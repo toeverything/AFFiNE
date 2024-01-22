@@ -5,6 +5,7 @@ import { PrismaClient } from '@prisma/client';
 import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 
 import { AppModule, FunctionalityModules } from '../../src/app.module';
+import { AuthModule } from '../../src/core/auth';
 import { UserFeaturesInit1698652531198 } from '../../src/data/migrations/1698652531198-user-features-init';
 import { GqlModule } from '../../src/fundamentals/graphql';
 
@@ -68,7 +69,12 @@ export async function createTestingModule(
   imports =
     imports[0] === AppModule
       ? [AppModule]
-      : dedupeModules([...FunctionalityModules, GqlModule, ...imports]);
+      : dedupeModules([
+          ...FunctionalityModules,
+          AuthModule,
+          GqlModule,
+          ...imports,
+        ]);
 
   const builder = Test.createTestingModule({
     imports,

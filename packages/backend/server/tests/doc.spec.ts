@@ -11,10 +11,10 @@ import {
   encodeStateAsUpdate,
 } from 'yjs';
 
+import { DocManager, DocModule } from '../src/core/doc';
+import { QuotaModule } from '../src/core/quota';
+import { StorageModule } from '../src/core/storage';
 import { Config } from '../src/fundamentals/config';
-import { DocManager, DocModule } from '../src/modules/doc';
-import { QuotaModule } from '../src/modules/quota';
-import { StorageModule } from '../src/modules/storage';
 import { createTestingModule, initTestingDB } from './utils';
 
 const createModule = () => {

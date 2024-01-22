@@ -1,7 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 
-import { Features } from '../../modules/features';
-import { Quotas } from '../../modules/quota/schema';
+import { Features } from '../../core/features';
+import { Quotas } from '../../core/quota/schema';
 import { migrateNewFeatureTable, upsertFeature } from './utils/user-features';
 
 export class UserFeaturesInit1698652531198 {

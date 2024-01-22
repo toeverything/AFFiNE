@@ -3,15 +3,15 @@
 import { TestingModule } from '@nestjs/testing';
 import ava, { type TestFn } from 'ava';
 
-import { AuthService } from '../src/modules/auth';
+import { AuthService } from '../src/core/auth';
 import {
   QuotaManagementService,
   QuotaModule,
   Quotas,
   QuotaService,
   QuotaType,
-} from '../src/modules/quota';
-import { StorageModule } from '../src/modules/storage';
+} from '../src/core/quota';
+import { StorageModule } from '../src/core/storage';
 import { createTestingModule } from './utils';
 
 const test = ava as TestFn<{

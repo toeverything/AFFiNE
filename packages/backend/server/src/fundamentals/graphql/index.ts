@@ -28,6 +28,7 @@ import { GQLLoggerPlugin } from './logger-plugin';
               ? '../../../../node_modules/.cache/schema.gql'
               : '../../../schema.gql'
           ),
+          sortSchema: true,
           context: ({ req, res }: { req: Request; res: Response }) => ({
             req,
             res,

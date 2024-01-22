@@ -5,7 +5,7 @@ import {
   OnEvent as RawOnEvent,
 } from '@nestjs/event-emitter';
 
-import type { Event, EventPayload } from './events';
+import type { Event, EventPayload } from './def';
 
 @Injectable()
 export class EventEmitter {
@@ -40,4 +40,4 @@ export const OnEvent = RawOnEvent as (
   exports: [EventEmitter],
 })
 export class EventModule {}
-export { EventPayload };
+export { Event, EventPayload };

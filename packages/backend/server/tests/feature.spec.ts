@@ -4,17 +4,17 @@ import { INestApplication, Injectable } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import ava, { type TestFn } from 'ava';
 
-import { ConfigModule } from '../src/fundamentals/config';
-import { AuthService } from '../src/modules/auth/service';
+import { AuthService } from '../src/core/auth/service';
 import {
   FeatureManagementService,
   FeatureModule,
   FeatureService,
   FeatureType,
-} from '../src/modules/features';
-import { UserType } from '../src/modules/users/types';
-import { WorkspaceResolver } from '../src/modules/workspaces/resolvers';
-import { Permission } from '../src/modules/workspaces/types';
+} from '../src/core/features';
+import { UserType } from '../src/core/users/types';
+import { WorkspaceResolver } from '../src/core/workspaces/resolvers';
+import { Permission } from '../src/core/workspaces/types';
+import { ConfigModule } from '../src/fundamentals/config';
 import { createTestingApp } from './utils';
 
 @Injectable()

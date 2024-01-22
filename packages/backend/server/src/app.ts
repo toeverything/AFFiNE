@@ -1,10 +1,11 @@
+import { Type } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import cookieParser from 'cookie-parser';
 import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 
-import { CacheRedis } from './fundamentals/cache/redis';
-import { RedisIoAdapter } from './fundamentals/websocket';
+import { SocketIoAdapter } from './fundamentals';
+import { SocketIoAdapterImpl } from './fundamentals/websocket';
 import { ExceptionLogger } from './middleware/exception-logger';
 import { serverTimingAndCache } from './middleware/timing';
 
@@ -31,11 +32,16 @@ export async function createApp() {
   app.useGlobalFilters(new ExceptionLogger());
   app.use(cookieParser());
 
-  if (AFFiNE.redis.enabled) {
-    const redis = app.get(CacheRedis, { strict: false });
-    const redisIoAdapter = new RedisIoAdapter(app);
-    await redisIoAdapter.connectToRedis(redis);
-    app.useWebSocketAdapter(redisIoAdapter);
+  if (AFFiNE.flavor.sync) {
+    const SocketIoAdapter = app.get<Type<SocketIoAdapter>>(
+      SocketIoAdapterImpl,
+      {
+        strict: false,
+      }
+    );
+
+    const adapter = new SocketIoAdapter(app);
+    app.useWebSocketAdapter(adapter);
   }
 
   return app;

@@ -55,6 +55,8 @@ const config: PlaywrightTestConfig = {
         OAUTH_EMAIL_SENDER: 'noreply@toeverything.info',
         OAUTH_EMAIL_LOGIN: 'noreply@toeverything.info',
         OAUTH_EMAIL_PASSWORD: 'affine',
+        STRIPE_API_KEY: '1',
+        STRIPE_WEBHOOK_KEY: '1',
       },
     },
   ],

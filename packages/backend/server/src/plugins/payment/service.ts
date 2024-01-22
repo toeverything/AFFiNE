@@ -9,10 +9,15 @@ import type {
 } from '@prisma/client';
 import Stripe from 'stripe';
 
-import { Config, PrismaService } from '../../fundamentals';
-import { FeatureManagementService } from '../features';
-import { QuotaService, QuotaType } from '../quota';
+import { FeatureManagementService } from '../../core/features';
+import { EventEmitter, PrismaService } from '../../fundamentals';
 import { ScheduleManager } from './schedule';
+import {
+  InvoiceStatus,
+  SubscriptionPlan,
+  SubscriptionRecurring,
+  SubscriptionStatus,
+} from './types';
 
 const OnEvent = (
   event: Stripe.Event.Type,
@@ -20,19 +25,6 @@ const OnEvent = (
 ) => RawOnEvent(event, opts);
 
 // Plan x Recurring make a stripe price lookup key
-export enum SubscriptionRecurring {
-  Monthly = 'monthly',
-  Yearly = 'yearly',
-}
-
-export enum SubscriptionPlan {
-  Free = 'free',
-  Pro = 'pro',
-  Team = 'team',
-  Enterprise = 'enterprise',
-  SelfHosted = 'selfhosted',
-}
-
 export function encodeLookupKey(
   plan: SubscriptionPlan,
   recurring: SubscriptionRecurring
@@ -48,30 +40,10 @@ export function decodeLookupKey(
   return [plan as SubscriptionPlan, recurring as SubscriptionRecurring];
 }
 
-// see https://stripe.com/docs/api/subscriptions/object#subscription_object-status
-export enum SubscriptionStatus {
-  Active = 'active',
-  PastDue = 'past_due',
-  Unpaid = 'unpaid',
-  Canceled = 'canceled',
-  Incomplete = 'incomplete',
-  Paused = 'paused',
-  IncompleteExpired = 'incomplete_expired',
-  Trialing = 'trialing',
-}
-
 const SubscriptionActivated: Stripe.Subscription.Status[] = [
   SubscriptionStatus.Active,
   SubscriptionStatus.Trialing,
 ];
-
-export enum InvoiceStatus {
-  Draft = 'draft',
-  Open = 'open',
-  Void = 'void',
-  Paid = 'paid',
-  Uncollectible = 'uncollectible',
-}
 
 export enum CouponType {
   EarlyAccess = 'earlyaccess',
@@ -80,27 +52,15 @@ export enum CouponType {
 
 @Injectable()
 export class SubscriptionService {
-  private readonly paymentConfig: Config['payment'];
   private readonly logger = new Logger(SubscriptionService.name);
 
   constructor(
-    config: Config,
     private readonly stripe: Stripe,
     private readonly db: PrismaService,
     private readonly scheduleManager: ScheduleManager,
-    private readonly features: FeatureManagementService,
-    private readonly quota: QuotaService
-  ) {
-    this.paymentConfig = config.payment;
-
-    if (
-      !this.paymentConfig.stripe.keys.APIKey ||
-      !this.paymentConfig.stripe.keys.webhookKey /* default empty string */
-    ) {
-      this.logger.warn('Stripe API key not set, Stripe will be disabled');
-      this.logger.warn('Set STRIPE_API_KEY to enable Stripe');
-    }
-  }
+    private readonly event: EventEmitter,
+    private readonly features: FeatureManagementService
+  ) {}
 
   async listPrices() {
     return this.stripe.prices.list();
@@ -477,16 +437,6 @@ export class SubscriptionService {
     }
   }
 
-  private getPlanQuota(plan: SubscriptionPlan) {
-    if (plan === SubscriptionPlan.Free) {
-      return QuotaType.FreePlanV1;
-    } else if (plan === SubscriptionPlan.Pro) {
-      return QuotaType.ProPlanV1;
-    } else {
-      throw new Error(`Unknown plan: ${plan}`);
-    }
-  }
-
   private async saveSubscription(
     user: User,
     subscription: Stripe.Subscription,
@@ -509,8 +459,10 @@ export class SubscriptionService {
 
     let nextBillAt: Date | null = null;
     if (planActivated) {
-      // update user's quota if plan activated
-      await this.quota.switchUserQuota(user.id, this.getPlanQuota(plan));
+      this.event.emit('user.subscription.activated', {
+        userId: user.id,
+        plan,
+      });
 
       // get next bill date from upcoming invoice
       // see https://stripe.com/docs/api/invoices/upcoming
@@ -518,8 +470,7 @@ export class SubscriptionService {
         nextBillAt = new Date(subscription.current_period_end * 1000);
       }
     } else {
-      // switch to free plan if subscription is canceled
-      await this.quota.switchUserQuota(user.id, QuotaType.FreePlanV1);
+      this.event.emit('user.subscription.canceled', user.id);
     }
 
     const commonData = {

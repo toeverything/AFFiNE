@@ -2,6 +2,7 @@
 
 import { createPrivateKey, createPublicKey } from 'node:crypto';
 
+import { merge } from 'lodash-es';
 import parse from 'parse-duration';
 
 import pkg from '../../../package.json' assert { type: 'json' };
@@ -46,11 +47,22 @@ const jwtKeyPair = (function () {
 
 export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
   let isHttps: boolean | null = null;
-  const flavor = (process.env.SERVER_FLAVOR ?? 'allinone') as ServerFlavor;
+  let flavor = (process.env.SERVER_FLAVOR ?? 'allinone') as ServerFlavor;
   const defaultConfig = {
     serverId: 'affine-nestjs-server',
+    serverName: flavor === 'selfhosted' ? 'Self-Host Cloud' : 'AFFiNE Cloud',
     version: pkg.version,
-    flavor,
+    get flavor() {
+      if (flavor === 'graphql') {
+        flavor = 'main';
+      }
+      return {
+        type: flavor,
+        main: flavor === 'main' || flavor === 'allinone',
+        sync: flavor === 'sync' || flavor === 'allinone',
+        selfhosted: flavor === 'selfhosted',
+      };
+    },
     ENV_MAP: {},
     affineEnv: 'dev',
     get affine() {
@@ -142,15 +154,7 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
     storage: getDefaultAFFiNEStorageConfig(),
     rateLimiter: {
       ttl: 60,
-      limit: 60,
-    },
-    redis: {
-      enabled: false,
-      host: '127.0.0.1',
-      port: 6379,
-      username: '',
-      password: '',
-      database: 0,
+      limit: 120,
     },
     doc: {
       manager: {
@@ -162,17 +166,15 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
         interval: 1000 * 60 * 10 /* 10 mins */,
       },
     },
-    payment: {
-      stripe: {
-        keys: {
-          APIKey: '',
-          webhookKey: '',
-        },
-        apiVersion: '2023-10-16',
-      },
-    },
     metrics: {
       enabled: false,
+    },
+    plugins: {
+      enabled: [],
+      use(plugin, config) {
+        this[plugin] = merge(this[plugin], config || {});
+        this.enabled.push(plugin);
+      },
     },
   } satisfies AFFiNEConfig;
 

@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 
-import { Features } from '../../modules/features';
+import { Features } from '../../core/features';
 import { upsertFeature } from './utils/user-features';
 
 export class RefreshUserFeatures1704352562369 {

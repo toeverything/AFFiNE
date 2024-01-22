@@ -13,6 +13,9 @@ import { RevertCommand, RunCommand } from './commands/run';
           enableUpdateAutoMerging: false,
         },
       },
+      metrics: {
+        enabled: false,
+      },
     }),
     BusinessAppModule,
   ],

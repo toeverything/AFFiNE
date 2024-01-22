@@ -10,7 +10,7 @@ import type { Express } from 'express';
 import request from 'supertest';
 
 import { AppModule } from '../src/app.module';
-import { FeatureManagementService } from '../src/modules/features';
+import { FeatureManagementService } from '../src/core/features';
 import { createTestingApp } from './utils';
 
 const gql = '/graphql';

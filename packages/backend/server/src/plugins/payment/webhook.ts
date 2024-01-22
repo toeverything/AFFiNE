@@ -1,3 +1,5 @@
+import assert from 'node:assert';
+
 import type { RawBodyRequest } from '@nestjs/common';
 import {
   Controller,
@@ -14,7 +16,7 @@ import { Config } from '../../fundamentals';
 
 @Controller('/api/stripe')
 export class StripeWebhook {
-  private readonly config: Config['payment'];
+  private readonly webhookKey: string;
   private readonly logger = new Logger(StripeWebhook.name);
 
   constructor(
@@ -22,18 +24,13 @@ export class StripeWebhook {
     private readonly stripe: Stripe,
     private readonly event: EventEmitter2
   ) {
-    this.config = config.payment;
+    assert(config.plugins.payment);
+    this.webhookKey = config.plugins.payment.stripe.keys.webhookKey;
   }
 
   @Post('/webhook')
   async handleWebhook(@Req() req: RawBodyRequest<Request>) {
     // Check if webhook signing is configured.
-    if (!this.config.stripe.keys.webhookKey) {
-      this.logger.error(
-        'Stripe Webhook key is not set, but a webhook was received.'
-      );
-      throw new NotAcceptableException();
-    }
 
     // Retrieve the event by verifying the signature using the raw body and secret.
     const signature = req.headers['stripe-signature'];
@@ -41,7 +38,7 @@ export class StripeWebhook {
       const event = this.stripe.webhooks.constructEvent(
         req.rawBody ?? '',
         signature ?? '',
-        this.config.stripe.keys.webhookKey
+        this.webhookKey
       );
 
       this.logger.debug(

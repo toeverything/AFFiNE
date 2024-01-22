@@ -10,13 +10,6 @@ declare global {
     // eslint-disable-next-line no-var
     var AFFiNE: AFFiNEConfig;
   }
-
-  // eslint-disable-next-line @typescript-eslint/no-namespace
-  namespace NodeJS {
-    interface ProcessEnv {
-      SERVER_FLAVOR: ServerFlavor | '';
-    }
-  }
 }
 
 export enum ExternalAccount {
@@ -25,22 +18,28 @@ export enum ExternalAccount {
   firebase = 'firebase',
 }
 
-export type ServerFlavor = 'allinone' | 'graphql' | 'sync' | 'selfhosted';
-type ConfigPaths = LeafPaths<
+export type ServerFlavor =
+  | 'allinone'
+  | 'main'
+  // @deprecated
+  | 'graphql'
+  | 'sync'
+  | 'selfhosted';
+export type ConfigPaths = LeafPaths<
   Omit<
     AFFiNEConfig,
     | 'ENV_MAP'
     | 'version'
-    | 'baseUrl'
-    | 'origin'
-    | 'prod'
-    | 'dev'
-    | 'test'
+    | 'flavor'
+    | 'env'
+    | 'affine'
     | 'deploy'
     | 'node'
+    | 'baseUrl'
+    | 'origin'
   >,
   '',
-  '....'
+  '.....'
 >;
 
 /**
@@ -52,15 +51,28 @@ export interface AFFiNEConfig {
   /**
    * Server Identity
    */
-  readonly serverId: string;
+  serverId: string;
+
+  /**
+   * Name may show on the UI
+   */
+  serverName: string;
+
   /**
    * System version
    */
   readonly version: string;
+
   /**
    * Server flavor
    */
-  readonly flavor: ServerFlavor;
+  get flavor(): {
+    type: string;
+    main: boolean;
+    sync: boolean;
+    selfhosted: boolean;
+  };
+
   /**
    * Deployment environment
    */
@@ -170,38 +182,6 @@ export interface AFFiNEConfig {
      * @env THROTTLE_LIMIT
      */
     limit: number;
-  };
-
-  /**
-   * Redis Config
-   *
-   * whether to use redis as Socket.IO adapter
-   */
-  redis: {
-    /**
-     * if not enabled, use in-memory adapter by default
-     */
-    enabled: boolean;
-    /**
-     * url of redis host
-     */
-    host: string;
-    /**
-     * port of redis
-     */
-    port: number;
-    username: string;
-    password: string;
-    /**
-     * redis database index
-     *
-     * Rate Limiter scope: database + 1
-     *
-     * Session scope: database + 2
-     *
-     * @default 0
-     */
-    database: number;
   };
 
   /**
@@ -340,15 +320,6 @@ export interface AFFiNEConfig {
 
   metrics: {
     enabled: boolean;
-  };
-
-  payment: {
-    stripe: {
-      keys: {
-        APIKey: string;
-        webhookKey: string;
-      };
-    } & import('stripe').Stripe.StripeConfig;
   };
 }
 

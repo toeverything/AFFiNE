@@ -7,9 +7,9 @@ import { PrismaClient } from '@prisma/client';
 import ava, { type TestFn } from 'ava';
 
 import { AppModule } from '../src/app.module';
+import { FeatureKind, FeatureManagementService } from '../src/core/features';
+import { Quotas } from '../src/core/quota';
 import { MailService } from '../src/fundamentals/mailer';
-import { FeatureKind, FeatureManagementService } from '../src/modules/features';
-import { Quotas } from '../src/modules/quota';
 import {
   createTestingApp,
   createWorkspace,

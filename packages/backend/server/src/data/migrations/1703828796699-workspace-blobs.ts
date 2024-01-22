@@ -1,7 +1,7 @@
 import { ModuleRef } from '@nestjs/core';
 import { PrismaClient } from '@prisma/client';
 
-import { WorkspaceBlobStorage } from '../../modules/storage';
+import { WorkspaceBlobStorage } from '../../core/storage';
 
 export class WorkspaceBlobs1703828796699 {
   // do the migration

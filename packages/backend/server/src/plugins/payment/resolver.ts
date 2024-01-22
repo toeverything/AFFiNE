@@ -16,17 +16,16 @@ import type { User, UserInvoice, UserSubscription } from '@prisma/client';
 import { GraphQLError } from 'graphql';
 import { groupBy } from 'lodash-es';
 
+import { Auth, CurrentUser, Public } from '../../core/auth';
+import { UserType } from '../../core/users';
 import { Config, PrismaService } from '../../fundamentals';
-import { Auth, CurrentUser, Public } from '../auth';
-import { UserType } from '../users';
+import { decodeLookupKey, SubscriptionService } from './service';
 import {
-  decodeLookupKey,
   InvoiceStatus,
   SubscriptionPlan,
   SubscriptionRecurring,
-  SubscriptionService,
   SubscriptionStatus,
-} from './service';
+} from './types';
 
 registerEnumType(SubscriptionStatus, { name: 'SubscriptionStatus' });
 registerEnumType(SubscriptionRecurring, { name: 'SubscriptionRecurring' });
@@ -251,7 +250,10 @@ export class SubscriptionResolver {
 
 @Resolver(() => UserType)
 export class UserSubscriptionResolver {
-  constructor(private readonly db: PrismaService) {}
+  constructor(
+    private readonly config: Config,
+    private readonly db: PrismaService
+  ) {}
 
   @ResolveField(() => UserSubscriptionType, { nullable: true })
   async subscription(
@@ -270,6 +272,25 @@ export class UserSubscriptionResolver {
           },
         }
       );
+    }
+
+    // @FIXME(@forehalo): should not mock any api for selfhosted server
+    // the frontend should avoid calling such api if feature is not enabled
+    if (this.config.flavor.selfhosted) {
+      const start = new Date();
+      const end = new Date();
+      end.setFullYear(start.getFullYear() + 1);
+
+      return {
+        stripeSubscriptionId: 'dummy',
+        plan: SubscriptionPlan.SelfHosted,
+        recurring: SubscriptionRecurring.Yearly,
+        status: SubscriptionStatus.Active,
+        start,
+        end,
+        createdAt: start,
+        updatedAt: start,
+      };
     }
 
     return this.db.userSubscription.findUnique({

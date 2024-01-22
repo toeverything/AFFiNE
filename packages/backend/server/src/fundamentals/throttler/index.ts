@@ -1,4 +1,4 @@
-import { ExecutionContext, Injectable, Logger } from '@nestjs/common';
+import { ExecutionContext, Injectable } from '@nestjs/common';
 import { Global, Module } from '@nestjs/common';
 import {
   Throttle,
@@ -6,39 +6,35 @@ import {
   ThrottlerModule,
   ThrottlerModuleOptions,
   ThrottlerOptionsFactory,
+  ThrottlerStorageService,
 } from '@nestjs/throttler';
-import { ThrottlerStorageRedisService } from 'nestjs-throttler-storage-redis';
 
-import { ThrottlerCache } from '../cache';
 import { Config } from '../config';
 import { getRequestResponseFromContext } from '../utils/request';
+
+@Injectable()
+export class ThrottlerStorage extends ThrottlerStorageService {}
 
 @Injectable()
 class CustomOptionsFactory implements ThrottlerOptionsFactory {
   constructor(
     private readonly config: Config,
-    private readonly cache: ThrottlerCache
+    private readonly storage: ThrottlerStorage
   ) {}
+
   createThrottlerOptions() {
     const options: ThrottlerModuleOptions = {
       throttlers: [
         {
-          ttl: this.config.rateLimiter.ttl,
+          ttl: this.config.rateLimiter.ttl * 1000,
           limit: this.config.rateLimiter.limit,
         },
       ],
       skipIf: () => {
         return !this.config.node.prod || this.config.affine.canary;
       },
+      storage: this.storage,
     };
-
-    if (this.config.redis.enabled) {
-      new Logger(RateLimiterModule.name).log('Use Redis');
-      options.storage = new ThrottlerStorageRedisService(
-        // @ts-expect-error hidden field
-        this.cache.redis
-      );
-    }
 
     return options;
   }
@@ -51,6 +47,8 @@ class CustomOptionsFactory implements ThrottlerOptionsFactory {
       useClass: CustomOptionsFactory,
     }),
   ],
+  providers: [ThrottlerStorage],
+  exports: [ThrottlerStorage],
 })
 export class RateLimiterModule {}
 

@@ -1,7 +1,7 @@
 import { DynamicModule, FactoryProvider } from '@nestjs/common';
 import { merge } from 'lodash-es';
 
-import { ApplyType, DeepPartial } from '../utils/types';
+import { ApplyType } from '../utils/types';
 import { AFFiNEConfig } from './def';
 
 /**

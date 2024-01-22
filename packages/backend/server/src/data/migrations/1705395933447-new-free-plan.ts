@@ -1,7 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 
-import { FeatureKind } from '../../modules/features';
-import { Quotas } from '../../modules/quota';
+import { FeatureKind } from '../../core/features';
+import { Quotas } from '../../core/quota';
 import { upsertFeature } from './utils/user-features';
 
 export class NewFreePlan1705395933447 {

@@ -1,15 +1,14 @@
-import { Module } from '@nestjs/common';
-
-import { FeatureModule } from '../features';
-import { QuotaModule } from '../quota';
+import { ServerFeature } from '../../core/config';
+import { FeatureModule } from '../../core/features';
+import { OptionalModule } from '../../fundamentals';
 import { SubscriptionResolver, UserSubscriptionResolver } from './resolver';
 import { ScheduleManager } from './schedule';
 import { SubscriptionService } from './service';
 import { StripeProvider } from './stripe';
 import { StripeWebhook } from './webhook';
 
-@Module({
-  imports: [FeatureModule, QuotaModule],
+@OptionalModule({
+  imports: [FeatureModule],
   providers: [
     ScheduleManager,
     StripeProvider,
@@ -18,5 +17,12 @@ import { StripeWebhook } from './webhook';
     UserSubscriptionResolver,
   ],
   controllers: [StripeWebhook],
+  requires: [
+    'plugins.payment.stripe.keys.APIKey',
+    'plugins.payment.stripe.keys.webhookKey',
+  ],
+  contributesTo: ServerFeature.Payment,
 })
 export class PaymentModule {}
+
+export type { PaymentConfig } from './types';

@@ -10,7 +10,7 @@ import { Reflector } from '@nestjs/core';
 import { GqlContextType, GqlExecutionContext } from '@nestjs/graphql';
 import { mergeMap, Observable, of } from 'rxjs';
 
-import { LocalCache } from './providers/cache';
+import { Cache } from './instances';
 
 export const MakeCache = (key: string[], args?: string[]) =>
   SetMetadata('cacheKey', [key, args]);
@@ -24,7 +24,7 @@ export class CacheInterceptor implements NestInterceptor {
   private readonly logger = new Logger(CacheInterceptor.name);
   constructor(
     private readonly reflector: Reflector,
-    private readonly cache: LocalCache
+    private readonly cache: Cache
   ) {}
   async intercept(
     ctx: ExecutionContext,

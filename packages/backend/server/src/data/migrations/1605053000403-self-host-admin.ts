@@ -8,7 +8,7 @@ export class SelfHostAdmin1605053000403 {
   // do the migration
   static async up(db: PrismaClient, ref: ModuleRef) {
     const config = ref.get(Config, { strict: false });
-    if (config.flavor === 'selfhosted') {
+    if (config.flavor.selfhosted) {
       if (
         !process.env.AFFINE_ADMIN_EMAIL ||
         !process.env.AFFINE_ADMIN_PASSWORD

@@ -1,4 +1,13 @@
-import { LocalCache } from './providers/cache';
+import { Injectable } from '@nestjs/common';
 
-export class SessionCache extends LocalCache {}
-export class ThrottlerCache extends LocalCache {}
+import { LocalCache } from './local';
+
+@Injectable()
+export class Cache extends LocalCache {}
+
+@Injectable()
+export class SessionCache extends LocalCache {
+  constructor() {
+    super({ namespace: 'session' });
+  }
+}

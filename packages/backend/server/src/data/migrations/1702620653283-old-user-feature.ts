@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 
-import { QuotaType } from '../../modules/quota/types';
+import { QuotaType } from '../../core/quota/types';
 export class OldUserFeature1702620653283 {
   // do the migration
   static async up(db: PrismaClient) {

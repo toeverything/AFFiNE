@@ -4,10 +4,10 @@ import { PrismaClient } from '@prisma/client';
 import test from 'ava';
 import * as Sinon from 'sinon';
 
+import { DocHistoryManager } from '../src/core/doc';
+import { QuotaModule } from '../src/core/quota';
+import { StorageModule } from '../src/core/storage';
 import { type EventPayload } from '../src/fundamentals/event';
-import { DocHistoryManager } from '../src/modules/doc';
-import { QuotaModule } from '../src/modules/quota';
-import { StorageModule } from '../src/modules/storage';
 import { createTestingModule } from './utils';
 
 let m: TestingModule;

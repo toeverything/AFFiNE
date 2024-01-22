@@ -63,6 +63,10 @@ export enum PublicPageMode {
   Page = 'Page',
 }
 
+export enum ServerFeature {
+  Payment = 'Payment',
+}
+
 export enum SubscriptionPlan {
   Enterprise = 'Enterprise',
   Free = 'Free',
@@ -656,8 +660,10 @@ export type ServerConfigQuery = {
   serverConfig: {
     __typename?: 'ServerConfigType';
     version: string;
-    flavor: string;
     baseUrl: string;
+    name: string;
+    features: Array<ServerFeature>;
+    flavor: string;
   };
 };
 

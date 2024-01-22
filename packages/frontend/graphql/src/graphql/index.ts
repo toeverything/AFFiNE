@@ -674,8 +674,10 @@ export const serverConfigQuery = {
 query serverConfig {
   serverConfig {
     version
-    flavor
     baseUrl
+    name
+    features
+    flavor
   }
 }`,
 };

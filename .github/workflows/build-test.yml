@@ -19,6 +19,7 @@ env:
   MACOSX_DEPLOYMENT_TARGET: '10.13'
   NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
   PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/node_modules/.cache/ms-playwright
+  DISABLE_TELEMETRY: true
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

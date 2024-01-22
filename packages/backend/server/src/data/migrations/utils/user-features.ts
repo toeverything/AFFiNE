@@ -4,7 +4,7 @@ import {
   CommonFeature,
   FeatureKind,
   FeatureType,
-} from '../../../modules/features';
+} from '../../../core/features';
 
 // upgrade features from lower version to higher version
 export async function upsertFeature(

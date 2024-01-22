@@ -1,7 +1,7 @@
 import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 
-import type { InvitationType } from '../../src/modules/workspaces';
+import type { InvitationType } from '../../src/core/workspaces';
 import { gql } from './common';
 
 export async function inviteUser(

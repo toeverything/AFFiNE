@@ -1,8 +1,8 @@
 import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 
-import type { TokenType } from '../../src/modules/auth';
-import type { UserType } from '../../src/modules/users';
+import type { TokenType } from '../../src/core/auth';
+import type { UserType } from '../../src/core/users';
 import { gql } from './common';
 
 export async function signUp(

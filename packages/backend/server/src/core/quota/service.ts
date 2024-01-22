@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
-import { PrismaService } from '../../fundamentals';
+import { type EventPayload, OnEvent, PrismaService } from '../../fundamentals';
 import { FeatureKind } from '../features';
 import { QuotaConfig } from './quota';
 import { QuotaType } from './types';
@@ -154,5 +154,27 @@ export class QuotaService {
         },
       })
       .then(count => count > 0);
+  }
+
+  @OnEvent('user.subscription.activated')
+  async onSubscriptionUpdated({
+    userId,
+  }: EventPayload<'user.subscription.activated'>) {
+    await this.switchUserQuota(
+      userId,
+      QuotaType.ProPlanV1,
+      'subscription activated'
+    );
+  }
+
+  @OnEvent('user.subscription.canceled')
+  async onSubscriptionCanceled(
+    userId: EventPayload<'user.subscription.canceled'>
+  ) {
+    await this.switchUserQuota(
+      userId,
+      QuotaType.FreePlanV1,
+      'subscription canceled'
+    );
   }
 }

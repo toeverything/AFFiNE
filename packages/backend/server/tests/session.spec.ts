@@ -4,7 +4,6 @@ import { TestingModule } from '@nestjs/testing';
 import ava, { type TestFn } from 'ava';
 
 import { CacheModule } from '../src/fundamentals/cache';
-import { ConfigModule } from '../src/fundamentals/config';
 import { SessionModule, SessionService } from '../src/fundamentals/session';
 import { createTestingModule } from './utils';
 
@@ -15,15 +14,7 @@ const test = ava as TestFn<{
 
 test.beforeEach(async t => {
   const module = await createTestingModule({
-    imports: [
-      ConfigModule.forRoot({
-        redis: {
-          enabled: false,
-        },
-      }),
-      CacheModule,
-      SessionModule,
-    ],
+    imports: [CacheModule, SessionModule],
   });
   const session = module.get(SessionService);
   t.context.module = module;
