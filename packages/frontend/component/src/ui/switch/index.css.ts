@@ -14,7 +14,7 @@ export const switchStyle = style({
   position: 'relative',
   width: '46px',
   height: '26px',
-  background: 'var(--affine-icon-color)',
+  background: 'var(--affine-toggle-disable-background-color)',
   borderRadius: '37px',
   transition: '200ms all',
   border: '1px solid var(--affine-black-10)',
@@ -29,7 +29,7 @@ export const switchStyle = style({
       borderRadius: '50%',
       top: '50%',
       border: '1px solid var(--affine-black-10)',
-      background: 'var(--affine-white)',
+      background: 'var(--affine-toggle-circle-background-color)',
       transform: 'translate(1px, -50%)',
     },
   },
@@ -38,7 +38,7 @@ export const switchCheckedStyle = style({
   background: 'var(--affine-primary-color)',
   selectors: {
     '&:before': {
-      background: 'var(--affine-toggle-circle-background-color)',
+      borderColor: 'var(--affine-pure-black-10)',
       transform: 'translate(21px,-50%)',
     },
   },
