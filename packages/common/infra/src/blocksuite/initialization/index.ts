@@ -52,7 +52,7 @@ export async function buildShowcaseWorkspace(
       if (payload.type === 'page') {
         workspace.schema.upgradePage(
           info?.pageVersion ?? 0,
-          info?.blockVersions ?? {},
+          {},
           payload.page.spaceDoc
         );
       }
