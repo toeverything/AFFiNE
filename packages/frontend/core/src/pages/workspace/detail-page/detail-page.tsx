@@ -5,6 +5,11 @@ import { useWorkspaceStatus } from '@affine/core/hooks/use-workspace-status';
 import { waitForCurrentWorkspaceAtom } from '@affine/core/modules/workspace';
 import { WorkspaceSubPath } from '@affine/core/shared';
 import { globalBlockSuiteSchema, SyncEngineStep } from '@affine/workspace';
+import {
+  BookmarkService,
+  customImageProxyMiddleware,
+  ImageService,
+} from '@blocksuite/blocks';
 import type { AffineEditorContainer } from '@blocksuite/presets';
 import type { Page, Workspace } from '@blocksuite/store';
 import { appSettingAtom } from '@toeverything/infra/atom';
@@ -138,6 +143,13 @@ const DetailPageImpl = memo(function DetailPageImpl({ page }: { page: Page }) {
           );
         }
       } catch {}
+
+      ImageService.setImageProxyURL(runtimeConfig.imageProxyUrl);
+      BookmarkService.setLinkPreviewEndpoint(runtimeConfig.linkPreviewUrl);
+      editor.host?.std.clipboard.use(
+        customImageProxyMiddleware(runtimeConfig.imageProxyUrl)
+      );
+
       setPageMode(currentPageId, mode);
       // fixme: it seems pageLinkClicked is not triggered sometimes?
       const dispose = editor.slots.pageLinkClicked.on(({ pageId }) => {
