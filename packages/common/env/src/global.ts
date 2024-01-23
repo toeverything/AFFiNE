@@ -19,6 +19,7 @@ export const runtimeFlagsSchema = z.object({
   downloadUrl: z.string(),
   // see: tools/workers
   imageProxyUrl: z.string(),
+  linkPreviewUrl: z.string(),
   enablePreloading: z.boolean(),
   enableNewSettingModal: z.boolean(),
   enableNewSettingUnstableApi: z.boolean(),
