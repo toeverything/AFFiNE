@@ -12847,14 +12847,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@toeverything/theme@npm:^0.7.27":
-  version: 0.7.27
-  resolution: "@toeverything/theme@npm:0.7.27"
-  checksum: 9349d30256d33b5528441dbca09387819225449f97549585b92b33e354d7fbb3d0e5e35001c89b8a7e3033d8f51d3aee75ef9edaaf14fb7dd717dd66bfe96009
-  languageName: node
-  linkType: hard
-
-"@toeverything/theme@npm:^0.7.28":
+"@toeverything/theme@npm:^0.7.27, @toeverything/theme@npm:^0.7.28":
   version: 0.7.28
   resolution: "@toeverything/theme@npm:0.7.28"
   checksum: 675da6a9f1a7394b04ddb5e58ddc088ea6a56c2ae5f22d6041ec966905a231ba7238417bb63d95633963f9ebae1d7c655c88e22fccf0c4e54dfcceda0deee108

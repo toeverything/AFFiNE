@@ -96,6 +96,8 @@ jobs:
         run: |
           git checkout .yarnrc.yml
           yarn lint:prettier
+      - name: Yarn Dedupe
+        run: yarn dedupe --check
       - name: Run Type Check
         run: yarn typecheck
 
