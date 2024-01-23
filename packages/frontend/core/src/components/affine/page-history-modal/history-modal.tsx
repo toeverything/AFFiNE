@@ -5,6 +5,7 @@ import { ConfirmModal, Modal } from '@affine/component/ui/modal';
 import { openSettingModalAtom, type PageMode } from '@affine/core/atoms';
 import { useIsWorkspaceOwner } from '@affine/core/hooks/affine/use-is-workspace-owner';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
+import { useBlockSuiteWorkspacePageTitle } from '@affine/core/hooks/use-block-suite-workspace-page-title';
 import { useUserSubscription } from '@affine/core/hooks/use-subscription';
 import { waitForCurrentWorkspaceAtom } from '@affine/core/modules/workspace';
 import { timestampToLocalTime } from '@affine/core/utils';
@@ -418,7 +419,7 @@ const PageHistoryManager = ({
     return workspace.getPage(pageId)?.spaceDoc.guid ?? pageId;
   }, [pageId, workspace]);
 
-  const snapshotPage = useSnapshotPage(workspaceId, pageDocId, activeVersion);
+  const snapshotPage = useSnapshotPage(workspace, pageDocId, activeVersion);
 
   const t = useAFFiNEI18N();
 
@@ -440,10 +441,7 @@ const PageHistoryManager = ({
   const defaultPreviewPageMode = useAtomValue(currentModeAtom);
   const [mode, setMode] = useState<PageMode>(defaultPreviewPageMode);
 
-  const title = useMemo(
-    () => workspace.getPage(pageId)?.meta.title || t['Untitled'](),
-    [pageId, t, workspace]
-  );
+  const title = useBlockSuiteWorkspacePageTitle(workspace, pageId);
 
   const [showRestoreConfirmModal, setShowRestoreConfirmModal] = useState(false);
 

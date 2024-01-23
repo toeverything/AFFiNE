@@ -1,20 +1,25 @@
 import type { Workspace } from '@blocksuite/store';
 import { useAtomValue } from 'jotai';
-import { useEffect, useMemo, useReducer } from 'react';
+import { useEffect, useState } from 'react';
 
+import type { WorkspacePropertiesAdapter } from '../modules/workspace/properties';
 import {
   currentWorkspacePropertiesAdapterAtom,
-  WorkspacePropertiesAdapter,
+  workspaceAdapterAtomFamily,
 } from '../modules/workspace/properties';
 
+function getProxy<T extends object>(obj: T) {
+  return new Proxy(obj, {});
+}
+
 const useReactiveAdapter = (adapter: WorkspacePropertiesAdapter) => {
-  const [, forceUpdate] = useReducer(c => c + 1, 0);
+  const [proxy, setProxy] = useState(adapter);
 
   useEffect(() => {
     // todo: track which properties are used and then filter by property path change
     // using Y.YEvent.path
     function observe() {
-      forceUpdate();
+      setProxy(getProxy(adapter));
     }
     adapter.properties.observeDeep(observe);
     return () => {
@@ -22,7 +27,7 @@ const useReactiveAdapter = (adapter: WorkspacePropertiesAdapter) => {
     };
   }, [adapter]);
 
-  return adapter;
+  return proxy;
 };
 
 export function useCurrentWorkspacePropertiesAdapter() {
@@ -31,9 +36,6 @@ export function useCurrentWorkspacePropertiesAdapter() {
 }
 
 export function useWorkspacePropertiesAdapter(workspace: Workspace) {
-  const adapter = useMemo(
-    () => new WorkspacePropertiesAdapter(workspace),
-    [workspace]
-  );
+  const adapter = useAtomValue(workspaceAdapterAtomFamily(workspace));
   return useReactiveAdapter(adapter);
 }

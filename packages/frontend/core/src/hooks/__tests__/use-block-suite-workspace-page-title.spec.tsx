@@ -51,6 +51,8 @@ beforeEach(async () => {
 
   blockSuiteWorkspace = workspace.blockSuiteWorkspace;
 
+  blockSuiteWorkspace.doc.emit('sync', []);
+
   const initPage = async (page: Page) => {
     await page.waitForLoaded();
     expect(page).not.toBeNull();

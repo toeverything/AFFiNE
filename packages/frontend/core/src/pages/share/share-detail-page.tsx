@@ -99,6 +99,7 @@ export const loader: LoaderFunction = async ({ params }) => {
     assertDownloadResponse(response);
     const { arrayBuffer } = response;
     applyUpdate(workspace.doc, new Uint8Array(arrayBuffer));
+    workspace.doc.emit('sync', []);
   }
   const page = workspace.getPage(pageId);
   assertExists(page, 'cannot find page');
