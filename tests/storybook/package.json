@@ -24,7 +24,7 @@
     "@blocksuite/block-std": "0.12.0-nightly-202401190708-4e2c95a",
     "@blocksuite/blocks": "0.12.0-nightly-202401190708-4e2c95a",
     "@blocksuite/global": "0.12.0-nightly-202401190708-4e2c95a",
-    "@blocksuite/icons": "2.1.41",
+    "@blocksuite/icons": "2.1.42",
     "@blocksuite/inline": "0.12.0-nightly-202401190708-4e2c95a",
     "@blocksuite/lit": "0.12.0-nightly-202401190708-4e2c95a",
     "@blocksuite/presets": "0.12.0-nightly-202401190708-4e2c95a",

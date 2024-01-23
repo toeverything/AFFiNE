@@ -208,7 +208,7 @@ __metadata:
     "@affine/workspace": "workspace:*"
     "@blocksuite/blocks": "npm:0.12.0-nightly-202401190708-4e2c95a"
     "@blocksuite/global": "npm:0.12.0-nightly-202401190708-4e2c95a"
-    "@blocksuite/icons": "npm:2.1.41"
+    "@blocksuite/icons": "npm:2.1.42"
     "@blocksuite/lit": "npm:0.12.0-nightly-202401190708-4e2c95a"
     "@blocksuite/presets": "npm:0.12.0-nightly-202401190708-4e2c95a"
     "@blocksuite/store": "npm:0.12.0-nightly-202401190708-4e2c95a"
@@ -312,7 +312,7 @@ __metadata:
     "@blocksuite/block-std": "npm:0.12.0-nightly-202401190708-4e2c95a"
     "@blocksuite/blocks": "npm:0.12.0-nightly-202401190708-4e2c95a"
     "@blocksuite/global": "npm:0.12.0-nightly-202401190708-4e2c95a"
-    "@blocksuite/icons": "npm:2.1.41"
+    "@blocksuite/icons": "npm:2.1.42"
     "@blocksuite/inline": "npm:0.12.0-nightly-202401190708-4e2c95a"
     "@blocksuite/lit": "npm:0.12.0-nightly-202401190708-4e2c95a"
     "@blocksuite/presets": "npm:0.12.0-nightly-202401190708-4e2c95a"
@@ -743,7 +743,7 @@ __metadata:
     "@blocksuite/block-std": "npm:0.12.0-nightly-202401190708-4e2c95a"
     "@blocksuite/blocks": "npm:0.12.0-nightly-202401190708-4e2c95a"
     "@blocksuite/global": "npm:0.12.0-nightly-202401190708-4e2c95a"
-    "@blocksuite/icons": "npm:2.1.41"
+    "@blocksuite/icons": "npm:2.1.42"
     "@blocksuite/inline": "npm:0.12.0-nightly-202401190708-4e2c95a"
     "@blocksuite/lit": "npm:0.12.0-nightly-202401190708-4e2c95a"
     "@blocksuite/presets": "npm:0.12.0-nightly-202401190708-4e2c95a"
@@ -3461,13 +3461,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@blocksuite/icons@npm:2.1.41":
-  version: 2.1.41
-  resolution: "@blocksuite/icons@npm:2.1.41"
+"@blocksuite/icons@npm:2.1.42":
+  version: 2.1.42
+  resolution: "@blocksuite/icons@npm:2.1.42"
   peerDependencies:
     "@types/react": ^18.0.25
     react: ^18.2.0
-  checksum: bc7ff94c2f87fe470140f1efa616d5e5f183ec37de47efef1d686f4e45ac7f020fe3205d41b04c8e03a7c8574d6f46a43ce4931a5dc97fdb2c8fb285f0d903e0
+  checksum: 090a5925b253df1b5ade7c47ed5c098955abe027b6cbecfb13ebbc97d4bf2e6dfe520b973362af78c5440ea85765b655cc6f6abc4d5965bf76441c75a80fa2d6
   languageName: node
   linkType: hard
 
