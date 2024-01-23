@@ -30,7 +30,7 @@ export const PresentButton = () => {
     // TODO: use editor Atom
     const editorRoot = document.querySelector('editor-host');
     if (!editorRoot) return;
-  
+
     const edgelessPage = editorRoot?.querySelector('affine-edgeless-page');
     if (!edgelessPage) return;
 
