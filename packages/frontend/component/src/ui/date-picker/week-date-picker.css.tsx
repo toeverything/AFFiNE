@@ -1,3 +1,4 @@
+import { cssVar } from '@toeverything/theme';
 import { style } from '@vanilla-extract/css';
 
 export const weekDatePicker = style({
@@ -36,24 +37,24 @@ export const dayCell = style({
   padding: '2px 4px 1px 4px',
   borderRadius: 4,
 
-  fontFamily: 'var(--affine-font-family)',
+  fontFamily: cssVar('fontFamily'),
   fontWeight: 500,
   fontSize: 12,
 
   selectors: {
     '&:hover': {
-      backgroundColor: 'var(--affine-hover-color)',
+      backgroundColor: cssVar('hoverColor'),
     },
     '&[data-today="true"]:not([data-active="true"])': {
       vars: {
-        '--cell-color': 'var(--affine-brand-color)',
+        '--cell-color': cssVar('brandColor'),
       },
     },
     '&[data-active="true"]': {
       vars: {
-        '--cell-color': 'var(--affine-pure-white)',
+        '--cell-color': cssVar('pureWhite'),
       },
-      background: 'var(--affine-brand-color)',
+      background: cssVar('brandColor'),
     },
 
     // interactive
