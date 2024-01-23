@@ -30,18 +30,16 @@ export const PresentButton = () => {
     // TODO: use editor Atom
     const editorRoot = document.querySelector('editor-host');
     if (!editorRoot) return;
+  
+    const edgelessPage = editorRoot?.querySelector('affine-edgeless-page');
+    if (!edgelessPage) return;
 
-    // TODO: use surfaceService subAtom
-    const surfaceService = editorRoot?.spec.getService(
-      'affine:surface'
-    ) as SurfaceService;
-
-    surfaceService.slots.edgelessToolUpdated.on(() => {
-      setIsPresent(surfaceService?.currentTool?.type === 'frameNavigator');
+    edgelessPage.slots.edgelessToolUpdated.on(() => {
+      setIsPresent(edgelessPage.edgelessTool.type === 'frameNavigator');
     });
 
     return () => {
-      surfaceService.slots.edgelessToolUpdated.dispose();
+      edgelessPage.slots.edgelessToolUpdated.dispose();
     };
   }, [isPresent]);
 
