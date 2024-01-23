@@ -1,5 +1,7 @@
 export interface CacheSetOptions {
-  // in milliseconds
+  /**
+   * in milliseconds
+   */
   ttl?: number;
 }
 
