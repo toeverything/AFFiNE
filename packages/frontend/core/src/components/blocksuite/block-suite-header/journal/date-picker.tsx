@@ -13,7 +13,7 @@ export interface JournalWeekDatePickerProps {
   page: Page;
 }
 
-const weekStyle = { maxWidth: 548, width: '100%' };
+const weekStyle = { maxWidth: 800, width: '100%' };
 export const JournalWeekDatePicker = ({
   workspace,
   page,
