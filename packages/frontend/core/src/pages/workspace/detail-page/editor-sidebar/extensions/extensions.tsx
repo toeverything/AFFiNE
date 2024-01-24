@@ -1,8 +1,8 @@
 import { IconButton } from '@affine/component';
 import { useJournalInfoHelper } from '@affine/core/hooks/use-journal';
 import { useWorkspaceEnabledFeatures } from '@affine/core/hooks/use-workspace-features';
-import type { BlockSuiteWorkspace } from '@affine/core/shared';
 import { FeatureType } from '@affine/graphql';
+import type { Workspace } from '@affine/workspace/workspace';
 import type { Page } from '@blocksuite/store';
 import { assignInlineVars } from '@vanilla-extract/dynamic';
 import { useAtom, useAtomValue } from 'jotai';
@@ -15,15 +15,15 @@ import {
 import * as styles from './extensions.css';
 
 export interface ExtensionTabsProps {
-  workspace: BlockSuiteWorkspace;
+  workspace: Workspace;
   page: Page;
 }
 
 // provide a switcher for active extensions
 // will be used in global top header (MacOS) or sidebar (Windows)
-export const ExtensionTabs = ({ page }: ExtensionTabsProps) => {
+export const ExtensionTabs = ({ page, workspace }: ExtensionTabsProps) => {
   // todo: filter in editorExtensionsAtom instead?
-  const copilotEnabled = useWorkspaceEnabledFeatures().includes(
+  const copilotEnabled = useWorkspaceEnabledFeatures(workspace.meta).includes(
     FeatureType.Copilot
   );
 

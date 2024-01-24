@@ -22,6 +22,6 @@ export const WorkspaceSetting = ({
         />
       );
     case 'experimental-features':
-      return <ExperimentalFeatures />;
+      return <ExperimentalFeatures workspaceMetadata={workspaceMetadata} />;
   }
 };

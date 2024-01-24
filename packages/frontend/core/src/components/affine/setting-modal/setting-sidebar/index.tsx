@@ -240,7 +240,7 @@ const WorkspaceListItem = ({
   const isCurrent = currentWorkspace.id === meta.id;
   const t = useAFFiNEI18N();
   const isOwner = useIsWorkspaceOwner(meta);
-  const availableFeatures = useWorkspaceAvailableFeatures();
+  const availableFeatures = useWorkspaceAvailableFeatures(meta);
 
   const onClickPreference = useCallback(() => {
     onClick('preference');

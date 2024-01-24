@@ -206,7 +206,7 @@ const DetailPageImpl = memo(function DetailPageImpl({ page }: { page: Page }) {
         sidebar={
           !isInTrash ? (
             <div className={styles.sidebarContainerInner}>
-              <RightSidebarHeader workspace={blockSuiteWorkspace} page={page} />
+              <RightSidebarHeader workspace={currentWorkspace} page={page} />
               <EditorSidebar workspace={blockSuiteWorkspace} page={page} />
             </div>
           ) : null

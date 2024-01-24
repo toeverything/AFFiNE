@@ -8,6 +8,7 @@ import {
 } from '@affine/core/hooks/use-workspace-features';
 import { FeatureType } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import type { WorkspaceMetadata } from '@affine/workspace/metadata';
 import { useAtom } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
 import { Suspense, useCallback, useState } from 'react';
@@ -74,16 +75,18 @@ const ExperimentalFeaturesPrompt = ({
 interface ExperimentalFeaturesItemProps {
   feature: FeatureType;
   title: React.ReactNode;
+  workspaceMetadata: WorkspaceMetadata;
 }
 
 const ExperimentalFeaturesItem = ({
   feature,
   title,
+  workspaceMetadata,
 }: ExperimentalFeaturesItemProps) => {
-  const enabledFeatures = useWorkspaceEnabledFeatures();
+  const enabledFeatures = useWorkspaceEnabledFeatures(workspaceMetadata);
   const enabled = enabledFeatures.includes(feature);
   const [localEnabled, setLocalEnabled] = useState(enabled);
-  const { trigger, isMutating } = useSetWorkspaceFeature();
+  const { trigger, isMutating } = useSetWorkspaceFeature(workspaceMetadata);
   const onChange = useCallback(
     (checked: boolean) => {
       setLocalEnabled(checked);
@@ -104,9 +107,13 @@ const ExperimentalFeaturesItem = ({
   );
 };
 
-const ExperimentalFeaturesMain = () => {
+const ExperimentalFeaturesMain = ({
+  workspaceMetadata,
+}: {
+  workspaceMetadata: WorkspaceMetadata;
+}) => {
   const t = useAFFiNEI18N();
-  const features = useWorkspaceAvailableFeatures();
+  const features = useWorkspaceAvailableFeatures(workspaceMetadata);
 
   return (
     <>
@@ -119,6 +126,7 @@ const ExperimentalFeaturesMain = () => {
       {features.includes(FeatureType.Copilot) ? (
         <ExperimentalFeaturesItem
           title="AI POC"
+          workspaceMetadata={workspaceMetadata}
           feature={FeatureType.Copilot}
         />
       ) : null}
@@ -132,7 +140,11 @@ const experimentalFeaturesDisclaimerAtom = atomWithStorage(
   false
 );
 
-export const ExperimentalFeatures = () => {
+export const ExperimentalFeatures = ({
+  workspaceMetadata,
+}: {
+  workspaceMetadata: WorkspaceMetadata;
+}) => {
   const [enabled, setEnabled] = useAtom(experimentalFeaturesDisclaimerAtom);
   const handleConfirm = useAsyncCallback(async () => {
     setEnabled(true);
@@ -142,7 +154,7 @@ export const ExperimentalFeatures = () => {
   } else {
     return (
       <Suspense fallback={<Loading />}>
-        <ExperimentalFeaturesMain />
+        <ExperimentalFeaturesMain workspaceMetadata={workspaceMetadata} />
       </Suspense>
     );
   }
