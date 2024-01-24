@@ -1,5 +1,6 @@
 import { MetricExporter } from '@google-cloud/opentelemetry-cloud-monitoring-exporter';
 import { TraceExporter } from '@google-cloud/opentelemetry-cloud-trace-exporter';
+import { GcpDetectorSync } from '@google-cloud/opentelemetry-resource-util';
 import { metrics } from '@opentelemetry/api';
 import {
   CompositePropagator,
@@ -15,6 +16,7 @@ import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
 import { IORedisInstrumentation } from '@opentelemetry/instrumentation-ioredis';
 import { NestInstrumentation } from '@opentelemetry/instrumentation-nestjs-core';
 import { SocketIoInstrumentation } from '@opentelemetry/instrumentation-socket.io';
+import { Resource } from '@opentelemetry/resources';
 import {
   ConsoleMetricExporter,
   type MeterProvider,
@@ -29,11 +31,12 @@ import {
   SpanExporter,
   TraceIdRatioBasedSampler,
 } from '@opentelemetry/sdk-trace-node';
+import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
 import prismaInstrument from '@prisma/instrumentation';
 
-const { PrismaInstrumentation } = prismaInstrument;
-
 import { PrismaMetricProducer } from './prisma';
+
+const { PrismaInstrumentation } = prismaInstrument;
 
 abstract class OpentelemetryFactor {
   abstract getMetricReader(): MetricReader;
@@ -54,9 +57,18 @@ abstract class OpentelemetryFactor {
     return [new PrismaMetricProducer()];
   }
 
+  getResource() {
+    return new Resource({
+      [SemanticResourceAttributes.K8S_NAMESPACE_NAME]: AFFiNE.affineEnv,
+      [SemanticResourceAttributes.SERVICE_NAME]: AFFiNE.flavor.type,
+      [SemanticResourceAttributes.SERVICE_VERSION]: AFFiNE.version,
+    });
+  }
+
   create() {
     const traceExporter = this.getSpanExporter();
     return new NodeSDK({
+      resource: this.getResource(),
       sampler: new TraceIdRatioBasedSampler(0.1),
       traceExporter,
       metricReader: this.getMetricReader(),
@@ -74,6 +86,10 @@ abstract class OpentelemetryFactor {
 }
 
 class GCloudOpentelemetryFactor extends OpentelemetryFactor {
+  override getResource(): Resource {
+    return super.getResource().merge(new GcpDetectorSync().detect());
+  }
+
   override getMetricReader(): MetricReader {
     return new PeriodicExportingMetricReader({
       exportIntervalMillis: 30000,
