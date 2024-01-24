@@ -37,7 +37,7 @@ DocEditor.loaders = [
       id: 'test-workspace-id',
       schema,
     });
-
+    workspace.doc.emit('sync', []);
     workspace.meta.setProperties({
       tags: {
         options: [],

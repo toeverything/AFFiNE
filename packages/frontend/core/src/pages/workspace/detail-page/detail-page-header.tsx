@@ -11,7 +11,6 @@ import { JournalTodayButton } from '@affine/core/components/blocksuite/block-sui
 import { PageHeaderMenuButton } from '@affine/core/components/blocksuite/block-suite-header/menu';
 import { EditorModeSwitch } from '@affine/core/components/blocksuite/block-suite-mode-switch';
 import { useJournalInfoHelper } from '@affine/core/hooks/use-journal';
-import type { BlockSuiteWorkspace } from '@affine/core/shared';
 import type { Workspace } from '@affine/workspace';
 import { RightSidebarIcon } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
@@ -189,7 +188,7 @@ export function DetailPageHeader(props: PageHeaderProps) {
 }
 
 interface SidebarHeaderProps {
-  workspace: BlockSuiteWorkspace;
+  workspace: Workspace;
   page: Page;
 }
 function WindowsSidebarHeader(props: SidebarHeaderProps) {

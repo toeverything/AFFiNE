@@ -17,10 +17,11 @@ import { StripeWebhook } from './webhook';
     UserSubscriptionResolver,
   ],
   controllers: [StripeWebhook],
-  requires: [
-    'plugins.payment.stripe.keys.APIKey',
-    'plugins.payment.stripe.keys.webhookKey',
-  ],
+  // TODO(@forehalo): enable this requirements when conditional query is implemented in frontend
+  // requires: [
+  //   'plugins.payment.stripe.keys.APIKey',
+  //   'plugins.payment.stripe.keys.webhookKey',
+  // ],
   contributesTo: ServerFeature.Payment,
 })
 export class PaymentModule {}

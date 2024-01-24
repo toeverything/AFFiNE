@@ -15,6 +15,7 @@ const LanguageMenuContent = memo(function LanguageMenuContent() {
             key={option.name}
             selected={currentLanguage?.originalName === option.originalName}
             title={option.name}
+            lang={option.tag}
             onSelect={() => onLanguageChange(option.tag)}
           >
             {option.originalName}

@@ -29,6 +29,7 @@ AFFiNE.metrics.enabled = true;
 // Plugins Section Start
 AFFiNE.plugins.use('payment', {
   stripe: {
+    keys: {},
     apiVersion: '2023-10-16',
   },
 });
