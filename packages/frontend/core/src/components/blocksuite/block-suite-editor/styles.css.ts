@@ -1,3 +1,4 @@
+import { cssVar } from '@toeverything/theme';
 import { style } from '@vanilla-extract/css';
 
 export const docEditorRoot = style({
@@ -31,14 +32,25 @@ export const docContainer = style({
   flexGrow: 1,
 });
 
-export const titleTodayTag = style({
-  fontSize: 'var(--affine-font-base)',
-  fontWeight: 400,
-  color: 'var(--affine-brand-color)',
+const titleTagBasic = style({
+  fontSize: cssVar('fontH4'),
+  fontWeight: 600,
   padding: '0 4px',
   borderRadius: '4px',
   marginLeft: '4px',
 });
+export const titleDayTag = style([
+  titleTagBasic,
+  {
+    color: cssVar('textSecondaryColor'),
+  },
+]);
+export const titleTodayTag = style([
+  titleTagBasic,
+  {
+    color: cssVar('brandColor'),
+  },
+]);
 
 export const pageReferenceIcon = style({
   verticalAlign: 'middle',
