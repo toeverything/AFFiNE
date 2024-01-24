@@ -1,3 +1,4 @@
+import { WorkspaceSubPath } from '@affine/core/shared';
 import type { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowRightBigIcon } from '@blocksuite/icons';
 import type { Workspace } from '@blocksuite/store';
@@ -10,7 +11,6 @@ import {
   type PageModeOption,
 } from '../atoms';
 import type { useNavigateHelper } from '../hooks/use-navigate-helper';
-import { WorkspaceSubPath } from '../shared';
 
 export function registerAffineNavigationCommands({
   t,

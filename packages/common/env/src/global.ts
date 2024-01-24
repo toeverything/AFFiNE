@@ -19,6 +19,7 @@ export const runtimeFlagsSchema = z.object({
   downloadUrl: z.string(),
   // see: tools/workers
   imageProxyUrl: z.string(),
+  linkPreviewUrl: z.string(),
   enablePreloading: z.boolean(),
   enableNewSettingModal: z.boolean(),
   enableNewSettingUnstableApi: z.boolean(),
@@ -29,7 +30,7 @@ export const runtimeFlagsSchema = z.object({
   enableEnhanceShareMode: z.boolean(),
   enablePayment: z.boolean(),
   enablePageHistory: z.boolean(),
-  enableCopilot: z.boolean(),
+  enableJournal: z.boolean(),
   // this is for the electron app
   serverUrlPrefix: z.string(),
   enableMoveDatabase: z.boolean(),

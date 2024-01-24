@@ -1,7 +1,7 @@
 import { useActiveBlocksuiteEditor } from '@affine/core/hooks/use-block-suite-editor';
 import { assertExists } from '@blocksuite/global/utils';
 import { TocIcon } from '@blocksuite/icons';
-import { TOCPanel } from '@blocksuite/presets';
+import { OutlinePanel } from '@blocksuite/presets';
 import { useCallback, useRef } from 'react';
 
 import type { EditorExtension } from '../types';
@@ -9,13 +9,13 @@ import * as styles from './outline.css';
 
 // A wrapper for TOCNotesPanel
 const EditorOutline = () => {
-  const tocPanelRef = useRef<TOCPanel | null>(null);
+  const outlinePanelRef = useRef<OutlinePanel | null>(null);
   const [editor] = useActiveBlocksuiteEditor();
 
   const onRefChange = useCallback((container: HTMLDivElement | null) => {
     if (container) {
-      assertExists(tocPanelRef.current, 'toc panel should be initialized');
-      container.append(tocPanelRef.current);
+      assertExists(outlinePanelRef.current, 'toc panel should be initialized');
+      container.append(outlinePanelRef.current);
     }
   }, []);
 
@@ -23,13 +23,13 @@ const EditorOutline = () => {
     return;
   }
 
-  if (!tocPanelRef.current) {
-    tocPanelRef.current = new TOCPanel();
+  if (!outlinePanelRef.current) {
+    outlinePanelRef.current = new OutlinePanel();
   }
 
-  if (editor !== tocPanelRef.current?.editor) {
-    (tocPanelRef.current as TOCPanel).editor = editor;
-    (tocPanelRef.current as TOCPanel).fitPadding = [20, 20, 20, 20];
+  if (editor !== outlinePanelRef.current?.editor) {
+    (outlinePanelRef.current as OutlinePanel).editor = editor;
+    (outlinePanelRef.current as OutlinePanel).fitPadding = [20, 20, 20, 20];
   }
 
   return <div className={styles.root} ref={onRefChange} />;

@@ -18,6 +18,8 @@ export const editor = style({
 
 globalStyle(`${editor} .affine-doc-viewport`, {
   paddingBottom: '150px',
+  paddingLeft: '20px',
+  scrollbarGutter: 'stable',
 });
 
 globalStyle('.is-public-page page-meta-tags', {

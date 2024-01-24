@@ -1,3 +1,4 @@
+import type { PageMeta } from '@blocksuite/store';
 import { noop } from 'lodash-es';
 import { useEffect } from 'react';
 
@@ -13,4 +14,8 @@ export function useDocumentTitle(newTitle?: string | null) {
       document.title = oldTitle;
     };
   }, [newTitle]);
+}
+
+export function usePageDocumentTitle(pageMeta?: PageMeta) {
+  useDocumentTitle(pageMeta?.title ? `${pageMeta.title} · AFFiNE` : null);
 }

@@ -1,6 +1,7 @@
-import { readFileSync } from 'fs';
-import { dirname, resolve } from 'path';
-import { fileURLToPath } from 'url';
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 import { describe, expect, test } from 'vitest';
 import type { Array as YArray, Map as YMap } from 'yjs';
 import { applyUpdate, Doc } from 'yjs';

@@ -1,7 +1,8 @@
+import { apis } from '@affine/electron-api';
 import { fetchWithTraceReport } from '@affine/graphql';
 import { ArrowRightSmallIcon } from '@blocksuite/icons';
 import clsx from 'clsx';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import { type Location, useLocation, useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
@@ -50,43 +51,60 @@ function getCallbackUrl(location: Location) {
 }
 
 export const ScrollableLayout = ({
+  headerItems,
   children,
+  isMacosDesktop,
+  isWindowsDesktop,
 }: {
+  isMacosDesktop?: boolean;
+  isWindowsDesktop?: boolean;
+  headerItems?: React.ReactNode;
   children: React.ReactNode;
 }) => {
   return (
-    <ScrollableContainer className={styles.scrollableContainer}>
-      <div className={styles.onboardingContainer}>{children}</div>
-
-      <div className={styles.linkGroup}>
-        <a
-          className={styles.link}
-          href="https://affine.pro/terms"
-          target="_blank"
-          rel="noreferrer"
-        >
-          Terms of Conditions
-        </a>
-        <Divider orientation="vertical" />
-        <a
-          className={styles.link}
-          href="https://affine.pro/privacy"
-          target="_blank"
-          rel="noreferrer"
-        >
-          Privacy Policy
-        </a>
-      </div>
-    </ScrollableContainer>
+    <div className={styles.layout} data-is-macos-electron={isMacosDesktop}>
+      <header
+        className={styles.header}
+        data-is-windows-electron={isWindowsDesktop}
+      >
+        {headerItems}
+      </header>
+      <ScrollableContainer className={styles.scrollableContainer}>
+        <div className={styles.onboardingContainer}>{children}</div>
+      </ScrollableContainer>
+      <footer className={styles.footer}>
+        <div className={styles.linkGroup}>
+          <a
+            className={styles.link}
+            href="https://affine.pro/terms"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Terms of Conditions
+          </a>
+          <Divider orientation="vertical" />
+          <a
+            className={styles.link}
+            href="https://affine.pro/privacy"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Privacy Policy
+          </a>
+        </div>
+      </footer>
+    </div>
   );
 };
 
 export const OnboardingPage = ({
   user,
   onOpenAffine,
+  windowControl,
 }: {
   user: User;
   onOpenAffine: () => void;
+  windowControl?: React.ReactNode;
 }) => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -104,6 +122,17 @@ export const OnboardingPage = ({
     () => questions?.[questionIdx],
     [questionIdx, questions]
   );
+  const isMacosDesktop = environment.isDesktop && environment.isMacOs;
+  const isWindowsDesktop = environment.isDesktop && environment.isWindows;
+
+  useEffect(() => {
+    if (environment.isDesktop) {
+      // to hide macOS window control buttons
+      apis?.ui.handleSidebarVisibilityChange(false).catch(err => {
+        console.error(err);
+      });
+    }
+  }, []);
 
   if (!questions) {
     return null;
@@ -119,7 +148,25 @@ export const OnboardingPage = ({
 
   if (question) {
     return (
-      <ScrollableLayout>
+      <ScrollableLayout
+        headerItems={
+          <>
+            {isWindowsDesktop ? windowControl : null}
+            <Button
+              className={clsx(styles.button, {
+                [styles.disableButton]: questionIdx === 0,
+                [styles.windowsAppButton]: isWindowsDesktop,
+              })}
+              size="extraLarge"
+              onClick={() => setQuestionIdx(questions.length)}
+            >
+              Skip
+            </Button>
+          </>
+        }
+        isMacosDesktop={isMacosDesktop}
+        isWindowsDesktop={isWindowsDesktop}
+      >
         <div className={styles.content}>
           <h1 className={styles.question}>{question.question}</h1>
           <div className={styles.optionsWrapper}>
@@ -168,7 +215,7 @@ export const OnboardingPage = ({
           <div className={styles.buttonWrapper}>
             <Button
               className={clsx(styles.button, {
-                [styles.rightCornerButton]: questionIdx !== 0,
+                [styles.disableButton]: questionIdx !== 0,
               })}
               size="extraLarge"
               onClick={() => setQuestionIdx(questions.length)}
@@ -217,7 +264,11 @@ export const OnboardingPage = ({
     );
   }
   return (
-    <ScrollableLayout>
+    <ScrollableLayout
+      headerItems={isWindowsDesktop ? windowControl : null}
+      isMacosDesktop={isMacosDesktop}
+      isWindowsDesktop={isWindowsDesktop}
+    >
       <div className={styles.thankContainer}>
         <h1 className={styles.thankTitle}>Thank you!</h1>
         <p className={styles.thankText}>

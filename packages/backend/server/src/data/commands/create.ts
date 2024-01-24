@@ -59,13 +59,13 @@ export class CreateCommand extends CommandRunner {
   }
 
   private createScript(name: string) {
-    const contents = ["import { PrismaService } from '../../prisma';", ''];
+    const contents = ["import { PrismaClient } from '@prisma/client';", ''];
     contents.push(`export class ${name} {`);
     contents.push('  // do the migration');
-    contents.push('  static async up(db: PrismaService) {}');
+    contents.push('  static async up(db: PrismaClient) {}');
     contents.push('');
     contents.push('  // revert the migration');
-    contents.push('  static async down(db: PrismaService) {}');
+    contents.push('  static async down(db: PrismaClient) {}');
 
     contents.push('}');
 

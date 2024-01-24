@@ -15,8 +15,8 @@ import {
 } from 'react';
 
 import type { useCollectionManager } from '../use-collection-manager';
-import type { AllPageListConfig } from '.';
 import * as styles from './collection-operations.css';
+import type { AllPageListConfig } from './index';
 import {
   useEditCollection,
   useEditCollectionName,

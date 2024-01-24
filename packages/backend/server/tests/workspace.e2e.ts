@@ -1,19 +1,16 @@
 import type { INestApplication } from '@nestjs/common';
-import { Test } from '@nestjs/testing';
 import { PrismaClient } from '@prisma/client';
 import ava, { type TestFn } from 'ava';
-import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 import request from 'supertest';
 
-import { AppModule } from '../src/app';
-import { RevertCommand, RunCommand } from '../src/data/commands/run';
+import { AppModule } from '../src/app.module';
 import {
   acceptInviteById,
+  createTestingApp,
   createWorkspace,
   currentUser,
   getPublicWorkspace,
   getWorkspacePublicPages,
-  initFeatureConfigs,
   inviteUser,
   publishPage,
   revokePublicPage,
@@ -27,30 +24,12 @@ const test = ava as TestFn<{
 }>;
 
 test.beforeEach(async t => {
-  const client = new PrismaClient();
-  await client.$connect();
-  await client.user.deleteMany({});
-  await client.update.deleteMany({});
-  await client.snapshot.deleteMany({});
-  await client.workspace.deleteMany({});
-  await client.$disconnect();
-  const module = await Test.createTestingModule({
+  const { app } = await createTestingApp({
     imports: [AppModule],
-    providers: [RevertCommand, RunCommand],
-  }).compile();
-  const app = module.createNestApplication();
-  app.use(
-    graphqlUploadExpress({
-      maxFileSize: 10 * 1024 * 1024,
-      maxFiles: 5,
-    })
-  );
-  await app.init();
-  t.context.client = client;
-  t.context.app = app;
+  });
 
-  // init features
-  await initFeatureConfigs(module);
+  t.context.client = app.get(PrismaClient);
+  t.context.app = app;
 });
 
 test.afterEach.always(async t => {

@@ -1,5 +1,6 @@
+import { join } from 'node:path';
+
 import { net, protocol, session } from 'electron';
-import { join } from 'path';
 
 import { CLOUD_BASE_URL } from './config';
 import { logger } from './logger';

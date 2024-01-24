@@ -1,7 +1,8 @@
+import { EditorModeSwitch } from '@affine/core/components/blocksuite/block-suite-mode-switch';
 import type { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
 
 import type { PageMode } from '../../atoms';
-import { BlockSuiteHeaderTitle } from '../../components/blocksuite/block-suite-header-title';
+import { BlocksuiteHeaderTitle } from '../../components/blocksuite/block-suite-header/title/index';
 import ShareHeaderLeftItem from '../../components/cloud/share-header-left-item';
 import ShareHeaderRightItem from '../../components/cloud/share-header-right-item';
 import { Header } from '../../components/pure/header';
@@ -20,12 +21,19 @@ export function ShareHeader({
       isFloat={publishMode === 'edgeless'}
       left={<ShareHeaderLeftItem />}
       center={
-        <BlockSuiteHeaderTitle
-          blockSuiteWorkspace={blockSuiteWorkspace}
-          pageId={pageId}
-          isPublic={true}
-          publicMode={publishMode}
-        />
+        <>
+          <EditorModeSwitch
+            isPublic
+            blockSuiteWorkspace={blockSuiteWorkspace}
+            pageId={pageId}
+            publicMode={publishMode}
+          />
+          <BlocksuiteHeaderTitle
+            blockSuiteWorkspace={blockSuiteWorkspace}
+            pageId={pageId}
+            isPublic={true}
+          />
+        </>
       }
       right={
         <ShareHeaderRightItem

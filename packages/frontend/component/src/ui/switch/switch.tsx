@@ -19,6 +19,7 @@ export const Switch = ({
   checked: checkedProp = false,
   onChange: onChangeProp,
   children,
+  className,
   ...otherProps
 }: SwitchProps) => {
   const [checkedState, setCheckedState] = useState(checkedProp);
@@ -34,7 +35,7 @@ export const Switch = ({
   );
 
   return (
-    <label className={clsx(styles.labelStyle)} {...otherProps}>
+    <label className={clsx(styles.labelStyle, className)} {...otherProps}>
       {children}
       <input
         className={clsx(styles.inputStyle)}

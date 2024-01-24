@@ -1,4 +1,4 @@
-import { AFFiNEDatePicker } from '@affine/component/date-picker';
+import { AFFiNEDatePicker } from '@affine/component';
 import type { Meta, StoryFn } from '@storybook/react';
 import { useState } from 'react';
 
@@ -8,7 +8,7 @@ export default {
   parameters: {
     chromatic: { disableSnapshot: true },
   },
-} satisfies Meta;
+} satisfies Meta<typeof AFFiNEDatePicker>;
 
 export const Default: StoryFn = () => {
   const [value, setValue] = useState<string>(new Date().toString());

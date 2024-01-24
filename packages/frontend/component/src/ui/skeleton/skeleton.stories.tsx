@@ -1,6 +1,6 @@
 import type { Meta, StoryFn } from '@storybook/react';
 
-import { Skeleton, type SkeletonProps } from '.';
+import { Skeleton, type SkeletonProps } from './index';
 
 export default {
   title: 'UI/Skeleton',

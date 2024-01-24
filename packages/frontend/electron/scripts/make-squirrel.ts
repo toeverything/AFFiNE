@@ -1,7 +1,8 @@
+import path from 'node:path';
+
 import type { Options as ElectronWinstallerOptions } from 'electron-winstaller';
 import { convertVersion, createWindowsInstaller } from 'electron-winstaller';
 import fs from 'fs-extra';
-import path from 'path';
 
 import {
   arch,

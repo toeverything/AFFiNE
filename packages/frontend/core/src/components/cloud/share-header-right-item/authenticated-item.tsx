@@ -4,7 +4,7 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useCurrentUser } from '../../../hooks/affine/use-current-user';
 import { useMembers } from '../../../hooks/affine/use-members';
 import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
-import type { ShareHeaderRightItemProps } from '.';
+import type { ShareHeaderRightItemProps } from './index';
 
 export const AuthenticatedItem = ({ ...props }: ShareHeaderRightItemProps) => {
   const { workspaceId, pageId } = props;

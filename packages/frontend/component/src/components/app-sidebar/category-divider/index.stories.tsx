@@ -1,6 +1,6 @@
 import type { Meta, StoryFn } from '@storybook/react';
 
-import { CategoryDivider } from '.';
+import { CategoryDivider } from './index';
 
 export default {
   title: 'Components/AppSidebar/CategoryDivider',

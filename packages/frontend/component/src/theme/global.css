@@ -1,4 +1,3 @@
-@import 'react-datepicker/dist/react-datepicker.css';
 @import './fonts.css';
 
 * {
@@ -309,4 +308,11 @@ body {
   height: 100%;
   position: relative;
   overflow: hidden;
+}
+
+/**
+ * A hack to make the anchor wrapper not affect the layout of the page.
+ */
+[data-lit-react-wrapper] {
+  display: contents;
 }

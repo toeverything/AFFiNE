@@ -8,6 +8,7 @@ import {
 import { Avatar } from '@affine/component/ui/avatar';
 import { Button } from '@affine/component/ui/button';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
+import { useUserQuota } from '@affine/core/hooks/use-quota';
 import {
   allBlobSizesQuery,
   removeAvatarMutation,
@@ -177,10 +178,13 @@ const StoragePanel = () => {
   const [subscription] = useUserSubscription();
   const plan = subscription?.plan ?? SubscriptionPlan.Free;
 
-  // TODO(@JimmFly): get limit from user usage query directly after #4720 is merged
+  const quota = useUserQuota();
   const maxLimit = useMemo(() => {
+    if (quota) {
+      return quota.storageQuota;
+    }
     return bytes.parse(plan === SubscriptionPlan.Free ? '10GB' : '100GB');
-  }, [plan]);
+  }, [plan, quota]);
 
   const setSettingModalAtom = useSetAtom(openSettingModalAtom);
   const onUpgrade = useCallback(() => {

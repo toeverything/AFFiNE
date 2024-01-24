@@ -1,12 +1,13 @@
 {
   "$schema": "./node_modules/nx/schemas/nx-schema.json",
   "npmScope": "toeverything",
+  "nxCloudAccessToken": "MzUwNTU4YWItZGFhYi00YjE2LWIxODAtODk4NmIwYjMwYzZkfHJlYWQ=",
   "tasksRunnerOptions": {
     "default": {
       "runner": "nx-cloud",
       "options": {
         "cacheableOperations": ["build", "test", "e2e", "lint"],
-        "accessToken": "YmQ2NTg1ODktZTk5Mi00YzhiLTk2ZmUtNWQzMDg0NDBkOWM3fHJlYWQtb25seQ=="
+        "runtimeCacheInputs": ["node -v"]
       }
     }
   },

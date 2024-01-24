@@ -16,8 +16,9 @@ config:
     Decimal: number
     UUID: string
     ID: string
-    JSON: any
+    JSON: string
     Upload: File
+    SafeInt: number
 overwrite: true
 schema: ../../backend/server/src/schema.gql
 documents: ./src/**/*.gql

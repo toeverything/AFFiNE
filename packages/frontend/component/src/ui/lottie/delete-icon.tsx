@@ -2,8 +2,8 @@ import clsx from 'clsx';
 import Lottie, { type LottieRef } from 'lottie-react';
 import { useEffect, useRef } from 'react';
 
-import * as styles from './delete-icon.css';
 import animationData from './delete-icon.json';
+import * as styles from './styles.css';
 
 export interface DeleteIconProps {
   closed: boolean; // eg, when delete icon is a "dragged over" state

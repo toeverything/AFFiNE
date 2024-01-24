@@ -1,9 +1,12 @@
 // TODO: Check `input` , `loading`, not migrated from `design`
+export * from './lit-react';
 export * from './styles';
 export * from './ui/avatar';
 export * from './ui/button';
 export * from './ui/checkbox';
+export * from './ui/date-picker';
 export * from './ui/divider';
+export * from './ui/editable';
 export * from './ui/empty';
 export * from './ui/input';
 export * from './ui/layout';

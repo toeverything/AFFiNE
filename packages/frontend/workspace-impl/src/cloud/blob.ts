@@ -2,11 +2,14 @@ import {
   deleteBlobMutation,
   fetchWithTraceReport,
   getBaseUrl,
+  GraphQLError,
   listBlobsQuery,
   setBlobMutation,
 } from '@affine/graphql';
 import { fetcher } from '@affine/graphql';
 import type { BlobStorage } from '@affine/workspace';
+import { BlobStorageOverCapacity } from '@affine/workspace';
+import { isArray } from 'lodash-es';
 
 import { bufferToBlob } from '../utils/buffer-to-blob';
 
@@ -31,14 +34,24 @@ export const createAffineCloudBlobStorage = (
     },
     set: async (key, value) => {
       // set blob will check blob size & quota
-      const result = await fetcher({
+      return await fetcher({
         query: setBlobMutation,
         variables: {
           workspaceId,
           blob: new File([value], key),
         },
-      });
-      return result.setBlob;
+      })
+        .then(res => res.setBlob)
+        .catch(err => {
+          if (isArray(err)) {
+            err.map(e => {
+              if (e instanceof GraphQLError && e.extensions.code === 413) {
+                throw new BlobStorageOverCapacity(e);
+              } else throw e;
+            });
+          }
+          throw err;
+        });
     },
     list: async () => {
       const result = await fetcher({

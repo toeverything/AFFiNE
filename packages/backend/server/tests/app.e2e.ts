@@ -3,17 +3,15 @@ import { randomUUID } from 'node:crypto';
 
 import { Transformer } from '@napi-rs/image';
 import type { INestApplication } from '@nestjs/common';
-import { Test } from '@nestjs/testing';
 import { hashSync } from '@node-rs/argon2';
-import { type User } from '@prisma/client';
+import { PrismaClient, type User } from '@prisma/client';
 import ava, { type TestFn } from 'ava';
 import type { Express } from 'express';
-import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 import request from 'supertest';
 
-import { AppModule } from '../src/app';
-import { FeatureManagementService } from '../src/modules/features';
-import { PrismaService } from '../src/prisma/service';
+import { AppModule } from '../src/app.module';
+import { FeatureManagementService } from '../src/core/features';
+import { createTestingApp } from './utils';
 
 const gql = '/graphql';
 
@@ -49,25 +47,18 @@ class FakePrisma {
 }
 
 test.beforeEach(async t => {
-  const module = await Test.createTestingModule({
+  const { app } = await createTestingApp({
     imports: [AppModule],
-  })
-    .overrideProvider(PrismaService)
-    .useClass(FakePrisma)
-    .overrideProvider(FeatureManagementService)
-    .useValue({ canEarlyAccess: () => true })
-    .compile();
-  t.context.app = module.createNestApplication({
-    cors: true,
-    bodyParser: true,
+    tapModule(builder) {
+      builder
+        .overrideProvider(PrismaClient)
+        .useClass(FakePrisma)
+        .overrideProvider(FeatureManagementService)
+        .useValue({ canEarlyAccess: () => true });
+    },
   });
-  t.context.app.use(
-    graphqlUploadExpress({
-      maxFileSize: 10 * 1024 * 1024,
-      maxFiles: 5,
-    })
-  );
-  await t.context.app.init();
+
+  t.context.app = app;
 });
 
 test.afterEach.always(async t => {

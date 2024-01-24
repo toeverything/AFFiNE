@@ -1,7 +1,14 @@
+import { useBlockSuiteWorkspacePageTitle } from '@affine/core/hooks/use-block-suite-workspace-page-title';
+import { useJournalInfoHelper } from '@affine/core/hooks/use-journal';
 import type { Tag } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
-import { EdgelessIcon, PageIcon, ToggleCollapseIcon } from '@blocksuite/icons';
+import {
+  EdgelessIcon,
+  PageIcon,
+  TodayIcon,
+  ToggleCollapseIcon,
+} from '@blocksuite/icons';
 import type { PageMeta, Workspace } from '@blocksuite/store';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import clsx from 'clsx';
@@ -212,6 +219,28 @@ function tagIdToTagOption(
   );
 }
 
+const PageTitle = ({ id, workspace }: { id: string; workspace: Workspace }) => {
+  const title = useBlockSuiteWorkspacePageTitle(workspace, id);
+  return title;
+};
+
+const UnifiedPageIcon = ({
+  id,
+  workspace,
+  isPreferredEdgeless,
+}: {
+  id: string;
+  workspace: Workspace;
+  isPreferredEdgeless: (id: string) => boolean;
+}) => {
+  const isEdgeless = isPreferredEdgeless(id);
+  const { isJournal } = useJournalInfoHelper(workspace, id);
+  if (isJournal) {
+    return <TodayIcon />;
+  }
+  return isEdgeless ? <EdgelessIcon /> : <PageIcon />;
+};
+
 function pageMetaToPageItemProp(
   pageMeta: PageMeta,
   props: RequiredProps
@@ -237,7 +266,7 @@ function pageMetaToPageItemProp(
     : undefined;
   const itemProps: PageListItemProps = {
     pageId: pageMeta.id,
-    title: pageMeta.title,
+    title: <PageTitle id={pageMeta.id} workspace={props.blockSuiteWorkspace} />,
     preview: (
       <PagePreview workspace={props.blockSuiteWorkspace} pageId={pageMeta.id} />
     ),
@@ -250,10 +279,12 @@ function pageMetaToPageItemProp(
         ? `/workspace/${props.blockSuiteWorkspace.id}/${pageMeta.id}`
         : undefined,
     onClick: props.selectable ? toggleSelection : undefined,
-    icon: props.isPreferredEdgeless?.(pageMeta.id) ? (
-      <EdgelessIcon />
-    ) : (
-      <PageIcon />
+    icon: (
+      <UnifiedPageIcon
+        id={pageMeta.id}
+        workspace={props.blockSuiteWorkspace}
+        isPreferredEdgeless={props.isPreferredEdgeless}
+      />
     ),
     tags:
       pageMeta.tags

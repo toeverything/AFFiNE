@@ -74,7 +74,7 @@ export async function checkBlobSize(
     .post(gql)
     .auth(token, { type: 'bearer' })
     .send({
-      query: `query checkBlobSize($workspaceId: String!, $size: Float!) {
+      query: `query checkBlobSize($workspaceId: String!, $size: SafeInt!) {
           checkBlobSize(workspaceId: $workspaceId, size: $size) {
             size
           }

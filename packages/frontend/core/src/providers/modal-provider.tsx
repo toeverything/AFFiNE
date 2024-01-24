@@ -3,7 +3,8 @@ import {
   waitForCurrentWorkspaceAtom,
   workspaceListAtom,
 } from '@affine/core/modules/workspace';
-import { WorkspaceFlavour, WorkspaceSubPath } from '@affine/env/workspace';
+import { WorkspaceSubPath } from '@affine/core/shared';
+import { WorkspaceFlavour } from '@affine/env/workspace';
 import { assertExists } from '@blocksuite/global/utils';
 import { useAtom, useAtomValue } from 'jotai';
 import type { ReactElement } from 'react';
@@ -63,6 +64,18 @@ const WorkspaceGuideModal = lazy(() =>
 const SignOutModal = lazy(() =>
   import('../components/affine/sign-out-modal').then(module => ({
     default: module.SignOutModal,
+  }))
+);
+
+const LocalQuotaModal = lazy(() =>
+  import('../components/affine/quota-reached-modal').then(module => ({
+    default: module.LocalQuotaModal,
+  }))
+);
+
+const CloudQuotaModal = lazy(() =>
+  import('../components/affine/quota-reached-modal').then(module => ({
+    default: module.CloudQuotaModal,
   }))
 );
 
@@ -168,7 +181,13 @@ export function CurrentWorkspaceModals() {
         </Suspense>
       )}
       <WorkspaceGuideModal />
-      {currentWorkspace && <Setting />}
+      {currentWorkspace ? <Setting /> : null}
+      {currentWorkspace?.flavour === WorkspaceFlavour.LOCAL && (
+        <LocalQuotaModal />
+      )}
+      {currentWorkspace?.flavour === WorkspaceFlavour.AFFINE_CLOUD && (
+        <CloudQuotaModal />
+      )}
     </>
   );
 }

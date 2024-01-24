@@ -1,5 +1,6 @@
 import { usePageMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
 import { useBlockSuiteWorkspacePage } from '@affine/core/hooks/use-block-suite-workspace-page';
+import { timestampToLocalDate } from '@affine/core/utils';
 import { DebugLogger } from '@affine/debug';
 import {
   fetchWithTraceReport,
@@ -12,9 +13,9 @@ import { createAffineCloudBlobStorage } from '@affine/workspace-impl';
 import { assertEquals } from '@blocksuite/global/utils';
 import { Workspace } from '@blocksuite/store';
 import { revertUpdate } from '@toeverything/y-indexeddb';
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import useSWRImmutable from 'swr/immutable';
-import { applyUpdate } from 'yjs';
+import { applyUpdate, encodeStateAsUpdate } from 'yjs';
 
 import {
   useMutateQueryResource,
@@ -104,7 +105,7 @@ const snapshotFetcher = async (
 const workspaceMap = new Map<string, Workspace>();
 
 // assume the workspace is a cloud workspace since the history feature is only enabled for cloud workspace
-const getOrCreateWorkspace = (workspaceId: string) => {
+const getOrCreateShellWorkspace = (workspaceId: string) => {
   let workspace = workspaceMap.get(workspaceId);
   if (!workspace) {
     const blobStorage = createAffineCloudBlobStorage(workspaceId);
@@ -119,6 +120,7 @@ const getOrCreateWorkspace = (workspaceId: string) => {
       schema: globalBlockSuiteSchema,
     });
     workspaceMap.set(workspaceId, workspace);
+    workspace.doc.emit('sync', []);
   }
   return workspace;
 };
@@ -142,17 +144,17 @@ export const usePageHistory = (
 
 // workspace id + page id + timestamp + snapshot -> Page (to be used for rendering in blocksuite editor)
 export const useSnapshotPage = (
-  workspaceId: string,
+  workspace: Workspace,
   pageDocId: string,
   ts?: string
 ) => {
-  const snapshot = usePageHistory(workspaceId, pageDocId, ts);
+  const snapshot = usePageHistory(workspace.id, pageDocId, ts);
   const page = useMemo(() => {
     if (!ts) {
       return;
     }
     const pageId = pageDocId + '-' + ts;
-    const historyShellWorkspace = getOrCreateWorkspace(workspaceId);
+    const historyShellWorkspace = getOrCreateShellWorkspace(workspace.id);
     let page = historyShellWorkspace.getPage(pageId);
     if (!page && snapshot) {
       page = historyShellWorkspace.createPage({
@@ -168,7 +170,15 @@ export const useSnapshotPage = (
         .catch(console.error); // must load before applyUpdate
     }
     return page ?? undefined;
-  }, [pageDocId, snapshot, ts, workspaceId]);
+  }, [pageDocId, snapshot, ts, workspace]);
+
+  useEffect(() => {
+    const historyShellWorkspace = getOrCreateShellWorkspace(workspace.id);
+    // apply the rootdoc's update to the current workspace
+    // this makes sure the page reference links are not deleted ones in the preview
+    const update = encodeStateAsUpdate(workspace.doc);
+    applyUpdate(historyShellWorkspace.doc, update);
+  }, [workspace]);
 
   return page;
 };
@@ -176,11 +186,7 @@ export const useSnapshotPage = (
 export const historyListGroupByDay = (histories: DocHistory[]) => {
   const map = new Map<string, DocHistory[]>();
   for (const history of histories) {
-    const day = new Date(history.timestamp).toLocaleDateString(undefined, {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
+    const day = timestampToLocalDate(history.timestamp);
     const list = map.get(day) ?? [];
     list.push(history);
     map.set(day, list);

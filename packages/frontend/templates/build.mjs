@@ -1,6 +1,7 @@
-import fs from 'fs';
+import fs from 'node:fs';
+import path from 'node:path';
+
 import * as glob from 'glob';
-import path from 'path';
 
 // purpose: bundle all json files into one json file in onboarding folder
 const __dirname = new URL('.', import.meta.url).pathname;

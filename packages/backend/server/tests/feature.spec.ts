@@ -1,30 +1,25 @@
 /// <reference types="../src/global.d.ts" />
 
-import { Injectable } from '@nestjs/common';
-import { Test, TestingModule } from '@nestjs/testing';
+import { INestApplication, Injectable } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import ava, { type TestFn } from 'ava';
 
-import { ConfigModule } from '../src/config';
-import { RevertCommand, RunCommand } from '../src/data/commands/run';
-import { AuthModule } from '../src/modules/auth';
-import { AuthService } from '../src/modules/auth/service';
+import { AuthService } from '../src/core/auth/service';
 import {
   FeatureManagementService,
   FeatureModule,
   FeatureService,
   FeatureType,
-} from '../src/modules/features';
-import { UserType } from '../src/modules/users/types';
-import { WorkspaceResolver } from '../src/modules/workspaces/resolvers';
-import { Permission } from '../src/modules/workspaces/types';
-import { PrismaModule, PrismaService } from '../src/prisma';
-import { RateLimiterModule } from '../src/throttler';
-import { initFeatureConfigs } from './utils';
+} from '../src/core/features';
+import { UserType } from '../src/core/users/types';
+import { WorkspaceResolver } from '../src/core/workspaces/resolvers';
+import { Permission } from '../src/core/workspaces/types';
+import { ConfigModule } from '../src/fundamentals/config';
+import { createTestingApp } from './utils';
 
 @Injectable()
 class WorkspaceResolverMock {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaClient) {}
 
   async createWorkspace(user: UserType, _init: null) {
     const workspace = await this.prisma.workspace.create({
@@ -52,20 +47,11 @@ const test = ava as TestFn<{
   feature: FeatureService;
   workspace: WorkspaceResolver;
   management: FeatureManagementService;
-  app: TestingModule;
+  app: INestApplication;
 }>;
 
-// cleanup database before each test
-test.beforeEach(async () => {
-  const client = new PrismaClient();
-  await client.$connect();
-  await client.user.deleteMany({});
-  await client.workspace.deleteMany({});
-  await client.$disconnect();
-});
-
 test.beforeEach(async t => {
-  const module = await Test.createTestingModule({
+  const { app } = await createTestingApp({
     imports: [
       ConfigModule.forRoot({
         auth: {
@@ -79,27 +65,21 @@ test.beforeEach(async t => {
           earlyAccessPreview: true,
         },
       }),
-      PrismaModule,
-      AuthModule,
       FeatureModule,
-      RateLimiterModule,
-      RevertCommand,
-      RunCommand,
     ],
     providers: [WorkspaceResolver],
-  })
-    .overrideProvider(WorkspaceResolver)
-    .useClass(WorkspaceResolverMock)
-    .compile();
+    tapModule: module => {
+      module
+        .overrideProvider(WorkspaceResolver)
+        .useClass(WorkspaceResolverMock);
+    },
+  });
 
-  t.context.app = module;
-  t.context.auth = module.get(AuthService);
-  t.context.feature = module.get(FeatureService);
-  t.context.workspace = module.get(WorkspaceResolver);
-  t.context.management = module.get(FeatureManagementService);
-
-  // init features
-  await initFeatureConfigs(module);
+  t.context.app = app;
+  t.context.auth = app.get(AuthService);
+  t.context.feature = app.get(FeatureService);
+  t.context.workspace = app.get(WorkspaceResolver);
+  t.context.management = app.get(FeatureManagementService);
 });
 
 test.afterEach.always(async t => {

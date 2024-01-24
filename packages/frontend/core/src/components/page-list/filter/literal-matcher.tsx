@@ -1,5 +1,4 @@
-import { Input, Menu, MenuItem } from '@affine/component';
-import { AFFiNEDatePicker } from '@affine/component/date-picker';
+import { AFFiNEDatePicker, Input, Menu, MenuItem } from '@affine/component';
 import type { LiteralValue, Tag } from '@affine/env/filter';
 import dayjs from 'dayjs';
 import { type ReactNode } from 'react';

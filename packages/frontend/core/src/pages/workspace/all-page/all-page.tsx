@@ -230,7 +230,7 @@ const AllPageHeader = ({
           />
         }
         right={
-          <div className={styles.headerRightWindows}>
+          <div className={clsx(isWindowsDesktop && styles.headerRightWindows)}>
             <NewPageButton
               size="small"
               className={clsx(

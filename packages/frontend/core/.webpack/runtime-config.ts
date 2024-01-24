@@ -19,6 +19,7 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       changelogUrl: 'https://affine.pro/what-is-new',
       downloadUrl: 'https://affine.pro/download',
       imageProxyUrl: '/api/worker/image-proxy',
+      linkPreviewUrl: '/api/worker/link-preview',
       enablePreloading: true,
       enableNewSettingModal: true,
       enableNewSettingUnstableApi: false,
@@ -30,7 +31,7 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       enableEnhanceShareMode: false,
       enablePayment: true,
       enablePageHistory: true,
-      enableCopilot: false,
+      enableJournal: false,
       serverUrlPrefix: 'https://app.affine.pro',
       editorFlags,
       appVersion: packageJson.version,
@@ -41,7 +42,7 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       return {
         ...this.stable,
         enablePageHistory: true,
-        enableCopilot: false,
+        enableJournal: false,
         serverUrlPrefix: 'https://insider.affine.pro',
         appBuildType: 'beta' as const,
       };
@@ -61,6 +62,7 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       changelogUrl: 'https://github.com/toeverything/AFFiNE/releases',
       downloadUrl: 'https://affine.pro/download',
       imageProxyUrl: '/api/worker/image-proxy',
+      linkPreviewUrl: '/api/worker/link-preview',
       enablePreloading: true,
       enableNewSettingModal: true,
       enableNewSettingUnstableApi: false,
@@ -72,7 +74,7 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       enableEnhanceShareMode: false,
       enablePayment: true,
       enablePageHistory: true,
-      enableCopilot: true,
+      enableJournal: true,
       serverUrlPrefix: 'https://affine.fail',
       editorFlags,
       appVersion: packageJson.version,
@@ -136,11 +138,11 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       : buildFlags.mode === 'development'
         ? true
         : currentBuildPreset.enablePageHistory,
-    enableCopilot: process.env.ENABLE_COPILOT
-      ? process.env.ENABLE_COPILOT === 'true'
+    enableJournal: process.env.ENABLE_JOURNAL
+      ? process.env.ENABLE_JOURNAL === 'true'
       : buildFlags.mode === 'development'
         ? true
-        : currentBuildPreset.enableCopilot,
+        : currentBuildPreset.enableJournal,
   };
 
   if (buildFlags.mode === 'development') {

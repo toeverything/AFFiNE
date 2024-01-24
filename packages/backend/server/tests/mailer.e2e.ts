@@ -6,18 +6,13 @@ import {
   getCurrentMailMessageCount,
   getLatestMailMessage,
 } from '@affine-test/kit/utils/cloud';
-import { Test, TestingModule } from '@nestjs/testing';
+import { TestingModule } from '@nestjs/testing';
 import { PrismaClient } from '@prisma/client';
 import ava, { type TestFn } from 'ava';
 
-import { ConfigModule } from '../src/config';
-import { RevertCommand, RunCommand } from '../src/data/commands/run';
-import { GqlModule } from '../src/graphql.module';
-import { AuthModule } from '../src/modules/auth';
-import { AuthService } from '../src/modules/auth/service';
-import { PrismaModule } from '../src/prisma';
-import { RateLimiterModule } from '../src/throttler';
-import { initFeatureConfigs } from './utils';
+import { AuthService } from '../src/core/auth/service';
+import { ConfigModule } from '../src/fundamentals/config';
+import { createTestingModule } from './utils';
 
 const test = ava as TestFn<{
   auth: AuthService;
@@ -33,7 +28,7 @@ test.beforeEach(async () => {
 });
 
 test.beforeEach(async t => {
-  t.context.module = await Test.createTestingModule({
+  t.context.module = await createTestingModule({
     imports: [
       ConfigModule.forRoot({
         auth: {
@@ -42,17 +37,9 @@ test.beforeEach(async t => {
           leeway: 1,
         },
       }),
-      PrismaModule,
-      GqlModule,
-      AuthModule,
-      RateLimiterModule,
     ],
-    providers: [RevertCommand, RunCommand],
-  }).compile();
+  });
   t.context.auth = t.context.module.get(AuthService);
-
-  // init features
-  await initFeatureConfigs(t.context.module);
 });
 
 test.afterEach.always(async t => {

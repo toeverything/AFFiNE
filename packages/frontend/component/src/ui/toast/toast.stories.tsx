@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 
 import { Button } from '../button';
-import { toast } from '.';
+import { toast } from './index';
 
 export default {
   title: 'UI/Toast',

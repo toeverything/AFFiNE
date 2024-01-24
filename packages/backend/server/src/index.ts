@@ -1,59 +1,14 @@
 /// <reference types="./global.d.ts" />
-import { start as startAutoMetrics } from './metrics';
-startAutoMetrics();
+// keep the config import at the top
+// eslint-disable-next-line simple-import-sort/imports
+import './prelude';
+import { createApp } from './app';
 
-import { NestFactory } from '@nestjs/core';
-import type { NestExpressApplication } from '@nestjs/platform-express';
-import cookieParser from 'cookie-parser';
-import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
+const app = await createApp();
+const listeningHost = AFFiNE.deploy ? '0.0.0.0' : 'localhost';
+await app.listen(AFFiNE.port, listeningHost);
 
-import { AppModule } from './app';
-import { Config } from './config';
-import { ExceptionLogger } from './middleware/exception-logger';
-import { serverTimingAndCache } from './middleware/timing';
-import { RedisIoAdapter } from './modules/sync/redis-adapter';
-
-const { NODE_ENV, AFFINE_ENV } = process.env;
-const app = await NestFactory.create<NestExpressApplication>(AppModule, {
-  cors: true,
-  rawBody: true,
-  bodyParser: true,
-  logger:
-    NODE_ENV !== 'production' || AFFINE_ENV !== 'production'
-      ? ['verbose']
-      : ['log'],
-});
-
-app.use(serverTimingAndCache);
-
-app.use(
-  graphqlUploadExpress({
-    // TODO: dynamic limit by quota
-    maxFileSize: 100 * 1024 * 1024,
-    maxFiles: 5,
-  })
+console.log(
+  `AFFiNE Server has been started on http://${listeningHost}:${AFFiNE.port}.`
 );
-
-app.useGlobalFilters(new ExceptionLogger());
-app.use(cookieParser());
-
-const config = app.get(Config);
-
-const host = config.node.prod ? '0.0.0.0' : 'localhost';
-const port = config.port ?? 3010;
-
-if (config.redis.enabled) {
-  const redisIoAdapter = new RedisIoAdapter(app);
-  await redisIoAdapter.connectToRedis(
-    config.redis.host,
-    config.redis.port,
-    config.redis.username,
-    config.redis.password,
-    config.redis.database
-  );
-  app.useWebSocketAdapter(redisIoAdapter);
-}
-
-await app.listen(port, host);
-
-console.log(`Listening on http://${host}:${port}`);
+console.log(`And the public server should be recognized as ${AFFiNE.baseUrl}`);

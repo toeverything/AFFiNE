@@ -122,5 +122,4 @@ export const headerDivider = style({
   height: '20px',
   width: '1px',
   background: 'var(--affine-border-color)',
-  margin: '0 12px',
 });

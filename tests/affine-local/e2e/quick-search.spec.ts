@@ -400,7 +400,9 @@ test('can use cmdk to search page content and scroll to it, then the block will 
     await page.keyboard.press('Enter', { delay: 10 });
   }
   await page.keyboard.insertText('123456');
-  const textBlock = page.locator('affine-editor-container').getByText('123456');
+  const textBlock = page
+    .locator('[data-affine-editor-container]')
+    .getByText('123456');
   await expect(textBlock).toBeVisible();
   await clickSideBarAllPageButton(page);
   await openQuickSearchByShortcut(page);
@@ -414,7 +416,7 @@ test('can use cmdk to search page content and scroll to it, then the block will 
   await waitForScrollToFinish(page);
   const isVisitable = await checkElementIsInView(
     page,
-    page.locator('affine-editor-container').getByText('123456')
+    page.locator('[data-affine-editor-container]').getByText('123456')
   );
   expect(isVisitable).toBe(true);
   const selectionElement = page.locator('affine-block-selection');
@@ -460,8 +462,8 @@ test('disable quick search when the link-popup is visitable', async ({
   await getBlockSuiteEditorTitle(page).click();
   await getBlockSuiteEditorTitle(page).fill(specialTitle);
   await page.keyboard.press('Enter', { delay: 10 });
-  await page.keyboard.insertText('123456');
-  await page.getByText('123456').dblclick();
+  await page.keyboard.insertText('1234567890');
+  await page.getByText('1234567890').dblclick();
 
   await withCtrlOrMeta(page, () => page.keyboard.press('k', { delay: 50 }));
   const linkPopup = page.locator('.affine-link-popover');

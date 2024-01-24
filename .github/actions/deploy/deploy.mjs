@@ -65,8 +65,16 @@ const createHelmCommand = ({ isDryRun }) => {
         ]
       : [];
   const webReplicaCount = isProduction ? 3 : isBeta ? 2 : 2;
-  const graphqlReplicaCount = isProduction ? 10 : isBeta ? 5 : 2;
-  const syncReplicaCount = isProduction ? 10 : isBeta ? 5 : 2;
+  const graphqlReplicaCount = isProduction
+    ? Number(process.env.PRODUCTION_GRAPHQL_REPLICA) || 3
+    : isBeta
+      ? Number(process.env.isBeta_GRAPHQL_REPLICA) || 2
+      : 2;
+  const syncReplicaCount = isProduction
+    ? Number(process.env.PRODUCTION_SYNC_REPLICA) || 3
+    : isBeta
+      ? Number(process.env.BETA_SYNC_REPLICA) || 2
+      : 2;
   const namespace = isProduction
     ? 'production'
     : isBeta

@@ -1,3 +1,5 @@
+import { resolve } from 'node:path';
+
 import { skipOnboarding, test } from '@affine-test/kit/playwright';
 import {
   addUserToWorkspace,
@@ -16,7 +18,6 @@ import { clickUserInfoCard } from '@affine-test/kit/utils/setting';
 import { clickSideBarSettingButton } from '@affine-test/kit/utils/sidebar';
 import { createLocalWorkspace } from '@affine-test/kit/utils/workspace';
 import { expect } from '@playwright/test';
-import { resolve } from 'path';
 
 let user: {
   id: string;

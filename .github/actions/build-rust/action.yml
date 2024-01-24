@@ -37,7 +37,7 @@ runs:
         echo "TARGET_CC=clang" >> "$GITHUB_ENV"
 
     - name: Cache cargo
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: |
           ~/.cargo/registry/index/

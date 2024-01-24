@@ -1,79 +1,43 @@
 /// <reference types="../src/global.d.ts" />
 
-import { Test, TestingModule } from '@nestjs/testing';
-import { PrismaClient } from '@prisma/client';
+import { TestingModule } from '@nestjs/testing';
 import ava, { type TestFn } from 'ava';
 
-import { ConfigModule } from '../src/config';
-import { RevertCommand, RunCommand } from '../src/data/commands/run';
-import { EventModule } from '../src/event';
-import { AuthModule } from '../src/modules/auth';
-import { AuthService } from '../src/modules/auth/service';
+import { AuthService } from '../src/core/auth';
 import {
   QuotaManagementService,
   QuotaModule,
   Quotas,
   QuotaService,
   QuotaType,
-} from '../src/modules/quota';
-import { StorageModule } from '../src/modules/storage';
-import { PrismaModule } from '../src/prisma';
-import { RateLimiterModule } from '../src/throttler';
-import { initFeatureConfigs } from './utils';
+} from '../src/core/quota';
+import { StorageModule } from '../src/core/storage';
+import { createTestingModule } from './utils';
 
 const test = ava as TestFn<{
   auth: AuthService;
   quota: QuotaService;
   storageQuota: QuotaManagementService;
-  app: TestingModule;
+  module: TestingModule;
 }>;
 
-// cleanup database before each test
-test.beforeEach(async () => {
-  const client = new PrismaClient();
-  await client.$connect();
-  await client.user.deleteMany({});
-  await client.$disconnect();
-});
-
 test.beforeEach(async t => {
-  const module = await Test.createTestingModule({
-    imports: [
-      ConfigModule.forRoot({
-        auth: {
-          accessTokenExpiresIn: 1,
-          refreshTokenExpiresIn: 1,
-          leeway: 1,
-        },
-        host: 'example.org',
-        https: true,
-      }),
-      PrismaModule,
-      AuthModule,
-      EventModule,
-      QuotaModule,
-      StorageModule,
-      RateLimiterModule,
-      RevertCommand,
-      RunCommand,
-    ],
-  }).compile();
+  const module = await createTestingModule({
+    imports: [StorageModule, QuotaModule],
+  });
 
   const quota = module.get(QuotaService);
   const storageQuota = module.get(QuotaManagementService);
   const auth = module.get(AuthService);
 
-  t.context.app = module;
+  t.context.module = module;
   t.context.quota = quota;
   t.context.storageQuota = storageQuota;
   t.context.auth = auth;
-
-  // init features
-  await initFeatureConfigs(module);
 });
 
 test.afterEach.always(async t => {
-  await t.context.app.close();
+  await t.context.module.close();
 });
 
 test('should be able to set quota', async t => {
@@ -84,6 +48,7 @@ test('should be able to set quota', async t => {
   const q1 = await quota.getUserQuota(u1.id);
   t.truthy(q1, 'should have quota');
   t.is(q1?.feature.name, QuotaType.FreePlanV1, 'should be free plan');
+  t.is(q1?.feature.version, 2, 'should be version 2');
 
   await quota.switchUserQuota(u1.id, QuotaType.ProPlanV1);
 
@@ -99,8 +64,8 @@ test('should be able to check storage quota', async t => {
   const u1 = await auth.signUp('DarkSky', 'darksky@example.org', '123456');
 
   const q1 = await storageQuota.getUserQuota(u1.id);
-  t.is(q1?.blobLimit, Quotas[0].configs.blobLimit, 'should be free plan');
-  t.is(q1?.storageQuota, Quotas[0].configs.storageQuota, 'should be free plan');
+  t.is(q1?.blobLimit, Quotas[3].configs.blobLimit, 'should be free plan');
+  t.is(q1?.storageQuota, Quotas[3].configs.storageQuota, 'should be free plan');
 
   await quota.switchUserQuota(u1.id, QuotaType.ProPlanV1);
   const q2 = await storageQuota.getUserQuota(u1.id);
@@ -113,8 +78,8 @@ test('should be able revert quota', async t => {
   const u1 = await auth.signUp('DarkSky', 'darksky@example.org', '123456');
 
   const q1 = await storageQuota.getUserQuota(u1.id);
-  t.is(q1?.blobLimit, Quotas[0].configs.blobLimit, 'should be free plan');
-  t.is(q1?.storageQuota, Quotas[0].configs.storageQuota, 'should be free plan');
+  t.is(q1?.blobLimit, Quotas[3].configs.blobLimit, 'should be free plan');
+  t.is(q1?.storageQuota, Quotas[3].configs.storageQuota, 'should be free plan');
 
   await quota.switchUserQuota(u1.id, QuotaType.ProPlanV1);
   const q2 = await storageQuota.getUserQuota(u1.id);
@@ -123,7 +88,7 @@ test('should be able revert quota', async t => {
 
   await quota.switchUserQuota(u1.id, QuotaType.FreePlanV1);
   const q3 = await storageQuota.getUserQuota(u1.id);
-  t.is(q3?.blobLimit, Quotas[0].configs.blobLimit, 'should be free plan');
+  t.is(q3?.blobLimit, Quotas[3].configs.blobLimit, 'should be free plan');
 
   const quotas = await quota.getUserQuotas(u1.id);
   t.is(quotas.length, 3, 'should have 3 quotas');

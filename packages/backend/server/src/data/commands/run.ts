@@ -4,15 +4,14 @@ import { fileURLToPath } from 'node:url';
 
 import { Logger } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
+import { PrismaClient } from '@prisma/client';
 import { Command, CommandRunner } from 'nest-commander';
-
-import { PrismaService } from '../../prisma';
 
 interface Migration {
   file: string;
   name: string;
-  up: (db: PrismaService, injector: ModuleRef) => Promise<void>;
-  down: (db: PrismaService, injector: ModuleRef) => Promise<void>;
+  up: (db: PrismaClient, injector: ModuleRef) => Promise<void>;
+  down: (db: PrismaClient, injector: ModuleRef) => Promise<void>;
 }
 
 export async function collectMigrations(): Promise<Migration[]> {
@@ -48,7 +47,7 @@ export async function collectMigrations(): Promise<Migration[]> {
 export class RunCommand extends CommandRunner {
   logger = new Logger(RunCommand.name);
   constructor(
-    private readonly db: PrismaService,
+    private readonly db: PrismaClient,
     private readonly injector: ModuleRef
   ) {
     super();
@@ -139,7 +138,7 @@ export class RevertCommand extends CommandRunner {
   logger = new Logger(RevertCommand.name);
 
   constructor(
-    private readonly db: PrismaService,
+    private readonly db: PrismaClient,
     private readonly injector: ModuleRef
   ) {
     super();

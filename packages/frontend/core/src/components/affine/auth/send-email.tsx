@@ -39,7 +39,7 @@ const useContent = (emailType: AuthPanelProps['emailType'], email: string) => {
     case 'setPassword':
       return t['com.affine.auth.set.password.message']();
     case 'changePassword':
-      return t['com.affine.auth.set.password.message']();
+      return t['com.affine.auth.reset.password.message']();
     case 'changeEmail':
       return t['com.affine.auth.change.email.message']({
         email,

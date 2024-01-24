@@ -1,4 +1,4 @@
-import type { WorkspaceSubPath } from '@affine/env/workspace';
+import type { WorkspaceSubPath } from '@affine/core/shared';
 import { useCallback, useMemo } from 'react';
 import {
   type NavigateOptions,

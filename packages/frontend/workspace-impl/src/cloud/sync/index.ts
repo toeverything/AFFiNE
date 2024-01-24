@@ -172,8 +172,7 @@ export function createAffineStaticStorage(workspaceId: string): SyncStorage {
     name: 'affine-cloud-static',
     async pull(docId) {
       const response = await fetchWithTraceReport(
-        runtimeConfig.serverUrlPrefix +
-          `/api/workspaces/${workspaceId}/docs/${docId}`,
+        `/api/workspaces/${workspaceId}/docs/${docId}`,
         {
           priority: 'high',
         }

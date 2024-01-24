@@ -18,7 +18,7 @@ import type { BuildFlags } from '@affine/cli/config';
 import { projectRoot } from '@affine/cli/config';
 import { VanillaExtractPlugin } from '@vanilla-extract/webpack-plugin';
 import type { RuntimeConfig } from '@affine/env/global';
-import { WebpackS3Plugin, gitShortHash } from './s3-plugin.js';
+import { WebpackS3Plugin } from './s3-plugin.js';
 
 const IN_CI = !!process.env.CI;
 
@@ -72,15 +72,18 @@ const OptimizeOptionOptions: (
 
 export const getPublicPath = (buildFlags: BuildFlags) => {
   const { BUILD_TYPE } = process.env;
-  const publicPath = process.env.PUBLIC_PATH ?? '/';
+  if (typeof process.env.PUBLIC_PATH === 'string') {
+    return process.env.PUBLIC_PATH;
+  }
+  const publicPath = '/';
   if (process.env.COVERAGE || buildFlags.distribution === 'desktop') {
     return publicPath;
   }
 
   if (BUILD_TYPE === 'canary') {
-    return `https://dev.affineassets.com/${gitShortHash()}/`;
+    return `https://dev.affineassets.com/`;
   } else if (BUILD_TYPE === 'beta' || BUILD_TYPE === 'stable') {
-    return `https://prod.affineassets.com/${gitShortHash()}/`;
+    return `https://prod.affineassets.com/`;
   }
   return publicPath;
 };

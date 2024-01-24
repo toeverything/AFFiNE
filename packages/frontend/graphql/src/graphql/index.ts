@@ -13,7 +13,7 @@ export const checkBlobSizesQuery = {
   definitionName: 'checkBlobSize',
   containsFile: false,
   query: `
-query checkBlobSizes($workspaceId: String!, $size: Float!) {
+query checkBlobSizes($workspaceId: String!, $size: SafeInt!) {
   checkBlobSize(workspaceId: $workspaceId, size: $size) {
     size
   }
@@ -674,8 +674,10 @@ export const serverConfigQuery = {
 query serverConfig {
   serverConfig {
     version
-    flavor
     baseUrl
+    name
+    features
+    flavor
   }
 }`,
 };
@@ -780,6 +782,19 @@ mutation uploadAvatar($avatar: Upload!) {
 }`,
 };
 
+export const enabledFeaturesQuery = {
+  id: 'enabledFeaturesQuery' as const,
+  operationName: 'enabledFeatures',
+  definitionName: 'workspace',
+  containsFile: false,
+  query: `
+query enabledFeatures($id: String!) {
+  workspace(id: $id) {
+    features
+  }
+}`,
+};
+
 export const availableFeaturesQuery = {
   id: 'availableFeaturesQuery' as const,
   operationName: 'availableFeatures',
@@ -878,5 +893,23 @@ mutation acceptInviteByInviteId($workspaceId: String!, $inviteId: String!, $send
     inviteId: $inviteId
     sendAcceptMail: $sendAcceptMail
   )
+}`,
+};
+
+export const workspaceQuotaQuery = {
+  id: 'workspaceQuotaQuery' as const,
+  operationName: 'workspaceQuota',
+  definitionName: 'workspace',
+  containsFile: false,
+  query: `
+query workspaceQuota($id: String!) {
+  workspace(id: $id) {
+    quota {
+      humanReadableName
+      storageQuota
+      usedSize
+      blobLimit
+    }
+  }
 }`,
 };

@@ -8,16 +8,16 @@ import { Suspense, useCallback, useLayoutEffect, useRef } from 'react';
 
 import { useCurrentLoginStatus } from '../../../hooks/affine/use-current-login-status';
 import { AccountSetting } from './account-setting';
-import {
-  GeneralSetting,
-  type GeneralSettingKeys,
-  useGeneralSettingList,
-} from './general-setting';
+import { GeneralSetting } from './general-setting';
 import { SettingSidebar } from './setting-sidebar';
 import * as style from './style.css';
+import {
+  type ActiveTab,
+  type GeneralSettingKey,
+  GeneralSettingKeys,
+  type WorkspaceSubTab,
+} from './types';
 import { WorkspaceSetting } from './workspace-setting';
-
-type ActiveTab = GeneralSettingKeys | 'workspace' | 'account';
 
 export interface SettingProps extends ModalProps {
   activeTab: ActiveTab;
@@ -28,6 +28,9 @@ export interface SettingProps extends ModalProps {
   }) => void;
 }
 
+const isGeneralSetting = (key: string): key is GeneralSettingKey =>
+  GeneralSettingKeys.includes(key as GeneralSettingKey);
+
 export const SettingModal = ({
   activeTab = 'appearance',
   workspaceMetadata = null,
@@ -36,8 +39,6 @@ export const SettingModal = ({
 }: SettingProps) => {
   const t = useAFFiNEI18N();
   const loginStatus = useCurrentLoginStatus();
-
-  const generalSettingList = useGeneralSettingList();
 
   const modalContentRef = useRef<HTMLDivElement>(null);
   const modalContentWrapperRef = useRef<HTMLDivElement>(null);
@@ -72,27 +73,12 @@ export const SettingModal = ({
     };
   }, [modalProps.open]);
 
-  const onGeneralSettingClick = useCallback(
-    (key: GeneralSettingKeys) => {
-      onSettingClick({
-        activeTab: key,
-        workspaceMetadata: null,
-      });
+  const onTabChange = useCallback(
+    (key: ActiveTab, meta: WorkspaceMetadata | null) => {
+      onSettingClick({ activeTab: key, workspaceMetadata: meta });
     },
     [onSettingClick]
   );
-  const onWorkspaceSettingClick = useCallback(
-    (workspaceMetadata: WorkspaceMetadata) => {
-      onSettingClick({
-        activeTab: 'workspace',
-        workspaceMetadata,
-      });
-    },
-    [onSettingClick]
-  );
-  const onAccountSettingClick = useCallback(() => {
-    onSettingClick({ activeTab: 'account', workspaceMetadata: null });
-  }, [onSettingClick]);
 
   return (
     <Modal
@@ -111,12 +97,9 @@ export const SettingModal = ({
       {...modalProps}
     >
       <SettingSidebar
-        generalSettingList={generalSettingList}
-        onGeneralSettingClick={onGeneralSettingClick}
-        onWorkspaceSettingClick={onWorkspaceSettingClick}
-        selectedGeneralKey={activeTab}
+        activeTab={activeTab}
+        onTabChange={onTabChange}
         selectedWorkspaceId={workspaceMetadata?.id ?? null}
-        onAccountSettingClick={onAccountSettingClick}
       />
 
       <div
@@ -127,14 +110,15 @@ export const SettingModal = ({
         <div ref={modalContentRef} className={style.centerContainer}>
           <div className={style.content}>
             <Suspense fallback={<WorkspaceDetailSkeleton />}>
-              {activeTab === 'workspace' && workspaceMetadata ? (
+              {activeTab.startsWith('workspace:') && workspaceMetadata ? (
                 <WorkspaceSetting
+                  subTab={activeTab.split(':')[1] as WorkspaceSubTab}
                   key={workspaceMetadata.id}
                   workspaceMetadata={workspaceMetadata}
                 />
               ) : null}
-              {generalSettingList.some(v => v.key === activeTab) ? (
-                <GeneralSetting generalKey={activeTab as GeneralSettingKeys} />
+              {isGeneralSetting(activeTab) ? (
+                <GeneralSetting generalKey={activeTab} />
               ) : null}
               {activeTab === 'account' && loginStatus === 'authenticated' ? (
                 <AccountSetting />

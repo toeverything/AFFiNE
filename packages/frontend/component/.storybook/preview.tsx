@@ -1,3 +1,4 @@
+import '../src/theme/global.css';
 import './preview.css';
 import { ThemeProvider, useTheme } from 'next-themes';
 import type { ComponentType } from 'react';

@@ -3,20 +3,17 @@ import {
   getLatestMailMessage,
 } from '@affine-test/kit/utils/cloud';
 import type { INestApplication } from '@nestjs/common';
-import { Test } from '@nestjs/testing';
 import { PrismaClient } from '@prisma/client';
 import ava, { type TestFn } from 'ava';
-import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 
-import { AppModule } from '../src/app';
-import { RevertCommand, RunCommand } from '../src/data/commands/run';
-import { MailService } from '../src/modules/auth/mailer';
-import { AuthService } from '../src/modules/auth/service';
+import { AppModule } from '../src/app.module';
+import { AuthService } from '../src/core/auth/service';
+import { MailService } from '../src/fundamentals/mailer';
 import {
   acceptInviteById,
+  createTestingApp,
   createWorkspace,
   getWorkspace,
-  initFeatureConfigs,
   inviteUser,
   leaveWorkspace,
   revokeUser,
@@ -31,36 +28,13 @@ const test = ava as TestFn<{
 }>;
 
 test.beforeEach(async t => {
-  const client = new PrismaClient();
-  t.context.client = client;
-  await client.$connect();
-  await client.user.deleteMany({});
-  await client.snapshot.deleteMany({});
-  await client.update.deleteMany({});
-  await client.workspace.deleteMany({});
-  await client.$disconnect();
-  const module = await Test.createTestingModule({
+  const { app } = await createTestingApp({
     imports: [AppModule],
-    providers: [RevertCommand, RunCommand],
-  }).compile();
-  const app = module.createNestApplication();
-  app.use(
-    graphqlUploadExpress({
-      maxFileSize: 10 * 1024 * 1024,
-      maxFiles: 5,
-    })
-  );
-  await app.init();
-
-  const auth = module.get(AuthService);
-  const mail = module.get(MailService);
-
+  });
   t.context.app = app;
-  t.context.auth = auth;
-  t.context.mail = mail;
-
-  // init features
-  await initFeatureConfigs(module);
+  t.context.client = app.get(PrismaClient);
+  t.context.auth = app.get(AuthService);
+  t.context.mail = app.get(MailService);
 });
 
 test.afterEach.always(async t => {

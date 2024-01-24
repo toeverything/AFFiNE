@@ -217,6 +217,7 @@ const config = {
     'unicorn/no-useless-promise-resolve-reject': 'error',
     'unicorn/no-new-array': 'error',
     'unicorn/new-for-builtins': 'error',
+    'unicorn/prefer-node-protocol': 'error',
     'sonarjs/no-all-duplicated-branches': 'error',
     'sonarjs/no-element-overwrite': 'error',
     'sonarjs/no-empty-collection': 'error',

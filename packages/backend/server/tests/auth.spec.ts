@@ -1,33 +1,22 @@
 /// <reference types="../src/global.d.ts" />
-import { Test, TestingModule } from '@nestjs/testing';
-import { PrismaClient } from '@prisma/client';
+import { TestingModule } from '@nestjs/testing';
 import test from 'ava';
 
-import { ConfigModule } from '../src/config';
-import { RevertCommand, RunCommand } from '../src/data/commands/run';
-import { GqlModule } from '../src/graphql.module';
-import { AuthModule } from '../src/modules/auth';
-import { AuthResolver } from '../src/modules/auth/resolver';
-import { AuthService } from '../src/modules/auth/service';
-import { PrismaModule } from '../src/prisma';
-import { mintChallengeResponse, verifyChallengeResponse } from '../src/storage';
-import { RateLimiterModule } from '../src/throttler';
-import { initFeatureConfigs } from './utils';
+import { AuthResolver } from '../src/core/auth/resolver';
+import { AuthService } from '../src/core/auth/service';
+import { ConfigModule } from '../src/fundamentals/config';
+import {
+  mintChallengeResponse,
+  verifyChallengeResponse,
+} from '../src/fundamentals/storage';
+import { createTestingModule } from './utils';
 
 let authService: AuthService;
 let authResolver: AuthResolver;
 let module: TestingModule;
 
-// cleanup database before each test
 test.beforeEach(async () => {
-  const client = new PrismaClient();
-  await client.$connect();
-  await client.user.deleteMany({});
-  await client.$disconnect();
-});
-
-test.beforeEach(async () => {
-  module = await Test.createTestingModule({
+  module = await createTestingModule({
     imports: [
       ConfigModule.forRoot({
         auth: {
@@ -38,19 +27,11 @@ test.beforeEach(async () => {
         host: 'example.org',
         https: true,
       }),
-      PrismaModule,
-      GqlModule,
-      AuthModule,
-      RateLimiterModule,
-      RevertCommand,
-      RunCommand,
     ],
-  }).compile();
+  });
+
   authService = module.get(AuthService);
   authResolver = module.get(AuthResolver);
-
-  // init features
-  await initFeatureConfigs(module);
 });
 
 test.afterEach.always(async () => {

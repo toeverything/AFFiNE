@@ -24,13 +24,30 @@ globalStyle(`${authMessage} .link`, {
   color: 'var(--affine-link-color)',
 });
 
+export const forgetPasswordButtonRow = style({
+  position: 'absolute',
+  right: 0,
+  marginTop: '-26px', // Let this button be a tail of password input.
+});
+export const sendMagicLinkButtonRow = style({
+  marginBottom: '30px',
+});
+
+export const linkButton = style({
+  color: 'var(--affine-link-color)',
+  background: 'transparent',
+  borderColor: 'transparent',
+  fontSize: 'var(--affine-font-xs)',
+  lineHeight: '22px',
+  userSelect: 'none',
+});
+
 export const forgetPasswordButton = style({
   fontSize: 'var(--affine-font-sm)',
   color: 'var(--affine-text-secondary-color)',
   position: 'absolute',
   right: 0,
   bottom: 0,
-  display: 'none',
 });
 
 export const resendWrapper = style({
@@ -42,7 +59,21 @@ export const resendWrapper = style({
   marginTop: 30,
 });
 
-export const resendCountdown = style({ width: 45, textAlign: 'center' });
+export const sentRow = style({
+  display: 'flex',
+  justifyContent: 'center',
+  gap: '8px',
+  lineHeight: '22px',
+  fontSize: 'var(--affine-font-sm)',
+});
+export const sentMessage = style({
+  color: 'var(--affine-text-primary-color)',
+  fontWeight: 600,
+});
+export const resendCountdown = style({
+  width: 45,
+  textAlign: 'center',
+});
 export const resendCountdownInButton = style({
   width: 40,
   textAlign: 'center',

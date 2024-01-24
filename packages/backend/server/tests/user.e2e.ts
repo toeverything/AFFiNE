@@ -1,40 +1,17 @@
 import type { INestApplication } from '@nestjs/common';
-import { Test } from '@nestjs/testing';
-import { PrismaClient } from '@prisma/client';
 import test from 'ava';
-import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 import request from 'supertest';
 
-import { AppModule } from '../src/app';
-import { RevertCommand, RunCommand } from '../src/data/commands/run';
-import { currentUser, initFeatureConfigs, signUp } from './utils';
+import { AppModule } from '../src/app.module';
+import { createTestingApp, currentUser, signUp } from './utils';
 
 let app: INestApplication;
 
-// cleanup database before each test
 test.beforeEach(async () => {
-  const client = new PrismaClient();
-  await client.$connect();
-  await client.user.deleteMany({});
-  await client.$disconnect();
-});
-
-test.beforeEach(async () => {
-  const module = await Test.createTestingModule({
+  const { app: testApp } = await createTestingApp({
     imports: [AppModule],
-    providers: [RevertCommand, RunCommand],
-  }).compile();
-  app = module.createNestApplication();
-  app.use(
-    graphqlUploadExpress({
-      maxFileSize: 10 * 1024 * 1024,
-      maxFiles: 5,
-    })
-  );
-  await app.init();
-
-  // init features
-  await initFeatureConfigs(module);
+  });
+  app = testApp;
 });
 
 test.afterEach.always(async () => {

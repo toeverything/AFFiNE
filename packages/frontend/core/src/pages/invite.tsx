@@ -1,5 +1,5 @@
 import { AcceptInvitePage } from '@affine/component/member-components';
-import { WorkspaceSubPath } from '@affine/env/workspace';
+import { WorkspaceSubPath } from '@affine/core/shared';
 import {
   acceptInviteByInviteIdMutation,
   type GetInviteInfoQuery,

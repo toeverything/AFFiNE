@@ -11,7 +11,8 @@ export type Notification = {
   progressingBar?: boolean;
   multimedia?: React.ReactNode | JSX.Element;
   // actions
-  undo?: () => Promise<void>;
+  action?: () => Promise<void>;
+  actionLabel?: string;
 };
 
 const notificationsBaseAtom = atom<Notification[]>([]);
@@ -48,19 +49,19 @@ export const pushNotificationAtom = atom<null, [Notification], void>(
       set(notificationsBaseAtom, notifications =>
         notifications.filter(notification => notification.key !== key)
       );
-    const undo: (() => Promise<void>) | undefined = newNotification.undo
+    const action: (() => Promise<void>) | undefined = newNotification.action
       ? (() => {
-          const undo: () => Promise<void> = newNotification.undo;
-          return async function undoNotificationWrapper() {
+          const action: () => Promise<void> = newNotification.action;
+          return async function actionNotificationWrapper() {
             removeNotification();
-            return undo();
+            return action();
           };
         })()
       : undefined;
 
     set(notificationsBaseAtom, notifications => [
       // push to the top
-      { ...newNotification, undo },
+      { ...newNotification, action },
       ...notifications,
     ]);
   }

@@ -1,57 +1,35 @@
 import type { INestApplication } from '@nestjs/common';
-import { Test } from '@nestjs/testing';
-import { PrismaClient } from '@prisma/client';
 import test from 'ava';
-import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 import request from 'supertest';
 
-import { AppModule } from '../src/app';
-import { RevertCommand, RunCommand } from '../src/data/commands/run';
-import { QuotaService, QuotaType } from '../src/modules/quota';
+import { AppModule } from '../src/app.module';
+import { FeatureManagementService, FeatureType } from '../src/core/features';
+import { QuotaService, QuotaType } from '../src/core/quota';
 import {
   checkBlobSize,
   collectAllBlobSizes,
+  createTestingApp,
   createWorkspace,
   getWorkspaceBlobsSize,
-  initFeatureConfigs,
   listBlobs,
   setBlob,
   signUp,
 } from './utils';
 
+const OneMB = 1024 * 1024;
+
 let app: INestApplication;
 let quota: QuotaService;
-
-const client = new PrismaClient();
-
-// cleanup database before each test
-test.beforeEach(async () => {
-  await client.$connect();
-  await client.user.deleteMany({});
-  await client.snapshot.deleteMany({});
-  await client.update.deleteMany({});
-  await client.workspace.deleteMany({});
-  await client.$disconnect();
-});
+let feature: FeatureManagementService;
 
 test.beforeEach(async () => {
-  const module = await Test.createTestingModule({
+  const { app: testApp } = await createTestingApp({
     imports: [AppModule],
-    providers: [RevertCommand, RunCommand],
-  }).compile();
-  app = module.createNestApplication();
-  app.use(
-    graphqlUploadExpress({
-      maxFileSize: 10 * 1024 * 1024,
-      maxFiles: 5,
-    })
-  );
-  quota = module.get(QuotaService);
+  });
 
-  // init features
-  await initFeatureConfigs(module);
-
-  await app.init();
+  app = testApp;
+  quota = app.get(QuotaService);
+  feature = app.get(FeatureManagementService);
 });
 
 test.afterEach.always(async () => {
@@ -190,12 +168,51 @@ test('should be able calc quota after switch plan', async t => {
   t.is(size2, 0, 'failed to check pro plan blob size');
 });
 
-test('should reject blob exceeded limit', t => {
-  // TODO
-  t.true(true);
+test('should reject blob exceeded limit', async t => {
+  const u1 = await signUp(app, 'darksky', 'darksky@affine.pro', '1');
+
+  const workspace1 = await createWorkspace(app, u1.token.token);
+  await quota.switchUserQuota(u1.id, QuotaType.RestrictedPlanV1);
+
+  const buffer1 = Buffer.from(Array.from({ length: OneMB + 1 }, () => 0));
+  await t.throwsAsync(setBlob(app, u1.token.token, workspace1.id, buffer1));
+
+  await quota.switchUserQuota(u1.id, QuotaType.FreePlanV1);
+
+  const buffer2 = Buffer.from(Array.from({ length: OneMB + 1 }, () => 0));
+  await t.notThrowsAsync(setBlob(app, u1.token.token, workspace1.id, buffer2));
+
+  const buffer3 = Buffer.from(Array.from({ length: 100 * OneMB + 1 }, () => 0));
+  await t.throwsAsync(setBlob(app, u1.token.token, workspace1.id, buffer3));
 });
 
-test('should reject blob exceeded quota', t => {
-  // TODO
-  t.true(true);
+test('should reject blob exceeded quota', async t => {
+  const u1 = await signUp(app, 'darksky', 'darksky@affine.pro', '1');
+
+  const workspace = await createWorkspace(app, u1.token.token);
+  await quota.switchUserQuota(u1.id, QuotaType.RestrictedPlanV1);
+
+  const buffer = Buffer.from(Array.from({ length: OneMB }, () => 0));
+
+  for (let i = 0; i < 10; i++) {
+    await t.notThrowsAsync(setBlob(app, u1.token.token, workspace.id, buffer));
+  }
+
+  await t.throwsAsync(setBlob(app, u1.token.token, workspace.id, buffer));
+});
+
+test('should accept blob even storage out of quota if workspace has unlimited feature', async t => {
+  const u1 = await signUp(app, 'darksky', 'darksky@affine.pro', '1');
+
+  const workspace = await createWorkspace(app, u1.token.token);
+  await quota.switchUserQuota(u1.id, QuotaType.RestrictedPlanV1);
+  feature.addWorkspaceFeatures(workspace.id, FeatureType.UnlimitedWorkspace);
+
+  const buffer = Buffer.from(Array.from({ length: OneMB }, () => 0));
+
+  for (let i = 0; i < 10; i++) {
+    await t.notThrowsAsync(setBlob(app, u1.token.token, workspace.id, buffer));
+  }
+
+  await t.notThrowsAsync(setBlob(app, u1.token.token, workspace.id, buffer));
 });

@@ -1,16 +1,14 @@
 import { Loading, Scrollable } from '@affine/component';
-import {
-  BlockSuiteEditor,
-  EditorLoading,
-} from '@affine/component/block-suite-editor';
+import { EditorLoading } from '@affine/component/page-detail-skeleton';
 import { Button, IconButton } from '@affine/component/ui/button';
 import { ConfirmModal, Modal } from '@affine/component/ui/modal';
 import { openSettingModalAtom, type PageMode } from '@affine/core/atoms';
 import { useIsWorkspaceOwner } from '@affine/core/hooks/affine/use-is-workspace-owner';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import { useUserSubscription } from '@affine/core/hooks/use-subscription';
+import { useBlockSuiteWorkspacePageTitle } from '@affine/core/hooks/use-block-suite-workspace-page-title';
+import { useWorkspaceQuota } from '@affine/core/hooks/use-workspace-quota';
 import { waitForCurrentWorkspaceAtom } from '@affine/core/modules/workspace';
-import { SubscriptionPlan } from '@affine/graphql';
+import { timestampToLocalTime } from '@affine/core/utils';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloseIcon, ToggleCollapseIcon } from '@blocksuite/icons';
@@ -31,6 +29,7 @@ import { encodeStateAsUpdate } from 'yjs';
 
 import { currentModeAtom } from '../../../atoms/mode';
 import { pageHistoryModalAtom } from '../../../atoms/page-history';
+import { BlockSuiteEditor } from '../../blocksuite/block-suite-editor';
 import { StyledEditorModeSwitch } from '../../blocksuite/block-suite-mode-switch/style';
 import {
   EdgelessSwitchItem,
@@ -88,14 +87,6 @@ const ModalContainer = ({
   );
 };
 
-const localTimeFormatter = new Intl.DateTimeFormat('en', {
-  timeStyle: 'short',
-});
-
-const timestampToLocalTime = (ts: string) => {
-  return localTimeFormatter.format(new Date(ts));
-};
-
 interface HistoryEditorPreviewProps {
   ts?: string;
   snapshotPage?: Page;
@@ -148,7 +139,6 @@ const HistoryEditorPreview = ({
               className={styles.editor}
               mode={mode}
               page={snapshotPage}
-              onModeChange={onModeChange}
             />
           </AffineErrorBoundary>
         ) : (
@@ -163,10 +153,13 @@ const HistoryEditorPreview = ({
 const planPromptClosedAtom = atom(false);
 
 const PlanPrompt = () => {
-  const [subscription] = useUserSubscription();
   const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
+
   const isOwner = useIsWorkspaceOwner(currentWorkspace.meta);
-  const freePlan = subscription?.plan === SubscriptionPlan.Free;
+  const workspaceQuota = useWorkspaceQuota(currentWorkspace.id);
+  const isProWorkspace = useMemo(() => {
+    return workspaceQuota?.humanReadable.name.toLowerCase() !== 'free';
+  }, [workspaceQuota]);
 
   const setSettingModalAtom = useSetAtom(openSettingModalAtom);
   const [planPromptClosed, setPlanPromptClosed] = useAtom(planPromptClosedAtom);
@@ -187,7 +180,7 @@ const PlanPrompt = () => {
   const planTitle = useMemo(() => {
     return (
       <div className={styles.planPromptTitle}>
-        {freePlan
+        {!isProWorkspace
           ? t[
               'com.affine.history.confirm-restore-modal.plan-prompt.limited-title'
             ]()
@@ -200,14 +193,15 @@ const PlanPrompt = () => {
         />
       </div>
     );
-  }, [closeFreePlanPrompt, freePlan, t]);
+  }, [closeFreePlanPrompt, isProWorkspace, t]);
 
   const planDescription = useMemo(() => {
-    if (freePlan) {
+    if (!isProWorkspace) {
       return (
         <>
           <Trans i18nKey="com.affine.history.confirm-restore-modal.free-plan-prompt.description">
-            Free users can view up to the <b>last 7 days</b> of page history.
+            With the workspace creator&apos;s Free account, every member can
+            access up to <b>7 days</b> of version history.
           </Trans>
           {isOwner ? (
             <span
@@ -224,11 +218,12 @@ const PlanPrompt = () => {
     } else {
       return (
         <Trans i18nKey="com.affine.history.confirm-restore-modal.pro-plan-prompt.description">
-          Pro users can view up to the <b>last 30 days</b> of page history.
+          With the workspace creator&apos;s Pro account, every member enjoys the
+          privilege of accessing up to <b>30 days</b> of version history.
         </Trans>
       );
     }
-  }, [freePlan, isOwner, onClickUpgrade, t]);
+  }, [isOwner, isProWorkspace, onClickUpgrade, t]);
 
   return !planPromptClosed ? (
     <div className={styles.planPromptWrapper}>
@@ -428,7 +423,7 @@ const PageHistoryManager = ({
     return workspace.getPage(pageId)?.spaceDoc.guid ?? pageId;
   }, [pageId, workspace]);
 
-  const snapshotPage = useSnapshotPage(workspaceId, pageDocId, activeVersion);
+  const snapshotPage = useSnapshotPage(workspace, pageDocId, activeVersion);
 
   const t = useAFFiNEI18N();
 
@@ -450,10 +445,7 @@ const PageHistoryManager = ({
   const defaultPreviewPageMode = useAtomValue(currentModeAtom);
   const [mode, setMode] = useState<PageMode>(defaultPreviewPageMode);
 
-  const title = useMemo(
-    () => workspace.getPage(pageId)?.meta.title || t['Untitled'](),
-    [pageId, t, workspace]
-  );
+  const title = useBlockSuiteWorkspacePageTitle(workspace, pageId);
 
   const [showRestoreConfirmModal, setShowRestoreConfirmModal] = useState(false);
 

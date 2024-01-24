@@ -14,8 +14,8 @@ import {
 import { Menu } from '@affine/component/ui/menu';
 import { collectionsCRUDAtom } from '@affine/core/atoms/collections';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
+import { WorkspaceSubPath } from '@affine/core/shared';
 import { apis, events } from '@affine/electron-api';
-import { WorkspaceSubPath } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { Workspace } from '@affine/workspace';
 import { FolderIcon, SettingsIcon } from '@blocksuite/icons';
@@ -48,6 +48,7 @@ import FavoriteList from '../pure/workspace-slider-bar/favorite/favorite-list';
 import { UserWithWorkspaceList } from '../pure/workspace-slider-bar/user-with-workspace-list';
 import { WorkspaceCard } from '../pure/workspace-slider-bar/workspace-card';
 import ImportPage from './import-page';
+import { AppSidebarJournalButton } from './journal-button';
 import { UpdaterButton } from './updater-button';
 
 export type RootAppSidebarProps = {
@@ -254,6 +255,11 @@ export const RootAppSidebar = ({
             {t['com.affine.workspaceSubPath.all']()}
           </span>
         </RouteMenuLinkItem>
+        {runtimeConfig.enableJournal ? (
+          <AppSidebarJournalButton
+            workspace={currentWorkspace.blockSuiteWorkspace}
+          />
+        ) : null}
         {runtimeConfig.enableNewSettingModal ? (
           <MenuItem
             data-testid="slider-bar-workspace-setting-button"
@@ -294,9 +300,7 @@ export const RootAppSidebar = ({
             {t['com.affine.workspaceSubPath.trash']()}
           </span>
         </RouteMenuLinkItem>
-        {blockSuiteWorkspace && (
-          <ImportPage blocksuiteWorkspace={blockSuiteWorkspace} />
-        )}
+        <ImportPage blocksuiteWorkspace={blockSuiteWorkspace} />
       </SidebarScrollableContainer>
       <SidebarContainer>
         {environment.isDesktop ? <UpdaterButton /> : <AppDownloadButton />}

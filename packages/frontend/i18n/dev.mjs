@@ -1,5 +1,6 @@
+import { fileURLToPath } from 'node:url';
+
 import { runCli } from '@magic-works/i18n-codegen';
-import { fileURLToPath } from 'url';
 
 runCli(
   {

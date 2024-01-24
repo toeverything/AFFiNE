@@ -3,8 +3,13 @@ import { ResizePanel } from '@affine/component/resize-panel';
 import { useBlockSuitePageMeta } from '@affine/core/hooks/use-block-suite-page-meta';
 import { useWorkspaceStatus } from '@affine/core/hooks/use-workspace-status';
 import { waitForCurrentWorkspaceAtom } from '@affine/core/modules/workspace';
-import { WorkspaceSubPath } from '@affine/env/workspace';
+import { WorkspaceSubPath } from '@affine/core/shared';
 import { globalBlockSuiteSchema, SyncEngineStep } from '@affine/workspace';
+import {
+  BookmarkService,
+  customImageProxyMiddleware,
+  ImageService,
+} from '@blocksuite/blocks';
 import type { AffineEditorContainer } from '@blocksuite/presets';
 import type { Page, Workspace } from '@blocksuite/store';
 import { appSettingAtom } from '@toeverything/infra/atom';
@@ -35,7 +40,7 @@ import {
 import { TrashPageFooter } from '../../../components/pure/trash-page-footer';
 import { TopTip } from '../../../components/top-tip';
 import { useRegisterBlocksuiteEditorCommands } from '../../../hooks/affine/use-register-blocksuite-editor-commands';
-import { useDocumentTitle } from '../../../hooks/use-global-state';
+import { usePageDocumentTitle } from '../../../hooks/use-global-state';
 import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
 import { performanceRenderLogger } from '../../../shared';
 import { PageNotFound } from '../../404';
@@ -115,7 +120,7 @@ const DetailPageImpl = memo(function DetailPageImpl({ page }: { page: Page }) {
   const mode = useAtomValue(currentModeAtom);
   const setPageMode = useSetAtom(setPageModeAtom);
   useRegisterBlocksuiteEditorCommands(currentPageId, mode);
-  useDocumentTitle(pageMeta?.title ? `${pageMeta.title} · AFFiNE` : null);
+  usePageDocumentTitle(pageMeta);
 
   const onLoad = useCallback(
     (page: Page, editor: AffineEditorContainer) => {
@@ -138,7 +143,15 @@ const DetailPageImpl = memo(function DetailPageImpl({ page }: { page: Page }) {
           );
         }
       } catch {}
+
+      ImageService.setImageProxyURL(runtimeConfig.imageProxyUrl);
+      BookmarkService.setLinkPreviewEndpoint(runtimeConfig.linkPreviewUrl);
+      editor.host?.std.clipboard.use(
+        customImageProxyMiddleware(runtimeConfig.imageProxyUrl)
+      );
+
       setPageMode(currentPageId, mode);
+      // fixme: it seems pageLinkClicked is not triggered sometimes?
       const dispose = editor.slots.pageLinkClicked.on(({ pageId }) => {
         return openPage(blockSuiteWorkspace.id, pageId);
       });
@@ -193,8 +206,8 @@ const DetailPageImpl = memo(function DetailPageImpl({ page }: { page: Page }) {
         sidebar={
           !isInTrash ? (
             <div className={styles.sidebarContainerInner}>
-              <RightSidebarHeader />
-              <EditorSidebar />
+              <RightSidebarHeader workspace={currentWorkspace} page={page} />
+              <EditorSidebar workspace={blockSuiteWorkspace} page={page} />
             </div>
           ) : null
         }

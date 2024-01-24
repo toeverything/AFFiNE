@@ -17,7 +17,7 @@ export const AuthModal: FC<PropsWithChildren<AuthModalProps>> = ({
       open={open}
       onOpenChange={setOpen}
       width={400}
-      height={468}
+      minHeight={500}
       contentOptions={{
         ['data-testid' as string]: 'auth-modal',
         style: { padding: '44px 40px 0' },

@@ -272,7 +272,7 @@ export const EdgelessSwitch = ({
             size="extraLarge"
             style={{ marginTop: 40 }}
           >
-            Get Start
+            Get Started
           </Button>
         </div>
       </div>

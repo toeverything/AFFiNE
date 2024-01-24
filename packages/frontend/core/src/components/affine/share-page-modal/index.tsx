@@ -13,9 +13,14 @@ import { ShareMenu } from './share-menu';
 type SharePageModalProps = {
   workspace: Workspace;
   page: Page;
+  isJournal?: boolean;
 };
 
-export const SharePageButton = ({ workspace, page }: SharePageModalProps) => {
+export const SharePageButton = ({
+  workspace,
+  page,
+  isJournal,
+}: SharePageModalProps) => {
   const [open, setOpen] = useState(false);
 
   const { openPage } = useNavigateHelper();
@@ -35,6 +40,7 @@ export const SharePageButton = ({ workspace, page }: SharePageModalProps) => {
   return (
     <>
       <ShareMenu
+        isJournal={isJournal}
         workspaceMetadata={workspace.meta}
         currentPage={page}
         onEnableAffineCloud={() => setOpen(true)}

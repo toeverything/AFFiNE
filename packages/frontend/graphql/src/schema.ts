@@ -28,6 +28,8 @@ export interface Scalars {
   Float: { input: number; output: number };
   /** A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format. */
   DateTime: { input: string; output: string };
+  /** The `SafeInt` scalar type represents non-fractional signed whole numeric values that are considered safe as defined by the ECMAScript specification. */
+  SafeInt: { input: number; output: number };
   /** The `Upload` scalar type represents a file upload. */
   Upload: { input: File; output: File };
 }
@@ -36,6 +38,7 @@ export interface Scalars {
 export enum FeatureType {
   Copilot = 'Copilot',
   EarlyAccess = 'EarlyAccess',
+  UnlimitedWorkspace = 'UnlimitedWorkspace',
 }
 
 export enum InvoiceStatus {
@@ -58,6 +61,10 @@ export enum Permission {
 export enum PublicPageMode {
   Edgeless = 'Edgeless',
   Page = 'Page',
+}
+
+export enum ServerFeature {
+  Payment = 'Payment',
 }
 
 export enum SubscriptionPlan {
@@ -92,7 +99,7 @@ export interface UpdateWorkspaceInput {
 
 export type CheckBlobSizesQueryVariables = Exact<{
   workspaceId: Scalars['String']['input'];
-  size: Scalars['Float']['input'];
+  size: Scalars['SafeInt']['input'];
 }>;
 
 export type CheckBlobSizesQuery = {
@@ -653,8 +660,10 @@ export type ServerConfigQuery = {
   serverConfig: {
     __typename?: 'ServerConfigType';
     version: string;
-    flavor: string;
     baseUrl: string;
+    name: string;
+    features: Array<ServerFeature>;
+    flavor: string;
   };
 };
 
@@ -746,6 +755,15 @@ export type UploadAvatarMutation = {
   };
 };
 
+export type EnabledFeaturesQueryVariables = Exact<{
+  id: Scalars['String']['input'];
+}>;
+
+export type EnabledFeaturesQuery = {
+  __typename?: 'Query';
+  workspace: { __typename?: 'WorkspaceType'; features: Array<FeatureType> };
+};
+
 export type AvailableFeaturesQueryVariables = Exact<{
   id: Scalars['String']['input'];
 }>;
@@ -824,6 +842,24 @@ export type AcceptInviteByInviteIdMutationVariables = Exact<{
 export type AcceptInviteByInviteIdMutation = {
   __typename?: 'Mutation';
   acceptInviteById: boolean;
+};
+
+export type WorkspaceQuotaQueryVariables = Exact<{
+  id: Scalars['String']['input'];
+}>;
+
+export type WorkspaceQuotaQuery = {
+  __typename?: 'Query';
+  workspace: {
+    __typename?: 'WorkspaceType';
+    quota: {
+      __typename?: 'QuotaQueryType';
+      humanReadableName: string;
+      storageQuota: number;
+      usedSize: number;
+      blobLimit: number;
+    };
+  };
 };
 
 export type Queries =
@@ -948,6 +984,11 @@ export type Queries =
       response: SubscriptionQuery;
     }
   | {
+      name: 'enabledFeaturesQuery';
+      variables: EnabledFeaturesQueryVariables;
+      response: EnabledFeaturesQuery;
+    }
+  | {
       name: 'availableFeaturesQuery';
       variables: AvailableFeaturesQueryVariables;
       response: AvailableFeaturesQuery;
@@ -956,6 +997,11 @@ export type Queries =
       name: 'listWorkspaceFeaturesQuery';
       variables: ListWorkspaceFeaturesQueryVariables;
       response: ListWorkspaceFeaturesQuery;
+    }
+  | {
+      name: 'workspaceQuotaQuery';
+      variables: WorkspaceQuotaQueryVariables;
+      response: WorkspaceQuotaQuery;
     };
 
 export type Mutations =
