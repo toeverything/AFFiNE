@@ -13,6 +13,7 @@ export const openQuickSearchModalAtom = atom(false);
 export const openOnboardingModalAtom = atom(false);
 export const openSignOutModalAtom = atom(false);
 export const openPaymentDisableAtom = atom(false);
+export const openQuotaModalAtom = atom(false);
 
 export type SettingAtom = Pick<
   SettingProps,

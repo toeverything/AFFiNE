@@ -11,13 +11,9 @@ import ReactDOMServer from 'react-dom/server';
 
 class CustomAttachmentService extends AttachmentService {
   override mounted(): void {
-    //TODO: get user type from store
-    const userType = 'pro';
-    if (userType === 'pro') {
-      this.maxFileSize = bytes.parse('100MB');
-    } else {
-      this.maxFileSize = bytes.parse('10MB');
-    }
+    // blocksuite default max file size is 10MB, we override it to 2GB
+    // but the real place to limit blob size is CloudQuotaModal / LocalQuotaModal
+    this.maxFileSize = bytes.parse('2GB');
   }
 }
 

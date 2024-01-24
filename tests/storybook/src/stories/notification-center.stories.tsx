@@ -39,7 +39,7 @@ export const Basic = () => {
               message: `${key} message`,
               timeout: 3000,
               progressingBar: true,
-              undo: async () => {
+              action: async () => {
                 console.log('undo');
               },
               type: 'info',
@@ -218,7 +218,7 @@ export const Basic = () => {
               type: 'info',
               multimedia: image,
               timeout: 3000,
-              undo: async () => {
+              action: async () => {
                 console.log('undo');
               },
               progressingBar: true,

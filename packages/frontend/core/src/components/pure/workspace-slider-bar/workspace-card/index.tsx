@@ -1,11 +1,15 @@
+import { pushNotificationAtom } from '@affine/component/notification-center';
 import { Avatar } from '@affine/component/ui/avatar';
 import { Loading } from '@affine/component/ui/loading';
 import { Tooltip } from '@affine/component/ui/tooltip';
+import { openSettingModalAtom } from '@affine/core/atoms';
+import { useIsWorkspaceOwner } from '@affine/core/hooks/affine/use-is-workspace-owner';
 import { useWorkspaceBlobObjectUrl } from '@affine/core/hooks/use-workspace-blob';
 import { useWorkspaceInfo } from '@affine/core/hooks/use-workspace-info';
 import { waitForCurrentWorkspaceAtom } from '@affine/core/modules/workspace';
 import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
 import { WorkspaceFlavour } from '@affine/env/workspace';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { type SyncEngineStatus, SyncEngineStep } from '@affine/workspace';
 import {
   CloudWorkspaceIcon,
@@ -14,7 +18,7 @@ import {
   NoNetworkIcon,
   UnsyncIcon,
 } from '@blocksuite/icons';
-import { useAtomValue } from 'jotai';
+import { useAtomValue, useSetAtom } from 'jotai';
 import { debounce, mean } from 'lodash-es';
 import {
   forwardRef,
@@ -86,12 +90,23 @@ const OfflineStatus = () => {
 };
 
 const useSyncEngineSyncProgress = () => {
+  const t = useAFFiNEI18N();
   const isOnline = useSystemOnline();
-
+  const pushNotification = useSetAtom(pushNotificationAtom);
   const [syncEngineStatus, setSyncEngineStatus] =
     useState<SyncEngineStatus | null>(null);
+  const [isOverCapacity, setIsOverCapacity] = useState(false);
 
   const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
+  const isOwner = useIsWorkspaceOwner(currentWorkspace.meta);
+
+  const setSettingModalAtom = useSetAtom(openSettingModalAtom);
+  const jumpToPricePlan = useCallback(async () => {
+    setSettingModalAtom({
+      open: true,
+      activeTab: 'plans',
+    });
+  }, [setSettingModalAtom]);
 
   // debounce sync engine status
   useEffect(() => {
@@ -108,10 +123,39 @@ const useSyncEngineSyncProgress = () => {
         }
       )
     );
+    const disposableOverCapacity =
+      currentWorkspace.engine.blob.onStatusChange.on(
+        debounce(status => {
+          const isOver = status?.isStorageOverCapacity;
+          if (!isOver) {
+            setIsOverCapacity(false);
+            return;
+          }
+          setIsOverCapacity(true);
+          if (isOwner) {
+            pushNotification({
+              type: 'warning',
+              title: t['com.affine.payment.storage-limit.title'](),
+              message:
+                t['com.affine.payment.storage-limit.description.owner'](),
+              actionLabel: t['com.affine.payment.storage-limit.view'](),
+              action: jumpToPricePlan,
+            });
+          } else {
+            pushNotification({
+              type: 'warning',
+              title: t['com.affine.payment.storage-limit.title'](),
+              message:
+                t['com.affine.payment.storage-limit.description.member'](),
+            });
+          }
+        })
+      );
     return () => {
       disposable?.dispose();
+      disposableOverCapacity?.dispose();
     };
-  }, [currentWorkspace]);
+  }, [currentWorkspace, isOwner, jumpToPricePlan, pushNotification, t]);
 
   const progress = useMemo(() => {
     if (!syncEngineStatus?.remotes || syncEngineStatus?.remotes.length === 0) {
@@ -151,20 +195,29 @@ const useSyncEngineSyncProgress = () => {
     if (syncEngineStatus.retrying) {
       return 'Sync disconnected due to unexpected issues, reconnecting.';
     }
+    if (isOverCapacity) {
+      return 'Sync failed due to insufficient cloud storage space.';
+    }
     return 'Synced with AFFiNE Cloud';
-  }, [currentWorkspace.flavour, isOnline, progress, syncEngineStatus]);
+  }, [
+    currentWorkspace.flavour,
+    isOnline,
+    isOverCapacity,
+    progress,
+    syncEngineStatus,
+  ]);
 
   const CloudWorkspaceSyncStatus = useCallback(() => {
     if (!syncEngineStatus || syncEngineStatus.step === SyncEngineStep.Syncing) {
       return SyncingWorkspaceStatus({
         progress: progress ? Math.max(progress, 0.2) : undefined,
       });
-    } else if (syncEngineStatus.retrying) {
+    } else if (syncEngineStatus.retrying || isOverCapacity) {
       return UnSyncWorkspaceStatus();
     } else {
       return CloudWorkspaceStatus();
     }
-  }, [progress, syncEngineStatus]);
+  }, [isOverCapacity, progress, syncEngineStatus]);
 
   return {
     message: content,

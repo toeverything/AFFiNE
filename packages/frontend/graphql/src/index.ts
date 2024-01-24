@@ -18,3 +18,5 @@ export function getBaseUrl(): string {
 }
 
 export const fetcher = gqlFetcherFactory(getBaseUrl() + '/graphql');
+
+export { GraphQLError } from 'graphql';

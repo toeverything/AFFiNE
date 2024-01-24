@@ -2,6 +2,7 @@
 // License on the MIT
 // https://github.com/emilkowalski/sonner/blob/5cb703edc108a23fd74979235c2f3c4005edd2a7/src/index.tsx
 
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloseIcon, InformationFillDuotoneIcon } from '@blocksuite/icons';
 import * as Toast from '@radix-ui/react-toast';
 import clsx from 'clsx';
@@ -71,6 +72,7 @@ const typeColorMap = {
 };
 
 function NotificationCard(props: NotificationCardProps): ReactNode {
+  const t = useAFFiNEI18N();
   const removeNotification = useSetAtom(removeNotificationAtom);
   const { notification, notifications, setHeights, heights, index } = props;
 
@@ -134,7 +136,6 @@ function NotificationCard(props: NotificationCardProps): ReactNode {
     notificationNode.style.height = 'auto';
     const newHeight = notificationNode.getBoundingClientRect().height;
     notificationNode.style.height = originalHeight;
-
     setInitialHeight(newHeight);
 
     setHeights(heights => {
@@ -190,9 +191,9 @@ function NotificationCard(props: NotificationCardProps): ReactNode {
     };
   }, [duration, expand, onClickRemove]);
 
-  const onClickUndo = useCallback(() => {
-    if (notification.undo) {
-      notification.undo().catch(err => {
+  const onClickAction = useCallback(() => {
+    if (notification.action) {
+      notification.action().catch(err => {
         console.error(err);
       });
     }
@@ -298,7 +299,7 @@ function NotificationCard(props: NotificationCardProps): ReactNode {
           <div className={styles.notificationTitleContactStyle}>
             {notification.title}
           </div>
-          {notification.undo && (
+          {notification.action && (
             <div
               className={clsx(styles.undoButtonStyle, {
                 [styles.darkColorStyle]:
@@ -306,15 +307,16 @@ function NotificationCard(props: NotificationCardProps): ReactNode {
                   notification.theme !== 'default',
                 [styles.undoButtonWithMediaStyle]: notification.multimedia,
               })}
-              onClick={onClickUndo}
+              onClick={onClickAction}
             >
-              UNDO
+              {notification.actionLabel ??
+                t['com.affine.keyboardShortcuts.undo']()}
             </div>
           )}
           {notification.multimedia ? null : (
             <IconButton
               className={clsx(styles.closeButtonStyle, {
-                [styles.closeButtonWithoutUndoStyle]: !notification.undo,
+                [styles.closeButtonWithoutUndoStyle]: !notification.action,
               })}
               style={{
                 color:

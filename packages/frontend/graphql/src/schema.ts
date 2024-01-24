@@ -854,6 +854,7 @@ export type WorkspaceQuotaQuery = {
     __typename?: 'WorkspaceType';
     quota: {
       __typename?: 'QuotaQueryType';
+      humanReadableName: string;
       storageQuota: number;
       usedSize: number;
       blobLimit: number;

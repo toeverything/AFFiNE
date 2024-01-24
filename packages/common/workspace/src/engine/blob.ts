@@ -1,7 +1,14 @@
 import { DebugLogger } from '@affine/debug';
+import { Slot } from '@blocksuite/global/utils';
 import { difference } from 'lodash-es';
 
+import { BlobStorageOverCapacity } from './error';
+
 const logger = new DebugLogger('affine:blob-engine');
+
+export interface BlobStatus {
+  isStorageOverCapacity: boolean;
+}
 
 /**
  * # BlobEngine
@@ -12,6 +19,19 @@ const logger = new DebugLogger('affine:blob-engine');
  */
 export class BlobEngine {
   private abort: AbortController | null = null;
+  private _status: BlobStatus = { isStorageOverCapacity: false };
+  onStatusChange = new Slot<BlobStatus>();
+  singleBlobSizeLimit: number = 100 * 1024 * 1024;
+  onAbortLargeBlob = new Slot<Blob>();
+
+  private set status(s: BlobStatus) {
+    logger.debug('status change', s);
+    this._status = s;
+    this.onStatusChange.emit(s);
+  }
+  get status() {
+    return this._status;
+  }
 
   constructor(
     private readonly local: BlobStorage,
@@ -53,7 +73,7 @@ export class BlobEngine {
   }
 
   async sync() {
-    if (this.local.readonly) {
+    if (this.local.readonly || this._status.isStorageOverCapacity) {
       return;
     }
     logger.debug('start syncing blob...');
@@ -78,6 +98,11 @@ export class BlobEngine {
               await remote.set(key, data);
             }
           } catch (err) {
+            if (err instanceof BlobStorageOverCapacity) {
+              this.status = {
+                isStorageOverCapacity: true,
+              };
+            }
             logger.error(
               `error when sync ${key} from [${this.local.name}] to [${remote.name}]`,
               err
@@ -122,6 +147,12 @@ export class BlobEngine {
       throw new Error('local peer is readonly');
     }
 
+    if (value.size > this.singleBlobSizeLimit) {
+      this.onAbortLargeBlob.emit(value);
+      logger.error('blob over limit, abort set');
+      return key;
+    }
+
     // await upload to the local peer
     await this.local.set(key, value);
 
@@ -131,7 +162,7 @@ export class BlobEngine {
         .filter(r => !r.readonly)
         .map(peer =>
           peer.set(key, value).catch(err => {
-            logger.error('error when upload to peer', err);
+            logger.error('Error when uploading to peer', err);
           })
         )
     )

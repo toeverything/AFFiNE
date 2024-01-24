@@ -6,10 +6,9 @@ import { openSettingModalAtom, type PageMode } from '@affine/core/atoms';
 import { useIsWorkspaceOwner } from '@affine/core/hooks/affine/use-is-workspace-owner';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { useBlockSuiteWorkspacePageTitle } from '@affine/core/hooks/use-block-suite-workspace-page-title';
-import { useUserSubscription } from '@affine/core/hooks/use-subscription';
+import { useWorkspaceQuota } from '@affine/core/hooks/use-workspace-quota';
 import { waitForCurrentWorkspaceAtom } from '@affine/core/modules/workspace';
 import { timestampToLocalTime } from '@affine/core/utils';
-import { SubscriptionPlan } from '@affine/graphql';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloseIcon, ToggleCollapseIcon } from '@blocksuite/icons';
@@ -154,10 +153,13 @@ const HistoryEditorPreview = ({
 const planPromptClosedAtom = atom(false);
 
 const PlanPrompt = () => {
-  const [subscription] = useUserSubscription();
   const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
+
   const isOwner = useIsWorkspaceOwner(currentWorkspace.meta);
-  const freePlan = subscription?.plan === SubscriptionPlan.Free;
+  const workspaceQuota = useWorkspaceQuota(currentWorkspace.id);
+  const isProWorkspace = useMemo(() => {
+    return workspaceQuota?.humanReadable.name.toLowerCase() !== 'free';
+  }, [workspaceQuota]);
 
   const setSettingModalAtom = useSetAtom(openSettingModalAtom);
   const [planPromptClosed, setPlanPromptClosed] = useAtom(planPromptClosedAtom);
@@ -178,7 +180,7 @@ const PlanPrompt = () => {
   const planTitle = useMemo(() => {
     return (
       <div className={styles.planPromptTitle}>
-        {freePlan
+        {!isProWorkspace
           ? t[
               'com.affine.history.confirm-restore-modal.plan-prompt.limited-title'
             ]()
@@ -191,14 +193,15 @@ const PlanPrompt = () => {
         />
       </div>
     );
-  }, [closeFreePlanPrompt, freePlan, t]);
+  }, [closeFreePlanPrompt, isProWorkspace, t]);
 
   const planDescription = useMemo(() => {
-    if (freePlan) {
+    if (!isProWorkspace) {
       return (
         <>
           <Trans i18nKey="com.affine.history.confirm-restore-modal.free-plan-prompt.description">
-            Free users can view up to the <b>last 7 days</b> of page history.
+            With the workspace creator&apos;s Free account, every member can
+            access up to <b>7 days</b> of version history.
           </Trans>
           {isOwner ? (
             <span
@@ -215,11 +218,12 @@ const PlanPrompt = () => {
     } else {
       return (
         <Trans i18nKey="com.affine.history.confirm-restore-modal.pro-plan-prompt.description">
-          Pro users can view up to the <b>last 30 days</b> of page history.
+          With the workspace creator&apos;s Pro account, every member enjoys the
+          privilege of accessing up to <b>30 days</b> of version history.
         </Trans>
       );
     }
-  }, [freePlan, isOwner, onClickUpgrade, t]);
+  }, [isOwner, isProWorkspace, onClickUpgrade, t]);
 
   return !planPromptClosed ? (
     <div className={styles.planPromptWrapper}>

@@ -25,6 +25,7 @@ export class QuotaManagementService {
       storageQuota: quota.feature.storageQuota,
       historyPeriod: quota.feature.historyPeriod,
       memberLimit: quota.feature.memberLimit,
+      humanReadableName: quota.feature.humanReadable.name,
     };
   }
 
@@ -45,11 +46,12 @@ export class QuotaManagementService {
     const { user: owner } =
       await this.permissions.getWorkspaceOwner(workspaceId);
     if (!owner) throw new NotFoundException('Workspace owner not found');
-    const { storageQuota, blobLimit } = await this.getUserQuota(owner.id);
+    const { humanReadableName, storageQuota, blobLimit } =
+      await this.getUserQuota(owner.id);
     // get all workspaces size of owner used
     const usedSize = await this.getUserUsage(owner.id);
 
-    return { storageQuota, usedSize, blobLimit };
+    return { humanReadableName, storageQuota, usedSize, blobLimit };
   }
 
   async checkBlobQuota(workspaceId: string, size: number) {

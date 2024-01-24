@@ -2,11 +2,12 @@ import { Slot } from '@blocksuite/global/utils';
 
 import { throwIfAborted } from '../utils/throw-if-aborted';
 import type { AwarenessProvider } from './awareness';
-import type { BlobEngine } from './blob';
+import type { BlobEngine, BlobStatus } from './blob';
 import type { SyncEngine, SyncEngineStatus } from './sync';
 
 export interface WorkspaceEngineStatus {
   sync: SyncEngineStatus;
+  blob: BlobStatus;
 }
 
 /**
@@ -34,10 +35,18 @@ export class WorkspaceEngine {
   ) {
     this._status = {
       sync: sync.status,
+      blob: blob.status,
     };
     sync.onStatusChange.on(status => {
       this.status = {
         sync: status,
+        blob: blob.status,
+      };
+    });
+    blob.onStatusChange.on(status => {
+      this.status = {
+        sync: sync.status,
+        blob: status,
       };
     });
   }
@@ -71,4 +80,5 @@ export class WorkspaceEngine {
 
 export * from './awareness';
 export * from './blob';
+export * from './error';
 export * from './sync';

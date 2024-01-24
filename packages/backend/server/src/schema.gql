@@ -190,9 +190,10 @@ type Query {
 }
 
 type QuotaQueryType {
-  blobLimit: Int!
-  storageQuota: Int!
-  usedSize: Int!
+  blobLimit: SafeInt!
+  humanReadableName: String!
+  storageQuota: SafeInt!
+  usedSize: SafeInt!
 }
 
 type RemoveAvatar {
