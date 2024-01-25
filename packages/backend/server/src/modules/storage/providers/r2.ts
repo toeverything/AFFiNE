@@ -10,6 +10,7 @@ export class R2StorageProvider extends S3StorageProvider {
     super(
       {
         ...config,
+        forcePathStyle: true,
         endpoint: `https://${config.accountId}.r2.cloudflarestorage.com`,
       },
       bucket
