@@ -12,7 +12,6 @@ type MaybeDate = Date | string | number;
 export const JOURNAL_DATE_FORMAT = 'YYYY-MM-DD';
 
 function isJournalString(j?: string | false) {
-  if (!runtimeConfig.enableJournal) return false;
   return j ? !!j?.match(/^\d{4}-\d{2}-\d{2}$/) : false;
 }
 

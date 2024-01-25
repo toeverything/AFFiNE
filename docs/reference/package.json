@@ -19,5 +19,5 @@
     ],
     "ext": "ts,md,json"
   },
-  "version": "0.10.3-canary.2"
+  "version": "0.12.0"
 }
