@@ -49,7 +49,7 @@ export class S3StorageProvider implements StorageProvider {
         new PutObjectCommand({
           Bucket: this.bucket,
           Key: key,
-          Body: body,
+          Body: blob,
 
           // metadata
           ContentType: metadata.contentType,
