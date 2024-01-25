@@ -26,6 +26,16 @@ export const MAILER: FactoryProvider<
         },
       });
     }
+    if (config.auth.email.server !== 'smtp.gmail.com') {
+      return createTransport({
+        host: config.auth.email.server,
+        port: config.auth.email.port,
+        auth: {
+          user: config.auth.email.login,
+          pass: config.auth.email.password,
+        },
+      });
+    }
     return createTransport({
       service: 'gmail',
       auth: {
