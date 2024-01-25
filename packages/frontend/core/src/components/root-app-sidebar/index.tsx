@@ -255,11 +255,9 @@ export const RootAppSidebar = ({
             {t['com.affine.workspaceSubPath.all']()}
           </span>
         </RouteMenuLinkItem>
-        {runtimeConfig.enableJournal ? (
-          <AppSidebarJournalButton
-            workspace={currentWorkspace.blockSuiteWorkspace}
-          />
-        ) : null}
+        <AppSidebarJournalButton
+          workspace={currentWorkspace.blockSuiteWorkspace}
+        />
         {runtimeConfig.enableNewSettingModal ? (
           <MenuItem
             data-testid="slider-bar-workspace-setting-button"
