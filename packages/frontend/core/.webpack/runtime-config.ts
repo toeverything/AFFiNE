@@ -42,7 +42,7 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       return {
         ...this.stable,
         enablePageHistory: true,
-        enableJournal: false,
+        enableJournal: true,
         serverUrlPrefix: 'https://insider.affine.pro',
         appBuildType: 'beta' as const,
       };
