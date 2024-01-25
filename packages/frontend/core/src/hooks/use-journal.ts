@@ -109,14 +109,12 @@ export const useJournalHelper = (workspace: BlockSuiteWorkspace) => {
       if (!content) return;
       const page = getJournalByDate(dayjs().format(JOURNAL_DATE_FORMAT));
       if (!page) return;
-      await page.load(() => {
-        page.addBlock(
-          'affine:paragraph',
-          { text: new page.Text(content) },
-          page.getBlockByFlavour('affine:note')[0].id
-        );
-      });
-      return page;
+      const blockId = page.addBlock(
+        'affine:paragraph',
+        { text: new page.Text(content) },
+        page.getBlockByFlavour('affine:note')[0].id
+      );
+      return { page, blockId };
     },
     [getJournalByDate]
   );

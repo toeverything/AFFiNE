@@ -5,7 +5,12 @@ import {
 } from '@affine/core/hooks/use-block-suite-page-meta';
 import type { Collection } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { EdgelessIcon, PageIcon, TodayIcon, ViewLayersIcon } from '@blocksuite/icons';
+import {
+  EdgelessIcon,
+  PageIcon,
+  TodayIcon,
+  ViewLayersIcon,
+} from '@blocksuite/icons';
 import type { PageMeta } from '@blocksuite/store';
 import { Workspace } from '@toeverything/infra';
 import { getCurrentStore } from '@toeverything/infra/atom';
@@ -23,10 +28,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { pageSettingsAtom, recentPageIdsBaseAtom } from '../../../atoms';
 import { currentPageIdAtom } from '../../../atoms/mode';
-import {
-  useJournalHelper,
-  useJournalRouteHelper,
-} from '../../../hooks/use-journal';
+import { useJournalHelper } from '../../../hooks/use-journal';
 import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
 import { CollectionService } from '../../../modules/collection';
 import { WorkspaceSubPath } from '../../../shared';
@@ -166,9 +168,6 @@ export const usePageCommands = () => {
   const query = useAtomValue(cmdkQueryAtom);
   const navigationHelper = useNavigateHelper();
   const journalHelper = useJournalHelper(workspace.blockSuiteWorkspace);
-  const journalRouteHelper = useJournalRouteHelper(
-    workspace.blockSuiteWorkspace
-  );
   const t = useAFFiNEI18N();
 
   const [searchTime, setSearchTime] = useState<number>(0);
@@ -267,8 +266,14 @@ export const usePageCommands = () => {
           value: 'affine::append-journal' + query, // hack to make the page always showing in the search result
           category: 'affine:creation',
           run: async () => {
-            await journalHelper.appendContentToToday(query);
-            journalRouteHelper.openToday();
+            const appendRes = await journalHelper.appendContentToToday(query);
+            if (!appendRes) return;
+            const { page, blockId } = appendRes;
+            navigationHelper.jumpToPageBlock(
+              page.workspace.id,
+              page.id,
+              blockId
+            );
           },
           icon: <TodayIcon />,
         });
@@ -315,7 +320,6 @@ export const usePageCommands = () => {
     workspace,
     pages,
     journalHelper,
-    journalRouteHelper,
     pageHelper,
     pageMetaHelper,
   ]);
