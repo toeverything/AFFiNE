@@ -8422,7 +8422,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@opentelemetry/core@npm:1.19.0, @opentelemetry/core@npm:^1.19.0":
+"@opentelemetry/core@npm:1.19.0":
   version: 1.19.0
   resolution: "@opentelemetry/core@npm:1.19.0"
   dependencies:
@@ -8433,7 +8433,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@opentelemetry/core@npm:1.20.0":
+"@opentelemetry/core@npm:1.20.0, @opentelemetry/core@npm:^1.19.0":
   version: 1.20.0
   resolution: "@opentelemetry/core@npm:1.20.0"
   dependencies:
@@ -8718,7 +8718,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@opentelemetry/resources@npm:1.19.0, @opentelemetry/resources@npm:^1.19.0":
+"@opentelemetry/resources@npm:1.19.0":
   version: 1.19.0
   resolution: "@opentelemetry/resources@npm:1.19.0"
   dependencies:
@@ -8730,7 +8730,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@opentelemetry/resources@npm:1.20.0":
+"@opentelemetry/resources@npm:1.20.0, @opentelemetry/resources@npm:^1.19.0":
   version: 1.20.0
   resolution: "@opentelemetry/resources@npm:1.20.0"
   dependencies:
@@ -8755,7 +8755,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@opentelemetry/sdk-metrics@npm:1.19.0, @opentelemetry/sdk-metrics@npm:^1.19.0":
+"@opentelemetry/sdk-metrics@npm:1.19.0":
   version: 1.19.0
   resolution: "@opentelemetry/sdk-metrics@npm:1.19.0"
   dependencies:
@@ -8768,7 +8768,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@opentelemetry/sdk-metrics@npm:^1.8.0":
+"@opentelemetry/sdk-metrics@npm:^1.19.0, @opentelemetry/sdk-metrics@npm:^1.8.0":
   version: 1.20.0
   resolution: "@opentelemetry/sdk-metrics@npm:1.20.0"
   dependencies:
@@ -12875,14 +12875,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@toeverything/theme@npm:^0.7.20, @toeverything/theme@npm:^0.7.24":
-  version: 0.7.27
-  resolution: "@toeverything/theme@npm:0.7.27"
-  checksum: 9349d30256d33b5528441dbca09387819225449f97549585b92b33e354d7fbb3d0e5e35001c89b8a7e3033d8f51d3aee75ef9edaaf14fb7dd717dd66bfe96009
-  languageName: node
-  linkType: hard
-
-"@toeverything/theme@npm:^0.7.27":
+"@toeverything/theme@npm:^0.7.20, @toeverything/theme@npm:^0.7.24, @toeverything/theme@npm:^0.7.27":
   version: 0.7.29
   resolution: "@toeverything/theme@npm:0.7.29"
   checksum: d1dde76147bc9be8d6cc5d340cb24ceba90668e3b54ee36fc68d4b50aae8a8cb39a47eb193087c07491e5b3c0c5bc6b3042abd5ba490709406b2096163b6e1a5
@@ -24870,7 +24863,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lit@npm:^3.0.2":
+"lit@npm:^3.0.2, lit@npm:^3.1.0":
   version: 3.1.1
   resolution: "lit@npm:3.1.1"
   dependencies:
@@ -24878,17 +24871,6 @@ __metadata:
     lit-element: "npm:^4.0.0"
     lit-html: "npm:^3.1.0"
   checksum: 9194acc073c9dd5635ae173f255c58af54c4400d50573e77ebda2b2d6f689aee091835c1c513e4c02cb7e2dd58fcbd2a20b85128be97be339eb9b05f42dd5680
-  languageName: node
-  linkType: hard
-
-"lit@npm:^3.1.0":
-  version: 3.1.0
-  resolution: "lit@npm:3.1.0"
-  dependencies:
-    "@lit/reactive-element": "npm:^2.0.0"
-    lit-element: "npm:^4.0.0"
-    lit-html: "npm:^3.1.0"
-  checksum: cf46959d909a5dce2ac4bff3d9f8aa942be223c30ce1d4e86e66eda55d53f2886e4ae6092f9ab825c1a26d56d1a57c360981040cb579d53a73869d07ec04bad9
   languageName: node
   linkType: hard
 
@@ -28845,7 +28827,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"playwright@npm:1.40.0, playwright@npm:^1.39.0":
+"playwright@npm:1.40.0":
   version: 1.40.0
   resolution: "playwright@npm:1.40.0"
   dependencies:
@@ -28860,7 +28842,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"playwright@npm:^1.14.0":
+"playwright@npm:^1.14.0, playwright@npm:^1.39.0":
   version: 1.41.0
   resolution: "playwright@npm:1.41.0"
   dependencies:
@@ -31356,16 +31338,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"serialize-javascript@npm:^6.0.0":
-  version: 6.0.1
-  resolution: "serialize-javascript@npm:6.0.1"
-  dependencies:
-    randombytes: "npm:^2.1.0"
-  checksum: f756b1ff34b655b2183c64dd6683d28d4d9b9a80284b264cac9fd421c73890491eafd6c5c2bbe93f1f21bf78b572037c5a18d24b044c317ee1c9dc44d22db94c
-  languageName: node
-  linkType: hard
-
-"serialize-javascript@npm:^6.0.1":
+"serialize-javascript@npm:^6.0.0, serialize-javascript@npm:^6.0.1":
   version: 6.0.2
   resolution: "serialize-javascript@npm:6.0.2"
   dependencies:
