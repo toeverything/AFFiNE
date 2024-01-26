@@ -17,24 +17,18 @@ export const useWorkspaceQuota = (workspaceId: string) => {
   }, []);
 
   const quotaData = data.workspace.quota;
-  const blobLimit = BigInt(quotaData.blobLimit);
-  const storageQuota = BigInt(quotaData.storageQuota);
-  const usedSize = BigInt(quotaData.usedSize);
-
-  const humanReadableBlobLimit = changeToHumanReadable(blobLimit.toString());
-  const humanReadableStorageQuota = changeToHumanReadable(
-    storageQuota.toString()
+  const humanReadableUsedSize = changeToHumanReadable(
+    quotaData.usedSize.toString()
   );
-  const humanReadableUsedSize = changeToHumanReadable(usedSize.toString());
 
   return {
-    blobLimit,
-    storageQuota,
-    usedSize,
+    blobLimit: quotaData.blobLimit,
+    storageQuota: quotaData.storageQuota,
+    usedSize: quotaData.usedSize,
     humanReadable: {
-      name: quotaData.humanReadableName,
-      blobLimit: humanReadableBlobLimit,
-      storageQuota: humanReadableStorageQuota,
+      name: quotaData.humanReadable.name,
+      blobLimit: quotaData.humanReadable.blobLimit,
+      storageQuota: quotaData.humanReadable.storageQuota,
       usedSize: humanReadableUsedSize,
     },
   };
