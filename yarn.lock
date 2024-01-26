@@ -579,7 +579,7 @@ __metadata:
     eslint-plugin-vue: "npm:^9.18.1"
     fake-indexeddb: "npm:5.0.2"
     happy-dom: "npm:^13.0.0"
-    husky: "npm:^8.0.3"
+    husky: "npm:^9.0.0"
     lint-staged: "npm:^15.1.0"
     msw: "npm:^2.0.8"
     nanoid: "npm:^5.0.3"
@@ -22579,12 +22579,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"husky@npm:^8.0.3":
-  version: 8.0.3
-  resolution: "husky@npm:8.0.3"
+"husky@npm:^9.0.0":
+  version: 9.0.1
+  resolution: "husky@npm:9.0.1"
   bin:
-    husky: lib/bin.js
-  checksum: b754cf70fdc97c3b60fec5b80056b9c11436464953b1691bf2b5dcf0081fb6685d2c5f47abb8b2b1c49f504aabea5321fdd6496f8b755d9f6e7525a493406abb
+    husky: bin.js
+  checksum: 8f28488e59d3c6944fedb9ba9adb0d4f79f000d44ede2e5ed3a79031995afc261965a47013017480012ad7fa6f54a3023c00ad992c143434bedf4d6134957141
   languageName: node
   linkType: hard
 
