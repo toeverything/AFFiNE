@@ -8,6 +8,8 @@ import {
   useCallback,
   useEffect,
   useImperativeHandle,
+  useLayoutEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react';
@@ -42,49 +44,67 @@ export const WeekDatePicker = memo(function WeekDatePicker({
   const weekRef = useRef<HTMLDivElement | null>(null);
 
   const [cursor, setCursor] = useState(dayjs(value));
-  const [range, setRange] = useState([0, 7]);
   const [dense, setDense] = useState(false);
-  const [allDays, setAllDays] = useState<dayjs.Dayjs[]>([]);
   const [viewPortSize, setViewPortSize] = useState(7);
 
   useImperativeHandle(handleRef, () => ({
     setCursor,
   }));
 
-  const displayDays = allDays.slice(...range);
-
-  const updateRange = useCallback(
-    (newRange: [number, number]) => {
-      if (range && newRange[0] === range[0] && newRange[1] === range[1]) return;
-      setRange(newRange);
-    },
-    [range]
+  const range = useMemo(() => {
+    if (viewPortSize === 7) return [0, 7];
+    const cursorIndex = cursor.day();
+    let start = Math.max(0, cursorIndex - Math.floor(viewPortSize / 2));
+    const end = Math.min(7, start + viewPortSize);
+    if (end === 7) start = 7 - viewPortSize;
+    return [start, end];
+  }, [cursor, viewPortSize]);
+  const allDays = useMemo(
+    () =>
+      Array.from({ length: 7 }).map((_, index) =>
+        cursor.startOf('week').add(index, 'day').startOf('day')
+      ),
+    [cursor]
   );
+  const displayDays = useMemo(() => allDays.slice(...range), [allDays, range]);
 
   const onNext = useCallback(() => {
-    if (viewPortSize === 7) {
-      setCursor(cursor.add(1, 'week'));
-    } else if (range[1] === 7) {
-      setCursor(cursor.add(1, 'week'));
-      updateRange([0, viewPortSize]);
-    } else {
-      const end = Math.min(range[1] + viewPortSize, 7);
-      const start = Math.min(range[0] + viewPortSize, end - viewPortSize);
-      updateRange([start, end]);
+    const viewPortSize = displayDays.length;
+    if (viewPortSize === 7) setCursor(c => c.add(1, 'week'));
+    else {
+      setCursor(c => {
+        // last day of week is visible, move to next weeks
+        if (
+          displayDays[displayDays.length - 1].isSame(c.endOf('week'), 'day')
+        ) {
+          return c
+            .add(1, 'week')
+            .startOf('week')
+            .add(Math.floor(viewPortSize / 2), 'day');
+        }
+        let nextDay = c.add(viewPortSize, 'day');
+        if (!nextDay.isSame(c, 'week')) nextDay = c.endOf('week');
+        return nextDay;
+      });
     }
-  }, [cursor, range, updateRange, viewPortSize]);
+  }, [displayDays]);
   const onPrev = useCallback(() => {
-    if (viewPortSize === 7) {
-      setCursor(cursor.add(-1, 'week'));
-    } else if (range[0] === 0) {
-      setCursor(cursor.add(-1, 'week'));
-      updateRange([7 - viewPortSize, 7]);
-    } else {
-      const start = Math.max(range[0] - viewPortSize, 0);
-      const end = Math.max(range[1] - viewPortSize, start + viewPortSize);
-      updateRange([start, end]);
-    }
-  }, [cursor, range, updateRange, viewPortSize]);
+    const viewPortSize = displayDays.length;
+    if (viewPortSize === 7) setCursor(c => c.add(-1, 'week'));
+    else
+      setCursor(c => {
+        // first day of week is visible, move to prev weeks
+        if (displayDays[0].isSame(c.startOf('week'), 'day')) {
+          return c
+            .subtract(1, 'week')
+            .endOf('week')
+            .subtract(Math.floor(viewPortSize / 2) - 1, 'day');
+        }
+        let prevDay = c.add(-viewPortSize, 'day');
+        if (!prevDay.isSame(c, 'week')) prevDay = c.startOf('week');
+        return prevDay;
+      });
+  }, [displayDays]);
   const onDayClick = useCallback(
     (day: dayjs.Dayjs) => {
       onChange?.(day.format(format));
@@ -115,77 +135,36 @@ export const WeekDatePicker = memo(function WeekDatePicker({
     };
   }, []);
 
-  // update allDays when cursor changes
-  useEffect(() => {
-    const firstDay = dayjs(cursor).startOf('week');
-    if (allDays[0] && firstDay.isSame(allDays[0], 'day')) return;
-
-    setAllDays(
-      Array.from({ length: 7 }).map((_, index) =>
-        firstDay.add(index, 'day').startOf('day')
-      )
-    );
-  }, [allDays, cursor]);
-
-  // when viewPortSize changes, reset range
-  useEffect(() => {
-    if (viewPortSize >= 7) updateRange([0, 7]);
-    else {
-      const end = Math.min(7, range[0] + viewPortSize);
-      const start = Math.max(0, end - viewPortSize);
-      updateRange([start, end]);
-    }
-  }, [range, updateRange, viewPortSize]);
-
   // when value changes, reset cursor
   useEffect(() => {
     value && setCursor(dayjs(value));
   }, [value]);
 
-  // TODO: keyboard navigation
-  useEffect(() => {
+  const focusCursorCell = useCallback(() => {
+    if (!weekRef.current) return;
+    const cursorCell = weekRef.current.querySelector(
+      'button[tabIndex="0"]'
+    ) as HTMLButtonElement;
+    cursorCell?.focus();
+  }, []);
+
+  useLayoutEffect(() => {
     if (!weekRef.current) return;
     const el = weekRef.current;
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
       e.preventDefault();
       e.stopPropagation();
-
-      const focused = document.activeElement as HTMLElement;
-      if (!focused) return el.querySelector('button')?.focus();
-      const day = dayjs(focused.dataset.value);
-      if (
-        (day.day() === 0 && e.key === 'ArrowLeft') ||
-        (e.key === 'ArrowLeft' && !focused.previousElementSibling)
-      ) {
-        onPrev();
-        requestAnimationFrame(() => {
-          el.querySelector('button')?.focus();
-        });
-      }
-
-      if (
-        (day.day() === 6 && e.key === 'ArrowRight') ||
-        (e.key === 'ArrowRight' && !focused.nextElementSibling)
-      ) {
-        onNext();
-        requestAnimationFrame(() => {
-          (el.querySelector('button:last-child') as HTMLElement)?.focus();
-        });
-      }
-
-      if (e.key === 'ArrowLeft' && focused.previousElementSibling) {
-        (focused.previousElementSibling as HTMLElement).focus();
-      }
-      if (e.key === 'ArrowRight' && focused.nextElementSibling) {
-        (focused.nextElementSibling as HTMLElement).focus();
-      }
+      setCursor(cursor => cursor.add(e.key === 'ArrowLeft' ? -1 : 1, 'day'));
+      setTimeout(focusCursorCell);
     };
+
     el.addEventListener('keydown', onKeyDown);
+
     return () => {
       el.removeEventListener('keydown', onKeyDown);
     };
-  }, [onNext, onPrev]);
+  }, [focusCursorCell, onNext, onPrev]);
 
   return (
     <div className={clsx(styles.weekDatePicker, className)} {...attrs}>
@@ -230,7 +209,7 @@ const Cell = ({ day, dense, value, cursor, onClick }: CellProps) => {
 
   return (
     <button
-      tabIndex={0}
+      tabIndex={cursor.isSame(day, 'day') ? 0 : -1}
       aria-label={day.format(format)}
       data-active={isActive}
       data-curr-month={isCurrentMonth}
