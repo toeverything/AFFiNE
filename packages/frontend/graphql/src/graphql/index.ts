@@ -905,10 +905,19 @@ export const workspaceQuotaQuery = {
 query workspaceQuota($id: String!) {
   workspace(id: $id) {
     quota {
-      humanReadableName
-      storageQuota
-      usedSize
+      name
       blobLimit
+      storageQuota
+      historyPeriod
+      memberLimit
+      humanReadable {
+        name
+        blobLimit
+        storageQuota
+        historyPeriod
+        memberLimit
+      }
+      usedSize
     }
   }
 }`,

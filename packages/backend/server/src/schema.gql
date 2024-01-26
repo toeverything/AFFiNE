@@ -24,6 +24,14 @@ enum FeatureType {
   UnlimitedWorkspace
 }
 
+type HumanReadableQuotaType {
+  blobLimit: String!
+  historyPeriod: String!
+  memberLimit: String!
+  name: String!
+  storageQuota: String!
+}
+
 type InvitationType {
   """Invitee information"""
   invitee: UserType!
@@ -191,7 +199,10 @@ type Query {
 
 type QuotaQueryType {
   blobLimit: SafeInt!
-  humanReadableName: String!
+  historyPeriod: Int!
+  humanReadable: HumanReadableQuotaType!
+  memberLimit: Int!
+  name: String!
   storageQuota: SafeInt!
   usedSize: SafeInt!
 }

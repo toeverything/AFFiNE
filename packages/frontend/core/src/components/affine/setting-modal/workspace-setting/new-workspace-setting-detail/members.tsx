@@ -22,7 +22,7 @@ import { useInviteMember } from '@affine/core/hooks/affine/use-invite-member';
 import { useMemberCount } from '@affine/core/hooks/affine/use-member-count';
 import { type Member, useMembers } from '@affine/core/hooks/affine/use-members';
 import { useRevokeMemberPermission } from '@affine/core/hooks/affine/use-revoke-member-permission';
-import { useUserQuota } from '@affine/core/hooks/use-quota';
+import { useWorkspaceQuota } from '@affine/core/hooks/use-quota';
 import { useUserSubscription } from '@affine/core/hooks/use-subscription';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { Permission, SubscriptionPlan } from '@affine/graphql';
@@ -77,7 +77,7 @@ export const CloudWorkspaceMembersPanel = ({
     []
   );
 
-  const quota = useUserQuota();
+  const quota = useWorkspaceQuota(workspaceId);
   const [subscription] = useUserSubscription();
   const plan = subscription?.plan ?? SubscriptionPlan.Free;
   const isLimited = checkMemberCountLimit(memberCount, quota?.memberLimit);

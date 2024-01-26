@@ -854,10 +854,20 @@ export type WorkspaceQuotaQuery = {
     __typename?: 'WorkspaceType';
     quota: {
       __typename?: 'QuotaQueryType';
-      humanReadableName: string;
-      storageQuota: number;
-      usedSize: number;
+      name: string;
       blobLimit: number;
+      storageQuota: number;
+      historyPeriod: number;
+      memberLimit: number;
+      usedSize: number;
+      humanReadable: {
+        __typename?: 'HumanReadableQuotaType';
+        name: string;
+        blobLimit: string;
+        storageQuota: string;
+        historyPeriod: string;
+        memberLimit: string;
+      };
     };
   };
 };
