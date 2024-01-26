@@ -13,7 +13,8 @@ import clsx from 'clsx';
 import { type ReactNode, useCallback, useEffect, useState } from 'react';
 
 import { FilterList } from '../../filter';
-import { PageList, PageListScrollContainer } from '../../page-list';
+import { List, ListScrollContainer } from '../../list';
+import type { ListItem } from '../../types';
 import { filterPageByRules } from '../../use-collection-manager';
 import { AffineShapeIcon } from '../affine-shape';
 import type { AllPageListConfig } from './edit-collection';
@@ -77,6 +78,13 @@ export const RulesMode = ({
   }, [open, updateCollection, collection]);
   const [expandInclude, setExpandInclude] = useState(
     collection.allowList.length > 0
+  );
+  const operationsRenderer = useCallback(
+    (item: ListItem) => {
+      const page = item as PageMeta;
+      return allPageListConfig.favoriteRender(page);
+    },
+    [allPageListConfig]
   );
   return (
     <>
@@ -241,22 +249,22 @@ export const RulesMode = ({
             ) : null}
           </div>
         </div>
-        <PageListScrollContainer
+        <ListScrollContainer
           className={styles.rulesContainerRight}
           style={{
             display: showPreview ? 'flex' : 'none',
           }}
         >
           {rulesPages.length > 0 ? (
-            <PageList
+            <List
               hideHeader
               className={styles.resultPages}
-              pages={rulesPages}
+              items={rulesPages}
               groupBy={false}
               blockSuiteWorkspace={allPageListConfig.workspace}
               isPreferredEdgeless={allPageListConfig.isEdgeless}
-              pageOperationsRenderer={allPageListConfig.favoriteRender}
-            ></PageList>
+              operationsRenderer={operationsRenderer}
+            ></List>
           ) : (
             <RulesEmpty
               noRules={collection.filterList.length === 0}
@@ -268,18 +276,18 @@ export const RulesMode = ({
               <div className={styles.includeListTitle}>
                 {t['com.affine.editCollection.rules.include.title']()}
               </div>
-              <PageList
+              <List
                 hideHeader
                 className={styles.resultPages}
-                pages={allowListPages}
+                items={allowListPages}
                 groupBy={false}
                 blockSuiteWorkspace={allPageListConfig.workspace}
                 isPreferredEdgeless={allPageListConfig.isEdgeless}
-                pageOperationsRenderer={allPageListConfig.favoriteRender}
-              ></PageList>
+                operationsRenderer={operationsRenderer}
+              ></List>
             </div>
           ) : null}
-        </PageListScrollContainer>
+        </ListScrollContainer>
       </div>
       <div className={styles.rulesBottom}>
         <div className={styles.bottomLeft}>

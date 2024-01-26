@@ -18,7 +18,7 @@ const removeOnboardingPages = async (page: Page) => {
   await page.getByTestId('page-list-header-selection-checkbox').click();
   // click again to select all
   await page.getByTestId('page-list-header-selection-checkbox').click();
-  await page.getByTestId('page-list-toolbar-delete').click();
+  await page.getByTestId('list-toolbar-delete').click();
   // confirm delete
   await page.getByTestId('confirm-delete-page').click();
 };

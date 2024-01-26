@@ -2,12 +2,14 @@ import { Button, Menu } from '@affine/component';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { FilterIcon } from '@blocksuite/icons';
+import type { PageMeta } from '@blocksuite/store';
 import clsx from 'clsx';
 import { useCallback, useState } from 'react';
 
 import { FilterList } from '../../filter';
 import { VariableSelect } from '../../filter/vars';
-import { VirtualizedPageList } from '../../virtualized-page-list';
+import type { ListItem } from '../../types';
+import { VirtualizedList } from '../../virtualized-list';
 import { AffineShapeIcon } from '../affine-shape';
 import type { AllPageListConfig } from './edit-collection';
 import * as styles from './edit-collection.css';
@@ -43,6 +45,15 @@ export const SelectPage = ({
   } = useFilter(allPageListConfig.allPages);
   const { searchText, updateSearchText, searchedList } =
     useSearch(filteredList);
+
+  const operationsRenderer = useCallback(
+    (item: ListItem) => {
+      const page = item as PageMeta;
+      return allPageListConfig.favoriteRender(page);
+    },
+    [allPageListConfig]
+  );
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <input
@@ -94,16 +105,16 @@ export const SelectPage = ({
           </div>
         ) : null}
         {searchedList.length ? (
-          <VirtualizedPageList
+          <VirtualizedList
             className={styles.pageList}
-            pages={searchedList}
+            items={searchedList}
             blockSuiteWorkspace={allPageListConfig.workspace}
             selectable
             groupBy={false}
-            onSelectedPageIdsChange={onChange}
-            selectedPageIds={value}
+            onSelectedIdsChange={onChange}
+            selectedIds={value}
             isPreferredEdgeless={allPageListConfig.isEdgeless}
-            pageOperationsRenderer={allPageListConfig.favoriteRender}
+            operationsRenderer={operationsRenderer}
           />
         ) : (
           <EmptyList search={searchText} />

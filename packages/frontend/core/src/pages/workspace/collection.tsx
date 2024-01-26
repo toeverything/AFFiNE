@@ -10,6 +10,7 @@ import {
   useEditCollection,
 } from '@affine/core/components/page-list';
 import { WindowsAppControls } from '@affine/core/components/pure/header/windows-app-controls';
+import { useAllPageListConfig } from '@affine/core/hooks/affine/use-all-page-list-config';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { waitForCurrentWorkspaceAtom } from '@affine/core/modules/workspace';
 import type { Collection } from '@affine/env/filter';
@@ -31,7 +32,6 @@ import {
   collectionsCRUDAtom,
   pageCollectionBaseAtom,
 } from '../../atoms/collections';
-import { useAllPageListConfig } from '../../hooks/affine/use-all-page-list-config';
 import { useNavigateHelper } from '../../hooks/use-navigate-helper';
 import { WorkspaceSubPath } from '../../shared';
 import { getWorkspaceSetting } from '../../utils/workspace-setting';
@@ -89,17 +89,24 @@ export const Component = function CollectionPage() {
     return null;
   }
   return isEmpty(collection) ? (
-    <Placeholder collection={collection} />
+    <Placeholder collection={collection} workspaceId={workspace.id} />
   ) : (
-    <AllPage />
+    <AllPage activeFilter="collections" />
   );
 };
 
 const isWindowsDesktop = environment.isDesktop && environment.isWindows;
 
-const Placeholder = ({ collection }: { collection: Collection }) => {
+const Placeholder = ({
+  collection,
+  workspaceId,
+}: {
+  collection: Collection;
+  workspaceId: string;
+}) => {
   const { updateCollection } = useCollectionManager(collectionsCRUDAtom);
   const { node, open } = useEditCollection(useAllPageListConfig());
+  const { jumpToCollections } = useNavigateHelper();
   const openPageEdit = useAsyncCallback(async () => {
     const ret = await open({ ...collection }, 'page');
     updateCollection(ret);
@@ -118,6 +125,11 @@ const Placeholder = ({ collection }: { collection: Collection }) => {
   }, []);
   const t = useAFFiNEI18N();
   const leftSidebarOpen = useAtomValue(appSidebarOpenAtom);
+
+  const handleJumpToCollections = useCallback(() => {
+    jumpToCollections(workspaceId);
+  }, [jumpToCollections, workspaceId]);
+
   return (
     <div
       style={{
@@ -143,9 +155,11 @@ const Placeholder = ({ collection }: { collection: Collection }) => {
             display: 'flex',
             alignItems: 'center',
             gap: 4,
+            cursor: 'pointer',
             color: 'var(--affine-text-secondary-color)',
             ['WebkitAppRegion' as string]: 'no-drag',
           }}
+          onClick={handleJumpToCollections}
         >
           <ViewLayersIcon
             style={{ color: 'var(--affine-icon-color)' }}

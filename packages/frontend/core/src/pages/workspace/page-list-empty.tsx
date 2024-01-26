@@ -66,3 +66,22 @@ export const EmptyPageList = ({
     </div>
   );
 };
+
+export const EmptyCollectionList = ({ heading }: { heading: ReactNode }) => {
+  const t = useAFFiNEI18N();
+  return (
+    <div className={styles.pageListEmptyStyle}>
+      {heading && <div>{heading}</div>}
+      <Empty title={t['com.affine.emptyDesc.collection']()} />
+    </div>
+  );
+};
+export const EmptyTagList = ({ heading }: { heading: ReactNode }) => {
+  const t = useAFFiNEI18N();
+  return (
+    <div className={styles.pageListEmptyStyle}>
+      {heading && <div>{heading}</div>}
+      <Empty title={t['com.affine.emptyDesc.tag']()} />
+    </div>
+  );
+};

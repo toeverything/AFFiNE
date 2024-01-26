@@ -1,84 +1,31 @@
 import { Checkbox, type CheckboxProps } from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { MultiSelectIcon, SortDownIcon, SortUpIcon } from '@blocksuite/icons';
-import type { PageMeta } from '@blocksuite/store';
+import { MultiSelectIcon } from '@blocksuite/icons';
 import clsx from 'clsx';
 import { selectAtom } from 'jotai/utils';
-import {
-  type MouseEventHandler,
-  type ReactNode,
-  useCallback,
-  useMemo,
-} from 'react';
+import { type MouseEventHandler, useCallback } from 'react';
 
-import * as styles from './page-list.css';
+import { ListHeaderCell } from './components/list-header-cell';
+import * as styles from './page-header.css';
 import {
-  pageListHandlersAtom,
-  pageListPropsAtom,
-  pagesAtom,
+  itemsAtom,
+  listHandlersAtom,
+  listPropsAtom,
   selectionStateAtom,
-  showOperationsAtom,
   sorterAtom,
   useAtom,
   useAtomValue,
 } from './scoped-atoms';
-import { ColWrapper, type ColWrapperProps, stopPropagation } from './utils';
-
-export const PageListHeaderCell = (props: HeaderCellProps) => {
-  const [sorter, setSorter] = useAtom(sorterAtom);
-  const onClick: MouseEventHandler = useCallback(() => {
-    if (props.sortable && props.sortKey) {
-      setSorter({
-        newSortKey: props.sortKey,
-      });
-    }
-  }, [props.sortKey, props.sortable, setSorter]);
-
-  const sorting = sorter.key === props.sortKey;
-
-  return (
-    <ColWrapper
-      flex={props.flex}
-      alignment={props.alignment}
-      onClick={onClick}
-      className={styles.headerCell}
-      data-sortable={props.sortable ? true : undefined}
-      data-sorting={sorting ? true : undefined}
-      style={props.style}
-      role="columnheader"
-      hideInSmallContainer={props.hideInSmallContainer}
-    >
-      {props.children}
-      {sorting ? (
-        <div className={styles.headerCellSortIcon}>
-          {sorter.order === 'asc' ? <SortUpIcon /> : <SortDownIcon />}
-        </div>
-      ) : null}
-    </ColWrapper>
-  );
-};
-
-type HeaderColDef = {
-  key: string;
-  content: ReactNode;
-  flex: ColWrapperProps['flex'];
-  alignment?: ColWrapperProps['alignment'];
-  sortable?: boolean;
-  hideInSmallContainer?: boolean;
-};
-
-type HeaderCellProps = ColWrapperProps & {
-  sortKey: keyof PageMeta;
-  sortable?: boolean;
-};
+import type { HeaderColDef, ListItem } from './types';
+import { stopPropagation } from './utils';
 
 // the checkbox on the header has three states:
 // when list selectable = true, the checkbox will be presented
 // when internal selection state is not enabled, it is a clickable <ListIcon /> that enables the selection state
 // when internal selection state is enabled, it is a checkbox that reflects the selection state
-const PageListHeaderCheckbox = () => {
+const ListHeaderCheckbox = () => {
   const [selectionState, setSelectionState] = useAtom(selectionStateAtom);
-  const pages = useAtomValue(pagesAtom);
+  const items = useAtomValue(itemsAtom);
   const onActivateSelection: MouseEventHandler = useCallback(
     e => {
       stopPropagation(e);
@@ -86,13 +33,13 @@ const PageListHeaderCheckbox = () => {
     },
     [setSelectionState]
   );
-  const handlers = useAtomValue(pageListHandlersAtom);
+  const handlers = useAtomValue(listHandlersAtom);
   const onChange: NonNullable<CheckboxProps['onChange']> = useCallback(
     (e, checked) => {
       stopPropagation(e);
-      handlers.onSelectedPageIdsChange?.(checked ? pages.map(p => p.id) : []);
+      handlers.onSelectedIdsChange?.(checked ? items.map(i => i.id) : []);
     },
-    [handlers, pages]
+    [handlers, items]
   );
 
   if (!selectionState.selectable) {
@@ -109,11 +56,11 @@ const PageListHeaderCheckbox = () => {
         <MultiSelectIcon />
       ) : (
         <Checkbox
-          checked={selectionState.selectedPageIds?.length === pages.length}
+          checked={selectionState.selectedIds?.length === items.length}
           indeterminate={
-            selectionState.selectedPageIds &&
-            selectionState.selectedPageIds.length > 0 &&
-            selectionState.selectedPageIds.length < pages.length
+            selectionState.selectedIds &&
+            selectionState.selectedIds.length > 0 &&
+            selectionState.selectedIds.length < items.length
           }
           onChange={onChange}
         />
@@ -122,64 +69,37 @@ const PageListHeaderCheckbox = () => {
   );
 };
 
-const PageListHeaderTitleCell = () => {
+export const ListHeaderTitleCell = () => {
   const t = useAFFiNEI18N();
   return (
     <div className={styles.headerTitleCell}>
-      <PageListHeaderCheckbox />
+      <ListHeaderCheckbox />
       {t['Title']()}
     </div>
   );
 };
 
-const hideHeaderAtom = selectAtom(pageListPropsAtom, props => props.hideHeader);
+const hideHeaderAtom = selectAtom(listPropsAtom, props => props.hideHeader);
 
 // the table header for page list
-export const PageListTableHeader = () => {
-  const t = useAFFiNEI18N();
-  const showOperations = useAtomValue(showOperationsAtom);
+export const ListTableHeader = ({
+  headerCols,
+}: {
+  headerCols: HeaderColDef[];
+}) => {
+  const [sorter, setSorter] = useAtom(sorterAtom);
   const hideHeader = useAtomValue(hideHeaderAtom);
   const selectionState = useAtomValue(selectionStateAtom);
-  const headerCols = useMemo(() => {
-    const cols: (HeaderColDef | boolean)[] = [
-      {
-        key: 'title',
-        content: <PageListHeaderTitleCell />,
-        flex: 6,
-        alignment: 'start',
-        sortable: true,
-      },
-      {
-        key: 'tags',
-        content: t['Tags'](),
-        flex: 3,
-        alignment: 'end',
-      },
-      {
-        key: 'createDate',
-        content: t['Created'](),
-        flex: 1,
-        sortable: true,
-        alignment: 'end',
-        hideInSmallContainer: true,
-      },
-      {
-        key: 'updatedDate',
-        content: t['Updated'](),
-        flex: 1,
-        sortable: true,
-        alignment: 'end',
-        hideInSmallContainer: true,
-      },
-      showOperations && {
-        key: 'actions',
-        content: '',
-        flex: 1,
-        alignment: 'end',
-      },
-    ];
-    return cols.filter((def): def is HeaderColDef => !!def);
-  }, [t, showOperations]);
+  const onSort = useCallback(
+    (sortable?: boolean, sortKey?: keyof ListItem) => {
+      if (sortable && sortKey) {
+        setSorter({
+          newSortKey: sortKey,
+        });
+      }
+    },
+    [setSorter]
+  );
 
   if (hideHeader) {
     return false;
@@ -193,17 +113,20 @@ export const PageListTableHeader = () => {
     >
       {headerCols.map(col => {
         return (
-          <PageListHeaderCell
+          <ListHeaderCell
             flex={col.flex}
             alignment={col.alignment}
             key={col.key}
-            sortKey={col.key as keyof PageMeta}
+            sortKey={col.key as keyof ListItem}
             sortable={col.sortable}
+            sorting={sorter.key === col.key}
+            order={sorter.order}
+            onSort={onSort}
             style={{ overflow: 'visible' }}
             hideInSmallContainer={col.hideInSmallContainer}
           >
             {col.content}
-          </PageListHeaderCell>
+          </ListHeaderCell>
         );
       })}
     </div>
