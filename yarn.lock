@@ -25,10 +25,6 @@ __metadata:
   dependencies:
     "@affine-test/fixtures": "workspace:*"
     "@affine-test/kit": "workspace:*"
-    "@blocksuite/block-std": "npm:0.12.0-nightly-202401240410-02f373e"
-    "@blocksuite/blocks": "npm:0.12.0-nightly-202401240410-02f373e"
-    "@blocksuite/global": "npm:0.12.0-nightly-202401240410-02f373e"
-    "@blocksuite/store": "npm:0.12.0-nightly-202401240410-02f373e"
     "@playwright/test": "npm:^1.41.0"
     express: "npm:^4.18.2"
     http-proxy-middleware: "npm:^3.0.0-beta.1"
@@ -42,10 +38,6 @@ __metadata:
   dependencies:
     "@affine-test/fixtures": "workspace:*"
     "@affine-test/kit": "workspace:*"
-    "@blocksuite/block-std": "npm:0.12.0-nightly-202401240410-02f373e"
-    "@blocksuite/blocks": "npm:0.12.0-nightly-202401240410-02f373e"
-    "@blocksuite/global": "npm:0.12.0-nightly-202401240410-02f373e"
-    "@blocksuite/store": "npm:0.12.0-nightly-202401240410-02f373e"
     "@playwright/test": "npm:^1.41.0"
     express: "npm:^4.18.2"
     http-proxy-middleware: "npm:^3.0.0-beta.1"
@@ -59,10 +51,6 @@ __metadata:
   dependencies:
     "@affine-test/fixtures": "workspace:*"
     "@affine-test/kit": "workspace:*"
-    "@blocksuite/block-std": "npm:0.12.0-nightly-202401240410-02f373e"
-    "@blocksuite/blocks": "npm:0.12.0-nightly-202401240410-02f373e"
-    "@blocksuite/global": "npm:0.12.0-nightly-202401240410-02f373e"
-    "@blocksuite/store": "npm:0.12.0-nightly-202401240410-02f373e"
     "@playwright/test": "npm:^1.41.0"
     express: "npm:^4.18.2"
     http-proxy-middleware: "npm:^3.0.0-beta.1"
@@ -76,10 +64,6 @@ __metadata:
   dependencies:
     "@affine-test/fixtures": "workspace:*"
     "@affine-test/kit": "workspace:*"
-    "@blocksuite/block-std": "npm:0.12.0-nightly-202401240410-02f373e"
-    "@blocksuite/blocks": "npm:0.12.0-nightly-202401240410-02f373e"
-    "@blocksuite/global": "npm:0.12.0-nightly-202401240410-02f373e"
-    "@blocksuite/store": "npm:0.12.0-nightly-202401240410-02f373e"
     "@playwright/test": "npm:^1.41.0"
     express: "npm:^4.18.2"
     http-proxy-middleware: "npm:^3.0.0-beta.1"
@@ -139,10 +123,6 @@ __metadata:
   dependencies:
     "@affine-test/fixtures": "workspace:*"
     "@affine-test/kit": "workspace:*"
-    "@blocksuite/block-std": "npm:0.12.0-nightly-202401240410-02f373e"
-    "@blocksuite/blocks": "npm:0.12.0-nightly-202401240410-02f373e"
-    "@blocksuite/global": "npm:0.12.0-nightly-202401240410-02f373e"
-    "@blocksuite/store": "npm:0.12.0-nightly-202401240410-02f373e"
     "@playwright/test": "npm:^1.41.0"
   languageName: unknown
   linkType: soft
@@ -742,6 +722,7 @@ __metadata:
   dependencies:
     "@affine/component": "workspace:*"
     "@affine/i18n": "workspace:*"
+    "@affine/workspace-impl": "workspace:*"
     "@blocksuite/block-std": "npm:0.12.0-nightly-202401240410-02f373e"
     "@blocksuite/blocks": "npm:0.12.0-nightly-202401240410-02f373e"
     "@blocksuite/global": "npm:0.12.0-nightly-202401240410-02f373e"
