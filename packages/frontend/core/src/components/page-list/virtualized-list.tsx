@@ -1,5 +1,4 @@
 import { Scrollable } from '@affine/component';
-import type { PageMeta } from '@blocksuite/store';
 import clsx from 'clsx';
 import { selectAtom } from 'jotai/utils';
 import {
@@ -12,29 +11,29 @@ import {
 } from 'react';
 import { Virtuoso } from 'react-virtuoso';
 
-import { PageGroupHeader, PageMetaListItemRenderer } from './page-group';
-import { PageListTableHeader } from './page-header';
-import { PageListInnerWrapper } from './page-list';
-import * as styles from './page-list.css';
+import { ListInnerWrapper } from './list';
+import * as styles from './list.css';
+import { ItemGroupHeader } from './page-group';
 import {
-  pageGroupCollapseStateAtom,
-  pageGroupsAtom,
-  pageListPropsAtom,
-  PageListProvider,
+  groupCollapseStateAtom,
+  groupsAtom,
+  listPropsAtom,
+  ListProvider,
   useAtomValue,
 } from './scoped-atoms';
 import type {
-  PageGroupProps,
-  PageListHandle,
-  VirtualizedPageListProps,
+  ItemGroupProps,
+  ItemListHandle,
+  ListItem,
+  VirtualizedListProps,
 } from './types';
 
 // we have three item types for rendering rows in Virtuoso
 type VirtuosoItemType =
   | 'sticky-header'
-  | 'page-group-header'
-  | 'page-item'
-  | 'page-item-spacer';
+  | 'group-header'
+  | 'item'
+  | 'item-spacer';
 
 interface BaseVirtuosoItem {
   type: VirtuosoItemType;
@@ -44,62 +43,62 @@ interface VirtuosoItemStickyHeader extends BaseVirtuosoItem {
   type: 'sticky-header';
 }
 
-interface VirtuosoItemPageItem extends BaseVirtuosoItem {
-  type: 'page-item';
-  data: PageMeta;
+interface VirtuosoItemItem<T> extends BaseVirtuosoItem {
+  type: 'item';
+  data: T;
 }
 
-interface VirtuosoItemPageGroupHeader extends BaseVirtuosoItem {
-  type: 'page-group-header';
-  data: PageGroupProps;
+interface VirtuosoItemGroupHeader<T> extends BaseVirtuosoItem {
+  type: 'group-header';
+  data: ItemGroupProps<T>;
 }
 
 interface VirtuosoPageItemSpacer extends BaseVirtuosoItem {
-  type: 'page-item-spacer';
+  type: 'item-spacer';
   data: {
     height: number;
   };
 }
 
-type VirtuosoItem =
+type VirtuosoItem<T> =
   | VirtuosoItemStickyHeader
-  | VirtuosoItemPageItem
-  | VirtuosoItemPageGroupHeader
+  | VirtuosoItemItem<T>
+  | VirtuosoItemGroupHeader<T>
   | VirtuosoPageItemSpacer;
 
 /**
  * Given a list of pages, render a list of pages
  * Similar to normal PageList, but uses react-virtuoso to render the list (virtual rendering)
  */
-export const VirtualizedPageList = forwardRef<
-  PageListHandle,
-  VirtualizedPageListProps
->(function VirtualizedPageList(props, ref) {
+export const VirtualizedList = forwardRef<
+  ItemListHandle,
+  VirtualizedListProps<ListItem>
+>(function VirtualizedList(props, ref) {
   return (
     // push pageListProps to the atom so that downstream components can consume it
     // this makes sure pageListPropsAtom is always populated
     // @ts-expect-error fix type issues later
-    <PageListProvider initialValues={[[pageListPropsAtom, props]]}>
-      <PageListInnerWrapper {...props} handleRef={ref}>
-        <PageListInner {...props} />
-      </PageListInnerWrapper>
-    </PageListProvider>
+    <ListProvider initialValues={[[listPropsAtom, props]]}>
+      <ListInnerWrapper {...props} handleRef={ref}>
+        <ListInner {...props} />
+      </ListInnerWrapper>
+    </ListProvider>
   );
 });
 
-const headingAtom = selectAtom(pageListPropsAtom, props => props.heading);
+const headingAtom = selectAtom(listPropsAtom, props => props.heading);
 
 const PageListHeading = () => {
   const heading = useAtomValue(headingAtom);
   return <div className={styles.heading}>{heading}</div>;
 };
 
-const useVirtuosoItems = () => {
-  const groups = useAtomValue(pageGroupsAtom);
-  const groupCollapsedState = useAtomValue(pageGroupCollapseStateAtom);
+const useVirtuosoItems = <T extends ListItem>() => {
+  const groups = useAtomValue(groupsAtom);
+  const groupCollapsedState = useAtomValue(groupCollapseStateAtom);
 
   return useMemo(() => {
-    const items: VirtuosoItem[] = [];
+    const items: VirtuosoItem<T>[] = [];
 
     // 1.
     // always put sticky header at the top
@@ -114,21 +113,21 @@ const useVirtuosoItems = () => {
       // skip empty group header since it will cause issue in virtuoso ("Zero-sized element")
       if (group.label) {
         items.push({
-          type: 'page-group-header',
-          data: group,
+          type: 'group-header',
+          data: group as ItemGroupProps<T>,
         });
       }
       // do not render items if the group is collapsed
       if (!groupCollapsedState[group.id]) {
         for (const item of group.items) {
           items.push({
-            type: 'page-item',
-            data: item,
+            type: 'item',
+            data: item as T,
           });
           // add a spacer between items (4px), unless it's the last item
           if (item !== group.items[group.items.length - 1]) {
             items.push({
-              type: 'page-item-spacer',
+              type: 'item-spacer',
               data: {
                 height: 4,
               },
@@ -139,7 +138,7 @@ const useVirtuosoItems = () => {
 
       // add a spacer between groups (16px)
       items.push({
-        type: 'page-item-spacer',
+        type: 'item-spacer',
         data: {
           height: 16,
         },
@@ -147,19 +146,6 @@ const useVirtuosoItems = () => {
     }
     return items;
   }, [groupCollapsedState, groups]);
-};
-
-const itemContentRenderer = (_index: number, data: VirtuosoItem) => {
-  switch (data.type) {
-    case 'sticky-header':
-      return <PageListTableHeader />;
-    case 'page-group-header':
-      return <PageGroupHeader {...data.data} />;
-    case 'page-item':
-      return <PageMetaListItemRenderer {...data.data} />;
-    case 'page-item-spacer':
-      return <div style={{ height: data.data.height }} />;
-  }
 };
 
 const Scroller = forwardRef<
@@ -178,12 +164,12 @@ const Scroller = forwardRef<
 
 Scroller.displayName = 'Scroller';
 
-const PageListInner = ({
+const ListInner = ({
   atTopStateChange,
   atTopThreshold,
   ...props
-}: VirtualizedPageListProps) => {
-  const virtuosoItems = useVirtuosoItems();
+}: VirtualizedListProps<ListItem>) => {
+  const virtuosoItems = useVirtuosoItems<ListItem>();
   const [atTop, setAtTop] = useState(false);
   const handleAtTopStateChange = useCallback(
     (atTop: boolean) => {
@@ -198,15 +184,30 @@ const PageListInner = ({
       Scroller: Scroller,
     };
   }, [props.heading]);
+  const itemContentRenderer = useCallback(
+    (_index: number, data: VirtuosoItem<ListItem>) => {
+      switch (data.type) {
+        case 'sticky-header':
+          return props.headerRenderer?.();
+        case 'group-header':
+          return <ItemGroupHeader {...data.data} />;
+        case 'item':
+          return props.itemRenderer?.(data.data);
+        case 'item-spacer':
+          return <div style={{ height: data.data.height }} />;
+      }
+    },
+    [props]
+  );
   return (
-    <Virtuoso<VirtuosoItem>
+    <Virtuoso<VirtuosoItem<ListItem>>
       data-has-scroll-top={!atTop}
       atTopThreshold={atTopThreshold ?? 0}
       atTopStateChange={handleAtTopStateChange}
       components={components}
       data={virtuosoItems}
       data-testid="virtualized-page-list"
-      data-total-count={props.pages.length} // for testing, since we do not know the total count in test
+      data-total-count={props.items.length} // for testing, since we do not know the total count in test
       topItemCount={1} // sticky header
       totalCount={virtuosoItems.length}
       itemContent={itemContentRenderer}

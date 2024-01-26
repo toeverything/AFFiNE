@@ -1,322 +1,209 @@
-import { toast } from '@affine/component';
+import type { AllPageFilterOption } from '@affine/core/atoms';
+import { collectionsCRUDAtom } from '@affine/core/atoms/collections';
+import { HubIsland } from '@affine/core/components/affine/hub-island';
 import {
-  CollectionList,
+  CollectionListHeader,
+  type CollectionMeta,
+  createEmptyCollection,
   currentCollectionAtom,
-  FloatingToolbar,
-  NewPageButton as PureNewPageButton,
-  OperationCell,
-  type PageListHandle,
+  PageListHeader,
   useCollectionManager,
+  useEditCollectionName,
+  useFilteredPageMetas,
+  useSavedCollections,
+  useTagMetas,
+  VirtualizedCollectionList,
   VirtualizedPageList,
 } from '@affine/core/components/page-list';
+import {
+  TagListHeader,
+  VirtualizedTagList,
+} from '@affine/core/components/page-list/tags';
+import { useAllPageListConfig } from '@affine/core/hooks/affine/use-all-page-list-config';
 import { useBlockSuitePageMeta } from '@affine/core/hooks/use-block-suite-page-meta';
+import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
 import { waitForCurrentWorkspaceAtom } from '@affine/core/modules/workspace';
-import { Trans } from '@affine/i18n';
+import { performanceRenderLogger } from '@affine/core/shared';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import {
-  CloseIcon,
-  DeleteIcon,
-  PlusIcon,
-  ViewLayersIcon,
-} from '@blocksuite/icons';
-import type { PageMeta, Workspace } from '@blocksuite/store';
-import clsx from 'clsx';
 import { useAtomValue, useSetAtom } from 'jotai';
-import {
-  type PropsWithChildren,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import { nanoid } from 'nanoid';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useLocation, useParams } from 'react-router-dom';
 import { NIL } from 'uuid';
 
-import { collectionsCRUDAtom } from '../../../atoms/collections';
-import { HubIsland } from '../../../components/affine/hub-island';
-import { usePageHelper } from '../../../components/blocksuite/block-suite-page-list/utils';
-import { Header } from '../../../components/pure/header';
-import { WindowsAppControls } from '../../../components/pure/header/windows-app-controls';
-import { WorkspaceModeFilterTab } from '../../../components/pure/workspace-mode-filter-tab';
-import { useAllPageListConfig } from '../../../hooks/affine/use-all-page-list-config';
-import { useBlockSuiteMetaHelper } from '../../../hooks/affine/use-block-suite-meta-helper';
-import { useDeleteCollectionInfo } from '../../../hooks/affine/use-delete-collection-info';
-import { useTrashModalHelper } from '../../../hooks/affine/use-trash-modal-helper';
-import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
-import { performanceRenderLogger } from '../../../shared';
-import { EmptyPageList } from '../page-list-empty';
-import { useFilteredPageMetas } from '../pages';
+import {
+  EmptyCollectionList,
+  EmptyPageList,
+  EmptyTagList,
+} from '../page-list-empty';
 import * as styles from './all-page.css';
-import { FilterContainer } from './all-page-filter';
-
-const PageListHeader = () => {
-  const t = useAFFiNEI18N();
-  const setting = useCollectionManager(collectionsCRUDAtom);
-  const title = useMemo(() => {
-    if (setting.isDefault) {
-      return t['com.affine.all-pages.header']();
-    }
-    return (
-      <>
-        {t['com.affine.collections.header']()} /
-        <div className={styles.titleIcon}>
-          <ViewLayersIcon />
-        </div>
-        <div className={styles.titleCollectionName}>
-          {setting.currentCollection.name}
-        </div>
-      </>
-    );
-  }, [setting.currentCollection.name, setting.isDefault, t]);
-
-  return (
-    <div className={styles.allPagesHeader}>
-      <div className={styles.allPagesHeaderTitle}>{title}</div>
-      <NewPageButton testId="new-page-button-trigger">
-        {t['New Page']()}
-      </NewPageButton>
-    </div>
-  );
-};
-
-const usePageOperationsRenderer = () => {
-  const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
-  const { setTrashModal } = useTrashModalHelper(
-    currentWorkspace.blockSuiteWorkspace
-  );
-  const { toggleFavorite } = useBlockSuiteMetaHelper(
-    currentWorkspace.blockSuiteWorkspace
-  );
-  const t = useAFFiNEI18N();
-  const pageOperationsRenderer = useCallback(
-    (page: PageMeta) => {
-      const onDisablePublicSharing = () => {
-        toast('Successfully disabled', {
-          portal: document.body,
-        });
-      };
-      return (
-        <OperationCell
-          favorite={!!page.favorite}
-          isPublic={!!page.isPublic}
-          onDisablePublicSharing={onDisablePublicSharing}
-          link={`/workspace/${currentWorkspace.id}/${page.id}`}
-          onRemoveToTrash={() =>
-            setTrashModal({
-              open: true,
-              pageIds: [page.id],
-              pageTitles: [page.title],
-            })
-          }
-          onToggleFavoritePage={() => {
-            const status = page.favorite;
-            toggleFavorite(page.id);
-            toast(
-              status
-                ? t['com.affine.toastMessage.removedFavorites']()
-                : t['com.affine.toastMessage.addedFavorites']()
-            );
-          }}
-        />
-      );
-    },
-    [currentWorkspace.id, setTrashModal, t, toggleFavorite]
-  );
-
-  return pageOperationsRenderer;
-};
-
-const PageListFloatingToolbar = ({
-  selectedIds,
-  onClose,
-  open,
-}: {
-  open: boolean;
-  selectedIds: string[];
-  onClose: () => void;
-}) => {
-  const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
-  const { setTrashModal } = useTrashModalHelper(
-    currentWorkspace.blockSuiteWorkspace
-  );
-  const pageMetas = useBlockSuitePageMeta(currentWorkspace.blockSuiteWorkspace);
-  const handleMultiDelete = useCallback(() => {
-    const pageNameMapping = Object.fromEntries(
-      pageMetas.map(meta => [meta.id, meta.title])
-    );
-
-    const pageNames = selectedIds.map(id => pageNameMapping[id] ?? '');
-    setTrashModal({
-      open: true,
-      pageIds: selectedIds,
-      pageTitles: pageNames,
-    });
-  }, [pageMetas, selectedIds, setTrashModal]);
-
-  return (
-    <FloatingToolbar className={styles.floatingToolbar} open={open}>
-      <FloatingToolbar.Item>
-        <Trans
-          i18nKey="com.affine.page.toolbar.selected"
-          count={selectedIds.length}
-        >
-          <div className={styles.toolbarSelectedNumber}>
-            {{ count: selectedIds.length } as any}
-          </div>
-          selected
-        </Trans>
-      </FloatingToolbar.Item>
-      <FloatingToolbar.Button onClick={onClose} icon={<CloseIcon />} />
-      <FloatingToolbar.Separator />
-      <FloatingToolbar.Button
-        onClick={handleMultiDelete}
-        icon={<DeleteIcon />}
-        type="danger"
-        data-testid="page-list-toolbar-delete"
-      />
-    </FloatingToolbar>
-  );
-};
-
-const NewPageButton = ({
-  className,
-  children,
-  size,
-  testId,
-}: PropsWithChildren<{
-  className?: string;
-  size?: 'small' | 'default';
-  testId?: string;
-}>) => {
-  const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
-  const { importFile, createEdgeless, createPage } = usePageHelper(
-    currentWorkspace.blockSuiteWorkspace
-  );
-  return (
-    <div className={className} data-testid={testId}>
-      <PureNewPageButton
-        size={size}
-        importFile={importFile}
-        createNewEdgeless={createEdgeless}
-        createNewPage={createPage}
-      >
-        <div className={styles.newPageButtonLabel}>{children}</div>
-      </PureNewPageButton>
-    </div>
-  );
-};
-
-const AllPageHeader = ({
-  workspace,
-  showCreateNew,
-}: {
-  workspace: Workspace;
-  showCreateNew: boolean;
-}) => {
-  const setting = useCollectionManager(collectionsCRUDAtom);
-  const config = useAllPageListConfig();
-  const userInfo = useDeleteCollectionInfo();
-  const isWindowsDesktop = environment.isDesktop && environment.isWindows;
-
-  return (
-    <>
-      <Header
-        left={
-          <CollectionList
-            userInfo={userInfo}
-            allPageListConfig={config}
-            setting={setting}
-            propertiesMeta={workspace.meta.properties}
-          />
-        }
-        right={
-          <div className={clsx(isWindowsDesktop && styles.headerRightWindows)}>
-            <NewPageButton
-              size="small"
-              className={clsx(
-                styles.headerCreateNewButton,
-                !showCreateNew && styles.headerCreateNewButtonHidden
-              )}
-            >
-              <PlusIcon />
-            </NewPageButton>
-            {isWindowsDesktop ? <WindowsAppControls /> : null}
-          </div>
-        }
-        center={<WorkspaceModeFilterTab />}
-      />
-      <FilterContainer />
-    </>
-  );
-};
+import { AllPageHeader } from './all-page-header';
 
 // even though it is called all page, it is also being used for collection route as well
-export const AllPage = () => {
+export const AllPage = ({
+  activeFilter,
+}: {
+  activeFilter: AllPageFilterOption;
+}) => {
+  const t = useAFFiNEI18N();
+  const params = useParams();
   const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
-  const { isPreferredEdgeless } = usePageHelper(
-    currentWorkspace.blockSuiteWorkspace
-  );
   const pageMetas = useBlockSuitePageMeta(currentWorkspace.blockSuiteWorkspace);
-  const pageOperationsRenderer = usePageOperationsRenderer();
+  const [hideHeaderCreateNew, setHideHeaderCreateNew] = useState(true);
+
+  const setting = useCollectionManager(collectionsCRUDAtom);
+  const config = useAllPageListConfig();
+  const { collections } = useSavedCollections(collectionsCRUDAtom);
+  const { tags, tagMetas, filterPageMetaByTag, deleteTags } = useTagMetas(
+    currentWorkspace.blockSuiteWorkspace,
+    pageMetas
+  );
   const filteredPageMetas = useFilteredPageMetas(
     'all',
     pageMetas,
     currentWorkspace.blockSuiteWorkspace
   );
-  const [selectedPageIds, setSelectedPageIds] = useState<string[]>([]);
-  const pageListRef = useRef<PageListHandle>(null);
+  const tagPageMetas = useMemo(() => {
+    if (params.tagId) {
+      return filterPageMetaByTag(params.tagId);
+    }
+    return [];
+  }, [filterPageMetaByTag, params.tagId]);
 
-  const [showFloatingToolbar, setShowFloatingToolbar] = useState(false);
+  const collectionMetas = useMemo(() => {
+    const collectionsList: CollectionMeta[] = collections.map(collection => {
+      return {
+        ...collection,
+        title: collection.name,
+      };
+    });
+    return collectionsList;
+  }, [collections]);
 
-  const hideFloatingToolbar = useCallback(() => {
-    pageListRef.current?.toggleSelectable();
-  }, []);
+  const navigateHelper = useNavigateHelper();
+  const { open, node } = useEditCollectionName({
+    title: t['com.affine.editCollection.createCollection'](),
+    showTips: true,
+  });
 
-  // make sure selected id is in the filtered list
-  const filteredSelectedPageIds = useMemo(() => {
-    const ids = filteredPageMetas.map(page => page.id);
-    return selectedPageIds.filter(id => ids.includes(id));
-  }, [filteredPageMetas, selectedPageIds]);
+  const handleCreateCollection = useCallback(() => {
+    open('')
+      .then(name => {
+        const id = nanoid();
+        setting.createCollection(createEmptyCollection(id, { name }));
+        navigateHelper.jumpToCollection(currentWorkspace.id, id);
+      })
+      .catch(err => {
+        console.error(err);
+      });
+  }, [currentWorkspace.id, navigateHelper, open, setting]);
 
-  const [hideHeaderCreateNewPage, setHideHeaderCreateNewPage] = useState(true);
+  const currentTag = useMemo(() => {
+    if (params.tagId) {
+      return tags.find(tag => tag.id === params.tagId);
+    }
+    return;
+  }, [params.tagId, tags]);
+
+  const content = useMemo(() => {
+    if (filteredPageMetas.length > 0 && activeFilter === 'docs') {
+      return (
+        <VirtualizedPageList
+          setHideHeaderCreateNewPage={setHideHeaderCreateNew}
+        />
+      );
+    } else if (activeFilter === 'collections' && !setting.isDefault) {
+      return (
+        <VirtualizedPageList
+          collection={setting.currentCollection}
+          config={config}
+          setHideHeaderCreateNewPage={setHideHeaderCreateNew}
+        />
+      );
+    } else if (activeFilter === 'collections' && setting.isDefault) {
+      return collectionMetas.length > 0 ? (
+        <VirtualizedCollectionList
+          collections={collections}
+          collectionMetas={collectionMetas}
+          setHideHeaderCreateNewCollection={setHideHeaderCreateNew}
+          node={node}
+          config={config}
+          handleCreateCollection={handleCreateCollection}
+        />
+      ) : (
+        <EmptyCollectionList
+          heading={
+            <CollectionListHeader
+              node={node}
+              onCreate={handleCreateCollection}
+            />
+          }
+        />
+      );
+    } else if (activeFilter === 'tags') {
+      if (params.tagId) {
+        return tagPageMetas.length > 0 ? (
+          <VirtualizedPageList
+            tag={currentTag}
+            listItem={tagPageMetas}
+            setHideHeaderCreateNewPage={setHideHeaderCreateNew}
+          />
+        ) : (
+          <EmptyPageList
+            type="all"
+            heading={<PageListHeader workspaceId={currentWorkspace.id} />}
+            blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
+          />
+        );
+      }
+      return tags.length > 0 ? (
+        <VirtualizedTagList
+          tags={tags}
+          tagMetas={tagMetas}
+          setHideHeaderCreateNewTag={setHideHeaderCreateNew}
+          onTagDelete={deleteTags}
+        />
+      ) : (
+        <EmptyTagList heading={<TagListHeader />} />
+      );
+    }
+    return (
+      <EmptyPageList
+        type="all"
+        heading={<PageListHeader workspaceId={currentWorkspace.id} />}
+        blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
+      />
+    );
+  }, [
+    activeFilter,
+    collectionMetas,
+    collections,
+    config,
+    currentTag,
+    currentWorkspace.blockSuiteWorkspace,
+    currentWorkspace.id,
+    deleteTags,
+    filteredPageMetas.length,
+    handleCreateCollection,
+    node,
+    params.tagId,
+    setting.currentCollection,
+    setting.isDefault,
+    tagMetas,
+    tagPageMetas,
+    tags,
+  ]);
 
   return (
     <div className={styles.root}>
       <AllPageHeader
         workspace={currentWorkspace.blockSuiteWorkspace}
-        showCreateNew={!hideHeaderCreateNewPage}
+        showCreateNew={!hideHeaderCreateNew}
+        isDefaultFilter={setting.isDefault}
+        activeFilter={activeFilter}
+        onCreateCollection={handleCreateCollection}
       />
-      {filteredPageMetas.length > 0 ? (
-        <>
-          <VirtualizedPageList
-            ref={pageListRef}
-            selectable="toggle"
-            draggable
-            atTopThreshold={80}
-            atTopStateChange={setHideHeaderCreateNewPage}
-            onSelectionActiveChange={setShowFloatingToolbar}
-            heading={<PageListHeader />}
-            selectedPageIds={filteredSelectedPageIds}
-            onSelectedPageIdsChange={setSelectedPageIds}
-            pages={filteredPageMetas}
-            rowAsLink
-            isPreferredEdgeless={isPreferredEdgeless}
-            blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
-            pageOperationsRenderer={pageOperationsRenderer}
-          />
-          <PageListFloatingToolbar
-            open={showFloatingToolbar && filteredSelectedPageIds.length > 0}
-            selectedIds={filteredSelectedPageIds}
-            onClose={hideFloatingToolbar}
-          />
-        </>
-      ) : (
-        <EmptyPageList
-          type="all"
-          heading={<PageListHeader />}
-          blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
-        />
-      )}
+      {content}
       <HubIsland />
     </div>
   );
@@ -328,6 +215,18 @@ export const Component = () => {
   const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
   const currentCollection = useSetAtom(currentCollectionAtom);
   const navigateHelper = useNavigateHelper();
+
+  const location = useLocation();
+  const activeFilter = useMemo(() => {
+    const query = new URLSearchParams(location.search);
+    const filterMode = query.get('filterMode');
+    if (filterMode === 'collections') {
+      return 'collections';
+    } else if (filterMode === 'tags') {
+      return 'tags';
+    }
+    return 'docs';
+  }, [location.search]);
 
   useEffect(() => {
     function checkJumpOnce() {
@@ -355,5 +254,5 @@ export const Component = () => {
     currentCollection(NIL);
   }, [currentCollection]);
 
-  return <AllPage />;
+  return <AllPage activeFilter={activeFilter} />;
 };

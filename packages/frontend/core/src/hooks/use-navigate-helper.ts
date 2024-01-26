@@ -42,6 +42,22 @@ export function useNavigateHelper() {
     },
     [navigate]
   );
+  const jumpToCollections = useCallback(
+    (workspaceId: string, logic: RouteLogic = RouteLogic.PUSH) => {
+      return navigate(`/workspace/${workspaceId}/all?filterMode=collections`, {
+        replace: logic === RouteLogic.REPLACE,
+      });
+    },
+    [navigate]
+  );
+  const jumpToTags = useCallback(
+    (workspaceId: string, logic: RouteLogic = RouteLogic.PUSH) => {
+      return navigate(`/workspace/${workspaceId}/all?filterMode=tags`, {
+        replace: logic === RouteLogic.REPLACE,
+      });
+    },
+    [navigate]
+  );
   const jumpToCollection = useCallback(
     (
       workspaceId: string,
@@ -144,6 +160,8 @@ export function useNavigateHelper() {
       jumpToExpired,
       jumpToSignIn,
       jumpToCollection,
+      jumpToCollections,
+      jumpToTags,
     }),
     [
       jumpToPage,
@@ -156,6 +174,8 @@ export function useNavigateHelper() {
       jumpToExpired,
       jumpToSignIn,
       jumpToCollection,
+      jumpToCollections,
+      jumpToTags,
     ]
   );
 }

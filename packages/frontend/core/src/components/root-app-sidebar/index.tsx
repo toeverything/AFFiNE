@@ -69,15 +69,12 @@ export type RootAppSidebarProps = {
 const RouteMenuLinkItem = forwardRef<
   HTMLDivElement,
   {
-    currentPath: string; // todo: pass through useRouter?
     path: string;
     icon: ReactElement;
+    active?: boolean;
     children?: ReactElement;
-    isDraggedOver?: boolean;
   } & HTMLAttributes<HTMLDivElement>
->(({ currentPath, path, icon, children, isDraggedOver, ...props }, ref) => {
-  // Force active style when a page is dragged over
-  const active = isDraggedOver || currentPath === path;
+>(({ path, icon, active, children, ...props }, ref) => {
   return (
     <MenuLinkItem
       ref={ref}
@@ -197,6 +194,22 @@ export const RootAppSidebar = ({
       });
   }, [blockSuiteWorkspace.id, navigateHelper, open, setting]);
 
+  const allPageActive = useMemo(() => {
+    if (
+      currentPath.startsWith(`/workspace/${currentWorkspaceId}/collection/`) ||
+      currentPath.startsWith(`/workspace/${currentWorkspaceId}/tag/`)
+    ) {
+      return true;
+    }
+    return currentPath === paths.all(currentWorkspaceId);
+  }, [currentPath, currentWorkspaceId, paths]);
+
+  const trashActive = useMemo(() => {
+    return (
+      currentPath === paths.trash(currentWorkspaceId) || trashDroppable.isOver
+    );
+  }, [currentPath, currentWorkspaceId, paths, trashDroppable.isOver]);
+
   return (
     <AppSidebar
       router={router}
@@ -247,7 +260,7 @@ export const RootAppSidebar = ({
         />
         <RouteMenuLinkItem
           icon={<FolderIcon />}
-          currentPath={currentPath}
+          active={allPageActive}
           path={paths.all(currentWorkspaceId)}
           onClick={backToAll}
         >
@@ -289,9 +302,8 @@ export const RootAppSidebar = ({
         <div style={{ height: '4px' }} />
         <RouteMenuLinkItem
           ref={trashDroppable.setNodeRef}
-          isDraggedOver={trashDroppable.isOver}
           icon={<AnimatedDeleteIcon closed={trashDroppable.isOver} />}
-          currentPath={currentPath}
+          active={trashActive}
           path={paths.trash(currentWorkspaceId)}
         >
           <span data-testid="trash-page">

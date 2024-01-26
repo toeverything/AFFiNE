@@ -17,13 +17,11 @@ export function registerAffineNavigationCommands({
   store,
   workspace,
   navigationHelper,
-  pageListMode,
   setPageListMode,
 }: {
   t: ReturnType<typeof useAFFiNEI18N>;
   store: ReturnType<typeof createStore>;
   navigationHelper: ReturnType<typeof useNavigateHelper>;
-  pageListMode: PageModeOption;
   setPageListMode: React.Dispatch<React.SetStateAction<PageModeOption>>;
   workspace: Workspace;
 }) {
@@ -43,32 +41,26 @@ export function registerAffineNavigationCommands({
 
   unsubs.push(
     registerAffineCommand({
-      id: 'affine:goto-page-list',
+      id: 'affine:goto-collection-list',
       category: 'affine:navigation',
       icon: <ArrowRightBigIcon />,
-      preconditionStrategy: () => {
-        return pageListMode !== 'page';
-      },
-      label: t['com.affine.cmdk.affine.navigation.goto-page-list'](),
+      label: 'Go to Collection List',
       run() {
-        navigationHelper.jumpToSubPath(workspace.id, WorkspaceSubPath.ALL);
-        setPageListMode('page');
+        navigationHelper.jumpToCollections(workspace.id);
+        setPageListMode('all');
       },
     })
   );
 
   unsubs.push(
     registerAffineCommand({
-      id: 'affine:goto-edgeless-list',
+      id: 'affine:goto-tag-list',
       category: 'affine:navigation',
       icon: <ArrowRightBigIcon />,
-      preconditionStrategy: () => {
-        return pageListMode !== 'edgeless';
-      },
-      label: t['com.affine.cmdk.affine.navigation.goto-edgeless-list'](),
+      label: 'Go to Tag List',
       run() {
-        navigationHelper.jumpToSubPath(workspace.id, WorkspaceSubPath.ALL);
-        setPageListMode('edgeless');
+        navigationHelper.jumpToTags(workspace.id);
+        setPageListMode('all');
       },
     })
   );

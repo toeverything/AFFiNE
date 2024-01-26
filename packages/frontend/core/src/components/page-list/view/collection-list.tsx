@@ -25,11 +25,13 @@ export const CollectionList = ({
   propertiesMeta,
   allPageListConfig,
   userInfo,
+  disable,
 }: {
   setting: ReturnType<typeof useCollectionManager>;
   propertiesMeta: PropertiesMeta;
   allPageListConfig: AllPageListConfig;
   userInfo: DeleteCollectionInfo;
+  disable?: boolean;
 }) => {
   const t = useAFFiNEI18N();
   const [collection, setCollection] = useState<Collection>();
@@ -72,6 +74,7 @@ export const CollectionList = ({
               className={styles.filterMenuTrigger}
               type="default"
               icon={<FilterIcon />}
+              data-is-hidden={disable}
               data-testid="create-first-filter"
             >
               {t['com.affine.filter']()}

@@ -1,22 +1,22 @@
 import { DEFAULT_SORT_KEY } from '@affine/env/constant';
-import type { PageMeta } from '@blocksuite/store';
 import { atom } from 'jotai';
 import { selectAtom } from 'jotai/utils';
 import { createIsolation } from 'jotai-scope';
 
-import { pagesToPageGroups } from './pages-to-page-group';
+import { itemsToItemGroups } from './items-to-item-group';
 import type {
-  PageListProps,
-  PageMetaRecord,
-  VirtualizedPageListProps,
+  ListItem,
+  ListProps,
+  MetaRecord,
+  VirtualizedListProps,
 } from './types';
 import { shallowEqual } from './utils';
 
 // for ease of use in the component tree
 // note: must use selectAtom to access this atom for efficiency
 // @ts-expect-error the error is expected but we will assume the default value is always there by using useHydrateAtoms
-export const pageListPropsAtom = atom<
-  PageListProps & Partial<VirtualizedPageListProps>
+export const listPropsAtom = atom<
+  ListProps<ListItem> & Partial<VirtualizedListProps<ListItem>>
 >();
 
 // whether or not the table is in selection mode (showing selection checkbox & selection floating bar)
@@ -25,13 +25,13 @@ const selectionActiveAtom = atom(false);
 export const selectionStateAtom = atom(
   get => {
     const baseAtom = selectAtom(
-      pageListPropsAtom,
+      listPropsAtom,
       props => {
-        const { selectable, selectedPageIds, onSelectedPageIdsChange } = props;
+        const { selectable, selectedIds, onSelectedIdsChange } = props;
         return {
           selectable,
-          selectedPageIds,
-          onSelectedPageIdsChange,
+          selectedIds,
+          onSelectedIdsChange,
         };
       },
       shallowEqual
@@ -53,50 +53,49 @@ export const selectionStateAtom = atom(
 
 // id -> isCollapsed
 // maybe reset on page on unmount?
-export const pageGroupCollapseStateAtom = atom<Record<string, boolean>>({});
+export const groupCollapseStateAtom = atom<Record<string, boolean>>({});
 
 // get handlers from pageListPropsAtom
-export const pageListHandlersAtom = selectAtom(
-  pageListPropsAtom,
+export const listHandlersAtom = selectAtom(
+  listPropsAtom,
   props => {
-    const { onSelectedPageIdsChange } = props;
+    const { onSelectedIdsChange } = props;
     return {
-      onSelectedPageIdsChange,
+      onSelectedIdsChange,
     };
   },
   shallowEqual
 );
 
-export const pagesAtom = selectAtom(
-  pageListPropsAtom,
-  props => props.pages,
+export const itemsAtom = selectAtom(
+  listPropsAtom,
+  props => props.items,
   shallowEqual
 );
 
 export const showOperationsAtom = selectAtom(
-  pageListPropsAtom,
-  props => !!props.pageOperationsRenderer
+  listPropsAtom,
+  props => !!props.operationsRenderer
 );
 
-type SortingContext<T extends string | number | symbol> = {
-  key: T;
+type SortingContext<KeyType extends string | number | symbol> = {
+  key: KeyType;
   order: 'asc' | 'desc';
-  fallbackKey?: T;
+  fallbackKey?: KeyType;
 };
 
-type SorterConfig<T extends Record<string, unknown> = Record<string, unknown>> =
-  {
-    key?: keyof T;
-    order: 'asc' | 'desc';
-    sortingFn: (ctx: SortingContext<keyof T>, a: T, b: T) => number;
-  };
+type SorterConfig<T> = {
+  key?: keyof T;
+  order: 'asc' | 'desc';
+  sortingFn: (ctx: SortingContext<keyof T>, a: T, b: T) => number;
+};
 
-const defaultSortingFn: SorterConfig<PageMetaRecord>['sortingFn'] = (
+const defaultSortingFn: SorterConfig<MetaRecord<ListItem>>['sortingFn'] = (
   ctx,
   a,
   b
 ) => {
-  const val = (obj: PageMetaRecord) => {
+  const val = (obj: MetaRecord<ListItem>) => {
     let v = obj[ctx.key];
     if (v === undefined && ctx.fallbackKey) {
       v = obj[ctx.fallbackKey];
@@ -134,7 +133,14 @@ const defaultSortingFn: SorterConfig<PageMetaRecord>['sortingFn'] = (
   return 0;
 };
 
-const sorterStateAtom = atom<SorterConfig<PageMetaRecord>>({
+const validKeys: Array<keyof MetaRecord<ListItem>> = [
+  'id',
+  'title',
+  'createDate',
+  'updatedDate',
+];
+
+const sorterStateAtom = atom<SorterConfig<MetaRecord<ListItem>>>({
   key: DEFAULT_SORT_KEY,
   order: 'desc',
   sortingFn: defaultSortingFn,
@@ -142,47 +148,45 @@ const sorterStateAtom = atom<SorterConfig<PageMetaRecord>>({
 
 export const sorterAtom = atom(
   get => {
-    let pages = get(pagesAtom);
+    let items = get(itemsAtom);
     const sorterState = get(sorterStateAtom);
-    const sortCtx: SortingContext<keyof PageMetaRecord> | null = sorterState.key
-      ? {
-          key: sorterState.key,
-          order: sorterState.order,
-        }
-      : null;
+    const sortCtx: SortingContext<keyof MetaRecord<ListItem>> | null =
+      sorterState.key
+        ? {
+            key: sorterState.key,
+            order: sorterState.order,
+          }
+        : null;
     if (sortCtx) {
       if (sorterState.key === 'updatedDate') {
         sortCtx.fallbackKey = 'createDate';
       }
-      const compareFn = (a: PageMetaRecord, b: PageMetaRecord) =>
+      const compareFn = (a: MetaRecord<ListItem>, b: MetaRecord<ListItem>) =>
         sorterState.sortingFn(sortCtx, a, b);
-      pages = [...pages].sort(compareFn);
+      items = [...items].sort(compareFn);
     }
     return {
-      pages,
+      items,
       ...sortCtx,
     };
   },
-  (_get, set, { newSortKey }: { newSortKey: keyof PageMeta }) => {
+  (_get, set, { newSortKey }: { newSortKey: keyof MetaRecord<ListItem> }) => {
     set(sorterStateAtom, sorterState => {
-      if (sorterState.key === newSortKey) {
+      if (validKeys.includes(newSortKey)) {
         return {
           ...sorterState,
-          order: sorterState.order === 'asc' ? 'desc' : 'asc',
-        };
-      } else {
-        return {
           key: newSortKey,
-          order: 'desc',
+          order: sorterState.order === 'asc' ? 'desc' : 'asc',
           sortingFn: sorterState.sortingFn,
         };
       }
+      return sorterState;
     });
   }
 );
 
-export const pageGroupsAtom = atom(get => {
-  let groupBy = get(selectAtom(pageListPropsAtom, props => props.groupBy));
+export const groupsAtom = atom(get => {
+  let groupBy = get(selectAtom(listPropsAtom, props => props.groupBy));
   const sorter = get(sorterAtom);
 
   if (groupBy === false) {
@@ -196,11 +200,11 @@ export const pageGroupsAtom = atom(get => {
           ? DEFAULT_SORT_KEY
           : undefined;
   }
-  return pagesToPageGroups(sorter.pages, groupBy);
+  return itemsToItemGroups<ListItem>(sorter.items, groupBy);
 });
 
 export const {
-  Provider: PageListProvider,
+  Provider: ListProvider,
   useAtom,
   useAtomValue,
   useSetAtom,
