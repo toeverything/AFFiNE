@@ -70,6 +70,7 @@
   "commitMessageAction": "bump up",
   "commitMessageTopic": "{{depName}} version",
   "ignoreDeps": [],
+  "postUpdateOptions": ["yarnDedupeHighest"],
   "lockFileMaintenance": {
     "enabled": true,
     "extends": ["schedule:weekly"]
