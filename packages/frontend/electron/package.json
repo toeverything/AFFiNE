@@ -39,7 +39,7 @@
     "@electron-forge/plugin-auto-unpack-natives": "^7.2.0",
     "@electron-forge/shared-types": "^7.2.0",
     "@electron/remote": "2.1.1",
-    "@reforged/maker-appimage": "^4.0.0",
+    "@reforged/maker-appimage": "^3.3.1",
     "@toeverything/infra": "workspace:*",
     "@types/uuid": "^9.0.7",
     "builder-util-runtime": "^9.2.3",
