@@ -32,14 +32,14 @@
     }
   },
   "dependencies": {
-    "@blocksuite/global": "0.12.0-nightly-202401260550-8a560a1",
+    "@blocksuite/global": "0.12.0-nightly-202401290223-b6302df",
     "idb": "^8.0.0",
     "nanoid": "^5.0.3",
     "y-provider": "workspace:*"
   },
   "devDependencies": {
-    "@blocksuite/blocks": "0.12.0-nightly-202401260550-8a560a1",
-    "@blocksuite/store": "0.12.0-nightly-202401260550-8a560a1",
+    "@blocksuite/blocks": "0.12.0-nightly-202401290223-b6302df",
+    "@blocksuite/store": "0.12.0-nightly-202401290223-b6302df",
     "fake-indexeddb": "^5.0.0",
     "vite": "^5.0.6",
     "vite-plugin-dts": "3.7.0",
