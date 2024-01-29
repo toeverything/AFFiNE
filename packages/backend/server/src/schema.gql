@@ -199,9 +199,9 @@ type Query {
 
 type QuotaQueryType {
   blobLimit: SafeInt!
-  historyPeriod: Int!
+  historyPeriod: SafeInt!
   humanReadable: HumanReadableQuotaType!
-  memberLimit: Int!
+  memberLimit: SafeInt!
   name: String!
   storageQuota: SafeInt!
   usedSize: SafeInt!
