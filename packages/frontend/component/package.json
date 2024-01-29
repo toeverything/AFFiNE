@@ -75,7 +75,7 @@
   "devDependencies": {
     "@blocksuite/blocks": "0.12.0-nightly-202401260550-8a560a1",
     "@blocksuite/global": "0.12.0-nightly-202401260550-8a560a1",
-    "@blocksuite/icons": "2.1.43",
+    "@blocksuite/icons": "2.1.44",
     "@blocksuite/lit": "0.12.0-nightly-202401260550-8a560a1",
     "@blocksuite/presets": "0.12.0-nightly-202401260550-8a560a1",
     "@blocksuite/store": "0.12.0-nightly-202401260550-8a560a1",
