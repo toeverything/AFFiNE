@@ -29,7 +29,7 @@ export const affineDocViewport = style({
 
 export const docContainer = style({
   display: 'block',
-  flexGrow: 1,
+  paddingBottom: 64,
 });
 
 const titleTagBasic = style({

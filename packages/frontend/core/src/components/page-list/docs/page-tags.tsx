@@ -5,8 +5,8 @@ import { assignInlineVars } from '@vanilla-extract/dynamic';
 import clsx from 'clsx';
 import { useMemo } from 'react';
 
+import { stopPropagation, tagColorMap } from '../utils';
 import * as styles from './page-tags.css';
-import { stopPropagation } from './utils';
 
 export interface PageTagsProps {
   tags: Tag[];
@@ -22,24 +22,7 @@ interface TagItemProps {
   style?: React.CSSProperties;
 }
 
-// hack: map var(--affine-tag-xxx) colors to var(--affine-palette-line-xxx)
-const tagColorMap = (color: string) => {
-  const mapping: Record<string, string> = {
-    'var(--affine-tag-red)': 'var(--affine-palette-line-red)',
-    'var(--affine-tag-teal)': 'var(--affine-palette-line-green)',
-    'var(--affine-tag-blue)': 'var(--affine-palette-line-blue)',
-    'var(--affine-tag-yellow)': 'var(--affine-palette-line-yellow)',
-    'var(--affine-tag-pink)': 'var(--affine-palette-line-magenta)',
-    'var(--affine-tag-white)': 'var(--affine-palette-line-grey)',
-    'var(--affine-tag-gray)': 'var(--affine-palette-line-grey)',
-    'var(--affine-tag-orange)': 'var(--affine-palette-line-orange)',
-    'var(--affine-tag-purple)': 'var(--affine-palette-line-purple)',
-    'var(--affine-tag-green)': 'var(--affine-palette-line-green)',
-  };
-  return mapping[color] || color;
-};
-
-const TagItem = ({ tag, idx, mode, style }: TagItemProps) => {
+export const TagItem = ({ tag, idx, mode, style }: TagItemProps) => {
   return (
     <div
       data-testid="page-tag"

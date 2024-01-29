@@ -4,12 +4,12 @@ import { useDraggable } from '@dnd-kit/core';
 import { type PropsWithChildren, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 
+import type { DraggableTitleCellData, PageListItemProps } from '../types';
+import { ColWrapper, formatDate, stopPropagation } from '../utils';
 import * as styles from './page-list-item.css';
 import { PageTags } from './page-tags';
-import type { DraggableTitleCellData, PageListItemProps } from './types';
-import { ColWrapper, formatDate, stopPropagation } from './utils';
 
-const PageListTitleCell = ({
+const ListTitleCell = ({
   title,
   preview,
 }: Pick<PageListItemProps, 'title' | 'preview'>) => {
@@ -34,7 +34,7 @@ const PageListTitleCell = ({
   );
 };
 
-const PageListIconCell = ({ icon }: Pick<PageListItemProps, 'icon'>) => {
+const ListIconCell = ({ icon }: Pick<PageListItemProps, 'icon'>) => {
   return (
     <div data-testid="page-list-item-icon" className={styles.iconCell}>
       {icon}
@@ -128,9 +128,9 @@ export const PageListItem = (props: PageListItemProps) => {
             selectable={props.selectable}
             selected={props.selected}
           />
-          <PageListIconCell icon={props.icon} />
+          <ListIconCell icon={props.icon} />
         </div>
-        <PageListTitleCell title={props.title} preview={props.preview} />
+        <ListTitleCell title={props.title} preview={props.preview} />
       </div>
     );
   }, [
@@ -174,9 +174,9 @@ export const PageListItem = (props: PageListItemProps) => {
               selectable={props.selectable}
               selected={props.selected}
             />
-            <PageListIconCell icon={props.icon} />
+            <ListIconCell icon={props.icon} />
           </div>
-          <PageListTitleCell title={props.title} preview={props.preview} />
+          <ListTitleCell title={props.title} preview={props.preview} />
         </ColWrapper>
         <ColWrapper flex={4} alignment="end" style={{ overflow: 'visible' }}>
           <PageTagsCell tags={props.tags} />

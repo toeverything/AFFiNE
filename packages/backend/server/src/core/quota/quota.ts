@@ -57,6 +57,12 @@ export class QuotaConfig {
     return this.config.configs.blobLimit;
   }
 
+  get businessBlobLimit() {
+    return (
+      this.config.configs.businessBlobLimit || this.config.configs.blobLimit
+    );
+  }
+
   get storageQuota() {
     return this.config.configs.storageQuota;
   }

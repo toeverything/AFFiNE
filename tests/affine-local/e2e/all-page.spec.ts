@@ -212,7 +212,7 @@ test('select two pages and delete', async ({ page }) => {
   );
 
   // click delete button
-  await page.locator('[data-testid="page-list-toolbar-delete"]').click();
+  await page.locator('[data-testid="list-toolbar-delete"]').click();
 
   // the confirm dialog should appear
   await expect(page.getByText('Delete 2 pages?')).toBeVisible();

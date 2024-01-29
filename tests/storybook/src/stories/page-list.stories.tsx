@@ -1,14 +1,15 @@
 import { toast } from '@affine/component';
 import {
   FloatingToolbar,
+  List,
+  type ListItem,
+  type ListProps,
+  ListScrollContainer,
   NewPageButton,
-  OperationCell,
-  type OperationCellProps,
-  PageList,
   PageListItem,
   type PageListItemProps,
-  type PageListProps,
-  PageListScrollContainer,
+  PageOperationCell,
+  type PageOperationCellProps,
   PageTags,
   type PageTagsProps,
 } from '@affine/core/components/page-list';
@@ -29,9 +30,9 @@ export default {
   },
 } satisfies Meta;
 
-export const AffineOperationCell: StoryFn<OperationCellProps> = ({
+export const AffineOperationCell: StoryFn<PageOperationCellProps> = ({
   ...props
-}) => <OperationCell {...props} />;
+}) => <PageOperationCell {...props} />;
 
 AffineOperationCell.args = {
   favorite: false,
@@ -159,11 +160,11 @@ const testTags = [
   },
 ];
 
-export const ListItem: StoryFn<PageListItemProps> = props => (
+export const PageListItemComponent: StoryFn<PageListItemProps> = props => (
   <PageListItem {...props}></PageListItem>
 );
 
-ListItem.args = {
+PageListItemComponent.args = {
   pageId: 'test-page-id',
   title: 'Test Page Title',
   preview:
@@ -178,7 +179,7 @@ ListItem.args = {
   selected: true,
 };
 
-ListItem.decorators = [withRouter];
+PageListItemComponent.decorators = [withRouter];
 
 export const ListItemTags: StoryFn<PageTagsProps> = props => (
   <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
@@ -195,15 +196,18 @@ ListItemTags.args = {
   maxItems: 5,
 };
 
-export const PageListStory: StoryFn<PageListProps> = (props, { loaded }) => {
+export const PageListStory: StoryFn<ListProps<ListItem>> = (
+  props,
+  { loaded }
+) => {
   return (
-    <PageListScrollContainer
+    <ListScrollContainer
       style={{
         height: '100vh',
       }}
     >
-      <PageList {...props} {...loaded}></PageList>
-    </PageListScrollContainer>
+      <List {...props} {...loaded}></List>
+    </ListScrollContainer>
   );
 };
 

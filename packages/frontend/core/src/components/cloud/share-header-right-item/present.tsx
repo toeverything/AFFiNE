@@ -1,6 +1,6 @@
 import { Button } from '@affine/component/ui/button';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import type { SurfaceService } from '@blocksuite/blocks';
+import type { EdgelessPageService } from '@blocksuite/blocks';
 import { PresentationIcon } from '@blocksuite/icons';
 import { useCallback, useEffect, useState } from 'react';
 
@@ -16,11 +16,22 @@ export const PresentButton = () => {
     if (!editorRoot || isPresent) return;
 
     // TODO: use surfaceService subAtom
-    const surfaceService = editorRoot?.spec.getService(
-      'affine:surface'
-    ) as SurfaceService;
+    const enterPresentationMode = () => {
+      const edgelessPageService = editorRoot?.spec.getService(
+        'affine:page'
+      ) as EdgelessPageService;
 
-    surfaceService?.setNavigatorMode(true);
+      if (
+        !edgelessPageService ||
+        edgelessPageService.tool.edgelessTool.type === 'frameNavigator'
+      ) {
+        return;
+      }
+
+      edgelessPageService.tool.setEdgelessTool({ type: 'frameNavigator' });
+    };
+
+    enterPresentationMode();
     setIsPresent(true);
   }, [isPresent]);
 

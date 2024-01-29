@@ -7,6 +7,13 @@ import { ByteUnit, OneDay, OneKB } from './constant';
 
 /// ======== quota define ========
 
+/**
+ * naming rule:
+ * we append Vx to the end of the feature name to indicate the version of the feature
+ * x is a number, start from 1, this number will be change only at the time we change the schema of config
+ * for example, we change the value of `blobLimit` from 10MB to 100MB, then we will only change `version` field from 1 to 2
+ * but if we remove the `blobLimit` field or rename it, then we will change the Vx to Vx+1
+ */
 export enum QuotaType {
   FreePlanV1 = 'free_plan_v1',
   ProPlanV1 = 'pro_plan_v1',
@@ -26,6 +33,7 @@ const quotaPlan = z.object({
     storageQuota: z.number().positive().int(),
     historyPeriod: z.number().positive().int(),
     memberLimit: z.number().positive().int(),
+    businessBlobLimit: z.number().positive().int().nullish(),
   }),
 });
 
@@ -42,18 +50,45 @@ export type Quota = z.infer<typeof QuotaSchema>;
 /// ======== query types ========
 
 @ObjectType()
+export class HumanReadableQuotaType {
+  @Field(() => String)
+  name!: string;
+
+  @Field(() => String)
+  blobLimit!: string;
+
+  @Field(() => String)
+  storageQuota!: string;
+
+  @Field(() => String)
+  historyPeriod!: string;
+
+  @Field(() => String)
+  memberLimit!: string;
+}
+
+@ObjectType()
 export class QuotaQueryType {
   @Field(() => String)
-  humanReadableName!: string;
+  name!: string;
+
+  @Field(() => SafeIntResolver)
+  blobLimit!: number;
+
+  @Field(() => SafeIntResolver)
+  historyPeriod!: number;
+
+  @Field(() => SafeIntResolver)
+  memberLimit!: number;
 
   @Field(() => SafeIntResolver)
   storageQuota!: number;
 
-  @Field(() => SafeIntResolver)
-  usedSize!: number;
+  @Field(() => HumanReadableQuotaType)
+  humanReadable!: HumanReadableQuotaType;
 
   @Field(() => SafeIntResolver)
-  blobLimit!: number;
+  usedSize!: number;
 }
 
 /// ======== utils ========

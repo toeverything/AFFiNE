@@ -1,16 +1,16 @@
-import {
-  filterPage,
-  filterPageByRules,
-  useCollectionManager,
-} from '@affine/core/components/page-list';
+import { allPageModeSelectAtom } from '@affine/core/atoms';
+import { collectionsCRUDAtom } from '@affine/core/atoms/collections';
+import { usePageHelper } from '@affine/core/components/blocksuite/block-suite-page-list/utils';
+import type { BlockSuiteWorkspace } from '@affine/core/shared';
 import type { PageMeta } from '@blocksuite/store';
 import { useAtomValue } from 'jotai';
 import { useMemo } from 'react';
 
-import { allPageModeSelectAtom } from '../../atoms';
-import { collectionsCRUDAtom } from '../../atoms/collections';
-import { usePageHelper } from '../../components/blocksuite/block-suite-page-list/utils';
-import type { BlockSuiteWorkspace } from '../../shared';
+import {
+  filterPage,
+  filterPageByRules,
+  useCollectionManager,
+} from './use-collection-manager';
 
 export const useFilteredPageMetas = (
   route: 'all' | 'trash',

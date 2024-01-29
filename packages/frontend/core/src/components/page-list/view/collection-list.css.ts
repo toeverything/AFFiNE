@@ -38,4 +38,9 @@ export const filterMenuTrigger = style({
   ':hover': {
     backgroundColor: 'var(--affine-hover-color)',
   },
+  selectors: {
+    [`&[data-is-hidden="true"]`]: {
+      display: 'none',
+    },
+  },
 });

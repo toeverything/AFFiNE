@@ -1,13 +1,18 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 
+import { FeatureService, FeatureType } from '../features';
 import { WorkspaceBlobStorage } from '../storage';
 import { PermissionService } from '../workspaces/permission';
+import { OneGB } from './constant';
 import { QuotaService } from './service';
-import { QuotaQueryType } from './types';
+import { formatSize, QuotaQueryType } from './types';
+
+type QuotaBusinessType = QuotaQueryType & { businessBlobLimit: number };
 
 @Injectable()
 export class QuotaManagementService {
   constructor(
+    private readonly feature: FeatureService,
     private readonly quota: QuotaService,
     private readonly permissions: PermissionService,
     private readonly storage: WorkspaceBlobStorage
@@ -22,10 +27,10 @@ export class QuotaManagementService {
       createAt: quota.createdAt,
       expiredAt: quota.expiredAt,
       blobLimit: quota.feature.blobLimit,
+      businessBlobLimit: quota.feature.businessBlobLimit,
       storageQuota: quota.feature.storageQuota,
       historyPeriod: quota.feature.historyPeriod,
       memberLimit: quota.feature.memberLimit,
-      humanReadableName: quota.feature.humanReadable.name,
     };
   }
 
@@ -42,16 +47,60 @@ export class QuotaManagementService {
 
   // get workspace's owner quota and total size of used
   // quota was apply to owner's account
-  async getWorkspaceUsage(workspaceId: string): Promise<QuotaQueryType> {
+  async getWorkspaceUsage(workspaceId: string): Promise<QuotaBusinessType> {
     const { user: owner } =
       await this.permissions.getWorkspaceOwner(workspaceId);
     if (!owner) throw new NotFoundException('Workspace owner not found');
-    const { humanReadableName, storageQuota, blobLimit } =
-      await this.getUserQuota(owner.id);
+    const {
+      feature: {
+        name,
+        blobLimit,
+        businessBlobLimit,
+        historyPeriod,
+        memberLimit,
+        storageQuota,
+        humanReadable,
+      },
+    } = await this.quota.getUserQuota(owner.id);
     // get all workspaces size of owner used
     const usedSize = await this.getUserUsage(owner.id);
 
-    return { humanReadableName, storageQuota, usedSize, blobLimit };
+    const quota = {
+      name,
+      blobLimit,
+      businessBlobLimit,
+      historyPeriod,
+      memberLimit,
+      storageQuota,
+      humanReadable,
+      usedSize,
+    };
+
+    // relax restrictions if workspace has unlimited feature
+    // todo(@darkskygit): need a mechanism to allow feature as a middleware to edit quota
+    const unlimited = await this.feature.hasWorkspaceFeature(
+      workspaceId,
+      FeatureType.UnlimitedWorkspace
+    );
+    if (unlimited) {
+      return this.mergeUnlimitedQuota(quota);
+    }
+
+    return quota;
+  }
+
+  private mergeUnlimitedQuota(orig: QuotaBusinessType) {
+    return {
+      ...orig,
+      storageQuota: 1000 * OneGB,
+      memberLimit: 1000,
+      humanReadable: {
+        ...orig.humanReadable,
+        name: 'Unlimited',
+        storageQuota: formatSize(1000 * OneGB),
+        memberLimit: '1000',
+      },
+    };
   }
 
   async checkBlobQuota(workspaceId: string, size: number) {

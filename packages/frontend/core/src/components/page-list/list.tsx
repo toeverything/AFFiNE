@@ -12,41 +12,42 @@ import {
   useRef,
 } from 'react';
 
-import { PageGroup } from './page-group';
-import { PageListTableHeader } from './page-header';
-import * as styles from './page-list.css';
+import { pageHeaderColsDef } from './header-col-def';
+import * as styles from './list.css';
+import { ItemGroup } from './page-group';
+import { ListTableHeader } from './page-header';
 import {
-  pageGroupsAtom,
-  pageListPropsAtom,
-  PageListProvider,
+  groupsAtom,
+  listPropsAtom,
+  ListProvider,
   selectionStateAtom,
   useAtom,
   useAtomValue,
   useSetAtom,
 } from './scoped-atoms';
-import type { PageListHandle, PageListProps } from './types';
+import type { ItemListHandle, ListItem, ListProps } from './types';
 
 /**
  * Given a list of pages, render a list of pages
  */
-export const PageList = forwardRef<PageListHandle, PageListProps>(
-  function PageList(props, ref) {
+export const List = forwardRef<ItemListHandle, ListProps<ListItem>>(
+  function List(props, ref) {
     return (
       // push pageListProps to the atom so that downstream components can consume it
       // this makes sure pageListPropsAtom is always populated
       // @ts-expect-error fix type issues later
-      <PageListProvider initialValues={[[pageListPropsAtom, props]]}>
-        <PageListInnerWrapper {...props} handleRef={ref}>
-          <PageListInner {...props} />
-        </PageListInnerWrapper>
-      </PageListProvider>
+      <ListProvider initialValues={[[listPropsAtom, props]]}>
+        <ListInnerWrapper {...props} handleRef={ref}>
+          <ListInner {...props} />
+        </ListInnerWrapper>
+      </ListProvider>
     );
   }
 );
 
 // when pressing ESC or double clicking outside of the page list, close the selection mode
 // todo: use jotai-effect instead but it seems it does not work with jotai-scope?
-const usePageSelectionStateEffect = () => {
+const useItemSelectionStateEffect = () => {
   const [selectionState, setSelectionActive] = useAtom(selectionStateAtom);
   useEffect(() => {
     if (
@@ -96,23 +97,22 @@ const usePageSelectionStateEffect = () => {
   ]);
 };
 
-export const PageListInnerWrapper = memo(
+export const ListInnerWrapper = memo(
   ({
     handleRef,
     children,
     onSelectionActiveChange,
     ...props
   }: PropsWithChildren<
-    PageListProps & { handleRef: ForwardedRef<PageListHandle> }
+    ListProps<ListItem> & { handleRef: ForwardedRef<ItemListHandle> }
   >) => {
-    const setPageListPropsAtom = useSetAtom(pageListPropsAtom);
-    const [selectionState, setPageListSelectionState] =
-      useAtom(selectionStateAtom);
-    usePageSelectionStateEffect();
+    const setListPropsAtom = useSetAtom(listPropsAtom);
+    const [selectionState, setListSelectionState] = useAtom(selectionStateAtom);
+    useItemSelectionStateEffect();
 
     useEffect(() => {
-      setPageListPropsAtom(props);
-    }, [props, setPageListPropsAtom]);
+      setListPropsAtom(props);
+    }, [props, setListPropsAtom]);
 
     useEffect(() => {
       onSelectionActiveChange?.(!!selectionState.selectionActive);
@@ -123,41 +123,42 @@ export const PageListInnerWrapper = memo(
       () => {
         return {
           toggleSelectable: () => {
-            setPageListSelectionState(false);
+            setListSelectionState(false);
           },
         };
       },
-      [setPageListSelectionState]
+      [setListSelectionState]
     );
     return children;
   }
 );
 
-PageListInnerWrapper.displayName = 'PageListInnerWrapper';
+ListInnerWrapper.displayName = 'ListInnerWrapper';
 
-const PageListInner = (props: PageListProps) => {
-  const groups = useAtomValue(pageGroupsAtom);
+const ListInner = (props: ListProps<ListItem>) => {
+  const groups = useAtomValue(groupsAtom);
+
   const hideHeader = props.hideHeader;
   return (
     <div className={clsx(props.className, styles.root)}>
-      {!hideHeader ? <PageListTableHeader /> : null}
+      {!hideHeader ? <ListTableHeader headerCols={pageHeaderColsDef} /> : null}
       <div className={styles.groupsContainer}>
         {groups.map(group => (
-          <PageGroup key={group.id} {...group} />
+          <ItemGroup key={group.id} {...group} />
         ))}
       </div>
     </div>
   );
 };
 
-interface PageListScrollContainerProps {
+interface ListScrollContainerProps {
   className?: string;
   style?: React.CSSProperties;
 }
 
-export const PageListScrollContainer = forwardRef<
+export const ListScrollContainer = forwardRef<
   HTMLDivElement,
-  PropsWithChildren<PageListScrollContainerProps>
+  PropsWithChildren<ListScrollContainerProps>
 >(({ className, children, style }, ref) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const hasScrollTop = useHasScrollTop(containerRef);
@@ -188,4 +189,4 @@ export const PageListScrollContainer = forwardRef<
   );
 });
 
-PageListScrollContainer.displayName = 'PageListScrollContainer';
+ListScrollContainer.displayName = 'ListScrollContainer';

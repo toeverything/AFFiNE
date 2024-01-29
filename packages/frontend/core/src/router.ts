@@ -20,6 +20,10 @@ export const routes = [
         lazy: () => import('./pages/workspace/collection'),
       },
       {
+        path: 'tag/:tagId',
+        lazy: () => import('./pages/workspace/tag'),
+      },
+      {
         path: 'trash',
         lazy: () => import('./pages/workspace/trash-page'),
       },

@@ -15,6 +15,7 @@ import React, {
   useEffect,
   useMemo,
   useRef,
+  useState,
 } from 'react';
 
 import { BlocksuiteEditorJournalDocTitle } from './journal-doc-title';
@@ -61,6 +62,8 @@ export const BlocksuiteDocEditor = forwardRef<
 >(function BlocksuiteDocEditor({ page, customRenderers }, ref) {
   const titleRef = useRef<DocTitle>(null);
   const docRef = useRef<DocEditor | null>(null);
+  const [docPage, setDocPage] =
+    useState<HTMLElementTagNameMap['affine-doc-page']>();
   const { isJournal } = useJournalInfoHelper(page.workspace, page.id);
 
   const onDocRef = useCallback(
@@ -84,11 +87,15 @@ export const BlocksuiteDocEditor = forwardRef<
   useEffect(() => {
     // auto focus the title
     setTimeout(() => {
+      const docPage = docRef.current?.querySelector('affine-doc-page');
+      if (docPage) {
+        setDocPage(docPage);
+      }
       if (titleRef.current) {
         const richText = titleRef.current.querySelector('rich-text');
         richText?.inlineEditor?.focusEnd();
       } else {
-        docRef.current?.querySelector('affine-doc-page')?.focusFirstParagraph();
+        docPage?.focusFirstParagraph();
       }
     });
   }, []);
@@ -110,7 +117,9 @@ export const BlocksuiteDocEditor = forwardRef<
           specs={specs}
           hasViewport={false}
         />
-        <adapted.BiDirectionalLinkPanel page={page} />
+        {docPage ? (
+          <adapted.BiDirectionalLinkPanel page={page} docPageBlock={docPage} />
+        ) : null}
       </div>
     </div>
   );

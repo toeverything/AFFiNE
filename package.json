@@ -37,7 +37,8 @@
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc -b tsconfig.json --diagnostics",
-    "postinstall": "node ./scripts/check-version.mjs && yarn i18n-codegen gen && yarn husky install"
+    "postinstall": "node ./scripts/check-version.mjs && yarn i18n-codegen gen && yarn husky install",
+    "prepare": "husky"
   },
   "lint-staged": {
     "*": "prettier --write --ignore-unknown --cache",
@@ -88,7 +89,7 @@
     "eslint-plugin-vue": "^9.18.1",
     "fake-indexeddb": "5.0.2",
     "happy-dom": "^13.0.0",
-    "husky": "^8.0.3",
+    "husky": "^9.0.6",
     "lint-staged": "^15.1.0",
     "msw": "^2.0.8",
     "nanoid": "^5.0.3",

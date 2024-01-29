@@ -1,6 +1,6 @@
 import { waitForCurrentWorkspaceAtom } from '@affine/core/modules/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { useAtom, useAtomValue, useStore } from 'jotai';
+import { useAtomValue, useSetAtom, useStore } from 'jotai';
 import { useTheme } from 'next-themes';
 import { useEffect } from 'react';
 
@@ -26,7 +26,7 @@ export function useRegisterWorkspaceCommands() {
   const languageHelper = useLanguageHelper();
   const pageHelper = usePageHelper(currentWorkspace.blockSuiteWorkspace);
   const navigationHelper = useNavigateHelper();
-  const [pageListMode, setPageListMode] = useAtom(allPageModeSelectAtom);
+  const setPageListMode = useSetAtom(allPageModeSelectAtom);
   const [editor] = useActiveBlocksuiteEditor();
 
   // register AffineUpdatesCommands
@@ -48,7 +48,6 @@ export function useRegisterWorkspaceCommands() {
       t,
       workspace: currentWorkspace.blockSuiteWorkspace,
       navigationHelper,
-      pageListMode,
       setPageListMode,
     });
 
@@ -60,7 +59,6 @@ export function useRegisterWorkspaceCommands() {
     t,
     currentWorkspace.blockSuiteWorkspace,
     navigationHelper,
-    pageListMode,
     setPageListMode,
   ]);
 

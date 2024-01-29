@@ -1,11 +1,8 @@
 import clsx from 'clsx';
-import {
-  type BaseSyntheticEvent,
-  forwardRef,
-  type PropsWithChildren,
-} from 'react';
+import { type BaseSyntheticEvent, forwardRef } from 'react';
 
-import * as styles from './page-list.css';
+import * as styles from './list.css';
+import type { ColWrapperProps } from './types';
 
 export function isToday(date: Date): boolean {
   const today = new Date();
@@ -71,14 +68,6 @@ export const formatDate = (date: Date): string => {
   return `${month}-${day} ${hours}:${minutes}`;
 };
 
-export type ColWrapperProps = PropsWithChildren<{
-  flex?: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
-  alignment?: 'start' | 'center' | 'end';
-  styles?: React.CSSProperties;
-  hideInSmallContainer?: boolean;
-}> &
-  React.HTMLAttributes<Element>;
-
 export const ColWrapper = forwardRef<HTMLDivElement, ColWrapperProps>(
   function ColWrapper(
     {
@@ -103,11 +92,10 @@ export const ColWrapper = forwardRef<HTMLDivElement, ColWrapperProps>(
           flexBasis: flex ? `${(flex / 12) * 100}%` : 'auto',
           justifyContent: alignment,
         }}
-        className={clsx(
-          className,
-          styles.colWrapper,
-          hideInSmallContainer ? styles.hideInSmallContainer : null
-        )}
+        data-hide-item={hideInSmallContainer ? true : undefined}
+        className={clsx(className, styles.colWrapper, {
+          [styles.hideInSmallContainer]: hideInSmallContainer,
+        })}
       >
         {children}
       </div>
@@ -173,3 +161,20 @@ export function shallowEqual(objA: any, objB: any) {
 
   return true;
 }
+
+// hack: map var(--affine-tag-xxx) colors to var(--affine-palette-line-xxx)
+export const tagColorMap = (color: string) => {
+  const mapping: Record<string, string> = {
+    'var(--affine-tag-red)': 'var(--affine-palette-line-red)',
+    'var(--affine-tag-teal)': 'var(--affine-palette-line-green)',
+    'var(--affine-tag-blue)': 'var(--affine-palette-line-blue)',
+    'var(--affine-tag-yellow)': 'var(--affine-palette-line-yellow)',
+    'var(--affine-tag-pink)': 'var(--affine-palette-line-magenta)',
+    'var(--affine-tag-white)': 'var(--affine-palette-line-grey)',
+    'var(--affine-tag-gray)': 'var(--affine-palette-line-grey)',
+    'var(--affine-tag-orange)': 'var(--affine-palette-line-orange)',
+    'var(--affine-tag-purple)': 'var(--affine-palette-line-purple)',
+    'var(--affine-tag-green)': 'var(--affine-palette-line-green)',
+  };
+  return mapping[color] || color;
+};

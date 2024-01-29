@@ -50,7 +50,7 @@ export class UnlimitedWorkspaceFeatureConfig extends FeatureConfig {
     super(data);
 
     if (this.config.feature !== FeatureType.UnlimitedWorkspace) {
-      throw new Error('Invalid feature config: type is not EarlyAccess');
+      throw new Error('Invalid feature config: type is not UnlimitedWorkspace');
     }
   }
 }
