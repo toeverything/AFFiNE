@@ -128,7 +128,7 @@ export class WorkspaceBlobResolver {
       Permission.Write
     );
 
-    const { storageQuota, usedSize, blobLimit } =
+    const { storageQuota, usedSize, businessBlobLimit } =
       await this.quota.getWorkspaceUsage(workspaceId);
 
     const unlimited = await this.feature.hasWorkspaceFeature(
@@ -152,8 +152,10 @@ export class WorkspaceBlobResolver {
           `storage size limit exceeded: ${total} > ${storageQuota}`
         );
         return true;
-      } else if (recvSize > blobLimit) {
-        this.logger.log(`blob size limit exceeded: ${recvSize} > ${blobLimit}`);
+      } else if (recvSize > businessBlobLimit) {
+        this.logger.log(
+          `blob size limit exceeded: ${recvSize} > ${businessBlobLimit}`
+        );
         return true;
       } else {
         return false;
