@@ -80,7 +80,10 @@ export const Quotas: Quota[] = [
       name: 'Free',
       // single blob limit 10MB
       blobLimit: 10 * OneMB,
-      // used for business logic
+      // server limit will larger then client to handle a edge case:
+      // when a user downgrades from pro to free, he can still continue
+      // to upload previously added files that exceed the free limit
+      // NOTE: this is a product decision, may change in future
       businessBlobLimit: 100 * OneMB,
       // total blob limit 10GB
       storageQuota: 10 * OneGB,
