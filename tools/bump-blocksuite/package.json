@@ -1,0 +1,12 @@
+{
+  "name": "@affine/bump-blocksuite",
+  "version": "0.0.0",
+  "type": "module",
+  "main": "index.js",
+  "private": true,
+  "description": "Generate changelog from blocksuite version change",
+  "dependencies": {
+    "@napi-rs/clipboard": "^1.1.1",
+    "@napi-rs/simple-git": "^0.1.11"
+  }
+}

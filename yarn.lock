@@ -149,6 +149,15 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@affine/bump-blocksuite@workspace:tools/bump-blocksuite":
+  version: 0.0.0-use.local
+  resolution: "@affine/bump-blocksuite@workspace:tools/bump-blocksuite"
+  dependencies:
+    "@napi-rs/clipboard": "npm:^1.1.1"
+    "@napi-rs/simple-git": "npm:^0.1.11"
+  languageName: unknown
+  linkType: soft
+
 "@affine/cli@workspace:*, @affine/cli@workspace:tools/cli":
   version: 0.0.0-use.local
   resolution: "@affine/cli@workspace:tools/cli"
@@ -6736,6 +6745,115 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@napi-rs/clipboard-darwin-arm64@npm:1.1.1":
+  version: 1.1.1
+  resolution: "@napi-rs/clipboard-darwin-arm64@npm:1.1.1"
+  conditions: os=darwin & cpu=arm64
+  languageName: node
+  linkType: hard
+
+"@napi-rs/clipboard-darwin-x64@npm:1.1.1":
+  version: 1.1.1
+  resolution: "@napi-rs/clipboard-darwin-x64@npm:1.1.1"
+  conditions: os=darwin & cpu=x64
+  languageName: node
+  linkType: hard
+
+"@napi-rs/clipboard-linux-arm-gnueabihf@npm:1.1.1":
+  version: 1.1.1
+  resolution: "@napi-rs/clipboard-linux-arm-gnueabihf@npm:1.1.1"
+  conditions: os=linux & cpu=arm
+  languageName: node
+  linkType: hard
+
+"@napi-rs/clipboard-linux-arm64-gnu@npm:1.1.1":
+  version: 1.1.1
+  resolution: "@napi-rs/clipboard-linux-arm64-gnu@npm:1.1.1"
+  conditions: os=linux & cpu=arm64 & libc=glibc
+  languageName: node
+  linkType: hard
+
+"@napi-rs/clipboard-linux-arm64-musl@npm:1.1.1":
+  version: 1.1.1
+  resolution: "@napi-rs/clipboard-linux-arm64-musl@npm:1.1.1"
+  conditions: os=linux & cpu=arm64 & libc=musl
+  languageName: node
+  linkType: hard
+
+"@napi-rs/clipboard-linux-x64-gnu@npm:1.1.1":
+  version: 1.1.1
+  resolution: "@napi-rs/clipboard-linux-x64-gnu@npm:1.1.1"
+  conditions: os=linux & cpu=x64 & libc=glibc
+  languageName: node
+  linkType: hard
+
+"@napi-rs/clipboard-linux-x64-musl@npm:1.1.1":
+  version: 1.1.1
+  resolution: "@napi-rs/clipboard-linux-x64-musl@npm:1.1.1"
+  conditions: os=linux & cpu=x64 & libc=musl
+  languageName: node
+  linkType: hard
+
+"@napi-rs/clipboard-win32-arm64-msvc@npm:1.1.1":
+  version: 1.1.1
+  resolution: "@napi-rs/clipboard-win32-arm64-msvc@npm:1.1.1"
+  conditions: os=win32 & cpu=arm64
+  languageName: node
+  linkType: hard
+
+"@napi-rs/clipboard-win32-ia32-msvc@npm:1.1.1":
+  version: 1.1.1
+  resolution: "@napi-rs/clipboard-win32-ia32-msvc@npm:1.1.1"
+  conditions: os=win32 & cpu=ia32
+  languageName: node
+  linkType: hard
+
+"@napi-rs/clipboard-win32-x64-msvc@npm:1.1.1":
+  version: 1.1.1
+  resolution: "@napi-rs/clipboard-win32-x64-msvc@npm:1.1.1"
+  conditions: os=win32 & cpu=x64
+  languageName: node
+  linkType: hard
+
+"@napi-rs/clipboard@npm:^1.1.1":
+  version: 1.1.1
+  resolution: "@napi-rs/clipboard@npm:1.1.1"
+  dependencies:
+    "@napi-rs/clipboard-darwin-arm64": "npm:1.1.1"
+    "@napi-rs/clipboard-darwin-x64": "npm:1.1.1"
+    "@napi-rs/clipboard-linux-arm-gnueabihf": "npm:1.1.1"
+    "@napi-rs/clipboard-linux-arm64-gnu": "npm:1.1.1"
+    "@napi-rs/clipboard-linux-arm64-musl": "npm:1.1.1"
+    "@napi-rs/clipboard-linux-x64-gnu": "npm:1.1.1"
+    "@napi-rs/clipboard-linux-x64-musl": "npm:1.1.1"
+    "@napi-rs/clipboard-win32-arm64-msvc": "npm:1.1.1"
+    "@napi-rs/clipboard-win32-ia32-msvc": "npm:1.1.1"
+    "@napi-rs/clipboard-win32-x64-msvc": "npm:1.1.1"
+  dependenciesMeta:
+    "@napi-rs/clipboard-darwin-arm64":
+      optional: true
+    "@napi-rs/clipboard-darwin-x64":
+      optional: true
+    "@napi-rs/clipboard-linux-arm-gnueabihf":
+      optional: true
+    "@napi-rs/clipboard-linux-arm64-gnu":
+      optional: true
+    "@napi-rs/clipboard-linux-arm64-musl":
+      optional: true
+    "@napi-rs/clipboard-linux-x64-gnu":
+      optional: true
+    "@napi-rs/clipboard-linux-x64-musl":
+      optional: true
+    "@napi-rs/clipboard-win32-arm64-msvc":
+      optional: true
+    "@napi-rs/clipboard-win32-ia32-msvc":
+      optional: true
+    "@napi-rs/clipboard-win32-x64-msvc":
+      optional: true
+  checksum: 3cdd934538417b3911589d494b79e5e5abe1e8be6bb832d13b78fcee3a5df9a514c3268df5b1d02bf8d78d29aeafac4c242854e7093a758c679cf696a975b9ec
+  languageName: node
+  linkType: hard
+
 "@napi-rs/cross-toolchain@npm:^0.0.14":
   version: 0.0.14
   resolution: "@napi-rs/cross-toolchain@npm:0.0.14"
@@ -7032,6 +7150,125 @@ __metadata:
     "@napi-rs/lzma-win32-x64-msvc":
       optional: true
   checksum: 5e6d9bee5e359227f7bb3616b3b2a8b064bde0f5aebf4b885df23954cc2f35b1ae44595405733e54826ab9896c02309eac5ff2b340592b698ef2aa135a44288c
+  languageName: node
+  linkType: hard
+
+"@napi-rs/simple-git-android-arm-eabi@npm:0.1.11":
+  version: 0.1.11
+  resolution: "@napi-rs/simple-git-android-arm-eabi@npm:0.1.11"
+  conditions: os=android & cpu=arm
+  languageName: node
+  linkType: hard
+
+"@napi-rs/simple-git-android-arm64@npm:0.1.11":
+  version: 0.1.11
+  resolution: "@napi-rs/simple-git-android-arm64@npm:0.1.11"
+  conditions: os=android & cpu=arm64
+  languageName: node
+  linkType: hard
+
+"@napi-rs/simple-git-darwin-arm64@npm:0.1.11":
+  version: 0.1.11
+  resolution: "@napi-rs/simple-git-darwin-arm64@npm:0.1.11"
+  conditions: os=darwin & cpu=arm64
+  languageName: node
+  linkType: hard
+
+"@napi-rs/simple-git-darwin-x64@npm:0.1.11":
+  version: 0.1.11
+  resolution: "@napi-rs/simple-git-darwin-x64@npm:0.1.11"
+  conditions: os=darwin & cpu=x64
+  languageName: node
+  linkType: hard
+
+"@napi-rs/simple-git-linux-arm-gnueabihf@npm:0.1.11":
+  version: 0.1.11
+  resolution: "@napi-rs/simple-git-linux-arm-gnueabihf@npm:0.1.11"
+  conditions: os=linux & cpu=arm
+  languageName: node
+  linkType: hard
+
+"@napi-rs/simple-git-linux-arm64-gnu@npm:0.1.11":
+  version: 0.1.11
+  resolution: "@napi-rs/simple-git-linux-arm64-gnu@npm:0.1.11"
+  conditions: os=linux & cpu=arm64 & libc=glibc
+  languageName: node
+  linkType: hard
+
+"@napi-rs/simple-git-linux-arm64-musl@npm:0.1.11":
+  version: 0.1.11
+  resolution: "@napi-rs/simple-git-linux-arm64-musl@npm:0.1.11"
+  conditions: os=linux & cpu=arm64 & libc=musl
+  languageName: node
+  linkType: hard
+
+"@napi-rs/simple-git-linux-x64-gnu@npm:0.1.11":
+  version: 0.1.11
+  resolution: "@napi-rs/simple-git-linux-x64-gnu@npm:0.1.11"
+  conditions: os=linux & cpu=x64 & libc=glibc
+  languageName: node
+  linkType: hard
+
+"@napi-rs/simple-git-linux-x64-musl@npm:0.1.11":
+  version: 0.1.11
+  resolution: "@napi-rs/simple-git-linux-x64-musl@npm:0.1.11"
+  conditions: os=linux & cpu=x64 & libc=musl
+  languageName: node
+  linkType: hard
+
+"@napi-rs/simple-git-win32-arm64-msvc@npm:0.1.11":
+  version: 0.1.11
+  resolution: "@napi-rs/simple-git-win32-arm64-msvc@npm:0.1.11"
+  conditions: os=win32 & cpu=arm64
+  languageName: node
+  linkType: hard
+
+"@napi-rs/simple-git-win32-x64-msvc@npm:0.1.11":
+  version: 0.1.11
+  resolution: "@napi-rs/simple-git-win32-x64-msvc@npm:0.1.11"
+  conditions: os=win32 & cpu=x64
+  languageName: node
+  linkType: hard
+
+"@napi-rs/simple-git@npm:^0.1.11":
+  version: 0.1.11
+  resolution: "@napi-rs/simple-git@npm:0.1.11"
+  dependencies:
+    "@napi-rs/simple-git-android-arm-eabi": "npm:0.1.11"
+    "@napi-rs/simple-git-android-arm64": "npm:0.1.11"
+    "@napi-rs/simple-git-darwin-arm64": "npm:0.1.11"
+    "@napi-rs/simple-git-darwin-x64": "npm:0.1.11"
+    "@napi-rs/simple-git-linux-arm-gnueabihf": "npm:0.1.11"
+    "@napi-rs/simple-git-linux-arm64-gnu": "npm:0.1.11"
+    "@napi-rs/simple-git-linux-arm64-musl": "npm:0.1.11"
+    "@napi-rs/simple-git-linux-x64-gnu": "npm:0.1.11"
+    "@napi-rs/simple-git-linux-x64-musl": "npm:0.1.11"
+    "@napi-rs/simple-git-win32-arm64-msvc": "npm:0.1.11"
+    "@napi-rs/simple-git-win32-x64-msvc": "npm:0.1.11"
+  dependenciesMeta:
+    "@napi-rs/simple-git-android-arm-eabi":
+      optional: true
+    "@napi-rs/simple-git-android-arm64":
+      optional: true
+    "@napi-rs/simple-git-darwin-arm64":
+      optional: true
+    "@napi-rs/simple-git-darwin-x64":
+      optional: true
+    "@napi-rs/simple-git-linux-arm-gnueabihf":
+      optional: true
+    "@napi-rs/simple-git-linux-arm64-gnu":
+      optional: true
+    "@napi-rs/simple-git-linux-arm64-musl":
+      optional: true
+    "@napi-rs/simple-git-linux-x64-gnu":
+      optional: true
+    "@napi-rs/simple-git-linux-x64-musl":
+      optional: true
+    "@napi-rs/simple-git-win32-arm64-msvc":
+      optional: true
+    "@napi-rs/simple-git-win32-x64-msvc":
+      optional: true
+  checksum: 5802a96fb4152d3fd6cc28ebea56fd363d7055bb7a185289dab33954980d7114ee174290b8d12f4b5630a97dc4a443d24e5873417a3f9aa6877a5d3ec2f62165
   languageName: node
   linkType: hard
 
