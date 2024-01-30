@@ -1,0 +1,29 @@
+<svg width="135" height="80" viewBox="0 0 135 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect width="135" height="80" fill="white"/>
+<rect x="28" y="7" width="19" height="10" fill="#FFDE6B" stroke="white"/>
+<rect x="47" y="7" width="20" height="10" fill="#FFDE6B" stroke="white"/>
+<rect x="67" y="7" width="20" height="10" fill="#FFDE6B" stroke="white"/>
+<rect x="87" y="7" width="19" height="10" fill="#FFDE6B" stroke="white"/>
+<rect x="106" y="7" width="20" height="10" fill="#FFDE6B" stroke="white"/>
+<rect x="8" y="7" width="20" height="10" fill="#FFDE6B" stroke="white"/>
+<rect x="8" y="17" width="20" height="14" fill="#FFC46B" stroke="white"/>
+<rect x="28" y="17" width="98" height="14" fill="#FFC46B" stroke="white"/>
+<rect x="8" y="31" width="20" height="14" fill="#937EE7" stroke="white"/>
+<rect x="28" y="31" width="98" height="14" fill="#937EE7" stroke="white"/>
+<rect x="8" y="45" width="20" height="14" fill="#B8E3FF" stroke="white"/>
+<rect x="28" y="45" width="98" height="14" fill="#B8E3FF" stroke="white"/>
+<rect x="8" y="59" width="20" height="14" fill="#9DD194" stroke="white"/>
+<rect x="28" y="59" width="98" height="14" fill="#9DD194" stroke="white"/>
+<rect x="30" y="19" width="18" height="4" fill="#FFEACA"/>
+<rect x="30.05" y="19.05" width="17.9" height="3.9" stroke="black" stroke-opacity="0.1" stroke-width="0.1"/>
+<rect x="48" y="33" width="18" height="4" fill="#F3F0FF"/>
+<rect x="48.05" y="33.05" width="17.9" height="3.9" stroke="black" stroke-opacity="0.1" stroke-width="0.1"/>
+<rect x="55" y="39" width="34" height="4" fill="#F3F0FF"/>
+<rect x="55.05" y="39.05" width="33.9" height="3.9" stroke="black" stroke-opacity="0.1" stroke-width="0.1"/>
+<rect x="87" y="49" width="34" height="4" fill="#E1EFFF"/>
+<rect x="87.05" y="49.05" width="33.9" height="3.9" stroke="black" stroke-opacity="0.1" stroke-width="0.1"/>
+<rect x="40" y="62" width="28" height="4" fill="#DFF4E8"/>
+<rect x="40.05" y="62.05" width="27.9" height="3.9" stroke="black" stroke-opacity="0.1" stroke-width="0.1"/>
+<rect x="40" y="67" width="28" height="4" fill="#DFF4E8"/>
+<rect x="40.05" y="67.05" width="27.9" height="3.9" stroke="black" stroke-opacity="0.1" stroke-width="0.1"/>
+</svg>
