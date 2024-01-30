@@ -10,6 +10,7 @@
     "./di": "./src/di/index.ts",
     "./livedata": "./src/livedata/index.ts",
     "./storage": "./src/storage/index.ts",
+    "./lifecycle": "./src/lifecycle/index.ts",
     ".": "./src/index.ts"
   },
   "dependencies": {
