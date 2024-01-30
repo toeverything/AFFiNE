@@ -7,9 +7,9 @@ import * as styles from './not-found.css';
 
 export const NotFoundGroup = () => {
   const query = useAtomValue(cmdkQueryAtom);
-  // hack: we know that the filtered count is 2 when there is no result (create page & edgeless)
+  // hack: we know that the filtered count is 3 when there is no result (create page & edgeless & append to journal)
   const renderNoResult =
-    useCommandState(state => state.filtered.count === 2) || false;
+    useCommandState(state => state.filtered.count === 3) || false;
 
   if (!renderNoResult) {
     return null;

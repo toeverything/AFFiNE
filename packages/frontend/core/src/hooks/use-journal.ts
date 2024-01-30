@@ -104,6 +104,21 @@ export const useJournalHelper = (workspace: BlockSuiteWorkspace) => {
     [getJournalDateString]
   );
 
+  const appendContentToToday = useCallback(
+    async (content: string) => {
+      if (!content) return;
+      const page = getJournalByDate(dayjs().format(JOURNAL_DATE_FORMAT));
+      if (!page) return;
+      const blockId = page.addBlock(
+        'affine:paragraph',
+        { text: new page.Text(content) },
+        page.getBlockByFlavour('affine:note')[0].id
+      );
+      return { page, blockId };
+    },
+    [getJournalByDate]
+  );
+
   return useMemo(
     () => ({
       getJournalsByDate,
@@ -112,6 +127,7 @@ export const useJournalHelper = (workspace: BlockSuiteWorkspace) => {
       getLocalizedJournalDateString,
       isPageJournal,
       isPageTodayJournal,
+      appendContentToToday,
     }),
     [
       getJournalByDate,
@@ -120,6 +136,7 @@ export const useJournalHelper = (workspace: BlockSuiteWorkspace) => {
       getLocalizedJournalDateString,
       isPageJournal,
       isPageTodayJournal,
+      appendContentToToday,
     ]
   );
 };

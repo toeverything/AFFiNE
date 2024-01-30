@@ -5,7 +5,12 @@ import {
 } from '@affine/core/hooks/use-block-suite-page-meta';
 import type { Collection } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { EdgelessIcon, PageIcon, ViewLayersIcon } from '@blocksuite/icons';
+import {
+  EdgelessIcon,
+  PageIcon,
+  TodayIcon,
+  ViewLayersIcon,
+} from '@blocksuite/icons';
 import type { PageMeta } from '@blocksuite/store';
 import { Workspace } from '@toeverything/infra';
 import { getCurrentStore } from '@toeverything/infra/atom';
@@ -23,6 +28,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { pageSettingsAtom, recentPageIdsBaseAtom } from '../../../atoms';
 import { currentPageIdAtom } from '../../../atoms/mode';
+import { useJournalHelper } from '../../../hooks/use-journal';
 import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
 import { CollectionService } from '../../../modules/collection';
 import { WorkspaceSubPath } from '../../../shared';
@@ -161,6 +167,7 @@ export const usePageCommands = () => {
   const pageMetaHelper = usePageMetaHelper(workspace.blockSuiteWorkspace);
   const query = useAtomValue(cmdkQueryAtom);
   const navigationHelper = useNavigateHelper();
+  const journalHelper = useJournalHelper(workspace.blockSuiteWorkspace);
   const t = useAFFiNEI18N();
 
   const [searchTime, setSearchTime] = useState<number>(0);
@@ -254,6 +261,24 @@ export const usePageCommands = () => {
       // check if the pages have exact match. if not, we should show the "create page" command
       if (results.every(command => command.originalValue !== query)) {
         results.push({
+          id: 'affine:pages:append-to-journal',
+          label: t['com.affine.journal.cmdk.append-to-today'](),
+          value: 'affine::append-journal' + query, // hack to make the page always showing in the search result
+          category: 'affine:creation',
+          run: async () => {
+            const appendRes = await journalHelper.appendContentToToday(query);
+            if (!appendRes) return;
+            const { page, blockId } = appendRes;
+            navigationHelper.jumpToPageBlock(
+              page.workspace.id,
+              page.id,
+              blockId
+            );
+          },
+          icon: <TodayIcon />,
+        });
+
+        results.push({
           id: 'affine:pages:create-page',
           label: t['com.affine.cmdk.affine.create-new-page-as']({
             keyWord: query,
@@ -294,6 +319,7 @@ export const usePageCommands = () => {
     t,
     workspace,
     pages,
+    journalHelper,
     pageHelper,
     pageMetaHelper,
   ]);
