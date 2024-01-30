@@ -466,7 +466,7 @@ __metadata:
     nanoid: "npm:^5.0.3"
     rxjs: "npm:^7.8.1"
     semver: "npm:^7.5.4"
-    tinykeys: "npm:^2.1.0"
+    tinykeys: "patch:tinykeys@npm%3A2.1.0#~/.yarn/patches/tinykeys-npm-2.1.0-819feeaed0.patch"
     tree-kill: "npm:^1.2.2"
     ts-node: "npm:^10.9.1"
     undici: "npm:^6.0.0"
@@ -13054,6 +13054,7 @@ __metadata:
     foxact: "npm:^0.2.20"
     jotai: "npm:^2.5.1"
     jotai-effect: "npm:^0.2.3"
+    lodash-es: "npm:^4.17.21"
     nanoid: "npm:^5.0.3"
     react: "npm:^18.2.0"
     rxjs: "npm:^7.8.1"
@@ -33232,7 +33233,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tinykeys@npm:2.1.0, tinykeys@npm:^2.1.0":
+"tinykeys@npm:2.1.0":
   version: 2.1.0
   resolution: "tinykeys@npm:2.1.0"
   checksum: 64d222e08472d1a55e42fb1f20f8c4587f7fab633cba0a23754eea3bf477044ae3160f203fd1061435352ed3df900fb49ecf83e829c090e847d7fa45f54491ad

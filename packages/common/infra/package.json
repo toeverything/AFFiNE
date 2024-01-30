@@ -23,6 +23,7 @@
     "foxact": "^0.2.20",
     "jotai": "^2.5.1",
     "jotai-effect": "^0.2.3",
+    "lodash-es": "^4.17.21",
     "nanoid": "^5.0.3",
     "react": "18.2.0",
     "tinykeys": "patch:tinykeys@npm%3A2.1.0#~/.yarn/patches/tinykeys-npm-2.1.0-819feeaed0.patch",

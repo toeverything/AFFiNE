@@ -55,7 +55,7 @@
     "lodash-es": "^4.17.21",
     "rxjs": "^7.8.1",
     "semver": "^7.5.4",
-    "tinykeys": "^2.1.0",
+    "tinykeys": "patch:tinykeys@npm%3A2.1.0#~/.yarn/patches/tinykeys-npm-2.1.0-819feeaed0.patch",
     "tree-kill": "^1.2.2",
     "ts-node": "^10.9.1",
     "undici": "^6.0.0",
