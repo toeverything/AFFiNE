@@ -7,6 +7,7 @@
     "./command": "./src/command/index.ts",
     "./atom": "./src/atom/index.ts",
     "./app-config-storage": "./src/app-config-storage.ts",
+    "./di": "./src/di/index.ts",
     "./livedata": "./src/livedata/index.ts",
     ".": "./src/index.ts"
   },
