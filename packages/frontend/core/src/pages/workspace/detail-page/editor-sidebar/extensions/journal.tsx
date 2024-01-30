@@ -7,6 +7,7 @@ import {
 } from '@affine/component';
 import { MoveToTrash } from '@affine/core/components/page-list';
 import { useTrashModalHelper } from '@affine/core/hooks/affine/use-trash-modal-helper';
+import { useBlockSuitePageMeta } from '@affine/core/hooks/use-block-suite-page-meta';
 import { useBlockSuiteWorkspacePageTitle } from '@affine/core/hooks/use-block-suite-workspace-page-title';
 import {
   useJournalHelper,
@@ -14,6 +15,7 @@ import {
   useJournalRouteHelper,
 } from '@affine/core/hooks/use-journal';
 import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
+import type { BlockSuiteWorkspace } from '@affine/core/shared';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   EdgelessIcon,
@@ -21,7 +23,7 @@ import {
   PageIcon,
   TodayIcon,
 } from '@blocksuite/icons';
-import type { Page } from '@blocksuite/store';
+import type { Page, PageMeta } from '@blocksuite/store';
 import { assignInlineVars } from '@vanilla-extract/dynamic';
 import clsx from 'clsx';
 import dayjs from 'dayjs';
@@ -42,21 +44,28 @@ const CountDisplay = ({
   return <span {...attrs}>{count > max ? `${max}+` : count}</span>;
 };
 interface PageItemProps extends HTMLAttributes<HTMLDivElement> {
-  page: Page;
+  pageMeta: PageMeta;
+  workspace: BlockSuiteWorkspace;
   right?: ReactNode;
 }
-const PageItem = ({ page, right, className, ...attrs }: PageItemProps) => {
-  const { isJournal } = useJournalInfoHelper(page.workspace, page.id);
-  const title = useBlockSuiteWorkspacePageTitle(page.workspace, page.id);
+const PageItem = ({
+  pageMeta,
+  workspace,
+  right,
+  className,
+  ...attrs
+}: PageItemProps) => {
+  const { isJournal } = useJournalInfoHelper(workspace, pageMeta.id);
+  const title = useBlockSuiteWorkspacePageTitle(workspace, pageMeta.id);
 
   const Icon = isJournal
     ? TodayIcon
-    : page.meta.mode === 'edgeless'
+    : pageMeta.mode === 'edgeless'
       ? EdgelessIcon
       : PageIcon;
   return (
     <div
-      aria-label={page.meta.title}
+      aria-label={pageMeta.title}
       className={clsx(className, styles.pageItem)}
       {...attrs}
     >
@@ -147,15 +156,12 @@ const EditorJournalPanel = (props: EditorExtensionProps) => {
 };
 
 const sortPagesByDate = (
-  pages: Page[],
+  pages: PageMeta[],
   field: 'updatedDate' | 'createDate',
   order: 'asc' | 'desc' = 'desc'
 ) => {
   return [...pages].sort((a, b) => {
-    return (
-      (order === 'asc' ? 1 : -1) *
-      dayjs(b.meta[field]).diff(dayjs(a.meta[field]))
-    );
+    return (order === 'asc' ? 1 : -1) * dayjs(b[field]).diff(dayjs(a[field]));
   });
 };
 
@@ -174,21 +180,21 @@ const JournalDailyCountBlock = ({ workspace, date }: JournalBlockProps) => {
   const nodeRef = useRef<HTMLDivElement>(null);
   const t = useAFFiNEI18N();
   const [activeItem, setActiveItem] = useState<NavItemName>('createdToday');
+  const pageMetas = useBlockSuitePageMeta(workspace);
 
   const navigateHelper = useNavigateHelper();
 
   const getTodaysPages = useCallback(
     (field: 'createDate' | 'updatedDate') => {
-      const pages: Page[] = [];
-      Array.from(workspace.pages.values()).forEach(page => {
-        if (page.meta.trash) return;
-        if (page.meta[field] && dayjs(page.meta[field]).isSame(date, 'day')) {
-          pages.push(page);
-        }
-      });
-      return sortPagesByDate(pages, field);
+      return sortPagesByDate(
+        pageMetas.filter(pageMeta => {
+          if (pageMeta.trash) return false;
+          return pageMeta[field] && dayjs(pageMeta[field]).isSame(date, 'day');
+        }),
+        field
+      );
     },
-    [date, workspace.pages]
+    [date, pageMetas]
   );
 
   const createdToday = useMemo(
@@ -257,14 +263,15 @@ const JournalDailyCountBlock = ({ workspace, date }: JournalBlockProps) => {
               <Scrollable.Scrollbar />
               <Scrollable.Viewport>
                 <div className={styles.dailyCountContent} ref={nodeRef}>
-                  {renderList.map((page, index) => (
+                  {renderList.map((pageMeta, index) => (
                     <PageItem
                       onClick={() =>
-                        navigateHelper.openPage(workspace.id, page.id)
+                        navigateHelper.openPage(workspace.id, pageMeta.id)
                       }
                       tabIndex={name === activeItem ? 0 : -1}
                       key={index}
-                      page={page}
+                      pageMeta={pageMeta}
+                      workspace={workspace}
                     />
                   ))}
                 </div>
@@ -315,7 +322,8 @@ const ConflictList = ({
           <PageItem
             aria-label={page.meta.title}
             aria-selected={isCurrent}
-            page={page}
+            pageMeta={page.meta}
+            workspace={workspace}
             key={page.id}
             right={
               <Menu

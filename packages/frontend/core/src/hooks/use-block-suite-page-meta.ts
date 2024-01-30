@@ -5,9 +5,11 @@ import type { Atom } from 'jotai';
 import { atom, useAtomValue } from 'jotai';
 import { useMemo } from 'react';
 
+import { useJournalHelper } from './use-journal';
+
 const weakMap = new WeakMap<Workspace, Atom<PageMeta[]>>();
 
-export function useBlockSuitePageMeta(
+export function useAllBlockSuitePageMeta(
   blockSuiteWorkspace: Workspace
 ): PageMeta[] {
   if (!weakMap.has(blockSuiteWorkspace)) {
@@ -24,6 +26,18 @@ export function useBlockSuitePageMeta(
     };
   }
   return useAtomValue(weakMap.get(blockSuiteWorkspace) as Atom<PageMeta[]>);
+}
+
+export function useBlockSuitePageMeta(blocksuiteWorkspace: Workspace) {
+  const pageMetas = useAllBlockSuitePageMeta(blocksuiteWorkspace);
+  const { isPageJournal } = useJournalHelper(blocksuiteWorkspace);
+  return useMemo(
+    () =>
+      pageMetas.filter(
+        pageMeta => !isPageJournal(pageMeta.id) || !!pageMeta.updatedDate
+      ),
+    [isPageJournal, pageMetas]
+  );
 }
 
 export function usePageMetaHelper(blockSuiteWorkspace: Workspace) {
