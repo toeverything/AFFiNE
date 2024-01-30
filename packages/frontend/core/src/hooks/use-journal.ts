@@ -33,6 +33,10 @@ export const useJournalHelper = (workspace: BlockSuiteWorkspace) => {
     (maybeDate: MaybeDate) => {
       const title = dayjs(maybeDate).format(JOURNAL_DATE_FORMAT);
       const page = bsWorkspaceHelper.createPage();
+      // set created date to match the journal date
+      page.workspace.setPageMeta(page.id, {
+        createDate: dayjs(maybeDate).toDate().getTime(),
+      });
       initEmptyPage(page, title).catch(err =>
         console.error('Failed to load journal page', err)
       );
