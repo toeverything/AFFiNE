@@ -1,5 +1,5 @@
 {
-  "entryPoints": ["packages/common/infra", "packages/common/workspace"],
+  "entryPoints": ["packages/common/infra"],
   "out": "docs/reference/dist",
   "entryPointStrategy": "packages",
   "includeVersion": false,

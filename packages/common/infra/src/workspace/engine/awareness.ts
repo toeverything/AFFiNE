@@ -11,10 +11,6 @@ export const AwarenessProvider =
 export class AwarenessEngine {
   constructor(public readonly providers: AwarenessProvider[]) {}
 
-  static get EMPTY() {
-    return new AwarenessEngine([]);
-  }
-
   connect() {
     this.providers.forEach(provider => provider.connect());
   }

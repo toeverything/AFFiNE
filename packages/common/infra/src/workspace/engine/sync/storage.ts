@@ -23,3 +23,22 @@ export interface SyncStorage {
     disconnect: (reason: string) => void
   ): Promise<() => void>;
 }
+
+export const EmptySyncStorage: SyncStorage = {
+  name: 'empty',
+  pull: async () => null,
+  push: async () => {},
+  subscribe: async () => () => {},
+};
+
+export const ReadonlyMappingSyncStorage = (map: {
+  [key: string]: Uint8Array;
+}): SyncStorage => ({
+  name: 'map',
+  pull: async (id: string) => {
+    const data = map[id];
+    return data ? { data } : null;
+  },
+  push: async () => {},
+  subscribe: async () => () => {},
+});

@@ -22,9 +22,6 @@
       "path": "../../packages/common/infra"
     },
     {
-      "path": "../../packages/common/workspace"
-    },
-    {
       "path": "./tsconfig.node.json"
     }
   ]

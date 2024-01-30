@@ -2,15 +2,12 @@ import { pushNotificationAtom } from '@affine/component/notification-center';
 import { SettingRow } from '@affine/component/setting-components';
 import { ConfirmModal } from '@affine/component/ui/modal';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import {
-  currentWorkspaceAtom,
-  workspaceListAtom,
-  workspaceManagerAtom,
-} from '@affine/core/modules/workspace';
-import { WorkspaceSubPath } from '@affine/core/shared';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowRightSmallIcon } from '@blocksuite/icons';
-import { useAtomValue, useSetAtom } from 'jotai';
+import { Workspace, WorkspaceManager } from '@toeverything/infra';
+import { useService } from '@toeverything/infra/di';
+import { useLiveData } from '@toeverything/infra/livedata';
+import { useSetAtom } from 'jotai';
 import { useCallback, useState } from 'react';
 
 import { openSettingModalAtom } from '../../../../../../atoms';
@@ -18,6 +15,7 @@ import {
   RouteLogic,
   useNavigateHelper,
 } from '../../../../../../hooks/use-navigate-helper';
+import { WorkspaceSubPath } from '../../../../../../shared';
 import type { WorkspaceSettingDetailProps } from '../types';
 import { WorkspaceDeleteModal } from './delete';
 
@@ -35,9 +33,9 @@ export const DeleteLeaveWorkspace = ({
   const [showLeave, setShowLeave] = useState(false);
   const setSettingModal = useSetAtom(openSettingModalAtom);
 
-  const workspaceManager = useAtomValue(workspaceManagerAtom);
-  const workspaceList = useAtomValue(workspaceListAtom);
-  const currentWorkspace = useAtomValue(currentWorkspaceAtom);
+  const workspaceManager = useService(WorkspaceManager);
+  const workspaceList = useLiveData(workspaceManager.list.workspaceList);
+  const currentWorkspace = useService(Workspace);
   const pushNotification = useSetAtom(pushNotificationAtom);
 
   const onLeaveOrDelete = useCallback(() => {

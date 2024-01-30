@@ -1,17 +1,27 @@
 import { MainContainer } from '@affine/component/workspace';
 import { usePageDocumentTitle } from '@affine/core/hooks/use-global-state';
-import { DebugLogger } from '@affine/debug';
+import { WorkspaceFlavour } from '@affine/env/workspace';
 import { fetchWithTraceReport } from '@affine/graphql';
-import { globalBlockSuiteSchema } from '@affine/workspace';
 import {
-  createAffineCloudBlobStorage,
-  createStaticBlobStorage,
+  AffineCloudBlobStorage,
+  StaticBlobStorage,
 } from '@affine/workspace-impl';
-import { assertExists } from '@blocksuite/global/utils';
-import { type Page, Workspace } from '@blocksuite/store';
+import {
+  EmptyBlobStorage,
+  LocalBlobStorage,
+  LocalSyncStorage,
+  Page,
+  PageManager,
+  ReadonlyMappingSyncStorage,
+  RemoteBlobStorage,
+  useService,
+  useServiceOptional,
+  WorkspaceIdContext,
+  WorkspaceManager,
+  WorkspaceScope,
+} from '@toeverything/infra';
 import { noop } from 'foxact/noop';
-import type { ReactElement } from 'react';
-import { useCallback } from 'react';
+import { useEffect } from 'react';
 import type { LoaderFunction } from 'react-router-dom';
 import {
   isRouteErrorResponse,
@@ -19,12 +29,13 @@ import {
   useLoaderData,
   useRouteError,
 } from 'react-router-dom';
-import { applyUpdate } from 'yjs';
 
 import type { PageMode } from '../../atoms';
 import { AppContainer } from '../../components/affine/app-container';
 import { PageDetailEditor } from '../../components/page-detail-editor';
 import { SharePageNotFoundError } from '../../components/share-page-not-found-error';
+import { CurrentPageService } from '../../modules/page';
+import { CurrentWorkspaceService } from '../../modules/workspace';
 import { ShareHeader } from './share-header';
 
 type DocPublishMode = 'edgeless' | 'page';
@@ -57,8 +68,11 @@ export async function downloadBinaryFromCloud(
 }
 
 type LoaderData = {
-  page: Page;
+  pageId: string;
+  workspaceId: string;
   publishMode: PageMode;
+  pageArrayBuffer: ArrayBuffer;
+  workspaceArrayBuffer: ArrayBuffer;
 };
 
 function assertDownloadResponse(
@@ -73,55 +87,104 @@ function assertDownloadResponse(
   }
 }
 
-const logger = new DebugLogger('public:share-page');
-
 export const loader: LoaderFunction = async ({ params }) => {
   const workspaceId = params?.workspaceId;
   const pageId = params?.pageId;
   if (!workspaceId || !pageId) {
     return redirect('/404');
   }
-  const workspace = new Workspace({
-    id: workspaceId,
-    blobStorages: [
-      () => ({
-        crud: createAffineCloudBlobStorage(workspaceId),
-      }),
-      () => ({
-        crud: createStaticBlobStorage(),
-      }),
-    ],
-    schema: globalBlockSuiteSchema,
-  });
-  // download root workspace
-  {
-    const response = await downloadBinaryFromCloud(workspaceId, workspaceId);
-    assertDownloadResponse(response);
-    const { arrayBuffer } = response;
-    applyUpdate(workspace.doc, new Uint8Array(arrayBuffer));
-    workspace.doc.emit('sync', []);
-  }
-  const page = workspace.getPage(pageId);
-  assertExists(page, 'cannot find page');
-  // download page
 
-  const response = await downloadBinaryFromCloud(
+  const [workspaceResponse, pageResponse] = await Promise.all([
+    downloadBinaryFromCloud(workspaceId, workspaceId),
+    downloadBinaryFromCloud(workspaceId, pageId),
+  ]);
+  assertDownloadResponse(workspaceResponse);
+  const { arrayBuffer: workspaceArrayBuffer } = workspaceResponse;
+  assertDownloadResponse(pageResponse);
+  const { arrayBuffer: pageArrayBuffer, publishMode } = pageResponse;
+
+  return {
     workspaceId,
-    page.spaceDoc.guid
-  );
-  assertDownloadResponse(response);
-  const { arrayBuffer, publishMode } = response;
-
-  applyUpdate(page.spaceDoc, new Uint8Array(arrayBuffer));
-
-  logger.info('workspace', workspace);
-  workspace.awarenessStore.setReadonly(page, true);
-  return { page, publishMode };
+    pageId,
+    publishMode,
+    workspaceArrayBuffer,
+    pageArrayBuffer,
+  } satisfies LoaderData;
 };
 
-export const Component = (): ReactElement => {
-  const { page, publishMode } = useLoaderData() as LoaderData;
-  usePageDocumentTitle(page.meta);
+export const Component = () => {
+  const {
+    workspaceId,
+    pageId,
+    publishMode,
+    workspaceArrayBuffer,
+    pageArrayBuffer,
+  } = useLoaderData() as LoaderData;
+  const workspaceManager = useService(WorkspaceManager);
+
+  const currentWorkspace = useService(CurrentWorkspaceService);
+
+  useEffect(() => {
+    // create a workspace for share page
+    const workspace = workspaceManager.instantiate(
+      {
+        id: workspaceId,
+        flavour: WorkspaceFlavour.AFFINE_CLOUD,
+      },
+      services => {
+        services
+          .scope(WorkspaceScope)
+          .addImpl(LocalBlobStorage, EmptyBlobStorage)
+          .addImpl(RemoteBlobStorage('affine'), AffineCloudBlobStorage, [
+            WorkspaceIdContext,
+          ])
+          .addImpl(RemoteBlobStorage('static'), StaticBlobStorage)
+          .addImpl(
+            LocalSyncStorage,
+            ReadonlyMappingSyncStorage({
+              [workspaceId]: new Uint8Array(workspaceArrayBuffer),
+              [pageId]: new Uint8Array(pageArrayBuffer),
+            })
+          );
+      }
+    );
+
+    workspace.engine.sync
+      .waitForSynced()
+      .then(() => {
+        const { page } = workspace.services
+          .get(PageManager)
+          .openByPageId(pageId);
+
+        workspace.blockSuiteWorkspace.awarenessStore.setReadonly(
+          page.blockSuitePage,
+          true
+        );
+
+        const currentPage = workspace.services.get(CurrentPageService);
+
+        currentWorkspace.openWorkspace(workspace);
+        currentPage.openPage(page);
+      })
+      .catch(err => {
+        console.error(err);
+      });
+  }, [
+    currentWorkspace,
+    pageArrayBuffer,
+    pageId,
+    workspaceArrayBuffer,
+    workspaceId,
+    workspaceManager,
+  ]);
+
+  const page = useServiceOptional(Page);
+
+  usePageDocumentTitle(page?.meta);
+
+  if (!page) {
+    return;
+  }
 
   return (
     <AppContainer>
@@ -129,14 +192,14 @@ export const Component = (): ReactElement => {
         <ShareHeader
           pageId={page.id}
           publishMode={publishMode}
-          blockSuiteWorkspace={page.workspace}
+          blockSuiteWorkspace={page.blockSuitePage.workspace}
         />
         <PageDetailEditor
           isPublic
           publishMode={publishMode}
-          workspace={page.workspace}
+          workspace={page.blockSuitePage.workspace}
           pageId={page.id}
-          onLoad={useCallback(() => noop, [])}
+          onLoad={() => noop}
         />
       </MainContainer>
     </AppContainer>

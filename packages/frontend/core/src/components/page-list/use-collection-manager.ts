@@ -1,11 +1,8 @@
-import type {
-  Collection,
-  DeleteCollectionInfo,
-  Filter,
-  VariableMap,
-} from '@affine/env/filter';
+import type { CollectionService } from '@affine/core/modules/collection';
+import type { Collection, Filter, VariableMap } from '@affine/env/filter';
 import type { PageMeta } from '@blocksuite/store';
-import { type Atom, useAtom, useAtomValue } from 'jotai';
+import { useLiveData } from '@toeverything/infra/livedata';
+import { useAtom, useAtomValue } from 'jotai';
 import { atomWithReset } from 'jotai/utils';
 import { useCallback } from 'react';
 import { NIL } from 'uuid';
@@ -32,47 +29,28 @@ export const currentCollectionAtom = atomWithReset<string>(NIL);
 
 export type Updater<T> = (value: T) => T;
 export type CollectionUpdater = Updater<Collection>;
-export type CollectionsCRUD = {
-  addCollection: (...collections: Collection[]) => void;
-  collections: Collection[];
-  updateCollection: (id: string, updater: CollectionUpdater) => void;
-  deleteCollection: (info: DeleteCollectionInfo, ...ids: string[]) => void;
-};
-export type CollectionsCRUDAtom = Atom<
-  Promise<CollectionsCRUD> | CollectionsCRUD
->;
 
-export const useSavedCollections = (collectionAtom: CollectionsCRUDAtom) => {
-  const [{ collections, addCollection, deleteCollection, updateCollection }] =
-    useAtom(collectionAtom);
+export const useSavedCollections = (collectionService: CollectionService) => {
   const addPage = useCallback(
     (collectionId: string, pageId: string) => {
-      updateCollection(collectionId, old => {
+      collectionService.updateCollection(collectionId, old => {
         return {
           ...old,
           allowList: [pageId, ...(old.allowList ?? [])],
         };
       });
     },
-    [updateCollection]
+    [collectionService]
   );
   return {
-    collections,
-    addCollection,
-    updateCollection,
-    deleteCollection,
+    collectionService,
     addPage,
   };
 };
 
-export const useCollectionManager = (collectionsAtom: CollectionsCRUDAtom) => {
-  const {
-    collections,
-    updateCollection,
-    addCollection,
-    deleteCollection,
-    addPage,
-  } = useSavedCollections(collectionsAtom);
+export const useCollectionManager = (collectionService: CollectionService) => {
+  const collections = useLiveData(collectionService.collections);
+  const { addPage } = useSavedCollections(collectionService);
   const currentCollectionId = useAtomValue(currentCollectionAtom);
   const [defaultCollection, updateDefaultCollection] = useAtom(
     defaultCollectionAtom
@@ -82,10 +60,10 @@ export const useCollectionManager = (collectionsAtom: CollectionsCRUDAtom) => {
       if (collection.id === NIL) {
         updateDefaultCollection(collection);
       } else {
-        updateCollection(collection.id, () => collection);
+        collectionService.updateCollection(collection.id, () => collection);
       }
     },
-    [updateDefaultCollection, updateCollection]
+    [updateDefaultCollection, collectionService]
   );
   const setTemporaryFilter = useCallback(
     (filterList: Filter[]) => {
@@ -108,9 +86,10 @@ export const useCollectionManager = (collectionsAtom: CollectionsCRUDAtom) => {
     isDefault: currentCollectionId === NIL,
 
     // actions
-    createCollection: addCollection,
+    createCollection: collectionService.addCollection.bind(collectionService),
     updateCollection: update,
-    deleteCollection,
+    deleteCollection:
+      collectionService.deleteCollection.bind(collectionService),
     addPage,
     setTemporaryFilter,
   };

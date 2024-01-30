@@ -5,7 +5,6 @@ import {
 import { MainContainer, WorkspaceFallback } from '@affine/component/workspace';
 import { useBlockSuitePageMeta } from '@affine/core/hooks/use-block-suite-page-meta';
 import { useWorkspaceStatus } from '@affine/core/hooks/use-workspace-status';
-import { waitForCurrentWorkspaceAtom } from '@affine/core/modules/workspace';
 import { assertExists } from '@blocksuite/global/utils';
 import {
   DndContext,
@@ -16,6 +15,8 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
+import { Workspace } from '@toeverything/infra';
+import { useService } from '@toeverything/infra/di';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import type { PropsWithChildren, ReactNode } from 'react';
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
@@ -54,7 +55,7 @@ export const QuickSearch = () => {
     openQuickSearchModalAtom
   );
 
-  const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
+  const currentWorkspace = useService(Workspace);
   const { pageId } = useParams();
   const blockSuiteWorkspace = currentWorkspace.blockSuiteWorkspace;
   const pageMeta = useBlockSuitePageMeta(
@@ -92,7 +93,7 @@ export const WorkspaceLayout = function WorkspaceLayout({
 };
 
 export const WorkspaceLayoutInner = ({ children }: PropsWithChildren) => {
-  const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
+  const currentWorkspace = useService(Workspace);
   const { openPage } = useNavigateHelper();
   const pageHelper = usePageHelper(currentWorkspace.blockSuiteWorkspace);
 

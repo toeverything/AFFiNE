@@ -1,5 +1,5 @@
 import { DebugLogger } from '@affine/debug';
-import type { AwarenessProvider } from '@affine/workspace';
+import type { AwarenessProvider } from '@toeverything/infra';
 import {
   applyAwarenessUpdate,
   type Awareness,
@@ -14,30 +14,66 @@ const logger = new DebugLogger('affine:awareness:socketio');
 
 type AwarenessChanges = Record<'added' | 'updated' | 'removed', number[]>;
 
-export function createCloudAwarenessProvider(
-  workspaceId: string,
-  awareness: Awareness
-): AwarenessProvider {
-  const socket = getIoManager().socket('/');
+export class AffineCloudAwarenessProvider implements AwarenessProvider {
+  socket = getIoManager().socket('/');
 
-  const awarenessBroadcast = ({
+  constructor(
+    private readonly workspaceId: string,
+    private readonly awareness: Awareness
+  ) {}
+
+  connect(): void {
+    this.socket.on('server-awareness-broadcast', this.awarenessBroadcast);
+    this.socket.on(
+      'new-client-awareness-init',
+      this.newClientAwarenessInitHandler
+    );
+    this.awareness.on('update', this.awarenessUpdate);
+
+    window.addEventListener('beforeunload', this.windowBeforeUnloadHandler);
+
+    this.socket.connect();
+
+    this.socket.on('connect', () => this.handleConnect());
+
+    this.socket.emit('client-handshake-awareness', this.workspaceId);
+    this.socket.emit('awareness-init', this.workspaceId);
+  }
+  disconnect(): void {
+    removeAwarenessStates(
+      this.awareness,
+      [this.awareness.clientID],
+      'disconnect'
+    );
+    this.awareness.off('update', this.awarenessUpdate);
+    this.socket.emit('client-leave-awareness', this.workspaceId);
+    this.socket.off('server-awareness-broadcast', this.awarenessBroadcast);
+    this.socket.off(
+      'new-client-awareness-init',
+      this.newClientAwarenessInitHandler
+    );
+    this.socket.off('connect', this.handleConnect);
+    window.removeEventListener('unload', this.windowBeforeUnloadHandler);
+  }
+
+  awarenessBroadcast = ({
     workspaceId: wsId,
     awarenessUpdate,
   }: {
     workspaceId: string;
     awarenessUpdate: string;
   }) => {
-    if (wsId !== workspaceId) {
+    if (wsId !== this.workspaceId) {
       return;
     }
     applyAwarenessUpdate(
-      awareness,
+      this.awareness,
       base64ToUint8Array(awarenessUpdate),
       'remote'
     );
   };
 
-  const awarenessUpdate = (changes: AwarenessChanges, origin: unknown) => {
+  awarenessUpdate = (changes: AwarenessChanges, origin: unknown) => {
     if (origin === 'remote') {
       return;
     }
@@ -46,63 +82,41 @@ export function createCloudAwarenessProvider(
       res.concat(cur)
     );
 
-    const update = encodeAwarenessUpdate(awareness, changedClients);
+    const update = encodeAwarenessUpdate(this.awareness, changedClients);
     uint8ArrayToBase64(update)
       .then(encodedUpdate => {
-        socket.emit('awareness-update', {
-          workspaceId: workspaceId,
+        this.socket.emit('awareness-update', {
+          workspaceId: this.workspaceId,
           awarenessUpdate: encodedUpdate,
         });
       })
       .catch(err => logger.error(err));
   };
 
-  const newClientAwarenessInitHandler = () => {
-    const awarenessUpdate = encodeAwarenessUpdate(awareness, [
-      awareness.clientID,
+  newClientAwarenessInitHandler = () => {
+    const awarenessUpdate = encodeAwarenessUpdate(this.awareness, [
+      this.awareness.clientID,
     ]);
     uint8ArrayToBase64(awarenessUpdate)
       .then(encodedAwarenessUpdate => {
-        socket.emit('awareness-update', {
-          guid: workspaceId,
+        this.socket.emit('awareness-update', {
+          guid: this.workspaceId,
           awarenessUpdate: encodedAwarenessUpdate,
         });
       })
       .catch(err => logger.error(err));
   };
 
-  const windowBeforeUnloadHandler = () => {
-    removeAwarenessStates(awareness, [awareness.clientID], 'window unload');
+  windowBeforeUnloadHandler = () => {
+    removeAwarenessStates(
+      this.awareness,
+      [this.awareness.clientID],
+      'window unload'
+    );
   };
 
-  function handleConnect() {
-    socket.emit('client-handshake-awareness', workspaceId);
-    socket.emit('awareness-init', workspaceId);
-  }
-
-  return {
-    connect: () => {
-      socket.on('server-awareness-broadcast', awarenessBroadcast);
-      socket.on('new-client-awareness-init', newClientAwarenessInitHandler);
-      awareness.on('update', awarenessUpdate);
-
-      window.addEventListener('beforeunload', windowBeforeUnloadHandler);
-
-      socket.connect();
-
-      socket.on('connect', handleConnect);
-
-      socket.emit('client-handshake-awareness', workspaceId);
-      socket.emit('awareness-init', workspaceId);
-    },
-    disconnect: () => {
-      removeAwarenessStates(awareness, [awareness.clientID], 'disconnect');
-      awareness.off('update', awarenessUpdate);
-      socket.emit('client-leave-awareness', workspaceId);
-      socket.off('server-awareness-broadcast', awarenessBroadcast);
-      socket.off('new-client-awareness-init', newClientAwarenessInitHandler);
-      socket.off('connect', handleConnect);
-      window.removeEventListener('unload', windowBeforeUnloadHandler);
-    },
+  handleConnect = () => {
+    this.socket.emit('client-handshake-awareness', this.workspaceId);
+    this.socket.emit('awareness-init', this.workspaceId);
   };
 }

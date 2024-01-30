@@ -26,6 +26,6 @@ export function configureInfraServices(services: ServiceCollection) {
 
 export function configureTestingInfraServices(services: ServiceCollection) {
   configureTestingWorkspaceServices(services);
-  services.addImpl(GlobalCache, MemoryMemento);
-  services.addImpl(GlobalState, MemoryMemento);
+  services.override(GlobalCache, MemoryMemento);
+  services.override(GlobalState, MemoryMemento);
 }

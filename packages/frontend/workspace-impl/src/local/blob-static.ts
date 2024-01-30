@@ -1,4 +1,4 @@
-import type { BlobStorage } from '@affine/workspace';
+import { type BlobStorage } from '@toeverything/infra';
 
 export const predefinedStaticFiles = [
   '029uztLz2CzJezK7UUhrbGiWUdZ0J7NVs_qR6RDsvb8=',
@@ -36,37 +36,36 @@ export const predefinedStaticFiles = [
   'v2yF7lY2L5rtorTtTmYFsoMb9dBPKs5M1y9cUKxcI1M=',
 ];
 
-export const createStaticBlobStorage = (): BlobStorage => {
-  return {
-    name: 'static',
-    readonly: true,
-    get: async (key: string) => {
-      const isStaticResource =
-        predefinedStaticFiles.includes(key) || key.startsWith('/static/');
+export class StaticBlobStorage implements BlobStorage {
+  name = 'static';
+  readonly = true;
+  async get(key: string) {
+    const isStaticResource =
+      predefinedStaticFiles.includes(key) || key.startsWith('/static/');
 
-      if (!isStaticResource) {
-        return null;
-      }
-
-      const path = key.startsWith('/static/') ? key : `/static/${key}`;
-      const response = await fetch(path);
-
-      if (response.ok) {
-        return await response.blob();
-      }
-
+    if (!isStaticResource) {
       return null;
-    },
-    set: async key => {
-      // ignore
-      return key;
-    },
-    delete: async () => {
-      // ignore
-    },
-    list: async () => {
-      // ignore
-      return [];
-    },
-  };
-};
+    }
+
+    const path = key.startsWith('/static/') ? key : `/static/${key}`;
+    const response = await fetch(path);
+
+    if (response.ok) {
+      return await response.blob();
+    }
+
+    return null;
+  }
+
+  async set(key: string) {
+    // ignore
+    return key;
+  }
+  async delete() {
+    // ignore
+  }
+  async list() {
+    // ignore
+    return [];
+  }
+}

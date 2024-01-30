@@ -74,8 +74,14 @@ export function configureWorkspaceServices(services: ServiceCollection) {
 
 export function configureTestingWorkspaceServices(services: ServiceCollection) {
   services
-    .addImpl(WorkspaceListProvider, TestingLocalWorkspaceListProvider, [
+    .override(WorkspaceListProvider('affine-cloud'), null)
+    .override(WorkspaceFactory('affine-cloud'), null)
+    .override(
+      WorkspaceListProvider('local'),
+      TestingLocalWorkspaceListProvider,
+      [GlobalState]
+    )
+    .override(WorkspaceFactory('local'), TestingLocalWorkspaceFactory, [
       GlobalState,
-    ])
-    .addImpl(WorkspaceFactory, TestingLocalWorkspaceFactory, [GlobalState]);
+    ]);
 }

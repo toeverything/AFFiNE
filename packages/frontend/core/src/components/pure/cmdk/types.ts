@@ -1,8 +1,6 @@
-import type { Page } from '@blocksuite/store';
 import type { CommandCategory } from '@toeverything/infra/command';
 
 export interface CommandContext {
-  currentPage: Page | undefined;
   pageMode: 'page' | 'edgeless' | undefined;
 }
 

@@ -1,12 +1,11 @@
-import { workspaceManagerAtom } from '@affine/core/modules/workspace';
-import type { WorkspaceMetadata } from '@affine/workspace';
-import { useAtomValue } from 'jotai';
+import { WorkspaceManager, type WorkspaceMetadata } from '@toeverything/infra';
+import { useService } from '@toeverything/infra/di';
 import { useEffect, useState } from 'react';
 
 import { useWorkspaceBlobObjectUrl } from './use-workspace-blob';
 
 export function useWorkspaceInfo(meta: WorkspaceMetadata) {
-  const workspaceManager = useAtomValue(workspaceManagerAtom);
+  const workspaceManager = useService(WorkspaceManager);
 
   const [information, setInformation] = useState(
     () => workspaceManager.list.getInformation(meta).info

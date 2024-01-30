@@ -3,9 +3,9 @@ import { Divider } from '@affine/component/ui/divider';
 import { Menu } from '@affine/component/ui/menu';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import type { WorkspaceMetadata } from '@affine/workspace';
 import { WebIcon } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
+import type { WorkspaceMetadata } from '@toeverything/infra';
 import clsx from 'clsx';
 
 import { useIsSharedPage } from '../../../../hooks/affine/use-is-shared-page';

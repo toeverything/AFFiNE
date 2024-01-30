@@ -4,7 +4,7 @@ import { Button } from '@affine/component/ui/button';
 import { Tooltip } from '@affine/component/ui/tooltip';
 import { apis, events } from '@affine/electron-api';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import type { WorkspaceMetadata } from '@affine/workspace/metadata';
+import type { WorkspaceMetadata } from '@toeverything/infra';
 import { useMemo } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 

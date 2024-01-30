@@ -18,9 +18,6 @@
       "path": "../../frontend/i18n"
     },
     {
-      "path": "../../common/workspace"
-    },
-    {
       "path": "../../frontend/workspace-impl"
     },
     {

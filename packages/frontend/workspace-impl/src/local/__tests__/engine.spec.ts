@@ -1,12 +1,12 @@
 import 'fake-indexeddb/auto';
 
-import { SyncEngine, SyncEngineStep, SyncPeerStep } from '@affine/workspace';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import { Schema, Workspace } from '@blocksuite/store';
+import { SyncEngine, SyncEngineStep, SyncPeerStep } from '@toeverything/infra';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { Doc } from 'yjs';
 
-import { createIndexedDBStorage } from '..';
+import { IndexedDBSyncStorage } from '..';
 import { createTestStorage } from './test-storage';
 
 const schema = new Schema();
@@ -29,10 +29,10 @@ describe('SyncEngine', () => {
 
       const syncEngine = new SyncEngine(
         workspace.doc,
-        createIndexedDBStorage(workspace.doc.guid),
+        new IndexedDBSyncStorage(workspace.doc.guid),
         [
-          createIndexedDBStorage(workspace.doc.guid + '1'),
-          createIndexedDBStorage(workspace.doc.guid + '2'),
+          new IndexedDBSyncStorage(workspace.doc.guid + '1'),
+          new IndexedDBSyncStorage(workspace.doc.guid + '2'),
         ]
       );
       syncEngine.start();
@@ -60,7 +60,7 @@ describe('SyncEngine', () => {
       });
       const syncEngine = new SyncEngine(
         workspace.doc,
-        createIndexedDBStorage(workspace.doc.guid),
+        new IndexedDBSyncStorage(workspace.doc.guid),
         []
       );
       syncEngine.start();
@@ -79,7 +79,7 @@ describe('SyncEngine', () => {
       });
       const syncEngine = new SyncEngine(
         workspace.doc,
-        createIndexedDBStorage(workspace.doc.guid + '1'),
+        new IndexedDBSyncStorage(workspace.doc.guid + '1'),
         []
       );
       syncEngine.start();
@@ -98,7 +98,7 @@ describe('SyncEngine', () => {
       });
       const syncEngine = new SyncEngine(
         workspace.doc,
-        createIndexedDBStorage(workspace.doc.guid + '2'),
+        new IndexedDBSyncStorage(workspace.doc.guid + '2'),
         []
       );
       syncEngine.start();
@@ -113,9 +113,9 @@ describe('SyncEngine', () => {
   test('status', async () => {
     const ydoc = new Doc({ guid: 'test - syncengine - status' });
 
-    const localStorage = createTestStorage(createIndexedDBStorage(ydoc.guid));
+    const localStorage = createTestStorage(new IndexedDBSyncStorage(ydoc.guid));
     const remoteStorage = createTestStorage(
-      createIndexedDBStorage(ydoc.guid + '1')
+      new IndexedDBSyncStorage(ydoc.guid + '1')
     );
 
     localStorage.pausePull();

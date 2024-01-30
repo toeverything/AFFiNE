@@ -1,130 +1,151 @@
 import { apis } from '@affine/electron-api';
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import type { WorkspaceListProvider } from '@affine/workspace';
-import { globalBlockSuiteSchema } from '@affine/workspace';
 import { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
+import type { WorkspaceListProvider } from '@toeverything/infra';
+import {
+  type BlobStorage,
+  type WorkspaceInfo,
+  type WorkspaceMetadata,
+} from '@toeverything/infra';
+import { globalBlockSuiteSchema } from '@toeverything/infra';
 import { difference } from 'lodash-es';
 import { nanoid } from 'nanoid';
 import { applyUpdate, encodeStateAsUpdate } from 'yjs';
 
-import { createLocalBlobStorage } from './blob';
+import { IndexedDBBlobStorage } from './blob-indexeddb';
+import { SQLiteBlobStorage } from './blob-sqlite';
 import {
   LOCAL_WORKSPACE_CREATED_BROADCAST_CHANNEL_KEY,
   LOCAL_WORKSPACE_LOCAL_STORAGE_KEY,
 } from './consts';
-import { createLocalStorage } from './sync';
+import { IndexedDBSyncStorage } from './sync-indexeddb';
+import { SQLiteSyncStorage } from './sync-sqlite';
 
-export function createLocalWorkspaceListProvider(): WorkspaceListProvider {
-  const notifyChannel = new BroadcastChannel(
+export class LocalWorkspaceListProvider implements WorkspaceListProvider {
+  name = WorkspaceFlavour.LOCAL;
+
+  notifyChannel = new BroadcastChannel(
     LOCAL_WORKSPACE_CREATED_BROADCAST_CHANNEL_KEY
   );
 
-  return {
-    name: WorkspaceFlavour.LOCAL,
-    getList() {
-      return Promise.resolve(
-        JSON.parse(
-          localStorage.getItem(LOCAL_WORKSPACE_LOCAL_STORAGE_KEY) ?? '[]'
-        ).map((id: string) => ({ id, flavour: WorkspaceFlavour.LOCAL }))
-      );
-    },
-    subscribe(callback) {
-      let lastWorkspaceIDs: string[] = [];
+  async getList() {
+    return JSON.parse(
+      localStorage.getItem(LOCAL_WORKSPACE_LOCAL_STORAGE_KEY) ?? '[]'
+    ).map((id: string) => ({ id, flavour: WorkspaceFlavour.LOCAL }));
+  }
 
-      function scan() {
-        const allWorkspaceIDs: string[] = JSON.parse(
-          localStorage.getItem(LOCAL_WORKSPACE_LOCAL_STORAGE_KEY) ?? '[]'
-        );
-        const added = difference(allWorkspaceIDs, lastWorkspaceIDs);
-        const deleted = difference(lastWorkspaceIDs, allWorkspaceIDs);
-        lastWorkspaceIDs = allWorkspaceIDs;
-        callback({
-          added: added.map(id => ({ id, flavour: WorkspaceFlavour.LOCAL })),
-          deleted: deleted.map(id => ({ id, flavour: WorkspaceFlavour.LOCAL })),
-        });
-      }
+  async delete(workspaceId: string) {
+    const allWorkspaceIDs: string[] = JSON.parse(
+      localStorage.getItem(LOCAL_WORKSPACE_LOCAL_STORAGE_KEY) ?? '[]'
+    );
+    localStorage.setItem(
+      LOCAL_WORKSPACE_LOCAL_STORAGE_KEY,
+      JSON.stringify(allWorkspaceIDs.filter(x => x !== workspaceId))
+    );
 
-      scan();
+    if (apis && environment.isDesktop) {
+      await apis.workspace.delete(workspaceId);
+    }
 
-      // rescan if other tabs notify us
-      notifyChannel.addEventListener('message', scan);
-      return () => {
-        notifyChannel.removeEventListener('message', scan);
-      };
-    },
-    async create(initial) {
-      const id = nanoid();
+    // notify all browser tabs, so they can update their workspace list
+    this.notifyChannel.postMessage(workspaceId);
+  }
 
-      const blobStorage = createLocalBlobStorage(id);
-      const syncStorage = createLocalStorage(id);
+  async create(
+    initial: (
+      workspace: BlockSuiteWorkspace,
+      blobStorage: BlobStorage
+    ) => Promise<void>
+  ): Promise<WorkspaceMetadata> {
+    const id = nanoid();
 
-      const workspace = new BlockSuiteWorkspace({
-        id: id,
-        idGenerator: () => nanoid(),
-        schema: globalBlockSuiteSchema,
-      });
+    const blobStorage = environment.isDesktop
+      ? new SQLiteBlobStorage(id)
+      : new IndexedDBBlobStorage(id);
+    const syncStorage = environment.isDesktop
+      ? new SQLiteSyncStorage(id)
+      : new IndexedDBSyncStorage(id);
 
-      // apply initial state
-      await initial(workspace, blobStorage);
+    const workspace = new BlockSuiteWorkspace({
+      id: id,
+      idGenerator: () => nanoid(),
+      schema: globalBlockSuiteSchema,
+    });
 
-      // save workspace to local storage
-      await syncStorage.push(id, encodeStateAsUpdate(workspace.doc));
-      for (const subdocs of workspace.doc.getSubdocs()) {
-        await syncStorage.push(subdocs.guid, encodeStateAsUpdate(subdocs));
-      }
+    // apply initial state
+    await initial(workspace, blobStorage);
 
-      // save workspace id to local storage
+    // save workspace to local storage
+    await syncStorage.push(id, encodeStateAsUpdate(workspace.doc));
+    for (const subdocs of workspace.doc.getSubdocs()) {
+      await syncStorage.push(subdocs.guid, encodeStateAsUpdate(subdocs));
+    }
+
+    // save workspace id to local storage
+    const allWorkspaceIDs: string[] = JSON.parse(
+      localStorage.getItem(LOCAL_WORKSPACE_LOCAL_STORAGE_KEY) ?? '[]'
+    );
+    allWorkspaceIDs.push(id);
+    localStorage.setItem(
+      LOCAL_WORKSPACE_LOCAL_STORAGE_KEY,
+      JSON.stringify(allWorkspaceIDs)
+    );
+
+    // notify all browser tabs, so they can update their workspace list
+    this.notifyChannel.postMessage(id);
+
+    return { id, flavour: WorkspaceFlavour.LOCAL };
+  }
+  subscribe(
+    callback: (changed: {
+      added?: WorkspaceMetadata[] | undefined;
+      deleted?: WorkspaceMetadata[] | undefined;
+    }) => void
+  ): () => void {
+    let lastWorkspaceIDs: string[] = [];
+
+    function scan() {
       const allWorkspaceIDs: string[] = JSON.parse(
         localStorage.getItem(LOCAL_WORKSPACE_LOCAL_STORAGE_KEY) ?? '[]'
       );
-      allWorkspaceIDs.push(id);
-      localStorage.setItem(
-        LOCAL_WORKSPACE_LOCAL_STORAGE_KEY,
-        JSON.stringify(allWorkspaceIDs)
-      );
-
-      // notify all browser tabs, so they can update their workspace list
-      notifyChannel.postMessage(id);
-
-      return id;
-    },
-    async delete(workspaceId) {
-      const allWorkspaceIDs: string[] = JSON.parse(
-        localStorage.getItem(LOCAL_WORKSPACE_LOCAL_STORAGE_KEY) ?? '[]'
-      );
-      localStorage.setItem(
-        LOCAL_WORKSPACE_LOCAL_STORAGE_KEY,
-        JSON.stringify(allWorkspaceIDs.filter(x => x !== workspaceId))
-      );
-
-      if (apis && environment.isDesktop) {
-        await apis.workspace.delete(workspaceId);
-      }
-
-      // notify all browser tabs, so they can update their workspace list
-      notifyChannel.postMessage(workspaceId);
-    },
-    async getInformation(id) {
-      // get information from root doc
-
-      const storage = createLocalStorage(id);
-      const data = await storage.pull(id, new Uint8Array([]));
-
-      if (!data) {
-        return;
-      }
-
-      const bs = new BlockSuiteWorkspace({
-        id,
-        schema: globalBlockSuiteSchema,
+      const added = difference(allWorkspaceIDs, lastWorkspaceIDs);
+      const deleted = difference(lastWorkspaceIDs, allWorkspaceIDs);
+      lastWorkspaceIDs = allWorkspaceIDs;
+      callback({
+        added: added.map(id => ({ id, flavour: WorkspaceFlavour.LOCAL })),
+        deleted: deleted.map(id => ({ id, flavour: WorkspaceFlavour.LOCAL })),
       });
+    }
 
-      applyUpdate(bs.doc, data.data);
+    scan();
 
-      return {
-        name: bs.meta.name,
-        avatar: bs.meta.avatar,
-      };
-    },
-  };
+    // rescan if other tabs notify us
+    this.notifyChannel.addEventListener('message', scan);
+    return () => {
+      this.notifyChannel.removeEventListener('message', scan);
+    };
+  }
+  async getInformation(id: string): Promise<WorkspaceInfo | undefined> {
+    // get information from root doc
+    const storage = environment.isDesktop
+      ? new SQLiteSyncStorage(id)
+      : new IndexedDBSyncStorage(id);
+    const data = await storage.pull(id, new Uint8Array([]));
+
+    if (!data) {
+      return;
+    }
+
+    const bs = new BlockSuiteWorkspace({
+      id,
+      schema: globalBlockSuiteSchema,
+    });
+
+    applyUpdate(bs.doc, data.data);
+
+    return {
+      name: bs.meta.name,
+      avatar: bs.meta.avatar,
+    };
+  }
 }

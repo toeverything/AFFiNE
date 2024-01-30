@@ -5,7 +5,7 @@ import type { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
 import { applyUpdate, encodeStateAsUpdate } from 'yjs';
 
 import { fixWorkspaceVersion } from '../blocksuite';
-import type { ServiceProvider } from '../di';
+import type { ServiceCollection, ServiceProvider } from '../di';
 import { ObjectPool } from '../utils/object-pool';
 import { configureWorkspaceContext } from './context';
 import type { BlobStorage } from './engine';
@@ -90,6 +90,9 @@ export class WorkspaceManager {
     }
 
     const workspace = this.instantiate(metadata);
+    // sync information with workspace list, when workspace's avatar and name changed, information will be updated
+    this.list.getInformation(metadata).syncWithWorkspace(workspace);
+
     const ref = this.pool.put(workspace.meta.id, workspace);
 
     return {
@@ -164,23 +167,27 @@ export class WorkspaceManager {
     return factory.getWorkspaceBlob(metadata.id, blobKey);
   }
 
-  private instantiate(metadata: WorkspaceMetadata) {
+  instantiate(
+    metadata: WorkspaceMetadata,
+    configureWorkspace?: (serviceCollection: ServiceCollection) => void
+  ) {
     logger.info(`open workspace [${metadata.flavour}] ${metadata.id} `);
-    const factory = this.factories.find(x => x.name === metadata.flavour);
-    if (!factory) {
-      throw new Error(`Unknown workspace flavour: ${metadata.flavour}`);
-    }
     const serviceCollection = this.serviceProvider.collection.clone();
-    factory.configureWorkspace(serviceCollection);
+    if (configureWorkspace) {
+      configureWorkspace(serviceCollection);
+    } else {
+      const factory = this.factories.find(x => x.name === metadata.flavour);
+      if (!factory) {
+        throw new Error(`Unknown workspace flavour: ${metadata.flavour}`);
+      }
+      factory.configureWorkspace(serviceCollection);
+    }
     configureWorkspaceContext(serviceCollection, metadata);
     const provider = serviceCollection.provider(
       WorkspaceScope,
       this.serviceProvider
     );
     const workspace = provider.get(Workspace);
-
-    // sync information with workspace list, when workspace's avatar and name changed, information will be updated
-    this.list.getInformation(metadata).syncWithWorkspace(workspace);
 
     // apply compatibility fix
     fixWorkspaceVersion(workspace.blockSuiteWorkspace.doc);

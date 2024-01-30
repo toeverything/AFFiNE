@@ -1,9 +1,9 @@
-import { waitForCurrentWorkspaceAtom } from '@affine/core/modules/workspace';
+import { CollectionService } from '@affine/core/modules/collection';
 import type { Collection, Filter } from '@affine/env/filter';
-import { useAtomValue } from 'jotai';
+import { useService } from '@toeverything/infra';
+import { Workspace } from '@toeverything/infra';
 import { useCallback } from 'react';
 
-import { collectionsCRUDAtom } from '../../../atoms/collections';
 import { filterContainerStyle } from '../../../components/filter-container.css';
 import {
   FilterList,
@@ -13,9 +13,9 @@ import {
 import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
 
 export const FilterContainer = () => {
-  const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
+  const currentWorkspace = useService(Workspace);
   const navigateHelper = useNavigateHelper();
-  const setting = useCollectionManager(collectionsCRUDAtom);
+  const setting = useCollectionManager(useService(CollectionService));
   const saveToCollection = useCallback(
     (collection: Collection) => {
       setting.createCollection({

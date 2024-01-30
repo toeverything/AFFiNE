@@ -2,7 +2,7 @@ import type { PageMeta } from '@blocksuite/store';
 import { Observable } from 'rxjs';
 
 import { LiveData } from '../livedata';
-import type { Workspace } from '../workspace';
+import { SyncEngineStep, type Workspace } from '../workspace';
 
 export class PageListService {
   constructor(private readonly workspace: Workspace) {}
@@ -25,4 +25,26 @@ export class PageListService {
     }),
     []
   );
+
+  public readonly isReady = LiveData.from<boolean>(
+    new Observable(subscriber => {
+      subscriber.next(
+        this.workspace.engine.status.sync.step === SyncEngineStep.Synced
+      );
+
+      const dispose = this.workspace.engine.onStatusChange.on(() => {
+        subscriber.next(
+          this.workspace.engine.status.sync.step === SyncEngineStep.Synced
+        );
+      }).dispose;
+      return () => {
+        dispose();
+      };
+    }),
+    false
+  );
+
+  public getPageMetaById(id: string) {
+    return this.pages.value.find(page => page.id === id);
+  }
 }

@@ -4,7 +4,7 @@ import { useCallback, useMemo } from 'react';
 
 import type { BlockSuiteWorkspace } from '../shared';
 import { timestampToLocalDate } from '../utils';
-import { useWorkspacePropertiesAdapter } from './use-affine-adapter';
+import { useCurrentWorkspacePropertiesAdapter } from './use-affine-adapter';
 import { useBlockSuiteWorkspaceHelper } from './use-block-suite-workspace-helper';
 import { useNavigateHelper } from './use-navigate-helper';
 
@@ -24,7 +24,7 @@ function toDayjs(j?: string | false) {
 
 export const useJournalHelper = (workspace: BlockSuiteWorkspace) => {
   const bsWorkspaceHelper = useBlockSuiteWorkspaceHelper(workspace);
-  const adapter = useWorkspacePropertiesAdapter(workspace);
+  const adapter = useCurrentWorkspacePropertiesAdapter();
 
   /**
    * @internal

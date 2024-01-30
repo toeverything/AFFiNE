@@ -1,15 +1,16 @@
 import { toast } from '@affine/component';
 import { usePageMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
-import { waitForCurrentWorkspaceAtom } from '@affine/core/modules/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
 import { EdgelessIcon, HistoryIcon, PageIcon } from '@blocksuite/icons';
+import { Workspace } from '@toeverything/infra';
 import {
   PreconditionStrategy,
   registerAffineCommand,
 } from '@toeverything/infra/command';
-import { useAtomValue, useSetAtom } from 'jotai';
+import { useService } from '@toeverything/infra/di';
+import { useSetAtom } from 'jotai';
 import { useCallback, useEffect } from 'react';
 
 import { pageHistoryModalAtom } from '../../atoms/page-history';
@@ -22,7 +23,7 @@ export function useRegisterBlocksuiteEditorCommands(
   mode: 'page' | 'edgeless'
 ) {
   const t = useAFFiNEI18N();
-  const workspace = useAtomValue(waitForCurrentWorkspaceAtom);
+  const workspace = useService(Workspace);
   const blockSuiteWorkspace = workspace.blockSuiteWorkspace;
   const { getPageMeta } = usePageMetaHelper(blockSuiteWorkspace);
   const currentPage = blockSuiteWorkspace.getPage(pageId);

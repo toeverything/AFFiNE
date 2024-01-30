@@ -4,7 +4,7 @@ import { Button } from '@affine/component/ui/button';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { apis } from '@affine/electron-api';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import type { Workspace, WorkspaceMetadata } from '@affine/workspace';
+import type { Workspace, WorkspaceMetadata } from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
 import { useState } from 'react';
 

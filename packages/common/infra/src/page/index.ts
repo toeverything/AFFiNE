@@ -17,7 +17,7 @@ export function configurePageServices(services: ServiceCollection) {
   services
     .scope(WorkspaceScope)
     .add(PageListService, [Workspace])
-    .add(PageManager, [Workspace, ServiceProvider]);
+    .add(PageManager, [Workspace, PageListService, ServiceProvider]);
   services
     .scope(PageScope)
     .add(CleanupService)

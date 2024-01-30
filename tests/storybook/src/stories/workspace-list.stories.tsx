@@ -1,8 +1,8 @@
 import type { WorkspaceListProps } from '@affine/component/workspace-list';
 import { WorkspaceList } from '@affine/component/workspace-list';
-import { workspaceListAtom } from '@affine/core/modules/workspace';
 import type { Meta } from '@storybook/react';
-import { useAtomValue } from 'jotai';
+import { WorkspaceManager } from '@toeverything/infra';
+import { useLiveData, useService } from '@toeverything/infra';
 
 export default {
   title: 'AFFiNE/WorkspaceList',
@@ -13,7 +13,7 @@ export default {
 } satisfies Meta<WorkspaceListProps>;
 
 export const Default = () => {
-  const list = useAtomValue(workspaceListAtom);
+  const list = useLiveData(useService(WorkspaceManager).list.workspaceList);
   return (
     <WorkspaceList
       currentWorkspaceId={null}

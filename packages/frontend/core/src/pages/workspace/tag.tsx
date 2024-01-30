@@ -1,7 +1,6 @@
 import { TagListHeader, useTagMetas } from '@affine/core/components/page-list';
 import { useBlockSuitePageMeta } from '@affine/core/hooks/use-block-suite-page-meta';
-import { waitForCurrentWorkspaceAtom } from '@affine/core/modules/workspace';
-import { useAtomValue } from 'jotai';
+import { useService, Workspace } from '@toeverything/infra';
 import { useMemo } from 'react';
 import { type LoaderFunction, redirect, useParams } from 'react-router-dom';
 
@@ -19,7 +18,7 @@ export const loader: LoaderFunction = async args => {
 
 export const Component = function TagPage() {
   const params = useParams();
-  const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
+  const currentWorkspace = useService(Workspace);
   const pageMetas = useBlockSuitePageMeta(currentWorkspace.blockSuiteWorkspace);
   const { tagUsageCounts } = useTagMetas(
     currentWorkspace.blockSuiteWorkspace,

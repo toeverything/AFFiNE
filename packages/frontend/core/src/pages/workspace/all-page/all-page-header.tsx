@@ -1,6 +1,5 @@
 import { IconButton } from '@affine/component';
 import type { AllPageFilterOption } from '@affine/core/atoms';
-import { collectionsCRUDAtom } from '@affine/core/atoms/collections';
 import {
   CollectionList,
   PageListNewPageButton,
@@ -13,9 +12,11 @@ import { useAllPageListConfig } from '@affine/core/hooks/affine/use-all-page-lis
 import { useDeleteCollectionInfo } from '@affine/core/hooks/affine/use-delete-collection-info';
 import { PlusIcon } from '@blocksuite/icons';
 import type { Workspace } from '@blocksuite/store';
+import { useService } from '@toeverything/infra/di';
 import clsx from 'clsx';
 import { useMemo } from 'react';
 
+import { CollectionService } from '../../../modules/collection';
 import * as styles from './all-page.css';
 import { FilterContainer } from './all-page-filter';
 
@@ -32,7 +33,7 @@ export const AllPageHeader = ({
   activeFilter: AllPageFilterOption;
   onCreateCollection?: () => void;
 }) => {
-  const setting = useCollectionManager(collectionsCRUDAtom);
+  const setting = useCollectionManager(useService(CollectionService));
   const config = useAllPageListConfig();
   const userInfo = useDeleteCollectionInfo();
   const isWindowsDesktop = environment.isDesktop && environment.isWindows;

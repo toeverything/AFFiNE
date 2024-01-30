@@ -1,8 +1,9 @@
 import { allPageModeSelectAtom } from '@affine/core/atoms';
-import { collectionsCRUDAtom } from '@affine/core/atoms/collections';
 import { usePageHelper } from '@affine/core/components/blocksuite/block-suite-page-list/utils';
+import { CollectionService } from '@affine/core/modules/collection';
 import type { BlockSuiteWorkspace } from '@affine/core/shared';
 import type { PageMeta } from '@blocksuite/store';
+import { useService } from '@toeverything/infra/di';
 import { useAtomValue } from 'jotai';
 import { useMemo } from 'react';
 
@@ -19,8 +20,9 @@ export const useFilteredPageMetas = (
 ) => {
   const { isPreferredEdgeless } = usePageHelper(workspace);
   const pageMode = useAtomValue(allPageModeSelectAtom);
-  const { currentCollection, isDefault } =
-    useCollectionManager(collectionsCRUDAtom);
+  const { currentCollection, isDefault } = useCollectionManager(
+    useService(CollectionService)
+  );
 
   const filteredPageMetas = useMemo(
     () =>

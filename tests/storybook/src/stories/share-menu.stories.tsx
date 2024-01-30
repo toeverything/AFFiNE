@@ -1,13 +1,13 @@
 import { toast } from '@affine/component';
 import { PublicLinkDisableModal } from '@affine/component/disable-public-link';
 import { ShareMenu } from '@affine/core/components/affine/share-page-modal/share-menu';
-import { waitForCurrentWorkspaceAtom } from '@affine/core/modules/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { type Page } from '@blocksuite/store';
 import { expect } from '@storybook/jest';
 import type { Meta, StoryFn } from '@storybook/react';
+import { Workspace } from '@toeverything/infra';
 import { initEmptyPage } from '@toeverything/infra/blocksuite';
-import { useAtomValue } from 'jotai';
+import { useService } from '@toeverything/infra/di';
 import { nanoid } from 'nanoid';
 import { useEffect, useState } from 'react';
 
@@ -24,7 +24,7 @@ async function unimplemented() {
 }
 
 export const Basic: StoryFn = () => {
-  const workspace = useAtomValue(waitForCurrentWorkspaceAtom);
+  const workspace = useService(Workspace);
 
   const [page, setPage] = useState<Page | null>(null);
 
@@ -66,7 +66,7 @@ Basic.play = async ({ canvasElement }) => {
 };
 
 export const AffineBasic: StoryFn = () => {
-  const workspace = useAtomValue(waitForCurrentWorkspaceAtom);
+  const workspace = useService(Workspace);
 
   const [page, setPage] = useState<Page | null>(null);
 

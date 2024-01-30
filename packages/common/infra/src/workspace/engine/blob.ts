@@ -54,10 +54,6 @@ export class BlobEngine {
     private readonly remotes: BlobStorage[]
   ) {}
 
-  static get EMPTY() {
-    return new BlobEngine(createEmptyBlobStorage(), []);
-  }
-
   start() {
     if (this.abort || this._status.isStorageOverCapacity) {
       return;
@@ -222,21 +218,19 @@ export class BlobEngine {
   }
 }
 
-export function createEmptyBlobStorage() {
-  return {
-    name: 'empty',
-    readonly: true,
-    async get(_key: string) {
-      return null;
-    },
-    async set(_key: string, _value: Blob) {
-      throw new Error('not supported');
-    },
-    async delete(_key: string) {
-      throw new Error('not supported');
-    },
-    async list() {
-      return [];
-    },
-  } satisfies BlobStorage;
-}
+export const EmptyBlobStorage: BlobStorage = {
+  name: 'empty',
+  readonly: true,
+  async get(_key: string) {
+    return null;
+  },
+  async set(_key: string, _value: Blob) {
+    throw new Error('not supported');
+  },
+  async delete(_key: string) {
+    throw new Error('not supported');
+  },
+  async list() {
+    return [];
+  },
+};

@@ -1,7 +1,7 @@
-import { waitForCurrentWorkspaceAtom } from '@affine/core/modules/workspace';
 import { Trans } from '@affine/i18n';
 import type { Tag } from '@blocksuite/store';
-import { useAtomValue } from 'jotai';
+import { useService } from '@toeverything/infra';
+import { Workspace } from '@toeverything/infra';
 import { useCallback, useMemo, useRef, useState } from 'react';
 
 import { ListFloatingToolbar } from '../components/list-floating-toolbar';
@@ -26,7 +26,7 @@ export const VirtualizedTagList = ({
   const listRef = useRef<ItemListHandle>(null);
   const [showFloatingToolbar, setShowFloatingToolbar] = useState(false);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
-  const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
+  const currentWorkspace = useService(Workspace);
 
   const filteredSelectedTagIds = useMemo(() => {
     const ids = tags.map(tag => tag.id);

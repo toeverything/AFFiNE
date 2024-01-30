@@ -1,6 +1,7 @@
-import { waitForCurrentWorkspaceAtom } from '@affine/core/modules/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { useAtomValue, useSetAtom, useStore } from 'jotai';
+import { Workspace } from '@toeverything/infra';
+import { useService } from '@toeverything/infra/di';
+import { useSetAtom, useStore } from 'jotai';
 import { useTheme } from 'next-themes';
 import { useEffect } from 'react';
 
@@ -22,7 +23,7 @@ export function useRegisterWorkspaceCommands() {
   const store = useStore();
   const t = useAFFiNEI18N();
   const theme = useTheme();
-  const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
+  const currentWorkspace = useService(Workspace);
   const languageHelper = useLanguageHelper();
   const pageHelper = usePageHelper(currentWorkspace.blockSuiteWorkspace);
   const navigationHelper = useNavigateHelper();

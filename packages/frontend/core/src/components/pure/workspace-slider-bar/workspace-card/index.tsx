@@ -6,11 +6,9 @@ import { openSettingModalAtom } from '@affine/core/atoms';
 import { useIsWorkspaceOwner } from '@affine/core/hooks/affine/use-is-workspace-owner';
 import { useWorkspaceBlobObjectUrl } from '@affine/core/hooks/use-workspace-blob';
 import { useWorkspaceInfo } from '@affine/core/hooks/use-workspace-info';
-import { waitForCurrentWorkspaceAtom } from '@affine/core/modules/workspace';
 import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { type SyncEngineStatus, SyncEngineStep } from '@affine/workspace';
 import {
   CloudWorkspaceIcon,
   InformationFillDuotoneIcon,
@@ -18,7 +16,13 @@ import {
   NoNetworkIcon,
   UnsyncIcon,
 } from '@blocksuite/icons';
-import { useAtomValue, useSetAtom } from 'jotai';
+import {
+  type SyncEngineStatus,
+  SyncEngineStep,
+  Workspace,
+} from '@toeverything/infra';
+import { useService } from '@toeverything/infra/di';
+import { useSetAtom } from 'jotai';
 import { debounce, mean } from 'lodash-es';
 import {
   forwardRef,
@@ -97,7 +101,7 @@ const useSyncEngineSyncProgress = () => {
     useState<SyncEngineStatus | null>(null);
   const [isOverCapacity, setIsOverCapacity] = useState(false);
 
-  const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
+  const currentWorkspace = useService(Workspace);
   const isOwner = useIsWorkspaceOwner(currentWorkspace.meta);
 
   const setSettingModalAtom = useSetAtom(openSettingModalAtom);
@@ -250,7 +254,7 @@ export const WorkspaceCard = forwardRef<
   HTMLDivElement,
   HTMLAttributes<HTMLDivElement>
 >(({ ...props }, ref) => {
-  const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
+  const currentWorkspace = useService(Workspace);
 
   const information = useWorkspaceInfo(currentWorkspace.meta);
 

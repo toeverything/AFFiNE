@@ -12,15 +12,14 @@ import {
   SidebarScrollableContainer,
 } from '@affine/component/app-sidebar';
 import { Menu } from '@affine/component/ui/menu';
-import { collectionsCRUDAtom } from '@affine/core/atoms/collections';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import { WorkspaceSubPath } from '@affine/core/shared';
+import { CollectionService } from '@affine/core/modules/collection';
 import { apis, events } from '@affine/electron-api';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import type { Workspace } from '@affine/workspace';
 import { FolderIcon, SettingsIcon } from '@blocksuite/icons';
 import { type Page } from '@blocksuite/store';
 import { useDroppable } from '@dnd-kit/core';
+import { useService, type Workspace } from '@toeverything/infra';
 import { useAtom, useAtomValue } from 'jotai';
 import { nanoid } from 'nanoid';
 import type { HTMLAttributes, ReactElement } from 'react';
@@ -35,6 +34,7 @@ import { getDropItemId } from '../../hooks/affine/use-sidebar-drag';
 import { useTrashModalHelper } from '../../hooks/affine/use-trash-modal-helper';
 import { useRegisterBrowserHistoryCommands } from '../../hooks/use-browser-history-commands';
 import { useNavigateHelper } from '../../hooks/use-navigate-helper';
+import { WorkspaceSubPath } from '../../shared';
 import {
   createEmptyCollection,
   MoveToTrash,
@@ -177,7 +177,7 @@ export const RootAppSidebar = ({
   useRegisterBrowserHistoryCommands(router.back, router.forward);
   const userInfo = useDeleteCollectionInfo();
 
-  const setting = useCollectionManager(collectionsCRUDAtom);
+  const setting = useCollectionManager(useService(CollectionService));
   const { node, open } = useEditCollectionName({
     title: t['com.affine.editCollection.createCollection'](),
     showTips: true,

@@ -1,13 +1,16 @@
-import { waitForCurrentWorkspaceAtom } from '@affine/core/modules/workspace';
-import { useAtomValue } from 'jotai';
+import { useService } from '@toeverything/infra/di';
+import { useLiveData } from '@toeverything/infra/livedata';
 import { Suspense, useEffect } from 'react';
 
 import { useCurrentLoginStatus } from '../../../hooks/affine/use-current-login-status';
 import { useCurrentUser } from '../../../hooks/affine/use-current-user';
+import { CurrentWorkspaceService } from '../../../modules/workspace/current-workspace';
 
 const SyncAwarenessInnerLoggedIn = () => {
   const currentUser = useCurrentUser();
-  const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
+  const currentWorkspace = useLiveData(
+    useService(CurrentWorkspaceService).currentWorkspace
+  );
 
   useEffect(() => {
     if (currentUser && currentWorkspace) {

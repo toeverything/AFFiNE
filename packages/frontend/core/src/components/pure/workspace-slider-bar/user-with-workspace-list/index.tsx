@@ -1,13 +1,12 @@
 import { Divider } from '@affine/component/ui/divider';
 import { MenuItem } from '@affine/component/ui/menu';
-import {
-  workspaceListAtom,
-  workspaceManagerAtom,
-} from '@affine/core/modules/workspace';
 import { Unreachable } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { Logo1Icon } from '@blocksuite/icons';
-import { useAtomValue, useSetAtom } from 'jotai';
+import { WorkspaceManager } from '@toeverything/infra';
+import { useService } from '@toeverything/infra/di';
+import { useLiveData } from '@toeverything/infra/livedata';
+import { useSetAtom } from 'jotai';
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import { useSession } from 'next-auth/react';
 import { useCallback, useEffect, useMemo } from 'react';
@@ -85,9 +84,8 @@ export const UserWithWorkspaceList = ({
     onEventEnd?.();
   }, [onEventEnd, setOpenCreateWorkspaceModal]);
 
-  const workspaces = useAtomValue(workspaceListAtom);
-
-  const workspaceManager = useAtomValue(workspaceManagerAtom);
+  const workspaceManager = useService(WorkspaceManager);
+  const workspaces = useLiveData(workspaceManager.list.workspaceList);
 
   // revalidate workspace list when mounted
   useEffect(() => {

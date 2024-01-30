@@ -5,18 +5,18 @@ import {
   Modal,
 } from '@affine/component/ui/modal';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import { workspaceManagerAtom } from '@affine/core/modules/workspace';
 import { DebugLogger } from '@affine/debug';
 import { apis } from '@affine/electron-api';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { _addLocalWorkspace } from '@affine/workspace-impl';
+import { WorkspaceManager } from '@toeverything/infra';
 import { getCurrentStore } from '@toeverything/infra/atom';
 import {
   buildShowcaseWorkspace,
   initEmptyPage,
 } from '@toeverything/infra/blocksuite';
-import { useAtomValue } from 'jotai';
+import { useService } from '@toeverything/infra/di';
 import type { KeyboardEvent } from 'react';
 import { useLayoutEffect } from 'react';
 import { useCallback, useState } from 'react';
@@ -101,7 +101,7 @@ export const CreateWorkspaceModal = ({
 }: ModalProps) => {
   const [step, setStep] = useState<CreateWorkspaceStep>();
   const t = useAFFiNEI18N();
-  const workspaceManager = useAtomValue(workspaceManagerAtom);
+  const workspaceManager = useService(WorkspaceManager);
 
   // todo: maybe refactor using xstate?
   useLayoutEffect(() => {
@@ -148,7 +148,7 @@ export const CreateWorkspaceModal = ({
     async (name: string) => {
       // this will be the last step for web for now
       // fix me later
-      const id = await workspaceManager.createWorkspace(
+      const { id } = await workspaceManager.createWorkspace(
         WorkspaceFlavour.LOCAL,
         async workspace => {
           workspace.meta.setName(name);

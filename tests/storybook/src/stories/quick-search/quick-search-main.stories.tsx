@@ -5,14 +5,11 @@ import {
 } from '@affine/core/commands';
 import { CMDKQuickSearchModal } from '@affine/core/components/pure/cmdk';
 import { HighlightLabel } from '@affine/core/components/pure/cmdk/highlight';
-import { useWorkspace } from '@affine/core/hooks/use-workspace';
-import { currentWorkspaceAtom } from '@affine/core/modules/workspace';
-import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { Page } from '@blocksuite/store';
 import type { Meta, StoryFn } from '@storybook/react';
 import { useStore } from 'jotai';
-import { useEffect, useLayoutEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { withRouter } from 'storybook-addon-react-router-v6';
 
 export default {
@@ -79,20 +76,7 @@ function useRegisterCommands() {
   }, [store, t]);
 }
 
-function usePrepareWorkspace() {
-  const workspaceId = 'test-workspace';
-  const store = useStore();
-  const workspace = useWorkspace({
-    id: workspaceId,
-    flavour: WorkspaceFlavour.LOCAL,
-  });
-  useLayoutEffect(() => {
-    store.set(currentWorkspaceAtom, workspace);
-  }, [store, workspace]);
-}
-
 export const CMDKStoryWithCommands: StoryFn = () => {
-  usePrepareWorkspace();
   useRegisterCommands();
 
   return <CMDKQuickSearchModal open />;

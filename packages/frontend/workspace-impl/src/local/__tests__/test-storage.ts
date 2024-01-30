@@ -1,4 +1,4 @@
-import type { SyncStorage } from '@affine/workspace';
+import type { SyncStorage } from '@toeverything/infra';
 
 export function createTestStorage(origin: SyncStorage) {
   const controler = {

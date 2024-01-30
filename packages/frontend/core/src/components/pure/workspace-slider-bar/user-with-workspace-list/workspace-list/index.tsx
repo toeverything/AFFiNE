@@ -5,16 +5,13 @@ import {
   useWorkspaceAvatar,
   useWorkspaceName,
 } from '@affine/core/hooks/use-workspace-info';
-import {
-  currentWorkspaceAtom,
-  workspaceListAtom,
-} from '@affine/core/modules/workspace';
-import { WorkspaceSubPath } from '@affine/core/shared';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import type { WorkspaceMetadata } from '@affine/workspace';
 import type { DragEndEvent } from '@dnd-kit/core';
-import { useAtomValue, useSetAtom } from 'jotai';
+import { WorkspaceManager, type WorkspaceMetadata } from '@toeverything/infra';
+import { useService } from '@toeverything/infra/di';
+import { useLiveData } from '@toeverything/infra/livedata';
+import { useSetAtom } from 'jotai';
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import { useSession } from 'next-auth/react';
 import { useCallback, useMemo } from 'react';
@@ -23,6 +20,8 @@ import {
   openCreateWorkspaceModalAtom,
   openSettingModalAtom,
 } from '../../../../../atoms';
+import { CurrentWorkspaceService } from '../../../../../modules/workspace/current-workspace';
+import { WorkspaceSubPath } from '../../../../../shared';
 import { useIsWorkspaceOwner } from '../.././../../../hooks/affine/use-is-workspace-owner';
 import { useNavigateHelper } from '../.././../../../hooks/use-navigate-helper';
 import * as styles from './index.css';
@@ -106,13 +105,17 @@ export const AFFiNEWorkspaceList = ({
 }: {
   onEventEnd?: () => void;
 }) => {
-  const workspaces = useAtomValue(workspaceListAtom);
+  const workspaces = useLiveData(
+    useService(WorkspaceManager).list.workspaceList
+  );
 
   const setOpenCreateWorkspaceModal = useSetAtom(openCreateWorkspaceModalAtom);
 
   const { jumpToSubPath } = useNavigateHelper();
 
-  const currentWorkspace = useAtomValue(currentWorkspaceAtom);
+  const currentWorkspace = useLiveData(
+    useService(CurrentWorkspaceService).currentWorkspace
+  );
 
   const setOpenSettingModalAtom = useSetAtom(openSettingModalAtom);
 

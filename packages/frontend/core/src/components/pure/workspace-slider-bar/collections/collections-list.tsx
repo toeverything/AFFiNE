@@ -7,21 +7,22 @@ import {
   filterPage,
   stopPropagation,
   useCollectionManager,
-  useSavedCollections,
 } from '@affine/core/components/page-list';
-import { useBlockSuitePageMeta } from '@affine/core/hooks/use-block-suite-page-meta';
+import { CollectionService } from '@affine/core/modules/collection';
 import type { Collection, DeleteCollectionInfo } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { MoreHorizontalIcon, ViewLayersIcon } from '@blocksuite/icons';
 import type { PageMeta, Workspace } from '@blocksuite/store';
 import { useDroppable } from '@dnd-kit/core';
 import * as Collapsible from '@radix-ui/react-collapsible';
+import { useService } from '@toeverything/infra';
+import { useLiveData } from '@toeverything/infra/livedata';
 import { useCallback, useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 
-import { collectionsCRUDAtom } from '../../../../atoms/collections';
 import { useAllPageListConfig } from '../../../../hooks/affine/use-all-page-list-config';
 import { getDropItemId } from '../../../../hooks/affine/use-sidebar-drag';
+import { useBlockSuitePageMeta } from '../../../../hooks/use-block-suite-page-meta';
 import type { CollectionsListProps } from '../index';
 import { Page } from './page';
 import * as styles from './styles.css';
@@ -39,7 +40,7 @@ const CollectionRenderer = ({
 }) => {
   const [collapsed, setCollapsed] = useState(true);
   const [open, setOpen] = useState(false);
-  const setting = useCollectionManager(collectionsCRUDAtom);
+  const setting = useCollectionManager(useService(CollectionService));
   const t = useAFFiNEI18N();
   const dragItemId = getDropItemId('collections', collection.id);
 
@@ -168,7 +169,7 @@ export const CollectionsList = ({
   onCreate,
 }: CollectionsListProps) => {
   const metas = useBlockSuitePageMeta(workspace);
-  const { collections } = useSavedCollections(collectionsCRUDAtom);
+  const collections = useLiveData(useService(CollectionService).collections);
   const t = useAFFiNEI18N();
   if (collections.length === 0) {
     return (

@@ -3,15 +3,12 @@ import { AffineShapeIcon } from '@affine/core/components/page-list'; // TODO: im
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
 import { useWorkspaceStatus } from '@affine/core/hooks/use-workspace-status';
-import {
-  waitForCurrentWorkspaceAtom,
-  workspaceManagerAtom,
-} from '@affine/core/modules/workspace';
-import { WorkspaceSubPath } from '@affine/core/shared';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { useAtomValue } from 'jotai';
+import { Workspace, WorkspaceManager } from '@toeverything/infra';
+import { useService } from '@toeverything/infra/di';
 import { useState } from 'react';
 
+import { WorkspaceSubPath } from '../../shared';
 import * as styles from './upgrade.css';
 import { ArrowCircleIcon, HeartBreakIcon } from './upgrade-icon';
 
@@ -20,8 +17,8 @@ import { ArrowCircleIcon, HeartBreakIcon } from './upgrade-icon';
  */
 export const WorkspaceUpgrade = function WorkspaceUpgrade() {
   const [error, setError] = useState<string | null>(null);
-  const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
-  const workspaceManager = useAtomValue(workspaceManagerAtom);
+  const currentWorkspace = useService(Workspace);
+  const workspaceManager = useService(WorkspaceManager);
   const upgradeStatus = useWorkspaceStatus(currentWorkspace, s => s.upgrade);
   const { openPage } = useNavigateHelper();
   const t = useAFFiNEI18N();
@@ -32,10 +29,10 @@ export const WorkspaceUpgrade = function WorkspaceUpgrade() {
     }
 
     try {
-      const newWorkspaceId =
+      const newWorkspace =
         await currentWorkspace.upgrade.upgrade(workspaceManager);
-      if (newWorkspaceId) {
-        openPage(newWorkspaceId, WorkspaceSubPath.ALL);
+      if (newWorkspace) {
+        openPage(newWorkspace.id, WorkspaceSubPath.ALL);
       } else {
         // blocksuite may enter an incorrect state, reload to reset it.
         location.reload();
