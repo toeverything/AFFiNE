@@ -25,7 +25,7 @@
     "jotai-effect": "^0.2.3",
     "nanoid": "^5.0.3",
     "react": "18.2.0",
-    "tinykeys": "^2.1.0",
+    "tinykeys": "patch:tinykeys@npm%3A2.1.0#~/.yarn/patches/tinykeys-npm-2.1.0-819feeaed0.patch",
     "yjs": "^13.6.10",
     "zod": "^3.22.4"
   },
