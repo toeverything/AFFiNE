@@ -9,6 +9,7 @@
     "./app-config-storage": "./src/app-config-storage.ts",
     "./di": "./src/di/index.ts",
     "./livedata": "./src/livedata/index.ts",
+    "./storage": "./src/storage/index.ts",
     ".": "./src/index.ts"
   },
   "dependencies": {
