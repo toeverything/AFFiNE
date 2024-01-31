@@ -15,7 +15,6 @@
     "@affine/electron-api": "workspace:*",
     "@affine/env": "workspace:*",
     "@affine/graphql": "workspace:*",
-    "@affine/workspace": "workspace:*",
     "@toeverything/infra": "workspace:*",
     "idb": "^8.0.0",
     "idb-keyval": "^6.2.1",

@@ -4,6 +4,8 @@ import {
   usePageMetaHelper,
 } from '@affine/core/hooks/use-block-suite-page-meta';
 import { useBlockSuiteWorkspaceHelper } from '@affine/core/hooks/use-block-suite-workspace-helper';
+import { CollectionService } from '@affine/core/modules/collection';
+import { useService } from '@toeverything/infra';
 import { useAtomValue, useSetAtom } from 'jotai';
 import { useCallback } from 'react';
 import { applyUpdate, encodeStateAsUpdate } from 'yjs';
@@ -11,7 +13,6 @@ import { applyUpdate, encodeStateAsUpdate } from 'yjs';
 import { setPageModeAtom } from '../../atoms';
 import { currentModeAtom } from '../../atoms/mode';
 import type { BlockSuiteWorkspace } from '../../shared';
-import { getWorkspaceSetting } from '../../utils/workspace-setting';
 import { useNavigateHelper } from '../use-navigate-helper';
 import { useReferenceLinkHelper } from './use-reference-link-helper';
 
@@ -26,6 +27,7 @@ export function useBlockSuiteMetaHelper(
   const currentMode = useAtomValue(currentModeAtom);
   const { createPage } = useBlockSuiteWorkspaceHelper(blockSuiteWorkspace);
   const { openPage } = useNavigateHelper();
+  const collectionService = useService(CollectionService);
 
   const switchToPageMode = useCallback(
     (pageId: string) => {
@@ -89,9 +91,9 @@ export function useBlockSuiteMetaHelper(
         trashRelate: isRoot ? parentMeta?.id : undefined,
       });
       setPageReadonly(pageId, true);
-      getWorkspaceSetting(blockSuiteWorkspace).deletePages([pageId]);
+      collectionService.deletePagesFromCollections([pageId]);
     },
-    [blockSuiteWorkspace, getPageMeta, metas, setPageMeta, setPageReadonly]
+    [collectionService, getPageMeta, metas, setPageMeta, setPageReadonly]
   );
 
   const restoreFromTrash = useCallback(

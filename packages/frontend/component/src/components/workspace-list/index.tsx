@@ -1,4 +1,3 @@
-import type { WorkspaceMetadata } from '@affine/workspace';
 import type { DragEndEvent } from '@dnd-kit/core';
 import {
   DndContext,
@@ -11,6 +10,7 @@ import {
   restrictToVerticalAxis,
 } from '@dnd-kit/modifiers';
 import { arrayMove, SortableContext, useSortable } from '@dnd-kit/sortable';
+import type { WorkspaceMetadata } from '@toeverything/infra';
 import type { CSSProperties } from 'react';
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 

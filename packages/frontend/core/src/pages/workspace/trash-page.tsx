@@ -14,13 +14,13 @@ import { Header } from '@affine/core/components/pure/header';
 import { WindowsAppControls } from '@affine/core/components/pure/header/windows-app-controls';
 import { useBlockSuiteMetaHelper } from '@affine/core/hooks/affine/use-block-suite-meta-helper';
 import { useBlockSuitePageMeta } from '@affine/core/hooks/use-block-suite-page-meta';
-import { waitForCurrentWorkspaceAtom } from '@affine/core/modules/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
 import { DeleteIcon } from '@blocksuite/icons';
 import type { PageMeta } from '@blocksuite/store';
+import { Workspace } from '@toeverything/infra';
 import { getCurrentStore } from '@toeverything/infra/atom';
-import { useAtomValue } from 'jotai';
+import { useService } from '@toeverything/infra/di';
 import { useCallback } from 'react';
 import { type LoaderFunction } from 'react-router-dom';
 import { NIL } from 'uuid';
@@ -61,7 +61,7 @@ export const loader: LoaderFunction = async () => {
 };
 
 export const TrashPage = () => {
-  const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
+  const currentWorkspace = useService(Workspace);
   const blockSuiteWorkspace = currentWorkspace.blockSuiteWorkspace;
   assertExists(blockSuiteWorkspace);
 

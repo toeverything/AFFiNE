@@ -8,17 +8,19 @@ import { useIsWorkspaceOwner } from '@affine/core/hooks/affine/use-is-workspace-
 import { useWorkspaceBlobObjectUrl } from '@affine/core/hooks/use-workspace-blob';
 import { useWorkspaceAvailableFeatures } from '@affine/core/hooks/use-workspace-features';
 import { useWorkspaceInfo } from '@affine/core/hooks/use-workspace-info';
-import {
-  waitForCurrentWorkspaceAtom,
-  workspaceListAtom,
-} from '@affine/core/modules/workspace';
 import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import type { WorkspaceMetadata } from '@affine/workspace';
 import { Logo1Icon } from '@blocksuite/icons';
+import {
+  Workspace,
+  WorkspaceManager,
+  type WorkspaceMetadata,
+} from '@toeverything/infra';
+import { useService } from '@toeverything/infra/di';
+import { useLiveData } from '@toeverything/infra/livedata';
 import clsx from 'clsx';
-import { useAtom, useAtomValue } from 'jotai/react';
+import { useAtom } from 'jotai/react';
 import { type ReactElement, Suspense, useCallback, useMemo } from 'react';
 
 import { authAtom } from '../../../../atoms';
@@ -188,7 +190,9 @@ export const WorkspaceList = ({
   selectedWorkspaceId: string | null;
   activeSubTab: WorkspaceSubTab;
 }) => {
-  const workspaces = useAtomValue(workspaceListAtom);
+  const workspaces = useLiveData(
+    useService(WorkspaceManager).list.workspaceList
+  );
   return (
     <>
       {workspaces.map(workspace => {
@@ -236,7 +240,7 @@ const WorkspaceListItem = ({
   const information = useWorkspaceInfo(meta);
   const avatarUrl = useWorkspaceBlobObjectUrl(meta, information?.avatar);
   const name = information?.name ?? UNTITLED_WORKSPACE_NAME;
-  const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
+  const currentWorkspace = useService(Workspace);
   const isCurrent = currentWorkspace.id === meta.id;
   const t = useAFFiNEI18N();
   const isOwner = useIsWorkspaceOwner(meta);

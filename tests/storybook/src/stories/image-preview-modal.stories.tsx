@@ -1,10 +1,9 @@
 import { BlockSuiteEditor } from '@affine/core/components/blocksuite/block-suite-editor';
 import { ImagePreviewModal } from '@affine/core/components/image-preview';
-import { waitForCurrentWorkspaceAtom } from '@affine/core/modules/workspace';
 import type { Page } from '@blocksuite/store';
 import type { Meta } from '@storybook/react';
+import { useService, Workspace } from '@toeverything/infra';
 import { initEmptyPage } from '@toeverything/infra/blocksuite';
-import { useAtomValue } from 'jotai';
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 
@@ -14,7 +13,7 @@ export default {
 } satisfies Meta;
 
 export const Default = () => {
-  const workspace = useAtomValue(waitForCurrentWorkspaceAtom);
+  const workspace = useService(Workspace);
 
   const [page, setPage] = useState<Page | null>(null);
 

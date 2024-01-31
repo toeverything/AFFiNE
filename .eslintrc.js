@@ -64,7 +64,7 @@ const allPackages = [
   'packages/frontend/i18n',
   'packages/frontend/native',
   'packages/frontend/templates',
-  'packages/frontend/workspace',
+  'packages/frontend/workspace-impl',
   'packages/common/debug',
   'packages/common/env',
   'packages/common/infra',

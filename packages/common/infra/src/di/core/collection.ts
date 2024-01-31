@@ -203,6 +203,25 @@ export class ServiceCollection {
     this.services.set(normalizedScope, services);
   }
 
+  remove(identifier: ServiceIdentifierValue, scope: ServiceScope = ROOT_SCOPE) {
+    const normalizedScope = stringifyScope(scope);
+    const normalizedIdentifier = parseIdentifier(identifier);
+    const normalizedVariant =
+      normalizedIdentifier.variant ?? DEFAULT_SERVICE_VARIANT;
+
+    const services = this.services.get(normalizedScope);
+    if (!services) {
+      return;
+    }
+
+    const variants = services.get(normalizedIdentifier.identifierName);
+    if (!variants) {
+      return;
+    }
+
+    variants.delete(normalizedVariant);
+  }
+
   /**
    * Create a service provider from the collection.
    *
@@ -365,7 +384,7 @@ class ServiceCollectionEditor {
    */
   override = <
     Arg1 extends ServiceIdentifier<any>,
-    Arg2 extends Type<Trait> | ServiceFactory<Trait> | Trait,
+    Arg2 extends Type<Trait> | ServiceFactory<Trait> | Trait | null,
     Trait = ServiceIdentifierType<Arg1>,
     Deps extends Arg2 extends Type<Trait>
       ? TypesToDeps<ConstructorParameters<Arg2>>
@@ -378,7 +397,10 @@ class ServiceCollectionEditor {
     arg2: Arg2,
     ...[arg3]: Arg3 extends [] ? [] : [Arg3]
   ): this => {
-    if (arg2 instanceof Function) {
+    if (arg2 === null) {
+      this.collection.remove(identifier, this.currentScope);
+      return this;
+    } else if (arg2 instanceof Function) {
       this.collection.addFactory<any>(
         identifier,
         dependenciesToFactory(arg2, arg3 as any[]),

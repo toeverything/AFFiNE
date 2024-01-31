@@ -1,9 +1,8 @@
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import { workspaceManagerAtom } from '@affine/core/modules/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import type { Workspace } from '@affine/workspace';
 import type { Page } from '@blocksuite/store';
-import { useAtomValue } from 'jotai';
+import { type Workspace, WorkspaceManager } from '@toeverything/infra';
+import { useService } from '@toeverything/infra';
 import { useState } from 'react';
 
 import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
@@ -25,7 +24,7 @@ export const SharePageButton = ({
 
   const { openPage } = useNavigateHelper();
 
-  const workspaceManager = useAtomValue(workspaceManagerAtom);
+  const workspaceManager = useService(WorkspaceManager);
 
   const handleConfirm = useAsyncCallback(async () => {
     if (workspace.flavour !== WorkspaceFlavour.LOCAL) {

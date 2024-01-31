@@ -3,15 +3,15 @@ import { openQuotaModalAtom, openSettingModalAtom } from '@affine/core/atoms';
 import { useIsWorkspaceOwner } from '@affine/core/hooks/affine/use-is-workspace-owner';
 import { useUserQuota } from '@affine/core/hooks/use-quota';
 import { useWorkspaceQuota } from '@affine/core/hooks/use-workspace-quota';
-import { waitForCurrentWorkspaceAtom } from '@affine/core/modules/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useService, Workspace } from '@toeverything/infra';
 import bytes from 'bytes';
-import { useAtom, useAtomValue, useSetAtom } from 'jotai';
+import { useAtom, useSetAtom } from 'jotai';
 import { useCallback, useEffect, useMemo } from 'react';
 
 export const CloudQuotaModal = () => {
   const t = useAFFiNEI18N();
-  const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
+  const currentWorkspace = useService(Workspace);
   const [open, setOpen] = useAtom(openQuotaModalAtom);
   const workspaceQuota = useWorkspaceQuota(currentWorkspace.id);
   const isOwner = useIsWorkspaceOwner(currentWorkspace.meta);

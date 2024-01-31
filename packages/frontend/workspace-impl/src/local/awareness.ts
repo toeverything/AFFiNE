@@ -1,4 +1,4 @@
-import type { AwarenessProvider } from '@affine/workspace';
+import type { AwarenessProvider } from '@toeverything/infra';
 import type { Awareness } from 'y-protocols/awareness.js';
 import {
   applyAwarenessUpdate,
@@ -11,13 +11,35 @@ type ChannelMessage =
   | { type: 'connect' }
   | { type: 'update'; update: Uint8Array };
 
-export function createBroadcastChannelAwarenessProvider(
-  workspaceId: string,
-  awareness: Awareness
-): AwarenessProvider {
-  const channel = new BroadcastChannel('awareness:' + workspaceId);
+export class BroadcastChannelAwarenessProvider implements AwarenessProvider {
+  channel: BroadcastChannel | null = null;
 
-  function handleAwarenessUpdate(changes: AwarenessChanges, origin: unknown) {
+  constructor(
+    private readonly workspaceId: string,
+    private readonly awareness: Awareness
+  ) {}
+
+  connect(): void {
+    this.channel = new BroadcastChannel('awareness:' + this.workspaceId);
+    this.channel.postMessage({
+      type: 'connect',
+    } satisfies ChannelMessage);
+    this.awareness.on('update', (changes: AwarenessChanges, origin: unknown) =>
+      this.handleAwarenessUpdate(changes, origin)
+    );
+    this.channel.addEventListener(
+      'message',
+      (event: MessageEvent<ChannelMessage>) => {
+        this.handleChannelMessage(event);
+      }
+    );
+  }
+  disconnect(): void {
+    this.channel?.close();
+    this.channel = null;
+  }
+
+  handleAwarenessUpdate(changes: AwarenessChanges, origin: unknown) {
     if (origin === 'remote') {
       return;
     }
@@ -26,37 +48,25 @@ export function createBroadcastChannelAwarenessProvider(
       res.concat(cur)
     );
 
-    const update = encodeAwarenessUpdate(awareness, changedClients);
-    channel.postMessage({
+    const update = encodeAwarenessUpdate(this.awareness, changedClients);
+    this.channel?.postMessage({
       type: 'update',
       update: update,
     } satisfies ChannelMessage);
   }
 
-  function handleChannelMessage(event: MessageEvent<ChannelMessage>) {
+  handleChannelMessage(event: MessageEvent<ChannelMessage>) {
     if (event.data.type === 'update') {
       const update = event.data.update;
-      applyAwarenessUpdate(awareness, update, 'remote');
+      applyAwarenessUpdate(this.awareness, update, 'remote');
     }
     if (event.data.type === 'connect') {
-      channel.postMessage({
+      this.channel?.postMessage({
         type: 'update',
-        update: encodeAwarenessUpdate(awareness, [awareness.clientID]),
+        update: encodeAwarenessUpdate(this.awareness, [
+          this.awareness.clientID,
+        ]),
       } satisfies ChannelMessage);
     }
   }
-
-  return {
-    connect() {
-      channel.postMessage({
-        type: 'connect',
-      } satisfies ChannelMessage);
-      awareness.on('update', handleAwarenessUpdate);
-      channel.addEventListener('message', handleChannelMessage);
-    },
-    disconnect() {
-      awareness.off('update', handleAwarenessUpdate);
-      channel.removeEventListener('message', handleChannelMessage);
-    },
-  };
 }

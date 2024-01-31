@@ -4,6 +4,7 @@ import {
   Inject,
   Injectable,
   SetMetadata,
+  UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
@@ -69,6 +70,10 @@ class AuthGuard implements CanActivate {
       'isPublic',
       context.getHandler()
     );
+
+    // FIXME(@forehalo): @Publicable() is duplicated with @CurrentUser() user?: User
+    //                                                                       ^ optional
+    //   we can prefetch user session in each request even before this `Guard`
     // api can be public, but if user is logged in, we can get user info
     const isPublicable = this.reflector.get<boolean>(
       'isPublicable',
@@ -94,7 +99,7 @@ class AuthGuard implements CanActivate {
 
       const { body = {}, cookies, status = 200 } = session;
       if (!body && !isPublicable) {
-        return false;
+        throw new UnauthorizedException('You are not signed in.');
       }
 
       // @ts-expect-error body is user here

@@ -1,6 +1,6 @@
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { getIsOwnerQuery } from '@affine/graphql';
-import type { WorkspaceMetadata } from '@affine/workspace/metadata';
+import type { WorkspaceMetadata } from '@toeverything/infra';
 
 import { useQueryImmutable } from '../use-query';
 

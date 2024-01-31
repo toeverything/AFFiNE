@@ -1,7 +1,7 @@
 import { DebugLogger } from '@affine/debug';
 import { DEFAULT_WORKSPACE_NAME } from '@affine/env/constant';
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import { workspaceManager } from '@affine/workspace-impl';
+import type { WorkspaceManager } from '@toeverything/infra';
 import { getCurrentStore } from '@toeverything/infra/atom';
 import {
   buildShowcaseWorkspace,
@@ -12,12 +12,12 @@ import { setPageModeAtom } from '../atoms';
 
 const logger = new DebugLogger('affine:first-app-data');
 
-export async function createFirstAppData() {
+export async function createFirstAppData(workspaceManager: WorkspaceManager) {
   if (localStorage.getItem('is-first-open') !== null) {
     return;
   }
   localStorage.setItem('is-first-open', 'false');
-  const workspaceId = await workspaceManager.createWorkspace(
+  const workspaceMetadata = await workspaceManager.createWorkspace(
     WorkspaceFlavour.LOCAL,
     async workspace => {
       workspace.meta.setName(DEFAULT_WORKSPACE_NAME);
@@ -38,6 +38,6 @@ export async function createFirstAppData() {
       logger.debug('create first workspace');
     }
   );
-  console.info('create first workspace', workspaceId);
-  return workspaceId;
+  console.info('create first workspace', workspaceMetadata);
+  return workspaceMetadata;
 }

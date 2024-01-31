@@ -14,7 +14,9 @@
     {
       "path": "../../frontend/electron-api"
     },
-    { "path": "../../common/workspace" },
+    {
+      "path": "../../frontend/graphql"
+    },
     {
       "path": "../../common/debug"
     },

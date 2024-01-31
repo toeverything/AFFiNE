@@ -1,18 +1,18 @@
 import { WorkspaceFallback } from '@affine/component/workspace';
 import { useWorkspace } from '@affine/core/hooks/use-workspace';
 import {
-  currentWorkspaceAtom,
-  workspaceListAtom,
-  workspaceListLoadingStatusAtom,
-  workspaceManagerAtom,
-} from '@affine/core/modules/workspace';
-import { type Workspace } from '@affine/workspace';
-import { useAtom, useAtomValue } from 'jotai';
+  Workspace,
+  WorkspaceListService,
+  WorkspaceManager,
+} from '@toeverything/infra';
+import { useService, useServiceOptional } from '@toeverything/infra/di';
+import { useLiveData } from '@toeverything/infra/livedata';
 import { type ReactElement, Suspense, useEffect, useMemo } from 'react';
 import { Outlet, useParams } from 'react-router-dom';
 
 import { AffineErrorBoundary } from '../../components/affine/affine-error-boundary';
 import { WorkspaceLayout } from '../../layouts/workspace-layout';
+import { CurrentWorkspaceService } from '../../modules/workspace/current-workspace';
 import { performanceRenderLogger } from '../../shared';
 import { PageNotFound } from '../404';
 
@@ -30,29 +30,27 @@ declare global {
 export const Component = (): ReactElement => {
   performanceRenderLogger.info('WorkspaceLayout');
 
-  const [
-    _ /* read this atom here to make sure children refresh when currentWorkspace changed */,
-    setCurrentWorkspace,
-  ] = useAtom(currentWorkspaceAtom);
+  const currentWorkspaceService = useService(CurrentWorkspaceService);
 
   const params = useParams();
 
-  const list = useAtomValue(workspaceListAtom);
-  const listLoading = useAtomValue(workspaceListLoadingStatusAtom);
-  const workspaceManager = useAtomValue(workspaceManagerAtom);
+  const { workspaceList, loading: listLoading } = useLiveData(
+    useService(WorkspaceListService).status
+  );
+  const workspaceManager = useService(WorkspaceManager);
 
   const meta = useMemo(() => {
-    return list.find(({ id }) => id === params.workspaceId);
-  }, [list, params.workspaceId]);
+    return workspaceList.find(({ id }) => id === params.workspaceId);
+  }, [workspaceList, params.workspaceId]);
 
   const workspace = useWorkspace(meta);
 
   useEffect(() => {
     if (!workspace) {
-      setCurrentWorkspace(null);
+      currentWorkspaceService.closeWorkspace();
       return undefined;
     }
-    setCurrentWorkspace(workspace);
+    currentWorkspaceService.openWorkspace(workspace ?? null);
 
     // for debug purpose
     window.currentWorkspace = workspace;
@@ -65,14 +63,16 @@ export const Component = (): ReactElement => {
     );
 
     localStorage.setItem('last_workspace_id', workspace.id);
-  }, [setCurrentWorkspace, meta, workspaceManager, workspace]);
+  }, [meta, workspaceManager, workspace, currentWorkspaceService]);
+
+  const currentWorkspace = useServiceOptional(Workspace);
 
   // if listLoading is false, we can show 404 page, otherwise we should show loading page.
   if (listLoading === false && meta === undefined) {
     return <PageNotFound />;
   }
 
-  if (!workspace) {
+  if (!currentWorkspace) {
     return <WorkspaceFallback key="workspaceLoading" />;
   }
 

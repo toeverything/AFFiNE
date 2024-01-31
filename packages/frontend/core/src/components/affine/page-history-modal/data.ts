@@ -8,10 +8,10 @@ import {
   listHistoryQuery,
   recoverDocMutation,
 } from '@affine/graphql';
-import { globalBlockSuiteSchema } from '@affine/workspace';
-import { createAffineCloudBlobStorage } from '@affine/workspace-impl';
+import { AffineCloudBlobStorage } from '@affine/workspace-impl';
 import { assertEquals } from '@blocksuite/global/utils';
 import { Workspace } from '@blocksuite/store';
+import { globalBlockSuiteSchema } from '@toeverything/infra';
 import { revertUpdate } from '@toeverything/y-indexeddb';
 import { useEffect, useMemo } from 'react';
 import useSWRImmutable from 'swr/immutable';
@@ -108,7 +108,7 @@ const workspaceMap = new Map<string, Workspace>();
 const getOrCreateShellWorkspace = (workspaceId: string) => {
   let workspace = workspaceMap.get(workspaceId);
   if (!workspace) {
-    const blobStorage = createAffineCloudBlobStorage(workspaceId);
+    const blobStorage = new AffineCloudBlobStorage(workspaceId);
     workspace = new Workspace({
       id: workspaceId,
       providerCreators: [],

@@ -1,77 +1,55 @@
-import { setupEditorFlags } from '@affine/env/global';
-import type { WorkspaceFactory } from '@affine/workspace';
-import { BlobEngine, SyncEngine, WorkspaceEngine } from '@affine/workspace';
-import { globalBlockSuiteSchema } from '@affine/workspace';
-import { Workspace } from '@affine/workspace';
-import { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
-import { nanoid } from 'nanoid';
+import { WorkspaceFlavour } from '@affine/env/workspace';
+import type { WorkspaceFactory } from '@toeverything/infra';
+import {
+  AwarenessContext,
+  AwarenessProvider,
+  RemoteBlobStorage,
+  RemoteSyncStorage,
+  WorkspaceIdContext,
+  WorkspaceScope,
+} from '@toeverything/infra';
+import type { ServiceCollection } from '@toeverything/infra/di';
+import { CleanupService } from '@toeverything/infra/lifecycle';
 
-import { createBroadcastChannelAwarenessProvider } from '../local/awareness';
-import { createLocalBlobStorage } from '../local/blob';
-import { createStaticBlobStorage } from '../local/blob-static';
-import { createLocalStorage } from '../local/sync';
-import { createCloudAwarenessProvider } from './awareness';
-import { createAffineCloudBlobStorage } from './blob';
-import { createAffineStorage } from './sync';
+import { LocalWorkspaceFactory } from '../local';
+import { IndexedDBBlobStorage, SQLiteBlobStorage } from '../local';
+import { AffineCloudAwarenessProvider } from './awareness';
+import { AffineCloudBlobStorage } from './blob';
+import { AffineSyncStorage } from './sync';
 
-export const cloudWorkspaceFactory: WorkspaceFactory = {
-  name: 'affine-cloud',
-  openWorkspace(metadata) {
-    const blobEngine = new BlobEngine(createLocalBlobStorage(metadata.id), [
-      createAffineCloudBlobStorage(metadata.id),
-      createStaticBlobStorage(),
-    ]);
+export class CloudWorkspaceFactory implements WorkspaceFactory {
+  name = WorkspaceFlavour.AFFINE_CLOUD;
+  configureWorkspace(services: ServiceCollection): void {
+    // configure local-first providers
+    new LocalWorkspaceFactory().configureWorkspace(services);
 
-    // create blocksuite workspace
-    const bs = new BlockSuiteWorkspace({
-      id: metadata.id,
-      blobStorages: [
-        () => ({
-          crud: blobEngine,
-        }),
-      ],
-      idGenerator: () => nanoid(),
-      schema: globalBlockSuiteSchema,
-    });
-
-    const affineStorage = createAffineStorage(metadata.id);
-    const syncEngine = new SyncEngine(bs.doc, createLocalStorage(metadata.id), [
-      affineStorage,
-    ]);
-
-    const awarenessProviders = [
-      createBroadcastChannelAwarenessProvider(
-        metadata.id,
-        bs.awarenessStore.awareness
-      ),
-      createCloudAwarenessProvider(metadata.id, bs.awarenessStore.awareness),
-    ];
-    const engine = new WorkspaceEngine(
-      blobEngine,
-      syncEngine,
-      awarenessProviders
-    );
-
-    setupEditorFlags(bs);
-
-    const workspace = new Workspace(metadata, engine, bs);
-
-    workspace.onStop.once(() => {
-      // affine sync storage need manually disconnect
-      affineStorage.disconnect();
-    });
-
-    return workspace;
-  },
+    services
+      .scope(WorkspaceScope)
+      .addImpl(RemoteBlobStorage('affine-cloud'), AffineCloudBlobStorage, [
+        WorkspaceIdContext,
+      ])
+      .addImpl(RemoteSyncStorage('affine-cloud'), AffineSyncStorage, [
+        WorkspaceIdContext,
+        CleanupService,
+      ])
+      .addImpl(
+        AwarenessProvider('affine-cloud'),
+        AffineCloudAwarenessProvider,
+        [WorkspaceIdContext, AwarenessContext]
+      );
+  }
   async getWorkspaceBlob(id: string, blobKey: string): Promise<Blob | null> {
     // try to get blob from local storage first
-    const localBlobStorage = createLocalBlobStorage(id);
+    const localBlobStorage = environment.isDesktop
+      ? new SQLiteBlobStorage(id)
+      : new IndexedDBBlobStorage(id);
+
     const localBlob = await localBlobStorage.get(blobKey);
     if (localBlob) {
       return localBlob;
     }
 
-    const blobStorage = createAffineCloudBlobStorage(id);
+    const blobStorage = new AffineCloudBlobStorage(id);
     return await blobStorage.get(blobKey);
-  },
-};
+  }
+}

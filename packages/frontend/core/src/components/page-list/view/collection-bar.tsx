@@ -1,4 +1,5 @@
 import { Button, Tooltip } from '@affine/component';
+import type { CollectionService } from '@affine/core/modules/collection';
 import type { DeleteCollectionInfo, PropertiesMeta } from '@affine/env/filter';
 import type { GetPageInfoById } from '@affine/env/page-info';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
@@ -6,10 +7,7 @@ import { ViewLayersIcon } from '@blocksuite/icons';
 import clsx from 'clsx';
 import { useState } from 'react';
 
-import {
-  type CollectionsCRUDAtom,
-  useCollectionManager,
-} from '../use-collection-manager';
+import { useCollectionManager } from '../use-collection-manager';
 import * as styles from './collection-bar.css';
 import {
   type AllPageListConfig,
@@ -20,16 +18,16 @@ import { useActions } from './use-action';
 interface CollectionBarProps {
   getPageInfo: GetPageInfoById;
   propertiesMeta: PropertiesMeta;
-  collectionsAtom: CollectionsCRUDAtom;
+  collectionService: CollectionService;
   backToAll: () => void;
   allPageListConfig: AllPageListConfig;
   info: DeleteCollectionInfo;
 }
 
 export const CollectionBar = (props: CollectionBarProps) => {
-  const { collectionsAtom } = props;
+  const { collectionService } = props;
   const t = useAFFiNEI18N();
-  const setting = useCollectionManager(collectionsAtom);
+  const setting = useCollectionManager(collectionService);
   const collection = setting.currentCollection;
   const [open, setOpen] = useState(false);
   const actions = useActions({

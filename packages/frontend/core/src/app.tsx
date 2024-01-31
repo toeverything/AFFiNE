@@ -8,14 +8,17 @@ import { WorkspaceFallback } from '@affine/component/workspace';
 import { createI18n, setUpLanguage } from '@affine/i18n';
 import { CacheProvider } from '@emotion/react';
 import { getCurrentStore } from '@toeverything/infra/atom';
+import { ServiceCollection } from '@toeverything/infra/di';
 import type { PropsWithChildren, ReactElement } from 'react';
 import { lazy, memo, Suspense } from 'react';
 import { RouterProvider } from 'react-router-dom';
 
+import { GlobalScopeProvider } from './modules/infra-web/global-scope';
 import { CloudSessionProvider } from './providers/session-provider';
 import { router } from './router';
 import { performanceLogger, performanceRenderLogger } from './shared';
 import createEmotionCache from './utils/create-emotion-cache';
+import { configureWebServices } from './web';
 
 const performanceI18nLogger = performanceLogger.namespace('i18n');
 const cache = createEmotionCache();
@@ -52,6 +55,10 @@ async function loadLanguage() {
 
 let languageLoadingPromise: Promise<void> | null = null;
 
+const services = new ServiceCollection();
+configureWebServices(services);
+const serviceProvider = services.provider();
+
 export const App = memo(function App() {
   performanceRenderLogger.info('App');
 
@@ -60,20 +67,26 @@ export const App = memo(function App() {
   }
 
   return (
-    <CacheProvider value={cache}>
-      <AffineContext store={getCurrentStore()}>
-        <CloudSessionProvider>
-          <DebugProvider>
-            <GlobalLoading />
-            {runtimeConfig.enableNotificationCenter && <NotificationCenter />}
-            <RouterProvider
-              fallbackElement={<WorkspaceFallback key="RouterFallback" />}
-              router={router}
-              future={future}
-            />
-          </DebugProvider>
-        </CloudSessionProvider>
-      </AffineContext>
-    </CacheProvider>
+    <Suspense>
+      <GlobalScopeProvider provider={serviceProvider}>
+        <CacheProvider value={cache}>
+          <AffineContext store={getCurrentStore()}>
+            <CloudSessionProvider>
+              <DebugProvider>
+                <GlobalLoading />
+                {runtimeConfig.enableNotificationCenter && (
+                  <NotificationCenter />
+                )}
+                <RouterProvider
+                  fallbackElement={<WorkspaceFallback key="RouterFallback" />}
+                  router={router}
+                  future={future}
+                />
+              </DebugProvider>
+            </CloudSessionProvider>
+          </AffineContext>
+        </CacheProvider>
+      </GlobalScopeProvider>
+    </Suspense>
   );
 });

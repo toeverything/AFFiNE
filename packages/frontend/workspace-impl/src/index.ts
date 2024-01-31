@@ -1,29 +1,23 @@
-import { WorkspaceList, WorkspaceManager } from '@affine/workspace';
+import { WorkspaceFactory, WorkspaceListProvider } from '@toeverything/infra';
+import type { ServiceCollection } from '@toeverything/infra/di';
 
+import { CloudWorkspaceFactory, CloudWorkspaceListProvider } from './cloud';
 import {
-  cloudWorkspaceFactory,
-  createCloudWorkspaceListProvider,
-} from './cloud';
-import {
-  createLocalWorkspaceListProvider,
   LOCAL_WORKSPACE_LOCAL_STORAGE_KEY,
-  localWorkspaceFactory,
+  LocalWorkspaceFactory,
+  LocalWorkspaceListProvider,
 } from './local';
-
-const list = new WorkspaceList([
-  createLocalWorkspaceListProvider(),
-  createCloudWorkspaceListProvider(),
-]);
-
-export const workspaceManager = new WorkspaceManager(list, [
-  localWorkspaceFactory,
-  cloudWorkspaceFactory,
-]);
-
-(window as any).workspaceManager = workspaceManager;
 
 export * from './cloud';
 export * from './local';
+
+export function configureWorkspaceImplServices(services: ServiceCollection) {
+  services
+    .addImpl(WorkspaceListProvider('affine-cloud'), CloudWorkspaceListProvider)
+    .addImpl(WorkspaceFactory('affine-cloud'), CloudWorkspaceFactory)
+    .addImpl(WorkspaceListProvider('local'), LocalWorkspaceListProvider)
+    .addImpl(WorkspaceFactory('local'), LocalWorkspaceFactory);
+}
 
 /**
  * a hack for directly add local workspace to workspace list

@@ -1,13 +1,14 @@
 import { Button } from '@affine/component';
-import { collectionsCRUDAtom } from '@affine/core/atoms/collections';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
 import type { Collection, Tag } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ViewLayersIcon } from '@blocksuite/icons';
+import { useService } from '@toeverything/infra/di';
 import { nanoid } from 'nanoid';
 import { useCallback, useMemo } from 'react';
 
+import { CollectionService } from '../../../modules/collection';
 import { createTagFilter } from '../filter/utils';
 import {
   createEmptyCollection,
@@ -24,7 +25,7 @@ import { PageListNewPageButton } from './page-list-new-page-button';
 
 export const PageListHeader = ({ workspaceId }: { workspaceId: string }) => {
   const t = useAFFiNEI18N();
-  const setting = useCollectionManager(collectionsCRUDAtom);
+  const setting = useCollectionManager(useService(CollectionService));
   const { jumpToCollections } = useNavigateHelper();
 
   const handleJumpToCollections = useCallback(() => {
@@ -74,14 +75,16 @@ export const CollectionPageListHeader = ({
   workspaceId: string;
 }) => {
   const t = useAFFiNEI18N();
-  const setting = useCollectionManager(collectionsCRUDAtom);
+  const setting = useCollectionManager(useService(CollectionService));
   const { jumpToCollections } = useNavigateHelper();
 
   const handleJumpToCollections = useCallback(() => {
     jumpToCollections(workspaceId);
   }, [jumpToCollections, workspaceId]);
 
-  const { updateCollection } = useCollectionManager(collectionsCRUDAtom);
+  const { updateCollection } = useCollectionManager(
+    useService(CollectionService)
+  );
   const { node, open } = useEditCollection(config);
 
   const handleAddPage = useAsyncCallback(async () => {
@@ -121,7 +124,7 @@ export const TagPageListHeader = ({
 }) => {
   const t = useAFFiNEI18N();
   const { jumpToTags, jumpToCollection } = useNavigateHelper();
-  const setting = useCollectionManager(collectionsCRUDAtom);
+  const setting = useCollectionManager(useService(CollectionService));
   const { open, node } = useEditCollectionName({
     title: t['com.affine.editCollection.saveCollection'](),
     showTips: true,

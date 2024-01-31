@@ -2,12 +2,12 @@ import { toast } from '@affine/component';
 import { useBlockSuiteMetaHelper } from '@affine/core/hooks/affine/use-block-suite-meta-helper';
 import { useTrashModalHelper } from '@affine/core/hooks/affine/use-trash-modal-helper';
 import { useBlockSuitePageMeta } from '@affine/core/hooks/use-block-suite-page-meta';
-import { waitForCurrentWorkspaceAtom } from '@affine/core/modules/workspace';
 import type { Collection } from '@affine/env/filter';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { PageMeta, Tag } from '@blocksuite/store';
-import { useAtomValue } from 'jotai';
+import { useService } from '@toeverything/infra';
+import { Workspace } from '@toeverything/infra';
 import { useCallback, useMemo, useRef, useState } from 'react';
 
 import { usePageHelper } from '../../blocksuite/block-suite-page-list/utils';
@@ -27,7 +27,7 @@ import {
 } from './page-list-header';
 
 const usePageOperationsRenderer = () => {
-  const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
+  const currentWorkspace = useService(Workspace);
   const { setTrashModal } = useTrashModalHelper(
     currentWorkspace.blockSuiteWorkspace
   );
@@ -89,7 +89,7 @@ export const VirtualizedPageList = ({
   const listRef = useRef<ItemListHandle>(null);
   const [showFloatingToolbar, setShowFloatingToolbar] = useState(false);
   const [selectedPageIds, setSelectedPageIds] = useState<string[]>([]);
-  const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
+  const currentWorkspace = useService(Workspace);
   const pageMetas = useBlockSuitePageMeta(currentWorkspace.blockSuiteWorkspace);
   const pageOperations = usePageOperationsRenderer();
   const { isPreferredEdgeless } = usePageHelper(

@@ -1,4 +1,4 @@
-import type { WorkspaceMetadata } from '@affine/workspace/metadata';
+import type { WorkspaceMetadata } from '@toeverything/infra';
 
 export interface WorkspaceSettingDetailProps {
   isOwner: boolean;
