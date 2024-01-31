@@ -255,12 +255,7 @@ export class SubscriptionResolver {
     });
 
     if (!session.url) {
-      throw new GraphQLError('Failed to create checkout session', {
-        extensions: {
-          status: HttpStatus[HttpStatus.BAD_GATEWAY],
-          code: HttpStatus.BAD_GATEWAY,
-        },
-      });
+      throw new BadGatewayException('Failed to create checkout session.');
     }
 
     return session.url;
