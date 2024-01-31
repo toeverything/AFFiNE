@@ -1,3 +1,4 @@
+export * from './error';
 export * from './fetcher';
 export * from './graphql';
 export * from './schema';
@@ -18,5 +19,3 @@ export function getBaseUrl(): string {
 }
 
 export const fetcher = gqlFetcherFactory(getBaseUrl() + '/graphql');
-
-export { GraphQLError } from 'graphql';

@@ -5,11 +5,14 @@ import {
 } from '@affine/component/auth-components';
 import { Button } from '@affine/component/ui/button';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import { type GetUserQuery, getUserQuery } from '@affine/graphql';
+import {
+  findGraphQLError,
+  type GetUserQuery,
+  getUserQuery,
+} from '@affine/graphql';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowDownBigIcon, GoogleDuotoneIcon } from '@blocksuite/icons';
-import { GraphQLError } from 'graphql';
 import { type FC, useState } from 'react';
 import { useCallback } from 'react';
 
@@ -64,8 +67,7 @@ export const SignIn: FC<AuthPanelProps> = ({
     const user: GetUserQuery['user'] | null | 0 = await verifyUser({ email })
       .then(({ user }) => user)
       .catch(err => {
-        const e = err?.[0];
-        if (e instanceof GraphQLError && e.extensions?.code === 402) {
+        if (findGraphQLError(err, e => e.extensions.code === 402)) {
           setAuthState('noAccess');
           return 0;
         } else {

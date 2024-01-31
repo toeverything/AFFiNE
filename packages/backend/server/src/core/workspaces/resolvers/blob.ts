@@ -1,4 +1,9 @@
-import { HttpStatus, Logger, UseGuards } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Logger,
+  PayloadTooLargeException,
+  UseGuards,
+} from '@nestjs/common';
 import {
   Args,
   Int,
@@ -8,7 +13,6 @@ import {
   ResolveField,
   Resolver,
 } from '@nestjs/graphql';
-import { GraphQLError } from 'graphql';
 import { SafeIntResolver } from 'graphql-scalars';
 import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 
@@ -138,12 +142,7 @@ export class WorkspaceBlobResolver {
 
     const checkExceeded = (recvSize: number) => {
       if (!storageQuota) {
-        throw new GraphQLError('cannot find user quota', {
-          extensions: {
-            status: HttpStatus[HttpStatus.FORBIDDEN],
-            code: HttpStatus.FORBIDDEN,
-          },
-        });
+        throw new ForbiddenException('Cannot find user quota.');
       }
       const total = usedSize + recvSize;
       // only skip total storage check if workspace has unlimited feature
@@ -163,12 +162,9 @@ export class WorkspaceBlobResolver {
     };
 
     if (checkExceeded(0)) {
-      throw new GraphQLError('storage or blob size limit exceeded', {
-        extensions: {
-          status: HttpStatus[HttpStatus.PAYLOAD_TOO_LARGE],
-          code: HttpStatus.PAYLOAD_TOO_LARGE,
-        },
-      });
+      throw new PayloadTooLargeException(
+        'Storage or blob size limit exceeded.'
+      );
     }
     const buffer = await new Promise<Buffer>((resolve, reject) => {
       const stream = blob.createReadStream();
@@ -180,12 +176,7 @@ export class WorkspaceBlobResolver {
         const bufferSize = chunks.reduce((acc, cur) => acc + cur.length, 0);
         if (checkExceeded(bufferSize)) {
           reject(
-            new GraphQLError('storage or blob size limit exceeded', {
-              extensions: {
-                status: HttpStatus[HttpStatus.PAYLOAD_TOO_LARGE],
-                code: HttpStatus.PAYLOAD_TOO_LARGE,
-              },
-            })
+            new PayloadTooLargeException('Storage or blob size limit exceeded.')
           );
         }
       });
@@ -194,14 +185,7 @@ export class WorkspaceBlobResolver {
         const buffer = Buffer.concat(chunks);
 
         if (checkExceeded(buffer.length)) {
-          reject(
-            new GraphQLError('storage limit exceeded', {
-              extensions: {
-                status: HttpStatus[HttpStatus.PAYLOAD_TOO_LARGE],
-                code: HttpStatus.PAYLOAD_TOO_LARGE,
-              },
-            })
-          );
+          reject(new PayloadTooLargeException('Storage limit exceeded.'));
         } else {
           resolve(buffer);
         }

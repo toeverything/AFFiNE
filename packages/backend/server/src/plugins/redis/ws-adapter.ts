@@ -2,7 +2,7 @@ import { createAdapter } from '@socket.io/redis-adapter';
 import { Redis } from 'ioredis';
 import { Server, ServerOptions } from 'socket.io';
 
-import { SocketIoAdapter } from '../../fundamentals';
+import { SocketIoAdapter } from '../../fundamentals/websocket';
 
 export function createSockerIoAdapterImpl(
   redis: Redis

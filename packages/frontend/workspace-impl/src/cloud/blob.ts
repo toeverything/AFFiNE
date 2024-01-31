@@ -1,14 +1,13 @@
 import {
   deleteBlobMutation,
   fetchWithTraceReport,
+  findGraphQLError,
   getBaseUrl,
-  GraphQLError,
   listBlobsQuery,
   setBlobMutation,
 } from '@affine/graphql';
 import { fetcher } from '@affine/graphql';
 import { type BlobStorage, BlobStorageOverCapacity } from '@toeverything/infra';
-import { isArray } from 'lodash-es';
 
 import { bufferToBlob } from '../utils/buffer-to-blob';
 
@@ -43,13 +42,15 @@ export class AffineCloudBlobStorage implements BlobStorage {
     })
       .then(res => res.setBlob)
       .catch(err => {
-        if (isArray(err)) {
-          err.map(e => {
-            if (e instanceof GraphQLError && e.extensions.code === 413) {
-              throw new BlobStorageOverCapacity(e);
-            } else throw e;
-          });
+        const uploadError = findGraphQLError(
+          err,
+          e => e.extensions.code === 413
+        );
+
+        if (uploadError) {
+          throw new BlobStorageOverCapacity(uploadError);
         }
+
         throw err;
       });
   }

@@ -1,8 +1,9 @@
 import {
   ForbiddenException,
-  HttpStatus,
+  InternalServerErrorException,
   Logger,
   NotFoundException,
+  PayloadTooLargeException,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -16,7 +17,6 @@ import {
 } from '@nestjs/graphql';
 import type { User } from '@prisma/client';
 import { getStreamAsBuffer } from 'get-stream';
-import { GraphQLError } from 'graphql';
 import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 import { applyUpdate, Doc } from 'yjs';
 
@@ -344,12 +344,7 @@ export class WorkspaceResolver {
       this.quota.getWorkspaceUsage(workspaceId),
     ]);
     if (memberCount >= quota.memberLimit) {
-      throw new GraphQLError('Workspace member limit reached', {
-        extensions: {
-          status: HttpStatus[HttpStatus.PAYLOAD_TOO_LARGE],
-          code: HttpStatus.PAYLOAD_TOO_LARGE,
-        },
-      });
+      throw new PayloadTooLargeException('Workspace member limit reached.');
     }
 
     let target = await this.users.findUserByEmail(email);
@@ -401,14 +396,8 @@ export class WorkspaceResolver {
             `failed to send ${workspaceId} invite email to ${email}, but successfully revoked permission: ${e}`
           );
         }
-        return new GraphQLError(
-          'failed to send invite email, please try again',
-          {
-            extensions: {
-              status: HttpStatus[HttpStatus.INTERNAL_SERVER_ERROR],
-              code: HttpStatus.INTERNAL_SERVER_ERROR,
-            },
-          }
+        return new InternalServerErrorException(
+          'Failed to send invite email. Please try again.'
         );
       }
     }
