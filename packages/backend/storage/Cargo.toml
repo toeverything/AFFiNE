@@ -8,9 +8,6 @@ crate-type = ["cdylib"]
 
 [dependencies]
 chrono = "0.4"
-jwst-codec = { git = "https://github.com/toeverything/OctoBase.git", rev = "49a6b7a" }
-jwst-core = { git = "https://github.com/toeverything/OctoBase.git", rev = "49a6b7a" }
-jwst-storage = { git = "https://github.com/toeverything/OctoBase.git", rev = "49a6b7a" }
 napi = { version = "2", default-features = false, features = [
   "napi5",
   "async",
@@ -18,6 +15,7 @@ napi = { version = "2", default-features = false, features = [
 napi-derive = { version = "2", features = ["type-def"] }
 rand = "0.8"
 sha3 = "0.10"
+y-octo = { git = "https://github.com/y-crdt/y-octo.git", branch = "main" }
 
 [dev-dependencies]
 tokio = "1"

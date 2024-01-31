@@ -15,8 +15,6 @@ try {
         : require('../../../storage.node');
 }
 
-export { storageModule as OctoBaseStorageModule };
-
 export const mergeUpdatesInApplyWay = storageModule.mergeUpdatesInApplyWay;
 
 export const verifyChallengeResponse = async (
