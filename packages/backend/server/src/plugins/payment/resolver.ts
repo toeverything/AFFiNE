@@ -7,6 +7,7 @@ import {
   Args,
   Context,
   Field,
+  InputType,
   Int,
   Mutation,
   ObjectType,
@@ -128,6 +129,31 @@ class UserInvoiceType implements Partial<UserInvoice> {
   updatedAt!: Date;
 }
 
+@InputType()
+class CreateCheckoutSessionInput {
+  @Field(() => SubscriptionRecurring, {
+    nullable: true,
+    defaultValue: SubscriptionRecurring.Yearly,
+  })
+  recurring!: SubscriptionRecurring;
+
+  @Field(() => SubscriptionPlan, {
+    nullable: true,
+    defaultValue: SubscriptionPlan.Pro,
+  })
+  plan!: SubscriptionPlan;
+
+  @Field(() => String, { nullable: true })
+  coupon!: string | null;
+
+  @Field(() => String, { nullable: true })
+  successCallbackLink!: string | null;
+
+  // @FIXME(forehalo): we should put this field in the header instead of as a explicity args
+  @Field(() => String)
+  idempotencyKey!: string;
+}
+
 @Auth()
 @Resolver(() => UserSubscriptionType)
 export class SubscriptionResolver {
@@ -182,7 +208,11 @@ export class SubscriptionResolver {
     });
   }
 
+  /**
+   * @deprecated
+   */
   @Mutation(() => String, {
+    deprecationReason: 'use `createCheckoutSession` instead',
     description: 'Create a subscription checkout link of stripe',
   })
   async checkout(
@@ -193,6 +223,7 @@ export class SubscriptionResolver {
   ) {
     const session = await this.service.createCheckoutSession({
       user,
+      plan: SubscriptionPlan.Pro,
       recurring,
       redirectUrl: `${this.config.baseUrl}/upgrade-success`,
       idempotencyKey,
@@ -200,6 +231,36 @@ export class SubscriptionResolver {
 
     if (!session.url) {
       throw new BadGatewayException('Failed to create checkout session.');
+    }
+
+    return session.url;
+  }
+
+  @Mutation(() => String, {
+    description: 'Create a subscription checkout link of stripe',
+  })
+  async createCheckoutSession(
+    @CurrentUser() user: User,
+    @Args({ name: 'input', type: () => CreateCheckoutSessionInput })
+    input: CreateCheckoutSessionInput
+  ) {
+    const session = await this.service.createCheckoutSession({
+      user,
+      plan: input.plan,
+      recurring: input.recurring,
+      promotionCode: input.coupon,
+      redirectUrl:
+        input.successCallbackLink ?? `${this.config.baseUrl}/upgrade-success`,
+      idempotencyKey: input.idempotencyKey,
+    });
+
+    if (!session.url) {
+      throw new GraphQLError('Failed to create checkout session', {
+        extensions: {
+          status: HttpStatus[HttpStatus.BAD_GATEWAY],
+          code: HttpStatus.BAD_GATEWAY,
+        },
+      });
     }
 
     return session.url;
