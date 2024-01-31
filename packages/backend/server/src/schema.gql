@@ -2,6 +2,14 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+input CreateCheckoutSessionInput {
+  coupon: String
+  idempotencyKey: String!
+  plan: SubscriptionPlan = Pro
+  recurring: SubscriptionRecurring = Yearly
+  successCallbackLink: String
+}
+
 """
 A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
 """
@@ -107,7 +115,10 @@ type Mutation {
   changePassword(newPassword: String!, token: String!): UserType!
 
   """Create a subscription checkout link of stripe"""
-  checkout(idempotencyKey: String!, recurring: SubscriptionRecurring!): String!
+  checkout(idempotencyKey: String!, recurring: SubscriptionRecurring!): String! @deprecated(reason: "use `createCheckoutSession` instead")
+
+  """Create a subscription checkout link of stripe"""
+  createCheckoutSession(input: CreateCheckoutSessionInput!): String!
 
   """Create a stripe customer portal to manage payment methods"""
   createCustomerPortal: String!
