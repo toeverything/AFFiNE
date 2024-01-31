@@ -3,7 +3,10 @@ import './page-detail-editor.css';
 import { useActiveBlocksuiteEditor } from '@affine/core/hooks/use-block-suite-editor';
 import { useBlockSuiteWorkspacePage } from '@affine/core/hooks/use-block-suite-workspace-page';
 import { builtInTemplates } from '@affine/templates/edgeless';
-import { EdgelessTemplatePanel } from '@blocksuite/blocks';
+import {
+  EdgelessTemplatePanel,
+  type TemplateManager,
+} from '@blocksuite/blocks';
 import { assertExists, DisposableGroup } from '@blocksuite/global/utils';
 import type { AffineEditorContainer } from '@blocksuite/presets';
 import type { Page, Workspace } from '@blocksuite/store';
@@ -43,7 +46,8 @@ function useRouterHash() {
 
 let extended = false;
 function useEdgelessTemplate() {
-  !extended && EdgelessTemplatePanel.templates.extend(builtInTemplates);
+  !extended &&
+    EdgelessTemplatePanel.templates.extend(builtInTemplates as TemplateManager);
   extended = true;
 }
 
