@@ -11,6 +11,7 @@ import {
   useState,
 } from 'react';
 
+import { MIN_PANEL_PERCENT } from './constants';
 import { SplitViewContext } from './split-view.context';
 import * as styles from './split-view.css';
 import type {
@@ -202,9 +203,12 @@ export const SplitViewRoot = ({ className, limit }: SplitViewRootProps) => {
 
         if (index > 0) {
           newPanels[index - 1].percent += percent;
+          if (newPanels[index - 1].percent < MIN_PANEL_PERCENT)
+            return prevPanels;
         }
         if (index < newPanels.length) {
           newPanels[index].percent -= percent;
+          if (newPanels[index].percent < MIN_PANEL_PERCENT) return prevPanels;
         }
         return newPanels;
       });
