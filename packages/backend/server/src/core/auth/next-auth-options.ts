@@ -244,7 +244,10 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
             .count({
               where: {
                 user: {
-                  email,
+                  email: {
+                    equals: email,
+                    mode: 'insensitive',
+                  },
                 },
                 feature: {
                   feature: FeatureType.EarlyAccess,

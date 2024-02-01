@@ -151,7 +151,10 @@ export class AuthService {
   async signIn(email: string, password: string): Promise<User> {
     const user = await this.prisma.user.findFirst({
       where: {
-        email,
+        email: {
+          equals: email,
+          mode: 'insensitive',
+        },
       },
     });
 
@@ -179,7 +182,10 @@ export class AuthService {
   async signUp(name: string, email: string, password: string): Promise<User> {
     const user = await this.prisma.user.findFirst({
       where: {
-        email,
+        email: {
+          equals: email,
+          mode: 'insensitive',
+        },
       },
     });
 
@@ -213,7 +219,10 @@ export class AuthService {
   async createAnonymousUser(email: string): Promise<User> {
     const user = await this.prisma.user.findFirst({
       where: {
-        email,
+        email: {
+          equals: email,
+          mode: 'insensitive',
+        },
       },
     });
 
@@ -241,9 +250,12 @@ export class AuthService {
   }
 
   async getUserByEmail(email: string): Promise<User | null> {
-    return this.prisma.user.findUnique({
+    return this.prisma.user.findFirst({
       where: {
-        email,
+        email: {
+          equals: email,
+          mode: 'insensitive',
+        },
       },
     });
   }
@@ -251,7 +263,10 @@ export class AuthService {
   async isUserHasPassword(email: string): Promise<boolean> {
     const user = await this.prisma.user.findFirst({
       where: {
-        email,
+        email: {
+          equals: email,
+          mode: 'insensitive',
+        },
       },
     });
     if (!user) {
@@ -261,9 +276,12 @@ export class AuthService {
   }
 
   async changePassword(email: string, newPassword: string): Promise<User> {
-    const user = await this.prisma.user.findUnique({
+    const user = await this.prisma.user.findFirst({
       where: {
-        email,
+        email: {
+          equals: email,
+          mode: 'insensitive',
+        },
         emailVerified: {
           not: null,
         },
