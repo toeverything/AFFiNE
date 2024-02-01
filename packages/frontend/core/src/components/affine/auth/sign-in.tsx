@@ -20,6 +20,7 @@ import type { AuthPanelProps } from './index';
 import * as style from './style.css';
 import { INTERNAL_BETA_URL, useAuth } from './use-auth';
 import { Captcha, useCaptcha } from './use-captcha';
+import { useSubscriptionSearch } from './use-subscription';
 
 function validateEmail(email: string) {
   return emailRegex.test(email);
@@ -34,6 +35,7 @@ export const SignIn: FC<AuthPanelProps> = ({
   const t = useAFFiNEI18N();
   const loginStatus = useCurrentLoginStatus();
   const [verifyToken, challenge] = useCaptcha();
+  const subscriptionData = useSubscriptionSearch();
 
   const {
     isMutating: isSigningIn,
@@ -81,7 +83,8 @@ export const SignIn: FC<AuthPanelProps> = ({
     if (verifyToken) {
       if (user) {
         // provider password sign-in if user has by default
-        if (user.hasPassword) {
+        //  If with payment, onl support email sign in to avoid redirect to affine app
+        if (user.hasPassword && !subscriptionData) {
           setAuthState('signInWithPassword');
         } else {
           const res = await signIn(email, verifyToken, challenge);
@@ -101,6 +104,7 @@ export const SignIn: FC<AuthPanelProps> = ({
       }
     }
   }, [
+    subscriptionData,
     challenge,
     email,
     setAuthEmail,
