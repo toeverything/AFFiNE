@@ -3,7 +3,14 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { Clipboard } from '@napi-rs/clipboard';
-import { Repository, Sort } from '@napi-rs/simple-git';
+import {
+  FetchOptions,
+  ProxyOptions,
+  RemoteCallbacks,
+  Repository,
+  Sort,
+} from '@napi-rs/simple-git';
+import chalk from 'chalk';
 
 import corePackage from '../../packages/frontend/core/package.json' assert { type: 'json' };
 
@@ -19,6 +26,11 @@ const info = await fetch(
 
 const latestVersion = info['dist-tags'].nightly;
 const latestHash = latestVersion.split('-').pop();
+
+if (oldHash === latestHash) {
+  console.info(chalk.greenBright('Already updated'));
+  process.exit(0);
+}
 
 console.info(`Upgrade blocksuite from ${oldHash} -> ${latestHash}`);
 
@@ -38,7 +50,7 @@ const blocksuiteDepsList = blockSuiteDeps
 
 for (const pkg of blocksuiteDepsList) {
   const command = `yarn up ${pkg}@${latestVersion}`;
-  console.info(`Executing ${command}`);
+  console.info(chalk.bgCyan(`Executing ${command}`));
   execSync(command, {
     stdio: 'inherit',
   });
@@ -50,16 +62,25 @@ const repo = new Repository(
   join(fileURLToPath(import.meta.url), '..', '..', '..', '..', 'BlockSuite')
 );
 
-repo.remote('origin').fetch(['master'], progress => {
-  if (progress.totalDeltas && progress.totalObjects) {
-    console.log(
-      `${(
-        (progress.receivedObjects / progress.totalObjects) * 50 +
-        (progress.indexedDeltas / progress.totalDeltas) * 50
-      ).toFixed(2)}%`
-    );
-  }
-});
+const remote = repo.remoteAnonymous(
+  'https://github.com/toeverything/BlockSuite.git'
+);
+
+remote.fetch(
+  ['master'],
+  new FetchOptions().proxyOptions(new ProxyOptions().auto()).remoteCallback(
+    new RemoteCallbacks().transferProgress(progress => {
+      if (progress.totalDeltas && progress.totalObjects) {
+        console.log(
+          `${(
+            (progress.receivedObjects / progress.totalObjects) * 50 +
+            (progress.indexedDeltas / progress.totalDeltas) * 50
+          ).toFixed(2)}%`
+        );
+      }
+    })
+  )
+);
 
 const latest = repo.findCommit(latestHash);
 
