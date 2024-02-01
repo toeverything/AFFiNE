@@ -47,6 +47,11 @@
       "groupName": "electron-forge"
     },
     {
+      "matchPackageNames": ["oxlint"],
+      "rangeStrategy": "replace",
+      "groupName": "oxlint"
+    },
+    {
       "groupName": "blocksuite-canary",
       "matchPackagePatterns": ["^@blocksuite"],
       "excludePackageNames": ["@blocksuite/icons"],
@@ -57,7 +62,7 @@
       "groupName": "all non-major dependencies",
       "groupSlug": "all-minor-patch",
       "matchPackagePatterns": ["*"],
-      "excludePackagePatterns": ["^@blocksuite/"],
+      "excludePackagePatterns": ["^@blocksuite/", "oxlint"],
       "matchUpdateTypes": ["minor", "patch"]
     },
     {
