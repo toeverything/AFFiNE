@@ -10,7 +10,6 @@ import { chunk } from 'lodash-es';
 import { defer, retry } from 'rxjs';
 import {
   applyUpdate,
-  decodeStateVector,
   Doc,
   encodeStateAsUpdate,
   encodeStateVector,
@@ -40,36 +39,6 @@ function compare(yBinary: Buffer, jwstBinary: Buffer, strict = false): boolean {
   const yBinary2 = Buffer.from(encodeStateAsUpdate(doc));
 
   return compare(yBinary, yBinary2, true);
-}
-
-/**
- * Detect whether rhs state is newer than lhs state.
- *
- * How could we tell a state is newer:
- *
- *   i. if the state vector size is larger, it's newer
- *  ii. if the state vector size is same, compare each client's state
- */
-function isStateNewer(lhs: Buffer, rhs: Buffer): boolean {
-  const lhsVector = decodeStateVector(lhs);
-  const rhsVector = decodeStateVector(rhs);
-
-  if (lhsVector.size < rhsVector.size) {
-    return true;
-  }
-
-  for (const [client, state] of lhsVector) {
-    const rstate = rhsVector.get(client);
-    if (!rstate) {
-      return false;
-    }
-
-    if (state < rstate) {
-      return true;
-    }
-  }
-
-  return false;
 }
 
 export function isEmptyBuffer(buf: Buffer): boolean {
@@ -116,6 +85,7 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
     this.destroy();
   }
 
+  @CallTimer('doc', 'yjs_recover_updates_to_doc')
   private recoverDoc(...updates: Buffer[]): Promise<Doc> {
     const doc = new Doc();
     const chunks = chunk(updates, 10);
@@ -379,7 +349,7 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
     const updates = await this.getUpdates(workspaceId, guid);
 
     if (updates.length) {
-      const doc = await this.squash(updates, snapshot);
+      const doc = await this.squash(snapshot, updates);
       return Buffer.from(encodeStateVector(doc));
     }
 
@@ -460,97 +430,94 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
     });
   }
 
+  /**
+   * @returns whether the snapshot is updated to the latest, `undefined` means the doc to be upserted is outdated.
+   */
   @CallTimer('doc', 'upsert')
   private async upsert(
     workspaceId: string,
     guid: string,
     doc: Doc,
     // we always delay the snapshot update to avoid db overload,
-    // so the value of `updatedAt` will not be accurate to user's real action time
+    // so the value of auto updated `updatedAt` by db will never be accurate to user's real action time
     updatedAt: Date,
-    initialSeq?: number
+    seq: number
   ) {
     const blob = Buffer.from(encodeStateAsUpdate(doc));
 
     if (isEmptyBuffer(blob)) {
-      return false;
+      return undefined;
     }
 
     const state = Buffer.from(encodeStateVector(doc));
 
-    await this.db.$queryRaw`BEGIN;`;
-    let committed = false;
-    const commit = async () => {
-      if (!committed) {
-        committed = true;
-        await this.db.$queryRaw`COMMIT;`;
-      }
-    };
+    // CONCERNS:
+    //   i. Because we save the real user's last seen action time as `updatedAt`,
+    //      it's possible to simply compare the `updatedAt` to determine if the snapshot is older than the one we are going to save.
+    //
+    //  ii. Prisma doesn't support `upsert` with additional `where` condition along side unique constraint.
+    //      In our case, we need to manually check the `updatedAt` to avoid overriding the newer snapshot.
+    //      where: { id_workspaceId: {}, updatedAt: { lt: updatedAt } }
+    //                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    //
+    // iii. Only set the seq number when creating the snapshot.
+    //      For updating scenario, the seq number will be updated when updates pushed to db.
     try {
-      const [snapshot]: {
-        workspace_id: string;
-        id: string;
-        blob: Buffer;
-        state?: Buffer;
-      }[] = await this.db.$queryRaw`
-        -- LOCK TABLE "Snapshot" IN SHARE ROW EXCLUSIVE MODE;
-        SELECT * FROM snapshots WHERE workspace_id = ${workspaceId} AND guid = ${guid} limit 1
-        FOR UPDATE;
+      const result: { updatedAt: Date }[] = await this.db.$queryRaw`
+        INSERT INTO "snapshots" ("workspace_id", "guid", "blob", "state", "seq", "created_at", "updated_at")
+        VALUES (${workspaceId}, ${guid}, ${blob}, ${state}, ${seq}, DEFAULT, ${updatedAt})
+        ON CONFLICT ("workspace_id", "guid")
+        DO UPDATE SET "blob" = ${blob}, "state" = ${state}, "updated_at" = ${updatedAt}, "seq" = ${seq}
+        WHERE "snapshots"."workspace_id" = ${workspaceId} AND "snapshots"."guid" = ${guid} AND "snapshots"."updated_at" <= ${updatedAt}
+        RETURNING "snapshots"."workspace_id" as "workspaceId", "snapshots"."guid" as "id", "snapshots"."updated_at" as "updatedAt"
       `;
 
-      // update
-      if (snapshot) {
-        // only update if state is newer
-        if (isStateNewer(snapshot.state ?? Buffer.from([0]), state)) {
-          await this.db.snapshot.update({
-            select: {
-              seq: true,
-            },
-            where: {
-              id_workspaceId: {
-                workspaceId,
-                id: guid,
-              },
-            },
-            data: {
-              blob,
-              state,
-              updatedAt,
-            },
-          });
+      // const result = await this.db.snapshot.upsert({
+      //   select: {
+      //     updatedAt: true,
+      //     seq: true,
+      //   },
+      //   where: {
+      //     id_workspaceId: {
+      //       workspaceId,
+      //       id: guid,
+      //     },
+      //     ⬇️ NOT SUPPORTED BY PRISMA YET
+      //     updatedAt: {
+      //       lt: updatedAt,
+      //     },
+      //   },
+      //   update: {
+      //     blob,
+      //     state,
+      //     updatedAt,
+      //   },
+      //   create: {
+      //     workspaceId,
+      //     id: guid,
+      //     blob,
+      //     state,
+      //     updatedAt,
+      //     seq,
+      //   },
+      // });
 
-          return true;
-        } else {
-          return false;
-        }
-      } else {
-        // create
-        // no record exists, should commit the previous row lock first
-        await commit();
-        await this.db.snapshot.create({
-          select: {
-            seq: true,
-          },
-          data: {
-            id: guid,
-            workspaceId,
-            blob,
-            state,
-            seq: initialSeq,
-            createdAt: updatedAt,
-            updatedAt,
-          },
-        });
+      // if the condition `snapshot.updatedAt > updatedAt` is true, by which means the snapshot has already been updated by other process,
+      // the updates has been applied to current `doc` must have been seen by the other process as well.
+      // The `updatedSnapshot` will be `undefined` in this case.
+      const updatedSnapshot = result.at(0);
 
-        return true;
+      if (!updatedSnapshot) {
+        return undefined;
       }
+
+      return true;
     } catch (e) {
-      await this.db.$queryRaw`ROLLBACK;`;
-      throw e;
-    } finally {
-      await commit();
+      this.logger.error('Failed to upsert snapshot', e);
+      return false;
     }
   }
+
   private async _get(
     workspaceId: string,
     guid: string
@@ -560,7 +527,7 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
 
     if (updates.length) {
       return {
-        doc: await this.squash(updates, snapshot),
+        doc: await this.squash(snapshot, updates),
       };
     }
 
@@ -572,17 +539,16 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
    * and delete the updates records at the same time.
    */
   @CallTimer('doc', 'squash')
-  private async squash(updates: Update[], snapshot: Snapshot | null) {
+  private async squash(snapshot: Snapshot | null, updates: Update[]) {
     if (!updates.length) {
       throw new Error('No updates to squash');
     }
-    const first = updates[0];
-    const last = updates[updates.length - 1];
 
-    const { id, workspaceId } = first;
+    const last = updates[updates.length - 1];
+    const { id, workspaceId } = last;
 
     const doc = await this.applyUpdates(
-      first.id,
+      id,
       snapshot ? snapshot.blob : Buffer.from([0, 0]),
       ...updates.map(u => u.blob)
     );
@@ -613,19 +579,24 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
       );
     }
 
-    // always delete updates
-    // the upsert will return false if the state is not newer, so we don't need to worry about it
-    const { count } = await this.db.update.deleteMany({
-      where: {
-        id,
-        workspaceId,
-        seq: {
-          in: updates.map(u => u.seq),
+    // we will keep the updates only if the upsert failed on unknown reason
+    // `done === undefined` means the updates is outdated(have already been merged by other process), safe to be deleted
+    // `done === true` means the upsert is successful, safe to be deleted
+    if (done !== false) {
+      // always delete updates
+      // the upsert will return false if the state is not newer, so we don't need to worry about it
+      const { count } = await this.db.update.deleteMany({
+        where: {
+          id,
+          workspaceId,
+          seq: {
+            in: updates.map(u => u.seq),
+          },
         },
-      },
-    });
+      });
 
-    await this.updateCachedUpdatesCount(workspaceId, id, -count);
+      await this.updateCachedUpdatesCount(workspaceId, id, -count);
+    }
 
     return doc;
   }

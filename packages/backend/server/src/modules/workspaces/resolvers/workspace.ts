@@ -262,6 +262,7 @@ export class WorkspaceResolver {
             id: workspace.id,
             workspaceId: workspace.id,
             blob: buffer,
+            updatedAt: new Date(),
           },
         });
       }
