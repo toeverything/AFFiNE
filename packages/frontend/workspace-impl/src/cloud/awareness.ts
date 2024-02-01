@@ -32,12 +32,13 @@ export class AffineCloudAwarenessProvider implements AwarenessProvider {
 
     window.addEventListener('beforeunload', this.windowBeforeUnloadHandler);
 
-    this.socket.connect();
-
     this.socket.on('connect', () => this.handleConnect());
 
-    this.socket.emit('client-handshake-awareness', this.workspaceId);
-    this.socket.emit('awareness-init', this.workspaceId);
+    if (this.socket.connected) {
+      this.handleConnect();
+    } else {
+      this.socket.connect();
+    }
   }
   disconnect(): void {
     removeAwarenessStates(
