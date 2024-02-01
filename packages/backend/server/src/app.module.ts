@@ -129,12 +129,12 @@ function buildAppModule() {
     // business modules
     .use(DocModule)
 
-    // sync server only
-    .useIf(config => config.flavor.sync, SyncModule)
+    // sync server & selfhosted only
+    .useIf(config => config.flavor.sync || config.flavor.selfhosted, SyncModule)
 
     // main server only
     .useIf(
-      config => config.flavor.main,
+      config => config.flavor.main || config.flavor.selfhosted,
       ServerConfigModule,
       WebSocketModule,
       GqlModule,
