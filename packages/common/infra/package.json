@@ -22,7 +22,7 @@
     "@blocksuite/store": "0.12.0-canary-202402010557-e8d6e1d",
     "foxact": "^0.2.20",
     "jotai": "^2.5.1",
-    "jotai-effect": "^0.2.3",
+    "jotai-effect": "^0.4.0",
     "lodash-es": "^4.17.21",
     "nanoid": "^5.0.3",
     "react": "18.2.0",
@@ -40,8 +40,8 @@
     "react": "^18.2.0",
     "rxjs": "^7.8.1",
     "vite": "^5.0.6",
-    "vite-plugin-dts": "3.7.0",
-    "vitest": "1.1.3"
+    "vite-plugin-dts": "3.7.2",
+    "vitest": "1.2.2"
   },
   "peerDependencies": {
     "@affine/templates": "*",

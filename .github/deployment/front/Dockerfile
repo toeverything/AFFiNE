@@ -1,4 +1,4 @@
-FROM openresty/openresty:1.21.4.3-0-buster
+FROM openresty/openresty:1.25.3.1-0-buster
 WORKDIR /app
 COPY ./packages/frontend/core/dist/index.html ./dist/index.html
 COPY ./.github/deployment/front/nginx.conf /usr/local/openresty/nginx/conf/nginx.conf

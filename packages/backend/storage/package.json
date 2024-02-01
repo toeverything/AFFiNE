@@ -35,7 +35,7 @@
     "version": "napi version"
   },
   "devDependencies": {
-    "@napi-rs/cli": "3.0.0-alpha.33",
+    "@napi-rs/cli": "3.0.0-alpha.36",
     "lib0": "^0.2.87",
     "nx": "^17.1.3",
     "nx-cloud": "^16.5.2",
