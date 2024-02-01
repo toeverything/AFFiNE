@@ -209,8 +209,8 @@ jobs:
         spec:
           - { os: ubuntu-latest, target: x86_64-unknown-linux-gnu }
           - { os: windows-latest, target: x86_64-pc-windows-msvc }
-          - { os: macos-latest, target: x86_64-apple-darwin }
-          - { os: macos-latest, target: aarch64-apple-darwin }
+          - { os: macos-14, target: x86_64-apple-darwin }
+          - { os: macos-14, target: aarch64-apple-darwin }
 
     steps:
       - uses: actions/checkout@v4
@@ -462,22 +462,21 @@ jobs:
     runs-on: ${{ matrix.spec.os }}
     strategy:
       fail-fast: false
-      # all combinations: macos-latest x64, macos-latest arm64, windows-latest x64, ubuntu-latest x64
       matrix:
         spec:
           - {
-              os: macos-latest,
+              os: macos-14,
               platform: macos,
               arch: x64,
               target: x86_64-apple-darwin,
-              test: true,
+              test: false,
             }
           - {
-              os: macos-latest,
+              os: macos-14,
               platform: macos,
               arch: arm64,
               target: aarch64-apple-darwin,
-              test: false,
+              test: true,
             }
           - {
               os: ubuntu-latest,
@@ -534,7 +533,7 @@ jobs:
         run: yarn workspace @affine/electron build
 
       - name: Run desktop tests
-        if: ${{ matrix.spec.test && matrix.spec.os == 'ubuntu-latest' }}
+        if: ${{ matrix.spec.os == 'ubuntu-latest' }}
         run: xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- yarn workspace @affine-test/affine-desktop e2e
 
       - name: Run desktop tests
@@ -542,7 +541,7 @@ jobs:
         run: yarn workspace @affine-test/affine-desktop e2e
 
       - name: Make bundle
-        if: ${{ matrix.spec.os == 'macos-latest' && matrix.spec.arch == 'arm64' }}
+        if: ${{ matrix.spec.os == 'macos-14' && matrix.spec.arch == 'arm64' }}
         env:
           SKIP_BUNDLE: true
           SKIP_WEB_BUILD: true
@@ -550,7 +549,7 @@ jobs:
         run: yarn workspace @affine/electron package --platform=darwin --arch=arm64
 
       - name: Output check
-        if: ${{ matrix.spec.os == 'macos-latest' && matrix.spec.arch == 'arm64' }}
+        if: ${{ matrix.spec.os == 'macos-14' && matrix.spec.arch == 'arm64' }}
         run: |
           yarn workspace @affine/electron exec node --loader ts-node/esm/transpile-only ./scripts/macos-arm64-output-check.ts
 
@@ -561,3 +560,19 @@ jobs:
           name: test-results-e2e-${{ matrix.spec.os }}-${{ matrix.spec.arch }}
           path: ./test-results
           if-no-files-found: ignore
+
+  test-done:
+    needs:
+      - analyze
+      - lint
+      - check-yarn-binary
+      - e2e-test
+      - e2e-migration-test
+      - unit-test
+      - server-test
+      - server-e2e-test
+      - desktop-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Done
+        run: echo "Done"
