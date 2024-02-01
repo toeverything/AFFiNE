@@ -190,7 +190,7 @@ jobs:
         run: yarn nx test:coverage @affine/monorepo
 
       - name: Upload unit test coverage results
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./.coverage/store/lcov.info
@@ -353,7 +353,7 @@ jobs:
           DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
 
       - name: Upload server test coverage results
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./packages/backend/server/.coverage/lcov.info
