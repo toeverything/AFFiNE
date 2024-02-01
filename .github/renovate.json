@@ -47,11 +47,11 @@
       "groupName": "electron-forge"
     },
     {
-      "groupName": "blocksuite-nightly",
+      "groupName": "blocksuite-canary",
       "matchPackagePatterns": ["^@blocksuite"],
       "excludePackageNames": ["@blocksuite/icons"],
       "rangeStrategy": "replace",
-      "followTag": "nightly"
+      "followTag": "canary"
     },
     {
       "groupName": "all non-major dependencies",
