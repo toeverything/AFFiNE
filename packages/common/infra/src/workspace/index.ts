@@ -11,6 +11,7 @@ export * from './upgrade';
 export * from './workspace';
 
 import { type ServiceCollection, ServiceProvider } from '../di';
+import { EventHandler, EventService } from '../eventbus';
 import { CleanupService } from '../lifecycle';
 import { GlobalCache, GlobalState } from '../storage';
 import {
@@ -53,6 +54,7 @@ export function configureWorkspaceServices(services: ServiceCollection) {
   // workspace scope
   services
     .scope(WorkspaceScope)
+    .add(EventService, [[EventHandler], ServiceProvider])
     .add(CleanupService)
     .add(Workspace, [
       WorkspaceMetadataContext,

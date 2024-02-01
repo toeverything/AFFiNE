@@ -436,7 +436,7 @@ class ServiceCollectionEditor {
 /**
  * Convert dependencies definition to a factory function.
  */
-function dependenciesToFactory(
+export function dependenciesToFactory(
   cls: any,
   deps: any[] = []
 ): ServiceFactory<any> {
