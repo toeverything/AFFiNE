@@ -1,5 +1,5 @@
+import { cssVar } from '@toeverything/theme';
 import { style } from '@vanilla-extract/css';
-
 export const ItemContainer = style({
   display: 'flex',
   alignItems: 'center',
@@ -10,13 +10,12 @@ export const ItemContainer = style({
   borderRadius: '8px',
   transition: 'background-color 0.2s',
   fontSize: '24px',
-  color: 'var(--affine-icon-secondary)',
+  color: cssVar('iconSecondary'),
 });
-
 export const ItemText = style({
-  fontSize: 'var(--affine-font-sm)',
+  fontSize: cssVar('fontSm'),
   lineHeight: '22px',
-  color: 'var(--affine-text-secondary-color)',
+  color: cssVar('textSecondaryColor'),
   fontWeight: 400,
   whiteSpace: 'nowrap',
   overflow: 'hidden',

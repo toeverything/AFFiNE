@@ -1,5 +1,5 @@
+import { cssVar } from '@toeverything/theme';
 import { style } from '@vanilla-extract/css';
-
 export const group = style({
   display: 'flex',
   gap: '16px',
@@ -15,20 +15,20 @@ export const deleteHintContainer = style({
   flexShrink: 0,
   bottom: '0',
   gap: '16px',
-  backgroundColor: 'var(--affine-background-primary-color)',
-  borderTop: '1px solid var(--affine-border-color)',
+  backgroundColor: cssVar('backgroundPrimaryColor'),
+  borderTop: `1px solid ${cssVar('borderColor')}`,
 });
 export const deleteHintText = style({
   fontSize: '15px',
   fontWeight: '500',
   lineHeight: '24px',
-  color: 'var(--affine-text-secondary-color)',
+  color: cssVar('textSecondaryColor'),
   whiteSpace: 'nowrap',
   textOverflow: 'ellipsis',
   overflow: 'hidden',
 });
 export const buttonContainer = style({
-  color: 'var(--affine-pure-white)',
+  color: cssVar('pureWhite'),
   padding: '8px 18px',
   fontSize: '20px',
   height: '36px',

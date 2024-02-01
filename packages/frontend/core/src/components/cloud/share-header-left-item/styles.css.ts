@@ -1,15 +1,15 @@
+import { cssVar } from '@toeverything/theme';
 import { style } from '@vanilla-extract/css';
-
 export const iconWrapper = style({
   display: 'flex',
   justifyContent: 'center',
   alignItems: 'center',
   fontSize: '24px',
   cursor: 'pointer',
-  color: 'var(--affine-text-primary-color)',
+  color: cssVar('textPrimaryColor'),
   selectors: {
     '&:visited': {
-      color: 'var(--affine-text-primary-color)',
+      color: cssVar('textPrimaryColor'),
     },
   },
 });

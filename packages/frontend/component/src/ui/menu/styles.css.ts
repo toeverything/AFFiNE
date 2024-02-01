@@ -1,18 +1,17 @@
+import { cssVar } from '@toeverything/theme';
 import { createVar, style } from '@vanilla-extract/css';
 export const triggerWidthVar = createVar('triggerWidthVar');
-
 export const menuContent = style({
   minWidth: '180px',
-  color: 'var(--affine-text-primary-color)',
+  color: cssVar('textPrimaryColor'),
   borderRadius: '8px',
   padding: '8px',
-  fontSize: 'var(--affine-font-sm)',
+  fontSize: cssVar('fontSm'),
   fontWeight: '400',
-  backgroundColor: 'var(--affine-background-overlay-panel-color)',
-  boxShadow: 'var(--affine-menu-shadow)',
+  backgroundColor: cssVar('backgroundOverlayPanelColor'),
+  boxShadow: cssVar('menuShadow'),
   userSelect: 'none',
 });
-
 export const menuItem = style({
   maxWidth: '296px',
   display: 'flex',
@@ -29,36 +28,34 @@ export const menuItem = style({
     '&:not(:last-of-type)': {
       marginBottom: '4px',
     },
-    '&.block': { maxWidth: '100%' },
+    '&.block': {
+      maxWidth: '100%',
+    },
     '&[data-disabled]': {
-      color: 'var(--affine-text-disable-color)',
+      color: cssVar('textDisableColor'),
       pointerEvents: 'none',
       cursor: 'not-allowed',
     },
     '&[data-highlighted]': {
-      backgroundColor: 'var(--affine-hover-color)',
+      backgroundColor: cssVar('hoverColor'),
     },
-
     '&:hover': {
-      backgroundColor: 'var(--affine-hover-color)',
+      backgroundColor: cssVar('hoverColor'),
     },
     '&.danger:hover': {
-      color: 'var(--affine-error-color)',
-      backgroundColor: 'var(--affine-background-error-color)',
+      color: cssVar('errorColor'),
+      backgroundColor: cssVar('backgroundErrorColor'),
     },
-
     '&.warning:hover': {
-      color: 'var(--affine-warning-color)',
-      backgroundColor: 'var(--affine-background-warning-color)',
+      color: cssVar('warningColor'),
+      backgroundColor: cssVar('backgroundWarningColor'),
     },
-
     '&.selected, &.checked': {
-      backgroundColor: 'var(--affine-hover-color)',
-      color: 'var(--affine-primary-color)',
+      backgroundColor: cssVar('hoverColor'),
+      color: cssVar('primaryColor'),
     },
   },
 });
-
 export const menuSpan = style({
   flex: 1,
   overflow: 'hidden',
@@ -69,31 +66,32 @@ export const menuSpan = style({
 export const menuItemIcon = style({
   display: 'flex',
   flexShrink: 0,
-  fontSize: 'var(--affine-font-h-5)',
-  color: 'var(--affine-icon-color)',
+  fontSize: cssVar('fontH5'),
+  color: cssVar('iconColor'),
   selectors: {
-    '&.start': { marginRight: '8px' },
-    '&.end': { marginLeft: '8px' },
-    '&.selected, &.checked': {
-      color: 'var(--affine-primary-color)',
+    '&.start': {
+      marginRight: '8px',
     },
-
+    '&.end': {
+      marginLeft: '8px',
+    },
+    '&.selected, &.checked': {
+      color: cssVar('primaryColor'),
+    },
     [`${menuItem}.danger:hover &`]: {
-      color: 'var(--affine-error-color)',
+      color: cssVar('errorColor'),
     },
     [`${menuItem}.warning:hover &`]: {
-      color: 'var(--affine-warning-color)',
+      color: cssVar('warningColor'),
     },
   },
 });
-
 export const menuSeparator = style({
   height: '1px',
-  backgroundColor: 'var(--affine-border-color)',
+  backgroundColor: cssVar('borderColor'),
   marginTop: '12px',
   marginBottom: '8px',
 });
-
 export const menuTrigger = style({
   vars: {
     [triggerWidthVar]: 'auto',
@@ -102,22 +100,21 @@ export const menuTrigger = style({
   height: 28,
   lineHeight: '22px',
   padding: '0 10px',
-  color: 'var(--affine-text-primary-color)',
+  color: cssVar('textPrimaryColor'),
   border: '1px solid',
-  backgroundColor: 'var(--affine-white)',
+  backgroundColor: cssVar('white'),
   borderRadius: 8,
   display: 'inline-flex',
   justifyContent: 'space-between',
   alignItems: 'center',
-  fontSize: 'var(--affine-font-xs)',
+  fontSize: cssVar('fontXs'),
   cursor: 'pointer',
   ['WebkitAppRegion' as string]: 'no-drag',
-  borderColor: 'var(--affine-border-color)',
+  borderColor: cssVar('borderColor'),
   outline: 'none',
-
   selectors: {
     '&:hover': {
-      background: 'var(--affine-hover-color)',
+      background: cssVar('hoverColor'),
     },
     '&.no-border': {
       border: 'unset',
@@ -137,7 +134,7 @@ export const menuTrigger = style({
     // color
     '&.disabled': {
       cursor: 'default',
-      color: 'var(--affine-disable-color)',
+      color: cssVar('textDisableColor'),
       pointerEvents: 'none',
     },
     // TODO: wait for design

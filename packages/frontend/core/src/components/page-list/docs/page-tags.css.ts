@@ -1,19 +1,16 @@
+import { cssVar } from '@toeverything/theme';
 import { createVar, style } from '@vanilla-extract/css';
-
 export const hoverMaxWidth = createVar();
-
 export const root = style({
   position: 'relative',
   width: '100%',
   height: '100%',
   minHeight: '32px',
 });
-
 export const tagsContainer = style({
   display: 'flex',
   alignItems: 'center',
 });
-
 export const tagsScrollContainer = style([
   tagsContainer,
   {
@@ -23,7 +20,6 @@ export const tagsScrollContainer = style([
     gap: '8px',
   },
 ]);
-
 export const tagsListContainer = style([
   tagsContainer,
   {
@@ -33,7 +29,6 @@ export const tagsListContainer = style([
     gap: '4px',
   },
 ]);
-
 export const innerContainer = style({
   display: 'flex',
   columnGap: '8px',
@@ -58,15 +53,15 @@ export const innerBackdrop = style({
   height: '100%',
   opacity: 0,
   transition: 'all 0.2s',
-  background:
-    'linear-gradient(90deg, transparent 0%, var(--affine-hover-color-filled) 40%)',
+  background: `linear-gradient(90deg, transparent 0%, ${cssVar(
+    'hoverColorFilled'
+  )} 40%)`,
   selectors: {
     [`${root}:hover &`]: {
       opacity: 1,
     },
   },
 });
-
 export const tag = style({
   height: '20px',
   display: 'flex',
@@ -77,33 +72,30 @@ export const tag = style({
     minWidth: 'max-content',
   },
 });
-
 export const tagInnerWrapper = style({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'space-between',
   padding: '0 8px',
-  color: 'var(--affine-text-primary-color)',
+  color: cssVar('textPrimaryColor'),
 });
-
 export const tagSticky = style([
   tagInnerWrapper,
   {
-    fontSize: 'var(--affine-font-xs)',
+    fontSize: cssVar('fontXs'),
     borderRadius: '10px',
     columnGap: '4px',
-    border: '1px solid var(--affine-border-color)',
-    background: 'var(--affine-background-primary-color)',
+    border: `1px solid ${cssVar('borderColor')}`,
+    background: cssVar('backgroundPrimaryColor'),
     maxWidth: '128px',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
   },
 ]);
-
 export const tagListItem = style([
   tag,
   {
-    fontSize: 'var(--affine-font-sm)',
+    fontSize: cssVar('fontSm'),
     padding: '4px 12px',
     columnGap: '8px',
     textOverflow: 'ellipsis',
@@ -111,21 +103,18 @@ export const tagListItem = style([
     height: '30px',
   },
 ]);
-
 export const showMoreTag = style({
-  fontSize: 'var(--affine-font-h-5)',
+  fontSize: cssVar('fontH5'),
   right: 0,
   position: 'sticky',
   display: 'inline-flex',
 });
-
 export const tagIndicator = style({
   width: '8px',
   height: '8px',
   borderRadius: '50%',
   flexShrink: 0,
 });
-
 export const tagLabel = style({
   overflow: 'hidden',
   textOverflow: 'ellipsis',

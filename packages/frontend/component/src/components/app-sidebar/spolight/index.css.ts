@@ -1,10 +1,8 @@
 import { createVar, style } from '@vanilla-extract/css';
-
 export const spotlightX = createVar();
 export const spotlightY = createVar();
 export const spotlightOpacity = createVar();
 export const spotlightSize = createVar();
-
 export const spotlight = style({
   vars: {
     [spotlightX]: '0px',

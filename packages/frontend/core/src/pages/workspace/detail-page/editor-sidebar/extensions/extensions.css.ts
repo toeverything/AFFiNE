@@ -1,7 +1,6 @@
+import { cssVar } from '@toeverything/theme';
 import { createVar, style } from '@vanilla-extract/css';
-
 export const activeIdx = createVar();
-
 export const switchRoot = style({
   vars: {
     [activeIdx]: '0',
@@ -13,30 +12,27 @@ export const switchRoot = style({
   borderRadius: '12px',
   padding: '4px',
   position: 'relative',
-  background: 'var(--affine-background-secondary-color)',
-
+  background: cssVar('backgroundSecondaryColor'),
   '::after': {
     content: '""',
     display: 'block',
     width: '24px',
     height: '24px',
-    background: 'var(--affine-background-primary-color)',
-    boxShadow: 'var(--affine-shadow-1)',
+    background: cssVar('backgroundPrimaryColor'),
+    boxShadow: cssVar('shadow1'),
     borderRadius: '8px',
     position: 'absolute',
     transform: `translateX(calc(${activeIdx} * 32px))`,
     transition: 'all .15s',
   },
 });
-
 export const button = style({
   width: '24px',
   height: '24px',
   borderRadius: '8px',
-  color: 'var(--affine-icon-color)',
+  color: cssVar('iconColor'),
   position: 'relative',
   zIndex: 1,
-
   selectors: {
     '&[data-active=true]': {
       pointerEvents: 'none',

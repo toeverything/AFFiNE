@@ -1,9 +1,8 @@
+import { cssVar } from '@toeverything/theme';
 import { createVar, globalStyle, style } from '@vanilla-extract/css';
-
 const headerHeight = createVar('header-height');
 const footerHeight = createVar('footer-height');
 const historyListWidth = createVar('history-list-width');
-
 export const root = style({
   height: '100%',
   width: '100%',
@@ -13,7 +12,6 @@ export const root = style({
     [historyListWidth]: '240px',
   },
 });
-
 export const modalContent = style({
   display: 'flex',
   height: `calc(100% - ${footerHeight})`,
@@ -26,7 +24,6 @@ export const modalContent = style({
     },
   },
 });
-
 export const previewWrapper = style({
   display: 'flex',
   flexDirection: 'column',
@@ -35,9 +32,8 @@ export const previewWrapper = style({
   position: 'relative',
   overflow: 'hidden',
   width: `calc(100% - ${historyListWidth})`,
-  backgroundColor: 'var(--affine-background-secondary-color)',
+  backgroundColor: cssVar('backgroundSecondaryColor'),
 });
-
 export const previewContainer = style({
   display: 'flex',
   flexDirection: 'column',
@@ -48,12 +44,11 @@ export const previewContainer = style({
   borderTopLeftRadius: 8,
   borderTopRightRadius: 8,
   overflow: 'hidden',
-  boxShadow: 'var(--affine-shadow-3)',
+  boxShadow: cssVar('shadow3'),
   height: 'calc(100% - 40px)',
   width: `calc(100% - 80px)`,
-  backgroundColor: 'var(--affine-background-secondary-color)',
+  backgroundColor: cssVar('backgroundSecondaryColor'),
 });
-
 export const previewContainerStack1 = style([
   previewContainer,
   {
@@ -62,7 +57,6 @@ export const previewContainerStack1 = style([
     width: `calc(100% - 96px)`,
   },
 ]);
-
 export const previewContainerStack2 = style([
   previewContainer,
   {
@@ -71,42 +65,38 @@ export const previewContainerStack2 = style([
     width: `calc(100% - 112px)`,
   },
 ]);
-
 export const previewHeader = style({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
   height: headerHeight,
-  borderBottom: '1px solid var(--affine-border-color)',
-  backgroundColor: 'var(--affine-background-primary-color)',
+  borderBottom: `1px solid ${cssVar('borderColor')}`,
+  backgroundColor: cssVar('backgroundPrimaryColor'),
   padding: '0 12px',
   flexShrink: 0,
   gap: 12,
 });
-
 export const previewHeaderTitle = style({
-  fontSize: 'var(--affine-font-xs)',
+  fontSize: cssVar('fontXs'),
   fontWeight: 600,
-  maxWidth: 400, // better responsiveness
+  maxWidth: 400,
+  // better responsiveness
   overflow: 'hidden',
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',
 });
-
 export const previewHeaderTimestamp = style({
-  color: 'var(--affine-text-secondary-color)',
-  backgroundColor: 'var(--affine-background-secondary-color)',
+  color: cssVar('textSecondaryColor'),
+  backgroundColor: cssVar('backgroundSecondaryColor'),
   padding: '0 10px',
   borderRadius: 4,
-  fontSize: 'var(--affine-font-xs)',
+  fontSize: cssVar('fontXs'),
 });
-
 export const editor = style({
   height: '100%',
   flexGrow: 1,
   overflow: 'hidden',
 });
-
 export const rowWrapper = style({
   display: 'flex',
   height: '100%',
@@ -116,7 +106,7 @@ export const rowWrapper = style({
     content: '""',
     width: 1,
     height: '100%',
-    backgroundColor: 'var(--affine-border-color)',
+    backgroundColor: cssVar('borderColor'),
     position: 'absolute',
     left: 16,
     top: 0,
@@ -136,61 +126,53 @@ export const rowWrapper = style({
     },
   },
 });
-
 export const loadingContainer = style({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
   height: '100%',
-  backgroundColor: 'var(--affine-background-primary-color)',
+  backgroundColor: cssVar('backgroundPrimaryColor'),
 });
-
 export const historyList = style({
   overflow: 'hidden',
   height: '100%',
   width: historyListWidth,
   flexShrink: 0,
-  borderLeft: '1px solid var(--affine-border-color)',
+  borderLeft: `1px solid ${cssVar('borderColor')}`,
 });
-
 export const historyListScrollable = style({
   height: `calc(100% - ${headerHeight})`,
 });
-
 export const historyListScrollableInner = style({
   display: 'flex',
   flexDirection: 'column',
 });
-
 export const historyListHeader = style({
   display: 'flex',
   alignItems: 'center',
   height: 52,
-  borderBottom: '1px solid var(--affine-border-color)',
+  borderBottom: `1px solid ${cssVar('borderColor')}`,
   fontWeight: 'bold',
   flexShrink: 0,
   padding: '0 12px',
 });
-
 export const historyItemGroup = style({
   display: 'flex',
   flexDirection: 'column',
 });
-
 export const historyItemGroupTitle = style({
   display: 'flex',
   alignItems: 'center',
   padding: '0 12px 0 4px',
   whiteSpace: 'nowrap',
-  color: 'var(--affine-text-secondary-color)',
+  color: cssVar('textSecondaryColor'),
   gap: 4,
-  backgroundColor: 'var(--affine-background-primary-color)',
+  backgroundColor: cssVar('backgroundPrimaryColor'),
   height: 28,
   ':hover': {
-    background: 'var(--affine-hover-color)',
+    background: cssVar('hoverColor'),
   },
 });
-
 export const historyItem = style([
   rowWrapper,
   {
@@ -201,16 +183,16 @@ export const historyItem = style([
     cursor: 'pointer',
     selectors: {
       '&:hover, &[data-active=true]': {
-        backgroundColor: 'var(--affine-hover-color)',
+        backgroundColor: cssVar('hoverColor'),
       },
       // draw circle
       '&::after': {
         content: '""',
         width: 7,
         height: 7,
-        backgroundColor: 'var(--affine-background-secondary-color)',
+        backgroundColor: cssVar('backgroundSecondaryColor'),
         borderRadius: '50%',
-        border: '1px solid var(--affine-border-color)',
+        border: `1px solid ${cssVar('borderColor')}`,
         position: 'absolute',
         left: 16,
         top: '50%',
@@ -218,51 +200,50 @@ export const historyItem = style([
         transform: 'translate(-50%, -50%)',
       },
       '&[data-active=true]::after': {
-        backgroundColor: 'var(--affine-primary-color)',
-        borderColor: 'var(--affine-black-30)',
+        backgroundColor: cssVar('primaryColor'),
+        borderColor: cssVar('black30'),
       },
     },
   },
 ]);
-
-export const historyItemGap = style([rowWrapper, { height: 16 }]);
-
+export const historyItemGap = style([
+  rowWrapper,
+  {
+    height: 16,
+  },
+]);
 export const historyItemLoadMore = style([
   historyItem,
   {
     cursor: 'pointer',
-    color: 'var(--affine-text-secondary-color)',
+    color: cssVar('textSecondaryColor'),
     flexShrink: 0,
     borderRadius: 0,
     selectors: {
       '&:hover': {
-        backgroundColor: 'var(--affine-hover-color)',
+        backgroundColor: cssVar('hoverColor'),
       },
     },
   },
 ]);
-
 globalStyle(`${historyItem} button`, {
   color: 'inherit',
 });
-
 export const historyFooter = style({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
   height: 68,
-  borderTop: '1px solid var(--affine-border-color)',
+  borderTop: `1px solid ${cssVar('borderColor')}`,
   padding: '0 24px',
   position: 'absolute',
   bottom: 0,
   left: 0,
   right: 0,
 });
-
 export const spacer = style({
   flexGrow: 1,
 });
-
 export const emptyHistoryPrompt = style({
   display: 'flex',
   flexDirection: 'column',
@@ -273,19 +254,16 @@ export const emptyHistoryPrompt = style({
   zIndex: 1,
   gap: 20,
 });
-
 export const emptyHistoryPromptTitle = style({
   fontWeight: 600,
-  fontSize: 'var(--affine-font-h-5)',
+  fontSize: cssVar('fontH5'),
 });
-
 export const emptyHistoryPromptDescription = style({
   width: 320,
   textAlign: 'center',
-  fontSize: 'var(--affine-font-xs)',
-  color: 'var(--affine-text-secondary-color)',
+  fontSize: cssVar('fontXs'),
+  color: cssVar('textSecondaryColor'),
 });
-
 export const collapsedIcon = style({
   transition: 'transform 0.2s ease-in-out',
   selectors: {
@@ -294,7 +272,6 @@ export const collapsedIcon = style({
     },
   },
 });
-
 export const collapsedIconContainer = style({
   fontSize: 24,
   display: 'flex',
@@ -309,29 +286,25 @@ export const collapsedIconContainer = style({
     },
   },
 });
-
 export const planPromptWrapper = style({
   padding: '4px 12px',
 });
-
 export const planPrompt = style({
   gap: 6,
   borderRadius: 8,
   flexDirection: 'column',
   padding: 10,
-  fontSize: 'var(--affine-font-xs)',
-  backgroundColor: 'var(--affine-background-secondary-color)',
+  fontSize: cssVar('fontXs'),
+  backgroundColor: cssVar('backgroundSecondaryColor'),
 });
-
 export const planPromptTitle = style({
   fontWeight: 600,
   marginBottom: 14,
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',
-  color: 'var(--affine-text-secondary-color)',
+  color: cssVar('textSecondaryColor'),
 });
-
 export const planPromptUpdateButton = style({
   textDecoration: 'underline',
   cursor: 'pointer',

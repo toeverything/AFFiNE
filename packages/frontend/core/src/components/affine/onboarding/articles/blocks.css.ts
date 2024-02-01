@@ -1,35 +1,29 @@
 import { globalStyle, style } from '@vanilla-extract/css';
-
 export const block = style({});
 globalStyle(`${block} h1`, {
   fontSize: '40px',
   fontWeight: '600',
   lineHeight: '48px',
 });
-
 globalStyle(`${block} h2`, {
   fontSize: '20px',
   fontWeight: '600',
   lineHeight: '28px',
 });
-
 globalStyle(`${block} h3`, {
   fontSize: '18px',
   fontWeight: '600',
   lineHeight: '26px',
 });
-
 globalStyle(`${block} p`, {
   fontSize: '15px',
   fontWeight: 400,
   lineHeight: '23px',
 });
-
 globalStyle(`${block} b`, {
   // TODO: 500's effect not matching the design, use 600 for now
   fontWeight: '600',
 });
-
 globalStyle(`${block} ol`, {
   counterReset: 'section',
   listStyleType: 'none',
@@ -79,7 +73,6 @@ globalStyle(`${block} img.illustration`, {
   borderRadius: '5px',
   overflow: 'hidden',
 });
-
 export const link = style({
   color: '#1E67AF',
 });
@@ -109,7 +102,6 @@ export const pageLinkLabel = style({
     },
   },
 });
-
 export const quote = style({
   paddingLeft: '17px',
   position: 'relative',
@@ -126,7 +118,6 @@ export const quote = style({
     },
   },
 });
-
 export const hr = style({
   height: '1px',
   backgroundColor: '#E3E2E4',

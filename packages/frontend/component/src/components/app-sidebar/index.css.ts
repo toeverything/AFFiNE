@@ -1,12 +1,10 @@
-import type { ComplexStyleRule } from '@vanilla-extract/css';
+import { cssVar } from '@toeverything/theme';
 import { style } from '@vanilla-extract/css';
-
 export const floatingMaxWidth = 768;
-
 export const navWrapperStyle = style({
   zIndex: 3,
   paddingBottom: '8px',
-  backgroundColor: 'var(--affine-background-primary-color)',
+  backgroundColor: cssVar('backgroundPrimaryColor'),
   '@media': {
     print: {
       display: 'none',
@@ -15,23 +13,20 @@ export const navWrapperStyle = style({
   },
   selectors: {
     '&[data-has-border=true]': {
-      borderRight: '1px solid var(--affine-border-color)',
+      borderRight: `1px solid ${cssVar('borderColor')}`,
     },
   },
 });
-
 export const navHeaderButton = style({
   width: '32px',
   height: '32px',
   flexShrink: 0,
 });
-
 export const navHeaderNavigationButtons = style({
   display: 'flex',
   alignItems: 'center',
   columnGap: '32px',
 });
-
 export const navStyle = style({
   position: 'relative',
   width: '100%',
@@ -39,7 +34,6 @@ export const navStyle = style({
   display: 'flex',
   flexDirection: 'column',
 });
-
 export const navHeaderStyle = style({
   flex: '0 0 auto',
   height: '52px',
@@ -47,14 +41,13 @@ export const navHeaderStyle = style({
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',
-  WebkitAppRegion: 'drag',
+  ['WebkitAppRegion' as string]: 'drag',
   selectors: {
     '&[data-is-macos-electron="true"]': {
       paddingLeft: '90px',
     },
   },
-} as ComplexStyleRule);
-
+});
 export const navBodyStyle = style({
   flex: '1 1 auto',
   height: 'calc(100% - 52px)',
@@ -62,7 +55,6 @@ export const navBodyStyle = style({
   flexDirection: 'column',
   rowGap: '4px',
 });
-
 export const sidebarFloatMaskStyle = style({
   transition: 'opacity .15s',
   opacity: 0,
@@ -72,7 +64,7 @@ export const sidebarFloatMaskStyle = style({
   left: 0,
   right: '100%',
   bottom: 0,
-  background: 'var(--affine-background-modal-color)',
+  background: cssVar('backgroundModalColor'),
   selectors: {
     '&[data-open="true"][data-is-floating="true"]': {
       opacity: 1,

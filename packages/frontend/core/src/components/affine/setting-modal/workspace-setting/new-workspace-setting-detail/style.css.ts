@@ -1,5 +1,5 @@
+import { cssVar } from '@toeverything/theme';
 import { globalStyle, style } from '@vanilla-extract/css';
-
 export const profileWrapper = style({
   display: 'flex',
   alignItems: 'flex-end',
@@ -11,7 +11,6 @@ export const profileHandlerWrapper = style({
   alignItems: 'center',
   marginLeft: '20px',
 });
-
 export const labelWrapper = style({
   width: '100%',
   display: 'flex',
@@ -20,7 +19,6 @@ export const labelWrapper = style({
   gap: '10px',
   flexWrap: 'wrap',
 });
-
 export const avatarWrapper = style({
   width: '56px',
   height: '56px',
@@ -51,10 +49,9 @@ globalStyle(`${avatarWrapper} .camera-icon-wrapper`, {
   alignItems: 'center',
   backgroundColor: 'rgba(60, 61, 63, 0.5)',
   zIndex: '1',
-  color: 'var(--affine-white)',
+  color: cssVar('white'),
   fontSize: '24px',
 });
-
 export const urlButton = style({
   width: 'calc(100% - 64px - 15px)',
   justifyContent: 'left',
@@ -65,10 +62,9 @@ globalStyle(`${urlButton} span`, {
   overflow: 'hidden',
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',
-  color: 'var(--affine-placeholder-color)',
+  color: cssVar('placeholderColor'),
   fontWeight: '500',
 });
-
 export const fakeWrapper = style({
   position: 'relative',
   opacity: 0.4,
@@ -85,23 +81,21 @@ export const fakeWrapper = style({
     },
   },
 });
-
 export const membersFallback = style({
   display: 'flex',
   justifyContent: 'center',
   alignItems: 'center',
-  color: 'var(--affine-primary-color)',
+  color: cssVar('primaryColor'),
 });
 export const membersPanel = style({
   padding: '4px',
   borderRadius: '12px',
-  background: 'var(--affine-background-primary-color)',
-  border: '1px solid var(--affine-border-color)',
+  background: cssVar('backgroundPrimaryColor'),
+  border: `1px solid ${cssVar('borderColor')}`,
   display: 'flex',
   flexDirection: 'column',
   justifyContent: 'space-between',
 });
-
 export const memberList = style({});
 export const memberListItem = style({
   padding: '0 4px 0 16px',
@@ -111,7 +105,7 @@ export const memberListItem = style({
   alignItems: 'center',
   selectors: {
     '&:hover': {
-      background: 'var(--affine-hover-color)',
+      background: cssVar('hoverColor'),
       borderRadius: '8px',
     },
     '&:not(:last-of-type)': {
@@ -133,39 +127,37 @@ export const roleOrStatus = style({
   overflow: 'hidden',
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',
-  fontSize: 'var(--affine-font-sm)',
+  fontSize: cssVar('fontSm'),
   selectors: {
     '&.pending': {
-      color: 'var(--affine-primary-color)',
+      color: cssVar('primaryColor'),
     },
   },
 });
 export const memberName = style({
-  fontSize: 'var(--affine-font-sm)',
-  color: 'var(--affine-text-primary-color)',
+  fontSize: cssVar('fontSm'),
+  color: cssVar('textPrimaryColor'),
   overflow: 'hidden',
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',
   lineHeight: '22px',
 });
 export const memberEmail = style({
-  fontSize: 'var(--affine-font-xs)',
-  color: 'var(--affine-text-secondary-color)',
+  fontSize: cssVar('fontXs'),
+  color: cssVar('textSecondaryColor'),
   overflow: 'hidden',
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',
   lineHeight: '20px',
 });
 export const iconButton = style({});
-
 globalStyle(`${memberListItem}:hover ${iconButton}`, {
   opacity: 1,
   pointerEvents: 'all',
 });
-
 export const label = style({
-  fontSize: 'var(--affine-font-xs)',
-  color: 'var(--affine-text-secondary-color)',
+  fontSize: cssVar('fontXs'),
+  color: cssVar('textSecondaryColor'),
   marginBottom: '5px',
 });
 export const workspaceLabel = style({
@@ -176,28 +168,25 @@ export const workspaceLabel = style({
   alignItems: 'center',
   borderRadius: '6px',
   padding: '2px 10px',
-  border: '1px solid var(--affine-white-30)',
-  fontSize: 'var(--affine-font-xs)',
-  color: 'var(--affine-text-primary-color)',
+  border: `1px solid ${cssVar('white30')}`,
+  fontSize: cssVar('fontXs'),
+  color: cssVar('textPrimaryColor'),
   lineHeight: '20px',
   whiteSpace: 'nowrap',
 });
-
 export const goUpgrade = style({
-  fontSize: 'var(--affine-font-xs)',
-  color: 'var(--affine-text-emphasis-color)',
+  fontSize: cssVar('fontXs'),
+  color: cssVar('textEmphasisColor'),
   cursor: 'pointer',
   marginLeft: '4px',
   display: 'inline',
 });
-
 export const goUpgradeWrapper = style({
   display: 'inline-flex',
   alignItems: 'center',
 });
-
 export const arrowRight = style({
   fontSize: '16px',
-  color: 'var(--affine-text-emphasis-color)',
+  color: cssVar('textEmphasisColor'),
   cursor: 'pointer',
 });

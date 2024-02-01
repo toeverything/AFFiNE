@@ -1,5 +1,5 @@
+import { cssVar } from '@toeverything/theme';
 import { style } from '@vanilla-extract/css';
-
 export const workspaceListsWrapper = style({
   display: 'flex',
   width: '100%',
@@ -12,17 +12,15 @@ export const workspaceListWrapper = style({
   flexDirection: 'column',
   gap: '4px',
 });
-
 export const workspaceType = style({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'space-between',
   padding: '0px 12px',
-  fontSize: 'var(--affine-font-xs)',
+  fontSize: cssVar('fontXs'),
   lineHeight: '20px',
-  color: 'var(--affine-text-secondary-color)',
+  color: cssVar('textSecondaryColor'),
 });
-
 export const scrollbar = style({
   transform: 'translateX(8px)',
   width: '4px',

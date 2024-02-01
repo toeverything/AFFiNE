@@ -1,24 +1,21 @@
+import { cssVar } from '@toeverything/theme';
 import { globalStyle, style } from '@vanilla-extract/css';
-
 export const root = style({});
-
 export const commandsContainer = style({
   height: 'calc(100% - 65px)',
   padding: '8px 6px 18px 6px',
 });
-
 export const searchInput = style({
   height: 66,
-  color: 'var(--affine-text-primary-color)',
-  fontSize: 'var(--affine-font-h-5)',
+  color: cssVar('textPrimaryColor'),
+  fontSize: cssVar('fontH5'),
   padding: '21px 24px',
   marginBottom: '8px',
   width: '100%',
-  borderBottom: '1px solid var(--affine-border-color)',
+  borderBottom: `1px solid ${cssVar('borderColor')}`,
   flexShrink: 0,
-
   '::placeholder': {
-    color: 'var(--affine-text-secondary-color)',
+    color: cssVar('textSecondaryColor'),
   },
   selectors: {
     '&.inEditor': {
@@ -27,94 +24,82 @@ export const searchInput = style({
     },
   },
 });
-
 export const pageTitleWrapper = style({
   display: 'flex',
   alignItems: 'center',
   padding: '18px 24px 0 24px',
   width: '100%',
 });
-
 export const pageTitle = style({
   padding: '2px 6px',
   borderRadius: 4,
-  fontSize: 'var(--affine-font-xs)',
+  fontSize: cssVar('fontXs'),
   lineHeight: '20px',
-  color: 'var(--affine-text-secondary-color)',
+  color: cssVar('textSecondaryColor'),
   overflow: 'hidden',
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',
   maxWidth: '100%',
-  backgroundColor: 'var(--affine-background-secondary-color)',
+  backgroundColor: cssVar('backgroundSecondaryColor'),
 });
-
 export const panelContainer = style({
   height: '100%',
   display: 'flex',
   flexDirection: 'column',
 });
-
 export const itemIcon = style({
   fontSize: 20,
   marginRight: 16,
   flexShrink: 0,
   display: 'flex',
   alignItems: 'center',
-  color: 'var(--affine-icon-secondary)',
+  color: cssVar('iconSecondary'),
 });
-
 export const itemLabel = style({
   fontSize: 14,
   lineHeight: '1.5',
-  color: 'var(--affine-text-primary-color)',
+  color: cssVar('textPrimaryColor'),
   flex: 1,
   overflow: 'hidden',
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',
 });
-
 export const timestamp = style({
   display: 'flex',
-  fontSize: 'var(--affine-font-xs)',
-  color: 'var(--affine-text-secondary-color)',
+  fontSize: cssVar('fontXs'),
+  color: cssVar('textSecondaryColor'),
   minWidth: 120,
   flexDirection: 'row-reverse',
 });
-
 export const keybinding = style({
   display: 'flex',
-  fontSize: 'var(--affine-font-xs)',
+  fontSize: cssVar('fontXs'),
   columnGap: 2,
 });
-
 export const keybindingFragment = style({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
   padding: '0 4px',
   borderRadius: 4,
-  color: 'var(--affine-text-secondary-color)',
-  backgroundColor: 'var(--affine-background-tertiary-color)',
+  color: cssVar('textSecondaryColor'),
+  backgroundColor: cssVar('backgroundTertiaryColor'),
   width: 24,
   height: 20,
 });
-
 globalStyle(`${root} [cmdk-root]`, {
   height: '100%',
 });
-
 globalStyle(`${root} [cmdk-group-heading]`, {
   padding: '8px',
-  color: 'var(--affine-text-secondary-color)',
-  fontSize: 'var(--affine-font-xs)',
+  color: cssVar('textSecondaryColor'),
+  fontSize: cssVar('fontXs'),
   fontWeight: 600,
   lineHeight: '1.67',
 });
-
 globalStyle(`${root} [cmdk-group][hidden]`, {
   display: 'none',
 });
-
 globalStyle(`${root} [cmdk-list]`, {
   maxHeight: 400,
   minHeight: 120,
@@ -125,29 +110,23 @@ globalStyle(`${root} [cmdk-list]`, {
   scrollbarGutter: 'stable',
   scrollPaddingBlock: '12px',
 });
-
 globalStyle(`${root} [cmdk-list]:not([data-opening])`, {
   transition: 'height .1s ease',
 });
-
 globalStyle(`${root} [cmdk-list]::-webkit-scrollbar`, {
   width: 6,
   height: 6,
 });
-
 globalStyle(`${root} [cmdk-list]::-webkit-scrollbar-thumb`, {
   borderRadius: 4,
   backgroundClip: 'padding-box',
 });
-
 globalStyle(`${root} [cmdk-list]:hover::-webkit-scrollbar-thumb`, {
-  backgroundColor: 'var(--affine-divider-color)',
+  backgroundColor: cssVar('dividerColor'),
 });
-
 globalStyle(`${root} [cmdk-list]:hover::-webkit-scrollbar-thumb:hover`, {
-  backgroundColor: 'var(--affine-icon-color)',
+  backgroundColor: cssVar('iconColor'),
 });
-
 globalStyle(`${root} [cmdk-item]`, {
   display: 'flex',
   minHeight: 44,
@@ -157,35 +136,32 @@ globalStyle(`${root} [cmdk-item]`, {
   borderRadius: 4,
   userSelect: 'none',
 });
-
 globalStyle(`${root} [cmdk-item][data-selected=true]`, {
-  background: 'var(--affine-background-secondary-color)',
+  background: cssVar('backgroundSecondaryColor'),
 });
 globalStyle(`${root} [cmdk-item][data-selected=true][data-is-danger=true]`, {
-  background: 'var(--affine-background-error-color)',
-  color: 'var(--affine-error-color)',
+  background: cssVar('backgroundErrorColor'),
+  color: cssVar('errorColor'),
 });
-
 globalStyle(`${root} [cmdk-item][data-selected=true] ${itemIcon}`, {
-  color: 'var(--affine-icon-color)',
+  color: cssVar('iconColor'),
 });
 globalStyle(
   `${root} [cmdk-item][data-selected=true][data-is-danger=true] ${itemIcon}`,
   {
-    color: 'var(--affine-error-color)',
+    color: cssVar('errorColor'),
   }
 );
 globalStyle(
   `${root} [cmdk-item][data-selected=true][data-is-danger=true] ${itemLabel}`,
   {
-    color: 'var(--affine-error-color)',
+    color: cssVar('errorColor'),
   }
 );
-
 export const resultGroupHeader = style({
   padding: '8px',
-  color: 'var(--affine-text-secondary-color)',
-  fontSize: 'var(--affine-font-xs)',
+  color: cssVar('textSecondaryColor'),
+  fontSize: cssVar('fontXs'),
   fontWeight: 600,
   lineHeight: '1.67',
 });

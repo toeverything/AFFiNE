@@ -1,5 +1,5 @@
+import { cssVar } from '@toeverything/theme';
 import { style } from '@vanilla-extract/css';
-
 export const view = style({
   display: 'flex',
   alignItems: 'center',
@@ -8,7 +8,6 @@ export const view = style({
   fontWeight: 600,
   height: '100%',
 });
-
 export const option = style({
   display: 'flex',
   alignItems: 'center',
@@ -17,7 +16,7 @@ export const option = style({
   cursor: 'pointer',
   borderRadius: 4,
   ':hover': {
-    backgroundColor: 'var(--affine-hover-color)',
+    backgroundColor: cssVar('hoverColor'),
   },
   opacity: 0,
   selectors: {

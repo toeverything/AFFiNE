@@ -1,7 +1,6 @@
+import { cssVar } from '@toeverything/theme';
 import { lightCssVariables } from '@toeverything/theme';
-import type { ComplexStyleRule } from '@vanilla-extract/css';
 import { globalStyle, style } from '@vanilla-extract/css';
-
 export const appStyle = style({
   width: '100%',
   position: 'relative',
@@ -9,7 +8,7 @@ export const appStyle = style({
   display: 'flex',
   flexGrow: '1',
   flexDirection: 'row',
-  backgroundColor: 'var(--affine-background-primary-color)',
+  backgroundColor: cssVar('backgroundPrimaryColor'),
   selectors: {
     '&[data-is-resizing="true"]': {
       cursor: 'col-resize',
@@ -21,7 +20,7 @@ export const appStyle = style({
       content: '""',
       position: 'absolute',
       inset: 0,
-      opacity: 'var(--affine-noise-opacity, 0)',
+      opacity: `var(--affine-noise-opacity, 0)`,
       backgroundRepeat: 'repeat',
       backgroundSize: '3%',
       // todo: figure out how to use vanilla-extract webpack plugin to inject img url
@@ -29,32 +28,29 @@ export const appStyle = style({
     },
   },
 });
-
 globalStyle(`html[data-theme="light"] ${appStyle}`, {
   vars: {
     '--affine-noise-opacity': '0.35',
   },
 });
-
 globalStyle(`html[data-theme="dark"] ${appStyle}`, {
   vars: {
     '--affine-noise-opacity': '1',
   },
-
   '@media': {
     print: {
       vars: lightCssVariables,
     },
   },
 });
-
 export const mainContainerStyle = style({
   position: 'relative',
-  zIndex: 0, // it will create stacking context to limit layer of child elements and be lower than after auto zIndex
+  zIndex: 0,
+  // it will create stacking context to limit layer of child elements and be lower than after auto zIndex
   width: 0,
   flex: 1,
   maxWidth: '100%',
-  backgroundColor: 'var(--affine-background-primary-color)',
+  backgroundColor: cssVar('backgroundPrimaryColor'),
   selectors: {
     '&[data-show-padding="true"]': {
       margin: '8px',
@@ -80,19 +76,18 @@ export const mainContainerStyle = style({
       width: '100%',
       top: '-8px',
       left: 0,
-      WebkitAppRegion: 'drag',
+      ['WebkitAppRegion' as string]: 'drag',
     },
     '&[data-transparent=true]': {
       backgroundColor: 'transparent',
     },
   },
-} as ComplexStyleRule);
-
+});
 export const toolStyle = style({
   position: 'absolute',
   right: '30px',
   bottom: '30px',
-  zIndex: 'var(--affine-z-index-popover)',
+  zIndex: cssVar('zIndexPopover'),
   display: 'flex',
   flexDirection: 'column',
   gap: '12px',

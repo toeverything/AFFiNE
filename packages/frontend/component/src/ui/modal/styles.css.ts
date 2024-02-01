@@ -1,25 +1,22 @@
+import { cssVar } from '@toeverything/theme';
 import { createVar, style } from '@vanilla-extract/css';
-
 export const widthVar = createVar('widthVar');
 export const heightVar = createVar('heightVar');
 export const minHeightVar = createVar('minHeightVar');
-
 export const modalOverlay = style({
   position: 'fixed',
   inset: 0,
-  backgroundColor: 'var(--affine-background-modal-color)',
-  zIndex: 'var(--affine-z-index-modal)',
+  backgroundColor: cssVar('backgroundModalColor'),
+  zIndex: cssVar('zIndexModal'),
 });
-
 export const modalContentWrapper = style({
   position: 'fixed',
   inset: 0,
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  zIndex: 'var(--affine-z-index-modal)',
+  zIndex: cssVar('zIndexModal'),
 });
-
 export const modalContent = style({
   vars: {
     [widthVar]: '',
@@ -30,27 +27,25 @@ export const modalContent = style({
   height: heightVar,
   minHeight: minHeightVar,
   boxSizing: 'border-box',
-  fontSize: 'var(--affine-font-base)',
+  fontSize: cssVar('fontBase'),
   fontWeight: '400',
   lineHeight: '1.6',
   padding: '20px 24px',
   position: 'relative',
-  backgroundColor: 'var(--affine-background-overlay-panel-color)',
-  boxShadow: 'var(--affine-popover-shadow)',
+  backgroundColor: cssVar('backgroundOverlayPanelColor'),
+  boxShadow: cssVar('popoverShadow'),
   borderRadius: '12px',
   maxHeight: 'calc(100vh - 32px)',
   // :focus-visible will set outline
   outline: 'none',
 });
-
 export const closeButton = style({
   position: 'absolute',
   top: '22px',
   right: '20px',
 });
-
 export const modalHeader = style({
-  fontSize: 'var(--affine-font-h-6)',
+  fontSize: cssVar('fontH6'),
   fontWeight: '600',
   lineHeight: '1.45',
   marginBottom: '12px',
@@ -58,7 +53,6 @@ export const modalHeader = style({
 export const modalDescription = style({
   // marginBottom: '20px',
 });
-
 export const modalFooter = style({
   display: 'flex',
   justifyContent: 'flex-end',
@@ -72,12 +66,10 @@ export const modalFooter = style({
     },
   },
 });
-
 export const confirmModalContent = style({
   marginTop: '12px',
   marginBottom: '20px',
 });
-
 export const confirmModalContainer = style({
   display: 'flex',
   flexDirection: 'column',

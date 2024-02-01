@@ -1,7 +1,6 @@
+import { cssVar } from '@toeverything/theme';
 import { globalStyle, style } from '@vanilla-extract/css';
-
 export const subscription = style({});
-
 export const history = style({
   display: 'flex',
   flexDirection: 'column',
@@ -11,61 +10,50 @@ export const history = style({
 export const historyContent = style({
   width: '100%',
 });
-
 export const planCard = style({
   display: 'flex',
   justifyContent: 'space-between',
   padding: '12px',
-  border: '1px solid var(--affine-border-color)',
+  border: `1px solid ${cssVar('borderColor')}`,
   borderRadius: '8px',
 });
-
 export const currentPlan = style({
   flex: '1 0 0',
 });
-
 export const planAction = style({
   marginTop: '8px',
 });
-
 export const planPrice = style({
-  fontSize: 'var(--affine-font-h-6)',
+  fontSize: cssVar('fontH6'),
   fontWeight: 600,
 });
-
 export const billingFrequency = style({
-  fontSize: 'var(--affine-font-base)',
+  fontSize: cssVar('fontBase'),
 });
-
 export const paymentMethod = style({
   marginTop: '24px',
 });
-
 globalStyle('.dangerous-setting .name', {
-  color: 'var(--affine-error-color)',
+  color: cssVar('errorColor'),
 });
-
 export const noInvoice = style({
-  color: 'var(--affine-text-secondary-color)',
-  fontSize: 'var(--affine-font-xs)',
+  color: cssVar('textSecondaryColor'),
+  fontSize: cssVar('fontXs'),
 });
-
 export const currentPlanName = style({
-  fontSize: 'var(--affine-font-xs)',
+  fontSize: cssVar('fontXs'),
   fontWeight: 500,
-  color: 'var(--affine-text-emphasis-color)',
+  color: cssVar('textEmphasisColor'),
   cursor: 'pointer',
 });
 export const button = style({
   padding: '4px 12px',
 });
-
 export const subscriptionSettingSkeleton = style({
   display: 'flex',
   flexDirection: 'column',
   gap: '24px',
 });
-
 export const billingHistorySkeleton = style({
   display: 'flex',
   flexDirection: 'column',

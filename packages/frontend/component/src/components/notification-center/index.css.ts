@@ -1,9 +1,8 @@
+import { cssVar } from '@toeverything/theme';
 // Credits to sonner
 // License on the MIT
 // https://github.com/emilkowalski/sonner/blob/5cb703edc108a23fd74979235c2f3c4005edd2a7/src/styles.css
-
 import { globalStyle, style, styleVariants } from '@vanilla-extract/css';
-
 export const notificationCenterViewportStyle = style({
   position: 'fixed',
   height: '500px',
@@ -29,7 +28,6 @@ globalStyle(`${notificationMultimediaStyle} > *`, {
   objectFit: 'cover',
   cursor: 'unset',
 });
-
 export const notificationStyle = style({
   position: 'absolute',
   borderRadius: '8px',
@@ -114,7 +112,7 @@ export const notificationIconStyle = style({
   fontSize: '24px',
   marginLeft: '18px',
   marginRight: '8px',
-  color: 'var(--affine-processing-color)',
+  color: cssVar('processingColor'),
   display: 'flex',
   justifyContent: 'center',
   alignItems: 'center',
@@ -127,9 +125,9 @@ export const hasMediaStyle = style({
   paddingBottom: '16px',
   width: '380px',
   borderRadius: '8px',
-  boxShadow: 'var(--affine-shadow-1)',
-  border: '1px solid var(--affine-border-color)',
-  background: 'var(--affine-white)',
+  boxShadow: cssVar('shadow1'),
+  border: `1px solid ${cssVar('borderColor')}`,
+  background: cssVar('white'),
   transition: 'all 0.3s',
 });
 export const notificationContentStyle = style({
@@ -140,9 +138,9 @@ export const notificationContentStyle = style({
   paddingBottom: '16px',
   width: '380px',
   borderRadius: '8px',
-  boxShadow: 'var(--affine-shadow-1)',
-  border: '1px solid var(--affine-black-10)',
-  background: 'var(--affine-white)',
+  boxShadow: cssVar('shadow1'),
+  border: `1px solid ${cssVar('black10')}`,
+  background: cssVar('white'),
   transition: 'all 0.3s',
 });
 export const notificationTitleContactStyle = style({
@@ -150,7 +148,7 @@ export const notificationTitleContactStyle = style({
   width: '200px',
   overflow: 'wrap',
   lineHeight: '24px',
-  fontSize: 'var(--affine-font-base)',
+  fontSize: cssVar('fontBase'),
 });
 export const notificationTitleStyle = style({
   display: 'flex',
@@ -159,14 +157,14 @@ export const notificationTitleStyle = style({
   justifyContent: 'flex-start',
 });
 export const notificationDescriptionStyle = style({
-  fontSize: 'var(--affine-font-sm)',
-  color: 'var(--affine-text-secondary-color)',
+  fontSize: cssVar('fontSm'),
+  color: cssVar('textSecondaryColor'),
   marginBottom: '4px',
   lineHeight: '22px',
 });
 export const notificationTimeStyle = style({
-  fontSize: 'var(--affine-font-sm)',
-  color: 'var(--affine-text-secondary-color)',
+  fontSize: cssVar('fontSm'),
+  color: cssVar('textSecondaryColor'),
   marginBottom: '4px',
 });
 export const closeButtonStyle = style({
@@ -192,20 +190,20 @@ export const closeButtonWithMediaStyle = style({
   alignItems: 'center',
   cursor: 'pointer',
   borderRadius: '4px',
-  color: 'var(--affine-pure-black)',
+  color: cssVar('pureBlack'),
   ':hover': {
-    background: 'var(--affine-hover-color)',
+    background: cssVar('hoverColor'),
   },
 });
 export const closeButtonColorStyle = style({
-  color: 'var(--affine-text-primary-color)',
+  color: cssVar('textPrimaryColor'),
 });
 export const undoButtonStyle = style({
-  fontSize: 'var(--affine-font-sm)',
-  background: 'var(--affine-hover-color)',
+  fontSize: cssVar('fontSm'),
+  background: cssVar('hoverColor'),
   padding: '3px 6px',
   borderRadius: '4px',
-  color: 'var(--affine-processing-color)',
+  color: cssVar('processingColor'),
   cursor: 'pointer',
 });
 export const undoButtonWithMediaStyle = style({
@@ -213,13 +211,13 @@ export const undoButtonWithMediaStyle = style({
   marginRight: '16px',
 });
 export const messageStyle = style({
-  fontSize: 'var(--affine-font-sm)',
+  fontSize: cssVar('fontSm'),
   width: '200px',
   marginLeft: '50px',
   lineHeight: '18px',
 });
 export const progressBarStyle = style({
-  fontSize: 'var(--affine-font-sm)',
+  fontSize: cssVar('fontSm'),
   width: '100%',
   height: '10px',
   marginTop: '10px',
@@ -228,42 +226,42 @@ export const progressBarStyle = style({
   marginBottom: '16px',
 });
 export const darkSuccessStyle = style({
-  background: 'var(--affine-success-color)',
+  background: cssVar('successColor'),
   borderRadius: '8px',
 });
 export const darkInfoStyle = style({
-  background: 'var(--affine-processing-color)',
+  background: cssVar('processingColor'),
   borderRadius: '8px',
 });
 export const darkErrorStyle = style({
-  background: 'var(--affine-error-color)',
+  background: cssVar('errorColor'),
   borderRadius: '8px',
 });
 export const darkWarningStyle = style({
-  background: 'var(--affine-warning-color)',
+  background: cssVar('warningColor'),
   borderRadius: '8px',
 });
 export const lightSuccessStyle = style({
-  background: 'var(--affine-background-success-color)',
+  background: cssVar('backgroundSuccessColor'),
   borderRadius: '8px',
 });
 export const lightInfoStyle = style({
-  background: 'var(--affine-background-processing-color)',
+  background: cssVar('backgroundProcessingColor'),
   borderRadius: '8px',
 });
 export const lightErrorStyle = style({
-  background: 'var(--affine-background-error-color)',
+  background: cssVar('backgroundErrorColor'),
   borderRadius: '8px',
 });
 export const lightWarningStyle = style({
-  background: 'var(--affine-background-warning-color)',
+  background: cssVar('backgroundWarningColor'),
   borderRadius: '8px',
 });
 export const darkColorStyle = style({
-  color: 'var(--affine-pure-white)',
+  color: cssVar('pureWhite'),
 });
 export const lightInfoIconStyle = style({
-  color: 'var(--affine-icon-color)',
+  color: cssVar('iconColor'),
 });
 export const defaultCollapseStyle = styleVariants({
   secondary: {

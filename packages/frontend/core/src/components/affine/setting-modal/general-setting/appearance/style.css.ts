@@ -1,5 +1,4 @@
 import { style } from '@vanilla-extract/css';
-
 export const settingWrapper = style({
   flexGrow: 1,
   display: 'flex',

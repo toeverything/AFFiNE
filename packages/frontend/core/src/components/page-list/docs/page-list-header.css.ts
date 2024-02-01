@@ -1,5 +1,5 @@
+import { cssVar } from '@toeverything/theme';
 import { style } from '@vanilla-extract/css';
-
 export const docListHeader = style({
   height: 100,
   alignItems: 'center',
@@ -7,63 +7,56 @@ export const docListHeader = style({
   overflow: 'hidden',
   display: 'flex',
   justifyContent: 'space-between',
-  background: 'var(--affine-background-primary-color)',
+  background: cssVar('backgroundPrimaryColor'),
 });
-
 export const docListHeaderTitle = style({
-  fontSize: 'var(--affine-font-h-5)',
+  fontSize: cssVar('fontH5'),
   fontWeight: 500,
-  color: 'var(--affine-text-secondary-color)',
+  color: cssVar('textSecondaryColor'),
   display: 'flex',
   alignItems: 'center',
   gap: 8,
   height: '28px',
 });
-
 export const titleIcon = style({
-  color: 'var(--affine-icon-color)',
+  color: cssVar('iconColor'),
   display: 'inline-flex',
   alignItems: 'center',
 });
-
 export const titleCollectionName = style({
-  color: 'var(--affine-text-primary-color)',
+  color: cssVar('textPrimaryColor'),
 });
-
 export const addPageButton = style({
   padding: '6px 10px',
   borderRadius: '8px',
-  background: 'var(--affine-background-primary-color)',
-  fontSize: 'var(--affine-font-sm)',
+  background: cssVar('backgroundPrimaryColor'),
+  fontSize: cssVar('fontSm'),
   fontWeight: 600,
   height: '32px',
 });
-
 export const tagSticky = style({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'space-between',
   padding: '1px 8px',
-  color: 'var(--affine-text-primary-color)',
-  fontSize: 'var(--affine-font-xs)',
+  color: cssVar('textPrimaryColor'),
+  fontSize: cssVar('fontXs'),
   borderRadius: '10px',
   columnGap: '4px',
-  border: '1px solid var(--affine-border-color)',
-  background: 'var(--affine-background-primary-color)',
+  border: `1px solid ${cssVar('borderColor')}`,
+  background: cssVar('backgroundPrimaryColor'),
   maxWidth: '30vw',
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',
   height: '22px',
   lineHeight: '1.67em',
 });
-
 export const tagIndicator = style({
   width: '8px',
   height: '8px',
   borderRadius: '50%',
   flexShrink: 0,
 });
-
 export const tagLabel = style({
   overflow: 'hidden',
   textOverflow: 'ellipsis',

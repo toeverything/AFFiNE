@@ -1,5 +1,5 @@
+import { cssVar } from '@toeverything/theme';
 import { globalStyle, style } from '@vanilla-extract/css';
-
 export const importPageContainerStyle = style({
   position: 'relative',
   display: 'flex',
@@ -8,11 +8,10 @@ export const importPageContainerStyle = style({
   justifyContent: 'center',
   alignItems: 'center',
   borderRadius: '12px',
-  boxShadow: 'var(--affine-popover-shadow)',
-  background: 'var(--affine-background-overlay-panel-color)',
+  boxShadow: cssVar('popoverShadow'),
+  background: cssVar('backgroundOverlayPanelColor'),
   overflow: 'hidden',
 });
-
 export const importPageBodyStyle = style({
   display: 'flex',
   padding: '32px 40px 20px 40px',
@@ -20,7 +19,6 @@ export const importPageBodyStyle = style({
   gap: '20px',
   alignSelf: 'stretch',
 });
-
 export const importPageButtonContainerStyle = style({
   display: 'grid',
   gridTemplateColumns: '1fr 1fr',
@@ -30,16 +28,14 @@ export const importPageButtonContainerStyle = style({
   gap: '20px',
   alignSelf: 'stretch',
 });
-
 globalStyle(`${importPageBodyStyle} .title`, {
-  fontSize: 'var(--affine-font-h-6)',
+  fontSize: cssVar('fontH6'),
   fontWeight: 600,
 });
-
 globalStyle(`${importPageBodyStyle} a`, {
   whiteSpace: 'nowrap',
   wordBreak: 'break-word',
-  color: 'var(--affine-link-color)',
+  color: cssVar('linkColor'),
   textDecoration: 'none',
   cursor: 'pointer',
 });

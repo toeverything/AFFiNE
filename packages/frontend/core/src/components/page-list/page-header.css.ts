@@ -1,11 +1,10 @@
+import { cssVar } from '@toeverything/theme';
 import { globalStyle, style } from '@vanilla-extract/css';
-
 export const headerTitleCell = style({
   display: 'flex',
   alignItems: 'center',
   gap: '8px',
 });
-
 export const tableHeader = style({
   display: 'flex',
   alignItems: 'center',
@@ -15,15 +14,13 @@ export const tableHeader = style({
   zIndex: 1,
   top: 0,
   left: 0,
-  background: 'var(--affine-background-primary-color)',
+  background: cssVar('backgroundPrimaryColor'),
   transition: 'box-shadow 0.2s ease-in-out',
   transform: 'translateY(-0.5px)', // fix sticky look through issue
 });
-
 globalStyle(`[data-has-scroll-top=true] ${tableHeader}`, {
-  boxShadow: '0 1px var(--affine-border-color)',
+  boxShadow: `0 1px ${cssVar('borderColor')}`,
 });
-
 export const headerTitleSelectionIconWrapper = style({
   display: 'flex',
   alignItems: 'center',

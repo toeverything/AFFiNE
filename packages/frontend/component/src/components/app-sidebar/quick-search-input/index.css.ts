@@ -1,12 +1,12 @@
+import { cssVar } from '@toeverything/theme';
 import { style } from '@vanilla-extract/css';
-
 export const root = style({
   display: 'inline-flex',
-  background: 'var(--affine-white-10)',
+  background: cssVar('white10'),
   alignItems: 'center',
   borderRadius: '8px',
-  border: '1px solid var(--affine-black-10)',
-  fontSize: 'var(--affine-font-sm)',
+  border: `1px solid ${cssVar('black10')}`,
+  fontSize: cssVar('fontSm'),
   width: '100%',
   height: '36px',
   userSelect: 'none',
@@ -15,18 +15,15 @@ export const root = style({
   margin: '20px 0',
   position: 'relative',
 });
-
 export const icon = style({
   marginRight: '8px',
-  color: 'var(--affine-icon-color)',
+  color: cssVar('iconColor'),
   fontSize: '20px',
 });
-
 export const spacer = style({
   flex: 1,
 });
-
 export const shortcutHint = style({
-  color: 'var(--affine-black-30)',
-  fontSize: 'var(--affine-font-base)',
+  color: cssVar('black30'),
+  fontSize: cssVar('fontBase'),
 });
