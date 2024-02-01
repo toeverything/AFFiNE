@@ -154,7 +154,7 @@ export const createConfiguration: (
       alias: {
         yjs: require.resolve('yjs'),
         '@blocksuite/block-std': blocksuiteBaseDir
-          ? join(blocksuiteBaseDir, 'packages', 'block-std', 'src')
+          ? join(blocksuiteBaseDir, 'packages', 'framework', 'block-std', 'src')
           : join(
               workspaceRoot,
               'node_modules',
@@ -181,7 +181,7 @@ export const createConfiguration: (
               'dist'
             ),
         '@blocksuite/global': blocksuiteBaseDir
-          ? join(blocksuiteBaseDir, 'packages', 'global', 'src')
+          ? join(blocksuiteBaseDir, 'packages', 'framework', 'global', 'src')
           : join(
               workspaceRoot,
               'node_modules',
@@ -193,6 +193,7 @@ export const createConfiguration: (
           ? join(
               blocksuiteBaseDir,
               'packages',
+              'framework',
               'store',
               'src/providers/broadcast-channel'
             )
@@ -206,10 +207,10 @@ export const createConfiguration: (
               'broadcast-channel.js'
             ),
         '@blocksuite/store': blocksuiteBaseDir
-          ? join(blocksuiteBaseDir, 'packages', 'store', 'src')
+          ? join(blocksuiteBaseDir, 'packages', 'framework', 'store', 'src')
           : join(workspaceRoot, 'node_modules', '@blocksuite', 'store', 'dist'),
         '@blocksuite/inline': blocksuiteBaseDir
-          ? join(blocksuiteBaseDir, 'packages', 'inline', 'src')
+          ? join(blocksuiteBaseDir, 'packages', 'framework', 'inline', 'src')
           : join(
               workspaceRoot,
               'node_modules',
@@ -217,6 +218,9 @@ export const createConfiguration: (
               'inline',
               'dist'
             ),
+        '@blocksuite/lit': blocksuiteBaseDir
+          ? join(blocksuiteBaseDir, 'packages', 'framework', 'lit', 'src')
+          : join(workspaceRoot, 'node_modules', '@blocksuite', 'lit', 'dist'),
       },
     },
 
