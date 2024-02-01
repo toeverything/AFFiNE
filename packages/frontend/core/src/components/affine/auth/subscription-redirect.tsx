@@ -3,10 +3,10 @@ import { Button } from '@affine/component/ui/button';
 import { Loading } from '@affine/component/ui/loading';
 import { AffineShapeIcon } from '@affine/core/components/page-list';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import type { SubscriptionRecurring } from '@affine/graphql';
+import type { SubscriptionPlan, SubscriptionRecurring } from '@affine/graphql';
 import {
   changePasswordMutation,
-  checkoutMutation,
+  createCheckoutSessionMutation,
   subscriptionQuery,
 } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
@@ -30,18 +30,25 @@ const usePaymentRedirect = () => {
   }
 
   const recurring = searchData.recurring as SubscriptionRecurring;
+  const plan = searchData.plan as SubscriptionPlan;
+  const coupon = searchData.coupon;
   const idempotencyKey = useMemo(() => nanoid(), []);
   const { trigger: checkoutSubscription } = useMutation({
-    mutation: checkoutMutation,
+    mutation: createCheckoutSessionMutation,
   });
 
   return useAsyncCallback(async () => {
-    const { checkout } = await checkoutSubscription({
-      recurring,
-      idempotencyKey,
+    const { createCheckoutSession: checkoutUrl } = await checkoutSubscription({
+      input: {
+        recurring,
+        plan,
+        coupon,
+        idempotencyKey,
+        successCallbackLink: null,
+      },
     });
-    window.open(checkout, '_self', 'norefferer');
-  }, [recurring, idempotencyKey, checkoutSubscription]);
+    window.open(checkoutUrl, '_self', 'norefferer');
+  }, [recurring, plan, coupon, idempotencyKey, checkoutSubscription]);
 };
 
 const CenterLoading = () => {

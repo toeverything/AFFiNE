@@ -1,6 +1,3 @@
-mutation checkout(
-  $recurring: SubscriptionRecurring!
-  $idempotencyKey: String!
-) {
-  checkout(recurring: $recurring, idempotencyKey: $idempotencyKey)
+mutation createCheckoutSession($input: CreateCheckoutSessionInput!) {
+  createCheckoutSession(input: $input)
 }

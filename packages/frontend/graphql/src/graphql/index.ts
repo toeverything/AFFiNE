@@ -127,14 +127,14 @@ mutation changePassword($token: String!, $newPassword: String!) {
 }`,
 };
 
-export const checkoutMutation = {
-  id: 'checkoutMutation' as const,
-  operationName: 'checkout',
-  definitionName: 'checkout',
+export const createCheckoutSessionMutation = {
+  id: 'createCheckoutSessionMutation' as const,
+  operationName: 'createCheckoutSession',
+  definitionName: 'createCheckoutSession',
   containsFile: false,
   query: `
-mutation checkout($recurring: SubscriptionRecurring!, $idempotencyKey: String!) {
-  checkout(recurring: $recurring, idempotencyKey: $idempotencyKey)
+mutation createCheckoutSession($input: CreateCheckoutSessionInput!) {
+  createCheckoutSession(input: $input)
 }`,
 };
 

@@ -200,12 +200,14 @@ export type ChangePasswordMutation = {
   };
 };
 
-export type CheckoutMutationVariables = Exact<{
-  recurring: SubscriptionRecurring;
-  idempotencyKey: Scalars['String']['input'];
+export type CreateCheckoutSessionMutationVariables = Exact<{
+  input: CreateCheckoutSessionInput;
 }>;
 
-export type CheckoutMutation = { __typename?: 'Mutation'; checkout: string };
+export type CreateCheckoutSessionMutation = {
+  __typename?: 'Mutation';
+  createCheckoutSession: string;
+};
 
 export type CreateCustomerPortalMutationVariables = Exact<{
   [key: string]: never;
@@ -1049,9 +1051,9 @@ export type Mutations =
       response: ChangePasswordMutation;
     }
   | {
-      name: 'checkoutMutation';
-      variables: CheckoutMutationVariables;
-      response: CheckoutMutation;
+      name: 'createCheckoutSessionMutation';
+      variables: CreateCheckoutSessionMutationVariables;
+      response: CreateCheckoutSessionMutation;
     }
   | {
       name: 'createCustomerPortalMutation';
