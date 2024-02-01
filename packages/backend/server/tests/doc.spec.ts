@@ -4,12 +4,7 @@ import { TestingModule } from '@nestjs/testing';
 import { PrismaClient } from '@prisma/client';
 import test from 'ava';
 import * as Sinon from 'sinon';
-import {
-  applyUpdate,
-  decodeStateVector,
-  Doc as YDoc,
-  encodeStateAsUpdate,
-} from 'yjs';
+import { applyUpdate, Doc as YDoc, encodeStateAsUpdate } from 'yjs';
 
 import { DocManager, DocModule } from '../src/core/doc';
 import { QuotaModule } from '../src/core/quota';
@@ -277,72 +272,120 @@ test('should throw if meet max retry times', async t => {
   t.is(stub.callCount, 5);
 });
 
-test('should not update snapshot if state is outdated', async t => {
-  const db = m.get(PrismaClient);
+test('should be able to insert the snapshot if it is new created', async t => {
   const manager = m.get(DocManager);
 
-  await db.snapshot.create({
-    data: {
-      id: '2',
-      workspaceId: '2',
-      blob: Buffer.from([0, 0]),
-      seq: 1,
-    },
-  });
   const doc = new YDoc();
   const text = doc.getText('content');
-  const updates: Buffer[] = [];
-
-  doc.on('update', update => {
-    updates.push(Buffer.from(update));
-  });
-
   text.insert(0, 'hello');
-  text.insert(5, 'world');
-  text.insert(5, ' ');
+  const update = encodeStateAsUpdate(doc);
 
-  await Promise.all(updates.map(update => manager.push('2', '2', update)));
+  await manager.push('1', '1', Buffer.from(update));
 
-  const updateWith3Records = await manager.getUpdates('2', '2');
-  text.insert(11, '!');
-  await manager.push('2', '2', updates[3]);
-  const updateWith4Records = await manager.getUpdates('2', '2');
-
-  // Simulation:
-  //   Node A get 3 updates and squash them at time 1, will finish at time 10
-  //   Node B get 4 updates and squash them at time 3, will finish at time 8
-  //   Node B finish the squash first, and update the snapshot
-  //   Node A finish the squash later, and update the snapshot to an outdated state
-  // Time: ---------------------->
-  //    A:   ^get           ^upsert
-  //    B:      ^get    ^upsert
-  //
-  // We should avoid such situation
+  const updates = await manager.getUpdates('1', '1');
+  t.is(updates.length, 1);
   // @ts-expect-error private
-  await manager.squash(updateWith4Records, null);
-  // @ts-expect-error private
-  await manager.squash(updateWith3Records, null);
+  const snapshot = await manager.squash(null, updates);
 
-  const result = await db.snapshot.findUnique({
+  t.truthy(snapshot);
+  t.is(snapshot.getText('content').toString(), 'hello');
+
+  const restUpdates = await manager.getUpdates('1', '1');
+
+  t.is(restUpdates.length, 0);
+});
+
+test('should be able to merge updates into snapshot', async t => {
+  const manager = m.get(DocManager);
+
+  const updates: Buffer[] = [];
+  {
+    const doc = new YDoc();
+    doc.on('update', data => {
+      updates.push(Buffer.from(data));
+    });
+
+    const text = doc.getText('content');
+    text.insert(0, 'hello');
+    text.insert(5, 'world');
+    text.insert(5, ' ');
+    text.insert(11, '!');
+  }
+
+  {
+    await manager.batchPush('1', '1', updates.slice(0, 2));
+    // do the merge
+    const doc = (await manager.get('1', '1'))!;
+
+    t.is(doc.getText('content').toString(), 'helloworld');
+  }
+
+  {
+    await manager.batchPush('1', '1', updates.slice(2));
+    const doc = (await manager.get('1', '1'))!;
+
+    t.is(doc.getText('content').toString(), 'hello world!');
+  }
+
+  const restUpdates = await manager.getUpdates('1', '1');
+
+  t.is(restUpdates.length, 0);
+});
+
+test('should not update snapshot if doc is outdated', async t => {
+  const manager = m.get(DocManager);
+  const db = m.get(PrismaClient);
+
+  const updates: Buffer[] = [];
+  {
+    const doc = new YDoc();
+    doc.on('update', data => {
+      updates.push(Buffer.from(data));
+    });
+
+    const text = doc.getText('content');
+    text.insert(0, 'hello');
+    text.insert(5, 'world');
+    text.insert(5, ' ');
+    text.insert(11, '!');
+  }
+
+  await manager.batchPush('2', '1', updates.slice(0, 2)); // 'helloworld'
+  // merge updates into snapshot
+  await manager.get('2', '1');
+  // fake the snapshot is a lot newer
+  await db.snapshot.update({
     where: {
       id_workspaceId: {
-        id: '2',
         workspaceId: '2',
+        id: '1',
       },
+    },
+    data: {
+      updatedAt: new Date(Date.now() + 10000),
     },
   });
 
-  if (!result) {
-    t.fail('snapshot not found');
-    return;
+  {
+    const snapshot = await manager.getSnapshot('2', '1');
+    await manager.batchPush('2', '1', updates.slice(2)); // 'hello world!'
+    const updateRecords = await manager.getUpdates('2', '1');
+
+    // @ts-expect-error private
+    const doc = await manager.squash(snapshot, updateRecords);
+
+    // all updated will merged into doc not matter it's timestamp is outdated or not,
+    // but the snapshot record will not be updated
+    t.is(doc.getText('content').toString(), 'hello world!');
   }
 
-  const state = decodeStateVector(result.state!);
-  t.is(state.get(doc.clientID), 12);
+  {
+    const doc = new YDoc();
+    applyUpdate(doc, (await manager.getSnapshot('2', '1'))!.blob);
+    // the snapshot will not get touched if the new doc's timestamp is outdated
+    t.is(doc.getText('content').toString(), 'helloworld');
 
-  const d = new YDoc();
-  applyUpdate(d, result.blob!);
-
-  const dtext = d.getText('content');
-  t.is(dtext.toString(), 'hello world!');
+    // the updates are known as outdated, so they will be deleted
+    t.is((await manager.getUpdates('2', '1')).length, 0);
+  }
 });
