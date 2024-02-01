@@ -258,7 +258,7 @@ __metadata:
     nanoid: "npm:^5.0.3"
     next-themes: "npm:^0.2.1"
     react: "npm:18.2.0"
-    react-datepicker: "npm:^5.0.0"
+    react-datepicker: "npm:^6.0.0"
     react-dom: "npm:18.2.0"
     react-error-boundary: "npm:^4.0.11"
     react-is: "npm:^18.2.0"
@@ -18391,7 +18391,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"date-fns@npm:^3.3.0":
+"date-fns@npm:^3.3.0, date-fns@npm:^3.3.1":
   version: 3.3.1
   resolution: "date-fns@npm:3.3.1"
   checksum: 98231936765dfb6fc6897676319b500a06a39f051b2c3ecbdd541a07ce9b1344b770277b8bfb1049fb7a2f70bf365ac8e6f1e2bb452b10e1a8101d518ca7f95d
@@ -30127,19 +30127,19 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-datepicker@npm:^5.0.0":
-  version: 5.1.0
-  resolution: "react-datepicker@npm:5.1.0"
+"react-datepicker@npm:^6.0.0":
+  version: 6.0.0
+  resolution: "react-datepicker@npm:6.0.0"
   dependencies:
     "@floating-ui/react": "npm:^0.26.2"
     classnames: "npm:^2.2.6"
-    date-fns: "npm:^2.30.0"
+    date-fns: "npm:^3.3.1"
     prop-types: "npm:^15.7.2"
     react-onclickoutside: "npm:^6.13.0"
   peerDependencies:
     react: ^16.9.0 || ^17 || ^18
     react-dom: ^16.9.0 || ^17 || ^18
-  checksum: e9ed63ecff71dd9bf584e1b601e299de837c4bb7c89305db3babb998965a66648c76021d62aa93579aa26e0f68d3d2b4390ffae2f3f910158a4046ded8a0370d
+  checksum: cbc43b9d5ce68c32bca0e6584291796bad776004511a548e1a0de9175fb94b5c9d4a6344dc6adf9af31c5bbc32305ce4bd9a1f72100f7ab627d49ac418b32af2
   languageName: node
   linkType: hard
 
