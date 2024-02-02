@@ -27969,9 +27969,9 @@ __metadata:
   linkType: hard
 
 "nodemailer@npm:^6.9.7":
-  version: 6.9.7
-  resolution: "nodemailer@npm:6.9.7"
-  checksum: 10/32b6e6c3f5e0ab6c5fa796934fee397e8b520f6d782fc41d8bd5aaf72a2e757564b8e7e7f7aa02fcf0ba73a83d364bdb923c2dbb76a32ac87a5c628d1bde03df
+  version: 6.9.9
+  resolution: "nodemailer@npm:6.9.9"
+  checksum: 10/d81f8613c35785aeb60dd0e3ead2c2c0171c709381fde17ada112f5ac635630814ad09492dacaf0fd30158492ed834abb82d9c58b49e9b495e5c675fbc5fffef
   languageName: node
   linkType: hard
 
