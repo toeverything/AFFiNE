@@ -1,9 +1,10 @@
-import type { BlockSpec } from '@blocksuite/block-std';
+import type { BlockServiceOptions, BlockSpec } from '@blocksuite/block-std';
 import type { ParagraphService } from '@blocksuite/blocks';
 import {
   AttachmentService,
   DocEditorBlockSpecs,
   EdgelessEditorBlockSpecs,
+  PageService,
 } from '@blocksuite/blocks';
 import bytes from 'bytes';
 import { html, unsafeStatic } from 'lit/static-html.js';
@@ -14,6 +15,26 @@ class CustomAttachmentService extends AttachmentService {
     // blocksuite default max file size is 10MB, we override it to 2GB
     // but the real place to limit blob size is CloudQuotaModal / LocalQuotaModal
     this.maxFileSize = bytes.parse('2GB');
+  }
+}
+
+class CustomPageService extends PageService {
+  constructor(opt: BlockServiceOptions) {
+    super(opt);
+    const officialDomains = new Set(['affine.pro', 'affine.fail']);
+    const load = this.fontLoader.load.bind(this.fontLoader);
+    this.fontLoader.load = function (fonts) {
+      if (!officialDomains.has(window.location.host)) {
+        return load(
+          fonts.map(f => ({
+            ...f,
+            // self-hosted fonts are served from /assets
+            url: '/assets' + new URL(f.url).pathname.split('/').pop(),
+          }))
+        );
+      }
+      return load(fonts);
+    };
   }
 }
 
@@ -74,6 +95,12 @@ export const docModeSpecs = DocEditorBlockSpecs.map(spec => {
     return {
       ...spec,
       service: CustomAttachmentService,
+    };
+  }
+  if (spec.schema.model.flavour === 'affine:page') {
+    return {
+      ...spec,
+      service: CustomPageService,
     };
   }
   return spec;
