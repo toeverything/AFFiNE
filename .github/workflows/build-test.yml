@@ -572,7 +572,10 @@ jobs:
       - server-test
       - server-e2e-test
       - desktop-test
+    if: always()
     runs-on: ubuntu-latest
+    name: 3, 2, 1 Launch
     steps:
-      - name: Done
-        run: echo "Done"
+      - run: exit 1
+        # Thank you, next https://github.com/vercel/next.js/blob/canary/.github/workflows/build_and_test.yml#L379
+        if: ${{ always() && (contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')) }}
