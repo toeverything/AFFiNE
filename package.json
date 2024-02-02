@@ -71,7 +71,7 @@
     "@types/node": "^20.9.3",
     "@typescript-eslint/eslint-plugin": "^6.13.1",
     "@typescript-eslint/parser": "^6.13.1",
-    "@vanilla-extract/vite-plugin": "^3.9.2",
+    "@vanilla-extract/vite-plugin": "^4.0.0",
     "@vanilla-extract/webpack-plugin": "^2.3.1",
     "@vitejs/plugin-react-swc": "^3.5.0",
     "@vitest/coverage-istanbul": "1.2.2",
