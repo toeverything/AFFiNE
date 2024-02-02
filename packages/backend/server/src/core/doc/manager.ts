@@ -125,11 +125,7 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
     const doc = await this.recoverDoc(...updates);
 
     // test jwst codec
-    if (
-      this.config.affine.canary &&
-      this.config.doc.manager.experimentalMergeWithJwstCodec &&
-      updates.length < 100 /* avoid overloading */
-    ) {
+    if (this.config.doc.manager.experimentalMergeWithYOcto) {
       metrics.jwst.counter('codec_merge_counter').add(1);
       const yjsResult = Buffer.from(encodeStateAsUpdate(doc));
       let log = false;
@@ -180,7 +176,7 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
     }, this.config.doc.manager.updatePollInterval);
 
     this.logger.log('Automation started');
-    if (this.config.doc.manager.experimentalMergeWithJwstCodec) {
+    if (this.config.doc.manager.experimentalMergeWithYOcto) {
       this.logger.warn(
         'Experimental feature enabled: merge updates with jwst codec is enabled'
       );

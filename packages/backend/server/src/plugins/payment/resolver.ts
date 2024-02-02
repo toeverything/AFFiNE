@@ -321,7 +321,7 @@ export class UserSubscriptionResolver {
 
     // @FIXME(@forehalo): should not mock any api for selfhosted server
     // the frontend should avoid calling such api if feature is not enabled
-    if (this.config.flavor.selfhosted) {
+    if (this.config.isSelfhosted) {
       const start = new Date();
       const end = new Date();
       end.setFullYear(start.getFullYear() + 1);

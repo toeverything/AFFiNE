@@ -18,18 +18,22 @@ export enum ExternalAccount {
   firebase = 'firebase',
 }
 
-export type ServerFlavor =
-  | 'allinone'
-  | 'main'
-  // @deprecated
-  | 'graphql'
-  | 'sync'
-  | 'selfhosted';
+export type ServerFlavor = 'allinone' | 'graphql' | 'sync';
+export type AFFINE_ENV = 'dev' | 'beta' | 'production';
+export type NODE_ENV = 'development' | 'test' | 'production';
+
+export enum DeploymentType {
+  Affine = 'affine',
+  Selfhosted = 'selfhosted',
+}
+
 export type ConfigPaths = LeafPaths<
   Omit<
     AFFiNEConfig,
     | 'ENV_MAP'
     | 'version'
+    | 'type'
+    | 'isSelfhosted'
     | 'flavor'
     | 'env'
     | 'affine'
@@ -64,26 +68,35 @@ export interface AFFiNEConfig {
   readonly version: string;
 
   /**
+   * Deployment type, AFFiNE Cloud, or Selfhosted
+   */
+  get type(): DeploymentType;
+
+  /**
+   * Fast detect whether currently deployed in a selfhosted environment
+   */
+  get isSelfhosted(): boolean;
+
+  /**
    * Server flavor
    */
   get flavor(): {
     type: string;
-    main: boolean;
+    graphql: boolean;
     sync: boolean;
-    selfhosted: boolean;
   };
 
   /**
    * Deployment environment
    */
-  readonly affineEnv: 'dev' | 'beta' | 'production';
+  readonly AFFINE_ENV: AFFINE_ENV;
   /**
    * alias to `process.env.NODE_ENV`
    *
-   * @default 'production'
+   * @default 'development'
    * @env NODE_ENV
    */
-  readonly env: string;
+  readonly NODE_ENV: NODE_ENV;
 
   /**
    * fast AFFiNE environment judge
@@ -101,6 +114,7 @@ export interface AFFiNEConfig {
     dev: boolean;
     test: boolean;
   };
+
   get deploy(): boolean;
 
   /**
@@ -302,11 +316,11 @@ export interface AFFiNEConfig {
       updatePollInterval: number;
 
       /**
-       * Use JwstCodec to merge updates at the same time when merging using Yjs.
+       * Use `y-octo` to merge updates at the same time when merging using Yjs.
        *
        * This is an experimental feature, and aimed to check the correctness of JwstCodec.
        */
-      experimentalMergeWithJwstCodec: boolean;
+      experimentalMergeWithYOcto: boolean;
     };
     history: {
       /**

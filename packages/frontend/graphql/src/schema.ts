@@ -71,6 +71,11 @@ export enum PublicPageMode {
   Page = 'Page',
 }
 
+export enum ServerDeploymentType {
+  Affine = 'Affine',
+  Selfhosted = 'Selfhosted',
+}
+
 export enum ServerFeature {
   Payment = 'Payment',
 }
@@ -673,7 +678,7 @@ export type ServerConfigQuery = {
     baseUrl: string;
     name: string;
     features: Array<ServerFeature>;
-    flavor: string;
+    type: ServerDeploymentType;
   };
 };
 
