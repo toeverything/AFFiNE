@@ -563,6 +563,17 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@affine/main@workspace:packages/frontend/main":
+  version: 0.0.0-use.local
+  resolution: "@affine/main@workspace:packages/frontend/main"
+  dependencies:
+    "@blocksuite/blocks": "npm:0.12.0-canary-202402010557-e8d6e1d"
+    "@blocksuite/global": "npm:0.12.0-canary-202402010557-e8d6e1d"
+    "@blocksuite/store": "npm:0.12.0-canary-202402010557-e8d6e1d"
+    react: "npm:18.2.0"
+  languageName: unknown
+  linkType: soft
+
 "@affine/monorepo@workspace:.":
   version: 0.0.0-use.local
   resolution: "@affine/monorepo@workspace:."
