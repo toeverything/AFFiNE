@@ -19,7 +19,7 @@ env:
   MACOSX_DEPLOYMENT_TARGET: '10.13'
   NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
   PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/node_modules/.cache/ms-playwright
-  DISABLE_TELEMETRY: true
+  DEPLOYMENT_TYPE: affine
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -291,6 +291,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: build-storage
     env:
+      NODE_ENV: test
       DISTRIBUTION: browser
     services:
       postgres:

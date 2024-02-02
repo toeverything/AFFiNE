@@ -677,7 +677,7 @@ query serverConfig {
     baseUrl
     name
     features
-    flavor
+    type
   }
 }`,
 };

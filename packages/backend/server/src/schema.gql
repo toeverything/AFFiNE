@@ -240,8 +240,16 @@ type ServerConfigType {
   """server identical name could be shown as badge on user interface"""
   name: String!
 
+  """server type"""
+  type: ServerDeploymentType!
+
   """server version"""
   version: String!
+}
+
+enum ServerDeploymentType {
+  Affine
+  Selfhosted
 }
 
 enum ServerFeature {

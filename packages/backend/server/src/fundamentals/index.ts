@@ -9,6 +9,7 @@ export {
   applyEnvToConfig,
   Config,
   type ConfigPaths,
+  DeploymentType,
   getDefaultAFFiNEStorageConfig,
 } from './config';
 export { EventEmitter, type EventPayload, OnEvent } from './event';

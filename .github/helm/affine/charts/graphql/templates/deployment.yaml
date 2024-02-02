@@ -39,6 +39,8 @@ spec:
             value: "--max-old-space-size=4096"
           - name: NO_COLOR
             value: "1"
+          - name: DEPLOYMENT_TYPE
+            value: "affine"
           - name: SERVER_FLAVOR
             value: "graphql"
           - name: AFFINE_ENV

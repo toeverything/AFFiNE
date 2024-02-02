@@ -6,7 +6,14 @@ import { merge } from 'lodash-es';
 import parse from 'parse-duration';
 
 import pkg from '../../../package.json' assert { type: 'json' };
-import type { AFFiNEConfig, ServerFlavor } from './def';
+import {
+  type AFFINE_ENV,
+  AFFiNEConfig,
+  DeploymentType,
+  type NODE_ENV,
+  type ServerFlavor,
+} from './def';
+import { readEnv } from './env';
 import { getDefaultAFFiNEStorageConfig } from './storage';
 
 // Don't use this in production
@@ -46,40 +53,62 @@ const jwtKeyPair = (function () {
 })();
 
 export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
-  let isHttps: boolean | null = null;
-  let flavor = (process.env.SERVER_FLAVOR ?? 'allinone') as ServerFlavor;
+  const NODE_ENV = readEnv<NODE_ENV>('NODE_ENV', 'development', [
+    'development',
+    'test',
+    'production',
+  ]);
+  const AFFINE_ENV = readEnv<AFFINE_ENV>('AFFINE_ENV', 'dev', [
+    'dev',
+    'beta',
+    'production',
+  ]);
+  const flavor = readEnv<ServerFlavor>('SERVER_FLAVOR', 'allinone', [
+    'allinone',
+    'graphql',
+    'sync',
+  ]);
+  const deploymentType = readEnv<DeploymentType>(
+    'DEPLOYMENT_TYPE',
+    NODE_ENV === 'development'
+      ? DeploymentType.Affine
+      : DeploymentType.Selfhosted,
+    Object.values(DeploymentType)
+  );
+  const isSelfhosted = deploymentType === DeploymentType.Selfhosted;
+
   const defaultConfig = {
     serverId: 'affine-nestjs-server',
-    serverName: flavor === 'selfhosted' ? 'Self-Host Cloud' : 'AFFiNE Cloud',
+    serverName: isSelfhosted ? 'Self-Host Cloud' : 'AFFiNE Cloud',
     version: pkg.version,
+    get type() {
+      return deploymentType;
+    },
+    get isSelfhosted() {
+      return isSelfhosted;
+    },
     get flavor() {
-      if (flavor === 'graphql') {
-        flavor = 'main';
-      }
       return {
         type: flavor,
-        main: flavor === 'main' || flavor === 'allinone',
+        graphql: flavor === 'graphql' || flavor === 'allinone',
         sync: flavor === 'sync' || flavor === 'allinone',
-        selfhosted: flavor === 'selfhosted',
       };
     },
     ENV_MAP: {},
-    affineEnv: 'dev',
+    AFFINE_ENV,
     get affine() {
-      const env = this.affineEnv;
       return {
-        canary: env === 'dev',
-        beta: env === 'beta',
-        stable: env === 'production',
+        canary: AFFINE_ENV === 'dev',
+        beta: AFFINE_ENV === 'beta',
+        stable: AFFINE_ENV === 'production',
       };
     },
-    env: process.env.NODE_ENV ?? 'development',
+    NODE_ENV,
     get node() {
-      const env = this.env;
       return {
-        prod: env === 'production',
-        dev: env === 'development',
-        test: env === 'test',
+        prod: NODE_ENV === 'production',
+        dev: NODE_ENV === 'development',
+        test: NODE_ENV === 'test',
       };
     },
     get deploy() {
@@ -88,12 +117,7 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
     featureFlags: {
       earlyAccessPreview: false,
     },
-    get https() {
-      return isHttps ?? !this.node.dev;
-    },
-    set https(value: boolean) {
-      isHttps = value;
-    },
+    https: false,
     host: 'localhost',
     port: 3010,
     path: '',
@@ -160,7 +184,7 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
       manager: {
         enableUpdateAutoMerging: flavor !== 'sync',
         updatePollInterval: 3000,
-        experimentalMergeWithJwstCodec: false,
+        experimentalMergeWithYOcto: false,
       },
       history: {
         interval: 1000 * 60 * 10 /* 10 mins */,

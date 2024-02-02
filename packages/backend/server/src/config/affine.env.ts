@@ -3,8 +3,7 @@ AFFiNE.ENV_MAP = {
   AFFINE_SERVER_PORT: ['port', 'int'],
   AFFINE_SERVER_HOST: 'host',
   AFFINE_SERVER_SUB_PATH: 'path',
-  AFFIHE_SERVER_HTTPS: ['https', 'boolean'],
-  AFFINE_ENV: 'affineEnv',
+  AFFINE_SERVER_HTTPS: ['https', 'boolean'],
   DATABASE_URL: 'db.url',
   ENABLE_CAPTCHA: ['auth.captcha.enable', 'boolean'],
   CAPTCHA_TURNSTILE_SECRET: ['auth.captcha.turnstile.secret', 'string'],
@@ -28,7 +27,7 @@ AFFiNE.ENV_MAP = {
   REDIS_SERVER_DATABASE: ['plugins.redis.db', 'int'],
   DOC_MERGE_INTERVAL: ['doc.manager.updatePollInterval', 'int'],
   DOC_MERGE_USE_JWST_CODEC: [
-    'doc.manager.experimentalMergeWithJwstCodec',
+    'doc.manager.experimentalMergeWithYOcto',
     'boolean',
   ],
   ENABLE_LOCAL_EMAIL: ['auth.localEmail', 'boolean'],
@@ -36,5 +35,3 @@ AFFiNE.ENV_MAP = {
   STRIPE_WEBHOOK_KEY: 'plugins.payment.stripe.keys.webhookKey',
   FEATURES_EARLY_ACCESS_PREVIEW: ['featureFlags.earlyAccessPreview', 'boolean'],
 };
-
-export default AFFiNE;

@@ -36,6 +36,8 @@ spec:
             value: "{{ .Values.env }}"
           - name: NO_COLOR
             value: "1"
+          - name: DEPLOYMENT_TYPE
+            value: "affine"
           - name: SERVER_FLAVOR
             value: "sync"
           - name: NEXTAUTH_URL

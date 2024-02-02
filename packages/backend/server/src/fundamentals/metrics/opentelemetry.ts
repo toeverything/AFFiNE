@@ -1,6 +1,4 @@
-import { MetricExporter } from '@google-cloud/opentelemetry-cloud-monitoring-exporter';
-import { TraceExporter } from '@google-cloud/opentelemetry-cloud-trace-exporter';
-import { GcpDetectorSync } from '@google-cloud/opentelemetry-resource-util';
+import { OnModuleDestroy } from '@nestjs/common';
 import { metrics } from '@opentelemetry/api';
 import {
   CompositePropagator,
@@ -18,16 +16,13 @@ import { NestInstrumentation } from '@opentelemetry/instrumentation-nestjs-core'
 import { SocketIoInstrumentation } from '@opentelemetry/instrumentation-socket.io';
 import { Resource } from '@opentelemetry/resources';
 import {
-  ConsoleMetricExporter,
   type MeterProvider,
   MetricProducer,
   MetricReader,
-  PeriodicExportingMetricReader,
 } from '@opentelemetry/sdk-metrics';
 import { NodeSDK } from '@opentelemetry/sdk-node';
 import {
   BatchSpanProcessor,
-  ConsoleSpanExporter,
   SpanExporter,
   TraceIdRatioBasedSampler,
 } from '@opentelemetry/sdk-trace-node';
@@ -38,7 +33,7 @@ import { PrismaMetricProducer } from './prisma';
 
 const { PrismaInstrumentation } = prismaInstrument;
 
-abstract class OpentelemetryFactor {
+export abstract class OpentelemetryFactory {
   abstract getMetricReader(): MetricReader;
   abstract getSpanExporter(): SpanExporter;
 
@@ -59,7 +54,7 @@ abstract class OpentelemetryFactor {
 
   getResource() {
     return new Resource({
-      [SemanticResourceAttributes.K8S_NAMESPACE_NAME]: AFFiNE.affineEnv,
+      [SemanticResourceAttributes.K8S_NAMESPACE_NAME]: AFFiNE.AFFINE_ENV,
       [SemanticResourceAttributes.SERVICE_NAME]: AFFiNE.flavor.type,
       [SemanticResourceAttributes.SERVICE_VERSION]: AFFiNE.version,
     });
@@ -85,64 +80,25 @@ abstract class OpentelemetryFactor {
   }
 }
 
-class GCloudOpentelemetryFactor extends OpentelemetryFactor {
-  override getResource(): Resource {
-    return super.getResource().merge(new GcpDetectorSync().detect());
+export class LocalOpentelemetryFactory
+  extends OpentelemetryFactory
+  implements OnModuleDestroy
+{
+  private readonly metricsExporter = new PrometheusExporter({
+    metricProducers: this.getMetricsProducers(),
+  });
+
+  async onModuleDestroy() {
+    await this.metricsExporter.shutdown();
   }
 
   override getMetricReader(): MetricReader {
-    return new PeriodicExportingMetricReader({
-      exportIntervalMillis: 30000,
-      exportTimeoutMillis: 10000,
-      exporter: new MetricExporter({
-        prefix: 'custom.googleapis.com',
-      }),
-      metricProducers: this.getMetricsProducers(),
-    });
-  }
-
-  override getSpanExporter(): SpanExporter {
-    return new TraceExporter();
-  }
-}
-
-class LocalOpentelemetryFactor extends OpentelemetryFactor {
-  override getMetricReader(): MetricReader {
-    return new PrometheusExporter({
-      metricProducers: this.getMetricsProducers(),
-    });
+    return this.metricsExporter;
   }
 
   override getSpanExporter(): SpanExporter {
     return new ZipkinExporter();
   }
-}
-
-class DebugOpentelemetryFactor extends OpentelemetryFactor {
-  override getMetricReader(): MetricReader {
-    return new PeriodicExportingMetricReader({
-      exporter: new ConsoleMetricExporter(),
-      metricProducers: this.getMetricsProducers(),
-    });
-  }
-
-  override getSpanExporter(): SpanExporter {
-    return new ConsoleSpanExporter();
-  }
-}
-
-// TODO(@forehalo): make it configurable
-export function createSDK() {
-  let factor: OpentelemetryFactor | null = null;
-  if (process.env.NODE_ENV === 'production') {
-    factor = new GCloudOpentelemetryFactor();
-  } else if (process.env.DEBUG_METRICS) {
-    factor = new DebugOpentelemetryFactor();
-  } else {
-    factor = new LocalOpentelemetryFactor();
-  }
-
-  return factor?.create();
 }
 
 function getMeterProvider() {

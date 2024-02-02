@@ -109,7 +109,7 @@ export class AppModuleBuilder {
         },
       ],
       imports: this.modules,
-      controllers: this.config.flavor.selfhosted ? [] : [AppController],
+      controllers: this.config.isSelfhosted ? [] : [AppController],
     })
     class AppModule {}
 
@@ -132,9 +132,9 @@ function buildAppModule() {
     // sync server only
     .useIf(config => config.flavor.sync, SyncModule)
 
-    // main server only
+    // graphql server only
     .useIf(
-      config => config.flavor.main,
+      config => config.flavor.graphql,
       ServerConfigModule,
       WebSocketModule,
       GqlModule,
@@ -147,7 +147,7 @@ function buildAppModule() {
 
     // self hosted server only
     .useIf(
-      config => config.flavor.selfhosted,
+      config => config.isSelfhosted,
       ServeStaticModule.forRoot({
         rootPath: join('/app', 'static'),
       })

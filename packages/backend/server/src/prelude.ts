@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { config } from 'dotenv';
+import { omit } from 'lodash-es';
 
 import {
   applyEnvToConfig,
@@ -49,8 +50,17 @@ async function load() {
   // 5. load `config/affine` to patch custom configs
   await loadRemote(AFFiNE_CONFIG_PATH, 'affine.js');
 
-  if (process.env.NODE_ENV === 'development') {
-    console.log('AFFiNE Config:', JSON.stringify(globalThis.AFFiNE, null, 2));
+  // 6. load `config/affine.self` to patch custom configs
+  // This is the file only take effect in [AFFiNE Cloud]
+  if (!AFFiNE.isSelfhosted) {
+    await loadRemote(AFFiNE_CONFIG_PATH, 'affine.self.js');
+  }
+
+  if (AFFiNE.node.dev) {
+    console.log(
+      'AFFiNE Config:',
+      JSON.stringify(omit(globalThis.AFFiNE, 'ENV_MAP'), null, 2)
+    );
   }
 }
 
