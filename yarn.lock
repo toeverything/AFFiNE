@@ -249,7 +249,7 @@ __metadata:
     fake-indexeddb: "npm:^5.0.0"
     foxact: "npm:^0.2.20"
     jotai: "npm:^2.5.1"
-    jotai-effect: "npm:^0.4.0"
+    jotai-effect: "npm:^0.5.0"
     jotai-scope: "npm:^0.5.0"
     lit: "npm:^3.0.2"
     lodash-es: "npm:^4.17.21"
@@ -355,7 +355,7 @@ __metadata:
     intl-segmenter-polyfill-rs: "npm:^0.1.6"
     jotai: "npm:^2.5.1"
     jotai-devtools: "npm:^0.7.0"
-    jotai-effect: "npm:^0.4.0"
+    jotai-effect: "npm:^0.5.0"
     jotai-scope: "npm:^0.5.0"
     lit: "npm:^3.0.2"
     lodash-es: "npm:^4.17.21"
@@ -13077,7 +13077,7 @@ __metadata:
     async-call-rpc: "npm:^6.3.1"
     foxact: "npm:^0.2.20"
     jotai: "npm:^2.5.1"
-    jotai-effect: "npm:^0.4.0"
+    jotai-effect: "npm:^0.5.0"
     lodash-es: "npm:^4.17.21"
     nanoid: "npm:^5.0.3"
     react: "npm:^18.2.0"
@@ -24513,12 +24513,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"jotai-effect@npm:^0.4.0":
-  version: 0.4.0
-  resolution: "jotai-effect@npm:0.4.0"
+"jotai-effect@npm:^0.5.0":
+  version: 0.5.0
+  resolution: "jotai-effect@npm:0.5.0"
   peerDependencies:
     jotai: ">=2.5.0"
-  checksum: 10/d2c0d29239dd07361d9398c7da73843ea1190fb3321765ee681132fdf4e285ce44d0008572c5638965cdff07f3941d4fc0582b425b9728ace7e24453e4a5bf3b
+  checksum: 10/8aad4a968e479ae96141f504afa3156e924d154690e2e874d02c6aa42cbd2a78eed80717d6b31d1263a503c3416ecc582301ff689f2097790eb70bf4cef6c280
   languageName: node
   linkType: hard
 

@@ -66,7 +66,7 @@
     "intl-segmenter-polyfill-rs": "^0.1.6",
     "jotai": "^2.5.1",
     "jotai-devtools": "^0.7.0",
-    "jotai-effect": "^0.4.0",
+    "jotai-effect": "^0.5.0",
     "jotai-scope": "^0.5.0",
     "lit": "^3.0.2",
     "lodash-es": "^4.17.21",
