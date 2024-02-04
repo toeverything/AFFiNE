@@ -44,17 +44,17 @@ async function load() {
   // 3. load env => config map to `globalThis.AFFiNE.ENV_MAP
   await loadRemote(AFFiNE_CONFIG_PATH, 'affine.env.js');
 
-  // 4. apply `process.env` map overriding to `globalThis.AFFiNE`
-  applyEnvToConfig(globalThis.AFFiNE);
-
-  // 5. load `config/affine` to patch custom configs
+  // 4. load `config/affine` to patch custom configs
   await loadRemote(AFFiNE_CONFIG_PATH, 'affine.js');
 
-  // 6. load `config/affine.self` to patch custom configs
+  // 5. load `config/affine.self` to patch custom configs
   // This is the file only take effect in [AFFiNE Cloud]
   if (!AFFiNE.isSelfhosted) {
     await loadRemote(AFFiNE_CONFIG_PATH, 'affine.self.js');
   }
+
+  // 6. apply `process.env` map overriding to `globalThis.AFFiNE`
+  applyEnvToConfig(globalThis.AFFiNE);
 
   if (AFFiNE.node.dev) {
     console.log(

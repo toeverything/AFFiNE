@@ -23,6 +23,7 @@ import { StripeWebhook } from './webhook';
   //   'plugins.payment.stripe.keys.webhookKey',
   // ],
   contributesTo: ServerFeature.Payment,
+  if: config => config.flavor.graphql,
 })
 export class PaymentModule {}
 

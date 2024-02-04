@@ -316,6 +316,12 @@ export interface AFFiNEConfig {
       updatePollInterval: number;
 
       /**
+       * The maximum number of updates that will be pulled from the server at once.
+       * Existing for avoiding the server to be overloaded when there are too many updates for one doc.
+       */
+      maxUpdatesPullCount: number;
+
+      /**
        * Use `y-octo` to merge updates at the same time when merging using Yjs.
        *
        * This is an experimental feature, and aimed to check the correctness of JwstCodec.

@@ -382,7 +382,7 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
       // take it ease, we don't want to overload db and or cpu
       // if we limit the taken number here,
       // user will never see the latest doc if there are too many updates pending to be merged.
-      take: 100,
+      take: this.config.doc.manager.maxUpdatesPullCount,
     });
 
     // perf(memory): avoid sorting in db
