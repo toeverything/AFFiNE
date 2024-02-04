@@ -184,6 +184,7 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
       manager: {
         enableUpdateAutoMerging: flavor !== 'sync',
         updatePollInterval: 3000,
+        maxUpdatesPullCount: 500,
         experimentalMergeWithYOcto: false,
       },
       history: {

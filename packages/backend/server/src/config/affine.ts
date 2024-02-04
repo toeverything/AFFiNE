@@ -11,8 +11,8 @@
 // > Configurations merge order
 //   1. load environment variables (`.env` if provided, and from system)
 //   2. load `src/fundamentals/config/default.ts` for all default settings
-//   3. apply `./affine.env.ts` patches
-//   4. apply `./affine.ts` patches (this file)
+//   3. apply `./affine.ts` patches (this file)
+//   4. apply `./affine.env.ts` patches
 //
 //
 // ###############################################################
