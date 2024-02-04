@@ -812,6 +812,7 @@ __metadata:
     lodash-es: "npm:^4.17.21"
     nanoid: "npm:^5.0.3"
     next-auth: "npm:^4.24.5"
+    rxjs: "npm:^7.8.1"
     socket.io-client: "npm:^4.7.2"
     vitest: "npm:1.1.3"
     ws: "npm:^8.14.2"
