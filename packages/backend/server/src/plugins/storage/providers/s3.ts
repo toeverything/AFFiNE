@@ -11,21 +11,22 @@ import {
 } from '@aws-sdk/client-s3';
 import { Logger } from '@nestjs/common';
 
-import { S3StorageConfig } from '../../config/storage';
 import {
+  autoMetadata,
   BlobInputType,
   GetObjectMetadata,
   ListObjectsMetadata,
   PutObjectMetadata,
   StorageProvider,
-} from './provider';
-import { autoMetadata, toBuffer } from './utils';
+  toBuffer,
+} from '../../../fundamentals/storage';
+import type { S3StorageConfig } from '../types';
 
 export class S3StorageProvider implements StorageProvider {
   protected logger: Logger;
   protected client: S3Client;
 
-  readonly type = 's3';
+  readonly type = 'aws-s3';
 
   constructor(
     config: S3StorageConfig,

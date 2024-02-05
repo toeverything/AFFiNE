@@ -1,10 +1,10 @@
 import { Logger } from '@nestjs/common';
 
-import { R2StorageConfig } from '../../config/storage';
+import type { R2StorageConfig } from '../types';
 import { S3StorageProvider } from './s3';
 
 export class R2StorageProvider extends S3StorageProvider {
-  override readonly type = 'r2' as any /* cast 'r2' to 's3' */;
+  override readonly type = 'cloudflare-r2' as any /* cast 'r2' to 's3' */;
 
   constructor(config: R2StorageConfig, bucket: string) {
     super(

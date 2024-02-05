@@ -87,8 +87,31 @@ AFFiNE.port = 3010;
 AFFiNE.plugins.use('redis', {
   /* override options */
 });
+//
+//
 // /* Payment Plugin */
 AFFiNE.plugins.use('payment', {
   stripe: { keys: {}, apiVersion: '2023-10-16' },
 });
 //
+//
+// /* Cloudflare R2 Plugin */
+// /* Enable if you choose to store workspace blobs or user avatars in Cloudflare R2 Storage Service */
+// AFFiNE.plugins.use('cloudflare-r2', {
+//   accountId: '',
+//   credentials: {
+//     accessKeyId: '',
+//     secretAccessKey: '',
+//   },
+// });
+//
+// /* AWS S3 Plugin */
+// /* Enable if you choose to store workspace blobs or user avatars in AWS S3 Storage Service */
+// AFFiNE.plugins.use('aws-s3', {
+//  credentials: {
+//    accessKeyId: '',
+//    secretAccessKey: '',
+// })
+// /* Update the provider of storages */
+// AFFiNE.storage.storages.blob.provider = 'r2';
+// AFFiNE.storage.storages.avatar.provider = 'r2';

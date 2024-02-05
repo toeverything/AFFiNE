@@ -6,15 +6,18 @@ import type {
   PutObjectMetadata,
   StorageProvider,
 } from '../../../fundamentals';
-import { Config, createStorageProvider, OnEvent } from '../../../fundamentals';
+import { Config, OnEvent, StorageProviderFactory } from '../../../fundamentals';
 
 @Injectable()
 export class AvatarStorage {
   public readonly provider: StorageProvider;
   private readonly storageConfig: Config['storage']['storages']['avatar'];
 
-  constructor(private readonly config: Config) {
-    this.provider = createStorageProvider(this.config.storage, 'avatar');
+  constructor(
+    private readonly config: Config,
+    private readonly storageFactory: StorageProviderFactory
+  ) {
+    this.provider = this.storageFactory.create('avatar');
     this.storageConfig = this.config.storage.storages.avatar;
   }
 

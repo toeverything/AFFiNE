@@ -24,6 +24,7 @@ export {
 export { PrismaService } from './prisma';
 export { SessionService } from './session';
 export * from './storage';
+export { type StorageProvider, StorageProviderFactory } from './storage';
 export { AuthThrottlerGuard, CloudThrottlerGuard, Throttle } from './throttler';
 export {
   getRequestFromHost,

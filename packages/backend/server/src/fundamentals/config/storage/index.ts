@@ -1,21 +1,25 @@
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 
-import { S3ClientConfigType } from '@aws-sdk/client-s3';
-
-export type StorageProviderType = 'fs' | 'r2' | 's3';
 export interface FsStorageConfig {
   path: string;
 }
-export type R2StorageConfig = S3ClientConfigType & {
-  accountId: string;
-};
-export type S3StorageConfig = S3ClientConfigType;
 
-export type StorageTargetConfig<Ext = unknown> = {
+export interface StorageProvidersConfig {
+  fs: FsStorageConfig;
+}
+
+export type StorageProviderType = keyof StorageProvidersConfig;
+
+export type StorageConfig<Ext = unknown> = {
   provider: StorageProviderType;
   bucket: string;
 } & Ext;
+
+export interface StoragesConfig {
+  avatar: StorageConfig<{ publicLinkFactory: (key: string) => string }>;
+  blob: StorageConfig;
+}
 
 export interface AFFiNEStorageConfig {
   /**
@@ -23,15 +27,8 @@ export interface AFFiNEStorageConfig {
    *
    * Support different providers for different usage at the same time.
    */
-  providers: {
-    fs?: FsStorageConfig;
-    s3?: S3StorageConfig;
-    r2?: R2StorageConfig;
-  };
-  storages: {
-    avatar: StorageTargetConfig<{ publicLinkFactory: (key: string) => string }>;
-    blob: StorageTargetConfig;
-  };
+  providers: StorageProvidersConfig;
+  storages: StoragesConfig;
 }
 
 export type StorageProviders = AFFiNEStorageConfig['providers'];

@@ -1,34 +1,37 @@
-import { AFFiNEStorageConfig, Storages } from '../../config/storage';
-import { FsStorageProvider } from './fs';
+import { Injectable } from '@nestjs/common';
+
+import { Config } from '../../config';
+import type { StorageProviderType, Storages } from '../../config/storage';
 import type { StorageProvider } from './provider';
-import { R2StorageProvider } from './r2';
-import { S3StorageProvider } from './s3';
 
-export function createStorageProvider(
-  config: AFFiNEStorageConfig,
-  storage: Storages
-): StorageProvider {
-  const storageConfig = config.storages[storage];
-  const providerConfig = config.providers[storageConfig.provider] as any;
-  if (!providerConfig) {
-    throw new Error(
-      `Failed to create ${storageConfig.provider} storage, configuration not correctly set`
-    );
+const availableProviders = new Map<
+  StorageProviderType,
+  (config: Config, bucket: string) => StorageProvider
+>();
+
+export function registerStorageProvider(
+  type: StorageProviderType,
+  providerFactory: (config: Config, bucket: string) => StorageProvider
+) {
+  availableProviders.set(type, providerFactory);
+}
+
+@Injectable()
+export class StorageProviderFactory {
+  constructor(private readonly config: Config) {}
+
+  create(storage: Storages): StorageProvider {
+    const storageConfig = this.config.storage.storages[storage];
+    const providerFactory = availableProviders.get(storageConfig.provider);
+
+    if (!providerFactory) {
+      throw new Error(
+        `Unknown storage provider type: ${storageConfig.provider}`
+      );
+    }
+
+    return providerFactory(this.config, storageConfig.bucket);
   }
-
-  if (storageConfig.provider === 's3') {
-    return new S3StorageProvider(providerConfig, storageConfig.bucket);
-  }
-
-  if (storageConfig.provider === 'r2') {
-    return new R2StorageProvider(providerConfig, storageConfig.bucket);
-  }
-
-  if (storageConfig.provider === 'fs') {
-    return new FsStorageProvider(providerConfig, storageConfig.bucket);
-  }
-
-  throw new Error(`Unknown storage provider type: ${storageConfig.provider}`);
 }
 
 export type * from './provider';
