@@ -195,6 +195,14 @@ const useSyncEngineSyncProgress = () => {
         `Syncing with AFFiNE Cloud` +
         (progress ? ` (${Math.floor(progress * 100)}%)` : '')
       );
+    } else if (
+      syncEngineStatus &&
+      syncEngineStatus.step < SyncEngineStep.Syncing
+    ) {
+      return (
+        syncEngineStatus.error ||
+        'Disconnected, please check your network connection'
+      );
     }
     if (syncEngineStatus.retrying) {
       return 'Sync disconnected due to unexpected issues, reconnecting.';
@@ -227,7 +235,7 @@ const useSyncEngineSyncProgress = () => {
     message: content,
     icon:
       currentWorkspace.flavour === WorkspaceFlavour.AFFINE_CLOUD ? (
-        !isOnline ? (
+        !isOnline || syncEngineStatus?.error ? (
           <OfflineStatus />
         ) : (
           <CloudWorkspaceSyncStatus />

@@ -19,6 +19,7 @@ export interface SyncPeerStatus {
   loadedDocs: number;
   pendingPullUpdates: number;
   pendingPushUpdates: number;
+  lastError: string | null;
 }
 
 /**
@@ -54,6 +55,7 @@ export class SyncPeer {
     loadedDocs: 0,
     pendingPullUpdates: 0,
     pendingPushUpdates: 0,
+    lastError: null,
   };
   onStatusChange = new Slot<SyncPeerStatus>();
   readonly abort = new AbortController();
@@ -119,6 +121,7 @@ export class SyncPeer {
           loadedDocs: 0,
           pendingPullUpdates: 0,
           pendingPushUpdates: 0,
+          lastError: 'Retrying sync after 5 seconds',
         };
         await Promise.race([
           new Promise<void>(resolve => {
@@ -199,6 +202,7 @@ export class SyncPeer {
           abortInner.abort('subscribe disconnect:' + reason);
         }
       );
+
       throwIfAborted(abortInner.signal);
 
       // Step 1: load root doc
@@ -368,7 +372,11 @@ export class SyncPeer {
 
   reportSyncStatus() {
     let step;
-    if (this.state.connectedDocs.size === 0) {
+    let lastError = null;
+    if (this.storage.errorMessage?.type === 'outdated') {
+      step = SyncPeerStep.VersionRejected;
+      lastError = this.storage.errorMessage.message.reason;
+    } else if (this.state.connectedDocs.size === 0) {
       step = SyncPeerStep.LoadingRootDoc;
     } else if (this.state.subdocsLoadQueue.length || this.state.subdocLoading) {
       step = SyncPeerStep.LoadingSubDoc;
@@ -391,6 +399,7 @@ export class SyncPeer {
         this.state.pullUpdatesQueue.length + (this.state.subdocLoading ? 1 : 0),
       pendingPushUpdates:
         this.state.pushUpdatesQueue.length + (this.state.pushingUpdate ? 1 : 0),
+      lastError,
     };
   }
 

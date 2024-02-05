@@ -60,6 +60,7 @@ app:
       webhookKey: ''
   features:
     earlyAccessPreview: false
+    syncClientVersionCheck: false
 
 serviceAccount:
   create: true

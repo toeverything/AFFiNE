@@ -1,5 +1,5 @@
 import { DebugLogger } from '@affine/debug';
-import type { AwarenessProvider } from '@toeverything/infra';
+import type { AwarenessProvider, RejectByVersion } from '@toeverything/infra';
 import {
   applyAwarenessUpdate,
   type Awareness,
@@ -33,6 +33,7 @@ export class AffineCloudAwarenessProvider implements AwarenessProvider {
     window.addEventListener('beforeunload', this.windowBeforeUnloadHandler);
 
     this.socket.on('connect', () => this.handleConnect());
+    this.socket.on('server-version-rejected', this.handleReject);
 
     if (this.socket.connected) {
       this.handleConnect();
@@ -40,6 +41,7 @@ export class AffineCloudAwarenessProvider implements AwarenessProvider {
       this.socket.connect();
     }
   }
+
   disconnect(): void {
     removeAwarenessStates(
       this.awareness,
@@ -54,6 +56,7 @@ export class AffineCloudAwarenessProvider implements AwarenessProvider {
       this.newClientAwarenessInitHandler
     );
     this.socket.off('connect', this.handleConnect);
+    this.socket.off('server-version-rejected', this.handleReject);
     window.removeEventListener('unload', this.windowBeforeUnloadHandler);
   }
 
@@ -117,7 +120,16 @@ export class AffineCloudAwarenessProvider implements AwarenessProvider {
   };
 
   handleConnect = () => {
-    this.socket.emit('client-handshake-awareness', this.workspaceId);
+    this.socket.emit('client-handshake-awareness', {
+      workspaceId: this.workspaceId,
+      version: runtimeConfig.appVersion,
+    });
     this.socket.emit('awareness-init', this.workspaceId);
+  };
+
+  handleReject = (_msg: RejectByVersion) => {
+    this.socket.off('server-version-rejected', this.handleReject);
+    this.disconnect();
+    this.socket.disconnect();
   };
 }

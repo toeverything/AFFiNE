@@ -113,6 +113,7 @@ const createHelmCommand = ({ isDryRun }) => {
     `--set-string graphql.app.payment.stripe.webhookKey="${STRIPE_WEBHOOK_KEY}"`,
     `--set        graphql.app.experimental.enableJwstCodec=true`,
     `--set        graphql.app.features.earlyAccessPreview=false`,
+    `--set        graphql.app.features.syncClientVersionCheck=true`,
     `--set        sync.replicaCount=${syncReplicaCount}`,
     `--set-string sync.image.tag="${imageTag}"`,
     ...serviceAnnotations,

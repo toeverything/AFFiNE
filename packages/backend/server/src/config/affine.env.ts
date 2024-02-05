@@ -34,4 +34,8 @@ AFFiNE.ENV_MAP = {
   STRIPE_API_KEY: 'plugins.payment.stripe.keys.APIKey',
   STRIPE_WEBHOOK_KEY: 'plugins.payment.stripe.keys.webhookKey',
   FEATURES_EARLY_ACCESS_PREVIEW: ['featureFlags.earlyAccessPreview', 'boolean'],
+  FEATURES_SYNC_CLIENT_VERSION_CHECK: [
+    'featureFlags.syncClientVersionCheck',
+    'boolean',
+  ],
 };

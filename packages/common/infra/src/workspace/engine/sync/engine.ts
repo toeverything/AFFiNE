@@ -13,6 +13,7 @@ export interface SyncEngineStatus {
   step: SyncEngineStep;
   local: SyncPeerStatus | null;
   remotes: (SyncPeerStatus | null)[];
+  error: string | null;
   retrying: boolean;
 }
 
@@ -82,6 +83,7 @@ export class SyncEngine {
       step: SyncEngineStep.Stopped,
       local: null,
       remotes: remotes.map(() => null),
+      error: null,
       retrying: false,
     };
   }
@@ -130,6 +132,7 @@ export class SyncEngine {
       step: SyncEngineStep.Stopped,
       local: null,
       remotes: this.remotes.map(() => null),
+      error: 'Sync progress manually stopped',
       retrying: false,
     };
   }
@@ -209,10 +212,18 @@ export class SyncEngine {
 
   updateSyncingState(local: SyncPeer | null, remotes: (SyncPeer | null)[]) {
     let step = SyncEngineStep.Synced;
+    let error = null;
     const allPeer = [local, ...remotes];
     for (const peer of allPeer) {
       if (!peer || peer.status.step !== SyncPeerStep.Synced) {
-        step = SyncEngineStep.Syncing;
+        if (peer && peer.status.step <= 0) {
+          // step < 0 means reject connection by server with some reason
+          // so the data may be out of date
+          step = SyncEngineStep.Rejected;
+          error = peer.status.lastError;
+        } else {
+          step = SyncEngineStep.Syncing;
+        }
         break;
       }
     }
@@ -220,6 +231,7 @@ export class SyncEngine {
       step,
       local: local?.status ?? null,
       remotes: remotes.map(peer => peer?.status ?? null),
+      error,
       retrying: allPeer.some(
         peer => peer?.status.step === SyncPeerStep.Retrying
       ),

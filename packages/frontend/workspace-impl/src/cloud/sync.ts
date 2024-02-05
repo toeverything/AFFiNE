@@ -1,6 +1,10 @@
 import { DebugLogger } from '@affine/debug';
 import { fetchWithTraceReport } from '@affine/graphql';
-import { type SyncStorage } from '@toeverything/infra';
+import {
+  type RejectByVersion,
+  type SyncErrorMessage,
+  type SyncStorage,
+} from '@toeverything/infra';
 import type { CleanupService } from '@toeverything/infra/lifecycle';
 
 import { getIoManager } from '../utils/affine-io';
@@ -15,14 +19,17 @@ export class AffineSyncStorage implements SyncStorage {
 
   socket = getIoManager().socket('/');
 
+  errorMessage?: SyncErrorMessage;
+
   constructor(
     private readonly workspaceId: string,
     cleanupService: CleanupService
   ) {
     this.socket.on('connect', this.handleConnect);
+    this.socket.on('server-version-rejected', this.handleReject);
 
     if (this.socket.connected) {
-      this.socket.emit('client-handshake-sync', this.workspaceId);
+      this.handleConnect();
     } else {
       this.socket.connect();
     }
@@ -33,7 +40,17 @@ export class AffineSyncStorage implements SyncStorage {
   }
 
   handleConnect = () => {
-    this.socket.emit('client-handshake-sync', this.workspaceId);
+    this.socket.emit('client-handshake-sync', {
+      workspaceId: this.workspaceId,
+      version: runtimeConfig.appVersion,
+    });
+  };
+
+  handleReject = (message: RejectByVersion) => {
+    this.socket.off('server-version-rejected', this.handleReject);
+    this.cleanup();
+    this.socket.disconnect();
+    this.errorMessage = { type: 'outdated', message };
   };
 
   async pull(

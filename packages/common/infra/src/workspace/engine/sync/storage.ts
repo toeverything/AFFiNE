@@ -1,8 +1,21 @@
+export type RejectByVersion = {
+  currVersion: string;
+  requiredVersion: string;
+  reason: string;
+};
+
+export type SyncErrorMessage = {
+  type: 'outdated';
+  message: RejectByVersion;
+};
+
 export interface SyncStorage {
   /**
    * for debug
    */
   name: string;
+
+  errorMessage?: SyncErrorMessage;
 
   pull(
     docId: string,
