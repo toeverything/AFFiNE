@@ -8,7 +8,13 @@ import {
 } from '@affine/core/modules/workspace';
 import { type Workspace } from '@affine/workspace';
 import { useAtom, useAtomValue } from 'jotai';
-import { type ReactElement, Suspense, useEffect, useMemo } from 'react';
+import {
+  type ReactElement,
+  Suspense,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 import { Outlet, useParams } from 'react-router-dom';
 
 import { AffineErrorBoundary } from '../../components/affine/affine-error-boundary';
@@ -67,12 +73,34 @@ export const Component = (): ReactElement => {
     localStorage.setItem('last_workspace_id', workspace.id);
   }, [setCurrentWorkspace, meta, workspaceManager, workspace]);
 
+  const [workspaceIsLoading, setWorkspaceIsLoading] = useState(true);
+
+  // hotfix: avoid doing operation, before workspace is loaded
+  useEffect(() => {
+    if (!workspace) {
+      setWorkspaceIsLoading(true);
+      return;
+    }
+    const metaYMap = workspace.blockSuiteWorkspace.doc.getMap('meta');
+
+    const handleYMapChanged = () => {
+      setWorkspaceIsLoading(metaYMap.size === 0);
+    };
+
+    handleYMapChanged();
+
+    metaYMap.observe(handleYMapChanged);
+    return () => {
+      metaYMap.unobserve(handleYMapChanged);
+    };
+  }, [workspace]);
+
   // if listLoading is false, we can show 404 page, otherwise we should show loading page.
   if (listLoading === false && meta === undefined) {
     return <PageNotFound />;
   }
 
-  if (!workspace) {
+  if (!workspace || workspaceIsLoading) {
     return <WorkspaceFallback key="workspaceLoading" />;
   }
 
