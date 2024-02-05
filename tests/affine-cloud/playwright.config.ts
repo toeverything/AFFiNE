@@ -1,3 +1,4 @@
+import { testResultDir } from '@affine-test/kit/playwright';
 import type {
   PlaywrightTestConfig,
   PlaywrightWorkerOptions,
@@ -7,6 +8,7 @@ const config: PlaywrightTestConfig = {
   testDir: './e2e',
   fullyParallel: !process.env.CI,
   timeout: 120_000,
+  outputDir: testResultDir,
   use: {
     baseURL: 'http://localhost:8081/',
     browserName:
