@@ -23,6 +23,7 @@
     "lodash-es": "^4.17.21",
     "nanoid": "^5.0.3",
     "next-auth": "^4.24.5",
+    "rxjs": "^7.8.1",
     "socket.io-client": "^4.7.2",
     "y-protocols": "^1.0.6",
     "yjs": "^13.6.10"
