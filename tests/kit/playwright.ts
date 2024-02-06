@@ -67,6 +67,15 @@ export const test = baseTest.extend<{
       },
     });
   },
+  page: async ({ page, context }, use) => {
+    if (process.env.CPU_THROTTLE) {
+      const cdpSession = await context.newCDPSession(page);
+      await cdpSession.send('Emulation.setCPUThrottlingRate', {
+        rate: parseInt(process.env.CPU_THROTTLE),
+      });
+    }
+    await use(page);
+  },
   context: async ({ context }, use) => {
     // workaround for skipping onboarding redirect on the web
     await skipOnboarding(context);
