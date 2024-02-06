@@ -19,7 +19,12 @@ export async function clickNewPageButton(page: Page) {
   await page.getByTestId('sidebar-new-page-button').click({
     delay: 100,
   });
-  await waitForEditorLoad(page);
+  await expect(page.locator('.doc-title-container-empty')).toBeVisible();
+  await waitForEmptyEditor(page);
+}
+
+export async function waitForEmptyEditor(page: Page) {
+  await expect(page.locator('.doc-title-container-empty')).toBeVisible();
 }
 
 export function getBlockSuiteEditorTitle(page: Page) {

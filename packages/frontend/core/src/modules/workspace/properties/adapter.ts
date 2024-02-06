@@ -111,8 +111,7 @@ export class WorkspacePropertiesAdapter {
   }
 
   getJournalPageDateString(id: string) {
-    this.ensurePageProperties(id);
-    return this.pageProperties[id].system[PageSystemPropertyId.Journal].value;
+    return this.pageProperties[id]?.system[PageSystemPropertyId.Journal]?.value;
   }
 
   setJournalPageDateString(id: string, date: string) {
@@ -127,9 +126,9 @@ export class WorkspacePropertiesAdapter {
 
   // page tags could be reactive
   getPageTags(pageId: string) {
-    this.ensurePageProperties(pageId);
     const tags =
-      this.pageProperties[pageId].system[PageSystemPropertyId.Tags].value;
+      this.getPageProperties(pageId)?.system[PageSystemPropertyId.Tags].value ??
+      [];
     const optionsMap = Object.fromEntries(this.tagOptions.map(o => [o.id, o]));
     return tags.map(tag => optionsMap[tag]).filter((t): t is TagOption => !!t);
   }

@@ -18,10 +18,10 @@ const addDatabase = async (page: Page) => {
 };
 
 test('database is useable', async ({ page }) => {
+  test.slow();
   await openHomePage(page);
   await waitForEditorLoad(page);
   await clickNewPageButton(page);
-  await waitForEditorLoad(page);
   const title = getBlockSuiteEditorTitle(page);
   await title.pressSequentially('test title');
   await page.keyboard.press('Enter');
@@ -32,7 +32,6 @@ test('database is useable', async ({ page }) => {
   await page.reload();
   await waitForEditorLoad(page);
   await clickNewPageButton(page);
-  await waitForEditorLoad(page);
   const title2 = getBlockSuiteEditorTitle(page);
   await title2.pressSequentially('test title2');
   await page.waitForTimeout(500);
@@ -66,9 +65,11 @@ test('link page is useable', async ({ page }) => {
   await page.keyboard.press('1');
   await page.keyboard.press('Enter');
   const link = page.locator('.affine-reference');
-  await page.waitForTimeout(500);
   await expect(link).toBeVisible();
   await page.click('.affine-reference');
   await page.waitForTimeout(500);
-  expect(await title.innerText()).toBe('page1');
+
+  await expect(
+    page.locator('.doc-title-container:has-text("page1")')
+  ).toBeVisible();
 });

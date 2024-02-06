@@ -7,6 +7,7 @@ import {
   getBlockSuiteEditorTitle,
   getPageByTitle,
   waitForEditorLoad,
+  waitForEmptyEditor,
 } from '@affine-test/kit/utils/page-logic';
 import { expect } from '@playwright/test';
 
@@ -101,6 +102,10 @@ test("Deleted page's reference will not be shown in sidebar", async ({
   // goto "Another page"
   await page.locator('.affine-reference-title').click();
 
+  await expect(
+    page.locator('.doc-title-container:has-text("Another page")')
+  ).toBeVisible();
+
   // delete the page
   await clickPageMoreActions(page);
 
@@ -131,7 +136,7 @@ test('Add new favorite page via sidebar', async ({ page }) => {
   await openHomePage(page);
   await waitForEditorLoad(page);
   await page.getByTestId('slider-bar-add-favorite-button').first().click();
-  await waitForEditorLoad(page);
+  await waitForEmptyEditor(page);
 
   // enter random page title
   await getBlockSuiteEditorTitle(page).fill('this is a new fav page');
