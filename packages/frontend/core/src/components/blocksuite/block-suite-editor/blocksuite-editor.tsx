@@ -37,24 +37,14 @@ export type EditorProps = {
   className?: string;
 };
 
-/**
- * TODO: Defined async cache to support suspense, instead of reflect symbol to provider persistent error cache.
- */
-const PAGE_LOAD_KEY = Symbol('PAGE_LOAD');
-const PAGE_ROOT_KEY = Symbol('PAGE_ROOT');
-
 function usePageRoot(page: Page) {
-  let load$ = Reflect.get(page, PAGE_LOAD_KEY);
-  if (!load$) {
-    load$ = page.load();
-    Reflect.set(page, PAGE_LOAD_KEY, load$);
+  if (!page.ready) {
+    use(page.load());
   }
-  use(load$);
 
   if (!page.root) {
-    let root$: Promise<void> | undefined = Reflect.get(page, PAGE_ROOT_KEY);
-    if (!root$) {
-      root$ = new Promise((resolve, reject) => {
+    use(
+      new Promise<void>((resolve, reject) => {
         const disposable = page.slots.rootAdded.once(() => {
           resolve();
         });
@@ -62,10 +52,8 @@ function usePageRoot(page: Page) {
           disposable.dispose();
           reject(new NoPageRootError(page));
         }, 20 * 1000);
-      });
-      Reflect.set(page, PAGE_ROOT_KEY, root$);
-    }
-    use(root$);
+      })
+    );
   }
 
   return page.root;
