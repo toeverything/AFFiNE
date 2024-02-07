@@ -420,7 +420,7 @@ test('can use cmdk to search page content and scroll to it, then the block will 
     page.locator('[data-affine-editor-container]').getByText('123456')
   );
   expect(isVisitable).toBe(true);
-  await page.waitForTimeout(300);
+  await page.waitForTimeout(2000);
   const selectionElement = page.locator('affine-block-selection');
   await expect(selectionElement).toBeVisible();
 });
