@@ -1,5 +1,6 @@
 import './polyfill/intl-segmenter';
 import './polyfill/request-idle-callback';
+import './orm/test';
 
 import { assertExists } from '@blocksuite/global/utils';
 import { StrictMode } from 'react';
