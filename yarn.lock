@@ -561,7 +561,7 @@ __metadata:
     eslint-plugin-react-hooks: "npm:^4.6.0"
     eslint-plugin-simple-import-sort: "npm:^10.0.0"
     eslint-plugin-sonarjs: "npm:^0.23.0"
-    eslint-plugin-unicorn: "npm:^50.0.0"
+    eslint-plugin-unicorn: "npm:^51.0.0"
     eslint-plugin-unused-imports: "npm:^3.0.0"
     eslint-plugin-vue: "npm:^9.18.1"
     fake-indexeddb: "npm:5.0.2"
@@ -20083,9 +20083,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eslint-plugin-unicorn@npm:^50.0.0":
-  version: 50.0.0
-  resolution: "eslint-plugin-unicorn@npm:50.0.0"
+"eslint-plugin-unicorn@npm:^51.0.0":
+  version: 51.0.0
+  resolution: "eslint-plugin-unicorn@npm:51.0.0"
   dependencies:
     "@babel/helper-validator-identifier": "npm:^7.22.20"
     "@eslint-community/eslint-utils": "npm:^4.4.0"
@@ -20105,7 +20105,7 @@ __metadata:
     strip-indent: "npm:^3.0.0"
   peerDependencies:
     eslint: ">=8.56.0"
-  checksum: 10/09d069bac3d4c7d3d3d4ddf8a9992718cd1acc6bbba99cfcb0fb581d9dd0d64378c55d6cc5579aadf23d199c53b539a4351446e0855b363c95e8926be15c95e6
+  checksum: 10/cf875cf673bbc3e515bce5248f232d4a7a548d8c649f5cf653822a612e84532b4f190d9564a191c44054dcf8b7811f7e2bf64da39885a1a9ec123745237c818e
   languageName: node
   linkType: hard
 
