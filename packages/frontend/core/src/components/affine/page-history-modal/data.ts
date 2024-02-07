@@ -111,7 +111,6 @@ const getOrCreateShellWorkspace = (workspaceId: string) => {
     const blobStorage = new AffineCloudBlobStorage(workspaceId);
     workspace = new Workspace({
       id: workspaceId,
-      providerCreators: [],
       blobStorages: [
         () => ({
           crud: blobStorage,
