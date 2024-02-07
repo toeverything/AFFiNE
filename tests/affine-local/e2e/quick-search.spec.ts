@@ -315,6 +315,7 @@ test('assert the recent browse pages are on the recent list', async ({
   {
     const title = getBlockSuiteEditorTitle(page);
     await title.click();
+    await page.waitForTimeout(200);
     await title.pressSequentially('affine is the best', { delay: 100 });
     await expect(title).toHaveText('affine is the best', { timeout: 500 });
   }
