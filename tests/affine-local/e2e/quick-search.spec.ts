@@ -315,6 +315,7 @@ test('assert the recent browse pages are on the recent list', async ({
   {
     const title = getBlockSuiteEditorTitle(page);
     await title.click();
+    await page.waitForTimeout(200);
     await title.pressSequentially('affine is the best', { delay: 100 });
     await expect(title).toHaveText('affine is the best', { timeout: 500 });
   }
@@ -419,7 +420,9 @@ test('can use cmdk to search page content and scroll to it, then the block will 
     page.locator('[data-affine-editor-container]').getByText('123456')
   );
   expect(isVisitable).toBe(true);
-  const selectionElement = page.locator('affine-block-selection');
+  const selectionElement = page.locator(
+    'affine-block-selection[style*="display: block;"]'
+  );
   await expect(selectionElement).toBeVisible();
 });
 
