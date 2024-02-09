@@ -101,7 +101,6 @@ export const PageOperationCell = ({
           </MenuItem>
         </Link>
       )}
-      {/* Duplicate a page */}
       <MenuItem
         preFix={
           <MenuIcon>
