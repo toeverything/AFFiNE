@@ -149,7 +149,7 @@ export function useBlockSuiteMetaHelper(
   );
 
   const duplicate = useAsyncCallback(
-    async (pageId: string) => {
+    async (pageId: string, openPageAfterDuplication: boolean = true) => {
       const currentPageMeta = getPageMeta(pageId);
       const newPage = createPage();
       const currentPage = blockSuiteWorkspace.getPage(pageId);
@@ -176,7 +176,8 @@ export function useBlockSuiteMetaHelper(
 
       setPageMode(newPage.id, currentMode);
       setPageTitle(newPage.id, newPageTitle);
-      openPage(blockSuiteWorkspace.id, newPage.id);
+
+      openPageAfterDuplication && openPage(blockSuiteWorkspace.id, newPage.id);
     },
     [
       blockSuiteWorkspace,

@@ -51,7 +51,7 @@ const usePageOperationsRenderer = () => {
           onDisablePublicSharing={onDisablePublicSharing}
           link={`/workspace/${currentWorkspace.id}/${page.id}`}
           onDuplicate={() => {
-            duplicate(page.id);
+            duplicate(page.id, false);
           }}
           onRemoveToTrash={() =>
             setTrashModal({
