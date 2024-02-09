@@ -50,7 +50,7 @@ export const PageOperationCell = ({
   link,
   onToggleFavoritePage,
   onRemoveToTrash,
-  onDuplicate: onDuplicatePage,
+  onDuplicate,
   onDisablePublicSharing,
 }: PageOperationCellProps) => {
   const t = useAFFiNEI18N();
@@ -101,14 +101,14 @@ export const PageOperationCell = ({
           </MenuItem>
         </Link>
       )}
+
       <MenuItem
         preFix={
           <MenuIcon>
             <DuplicateIcon />
           </MenuIcon>
         }
-        data-testid="editor-option-menu-duplicate"
-        onSelect={onDuplicatePage}
+        onSelect={onDuplicate}
       >
         {t['com.affine.header.option.duplicate']()}
       </MenuItem>

@@ -44,17 +44,15 @@ const usePageOperationsRenderer = () => {
         });
       };
 
-      const onDuplicatePage = () => {
-        duplicate(page.id);
-      };
-
       return (
         <PageOperationCell
           favorite={!!page.favorite}
           isPublic={!!page.isPublic}
           onDisablePublicSharing={onDisablePublicSharing}
           link={`/workspace/${currentWorkspace.id}/${page.id}`}
-          onDuplicate={onDuplicatePage}
+          onDuplicate={() => {
+            duplicate(page.id);
+          }}
           onRemoveToTrash={() =>
             setTrashModal({
               open: true,
