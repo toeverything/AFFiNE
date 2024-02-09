@@ -11,6 +11,7 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   DeleteIcon,
   DeletePermanentlyIcon,
+  DuplicateIcon,
   EditIcon,
   FavoritedIcon,
   FavoriteIcon,
@@ -39,6 +40,7 @@ export interface PageOperationCellProps {
   link: string;
   onToggleFavoritePage: () => void;
   onRemoveToTrash: () => void;
+  onDuplicate: () => void;
   onDisablePublicSharing: () => void;
 }
 
@@ -48,6 +50,7 @@ export const PageOperationCell = ({
   link,
   onToggleFavoritePage,
   onRemoveToTrash,
+  onDuplicate: onDuplicatePage,
   onDisablePublicSharing,
 }: PageOperationCellProps) => {
   const t = useAFFiNEI18N();
@@ -98,6 +101,19 @@ export const PageOperationCell = ({
           </MenuItem>
         </Link>
       )}
+      {/* Duplicate a page */}
+      <MenuItem
+        preFix={
+          <MenuIcon>
+            <DuplicateIcon />
+          </MenuIcon>
+        }
+        data-testid="editor-option-menu-duplicate"
+        onSelect={onDuplicatePage}
+      >
+        {t['com.affine.header.option.duplicate']()}
+      </MenuItem>
+
       <MoveToTrash data-testid="move-to-trash" onSelect={onRemoveToTrash} />
     </>
   );

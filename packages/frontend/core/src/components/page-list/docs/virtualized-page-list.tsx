@@ -31,10 +31,11 @@ const usePageOperationsRenderer = () => {
   const { setTrashModal } = useTrashModalHelper(
     currentWorkspace.blockSuiteWorkspace
   );
-  const { toggleFavorite } = useBlockSuiteMetaHelper(
+  const { toggleFavorite, duplicate } = useBlockSuiteMetaHelper(
     currentWorkspace.blockSuiteWorkspace
   );
   const t = useAFFiNEI18N();
+
   const pageOperationsRenderer = useCallback(
     (page: PageMeta) => {
       const onDisablePublicSharing = () => {
@@ -42,12 +43,18 @@ const usePageOperationsRenderer = () => {
           portal: document.body,
         });
       };
+
+      const onDuplicatePage = () => {
+        duplicate(page.id);
+      };
+
       return (
         <PageOperationCell
           favorite={!!page.favorite}
           isPublic={!!page.isPublic}
           onDisablePublicSharing={onDisablePublicSharing}
           link={`/workspace/${currentWorkspace.id}/${page.id}`}
+          onDuplicate={onDuplicatePage}
           onRemoveToTrash={() =>
             setTrashModal({
               open: true,
@@ -67,7 +74,7 @@ const usePageOperationsRenderer = () => {
         />
       );
     },
-    [currentWorkspace.id, setTrashModal, t, toggleFavorite]
+    [currentWorkspace.id, setTrashModal, t, toggleFavorite, duplicate]
   );
 
   return pageOperationsRenderer;
