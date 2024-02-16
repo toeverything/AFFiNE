@@ -1,7 +1,8 @@
 import { useMemo } from 'react';
 
 function* highlightTextFragmentsGenerator(text: string, query: string) {
-  const lowerCaseText = text.toLowerCase();
+  const lowerCaseText = text.replace(/\r?\n|\r/g, '').toLowerCase();
+  query = query.toLowerCase();
   let startIndex = lowerCaseText.indexOf(query);
 
   if (startIndex !== -1) {

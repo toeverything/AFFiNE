@@ -126,6 +126,7 @@ export function useRegisterBlocksuiteEditorCommands(
       })
     );
 
+    // todo: should not show duplicate for journal
     unsubs.push(
       registerAffineCommand({
         id: `editor:${mode}-duplicate`,

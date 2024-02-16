@@ -24,10 +24,12 @@ const insertInputText = async (page: Page, text: string) => {
 
 const keyboardDownAndSelect = async (page: Page, label: string) => {
   await page.keyboard.press('ArrowDown');
+  const selectedEl = page.locator(
+    '[cmdk-item][data-selected] [data-testid="cmdk-label"]'
+  );
   if (
-    (await page
-      .locator('[cmdk-item][data-selected] [data-testid="cmdk-label"]')
-      .innerText()) !== label
+    !(await selectedEl.isVisible()) ||
+    (await selectedEl.innerText()) !== label
   ) {
     await keyboardDownAndSelect(page, label);
   } else {

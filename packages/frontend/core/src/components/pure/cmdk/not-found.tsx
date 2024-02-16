@@ -2,7 +2,7 @@ import { SearchIcon } from '@blocksuite/icons';
 import { useCommandState } from 'cmdk';
 import { useAtomValue } from 'jotai';
 
-import { cmdkQueryAtom } from './data';
+import { cmdkQueryAtom } from './data-hooks';
 import * as styles from './not-found.css';
 
 export const NotFoundGroup = () => {

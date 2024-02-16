@@ -4,17 +4,15 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { PageMeta } from '@blocksuite/store';
 import type { CommandCategory } from '@toeverything/infra/command';
 import clsx from 'clsx';
-import { Command, useCommandState } from 'cmdk';
-import { useAtom, useAtomValue } from 'jotai';
+import { Command } from 'cmdk';
+import { useAtom } from 'jotai';
 import { Suspense, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import {
   cmdkQueryAtom,
   cmdkValueAtom,
-  customCommandFilter,
-  removeDoubleQuotes,
   useCMDKCommandGroups,
-} from './data';
+} from './data-hooks';
 import { HighlightLabel } from './highlight';
 import * as styles from './main.css';
 import { CMDKModal, type CMDKModalProps } from './modal';
@@ -43,6 +41,7 @@ const categoryToI18nKey: Record<CommandCategory, i18nKey> = {
   'editor:insert-object':
     'com.affine.cmdk.affine.category.editor.insert-object',
   'editor:page': 'com.affine.cmdk.affine.category.editor.page',
+  'affine:results': 'com.affine.cmdk.affine.category.results',
 };
 
 const QuickSearchGroup = ({
@@ -55,7 +54,7 @@ const QuickSearchGroup = ({
   onOpenChange?: (open: boolean) => void;
 }) => {
   const t = useAFFiNEI18N();
-  const i18nkey = categoryToI18nKey[category];
+  const i18nKey = categoryToI18nKey[category];
   const [query, setQuery] = useAtom(cmdkQueryAtom);
 
   const onCommendSelect = useAsyncCallback(
@@ -71,7 +70,7 @@ const QuickSearchGroup = ({
   );
 
   return (
-    <Command.Group key={category} heading={query ? '' : t[i18nkey]()}>
+    <Command.Group key={category} heading={t[i18nKey]()}>
       {commands.map(command => {
         const label =
           typeof command.label === 'string'
@@ -79,15 +78,11 @@ const QuickSearchGroup = ({
                 title: command.label,
               }
             : command.label;
-
-        // use to remove double quotes from a string until this issue is fixed
-        // https://github.com/pacocoursey/cmdk/issues/189
-        const escapeValue = removeDoubleQuotes(command.value);
         return (
           <Command.Item
             key={command.id}
             onSelect={() => onCommendSelect(command)}
-            value={escapeValue}
+            value={command.value}
             data-is-danger={
               command.id === 'editor:page-move-to-trash' ||
               command.id === 'editor:edgeless-move-to-trash'
@@ -97,9 +92,7 @@ const QuickSearchGroup = ({
             <div
               data-testid="cmdk-label"
               className={styles.itemLabel}
-              data-value={
-                command.originalValue ? command.originalValue : undefined
-              }
+              data-value={command.value}
             >
               <HighlightLabel highlight={query} label={label} />
             </div>
@@ -126,34 +119,13 @@ const QuickSearchGroup = ({
 
 const QuickSearchCommands = ({
   onOpenChange,
+  groups,
 }: {
   onOpenChange?: (open: boolean) => void;
+  groups: ReturnType<typeof useCMDKCommandGroups>;
 }) => {
-  const t = useAFFiNEI18N();
-  const groups = useCMDKCommandGroups();
-
-  const query = useAtomValue(cmdkQueryAtom);
-  const resultCount = useCommandState(state => state.filtered.count);
-  const resultGroupHeader = useMemo(() => {
-    if (query) {
-      return (
-        <div className={styles.resultGroupHeader}>
-          {
-            // hack: use resultCount to determine if it is creation or results
-            // because the creation(as 2 results) is always shown at the top when there is no result
-            resultCount === 2
-              ? t['com.affine.cmdk.affine.category.affine.creation']()
-              : t['com.affine.cmdk.affine.category.results']()
-          }
-        </div>
-      );
-    }
-    return null;
-  }, [query, resultCount, t]);
-
   return (
     <>
-      {resultGroupHeader}
       {groups.map(([category, commands]) => {
         return (
           <QuickSearchGroup
@@ -181,6 +153,7 @@ export const CMDKContainer = ({
   className?: string;
   query: string;
   pageMeta?: PageMeta;
+  groups: ReturnType<typeof useCMDKCommandGroups>;
   onQueryChange: (query: string) => void;
 }>) => {
   const t = useAFFiNEI18N();
@@ -190,7 +163,7 @@ export const CMDKContainer = ({
 
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // fix list height animation on openning
+  // fix list height animation on opening
   useLayoutEffect(() => {
     if (open) {
       setOpening(true);
@@ -206,15 +179,15 @@ export const CMDKContainer = ({
     }
     return;
   }, [open]);
-
   return (
     <Command
       {...rest}
       data-testid="cmdk-quick-search"
-      filter={customCommandFilter}
+      shouldFilter={false}
       className={clsx(className, styles.panelContainer)}
       value={value}
       onValueChange={setValue}
+      loop
     >
       {/* todo: add page context here */}
       {isInEditor ? (
@@ -242,7 +215,7 @@ export const CMDKContainer = ({
   );
 };
 
-export const CMDKQuickSearchModal = ({
+const CMDKQuickSearchModalInner = ({
   pageMeta,
   open,
   ...props
@@ -253,19 +226,35 @@ export const CMDKQuickSearchModal = ({
       setQuery('');
     }
   }, [open, setQuery]);
+  const groups = useCMDKCommandGroups();
+  return (
+    <CMDKContainer
+      className={styles.root}
+      query={query}
+      groups={groups}
+      onQueryChange={setQuery}
+      pageMeta={pageMeta}
+      open={open}
+    >
+      <QuickSearchCommands groups={groups} onOpenChange={props.onOpenChange} />
+    </CMDKContainer>
+  );
+};
+
+export const CMDKQuickSearchModal = ({
+  pageMeta,
+  open,
+  ...props
+}: CMDKModalProps & { pageMeta?: PageMeta }) => {
   return (
     <CMDKModal open={open} {...props}>
-      <CMDKContainer
-        className={styles.root}
-        query={query}
-        onQueryChange={setQuery}
-        pageMeta={pageMeta}
-        open={open}
-      >
-        <Suspense fallback={<Command.Loading />}>
-          <QuickSearchCommands onOpenChange={props.onOpenChange} />
-        </Suspense>
-      </CMDKContainer>
+      <Suspense fallback={<Command.Loading />}>
+        <CMDKQuickSearchModalInner
+          pageMeta={pageMeta}
+          open={open}
+          onOpenChange={props.onOpenChange}
+        />
+      </Suspense>
     </CMDKModal>
   );
 };
