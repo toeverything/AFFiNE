@@ -96,6 +96,32 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
       }
       return result;
     };
+
+    prismaAdapter.createVerificationToken = async data => {
+      await session.set(
+        `${data.identifier}:${data.token}`,
+        Date.now() + session.sessionTtl
+      );
+      return data;
+    };
+
+    const VerificationTokenError = new Error('Verification token not found');
+    prismaAdapter.useVerificationToken = async ({ identifier, token }) => {
+      try {
+        const expires = await session.get(`${identifier}:${token}`);
+        if (expires) {
+          return { identifier, token, expires: new Date(expires) };
+        } else {
+          throw VerificationTokenError;
+        }
+      } catch (error) {
+        if (error === VerificationTokenError) {
+          return null;
+        }
+        throw error;
+      }
+    };
+
     const nextAuthOptions: NextAuthOptions = {
       providers: [
         // @ts-expect-error esm interop issue
