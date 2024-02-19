@@ -34,6 +34,14 @@ export interface Scalars {
   Upload: { input: File; output: File };
 }
 
+export interface CreateCheckoutSessionInput {
+  coupon: InputMaybe<Scalars['String']['input']>;
+  idempotencyKey: Scalars['String']['input'];
+  plan: InputMaybe<SubscriptionPlan>;
+  recurring: InputMaybe<SubscriptionRecurring>;
+  successCallbackLink: InputMaybe<Scalars['String']['input']>;
+}
+
 /** The type of workspace feature */
 export enum FeatureType {
   Copilot = 'Copilot',
