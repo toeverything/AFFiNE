@@ -1,30 +1,28 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
 
 import { Config } from '../config';
-import {
-  MAILER_SERVICE,
-  type MailerService,
-  type Options,
-  type Response,
-} from './mailer';
+import { MAILER_SERVICE, type MailerService, type Options } from './mailer';
 import { emailTemplate } from './template';
 @Injectable()
 export class MailService {
   constructor(
-    @Inject(MAILER_SERVICE) private readonly mailer: MailerService,
-    private readonly config: Config
+    private readonly config: Config,
+    @Optional() @Inject(MAILER_SERVICE) private readonly mailer?: MailerService
   ) {}
 
-  async sendMail(options: Options): Promise<Response> {
-    return this.mailer.sendMail(options);
+  async sendMail(options: Options) {
+    if (!this.mailer) {
+      throw new Error('Mailer service is not configured.');
+    }
+
+    return this.mailer.sendMail({
+      from: this.config.mailer?.from,
+      ...options,
+    });
   }
 
   hasConfigured() {
-    return (
-      !!this.config.auth.email.login &&
-      !!this.config.auth.email.password &&
-      !!this.config.auth.email.sender
-    );
+    return !!this.mailer;
   }
 
   async sendInviteEmail(
@@ -80,7 +78,6 @@ export class MailService {
     });
 
     return this.sendMail({
-      from: this.config.auth.email.sender,
       to,
       subject: `${invitationInfo.user.name} invited you to join ${invitationInfo.workspace.name}`,
       html,
@@ -119,7 +116,6 @@ export class MailService {
       buttonUrl: url,
     });
     return this.sendMail({
-      from: this.config.auth.email.sender,
       to,
       subject: `Modify your AFFiNE password`,
       html,
@@ -135,7 +131,6 @@ export class MailService {
       buttonUrl: url,
     });
     return this.sendMail({
-      from: this.config.auth.email.sender,
       to,
       subject: `Set your AFFiNE password`,
       html,
@@ -150,7 +145,6 @@ export class MailService {
       buttonUrl: url,
     });
     return this.sendMail({
-      from: this.config.auth.email.sender,
       to,
       subject: `Verify your current email for AFFiNE`,
       html,
@@ -165,7 +159,6 @@ export class MailService {
       buttonUrl: url,
     });
     return this.sendMail({
-      from: this.config.auth.email.sender,
       to,
       subject: `Verify your new email for AFFiNE`,
       html,
@@ -177,7 +170,6 @@ export class MailService {
       content: `As per your request, we have changed your email. Please make sure you're using ${to} when you log in the next time. `,
     });
     return this.sendMail({
-      from: this.config.auth.email.sender,
       to,
       subject: `Your email has been changed`,
       html,
@@ -200,7 +192,6 @@ export class MailService {
       content: `${inviteeName} has joined ${workspaceName}`,
     });
     return this.sendMail({
-      from: this.config.auth.email.sender,
       to,
       subject: title,
       html,
@@ -223,7 +214,6 @@ export class MailService {
       content: `${inviteeName} has left your workspace`,
     });
     return this.sendMail({
-      from: this.config.auth.email.sender,
       to,
       subject: title,
       html,

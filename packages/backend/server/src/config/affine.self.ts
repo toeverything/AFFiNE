@@ -42,5 +42,13 @@ AFFiNE.plugins.use('redis');
 AFFiNE.plugins.use('payment');
 
 if (AFFiNE.deploy) {
+  AFFiNE.mailer = {
+    service: 'gmail',
+    auth: {
+      user: env.MAILER_USER,
+      pass: env.MAILER_PASSWORD,
+    },
+  };
+
   AFFiNE.plugins.use('gcloud');
 }

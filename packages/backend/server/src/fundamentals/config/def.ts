@@ -1,4 +1,5 @@
 import type { ApolloDriverConfig } from '@nestjs/apollo';
+import SMTPTransport from 'nodemailer/lib/smtp-transport';
 
 import type { LeafPaths } from '../utils/types';
 import { EnvConfigType } from './env';
@@ -264,18 +265,6 @@ export interface AFFiNEConfig {
         }
       >
     >;
-    /**
-     * whether to use local email service to send email
-     * local debug only
-     */
-    localEmail: boolean;
-    email: {
-      server: string;
-      port: number;
-      login: string;
-      sender: string;
-      password: string;
-    };
     captcha: {
       /**
        * whether to enable captcha
@@ -298,6 +287,13 @@ export interface AFFiNEConfig {
       };
     };
   };
+
+  /**
+   * Configurations for mail service used to post auth or bussiness mails.
+   *
+   * @see https://nodemailer.com/smtp/
+   */
+  mailer?: SMTPTransport.Options;
 
   doc: {
     manager: {

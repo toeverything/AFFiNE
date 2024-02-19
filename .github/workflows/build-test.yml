@@ -448,7 +448,6 @@ jobs:
           ${{ matrix.tests.script }}
         env:
           DEV_SERVER_URL: http://localhost:8080
-          ENABLE_LOCAL_EMAIL: true
 
       - name: Upload test results
         if: ${{ failure() }}
