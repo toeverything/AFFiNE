@@ -1,7 +1,7 @@
 import { memo } from 'react';
 
-import { useHighlight } from '../../../hooks/affine/use-highlight';
 import * as styles from './highlight.css';
+import { useHighlight } from './use-highlight';
 
 type SearchResultLabel = {
   title: string;
@@ -22,10 +22,7 @@ export const Highlight = memo(function Highlight({
   text = '',
   highlight = '',
 }: HighlightProps) {
-  // Use regular expression to replace all line breaks and carriage returns in the text
-  const cleanedText = text.replace(/\r?\n|\r/g, '');
-
-  const highlights = useHighlight(cleanedText, highlight.toLowerCase());
+  const highlights = useHighlight(text, highlight);
 
   return (
     <div className={styles.highlightContainer}>

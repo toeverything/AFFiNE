@@ -1,8 +1,12 @@
+import { currentPageIdAtom } from '@affine/core/atoms/mode';
 import { useCollectionManager } from '@affine/core/components/page-list';
 import {
   useBlockSuitePageMeta,
   usePageMetaHelper,
 } from '@affine/core/hooks/use-block-suite-page-meta';
+import { useJournalHelper } from '@affine/core/hooks/use-journal';
+import { CollectionService } from '@affine/core/modules/collection';
+import { WorkspaceSubPath } from '@affine/core/shared';
 import type { Collection } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
@@ -11,8 +15,8 @@ import {
   TodayIcon,
   ViewLayersIcon,
 } from '@blocksuite/icons';
-import type { PageMeta } from '@blocksuite/store';
-import { Workspace } from '@toeverything/infra';
+import { type PageMeta } from '@blocksuite/store';
+import { useService, Workspace } from '@toeverything/infra';
 import { getCurrentStore } from '@toeverything/infra/atom';
 import {
   type AffineCommand,
@@ -20,28 +24,18 @@ import {
   type CommandCategory,
   PreconditionStrategy,
 } from '@toeverything/infra/command';
-import { useService } from '@toeverything/infra/di';
-import { commandScore } from 'cmdk';
 import { atom, useAtomValue } from 'jotai';
-import { groupBy } from 'lodash-es';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { pageSettingsAtom, recentPageIdsBaseAtom } from '../../../atoms';
-import { currentPageIdAtom } from '../../../atoms/mode';
-import { useJournalHelper } from '../../../hooks/use-journal';
 import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
-import { CollectionService } from '../../../modules/collection';
-import { WorkspaceSubPath } from '../../../shared';
 import { usePageHelper } from '../../blocksuite/block-suite-page-list/utils';
+import { filterSortAndGroupCommands } from './filter-commands';
 import type { CMDKCommand, CommandContext } from './types';
 
 interface SearchResultsValue {
   space: string;
   content: string;
-}
-
-export function removeDoubleQuotes(str?: string): string | undefined {
-  return str?.replace(/"/g, '');
 }
 
 export const cmdkQueryAtom = atom('');
@@ -98,9 +92,6 @@ const useRecentPages = () => {
   }, [recentPageIds, pages]);
 };
 
-const valueWrapperStart = '__>>>';
-const valueWrapperEnd = '<<<__';
-
 export const pageToCommand = (
   category: CommandCategory,
   page: PageMeta,
@@ -123,21 +114,11 @@ export const pageToCommand = (
 
   // hack: when comparing, the part between >>> and <<< will be ignored
   // adding this patch so that CMDK will not complain about duplicated commands
-  const id = CSS.escape(
-    title +
-      (label?.subTitle || '') +
-      valueWrapperStart +
-      page.id +
-      '.' +
-      category +
-      valueWrapperEnd
-  );
+  const id = category + '.' + page.id;
 
   return {
     id,
     label: commandLabel,
-    value: id,
-    originalValue: title,
     category: category,
     run: () => {
       if (!workspace) {
@@ -153,10 +134,6 @@ export const pageToCommand = (
     timestamp: page.updatedDate,
   };
 };
-
-const contentMatchedMagicString = '__$$content_matched$$__';
-const contentMatchedWithoutSubtitle =
-  '__$$content_matched_without_subtitle$$__';
 
 export const usePageCommands = () => {
   const recentPages = useRecentPages();
@@ -209,13 +186,6 @@ export const usePageCommands = () => {
       }) as unknown as Map<string, SearchResultsValue>;
       const resultValues = Array.from(searchResults.values());
 
-      const pageIds = resultValues.map(result => {
-        if (result.space.startsWith('space:')) {
-          return result.space.slice(6);
-        } else {
-          return result.space;
-        }
-      });
       const reverseMapping: Map<string, string> = new Map();
       searchResults.forEach((value, key) => {
         reverseMapping.set(value.space, key);
@@ -245,16 +215,6 @@ export const usePageCommands = () => {
           label,
           blockId
         );
-
-        if (pageIds.includes(page.id)) {
-          // hack to make the page always showing in the search result
-          command.value += contentMatchedMagicString;
-        }
-        if (!subTitle) {
-          // hack to make the page title result always before the content result
-          command.value += contentMatchedWithoutSubtitle;
-        }
-
         return command;
       });
 
@@ -263,7 +223,7 @@ export const usePageCommands = () => {
         results.push({
           id: 'affine:pages:append-to-journal',
           label: t['com.affine.journal.cmdk.append-to-today'](),
-          value: 'affine::append-journal' + query, // hack to make the page always showing in the search result
+          alwaysShow: true,
           category: 'affine:creation',
           run: async () => {
             const appendRes = await journalHelper.appendContentToToday(query);
@@ -283,11 +243,11 @@ export const usePageCommands = () => {
           label: t['com.affine.cmdk.affine.create-new-page-as']({
             keyWord: query,
           }),
-          value: 'affine::create-page' + query, // hack to make the page always showing in the search result
+          alwaysShow: true,
           category: 'affine:creation',
           run: async () => {
             const page = pageHelper.createPage();
-            await page.waitForLoaded();
+            await page.load();
             pageMetaHelper.setPageTitle(page.id, query);
           },
           icon: <PageIcon />,
@@ -298,11 +258,11 @@ export const usePageCommands = () => {
           label: t['com.affine.cmdk.affine.create-new-edgeless-as']({
             keyWord: query,
           }),
-          value: 'affine::create-edgeless' + query, // hack to make the page always showing in the search result
+          alwaysShow: true,
           category: 'affine:creation',
           run: async () => {
             const page = pageHelper.createEdgeless();
-            await page.waitForLoaded();
+            await page.load();
             pageMetaHelper.setPageTitle(page.id, query);
           },
           icon: <EdgelessIcon />,
@@ -337,16 +297,6 @@ export const collectionToCommand = (
   return {
     id: collection.id,
     label: label,
-    // hack: when comparing, the part between >>> and <<< will be ignored
-    // adding this patch so that CMDK will not complain about duplicated commands
-    value:
-      label +
-      valueWrapperStart +
-      collection.id +
-      '.' +
-      category +
-      valueWrapperEnd,
-    originalValue: label,
     category: category,
     run: () => {
       navigationHelper.jumpToSubPath(workspace.id, WorkspaceSubPath.ALL);
@@ -401,7 +351,6 @@ export const useCollectionsCommands = () => {
 export const useCMDKCommandGroups = () => {
   const pageCommands = usePageCommands();
   const collectionCommands = useCollectionsCommands();
-
   const currentPageId = useAtomValue(currentPageIdAtom);
   const pageSettings = useAtomValue(pageSettingsAtom);
   const currentPageMode = currentPageId
@@ -412,6 +361,7 @@ export const useCMDKCommandGroups = () => {
       pageMode: currentPageMode,
     });
   }, [currentPageMode]);
+  const query = useAtomValue(cmdkQueryAtom).trim();
 
   return useMemo(() => {
     const commands = [
@@ -419,63 +369,6 @@ export const useCMDKCommandGroups = () => {
       ...pageCommands,
       ...affineCommands,
     ];
-    const groups = groupBy(commands, command => command.category);
-    return Object.entries(groups) as [CommandCategory, CMDKCommand[]][];
-  }, [affineCommands, collectionCommands, pageCommands]);
+    return filterSortAndGroupCommands(commands, query);
+  }, [affineCommands, collectionCommands, pageCommands, query]);
 };
-
-export const customCommandFilter = (value: string, search: string) => {
-  // strip off the part between __>>> and <<<__
-  let label = value.replace(
-    new RegExp(valueWrapperStart + '.*' + valueWrapperEnd, 'g'),
-    ''
-  );
-
-  const pageContentMatched = label.includes(contentMatchedMagicString);
-  if (pageContentMatched) {
-    label = label.replace(contentMatchedMagicString, '');
-  }
-  const pageTitleMatched = label.includes(contentMatchedWithoutSubtitle);
-  if (pageTitleMatched) {
-    label = label.replace(contentMatchedWithoutSubtitle, '');
-  }
-
-  // use to remove double quotes from a string until this issue is fixed
-  // https://github.com/pacocoursey/cmdk/issues/189
-  const escapedSearch = removeDoubleQuotes(search) || '';
-  const originalScore = commandScore(label, escapedSearch);
-
-  // hack to make the page title result always before the content result
-  // if the command has matched the title but not the subtitle,
-  // we should give it a higher score
-  if (originalScore > 0 && pageTitleMatched) {
-    return 0.999;
-  }
-  // if the command has matched the content but not the label,
-  // we should give it a higher score, but not too high
-  if (originalScore < 0.01 && pageContentMatched) {
-    return 0.3;
-  }
-
-  return originalScore;
-};
-
-export const useCommandFilteredStatus = (
-  groups: [CommandCategory, CMDKCommand[]][]
-) => {
-  // for each of the groups, show the count of commands that has matched the query
-  const query = useAtomValue(cmdkQueryAtom);
-  return useMemo(() => {
-    return Object.fromEntries(
-      groups.map(([category, commands]) => {
-        return [category, getCommandFilteredCount(commands, query)] as const;
-      })
-    ) as Record<CommandCategory, number>;
-  }, [groups, query]);
-};
-
-function getCommandFilteredCount(commands: CMDKCommand[], query: string) {
-  return commands.filter(command => {
-    return command.value && customCommandFilter(command.value, query) > 0;
-  }).length;
-}

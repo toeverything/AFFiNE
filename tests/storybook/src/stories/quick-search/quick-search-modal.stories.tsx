@@ -1,5 +1,6 @@
 import { Button } from '@affine/component/ui/button';
 import { CMDKContainer, CMDKModal } from '@affine/core/components/pure/cmdk';
+import { useCMDKCommandGroups } from '@affine/core/components/pure/cmdk/data-hooks';
 import type { Meta, StoryFn } from '@storybook/react';
 import { useState } from 'react';
 
@@ -27,9 +28,15 @@ export const CMDKModalStory: StoryFn = () => {
 
 export const CMDKPanelStory: StoryFn = () => {
   const [query, setQuery] = useState('');
+  const groups = useCMDKCommandGroups();
   return (
     <CMDKModal open>
-      <CMDKContainer open query={query} onQueryChange={setQuery} />
+      <CMDKContainer
+        open
+        query={query}
+        onQueryChange={setQuery}
+        groups={groups}
+      />
     </CMDKModal>
   );
 };

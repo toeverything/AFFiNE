@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 
-import { highlightTextFragments } from '../affine/use-highlight';
+import { highlightTextFragments } from '../use-highlight';
 
 describe('highlightTextFragments', () => {
   test('should correctly highlight full matches', () => {

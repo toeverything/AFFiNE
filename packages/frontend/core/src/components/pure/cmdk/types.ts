@@ -19,6 +19,7 @@ export interface CMDKCommand {
   category: CommandCategory;
   keyBinding?: string | { binding: string };
   timestamp?: number;
+  alwaysShow?: boolean;
   value?: string; // this is used for item filtering
   originalValue?: string; // some values may be transformed, this is the original value
   run: (e?: Event) => void | Promise<void>;
