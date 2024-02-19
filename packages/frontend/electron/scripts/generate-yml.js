@@ -7,9 +7,17 @@ const yml = {
   files: [],
 };
 
+const filenamesMapping = {
+  windows: 'latest.yml',
+  macos: 'latest-mac.yml',
+  linux: 'latest-linux.yml',
+};
+
 const generateYml = platform => {
   const regex = new RegExp(`^affine-.*-${platform}-.*.(exe|zip|dmg|AppImage)$`);
   const files = fs.readdirSync(process.cwd()).filter(file => regex.test(file));
+  const outputFileName = filenamesMapping[platform];
+
   files.forEach(fileName => {
     const filePath = path.join(process.cwd(), './', fileName);
     try {
@@ -47,10 +55,9 @@ const generateYml = platform => {
     `sha512: ${yml.sha512}\n` +
     `releaseDate: ${yml.releaseDate}\n`;
 
-  const fileName = platform === 'windows' ? 'latest.yml' : 'latest-mac.yml';
-
-  fs.writeFileSync(fileName, ymlStr);
+  fs.writeFileSync(outputFileName, ymlStr);
 };
 
 generateYml('windows');
 generateYml('macos');
+generateYml('linux');
