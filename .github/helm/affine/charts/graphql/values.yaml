@@ -35,14 +35,7 @@ app:
       accountId: ''
       accessKeyId: ''
       secretAccessKey: ''
-  oauth:
-    email:
-      secretName: 'oauth-email'
-      sender: 'noreply@toeverything.info'
-      login: ''
-      password: ''
-      server: 'smtp.gmail.com'
-      port: '465'
+  oauth: 
     google:
       enabled: false
       secretName: oauth-google
@@ -53,6 +46,13 @@ app:
       secretName: oauth-github
       clientId: ''
       clientSecret: ''
+  mailer:
+    secretName: 'mailer'
+    host: 'smtp.gmail.com'
+    port: '465'
+    user: ''
+    password: ''
+    sender: 'noreply@toeverything.info'
   payment:
     stripe:
       secretName: 'stripe'

@@ -83,31 +83,33 @@ spec:
             value: "{{ .Values.app.captcha.enabled }}"
           - name: FEATURES_EARLY_ACCESS_PREVIEW
             value: "{{ .Values.app.features.earlyAccessPreview }}"
-          - name: OAUTH_EMAIL_SENDER
+          - name: FEATURES_SYNC_CLIENT_VERSION_CHECK
+            value: "{{ .Values.app.features.syncClientVersionCheck }}"
+          - name: MAILER_HOST
             valueFrom:
               secretKeyRef:
-                name: "{{ .Values.app.oauth.email.secretName }}"
-                key: sender
-          - name: OAUTH_EMAIL_LOGIN
+                name: "{{ .Values.app.mailer.secretName }}"
+                key: host
+          - name: MAILER_PORT
             valueFrom:
               secretKeyRef:
-                name: "{{ .Values.app.oauth.email.secretName }}"
-                key: login
-          - name: OAUTH_EMAIL_SERVER
-            valueFrom:
-              secretKeyRef:
-                name: "{{ .Values.app.oauth.email.secretName }}"
-                key: server
-          - name: OAUTH_EMAIL_PORT
-            valueFrom:
-              secretKeyRef:
-                name: "{{ .Values.app.oauth.email.secretName }}"
+                name: "{{ .Values.app.mailer.secretName }}"
                 key: port
-          - name: OAUTH_EMAIL_PASSWORD
+          - name: MAILER_USER
             valueFrom:
               secretKeyRef:
-                name: "{{ .Values.app.oauth.email.secretName }}"
+                name: "{{ .Values.app.mailer.secretName }}"
+                key: user
+          - name: MAILER_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: "{{ .Values.app.mailer.secretName }}"
                 key: password
+          - name: MAILER_SENDER
+            valueFrom:
+              secretKeyRef:
+                name: "{{ .Values.app.mailer.secretName }}"
+                key: sender
           - name: STRIPE_API_KEY
             valueFrom:
               secretKeyRef:

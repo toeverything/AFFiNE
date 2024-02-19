@@ -166,14 +166,6 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
         return this.privateKey;
       },
       oauthProviders: {},
-      localEmail: false,
-      email: {
-        server: 'smtp.gmail.com',
-        port: 465,
-        login: '',
-        sender: '',
-        password: '',
-      },
     },
     storage: getDefaultAFFiNEStorageConfig(),
     rateLimiter: {

@@ -139,10 +139,11 @@
     "environmentVariables": {
       "TS_NODE_PROJECT": "./tests/tsconfig.json",
       "NODE_ENV": "test",
-      "ENABLE_LOCAL_EMAIL": "true",
-      "OAUTH_EMAIL_LOGIN": "noreply@toeverything.info",
-      "OAUTH_EMAIL_PASSWORD": "affine",
-      "OAUTH_EMAIL_SENDER": "noreply@toeverything.info",
+      "MAILER_HOST": "0.0.0.0",
+      "MAILER_PORT": "1025",
+      "MAILER_USER": "noreply@toeverything.info",
+      "MAILER_PASSWORD": "affine",
+      "MAILER_SENDER": "noreply@toeverything.info",
       "FEATURES_EARLY_ACCESS_PREVIEW": "false"
     }
   },
