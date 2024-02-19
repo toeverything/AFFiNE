@@ -105,20 +105,12 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
       return data;
     };
 
-    const VerificationTokenError = new Error('Verification token not found');
     prismaAdapter.useVerificationToken = async ({ identifier, token }) => {
-      try {
-        const expires = await session.get(`${identifier}:${token}`);
-        if (expires) {
-          return { identifier, token, expires: new Date(expires) };
-        } else {
-          throw VerificationTokenError;
-        }
-      } catch (error) {
-        if (error === VerificationTokenError) {
-          return null;
-        }
-        throw error;
+      const expires = await session.get(`${identifier}:${token}`);
+      if (expires) {
+        return { identifier, token, expires: new Date(expires) };
+      } else {
+        return null;
       }
     };
 
