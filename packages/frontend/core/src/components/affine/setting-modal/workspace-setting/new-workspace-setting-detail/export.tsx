@@ -2,6 +2,7 @@ import { pushNotificationAtom } from '@affine/component/notification-center';
 import { SettingRow } from '@affine/component/setting-components';
 import { Button } from '@affine/component/ui/button';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
+import { useSystemOnline } from '@affine/core/hooks/use-system-online';
 import { apis } from '@affine/electron-api';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { Workspace, WorkspaceMetadata } from '@affine/workspace';
@@ -20,6 +21,7 @@ export const ExportPanel = ({
   const workspaceId = workspaceMetadata.id;
   const t = useAFFiNEI18N();
   const [saving, setSaving] = useState(false);
+  const isOnline = useSystemOnline();
 
   const pushNotification = useSetAtom(pushNotificationAtom);
   const onExport = useAsyncCallback(async () => {
@@ -28,8 +30,11 @@ export const ExportPanel = ({
     }
     setSaving(true);
     try {
-      await workspace.engine.sync.waitForSynced();
-      await workspace.engine.blob.sync();
+      if (isOnline) {
+        await workspace.engine.sync.waitForSynced();
+        await workspace.engine.blob.sync();
+      }
+
       const result = await apis?.dialog.saveDBFileAs(workspaceId);
       if (result?.error) {
         throw new Error(result.error);
@@ -48,7 +53,7 @@ export const ExportPanel = ({
     } finally {
       setSaving(false);
     }
-  }, [pushNotification, saving, t, workspace, workspaceId]);
+  }, [isOnline, pushNotification, saving, t, workspace, workspaceId]);
 
   return (
     <SettingRow name={t['Export']()} desc={t['Export Description']()}>
