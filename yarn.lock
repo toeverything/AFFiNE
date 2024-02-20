@@ -33998,20 +33998,20 @@ __metadata:
   linkType: hard
 
 "undici@npm:^5.22.1":
-  version: 5.28.0
-  resolution: "undici@npm:5.28.0"
+  version: 5.28.3
+  resolution: "undici@npm:5.28.3"
   dependencies:
     "@fastify/busboy": "npm:^2.0.0"
-  checksum: 10/70afe17996fbb84a4febbda78b30ce627fc6db585afe0c5191426d277ff4162f62ae36ddbc252b8aaba5cc1fd4e09bc6db8a919ff59adb10008fb3882492a171
+  checksum: 10/779856ce14ba6907c0759df8e4babd61608b1f502569d44de7dd1d014afb7c67a0a2997b4f706e0daff8a55d87ee2f25b830b195fc0202cb6fbd25abe2d941eb
   languageName: node
   linkType: hard
 
 "undici@npm:^6.0.0":
-  version: 6.0.1
-  resolution: "undici@npm:6.0.1"
+  version: 6.6.2
+  resolution: "undici@npm:6.6.2"
   dependencies:
     "@fastify/busboy": "npm:^2.0.0"
-  checksum: 10/48d7f3c9aa9e1ca3fb2488c8aa25838e9163d3a7f1e41d695ed110006abc26648cf97c15d76abfd896fe16128e34136c8a7e0723e0583451ed9f34aaa37513ad
+  checksum: 10/e08ac9c279d4e4ee1249d30e6e0671f008e156d8ef224bbe3329ef5c5e10197a9e9dbf87c14e44deaffe2802c10bee66c8687d60ff07179b2e18cd5ef454b5c6
   languageName: node
   linkType: hard
 
