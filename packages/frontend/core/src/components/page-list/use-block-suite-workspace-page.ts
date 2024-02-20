@@ -42,5 +42,11 @@ export function useBlockSuiteWorkspacePage(
     }
   }, [page]);
 
+  useEffect(() => {
+    if (page?.id !== pageId) {
+      setPage(pageId ? blockSuiteWorkspace.getPage(pageId) : null);
+    }
+  }, [blockSuiteWorkspace, page?.id, pageId]);
+
   return page;
 }
