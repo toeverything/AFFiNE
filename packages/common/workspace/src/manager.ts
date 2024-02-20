@@ -1,4 +1,5 @@
 import { DebugLogger } from '@affine/debug';
+import { setupEditorFlags } from '@affine/env/global';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { assertEquals } from '@blocksuite/global/utils';
 import type { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
@@ -163,6 +164,8 @@ export class WorkspaceManager {
 
     // apply compatibility fix
     fixWorkspaceVersion(workspace.blockSuiteWorkspace.doc);
+
+    setupEditorFlags(workspace.blockSuiteWorkspace);
 
     return workspace;
   }

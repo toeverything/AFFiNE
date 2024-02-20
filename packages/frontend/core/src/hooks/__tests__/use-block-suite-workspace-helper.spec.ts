@@ -30,9 +30,9 @@ beforeEach(async () => {
 
   blockSuiteWorkspace.doc.emit('sync', []);
 
-  await initEmptyPage(blockSuiteWorkspace.createPage({ id: 'page0' }));
-  await initEmptyPage(blockSuiteWorkspace.createPage({ id: 'page1' }));
-  await initEmptyPage(blockSuiteWorkspace.createPage({ id: 'page2' }));
+  initEmptyPage(blockSuiteWorkspace.createPage({ id: 'page0' }));
+  initEmptyPage(blockSuiteWorkspace.createPage({ id: 'page1' }));
+  initEmptyPage(blockSuiteWorkspace.createPage({ id: 'page2' }));
 });
 
 describe('useBlockSuiteWorkspaceHelper', () => {

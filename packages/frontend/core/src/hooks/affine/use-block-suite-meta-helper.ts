@@ -152,7 +152,7 @@ export function useBlockSuiteMetaHelper(
       const newPage = createPage();
       const currentPage = blockSuiteWorkspace.getPage(pageId);
 
-      await newPage.waitForLoaded();
+      newPage.waitForLoaded();
       if (!currentPageMeta || !currentPage) {
         return;
       }

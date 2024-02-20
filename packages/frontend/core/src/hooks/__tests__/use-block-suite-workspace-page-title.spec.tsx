@@ -54,7 +54,7 @@ beforeEach(async () => {
   blockSuiteWorkspace.doc.emit('sync', []);
 
   const initPage = async (page: Page) => {
-    await page.waitForLoaded();
+    page.load();
     expect(page).not.toBeNull();
     assertExists(page);
     const pageBlockId = page.addBlock('affine:page', {

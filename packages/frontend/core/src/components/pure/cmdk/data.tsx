@@ -67,7 +67,7 @@ const safeCurrentPageAtom = atom<Promise<Page | undefined>>(async get => {
   }
 
   if (!page.loaded) {
-    await page.waitForLoaded();
+    page.load();
   }
   return page;
 });
@@ -310,7 +310,7 @@ export const usePageCommands = () => {
           category: 'affine:creation',
           run: async () => {
             const page = pageHelper.createPage();
-            await page.waitForLoaded();
+            page.load();
             pageMetaHelper.setPageTitle(page.id, query);
           },
           icon: <PageIcon />,
@@ -325,7 +325,7 @@ export const usePageCommands = () => {
           category: 'affine:creation',
           run: async () => {
             const page = pageHelper.createEdgeless();
-            await page.waitForLoaded();
+            page.load();
             pageMetaHelper.setPageTitle(page.id, query);
           },
           icon: <EdgelessIcon />,

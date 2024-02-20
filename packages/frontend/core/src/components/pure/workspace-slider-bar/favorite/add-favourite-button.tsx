@@ -25,7 +25,7 @@ export const AddFavouriteButton = ({
         createLinkedPage(pageId);
       } else {
         const page = createPage();
-        await page.load();
+        page.load();
         setPageMeta(page.id, { favorite: true });
       }
     },

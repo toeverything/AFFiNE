@@ -7,6 +7,7 @@ import { isDesktop, isServer } from './constant.js';
 import { UaHelper } from './ua-helper.js';
 
 export const blockSuiteFeatureFlags = z.object({
+  enable_synced_doc_block: z.boolean(),
   enable_expand_database_block: z.boolean(),
   enable_bultin_ledits: z.boolean(),
 });

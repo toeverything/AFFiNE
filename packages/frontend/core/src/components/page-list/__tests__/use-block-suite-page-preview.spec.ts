@@ -22,7 +22,7 @@ beforeEach(async () => {
   vi.useFakeTimers({ toFake: ['requestIdleCallback'] });
   blockSuiteWorkspace = new BlockSuiteWorkspace({ id: 'test', schema });
   const initPage = async (page: Page) => {
-    await page.waitForLoaded();
+    page.waitForLoaded();
     expect(page).not.toBeNull();
     assertExists(page);
     const pageBlockId = page.addBlock('affine:page', {

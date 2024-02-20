@@ -37,9 +37,7 @@ export const useJournalHelper = (workspace: BlockSuiteWorkspace) => {
       page.workspace.setPageMeta(page.id, {
         createDate: dayjs(maybeDate).toDate().getTime(),
       });
-      initEmptyPage(page, title).catch(err =>
-        console.error('Failed to load journal page', err)
-      );
+      initEmptyPage(page, title);
       adapter.setJournalPageDateString(page.id, title);
       return page;
     },
