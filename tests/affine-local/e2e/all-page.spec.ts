@@ -99,7 +99,6 @@ test('use monthpicker to modify the month of datepicker', async ({ page }) => {
   await selectMonthFromMonthPicker(page, lastMonth);
   await checkDatePickerMonth(page, lastMonth);
   // change month
-  await clickDatePicker(page);
   const nextMonth = new Date();
   nextMonth.setMonth(nextMonth.getMonth() + 1);
   await selectMonthFromMonthPicker(page, nextMonth);

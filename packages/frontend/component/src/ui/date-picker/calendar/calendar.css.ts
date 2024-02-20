@@ -89,7 +89,9 @@ export const basicCell = style({
 });
 
 // roots
-export const calendarRoot = style({});
+export const calendarRoot = style({
+  minWidth: `calc(28px * 7 + ${vars.gapX} * 6)`,
+});
 export const calendarWrapper = style({
   display: 'flex',
   flexDirection: 'column',
@@ -101,7 +103,7 @@ export const calendarHeader = style({
 });
 
 // header
-export const headerLayoutCell = style([basicCell]);
+export const headerLayoutCell = style([basicCell, { height: 'auto' }]);
 export const headerLayoutCellOrigin = style({
   width: 0,
   height: 'fit-content',

@@ -119,12 +119,17 @@ export const DayPicker = memo(function DayPicker(
           onClick={openMonthPicker}
           ref={headerMonthRef}
           className={styles.calendarHeaderTriggerButton}
+          data-testid="month-picker-button"
+          data-month={cursor.month()}
+          data-year={cursor.year()}
         >
           {monthNames.split(',')[cursor.month()]}
         </button>
         <button
           className={styles.calendarHeaderTriggerButton}
           onClick={openYearPicker}
+          data-testid="year-picker-button"
+          data-year={cursor.year()}
         >
           {cursor.year()}
         </button>

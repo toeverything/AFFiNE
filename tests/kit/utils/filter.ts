@@ -78,68 +78,8 @@ export const fillDatePicker = async (page: Page, date: Date) => {
     .fill(dateFormat(date));
 };
 
-const checkIsLastMonth = (date: Date): boolean => {
-  const targetMonth = date.getMonth();
-  const currentMonth = new Date().getMonth();
-  const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
-  return targetMonth === lastMonth;
-};
-
-const checkIsNextMonth = (date: Date): boolean => {
-  const targetMonth = date.getMonth();
-  const currentMonth = new Date().getMonth();
-  const nextMonth = currentMonth === 11 ? 0 : currentMonth + 1;
-  return targetMonth === nextMonth;
-};
-
-export const selectDateFromDatePicker = async (page: Page, date: Date) => {
-  const datePickerPopup = page.locator('.react-datepicker-popper');
-  const day = date.getDate();
-  const month = date.toLocaleString('en-US', { month: 'long' });
-  const weekday = date.toLocaleString('en-US', { weekday: 'long' });
-  const year = date.getFullYear().toString();
-  const nth = function (d: number) {
-    if (d > 3 && d < 21) return 'th';
-    switch (d % 10) {
-      case 1:
-        return 'st';
-      case 2:
-        return 'nd';
-      case 3:
-        return 'rd';
-      default:
-        return 'th';
-    }
-  };
-  const daySuffix = nth(day);
-  // Open the date picker popup
-  await clickDatePicker(page);
-  const selectDate = async (): Promise<void> => {
-    if (checkIsLastMonth(date)) {
-      const lastMonthButton = page.locator(
-        '[data-testid="date-picker-prev-button"]'
-      );
-      await lastMonthButton.click();
-    } else if (checkIsNextMonth(date)) {
-      const nextMonthButton = page.locator(
-        '[data-testid="date-picker-next-button"]'
-      );
-      await nextMonthButton.click();
-    }
-    // Click on the day cell
-    const dateCell = page.locator(
-      `[aria-disabled="false"][aria-label="Choose ${weekday}, ${month} ${day}${daySuffix}, ${year}"]`
-    );
-    await dateCell.click();
-  };
-  await selectDate();
-
-  // Wait for the date picker popup to close
-  await datePickerPopup.waitFor({ state: 'hidden' });
-};
-
 export const selectMonthFromMonthPicker = async (page: Page, date: Date) => {
-  const month = date.toLocaleString('en-US', { month: 'long' });
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
   const year = date.getFullYear();
   // Open the month picker popup
   await clickMonthPicker(page);
@@ -148,14 +88,16 @@ export const selectMonthFromMonthPicker = async (page: Page, date: Date) => {
       .getByTestId('month-picker-current-year')
       .innerText());
     if (selectedYear > year) {
-      await page.locator('[data-testid="month-picker-prev-button"]').click();
+      await page.locator('[data-testid="date-picker-nav-prev"]').click();
       return await selectMonth();
     } else if (selectedYear < year) {
-      await page.locator('[data-testid="month-picker-next-button"]').click();
+      await page.locator('[data-testid="date-picker-nav-next"]').click();
       return await selectMonth();
     }
     // Click on the day cell
-    const monthCell = page.locator(`[aria-label="Choose ${month} ${year}"]`);
+    const monthCell = page.locator(
+      `[data-is-month-cell][aria-label="${year}-${month}"]`
+    );
     await monthCell.click();
   };
   await selectMonth();
@@ -163,8 +105,8 @@ export const selectMonthFromMonthPicker = async (page: Page, date: Date) => {
 
 export const checkDatePickerMonth = async (page: Page, date: Date) => {
   expect(
-    await page.locator('[data-testid="date-picker-current-month"]').innerText()
-  ).toBe(date.toLocaleString('en-US', { month: 'long' }));
+    await page.getByTestId('month-picker-button').evaluate(e => e.dataset.month)
+  ).toBe(date.getMonth().toString());
 };
 
 const createTag = async (page: Page, name: string) => {

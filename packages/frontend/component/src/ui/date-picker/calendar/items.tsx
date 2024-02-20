@@ -19,6 +19,8 @@ interface HeaderLayoutProps extends HTMLAttributes<HTMLDivElement> {
   left: React.ReactNode;
   right: React.ReactNode;
 }
+
+const autoHeight = { height: 'auto' };
 /**
  * The `DatePicker` should work with different width
  * This is a hack to make header's item align with calendar cell's label, **instead of the cell**
@@ -57,6 +59,7 @@ const HeaderLayout = memo(function HeaderLayout({
                 [styles.yearViewBodyCell]: mode === 'month',
                 [styles.decadeViewBodyCell]: mode === 'year',
               })}
+              style={autoHeight}
             >
               <div className={styles.headerLayoutCellOrigin}>
                 {isLeft ? left : isRight ? right : null}
@@ -139,6 +142,7 @@ export const NavButtons = memo(function NavButtons({
         size="small"
         className={styles.focusInteractive}
         disabled={prevDisabled}
+        data-testid="date-picker-nav-prev"
         onClick={onPrev}
       >
         <ArrowLeftSmallIcon />
@@ -151,6 +155,7 @@ export const NavButtons = memo(function NavButtons({
         size="small"
         className={styles.focusInteractive}
         disabled={nextDisabled}
+        data-testid="date-picker-nav-next"
         onClick={onNext}
       >
         <ArrowRightSmallIcon />

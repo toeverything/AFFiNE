@@ -73,6 +73,8 @@ export const MonthPicker = memo(function MonthPicker(
 
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
         closeMonthPicker();
         return;
       }
@@ -101,6 +103,7 @@ export const MonthPicker = memo(function MonthPicker(
   const HeaderLeft = useMemo(() => {
     return (
       <button
+        data-testid="month-picker-current-year"
         onClick={closeMonthPicker}
         className={styles.calendarHeaderTriggerButton}
       >
@@ -137,6 +140,7 @@ export const MonthPicker = memo(function MonthPicker(
                       data-current-month={month.isSame(dayjs(), 'month')}
                       onClick={() => onMonthChange(month)}
                       tabIndex={month.isSame(monthCursor, 'month') ? 0 : -1}
+                      aria-label={month.format('YYYY-MM')}
                     >
                       {monthNames.split(',')[month.month()]}
                     </button>

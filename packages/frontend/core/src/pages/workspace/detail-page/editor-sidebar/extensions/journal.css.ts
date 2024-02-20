@@ -1,5 +1,6 @@
 import { cssVar } from '@toeverything/theme';
-import { globalStyle, style } from '@vanilla-extract/css';
+import { style } from '@vanilla-extract/css';
+
 const interactive = style({
   position: 'relative',
   cursor: 'pointer',
@@ -41,6 +42,7 @@ export const journalPanel = style({
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'stretch',
+  overflow: 'hidden',
 });
 export const dailyCount = style({
   height: 0,
@@ -179,14 +181,47 @@ export const journalConflictMoreTrigger = style([
   },
 ]);
 
-// TODO: when date-picker's cell is customizable, we should implement by custom cell
-// override date-picker's active day when is not journal
-globalStyle(
-  `.${journalPanel}[data-is-journal="false"] .react-datepicker__day[aria-selected="true"]`,
+// customize date-picker cell
+export const journalDateCell = style([
+  interactive,
   {
-    backgroundColor: 'transparent',
+    width: '100%',
+    height: '100%',
+    borderRadius: 8,
+    fontSize: cssVar('fontSm'),
     color: cssVar('textPrimaryColor'),
-    fontWeight: 500,
-    border: `1px solid ${cssVar('primaryColor')}`,
-  }
-);
+    fontWeight: 400,
+    position: 'relative',
+
+    selectors: {
+      '&[data-is-today="true"]': {
+        fontWeight: 600,
+        color: cssVar('brandColor'),
+      },
+      '&[data-not-current-month="true"]': {
+        color: cssVar('black10'),
+      },
+      '&[data-selected="true"]': {
+        backgroundColor: cssVar('brandColor'),
+        fontWeight: 500,
+        color: cssVar('pureWhite'),
+      },
+      '&[data-is-journal="false"][data-selected="true"]': {
+        backgroundColor: 'transparent',
+        color: 'var(--affine-text-primary-color)',
+        fontWeight: 500,
+        border: `1px solid ${cssVar('primaryColor')}`,
+      },
+    },
+  },
+]);
+export const journalDateCellDot = style({
+  width: 4,
+  height: 4,
+  borderRadius: '50%',
+  backgroundColor: cssVar('primaryColor'),
+  position: 'absolute',
+  bottom: 0,
+  left: '50%',
+  transform: 'translateX(-50%)',
+});

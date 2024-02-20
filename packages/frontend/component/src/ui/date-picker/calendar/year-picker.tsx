@@ -84,6 +84,8 @@ export const YearPicker = memo(function YearPicker(
 
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
         closeYearPicker();
         return;
       }
