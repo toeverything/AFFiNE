@@ -28,7 +28,8 @@
   },
   "dependencies": {
     "i18next": "^23.5.1",
-    "react-i18next": "^14.0.0"
+    "react-i18next": "^14.0.0",
+    "undici": "^6.6.2"
   },
   "devDependencies": {
     "@types/prettier": "^3.0.0",

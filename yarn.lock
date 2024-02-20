@@ -427,7 +427,7 @@ __metadata:
   resolution: "@affine/electron-api@workspace:packages/frontend/electron-api"
   dependencies:
     "@toeverything/infra": "workspace:*"
-    electron: "npm:^28.2.1"
+    electron: "npm:^29.0.0"
   languageName: unknown
   linkType: soft
 
@@ -457,7 +457,7 @@ __metadata:
     async-call-rpc: "npm:^6.3.1"
     builder-util-runtime: "npm:^9.2.3"
     cross-env: "npm:^7.0.3"
-    electron: "npm:^28.2.1"
+    electron: "npm:^29.0.0"
     electron-log: "npm:^5.0.1"
     electron-squirrel-startup: "npm:1.0.0"
     electron-updater: "npm:^6.1.5"
@@ -531,6 +531,7 @@ __metadata:
     react-i18next: "npm:^14.0.0"
     ts-node: "npm:^10.9.1"
     typescript: "npm:^5.2.2"
+    undici: "npm:^6.6.2"
   languageName: unknown
   linkType: soft
 
@@ -560,7 +561,7 @@ __metadata:
     "@vitejs/plugin-react-swc": "npm:^3.5.0"
     "@vitest/coverage-istanbul": "npm:1.2.2"
     "@vitest/ui": "npm:1.2.2"
-    electron: "npm:^28.2.1"
+    electron: "npm:^29.0.0"
     eslint: "npm:^8.54.0"
     eslint-config-prettier: "npm:^9.0.0"
     eslint-plugin-i: "npm:^2.29.0"
@@ -13929,12 +13930,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:*, @types/node@npm:>=10.0.0, @types/node@npm:>=12.12.47, @types/node@npm:>=13.7.0, @types/node@npm:>=8.1.0, @types/node@npm:^20.9.3":
-  version: 20.10.0
-  resolution: "@types/node@npm:20.10.0"
+"@types/node@npm:*, @types/node@npm:>=10.0.0, @types/node@npm:>=12.12.47, @types/node@npm:>=13.7.0, @types/node@npm:>=8.1.0, @types/node@npm:^20.9.0, @types/node@npm:^20.9.3":
+  version: 20.11.19
+  resolution: "@types/node@npm:20.11.19"
   dependencies:
     undici-types: "npm:~5.26.4"
-  checksum: 10/c7d5ddbdbf3491e2363135c9611eb6bfae90eda2957279237fa232bcb29cd0df1cc3ee149d6de9915b754262a531ee2d57d33c9ecd58d763e8ad4856113822f3
+  checksum: 10/c7f4705d6c84aa21679ad180c33c13ca9567f650e66e14bcee77c7c43d14619c7cd3b4d7b2458947143030b7b1930180efa6d12d999b45366abff9fed7a17472
   languageName: node
   linkType: hard
 
@@ -19491,16 +19492,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"electron@npm:^28.2.1":
-  version: 28.2.1
-  resolution: "electron@npm:28.2.1"
+"electron@npm:^29.0.0":
+  version: 29.0.0
+  resolution: "electron@npm:29.0.0"
   dependencies:
     "@electron/get": "npm:^2.0.0"
-    "@types/node": "npm:^18.11.18"
+    "@types/node": "npm:^20.9.0"
     extract-zip: "npm:^2.0.1"
   bin:
     electron: cli.js
-  checksum: 10/e70cb983ba8cdae661eae7695e213f189d7f12002ed05727c1f74a498f58e60b471708ec4fb41dcc0b15b1b86d2b7afc9b5de1172d12e53b692ad725d07b0a52
+  checksum: 10/e8f6732caedf574aeb8273d5965f69a4ad52c0969ce8f45b03795046a56aefaceadb916d52501288fe2b36219017f0fb8c788965315f49a89e2a38d4c773fdce
   languageName: node
   linkType: hard
 
@@ -33984,7 +33985,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"undici@npm:^6.0.0":
+"undici@npm:^6.0.0, undici@npm:^6.6.2":
   version: 6.6.2
   resolution: "undici@npm:6.6.2"
   dependencies:

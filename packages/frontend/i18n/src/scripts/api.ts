@@ -1,3 +1,5 @@
+import type { Response } from 'undici-types';
+
 // cSpell:ignore Tolgee
 import { fetchTolgee } from './request.js';
 
@@ -73,7 +75,7 @@ export const getAllProjectLanguages = async (
       }[];
     };
     page: unknown;
-  } = await resp.json();
+  } = (await resp.json()) as any;
   return json._embedded.languages;
 };
 
@@ -106,7 +108,7 @@ export const getLanguagesTranslations = async <T extends string>(
     throw new Error(url + ' ' + resp.status + '\n' + (await resp.text()));
   }
   const json = await resp.json();
-  return json;
+  return json as { [key in T]?: Record<string, string> };
 };
 
 export const getRemoteTranslations = async (
