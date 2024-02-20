@@ -52,6 +52,7 @@ export function OptionalModule(metadata: OptionalModuleMetadata) {
       metadata.providers = (metadata.providers ?? []).concat(
         metadata.overrides
       );
+      // eslint-disable-next-line @typescript-eslint/no-floating-promises
       metadata.exports = (metadata.exports ?? []).concat(metadata.overrides);
     }
 
