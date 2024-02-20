@@ -72,14 +72,22 @@ const CloudQuotaModal = lazy(() =>
     default: module.CloudQuotaModal,
   }))
 );
+
 const StarAFFiNEModal = lazy(() =>
   import('../components/affine/star-affine-modal').then(module => ({
     default: module.StarAFFiNEModal,
   }))
 );
+
 const IssueFeedbackModal = lazy(() =>
   import('../components/affine/issue-feedback-modal').then(module => ({
     default: module.IssueFeedbackModal,
+  }))
+);
+
+const HistoryTipsModal = lazy(() =>
+  import('../components/affine/history-tips-modal').then(module => ({
+    default: module.HistoryTipsModal,
   }))
 );
 
@@ -184,7 +192,10 @@ export function CurrentWorkspaceModals() {
       <WorkspaceGuideModal />
       {currentWorkspace ? <Setting /> : null}
       {currentWorkspace?.flavour === WorkspaceFlavour.LOCAL && (
-        <LocalQuotaModal />
+        <>
+          <LocalQuotaModal />
+          <HistoryTipsModal />
+        </>
       )}
       {currentWorkspace?.flavour === WorkspaceFlavour.AFFINE_CLOUD && (
         <CloudQuotaModal />

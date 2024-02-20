@@ -5,6 +5,7 @@ import {
   MenuItem,
   MenuSeparator,
 } from '@affine/component/ui/menu';
+import { openHistoryTipsModalAtom } from '@affine/core/atoms';
 import { currentModeAtom } from '@affine/core/atoms/mode';
 import { PageHistoryModal } from '@affine/core/components/affine/page-history-modal';
 import { Export, MoveToTrash } from '@affine/core/components/page-list';
@@ -26,7 +27,7 @@ import {
   PageIcon,
 } from '@blocksuite/icons';
 import { useService, Workspace } from '@toeverything/infra';
-import { useAtomValue } from 'jotai';
+import { useAtomValue, useSetAtom } from 'jotai';
 import { useCallback, useState } from 'react';
 
 import { HeaderDropDownButton } from '../../../pure/header-drop-down-button';
@@ -64,10 +65,14 @@ export const PageHeaderMenuButton = ({
   const { setTrashModal } = useTrashModalHelper(blockSuiteWorkspace);
 
   const [historyModalOpen, setHistoryModalOpen] = useState(false);
+  const setOpenHistoryTipsModal = useSetAtom(openHistoryTipsModalAtom);
 
   const openHistoryModal = useCallback(() => {
-    setHistoryModalOpen(true);
-  }, []);
+    if (workspace.flavour === WorkspaceFlavour.AFFINE_CLOUD) {
+      return setHistoryModalOpen(true);
+    }
+    return setOpenHistoryTipsModal(true);
+  }, [setOpenHistoryTipsModal, workspace.flavour]);
 
   const handleOpenTrashModal = useCallback(() => {
     if (!pageMeta) {
@@ -186,8 +191,7 @@ export const PageHeaderMenuButton = ({
       </MenuItem>
       <Export exportHandler={exportHandler} pageMode={currentMode} />
 
-      {workspace.flavour === WorkspaceFlavour.AFFINE_CLOUD &&
-      runtimeConfig.enablePageHistory ? (
+      {runtimeConfig.enablePageHistory ? (
         <MenuItem
           preFix={
             <MenuIcon>

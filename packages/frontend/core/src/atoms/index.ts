@@ -15,6 +15,7 @@ export const openPaymentDisableAtom = atom(false);
 export const openQuotaModalAtom = atom(false);
 export const openStarAFFiNEModalAtom = atom(false);
 export const openIssueFeedbackModalAtom = atom(false);
+export const openHistoryTipsModalAtom = atom(false);
 
 export type SettingAtom = Pick<
   SettingProps,

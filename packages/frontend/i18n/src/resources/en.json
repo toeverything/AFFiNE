@@ -1079,5 +1079,9 @@
   "com.affine.issue-feedback.title": "Share Your Feedback on GitHub",
   "com.affine.issue-feedback.description": "Got feedback? We're all ears! Create an issue on GitHub to let us know your thoughts and suggestions",
   "com.affine.issue-feedback.confirm": "Create Issue on GitHub",
-  "com.affine.issue-feedback.cancel": "Maybe Later"
+  "com.affine.issue-feedback.cancel": "Maybe Later",
+  "com.affine.history-vision.tips-modal.title": "History Vision Needs AFFiNE Cloud",
+  "com.affine.history-vision.tips-modal.description": "The current workspace is a local workspace, and we do not support version history for it at the moment. You can enable AFFiNE Cloud. This will sync the workspace with the Cloud, allowing you to use this feature.",
+  "com.affine.history-vision.tips-modal.cancel": "Cancel",
+  "com.affine.history-vision.tips-modal.confirm": "Enable AFFiNE Cloud"
 }
