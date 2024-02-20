@@ -1,11 +1,10 @@
+import { cssVar } from '@toeverything/theme';
 import { createVar, style } from '@vanilla-extract/css';
-
 export const panelWidthVar = createVar('panel-width');
 export const resizeHandleOffsetVar = createVar('resize-handle-offset');
 export const resizeHandleVerticalPadding = createVar(
   'resize-handle-vertical-padding'
 );
-
 export const root = style({
   vars: {
     [panelWidthVar]: '256px',
@@ -38,13 +37,11 @@ export const root = style({
     },
   },
 });
-
 export const panelContent = style({
   position: 'relative',
   height: '100%',
   overflow: 'auto',
 });
-
 export const resizeHandleContainer = style({
   position: 'absolute',
   right: resizeHandleOffsetVar,
@@ -82,13 +79,12 @@ export const resizeHandleContainer = style({
     },
   },
 });
-
 export const resizerInner = style({
   position: 'absolute',
   height: '100%',
   width: '2px',
   borderRadius: '2px',
-  backgroundColor: 'var(--affine-primary-color)',
+  backgroundColor: cssVar('primaryColor'),
   transition: 'all 0.2s ease-in-out',
   transform: 'translateX(0.5px)',
   selectors: {

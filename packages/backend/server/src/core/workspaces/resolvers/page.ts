@@ -1,4 +1,4 @@
-import { ForbiddenException, UseGuards } from '@nestjs/common';
+import { BadRequestException, UseGuards } from '@nestjs/common';
 import {
   Args,
   Field,
@@ -111,7 +111,7 @@ export class PagePermissionResolver {
     const docId = new DocID(pageId, workspaceId);
 
     if (docId.isWorkspace) {
-      throw new ForbiddenException('Expect page not to be workspace');
+      throw new BadRequestException('Expect page not to be workspace');
     }
 
     await this.permission.checkWorkspace(
@@ -148,7 +148,7 @@ export class PagePermissionResolver {
     const docId = new DocID(pageId, workspaceId);
 
     if (docId.isWorkspace) {
-      throw new ForbiddenException('Expect page not to be workspace');
+      throw new BadRequestException('Expect page not to be workspace');
     }
 
     await this.permission.checkWorkspace(
@@ -156,6 +156,15 @@ export class PagePermissionResolver {
       user.id,
       Permission.Read
     );
+
+    const isPublic = await this.permission.isPublicPage(
+      docId.workspace,
+      docId.guid
+    );
+
+    if (!isPublic) {
+      throw new BadRequestException('Page is not public');
+    }
 
     return this.permission.revokePublicPage(docId.workspace, docId.guid);
   }

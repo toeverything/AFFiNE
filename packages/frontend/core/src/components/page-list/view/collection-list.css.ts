@@ -1,10 +1,10 @@
+import { cssVar } from '@toeverything/theme';
 import { style } from '@vanilla-extract/css';
-
 export const menuTitleStyle = style({
   marginLeft: '12px',
   marginTop: '10px',
-  fontSize: 'var(--affine-font-xs)',
-  color: 'var(--affine-text-secondary-color)',
+  fontSize: cssVar('fontXs'),
+  color: cssVar('textSecondaryColor'),
 });
 export const menuDividerStyle = style({
   marginTop: '2px',
@@ -12,7 +12,7 @@ export const menuDividerStyle = style({
   marginLeft: '12px',
   marginRight: '8px',
   height: '1px',
-  background: 'var(--affine-border-color)',
+  background: cssVar('borderColor'),
 });
 export const viewMenu = style({});
 export const viewOption = style({
@@ -25,7 +25,7 @@ export const viewOption = style({
   height: 24,
   opacity: 0,
   ':hover': {
-    backgroundColor: 'var(--affine-hover-color)',
+    backgroundColor: cssVar('hoverColor'),
   },
   selectors: {
     [`${viewMenu}:hover &`]: {
@@ -36,7 +36,7 @@ export const viewOption = style({
 export const filterMenuTrigger = style({
   padding: '6px 8px',
   ':hover': {
-    backgroundColor: 'var(--affine-hover-color)',
+    backgroundColor: cssVar('hoverColor'),
   },
   selectors: {
     [`&[data-is-hidden="true"]`]: {

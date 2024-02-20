@@ -1,11 +1,10 @@
+import { cssVar } from '@toeverything/theme';
 import { style } from '@vanilla-extract/css';
-
 export const plansLayoutRoot = style({
   display: 'flex',
   flexDirection: 'column',
   gap: '24px',
 });
-
 export const scrollArea = style({
   marginLeft: 'calc(-1 * var(--setting-modal-gap-x))',
   paddingLeft: 'var(--setting-modal-gap-x)',
@@ -13,12 +12,10 @@ export const scrollArea = style({
   overflowX: 'auto',
   scrollSnapType: 'x mandatory',
   paddingBottom: '21px',
-
   /** Avoid box-shadow clipping */
   paddingTop: '21px',
   marginTop: '-21px',
 });
-
 export const scrollBar = style({
   display: 'flex',
   alignItems: 'center',
@@ -27,25 +24,22 @@ export const scrollBar = style({
   height: '9px',
   width: '100%',
 });
-
 export const scrollThumb = style({
-  background: 'var(--affine-icon-secondary)',
+  background: cssVar('iconSecondary'),
   opacity: 0.6,
   overflow: 'hidden',
   height: '4px',
   borderRadius: '4px',
-
   vars: {
     '--radix-scroll-area-thumb-height': '4px',
   },
 });
-
 export const allPlansLink = style({
   display: 'flex',
   alignItems: 'center',
   gap: '4px',
-  color: 'var(--affine-link-color)',
+  color: cssVar('linkColor'),
   background: 'transparent',
   borderColor: 'transparent',
-  fontSize: 'var(--affine-font-xs)',
+  fontSize: cssVar('fontXs'),
 });

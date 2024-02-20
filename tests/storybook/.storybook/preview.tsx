@@ -8,10 +8,8 @@ import MockSessionContext, {
 import { ThemeProvider, useTheme } from 'next-themes';
 import { useDarkMode } from 'storybook-dark-mode';
 import { AffineContext } from '@affine/component/context';
-import { workspaceManager } from '@affine/workspace-impl';
 import useSWR from 'swr';
 import type { Decorator } from '@storybook/react';
-import { createStore } from 'jotai/vanilla';
 import { _setCurrentStore } from '@toeverything/infra/atom';
 import { setupGlobal, type Environment } from '@affine/env/global';
 
@@ -19,7 +17,16 @@ import type { Preview } from '@storybook/react';
 import { useLayoutEffect, useRef } from 'react';
 import { setup } from '@affine/core/bootstrap/setup';
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import { currentWorkspaceAtom } from '@affine/core/modules/workspace';
+import { ServiceCollection } from '@toeverything/infra/di';
+import {
+  WorkspaceManager,
+  configureInfraServices,
+  configureTestingInfraServices,
+} from '@toeverything/infra';
+import { CurrentWorkspaceService } from '@affine/core/modules/workspace';
+import { configureBusinessServices } from '@affine/core/modules/services';
+import { createStore } from 'jotai';
+import { GlobalScopeProvider } from '@affine/core/modules/infra-web/global-scope';
 
 setupGlobal();
 export const parameters = {
@@ -112,29 +119,42 @@ window.localStorage.setItem(
   '{"onBoarding":false, "dismissWorkspaceGuideModal":true}'
 );
 
+const services = new ServiceCollection();
+
+configureInfraServices(services);
+configureTestingInfraServices(services);
+configureBusinessServices(services);
+
+const provider = services.provider();
+
 const store = createStore();
 _setCurrentStore(store);
 setup();
-workspaceManager
+
+provider
+  .get(WorkspaceManager)
   .createWorkspace(WorkspaceFlavour.LOCAL, async w => {
     w.meta.setName('test-workspace');
     w.meta.writeVersion(w);
   })
-  .then(id => {
-    store.set(
-      currentWorkspaceAtom,
-      workspaceManager.use({ flavour: WorkspaceFlavour.LOCAL, id }).workspace
+  .then(workspaceMetadata => {
+    const currentWorkspace = provider.get(CurrentWorkspaceService);
+    const workspaceManager = provider.get(WorkspaceManager);
+    currentWorkspace.openWorkspace(
+      workspaceManager.open(workspaceMetadata).workspace
     );
   });
 
 const withContextDecorator: Decorator = (Story, context) => {
   return (
-    <ThemeProvider>
-      <AffineContext store={store}>
-        <ThemeChange />
-        <Story {...context} />
-      </AffineContext>
-    </ThemeProvider>
+    <GlobalScopeProvider provider={provider}>
+      <ThemeProvider>
+        <AffineContext store={store}>
+          <ThemeChange />
+          <Story {...context} />
+        </AffineContext>
+      </ThemeProvider>
+    </GlobalScopeProvider>
   );
 };
 

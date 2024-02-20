@@ -6,7 +6,7 @@ import type {
   SubscriptionMutator,
 } from '@affine/core/hooks/use-subscription';
 import {
-  checkoutMutation,
+  createCheckoutSessionMutation,
   SubscriptionPlan,
   SubscriptionRecurring,
   SubscriptionStatus,
@@ -359,7 +359,7 @@ const Upgrade = ({
 }) => {
   const t = useAFFiNEI18N();
   const { isMutating, trigger } = useMutation({
-    mutation: checkoutMutation,
+    mutation: createCheckoutSessionMutation,
   });
 
   const newTabRef = useRef<Window | null>(null);
@@ -383,13 +383,21 @@ const Upgrade = ({
       newTabRef.current.focus();
     } else {
       await trigger(
-        { recurring, idempotencyKey },
+        {
+          input: {
+            recurring,
+            idempotencyKey,
+            plan: SubscriptionPlan.Pro, // Only support prod plan now.
+            coupon: null,
+            successCallbackLink: null,
+          },
+        },
         {
           onSuccess: data => {
             // FIXME: safari prevents from opening new tab by window api
             // TODO(@xp): what if electron?
             const newTab = window.open(
-              data.checkout,
+              data.createCheckoutSession,
               '_blank',
               'noopener noreferrer'
             );

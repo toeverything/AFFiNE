@@ -56,7 +56,7 @@ export class WorkspacesController {
       this.logger.warn(`Blob ${workspaceId}/${name} has no metadata`);
     }
 
-    res.setHeader('cache-control', 'public, max-age=31536000, immutable');
+    res.setHeader('cache-control', 'public, max-age=2592000, immutable');
     body.pipe(res);
   }
 
@@ -106,6 +106,7 @@ export class WorkspacesController {
     }
 
     res.setHeader('content-type', 'application/octet-stream');
+    res.setHeader('cache-control', 'no-cache');
     res.send(update);
   }
 
@@ -142,6 +143,7 @@ export class WorkspacesController {
 
     if (history) {
       res.setHeader('content-type', 'application/octet-stream');
+      res.setHeader('cache-control', 'public, max-age=2592000, immutable');
       res.send(history.blob);
     } else {
       throw new NotFoundException('Doc history not found');

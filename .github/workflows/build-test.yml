@@ -19,7 +19,7 @@ env:
   MACOSX_DEPLOYMENT_TARGET: '10.13'
   NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
   PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/node_modules/.cache/ms-playwright
-  DISABLE_TELEMETRY: true
+  DEPLOYMENT_TYPE: affine
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -190,7 +190,7 @@ jobs:
         run: yarn nx test:coverage @affine/monorepo
 
       - name: Upload unit test coverage results
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./.coverage/store/lcov.info
@@ -209,8 +209,8 @@ jobs:
         spec:
           - { os: ubuntu-latest, target: x86_64-unknown-linux-gnu }
           - { os: windows-latest, target: x86_64-pc-windows-msvc }
-          - { os: macos-latest, target: x86_64-apple-darwin }
-          - { os: macos-latest, target: aarch64-apple-darwin }
+          - { os: macos-14, target: x86_64-apple-darwin }
+          - { os: macos-14, target: aarch64-apple-darwin }
 
     steps:
       - uses: actions/checkout@v4
@@ -291,6 +291,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: build-storage
     env:
+      NODE_ENV: test
       DISTRIBUTION: browser
     services:
       postgres:
@@ -353,7 +354,7 @@ jobs:
           DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
 
       - name: Upload server test coverage results
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./packages/backend/server/.coverage/lcov.info
@@ -447,7 +448,6 @@ jobs:
           ${{ matrix.tests.script }}
         env:
           DEV_SERVER_URL: http://localhost:8080
-          ENABLE_LOCAL_EMAIL: true
 
       - name: Upload test results
         if: ${{ failure() }}
@@ -462,22 +462,21 @@ jobs:
     runs-on: ${{ matrix.spec.os }}
     strategy:
       fail-fast: false
-      # all combinations: macos-latest x64, macos-latest arm64, windows-latest x64, ubuntu-latest x64
       matrix:
         spec:
           - {
-              os: macos-latest,
+              os: macos-14,
               platform: macos,
               arch: x64,
               target: x86_64-apple-darwin,
-              test: true,
+              test: false,
             }
           - {
-              os: macos-latest,
+              os: macos-14,
               platform: macos,
               arch: arm64,
               target: aarch64-apple-darwin,
-              test: false,
+              test: true,
             }
           - {
               os: ubuntu-latest,
@@ -534,7 +533,7 @@ jobs:
         run: yarn workspace @affine/electron build
 
       - name: Run desktop tests
-        if: ${{ matrix.spec.test && matrix.spec.os == 'ubuntu-latest' }}
+        if: ${{ matrix.spec.os == 'ubuntu-latest' }}
         run: xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- yarn workspace @affine-test/affine-desktop e2e
 
       - name: Run desktop tests
@@ -542,7 +541,7 @@ jobs:
         run: yarn workspace @affine-test/affine-desktop e2e
 
       - name: Make bundle
-        if: ${{ matrix.spec.os == 'macos-latest' && matrix.spec.arch == 'arm64' }}
+        if: ${{ matrix.spec.os == 'macos-14' && matrix.spec.arch == 'arm64' }}
         env:
           SKIP_BUNDLE: true
           SKIP_WEB_BUILD: true
@@ -550,7 +549,7 @@ jobs:
         run: yarn workspace @affine/electron package --platform=darwin --arch=arm64
 
       - name: Output check
-        if: ${{ matrix.spec.os == 'macos-latest' && matrix.spec.arch == 'arm64' }}
+        if: ${{ matrix.spec.os == 'macos-14' && matrix.spec.arch == 'arm64' }}
         run: |
           yarn workspace @affine/electron exec node --loader ts-node/esm/transpile-only ./scripts/macos-arm64-output-check.ts
 
@@ -561,3 +560,22 @@ jobs:
           name: test-results-e2e-${{ matrix.spec.os }}-${{ matrix.spec.arch }}
           path: ./test-results
           if-no-files-found: ignore
+
+  test-done:
+    needs:
+      - analyze
+      - lint
+      - check-yarn-binary
+      - e2e-test
+      - e2e-migration-test
+      - unit-test
+      - server-test
+      - server-e2e-test
+      - desktop-test
+    if: always()
+    runs-on: ubuntu-latest
+    name: 3, 2, 1 Launch
+    steps:
+      - run: exit 1
+        # Thank you, next https://github.com/vercel/next.js/blob/canary/.github/workflows/build_and_test.yml#L379
+        if: ${{ always() && (contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')) }}

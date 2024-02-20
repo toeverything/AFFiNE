@@ -34,6 +34,14 @@ export interface Scalars {
   Upload: { input: File; output: File };
 }
 
+export interface CreateCheckoutSessionInput {
+  coupon: InputMaybe<Scalars['String']['input']>;
+  idempotencyKey: Scalars['String']['input'];
+  plan: InputMaybe<SubscriptionPlan>;
+  recurring: InputMaybe<SubscriptionRecurring>;
+  successCallbackLink: InputMaybe<Scalars['String']['input']>;
+}
+
 /** The type of workspace feature */
 export enum FeatureType {
   Copilot = 'Copilot',
@@ -61,6 +69,11 @@ export enum Permission {
 export enum PublicPageMode {
   Edgeless = 'Edgeless',
   Page = 'Page',
+}
+
+export enum ServerDeploymentType {
+  Affine = 'Affine',
+  Selfhosted = 'Selfhosted',
 }
 
 export enum ServerFeature {
@@ -192,12 +205,14 @@ export type ChangePasswordMutation = {
   };
 };
 
-export type CheckoutMutationVariables = Exact<{
-  recurring: SubscriptionRecurring;
-  idempotencyKey: Scalars['String']['input'];
+export type CreateCheckoutSessionMutationVariables = Exact<{
+  input: CreateCheckoutSessionInput;
 }>;
 
-export type CheckoutMutation = { __typename?: 'Mutation'; checkout: string };
+export type CreateCheckoutSessionMutation = {
+  __typename?: 'Mutation';
+  createCheckoutSession: string;
+};
 
 export type CreateCustomerPortalMutationVariables = Exact<{
   [key: string]: never;
@@ -663,7 +678,7 @@ export type ServerConfigQuery = {
     baseUrl: string;
     name: string;
     features: Array<ServerFeature>;
-    flavor: string;
+    type: ServerDeploymentType;
   };
 };
 
@@ -1041,9 +1056,9 @@ export type Mutations =
       response: ChangePasswordMutation;
     }
   | {
-      name: 'checkoutMutation';
-      variables: CheckoutMutationVariables;
-      response: CheckoutMutation;
+      name: 'createCheckoutSessionMutation';
+      variables: CreateCheckoutSessionMutationVariables;
+      response: CreateCheckoutSessionMutation;
     }
   | {
       name: 'createCustomerPortalMutation';

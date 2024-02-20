@@ -1,9 +1,8 @@
-import { collectionsCRUDAtom } from '@affine/core/atoms/collections';
 import { useDeleteCollectionInfo } from '@affine/core/hooks/affine/use-delete-collection-info';
-import { waitForCurrentWorkspaceAtom } from '@affine/core/modules/workspace';
 import type { Collection, DeleteCollectionInfo } from '@affine/env/filter';
 import { Trans } from '@affine/i18n';
-import { useAtomValue } from 'jotai';
+import { useService } from '@toeverything/infra';
+import { Workspace } from '@toeverything/infra';
 import {
   type ReactElement,
   useCallback,
@@ -12,6 +11,7 @@ import {
   useState,
 } from 'react';
 
+import { CollectionService } from '../../../modules/collection';
 import { ListFloatingToolbar } from '../components/list-floating-toolbar';
 import { collectionHeaderColsDef } from '../header-col-def';
 import { CollectionOperationCell } from '../operation-cell';
@@ -69,8 +69,8 @@ export const VirtualizedCollectionList = ({
   const [selectedCollectionIds, setSelectedCollectionIds] = useState<string[]>(
     []
   );
-  const setting = useCollectionManager(collectionsCRUDAtom);
-  const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
+  const setting = useCollectionManager(useService(CollectionService));
+  const currentWorkspace = useService(Workspace);
   const info = useDeleteCollectionInfo();
 
   const collectionOperations = useCollectionOperationsRenderer({

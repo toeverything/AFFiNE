@@ -1,54 +1,50 @@
-import { setupEditorFlags } from '@affine/env/global';
-import type { WorkspaceFactory } from '@affine/workspace';
-import { WorkspaceEngine } from '@affine/workspace';
-import { BlobEngine } from '@affine/workspace';
-import { SyncEngine } from '@affine/workspace';
-import { globalBlockSuiteSchema } from '@affine/workspace';
-import { Workspace } from '@affine/workspace';
-import { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
-import { nanoid } from 'nanoid';
+import type { ServiceCollection, WorkspaceFactory } from '@toeverything/infra';
+import {
+  AwarenessContext,
+  AwarenessProvider,
+  LocalBlobStorage,
+  LocalSyncStorage,
+  RemoteBlobStorage,
+  WorkspaceIdContext,
+  WorkspaceScope,
+} from '@toeverything/infra';
 
-import { createBroadcastChannelAwarenessProvider } from './awareness';
-import { createLocalBlobStorage } from './blob';
-import { createStaticBlobStorage } from './blob-static';
-import { createLocalStorage } from './sync';
+import { BroadcastChannelAwarenessProvider } from './awareness';
+import { IndexedDBBlobStorage } from './blob-indexeddb';
+import { SQLiteBlobStorage } from './blob-sqlite';
+import { StaticBlobStorage } from './blob-static';
+import { IndexedDBSyncStorage } from './sync-indexeddb';
+import { SQLiteSyncStorage } from './sync-sqlite';
 
-export const localWorkspaceFactory: WorkspaceFactory = {
-  name: 'local',
-  openWorkspace(metadata) {
-    const blobEngine = new BlobEngine(createLocalBlobStorage(metadata.id), [
-      createStaticBlobStorage(),
-    ]);
-    const bs = new BlockSuiteWorkspace({
-      id: metadata.id,
-      blobStorages: [
-        () => ({
-          crud: blobEngine,
-        }),
-      ],
-      idGenerator: () => nanoid(),
-      schema: globalBlockSuiteSchema,
-    });
-    const syncEngine = new SyncEngine(
-      bs.doc,
-      createLocalStorage(metadata.id),
-      []
-    );
-    const awarenessProvider = createBroadcastChannelAwarenessProvider(
-      metadata.id,
-      bs.awarenessStore.awareness
-    );
-    const engine = new WorkspaceEngine(blobEngine, syncEngine, [
-      awarenessProvider,
-    ]);
+export class LocalWorkspaceFactory implements WorkspaceFactory {
+  name = 'local';
+  configureWorkspace(services: ServiceCollection): void {
+    if (environment.isDesktop) {
+      services
+        .scope(WorkspaceScope)
+        .addImpl(LocalBlobStorage, SQLiteBlobStorage, [WorkspaceIdContext])
+        .addImpl(LocalSyncStorage, SQLiteSyncStorage, [WorkspaceIdContext]);
+    } else {
+      services
+        .scope(WorkspaceScope)
+        .addImpl(LocalBlobStorage, IndexedDBBlobStorage, [WorkspaceIdContext])
+        .addImpl(LocalSyncStorage, IndexedDBSyncStorage, [WorkspaceIdContext]);
+    }
 
-    setupEditorFlags(bs);
-
-    return new Workspace(metadata, engine, bs);
-  },
-  async getWorkspaceBlob(id, blobKey) {
-    const blobStorage = createLocalBlobStorage(id);
+    services
+      .scope(WorkspaceScope)
+      .addImpl(RemoteBlobStorage('static'), StaticBlobStorage)
+      .addImpl(
+        AwarenessProvider('broadcast-channel'),
+        BroadcastChannelAwarenessProvider,
+        [WorkspaceIdContext, AwarenessContext]
+      );
+  }
+  async getWorkspaceBlob(id: string, blobKey: string): Promise<Blob | null> {
+    const blobStorage = environment.isDesktop
+      ? new SQLiteBlobStorage(id)
+      : new IndexedDBBlobStorage(id);
 
     return await blobStorage.get(blobKey);
-  },
-};
+  }
+}

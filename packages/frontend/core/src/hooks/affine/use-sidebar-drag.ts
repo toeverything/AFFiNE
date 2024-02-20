@@ -1,10 +1,10 @@
 import { toast } from '@affine/component';
 import type { DraggableTitleCellData } from '@affine/core/components/page-list';
 import { usePageMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
-import { waitForCurrentWorkspaceAtom } from '@affine/core/modules/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { DragEndEvent, UniqueIdentifier } from '@dnd-kit/core';
-import { useAtomValue } from 'jotai';
+import { Workspace } from '@toeverything/infra';
+import { useService } from '@toeverything/infra/di';
 import { useCallback } from 'react';
 
 import { useBlockSuiteMetaHelper } from './use-block-suite-meta-helper';
@@ -69,7 +69,7 @@ export function getDragItemId(
 
 export const useSidebarDrag = () => {
   const t = useAFFiNEI18N();
-  const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
+  const currentWorkspace = useService(Workspace);
   const workspace = currentWorkspace.blockSuiteWorkspace;
   const { setTrashModal } = useTrashModalHelper(workspace);
   const { addToFavorite, removeFromFavorite } =

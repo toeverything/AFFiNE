@@ -1,2 +1,2 @@
-export * from './atoms';
+export * from './current-workspace';
 export * from './properties';

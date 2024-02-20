@@ -8,7 +8,7 @@ import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import type { WorkspaceMetadata } from '@affine/workspace/metadata';
+import type { WorkspaceMetadata } from '@toeverything/infra';
 import { useCallback, useState } from 'react';
 
 import * as styles from './style.css';

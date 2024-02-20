@@ -1,27 +1,25 @@
+import { cssVar } from '@toeverything/theme';
 import { globalStyle, style } from '@vanilla-extract/css';
-
 export const settingSlideBar = style({
   width: '25%',
   maxWidth: '242px',
-  background: 'var(--affine-background-secondary-color)',
+  background: cssVar('backgroundSecondaryColor'),
   padding: '20px 0px',
   height: '100%',
   flexShrink: 0,
   display: 'flex',
   flexDirection: 'column',
 });
-
 export const sidebarTitle = style({
-  fontSize: 'var(--affine-font-h-6)',
+  fontSize: cssVar('fontH6'),
   fontWeight: '600',
-  lineHeight: 'var(--affine-line-height)',
+  lineHeight: cssVar('lineHeight'),
   padding: '0px 16px 0px 24px',
 });
-
 export const sidebarSubtitle = style({
-  fontSize: 'var(--affine-font-sm)',
-  lineHeight: 'var(--affine-line-height)',
-  color: 'var(--affine-text-secondary-color)',
+  fontSize: cssVar('fontSm'),
+  lineHeight: cssVar('lineHeight'),
+  color: cssVar('textSecondaryColor'),
   padding: '0px 16px 0px 24px',
   marginTop: '20px',
   marginBottom: '4px',
@@ -29,7 +27,6 @@ export const sidebarSubtitle = style({
   justifyContent: 'space-between',
   alignItems: 'center',
 });
-
 export const sidebarItemsWrapper = style({
   display: 'flex',
   flexDirection: 'column',
@@ -41,7 +38,6 @@ export const sidebarItemsWrapper = style({
     },
   },
 });
-
 export const sidebarSelectItem = style({
   display: 'flex',
   alignItems: 'center',
@@ -49,20 +45,19 @@ export const sidebarSelectItem = style({
   padding: '0px 8px',
   height: '30px',
   flexShrink: 0,
-  fontSize: 'var(--affine-font-sm)',
+  fontSize: cssVar('fontSm'),
   borderRadius: '8px',
   cursor: 'pointer',
   userSelect: 'none',
   ':hover': {
-    background: 'var(--affine-hover-color)',
+    background: cssVar('hoverColor'),
   },
   selectors: {
     '&.active': {
-      background: 'var(--affine-hover-color)',
+      background: cssVar('hoverColor'),
     },
   },
 });
-
 export const sidebarSelectSubItem = style({
   display: 'flex',
   alignItems: 'center',
@@ -70,18 +65,17 @@ export const sidebarSelectSubItem = style({
   padding: '0px 8px 0px 32px',
   height: '30px',
   flexShrink: 0,
-  fontSize: 'var(--affine-font-sm)',
+  fontSize: cssVar('fontSm'),
   borderRadius: '8px',
   cursor: 'pointer',
   userSelect: 'none',
-  color: 'var(--affine-text-secondary-color)',
+  color: cssVar('textSecondaryColor'),
   selectors: {
     '&.active, &:hover': {
-      color: 'var(--affine-text-primary-color)',
+      color: cssVar('textPrimaryColor'),
     },
   },
 });
-
 globalStyle(`${settingSlideBar} .icon`, {
   width: '16px',
   height: '16px',
@@ -107,13 +101,13 @@ export const currentWorkspaceLabel = style({
       width: '8px',
       height: '8px',
       borderRadius: '50%',
-      background: 'var(--affine-blue)',
+      background: cssVar('blue'),
     },
   },
 });
-
-export const sidebarFooter = style({ padding: '0 16px' });
-
+export const sidebarFooter = style({
+  padding: '0 16px',
+});
 export const accountButton = style({
   padding: '4px 8px',
   borderRadius: '8px',
@@ -124,15 +118,14 @@ export const accountButton = style({
   justifyContent: 'space-between',
   alignItems: 'center',
   ':hover': {
-    background: 'var(--affine-hover-color)',
+    background: cssVar('hoverColor'),
   },
   selectors: {
     '&.active': {
-      background: 'var(--affine-hover-color)',
+      background: cssVar('hoverColor'),
     },
   },
 });
-
 globalStyle(`${accountButton} .avatar`, {
   width: '28px',
   height: '28px',
@@ -143,12 +136,11 @@ globalStyle(`${accountButton} .avatar`, {
   alignItems: 'center',
   flexShrink: 0,
 });
-
 globalStyle(`${accountButton} .avatar.not-sign`, {
-  color: 'var(--affine-icon-secondary)',
-  background: 'var(--affine-white)',
+  color: cssVar('iconSecondary'),
+  background: cssVar('white'),
   paddingBottom: '2px',
-  border: '1px solid var(--affine-icon-secondary)',
+  border: `1px solid ${cssVar('iconSecondary')}`,
 });
 globalStyle(`${accountButton} .content`, {
   flexGrow: '1',
@@ -163,7 +155,7 @@ globalStyle(`${accountButton} .name-container`, {
   height: '22px',
 });
 globalStyle(`${accountButton} .name`, {
-  fontSize: 'var(--affine-font-sm)',
+  fontSize: cssVar('fontSm'),
   fontWeight: 600,
   overflow: 'hidden',
   textOverflow: 'ellipsis',
@@ -171,8 +163,8 @@ globalStyle(`${accountButton} .name`, {
   height: '22px',
 });
 globalStyle(`${accountButton} .email`, {
-  fontSize: 'var(--affine-font-xs)',
-  color: 'var(--affine-text-secondary-color)',
+  fontSize: cssVar('fontXs'),
+  color: cssVar('textSecondaryColor'),
   overflow: 'hidden',
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',

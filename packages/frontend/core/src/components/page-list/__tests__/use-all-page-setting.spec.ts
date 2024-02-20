@@ -3,57 +3,46 @@
  */
 import 'fake-indexeddb/auto';
 
+import type { CollectionService } from '@affine/core/modules/collection';
 import type { Collection } from '@affine/env/filter';
 import { renderHook } from '@testing-library/react';
-import { atom } from 'jotai';
-import { atomWithObservable } from 'jotai/utils';
+import { LiveData } from '@toeverything/infra';
 import { BehaviorSubject } from 'rxjs';
 import { expect, test } from 'vitest';
 
 import { createDefaultFilter, vars } from '../filter/vars';
-import {
-  type CollectionsCRUD,
-  useCollectionManager,
-} from '../use-collection-manager';
+import { useCollectionManager } from '../use-collection-manager';
 
 const defaultMeta = { tags: { options: [] } };
 const collectionsSubject = new BehaviorSubject<Collection[]>([]);
-const baseAtom = atomWithObservable<Collection[]>(
-  () => {
-    return collectionsSubject;
-  },
-  {
-    initialValue: [],
-  }
-);
 
-const mockAtom = atom(get => {
-  return {
-    collections: get(baseAtom),
-    addCollection: (...collections) => {
-      const prev = collectionsSubject.value;
-      collectionsSubject.next([...collections, ...prev]);
-    },
-    deleteCollection: (...ids) => {
-      const prev = collectionsSubject.value;
-      collectionsSubject.next(prev.filter(v => !ids.includes(v.id)));
-    },
-    updateCollection: (id, updater) => {
-      const prev = collectionsSubject.value;
-      collectionsSubject.next(
-        prev.map(v => {
-          if (v.id === id) {
-            return updater(v);
-          }
-          return v;
-        })
-      );
-    },
-  } satisfies CollectionsCRUD;
-});
+const mockWorkspaceCollectionService = {
+  collections: LiveData.from(collectionsSubject, []),
+  addCollection: (...collections) => {
+    const prev = collectionsSubject.value;
+    collectionsSubject.next([...collections, ...prev]);
+  },
+  deleteCollection: (...ids) => {
+    const prev = collectionsSubject.value;
+    collectionsSubject.next(prev.filter(v => !ids.includes(v.id)));
+  },
+  updateCollection: (id, updater) => {
+    const prev = collectionsSubject.value;
+    collectionsSubject.next(
+      prev.map(v => {
+        if (v.id === id) {
+          return updater(v);
+        }
+        return v;
+      })
+    );
+  },
+} as CollectionService;
 
 test('useAllPageSetting', async () => {
-  const settingHook = renderHook(() => useCollectionManager(mockAtom));
+  const settingHook = renderHook(() =>
+    useCollectionManager(mockWorkspaceCollectionService)
+  );
   const prevCollection = settingHook.result.current.currentCollection;
   expect(settingHook.result.current.savedCollections).toEqual([]);
   settingHook.result.current.updateCollection({

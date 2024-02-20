@@ -35,7 +35,7 @@
     }
   },
   "devDependencies": {
-    "@napi-rs/cli": "3.0.0-alpha.33",
+    "@napi-rs/cli": "3.0.0-alpha.36",
     "@types/node": "^20.9.3",
     "@types/uuid": "^9.0.7",
     "ava": "^6.0.0",

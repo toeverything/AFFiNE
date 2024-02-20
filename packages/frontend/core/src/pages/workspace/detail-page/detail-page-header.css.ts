@@ -1,4 +1,4 @@
-import type { ComplexStyleRule } from '@vanilla-extract/css';
+import { cssVar } from '@toeverything/theme';
 import { style } from '@vanilla-extract/css';
 
 export const header = style({
@@ -7,11 +7,14 @@ export const header = style({
   width: '100%',
   alignItems: 'center',
   flexShrink: 0,
-  background: 'var(--affine-background-primary-color)',
-  borderBottom: '1px solid var(--affine-border-color)',
+  background: cssVar('backgroundPrimaryColor'),
+  borderBottom: `1px solid ${cssVar('borderColor')}`,
   selectors: {
     '&[data-sidebar-floating="false"]': {
-      WebkitAppRegion: 'drag',
+      ['WebkitAppRegion' as string]: 'drag',
+    },
+    '&:has([data-popper-placement])': {
+      ['WebkitAppRegion' as string]: 'no-drag',
     },
   },
   '@media': {
@@ -19,11 +22,7 @@ export const header = style({
       display: 'none',
     },
   },
-  ':has([data-popper-placement])': {
-    WebkitAppRegion: 'no-drag',
-  },
-} as ComplexStyleRule);
-
+});
 export const mainHeader = style([
   header,
   {
@@ -31,7 +30,6 @@ export const mainHeader = style([
     gap: 12,
   },
 ]);
-
 export const sidebarHeader = style([
   header,
   {
@@ -39,18 +37,15 @@ export const sidebarHeader = style([
     gap: '12px',
   },
 ]);
-
 export const mainHeaderRight = style({
   display: 'flex',
   alignItems: 'center',
   gap: '8px',
 });
-
 export const spacer = style({
   flexGrow: 1,
   minWidth: 12,
 });
-
 export const standaloneExtensionSwitcherWrapper = style({
   display: 'flex',
   alignItems: 'center',
@@ -59,7 +54,6 @@ export const standaloneExtensionSwitcherWrapper = style({
   height: '52px',
   position: 'relative',
 });
-
 export const journalWeekPicker = style({
   minWidth: 100,
   flexGrow: 1,

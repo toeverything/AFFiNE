@@ -1,11 +1,10 @@
+import { cssVar } from '@toeverything/theme';
 import { globalStyle, style } from '@vanilla-extract/css';
-
 export const baseContainer = style({
   padding: '4px 16px',
   display: 'flex',
   flexFlow: 'column nowrap',
 });
-
 export const scrollableContainerRoot = style({
   flex: '1 1 auto',
   overflowY: 'hidden',
@@ -13,7 +12,6 @@ export const scrollableContainerRoot = style({
     '--scrollbar-width': '10px',
   },
 });
-
 export const scrollTopBorder = style({
   position: 'absolute',
   top: 0,
@@ -22,24 +20,21 @@ export const scrollTopBorder = style({
   height: '1px',
   transition: 'opacity .3s .2s',
   opacity: 0,
-  background: 'var(--affine-black-10)',
+  background: cssVar('black10'),
   selectors: {
     '&[data-has-scroll-top="true"]': {
       opacity: 1,
     },
   },
 });
-
 export const scrollableViewport = style({
   height: '100%',
   marginTop: '4px',
 });
-
 globalStyle(`${scrollableViewport} > div`, {
   maxWidth: '100%',
   display: 'block !important',
 });
-
 export const scrollableContainer = style([
   baseContainer,
   {
@@ -47,7 +42,6 @@ export const scrollableContainer = style([
     padding: '4px 8px',
   },
 ]);
-
 export const scrollbar = style({
   display: 'flex',
   flexDirection: 'column',
@@ -64,10 +58,9 @@ export const scrollbar = style({
     },
   },
 });
-
 export const scrollbarThumb = style({
   position: 'relative',
-  background: 'var(--affine-black-30)',
+  background: cssVar('black30'),
   borderRadius: '4px',
   overflow: 'hidden',
   selectors: {

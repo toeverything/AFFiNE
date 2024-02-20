@@ -13,7 +13,10 @@ const configFiles = [
 ];
 
 function configCleaner(content) {
-  return content.replace(/(\/\/#.*$)|(\/\/\s+TODO.*$)/gm, '');
+  return content.replace(
+    /(^\/\/#.*$)|(^\/\/\s+TODO.*$)|("use\sstrict";?)|(^.*eslint-disable.*$)/gm,
+    ''
+  );
 }
 
 function prepare() {

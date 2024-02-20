@@ -4,9 +4,8 @@ import type { NestExpressApplication } from '@nestjs/platform-express';
 import cookieParser from 'cookie-parser';
 import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 
-import { SocketIoAdapter } from './fundamentals';
-import { SocketIoAdapterImpl } from './fundamentals/websocket';
-import { ExceptionLogger } from './middleware/exception-logger';
+import { GlobalExceptionFilter } from './fundamentals';
+import { SocketIoAdapter, SocketIoAdapterImpl } from './fundamentals/websocket';
 import { serverTimingAndCache } from './middleware/timing';
 
 export async function createApp() {
@@ -29,7 +28,7 @@ export async function createApp() {
     })
   );
 
-  app.useGlobalFilters(new ExceptionLogger());
+  app.useGlobalFilters(new GlobalExceptionFilter(app.getHttpAdapter()));
   app.use(cookieParser());
 
   if (AFFiNE.flavor.sync) {

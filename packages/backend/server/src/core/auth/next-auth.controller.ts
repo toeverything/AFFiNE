@@ -107,7 +107,10 @@ export class NextAuthController {
       if (email) {
         const user = await this.prisma.user.findFirst({
           where: {
-            email,
+            email: {
+              equals: email,
+              mode: 'insensitive',
+            },
           },
         });
         if (!user) {

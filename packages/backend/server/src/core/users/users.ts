@@ -7,13 +7,14 @@ export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
 
   async findUserByEmail(email: string) {
-    return this.prisma.user
-      .findUnique({
-        where: { email },
-      })
-      .catch(() => {
-        return null;
-      });
+    return this.prisma.user.findFirst({
+      where: {
+        email: {
+          equals: email,
+          mode: 'insensitive',
+        },
+      },
+    });
   }
 
   async findUserById(id: string) {

@@ -48,7 +48,7 @@ test('should be able to set quota', async t => {
   const q1 = await quota.getUserQuota(u1.id);
   t.truthy(q1, 'should have quota');
   t.is(q1?.feature.name, QuotaType.FreePlanV1, 'should be free plan');
-  t.is(q1?.feature.version, 2, 'should be version 2');
+  t.is(q1?.feature.version, 3, 'should be version 2');
 
   await quota.switchUserQuota(u1.id, QuotaType.ProPlanV1);
 
@@ -64,8 +64,8 @@ test('should be able to check storage quota', async t => {
   const u1 = await auth.signUp('DarkSky', 'darksky@example.org', '123456');
 
   const q1 = await storageQuota.getUserQuota(u1.id);
-  t.is(q1?.blobLimit, Quotas[3].configs.blobLimit, 'should be free plan');
-  t.is(q1?.storageQuota, Quotas[3].configs.storageQuota, 'should be free plan');
+  t.is(q1?.blobLimit, Quotas[4].configs.blobLimit, 'should be free plan');
+  t.is(q1?.storageQuota, Quotas[4].configs.storageQuota, 'should be free plan');
 
   await quota.switchUserQuota(u1.id, QuotaType.ProPlanV1);
   const q2 = await storageQuota.getUserQuota(u1.id);
@@ -78,8 +78,8 @@ test('should be able revert quota', async t => {
   const u1 = await auth.signUp('DarkSky', 'darksky@example.org', '123456');
 
   const q1 = await storageQuota.getUserQuota(u1.id);
-  t.is(q1?.blobLimit, Quotas[3].configs.blobLimit, 'should be free plan');
-  t.is(q1?.storageQuota, Quotas[3].configs.storageQuota, 'should be free plan');
+  t.is(q1?.blobLimit, Quotas[4].configs.blobLimit, 'should be free plan');
+  t.is(q1?.storageQuota, Quotas[4].configs.storageQuota, 'should be free plan');
 
   await quota.switchUserQuota(u1.id, QuotaType.ProPlanV1);
   const q2 = await storageQuota.getUserQuota(u1.id);
@@ -88,7 +88,7 @@ test('should be able revert quota', async t => {
 
   await quota.switchUserQuota(u1.id, QuotaType.FreePlanV1);
   const q3 = await storageQuota.getUserQuota(u1.id);
-  t.is(q3?.blobLimit, Quotas[3].configs.blobLimit, 'should be free plan');
+  t.is(q3?.blobLimit, Quotas[4].configs.blobLimit, 'should be free plan');
 
   const quotas = await quota.getUserQuotas(u1.id);
   t.is(quotas.length, 3, 'should have 3 quotas');

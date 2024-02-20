@@ -1,20 +1,19 @@
+import { cssVar } from '@toeverything/theme';
 import { style } from '@vanilla-extract/css';
-
 export const inputWrapper = style({
   width: '100%',
   height: 28,
   lineHeight: '22px',
   padding: '0 10px',
-  color: 'var(--affine-text-primary-color)',
+  color: cssVar('textPrimaryColor'),
   border: '1px solid',
-  backgroundColor: 'var(--affine-white)',
+  backgroundColor: cssVar('white'),
   borderRadius: 8,
   display: 'flex',
   justifyContent: 'center',
   alignItems: 'center',
-  fontSize: 'var(--affine-font-base)',
+  fontSize: cssVar('fontBase'),
   boxSizing: 'border-box',
-
   selectors: {
     '&.no-border': {
       border: 'unset',
@@ -29,27 +28,26 @@ export const inputWrapper = style({
     },
     // color
     '&.disabled': {
-      background: 'var(--affine-hover-color)',
+      background: cssVar('hoverColor'),
     },
     '&.error': {
-      borderColor: 'var(--affine-error-color)',
+      borderColor: cssVar('errorColor'),
     },
     '&.success': {
-      borderColor: 'var(--affine-success-color)',
+      borderColor: cssVar('successColor'),
     },
     '&.warning': {
-      borderColor: 'var(--affine-warning-color)',
+      borderColor: cssVar('warningColor'),
     },
     '&.default': {
-      borderColor: 'var(--affine-border-color)',
+      borderColor: cssVar('borderColor'),
     },
     '&.default.focus': {
-      borderColor: 'var(--affine-primary-color)',
+      borderColor: cssVar('primaryColor'),
       boxShadow: '0px 0px 0px 2px rgba(30, 150, 235, 0.30);',
     },
   },
 });
-
 export const input = style({
   height: '100%',
   width: '0',
@@ -61,13 +59,12 @@ export const input = style({
   outline: 'none',
   border: 'none',
   background: 'transparent',
-
   selectors: {
     '&::placeholder': {
-      color: 'var(--affine-placeholder-color)',
+      color: cssVar('placeholderColor'),
     },
     '&:disabled': {
-      color: 'var(--affine-text-disable-color)',
+      color: cssVar('textDisableColor'),
     },
   },
 });

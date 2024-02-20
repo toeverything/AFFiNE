@@ -1,3 +1,4 @@
+import { toast } from '@affine/component';
 import {
   Menu,
   MenuIcon,
@@ -11,8 +12,6 @@ import { useBlockSuiteMetaHelper } from '@affine/core/hooks/affine/use-block-sui
 import { useExportPage } from '@affine/core/hooks/affine/use-export-page';
 import { useTrashModalHelper } from '@affine/core/hooks/affine/use-trash-modal-helper';
 import { useBlockSuitePageMeta } from '@affine/core/hooks/use-block-suite-page-meta';
-import { waitForCurrentWorkspaceAtom } from '@affine/core/modules/workspace';
-import { toast } from '@affine/core/utils';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
@@ -26,6 +25,7 @@ import {
   ImportIcon,
   PageIcon,
 } from '@blocksuite/icons';
+import { useService, Workspace } from '@toeverything/infra';
 import { useAtomValue } from 'jotai';
 import { useCallback, useState } from 'react';
 
@@ -46,8 +46,7 @@ export const PageHeaderMenuButton = ({
 }: PageMenuProps) => {
   const t = useAFFiNEI18N();
 
-  // fixme(himself65): remove these hooks ASAP
-  const workspace = useAtomValue(waitForCurrentWorkspaceAtom);
+  const workspace = useService(Workspace);
   const blockSuiteWorkspace = workspace.blockSuiteWorkspace;
   const currentPage = blockSuiteWorkspace.getPage(pageId);
   assertExists(currentPage);

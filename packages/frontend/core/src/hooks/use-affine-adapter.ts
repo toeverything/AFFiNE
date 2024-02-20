@@ -1,12 +1,7 @@
-import type { Workspace } from '@blocksuite/store';
-import { useAtomValue } from 'jotai';
+import { useService } from '@toeverything/infra/di';
 import { useEffect, useState } from 'react';
 
-import type { WorkspacePropertiesAdapter } from '../modules/workspace/properties';
-import {
-  currentWorkspacePropertiesAdapterAtom,
-  workspaceAdapterAtomFamily,
-} from '../modules/workspace/properties';
+import { WorkspacePropertiesAdapter } from '../modules/workspace/properties';
 
 function getProxy<T extends object>(obj: T) {
   return new Proxy(obj, {});
@@ -31,11 +26,6 @@ const useReactiveAdapter = (adapter: WorkspacePropertiesAdapter) => {
 };
 
 export function useCurrentWorkspacePropertiesAdapter() {
-  const adapter = useAtomValue(currentWorkspacePropertiesAdapterAtom);
-  return useReactiveAdapter(adapter);
-}
-
-export function useWorkspacePropertiesAdapter(workspace: Workspace) {
-  const adapter = useAtomValue(workspaceAdapterAtomFamily(workspace));
+  const adapter = useService(WorkspacePropertiesAdapter);
   return useReactiveAdapter(adapter);
 }

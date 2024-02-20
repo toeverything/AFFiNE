@@ -1,8 +1,8 @@
+import { cssVar } from '@toeverything/theme';
 import { style } from '@vanilla-extract/css';
-
 export const divider = style({
   height: '1px',
-  backgroundColor: 'var(--affine-border-color)',
+  backgroundColor: cssVar('borderColor'),
   borderRadius: '8px',
   margin: '8px 0',
   width: '100%',

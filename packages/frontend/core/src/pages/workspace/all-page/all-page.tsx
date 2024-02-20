@@ -1,5 +1,4 @@
 import type { AllPageFilterOption } from '@affine/core/atoms';
-import { collectionsCRUDAtom } from '@affine/core/atoms/collections';
 import { HubIsland } from '@affine/core/components/affine/hub-island';
 import {
   CollectionListHeader,
@@ -10,7 +9,6 @@ import {
   useCollectionManager,
   useEditCollectionName,
   useFilteredPageMetas,
-  useSavedCollections,
   useTagMetas,
   VirtualizedCollectionList,
   VirtualizedPageList,
@@ -22,15 +20,18 @@ import {
 import { useAllPageListConfig } from '@affine/core/hooks/affine/use-all-page-list-config';
 import { useBlockSuitePageMeta } from '@affine/core/hooks/use-block-suite-page-meta';
 import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
-import { waitForCurrentWorkspaceAtom } from '@affine/core/modules/workspace';
 import { performanceRenderLogger } from '@affine/core/shared';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { useAtomValue, useSetAtom } from 'jotai';
+import { useService } from '@toeverything/infra';
+import { useLiveData } from '@toeverything/infra';
+import { Workspace } from '@toeverything/infra';
+import { useSetAtom } from 'jotai';
 import { nanoid } from 'nanoid';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 import { NIL } from 'uuid';
 
+import { CollectionService } from '../../../modules/collection';
 import {
   EmptyCollectionList,
   EmptyPageList,
@@ -47,13 +48,14 @@ export const AllPage = ({
 }) => {
   const t = useAFFiNEI18N();
   const params = useParams();
-  const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
+  const currentWorkspace = useService(Workspace);
   const pageMetas = useBlockSuitePageMeta(currentWorkspace.blockSuiteWorkspace);
   const [hideHeaderCreateNew, setHideHeaderCreateNew] = useState(true);
 
-  const setting = useCollectionManager(collectionsCRUDAtom);
+  const collectionService = useService(CollectionService);
+  const collections = useLiveData(collectionService.collections);
+  const setting = useCollectionManager(collectionService);
   const config = useAllPageListConfig();
-  const { collections } = useSavedCollections(collectionsCRUDAtom);
   const { tags, tagMetas, filterPageMetaByTag, deleteTags } = useTagMetas(
     currentWorkspace.blockSuiteWorkspace,
     pageMetas
@@ -212,7 +214,7 @@ export const AllPage = ({
 export const Component = () => {
   performanceRenderLogger.info('AllPage');
 
-  const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
+  const currentWorkspace = useService(Workspace);
   const currentCollection = useSetAtom(currentCollectionAtom);
   const navigateHelper = useNavigateHelper();
 

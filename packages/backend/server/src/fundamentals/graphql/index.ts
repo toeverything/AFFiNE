@@ -3,9 +3,10 @@ import { fileURLToPath } from 'node:url';
 
 import type { ApolloDriverConfig } from '@nestjs/apollo';
 import { ApolloDriver } from '@nestjs/apollo';
-import { Global, Module } from '@nestjs/common';
+import { Global, HttpException, HttpStatus, Module } from '@nestjs/common';
 import { GraphQLModule } from '@nestjs/graphql';
 import { Request, Response } from 'express';
+import { GraphQLError } from 'graphql';
 
 import { Config } from '../config';
 import { GQLLoggerPlugin } from './logger-plugin';
@@ -34,7 +35,37 @@ import { GQLLoggerPlugin } from './logger-plugin';
             res,
             isAdminQuery: false,
           }),
+          includeStacktraceInErrorResponses: !config.node.prod,
           plugins: [new GQLLoggerPlugin()],
+          formatError: (formattedError, error) => {
+            // @ts-expect-error allow assign
+            formattedError.extensions ??= {};
+
+            if (
+              error instanceof GraphQLError &&
+              error.originalError instanceof HttpException
+            ) {
+              const statusCode = error.originalError.getStatus();
+              const statusName = HttpStatus[statusCode];
+
+              // originally be 'INTERNAL_SERVER_ERROR'
+              formattedError.extensions['code'] = statusCode;
+              formattedError.extensions['status'] = statusName;
+              delete formattedError.extensions['originalError'];
+
+              return formattedError;
+            } else {
+              // @ts-expect-error allow assign
+              formattedError.message = 'Internal Server Error';
+
+              formattedError.extensions['code'] =
+                HttpStatus.INTERNAL_SERVER_ERROR;
+              formattedError.extensions['status'] =
+                HttpStatus[HttpStatus.INTERNAL_SERVER_ERROR];
+            }
+
+            return formattedError;
+          },
         };
       },
       inject: [Config],

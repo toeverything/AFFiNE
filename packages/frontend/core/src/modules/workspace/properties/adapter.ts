@@ -1,6 +1,7 @@
 // the adapter is to bridge the workspace rootdoc & native js bindings
 
-import { createYProxy, type Workspace, type Y } from '@blocksuite/store';
+import { createYProxy, type Y } from '@blocksuite/store';
+import type { Workspace } from '@toeverything/infra';
 import { defaultsDeep } from 'lodash-es';
 
 import {
@@ -29,7 +30,7 @@ export class WorkspacePropertiesAdapter {
 
   constructor(private readonly workspace: Workspace) {
     // check if properties exists, if not, create one
-    const rootDoc = workspace.doc;
+    const rootDoc = workspace.blockSuiteWorkspace.doc;
     this.properties = rootDoc.getMap(AFFINE_PROPERTIES_ID);
     this.proxy = createYProxy(this.properties);
 
@@ -56,7 +57,9 @@ export class WorkspacePropertiesAdapter {
               name: 'Tags',
               source: 'system',
               type: PagePropertyType.Tags,
-              options: this.workspace.meta.properties.tags?.options ?? [], // better use a one time migration
+              options:
+                this.workspace.blockSuiteWorkspace.meta.properties.tags
+                  ?.options ?? [], // better use a one time migration
             },
           },
         },
@@ -108,8 +111,7 @@ export class WorkspacePropertiesAdapter {
   }
 
   getJournalPageDateString(id: string) {
-    this.ensurePageProperties(id);
-    return this.pageProperties[id].system[PageSystemPropertyId.Journal].value;
+    return this.pageProperties[id]?.system[PageSystemPropertyId.Journal]?.value;
   }
 
   setJournalPageDateString(id: string, date: string) {
@@ -124,9 +126,9 @@ export class WorkspacePropertiesAdapter {
 
   // page tags could be reactive
   getPageTags(pageId: string) {
-    this.ensurePageProperties(pageId);
     const tags =
-      this.pageProperties[pageId].system[PageSystemPropertyId.Tags].value;
+      this.getPageProperties(pageId)?.system[PageSystemPropertyId.Tags].value ??
+      [];
     const optionsMap = Object.fromEntries(this.tagOptions.map(o => [o.id, o]));
     return tags.map(tag => optionsMap[tag]).filter((t): t is TagOption => !!t);
   }

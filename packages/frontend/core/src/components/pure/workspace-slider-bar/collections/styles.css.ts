@@ -1,5 +1,5 @@
+import { cssVar } from '@toeverything/theme';
 import { globalStyle, keyframes, style } from '@vanilla-extract/css';
-
 export const wrapper = style({
   display: 'flex',
   flexDirection: 'column',
@@ -28,7 +28,6 @@ export const title = style({
   overflow: 'hidden',
   textOverflow: 'ellipsis',
 });
-
 globalStyle(`[data-draggable=true] ${title}:before`, {
   content: '""',
   position: 'absolute',
@@ -38,46 +37,42 @@ globalStyle(`[data-draggable=true] ${title}:before`, {
   width: 4,
   height: 4,
   transition: 'height 0.2s, opacity 0.2s',
-  backgroundColor: 'var(--affine-placeholder-color)',
+  backgroundColor: cssVar('placeholderColor'),
   borderRadius: '2px',
   opacity: 0,
   willChange: 'height, opacity',
 });
-
 globalStyle(`[data-draggable=true] ${title}:hover:before`, {
   height: 12,
   opacity: 1,
 });
-
 globalStyle(`[data-draggable=true][data-dragging=true] ${title}`, {
   opacity: 0.5,
 });
-
 globalStyle(`[data-draggable=true][data-dragging=true] ${title}:before`, {
   height: 32,
   width: 2,
   opacity: 1,
 });
-
 export const more = style({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
   borderRadius: 2,
   fontSize: 16,
-  color: 'var(--affine-icon-color)',
+  color: cssVar('iconColor'),
   ':hover': {
-    backgroundColor: 'var(--affine-hover-color)',
+    backgroundColor: cssVar('hoverColor'),
   },
 });
 export const deleteFolder = style({
   ':hover': {
-    color: 'var(--affine-error-color)',
-    backgroundColor: 'var(--affine-background-error-color)',
+    color: cssVar('errorColor'),
+    backgroundColor: cssVar('backgroundErrorColor'),
   },
 });
 globalStyle(`${deleteFolder}:hover svg`, {
-  color: 'var(--affine-error-color)',
+  color: cssVar('errorColor'),
 });
 export const menuDividerStyle = style({
   marginTop: '2px',
@@ -85,9 +80,8 @@ export const menuDividerStyle = style({
   marginLeft: '12px',
   marginRight: '8px',
   height: '1px',
-  background: 'var(--affine-border-color)',
+  background: cssVar('borderColor'),
 });
-
 const slideDown = keyframes({
   '0%': {
     height: '0px',
@@ -96,7 +90,6 @@ const slideDown = keyframes({
     height: 'var(--radix-collapsible-content-height)',
   },
 });
-
 const slideUp = keyframes({
   '0%': {
     height: 'var(--radix-collapsible-content-height)',
@@ -105,7 +98,6 @@ const slideUp = keyframes({
     height: '0px',
   },
 });
-
 export const collapsibleContent = style({
   overflow: 'hidden',
   marginTop: '4px',
@@ -118,7 +110,6 @@ export const collapsibleContent = style({
     },
   },
 });
-
 export const emptyCollectionWrapper = style({
   padding: '9px 0',
   display: 'flex',
@@ -126,14 +117,12 @@ export const emptyCollectionWrapper = style({
   alignItems: 'center',
   gap: 8,
 });
-
 export const emptyCollectionContent = style({
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
   gap: 6,
 });
-
 export const emptyCollectionIconWrapper = style({
   width: 36,
   height: 36,
@@ -141,22 +130,19 @@ export const emptyCollectionIconWrapper = style({
   alignItems: 'center',
   justifyContent: 'center',
   borderRadius: '50%',
-  backgroundColor: 'var(--affine-hover-color)',
+  backgroundColor: cssVar('hoverColor'),
 });
-
 export const emptyCollectionIcon = style({
   fontSize: 20,
-  color: 'var(--affine-icon-secondary)',
+  color: cssVar('iconSecondary'),
 });
-
 export const emptyCollectionMessage = style({
-  fontSize: 'var(--affine-font-sm)',
+  fontSize: cssVar('fontSm'),
   textAlign: 'center',
-  color: 'var(--affine-black-30)',
+  color: cssVar('black30'),
 });
-
 export const emptyCollectionNewButton = style({
   padding: '0 8px',
   height: '30px',
-  fontSize: 'var(--affine-font-sm)',
+  fontSize: cssVar('fontSm'),
 });

@@ -1,4 +1,4 @@
-enum EventErrorCode {
+export enum EventErrorCode {
   WORKSPACE_NOT_FOUND = 'WORKSPACE_NOT_FOUND',
   DOC_NOT_FOUND = 'DOC_NOT_FOUND',
   NOT_IN_WORKSPACE = 'NOT_IN_WORKSPACE',

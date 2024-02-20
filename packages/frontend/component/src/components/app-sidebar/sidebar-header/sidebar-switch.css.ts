@@ -1,5 +1,4 @@
 import { style } from '@vanilla-extract/css';
-
 export const sidebarSwitch = style({
   opacity: 0,
   display: 'none !important',

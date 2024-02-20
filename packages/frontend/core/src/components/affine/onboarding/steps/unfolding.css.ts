@@ -1,22 +1,32 @@
+import { cssVar } from '@toeverything/theme';
 import { keyframes, style } from '@vanilla-extract/css';
 
 import { onboardingVars, paperLocation } from '../style.css';
-
 const unfolding = onboardingVars.unfolding;
-
 const shadowIn = keyframes({
-  from: { boxShadow: `0px 0px 0px rgba(0, 0, 0, 0)` },
-  to: { boxShadow: `0px 0px 4px rgba(66, 65, 73, 0.14)` },
+  from: {
+    boxShadow: `0px 0px 0px rgba(0, 0, 0, 0)`,
+  },
+  to: {
+    boxShadow: `0px 0px 4px rgba(66, 65, 73, 0.14)`,
+  },
 });
 const borderIn = keyframes({
-  from: { opacity: 0 },
-  to: { opacity: 1 },
+  from: {
+    opacity: 0,
+  },
+  to: {
+    opacity: 1,
+  },
 });
 const fadeOut = keyframes({
-  from: { opacity: 1 },
-  to: { opacity: 0 },
+  from: {
+    opacity: 1,
+  },
+  to: {
+    opacity: 0,
+  },
 });
-
 export const unfoldingWrapper = style([
   paperLocation,
   {
@@ -27,29 +37,23 @@ export const unfoldingWrapper = style([
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-
     transform:
       'rotate(var(--toRotateZ)) translateY(var(--hover-offset-y)) scale(var(--hover-scale))',
     cursor: 'pointer',
-
     backgroundColor: onboardingVars.paper.bg,
     borderRadius: onboardingVars.paper.r,
     width: onboardingVars.paper.w,
     height: onboardingVars.paper.h,
-
     // animate in
     boxShadow: `0px 0px 0px rgba(0, 0, 0, 0)`,
     animation: `${shadowIn} 0.5s ease forwards`,
-
     transition: `all 0.23s ease, width ${unfolding.sizeTransition}, height ${unfolding.sizeTransition}, transform ${unfolding.transformTransition}`,
-
     ':hover': {
       vars: {
         '--hover-offset-y': '-10px',
         '--hover-scale': '1.03',
       },
     },
-
     '::before': {
       // hack border
       content: '""',
@@ -60,7 +64,6 @@ export const unfoldingWrapper = style([
       animation: `${borderIn} 0.5s ease forwards`,
       pointerEvents: 'none',
     },
-
     selectors: {
       '&[data-fold="false"]': {
         vars: {
@@ -77,15 +80,12 @@ export const unfoldingWrapper = style([
     },
   },
 ]);
-
 export const unfoldingContent = style({
   width: onboardingVars.paper.w,
   height: onboardingVars.paper.h,
-
   padding: '16px',
   overflow: 'hidden',
-  fontFamily: 'var(--affine-font-family)',
-
+  fontFamily: cssVar('fontFamily'),
   selectors: {
     '&.leave': {
       animation: `${fadeOut} 0.1s ease forwards`,

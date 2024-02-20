@@ -1,11 +1,11 @@
+import { cssVar } from '@toeverything/theme';
 import { keyframes, style } from '@vanilla-extract/css';
-
 export const modalStyle = style({
   width: '100%',
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
-  backgroundColor: 'var(--affine-background-secondary-color)',
+  backgroundColor: cssVar('backgroundSecondaryColor'),
   borderRadius: '16px',
   overflow: 'hidden',
 });
@@ -19,7 +19,7 @@ export const titleContainerStyle = style({
   overflow: 'hidden',
 });
 export const titleStyle = style({
-  fontSize: 'var(--affine-font-h6)',
+  fontSize: cssVar('fontH6'),
   fontWeight: '600',
   marginTop: '12px',
   position: 'absolute',
@@ -77,7 +77,6 @@ export const slideToLeftStyle = style({
 export const slideToRightStyle = style({
   animation: `${slideToRight} 0.3s ease-in-out forwards`,
 });
-
 export const containerStyle = style({
   width: '100%',
   display: 'flex',
@@ -105,7 +104,7 @@ export const videoStyle = style({
   position: 'absolute',
   objectFit: 'fill',
   height: '300px',
-  border: '1px solid var(--affine-border-color)',
+  border: `1px solid ${cssVar('borderColor')}`,
   transition: 'opacity 0.5s ease-in-out',
 });
 const fadeIn = keyframes({
@@ -120,7 +119,6 @@ export const videoActiveStyle = style({
   animation: `${fadeIn} 0.5s ease-in-out forwards`,
   opacity: 0,
 });
-
 export const arrowStyle = style({
   wordBreak: 'break-all',
   wordWrap: 'break-word',
@@ -142,12 +140,11 @@ export const descriptionContainerStyle = style({
   position: 'relative',
   overflow: 'hidden',
 });
-
 export const descriptionStyle = style({
   marginTop: '15px',
   width: '100%',
   display: 'flex',
-  fontSize: 'var(--affine-font-sm)',
+  fontSize: cssVar('fontSm'),
   lineHeight: '18px',
   position: 'absolute',
 });
@@ -169,7 +166,7 @@ export const tabStyle = style({
     left: '0',
     width: '100%',
     height: '2px',
-    background: 'var(--affine-text-primary-color)',
+    background: cssVar('textPrimaryColor'),
     transition: 'all 0.15s ease-in-out',
     opacity: 0.2,
     cursor: 'pointer',
@@ -191,5 +188,5 @@ export const tabContainerStyle = style({
 });
 export const buttonDisableStyle = style({
   cursor: 'not-allowed',
-  color: 'var(--affine-text-disable-color)',
+  color: cssVar('textDisableColor'),
 });

@@ -9,9 +9,9 @@ import { useWorkspaceStatus } from '@affine/core/hooks/use-workspace-status';
 import { validateAndReduceImage } from '@affine/core/utils/reduce-image';
 import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import type { Workspace } from '@affine/workspace';
-import { SyncPeerStep } from '@affine/workspace';
 import { CameraIcon } from '@blocksuite/icons';
+import type { Workspace } from '@toeverything/infra';
+import { SyncPeerStep } from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
 import {
   type KeyboardEvent,

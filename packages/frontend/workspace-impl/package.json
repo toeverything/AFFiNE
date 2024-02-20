@@ -15,7 +15,6 @@
     "@affine/electron-api": "workspace:*",
     "@affine/env": "workspace:*",
     "@affine/graphql": "workspace:*",
-    "@affine/workspace": "workspace:*",
     "@toeverything/infra": "workspace:*",
     "idb": "^8.0.0",
     "idb-keyval": "^6.2.1",
@@ -29,7 +28,7 @@
   },
   "devDependencies": {
     "fake-indexeddb": "^5.0.0",
-    "vitest": "1.1.3",
+    "vitest": "1.2.2",
     "ws": "^8.14.2"
   },
   "version": "0.12.0"

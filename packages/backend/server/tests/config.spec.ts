@@ -18,7 +18,7 @@ test.afterEach.always(async () => {
 
 test('should be able to get config', t => {
   t.true(typeof config.host === 'string');
-  t.is(config.env, 'test');
+  t.is(config.NODE_ENV, 'test');
 });
 
 test('should be able to override config', async t => {

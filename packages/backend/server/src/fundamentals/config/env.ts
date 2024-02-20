@@ -48,3 +48,24 @@ export function applyEnvToConfig(rawConfig: AFFiNEConfig) {
     }
   }
 }
+
+export function readEnv<T>(
+  env: string,
+  defaultValue: T,
+  availableValues?: T[]
+) {
+  const value = process.env[env];
+  if (value === undefined) {
+    return defaultValue;
+  }
+
+  if (availableValues && !availableValues.includes(value as any)) {
+    throw new Error(
+      `Invalid value '${value}' for environment variable ${env}, expected one of [${availableValues.join(
+        ', '
+      )}]`
+    );
+  }
+
+  return value as T;
+}

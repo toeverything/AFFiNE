@@ -1,3 +1,4 @@
+import { testResultDir } from '@affine-test/kit/playwright';
 import type { PlaywrightTestConfig } from '@playwright/test';
 // import { devices } from '@playwright/test';
 
@@ -14,6 +15,7 @@ const config: PlaywrightTestConfig = {
   testDir: './e2e',
   fullyParallel: true,
   timeout: process.env.CI ? 50_000 : 30_000,
+  outputDir: testResultDir,
   use: {
     viewport: { width: 1440, height: 800 },
   },
@@ -45,9 +47,8 @@ const config: PlaywrightTestConfig = {
         DEBUG: 'affine:*',
         FORCE_COLOR: 'true',
         DEBUG_COLORS: 'true',
-        ENABLE_LOCAL_EMAIL: process.env.ENABLE_LOCAL_EMAIL ?? 'true',
         NEXTAUTH_URL: 'http://localhost:8080',
-        OAUTH_EMAIL_SENDER: 'noreply@toeverything.info',
+        MAILER_SENDER: 'noreply@toeverything.info',
       },
     },
   ],

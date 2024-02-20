@@ -4,7 +4,7 @@ import { useCallback, useMemo } from 'react';
 
 import type { BlockSuiteWorkspace } from '../shared';
 import { timestampToLocalDate } from '../utils';
-import { useWorkspacePropertiesAdapter } from './use-affine-adapter';
+import { useCurrentWorkspacePropertiesAdapter } from './use-affine-adapter';
 import { useBlockSuiteWorkspaceHelper } from './use-block-suite-workspace-helper';
 import { useNavigateHelper } from './use-navigate-helper';
 
@@ -24,7 +24,7 @@ function toDayjs(j?: string | false) {
 
 export const useJournalHelper = (workspace: BlockSuiteWorkspace) => {
   const bsWorkspaceHelper = useBlockSuiteWorkspaceHelper(workspace);
-  const adapter = useWorkspacePropertiesAdapter(workspace);
+  const adapter = useCurrentWorkspacePropertiesAdapter();
 
   /**
    * @internal
@@ -33,6 +33,10 @@ export const useJournalHelper = (workspace: BlockSuiteWorkspace) => {
     (maybeDate: MaybeDate) => {
       const title = dayjs(maybeDate).format(JOURNAL_DATE_FORMAT);
       const page = bsWorkspaceHelper.createPage();
+      // set created date to match the journal date
+      page.workspace.setPageMeta(page.id, {
+        createDate: dayjs(maybeDate).toDate().getTime(),
+      });
       initEmptyPage(page, title).catch(err =>
         console.error('Failed to load journal page', err)
       );
@@ -104,6 +108,21 @@ export const useJournalHelper = (workspace: BlockSuiteWorkspace) => {
     [getJournalDateString]
   );
 
+  const appendContentToToday = useCallback(
+    async (content: string) => {
+      if (!content) return;
+      const page = getJournalByDate(dayjs().format(JOURNAL_DATE_FORMAT));
+      if (!page) return;
+      const blockId = page.addBlock(
+        'affine:paragraph',
+        { text: new page.Text(content) },
+        page.getBlockByFlavour('affine:note')[0].id
+      );
+      return { page, blockId };
+    },
+    [getJournalByDate]
+  );
+
   return useMemo(
     () => ({
       getJournalsByDate,
@@ -112,6 +131,7 @@ export const useJournalHelper = (workspace: BlockSuiteWorkspace) => {
       getLocalizedJournalDateString,
       isPageJournal,
       isPageTodayJournal,
+      appendContentToToday,
     }),
     [
       getJournalByDate,
@@ -120,6 +140,7 @@ export const useJournalHelper = (workspace: BlockSuiteWorkspace) => {
       getLocalizedJournalDateString,
       isPageJournal,
       isPageTodayJournal,
+      appendContentToToday,
     ]
   );
 };

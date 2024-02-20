@@ -77,7 +77,6 @@ export const VirtualizedList = forwardRef<
   return (
     // push pageListProps to the atom so that downstream components can consume it
     // this makes sure pageListPropsAtom is always populated
-    // @ts-expect-error fix type issues later
     <ListProvider initialValues={[[listPropsAtom, props]]}>
       <ListInnerWrapper {...props} handleRef={ref}>
         <ListInner {...props} />

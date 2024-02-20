@@ -299,6 +299,18 @@ export class PermissionService {
     return this.tryCheckWorkspace(ws, user, permission);
   }
 
+  async isPublicPage(ws: string, page: string) {
+    return this.prisma.workspacePage
+      .count({
+        where: {
+          workspaceId: ws,
+          pageId: page,
+          public: true,
+        },
+      })
+      .then(count => count > 0);
+  }
+
   async publishPage(ws: string, page: string, mode = PublicPageMode.Page) {
     return this.prisma.workspacePage.upsert({
       where: {
@@ -321,26 +333,19 @@ export class PermissionService {
   }
 
   async revokePublicPage(ws: string, page: string) {
-    const workspacePage = await this.prisma.workspacePage.findUnique({
+    return this.prisma.workspacePage.upsert({
       where: {
         workspaceId_pageId: {
           workspaceId: ws,
           pageId: page,
         },
       },
-    });
-    if (!workspacePage) {
-      throw new Error('Page is not public');
-    }
-
-    return this.prisma.workspacePage.update({
-      where: {
-        workspaceId_pageId: {
-          workspaceId: ws,
-          pageId: page,
-        },
+      update: {
+        public: false,
       },
-      data: {
+      create: {
+        workspaceId: ws,
+        pageId: page,
         public: false,
       },
     });

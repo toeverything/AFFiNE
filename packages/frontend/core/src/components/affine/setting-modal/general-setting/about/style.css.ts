@@ -1,11 +1,11 @@
+import { cssVar } from '@toeverything/theme';
 import { globalStyle, style } from '@vanilla-extract/css';
-
 export const link = style({
   height: '18px',
   display: 'flex',
   alignItems: 'center',
-  color: 'var(--affine-text-primary-color)',
-  fontSize: 'var(--affine-font-sm)',
+  color: cssVar('textPrimaryColor'),
+  fontSize: cssVar('fontSm'),
   fontWeight: 600,
   marginBottom: '12px',
   selectors: {
@@ -14,13 +14,11 @@ export const link = style({
     },
   },
 });
-
 globalStyle(`${link} .icon`, {
-  color: 'var(--affine-icon-color)',
-  fontSize: 'var(--affine-font-base)',
+  color: cssVar('iconColor'),
+  fontSize: cssVar('fontBase'),
   marginLeft: '5px',
 });
-
 export const communityWrapper = style({
   display: 'grid',
   gridTemplateColumns: '15% 15% 15% 15% 15% 15%',
@@ -28,8 +26,8 @@ export const communityWrapper = style({
 });
 export const communityItem = style({
   borderRadius: '8px',
-  border: '1px solid var(--affine-border-color)',
-  color: 'var(--affine-text-primary-color)',
+  border: `1px solid ${cssVar('borderColor')}`,
+  color: cssVar('textPrimaryColor'),
   cursor: 'pointer',
   padding: '6px 8px',
 });
@@ -40,30 +38,27 @@ globalStyle(`${communityItem} svg`, {
   margin: '0 auto 2px',
 });
 globalStyle(`${communityItem} p`, {
-  fontSize: 'var(--affine-font-xs)',
+  fontSize: cssVar('fontXs'),
   textAlign: 'center',
 });
-
 export const checkUpdateDesc = style({
-  color: 'var(--affine-text-secondary-color)',
-  fontSize: 'var(--affine-font-xs)',
+  color: cssVar('textSecondaryColor'),
+  fontSize: cssVar('fontXs'),
   display: 'inline-flex',
   alignItems: 'center',
   justifyContent: 'flex-start',
   selectors: {
     '&.active': {
-      color: 'var(--affine-text-emphasis-color)',
+      color: cssVar('textEmphasisColor'),
     },
     '&.error': {
-      color: 'var(--affine-error-color)',
+      color: cssVar('errorColor'),
     },
   },
 });
-
 globalStyle(`${checkUpdateDesc} svg`, {
   marginRight: '4px',
 });
-
 export const appImageRow = style({
   flexDirection: 'row-reverse',
   selectors: {
@@ -72,7 +67,6 @@ export const appImageRow = style({
     },
   },
 });
-
 globalStyle(`${appImageRow} .right-col`, {
   paddingLeft: '0',
   paddingRight: '20px',

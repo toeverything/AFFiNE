@@ -1,18 +1,24 @@
 import { PageDetailSkeleton } from '@affine/component/page-detail-skeleton';
 import { ResizePanel } from '@affine/component/resize-panel';
 import { useBlockSuitePageMeta } from '@affine/core/hooks/use-block-suite-page-meta';
-import { useWorkspaceStatus } from '@affine/core/hooks/use-workspace-status';
-import { waitForCurrentWorkspaceAtom } from '@affine/core/modules/workspace';
-import { WorkspaceSubPath } from '@affine/core/shared';
-import { globalBlockSuiteSchema, SyncEngineStep } from '@affine/workspace';
+import { CollectionService } from '@affine/core/modules/collection';
 import {
   BookmarkService,
   customImageProxyMiddleware,
   ImageService,
 } from '@blocksuite/blocks';
 import type { AffineEditorContainer } from '@blocksuite/presets';
-import type { Page, Workspace } from '@blocksuite/store';
-import { appSettingAtom } from '@toeverything/infra/atom';
+import type { Page as BlockSuitePage } from '@blocksuite/store';
+import {
+  globalBlockSuiteSchema,
+  Page,
+  PageListService,
+  PageManager,
+  useLiveData,
+  useServiceOptional,
+} from '@toeverything/infra';
+import { appSettingAtom, Workspace } from '@toeverything/infra';
+import { useService } from '@toeverything/infra';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import {
   memo,
@@ -20,13 +26,12 @@ import {
   type ReactNode,
   useCallback,
   useEffect,
-  useState,
+  useMemo,
 } from 'react';
 import { useParams } from 'react-router-dom';
 import type { Map as YMap } from 'yjs';
 
 import { setPageModeAtom } from '../../../atoms';
-import { collectionsCRUDAtom } from '../../../atoms/collections';
 import { currentModeAtom, currentPageIdAtom } from '../../../atoms/mode';
 import { AffineErrorBoundary } from '../../../components/affine/affine-error-boundary';
 import { HubIsland } from '../../../components/affine/hub-island';
@@ -42,7 +47,8 @@ import { TopTip } from '../../../components/top-tip';
 import { useRegisterBlocksuiteEditorCommands } from '../../../hooks/affine/use-register-blocksuite-editor-commands';
 import { usePageDocumentTitle } from '../../../hooks/use-global-state';
 import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
-import { performanceRenderLogger } from '../../../shared';
+import { CurrentPageService } from '../../../modules/page';
+import { performanceRenderLogger, WorkspaceSubPath } from '../../../shared';
 import { PageNotFound } from '../../404';
 import * as styles from './detail-page.css';
 import { DetailPageHeader, RightSidebarHeader } from './detail-page-header';
@@ -104,10 +110,11 @@ const DetailPageLayout = ({
   );
 };
 
-const DetailPageImpl = memo(function DetailPageImpl({ page }: { page: Page }) {
+const DetailPageImpl = memo(function DetailPageImpl() {
+  const page = useService(Page);
   const currentPageId = page.id;
   const { openPage, jumpToSubPath } = useNavigateHelper();
-  const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
+  const currentWorkspace = useService(Workspace);
   const blockSuiteWorkspace = currentWorkspace.blockSuiteWorkspace;
 
   const pageMeta = useBlockSuitePageMeta(blockSuiteWorkspace).find(
@@ -116,14 +123,15 @@ const DetailPageImpl = memo(function DetailPageImpl({ page }: { page: Page }) {
 
   const isInTrash = pageMeta?.trash;
 
-  const { setTemporaryFilter } = useCollectionManager(collectionsCRUDAtom);
+  const collectionService = useService(CollectionService);
+  const { setTemporaryFilter } = useCollectionManager(collectionService);
   const mode = useAtomValue(currentModeAtom);
   const setPageMode = useSetAtom(setPageModeAtom);
   useRegisterBlocksuiteEditorCommands(currentPageId, mode);
   usePageDocumentTitle(pageMeta);
 
   const onLoad = useCallback(
-    (page: Page, editor: AffineEditorContainer) => {
+    (page: BlockSuitePage, editor: AffineEditorContainer) => {
       try {
         // todo(joooye34): improve the following migration code
         const surfaceBlock = page.getBlockByFlavour('affine:surface')[0];
@@ -182,7 +190,7 @@ const DetailPageImpl = memo(function DetailPageImpl({ page }: { page: Page }) {
         header={
           <>
             <DetailPageHeader
-              page={page}
+              page={page.blockSuitePage}
               workspace={currentWorkspace}
               showSidebarSwitch={!isInTrash}
             />
@@ -206,8 +214,14 @@ const DetailPageImpl = memo(function DetailPageImpl({ page }: { page: Page }) {
         sidebar={
           !isInTrash ? (
             <div className={styles.sidebarContainerInner}>
-              <RightSidebarHeader workspace={currentWorkspace} page={page} />
-              <EditorSidebar workspace={blockSuiteWorkspace} page={page} />
+              <RightSidebarHeader
+                workspace={currentWorkspace}
+                page={page.blockSuitePage}
+              />
+              <EditorSidebar
+                workspace={blockSuiteWorkspace}
+                page={page.blockSuitePage}
+              />
             </div>
           ) : null
         }
@@ -221,38 +235,44 @@ const DetailPageImpl = memo(function DetailPageImpl({ page }: { page: Page }) {
   );
 });
 
-const useForceUpdate = () => {
-  const [, setCount] = useState(0);
-  return useCallback(() => setCount(count => count + 1), []);
-};
-const useSafePage = (workspace: Workspace, pageId: string) => {
-  const forceUpdate = useForceUpdate();
-  useEffect(() => {
-    const disposable = workspace.slots.pagesUpdated.on(() => {
-      forceUpdate();
-    });
-    return disposable.dispose;
-  }, [pageId, workspace.slots.pagesUpdated, forceUpdate]);
-
-  return workspace.getPage(pageId);
-};
-
 export const DetailPage = ({ pageId }: { pageId: string }): ReactElement => {
-  const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
-  const currentSyncEngineStep = useWorkspaceStatus(
-    currentWorkspace,
-    s => s.engine.sync.step
+  const pageListService = useService(PageListService);
+
+  const pageListReady = useLiveData(pageListService.isReady);
+
+  const pageMetas = useLiveData(pageListService.pages);
+
+  const pageMeta = useMemo(
+    () => pageMetas.find(page => page.id === pageId),
+    [pageMetas, pageId]
   );
+
+  const pageManager = useService(PageManager);
+  const currentPageService = useService(CurrentPageService);
+
+  useEffect(() => {
+    if (!pageMeta) {
+      return;
+    }
+    const { page, release } = pageManager.open(pageMeta);
+    currentPageService.openPage(page);
+    return () => {
+      currentPageService.closePage();
+      release();
+    };
+  }, [currentPageService, pageManager, pageMeta]);
+
+  const page = useServiceOptional(Page);
+
+  const currentWorkspace = useService(Workspace);
 
   // set sync engine priority target
   useEffect(() => {
     currentWorkspace.setPriorityRule(id => id.endsWith(pageId));
   }, [pageId, currentWorkspace]);
 
-  const page = useSafePage(currentWorkspace?.blockSuiteWorkspace, pageId);
-
   // if sync engine has been synced and the page is null, show 404 page.
-  if (currentSyncEngineStep === SyncEngineStep.Synced && !page) {
+  if (pageListReady && !page) {
     return <PageNotFound />;
   }
 
@@ -266,7 +286,7 @@ export const DetailPage = ({ pageId }: { pageId: string }): ReactElement => {
     });
   }
 
-  return <DetailPageImpl page={page} />;
+  return <DetailPageImpl />;
 };
 
 export const Component = () => {

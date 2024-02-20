@@ -1,11 +1,11 @@
 import 'fake-indexeddb/auto';
 
-import { SyncPeer, SyncPeerStep } from '@affine/workspace';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import { Schema, Workspace } from '@blocksuite/store';
+import { SyncPeer, SyncPeerStep } from '@toeverything/infra';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
-import { createIndexedDBStorage } from '..';
+import { IndexedDBSyncStorage } from '..';
 
 const schema = new Schema();
 
@@ -27,7 +27,7 @@ describe('SyncPeer', () => {
 
       const syncPeer = new SyncPeer(
         workspace.doc,
-        createIndexedDBStorage(workspace.doc.guid)
+        new IndexedDBSyncStorage(workspace.doc.guid)
       );
       await syncPeer.waitForLoaded();
 
@@ -54,7 +54,7 @@ describe('SyncPeer', () => {
       });
       const syncPeer = new SyncPeer(
         workspace.doc,
-        createIndexedDBStorage(workspace.doc.guid)
+        new IndexedDBSyncStorage(workspace.doc.guid)
       );
       await syncPeer.waitForSynced();
       expect(workspace.doc.toJSON()).toEqual({
@@ -73,7 +73,7 @@ describe('SyncPeer', () => {
 
     const syncPeer = new SyncPeer(
       workspace.doc,
-      createIndexedDBStorage(workspace.doc.guid)
+      new IndexedDBSyncStorage(workspace.doc.guid)
     );
     expect(syncPeer.status.step).toBe(SyncPeerStep.LoadingRootDoc);
     await syncPeer.waitForSynced();

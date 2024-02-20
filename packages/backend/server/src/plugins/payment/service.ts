@@ -69,13 +69,15 @@ export class SubscriptionService {
   async createCheckoutSession({
     user,
     recurring,
+    plan,
+    promotionCode,
     redirectUrl,
     idempotencyKey,
-    plan = SubscriptionPlan.Pro,
   }: {
     user: User;
-    plan?: SubscriptionPlan;
     recurring: SubscriptionRecurring;
+    plan: SubscriptionPlan;
+    promotionCode?: string | null;
     redirectUrl: string;
     idempotencyKey: string;
   }) {
@@ -95,7 +97,28 @@ export class SubscriptionService {
       `${idempotencyKey}-getOrCreateCustomer`,
       user
     );
-    const coupon = await this.getAvailableCoupon(user, CouponType.EarlyAccess);
+
+    let discount: { coupon?: string; promotion_code?: string } | undefined;
+
+    if (promotionCode) {
+      const code = await this.getAvailablePromotionCode(
+        promotionCode,
+        customer.stripeCustomerId
+      );
+      if (code) {
+        discount ??= {};
+        discount.promotion_code = code;
+      }
+    } else {
+      const coupon = await this.getAvailableCoupon(
+        user,
+        CouponType.EarlyAccess
+      );
+      if (coupon) {
+        discount ??= {};
+        discount.coupon = coupon;
+      }
+    }
 
     return await this.stripe.checkout.sessions.create(
       {
@@ -108,13 +131,11 @@ export class SubscriptionService {
         tax_id_collection: {
           enabled: true,
         },
-        ...(coupon
+        ...(discount
           ? {
-              discounts: [{ coupon }],
+              discounts: [discount],
             }
-          : {
-              allow_promotion_codes: true,
-            }),
+          : { allow_promotion_codes: true }),
         mode: 'subscription',
         success_url: redirectUrl,
         customer: customer.stripeCustomerId,
@@ -642,5 +663,34 @@ export class SubscriptionService {
     }
 
     return null;
+  }
+
+  private async getAvailablePromotionCode(
+    userFacingPromotionCode: string,
+    customer?: string
+  ) {
+    const list = await this.stripe.promotionCodes.list({
+      code: userFacingPromotionCode,
+      active: true,
+      limit: 1,
+    });
+
+    const code = list.data[0];
+    if (!code) {
+      return null;
+    }
+
+    let available = false;
+
+    if (code.customer) {
+      available =
+        typeof code.customer === 'string'
+          ? code.customer === customer
+          : code.customer.id === customer;
+    } else {
+      available = true;
+    }
+
+    return available ? code.id : null;
   }
 }

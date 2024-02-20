@@ -1,5 +1,5 @@
+import { cssVar } from '@toeverything/theme';
 import { keyframes, style } from '@vanilla-extract/css';
-
 const slideDownAndFade = keyframes({
   '0%': {
     opacity: 0,
@@ -10,7 +10,6 @@ const slideDownAndFade = keyframes({
     transform: 'scale(1) translateY(0)',
   },
 });
-
 const slideUpAndFade = keyframes({
   '0%': {
     opacity: 1,
@@ -21,20 +20,18 @@ const slideUpAndFade = keyframes({
     transform: 'scale(0.95) translateY(20px)',
   },
 });
-
 export const root = style({
   display: 'flex',
   alignItems: 'center',
   borderRadius: '10px',
   padding: '4px',
-  border: '1px solid var(--affine-border-color)',
-  boxShadow: 'var(--affine-menu-shadow)',
+  border: `1px solid ${cssVar('borderColor')}`,
+  boxShadow: cssVar('menuShadow'),
   gap: 4,
   minWidth: 'max-content',
   width: 'fit-content',
-  background: 'var(--affine-background-primary-color)',
+  background: cssVar('backgroundPrimaryColor'),
 });
-
 export const popoverContent = style({
   willChange: 'transform opacity',
   selectors: {
@@ -46,13 +43,11 @@ export const popoverContent = style({
     },
   },
 });
-
 export const separator = style({
   width: '1px',
   height: '24px',
-  background: 'var(--affine-divider-color)',
+  background: cssVar('dividerColor'),
 });
-
 export const item = style({
   display: 'flex',
   alignItems: 'center',
@@ -61,33 +56,30 @@ export const item = style({
   height: '32px',
   padding: '0 6px',
 });
-
 export const button = style([
   item,
   {
     borderRadius: '8px',
     ':hover': {
-      background: 'var(--affine-hover-color)',
+      background: cssVar('hoverColor'),
     },
   },
 ]);
-
 export const danger = style({
   color: 'inherit',
   ':hover': {
-    background: 'var(--affine-background-error-color)',
-    color: 'var(--affine-error-color)',
+    background: cssVar('backgroundErrorColor'),
+    color: cssVar('errorColor'),
   },
 });
-
 export const buttonIcon = style({
   display: 'flex',
   alignItems: 'center',
   fontSize: 20,
-  color: 'var(--affine-icon-color)',
+  color: cssVar('iconColor'),
   selectors: {
     [`${danger}:hover &`]: {
-      color: 'var(--affine-error-color)',
+      color: cssVar('errorColor'),
     },
   },
 });

@@ -1,5 +1,5 @@
+import { cssVar } from '@toeverything/theme';
 import { style } from '@vanilla-extract/css';
-
 export const globalLoadingWrapperStyle = style({
   position: 'fixed',
   top: 0,
@@ -7,13 +7,13 @@ export const globalLoadingWrapperStyle = style({
   bottom: 0,
   right: '100%',
   zIndex: 5,
-  backgroundColor: 'var(--affine-background-modal-color)',
+  backgroundColor: cssVar('backgroundModalColor'),
   opacity: 0,
   transition: 'opacity .3s',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  color: 'var(--affine-processing-color)',
+  color: cssVar('processingColor'),
   '@media': {
     print: {
       display: 'none',

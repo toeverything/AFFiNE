@@ -1,10 +1,9 @@
+import { cssVar } from '@toeverything/theme';
 import { style } from '@vanilla-extract/css';
-
 export const linkItemRoot = style({
   color: 'inherit',
   display: 'contents',
 });
-
 export const root = style({
   display: 'inline-flex',
   alignItems: 'center',
@@ -16,19 +15,19 @@ export const root = style({
   userSelect: 'none',
   cursor: 'pointer',
   padding: '0 12px',
-  fontSize: 'var(--affine-font-sm)',
+  fontSize: cssVar('fontSm'),
   marginTop: '4px',
   position: 'relative',
   selectors: {
     '&:hover': {
-      background: 'var(--affine-hover-color)',
+      background: cssVar('hoverColor'),
     },
     '&[data-active="true"]': {
-      background: 'var(--affine-hover-color)',
+      background: cssVar('hoverColor'),
     },
     '&[data-disabled="true"]': {
       cursor: 'default',
-      color: 'var(--affine-text-secondary-color)',
+      color: cssVar('textSecondaryColor'),
       pointerEvents: 'none',
     },
     // this is not visible in dark mode
@@ -53,14 +52,12 @@ export const root = style({
     },
   },
 });
-
 export const content = style({
   overflow: 'hidden',
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',
   flex: 1,
 });
-
 export const postfix = style({
   right: '4px',
   position: 'absolute',
@@ -75,12 +72,10 @@ export const postfix = style({
     },
   },
 });
-
 export const icon = style({
-  color: 'var(--affine-icon-color)',
+  color: cssVar('iconColor'),
   fontSize: '20px',
 });
-
 export const collapsedIconContainer = style({
   width: '16px',
   height: '16px',
@@ -99,11 +94,10 @@ export const collapsedIconContainer = style({
       pointerEvents: 'none',
     },
     '&:hover': {
-      background: 'var(--affine-hover-color)',
+      background: cssVar('hoverColor'),
     },
   },
 });
-
 export const iconsContainer = style({
   display: 'flex',
   alignItems: 'center',
@@ -116,7 +110,6 @@ export const iconsContainer = style({
     },
   },
 });
-
 export const collapsedIcon = style({
   transition: 'transform 0.2s ease-in-out',
   selectors: {
@@ -125,7 +118,6 @@ export const collapsedIcon = style({
     },
   },
 });
-
 export const spacer = style({
   flex: 1,
 });

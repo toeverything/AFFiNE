@@ -1,14 +1,14 @@
+import { cssVar } from '@toeverything/theme';
 import { globalStyle, style } from '@vanilla-extract/css';
 export const profileInputWrapper = style({
   marginLeft: '20px',
 });
 globalStyle(`${profileInputWrapper} label`, {
   display: 'block',
-  fontSize: 'var(--affine-font-xs)',
-  color: 'var(--affine-text-secondary-color)',
+  fontSize: cssVar('fontXs'),
+  color: cssVar('textSecondaryColor'),
   marginBottom: '4px',
 });
-
 export const avatarWrapper = style({
   width: '56px',
   height: '56px',
@@ -36,10 +36,9 @@ globalStyle(`${avatarWrapper} .camera-icon-wrapper`, {
   alignItems: 'center',
   backgroundColor: 'rgba(60, 61, 63, 0.5)',
   zIndex: '1',
-  color: 'var(--affine-white)',
-  fontSize: 'var(--affine-font-h-4)',
+  color: cssVar('white'),
+  fontSize: cssVar('fontH4'),
 });
-
 export const button = style({
   padding: '4px 12px',
 });

@@ -96,23 +96,26 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
       }
       return result;
     };
+
+    prismaAdapter.createVerificationToken = async data => {
+      await session.set(
+        `${data.identifier}:${data.token}`,
+        Date.now() + session.sessionTtl
+      );
+      return data;
+    };
+
+    prismaAdapter.useVerificationToken = async ({ identifier, token }) => {
+      const expires = await session.get(`${identifier}:${token}`);
+      if (expires) {
+        return { identifier, token, expires: new Date(expires) };
+      } else {
+        return null;
+      }
+    };
+
     const nextAuthOptions: NextAuthOptions = {
-      providers: [
-        // @ts-expect-error esm interop issue
-        Email.default({
-          server: {
-            host: config.auth.email.server,
-            port: config.auth.email.port,
-            auth: {
-              user: config.auth.email.login,
-              pass: config.auth.email.password,
-            },
-          },
-          from: config.auth.email.sender,
-          sendVerificationRequest: (params: SendVerificationRequestParams) =>
-            sendVerificationRequest(config, logger, mailer, session, params),
-        }),
-      ],
+      providers: [],
       adapter: prismaAdapter,
       debug: !config.node.prod,
       session: {
@@ -137,6 +140,18 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
         },
       },
     };
+
+    if (config.mailer && mailer) {
+      nextAuthOptions.providers.push(
+        // @ts-expect-error esm interop issue
+        Email.default({
+          server: config.mailer,
+          from: config.mailer.from,
+          sendVerificationRequest: (params: SendVerificationRequestParams) =>
+            sendVerificationRequest(config, logger, mailer, session, params),
+        })
+      );
+    }
 
     nextAuthOptions.providers.push(
       // @ts-expect-error esm interop issue
@@ -244,7 +259,10 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
             .count({
               where: {
                 user: {
-                  email,
+                  email: {
+                    equals: email,
+                    mode: 'insensitive',
+                  },
                 },
                 feature: {
                   feature: FeatureType.EarlyAccess,

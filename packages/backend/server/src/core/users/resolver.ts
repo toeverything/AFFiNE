@@ -1,4 +1,4 @@
-import { BadRequestException, HttpStatus, UseGuards } from '@nestjs/common';
+import { BadRequestException, UseGuards } from '@nestjs/common';
 import {
   Args,
   Int,
@@ -8,13 +8,13 @@ import {
   Resolver,
 } from '@nestjs/graphql';
 import type { User } from '@prisma/client';
-import { GraphQLError } from 'graphql';
 import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 
 import {
   CloudThrottlerGuard,
   EventEmitter,
   type FileUpload,
+  PaymentRequiredException,
   PrismaService,
   Throttle,
 } from '../../fundamentals';
@@ -97,14 +97,8 @@ export class UserResolver {
     @Args('email') email?: string
   ) {
     if (!email || !(await this.feature.canEarlyAccess(email))) {
-      return new GraphQLError(
-        `You don't have early access permission\nVisit https://community.affine.pro/c/insider-general/ for more information`,
-        {
-          extensions: {
-            status: HttpStatus[HttpStatus.PAYMENT_REQUIRED],
-            code: HttpStatus.PAYMENT_REQUIRED,
-          },
-        }
+      throw new PaymentRequiredException(
+        `You don't have early access permission\nVisit https://community.affine.pro/c/insider-general/ for more information`
       );
     }
 

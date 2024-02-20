@@ -7,14 +7,17 @@ import { useIsWorkspaceOwner } from '@affine/core/hooks/affine/use-is-workspace-
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { useBlockSuiteWorkspacePageTitle } from '@affine/core/hooks/use-block-suite-workspace-page-title';
 import { useWorkspaceQuota } from '@affine/core/hooks/use-workspace-quota';
-import { waitForCurrentWorkspaceAtom } from '@affine/core/modules/workspace';
-import { timestampToLocalTime } from '@affine/core/utils';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloseIcon, ToggleCollapseIcon } from '@blocksuite/icons';
-import type { Page, Workspace } from '@blocksuite/store';
+import {
+  type Page,
+  type Workspace as BlockSuiteWorkspace,
+} from '@blocksuite/store';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import type { DialogContentProps } from '@radix-ui/react-dialog';
+import { Workspace } from '@toeverything/infra';
+import { useService } from '@toeverything/infra/di';
 import { atom, useAtom, useAtomValue, useSetAtom } from 'jotai';
 import {
   Fragment,
@@ -29,6 +32,7 @@ import { encodeStateAsUpdate } from 'yjs';
 
 import { currentModeAtom } from '../../../atoms/mode';
 import { pageHistoryModalAtom } from '../../../atoms/page-history';
+import { timestampToLocalTime } from '../../../utils';
 import { BlockSuiteEditor } from '../../blocksuite/block-suite-editor';
 import { StyledEditorModeSwitch } from '../../blocksuite/block-suite-mode-switch/style';
 import {
@@ -48,7 +52,7 @@ import * as styles from './styles.css';
 export interface PageHistoryModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  workspace: Workspace;
+  workspace: BlockSuiteWorkspace;
   pageId: string;
 }
 
@@ -153,13 +157,12 @@ const HistoryEditorPreview = ({
 const planPromptClosedAtom = atom(false);
 
 const PlanPrompt = () => {
-  const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
-
-  const isOwner = useIsWorkspaceOwner(currentWorkspace.meta);
-  const workspaceQuota = useWorkspaceQuota(currentWorkspace.id);
+  const workspace = useService(Workspace);
+  const workspaceQuota = useWorkspaceQuota(workspace.id);
   const isProWorkspace = useMemo(() => {
     return workspaceQuota?.humanReadable.name.toLowerCase() !== 'free';
   }, [workspaceQuota]);
+  const isOwner = useIsWorkspaceOwner(workspace.meta);
 
   const setSettingModalAtom = useSetAtom(openSettingModalAtom);
   const [planPromptClosed, setPlanPromptClosed] = useAtom(planPromptClosedAtom);
@@ -412,7 +415,7 @@ const PageHistoryManager = ({
   pageId,
   onClose,
 }: {
-  workspace: Workspace;
+  workspace: BlockSuiteWorkspace;
   pageId: string;
   onClose: () => void;
 }) => {
@@ -536,8 +539,7 @@ export const PageHistoryModal = ({
 
 export const GlobalPageHistoryModal = () => {
   const [{ open, pageId }, setState] = useAtom(pageHistoryModalAtom);
-  const workspace = useAtomValue(waitForCurrentWorkspaceAtom);
-
+  const workspace = useService(Workspace);
   const handleOpenChange = useCallback(
     (open: boolean) => {
       setState(prev => ({

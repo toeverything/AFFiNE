@@ -1,17 +1,15 @@
+import { cssVar } from '@toeverything/theme';
 import { globalStyle, style } from '@vanilla-extract/css';
-
 export const moveToTrashStyle = style({
   padding: '4px 12px',
   ':hover': {
-    backgroundColor: 'var(--affine-background-error-color)',
-    color: 'var(--affine-error-color)',
+    backgroundColor: cssVar('backgroundErrorColor'),
+    color: cssVar('errorColor'),
   },
 });
-
 globalStyle(`${moveToTrashStyle}:hover svg`, {
-  color: 'var(--affine-error-color)',
+  color: cssVar('errorColor'),
 });
-
 export const transitionStyle = style({
   transition: 'all 0.3s',
 });

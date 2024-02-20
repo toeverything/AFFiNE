@@ -61,7 +61,7 @@
 
 ## Join our community
 
-Before we tell you how to get started with AFFiNE, we'd like to shamelessly plug our awesome user and developer communities across [official social platforms](https://community.affine.pro/c/start-here/)! Once you’re familiar with using the software, maybe you will share your wisdom with others and even consider joining the [AFFiNE Ambassador program](https://community.affine.pro/c/start-here/affine-ambassador) to help spread AFFiNE to the world.
+Before we tell you how to get started with AFFiNE, we'd like to shamelessly plug our awesome user and developer communities across [official discord server](https://discord.gg/tSNqN4S4)! Once you’re familiar with using the software, maybe you will share your wisdom with others and even consider joining the [AFFiNE Ambassador program](https://community.affine.pro/c/start-here/affine-ambassador) to help spread AFFiNE to the world.
 
 ## Getting started & staying tuned with us.
 

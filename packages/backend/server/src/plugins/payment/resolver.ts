@@ -1,8 +1,13 @@
-import { HttpStatus } from '@nestjs/common';
+import {
+  BadGatewayException,
+  ForbiddenException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import {
   Args,
   Context,
   Field,
+  InputType,
   Int,
   Mutation,
   ObjectType,
@@ -13,7 +18,6 @@ import {
   Resolver,
 } from '@nestjs/graphql';
 import type { User, UserInvoice, UserSubscription } from '@prisma/client';
-import { GraphQLError } from 'graphql';
 import { groupBy } from 'lodash-es';
 
 import { Auth, CurrentUser, Public } from '../../core/auth';
@@ -125,6 +129,31 @@ class UserInvoiceType implements Partial<UserInvoice> {
   updatedAt!: Date;
 }
 
+@InputType()
+class CreateCheckoutSessionInput {
+  @Field(() => SubscriptionRecurring, {
+    nullable: true,
+    defaultValue: SubscriptionRecurring.Yearly,
+  })
+  recurring!: SubscriptionRecurring;
+
+  @Field(() => SubscriptionPlan, {
+    nullable: true,
+    defaultValue: SubscriptionPlan.Pro,
+  })
+  plan!: SubscriptionPlan;
+
+  @Field(() => String, { nullable: true })
+  coupon!: string | null;
+
+  @Field(() => String, { nullable: true })
+  successCallbackLink!: string | null;
+
+  // @FIXME(forehalo): we should put this field in the header instead of as a explicity args
+  @Field(() => String)
+  idempotencyKey!: string;
+}
+
 @Auth()
 @Resolver(() => UserSubscriptionType)
 export class SubscriptionResolver {
@@ -164,12 +193,9 @@ export class SubscriptionResolver {
       );
 
       if (!yearly || !monthly) {
-        throw new GraphQLError('The prices are not configured correctly', {
-          extensions: {
-            status: HttpStatus[HttpStatus.BAD_GATEWAY],
-            code: HttpStatus.BAD_GATEWAY,
-          },
-        });
+        throw new InternalServerErrorException(
+          'The prices are not configured correctly.'
+        );
       }
 
       return {
@@ -182,7 +208,11 @@ export class SubscriptionResolver {
     });
   }
 
+  /**
+   * @deprecated
+   */
   @Mutation(() => String, {
+    deprecationReason: 'use `createCheckoutSession` instead',
     description: 'Create a subscription checkout link of stripe',
   })
   async checkout(
@@ -193,18 +223,39 @@ export class SubscriptionResolver {
   ) {
     const session = await this.service.createCheckoutSession({
       user,
+      plan: SubscriptionPlan.Pro,
       recurring,
       redirectUrl: `${this.config.baseUrl}/upgrade-success`,
       idempotencyKey,
     });
 
     if (!session.url) {
-      throw new GraphQLError('Failed to create checkout session', {
-        extensions: {
-          status: HttpStatus[HttpStatus.BAD_GATEWAY],
-          code: HttpStatus.BAD_GATEWAY,
-        },
-      });
+      throw new BadGatewayException('Failed to create checkout session.');
+    }
+
+    return session.url;
+  }
+
+  @Mutation(() => String, {
+    description: 'Create a subscription checkout link of stripe',
+  })
+  async createCheckoutSession(
+    @CurrentUser() user: User,
+    @Args({ name: 'input', type: () => CreateCheckoutSessionInput })
+    input: CreateCheckoutSessionInput
+  ) {
+    const session = await this.service.createCheckoutSession({
+      user,
+      plan: input.plan,
+      recurring: input.recurring,
+      promotionCode: input.coupon,
+      redirectUrl:
+        input.successCallbackLink ?? `${this.config.baseUrl}/upgrade-success`,
+      idempotencyKey: input.idempotencyKey,
+    });
+
+    if (!session.url) {
+      throw new BadGatewayException('Failed to create checkout session.');
     }
 
     return session.url;
@@ -263,20 +314,14 @@ export class UserSubscriptionResolver {
   ) {
     // allow admin to query other user's subscription
     if (!ctx.isAdminQuery && me.id !== user.id) {
-      throw new GraphQLError(
-        'You are not allowed to access this subscription',
-        {
-          extensions: {
-            status: HttpStatus[HttpStatus.FORBIDDEN],
-            code: HttpStatus.FORBIDDEN,
-          },
-        }
+      throw new ForbiddenException(
+        'You are not allowed to access this subscription.'
       );
     }
 
     // @FIXME(@forehalo): should not mock any api for selfhosted server
     // the frontend should avoid calling such api if feature is not enabled
-    if (this.config.flavor.selfhosted) {
+    if (this.config.isSelfhosted) {
       const start = new Date();
       const end = new Date();
       end.setFullYear(start.getFullYear() + 1);
@@ -310,12 +355,9 @@ export class UserSubscriptionResolver {
     @Args('skip', { type: () => Int, nullable: true }) skip?: number
   ) {
     if (me.id !== user.id) {
-      throw new GraphQLError('You are not allowed to access this invoices', {
-        extensions: {
-          status: HttpStatus[HttpStatus.FORBIDDEN],
-          code: HttpStatus.FORBIDDEN,
-        },
-      });
+      throw new ForbiddenException(
+        'You are not allowed to access this invoices'
+      );
     }
 
     return this.db.userInvoice.findMany({

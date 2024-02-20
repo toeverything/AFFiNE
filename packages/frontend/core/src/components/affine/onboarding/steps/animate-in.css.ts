@@ -1,7 +1,6 @@
 import { keyframes, style } from '@vanilla-extract/css';
 
 import { paperLocation } from '../style.css';
-
 const moveInAnim = keyframes({
   '0%': {
     transform: `translateZ(var(--fromZ)) translateX(var(--fromX)) translateY(var(--fromY)) rotateX(var(--fromRotateX)) rotateY(var(--fromRotateY)) rotateZ(var(--fromRotateZ))`,
@@ -10,7 +9,6 @@ const moveInAnim = keyframes({
     transform: `translateZ(var(--toZ)) translateX(0) translateY(0) rotateX(0deg) rotateY(0deg) rotateZ(var(--toRotateZ))`,
   },
 });
-
 export const moveIn = style([
   paperLocation,
   {

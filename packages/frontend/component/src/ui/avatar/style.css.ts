@@ -1,6 +1,6 @@
+import { cssVar } from '@toeverything/theme';
 import { createVar, globalStyle, keyframes, style } from '@vanilla-extract/css';
 export const sizeVar = createVar('sizeVar');
-
 const bottomAnimation = keyframes({
   '0%': {
     top: '-44%',
@@ -75,7 +75,6 @@ const middleAnimation = keyframes({
     transform: 'matrix(-0.48, -0.88, 0.8, -0.6, 0, 0)',
   },
 });
-
 export const DefaultAvatarContainerStyle = style({
   width: '100%',
   height: '100%',
@@ -83,7 +82,6 @@ export const DefaultAvatarContainerStyle = style({
   borderRadius: '50%',
   overflow: 'hidden',
 });
-
 export const DefaultAvatarMiddleItemStyle = style({
   width: '83%',
   height: '81%',
@@ -128,7 +126,6 @@ export const DefaultAvatarTopItemStyle = style({
   transform: 'matrix(-0.28, -0.96, 0.93, -0.37, 0, 0)',
   transformOrigin: 'center center',
 });
-
 export const avatarRoot = style({
   position: 'relative',
   display: 'inline-flex',
@@ -148,14 +145,12 @@ export const avatarWrapper = style({
   userSelect: 'none',
   position: 'relative',
 });
-
 export const avatarImage = style({
   width: '100%',
   height: '100%',
   objectFit: 'cover',
   borderRadius: '50%',
 });
-
 export const avatarFallback = style({
   width: '100%',
   height: '100%',
@@ -163,12 +158,11 @@ export const avatarFallback = style({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  backgroundColor: 'var(--affine-primary-color)',
-  color: 'var(--affine-white)',
+  backgroundColor: cssVar('primaryColor'),
+  color: cssVar('white'),
   lineHeight: '1',
   fontWeight: '500',
 });
-
 export const hoverWrapper = style({
   width: '100%',
   height: '100%',
@@ -179,7 +173,7 @@ export const hoverWrapper = style({
   alignItems: 'center',
   backgroundColor: 'rgba(60, 61, 63, 0.5)',
   zIndex: '1',
-  color: 'var(--affine-white)',
+  color: cssVar('white'),
   opacity: 0,
   transition: 'opacity .15s',
   cursor: 'pointer',
@@ -189,7 +183,6 @@ export const hoverWrapper = style({
     },
   },
 });
-
 export const removeButton = style({
   position: 'absolute',
   right: '-8px',

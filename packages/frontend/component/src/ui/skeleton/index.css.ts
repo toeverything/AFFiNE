@@ -1,30 +1,36 @@
+import { cssVar } from '@toeverything/theme';
 import { keyframes, style } from '@vanilla-extract/css';
-
-import type { PickStringFromUnion, SkeletonProps } from './types';
-
 // variables
-const bg = 'var(--affine-placeholder-color)';
+const bg = cssVar('placeholderColor');
 const highlight = 'rgba(255, 255, 255, 0.4)';
 const defaultHeight = '32px';
-
 const pulseKeyframes = keyframes({
-  '0%': { opacity: 1 },
-  '50%': { opacity: 0.5 },
-  '100%': { opacity: 1 },
+  '0%': {
+    opacity: 1,
+  },
+  '50%': {
+    opacity: 0.5,
+  },
+  '100%': {
+    opacity: 1,
+  },
 });
-
 const waveKeyframes = keyframes({
-  '0%': { transform: 'translateX(-100%)' },
-  '50%': { transform: 'translateX(100%)' },
-  '100%': { transform: 'translateX(100%)' },
+  '0%': {
+    transform: 'translateX(-100%)',
+  },
+  '50%': {
+    transform: 'translateX(100%)',
+  },
+  '100%': {
+    transform: 'translateX(100%)',
+  },
 });
-
 export const root = style({
   display: 'block',
   width: '100%',
   height: defaultHeight,
   flexShrink: 0,
-
   /**
    * paint background in ::before,
    * so that we can use opacity to control the color
@@ -39,8 +45,7 @@ export const root = style({
     backgroundColor: bg,
   },
 });
-
-export const variant: Record<string, string> = {
+export const variant = {
   circular: style({
     width: defaultHeight,
     borderRadius: '50%',
@@ -58,21 +63,15 @@ export const variant: Record<string, string> = {
     marginBottom: '0.2em',
   }),
 };
-
-export const animation: Record<
-  PickStringFromUnion<SkeletonProps['animation']>,
-  string
-> = {
+export const animation = {
   pulse: style({
     animation: `${pulseKeyframes} 2s ease-in-out 0.5s infinite`,
   }),
   wave: style({
     position: 'relative',
     overflow: 'hidden',
-
     /* Fix bug in Safari https://bugs.webkit.org/show_bug.cgi?id=68196 */
     WebkitMaskImage: '-webkit-radial-gradient(white, black)',
-
     '::after': {
       animation: `${waveKeyframes} 2s linear 0.5s infinite`,
       background: `linear-gradient(

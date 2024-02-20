@@ -48,7 +48,7 @@ interface BlocksuiteEditorContainerProps {
 // mimic the interface of the webcomponent and expose slots & host
 type BlocksuiteEditorContainerRef = Pick<
   (typeof AffineEditorContainer)['prototype'],
-  'mode' | 'page' | 'model' | 'slots' | 'host'
+  'mode' | 'page' | 'slots' | 'host'
 > &
   HTMLDivElement;
 

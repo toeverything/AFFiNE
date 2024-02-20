@@ -1,4 +1,4 @@
-import type { WorkspaceMetadata } from '@affine/workspace/metadata';
+import type { WorkspaceMetadata } from '@toeverything/infra';
 
 import { useIsWorkspaceOwner } from '../../../../hooks/affine/use-is-workspace-owner';
 import { ExperimentalFeatures } from './experimental-features';

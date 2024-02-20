@@ -1,28 +1,24 @@
+import { cssVar } from '@toeverything/theme';
 import { createVar, style } from '@vanilla-extract/css';
 
 import { onboardingVars } from '../style.css';
-
 export const paperWidthVar = createVar();
 export const paperHeightVar = createVar();
-
 export const paper = style({
   vars: {
     [paperWidthVar]: onboardingVars.paper.w,
     [paperHeightVar]: onboardingVars.paper.h,
   },
-
   width: paperWidthVar,
   height: paperHeightVar,
   position: 'relative',
 });
-
 export const segment = style({
   width: '100%',
   height: '100%',
   background: onboardingVars.paper.bg,
   position: 'absolute',
   top: `calc(var(--segments-up) / var(--segments) * 100%)`,
-
   // add a thin line behind to hide the gap between segments
   '::before': {
     content: '""',
@@ -32,7 +28,6 @@ export const segment = style({
     height: '2px',
     background: onboardingVars.paper.bg,
   },
-
   selectors: {
     ['&[data-root="true"]::before']: {
       content: 'none',
@@ -43,7 +38,6 @@ export const segment = style({
     ['&[data-direction="down"]::before']: {
       top: -1,
     },
-
     ['&[data-root="true"]']: {
       height: `calc(1 / var(--segments) * 100%)`,
     },
@@ -66,19 +60,16 @@ export const segment = style({
     },
   },
 });
-
 export const contentWrapper = style({
   width: '100%',
   height: '100%',
   overflow: 'hidden',
   position: 'absolute',
 });
-
 export const content = style({
   padding: '16px',
   overflow: 'hidden',
-  fontFamily: 'var(--affine-font-family)',
-
+  fontFamily: cssVar('fontFamily'),
   selectors: {
     [`${contentWrapper} > &`]: {
       position: 'absolute',
@@ -88,20 +79,17 @@ export const content = style({
     },
   },
 });
-
 export const articleWrapper = style({
   width: '100%',
   height: '100%',
   overflow: 'hidden',
 });
-
 export const article = style({
   display: 'flex',
   flexDirection: 'column',
   gap: '12px',
   color: onboardingVars.paper.textColor,
 });
-
 export const title = style({
   fontSize: '18px',
   fontWeight: 600,

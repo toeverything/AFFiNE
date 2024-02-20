@@ -33,6 +33,7 @@ const quotaPlan = z.object({
     storageQuota: z.number().positive().int(),
     historyPeriod: z.number().positive().int(),
     memberLimit: z.number().positive().int(),
+    businessBlobLimit: z.number().positive().int().nullish(),
   }),
 });
 

@@ -3,6 +3,7 @@ import { Prisma, PrismaClient } from '@prisma/client';
 import {
   CommonFeature,
   FeatureKind,
+  Features,
   FeatureType,
 } from '../../../core/features';
 
@@ -31,6 +32,16 @@ export async function upsertFeature(
       },
     });
   }
+}
+
+export async function upsertLatestFeatureVersion(
+  db: PrismaClient,
+  type: FeatureType
+) {
+  const feature = Features.filter(f => f.feature === type);
+  feature.sort((a, b) => b.version - a.version);
+  const latestFeature = feature[0];
+  await upsertFeature(db, latestFeature);
 }
 
 export async function migrateNewFeatureTable(prisma: PrismaClient) {

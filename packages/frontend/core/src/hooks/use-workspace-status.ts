@@ -1,4 +1,4 @@
-import type { Workspace, WorkspaceStatus } from '@affine/workspace';
+import type { Workspace, WorkspaceStatus } from '@toeverything/infra';
 import { useEffect, useState } from 'react';
 
 export function useWorkspaceStatus<

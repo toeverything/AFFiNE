@@ -1,19 +1,19 @@
+import { cssVar } from '@toeverything/theme';
 import { style } from '@vanilla-extract/css';
-
 export const headerCell = style({
   padding: '0 8px',
   userSelect: 'none',
-  fontSize: 'var(--affine-font-xs)',
-  color: 'var(--affine-text-secondary-color)',
+  fontSize: cssVar('fontXs'),
+  color: cssVar('textSecondaryColor'),
   selectors: {
     '&[data-sorting], &:hover': {
-      color: 'var(--affine-text-primary-color)',
+      color: cssVar('textPrimaryColor'),
     },
     '&[data-sortable]': {
       cursor: 'pointer',
     },
     '&:not(:last-child)': {
-      borderRight: '1px solid var(--affine-hover-color-filled)',
+      borderRight: `1px solid ${cssVar('hoverColorFilled')}`,
     },
   },
   display: 'flex',
@@ -22,9 +22,8 @@ export const headerCell = style({
   position: 'relative',
   whiteSpace: 'nowrap',
 });
-
 export const headerCellSortIcon = style({
   display: 'inline-flex',
   fontSize: 14,
-  color: 'var(--affine-icon-color)',
+  color: cssVar('iconColor'),
 });

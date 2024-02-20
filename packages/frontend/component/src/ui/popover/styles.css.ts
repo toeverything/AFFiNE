@@ -1,13 +1,13 @@
+import { cssVar } from '@toeverything/theme';
 import { style } from '@vanilla-extract/css';
-
 export const popoverContent = style({
   minWidth: '180px',
-  color: 'var(--affine-text-primary-color)',
+  color: cssVar('textPrimaryColor'),
   borderRadius: '8px',
   padding: '8px',
-  fontSize: 'var(--affine-font-sm)',
+  fontSize: cssVar('fontSm'),
   fontWeight: '400',
-  backgroundColor: 'var(--affine-background-overlay-panel-color)',
-  boxShadow: 'var(--affine-menu-shadow)',
+  backgroundColor: cssVar('backgroundOverlayPanelColor'),
+  boxShadow: cssVar('menuShadow'),
   userSelect: 'none',
 });

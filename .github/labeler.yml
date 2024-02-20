@@ -29,11 +29,6 @@ mod:plugin-cli:
       - any-glob-to-any-file:
           - 'tools/plugin-cli/**/*'
 
-mod:workspace:
-  - changed-files:
-      - any-glob-to-any-file:
-          - 'packages/common/workspace/**/*'
-
 mod:workspace-impl:
   - changed-files:
       - any-glob-to-any-file:

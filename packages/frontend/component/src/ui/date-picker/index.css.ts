@@ -1,3 +1,4 @@
+import { cssVar } from '@toeverything/theme';
 import { globalStyle, style } from '@vanilla-extract/css';
 
 /**
@@ -6,7 +7,6 @@ import { globalStyle, style } from '@vanilla-extract/css';
 globalStyle('.react-datepicker__aria-live', {
   display: 'none',
 });
-
 export const basicCell = style({
   display: 'flex',
   alignItems: 'center',
@@ -32,9 +32,8 @@ export const headerLayoutCellOrigin = style({
     },
   },
 });
-
 export const inputStyle = style({
-  fontSize: 'var(--affine-font-xs)',
+  fontSize: cssVar('fontXs'),
   width: '50px',
   fontWeight: '600',
   display: 'flex',
@@ -43,20 +42,19 @@ export const inputStyle = style({
   height: '22px',
   textAlign: 'center',
   ':hover': {
-    background: 'var(--affine-hover-color)',
+    background: cssVar('hoverColor'),
     borderRadius: '4px',
   },
 });
 export const popperStyle = style({
-  boxShadow: 'var(--affine-shadow-2)',
+  boxShadow: cssVar('shadow2'),
   // TODO: for menu offset, need to be optimized
   marginTop: '16px',
-  background: 'var(--affine-background-overlay-panel-color)',
+  background: cssVar('backgroundOverlayPanelColor'),
   borderRadius: '12px',
   width: '300px',
-  zIndex: 'var(--affine-z-index-popover)',
+  zIndex: cssVar('zIndexPopover'),
 });
-
 globalStyle('.react-datepicker__header', {
   background: 'none',
   border: 'none',
@@ -80,20 +78,20 @@ export const monthHeaderStyle = style({
   marginBottom: '18px',
 });
 export const monthTitleStyle = style({
-  color: 'var(--affine-text-primary-color)',
+  color: cssVar('textPrimaryColor'),
   fontWeight: '600',
-  fontSize: 'var(--affine-font-sm)',
+  fontSize: cssVar('fontSm'),
 });
 export const yearStyle = style({
   marginLeft: '8px',
-  color: 'var(--affine-text-primary-color)',
+  color: cssVar('textPrimaryColor'),
   fontWeight: '600',
-  fontSize: 'var(--affine-font-sm)',
+  fontSize: cssVar('fontSm'),
 });
 export const mouthStyle = style({
-  color: 'var(--affine-text-primary-color)',
+  color: cssVar('textPrimaryColor'),
   fontWeight: '600',
-  fontSize: 'var(--affine-font-sm)',
+  fontSize: cssVar('fontSm'),
   cursor: 'pointer',
   textAlign: 'center',
 });
@@ -110,7 +108,6 @@ export const headerAction = style({
   width: '16px',
   height: '16px',
 });
-
 globalStyle('.react-datepicker__day-names, .react-datepicker__week', {
   display: 'flex',
   alignItems: 'center',
@@ -128,9 +125,9 @@ export const weekStyle = style([
   basicCell,
   {
     height: '28px',
-    fontSize: 'var(--affine-font-xs)',
+    fontSize: cssVar('fontXs'),
     fontWeight: 500,
-    color: 'var(--affine-text-secondary-color)',
+    color: cssVar('textSecondaryColor'),
   },
 ]);
 export const calendarStyle = style({
@@ -139,37 +136,35 @@ export const calendarStyle = style({
   width: '100%',
   padding: '20px',
 });
-
 export const dayStyle = style([
   basicCell,
   {
     height: '28px',
-    fontSize: 'var(--affine-font-xs)',
-    color: 'var(--affine-text-primary-color)',
+    fontSize: cssVar('fontXs'),
+    color: cssVar('textPrimaryColor'),
     cursor: 'pointer',
-
     fontWeight: '400',
     borderRadius: '8px',
     selectors: {
       '&[aria-selected="false"]:hover': {
-        background: 'var(--affine-hover-color)',
+        background: cssVar('hoverColor'),
         borderRadius: '8px',
         transition: 'background-color 0.3s ease-in-out',
       },
       '&[aria-selected="true"]': {
-        color: 'var(--affine-pure-white)',
-        background: 'var(--affine-primary-color)',
+        color: cssVar('pureWhite'),
+        background: cssVar('primaryColor'),
         fontWeight: '500',
       },
       '&[tabindex="0"][aria-selected="false"]': {
-        background: 'var(--affine-background-overlay-panel-color)',
+        background: cssVar('backgroundOverlayPanelColor'),
       },
       '&.react-datepicker__day--today[aria-selected="false"]': {
         fontWeight: '600',
-        color: 'var(--affine-primary-color)',
+        color: cssVar('primaryColor'),
       },
       '&.react-datepicker__day--outside-month[aria-selected="false"]': {
-        color: 'var(--affine-text-disable-color)',
+        color: cssVar('textDisableColor'),
       },
     },
   },
@@ -178,13 +173,13 @@ export const arrowDownStyle = style({
   width: '16px',
   height: '16px',
   marginLeft: '4px',
-  color: 'var(--affine-icon-color)',
-  fontSize: 'var(--affine-font-sm)',
+  color: cssVar('iconColor'),
+  fontSize: cssVar('fontSm'),
   cursor: 'pointer',
 });
 export const mouthsStyle = style({
-  fontSize: 'var(--affine-font-base)',
-  color: 'var(--affine-text-primary-color)',
+  fontSize: cssVar('fontBase'),
+  color: cssVar('textPrimaryColor'),
   display: 'inline-block',
   lineHeight: '22px',
   padding: '6px 16px',
@@ -192,32 +187,31 @@ export const mouthsStyle = style({
   borderRadius: '8px',
   selectors: {
     '&:hover': {
-      background: 'var(--affine-hover-color)',
+      background: cssVar('hoverColor'),
       transition: 'background-color 0.3s ease-in-out',
       borderRadius: '8px',
     },
     '&[aria-selected="true"]': {
-      color: 'var(--affine-black)',
-      background: 'var(--affine-hover-color)',
+      color: cssVar('black'),
+      background: cssVar('hoverColor'),
       fontWeight: '400',
     },
     '&[aria-selected="true"]:hover': {
-      background: 'var(--affine-hover-color)',
+      background: cssVar('hoverColor'),
     },
     '&[tabindex="0"][aria-selected="false"]': {
-      background: 'var(--affine-background-overlay-panel-color)',
+      background: cssVar('backgroundOverlayPanelColor'),
     },
     '&.react-datepicker__month-text--today[aria-selected="false"]': {
-      background: 'var(--affine-primary-color)',
-      color: 'var(--affine-palette-line-white)',
+      background: cssVar('primaryColor'),
+      color: cssVar('paletteLineWhite'),
     },
     '&.react-datepicker__month-text--today[aria-selected="false"]:hover': {
-      background: 'var(--affine-hover-color)',
-      color: 'var(--affine-black)',
+      background: cssVar('hoverColor'),
+      color: cssVar('black'),
     },
   },
 });
-
 globalStyle(`${calendarStyle} .react-datepicker__month-container`, {
   float: 'none',
   width: '100%',

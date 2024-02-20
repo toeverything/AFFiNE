@@ -275,9 +275,9 @@ jobs:
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           ENABLE_CAPTCHA: true
           CAPTCHA_TURNSTILE_SECRET: ${{ secrets.CAPTCHA_TURNSTILE_SECRET }}
-          OAUTH_EMAIL_SENDER: ${{ secrets.OAUTH_EMAIL_SENDER }}
-          OAUTH_EMAIL_LOGIN: ${{ secrets.OAUTH_EMAIL_LOGIN }}
-          OAUTH_EMAIL_PASSWORD: ${{ secrets.OAUTH_EMAIL_PASSWORD }}
+          MAILER_SENDER: ${{ secrets.OAUTH_EMAIL_SENDER }}
+          MAILER_USER: ${{ secrets.OAUTH_EMAIL_LOGIN }}
+          MAILER_PASSWORD: ${{ secrets.OAUTH_EMAIL_PASSWORD }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           AFFINE_GOOGLE_CLIENT_ID: ${{ secrets.AFFINE_GOOGLE_CLIENT_ID }}
           AFFINE_GOOGLE_CLIENT_SECRET: ${{ secrets.AFFINE_GOOGLE_CLIENT_SECRET }}

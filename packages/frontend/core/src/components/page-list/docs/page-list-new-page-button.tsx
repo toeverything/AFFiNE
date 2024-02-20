@@ -1,5 +1,5 @@
-import { waitForCurrentWorkspaceAtom } from '@affine/core/modules/workspace';
-import { useAtomValue } from 'jotai';
+import { Workspace } from '@toeverything/infra';
+import { useService } from '@toeverything/infra/di';
 import type { PropsWithChildren } from 'react';
 
 import { usePageHelper } from '../../blocksuite/block-suite-page-list/utils';
@@ -16,7 +16,7 @@ export const PageListNewPageButton = ({
   size?: 'small' | 'default';
   testId?: string;
 }>) => {
-  const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
+  const currentWorkspace = useService(Workspace);
   const { importFile, createEdgeless, createPage } = usePageHelper(
     currentWorkspace.blockSuiteWorkspace
   );

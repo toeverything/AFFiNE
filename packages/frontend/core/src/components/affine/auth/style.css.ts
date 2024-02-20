@@ -1,29 +1,26 @@
+import { cssVar } from '@toeverything/theme';
 import { globalStyle, style } from '@vanilla-extract/css';
-
 export const authModalContent = style({
   marginTop: '30px',
 });
-
 export const captchaWrapper = style({
   margin: 'auto',
   marginBottom: '4px',
   textAlign: 'center',
 });
-
 export const authMessage = style({
   marginTop: '30px',
-  color: 'var(--affine-text-secondary-color)',
-  fontSize: 'var(--affine-font-xs)',
+  color: cssVar('textSecondaryColor'),
+  fontSize: cssVar('fontXs'),
   lineHeight: 1.5,
 });
 globalStyle(`${authMessage} a`, {
-  color: 'var(--affine-link-color)',
+  color: cssVar('linkColor'),
 });
 globalStyle(`${authMessage} .link`, {
   cursor: 'pointer',
-  color: 'var(--affine-link-color)',
+  color: cssVar('linkColor'),
 });
-
 export const forgetPasswordButtonRow = style({
   position: 'absolute',
   right: 0,
@@ -32,24 +29,21 @@ export const forgetPasswordButtonRow = style({
 export const sendMagicLinkButtonRow = style({
   marginBottom: '30px',
 });
-
 export const linkButton = style({
-  color: 'var(--affine-link-color)',
+  color: cssVar('linkColor'),
   background: 'transparent',
   borderColor: 'transparent',
-  fontSize: 'var(--affine-font-xs)',
+  fontSize: cssVar('fontXs'),
   lineHeight: '22px',
   userSelect: 'none',
 });
-
 export const forgetPasswordButton = style({
-  fontSize: 'var(--affine-font-sm)',
-  color: 'var(--affine-text-secondary-color)',
+  fontSize: cssVar('fontSm'),
+  color: cssVar('textSecondaryColor'),
   position: 'absolute',
   right: 0,
   bottom: 0,
 });
-
 export const resendWrapper = style({
   height: 77,
   display: 'flex',
@@ -58,16 +52,15 @@ export const resendWrapper = style({
   alignItems: 'center',
   marginTop: 30,
 });
-
 export const sentRow = style({
   display: 'flex',
   justifyContent: 'center',
   gap: '8px',
   lineHeight: '22px',
-  fontSize: 'var(--affine-font-sm)',
+  fontSize: cssVar('fontSm'),
 });
 export const sentMessage = style({
-  color: 'var(--affine-text-primary-color)',
+  color: cssVar('textPrimaryColor'),
   fontWeight: 600,
 });
 export const resendCountdown = style({
@@ -77,31 +70,29 @@ export const resendCountdown = style({
 export const resendCountdownInButton = style({
   width: 40,
   textAlign: 'center',
-  fontSize: 'var(--affine-font-sm)',
+  fontSize: cssVar('fontSm'),
   marginLeft: 16,
-  color: 'var(--affine-blue)',
+  color: cssVar('blue'),
   fontWeight: 400,
 });
-
 export const accessMessage = style({
   textAlign: 'center',
   display: 'flex',
   justifyContent: 'center',
   alignItems: 'center',
-  fontSize: 'var(--affine-font-xs)',
+  fontSize: cssVar('fontXs'),
   fontWeight: 500,
   marginTop: 65,
   marginBottom: 40,
 });
-
 export const userPlanButton = style({
   display: 'flex',
-  fontSize: 'var(--affine-font-xs)',
+  fontSize: cssVar('fontXs'),
   height: 20,
   fontWeight: 500,
   cursor: 'pointer',
-  color: 'var(--affine-pure-white)',
-  backgroundColor: 'var(--affine-brand-color)',
+  color: cssVar('pureWhite'),
+  backgroundColor: cssVar('brandColor'),
   padding: '0 4px',
   borderRadius: 4,
   justifyContent: 'center',

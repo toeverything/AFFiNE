@@ -1,12 +1,11 @@
+import { cssVar } from '@toeverything/theme';
 import { globalStyle, style } from '@vanilla-extract/css';
-
 const interactive = style({
   position: 'relative',
   cursor: 'pointer',
-
   selectors: {
     '&:hover': {
-      backgroundColor: 'var(--affine-hover-color)',
+      backgroundColor: cssVar('hoverColor'),
     },
     '&::before': {
       content: '""',
@@ -14,7 +13,7 @@ const interactive = style({
       inset: 0,
       opacity: 0,
       borderRadius: 'inherit',
-      boxShadow: '0 0 0 3px var(--affine-primary-color)',
+      boxShadow: `0 0 0 3px ${cssVar('primaryColor')}`,
       pointerEvents: 'none',
     },
     '&::after': {
@@ -22,22 +21,20 @@ const interactive = style({
       position: 'absolute',
       inset: 0,
       borderRadius: 'inherit',
-      boxShadow: '0 0 0 0px var(--affine-primary-color)',
+      boxShadow: `0 0 0 0px ${cssVar('primaryColor')}`,
       pointerEvents: 'none',
     },
     '&:focus-visible::before': {
       opacity: 0.2,
     },
     '&:focus-visible::after': {
-      boxShadow: '0 0 0 1px var(--affine-primary-color)',
+      boxShadow: `0 0 0 1px ${cssVar('primaryColor')}`,
     },
   },
 });
-
 export const calendar = style({
   padding: '16px',
 });
-
 export const journalPanel = style({
   width: '100%',
   height: '100%',
@@ -45,7 +42,6 @@ export const journalPanel = style({
   flexDirection: 'column',
   alignItems: 'stretch',
 });
-
 export const dailyCount = style({
   height: 0,
   flexGrow: 1,
@@ -53,7 +49,6 @@ export const dailyCount = style({
   flexDirection: 'column',
   gap: 8,
 });
-
 export const dailyCountHeader = style({
   display: 'flex',
   alignItems: 'center',
@@ -61,7 +56,6 @@ export const dailyCountHeader = style({
   padding: '0 16px',
   gap: 8,
 });
-
 export const dailyCountNav = style([
   interactive,
   {
@@ -76,18 +70,16 @@ export const dailyCountNav = style([
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    color: 'var(--affine-text-secondary-color)',
+    color: cssVar('textSecondaryColor'),
     transition: 'all .3s',
-
     selectors: {
       '&[aria-selected="true"]': {
-        backgroundColor: 'var(--affine-background-tertiary-color)',
-        color: 'var(--affine-text-primary-color)',
+        backgroundColor: cssVar('backgroundTertiaryColor'),
+        color: cssVar('textPrimaryColor'),
       },
     },
   },
 ]);
-
 export const dailyCountContainer = style({
   height: 0,
   flexGrow: 1,
@@ -115,10 +107,9 @@ export const dailyCountEmpty = style({
   flexDirection: 'column',
   alignItems: 'center',
   justifyContent: 'center',
-
   lineHeight: '24px',
   fontSize: 15,
-  color: 'var(--affine-text-secondary-color)',
+  color: cssVar('textSecondaryColor'),
   textAlign: 'center',
   padding: '0 70px',
   fontWeight: 400,
@@ -135,10 +126,9 @@ export const pageItem = style([
     padding: '0 4px',
     gap: 8,
     height: 30,
-
     selectors: {
       '&[aria-selected="true"]': {
-        backgroundColor: 'var(--affine-hover-color)',
+        backgroundColor: cssVar('hoverColor'),
       },
     },
   },
@@ -146,7 +136,7 @@ export const pageItem = style([
 export const pageItemIcon = style({
   width: 20,
   height: 20,
-  color: 'var(--affine-icon-color)',
+  color: cssVar('iconColor'),
 });
 export const pageItemLabel = style({
   width: 0,
@@ -155,13 +145,13 @@ export const pageItemLabel = style({
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',
   fontWeight: 500,
-  fontSize: 'var(--affine-font-size-sm)',
-  color: 'var(--affine-text-primary-color)',
+  fontSize: cssVar('fontSm'),
+  color: cssVar('textPrimaryColor'),
   textAlign: 'left',
   selectors: {
     '[aria-selected="true"] &': {
       // TODO: wait for design
-      color: 'var(--affine-primary-color)',
+      color: cssVar('primaryColor'),
     },
   },
 });
@@ -179,11 +169,11 @@ export const journalConflictWrapper = style({
 export const journalConflictMoreTrigger = style([
   interactive,
   {
-    color: 'var(--affine-text-secondary-color)',
+    color: cssVar('textSecondaryColor'),
     height: 30,
     borderRadius: 4,
     padding: '0px 8px',
-    fontSize: 'var(--affine-font-size-sm)',
+    fontSize: cssVar('fontSm'),
     display: 'flex',
     alignItems: 'center',
   },
@@ -195,8 +185,8 @@ globalStyle(
   `.${journalPanel}[data-is-journal="false"] .react-datepicker__day[aria-selected="true"]`,
   {
     backgroundColor: 'transparent',
-    color: 'var(--affine-text-primary-color)',
+    color: cssVar('textPrimaryColor'),
     fontWeight: 500,
-    border: '1px solid var(--affine-primary-color)',
+    border: `1px solid ${cssVar('primaryColor')}`,
   }
 );

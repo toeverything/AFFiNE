@@ -1,11 +1,11 @@
 import { FavoriteTag } from '@affine/core/components/page-list';
 import { useBlockSuiteMetaHelper } from '@affine/core/hooks/affine/use-block-suite-meta-helper';
 import { useBlockSuitePageMeta } from '@affine/core/hooks/use-block-suite-page-meta';
-import { waitForCurrentWorkspaceAtom } from '@affine/core/modules/workspace';
 import { toast } from '@affine/core/utils';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
-import { useAtomValue } from 'jotai';
+import { Workspace } from '@toeverything/infra';
+import { useService } from '@toeverything/infra/di';
 import { useCallback } from 'react';
 
 export interface FavoriteButtonProps {
@@ -14,7 +14,7 @@ export interface FavoriteButtonProps {
 
 export const useFavorite = (pageId: string) => {
   const t = useAFFiNEI18N();
-  const workspace = useAtomValue(waitForCurrentWorkspaceAtom);
+  const workspace = useService(Workspace);
   const blockSuiteWorkspace = workspace.blockSuiteWorkspace;
   const currentPage = blockSuiteWorkspace.getPage(pageId);
   assertExists(currentPage);

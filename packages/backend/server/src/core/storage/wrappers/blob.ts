@@ -6,10 +6,9 @@ import type {
   StorageProvider,
 } from '../../../fundamentals';
 import {
-  Config,
-  createStorageProvider,
   EventEmitter,
   OnEvent,
+  StorageProviderFactory,
 } from '../../../fundamentals';
 
 @Injectable()
@@ -18,9 +17,9 @@ export class WorkspaceBlobStorage {
 
   constructor(
     private readonly event: EventEmitter,
-    private readonly config: Config
+    private readonly storageFactory: StorageProviderFactory
   ) {
-    this.provider = createStorageProvider(this.config.storage, 'blob');
+    this.provider = this.storageFactory.create('blob');
   }
 
   async put(workspaceId: string, key: string, blob: BlobInputType) {

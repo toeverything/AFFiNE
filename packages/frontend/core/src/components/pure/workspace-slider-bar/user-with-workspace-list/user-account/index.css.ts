@@ -1,5 +1,5 @@
+import { cssVar } from '@toeverything/theme';
 import { style } from '@vanilla-extract/css';
-
 export const userAccountContainer = style({
   display: 'flex',
   padding: '4px 0px 4px 12px',
@@ -9,14 +9,13 @@ export const userAccountContainer = style({
   width: '100%',
 });
 export const userEmail = style({
-  fontSize: 'var(--affine-font-sm)',
+  fontSize: cssVar('fontSm'),
   fontWeight: 400,
   lineHeight: '22px',
   textOverflow: 'ellipsis',
   overflow: 'hidden',
   whiteSpace: 'nowrap',
 });
-
 export const leftContainer = style({
   display: 'flex',
   alignItems: 'center',

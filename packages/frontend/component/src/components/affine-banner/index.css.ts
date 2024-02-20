@@ -1,10 +1,10 @@
+import { cssVar } from '@toeverything/theme';
 import { style } from '@vanilla-extract/css';
-
 export const browserWarningStyle = style({
-  backgroundColor: 'var(--affine-background-warning-color)',
-  color: 'var(--affine-warning-color)',
+  backgroundColor: cssVar('backgroundWarningColor'),
+  color: cssVar('warningColor'),
   height: '36px',
-  fontSize: 'var(--affine-font-sm)',
+  fontSize: cssVar('fontSm'),
   display: 'flex',
   justifyContent: 'center',
   alignItems: 'center',
@@ -13,7 +13,7 @@ export const browserWarningStyle = style({
 export const closeButtonStyle = style({
   width: '36px',
   height: '36px',
-  color: 'var(--affine-icon-color)',
+  color: cssVar('iconColor'),
   cursor: 'pointer',
   display: 'flex',
   justifyContent: 'flex-end',
@@ -28,10 +28,10 @@ export const closeIconStyle = style({
   zIndex: 1,
 });
 export const tipsContainer = style({
-  backgroundColor: 'var(--affine-background-error-color)',
-  color: 'var(--affine-error-color)',
+  backgroundColor: cssVar('backgroundErrorColor'),
+  color: cssVar('errorColor'),
   width: '100%',
-  fontSize: 'var(--affine-font-sm)',
+  fontSize: cssVar('fontSm'),
   fontWeight: '700',
   display: 'flex',
   justifyContent: 'space-between',
@@ -46,13 +46,11 @@ export const tipsContainer = style({
     },
   },
 });
-
 export const tipsMessage = style({
-  color: 'var(--affine-error-color)',
+  color: cssVar('errorColor'),
   flexGrow: 1,
   flexShrink: 1,
 });
-
 export const tipsRightItem = style({
   display: 'flex',
   flexShrink: 0,

@@ -7,6 +7,8 @@ import { OneGB } from './constant';
 import { QuotaService } from './service';
 import { formatSize, QuotaQueryType } from './types';
 
+type QuotaBusinessType = QuotaQueryType & { businessBlobLimit: number };
+
 @Injectable()
 export class QuotaManagementService {
   constructor(
@@ -25,6 +27,7 @@ export class QuotaManagementService {
       createAt: quota.createdAt,
       expiredAt: quota.expiredAt,
       blobLimit: quota.feature.blobLimit,
+      businessBlobLimit: quota.feature.businessBlobLimit,
       storageQuota: quota.feature.storageQuota,
       historyPeriod: quota.feature.historyPeriod,
       memberLimit: quota.feature.memberLimit,
@@ -44,7 +47,7 @@ export class QuotaManagementService {
 
   // get workspace's owner quota and total size of used
   // quota was apply to owner's account
-  async getWorkspaceUsage(workspaceId: string): Promise<QuotaQueryType> {
+  async getWorkspaceUsage(workspaceId: string): Promise<QuotaBusinessType> {
     const { user: owner } =
       await this.permissions.getWorkspaceOwner(workspaceId);
     if (!owner) throw new NotFoundException('Workspace owner not found');
@@ -52,6 +55,7 @@ export class QuotaManagementService {
       feature: {
         name,
         blobLimit,
+        businessBlobLimit,
         historyPeriod,
         memberLimit,
         storageQuota,
@@ -64,6 +68,7 @@ export class QuotaManagementService {
     const quota = {
       name,
       blobLimit,
+      businessBlobLimit,
       historyPeriod,
       memberLimit,
       storageQuota,
@@ -84,7 +89,7 @@ export class QuotaManagementService {
     return quota;
   }
 
-  private mergeUnlimitedQuota(orig: QuotaQueryType) {
+  private mergeUnlimitedQuota(orig: QuotaBusinessType) {
     return {
       ...orig,
       storageQuota: 1000 * OneGB,
