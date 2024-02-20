@@ -607,7 +607,7 @@ __metadata:
     ava: "npm:^6.0.0"
     cross-env: "npm:^7.0.3"
     nx: "npm:^18.0.0"
-    nx-cloud: "npm:^16.5.2"
+    nx-cloud: "npm:^18.0.0"
     rxjs: "npm:^7.8.1"
     ts-node: "npm:^10.9.1"
     typescript: "npm:^5.3.2"
@@ -726,7 +726,7 @@ __metadata:
     "@napi-rs/cli": "npm:3.0.0-alpha.36"
     lib0: "npm:^0.2.87"
     nx: "npm:^18.0.0"
-    nx-cloud: "npm:^16.5.2"
+    nx-cloud: "npm:^18.0.0"
     yjs: "npm:^13.6.10"
   languageName: unknown
   linkType: soft
@@ -8331,12 +8331,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@nrwl/nx-cloud@npm:16.5.2":
-  version: 16.5.2
-  resolution: "@nrwl/nx-cloud@npm:16.5.2"
+"@nrwl/nx-cloud@npm:18.0.0":
+  version: 18.0.0
+  resolution: "@nrwl/nx-cloud@npm:18.0.0"
   dependencies:
-    nx-cloud: "npm:16.5.2"
-  checksum: 10/e0fbbe68d33a95a123bc45c23aa72d02a2d81445bab61dce63b0fb4f1dfb81b2f3dd8456ab61460e10548b123c4d3250315027398d45e0f1da2145552bb01316
+    nx-cloud: "npm:18.0.0"
+  checksum: 10/081132b18b471c8db8b68ab25c6ea410bb8bbc12a531e3252b5e56bd3ad86d1ba6e52b0ea662f442e02a6687331a5c1a7062f3e405eac846f63579e262c34403
   languageName: node
   linkType: hard
 
@@ -28124,11 +28124,11 @@ __metadata:
   languageName: node
   linkType: hard
 
-"nx-cloud@npm:16.5.2, nx-cloud@npm:^16.5.2":
-  version: 16.5.2
-  resolution: "nx-cloud@npm:16.5.2"
+"nx-cloud@npm:18.0.0, nx-cloud@npm:^18.0.0":
+  version: 18.0.0
+  resolution: "nx-cloud@npm:18.0.0"
   dependencies:
-    "@nrwl/nx-cloud": "npm:16.5.2"
+    "@nrwl/nx-cloud": "npm:18.0.0"
     axios: "npm:1.1.3"
     chalk: "npm:^4.1.0"
     dotenv: "npm:~10.0.0"
@@ -28140,7 +28140,7 @@ __metadata:
     yargs-parser: "npm:>=21.1.1"
   bin:
     nx-cloud: bin/nx-cloud.js
-  checksum: 10/3c463a1bef131867e125d76013579703fa5b63afc91dc502c64fcda128b9b9e369e54aa2d9e296df1bc3888aca94d0be8ceda52aa915c4e252472a8ef90a0cf0
+  checksum: 10/e023f25d09be7ea69456f74e166b955e2e2c20a5de7946740344ca139f116339ed73f453ca7d1141d7943d3af008cdbef4bc577445afa4549326a7ca42e547ed
   languageName: node
   linkType: hard
 
