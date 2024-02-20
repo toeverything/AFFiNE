@@ -382,19 +382,17 @@ export const createConfiguration: (
         publicPath: '/',
         watch: true,
       },
-      proxy: {
-        '/api/worker/': {
+      proxy: [
+        {
+          context: '/api/worker/',
           target: 'https://affine.fail',
           changeOrigin: true,
           secure: false,
         },
-        '/api': 'http://localhost:3010',
-        '/socket.io': {
-          target: 'http://localhost:3010',
-          ws: true,
-        },
-        '/graphql': 'http://localhost:3010',
-      },
+        { context: '/api', target: 'http://localhost:3010' },
+        { context: '/socket.io', target: 'http://localhost:3010', ws: true },
+        { context: '/graphql', target: 'http://localhost:3010' },
+      ],
     } as DevServerConfiguration,
   } satisfies webpack.Configuration;
 
