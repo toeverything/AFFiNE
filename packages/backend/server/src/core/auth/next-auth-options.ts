@@ -96,6 +96,24 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
       }
       return result;
     };
+
+    prismaAdapter.createVerificationToken = async data => {
+      await session.set(
+        `${data.identifier}:${data.token}`,
+        Date.now() + session.sessionTtl
+      );
+      return data;
+    };
+
+    prismaAdapter.useVerificationToken = async ({ identifier, token }) => {
+      const expires = await session.get(`${identifier}:${token}`);
+      if (expires) {
+        return { identifier, token, expires: new Date(expires) };
+      } else {
+        return null;
+      }
+    };
+
     const nextAuthOptions: NextAuthOptions = {
       providers: [],
       adapter: prismaAdapter,

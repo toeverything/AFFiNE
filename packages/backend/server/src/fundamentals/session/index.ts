@@ -5,7 +5,7 @@ import { SessionCache } from '../cache';
 @Injectable()
 export class SessionService {
   private readonly prefix = 'session:';
-  private readonly sessionTtl = 30 * 60 * 1000; // 30 min
+  public readonly sessionTtl = 30 * 60 * 1000; // 30 min
 
   constructor(private readonly cache: SessionCache) {}
 
