@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { AFFiNEDatePicker } from '.';
 
 export default {
-  title: 'UI/Date Picker/Date Picker',
+  title: 'UI/Date Picker/AFFiNE Date Picker',
 } satisfies Meta<typeof AFFiNEDatePicker>;
 
 const _format = 'YYYY-MM-DD';

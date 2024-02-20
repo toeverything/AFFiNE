@@ -975,5 +975,8 @@
   "system": "跟随系统",
   "upgradeBrowser": "请升级至最新版Chrome浏览器以获得最佳体验。",
   "will be moved to Trash": "{{title}} 将被移到垃圾箱",
-  "will delete member": "将删除成员"
+  "will delete member": "将删除成员",
+  "com.affine.calendar-date-picker.week-days": "日,一,二,三,四,五,六",
+  "com.affine.calendar-date-picker.today": "今天",
+  "com.affine.calendar-date-picker.month-names": "一月,二月,三月,四月,五月,六月,七月,八月,九月,十月,十一月,十二月"
 }
