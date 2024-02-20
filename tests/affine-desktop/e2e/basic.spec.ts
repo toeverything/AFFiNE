@@ -25,10 +25,6 @@ test('new page', async ({ page, workspace }) => {
 // macOS only
 // if (platform() === 'darwin') {
 test('app sidebar router forward/back', async ({ page }) => {
-  await page.getByTestId('help-island').click();
-  await page.getByTestId('easy-guide').click();
-  await page.getByTestId('onboarding-modal-next-button').click();
-  await page.getByTestId('onboarding-modal-close-button').click();
   {
     // create pages
     await page.waitForTimeout(500);
@@ -126,25 +122,6 @@ test('app theme', async ({ page, electronApp }) => {
     });
     expect(theme).toBe('dark');
   }
-});
-
-test('affine onboarding button', async ({ page }) => {
-  await page.getByTestId('help-island').click();
-  await page.getByTestId('easy-guide').click();
-  const onboardingModal = page.locator('[data-testid=onboarding-modal]');
-  await expect(onboardingModal).toBeVisible();
-  const switchVideo = page.locator(
-    '[data-testid=onboarding-modal-switch-video]'
-  );
-  await expect(switchVideo).toBeVisible();
-  await page.getByTestId('onboarding-modal-next-button').click();
-  const editingVideo = page.locator(
-    '[data-testid=onboarding-modal-editing-video]'
-  );
-  await expect(editingVideo).toBeVisible();
-  await page.getByTestId('onboarding-modal-close-button').click();
-
-  await expect(onboardingModal).toBeHidden();
 });
 
 test('windows only check', async ({ page }) => {

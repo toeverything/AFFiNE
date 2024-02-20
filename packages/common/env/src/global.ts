@@ -16,6 +16,7 @@ export const runtimeFlagsSchema = z.object({
   enableTestProperties: z.boolean(),
   enableBroadcastChannelProvider: z.boolean(),
   enableDebugPage: z.boolean(),
+  githubUrl: z.string(),
   changelogUrl: z.string(),
   downloadUrl: z.string(),
   // see: tools/workers
