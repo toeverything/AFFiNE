@@ -86,8 +86,14 @@ const PageDetailEditorMain = memo(function PageDetailEditorMain({
         })
       );
       localStorage.setItem('last_page_id', page.id);
+
       if (onLoad) {
-        disposableGroup.add(onLoad(page, editor));
+        // Invoke onLoad once the editor has been mounted to the DOM.
+        editor.updateComplete
+          .then(() => {
+            disposableGroup.add(onLoad(page, editor));
+          })
+          .catch(console.error);
       }
 
       return () => {

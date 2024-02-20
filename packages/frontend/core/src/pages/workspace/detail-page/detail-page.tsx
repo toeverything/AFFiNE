@@ -2,9 +2,13 @@ import { PageDetailSkeleton } from '@affine/component/page-detail-skeleton';
 import { ResizePanel } from '@affine/component/resize-panel';
 import { useBlockSuitePageMeta } from '@affine/core/hooks/use-block-suite-page-meta';
 import { CollectionService } from '@affine/core/modules/collection';
+import type { PageService } from '@blocksuite/blocks';
 import {
   BookmarkService,
   customImageProxyMiddleware,
+  EmbedGithubService,
+  EmbedLoomService,
+  EmbedYoutubeService,
   ImageService,
 } from '@blocksuite/blocks';
 import type { AffineEditorContainer } from '@blocksuite/presets';
@@ -19,7 +23,7 @@ import {
 } from '@toeverything/infra';
 import { appSettingAtom, Workspace } from '@toeverything/infra';
 import { useService } from '@toeverything/infra';
-import { useAtom, useAtomValue, useSetAtom } from 'jotai';
+import { useAtom, useAtomValue, useSetAtom, useStore } from 'jotai';
 import {
   memo,
   type ReactElement,
@@ -31,7 +35,7 @@ import {
 import { useParams } from 'react-router-dom';
 import type { Map as YMap } from 'yjs';
 
-import { setPageModeAtom } from '../../../atoms';
+import { pageSettingFamily, setPageModeAtom } from '../../../atoms';
 import { currentModeAtom, currentPageIdAtom } from '../../../atoms/mode';
 import { AffineErrorBoundary } from '../../../components/affine/affine-error-boundary';
 import { HubIsland } from '../../../components/affine/hub-island';
@@ -129,6 +133,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
   const setPageMode = useSetAtom(setPageModeAtom);
   useRegisterBlocksuiteEditorCommands(currentPageId, mode);
   usePageDocumentTitle(pageMeta);
+  const rootStore = useStore();
 
   const onLoad = useCallback(
     (page: BlockSuitePage, editor: AffineEditorContainer) => {
@@ -152,11 +157,35 @@ const DetailPageImpl = memo(function DetailPageImpl() {
         }
       } catch {}
 
-      ImageService.setImageProxyURL(runtimeConfig.imageProxyUrl);
-      BookmarkService.setLinkPreviewEndpoint(runtimeConfig.linkPreviewUrl);
-      editor.host?.std.clipboard.use(
+      // blocksuite editor host
+      const editorHost = editor.host;
+
+      // provide image proxy endpoint to blocksuite
+      editorHost.std.clipboard.use(
         customImageProxyMiddleware(runtimeConfig.imageProxyUrl)
       );
+      ImageService.setImageProxyURL(runtimeConfig.imageProxyUrl);
+
+      // provide link preview endpoint to blocksuite
+      BookmarkService.setLinkPreviewEndpoint(runtimeConfig.linkPreviewUrl);
+      EmbedGithubService.setLinkPreviewEndpoint(runtimeConfig.linkPreviewUrl);
+      EmbedYoutubeService.setLinkPreviewEndpoint(runtimeConfig.linkPreviewUrl);
+      EmbedLoomService.setLinkPreviewEndpoint(runtimeConfig.linkPreviewUrl);
+
+      // provide page mode and updated date to blocksuite
+      const pageService = editorHost.std.spec.getService(
+        'affine:page'
+      ) as PageService;
+      pageService.getPageMode = (pageId: string) =>
+        rootStore.get(pageSettingFamily(pageId)).mode;
+      pageService.getPageUpdatedAt = (pageId: string) => {
+        const linkedPage = page.workspace.getPage(pageId);
+        if (!linkedPage) return new Date();
+
+        const updatedDate = linkedPage.meta.updatedDate;
+        const createDate = linkedPage.meta.createDate;
+        return updatedDate ? new Date(updatedDate) : new Date(createDate);
+      };
 
       setPageMode(currentPageId, mode);
       // fixme: it seems pageLinkClicked is not triggered sometimes?
@@ -181,6 +210,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
       openPage,
       setPageMode,
       setTemporaryFilter,
+      rootStore,
     ]
   );
 
