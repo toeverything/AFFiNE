@@ -244,7 +244,7 @@ __metadata:
     "@toeverything/theme": "npm:^0.7.29"
     "@types/bytes": "npm:^3.1.3"
     "@types/react": "npm:^18.2.28"
-    "@types/react-datepicker": "npm:^4.19.0"
+    "@types/react-datepicker": "npm:^6.0.0"
     "@types/react-dnd": "npm:^3.0.2"
     "@types/react-dom": "npm:^18.2.13"
     "@vanilla-extract/css": "npm:^1.13.0"
@@ -9393,7 +9393,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@popperjs/core@npm:^2.11.8, @popperjs/core@npm:^2.9.2":
+"@popperjs/core@npm:^2.11.8":
   version: 2.11.8
   resolution: "@popperjs/core@npm:2.11.8"
   checksum: 10/ddd16090cde777aaf102940f05d0274602079a95ad9805bd20bc55dcc7c3a2ba1b99dd5c73e5cc2753c3d31250ca52a67d58059459d7d27debb983a9f552936c
@@ -14037,15 +14037,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/react-datepicker@npm:^4.19.0":
-  version: 4.19.3
-  resolution: "@types/react-datepicker@npm:4.19.3"
+"@types/react-datepicker@npm:^6.0.0":
+  version: 6.0.1
+  resolution: "@types/react-datepicker@npm:6.0.1"
   dependencies:
-    "@popperjs/core": "npm:^2.9.2"
+    "@floating-ui/react": "npm:^0.26.2"
     "@types/react": "npm:*"
-    date-fns: "npm:^2.0.1"
-    react-popper: "npm:^2.2.5"
-  checksum: 10/98305c01186a1e42bda2a5002de70b27e1328b79ef3114842068c7de42d2c22f5eb96ff11d763173be7b4ba23f74e5bedb7337500a3fa1bd584232b7fb4e180e
+    date-fns: "npm:^3.3.1"
+  checksum: 10/b54432c0dbea42675973365081d40381e7c0a4d006ae2dea6f663a7f99cfca0abfc5490bbe182f999706a7172b156f691629eb09ec566c351554cef63ea38f17
   languageName: node
   linkType: hard
 
@@ -18531,7 +18530,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"date-fns@npm:^2.0.1, date-fns@npm:^2.30.0":
+"date-fns@npm:^2.30.0":
   version: 2.30.0
   resolution: "date-fns@npm:2.30.0"
   dependencies:
@@ -30403,13 +30402,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-fast-compare@npm:^3.0.1":
-  version: 3.2.2
-  resolution: "react-fast-compare@npm:3.2.2"
-  checksum: 10/a6826180ba75cefba1c8d3ac539735f9b627ca05d3d307fe155487f5d0228d376dac6c9708d04a283a7b9f9aee599b637446635b79c8c8753d0b4eece56c125c
-  languageName: node
-  linkType: hard
-
 "react-i18next@npm:^14.0.0":
   version: 14.0.0
   resolution: "react-i18next@npm:14.0.0"
@@ -30497,20 +30489,6 @@ __metadata:
   peerDependencies:
     react: ^16 || ^17 || ^18
   checksum: 10/13911c1db55a0ca0fa21c7e0df5e913be1febf7bd0ec7fde5618c48e0119ac45ff8920202c4fd7216f93244529180b4e91de41fc86a40be5e53dec14ae65956c
-  languageName: node
-  linkType: hard
-
-"react-popper@npm:^2.2.5":
-  version: 2.3.0
-  resolution: "react-popper@npm:2.3.0"
-  dependencies:
-    react-fast-compare: "npm:^3.0.1"
-    warning: "npm:^4.0.2"
-  peerDependencies:
-    "@popperjs/core": ^2.0.0
-    react: ^16.8.0 || ^17 || ^18
-    react-dom: ^16.8.0 || ^17 || ^18
-  checksum: 10/2afc495479ae4b9e67f9a1642debd7121947fe71a00c5b326301adb8288a18dca53ebd836fe9c3b7a4e2feb838df0abe8e044eb278e89b1c5d50978b0b93d0ac
   languageName: node
   linkType: hard
 
@@ -35028,15 +35006,6 @@ __metadata:
   dependencies:
     makeerror: "npm:1.0.12"
   checksum: 10/ad7a257ea1e662e57ef2e018f97b3c02a7240ad5093c392186ce0bcf1f1a60bbadd520d073b9beb921ed99f64f065efb63dfc8eec689a80e569f93c1c5d5e16c
-  languageName: node
-  linkType: hard
-
-"warning@npm:^4.0.2":
-  version: 4.0.3
-  resolution: "warning@npm:4.0.3"
-  dependencies:
-    loose-envify: "npm:^1.0.0"
-  checksum: 10/e7842aff036e2e07ce7a6cc3225e707775b969fe3d0577ad64bd24660e3a9ce3017f0b8c22a136566dcd3a151f37b8ed1ccee103b3bd82bd8a571bf80b247bc4
   languageName: node
   linkType: hard
 
