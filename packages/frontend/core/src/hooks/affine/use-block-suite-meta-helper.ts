@@ -149,7 +149,7 @@ export function useBlockSuiteMetaHelper(
   );
 
   const duplicate = useAsyncCallback(
-    async (pageId: string) => {
+    async (pageId: string, openPageAfterDuplication: boolean = true) => {
       const currentPageMeta = getPageMeta(pageId);
       const newPage = createPage();
       const currentPage = blockSuiteWorkspace.getPage(pageId);
@@ -166,9 +166,18 @@ export function useBlockSuiteMetaHelper(
         tags: currentPageMeta.tags,
         favorite: currentPageMeta.favorite,
       });
+
+      const lastDigitRegex = /\((\d+)\)$/;
+      const match = currentPageMeta.title.match(lastDigitRegex);
+      const newNumber = match ? parseInt(match[1], 10) + 1 : 1;
+
+      const newPageTitle =
+        currentPageMeta.title.replace(lastDigitRegex, '') + `(${newNumber})`;
+
       setPageMode(newPage.id, currentMode);
-      setPageTitle(newPage.id, `${currentPageMeta.title}(1)`);
-      openPage(blockSuiteWorkspace.id, newPage.id);
+      setPageTitle(newPage.id, newPageTitle);
+
+      openPageAfterDuplication && openPage(blockSuiteWorkspace.id, newPage.id);
     },
     [
       blockSuiteWorkspace,
