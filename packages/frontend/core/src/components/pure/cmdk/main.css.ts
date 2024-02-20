@@ -5,23 +5,29 @@ export const commandsContainer = style({
   height: 'calc(100% - 65px)',
   padding: '8px 6px 18px 6px',
 });
-export const searchInput = style({
+export const searchInputContainer = style({
   height: 66,
-  color: cssVar('textPrimaryColor'),
-  fontSize: cssVar('fontH5'),
-  padding: '21px 24px',
+  padding: '18px 16px',
   marginBottom: '8px',
   width: '100%',
+  display: 'flex',
+  alignItems: 'center',
+  gap: 12,
   borderBottom: `1px solid ${cssVar('borderColor')}`,
   flexShrink: 0,
-  '::placeholder': {
-    color: cssVar('textSecondaryColor'),
-  },
   selectors: {
     '&.inEditor': {
       paddingTop: '12px',
       paddingBottom: '18px',
     },
+  },
+});
+export const searchInput = style({
+  color: cssVar('textPrimaryColor'),
+  fontSize: cssVar('fontH5'),
+  width: '100%',
+  '::placeholder': {
+    color: cssVar('textSecondaryColor'),
   },
 });
 export const pageTitleWrapper = style({
