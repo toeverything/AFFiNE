@@ -45,7 +45,7 @@ describe('SyncEngine', () => {
       const page = workspace.createPage({
         id: 'page0',
       });
-      await page.load();
+      page.load();
       const pageBlockId = page.addBlock('affine:page', {
         title: new page.Text(''),
       });

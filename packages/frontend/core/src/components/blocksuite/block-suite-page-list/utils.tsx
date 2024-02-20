@@ -27,9 +27,7 @@ export const usePageHelper = (blockSuiteWorkspace: BlockSuiteWorkspace) => {
   const createPageAndOpen = useCallback(
     (mode?: 'page' | 'edgeless') => {
       const page = createPage();
-      initEmptyPage(page).catch(error => {
-        toast(`Failed to initialize Page: ${error.message}`);
-      });
+      initEmptyPage(page);
       setPageMode(page.id, mode || 'page');
       openPage(blockSuiteWorkspace.id, page.id);
       return page;
@@ -66,10 +64,10 @@ export const usePageHelper = (blockSuiteWorkspace: BlockSuiteWorkspace) => {
   const createLinkedPageAndOpen = useAsyncCallback(
     async (pageId: string) => {
       const page = createPageAndOpen();
-      await page.load();
+      page.load();
       const parentPage = blockSuiteWorkspace.getPage(pageId);
       if (parentPage) {
-        await parentPage.load();
+        parentPage.load();
         const text = parentPage.Text.fromDelta([
           {
             insert: ' ',

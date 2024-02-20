@@ -33,7 +33,7 @@ export async function createFirstAppData(workspaceManager: WorkspaceManager) {
         workspace.setPageMeta(page.id, {
           jumpOnce: true,
         });
-        await initEmptyPage(page);
+        initEmptyPage(page);
       }
       logger.debug('create first workspace');
     }

@@ -22,9 +22,9 @@ beforeEach(async () => {
     id: 'test',
     schema,
   });
-  await initEmptyPage(blockSuiteWorkspace.createPage({ id: 'page0' }));
-  await initEmptyPage(blockSuiteWorkspace.createPage({ id: 'page1' }));
-  await initEmptyPage(blockSuiteWorkspace.createPage({ id: 'page2' }));
+  initEmptyPage(blockSuiteWorkspace.createPage({ id: 'page0' }));
+  initEmptyPage(blockSuiteWorkspace.createPage({ id: 'page1' }));
+  initEmptyPage(blockSuiteWorkspace.createPage({ id: 'page2' }));
 });
 
 describe('useBlockSuiteWorkspaceHelper', () => {

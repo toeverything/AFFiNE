@@ -247,7 +247,7 @@ export const usePageCommands = () => {
           category: 'affine:creation',
           run: async () => {
             const page = pageHelper.createPage();
-            await page.load();
+            page.load();
             pageMetaHelper.setPageTitle(page.id, query);
           },
           icon: <PageIcon />,
@@ -262,7 +262,7 @@ export const usePageCommands = () => {
           category: 'affine:creation',
           run: async () => {
             const page = pageHelper.createEdgeless();
-            await page.load();
+            page.load();
             pageMetaHelper.setPageTitle(page.id, query);
           },
           icon: <EdgelessIcon />,

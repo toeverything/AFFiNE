@@ -1,9 +1,6 @@
-import { DebugLogger } from '@affine/debug';
 import { DisposableGroup } from '@blocksuite/global/utils';
 import type { Page, Workspace } from '@blocksuite/store';
 import { useEffect, useState } from 'react';
-
-const logger = new DebugLogger('use-block-suite-workspace-page');
 
 export function useBlockSuiteWorkspacePage(
   blockSuiteWorkspace: Workspace,
@@ -36,9 +33,7 @@ export function useBlockSuiteWorkspacePage(
 
   useEffect(() => {
     if (page && !page.loaded) {
-      page.load().catch(err => {
-        logger.error('Failed to load page', err);
-      });
+      page.load();
     }
   }, [page]);
 

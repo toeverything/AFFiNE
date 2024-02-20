@@ -25,7 +25,7 @@ describe('Workspace System', () => {
     const page = workspace.blockSuiteWorkspace.createPage({
       id: 'page0',
     });
-    await page.load();
+    page.load();
     page.addBlock('affine:page', {
       title: new page.Text('test-page'),
     });

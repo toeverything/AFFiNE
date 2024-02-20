@@ -161,12 +161,10 @@ export const useSnapshotPage = (
       });
       page.awarenessStore.setReadonly(page, true);
       const spaceDoc = page.spaceDoc;
-      page
-        .load(() => {
-          applyUpdate(spaceDoc, new Uint8Array(snapshot));
-          historyShellWorkspace.schema.upgradePage(0, {}, spaceDoc);
-        })
-        .catch(console.error); // must load before applyUpdate
+      page.load(() => {
+        applyUpdate(spaceDoc, new Uint8Array(snapshot));
+        historyShellWorkspace.schema.upgradePage(0, {}, spaceDoc);
+      }); // must load before applyUpdate
     }
     return page ?? undefined;
   }, [pageDocId, snapshot, ts, workspace]);

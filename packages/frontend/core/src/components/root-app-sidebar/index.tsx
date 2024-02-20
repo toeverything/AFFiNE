@@ -115,7 +115,7 @@ export const RootAppSidebar = ({
 
   const onClickNewPage = useAsyncCallback(async () => {
     const page = createPage();
-    await page.waitForLoaded();
+    page.waitForLoaded();
     openPage(page.id);
   }, [createPage, openPage]);
 

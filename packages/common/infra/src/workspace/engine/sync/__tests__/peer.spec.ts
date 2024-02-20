@@ -38,7 +38,7 @@ describe('SyncPeer', () => {
       const page = workspace.createPage({
         id: 'page0',
       });
-      await page.load();
+      page.load();
       const pageBlockId = page.addBlock('affine:page', {
         title: new page.Text(''),
       });
@@ -89,7 +89,7 @@ describe('SyncPeer', () => {
       id: 'page0',
     });
     expect(syncPeer.status.step).toBe(SyncPeerStep.LoadingSubDoc);
-    await page.load();
+    page.load();
     await syncPeer.waitForSynced();
     page.addBlock('affine:page', {
       title: new page.Text(''),
