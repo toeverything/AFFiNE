@@ -24,7 +24,7 @@ export async function configureTestingEnvironment() {
   const { workspace } = workspaceManager.open(
     await workspaceManager.createWorkspace(WorkspaceFlavour.LOCAL, async ws => {
       const initPage = async (page: BlockSuitePage) => {
-        await page.load();
+        page.load();
         const pageBlockId = page.addBlock('affine:page', {
           title: new page.Text(''),
         });

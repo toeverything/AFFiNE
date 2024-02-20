@@ -13,8 +13,8 @@ import { Map as YMap } from 'yjs';
 import { getLatestVersions } from '../migration/blocksuite';
 import { replaceIdMiddleware } from './middleware';
 
-export async function initEmptyPage(page: Page, title?: string) {
-  await page.load(() => {
+export function initEmptyPage(page: Page, title?: string) {
+  page.load(() => {
     const pageBlockId = page.addBlock('affine:page', {
       title: new page.Text(title ?? ''),
     });

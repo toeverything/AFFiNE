@@ -39,7 +39,7 @@ export type EditorProps = {
 
 function usePageRoot(page: Page) {
   if (!page.ready) {
-    use(page.load());
+    page.load();
   }
 
   if (!page.root) {
