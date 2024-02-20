@@ -1,3 +1,4 @@
+import { cssVar } from '@toeverything/theme';
 import { globalStyle, style } from '@vanilla-extract/css';
 
 export const root = style({});
@@ -7,24 +8,30 @@ export const commandsContainer = style({
   padding: '8px 6px 18px 6px',
 });
 
-export const searchInput = style({
+export const searchInputContainer = style({
   height: 66,
-  color: 'var(--affine-text-primary-color)',
-  fontSize: 'var(--affine-font-h-5)',
-  padding: '21px 24px',
+  padding: '18px 16px',
   marginBottom: '8px',
   width: '100%',
-  borderBottom: '1px solid var(--affine-border-color)',
+  display: 'flex',
+  alignItems: 'center',
+  gap: 12,
+  borderBottom: `1px solid ${cssVar('borderColor')}`,
   flexShrink: 0,
-
-  '::placeholder': {
-    color: 'var(--affine-text-secondary-color)',
-  },
   selectors: {
     '&.inEditor': {
       paddingTop: '12px',
       paddingBottom: '18px',
     },
+  },
+});
+
+export const searchInput = style({
+  color: cssVar('textPrimaryColor'),
+  fontSize: cssVar('fontH5'),
+  width: '100%',
+  '::placeholder': {
+    color: cssVar('textSecondaryColor'),
   },
 });
 
