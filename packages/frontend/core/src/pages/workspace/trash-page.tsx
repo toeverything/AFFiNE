@@ -92,6 +92,7 @@ export const TrashPage = () => {
         permanentlyDeletePage(page.id);
         toast(t['com.affine.toastMessage.permanentlyDeleted']());
       };
+
       return (
         <TrashOperationCell
           onPermanentlyDeletePage={onPermanentlyDeletePage}
