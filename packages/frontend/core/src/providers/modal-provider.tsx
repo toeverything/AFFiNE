@@ -48,11 +48,6 @@ const TmpDisableAffineCloudModal = lazy(() =>
   )
 );
 
-const OnboardingModal = lazy(() =>
-  import('../components/affine/onboarding-modal').then(module => ({
-    default: module.OnboardingModal,
-  }))
-);
 const WorkspaceGuideModal = lazy(() =>
   import('../components/affine/onboarding/workspace-guide-modal').then(
     module => ({
@@ -76,6 +71,16 @@ const LocalQuotaModal = lazy(() =>
 const CloudQuotaModal = lazy(() =>
   import('../components/affine/quota-reached-modal').then(module => ({
     default: module.CloudQuotaModal,
+  }))
+);
+const StarAFFiNEModal = lazy(() =>
+  import('../components/affine/star-affine-modal').then(module => ({
+    default: module.StarAFFiNEModal,
+  }))
+);
+const IssueFeedbackModal = lazy(() =>
+  import('../components/affine/issue-feedback-modal').then(module => ({
+    default: module.IssueFeedbackModal,
   }))
 );
 
@@ -175,11 +180,8 @@ export function CurrentWorkspaceModals() {
           onOpenChange={setOpenDisableCloudAlertModal}
         />
       </Suspense>
-      {environment.isDesktop && (
-        <Suspense>
-          <OnboardingModal />
-        </Suspense>
-      )}
+      <StarAFFiNEModal />
+      <IssueFeedbackModal />
       <WorkspaceGuideModal />
       {currentWorkspace ? <Setting /> : null}
       {currentWorkspace?.flavour === WorkspaceFlavour.LOCAL && (

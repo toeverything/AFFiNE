@@ -55,21 +55,6 @@ export const guideChangeLogAtom = atom<
     }));
   }
 );
-export const guideOnboardingAtom = atom<
-  Guide['onBoarding'],
-  [open: boolean],
-  void
->(
-  get => {
-    return get(guidePrimitiveAtom).onBoarding;
-  },
-  (_, set, open) => {
-    set(guidePrimitiveAtom, tips => ({
-      ...tips,
-      onBoarding: open,
-    }));
-  }
-);
 
 export const guideDownloadClientTipAtom = atom<
   Guide['downloadClientTip'],

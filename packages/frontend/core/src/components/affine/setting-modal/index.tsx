@@ -1,8 +1,13 @@
 import { WorkspaceDetailSkeleton } from '@affine/component/setting-components';
 import { Modal, type ModalProps } from '@affine/component/ui/modal';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import {
+  openIssueFeedbackModalAtom,
+  openStarAFFiNEModalAtom,
+} from '@affine/core/atoms';
+import { Trans } from '@affine/i18n';
 import type { WorkspaceMetadata } from '@affine/workspace/metadata';
 import { ContactWithUsIcon } from '@blocksuite/icons';
+import { useSetAtom } from 'jotai';
 import { debounce } from 'lodash-es';
 import { Suspense, useCallback, useLayoutEffect, useRef } from 'react';
 
@@ -37,7 +42,6 @@ export const SettingModal = ({
   onSettingClick,
   ...modalProps
 }: SettingProps) => {
-  const t = useAFFiNEI18N();
   const loginStatus = useCurrentLoginStatus();
 
   const modalContentRef = useRef<HTMLDivElement>(null);
@@ -79,6 +83,16 @@ export const SettingModal = ({
     },
     [onSettingClick]
   );
+  const setOpenIssueFeedbackModal = useSetAtom(openIssueFeedbackModalAtom);
+  const setOpenStarAFFiNEModal = useSetAtom(openStarAFFiNEModalAtom);
+
+  const handleOpenIssueFeedbackModal = useCallback(() => {
+    setOpenIssueFeedbackModal(true);
+  }, [setOpenIssueFeedbackModal]);
+
+  const handleOpenStarAFFiNEModal = useCallback(() => {
+    setOpenStarAFFiNEModal(true);
+  }, [setOpenStarAFFiNEModal]);
 
   return (
     <Modal
@@ -126,17 +140,24 @@ export const SettingModal = ({
             </Suspense>
           </div>
           <div className={style.footer}>
-            <a
-              href="https://community.affine.pro/home"
-              target="_blank"
-              rel="noreferrer"
-              className={style.suggestionLink}
-            >
-              <span className={style.suggestionLinkIcon}>
-                <ContactWithUsIcon width="16" height="16" />
-              </span>
-              {t['com.affine.settings.suggestion']()}
-            </a>
+            <ContactWithUsIcon fontSize={16} />
+            <Trans
+              i18nKey={'com.affine.settings.suggestion-2'}
+              components={{
+                1: (
+                  <span
+                    className={style.link}
+                    onClick={handleOpenStarAFFiNEModal}
+                  />
+                ),
+                2: (
+                  <span
+                    className={style.link}
+                    onClick={handleOpenIssueFeedbackModal}
+                  />
+                ),
+              }}
+            />
           </div>
         </div>
       </div>

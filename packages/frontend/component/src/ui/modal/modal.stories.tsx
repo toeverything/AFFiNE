@@ -5,6 +5,7 @@ import { Button } from '../button';
 import { Input, type InputProps } from '../input';
 import { ConfirmModal, type ConfirmModalProps } from './confirm-modal';
 import { Modal, type ModalProps } from './modal';
+import { OverlayModal, type OverlayModalProps } from './overlay-modal';
 
 export default {
   title: 'UI/Modal',
@@ -65,5 +66,38 @@ const ConfirmModalTemplate: StoryFn<ConfirmModalProps> = () => {
   );
 };
 
+const OverlayModalTemplate: StoryFn<OverlayModalProps> = () => {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <>
+      <Button onClick={() => setOpen(true)}>Open Overlay Modal</Button>
+      <OverlayModal
+        open={open}
+        onOpenChange={setOpen}
+        title="Modal Title"
+        description="Modal description"
+        confirmButtonOptions={{
+          type: 'primary',
+        }}
+        topImage={
+          <div
+            style={{
+              width: '400px',
+              height: '300px',
+              background: '#66ccff',
+              opacity: 0.1,
+              color: '#fff',
+            }}
+          ></div>
+        }
+      />
+    </>
+  );
+};
+
 export const Confirm: StoryFn<ModalProps> =
   ConfirmModalTemplate.bind(undefined);
+
+export const Overlay: StoryFn<ModalProps> =
+  OverlayModalTemplate.bind(undefined);

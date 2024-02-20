@@ -887,6 +887,7 @@
   "com.affine.settings.storage.description": "Check or change storage location",
   "com.affine.settings.storage.description-alt": "Check or change storage location. Click path to edit location.",
   "com.affine.settings.suggestion": "Need more customization options? Tell us in the community.",
+  "com.affine.settings.suggestion-2": "Love our app? <1>Star us on GitHub</1> and <2>create issues</2> for your valuable feedback!",
   "com.affine.settings.translucent-style": "Translucent UI on the sidebar",
   "com.affine.settings.translucent-style-description": "Use transparency effect on the sidebar.",
   "com.affine.settings.workspace": "Workspace",
@@ -1069,5 +1070,14 @@
   "com.affine.journal.daily-count-updated-empty-tips": "You haven't updated anything yet",
   "com.affine.journal.conflict-show-more": "{{count}} more articles",
   "com.affine.journal.app-sidebar-title": "Journals",
-  "com.affine.editor.reference-not-found": "Linked page not found"
+  "com.affine.editor.reference-not-found": "Linked page not found",
+  "com.affine.journal.cmdk.append-to-today": "Append to Journal",
+  "com.affine.star-affine.title": "Star Us on GitHub",
+  "com.affine.star-affine.description": "Are you finding our app useful and enjoyable? We'd love your support to keep improving! A great way to help us out is by giving us a star on GitHub. This simple action can make a big difference and helps us continue to deliver the best experience for you.",
+  "com.affine.star-affine.confirm": "Star on GitHub",
+  "com.affine.star-affine.cancel": "Maybe Later",
+  "com.affine.issue-feedback.title": "Share Your Feedback on GitHub",
+  "com.affine.issue-feedback.description": "Got feedback? We're all ears! Create an issue on GitHub to let us know your thoughts and suggestions",
+  "com.affine.issue-feedback.confirm": "Create Issue on GitHub",
+  "com.affine.issue-feedback.cancel": "Maybe Later"
 }

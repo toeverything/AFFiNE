@@ -36,9 +36,6 @@ export const test = base.extend<{
 }>({
   page: async ({ electronApp }, use) => {
     const page = await electronApp.firstWindow();
-    await page.getByTestId('onboarding-modal-close-button').click({
-      delay: 100,
-    });
     // wait for blocksuite to be loaded
     await page.waitForSelector('v-line');
     if (enableCoverage) {
