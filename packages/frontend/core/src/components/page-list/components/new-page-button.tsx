@@ -29,7 +29,7 @@ export const CreateNewPagePopup = ({
       }}
     >
       <BlockCard
-        title={t['New Page']()}
+        title={t['com.affine.new.page-mode']()}
         desc={t['com.affine.write_with_a_blank_page']()}
         right={<PageIcon width={20} height={20} />}
         onClick={createNewPage}

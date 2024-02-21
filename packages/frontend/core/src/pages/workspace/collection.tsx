@@ -59,12 +59,12 @@ export const Component = function CollectionPage() {
       const collection = collectionService.collectionsTrash.value.find(
         v => v.collection.id === params.collectionId
       );
-      let text = 'Collection is not exist';
+      let text = 'Collection does not exist';
       if (collection) {
         if (collection.userId) {
-          text = `${collection.collection.name} is deleted by ${collection.userName}`;
+          text = `${collection.collection.name} has been deleted by ${collection.userName}`;
         } else {
-          text = `${collection.collection.name} is deleted`;
+          text = `${collection.collection.name} has been deleted`;
         }
       }
       pushNotification({

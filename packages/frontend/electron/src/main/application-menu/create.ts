@@ -40,7 +40,7 @@ export function createApplicationMenu() {
       submenu: [
         {
           id: MENUITEM_NEW_PAGE,
-          label: 'New Page',
+          label: 'New Doc',
           accelerator: isMac ? 'Cmd+N' : 'Ctrl+N',
           click: () => {
             applicationMenuSubjects.newPageAction.next();

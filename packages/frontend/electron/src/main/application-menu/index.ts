@@ -9,7 +9,7 @@ export * from './subject';
  */
 export const applicationMenuEvents = {
   /**
-   * File -> New Page
+   * File -> New Doc
    */
   onNewPageAction: (fn: () => void) => {
     const sub = applicationMenuSubjects.newPageAction.subscribe(fn);

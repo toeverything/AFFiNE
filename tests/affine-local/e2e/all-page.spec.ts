@@ -214,7 +214,7 @@ test('select two pages and delete', async ({ page }) => {
   await page.locator('[data-testid="list-toolbar-delete"]').click();
 
   // the confirm dialog should appear
-  await expect(page.getByText('Delete 2 pages?')).toBeVisible();
+  await expect(page.getByText('Delete 2 docs?')).toBeVisible();
 
   await page.getByRole('button', { name: 'Delete' }).click();
 
