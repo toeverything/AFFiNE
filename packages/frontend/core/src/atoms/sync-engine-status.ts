@@ -1,4 +1,4 @@
-import type { SyncEngineStatus } from '@toeverything/infra';
+import type { SyncEngineStatus } from '@affine/workspace';
 import { atom } from 'jotai';
 
 export const syncEngineStatusAtom = atom<SyncEngineStatus | null>(null);
