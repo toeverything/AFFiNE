@@ -1,0 +1,13 @@
+{{- if .Values.app.mailer.secretName -}}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: "{{ .Values.app.mailer.secretName }}"
+type: Opaque
+data:
+  host: "{{ .Values.app.mailer.host | b64enc }}"
+  port: "{{ .Values.app.mailer.port | b64enc }}"
+  user: "{{ .Values.app.mailer.user | b64enc }}"
+  password: "{{ .Values.app.mailer.password | b64enc }}"
+  sender: "{{ .Values.app.mailer.sender | b64enc }}"
+{{- end }}
