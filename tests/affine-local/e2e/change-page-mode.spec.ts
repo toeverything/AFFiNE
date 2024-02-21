@@ -1,6 +1,7 @@
 import { test } from '@affine-test/kit/playwright';
 import { openHomePage } from '@affine-test/kit/utils/load-page';
 import {
+  clickNewPageButton,
   clickPageMoreActions,
   waitForEditorLoad,
 } from '@affine-test/kit/utils/page-logic';
@@ -15,6 +16,7 @@ test('Switch to edgeless by switch edgeless item', async ({ page }) => {
   }
   await openHomePage(page);
   await waitForEditorLoad(page);
+  await clickNewPageButton(page);
   const btn = page.getByTestId('switch-edgeless-mode-button');
   await page.evaluate(() => {
     // @ts-expect-error
@@ -56,6 +58,7 @@ test('Switch to edgeless by switch edgeless item', async ({ page }) => {
 test('Convert to edgeless by editor header items', async ({ page }) => {
   await openHomePage(page);
   await waitForEditorLoad(page);
+  await clickNewPageButton(page);
   await clickPageMoreActions(page);
   const menusEdgelessItem = page.getByTestId('editor-option-menu-edgeless');
   await menusEdgelessItem.click({ delay: 100 });

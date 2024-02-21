@@ -15,6 +15,13 @@ export async function waitForAllPagesLoad(page: Page) {
 }
 
 export async function clickNewPageButton(page: Page) {
+  //FiXME: when the page is in edgeless mode, clickNewPageButton will create a new edgeless page
+  const edgelessPage = page.locator('edgeless-editor');
+  if (await edgelessPage.isVisible()) {
+    await page.getByTestId('switch-page-mode-button').click({
+      delay: 100,
+    });
+  }
   // fixme(himself65): if too fast, the page will crash
   await page.getByTestId('sidebar-new-page-button').click({
     delay: 100,

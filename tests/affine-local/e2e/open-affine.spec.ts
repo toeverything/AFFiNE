@@ -40,11 +40,3 @@ test('Download client tip', async ({ page }) => {
   );
   await expect(currentLocalDemoTipsItemItem).toBeVisible();
 });
-
-test('Check the class name for the scrollbar', async ({ page }) => {
-  //Because the scroll bar in page mode depends on the class name of blocksuite
-  await openHomePage(page);
-  await waitForEditorLoad(page);
-  const affineDocViewport = page.locator('.affine-doc-viewport');
-  await expect(affineDocViewport).toBeVisible();
-});

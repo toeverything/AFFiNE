@@ -100,13 +100,13 @@ export async function buildShowcaseWorkspace(
       store.set(atoms.pageMode, edgelessPage1, 'edgeless');
     }
 
-    // should jump to "Getting Started" by default
-    const gettingStartedPage = (workspace.meta.pages as PageMeta[])?.find(p =>
-      p.title.startsWith('Getting Started')
+    // should jump to "AFFiNE - not just a note-taking app" by default
+    const defaultPage = (workspace.meta.pages as PageMeta[])?.find(p =>
+      p.title.startsWith('AFFiNE - not just a note-taking app')
     )?.id;
 
-    if (gettingStartedPage) {
-      workspace.setPageMeta(gettingStartedPage, {
+    if (defaultPage) {
+      workspace.setPageMeta(defaultPage, {
         jumpOnce: true,
       });
     }

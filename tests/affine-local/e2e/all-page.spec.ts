@@ -14,6 +14,7 @@ import {
 } from '@affine-test/kit/utils/filter';
 import { openHomePage } from '@affine-test/kit/utils/load-page';
 import {
+  clickNewPageButton,
   getBlockSuiteEditorTitle,
   waitForAllPagesLoad,
   waitForEditorLoad,
@@ -118,7 +119,7 @@ test('allow creation of filters by tags', async ({ page }) => {
     .locator('[data-testid="page-list-item"]')
     .all();
   const pagesWithTagsCount = pagesWithTags.length;
-  expect(pagesWithTagsCount).not.toBe(0);
+  expect(pagesWithTagsCount).toBe(0);
   await createPageWithTag(page, { title: 'Page A', tags: ['Page A'] });
   await createPageWithTag(page, { title: 'Page B', tags: ['Page B'] });
   await clickSideBarAllPageButton(page);
@@ -183,6 +184,7 @@ test('enable selection and use ESC to disable selection', async ({ page }) => {
 test('select two pages and delete', async ({ page }) => {
   await openHomePage(page);
   await waitForEditorLoad(page);
+  await clickNewPageButton(page);
   await clickSideBarAllPageButton(page);
   await waitForAllPagesLoad(page);
 
@@ -229,6 +231,7 @@ test('select a group of items by clicking "Select All" in group header', async (
 }) => {
   await openHomePage(page);
   await waitForEditorLoad(page);
+  await clickNewPageButton(page);
   await clickSideBarAllPageButton(page);
   await waitForAllPagesLoad(page);
 

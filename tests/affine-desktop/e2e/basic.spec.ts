@@ -1,6 +1,9 @@
 import { test } from '@affine-test/kit/electron';
 import { withCtrlOrMeta } from '@affine-test/kit/utils/keyboard';
-import { getBlockSuiteEditorTitle } from '@affine-test/kit/utils/page-logic';
+import {
+  clickNewPageButton,
+  getBlockSuiteEditorTitle,
+} from '@affine-test/kit/utils/page-logic';
 import {
   clickSideBarCurrentWorkspaceBanner,
   clickSideBarSettingButton,
@@ -28,9 +31,7 @@ test('app sidebar router forward/back', async ({ page }) => {
   {
     // create pages
     await page.waitForTimeout(500);
-    await page.getByTestId('sidebar-new-page-button').click({
-      delay: 100,
-    });
+    await clickNewPageButton(page);
     await page.waitForSelector('v-line');
     const title = getBlockSuiteEditorTitle(page);
     await title.focus();

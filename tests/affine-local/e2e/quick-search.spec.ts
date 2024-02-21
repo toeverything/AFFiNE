@@ -12,7 +12,7 @@ import { expect, type Locator, type Page } from '@playwright/test';
 const openQuickSearchByShortcut = async (page: Page, checkVisible = true) => {
   await withCtrlOrMeta(page, () => page.keyboard.press('k', { delay: 50 }));
   if (checkVisible) {
-    expect(page.getByTestId('cmdk-quick-search')).toBeVisible();
+    await expect(page.getByTestId('cmdk-quick-search')).toBeVisible();
   }
 };
 
@@ -367,6 +367,7 @@ test('can use cmdk to delete page and restore it', async ({ page }) => {
   await page.getByTestId('confirm-delete-page').click();
   const restoreButton = page.getByTestId('page-restore-button');
   await expect(restoreButton).toBeVisible();
+  await page.waitForTimeout(100);
   await openQuickSearchByShortcut(page);
   expect(await commandsIsVisible(page, 'Move to Trash')).toBe(false);
   expect(await commandsIsVisible(page, 'Export to PDF')).toBe(false);
