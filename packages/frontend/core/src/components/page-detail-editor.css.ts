@@ -14,11 +14,14 @@ export const editor = style({
     },
   },
 });
-globalStyle(`${editor} .affine-doc-viewport`, {
-  paddingBottom: '150px',
-  paddingLeft: '20px',
-  scrollbarGutter: 'stable',
-});
+globalStyle(
+  `${editor} .affine-doc-viewport:not(.affine-embed-synced-doc-editor)`,
+  {
+    paddingBottom: '150px',
+    paddingLeft: '20px',
+    scrollbarGutter: 'stable',
+  }
+);
 globalStyle('.is-public-page page-meta-tags', {
   display: 'none',
 });
