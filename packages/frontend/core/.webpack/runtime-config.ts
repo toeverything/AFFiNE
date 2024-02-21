@@ -5,14 +5,8 @@ import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 const packageJson = require('../package.json');
 
-const editorFlagsStable: BlockSuiteFeatureFlags = {
+const editorFlags: BlockSuiteFeatureFlags = {
   enable_synced_doc_block: false,
-  enable_expand_database_block: false,
-  enable_bultin_ledits: false,
-};
-
-const editorFlagsCanary: BlockSuiteFeatureFlags = {
-  enable_synced_doc_block: true,
   enable_expand_database_block: false,
   enable_bultin_ledits: false,
 };
@@ -40,7 +34,7 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       enablePayment: true,
       enablePageHistory: true,
       serverUrlPrefix: 'https://app.affine.pro',
-      editorFlags: editorFlagsStable,
+      editorFlags,
       appVersion: packageJson.version,
       editorVersion: packageJson.dependencies['@blocksuite/presets'],
       appBuildType: 'stable',
@@ -82,7 +76,7 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       enablePayment: true,
       enablePageHistory: true,
       serverUrlPrefix: 'https://affine.fail',
-      editorFlags: editorFlagsCanary,
+      editorFlags,
       appVersion: packageJson.version,
       editorVersion: packageJson.dependencies['@blocksuite/presets'],
       appBuildType: 'canary',
