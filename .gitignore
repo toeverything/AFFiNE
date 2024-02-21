@@ -79,3 +79,6 @@ lib
 affine.db
 apps/web/next-routes.conf
 .nx
+
+packages/frontend/templates/edgeless
+packages/frontend/core/public/static/templates

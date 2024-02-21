@@ -790,6 +790,8 @@ __metadata:
 "@affine/templates@workspace:*, @affine/templates@workspace:packages/frontend/templates":
   version: 0.0.0-use.local
   resolution: "@affine/templates@workspace:packages/frontend/templates"
+  dependencies:
+    jszip: "npm:^3.10.1"
   languageName: unknown
   linkType: soft
 

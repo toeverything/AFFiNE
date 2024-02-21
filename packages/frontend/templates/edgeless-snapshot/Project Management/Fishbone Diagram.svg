@@ -1,0 +1,31 @@
+<svg width="135" height="80" viewBox="0 0 135 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect width="135" height="80" fill="white"/>
+<rect x="22" y="39" width="82" height="2" fill="#77757D"/>
+<path d="M125.478 34.3617C129.347 36.6946 129.347 42.3054 125.478 44.6383L109.098 54.5144C105.099 56.9255 100 54.0457 100 49.3761L100 29.6239C100 24.9543 105.099 22.0745 109.098 24.4856L125.478 34.3617Z" fill="#77757D"/>
+<path d="M21.2542 36.712C23.5502 38.3028 23.5502 41.6972 21.2542 43.288L13.528 48.6409C10.8752 50.4788 7.25 48.5802 7.25 45.3529L7.25 34.6471C7.25 31.4198 10.8752 29.5212 13.528 31.3591L21.2542 36.712Z" fill="#77757D"/>
+<path d="M83 17L95 39" stroke="#77757D" stroke-width="2" stroke-linecap="round"/>
+<path d="M83 63L95 41" stroke="#77757D" stroke-width="2" stroke-linecap="round"/>
+<path d="M56 17L68 39" stroke="#77757D" stroke-width="2" stroke-linecap="round"/>
+<path d="M56 63L68 41" stroke="#77757D" stroke-width="2" stroke-linecap="round"/>
+<path d="M29 17L41 39" stroke="#77757D" stroke-width="2" stroke-linecap="round"/>
+<path d="M29 63L41 41" stroke="#77757D" stroke-width="2" stroke-linecap="round"/>
+<circle cx="123.5" cy="39.5" r="2.5" fill="white"/>
+<rect x="47.5" y="8.5" width="17" height="10" rx="1.5" fill="#E3E2E0" stroke="#77757D"/>
+<rect x="0.5" y="-0.5" width="17" height="10" rx="1.5" transform="matrix(1 0 0 -1 47 71)" fill="#E3E2E0" stroke="#77757D"/>
+<rect x="74.5" y="8.5" width="16" height="10" rx="1.5" fill="#E3E2E0" stroke="#77757D"/>
+<rect x="0.5" y="-0.5" width="16" height="10" rx="1.5" transform="matrix(1 0 0 -1 74 71)" fill="#E3E2E0" stroke="#77757D"/>
+<rect x="21.5" y="8.5" width="16" height="10" rx="1.5" fill="#E3E2E0" stroke="#77757D"/>
+<rect x="0.5" y="-0.5" width="16" height="10" rx="1.5" transform="matrix(1 0 0 -1 21 71)" fill="#E3E2E0" stroke="#77757D"/>
+<line x1="75" y1="27.5" x2="89" y2="27.5" stroke="#77757D" stroke-dasharray="2 2"/>
+<line x1="48" y1="27.5" x2="62" y2="27.5" stroke="#77757D" stroke-dasharray="2 2"/>
+<line x1="21" y1="27.5" x2="35" y2="27.5" stroke="#77757D" stroke-dasharray="2 2"/>
+<line x1="77" y1="32.5" x2="91" y2="32.5" stroke="#77757D" stroke-dasharray="2 2"/>
+<line x1="50" y1="32.5" x2="64" y2="32.5" stroke="#77757D" stroke-dasharray="2 2"/>
+<line x1="23" y1="32.5" x2="37" y2="32.5" stroke="#77757D" stroke-dasharray="2 2"/>
+<line y1="-0.5" x2="14" y2="-0.5" transform="matrix(1 0 0 -1 74 54)" stroke="#77757D" stroke-dasharray="2 2"/>
+<line y1="-0.5" x2="14" y2="-0.5" transform="matrix(1 0 0 -1 47 54)" stroke="#77757D" stroke-dasharray="2 2"/>
+<line y1="-0.5" x2="14" y2="-0.5" transform="matrix(1 0 0 -1 20 54)" stroke="#77757D" stroke-dasharray="2 2"/>
+<line y1="-0.5" x2="14" y2="-0.5" transform="matrix(1 0 0 -1 76 49)" stroke="#77757D" stroke-dasharray="2 2"/>
+<line y1="-0.5" x2="14" y2="-0.5" transform="matrix(1 0 0 -1 49 49)" stroke="#77757D" stroke-dasharray="2 2"/>
+<line y1="-0.5" x2="14" y2="-0.5" transform="matrix(1 0 0 -1 22 49)" stroke="#77757D" stroke-dasharray="2 2"/>
+</svg>

@@ -1,0 +1,23 @@
+<svg width="135" height="80" viewBox="0 0 135 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect width="135" height="80" fill="white"/>
+<line x1="27" y1="45.8907" x2="37" y2="45.8907" stroke="black" stroke-opacity="0.6" stroke-width="0.218649"/>
+<line x1="27" y1="45.8907" x2="37" y2="45.8907" stroke="black" stroke-opacity="0.6" stroke-width="0.218649"/>
+<path d="M53 46H57.2695V32.4864V26.0002L63 26" stroke="black" stroke-opacity="0.6" stroke-width="0.218649"/>
+<path d="M81 26H99.2825V16V11L105 11.0002" stroke="black" stroke-opacity="0.6" stroke-width="0.218649"/>
+<path d="M48 46H57.2841L57.2848 55.8122V60.9998L63 61" stroke="black" stroke-opacity="0.6" stroke-width="0.218649"/>
+<path d="M96 26H100.475V35.3332V39.9998L106 40" stroke="black" stroke-opacity="0.6" stroke-width="0.218649"/>
+<rect x="63" y="55" width="18" height="11" rx="0.728829" fill="#9DD194"/>
+<rect x="63.0364" y="55.0364" width="17.9271" height="10.9271" rx="0.692388" stroke="black" stroke-opacity="0.1" stroke-width="0.0728829"/>
+<rect x="8" y="41" width="19" height="10" rx="0.728829" fill="#FFDE6B"/>
+<rect x="8.03644" y="41.0364" width="18.9271" height="9.92712" rx="0.692388" stroke="black" stroke-opacity="0.1" stroke-width="0.0728829"/>
+<rect width="9.73582" height="9.73582" transform="matrix(0.676371 -0.736561 0.676371 0.736561 85.4199 26.1201)" fill="#937EE7"/>
+<rect x="0.0492959" width="9.66294" height="9.66294" transform="matrix(0.676371 -0.736561 0.676371 0.736561 85.4359 26.1564)" stroke="black" stroke-opacity="0.1" stroke-width="0.0728829"/>
+<rect width="9.73582" height="9.73582" transform="matrix(0.676371 -0.736561 0.676371 0.736561 35.5234 46.1709)" fill="#937EE7"/>
+<rect x="0.0492959" width="9.66294" height="9.66294" transform="matrix(0.676371 -0.736561 0.676371 0.736561 35.5394 46.2072)" stroke="black" stroke-opacity="0.1" stroke-width="0.0728829"/>
+<rect x="63" y="20" width="18" height="12" rx="0.728829" fill="#FFDE6B"/>
+<rect x="63.0364" y="20.0364" width="17.9271" height="11.9271" rx="0.692388" stroke="black" stroke-opacity="0.1" stroke-width="0.0728829"/>
+<rect x="105" y="8" width="20" height="10" rx="0.728829" fill="#937EE7"/>
+<rect x="105.036" y="8.03644" width="19.9271" height="9.92712" rx="0.692388" stroke="black" stroke-opacity="0.1" stroke-width="0.0728829"/>
+<rect x="105" y="34" width="20" height="12" rx="0.728829" fill="#937EE7"/>
+<rect x="105.036" y="34.0364" width="19.9271" height="11.9271" rx="0.692388" stroke="black" stroke-opacity="0.1" stroke-width="0.0728829"/>
+</svg>
