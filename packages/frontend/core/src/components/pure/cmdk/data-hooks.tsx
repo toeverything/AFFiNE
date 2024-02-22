@@ -4,6 +4,7 @@ import {
   useBlockSuitePageMeta,
   usePageMetaHelper,
 } from '@affine/core/hooks/use-block-suite-page-meta';
+import { useGetBlockSuiteWorkspacePageTitle } from '@affine/core/hooks/use-block-suite-workspace-page-title';
 import { useJournalHelper } from '@affine/core/hooks/use-journal';
 import { CollectionService } from '@affine/core/modules/collection';
 import { WorkspaceSubPath } from '@affine/core/shared';
@@ -97,24 +98,32 @@ export const pageToCommand = (
   page: PageMeta,
   store: ReturnType<typeof getCurrentStore>,
   navigationHelper: ReturnType<typeof useNavigateHelper>,
+  getPageTitle: ReturnType<typeof useGetBlockSuiteWorkspacePageTitle>,
+  isPageJournal: (pageId: string) => boolean,
   t: ReturnType<typeof useAFFiNEI18N>,
   workspace: Workspace,
-  label?: {
-    title: string;
-    subTitle?: string;
-  },
+  subTitle?: string,
   blockId?: string
 ): CMDKCommand => {
   const pageMode = store.get(pageSettingsAtom)?.[page.id]?.mode;
 
-  const title = page.title || t['Untitled']();
-  const commandLabel = label || {
+  const title = getPageTitle(page.id) || t['Untitled']();
+  const commandLabel = {
     title: title,
+    subTitle: subTitle,
   };
 
   // hack: when comparing, the part between >>> and <<< will be ignored
   // adding this patch so that CMDK will not complain about duplicated commands
   const id = category + '.' + page.id;
+
+  const icon = isPageJournal(page.id) ? (
+    <TodayIcon />
+  ) : pageMode === 'edgeless' ? (
+    <EdgelessIcon />
+  ) : (
+    <PageIcon />
+  );
 
   return {
     id,
@@ -130,7 +139,7 @@ export const pageToCommand = (
       }
       return navigationHelper.jumpToPage(workspace.id, page.id);
     },
-    icon: pageMode === 'edgeless' ? <EdgelessIcon /> : <PageIcon />,
+    icon: icon,
     timestamp: page.updatedDate,
   };
 };
@@ -146,6 +155,10 @@ export const usePageCommands = () => {
   const navigationHelper = useNavigateHelper();
   const journalHelper = useJournalHelper(workspace.blockSuiteWorkspace);
   const t = useAFFiNEI18N();
+  const getPageTitle = useGetBlockSuiteWorkspacePageTitle(
+    workspace.blockSuiteWorkspace
+  );
+  const { isPageJournal } = useJournalHelper(workspace.blockSuiteWorkspace);
 
   const [searchTime, setSearchTime] = useState<number>(0);
 
@@ -174,6 +187,8 @@ export const usePageCommands = () => {
           page,
           store,
           navigationHelper,
+          getPageTitle,
+          isPageJournal,
           t,
           workspace
         );
@@ -198,10 +213,6 @@ export const usePageCommands = () => {
 
         const subTitle = resultValues.find(result => result.space === page.id)
           ?.content;
-        const label = {
-          title: page.title || t['Untitled'](), // Used to ensure that a title exists
-          subTitle: subTitle || '',
-        };
 
         const blockId = reverseMapping.get(page.id);
 
@@ -210,9 +221,11 @@ export const usePageCommands = () => {
           page,
           store,
           navigationHelper,
+          getPageTitle,
+          isPageJournal,
           t,
           workspace,
-          label,
+          subTitle,
           blockId
         );
         return command;
@@ -276,6 +289,8 @@ export const usePageCommands = () => {
     recentPages,
     store,
     navigationHelper,
+    getPageTitle,
+    isPageJournal,
     t,
     workspace,
     pages,

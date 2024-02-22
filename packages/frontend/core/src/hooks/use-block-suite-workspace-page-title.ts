@@ -2,8 +2,9 @@ import { assertExists } from '@blocksuite/global/utils';
 import type { Workspace } from '@blocksuite/store';
 import type { Atom } from 'jotai';
 import { atom, useAtomValue } from 'jotai';
+import { useCallback } from 'react';
 
-import { useJournalInfoHelper } from './use-journal';
+import { useJournalHelper, useJournalInfoHelper } from './use-journal';
 
 const weakMap = new WeakMap<Workspace, Map<string, Atom<string>>>();
 
@@ -43,4 +44,21 @@ export function useBlockSuiteWorkspacePageTitle(
     pageId
   );
   return localizedJournalDate || title;
+}
+
+// This hook is NOT reactive to the page title change
+export function useGetBlockSuiteWorkspacePageTitle(
+  blockSuiteWorkspace: Workspace
+) {
+  const { getLocalizedJournalDateString } =
+    useJournalHelper(blockSuiteWorkspace);
+  return useCallback(
+    (pageId: string) => {
+      return (
+        getLocalizedJournalDateString(pageId) ||
+        blockSuiteWorkspace.getPage(pageId)?.meta.title
+      );
+    },
+    [blockSuiteWorkspace, getLocalizedJournalDateString]
+  );
 }
