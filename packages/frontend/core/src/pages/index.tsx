@@ -1,6 +1,9 @@
 import { Menu } from '@affine/component/ui/menu';
 import { WorkspaceFallback } from '@affine/component/workspace';
-import { workspaceListAtom } from '@affine/core/modules/workspace';
+import {
+  workspaceListAtom,
+  workspaceListLoadingStatusAtom,
+} from '@affine/core/modules/workspace';
 import { WorkspaceSubPath } from '@affine/core/shared';
 import { useAtomValue } from 'jotai';
 import { lazy, useEffect, useLayoutEffect, useState } from 'react';
@@ -30,10 +33,12 @@ export const Component = () => {
   const [creating, setCreating] = useState(false);
 
   const list = useAtomValue(workspaceListAtom);
+  const listLoading = useAtomValue(workspaceListLoadingStatusAtom);
+
   const { openPage } = useNavigateHelper();
 
   useLayoutEffect(() => {
-    if (list.length === 0) {
+    if (list.length === 0 && !listLoading) {
       return;
     }
 
@@ -42,7 +47,7 @@ export const Component = () => {
     const openWorkspace = list.find(w => w.id === lastId) ?? list[0];
     openPage(openWorkspace.id, WorkspaceSubPath.ALL);
     setNavigating(true);
-  }, [list, openPage]);
+  }, [list, listLoading, openPage]);
 
   useEffect(() => {
     setCreating(true);
