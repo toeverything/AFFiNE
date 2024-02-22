@@ -1,29 +1,26 @@
 import type { PageBlockModel } from '@blocksuite/blocks';
 import { assertExists } from '@blocksuite/global/utils';
 import type { PageMeta, Workspace } from '@blocksuite/store';
-import type { Atom } from 'jotai';
-import { atom, useAtomValue } from 'jotai';
 import { useMemo } from 'react';
 
-const weakMap = new WeakMap<Workspace, Atom<PageMeta[]>>();
+import { useAllBlockSuitePageMeta } from './use-all-block-suite-page-meta';
+import { useJournalHelper } from './use-journal';
 
-export function useBlockSuitePageMeta(
-  blockSuiteWorkspace: Workspace
-): PageMeta[] {
-  if (!weakMap.has(blockSuiteWorkspace)) {
-    const baseAtom = atom<PageMeta[]>(blockSuiteWorkspace.meta.pageMetas);
-    weakMap.set(blockSuiteWorkspace, baseAtom);
-    baseAtom.onMount = set => {
-      set(blockSuiteWorkspace.meta.pageMetas);
-      const dispose = blockSuiteWorkspace.meta.pageMetasUpdated.on(() => {
-        set(blockSuiteWorkspace.meta.pageMetas);
-      });
-      return () => {
-        dispose.dispose();
-      };
-    };
-  }
-  return useAtomValue(weakMap.get(blockSuiteWorkspace) as Atom<PageMeta[]>);
+/**
+ * Get pageMetas excluding journal pages without updatedDate
+ * If you want to get all pageMetas, use `useAllBlockSuitePageMeta` instead
+ * @returns
+ */
+export function useBlockSuitePageMeta(blocksuiteWorkspace: Workspace) {
+  const pageMetas = useAllBlockSuitePageMeta(blocksuiteWorkspace);
+  const { isPageJournal } = useJournalHelper(blocksuiteWorkspace);
+  return useMemo(
+    () =>
+      pageMetas.filter(
+        pageMeta => !isPageJournal(pageMeta.id) || !!pageMeta.updatedDate
+      ),
+    [isPageJournal, pageMetas]
+  );
 }
 
 export function usePageMetaHelper(blockSuiteWorkspace: Workspace) {
