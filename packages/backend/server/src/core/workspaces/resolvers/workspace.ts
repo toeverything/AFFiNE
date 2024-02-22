@@ -15,7 +15,7 @@ import {
   ResolveField,
   Resolver,
 } from '@nestjs/graphql';
-import type { User } from '@prisma/client';
+import { PrismaClient, type User } from '@prisma/client';
 import { getStreamAsBuffer } from 'get-stream';
 import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 import { applyUpdate, Doc } from 'yjs';
@@ -25,7 +25,6 @@ import {
   EventEmitter,
   type FileUpload,
   MailService,
-  PrismaService,
   Throttle,
 } from '../../../fundamentals';
 import { Auth, CurrentUser, Public } from '../../auth';
@@ -57,7 +56,7 @@ export class WorkspaceResolver {
   constructor(
     private readonly auth: AuthService,
     private readonly mailer: MailService,
-    private readonly prisma: PrismaService,
+    private readonly prisma: PrismaClient,
     private readonly permissions: PermissionService,
     private readonly quota: QuotaManagementService,
     private readonly users: UsersService,

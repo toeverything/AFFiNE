@@ -15,7 +15,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { hash, verify } from '@node-rs/argon2';
-import type { User } from '@prisma/client';
+import { PrismaClient, type User } from '@prisma/client';
 import type { NextFunction, Request, Response } from 'express';
 import { pick } from 'lodash-es';
 import { nanoid } from 'nanoid';
@@ -26,7 +26,6 @@ import {
   AuthThrottlerGuard,
   Config,
   metrics,
-  PrismaService,
   SessionService,
   Throttle,
 } from '../../fundamentals';
@@ -45,7 +44,7 @@ export class NextAuthController {
 
   constructor(
     readonly config: Config,
-    readonly prisma: PrismaService,
+    readonly prisma: PrismaClient,
     private readonly authService: AuthService,
     @Inject(NextAuthOptionsProvide)
     private readonly nextAuthOptions: NextAuthOptions,

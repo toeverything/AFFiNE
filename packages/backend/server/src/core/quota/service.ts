@@ -1,15 +1,16 @@
 import { Injectable } from '@nestjs/common';
+import { PrismaClient } from '@prisma/client';
 
-import { type EventPayload, OnEvent, PrismaService } from '../../fundamentals';
+import { type EventPayload, OnEvent } from '../../fundamentals';
 import { FeatureKind } from '../features';
 import { QuotaConfig } from './quota';
 import { QuotaType } from './types';
 
-type Transaction = Parameters<Parameters<PrismaService['$transaction']>[0]>[0];
+type Transaction = Parameters<Parameters<PrismaClient['$transaction']>[0]>[0];
 
 @Injectable()
 export class QuotaService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaClient) {}
 
   // get activated user quota
   async getUserQuota(userId: string) {

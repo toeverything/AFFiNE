@@ -18,11 +18,12 @@ import {
   Resolver,
 } from '@nestjs/graphql';
 import type { User, UserInvoice, UserSubscription } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import { groupBy } from 'lodash-es';
 
 import { Auth, CurrentUser, Public } from '../../core/auth';
 import { UserType } from '../../core/users';
-import { Config, PrismaService } from '../../fundamentals';
+import { Config } from '../../fundamentals';
 import { decodeLookupKey, SubscriptionService } from './service';
 import {
   InvoiceStatus,
@@ -303,7 +304,7 @@ export class SubscriptionResolver {
 export class UserSubscriptionResolver {
   constructor(
     private readonly config: Config,
-    private readonly db: PrismaService
+    private readonly db: PrismaClient
   ) {}
 
   @ResolveField(() => UserSubscriptionType, { nullable: true })

@@ -7,7 +7,7 @@ import {
   ResolveField,
   Resolver,
 } from '@nestjs/graphql';
-import type { User } from '@prisma/client';
+import { PrismaClient, type User } from '@prisma/client';
 import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 
 import {
@@ -15,7 +15,6 @@ import {
   EventEmitter,
   type FileUpload,
   PaymentRequiredException,
-  PrismaService,
   Throttle,
 } from '../../fundamentals';
 import { Auth, CurrentUser, Public, Publicable } from '../auth/guard';
@@ -40,7 +39,7 @@ import { UsersService } from './users';
 @Resolver(() => UserType)
 export class UserResolver {
   constructor(
-    private readonly prisma: PrismaService,
+    private readonly prisma: PrismaClient,
     private readonly storage: AvatarStorage,
     private readonly users: UsersService,
     private readonly feature: FeatureManagementService,
