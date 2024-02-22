@@ -15,10 +15,11 @@ export enum PageSystemPropertyId {
 }
 
 export enum PagePropertyType {
-  String = 'string',
+  Text = 'text',
   Number = 'number',
-  Boolean = 'boolean',
   Date = 'date',
+  Progress = 'progress',
+  Checkbox = 'checkbox',
   Tags = 'tags',
 }
 
@@ -26,7 +27,9 @@ export const PagePropertyMetaBaseSchema = z.object({
   id: z.string(),
   name: z.string(),
   source: z.string(),
-  type: z.string(),
+  type: z.nativeEnum(PagePropertyType),
+  icon: z.string(),
+  required: z.boolean().optional(),
 });
 
 export const PageSystemPropertyMetaBaseSchema =
@@ -36,13 +39,13 @@ export const PageSystemPropertyMetaBaseSchema =
 
 export const PageCustomPropertyMetaSchema = PagePropertyMetaBaseSchema.extend({
   source: z.literal('custom'),
-  type: z.nativeEnum(PagePropertyType),
+  order: z.number(),
 });
 
 // ====== page info schema ======
 export const PageInfoItemSchema = z.object({
   id: z.string(), // property id. Maps to PagePropertyMetaSchema.id
-  hidden: z.boolean().optional(),
+  visibility: z.enum(['visible', 'hide', 'hide-if-empty']),
   value: z.any(), // corresponds to PagePropertyMetaSchema.type
 });
 
@@ -55,6 +58,8 @@ export const PageInfoTagsItemSchema = PageInfoItemSchema.extend({
   id: z.literal(PageSystemPropertyId.Tags),
   value: z.array(z.string()),
 });
+
+export type PageInfoTagsItem = z.infer<typeof PageInfoTagsItemSchema>;
 
 // ====== workspace properties schema ======
 export const WorkspaceFavoriteItemSchema = z.object({
@@ -82,8 +87,12 @@ const WorkspaceAffinePropertiesSchemaSchema = z.object({
   }),
 });
 
+const PageInfoCustomPropertyItemSchema = PageInfoItemSchema.extend({
+  order: z.number(),
+});
+
 const WorkspacePagePropertiesSchema = z.object({
-  custom: z.record(PageInfoItemSchema.extend({ order: z.number() })),
+  custom: z.record(PageInfoCustomPropertyItemSchema),
   system: z.object({
     [PageSystemPropertyId.Journal]: PageInfoJournalItemSchema,
     [PageSystemPropertyId.Tags]: PageInfoTagsItemSchema,
@@ -96,6 +105,18 @@ export const WorkspaceAffinePropertiesSchema = z.object({
   pageProperties: z.record(WorkspacePagePropertiesSchema),
 });
 
+export type PageInfoCustomPropertyMeta = z.infer<
+  typeof PageCustomPropertyMetaSchema
+>;
+
 export type WorkspaceAffineProperties = z.infer<
   typeof WorkspaceAffinePropertiesSchema
+>;
+
+export type PageInfoCustomProperty = z.infer<
+  typeof PageInfoCustomPropertyItemSchema
+>;
+
+export type WorkspaceAffinePageProperties = z.infer<
+  typeof WorkspacePagePropertiesSchema
 >;

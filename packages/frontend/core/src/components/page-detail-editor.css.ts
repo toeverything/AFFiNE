@@ -22,6 +22,3 @@ globalStyle(
     scrollbarGutter: 'stable',
   }
 );
-globalStyle('.is-public-page page-meta-tags', {
-  display: 'none',
-});

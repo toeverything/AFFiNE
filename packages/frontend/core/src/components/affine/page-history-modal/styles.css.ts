@@ -280,11 +280,6 @@ export const collapsedIconContainer = style({
   borderRadius: '2px',
   transition: 'transform 0.2s',
   color: 'inherit',
-  selectors: {
-    '&[data-collapsed="true"]': {
-      transform: 'rotate(-90deg)',
-    },
-  },
 });
 export const planPromptWrapper = style({
   padding: '4px 12px',

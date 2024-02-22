@@ -25,10 +25,10 @@ const AFFINE_PROPERTIES_ID = 'affine:workspace-properties';
  */
 export class WorkspacePropertiesAdapter {
   // provides a easy-to-use interface for workspace properties
-  private readonly proxy: WorkspaceAffineProperties;
+  public readonly proxy: WorkspaceAffineProperties;
   public readonly properties: Y.Map<any>;
 
-  constructor(private readonly workspace: Workspace) {
+  constructor(public readonly workspace: Workspace) {
     // check if properties exists, if not, create one
     const rootDoc = workspace.blockSuiteWorkspace.doc;
     this.properties = rootDoc.getMap(AFFINE_PROPERTIES_ID);
@@ -69,7 +69,7 @@ export class WorkspacePropertiesAdapter {
     });
   }
 
-  private ensurePageProperties(pageId: string) {
+  ensurePageProperties(pageId: string) {
     // fixme: may not to be called every time
     defaultsDeep(this.proxy.pageProperties, {
       [pageId]: {
@@ -88,6 +88,11 @@ export class WorkspacePropertiesAdapter {
     });
   }
 
+  // leak some yjs abstraction to modify multiple properties at once
+  transact = this.workspace.blockSuiteWorkspace.doc.transact.bind(
+    this.workspace.blockSuiteWorkspace.doc
+  );
+
   get schema() {
     return this.proxy.schema;
   }
@@ -103,6 +108,7 @@ export class WorkspacePropertiesAdapter {
   // ====== utilities ======
 
   getPageProperties(pageId: string) {
+    this.ensurePageProperties(pageId);
     return this.pageProperties[pageId];
   }
 
@@ -139,6 +145,14 @@ export class WorkspacePropertiesAdapter {
     const tagId = typeof tag === 'string' ? tag : tag.id;
     if (tags.some(t => t.id === tagId)) {
       return;
+    }
+    // add tag option if not exist
+    if (!this.tagOptions.some(t => t.id === tagId)) {
+      if (typeof tag === 'string') {
+        throw new Error(`Tag ${tag} does not exist`);
+      } else {
+        this.tagOptions.push(tag);
+      }
     }
     const pageProperties = this.pageProperties[pageId];
     pageProperties.system[PageSystemPropertyId.Tags].value.push(tagId);

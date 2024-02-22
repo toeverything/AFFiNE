@@ -50,10 +50,6 @@ export const menuItem = style({
       color: cssVar('warningColor'),
       backgroundColor: cssVar('backgroundWarningColor'),
     },
-    '&.selected, &.checked': {
-      backgroundColor: cssVar('hoverColor'),
-      color: cssVar('primaryColor'),
-    },
   },
 });
 export const menuSpan = style({
@@ -69,12 +65,8 @@ export const menuItemIcon = style({
   fontSize: cssVar('fontH5'),
   color: cssVar('iconColor'),
   selectors: {
-    '&.start': {
-      marginRight: '8px',
-    },
-    '&.end': {
-      marginLeft: '8px',
-    },
+    '&.start': { marginRight: '4px' },
+    '&.end': { marginLeft: '4px' },
     '&.selected, &.checked': {
       color: cssVar('primaryColor'),
     },

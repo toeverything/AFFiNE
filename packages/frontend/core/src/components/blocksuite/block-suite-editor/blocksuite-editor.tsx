@@ -3,7 +3,6 @@ import { usePageMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta'
 import { useJournalHelper } from '@affine/core/hooks/use-journal';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
-import { LinkedPageIcon, TodayIcon } from '@blocksuite/icons';
 import type { AffineEditorContainer } from '@blocksuite/presets';
 import type { Page } from '@blocksuite/store';
 import { use } from 'foxact/use';
@@ -19,9 +18,12 @@ import {
 } from 'react';
 import { type Map as YMap } from 'yjs';
 
+import {
+  pageReferenceRenderer,
+  type PageReferenceRendererOptions,
+} from '../../affine/reference-link';
 import { BlocksuiteEditorContainer } from './blocksuite-editor-container';
 import type { InlineRenderers } from './specs';
-import * as styles from './styles.css';
 
 export type ErrorBoundaryProps = {
   onReset?: () => void;
@@ -59,52 +61,18 @@ function usePageRoot(page: Page) {
   return page.root;
 }
 
-interface PageReferenceProps {
-  reference: HTMLElementTagNameMap['affine-reference'];
-  pageMetaHelper: ReturnType<typeof usePageMetaHelper>;
-  journalHelper: ReturnType<typeof useJournalHelper>;
-  t: ReturnType<typeof useAFFiNEI18N>;
-}
-
-// TODO: this is a placeholder proof-of-concept implementation
-function customPageReference({
-  reference,
-  pageMetaHelper,
-  journalHelper,
-  t,
-}: PageReferenceProps) {
-  const { isPageJournal, getLocalizedJournalDateString } = journalHelper;
-  assertExists(
-    reference.delta.attributes?.reference?.pageId,
-    'pageId should exist for page reference'
-  );
-  const pageId = reference.delta.attributes.reference.pageId;
-  const referencedPage = pageMetaHelper.getPageMeta(pageId);
-  let title =
-    referencedPage?.title ?? t['com.affine.editor.reference-not-found']();
-  let icon = <LinkedPageIcon className={styles.pageReferenceIcon} />;
-  const isJournal = isPageJournal(pageId);
-  const localizedJournalDate = getLocalizedJournalDateString(pageId);
-  if (isJournal && localizedJournalDate) {
-    title = localizedJournalDate;
-    icon = <TodayIcon className={styles.pageReferenceIcon} />;
-  }
-  return (
-    <>
-      {icon}
-      <span className="affine-reference-title">{title}</span>
-    </>
-  );
-}
-
 // we cannot pass components to lit renderers, but give them the rendered elements
 const customRenderersFactory: (
-  opts: Omit<PageReferenceProps, 'reference'>
+  opts: Omit<PageReferenceRendererOptions, 'pageId'>
 ) => InlineRenderers = opts => ({
   pageReference(reference) {
-    return customPageReference({
+    const pageId = reference.delta.attributes?.reference?.pageId;
+    if (!pageId) {
+      return <span />;
+    }
+    return pageReferenceRenderer({
       ...opts,
-      reference,
+      pageId,
     });
   },
 });

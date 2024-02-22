@@ -311,6 +311,7 @@ __metadata:
     "@blocksuite/presets": "npm:0.12.0-canary-202402210317-3698d1d"
     "@blocksuite/store": "npm:0.12.0-canary-202402210317-3698d1d"
     "@dnd-kit/core": "npm:^6.0.8"
+    "@dnd-kit/modifiers": "npm:^7.0.0"
     "@dnd-kit/sortable": "npm:^8.0.0"
     "@emotion/cache": "npm:^11.11.0"
     "@emotion/react": "npm:^11.11.1"

@@ -1087,5 +1087,21 @@
   "com.affine.history-vision.tips-modal.title": "History Vision Needs AFFiNE Cloud",
   "com.affine.history-vision.tips-modal.description": "The current workspace is a local workspace, and we do not support version history for it at the moment. You can enable AFFiNE Cloud. This will sync the workspace with the Cloud, allowing you to use this feature.",
   "com.affine.history-vision.tips-modal.cancel": "Cancel",
-  "com.affine.history-vision.tips-modal.confirm": "Enable AFFiNE Cloud"
+  "com.affine.history-vision.tips-modal.confirm": "Enable AFFiNE Cloud",
+  "com.affine.page-properties.backlinks": "Backlinks",
+  "com.affine.page-properties.page-info": "Page Info",
+  "com.affine.page-properties.settings.title": "customize properties",
+  "com.affine.page-properties.add-property": "Add a property",
+  "com.affine.page-properties.add-property.menu.header": "Properties",
+  "com.affine.page-properties.create-property.menu.header": "Type",
+  "com.affine.page-properties.add-property.menu.create": "Create property",
+  "com.affine.page-properties.property-value-placeholder": "Empty",
+  "com.affine.page-properties.property.hide-in-view": "Hide in view",
+  "com.affine.page-properties.property.hide-in-view-when-empty": "Hide in view when empty",
+  "com.affine.page-properties.property.show-in-view": "Show in view",
+  "com.affine.page-properties.property.always-hide": "Always hide",
+  "com.affine.page-properties.property.always-show": "Always show",
+  "com.affine.page-properties.property.hide-when-empty": "Hide when empty",
+  "com.affine.page-properties.property.required": "Required",
+  "com.affine.page-properties.property.remove-property": "Remove property"
 }

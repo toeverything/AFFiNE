@@ -18,6 +18,7 @@ import React, {
   useState,
 } from 'react';
 
+import { PagePropertiesTable } from '../../affine/page-properties';
 import { BlocksuiteEditorJournalDocTitle } from './journal-doc-title';
 import {
   docModeSpecs,
@@ -108,8 +109,7 @@ export const BlocksuiteDocEditor = forwardRef<
         ) : (
           <BlocksuiteEditorJournalDocTitle page={page} />
         )}
-        {/* We will replace page meta tags with our own implementation */}
-        <adapted.PageMetaTags page={page} />
+        <PagePropertiesTable page={page} />
         <adapted.DocEditor
           className={styles.docContainer}
           ref={onDocRef}

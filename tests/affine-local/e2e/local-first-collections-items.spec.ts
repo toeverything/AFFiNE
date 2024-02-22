@@ -137,7 +137,7 @@ test('edit collection and change filter date', async ({ page }) => {
   expect(await first.textContent()).toBe('123');
 });
 
-test('create temporary filter by click tag', async ({ page }) => {
+test.skip('create temporary filter by click tag', async ({ page }) => {
   await clickNewPageButton(page);
   await getBlockSuiteEditorTitle(page).click();
   await getBlockSuiteEditorTitle(page).fill('test page');

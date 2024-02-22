@@ -8,10 +8,10 @@ const dateFormatter = new Intl.DateTimeFormat(undefined, {
   day: 'numeric',
 });
 
-export const timestampToLocalTime = (ts: string) => {
+export const timestampToLocalTime = (ts: string | number) => {
   return timeFormatter.format(new Date(ts));
 };
 
-export const timestampToLocalDate = (ts: string) => {
+export const timestampToLocalDate = (ts: string | number) => {
   return dateFormatter.format(new Date(ts));
 };
