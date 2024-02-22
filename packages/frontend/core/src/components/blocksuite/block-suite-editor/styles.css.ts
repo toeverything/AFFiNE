@@ -26,11 +26,20 @@ export const affineDocViewport = style({
     },
   },
 });
+
 export const docContainer = style({
   display: 'block',
-  paddingBottom: 64,
   flexGrow: 1,
 });
+
+export const docEditorGap = style({
+  display: 'block',
+  width: '100%',
+  margin: '0 auto',
+  paddingTop: 50,
+  paddingBottom: 50,
+});
+
 const titleTagBasic = style({
   fontSize: cssVar('fontH4'),
   fontWeight: 600,

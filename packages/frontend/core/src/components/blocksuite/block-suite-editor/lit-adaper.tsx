@@ -1,5 +1,6 @@
 import { createReactComponentFromLit } from '@affine/component';
 import { useJournalInfoHelper } from '@affine/core/hooks/use-journal';
+import type { DocPageService } from '@blocksuite/blocks';
 import {
   BiDirectionalLinkPanel,
   DocEditor,
@@ -117,6 +118,16 @@ export const BlocksuiteDocEditor = forwardRef<
           specs={specs}
           hasViewport={false}
         />
+        {docPage ? (
+          <div
+            className={styles.docEditorGap}
+            onClick={() => {
+              (
+                docPage.std.spec.getService('affine:page') as DocPageService
+              ).appendParagraph();
+            }}
+          ></div>
+        ) : null}
         {docPage ? (
           <adapted.BiDirectionalLinkPanel page={page} docPageBlock={docPage} />
         ) : null}
