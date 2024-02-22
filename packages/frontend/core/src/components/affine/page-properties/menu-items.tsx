@@ -90,7 +90,9 @@ export const EditPropertyNameMenuItem = ({
   const iconName = getSafeIconName(property.icon, property.type);
   const onKeyDown: KeyboardEventHandler<HTMLInputElement> = useCallback(
     e => {
-      e.stopPropagation();
+      if (e.key !== 'Escape') {
+        e.stopPropagation();
+      }
       if (e.key === 'Enter') {
         e.preventDefault();
         onBlur(e.currentTarget.value);

@@ -126,8 +126,9 @@ export const createPageWithTag = async (
   await clickNewPageButton(page);
   await getBlockSuiteEditorTitle(page).click();
   await getBlockSuiteEditorTitle(page).fill('test page');
-  await page.locator('page-meta-tags').click();
-  await page.locator('.add-tag').click();
+  await page
+    .locator('[data-testid="page-property-row"][data-property="tags"]')
+    .click();
   for (const name of options.tags) {
     await createTag(page, name);
   }

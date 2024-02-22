@@ -212,7 +212,7 @@ export const propertyRowCell = style({
   position: 'relative',
   borderRadius: 4,
   fontSize: cssVar('fontSm'),
-  lineHeight: '20px',
+  lineHeight: '22px',
   userSelect: 'none',
   ':focus-visible': {
     outline: 'none',

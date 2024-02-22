@@ -44,6 +44,8 @@ export const TagItem = ({
       data-testid="page-tag"
       className={styles.tag}
       data-idx={idx}
+      data-tag-id={tag.id}
+      data-tag-value={tag.value}
       title={tag.value}
       style={style}
     >
@@ -59,7 +61,11 @@ export const TagItem = ({
         />
         <div className={styles.tagLabel}>{tag.value}</div>
         {onRemoved ? (
-          <div className={styles.tagRemove} onClick={handleRemove}>
+          <div
+            data-testid="remove-tag-button"
+            className={styles.tagRemove}
+            onClick={handleRemove}
+          >
             <CloseIcon />
           </div>
         ) : null}

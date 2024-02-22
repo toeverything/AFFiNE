@@ -137,27 +137,6 @@ test('edit collection and change filter date', async ({ page }) => {
   expect(await first.textContent()).toBe('123');
 });
 
-test.skip('create temporary filter by click tag', async ({ page }) => {
-  await clickNewPageButton(page);
-  await getBlockSuiteEditorTitle(page).click();
-  await getBlockSuiteEditorTitle(page).fill('test page');
-  await page.locator('page-meta-tags').click();
-  await page.locator('.add-tag').click();
-  await page.keyboard.type('TODO Tag');
-  await page.keyboard.press('Enter');
-  await page.keyboard.press('Escape');
-  await page.locator('.tag', { hasText: 'TODO Tag' }).click();
-  const cell = page.getByTestId('page-list-item-title').getByText('test page');
-  await expect(cell).toBeVisible();
-  expect(await page.getByTestId('page-list-item').count()).toBe(1);
-  await page.getByTestId('filter-arg').click();
-
-  await page.getByTestId('multi-select-TODO Tag').click();
-  expect(
-    await page.getByTestId('page-list-item').count()
-  ).toBeGreaterThanOrEqual(2);
-});
-
 test('add collection from sidebar', async ({ page }) => {
   await removeOnboardingPages(page);
   await clickNewPageButton(page);

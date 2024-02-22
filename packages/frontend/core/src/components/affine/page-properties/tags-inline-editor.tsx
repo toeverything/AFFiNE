@@ -47,7 +47,7 @@ const InlineTagsList = ({
   children,
 }: PropsWithChildren<InlineTagsListProps>) => {
   return (
-    <div className={styles.inlineTagsContainer}>
+    <div className={styles.inlineTagsContainer} data-testid="inline-tags-list">
       {value.map((tagId, idx) => {
         const tag = options.find(t => t.id === tagId);
         if (!tag) {
@@ -251,7 +251,7 @@ export const TagsEditor = ({
   );
 
   return (
-    <div className={styles.tagsEditorRoot}>
+    <div data-testid="tags-editor-popup" className={styles.tagsEditorRoot}>
       <div className={styles.tagsEditorSelectedTags}>
         <InlineTagsList
           options={options}
@@ -282,6 +282,9 @@ export const TagsEditor = ({
                 <div
                   key={tag.id}
                   className={styles.tagSelectorItem}
+                  data-testid="tag-selector-item"
+                  data-tag-id={tag.id}
+                  data-tag-value={tag.value}
                   onClick={() => {
                     onAddTag(tag.id);
                   }}
@@ -296,6 +299,7 @@ export const TagsEditor = ({
             })}
             {exactMatch || !inputValue ? null : (
               <div
+                data-testid="tag-selector-item"
                 className={styles.tagSelectorItem}
                 onClick={() => {
                   setInputValue('');

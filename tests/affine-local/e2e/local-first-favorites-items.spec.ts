@@ -1,4 +1,5 @@
 import { test } from '@affine-test/kit/playwright';
+import { clickPageModeButton } from '@affine-test/kit/utils/editor';
 import { openHomePage } from '@affine-test/kit/utils/load-page';
 import {
   clickNewPageButton,
@@ -135,8 +136,9 @@ test("Deleted page's reference will not be shown in sidebar", async ({
 test('Add new favorite page via sidebar', async ({ page }) => {
   await openHomePage(page);
   await waitForEditorLoad(page);
-  await clickNewPageButton(page);
+
   await page.getByTestId('slider-bar-add-favorite-button').first().click();
+  await clickPageModeButton(page);
   await waitForEmptyEditor(page);
 
   // enter random page title

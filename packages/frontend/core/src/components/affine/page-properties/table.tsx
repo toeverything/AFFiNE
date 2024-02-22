@@ -60,6 +60,7 @@ import {
 
 import { AffinePageReference } from '../reference-link';
 import { managerContext, pageInfoCollapsedAtom } from './common';
+import { ConfirmDeletePropertyModal } from './confirm-delete-property-modal';
 import {
   getDefaultIconName,
   nameToIcon,
@@ -281,7 +282,11 @@ const VisibilityModeSelector = ({
         },
       }}
     >
-      <div data-required={required} className={styles.selectorButton}>
+      <div
+        role="button"
+        data-required={required}
+        className={styles.selectorButton}
+      >
         {required ? (
           t['com.affine.page-properties.property.required']()
         ) : (
@@ -305,7 +310,11 @@ export const PagePropertiesSettingsPopup = ({
   const menuItems = useMemo(() => {
     const options: MenuItemOption[] = [];
     options.push(
-      <div className={styles.menuHeader} style={{ minWidth: 320 }}>
+      <div
+        role="heading"
+        className={styles.menuHeader}
+        style={{ minWidth: 320 }}
+      >
         {t['com.affine.page-properties.settings.title']()}
       </div>
     );
@@ -327,7 +336,12 @@ export const PagePropertiesSettingsPopup = ({
               <MenuIcon>
                 <Icon />
               </MenuIcon>
-              <div className={styles.propertyRowName}>{name}</div>
+              <div
+                data-testid="page-property-setting-row-name"
+                className={styles.propertyRowName}
+              >
+                {name}
+              </div>
               <VisibilityModeSelector property={property} />
             </SortablePropertyRow>
           );
@@ -407,6 +421,8 @@ export const PagePropertyRowNameMenu = ({
   const [localProperty, setLocalProperty] = useState(() => ({ ...property }));
   const nextVisibility = rotateVisibility(localProperty.visibility);
 
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+
   const handleFinishEditing = useCallback(() => {
     onFinishEditing();
     manager.updateCustomPropertyMeta(meta.id, localPropertyMeta);
@@ -445,14 +461,9 @@ export const PagePropertyRowNameMenu = ({
     },
     [nextVisibility]
   );
-  const handleDelete = useCallback(
-    (e: MouseEvent) => {
-      e.stopPropagation();
-      e.preventDefault();
-      manager.removeCustomProperty(property.id);
-    },
-    [manager, property.id]
-  );
+  const handleDelete = useCallback(() => {
+    manager.removeCustomProperty(property.id);
+  }, [manager, property.id]);
 
   const handleIconChange = useCallback(
     (icon: PagePropertyIcon) => {
@@ -496,12 +507,11 @@ export const PagePropertyRowNameMenu = ({
         type: 'danger',
         icon: <DeleteIcon />,
         text: t['com.affine.page-properties.property.remove-property'](),
-        onClick: handleDelete,
+        onClick: () => setShowDeleteModal(true),
       });
     }
     return renderMenuItemOptions(options);
   }, [
-    handleDelete,
     handleIconChange,
     handleNameBlur,
     handleNameChange,
@@ -513,20 +523,36 @@ export const PagePropertyRowNameMenu = ({
   ]);
 
   return (
-    <Menu
-      rootOptions={{
-        open: editing,
-      }}
-      contentOptions={{
-        onInteractOutside: handleFinishEditing,
-        onClick(e) {
-          e.stopPropagation();
-        },
-      }}
-      items={menuItems}
-    >
-      {children}
-    </Menu>
+    <>
+      <Menu
+        rootOptions={{
+          open: editing,
+        }}
+        contentOptions={{
+          onInteractOutside: handleFinishEditing,
+          onClick(e) {
+            e.stopPropagation();
+          },
+          onKeyDown(e) {
+            if (e.key === 'Escape') {
+              handleFinishEditing();
+            }
+          },
+        }}
+        items={menuItems}
+      >
+        {children}
+      </Menu>
+      <ConfirmDeletePropertyModal
+        onConfirm={() => {
+          setShowDeleteModal(false);
+          handleDelete();
+        }}
+        onCancel={() => setShowDeleteModal(false)}
+        show={showDeleteModal}
+        property={meta}
+      />
+    </>
   );
 };
 
@@ -607,7 +633,11 @@ export const PagePropertiesTableHeader = ({
         </div>
         {properties.length === 0 || manager.readonly ? null : (
           <PagePropertiesSettingsPopup>
-            <IconButton type="plain" icon={<MoreHorizontalIcon />} />
+            <IconButton
+              data-testid="page-info-show-more"
+              type="plain"
+              icon={<MoreHorizontalIcon />}
+            />
           </PagePropertiesSettingsPopup>
         )}
         <div className={styles.spacer} />
@@ -802,7 +832,7 @@ export const PagePropertiesCreatePropertyMenuItems = ({
   return useMemo(() => {
     const options: MenuItemOption[] = [];
     options.push(
-      <div className={styles.menuHeader}>
+      <div role="heading" className={styles.menuHeader}>
         {t['com.affine.page-properties.create-property.menu.header']()}
       </div>
     );
@@ -864,7 +894,7 @@ const PagePropertiesAddPropertyMenuItems = ({
   const menuItems = useMemo(() => {
     const options: MenuItemOption[] = [];
     options.push(
-      <div className={styles.menuHeader}>
+      <div role="heading" className={styles.menuHeader}>
         {t['com.affine.page-properties.add-property.menu.header']()}
       </div>
     );

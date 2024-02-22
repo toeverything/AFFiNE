@@ -132,6 +132,10 @@ export class PagePropertiesMetaManager {
     }
     return mapping;
   }
+
+  getPropertyRelatedPages(id: string) {
+    return this.getPropertyStatistics().get(id);
+  }
 }
 
 export class PagePropertiesManager {

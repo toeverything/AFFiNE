@@ -34,7 +34,7 @@ export const IconsSelectorPanel = ({
   const t = useAFFiNEI18N();
   return (
     <Scrollable.Root>
-      <div className={styles.menuHeader}>
+      <div role="heading" className={styles.menuHeader}>
         {t['com.affine.page-properties.icons']()}
       </div>
       <Scrollable.Viewport className={styles.iconsContainerScrollable}>

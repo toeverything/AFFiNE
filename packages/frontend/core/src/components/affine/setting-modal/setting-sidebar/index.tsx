@@ -269,6 +269,7 @@ const WorkspaceListItem = ({
       .map(({ key, title }) => {
         return (
           <div
+            data-testid={`workspace-list-item-${key}`}
             onClick={() => {
               onClick(key);
             }}

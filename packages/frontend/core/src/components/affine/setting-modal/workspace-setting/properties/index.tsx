@@ -1,4 +1,4 @@
-import { Button, ConfirmModal, IconButton, Menu } from '@affine/component';
+import { Button, IconButton, Menu } from '@affine/component';
 import { SettingHeader } from '@affine/component/setting-components';
 import { useWorkspacePropertiesAdapter } from '@affine/core/hooks/use-affine-adapter';
 import { useWorkspace } from '@affine/core/hooks/use-workspace';
@@ -28,6 +28,7 @@ import {
   PagePropertiesMetaManager,
   type PagePropertyIcon,
 } from '../../../page-properties';
+import { ConfirmDeletePropertyModal } from '../../../page-properties/confirm-delete-property-modal';
 import {
   EditPropertyNameMenuItem,
   type MenuItemOption,
@@ -54,57 +55,9 @@ const Divider = () => {
   return <div className={styles.divider} />;
 };
 
-const ConfirmDeletePropertyModal = ({
-  onConfirm,
-  onCancel,
-  property,
-  count,
-  show,
-}: {
-  property: PageInfoCustomPropertyMeta;
-  count: number;
-  show: boolean;
-  onConfirm: () => void;
-  onCancel: () => void;
-}) => {
-  const t = useAFFiNEI18N();
-
-  return (
-    <ConfirmModal
-      open={show}
-      closeButtonOptions={{
-        onClick: onCancel,
-      }}
-      title={t['com.affine.settings.workspace.properties.delete-property']()}
-      description={
-        <Trans
-          values={{
-            name: property.name,
-            count,
-          }}
-          i18nKey="com.affine.settings.workspace.properties.delete-property-prompt"
-        >
-          The <strong>{{ name: property.name } as any}</strong> property will be
-          removed from count doc(s). This action cannot be undone.
-        </Trans>
-      }
-      onConfirm={onConfirm}
-      cancelButtonOptions={{
-        onClick: onCancel,
-      }}
-      confirmButtonOptions={{
-        type: 'error',
-        children: t['Confirm'](),
-      }}
-    />
-  );
-};
-
 const EditPropertyButton = ({
   property,
-  count,
 }: {
-  count: number;
   property: PageInfoCustomPropertyMeta;
 }) => {
   const t = useAFFiNEI18N();
@@ -234,7 +187,6 @@ const EditPropertyButton = ({
         onCancel={() => setShowDeleteModal(false)}
         show={showDeleteModal}
         property={property}
-        count={count}
       />
     </>
   );
@@ -281,7 +233,7 @@ const CustomPropertyRow = ({
           {t['com.affine.page-properties.property.required']()}
         </div>
       ) : null}
-      <EditPropertyButton property={property} count={relatedPages.length} />
+      <EditPropertyButton property={property} />
     </div>
   );
 };

@@ -26,7 +26,6 @@ export async function clickNewPageButton(page: Page) {
   await page.getByTestId('sidebar-new-page-button').click({
     delay: 100,
   });
-  await expect(page.locator('.doc-title-container-empty')).toBeVisible();
   await waitForEmptyEditor(page);
 }
 

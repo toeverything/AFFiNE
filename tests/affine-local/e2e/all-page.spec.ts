@@ -106,7 +106,7 @@ test('use monthpicker to modify the month of datepicker', async ({ page }) => {
   await checkDatePickerMonth(page, nextMonth);
 });
 
-test.skip('allow creation of filters by tags', async ({ page }) => {
+test('allow creation of filters by tags', async ({ page }) => {
   await openHomePage(page);
   await waitForEditorLoad(page);
   await clickSideBarAllPageButton(page);
