@@ -140,6 +140,7 @@ export const emptyCollectionMessage = style({
   fontSize: cssVar('fontSm'),
   textAlign: 'center',
   color: cssVar('black30'),
+  userSelect: 'none',
 });
 export const emptyCollectionNewButton = style({
   padding: '0 8px',
