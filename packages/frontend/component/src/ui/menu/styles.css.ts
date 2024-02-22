@@ -13,7 +13,6 @@ export const menuContent = style({
   userSelect: 'none',
 });
 export const menuItem = style({
-  maxWidth: '296px',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'space-between',
@@ -49,6 +48,9 @@ export const menuItem = style({
     '&.warning:hover': {
       color: cssVar('warningColor'),
       backgroundColor: cssVar('backgroundWarningColor'),
+    },
+    '&.checked': {
+      color: cssVar('primaryColor'),
     },
   },
 });

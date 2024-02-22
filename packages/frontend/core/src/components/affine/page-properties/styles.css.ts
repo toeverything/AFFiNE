@@ -19,6 +19,11 @@ export const rootCentered = style({
   width: '100%',
   maxWidth: cssVar('editorWidth'),
   padding: `0 ${cssVar('editorSidePadding', '24px')}`,
+  '@container': {
+    [`viewport (width <= 640px)`]: {
+      padding: '0 24px',
+    },
+  },
 });
 
 export const tableHeader = style({
@@ -226,7 +231,6 @@ export const propertyRowIconContainer = style({
   justifyContent: 'center',
   borderRadius: '2px',
   fontSize: 16,
-  transition: 'transform 0.2s',
   color: 'inherit',
 });
 
@@ -277,13 +281,11 @@ export const menuHeader = style({
   fontWeight: 500,
   color: cssVar('textSecondaryColor'),
   padding: '8px 16px',
-  minWidth: 320,
+  minWidth: 200,
   textTransform: 'uppercase',
 });
 
-export const menuItemListScrollable = style({
-  maxHeight: 300,
-});
+export const menuItemListScrollable = style({});
 
 export const menuItemListScrollbar = style({
   transform: 'translateX(4px)',
@@ -296,7 +298,7 @@ export const menuItemList = style({
   overflow: 'auto',
 });
 
-globalStyle(`${menuItemList}${menuItemList} > div`, {
+globalStyle(`${menuItemList}[data-radix-scroll-area-viewport] > div`, {
   display: 'table !important',
 });
 
@@ -316,30 +318,6 @@ export const menuItemName = style({
 
 export const checkboxProperty = style({
   fontSize: cssVar('fontH5'),
-});
-
-export const propertyNameIconEditable = style({
-  fontSize: cssVar('fontH5'),
-  borderRadius: 4,
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  width: 32,
-  height: 32,
-  flexShrink: 0,
-  border: `1px solid ${cssVar('borderColor')}`,
-  background: cssVar('backgroundSecondaryColor'),
-});
-
-export const propertyNameInput = style({
-  fontSize: cssVar('fontSm'),
-  borderRadius: 4,
-  color: cssVar('textPrimaryColor'),
-  background: 'none',
-  border: `1px solid ${cssVar('borderColor')}`,
-  outline: 'none',
-  width: '100%',
-  padding: 6,
 });
 
 globalStyle(
@@ -387,7 +365,7 @@ export const propertySettingRowName = style({
 export const selectorButton = style({
   display: 'flex',
   alignItems: 'center',
-  justifyContent: 'center',
+  justifyContent: 'flex-end',
   borderRadius: 4,
   gap: 8,
   fontSize: cssVar('fontSm'),
@@ -397,4 +375,29 @@ export const selectorButton = style({
   ':hover': {
     backgroundColor: cssVar('hoverColor'),
   },
+  selectors: {
+    '&[data-required=true]': {
+      color: cssVar('textDisableColor'),
+      pointerEvents: 'none',
+    },
+  },
+});
+
+export const propertyRowTypeItem = style({
+  display: 'flex',
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: '8px',
+  fontSize: cssVar('fontSm'),
+  padding: '8px 16px',
+  minWidth: 260,
+});
+
+export const propertyTypeName = style({
+  color: cssVar('textSecondaryColor'),
+  fontSize: cssVar('fontXs'),
+  display: 'flex',
+  alignItems: 'center',
+  gap: 4,
 });

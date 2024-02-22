@@ -29,29 +29,11 @@ function validatePropertyValue(type: PagePropertyType, value: any) {
   }
 }
 
-export interface NewPropertyOption {
-  name: string;
-  type: PagePropertyType;
-}
-
-export const newPropertyOptions: NewPropertyOption[] = [
-  // todo: name i18n?
-  {
-    name: 'Text',
-    type: PagePropertyType.Text,
-  },
-  {
-    name: 'Number',
-    type: PagePropertyType.Number,
-  },
-  {
-    name: 'Checkbox',
-    type: PagePropertyType.Checkbox,
-  },
-  {
-    name: 'Date',
-    type: PagePropertyType.Date,
-  },
+export const newPropertyTypes: PagePropertyType[] = [
+  PagePropertyType.Text,
+  PagePropertyType.Number,
+  PagePropertyType.Checkbox,
+  PagePropertyType.Date,
   // todo: add more
 ];
 
@@ -121,6 +103,21 @@ export class PagePropertiesMetaManager {
     return property;
   }
 
+  updateCustomPropertyMeta(
+    id: string,
+    opt: Partial<PageInfoCustomPropertyMeta>
+  ) {
+    if (!this.checkPropertyExists(id)) {
+      logger.warn(`property ${id} not found`);
+      return;
+    }
+    Object.assign(this.customPropertiesSchema[id], opt);
+  }
+
+  isPropertyRequired(id: string) {
+    return this.customPropertiesSchema[id]?.required;
+  }
+
   removeCustomPropertyMeta(id: string) {
     // should warn if the property is in use
     delete this.customPropertiesSchema[id];
@@ -136,6 +133,7 @@ export class PagePropertiesMetaManager {
         mapping.get(id)?.add(page.id);
       }
     }
+    return mapping;
   }
 }
 
@@ -147,6 +145,20 @@ export class PagePropertiesManager {
   ) {
     this.adapter.ensurePageProperties(this.pageId);
     this.metaManager = new PagePropertiesMetaManager(this.adapter);
+  }
+
+  private ensuring = false;
+  ensureRequiredProperties() {
+    if (this.ensuring) return;
+    this.ensuring = true;
+    this.transact(() => {
+      this.metaManager.getOrderedCustomPropertiesSchema().forEach(property => {
+        if (property.required && !this.hasCustomProperty(property.id)) {
+          this.addCustomProperty(property.id);
+        }
+      });
+    });
+    this.ensuring = false;
   }
 
   get workspace() {
@@ -174,6 +186,7 @@ export class PagePropertiesManager {
   }
 
   get properties() {
+    this.ensureRequiredProperties();
     return this.adapter.getPageProperties(this.pageId);
   }
 
@@ -192,7 +205,7 @@ export class PagePropertiesManager {
   /**
    * get custom properties (filter out properties that are not in schema)
    */
-  getCustomProperties() {
+  getCustomProperties(): Record<string, PageInfoCustomProperty> {
     return Object.fromEntries(
       Object.entries(this.properties.custom).filter(([id]) =>
         this.metaManager.checkPropertyExists(id)
@@ -208,13 +221,6 @@ export class PagePropertiesManager {
 
   largestOrder() {
     return Math.max(
-      ...Object.values(this.properties.custom).map(p => p.order),
-      0
-    );
-  }
-
-  leastOrder() {
-    return Math.min(
       ...Object.values(this.properties.custom).map(p => p.order),
       0
     );
@@ -275,15 +281,12 @@ export class PagePropertiesManager {
     Object.assign(this.properties.custom[id], opt);
   }
 
-  updateCustomPropertyMeta(
-    id: string,
-    opt: Partial<PageInfoCustomPropertyMeta>
-  ) {
-    if (!this.metaManager.checkPropertyExists(id)) {
-      logger.warn(`property ${id} not found`);
-      return;
-    }
-    Object.assign(this.metaManager.customPropertiesSchema[id], opt);
+  get updateCustomPropertyMeta() {
+    return this.metaManager.updateCustomPropertyMeta.bind(this.metaManager);
+  }
+
+  get isPropertyRequired() {
+    return this.metaManager.isPropertyRequired.bind(this.metaManager);
   }
 
   transact = this.adapter.transact;
