@@ -1,4 +1,4 @@
-import { Button, IconButton, Menu } from '@affine/component';
+import { Button, ConfirmModal, IconButton, Menu } from '@affine/component';
 import { SettingHeader } from '@affine/component/setting-components';
 import { useWorkspacePropertiesAdapter } from '@affine/core/hooks/use-affine-adapter';
 import { useWorkspace } from '@affine/core/hooks/use-workspace';
@@ -12,11 +12,9 @@ import type {
   WorkspaceMetadata,
 } from '@toeverything/infra/workspace';
 import {
-  type ChangeEventHandler,
   createContext,
   Fragment,
   type MouseEvent,
-  type MouseEventHandler,
   useCallback,
   useContext,
   useEffect,
@@ -56,9 +54,57 @@ const Divider = () => {
   return <div className={styles.divider} />;
 };
 
+const ConfirmDeletePropertyModal = ({
+  onConfirm,
+  onCancel,
+  property,
+  count,
+  show,
+}: {
+  property: PageInfoCustomPropertyMeta;
+  count: number;
+  show: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) => {
+  const t = useAFFiNEI18N();
+
+  return (
+    <ConfirmModal
+      open={show}
+      closeButtonOptions={{
+        onClick: onCancel,
+      }}
+      title={t['com.affine.settings.workspace.properties.delete-property']()}
+      description={
+        <Trans
+          values={{
+            name: property.name,
+            count,
+          }}
+          i18nKey="com.affine.settings.workspace.properties.delete-property-prompt"
+        >
+          The <strong>{{ name: property.name } as any}</strong> property will be
+          removed from count doc(s). This action cannot be undone.
+        </Trans>
+      }
+      onConfirm={onConfirm}
+      cancelButtonOptions={{
+        onClick: onCancel,
+      }}
+      confirmButtonOptions={{
+        type: 'error',
+        children: t['Confirm'](),
+      }}
+    />
+  );
+};
+
 const EditPropertyButton = ({
   property,
+  count,
 }: {
+  count: number;
   property: PageInfoCustomPropertyMeta;
 }) => {
   const t = useAFFiNEI18N();
@@ -69,31 +115,22 @@ const EditPropertyButton = ({
   useEffect(() => {
     setLocalPropertyMeta(property);
   }, [property]);
-  const handleToggleRequired: MouseEventHandler = useCallback(
-    e => {
-      e.stopPropagation();
-      e.preventDefault();
-      manager.updateCustomPropertyMeta(localPropertyMeta.id, {
-        required: !localPropertyMeta.required,
-      });
-    },
-    [manager, localPropertyMeta.id, localPropertyMeta.required]
-  );
-  const handleDelete: MouseEventHandler = useCallback(
-    e => {
-      e.stopPropagation();
-      e.preventDefault();
-      manager.removeCustomPropertyMeta(localPropertyMeta.id);
-    },
-    [manager, localPropertyMeta.id]
-  );
+  const handleToggleRequired = useCallback(() => {
+    manager.updatePropertyMeta(localPropertyMeta.id, {
+      required: !localPropertyMeta.required,
+    });
+  }, [manager, localPropertyMeta.id, localPropertyMeta.required]);
+  const handleDelete = useCallback(() => {
+    manager.removePropertyMeta(localPropertyMeta.id);
+  }, [manager, localPropertyMeta.id]);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const handleFinishEditing = useCallback(() => {
     setOpen(false);
     setEditing(false);
-    manager.updateCustomPropertyMeta(localPropertyMeta.id, localPropertyMeta);
+    manager.updatePropertyMeta(localPropertyMeta.id, localPropertyMeta);
   }, [localPropertyMeta, manager]);
 
   const defaultMenuItems = useMemo(() => {
@@ -113,26 +150,25 @@ const EditPropertyButton = ({
     });
     options.push({
       text: t['com.affine.settings.workspace.properties.delete-property'](),
-      onClick: handleDelete,
+      onClick: () => setShowDeleteModal(true),
       type: 'danger',
       icon: <DeleteIcon />,
     });
     return renderMenuItemOptions(options);
-  }, [handleDelete, handleToggleRequired, localPropertyMeta.required, t]);
+  }, [handleToggleRequired, localPropertyMeta.required, t]);
 
-  const handleNameBlur: ChangeEventHandler<HTMLInputElement> = useCallback(
-    e => {
-      e.stopPropagation();
-      manager.updateCustomPropertyMeta(localPropertyMeta.id, {
-        name: e.target.value,
+  const handleNameBlur = useCallback(
+    (e: string) => {
+      manager.updatePropertyMeta(localPropertyMeta.id, {
+        name: e,
       });
     },
     [manager, localPropertyMeta.id]
   );
-  const handleNameChange: (name: string) => void = useCallback(name => {
+  const handleNameChange = useCallback((e: string) => {
     setLocalPropertyMeta(prev => ({
       ...prev,
-      name: name,
+      name: e,
     }));
   }, []);
   const handleIconChange = useCallback(
@@ -141,7 +177,7 @@ const EditPropertyButton = ({
         ...prev,
         icon,
       }));
-      manager.updateCustomPropertyMeta(localPropertyMeta.id, {
+      manager.updatePropertyMeta(localPropertyMeta.id, {
         icon,
       });
     },
@@ -176,19 +212,31 @@ const EditPropertyButton = ({
   ]);
 
   return (
-    <Menu
-      rootOptions={{
-        open,
-        onOpenChange: handleFinishEditing,
-      }}
-      items={editing ? editMenuItems : defaultMenuItems}
-    >
-      <IconButton
-        onClick={() => setOpen(true)}
-        type="plain"
-        icon={<MoreHorizontalIcon />}
+    <>
+      <Menu
+        rootOptions={{
+          open,
+          onOpenChange: handleFinishEditing,
+        }}
+        items={editing ? editMenuItems : defaultMenuItems}
+      >
+        <IconButton
+          onClick={() => setOpen(true)}
+          type="plain"
+          icon={<MoreHorizontalIcon />}
+        />
+      </Menu>
+      <ConfirmDeletePropertyModal
+        onConfirm={() => {
+          setShowDeleteModal(false);
+          handleDelete();
+        }}
+        onCancel={() => setShowDeleteModal(false)}
+        show={showDeleteModal}
+        property={property}
+        count={count}
       />
-    </Menu>
+    </>
   );
 };
 
@@ -233,7 +281,7 @@ const CustomPropertyRow = ({
           {t['com.affine.page-properties.property.required']()}
         </div>
       ) : null}
-      <EditPropertyButton property={property} />
+      <EditPropertyButton property={property} count={relatedPages.length} />
     </div>
   );
 };
@@ -269,8 +317,8 @@ const CustomPropertyRowsList = ({
   filterMode: PropertyFilterMode;
 }) => {
   const manager = useContext(managerContext);
-  const properties = manager.getOrderedCustomPropertiesSchema();
-  const statistics = manager.getCustomPropertyStatistics();
+  const properties = manager.getOrderedPropertiesSchema();
+  const statistics = manager.getPropertyStatistics();
   const t = useAFFiNEI18N();
 
   if (filterMode !== 'all') {
@@ -315,7 +363,7 @@ const WorkspaceSettingPropertiesMain = () => {
   const t = useAFFiNEI18N();
   const manager = useContext(managerContext);
   const [filterMode, setFilterMode] = useState<PropertyFilterMode>('all');
-  const properties = manager.getOrderedCustomPropertiesSchema();
+  const properties = manager.getOrderedPropertiesSchema();
   const filterMenuItems = useMemo(() => {
     const options: MenuItemOption[] = (
       ['all', '-', 'in-use', 'unused'] as const

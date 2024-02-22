@@ -1,4 +1,6 @@
 import { Checkbox, DatePicker, Menu } from '@affine/component';
+import { useBlockSuitePageMeta } from '@affine/core/hooks/use-block-suite-page-meta';
+import { WorkspaceLegacyProperties } from '@affine/core/modules/workspace';
 import type {
   PageInfoCustomProperty,
   PageInfoCustomPropertyMeta,
@@ -6,11 +8,14 @@ import type {
 } from '@affine/core/modules/workspace/properties/schema';
 import { timestampToLocalDate } from '@affine/core/utils';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { assertExists } from '@blocksuite/global/utils';
+import { Page, useLiveData, useService, Workspace } from '@toeverything/infra';
 import { noop } from 'lodash-es';
 import { type ChangeEventHandler, useCallback, useContext } from 'react';
 
 import { managerContext } from './common';
 import * as styles from './styles.css';
+import { TagsInlineEditor } from './tags-inline-editor';
 
 interface PropertyRowValueProps {
   property: PageInfoCustomProperty;
@@ -108,6 +113,38 @@ export const TextValue = ({ property, meta }: PropertyRowValueProps) => {
   );
 };
 
+export const TagsValue = () => {
+  const workspace = useService(Workspace);
+  const page = useService(Page);
+  const blockSuiteWorkspace = workspace.blockSuiteWorkspace;
+  const pageMetas = useBlockSuitePageMeta(blockSuiteWorkspace);
+  const legacyProperties = useService(WorkspaceLegacyProperties);
+  const options = useLiveData(legacyProperties.tagOptions$);
+
+  const pageMeta = pageMetas.find(x => x.id === page.id);
+  assertExists(pageMeta, 'pageMeta should exist');
+  const tagIds = pageMeta.tags;
+  const t = useAFFiNEI18N();
+  const onChange = useCallback(
+    (tags: string[]) => {
+      legacyProperties.updatePageTags(page.id, tags);
+    },
+    [legacyProperties, page.id]
+  );
+
+  return (
+    <TagsInlineEditor
+      className={styles.propertyRowValueCell}
+      placeholder={t['com.affine.page-properties.property-value-placeholder']()}
+      value={tagIds}
+      options={options}
+      readonly={page.blockSuitePage.readonly}
+      onChange={onChange}
+      onOptionsChange={legacyProperties.updateTagOptions}
+    />
+  );
+};
+
 export const propertyValueRenderers: Record<
   PagePropertyType,
   typeof DateValue
@@ -117,6 +154,6 @@ export const propertyValueRenderers: Record<
   text: TextValue,
   number: TextValue,
   // todo: fix following
-  tags: TextValue,
+  tags: TagsValue,
   progress: TextValue,
 };

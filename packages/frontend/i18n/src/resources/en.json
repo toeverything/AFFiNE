@@ -913,6 +913,7 @@
   "com.affine.settings.workspace.properties.set-as-required": "Set as required property",
   "com.affine.settings.workspace.properties.edit-property": "Edit property",
   "com.affine.settings.workspace.properties.delete-property": "Delete property",
+  "com.affine.settings.workspace.properties.delete-property-prompt": "The \"<1>{{ name }}</1>\" property will be remove from {{ count }} doc(s). This action cannot be undone.",
   "com.affine.settings.workspace.properties.required-properties": "Required properties",
   "com.affine.settings.workspace.properties.general-properties": "General properties",
   "com.affine.settings.workspace.preferences": "Preference",
@@ -1125,5 +1126,7 @@
   "com.affine.page-properties.property.checkbox": "Checkbox",
   "com.affine.page-properties.property.progress": "Progress",
   "com.affine.page-properties.property.tags": "Tags",
-  "com.affine.page-properties.icons": "Icons"
+  "com.affine.page-properties.icons": "Icons",
+  "com.affine.page-properties.tags.selector-header-title": "Select tag or create one",
+  "com.affine.page-properties.tags.open-tags-page": "Open tag page"
 }

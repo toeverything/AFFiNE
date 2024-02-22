@@ -4,67 +4,139 @@ import type { SVGProps } from 'react';
 
 type IconType = (props: SVGProps<SVGSVGElement>) => JSX.Element;
 
-// todo: this breaks tree-shaking, and we should fix it (using dynamic imports?)
-const IconsMapping = icons;
-export type PagePropertyIcon = keyof typeof IconsMapping;
+// assume all exports in icons are icon Components
+type LibIconComponentName = keyof typeof icons;
 
-const excludedIcons: PagePropertyIcon[] = [
-  'YoutubeDuotoneIcon',
-  'LinearLogoIcon',
-  'RedditDuotoneIcon',
-  'Logo2Icon',
-  'Logo3Icon',
-  'Logo4Icon',
-  'InstagramDuotoneIcon',
-  'TelegramDuotoneIcon',
-  'TextBackgroundDuotoneIcon',
-];
+type fromLibIconName<T extends string> = T extends `${infer N}Icon`
+  ? Uncapitalize<N>
+  : never;
 
-export const iconNames = Object.keys(IconsMapping).filter(
-  icon => !excludedIcons.includes(icon as PagePropertyIcon)
-) as PagePropertyIcon[];
+export const iconNames = [
+  'ai',
+  'email',
+  'text',
+  'dateTime',
+  'keyboard',
+  'pen',
+  'account',
+  'embedWeb',
+  'layer',
+  'pin',
+  'appearance',
+  'eraser',
+  'layout',
+  'presentation',
+  'bookmark',
+  'exportToHtml',
+  'lightMode',
+  'progress',
+  'bulletedList',
+  'exportToMarkdown',
+  'link',
+  'publish',
+  'camera',
+  'exportToPdf',
+  'linkedEdgeless',
+  'quote',
+  'checkBoxCheckLinear',
+  'exportToPng',
+  'linkedPage',
+  'save',
+  'cloudWorkspace',
+  'exportToSvg',
+  'localData',
+  'shape',
+  'code',
+  'favorite',
+  'localWorkspace',
+  'style',
+  'codeBlock',
+  'file',
+  'lock',
+  'tag',
+  'collaboration',
+  'folder',
+  'multiSelect',
+  'tags',
+  'colorPicker',
+  'frame',
+  'new',
+  'today',
+  'contactWithUs',
+  'grid',
+  'now',
+  'upgrade',
+  'darkMode',
+  'grouping',
+  'number',
+  'userGuide',
+  'databaseKanbanView',
+  'image',
+  'numberedList',
+  'view',
+  'databaseListView',
+  'inbox',
+  'other',
+  'viewLayers',
+  'databaseTableView',
+  'info',
+  'page',
+  'attachment',
+  'delete',
+  'issue',
+  'paste',
+  'heartbreak',
+  'edgeless',
+  'journal',
+  'payment',
+] as const satisfies fromLibIconName<LibIconComponentName>[];
+
+export type PagePropertyIcon = (typeof iconNames)[number];
 
 export const getDefaultIconName = (
   type: PagePropertyType
 ): PagePropertyIcon => {
   switch (type) {
     case 'text':
-      return 'TextIcon';
+      return 'text';
     case 'tags':
-      return 'TagIcon';
+      return 'tag';
     case 'date':
-      return 'DateTimeIcon';
+      return 'dateTime';
     case 'progress':
-      return 'ProgressIcon';
+      return 'progress';
     case 'checkbox':
-      return 'CheckBoxCheckLinearIcon';
+      return 'checkBoxCheckLinear';
     case 'number':
-      return 'NumberIcon';
+      return 'number';
     default:
-      return 'TextIcon';
+      return 'text';
   }
-};
-
-// fixme: this function may break if icons are imported twice
-export const IconToIconName = (icon: IconType) => {
-  const iconKey = Object.entries(IconsMapping).find(([_, candidate]) => {
-    return candidate === icon;
-  })?.[0];
-  return iconKey;
 };
 
 export const getSafeIconName = (
   iconName: string,
   type?: PagePropertyType
 ): PagePropertyIcon => {
-  return Object.hasOwn(IconsMapping, iconName)
+  return iconNames.includes(iconName as any)
     ? (iconName as PagePropertyIcon)
     : getDefaultIconName(type || PagePropertyType.Text);
+};
+
+const nameToComponentName = (
+  iconName: PagePropertyIcon
+): LibIconComponentName => {
+  const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+  return `${capitalize(iconName)}Icon` as LibIconComponentName;
 };
 
 export const nameToIcon = (
   iconName: string,
   type?: PagePropertyType
 ): IconType => {
-  return IconsMapping[getSafeIconName(iconName, type)];
+  const Icon = icons[nameToComponentName(getSafeIconName(iconName, type))];
+  if (!Icon) {
+    throw new Error(`Icon ${iconName} not found`);
+  }
+  return Icon;
 };

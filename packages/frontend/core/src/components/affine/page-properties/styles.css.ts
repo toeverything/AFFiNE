@@ -99,10 +99,11 @@ export const tableBodyRoot = style({
   gap: 8,
 });
 
-export const tableBody = style({
+export const tableBodySortable = style({
   display: 'flex',
   flexDirection: 'column',
   gap: 4,
+  position: 'relative',
 });
 
 export const addPropertyButton = style({
@@ -143,7 +144,14 @@ export const propertyRow = style({
   },
 });
 
-export const draggableRow = style({
+export const tagsPropertyRow = style([
+  propertyRow,
+  {
+    marginBottom: -4,
+  },
+]);
+
+export const draggableItem = style({
   cursor: 'pointer',
   selectors: {
     '&:before': {
@@ -184,7 +192,7 @@ export const draggableRow = style({
 });
 
 export const draggableRowSetting = style([
-  draggableRow,
+  draggableItem,
   {
     selectors: {
       '&:active:before': {
@@ -200,29 +208,41 @@ export const draggableRowSetting = style([
 export const propertyRowCell = style({
   display: 'flex',
   flexDirection: 'row',
-  alignItems: 'center',
+  alignItems: 'flex-start',
   position: 'relative',
-  padding: 6,
   borderRadius: 4,
-  cursor: 'pointer',
   fontSize: cssVar('fontSm'),
+  lineHeight: '20px',
   userSelect: 'none',
   ':focus-visible': {
     outline: 'none',
   },
-  ':hover': {
-    backgroundColor: cssVar('hoverColor'),
-  },
 });
+
+export const editablePropertyRowCell = style([
+  propertyRowCell,
+  {
+    cursor: 'pointer',
+    ':hover': {
+      backgroundColor: cssVar('hoverColor'),
+    },
+  },
+]);
 
 export const propertyRowNameCell = style([
   propertyRowCell,
-  draggableRow,
   {
+    padding: 6,
     color: cssVar('textSecondaryColor'),
     width: propertyNameCellWidth,
     gap: 6,
   },
+]);
+
+export const sortablePropertyRowNameCell = style([
+  propertyRowNameCell,
+  draggableItem,
+  editablePropertyRowCell,
 ]);
 
 export const propertyRowIconContainer = style({
@@ -232,6 +252,14 @@ export const propertyRowIconContainer = style({
   borderRadius: '2px',
   fontSize: 16,
   color: 'inherit',
+});
+
+export const propertyRowNameContainer = style({
+  display: 'flex',
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 6,
+  flexGrow: 1,
 });
 
 export const propertyRowName = style({
@@ -244,7 +272,9 @@ export const propertyRowName = style({
 
 export const propertyRowValueCell = style([
   propertyRowCell,
+  editablePropertyRowCell,
   {
+    padding: '6px 8px',
     border: `1px solid transparent`,
     color: cssVar('textPrimaryColor'),
     ':focus': {
@@ -256,6 +286,9 @@ export const propertyRowValueCell = style([
     selectors: {
       '&[data-empty="true"]': {
         color: cssVar('placeholderColor'),
+      },
+      '&[data-readonly=true]': {
+        pointerEvents: 'none',
       },
     },
     flex: 1,

@@ -1,9 +1,9 @@
 import { Menu } from '@affine/component';
 import type { Tag } from '@affine/env/filter';
-import { MoreHorizontalIcon } from '@blocksuite/icons';
+import { CloseIcon, MoreHorizontalIcon } from '@blocksuite/icons';
 import { assignInlineVars } from '@vanilla-extract/dynamic';
 import clsx from 'clsx';
-import { useMemo } from 'react';
+import { type MouseEventHandler, useCallback, useMemo } from 'react';
 
 import { stopPropagation, tagColorMap } from '../utils';
 import * as styles from './page-tags.css';
@@ -17,12 +17,28 @@ export interface PageTagsProps {
 
 interface TagItemProps {
   tag: Tag;
-  idx: number;
-  mode: 'sticky' | 'list-item';
+  idx?: number;
+  maxWidth?: number | string;
+  mode: 'inline' | 'list-item';
+  onRemoved?: () => void;
   style?: React.CSSProperties;
 }
 
-export const TagItem = ({ tag, idx, mode, style }: TagItemProps) => {
+export const TagItem = ({
+  tag,
+  idx,
+  mode,
+  onRemoved,
+  style,
+  maxWidth,
+}: TagItemProps) => {
+  const handleRemove: MouseEventHandler = useCallback(
+    e => {
+      e.stopPropagation();
+      onRemoved?.();
+    },
+    [onRemoved]
+  );
   return (
     <div
       data-testid="page-tag"
@@ -32,7 +48,8 @@ export const TagItem = ({ tag, idx, mode, style }: TagItemProps) => {
       style={style}
     >
       <div
-        className={mode === 'sticky' ? styles.tagSticky : styles.tagListItem}
+        style={{ maxWidth: maxWidth }}
+        className={mode === 'inline' ? styles.tagInline : styles.tagListItem}
       >
         <div
           className={styles.tagIndicator}
@@ -41,6 +58,11 @@ export const TagItem = ({ tag, idx, mode, style }: TagItemProps) => {
           }}
         />
         <div className={styles.tagLabel}>{tag.value}</div>
+        {onRemoved ? (
+          <div className={styles.tagRemove} onClick={handleRemove}>
+            <CloseIcon />
+          </div>
+        ) : null}
       </div>
     </div>
   );
@@ -76,7 +98,7 @@ export const PageTags = ({
     nTags.sort((a, b) => a.value.length - b.value.length);
 
     return nTags.map((tag, idx) => (
-      <TagItem key={tag.id} tag={tag} idx={idx} mode="sticky" />
+      <TagItem key={tag.id} tag={tag} idx={idx} mode="inline" />
     ));
   }, [maxItems, tags]);
   return (

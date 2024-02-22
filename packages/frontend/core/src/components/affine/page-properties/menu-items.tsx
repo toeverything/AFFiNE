@@ -9,10 +9,11 @@ import {
 import type { PageInfoCustomPropertyMeta } from '@affine/core/modules/workspace/properties/schema';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
-  type ChangeEventHandler,
   cloneElement,
   isValidElement,
+  type KeyboardEventHandler,
   type MouseEventHandler,
+  useCallback,
 } from 'react';
 
 import {
@@ -81,12 +82,29 @@ export const EditPropertyNameMenuItem = ({
   onNameChange,
   onIconChange,
 }: {
-  onNameBlur: ChangeEventHandler;
-  onNameChange: (name: string) => void;
+  onNameBlur: (e: string) => void;
+  onNameChange: (e: string) => void;
   onIconChange: (icon: PagePropertyIcon) => void;
   property: PageInfoCustomPropertyMeta;
 }) => {
   const iconName = getSafeIconName(property.icon, property.type);
+  const onKeyDown: KeyboardEventHandler<HTMLInputElement> = useCallback(
+    e => {
+      e.stopPropagation();
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        onBlur(e.currentTarget.value);
+      }
+    },
+    [onBlur]
+  );
+  const handleBlur = useCallback(
+    (e: React.FocusEvent<HTMLInputElement>) => {
+      onBlur(e.target.value);
+    },
+    [onBlur]
+  );
+
   const t = useAFFiNEI18N();
   return (
     <div className={styles.propertyRowNamePopupRow}>
@@ -96,11 +114,10 @@ export const EditPropertyNameMenuItem = ({
       />
       <Input
         defaultValue={property.name}
-        onBlur={onBlur}
-        size="large"
-        style={{ borderRadius: 4 }}
+        onBlur={handleBlur}
         onChange={onNameChange}
         placeholder={t['unnamed']()}
+        onKeyDown={onKeyDown}
       />
     </div>
   );

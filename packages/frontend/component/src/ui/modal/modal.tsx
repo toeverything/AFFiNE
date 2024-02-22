@@ -17,8 +17,8 @@ export interface ModalProps extends DialogProps {
   width?: CSSProperties['width'];
   height?: CSSProperties['height'];
   minHeight?: CSSProperties['minHeight'];
-  title?: string;
-  description?: string;
+  title?: React.ReactNode;
+  description?: React.ReactNode;
   withoutCloseButton?: boolean;
 
   portalOptions?: DialogPortalProps;

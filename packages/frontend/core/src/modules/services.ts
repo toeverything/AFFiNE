@@ -10,6 +10,7 @@ import { LocalStorageGlobalCache } from './infra-web/storage';
 import { CurrentPageService } from './page';
 import {
   CurrentWorkspaceService,
+  WorkspaceLegacyProperties,
   WorkspacePropertiesAdapter,
 } from './workspace';
 
@@ -19,7 +20,8 @@ export function configureBusinessServices(services: ServiceCollection) {
     .scope(WorkspaceScope)
     .add(CurrentPageService)
     .add(WorkspacePropertiesAdapter, [Workspace])
-    .add(CollectionService, [Workspace]);
+    .add(CollectionService, [Workspace])
+    .add(WorkspaceLegacyProperties, [Workspace]);
 }
 
 export function configureWebInfraServices(services: ServiceCollection) {

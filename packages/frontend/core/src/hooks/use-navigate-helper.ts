@@ -58,6 +58,18 @@ export function useNavigateHelper() {
     },
     [navigate]
   );
+  const jumpToTag = useCallback(
+    (
+      workspaceId: string,
+      tagId: string,
+      logic: RouteLogic = RouteLogic.PUSH
+    ) => {
+      return navigate(`/workspace/${workspaceId}/tag/${tagId}`, {
+        replace: logic === RouteLogic.REPLACE,
+      });
+    },
+    [navigate]
+  );
   const jumpToCollection = useCallback(
     (
       workspaceId: string,
@@ -162,6 +174,7 @@ export function useNavigateHelper() {
       jumpToCollection,
       jumpToCollections,
       jumpToTags,
+      jumpToTag,
     }),
     [
       jumpToPage,
@@ -176,6 +189,7 @@ export function useNavigateHelper() {
       jumpToCollection,
       jumpToCollections,
       jumpToTags,
+      jumpToTag,
     ]
   );
 }

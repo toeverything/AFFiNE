@@ -56,7 +56,7 @@ export class PagePropertiesMetaManager {
     return this.adapter.schema.pageProperties.custom;
   }
 
-  getOrderedCustomPropertiesSchema() {
+  getOrderedPropertiesSchema() {
     return Object.values(this.customPropertiesSchema).sort(
       (a, b) => a.order - b.order
     );
@@ -66,7 +66,7 @@ export class PagePropertiesMetaManager {
     return !!this.customPropertiesSchema[id];
   }
 
-  validateCustomPropertyValue(id: string, value?: any) {
+  validatePropertyValue(id: string, value?: any) {
     if (!value) {
       // value is optional in all cases?
       return true;
@@ -79,7 +79,7 @@ export class PagePropertiesMetaManager {
     return validatePropertyValue(type, value);
   }
 
-  addCustomPropertyMeta(schema: {
+  addPropertyMeta(schema: {
     name: string;
     type: PagePropertyType;
     icon?: string;
@@ -103,10 +103,7 @@ export class PagePropertiesMetaManager {
     return property;
   }
 
-  updateCustomPropertyMeta(
-    id: string,
-    opt: Partial<PageInfoCustomPropertyMeta>
-  ) {
+  updatePropertyMeta(id: string, opt: Partial<PageInfoCustomPropertyMeta>) {
     if (!this.checkPropertyExists(id)) {
       logger.warn(`property ${id} not found`);
       return;
@@ -118,13 +115,13 @@ export class PagePropertiesMetaManager {
     return this.customPropertiesSchema[id]?.required;
   }
 
-  removeCustomPropertyMeta(id: string) {
+  removePropertyMeta(id: string) {
     // should warn if the property is in use
     delete this.customPropertiesSchema[id];
   }
 
   // returns page schema properties -> related page
-  getCustomPropertyStatistics() {
+  getPropertyStatistics() {
     const mapping = new Map<string, Set<string>>();
     for (const page of this.adapter.workspace.blockSuiteWorkspace.pages.values()) {
       const properties = this.adapter.getPageProperties(page.id);
@@ -147,12 +144,13 @@ export class PagePropertiesManager {
     this.metaManager = new PagePropertiesMetaManager(this.adapter);
   }
 
+  // prevent infinite loop
   private ensuring = false;
   ensureRequiredProperties() {
     if (this.ensuring) return;
     this.ensuring = true;
     this.transact(() => {
-      this.metaManager.getOrderedCustomPropertiesSchema().forEach(property => {
+      this.metaManager.getOrderedPropertiesSchema().forEach(property => {
         if (property.required && !this.hasCustomProperty(property.id)) {
           this.addCustomProperty(property.id);
         }
@@ -240,7 +238,7 @@ export class PagePropertiesManager {
       return;
     }
 
-    if (!this.metaManager.validateCustomPropertyValue(id, value)) {
+    if (!this.metaManager.validatePropertyValue(id, value)) {
       logger.warn(`property ${id} value ${value} is invalid`);
       return;
     }
@@ -273,7 +271,7 @@ export class PagePropertiesManager {
     }
     if (
       opt.value !== undefined &&
-      !this.metaManager.validateCustomPropertyValue(id, opt.value)
+      !this.metaManager.validatePropertyValue(id, opt.value)
     ) {
       logger.warn(`property ${id} value ${opt.value} is invalid`);
       return;
@@ -282,7 +280,7 @@ export class PagePropertiesManager {
   }
 
   get updateCustomPropertyMeta() {
-    return this.metaManager.updateCustomPropertyMeta.bind(this.metaManager);
+    return this.metaManager.updatePropertyMeta.bind(this.metaManager);
   }
 
   get isPropertyRequired() {
