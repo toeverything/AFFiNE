@@ -506,6 +506,11 @@ jobs:
           hard-link-nm: false
           enableScripts: false
 
+      - name: check node_module files
+        run: |
+          cd ./packages/frontend/electron
+          node -e "console.log(require.resolve('app-builder-lib'))"
+
       - name: Setup filename
         id: filename
         shell: bash

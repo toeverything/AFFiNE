@@ -41,6 +41,7 @@
     "@pengx17/electron-forge-maker-appimage": "^1.0.1",
     "@toeverything/infra": "workspace:*",
     "@types/uuid": "^9.0.7",
+    "app-builder-lib": "^24.13.1",
     "builder-util-runtime": "^9.2.3",
     "cross-env": "^7.0.3",
     "electron": "^29.0.0",
