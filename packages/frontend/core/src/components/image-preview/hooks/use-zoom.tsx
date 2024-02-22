@@ -1,6 +1,5 @@
 import type { MouseEvent as ReactMouseEvent, RefObject } from 'react';
 import { useCallback, useEffect, useState } from 'react';
-import { useRef } from 'react';
 
 interface UseZoomControlsProps {
   zoomRef: RefObject<HTMLDivElement>;
@@ -22,7 +21,6 @@ export const useZoomControls = ({
     x: 0,
     y: 0,
   });
-  const zoomInScaleRef = useRef<number>(1);
 
   const handleDragStart = useCallback(
     (event: ReactMouseEvent) => {
@@ -98,11 +96,15 @@ export const useZoomControls = ({
     [dragEndImpl]
   );
 
-  const handleMouseUp = useCallback(() => {
-    if (isDragging) {
-      dragEndImpl();
-    }
-  }, [isDragging, dragEndImpl]);
+  const handleMouseUp = useCallback(
+    (evt: MouseEvent) => {
+      evt.preventDefault();
+      if (isDragging) {
+        dragEndImpl();
+      }
+    },
+    [isDragging, dragEndImpl]
+  );
 
   const checkZoomSize = useCallback(() => {
     const { current: zoomArea } = zoomRef;
@@ -126,7 +128,6 @@ export const useZoomControls = ({
     if (image && currentScale < 2) {
       const newScale = currentScale + 0.1;
       setCurrentScale(newScale);
-      zoomInScaleRef.current = newScale; // Update the ref
       image.style.width = `${image.naturalWidth * newScale}px`;
       image.style.height = `${image.naturalHeight * newScale}px`;
     }
@@ -137,7 +138,6 @@ export const useZoomControls = ({
     if (image && currentScale > 0.2) {
       const newScale = currentScale - 0.1;
       setCurrentScale(newScale);
-      zoomInScaleRef.current = newScale; // Update the ref
       image.style.width = `${image.naturalWidth * newScale}px`;
       image.style.height = `${image.naturalHeight * newScale}px`;
       const zoomedWidth = image.naturalWidth * newScale;
@@ -187,15 +187,17 @@ export const useZoomControls = ({
 
   useEffect(() => {
     const handleScroll = (event: WheelEvent) => {
+      event.preventDefault();
       const { deltaY } = event;
       if (deltaY > 0) {
         zoomOut();
-      } else if (deltaY < 0 && currentScale < 2 && zoomInScaleRef.current < 2) {
+      } else if (deltaY < 0 && currentScale < 2) {
         zoomIn();
       }
     };
 
-    const handleResize = () => {
+    const handleResize = (event: UIEvent) => {
+      event.preventDefault();
       checkZoomSize();
     };
 
@@ -210,7 +212,7 @@ export const useZoomControls = ({
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [zoomIn, zoomOut, checkZoomSize, handleMouseUp]);
+  }, [zoomIn, zoomOut, checkZoomSize, handleMouseUp, currentScale]);
 
   return {
     zoomIn,
