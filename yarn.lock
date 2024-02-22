@@ -457,7 +457,7 @@ __metadata:
     "@electron-forge/maker-zip": "npm:^7.2.0"
     "@electron-forge/plugin-auto-unpack-natives": "npm:^7.2.0"
     "@electron-forge/shared-types": "npm:^7.2.0"
-    "@pengx17/electron-forge-maker-appimage": "npm:^1.0.1"
+    "@pengx17/electron-forge-maker-appimage": "npm:^1.0.2"
     "@toeverything/infra": "workspace:*"
     "@types/uuid": "npm:^9.0.7"
     app-builder-lib: "npm:^24.13.1"
@@ -9330,14 +9330,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@pengx17/electron-forge-maker-appimage@npm:^1.0.1":
-  version: 1.0.1
-  resolution: "@pengx17/electron-forge-maker-appimage@npm:1.0.1"
+"@pengx17/electron-forge-maker-appimage@npm:^1.0.2":
+  version: 1.0.2
+  resolution: "@pengx17/electron-forge-maker-appimage@npm:1.0.2"
   dependencies:
     "@electron-forge/maker-base": "npm:^7.1.0"
     "@electron-forge/shared-types": "npm:^7.1.0"
     app-builder-lib: "npm:^21.2.0"
-  checksum: 10/2b0c43bc4df9c3a93cdabbd264e2f685e1285185229e3f3f7c0daeefd74f0de7f4dd3905213c4e53821349b443edb3fa25cacbc74429b0381a715ba72a526ae8
+  checksum: 10/a9fe8430d038935af99d4f008d367f69e006fec88dae2363230b457a2adae4d2f06dcfefec297062e7b17469658967dcfbc9d85382d271e186cc1cd1ad8fcae8
   languageName: node
   linkType: hard
 
