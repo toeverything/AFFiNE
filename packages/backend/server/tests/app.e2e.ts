@@ -4,13 +4,14 @@ import { randomUUID } from 'node:crypto';
 import { Transformer } from '@napi-rs/image';
 import type { INestApplication } from '@nestjs/common';
 import { hashSync } from '@node-rs/argon2';
-import { PrismaClient, type User } from '@prisma/client';
+import { type User } from '@prisma/client';
 import ava, { type TestFn } from 'ava';
 import type { Express } from 'express';
 import request from 'supertest';
 
 import { AppModule } from '../src/app.module';
 import { FeatureManagementService } from '../src/core/features';
+import { PrismaService } from '../src/fundamentals/prisma';
 import { createTestingApp } from './utils';
 
 const gql = '/graphql';
@@ -51,7 +52,7 @@ test.beforeEach(async t => {
     imports: [AppModule],
     tapModule(builder) {
       builder
-        .overrideProvider(PrismaClient)
+        .overrideProvider(PrismaService)
         .useClass(FakePrisma)
         .overrideProvider(FeatureManagementService)
         .useValue({ canEarlyAccess: () => true });
