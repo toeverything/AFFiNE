@@ -96,11 +96,15 @@ export const useZoomControls = ({
     [dragEndImpl]
   );
 
-  const handleMouseUp = useCallback(() => {
-    if (isDragging) {
-      dragEndImpl();
-    }
-  }, [isDragging, dragEndImpl]);
+  const handleMouseUp = useCallback(
+    (evt: MouseEvent) => {
+      evt.preventDefault();
+      if (isDragging) {
+        dragEndImpl();
+      }
+    },
+    [isDragging, dragEndImpl]
+  );
 
   const checkZoomSize = useCallback(() => {
     const { current: zoomArea } = zoomRef;
@@ -183,15 +187,17 @@ export const useZoomControls = ({
 
   useEffect(() => {
     const handleScroll = (event: WheelEvent) => {
+      event.preventDefault();
       const { deltaY } = event;
       if (deltaY > 0) {
         zoomOut();
-      } else if (deltaY < 0) {
+      } else if (deltaY < 0 && currentScale < 2) {
         zoomIn();
       }
     };
 
-    const handleResize = () => {
+    const handleResize = (event: UIEvent) => {
+      event.preventDefault();
       checkZoomSize();
     };
 
@@ -206,7 +212,7 @@ export const useZoomControls = ({
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [zoomIn, zoomOut, checkZoomSize, handleMouseUp]);
+  }, [zoomIn, zoomOut, checkZoomSize, handleMouseUp, currentScale]);
 
   return {
     zoomIn,
