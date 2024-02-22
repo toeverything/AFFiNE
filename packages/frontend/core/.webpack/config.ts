@@ -272,14 +272,6 @@ export const createConfiguration: (
                     },
                     useDefineForClassFields: false,
                   },
-                  experimental: {
-                    plugins: [
-                      buildFlags.coverage && [
-                        'swc-plugin-coverage-instrument',
-                        {},
-                      ],
-                    ].filter(Boolean),
-                  },
                 },
               },
             },

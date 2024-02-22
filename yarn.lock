@@ -386,7 +386,6 @@ __metadata:
     source-map-loader: "npm:^5.0.0"
     style-loader: "npm:^3.3.3"
     swc-loader: "npm:^0.2.3"
-    swc-plugin-coverage-instrument: "npm:^0.0.20"
     swr: "npm:2.2.5"
     thread-loader: "npm:^4.0.2"
     uuid: "npm:^9.0.1"
@@ -33058,13 +33057,6 @@ __metadata:
     "@swc/core": ^1.2.147
     webpack: ">=2"
   checksum: 10/010d84d399525c0185d36d62c86c55ae017e7a90046bc8a39be4b7e07526924037868049f6037bc966da98151cb2600934b96a66279b742d3c413a718b427251
-  languageName: node
-  linkType: hard
-
-"swc-plugin-coverage-instrument@npm:^0.0.20":
-  version: 0.0.20
-  resolution: "swc-plugin-coverage-instrument@npm:0.0.20"
-  checksum: 10/9467e2d225169f9fce30a1318284e3c09be10349723c33c847e2af90a94caca11a998e1e103b605f4864807452c1305f103a88214bebc3273c5b5aa655f8f9e1
   languageName: node
   linkType: hard
 

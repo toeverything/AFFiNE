@@ -119,7 +119,6 @@
     "source-map-loader": "^5.0.0",
     "style-loader": "^3.3.3",
     "swc-loader": "^0.2.3",
-    "swc-plugin-coverage-instrument": "^0.0.20",
     "thread-loader": "^4.0.2",
     "vitest": "1.3.1",
     "webpack": "^5.89.0",
