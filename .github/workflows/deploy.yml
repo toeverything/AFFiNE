@@ -72,7 +72,7 @@ jobs:
           if-no-files-found: error
 
   build-core-selfhost:
-    name: Build @affine/core
+    name: Build @affine/core selfhost
     runs-on: ubuntu-latest
     environment: ${{ github.event.inputs.flavor }}
     steps:
