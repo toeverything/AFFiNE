@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
+import { PrismaClient } from '@prisma/client';
 
-import { PrismaService } from '../../fundamentals';
 import { UserType } from '../users/types';
 import { WorkspaceType } from '../workspaces/types';
 import { FeatureConfigType, getFeature } from './feature';
@@ -8,7 +8,7 @@ import { FeatureKind, FeatureType } from './types';
 
 @Injectable()
 export class FeatureService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaClient) {}
 
   async getFeaturesVersion() {
     const features = await this.prisma.features.findMany({

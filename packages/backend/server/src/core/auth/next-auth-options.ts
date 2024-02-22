@@ -1,6 +1,7 @@
 import { PrismaAdapter } from '@auth/prisma-adapter';
 import { FactoryProvider, Logger } from '@nestjs/common';
 import { verify } from '@node-rs/argon2';
+import { PrismaClient } from '@prisma/client';
 import { assign, omit } from 'lodash-es';
 import { NextAuthOptions } from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
@@ -8,12 +9,7 @@ import Email from 'next-auth/providers/email';
 import Github from 'next-auth/providers/github';
 import Google from 'next-auth/providers/google';
 
-import {
-  Config,
-  MailService,
-  PrismaService,
-  SessionService,
-} from '../../fundamentals';
+import { Config, MailService, SessionService } from '../../fundamentals';
 import { FeatureType } from '../features';
 import { Quota_FreePlanV1_1 } from '../quota';
 import {
@@ -31,7 +27,7 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
   provide: NextAuthOptionsProvide,
   useFactory(
     config: Config,
-    prisma: PrismaService,
+    prisma: PrismaClient,
     mailer: MailService,
     session: SessionService
   ) {
@@ -284,5 +280,5 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
     };
     return nextAuthOptions;
   },
-  inject: [Config, PrismaService, MailService, SessionService],
+  inject: [Config, PrismaClient, MailService, SessionService],
 };

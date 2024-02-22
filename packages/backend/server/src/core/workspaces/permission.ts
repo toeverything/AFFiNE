@@ -1,7 +1,6 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { type Prisma, PrismaClient } from '@prisma/client';
 
-import { PrismaService } from '../../fundamentals';
 import { Permission } from './types';
 
 export enum PublicPageMode {
@@ -11,7 +10,7 @@ export enum PublicPageMode {
 
 @Injectable()
 export class PermissionService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaClient) {}
 
   /// Start regin: workspace permission
   async get(ws: string, user: string) {

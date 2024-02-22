@@ -7,10 +7,11 @@ import type {
   UserStripeCustomer,
   UserSubscription,
 } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import Stripe from 'stripe';
 
 import { FeatureManagementService } from '../../core/features';
-import { EventEmitter, PrismaService } from '../../fundamentals';
+import { EventEmitter } from '../../fundamentals';
 import { ScheduleManager } from './schedule';
 import {
   InvoiceStatus,
@@ -56,7 +57,7 @@ export class SubscriptionService {
 
   constructor(
     private readonly stripe: Stripe,
-    private readonly db: PrismaService,
+    private readonly db: PrismaClient,
     private readonly scheduleManager: ScheduleManager,
     private readonly event: EventEmitter,
     private readonly features: FeatureManagementService

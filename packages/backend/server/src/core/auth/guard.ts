@@ -8,13 +8,11 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { PrismaClient } from '@prisma/client';
 import type { NextAuthOptions } from 'next-auth';
 import { AuthHandler } from 'next-auth/core';
 
-import {
-  getRequestResponseFromContext,
-  PrismaService,
-} from '../../fundamentals';
+import { getRequestResponseFromContext } from '../../fundamentals';
 import { NextAuthOptionsProvide } from './next-auth-options';
 import { AuthService } from './service';
 
@@ -57,7 +55,7 @@ class AuthGuard implements CanActivate {
     @Inject(NextAuthOptionsProvide)
     private readonly nextAuthOptions: NextAuthOptions,
     private readonly auth: AuthService,
-    private readonly prisma: PrismaService,
+    private readonly prisma: PrismaClient,
     private readonly reflector: Reflector
   ) {}
 

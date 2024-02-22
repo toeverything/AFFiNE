@@ -8,13 +8,12 @@ import {
 } from '@nestjs/common';
 import { hash, verify } from '@node-rs/argon2';
 import { Algorithm, sign, verify as jwtVerify } from '@node-rs/jsonwebtoken';
-import type { User } from '@prisma/client';
+import { PrismaClient, type User } from '@prisma/client';
 import { nanoid } from 'nanoid';
 
 import {
   Config,
   MailService,
-  PrismaService,
   verifyChallengeResponse,
 } from '../../fundamentals';
 import { Quota_FreePlanV1_1 } from '../quota';
@@ -32,7 +31,7 @@ export const getUtcTimestamp = () => Math.floor(Date.now() / 1000);
 export class AuthService {
   constructor(
     private readonly config: Config,
-    private readonly prisma: PrismaService,
+    private readonly prisma: PrismaClient,
     private readonly mailer: MailService
   ) {}
 
