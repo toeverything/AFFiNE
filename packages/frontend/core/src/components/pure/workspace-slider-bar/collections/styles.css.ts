@@ -153,6 +153,7 @@ export const emptyCollectionMessage = style({
   fontSize: 'var(--affine-font-sm)',
   textAlign: 'center',
   color: 'var(--affine-black-30)',
+  userSelect: 'none',
 });
 
 export const emptyCollectionNewButton = style({
