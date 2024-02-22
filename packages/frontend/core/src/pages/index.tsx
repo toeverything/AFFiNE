@@ -38,7 +38,7 @@ export const Component = () => {
   const { openPage } = useNavigateHelper();
 
   useLayoutEffect(() => {
-    if (list.length === 0 && !listLoading) {
+    if (list.length === 0 || listLoading) {
       return;
     }
 
