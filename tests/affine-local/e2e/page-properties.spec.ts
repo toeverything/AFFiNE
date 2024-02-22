@@ -241,3 +241,45 @@ test('create a required property', async ({ page }) => {
     )
   ).toContainText('Required');
 });
+
+test('delete a required property', async ({ page }) => {
+  await openWorkspaceProperties(page);
+  await addCustomProperty(page, 'Text', true);
+
+  await page
+    .locator('[data-testid="custom-property-row"]:has-text("Text")')
+    .getByRole('button')
+    .click();
+
+  await page
+    .getByRole('menuitem', {
+      name: 'Set as required property',
+    })
+    .click();
+
+  await page
+    .locator('[data-testid="custom-property-row"]:has-text("Text")')
+    .getByRole('button')
+    .click();
+
+  await page
+    .getByRole('menuitem', {
+      name: 'Delete property',
+    })
+    .click();
+  await page
+    .getByRole('button', {
+      name: 'Confirm',
+    })
+    .click();
+
+  // close workspace settings
+  await page.keyboard.press('Escape');
+
+  await waitForEditorLoad(page);
+
+  // check if the property is removed from page properties
+  await expect(
+    page.locator('[data-testid="page-property-row-name"]:has-text("Text")')
+  ).not.toBeVisible();
+});

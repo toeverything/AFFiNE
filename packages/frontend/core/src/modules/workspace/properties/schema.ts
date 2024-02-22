@@ -88,7 +88,7 @@ const WorkspaceAffinePropertiesSchemaSchema = z.object({
 });
 
 const PageInfoCustomPropertyItemSchema = PageInfoItemSchema.extend({
-  order: z.number(),
+  order: z.string(),
 });
 
 const WorkspacePagePropertiesSchema = z.object({

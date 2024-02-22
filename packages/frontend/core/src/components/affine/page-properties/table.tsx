@@ -40,7 +40,7 @@ import {
   restrictToParentElement,
   restrictToVerticalAxis,
 } from '@dnd-kit/modifiers';
-import { arrayMove, SortableContext, useSortable } from '@dnd-kit/sortable';
+import { SortableContext, useSortable } from '@dnd-kit/sortable';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import clsx from 'clsx';
 import { use } from 'foxact/use';
@@ -54,6 +54,7 @@ import {
   Suspense,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
 } from 'react';
@@ -95,7 +96,12 @@ type PropertyVisibility = PageInfoCustomProperty['visibility'];
 const editingPropertyAtom = atom<string | null>(null);
 
 const modifiers = [restrictToParentElement, restrictToVerticalAxis];
-const SortableProperties = ({ children }: PropsWithChildren) => {
+
+interface SortablePropertiesProps {
+  children: (properties: PageInfoCustomProperty[]) => React.ReactNode;
+}
+
+const SortableProperties = ({ children }: SortablePropertiesProps) => {
   const manager = useContext(managerContext);
   const properties = useMemo(
     () => manager.getOrderedCustomProperties(),
@@ -110,6 +116,14 @@ const SortableProperties = ({ children }: PropsWithChildren) => {
       },
     })
   );
+  // use localProperties since changes applied to upstream may be delayed
+  // if we use that one, there will be weird behavior after reordering
+  const [localProperties, setLocalProperties] = useState(properties);
+
+  useEffect(() => {
+    setLocalProperties(properties);
+  }, [properties]);
+
   const onDragEnd = useCallback(
     (event: DragEndEvent) => {
       if (!draggable) {
@@ -120,22 +134,22 @@ const SortableProperties = ({ children }: PropsWithChildren) => {
       const toIndex = properties.findIndex(p => p.id === over?.id);
 
       if (fromIndex !== -1 && toIndex !== -1 && fromIndex !== toIndex) {
-        const newOrdered = arrayMove(properties, fromIndex, toIndex);
-        manager.transact(() => {
-          newOrdered.forEach((p, i) => {
-            manager.updateCustomProperty(p.id, {
-              order: i,
-            });
-          });
-        });
+        manager.moveCustomProperty(fromIndex, toIndex);
+        setLocalProperties(manager.getOrderedCustomProperties());
       }
     },
     [manager, properties, draggable]
   );
+
+  const filteredProperties = useMemo(
+    () => localProperties.filter(p => manager.getCustomPropertyMeta(p.id)),
+    [localProperties, manager]
+  );
+
   return (
     <DndContext sensors={sensors} onDragEnd={onDragEnd} modifiers={modifiers}>
       <SortableContext disabled={!draggable} items={properties}>
-        {children}
+        {children(filteredProperties)}
       </SortableContext>
     </DndContext>
   );
@@ -167,6 +181,7 @@ const SortablePropertyRow = ({
     transition,
     active,
     isDragging,
+    isSorting,
   } = useSortable({
     id: property.id,
   });
@@ -175,10 +190,10 @@ const SortablePropertyRow = ({
       transform: transform
         ? `translate3d(${transform.x}px, ${transform.y}px, 0)`
         : undefined,
-      transition,
+      transition: isSorting ? transition : undefined,
       pointerEvents: manager.readonly ? 'none' : undefined,
     }),
-    [manager.readonly, transform, transition]
+    [isSorting, manager.readonly, transform, transition]
   );
 
   return (
@@ -305,7 +320,6 @@ export const PagePropertiesSettingsPopup = ({
 }: PagePropertiesSettingsPopupProps) => {
   const manager = useContext(managerContext);
   const t = useAFFiNEI18N();
-  const properties = manager.getOrderedCustomProperties();
 
   const menuItems = useMemo(() => {
     const options: MenuItemOption[] = [];
@@ -321,35 +335,37 @@ export const PagePropertiesSettingsPopup = ({
     options.push('-');
     options.push([
       <SortableProperties key="sortable-settings">
-        {properties.map(property => {
-          const meta = manager.getCustomPropertyMeta(property.id);
-          assertExists(meta, 'meta should exist for property');
-          const Icon = nameToIcon(meta.icon, meta.type);
-          const name = meta.name;
-          return (
-            <SortablePropertyRow
-              key={meta.id}
-              property={property}
-              className={styles.propertySettingRow}
-              data-testid="page-properties-settings-menu-item"
-            >
-              <MenuIcon>
-                <Icon />
-              </MenuIcon>
-              <div
-                data-testid="page-property-setting-row-name"
-                className={styles.propertyRowName}
+        {properties =>
+          properties.map(property => {
+            const meta = manager.getCustomPropertyMeta(property.id);
+            assertExists(meta, 'meta should exist for property');
+            const Icon = nameToIcon(meta.icon, meta.type);
+            const name = meta.name;
+            return (
+              <SortablePropertyRow
+                key={meta.id}
+                property={property}
+                className={styles.propertySettingRow}
+                data-testid="page-properties-settings-menu-item"
               >
-                {name}
-              </div>
-              <VisibilityModeSelector property={property} />
-            </SortablePropertyRow>
-          );
-        })}
+                <MenuIcon>
+                  <Icon />
+                </MenuIcon>
+                <div
+                  data-testid="page-property-setting-row-name"
+                  className={styles.propertyRowName}
+                >
+                  {name}
+                </div>
+                <VisibilityModeSelector property={property} />
+              </SortablePropertyRow>
+            );
+          })
+        }
       </SortableProperties>,
     ]);
     return renderMenuItemOptions(options);
-  }, [manager, properties, t]);
+  }, [manager, t]);
 
   return (
     <Menu
@@ -422,6 +438,14 @@ export const PagePropertyRowNameMenu = ({
   const nextVisibility = rotateVisibility(localProperty.visibility);
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  useEffect(() => {
+    setLocalPropertyMeta(meta);
+  }, [meta]);
+
+  useEffect(() => {
+    setLocalProperty(property);
+  }, [property]);
 
   const handleFinishEditing = useCallback(() => {
     onFinishEditing();
@@ -752,10 +776,6 @@ export const PagePropertiesTableBody = ({
   style,
 }: PagePropertiesTableBodyProps) => {
   const manager = useContext(managerContext);
-
-  const properties = useMemo(() => {
-    return manager.getOrderedCustomProperties();
-  }, [manager]);
   return (
     <Collapsible.Content
       className={clsx(styles.tableBodyRoot, className)}
@@ -764,16 +784,20 @@ export const PagePropertiesTableBody = ({
       <PageTagsRow />
       <div className={styles.tableBodySortable}>
         <SortableProperties>
-          {properties
-            .filter(
-              property =>
-                manager.isPropertyRequired(property.id) ||
-                (property.visibility !== 'hide' &&
-                  !(property.visibility === 'hide-if-empty' && !property.value))
-            )
-            .map(property => (
-              <PagePropertyRow key={property.id} property={property} />
-            ))}
+          {properties =>
+            properties
+              .filter(
+                property =>
+                  manager.isPropertyRequired(property.id) ||
+                  (property.visibility !== 'hide' &&
+                    !(
+                      property.visibility === 'hide-if-empty' && !property.value
+                    ))
+              )
+              .map(property => (
+                <PagePropertyRow key={property.id} property={property} />
+              ))
+          }
         </SortableProperties>
       </div>
       {manager.readonly ? null : <PagePropertiesAddProperty />}

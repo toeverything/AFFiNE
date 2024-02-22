@@ -1,33 +1,36 @@
 import type { Workspace } from '@toeverything/infra';
 import { useService } from '@toeverything/infra/di';
-import { use } from 'foxact/use';
-import { useEffect, useMemo, useState } from 'react';
+import { useDebouncedState } from 'foxact/use-debounced-state';
+import { useEffect, useMemo } from 'react';
 
 import { WorkspacePropertiesAdapter } from '../modules/workspace/properties';
-import { useAllBlockSuitePageMeta } from './use-all-block-suite-page-meta';
 
 function getProxy<T extends object>(obj: T) {
   return new Proxy(obj, {});
 }
 
 const useReactiveAdapter = (adapter: WorkspacePropertiesAdapter) => {
-  use(adapter.workspace.blockSuiteWorkspace.doc.whenSynced);
-  const [proxy, setProxy] = useState(adapter);
-  // fixme: this is a hack to force re-render when default meta changed
-  useAllBlockSuitePageMeta(adapter.workspace.blockSuiteWorkspace);
+  // hack: delay proxy creation to avoid unnecessary re-render + render in another component issue
+  const [proxy, setProxy] = useDebouncedState(adapter, 0);
   useEffect(() => {
     // todo: track which properties are used and then filter by property path change
     // using Y.YEvent.path
     function observe() {
-      requestAnimationFrame(() => {
-        setProxy(getProxy(adapter));
-      });
+      setProxy(getProxy(adapter));
     }
+    const disposables: (() => void)[] = [];
+    disposables.push(
+      adapter.workspace.blockSuiteWorkspace.meta.pageMetasUpdated.on(observe)
+        .dispose
+    );
     adapter.properties.observeDeep(observe);
+    disposables.push(() => adapter.properties.unobserveDeep(observe));
     return () => {
-      adapter.properties.unobserveDeep(observe);
+      for (const dispose of disposables) {
+        dispose();
+      }
     };
-  }, [adapter]);
+  }, [adapter, setProxy]);
 
   return proxy;
 };

@@ -27,7 +27,7 @@ export const inlineTagsContainer = style({
 export const tagsMenu = style({
   padding: 0,
   transform:
-    'translate(-3px, calc(-3px + var(--radix-popper-anchor-height) * -1))',
+    'translate(-3.5px, calc(-3.5px + var(--radix-popper-anchor-height) * -1))',
   width: 'calc(var(--radix-popper-anchor-width) + 16px)',
   overflow: 'hidden',
 });

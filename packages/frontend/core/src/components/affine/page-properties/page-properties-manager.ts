@@ -6,6 +6,7 @@ import type {
 } from '@affine/core/modules/workspace/properties/schema';
 import { PagePropertyType } from '@affine/core/modules/workspace/properties/schema';
 import { DebugLogger } from '@affine/debug';
+import { generateKeyBetween } from 'fractional-indexing';
 import { nanoid } from 'nanoid';
 
 import { getDefaultIconName } from './icons-mapping';
@@ -216,16 +217,13 @@ export class PagePropertiesManager {
   }
 
   getOrderedCustomProperties() {
-    return Object.values(this.getCustomProperties()).sort(
-      (a, b) => a.order - b.order
+    return Object.values(this.getCustomProperties()).sort((a, b) =>
+      a.order > b.order ? 1 : a.order < b.order ? -1 : 0
     );
   }
 
   largestOrder() {
-    return Math.max(
-      ...Object.values(this.properties.custom).map(p => p.order),
-      0
-    );
+    return this.getOrderedCustomProperties().at(-1)?.order ?? null;
   }
 
   getCustomPropertyMeta(id: string): PageInfoCustomPropertyMeta | undefined {
@@ -247,7 +245,7 @@ export class PagePropertiesManager {
       return;
     }
 
-    const newOrder = this.largestOrder() + 1;
+    const newOrder = generateKeyBetween(this.largestOrder(), null);
     if (this.properties.custom[id]) {
       logger.warn(`custom property ${id} already exists`);
     }
@@ -258,6 +256,20 @@ export class PagePropertiesManager {
       order: newOrder,
       visibility: 'visible',
     };
+  }
+
+  moveCustomProperty(from: number, to: number) {
+    // move from -> to means change from's order to a new order between to and to -1/+1
+    const properties = this.getOrderedCustomProperties();
+    const fromProperty = properties[from];
+    const toProperty = properties[to];
+    const toNextProperty = properties[from < to ? to + 1 : to - 1];
+    const args: [string?, string?] =
+      from < to
+        ? [toProperty.order, toNextProperty?.order ?? null]
+        : [toNextProperty?.order ?? null, toProperty.order];
+    const newOrder = generateKeyBetween(...args);
+    this.properties.custom[fromProperty.id].order = newOrder;
   }
 
   hasCustomProperty(id: string) {
