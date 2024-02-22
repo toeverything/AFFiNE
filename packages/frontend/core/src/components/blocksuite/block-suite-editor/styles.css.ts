@@ -29,6 +29,7 @@ export const affineDocViewport = style({
 export const docContainer = style({
   display: 'block',
   paddingBottom: 64,
+  flexGrow: 1,
 });
 const titleTagBasic = style({
   fontSize: cssVar('fontH4'),
