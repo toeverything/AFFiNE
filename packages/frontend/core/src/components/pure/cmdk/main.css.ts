@@ -102,8 +102,9 @@ export const keybindingFragment = style({
   borderRadius: 4,
   color: 'var(--affine-text-secondary-color)',
   backgroundColor: 'var(--affine-background-tertiary-color)',
-  width: 24,
+  minWidth: 24,
   height: 20,
+  textTransform: 'uppercase',
 });
 
 globalStyle(`${root} [cmdk-root]`, {
