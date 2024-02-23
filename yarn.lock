@@ -761,7 +761,7 @@ __metadata:
     "@tomfreudenberg/next-auth-mock": "npm:^0.5.6"
     "@vanilla-extract/esbuild-plugin": "npm:^2.3.1"
     "@vitejs/plugin-react": "npm:^4.2.0"
-    chromatic: "npm:^10.0.0"
+    chromatic: "npm:^11.0.0"
     concurrently: "npm:^8.2.2"
     foxact: "npm:^0.2.26"
     jest-mock: "npm:^29.7.0"
@@ -17219,14 +17219,22 @@ __metadata:
   languageName: node
   linkType: hard
 
-"chromatic@npm:^10.0.0":
-  version: 10.2.0
-  resolution: "chromatic@npm:10.2.0"
+"chromatic@npm:^11.0.0":
+  version: 11.0.0
+  resolution: "chromatic@npm:11.0.0"
+  peerDependencies:
+    "@chromatic-com/cypress": ^0.5.2 || ^1.0.0
+    "@chromatic-com/playwright": ^0.5.2 || ^1.0.0
+  peerDependenciesMeta:
+    "@chromatic-com/cypress":
+      optional: true
+    "@chromatic-com/playwright":
+      optional: true
   bin:
     chroma: dist/bin.js
     chromatic: dist/bin.js
     chromatic-cli: dist/bin.js
-  checksum: 10/8df1b4a828c7d5eb2614fcab9a1685f5be947a68f5f31733ebf2bbfab86f6b02c0ee99064bfe62b1457f05ddef285c1d36d5674208f778c815714c51c72a68bd
+  checksum: 10/3d5d853bf860ab47200a2c7962d0647cf462db84355f397f69f48828ee5f2be7ccf692514d0c60f077e8cbbcab4cc79f4b66f59ff66f9f65d5a3b9cc12edcd8a
   languageName: node
   linkType: hard
 

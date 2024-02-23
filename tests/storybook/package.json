@@ -43,7 +43,7 @@
     "@tomfreudenberg/next-auth-mock": "^0.5.6",
     "@vanilla-extract/esbuild-plugin": "^2.3.1",
     "@vitejs/plugin-react": "^4.2.0",
-    "chromatic": "^10.0.0",
+    "chromatic": "^11.0.0",
     "concurrently": "^8.2.2",
     "jest-mock": "^29.7.0",
     "react": "18.2.0",
