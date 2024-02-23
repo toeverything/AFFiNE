@@ -1,5 +1,5 @@
 import { Checkbox, DatePicker, Menu } from '@affine/component';
-import { useBlockSuitePageMeta } from '@affine/core/hooks/use-block-suite-page-meta';
+import { useAllBlockSuitePageMeta } from '@affine/core/hooks/use-all-block-suite-page-meta';
 import { WorkspaceLegacyProperties } from '@affine/core/modules/workspace';
 import type {
   PageInfoCustomProperty,
@@ -117,7 +117,7 @@ export const TagsValue = () => {
   const workspace = useService(Workspace);
   const page = useService(Page);
   const blockSuiteWorkspace = workspace.blockSuiteWorkspace;
-  const pageMetas = useBlockSuitePageMeta(blockSuiteWorkspace);
+  const pageMetas = useAllBlockSuitePageMeta(blockSuiteWorkspace);
   const legacyProperties = useService(WorkspaceLegacyProperties);
   const options = useLiveData(legacyProperties.tagOptions$);
 

@@ -21,7 +21,6 @@ export const menuItemStyle = style({
 });
 export const descriptionStyle = style({
   wordWrap: 'break-word',
-  // wordBreak: 'break-all',
   fontSize: cssVar('fontXs'),
   lineHeight: '20px',
   color: cssVar('textSecondaryColor'),

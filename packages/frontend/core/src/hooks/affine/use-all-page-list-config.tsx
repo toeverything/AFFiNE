@@ -12,9 +12,11 @@ import { useCallback, useMemo } from 'react';
 
 import { usePageHelper } from '../../components/blocksuite/block-suite-page-list/utils';
 import { useBlockSuiteMetaHelper } from './use-block-suite-meta-helper';
+import { usePublicPages } from './use-is-shared-page';
 
 export const useAllPageListConfig = () => {
   const currentWorkspace = useService(Workspace);
+  const { getPublicMode } = usePublicPages(currentWorkspace);
   const workspace = currentWorkspace.blockSuiteWorkspace;
   const pageMetas = useBlockSuitePageMeta(workspace);
   const { isPreferredEdgeless } = usePageHelper(workspace);
@@ -42,6 +44,7 @@ export const useAllPageListConfig = () => {
     return {
       allPages: pageMetas,
       isEdgeless: isPreferredEdgeless,
+      getPublicMode,
       workspace: currentWorkspace.blockSuiteWorkspace,
       getPage: id => pageMap[id],
       favoriteRender: page => {
@@ -55,9 +58,10 @@ export const useAllPageListConfig = () => {
       },
     };
   }, [
-    currentWorkspace.blockSuiteWorkspace,
-    isPreferredEdgeless,
     pageMetas,
+    isPreferredEdgeless,
+    getPublicMode,
+    currentWorkspace.blockSuiteWorkspace,
     pageMap,
     onToggleFavoritePage,
   ]);

@@ -42,7 +42,12 @@ export const SelectPage = ({
     showFilter,
     updateFilters,
     filteredList,
-  } = useFilter(allPageListConfig.allPages);
+  } = useFilter(
+    allPageListConfig.allPages.map(meta => ({
+      meta,
+      publicMode: allPageListConfig.getPublicMode(meta.id),
+    }))
+  );
   const { searchText, updateSearchText, searchedList } =
     useSearch(filteredList);
 

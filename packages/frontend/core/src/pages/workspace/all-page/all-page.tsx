@@ -63,7 +63,7 @@ export const AllPage = ({
   const filteredPageMetas = useFilteredPageMetas(
     'all',
     pageMetas,
-    currentWorkspace.blockSuiteWorkspace
+    currentWorkspace
   );
   const tagPageMetas = useMemo(() => {
     if (params.tagId) {

@@ -36,7 +36,9 @@ export const AddWorkspace = ({
         className={styles.ItemContainer}
       >
         <div className={styles.ItemText}>
-          {t['com.affine.workspaceList.addWorkspace.create']()}
+          {runtimeConfig.enableSQLiteProvider && environment.isDesktop
+            ? t['com.affine.workspaceList.addWorkspace.create']()
+            : t['com.affine.workspaceList.addWorkspace.create-cloud']()}
         </div>
       </MenuItem>
     </div>

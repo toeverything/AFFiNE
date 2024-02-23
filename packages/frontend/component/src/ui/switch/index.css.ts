@@ -43,3 +43,7 @@ export const switchCheckedStyle = style({
     },
   },
 });
+export const switchDisabledStyle = style({
+  cursor: 'not-allowed',
+  opacity: 0.5,
+});
