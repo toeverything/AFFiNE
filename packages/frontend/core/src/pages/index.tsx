@@ -32,12 +32,11 @@ export const Component = () => {
   const [creating, setCreating] = useState(false);
 
   const list = useLiveData(useService(WorkspaceListService).workspaceList);
-  const workspaceStatus = useLiveData(useService(WorkspaceListService).status);
 
   const { openPage } = useNavigateHelper();
 
   useLayoutEffect(() => {
-    if (list.length === 0 || workspaceStatus.loading) {
+    if (list.length === 0) {
       return;
     }
 
@@ -47,7 +46,7 @@ export const Component = () => {
     const openWorkspace = list.find(w => w.id === lastId) ?? list[0];
     openPage(openWorkspace.id, WorkspaceSubPath.ALL);
     setNavigating(true);
-  }, [list, workspaceStatus, openPage]);
+  }, [list, openPage]);
 
   const workspaceManager = useService(WorkspaceManager);
 
