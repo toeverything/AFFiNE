@@ -768,6 +768,7 @@
   "com.affine.payment.buy-pro": "Buy Pro",
   "com.affine.payment.change-to": "Change to {{to}} Billing",
   "com.affine.payment.contact-sales": "Contact Sales",
+  "com.affine.payment.book-a-demo": "Book a Demo",
   "com.affine.payment.current-plan": "Current Plan",
   "com.affine.payment.disable-payment.description": "This is a special testing(Canary) version of AFFiNE. Account upgrades are not supported in this version. If you want to experience the full service, please download the stable version from our website.",
   "com.affine.payment.disable-payment.title": "Account Upgrade Unavailable",
