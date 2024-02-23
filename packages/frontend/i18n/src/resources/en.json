@@ -627,6 +627,7 @@
   "com.affine.filter.is empty": "is empty",
   "com.affine.filter.is not empty": "is not empty",
   "com.affine.filter.is-favourited": "Favourited",
+  "com.affine.filter.is-public": "Shared",
   "com.affine.filter.save-view": "Save View",
   "com.affine.filter.true": "true",
   "com.affine.filterList.button.add": "Add Filter",

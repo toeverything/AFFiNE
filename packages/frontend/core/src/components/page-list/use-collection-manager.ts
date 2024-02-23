@@ -97,24 +97,30 @@ export const useCollectionManager = (collectionService: CollectionService) => {
 export const filterByFilterList = (filterList: Filter[], varMap: VariableMap) =>
   evalFilterList(filterList, varMap);
 
-export const filterPage = (collection: Collection, page: PageMeta) => {
+export type PageDataForFilter = {
+  meta: PageMeta;
+  publicMode: undefined | 'page' | 'edgeless';
+};
+
+export const filterPage = (collection: Collection, page: PageDataForFilter) => {
   if (collection.filterList.length === 0) {
-    return collection.allowList.includes(page.id);
+    return collection.allowList.includes(page.meta.id);
   }
   return filterPageByRules(collection.filterList, collection.allowList, page);
 };
 export const filterPageByRules = (
   rules: Filter[],
   allowList: string[],
-  page: PageMeta
+  { meta, publicMode }: PageDataForFilter
 ) => {
-  if (allowList?.includes(page.id)) {
+  if (allowList?.includes(meta.id)) {
     return true;
   }
   return filterByFilterList(rules, {
-    'Is Favourited': !!page.favorite,
-    Created: page.createDate,
-    Updated: page.updatedDate ?? page.createDate,
-    Tags: page.tags,
+    'Is Favourited': !!meta.favorite,
+    'Is Public': !!publicMode,
+    Created: meta.createDate,
+    Updated: meta.updatedDate ?? meta.createDate,
+    Tags: meta.tags,
   });
 };

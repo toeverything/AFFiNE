@@ -81,9 +81,14 @@ const CollectionRenderer = ({
     [collection.allowList]
   );
 
-  const pagesToRender = pages.filter(
-    page => filterPage(collection, page) && !page.trash
-  );
+  const pagesToRender = pages.filter(meta => {
+    if (meta.trash) return false;
+    const pageData = {
+      meta,
+      publicMode: config.getPublicMode(meta.id),
+    };
+    return filterPage(collection, pageData);
+  });
   const location = useLocation();
   const currentPath = location.pathname.split('?')[0];
   const path = `/workspace/${workspace.id}/collection/${collection.id}`;
