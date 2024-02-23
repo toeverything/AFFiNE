@@ -24,8 +24,7 @@
     "nodeArguments": [
       "--loader",
       "ts-node/esm.mjs",
-      "--es-module-specifier-resolution",
-      "node"
+      "--es-module-specifier-resolution=node"
     ],
     "files": [
       "__tests__/*.spec.mts"

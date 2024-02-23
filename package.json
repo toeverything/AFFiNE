@@ -14,7 +14,7 @@
     "tests/affine-legacy/*"
   ],
   "engines": {
-    "node": ">=18.16.1 <19.0.0"
+    "node": "<21.0.0"
   },
   "scripts": {
     "dev": "dev-core",
