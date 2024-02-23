@@ -5,7 +5,12 @@ import {
   openHomePage,
   openJournalsPage,
 } from '@affine-test/kit/utils/load-page';
-import { dragTo, waitForEditorLoad } from '@affine-test/kit/utils/page-logic';
+import {
+  clickNewPageButton,
+  dragTo,
+  waitForEditorLoad,
+  waitForEmptyEditor,
+} from '@affine-test/kit/utils/page-logic';
 import {
   addCustomProperty,
   changePropertyVisibility,
@@ -23,7 +28,8 @@ import { expect } from '@playwright/test';
 test.beforeEach(async ({ page }) => {
   await openHomePage(page);
   await clickPageModeButton(page);
-  await waitForEditorLoad(page);
+  await clickNewPageButton(page);
+  await waitForEmptyEditor(page);
 });
 
 test('allow create tag', async ({ page }) => {
@@ -41,6 +47,8 @@ test('allow create tag', async ({ page }) => {
 
 test('allow create tag on journals page', async ({ page }) => {
   await openJournalsPage(page);
+  await waitForEditorLoad(page);
+
   await openTagsEditor(page);
   await searchAndCreateTag(page, 'Test1');
   await searchAndCreateTag(page, 'Test2');
