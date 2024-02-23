@@ -600,7 +600,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@affine/native@workspace:packages/frontend/native"
   dependencies:
-    "@napi-rs/cli": "npm:3.0.0-alpha.40"
+    "@napi-rs/cli": "npm:3.0.0-alpha.41"
     "@types/node": "npm:^20.9.3"
     "@types/uuid": "npm:^9.0.7"
     ava: "npm:^6.0.0"
@@ -722,7 +722,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@affine/storage@workspace:packages/backend/storage"
   dependencies:
-    "@napi-rs/cli": "npm:3.0.0-alpha.40"
+    "@napi-rs/cli": "npm:3.0.0-alpha.41"
     lib0: "npm:^0.2.87"
     nx: "npm:^18.0.0"
     nx-cloud: "npm:^18.0.0"
@@ -6833,9 +6833,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@napi-rs/cli@npm:3.0.0-alpha.40":
-  version: 3.0.0-alpha.40
-  resolution: "@napi-rs/cli@npm:3.0.0-alpha.40"
+"@napi-rs/cli@npm:3.0.0-alpha.41":
+  version: 3.0.0-alpha.41
+  resolution: "@napi-rs/cli@npm:3.0.0-alpha.41"
   dependencies:
     "@napi-rs/cross-toolchain": "npm:^0.0.14"
     "@octokit/rest": "npm:^20.0.2"
@@ -6863,7 +6863,7 @@ __metadata:
   bin:
     napi: dist/cli.js
     napi-raw: cli.mjs
-  checksum: 10/b73e106b76280dcf82a20e3943d4f7db6a99d0acd3eebdd8a6aa88718fa03fbaf5140f0c804518bffa0fc4d28e15a6d09b66b27b5e88509cb68a191599254499
+  checksum: 10/69d870b4295aa842e1cbec9fea1419b34828433e5f398f0aecae0a823327864c74e4640cbb991e18aa3817af42f7d930915babb735d364227f09169695613bda
   languageName: node
   linkType: hard
 
