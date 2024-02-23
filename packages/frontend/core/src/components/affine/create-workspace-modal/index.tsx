@@ -1,9 +1,15 @@
-import { Input, toast } from '@affine/component';
+import { Avatar, Input, Switch, toast } from '@affine/component';
 import {
   ConfirmModal,
   type ConfirmModalProps,
   Modal,
 } from '@affine/component/ui/modal';
+import {
+  authAtom,
+  openDisableCloudAlertModalAtom,
+  setPageModeAtom,
+} from '@affine/core/atoms';
+import { useCurrentLoginStatus } from '@affine/core/hooks/affine/use-current-login-status';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { DebugLogger } from '@affine/debug';
 import { apis } from '@affine/electron-api';
@@ -17,12 +23,13 @@ import {
   initEmptyPage,
 } from '@toeverything/infra/blocksuite';
 import { useService } from '@toeverything/infra/di';
+import { useSetAtom } from 'jotai';
 import type { KeyboardEvent } from 'react';
 import { useLayoutEffect } from 'react';
 import { useCallback, useState } from 'react';
 
-import { setPageModeAtom } from '../../../atoms';
-import * as style from './index.css';
+import { CloudSvg } from '../share-page-modal/cloud-svg';
+import * as styles from './index.css';
 
 type CreateWorkspaceStep =
   | 'set-db-location'
@@ -40,18 +47,55 @@ interface ModalProps {
 }
 
 interface NameWorkspaceContentProps extends ConfirmModalProps {
-  onConfirmName: (name: string) => void;
+  onConfirmName: (
+    name: string,
+    workspaceFlavour: WorkspaceFlavour,
+    avatar?: File
+  ) => void;
 }
+
+const shouldEnableCloud =
+  !runtimeConfig.allowLocalWorkspace && !environment.isDesktop;
 
 const NameWorkspaceContent = ({
   onConfirmName,
   ...props
 }: NameWorkspaceContentProps) => {
+  const t = useAFFiNEI18N();
   const [workspaceName, setWorkspaceName] = useState('');
+  const [enable, setEnable] = useState(shouldEnableCloud);
+  const loginStatus = useCurrentLoginStatus();
+  const setDisableCloudOpen = useSetAtom(openDisableCloudAlertModalAtom);
+
+  const setOpenSignIn = useSetAtom(authAtom);
+
+  const openSignInModal = useCallback(() => {
+    if (!runtimeConfig.enableCloud) {
+      setDisableCloudOpen(true);
+    } else {
+      setOpenSignIn(state => ({
+        ...state,
+        openModal: true,
+      }));
+    }
+  }, [setDisableCloudOpen, setOpenSignIn]);
+
+  const onSwitchChange = useCallback(
+    (checked: boolean) => {
+      if (loginStatus !== 'authenticated') {
+        return openSignInModal();
+      }
+      return setEnable(checked);
+    },
+    [loginStatus, openSignInModal]
+  );
 
   const handleCreateWorkspace = useCallback(() => {
-    onConfirmName(workspaceName);
-  }, [onConfirmName, workspaceName]);
+    onConfirmName(
+      workspaceName,
+      enable ? WorkspaceFlavour.AFFINE_CLOUD : WorkspaceFlavour.LOCAL
+    );
+  }, [enable, onConfirmName, workspaceName]);
 
   const handleKeyDown = useCallback(
     (event: KeyboardEvent<HTMLInputElement>) => {
@@ -61,7 +105,9 @@ const NameWorkspaceContent = ({
     },
     [handleCreateWorkspace, workspaceName]
   );
-  const t = useAFFiNEI18N();
+  // TODO: Support uploading avatars.
+  // Currently, when we create a new workspace and upload an avatar at the same time,
+  // an error occurs after the creation is successful: get blob 404 not found
   return (
     <ConfirmModal
       defaultOpen={true}
@@ -80,16 +126,56 @@ const NameWorkspaceContent = ({
       onConfirm={handleCreateWorkspace}
       {...props}
     >
-      <Input
-        autoFocus
-        data-testid="create-workspace-input"
-        onKeyDown={handleKeyDown}
-        placeholder={t['com.affine.nameWorkspace.placeholder']()}
-        maxLength={64}
-        minLength={0}
-        onChange={setWorkspaceName}
-        size="large"
-      />
+      <div className={styles.avatarWrapper}>
+        <Avatar size={56} name={workspaceName} colorfulFallback />
+      </div>
+
+      <div className={styles.workspaceNameWrapper}>
+        <div className={styles.subTitle}>
+          {t['com.affine.nameWorkspace.subtitle.workspace-name']()}
+        </div>
+        <Input
+          autoFocus
+          data-testid="create-workspace-input"
+          onKeyDown={handleKeyDown}
+          placeholder={t['com.affine.nameWorkspace.placeholder']()}
+          maxLength={64}
+          minLength={0}
+          onChange={setWorkspaceName}
+          size="large"
+        />
+      </div>
+      <div className={styles.affineCloudWrapper}>
+        <div className={styles.subTitle}>{t['AFFiNE Cloud']()}</div>
+        <div className={styles.card}>
+          <div className={styles.cardText}>
+            <div className={styles.cardTitle}>
+              <span>{t['com.affine.nameWorkspace.affine-cloud.title']()}</span>
+              <Switch
+                checked={enable}
+                onChange={onSwitchChange}
+                disabled={shouldEnableCloud}
+              />
+            </div>
+            <div className={styles.cardDescription}>
+              {t['com.affine.nameWorkspace.affine-cloud.description']()}
+            </div>
+          </div>
+          <div className={styles.cloudSvgContainer}>
+            <CloudSvg />
+          </div>
+        </div>
+        {shouldEnableCloud ? (
+          <a
+            className={styles.cloudTips}
+            href={runtimeConfig.downloadUrl}
+            target="_blank"
+            rel="noreferrer"
+          >
+            {t['com.affine.nameWorkspace.affine-cloud.web-tips']()}
+          </a>
+        ) : null}
+      </div>
     </ConfirmModal>
   );
 };
@@ -145,11 +231,11 @@ export const CreateWorkspaceModal = ({
   }, [mode, onClose, onCreate, t, workspaceManager]);
 
   const onConfirmName = useAsyncCallback(
-    async (name: string) => {
+    async (name: string, workspaceFlavour: WorkspaceFlavour) => {
       // this will be the last step for web for now
       // fix me later
       const { id } = await workspaceManager.createWorkspace(
-        WorkspaceFlavour.LOCAL,
+        workspaceFlavour,
         async workspace => {
           workspace.meta.setName(name);
           if (runtimeConfig.enablePreloading) {
@@ -201,7 +287,7 @@ export const CreateWorkspaceModal = ({
         style: { padding: '10px' },
       }}
     >
-      <div className={style.header}></div>
+      <div className={styles.header}></div>
     </Modal>
   );
 };
