@@ -38,7 +38,7 @@
     "@electron-forge/maker-zip": "^7.2.0",
     "@electron-forge/plugin-auto-unpack-natives": "^7.2.0",
     "@electron-forge/shared-types": "^7.2.0",
-    "@pengx17/electron-forge-maker-appimage": "^1.0.1",
+    "@pengx17/electron-forge-maker-appimage": "^1.0.2",
     "@toeverything/infra": "workspace:*",
     "@types/uuid": "^9.0.7",
     "builder-util-runtime": "^9.2.3",
