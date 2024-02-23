@@ -60,6 +60,7 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
       if (data.image) {
         userData.avatarUrl = data.image;
       }
+      // @ts-expect-error third part library type mismatch
       return createUser(userData);
     };
     // linkAccount exists in the adapter
@@ -112,6 +113,7 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
 
     const nextAuthOptions: NextAuthOptions = {
       providers: [],
+      // @ts-expect-error Third part library type mismatch
       adapter: prismaAdapter,
       debug: !config.node.prod,
       session: {

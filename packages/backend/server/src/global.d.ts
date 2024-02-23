@@ -16,15 +16,16 @@ declare type ConstructorOf<T> = {
   new (): T;
 };
 
-declare type DeepPartial<T> = T extends Array<infer U>
-  ? DeepPartial<U>[]
-  : T extends ReadonlyArray<infer U>
-    ? ReadonlyArray<DeepPartial<U>>
-    : T extends object
-      ? {
-          [K in keyof T]?: DeepPartial<T[K]>;
-        }
-      : T;
+declare type DeepPartial<T> =
+  T extends Array<infer U>
+    ? DeepPartial<U>[]
+    : T extends ReadonlyArray<infer U>
+      ? ReadonlyArray<DeepPartial<U>>
+      : T extends object
+        ? {
+            [K in keyof T]?: DeepPartial<T[K]>;
+          }
+        : T;
 
 declare type AFFiNEModule =
   | import('@nestjs/common').Type

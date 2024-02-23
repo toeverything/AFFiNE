@@ -86,9 +86,8 @@ export type TDataType<Data extends DataTypeShape = Record<string, unknown>> = {
   name: string;
   data?: Data;
 };
-export type ValueOfData<T extends DataDefine> = T extends DataDefine<infer R>
-  ? R
-  : never;
+export type ValueOfData<T extends DataDefine> =
+  T extends DataDefine<infer R> ? R : never;
 
 export class DataDefine<Data extends DataTypeShape = Record<string, unknown>> {
   constructor(

@@ -7,9 +7,9 @@
   "devDependencies": {
     "@affine-test/fixtures": "workspace:*",
     "@affine-test/kit": "workspace:*",
-    "@playwright/test": "^1.41.0",
-    "@types/fs-extra": "^11.0.2",
-    "fs-extra": "^11.1.1"
+    "@playwright/test": "^1.41.2",
+    "@types/fs-extra": "^11.0.4",
+    "fs-extra": "^11.2.0"
   },
   "version": "0.12.0"
 }

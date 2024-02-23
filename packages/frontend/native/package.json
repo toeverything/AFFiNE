@@ -35,15 +35,15 @@
   },
   "devDependencies": {
     "@napi-rs/cli": "3.0.0-alpha.41",
-    "@types/node": "^20.9.3",
-    "@types/uuid": "^9.0.7",
-    "ava": "^6.0.0",
+    "@types/node": "^20.11.20",
+    "@types/uuid": "^9.0.8",
+    "ava": "^6.1.1",
     "cross-env": "^7.0.3",
-    "nx": "^18.0.0",
+    "nx": "^18.0.4",
     "nx-cloud": "^18.0.0",
     "rxjs": "^7.8.1",
-    "ts-node": "^10.9.1",
-    "typescript": "^5.3.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3",
     "uuid": "^9.0.1"
   },
   "engines": {

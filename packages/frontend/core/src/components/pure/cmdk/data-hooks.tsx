@@ -211,8 +211,9 @@ export const usePageCommands = () => {
         const category =
           pageMode === 'edgeless' ? 'affine:edgeless' : 'affine:pages';
 
-        const subTitle = resultValues.find(result => result.space === page.id)
-          ?.content;
+        const subTitle = resultValues.find(
+          result => result.space === page.id
+        )?.content;
 
         const blockId = reverseMapping.get(page.id);
 

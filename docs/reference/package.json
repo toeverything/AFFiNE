@@ -7,9 +7,9 @@
     "dev": "nodemon --exec 'typedoc --options ../../typedoc.json' & serve dist/"
   },
   "devDependencies": {
-    "nodemon": "^3.0.1",
+    "nodemon": "^3.1.0",
     "serve": "^14.2.1",
-    "typedoc": "^0.25.4"
+    "typedoc": "^0.25.8"
   },
   "nodemonConfig": {
     "watch": [
