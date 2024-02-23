@@ -83,11 +83,12 @@ export function registerAffineNavigationCommands({
       category: 'affine:navigation',
       icon: <ArrowRightBigIcon />,
       label: t['com.affine.cmdk.affine.navigation.open-settings'](),
+      keyBinding: '$mod+,',
       run() {
-        store.set(openSettingModalAtom, {
+        store.set(openSettingModalAtom, s => ({
           activeTab: 'appearance',
-          open: true,
-        });
+          open: !s.open,
+        }));
       },
     })
   );
