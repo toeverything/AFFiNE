@@ -69,6 +69,8 @@ export const modalFooter = style({
 export const confirmModalContent = style({
   marginTop: '12px',
   marginBottom: '20px',
+  height: '100%',
+  overflowY: 'auto',
 });
 export const confirmModalContainer = style({
   display: 'flex',

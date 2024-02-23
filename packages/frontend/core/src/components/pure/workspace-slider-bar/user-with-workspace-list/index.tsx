@@ -73,11 +73,37 @@ export const UserWithWorkspaceList = ({
   const isAuthenticated = useMemo(() => status === 'authenticated', [status]);
 
   const setOpenCreateWorkspaceModal = useSetAtom(openCreateWorkspaceModalAtom);
+  const setDisableCloudOpen = useSetAtom(openDisableCloudAlertModalAtom);
+
+  const setOpenSignIn = useSetAtom(authAtom);
+
+  const openSignInModal = useCallback(() => {
+    if (!runtimeConfig.enableCloud) {
+      setDisableCloudOpen(true);
+    } else {
+      setOpenSignIn(state => ({
+        ...state,
+        openModal: true,
+      }));
+    }
+  }, [setDisableCloudOpen, setOpenSignIn]);
 
   const onNewWorkspace = useCallback(() => {
+    if (
+      !isAuthenticated &&
+      !environment.isDesktop &&
+      !runtimeConfig.allowLocalWorkspace
+    ) {
+      return openSignInModal();
+    }
     setOpenCreateWorkspaceModal('new');
     onEventEnd?.();
-  }, [onEventEnd, setOpenCreateWorkspaceModal]);
+  }, [
+    isAuthenticated,
+    onEventEnd,
+    openSignInModal,
+    setOpenCreateWorkspaceModal,
+  ]);
 
   const onAddWorkspace = useCallback(() => {
     setOpenCreateWorkspaceModal('add');
