@@ -1,7 +1,10 @@
 /* eslint-disable unicorn/prefer-dom-node-dataset */
 import { test } from '@affine-test/kit/playwright';
 import { clickPageModeButton } from '@affine-test/kit/utils/editor';
-import { openHomePage } from '@affine-test/kit/utils/load-page';
+import {
+  openHomePage,
+  openJournalsPage,
+} from '@affine-test/kit/utils/load-page';
 import { dragTo, waitForEditorLoad } from '@affine-test/kit/utils/page-logic';
 import {
   addCustomProperty,
@@ -24,6 +27,20 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('allow create tag', async ({ page }) => {
+  await openTagsEditor(page);
+  await searchAndCreateTag(page, 'Test1');
+  await searchAndCreateTag(page, 'Test2');
+  await closeTagsEditor(page);
+  await expectTagsVisible(page, ['Test1', 'Test2']);
+
+  await openTagsEditor(page);
+  await removeSelectedTag(page, 'Test1');
+  await closeTagsEditor(page);
+  await expectTagsVisible(page, ['Test2']);
+});
+
+test('allow create tag on journals page', async ({ page }) => {
+  await openJournalsPage(page);
   await openTagsEditor(page);
   await searchAndCreateTag(page, 'Test1');
   await searchAndCreateTag(page, 'Test2');

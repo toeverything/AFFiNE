@@ -37,7 +37,12 @@ export const AppSidebarJournalButton = ({
       : TodayIcon;
 
   return (
-    <MenuItem active={isJournalActive} onClick={openToday} icon={<Icon />}>
+    <MenuItem
+      data-testid="slider-bar-journals-button"
+      active={isJournalActive}
+      onClick={openToday}
+      icon={<Icon />}
+    >
       {t['com.affine.journal.app-sidebar-title']()}
     </MenuItem>
   );
