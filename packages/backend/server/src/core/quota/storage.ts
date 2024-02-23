@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 
 import { FeatureService, FeatureType } from '../features';
 import { WorkspaceBlobStorage } from '../storage';
@@ -11,6 +11,8 @@ type QuotaBusinessType = QuotaQueryType & { businessBlobLimit: number };
 
 @Injectable()
 export class QuotaManagementService {
+  protected logger = new Logger(QuotaManagementService.name);
+
   constructor(
     private readonly feature: FeatureService,
     private readonly quota: QuotaService,
@@ -38,11 +40,22 @@ export class QuotaManagementService {
   async getUserUsage(userId: string) {
     const workspaces = await this.permissions.getOwnedWorkspaces(userId);
 
-    const sizes = await Promise.all(
+    const sizes = await Promise.allSettled(
       workspaces.map(workspace => this.storage.totalSize(workspace))
     );
 
-    return sizes.reduce((total, size) => total + size, 0);
+    return sizes.reduce((total, size) => {
+      if (size.status === 'fulfilled') {
+        if (Number.isSafeInteger(size.value)) {
+          return total + size.value;
+        } else {
+          this.logger.error(`Workspace size is invalid: ${size.value}`);
+        }
+      } else {
+        this.logger.error(`Failed to get workspace size: ${size.reason}`);
+      }
+      return total;
+    }, 0);
   }
 
   // get workspace's owner quota and total size of used
