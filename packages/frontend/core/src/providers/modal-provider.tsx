@@ -202,7 +202,9 @@ export const SignOutConfirmModal = () => {
 
   const onConfirm = useAsyncCallback(async () => {
     setOpen(false);
-    await signOutCloud();
+    await signOutCloud({
+      redirect: false,
+    });
 
     // if current workspace is affine cloud, switch to local workspace
     if (currentWorkspace?.flavour === WorkspaceFlavour.AFFINE_CLOUD) {
