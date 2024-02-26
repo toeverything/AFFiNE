@@ -104,7 +104,10 @@ export const BlocksuiteDocEditor = forwardRef<
 
   return (
     <div className={styles.docEditorRoot}>
-      <div className={clsx('affine-doc-viewport', styles.affineDocViewport)}>
+      <div
+        className={clsx('affine-doc-viewport', styles.affineDocViewport)}
+        data-doc-viewport={true}
+      >
         {!isJournal ? (
           <adapted.DocTitle page={page} ref={titleRef} />
         ) : (

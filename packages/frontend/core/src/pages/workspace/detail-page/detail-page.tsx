@@ -1,3 +1,4 @@
+import { Scrollable } from '@affine/component';
 import { PageDetailSkeleton } from '@affine/component/page-detail-skeleton';
 import { ResizePanel } from '@affine/component/resize-panel';
 import { useBlockSuitePageMeta } from '@affine/core/hooks/use-block-suite-page-meta';
@@ -230,14 +231,17 @@ const DetailPageImpl = memo(function DetailPageImpl() {
         main={
           // Add a key to force rerender when page changed, to avoid error boundary persisting.
           <AffineErrorBoundary key={currentPageId}>
-            <div className={styles.editorContainer}>
-              <PageDetailEditor
-                pageId={currentPageId}
-                onLoad={onLoad}
-                workspace={blockSuiteWorkspace}
-              />
-              <HubIsland />
-            </div>
+            <Scrollable.Root>
+              <Scrollable.Viewport className={styles.editorContainer}>
+                <PageDetailEditor
+                  pageId={currentPageId}
+                  onLoad={onLoad}
+                  workspace={blockSuiteWorkspace}
+                />
+              </Scrollable.Viewport>
+              <Scrollable.Scrollbar />
+            </Scrollable.Root>
+            <HubIsland />
           </AffineErrorBoundary>
         }
         footer={isInTrash ? <TrashPageFooter pageId={page.id} /> : null}

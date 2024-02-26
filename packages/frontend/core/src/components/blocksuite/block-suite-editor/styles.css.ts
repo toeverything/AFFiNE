@@ -2,8 +2,6 @@ import { cssVar } from '@toeverything/theme';
 import { style } from '@vanilla-extract/css';
 export const docEditorRoot = style({
   display: 'block',
-  height: '100%',
-  overflow: 'hidden',
   background: cssVar('backgroundPrimaryColor'),
 });
 
@@ -11,9 +9,6 @@ export const docEditorRoot = style({
 export const affineDocViewport = style({
   display: 'flex',
   flexDirection: 'column',
-  height: '100%',
-  overflowX: 'hidden',
-  overflowY: 'auto',
   userSelect: 'none',
   containerName: 'viewport',
   // todo: find out what this does in bs
@@ -23,6 +18,13 @@ export const affineDocViewport = style({
     print: {
       display: 'none',
       zIndex: -1,
+    },
+  },
+  selectors: {
+    '&[data-doc-viewport="true"]': {
+      overflowX: 'visible',
+      overflowY: 'visible',
+      height: 'auto',
     },
   },
 });

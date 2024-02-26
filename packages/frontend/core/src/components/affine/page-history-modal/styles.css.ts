@@ -95,7 +95,6 @@ export const previewHeaderTimestamp = style({
 export const editor = style({
   height: '100%',
   flexGrow: 1,
-  overflow: 'hidden',
 });
 export const rowWrapper = style({
   display: 'flex',

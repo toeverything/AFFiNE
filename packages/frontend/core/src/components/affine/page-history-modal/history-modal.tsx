@@ -139,11 +139,16 @@ const HistoryEditorPreview = ({
 
         {snapshotPage ? (
           <AffineErrorBoundary>
-            <BlockSuiteEditor
-              className={styles.editor}
-              mode={mode}
-              page={snapshotPage}
-            />
+            <Scrollable.Root>
+              <Scrollable.Viewport>
+                <BlockSuiteEditor
+                  className={styles.editor}
+                  mode={mode}
+                  page={snapshotPage}
+                />
+              </Scrollable.Viewport>
+              <Scrollable.Scrollbar />
+            </Scrollable.Root>
           </AffineErrorBoundary>
         ) : (
           <div className={styles.loadingContainer}>

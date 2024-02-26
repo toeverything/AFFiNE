@@ -1,8 +1,11 @@
-import type { PageMode } from '../../../atoms';
-import { useCurrentLoginStatus } from '../../../hooks/affine/use-current-login-status';
+import type { PageMode } from '@affine/core/atoms';
+import { useCurrentLoginStatus } from '@affine/core/hooks/affine/use-current-login-status';
+import { useState } from 'react';
+
 import { AuthenticatedItem } from './authenticated-item';
 import { PresentButton } from './present';
 import * as styles from './styles.css';
+import { PublishPageUserAvatar } from './user-avatar';
 
 export type ShareHeaderRightItemProps = {
   workspaceId: string;
@@ -13,14 +16,25 @@ export type ShareHeaderRightItemProps = {
 const ShareHeaderRightItem = ({ ...props }: ShareHeaderRightItemProps) => {
   const loginStatus = useCurrentLoginStatus();
   const { publishMode } = props;
+  const [isMember, setIsMember] = useState(false);
 
   // TODO: Add TOC
   return (
     <div className={styles.rightItemContainer}>
       {loginStatus === 'authenticated' ? (
-        <AuthenticatedItem {...props} />
+        <AuthenticatedItem setIsMember={setIsMember} {...props} />
       ) : null}
       {publishMode === 'edgeless' ? <PresentButton /> : null}
+      {loginStatus === 'authenticated' ? (
+        <>
+          <div
+            className={styles.headerDivider}
+            data-is-member={isMember}
+            data-is-edgeless={publishMode === 'edgeless'}
+          />
+          <PublishPageUserAvatar />
+        </>
+      ) : null}
     </div>
   );
 };

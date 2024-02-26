@@ -1138,5 +1138,9 @@
   "unnamed": "unnamed",
   "upgradeBrowser": "Please upgrade to the latest version of Chrome for the best experience.",
   "will be moved to Trash": "{{title}} will be moved to Trash",
-  "will delete member": "will delete member"
+  "will delete member": "will delete member",
+  "com.affine.share-page.footer.create-with": "Create with",
+  "com.affine.share-page.footer.built-with": "Built with",
+  "com.affine.share-page.footer.description": "Empower your sharing with AffiNE Cloud: One-click doc sharing",
+  "com.affine.share-page.footer.get-started": "Get started for free"
 }

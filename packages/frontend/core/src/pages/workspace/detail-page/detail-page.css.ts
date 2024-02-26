@@ -26,7 +26,6 @@ export const editorContainer = style({
   display: 'flex',
   flexDirection: 'column',
   flex: 1,
-  overflow: 'hidden',
   zIndex: 0,
 });
 export const sidebarContainer = style({
