@@ -21,5 +21,6 @@
     }
   },
   "updateContentCommand": "bash ./.devcontainer/build.sh",
-  "postCreateCommand": "bash ./.devcontainer/setup-user.sh"
+  "postCreateCommand": "bash ./.devcontainer/setup-user.sh",
+  "postStartCommand": ["yarn dev", "yarn workspace @affine/server dev"]
 }
