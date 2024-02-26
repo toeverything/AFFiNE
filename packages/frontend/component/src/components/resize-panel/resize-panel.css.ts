@@ -35,8 +35,12 @@ export const root = style({
     '&[data-is-floating="false"][data-transparent=true]': {
       backgroundColor: 'transparent',
     },
+    '&[data-enable-animation="false"][data-open="false"]': {
+      display: 'none',
+    },
   },
 });
+
 export const panelContent = style({
   position: 'relative',
   height: '100%',
