@@ -435,6 +435,7 @@
   "com.affine.auth.send.set.password.link": "Send set link",
   "com.affine.auth.sent": "Sent",
   "com.affine.auth.sent.change.email.hint": "Verification link has been sent.",
+  "com.affine.auth.sent.change.email.fail": "The verification link failed to be sent, please try again later.",
   "com.affine.auth.sent.change.password.hint": "Reset password link has been sent.",
   "com.affine.auth.sent.reset.password.success.message": "Your password has upgraded! You can sign in AFFiNE Cloud with new password!",
   "com.affine.auth.sent.set.password.hint": "Set password link has been sent.",

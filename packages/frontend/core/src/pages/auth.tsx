@@ -78,6 +78,13 @@ export const AuthPage = (): ReactElement | null => {
         });
       }
 
+      if (!res?.sendVerifyChangeEmail) {
+        pushNotification({
+          title: t['com.affine.auth.sent.change.email.fail'](),
+          type: 'error',
+        });
+      }
+
       return !!res?.sendVerifyChangeEmail;
     },
     [pushNotification, searchParams, sendVerifyChangeEmail, t]
