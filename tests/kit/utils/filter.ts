@@ -126,6 +126,7 @@ export const createPageWithTag = async (
   await clickNewPageButton(page);
   await getBlockSuiteEditorTitle(page).click();
   await getBlockSuiteEditorTitle(page).fill('test page');
+  await page.getByTestId('page-info-collapse').click();
   await page
     .locator('[data-testid="page-property-row"][data-property="tags"]')
     .click();

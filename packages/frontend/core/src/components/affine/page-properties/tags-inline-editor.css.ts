@@ -1,8 +1,7 @@
 import { cssVar } from '@toeverything/theme';
-import { style } from '@vanilla-extract/css';
+import { globalStyle, style } from '@vanilla-extract/css';
 
 export const tagsInlineEditor = style({
-  width: '100%',
   selectors: {
     '&[data-empty=true]': {
       color: cssVar('placeholderColor'),
@@ -14,7 +13,7 @@ export const tagsEditorRoot = style({
   display: 'flex',
   flexDirection: 'column',
   width: '100%',
-  gap: '8px',
+  gap: '12px',
 });
 
 export const inlineTagsContainer = style({
@@ -70,7 +69,7 @@ export const tagsEditorTagsSelectorHeader = style({
   justifyContent: 'space-between',
   alignItems: 'center',
   padding: '0 8px',
-  fontSize: '14px',
+  fontSize: cssVar('fontXs'),
   fontWeight: 500,
   color: cssVar('textSecondaryColor'),
 });
@@ -94,6 +93,19 @@ export const tagSelectorItem = style({
   ':hover': {
     backgroundColor: cssVar('hoverColor'),
   },
+});
+
+export const tagEditIcon = style({
+  opacity: 0,
+  selectors: {
+    [`${tagSelectorItem}:hover &`]: {
+      opacity: 1,
+    },
+  },
+});
+
+globalStyle(`${tagEditIcon}[data-state=open]`, {
+  opacity: 1,
 });
 
 export const spacer = style({

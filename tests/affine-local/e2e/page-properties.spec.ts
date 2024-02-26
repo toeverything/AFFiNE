@@ -16,6 +16,7 @@ import {
   changePropertyVisibility,
   clickPropertyValue,
   closeTagsEditor,
+  ensurePagePropertiesVisible,
   expectTagsVisible,
   getPropertyValueLocator,
   openTagsEditor,
@@ -30,6 +31,7 @@ test.beforeEach(async ({ page }) => {
   await clickPageModeButton(page);
   await clickNewPageButton(page);
   await waitForEmptyEditor(page);
+  await ensurePagePropertiesVisible(page);
 });
 
 test('allow create tag', async ({ page }) => {
@@ -48,6 +50,7 @@ test('allow create tag', async ({ page }) => {
 test('allow create tag on journals page', async ({ page }) => {
   await openJournalsPage(page);
   await waitForEditorLoad(page);
+  await ensurePagePropertiesVisible(page);
 
   await openTagsEditor(page);
   await searchAndCreateTag(page, 'Test1');

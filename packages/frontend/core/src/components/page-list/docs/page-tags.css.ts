@@ -82,7 +82,7 @@ export const tagInnerWrapper = style({
 export const tagInline = style([
   tagInnerWrapper,
   {
-    fontSize: cssVar('fontXs'),
+    fontSize: cssVar('fontSm'),
     borderRadius: '10px',
     columnGap: '4px',
     border: `1px solid ${cssVar('borderColor')}`,

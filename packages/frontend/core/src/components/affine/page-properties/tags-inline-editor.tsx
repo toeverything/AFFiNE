@@ -292,7 +292,11 @@ export const TagsEditor = ({
                   <TagItem maxWidth="100%" tag={tag} mode="inline" />
                   <div className={styles.spacer} />
                   <EditTagMenu tag={tag}>
-                    <IconButton type="plain" icon={<MoreHorizontalIcon />} />
+                    <IconButton
+                      className={styles.tagEditIcon}
+                      type="plain"
+                      icon={<MoreHorizontalIcon />}
+                    />
                   </EditTagMenu>
                 </div>
               );
@@ -319,7 +323,7 @@ export const TagsEditor = ({
               </div>
             )}
           </Scrollable.Viewport>
-          <Scrollable.Scrollbar />
+          <Scrollable.Scrollbar style={{ transform: 'translateX(6px)' }} />
         </Scrollable.Root>
       </div>
     </div>

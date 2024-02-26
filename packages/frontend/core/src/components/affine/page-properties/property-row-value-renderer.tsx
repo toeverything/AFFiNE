@@ -11,7 +11,13 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
 import { Page, useLiveData, useService, Workspace } from '@toeverything/infra';
 import { noop } from 'lodash-es';
-import { type ChangeEventHandler, useCallback, useContext } from 'react';
+import {
+  type ChangeEventHandler,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from 'react';
 
 import { managerContext } from './common';
 import * as styles from './styles.css';
@@ -84,30 +90,85 @@ export const CheckboxValue = ({ property }: PropertyRowValueProps) => {
   );
 };
 
-export const TextValue = ({ property, meta }: PropertyRowValueProps) => {
+export const TextValue = ({ property }: PropertyRowValueProps) => {
   const manager = useContext(managerContext);
+  const [value, setValue] = useState<string>(property.value);
   const handleClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
-    // todo: show edit popup
   }, []);
-  const handleOnChange: ChangeEventHandler<HTMLInputElement> = useCallback(
-    e => {
+  const handleBlur = useCallback(
+    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
       manager.updateCustomProperty(property.id, {
-        value: e.target.value,
+        value: e.target.value.trim(),
       });
     },
     [manager, property.id]
   );
+  const handleOnChange: ChangeEventHandler<HTMLTextAreaElement> = useCallback(
+    e => {
+      setValue(e.target.value);
+    },
+    []
+  );
   const t = useAFFiNEI18N();
-  const isNumber = meta.type === 'number';
+  useEffect(() => {
+    setValue(property.value);
+  }, [property.value]);
+
+  return (
+    <div onClick={handleClick} className={styles.propertyRowValueTextCell}>
+      <textarea
+        className={styles.propertyRowValueTextarea}
+        value={value || ''}
+        onChange={handleOnChange}
+        onClick={handleClick}
+        onBlur={handleBlur}
+        data-empty={!value}
+        placeholder={t[
+          'com.affine.page-properties.property-value-placeholder'
+        ]()}
+      />
+      <div className={styles.propertyRowValueTextareaInvisible}>
+        {value}
+        {value?.endsWith('\n') || value === '' ? <br /> : null}
+      </div>
+    </div>
+  );
+};
+
+export const NumberValue = ({ property }: PropertyRowValueProps) => {
+  const manager = useContext(managerContext);
+  const [value, setValue] = useState(property.value);
+  const handleClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+  }, []);
+  const handleBlur = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      manager.updateCustomProperty(property.id, {
+        value: e.target.value.trim(),
+      });
+    },
+    [manager, property.id]
+  );
+  const handleOnChange: ChangeEventHandler<HTMLInputElement> = useCallback(
+    e => {
+      setValue(e.target.value);
+    },
+    []
+  );
+  const t = useAFFiNEI18N();
+  useEffect(() => {
+    setValue(property.value);
+  }, [property.value]);
   return (
     <input
-      type={isNumber ? 'number' : 'text'}
-      value={property.value || ''}
+      className={styles.propertyRowValueNumberCell}
+      type={'number'}
+      value={value || ''}
       onChange={handleOnChange}
       onClick={handleClick}
-      className={styles.propertyRowValueTextCell}
-      data-empty={!property.value}
+      onBlur={handleBlur}
+      data-empty={!value}
       placeholder={t['com.affine.page-properties.property-value-placeholder']()}
     />
   );
@@ -152,7 +213,7 @@ export const propertyValueRenderers: Record<
   date: DateValue,
   checkbox: CheckboxValue,
   text: TextValue,
-  number: TextValue,
+  number: NumberValue,
   // todo: fix following
   tags: TagsValue,
   progress: TextValue,

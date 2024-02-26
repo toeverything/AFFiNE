@@ -7,6 +7,7 @@ export const root = style({
   display: 'flex',
   width: '100%',
   justifyContent: 'center',
+  fontFamily: cssVar('fontFamily'),
   vars: {
     [propertyNameCellWidth]: '160px',
   },
@@ -40,6 +41,7 @@ export const tableHeaderInfoRow = style({
   color: cssVar('textSecondaryColor'),
   fontSize: cssVar('fontSm'),
   fontWeight: 500,
+  minHeight: 34,
 });
 
 export const tableHeaderSecondaryRow = style({
@@ -87,7 +89,7 @@ export const tableHeaderTimestamp = style({
 });
 
 export const tableHeaderDivider = style({
-  height: '1px',
+  height: '0.5px',
   width: '100%',
   margin: '8px 0',
   backgroundColor: cssVar('dividerColor'),
@@ -118,7 +120,6 @@ export const addPropertyButton = style({
     color: cssVar('textPrimaryColor'),
     backgroundColor: cssVar('hoverColor'),
   },
-  marginTop: '8px',
 });
 
 export const collapsedIcon = style({
@@ -233,6 +234,7 @@ export const propertyRowNameCell = style([
   propertyRowCell,
   {
     padding: 6,
+    flexShrink: 0,
     color: cssVar('textSecondaryColor'),
     width: propertyNameCellWidth,
     gap: 6,
@@ -298,10 +300,46 @@ export const propertyRowValueCell = style([
 export const propertyRowValueTextCell = style([
   propertyRowValueCell,
   {
-    ':focus': {
+    padding: 0,
+    position: 'relative',
+    ':focus-within': {
       border: `1px solid ${cssVar('blue700')}`,
       boxShadow: cssVar('activeShadow'),
     },
+  },
+]);
+
+export const propertyRowValueTextarea = style([
+  propertyRowValueCell,
+  {
+    border: 'none',
+    padding: '6px 8px',
+    height: '100%',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    overflow: 'hidden',
+  },
+]);
+
+export const propertyRowValueTextareaInvisible = style([
+  propertyRowValueCell,
+  {
+    border: 'none',
+    padding: '6px 8px',
+    visibility: 'hidden',
+    whiteSpace: 'break-spaces',
+    wordBreak: 'break-all',
+    overflow: 'hidden',
+  },
+]);
+
+export const propertyRowValueNumberCell = style([
+  propertyRowValueTextCell,
+  {
+    padding: '6px 8px',
   },
 ]);
 
@@ -429,7 +467,7 @@ export const propertyRowTypeItem = style({
 
 export const propertyTypeName = style({
   color: cssVar('textSecondaryColor'),
-  fontSize: cssVar('fontXs'),
+  fontSize: cssVar('fontSm'),
   display: 'flex',
   alignItems: 'center',
   gap: 4,

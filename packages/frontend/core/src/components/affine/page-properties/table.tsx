@@ -44,7 +44,7 @@ import { SortableContext, useSortable } from '@dnd-kit/sortable';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import clsx from 'clsx';
 import { use } from 'foxact/use';
-import { atom, useAtom, useAtomValue, useSetAtom } from 'jotai';
+import { atom, useAtomValue, useSetAtom } from 'jotai';
 import type React from 'react';
 import {
   type CSSProperties,
@@ -60,7 +60,7 @@ import {
 } from 'react';
 
 import { AffinePageReference } from '../reference-link';
-import { managerContext, pageInfoCollapsedAtom } from './common';
+import { managerContext } from './common';
 import { ConfirmDeletePropertyModal } from './confirm-delete-property-modal';
 import {
   getDefaultIconName,
@@ -583,6 +583,8 @@ export const PagePropertyRowNameMenu = ({
 interface PagePropertiesTableHeaderProps {
   className?: string;
   style?: React.CSSProperties;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
 // backlinks - #no                Updated yyyy-mm-dd
@@ -591,6 +593,8 @@ interface PagePropertiesTableHeaderProps {
 export const PagePropertiesTableHeader = ({
   className,
   style,
+  open,
+  onOpenChange,
 }: PagePropertiesTableHeaderProps) => {
   const manager = useContext(managerContext);
 
@@ -630,10 +634,9 @@ export const PagePropertiesTableHeader = ({
     );
   }, [manager.createDate, manager.updatedDate, t]);
 
-  const [collapsed, setCollapsed] = useAtom(pageInfoCollapsedAtom);
   const handleCollapse = useCallback(() => {
-    setCollapsed(prev => !prev);
-  }, [setCollapsed]);
+    onOpenChange(!open);
+  }, [onOpenChange, open]);
 
   const properties = manager.getOrderedCustomProperties();
 
@@ -652,7 +655,7 @@ export const PagePropertiesTableHeader = ({
       </div>
       <Divider />
       <div className={styles.tableHeaderSecondaryRow}>
-        <div className={clsx(collapsed ? styles.pageInfoDimmed : null)}>
+        <div className={clsx(!open ? styles.pageInfoDimmed : null)}>
           {t['com.affine.page-properties.page-info']()}
         </div>
         {properties.length === 0 || manager.readonly ? null : (
@@ -668,10 +671,11 @@ export const PagePropertiesTableHeader = ({
         <Collapsible.Trigger asChild role="button" onClick={handleCollapse}>
           <IconButton
             type="plain"
+            data-testid="page-info-collapse"
             icon={
               <ToggleExpandIcon
                 className={styles.collapsedIcon}
-                data-collapsed={collapsed !== false}
+                data-collapsed={!open}
               />
             }
           />
@@ -782,24 +786,27 @@ export const PagePropertiesTableBody = ({
       style={style}
     >
       <PageTagsRow />
-      <div className={styles.tableBodySortable}>
-        <SortableProperties>
-          {properties =>
-            properties
-              .filter(
-                property =>
-                  manager.isPropertyRequired(property.id) ||
-                  (property.visibility !== 'hide' &&
-                    !(
-                      property.visibility === 'hide-if-empty' && !property.value
-                    ))
-              )
-              .map(property => (
-                <PagePropertyRow key={property.id} property={property} />
-              ))
-          }
-        </SortableProperties>
-      </div>
+      <SortableProperties>
+        {properties =>
+          properties.length ? (
+            <div className={styles.tableBodySortable}>
+              {properties
+                .filter(
+                  property =>
+                    manager.isPropertyRequired(property.id) ||
+                    (property.visibility !== 'hide' &&
+                      !(
+                        property.visibility === 'hide-if-empty' &&
+                        !property.value
+                      ))
+                )
+                .map(property => (
+                  <PagePropertyRow key={property.id} property={property} />
+                ))}
+            </div>
+          ) : null
+        }
+      </SortableProperties>
       {manager.readonly ? null : <PagePropertiesAddProperty />}
       <Divider />
     </Collapsible.Content>
@@ -1004,12 +1011,16 @@ export const PagePropertiesAddProperty = () => {
 
 const PagePropertiesTableInner = () => {
   const manager = useContext(managerContext);
-  const collapsed = useAtomValue(pageInfoCollapsedAtom);
+  const [expanded, setExpanded] = useState(false);
   use(manager.workspace.blockSuiteWorkspace.doc.whenSynced);
   return (
     <div className={styles.root}>
-      <Collapsible.Root open={!collapsed} className={styles.rootCentered}>
-        <PagePropertiesTableHeader />
+      <Collapsible.Root
+        open={expanded}
+        onOpenChange={setExpanded}
+        className={styles.rootCentered}
+      >
+        <PagePropertiesTableHeader open={expanded} onOpenChange={setExpanded} />
         <PagePropertiesTableBody />
       </Collapsible.Root>
     </div>

@@ -6,6 +6,19 @@ export const getPropertyValueLocator = (page: Page, property: string) => {
   );
 };
 
+export const ensurePagePropertiesVisible = async (page: Page) => {
+  if (
+    await page
+      .getByRole('button', {
+        name: 'Add property',
+      })
+      .isVisible()
+  ) {
+    return;
+  }
+  await page.getByTestId('page-info-collapse').click();
+};
+
 export const clickPropertyValue = async (page: Page, property: string) => {
   await getPropertyValueLocator(page, property).click();
 };
