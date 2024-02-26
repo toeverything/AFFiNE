@@ -443,8 +443,7 @@
   "com.affine.auth.sign.auth.code.message": "如果您没有收到电子邮件，请检查您的垃圾邮件文件夹。",
   "com.affine.auth.sign.auth.code.message.password": "或者使用<1>密码登录</1>。",
   "com.affine.auth.sign.auth.code.on.resend.hint": "再次发送验证码",
-  "com.affine.auth.sign.auth.code.sent-tips": "重发验证码",
-  "com.affine.auth.sign.auth.code.send-email.sign-in": "邮件登录",
+  "com.affine.auth.sign.auth.code.resend.hint": "重发验证码",
   "com.affine.auth.sign.condition": "条款与条件",
   "com.affine.auth.sign.email.continue": "以电子邮件继续",
   "com.affine.auth.sign.email.error": "无效的电子邮件",
@@ -457,8 +456,6 @@
   "com.affine.auth.sign.no.access.wait": "请期待正式发行",
   "com.affine.auth.sign.policy": "隐私政策",
   "com.affine.auth.sign.sent.email.message.end": "您可以点击链接自动创建账户。",
-  "com.affine.auth.sign.sent.email.message.sign-in.end": "您可以点击链接自动登录。",
-  "com.affine.auth.sign.sent.email.message.sent-tips": "一封带有 magic link 的邮件已发送至 <a>{{email}}</a>。",
   "com.affine.auth.sign.up": "注册",
   "com.affine.auth.sign.up.sent.email.subtitle": "创建您的账号",
   "com.affine.auth.sign.up.success.subtitle": "AFFiNE 客户端将自动打开或重定向到网页端，如果您遇到任何问题，可以点击下方按钮手动打开 AFFiNE。",
@@ -595,7 +592,6 @@
   "com.affine.filter": "筛选",
   "com.affine.filter.after": "晚于",
   "com.affine.filter.before": "早于",
-  "com.affine.filter.last": "最近",
   "com.affine.filter.contains all": "包含以下所有",
   "com.affine.filter.contains one of": "包含以下之一",
   "com.affine.filter.does not contains all": "不包含以下所有",
@@ -975,8 +971,5 @@
   "system": "跟随系统",
   "upgradeBrowser": "请升级至最新版Chrome浏览器以获得最佳体验。",
   "will be moved to Trash": "{{title}} 将被移到垃圾箱",
-  "will delete member": "将删除成员",
-  "com.affine.calendar-date-picker.week-days": "日,一,二,三,四,五,六",
-  "com.affine.calendar-date-picker.today": "今天",
-  "com.affine.calendar-date-picker.month-names": "一月,二月,三月,四月,五月,六月,七月,八月,九月,十月,十一月,十二月"
+  "will delete member": "将删除成员"
 }
