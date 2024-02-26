@@ -8,5 +8,8 @@ corepack prepare yarn@stable --activate
 # install dependencies
 yarn install
 
+# Build Server Dependencies
+yarn workspace @affine/storage build
+
 # Create database
 yarn workspace @affine/server prisma db push
