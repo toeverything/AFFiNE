@@ -16,8 +16,6 @@
 
 <br/>
 
-
-
 <br/>
 <a href="https://www.producthunt.com/posts/affine-3?utm_source=badge-featured&utm_medium=badge&utm_souce=badge-affine&#0045;3" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=440671&theme=light" alt="AFFiNE - One&#0032;app&#0032;for&#0032;all&#0032;&#0045;&#0032;Where&#0032;Notion&#0032;meets&#0032;Miro | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>
 <br/>
@@ -37,10 +35,8 @@
 [![TypeScript-version-icon]](https://www.typescriptlang.org/)
 [![Rust-version-icon]](https://www.rust-lang.org/)
 
-  
 </div>
 
- 
 <br />
 <div align="center">
 <em>Docs, canvas and tables are hyper-merged with AFFiNE - just like the word affine (əˈfʌɪn | a-fine).</em>
@@ -58,10 +54,11 @@ Star us, and you will receive all releases notifications from GitHub without any
 <img src="https://user-images.githubusercontent.com/79301703/230891830-0110681e-8c7e-483b-b6d9-9e42b291b9ef.gif" style="width: 100%"/>
 
 ## What is AFFiNE
-AFFiNE is an open-source, all-in-one workspace and an operating system for all the building blocks that assemble your knowledge base and much more -- wiki, knowledge management, presentation and digital assets. It's a better alternative to Notion and Miro. 
 
+AFFiNE is an open-source, all-in-one workspace and an operating system for all the building blocks that assemble your knowledge base and much more -- wiki, knowledge management, presentation and digital assets. It's a better alternative to Notion and Miro.
 
 ## Features
+
 **A true canvas for blocks in any form. Docs and whiteboard are now fully merged.**
 
 - Many editor apps claim to be a canvas for productivity, but AFFiNE is one of the very few which allows you to put any building block on an edgeless canvas -- rich text, sticky notes, any embedded web pages, multi-view databases, linked pages, shapes and even slides. We have it all.
@@ -74,11 +71,12 @@ AFFiNE is an open-source, all-in-one workspace and an operating system for all t
 
 - We love the idea of local-first that you always own your data on your disk, in spite of the cloud. Furthermore, AFFiNE supports real-time sync and collaborations on web and cross-platform clients.
 
-**Self-host & Shape your own AFFiNE**  
+**Self-host & Shape your own AFFiNE**
 
 - You have the freedom to manage, self-host, fork and build your own AFFiNE. Plugin community and third-party blocks is coming soon. More tractions on [Blocksuite](block-suite.com). Check there to learn how to [self-host AFFiNE](https://docs.affine.pro/docs/self-host-affine-).
 
 ## Acknowledgement
+
 “We shape our tools and thereafter our tools shape us”. A lot of pioneers have inspired us along the way, e.g.:
 
 - Quip & Notion with their great concept of “everything is a block”
@@ -90,8 +88,6 @@ AFFiNE is an open-source, all-in-one workspace and an operating system for all t
 There is a large overlap of their atomic “building blocks” between these apps. They are not open source, nor do they have a plugin system like Vscode for contributors to customize. We want to have something that contains all the features we love and also goes one step even further.
 
 Thanks for checking us out, we appreciate your interest and sincerely hope that AFFiNE resonates with you! 🎵 Checking https://affine.pro/ for more details ions.
-
-
 
 ## Contributing
 
@@ -182,7 +178,6 @@ Thanks to [Chromatic](https://www.chromatic.com/) for providing the visual testi
 ## License
 
 See [LICENSE] for details.
-
 
 [all-contributors-badge]: https://img.shields.io/github/contributors/toeverything/AFFiNE
 [license]: ./LICENSE
