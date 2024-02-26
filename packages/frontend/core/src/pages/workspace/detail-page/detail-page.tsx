@@ -95,7 +95,6 @@ const DetailPageLayout = ({
       </div>
       {sidebar ? (
         <ResizePanel
-          enableAnimation={false}
           resizeHandlePos="left"
           resizeHandleOffset={clientBorder ? 4 : 0}
           width={width}
