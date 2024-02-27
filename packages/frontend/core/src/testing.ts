@@ -7,7 +7,6 @@ import {
   WorkspaceManager,
 } from '@toeverything/infra';
 
-import { CurrentPageService } from './modules/page';
 import { CurrentWorkspaceService } from './modules/workspace';
 import { configureWebServices } from './web';
 
@@ -40,7 +39,6 @@ export async function configureTestingEnvironment() {
   const { page } = workspace.services.get(PageManager).open('page0');
 
   rootServices.get(CurrentWorkspaceService).openWorkspace(workspace);
-  workspace.services.get(CurrentPageService).openPage(page);
 
   return { services: rootServices, workspace, page };
 }

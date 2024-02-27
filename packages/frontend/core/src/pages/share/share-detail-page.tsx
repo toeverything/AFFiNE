@@ -10,24 +10,24 @@ import {
   StaticBlobStorage,
 } from '@affine/workspace-impl';
 import { Logo1Icon } from '@blocksuite/icons';
+import type { Page } from '@toeverything/infra';
 import {
   EmptyBlobStorage,
   LocalBlobStorage,
   LocalSyncStorage,
-  Page,
   PageManager,
   type PageMode,
   ReadonlyMappingSyncStorage,
   RemoteBlobStorage,
+  ServiceProviderContext,
   useLiveData,
   useService,
-  useServiceOptional,
   WorkspaceIdContext,
   WorkspaceManager,
   WorkspaceScope,
 } from '@toeverything/infra';
 import { noop } from 'foxact/noop';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import type { LoaderFunction } from 'react-router-dom';
 import {
   isRouteErrorResponse,
@@ -39,7 +39,6 @@ import {
 import { AppContainer } from '../../components/affine/app-container';
 import { PageDetailEditor } from '../../components/page-detail-editor';
 import { SharePageNotFoundError } from '../../components/share-page-not-found-error';
-import { CurrentPageService } from '../../modules/page';
 import { CurrentWorkspaceService } from '../../modules/workspace';
 import * as styles from './share-detail-page.css';
 import { ShareFooter } from './share-footer';
@@ -131,6 +130,7 @@ export const Component = () => {
 
   const currentWorkspace = useService(CurrentWorkspaceService);
   const t = useAFFiNEI18N();
+  const [page, setPage] = useState<Page | null>(null);
 
   useEffect(() => {
     // create a workspace for share page
@@ -167,10 +167,8 @@ export const Component = () => {
           true
         );
 
-        const currentPage = workspace.services.get(CurrentPageService);
-
         currentWorkspace.openWorkspace(workspace);
-        currentPage.openPage(page);
+        setPage(page);
       })
       .catch(err => {
         console.error(err);
@@ -184,7 +182,6 @@ export const Component = () => {
     workspaceManager,
   ]);
 
-  const page = useServiceOptional(Page);
   const pageTitle = useLiveData(page?.title);
 
   usePageDocumentTitle(pageTitle);
@@ -195,45 +192,47 @@ export const Component = () => {
   }
 
   return (
-    <AppContainer>
-      <MainContainer>
-        <div className={styles.root}>
-          <div className={styles.mainContainer}>
-            <ShareHeader
-              pageId={page.id}
-              publishMode={publishMode}
-              blockSuiteWorkspace={page.blockSuitePage.workspace}
-            />
-            <Scrollable.Root>
-              <Scrollable.Viewport className={styles.editorContainer}>
-                <PageDetailEditor
-                  isPublic
-                  publishMode={publishMode}
-                  workspace={page.blockSuitePage.workspace}
-                  pageId={page.id}
-                  onLoad={() => noop}
-                />
-                {publishMode === 'page' ? <ShareFooter /> : null}
-              </Scrollable.Viewport>
-              <Scrollable.Scrollbar />
-            </Scrollable.Root>
-            {loginStatus !== 'authenticated' ? (
-              <a
-                href="https://affine.pro"
-                target="_blank"
-                className={styles.link}
-                rel="noreferrer"
-              >
-                <span className={styles.linkText}>
-                  {t['com.affine.share-page.footer.built-with']()}
-                </span>
-                <Logo1Icon fontSize={20} />
-              </a>
-            ) : null}
+    <ServiceProviderContext.Provider value={page.services}>
+      <AppContainer>
+        <MainContainer>
+          <div className={styles.root}>
+            <div className={styles.mainContainer}>
+              <ShareHeader
+                pageId={page.id}
+                publishMode={publishMode}
+                blockSuiteWorkspace={page.blockSuitePage.workspace}
+              />
+              <Scrollable.Root>
+                <Scrollable.Viewport className={styles.editorContainer}>
+                  <PageDetailEditor
+                    isPublic
+                    publishMode={publishMode}
+                    workspace={page.blockSuitePage.workspace}
+                    pageId={page.id}
+                    onLoad={() => noop}
+                  />
+                  {publishMode === 'page' ? <ShareFooter /> : null}
+                </Scrollable.Viewport>
+                <Scrollable.Scrollbar />
+              </Scrollable.Root>
+              {loginStatus !== 'authenticated' ? (
+                <a
+                  href="https://affine.pro"
+                  target="_blank"
+                  className={styles.link}
+                  rel="noreferrer"
+                >
+                  <span className={styles.linkText}>
+                    {t['com.affine.share-page.footer.built-with']()}
+                  </span>
+                  <Logo1Icon fontSize={20} />
+                </a>
+              ) : null}
+            </div>
           </div>
-        </div>
-      </MainContainer>
-    </AppContainer>
+        </MainContainer>
+      </AppContainer>
+    </ServiceProviderContext.Provider>
   );
 };
 

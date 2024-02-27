@@ -321,10 +321,7 @@ function pageMetaToListItemProp(
     ),
     createDate: new Date(item.createDate),
     updatedDate: item.updatedDate ? new Date(item.updatedDate) : undefined,
-    to:
-      props.rowAsLink && !props.selectable
-        ? `/workspace/${props.blockSuiteWorkspace.id}/${item.id}`
-        : undefined,
+    to: props.rowAsLink && !props.selectable ? `/${item.id}` : undefined,
     onClick: props.selectable ? toggleSelection : undefined,
     icon: (
       <UnifiedPageIcon
@@ -372,7 +369,7 @@ function collectionMetaToListItemProp(
     title: item.title,
     to:
       props.rowAsLink && !props.selectable
-        ? `/workspace/${props.blockSuiteWorkspace.id}/collection/${item.id}`
+        ? `/collection/${item.id}`
         : undefined,
     onClick: props.selectable ? toggleSelection : undefined,
     icon: <ViewLayersIcon />,
@@ -407,10 +404,7 @@ function tagMetaToListItemProp(
   const itemProps: TagListItemProps = {
     tagId: item.id,
     title: item.title,
-    to:
-      props.rowAsLink && !props.selectable
-        ? `/workspace/${props.blockSuiteWorkspace.id}/tag/${item.id}`
-        : undefined,
+    to: props.rowAsLink && !props.selectable ? `/tag/${item.id}` : undefined,
     onClick: props.selectable ? toggleSelection : undefined,
     color: item.color,
     pageCount: item.pageCount,

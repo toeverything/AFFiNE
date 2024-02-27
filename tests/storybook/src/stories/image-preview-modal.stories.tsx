@@ -1,9 +1,13 @@
 import { BlockSuiteEditor } from '@affine/core/components/blocksuite/block-suite-editor';
 import { ImagePreviewModal } from '@affine/core/components/image-preview';
-import { CurrentPageService } from '@affine/core/modules/page';
-import type { Page } from '@blocksuite/store';
 import type { Meta } from '@storybook/react';
-import { PageManager, useService, Workspace } from '@toeverything/infra';
+import type { Page } from '@toeverything/infra';
+import {
+  PageManager,
+  ServiceProviderContext,
+  useService,
+  Workspace,
+} from '@toeverything/infra';
 import { initEmptyPage } from '@toeverything/infra';
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -16,7 +20,6 @@ export default {
 export const Default = () => {
   const workspace = useService(Workspace);
   const pageManager = useService(PageManager);
-  const currentPageService = useService(CurrentPageService);
 
   const [page, setPage] = useState<Page | null>(null);
 
@@ -25,7 +28,6 @@ export const Default = () => {
     initEmptyPage(bsPage);
 
     const { page, release } = pageManager.open(bsPage.meta.id);
-    currentPageService.openPage(page);
 
     fetch(new URL('@affine-test/fixtures/large-image.png', import.meta.url))
       .then(res => res.arrayBuffer())
@@ -54,31 +56,35 @@ export const Default = () => {
       .catch(err => {
         console.error('Failed to load large-image.png', err);
       });
-    setPage(bsPage);
+    setPage(page);
 
     return () => {
       release();
-      currentPageService.closePage();
     };
-  }, [currentPageService, pageManager, workspace]);
+  }, [pageManager, workspace]);
 
   if (!page) {
     return null;
   }
 
   return (
-    <div
-      style={{
-        height: '100vh',
-        width: '100vw',
-        overflow: 'auto',
-      }}
-    >
-      <BlockSuiteEditor mode="page" page={page} />
-      {createPortal(
-        <ImagePreviewModal pageId={page.id} workspace={page.workspace} />,
-        document.body
-      )}
-    </div>
+    <ServiceProviderContext.Provider value={page.services}>
+      <div
+        style={{
+          height: '100vh',
+          width: '100vw',
+          overflow: 'auto',
+        }}
+      >
+        <BlockSuiteEditor mode="page" page={page.blockSuitePage} />
+        {createPortal(
+          <ImagePreviewModal
+            pageId={page.id}
+            workspace={page.blockSuitePage.workspace}
+          />,
+          document.body
+        )}
+      </div>
+    </ServiceProviderContext.Provider>
   );
 };

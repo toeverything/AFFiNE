@@ -5,7 +5,11 @@ import {
   WorkspaceListService,
   WorkspaceManager,
 } from '@toeverything/infra';
-import { useService, useServiceOptional } from '@toeverything/infra/di';
+import {
+  ServiceProviderContext,
+  useService,
+  useServiceOptional,
+} from '@toeverything/infra/di';
 import { useLiveData } from '@toeverything/infra/livedata';
 import {
   type ReactElement,
@@ -14,10 +18,11 @@ import {
   useMemo,
   useState,
 } from 'react';
-import { Outlet, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 
 import { AffineErrorBoundary } from '../../components/affine/affine-error-boundary';
 import { WorkspaceLayout } from '../../layouts/workspace-layout';
+import { WorkbenchRoot } from '../../modules/workbench/workbench-root';
 import { CurrentWorkspaceService } from '../../modules/workspace/current-workspace';
 import { performanceRenderLogger } from '../../shared';
 import { PageNotFound } from '../404';
@@ -105,12 +110,14 @@ export const Component = (): ReactElement => {
   }
 
   return (
-    <Suspense fallback={<WorkspaceFallback key="workspaceFallback" />}>
-      <AffineErrorBoundary height="100vh">
-        <WorkspaceLayout>
-          <Outlet />
-        </WorkspaceLayout>
-      </AffineErrorBoundary>
-    </Suspense>
+    <ServiceProviderContext.Provider value={currentWorkspace.services}>
+      <Suspense fallback={<WorkspaceFallback key="workspaceFallback" />}>
+        <AffineErrorBoundary height="100vh">
+          <WorkspaceLayout>
+            <WorkbenchRoot />
+          </WorkspaceLayout>
+        </AffineErrorBoundary>
+      </Suspense>
+    </ServiceProviderContext.Provider>
   );
 };
