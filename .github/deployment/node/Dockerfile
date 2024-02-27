@@ -8,4 +8,4 @@ RUN apt-get update && \
   apt-get install -y --no-install-recommends openssl && \
   rm -rf /var/lib/apt/lists/*
 
-CMD ["node", "--es-module-specifier-resolution=node", "./dist/index.js"]
+CMD ["node", "--import", "./scripts/register.js", "./dist/index.js"]

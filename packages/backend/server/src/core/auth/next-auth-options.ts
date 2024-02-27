@@ -118,9 +118,6 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
       providers: [],
       adapter: prismaAdapter,
       debug: !config.node.prod,
-      session: {
-        strategy: 'database',
-      },
       logger: {
         debug(code, metadata) {
           logger.debug(`${code}: ${JSON.stringify(metadata)}`);
@@ -140,18 +137,6 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
         },
       },
     };
-
-    if (config.mailer && mailer) {
-      nextAuthOptions.providers.push(
-        // @ts-expect-error esm interop issue
-        Email.default({
-          server: config.mailer,
-          from: config.mailer.from,
-          sendVerificationRequest: (params: SendVerificationRequestParams) =>
-            sendVerificationRequest(config, logger, mailer, session, params),
-        })
-      );
-    }
 
     nextAuthOptions.providers.push(
       // @ts-expect-error esm interop issue
@@ -185,6 +170,18 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
       })
     );
 
+    if (config.mailer && mailer) {
+      nextAuthOptions.providers.push(
+        // @ts-expect-error esm interop issue
+        Email.default({
+          server: config.mailer,
+          from: config.mailer.from,
+          sendVerificationRequest: (params: SendVerificationRequestParams) =>
+            sendVerificationRequest(config, logger, mailer, session, params),
+        })
+      );
+    }
+
     if (config.auth.oauthProviders.github) {
       nextAuthOptions.providers.push(
         // @ts-expect-error esm interop issue
@@ -209,6 +206,11 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
           },
         })
       );
+    }
+
+    if (nextAuthOptions.providers.length > 1) {
+      // not only credentials provider
+      nextAuthOptions.session = { strategy: 'database' };
     }
 
     nextAuthOptions.jwt = {
