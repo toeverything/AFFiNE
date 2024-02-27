@@ -9,13 +9,13 @@
   },
   "scripts": {
     "build": "tsc",
-    "start": "node --loader ts-node/esm/transpile-only.mjs --es-module-specifier-resolution=node ./src/index.ts",
+    "start": "node --loader ts-node/esm/transpile-only.mjs ./src/index.ts",
     "dev": "nodemon ./src/index.ts",
     "test": "ava --concurrency 1 --serial",
     "test:coverage": "c8 ava --concurrency 1 --serial",
     "postinstall": "prisma generate",
-    "data-migration": "node --loader ts-node/esm/transpile-only.mjs --es-module-specifier-resolution=node ./src/data/index.ts",
-    "predeploy": "yarn prisma migrate deploy && node --es-module-specifier-resolution=node ./dist/data/index.js run"
+    "data-migration": "node --loader ts-node/esm/transpile-only.mjs ./src/data/index.ts",
+    "predeploy": "yarn prisma migrate deploy && node --import ./scripts/register.js ./dist/data/index.js run"
   },
   "dependencies": {
     "@apollo/server": "^4.10.0",
@@ -86,6 +86,8 @@
     "semver": "^7.6.0",
     "socket.io": "^4.7.4",
     "stripe": "^14.18.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3",
     "ws": "^8.16.0",
     "yjs": "^13.6.12",
     "zod": "^3.22.4"
@@ -112,9 +114,7 @@
     "c8": "^9.1.0",
     "nodemon": "^3.1.0",
     "sinon": "^17.0.1",
-    "supertest": "^6.3.4",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.3.3"
+    "supertest": "^6.3.4"
   },
   "ava": {
     "timeout": "1m",
