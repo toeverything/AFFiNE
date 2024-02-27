@@ -7507,6 +7507,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@napi-rs/macos-alias-darwin-universal@npm:0.0.3":
+  version: 0.0.3
+  resolution: "@napi-rs/macos-alias-darwin-universal@npm:0.0.3"
+  conditions: os=darwin
+  languageName: node
+  linkType: hard
+
 "@napi-rs/simple-git-android-arm-eabi@npm:0.1.16":
   version: 0.1.16
   resolution: "@napi-rs/simple-git-android-arm-eabi@npm:0.1.16"
@@ -25994,9 +26001,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"macos-alias@npm:macos-alias-building@latest":
-  version: 0.2.14
-  resolution: "macos-alias-building@npm:0.2.14"
+"macos-alias@npm:@napi-rs/macos-alias@latest":
+  version: 0.0.3
+  resolution: "@napi-rs/macos-alias@npm:0.0.3"
+  dependencies:
+    "@napi-rs/macos-alias-darwin-universal": "npm:0.0.3"
+  dependenciesMeta:
+    "@napi-rs/macos-alias-darwin-universal":
+      optional: true
   conditions: os=darwin
   languageName: node
   linkType: hard
