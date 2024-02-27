@@ -1,5 +1,5 @@
 import { cssVar } from '@toeverything/theme';
-import { keyframes, style } from '@vanilla-extract/css';
+import { createVar, keyframes, style } from '@vanilla-extract/css';
 const contentShow = keyframes({
   from: {
     opacity: 0,
@@ -35,6 +35,9 @@ export const modalContentWrapper = style({
   zIndex: cssVar('zIndexModal'),
   padding: '13vh 16px 16px',
 });
+
+export const animationTimeout = createVar();
+
 export const modalContent = style({
   width: 640,
   // height: 530,
@@ -51,11 +54,11 @@ export const modalContent = style({
   willChange: 'transform, opacity',
   selectors: {
     '&[data-state=entered], &[data-state=entering]': {
-      animation: `${contentShow} 120ms cubic-bezier(0.42, 0, 0.58, 1)`,
+      animation: `${contentShow} ${animationTimeout} cubic-bezier(0.42, 0, 0.58, 1)`,
       animationFillMode: 'forwards',
     },
     '&[data-state=exited], &[data-state=exiting]': {
-      animation: `${contentHide} 120ms cubic-bezier(0.42, 0, 0.58, 1)`,
+      animation: `${contentHide} ${animationTimeout} cubic-bezier(0.42, 0, 0.58, 1)`,
       animationFillMode: 'forwards',
     },
   },

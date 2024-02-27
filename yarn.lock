@@ -269,6 +269,7 @@ __metadata:
     react-is: "npm:^18.2.0"
     react-paginate: "npm:^8.2.0"
     react-router-dom: "npm:^6.22.1"
+    react-transition-state: "npm:^2.1.1"
     react-virtuoso: "npm:~4.6.3"
     rxjs: "npm:^7.8.1"
     storybook: "npm:^7.6.17"
@@ -381,6 +382,7 @@ __metadata:
     react-error-boundary: "npm:^4.0.12"
     react-is: "npm:18.2.0"
     react-router-dom: "npm:^6.22.1"
+    react-transition-state: "npm:^2.1.1"
     react-virtuoso: "npm:~4.6.3"
     rxjs: "npm:^7.8.1"
     ses: "npm:^1.3.0"
@@ -30816,6 +30818,16 @@ __metadata:
   peerDependencies:
     react: ^16.8.0 || ^17.0.0 || ^18.0.0
   checksum: 10/c5fbcf02a65255f4fd31b280c091947ac5b1d471974ecde50181bae3665b6ff4f5cfbdbc3855affe9dcc6807f0e248f974c32486fe758fb97d2b21267f5c74b2
+  languageName: node
+  linkType: hard
+
+"react-transition-state@npm:^2.1.1":
+  version: 2.1.1
+  resolution: "react-transition-state@npm:2.1.1"
+  peerDependencies:
+    react: ">=16.8.0"
+    react-dom: ">=16.8.0"
+  checksum: 10/992f6a44070c74bdcbeae4f6a2a5dd2429ab031e74a942822f9f2bd40b938e0efcdfbc0736f3f1a1003399191de9e5659397e99b4e901600cd03cc639579da54
   languageName: node
   linkType: hard
 

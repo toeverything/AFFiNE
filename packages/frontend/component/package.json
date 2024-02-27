@@ -65,6 +65,7 @@
     "react-is": "^18.2.0",
     "react-paginate": "^8.2.0",
     "react-router-dom": "^6.22.1",
+    "react-transition-state": "^2.1.1",
     "react-virtuoso": "~4.6.3",
     "rxjs": "^7.8.1",
     "swr": "^2.2.5",

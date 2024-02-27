@@ -5,6 +5,7 @@ export const resizeHandleOffsetVar = createVar('resize-handle-offset');
 export const resizeHandleVerticalPadding = createVar(
   'resize-handle-vertical-padding'
 );
+export const animationTimeout = createVar();
 export const root = style({
   vars: {
     [panelWidthVar]: '256px',
@@ -30,13 +31,14 @@ export const root = style({
       marginRight: `calc(${panelWidthVar} * -1)`,
     },
     '&[data-enable-animation="true"]': {
-      transition: 'margin-left .3s .05s, margin-right .3s .05s, width .3s .05s',
+      transition: `margin-left ${animationTimeout} .05s, margin-right ${animationTimeout} .05s, width ${animationTimeout} .05s`,
     },
     '&[data-is-floating="false"][data-transparent=true]': {
       backgroundColor: 'transparent',
     },
-    '&[data-enable-animation="false"][data-open="false"]': {
-      display: 'none',
+    '&[data-transition-state="exited"]': {
+      // avoid focus on hidden panel
+      visibility: 'hidden',
     },
   },
 });
