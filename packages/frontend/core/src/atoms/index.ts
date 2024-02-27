@@ -48,9 +48,6 @@ export const recentPageIdsBaseAtom = atomWithStorage<string[]>(
   []
 );
 
-export type PageModeOption = 'all' | 'page' | 'edgeless';
-export const allPageModeSelectAtom = atom<PageModeOption>('all');
-
 export type AllPageFilterOption = 'docs' | 'collections' | 'tags';
 export const allPageFilterSelectAtom = atom<AllPageFilterOption>('docs');
 

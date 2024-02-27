@@ -18,19 +18,18 @@ import { CollectionOperationCell } from '../operation-cell';
 import { CollectionListItemRenderer } from '../page-group';
 import { ListTableHeader } from '../page-header';
 import type { CollectionMeta, ItemListHandle, ListItem } from '../types';
-import { useCollectionManager } from '../use-collection-manager';
 import type { AllPageListConfig } from '../view';
 import { VirtualizedList } from '../virtualized-list';
 import { CollectionListHeader } from './collection-list-header';
 
 const useCollectionOperationsRenderer = ({
   info,
-  setting,
+  service,
   config,
 }: {
   info: DeleteCollectionInfo;
   config: AllPageListConfig;
-  setting: ReturnType<typeof useCollectionManager>;
+  service: CollectionService;
 }) => {
   const pageOperationsRenderer = useCallback(
     (collection: Collection) => {
@@ -38,12 +37,12 @@ const useCollectionOperationsRenderer = ({
         <CollectionOperationCell
           info={info}
           collection={collection}
-          setting={setting}
+          service={service}
           config={config}
         />
       );
     },
-    [config, info, setting]
+    [config, info, service]
   );
 
   return pageOperationsRenderer;
@@ -69,13 +68,13 @@ export const VirtualizedCollectionList = ({
   const [selectedCollectionIds, setSelectedCollectionIds] = useState<string[]>(
     []
   );
-  const setting = useCollectionManager(useService(CollectionService));
+  const collectionService = useService(CollectionService);
   const currentWorkspace = useService(Workspace);
   const info = useDeleteCollectionInfo();
 
   const collectionOperations = useCollectionOperationsRenderer({
     info,
-    setting,
+    service: collectionService,
     config,
   });
 
@@ -105,8 +104,8 @@ export const VirtualizedCollectionList = ({
   }, []);
 
   const handleDelete = useCallback(() => {
-    return setting.deleteCollection(info, ...selectedCollectionIds);
-  }, [setting, info, selectedCollectionIds]);
+    return collectionService.deleteCollection(info, ...selectedCollectionIds);
+  }, [collectionService, info, selectedCollectionIds]);
 
   return (
     <>

@@ -8,36 +8,31 @@ import { filterContainerStyle } from '../../../components/filter-container.css';
 import {
   FilterList,
   SaveAsCollectionButton,
-  useCollectionManager,
 } from '../../../components/page-list';
 import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
 
-export const FilterContainer = () => {
+export const FilterContainer = ({
+  filters,
+  onChangeFilters,
+}: {
+  filters: Filter[];
+  onChangeFilters: (filters: Filter[]) => void;
+}) => {
   const currentWorkspace = useService(Workspace);
   const navigateHelper = useNavigateHelper();
-  const setting = useCollectionManager(useService(CollectionService));
+  const collectionService = useService(CollectionService);
   const saveToCollection = useCallback(
     (collection: Collection) => {
-      setting.createCollection({
+      collectionService.addCollection({
         ...collection,
-        filterList: setting.currentCollection.filterList,
+        filterList: filters,
       });
       navigateHelper.jumpToCollection(currentWorkspace.id, collection.id);
     },
-    [setting, navigateHelper, currentWorkspace.id]
+    [collectionService, filters, navigateHelper, currentWorkspace.id]
   );
 
-  const onFilterChange = useCallback(
-    (filterList: Filter[]) => {
-      setting.updateCollection({
-        ...setting.currentCollection,
-        filterList,
-      });
-    },
-    [setting]
-  );
-
-  if (!setting.isDefault || !setting.currentCollection.filterList.length) {
+  if (!filters.length) {
     return null;
   }
 
@@ -46,12 +41,12 @@ export const FilterContainer = () => {
       <div style={{ flex: 1 }}>
         <FilterList
           propertiesMeta={currentWorkspace.blockSuiteWorkspace.meta.properties}
-          value={setting.currentCollection.filterList}
-          onChange={onFilterChange}
+          value={filters}
+          onChange={onChangeFilters}
         />
       </div>
       <div>
-        {setting.currentCollection.filterList.length > 0 ? (
+        {filters.length > 0 ? (
           <SaveAsCollectionButton onConfirm={saveToCollection} />
         ) : null}
       </div>

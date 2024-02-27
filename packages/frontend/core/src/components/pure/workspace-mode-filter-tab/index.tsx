@@ -4,18 +4,19 @@ import { allPageFilterSelectAtom } from '@affine/core/atoms';
 import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
 import { WorkspaceSubPath } from '@affine/core/shared';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useService } from '@toeverything/infra';
+import { Workspace } from '@toeverything/infra';
 import { useAtom } from 'jotai';
 import { useCallback, useEffect, useState } from 'react';
 
 import * as styles from './index.css';
 
 export const WorkspaceModeFilterTab = ({
-  workspaceId,
   activeFilter,
 }: {
-  workspaceId: string;
   activeFilter: AllPageFilterOption;
 }) => {
+  const workspace = useService(Workspace);
   const t = useAFFiNEI18N();
   const [value, setValue] = useState(activeFilter);
   const [filterMode, setFilterMode] = useAtom(allPageFilterSelectAtom);
@@ -24,17 +25,17 @@ export const WorkspaceModeFilterTab = ({
     (value: AllPageFilterOption) => {
       switch (value) {
         case 'collections':
-          jumpToCollections(workspaceId);
+          jumpToCollections(workspace.id);
           break;
         case 'tags':
-          jumpToTags(workspaceId);
+          jumpToTags(workspace.id);
           break;
         case 'docs':
-          jumpToSubPath(workspaceId, WorkspaceSubPath.ALL);
+          jumpToSubPath(workspace.id, WorkspaceSubPath.ALL);
           break;
       }
     },
-    [jumpToCollections, jumpToSubPath, jumpToTags, workspaceId]
+    [jumpToCollections, jumpToSubPath, jumpToTags, workspace]
   );
 
   useEffect(() => {

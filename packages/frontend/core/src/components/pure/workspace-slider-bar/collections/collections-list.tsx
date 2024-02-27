@@ -6,7 +6,6 @@ import {
   CollectionOperations,
   filterPage,
   stopPropagation,
-  useCollectionManager,
 } from '@affine/core/components/page-list';
 import { CollectionService } from '@affine/core/modules/collection';
 import type { Collection, DeleteCollectionInfo } from '@affine/env/filter';
@@ -40,20 +39,20 @@ const CollectionRenderer = ({
 }) => {
   const [collapsed, setCollapsed] = useState(true);
   const [open, setOpen] = useState(false);
-  const setting = useCollectionManager(useService(CollectionService));
+  const collectionService = useService(CollectionService);
   const t = useAFFiNEI18N();
   const dragItemId = getDropItemId('collections', collection.id);
 
   const removeFromAllowList = useCallback(
     (id: string) => {
-      setting.updateCollection({
+      collectionService.updateCollection(collection.id, () => ({
         ...collection,
         allowList: collection.allowList?.filter(v => v !== id),
-      });
+      }));
 
       toast(t['com.affine.collection.removePage.success']());
     },
-    [collection, setting, t]
+    [collection, collectionService, t]
   );
 
   const { setNodeRef, isOver } = useDroppable({
@@ -66,7 +65,7 @@ const CollectionRenderer = ({
         } else {
           toast(t['com.affine.collection.addPage.success']());
         }
-        setting.addPage(collection.id, id);
+        collectionService.addPageToCollection(collection.id, id);
       },
     },
   });
@@ -95,13 +94,13 @@ const CollectionRenderer = ({
 
   const onRename = useCallback(
     (name: string) => {
-      setting.updateCollection({
+      collectionService.updateCollection(collection.id, () => ({
         ...collection,
         name,
-      });
+      }));
       toast(t['com.affine.toastMessage.rename']());
     },
-    [collection, setting, t]
+    [collection, collectionService, t]
   );
   const handleOpen = useCallback(() => {
     setOpen(true);
@@ -124,7 +123,6 @@ const CollectionRenderer = ({
             <CollectionOperations
               info={info}
               collection={collection}
-              setting={setting}
               config={config}
               openRenameModal={handleOpen}
             >

@@ -10,10 +10,7 @@ import { useCallback, useMemo } from 'react';
 
 import { CollectionService } from '../../../modules/collection';
 import { createTagFilter } from '../filter/utils';
-import {
-  createEmptyCollection,
-  useCollectionManager,
-} from '../use-collection-manager';
+import { createEmptyCollection } from '../use-collection-manager';
 import { tagColorMap } from '../utils';
 import type { AllPageListConfig } from '../view/edit-collection/edit-collection';
 import {
@@ -23,38 +20,12 @@ import {
 import * as styles from './page-list-header.css';
 import { PageListNewPageButton } from './page-list-new-page-button';
 
-export const PageListHeader = ({ workspaceId }: { workspaceId: string }) => {
+export const PageListHeader = () => {
   const t = useAFFiNEI18N();
-  const setting = useCollectionManager(useService(CollectionService));
-  const { jumpToCollections } = useNavigateHelper();
-
-  const handleJumpToCollections = useCallback(() => {
-    jumpToCollections(workspaceId);
-  }, [jumpToCollections, workspaceId]);
 
   const title = useMemo(() => {
-    if (setting.isDefault) {
-      return t['com.affine.all-pages.header']();
-    }
-    return (
-      <>
-        <div style={{ cursor: 'pointer' }} onClick={handleJumpToCollections}>
-          {t['com.affine.collections.header']()} /
-        </div>
-        <div className={styles.titleIcon}>
-          <ViewLayersIcon />
-        </div>
-        <div className={styles.titleCollectionName}>
-          {setting.currentCollection.name}
-        </div>
-      </>
-    );
-  }, [
-    handleJumpToCollections,
-    setting.currentCollection.name,
-    setting.isDefault,
-    t,
-  ]);
+    return t['com.affine.all-pages.header']();
+  }, [t]);
 
   return (
     <div className={styles.docListHeader}>
@@ -75,22 +46,19 @@ export const CollectionPageListHeader = ({
   workspaceId: string;
 }) => {
   const t = useAFFiNEI18N();
-  const setting = useCollectionManager(useService(CollectionService));
   const { jumpToCollections } = useNavigateHelper();
 
   const handleJumpToCollections = useCallback(() => {
     jumpToCollections(workspaceId);
   }, [jumpToCollections, workspaceId]);
 
-  const { updateCollection } = useCollectionManager(
-    useService(CollectionService)
-  );
+  const collectionService = useService(CollectionService);
   const { node, open } = useEditCollection(config);
 
   const handleAddPage = useAsyncCallback(async () => {
     const ret = await open({ ...collection }, 'page');
-    updateCollection(ret);
-  }, [collection, open, updateCollection]);
+    collectionService.updateCollection(collection.id, () => ret);
+  }, [collection, collectionService, open]);
 
   return (
     <>
@@ -103,9 +71,7 @@ export const CollectionPageListHeader = ({
           <div className={styles.titleIcon}>
             <ViewLayersIcon />
           </div>
-          <div className={styles.titleCollectionName}>
-            {setting.currentCollection.name}
-          </div>
+          <div className={styles.titleCollectionName}>{collection.name}</div>
         </div>
         <Button className={styles.addPageButton} onClick={handleAddPage}>
           {t['com.affine.collection.addPages']()}
@@ -124,7 +90,7 @@ export const TagPageListHeader = ({
 }) => {
   const t = useAFFiNEI18N();
   const { jumpToTags, jumpToCollection } = useNavigateHelper();
-  const setting = useCollectionManager(useService(CollectionService));
+  const collectionService = useService(CollectionService);
   const { open, node } = useEditCollectionName({
     title: t['com.affine.editCollection.saveCollection'](),
     showTips: true,
@@ -136,13 +102,13 @@ export const TagPageListHeader = ({
 
   const saveToCollection = useCallback(
     (collection: Collection) => {
-      setting.createCollection({
+      collectionService.addCollection({
         ...collection,
         filterList: [createTagFilter(tag.id)],
       });
       jumpToCollection(workspaceId, collection.id);
     },
-    [setting, tag.id, jumpToCollection, workspaceId]
+    [collectionService, tag.id, jumpToCollection, workspaceId]
   );
   const handleClick = useCallback(() => {
     open('')

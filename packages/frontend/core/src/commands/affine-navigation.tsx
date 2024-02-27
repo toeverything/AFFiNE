@@ -5,11 +5,7 @@ import type { Workspace } from '@blocksuite/store';
 import { registerAffineCommand } from '@toeverything/infra/command';
 import type { createStore } from 'jotai';
 
-import {
-  openSettingModalAtom,
-  openWorkspaceListModalAtom,
-  type PageModeOption,
-} from '../atoms';
+import { openSettingModalAtom, openWorkspaceListModalAtom } from '../atoms';
 import type { useNavigateHelper } from '../hooks/use-navigate-helper';
 
 export function registerAffineNavigationCommands({
@@ -17,12 +13,10 @@ export function registerAffineNavigationCommands({
   store,
   workspace,
   navigationHelper,
-  setPageListMode,
 }: {
   t: ReturnType<typeof useAFFiNEI18N>;
   store: ReturnType<typeof createStore>;
   navigationHelper: ReturnType<typeof useNavigateHelper>;
-  setPageListMode: React.Dispatch<React.SetStateAction<PageModeOption>>;
   workspace: Workspace;
 }) {
   const unsubs: Array<() => void> = [];
@@ -34,7 +28,6 @@ export function registerAffineNavigationCommands({
       label: t['com.affine.cmdk.affine.navigation.goto-all-pages'](),
       run() {
         navigationHelper.jumpToSubPath(workspace.id, WorkspaceSubPath.ALL);
-        setPageListMode('all');
       },
     })
   );
@@ -47,7 +40,6 @@ export function registerAffineNavigationCommands({
       label: 'Go to Collection List',
       run() {
         navigationHelper.jumpToCollections(workspace.id);
-        setPageListMode('all');
       },
     })
   );
@@ -60,7 +52,6 @@ export function registerAffineNavigationCommands({
       label: 'Go to Tag List',
       run() {
         navigationHelper.jumpToTags(workspace.id);
-        setPageListMode('all');
       },
     })
   );
@@ -101,7 +92,6 @@ export function registerAffineNavigationCommands({
       label: t['com.affine.cmdk.affine.navigation.goto-trash'](),
       run() {
         navigationHelper.jumpToSubPath(workspace.id, WorkspaceSubPath.TRASH);
-        setPageListMode('all');
       },
     })
   );

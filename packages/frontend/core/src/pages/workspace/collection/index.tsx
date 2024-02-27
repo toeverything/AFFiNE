@@ -3,11 +3,11 @@ import {
   SidebarSwitch,
 } from '@affine/component/app-sidebar';
 import { pushNotificationAtom } from '@affine/component/notification-center';
+import { HubIsland } from '@affine/core/components/affine/hub-island';
 import {
   AffineShapeIcon,
-  currentCollectionAtom,
-  useCollectionManager,
   useEditCollection,
+  VirtualizedPageList,
 } from '@affine/core/components/page-list';
 import { WindowsAppControls } from '@affine/core/components/pure/header/windows-app-controls';
 import { useAllPageListConfig } from '@affine/core/hooks/affine/use-all-page-list-config';
@@ -23,30 +23,54 @@ import {
   ViewLayersIcon,
 } from '@blocksuite/icons';
 import { Workspace } from '@toeverything/infra';
-import { getCurrentStore } from '@toeverything/infra/atom';
 import { useService } from '@toeverything/infra/di';
 import { useLiveData } from '@toeverything/infra/livedata';
 import { useAtomValue } from 'jotai';
 import { useSetAtom } from 'jotai';
 import { useCallback, useEffect, useState } from 'react';
-import { type LoaderFunction, redirect, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 
-import { useNavigateHelper } from '../../hooks/use-navigate-helper';
-import { WorkspaceSubPath } from '../../shared';
-import { AllPage } from './all-page/all-page';
+import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
+import { WorkspaceSubPath } from '../../../shared';
+import * as allPageStyles from '../all-page/all-page.css';
 import * as styles from './collection.css';
+import { CollectionDetailHeader } from './header';
 
-export const loader: LoaderFunction = async args => {
-  const rootStore = getCurrentStore();
-  if (!args.params.collectionId) {
-    return redirect('/404');
-  }
-  rootStore.set(currentCollectionAtom, args.params.collectionId);
-  return null;
+export const CollectionDetail = ({
+  collection,
+}: {
+  collection: Collection;
+}) => {
+  const config = useAllPageListConfig();
+  const { node, open } = useEditCollection(useAllPageListConfig());
+  const collectionService = useService(CollectionService);
+  const [hideHeaderCreateNew, setHideHeaderCreateNew] = useState(true);
+
+  const handleEditCollection = useAsyncCallback(async () => {
+    const ret = await open({ ...collection }, 'page');
+    collectionService.updateCollection(ret.id, () => ret);
+  }, [collection, collectionService, open]);
+
+  return (
+    <div className={allPageStyles.root}>
+      <CollectionDetailHeader
+        showCreateNew={!hideHeaderCreateNew}
+        onCreate={handleEditCollection}
+      />
+      <VirtualizedPageList
+        collection={collection}
+        config={config}
+        setHideHeaderCreateNewPage={setHideHeaderCreateNew}
+      />
+      <HubIsland />
+      {node}
+    </div>
+  );
 };
 
 export const Component = function CollectionPage() {
   const collectionService = useService(CollectionService);
+
   const collections = useLiveData(collectionService.collections);
   const navigate = useNavigateHelper();
   const params = useParams();
@@ -87,7 +111,7 @@ export const Component = function CollectionPage() {
   return isEmpty(collection) ? (
     <Placeholder collection={collection} />
   ) : (
-    <AllPage activeFilter="collections" />
+    <CollectionDetail collection={collection} />
   );
 };
 
@@ -95,16 +119,16 @@ const isWindowsDesktop = environment.isDesktop && environment.isWindows;
 
 const Placeholder = ({ collection }: { collection: Collection }) => {
   const workspace = useService(Workspace);
-  const collectionService = useCollectionManager(useService(CollectionService));
+  const collectionService = useService(CollectionService);
   const { node, open } = useEditCollection(useAllPageListConfig());
   const { jumpToCollections } = useNavigateHelper();
   const openPageEdit = useAsyncCallback(async () => {
     const ret = await open({ ...collection }, 'page');
-    collectionService.updateCollection(ret);
+    collectionService.updateCollection(ret.id, () => ret);
   }, [open, collection, collectionService]);
   const openRuleEdit = useAsyncCallback(async () => {
     const ret = await open({ ...collection }, 'rule');
-    collectionService.updateCollection(ret);
+    collectionService.updateCollection(ret.id, () => ret);
   }, [collection, open, collectionService]);
   const [showTips, setShowTips] = useState(false);
   useEffect(() => {

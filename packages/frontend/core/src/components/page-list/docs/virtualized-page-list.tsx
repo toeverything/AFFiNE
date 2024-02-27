@@ -2,7 +2,7 @@ import { toast } from '@affine/component';
 import { useBlockSuiteMetaHelper } from '@affine/core/hooks/affine/use-block-suite-meta-helper';
 import { useTrashModalHelper } from '@affine/core/hooks/affine/use-trash-modal-helper';
 import { useBlockSuitePageMeta } from '@affine/core/hooks/use-block-suite-page-meta';
-import type { Collection } from '@affine/env/filter';
+import type { Collection, Filter } from '@affine/env/filter';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { PageMeta, Tag } from '@blocksuite/store';
@@ -81,15 +81,17 @@ const usePageOperationsRenderer = () => {
 export const VirtualizedPageList = ({
   tag,
   collection,
+  filters,
   config,
   listItem,
   setHideHeaderCreateNewPage,
 }: {
   tag?: Tag;
   collection?: Collection;
+  filters?: Filter[];
   config?: AllPageListConfig;
   listItem?: PageMeta[];
-  setHideHeaderCreateNewPage: (hide: boolean) => void;
+  setHideHeaderCreateNewPage?: (hide: boolean) => void;
 }) => {
   const listRef = useRef<ItemListHandle>(null);
   const [showFloatingToolbar, setShowFloatingToolbar] = useState(false);
@@ -101,11 +103,10 @@ export const VirtualizedPageList = ({
     currentWorkspace.blockSuiteWorkspace
   );
 
-  const filteredPageMetas = useFilteredPageMetas(
-    'all',
-    pageMetas,
-    currentWorkspace
-  );
+  const filteredPageMetas = useFilteredPageMetas(currentWorkspace, pageMetas, {
+    filters,
+    collection,
+  });
   const pageMetasToRender = useMemo(() => {
     if (listItem) {
       return listItem;
@@ -151,7 +152,7 @@ export const VirtualizedPageList = ({
         />
       );
     }
-    return <PageListHeader workspaceId={currentWorkspace.id} />;
+    return <PageListHeader />;
   }, [collection, config, currentWorkspace.id, tag]);
 
   const { setTrashModal } = useTrashModalHelper(

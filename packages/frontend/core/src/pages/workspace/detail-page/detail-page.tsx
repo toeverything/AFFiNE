@@ -2,7 +2,6 @@ import { Scrollable } from '@affine/component';
 import { PageDetailSkeleton } from '@affine/component/page-detail-skeleton';
 import { ResizePanel } from '@affine/component/resize-panel';
 import { useBlockSuitePageMeta } from '@affine/core/hooks/use-block-suite-page-meta';
-import { CollectionService } from '@affine/core/modules/collection';
 import type { PageService } from '@blocksuite/blocks';
 import {
   BookmarkService,
@@ -42,17 +41,13 @@ import { HubIsland } from '../../../components/affine/hub-island';
 import { GlobalPageHistoryModal } from '../../../components/affine/page-history-modal';
 import { ImagePreviewModal } from '../../../components/image-preview';
 import { PageDetailEditor } from '../../../components/page-detail-editor';
-import {
-  createTagFilter,
-  useCollectionManager,
-} from '../../../components/page-list';
 import { TrashPageFooter } from '../../../components/pure/trash-page-footer';
 import { TopTip } from '../../../components/top-tip';
 import { useRegisterBlocksuiteEditorCommands } from '../../../hooks/affine/use-register-blocksuite-editor-commands';
 import { usePageDocumentTitle } from '../../../hooks/use-global-state';
 import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
 import { CurrentPageService } from '../../../modules/page';
-import { performanceRenderLogger, WorkspaceSubPath } from '../../../shared';
+import { performanceRenderLogger } from '../../../shared';
 import { PageNotFound } from '../../404';
 import * as styles from './detail-page.css';
 import { DetailPageHeader, RightSidebarHeader } from './detail-page-header';
@@ -117,7 +112,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
   const page = useService(Page);
   const pageRecordList = useService(PageRecordList);
   const currentPageId = page.id;
-  const { openPage, jumpToSubPath } = useNavigateHelper();
+  const { openPage, jumpToTag } = useNavigateHelper();
   const currentWorkspace = useService(Workspace);
   const blockSuiteWorkspace = currentWorkspace.blockSuiteWorkspace;
 
@@ -127,8 +122,6 @@ const DetailPageImpl = memo(function DetailPageImpl() {
 
   const isInTrash = pageMeta?.trash;
 
-  const collectionService = useService(CollectionService);
-  const { setTemporaryFilter } = useCollectionManager(collectionService);
   const mode = useLiveData(page.mode);
   useRegisterBlocksuiteEditorCommands();
   const title = useLiveData(page.title);
@@ -191,9 +184,8 @@ const DetailPageImpl = memo(function DetailPageImpl() {
       const dispose = editor.slots.pageLinkClicked.on(({ pageId }) => {
         return openPage(blockSuiteWorkspace.id, pageId);
       });
-      const disposeTagClick = editor.slots.tagClicked.on(async ({ tagId }) => {
-        jumpToSubPath(currentWorkspace.id, WorkspaceSubPath.ALL);
-        setTemporaryFilter([createTagFilter(tagId)]);
+      const disposeTagClick = editor.slots.tagClicked.on(({ tagId }) => {
+        jumpToTag(currentWorkspace.id, tagId);
       });
       return () => {
         dispose.dispose();
@@ -201,14 +193,13 @@ const DetailPageImpl = memo(function DetailPageImpl() {
       };
     },
     [
-      page,
-      mode,
-      pageRecordList,
-      openPage,
       blockSuiteWorkspace.id,
-      jumpToSubPath,
       currentWorkspace.id,
-      setTemporaryFilter,
+      jumpToTag,
+      mode,
+      openPage,
+      page,
+      pageRecordList,
     ]
   );
 

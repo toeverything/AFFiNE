@@ -1,7 +1,6 @@
 import { toast } from '@affine/component';
 import { usePageHelper } from '@affine/core/components/blocksuite/block-suite-page-list/utils';
 import {
-  currentCollectionAtom,
   type ListItem,
   ListTableHeader,
   PageListItemRenderer,
@@ -19,11 +18,8 @@ import { assertExists } from '@blocksuite/global/utils';
 import { DeleteIcon } from '@blocksuite/icons';
 import type { PageMeta } from '@blocksuite/store';
 import { Workspace } from '@toeverything/infra';
-import { getCurrentStore } from '@toeverything/infra/atom';
 import { useService } from '@toeverything/infra/di';
 import { useCallback } from 'react';
-import { type LoaderFunction } from 'react-router-dom';
-import { NIL } from 'uuid';
 
 import { EmptyPageList } from './page-list-empty';
 import * as styles from './trash-page.css';
@@ -50,27 +46,15 @@ const TrashHeader = () => {
   );
 };
 
-export const loader: LoaderFunction = async () => {
-  // to fix the bug that the trash page list is not updated when route from collection to trash
-  // but it's not a good solution, the page will jitter when collection and trash are switched between each other.
-  // TODO: fix this bug
-
-  const rootStore = getCurrentStore();
-  rootStore.set(currentCollectionAtom, NIL);
-  return null;
-};
-
 export const TrashPage = () => {
   const currentWorkspace = useService(Workspace);
   const blockSuiteWorkspace = currentWorkspace.blockSuiteWorkspace;
   assertExists(blockSuiteWorkspace);
 
   const pageMetas = useBlockSuitePageMeta(blockSuiteWorkspace);
-  const filteredPageMetas = useFilteredPageMetas(
-    'trash',
-    pageMetas,
-    currentWorkspace
-  );
+  const filteredPageMetas = useFilteredPageMetas(currentWorkspace, pageMetas, {
+    trash: true,
+  });
 
   const { restoreFromTrash, permanentlyDeletePage } =
     useBlockSuiteMetaHelper(blockSuiteWorkspace);

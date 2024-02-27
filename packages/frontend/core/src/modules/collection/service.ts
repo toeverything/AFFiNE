@@ -81,6 +81,15 @@ export class CollectionService {
     }
   }
 
+  addPageToCollection(collectionId: string, pageId: string) {
+    this.updateCollection(collectionId, old => {
+      return {
+        ...old,
+        allowList: [pageId, ...(old.allowList ?? [])],
+      };
+    });
+  }
+
   deleteCollection(info: DeleteCollectionInfo, ...ids: string[]) {
     const collectionsYArray = this.collectionsYArray;
     if (!collectionsYArray) {

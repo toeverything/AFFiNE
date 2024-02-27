@@ -1,77 +1,55 @@
-import { allPageModeSelectAtom } from '@affine/core/atoms';
-import { usePageHelper } from '@affine/core/components/blocksuite/block-suite-page-list/utils';
-import { usePublicPages } from '@affine/core/hooks/affine/use-is-shared-page';
-import { CollectionService } from '@affine/core/modules/collection';
+import type { Collection, Filter } from '@affine/env/filter';
 import type { PageMeta } from '@blocksuite/store';
 import type { Workspace } from '@toeverything/infra';
-import { useService } from '@toeverything/infra/di';
-import { useAtomValue } from 'jotai';
 import { useMemo } from 'react';
 
-import {
-  filterPage,
-  filterPageByRules,
-  useCollectionManager,
-} from './use-collection-manager';
+import { usePublicPages } from '../../hooks/affine/use-is-shared-page';
+import { filterPage, filterPageByRules } from './use-collection-manager';
 
 export const useFilteredPageMetas = (
-  route: 'all' | 'trash',
+  workspace: Workspace,
   pageMetas: PageMeta[],
-  workspace: Workspace
+  options: {
+    trash?: boolean;
+    filters?: Filter[];
+    collection?: Collection;
+  } = {}
 ) => {
-  const { isPreferredEdgeless } = usePageHelper(workspace.blockSuiteWorkspace);
-  const pageMode = useAtomValue(allPageModeSelectAtom);
-  const { currentCollection, isDefault } = useCollectionManager(
-    useService(CollectionService)
-  );
   const { getPublicMode } = usePublicPages(workspace);
 
   const filteredPageMetas = useMemo(
     () =>
-      pageMetas
-        .filter(pageMeta => {
-          if (pageMode === 'all') {
-            return true;
-          }
-          if (pageMode === 'edgeless') {
-            return isPreferredEdgeless(pageMeta.id);
-          }
-          if (pageMode === 'page') {
-            return !isPreferredEdgeless(pageMeta.id);
-          }
-          console.error('unknown filter mode', pageMeta, pageMode);
-          return true;
-        })
-        .filter(pageMeta => {
-          if (
-            (route === 'trash' && !pageMeta.trash) ||
-            (route === 'all' && pageMeta.trash)
-          ) {
+      pageMetas.filter(pageMeta => {
+        if (options.trash) {
+          if (!pageMeta.trash) {
             return false;
           }
-          if (!currentCollection) {
-            return true;
-          }
-          const pageData = {
-            meta: pageMeta,
-            publicMode: getPublicMode(pageMeta.id),
-          };
-          return isDefault
-            ? filterPageByRules(
-                currentCollection.filterList,
-                currentCollection.allowList,
-                pageData
-              )
-            : filterPage(currentCollection, pageData);
-        }),
+        } else if (pageMeta.trash) {
+          return false;
+        }
+        const pageData = {
+          meta: pageMeta,
+          publicMode: getPublicMode(pageMeta.id),
+        };
+        if (
+          options.filters &&
+          !filterPageByRules(options.filters, [], pageData)
+        ) {
+          return false;
+        }
+
+        if (options.collection && !filterPage(options.collection, pageData)) {
+          return false;
+        }
+
+        return true;
+      }),
     [
-      currentCollection,
-      isDefault,
-      isPreferredEdgeless,
-      getPublicMode,
       pageMetas,
-      pageMode,
-      route,
+      options.trash,
+      options.filters,
+      options.collection,
+      getPublicMode,
     ]
   );
 

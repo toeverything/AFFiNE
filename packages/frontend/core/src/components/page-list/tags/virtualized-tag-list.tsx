@@ -15,12 +15,10 @@ import { TagListHeader } from './tag-list-header';
 export const VirtualizedTagList = ({
   tags,
   tagMetas,
-  setHideHeaderCreateNewTag,
   onTagDelete,
 }: {
   tags: Tag[];
   tagMetas: TagMeta[];
-  setHideHeaderCreateNewTag: (hide: boolean) => void;
   onTagDelete: (tagIds: string[]) => void;
 }) => {
   const listRef = useRef<ItemListHandle>(null);
@@ -63,7 +61,6 @@ export const VirtualizedTagList = ({
         draggable={false}
         groupBy={false}
         atTopThreshold={80}
-        atTopStateChange={setHideHeaderCreateNewTag}
         onSelectionActiveChange={setShowFloatingToolbar}
         heading={<TagListHeader />}
         selectedIds={filteredSelectedTagIds}

@@ -38,7 +38,6 @@ import { WorkspaceSubPath } from '../../shared';
 import {
   createEmptyCollection,
   MoveToTrash,
-  useCollectionManager,
   useEditCollectionName,
 } from '../page-list';
 import { CollectionsList } from '../pure/workspace-slider-bar/collections';
@@ -177,7 +176,7 @@ export const RootAppSidebar = ({
   useRegisterBrowserHistoryCommands(router.back, router.forward);
   const userInfo = useDeleteCollectionInfo();
 
-  const setting = useCollectionManager(useService(CollectionService));
+  const collection = useService(CollectionService);
   const { node, open } = useEditCollectionName({
     title: t['com.affine.editCollection.createCollection'](),
     showTips: true,
@@ -186,13 +185,13 @@ export const RootAppSidebar = ({
     open('')
       .then(name => {
         const id = nanoid();
-        setting.createCollection(createEmptyCollection(id, { name }));
+        collection.addCollection(createEmptyCollection(id, { name }));
         navigateHelper.jumpToCollection(blockSuiteWorkspace.id, id);
       })
       .catch(err => {
         console.error(err);
       });
-  }, [blockSuiteWorkspace.id, navigateHelper, open, setting]);
+  }, [blockSuiteWorkspace.id, collection, navigateHelper, open]);
 
   const allPageActive = useMemo(() => {
     if (

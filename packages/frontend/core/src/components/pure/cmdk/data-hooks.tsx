@@ -1,4 +1,3 @@
-import { useCollectionManager } from '@affine/core/components/page-list';
 import {
   useBlockSuitePageMeta,
   usePageMetaHelper,
@@ -322,9 +321,8 @@ export const collectionToCommand = (
 
 export const useCollectionsCommands = () => {
   // todo: considering collections for searching pages
-  const { savedCollections } = useCollectionManager(
-    useService(CollectionService)
-  );
+  const collectionService = useService(CollectionService);
+  const collections = useLiveData(collectionService.collections);
   const query = useAtomValue(cmdkQueryAtom);
   const navigationHelper = useNavigateHelper();
   const t = useAFFiNEI18N();
@@ -340,7 +338,7 @@ export const useCollectionsCommands = () => {
     if (query.trim() === '') {
       return results;
     } else {
-      results = savedCollections.map(collection => {
+      results = collections.map(collection => {
         const command = collectionToCommand(
           collection,
           navigationHelper,
@@ -352,14 +350,7 @@ export const useCollectionsCommands = () => {
       });
       return results;
     }
-  }, [
-    query,
-    savedCollections,
-    navigationHelper,
-    selectCollection,
-    t,
-    workspace,
-  ]);
+  }, [query, collections, navigationHelper, selectCollection, t, workspace]);
 };
 
 export const useCMDKCommandGroups = () => {
