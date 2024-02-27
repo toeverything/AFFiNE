@@ -1,4 +1,3 @@
-import type { PageMode } from '@affine/core/atoms';
 import type { BlockElement } from '@blocksuite/lit';
 import type {
   AffineEditorContainer,
@@ -6,6 +5,7 @@ import type {
   EdgelessEditor,
 } from '@blocksuite/presets';
 import { type Page, Slot } from '@blocksuite/store';
+import type { PageMode } from '@toeverything/infra';
 import clsx from 'clsx';
 import type React from 'react';
 import {

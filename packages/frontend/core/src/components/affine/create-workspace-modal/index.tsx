@@ -4,11 +4,7 @@ import {
   type ConfirmModalProps,
   Modal,
 } from '@affine/component/ui/modal';
-import {
-  authAtom,
-  openDisableCloudAlertModalAtom,
-  setPageModeAtom,
-} from '@affine/core/atoms';
+import { authAtom, openDisableCloudAlertModalAtom } from '@affine/core/atoms';
 import { useCurrentLoginStatus } from '@affine/core/hooks/affine/use-current-login-status';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { DebugLogger } from '@affine/debug';
@@ -17,11 +13,7 @@ import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { _addLocalWorkspace } from '@affine/workspace-impl';
 import { WorkspaceManager } from '@toeverything/infra';
-import { getCurrentStore } from '@toeverything/infra/atom';
-import {
-  buildShowcaseWorkspace,
-  initEmptyPage,
-} from '@toeverything/infra/blocksuite';
+import { buildShowcaseWorkspace, initEmptyPage } from '@toeverything/infra';
 import { useService } from '@toeverything/infra/di';
 import { useSetAtom } from 'jotai';
 import type { KeyboardEvent } from 'react';
@@ -234,28 +226,27 @@ export const CreateWorkspaceModal = ({
     async (name: string, workspaceFlavour: WorkspaceFlavour) => {
       // this will be the last step for web for now
       // fix me later
-      const { id } = await workspaceManager.createWorkspace(
-        workspaceFlavour,
-        async workspace => {
-          workspace.meta.setName(name);
-          if (runtimeConfig.enablePreloading) {
-            await buildShowcaseWorkspace(workspace, {
-              store: getCurrentStore(),
-              atoms: {
-                pageMode: setPageModeAtom,
-              },
-            });
-          } else {
+      if (runtimeConfig.enablePreloading) {
+        const { id } = await buildShowcaseWorkspace(
+          workspaceManager,
+          workspaceFlavour,
+          name
+        );
+        onCreate(id);
+      } else {
+        const { id } = await workspaceManager.createWorkspace(
+          workspaceFlavour,
+          async workspace => {
+            workspace.meta.setName(name);
             const page = workspace.createPage();
             workspace.setPageMeta(page.id, {
               jumpOnce: true,
             });
             initEmptyPage(page);
           }
-          logger.debug('create first workspace');
-        }
-      );
-      onCreate(id);
+        );
+        onCreate(id);
+      }
     },
     [onCreate, workspaceManager]
   );

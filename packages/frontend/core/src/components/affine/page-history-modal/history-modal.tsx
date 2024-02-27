@@ -2,7 +2,7 @@ import { Loading, Scrollable } from '@affine/component';
 import { EditorLoading } from '@affine/component/page-detail-skeleton';
 import { Button, IconButton } from '@affine/component/ui/button';
 import { ConfirmModal, Modal } from '@affine/component/ui/modal';
-import { openSettingModalAtom, type PageMode } from '@affine/core/atoms';
+import { openSettingModalAtom } from '@affine/core/atoms';
 import { useIsWorkspaceOwner } from '@affine/core/hooks/affine/use-is-workspace-owner';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { useBlockSuiteWorkspacePageTitle } from '@affine/core/hooks/use-block-suite-workspace-page-title';
@@ -10,15 +10,13 @@ import { useWorkspaceQuota } from '@affine/core/hooks/use-workspace-quota';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloseIcon, ToggleCollapseIcon } from '@blocksuite/icons';
-import {
-  type Page,
-  type Workspace as BlockSuiteWorkspace,
-} from '@blocksuite/store';
+import type { Page as BlockSuitePage } from '@blocksuite/store';
+import { type Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import type { DialogContentProps } from '@radix-ui/react-dialog';
-import { Workspace } from '@toeverything/infra';
+import { Page, type PageMode, Workspace } from '@toeverything/infra';
 import { useService } from '@toeverything/infra/di';
-import { atom, useAtom, useAtomValue, useSetAtom } from 'jotai';
+import { atom, useAtom, useSetAtom } from 'jotai';
 import {
   Fragment,
   type PropsWithChildren,
@@ -30,7 +28,6 @@ import {
 } from 'react';
 import { encodeStateAsUpdate } from 'yjs';
 
-import { currentModeAtom } from '../../../atoms/mode';
 import { pageHistoryModalAtom } from '../../../atoms/page-history';
 import { timestampToLocalTime } from '../../../utils';
 import { BlockSuiteEditor } from '../../blocksuite/block-suite-editor';
@@ -93,7 +90,7 @@ const ModalContainer = ({
 
 interface HistoryEditorPreviewProps {
   ts?: string;
-  snapshotPage?: Page;
+  snapshotPage?: BlockSuitePage;
   mode: PageMode;
   onModeChange: (mode: PageMode) => void;
   title: string;
@@ -450,8 +447,8 @@ const PageHistoryManager = ({
     [activeVersion, onClose, onRestore, snapshotPage]
   );
 
-  const defaultPreviewPageMode = useAtomValue(currentModeAtom);
-  const [mode, setMode] = useState<PageMode>(defaultPreviewPageMode);
+  const page = useService(Page);
+  const [mode, setMode] = useState<PageMode>(page.mode.value);
 
   const title = useBlockSuiteWorkspacePageTitle(workspace, pageId);
 

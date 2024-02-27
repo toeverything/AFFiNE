@@ -16,8 +16,10 @@ import {
   LocalSyncStorage,
   Page,
   PageManager,
+  type PageMode,
   ReadonlyMappingSyncStorage,
   RemoteBlobStorage,
+  useLiveData,
   useService,
   useServiceOptional,
   WorkspaceIdContext,
@@ -34,7 +36,6 @@ import {
   useRouteError,
 } from 'react-router-dom';
 
-import type { PageMode } from '../../atoms';
 import { AppContainer } from '../../components/affine/app-container';
 import { PageDetailEditor } from '../../components/page-detail-editor';
 import { SharePageNotFoundError } from '../../components/share-page-not-found-error';
@@ -159,9 +160,7 @@ export const Component = () => {
     workspace.engine.sync
       .waitForSynced()
       .then(() => {
-        const { page } = workspace.services
-          .get(PageManager)
-          .openByPageId(pageId);
+        const { page } = workspace.services.get(PageManager).open(pageId);
 
         workspace.blockSuiteWorkspace.awarenessStore.setReadonly(
           page.blockSuitePage,
@@ -186,9 +185,11 @@ export const Component = () => {
   ]);
 
   const page = useServiceOptional(Page);
+  const pageTitle = useLiveData(page?.title);
 
-  usePageDocumentTitle(page?.meta);
+  usePageDocumentTitle(pageTitle);
   const loginStatus = useCurrentLoginStatus();
+
   if (!page) {
     return;
   }

@@ -3,6 +3,7 @@ export * from './atom';
 export * from './blocksuite';
 export * from './command';
 export * from './di';
+export * from './initialization';
 export * from './livedata';
 export * from './page';
 export * from './storage';

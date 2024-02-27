@@ -3,13 +3,29 @@ import { useSyncExternalStore } from 'react';
 
 import type { LiveData } from './index';
 
+function noopSubscribe() {
+  return () => {};
+}
+
+function noopGetSnapshot() {
+  return null;
+}
+
 /**
  * subscribe LiveData and return the value.
  */
-export function useLiveData<T>(liveData: LiveData<T>): T {
+export function useLiveData<Input extends LiveData<any> | null | undefined>(
+  liveData: Input
+): NonNullable<Input> extends LiveData<infer T>
+  ? Input extends undefined
+    ? T | undefined
+    : Input extends null
+      ? T | null
+      : T
+  : never {
   return useSyncExternalStore(
-    liveData.reactSubscribe,
-    liveData.reactGetSnapshot
+    liveData ? liveData.reactSubscribe : noopSubscribe,
+    liveData ? liveData.reactGetSnapshot : noopGetSnapshot
   );
 }
 

@@ -1,8 +1,8 @@
 import { EditorModeSwitch } from '@affine/core/components/blocksuite/block-suite-mode-switch';
 import ShareHeaderRightItem from '@affine/core/components/cloud/share-header-right-item';
 import type { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
+import type { PageMode } from '@toeverything/infra';
 
-import type { PageMode } from '../../atoms';
 import { BlocksuiteHeaderTitle } from '../../components/blocksuite/block-suite-header/title/index';
 import * as styles from './share-header.css';
 

@@ -36,7 +36,7 @@
     "test": "vitest --run",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
-    "typecheck": "tsc -b tsconfig.json --diagnostics",
+    "typecheck": "tsc -b tsconfig.json",
     "postinstall": "node ./scripts/check-version.mjs && yarn i18n-codegen gen && yarn husky install",
     "prepare": "husky"
   },

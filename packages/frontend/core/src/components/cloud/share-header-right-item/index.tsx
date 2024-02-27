@@ -1,7 +1,7 @@
-import type { PageMode } from '@affine/core/atoms';
-import { useCurrentLoginStatus } from '@affine/core/hooks/affine/use-current-login-status';
+import type { PageMode } from '@toeverything/infra';
 import { useState } from 'react';
 
+import { useCurrentLoginStatus } from '../../../hooks/affine/use-current-login-status';
 import { AuthenticatedItem } from './authenticated-item';
 import { PresentButton } from './present';
 import * as styles from './styles.css';

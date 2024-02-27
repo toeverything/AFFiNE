@@ -1,17 +1,11 @@
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import {
-  useBlockSuitePageMeta,
-  usePageMetaHelper,
-} from '@affine/core/hooks/use-block-suite-page-meta';
+import { usePageMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
 import { useBlockSuiteWorkspaceHelper } from '@affine/core/hooks/use-block-suite-workspace-helper';
 import { CollectionService } from '@affine/core/modules/collection';
-import { useService } from '@toeverything/infra';
-import { useAtomValue, useSetAtom } from 'jotai';
+import { PageRecordList, useService } from '@toeverything/infra';
 import { useCallback } from 'react';
 import { applyUpdate, encodeStateAsUpdate } from 'yjs';
 
-import { setPageModeAtom } from '../../atoms';
-import { currentModeAtom } from '../../atoms/mode';
 import type { BlockSuiteWorkspace } from '../../shared';
 import { useNavigateHelper } from '../use-navigate-helper';
 import { useReferenceLinkHelper } from './use-reference-link-helper';
@@ -22,31 +16,10 @@ export function useBlockSuiteMetaHelper(
   const { setPageMeta, getPageMeta, setPageReadonly, setPageTitle } =
     usePageMetaHelper(blockSuiteWorkspace);
   const { addReferenceLink } = useReferenceLinkHelper(blockSuiteWorkspace);
-  const metas = useBlockSuitePageMeta(blockSuiteWorkspace);
-  const setPageMode = useSetAtom(setPageModeAtom);
-  const currentMode = useAtomValue(currentModeAtom);
   const { createPage } = useBlockSuiteWorkspaceHelper(blockSuiteWorkspace);
   const { openPage } = useNavigateHelper();
   const collectionService = useService(CollectionService);
-
-  const switchToPageMode = useCallback(
-    (pageId: string) => {
-      setPageMode(pageId, 'page');
-    },
-    [setPageMode]
-  );
-  const switchToEdgelessMode = useCallback(
-    (pageId: string) => {
-      setPageMode(pageId, 'edgeless');
-    },
-    [setPageMode]
-  );
-  const togglePageMode = useCallback(
-    (pageId: string) => {
-      setPageMode(pageId, currentMode === 'edgeless' ? 'page' : 'edgeless');
-    },
-    [currentMode, setPageMode]
-  );
+  const pageRecordList = useService(PageRecordList);
 
   const addToFavorite = useCallback(
     (pageId: string) => {
@@ -77,28 +50,21 @@ export function useBlockSuiteMetaHelper(
   // TODO-Doma
   // "Remove" may cause ambiguity here. Consider renaming as "moveToTrash".
   const removeToTrash = useCallback(
-    (pageId: string, isRoot = true) => {
-      const parentMeta = metas.find(m => m.subpageIds?.includes(pageId));
-      const { subpageIds = [] } = getPageMeta(pageId) ?? {};
-
-      subpageIds.forEach(id => {
-        removeToTrash(id, false);
-      });
-
+    (pageId: string) => {
       setPageMeta(pageId, {
         trash: true,
         trashDate: Date.now(),
-        trashRelate: isRoot ? parentMeta?.id : undefined,
+        trashRelate: undefined,
       });
       setPageReadonly(pageId, true);
       collectionService.deletePagesFromCollections([pageId]);
     },
-    [collectionService, getPageMeta, metas, setPageMeta, setPageReadonly]
+    [collectionService, setPageMeta, setPageReadonly]
   );
 
   const restoreFromTrash = useCallback(
     (pageId: string) => {
-      const { subpageIds = [], trashRelate } = getPageMeta(pageId) ?? {};
+      const { trashRelate } = getPageMeta(pageId) ?? {};
 
       if (trashRelate) {
         addReferenceLink(trashRelate, pageId);
@@ -110,9 +76,6 @@ export function useBlockSuiteMetaHelper(
         trashRelate: undefined,
       });
       setPageReadonly(pageId, false);
-      subpageIds.forEach(id => {
-        restoreFromTrash(id);
-      });
     },
     [addReferenceLink, getPageMeta, setPageMeta, setPageReadonly]
   );
@@ -150,6 +113,7 @@ export function useBlockSuiteMetaHelper(
 
   const duplicate = useAsyncCallback(
     async (pageId: string, openPageAfterDuplication: boolean = true) => {
+      const currentPageMode = pageRecordList.record(pageId).value?.mode.value;
       const currentPageMeta = getPageMeta(pageId);
       const newPage = createPage();
       const currentPage = blockSuiteWorkspace.getPage(pageId);
@@ -174,28 +138,24 @@ export function useBlockSuiteMetaHelper(
       const newPageTitle =
         currentPageMeta.title.replace(lastDigitRegex, '') + `(${newNumber})`;
 
-      setPageMode(newPage.id, currentMode);
+      pageRecordList
+        .record(newPage.id)
+        .value?.setMode(currentPageMode || 'page');
       setPageTitle(newPage.id, newPageTitle);
-
       openPageAfterDuplication && openPage(blockSuiteWorkspace.id, newPage.id);
     },
     [
       blockSuiteWorkspace,
       createPage,
-      currentMode,
       getPageMeta,
       openPage,
+      pageRecordList,
       setPageMeta,
-      setPageMode,
       setPageTitle,
     ]
   );
 
   return {
-    switchToPageMode,
-    switchToEdgelessMode,
-    togglePageMode,
-
     publicPage,
     cancelPublicPage,
 

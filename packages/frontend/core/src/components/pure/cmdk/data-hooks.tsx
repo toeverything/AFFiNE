@@ -1,4 +1,3 @@
-import { currentPageIdAtom } from '@affine/core/atoms/mode';
 import { useCollectionManager } from '@affine/core/components/page-list';
 import {
   useBlockSuitePageMeta,
@@ -16,19 +15,24 @@ import {
   TodayIcon,
   ViewLayersIcon,
 } from '@blocksuite/icons';
-import { type PageMeta } from '@blocksuite/store';
-import { useService, Workspace } from '@toeverything/infra';
-import { getCurrentStore } from '@toeverything/infra/atom';
+import type { PageMeta } from '@blocksuite/store';
+import {
+  Page,
+  PageRecordList,
+  useLiveData,
+  Workspace,
+} from '@toeverything/infra';
 import {
   type AffineCommand,
   AffineCommandRegistry,
   type CommandCategory,
   PreconditionStrategy,
 } from '@toeverything/infra/command';
+import { useService, useServiceOptional } from '@toeverything/infra/di';
 import { atom, useAtomValue } from 'jotai';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { pageSettingsAtom, recentPageIdsBaseAtom } from '../../../atoms';
+import { recentPageIdsBaseAtom } from '../../../atoms';
 import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
 import { usePageHelper } from '../../blocksuite/block-suite-page-list/utils';
 import { filterSortAndGroupCommands } from './filter-commands';
@@ -96,7 +100,6 @@ const useRecentPages = () => {
 export const pageToCommand = (
   category: CommandCategory,
   page: PageMeta,
-  store: ReturnType<typeof getCurrentStore>,
   navigationHelper: ReturnType<typeof useNavigateHelper>,
   getPageTitle: ReturnType<typeof useGetBlockSuiteWorkspacePageTitle>,
   isPageJournal: (pageId: string) => boolean,
@@ -105,7 +108,8 @@ export const pageToCommand = (
   subTitle?: string,
   blockId?: string
 ): CMDKCommand => {
-  const pageMode = store.get(pageSettingsAtom)?.[page.id]?.mode;
+  const pageMode = workspace.services.get(PageRecordList).record(page.id).value
+    ?.mode.value;
 
   const title = getPageTitle(page.id) || t['Untitled']();
   const commandLabel = {
@@ -147,7 +151,6 @@ export const pageToCommand = (
 export const usePageCommands = () => {
   const recentPages = useRecentPages();
   const pages = useWorkspacePages();
-  const store = getCurrentStore();
   const workspace = useService(Workspace);
   const pageHelper = usePageHelper(workspace.blockSuiteWorkspace);
   const pageMetaHelper = usePageMetaHelper(workspace.blockSuiteWorkspace);
@@ -185,7 +188,6 @@ export const usePageCommands = () => {
         return pageToCommand(
           'affine:recent',
           page,
-          store,
           navigationHelper,
           getPageTitle,
           isPageJournal,
@@ -207,9 +209,7 @@ export const usePageCommands = () => {
       });
 
       results = pages.map(page => {
-        const pageMode = store.get(pageSettingsAtom)?.[page.id]?.mode;
-        const category =
-          pageMode === 'edgeless' ? 'affine:edgeless' : 'affine:pages';
+        const category = 'affine:pages';
 
         const subTitle = resultValues.find(
           result => result.space === page.id
@@ -220,7 +220,6 @@ export const usePageCommands = () => {
         const command = pageToCommand(
           category,
           page,
-          store,
           navigationHelper,
           getPageTitle,
           isPageJournal,
@@ -288,7 +287,6 @@ export const usePageCommands = () => {
     searchTime,
     query,
     recentPages,
-    store,
     navigationHelper,
     getPageTitle,
     isPageJournal,
@@ -367,11 +365,9 @@ export const useCollectionsCommands = () => {
 export const useCMDKCommandGroups = () => {
   const pageCommands = usePageCommands();
   const collectionCommands = useCollectionsCommands();
-  const currentPageId = useAtomValue(currentPageIdAtom);
-  const pageSettings = useAtomValue(pageSettingsAtom);
-  const currentPageMode = currentPageId
-    ? pageSettings[currentPageId]?.mode
-    : undefined;
+
+  const currentPage = useServiceOptional(Page);
+  const currentPageMode = useLiveData(currentPage?.mode);
   const affineCommands = useMemo(() => {
     return getAllCommand({
       pageMode: currentPageMode,

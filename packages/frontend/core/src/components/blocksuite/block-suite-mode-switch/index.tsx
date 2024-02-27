@@ -1,13 +1,15 @@
 import { Tooltip } from '@affine/component/ui/tooltip';
 import { useBlockSuitePageMeta } from '@affine/core/hooks/use-block-suite-page-meta';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { useAtomValue } from 'jotai';
+import {
+  Page,
+  type PageMode,
+  useLiveData,
+  useService,
+} from '@toeverything/infra';
 import type { CSSProperties } from 'react';
 import { useCallback, useEffect } from 'react';
 
-import type { PageMode } from '../../../atoms';
-import { currentModeAtom } from '../../../atoms/mode';
-import { useBlockSuiteMetaHelper } from '../../../hooks/affine/use-block-suite-meta-helper';
 import type { BlockSuiteWorkspace } from '../../../shared';
 import { toast } from '../../../utils';
 import { StyledEditorModeSwitch, StyledKeyboardItem } from './style';
@@ -44,10 +46,9 @@ export const EditorModeSwitch = ({
     meta => meta.id === pageId
   );
   const trash = pageMeta?.trash ?? false;
+  const page = useService(Page);
 
-  const { togglePageMode, switchToEdgelessMode, switchToPageMode } =
-    useBlockSuiteMetaHelper(blockSuiteWorkspace);
-  const currentMode = useAtomValue(currentModeAtom);
+  const currentMode = useLiveData(page.mode);
 
   useEffect(() => {
     if (trash || isPublic) {
@@ -56,7 +57,7 @@ export const EditorModeSwitch = ({
     const keydown = (e: KeyboardEvent) => {
       if (e.code === 'KeyS' && e.altKey) {
         e.preventDefault();
-        togglePageMode(pageId);
+        page.toggleMode();
         toast(
           currentMode === 'page'
             ? t['com.affine.toastMessage.edgelessMode']()
@@ -67,23 +68,23 @@ export const EditorModeSwitch = ({
     document.addEventListener('keydown', keydown, { capture: true });
     return () =>
       document.removeEventListener('keydown', keydown, { capture: true });
-  }, [currentMode, isPublic, pageId, t, togglePageMode, trash]);
+  }, [currentMode, isPublic, page, pageId, t, trash]);
 
   const onSwitchToPageMode = useCallback(() => {
     if (currentMode === 'page' || isPublic) {
       return;
     }
-    switchToPageMode(pageId);
+    page.setMode('page');
     toast(t['com.affine.toastMessage.pageMode']());
-  }, [currentMode, isPublic, pageId, switchToPageMode, t]);
+  }, [currentMode, isPublic, page, t]);
 
   const onSwitchToEdgelessMode = useCallback(() => {
     if (currentMode === 'edgeless' || isPublic) {
       return;
     }
-    switchToEdgelessMode(pageId);
+    page.setMode('edgeless');
     toast(t['com.affine.toastMessage.edgelessMode']());
-  }, [currentMode, isPublic, pageId, switchToEdgelessMode, t]);
+  }, [currentMode, isPublic, page, t]);
 
   const shouldHide = useCallback(
     (mode: PageMode) =>

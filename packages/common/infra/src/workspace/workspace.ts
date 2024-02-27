@@ -10,6 +10,8 @@ import { type WorkspaceMetadata } from './metadata';
 import type { WorkspaceUpgradeController } from './upgrade';
 import { type WorkspaceUpgradeStatus } from './upgrade';
 
+export type { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
+
 const logger = new DebugLogger('affine:workspace');
 
 export type WorkspaceStatus = {

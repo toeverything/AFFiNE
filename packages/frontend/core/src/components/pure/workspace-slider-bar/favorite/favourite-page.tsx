@@ -4,11 +4,12 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
 import { useDraggable } from '@dnd-kit/core';
 import * as Collapsible from '@radix-ui/react-collapsible';
-import { useAtomValue } from 'jotai/index';
+import { useService } from '@toeverything/infra';
+import { useLiveData } from '@toeverything/infra';
+import { PageRecordList } from '@toeverything/infra';
 import { useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
-import { pageSettingFamily } from '../../../../atoms';
 import { getDragItemId } from '../../../../hooks/affine/use-sidebar-drag';
 import { DragMenuItemOverlay } from '../components/drag-menu-item-overlay';
 import { PostfixItem } from '../components/postfix-item';
@@ -28,11 +29,12 @@ export const FavouritePage = ({
   const params = useParams();
   const active = params.pageId === pageId;
   const dragItemId = getDragItemId('favouritePage', pageId);
+  const pageRecord = useLiveData(useService(PageRecordList).record(pageId));
+  const pageMode = useLiveData(pageRecord?.mode);
 
-  const setting = useAtomValue(pageSettingFamily(pageId));
   const icon = useMemo(() => {
-    return setting?.mode === 'edgeless' ? <EdgelessIcon /> : <PageIcon />;
-  }, [setting?.mode]);
+    return pageMode === 'edgeless' ? <EdgelessIcon /> : <PageIcon />;
+  }, [pageMode]);
 
   const references = useBlockSuitePageReferences(workspace, pageId);
   const referencesToShow = useMemo(() => {

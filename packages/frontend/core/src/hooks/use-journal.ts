@@ -1,4 +1,4 @@
-import { initEmptyPage } from '@toeverything/infra/blocksuite';
+import { initEmptyPage } from '@toeverything/infra';
 import dayjs from 'dayjs';
 import { useCallback, useMemo } from 'react';
 

@@ -4,7 +4,7 @@ import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
 import { EdgelessIcon, HistoryIcon, PageIcon } from '@blocksuite/icons';
-import { Workspace } from '@toeverything/infra';
+import { Page, useLiveData, Workspace } from '@toeverything/infra';
 import {
   PreconditionStrategy,
   registerAffineCommand,
@@ -18,10 +18,10 @@ import { useBlockSuiteMetaHelper } from './use-block-suite-meta-helper';
 import { useExportPage } from './use-export-page';
 import { useTrashModalHelper } from './use-trash-modal-helper';
 
-export function useRegisterBlocksuiteEditorCommands(
-  pageId: string,
-  mode: 'page' | 'edgeless'
-) {
+export function useRegisterBlocksuiteEditorCommands() {
+  const page = useService(Page);
+  const pageId = page.id;
+  const mode = useLiveData(page.mode);
   const t = useAFFiNEI18N();
   const workspace = useService(Workspace);
   const blockSuiteWorkspace = workspace.blockSuiteWorkspace;
@@ -42,7 +42,7 @@ export function useRegisterBlocksuiteEditorCommands(
     }));
   }, [pageId, setPageHistoryModalState]);
 
-  const { togglePageMode, toggleFavorite, restoreFromTrash, duplicate } =
+  const { toggleFavorite, restoreFromTrash, duplicate } =
     useBlockSuiteMetaHelper(blockSuiteWorkspace);
   const exportHandler = useExportPage(currentPage);
   const { setTrashModal } = useTrashModalHelper(blockSuiteWorkspace);
@@ -116,7 +116,7 @@ export function useRegisterBlocksuiteEditorCommands(
             : t['com.affine.pageMode.page']()
         }`,
         run() {
-          togglePageMode(pageId);
+          page.toggleMode();
           toast(
             mode === 'page'
               ? t['com.affine.toastMessage.edgelessMode']()
@@ -245,10 +245,10 @@ export function useRegisterBlocksuiteEditorCommands(
     restoreFromTrash,
     t,
     toggleFavorite,
-    togglePageMode,
     trash,
     isCloudWorkspace,
     openHistoryModal,
     duplicate,
+    page,
   ]);
 }

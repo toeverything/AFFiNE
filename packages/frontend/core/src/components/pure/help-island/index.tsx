@@ -1,13 +1,12 @@
 import { Tooltip } from '@affine/component/ui/tooltip';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloseIcon, NewIcon } from '@blocksuite/icons';
+import { useLiveData, useServiceOptional } from '@toeverything/infra';
+import { Page } from '@toeverything/infra';
 import { useSetAtom } from 'jotai/react';
-import { useAtomValue } from 'jotai/react';
 import { useCallback, useState } from 'react';
-import { useParams } from 'react-router-dom';
 
 import { openSettingModalAtom } from '../../../atoms';
-import { currentModeAtom } from '../../../atoms/mode';
 import type { SettingProps } from '../../affine/setting-modal';
 import { ContactIcon, HelpIcon, KeyboardIcon } from './icons';
 import {
@@ -29,7 +28,9 @@ type IslandItemNames = 'whatNew' | 'contact' | 'shortcuts';
 const showList = environment.isDesktop ? DESKTOP_SHOW_LIST : DEFAULT_SHOW_LIST;
 
 export const HelpIsland = () => {
-  const mode = useAtomValue(currentModeAtom);
+  const page = useServiceOptional(Page);
+  const pageId = page?.id;
+  const mode = useLiveData(page?.mode);
   const setOpenSettingModalAtom = useSetAtom(openSettingModalAtom);
   const [spread, setShowSpread] = useState(false);
   const t = useAFFiNEI18N();
@@ -52,8 +53,6 @@ export const HelpIsland = () => {
     () => openSettingModal('shortcuts'),
     [openSettingModal]
   );
-
-  const { pageId } = useParams();
 
   return (
     <StyledIsland

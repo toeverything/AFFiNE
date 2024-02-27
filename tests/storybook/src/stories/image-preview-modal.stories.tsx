@@ -4,7 +4,7 @@ import { CurrentPageService } from '@affine/core/modules/page';
 import type { Page } from '@blocksuite/store';
 import type { Meta } from '@storybook/react';
 import { PageManager, useService, Workspace } from '@toeverything/infra';
-import { initEmptyPage } from '@toeverything/infra/blocksuite';
+import { initEmptyPage } from '@toeverything/infra';
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 
@@ -24,7 +24,7 @@ export const Default = () => {
     const bsPage = workspace.blockSuiteWorkspace.createPage('page0');
     initEmptyPage(bsPage);
 
-    const { page, release } = pageManager.open(bsPage.meta);
+    const { page, release } = pageManager.open(bsPage.meta.id);
     currentPageService.openPage(page);
 
     fetch(new URL('@affine-test/fixtures/large-image.png', import.meta.url))

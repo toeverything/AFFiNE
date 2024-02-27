@@ -18,7 +18,7 @@ import { PageIcon, TagsIcon } from '@blocksuite/icons';
 import { Schema, Workspace } from '@blocksuite/store';
 import type { Meta, StoryFn } from '@storybook/react';
 import { userEvent } from '@storybook/testing-library';
-import { initEmptyPage } from '@toeverything/infra/blocksuite';
+import { initEmptyPage } from '@toeverything/infra';
 import { useState } from 'react';
 import { withRouter } from 'storybook-addon-react-router-v6';
 

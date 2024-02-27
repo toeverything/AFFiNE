@@ -3,36 +3,35 @@ import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { usePageMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
 import { useBlockSuiteWorkspaceHelper } from '@affine/core/hooks/use-block-suite-workspace-helper';
 import { WorkspaceSubPath } from '@affine/core/shared';
-import { initEmptyPage } from '@toeverything/infra/blocksuite';
-import { useAtomValue, useSetAtom } from 'jotai';
+import { useService } from '@toeverything/infra';
+import { PageRecordList } from '@toeverything/infra';
+import { initEmptyPage } from '@toeverything/infra';
 import { useCallback, useMemo } from 'react';
 
-import { pageSettingsAtom, setPageModeAtom } from '../../../atoms';
 import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
 import type { BlockSuiteWorkspace } from '../../../shared';
 
 export const usePageHelper = (blockSuiteWorkspace: BlockSuiteWorkspace) => {
   const { openPage, jumpToSubPath } = useNavigateHelper();
   const { createPage } = useBlockSuiteWorkspaceHelper(blockSuiteWorkspace);
-  const pageSettings = useAtomValue(pageSettingsAtom);
   const { setPageMeta } = usePageMetaHelper(blockSuiteWorkspace);
+  const pageRecordList = useService(PageRecordList);
 
   const isPreferredEdgeless = useCallback(
-    (pageId: string) => pageSettings[pageId]?.mode === 'edgeless',
-    [pageSettings]
+    (pageId: string) =>
+      pageRecordList.record(pageId).value?.mode.value === 'edgeless',
+    [pageRecordList]
   );
-
-  const setPageMode = useSetAtom(setPageModeAtom);
 
   const createPageAndOpen = useCallback(
     (mode?: 'page' | 'edgeless') => {
       const page = createPage();
       initEmptyPage(page);
-      setPageMode(page.id, mode || 'page');
+      pageRecordList.record(page.id).value?.setMode(mode || 'page');
       openPage(blockSuiteWorkspace.id, page.id);
       return page;
     },
-    [blockSuiteWorkspace.id, createPage, openPage, setPageMode]
+    [blockSuiteWorkspace.id, createPage, openPage, pageRecordList]
   );
 
   const createEdgelessAndOpen = useCallback(() => {
@@ -89,17 +88,17 @@ export const usePageHelper = (blockSuiteWorkspace: BlockSuiteWorkspace) => {
 
   return useMemo(() => {
     return {
+      isPreferredEdgeless,
       createPage: createPageAndOpen,
       createEdgeless: createEdgelessAndOpen,
       importFile: importFileAndOpen,
-      isPreferredEdgeless: isPreferredEdgeless,
       createLinkedPage: createLinkedPageAndOpen,
     };
   }, [
+    isPreferredEdgeless,
     createEdgelessAndOpen,
     createLinkedPageAndOpen,
     createPageAndOpen,
     importFileAndOpen,
-    isPreferredEdgeless,
   ]);
 };

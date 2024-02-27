@@ -4,11 +4,10 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
 import { type PageMeta, type Workspace } from '@blocksuite/store';
 import * as Collapsible from '@radix-ui/react-collapsible';
-import { useAtomValue } from 'jotai/react';
+import { PageRecordList, useLiveData, useService } from '@toeverything/infra';
 import { useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
-import { pageSettingFamily } from '../../../../atoms';
 import * as styles from '../favorite/styles.css';
 import { PostfixItem } from './postfix-item';
 export interface ReferencePageProps {
@@ -28,10 +27,11 @@ export const ReferencePage = ({
   const params = useParams();
   const active = params.pageId === pageId;
 
-  const setting = useAtomValue(pageSettingFamily(pageId));
+  const pageRecord = useLiveData(useService(PageRecordList).record(pageId));
+  const pageMode = useLiveData(pageRecord?.mode);
   const icon = useMemo(() => {
-    return setting?.mode === 'edgeless' ? <EdgelessIcon /> : <PageIcon />;
-  }, [setting?.mode]);
+    return pageMode === 'edgeless' ? <EdgelessIcon /> : <PageIcon />;
+  }, [pageMode]);
 
   const references = useBlockSuitePageReferences(workspace, pageId);
   const referencesToShow = useMemo(() => {

@@ -6,7 +6,6 @@ import {
   MenuSeparator,
 } from '@affine/component/ui/menu';
 import { openHistoryTipsModalAtom } from '@affine/core/atoms';
-import { currentModeAtom } from '@affine/core/atoms/mode';
 import { PageHistoryModal } from '@affine/core/components/affine/page-history-modal';
 import { Export, MoveToTrash } from '@affine/core/components/page-list';
 import { useBlockSuiteMetaHelper } from '@affine/core/hooks/affine/use-block-suite-meta-helper';
@@ -26,8 +25,8 @@ import {
   ImportIcon,
   PageIcon,
 } from '@blocksuite/icons';
-import { useService, Workspace } from '@toeverything/infra';
-import { useAtomValue, useSetAtom } from 'jotai';
+import { Page, useLiveData, useService, Workspace } from '@toeverything/infra';
+import { useSetAtom } from 'jotai';
 import { useCallback, useState } from 'react';
 
 import { HeaderDropDownButton } from '../../../pure/header-drop-down-button';
@@ -55,12 +54,12 @@ export const PageHeaderMenuButton = ({
   const pageMeta = useBlockSuitePageMeta(blockSuiteWorkspace).find(
     meta => meta.id === pageId
   );
-  const currentMode = useAtomValue(currentModeAtom);
+  const page = useService(Page);
+  const currentMode = useLiveData(page.mode);
 
   const { favorite, toggleFavorite } = useFavorite(pageId);
 
-  const { togglePageMode, duplicate } =
-    useBlockSuiteMetaHelper(blockSuiteWorkspace);
+  const { duplicate } = useBlockSuiteMetaHelper(blockSuiteWorkspace);
   const { importFile } = usePageHelper(blockSuiteWorkspace);
   const { setTrashModal } = useTrashModalHelper(blockSuiteWorkspace);
 
@@ -86,13 +85,13 @@ export const PageHeaderMenuButton = ({
   }, [pageId, pageMeta, setTrashModal]);
 
   const handleSwitchMode = useCallback(() => {
-    togglePageMode(pageId);
+    page.toggleMode();
     toast(
       currentMode === 'page'
         ? t['com.affine.toastMessage.edgelessMode']()
         : t['com.affine.toastMessage.pageMode']()
     );
-  }, [currentMode, pageId, t, togglePageMode]);
+  }, [currentMode, page, t]);
   const menuItemStyle = {
     padding: '4px 12px',
     transition: 'all 0.3s',

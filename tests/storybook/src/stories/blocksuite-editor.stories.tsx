@@ -3,7 +3,7 @@ import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import { Workspace } from '@blocksuite/store';
 import { Schema } from '@blocksuite/store';
 import type { StoryFn } from '@storybook/react';
-import { initEmptyPage } from '@toeverything/infra/blocksuite';
+import { initEmptyPage } from '@toeverything/infra';
 
 const schema = new Schema();
 schema.register(AffineSchemas).register(__unstableSchemas);

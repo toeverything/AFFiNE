@@ -337,7 +337,7 @@ class ServiceCollectionEditor {
    * ```
    */
   addImpl = <
-    Arg1 extends ServiceIdentifier<any>,
+    Arg1 extends ServiceIdentifier<any> | (new (...args: any) => any),
     Arg2 extends Type<Trait> | ServiceFactory<Trait> | Trait,
     Trait = ServiceIdentifierType<Arg1>,
     Deps extends Arg2 extends Type<Trait>

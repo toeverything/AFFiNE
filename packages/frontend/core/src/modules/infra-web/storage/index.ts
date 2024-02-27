@@ -1,8 +1,8 @@
-import type { GlobalCache } from '@toeverything/infra';
+import type { GlobalCache, GlobalState, Memento } from '@toeverything/infra';
 import { Observable } from 'rxjs';
 
-export class LocalStorageGlobalCache implements GlobalCache {
-  prefix = 'cache:';
+export class LocalStorageMemento implements Memento {
+  constructor(private readonly prefix: string) {}
 
   get<T>(key: string): T | null {
     const json = localStorage.getItem(this.prefix + key);
@@ -28,5 +28,23 @@ export class LocalStorageGlobalCache implements GlobalCache {
     const channel = new BroadcastChannel(this.prefix + key);
     channel.postMessage(value);
     channel.close();
+  }
+}
+
+export class LocalStorageGlobalCache
+  extends LocalStorageMemento
+  implements GlobalCache
+{
+  constructor() {
+    super('global-cache:');
+  }
+}
+
+export class LocalStorageGlobalState
+  extends LocalStorageMemento
+  implements GlobalState
+{
+  constructor() {
+    super('global-state:');
   }
 }

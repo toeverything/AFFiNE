@@ -6,7 +6,7 @@ import { type Page } from '@blocksuite/store';
 import { expect } from '@storybook/jest';
 import type { Meta, StoryFn } from '@storybook/react';
 import { Workspace } from '@toeverything/infra';
-import { initEmptyPage } from '@toeverything/infra/blocksuite';
+import { initEmptyPage } from '@toeverything/infra';
 import { useService } from '@toeverything/infra/di';
 import { nanoid } from 'nanoid';
 import { useEffect, useState } from 'react';

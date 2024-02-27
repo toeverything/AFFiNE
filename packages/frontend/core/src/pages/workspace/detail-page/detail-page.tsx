@@ -17,14 +17,14 @@ import type { Page as BlockSuitePage } from '@blocksuite/store';
 import {
   globalBlockSuiteSchema,
   Page,
-  PageListService,
   PageManager,
+  PageRecordList,
   useLiveData,
   useServiceOptional,
 } from '@toeverything/infra';
 import { appSettingAtom, Workspace } from '@toeverything/infra';
 import { useService } from '@toeverything/infra';
-import { useAtom, useAtomValue, useSetAtom, useStore } from 'jotai';
+import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import {
   memo,
   type ReactElement,
@@ -36,8 +36,7 @@ import {
 import { useParams } from 'react-router-dom';
 import type { Map as YMap } from 'yjs';
 
-import { pageSettingFamily, setPageModeAtom } from '../../../atoms';
-import { currentModeAtom, currentPageIdAtom } from '../../../atoms/mode';
+import { recentPageIdsBaseAtom } from '../../../atoms';
 import { AffineErrorBoundary } from '../../../components/affine/affine-error-boundary';
 import { HubIsland } from '../../../components/affine/hub-island';
 import { GlobalPageHistoryModal } from '../../../components/affine/page-history-modal';
@@ -116,6 +115,7 @@ const DetailPageLayout = ({
 
 const DetailPageImpl = memo(function DetailPageImpl() {
   const page = useService(Page);
+  const pageRecordList = useService(PageRecordList);
   const currentPageId = page.id;
   const { openPage, jumpToSubPath } = useNavigateHelper();
   const currentWorkspace = useService(Workspace);
@@ -129,17 +129,16 @@ const DetailPageImpl = memo(function DetailPageImpl() {
 
   const collectionService = useService(CollectionService);
   const { setTemporaryFilter } = useCollectionManager(collectionService);
-  const mode = useAtomValue(currentModeAtom);
-  const setPageMode = useSetAtom(setPageModeAtom);
-  useRegisterBlocksuiteEditorCommands(currentPageId, mode);
-  usePageDocumentTitle(pageMeta);
-  const rootStore = useStore();
+  const mode = useLiveData(page.mode);
+  useRegisterBlocksuiteEditorCommands();
+  const title = useLiveData(page.title);
+  usePageDocumentTitle(title);
 
   const onLoad = useCallback(
-    (page: BlockSuitePage, editor: AffineEditorContainer) => {
+    (bsPage: BlockSuitePage, editor: AffineEditorContainer) => {
       try {
         // todo(joooye34): improve the following migration code
-        const surfaceBlock = page.getBlockByFlavour('affine:surface')[0];
+        const surfaceBlock = bsPage.getBlockByFlavour('affine:surface')[0];
         // hotfix for old page
         if (
           surfaceBlock &&
@@ -152,7 +151,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
             {
               'affine:surface': 3,
             },
-            page.spaceDoc
+            bsPage.spaceDoc
           );
         }
       } catch {}
@@ -177,17 +176,17 @@ const DetailPageImpl = memo(function DetailPageImpl() {
         'affine:page'
       ) as PageService;
       pageService.getPageMode = (pageId: string) =>
-        rootStore.get(pageSettingFamily(pageId)).mode;
+        pageRecordList.record(pageId).value?.mode.value ?? 'page';
       pageService.getPageUpdatedAt = (pageId: string) => {
-        const linkedPage = page.workspace.getPage(pageId);
+        const linkedPage = pageRecordList.record(pageId).value;
         if (!linkedPage) return new Date();
 
-        const updatedDate = linkedPage.meta.updatedDate;
-        const createDate = linkedPage.meta.createDate;
+        const updatedDate = linkedPage.meta.value.updatedDate;
+        const createDate = linkedPage.meta.value.createDate;
         return updatedDate ? new Date(updatedDate) : new Date(createDate);
       };
 
-      setPageMode(currentPageId, mode);
+      page.setMode(mode);
       // fixme: it seems pageLinkClicked is not triggered sometimes?
       const dispose = editor.slots.pageLinkClicked.on(({ pageId }) => {
         return openPage(blockSuiteWorkspace.id, pageId);
@@ -202,15 +201,14 @@ const DetailPageImpl = memo(function DetailPageImpl() {
       };
     },
     [
-      blockSuiteWorkspace.id,
-      currentPageId,
-      currentWorkspace.id,
-      jumpToSubPath,
+      page,
       mode,
+      pageRecordList,
       openPage,
-      setPageMode,
+      blockSuiteWorkspace.id,
+      jumpToSubPath,
+      currentWorkspace.id,
       setTemporaryFilter,
-      rootStore,
     ]
   );
 
@@ -269,31 +267,31 @@ const DetailPageImpl = memo(function DetailPageImpl() {
 });
 
 export const DetailPage = ({ pageId }: { pageId: string }): ReactElement => {
-  const pageListService = useService(PageListService);
+  const pageRecordList = useService(PageRecordList);
 
-  const pageListReady = useLiveData(pageListService.isReady);
+  const pageListReady = useLiveData(pageRecordList.isReady);
 
-  const pageMetas = useLiveData(pageListService.pages);
+  const pageRecords = useLiveData(pageRecordList.records);
 
-  const pageMeta = useMemo(
-    () => pageMetas.find(page => page.id === pageId),
-    [pageMetas, pageId]
+  const pageRecord = useMemo(
+    () => pageRecords.find(page => page.id === pageId),
+    [pageRecords, pageId]
   );
 
   const pageManager = useService(PageManager);
   const currentPageService = useService(CurrentPageService);
 
   useEffect(() => {
-    if (!pageMeta) {
+    if (!pageRecord) {
       return;
     }
-    const { page, release } = pageManager.open(pageMeta);
+    const { page, release } = pageManager.open(pageRecord.id);
     currentPageService.openPage(page);
     return () => {
       currentPageService.closePage();
       release();
     };
-  }, [currentPageService, pageManager, pageMeta]);
+  }, [currentPageService, pageManager, pageRecord]);
 
   const page = useServiceOptional(Page);
 
@@ -304,6 +302,14 @@ export const DetailPage = ({ pageId }: { pageId: string }): ReactElement => {
     currentWorkspace.setPriorityRule(id => id.endsWith(pageId));
   }, [pageId, currentWorkspace]);
 
+  const jumpOnce = useLiveData(pageRecord?.meta.map(meta => meta.jumpOnce));
+
+  useEffect(() => {
+    if (jumpOnce) {
+      pageRecord?.setMeta({ jumpOnce: false });
+    }
+  }, [jumpOnce, pageRecord]);
+
   // if sync engine has been synced and the page is null, show 404 page.
   if (pageListReady && !page) {
     return <PageNotFound />;
@@ -313,27 +319,26 @@ export const DetailPage = ({ pageId }: { pageId: string }): ReactElement => {
     return <PageDetailSkeleton key="current-page-is-null" />;
   }
 
-  if (page.meta.jumpOnce) {
-    currentWorkspace.blockSuiteWorkspace.setPageMeta(page.id, {
-      jumpOnce: false,
-    });
-  }
-
   return <DetailPageImpl />;
 };
 
 export const Component = () => {
   performanceRenderLogger.info('DetailPage');
 
-  const setCurrentPageId = useSetAtom(currentPageIdAtom);
   const params = useParams();
+  const setRecentPageIds = useSetAtom(recentPageIdsBaseAtom);
 
   useEffect(() => {
     if (params.pageId) {
-      localStorage.setItem('last_page_id', params.pageId);
-      setCurrentPageId(params.pageId);
+      const pageId = params.pageId;
+      localStorage.setItem('last_page_id', pageId);
+
+      setRecentPageIds(ids => {
+        // pick 3 recent page ids
+        return [...new Set([pageId, ...ids]).values()].slice(0, 3);
+      });
     }
-  }, [params, setCurrentPageId]);
+  }, [params, setRecentPageIds]);
 
   const pageId = params.pageId;
 

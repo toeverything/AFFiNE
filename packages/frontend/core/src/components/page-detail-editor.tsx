@@ -4,15 +4,20 @@ import { useActiveBlocksuiteEditor } from '@affine/core/hooks/use-block-suite-ed
 import { useBlockSuiteWorkspacePage } from '@affine/core/hooks/use-block-suite-workspace-page';
 import { assertExists, DisposableGroup } from '@blocksuite/global/utils';
 import type { AffineEditorContainer } from '@blocksuite/presets';
-import type { Page, Workspace } from '@blocksuite/store';
+import type { Workspace } from '@blocksuite/store';
+import type { Page as BlockSuitePage } from '@blocksuite/store';
+import {
+  Page,
+  type PageMode,
+  useLiveData,
+  useService,
+} from '@toeverything/infra';
 import { fontStyleOptions } from '@toeverything/infra/atom';
 import clsx from 'clsx';
-import { useAtomValue } from 'jotai';
 import type { CSSProperties } from 'react';
 import { memo, Suspense, useCallback, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 
-import { type PageMode, pageSettingFamily } from '../atoms';
 import { useAppSettingHelper } from '../hooks/affine/use-app-setting-helper';
 import { BlockSuiteEditor as Editor } from './blocksuite/block-suite-editor';
 import * as styles from './page-detail-editor.css';
@@ -23,7 +28,7 @@ declare global {
 }
 
 export type OnLoadEditor = (
-  page: Page,
+  page: BlockSuitePage,
   editor: AffineEditorContainer
 ) => () => void;
 
@@ -41,23 +46,19 @@ function useRouterHash() {
 
 const PageDetailEditorMain = memo(function PageDetailEditorMain({
   page,
-  pageId,
   onLoad,
   isPublic,
   publishMode,
-}: PageDetailEditorProps & { page: Page }) {
-  const pageSettingAtom = pageSettingFamily(pageId);
-  const pageSetting = useAtomValue(pageSettingAtom);
-
+}: PageDetailEditorProps & { page: BlockSuitePage }) {
+  const currentMode = useLiveData(useService(Page).mode);
   const mode = useMemo(() => {
-    const currentMode = pageSetting.mode;
     const shareMode = publishMode || currentMode;
 
     if (isPublic) {
       return shareMode;
     }
     return currentMode;
-  }, [isPublic, publishMode, pageSetting.mode]);
+  }, [isPublic, publishMode, currentMode]);
 
   const { appSettings } = useAppSettingHelper();
 
