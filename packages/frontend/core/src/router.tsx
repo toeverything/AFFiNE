@@ -2,44 +2,14 @@ import * as Sentry from '@sentry/react';
 import type { RouteObject } from 'react-router-dom';
 import { createBrowserRouter as reactRouterCreateBrowserRouter } from 'react-router-dom';
 
-export const routes = [
+export const workbenchRoutes = [
   {
     path: '/',
     lazy: () => import('./pages/index'),
   },
   {
-    path: '/workspace/:workspaceId',
+    path: '/workspace/:workspaceId/*',
     lazy: () => import('./pages/workspace/index'),
-    children: [
-      {
-        path: 'all',
-        lazy: () => import('./pages/workspace/all-page/all-page'),
-      },
-      {
-        path: 'collection',
-        lazy: () => import('./pages/workspace/all-collection'),
-      },
-      {
-        path: 'collection/:collectionId',
-        lazy: () => import('./pages/workspace/collection/index'),
-      },
-      {
-        path: 'tag',
-        lazy: () => import('./pages/workspace/all-tag'),
-      },
-      {
-        path: 'tag/:tagId',
-        lazy: () => import('./pages/workspace/tag'),
-      },
-      {
-        path: 'trash',
-        lazy: () => import('./pages/workspace/trash-page'),
-      },
-      {
-        path: ':pageId',
-        lazy: () => import('./pages/workspace/detail-page/detail-page'),
-      },
-    ],
   },
   {
     path: '/share/:workspaceId/:pageId',
@@ -87,10 +57,45 @@ export const routes = [
   },
 ] satisfies [RouteObject, ...RouteObject[]];
 
+export const viewRoutes = [
+  {
+    path: '/all',
+    lazy: () => import('./pages/workspace/all-page/all-page'),
+  },
+  {
+    path: '/collection',
+    lazy: () => import('./pages/workspace/all-collection'),
+  },
+  {
+    path: '/collection/:collectionId',
+    lazy: () => import('./pages/workspace/collection/index'),
+  },
+  {
+    path: '/tag',
+    lazy: () => import('./pages/workspace/all-tag'),
+  },
+  {
+    path: '/tag/:tagId',
+    lazy: () => import('./pages/workspace/tag'),
+  },
+  {
+    path: '/trash',
+    lazy: () => import('./pages/workspace/trash-page'),
+  },
+  {
+    path: '/:pageId',
+    lazy: () => import('./pages/workspace/detail-page/detail-page'),
+  },
+  {
+    path: '*',
+    lazy: () => import('./pages/404'),
+  },
+] satisfies [RouteObject, ...RouteObject[]];
+
 const createBrowserRouter = Sentry.wrapCreateBrowserRouter(
   reactRouterCreateBrowserRouter
 );
-export const router = createBrowserRouter(routes, {
+export const router = createBrowserRouter(workbenchRoutes, {
   future: {
     v7_normalizeFormMethod: true,
   },

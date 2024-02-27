@@ -63,6 +63,7 @@
     "foxact": "^0.2.31",
     "fractional-indexing": "^3.2.0",
     "graphql": "^16.8.1",
+    "history": "^5.3.0",
     "idb": "^8.0.0",
     "image-blob-reduce": "^4.1.0",
     "intl-segmenter-polyfill-rs": "^0.1.7",

@@ -18,8 +18,8 @@ import {
   Page,
   PageManager,
   PageRecordList,
+  ServiceProviderContext,
   useLiveData,
-  useServiceOptional,
 } from '@toeverything/infra';
 import { appSettingAtom, Workspace } from '@toeverything/infra';
 import { useService } from '@toeverything/infra';
@@ -31,6 +31,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useState,
 } from 'react';
 import { useParams } from 'react-router-dom';
 import type { Map as YMap } from 'yjs';
@@ -46,7 +47,6 @@ import { TopTip } from '../../../components/top-tip';
 import { useRegisterBlocksuiteEditorCommands } from '../../../hooks/affine/use-register-blocksuite-editor-commands';
 import { usePageDocumentTitle } from '../../../hooks/use-global-state';
 import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
-import { CurrentPageService } from '../../../modules/page';
 import { performanceRenderLogger } from '../../../shared';
 import { PageNotFound } from '../../404';
 import * as styles from './detail-page.css';
@@ -270,28 +270,19 @@ export const DetailPage = ({ pageId }: { pageId: string }): ReactElement => {
   );
 
   const pageManager = useService(PageManager);
-  const currentPageService = useService(CurrentPageService);
+
+  const [page, setPage] = useState<Page | null>(null);
 
   useEffect(() => {
     if (!pageRecord) {
       return;
     }
     const { page, release } = pageManager.open(pageRecord.id);
-    currentPageService.openPage(page);
+    setPage(page);
     return () => {
-      currentPageService.closePage();
       release();
     };
-  }, [currentPageService, pageManager, pageRecord]);
-
-  const page = useServiceOptional(Page);
-
-  const currentWorkspace = useService(Workspace);
-
-  // set sync engine priority target
-  useEffect(() => {
-    currentWorkspace.setPriorityRule(id => id.endsWith(pageId));
-  }, [pageId, currentWorkspace]);
+  }, [pageManager, pageRecord]);
 
   const jumpOnce = useLiveData(pageRecord?.meta.map(meta => meta.jumpOnce));
 
@@ -310,7 +301,11 @@ export const DetailPage = ({ pageId }: { pageId: string }): ReactElement => {
     return <PageDetailSkeleton key="current-page-is-null" />;
   }
 
-  return <DetailPageImpl />;
+  return (
+    <ServiceProviderContext.Provider value={page.services}>
+      <DetailPageImpl />
+    </ServiceProviderContext.Provider>
+  );
 };
 
 export const Component = () => {

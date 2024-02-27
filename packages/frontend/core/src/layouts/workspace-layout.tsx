@@ -20,7 +20,7 @@ import { useService } from '@toeverything/infra/di';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import type { PropsWithChildren, ReactNode } from 'react';
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
-import { useLocation, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { Map as YMap } from 'yjs';
 
 import { openQuickSearchModalAtom, openSettingModalAtom } from '../atoms';
@@ -151,7 +151,6 @@ export const WorkspaceLayoutInner = ({ children }: PropsWithChildren) => {
   const handleDragEnd = useSidebarDrag();
 
   const { appSettings } = useAppSettingHelper();
-  const location = useLocation();
   const { pageId } = useParams();
 
   // todo: refactor this that the root layout do not need to check route state
@@ -182,7 +181,6 @@ export const WorkspaceLayoutInner = ({ children }: PropsWithChildren) => {
                 [currentWorkspace, openPage]
               )}
               createPage={handleCreatePage}
-              currentPath={location.pathname.split('?')[0]}
               paths={pathGenerator}
             />
           </Suspense>

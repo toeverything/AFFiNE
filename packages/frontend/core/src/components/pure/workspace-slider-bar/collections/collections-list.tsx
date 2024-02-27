@@ -17,11 +17,12 @@ import * as Collapsible from '@radix-ui/react-collapsible';
 import { useService } from '@toeverything/infra';
 import { useLiveData } from '@toeverything/infra/livedata';
 import { useCallback, useMemo, useState } from 'react';
-import { useLocation } from 'react-router-dom';
 
 import { useAllPageListConfig } from '../../../../hooks/affine/use-all-page-list-config';
 import { getDropItemId } from '../../../../hooks/affine/use-sidebar-drag';
 import { useBlockSuitePageMeta } from '../../../../hooks/use-block-suite-page-meta';
+import { Workbench } from '../../../../modules/workbench';
+import { WorkbenchLink } from '../../../../modules/workbench/workbench-link';
 import type { CollectionsListProps } from '../index';
 import { Page } from './page';
 import * as styles from './styles.css';
@@ -88,9 +89,9 @@ const CollectionRenderer = ({
     };
     return filterPage(collection, pageData);
   });
-  const location = useLocation();
-  const currentPath = location.pathname.split('?')[0];
-  const path = `/workspace/${workspace.id}/collection/${collection.id}`;
+  const location = useLiveData(useService(Workbench).location);
+  const currentPath = location.pathname;
+  const path = `/collection/${collection.id}`;
 
   const onRename = useCallback(
     (name: string) => {
@@ -115,6 +116,7 @@ const CollectionRenderer = ({
         active={isOver || currentPath === path}
         icon={<AnimatedCollectionsIcon closed={isOver} />}
         to={path}
+        linkComponent={WorkbenchLink}
         postfix={
           <div
             onClick={stopPropagation}

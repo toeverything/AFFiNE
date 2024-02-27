@@ -1,4 +1,4 @@
-import { routes } from '@affine/core/router';
+import { workbenchRoutes } from '@affine/core/router';
 import { assertExists } from '@blocksuite/global/utils';
 import type { StoryFn } from '@storybook/react';
 import { screen, userEvent, waitFor, within } from '@storybook/testing-library';
@@ -28,7 +28,7 @@ export const Index: StoryFn = () => {
 Index.decorators = [withRouter];
 Index.parameters = {
   reactRouter: reactRouterParameters({
-    routing: reactRouterOutlets(routes),
+    routing: reactRouterOutlets(workbenchRoutes),
   }),
 };
 
@@ -74,7 +74,7 @@ SettingPage.play = async ({ canvasElement, step }) => {
 SettingPage.decorators = [withRouter];
 SettingPage.parameters = {
   reactRouter: reactRouterParameters({
-    routing: reactRouterOutlets(routes),
+    routing: reactRouterOutlets(workbenchRoutes),
   }),
 };
 
@@ -84,7 +84,7 @@ export const NotFoundPage: StoryFn = () => {
 NotFoundPage.decorators = [withRouter];
 NotFoundPage.parameters = {
   reactRouter: reactRouterParameters({
-    routing: reactRouterOutlets(routes),
+    routing: reactRouterOutlets(workbenchRoutes),
     location: {
       path: '/404',
     },
@@ -114,7 +114,7 @@ WorkspaceList.play = async ({ canvasElement }) => {
 WorkspaceList.decorators = [withRouter];
 WorkspaceList.parameters = {
   reactRouter: reactRouterParameters({
-    routing: reactRouterOutlets(routes),
+    routing: reactRouterOutlets(workbenchRoutes),
     location: {
       path: '/',
     },
@@ -151,7 +151,7 @@ SearchPage.play = async ({ canvasElement }) => {
 SearchPage.decorators = [withRouter];
 SearchPage.parameters = {
   reactRouter: reactRouterParameters({
-    routing: reactRouterOutlets(routes),
+    routing: reactRouterOutlets(workbenchRoutes),
     location: {
       path: '/',
     },
@@ -193,7 +193,7 @@ ImportPage.play = async ({ canvasElement }) => {
 ImportPage.decorators = [withRouter];
 ImportPage.parameters = {
   reactRouter: reactRouterParameters({
-    routing: reactRouterOutlets(routes),
+    routing: reactRouterOutlets(workbenchRoutes),
     location: {
       path: '/',
     },
@@ -206,7 +206,7 @@ export const OpenAppPage: StoryFn = () => {
 OpenAppPage.decorators = [withRouter];
 OpenAppPage.parameters = {
   reactRouter: reactRouterParameters({
-    routing: reactRouterOutlets(routes),
+    routing: reactRouterOutlets(workbenchRoutes),
     location: {
       path: '/open-app/url',
       searchParams: {

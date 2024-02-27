@@ -19,7 +19,7 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { FolderIcon, SettingsIcon } from '@blocksuite/icons';
 import { type Page } from '@blocksuite/store';
 import { useDroppable } from '@dnd-kit/core';
-import { useService, type Workspace } from '@toeverything/infra';
+import { useLiveData, useService, type Workspace } from '@toeverything/infra';
 import { useAtom, useAtomValue } from 'jotai';
 import { nanoid } from 'nanoid';
 import type { HTMLAttributes, ReactElement } from 'react';
@@ -34,6 +34,7 @@ import { getDropItemId } from '../../hooks/affine/use-sidebar-drag';
 import { useTrashModalHelper } from '../../hooks/affine/use-trash-modal-helper';
 import { useRegisterBrowserHistoryCommands } from '../../hooks/use-browser-history-commands';
 import { useNavigateHelper } from '../../hooks/use-navigate-helper';
+import { Workbench } from '../../modules/workbench';
 import { WorkspaceSubPath } from '../../shared';
 import {
   createEmptyCollection,
@@ -57,7 +58,6 @@ export type RootAppSidebarProps = {
   currentWorkspace: Workspace;
   openPage: (pageId: string) => void;
   createPage: () => Page;
-  currentPath: string;
   paths: {
     all: (workspaceId: string) => string;
     trash: (workspaceId: string) => string;
@@ -98,7 +98,6 @@ export const RootAppSidebar = ({
   currentWorkspace,
   openPage,
   createPage,
-  currentPath,
   paths,
   onOpenQuickSearchModal,
   onOpenSettingModal,
@@ -111,6 +110,7 @@ export const RootAppSidebar = ({
     openWorkspaceListModalAtom
   );
   const generalShortcutsInfo = useGeneralShortcuts();
+  const currentPath = useLiveData(useService(Workbench).location).pathname;
 
   const onClickNewPage = useAsyncCallback(async () => {
     const page = createPage();
@@ -193,21 +193,9 @@ export const RootAppSidebar = ({
       });
   }, [blockSuiteWorkspace.id, collection, navigateHelper, open]);
 
-  const allPageActive = useMemo(() => {
-    if (
-      currentPath.startsWith(`/workspace/${currentWorkspaceId}/collection/`) ||
-      currentPath.startsWith(`/workspace/${currentWorkspaceId}/tag/`)
-    ) {
-      return true;
-    }
-    return currentPath === paths.all(currentWorkspaceId);
-  }, [currentPath, currentWorkspaceId, paths]);
+  const allPageActive = currentPath === '/all';
 
-  const trashActive = useMemo(() => {
-    return (
-      currentPath === paths.trash(currentWorkspaceId) || trashDroppable.isOver
-    );
-  }, [currentPath, currentWorkspaceId, paths, trashDroppable.isOver]);
+  const trashActive = currentPath === '/trash';
 
   return (
     <AppSidebar
