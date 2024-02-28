@@ -3,7 +3,7 @@ import {
   SettingRow,
   SettingWrapper,
 } from '@affine/component/setting-components';
-import { useSelfHosted } from '@affine/core/hooks/affine/use-server-config';
+import { useServerFeatures } from '@affine/core/hooks/affine/use-server-config';
 import { useWorkspace } from '@affine/core/hooks/use-workspace';
 import { useWorkspaceInfo } from '@affine/core/hooks/use-workspace-info';
 import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
@@ -20,7 +20,7 @@ import type { WorkspaceSettingDetailProps } from './types';
 
 export const WorkspaceSettingDetail = (props: WorkspaceSettingDetailProps) => {
   const t = useAFFiNEI18N();
-  const isSelfHosted = useSelfHosted();
+  const { payment: hasPaymentFeature } = useServerFeatures();
   const workspaceMetadata = props.workspaceMetadata;
 
   // useWorkspace hook is a vary heavy operation here, but we need syncing name and avatar changes here,
@@ -49,7 +49,7 @@ export const WorkspaceSettingDetail = (props: WorkspaceSettingDetailProps) => {
       </SettingWrapper>
       <SettingWrapper title={t['com.affine.brand.affineCloud']()}>
         <EnableCloudPanel workspace={workspace} {...props} />
-        <MembersPanel upgradable={!isSelfHosted} {...props} />
+        <MembersPanel upgradable={hasPaymentFeature} {...props} />
       </SettingWrapper>
       {environment.isDesktop && (
         <SettingWrapper title={t['Storage and Export']()}>
