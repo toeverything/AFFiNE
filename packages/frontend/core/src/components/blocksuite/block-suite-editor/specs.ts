@@ -21,12 +21,12 @@ class CustomAttachmentService extends AttachmentService {
 }
 
 function customLoadFonts(service: PageService): void {
-  const officialDomains = new Set(['affine.pro', 'affine.fail']);
+  const officialDomains = new Set(['app.affine.pro', 'affine.fail']);
   if (!officialDomains.has(window.location.host)) {
     const fonts = CanvasTextFonts.map(font => ({
       ...font,
       // self-hosted fonts are served from /assets
-      url: '/assets' + new URL(font.url).pathname.split('/').pop(),
+      url: '/assets/' + new URL(font.url).pathname.split('/').pop(),
     }));
     service.fontLoader.load(fonts);
   } else {
