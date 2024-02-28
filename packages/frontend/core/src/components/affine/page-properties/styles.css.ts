@@ -92,7 +92,7 @@ export const tableHeaderDivider = style({
   height: '0.5px',
   width: '100%',
   margin: '8px 0',
-  backgroundColor: cssVar('dividerColor'),
+  backgroundColor: cssVar('borderColor'),
 });
 
 export const tableBodyRoot = style({
@@ -114,7 +114,8 @@ export const addPropertyButton = style({
   alignSelf: 'flex-start',
   fontSize: cssVar('fontSm'),
   color: `${cssVar('textSecondaryColor')} !important`,
-  padding: '6px 4px',
+  padding: '0 4px',
+  height: 36,
   cursor: 'pointer',
   ':hover': {
     color: cssVar('textPrimaryColor'),
@@ -440,7 +441,7 @@ export const selectorButton = style({
   borderRadius: 4,
   gap: 8,
   fontSize: cssVar('fontSm'),
-  fontWeight: 500,
+  fontWeight: 400,
   padding: '4px 8px',
   cursor: 'pointer',
   ':hover': {

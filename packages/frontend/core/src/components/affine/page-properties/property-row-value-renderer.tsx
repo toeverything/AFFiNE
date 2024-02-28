@@ -130,7 +130,7 @@ export const TextValue = ({ property }: PropertyRowValueProps) => {
       />
       <div className={styles.propertyRowValueTextareaInvisible}>
         {value}
-        {value?.endsWith('\n') || value === '' ? <br /> : null}
+        {value?.endsWith('\n') || !value ? <br /> : null}
       </div>
     </div>
   );
