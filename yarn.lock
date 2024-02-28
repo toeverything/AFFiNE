@@ -270,7 +270,7 @@ __metadata:
     react-paginate: "npm:^8.2.0"
     react-router-dom: "npm:^6.22.1"
     react-transition-state: "npm:^2.1.1"
-    react-virtuoso: "npm:~4.6.3"
+    react-virtuoso: "npm:^4.7.0"
     rxjs: "npm:^7.8.1"
     storybook: "npm:^7.6.17"
     storybook-dark-mode: "npm:^3.0.3"
@@ -318,6 +318,7 @@ __metadata:
     "@emotion/react": "npm:^11.11.3"
     "@emotion/server": "npm:^11.11.0"
     "@emotion/styled": "npm:^11.11.0"
+    "@juggle/resize-observer": "npm:^3.4.0"
     "@marsidev/react-turnstile": "npm:^0.5.3"
     "@perfsee/webpack": "npm:^1.12.2"
     "@pmmmwh/react-refresh-webpack-plugin": "npm:^0.5.11"
@@ -383,7 +384,7 @@ __metadata:
     react-is: "npm:18.2.0"
     react-router-dom: "npm:^6.22.1"
     react-transition-state: "npm:^2.1.1"
-    react-virtuoso: "npm:~4.6.3"
+    react-virtuoso: "npm:^4.7.0"
     rxjs: "npm:^7.8.1"
     ses: "npm:^1.3.0"
     source-map-loader: "npm:^5.0.0"
@@ -6766,7 +6767,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@juggle/resize-observer@npm:^3.3.1":
+"@juggle/resize-observer@npm:^3.3.1, @juggle/resize-observer@npm:^3.4.0":
   version: 3.4.0
   resolution: "@juggle/resize-observer@npm:3.4.0"
   checksum: 10/73d1d00ee9132fb6f0aea0531940a6b93603e935590bd450fc6285a328d906102eeeb95dea77b2edac0e779031a9708aa8c82502bd298ee4dd26e7dff48f397a
@@ -30831,13 +30832,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-virtuoso@npm:~4.6.3":
-  version: 4.6.3
-  resolution: "react-virtuoso@npm:4.6.3"
+"react-virtuoso@npm:^4.7.0":
+  version: 4.7.1
+  resolution: "react-virtuoso@npm:4.7.1"
   peerDependencies:
     react: ">=16 || >=17 || >= 18"
     react-dom: ">=16 || >=17 || >= 18"
-  checksum: 10/47ff54ec6dbd51ab28092bbe1adec71a346606af07482545fc2f13c8c021550ea23f350fa22d5621422097eeb0f9241bbb9926e074b7e120e1632eb85cf65bf1
+  checksum: 10/c223ef8af0d2186c5469f3a512ad68f98c86e39572e220607e0ff0e441a5b03ea238f0075f183de30c6f3e8d0c42a6af8c8e5a555f1c1122141bf65386e31189
   languageName: node
   linkType: hard
 
