@@ -104,10 +104,4 @@ test.skip('migration', async ({ page, browser }) => {
   await page.waitForTimeout(5000);
   await page.reload();
   await waitForEditorLoad(page);
-
-  // click edgeless switch button is flaky in e2e
-  // await clickEdgelessModeButton(page);
-  // await expect(page.locator('affine-edgeless-page')).toBeVisible({
-  //   timeout: 1000,
-  // });
 });

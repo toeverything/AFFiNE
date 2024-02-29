@@ -44,7 +44,7 @@ const commandsIsVisible = async (page: Page, label: string) => {
 };
 
 async function assertTitle(page: Page, text: string) {
-  const edgeless = page.locator('affine-edgeless-page');
+  const edgeless = page.locator('affine-edgeless-root');
   if (!edgeless) {
     const locator = getBlockSuiteEditorTitle(page);
     const actual = await locator.inputValue();
@@ -97,7 +97,7 @@ async function assertResultList(page: Page, texts: string[]) {
 }
 
 async function titleIsFocused(page: Page) {
-  const edgeless = page.locator('affine-edgeless-page');
+  const edgeless = page.locator('affine-edgeless-root');
   if (!edgeless) {
     const title = getBlockSuiteEditorTitle(page);
     await expect(title).toBeVisible();

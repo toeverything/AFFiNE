@@ -66,7 +66,7 @@ test('all page can create new edgeless page', async ({ page }) => {
   await waitForEditorLoad(page);
   await clickSideBarAllPageButton(page);
   await clickNewEdgelessDropdown();
-  await expect(page.locator('affine-edgeless-page')).toBeVisible();
+  await expect(page.locator('affine-edgeless-root')).toBeVisible();
 });
 
 test('allow creation of filters by favorite', async ({ page }) => {
