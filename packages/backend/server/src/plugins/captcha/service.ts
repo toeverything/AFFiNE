@@ -5,11 +5,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { nanoid } from 'nanoid';
 
-import {
-  Config,
-  SessionCache,
-  verifyChallengeResponse,
-} from '../../fundamentals';
+import { TokenService, TokenType } from '../../core/auth/token';
+import { Config, verifyChallengeResponse } from '../../fundamentals';
 import { CaptchaConfig } from './types';
 
 @Injectable()
@@ -19,7 +16,7 @@ export class CaptchaService {
 
   constructor(
     private readonly config: Config,
-    private readonly cache: SessionCache
+    private readonly token: TokenService
   ) {
     assert(config.plugins.captcha);
     this.captcha = config.plugins.captcha;
@@ -58,11 +55,12 @@ export class CaptchaService {
   }
 
   async getChallengeToken() {
-    const challenge = randomUUID();
     const resource = randomUUID();
-    await this.cache.set(`CHALLENGE:${challenge}`, resource, {
-      ttl: 5 * 60 * 1000,
-    });
+    const challenge = this.token.createToken(
+      TokenType.Challenge,
+      resource,
+      5 * 60
+    );
 
     return {
       challenge,
@@ -83,7 +81,9 @@ export class CaptchaService {
   async verifyRequest(req: Request, res: Response): Promise<boolean> {
     const challenge = req.query?.challenge;
     if (typeof challenge === 'string' && challenge) {
-      const resource = await this.cache.get<string>(challenge);
+      const resource = await this.token
+        .verifyToken(TokenType.Challenge, challenge)
+        .then(token => token?.credential);
 
       if (!resource) {
         this.rejectResponse(res, 'Invalid Challenge');
