@@ -146,6 +146,9 @@ export const BlocksuiteEditorContainer = forwardRef<
       get page() {
         return page;
       },
+      get doc() {
+        return page;
+      },
       get host() {
         return mode === 'page'
           ? docRef.current?.host
