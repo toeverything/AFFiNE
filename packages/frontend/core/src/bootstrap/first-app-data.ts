@@ -19,10 +19,10 @@ export async function createFirstAppData() {
   localStorage.setItem('is-first-open', 'false');
   const workspaceId = await workspaceManager.createWorkspace(
     WorkspaceFlavour.LOCAL,
-    async workspace => {
+    async (workspace, blob) => {
       workspace.meta.setName(DEFAULT_WORKSPACE_NAME);
       if (runtimeConfig.enablePreloading) {
-        await buildShowcaseWorkspace(workspace, {
+        await buildShowcaseWorkspace(workspace, blob, {
           store: getCurrentStore(),
           atoms: {
             pageMode: setPageModeAtom,
