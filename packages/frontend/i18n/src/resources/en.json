@@ -1142,5 +1142,9 @@
   "com.affine.share-page.footer.create-with": "Create with",
   "com.affine.share-page.footer.built-with": "Built with",
   "com.affine.share-page.footer.description": "Empower your sharing with AffiNE Cloud: One-click doc sharing",
-  "com.affine.share-page.footer.get-started": "Get started for free"
+  "com.affine.share-page.footer.get-started": "Get started for free",
+  "com.affine.workbench.split-view-menu.close": "Close",
+  "com.affine.workbench.split-view-menu.move-left": "Move Left",
+  "com.affine.workbench.split-view-menu.move-right": "Move Right",
+  "com.affine.workbench.split-view-menu.full-screen": "Full Screen"
 }

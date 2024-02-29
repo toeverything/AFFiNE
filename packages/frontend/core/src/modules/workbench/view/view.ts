@@ -18,6 +18,7 @@ export class View {
     }),
     this.history.location
   );
+  size = new LiveData(100);
 
   push(path: To) {
     this.history.push(path);

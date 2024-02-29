@@ -1,5 +1,5 @@
 import { useLiveData } from '@toeverything/infra/livedata';
-import { useEffect, useMemo } from 'react';
+import { memo, useEffect, useMemo } from 'react';
 import {
   createMemoryRouter,
   RouterProvider,
@@ -10,7 +10,7 @@ import {
 import { viewRoutes } from '../../../router';
 import type { View } from './view';
 
-export const ViewRoot = ({ view }: { view: View }) => {
+export const ViewRoot = memo(function ViewRoot({ view }: { view: View }) {
   const viewRouter = useMemo(() => createMemoryRouter(viewRoutes), []);
 
   const location = useLiveData(view.location);
@@ -35,4 +35,4 @@ export const ViewRoot = ({ view }: { view: View }) => {
       </UNSAFE_RouteContext.Provider>
     </UNSAFE_LocationContext.Provider>
   );
-};
+});

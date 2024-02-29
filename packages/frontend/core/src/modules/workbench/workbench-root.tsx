@@ -1,10 +1,11 @@
 import { useService } from '@toeverything/infra/di';
 import { useLiveData } from '@toeverything/infra/livedata';
-import { useCallback } from 'react';
+import { memo, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 
 import { useBindWorkbenchToBrowserRouter } from './browser-adapter';
 import { useBindWorkbenchToDesktopRouter } from './desktop-adapter';
+import { SplitView } from './split-view';
 import type { View } from './view';
 import { ViewRoot } from './view/view-root';
 import { Workbench } from './workbench';
@@ -30,25 +31,57 @@ export const WorkbenchRoot = () => {
 
   useAdapter(workbench, basename);
 
+  const handleOnFocus = useCallback(
+    (view: View) => {
+      const index = workbench.views.value.indexOf(view);
+      workbench.active(index);
+    },
+    [workbench]
+  );
+
+  const panelRenderer = useCallback(
+    (view: View) => {
+      return (
+        <WorkbenchView onFocus={handleOnFocus} key={view.id} view={view} />
+      );
+    },
+    [handleOnFocus]
+  );
+
+  const onMove = useCallback(
+    (from: number, to: number) => {
+      workbench.moveView(from, to);
+    },
+    [workbench]
+  );
+
   return (
-    <div className={workbenchRootContainer}>
-      {views.map((view, index) => (
-        <WorkbenchView key={view.id} view={view} index={index} />
-      ))}
-    </div>
+    <SplitView
+      className={workbenchRootContainer}
+      views={views}
+      renderer={panelRenderer}
+      onMove={onMove}
+    />
   );
 };
 
-const WorkbenchView = ({ view, index }: { view: View; index: number }) => {
-  const workbench = useService(Workbench);
-
-  const handleOnFocus = useCallback(() => {
-    workbench.active(index);
-  }, [workbench, index]);
+const WorkbenchView = memo(function WorkbenchView({
+  view,
+  onFocus,
+}: {
+  view: View;
+  onFocus?: (view: View) => void;
+}) {
+  const handleMouseDownCapture = useCallback(() => {
+    onFocus?.(view);
+  }, [onFocus, view]);
 
   return (
-    <div className={workbenchViewContainer} onMouseDownCapture={handleOnFocus}>
+    <div
+      className={workbenchViewContainer}
+      onMouseDownCapture={handleMouseDownCapture}
+    >
       <ViewRoot key={view.id} view={view} />
     </div>
   );
-};
+});

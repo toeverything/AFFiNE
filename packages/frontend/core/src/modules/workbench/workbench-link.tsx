@@ -17,11 +17,11 @@ export const WorkbenchLink = ({
     (event: React.MouseEvent<HTMLAnchorElement>) => {
       event.preventDefault();
       // TODO: open this when multi view control is implemented
-      // if (environment.isDesktop && (event.ctrlKey || event.metaKey)) {
-      //   workbench.open(to, { at: 'beside' });
-      // } else {
-      workbench.open(to);
-      // }
+      if (environment.isDesktop && (event.ctrlKey || event.metaKey)) {
+        workbench.open(to, { at: 'beside' });
+      } else {
+        workbench.open(to);
+      }
 
       onClick?.(event);
     },

@@ -50,7 +50,7 @@ export const mainContainerStyle = style({
   width: 0,
   flex: 1,
   maxWidth: '100%',
-  backgroundColor: cssVar('backgroundPrimaryColor'),
+  // backgroundColor: cssVar('backgroundPrimaryColor'),
   selectors: {
     '&[data-show-padding="true"]': {
       margin: '8px',
