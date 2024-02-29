@@ -30,6 +30,7 @@ export const previewWrapper = style({
   flexGrow: 1,
   height: '100%',
   position: 'relative',
+  zIndex: 0,
   overflow: 'hidden',
   width: `calc(100% - ${historyListWidth})`,
   backgroundColor: cssVar('backgroundSecondaryColor'),
@@ -47,24 +48,38 @@ export const previewContainer = style({
   boxShadow: cssVar('shadow3'),
   height: 'calc(100% - 40px)',
   width: `calc(100% - 80px)`,
-  backgroundColor: cssVar('backgroundSecondaryColor'),
+  backgroundColor: cssVar('backgroundPrimaryColor'),
+  transformOrigin: 'top center',
+  transition: 'all 0.5s ease-in-out',
+  selectors: {
+    '&[data-distance="> 2"]': {
+      transform: 'scale(0.60)',
+      opacity: 0,
+      zIndex: -3,
+      pointerEvents: 'none',
+    },
+    '&[data-distance="2"]': {
+      transform: 'scale(0.90) translateY(-16px)',
+      zIndex: -2,
+      pointerEvents: 'none',
+    },
+    '&[data-distance="1"]': {
+      transform: 'scale(0.95) translateY(-8px)',
+      zIndex: -1,
+      pointerEvents: 'none',
+    },
+    '&[data-distance="current"]': {
+      opacity: 1,
+      zIndex: 0,
+    },
+    '&[data-distance="< 0"]': {
+      transform: 'scale(1.60) translateY(18px)',
+      opacity: 0,
+      zIndex: 1,
+      pointerEvents: 'none',
+    },
+  },
 });
-export const previewContainerStack1 = style([
-  previewContainer,
-  {
-    left: 48,
-    height: 'calc(100% - 32px)',
-    width: `calc(100% - 96px)`,
-  },
-]);
-export const previewContainerStack2 = style([
-  previewContainer,
-  {
-    left: 56,
-    height: 'calc(100% - 24px)',
-    width: `calc(100% - 112px)`,
-  },
-]);
 export const previewHeader = style({
   display: 'flex',
   alignItems: 'center',

@@ -17,6 +17,7 @@ import type { DialogContentProps } from '@radix-ui/react-dialog';
 import { Doc, type PageMode, Workspace } from '@toeverything/infra';
 import { useService } from '@toeverything/infra/di';
 import { atom, useAtom, useSetAtom } from 'jotai';
+import { range } from 'lodash-es';
 import {
   Fragment,
   type PropsWithChildren,
@@ -24,6 +25,7 @@ import {
   useCallback,
   useLayoutEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 import { encodeStateAsUpdate } from 'yjs';
@@ -90,6 +92,7 @@ const ModalContainer = ({
 
 interface HistoryEditorPreviewProps {
   ts?: string;
+  historyList: HistoryList;
   snapshotPage?: BlockSuiteDoc;
   mode: PageMode;
   onModeChange: (mode: PageMode) => void;
@@ -98,6 +101,7 @@ interface HistoryEditorPreviewProps {
 
 const HistoryEditorPreview = ({
   ts,
+  historyList,
   snapshotPage,
   onModeChange,
   mode,
@@ -110,11 +114,9 @@ const HistoryEditorPreview = ({
     onModeChange('edgeless');
   }, [onModeChange]);
 
-  return (
-    <div className={styles.previewWrapper}>
-      <div className={styles.previewContainerStack2} />
-      <div className={styles.previewContainerStack1} />
-      <div className={styles.previewContainer}>
+  const content = useMemo(() => {
+    return (
+      <>
         <div className={styles.previewHeader}>
           <StyledEditorModeSwitch switchLeft={mode === 'page'}>
             <PageSwitchItem
@@ -152,7 +154,38 @@ const HistoryEditorPreview = ({
             <Loading size={24} />
           </div>
         )}
-      </div>
+      </>
+    );
+  }, [
+    mode,
+    onSwitchToEdgelessMode,
+    onSwitchToPageMode,
+    snapshotPage,
+    title,
+    ts,
+  ]);
+
+  const previewRef = useRef<HTMLDivElement | null>(null);
+
+  return (
+    <div className={styles.previewWrapper} ref={previewRef}>
+      {range(0, historyList.length).map(i => {
+        const historyIndex = historyList.findIndex(h => h.timestamp === ts);
+        const distance = i - historyIndex;
+        const flag =
+          distance === 0
+            ? 'current'
+            : distance > 2
+              ? '> 2'
+              : distance < 0
+                ? '< 0'
+                : distance;
+        return (
+          <div data-distance={flag} key={i} className={styles.previewContainer}>
+            {historyIndex === i ? content : null}
+          </div>
+        );
+      })}
     </div>
   );
 };
@@ -240,21 +273,21 @@ const PlanPrompt = () => {
   ) : null;
 };
 
+type HistoryList = ReturnType<typeof useDocSnapshotList>[0];
+
 const PageHistoryList = ({
-  pageDocId,
-  workspaceId,
+  historyList,
+  onLoadMore,
+  loadingMore,
   activeVersion,
   onVersionChange,
 }: {
-  workspaceId: string;
-  pageDocId: string;
   activeVersion?: string;
   onVersionChange: (version: string) => void;
+  historyList: HistoryList;
+  onLoadMore: (() => void) | false;
+  loadingMore: boolean;
 }) => {
-  const [historyList, loadMore, loadingMore] = useDocSnapshotList(
-    workspaceId,
-    pageDocId
-  );
   const historyListByDay = useMemo(() => {
     return historyListGroupByDay(historyList);
   }, [historyList]);
@@ -330,13 +363,13 @@ const PageHistoryList = ({
               </Collapsible.Root>
             );
           })}
-          {loadMore ? (
+          {onLoadMore ? (
             <Button
               type="plain"
               loading={loadingMore}
               disabled={loadingMore}
               className={styles.historyItemLoadMore}
-              onClick={loadMore}
+              onClick={onLoadMore}
             >
               {t['com.affine.history.confirm-restore-modal.load-more']()}
             </Button>
@@ -468,11 +501,17 @@ const PageHistoryManager = ({
     [handleRestore]
   );
 
+  const [historyList, loadMore, loadingMore] = useDocSnapshotList(
+    workspaceId,
+    pageDocId
+  );
+
   return (
     <div className={styles.root}>
       <div className={styles.modalContent} data-empty={!activeVersion}>
         <HistoryEditorPreview
           ts={activeVersion}
+          historyList={historyList}
           snapshotPage={snapshotPage}
           mode={mode}
           onModeChange={setMode}
@@ -480,8 +519,9 @@ const PageHistoryManager = ({
         />
 
         <PageHistoryList
-          workspaceId={workspaceId}
-          pageDocId={pageDocId}
+          historyList={historyList}
+          onLoadMore={loadMore}
+          loadingMore={loadingMore}
           activeVersion={activeVersion}
           onVersionChange={setActiveVersion}
         />

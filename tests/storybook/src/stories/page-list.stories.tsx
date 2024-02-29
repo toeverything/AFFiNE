@@ -13,14 +13,20 @@ import {
   PageTags,
   type PageTagsProps,
 } from '@affine/core/components/page-list';
+import { workbenchRoutes } from '@affine/core/router';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import { PageIcon, TagsIcon } from '@blocksuite/icons';
 import { Schema, Workspace } from '@blocksuite/store';
+import { expect } from '@storybook/jest';
 import type { Meta, StoryFn } from '@storybook/react';
 import { userEvent } from '@storybook/testing-library';
 import { initEmptyPage } from '@toeverything/infra';
 import { useState } from 'react';
-import { withRouter } from 'storybook-addon-react-router-v6';
+import {
+  reactRouterOutlets,
+  reactRouterParameters,
+  withRouter,
+} from 'storybook-addon-react-router-v6';
 
 export default {
   title: 'AFFiNE/PageList',
@@ -40,6 +46,11 @@ AffineOperationCell.args = {
   onToggleFavoritePage: () => toast('Toggle favorite page'),
   onDisablePublicSharing: () => toast('Disable public sharing'),
   onRemoveToTrash: () => toast('Remove to trash'),
+};
+AffineOperationCell.parameters = {
+  reactRouter: reactRouterParameters({
+    routing: reactRouterOutlets(workbenchRoutes),
+  }),
 };
 AffineOperationCell.play = async ({ canvasElement }) => {
   {

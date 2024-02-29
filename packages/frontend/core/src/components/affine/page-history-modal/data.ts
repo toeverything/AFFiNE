@@ -63,11 +63,7 @@ export const useDocSnapshotList = (workspaceId: string, pageDocId: string) => {
     return data.flatMap(page => page.workspace.histories);
   }, [data]);
 
-  return [
-    histories,
-    shouldLoadMore ? loadMore : undefined,
-    loadingMore,
-  ] as const;
+  return [histories, shouldLoadMore ? loadMore : false, !!loadingMore] as const;
 };
 
 const snapshotFetcher = async (
