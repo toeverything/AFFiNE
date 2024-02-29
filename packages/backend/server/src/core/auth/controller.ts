@@ -142,6 +142,8 @@ export class AuthController {
 
     const valid = await this.token.verifyToken(TokenType.SignIn, token, {
       credential: email,
+      // don't revoke the token to avoid email client prefetching touch link
+      keep: true,
     });
 
     if (!valid) {
