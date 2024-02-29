@@ -22,7 +22,8 @@ import { useParams } from 'react-router-dom';
 
 import { AffineErrorBoundary } from '../../components/affine/affine-error-boundary';
 import { WorkspaceLayout } from '../../layouts/workspace-layout';
-import { WorkbenchRoot } from '../../modules/workbench/workbench-root';
+import { RightSidebarContainer } from '../../modules/right-sidebar';
+import { WorkbenchRoot } from '../../modules/workbench/view/workbench-root';
 import { CurrentWorkspaceService } from '../../modules/workspace/current-workspace';
 import { performanceRenderLogger } from '../../shared';
 import { PageNotFound } from '../404';
@@ -115,6 +116,7 @@ export const Component = (): ReactElement => {
         <AffineErrorBoundary height="100vh">
           <WorkspaceLayout>
             <WorkbenchRoot />
+            <RightSidebarContainer />
           </WorkspaceLayout>
         </AffineErrorBoundary>
       </Suspense>

@@ -3,11 +3,11 @@ import { useLiveData } from '@toeverything/infra/livedata';
 import { useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 
+import type { View } from '../entities/view';
+import { Workbench } from '../entities/workbench';
 import { useBindWorkbenchToBrowserRouter } from './browser-adapter';
 import { useBindWorkbenchToDesktopRouter } from './desktop-adapter';
-import type { View } from './view';
-import { ViewRoot } from './view/view-root';
-import { Workbench } from './workbench';
+import { ViewRoot } from './view-root';
 import {
   workbenchRootContainer,
   workbenchViewContainer,

@@ -48,6 +48,7 @@ export const mainContainerStyle = style({
   zIndex: 0,
   // it will create stacking context to limit layer of child elements and be lower than after auto zIndex
   width: 0,
+  display: 'flex',
   flex: 1,
   maxWidth: '100%',
   backgroundColor: cssVar('backgroundPrimaryColor'),

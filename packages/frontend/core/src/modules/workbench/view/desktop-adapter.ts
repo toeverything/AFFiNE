@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import { useLocation } from 'react-router-dom';
 
-import type { Workbench } from './workbench';
+import type { Workbench } from '../entities/workbench';
 
 /**
  * This hook binds the workbench to the browser router.

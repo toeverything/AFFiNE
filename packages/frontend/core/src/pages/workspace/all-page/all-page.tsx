@@ -12,8 +12,10 @@ import { useService } from '@toeverything/infra';
 import { Workspace } from '@toeverything/infra';
 import { useEffect, useState } from 'react';
 
+import { ViewBodyIsland, ViewHeaderIsland } from '../../../modules/workbench';
 import { EmptyPageList } from '../page-list-empty';
 import * as styles from './all-page.css';
+import { FilterContainer } from './all-page-filter';
 import { AllPageHeader } from './all-page-header';
 
 export const AllPage = () => {
@@ -27,26 +29,33 @@ export const AllPage = () => {
   });
 
   return (
-    <div className={styles.root}>
-      <AllPageHeader
-        showCreateNew={!hideHeaderCreateNew}
-        filters={filters}
-        onChangeFilters={setFilters}
-      />
-      {filteredPageMetas.length > 0 ? (
-        <VirtualizedPageList
-          setHideHeaderCreateNewPage={setHideHeaderCreateNew}
+    <>
+      <ViewHeaderIsland>
+        <AllPageHeader
+          showCreateNew={!hideHeaderCreateNew}
           filters={filters}
+          onChangeFilters={setFilters}
         />
-      ) : (
-        <EmptyPageList
-          type="all"
-          heading={<PageListHeader />}
-          blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
-        />
-      )}
-      <HubIsland />
-    </div>
+      </ViewHeaderIsland>
+      <ViewBodyIsland>
+        <div className={styles.body}>
+          <FilterContainer filters={filters} onChangeFilters={setFilters} />
+          {filteredPageMetas.length > 0 ? (
+            <VirtualizedPageList
+              setHideHeaderCreateNewPage={setHideHeaderCreateNew}
+              filters={filters}
+            />
+          ) : (
+            <EmptyPageList
+              type="all"
+              heading={<PageListHeader />}
+              blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
+            />
+          )}
+        </div>
+        <HubIsland />
+      </ViewBodyIsland>
+    </>
   );
 };
 

@@ -11,7 +11,6 @@ import { useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 
 import { PageNotFound } from '../../404';
-import * as styles from '../all-page/all-page.css';
 import { EmptyPageList } from '../page-list-empty';
 import { TagDetailHeader } from './header';
 
@@ -40,7 +39,7 @@ export const TagDetail = ({ tagId }: { tagId?: string }) => {
   }
 
   return (
-    <div className={styles.root}>
+    <>
       <TagDetailHeader />
       {tagPageMetas.length > 0 ? (
         <VirtualizedPageList tag={currentTag} listItem={tagPageMetas} />
@@ -52,7 +51,7 @@ export const TagDetail = ({ tagId }: { tagId?: string }) => {
         />
       )}
       <HubIsland />
-    </div>
+    </>
   );
 };
 

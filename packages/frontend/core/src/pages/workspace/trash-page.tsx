@@ -94,7 +94,7 @@ export const TrashPage = () => {
     return <ListTableHeader headerCols={pageHeaderColsDef} />;
   }, []);
   return (
-    <div className={styles.root}>
+    <>
       <TrashHeader />
       {filteredPageMetas.length > 0 ? (
         <VirtualizedList
@@ -113,7 +113,7 @@ export const TrashPage = () => {
           blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
         />
       )}
-    </div>
+    </>
   );
 };
 

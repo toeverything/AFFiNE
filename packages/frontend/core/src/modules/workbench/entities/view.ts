@@ -4,6 +4,8 @@ import { createMemoryHistory } from 'history';
 import { nanoid } from 'nanoid';
 import { Observable } from 'rxjs';
 
+import { createIsland } from '../../../utils/island';
+
 export class View {
   id = nanoid();
 
@@ -18,6 +20,9 @@ export class View {
     }),
     this.history.location
   );
+
+  header = createIsland();
+  body = createIsland();
 
   push(path: To) {
     this.history.push(path);

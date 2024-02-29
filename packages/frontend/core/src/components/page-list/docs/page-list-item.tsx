@@ -3,7 +3,7 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useDraggable } from '@dnd-kit/core';
 import { type PropsWithChildren, useCallback, useMemo } from 'react';
 
-import { WorkbenchLink } from '../../../modules/workbench/workbench-link';
+import { WorkbenchLink } from '../../../modules/workbench/view/workbench-link';
 import type { DraggableTitleCellData, PageListItemProps } from '../types';
 import { ColWrapper, formatDate, stopPropagation } from '../utils';
 import * as styles from './page-list-item.css';

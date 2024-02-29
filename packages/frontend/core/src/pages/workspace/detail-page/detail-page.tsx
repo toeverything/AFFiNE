@@ -1,6 +1,5 @@
 import { Scrollable } from '@affine/component';
 import { PageDetailSkeleton } from '@affine/component/page-detail-skeleton';
-import { ResizePanel } from '@affine/component/resize-panel';
 import { useBlockSuitePageMeta } from '@affine/core/hooks/use-block-suite-page-meta';
 import type { PageService } from '@blocksuite/blocks';
 import {
@@ -21,13 +20,12 @@ import {
   ServiceProviderContext,
   useLiveData,
 } from '@toeverything/infra';
-import { appSettingAtom, Workspace } from '@toeverything/infra';
+import { Workspace } from '@toeverything/infra';
 import { useService } from '@toeverything/infra';
-import { useAtom, useAtomValue, useSetAtom } from 'jotai';
+import { useSetAtom } from 'jotai';
 import {
   memo,
   type ReactElement,
-  type ReactNode,
   useCallback,
   useEffect,
   useMemo,
@@ -47,66 +45,17 @@ import { TopTip } from '../../../components/top-tip';
 import { useRegisterBlocksuiteEditorCommands } from '../../../hooks/affine/use-register-blocksuite-editor-commands';
 import { usePageDocumentTitle } from '../../../hooks/use-global-state';
 import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
+import { RightSidebarViewIsland } from '../../../modules/right-sidebar';
+import {
+  useIsActiveView,
+  ViewBodyIsland,
+  ViewHeaderIsland,
+} from '../../../modules/workbench';
 import { performanceRenderLogger } from '../../../shared';
 import { PageNotFound } from '../../404';
 import * as styles from './detail-page.css';
-import { DetailPageHeader, RightSidebarHeader } from './detail-page-header';
-import {
-  EditorSidebar,
-  editorSidebarOpenAtom,
-  editorSidebarResizingAtom,
-  editorSidebarWidthAtom,
-} from './editor-sidebar';
-
-interface DetailPageLayoutProps {
-  main: ReactNode;
-  header: ReactNode;
-  footer: ReactNode;
-  sidebar: ReactNode;
-}
-
-const MIN_SIDEBAR_WIDTH = 320;
-const MAX_SIDEBAR_WIDTH = 800;
-
-// todo: consider move to a shared place if we also want to reuse the layout for other routes
-const DetailPageLayout = ({
-  main,
-  header,
-  footer,
-  sidebar,
-}: DetailPageLayoutProps): ReactElement => {
-  const [width, setWidth] = useAtom(editorSidebarWidthAtom);
-  const { clientBorder } = useAtomValue(appSettingAtom);
-  const [resizing, setResizing] = useAtom(editorSidebarResizingAtom);
-  const [open, setOpen] = useAtom(editorSidebarOpenAtom);
-
-  return (
-    <div className={styles.root} data-client-border={clientBorder && open}>
-      <div className={styles.mainContainer}>
-        {header}
-        {main}
-        {footer}
-      </div>
-      {sidebar ? (
-        <ResizePanel
-          resizeHandlePos="left"
-          resizeHandleOffset={clientBorder ? 4 : 0}
-          width={width}
-          className={styles.sidebarContainer}
-          onResizing={setResizing}
-          resizing={resizing}
-          open={open}
-          onOpen={setOpen}
-          onWidthChange={setWidth}
-          minWidth={MIN_SIDEBAR_WIDTH}
-          maxWidth={MAX_SIDEBAR_WIDTH}
-        >
-          {sidebar}
-        </ResizePanel>
-      ) : null}
-    </div>
-  );
-};
+import { DetailPageHeader } from './detail-page-header';
+import { EditorSidebar, ExtensionTabs } from './editor-sidebar';
 
 const DetailPageImpl = memo(function DetailPageImpl() {
   const page = useService(Page);
@@ -203,24 +152,23 @@ const DetailPageImpl = memo(function DetailPageImpl() {
     ]
   );
 
+  const isActiveView = useIsActiveView();
+
   return (
     <>
-      <DetailPageLayout
-        header={
-          <>
-            <DetailPageHeader
-              page={page.blockSuitePage}
-              workspace={currentWorkspace}
-              showSidebarSwitch={!isInTrash}
-            />
-            <TopTip pageId={currentPageId} workspace={currentWorkspace} />
-          </>
-        }
-        main={
-          // Add a key to force rerender when page changed, to avoid error boundary persisting.
+      <ViewHeaderIsland>
+        <DetailPageHeader
+          page={page.blockSuitePage}
+          workspace={currentWorkspace}
+        />
+      </ViewHeaderIsland>
+      <ViewBodyIsland>
+        <div className={styles.mainContainer}>
+          {/* Add a key to force rerender when page changed, to avoid error boundary persisting. */}
           <AffineErrorBoundary key={currentPageId}>
             <Scrollable.Root>
               <Scrollable.Viewport className={styles.editorContainer}>
+                <TopTip pageId={currentPageId} workspace={currentWorkspace} />
                 <PageDetailEditor
                   pageId={currentPageId}
                   onLoad={onLoad}
@@ -231,23 +179,26 @@ const DetailPageImpl = memo(function DetailPageImpl() {
             </Scrollable.Root>
             <HubIsland />
           </AffineErrorBoundary>
+          {isInTrash ? <TrashPageFooter pageId={page.id} /> : null}
+        </div>
+      </ViewBodyIsland>
+
+      <RightSidebarViewIsland
+        active={isActiveView}
+        header={
+          <ExtensionTabs
+            workspace={currentWorkspace}
+            page={page.blockSuitePage}
+          />
         }
-        footer={isInTrash ? <TrashPageFooter pageId={page.id} /> : null}
-        sidebar={
-          !isInTrash ? (
-            <div className={styles.sidebarContainerInner}>
-              <RightSidebarHeader
-                workspace={currentWorkspace}
-                page={page.blockSuitePage}
-              />
-              <EditorSidebar
-                workspace={blockSuiteWorkspace}
-                page={page.blockSuitePage}
-              />
-            </div>
-          ) : null
+        body={
+          <EditorSidebar
+            workspace={currentWorkspace.blockSuiteWorkspace}
+            page={page.blockSuitePage}
+          />
         }
       />
+
       <ImagePreviewModal
         pageId={currentPageId}
         workspace={blockSuiteWorkspace}

@@ -32,7 +32,6 @@ import { useParams } from 'react-router-dom';
 
 import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
 import { WorkspaceSubPath } from '../../../shared';
-import * as allPageStyles from '../all-page/all-page.css';
 import * as styles from './collection.css';
 import { CollectionDetailHeader } from './header';
 
@@ -52,7 +51,7 @@ export const CollectionDetail = ({
   }, [collection, collectionService, open]);
 
   return (
-    <div className={allPageStyles.root}>
+    <>
       <CollectionDetailHeader
         showCreateNew={!hideHeaderCreateNew}
         onCreate={handleEditCollection}
@@ -64,7 +63,7 @@ export const CollectionDetail = ({
       />
       <HubIsland />
       {node}
-    </div>
+    </>
   );
 };
 

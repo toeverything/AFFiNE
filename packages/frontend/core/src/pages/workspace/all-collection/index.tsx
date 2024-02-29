@@ -16,7 +16,6 @@ import { nanoid } from 'nanoid';
 import { useCallback, useMemo, useState } from 'react';
 
 import { CollectionService } from '../../../modules/collection';
-import * as styles from '../all-page/all-page.css';
 import { EmptyCollectionList } from '../page-list-empty';
 import { AllCollectionHeader } from './header';
 
@@ -58,7 +57,7 @@ export const AllCollection = () => {
   }, [collectionService, currentWorkspace, navigateHelper, open]);
 
   return (
-    <div className={styles.root}>
+    <>
       <AllCollectionHeader
         showCreateNew={!hideHeaderCreateNew}
         onCreateCollection={handleCreateCollection}
@@ -84,7 +83,7 @@ export const AllCollection = () => {
       )}
 
       <HubIsland />
-    </div>
+    </>
   );
 };
 

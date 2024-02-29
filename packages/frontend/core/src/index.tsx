@@ -2,6 +2,7 @@ import './polyfill/intl-segmenter';
 import './polyfill/request-idle-callback';
 import './polyfill/resize-observer';
 
+import { ZipTransformer } from '@blocksuite/blocks';
 import { assertExists } from '@blocksuite/global/utils';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -9,6 +10,8 @@ import { createRoot } from 'react-dom/client';
 import { App } from './app';
 import { setup } from './bootstrap/setup';
 import { performanceLogger } from './shared';
+
+window.ZipTransformer = ZipTransformer;
 
 const performanceMainLogger = performanceLogger.namespace('main');
 function main() {

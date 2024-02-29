@@ -8,7 +8,6 @@ import { useBlockSuitePageMeta } from '@affine/core/hooks/use-block-suite-page-m
 import { useService } from '@toeverything/infra';
 import { Workspace } from '@toeverything/infra';
 
-import * as styles from '../all-page/all-page.css';
 import { EmptyTagList } from '../page-list-empty';
 import { AllTagHeader } from './header';
 
@@ -22,7 +21,7 @@ export const AllTag = () => {
   );
 
   return (
-    <div className={styles.root}>
+    <>
       <AllTagHeader />
       {tags.length > 0 ? (
         <VirtualizedTagList
@@ -34,7 +33,7 @@ export const AllTag = () => {
         <EmptyTagList heading={<TagListHeader />} />
       )}
       <HubIsland />
-    </div>
+    </>
   );
 };
 
