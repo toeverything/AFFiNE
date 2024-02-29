@@ -2,7 +2,7 @@ import { MenuLinkItem } from '@affine/component/app-sidebar';
 import { useBlockSuitePageReferences } from '@affine/core/hooks/use-block-suite-page-references';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
-import { type PageMeta, type Workspace } from '@blocksuite/store';
+import { type DocMeta, type Workspace } from '@blocksuite/store';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import { PageRecordList, useLiveData, useService } from '@toeverything/infra';
 import { useMemo, useState } from 'react';
@@ -13,7 +13,7 @@ import { PostfixItem } from './postfix-item';
 export interface ReferencePageProps {
   workspace: Workspace;
   pageId: string;
-  metaMapping: Record<string, PageMeta>;
+  metaMapping: Record<string, DocMeta>;
   parentIds: Set<string>;
 }
 

@@ -1,5 +1,5 @@
 import type { Collection, Filter } from '@affine/env/filter';
-import type { PageMeta } from '@blocksuite/store';
+import type { DocMeta } from '@blocksuite/store';
 import type { Workspace } from '@toeverything/infra';
 import { useMemo } from 'react';
 
@@ -8,7 +8,7 @@ import { filterPage, filterPageByRules } from './use-collection-manager';
 
 export const useFilteredPageMetas = (
   workspace: Workspace,
-  pageMetas: PageMeta[],
+  pageMetas: DocMeta[],
   options: {
     trash?: boolean;
     filters?: Filter[];

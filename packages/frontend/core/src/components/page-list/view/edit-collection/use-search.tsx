@@ -1,7 +1,7 @@
-import type { PageMeta } from '@blocksuite/store';
+import type { DocMeta } from '@blocksuite/store';
 import { useState } from 'react';
 
-export const useSearch = (list: PageMeta[]) => {
+export const useSearch = (list: DocMeta[]) => {
   const [value, onChange] = useState('');
   return {
     searchText: value,

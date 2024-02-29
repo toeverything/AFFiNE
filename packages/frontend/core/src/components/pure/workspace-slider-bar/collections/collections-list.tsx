@@ -11,7 +11,7 @@ import { CollectionService } from '@affine/core/modules/collection';
 import type { Collection, DeleteCollectionInfo } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { MoreHorizontalIcon, ViewLayersIcon } from '@blocksuite/icons';
-import type { PageMeta, Workspace } from '@blocksuite/store';
+import type { DocMeta, Workspace } from '@blocksuite/store';
 import { useDroppable } from '@dnd-kit/core';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import { useService } from '@toeverything/infra';
@@ -20,7 +20,7 @@ import { useCallback, useMemo, useState } from 'react';
 
 import { useAllPageListConfig } from '../../../../hooks/affine/use-all-page-list-config';
 import { getDropItemId } from '../../../../hooks/affine/use-sidebar-drag';
-import { useBlockSuitePageMeta } from '../../../../hooks/use-block-suite-page-meta';
+import { useBlockSuiteDocMeta } from '../../../../hooks/use-block-suite-page-meta';
 import { Workbench } from '../../../../modules/workbench';
 import { WorkbenchLink } from '../../../../modules/workbench/workbench-link';
 import type { CollectionsListProps } from '../index';
@@ -34,7 +34,7 @@ const CollectionRenderer = ({
   info,
 }: {
   collection: Collection;
-  pages: PageMeta[];
+  pages: DocMeta[];
   workspace: Workspace;
   info: DeleteCollectionInfo;
 }) => {
@@ -173,7 +173,7 @@ export const CollectionsList = ({
   info,
   onCreate,
 }: CollectionsListProps) => {
-  const metas = useBlockSuitePageMeta(workspace);
+  const metas = useBlockSuiteDocMeta(workspace);
   const collections = useLiveData(useService(CollectionService).collections);
   const t = useAFFiNEI18N();
   if (collections.length === 0) {

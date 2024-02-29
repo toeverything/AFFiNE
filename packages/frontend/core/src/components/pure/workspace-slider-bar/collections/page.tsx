@@ -2,7 +2,7 @@ import { MenuItem as CollectionItem } from '@affine/component/app-sidebar';
 import { useBlockSuitePageReferences } from '@affine/core/hooks/use-block-suite-page-references';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
-import type { PageMeta, Workspace } from '@blocksuite/store';
+import type { DocMeta, Workspace } from '@blocksuite/store';
 import { useDraggable } from '@dnd-kit/core';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import { PageRecordList, useLiveData, useService } from '@toeverything/infra';
@@ -23,11 +23,11 @@ export const Page = ({
   inAllowList,
   removeFromAllowList,
 }: {
-  page: PageMeta;
+  page: DocMeta;
   inAllowList: boolean;
   removeFromAllowList: (id: string) => void;
   workspace: Workspace;
-  allPageMeta: Record<string, PageMeta>;
+  allPageMeta: Record<string, DocMeta>;
 }) => {
   const [collapsed, setCollapsed] = React.useState(true);
   const params = useParams();

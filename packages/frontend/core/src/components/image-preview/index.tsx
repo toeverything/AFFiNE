@@ -96,7 +96,7 @@ const ImagePreviewModalImpl = (
       if (!hasPlayedAnimation) {
         setHasPlayedAnimation(true);
       }
-      const page = workspace.getPage(props.pageId);
+      const page = workspace.getDoc(props.pageId);
       assertExists(page);
       const block = page.getBlockById(blockId);
       assertExists(block);
@@ -116,7 +116,7 @@ const ImagePreviewModalImpl = (
     (blockId: string | null) => {
       assertExists(blockId);
       const workspace = props.workspace;
-      const page = workspace.getPage(props.pageId);
+      const page = workspace.getDoc(props.pageId);
       assertExists(page);
       const block = page.getBlockById(blockId);
       assertExists(block);
@@ -137,7 +137,7 @@ const ImagePreviewModalImpl = (
     (blockId: string) => {
       const { pageId, workspace, onClose } = props;
 
-      const page = workspace.getPage(pageId);
+      const page = workspace.getDoc(pageId);
       assertExists(page);
       const block = page.getBlockById(blockId);
       assertExists(block);
@@ -186,7 +186,7 @@ const ImagePreviewModalImpl = (
   const downloadHandler = useCallback(
     async (blockId: string | null) => {
       const workspace = props.workspace;
-      const page = workspace.getPage(props.pageId);
+      const page = workspace.getDoc(props.pageId);
       assertExists(page);
       if (typeof blockId === 'string') {
         const block = page.getBlockById(blockId) as ImageBlockModel;
@@ -240,14 +240,14 @@ const ImagePreviewModalImpl = (
     [props.pageId, props.workspace]
   );
   const [caption, setCaption] = useState(() => {
-    const page = props.workspace.getPage(props.pageId);
+    const page = props.workspace.getDoc(props.pageId);
     assertExists(page);
     const block = page.getBlockById(props.blockId) as ImageBlockModel;
     assertExists(block);
     return block?.caption;
   });
   useEffect(() => {
-    const page = props.workspace.getPage(props.pageId);
+    const page = props.workspace.getDoc(props.pageId);
     assertExists(page);
     const block = page.getBlockById(props.blockId) as ImageBlockModel;
     assertExists(block);
@@ -257,7 +257,7 @@ const ImagePreviewModalImpl = (
     ['workspace', 'image', props.pageId, props.blockId],
     {
       fetcher: ([_, __, pageId, blockId]) => {
-        const page = props.workspace.getPage(pageId);
+        const page = props.workspace.getDoc(pageId);
         assertExists(page);
         const block = page.getBlockById(blockId) as ImageBlockModel;
         assertExists(block);
@@ -510,7 +510,7 @@ export const ImagePreviewModal = (
 
       const workspace = props.workspace;
 
-      const page = workspace.getPage(props.pageId);
+      const page = workspace.getDoc(props.pageId);
       assertExists(page);
       const block = page.getBlockById(blockId);
       assertExists(block);

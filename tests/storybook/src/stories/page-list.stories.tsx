@@ -230,7 +230,7 @@ async function createAndInitPage(
   title: string,
   preview: string
 ) {
-  const page = workspace.createPage();
+  const page = workspace.createDoc();
   initEmptyPage(page, title);
   page.getBlockByFlavour('affine:paragraph').at(0)?.text?.insert(preview, 0);
   return page;
@@ -273,16 +273,16 @@ PageListStory.loaders = [
       'Hello World from page 3Hello World from page 3Hello World from page 3Hello World from page 3Hello World from page 3'
     );
 
-    page1.meta.createDate = new Date('2021-01-01').getTime();
-    page2.meta.createDate = page2.meta.createDate - 3600 * 1000 * 24;
-    page3.meta.createDate = page3.meta.createDate - 3600 * 1000 * 24 * 7;
+    page1.meta!.createDate = new Date('2021-01-01').getTime();
+    page2.meta!.createDate = page2.meta!.createDate - 3600 * 1000 * 24;
+    page3.meta!.createDate = page3.meta!.createDate - 3600 * 1000 * 24 * 7;
 
-    workspace.meta.pageMetas[3].tags = testTags.slice(0, 3).map(t => t.id);
-    workspace.meta.pageMetas[2].tags = testTags.slice(0, 12).map(t => t.id);
+    workspace.meta.docMetas[3].tags = testTags.slice(0, 3).map(t => t.id);
+    workspace.meta.docMetas[2].tags = testTags.slice(0, 12).map(t => t.id);
 
     return {
       blockSuiteWorkspace: workspace,
-      pages: workspace.meta.pages,
+      pages: workspace.meta.docs,
     };
   },
 ];

@@ -32,7 +32,7 @@ test('Switch to edgeless by switch edgeless item', async ({ page }) => {
     const count = await getCount();
     expect(count).toBe(1);
   }
-  const edgeless = page.locator('affine-edgeless-page');
+  const edgeless = page.locator('affine-edgeless-root');
   await expect(edgeless).toBeVisible();
 
   const editorWrapperPadding = await page
@@ -62,7 +62,7 @@ test('Convert to edgeless by editor header items', async ({ page }) => {
   await clickPageMoreActions(page);
   const menusEdgelessItem = page.getByTestId('editor-option-menu-edgeless');
   await menusEdgelessItem.click({ delay: 100 });
-  const edgeless = page.locator('affine-edgeless-page');
+  const edgeless = page.locator('affine-edgeless-root');
   await expect(edgeless).toBeVisible();
 });
 

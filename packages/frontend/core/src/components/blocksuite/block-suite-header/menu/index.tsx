@@ -11,7 +11,7 @@ import { Export, MoveToTrash } from '@affine/core/components/page-list';
 import { useBlockSuiteMetaHelper } from '@affine/core/hooks/affine/use-block-suite-meta-helper';
 import { useExportPage } from '@affine/core/hooks/affine/use-export-page';
 import { useTrashModalHelper } from '@affine/core/hooks/affine/use-trash-modal-helper';
-import { useBlockSuitePageMeta } from '@affine/core/hooks/use-block-suite-page-meta';
+import { useBlockSuiteDocMeta } from '@affine/core/hooks/use-block-suite-page-meta';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
@@ -25,7 +25,7 @@ import {
   ImportIcon,
   PageIcon,
 } from '@blocksuite/icons';
-import { Page, useLiveData, useService, Workspace } from '@toeverything/infra';
+import { Doc, useLiveData, useService, Workspace } from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
 import { useCallback, useState } from 'react';
 
@@ -48,13 +48,13 @@ export const PageHeaderMenuButton = ({
 
   const workspace = useService(Workspace);
   const blockSuiteWorkspace = workspace.blockSuiteWorkspace;
-  const currentPage = blockSuiteWorkspace.getPage(pageId);
+  const currentPage = blockSuiteWorkspace.getDoc(pageId);
   assertExists(currentPage);
 
-  const pageMeta = useBlockSuitePageMeta(blockSuiteWorkspace).find(
+  const pageMeta = useBlockSuiteDocMeta(blockSuiteWorkspace).find(
     meta => meta.id === pageId
   );
-  const page = useService(Page);
+  const page = useService(Doc);
   const currentMode = useLiveData(page.mode);
 
   const { favorite, toggleFavorite } = useFavorite(pageId);

@@ -1,8 +1,8 @@
 import { Tooltip } from '@affine/component/ui/tooltip';
-import { useBlockSuitePageMeta } from '@affine/core/hooks/use-block-suite-page-meta';
+import { useBlockSuiteDocMeta } from '@affine/core/hooks/use-block-suite-page-meta';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
-  Page,
+  Doc,
   type PageMode,
   useLiveData,
   useService,
@@ -42,11 +42,11 @@ export const EditorModeSwitch = ({
   publicMode,
 }: EditorModeSwitchProps) => {
   const t = useAFFiNEI18N();
-  const pageMeta = useBlockSuitePageMeta(blockSuiteWorkspace).find(
+  const pageMeta = useBlockSuiteDocMeta(blockSuiteWorkspace).find(
     meta => meta.id === pageId
   );
   const trash = pageMeta?.trash ?? false;
-  const page = useService(Page);
+  const page = useService(Doc);
 
   const currentMode = useLiveData(page.mode);
 

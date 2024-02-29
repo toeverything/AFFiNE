@@ -10,7 +10,7 @@ import {
   ToggleCollapseIcon,
   ViewLayersIcon,
 } from '@blocksuite/icons';
-import type { PageMeta, Workspace } from '@blocksuite/store';
+import type { DocMeta, Workspace } from '@blocksuite/store';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import clsx from 'clsx';
 import { selectAtom } from 'jotai/utils';
@@ -223,7 +223,7 @@ const listsPropsAtom = selectAtom(
 export const PageListItemRenderer = (item: ListItem) => {
   const props = useAtomValue(listsPropsAtom);
   const { selectionActive } = useAtomValue(selectionStateAtom);
-  const page = item as PageMeta;
+  const page = item as DocMeta;
   return (
     <PageListItem
       {...pageMetaToListItemProp(page, {
@@ -294,8 +294,8 @@ const UnifiedPageIcon = ({
 };
 
 function pageMetaToListItemProp(
-  item: PageMeta,
-  props: RequiredProps<PageMeta>
+  item: DocMeta,
+  props: RequiredProps<DocMeta>
 ): PageListItemProps {
   const toggleSelection = props.onSelectedIdsChange
     ? () => {

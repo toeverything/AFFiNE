@@ -2,7 +2,7 @@ import { IconButton } from '@affine/component';
 import { useJournalInfoHelper } from '@affine/core/hooks/use-journal';
 import { useWorkspaceEnabledFeatures } from '@affine/core/hooks/use-workspace-features';
 import { FeatureType } from '@affine/graphql';
-import type { Page } from '@blocksuite/store';
+import type { Doc } from '@blocksuite/store';
 import type { Workspace } from '@toeverything/infra';
 import { assignInlineVars } from '@vanilla-extract/dynamic';
 import { useAtom, useAtomValue } from 'jotai';
@@ -16,7 +16,7 @@ import * as styles from './extensions.css';
 
 export interface ExtensionTabsProps {
   workspace: Workspace;
-  page: Page;
+  page: Doc;
 }
 
 // provide a switcher for active extensions

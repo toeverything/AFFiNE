@@ -35,7 +35,7 @@ describe('SyncPeer', () => {
       );
       await syncPeer.waitForLoaded();
 
-      const page = workspace.createPage({
+      const page = workspace.createDoc({
         id: 'page0',
       });
       page.load();
@@ -85,7 +85,7 @@ describe('SyncPeer', () => {
     await syncPeer.waitForSynced();
     expect(syncPeer.status.step).toBe(SyncPeerStep.Synced);
 
-    const page = workspace.createPage({
+    const page = workspace.createDoc({
       id: 'page0',
     });
     expect(syncPeer.status.step).toBe(SyncPeerStep.LoadingSubDoc);

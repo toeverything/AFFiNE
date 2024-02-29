@@ -3,7 +3,7 @@ import {
   appSidebarResizingAtom,
 } from '@affine/component/app-sidebar';
 import { MainContainer, WorkspaceFallback } from '@affine/component/workspace';
-import { useBlockSuitePageMeta } from '@affine/core/hooks/use-block-suite-page-meta';
+import { useBlockSuiteDocMeta } from '@affine/core/hooks/use-block-suite-page-meta';
 import { useWorkspaceStatus } from '@affine/core/hooks/use-workspace-status';
 import { assertExists } from '@blocksuite/global/utils';
 import {
@@ -58,7 +58,7 @@ export const QuickSearch = () => {
   const currentWorkspace = useService(Workspace);
   const { pageId } = useParams();
   const blockSuiteWorkspace = currentWorkspace.blockSuiteWorkspace;
-  const pageMeta = useBlockSuitePageMeta(
+  const pageMeta = useBlockSuiteDocMeta(
     currentWorkspace.blockSuiteWorkspace
   ).find(meta => meta.id === pageId);
 

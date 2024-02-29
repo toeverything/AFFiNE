@@ -15,7 +15,7 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowRightSmallIcon } from '@blocksuite/icons';
 import { useService } from '@toeverything/infra';
 import { useLiveData } from '@toeverything/infra';
-import { Page, type PageMode } from '@toeverything/infra';
+import { Doc, type PageMode } from '@toeverything/infra';
 import { useMemo, useState } from 'react';
 import { useCallback } from 'react';
 
@@ -56,7 +56,7 @@ export const AffineSharePage = (props: ShareMenuProps) => {
     currentPage,
   } = props;
   const pageId = currentPage.id;
-  const page = useService(Page);
+  const page = useService(Doc);
   const [showDisable, setShowDisable] = useState(false);
   const {
     isSharedPage,

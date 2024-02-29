@@ -5,7 +5,7 @@ export const docEditorRoot = style({
   background: cssVar('backgroundPrimaryColor'),
 });
 
-// brings styles of .affine-doc-viewport from blocksuite
+// brings styles of .affine-page-viewport from blocksuite
 export const affineDocViewport = style({
   display: 'flex',
   flexDirection: 'column',

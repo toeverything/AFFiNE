@@ -6,7 +6,7 @@ import {
 import { CMDKQuickSearchModal } from '@affine/core/components/pure/cmdk';
 import { HighlightLabel } from '@affine/core/components/pure/cmdk/highlight';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import type { Page } from '@blocksuite/store';
+import type { Doc } from '@blocksuite/store';
 import type { Meta, StoryFn } from '@storybook/react';
 import { useStore } from 'jotai';
 import { useEffect, useState } from 'react';
@@ -23,7 +23,7 @@ const createMockedPage = () => {
   return {
     id: 'test-page',
     waitForLoaded: () => Promise.resolve(),
-  } as any as Page;
+  } as any as Doc;
 };
 
 function useRegisterCommands() {

@@ -1,8 +1,7 @@
 import { Scrollable } from '@affine/component';
 import { PageDetailSkeleton } from '@affine/component/page-detail-skeleton';
 import { ResizePanel } from '@affine/component/resize-panel';
-import { useBlockSuitePageMeta } from '@affine/core/hooks/use-block-suite-page-meta';
-import type { PageService } from '@blocksuite/blocks';
+import { useBlockSuiteDocMeta } from '@affine/core/hooks/use-block-suite-page-meta';
 import {
   BookmarkService,
   customImageProxyMiddleware,
@@ -12,10 +11,10 @@ import {
   ImageService,
 } from '@blocksuite/blocks';
 import type { AffineEditorContainer } from '@blocksuite/presets';
-import type { Page as BlockSuitePage } from '@blocksuite/store';
+import type { Doc as BlockSuiteDoc } from '@blocksuite/store';
 import {
+  Doc,
   globalBlockSuiteSchema,
-  Page,
   PageManager,
   PageRecordList,
   ServiceProviderContext,
@@ -109,14 +108,14 @@ const DetailPageLayout = ({
 };
 
 const DetailPageImpl = memo(function DetailPageImpl() {
-  const page = useService(Page);
+  const page = useService(Doc);
   const pageRecordList = useService(PageRecordList);
   const currentPageId = page.id;
   const { openPage, jumpToTag } = useNavigateHelper();
   const currentWorkspace = useService(Workspace);
   const blockSuiteWorkspace = currentWorkspace.blockSuiteWorkspace;
 
-  const pageMeta = useBlockSuitePageMeta(blockSuiteWorkspace).find(
+  const pageMeta = useBlockSuiteDocMeta(blockSuiteWorkspace).find(
     meta => meta.id === page.id
   );
 
@@ -128,7 +127,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
   usePageDocumentTitle(title);
 
   const onLoad = useCallback(
-    (bsPage: BlockSuitePage, editor: AffineEditorContainer) => {
+    (bsPage: BlockSuiteDoc, editor: AffineEditorContainer) => {
       try {
         // todo(joooye34): improve the following migration code
         const surfaceBlock = bsPage.getBlockByFlavour('affine:surface')[0];
@@ -139,7 +138,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
             'type'
           ) !== '$blocksuite:internal:native$'
         ) {
-          globalBlockSuiteSchema.upgradePage(
+          globalBlockSuiteSchema.upgradeDoc(
             0,
             {
               'affine:surface': 3,
@@ -165,12 +164,10 @@ const DetailPageImpl = memo(function DetailPageImpl() {
       EmbedLoomService.setLinkPreviewEndpoint(runtimeConfig.linkPreviewUrl);
 
       // provide page mode and updated date to blocksuite
-      const pageService = editorHost.std.spec.getService(
-        'affine:page'
-      ) as PageService;
-      pageService.getPageMode = (pageId: string) =>
+      const pageService = editorHost.std.spec.getService('affine:page');
+      pageService.getEditorMode = (pageId: string) =>
         pageRecordList.record(pageId).value?.mode.value ?? 'page';
-      pageService.getPageUpdatedAt = (pageId: string) => {
+      pageService.getDocUpdatedAt = (pageId: string) => {
         const linkedPage = pageRecordList.record(pageId).value;
         if (!linkedPage) return new Date();
 
@@ -181,8 +178,8 @@ const DetailPageImpl = memo(function DetailPageImpl() {
 
       page.setMode(mode);
       // fixme: it seems pageLinkClicked is not triggered sometimes?
-      const dispose = editor.slots.pageLinkClicked.on(({ pageId }) => {
-        return openPage(blockSuiteWorkspace.id, pageId);
+      const dispose = editor.slots.docLinkClicked.on(({ docId }) => {
+        return openPage(blockSuiteWorkspace.id, docId);
       });
       const disposeTagClick = editor.slots.tagClicked.on(({ tagId }) => {
         jumpToTag(currentWorkspace.id, tagId);
@@ -209,7 +206,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
         header={
           <>
             <DetailPageHeader
-              page={page.blockSuitePage}
+              page={page.blockSuiteDoc}
               workspace={currentWorkspace}
               showSidebarSwitch={!isInTrash}
             />
@@ -238,11 +235,11 @@ const DetailPageImpl = memo(function DetailPageImpl() {
             <div className={styles.sidebarContainerInner}>
               <RightSidebarHeader
                 workspace={currentWorkspace}
-                page={page.blockSuitePage}
+                page={page.blockSuiteDoc}
               />
               <EditorSidebar
                 workspace={blockSuiteWorkspace}
-                page={page.blockSuitePage}
+                page={page.blockSuiteDoc}
               />
             </div>
           ) : null
@@ -271,7 +268,7 @@ export const DetailPage = ({ pageId }: { pageId: string }): ReactElement => {
 
   const pageManager = useService(PageManager);
 
-  const [page, setPage] = useState<Page | null>(null);
+  const [page, setPage] = useState<Doc | null>(null);
 
   useEffect(() => {
     if (!pageRecord) {

@@ -24,8 +24,8 @@ export async function createFirstAppData(workspaceManager: WorkspaceManager) {
       WorkspaceFlavour.LOCAL,
       async workspace => {
         workspace.meta.setName(DEFAULT_WORKSPACE_NAME);
-        const page = workspace.createPage();
-        workspace.setPageMeta(page.id, {
+        const page = workspace.createDoc();
+        workspace.setDocMeta(page.id, {
           jumpOnce: true,
         });
         initEmptyPage(page);

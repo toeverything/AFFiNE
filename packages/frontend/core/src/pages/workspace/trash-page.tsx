@@ -12,11 +12,11 @@ import { pageHeaderColsDef } from '@affine/core/components/page-list/header-col-
 import { Header } from '@affine/core/components/pure/header';
 import { WindowsAppControls } from '@affine/core/components/pure/header/windows-app-controls';
 import { useBlockSuiteMetaHelper } from '@affine/core/hooks/affine/use-block-suite-meta-helper';
-import { useBlockSuitePageMeta } from '@affine/core/hooks/use-block-suite-page-meta';
+import { useBlockSuiteDocMeta } from '@affine/core/hooks/use-block-suite-page-meta';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
 import { DeleteIcon } from '@blocksuite/icons';
-import type { PageMeta } from '@blocksuite/store';
+import type { DocMeta } from '@blocksuite/store';
 import { Workspace } from '@toeverything/infra';
 import { useService } from '@toeverything/infra/di';
 import { useCallback } from 'react';
@@ -51,7 +51,7 @@ export const TrashPage = () => {
   const blockSuiteWorkspace = currentWorkspace.blockSuiteWorkspace;
   assertExists(blockSuiteWorkspace);
 
-  const pageMetas = useBlockSuitePageMeta(blockSuiteWorkspace);
+  const pageMetas = useBlockSuiteDocMeta(blockSuiteWorkspace);
   const filteredPageMetas = useFilteredPageMetas(currentWorkspace, pageMetas, {
     trash: true,
   });
@@ -63,7 +63,7 @@ export const TrashPage = () => {
 
   const pageOperationsRenderer = useCallback(
     (item: ListItem) => {
-      const page = item as PageMeta;
+      const page = item as DocMeta;
       const onRestorePage = () => {
         restoreFromTrash(page.id);
         toast(

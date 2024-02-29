@@ -4,7 +4,7 @@ import {
   useFilteredPageMetas,
   VirtualizedPageList,
 } from '@affine/core/components/page-list';
-import { useBlockSuitePageMeta } from '@affine/core/hooks/use-block-suite-page-meta';
+import { useBlockSuiteDocMeta } from '@affine/core/hooks/use-block-suite-page-meta';
 import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
 import { performanceRenderLogger } from '@affine/core/shared';
 import type { Filter } from '@affine/env/filter';
@@ -18,7 +18,7 @@ import { AllPageHeader } from './all-page-header';
 
 export const AllPage = () => {
   const currentWorkspace = useService(Workspace);
-  const pageMetas = useBlockSuitePageMeta(currentWorkspace.blockSuiteWorkspace);
+  const pageMetas = useBlockSuiteDocMeta(currentWorkspace.blockSuiteWorkspace);
   const [hideHeaderCreateNew, setHideHeaderCreateNew] = useState(true);
 
   const [filters, setFilters] = useState<Filter[]>([]);
@@ -58,10 +58,10 @@ export const Component = () => {
 
   useEffect(() => {
     function checkJumpOnce() {
-      for (const [pageId] of currentWorkspace.blockSuiteWorkspace.pages) {
-        const page = currentWorkspace.blockSuiteWorkspace.getPage(pageId);
-        if (page && page.meta.jumpOnce) {
-          currentWorkspace.blockSuiteWorkspace.meta.setPageMeta(page.id, {
+      for (const [pageId] of currentWorkspace.blockSuiteWorkspace.docs) {
+        const page = currentWorkspace.blockSuiteWorkspace.getDoc(pageId);
+        if (page && page.meta?.jumpOnce) {
+          currentWorkspace.blockSuiteWorkspace.meta.setDocMeta(page.id, {
             jumpOnce: false,
           });
           navigateHelper.jumpToPage(currentWorkspace.id, pageId);
@@ -69,7 +69,7 @@ export const Component = () => {
       }
     }
     checkJumpOnce();
-    return currentWorkspace.blockSuiteWorkspace.slots.pagesUpdated.on(
+    return currentWorkspace.blockSuiteWorkspace.slots.docUpdated.on(
       checkJumpOnce
     ).dispose;
   }, [

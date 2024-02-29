@@ -20,7 +20,7 @@ const useReactiveAdapter = (adapter: WorkspacePropertiesAdapter) => {
     }
     const disposables: (() => void)[] = [];
     disposables.push(
-      adapter.workspace.blockSuiteWorkspace.meta.pageMetasUpdated.on(observe)
+      adapter.workspace.blockSuiteWorkspace.meta.docMetaUpdated.on(observe)
         .dispose
     );
     adapter.properties.observeDeep(observe);

@@ -1,14 +1,11 @@
-import type { PageMeta, Tag, Workspace } from '@blocksuite/store';
+import type { DocMeta, Tag, Workspace } from '@blocksuite/store';
 import { useCallback, useMemo } from 'react';
 
 interface TagUsageCounts {
   [key: string]: number;
 }
 
-export function useTagMetas(
-  currentWorkspace: Workspace,
-  pageMetas: PageMeta[]
-) {
+export function useTagMetas(currentWorkspace: Workspace, pageMetas: DocMeta[]) {
   const tags = useMemo(() => {
     return currentWorkspace.meta.properties.tags?.options || [];
   }, [currentWorkspace]);

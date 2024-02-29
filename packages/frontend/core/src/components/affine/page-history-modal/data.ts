@@ -1,4 +1,4 @@
-import { usePageMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
+import { useDocMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
 import { useBlockSuiteWorkspacePage } from '@affine/core/hooks/use-block-suite-workspace-page';
 import { timestampToLocalDate } from '@affine/core/utils';
 import { DebugLogger } from '@affine/debug';
@@ -27,7 +27,7 @@ const logger = new DebugLogger('page-history');
 
 type DocHistory = ListHistoryQuery['workspace']['histories'][number];
 
-export const usePageSnapshotList = (workspaceId: string, pageDocId: string) => {
+export const useDocSnapshotList = (workspaceId: string, pageDocId: string) => {
   const pageSize = 10;
   const { data, loadingMore, loadMore } = useQueryInfinite({
     query: listHistoryQuery,
@@ -154,16 +154,16 @@ export const useSnapshotPage = (
     }
     const pageId = pageDocId + '-' + ts;
     const historyShellWorkspace = getOrCreateShellWorkspace(workspace.id);
-    let page = historyShellWorkspace.getPage(pageId);
+    let page = historyShellWorkspace.getDoc(pageId);
     if (!page && snapshot) {
-      page = historyShellWorkspace.createPage({
+      page = historyShellWorkspace.createDoc({
         id: pageId,
       });
       page.awarenessStore.setReadonly(page, true);
       const spaceDoc = page.spaceDoc;
       page.load(() => {
         applyUpdate(spaceDoc, new Uint8Array(snapshot));
-        historyShellWorkspace.schema.upgradePage(0, {}, spaceDoc);
+        historyShellWorkspace.schema.upgradeDoc(0, {}, spaceDoc);
       }); // must load before applyUpdate
     }
     return page ?? undefined;
@@ -197,7 +197,7 @@ export const useRestorePage = (workspace: Workspace, pageId: string) => {
   const { trigger: recover, isMutating } = useMutation({
     mutation: recoverDocMutation,
   });
-  const { getPageMeta, setPageTitle } = usePageMetaHelper(workspace);
+  const { getDocMeta, setDocTitle } = useDocMetaHelper(workspace);
 
   const onRestore = useMemo(() => {
     return async (version: string, update: Uint8Array) => {
@@ -211,10 +211,10 @@ export const useRestorePage = (workspace: Workspace, pageId: string) => {
       });
 
       // should also update the page title, since it may be changed in the history
-      const title = page.meta.title;
+      const title = page.meta?.title ?? '';
 
-      if (getPageMeta(pageId)?.title !== title) {
-        setPageTitle(pageId, title);
+      if (getDocMeta(pageId)?.title !== title) {
+        setDocTitle(pageId, title);
       }
 
       await recover({
@@ -232,12 +232,12 @@ export const useRestorePage = (workspace: Workspace, pageId: string) => {
       logger.info('Page restored', pageDocId, version);
     };
   }, [
-    getPageMeta,
+    getDocMeta,
     mutateQueryResource,
     page,
     pageId,
     recover,
-    setPageTitle,
+    setDocTitle,
     workspace.id,
   ]);
 

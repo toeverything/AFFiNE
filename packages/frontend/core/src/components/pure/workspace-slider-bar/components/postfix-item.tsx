@@ -1,6 +1,6 @@
 import { toast } from '@affine/component';
 import { RenameModal } from '@affine/component/rename-modal';
-import { usePageMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
+import { useDocMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { Workspace } from '@blocksuite/store';
 import { useCallback, useState } from 'react';
@@ -23,15 +23,15 @@ export const PostfixItem = ({ ...props }: PostfixItemProps) => {
   const { workspace, pageId, pageTitle } = props;
   const t = useAFFiNEI18N();
   const [open, setOpen] = useState(false);
-  const { setPageTitle } = usePageMetaHelper(workspace);
+  const { setDocTitle } = useDocMetaHelper(workspace);
 
   const handleRename = useCallback(
     (newName: string) => {
-      setPageTitle(pageId, newName);
+      setDocTitle(pageId, newName);
       setOpen(false);
       toast(t['com.affine.toastMessage.rename']());
     },
-    [pageId, setPageTitle, t]
+    [pageId, setDocTitle, t]
   );
 
   return (

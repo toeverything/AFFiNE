@@ -27,7 +27,7 @@ import {
   ToggleExpandIcon,
   ViewIcon,
 } from '@blocksuite/icons';
-import type { Page } from '@blocksuite/store';
+import type { Doc } from '@blocksuite/store';
 import {
   DndContext,
   type DragEndEvent,
@@ -1027,7 +1027,7 @@ const PagePropertiesTableInner = () => {
   );
 };
 
-const usePagePropertiesManager = (page: Page) => {
+const usePagePropertiesManager = (page: Doc) => {
   // the workspace properties adapter adapter is reactive,
   // which means it's reference will change when any of the properties change
   // also it will trigger a re-render of the component
@@ -1040,7 +1040,7 @@ const usePagePropertiesManager = (page: Page) => {
 
 // this is the main component that renders the page properties table at the top of the page below
 // the page title
-export const PagePropertiesTable = ({ page }: { page: Page }) => {
+export const PagePropertiesTable = ({ page }: { page: Doc }) => {
   const manager = usePagePropertiesManager(page);
 
   // if the given page is not in the current workspace, then we don't render anything

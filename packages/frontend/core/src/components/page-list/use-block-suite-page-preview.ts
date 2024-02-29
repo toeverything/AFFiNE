@@ -1,13 +1,13 @@
-import type { Page } from '@blocksuite/store';
+import type { Doc } from '@blocksuite/store';
 import type { Atom } from 'jotai';
 import { atom } from 'jotai';
 
 const MAX_PREVIEW_LENGTH = 150;
 const MAX_SEARCH_BLOCK_COUNT = 30;
 
-const weakMap = new WeakMap<Page, Atom<string>>();
+const weakMap = new WeakMap<Doc, Atom<string>>();
 
-export const getPagePreviewText = (page: Page) => {
+export const getPagePreviewText = (page: Doc) => {
   const pageRoot = page.root;
   if (!pageRoot) {
     return '';
@@ -56,7 +56,7 @@ export const getPagePreviewText = (page: Page) => {
 
 const emptyAtom = atom<string>('');
 
-export function useBlockSuitePagePreview(page: Page | null): Atom<string> {
+export function useBlockSuitePagePreview(page: Doc | null): Atom<string> {
   if (page === null) {
     return emptyAtom;
   } else if (weakMap.has(page)) {

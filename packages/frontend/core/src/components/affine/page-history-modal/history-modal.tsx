@@ -10,11 +10,11 @@ import { useWorkspaceQuota } from '@affine/core/hooks/use-workspace-quota';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloseIcon, ToggleCollapseIcon } from '@blocksuite/icons';
-import type { Page as BlockSuitePage } from '@blocksuite/store';
+import type { Doc as BlockSuiteDoc } from '@blocksuite/store';
 import { type Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import type { DialogContentProps } from '@radix-ui/react-dialog';
-import { Page, type PageMode, Workspace } from '@toeverything/infra';
+import { Doc, type PageMode, Workspace } from '@toeverything/infra';
 import { useService } from '@toeverything/infra/di';
 import { atom, useAtom, useSetAtom } from 'jotai';
 import {
@@ -39,7 +39,7 @@ import {
 import { AffineErrorBoundary } from '../affine-error-boundary';
 import {
   historyListGroupByDay,
-  usePageSnapshotList,
+  useDocSnapshotList,
   useRestorePage,
   useSnapshotPage,
 } from './data';
@@ -90,7 +90,7 @@ const ModalContainer = ({
 
 interface HistoryEditorPreviewProps {
   ts?: string;
-  snapshotPage?: BlockSuitePage;
+  snapshotPage?: BlockSuiteDoc;
   mode: PageMode;
   onModeChange: (mode: PageMode) => void;
   title: string;
@@ -251,7 +251,7 @@ const PageHistoryList = ({
   activeVersion?: string;
   onVersionChange: (version: string) => void;
 }) => {
-  const [historyList, loadMore, loadingMore] = usePageSnapshotList(
+  const [historyList, loadMore, loadingMore] = useDocSnapshotList(
     workspaceId,
     pageDocId
   );
@@ -425,7 +425,7 @@ const PageHistoryManager = ({
   const [activeVersion, setActiveVersion] = useState<string>();
 
   const pageDocId = useMemo(() => {
-    return workspace.getPage(pageId)?.spaceDoc.guid ?? pageId;
+    return workspace.getDoc(pageId)?.spaceDoc.guid ?? pageId;
   }, [pageId, workspace]);
 
   const snapshotPage = useSnapshotPage(workspace, pageDocId, activeVersion);
@@ -447,7 +447,7 @@ const PageHistoryManager = ({
     [activeVersion, onClose, onRestore, snapshotPage]
   );
 
-  const page = useService(Page);
+  const page = useService(Doc);
   const [mode, setMode] = useState<PageMode>(page.mode.value);
 
   const title = useBlockSuiteWorkspacePageTitle(workspace, pageId);

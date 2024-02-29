@@ -4,7 +4,7 @@ import {
   useTagMetas,
   VirtualizedPageList,
 } from '@affine/core/components/page-list';
-import { useBlockSuitePageMeta } from '@affine/core/hooks/use-block-suite-page-meta';
+import { useBlockSuiteDocMeta } from '@affine/core/hooks/use-block-suite-page-meta';
 import { useService } from '@toeverything/infra';
 import { Workspace } from '@toeverything/infra';
 import { useMemo } from 'react';
@@ -17,7 +17,7 @@ import { TagDetailHeader } from './header';
 
 export const TagDetail = ({ tagId }: { tagId?: string }) => {
   const currentWorkspace = useService(Workspace);
-  const pageMetas = useBlockSuitePageMeta(currentWorkspace.blockSuiteWorkspace);
+  const pageMetas = useBlockSuiteDocMeta(currentWorkspace.blockSuiteWorkspace);
 
   const { tags, filterPageMetaByTag } = useTagMetas(
     currentWorkspace.blockSuiteWorkspace,

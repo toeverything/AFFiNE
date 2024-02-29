@@ -1,5 +1,5 @@
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import { usePageMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
+import { useDocMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
 import { useBlockSuiteWorkspaceHelper } from '@affine/core/hooks/use-block-suite-workspace-helper';
 import { CollectionService } from '@affine/core/modules/collection';
 import { PageRecordList, useService } from '@toeverything/infra';
@@ -13,76 +13,76 @@ import { useReferenceLinkHelper } from './use-reference-link-helper';
 export function useBlockSuiteMetaHelper(
   blockSuiteWorkspace: BlockSuiteWorkspace
 ) {
-  const { setPageMeta, getPageMeta, setPageReadonly, setPageTitle } =
-    usePageMetaHelper(blockSuiteWorkspace);
+  const { setDocMeta, getDocMeta, setDocReadonly, setDocTitle } =
+    useDocMetaHelper(blockSuiteWorkspace);
   const { addReferenceLink } = useReferenceLinkHelper(blockSuiteWorkspace);
-  const { createPage } = useBlockSuiteWorkspaceHelper(blockSuiteWorkspace);
+  const { createDoc } = useBlockSuiteWorkspaceHelper(blockSuiteWorkspace);
   const { openPage } = useNavigateHelper();
   const collectionService = useService(CollectionService);
   const pageRecordList = useService(PageRecordList);
 
   const addToFavorite = useCallback(
     (pageId: string) => {
-      setPageMeta(pageId, {
+      setDocMeta(pageId, {
         favorite: true,
       });
     },
-    [setPageMeta]
+    [setDocMeta]
   );
   const removeFromFavorite = useCallback(
     (pageId: string) => {
-      setPageMeta(pageId, {
+      setDocMeta(pageId, {
         favorite: false,
       });
     },
-    [setPageMeta]
+    [setDocMeta]
   );
   const toggleFavorite = useCallback(
     (pageId: string) => {
-      const { favorite } = getPageMeta(pageId) ?? {};
-      setPageMeta(pageId, {
+      const { favorite } = getDocMeta(pageId) ?? {};
+      setDocMeta(pageId, {
         favorite: !favorite,
       });
     },
-    [getPageMeta, setPageMeta]
+    [getDocMeta, setDocMeta]
   );
 
   // TODO-Doma
   // "Remove" may cause ambiguity here. Consider renaming as "moveToTrash".
   const removeToTrash = useCallback(
     (pageId: string) => {
-      setPageMeta(pageId, {
+      setDocMeta(pageId, {
         trash: true,
         trashDate: Date.now(),
         trashRelate: undefined,
       });
-      setPageReadonly(pageId, true);
+      setDocReadonly(pageId, true);
       collectionService.deletePagesFromCollections([pageId]);
     },
-    [collectionService, setPageMeta, setPageReadonly]
+    [collectionService, setDocMeta, setDocReadonly]
   );
 
   const restoreFromTrash = useCallback(
     (pageId: string) => {
-      const { trashRelate } = getPageMeta(pageId) ?? {};
+      const { trashRelate } = getDocMeta(pageId) ?? {};
 
       if (trashRelate) {
         addReferenceLink(trashRelate, pageId);
       }
 
-      setPageMeta(pageId, {
+      setDocMeta(pageId, {
         trash: false,
         trashDate: undefined,
         trashRelate: undefined,
       });
-      setPageReadonly(pageId, false);
+      setDocReadonly(pageId, false);
     },
-    [addReferenceLink, getPageMeta, setPageMeta, setPageReadonly]
+    [addReferenceLink, getDocMeta, setDocMeta, setDocReadonly]
   );
 
   const permanentlyDeletePage = useCallback(
     (pageId: string) => {
-      blockSuiteWorkspace.removePage(pageId);
+      blockSuiteWorkspace.removeDoc(pageId);
     },
     [blockSuiteWorkspace]
   );
@@ -92,11 +92,11 @@ export function useBlockSuiteMetaHelper(
    */
   const publicPage = useCallback(
     (pageId: string) => {
-      setPageMeta(pageId, {
+      setDocMeta(pageId, {
         isPublic: true,
       });
     },
-    [setPageMeta]
+    [setDocMeta]
   );
 
   /**
@@ -104,21 +104,21 @@ export function useBlockSuiteMetaHelper(
    */
   const cancelPublicPage = useCallback(
     (pageId: string) => {
-      setPageMeta(pageId, {
+      setDocMeta(pageId, {
         isPublic: false,
       });
     },
-    [setPageMeta]
+    [setDocMeta]
   );
 
   const duplicate = useAsyncCallback(
     async (pageId: string, openPageAfterDuplication: boolean = true) => {
       const currentPageMode = pageRecordList.record(pageId).value?.mode.value;
-      const currentPageMeta = getPageMeta(pageId);
-      const newPage = createPage();
-      const currentPage = blockSuiteWorkspace.getPage(pageId);
+      const currentPageMeta = getDocMeta(pageId);
+      const newPage = createDoc();
+      const currentPage = blockSuiteWorkspace.getDoc(pageId);
 
-      newPage.waitForLoaded();
+      newPage.load();
       if (!currentPageMeta || !currentPage) {
         return;
       }
@@ -126,7 +126,7 @@ export function useBlockSuiteMetaHelper(
       const update = encodeStateAsUpdate(currentPage.spaceDoc);
       applyUpdate(newPage.spaceDoc, update);
 
-      setPageMeta(newPage.id, {
+      setDocMeta(newPage.id, {
         tags: currentPageMeta.tags,
         favorite: currentPageMeta.favorite,
       });
@@ -141,17 +141,17 @@ export function useBlockSuiteMetaHelper(
       pageRecordList
         .record(newPage.id)
         .value?.setMode(currentPageMode || 'page');
-      setPageTitle(newPage.id, newPageTitle);
+      setDocTitle(newPage.id, newPageTitle);
       openPageAfterDuplication && openPage(blockSuiteWorkspace.id, newPage.id);
     },
     [
       blockSuiteWorkspace,
-      createPage,
-      getPageMeta,
+      createDoc,
+      getDocMeta,
       openPage,
       pageRecordList,
-      setPageMeta,
-      setPageTitle,
+      setDocMeta,
+      setDocTitle,
     ]
   );
 

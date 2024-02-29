@@ -1,12 +1,12 @@
-import type { Page as BlockSuitePage } from '@blocksuite/store';
+import type { Doc as BlockSuiteDoc } from '@blocksuite/store';
 import type { ServiceProvider } from '@toeverything/infra/di';
 
 import type { PageMode, PageRecord } from './record';
 
-export class Page {
+export class Doc {
   constructor(
     public readonly record: PageRecord,
-    public readonly blockSuitePage: BlockSuitePage,
+    public readonly blockSuiteDoc: BlockSuiteDoc,
     public readonly services: ServiceProvider
   ) {}
 

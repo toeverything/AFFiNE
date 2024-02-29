@@ -3,9 +3,9 @@ import {
   type AllPageListConfig,
   FavoriteTag,
 } from '@affine/core/components/page-list';
-import { useBlockSuitePageMeta } from '@affine/core/hooks/use-block-suite-page-meta';
+import { useBlockSuiteDocMeta } from '@affine/core/hooks/use-block-suite-page-meta';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import type { PageMeta } from '@blocksuite/store';
+import type { DocMeta } from '@blocksuite/store';
 import { Workspace } from '@toeverything/infra';
 import { useService } from '@toeverything/infra/di';
 import { useCallback, useMemo } from 'react';
@@ -18,7 +18,7 @@ export const useAllPageListConfig = () => {
   const currentWorkspace = useService(Workspace);
   const { getPublicMode } = usePublicPages(currentWorkspace);
   const workspace = currentWorkspace.blockSuiteWorkspace;
-  const pageMetas = useBlockSuitePageMeta(workspace);
+  const pageMetas = useBlockSuiteDocMeta(workspace);
   const { isPreferredEdgeless } = usePageHelper(workspace);
   const pageMap = useMemo(
     () => Object.fromEntries(pageMetas.map(page => [page.id, page])),
@@ -29,7 +29,7 @@ export const useAllPageListConfig = () => {
   );
   const t = useAFFiNEI18N();
   const onToggleFavoritePage = useCallback(
-    (page: PageMeta) => {
+    (page: DocMeta) => {
       const status = page.favorite;
       toggleFavorite(page.id);
       toast(

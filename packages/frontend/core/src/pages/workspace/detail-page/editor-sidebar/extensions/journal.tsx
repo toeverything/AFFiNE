@@ -7,7 +7,7 @@ import {
 } from '@affine/component';
 import { MoveToTrash } from '@affine/core/components/page-list';
 import { useTrashModalHelper } from '@affine/core/hooks/affine/use-trash-modal-helper';
-import { useBlockSuitePageMeta } from '@affine/core/hooks/use-block-suite-page-meta';
+import { useBlockSuiteDocMeta } from '@affine/core/hooks/use-block-suite-page-meta';
 import { useBlockSuiteWorkspacePageTitle } from '@affine/core/hooks/use-block-suite-workspace-page-title';
 import {
   useJournalHelper,
@@ -23,7 +23,7 @@ import {
   PageIcon,
   TodayIcon,
 } from '@blocksuite/icons';
-import type { Page, PageMeta } from '@blocksuite/store';
+import type { Doc, DocMeta } from '@blocksuite/store';
 import { assignInlineVars } from '@vanilla-extract/dynamic';
 import clsx from 'clsx';
 import dayjs from 'dayjs';
@@ -44,7 +44,7 @@ const CountDisplay = ({
   return <span {...attrs}>{count > max ? `${max}+` : count}</span>;
 };
 interface PageItemProps extends HTMLAttributes<HTMLDivElement> {
-  pageMeta: PageMeta;
+  pageMeta: DocMeta;
   workspace: BlockSuiteWorkspace;
   right?: ReactNode;
 }
@@ -156,7 +156,7 @@ const EditorJournalPanel = (props: EditorExtensionProps) => {
 };
 
 const sortPagesByDate = (
-  pages: PageMeta[],
+  pages: DocMeta[],
   field: 'updatedDate' | 'createDate',
   order: 'asc' | 'desc' = 'desc'
 ) => {
@@ -180,7 +180,7 @@ const JournalDailyCountBlock = ({ workspace, date }: JournalBlockProps) => {
   const nodeRef = useRef<HTMLDivElement>(null);
   const t = useAFFiNEI18N();
   const [activeItem, setActiveItem] = useState<NavItemName>('createdToday');
-  const pageMetas = useBlockSuitePageMeta(workspace);
+  const pageMetas = useBlockSuiteDocMeta(workspace);
 
   const navigateHelper = useNavigateHelper();
 
@@ -289,7 +289,7 @@ interface ConflictListProps
   extends JournalBlockProps,
     PropsWithChildren,
     HTMLAttributes<HTMLDivElement> {
-  pages: Page[];
+  pages: Doc[];
 }
 const ConflictList = ({
   page: currentPage,
@@ -303,7 +303,7 @@ const ConflictList = ({
   const { setTrashModal } = useTrashModalHelper(workspace);
 
   const handleOpenTrashModal = useCallback(
-    (page: Page) => {
+    (page: Doc) => {
       if (!page.meta) return;
       setTrashModal({
         open: true,
@@ -320,9 +320,9 @@ const ConflictList = ({
         const isCurrent = page.id === currentPage.id;
         return (
           <PageItem
-            aria-label={page.meta.title}
+            aria-label={page.meta?.title}
             aria-selected={isCurrent}
-            pageMeta={page.meta}
+            pageMeta={page.meta as DocMeta}
             workspace={workspace}
             key={page.id}
             right={

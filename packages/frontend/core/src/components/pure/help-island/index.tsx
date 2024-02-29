@@ -2,7 +2,7 @@ import { Tooltip } from '@affine/component/ui/tooltip';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloseIcon, NewIcon } from '@blocksuite/icons';
 import { useLiveData, useServiceOptional } from '@toeverything/infra';
-import { Page } from '@toeverything/infra';
+import { Doc } from '@toeverything/infra';
 import { useSetAtom } from 'jotai/react';
 import { useCallback, useState } from 'react';
 
@@ -28,7 +28,7 @@ type IslandItemNames = 'whatNew' | 'contact' | 'shortcuts';
 const showList = environment.isDesktop ? DESKTOP_SHOW_LIST : DEFAULT_SHOW_LIST;
 
 export const HelpIsland = () => {
-  const page = useServiceOptional(Page);
+  const page = useServiceOptional(Doc);
   const pageId = page?.id;
   const mode = useLiveData(page?.mode);
   const setOpenSettingModalAtom = useSetAtom(openSettingModalAtom);

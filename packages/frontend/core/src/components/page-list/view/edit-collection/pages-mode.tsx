@@ -2,7 +2,7 @@ import { Menu } from '@affine/component';
 import type { Collection } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { FilterIcon } from '@blocksuite/icons';
-import type { PageMeta } from '@blocksuite/store';
+import type { DocMeta } from '@blocksuite/store';
 import clsx from 'clsx';
 import { type ReactNode, useCallback } from 'react';
 
@@ -56,7 +56,7 @@ export const PagesMode = ({
   }, [collection, updateCollection]);
   const pageOperationsRenderer = useCallback(
     (item: ListItem) => {
-      const page = item as PageMeta;
+      const page = item as DocMeta;
       return allPageListConfig.favoriteRender(page);
     },
     [allPageListConfig]

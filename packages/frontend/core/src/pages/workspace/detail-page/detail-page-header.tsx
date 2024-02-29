@@ -12,7 +12,7 @@ import { PageHeaderMenuButton } from '@affine/core/components/blocksuite/block-s
 import { EditorModeSwitch } from '@affine/core/components/blocksuite/block-suite-mode-switch';
 import { useJournalInfoHelper } from '@affine/core/hooks/use-journal';
 import { RightSidebarIcon } from '@blocksuite/icons';
-import type { Page } from '@blocksuite/store';
+import type { Doc } from '@blocksuite/store';
 import type { Workspace } from '@toeverything/infra';
 import { useAtomValue, useSetAtom } from 'jotai';
 import { useCallback, useRef } from 'react';
@@ -104,7 +104,7 @@ function Header({
 }
 
 interface PageHeaderProps {
-  page: Page;
+  page: Doc;
   workspace: Workspace;
   showSidebarSwitch?: boolean;
 }
@@ -178,7 +178,7 @@ export function NormalPageHeader({
 export function DetailPageHeader(props: PageHeaderProps) {
   const { page } = props;
   const { isJournal } = useJournalInfoHelper(page.workspace, page.id);
-  const isInTrash = page.meta.trash;
+  const isInTrash = page.meta?.trash;
 
   return isJournal && !isInTrash ? (
     <JournalPageHeader {...props} />
@@ -189,7 +189,7 @@ export function DetailPageHeader(props: PageHeaderProps) {
 
 interface SidebarHeaderProps {
   workspace: Workspace;
-  page: Page;
+  page: Doc;
 }
 function WindowsSidebarHeader(props: SidebarHeaderProps) {
   return (

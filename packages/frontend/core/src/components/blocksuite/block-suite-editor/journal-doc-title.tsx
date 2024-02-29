@@ -1,10 +1,10 @@
 import { useJournalInfoHelper } from '@affine/core/hooks/use-journal';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import type { Page } from '@blocksuite/store';
+import type { Doc } from '@blocksuite/store';
 
 import * as styles from './styles.css';
 
-export const BlocksuiteEditorJournalDocTitle = ({ page }: { page: Page }) => {
+export const BlocksuiteEditorJournalDocTitle = ({ page }: { page: Doc }) => {
   const { localizedJournalDate, isTodayJournal, journalDate } =
     useJournalInfoHelper(page.workspace, page.id);
   const t = useAFFiNEI18N();

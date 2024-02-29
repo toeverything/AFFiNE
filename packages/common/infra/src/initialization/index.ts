@@ -1,8 +1,8 @@
 import type { WorkspaceFlavour } from '@affine/env/workspace';
 import type {
+  Doc,
+  DocSnapshot,
   JobMiddleware,
-  Page,
-  PageSnapshot,
   WorkspaceInfoSnapshot,
 } from '@blocksuite/store';
 import { Job } from '@blocksuite/store';
@@ -13,7 +13,7 @@ import { PageRecordList } from '../page';
 import type { WorkspaceManager } from '../workspace';
 import { replaceIdMiddleware } from './middleware';
 
-export function initEmptyPage(page: Page, title?: string) {
+export function initEmptyPage(page: Doc, title?: string) {
   page.load(() => {
     const pageBlockId = page.addBlock('affine:page', {
       title: new page.Text(title ?? ''),
@@ -44,7 +44,7 @@ export async function buildShowcaseWorkspace(
       const migrationMiddleware: JobMiddleware = ({ slots, workspace }) => {
         slots.afterImport.on(payload => {
           if (payload.type === 'page') {
-            workspace.schema.upgradePage(
+            workspace.schema.upgradeDoc(
               info?.pageVersion ?? 0,
               {},
               payload.page.spaceDoc
@@ -65,15 +65,15 @@ export async function buildShowcaseWorkspace(
       // @ts-expect-error - rethinking API
       job._assetsManager.writeToBlob = async () => {};
 
-      const pageSnapshots: PageSnapshot[] = Object.entries(onboarding)
+      const docSnapshots: DocSnapshot[] = Object.entries(onboarding)
         .filter(([key]) => {
           return key.endsWith('snapshot.json');
         })
-        .map(([_, value]) => value as unknown as PageSnapshot);
+        .map(([_, value]) => value as unknown as DocSnapshot);
 
       await Promise.all(
-        pageSnapshots.map(snapshot => {
-          return job.snapshotToPage(snapshot);
+        docSnapshots.map(snapshot => {
+          return job.snapshotToDoc(snapshot);
         })
       );
 

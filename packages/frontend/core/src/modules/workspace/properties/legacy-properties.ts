@@ -1,4 +1,4 @@
-import type { PagesPropertiesMeta, Tag } from '@blocksuite/store';
+import type { DocsPropertiesMeta, Tag } from '@blocksuite/store';
 import { LiveData } from '@toeverything/infra/livedata';
 import type { Workspace } from '@toeverything/infra/workspace';
 import { Observable } from 'rxjs';
@@ -20,18 +20,18 @@ export class WorkspaceLegacyProperties {
     return this.properties.tags?.options ?? [];
   }
 
-  updateProperties = (properties: PagesPropertiesMeta) => {
+  updateProperties = (properties: DocsPropertiesMeta) => {
     this.workspace.blockSuiteWorkspace.meta.setProperties(properties);
   };
 
   subscribe(cb: () => void) {
     const disposable =
-      this.workspace.blockSuiteWorkspace.meta.pageMetasUpdated.on(cb);
+      this.workspace.blockSuiteWorkspace.meta.docMetaUpdated.on(cb);
     return disposable.dispose;
   }
 
   properties$ = LiveData.from(
-    new Observable<PagesPropertiesMeta>(sub => {
+    new Observable<DocsPropertiesMeta>(sub => {
       return this.subscribe(() => sub.next(this.properties));
     }),
     this.properties
@@ -61,11 +61,11 @@ export class WorkspaceLegacyProperties {
     this.workspace.blockSuiteWorkspace.doc.transact(() => {
       this.updateTagOptions(this.tagOptions.filter(o => o.id !== id));
       // need to remove tag from all pages
-      this.workspace.blockSuiteWorkspace.pages.forEach(page => {
-        const tags = page.meta.tags ?? [];
+      this.workspace.blockSuiteWorkspace.docs.forEach(doc => {
+        const tags = doc.meta?.tags ?? [];
         if (tags.includes(id)) {
           this.updatePageTags(
-            page.id,
+            doc.id,
             tags.filter(t => t !== id)
           );
         }
@@ -74,7 +74,7 @@ export class WorkspaceLegacyProperties {
   };
 
   updatePageTags = (pageId: string, tags: string[]) => {
-    this.workspace.blockSuiteWorkspace.setPageMeta(pageId, {
+    this.workspace.blockSuiteWorkspace.setDocMeta(pageId, {
       tags,
     });
   };

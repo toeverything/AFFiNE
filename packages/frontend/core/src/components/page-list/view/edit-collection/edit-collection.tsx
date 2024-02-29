@@ -6,7 +6,7 @@ import {
 } from '@affine/component';
 import type { Collection } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import type { PageMeta, Workspace } from '@blocksuite/store';
+import type { DocMeta, Workspace } from '@blocksuite/store';
 import type { DialogContentProps } from '@radix-ui/react-dialog';
 import { type ReactNode, useCallback, useMemo, useState } from 'react';
 
@@ -198,13 +198,13 @@ export const EditCollection = ({
 };
 
 export type AllPageListConfig = {
-  allPages: PageMeta[];
+  allPages: DocMeta[];
   workspace: Workspace;
   isEdgeless: (id: string) => boolean;
   /**
    * Return `undefined` if the page is not public
    */
   getPublicMode: (id: string) => undefined | 'page' | 'edgeless';
-  getPage: (id: string) => PageMeta | undefined;
-  favoriteRender: (page: PageMeta) => ReactNode;
+  getPage: (id: string) => DocMeta | undefined;
+  favoriteRender: (page: DocMeta) => ReactNode;
 };

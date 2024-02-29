@@ -32,9 +32,9 @@ export const useJournalHelper = (workspace: BlockSuiteWorkspace) => {
   const _createJournal = useCallback(
     (maybeDate: MaybeDate) => {
       const title = dayjs(maybeDate).format(JOURNAL_DATE_FORMAT);
-      const page = bsWorkspaceHelper.createPage();
+      const page = bsWorkspaceHelper.createDoc();
       // set created date to match the journal date
-      page.workspace.setPageMeta(page.id, {
+      page.workspace.setDocMeta(page.id, {
         createDate: dayjs(maybeDate).toDate().getTime(),
       });
       initEmptyPage(page, title);
@@ -57,16 +57,16 @@ export const useJournalHelper = (workspace: BlockSuiteWorkspace) => {
   const getJournalsByDate = useCallback(
     (maybeDate: MaybeDate) => {
       const day = dayjs(maybeDate);
-      return Array.from(workspace.pages.values()).filter(page => {
+      return Array.from(workspace.docs.values()).filter(page => {
         const pageId = page.id;
         if (!isPageJournal(pageId)) return false;
-        if (page.meta.trash) return false;
+        if (page.meta?.trash) return false;
         const journalDate = adapter.getJournalPageDateString(page.id);
         if (!journalDate) return false;
         return day.isSame(journalDate, 'day');
       });
     },
-    [adapter, isPageJournal, workspace.pages]
+    [adapter, isPageJournal, workspace.docs]
   );
 
   /**

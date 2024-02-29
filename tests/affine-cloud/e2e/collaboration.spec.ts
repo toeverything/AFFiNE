@@ -89,7 +89,7 @@ test('share page with default edgeless', async ({ page, browser }) => {
   await page.keyboard.press('Enter', { delay: 50 });
   await page.keyboard.type('TEST CONTENT', { delay: 50 });
   await clickEdgelessModeButton(page);
-  await expect(page.locator('affine-edgeless-page')).toBeVisible({
+  await expect(page.locator('affine-edgeless-root')).toBeVisible({
     timeout: 1000,
   });
   await page.getByTestId('cloud-share-menu-button').click();
@@ -106,7 +106,7 @@ test('share page with default edgeless', async ({ page, browser }) => {
     const page2 = await context.newPage();
     await page2.goto(url);
     await waitForEditorLoad(page2);
-    await expect(page.locator('affine-edgeless-page')).toBeVisible({
+    await expect(page.locator('affine-edgeless-root')).toBeVisible({
       timeout: 1000,
     });
     expect(await page2.textContent('affine-paragraph')).toContain(

@@ -37,7 +37,7 @@ describe('SyncEngine', () => {
       );
       syncEngine.start();
 
-      const page = workspace.createPage({
+      const page = workspace.createDoc({
         id: 'page0',
       });
       page.load();

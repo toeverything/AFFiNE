@@ -1,10 +1,10 @@
 import { EditorLoading } from '@affine/component/page-detail-skeleton';
-import { usePageMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
+import { useDocMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
 import { useJournalHelper } from '@affine/core/hooks/use-journal';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
 import type { AffineEditorContainer } from '@blocksuite/presets';
-import type { Page } from '@blocksuite/store';
+import type { Doc } from '@blocksuite/store';
 import { use } from 'foxact/use';
 import type { CSSProperties, ReactElement } from 'react';
 import {
@@ -30,7 +30,7 @@ export type ErrorBoundaryProps = {
 };
 
 export type EditorProps = {
-  page: Page;
+  page: Doc;
   mode: 'page' | 'edgeless';
   defaultSelectedBlockId?: string;
   // on Editor instance instantiated
@@ -39,7 +39,7 @@ export type EditorProps = {
   className?: string;
 };
 
-function usePageRoot(page: Page) {
+function usePageRoot(page: Doc) {
   if (!page.ready) {
     page.load();
   }
@@ -81,7 +81,7 @@ const customRenderersFactory: (
  * TODO: Define error to unexpected state together in the future.
  */
 export class NoPageRootError extends Error {
-  constructor(public page: Page) {
+  constructor(public page: Doc) {
     super('Page root not found when render editor!');
 
     // Log info to let sentry collect more message
@@ -138,7 +138,7 @@ const BlockSuiteEditorImpl = forwardRef<AffineEditorContainer, EditorProps>(
       };
     }, []);
 
-    const pageMetaHelper = usePageMetaHelper(page.workspace);
+    const pageMetaHelper = useDocMetaHelper(page.workspace);
     const journalHelper = useJournalHelper(page.workspace);
     const t = useAFFiNEI18N();
 

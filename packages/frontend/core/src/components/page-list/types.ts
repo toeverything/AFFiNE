@@ -1,9 +1,9 @@
 import type { Collection, Tag } from '@affine/env/filter';
-import type { PageMeta, Workspace } from '@blocksuite/store';
+import type { DocMeta, Workspace } from '@blocksuite/store';
 import type { PropsWithChildren, ReactNode } from 'react';
 import type { To } from 'react-router-dom';
 
-export type ListItem = PageMeta | CollectionMeta | TagMeta;
+export type ListItem = DocMeta | CollectionMeta | TagMeta;
 
 export interface CollectionMeta extends Collection {
   title: string;

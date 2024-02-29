@@ -1,7 +1,7 @@
 import { Button } from '@affine/component/ui/button';
 import { useActiveBlocksuiteEditor } from '@affine/core/hooks/use-block-suite-editor';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import type { EdgelessPageService } from '@blocksuite/blocks';
+import type { EdgelessRootService } from '@blocksuite/blocks';
 import { PresentationIcon } from '@blocksuite/icons';
 import { useCallback, useEffect, useState } from 'react';
 
@@ -18,18 +18,18 @@ export const PresentButton = () => {
 
     // TODO: use surfaceService subAtom
     const enterPresentationMode = () => {
-      const edgelessPageService = editorHost.spec.getService(
+      const edgelessRootService = editorHost.spec.getService(
         'affine:page'
-      ) as EdgelessPageService;
+      ) as EdgelessRootService;
 
       if (
-        !edgelessPageService ||
-        edgelessPageService.tool.edgelessTool.type === 'frameNavigator'
+        !edgelessRootService ||
+        edgelessRootService.tool.edgelessTool.type === 'frameNavigator'
       ) {
         return;
       }
 
-      edgelessPageService.tool.setEdgelessTool({ type: 'frameNavigator' });
+      edgelessRootService.tool.setEdgelessTool({ type: 'frameNavigator' });
     };
 
     enterPresentationMode();
@@ -42,7 +42,7 @@ export const PresentButton = () => {
     const editorHost = editor?.host;
     if (!editorHost) return;
 
-    const edgelessPage = editorHost?.querySelector('affine-edgeless-page');
+    const edgelessPage = editorHost?.querySelector('affine-edgeless-root');
     if (!edgelessPage) return;
 
     edgelessPage.slots.edgelessToolUpdated.on(() => {

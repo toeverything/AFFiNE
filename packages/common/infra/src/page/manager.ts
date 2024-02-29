@@ -3,11 +3,11 @@ import { ObjectPool } from '../utils/object-pool';
 import type { Workspace } from '../workspace';
 import type { PageRecordList } from '.';
 import { configurePageContext } from './context';
-import { Page } from './page';
+import { Doc } from './page';
 import { PageScope } from './service-scope';
 
 export class PageManager {
-  pool = new ObjectPool<string, Page>({});
+  pool = new ObjectPool<string, Doc>({});
 
   constructor(
     private readonly workspace: Workspace,
@@ -20,7 +20,7 @@ export class PageManager {
     if (!pageRecord) {
       throw new Error('Page record not found');
     }
-    const blockSuitePage = this.workspace.blockSuiteWorkspace.getPage(pageId);
+    const blockSuitePage = this.workspace.blockSuiteWorkspace.getDoc(pageId);
     if (!blockSuitePage) {
       throw new Error('Page not found');
     }
@@ -41,7 +41,7 @@ export class PageManager {
       this.serviceProvider
     );
 
-    const page = provider.get(Page);
+    const page = provider.get(Doc);
 
     const { obj, release } = this.pool.put(pageId, page);
 

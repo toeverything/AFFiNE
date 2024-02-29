@@ -1,5 +1,5 @@
 import { Checkbox, DatePicker, Menu } from '@affine/component';
-import { useAllBlockSuitePageMeta } from '@affine/core/hooks/use-all-block-suite-page-meta';
+import { useAllBlockSuiteDocMeta } from '@affine/core/hooks/use-all-block-suite-page-meta';
 import { WorkspaceLegacyProperties } from '@affine/core/modules/workspace';
 import type {
   PageInfoCustomProperty,
@@ -9,7 +9,7 @@ import type {
 import { timestampToLocalDate } from '@affine/core/utils';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
-import { Page, useLiveData, useService, Workspace } from '@toeverything/infra';
+import { Doc, useLiveData, useService, Workspace } from '@toeverything/infra';
 import { noop } from 'lodash-es';
 import {
   type ChangeEventHandler,
@@ -176,9 +176,9 @@ export const NumberValue = ({ property }: PropertyRowValueProps) => {
 
 export const TagsValue = () => {
   const workspace = useService(Workspace);
-  const page = useService(Page);
+  const page = useService(Doc);
   const blockSuiteWorkspace = workspace.blockSuiteWorkspace;
-  const pageMetas = useAllBlockSuitePageMeta(blockSuiteWorkspace);
+  const pageMetas = useAllBlockSuiteDocMeta(blockSuiteWorkspace);
   const legacyProperties = useService(WorkspaceLegacyProperties);
   const options = useLiveData(legacyProperties.tagOptions$);
 
@@ -199,7 +199,7 @@ export const TagsValue = () => {
       placeholder={t['com.affine.page-properties.property-value-placeholder']()}
       value={tagIds}
       options={options}
-      readonly={page.blockSuitePage.readonly}
+      readonly={page.blockSuiteDoc.readonly}
       onChange={onChange}
       onOptionsChange={legacyProperties.updateTagOptions}
     />

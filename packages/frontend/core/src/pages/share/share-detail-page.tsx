@@ -10,7 +10,7 @@ import {
   StaticBlobStorage,
 } from '@affine/workspace-impl';
 import { Logo1Icon } from '@blocksuite/icons';
-import type { Page } from '@toeverything/infra';
+import type { Doc } from '@toeverything/infra';
 import {
   EmptyBlobStorage,
   LocalBlobStorage,
@@ -130,7 +130,7 @@ export const Component = () => {
 
   const currentWorkspace = useService(CurrentWorkspaceService);
   const t = useAFFiNEI18N();
-  const [page, setPage] = useState<Page | null>(null);
+  const [page, setPage] = useState<Doc | null>(null);
 
   useEffect(() => {
     // create a workspace for share page
@@ -163,7 +163,7 @@ export const Component = () => {
         const { page } = workspace.services.get(PageManager).open(pageId);
 
         workspace.blockSuiteWorkspace.awarenessStore.setReadonly(
-          page.blockSuitePage,
+          page.blockSuiteDoc,
           true
         );
 
@@ -200,14 +200,14 @@ export const Component = () => {
               <ShareHeader
                 pageId={page.id}
                 publishMode={publishMode}
-                blockSuiteWorkspace={page.blockSuitePage.workspace}
+                blockSuiteWorkspace={page.blockSuiteDoc.workspace}
               />
               <Scrollable.Root>
                 <Scrollable.Viewport className={styles.editorContainer}>
                   <PageDetailEditor
                     isPublic
                     publishMode={publishMode}
-                    workspace={page.blockSuitePage.workspace}
+                    workspace={page.blockSuiteDoc.workspace}
                     pageId={page.id}
                     onLoad={() => noop}
                   />

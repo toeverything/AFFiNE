@@ -3,7 +3,7 @@ import { formatDate } from '@affine/core/components/page-list';
 import { useSyncEngineStatus } from '@affine/core/hooks/affine/use-sync-engine-status';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import type { PageMeta } from '@blocksuite/store';
+import type { DocMeta } from '@blocksuite/store';
 import { SyncEngineStep } from '@toeverything/infra';
 import type { CommandCategory } from '@toeverything/infra/command';
 import clsx from 'clsx';
@@ -155,7 +155,7 @@ export const CMDKContainer = ({
   open: boolean;
   className?: string;
   query: string;
-  pageMeta?: PageMeta;
+  pageMeta?: DocMeta;
   groups: ReturnType<typeof useCMDKCommandGroups>;
   onQueryChange: (query: string) => void;
 }>) => {
@@ -235,7 +235,7 @@ const CMDKQuickSearchModalInner = ({
   pageMeta,
   open,
   ...props
-}: CMDKModalProps & { pageMeta?: PageMeta }) => {
+}: CMDKModalProps & { pageMeta?: DocMeta }) => {
   const [query, setQuery] = useAtom(cmdkQueryAtom);
   useLayoutEffect(() => {
     if (open) {
@@ -261,7 +261,7 @@ export const CMDKQuickSearchModal = ({
   pageMeta,
   open,
   ...props
-}: CMDKModalProps & { pageMeta?: PageMeta }) => {
+}: CMDKModalProps & { pageMeta?: DocMeta }) => {
   return (
     <CMDKModal open={open} {...props}>
       <Suspense fallback={<Command.Loading />}>

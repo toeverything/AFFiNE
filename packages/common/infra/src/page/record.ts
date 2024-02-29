@@ -1,4 +1,4 @@
-import type { PageMeta } from '@blocksuite/store';
+import type { DocMeta } from '@blocksuite/store';
 import { Observable } from 'rxjs';
 
 import { LiveData } from '../livedata';
@@ -13,10 +13,10 @@ export class PageRecord {
     private readonly localState: WorkspaceLocalState
   ) {}
 
-  meta = LiveData.from<PageMeta>(
+  meta = LiveData.from<DocMeta>(
     new Observable(subscriber => {
       const emit = () => {
-        const meta = this.workspace.blockSuiteWorkspace.meta.pageMetas.find(
+        const meta = this.workspace.blockSuiteWorkspace.meta.docMetas.find(
           page => page.id === this.id
         );
         if (meta === undefined) {
@@ -28,9 +28,7 @@ export class PageRecord {
       emit();
 
       const dispose =
-        this.workspace.blockSuiteWorkspace.meta.pageMetasUpdated.on(
-          emit
-        ).dispose;
+        this.workspace.blockSuiteWorkspace.meta.docMetaUpdated.on(emit).dispose;
       return () => {
         dispose();
       };
@@ -43,8 +41,8 @@ export class PageRecord {
     }
   );
 
-  setMeta(meta: Partial<PageMeta>): void {
-    this.workspace.blockSuiteWorkspace.setPageMeta(this.id, meta);
+  setMeta(meta: Partial<DocMeta>): void {
+    this.workspace.blockSuiteWorkspace.setDocMeta(this.id, meta);
   }
 
   mode: LiveData<PageMode> = LiveData.from(
