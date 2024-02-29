@@ -1,11 +1,11 @@
 import { toast } from '@affine/component';
 import { useBlockSuiteMetaHelper } from '@affine/core/hooks/affine/use-block-suite-meta-helper';
 import { useTrashModalHelper } from '@affine/core/hooks/affine/use-trash-modal-helper';
-import { useBlockSuitePageMeta } from '@affine/core/hooks/use-block-suite-page-meta';
+import { useBlockSuiteDocMeta } from '@affine/core/hooks/use-block-suite-page-meta';
 import type { Collection, Filter } from '@affine/env/filter';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import type { PageMeta, Tag } from '@blocksuite/store';
+import type { DocMeta, Tag } from '@blocksuite/store';
 import { useService } from '@toeverything/infra';
 import { Workspace } from '@toeverything/infra';
 import { useCallback, useMemo, useRef, useState } from 'react';
@@ -37,7 +37,7 @@ const usePageOperationsRenderer = () => {
   const t = useAFFiNEI18N();
 
   const pageOperationsRenderer = useCallback(
-    (page: PageMeta) => {
+    (page: DocMeta) => {
       const onDisablePublicSharing = () => {
         toast('Successfully disabled', {
           portal: document.body,
@@ -90,14 +90,14 @@ export const VirtualizedPageList = ({
   collection?: Collection;
   filters?: Filter[];
   config?: AllPageListConfig;
-  listItem?: PageMeta[];
+  listItem?: DocMeta[];
   setHideHeaderCreateNewPage?: (hide: boolean) => void;
 }) => {
   const listRef = useRef<ItemListHandle>(null);
   const [showFloatingToolbar, setShowFloatingToolbar] = useState(false);
   const [selectedPageIds, setSelectedPageIds] = useState<string[]>([]);
   const currentWorkspace = useService(Workspace);
-  const pageMetas = useBlockSuitePageMeta(currentWorkspace.blockSuiteWorkspace);
+  const pageMetas = useBlockSuiteDocMeta(currentWorkspace.blockSuiteWorkspace);
   const pageOperations = usePageOperationsRenderer();
   const { isPreferredEdgeless } = usePageHelper(
     currentWorkspace.blockSuiteWorkspace
@@ -125,7 +125,7 @@ export const VirtualizedPageList = ({
 
   const pageOperationRenderer = useCallback(
     (item: ListItem) => {
-      const page = item as PageMeta;
+      const page = item as DocMeta;
       return pageOperations(page);
     },
     [pageOperations]

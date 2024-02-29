@@ -1,14 +1,13 @@
 import { createReactComponentFromLit } from '@affine/component';
 import { useJournalInfoHelper } from '@affine/core/hooks/use-journal';
-import type { DocPageService } from '@blocksuite/blocks';
 import {
   BiDirectionalLinkPanel,
-  DocEditor,
+  DocMetaTags,
   DocTitle,
   EdgelessEditor,
-  PageMetaTags,
+  PageEditor,
 } from '@blocksuite/presets';
-import { type Page } from '@blocksuite/store';
+import { type Doc } from '@blocksuite/store';
 import clsx from 'clsx';
 import React, {
   forwardRef,
@@ -32,7 +31,7 @@ import * as styles from './styles.css';
 const adapted = {
   DocEditor: createReactComponentFromLit({
     react: React,
-    elementClass: DocEditor,
+    elementClass: PageEditor,
   }),
   DocTitle: createReactComponentFromLit({
     react: React,
@@ -40,7 +39,7 @@ const adapted = {
   }),
   PageMetaTags: createReactComponentFromLit({
     react: React,
-    elementClass: PageMetaTags,
+    elementClass: DocMetaTags,
   }),
   EdgelessEditor: createReactComponentFromLit({
     react: React,
@@ -53,23 +52,23 @@ const adapted = {
 };
 
 interface BlocksuiteDocEditorProps {
-  page: Page;
+  page: Doc;
   customRenderers?: InlineRenderers;
   // todo: add option to replace docTitle with custom component (e.g., for journal page)
 }
 
 export const BlocksuiteDocEditor = forwardRef<
-  DocEditor,
+  PageEditor,
   BlocksuiteDocEditorProps
 >(function BlocksuiteDocEditor({ page, customRenderers }, ref) {
   const titleRef = useRef<DocTitle>(null);
-  const docRef = useRef<DocEditor | null>(null);
+  const docRef = useRef<PageEditor | null>(null);
   const [docPage, setDocPage] =
-    useState<HTMLElementTagNameMap['affine-doc-page']>();
+    useState<HTMLElementTagNameMap['affine-page-root']>();
   const { isJournal } = useJournalInfoHelper(page.workspace, page.id);
 
   const onDocRef = useCallback(
-    (el: DocEditor) => {
+    (el: PageEditor) => {
       docRef.current = el;
       if (ref) {
         if (typeof ref === 'function') {
@@ -89,7 +88,7 @@ export const BlocksuiteDocEditor = forwardRef<
   useEffect(() => {
     // auto focus the title
     setTimeout(() => {
-      const docPage = docRef.current?.querySelector('affine-doc-page');
+      const docPage = docRef.current?.querySelector('affine-page-root');
       if (docPage) {
         setDocPage(docPage);
       }
@@ -105,11 +104,11 @@ export const BlocksuiteDocEditor = forwardRef<
   return (
     <div className={styles.docEditorRoot}>
       <div
-        className={clsx('affine-doc-viewport', styles.affineDocViewport)}
+        className={clsx('affine-page-viewport', styles.affineDocViewport)}
         data-doc-viewport={true}
       >
         {!isJournal ? (
-          <adapted.DocTitle page={page} ref={titleRef} />
+          <adapted.DocTitle doc={page} ref={titleRef} />
         ) : (
           <BlocksuiteEditorJournalDocTitle page={page} />
         )}
@@ -117,7 +116,7 @@ export const BlocksuiteDocEditor = forwardRef<
         <adapted.DocEditor
           className={styles.docContainer}
           ref={onDocRef}
-          page={page}
+          doc={page}
           specs={specs}
           hasViewport={false}
         />
@@ -125,14 +124,12 @@ export const BlocksuiteDocEditor = forwardRef<
           <div
             className={styles.docEditorGap}
             onClick={() => {
-              (
-                docPage.std.spec.getService('affine:page') as DocPageService
-              ).appendParagraph();
+              docPage.std.spec.getService('affine:page').appendParagraph();
             }}
           ></div>
         ) : null}
         {docPage ? (
-          <adapted.BiDirectionalLinkPanel page={page} docPageBlock={docPage} />
+          <adapted.BiDirectionalLinkPanel doc={page} pageRoot={docPage} />
         ) : null}
       </div>
     </div>
@@ -146,5 +143,5 @@ export const BlocksuiteEdgelessEditor = forwardRef<
   const specs = useMemo(() => {
     return patchSpecs(edgelessModeSpecs, customRenderers);
   }, [customRenderers]);
-  return <adapted.EdgelessEditor ref={ref} page={page} specs={specs} />;
+  return <adapted.EdgelessEditor ref={ref} doc={page} specs={specs} />;
 });

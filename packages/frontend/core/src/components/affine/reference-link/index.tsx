@@ -1,4 +1,4 @@
-import { usePageMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
+import { useDocMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
 import { useJournalHelper } from '@affine/core/hooks/use-journal';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { LinkedPageIcon, TodayIcon } from '@blocksuite/icons';
@@ -10,7 +10,7 @@ import * as styles from './styles.css';
 
 export interface PageReferenceRendererOptions {
   pageId: string;
-  pageMetaHelper: ReturnType<typeof usePageMetaHelper>;
+  pageMetaHelper: ReturnType<typeof useDocMetaHelper>;
   journalHelper: ReturnType<typeof useJournalHelper>;
   t: ReturnType<typeof useAFFiNEI18N>;
 }
@@ -22,7 +22,7 @@ export function pageReferenceRenderer({
   t,
 }: PageReferenceRendererOptions) {
   const { isPageJournal, getLocalizedJournalDateString } = journalHelper;
-  const referencedPage = pageMetaHelper.getPageMeta(pageId);
+  const referencedPage = pageMetaHelper.getDocMeta(pageId);
   let title =
     referencedPage?.title ?? t['com.affine.editor.reference-not-found']();
   let icon = <LinkedPageIcon className={styles.pageReferenceIcon} />;
@@ -35,7 +35,9 @@ export function pageReferenceRenderer({
   return (
     <>
       {icon}
-      <span className="affine-reference-title">{title}</span>
+      <span className="affine-reference-title">
+        {title ? title : 'Untitled'}
+      </span>
     </>
   );
 }
@@ -49,7 +51,7 @@ export function AffinePageReference({
   pageId: string;
   wrapper?: React.ComponentType<PropsWithChildren>;
 }) {
-  const pageMetaHelper = usePageMetaHelper(workspace);
+  const pageMetaHelper = useDocMetaHelper(workspace);
   const journalHelper = useJournalHelper(workspace);
   const t = useAFFiNEI18N();
   const el = pageReferenceRenderer({

@@ -1,10 +1,10 @@
 import { toast } from '@affine/component';
-import { usePageMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
+import { useDocMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
 import { EdgelessIcon, HistoryIcon, PageIcon } from '@blocksuite/icons';
-import { Page, useLiveData, Workspace } from '@toeverything/infra';
+import { Doc, useLiveData, Workspace } from '@toeverything/infra';
 import {
   PreconditionStrategy,
   registerAffineCommand,
@@ -19,16 +19,16 @@ import { useExportPage } from './use-export-page';
 import { useTrashModalHelper } from './use-trash-modal-helper';
 
 export function useRegisterBlocksuiteEditorCommands() {
-  const page = useService(Page);
+  const page = useService(Doc);
   const pageId = page.id;
   const mode = useLiveData(page.mode);
   const t = useAFFiNEI18N();
   const workspace = useService(Workspace);
   const blockSuiteWorkspace = workspace.blockSuiteWorkspace;
-  const { getPageMeta } = usePageMetaHelper(blockSuiteWorkspace);
-  const currentPage = blockSuiteWorkspace.getPage(pageId);
+  const { getDocMeta } = useDocMetaHelper(blockSuiteWorkspace);
+  const currentPage = blockSuiteWorkspace.getDoc(pageId);
   assertExists(currentPage);
-  const pageMeta = getPageMeta(pageId);
+  const pageMeta = getDocMeta(pageId);
   assertExists(pageMeta);
   const favorite = pageMeta.favorite ?? false;
   const trash = pageMeta.trash ?? false;

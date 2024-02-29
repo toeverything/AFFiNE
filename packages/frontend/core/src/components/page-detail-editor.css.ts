@@ -11,7 +11,7 @@ export const editor = style({
   },
 });
 globalStyle(
-  `${editor} .affine-doc-viewport:not(.affine-embed-synced-doc-editor)`,
+  `${editor} .affine-page-viewport:not(.affine-embed-synced-doc-editor)`,
   {
     paddingBottom: '150px',
   }

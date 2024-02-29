@@ -1,6 +1,6 @@
 import { FavoriteTag } from '@affine/core/components/page-list';
 import { useBlockSuiteMetaHelper } from '@affine/core/hooks/affine/use-block-suite-meta-helper';
-import { useBlockSuitePageMeta } from '@affine/core/hooks/use-block-suite-page-meta';
+import { useBlockSuiteDocMeta } from '@affine/core/hooks/use-block-suite-page-meta';
 import { toast } from '@affine/core/utils';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
@@ -16,10 +16,10 @@ export const useFavorite = (pageId: string) => {
   const t = useAFFiNEI18N();
   const workspace = useService(Workspace);
   const blockSuiteWorkspace = workspace.blockSuiteWorkspace;
-  const currentPage = blockSuiteWorkspace.getPage(pageId);
+  const currentPage = blockSuiteWorkspace.getDoc(pageId);
   assertExists(currentPage);
 
-  const pageMeta = useBlockSuitePageMeta(blockSuiteWorkspace).find(
+  const pageMeta = useBlockSuiteDocMeta(blockSuiteWorkspace).find(
     meta => meta.id === pageId
   );
   const favorite = pageMeta?.favorite ?? false;

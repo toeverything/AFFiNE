@@ -1,16 +1,16 @@
-import type { Page, Workspace } from '@blocksuite/store';
+import type { Doc, Workspace } from '@blocksuite/store';
 import { type Atom, atom, useAtomValue } from 'jotai';
 
 import { useBlockSuiteWorkspacePage } from './use-block-suite-workspace-page';
 
-const weakMap = new WeakMap<Page, Atom<string[]>>();
-function getPageReferences(page: Page): string[] {
+const weakMap = new WeakMap<Doc, Atom<string[]>>();
+function getPageReferences(page: Doc): string[] {
   return Object.values(
     page.workspace.indexer.backlink.linkIndexMap[page.id] ?? {}
   ).flatMap(linkNodes => linkNodes.map(linkNode => linkNode.pageId));
 }
 
-const getPageReferencesAtom = (page: Page | null) => {
+const getPageReferencesAtom = (page: Doc | null) => {
   if (!page) {
     return atom([]);
   }

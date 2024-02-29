@@ -1,7 +1,7 @@
 import { BlockSuiteEditor } from '@affine/core/components/blocksuite/block-suite-editor';
 import { ImagePreviewModal } from '@affine/core/components/image-preview';
 import type { Meta } from '@storybook/react';
-import type { Page } from '@toeverything/infra';
+import type { Doc } from '@toeverything/infra';
 import {
   PageManager,
   ServiceProviderContext,
@@ -21,13 +21,13 @@ export const Default = () => {
   const workspace = useService(Workspace);
   const pageManager = useService(PageManager);
 
-  const [page, setPage] = useState<Page | null>(null);
+  const [page, setPage] = useState<Doc | null>(null);
 
   useEffect(() => {
-    const bsPage = workspace.blockSuiteWorkspace.createPage('page0');
+    const bsPage = workspace.blockSuiteWorkspace.createDoc('page0');
     initEmptyPage(bsPage);
 
-    const { page, release } = pageManager.open(bsPage.meta.id);
+    const { page, release } = pageManager.open(bsPage.meta!.id);
 
     fetch(new URL('@affine-test/fixtures/large-image.png', import.meta.url))
       .then(res => res.arrayBuffer())
@@ -76,11 +76,11 @@ export const Default = () => {
           overflow: 'auto',
         }}
       >
-        <BlockSuiteEditor mode="page" page={page.blockSuitePage} />
+        <BlockSuiteEditor mode="page" page={page.blockSuiteDoc} />
         {createPortal(
           <ImagePreviewModal
             pageId={page.id}
-            workspace={page.blockSuitePage.workspace}
+            workspace={page.blockSuiteDoc.workspace}
           />,
           document.body
         )}

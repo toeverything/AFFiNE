@@ -1,17 +1,17 @@
-import type { Page, Workspace } from '@blocksuite/store';
+import type { Doc, Workspace } from '@blocksuite/store';
 import { type Atom, atom, useAtomValue } from 'jotai';
 
 import { useBlockSuiteWorkspacePage } from './use-block-suite-workspace-page';
 
-const weakMap = new WeakMap<Page, Atom<string[]>>();
-function getPageBacklinks(page: Page): string[] {
+const weakMap = new WeakMap<Doc, Atom<string[]>>();
+function getPageBacklinks(page: Doc): string[] {
   return page.workspace.indexer.backlink
     .getBacklink(page.id)
     .map(linkNode => linkNode.pageId)
     .filter(id => id !== page.id);
 }
 
-const getPageBacklinksAtom = (page: Page | null) => {
+const getPageBacklinksAtom = (page: Doc | null) => {
   if (!page) {
     return atom([]);
   }

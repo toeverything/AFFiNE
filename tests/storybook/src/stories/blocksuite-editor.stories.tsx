@@ -13,7 +13,7 @@ async function createAndInitPage(
   title: string,
   preview: string
 ) {
-  const page = workspace.createPage();
+  const page = workspace.createDoc();
   initEmptyPage(page, title);
   page.getBlockByFlavour('affine:paragraph').at(0)?.text?.insert(preview, 0);
   return page;

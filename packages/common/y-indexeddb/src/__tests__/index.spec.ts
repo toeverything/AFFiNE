@@ -7,12 +7,12 @@ import { setTimeout } from 'node:timers/promises';
 
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import { assertExists } from '@blocksuite/global/utils';
-import type { Page } from '@blocksuite/store';
+import type { Doc } from '@blocksuite/store';
 import { Schema, Workspace } from '@blocksuite/store';
 import { openDB } from 'idb';
 import { nanoid } from 'nanoid';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
-import { applyUpdate, Doc, encodeStateAsUpdate } from 'yjs';
+import { applyUpdate, Doc as YDoc, encodeStateAsUpdate } from 'yjs';
 
 import type { WorkspacePersist } from '../index';
 import {
@@ -27,7 +27,7 @@ import {
   setMergeCount,
 } from '../index';
 
-function initEmptyPage(page: Page) {
+function initEmptyPage(page: Doc) {
   const pageBlockId = page.addBlock('affine:page', {
     title: new page.Text(''),
   });
@@ -99,9 +99,9 @@ describe('indexeddb provider', () => {
           },
         ],
       });
-      const page = workspace.createPage({ id: 'page0' });
-      page.waitForLoaded();
-      const pageBlockId = page.addBlock('affine:page', { title: '' });
+      const page = workspace.createDoc({ id: 'page0' });
+      page.load();
+      const pageBlockId = page.addBlock('affine:page', {});
       const frameId = page.addBlock('affine:note', {}, pageBlockId);
       page.addBlock('affine:paragraph', {}, frameId);
     }
@@ -129,7 +129,7 @@ describe('indexeddb provider', () => {
           | WorkspacePersist
           | undefined;
         assertExists(data);
-        testWorkspace.getPage('page0')?.waitForLoaded();
+        testWorkspace.getDoc('page0')?.load();
         data.updates.forEach(({ update }) => {
           Workspace.Y.applyUpdate(subPage, update);
         });
@@ -147,9 +147,9 @@ describe('indexeddb provider', () => {
     provider.disconnect();
     expect(provider.connected).toBe(false);
     {
-      const page = workspace.createPage({ id: 'page0' });
-      page.waitForLoaded();
-      const pageBlockId = page.addBlock('affine:page', { title: '' });
+      const page = workspace.createDoc({ id: 'page0' });
+      page.load();
+      const pageBlockId = page.addBlock('affine:page');
       const frameId = page.addBlock('affine:note', {}, pageBlockId);
       page.addBlock('affine:paragraph', {}, frameId);
     }
@@ -202,9 +202,9 @@ describe('indexeddb provider', () => {
     const provider = createIndexedDBProvider(workspace.doc, rootDBName);
     provider.connect();
     {
-      const page = workspace.createPage({ id: 'page0' });
-      page.waitForLoaded();
-      const pageBlockId = page.addBlock('affine:page', { title: '' });
+      const page = workspace.createDoc({ id: 'page0' });
+      page.load();
+      const pageBlockId = page.addBlock('affine:page');
       const frameId = page.addBlock('affine:note', {}, pageBlockId);
       for (let i = 0; i < 99; i++) {
         page.addBlock('affine:paragraph', {}, frameId);
@@ -250,7 +250,7 @@ describe('indexeddb provider', () => {
       expect(event).toBe('beforeunload');
       return oldRemoveEventListener(event, fn, options);
     });
-    const doc = new Doc({
+    const doc = new YDoc({
       guid: '1',
     });
     const provider = createIndexedDBProvider(doc);
@@ -270,7 +270,7 @@ describe('indexeddb provider', () => {
 
 describe('milestone', () => {
   test('milestone', async () => {
-    const doc = new Doc();
+    const doc = new YDoc();
     const map = doc.getMap('map');
     const array = doc.getArray('array');
     map.set('1', 1);
@@ -281,7 +281,7 @@ describe('milestone', () => {
     expect(milestones).toBeDefined();
     expect(Object.keys(milestones).length).toBe(1);
     expect(milestones.test1).toBeInstanceOf(Uint8Array);
-    const snapshot = new Doc();
+    const snapshot = new YDoc();
     applyUpdate(snapshot, milestones.test1);
     {
       const map = snapshot.getMap('map');
@@ -316,7 +316,7 @@ describe('milestone', () => {
 
     expect(fn).toBeCalled();
 
-    const doc2 = new Doc();
+    const doc2 = new YDoc();
     applyUpdate(doc2, encodeStateAsUpdate(doc));
 
     revertUpdate(doc2, milestones.test1, key =>
@@ -333,11 +333,11 @@ describe('subDoc', () => {
   test('basic', async () => {
     let json1: any, json2: any;
     {
-      const doc = new Doc({
+      const doc = new YDoc({
         guid: 'test',
       });
       const map = doc.getMap();
-      const subDoc = new Doc();
+      const subDoc = new YDoc();
       subDoc.load();
       map.set('1', subDoc);
       map.set('2', 'test');
@@ -348,14 +348,14 @@ describe('subDoc', () => {
       json1 = doc.toJSON();
     }
     {
-      const doc = new Doc({
+      const doc = new YDoc({
         guid: 'test',
       });
       const provider = createIndexedDBProvider(doc);
       provider.connect();
       await setTimeout(200);
       const map = doc.getMap();
-      const subDoc = map.get('1') as Doc;
+      const subDoc = map.get('1') as YDoc;
       subDoc.load();
       provider.disconnect();
       json2 = doc.toJSON();
@@ -366,17 +366,17 @@ describe('subDoc', () => {
   });
 
   test('blocksuite', async () => {
-    const page0 = workspace.createPage({
+    const page0 = workspace.createDoc({
       id: 'page0',
     });
-    page0.waitForLoaded();
+    page0.load();
     const { paragraphBlockId: paragraphBlockIdPage1 } = initEmptyPage(page0);
     const provider = createIndexedDBProvider(workspace.doc, rootDBName);
     provider.connect();
-    const page1 = workspace.createPage({
+    const page1 = workspace.createDoc({
       id: 'page1',
     });
-    page1.waitForLoaded();
+    page1.load();
     const { paragraphBlockId: paragraphBlockIdPage2 } = initEmptyPage(page1);
     await setTimeout(200);
     provider.disconnect();
@@ -389,15 +389,15 @@ describe('subDoc', () => {
       const provider = createIndexedDBProvider(newWorkspace.doc, rootDBName);
       provider.connect();
       await setTimeout(200);
-      const page0 = newWorkspace.getPage('page0') as Page;
-      page0.waitForLoaded();
+      const page0 = newWorkspace.getDoc('page0') as Doc;
+      page0.load();
       await setTimeout(200);
       {
         const block = page0.getBlockById(paragraphBlockIdPage1);
         assertExists(block);
       }
-      const page1 = newWorkspace.getPage('page1') as Page;
-      page1.waitForLoaded();
+      const page1 = newWorkspace.getDoc('page1') as Doc;
+      page1.load();
       await setTimeout(200);
       {
         const block = page1.getBlockById(paragraphBlockIdPage2);
@@ -409,8 +409,8 @@ describe('subDoc', () => {
 
 describe('utils', () => {
   test('download binary', async () => {
-    const page = workspace.createPage({ id: 'page0' });
-    page.waitForLoaded();
+    const page = workspace.createDoc({ id: 'page0' });
+    page.load();
     initEmptyPage(page);
     const provider = createIndexedDBProvider(workspace.doc, rootDBName);
     provider.connect();
@@ -437,7 +437,7 @@ describe('utils', () => {
   });
 
   test('overwrite binary', async () => {
-    const doc = new Doc();
+    const doc = new YDoc();
     const map = doc.getMap();
     map.set('1', 1);
     await overwriteBinary('test', new Uint8Array(encodeStateAsUpdate(doc)));

@@ -1,12 +1,12 @@
 import type { BlockSpec } from '@blocksuite/block-std';
-import type { PageService, ParagraphService } from '@blocksuite/blocks';
+import type { ParagraphService, RootService } from '@blocksuite/blocks';
 import {
   AttachmentService,
   CanvasTextFonts,
-  DocEditorBlockSpecs,
-  DocPageService,
   EdgelessEditorBlockSpecs,
-  EdgelessPageService,
+  EdgelessRootService,
+  PageEditorBlockSpecs,
+  PageRootService,
 } from '@blocksuite/blocks';
 import bytes from 'bytes';
 import { html, unsafeStatic } from 'lit/static-html.js';
@@ -20,7 +20,7 @@ class CustomAttachmentService extends AttachmentService {
   }
 }
 
-function customLoadFonts(service: PageService): void {
+function customLoadFonts(service: RootService): void {
   const officialDomains = new Set(['app.affine.pro', 'affine.fail']);
   if (!officialDomains.has(window.location.host)) {
     const fonts = CanvasTextFonts.map(font => ({
@@ -34,12 +34,12 @@ function customLoadFonts(service: PageService): void {
   }
 }
 
-class CustomDocPageService extends DocPageService {
+class CustomDocPageService extends PageRootService {
   override loadFonts(): void {
     customLoadFonts(this);
   }
 }
-class CustomEdgelessPageService extends EdgelessPageService {
+class CustomEdgelessPageService extends EdgelessRootService {
   override loadFonts(): void {
     customLoadFonts(this);
   }
@@ -97,7 +97,7 @@ export function patchSpecs(
   return newSpecs;
 }
 
-export const docModeSpecs = DocEditorBlockSpecs.map(spec => {
+export const docModeSpecs = PageEditorBlockSpecs.map(spec => {
   if (spec.schema.model.flavour === 'affine:attachment') {
     return {
       ...spec,

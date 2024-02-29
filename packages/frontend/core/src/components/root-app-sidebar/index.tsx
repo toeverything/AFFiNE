@@ -17,7 +17,7 @@ import { CollectionService } from '@affine/core/modules/collection';
 import { apis, events } from '@affine/electron-api';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { FolderIcon, SettingsIcon } from '@blocksuite/icons';
-import { type Page } from '@blocksuite/store';
+import { type Doc } from '@blocksuite/store';
 import { useDroppable } from '@dnd-kit/core';
 import { useLiveData, useService, type Workspace } from '@toeverything/infra';
 import { useAtom, useAtomValue } from 'jotai';
@@ -57,7 +57,7 @@ export type RootAppSidebarProps = {
   onOpenSettingModal: () => void;
   currentWorkspace: Workspace;
   openPage: (pageId: string) => void;
-  createPage: () => Page;
+  createPage: () => Doc;
   paths: {
     all: (workspaceId: string) => string;
     trash: (workspaceId: string) => string;
@@ -114,7 +114,7 @@ export const RootAppSidebar = ({
 
   const onClickNewPage = useAsyncCallback(async () => {
     const page = createPage();
-    page.waitForLoaded();
+    page.load();
     openPage(page.id);
   }, [createPage, openPage]);
 

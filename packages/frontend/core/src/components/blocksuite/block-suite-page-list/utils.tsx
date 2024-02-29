@@ -1,6 +1,6 @@
 import { toast } from '@affine/component';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import { usePageMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
+import { useDocMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
 import { useBlockSuiteWorkspaceHelper } from '@affine/core/hooks/use-block-suite-workspace-helper';
 import { WorkspaceSubPath } from '@affine/core/shared';
 import { useService } from '@toeverything/infra';
@@ -13,8 +13,8 @@ import type { BlockSuiteWorkspace } from '../../../shared';
 
 export const usePageHelper = (blockSuiteWorkspace: BlockSuiteWorkspace) => {
   const { openPage, jumpToSubPath } = useNavigateHelper();
-  const { createPage } = useBlockSuiteWorkspaceHelper(blockSuiteWorkspace);
-  const { setPageMeta } = usePageMetaHelper(blockSuiteWorkspace);
+  const { createDoc } = useBlockSuiteWorkspaceHelper(blockSuiteWorkspace);
+  const { setDocMeta } = useDocMetaHelper(blockSuiteWorkspace);
   const pageRecordList = useService(PageRecordList);
 
   const isPreferredEdgeless = useCallback(
@@ -25,13 +25,13 @@ export const usePageHelper = (blockSuiteWorkspace: BlockSuiteWorkspace) => {
 
   const createPageAndOpen = useCallback(
     (mode?: 'page' | 'edgeless') => {
-      const page = createPage();
+      const page = createDoc();
       initEmptyPage(page);
       pageRecordList.record(page.id).value?.setMode(mode || 'page');
       openPage(blockSuiteWorkspace.id, page.id);
       return page;
     },
-    [blockSuiteWorkspace.id, createPage, openPage, pageRecordList]
+    [blockSuiteWorkspace.id, createDoc, openPage, pageRecordList]
   );
 
   const createEdgelessAndOpen = useCallback(() => {
@@ -64,7 +64,7 @@ export const usePageHelper = (blockSuiteWorkspace: BlockSuiteWorkspace) => {
     async (pageId: string) => {
       const page = createPageAndOpen();
       page.load();
-      const parentPage = blockSuiteWorkspace.getPage(pageId);
+      const parentPage = blockSuiteWorkspace.getDoc(pageId);
       if (parentPage) {
         parentPage.load();
         const text = parentPage.Text.fromDelta([
@@ -80,10 +80,10 @@ export const usePageHelper = (blockSuiteWorkspace: BlockSuiteWorkspace) => {
         ]);
         const [frame] = parentPage.getBlockByFlavour('affine:note');
         frame && parentPage.addBlock('affine:paragraph', { text }, frame.id);
-        setPageMeta(page.id, {});
+        setDocMeta(page.id, {});
       }
     },
-    [blockSuiteWorkspace, createPageAndOpen, setPageMeta]
+    [blockSuiteWorkspace, createPageAndOpen, setDocMeta]
   );
 
   return useMemo(() => {

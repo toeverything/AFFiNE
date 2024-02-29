@@ -4,7 +4,7 @@ import {
   TagListHeader,
   VirtualizedTagList,
 } from '@affine/core/components/page-list/tags';
-import { useBlockSuitePageMeta } from '@affine/core/hooks/use-block-suite-page-meta';
+import { useBlockSuiteDocMeta } from '@affine/core/hooks/use-block-suite-page-meta';
 import { useService } from '@toeverything/infra';
 import { Workspace } from '@toeverything/infra';
 
@@ -14,7 +14,7 @@ import { AllTagHeader } from './header';
 
 export const AllTag = () => {
   const currentWorkspace = useService(Workspace);
-  const pageMetas = useBlockSuitePageMeta(currentWorkspace.blockSuiteWorkspace);
+  const pageMetas = useBlockSuiteDocMeta(currentWorkspace.blockSuiteWorkspace);
 
   const { tags, tagMetas, deleteTags } = useTagMetas(
     currentWorkspace.blockSuiteWorkspace,

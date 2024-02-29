@@ -4,13 +4,13 @@ import {
   useJournalRouteHelper,
 } from '@affine/core/hooks/use-journal';
 import type { BlockSuiteWorkspace } from '@affine/core/shared';
-import type { Page } from '@blocksuite/store';
+import type { Doc } from '@blocksuite/store';
 import dayjs from 'dayjs';
 import { useEffect, useRef, useState } from 'react';
 
 export interface JournalWeekDatePickerProps {
   workspace: BlockSuiteWorkspace;
-  page: Page;
+  page: Doc;
 }
 
 const weekStyle = { maxWidth: 800, width: '100%' };

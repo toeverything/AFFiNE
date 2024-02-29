@@ -30,7 +30,7 @@ export async function migratePages(
   spaces.forEach((space: YDoc) => {
     try {
       // Catch page upgrade error to avoid blocking the whole workspace migration.
-      schema.upgradePage(0, oldVersions, space);
+      schema.upgradeDoc(0, oldVersions, space);
     } catch (e) {
       console.error(e);
     }

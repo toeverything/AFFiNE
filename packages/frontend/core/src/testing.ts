@@ -1,5 +1,5 @@
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import type { Page as BlockSuitePage } from '@blocksuite/store';
+import type { Doc as BlockSuiteDoc } from '@blocksuite/store';
 import {
   configureTestingInfraServices,
   PageManager,
@@ -22,7 +22,7 @@ export async function configureTestingEnvironment() {
 
   const { workspace } = workspaceManager.open(
     await workspaceManager.createWorkspace(WorkspaceFlavour.LOCAL, async ws => {
-      const initPage = async (page: BlockSuitePage) => {
+      const initPage = async (page: BlockSuiteDoc) => {
         page.load();
         const pageBlockId = page.addBlock('affine:page', {
           title: new page.Text(''),
@@ -30,7 +30,7 @@ export async function configureTestingEnvironment() {
         const frameId = page.addBlock('affine:note', {}, pageBlockId);
         page.addBlock('affine:paragraph', {}, frameId);
       };
-      await initPage(ws.createPage({ id: 'page0' }));
+      await initPage(ws.createDoc({ id: 'page0' }));
     })
   );
 

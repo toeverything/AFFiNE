@@ -9,7 +9,7 @@ import { CleanupService } from '../lifecycle';
 import { Workspace, WorkspaceLocalState, WorkspaceScope } from '../workspace';
 import { BlockSuitePageContext, PageRecordContext } from './context';
 import { PageManager } from './manager';
-import { Page } from './page';
+import { Doc } from './page';
 import { PageRecordList } from './record-list';
 import { PageScope } from './service-scope';
 
@@ -22,5 +22,5 @@ export function configurePageServices(services: ServiceCollection) {
   services
     .scope(PageScope)
     .add(CleanupService)
-    .add(Page, [PageRecordContext, BlockSuitePageContext, ServiceProvider]);
+    .add(Doc, [PageRecordContext, BlockSuitePageContext, ServiceProvider]);
 }

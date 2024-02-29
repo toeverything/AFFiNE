@@ -28,7 +28,7 @@ export function checkWorkspaceCompatibility(
   }
 
   // exit if no pages
-  if (!workspace.meta.pages?.length) {
+  if (!workspace.meta.docs?.length) {
     return null;
   }
 
@@ -55,7 +55,7 @@ export function checkWorkspaceCompatibility(
 
   // TODO: Catch compatibility error from blocksuite to show upgrade page.
   // Temporarily follow the check logic of blocksuite.
-  if ((workspace.meta.pages?.length ?? 0) <= 1) {
+  if ((workspace.meta.docs?.length ?? 0) <= 1) {
     try {
       workspace.meta.validateVersion(workspace);
     } catch (e) {

@@ -1,6 +1,6 @@
 import { toast } from '@affine/component';
 import type { DraggableTitleCellData } from '@affine/core/components/page-list';
-import { usePageMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
+import { useDocMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { DragEndEvent, UniqueIdentifier } from '@dnd-kit/core';
 import { Workspace } from '@toeverything/infra';
@@ -74,7 +74,7 @@ export const useSidebarDrag = () => {
   const { setTrashModal } = useTrashModalHelper(workspace);
   const { addToFavorite, removeFromFavorite } =
     useBlockSuiteMetaHelper(workspace);
-  const { getPageMeta } = usePageMetaHelper(workspace);
+  const { getDocMeta } = useDocMetaHelper(workspace);
 
   const isDropArea = useCallback(
     (id: UniqueIdentifier | undefined, prefix: string) => {
@@ -109,7 +109,7 @@ export const useSidebarDrag = () => {
   const processMoveToTrashDrag = useCallback(
     (e: DragEndEvent) => {
       const { pageId } = e.active.data.current as DraggableTitleCellData;
-      const pageTitle = getPageMeta(pageId)?.title ?? t['Untitled']();
+      const pageTitle = getDocMeta(pageId)?.title ?? t['Untitled']();
       processDrag(e, DropPrefix.SidebarTrash, pageId => {
         setTrashModal({
           open: true,
@@ -118,13 +118,13 @@ export const useSidebarDrag = () => {
         });
       });
     },
-    [getPageMeta, processDrag, setTrashModal, t]
+    [getDocMeta, processDrag, setTrashModal, t]
   );
 
   const processFavouritesDrag = useCallback(
     (e: DragEndEvent) => {
       const { pageId } = e.active.data.current as DraggableTitleCellData;
-      const isFavourited = getPageMeta(pageId)?.favorite;
+      const isFavourited = getDocMeta(pageId)?.favorite;
       const isFavouriteDrag = String(e.over?.id).startsWith(
         DropPrefix.SidebarFavorites
       );
@@ -136,7 +136,7 @@ export const useSidebarDrag = () => {
         toast(t['com.affine.cmdk.affine.editor.add-to-favourites']());
       });
     },
-    [getPageMeta, processDrag, addToFavorite, t]
+    [getDocMeta, processDrag, addToFavorite, t]
   );
 
   const processRemoveDrag = useCallback(

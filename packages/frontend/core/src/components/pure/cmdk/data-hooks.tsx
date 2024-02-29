@@ -1,6 +1,6 @@
 import {
-  useBlockSuitePageMeta,
-  usePageMetaHelper,
+  useBlockSuiteDocMeta,
+  useDocMetaHelper,
 } from '@affine/core/hooks/use-block-suite-page-meta';
 import { useGetBlockSuiteWorkspacePageTitle } from '@affine/core/hooks/use-block-suite-workspace-page-title';
 import { useJournalHelper } from '@affine/core/hooks/use-journal';
@@ -14,9 +14,9 @@ import {
   TodayIcon,
   ViewLayersIcon,
 } from '@blocksuite/icons';
-import type { PageMeta } from '@blocksuite/store';
+import type { DocMeta } from '@blocksuite/store';
 import {
-  Page,
+  Doc,
   PageRecordList,
   useLiveData,
   Workspace,
@@ -79,7 +79,7 @@ function getAllCommand(context: CommandContext) {
 
 const useWorkspacePages = () => {
   const workspace = useService(Workspace);
-  const pages = useBlockSuitePageMeta(workspace.blockSuiteWorkspace);
+  const pages = useBlockSuiteDocMeta(workspace.blockSuiteWorkspace);
   return pages;
 };
 
@@ -92,13 +92,13 @@ const useRecentPages = () => {
         const page = pages.find(page => page.id === pageId);
         return page;
       })
-      .filter((p): p is PageMeta => !!p);
+      .filter((p): p is DocMeta => !!p);
   }, [recentPageIds, pages]);
 };
 
 export const pageToCommand = (
   category: CommandCategory,
-  page: PageMeta,
+  page: DocMeta,
   navigationHelper: ReturnType<typeof useNavigateHelper>,
   getPageTitle: ReturnType<typeof useGetBlockSuiteWorkspacePageTitle>,
   isPageJournal: (pageId: string) => boolean,
@@ -152,7 +152,7 @@ export const usePageCommands = () => {
   const pages = useWorkspacePages();
   const workspace = useService(Workspace);
   const pageHelper = usePageHelper(workspace.blockSuiteWorkspace);
-  const pageMetaHelper = usePageMetaHelper(workspace.blockSuiteWorkspace);
+  const pageMetaHelper = useDocMetaHelper(workspace.blockSuiteWorkspace);
   const query = useAtomValue(cmdkQueryAtom);
   const navigationHelper = useNavigateHelper();
   const journalHelper = useJournalHelper(workspace.blockSuiteWorkspace);
@@ -260,7 +260,7 @@ export const usePageCommands = () => {
           run: async () => {
             const page = pageHelper.createPage();
             page.load();
-            pageMetaHelper.setPageTitle(page.id, query);
+            pageMetaHelper.setDocTitle(page.id, query);
           },
           icon: <PageIcon />,
         });
@@ -275,7 +275,7 @@ export const usePageCommands = () => {
           run: async () => {
             const page = pageHelper.createEdgeless();
             page.load();
-            pageMetaHelper.setPageTitle(page.id, query);
+            pageMetaHelper.setDocTitle(page.id, query);
           },
           icon: <EdgelessIcon />,
         });
@@ -357,7 +357,7 @@ export const useCMDKCommandGroups = () => {
   const pageCommands = usePageCommands();
   const collectionCommands = useCollectionsCommands();
 
-  const currentPage = useServiceOptional(Page);
+  const currentPage = useServiceOptional(Doc);
   const currentPageMode = useLiveData(currentPage?.mode);
   const affineCommands = useMemo(() => {
     return getAllCommand({

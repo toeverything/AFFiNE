@@ -4,7 +4,7 @@ import { Menu } from '@affine/component/ui/menu';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { WebIcon } from '@blocksuite/icons';
-import type { Page } from '@blocksuite/store';
+import type { Doc } from '@blocksuite/store';
 import type { WorkspaceMetadata } from '@toeverything/infra';
 import clsx from 'clsx';
 
@@ -15,7 +15,7 @@ import { SharePage } from './share-page';
 
 export interface ShareMenuProps {
   workspaceMetadata: WorkspaceMetadata;
-  currentPage: Page;
+  currentPage: Doc;
   isJournal?: boolean;
   onEnableAffineCloud: () => void;
 }

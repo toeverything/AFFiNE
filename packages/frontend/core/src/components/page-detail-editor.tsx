@@ -5,9 +5,9 @@ import { useBlockSuiteWorkspacePage } from '@affine/core/hooks/use-block-suite-w
 import { assertExists, DisposableGroup } from '@blocksuite/global/utils';
 import type { AffineEditorContainer } from '@blocksuite/presets';
 import type { Workspace } from '@blocksuite/store';
-import type { Page as BlockSuitePage } from '@blocksuite/store';
+import type { Doc as BlockSuiteDoc } from '@blocksuite/store';
 import {
-  Page,
+  Doc,
   type PageMode,
   useLiveData,
   useService,
@@ -28,7 +28,7 @@ declare global {
 }
 
 export type OnLoadEditor = (
-  page: BlockSuitePage,
+  page: BlockSuiteDoc,
   editor: AffineEditorContainer
 ) => () => void;
 
@@ -49,8 +49,8 @@ const PageDetailEditorMain = memo(function PageDetailEditorMain({
   onLoad,
   isPublic,
   publishMode,
-}: PageDetailEditorProps & { page: BlockSuitePage }) {
-  const currentMode = useLiveData(useService(Page).mode);
+}: PageDetailEditorProps & { page: BlockSuiteDoc }) {
+  const currentMode = useLiveData(useService(Doc).mode);
   const mode = useMemo(() => {
     const shareMode = publishMode || currentMode;
 
@@ -81,7 +81,7 @@ const PageDetailEditorMain = memo(function PageDetailEditorMain({
       const disposableGroup = new DisposableGroup();
       disposableGroup.add(
         page.slots.blockUpdated.once(() => {
-          page.workspace.setPageMeta(page.id, {
+          page.workspace.setDocMeta(page.id, {
             updatedDate: Date.now(),
           });
         })

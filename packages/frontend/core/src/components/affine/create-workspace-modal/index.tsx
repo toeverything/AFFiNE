@@ -238,8 +238,8 @@ export const CreateWorkspaceModal = ({
           workspaceFlavour,
           async workspace => {
             workspace.meta.setName(name);
-            const page = workspace.createPage();
-            workspace.setPageMeta(page.id, {
+            const page = workspace.createDoc();
+            workspace.setDocMeta(page.id, {
               jumpOnce: true,
             });
             initEmptyPage(page);

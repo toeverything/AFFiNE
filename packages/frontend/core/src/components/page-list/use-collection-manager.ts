@@ -1,5 +1,5 @@
 import type { Collection, Filter, VariableMap } from '@affine/env/filter';
-import type { PageMeta } from '@blocksuite/store';
+import type { DocMeta } from '@blocksuite/store';
 
 import { evalFilterList } from './filter';
 
@@ -20,7 +20,7 @@ export const filterByFilterList = (filterList: Filter[], varMap: VariableMap) =>
   evalFilterList(filterList, varMap);
 
 export type PageDataForFilter = {
-  meta: PageMeta;
+  meta: DocMeta;
   publicMode: undefined | 'page' | 'edgeless';
 };
 

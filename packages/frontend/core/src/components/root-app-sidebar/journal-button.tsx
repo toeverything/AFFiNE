@@ -6,7 +6,7 @@ import {
 import type { BlockSuiteWorkspace } from '@affine/core/shared';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { TodayIcon, TomorrowIcon, YesterdayIcon } from '@blocksuite/icons';
-import { Page, useServiceOptional } from '@toeverything/infra';
+import { Doc, useServiceOptional } from '@toeverything/infra';
 import { useParams } from 'react-router-dom';
 
 interface AppSidebarJournalButtonProps {
@@ -17,7 +17,7 @@ export const AppSidebarJournalButton = ({
   workspace,
 }: AppSidebarJournalButtonProps) => {
   const t = useAFFiNEI18N();
-  const currentPage = useServiceOptional(Page);
+  const currentPage = useServiceOptional(Doc);
   const { openToday } = useJournalRouteHelper(workspace);
   const { journalDate, isJournal } = useJournalInfoHelper(
     workspace,

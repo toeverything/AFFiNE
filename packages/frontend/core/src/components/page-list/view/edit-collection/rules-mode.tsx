@@ -8,7 +8,7 @@ import {
   PlusIcon,
   ToggleCollapseIcon,
 } from '@blocksuite/icons';
-import type { PageMeta } from '@blocksuite/store';
+import type { DocMeta } from '@blocksuite/store';
 import clsx from 'clsx';
 import { type ReactNode, useCallback, useEffect, useState } from 'react';
 
@@ -38,8 +38,8 @@ export const RulesMode = ({
 }) => {
   const t = useAFFiNEI18N();
   const [showPreview, setShowPreview] = useState(true);
-  const allowListPages: PageMeta[] = [];
-  const rulesPages: PageMeta[] = [];
+  const allowListPages: DocMeta[] = [];
+  const rulesPages: DocMeta[] = [];
   const [showTips, setShowTips] = useState(false);
   useEffect(() => {
     setShowTips(!localStorage.getItem('hide-rules-mode-include-page-tips'));
@@ -85,7 +85,7 @@ export const RulesMode = ({
   );
   const operationsRenderer = useCallback(
     (item: ListItem) => {
-      const page = item as PageMeta;
+      const page = item as DocMeta;
       return allPageListConfig.favoriteRender(page);
     },
     [allPageListConfig]
