@@ -1,13 +1,14 @@
 import { AuthModule } from '../../core/auth';
 import { ServerFeature } from '../../core/config';
 import { Plugin } from '../registry';
+import { CaptchaController } from './resolver';
 import { CaptchaService } from './service';
 
 @Plugin({
   name: 'captcha',
   imports: [AuthModule],
   providers: [CaptchaService],
-  controllers: [],
+  controllers: [CaptchaController],
   contributesTo: ServerFeature.Captcha,
   if: config => !!config.plugins.captcha,
 })

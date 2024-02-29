@@ -10,7 +10,7 @@ import {
   SessionCache,
   verifyChallengeResponse,
 } from '../../fundamentals';
-import { CaptchaConfig } from '.';
+import { CaptchaConfig } from './types';
 
 @Injectable()
 export class CaptchaService {
