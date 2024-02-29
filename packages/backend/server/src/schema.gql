@@ -271,6 +271,7 @@ enum ServerDeploymentType {
 }
 
 enum ServerFeature {
+  Captcha
   OAuth
   Payment
 }

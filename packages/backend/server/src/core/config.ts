@@ -7,6 +7,7 @@ import { Public } from './auth';
 export enum ServerFeature {
   Payment = 'payment',
   OAuth = 'oauth',
+  Captcha = 'captcha',
 }
 
 registerEnumType(ServerFeature, {
