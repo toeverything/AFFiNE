@@ -24,7 +24,7 @@ jobs:
           token: ${{ secrets.HELM_RELEASER_TOKEN }}
 
       - name: Install Helm
-        uses: azure/setup-helm@v3
+        uses: azure/setup-helm@v4
 
       - name: Install chart releaser
         run: |

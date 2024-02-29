@@ -24,7 +24,7 @@ runs:
       shell: bash
       run: |
         echo "GIT_SHORT_HASH=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
-    - uses: azure/setup-helm@v3
+    - uses: azure/setup-helm@v4
     - id: auth
       uses: google-github-actions/auth@v2
       with:
