@@ -34,11 +34,12 @@ export async function buildShowcaseWorkspace(
 ) {
   const meta = await workspaceManager.createWorkspace(
     flavour,
-    async blockSuiteWorkspace => {
+    async (blockSuiteWorkspace, blobStorage) => {
       blockSuiteWorkspace.meta.setName(workspaceName);
       const { onboarding } = await import('@affine/templates');
 
       const info = onboarding['info.json'] as WorkspaceInfoSnapshot;
+      const blob = onboarding['blob.json'] as { [key: string]: string };
 
       const migrationMiddleware: JobMiddleware = ({ slots, workspace }) => {
         slots.afterImport.on(payload => {
@@ -80,6 +81,10 @@ export async function buildShowcaseWorkspace(
       blockSuiteWorkspace.doc
         .getMap('meta')
         .set('blockVersions', new YMap(Object.entries(newVersions)));
+
+      for (const [key, base64] of Object.entries(blob)) {
+        await blobStorage.set(key, new Blob([base64ToUint8Array(base64)]));
+      }
     }
   );
 
@@ -92,18 +97,18 @@ export async function buildShowcaseWorkspace(
   // todo: find better way to do the following
   // perhaps put them into middleware?
   {
-    // the "AFFiNE - not just a note-taking app" page should be set to edgeless mode
+    // the "Write, Draw, Plan all at Once." page should be set to edgeless mode
     const edgelessPage1 = pageRecordList.records.value.find(
-      p => p.title.value === 'AFFiNE - not just a note-taking app'
+      p => p.title.value === 'Write, Draw, Plan all at Once.'
     );
 
     if (edgelessPage1) {
       edgelessPage1.setMode('edgeless');
     }
 
-    // should jump to "AFFiNE - not just a note-taking app" by default
+    // should jump to "Write, Draw, Plan all at Once." by default
     const defaultPage = pageRecordList.records.value.find(p =>
-      p.title.value.startsWith('AFFiNE - not just a note-taking app')
+      p.title.value.startsWith('Write, Draw, Plan all at Once.')
     );
 
     if (defaultPage) {
@@ -114,4 +119,12 @@ export async function buildShowcaseWorkspace(
   }
   release();
   return meta;
+}
+
+function base64ToUint8Array(base64: string) {
+  const binaryString = atob(base64);
+  const binaryArray = binaryString.split('').map(function (char) {
+    return char.charCodeAt(0);
+  });
+  return new Uint8Array(binaryArray);
 }

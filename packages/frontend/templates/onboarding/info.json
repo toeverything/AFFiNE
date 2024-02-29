@@ -1,40 +1,21 @@
 {
   "type": "info",
-  "id": "XdwdkEYm8fFZcYAdDa0qT",
-  "blockVersions": {
-    "affine:code": 1,
-    "affine:paragraph": 1,
-    "affine:page": 2,
-    "affine:list": 1,
-    "affine:note": 1,
-    "affine:divider": 1,
-    "affine:image": 1,
-    "affine:surface": 5,
-    "affine:bookmark": 1,
-    "affine:frame": 1,
-    "affine:database": 3,
-    "affine:surface-ref": 1,
-    "affine:data-view": 1,
-    "affine:attachment": 1,
-    "affine:embed-github": 1,
-    "affine:embed-html": 1
-  },
+  "id": "dc61f2e3-a973-432f-a463-164a15cfc778",
   "pageVersion": 2,
   "workspaceVersion": 2,
   "properties": {
     "tags": {
-      "options": [
-      ]
+      "options": []
     }
   },
   "pages": [
     {
-      "id": "9iIScyvuIB_kUKbs1AYOQ",
-      "title": "AFFiNE - not just a note-taking app",
-      "createDate": 1691548220794,
+      "id": "W-d9_llZ6rE-qoTiHKTk4",
+      "createDate": 1706862386590,
       "tags": [],
-      "updatedDate": 1691676775642,
-      "favorite": false
+      "favorite": false,
+      "title": "Write, Draw, Plan all at Once.",
+      "updatedDate": 1709110332309
     }
   ]
 }
