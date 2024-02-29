@@ -150,10 +150,10 @@ export const CreateWorkspaceModal = ({
       // fix me later
       const id = await workspaceManager.createWorkspace(
         WorkspaceFlavour.LOCAL,
-        async workspace => {
+        async (workspace, blob) => {
           workspace.meta.setName(name);
           if (runtimeConfig.enablePreloading) {
-            await buildShowcaseWorkspace(workspace, {
+            await buildShowcaseWorkspace(workspace, blob, {
               store: getCurrentStore(),
               atoms: {
                 pageMode: setPageModeAtom,

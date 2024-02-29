@@ -7,7 +7,7 @@ import type {
   WorkspaceInfoSnapshot,
 } from '@blocksuite/store';
 import { Job } from '@blocksuite/store';
-import type { createStore, WritableAtom } from 'jotai/vanilla';
+import type { createStore, WritableAtom } from 'jotai';
 import { Map as YMap } from 'yjs';
 
 import { getLatestVersions } from '../migration/blocksuite';
@@ -29,6 +29,7 @@ export function initEmptyPage(page: Page, title?: string) {
  */
 export async function buildShowcaseWorkspace(
   workspace: Workspace,
+  blobStorage: { set: (key: string, blob: Blob) => Promise<string> },
   {
     store,
     atoms,
@@ -46,6 +47,7 @@ export async function buildShowcaseWorkspace(
   const { onboarding } = await import('@affine/templates');
 
   const info = onboarding['info.json'] as WorkspaceInfoSnapshot;
+  const blob = onboarding['blob.json'] as { [key: string]: string };
 
   const migrationMiddleware: JobMiddleware = ({ slots, workspace }) => {
     slots.afterImport.on(payload => {
@@ -88,27 +90,29 @@ export async function buildShowcaseWorkspace(
     .getMap('meta')
     .set('blockVersions', new YMap(Object.entries(newVersions)));
 
+  for (const [key, base64] of Object.entries(blob)) {
+    await blobStorage.set(key, new Blob([base64ToUint8Array(base64)]));
+  }
+
   // todo: find better way to do the following
   // perhaps put them into middleware?
   {
-    // the "AFFiNE - not just a note-taking app" page should be set to edgeless mode
+    // the "Write, Draw, Plan all at Once." page should be set to edgeless mode
     const edgelessPage1 = (workspace.meta.pages as PageMeta[])?.find(
-      p => p.title === 'AFFiNE - not just a note-taking app'
+      p => p.title === 'Write, Draw, Plan all at Once.'
     )?.id;
 
     if (edgelessPage1) {
+      workspace.setPageMeta(edgelessPage1, { jumpOnce: true });
       store.set(atoms.pageMode, edgelessPage1, 'edgeless');
     }
-
-    // should jump to "Getting Started" by default
-    const gettingStartedPage = (workspace.meta.pages as PageMeta[])?.find(p =>
-      p.title.startsWith('Getting Started')
-    )?.id;
-
-    if (gettingStartedPage) {
-      workspace.setPageMeta(gettingStartedPage, {
-        jumpOnce: true,
-      });
-    }
   }
+}
+
+function base64ToUint8Array(base64: string) {
+  const binaryString = atob(base64);
+  const binaryArray = binaryString.split('').map(function (char) {
+    return char.charCodeAt(0);
+  });
+  return new Uint8Array(binaryArray);
 }
