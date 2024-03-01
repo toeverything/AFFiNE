@@ -15,7 +15,9 @@ import {
   ResolveField,
   Resolver,
 } from '@nestjs/graphql';
-import { PrismaClient, type User } from '@prisma/client';
+import { InjectTransaction, Transaction } from '@nestjs-cls/transactional';
+import { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
+import { type User } from '@prisma/client';
 import { getStreamAsBuffer } from 'get-stream';
 import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 import { applyUpdate, Doc } from 'yjs';
@@ -26,7 +28,6 @@ import {
   type FileUpload,
   MailService,
   Throttle,
-  type Transaction,
 } from '../../../fundamentals';
 import { Auth, CurrentUser, Public } from '../../auth';
 import { AuthService } from '../../auth/service';
@@ -57,7 +58,9 @@ export class WorkspaceResolver {
   constructor(
     private readonly auth: AuthService,
     private readonly mailer: MailService,
-    private readonly prisma: PrismaClient,
+    // private readonly prisma: PrismaClient,
+    @InjectTransaction()
+    private readonly prisma: Transaction<TransactionalAdapterPrisma>,
     private readonly permissions: PermissionService,
     private readonly quota: QuotaManagementService,
     private readonly users: UsersService,
@@ -337,76 +340,72 @@ export class WorkspaceResolver {
       throw new ForbiddenException('Cannot change owner');
     }
 
-    return this.prisma.$transaction(async tx => {
-      // member limit check
-      const [memberCount, quota] = await Promise.all([
-        tx.workspaceUserPermission.count({
-          where: { workspaceId },
-        }),
-        this.quota.getWorkspaceUsage(workspaceId, tx),
-      ]);
-      if (memberCount >= quota.memberLimit) {
-        throw new PayloadTooLargeException('Workspace member limit reached.');
-      }
+    // member limit check
+    const [memberCount, quota] = await Promise.all([
+      this.prisma.workspaceUserPermission.count({
+        where: { workspaceId },
+      }),
+      this.quota.getWorkspaceUsage(workspaceId),
+    ]);
+    if (memberCount >= quota.memberLimit) {
+      throw new PayloadTooLargeException('Workspace member limit reached.');
+    }
 
-      let target = await this.users.findUserByEmail(email, tx);
-      if (target) {
-        const originRecord = await tx.workspaceUserPermission.findFirst({
-          where: {
-            workspaceId,
-            userId: target.id,
+    let target = await this.users.findUserByEmail(email);
+    if (target) {
+      const originRecord = await this.prisma.workspaceUserPermission.findFirst({
+        where: {
+          workspaceId,
+          userId: target.id,
+        },
+      });
+      // only invite if the user is not already in the workspace
+      if (originRecord) return originRecord.id;
+    } else {
+      target = await this.auth.createAnonymousUser(email);
+    }
+
+    const inviteId = await this.permissions.grant(
+      workspaceId,
+      target.id,
+      permission
+    );
+    if (sendInviteMail) {
+      const inviteInfo = await this.getInviteInfo(inviteId);
+
+      try {
+        await this.mailer.sendInviteEmail(email, inviteId, {
+          workspace: {
+            id: inviteInfo.workspace.id,
+            name: inviteInfo.workspace.name,
+            avatar: inviteInfo.workspace.avatar,
+          },
+          user: {
+            avatar: inviteInfo.user?.avatarUrl || '',
+            name: inviteInfo.user?.name || '',
           },
         });
-        // only invite if the user is not already in the workspace
-        if (originRecord) return originRecord.id;
-      } else {
-        target = await this.auth.createAnonymousUser(email, tx);
-      }
+      } catch (e) {
+        const ret = await this.permissions.revokeWorkspace(
+          workspaceId,
+          target.id
+        );
 
-      const inviteId = await this.permissions.grant(
-        workspaceId,
-        target.id,
-        permission,
-        tx
-      );
-      if (sendInviteMail) {
-        const inviteInfo = await this.getInviteInfo(inviteId, tx);
-
-        try {
-          await this.mailer.sendInviteEmail(email, inviteId, {
-            workspace: {
-              id: inviteInfo.workspace.id,
-              name: inviteInfo.workspace.name,
-              avatar: inviteInfo.workspace.avatar,
-            },
-            user: {
-              avatar: inviteInfo.user?.avatarUrl || '',
-              name: inviteInfo.user?.name || '',
-            },
-          });
-        } catch (e) {
-          const ret = await this.permissions.revokeWorkspace(
-            workspaceId,
-            target.id,
-            tx
+        if (!ret) {
+          this.logger.fatal(
+            `failed to send ${workspaceId} invite email to ${email} and failed to revoke permission: ${inviteId}, ${e}`
           );
-
-          if (!ret) {
-            this.logger.fatal(
-              `failed to send ${workspaceId} invite email to ${email} and failed to revoke permission: ${inviteId}, ${e}`
-            );
-          } else {
-            this.logger.warn(
-              `failed to send ${workspaceId} invite email to ${email}, but successfully revoked permission: ${e}`
-            );
-          }
-          return new InternalServerErrorException(
-            'Failed to send invite email. Please try again.'
+        } else {
+          this.logger.warn(
+            `failed to send ${workspaceId} invite email to ${email}, but successfully revoked permission: ${e}`
           );
         }
+        return new InternalServerErrorException(
+          'Failed to send invite email. Please try again.'
+        );
       }
-      return inviteId;
-    });
+    }
+    return inviteId;
   }
 
   @Throttle({
@@ -419,9 +418,8 @@ export class WorkspaceResolver {
   @Query(() => InvitationType, {
     description: 'Update workspace',
   })
-  async getInviteInfo(@Args('inviteId') inviteId: string, tx?: Transaction) {
-    const executor = tx ?? this.prisma;
-    const workspaceId = await executor.workspaceUserPermission
+  async getInviteInfo(@Args('inviteId') inviteId: string) {
+    const workspaceId = await this.prisma.workspaceUserPermission
       .findUniqueOrThrow({
         where: {
           id: inviteId,
@@ -432,7 +430,7 @@ export class WorkspaceResolver {
       })
       .then(({ workspaceId }) => workspaceId);
 
-    const snapshot = await executor.snapshot.findFirstOrThrow({
+    const snapshot = await this.prisma.snapshot.findFirstOrThrow({
       where: {
         id: workspaceId,
         workspaceId,
@@ -444,14 +442,10 @@ export class WorkspaceResolver {
     applyUpdate(doc, new Uint8Array(snapshot.blob));
     const metaJSON = doc.getMap('meta').toJSON();
 
-    const owner = await this.permissions.getWorkspaceOwner(
-      workspaceId,
-      executor
-    );
+    const owner = await this.permissions.getWorkspaceOwner(workspaceId);
     const invitee = await this.permissions.getWorkspaceInvitation(
       inviteId,
-      workspaceId,
-      executor
+      workspaceId
     );
 
     let avatar = '';

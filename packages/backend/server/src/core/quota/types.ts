@@ -1,4 +1,5 @@
 import { Field, ObjectType } from '@nestjs/graphql';
+import { PrismaClient } from '@prisma/client';
 import { SafeIntResolver } from 'graphql-scalars';
 import { z } from 'zod';
 
@@ -92,6 +93,10 @@ export class QuotaQueryType {
 }
 
 /// ======== utils ========
+
+export type Transaction = Parameters<
+  Parameters<PrismaClient['$transaction']>[0]
+>[0];
 
 export function formatSize(bytes: number, decimals: number = 2): string {
   if (bytes === 0) return '0 B';

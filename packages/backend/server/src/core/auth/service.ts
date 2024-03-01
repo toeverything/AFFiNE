@@ -6,15 +6,16 @@ import {
   InternalServerErrorException,
   UnauthorizedException,
 } from '@nestjs/common';
+import { InjectTransaction, Transaction } from '@nestjs-cls/transactional';
+import { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
 import { hash, verify } from '@node-rs/argon2';
 import { Algorithm, sign, verify as jwtVerify } from '@node-rs/jsonwebtoken';
-import { PrismaClient, type User } from '@prisma/client';
+import { type User } from '@prisma/client';
 import { nanoid } from 'nanoid';
 
 import {
   Config,
   MailService,
-  Transaction,
   verifyChallengeResponse,
 } from '../../fundamentals';
 import { Quota_FreePlanV1_1 } from '../quota';
@@ -32,7 +33,9 @@ export const getUtcTimestamp = () => Math.floor(Date.now() / 1000);
 export class AuthService {
   constructor(
     private readonly config: Config,
-    private readonly prisma: PrismaClient,
+    // private readonly prisma: PrismaClient,
+    @InjectTransaction()
+    private readonly prisma: Transaction<TransactionalAdapterPrisma>,
     private readonly mailer: MailService
   ) {}
 
@@ -216,9 +219,8 @@ export class AuthService {
     });
   }
 
-  async createAnonymousUser(email: string, tx?: Transaction): Promise<User> {
-    const executor = tx ?? this.prisma;
-    const user = await executor.user.findFirst({
+  async createAnonymousUser(email: string): Promise<User> {
+    const user = await this.prisma.user.findFirst({
       where: {
         email: {
           equals: email,
@@ -231,9 +233,9 @@ export class AuthService {
       throw new BadRequestException('Email already exists');
     }
 
-    return executor.user.create({
+    return this.prisma.user.create({
       data: {
-        name: email.split('@')[0],
+        name: 'Unnamed',
         email,
         features: {
           create: {

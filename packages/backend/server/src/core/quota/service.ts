@@ -1,23 +1,27 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
-
 import {
-  type EventPayload,
-  OnEvent,
-  type Transaction,
-} from '../../fundamentals';
+  InjectTransaction,
+  Transaction,
+  Transactional,
+} from '@nestjs-cls/transactional';
+import { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
+
+import { type EventPayload, OnEvent } from '../../fundamentals';
 import { FeatureKind } from '../features';
 import { QuotaConfig } from './quota';
 import { QuotaType } from './types';
 
 @Injectable()
 export class QuotaService {
-  constructor(private readonly prisma: PrismaClient) {}
+  constructor(
+    // private readonly prisma: PrismaClient,
+    @InjectTransaction()
+    private readonly prisma: Transaction<TransactionalAdapterPrisma>
+  ) {}
 
   // get activated user quota
-  async getUserQuota(userId: string, tx?: Transaction) {
-    const executor = tx ?? this.prisma;
-    const quota = await executor.userFeatures.findFirst({
+  async getUserQuota(userId: string) {
+    const quota = await this.prisma.userFeatures.findFirst({
       where: {
         user: {
           id: userId,
@@ -40,14 +44,13 @@ export class QuotaService {
       throw new Error(`User ${userId} has no quota`);
     }
 
-    const feature = await QuotaConfig.get(executor, quota.featureId);
+    const feature = await QuotaConfig.get(this.prisma, quota.featureId);
     return { ...quota, feature };
   }
 
   // get user all quota records
-  async getUserQuotas(userId: string, tx?: Transaction) {
-    const executor = tx ?? this.prisma;
-    const quotas = await executor.userFeatures.findMany({
+  async getUserQuotas(userId: string) {
+    const quotas = await this.prisma.userFeatures.findMany({
       where: {
         user: {
           id: userId,
@@ -69,7 +72,7 @@ export class QuotaService {
         try {
           return {
             ...quota,
-            feature: await QuotaConfig.get(executor, quota.featureId),
+            feature: await QuotaConfig.get(this.prisma, quota.featureId),
           };
         } catch (_) {}
         return null as unknown as typeof quota & {
@@ -83,78 +86,68 @@ export class QuotaService {
 
   // switch user to a new quota
   // currently each user can only have one quota
+  @Transactional()
   async switchUserQuota(
     userId: string,
     quota: QuotaType,
     reason?: string,
-    expiredAt?: Date,
-    transaction?: Transaction
+    expiredAt?: Date
   ) {
-    const trx = async (tx: Transaction) => {
-      const hasSameActivatedQuota = await this.hasQuota(userId, quota, tx);
+    const hasSameActivatedQuota = await this.hasQuota(userId, quota);
 
-      if (hasSameActivatedQuota) {
-        // don't need to switch
-        return;
-      }
+    if (hasSameActivatedQuota) {
+      // don't need to switch
+      return;
+    }
 
-      const latestPlanVersion = await tx.features.aggregate({
-        where: {
-          feature: quota,
+    const latestPlanVersion = await this.prisma.features.aggregate({
+      where: {
+        feature: quota,
+      },
+      _max: {
+        version: true,
+      },
+    });
+
+    // we will deactivate all exists quota for this user
+    await this.prisma.userFeatures.updateMany({
+      where: {
+        id: undefined,
+        userId,
+        feature: {
+          type: FeatureKind.Quota,
         },
-        _max: {
-          version: true,
-        },
-      });
+      },
+      data: {
+        activated: false,
+      },
+    });
 
-      // we will deactivate all exists quota for this user
-      await tx.userFeatures.updateMany({
-        where: {
-          id: undefined,
-          userId,
-          feature: {
+    await this.prisma.userFeatures.create({
+      data: {
+        user: {
+          connect: {
+            id: userId,
+          },
+        },
+        feature: {
+          connect: {
+            feature_version: {
+              feature: quota,
+              version: latestPlanVersion._max.version || 1,
+            },
             type: FeatureKind.Quota,
           },
         },
-        data: {
-          activated: false,
-        },
-      });
-
-      await tx.userFeatures.create({
-        data: {
-          user: {
-            connect: {
-              id: userId,
-            },
-          },
-          feature: {
-            connect: {
-              feature_version: {
-                feature: quota,
-                version: latestPlanVersion._max.version || 1,
-              },
-              type: FeatureKind.Quota,
-            },
-          },
-          reason: reason ?? 'switch quota',
-          activated: true,
-          expiredAt,
-        },
-      });
-    };
-
-    if (transaction) {
-      await trx(transaction);
-    } else {
-      await this.prisma.$transaction(trx);
-    }
+        reason: reason ?? 'switch quota',
+        activated: true,
+        expiredAt,
+      },
+    });
   }
 
-  async hasQuota(userId: string, quota: QuotaType, tx?: Transaction) {
-    const executor = tx ?? this.prisma;
-
-    return executor.userFeatures
+  async hasQuota(userId: string, quota: QuotaType) {
+    return this.prisma.userFeatures
       .count({
         where: {
           userId,

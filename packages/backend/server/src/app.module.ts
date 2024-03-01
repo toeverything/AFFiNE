@@ -4,7 +4,11 @@ import { Logger, Module } from '@nestjs/common';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ServeStaticModule } from '@nestjs/serve-static';
+import { ClsPluginTransactional } from '@nestjs-cls/transactional';
+import { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
+import { PrismaClient } from '@prisma/client';
 import { get } from 'lodash-es';
+import { ClsModule } from 'nestjs-cls';
 
 import { AppController } from './app.controller';
 import { AuthModule } from './core/auth';
@@ -40,6 +44,16 @@ export const FunctionalityModules = [
   EventModule,
   CacheModule,
   PrismaModule,
+  ClsModule.forRoot({
+    plugins: [
+      new ClsPluginTransactional({
+        imports: [PrismaModule],
+        adapter: new TransactionalAdapterPrisma({
+          prismaInjectionToken: PrismaClient,
+        }),
+      }),
+    ],
+  }),
   MetricsModule,
   RateLimiterModule,
   SessionModule,

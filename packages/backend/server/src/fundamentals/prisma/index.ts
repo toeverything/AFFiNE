@@ -16,7 +16,3 @@ const clientProvider: Provider = {
 })
 export class PrismaModule {}
 export { PrismaService } from './service';
-
-export type Transaction = Parameters<
-  Parameters<PrismaClient['$transaction']>[0]
->[0];

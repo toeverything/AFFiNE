@@ -1,4 +1,4 @@
-import { Transaction } from '../../fundamentals';
+import { Transaction } from './types';
 import { formatDate, formatSize, Quota, QuotaSchema } from './types';
 
 const QuotaCache = new Map<number, QuotaConfig>();

@@ -1,7 +1,11 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
-import { type Prisma, PrismaClient } from '@prisma/client';
+import {
+  InjectTransaction,
+  Transaction,
+  Transactional,
+} from '@nestjs-cls/transactional';
+import { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
 
-import { Transaction } from '../../fundamentals';
 import { Permission } from './types';
 
 export enum PublicPageMode {
@@ -11,7 +15,11 @@ export enum PublicPageMode {
 
 @Injectable()
 export class PermissionService {
-  constructor(private readonly prisma: PrismaClient) {}
+  constructor(
+    // private readonly prisma: PrismaClient,
+    @InjectTransaction()
+    private readonly prisma: Transaction<TransactionalAdapterPrisma>
+  ) {}
 
   /// Start regin: workspace permission
   async get(ws: string, user: string) {
@@ -41,9 +49,8 @@ export class PermissionService {
       .then(data => data.map(({ workspaceId }) => workspaceId));
   }
 
-  async getWorkspaceOwner(workspaceId: string, tx?: Transaction) {
-    const executor = tx ?? this.prisma;
-    return executor.workspaceUserPermission.findFirstOrThrow({
+  async getWorkspaceOwner(workspaceId: string) {
+    return this.prisma.workspaceUserPermission.findFirstOrThrow({
       where: {
         workspaceId,
         type: Permission.Owner,
@@ -139,14 +146,13 @@ export class PermissionService {
     return false;
   }
 
+  @Transactional()
   async grant(
     ws: string,
     user: string,
-    permission: Permission = Permission.Read,
-    tx?: Transaction
+    permission: Permission = Permission.Read
   ): Promise<string> {
-    const executor = tx ?? this.prisma;
-    const data = await executor.workspaceUserPermission.findFirst({
+    const data = await this.prisma.workspaceUserPermission.findFirst({
       where: {
         workspaceId: ws,
         userId: user,
@@ -155,47 +161,38 @@ export class PermissionService {
     });
 
     if (data) {
-      const trx = (tx: Transaction) =>
-        [
-          tx.workspaceUserPermission.update({
-            where: {
-              workspaceId_userId: {
-                workspaceId: ws,
-                userId: user,
-              },
-            },
-            data: {
-              type: permission,
-            },
-          }),
-          // If the new permission is owner, we need to revoke old owner
-          permission === Permission.Owner
-            ? tx.workspaceUserPermission.updateMany({
-                where: {
-                  workspaceId: ws,
-                  type: Permission.Owner,
-                  userId: {
-                    not: user,
-                  },
-                },
-                data: {
-                  type: Permission.Admin,
-                },
-              })
-            : null,
-        ].filter(Boolean) as Prisma.PrismaPromise<any>[];
+      const p = await this.prisma.workspaceUserPermission.update({
+        where: {
+          workspaceId_userId: {
+            workspaceId: ws,
+            userId: user,
+          },
+        },
+        data: {
+          type: permission,
+        },
+      });
 
-      if (tx) {
-        const [p] = await Promise.all(trx(tx));
-        return p.id;
-      } else {
-        const [p] = await this.prisma.$transaction(trx(this.prisma));
-
-        return p.id;
+      // If the new permission is owner, we need to revoke old owner
+      if (permission === Permission.Owner) {
+        await this.prisma.workspaceUserPermission.updateMany({
+          where: {
+            workspaceId: ws,
+            type: Permission.Owner,
+            userId: {
+              not: user,
+            },
+          },
+          data: {
+            type: Permission.Admin,
+          },
+        });
       }
+
+      return p.id;
     }
 
-    return executor.workspaceUserPermission
+    return this.prisma.workspaceUserPermission
       .create({
         data: {
           workspaceId: ws,
@@ -206,13 +203,8 @@ export class PermissionService {
       .then(p => p.id);
   }
 
-  async getWorkspaceInvitation(
-    invitationId: string,
-    workspaceId: string,
-    tx?: Transaction
-  ) {
-    const executor = tx ?? this.prisma;
-    return executor.workspaceUserPermission.findUniqueOrThrow({
+  async getWorkspaceInvitation(invitationId: string, workspaceId: string) {
+    return this.prisma.workspaceUserPermission.findUniqueOrThrow({
       where: {
         id: invitationId,
         workspaceId,
@@ -237,9 +229,8 @@ export class PermissionService {
     return result.count > 0;
   }
 
-  async revokeWorkspace(ws: string, user: string, tx?: Transaction) {
-    const executor = tx ?? this.prisma;
-    const result = await executor.workspaceUserPermission.deleteMany({
+  async revokeWorkspace(ws: string, user: string) {
+    const result = await this.prisma.workspaceUserPermission.deleteMany({
       where: {
         workspaceId: ws,
         userId: user,
@@ -365,6 +356,7 @@ export class PermissionService {
     });
   }
 
+  @Transactional()
   async grantPage(
     ws: string,
     page: string,
@@ -381,35 +373,31 @@ export class PermissionService {
     });
 
     if (data) {
-      const [p] = await this.prisma.$transaction(
-        [
-          this.prisma.workspacePageUserPermission.update({
-            where: {
-              id: data.id,
-            },
-            data: {
-              type: permission,
-            },
-          }),
+      const p = await this.prisma.workspacePageUserPermission.update({
+        where: {
+          id: data.id,
+        },
+        data: {
+          type: permission,
+        },
+      });
 
-          // If the new permission is owner, we need to revoke old owner
-          permission === Permission.Owner
-            ? this.prisma.workspacePageUserPermission.updateMany({
-                where: {
-                  workspaceId: ws,
-                  pageId: page,
-                  type: Permission.Owner,
-                  userId: {
-                    not: user,
-                  },
-                },
-                data: {
-                  type: Permission.Admin,
-                },
-              })
-            : null,
-        ].filter(Boolean) as Prisma.PrismaPromise<any>[]
-      );
+      // If the new permission is owner, we need to revoke old owner
+      if (permission === Permission.Owner) {
+        await this.prisma.workspacePageUserPermission.updateMany({
+          where: {
+            workspaceId: ws,
+            pageId: page,
+            type: Permission.Owner,
+            userId: {
+              not: user,
+            },
+          },
+          data: {
+            type: Permission.Admin,
+          },
+        });
+      }
 
       return p.id;
     }
