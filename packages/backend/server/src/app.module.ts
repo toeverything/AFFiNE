@@ -45,6 +45,7 @@ export const FunctionalityModules = [
   CacheModule,
   PrismaModule,
   ClsModule.forRoot({
+    interceptor: { mount: true },
     plugins: [
       new ClsPluginTransactional({
         imports: [PrismaModule],

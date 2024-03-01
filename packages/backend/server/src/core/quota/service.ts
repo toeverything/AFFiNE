@@ -20,6 +20,7 @@ export class QuotaService {
   ) {}
 
   // get activated user quota
+  @Transactional()
   async getUserQuota(userId: string) {
     const quota = await this.prisma.userFeatures.findFirst({
       where: {
@@ -49,6 +50,7 @@ export class QuotaService {
   }
 
   // get user all quota records
+  @Transactional()
   async getUserQuotas(userId: string) {
     const quotas = await this.prisma.userFeatures.findMany({
       where: {
@@ -146,6 +148,7 @@ export class QuotaService {
     });
   }
 
+  @Transactional()
   async hasQuota(userId: string, quota: QuotaType) {
     return this.prisma.userFeatures
       .count({
@@ -162,6 +165,7 @@ export class QuotaService {
   }
 
   @OnEvent('user.subscription.activated')
+  @Transactional()
   async onSubscriptionUpdated({
     userId,
   }: EventPayload<'user.subscription.activated'>) {
@@ -173,6 +177,7 @@ export class QuotaService {
   }
 
   @OnEvent('user.subscription.canceled')
+  @Transactional()
   async onSubscriptionCanceled(
     userId: EventPayload<'user.subscription.canceled'>
   ) {

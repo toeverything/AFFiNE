@@ -15,7 +15,11 @@ import {
   ResolveField,
   Resolver,
 } from '@nestjs/graphql';
-import { InjectTransaction, type Transaction } from '@nestjs-cls/transactional';
+import {
+  InjectTransaction,
+  type Transaction,
+  Transactional,
+} from '@nestjs-cls/transactional';
 import { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
 import { type User } from '@prisma/client';
 import { getStreamAsBuffer } from 'get-stream';
@@ -116,6 +120,7 @@ export class WorkspaceResolver {
     description: 'Members of workspace',
     complexity: 2,
   })
+  @Transactional()
   async members(
     @Parent() workspace: WorkspaceType,
     @Args('skip', { type: () => Int, nullable: true }) skip?: number,
@@ -323,6 +328,7 @@ export class WorkspaceResolver {
   }
 
   @Mutation(() => String)
+  @Transactional()
   async invite(
     @CurrentUser() user: UserType,
     @Args('workspaceId') workspaceId: string,

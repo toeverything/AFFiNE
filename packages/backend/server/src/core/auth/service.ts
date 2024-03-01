@@ -6,7 +6,11 @@ import {
   InternalServerErrorException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { InjectTransaction, type Transaction } from '@nestjs-cls/transactional';
+import {
+  InjectTransaction,
+  type Transaction,
+  Transactional,
+} from '@nestjs-cls/transactional';
 import { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
 import { hash, verify } from '@node-rs/argon2';
 import { Algorithm, sign, verify as jwtVerify } from '@node-rs/jsonwebtoken';
@@ -151,6 +155,7 @@ export class AuthService {
     );
   }
 
+  @Transactional()
   async signIn(email: string, password: string): Promise<User> {
     const user = await this.prisma.user.findFirst({
       where: {
@@ -182,6 +187,7 @@ export class AuthService {
     return user;
   }
 
+  @Transactional()
   async signUp(name: string, email: string, password: string): Promise<User> {
     const user = await this.prisma.user.findFirst({
       where: {
@@ -219,6 +225,7 @@ export class AuthService {
     });
   }
 
+  @Transactional()
   async createAnonymousUser(email: string): Promise<User> {
     const user = await this.prisma.user.findFirst({
       where: {
@@ -235,7 +242,7 @@ export class AuthService {
 
     return this.prisma.user.create({
       data: {
-        name: 'Unnamed',
+        name: email.split('@')[0],
         email,
         features: {
           create: {
@@ -252,6 +259,7 @@ export class AuthService {
     });
   }
 
+  @Transactional()
   async getUserByEmail(email: string): Promise<User | null> {
     return this.prisma.user.findFirst({
       where: {
@@ -263,6 +271,7 @@ export class AuthService {
     });
   }
 
+  @Transactional()
   async isUserHasPassword(email: string): Promise<boolean> {
     const user = await this.prisma.user.findFirst({
       where: {
@@ -278,6 +287,7 @@ export class AuthService {
     return Boolean(user.password);
   }
 
+  @Transactional()
   async changePassword(email: string, newPassword: string): Promise<User> {
     const user = await this.prisma.user.findFirst({
       where: {
@@ -307,6 +317,7 @@ export class AuthService {
     });
   }
 
+  @Transactional()
   async changeEmail(id: string, newEmail: string): Promise<User> {
     const user = await this.prisma.user.findUnique({
       where: {

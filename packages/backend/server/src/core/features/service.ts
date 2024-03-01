@@ -19,6 +19,7 @@ export class FeatureService {
     private readonly prisma: Transaction<TransactionalAdapterPrisma>
   ) {}
 
+  @Transactional()
   async getFeaturesVersion() {
     const features = await this.prisma.features.findMany({
       where: {
@@ -45,6 +46,7 @@ export class FeatureService {
     );
   }
 
+  @Transactional()
   async getFeature<F extends FeatureType>(
     feature: F
   ): Promise<FeatureConfigType<F> | undefined> {
@@ -116,6 +118,7 @@ export class FeatureService {
     }
   }
 
+  @Transactional()
   async removeUserFeature(userId: string, feature: FeatureType) {
     return this.prisma.userFeatures
       .updateMany({
@@ -139,6 +142,7 @@ export class FeatureService {
    * @param userId user id
    * @returns list of features
    */
+  @Transactional()
   async getUserFeatures(userId: string) {
     const features = await this.prisma.userFeatures.findMany({
       where: {
@@ -166,6 +170,7 @@ export class FeatureService {
     return configs.filter(feature => !!feature.feature);
   }
 
+  @Transactional()
   async listFeatureUsers(feature: FeatureType): Promise<UserType[]> {
     return this.prisma.userFeatures
       .findMany({
@@ -192,6 +197,7 @@ export class FeatureService {
       .then(users => users.map(user => user.user));
   }
 
+  @Transactional()
   async hasUserFeature(userId: string, feature: FeatureType) {
     return this.prisma.userFeatures
       .count({
@@ -259,6 +265,7 @@ export class FeatureService {
     }
   }
 
+  @Transactional()
   async removeWorkspaceFeature(workspaceId: string, feature: FeatureType) {
     return this.prisma.workspaceFeatures
       .updateMany({
@@ -282,6 +289,7 @@ export class FeatureService {
    * @param workspaceId workspace id
    * @returns list of features
    */
+  @Transactional()
   async getWorkspaceFeatures(workspaceId: string) {
     const features = await this.prisma.workspaceFeatures.findMany({
       where: {
@@ -309,6 +317,7 @@ export class FeatureService {
     return configs.filter(feature => !!feature.feature);
   }
 
+  @Transactional()
   async listFeatureWorkspaces(feature: FeatureType): Promise<WorkspaceType[]> {
     return this.prisma.workspaceFeatures
       .findMany({
@@ -332,6 +341,7 @@ export class FeatureService {
       .then(wss => wss.map(ws => ws.workspace as WorkspaceType));
   }
 
+  @Transactional()
   async hasWorkspaceFeature(workspaceId: string, feature: FeatureType) {
     return this.prisma.workspaceFeatures
       .count({

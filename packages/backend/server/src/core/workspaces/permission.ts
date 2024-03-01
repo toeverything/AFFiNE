@@ -22,6 +22,7 @@ export class PermissionService {
   ) {}
 
   /// Start regin: workspace permission
+  @Transactional()
   async get(ws: string, user: string) {
     const data = await this.prisma.workspaceUserPermission.findFirst({
       where: {
@@ -34,6 +35,7 @@ export class PermissionService {
     return data?.type as Permission;
   }
 
+  @Transactional()
   async getOwnedWorkspaces(userId: string) {
     return this.prisma.workspaceUserPermission
       .findMany({
@@ -49,6 +51,7 @@ export class PermissionService {
       .then(data => data.map(({ workspaceId }) => workspaceId));
   }
 
+  @Transactional()
   async getWorkspaceOwner(workspaceId: string) {
     return this.prisma.workspaceUserPermission.findFirstOrThrow({
       where: {
@@ -61,6 +64,7 @@ export class PermissionService {
     });
   }
 
+  @Transactional()
   async tryGetWorkspaceOwner(workspaceId: string) {
     return this.prisma.workspaceUserPermission.findFirst({
       where: {
@@ -73,6 +77,7 @@ export class PermissionService {
     });
   }
 
+  @Transactional()
   async isAccessible(ws: string, id: string, user?: string): Promise<boolean> {
     // workspace
     if (ws === id) {
@@ -82,6 +87,7 @@ export class PermissionService {
     return this.tryCheckPage(ws, id, user);
   }
 
+  @Transactional()
   async checkWorkspace(
     ws: string,
     user?: string,
@@ -92,6 +98,7 @@ export class PermissionService {
     }
   }
 
+  @Transactional()
   async tryCheckWorkspace(
     ws: string,
     user?: string,
@@ -203,6 +210,7 @@ export class PermissionService {
       .then(p => p.id);
   }
 
+  @Transactional()
   async getWorkspaceInvitation(invitationId: string, workspaceId: string) {
     return this.prisma.workspaceUserPermission.findUniqueOrThrow({
       where: {
@@ -215,6 +223,7 @@ export class PermissionService {
     });
   }
 
+  @Transactional()
   async acceptWorkspaceInvitation(invitationId: string, workspaceId: string) {
     const result = await this.prisma.workspaceUserPermission.updateMany({
       where: {
@@ -229,6 +238,7 @@ export class PermissionService {
     return result.count > 0;
   }
 
+  @Transactional()
   async revokeWorkspace(ws: string, user: string) {
     const result = await this.prisma.workspaceUserPermission.deleteMany({
       where: {
@@ -246,6 +256,7 @@ export class PermissionService {
   /// End regin: workspace permission
 
   /// Start regin: page permission
+  @Transactional()
   async checkPagePermission(
     ws: string,
     page: string,
@@ -257,6 +268,7 @@ export class PermissionService {
     }
   }
 
+  @Transactional()
   async tryCheckPage(
     ws: string,
     page: string,
@@ -304,6 +316,7 @@ export class PermissionService {
     return this.tryCheckWorkspace(ws, user, permission);
   }
 
+  @Transactional()
   async isPublicPage(ws: string, page: string) {
     return this.prisma.workspacePage
       .count({
@@ -316,6 +329,7 @@ export class PermissionService {
       .then(count => count > 0);
   }
 
+  @Transactional()
   async publishPage(ws: string, page: string, mode = PublicPageMode.Page) {
     return this.prisma.workspacePage.upsert({
       where: {
@@ -337,6 +351,7 @@ export class PermissionService {
     });
   }
 
+  @Transactional()
   async revokePublicPage(ws: string, page: string) {
     return this.prisma.workspacePage.upsert({
       where: {
@@ -414,6 +429,7 @@ export class PermissionService {
       .then(p => p.id);
   }
 
+  @Transactional()
   async revokePage(ws: string, page: string, user: string) {
     const result = await this.prisma.workspacePageUserPermission.deleteMany({
       where: {

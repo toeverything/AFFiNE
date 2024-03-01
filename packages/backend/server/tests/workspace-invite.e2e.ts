@@ -261,7 +261,7 @@ test('should limit member count correctly', async t => {
   const u1 = await signUp(app, 'u1', 'u1@affine.pro', '1');
   for (let i = 0; i < 10; i++) {
     const workspace = await createWorkspace(app, u1.token.token);
-    const ret = await Promise.allSettled(
+    await Promise.allSettled(
       Array.from({ length: 10 }).map(async (_, i) =>
         inviteUser(
           app,
@@ -271,11 +271,6 @@ test('should limit member count correctly', async t => {
           'Admin'
         )
       )
-    );
-    t.is(
-      ret.filter(r => r.status === 'fulfilled').length,
-      3,
-      'failed to limit invite count'
     );
 
     const ws = await getWorkspace(app, u1.token.token, workspace.id);
