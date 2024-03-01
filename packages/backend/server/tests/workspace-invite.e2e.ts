@@ -104,7 +104,7 @@ test('should create user if not exist', async t => {
 
   const user = await auth.getUserByEmail('u2@affine.pro');
   t.not(user, undefined, 'failed to create user');
-  t.is(user?.name, 'Unnamed', 'failed to create user');
+  t.is(user?.name, 'u2', 'failed to create user');
 });
 
 test('should invite a user by link', async t => {
