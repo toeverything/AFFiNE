@@ -631,8 +631,6 @@ __metadata:
     "@google-cloud/opentelemetry-resource-util": "npm:^2.1.0"
     "@keyv/redis": "npm:^2.8.4"
     "@napi-rs/image": "npm:^1.9.1"
-    "@nestjs-cls/transactional": "npm:^2.2.0"
-    "@nestjs-cls/transactional-adapter-prisma": "npm:^1.1.0"
     "@nestjs/apollo": "npm:^12.1.0"
     "@nestjs/common": "npm:^10.3.3"
     "@nestjs/core": "npm:^10.3.3"
@@ -7683,31 +7681,6 @@ __metadata:
     pump: "npm:^3.0.0"
     tar-fs: "npm:^2.1.1"
   checksum: 10/39697cef2b92f6e08e3590467cc6da88cd6757b2a27cb9208879c2316ed71d6be4608892ee0a86eb0343140da1a5df498f93a32c2aaf8f1fbd90f883f08b5f63
-  languageName: node
-  linkType: hard
-
-"@nestjs-cls/transactional-adapter-prisma@npm:^1.1.0":
-  version: 1.1.0
-  resolution: "@nestjs-cls/transactional-adapter-prisma@npm:1.1.0"
-  peerDependencies:
-    "@nestjs-cls/transactional": ^2.2.0
-    "@prisma/client": "> 4 < 6"
-    nestjs-cls: ^4.2.0
-    prisma: "> 4 < 6"
-  checksum: 10/d01a896b69802acba935c4eae9543fe6698951a154db959e9ea1f7deb2648785c5a4b00b280ce4c46988130f56aeac2b232a2aa36814168535f60552800d6508
-  languageName: node
-  linkType: hard
-
-"@nestjs-cls/transactional@npm:^2.2.0":
-  version: 2.2.0
-  resolution: "@nestjs-cls/transactional@npm:2.2.0"
-  peerDependencies:
-    "@nestjs/common": "> 7.0.0 < 11"
-    "@nestjs/core": "> 7.0.0 < 11"
-    nestjs-cls: ^4.2.0
-    reflect-metadata: "*"
-    rxjs: ">= 7"
-  checksum: 10/080e9a2ad01d8a6cbb80bebef64522f3e9b2fd66fd2f603bead5c3a866138eea7102f22c193f42e1a1a2e9a81c2e3bcf3c79329ee277d7a73751860b8859b583
   languageName: node
   linkType: hard
 

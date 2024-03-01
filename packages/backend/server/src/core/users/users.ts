@@ -1,14 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { InjectTransaction, type Transaction } from '@nestjs-cls/transactional';
-import { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
+import { PrismaClient } from '@prisma/client';
 
 @Injectable()
 export class UsersService {
-  constructor(
-    // private readonly prisma: PrismaClient,
-    @InjectTransaction()
-    private readonly prisma: Transaction<TransactionalAdapterPrisma>
-  ) {}
+  constructor(private readonly prisma: PrismaClient) {}
 
   async findUserByEmail(email: string) {
     return this.prisma.user.findFirst({

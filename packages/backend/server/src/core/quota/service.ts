@@ -1,26 +1,20 @@
 import { Injectable } from '@nestjs/common';
-import {
-  InjectTransaction,
-  type Transaction,
-  Transactional,
-} from '@nestjs-cls/transactional';
-import { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
+import { PrismaClient } from '@prisma/client';
 
-import { type EventPayload, OnEvent } from '../../fundamentals';
+import {
+  type EventPayload,
+  OnEvent,
+  PrismaTransaction,
+} from '../../fundamentals';
 import { FeatureKind } from '../features';
 import { QuotaConfig } from './quota';
 import { QuotaType } from './types';
 
 @Injectable()
 export class QuotaService {
-  constructor(
-    // private readonly prisma: PrismaClient,
-    @InjectTransaction()
-    private readonly prisma: Transaction<TransactionalAdapterPrisma>
-  ) {}
+  constructor(private readonly prisma: PrismaClient) {}
 
   // get activated user quota
-  @Transactional()
   async getUserQuota(userId: string) {
     const quota = await this.prisma.userFeatures.findFirst({
       where: {
@@ -50,7 +44,6 @@ export class QuotaService {
   }
 
   // get user all quota records
-  @Transactional()
   async getUserQuotas(userId: string) {
     const quotas = await this.prisma.userFeatures.findMany({
       where: {
@@ -88,69 +81,71 @@ export class QuotaService {
 
   // switch user to a new quota
   // currently each user can only have one quota
-  @Transactional()
   async switchUserQuota(
     userId: string,
     quota: QuotaType,
     reason?: string,
     expiredAt?: Date
   ) {
-    const hasSameActivatedQuota = await this.hasQuota(userId, quota);
+    await this.prisma.$transaction(async tx => {
+      const hasSameActivatedQuota = await this.hasQuota(userId, quota, tx);
 
-    if (hasSameActivatedQuota) {
-      // don't need to switch
-      return;
-    }
+      if (hasSameActivatedQuota) {
+        // don't need to switch
+        return;
+      }
 
-    const latestPlanVersion = await this.prisma.features.aggregate({
-      where: {
-        feature: quota,
-      },
-      _max: {
-        version: true,
-      },
-    });
-
-    // we will deactivate all exists quota for this user
-    await this.prisma.userFeatures.updateMany({
-      where: {
-        id: undefined,
-        userId,
-        feature: {
-          type: FeatureKind.Quota,
+      const latestPlanVersion = await tx.features.aggregate({
+        where: {
+          feature: quota,
         },
-      },
-      data: {
-        activated: false,
-      },
-    });
-
-    await this.prisma.userFeatures.create({
-      data: {
-        user: {
-          connect: {
-            id: userId,
-          },
+        _max: {
+          version: true,
         },
-        feature: {
-          connect: {
-            feature_version: {
-              feature: quota,
-              version: latestPlanVersion._max.version || 1,
-            },
+      });
+
+      // we will deactivate all exists quota for this user
+      await tx.userFeatures.updateMany({
+        where: {
+          id: undefined,
+          userId,
+          feature: {
             type: FeatureKind.Quota,
           },
         },
-        reason: reason ?? 'switch quota',
-        activated: true,
-        expiredAt,
-      },
+        data: {
+          activated: false,
+        },
+      });
+
+      await tx.userFeatures.create({
+        data: {
+          user: {
+            connect: {
+              id: userId,
+            },
+          },
+          feature: {
+            connect: {
+              feature_version: {
+                feature: quota,
+                version: latestPlanVersion._max.version || 1,
+              },
+              type: FeatureKind.Quota,
+            },
+          },
+          reason: reason ?? 'switch quota',
+          activated: true,
+          expiredAt,
+        },
+      });
     });
   }
 
-  @Transactional()
-  async hasQuota(userId: string, quota: QuotaType) {
-    return this.prisma.userFeatures
+  async hasQuota(userId: string, quota: QuotaType, tx?: PrismaTransaction) {
+    const executor = tx ?? this.prisma;
+
+    return executor.userFeatures
       .count({
         where: {
           userId,
@@ -165,7 +160,6 @@ export class QuotaService {
   }
 
   @OnEvent('user.subscription.activated')
-  @Transactional()
   async onSubscriptionUpdated({
     userId,
   }: EventPayload<'user.subscription.activated'>) {
@@ -177,7 +171,6 @@ export class QuotaService {
   }
 
   @OnEvent('user.subscription.canceled')
-  @Transactional()
   async onSubscriptionCanceled(
     userId: EventPayload<'user.subscription.canceled'>
   ) {

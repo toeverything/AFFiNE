@@ -3,7 +3,6 @@ import { randomUUID } from 'node:crypto';
 
 import { Transformer } from '@napi-rs/image';
 import type { INestApplication } from '@nestjs/common';
-import { getTransactionToken } from '@nestjs-cls/transactional';
 import { hashSync } from '@node-rs/argon2';
 import { PrismaClient, type User } from '@prisma/client';
 import ava, { type TestFn } from 'ava';
@@ -20,10 +19,9 @@ const test = ava as TestFn<{
   app: INestApplication;
 }>;
 
-const userId = randomUUID();
 class FakePrisma {
   fakeUser: User = {
-    id: userId,
+    id: randomUUID(),
     name: 'Alex Yang',
     avatarUrl: '',
     email: 'alex.yang@example.org',
@@ -46,9 +44,6 @@ class FakePrisma {
       },
     };
   }
-  get $transaction() {
-    return (cb: any) => cb(FakePrisma);
-  }
 }
 
 test.beforeEach(async t => {
@@ -57,8 +52,6 @@ test.beforeEach(async t => {
     tapModule(builder) {
       builder
         .overrideProvider(PrismaClient)
-        .useClass(FakePrisma)
-        .overrideProvider(getTransactionToken())
         .useClass(FakePrisma)
         .overrideProvider(FeatureManagementService)
         .useValue({ canEarlyAccess: () => true });

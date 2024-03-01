@@ -1,5 +1,4 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { Transactional } from '@nestjs-cls/transactional';
 
 import { FeatureService, FeatureType } from '../features';
 import { WorkspaceBlobStorage } from '../storage';
@@ -38,7 +37,6 @@ export class QuotaManagementService {
   }
 
   // TODO: lazy calc, need to be optimized with cache
-  @Transactional()
   async getUserUsage(userId: string) {
     const workspaces = await this.permissions.getOwnedWorkspaces(userId);
 
@@ -62,7 +60,6 @@ export class QuotaManagementService {
 
   // get workspace's owner quota and total size of used
   // quota was apply to owner's account
-  @Transactional()
   async getWorkspaceUsage(workspaceId: string): Promise<QuotaBusinessType> {
     const { user: owner } =
       await this.permissions.getWorkspaceOwner(workspaceId);
