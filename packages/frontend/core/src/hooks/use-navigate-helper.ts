@@ -1,6 +1,11 @@
 import type { WorkspaceSubPath } from '@affine/core/shared';
-import { useCallback, useMemo } from 'react';
-import { type NavigateOptions, type To, useLocation } from 'react-router-dom';
+import { createContext, useCallback, useContext, useMemo } from 'react';
+import {
+  type NavigateFunction,
+  type NavigateOptions,
+  type To,
+  useLocation,
+} from 'react-router-dom';
 
 import { router } from '../router';
 
@@ -9,15 +14,19 @@ export enum RouteLogic {
   PUSH = 'push',
 }
 
-function navigate(to: To, option?: { replace?: boolean }) {
+function defaultNavigate(to: To, option?: { replace?: boolean }) {
   router.navigate(to, option).catch(err => {
     console.error('Failed to navigate', err);
   });
 }
 
+export const NavigateContext = createContext<NavigateFunction | null>(null);
+
 // todo: add a name -> path helper in the results
 export function useNavigateHelper() {
   const location = useLocation();
+
+  const navigate = useContext(NavigateContext) ?? defaultNavigate;
 
   const jumpToPage = useCallback(
     (
@@ -29,7 +38,7 @@ export function useNavigateHelper() {
         replace: logic === RouteLogic.REPLACE,
       });
     },
-    []
+    [navigate]
   );
   const jumpToPageBlock = useCallback(
     (
@@ -42,7 +51,7 @@ export function useNavigateHelper() {
         replace: logic === RouteLogic.REPLACE,
       });
     },
-    []
+    [navigate]
   );
   const jumpToCollections = useCallback(
     (workspaceId: string, logic: RouteLogic = RouteLogic.PUSH) => {
@@ -50,7 +59,7 @@ export function useNavigateHelper() {
         replace: logic === RouteLogic.REPLACE,
       });
     },
-    []
+    [navigate]
   );
   const jumpToTags = useCallback(
     (workspaceId: string, logic: RouteLogic = RouteLogic.PUSH) => {
@@ -58,7 +67,7 @@ export function useNavigateHelper() {
         replace: logic === RouteLogic.REPLACE,
       });
     },
-    []
+    [navigate]
   );
   const jumpToTag = useCallback(
     (
@@ -70,7 +79,7 @@ export function useNavigateHelper() {
         replace: logic === RouteLogic.REPLACE,
       });
     },
-    []
+    [navigate]
   );
   const jumpToCollection = useCallback(
     (
@@ -82,7 +91,7 @@ export function useNavigateHelper() {
         replace: logic === RouteLogic.REPLACE,
       });
     },
-    []
+    [navigate]
   );
   const jumpToPublicWorkspacePage = useCallback(
     (
@@ -94,7 +103,7 @@ export function useNavigateHelper() {
         replace: logic === RouteLogic.REPLACE,
       });
     },
-    []
+    [navigate]
   );
   const jumpToSubPath = useCallback(
     (
@@ -106,7 +115,7 @@ export function useNavigateHelper() {
         replace: logic === RouteLogic.REPLACE,
       });
     },
-    []
+    [navigate]
   );
 
   const isPublicWorkspace = useMemo(() => {
@@ -124,22 +133,31 @@ export function useNavigateHelper() {
     [jumpToPage, jumpToPublicWorkspacePage, isPublicWorkspace]
   );
 
-  const jumpToIndex = useCallback((logic: RouteLogic = RouteLogic.PUSH) => {
-    return navigate('/', {
-      replace: logic === RouteLogic.REPLACE,
-    });
-  }, []);
+  const jumpToIndex = useCallback(
+    (logic: RouteLogic = RouteLogic.PUSH) => {
+      return navigate('/', {
+        replace: logic === RouteLogic.REPLACE,
+      });
+    },
+    [navigate]
+  );
 
-  const jumpTo404 = useCallback((logic: RouteLogic = RouteLogic.PUSH) => {
-    return navigate('/404', {
-      replace: logic === RouteLogic.REPLACE,
-    });
-  }, []);
-  const jumpToExpired = useCallback((logic: RouteLogic = RouteLogic.PUSH) => {
-    return navigate('/expired', {
-      replace: logic === RouteLogic.REPLACE,
-    });
-  }, []);
+  const jumpTo404 = useCallback(
+    (logic: RouteLogic = RouteLogic.PUSH) => {
+      return navigate('/404', {
+        replace: logic === RouteLogic.REPLACE,
+      });
+    },
+    [navigate]
+  );
+  const jumpToExpired = useCallback(
+    (logic: RouteLogic = RouteLogic.PUSH) => {
+      return navigate('/expired', {
+        replace: logic === RouteLogic.REPLACE,
+      });
+    },
+    [navigate]
+  );
   const jumpToSignIn = useCallback(
     (
       logic: RouteLogic = RouteLogic.PUSH,
@@ -150,7 +168,7 @@ export function useNavigateHelper() {
         ...otherOptions,
       });
     },
-    []
+    [navigate]
   );
 
   return useMemo(

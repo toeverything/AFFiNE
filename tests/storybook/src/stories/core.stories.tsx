@@ -1,8 +1,9 @@
+import { NavigateContext } from '@affine/core/hooks/use-navigate-helper';
 import { workbenchRoutes } from '@affine/core/router';
 import { assertExists } from '@blocksuite/global/utils';
 import type { StoryFn } from '@storybook/react';
 import { screen, userEvent, waitFor, within } from '@storybook/testing-library';
-import { Outlet, useLocation } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   reactRouterOutlets,
   reactRouterParameters,
@@ -11,8 +12,13 @@ import {
 
 const FakeApp = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   // fixme: `key` is a hack to force the storybook to re-render the outlet
-  return <Outlet key={location.pathname} />;
+  return (
+    <NavigateContext.Provider value={navigate}>
+      <Outlet key={location.pathname} />
+    </NavigateContext.Provider>
+  );
 };
 
 export default {
