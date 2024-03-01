@@ -26,7 +26,7 @@ import {
   type FileUpload,
   MailService,
   Throttle,
-  Transaction,
+  type Transaction,
 } from '../../../fundamentals';
 import { Auth, CurrentUser, Public } from '../../auth';
 import { AuthService } from '../../auth/service';
