@@ -1,5 +1,7 @@
 import { cssVar } from '@toeverything/theme';
 import { createVar, globalStyle, style } from '@vanilla-extract/css';
+import { range } from 'lodash-es';
+
 const headerHeight = createVar('header-height');
 const footerHeight = createVar('footer-height');
 const historyListWidth = createVar('history-list-width');
@@ -35,51 +37,53 @@ export const previewWrapper = style({
   width: `calc(100% - ${historyListWidth})`,
   backgroundColor: cssVar('backgroundSecondaryColor'),
 });
+
 export const previewContainer = style({
   display: 'flex',
   flexDirection: 'column',
   flexGrow: 1,
   position: 'absolute',
-  bottom: 0,
+  top: 0,
   left: 40,
-  borderTopLeftRadius: 8,
-  borderTopRightRadius: 8,
+  borderRadius: 8,
   overflow: 'hidden',
   boxShadow: cssVar('shadow3'),
-  height: 'calc(100% - 40px)',
+  height: '200%',
   width: `calc(100% - 80px)`,
   backgroundColor: cssVar('backgroundPrimaryColor'),
   transformOrigin: 'top center',
-  transition: 'all 0.5s ease-in-out',
+  transition: 'transform 0.3s 0.1s ease-in-out, opacity 0.3s ease-in-out',
   selectors: {
-    '&[data-distance="> 2"]': {
-      transform: 'scale(0.60)',
+    ...Object.fromEntries(
+      range(-20, 20).map(i => [
+        `&[data-distance="${i}"]`,
+        {
+          transform: `scale(${1 - 0.05 * i}) translateY(${-8 * i + 40}px)`,
+          opacity: [0, 1, 2].includes(i) ? 1 : 0,
+          zIndex: -i,
+          pointerEvents: i === 0 ? 'auto' : 'none',
+        },
+      ])
+    ),
+    '&[data-distance="> 20"]': {
+      transform: `scale(0) translateY(${-8 * 20 + 40}px)`,
       opacity: 0,
-      zIndex: -3,
+      zIndex: -20,
       pointerEvents: 'none',
     },
-    '&[data-distance="2"]': {
-      transform: 'scale(0.90) translateY(-16px)',
-      zIndex: -2,
-      pointerEvents: 'none',
-    },
-    '&[data-distance="1"]': {
-      transform: 'scale(0.95) translateY(-8px)',
-      zIndex: -1,
-      pointerEvents: 'none',
-    },
-    '&[data-distance="current"]': {
-      opacity: 1,
-      zIndex: 0,
-    },
-    '&[data-distance="< 0"]': {
-      transform: 'scale(1.60) translateY(18px)',
+    '&[data-distance="< -20"]': {
+      transform: `scale(2) translateY(${-8 * -20 + 40}px)`,
       opacity: 0,
-      zIndex: 1,
+      zIndex: 20,
       pointerEvents: 'none',
     },
   },
 });
+
+export const previewContent = style({
+  height: '50%',
+});
+
 export const previewHeader = style({
   display: 'flex',
   alignItems: 'center',

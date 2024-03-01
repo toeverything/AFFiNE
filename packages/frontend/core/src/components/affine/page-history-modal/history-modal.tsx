@@ -17,7 +17,6 @@ import type { DialogContentProps } from '@radix-ui/react-dialog';
 import { Doc, type PageMode, Workspace } from '@toeverything/infra';
 import { useService } from '@toeverything/infra/di';
 import { atom, useAtom, useSetAtom } from 'jotai';
-import { range } from 'lodash-es';
 import {
   Fragment,
   type PropsWithChildren,
@@ -25,7 +24,6 @@ import {
   useCallback,
   useLayoutEffect,
   useMemo,
-  useRef,
   useState,
 } from 'react';
 import { encodeStateAsUpdate } from 'yjs';
@@ -116,7 +114,7 @@ const HistoryEditorPreview = ({
 
   const content = useMemo(() => {
     return (
-      <>
+      <div className={styles.previewContent}>
         <div className={styles.previewHeader}>
           <StyledEditorModeSwitch switchLeft={mode === 'page'}>
             <PageSwitchItem
@@ -154,7 +152,7 @@ const HistoryEditorPreview = ({
             <Loading size={24} />
           </div>
         )}
-      </>
+      </div>
     );
   }, [
     mode,
@@ -165,23 +163,23 @@ const HistoryEditorPreview = ({
     ts,
   ]);
 
-  const previewRef = useRef<HTMLDivElement | null>(null);
-
   return (
-    <div className={styles.previewWrapper} ref={previewRef}>
-      {range(0, historyList.length).map(i => {
+    <div className={styles.previewWrapper}>
+      {historyList.map((item, i) => {
         const historyIndex = historyList.findIndex(h => h.timestamp === ts);
         const distance = i - historyIndex;
         const flag =
-          distance === 0
-            ? 'current'
-            : distance > 2
-              ? '> 2'
-              : distance < 0
-                ? '< 0'
-                : distance;
+          distance > 20
+            ? '> 20'
+            : distance < -20
+              ? '< -20'
+              : distance.toString();
         return (
-          <div data-distance={flag} key={i} className={styles.previewContainer}>
+          <div
+            data-distance={flag}
+            key={item.id}
+            className={styles.previewContainer}
+          >
             {historyIndex === i ? content : null}
           </div>
         );
