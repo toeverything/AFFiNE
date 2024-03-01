@@ -15,7 +15,7 @@ import {
   ResolveField,
   Resolver,
 } from '@nestjs/graphql';
-import { InjectTransaction, Transaction } from '@nestjs-cls/transactional';
+import { InjectTransaction, type Transaction } from '@nestjs-cls/transactional';
 import { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
 import { type User } from '@prisma/client';
 import { getStreamAsBuffer } from 'get-stream';

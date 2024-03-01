@@ -51,6 +51,7 @@ export const FunctionalityModules = [
         adapter: new TransactionalAdapterPrisma({
           prismaInjectionToken: PrismaClient,
         }),
+        enableTransactionProxy: true,
       }),
     ],
   }),

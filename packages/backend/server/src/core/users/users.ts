@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { InjectTransaction, Transaction } from '@nestjs-cls/transactional';
+import { InjectTransaction, type Transaction } from '@nestjs-cls/transactional';
 import { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
 
 @Injectable()
