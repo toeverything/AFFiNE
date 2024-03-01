@@ -1,20 +1,23 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 
-import { type EventPayload, OnEvent } from '../../fundamentals';
+import {
+  type EventPayload,
+  OnEvent,
+  type Transaction,
+} from '../../fundamentals';
 import { FeatureKind } from '../features';
 import { QuotaConfig } from './quota';
 import { QuotaType } from './types';
-
-type Transaction = Parameters<Parameters<PrismaClient['$transaction']>[0]>[0];
 
 @Injectable()
 export class QuotaService {
   constructor(private readonly prisma: PrismaClient) {}
 
   // get activated user quota
-  async getUserQuota(userId: string) {
-    const quota = await this.prisma.userFeatures.findFirst({
+  async getUserQuota(userId: string, tx?: Transaction) {
+    const executor = tx ?? this.prisma;
+    const quota = await executor.userFeatures.findFirst({
       where: {
         user: {
           id: userId,
@@ -37,13 +40,14 @@ export class QuotaService {
       throw new Error(`User ${userId} has no quota`);
     }
 
-    const feature = await QuotaConfig.get(this.prisma, quota.featureId);
+    const feature = await QuotaConfig.get(executor, quota.featureId);
     return { ...quota, feature };
   }
 
   // get user all quota records
-  async getUserQuotas(userId: string) {
-    const quotas = await this.prisma.userFeatures.findMany({
+  async getUserQuotas(userId: string, tx?: Transaction) {
+    const executor = tx ?? this.prisma;
+    const quotas = await executor.userFeatures.findMany({
       where: {
         user: {
           id: userId,
@@ -65,7 +69,7 @@ export class QuotaService {
         try {
           return {
             ...quota,
-            feature: await QuotaConfig.get(this.prisma, quota.featureId),
+            feature: await QuotaConfig.get(executor, quota.featureId),
           };
         } catch (_) {}
         return null as unknown as typeof quota & {
@@ -83,9 +87,10 @@ export class QuotaService {
     userId: string,
     quota: QuotaType,
     reason?: string,
-    expiredAt?: Date
+    expiredAt?: Date,
+    transaction?: Transaction
   ) {
-    await this.prisma.$transaction(async tx => {
+    const trx = async (tx: Transaction) => {
       const hasSameActivatedQuota = await this.hasQuota(userId, quota, tx);
 
       if (hasSameActivatedQuota) {
@@ -137,11 +142,17 @@ export class QuotaService {
           expiredAt,
         },
       });
-    });
+    };
+
+    if (transaction) {
+      await trx(transaction);
+    } else {
+      await this.prisma.$transaction(trx);
+    }
   }
 
-  async hasQuota(userId: string, quota: QuotaType, transaction?: Transaction) {
-    const executor = transaction ?? this.prisma;
+  async hasQuota(userId: string, quota: QuotaType, tx?: Transaction) {
+    const executor = tx ?? this.prisma;
 
     return executor.userFeatures
       .count({

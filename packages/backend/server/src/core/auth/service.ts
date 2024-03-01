@@ -14,6 +14,7 @@ import { nanoid } from 'nanoid';
 import {
   Config,
   MailService,
+  Transaction,
   verifyChallengeResponse,
 } from '../../fundamentals';
 import { Quota_FreePlanV1_1 } from '../quota';
@@ -215,8 +216,9 @@ export class AuthService {
     });
   }
 
-  async createAnonymousUser(email: string): Promise<User> {
-    const user = await this.prisma.user.findFirst({
+  async createAnonymousUser(email: string, tx?: Transaction): Promise<User> {
+    const executor = tx ?? this.prisma;
+    const user = await executor.user.findFirst({
       where: {
         email: {
           equals: email,
@@ -229,9 +231,9 @@ export class AuthService {
       throw new BadRequestException('Email already exists');
     }
 
-    return this.prisma.user.create({
+    return executor.user.create({
       data: {
-        name: 'Unnamed',
+        name: email.split('@')[0],
         email,
         features: {
           create: {

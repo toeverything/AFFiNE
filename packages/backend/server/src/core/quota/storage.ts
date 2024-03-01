@@ -1,5 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 
+import { Transaction } from '../../fundamentals';
 import { FeatureService, FeatureType } from '../features';
 import { WorkspaceBlobStorage } from '../storage';
 import { PermissionService } from '../workspaces/permission';
@@ -60,9 +61,14 @@ export class QuotaManagementService {
 
   // get workspace's owner quota and total size of used
   // quota was apply to owner's account
-  async getWorkspaceUsage(workspaceId: string): Promise<QuotaBusinessType> {
-    const { user: owner } =
-      await this.permissions.getWorkspaceOwner(workspaceId);
+  async getWorkspaceUsage(
+    workspaceId: string,
+    tx?: Transaction
+  ): Promise<QuotaBusinessType> {
+    const { user: owner } = await this.permissions.getWorkspaceOwner(
+      workspaceId,
+      tx
+    );
     if (!owner) throw new NotFoundException('Workspace owner not found');
     const {
       feature: {
@@ -74,7 +80,7 @@ export class QuotaManagementService {
         storageQuota,
         humanReadable,
       },
-    } = await this.quota.getUserQuota(owner.id);
+    } = await this.quota.getUserQuota(owner.id, tx);
     // get all workspaces size of owner used
     const usedSize = await this.getUserUsage(owner.id);
 
