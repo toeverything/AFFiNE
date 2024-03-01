@@ -31,6 +31,7 @@ import {
   EventEmitter,
   type FileUpload,
   MailService,
+  MutexService,
   Throttle,
 } from '../../../fundamentals';
 import { Auth, CurrentUser, Public } from '../../auth';
@@ -69,7 +70,8 @@ export class WorkspaceResolver {
     private readonly quota: QuotaManagementService,
     private readonly users: UsersService,
     private readonly event: EventEmitter,
-    private readonly blobStorage: WorkspaceBlobStorage
+    private readonly blobStorage: WorkspaceBlobStorage,
+    private readonly mutex: MutexService
   ) {}
 
   @ResolveField(() => Permission, {
@@ -346,6 +348,12 @@ export class WorkspaceResolver {
       throw new ForbiddenException('Cannot change owner');
     }
 
+    const lockFlag = `invite:${workspaceId}`;
+    if (!(await this.mutex.lock(lockFlag))) {
+      throw new ForbiddenException('Failed to acquire lock');
+    }
+    console.error('invite flag log: ', lockFlag);
+
     // member limit check
     const [memberCount, quota] = await Promise.all([
       this.prisma.workspaceUserPermission.count({
@@ -354,6 +362,7 @@ export class WorkspaceResolver {
       this.quota.getWorkspaceUsage(workspaceId),
     ]);
     if (memberCount >= quota.memberLimit) {
+      await this.mutex.unlock(lockFlag);
       throw new PayloadTooLargeException('Workspace member limit reached.');
     }
 
@@ -366,7 +375,10 @@ export class WorkspaceResolver {
         },
       });
       // only invite if the user is not already in the workspace
-      if (originRecord) return originRecord.id;
+      if (originRecord) {
+        await this.mutex.unlock(lockFlag);
+        return originRecord.id;
+      }
     } else {
       target = await this.auth.createAnonymousUser(email);
     }
@@ -406,11 +418,13 @@ export class WorkspaceResolver {
             `failed to send ${workspaceId} invite email to ${email}, but successfully revoked permission: ${e}`
           );
         }
+        await this.mutex.unlock(lockFlag);
         return new InternalServerErrorException(
           'Failed to send invite email. Please try again.'
         );
       }
     }
+    await this.mutex.unlock(lockFlag);
     return inviteId;
   }
 

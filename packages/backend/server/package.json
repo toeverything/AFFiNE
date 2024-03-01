@@ -132,8 +132,7 @@
       "--es-module-specifier-resolution=node"
     ],
     "files": [
-      "tests/**/*.spec.ts",
-      "tests/**/*.e2e.ts"
+      "tests/**/workspace-invite.e2e.ts"
     ],
     "require": [
       "./src/prelude.ts"

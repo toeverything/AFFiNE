@@ -31,6 +31,7 @@ import { EventModule } from './fundamentals/event';
 import { GqlModule } from './fundamentals/graphql';
 import { MailModule } from './fundamentals/mailer';
 import { MetricsModule } from './fundamentals/metrics';
+import { MutexModule } from './fundamentals/mutex';
 import { PrismaModule } from './fundamentals/prisma';
 import { SessionModule } from './fundamentals/session';
 import { StorageProviderModule } from './fundamentals/storage';
@@ -43,9 +44,12 @@ export const FunctionalityModules = [
   ScheduleModule.forRoot(),
   EventModule,
   CacheModule,
+  MutexModule,
   PrismaModule,
   ClsModule.forRoot({
-    interceptor: { mount: true },
+    global: true,
+    middleware: { mount: true },
+    interceptor: { mount: true, generateId: true },
     plugins: [
       new ClsPluginTransactional({
         imports: [PrismaModule],
