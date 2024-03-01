@@ -21,6 +21,7 @@ export {
   GlobalExceptionFilter,
   OptionalModule,
 } from './nestjs';
+export type { PrismaTransaction } from './prisma';
 export { SessionService } from './session';
 export * from './storage';
 export { type StorageProvider, StorageProviderFactory } from './storage';

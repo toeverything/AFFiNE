@@ -1,5 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+import {
+  InjectTransaction,
+  Transaction,
+  Transactional,
+} from '@nestjs-cls/transactional';
+import { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
 
 import { UserType } from '../users/types';
 import { WorkspaceType } from '../workspaces/types';
@@ -8,7 +13,11 @@ import { FeatureKind, FeatureType } from './types';
 
 @Injectable()
 export class FeatureService {
-  constructor(private readonly prisma: PrismaClient) {}
+  constructor(
+    // private readonly prisma: PrismaClient,
+    @InjectTransaction()
+    private readonly prisma: Transaction<TransactionalAdapterPrisma>
+  ) {}
 
   async getFeaturesVersion() {
     const features = await this.prisma.features.findMany({
@@ -57,6 +66,7 @@ export class FeatureService {
 
   // ======== User Features ========
 
+  @Transactional()
   async addUserFeature(
     userId: string,
     feature: FeatureType,
@@ -64,48 +74,46 @@ export class FeatureService {
     reason: string,
     expiredAt?: Date | string
   ) {
-    return this.prisma.$transaction(async tx => {
-      const latestFlag = await tx.userFeatures.findFirst({
-        where: {
-          userId,
-          feature: {
-            feature,
-            type: FeatureKind.Feature,
-          },
-          activated: true,
+    const latestFlag = await this.prisma.userFeatures.findFirst({
+      where: {
+        userId,
+        feature: {
+          feature,
+          type: FeatureKind.Feature,
         },
-        orderBy: {
-          createdAt: 'desc',
-        },
-      });
-      if (latestFlag) {
-        return latestFlag.id;
-      } else {
-        return tx.userFeatures
-          .create({
-            data: {
-              reason,
-              expiredAt,
-              activated: true,
-              user: {
-                connect: {
-                  id: userId,
-                },
-              },
-              feature: {
-                connect: {
-                  feature_version: {
-                    feature,
-                    version,
-                  },
-                  type: FeatureKind.Feature,
-                },
+        activated: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+    if (latestFlag) {
+      return latestFlag.id;
+    } else {
+      return this.prisma.userFeatures
+        .create({
+          data: {
+            reason,
+            expiredAt,
+            activated: true,
+            user: {
+              connect: {
+                id: userId,
               },
             },
-          })
-          .then(r => r.id);
-      }
-    });
+            feature: {
+              connect: {
+                feature_version: {
+                  feature,
+                  version,
+                },
+                type: FeatureKind.Feature,
+              },
+            },
+          },
+        })
+        .then(r => r.id);
+    }
   }
 
   async removeUserFeature(userId: string, feature: FeatureType) {
@@ -201,6 +209,7 @@ export class FeatureService {
 
   // ======== Workspace Features ========
 
+  @Transactional()
   async addWorkspaceFeature(
     workspaceId: string,
     feature: FeatureType,
@@ -208,48 +217,46 @@ export class FeatureService {
     reason: string,
     expiredAt?: Date | string
   ) {
-    return this.prisma.$transaction(async tx => {
-      const latestFlag = await tx.workspaceFeatures.findFirst({
-        where: {
-          workspaceId,
-          feature: {
-            feature,
-            type: FeatureKind.Feature,
-          },
-          activated: true,
+    const latestFlag = await this.prisma.workspaceFeatures.findFirst({
+      where: {
+        workspaceId,
+        feature: {
+          feature,
+          type: FeatureKind.Feature,
         },
-        orderBy: {
-          createdAt: 'desc',
-        },
-      });
-      if (latestFlag) {
-        return latestFlag.id;
-      } else {
-        return tx.workspaceFeatures
-          .create({
-            data: {
-              reason,
-              expiredAt,
-              activated: true,
-              workspace: {
-                connect: {
-                  id: workspaceId,
-                },
-              },
-              feature: {
-                connect: {
-                  feature_version: {
-                    feature,
-                    version,
-                  },
-                  type: FeatureKind.Feature,
-                },
+        activated: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+    if (latestFlag) {
+      return latestFlag.id;
+    } else {
+      return this.prisma.workspaceFeatures
+        .create({
+          data: {
+            reason,
+            expiredAt,
+            activated: true,
+            workspace: {
+              connect: {
+                id: workspaceId,
               },
             },
-          })
-          .then(r => r.id);
-      }
-    });
+            feature: {
+              connect: {
+                feature_version: {
+                  feature,
+                  version,
+                },
+                type: FeatureKind.Feature,
+              },
+            },
+          },
+        })
+        .then(r => r.id);
+    }
   }
 
   async removeWorkspaceFeature(workspaceId: string, feature: FeatureType) {
