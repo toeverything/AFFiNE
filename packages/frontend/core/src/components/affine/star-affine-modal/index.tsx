@@ -15,7 +15,7 @@ export const StarAFFiNEModal = () => {
           width={400}
           height={300}
           style={{ objectFit: 'cover' }}
-          src={'/static/gitHubStar.mp4'}
+          src={'/static/githubStar.mp4'}
           autoPlay
           loop
         />
