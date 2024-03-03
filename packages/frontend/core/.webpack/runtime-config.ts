@@ -147,6 +147,10 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
         : currentBuildPreset.allowLocalWorkspace,
   };
 
+  const testEnvironmentPreset = {
+    allowLocalWorkspace: true,
+  };
+
   if (buildFlags.mode === 'development') {
     currentBuildPreset.serverUrlPrefix = 'http://localhost:8080';
   }
@@ -156,6 +160,10 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
     // environment preset will overwrite current build preset
     // this environment variable is for debug proposes only
     // do not put them into CI
-    ...(process.env.CI ? { allowLocalWorkspace: true } : environmentPreset),
+    ...(process.env.CI ? {} : environmentPreset),
+
+    // test environment preset will overwrite current build preset
+    // this environment variable is for github workflow e2e-test only
+    ...(process.env.IN_CI_TEST ? testEnvironmentPreset : {}),
   };
 }

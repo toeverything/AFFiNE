@@ -118,6 +118,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DISTRIBUTION: browser
+      IN_CI_TEST: true
     strategy:
       fail-fast: false
       matrix:
@@ -370,6 +371,7 @@ jobs:
     env:
       DISTRIBUTION: browser
       DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
+      IN_CI_TEST: true
     strategy:
       fail-fast: false
       matrix:
