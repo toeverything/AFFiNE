@@ -1,7 +1,5 @@
-import { appSettingAtom } from '@toeverything/infra/atom';
 import { useService } from '@toeverything/infra/di';
 import { useLiveData } from '@toeverything/infra/livedata';
-import { useAtomValue } from 'jotai';
 import { useCallback, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 
@@ -9,6 +7,7 @@ import type { View } from '../entities/view';
 import { Workbench } from '../entities/workbench';
 import { useBindWorkbenchToBrowserRouter } from './browser-adapter';
 import { useBindWorkbenchToDesktopRouter } from './desktop-adapter';
+import { SplitView } from './split-view/split-view';
 import { ViewRoot } from './view-root';
 import * as styles from './workbench-root.css';
 
@@ -29,17 +28,24 @@ export const WorkbenchRoot = () => {
 
   useAdapter(workbench, basename);
 
-  const { clientBorder } = useAtomValue(appSettingAtom);
+  const panelRenderer = useCallback((view: View, index: number) => {
+    return <WorkbenchView key={view.id} view={view} index={index} />;
+  }, []);
+
+  const onMove = useCallback(
+    (from: number, to: number) => {
+      workbench.moveView(from, to);
+    },
+    [workbench]
+  );
 
   return (
-    <div
+    <SplitView
       className={styles.workbenchRootContainer}
-      data-client-border={!!clientBorder}
-    >
-      {views.map((view, index) => (
-        <WorkbenchView key={view.id} view={view} index={index} />
-      ))}
-    </div>
+      views={views}
+      renderer={panelRenderer}
+      onMove={onMove}
+    />
   );
 };
 

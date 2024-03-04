@@ -89,6 +89,48 @@ export class Workbench {
     return this.views.value[this.indexAt(positionIndex)];
   }
 
+  close(view: View) {
+    if (this.views.value.length === 1) return;
+    const index = this.views.value.indexOf(view);
+    if (index === -1) return;
+    const newViews = [...this.views.value];
+    newViews.splice(index, 1);
+    this.views.next(newViews);
+  }
+
+  closeOthers(view: View) {
+    view.size.next(100);
+    this.views.next([view]);
+  }
+
+  moveView(from: number, to: number) {
+    const views = [...this.views.value];
+    const [removed] = views.splice(from, 1);
+    views.splice(to, 0, removed);
+    this.views.next(views);
+    this.active(to);
+  }
+
+  /**
+   * resize specified view and the next view
+   * @param view
+   * @param percent from 0 to 1
+   * @returns
+   */
+  resize(index: number, percent: number) {
+    const view = this.views.value[index];
+    const nextView = this.views.value[index + 1];
+    if (!nextView) return;
+
+    const totalViewSize = this.views.value.reduce(
+      (sum, v) => sum + v.size.value,
+      0
+    );
+    const percentOfTotal = totalViewSize * percent;
+    view.setSize(Number((view.size.value + percentOfTotal).toFixed(4)));
+    nextView.setSize(Number((nextView.size.value - percentOfTotal).toFixed(4)));
+  }
+
   private indexAt(positionIndex: WorkbenchPosition): number {
     if (positionIndex === 'active') {
       return this.activeViewIndex.value;

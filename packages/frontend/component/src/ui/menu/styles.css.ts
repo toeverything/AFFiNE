@@ -11,6 +11,7 @@ export const menuContent = style({
   backgroundColor: cssVar('backgroundOverlayPanelColor'),
   boxShadow: cssVar('menuShadow'),
   userSelect: 'none',
+  ['WebkitAppRegion' as string]: 'no-drag',
 });
 export const menuItem = style({
   display: 'flex',

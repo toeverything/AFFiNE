@@ -20,6 +20,7 @@ export class View {
     }),
     this.history.location
   );
+  size = new LiveData(100);
 
   header = createIsland();
   body = createIsland();
@@ -34,5 +35,9 @@ export class View {
 
   replace(path: To) {
     this.history.replace(path);
+  }
+
+  setSize(size?: number) {
+    this.size.next(size ?? 100);
   }
 }
