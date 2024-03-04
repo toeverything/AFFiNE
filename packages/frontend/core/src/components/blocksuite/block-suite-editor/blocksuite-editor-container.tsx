@@ -206,11 +206,13 @@ export const BlocksuiteEditorContainer = forwardRef<
   useEffect(() => {
     if (blockElement) {
       requestIdleCallback(() => {
-        blockElement.scrollIntoView({
-          behavior: 'smooth',
-          block: 'center',
-          inline: 'center',
-        });
+        if (mode === 'page') {
+          blockElement.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center',
+            inline: 'center',
+          });
+        }
         const selectManager = affineEditorContainerProxy.host?.selection;
         if (!blockElement.path.length || !selectManager) {
           return;
@@ -221,7 +223,7 @@ export const BlocksuiteEditorContainer = forwardRef<
         selectManager.set([newSelection]);
       });
     }
-  }, [blockElement, affineEditorContainerProxy.host?.selection]);
+  }, [blockElement, affineEditorContainerProxy.host?.selection, mode]);
 
   return (
     <div

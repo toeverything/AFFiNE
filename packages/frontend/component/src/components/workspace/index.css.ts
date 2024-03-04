@@ -50,6 +50,7 @@ export const mainContainerStyle = style({
   width: 0,
   display: 'flex',
   flex: 1,
+  overflow: 'hidden',
   maxWidth: '100%',
   selectors: {
     '&[data-show-padding="true"]': {
