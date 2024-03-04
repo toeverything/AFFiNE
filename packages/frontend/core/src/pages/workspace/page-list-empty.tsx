@@ -76,6 +76,7 @@ export const EmptyCollectionList = ({ heading }: { heading: ReactNode }) => {
     </div>
   );
 };
+
 export const EmptyTagList = ({ heading }: { heading: ReactNode }) => {
   const t = useAFFiNEI18N();
   return (

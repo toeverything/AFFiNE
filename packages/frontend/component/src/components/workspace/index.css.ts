@@ -48,13 +48,12 @@ export const mainContainerStyle = style({
   zIndex: 0,
   // it will create stacking context to limit layer of child elements and be lower than after auto zIndex
   width: 0,
+  display: 'flex',
   flex: 1,
   maxWidth: '100%',
-  backgroundColor: cssVar('backgroundPrimaryColor'),
   selectors: {
     '&[data-show-padding="true"]': {
       margin: '8px',
-      borderRadius: '5px',
       overflow: 'hidden',
       // todo: is this performance intensive?
       filter: 'drop-shadow(0px 0px 4px rgba(66,65,73,.14))',
@@ -65,9 +64,6 @@ export const mainContainerStyle = style({
           borderRadius: '0px',
         },
       },
-    },
-    '&[data-show-padding="true"][data-is-macos="true"]': {
-      borderRadius: '6px',
     },
     '&[data-show-padding="true"]:before': {
       content: '""',

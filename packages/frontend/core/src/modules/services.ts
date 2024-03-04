@@ -11,6 +11,7 @@ import {
   LocalStorageGlobalCache,
   LocalStorageGlobalState,
 } from './infra-web/storage';
+import { RightSidebar } from './right-sidebar/entities/right-sidebar';
 import { Workbench } from './workbench';
 import {
   CurrentWorkspaceService,
@@ -23,6 +24,7 @@ export function configureBusinessServices(services: ServiceCollection) {
   services
     .scope(WorkspaceScope)
     .add(Workbench)
+    .add(RightSidebar)
     .add(WorkspacePropertiesAdapter, [Workspace])
     .add(CollectionService, [Workspace])
     .add(WorkspaceLegacyProperties, [Workspace]);

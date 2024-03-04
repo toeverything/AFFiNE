@@ -1,9 +1,8 @@
 import { Checkbox } from '@affine/component';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useDraggable } from '@dnd-kit/core';
 import { type PropsWithChildren, useCallback, useMemo } from 'react';
 
-import { WorkbenchLink } from '../../../modules/workbench/workbench-link';
+import { WorkbenchLink } from '../../../modules/workbench/view/workbench-link';
 import type { DraggableTitleCellData, PageListItemProps } from '../types';
 import { ColWrapper, formatDate, stopPropagation } from '../utils';
 import * as styles from './page-list-item.css';
@@ -13,14 +12,13 @@ const ListTitleCell = ({
   title,
   preview,
 }: Pick<PageListItemProps, 'title' | 'preview'>) => {
-  const t = useAFFiNEI18N();
   return (
     <div data-testid="page-list-item-title" className={styles.titleCell}>
       <div
         data-testid="page-list-item-title-text"
         className={styles.titleCellMain}
       >
-        {title || t['Untitled']()}
+        {title}
       </div>
       {preview ? (
         <div

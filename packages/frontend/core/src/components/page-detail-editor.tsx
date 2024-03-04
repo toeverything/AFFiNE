@@ -1,6 +1,5 @@
 import './page-detail-editor.css';
 
-import { useActiveBlocksuiteEditor } from '@affine/core/hooks/use-block-suite-editor';
 import { useBlockSuiteWorkspacePage } from '@affine/core/hooks/use-block-suite-workspace-page';
 import { assertExists, DisposableGroup } from '@blocksuite/global/utils';
 import type { AffineEditorContainer } from '@blocksuite/presets';
@@ -70,14 +69,12 @@ const PageDetailEditorMain = memo(function PageDetailEditorMain({
     return fontStyle.value;
   }, [appSettings.fontStyle]);
 
-  const [, setActiveBlocksuiteEditor] = useActiveBlocksuiteEditor();
   const blockId = useRouterHash();
 
   const onLoadEditor = useCallback(
     (editor: AffineEditorContainer) => {
       // debug current detail editor
       globalThis.currentEditor = editor;
-      setActiveBlocksuiteEditor(editor);
       const disposableGroup = new DisposableGroup();
       disposableGroup.add(
         page.slots.blockUpdated.once(() => {
@@ -99,10 +96,9 @@ const PageDetailEditorMain = memo(function PageDetailEditorMain({
 
       return () => {
         disposableGroup.dispose();
-        setActiveBlocksuiteEditor(null);
       };
     },
-    [onLoad, page, setActiveBlocksuiteEditor]
+    [onLoad, page]
   );
 
   return (

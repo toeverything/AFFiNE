@@ -1,4 +1,3 @@
-import { HubIsland } from '@affine/core/components/affine/hub-island';
 import {
   CollectionListHeader,
   type CollectionMeta,
@@ -16,7 +15,7 @@ import { nanoid } from 'nanoid';
 import { useCallback, useMemo, useState } from 'react';
 
 import { CollectionService } from '../../../modules/collection';
-import * as styles from '../all-page/all-page.css';
+import { ViewBodyIsland, ViewHeaderIsland } from '../../../modules/workbench';
 import { EmptyCollectionList } from '../page-list-empty';
 import { AllCollectionHeader } from './header';
 
@@ -58,33 +57,35 @@ export const AllCollection = () => {
   }, [collectionService, currentWorkspace, navigateHelper, open]);
 
   return (
-    <div className={styles.root}>
-      <AllCollectionHeader
-        showCreateNew={!hideHeaderCreateNew}
-        onCreateCollection={handleCreateCollection}
-      />
-      {collectionMetas.length > 0 ? (
-        <VirtualizedCollectionList
-          collections={collections}
-          collectionMetas={collectionMetas}
-          setHideHeaderCreateNewCollection={setHideHeaderCreateNew}
-          node={node}
-          config={config}
-          handleCreateCollection={handleCreateCollection}
+    <>
+      <ViewHeaderIsland>
+        <AllCollectionHeader
+          showCreateNew={!hideHeaderCreateNew}
+          onCreateCollection={handleCreateCollection}
         />
-      ) : (
-        <EmptyCollectionList
-          heading={
-            <CollectionListHeader
-              node={node}
-              onCreate={handleCreateCollection}
-            />
-          }
-        />
-      )}
-
-      <HubIsland />
-    </div>
+      </ViewHeaderIsland>
+      <ViewBodyIsland>
+        {collectionMetas.length > 0 ? (
+          <VirtualizedCollectionList
+            collections={collections}
+            collectionMetas={collectionMetas}
+            setHideHeaderCreateNewCollection={setHideHeaderCreateNew}
+            node={node}
+            config={config}
+            handleCreateCollection={handleCreateCollection}
+          />
+        ) : (
+          <EmptyCollectionList
+            heading={
+              <CollectionListHeader
+                node={node}
+                onCreate={handleCreateCollection}
+              />
+            }
+          />
+        )}
+      </ViewBodyIsland>
+    </>
   );
 };
 

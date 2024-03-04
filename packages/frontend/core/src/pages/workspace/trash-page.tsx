@@ -21,6 +21,7 @@ import { Workspace } from '@toeverything/infra';
 import { useService } from '@toeverything/infra/di';
 import { useCallback } from 'react';
 
+import { ViewBodyIsland, ViewHeaderIsland } from '../../modules/workbench';
 import { EmptyPageList } from './page-list-empty';
 import * as styles from './trash-page.css';
 
@@ -94,26 +95,32 @@ export const TrashPage = () => {
     return <ListTableHeader headerCols={pageHeaderColsDef} />;
   }, []);
   return (
-    <div className={styles.root}>
-      <TrashHeader />
-      {filteredPageMetas.length > 0 ? (
-        <VirtualizedList
-          items={filteredPageMetas}
-          rowAsLink
-          groupBy={false}
-          isPreferredEdgeless={isPreferredEdgeless}
-          blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
-          operationsRenderer={pageOperationsRenderer}
-          itemRenderer={pageItemRenderer}
-          headerRenderer={pageHeaderRenderer}
-        />
-      ) : (
-        <EmptyPageList
-          type="trash"
-          blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
-        />
-      )}
-    </div>
+    <>
+      <ViewHeaderIsland>
+        <TrashHeader />
+      </ViewHeaderIsland>
+      <ViewBodyIsland>
+        <div className={styles.body}>
+          {filteredPageMetas.length > 0 ? (
+            <VirtualizedList
+              items={filteredPageMetas}
+              rowAsLink
+              groupBy={false}
+              isPreferredEdgeless={isPreferredEdgeless}
+              blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
+              operationsRenderer={pageOperationsRenderer}
+              itemRenderer={pageItemRenderer}
+              headerRenderer={pageHeaderRenderer}
+            />
+          ) : (
+            <EmptyPageList
+              type="trash"
+              blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
+            />
+          )}
+        </div>
+      </ViewBodyIsland>
+    </>
   );
 };
 

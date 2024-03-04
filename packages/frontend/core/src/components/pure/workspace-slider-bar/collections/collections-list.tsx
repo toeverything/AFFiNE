@@ -22,7 +22,7 @@ import { useAllPageListConfig } from '../../../../hooks/affine/use-all-page-list
 import { getDropItemId } from '../../../../hooks/affine/use-sidebar-drag';
 import { useBlockSuiteDocMeta } from '../../../../hooks/use-block-suite-page-meta';
 import { Workbench } from '../../../../modules/workbench';
-import { WorkbenchLink } from '../../../../modules/workbench/workbench-link';
+import { WorkbenchLink } from '../../../../modules/workbench/view/workbench-link';
 import type { CollectionsListProps } from '../index';
 import { Page } from './page';
 import * as styles from './styles.css';

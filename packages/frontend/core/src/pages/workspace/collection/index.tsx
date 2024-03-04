@@ -1,15 +1,9 @@
-import {
-  appSidebarOpenAtom,
-  SidebarSwitch,
-} from '@affine/component/app-sidebar';
 import { pushNotificationAtom } from '@affine/component/notification-center';
-import { HubIsland } from '@affine/core/components/affine/hub-island';
 import {
   AffineShapeIcon,
   useEditCollection,
   VirtualizedPageList,
 } from '@affine/core/components/page-list';
-import { WindowsAppControls } from '@affine/core/components/pure/header/windows-app-controls';
 import { useAllPageListConfig } from '@affine/core/hooks/affine/use-all-page-list-config';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { CollectionService } from '@affine/core/modules/collection';
@@ -25,14 +19,13 @@ import {
 import { Workspace } from '@toeverything/infra';
 import { useService } from '@toeverything/infra/di';
 import { useLiveData } from '@toeverything/infra/livedata';
-import { useAtomValue } from 'jotai';
 import { useSetAtom } from 'jotai';
 import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
 import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
+import { ViewBodyIsland, ViewHeaderIsland } from '../../../modules/workbench';
 import { WorkspaceSubPath } from '../../../shared';
-import * as allPageStyles from '../all-page/all-page.css';
 import * as styles from './collection.css';
 import { CollectionDetailHeader } from './header';
 
@@ -52,19 +45,22 @@ export const CollectionDetail = ({
   }, [collection, collectionService, open]);
 
   return (
-    <div className={allPageStyles.root}>
-      <CollectionDetailHeader
-        showCreateNew={!hideHeaderCreateNew}
-        onCreate={handleEditCollection}
-      />
-      <VirtualizedPageList
-        collection={collection}
-        config={config}
-        setHideHeaderCreateNewPage={setHideHeaderCreateNew}
-      />
-      <HubIsland />
+    <>
+      <ViewHeaderIsland>
+        <CollectionDetailHeader
+          showCreateNew={!hideHeaderCreateNew}
+          onCreate={handleEditCollection}
+        />
+      </ViewHeaderIsland>
+      <ViewBodyIsland>
+        <VirtualizedPageList
+          collection={collection}
+          config={config}
+          setHideHeaderCreateNewPage={setHideHeaderCreateNew}
+        />
+      </ViewBodyIsland>
       {node}
-    </div>
+    </>
   );
 };
 
@@ -115,8 +111,6 @@ export const Component = function CollectionPage() {
   );
 };
 
-const isWindowsDesktop = environment.isDesktop && environment.isWindows;
-
 const Placeholder = ({ collection }: { collection: Collection }) => {
   const workspace = useService(Workspace);
   const collectionService = useService(CollectionService);
@@ -139,199 +133,191 @@ const Placeholder = ({ collection }: { collection: Collection }) => {
     localStorage.setItem('hide-empty-collection-help-info', 'true');
   }, []);
   const t = useAFFiNEI18N();
-  const leftSidebarOpen = useAtomValue(appSidebarOpenAtom);
 
   const handleJumpToCollections = useCallback(() => {
     jumpToCollections(workspace.id);
   }, [jumpToCollections, workspace]);
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100%',
-      }}
-    >
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-          height: 52,
-          paddingLeft: '16px',
-          fontSize: 'var(--affine-font-xs)',
-          ['WebkitAppRegion' as string]: 'drag',
-        }}
-      >
-        <SidebarSwitch show={!leftSidebarOpen} />
+    <>
+      <ViewHeaderIsland>
         <div
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: 4,
-            cursor: 'pointer',
-            color: 'var(--affine-text-secondary-color)',
-            ['WebkitAppRegion' as string]: 'no-drag',
-          }}
-          onClick={handleJumpToCollections}
-        >
-          <ViewLayersIcon
-            style={{ color: 'var(--affine-icon-color)' }}
-            fontSize={14}
-          />
-          {t['com.affine.collection.allCollections']()}
-          <div>/</div>
-        </div>
-        <div
-          data-testid="collection-name"
-          style={{
-            fontWeight: 600,
-            color: 'var(--affine-text-primary-color)',
-            ['WebkitAppRegion' as string]: 'no-drag',
+            gap: 8,
+            fontSize: 'var(--affine-font-xs)',
           }}
         >
-          {collection.name}
-        </div>
-        <div style={{ flex: 1 }} />
-        {isWindowsDesktop && <WindowsAppControls />}
-      </div>
-      <div
-        style={{
-          display: 'flex',
-          flex: 1,
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: 64,
-        }}
-      >
-        <div
-          style={{
-            maxWidth: 432,
-            marginTop: 118,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: 18,
-            margin: '118px 12px 0',
-          }}
-        >
-          <AffineShapeIcon />
-          <div
-            style={{
-              fontSize: 20,
-              lineHeight: '28px',
-              fontWeight: 600,
-              color: 'var(--affine-text-primary-color)',
-            }}
-          >
-            {t['com.affine.collection.emptyCollection']()}
-          </div>
-          <div
-            style={{
-              fontSize: 12,
-              lineHeight: '20px',
-              color: 'var(--affine-text-secondary-color)',
-              textAlign: 'center',
-            }}
-          >
-            {t['com.affine.collection.emptyCollectionDescription']()}
-          </div>
           <div
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '12px 32px',
-              flexWrap: 'wrap',
-              justifyContent: 'center',
+              gap: 4,
+              cursor: 'pointer',
+              color: 'var(--affine-text-secondary-color)',
+              ['WebkitAppRegion' as string]: 'no-drag',
+            }}
+            onClick={handleJumpToCollections}
+          >
+            <ViewLayersIcon
+              style={{ color: 'var(--affine-icon-color)' }}
+              fontSize={14}
+            />
+            {t['com.affine.collection.allCollections']()}
+            <div>/</div>
+          </div>
+          <div
+            data-testid="collection-name"
+            style={{
+              fontWeight: 600,
+              color: 'var(--affine-text-primary-color)',
+              ['WebkitAppRegion' as string]: 'no-drag',
             }}
           >
-            <div onClick={openPageEdit} className={styles.placeholderButton}>
-              <PageIcon
-                style={{
-                  width: 20,
-                  height: 20,
-                  color: 'var(--affine-icon-color)',
-                }}
-              />
-              <span style={{ padding: '0 4px' }}>
-                {t['com.affine.collection.addPages']()}
-              </span>
-            </div>
-            <div onClick={openRuleEdit} className={styles.placeholderButton}>
-              <FilterIcon
-                style={{
-                  width: 20,
-                  height: 20,
-                  color: 'var(--affine-icon-color)',
-                }}
-              />
-              <span style={{ padding: '0 4px' }}>
-                {t['com.affine.collection.addRules']()}
-              </span>
-            </div>
+            {collection.name}
           </div>
+          <div style={{ flex: 1 }} />
         </div>
-        {showTips ? (
+      </ViewHeaderIsland>
+      <ViewBodyIsland>
+        <div
+          style={{
+            display: 'flex',
+            flex: 1,
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 64,
+          }}
+        >
           <div
             style={{
-              maxWidth: 452,
-              borderRadius: 8,
+              maxWidth: 432,
+              marginTop: 118,
               display: 'flex',
               flexDirection: 'column',
-              backgroundColor: 'var(--affine-background-overlay-panel-color)',
-              padding: 10,
-              gap: 14,
-              margin: '0 12px',
+              alignItems: 'center',
+              gap: 18,
+              margin: '118px 12px 0',
             }}
           >
+            <AffineShapeIcon />
             <div
               style={{
+                fontSize: 20,
+                lineHeight: '28px',
                 fontWeight: 600,
+                color: 'var(--affine-text-primary-color)',
+              }}
+            >
+              {t['com.affine.collection.emptyCollection']()}
+            </div>
+            <div
+              style={{
                 fontSize: 12,
                 lineHeight: '20px',
                 color: 'var(--affine-text-secondary-color)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
+                textAlign: 'center',
               }}
             >
-              <div>{t['com.affine.collection.helpInfo']()}</div>
-              <CloseIcon
-                className={styles.button}
-                style={{ width: 16, height: 16 }}
-                onClick={hideTips}
-              />
+              {t['com.affine.collection.emptyCollectionDescription']()}
             </div>
             <div
               style={{
                 display: 'flex',
-                flexDirection: 'column',
-                gap: 10,
-                fontSize: 12,
-                lineHeight: '20px',
+                alignItems: 'center',
+                gap: '12px 32px',
+                flexWrap: 'wrap',
+                justifyContent: 'center',
               }}
             >
-              <div>
-                <Trans i18nKey="com.affine.collection.addPages.tips">
-                  <span style={{ fontWeight: 600 }}>Add pages:</span> You can
-                  freely select pages and add them to the collection.
-                </Trans>
+              <div onClick={openPageEdit} className={styles.placeholderButton}>
+                <PageIcon
+                  style={{
+                    width: 20,
+                    height: 20,
+                    color: 'var(--affine-icon-color)',
+                  }}
+                />
+                <span style={{ padding: '0 4px' }}>
+                  {t['com.affine.collection.addPages']()}
+                </span>
               </div>
-              <div>
-                <Trans i18nKey="com.affine.collection.addRules.tips">
-                  <span style={{ fontWeight: 600 }}>Add rules:</span> Rules are
-                  based on filtering. After adding rules, pages that meet the
-                  requirements will be automatically added to the current
-                  collection.
-                </Trans>
+              <div onClick={openRuleEdit} className={styles.placeholderButton}>
+                <FilterIcon
+                  style={{
+                    width: 20,
+                    height: 20,
+                    color: 'var(--affine-icon-color)',
+                  }}
+                />
+                <span style={{ padding: '0 4px' }}>
+                  {t['com.affine.collection.addRules']()}
+                </span>
               </div>
             </div>
           </div>
-        ) : null}
-      </div>
+          {showTips ? (
+            <div
+              style={{
+                maxWidth: 452,
+                borderRadius: 8,
+                display: 'flex',
+                flexDirection: 'column',
+                backgroundColor: 'var(--affine-background-overlay-panel-color)',
+                padding: 10,
+                gap: 14,
+                margin: '0 12px',
+              }}
+            >
+              <div
+                style={{
+                  fontWeight: 600,
+                  fontSize: 12,
+                  lineHeight: '20px',
+                  color: 'var(--affine-text-secondary-color)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
+              >
+                <div>{t['com.affine.collection.helpInfo']()}</div>
+                <CloseIcon
+                  className={styles.button}
+                  style={{ width: 16, height: 16 }}
+                  onClick={hideTips}
+                />
+              </div>
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 10,
+                  fontSize: 12,
+                  lineHeight: '20px',
+                }}
+              >
+                <div>
+                  <Trans i18nKey="com.affine.collection.addPages.tips">
+                    <span style={{ fontWeight: 600 }}>Add pages:</span> You can
+                    freely select pages and add them to the collection.
+                  </Trans>
+                </div>
+                <div>
+                  <Trans i18nKey="com.affine.collection.addRules.tips">
+                    <span style={{ fontWeight: 600 }}>Add rules:</span> Rules
+                    are based on filtering. After adding rules, pages that meet
+                    the requirements will be automatically added to the current
+                    collection.
+                  </Trans>
+                </div>
+              </div>
+            </div>
+          ) : null}
+        </div>
+      </ViewBodyIsland>
       {node}
-    </div>
+    </>
   );
 };
 

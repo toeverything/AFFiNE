@@ -13,7 +13,7 @@ export const root = style({
   },
   position: 'relative',
   width: panelWidthVar,
-  minWidth: 0,
+  minWidth: panelWidthVar,
   height: '100%',
   selectors: {
     '&[data-is-floating="true"]': {

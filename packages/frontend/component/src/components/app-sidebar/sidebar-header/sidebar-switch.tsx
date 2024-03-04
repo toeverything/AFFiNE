@@ -1,5 +1,6 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { SidebarIcon } from '@blocksuite/icons';
+import clsx from 'clsx';
 import { useAtom } from 'jotai';
 
 import { IconButton } from '../../../ui/button';
@@ -7,7 +8,13 @@ import { Tooltip } from '../../../ui/tooltip';
 import { appSidebarOpenAtom } from '../index.jotai';
 import * as styles from './sidebar-switch.css';
 
-export const SidebarSwitch = ({ show }: { show: boolean }) => {
+export const SidebarSwitch = ({
+  show = true,
+  className,
+}: {
+  show?: boolean;
+  className?: string;
+}) => {
   const [open, setOpen] = useAtom(appSidebarOpenAtom);
   const t = useAFFiNEI18N();
   const tooltipContent = open
@@ -22,7 +29,7 @@ export const SidebarSwitch = ({ show }: { show: boolean }) => {
       side={open ? 'bottom' : 'right'}
     >
       <IconButton
-        className={styles.sidebarSwitch}
+        className={clsx(styles.sidebarSwitch, className)}
         data-show={show}
         size="large"
         data-testid={`app-sidebar-arrow-button-${open ? 'collapse' : 'expand'}`}

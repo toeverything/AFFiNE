@@ -1,4 +1,3 @@
-import { HubIsland } from '@affine/core/components/affine/hub-island';
 import { useTagMetas } from '@affine/core/components/page-list';
 import {
   TagListHeader,
@@ -8,8 +7,9 @@ import { useBlockSuiteDocMeta } from '@affine/core/hooks/use-block-suite-page-me
 import { useService } from '@toeverything/infra';
 import { Workspace } from '@toeverything/infra';
 
-import * as styles from '../all-page/all-page.css';
+import { ViewBodyIsland, ViewHeaderIsland } from '../../../modules/workbench';
 import { EmptyTagList } from '../page-list-empty';
+import * as styles from './all-tag.css';
 import { AllTagHeader } from './header';
 
 export const AllTag = () => {
@@ -22,19 +22,24 @@ export const AllTag = () => {
   );
 
   return (
-    <div className={styles.root}>
-      <AllTagHeader />
-      {tags.length > 0 ? (
-        <VirtualizedTagList
-          tags={tags}
-          tagMetas={tagMetas}
-          onTagDelete={deleteTags}
-        />
-      ) : (
-        <EmptyTagList heading={<TagListHeader />} />
-      )}
-      <HubIsland />
-    </div>
+    <>
+      <ViewHeaderIsland>
+        <AllTagHeader />
+      </ViewHeaderIsland>
+      <ViewBodyIsland>
+        <div className={styles.body}>
+          {tags.length > 0 ? (
+            <VirtualizedTagList
+              tags={tags}
+              tagMetas={tagMetas}
+              onTagDelete={deleteTags}
+            />
+          ) : (
+            <EmptyTagList heading={<TagListHeader />} />
+          )}
+        </div>
+      </ViewBodyIsland>
+    </>
   );
 };
 
