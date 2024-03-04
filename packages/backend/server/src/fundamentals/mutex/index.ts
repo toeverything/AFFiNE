@@ -13,14 +13,14 @@ export class MutexService {
   private readonly logger = new Logger(MutexService.name);
   private readonly bucket = new Map<string, string>();
 
-  constructor(private readonly als: ClsService) {}
+  constructor(private readonly cls: ClsService) {}
 
   private getId() {
-    let id = this.als.get('asyncId');
+    let id = this.cls.get('asyncId');
 
     if (!id) {
       id = randomUUID();
-      this.als.set('asyncId', id);
+      this.cls.set('asyncId', id);
     }
 
     return id;

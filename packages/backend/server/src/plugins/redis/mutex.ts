@@ -44,11 +44,11 @@ export class MutexRedisService {
     return id;
   }
 
-  async lock(key: string, timeout: number = 100): Promise<boolean> {
+  async lock(key: string, releaseTimeInMS: number = 200): Promise<boolean> {
     const clientId = this.getId();
     console.error('lock', key, clientId);
     this.logger.debug(`Client ID is ${clientId}`);
-    const timeoutStr = timeout.toString();
+    const releaseTime = releaseTimeInMS.toString();
 
     const fetchLock = async (retry: number): Promise<boolean> => {
       if (retry === 0) {
@@ -59,7 +59,7 @@ export class MutexRedisService {
       }
       try {
         const success = await this.redis.sendCommand(
-          new Command('EVAL', [lockScript, '1', key, clientId, timeoutStr])
+          new Command('EVAL', [lockScript, '1', key, clientId, releaseTime])
         );
         if (success === 1) {
           console.error('success lock', key);
