@@ -667,18 +667,21 @@ export const PagePropertiesTableHeader = ({
             />
           </PagePropertiesSettingsPopup>
         )}
-        <div className={styles.spacer} />
         <Collapsible.Trigger asChild role="button" onClick={handleCollapse}>
-          <IconButton
-            type="plain"
+          <div
+            className={styles.tableHeaderCollapseButtonWrapper}
             data-testid="page-info-collapse"
-            icon={
-              <ToggleExpandIcon
-                className={styles.collapsedIcon}
-                data-collapsed={!open}
-              />
-            }
-          />
+          >
+            <IconButton
+              type="plain"
+              icon={
+                <ToggleExpandIcon
+                  className={styles.collapsedIcon}
+                  data-collapsed={!open}
+                />
+              }
+            />
+          </div>
         </Collapsible.Trigger>
       </div>
     </div>

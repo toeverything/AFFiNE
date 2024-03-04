@@ -5,6 +5,7 @@ import { range } from 'lodash-es';
 const headerHeight = createVar('header-height');
 const footerHeight = createVar('footer-height');
 const historyListWidth = createVar('history-list-width');
+const previewTopOffset = createVar('preview-top-offset');
 export const root = style({
   height: '100%',
   width: '100%',
@@ -12,6 +13,7 @@ export const root = style({
     [headerHeight]: '52px',
     [footerHeight]: '68px',
     [historyListWidth]: '240px',
+    [previewTopOffset]: '40px',
   },
 });
 export const modalContent = style({
@@ -58,7 +60,7 @@ export const previewContainer = style({
       range(-20, 20).map(i => [
         `&[data-distance="${i}"]`,
         {
-          transform: `scale(${1 - 0.05 * i}) translateY(${-8 * i + 40}px)`,
+          transform: `scale(${1 - 0.05 * i}) translateY(calc(${-8 * i}px + ${previewTopOffset}))`,
           opacity: [0, 1, 2].includes(i) ? 1 : 0,
           zIndex: -i,
           pointerEvents: i === 0 ? 'auto' : 'none',
@@ -66,13 +68,13 @@ export const previewContainer = style({
       ])
     ),
     '&[data-distance="> 20"]': {
-      transform: `scale(0) translateY(${-8 * 20 + 40}px)`,
+      transform: `scale(0) translateY(calc(${-8 * 20}px + ${previewTopOffset}))`,
       opacity: 0,
       zIndex: -20,
       pointerEvents: 'none',
     },
     '&[data-distance="< -20"]': {
-      transform: `scale(2) translateY(${-8 * -20 + 40}px)`,
+      transform: `scale(2) translateY(calc(${-8 * -20}px + ${previewTopOffset}))`,
       opacity: 0,
       zIndex: 20,
       pointerEvents: 'none',
@@ -81,7 +83,7 @@ export const previewContainer = style({
 });
 
 export const previewContent = style({
-  height: '50%',
+  height: `calc(50% - ${previewTopOffset} - ${headerHeight})`,
 });
 
 export const previewHeader = style({
@@ -168,7 +170,7 @@ export const historyListScrollableInner = style({
 export const historyListHeader = style({
   display: 'flex',
   alignItems: 'center',
-  height: 52,
+  height: headerHeight,
   borderBottom: `1px solid ${cssVar('borderColor')}`,
   fontWeight: 'bold',
   flexShrink: 0,

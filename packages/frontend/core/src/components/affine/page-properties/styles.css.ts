@@ -53,6 +53,14 @@ export const tableHeaderSecondaryRow = style({
   fontWeight: 500,
   padding: '0 6px',
   gap: '8px',
+  height: 24,
+});
+
+export const tableHeaderCollapseButtonWrapper = style({
+  display: 'flex',
+  flex: 1,
+  justifyContent: 'flex-end',
+  cursor: 'pointer',
 });
 
 export const pageInfoDimmed = style({
