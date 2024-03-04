@@ -1,10 +1,6 @@
 import { Field, ObjectType } from '@nestjs/graphql';
 
 export interface CaptchaConfig {
-  /**
-   * whether to enable captcha
-   */
-  enable: boolean;
   turnstile: {
     /**
      * Cloudflare Turnstile CAPTCHA secret
