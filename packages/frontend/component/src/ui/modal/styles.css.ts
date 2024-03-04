@@ -43,6 +43,7 @@ export const closeButton = style({
   position: 'absolute',
   top: '22px',
   right: '20px',
+  zIndex: cssVar('zIndexModal'),
 });
 export const modalHeader = style({
   fontSize: cssVar('fontH6'),
