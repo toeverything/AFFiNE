@@ -278,7 +278,7 @@ jobs:
       artifact-name: installer-win32-x64
 
   finalize-installer-windows:
-    needs: sign-installer-artifacts-windows
+    needs: [sign-installer-artifacts-windows, before-make]
     strategy:
       matrix:
         spec:
