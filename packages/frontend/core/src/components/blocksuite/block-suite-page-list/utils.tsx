@@ -40,13 +40,16 @@ export const usePageHelper = (blockSuiteWorkspace: BlockSuiteWorkspace) => {
 
   const importFileAndOpen = useAsyncCallback(async () => {
     const { showImportModal } = await import('@blocksuite/blocks');
-    const onSuccess = (pageIds: string[], isWorkspaceFile: boolean) => {
+    const onSuccess = (
+      pageIds: string[],
+      options: { isWorkspaceFile: boolean }
+    ) => {
       toast(
         `Successfully imported ${pageIds.length} Page${
           pageIds.length > 1 ? 's' : ''
         }.`
       );
-      if (isWorkspaceFile) {
+      if (options.isWorkspaceFile) {
         jumpToSubPath(blockSuiteWorkspace.id, WorkspaceSubPath.ALL);
         return;
       }
