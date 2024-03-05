@@ -31,11 +31,17 @@ export const useJournalHelper = (workspace: BlockSuiteWorkspace) => {
    */
   const _createJournal = useCallback(
     (maybeDate: MaybeDate) => {
-      const title = dayjs(maybeDate).format(JOURNAL_DATE_FORMAT);
+      const day = dayjs(maybeDate);
+      const title = day.format(JOURNAL_DATE_FORMAT);
       const page = bsWorkspaceHelper.createDoc();
       // set created date to match the journal date
       page.workspace.setDocMeta(page.id, {
-        createDate: dayjs(maybeDate).toDate().getTime(),
+        createDate: dayjs()
+          .set('year', day.year())
+          .set('month', day.month())
+          .set('date', day.date())
+          .toDate()
+          .getTime(),
       });
       initEmptyPage(page, title);
       adapter.setJournalPageDateString(page.id, title);
