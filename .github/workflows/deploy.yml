@@ -88,6 +88,7 @@ jobs:
           BUILD_TYPE: ${{ github.event.inputs.flavor }}
           SHOULD_REPORT_TRACE: false
           PUBLIC_PATH: '/'
+          SELF_HOSTED: true
       - name: Download selfhost fonts
         run: node ./scripts/download-blocksuite-fonts.mjs
       - name: Upload core artifact

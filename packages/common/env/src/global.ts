@@ -45,6 +45,7 @@ export const runtimeFlagsSchema = z.object({
     z.literal('internal'),
     z.literal('canary'),
   ]),
+  isSelfHosted: z.boolean().optional(),
 });
 
 export type BlockSuiteFeatureFlags = z.infer<typeof blockSuiteFeatureFlags>;
