@@ -51,7 +51,7 @@
     "dayjs": "^1.11.10",
     "foxact": "^0.2.31",
     "jotai": "^2.6.5",
-    "jotai-effect": "^0.5.0",
+    "jotai-effect": "^0.6.0",
     "jotai-scope": "^0.5.1",
     "lit": "^3.1.2",
     "lodash-es": "^4.17.21",
