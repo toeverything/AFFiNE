@@ -5,7 +5,6 @@ AFFiNE.ENV_MAP = {
   AFFINE_SERVER_SUB_PATH: 'path',
   AFFINE_SERVER_HTTPS: ['https', 'boolean'],
   DATABASE_URL: 'db.url',
-  ENABLE_CAPTCHA: ['plugins.captcha.enable', 'boolean'],
   CAPTCHA_TURNSTILE_SECRET: ['plugins.captcha.turnstile.secret', 'string'],
   OAUTH_GOOGLE_CLIENT_ID: 'plugins.oauth.providers.google.clientId',
   OAUTH_GOOGLE_CLIENT_SECRET: 'plugins.oauth.providers.google.clientSecret',

@@ -10,7 +10,7 @@ import { CaptchaService } from './service';
   providers: [CaptchaService],
   controllers: [CaptchaController],
   contributesTo: ServerFeature.Captcha,
-  if: config => !!config.plugins.captcha,
+  requires: ['plugins.captcha.turnstile.secret'],
 })
 export class CaptchaModule {}
 
