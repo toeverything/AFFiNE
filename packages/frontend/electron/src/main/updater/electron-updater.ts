@@ -1,7 +1,6 @@
 import { app } from 'electron';
 import { autoUpdater } from 'electron-updater';
 
-import { isMacOS, isWindows } from '../../shared/utils';
 import { buildType } from '../config';
 import { logger } from '../logger';
 import { CustomGitHubProvider } from './custom-github-provider';
@@ -82,8 +81,7 @@ export const registerUpdater = async () => {
     return;
   }
 
-  // TODO: support auto update on linux
-  const allowAutoUpdate = isMacOS() || isWindows();
+  const allowAutoUpdate = true;
 
   autoUpdater.logger = logger;
   autoUpdater.autoDownload = false;
