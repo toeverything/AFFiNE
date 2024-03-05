@@ -30,6 +30,8 @@ services:
       - NODE_ENV=production
       - AFFINE_ADMIN_EMAIL=${AFFINE_ADMIN_EMAIL}
       - AFFINE_ADMIN_PASSWORD=${AFFINE_ADMIN_PASSWORD}
+      - AFFINE_SERVER_HOST=${AFFINE_SERVER_HOST:-localhost}
+      - AFFINE_SERVER_PORT=${AFFINE_SERVER_PORT:-3010}
   redis:
     image: redis
     container_name: affine_redis
