@@ -1,8 +1,10 @@
 import { DebugLogger } from '@affine/debug';
 import { Slot } from '@blocksuite/global/utils';
+import { Observable } from 'rxjs';
 import type { Doc } from 'yjs';
 
 import { createIdentifier } from '../../../di';
+import { LiveData } from '../../../livedata';
 import { SharedPriorityTarget } from '../../../utils/async-queue';
 import { MANUALLY_STOP, throwIfAborted } from '../../../utils/throw-if-aborted';
 import { SyncEngineStep, SyncPeerStep } from './consts';
@@ -65,6 +67,21 @@ export class SyncEngine {
     this._status = s;
     this.onStatusChange.emit(s);
   }
+  isRootDocLoaded = LiveData.from(
+    new Observable(observer => {
+      observer.next(
+        this.status.local
+          ? this.status.local.step > SyncPeerStep.LoadingRootDoc
+          : false
+      );
+      this.onStatusChange.on(status => {
+        observer.next(
+          status.local ? status.local.step > SyncPeerStep.LoadingRootDoc : false
+        );
+      });
+    }),
+    false
+  );
 
   priorityTarget = new SharedPriorityTarget();
 
