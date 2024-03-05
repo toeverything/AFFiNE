@@ -6,11 +6,6 @@
       "executor": "nx:run-script",
       "dependsOn": [
         {
-          "projects": ["tag:plugin"],
-          "target": "build",
-          "params": "ignore"
-        },
-        {
           "projects": ["tag:infra"],
           "target": "build",
           "params": "ignore"
