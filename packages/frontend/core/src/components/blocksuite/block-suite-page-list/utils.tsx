@@ -42,11 +42,11 @@ export const usePageHelper = (blockSuiteWorkspace: BlockSuiteWorkspace) => {
     const { showImportModal } = await import('@blocksuite/blocks');
     const onSuccess = (
       pageIds: string[],
-      options: { isWorkspaceFile: boolean }
+      options: { isWorkspaceFile: boolean; importedCount: number }
     ) => {
       toast(
-        `Successfully imported ${pageIds.length} Page${
-          pageIds.length > 1 ? 's' : ''
+        `Successfully imported ${options.importedCount} Page${
+          options.importedCount > 1 ? 's' : ''
         }.`
       );
       if (options.isWorkspaceFile) {
