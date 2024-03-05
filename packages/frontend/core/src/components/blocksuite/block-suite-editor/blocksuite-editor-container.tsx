@@ -205,25 +205,27 @@ export const BlocksuiteEditorContainer = forwardRef<
 
   useEffect(() => {
     if (blockElement) {
-      requestIdleCallback(() => {
-        if (mode === 'page') {
-          blockElement.scrollIntoView({
-            behavior: 'smooth',
-            block: 'center',
-            inline: 'center',
+      affineEditorContainerProxy.updateComplete
+        .then(() => {
+          if (mode === 'page') {
+            blockElement.scrollIntoView({
+              behavior: 'smooth',
+              block: 'center',
+              inline: 'center',
+            });
+          }
+          const selectManager = affineEditorContainerProxy.host?.selection;
+          if (!blockElement.path.length || !selectManager) {
+            return;
+          }
+          const newSelection = selectManager.create('block', {
+            path: blockElement.path,
           });
-        }
-        const selectManager = affineEditorContainerProxy.host?.selection;
-        if (!blockElement.path.length || !selectManager) {
-          return;
-        }
-        const newSelection = selectManager.create('block', {
-          path: blockElement.path,
-        });
-        selectManager.set([newSelection]);
-      });
+          selectManager.set([newSelection]);
+        })
+        .catch(console.error);
     }
-  }, [blockElement, affineEditorContainerProxy.host?.selection, mode]);
+  }, [blockElement, affineEditorContainerProxy, mode]);
 
   return (
     <div
