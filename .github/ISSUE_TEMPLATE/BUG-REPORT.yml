@@ -50,7 +50,7 @@ body:
       description: >
         If you are self-hosting, please check the box and provide information about your setup.
       options:
-        - label: Yes
+        - label: 'Yes'
   - type: textarea
     id: logs
     attributes:
