@@ -70,7 +70,7 @@
     "intl-segmenter-polyfill-rs": "^0.1.7",
     "jotai": "^2.6.5",
     "jotai-devtools": "^0.8.0",
-    "jotai-effect": "^0.5.0",
+    "jotai-effect": "^0.6.0",
     "jotai-scope": "^0.5.1",
     "lit": "^3.1.2",
     "lodash-es": "^4.17.21",
@@ -98,7 +98,7 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
-    "@aws-sdk/client-s3": "3.523.0",
+    "@aws-sdk/client-s3": "3.525.0",
     "@perfsee/webpack": "^1.12.2",
     "@pmmmwh/react-refresh-webpack-plugin": "^0.5.11",
     "@sentry/webpack-plugin": "^2.14.2",
