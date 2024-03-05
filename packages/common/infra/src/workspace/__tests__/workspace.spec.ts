@@ -26,7 +26,7 @@ describe('Workspace System', () => {
       id: 'page0',
     });
     page.load();
-    page.addBlock('affine:page', {
+    page.addBlock('affine:page' as keyof BlockSuite.BlockModels, {
       title: new page.Text('test-page'),
     });
 
