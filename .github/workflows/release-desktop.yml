@@ -139,14 +139,14 @@ jobs:
         if: ${{ matrix.spec.platform == 'darwin' }}
         run: |
           mkdir -p builds
-          mv packages/frontend/electron/out/*/make/*.dmg ./builds/affine-${{ env.BUILD_TYPE }}-macos-${{ matrix.spec.arch }}.dmg
-          mv packages/frontend/electron/out/*/make/zip/darwin/${{ matrix.spec.arch }}/*.zip ./builds/affine-${{ env.BUILD_TYPE }}-macos-${{ matrix.spec.arch }}.zip
+          mv packages/frontend/electron/out/*/make/*.dmg ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-macos-${{ matrix.spec.arch }}.dmg
+          mv packages/frontend/electron/out/*/make/zip/darwin/${{ matrix.spec.arch }}/*.zip ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-macos-${{ matrix.spec.arch }}.zip
       - name: Save artifacts (linux)
         if: ${{ matrix.spec.platform == 'linux' }}
         run: |
           mkdir -p builds
-          mv packages/frontend/electron/out/*/make/zip/linux/x64/*.zip ./builds/affine-${{ env.BUILD_TYPE }}-linux-x64.zip
-          mv packages/frontend/electron/out/*/make/*.AppImage ./builds/affine-${{ env.BUILD_TYPE }}-linux-x64.AppImage
+          mv packages/frontend/electron/out/*/make/zip/linux/x64/*.zip ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-x64.zip
+          mv packages/frontend/electron/out/*/make/*.AppImage ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-x64.appimage
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
@@ -299,9 +299,9 @@ jobs:
       - name: Save artifacts
         run: |
           mkdir -p builds
-          mv packages/frontend/electron/out/*/make/zip/win32/x64/AFFiNE*-win32-x64-*.zip ./builds/affine-${{ env.BUILD_TYPE }}-windows-x64.zip
-          mv packages/frontend/electron/out/*/make/squirrel.windows/x64/*.exe ./builds/affine-${{ env.BUILD_TYPE }}-windows-x64.exe
-          mv packages/frontend/electron/out/*/make/squirrel.windows/x64/*.msi ./builds/affine-${{ env.BUILD_TYPE }}-windows-x64.msi
+          mv packages/frontend/electron/out/*/make/zip/win32/x64/AFFiNE*-win32-x64-*.zip ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-windows-x64.zip
+          mv packages/frontend/electron/out/*/make/squirrel.windows/x64/*.exe ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-windows-x64.exe
+          mv packages/frontend/electron/out/*/make/squirrel.windows/x64/*.msi ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-windows-x64.msi
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
@@ -362,7 +362,7 @@ jobs:
             ./*.zip
             ./*.dmg
             ./*.exe
-            ./*.AppImage
+            ./*.appimage
             ./*.apk
             ./*.yml
       - name: Create Nightly Release Draft
@@ -384,6 +384,6 @@ jobs:
             ./*.zip
             ./*.dmg
             ./*.exe
-            ./*.AppImage
+            ./*.appimage
             ./*.apk
             ./*.yml

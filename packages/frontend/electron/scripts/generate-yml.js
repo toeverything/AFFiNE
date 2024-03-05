@@ -2,11 +2,6 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 
-const yml = {
-  version: process.env.RELEASE_VERSION ?? '0.0.0',
-  files: [],
-};
-
 const filenamesMapping = {
   windows: 'latest.yml',
   macos: 'latest-mac.yml',
@@ -14,7 +9,11 @@ const filenamesMapping = {
 };
 
 const generateYml = platform => {
-  const regex = new RegExp(`^affine-.*-${platform}-.*.(exe|zip|dmg|AppImage)$`);
+  const yml = {
+    version: process.env.RELEASE_VERSION ?? '0.0.0',
+    files: [],
+  };
+  const regex = new RegExp(`^affine-.*-${platform}-.*.(exe|zip|dmg|appimage)$`);
   const files = fs.readdirSync(process.cwd()).filter(file => regex.test(file));
   const outputFileName = filenamesMapping[platform];
 
@@ -35,6 +34,7 @@ const generateYml = platform => {
       });
     } catch (e) {}
   });
+  // path & sha512 are deprecated
   yml.path = yml.files[0].url;
   yml.sha512 = yml.files[0].sha512;
   yml.releaseDate = new Date().toISOString();
