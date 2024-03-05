@@ -9,6 +9,7 @@ import {
   EmbedYoutubeService,
   ImageService,
 } from '@blocksuite/blocks';
+import { DisposableGroup } from '@blocksuite/global/utils';
 import type { AffineEditorContainer } from '@blocksuite/presets';
 import type { Doc as BlockSuiteDoc } from '@blocksuite/store';
 import {
@@ -134,6 +135,8 @@ const DetailPageImpl = memo(function DetailPageImpl() {
 
       // provide page mode and updated date to blocksuite
       const pageService = editorHost.std.spec.getService('affine:page');
+      const disposable = new DisposableGroup();
+
       pageService.getEditorMode = (pageId: string) =>
         pageRecordList.record(pageId).value?.mode.value ?? 'page';
       pageService.getDocUpdatedAt = (pageId: string) => {
@@ -147,18 +150,26 @@ const DetailPageImpl = memo(function DetailPageImpl() {
 
       page.setMode(mode);
       // fixme: it seems pageLinkClicked is not triggered sometimes?
-      const dispose = editor.slots.docLinkClicked.on(({ docId }) => {
-        return openPage(blockSuiteWorkspace.id, docId);
-      });
-      const disposeTagClick = editor.slots.tagClicked.on(({ tagId }) => {
-        jumpToTag(currentWorkspace.id, tagId);
-      });
+      disposable.add(
+        editor.slots.docLinkClicked.on(({ docId }) => {
+          return openPage(blockSuiteWorkspace.id, docId);
+        })
+      );
+      disposable.add(
+        editor.slots.tagClicked.on(({ tagId }) => {
+          jumpToTag(currentWorkspace.id, tagId);
+        })
+      );
+      disposable.add(
+        pageService.slots.editorModeSwitch.on(mode => {
+          page.setMode(mode);
+        })
+      );
 
       setEditor(editor);
 
       return () => {
-        dispose.dispose();
-        disposeTagClick.dispose();
+        disposable.dispose();
       };
     },
     [
