@@ -2,12 +2,13 @@ import {
   PreconditionStrategy,
   registerAffineCommand,
 } from '@toeverything/infra/command';
+import { useService } from '@toeverything/infra/di';
 import { useEffect } from 'react';
 
-export function useRegisterBrowserHistoryCommands(
-  back: () => unknown,
-  forward: () => unknown
-) {
+import { Navigator } from '../entities/navigator';
+
+export function useRegisterNavigationCommands() {
+  const navigator = useService(Navigator);
   useEffect(() => {
     const unsubs: Array<() => void> = [];
 
@@ -22,7 +23,7 @@ export function useRegisterBrowserHistoryCommands(
           binding: '$mod+[',
         },
         run() {
-          back();
+          navigator.back();
         },
       })
     );
@@ -37,7 +38,7 @@ export function useRegisterBrowserHistoryCommands(
           binding: '$mod+]',
         },
         run() {
-          forward();
+          navigator.forward();
         },
       })
     );
@@ -45,5 +46,5 @@ export function useRegisterBrowserHistoryCommands(
     return () => {
       unsubs.forEach(unsub => unsub());
     };
-  }, [back, forward]);
+  }, [navigator]);
 }

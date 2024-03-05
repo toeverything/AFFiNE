@@ -1,4 +1,3 @@
-import { WorkspaceFallback } from '@affine/component/workspace';
 import { useWorkspace } from '@affine/core/hooks/use-workspace';
 import {
   Workspace,
@@ -22,6 +21,7 @@ import { useParams } from 'react-router-dom';
 
 import { AffineErrorBoundary } from '../../components/affine/affine-error-boundary';
 import { HubIsland } from '../../components/affine/hub-island';
+import { WorkspaceFallback } from '../../components/workspace';
 import { WorkspaceLayout } from '../../layouts/workspace-layout';
 import { RightSidebarContainer } from '../../modules/right-sidebar';
 import { WorkbenchRoot } from '../../modules/workbench';

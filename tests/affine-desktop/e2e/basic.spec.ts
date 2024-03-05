@@ -62,13 +62,13 @@ test('app sidebar router forward/back', async ({ page }) => {
     await expect(getBlockSuiteEditorTitle(page)).toHaveText('test3');
   }
 
-  await page.click('[data-testid="app-sidebar-arrow-button-back"]');
-  await page.click('[data-testid="app-sidebar-arrow-button-back"]');
+  await page.click('[data-testid="app-navigation-button-back"]');
+  await page.click('[data-testid="app-navigation-button-back"]');
   {
     await expect(getBlockSuiteEditorTitle(page)).toHaveText('test1');
   }
-  await page.click('[data-testid="app-sidebar-arrow-button-forward"]');
-  await page.click('[data-testid="app-sidebar-arrow-button-forward"]');
+  await page.click('[data-testid="app-navigation-button-forward"]');
+  await page.click('[data-testid="app-navigation-button-forward"]');
   {
     await expect(getBlockSuiteEditorTitle(page)).toHaveText('test3');
   }

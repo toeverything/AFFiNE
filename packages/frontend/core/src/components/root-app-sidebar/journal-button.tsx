@@ -1,4 +1,3 @@
-import { MenuItem } from '@affine/component/app-sidebar';
 import {
   useJournalInfoHelper,
   useJournalRouteHelper,
@@ -8,6 +7,8 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { TodayIcon, TomorrowIcon, YesterdayIcon } from '@blocksuite/icons';
 import { Doc, useServiceOptional } from '@toeverything/infra';
 import { useParams } from 'react-router-dom';
+
+import { MenuItem } from '../app-sidebar';
 
 interface AppSidebarJournalButtonProps {
   workspace: BlockSuiteWorkspace;

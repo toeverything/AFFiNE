@@ -1,5 +1,4 @@
 import { Scrollable } from '@affine/component';
-import { MainContainer } from '@affine/component/workspace';
 import { useCurrentLoginStatus } from '@affine/core/hooks/affine/use-current-login-status';
 import { usePageDocumentTitle } from '@affine/core/hooks/use-global-state';
 import { WorkspaceFlavour } from '@affine/env/workspace';
@@ -39,6 +38,7 @@ import {
 import { AppContainer } from '../../components/affine/app-container';
 import { PageDetailEditor } from '../../components/page-detail-editor';
 import { SharePageNotFoundError } from '../../components/share-page-not-found-error';
+import { MainContainer } from '../../components/workspace';
 import { CurrentWorkspaceService } from '../../modules/workspace';
 import * as styles from './share-detail-page.css';
 import { ShareFooter } from './share-footer';

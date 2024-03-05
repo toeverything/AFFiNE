@@ -1,16 +1,4 @@
 import { AnimatedDeleteIcon } from '@affine/component';
-import {
-  AddPageButton,
-  AppDownloadButton,
-  AppSidebar,
-  appSidebarOpenAtom,
-  CategoryDivider,
-  MenuItem,
-  MenuLinkItem,
-  QuickSearchInput,
-  SidebarContainer,
-  SidebarScrollableContainer,
-} from '@affine/component/app-sidebar';
 import { Menu } from '@affine/component/ui/menu';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { CollectionService } from '@affine/core/modules/collection';
@@ -23,19 +11,27 @@ import { useLiveData, useService, type Workspace } from '@toeverything/infra';
 import { useAtom, useAtomValue } from 'jotai';
 import { nanoid } from 'nanoid';
 import type { HTMLAttributes, ReactElement } from 'react';
-import { forwardRef, Suspense, useCallback, useEffect, useMemo } from 'react';
+import { forwardRef, Suspense, useCallback, useEffect } from 'react';
 
 import { openWorkspaceListModalAtom } from '../../atoms';
-import { useHistoryAtom } from '../../atoms/history';
 import { useAppSettingHelper } from '../../hooks/affine/use-app-setting-helper';
 import { useDeleteCollectionInfo } from '../../hooks/affine/use-delete-collection-info';
-import { useGeneralShortcuts } from '../../hooks/affine/use-shortcuts';
 import { getDropItemId } from '../../hooks/affine/use-sidebar-drag';
 import { useTrashModalHelper } from '../../hooks/affine/use-trash-modal-helper';
-import { useRegisterBrowserHistoryCommands } from '../../hooks/use-browser-history-commands';
 import { useNavigateHelper } from '../../hooks/use-navigate-helper';
 import { Workbench } from '../../modules/workbench';
-import { WorkspaceSubPath } from '../../shared';
+import {
+  AddPageButton,
+  AppDownloadButton,
+  AppSidebar,
+  appSidebarOpenAtom,
+  CategoryDivider,
+  MenuItem,
+  MenuLinkItem,
+  QuickSearchInput,
+  SidebarContainer,
+  SidebarScrollableContainer,
+} from '../app-sidebar';
 import {
   createEmptyCollection,
   MoveToTrash,
@@ -109,7 +105,6 @@ export const RootAppSidebar = ({
   const [openUserWorkspaceList, setOpenUserWorkspaceList] = useAtom(
     openWorkspaceListModalAtom
   );
-  const generalShortcutsInfo = useGeneralShortcuts();
   const currentPath = useLiveData(useService(Workbench).location).pathname;
 
   const onClickNewPage = useAsyncCallback(async () => {
@@ -133,9 +128,6 @@ export const RootAppSidebar = ({
   );
 
   const navigateHelper = useNavigateHelper();
-  const backToAll = useCallback(() => {
-    navigateHelper.jumpToSubPath(currentWorkspace.id, WorkspaceSubPath.ALL);
-  }, [currentWorkspace.id, navigateHelper]);
   // Listen to the "New Page" action from the menu
   useEffect(() => {
     if (environment.isDesktop) {
@@ -153,19 +145,6 @@ export const RootAppSidebar = ({
     }
   }, [sidebarOpen]);
 
-  const [history, setHistory] = useHistoryAtom();
-  const router = useMemo(() => {
-    return {
-      forward: () => {
-        setHistory(true);
-      },
-      back: () => {
-        setHistory(false);
-      },
-      history,
-    };
-  }, [history, setHistory]);
-
   const dropItemId = getDropItemId('trash');
   const trashDroppable = useDroppable({
     id: dropItemId,
@@ -173,7 +152,6 @@ export const RootAppSidebar = ({
   const closeUserWorkspaceList = useCallback(() => {
     setOpenUserWorkspaceList(false);
   }, [setOpenUserWorkspaceList]);
-  useRegisterBrowserHistoryCommands(router.back, router.forward);
   const userInfo = useDeleteCollectionInfo();
 
   const collection = useService(CollectionService);
@@ -199,7 +177,6 @@ export const RootAppSidebar = ({
 
   return (
     <AppSidebar
-      router={router}
       hasBackground={
         !(
           appSettings.enableBlurBackground &&
@@ -207,7 +184,6 @@ export const RootAppSidebar = ({
           environment.isMacOs
         )
       }
-      generalShortcutsInfo={generalShortcutsInfo}
     >
       <MoveToTrash.ConfirmModal
         open={trashConfirmOpen}
@@ -249,7 +225,6 @@ export const RootAppSidebar = ({
           icon={<FolderIcon />}
           active={allPageActive}
           path={paths.all(currentWorkspaceId)}
-          onClick={backToAll}
         >
           <span data-testid="all-pages">
             {t['com.affine.workspaceSubPath.all']()}

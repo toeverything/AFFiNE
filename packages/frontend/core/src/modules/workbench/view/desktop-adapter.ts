@@ -30,6 +30,13 @@ export function useBindWorkbenchToDesktopRouter(
     if (newLocation === null) {
       return;
     }
+    if (
+      workbench.location.value.pathname === newLocation.pathname &&
+      workbench.location.value.search === newLocation.search &&
+      workbench.location.value.hash === newLocation.hash
+    ) {
+      return;
+    }
 
     workbench.open(newLocation);
   }, [basename, browserLocation, workbench]);

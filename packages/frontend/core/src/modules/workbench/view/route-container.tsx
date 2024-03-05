@@ -1,8 +1,4 @@
 import { IconButton } from '@affine/component';
-import {
-  appSidebarOpenAtom,
-  SidebarSwitch,
-} from '@affine/component/app-sidebar';
 import { WindowsAppControls } from '@affine/core/components/pure/header/windows-app-controls';
 import { RightSidebarIcon } from '@blocksuite/icons';
 import { useLiveData } from '@toeverything/infra';
@@ -10,6 +6,10 @@ import { useService } from '@toeverything/infra/di';
 import { useAtomValue } from 'jotai';
 import { Suspense, useCallback } from 'react';
 
+import {
+  appSidebarOpenAtom,
+  SidebarSwitch,
+} from '../../../components/app-sidebar';
 import { RightSidebar } from '../../right-sidebar';
 import * as styles from './route-container.css';
 import { useView } from './use-view';

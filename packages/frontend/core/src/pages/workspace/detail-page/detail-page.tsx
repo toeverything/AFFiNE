@@ -28,6 +28,7 @@ import {
   type ReactElement,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useState,
 } from 'react';
@@ -269,7 +270,7 @@ export const DetailPage = ({ pageId }: { pageId: string }): ReactElement => {
 
   const [page, setPage] = useState<Doc | null>(null);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!pageRecord) {
       return;
     }

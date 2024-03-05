@@ -1,5 +1,4 @@
 import { Menu } from '@affine/component/ui/menu';
-import { WorkspaceFallback } from '@affine/component/workspace';
 import { WorkspaceManager } from '@toeverything/infra';
 import { WorkspaceListService } from '@toeverything/infra';
 import { useService } from '@toeverything/infra';
@@ -9,6 +8,7 @@ import { type LoaderFunction, redirect } from 'react-router-dom';
 
 import { createFirstAppData } from '../bootstrap/first-app-data';
 import { UserWithWorkspaceList } from '../components/pure/workspace-slider-bar/user-with-workspace-list';
+import { WorkspaceFallback } from '../components/workspace';
 import { appConfigStorage } from '../hooks/use-app-config-storage';
 import { useNavigateHelper } from '../hooks/use-navigate-helper';
 import { WorkspaceSubPath } from '../shared';

@@ -47,13 +47,25 @@ export const WorkspaceModeFilterTab = ({
 
   return (
     <RadioButtonGroup value={value} onValueChange={handleValueChange}>
-      <RadioButton spanStyle={styles.filterTab} value="docs">
+      <RadioButton
+        spanStyle={styles.filterTab}
+        value="docs"
+        data-testid="workspace-docs-button"
+      >
         {t['com.affine.docs.header']()}
       </RadioButton>
-      <RadioButton spanStyle={styles.filterTab} value="collections">
+      <RadioButton
+        spanStyle={styles.filterTab}
+        value="collections"
+        data-testid="workspace-collections-button"
+      >
         {t['com.affine.collections.header']()}
       </RadioButton>
-      <RadioButton spanStyle={styles.filterTab} value="tags">
+      <RadioButton
+        spanStyle={styles.filterTab}
+        value="tags"
+        data-testid="workspace-tags-button"
+      >
         {t['Tags']()}
       </RadioButton>
     </RadioButtonGroup>

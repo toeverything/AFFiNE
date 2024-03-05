@@ -1,5 +1,4 @@
 import { AnimatedCollectionsIcon, toast } from '@affine/component';
-import { MenuLinkItem as SidebarMenuLinkItem } from '@affine/component/app-sidebar';
 import { RenameModal } from '@affine/component/rename-modal';
 import { Button, IconButton } from '@affine/component/ui/button';
 import {
@@ -23,6 +22,7 @@ import { getDropItemId } from '../../../../hooks/affine/use-sidebar-drag';
 import { useBlockSuiteDocMeta } from '../../../../hooks/use-block-suite-page-meta';
 import { Workbench } from '../../../../modules/workbench';
 import { WorkbenchLink } from '../../../../modules/workbench/view/workbench-link';
+import { MenuLinkItem as SidebarMenuLinkItem } from '../../../app-sidebar';
 import type { CollectionsListProps } from '../index';
 import { Page } from './page';
 import * as styles from './styles.css';

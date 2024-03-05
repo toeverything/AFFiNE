@@ -1,7 +1,8 @@
 // these atoms cannot be moved to @affine/jotai since they use atoms from @affine/component
-import { appSidebarOpenAtom } from '@affine/component/app-sidebar';
 import { atom } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
+
+import { appSidebarOpenAtom } from '../components/app-sidebar';
 
 export type Guide = {
   // should show quick search tips

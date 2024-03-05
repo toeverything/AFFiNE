@@ -1,4 +1,3 @@
-import { MenuItem as CollectionItem } from '@affine/component/app-sidebar';
 import { useBlockSuitePageReferences } from '@affine/core/hooks/use-block-suite-page-references';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
@@ -11,6 +10,7 @@ import { useParams } from 'react-router-dom';
 
 import { getDragItemId } from '../../../../hooks/affine/use-sidebar-drag';
 import { useNavigateHelper } from '../../../../hooks/use-navigate-helper';
+import { MenuItem as CollectionItem } from '../../../app-sidebar';
 import { DragMenuItemOverlay } from '../components/drag-menu-item-overlay';
 import { PostfixItem } from '../components/postfix-item';
 import { ReferencePage } from '../components/reference-page';

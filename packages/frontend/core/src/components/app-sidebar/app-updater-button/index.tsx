@@ -1,10 +1,10 @@
+import { Tooltip } from '@affine/component';
 import { Unreachable } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloseIcon, NewIcon, ResetIcon } from '@blocksuite/icons';
 import clsx from 'clsx';
 import { useCallback, useMemo } from 'react';
 
-import { Tooltip } from '../../../ui/tooltip';
 import * as styles from './index.css';
 
 export interface AddPageButtonProps {

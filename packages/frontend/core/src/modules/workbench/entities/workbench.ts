@@ -27,8 +27,8 @@ export class Workbench {
     this.activeViewIndex.next(index);
   }
 
-  createView(at: WorkbenchPosition = 'beside') {
-    const view = new View();
+  createView(at: WorkbenchPosition = 'beside', defaultLocation: To) {
+    const view = new View(defaultLocation);
     const newViews = [...this.views.value];
     newViews.splice(this.indexAt(at), 0, view);
     this.views.next(newViews);
@@ -44,16 +44,17 @@ export class Workbench {
   ) {
     let view = this.viewAt(at);
     if (!view) {
-      const newIndex = this.createView(at);
+      const newIndex = this.createView(at, to);
       view = this.viewAt(newIndex);
       if (!view) {
         throw new Unreachable();
       }
-    }
-    if (replaceHistory) {
-      view.history.replace(to);
     } else {
-      view.history.push(to);
+      if (replaceHistory) {
+        view.history.replace(to);
+      } else {
+        view.history.push(to);
+      }
     }
   }
 

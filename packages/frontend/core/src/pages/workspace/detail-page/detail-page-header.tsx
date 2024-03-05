@@ -1,5 +1,4 @@
 import type { InlineEditHandle } from '@affine/component';
-import { appSidebarFloatingAtom } from '@affine/component/app-sidebar';
 import { FavoriteButton } from '@affine/core/components/blocksuite/block-suite-header/favorite';
 import { JournalWeekDatePicker } from '@affine/core/components/blocksuite/block-suite-header/journal/date-picker';
 import { JournalTodayButton } from '@affine/core/components/blocksuite/block-suite-header/journal/today-button';
@@ -12,6 +11,7 @@ import { useAtomValue } from 'jotai';
 import { useCallback, useRef } from 'react';
 
 import { SharePageButton } from '../../../components/affine/share-page-modal';
+import { appSidebarFloatingAtom } from '../../../components/app-sidebar';
 import { BlocksuiteHeaderTitle } from '../../../components/blocksuite/block-suite-header/title/index';
 import { HeaderDivider } from '../../../components/pure/header';
 import * as styles from './detail-page-header.css';

@@ -182,7 +182,7 @@ export class LiveData<T = unknown> implements InteropObservable<T> {
   }
 
   subscribe(
-    observer: Partial<Observer<T>> | ((value: T) => void) | undefined
+    observer?: Partial<Observer<T>> | ((value: T) => void) | undefined
   ): Subscription {
     this.ops.next('watch');
     const subscription = this.raw.subscribe(observer);

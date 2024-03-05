@@ -1,10 +1,10 @@
+import { Skeleton } from '@affine/component';
+import { ResizePanel } from '@affine/component/resize-panel';
 import { useAtom, useAtomValue } from 'jotai';
 import { debounce } from 'lodash-es';
 import type { PropsWithChildren, ReactElement } from 'react';
 import { useEffect } from 'react';
 
-import { Skeleton } from '../../ui/skeleton';
-import { ResizePanel } from '../resize-panel';
 import { fallbackHeaderStyle, fallbackStyle } from './fallback.css';
 import {
   floatingMaxWidth,
@@ -21,14 +21,11 @@ import {
   appSidebarResizingAtom,
   appSidebarWidthAtom,
 } from './index.jotai';
-import type { SidebarHeaderProps } from './sidebar-header';
 import { SidebarHeader } from './sidebar-header';
 
-export type AppSidebarProps = PropsWithChildren<
-  SidebarHeaderProps & {
-    hasBackground?: boolean;
-  }
->;
+export type AppSidebarProps = PropsWithChildren<{
+  hasBackground?: boolean;
+}>;
 
 export type History = {
   stack: string[];
@@ -97,10 +94,7 @@ export function AppSidebar(props: AppSidebarProps): ReactElement {
         data-has-background={environment.isDesktop && props.hasBackground}
       >
         <nav className={navStyle} data-testid="app-sidebar">
-          <SidebarHeader
-            router={props.router}
-            generalShortcutsInfo={props.generalShortcutsInfo}
-          />
+          <SidebarHeader />
           <div className={navBodyStyle} data-testid="sliderBar-inner">
             {props.children}
           </div>

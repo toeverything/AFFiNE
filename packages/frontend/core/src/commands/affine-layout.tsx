@@ -1,8 +1,9 @@
-import { appSidebarOpenAtom } from '@affine/component/app-sidebar';
 import type { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { SidebarIcon } from '@blocksuite/icons';
 import { registerAffineCommand } from '@toeverything/infra/command';
 import type { createStore } from 'jotai';
+
+import { appSidebarOpenAtom } from '../components/app-sidebar';
 
 export function registerAffineLayoutCommands({
   t,

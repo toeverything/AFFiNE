@@ -1,8 +1,3 @@
-import {
-  AppSidebarFallback,
-  appSidebarResizingAtom,
-} from '@affine/component/app-sidebar';
-import { MainContainer, WorkspaceFallback } from '@affine/component/workspace';
 import { useBlockSuiteDocMeta } from '@affine/core/hooks/use-block-suite-page-meta';
 import { useWorkspaceStatus } from '@affine/core/hooks/use-workspace-status';
 import { assertExists } from '@blocksuite/global/utils';
@@ -26,12 +21,17 @@ import { Map as YMap } from 'yjs';
 import { openQuickSearchModalAtom, openSettingModalAtom } from '../atoms';
 import { AppContainer } from '../components/affine/app-container';
 import { SyncAwareness } from '../components/affine/awareness';
+import {
+  AppSidebarFallback,
+  appSidebarResizingAtom,
+} from '../components/app-sidebar';
 import { usePageHelper } from '../components/blocksuite/block-suite-page-list/utils';
 import {
   type DraggableTitleCellData,
   PageListDragOverlay,
 } from '../components/page-list';
 import { RootAppSidebar } from '../components/root-app-sidebar';
+import { MainContainer, WorkspaceFallback } from '../components/workspace';
 import { WorkspaceUpgrade } from '../components/workspace-upgrade';
 import { useAppSettingHelper } from '../hooks/affine/use-app-setting-helper';
 import { useSidebarDrag } from '../hooks/affine/use-sidebar-drag';

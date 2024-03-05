@@ -1,4 +1,3 @@
-import { MenuLinkItem } from '@affine/component/app-sidebar';
 import { useBlockSuitePageReferences } from '@affine/core/hooks/use-block-suite-page-references';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
@@ -8,6 +7,7 @@ import { PageRecordList, useLiveData, useService } from '@toeverything/infra';
 import { useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
+import { MenuLinkItem } from '../../../app-sidebar';
 import * as styles from '../favorite/styles.css';
 import { PostfixItem } from './postfix-item';
 export interface ReferencePageProps {

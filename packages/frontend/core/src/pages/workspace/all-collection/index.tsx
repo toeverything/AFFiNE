@@ -18,6 +18,7 @@ import { CollectionService } from '../../../modules/collection';
 import { ViewBodyIsland, ViewHeaderIsland } from '../../../modules/workbench';
 import { EmptyCollectionList } from '../page-list-empty';
 import { AllCollectionHeader } from './header';
+import * as styles from './index.css';
 
 export const AllCollection = () => {
   const t = useAFFiNEI18N();
@@ -65,25 +66,27 @@ export const AllCollection = () => {
         />
       </ViewHeaderIsland>
       <ViewBodyIsland>
-        {collectionMetas.length > 0 ? (
-          <VirtualizedCollectionList
-            collections={collections}
-            collectionMetas={collectionMetas}
-            setHideHeaderCreateNewCollection={setHideHeaderCreateNew}
-            node={node}
-            config={config}
-            handleCreateCollection={handleCreateCollection}
-          />
-        ) : (
-          <EmptyCollectionList
-            heading={
-              <CollectionListHeader
-                node={node}
-                onCreate={handleCreateCollection}
-              />
-            }
-          />
-        )}
+        <div className={styles.body}>
+          {collectionMetas.length > 0 ? (
+            <VirtualizedCollectionList
+              collections={collections}
+              collectionMetas={collectionMetas}
+              setHideHeaderCreateNewCollection={setHideHeaderCreateNew}
+              node={node}
+              config={config}
+              handleCreateCollection={handleCreateCollection}
+            />
+          ) : (
+            <EmptyCollectionList
+              heading={
+                <CollectionListHeader
+                  node={node}
+                  onCreate={handleCreateCollection}
+                />
+              }
+            />
+          )}
+        </div>
       </ViewBodyIsland>
     </>
   );

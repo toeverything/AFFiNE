@@ -1,11 +1,8 @@
-import {
-  appSidebarFloatingAtom,
-  appSidebarOpenAtom,
-} from '@affine/component/app-sidebar';
 import clsx from 'clsx';
 import { useAtomValue } from 'jotai';
 import type { ReactNode } from 'react';
 
+import { appSidebarFloatingAtom, appSidebarOpenAtom } from '../../app-sidebar';
 import * as style from './style.css';
 
 interface HeaderPros {
