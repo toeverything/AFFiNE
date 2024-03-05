@@ -1,6 +1,12 @@
 import { randomUUID } from 'node:crypto';
 
-import { Global, Injectable, Logger, Module } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Global,
+  Injectable,
+  Logger,
+  Module,
+} from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
 
 import { sleep } from '../utils/utils';
@@ -24,6 +30,21 @@ export class MutexService {
     }
 
     return id;
+  }
+
+  async lockWith<R>(key: string, cb: () => Promise<R>): Promise<R> {
+    const locked = await this.lock(key);
+    if (locked) {
+      let result: R;
+      try {
+        result = await cb();
+      } finally {
+        await this.unlock(key);
+      }
+      return result;
+    } else {
+      throw new ForbiddenException('Failed to acquire lock');
+    }
   }
 
   async lock(key: string): Promise<boolean> {
