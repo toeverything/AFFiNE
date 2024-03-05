@@ -348,8 +348,7 @@ export class WorkspaceResolver {
         this.quota.getWorkspaceUsage(workspaceId),
       ]);
       if (memberCount >= quota.memberLimit) {
-        await this.mutex.unlock(lockFlag);
-        throw new PayloadTooLargeException('Workspace member limit reached.');
+        return new PayloadTooLargeException('Workspace member limit reached.');
       }
 
       let target = await this.users.findUserByEmail(email);
@@ -363,7 +362,6 @@ export class WorkspaceResolver {
           });
         // only invite if the user is not already in the workspace
         if (originRecord) {
-          await this.mutex.unlock(lockFlag);
           return originRecord.id;
         }
       } else {
@@ -405,13 +403,11 @@ export class WorkspaceResolver {
               `failed to send ${workspaceId} invite email to ${email}, but successfully revoked permission: ${e}`
             );
           }
-          await this.mutex.unlock(lockFlag);
           return new InternalServerErrorException(
             'Failed to send invite email. Please try again.'
           );
         }
       }
-      await this.mutex.unlock(lockFlag);
       return inviteId;
     });
   }
