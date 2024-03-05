@@ -68,7 +68,13 @@ if (!process.env.SKIP_WEB_BUILD) {
       content = content.replace(/# sourceMappingURL=(.*)\.map/g, (_, p1) => {
         return `# sourceMappingURL=assets://./${dir}/${p1}.map`;
       });
-      await fs.writeFile(fullpath, content);
+      try {
+        await fs.writeFile(fullpath, content);
+        console.log('amended sourceMappingURL for', fullpath);
+      } catch (e) {
+        // do not crash the build
+        console.error('error writing file', fullpath, e);
+      }
     });
   });
 
