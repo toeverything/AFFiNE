@@ -5,7 +5,7 @@ import 'fake-indexeddb/auto';
 
 import { setTimeout } from 'node:timers/promises';
 
-import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
+import { AffineSchemas } from '@blocksuite/blocks/schemas';
 import { assertExists } from '@blocksuite/global/utils';
 import type { Doc } from '@blocksuite/store';
 import { Schema, Workspace } from '@blocksuite/store';
@@ -28,12 +28,27 @@ import {
 } from '../index';
 
 function initEmptyPage(page: Doc) {
-  const pageBlockId = page.addBlock('affine:page', {
-    title: new page.Text(''),
-  });
-  const surfaceBlockId = page.addBlock('affine:surface', {}, pageBlockId);
-  const frameBlockId = page.addBlock('affine:note', {}, pageBlockId);
-  const paragraphBlockId = page.addBlock('affine:paragraph', {}, frameBlockId);
+  const pageBlockId = page.addBlock(
+    'affine:page' as keyof BlockSuite.BlockModels,
+    {
+      title: new page.Text(''),
+    }
+  );
+  const surfaceBlockId = page.addBlock(
+    'affine:surface' as keyof BlockSuite.BlockModels,
+    {},
+    pageBlockId
+  );
+  const frameBlockId = page.addBlock(
+    'affine:note' as keyof BlockSuite.BlockModels,
+    {},
+    pageBlockId
+  );
+  const paragraphBlockId = page.addBlock(
+    'affine:paragraph' as keyof BlockSuite.BlockModels,
+    {},
+    frameBlockId
+  );
   return {
     pageBlockId,
     surfaceBlockId,
@@ -59,7 +74,7 @@ const rootDBName = DEFAULT_DB_NAME;
 
 const schema = new Schema();
 
-schema.register(AffineSchemas).register(__unstableSchemas);
+schema.register(AffineSchemas);
 
 beforeEach(() => {
   id = nanoid();
@@ -101,9 +116,20 @@ describe('indexeddb provider', () => {
       });
       const page = workspace.createDoc({ id: 'page0' });
       page.load();
-      const pageBlockId = page.addBlock('affine:page', {});
-      const frameId = page.addBlock('affine:note', {}, pageBlockId);
-      page.addBlock('affine:paragraph', {}, frameId);
+      const pageBlockId = page.addBlock(
+        'affine:page' as keyof BlockSuite.BlockModels,
+        {}
+      );
+      const frameId = page.addBlock(
+        'affine:note' as keyof BlockSuite.BlockModels,
+        {},
+        pageBlockId
+      );
+      page.addBlock(
+        'affine:paragraph' as keyof BlockSuite.BlockModels,
+        {},
+        frameId
+      );
     }
     await setTimeout(200);
     {
@@ -149,9 +175,19 @@ describe('indexeddb provider', () => {
     {
       const page = workspace.createDoc({ id: 'page0' });
       page.load();
-      const pageBlockId = page.addBlock('affine:page');
-      const frameId = page.addBlock('affine:note', {}, pageBlockId);
-      page.addBlock('affine:paragraph', {}, frameId);
+      const pageBlockId = page.addBlock(
+        'affine:page' as keyof BlockSuite.BlockModels
+      );
+      const frameId = page.addBlock(
+        'affine:note' as keyof BlockSuite.BlockModels,
+        {},
+        pageBlockId
+      );
+      page.addBlock(
+        'affine:paragraph' as keyof BlockSuite.BlockModels,
+        {},
+        frameId
+      );
     }
     {
       const updates = await getUpdates(workspace.id);
@@ -204,10 +240,20 @@ describe('indexeddb provider', () => {
     {
       const page = workspace.createDoc({ id: 'page0' });
       page.load();
-      const pageBlockId = page.addBlock('affine:page');
-      const frameId = page.addBlock('affine:note', {}, pageBlockId);
+      const pageBlockId = page.addBlock(
+        'affine:page' as keyof BlockSuite.BlockModels
+      );
+      const frameId = page.addBlock(
+        'affine:note' as keyof BlockSuite.BlockModels,
+        {},
+        pageBlockId
+      );
       for (let i = 0; i < 99; i++) {
-        page.addBlock('affine:paragraph', {}, frameId);
+        page.addBlock(
+          'affine:paragraph' as keyof BlockSuite.BlockModels,
+          {},
+          frameId
+        );
       }
     }
     await setTimeout(200);

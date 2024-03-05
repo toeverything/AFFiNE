@@ -1,6 +1,6 @@
 import 'fake-indexeddb/auto';
 
-import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
+import { AffineSchemas } from '@blocksuite/blocks/schemas';
 import { Schema, Workspace } from '@blocksuite/store';
 import { SyncEngine, SyncEngineStep, SyncPeerStep } from '@toeverything/infra';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
@@ -11,7 +11,7 @@ import { createTestStorage } from './test-storage';
 
 const schema = new Schema();
 
-schema.register(AffineSchemas).register(__unstableSchemas);
+schema.register(AffineSchemas);
 
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ['requestIdleCallback'] });
@@ -41,12 +41,27 @@ describe('SyncEngine', () => {
         id: 'page0',
       });
       page.load();
-      const pageBlockId = page.addBlock('affine:page', {
-        title: new page.Text(''),
-      });
-      page.addBlock('affine:surface', {}, pageBlockId);
-      const frameId = page.addBlock('affine:note', {}, pageBlockId);
-      page.addBlock('affine:paragraph', {}, frameId);
+      const pageBlockId = page.addBlock(
+        'affine:page' as keyof BlockSuite.BlockModels,
+        {
+          title: new page.Text(''),
+        }
+      );
+      page.addBlock(
+        'affine:surface' as keyof BlockSuite.BlockModels,
+        {},
+        pageBlockId
+      );
+      const frameId = page.addBlock(
+        'affine:note' as keyof BlockSuite.BlockModels,
+        {},
+        pageBlockId
+      );
+      page.addBlock(
+        'affine:paragraph' as keyof BlockSuite.BlockModels,
+        {},
+        frameId
+      );
       await syncEngine.waitForSynced();
       syncEngine.forceStop();
       prev = workspace.doc.toJSON();

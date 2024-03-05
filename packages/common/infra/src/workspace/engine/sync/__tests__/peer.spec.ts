@@ -39,12 +39,27 @@ describe('SyncPeer', () => {
         id: 'page0',
       });
       page.load();
-      const pageBlockId = page.addBlock('affine:page', {
-        title: new page.Text(''),
-      });
-      page.addBlock('affine:surface', {}, pageBlockId);
-      const frameId = page.addBlock('affine:note', {}, pageBlockId);
-      page.addBlock('affine:paragraph', {}, frameId);
+      const pageBlockId = page.addBlock(
+        'affine:page' as keyof BlockSuite.BlockModels,
+        {
+          title: new page.Text(''),
+        }
+      );
+      page.addBlock(
+        'affine:surface' as keyof BlockSuite.BlockModels,
+        {},
+        pageBlockId
+      );
+      const frameId = page.addBlock(
+        'affine:note' as keyof BlockSuite.BlockModels,
+        {},
+        pageBlockId
+      );
+      page.addBlock(
+        'affine:paragraph' as keyof BlockSuite.BlockModels,
+        {},
+        frameId
+      );
       await syncPeer.waitForSynced();
       syncPeer.stop();
       prev = workspace.doc.toJSON();
@@ -91,7 +106,7 @@ describe('SyncPeer', () => {
     expect(syncPeer.status.step).toBe(SyncPeerStep.LoadingSubDoc);
     page.load();
     await syncPeer.waitForSynced();
-    page.addBlock('affine:page', {
+    page.addBlock('affine:page' as keyof BlockSuite.BlockModels, {
       title: new page.Text(''),
     });
     expect(syncPeer.status.step).toBe(SyncPeerStep.Syncing);

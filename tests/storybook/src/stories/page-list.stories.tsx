@@ -14,7 +14,7 @@ import {
   type PageTagsProps,
 } from '@affine/core/components/page-list';
 import { workbenchRoutes } from '@affine/core/router';
-import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
+import { AffineSchemas } from '@blocksuite/blocks/schemas';
 import { PageIcon, TagsIcon } from '@blocksuite/icons';
 import { Schema, Workspace } from '@blocksuite/store';
 import { expect } from '@storybook/jest';
@@ -250,7 +250,7 @@ async function createAndInitPage(
 PageListStory.loaders = [
   async () => {
     const schema = new Schema();
-    schema.register(AffineSchemas).register(__unstableSchemas);
+    schema.register(AffineSchemas);
     const workspace = new Workspace({
       id: 'test-workspace-id',
       schema,

@@ -3,7 +3,7 @@
  */
 import 'fake-indexeddb/auto';
 
-import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
+import { AffineSchemas } from '@blocksuite/blocks/schemas';
 import { assertExists } from '@blocksuite/global/utils';
 import type { Doc } from '@blocksuite/store';
 import { Schema, Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
@@ -16,7 +16,7 @@ import { useBlockSuitePagePreview } from '../use-block-suite-page-preview';
 let blockSuiteWorkspace: BlockSuiteWorkspace;
 
 const schema = new Schema();
-schema.register(AffineSchemas).register(__unstableSchemas);
+schema.register(AffineSchemas);
 
 beforeEach(async () => {
   vi.useFakeTimers({ toFake: ['requestIdleCallback'] });
