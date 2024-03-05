@@ -1,6 +1,6 @@
 import 'fake-indexeddb/auto';
 
-import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
+import { AffineSchemas } from '@blocksuite/blocks/schemas';
 import { Schema, Workspace } from '@blocksuite/store';
 import { SyncEngine, SyncEngineStep, SyncPeerStep } from '@toeverything/infra';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
@@ -11,7 +11,7 @@ import { createTestStorage } from './test-storage';
 
 const schema = new Schema();
 
-schema.register(AffineSchemas).register(__unstableSchemas);
+schema.register(AffineSchemas);
 
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ['requestIdleCallback'] });

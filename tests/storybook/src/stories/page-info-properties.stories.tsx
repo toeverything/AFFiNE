@@ -1,12 +1,12 @@
 import { PagePropertiesTable } from '@affine/core/components/affine/page-properties';
-import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
+import { AffineSchemas } from '@blocksuite/blocks/schemas';
 import { Workspace } from '@blocksuite/store';
 import { Schema } from '@blocksuite/store';
 import type { StoryFn } from '@storybook/react';
 import { initEmptyPage } from '@toeverything/infra';
 
 const schema = new Schema();
-schema.register(AffineSchemas).register(__unstableSchemas);
+schema.register(AffineSchemas);
 
 async function createAndInitPage(
   workspace: Workspace,
