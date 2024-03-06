@@ -140,6 +140,7 @@ jobs:
     permissions:
       contents: 'write'
       id-token: 'write'
+      packages: 'write'
     needs:
       - build-server
       - build-core
