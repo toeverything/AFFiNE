@@ -7,8 +7,12 @@ function noopSubscribe() {
   return () => {};
 }
 
-function noopGetSnapshot() {
+function nullGetSnapshot() {
   return null;
+}
+
+function undefinedGetSnapshot() {
+  return undefined;
 }
 
 /**
@@ -25,7 +29,11 @@ export function useLiveData<Input extends LiveData<any> | null | undefined>(
   : never {
   return useSyncExternalStore(
     liveData ? liveData.reactSubscribe : noopSubscribe,
-    liveData ? liveData.reactGetSnapshot : noopGetSnapshot
+    liveData
+      ? liveData.reactGetSnapshot
+      : liveData === undefined
+        ? undefinedGetSnapshot
+        : nullGetSnapshot
   );
 }
 
