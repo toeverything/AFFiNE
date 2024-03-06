@@ -45,7 +45,7 @@ impl Stamp {
 
       // check challenge
       let mut hasher = Sha3_256::new();
-      hasher.update(&self.format().as_bytes());
+      hasher.update(self.format().as_bytes());
       let result = format!("{:x}", hasher.finalize());
       result[..hex_digits] == String::from_utf8(vec![b'0'; hex_digits]).unwrap()
     } else {
@@ -87,7 +87,7 @@ impl Stamp {
         let hex_digits = ((bits as f32) / 4.).ceil() as usize;
         let zeros = String::from_utf8(vec![b'0'; hex_digits]).unwrap();
         loop {
-          hasher.update(&format!("{}:{:x}", challenge, counter).as_bytes());
+          hasher.update(format!("{}:{:x}", challenge, counter).as_bytes());
           let result = format!("{:x}", hasher.finalize_reset());
           if result[..hex_digits] == zeros {
             break format!("{:x}", counter);
