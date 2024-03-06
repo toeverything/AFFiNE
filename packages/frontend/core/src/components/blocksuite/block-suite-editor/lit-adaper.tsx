@@ -128,7 +128,7 @@ export const BlocksuiteDocEditor = forwardRef<
             }}
           ></div>
         ) : null}
-        {docPage ? (
+        {docPage && !page.readonly ? (
           <adapted.BiDirectionalLinkPanel doc={page} pageRoot={docPage} />
         ) : null}
       </div>

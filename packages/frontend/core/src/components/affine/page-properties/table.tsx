@@ -1049,7 +1049,7 @@ export const PagePropertiesTable = ({ page }: { page: Doc }) => {
   // if the given page is not in the current workspace, then we don't render anything
   // eg. when it is in history modal
 
-  if (!manager.page) {
+  if (!manager.page || manager.readonly) {
     return null;
   }
 
