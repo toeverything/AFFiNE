@@ -1,10 +1,10 @@
 import { useDocMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
 import { useJournalHelper } from '@affine/core/hooks/use-journal';
+import { WorkbenchLink } from '@affine/core/modules/workbench';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { LinkedPageIcon, TodayIcon } from '@blocksuite/icons';
 import type { Workspace } from '@blocksuite/store';
 import type { PropsWithChildren } from 'react';
-import { Link } from 'react-router-dom';
 
 import * as styles from './styles.css';
 
@@ -62,11 +62,8 @@ export function AffinePageReference({
   });
 
   return (
-    <Link
-      to={`/workspace/${workspace.id}/${pageId}`}
-      className={styles.pageReferenceLink}
-    >
+    <WorkbenchLink to={`/${pageId}`} className={styles.pageReferenceLink}>
       {Wrapper ? <Wrapper>{el}</Wrapper> : el}
-    </Link>
+    </WorkbenchLink>
   );
 }
