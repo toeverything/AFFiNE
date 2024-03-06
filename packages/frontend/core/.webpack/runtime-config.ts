@@ -145,6 +145,7 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       : buildFlags.mode === 'development'
         ? true
         : currentBuildPreset.allowLocalWorkspace,
+    isSelfHosted: process.env.SELF_HOSTED === 'true',
   };
 
   const testEnvironmentPreset = {

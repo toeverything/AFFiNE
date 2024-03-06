@@ -21,8 +21,7 @@ class CustomAttachmentService extends AttachmentService {
 }
 
 function customLoadFonts(service: RootService): void {
-  const officialDomains = new Set(['app.affine.pro', 'affine.fail']);
-  if (!officialDomains.has(window.location.host)) {
+  if (runtimeConfig.isSelfHosted) {
     const fonts = CanvasTextFonts.map(font => ({
       ...font,
       // self-hosted fonts are served from /assets
