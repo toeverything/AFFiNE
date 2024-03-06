@@ -137,6 +137,9 @@ jobs:
   build-docker:
     name: Build Docker
     runs-on: ubuntu-latest
+    permissions:
+      contents: 'write'
+      id-token: 'write'
     needs:
       - build-server
       - build-core
