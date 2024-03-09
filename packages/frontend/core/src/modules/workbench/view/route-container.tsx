@@ -68,7 +68,7 @@ export const RouteContainer = ({ route }: Props) => {
         )}
       </div>
       <view.body.Target className={styles.viewBodyContainer} />
-      <Suspense fallback={<>loading</>}>
+      <Suspense>
         <route.Component />
       </Suspense>
     </div>
