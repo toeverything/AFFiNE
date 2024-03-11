@@ -4,6 +4,7 @@ import {
   Menu,
   MenuIcon,
   MenuItem,
+  toast,
   Tooltip,
 } from '@affine/component';
 import type { Collection, DeleteCollectionInfo } from '@affine/env/filter';
@@ -27,6 +28,8 @@ import type { CollectionService } from '../../modules/collection';
 import { FavoriteTag } from './components/favorite-tag';
 import * as styles from './list.css';
 import { DisablePublicSharing, MoveToTrash } from './operation-menu-items';
+import { CreateOrEditTag } from './tags/create-tag';
+import type { TagMeta } from './types';
 import { ColWrapper, stopPropagationWithoutPrevent } from './utils';
 import {
   type AllPageListConfig,
@@ -281,6 +284,64 @@ export const CollectionOperationCell = ({
                 </MenuIcon>
               }
               type="danger"
+            >
+              {t['Delete']()}
+            </MenuItem>
+          }
+          contentOptions={{
+            align: 'end',
+          }}
+        >
+          <IconButton type="plain">
+            <MoreVerticalIcon />
+          </IconButton>
+        </Menu>
+      </ColWrapper>
+    </>
+  );
+};
+
+interface TagOperationCellProps {
+  tag: TagMeta;
+  onTagDelete: (tagId: string[]) => void;
+}
+
+export const TagOperationCell = ({
+  tag,
+  onTagDelete,
+}: TagOperationCellProps) => {
+  const t = useAFFiNEI18N();
+  const [open, setOpen] = useState(false);
+
+  const handleDelete = useCallback(() => {
+    onTagDelete([tag.id]);
+    toast(t['com.affine.tags.delete-tags.toast']());
+  }, [onTagDelete, t, tag.id]);
+  return (
+    <>
+      <div className={styles.editTagWrapper} data-show={open}>
+        <div style={{ width: '100%' }}>
+          <CreateOrEditTag open={open} onOpenChange={setOpen} tagMeta={tag} />
+        </div>
+      </div>
+
+      <Tooltip content={t['Rename']()} side="top">
+        <IconButton onClick={() => setOpen(true)}>
+          <EditIcon />
+        </IconButton>
+      </Tooltip>
+
+      <ColWrapper alignment="start">
+        <Menu
+          items={
+            <MenuItem
+              preFix={
+                <MenuIcon>
+                  <DeleteIcon />
+                </MenuIcon>
+              }
+              type="danger"
+              onSelect={handleDelete}
             >
               {t['Delete']()}
             </MenuItem>

@@ -1,4 +1,6 @@
+import { toast } from '@affine/component';
 import { Trans } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { Tag } from '@blocksuite/store';
 import { useService } from '@toeverything/infra';
 import { Workspace } from '@toeverything/infra';
@@ -6,10 +8,12 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 
 import { ListFloatingToolbar } from '../components/list-floating-toolbar';
 import { tagHeaderColsDef } from '../header-col-def';
+import { TagOperationCell } from '../operation-cell';
 import { TagListItemRenderer } from '../page-group';
 import { ListTableHeader } from '../page-header';
 import type { ItemListHandle, ListItem, TagMeta } from '../types';
 import { VirtualizedList } from '../virtualized-list';
+import { CreateOrEditTag } from './create-tag';
 import { TagListHeader } from './tag-list-header';
 
 export const VirtualizedTagList = ({
@@ -21,10 +25,19 @@ export const VirtualizedTagList = ({
   tagMetas: TagMeta[];
   onTagDelete: (tagIds: string[]) => void;
 }) => {
+  const t = useAFFiNEI18N();
   const listRef = useRef<ItemListHandle>(null);
   const [showFloatingToolbar, setShowFloatingToolbar] = useState(false);
+  const [showCreateTagInput, setShowCreateTagInput] = useState(false);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const currentWorkspace = useService(Workspace);
+
+  const tagOperations = useCallback(
+    (tag: TagMeta) => {
+      return <TagOperationCell tag={tag} onTagDelete={onTagDelete} />;
+    },
+    [onTagDelete]
+  );
 
   const filteredSelectedTagIds = useMemo(() => {
     const ids = tags.map(tag => tag.id);
@@ -35,13 +48,25 @@ export const VirtualizedTagList = ({
     listRef.current?.toggleSelectable();
   }, []);
 
-  const tagOperationRenderer = useCallback(() => {
-    return null;
-  }, []);
+  const tagOperationRenderer = useCallback(
+    (item: ListItem) => {
+      const tag = item as TagMeta;
+      return tagOperations(tag);
+    },
+    [tagOperations]
+  );
 
   const tagHeaderRenderer = useCallback(() => {
-    return <ListTableHeader headerCols={tagHeaderColsDef} />;
-  }, []);
+    return (
+      <>
+        <ListTableHeader headerCols={tagHeaderColsDef} />
+        <CreateOrEditTag
+          open={showCreateTagInput}
+          onOpenChange={setShowCreateTagInput}
+        />
+      </>
+    );
+  }, [showCreateTagInput]);
 
   const tagItemRenderer = useCallback((item: ListItem) => {
     return <TagListItemRenderer {...item} />;
@@ -49,20 +74,25 @@ export const VirtualizedTagList = ({
 
   const handleDelete = useCallback(() => {
     onTagDelete(selectedTagIds);
+    toast(t['com.affine.delete-tags.count']({ count: selectedTagIds.length }));
     hideFloatingToolbar();
     return;
-  }, [hideFloatingToolbar, onTagDelete, selectedTagIds]);
+  }, [hideFloatingToolbar, onTagDelete, selectedTagIds, t]);
+
+  const onOpenCreate = useCallback(() => {
+    setShowCreateTagInput(true);
+  }, [setShowCreateTagInput]);
 
   return (
     <>
       <VirtualizedList
         ref={listRef}
-        selectable={false}
+        selectable="toggle"
         draggable={false}
         groupBy={false}
         atTopThreshold={80}
         onSelectionActiveChange={setShowFloatingToolbar}
-        heading={<TagListHeader />}
+        heading={<TagListHeader onOpen={onOpenCreate} />}
         selectedIds={filteredSelectedTagIds}
         onSelectedIdsChange={setSelectedTagIds}
         items={tagMetas}

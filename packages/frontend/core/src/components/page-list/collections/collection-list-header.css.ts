@@ -16,6 +16,7 @@ export const collectionListHeaderTitle = style({
   display: 'flex',
   alignItems: 'center',
   gap: 8,
+  userSelect: 'none',
 });
 export const newCollectionButton = style({
   padding: '6px 10px',

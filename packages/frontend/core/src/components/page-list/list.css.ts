@@ -59,3 +59,20 @@ export const clearLinkStyle = style({
     color: 'inherit',
   },
 });
+
+export const editTagWrapper = style({
+  position: 'absolute',
+  right: '0',
+  width: '100%',
+  height: '60px',
+  display: 'none',
+  selectors: {
+    '&[data-show=true]': {
+      background: cssVar('backgroundPrimaryColor'),
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      cursor: 'auto',
+    },
+  },
+});

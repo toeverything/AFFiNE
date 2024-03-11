@@ -1,12 +1,19 @@
-import { Button } from '@affine/component';
+import { Button, Divider, Menu, Scrollable } from '@affine/component';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
+import { WorkspaceLegacyProperties } from '@affine/core/modules/workspace';
 import type { Collection, Tag } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { ViewLayersIcon } from '@blocksuite/icons';
-import { useService } from '@toeverything/infra/di';
+import {
+  ArrowDownSmallIcon,
+  SearchIcon,
+  ViewLayersIcon,
+} from '@blocksuite/icons';
+import { useLiveData, useService } from '@toeverything/infra';
+import clsx from 'clsx';
 import { nanoid } from 'nanoid';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 
 import { CollectionService } from '../../../modules/collection';
 import { createTagFilter } from '../filter/utils';
@@ -88,9 +95,12 @@ export const TagPageListHeader = ({
   tag: Tag;
   workspaceId: string;
 }) => {
+  const legacyProperties = useService(WorkspaceLegacyProperties);
+  const options = useLiveData(legacyProperties.tagOptions$);
   const t = useAFFiNEI18N();
   const { jumpToTags, jumpToCollection } = useNavigateHelper();
   const collectionService = useService(CollectionService);
+  const [openMenu, setOpenMenu] = useState(false);
   const { open, node } = useEditCollectionName({
     title: t['com.affine.editCollection.saveCollection'](),
     showTips: true,
@@ -131,20 +141,117 @@ export const TagPageListHeader = ({
           >
             {t['Tags']()} /
           </div>
-          <div className={styles.tagSticky}>
-            <div
-              className={styles.tagIndicator}
-              style={{
-                backgroundColor: tagColorMap(tag.color),
-              }}
-            />
-            <div className={styles.tagLabel}>{tag.value}</div>
-          </div>
+          <Menu
+            rootOptions={{
+              open: openMenu,
+              onOpenChange: setOpenMenu,
+            }}
+            contentOptions={{
+              side: 'bottom',
+              align: 'start',
+              sideOffset: 18,
+              avoidCollisions: false,
+              className: styles.tagsMenu,
+            }}
+            items={<TagsEditor options={options} onClick={setOpenMenu} />}
+          >
+            <div className={styles.tagSticky}>
+              <div
+                className={styles.tagIndicator}
+                style={{
+                  backgroundColor: tagColorMap(tag.color),
+                }}
+              />
+              <div className={styles.tagLabel}>{tag.value}</div>
+              <ArrowDownSmallIcon className={styles.arrowDownSmallIcon} />
+            </div>
+          </Menu>
         </div>
         <Button className={styles.addPageButton} onClick={handleClick}>
           {t['com.affine.editCollection.saveCollection']()}
         </Button>
       </div>
     </>
+  );
+};
+
+const filterOption = (option: Tag, inputValue?: string) => {
+  const trimmedValue = inputValue?.trim().toLowerCase() ?? '';
+  const trimmedOptionValue = option.value.trim().toLowerCase();
+  return trimmedOptionValue.includes(trimmedValue);
+};
+
+interface TagsEditorProps {
+  options: Tag[];
+  onClick: (open: boolean) => void;
+}
+
+export const TagsEditor = ({ options, onClick }: TagsEditorProps) => {
+  const t = useAFFiNEI18N();
+  const [inputValue, setInputValue] = useState('');
+  const filteredOptions = useMemo(
+    () =>
+      options.filter(o => (inputValue ? filterOption(o, inputValue) : true)),
+    [inputValue, options]
+  );
+
+  const onInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      setInputValue(e.target.value);
+    },
+    []
+  );
+
+  const handleClick = useCallback(() => {
+    setInputValue('');
+    onClick(false);
+  }, [onClick]);
+
+  return (
+    <div className={styles.tagsEditorRoot}>
+      <div className={styles.tagsEditorSelectedTags}>
+        <SearchIcon className={styles.searchIcon} />
+        <input
+          value={inputValue}
+          onChange={onInputChange}
+          autoFocus
+          className={styles.searchInput}
+          placeholder={t['com.affine.search-tags.placeholder']()}
+        />
+      </div>
+      <Divider />
+      <div className={styles.tagsEditorTagsSelector}>
+        <Scrollable.Root>
+          <Scrollable.Viewport
+            className={styles.tagSelectorTagsScrollContainer}
+          >
+            {filteredOptions.map(tag => {
+              return (
+                <Link
+                  key={tag.id}
+                  className={styles.tagSelectorItem}
+                  data-tag-id={tag.id}
+                  data-tag-value={tag.value}
+                  to={`/tag/${tag.id}`}
+                  onClick={handleClick}
+                >
+                  <div
+                    className={styles.tagIcon}
+                    style={{ background: tag.color }}
+                  />
+                  <div className={styles.tagSelectorItemText}>{tag.value}</div>
+                </Link>
+              );
+            })}
+            {filteredOptions.length === 0 ? (
+              <div className={clsx(styles.tagSelectorItem, 'disable')}>
+                {t['Find 0 result']()}
+              </div>
+            ) : null}
+          </Scrollable.Viewport>
+          <Scrollable.Scrollbar style={{ transform: 'translateX(6px)' }} />
+        </Scrollable.Root>
+      </div>
+    </div>
   );
 };
