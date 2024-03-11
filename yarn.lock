@@ -302,7 +302,7 @@ __metadata:
     "@affine/i18n": "workspace:*"
     "@affine/templates": "workspace:*"
     "@affine/workspace-impl": "workspace:*"
-    "@aws-sdk/client-s3": "npm:3.525.0"
+    "@aws-sdk/client-s3": "npm:3.529.1"
     "@blocksuite/block-std": "npm:0.13.0-canary-202403050653-934469c"
     "@blocksuite/blocks": "npm:0.13.0-canary-202403050653-934469c"
     "@blocksuite/global": "npm:0.13.0-canary-202403050653-934469c"
@@ -549,7 +549,7 @@ __metadata:
     "@faker-js/faker": "npm:^8.4.1"
     "@istanbuljs/schema": "npm:^0.1.3"
     "@magic-works/i18n-codegen": "npm:^0.5.0"
-    "@nx/vite": "npm:18.0.7"
+    "@nx/vite": "npm:18.0.8"
     "@playwright/test": "npm:^1.41.2"
     "@taplo/cli": "npm:^0.7.0"
     "@testing-library/react": "npm:^14.2.1"
@@ -652,11 +652,11 @@ __metadata:
     "@opentelemetry/exporter-zipkin": "npm:^1.21.0"
     "@opentelemetry/host-metrics": "npm:^0.35.0"
     "@opentelemetry/instrumentation": "npm:^0.49.0"
-    "@opentelemetry/instrumentation-graphql": "npm:^0.37.0"
+    "@opentelemetry/instrumentation-graphql": "npm:^0.38.0"
     "@opentelemetry/instrumentation-http": "npm:^0.49.0"
-    "@opentelemetry/instrumentation-ioredis": "npm:^0.37.0"
-    "@opentelemetry/instrumentation-nestjs-core": "npm:^0.34.0"
-    "@opentelemetry/instrumentation-socket.io": "npm:^0.36.0"
+    "@opentelemetry/instrumentation-ioredis": "npm:^0.38.0"
+    "@opentelemetry/instrumentation-nestjs-core": "npm:^0.35.0"
+    "@opentelemetry/instrumentation-socket.io": "npm:^0.37.0"
     "@opentelemetry/resources": "npm:^1.21.0"
     "@opentelemetry/sdk-metrics": "npm:^1.21.0"
     "@opentelemetry/sdk-node": "npm:^0.49.0"
@@ -1243,16 +1243,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@aws-sdk/client-s3@npm:3.525.0, @aws-sdk/client-s3@npm:^3.515.0":
-  version: 3.525.0
-  resolution: "@aws-sdk/client-s3@npm:3.525.0"
+"@aws-sdk/client-s3@npm:3.529.1, @aws-sdk/client-s3@npm:^3.515.0":
+  version: 3.529.1
+  resolution: "@aws-sdk/client-s3@npm:3.529.1"
   dependencies:
     "@aws-crypto/sha1-browser": "npm:3.0.0"
     "@aws-crypto/sha256-browser": "npm:3.0.0"
     "@aws-crypto/sha256-js": "npm:3.0.0"
-    "@aws-sdk/client-sts": "npm:3.525.0"
-    "@aws-sdk/core": "npm:3.525.0"
-    "@aws-sdk/credential-provider-node": "npm:3.525.0"
+    "@aws-sdk/client-sts": "npm:3.529.1"
+    "@aws-sdk/core": "npm:3.529.1"
+    "@aws-sdk/credential-provider-node": "npm:3.529.1"
     "@aws-sdk/middleware-bucket-endpoint": "npm:3.525.0"
     "@aws-sdk/middleware-expect-continue": "npm:3.523.0"
     "@aws-sdk/middleware-flexible-checksums": "npm:3.523.0"
@@ -1303,20 +1303,19 @@ __metadata:
     "@smithy/util-stream": "npm:^2.1.3"
     "@smithy/util-utf8": "npm:^2.1.1"
     "@smithy/util-waiter": "npm:^2.1.3"
-    fast-xml-parser: "npm:4.2.5"
     tslib: "npm:^2.5.0"
-  checksum: 10/13ecd0c71ef488c49826b2c48a9e7c774fe6c703a49ae3a5d0fe1f6d179406c80548ff271ac68be88e906acb723d93b8d24a27dd6a7936266f0cdae5a52e1c25
+  checksum: 10/97283c205b3d6f26c57e3a0d77024805d605cf33006c231b266d340b79335f3150f27c6648858fbfc2b0291719c0e2424f9a85b6ac18fe1d97d58280e5cdc57b
   languageName: node
   linkType: hard
 
-"@aws-sdk/client-sso-oidc@npm:3.525.0":
-  version: 3.525.0
-  resolution: "@aws-sdk/client-sso-oidc@npm:3.525.0"
+"@aws-sdk/client-sso-oidc@npm:3.529.1":
+  version: 3.529.1
+  resolution: "@aws-sdk/client-sso-oidc@npm:3.529.1"
   dependencies:
     "@aws-crypto/sha256-browser": "npm:3.0.0"
     "@aws-crypto/sha256-js": "npm:3.0.0"
-    "@aws-sdk/client-sts": "npm:3.525.0"
-    "@aws-sdk/core": "npm:3.525.0"
+    "@aws-sdk/client-sts": "npm:3.529.1"
+    "@aws-sdk/core": "npm:3.529.1"
     "@aws-sdk/middleware-host-header": "npm:3.523.0"
     "@aws-sdk/middleware-logger": "npm:3.523.0"
     "@aws-sdk/middleware-recursion-detection": "npm:3.523.0"
@@ -1353,18 +1352,18 @@ __metadata:
     "@smithy/util-utf8": "npm:^2.1.1"
     tslib: "npm:^2.5.0"
   peerDependencies:
-    "@aws-sdk/credential-provider-node": ^3.525.0
-  checksum: 10/9f27413c6105ceaf6121b597b471deefa4701faf7200c2852a54d200eb5fbf7c0f566cd71fc2ac4c0ffeb6534876b03bd8045fffe12e75a4d0b6f5fe359ecb92
+    "@aws-sdk/credential-provider-node": ^3.529.1
+  checksum: 10/b4653bf0b543ee99ddb77efc0fa7b727324ba515e76002c3d7d85a3662cbe2cf69094a6598609275154128a72a0d7e3373be6d30955b4445c3f9b419e4d20f8e
   languageName: node
   linkType: hard
 
-"@aws-sdk/client-sso@npm:3.525.0":
-  version: 3.525.0
-  resolution: "@aws-sdk/client-sso@npm:3.525.0"
+"@aws-sdk/client-sso@npm:3.529.1":
+  version: 3.529.1
+  resolution: "@aws-sdk/client-sso@npm:3.529.1"
   dependencies:
     "@aws-crypto/sha256-browser": "npm:3.0.0"
     "@aws-crypto/sha256-js": "npm:3.0.0"
-    "@aws-sdk/core": "npm:3.525.0"
+    "@aws-sdk/core": "npm:3.529.1"
     "@aws-sdk/middleware-host-header": "npm:3.523.0"
     "@aws-sdk/middleware-logger": "npm:3.523.0"
     "@aws-sdk/middleware-recursion-detection": "npm:3.523.0"
@@ -1400,17 +1399,17 @@ __metadata:
     "@smithy/util-retry": "npm:^2.1.3"
     "@smithy/util-utf8": "npm:^2.1.1"
     tslib: "npm:^2.5.0"
-  checksum: 10/67f40839ad6162b9592a9dd6863d629756b68bda891b436f3cac9d877335e41b8682e61e1fbbe6bc1a0bcedb13a990d1f4397e47a7466fa3a5293b56bdb56e12
+  checksum: 10/21ef07521cd628b6b1f595ec6b81b69b1b9fcdd8d482a15c08fcfa2a546a38300e466e3d10aadef7398da6de9da194855eb0bd44179e552af14a2102fe9f8d10
   languageName: node
   linkType: hard
 
-"@aws-sdk/client-sts@npm:3.525.0":
-  version: 3.525.0
-  resolution: "@aws-sdk/client-sts@npm:3.525.0"
+"@aws-sdk/client-sts@npm:3.529.1":
+  version: 3.529.1
+  resolution: "@aws-sdk/client-sts@npm:3.529.1"
   dependencies:
     "@aws-crypto/sha256-browser": "npm:3.0.0"
     "@aws-crypto/sha256-js": "npm:3.0.0"
-    "@aws-sdk/core": "npm:3.525.0"
+    "@aws-sdk/core": "npm:3.529.1"
     "@aws-sdk/middleware-host-header": "npm:3.523.0"
     "@aws-sdk/middleware-logger": "npm:3.523.0"
     "@aws-sdk/middleware-recursion-detection": "npm:3.523.0"
@@ -1445,25 +1444,25 @@ __metadata:
     "@smithy/util-middleware": "npm:^2.1.3"
     "@smithy/util-retry": "npm:^2.1.3"
     "@smithy/util-utf8": "npm:^2.1.1"
-    fast-xml-parser: "npm:4.2.5"
     tslib: "npm:^2.5.0"
   peerDependencies:
-    "@aws-sdk/credential-provider-node": ^3.525.0
-  checksum: 10/d790b539ded8ef5794f481ada752d141b2c910b25398557f4313c87e0799c47182f102528434d3a59490aaed601ef7e30b3bada014a4e9f27d7b7d3edfafb671
+    "@aws-sdk/credential-provider-node": ^3.529.1
+  checksum: 10/42f0d2423218f99b0b76831a76508e084d7463c98416c12e28e2a3261714b26e4b64374fd2b4ce8e6f03b43bf6af8ac9286a122a0771095b6ce64f79aec15515
   languageName: node
   linkType: hard
 
-"@aws-sdk/core@npm:3.525.0":
-  version: 3.525.0
-  resolution: "@aws-sdk/core@npm:3.525.0"
+"@aws-sdk/core@npm:3.529.1":
+  version: 3.529.1
+  resolution: "@aws-sdk/core@npm:3.529.1"
   dependencies:
     "@smithy/core": "npm:^1.3.5"
     "@smithy/protocol-http": "npm:^3.2.1"
     "@smithy/signature-v4": "npm:^2.1.3"
     "@smithy/smithy-client": "npm:^2.4.2"
     "@smithy/types": "npm:^2.10.1"
+    fast-xml-parser: "npm:4.2.5"
     tslib: "npm:^2.5.0"
-  checksum: 10/c4fa9be97227bca9d599237479ed718ed37ad5fbb9e851f1b62d27381294292eb1752063da3eb8a1b1141e86910396be2c932b231ea72da0f8b4afafbf490d26
+  checksum: 10/2232baf730c6776853e58c7a58604bbaebe411daf503a798abd98562f6d2a85ef4bf2cce5fbbb0d3fdc1f5dc5ac76c404ceeff26a12ddd7040fa0b0372170897
   languageName: node
   linkType: hard
 
@@ -1496,42 +1495,42 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@aws-sdk/credential-provider-ini@npm:3.525.0":
-  version: 3.525.0
-  resolution: "@aws-sdk/credential-provider-ini@npm:3.525.0"
+"@aws-sdk/credential-provider-ini@npm:3.529.1":
+  version: 3.529.1
+  resolution: "@aws-sdk/credential-provider-ini@npm:3.529.1"
   dependencies:
-    "@aws-sdk/client-sts": "npm:3.525.0"
+    "@aws-sdk/client-sts": "npm:3.529.1"
     "@aws-sdk/credential-provider-env": "npm:3.523.0"
     "@aws-sdk/credential-provider-process": "npm:3.523.0"
-    "@aws-sdk/credential-provider-sso": "npm:3.525.0"
-    "@aws-sdk/credential-provider-web-identity": "npm:3.525.0"
+    "@aws-sdk/credential-provider-sso": "npm:3.529.1"
+    "@aws-sdk/credential-provider-web-identity": "npm:3.529.1"
     "@aws-sdk/types": "npm:3.523.0"
     "@smithy/credential-provider-imds": "npm:^2.2.3"
     "@smithy/property-provider": "npm:^2.1.3"
     "@smithy/shared-ini-file-loader": "npm:^2.3.3"
     "@smithy/types": "npm:^2.10.1"
     tslib: "npm:^2.5.0"
-  checksum: 10/53b9f943aaadde706e57cdcdd47861d33bea3b6626bf76baa5db2536c2c6600bc83cc18d51091216cb345c50f0a600f8276bce4244e98d5d2e28364fbbffadcb
+  checksum: 10/ba2a58837be55955063f3c1820145cf79ad129fb2e97092a16c8a42955d0f2470ad5379b0d5df9a5ca86c254ec90af40012036a697cb84e9223192df111bfbaa
   languageName: node
   linkType: hard
 
-"@aws-sdk/credential-provider-node@npm:3.525.0":
-  version: 3.525.0
-  resolution: "@aws-sdk/credential-provider-node@npm:3.525.0"
+"@aws-sdk/credential-provider-node@npm:3.529.1":
+  version: 3.529.1
+  resolution: "@aws-sdk/credential-provider-node@npm:3.529.1"
   dependencies:
     "@aws-sdk/credential-provider-env": "npm:3.523.0"
     "@aws-sdk/credential-provider-http": "npm:3.525.0"
-    "@aws-sdk/credential-provider-ini": "npm:3.525.0"
+    "@aws-sdk/credential-provider-ini": "npm:3.529.1"
     "@aws-sdk/credential-provider-process": "npm:3.523.0"
-    "@aws-sdk/credential-provider-sso": "npm:3.525.0"
-    "@aws-sdk/credential-provider-web-identity": "npm:3.525.0"
+    "@aws-sdk/credential-provider-sso": "npm:3.529.1"
+    "@aws-sdk/credential-provider-web-identity": "npm:3.529.1"
     "@aws-sdk/types": "npm:3.523.0"
     "@smithy/credential-provider-imds": "npm:^2.2.3"
     "@smithy/property-provider": "npm:^2.1.3"
     "@smithy/shared-ini-file-loader": "npm:^2.3.3"
     "@smithy/types": "npm:^2.10.1"
     tslib: "npm:^2.5.0"
-  checksum: 10/958be6ff7a04801a32e2969eeefbe34150daf5871b2914979ab7317f87d0f2a68fdf479d775e693a12a0e331993ca993c96b1cfa5e72a00aa41dc4781db6a86e
+  checksum: 10/126456d6362e3f4939015f3233764e74d3e0708c2247fb158541cfcc0df70ac1ebf785cfea06e181e25d6a2afa59f9cbbff95f8fdae57e83d2c4047339bdee72
   languageName: node
   linkType: hard
 
@@ -1548,31 +1547,31 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@aws-sdk/credential-provider-sso@npm:3.525.0":
-  version: 3.525.0
-  resolution: "@aws-sdk/credential-provider-sso@npm:3.525.0"
+"@aws-sdk/credential-provider-sso@npm:3.529.1":
+  version: 3.529.1
+  resolution: "@aws-sdk/credential-provider-sso@npm:3.529.1"
   dependencies:
-    "@aws-sdk/client-sso": "npm:3.525.0"
-    "@aws-sdk/token-providers": "npm:3.525.0"
+    "@aws-sdk/client-sso": "npm:3.529.1"
+    "@aws-sdk/token-providers": "npm:3.529.1"
     "@aws-sdk/types": "npm:3.523.0"
     "@smithy/property-provider": "npm:^2.1.3"
     "@smithy/shared-ini-file-loader": "npm:^2.3.3"
     "@smithy/types": "npm:^2.10.1"
     tslib: "npm:^2.5.0"
-  checksum: 10/0785a8c566d0d52091f56da208971496be9ac84afa5f498ee3ff83011c34847d16d9cbca74a2be37947ec7107bcced66cba5de3730d0d4d65fa964343a14d9d2
+  checksum: 10/6f75e5800f6704ec5008efb2cd22ba741c27caa4d80ec069a6bb394639f8773d375f06988fb3c8f6bf54509bc78b32e910803510a06d3ba7fd671717f8221800
   languageName: node
   linkType: hard
 
-"@aws-sdk/credential-provider-web-identity@npm:3.525.0":
-  version: 3.525.0
-  resolution: "@aws-sdk/credential-provider-web-identity@npm:3.525.0"
+"@aws-sdk/credential-provider-web-identity@npm:3.529.1":
+  version: 3.529.1
+  resolution: "@aws-sdk/credential-provider-web-identity@npm:3.529.1"
   dependencies:
-    "@aws-sdk/client-sts": "npm:3.525.0"
+    "@aws-sdk/client-sts": "npm:3.529.1"
     "@aws-sdk/types": "npm:3.523.0"
     "@smithy/property-provider": "npm:^2.1.3"
     "@smithy/types": "npm:^2.10.1"
     tslib: "npm:^2.5.0"
-  checksum: 10/94ea94f89157428cb39da7efa000fd5b65551903aa138420755f8e96a2efe4063fe0fd93befe9321525fb86d09ed0c1f98cc124110a238022535e0e97e627572
+  checksum: 10/22e5b47403a51071acd91e0bf865309ad88b5ecc5df5074005783b1094207bcab4217115cb37285fb54d3461fe27a3ab272998888545ef404eafeb8a89f988e2
   languageName: node
   linkType: hard
 
@@ -1749,17 +1748,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@aws-sdk/token-providers@npm:3.525.0":
-  version: 3.525.0
-  resolution: "@aws-sdk/token-providers@npm:3.525.0"
+"@aws-sdk/token-providers@npm:3.529.1":
+  version: 3.529.1
+  resolution: "@aws-sdk/token-providers@npm:3.529.1"
   dependencies:
-    "@aws-sdk/client-sso-oidc": "npm:3.525.0"
+    "@aws-sdk/client-sso-oidc": "npm:3.529.1"
     "@aws-sdk/types": "npm:3.523.0"
     "@smithy/property-provider": "npm:^2.1.3"
     "@smithy/shared-ini-file-loader": "npm:^2.3.3"
     "@smithy/types": "npm:^2.10.1"
     tslib: "npm:^2.5.0"
-  checksum: 10/6a62ae78d506e433c5f3b378111f9df43458c5ca0c400d4d7ce0f43f3a7ad98f2ae3ae1af2fbad509c404d23a44d245fb6c42473a6d2209d0460729f2ccb93f8
+  checksum: 10/03a5a4edd2fc45f078a8afeb4d0ac5f3a36a5d761f2f6636d1a3fe5027f5b34d24b0d4a72dffcd9fc44cf2b636aebae9161d7ce1165fe0937eed6ade7c4f313e
   languageName: node
   linkType: hard
 
@@ -8483,21 +8482,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@nrwl/devkit@npm:18.0.7":
-  version: 18.0.7
-  resolution: "@nrwl/devkit@npm:18.0.7"
+"@nrwl/devkit@npm:18.0.8":
+  version: 18.0.8
+  resolution: "@nrwl/devkit@npm:18.0.8"
   dependencies:
-    "@nx/devkit": "npm:18.0.7"
-  checksum: 10/0de58007685f8e10eb1b72b2ffde9a31c1b161c24cfc3121386c0a4396fb5855bb07a5cf086f78e074fa055e8ecfa7836ce54f433e8d1ff64d67a58b281da25f
+    "@nx/devkit": "npm:18.0.8"
+  checksum: 10/ec59fabf272a84a5062b37af7940b682d398272531020dd32622005c99898e087e7422e198251c0df28b1d00d10215521771f1a6f09f6aaa5f236f8348bb7446
   languageName: node
   linkType: hard
 
-"@nrwl/js@npm:18.0.7":
-  version: 18.0.7
-  resolution: "@nrwl/js@npm:18.0.7"
+"@nrwl/js@npm:18.0.8":
+  version: 18.0.8
+  resolution: "@nrwl/js@npm:18.0.8"
   dependencies:
-    "@nx/js": "npm:18.0.7"
-  checksum: 10/6084c9097b88cb5fce4e8683be5f851a5e771deee160684c59cbf0a1ec967220b60a58e8c29d4ceaaf864534e5369da3b7ce668982b2557d8af4233e49c2f494
+    "@nx/js": "npm:18.0.8"
+  checksum: 10/2f21251d34252a02f626e26ddefd8e8fe3603614848599f76253a28cc0a1d0c289d8352f68ba46c438ce2f1577d7194b0fc8e72937b331cc5b2b0a9f06d01aca
   languageName: node
   linkType: hard
 
@@ -8510,33 +8509,33 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@nrwl/tao@npm:18.0.7":
-  version: 18.0.7
-  resolution: "@nrwl/tao@npm:18.0.7"
+"@nrwl/tao@npm:18.0.8":
+  version: 18.0.8
+  resolution: "@nrwl/tao@npm:18.0.8"
   dependencies:
-    nx: "npm:18.0.7"
+    nx: "npm:18.0.8"
     tslib: "npm:^2.3.0"
   bin:
     tao: index.js
-  checksum: 10/9b0498f32c3542a747d6a3f39eb886d382ddf78c9f2ce398f88b05f6b7899f283d84107cd0f61ec26a59e3f55086683b79f2eecd500614e242fb702db91df25c
+  checksum: 10/136b855a496cbaa857a2341048178ef5e54f26a9de9edb314a8c7f6ca799c4c56d3eea83d72a94ae38c374b7cd0bec0f3745d67d05ffed36b43a1df5b4b54e45
   languageName: node
   linkType: hard
 
-"@nrwl/vite@npm:18.0.7":
-  version: 18.0.7
-  resolution: "@nrwl/vite@npm:18.0.7"
+"@nrwl/vite@npm:18.0.8":
+  version: 18.0.8
+  resolution: "@nrwl/vite@npm:18.0.8"
   dependencies:
-    "@nx/vite": "npm:18.0.7"
-  checksum: 10/69e9957a20612e8468cb40ad61286fd69ce5cae64f0f158eb82d03a5e46ce97f93d8598e2ce31201f9207c316a1fc3582400729e4a6a720da69a8e7431dad89a
+    "@nx/vite": "npm:18.0.8"
+  checksum: 10/263c68c648a36c3053dc59a0eae0edaa1f9cad1c080982c8eb2cda7902e83976ec3d5fd21884cc1409ce2a207ec03e5d981f0e6e11fea18fc8cd55298587d26c
   languageName: node
   linkType: hard
 
-"@nrwl/workspace@npm:18.0.7":
-  version: 18.0.7
-  resolution: "@nrwl/workspace@npm:18.0.7"
+"@nrwl/workspace@npm:18.0.8":
+  version: 18.0.8
+  resolution: "@nrwl/workspace@npm:18.0.8"
   dependencies:
-    "@nx/workspace": "npm:18.0.7"
-  checksum: 10/c51e04d140345611d123a1936b86dc0c11d2890727281bd2166893d2a9ef81bb03871d7f17a4a70a20abc1d2f81fc18cd419ee49e8a6deb42665bfbca4c34b53
+    "@nx/workspace": "npm:18.0.8"
+  checksum: 10/fcb4acb6ca81844e2ee81ae18dc3cad570ebbbca4e8fa32030a9f61c5b5bf0e114823418740d7f169d9233f36ab1001d42218f0bbaec6ab246ceeb9a05b8c0ce
   languageName: node
   linkType: hard
 
@@ -8553,11 +8552,11 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@nx/devkit@npm:18.0.7":
-  version: 18.0.7
-  resolution: "@nx/devkit@npm:18.0.7"
+"@nx/devkit@npm:18.0.8":
+  version: 18.0.8
+  resolution: "@nx/devkit@npm:18.0.8"
   dependencies:
-    "@nrwl/devkit": "npm:18.0.7"
+    "@nrwl/devkit": "npm:18.0.8"
     ejs: "npm:^3.1.7"
     enquirer: "npm:~2.3.6"
     ignore: "npm:^5.0.4"
@@ -8567,13 +8566,13 @@ __metadata:
     yargs-parser: "npm:21.1.1"
   peerDependencies:
     nx: ">= 16 <= 18"
-  checksum: 10/67a8d92e4c60d7caa4cd306fd8ce19817f0b366c9506fa244f019b42aa5fc333eaeffff8eca18f834e1bad6f3b23b339cbf5c85b45f56fe22d09b1c77cbc134e
+  checksum: 10/2c2ad2febfc4016d743d43ee0f58f0c6af82bde950c0bc94f1258c7b990bca9933db914aa281717fd4939009215736ee3b9694780ce50fd876987dcfd8e0e083
   languageName: node
   linkType: hard
 
-"@nx/js@npm:18.0.7":
-  version: 18.0.7
-  resolution: "@nx/js@npm:18.0.7"
+"@nx/js@npm:18.0.8":
+  version: 18.0.8
+  resolution: "@nx/js@npm:18.0.8"
   dependencies:
     "@babel/core": "npm:^7.23.2"
     "@babel/plugin-proposal-decorators": "npm:^7.22.7"
@@ -8582,9 +8581,9 @@ __metadata:
     "@babel/preset-env": "npm:^7.23.2"
     "@babel/preset-typescript": "npm:^7.22.5"
     "@babel/runtime": "npm:^7.22.6"
-    "@nrwl/js": "npm:18.0.7"
-    "@nx/devkit": "npm:18.0.7"
-    "@nx/workspace": "npm:18.0.7"
+    "@nrwl/js": "npm:18.0.8"
+    "@nx/devkit": "npm:18.0.8"
+    "@nx/workspace": "npm:18.0.8"
     "@phenomnomnominal/tsquery": "npm:~5.0.1"
     babel-plugin-const-enum: "npm:^1.0.1"
     babel-plugin-macros: "npm:^2.8.0"
@@ -8610,87 +8609,87 @@ __metadata:
   peerDependenciesMeta:
     verdaccio:
       optional: true
-  checksum: 10/7233412d03bd68c94d83ad9e0516ac4bc5342669a63fbd23be415794dc52cd7c4ea81862a12cf3e16fc48bfde84e1bafdfc4fa8c2815d453f64a26e14c29b831
+  checksum: 10/93fa4ca956c6f266a16723e25cad63524638c82993d6ab5e6a972e0f61dd85b318a49b7e04b126544cd870196b36559b4a32b984aa962038369eeabe219d9e52
   languageName: node
   linkType: hard
 
-"@nx/nx-darwin-arm64@npm:18.0.7":
-  version: 18.0.7
-  resolution: "@nx/nx-darwin-arm64@npm:18.0.7"
+"@nx/nx-darwin-arm64@npm:18.0.8":
+  version: 18.0.8
+  resolution: "@nx/nx-darwin-arm64@npm:18.0.8"
   conditions: os=darwin & cpu=arm64
   languageName: node
   linkType: hard
 
-"@nx/nx-darwin-x64@npm:18.0.7":
-  version: 18.0.7
-  resolution: "@nx/nx-darwin-x64@npm:18.0.7"
+"@nx/nx-darwin-x64@npm:18.0.8":
+  version: 18.0.8
+  resolution: "@nx/nx-darwin-x64@npm:18.0.8"
   conditions: os=darwin & cpu=x64
   languageName: node
   linkType: hard
 
-"@nx/nx-freebsd-x64@npm:18.0.7":
-  version: 18.0.7
-  resolution: "@nx/nx-freebsd-x64@npm:18.0.7"
+"@nx/nx-freebsd-x64@npm:18.0.8":
+  version: 18.0.8
+  resolution: "@nx/nx-freebsd-x64@npm:18.0.8"
   conditions: os=freebsd & cpu=x64
   languageName: node
   linkType: hard
 
-"@nx/nx-linux-arm-gnueabihf@npm:18.0.7":
-  version: 18.0.7
-  resolution: "@nx/nx-linux-arm-gnueabihf@npm:18.0.7"
+"@nx/nx-linux-arm-gnueabihf@npm:18.0.8":
+  version: 18.0.8
+  resolution: "@nx/nx-linux-arm-gnueabihf@npm:18.0.8"
   conditions: os=linux & cpu=arm
   languageName: node
   linkType: hard
 
-"@nx/nx-linux-arm64-gnu@npm:18.0.7":
-  version: 18.0.7
-  resolution: "@nx/nx-linux-arm64-gnu@npm:18.0.7"
+"@nx/nx-linux-arm64-gnu@npm:18.0.8":
+  version: 18.0.8
+  resolution: "@nx/nx-linux-arm64-gnu@npm:18.0.8"
   conditions: os=linux & cpu=arm64 & libc=glibc
   languageName: node
   linkType: hard
 
-"@nx/nx-linux-arm64-musl@npm:18.0.7":
-  version: 18.0.7
-  resolution: "@nx/nx-linux-arm64-musl@npm:18.0.7"
+"@nx/nx-linux-arm64-musl@npm:18.0.8":
+  version: 18.0.8
+  resolution: "@nx/nx-linux-arm64-musl@npm:18.0.8"
   conditions: os=linux & cpu=arm64 & libc=musl
   languageName: node
   linkType: hard
 
-"@nx/nx-linux-x64-gnu@npm:18.0.7":
-  version: 18.0.7
-  resolution: "@nx/nx-linux-x64-gnu@npm:18.0.7"
+"@nx/nx-linux-x64-gnu@npm:18.0.8":
+  version: 18.0.8
+  resolution: "@nx/nx-linux-x64-gnu@npm:18.0.8"
   conditions: os=linux & cpu=x64 & libc=glibc
   languageName: node
   linkType: hard
 
-"@nx/nx-linux-x64-musl@npm:18.0.7":
-  version: 18.0.7
-  resolution: "@nx/nx-linux-x64-musl@npm:18.0.7"
+"@nx/nx-linux-x64-musl@npm:18.0.8":
+  version: 18.0.8
+  resolution: "@nx/nx-linux-x64-musl@npm:18.0.8"
   conditions: os=linux & cpu=x64 & libc=musl
   languageName: node
   linkType: hard
 
-"@nx/nx-win32-arm64-msvc@npm:18.0.7":
-  version: 18.0.7
-  resolution: "@nx/nx-win32-arm64-msvc@npm:18.0.7"
+"@nx/nx-win32-arm64-msvc@npm:18.0.8":
+  version: 18.0.8
+  resolution: "@nx/nx-win32-arm64-msvc@npm:18.0.8"
   conditions: os=win32 & cpu=arm64
   languageName: node
   linkType: hard
 
-"@nx/nx-win32-x64-msvc@npm:18.0.7":
-  version: 18.0.7
-  resolution: "@nx/nx-win32-x64-msvc@npm:18.0.7"
+"@nx/nx-win32-x64-msvc@npm:18.0.8":
+  version: 18.0.8
+  resolution: "@nx/nx-win32-x64-msvc@npm:18.0.8"
   conditions: os=win32 & cpu=x64
   languageName: node
   linkType: hard
 
-"@nx/vite@npm:18.0.7":
-  version: 18.0.7
-  resolution: "@nx/vite@npm:18.0.7"
+"@nx/vite@npm:18.0.8":
+  version: 18.0.8
+  resolution: "@nx/vite@npm:18.0.8"
   dependencies:
-    "@nrwl/vite": "npm:18.0.7"
-    "@nx/devkit": "npm:18.0.7"
-    "@nx/js": "npm:18.0.7"
+    "@nrwl/vite": "npm:18.0.8"
+    "@nx/devkit": "npm:18.0.8"
+    "@nx/js": "npm:18.0.8"
     "@phenomnomnominal/tsquery": "npm:~5.0.1"
     "@swc/helpers": "npm:~0.5.0"
     enquirer: "npm:~2.3.6"
@@ -8698,22 +8697,22 @@ __metadata:
   peerDependencies:
     vite: ^5.0.0
     vitest: ^1.3.1
-  checksum: 10/f3b35cb9b8d1f9b6dee880a495f6a196886eb4b242c041622f4d47bda7be3c1bb3c8a39d880230bfe8609dd70fbbc20f9f97d90e74b9ee28b6845f89d65cd6ad
+  checksum: 10/6e798914c1274d21831d1b80648785e9a97d79f2258c9054d3eba3719a133c106848eb1fad4d5da8ae0bfc43da322d326d52d1e0e6f3c4b0ff421e9d8098a728
   languageName: node
   linkType: hard
 
-"@nx/workspace@npm:18.0.7":
-  version: 18.0.7
-  resolution: "@nx/workspace@npm:18.0.7"
+"@nx/workspace@npm:18.0.8":
+  version: 18.0.8
+  resolution: "@nx/workspace@npm:18.0.8"
   dependencies:
-    "@nrwl/workspace": "npm:18.0.7"
-    "@nx/devkit": "npm:18.0.7"
+    "@nrwl/workspace": "npm:18.0.8"
+    "@nx/devkit": "npm:18.0.8"
     chalk: "npm:^4.1.0"
     enquirer: "npm:~2.3.6"
-    nx: "npm:18.0.7"
+    nx: "npm:18.0.8"
     tslib: "npm:^2.3.0"
     yargs-parser: "npm:21.1.1"
-  checksum: 10/91e17dc167f4aa96cdb164a2cc6a768b4f48c0a7841dffdedfef4ef9f2d679b14719a77a5ee5fe2424a585b7271875436138d6bf4899f25c7b868b81a3a6659b
+  checksum: 10/452974dfcb2f74f22455e8e2b0c8f111e46fd94118dec4fd787a5e0072c2bba1d65ee750e8ddb0bac53d1c5a969bf199d7253574d43ede9081dfd4c76d975d8b
   languageName: node
   linkType: hard
 
@@ -8999,14 +8998,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@opentelemetry/instrumentation-graphql@npm:^0.37.0":
-  version: 0.37.0
-  resolution: "@opentelemetry/instrumentation-graphql@npm:0.37.0"
+"@opentelemetry/instrumentation-graphql@npm:^0.38.0":
+  version: 0.38.0
+  resolution: "@opentelemetry/instrumentation-graphql@npm:0.38.0"
   dependencies:
-    "@opentelemetry/instrumentation": "npm:^0.48.0"
+    "@opentelemetry/instrumentation": "npm:^0.49.1"
   peerDependencies:
     "@opentelemetry/api": ^1.3.0
-  checksum: 10/2c6ad78f23ebedc09ee6b5ce3372d7387e4c40907a481d2268eaedf98d50c11fa9db9480c7d022f91cd5e37d644beb32caed6aefd4513d42deb6ec00da259ba7
+  checksum: 10/610ad2791edc234c2b7ad9cb38249c906cb0b3ea809e4cd4b2176c2a379262b44b52881560c491457f243e48258d49c2899ce133cf46f40c994063e8776e8e92
   languageName: node
   linkType: hard
 
@@ -9024,45 +9023,45 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@opentelemetry/instrumentation-ioredis@npm:^0.37.0":
-  version: 0.37.0
-  resolution: "@opentelemetry/instrumentation-ioredis@npm:0.37.0"
+"@opentelemetry/instrumentation-ioredis@npm:^0.38.0":
+  version: 0.38.0
+  resolution: "@opentelemetry/instrumentation-ioredis@npm:0.38.0"
   dependencies:
-    "@opentelemetry/instrumentation": "npm:^0.48.0"
+    "@opentelemetry/instrumentation": "npm:^0.49.1"
     "@opentelemetry/redis-common": "npm:^0.36.1"
     "@opentelemetry/semantic-conventions": "npm:^1.0.0"
     "@types/ioredis4": "npm:@types/ioredis@^4.28.10"
   peerDependencies:
     "@opentelemetry/api": ^1.3.0
-  checksum: 10/ec26360d1f7e0ad091c9008bb877852b795e2b881d62078e48d6e193bb6b12641995f95c52eba42877e87ea3642929d46e0733919cf2a5fa0bb91790167a6f1a
+  checksum: 10/2825a92c6fde895967fb55ca9631fea3b3507acee366ccf0b9af692106f35a258d124aa16e435b10dcbedf78876e6469b8531419099446d937f2fb89894674ac
   languageName: node
   linkType: hard
 
-"@opentelemetry/instrumentation-nestjs-core@npm:^0.34.0":
-  version: 0.34.0
-  resolution: "@opentelemetry/instrumentation-nestjs-core@npm:0.34.0"
+"@opentelemetry/instrumentation-nestjs-core@npm:^0.35.0":
+  version: 0.35.0
+  resolution: "@opentelemetry/instrumentation-nestjs-core@npm:0.35.0"
   dependencies:
-    "@opentelemetry/instrumentation": "npm:^0.48.0"
+    "@opentelemetry/instrumentation": "npm:^0.49.1"
     "@opentelemetry/semantic-conventions": "npm:^1.0.0"
   peerDependencies:
     "@opentelemetry/api": ^1.3.0
-  checksum: 10/f01499acd3b0ea24e9d52319012605c16f925b7c8e880428ae67b596c378deffd289b143aedc3f9bd731a299fe728b3f38315da61421fd45c5928a52b217bba9
+  checksum: 10/aa7fd8af2f5ed1dfa37933ffb735558c5e3c834a8b29521d12309e2b25256280f17a85759bf32235f4b197e010491eae02a8a3d73492c6d33a4f63f370b47896
   languageName: node
   linkType: hard
 
-"@opentelemetry/instrumentation-socket.io@npm:^0.36.0":
-  version: 0.36.0
-  resolution: "@opentelemetry/instrumentation-socket.io@npm:0.36.0"
+"@opentelemetry/instrumentation-socket.io@npm:^0.37.0":
+  version: 0.37.0
+  resolution: "@opentelemetry/instrumentation-socket.io@npm:0.37.0"
   dependencies:
-    "@opentelemetry/instrumentation": "npm:^0.48.0"
+    "@opentelemetry/instrumentation": "npm:^0.49.1"
     "@opentelemetry/semantic-conventions": "npm:^1.0.0"
   peerDependencies:
     "@opentelemetry/api": ^1.3.0
-  checksum: 10/e82c01635f6319a65fb86dc766c9fb6d1fb861c51d754baa5d28e8577de560ba512655d829dc5da8ace6a4d27cac2616cbde7ec74bfbfa3450928d430b527d49
+  checksum: 10/7376bde6a661a477e52da3d61c1b0622b72c5e19140cac2cc2cdc2d52b1e2def93ec305963f4e0cc890ac214cf0a690ebb6db9088ece6a73275343f6a4df2243
   languageName: node
   linkType: hard
 
-"@opentelemetry/instrumentation@npm:0.48.0, @opentelemetry/instrumentation@npm:^0.48.0":
+"@opentelemetry/instrumentation@npm:0.48.0":
   version: 0.48.0
   resolution: "@opentelemetry/instrumentation@npm:0.48.0"
   dependencies:
@@ -9077,7 +9076,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@opentelemetry/instrumentation@npm:0.49.1, @opentelemetry/instrumentation@npm:^0.49.0":
+"@opentelemetry/instrumentation@npm:0.49.1, @opentelemetry/instrumentation@npm:^0.49.0, @opentelemetry/instrumentation@npm:^0.49.1":
   version: 0.49.1
   resolution: "@opentelemetry/instrumentation@npm:0.49.1"
   dependencies:
@@ -28130,21 +28129,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"nx@npm:18.0.7, nx@npm:^18.0.4":
-  version: 18.0.7
-  resolution: "nx@npm:18.0.7"
+"nx@npm:18.0.8, nx@npm:^18.0.4":
+  version: 18.0.8
+  resolution: "nx@npm:18.0.8"
   dependencies:
-    "@nrwl/tao": "npm:18.0.7"
-    "@nx/nx-darwin-arm64": "npm:18.0.7"
-    "@nx/nx-darwin-x64": "npm:18.0.7"
-    "@nx/nx-freebsd-x64": "npm:18.0.7"
-    "@nx/nx-linux-arm-gnueabihf": "npm:18.0.7"
-    "@nx/nx-linux-arm64-gnu": "npm:18.0.7"
-    "@nx/nx-linux-arm64-musl": "npm:18.0.7"
-    "@nx/nx-linux-x64-gnu": "npm:18.0.7"
-    "@nx/nx-linux-x64-musl": "npm:18.0.7"
-    "@nx/nx-win32-arm64-msvc": "npm:18.0.7"
-    "@nx/nx-win32-x64-msvc": "npm:18.0.7"
+    "@nrwl/tao": "npm:18.0.8"
+    "@nx/nx-darwin-arm64": "npm:18.0.8"
+    "@nx/nx-darwin-x64": "npm:18.0.8"
+    "@nx/nx-freebsd-x64": "npm:18.0.8"
+    "@nx/nx-linux-arm-gnueabihf": "npm:18.0.8"
+    "@nx/nx-linux-arm64-gnu": "npm:18.0.8"
+    "@nx/nx-linux-arm64-musl": "npm:18.0.8"
+    "@nx/nx-linux-x64-gnu": "npm:18.0.8"
+    "@nx/nx-linux-x64-musl": "npm:18.0.8"
+    "@nx/nx-win32-arm64-msvc": "npm:18.0.8"
+    "@nx/nx-win32-x64-msvc": "npm:18.0.8"
     "@yarnpkg/lockfile": "npm:^1.1.0"
     "@yarnpkg/parsers": "npm:3.0.0-rc.46"
     "@zkochan/js-yaml": "npm:0.0.6"
@@ -28210,7 +28209,7 @@ __metadata:
   bin:
     nx: bin/nx.js
     nx-cloud: bin/nx-cloud.js
-  checksum: 10/c9bee9bd161a7eca730db0a95a941eaddac1a0eb4453a691d498b61d4b15e9fac0b2bdf0a38485104c139147975b9dd3e5d709cb0a45c4d100e04db887f26e5f
+  checksum: 10/f590a9a8d314161555c4a3d8fa7b2e57997eb7c3cd8d9639c24e735af23299850843898da1c682c08b6f60d1b9ab3e99e29b3caa8be8a3bd654419f427d7caa9
   languageName: node
   linkType: hard
 
