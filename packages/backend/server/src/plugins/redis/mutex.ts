@@ -1,10 +1,11 @@
 import { randomUUID } from 'node:crypto';
+import { setTimeout } from 'node:timers/promises';
 
 import { Injectable, Logger } from '@nestjs/common';
 import Redis, { Command } from 'ioredis';
 import { ClsService } from 'nestjs-cls';
 
-import { MUTEX_RETRY, MUTEX_WAIT, sleep } from '../../fundamentals';
+import { MUTEX_RETRY, MUTEX_WAIT } from '../../fundamentals';
 
 const lockScript = `local key = KEYS[1]
 local clientId = ARGV[1]
@@ -62,13 +63,12 @@ export class MutexRedisService {
           new Command('EVAL', [lockScript, '1', key, clientId, releaseTime])
         );
         if (success === 1) {
-          console.error('success lock', key);
           return true;
         } else {
           this.logger.warn(
             `Failed to fetch lock ${key}, retrying in ${MUTEX_WAIT} ms`
           );
-          await sleep(MUTEX_WAIT * (MUTEX_RETRY - retry + 1));
+          await setTimeout(MUTEX_WAIT * (MUTEX_RETRY - retry + 1));
           return fetchLock(retry - 1);
         }
       } catch (error: any) {

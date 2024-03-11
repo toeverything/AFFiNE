@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { setTimeout } from 'node:timers/promises';
 
 import {
   ForbiddenException,
@@ -8,8 +9,6 @@ import {
   Module,
 } from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
-
-import { sleep } from '../utils/utils';
 
 export const MUTEX_RETRY = 3;
 export const MUTEX_WAIT = 100;
@@ -66,11 +65,10 @@ export class MutexService {
         this.logger.warn(
           `Failed to fetch lock ${key}, retrying in ${MUTEX_WAIT} ms`
         );
-        await sleep(MUTEX_WAIT * (MUTEX_RETRY - retry + 1));
+        await setTimeout(MUTEX_WAIT * (MUTEX_RETRY - retry + 1));
         return fetchLock(retry - 1);
       }
       this.bucket.set(key, id);
-      console.error('success lock', key);
       return true;
     };
 
