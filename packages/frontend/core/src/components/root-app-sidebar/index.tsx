@@ -178,11 +178,7 @@ export const RootAppSidebar = ({
   return (
     <AppSidebar
       hasBackground={
-        !(
-          appSettings.enableBlurBackground &&
-          environment.isDesktop &&
-          environment.isMacOs
-        )
+        !(appSettings.enableBlurBackground && environment.isDesktop)
       }
     >
       <MoveToTrash.ConfirmModal
