@@ -1,5 +1,4 @@
 import cp from 'node:child_process';
-import { rm, symlink } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -9,7 +8,6 @@ import {
   arch,
   buildType,
   icnsPath,
-  iconUrl,
   icoPath,
   platform,
   productName,
@@ -65,18 +63,17 @@ const makers = [
       platforms: ['darwin', 'linux', 'win32'],
     },
   },
+  // !process.env.SKIP_BUNDLE && {
+  //   name: '@electron-forge/maker-squirrel',
+  //   config: {
+  //     name: productName,
+  //     setupIcon: icoPath,
+  //     iconUrl: iconUrl,
+  //     loadingGif: './resources/icons/affine_installing.gif',
+  //   },
+  // },
   !process.env.SKIP_BUNDLE && {
-    name: '@electron-forge/maker-squirrel',
-    config: {
-      name: productName,
-      setupIcon: icoPath,
-      iconUrl: iconUrl,
-      loadingGif: './resources/icons/affine_installing.gif',
-    },
-  },
-  !process.env.SKIP_BUNDLE && {
-    name: '@pengx17/electron-forge-maker-appimage',
-    platforms: ['linux'],
+    name: '@toinane/electron-forge-maker-nsis',
   },
 ].filter(Boolean);
 
@@ -123,19 +120,6 @@ export default {
       // we want different package name for canary build
       // so stable and canary will not share the same app data
       packageJson.productName = productName;
-    },
-    prePackage: async () => {
-      if (!process.env.HOIST_NODE_MODULES) {
-        await rm(path.join(__dirname, 'node_modules'), {
-          recursive: true,
-          force: true,
-        });
-
-        await symlink(
-          path.join(__dirname, '..', '..', '..', 'node_modules'),
-          path.join(__dirname, 'node_modules')
-        );
-      }
     },
     generateAssets: async (_, platform, arch) => {
       if (process.env.SKIP_GENERATE_ASSETS) {
