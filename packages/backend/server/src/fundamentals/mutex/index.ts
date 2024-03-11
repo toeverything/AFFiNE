@@ -32,18 +32,23 @@ export class MutexService {
     return id;
   }
 
-  async lockWith<R>(key: string, cb: () => Promise<R>): Promise<R> {
+  /// `lockWith` will only throw error if failed to acquire lock
+  /// if the callback throws error, it will be returned as result
+  async lockWith<R>(key: string, cb: () => Promise<R>): Promise<R | Error> {
     const locked = await this.lock(key);
     if (locked) {
-      let result: R;
+      let result: R | Error;
       try {
         result = await cb();
+      } catch (e: any) {
+        // return error as result
+        result = e;
       } finally {
         await this.unlock(key);
       }
       return result;
     } else {
-      throw new ForbiddenException('Failed to acquire lock');
+      throw new ForbiddenException(`Failed to acquire lock: ${key}`);
     }
   }
 
