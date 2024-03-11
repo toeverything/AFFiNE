@@ -41,6 +41,10 @@ export const FunctionalityModules = [
   ScheduleModule.forRoot(),
   EventModule,
   CacheModule,
+  // async context binding for nestjs
+  // now we use it alloc an unique id for each request
+  // currently we use this id to identify the mutex lock owner
+  // an mutex lock will only be released by the owner or expired
   ClsModule.forRoot({
     global: true,
     middleware: { mount: true },
