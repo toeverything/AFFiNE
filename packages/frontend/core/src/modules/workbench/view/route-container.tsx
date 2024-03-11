@@ -6,6 +6,7 @@ import { useService } from '@toeverything/infra/di';
 import { useAtomValue } from 'jotai';
 import { Suspense, useCallback } from 'react';
 
+import { AffineErrorBoundary } from '../../../components/affine/affine-error-boundary';
 import {
   appSidebarOpenAtom,
   SidebarSwitch,
@@ -68,9 +69,11 @@ export const RouteContainer = ({ route }: Props) => {
         )}
       </div>
       <view.body.Target className={styles.viewBodyContainer} />
-      <Suspense>
-        <route.Component />
-      </Suspense>
+      <AffineErrorBoundary>
+        <Suspense>
+          <route.Component />
+        </Suspense>
+      </AffineErrorBoundary>
     </div>
   );
 };

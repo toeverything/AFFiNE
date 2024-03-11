@@ -1,0 +1,30 @@
+import type { Doc } from '@blocksuite/store';
+import { type Map as YMap } from 'yjs';
+
+/**
+ * TODO: Define error to unexpected state together in the future.
+ */
+export class NoPageRootError extends Error {
+  constructor(public page: Doc) {
+    super('Page root not found when render editor!');
+
+    // Log info to let sentry collect more message
+    const hasExpectSpace = Array.from(page.rootDoc.spaces.values()).some(
+      doc => page.spaceDoc.guid === doc.guid
+    );
+    const blocks = page.spaceDoc.getMap('blocks') as YMap<YMap<any>>;
+    const havePageBlock = Array.from(blocks.values()).some(
+      block => block.get('sys:flavour') === 'affine:page'
+    );
+    console.info(
+      'NoPageRootError current data: %s',
+      JSON.stringify({
+        expectPageId: page.id,
+        expectGuid: page.spaceDoc.guid,
+        hasExpectSpace,
+        blockSize: blocks.size,
+        havePageBlock,
+      })
+    );
+  }
+}
