@@ -16,6 +16,7 @@ import {
   switchMap,
 } from 'rxjs';
 import { BehaviorSubject, Subject } from 'rxjs';
+import type { AbstractType as YAbstractType } from 'yjs';
 
 export * from './react';
 
@@ -130,6 +131,43 @@ export class LiveData<T = unknown> implements InteropObservable<T> {
     );
 
     return data;
+  }
+
+  /**
+   * @example
+   * ```ts
+   * LiveData.fromYjs(ymap, ymap => ymap.toJSON(), {
+   *   deep: true,
+   * });
+   * ```
+   */
+  static fromYjs<T extends YAbstractType<any>, N>(
+    ytype: T,
+    normalize: (v: T, prev?: N) => N,
+    { deep = false }: { deep?: boolean } = {}
+  ): LiveData<N> {
+    return LiveData.from(
+      new Observable<N>(subscriber => {
+        let prev = undefined as N | undefined;
+        const onChange = () => {
+          prev = normalize(ytype, prev);
+          subscriber.next(prev);
+        };
+        onChange();
+        if (deep) {
+          ytype.observeDeep(onChange);
+          return () => {
+            ytype.unobserveDeep(onChange);
+          };
+        } else {
+          ytype.observe(onChange);
+          return () => {
+            ytype.unobserve(onChange);
+          };
+        }
+      }),
+      null as any
+    );
   }
 
   private readonly raw: BehaviorSubject<T>;

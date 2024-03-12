@@ -1,6 +1,12 @@
 import type { Subscriber } from 'rxjs';
 import { combineLatest, Observable, of } from 'rxjs';
 import { describe, expect, test, vitest } from 'vitest';
+import {
+  applyUpdate,
+  Array as YArray,
+  Doc as YDoc,
+  encodeStateAsUpdate,
+} from 'yjs';
 
 import { LiveData } from '..';
 
@@ -130,6 +136,48 @@ describe('livedata', () => {
       expect(livedata.value).toBe(0);
       value = 1;
       expect(livedata.value).toBe(1);
+    }
+  });
+
+  test('fromYjs', () => {
+    {
+      const ydoc = new YDoc();
+      const ymap = ydoc.getMap('test');
+      ymap.set('a', 1);
+
+      const livedata = LiveData.fromYjs(ymap, ymap => ymap.toJSON());
+      expect(livedata.value).toEqual({ a: 1 });
+
+      ymap.set('b', 2);
+      expect(livedata.value).toEqual({ a: 1, b: 2 });
+
+      const remoteYdoc = new YDoc();
+      const remoteYmap = remoteYdoc.getMap('test');
+      remoteYmap.set('c', 3);
+      const update = encodeStateAsUpdate(remoteYdoc);
+      applyUpdate(ydoc, update);
+
+      expect(livedata.value).toEqual({ a: 1, b: 2, c: 3 });
+    }
+
+    {
+      const ydoc = new YDoc();
+      const ymap = ydoc.getMap('test');
+      ymap.set('a', new YArray());
+      const yarray = ymap.get('a') as YArray<number>;
+      yarray.push([1]);
+
+      const livedata = LiveData.fromYjs(ymap, ymap => ymap.toJSON(), {
+        deep: true,
+      });
+      let value = 0 as any;
+      livedata.subscribe(v => {
+        value = v;
+      });
+      expect(value).toEqual({ a: [1] });
+
+      yarray.push([2]);
+      expect(value).toEqual({ a: [1, 2] });
     }
   });
 
