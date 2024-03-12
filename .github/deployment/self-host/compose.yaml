@@ -1,6 +1,6 @@
 services:
   affine:
-    image: ghcr.io/toeverything/affine-graphql:beta
+    image: ghcr.io/toeverything/affine-graphql:stable
     container_name: affine_selfhosted
     command:
       ['sh', '-c', 'node ./scripts/self-host-predeploy && node ./dist/index.js']
@@ -23,7 +23,7 @@ services:
         max-size: '1000m'
     restart: unless-stopped
     environment:
-      - NODE_OPTIONS=--es-module-specifier-resolution node
+      - NODE_OPTIONS="--import=./scripts/register.js"
       - AFFINE_CONFIG_PATH=/root/.affine/config
       - REDIS_SERVER_HOST=redis
       - DATABASE_URL=postgres://affine:affine@postgres:5432/affine

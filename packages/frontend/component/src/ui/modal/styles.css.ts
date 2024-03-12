@@ -43,6 +43,7 @@ export const closeButton = style({
   position: 'absolute',
   top: '22px',
   right: '20px',
+  zIndex: cssVar('zIndexModal'),
 });
 export const modalHeader = style({
   fontSize: cssVar('fontH6'),
@@ -69,6 +70,8 @@ export const modalFooter = style({
 export const confirmModalContent = style({
   marginTop: '12px',
   marginBottom: '20px',
+  height: '100%',
+  overflowY: 'auto',
 });
 export const confirmModalContainer = style({
   display: 'flex',

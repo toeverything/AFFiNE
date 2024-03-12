@@ -1,5 +1,7 @@
 import * as Dialog from '@radix-ui/react-dialog';
-import { useEffect, useReducer } from 'react';
+import { assignInlineVars } from '@vanilla-extract/dynamic';
+import { useEffect } from 'react';
+import { useTransition } from 'react-transition-state';
 
 import * as styles from './modal.css';
 
@@ -11,52 +13,30 @@ export interface CMDKModalProps {
   onOpenChange?: (open: boolean) => void;
 }
 
-type ModalAnimationState = 'entering' | 'entered' | 'exiting' | 'exited';
-
-function reduceAnimationState(
-  state: ModalAnimationState,
-  action: 'open' | 'close' | 'finish'
-) {
-  switch (action) {
-    case 'open':
-      return state === 'entered' || state === 'entering' ? state : 'entering';
-    case 'close':
-      return state === 'exited' || state === 'exiting' ? state : 'exiting';
-    case 'finish':
-      return state === 'entering' ? 'entered' : 'exited';
-  }
-}
+const animationTimeout = 120;
 
 export const CMDKModal = ({
   onOpenChange,
   open,
   children,
 }: React.PropsWithChildren<CMDKModalProps>) => {
-  const [animationState, dispatch] = useReducer(reduceAnimationState, 'exited');
-
+  const [{ status }, toggle] = useTransition({
+    timeout: animationTimeout,
+  });
   useEffect(() => {
-    dispatch(open ? 'open' : 'close');
-    const timeout = setTimeout(() => {
-      dispatch('finish');
-    }, 120);
-
-    return () => {
-      clearTimeout(timeout);
-    };
+    toggle(open);
   }, [open]);
-
   return (
-    <Dialog.Root
-      modal
-      open={animationState !== 'exited'}
-      onOpenChange={onOpenChange}
-    >
+    <Dialog.Root modal open={status !== 'exited'} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className={styles.modalOverlay} />
         <div className={styles.modalContentWrapper}>
           <Dialog.Content
+            style={assignInlineVars({
+              [styles.animationTimeout]: `${animationTimeout}ms`,
+            })}
             className={styles.modalContent}
-            data-state={animationState}
+            data-state={status}
           >
             {children}
           </Dialog.Content>

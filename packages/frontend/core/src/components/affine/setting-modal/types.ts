@@ -9,6 +9,7 @@ export const GeneralSettingKeys = [
 export const WorkspaceSubTabs = [
   'preference',
   'experimental-features',
+  'properties',
 ] as const;
 
 export type GeneralSettingKey = (typeof GeneralSettingKeys)[number];

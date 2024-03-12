@@ -1,6 +1,7 @@
 import { PrismaAdapter } from '@auth/prisma-adapter';
 import { FactoryProvider, Logger } from '@nestjs/common';
 import { verify } from '@node-rs/argon2';
+import { PrismaClient } from '@prisma/client';
 import { assign, omit } from 'lodash-es';
 import { NextAuthOptions } from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
@@ -8,12 +9,7 @@ import Email from 'next-auth/providers/email';
 import Github from 'next-auth/providers/github';
 import Google from 'next-auth/providers/google';
 
-import {
-  Config,
-  MailService,
-  PrismaService,
-  SessionService,
-} from '../../fundamentals';
+import { Config, MailService, SessionService } from '../../fundamentals';
 import { FeatureType } from '../features';
 import { Quota_FreePlanV1_1 } from '../quota';
 import {
@@ -31,7 +27,7 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
   provide: NextAuthOptionsProvide,
   useFactory(
     config: Config,
-    prisma: PrismaService,
+    prisma: PrismaClient,
     mailer: MailService,
     session: SessionService
   ) {
@@ -64,6 +60,7 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
       if (data.image) {
         userData.avatarUrl = data.image;
       }
+      // @ts-expect-error third part library type mismatch
       return createUser(userData);
     };
     // linkAccount exists in the adapter
@@ -96,28 +93,29 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
       }
       return result;
     };
+
+    prismaAdapter.createVerificationToken = async data => {
+      await session.set(
+        `${data.identifier}:${data.token}`,
+        Date.now() + session.sessionTtl
+      );
+      return data;
+    };
+
+    prismaAdapter.useVerificationToken = async ({ identifier, token }) => {
+      const expires = await session.get(`${identifier}:${token}`);
+      if (expires) {
+        return { identifier, token, expires: new Date(expires) };
+      } else {
+        return null;
+      }
+    };
+
     const nextAuthOptions: NextAuthOptions = {
-      providers: [
-        // @ts-expect-error esm interop issue
-        Email.default({
-          server: {
-            host: config.auth.email.server,
-            port: config.auth.email.port,
-            auth: {
-              user: config.auth.email.login,
-              pass: config.auth.email.password,
-            },
-          },
-          from: config.auth.email.sender,
-          sendVerificationRequest: (params: SendVerificationRequestParams) =>
-            sendVerificationRequest(config, logger, mailer, session, params),
-        }),
-      ],
+      providers: [],
+      // @ts-expect-error Third part library type mismatch
       adapter: prismaAdapter,
       debug: !config.node.prod,
-      session: {
-        strategy: 'database',
-      },
       logger: {
         debug(code, metadata) {
           logger.debug(`${code}: ${JSON.stringify(metadata)}`);
@@ -170,6 +168,16 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
       })
     );
 
+    if (config.mailer && mailer) {
+      nextAuthOptions.providers.push(
+        // @ts-expect-error esm interop issue
+        Email.default({
+          sendVerificationRequest: (params: SendVerificationRequestParams) =>
+            sendVerificationRequest(config, logger, mailer, session, params),
+        })
+      );
+    }
+
     if (config.auth.oauthProviders.github) {
       nextAuthOptions.providers.push(
         // @ts-expect-error esm interop issue
@@ -194,6 +202,11 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
           },
         })
       );
+    }
+
+    if (nextAuthOptions.providers.length > 1) {
+      // not only credentials provider
+      nextAuthOptions.session = { strategy: 'database' };
     }
 
     nextAuthOptions.jwt = {
@@ -269,5 +282,5 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
     };
     return nextAuthOptions;
   },
-  inject: [Config, PrismaService, MailService, SessionService],
+  inject: [Config, PrismaClient, MailService, SessionService],
 };

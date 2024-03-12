@@ -1,8 +1,9 @@
-import { routes } from '@affine/core/router';
+import { NavigateContext } from '@affine/core/hooks/use-navigate-helper';
+import { workbenchRoutes } from '@affine/core/router';
 import { assertExists } from '@blocksuite/global/utils';
 import type { StoryFn } from '@storybook/react';
 import { screen, userEvent, waitFor, within } from '@storybook/testing-library';
-import { Outlet, useLocation } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   reactRouterOutlets,
   reactRouterParameters,
@@ -11,8 +12,13 @@ import {
 
 const FakeApp = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   // fixme: `key` is a hack to force the storybook to re-render the outlet
-  return <Outlet key={location.pathname} />;
+  return (
+    <NavigateContext.Provider value={navigate}>
+      <Outlet key={location.pathname} />
+    </NavigateContext.Provider>
+  );
 };
 
 export default {
@@ -28,7 +34,7 @@ export const Index: StoryFn = () => {
 Index.decorators = [withRouter];
 Index.parameters = {
   reactRouter: reactRouterParameters({
-    routing: reactRouterOutlets(routes),
+    routing: reactRouterOutlets(workbenchRoutes),
   }),
 };
 
@@ -74,7 +80,7 @@ SettingPage.play = async ({ canvasElement, step }) => {
 SettingPage.decorators = [withRouter];
 SettingPage.parameters = {
   reactRouter: reactRouterParameters({
-    routing: reactRouterOutlets(routes),
+    routing: reactRouterOutlets(workbenchRoutes),
   }),
 };
 
@@ -84,7 +90,7 @@ export const NotFoundPage: StoryFn = () => {
 NotFoundPage.decorators = [withRouter];
 NotFoundPage.parameters = {
   reactRouter: reactRouterParameters({
-    routing: reactRouterOutlets(routes),
+    routing: reactRouterOutlets(workbenchRoutes),
     location: {
       path: '/404',
     },
@@ -114,7 +120,7 @@ WorkspaceList.play = async ({ canvasElement }) => {
 WorkspaceList.decorators = [withRouter];
 WorkspaceList.parameters = {
   reactRouter: reactRouterParameters({
-    routing: reactRouterOutlets(routes),
+    routing: reactRouterOutlets(workbenchRoutes),
     location: {
       path: '/',
     },
@@ -151,7 +157,7 @@ SearchPage.play = async ({ canvasElement }) => {
 SearchPage.decorators = [withRouter];
 SearchPage.parameters = {
   reactRouter: reactRouterParameters({
-    routing: reactRouterOutlets(routes),
+    routing: reactRouterOutlets(workbenchRoutes),
     location: {
       path: '/',
     },
@@ -193,7 +199,7 @@ ImportPage.play = async ({ canvasElement }) => {
 ImportPage.decorators = [withRouter];
 ImportPage.parameters = {
   reactRouter: reactRouterParameters({
-    routing: reactRouterOutlets(routes),
+    routing: reactRouterOutlets(workbenchRoutes),
     location: {
       path: '/',
     },
@@ -206,7 +212,7 @@ export const OpenAppPage: StoryFn = () => {
 OpenAppPage.decorators = [withRouter];
 OpenAppPage.parameters = {
   reactRouter: reactRouterParameters({
-    routing: reactRouterOutlets(routes),
+    routing: reactRouterOutlets(workbenchRoutes),
     location: {
       path: '/open-app/url',
       searchParams: {

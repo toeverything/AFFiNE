@@ -1,7 +1,10 @@
+import { Loading } from '@affine/component/ui/loading';
 import { formatDate } from '@affine/core/components/page-list';
+import { useSyncEngineStatus } from '@affine/core/hooks/affine/use-sync-engine-status';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import type { PageMeta } from '@blocksuite/store';
+import type { DocMeta } from '@blocksuite/store';
+import { SyncEngineStep } from '@toeverything/infra';
 import type { CommandCategory } from '@toeverything/infra/command';
 import clsx from 'clsx';
 import { Command } from 'cmdk';
@@ -152,7 +155,7 @@ export const CMDKContainer = ({
   open: boolean;
   className?: string;
   query: string;
-  pageMeta?: PageMeta;
+  pageMeta?: DocMeta;
   groups: ReturnType<typeof useCMDKCommandGroups>;
   onQueryChange: (query: string) => void;
 }>) => {
@@ -160,7 +163,7 @@ export const CMDKContainer = ({
   const [value, setValue] = useAtom(cmdkValueAtom);
   const isInEditor = pageMeta !== undefined;
   const [opening, setOpening] = useState(open);
-
+  const { syncEngineStatus, progress } = useSyncEngineStatus();
   const inputRef = useRef<HTMLInputElement>(null);
 
   // fix list height animation on opening
@@ -197,16 +200,29 @@ export const CMDKContainer = ({
           </span>
         </div>
       ) : null}
-      <Command.Input
-        placeholder={t['com.affine.cmdk.placeholder']()}
-        ref={inputRef}
-        {...rest}
-        value={query}
-        onValueChange={onQueryChange}
-        className={clsx(className, styles.searchInput, {
+      <div
+        className={clsx(className, styles.searchInputContainer, {
           inEditor: isInEditor,
         })}
-      />
+      >
+        {!syncEngineStatus ||
+        syncEngineStatus.step === SyncEngineStep.Syncing ? (
+          <Loading
+            size={24}
+            progress={progress ? Math.max(progress, 0.2) : undefined}
+            speed={progress ? 0 : undefined}
+          />
+        ) : null}
+        <Command.Input
+          placeholder={t['com.affine.cmdk.placeholder']()}
+          ref={inputRef}
+          {...rest}
+          value={query}
+          onValueChange={onQueryChange}
+          className={clsx(className, styles.searchInput)}
+        />
+      </div>
+
       <Command.List data-opening={opening ? true : undefined}>
         {children}
       </Command.List>
@@ -219,7 +235,7 @@ const CMDKQuickSearchModalInner = ({
   pageMeta,
   open,
   ...props
-}: CMDKModalProps & { pageMeta?: PageMeta }) => {
+}: CMDKModalProps & { pageMeta?: DocMeta }) => {
   const [query, setQuery] = useAtom(cmdkQueryAtom);
   useLayoutEffect(() => {
     if (open) {
@@ -245,7 +261,7 @@ export const CMDKQuickSearchModal = ({
   pageMeta,
   open,
   ...props
-}: CMDKModalProps & { pageMeta?: PageMeta }) => {
+}: CMDKModalProps & { pageMeta?: DocMeta }) => {
   return (
     <CMDKModal open={open} {...props}>
       <Suspense fallback={<Command.Loading />}>

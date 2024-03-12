@@ -5,6 +5,7 @@ import type {
   VariableMap,
 } from '@affine/env/filter';
 import {
+  CloudWorkspaceIcon,
   CreatedIcon,
   FavoriteIcon,
   TagsIcon,
@@ -43,6 +44,10 @@ export const variableDefineMap = {
   Tags: {
     type: meta => tArray(tTag.create({ tags: meta.tags?.options ?? [] })),
     icon: <TagsIcon />,
+  },
+  'Is Public': {
+    type: () => tBoolean.create(),
+    icon: <CloudWorkspaceIcon />,
   },
   // Imported: {
   //   type: tBoolean.create(),

@@ -23,11 +23,10 @@ export type _QueryVariables<Q extends GraphQLQuery> =
       ? Extract<Mutations, { name: Q['id'] }>['variables']
       : undefined;
 
-export type QueryVariables<Q extends GraphQLQuery> = _QueryVariables<Q> extends
-  | never
-  | Record<string, never>
-  ? never
-  : _QueryVariables<Q>;
+export type QueryVariables<Q extends GraphQLQuery> =
+  _QueryVariables<Q> extends never | Record<string, never>
+    ? never
+    : _QueryVariables<Q>;
 
 export type QueryResponse<Q extends GraphQLQuery> = Extract<
   Queries | Mutations,

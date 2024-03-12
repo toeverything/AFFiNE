@@ -1,7 +1,7 @@
 import { resolve } from 'node:path';
 
 import { SqliteConnection } from '@affine/native';
-import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
+import { AffineSchemas } from '@blocksuite/blocks/schemas';
 import { Schema } from '@blocksuite/store';
 import {
   forceUpgradePages,
@@ -51,7 +51,7 @@ export const migrateToLatest = async (
     await connection.setVersion(version);
   }
   const schema = new Schema();
-  schema.register(AffineSchemas).register(__unstableSchemas);
+  schema.register(AffineSchemas);
   const rootDoc = new YDoc();
   const downloadBinary = async (doc: YDoc, isRoot: boolean): Promise<void> => {
     const update = (

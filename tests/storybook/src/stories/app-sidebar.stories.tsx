@@ -3,16 +3,16 @@ import {
   AppSidebarFallback,
   appSidebarOpenAtom,
   SidebarSwitch,
-} from '@affine/component/app-sidebar';
-import { AddPageButton } from '@affine/component/app-sidebar';
-import { CategoryDivider } from '@affine/component/app-sidebar';
-import { navHeaderStyle } from '@affine/component/app-sidebar';
-import { MenuLinkItem } from '@affine/component/app-sidebar';
-import { QuickSearchInput } from '@affine/component/app-sidebar';
+} from '@affine/core/components/app-sidebar';
+import { AddPageButton } from '@affine/core/components/app-sidebar';
+import { CategoryDivider } from '@affine/core/components/app-sidebar';
+import { navHeaderStyle } from '@affine/core/components/app-sidebar';
+import { MenuLinkItem } from '@affine/core/components/app-sidebar';
+import { QuickSearchInput } from '@affine/core/components/app-sidebar';
 import {
   SidebarContainer,
   SidebarScrollableContainer,
-} from '@affine/component/app-sidebar';
+} from '@affine/core/components/app-sidebar';
 import { DeleteTemporarilyIcon, SettingsIcon } from '@blocksuite/icons';
 import type { Meta, StoryFn } from '@storybook/react';
 import { useAtom } from 'jotai';

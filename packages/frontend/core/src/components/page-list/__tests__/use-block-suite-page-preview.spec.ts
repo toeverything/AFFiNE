@@ -3,9 +3,9 @@
  */
 import 'fake-indexeddb/auto';
 
-import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
+import { AffineSchemas } from '@blocksuite/blocks/schemas';
 import { assertExists } from '@blocksuite/global/utils';
-import type { Page } from '@blocksuite/store';
+import type { Doc } from '@blocksuite/store';
 import { Schema, Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
 import { renderHook } from '@testing-library/react';
 import { useAtomValue } from 'jotai';
@@ -16,13 +16,13 @@ import { useBlockSuitePagePreview } from '../use-block-suite-page-preview';
 let blockSuiteWorkspace: BlockSuiteWorkspace;
 
 const schema = new Schema();
-schema.register(AffineSchemas).register(__unstableSchemas);
+schema.register(AffineSchemas);
 
 beforeEach(async () => {
   vi.useFakeTimers({ toFake: ['requestIdleCallback'] });
   blockSuiteWorkspace = new BlockSuiteWorkspace({ id: 'test', schema });
-  const initPage = async (page: Page) => {
-    await page.waitForLoaded();
+  const initPage = async (page: Doc) => {
+    page.load();
     expect(page).not.toBeNull();
     assertExists(page);
     const pageBlockId = page.addBlock('affine:page', {
@@ -31,12 +31,12 @@ beforeEach(async () => {
     const frameId = page.addBlock('affine:note', {}, pageBlockId);
     page.addBlock('affine:paragraph', {}, frameId);
   };
-  await initPage(blockSuiteWorkspace.createPage({ id: 'page0' }));
+  await initPage(blockSuiteWorkspace.createDoc({ id: 'page0' }));
 });
 
 describe('useBlockSuitePagePreview', () => {
   test('basic', async () => {
-    const page = blockSuiteWorkspace.getPage('page0') as Page;
+    const page = blockSuiteWorkspace.getDoc('page0') as Doc;
     const id = page.addBlock(
       'affine:paragraph',
       {

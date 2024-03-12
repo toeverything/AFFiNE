@@ -74,7 +74,7 @@ const OpenAppImpl = ({ urlToOpen, channel }: OpenAppProps) => {
 
   if (urlToOpen && lastOpened !== urlToOpen && autoOpen) {
     lastOpened = urlToOpen;
-    open(urlToOpen, '_blank');
+    location.href = urlToOpen;
   }
 
   if (!urlToOpen) {

@@ -19,9 +19,8 @@ declare global {
 }
 
 declare module '@blocksuite/store' {
-  interface PageMeta {
+  interface DocMeta {
     favorite?: boolean;
-    subpageIds: string[];
     // If a page remove to trash, and it is a subpage, it will remove from its parent `subpageIds`, 'trashRelate' is use for save it parent
     trashRelate?: string;
     trash?: boolean;

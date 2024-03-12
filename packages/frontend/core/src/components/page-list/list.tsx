@@ -1,5 +1,4 @@
-import { Scrollable } from '@affine/component';
-import { useHasScrollTop } from '@affine/component/app-sidebar';
+import { Scrollable, useHasScrollTop } from '@affine/component';
 import clsx from 'clsx';
 import {
   type ForwardedRef,

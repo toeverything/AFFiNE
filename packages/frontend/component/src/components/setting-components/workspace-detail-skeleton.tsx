@@ -8,19 +8,15 @@ export const WorkspaceDetailSkeleton = () => {
     <>
       <SettingHeader title={<Skeleton />} subtitle={<Skeleton />} />
 
-      {Array.from({ length: 3 })
-        .fill(0)
-        .map((_, index) => {
-          return (
-            <SettingWrapper title={<Skeleton />} key={index}>
-              <SettingRow
-                name={<Skeleton />}
-                desc={<Skeleton />}
-                spreadCol={false}
-              ></SettingRow>
-            </SettingWrapper>
-          );
-        })}
+      {Array.from({ length: 3 }, (_, index) => (
+        <SettingWrapper title={<Skeleton />} key={index}>
+          <SettingRow
+            name={<Skeleton />}
+            desc={<Skeleton />}
+            spreadCol={false}
+          ></SettingRow>
+        </SettingWrapper>
+      ))}
     </>
   );
 };

@@ -1,9 +1,8 @@
-import { currentPageIdAtom } from '@affine/core/atoms/mode';
-import { useCollectionManager } from '@affine/core/components/page-list';
 import {
-  useBlockSuitePageMeta,
-  usePageMetaHelper,
+  useBlockSuiteDocMeta,
+  useDocMetaHelper,
 } from '@affine/core/hooks/use-block-suite-page-meta';
+import { useGetBlockSuiteWorkspacePageTitle } from '@affine/core/hooks/use-block-suite-workspace-page-title';
 import { useJournalHelper } from '@affine/core/hooks/use-journal';
 import { CollectionService } from '@affine/core/modules/collection';
 import { WorkspaceSubPath } from '@affine/core/shared';
@@ -15,19 +14,24 @@ import {
   TodayIcon,
   ViewLayersIcon,
 } from '@blocksuite/icons';
-import { type PageMeta } from '@blocksuite/store';
-import { useService, Workspace } from '@toeverything/infra';
-import { getCurrentStore } from '@toeverything/infra/atom';
+import type { DocMeta } from '@blocksuite/store';
+import {
+  Doc,
+  PageRecordList,
+  useLiveData,
+  Workspace,
+} from '@toeverything/infra';
 import {
   type AffineCommand,
   AffineCommandRegistry,
   type CommandCategory,
   PreconditionStrategy,
 } from '@toeverything/infra/command';
+import { useService, useServiceOptional } from '@toeverything/infra/di';
 import { atom, useAtomValue } from 'jotai';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { pageSettingsAtom, recentPageIdsBaseAtom } from '../../../atoms';
+import { recentPageIdsBaseAtom } from '../../../atoms';
 import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
 import { usePageHelper } from '../../blocksuite/block-suite-page-list/utils';
 import { filterSortAndGroupCommands } from './filter-commands';
@@ -75,7 +79,7 @@ function getAllCommand(context: CommandContext) {
 
 const useWorkspacePages = () => {
   const workspace = useService(Workspace);
-  const pages = useBlockSuitePageMeta(workspace.blockSuiteWorkspace);
+  const pages = useBlockSuiteDocMeta(workspace.blockSuiteWorkspace);
   return pages;
 };
 
@@ -88,33 +92,41 @@ const useRecentPages = () => {
         const page = pages.find(page => page.id === pageId);
         return page;
       })
-      .filter((p): p is PageMeta => !!p);
+      .filter((p): p is DocMeta => !!p);
   }, [recentPageIds, pages]);
 };
 
 export const pageToCommand = (
   category: CommandCategory,
-  page: PageMeta,
-  store: ReturnType<typeof getCurrentStore>,
+  page: DocMeta,
   navigationHelper: ReturnType<typeof useNavigateHelper>,
+  getPageTitle: ReturnType<typeof useGetBlockSuiteWorkspacePageTitle>,
+  isPageJournal: (pageId: string) => boolean,
   t: ReturnType<typeof useAFFiNEI18N>,
   workspace: Workspace,
-  label?: {
-    title: string;
-    subTitle?: string;
-  },
+  subTitle?: string,
   blockId?: string
 ): CMDKCommand => {
-  const pageMode = store.get(pageSettingsAtom)?.[page.id]?.mode;
+  const pageMode = workspace.services.get(PageRecordList).record(page.id).value
+    ?.mode.value;
 
-  const title = page.title || t['Untitled']();
-  const commandLabel = label || {
+  const title = getPageTitle(page.id) || t['Untitled']();
+  const commandLabel = {
     title: title,
+    subTitle: subTitle,
   };
 
   // hack: when comparing, the part between >>> and <<< will be ignored
   // adding this patch so that CMDK will not complain about duplicated commands
   const id = category + '.' + page.id;
+
+  const icon = isPageJournal(page.id) ? (
+    <TodayIcon />
+  ) : pageMode === 'edgeless' ? (
+    <EdgelessIcon />
+  ) : (
+    <PageIcon />
+  );
 
   return {
     id,
@@ -130,7 +142,7 @@ export const pageToCommand = (
       }
       return navigationHelper.jumpToPage(workspace.id, page.id);
     },
-    icon: pageMode === 'edgeless' ? <EdgelessIcon /> : <PageIcon />,
+    icon: icon,
     timestamp: page.updatedDate,
   };
 };
@@ -138,14 +150,17 @@ export const pageToCommand = (
 export const usePageCommands = () => {
   const recentPages = useRecentPages();
   const pages = useWorkspacePages();
-  const store = getCurrentStore();
   const workspace = useService(Workspace);
   const pageHelper = usePageHelper(workspace.blockSuiteWorkspace);
-  const pageMetaHelper = usePageMetaHelper(workspace.blockSuiteWorkspace);
+  const pageMetaHelper = useDocMetaHelper(workspace.blockSuiteWorkspace);
   const query = useAtomValue(cmdkQueryAtom);
   const navigationHelper = useNavigateHelper();
   const journalHelper = useJournalHelper(workspace.blockSuiteWorkspace);
   const t = useAFFiNEI18N();
+  const getPageTitle = useGetBlockSuiteWorkspacePageTitle(
+    workspace.blockSuiteWorkspace
+  );
+  const { isPageJournal } = useJournalHelper(workspace.blockSuiteWorkspace);
 
   const [searchTime, setSearchTime] = useState<number>(0);
 
@@ -172,8 +187,9 @@ export const usePageCommands = () => {
         return pageToCommand(
           'affine:recent',
           page,
-          store,
           navigationHelper,
+          getPageTitle,
+          isPageJournal,
           t,
           workspace
         );
@@ -192,27 +208,23 @@ export const usePageCommands = () => {
       });
 
       results = pages.map(page => {
-        const pageMode = store.get(pageSettingsAtom)?.[page.id]?.mode;
-        const category =
-          pageMode === 'edgeless' ? 'affine:edgeless' : 'affine:pages';
+        const category = 'affine:pages';
 
-        const subTitle = resultValues.find(result => result.space === page.id)
-          ?.content;
-        const label = {
-          title: page.title || t['Untitled'](), // Used to ensure that a title exists
-          subTitle: subTitle || '',
-        };
+        const subTitle = resultValues.find(
+          result => result.space === page.id
+        )?.content;
 
         const blockId = reverseMapping.get(page.id);
 
         const command = pageToCommand(
           category,
           page,
-          store,
           navigationHelper,
+          getPageTitle,
+          isPageJournal,
           t,
           workspace,
-          label,
+          subTitle,
           blockId
         );
         return command;
@@ -247,8 +259,8 @@ export const usePageCommands = () => {
           category: 'affine:creation',
           run: async () => {
             const page = pageHelper.createPage();
-            await page.load();
-            pageMetaHelper.setPageTitle(page.id, query);
+            page.load();
+            pageMetaHelper.setDocTitle(page.id, query);
           },
           icon: <PageIcon />,
         });
@@ -262,8 +274,8 @@ export const usePageCommands = () => {
           category: 'affine:creation',
           run: async () => {
             const page = pageHelper.createEdgeless();
-            await page.load();
-            pageMetaHelper.setPageTitle(page.id, query);
+            page.load();
+            pageMetaHelper.setDocTitle(page.id, query);
           },
           icon: <EdgelessIcon />,
         });
@@ -274,8 +286,9 @@ export const usePageCommands = () => {
     searchTime,
     query,
     recentPages,
-    store,
     navigationHelper,
+    getPageTitle,
+    isPageJournal,
     t,
     workspace,
     pages,
@@ -308,9 +321,8 @@ export const collectionToCommand = (
 
 export const useCollectionsCommands = () => {
   // todo: considering collections for searching pages
-  const { savedCollections } = useCollectionManager(
-    useService(CollectionService)
-  );
+  const collectionService = useService(CollectionService);
+  const collections = useLiveData(collectionService.collections);
   const query = useAtomValue(cmdkQueryAtom);
   const navigationHelper = useNavigateHelper();
   const t = useAFFiNEI18N();
@@ -326,7 +338,7 @@ export const useCollectionsCommands = () => {
     if (query.trim() === '') {
       return results;
     } else {
-      results = savedCollections.map(collection => {
+      results = collections.map(collection => {
         const command = collectionToCommand(
           collection,
           navigationHelper,
@@ -338,24 +350,15 @@ export const useCollectionsCommands = () => {
       });
       return results;
     }
-  }, [
-    query,
-    savedCollections,
-    navigationHelper,
-    selectCollection,
-    t,
-    workspace,
-  ]);
+  }, [query, collections, navigationHelper, selectCollection, t, workspace]);
 };
 
 export const useCMDKCommandGroups = () => {
   const pageCommands = usePageCommands();
   const collectionCommands = useCollectionsCommands();
-  const currentPageId = useAtomValue(currentPageIdAtom);
-  const pageSettings = useAtomValue(pageSettingsAtom);
-  const currentPageMode = currentPageId
-    ? pageSettings[currentPageId]?.mode
-    : undefined;
+
+  const currentPage = useServiceOptional(Doc);
+  const currentPageMode = useLiveData(currentPage?.mode);
   const affineCommands = useMemo(() => {
     return getAllCommand({
       pageMode: currentPageMode,

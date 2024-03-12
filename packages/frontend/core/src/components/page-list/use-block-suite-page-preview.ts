@@ -1,13 +1,13 @@
-import type { Page } from '@blocksuite/store';
+import type { Doc } from '@blocksuite/store';
 import type { Atom } from 'jotai';
 import { atom } from 'jotai';
 
 const MAX_PREVIEW_LENGTH = 150;
 const MAX_SEARCH_BLOCK_COUNT = 30;
 
-const weakMap = new WeakMap<Page, Atom<string>>();
+const weakMap = new WeakMap<Doc, Atom<string>>();
 
-export const getPagePreviewText = (page: Page) => {
+export const getPagePreviewText = (page: Doc) => {
   const pageRoot = page.root;
   if (!pageRoot) {
     return '';
@@ -23,6 +23,11 @@ export const getPagePreviewText = (page: Page) => {
       console.error('Unexpected empty block');
       break;
     }
+    if (block.flavour === 'affine:surface') {
+      // The surface block is a special block that contains canvas data,
+      // it should not be included in the preview.
+      continue;
+    }
     if (block.children) {
       queue.unshift(...block.children);
     }
@@ -30,6 +35,7 @@ export const getPagePreviewText = (page: Page) => {
       continue;
     }
     if (block.text) {
+      // Text block e.g. paragraph/heading/list/code
       const text = block.text.toString();
       if (!text.length) {
         continue;
@@ -37,18 +43,20 @@ export const getPagePreviewText = (page: Page) => {
       previewLenNeeded -= text.length;
       preview.push(text);
     } else {
-      // image/attachment/bookmark
+      // Other block e.g. image/attachment/bookmark
       const type = block.flavour.split('affine:')[1] ?? null;
-      previewLenNeeded -= type.length + 2;
-      type && preview.push(`[${type}]`);
+      if (type) {
+        previewLenNeeded -= type.length + 2;
+        preview.push(`[${type}]`);
+      }
     }
   }
-  return preview.join(' ');
+  return preview.join(' ').slice(0, MAX_PREVIEW_LENGTH);
 };
 
 const emptyAtom = atom<string>('');
 
-export function useBlockSuitePagePreview(page: Page | null): Atom<string> {
+export function useBlockSuitePagePreview(page: Doc | null): Atom<string> {
   if (page === null) {
     return emptyAtom;
   } else if (weakMap.has(page)) {

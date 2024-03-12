@@ -1,7 +1,7 @@
 import { Button } from '@affine/component/ui/button';
 import { ConfirmModal } from '@affine/component/ui/modal';
 import { Tooltip } from '@affine/component/ui/tooltip';
-import { useBlockSuitePageMeta } from '@affine/core/hooks/use-block-suite-page-meta';
+import { useBlockSuiteDocMeta } from '@affine/core/hooks/use-block-suite-page-meta';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
 import { DeleteIcon, ResetIcon } from '@blocksuite/icons';
@@ -23,7 +23,7 @@ export const TrashPageFooter = ({ pageId }: { pageId: string }) => {
   );
   assertExists(workspace);
   const blockSuiteWorkspace = workspace.blockSuiteWorkspace;
-  const pageMeta = useBlockSuitePageMeta(blockSuiteWorkspace).find(
+  const pageMeta = useBlockSuiteDocMeta(blockSuiteWorkspace).find(
     meta => meta.id === pageId
   );
   assertExists(pageMeta);
@@ -45,7 +45,7 @@ export const TrashPageFooter = ({ pageId }: { pageId: string }) => {
 
   const onConfirmDelete = useCallback(() => {
     jumpToSubPath(workspace.id, WorkspaceSubPath.ALL);
-    blockSuiteWorkspace.removePage(pageId);
+    blockSuiteWorkspace.removeDoc(pageId);
     toast(t['com.affine.toastMessage.permanentlyDeleted']());
   }, [blockSuiteWorkspace, jumpToSubPath, pageId, workspace.id, t]);
 

@@ -4,6 +4,7 @@ import { Loading } from '@affine/component/ui/loading';
 import { Tooltip } from '@affine/component/ui/tooltip';
 import { openSettingModalAtom } from '@affine/core/atoms';
 import { useIsWorkspaceOwner } from '@affine/core/hooks/affine/use-is-workspace-owner';
+import { useSyncEngineStatus } from '@affine/core/hooks/affine/use-sync-engine-status';
 import { useWorkspaceBlobObjectUrl } from '@affine/core/hooks/use-workspace-blob';
 import { useWorkspaceInfo } from '@affine/core/hooks/use-workspace-info';
 import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
@@ -16,14 +17,10 @@ import {
   NoNetworkIcon,
   UnsyncIcon,
 } from '@blocksuite/icons';
-import {
-  type SyncEngineStatus,
-  SyncEngineStep,
-  Workspace,
-} from '@toeverything/infra';
+import { SyncEngineStep, Workspace } from '@toeverything/infra';
 import { useService } from '@toeverything/infra/di';
 import { useSetAtom } from 'jotai';
-import { debounce, mean } from 'lodash-es';
+import { debounce } from 'lodash-es';
 import {
   forwardRef,
   type HTMLAttributes,
@@ -97,8 +94,8 @@ const useSyncEngineSyncProgress = () => {
   const t = useAFFiNEI18N();
   const isOnline = useSystemOnline();
   const pushNotification = useSetAtom(pushNotificationAtom);
-  const [syncEngineStatus, setSyncEngineStatus] =
-    useState<SyncEngineStatus | null>(null);
+  const { syncEngineStatus, setSyncEngineStatus, progress } =
+    useSyncEngineStatus();
   const [isOverCapacity, setIsOverCapacity] = useState(false);
 
   const currentWorkspace = useService(Workspace);
@@ -159,25 +156,14 @@ const useSyncEngineSyncProgress = () => {
       disposable?.dispose();
       disposableOverCapacity?.dispose();
     };
-  }, [currentWorkspace, isOwner, jumpToPricePlan, pushNotification, t]);
-
-  const progress = useMemo(() => {
-    if (!syncEngineStatus?.remotes || syncEngineStatus?.remotes.length === 0) {
-      return null;
-    }
-    return mean(
-      syncEngineStatus.remotes.map(peer => {
-        if (!peer) {
-          return 0;
-        }
-        const totalTask =
-          peer.totalDocs + peer.pendingPullUpdates + peer.pendingPushUpdates;
-        const doneTask = peer.loadedDocs;
-
-        return doneTask / totalTask;
-      })
-    );
-  }, [syncEngineStatus?.remotes]);
+  }, [
+    currentWorkspace,
+    isOwner,
+    jumpToPricePlan,
+    pushNotification,
+    setSyncEngineStatus,
+    t,
+  ]);
 
   const content = useMemo(() => {
     // TODO: add i18n

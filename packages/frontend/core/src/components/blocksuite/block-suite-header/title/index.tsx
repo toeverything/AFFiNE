@@ -1,7 +1,7 @@
 import { InlineEdit, type InlineEditProps } from '@affine/component';
 import {
-  useBlockSuitePageMeta,
-  usePageMetaHelper,
+  useBlockSuiteDocMeta,
+  useDocMetaHelper,
 } from '@affine/core/hooks/use-block-suite-page-meta';
 import type { BlockSuiteWorkspace } from '@affine/core/shared';
 import type { HTMLAttributes } from 'react';
@@ -27,18 +27,18 @@ export const BlocksuiteHeaderTitle = (props: BlockSuiteHeaderTitleProps) => {
     isPublic,
     inputHandleRef,
   } = props;
-  const currentPage = workspace.getPage(pageId);
-  const pageMeta = useBlockSuitePageMeta(workspace).find(
+  const currentPage = workspace.getDoc(pageId);
+  const pageMeta = useBlockSuiteDocMeta(workspace).find(
     meta => meta.id === currentPage?.id
   );
   const title = pageMeta?.title;
-  const { setPageTitle } = usePageMetaHelper(workspace);
+  const { setDocTitle } = useDocMetaHelper(workspace);
 
   const onChange = useCallback(
     (v: string) => {
-      setPageTitle(currentPage?.id || '', v);
+      setDocTitle(currentPage?.id || '', v);
     },
-    [currentPage?.id, setPageTitle]
+    [currentPage?.id, setDocTitle]
   );
 
   return (

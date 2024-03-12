@@ -7,6 +7,7 @@ import { isDesktop, isServer } from './constant.js';
 import { UaHelper } from './ua-helper.js';
 
 export const blockSuiteFeatureFlags = z.object({
+  enable_synced_doc_block: z.boolean(),
   enable_expand_database_block: z.boolean(),
   enable_bultin_ledits: z.boolean(),
 });
@@ -15,6 +16,7 @@ export const runtimeFlagsSchema = z.object({
   enableTestProperties: z.boolean(),
   enableBroadcastChannelProvider: z.boolean(),
   enableDebugPage: z.boolean(),
+  githubUrl: z.string(),
   changelogUrl: z.string(),
   downloadUrl: z.string(),
   // see: tools/workers
@@ -30,6 +32,7 @@ export const runtimeFlagsSchema = z.object({
   enableEnhanceShareMode: z.boolean(),
   enablePayment: z.boolean(),
   enablePageHistory: z.boolean(),
+  allowLocalWorkspace: z.boolean(),
   // this is for the electron app
   serverUrlPrefix: z.string(),
   enableMoveDatabase: z.boolean(),
@@ -42,6 +45,7 @@ export const runtimeFlagsSchema = z.object({
     z.literal('internal'),
     z.literal('canary'),
   ]),
+  isSelfHosted: z.boolean().optional(),
 });
 
 export type BlockSuiteFeatureFlags = z.infer<typeof blockSuiteFeatureFlags>;

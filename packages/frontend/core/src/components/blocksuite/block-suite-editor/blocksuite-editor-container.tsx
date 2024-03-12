@@ -1,15 +1,16 @@
-import type { PageMode } from '@affine/core/atoms';
 import type { BlockElement } from '@blocksuite/lit';
 import type {
   AffineEditorContainer,
-  DocEditor,
   EdgelessEditor,
+  PageEditor,
 } from '@blocksuite/presets';
-import { type Page, Slot } from '@blocksuite/store';
+import { type Doc, Slot } from '@blocksuite/store';
+import type { PageMode } from '@toeverything/infra';
 import clsx from 'clsx';
 import type React from 'react';
 import {
   forwardRef,
+  type RefObject,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -37,7 +38,7 @@ function forwardSlot<T extends Record<string, Slot<any>>>(
 }
 
 interface BlocksuiteEditorContainerProps {
-  page: Page;
+  page: Doc;
   mode: PageMode;
   className?: string;
   style?: React.CSSProperties;
@@ -48,7 +49,7 @@ interface BlocksuiteEditorContainerProps {
 // mimic the interface of the webcomponent and expose slots & host
 type BlocksuiteEditorContainerRef = Pick<
   (typeof AffineEditorContainer)['prototype'],
-  'mode' | 'page' | 'slots' | 'host'
+  'mode' | 'doc' | 'slots' | 'host'
 > &
   HTMLDivElement;
 
@@ -62,7 +63,7 @@ function findBlockElementById(container: HTMLElement, blockId: string) {
 // a workaround for returning the webcomponent for the given block id
 // by iterating over the children of the rendered dom tree
 const useBlockElementById = (
-  container: HTMLElement | null,
+  containerRef: RefObject<HTMLElement | null>,
   blockId: string | undefined,
   timeout = 1000
 ) => {
@@ -74,10 +75,10 @@ const useBlockElementById = (
     let canceled = false;
     const start = Date.now();
     function run() {
-      if (canceled || !container || !blockId) {
+      if (canceled || !containerRef.current || !blockId) {
         return;
       }
-      const element = findBlockElementById(container, blockId);
+      const element = findBlockElementById(containerRef.current, blockId);
       if (element) {
         setBlockElement(element);
       } else if (Date.now() - start < timeout) {
@@ -88,7 +89,7 @@ const useBlockElementById = (
     return () => {
       canceled = true;
     };
-  }, [container, blockId, timeout]);
+  }, [blockId, containerRef, timeout]);
   return blockElement;
 };
 
@@ -100,14 +101,14 @@ export const BlocksuiteEditorContainer = forwardRef<
   ref
 ) {
   const rootRef = useRef<HTMLDivElement>(null);
-  const docRef = useRef<DocEditor>(null);
+  const docRef = useRef<PageEditor>(null);
   const edgelessRef = useRef<EdgelessEditor>(null);
 
   const slots: BlocksuiteEditorContainerRef['slots'] = useMemo(() => {
     return {
-      pageLinkClicked: new Slot(),
-      pageModeSwitched: new Slot(),
-      pageUpdated: new Slot(),
+      docLinkClicked: new Slot(),
+      editorModeSwitched: new Slot(),
+      docUpdated: new Slot(),
       tagClicked: new Slot(),
     };
   }, []);
@@ -115,11 +116,10 @@ export const BlocksuiteEditorContainer = forwardRef<
   // forward the slot to the webcomponent
   useLayoutEffect(() => {
     requestAnimationFrame(() => {
-      const docPage = rootRef.current?.querySelector('affine-doc-page');
+      const docPage = rootRef.current?.querySelector('affine-page-root');
       const edgelessPage = rootRef.current?.querySelector(
-        'affine-edgeless-page'
+        'affine-edgeless-root'
       );
-      ('affine-edgeless-page');
       if (docPage) {
         forwardSlot(docPage.slots, slots);
       }
@@ -131,12 +131,12 @@ export const BlocksuiteEditorContainer = forwardRef<
   }, [page, slots]);
 
   useLayoutEffect(() => {
-    slots.pageUpdated.emit({ newPageId: page.id });
-  }, [page, slots.pageUpdated]);
+    slots.docUpdated.emit({ newDocId: page.id });
+  }, [page, slots.docUpdated]);
 
   useLayoutEffect(() => {
-    slots.pageModeSwitched.emit(mode);
-  }, [mode, slots.pageModeSwitched]);
+    slots.editorModeSwitched.emit(mode);
+  }, [mode, slots.editorModeSwitched]);
 
   /**
    * mimic an AffineEditorContainer using proxy
@@ -145,6 +145,9 @@ export const BlocksuiteEditorContainer = forwardRef<
     const api = {
       slots,
       get page() {
+        return page;
+      },
+      get doc() {
         return page;
       },
       get host() {
@@ -198,30 +201,31 @@ export const BlocksuiteEditorContainer = forwardRef<
     }
   }, [affineEditorContainerProxy, ref]);
 
-  const blockElement = useBlockElementById(
-    rootRef.current,
-    defaultSelectedBlockId
-  );
+  const blockElement = useBlockElementById(rootRef, defaultSelectedBlockId);
 
   useEffect(() => {
     if (blockElement) {
-      requestIdleCallback(() => {
-        blockElement.scrollIntoView({
-          behavior: 'smooth',
-          block: 'center',
-          inline: 'center',
-        });
-        const selectManager = affineEditorContainerProxy.host?.selection;
-        if (!blockElement.path.length || !selectManager) {
-          return;
-        }
-        const newSelection = selectManager.create('block', {
-          path: blockElement.path,
-        });
-        selectManager.set([newSelection]);
-      });
+      affineEditorContainerProxy.updateComplete
+        .then(() => {
+          if (mode === 'page') {
+            blockElement.scrollIntoView({
+              behavior: 'smooth',
+              block: 'center',
+              inline: 'center',
+            });
+          }
+          const selectManager = affineEditorContainerProxy.host?.selection;
+          if (!blockElement.path.length || !selectManager) {
+            return;
+          }
+          const newSelection = selectManager.create('block', {
+            path: blockElement.path,
+          });
+          selectManager.set([newSelection]);
+        })
+        .catch(console.error);
     }
-  }, [blockElement, affineEditorContainerProxy.host?.selection]);
+  }, [blockElement, affineEditorContainerProxy, mode]);
 
   return (
     <div

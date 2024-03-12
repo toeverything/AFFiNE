@@ -9,9 +9,12 @@ import {
   ResolveField,
   Resolver,
 } from '@nestjs/graphql';
-import type { WorkspacePage as PrismaWorkspacePage } from '@prisma/client';
+import {
+  PrismaClient,
+  type WorkspacePage as PrismaWorkspacePage,
+} from '@prisma/client';
 
-import { CloudThrottlerGuard, PrismaService } from '../../../fundamentals';
+import { CloudThrottlerGuard } from '../../../fundamentals';
 import { Auth, CurrentUser } from '../../auth';
 import { UserType } from '../../users';
 import { DocID } from '../../utils/doc';
@@ -43,7 +46,7 @@ class WorkspacePage implements Partial<PrismaWorkspacePage> {
 @Resolver(() => WorkspaceType)
 export class PagePermissionResolver {
   constructor(
-    private readonly prisma: PrismaService,
+    private readonly prisma: PrismaClient,
     private readonly permission: PermissionService
   ) {}
 

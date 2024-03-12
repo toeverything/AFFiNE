@@ -11,28 +11,11 @@ export type Response = SMTPTransport.SentMessageInfo;
 export type Options = SMTPTransport.Options;
 
 export const MAILER: FactoryProvider<
-  Transporter<SMTPTransport.SentMessageInfo>
+  Transporter<SMTPTransport.SentMessageInfo> | undefined
 > = {
   provide: MAILER_SERVICE,
   useFactory: (config: Config) => {
-    if (config.auth.localEmail) {
-      return createTransport({
-        host: '0.0.0.0',
-        port: 1025,
-        secure: false,
-        auth: {
-          user: config.auth.email.login,
-          pass: config.auth.email.password,
-        },
-      });
-    }
-    return createTransport({
-      service: 'gmail',
-      auth: {
-        user: config.auth.email.login,
-        pass: config.auth.email.password,
-      },
-    });
+    return config.mailer ? createTransport(config.mailer) : undefined;
   },
   inject: [Config],
 };

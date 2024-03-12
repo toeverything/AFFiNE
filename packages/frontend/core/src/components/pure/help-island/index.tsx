@@ -1,13 +1,12 @@
 import { Tooltip } from '@affine/component/ui/tooltip';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { CloseIcon, NewIcon, UserGuideIcon } from '@blocksuite/icons';
+import { CloseIcon, NewIcon } from '@blocksuite/icons';
+import { useLiveData, useServiceOptional } from '@toeverything/infra';
+import { Doc } from '@toeverything/infra';
 import { useSetAtom } from 'jotai/react';
-import { useAtomValue } from 'jotai/react';
 import { useCallback, useState } from 'react';
-import { useParams } from 'react-router-dom';
 
-import { openOnboardingModalAtom, openSettingModalAtom } from '../../../atoms';
-import { currentModeAtom } from '../../../atoms/mode';
+import { openSettingModalAtom } from '../../../atoms';
 import type { SettingProps } from '../../affine/setting-modal';
 import { ContactIcon, HelpIcon, KeyboardIcon } from './icons';
 import {
@@ -22,14 +21,16 @@ const DEFAULT_SHOW_LIST: IslandItemNames[] = [
   'contact',
   'shortcuts',
 ];
-const DESKTOP_SHOW_LIST: IslandItemNames[] = [...DEFAULT_SHOW_LIST, 'guide'];
-type IslandItemNames = 'whatNew' | 'contact' | 'shortcuts' | 'guide';
+
+const DESKTOP_SHOW_LIST: IslandItemNames[] = [...DEFAULT_SHOW_LIST];
+type IslandItemNames = 'whatNew' | 'contact' | 'shortcuts';
 
 const showList = environment.isDesktop ? DESKTOP_SHOW_LIST : DEFAULT_SHOW_LIST;
 
 export const HelpIsland = () => {
-  const mode = useAtomValue(currentModeAtom);
-  const setOpenOnboarding = useSetAtom(openOnboardingModalAtom);
+  const page = useServiceOptional(Doc);
+  const pageId = page?.id;
+  const mode = useLiveData(page?.mode);
   const setOpenSettingModalAtom = useSetAtom(openSettingModalAtom);
   const [spread, setShowSpread] = useState(false);
   const t = useAFFiNEI18N();
@@ -52,8 +53,6 @@ export const HelpIsland = () => {
     () => openSettingModal('shortcuts'),
     [openSettingModal]
   );
-
-  const { pageId } = useParams();
 
   return (
     <StyledIsland
@@ -99,22 +98,6 @@ export const HelpIsland = () => {
               onClick={openShortcuts}
             >
               <KeyboardIcon />
-            </StyledIconWrapper>
-          </Tooltip>
-        )}
-        {showList.includes('guide') && (
-          <Tooltip
-            content={t['com.affine.helpIsland.gettingStarted']()}
-            side="left"
-          >
-            <StyledIconWrapper
-              data-testid="easy-guide"
-              onClick={() => {
-                setShowSpread(false);
-                setOpenOnboarding(true);
-              }}
-            >
-              <UserGuideIcon />
             </StyledIconWrapper>
           </Tooltip>
         )}

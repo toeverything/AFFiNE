@@ -1,6 +1,14 @@
 import { app, shell } from 'electron';
 
 app.on('web-contents-created', (_, contents) => {
+  const isInternalUrl = (url: string) => {
+    return (
+      (process.env.DEV_SERVER_URL &&
+        url.startsWith(process.env.DEV_SERVER_URL)) ||
+      url.startsWith('affine://') ||
+      url.startsWith('file://.')
+    );
+  };
   /**
    * Block navigation to origins not on the allowlist.
    *
@@ -10,12 +18,7 @@ app.on('web-contents-created', (_, contents) => {
    * @see https://www.electronjs.org/docs/latest/tutorial/security#13-disable-or-limit-navigation
    */
   contents.on('will-navigate', (event, url) => {
-    if (
-      (process.env.DEV_SERVER_URL &&
-        url.startsWith(process.env.DEV_SERVER_URL)) ||
-      url.startsWith('affine://') ||
-      url.startsWith('file://.')
-    ) {
+    if (isInternalUrl(url)) {
       return;
     }
     // Prevent navigation
@@ -34,9 +37,10 @@ app.on('web-contents-created', (_, contents) => {
    * @see https://www.electronjs.org/docs/latest/tutorial/security#15-do-not-use-openexternal-with-untrusted-content
    */
   contents.setWindowOpenHandler(({ url }) => {
-    // Open default browser
-    shell.openExternal(url).catch(console.error);
-
+    if (!isInternalUrl(url)) {
+      // Open default browser
+      shell.openExternal(url).catch(console.error);
+    }
     // Prevent creating new window in application
     return { action: 'deny' };
   });

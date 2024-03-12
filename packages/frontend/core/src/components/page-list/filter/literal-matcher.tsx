@@ -1,8 +1,8 @@
-import { AFFiNEDatePicker, Input, Menu, MenuItem } from '@affine/component';
+import { Input, Menu, MenuItem } from '@affine/component';
 import type { LiteralValue, Tag } from '@affine/env/filter';
-import dayjs from 'dayjs';
 import { type ReactNode } from 'react';
 
+import { DateSelect } from './date-select';
 import { FilterTag } from './filter-tag-translation';
 import { inputStyle } from './index.css';
 import { tBoolean, tDate, tDateRange, tTag } from './logical/custom-type';
@@ -67,12 +67,7 @@ literalMatcher.register(tBoolean.create(), {
 });
 literalMatcher.register(tDate.create(), {
   render: ({ value, onChange }) => (
-    <AFFiNEDatePicker
-      value={dayjs(value as number).format('YYYY-MM-DD')}
-      onChange={e => {
-        onChange(dayjs(e, 'YYYY-MM-DD').valueOf());
-      }}
-    />
+    <DateSelect value={value as number} onChange={onChange} />
   ),
 });
 const getTagsOfArrayTag = (type: TType): Tag[] => {

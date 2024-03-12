@@ -72,7 +72,7 @@ jobs:
           if-no-files-found: error
 
   build-core-selfhost:
-    name: Build @affine/core
+    name: Build @affine/core selfhost
     runs-on: ubuntu-latest
     environment: ${{ github.event.inputs.flavor }}
     steps:
@@ -88,6 +88,7 @@ jobs:
           BUILD_TYPE: ${{ github.event.inputs.flavor }}
           SHOULD_REPORT_TRACE: false
           PUBLIC_PATH: '/'
+          SELF_HOSTED: true
       - name: Download selfhost fonts
         run: node ./scripts/download-blocksuite-fonts.mjs
       - name: Upload core artifact
@@ -136,6 +137,10 @@ jobs:
   build-docker:
     name: Build Docker
     runs-on: ubuntu-latest
+    permissions:
+      contents: 'write'
+      id-token: 'write'
+      packages: 'write'
     needs:
       - build-server
       - build-core
@@ -275,9 +280,9 @@ jobs:
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           ENABLE_CAPTCHA: true
           CAPTCHA_TURNSTILE_SECRET: ${{ secrets.CAPTCHA_TURNSTILE_SECRET }}
-          OAUTH_EMAIL_SENDER: ${{ secrets.OAUTH_EMAIL_SENDER }}
-          OAUTH_EMAIL_LOGIN: ${{ secrets.OAUTH_EMAIL_LOGIN }}
-          OAUTH_EMAIL_PASSWORD: ${{ secrets.OAUTH_EMAIL_PASSWORD }}
+          MAILER_SENDER: ${{ secrets.OAUTH_EMAIL_SENDER }}
+          MAILER_USER: ${{ secrets.OAUTH_EMAIL_LOGIN }}
+          MAILER_PASSWORD: ${{ secrets.OAUTH_EMAIL_PASSWORD }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           AFFINE_GOOGLE_CLIENT_ID: ${{ secrets.AFFINE_GOOGLE_CLIENT_ID }}
           AFFINE_GOOGLE_CLIENT_SECRET: ${{ secrets.AFFINE_GOOGLE_CLIENT_SECRET }}

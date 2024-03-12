@@ -1,9 +1,9 @@
 import type { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { ContactWithUsIcon, NewIcon, UserGuideIcon } from '@blocksuite/icons';
+import { ContactWithUsIcon, NewIcon } from '@blocksuite/icons';
 import { registerAffineCommand } from '@toeverything/infra/command';
 import type { createStore } from 'jotai';
 
-import { openOnboardingModalAtom, openSettingModalAtom } from '../atoms';
+import { openSettingModalAtom } from '../atoms';
 
 export function registerAffineHelpCommands({
   t,
@@ -36,18 +36,6 @@ export function registerAffineHelpCommands({
           activeTab: 'about',
           workspaceMetadata: null,
         });
-      },
-    })
-  );
-  unsubs.push(
-    registerAffineCommand({
-      id: 'affine:help-getting-started',
-      category: 'affine:help',
-      icon: <UserGuideIcon />,
-      label: t['com.affine.cmdk.affine.getting-started'](),
-      preconditionStrategy: () => environment.isDesktop,
-      run() {
-        store.set(openOnboardingModalAtom, true);
       },
     })
   );

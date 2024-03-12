@@ -1,57 +1,54 @@
-import type { PageBlockModel } from '@blocksuite/blocks';
+import type { RootBlockModel } from '@blocksuite/blocks';
 import { assertExists } from '@blocksuite/global/utils';
-import type { PageMeta, Workspace } from '@blocksuite/store';
-import type { Atom } from 'jotai';
-import { atom, useAtomValue } from 'jotai';
+import type { DocMeta, Workspace } from '@blocksuite/store';
 import { useMemo } from 'react';
 
-const weakMap = new WeakMap<Workspace, Atom<PageMeta[]>>();
+import { useAllBlockSuiteDocMeta } from './use-all-block-suite-page-meta';
+import { useJournalHelper } from './use-journal';
 
-export function useBlockSuitePageMeta(
-  blockSuiteWorkspace: Workspace
-): PageMeta[] {
-  if (!weakMap.has(blockSuiteWorkspace)) {
-    const baseAtom = atom<PageMeta[]>(blockSuiteWorkspace.meta.pageMetas);
-    weakMap.set(blockSuiteWorkspace, baseAtom);
-    baseAtom.onMount = set => {
-      set(blockSuiteWorkspace.meta.pageMetas);
-      const dispose = blockSuiteWorkspace.meta.pageMetasUpdated.on(() => {
-        set(blockSuiteWorkspace.meta.pageMetas);
-      });
-      return () => {
-        dispose.dispose();
-      };
-    };
-  }
-  return useAtomValue(weakMap.get(blockSuiteWorkspace) as Atom<PageMeta[]>);
+/**
+ * Get pageMetas excluding journal pages without updatedDate
+ * If you want to get all pageMetas, use `useAllBlockSuitePageMeta` instead
+ * @returns
+ */
+export function useBlockSuiteDocMeta(blocksuiteWorkspace: Workspace) {
+  const pageMetas = useAllBlockSuiteDocMeta(blocksuiteWorkspace);
+  const { isPageJournal } = useJournalHelper(blocksuiteWorkspace);
+  return useMemo(
+    () =>
+      pageMetas.filter(
+        pageMeta => !isPageJournal(pageMeta.id) || !!pageMeta.updatedDate
+      ),
+    [isPageJournal, pageMetas]
+  );
 }
 
-export function usePageMetaHelper(blockSuiteWorkspace: Workspace) {
+export function useDocMetaHelper(blockSuiteWorkspace: Workspace) {
   return useMemo(
     () => ({
-      setPageTitle: (pageId: string, newTitle: string) => {
-        const page = blockSuiteWorkspace.getPage(pageId);
+      setDocTitle: (docId: string, newTitle: string) => {
+        const page = blockSuiteWorkspace.getDoc(docId);
         assertExists(page);
         const pageBlock = page
           .getBlockByFlavour('affine:page')
-          .at(0) as PageBlockModel;
+          .at(0) as RootBlockModel;
         assertExists(pageBlock);
         page.transact(() => {
           pageBlock.title.delete(0, pageBlock.title.length);
           pageBlock.title.insert(newTitle, 0);
         });
-        blockSuiteWorkspace.meta.setPageMeta(pageId, { title: newTitle });
+        blockSuiteWorkspace.meta.setDocMeta(docId, { title: newTitle });
       },
-      setPageReadonly: (pageId: string, readonly: boolean) => {
-        const page = blockSuiteWorkspace.getPage(pageId);
+      setDocReadonly: (docId: string, readonly: boolean) => {
+        const page = blockSuiteWorkspace.getDoc(docId);
         assertExists(page);
         page.awarenessStore.setReadonly(page, readonly);
       },
-      setPageMeta: (pageId: string, pageMeta: Partial<PageMeta>) => {
-        blockSuiteWorkspace.meta.setPageMeta(pageId, pageMeta);
+      setDocMeta: (docId: string, docMeta: Partial<DocMeta>) => {
+        blockSuiteWorkspace.meta.setDocMeta(docId, docMeta);
       },
-      getPageMeta: (pageId: string) => {
-        return blockSuiteWorkspace.meta.getPageMeta(pageId);
+      getDocMeta: (docId: string) => {
+        return blockSuiteWorkspace.meta.getDocMeta(docId);
       },
     }),
     [blockSuiteWorkspace]

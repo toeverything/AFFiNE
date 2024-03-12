@@ -48,6 +48,7 @@ test('page delete -> create new page -> refresh page -> new page should be appea
   page,
   workspace,
 }) => {
+  test.slow();
   await openHomePage(page);
   await waitForEditorLoad(page);
   await clickNewPageButton(page);

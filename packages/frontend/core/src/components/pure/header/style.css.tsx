@@ -3,35 +3,16 @@ import { style } from '@vanilla-extract/css';
 
 export const header = style({
   display: 'flex',
+  flex: 1,
   justifyContent: 'space-between',
   position: 'relative',
-  padding: '0 16px',
-  minHeight: '52px',
-  background: 'var(--affine-background-primary-color)',
   zIndex: 2,
-  selectors: {
-    '&[data-sidebar-floating="false"]': {
-      WebkitAppRegion: 'drag',
-    },
-  },
   '@media': {
     print: {
       display: 'none',
     },
   },
-  ':has([data-popper-placement])': {
-    WebkitAppRegion: 'no-drag',
-  },
 } as ComplexStyleRule);
-
-export const headerFloat = style({
-  position: 'absolute',
-  width: '100%',
-});
-
-export const bottomBorder = style({
-  borderBottom: '1px solid var(--affine-border-color)',
-});
 
 export const headerItem = style({
   minHeight: '32px',
@@ -39,12 +20,6 @@ export const headerItem = style({
   alignItems: 'center',
   flexShrink: 0,
   selectors: {
-    '&.top-item': {
-      height: '52px',
-    },
-    '&.top-item-visible': {
-      marginRight: '20px',
-    },
     '&.left': {
       justifyContent: 'left',
     },
@@ -66,12 +41,6 @@ export const headerCenter = style({
   transform: 'translateX(-50%)',
   left: '50%',
   zIndex: 1,
-  selectors: {
-    '&.shadow': {
-      position: 'static',
-      visibility: 'hidden',
-    },
-  },
 });
 
 export const headerSideContainer = style({
@@ -81,10 +50,6 @@ export const headerSideContainer = style({
   selectors: {
     '&.right': {
       flexDirection: 'row-reverse',
-    },
-    '&.block': {
-      display: 'block',
-      paddingBottom: '10px',
     },
   },
 });

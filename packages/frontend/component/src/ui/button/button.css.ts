@@ -9,7 +9,7 @@ export const button = style({
   flexShrink: 0,
   outline: '0',
   border: '1px solid',
-  padding: '0 18px',
+  padding: '0 8px',
   borderRadius: '8px',
   fontSize: cssVar('fontXs'),
   fontWeight: 500,

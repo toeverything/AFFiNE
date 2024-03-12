@@ -11,9 +11,9 @@ export const menuContent = style({
   backgroundColor: cssVar('backgroundOverlayPanelColor'),
   boxShadow: cssVar('menuShadow'),
   userSelect: 'none',
+  ['WebkitAppRegion' as string]: 'no-drag',
 });
 export const menuItem = style({
-  maxWidth: '296px',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'space-between',
@@ -50,8 +50,7 @@ export const menuItem = style({
       color: cssVar('warningColor'),
       backgroundColor: cssVar('backgroundWarningColor'),
     },
-    '&.selected, &.checked': {
-      backgroundColor: cssVar('hoverColor'),
+    '&.checked': {
       color: cssVar('primaryColor'),
     },
   },
@@ -69,12 +68,8 @@ export const menuItemIcon = style({
   fontSize: cssVar('fontH5'),
   color: cssVar('iconColor'),
   selectors: {
-    '&.start': {
-      marginRight: '8px',
-    },
-    '&.end': {
-      marginLeft: '8px',
-    },
+    '&.start': { marginRight: '4px' },
+    '&.end': { marginLeft: '4px' },
     '&.selected, &.checked': {
       color: cssVar('primaryColor'),
     },

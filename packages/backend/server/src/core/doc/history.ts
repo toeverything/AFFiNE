@@ -2,13 +2,13 @@ import { isDeepStrictEqual } from 'node:util';
 
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { PrismaClient } from '@prisma/client';
 
 import {
   Config,
   type EventPayload,
   metrics,
   OnEvent,
-  PrismaService,
 } from '../../fundamentals';
 import { QuotaService } from '../quota';
 import { Permission } from '../workspaces/types';
@@ -19,7 +19,7 @@ export class DocHistoryManager {
   private readonly logger = new Logger(DocHistoryManager.name);
   constructor(
     private readonly config: Config,
-    private readonly db: PrismaService,
+    private readonly db: PrismaClient,
     private readonly quota: QuotaService
   ) {}
 

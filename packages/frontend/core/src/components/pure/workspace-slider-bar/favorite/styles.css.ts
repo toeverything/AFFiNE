@@ -150,4 +150,5 @@ export const emptyFavouritesMessage = style({
   fontSize: cssVar('fontSm'),
   textAlign: 'center',
   color: cssVar('black30'),
+  userSelect: 'none',
 });

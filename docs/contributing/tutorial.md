@@ -29,7 +29,7 @@ It includes the global constants, browser and system check.
 
 This package should be imported at the very beginning of the entry point.
 
-### `@affine/workspace`
+### `@affine/workspace-impl`
 
 Current we have two workspace plugin:
 

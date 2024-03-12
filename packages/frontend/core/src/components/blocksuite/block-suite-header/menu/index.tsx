@@ -5,13 +5,13 @@ import {
   MenuItem,
   MenuSeparator,
 } from '@affine/component/ui/menu';
-import { currentModeAtom } from '@affine/core/atoms/mode';
+import { openHistoryTipsModalAtom } from '@affine/core/atoms';
 import { PageHistoryModal } from '@affine/core/components/affine/page-history-modal';
 import { Export, MoveToTrash } from '@affine/core/components/page-list';
 import { useBlockSuiteMetaHelper } from '@affine/core/hooks/affine/use-block-suite-meta-helper';
 import { useExportPage } from '@affine/core/hooks/affine/use-export-page';
 import { useTrashModalHelper } from '@affine/core/hooks/affine/use-trash-modal-helper';
-import { useBlockSuitePageMeta } from '@affine/core/hooks/use-block-suite-page-meta';
+import { useBlockSuiteDocMeta } from '@affine/core/hooks/use-block-suite-page-meta';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
@@ -25,8 +25,8 @@ import {
   ImportIcon,
   PageIcon,
 } from '@blocksuite/icons';
-import { useService, Workspace } from '@toeverything/infra';
-import { useAtomValue } from 'jotai';
+import { Doc, useLiveData, useService, Workspace } from '@toeverything/infra';
+import { useSetAtom } from 'jotai';
 import { useCallback, useState } from 'react';
 
 import { HeaderDropDownButton } from '../../../pure/header-drop-down-button';
@@ -48,26 +48,30 @@ export const PageHeaderMenuButton = ({
 
   const workspace = useService(Workspace);
   const blockSuiteWorkspace = workspace.blockSuiteWorkspace;
-  const currentPage = blockSuiteWorkspace.getPage(pageId);
+  const currentPage = blockSuiteWorkspace.getDoc(pageId);
   assertExists(currentPage);
 
-  const pageMeta = useBlockSuitePageMeta(blockSuiteWorkspace).find(
+  const pageMeta = useBlockSuiteDocMeta(blockSuiteWorkspace).find(
     meta => meta.id === pageId
   );
-  const currentMode = useAtomValue(currentModeAtom);
+  const page = useService(Doc);
+  const currentMode = useLiveData(page.mode);
 
   const { favorite, toggleFavorite } = useFavorite(pageId);
 
-  const { togglePageMode, duplicate } =
-    useBlockSuiteMetaHelper(blockSuiteWorkspace);
+  const { duplicate } = useBlockSuiteMetaHelper(blockSuiteWorkspace);
   const { importFile } = usePageHelper(blockSuiteWorkspace);
   const { setTrashModal } = useTrashModalHelper(blockSuiteWorkspace);
 
   const [historyModalOpen, setHistoryModalOpen] = useState(false);
+  const setOpenHistoryTipsModal = useSetAtom(openHistoryTipsModalAtom);
 
   const openHistoryModal = useCallback(() => {
-    setHistoryModalOpen(true);
-  }, []);
+    if (workspace.flavour === WorkspaceFlavour.AFFINE_CLOUD) {
+      return setHistoryModalOpen(true);
+    }
+    return setOpenHistoryTipsModal(true);
+  }, [setOpenHistoryTipsModal, workspace.flavour]);
 
   const handleOpenTrashModal = useCallback(() => {
     if (!pageMeta) {
@@ -81,13 +85,13 @@ export const PageHeaderMenuButton = ({
   }, [pageId, pageMeta, setTrashModal]);
 
   const handleSwitchMode = useCallback(() => {
-    togglePageMode(pageId);
+    page.toggleMode();
     toast(
       currentMode === 'page'
         ? t['com.affine.toastMessage.edgelessMode']()
         : t['com.affine.toastMessage.pageMode']()
     );
-  }, [currentMode, pageId, t, togglePageMode]);
+  }, [currentMode, page, t]);
   const menuItemStyle = {
     padding: '4px 12px',
     transition: 'all 0.3s',
@@ -186,8 +190,7 @@ export const PageHeaderMenuButton = ({
       </MenuItem>
       <Export exportHandler={exportHandler} pageMode={currentMode} />
 
-      {workspace.flavour === WorkspaceFlavour.AFFINE_CLOUD &&
-      runtimeConfig.enablePageHistory ? (
+      {runtimeConfig.enablePageHistory ? (
         <MenuItem
           preFix={
             <MenuIcon>

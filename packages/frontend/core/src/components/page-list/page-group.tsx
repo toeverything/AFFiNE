@@ -1,4 +1,3 @@
-import { useBlockSuiteWorkspacePageTitle } from '@affine/core/hooks/use-block-suite-workspace-page-title';
 import { useJournalInfoHelper } from '@affine/core/hooks/use-journal';
 import type { Tag } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
@@ -10,8 +9,11 @@ import {
   ToggleCollapseIcon,
   ViewLayersIcon,
 } from '@blocksuite/icons';
-import type { PageMeta, Workspace } from '@blocksuite/store';
+import type { DocMeta, Workspace } from '@blocksuite/store';
 import * as Collapsible from '@radix-ui/react-collapsible';
+import { useService } from '@toeverything/infra';
+import { useLiveData } from '@toeverything/infra';
+import { PageRecordList } from '@toeverything/infra';
 import clsx from 'clsx';
 import { selectAtom } from 'jotai/utils';
 import { type MouseEventHandler, useCallback, useMemo, useState } from 'react';
@@ -223,7 +225,7 @@ const listsPropsAtom = selectAtom(
 export const PageListItemRenderer = (item: ListItem) => {
   const props = useAtomValue(listsPropsAtom);
   const { selectionActive } = useAtomValue(selectionStateAtom);
-  const page = item as PageMeta;
+  const page = item as DocMeta;
   return (
     <PageListItem
       {...pageMetaToListItemProp(page, {
@@ -271,9 +273,15 @@ function tagIdToTagOption(
   );
 }
 
-const PageTitle = ({ id, workspace }: { id: string; workspace: Workspace }) => {
-  const title = useBlockSuiteWorkspacePageTitle(workspace, id);
-  return title;
+const PageTitle = ({ id }: { id: string }) => {
+  const page = useLiveData(
+    useService(PageRecordList).records.map(record => {
+      return record.find(p => p.id === id);
+    })
+  );
+  const title = useLiveData(page?.title);
+  const t = useAFFiNEI18N();
+  return title || t['Untitled']();
 };
 
 const UnifiedPageIcon = ({
@@ -294,8 +302,8 @@ const UnifiedPageIcon = ({
 };
 
 function pageMetaToListItemProp(
-  item: PageMeta,
-  props: RequiredProps<PageMeta>
+  item: DocMeta,
+  props: RequiredProps<DocMeta>
 ): PageListItemProps {
   const toggleSelection = props.onSelectedIdsChange
     ? () => {
@@ -315,16 +323,13 @@ function pageMetaToListItemProp(
     : undefined;
   const itemProps: PageListItemProps = {
     pageId: item.id,
-    title: <PageTitle id={item.id} workspace={props.blockSuiteWorkspace} />,
+    title: <PageTitle id={item.id} />,
     preview: (
       <PagePreview workspace={props.blockSuiteWorkspace} pageId={item.id} />
     ),
     createDate: new Date(item.createDate),
     updatedDate: item.updatedDate ? new Date(item.updatedDate) : undefined,
-    to:
-      props.rowAsLink && !props.selectable
-        ? `/workspace/${props.blockSuiteWorkspace.id}/${item.id}`
-        : undefined,
+    to: props.rowAsLink && !props.selectable ? `/${item.id}` : undefined,
     onClick: props.selectable ? toggleSelection : undefined,
     icon: (
       <UnifiedPageIcon
@@ -372,7 +377,7 @@ function collectionMetaToListItemProp(
     title: item.title,
     to:
       props.rowAsLink && !props.selectable
-        ? `/workspace/${props.blockSuiteWorkspace.id}/collection/${item.id}`
+        ? `/collection/${item.id}`
         : undefined,
     onClick: props.selectable ? toggleSelection : undefined,
     icon: <ViewLayersIcon />,
@@ -407,10 +412,7 @@ function tagMetaToListItemProp(
   const itemProps: TagListItemProps = {
     tagId: item.id,
     title: item.title,
-    to:
-      props.rowAsLink && !props.selectable
-        ? `/workspace/${props.blockSuiteWorkspace.id}/tag/${item.id}`
-        : undefined,
+    to: props.rowAsLink && !props.selectable ? `/tag/${item.id}` : undefined,
     onClick: props.selectable ? toggleSelection : undefined,
     color: item.color,
     pageCount: item.pageCount,

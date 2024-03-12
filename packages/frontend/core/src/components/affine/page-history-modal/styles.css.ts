@@ -1,8 +1,11 @@
 import { cssVar } from '@toeverything/theme';
 import { createVar, globalStyle, style } from '@vanilla-extract/css';
+import { range } from 'lodash-es';
+
 const headerHeight = createVar('header-height');
 const footerHeight = createVar('footer-height');
 const historyListWidth = createVar('history-list-width');
+const previewTopOffset = createVar('preview-top-offset');
 export const root = style({
   height: '100%',
   width: '100%',
@@ -10,6 +13,7 @@ export const root = style({
     [headerHeight]: '52px',
     [footerHeight]: '68px',
     [historyListWidth]: '240px',
+    [previewTopOffset]: '40px',
   },
 });
 export const modalContent = style({
@@ -30,41 +34,58 @@ export const previewWrapper = style({
   flexGrow: 1,
   height: '100%',
   position: 'relative',
+  zIndex: 0,
   overflow: 'hidden',
   width: `calc(100% - ${historyListWidth})`,
   backgroundColor: cssVar('backgroundSecondaryColor'),
 });
+
 export const previewContainer = style({
   display: 'flex',
   flexDirection: 'column',
   flexGrow: 1,
   position: 'absolute',
-  bottom: 0,
+  top: 0,
   left: 40,
-  borderTopLeftRadius: 8,
-  borderTopRightRadius: 8,
+  borderRadius: 8,
   overflow: 'hidden',
   boxShadow: cssVar('shadow3'),
-  height: 'calc(100% - 40px)',
+  height: '200%',
   width: `calc(100% - 80px)`,
-  backgroundColor: cssVar('backgroundSecondaryColor'),
+  backgroundColor: cssVar('backgroundPrimaryColor'),
+  transformOrigin: 'top center',
+  transition: 'transform 0.3s 0.1s ease-in-out, opacity 0.3s ease-in-out',
+  selectors: {
+    ...Object.fromEntries(
+      range(-20, 20).map(i => [
+        `&[data-distance="${i}"]`,
+        {
+          transform: `scale(${1 - 0.05 * i}) translateY(calc(${-8 * i}px + ${previewTopOffset}))`,
+          opacity: [0, 1, 2].includes(i) ? 1 : 0,
+          zIndex: -i,
+          pointerEvents: i === 0 ? 'auto' : 'none',
+        },
+      ])
+    ),
+    '&[data-distance="> 20"]': {
+      transform: `scale(0) translateY(calc(${-8 * 20}px + ${previewTopOffset}))`,
+      opacity: 0,
+      zIndex: -20,
+      pointerEvents: 'none',
+    },
+    '&[data-distance="< -20"]': {
+      transform: `scale(2) translateY(calc(${-8 * -20}px + ${previewTopOffset}))`,
+      opacity: 0,
+      zIndex: 20,
+      pointerEvents: 'none',
+    },
+  },
 });
-export const previewContainerStack1 = style([
-  previewContainer,
-  {
-    left: 48,
-    height: 'calc(100% - 32px)',
-    width: `calc(100% - 96px)`,
-  },
-]);
-export const previewContainerStack2 = style([
-  previewContainer,
-  {
-    left: 56,
-    height: 'calc(100% - 24px)',
-    width: `calc(100% - 112px)`,
-  },
-]);
+
+export const previewContent = style({
+  height: `calc(50% - ${previewTopOffset} - ${headerHeight})`,
+});
+
 export const previewHeader = style({
   display: 'flex',
   alignItems: 'center',
@@ -95,7 +116,6 @@ export const previewHeaderTimestamp = style({
 export const editor = style({
   height: '100%',
   flexGrow: 1,
-  overflow: 'hidden',
 });
 export const rowWrapper = style({
   display: 'flex',
@@ -150,7 +170,7 @@ export const historyListScrollableInner = style({
 export const historyListHeader = style({
   display: 'flex',
   alignItems: 'center',
-  height: 52,
+  height: headerHeight,
   borderBottom: `1px solid ${cssVar('borderColor')}`,
   fontWeight: 'bold',
   flexShrink: 0,
@@ -280,11 +300,6 @@ export const collapsedIconContainer = style({
   borderRadius: '2px',
   transition: 'transform 0.2s',
   color: 'inherit',
-  selectors: {
-    '&[data-collapsed="true"]': {
-      transform: 'rotate(-90deg)',
-    },
-  },
 });
 export const planPromptWrapper = style({
   padding: '4px 12px',

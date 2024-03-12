@@ -1,17 +1,15 @@
-import type { PageMeta, Tag, Workspace } from '@blocksuite/store';
+import { WorkspaceLegacyProperties } from '@affine/core/modules/workspace';
+import type { DocMeta } from '@blocksuite/store';
+import { useLiveData, useService } from '@toeverything/infra';
 import { useCallback, useMemo } from 'react';
 
 interface TagUsageCounts {
   [key: string]: number;
 }
 
-export function useTagMetas(
-  currentWorkspace: Workspace,
-  pageMetas: PageMeta[]
-) {
-  const tags = useMemo(() => {
-    return currentWorkspace.meta.properties.tags?.options || [];
-  }, [currentWorkspace]);
+export function useTagMetas(pageMetas: DocMeta[]) {
+  const legacyProperties = useService(WorkspaceLegacyProperties);
+  const tags = useLiveData(legacyProperties.tagOptions$);
 
   const [tagMetas, tagUsageCounts] = useMemo(() => {
     const tagUsageCounts: TagUsageCounts = {};
@@ -51,41 +49,13 @@ export function useTagMetas(
     [pageMetas]
   );
 
-  const addNewTag = useCallback(
-    (tag: Tag) => {
-      const newTags = [...tags, tag];
-      currentWorkspace.meta.setProperties({
-        tags: { options: newTags },
-      });
-    },
-    [currentWorkspace.meta, tags]
-  );
-
-  const updateTag = useCallback(
-    (tag: Tag) => {
-      const newTags = tags.map(t => {
-        if (t.id === tag.id) {
-          return tag;
-        }
-        return t;
-      });
-      currentWorkspace.meta.setProperties({
-        tags: { options: newTags },
-      });
-    },
-    [currentWorkspace.meta, tags]
-  );
-
   const deleteTags = useCallback(
     (tagIds: string[]) => {
-      const newTags = tags.filter(tag => {
-        return !tagIds.includes(tag.id);
-      });
-      currentWorkspace.meta.setProperties({
-        tags: { options: newTags },
+      tagIds.forEach(tagId => {
+        legacyProperties.removeTagOption(tagId);
       });
     },
-    [currentWorkspace.meta, tags]
+    [legacyProperties]
   );
 
   return {
@@ -93,8 +63,6 @@ export function useTagMetas(
     tagMetas,
     tagUsageCounts,
     filterPageMetaByTag,
-    addNewTag,
-    updateTag,
     deleteTags,
   };
 }

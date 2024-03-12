@@ -12,6 +12,10 @@ export const isWindows = () => {
   return process.platform === 'win32';
 };
 
+export const isLinux = () => {
+  return process.platform === 'linux';
+};
+
 interface MessagePortLike {
   postMessage: (data: unknown) => void;
   addListener: (event: 'message', listener: (...args: any[]) => void) => void;

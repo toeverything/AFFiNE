@@ -1,40 +1,31 @@
-import type { PageMeta } from '@blocksuite/store';
-
 import type { ServiceProvider } from '../di';
 import { ObjectPool } from '../utils/object-pool';
 import type { Workspace } from '../workspace';
+import type { PageRecordList } from '.';
 import { configurePageContext } from './context';
-import type { PageListService } from './list';
-import { Page } from './page';
+import { Doc } from './page';
 import { PageScope } from './service-scope';
 
 export class PageManager {
-  pool = new ObjectPool<string, Page>({});
+  pool = new ObjectPool<string, Doc>({});
 
   constructor(
     private readonly workspace: Workspace,
-    private readonly pageList: PageListService,
+    private readonly pageRecordList: PageRecordList,
     private readonly serviceProvider: ServiceProvider
   ) {}
 
-  openByPageId(pageId: string) {
-    const pageMeta = this.pageList.getPageMetaById(pageId);
-    if (!pageMeta) {
-      throw new Error('Page not found');
+  open(pageId: string) {
+    const pageRecord = this.pageRecordList.record(pageId).value;
+    if (!pageRecord) {
+      throw new Error('Page record not found');
     }
-
-    return this.open(pageMeta);
-  }
-
-  open(pageMeta: PageMeta) {
-    const blockSuitePage = this.workspace.blockSuiteWorkspace.getPage(
-      pageMeta.id
-    );
+    const blockSuitePage = this.workspace.blockSuiteWorkspace.getDoc(pageId);
     if (!blockSuitePage) {
       throw new Error('Page not found');
     }
 
-    const exists = this.pool.get(pageMeta.id);
+    const exists = this.pool.get(pageId);
     if (exists) {
       return { page: exists.obj, release: exists.release };
     }
@@ -43,16 +34,16 @@ export class PageManager {
       // avoid to modify the original service collection
       .clone();
 
-    configurePageContext(serviceCollection, blockSuitePage, pageMeta);
+    configurePageContext(serviceCollection, blockSuitePage, pageRecord);
 
     const provider = serviceCollection.provider(
       PageScope,
       this.serviceProvider
     );
 
-    const page = provider.get(Page);
+    const page = provider.get(Doc);
 
-    const { obj, release } = this.pool.put(pageMeta.id, page);
+    const { obj, release } = this.pool.put(pageId, page);
 
     return { page: obj, release };
   }

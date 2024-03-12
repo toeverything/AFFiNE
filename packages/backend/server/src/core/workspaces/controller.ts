@@ -7,9 +7,10 @@ import {
   Param,
   Res,
 } from '@nestjs/common';
+import { PrismaClient } from '@prisma/client';
 import type { Response } from 'express';
 
-import { CallTimer, PrismaService } from '../../fundamentals';
+import { CallTimer } from '../../fundamentals';
 import { Auth, CurrentUser, Publicable } from '../auth';
 import { DocHistoryManager, DocManager } from '../doc';
 import { WorkspaceBlobStorage } from '../storage';
@@ -26,7 +27,7 @@ export class WorkspacesController {
     private readonly permission: PermissionService,
     private readonly docManager: DocManager,
     private readonly historyManager: DocHistoryManager,
-    private readonly prisma: PrismaService
+    private readonly prisma: PrismaClient
   ) {}
 
   // get workspace blob

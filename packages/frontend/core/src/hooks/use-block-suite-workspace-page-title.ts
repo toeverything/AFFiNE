@@ -2,8 +2,9 @@ import { assertExists } from '@blocksuite/global/utils';
 import type { Workspace } from '@blocksuite/store';
 import type { Atom } from 'jotai';
 import { atom, useAtomValue } from 'jotai';
+import { useCallback } from 'react';
 
-import { useJournalInfoHelper } from './use-journal';
+import { useJournalHelper, useJournalInfoHelper } from './use-journal';
 
 const weakMap = new WeakMap<Workspace, Map<string, Atom<string>>>();
 
@@ -14,11 +15,11 @@ function getAtom(w: Workspace, pageId: string): Atom<string> {
   const map = weakMap.get(w);
   assertExists(map);
   if (!map.has(pageId)) {
-    const baseAtom = atom<string>(w.getPage(pageId)?.meta.title || 'Untitled');
+    const baseAtom = atom<string>(w.getDoc(pageId)?.meta?.title || 'Untitled');
     baseAtom.onMount = set => {
-      const disposable = w.meta.pageMetasUpdated.on(() => {
-        const page = w.getPage(pageId);
-        set(page?.meta.title || 'Untitled');
+      const disposable = w.meta.docMetaUpdated.on(() => {
+        const page = w.getDoc(pageId);
+        set(page?.meta?.title || 'Untitled');
       });
       return () => {
         disposable.dispose();
@@ -43,4 +44,21 @@ export function useBlockSuiteWorkspacePageTitle(
     pageId
   );
   return localizedJournalDate || title;
+}
+
+// This hook is NOT reactive to the page title change
+export function useGetBlockSuiteWorkspacePageTitle(
+  blockSuiteWorkspace: Workspace
+) {
+  const { getLocalizedJournalDateString } =
+    useJournalHelper(blockSuiteWorkspace);
+  return useCallback(
+    (pageId: string) => {
+      return (
+        getLocalizedJournalDateString(pageId) ||
+        blockSuiteWorkspace.getDoc(pageId)?.meta?.title
+      );
+    },
+    [blockSuiteWorkspace, getLocalizedJournalDateString]
+  );
 }

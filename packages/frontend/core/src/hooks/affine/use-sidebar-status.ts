@@ -1,6 +1,7 @@
-import { appSidebarOpenAtom } from '@affine/component/app-sidebar';
 import { useAtom } from 'jotai';
 import { useCallback, useMemo } from 'react';
+
+import { appSidebarOpenAtom } from '../../components/app-sidebar';
 
 export function useSwitchSidebarStatus() {
   const [isOpened, setOpened] = useAtom(appSidebarOpenAtom);

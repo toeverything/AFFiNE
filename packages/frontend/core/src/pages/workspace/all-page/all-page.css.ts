@@ -1,12 +1,4 @@
-import { cssVar } from '@toeverything/theme';
 import { style } from '@vanilla-extract/css';
-export const root = style({
-  height: '100%',
-  width: '100%',
-  display: 'flex',
-  flexFlow: 'column',
-  background: cssVar('backgroundPrimaryColor'),
-});
 export const scrollContainer = style({
   flex: 1,
   width: '100%',
@@ -26,13 +18,11 @@ export const headerCreateNewButtonHidden = style({
   opacity: 0,
   pointerEvents: 'none',
 });
-export const headerRightWindows = style({
+
+export const body = style({
   display: 'flex',
-  alignItems: 'center',
-  gap: 8,
-  selectors: {
-    '&[data-is-windows-desktop="true"]': {
-      transform: 'translateX(16px)',
-    },
-  },
+  flexDirection: 'column',
+  flex: 1,
+  height: '100%',
+  width: '100%',
 });

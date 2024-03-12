@@ -2,8 +2,8 @@ import * as ScrollArea from '@radix-ui/react-scroll-area';
 import clsx from 'clsx';
 import { type PropsWithChildren, useRef } from 'react';
 
-import { useHasScrollTop } from '../../components/app-sidebar/sidebar-containers/use-has-scroll-top';
 import * as styles from './index.css';
+import { useHasScrollTop } from './use-has-scroll-top';
 
 export type ScrollableContainerProps = {
   showScrollTopBorder?: boolean;

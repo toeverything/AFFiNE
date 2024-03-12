@@ -5,13 +5,13 @@ import {
 import { pushNotificationAtom } from '@affine/component/notification-center';
 import { apis } from '@affine/electron-api';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import type { PageService } from '@blocksuite/blocks';
+import type { PageRootService } from '@blocksuite/blocks';
 import {
   HtmlTransformer,
   MarkdownTransformer,
-  type PageBlockModel,
+  type RootBlockModel,
 } from '@blocksuite/blocks';
-import type { Page } from '@blocksuite/store';
+import type { Doc } from '@blocksuite/store';
 import { useSetAtom } from 'jotai';
 import { nanoid } from 'nanoid';
 import { useCallback } from 'react';
@@ -19,27 +19,27 @@ import { useCallback } from 'react';
 type ExportType = 'pdf' | 'html' | 'png' | 'markdown';
 
 interface ExportHandlerOptions {
-  page: Page;
+  page: Doc;
   type: ExportType;
 }
 
 async function exportHandler({ page, type }: ExportHandlerOptions) {
   const editorRoot = document.querySelector('editor-host');
-  let pageService: PageService | null = null;
+  let pageService: PageRootService | null = null;
   if (editorRoot) {
-    pageService = editorRoot.spec.getService('affine:page') as PageService;
+    pageService = editorRoot.spec.getService<PageRootService>('affine:page');
   }
   switch (type) {
     case 'html':
-      await HtmlTransformer.exportPage(page);
+      await HtmlTransformer.exportDoc(page);
       break;
     case 'markdown':
-      await MarkdownTransformer.exportPage(page);
+      await MarkdownTransformer.exportDoc(page);
       break;
     case 'pdf':
-      if (environment.isDesktop && page.meta.mode === 'page') {
+      if (environment.isDesktop && page.meta?.mode === 'page') {
         await apis?.export.savePDFFileAs(
-          (page.root as PageBlockModel).title.toString()
+          (page.root as RootBlockModel).title.toString()
         );
       } else {
         if (!pageService) return;
@@ -54,7 +54,7 @@ async function exportHandler({ page, type }: ExportHandlerOptions) {
   }
 }
 
-export const useExportPage = (page: Page) => {
+export const useExportPage = (page: Doc) => {
   const pushNotification = useSetAtom(pushNotificationAtom);
   const pushGlobalLoadingEvent = useSetAtom(pushGlobalLoadingEventAtom);
   const resolveGlobalLoadingEvent = useSetAtom(resolveGlobalLoadingEventAtom);

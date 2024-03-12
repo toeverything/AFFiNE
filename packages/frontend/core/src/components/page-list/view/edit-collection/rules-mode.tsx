@@ -8,7 +8,7 @@ import {
   PlusIcon,
   ToggleCollapseIcon,
 } from '@blocksuite/icons';
-import type { PageMeta } from '@blocksuite/store';
+import type { DocMeta } from '@blocksuite/store';
 import clsx from 'clsx';
 import { type ReactNode, useCallback, useEffect, useState } from 'react';
 
@@ -38,8 +38,8 @@ export const RulesMode = ({
 }) => {
   const t = useAFFiNEI18N();
   const [showPreview, setShowPreview] = useState(true);
-  const allowListPages: PageMeta[] = [];
-  const rulesPages: PageMeta[] = [];
+  const allowListPages: DocMeta[] = [];
+  const rulesPages: DocMeta[] = [];
   const [showTips, setShowTips] = useState(false);
   useEffect(() => {
     setShowTips(!localStorage.getItem('hide-rules-mode-include-page-tips'));
@@ -48,18 +48,22 @@ export const RulesMode = ({
     setShowTips(false);
     localStorage.setItem('hide-rules-mode-include-page-tips', 'true');
   }, []);
-  allPageListConfig.allPages.forEach(v => {
-    if (v.trash) {
+  allPageListConfig.allPages.forEach(meta => {
+    if (meta.trash) {
       return;
     }
+    const pageData = {
+      meta,
+      publicMode: allPageListConfig.getPublicMode(meta.id),
+    };
     if (
       collection.filterList.length &&
-      filterPageByRules(collection.filterList, [], v)
+      filterPageByRules(collection.filterList, [], pageData)
     ) {
-      rulesPages.push(v);
+      rulesPages.push(meta);
     }
-    if (collection.allowList.includes(v.id)) {
-      allowListPages.push(v);
+    if (collection.allowList.includes(meta.id)) {
+      allowListPages.push(meta);
     }
   });
   const { node: selectPageNode, open } = useSelectPage({ allPageListConfig });
@@ -81,7 +85,7 @@ export const RulesMode = ({
   );
   const operationsRenderer = useCallback(
     (item: ListItem) => {
-      const page = item as PageMeta;
+      const page = item as DocMeta;
       return allPageListConfig.favoriteRender(page);
     },
     [allPageListConfig]

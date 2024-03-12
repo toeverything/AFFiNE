@@ -26,7 +26,7 @@ export const EmptyPageList = ({
     if (type === 'all') {
       const createNewPageButton = (
         <button className={styles.emptyDescButton} onClick={onCreatePage}>
-          New Page
+          {t['New Page']()}
         </button>
       );
       if (environment.isDesktop) {
@@ -76,6 +76,7 @@ export const EmptyCollectionList = ({ heading }: { heading: ReactNode }) => {
     </div>
   );
 };
+
 export const EmptyTagList = ({ heading }: { heading: ReactNode }) => {
   const t = useAFFiNEI18N();
   return (

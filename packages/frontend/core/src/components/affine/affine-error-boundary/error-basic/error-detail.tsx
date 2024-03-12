@@ -99,9 +99,9 @@ export const ErrorDetail: FC<ErrorDetailProps> = props => {
         <div
           className={styles.errorImage}
           style={{
-            backgroundImage: `url(${imageMap.get(status)?.[
-              resolvedTheme as 'light' | 'dark'
-            ]})`,
+            backgroundImage: `url(${
+              imageMap.get(status)?.[resolvedTheme as 'light' | 'dark']
+            })`,
           }}
         />
       )}

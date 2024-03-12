@@ -9,7 +9,6 @@ import {
   arch,
   buildType,
   icnsPath,
-  iconPngPath,
   iconUrl,
   icoPath,
   platform,
@@ -76,15 +75,8 @@ const makers = [
     },
   },
   !process.env.SKIP_BUNDLE && {
-    name: '@reforged/maker-appimage',
-    config: {
-      name: 'AFFiNE',
-      icon: iconPngPath,
-      platforms: ['linux'],
-      options: {
-        bin: productName,
-      },
-    },
+    name: '@pengx17/electron-forge-maker-appimage',
+    platforms: ['linux'],
   },
 ].filter(Boolean);
 

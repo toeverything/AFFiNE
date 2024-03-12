@@ -1,43 +1,44 @@
 import { useMemo } from 'react';
 
 function* highlightTextFragmentsGenerator(text: string, query: string) {
-  const lowerCaseText = text.replace(/\r?\n|\r/g, '').toLowerCase();
+  const cleanedText = text.replace(/\r?\n|\r|\t/g, '');
+  const lowerCaseText = cleanedText.toLowerCase();
   query = query.toLowerCase();
   let startIndex = lowerCaseText.indexOf(query);
 
   if (startIndex !== -1) {
     if (startIndex > 0) {
-      yield { text: text.substring(0, startIndex), highlight: false };
+      yield { text: cleanedText.substring(0, startIndex), highlight: false };
     }
 
     yield {
-      text: text.substring(startIndex, startIndex + query.length),
+      text: cleanedText.substring(startIndex, startIndex + query.length),
       highlight: true,
     };
 
-    if (startIndex + query.length < text.length) {
+    if (startIndex + query.length < cleanedText.length) {
       yield {
-        text: text.substring(startIndex + query.length),
+        text: cleanedText.substring(startIndex + query.length),
         highlight: false,
       };
     }
   } else {
     startIndex = 0;
     for (const char of query) {
-      const pos = text.toLowerCase().indexOf(char, startIndex);
+      const pos = cleanedText.toLowerCase().indexOf(char, startIndex);
       if (pos !== -1) {
         if (pos > startIndex) {
           yield {
-            text: text.substring(startIndex, pos),
+            text: cleanedText.substring(startIndex, pos),
             highlight: false,
           };
         }
-        yield { text: text.substring(pos, pos + 1), highlight: true };
+        yield { text: cleanedText.substring(pos, pos + 1), highlight: true };
         startIndex = pos + 1;
       }
     }
-    if (startIndex < text.length) {
-      yield { text: text.substring(startIndex), highlight: false };
+    if (startIndex < cleanedText.length) {
+      yield { text: cleanedText.substring(startIndex), highlight: false };
     }
   }
 }

@@ -171,6 +171,14 @@ function awaitChildProcess(child: ChildProcess): Promise<number> {
 }
 
 try {
+  await awaitChildProcess(
+    spawn('node', ['build-edgeless.mjs'], {
+      cwd: path.resolve(projectRoot, 'packages/frontend/templates'),
+      stdio: 'inherit',
+      shell: true,
+      env: process.env,
+    })
+  );
   // Start webpack
   await awaitChildProcess(
     spawn(

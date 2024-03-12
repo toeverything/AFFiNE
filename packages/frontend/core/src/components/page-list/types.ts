@@ -1,9 +1,9 @@
 import type { Collection, Tag } from '@affine/env/filter';
-import type { PageMeta, Workspace } from '@blocksuite/store';
+import type { DocMeta, Workspace } from '@blocksuite/store';
 import type { PropsWithChildren, ReactNode } from 'react';
 import type { To } from 'react-router-dom';
 
-export type ListItem = PageMeta | CollectionMeta | TagMeta;
+export type ListItem = DocMeta | CollectionMeta | TagMeta;
 
 export interface CollectionMeta extends Collection {
   title: string;
@@ -104,7 +104,7 @@ export interface ListProps<T> {
 
 export interface VirtualizedListProps<T> extends ListProps<T> {
   heading?: ReactNode; // the user provided heading part (non sticky, above the original header)
-  headerRenderer?: () => ReactNode; // the user provided header renderer
+  headerRenderer?: (item?: T) => ReactNode; // the user provided header renderer
   itemRenderer?: (item: T) => ReactNode; // the user provided item renderer
   atTopThreshold?: number; // the threshold to determine whether or not the user has scrolled to the top. default is 0
   atTopStateChange?: (atTop: boolean) => void; // called when the user scrolls to the top or not

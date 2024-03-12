@@ -12,7 +12,7 @@ import { expect, type Locator, type Page } from '@playwright/test';
 const openQuickSearchByShortcut = async (page: Page, checkVisible = true) => {
   await withCtrlOrMeta(page, () => page.keyboard.press('k', { delay: 50 }));
   if (checkVisible) {
-    expect(page.getByTestId('cmdk-quick-search')).toBeVisible();
+    await expect(page.getByTestId('cmdk-quick-search')).toBeVisible();
   }
 };
 
@@ -44,7 +44,7 @@ const commandsIsVisible = async (page: Page, label: string) => {
 };
 
 async function assertTitle(page: Page, text: string) {
-  const edgeless = page.locator('affine-edgeless-page');
+  const edgeless = page.locator('affine-edgeless-root');
   if (!edgeless) {
     const locator = getBlockSuiteEditorTitle(page);
     const actual = await locator.inputValue();
@@ -97,7 +97,7 @@ async function assertResultList(page: Page, texts: string[]) {
 }
 
 async function titleIsFocused(page: Page) {
-  const edgeless = page.locator('affine-edgeless-page');
+  const edgeless = page.locator('affine-edgeless-root');
   if (!edgeless) {
     const title = getBlockSuiteEditorTitle(page);
     await expect(title).toBeVisible();
@@ -135,7 +135,7 @@ test('Create a new page without keyword', async ({ page }) => {
   await waitForEditorLoad(page);
   await clickNewPageButton(page);
   await openQuickSearchByShortcut(page);
-  const addNewPage = page.locator('[cmdk-item] >> text=New Page');
+  const addNewPage = page.locator('[cmdk-item] >> text=New Doc');
   await addNewPage.click();
   await page.waitForTimeout(300);
   await assertTitle(page, '');
@@ -147,9 +147,7 @@ test('Create a new page with keyword', async ({ page }) => {
   await clickNewPageButton(page);
   await openQuickSearchByShortcut(page);
   await insertInputText(page, '"test123456"');
-  const addNewPage = page.locator(
-    '[cmdk-item] >> text=New ""test123456"" Page'
-  );
+  const addNewPage = page.locator('[cmdk-item] >> text=New ""test123456"" Doc');
   await addNewPage.click();
   await page.waitForTimeout(300);
   await assertTitle(page, '"test123456"');
@@ -171,7 +169,7 @@ test('Create a new page and search this page', async ({ page }) => {
   // input title and create new page
   await insertInputText(page, 'test123456');
   await page.waitForTimeout(300);
-  const addNewPage = page.locator('[cmdk-item] >> text=New "test123456" Page');
+  const addNewPage = page.locator('[cmdk-item] >> text=New "test123456" Doc');
   await addNewPage.click();
 
   await page.waitForTimeout(300);
@@ -240,7 +238,7 @@ test('Focus title after creating a new page', async ({ page }) => {
   await waitForEditorLoad(page);
   await clickNewPageButton(page);
   await openQuickSearchByShortcut(page);
-  const addNewPage = page.locator('[cmdk-item] >> text=New Page');
+  const addNewPage = page.locator('[cmdk-item] >> text=New Doc');
   await addNewPage.click();
   await titleIsFocused(page);
 });
@@ -266,18 +264,20 @@ test('assert the recent browse pages are on the recent list', async ({
   {
     const title = getBlockSuiteEditorTitle(page);
     await title.click();
+    await page.waitForTimeout(200);
     await title.pressSequentially('sgtokidoki', { delay: 100 });
     await expect(title).toHaveText('sgtokidoki');
   }
 
   // create second page
   await openQuickSearchByShortcut(page);
-  const addNewPage = page.locator('[cmdk-item] >> text=New Page');
+  const addNewPage = page.locator('[cmdk-item] >> text=New Doc');
   await addNewPage.click();
   await waitForEditorLoad(page);
   {
     const title = getBlockSuiteEditorTitle(page);
     await title.click();
+    await page.waitForTimeout(200);
     await title.pressSequentially('theliquidhorse', { delay: 100 });
     await expect(title).toHaveText('theliquidhorse');
   }
@@ -290,6 +290,7 @@ test('assert the recent browse pages are on the recent list', async ({
   {
     const title = getBlockSuiteEditorTitle(page);
     await title.click();
+    await page.waitForTimeout(200);
     await title.pressSequentially('battlekot', { delay: 100 });
     await expect(title).toHaveText('battlekot');
   }
@@ -310,7 +311,7 @@ test('assert the recent browse pages are on the recent list', async ({
   await waitForEditorLoad(page);
   await openQuickSearchByShortcut(page);
   {
-    const addNewPage = page.locator('[cmdk-item] >> text=New Page');
+    const addNewPage = page.locator('[cmdk-item] >> text=New Doc');
     await addNewPage.click();
   }
   await waitForEditorLoad(page);
@@ -369,6 +370,7 @@ test('can use cmdk to delete page and restore it', async ({ page }) => {
   await page.getByTestId('confirm-delete-page').click();
   const restoreButton = page.getByTestId('page-restore-button');
   await expect(restoreButton).toBeVisible();
+  await page.waitForTimeout(100);
   await openQuickSearchByShortcut(page);
   expect(await commandsIsVisible(page, 'Move to Trash')).toBe(false);
   expect(await commandsIsVisible(page, 'Export to PDF')).toBe(false);

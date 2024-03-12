@@ -2,14 +2,15 @@ import { randomUUID } from 'node:crypto';
 
 import { BadRequestException } from '@nestjs/common';
 import { Algorithm, sign, verify as jwtVerify } from '@node-rs/jsonwebtoken';
+import { PrismaClient } from '@prisma/client';
 import { JWT } from 'next-auth/jwt';
 
-import { Config, PrismaService } from '../../../fundamentals';
+import { Config } from '../../../fundamentals';
 import { getUtcTimestamp, UserClaim } from '../service';
 
 export const jwtEncode = async (
   config: Config,
-  prisma: PrismaService,
+  prisma: PrismaClient,
   token: JWT | undefined,
   maxAge: number | undefined
 ) => {

@@ -3,11 +3,11 @@ import { style } from '@vanilla-extract/css';
 export const notFoundPageContainer = style({
   fontSize: cssVar('fontBase'),
   color: cssVar('textPrimaryColor'),
-  height: '100vh',
+  height: '100%',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  width: '100vw',
+  width: '100%',
   padding: '0 20px',
 });
 export const wrapper = style({

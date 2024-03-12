@@ -7,6 +7,8 @@ body:
     attributes:
       value: |
         Thanks for taking the time to fill out this bug report!
+        Check out this [link](https://github.com/toeverything/AFFiNE/blob/canary/docs/issue-triaging.md)
+        to learn how we manage issues and when your issue will be processed.
   - type: textarea
     id: what-happened
     attributes:
@@ -41,6 +43,14 @@ body:
         - Firefox
         - Safari
         - Other
+  - type: checkboxes
+    id: selfhost
+    attributes:
+      label: Are you self-hosting?
+      description: >
+        If you are self-hosting, please check the box and provide information about your setup.
+      options:
+        - label: 'Yes'
   - type: textarea
     id: logs
     attributes:
@@ -53,11 +63,3 @@ body:
       description: |
         Links? References? Anything that will give us more context about the issue you are encountering!
         Tip: You can attach images here
-  - type: checkboxes
-    attributes:
-      label: Are you willing to submit a PR?
-      description: >
-        (Optional) We encourage you to submit a [Pull Request](https://github.com/toeverything/affine/pulls) (PR) to help improve AFFiNE for everyone, especially if you have a good understanding of how to implement a fix or feature.
-        See the AFFiNE [Contributing Guide](https://github.com/toeverything/affine/blob/canary/CONTRIBUTING.md) to get started.
-      options:
-        - label: Yes I'd like to help by submitting a PR!

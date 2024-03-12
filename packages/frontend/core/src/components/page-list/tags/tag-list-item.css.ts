@@ -87,7 +87,7 @@ globalStyle(`${root} > :last-child`, {
   paddingRight: '8px',
 });
 export const titleIconsWrapper = style({
-  padding: '0 5px',
+  padding: '5px',
   display: 'flex',
   alignItems: 'center',
   gap: '10px',
@@ -119,7 +119,7 @@ export const titleCellPreview = style({
   overflow: 'hidden',
   color: cssVar('textSecondaryColor'),
   fontSize: cssVar('fontBase'),
-  flex: 1,
+  flexShrink: 0,
   whiteSpace: 'nowrap',
   textOverflow: 'ellipsis',
   alignSelf: 'stretch',
@@ -161,6 +161,13 @@ export const operationsCell = style({
   justifyContent: 'flex-end',
   columnGap: '6px',
   flexShrink: 0,
+});
+export const tagIndicatorWrapper = style({
+  width: '24px',
+  height: '24px',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
 });
 export const tagIndicator = style({
   width: '8px',

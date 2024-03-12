@@ -6,6 +6,11 @@ vi.mock('lottie-web', () => ({
 
 vi.mock('@blocksuite/presets', () => ({
   AffineEditorContainer: vi.fn(),
+  BiDirectionalLinkPanel: vi.fn(),
+  DocMetaTags: vi.fn(),
+  DocTitle: vi.fn(),
+  EdgelessEditor: vi.fn(),
+  PageEditor: vi.fn(),
 }));
 
 if (typeof window !== 'undefined' && HTMLCanvasElement) {

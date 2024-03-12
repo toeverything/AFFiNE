@@ -42,11 +42,9 @@ function prepare() {
 function runPredeployScript() {
   console.log('running predeploy script.');
   execSync('yarn predeploy', {
-    env: {
-      ...process.env,
-      NODE_OPTIONS:
-        (process.env.NODE_OPTIONS ?? '') + ' --import ./dist/prelude.js',
-    },
+    encoding: 'utf-8',
+    env: process.env,
+    stdio: 'inherit',
   });
 }
 

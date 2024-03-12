@@ -1,11 +1,10 @@
 import { EditorLoading } from '@affine/component/page-detail-skeleton';
-import { usePageMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
+import { useDocMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
 import { useJournalHelper } from '@affine/core/hooks/use-journal';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
-import { LinkedPageIcon, TodayIcon } from '@blocksuite/icons';
 import type { AffineEditorContainer } from '@blocksuite/presets';
-import type { Page } from '@blocksuite/store';
+import type { Doc } from '@blocksuite/store';
 import { use } from 'foxact/use';
 import type { CSSProperties, ReactElement } from 'react';
 import {
@@ -17,18 +16,21 @@ import {
   useMemo,
   useRef,
 } from 'react';
-import { type Map as YMap } from 'yjs';
 
+import {
+  pageReferenceRenderer,
+  type PageReferenceRendererOptions,
+} from '../../affine/reference-link';
 import { BlocksuiteEditorContainer } from './blocksuite-editor-container';
+import { NoPageRootError } from './no-page-error';
 import type { InlineRenderers } from './specs';
-import * as styles from './styles.css';
 
 export type ErrorBoundaryProps = {
   onReset?: () => void;
 };
 
 export type EditorProps = {
-  page: Page;
+  page: Doc;
   mode: 'page' | 'edgeless';
   defaultSelectedBlockId?: string;
   // on Editor instance instantiated
@@ -37,9 +39,9 @@ export type EditorProps = {
   className?: string;
 };
 
-function usePageRoot(page: Page) {
+function usePageRoot(page: Doc) {
   if (!page.ready) {
-    use(page.load());
+    page.load();
   }
 
   if (!page.root) {
@@ -59,83 +61,21 @@ function usePageRoot(page: Page) {
   return page.root;
 }
 
-interface PageReferenceProps {
-  reference: HTMLElementTagNameMap['affine-reference'];
-  pageMetaHelper: ReturnType<typeof usePageMetaHelper>;
-  journalHelper: ReturnType<typeof useJournalHelper>;
-  t: ReturnType<typeof useAFFiNEI18N>;
-}
-
-// TODO: this is a placeholder proof-of-concept implementation
-function customPageReference({
-  reference,
-  pageMetaHelper,
-  journalHelper,
-  t,
-}: PageReferenceProps) {
-  const { isPageJournal, getLocalizedJournalDateString } = journalHelper;
-  assertExists(
-    reference.delta.attributes?.reference?.pageId,
-    'pageId should exist for page reference'
-  );
-  const pageId = reference.delta.attributes.reference.pageId;
-  const referencedPage = pageMetaHelper.getPageMeta(pageId);
-  let title =
-    referencedPage?.title ?? t['com.affine.editor.reference-not-found']();
-  let icon = <LinkedPageIcon className={styles.pageReferenceIcon} />;
-  const isJournal = isPageJournal(pageId);
-  const localizedJournalDate = getLocalizedJournalDateString(pageId);
-  if (isJournal && localizedJournalDate) {
-    title = localizedJournalDate;
-    icon = <TodayIcon className={styles.pageReferenceIcon} />;
-  }
-  return (
-    <>
-      {icon}
-      <span className="affine-reference-title">{title}</span>
-    </>
-  );
-}
-
 // we cannot pass components to lit renderers, but give them the rendered elements
 const customRenderersFactory: (
-  opts: Omit<PageReferenceProps, 'reference'>
+  opts: Omit<PageReferenceRendererOptions, 'pageId'>
 ) => InlineRenderers = opts => ({
   pageReference(reference) {
-    return customPageReference({
+    const pageId = reference.delta.attributes?.reference?.pageId;
+    if (!pageId) {
+      return <span />;
+    }
+    return pageReferenceRenderer({
       ...opts,
-      reference,
+      pageId,
     });
   },
 });
-
-/**
- * TODO: Define error to unexpected state together in the future.
- */
-export class NoPageRootError extends Error {
-  constructor(public page: Page) {
-    super('Page root not found when render editor!');
-
-    // Log info to let sentry collect more message
-    const hasExpectSpace = Array.from(page.rootDoc.spaces.values()).some(
-      doc => page.spaceDoc.guid === doc.guid
-    );
-    const blocks = page.spaceDoc.getMap('blocks') as YMap<YMap<any>>;
-    const havePageBlock = Array.from(blocks.values()).some(
-      block => block.get('sys:flavour') === 'affine:page'
-    );
-    console.info(
-      'NoPageRootError current data: %s',
-      JSON.stringify({
-        expectPageId: page.id,
-        expectGuid: page.spaceDoc.guid,
-        hasExpectSpace,
-        blockSize: blocks.size,
-        havePageBlock,
-      })
-    );
-  }
-}
 
 const BlockSuiteEditorImpl = forwardRef<AffineEditorContainer, EditorProps>(
   function BlockSuiteEditorImpl(
@@ -170,7 +110,7 @@ const BlockSuiteEditorImpl = forwardRef<AffineEditorContainer, EditorProps>(
       };
     }, []);
 
-    const pageMetaHelper = usePageMetaHelper(page.workspace);
+    const pageMetaHelper = useDocMetaHelper(page.workspace);
     const journalHelper = useJournalHelper(page.workspace);
     const t = useAFFiNEI18N();
 

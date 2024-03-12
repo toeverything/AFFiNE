@@ -81,8 +81,8 @@ export class PriorityAsyncQueue<
   override next(abort?: AbortSignal | undefined): Promise<T> {
     return super.next(abort, arr => {
       if (this.priorityTarget.priorityRule !== null) {
-        const index = arr.findIndex(
-          update => this.priorityTarget.priorityRule?.(update.id)
+        const index = arr.findIndex(update =>
+          this.priorityTarget.priorityRule?.(update.id)
         );
         if (index !== -1) {
           return arr.splice(index, 1)[0];

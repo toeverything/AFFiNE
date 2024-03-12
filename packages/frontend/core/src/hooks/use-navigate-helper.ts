@@ -1,21 +1,32 @@
 import type { WorkspaceSubPath } from '@affine/core/shared';
-import { useCallback, useMemo } from 'react';
+import { createContext, useCallback, useContext, useMemo } from 'react';
 import {
+  type NavigateFunction,
   type NavigateOptions,
+  type To,
   useLocation,
-  // eslint-disable-next-line @typescript-eslint/no-restricted-imports
-  useNavigate,
 } from 'react-router-dom';
+
+import { router } from '../router';
 
 export enum RouteLogic {
   REPLACE = 'replace',
   PUSH = 'push',
 }
 
+function defaultNavigate(to: To, option?: { replace?: boolean }) {
+  router.navigate(to, option).catch(err => {
+    console.error('Failed to navigate', err);
+  });
+}
+
+export const NavigateContext = createContext<NavigateFunction | null>(null);
+
 // todo: add a name -> path helper in the results
 export function useNavigateHelper() {
   const location = useLocation();
-  const navigate = useNavigate();
+
+  const navigate = useContext(NavigateContext) ?? defaultNavigate;
 
   const jumpToPage = useCallback(
     (
@@ -44,7 +55,7 @@ export function useNavigateHelper() {
   );
   const jumpToCollections = useCallback(
     (workspaceId: string, logic: RouteLogic = RouteLogic.PUSH) => {
-      return navigate(`/workspace/${workspaceId}/all?filterMode=collections`, {
+      return navigate(`/workspace/${workspaceId}/collection`, {
         replace: logic === RouteLogic.REPLACE,
       });
     },
@@ -52,7 +63,19 @@ export function useNavigateHelper() {
   );
   const jumpToTags = useCallback(
     (workspaceId: string, logic: RouteLogic = RouteLogic.PUSH) => {
-      return navigate(`/workspace/${workspaceId}/all?filterMode=tags`, {
+      return navigate(`/workspace/${workspaceId}/tag`, {
+        replace: logic === RouteLogic.REPLACE,
+      });
+    },
+    [navigate]
+  );
+  const jumpToTag = useCallback(
+    (
+      workspaceId: string,
+      tagId: string,
+      logic: RouteLogic = RouteLogic.PUSH
+    ) => {
+      return navigate(`/workspace/${workspaceId}/tag/${tagId}`, {
         replace: logic === RouteLogic.REPLACE,
       });
     },
@@ -162,6 +185,7 @@ export function useNavigateHelper() {
       jumpToCollection,
       jumpToCollections,
       jumpToTags,
+      jumpToTag,
     }),
     [
       jumpToPage,
@@ -176,6 +200,7 @@ export function useNavigateHelper() {
       jumpToCollection,
       jumpToCollections,
       jumpToTags,
+      jumpToTag,
     ]
   );
 }

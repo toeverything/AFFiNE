@@ -43,7 +43,7 @@ describe('useBlockSuiteWorkspacePageTitle', () => {
       </ServiceProviderContext.Provider>
     );
     expect(await findByText('title: Untitled')).toBeDefined();
-    workspace.blockSuiteWorkspace.setPageMeta(page.id, { title: '1' });
+    workspace.blockSuiteWorkspace.setDocMeta(page.id, { title: '1' });
     rerender(
       <ServiceProviderContext.Provider value={page.services}>
         <Provider store={store}>

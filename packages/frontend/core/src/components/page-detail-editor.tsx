@@ -1,18 +1,22 @@
 import './page-detail-editor.css';
 
-import { useActiveBlocksuiteEditor } from '@affine/core/hooks/use-block-suite-editor';
 import { useBlockSuiteWorkspacePage } from '@affine/core/hooks/use-block-suite-workspace-page';
 import { assertExists, DisposableGroup } from '@blocksuite/global/utils';
 import type { AffineEditorContainer } from '@blocksuite/presets';
-import type { Page, Workspace } from '@blocksuite/store';
+import type { Workspace } from '@blocksuite/store';
+import type { Doc as BlockSuiteDoc } from '@blocksuite/store';
+import {
+  Doc,
+  type PageMode,
+  useLiveData,
+  useService,
+} from '@toeverything/infra';
 import { fontStyleOptions } from '@toeverything/infra/atom';
 import clsx from 'clsx';
-import { useAtomValue } from 'jotai';
 import type { CSSProperties } from 'react';
 import { memo, Suspense, useCallback, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 
-import { type PageMode, pageSettingFamily } from '../atoms';
 import { useAppSettingHelper } from '../hooks/affine/use-app-setting-helper';
 import { BlockSuiteEditor as Editor } from './blocksuite/block-suite-editor';
 import * as styles from './page-detail-editor.css';
@@ -23,7 +27,7 @@ declare global {
 }
 
 export type OnLoadEditor = (
-  page: Page,
+  page: BlockSuiteDoc,
   editor: AffineEditorContainer
 ) => () => void;
 
@@ -41,23 +45,19 @@ function useRouterHash() {
 
 const PageDetailEditorMain = memo(function PageDetailEditorMain({
   page,
-  pageId,
   onLoad,
   isPublic,
   publishMode,
-}: PageDetailEditorProps & { page: Page }) {
-  const pageSettingAtom = pageSettingFamily(pageId);
-  const pageSetting = useAtomValue(pageSettingAtom);
-
+}: PageDetailEditorProps & { page: BlockSuiteDoc }) {
+  const currentMode = useLiveData(useService(Doc).mode);
   const mode = useMemo(() => {
-    const currentMode = pageSetting.mode;
     const shareMode = publishMode || currentMode;
 
     if (isPublic) {
       return shareMode;
     }
     return currentMode;
-  }, [isPublic, publishMode, pageSetting.mode]);
+  }, [isPublic, publishMode, currentMode]);
 
   const { appSettings } = useAppSettingHelper();
 
@@ -69,40 +69,43 @@ const PageDetailEditorMain = memo(function PageDetailEditorMain({
     return fontStyle.value;
   }, [appSettings.fontStyle]);
 
-  const [, setActiveBlocksuiteEditor] = useActiveBlocksuiteEditor();
   const blockId = useRouterHash();
 
   const onLoadEditor = useCallback(
     (editor: AffineEditorContainer) => {
       // debug current detail editor
       globalThis.currentEditor = editor;
-      setActiveBlocksuiteEditor(editor);
       const disposableGroup = new DisposableGroup();
       disposableGroup.add(
         page.slots.blockUpdated.once(() => {
-          page.workspace.setPageMeta(page.id, {
+          page.workspace.setDocMeta(page.id, {
             updatedDate: Date.now(),
           });
         })
       );
       localStorage.setItem('last_page_id', page.id);
+
       if (onLoad) {
-        disposableGroup.add(onLoad(page, editor));
+        // Invoke onLoad once the editor has been mounted to the DOM.
+        editor.updateComplete
+          .then(() => editor.host.updateComplete)
+          .then(() => {
+            disposableGroup.add(onLoad(page, editor));
+          })
+          .catch(console.error);
       }
 
       return () => {
         disposableGroup.dispose();
-        setActiveBlocksuiteEditor(null);
       };
     },
-    [onLoad, page, setActiveBlocksuiteEditor]
+    [onLoad, page]
   );
 
   return (
     <Editor
       className={clsx(styles.editor, {
         'full-screen': appSettings.fullWidthLayout,
-        'is-public-page': isPublic,
       })}
       style={
         {

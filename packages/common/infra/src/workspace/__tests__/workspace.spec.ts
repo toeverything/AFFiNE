@@ -22,15 +22,15 @@ describe('Workspace System', () => {
 
     expect(workspaceListService.workspaceList.value.length).toBe(1);
 
-    const page = workspace.blockSuiteWorkspace.createPage({
+    const page = workspace.blockSuiteWorkspace.createDoc({
       id: 'page0',
     });
-    await page.load();
-    page.addBlock('affine:page', {
+    page.load();
+    page.addBlock('affine:page' as keyof BlockSuite.BlockModels, {
       title: new page.Text('test-page'),
     });
 
-    expect(workspace.blockSuiteWorkspace.pages.size).toBe(1);
+    expect(workspace.blockSuiteWorkspace.docs.size).toBe(1);
     expect(
       (page!.getBlockByFlavour('affine:page')[0] as any).title.toString()
     ).toBe('test-page');

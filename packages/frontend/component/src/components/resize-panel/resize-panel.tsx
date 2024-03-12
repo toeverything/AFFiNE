@@ -2,6 +2,7 @@ import { assertExists } from '@blocksuite/global/utils';
 import { assignInlineVars } from '@vanilla-extract/dynamic';
 import clsx from 'clsx';
 import { forwardRef, useCallback, useEffect, useRef, useState } from 'react';
+import { useTransition } from 'react-transition-state';
 
 import * as styles from './resize-panel.css';
 
@@ -116,6 +117,7 @@ const ResizeHandle = ({
   );
 };
 
+// delay initial animation to avoid flickering
 function useEnableAnimation() {
   const [enable, setEnable] = useState(false);
   useEffect(() => {
@@ -125,6 +127,8 @@ function useEnableAnimation() {
   }, []);
   return enable;
 }
+
+const animationTimeout = 300;
 
 export const ResizePanel = forwardRef<HTMLDivElement, ResizePanelProps>(
   function ResizePanel(
@@ -150,15 +154,23 @@ export const ResizePanel = forwardRef<HTMLDivElement, ResizePanelProps>(
   ) {
     const enableAnimation = useEnableAnimation() && _enableAnimation;
     const safeWidth = Math.min(maxWidth, Math.max(minWidth, width));
+    const [{ status }, toggle] = useTransition({
+      timeout: animationTimeout,
+    });
+    useEffect(() => {
+      toggle(open);
+    }, [open]);
     return (
       <div
         {...rest}
         ref={ref}
         style={assignInlineVars({
           [styles.panelWidthVar]: `${safeWidth}px`,
+          [styles.animationTimeout]: `${animationTimeout}ms`,
         })}
         className={clsx(className, styles.root)}
         data-open={open}
+        data-transition-state={status}
         data-is-floating={floating}
         data-handle-position={resizeHandlePos}
         data-enable-animation={enableAnimation && !resizing}

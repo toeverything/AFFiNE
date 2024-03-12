@@ -223,6 +223,10 @@ const subTabConfigs = [
     key: 'experimental-features',
     title: 'com.affine.settings.workspace.experimental-features',
   },
+  {
+    key: 'properties',
+    title: 'com.affine.settings.workspace.properties',
+  },
 ] satisfies {
   key: WorkspaceSubTab;
   title: keyof ReturnType<typeof useAFFiNEI18N>;
@@ -265,6 +269,7 @@ const WorkspaceListItem = ({
       .map(({ key, title }) => {
         return (
           <div
+            data-testid={`workspace-list-item-${key}`}
             onClick={() => {
               onClick(key);
             }}

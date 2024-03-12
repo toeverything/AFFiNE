@@ -14,6 +14,7 @@ import {
 } from '@affine-test/kit/utils/filter';
 import { openHomePage } from '@affine-test/kit/utils/load-page';
 import {
+  clickNewPageButton,
   getBlockSuiteEditorTitle,
   waitForAllPagesLoad,
   waitForEditorLoad,
@@ -65,7 +66,7 @@ test('all page can create new edgeless page', async ({ page }) => {
   await waitForEditorLoad(page);
   await clickSideBarAllPageButton(page);
   await clickNewEdgelessDropdown();
-  await expect(page.locator('affine-edgeless-page')).toBeVisible();
+  await expect(page.locator('affine-edgeless-root')).toBeVisible();
 });
 
 test('allow creation of filters by favorite', async ({ page }) => {
@@ -99,7 +100,6 @@ test('use monthpicker to modify the month of datepicker', async ({ page }) => {
   await selectMonthFromMonthPicker(page, lastMonth);
   await checkDatePickerMonth(page, lastMonth);
   // change month
-  await clickDatePicker(page);
   const nextMonth = new Date();
   nextMonth.setMonth(nextMonth.getMonth() + 1);
   await selectMonthFromMonthPicker(page, nextMonth);
@@ -119,10 +119,11 @@ test('allow creation of filters by tags', async ({ page }) => {
     .locator('[data-testid="page-list-item"]')
     .all();
   const pagesWithTagsCount = pagesWithTags.length;
-  expect(pagesWithTagsCount).not.toBe(0);
+  expect(pagesWithTagsCount).toBe(0);
   await createPageWithTag(page, { title: 'Page A', tags: ['Page A'] });
   await createPageWithTag(page, { title: 'Page B', tags: ['Page B'] });
   await clickSideBarAllPageButton(page);
+  await createFirstFilter(page, 'Tags');
   await checkFilterName(page, 'is not empty');
   expect(await getPagesCount(page)).toBe(pagesWithTagsCount + 2);
   await changeFilter(page, 'contains all');
@@ -184,6 +185,7 @@ test('enable selection and use ESC to disable selection', async ({ page }) => {
 test('select two pages and delete', async ({ page }) => {
   await openHomePage(page);
   await waitForEditorLoad(page);
+  await clickNewPageButton(page);
   await clickSideBarAllPageButton(page);
   await waitForAllPagesLoad(page);
 
@@ -208,14 +210,14 @@ test('select two pages and delete', async ({ page }) => {
   // the floating popover should appear
   await expect(page.locator('[data-testid="floating-toolbar"]')).toBeVisible();
   await expect(page.locator('[data-testid="floating-toolbar"]')).toHaveText(
-    '2 selected'
+    '2 doc(s) selected'
   );
 
   // click delete button
   await page.locator('[data-testid="list-toolbar-delete"]').click();
 
   // the confirm dialog should appear
-  await expect(page.getByText('Delete 2 pages?')).toBeVisible();
+  await expect(page.getByText('Delete 2 docs?')).toBeVisible();
 
   await page.getByRole('button', { name: 'Delete' }).click();
 
@@ -230,6 +232,7 @@ test('select a group of items by clicking "Select All" in group header', async (
 }) => {
   await openHomePage(page);
   await waitForEditorLoad(page);
+  await clickNewPageButton(page);
   await clickSideBarAllPageButton(page);
   await waitForAllPagesLoad(page);
 
@@ -250,6 +253,6 @@ test('select a group of items by clicking "Select All" in group header', async (
 
   // check the selected count is equal to the one displayed in the floating toolbar
   await expect(page.locator('[data-testid="floating-toolbar"]')).toHaveText(
-    `${selectedItemCount} selected`
+    `${selectedItemCount} doc(s) selected`
   );
 });

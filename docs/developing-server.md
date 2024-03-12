@@ -59,9 +59,9 @@ You may need additional env for auth login. You may want to put your own one if 
 For email login & password, please refer to https://nodemailer.com/usage/using-gmail/
 
 ```
-OAUTH_EMAIL_SENDER=
-OAUTH_EMAIL_LOGIN=
-OAUTH_EMAIL_PASSWORD=
+MAILER_SENDER=
+MAILER_USER=
+MAILER_PASSWORD=
 OAUTH_GOOGLE_ENABLED="true"
 OAUTH_GOOGLE_CLIENT_ID=
 OAUTH_GOOGLE_CLIENT_SECRET=

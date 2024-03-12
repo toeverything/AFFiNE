@@ -1,4 +1,5 @@
 import { pushNotificationAtom } from '@affine/component/notification-center';
+import { WorkspaceFlavour } from '@affine/env/workspace';
 import {
   getWorkspacePublicPagesQuery,
   PublicPageMode,
@@ -6,10 +7,10 @@ import {
   revokePublicPageMutation,
 } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import type { PageMode, Workspace } from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
 import { useCallback, useMemo } from 'react';
 
-import type { PageMode } from '../../atoms';
 import { useMutation } from '../use-mutation';
 import { useQuery } from '../use-query';
 
@@ -191,4 +192,45 @@ export function useIsSharedPage(
     }),
     [isSharedPage, currentShareMode, enableShare, disableShare, changeShare]
   );
+}
+
+export function usePublicPages(workspace: Workspace) {
+  const isLocalWorkspace = workspace.flavour === WorkspaceFlavour.LOCAL;
+  const { data } = useQuery(
+    isLocalWorkspace
+      ? undefined
+      : {
+          query: getWorkspacePublicPagesQuery,
+          variables: {
+            workspaceId: workspace.id,
+          },
+        }
+  );
+  const maybeData = data as typeof data | undefined;
+
+  const publicPages: {
+    id: string;
+    mode: PageMode;
+  }[] = useMemo(
+    () =>
+      maybeData?.workspace.publicPages.map(i => ({
+        id: i.id,
+        mode: i.mode === PublicPageMode.Edgeless ? 'edgeless' : 'page',
+      })) ?? [],
+    [maybeData?.workspace.publicPages]
+  );
+
+  /**
+   * Return `undefined` if the page is not public.
+   */
+  const getPublicMode = useCallback(
+    (pageId: string) => {
+      return publicPages.find(i => i.id === pageId)?.mode;
+    },
+    [publicPages]
+  );
+  return {
+    publicPages,
+    getPublicMode,
+  };
 }

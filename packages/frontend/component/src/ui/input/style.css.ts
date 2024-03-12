@@ -4,7 +4,7 @@ export const inputWrapper = style({
   width: '100%',
   height: 28,
   lineHeight: '22px',
-  padding: '0 10px',
+  gap: '10px',
   color: cssVar('textPrimaryColor'),
   border: '1px solid',
   backgroundColor: cssVar('white'),
@@ -53,6 +53,7 @@ export const input = style({
   width: '0',
   flex: 1,
   boxSizing: 'border-box',
+  padding: '0 12px',
   // prevent default style
   WebkitAppearance: 'none',
   WebkitTapHighlightColor: 'transparent',

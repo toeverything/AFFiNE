@@ -211,7 +211,7 @@ export const AppearanceSettings = () => {
               }
             />
           </SettingRow>
-          {environment.isMacOs && (
+          {
             <SettingRow
               name={t['com.affine.appearanceSettings.translucentUI.title']()}
               desc={t[
@@ -225,7 +225,7 @@ export const AppearanceSettings = () => {
                 }
               />
             </SettingRow>
-          )}
+          }
         </SettingWrapper>
       ) : null}
     </>

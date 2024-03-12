@@ -144,7 +144,7 @@ export const CollectionListItem = (props: CollectionListItemProps) => {
       {props.operations ? (
         <ColWrapper
           className={styles.actionsCellWrapper}
-          flex={2}
+          flex={3}
           alignment="end"
         >
           <CollectionListOperationsCell operations={props.operations} />

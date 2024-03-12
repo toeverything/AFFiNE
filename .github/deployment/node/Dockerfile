@@ -1,4 +1,4 @@
-FROM node:18-bookworm-slim
+FROM node:20-bookworm-slim
 
 COPY ./packages/backend/server /app
 COPY ./packages/frontend/core/dist /app/static
@@ -8,4 +8,4 @@ RUN apt-get update && \
   apt-get install -y --no-install-recommends openssl && \
   rm -rf /var/lib/apt/lists/*
 
-CMD ["node", "--es-module-specifier-resolution=node", "./dist/index.js"]
+CMD ["node", "--import", "./scripts/register.js", "./dist/index.js"]

@@ -1,5 +1,3 @@
-import { MenuItem } from '@affine/component/app-sidebar';
-import { currentPageIdAtom } from '@affine/core/atoms/mode';
 import {
   useJournalInfoHelper,
   useJournalRouteHelper,
@@ -7,8 +5,10 @@ import {
 import type { BlockSuiteWorkspace } from '@affine/core/shared';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { TodayIcon, TomorrowIcon, YesterdayIcon } from '@blocksuite/icons';
-import { useAtomValue } from 'jotai';
+import { Doc, useServiceOptional } from '@toeverything/infra';
 import { useParams } from 'react-router-dom';
+
+import { MenuItem } from '../app-sidebar';
 
 interface AppSidebarJournalButtonProps {
   workspace: BlockSuiteWorkspace;
@@ -18,11 +18,11 @@ export const AppSidebarJournalButton = ({
   workspace,
 }: AppSidebarJournalButtonProps) => {
   const t = useAFFiNEI18N();
-  const currentPageId = useAtomValue(currentPageIdAtom);
+  const currentPage = useServiceOptional(Doc);
   const { openToday } = useJournalRouteHelper(workspace);
   const { journalDate, isJournal } = useJournalInfoHelper(
     workspace,
-    currentPageId
+    currentPage?.id
   );
   const params = useParams();
   const isJournalActive = isJournal && !!params.pageId;
@@ -37,7 +37,12 @@ export const AppSidebarJournalButton = ({
       : TodayIcon;
 
   return (
-    <MenuItem active={isJournalActive} onClick={openToday} icon={<Icon />}>
+    <MenuItem
+      data-testid="slider-bar-journals-button"
+      active={isJournalActive}
+      onClick={openToday}
+      icon={<Icon />}
+    >
       {t['com.affine.journal.app-sidebar-title']()}
     </MenuItem>
   );

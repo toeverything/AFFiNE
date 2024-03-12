@@ -7,7 +7,7 @@ export function useReferenceLinkHelper(
 ) {
   const addReferenceLink = useCallback(
     (pageId: string, referenceId: string) => {
-      const page = blockSuiteWorkspace?.getPage(pageId);
+      const page = blockSuiteWorkspace?.getDoc(pageId);
       if (!page) {
         return;
       }

@@ -1,20 +1,20 @@
 import { BlockSuiteEditor } from '@affine/core/components/blocksuite/block-suite-editor';
-import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
+import { AffineSchemas } from '@blocksuite/blocks/schemas';
 import { Workspace } from '@blocksuite/store';
 import { Schema } from '@blocksuite/store';
 import type { StoryFn } from '@storybook/react';
-import { initEmptyPage } from '@toeverything/infra/blocksuite';
+import { initEmptyPage } from '@toeverything/infra';
 
 const schema = new Schema();
-schema.register(AffineSchemas).register(__unstableSchemas);
+schema.register(AffineSchemas);
 
 async function createAndInitPage(
   workspace: Workspace,
   title: string,
   preview: string
 ) {
-  const page = workspace.createPage();
-  await initEmptyPage(page, title);
+  const page = workspace.createDoc();
+  initEmptyPage(page, title);
   page.getBlockByFlavour('affine:paragraph').at(0)?.text?.insert(preview, 0);
   return page;
 }

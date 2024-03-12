@@ -39,8 +39,9 @@ interface BaseVirtuosoItem {
   type: VirtuosoItemType;
 }
 
-interface VirtuosoItemStickyHeader extends BaseVirtuosoItem {
+interface VirtuosoItemStickyHeader<T> extends BaseVirtuosoItem {
   type: 'sticky-header';
+  data?: T;
 }
 
 interface VirtuosoItemItem<T> extends BaseVirtuosoItem {
@@ -61,7 +62,7 @@ interface VirtuosoPageItemSpacer extends BaseVirtuosoItem {
 }
 
 type VirtuosoItem<T> =
-  | VirtuosoItemStickyHeader
+  | VirtuosoItemStickyHeader<T>
   | VirtuosoItemItem<T>
   | VirtuosoItemGroupHeader<T>
   | VirtuosoPageItemSpacer;
@@ -187,7 +188,7 @@ const ListInner = ({
     (_index: number, data: VirtuosoItem<ListItem>) => {
       switch (data.type) {
         case 'sticky-header':
-          return props.headerRenderer?.();
+          return props.headerRenderer?.(data.data);
         case 'group-header':
           return <ItemGroupHeader {...data.data} />;
         case 'item':

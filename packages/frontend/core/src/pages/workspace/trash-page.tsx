@@ -1,7 +1,6 @@
 import { toast } from '@affine/component';
 import { usePageHelper } from '@affine/core/components/blocksuite/block-suite-page-list/utils';
 import {
-  currentCollectionAtom,
   type ListItem,
   ListTableHeader,
   PageListItemRenderer,
@@ -13,18 +12,16 @@ import { pageHeaderColsDef } from '@affine/core/components/page-list/header-col-
 import { Header } from '@affine/core/components/pure/header';
 import { WindowsAppControls } from '@affine/core/components/pure/header/windows-app-controls';
 import { useBlockSuiteMetaHelper } from '@affine/core/hooks/affine/use-block-suite-meta-helper';
-import { useBlockSuitePageMeta } from '@affine/core/hooks/use-block-suite-page-meta';
+import { useBlockSuiteDocMeta } from '@affine/core/hooks/use-block-suite-page-meta';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
 import { DeleteIcon } from '@blocksuite/icons';
-import type { PageMeta } from '@blocksuite/store';
+import type { DocMeta } from '@blocksuite/store';
 import { Workspace } from '@toeverything/infra';
-import { getCurrentStore } from '@toeverything/infra/atom';
 import { useService } from '@toeverything/infra/di';
 import { useCallback } from 'react';
-import { type LoaderFunction } from 'react-router-dom';
-import { NIL } from 'uuid';
 
+import { ViewBodyIsland, ViewHeaderIsland } from '../../modules/workbench';
 import { EmptyPageList } from './page-list-empty';
 import * as styles from './trash-page.css';
 
@@ -50,27 +47,15 @@ const TrashHeader = () => {
   );
 };
 
-export const loader: LoaderFunction = async () => {
-  // to fix the bug that the trash page list is not updated when route from collection to trash
-  // but it's not a good solution, the page will jitter when collection and trash are switched between each other.
-  // TODO: fix this bug
-
-  const rootStore = getCurrentStore();
-  rootStore.set(currentCollectionAtom, NIL);
-  return null;
-};
-
 export const TrashPage = () => {
   const currentWorkspace = useService(Workspace);
   const blockSuiteWorkspace = currentWorkspace.blockSuiteWorkspace;
   assertExists(blockSuiteWorkspace);
 
-  const pageMetas = useBlockSuitePageMeta(blockSuiteWorkspace);
-  const filteredPageMetas = useFilteredPageMetas(
-    'trash',
-    pageMetas,
-    blockSuiteWorkspace
-  );
+  const pageMetas = useBlockSuiteDocMeta(blockSuiteWorkspace);
+  const filteredPageMetas = useFilteredPageMetas(currentWorkspace, pageMetas, {
+    trash: true,
+  });
 
   const { restoreFromTrash, permanentlyDeletePage } =
     useBlockSuiteMetaHelper(blockSuiteWorkspace);
@@ -79,7 +64,7 @@ export const TrashPage = () => {
 
   const pageOperationsRenderer = useCallback(
     (item: ListItem) => {
-      const page = item as PageMeta;
+      const page = item as DocMeta;
       const onRestorePage = () => {
         restoreFromTrash(page.id);
         toast(
@@ -92,6 +77,7 @@ export const TrashPage = () => {
         permanentlyDeletePage(page.id);
         toast(t['com.affine.toastMessage.permanentlyDeleted']());
       };
+
       return (
         <TrashOperationCell
           onPermanentlyDeletePage={onPermanentlyDeletePage}
@@ -109,26 +95,32 @@ export const TrashPage = () => {
     return <ListTableHeader headerCols={pageHeaderColsDef} />;
   }, []);
   return (
-    <div className={styles.root}>
-      <TrashHeader />
-      {filteredPageMetas.length > 0 ? (
-        <VirtualizedList
-          items={filteredPageMetas}
-          rowAsLink
-          groupBy={false}
-          isPreferredEdgeless={isPreferredEdgeless}
-          blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
-          operationsRenderer={pageOperationsRenderer}
-          itemRenderer={pageItemRenderer}
-          headerRenderer={pageHeaderRenderer}
-        />
-      ) : (
-        <EmptyPageList
-          type="trash"
-          blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
-        />
-      )}
-    </div>
+    <>
+      <ViewHeaderIsland>
+        <TrashHeader />
+      </ViewHeaderIsland>
+      <ViewBodyIsland>
+        <div className={styles.body}>
+          {filteredPageMetas.length > 0 ? (
+            <VirtualizedList
+              items={filteredPageMetas}
+              rowAsLink
+              groupBy={false}
+              isPreferredEdgeless={isPreferredEdgeless}
+              blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
+              operationsRenderer={pageOperationsRenderer}
+              itemRenderer={pageItemRenderer}
+              headerRenderer={pageHeaderRenderer}
+            />
+          ) : (
+            <EmptyPageList
+              type="trash"
+              blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
+            />
+          )}
+        </div>
+      </ViewBodyIsland>
+    </>
   );
 };
 

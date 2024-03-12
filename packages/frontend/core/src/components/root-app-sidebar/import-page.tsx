@@ -1,8 +1,8 @@
-import { MenuItem } from '@affine/component/app-sidebar';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ImportIcon } from '@blocksuite/icons';
 
 import type { BlockSuiteWorkspace } from '../../shared';
+import { MenuItem } from '../app-sidebar';
 import { usePageHelper } from '../blocksuite/block-suite-page-list/utils';
 
 const ImportPage = ({

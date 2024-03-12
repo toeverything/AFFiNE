@@ -2,34 +2,28 @@ import { cssVar } from '@toeverything/theme';
 import { style } from '@vanilla-extract/css';
 export const docEditorRoot = style({
   display: 'block',
-  height: '100%',
-  overflow: 'hidden',
   background: cssVar('backgroundPrimaryColor'),
 });
 
-// brings styles of .affine-doc-viewport from blocksuite
 export const affineDocViewport = style({
   display: 'flex',
   flexDirection: 'column',
-  height: '100%',
-  overflowX: 'hidden',
-  overflowY: 'auto',
-  userSelect: 'none',
-  containerName: 'viewport',
-  // todo: find out what this does in bs
-  containerType: 'inline-size',
-  background: cssVar('backgroundPrimaryColor'),
-  '@media': {
-    print: {
-      display: 'none',
-      zIndex: -1,
-    },
-  },
+  paddingBottom: '150px',
 });
+
 export const docContainer = style({
   display: 'block',
-  paddingBottom: 64,
+  flexGrow: 1,
 });
+
+export const docEditorGap = style({
+  display: 'block',
+  width: '100%',
+  margin: '0 auto',
+  paddingTop: 50,
+  paddingBottom: 50,
+});
+
 const titleTagBasic = style({
   fontSize: cssVar('fontH4'),
   fontWeight: 600,

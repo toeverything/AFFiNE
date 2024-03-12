@@ -1,4 +1,25 @@
 import { AnimatedDeleteIcon } from '@affine/component';
+import { Menu } from '@affine/component/ui/menu';
+import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
+import { CollectionService } from '@affine/core/modules/collection';
+import { apis, events } from '@affine/electron-api';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { FolderIcon, SettingsIcon } from '@blocksuite/icons';
+import { type Doc } from '@blocksuite/store';
+import { useDroppable } from '@dnd-kit/core';
+import { useLiveData, useService, type Workspace } from '@toeverything/infra';
+import { useAtom, useAtomValue } from 'jotai';
+import { nanoid } from 'nanoid';
+import type { HTMLAttributes, ReactElement } from 'react';
+import { forwardRef, Suspense, useCallback, useEffect } from 'react';
+
+import { openWorkspaceListModalAtom } from '../../atoms';
+import { useAppSettingHelper } from '../../hooks/affine/use-app-setting-helper';
+import { useDeleteCollectionInfo } from '../../hooks/affine/use-delete-collection-info';
+import { getDropItemId } from '../../hooks/affine/use-sidebar-drag';
+import { useTrashModalHelper } from '../../hooks/affine/use-trash-modal-helper';
+import { useNavigateHelper } from '../../hooks/use-navigate-helper';
+import { Workbench } from '../../modules/workbench';
 import {
   AddPageButton,
   AppDownloadButton,
@@ -10,35 +31,10 @@ import {
   QuickSearchInput,
   SidebarContainer,
   SidebarScrollableContainer,
-} from '@affine/component/app-sidebar';
-import { Menu } from '@affine/component/ui/menu';
-import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import { CollectionService } from '@affine/core/modules/collection';
-import { apis, events } from '@affine/electron-api';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { FolderIcon, SettingsIcon } from '@blocksuite/icons';
-import { type Page } from '@blocksuite/store';
-import { useDroppable } from '@dnd-kit/core';
-import { useService, type Workspace } from '@toeverything/infra';
-import { useAtom, useAtomValue } from 'jotai';
-import { nanoid } from 'nanoid';
-import type { HTMLAttributes, ReactElement } from 'react';
-import { forwardRef, Suspense, useCallback, useEffect, useMemo } from 'react';
-
-import { openWorkspaceListModalAtom } from '../../atoms';
-import { useHistoryAtom } from '../../atoms/history';
-import { useAppSettingHelper } from '../../hooks/affine/use-app-setting-helper';
-import { useDeleteCollectionInfo } from '../../hooks/affine/use-delete-collection-info';
-import { useGeneralShortcuts } from '../../hooks/affine/use-shortcuts';
-import { getDropItemId } from '../../hooks/affine/use-sidebar-drag';
-import { useTrashModalHelper } from '../../hooks/affine/use-trash-modal-helper';
-import { useRegisterBrowserHistoryCommands } from '../../hooks/use-browser-history-commands';
-import { useNavigateHelper } from '../../hooks/use-navigate-helper';
-import { WorkspaceSubPath } from '../../shared';
+} from '../app-sidebar';
 import {
   createEmptyCollection,
   MoveToTrash,
-  useCollectionManager,
   useEditCollectionName,
 } from '../page-list';
 import { CollectionsList } from '../pure/workspace-slider-bar/collections';
@@ -57,8 +53,7 @@ export type RootAppSidebarProps = {
   onOpenSettingModal: () => void;
   currentWorkspace: Workspace;
   openPage: (pageId: string) => void;
-  createPage: () => Page;
-  currentPath: string;
+  createPage: () => Doc;
   paths: {
     all: (workspaceId: string) => string;
     trash: (workspaceId: string) => string;
@@ -99,7 +94,6 @@ export const RootAppSidebar = ({
   currentWorkspace,
   openPage,
   createPage,
-  currentPath,
   paths,
   onOpenQuickSearchModal,
   onOpenSettingModal,
@@ -111,11 +105,11 @@ export const RootAppSidebar = ({
   const [openUserWorkspaceList, setOpenUserWorkspaceList] = useAtom(
     openWorkspaceListModalAtom
   );
-  const generalShortcutsInfo = useGeneralShortcuts();
+  const currentPath = useLiveData(useService(Workbench).location).pathname;
 
   const onClickNewPage = useAsyncCallback(async () => {
     const page = createPage();
-    await page.waitForLoaded();
+    page.load();
     openPage(page.id);
   }, [createPage, openPage]);
 
@@ -134,9 +128,6 @@ export const RootAppSidebar = ({
   );
 
   const navigateHelper = useNavigateHelper();
-  const backToAll = useCallback(() => {
-    navigateHelper.jumpToSubPath(currentWorkspace.id, WorkspaceSubPath.ALL);
-  }, [currentWorkspace.id, navigateHelper]);
   // Listen to the "New Page" action from the menu
   useEffect(() => {
     if (environment.isDesktop) {
@@ -154,19 +145,6 @@ export const RootAppSidebar = ({
     }
   }, [sidebarOpen]);
 
-  const [history, setHistory] = useHistoryAtom();
-  const router = useMemo(() => {
-    return {
-      forward: () => {
-        setHistory(true);
-      },
-      back: () => {
-        setHistory(false);
-      },
-      history,
-    };
-  }, [history, setHistory]);
-
   const dropItemId = getDropItemId('trash');
   const trashDroppable = useDroppable({
     id: dropItemId,
@@ -174,10 +152,9 @@ export const RootAppSidebar = ({
   const closeUserWorkspaceList = useCallback(() => {
     setOpenUserWorkspaceList(false);
   }, [setOpenUserWorkspaceList]);
-  useRegisterBrowserHistoryCommands(router.back, router.forward);
   const userInfo = useDeleteCollectionInfo();
 
-  const setting = useCollectionManager(useService(CollectionService));
+  const collection = useService(CollectionService);
   const { node, open } = useEditCollectionName({
     title: t['com.affine.editCollection.createCollection'](),
     showTips: true,
@@ -186,41 +163,23 @@ export const RootAppSidebar = ({
     open('')
       .then(name => {
         const id = nanoid();
-        setting.createCollection(createEmptyCollection(id, { name }));
+        collection.addCollection(createEmptyCollection(id, { name }));
         navigateHelper.jumpToCollection(blockSuiteWorkspace.id, id);
       })
       .catch(err => {
         console.error(err);
       });
-  }, [blockSuiteWorkspace.id, navigateHelper, open, setting]);
+  }, [blockSuiteWorkspace.id, collection, navigateHelper, open]);
 
-  const allPageActive = useMemo(() => {
-    if (
-      currentPath.startsWith(`/workspace/${currentWorkspaceId}/collection/`) ||
-      currentPath.startsWith(`/workspace/${currentWorkspaceId}/tag/`)
-    ) {
-      return true;
-    }
-    return currentPath === paths.all(currentWorkspaceId);
-  }, [currentPath, currentWorkspaceId, paths]);
+  const allPageActive = currentPath === '/all';
 
-  const trashActive = useMemo(() => {
-    return (
-      currentPath === paths.trash(currentWorkspaceId) || trashDroppable.isOver
-    );
-  }, [currentPath, currentWorkspaceId, paths, trashDroppable.isOver]);
+  const trashActive = currentPath === '/trash';
 
   return (
     <AppSidebar
-      router={router}
       hasBackground={
-        !(
-          appSettings.enableBlurBackground &&
-          environment.isDesktop &&
-          environment.isMacOs
-        )
+        !(appSettings.enableBlurBackground && environment.isDesktop)
       }
-      generalShortcutsInfo={generalShortcutsInfo}
     >
       <MoveToTrash.ConfirmModal
         open={trashConfirmOpen}
@@ -262,7 +221,6 @@ export const RootAppSidebar = ({
           icon={<FolderIcon />}
           active={allPageActive}
           path={paths.all(currentWorkspaceId)}
-          onClick={backToAll}
         >
           <span data-testid="all-pages">
             {t['com.affine.workspaceSubPath.all']()}

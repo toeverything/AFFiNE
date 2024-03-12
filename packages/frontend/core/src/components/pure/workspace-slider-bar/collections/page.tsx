@@ -1,17 +1,16 @@
-import { MenuItem as CollectionItem } from '@affine/component/app-sidebar';
 import { useBlockSuitePageReferences } from '@affine/core/hooks/use-block-suite-page-references';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
-import type { PageMeta, Workspace } from '@blocksuite/store';
+import type { DocMeta, Workspace } from '@blocksuite/store';
 import { useDraggable } from '@dnd-kit/core';
 import * as Collapsible from '@radix-ui/react-collapsible';
-import { useAtomValue } from 'jotai/index';
+import { PageRecordList, useLiveData, useService } from '@toeverything/infra';
 import React, { useCallback, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 
-import { pageSettingFamily } from '../../../../atoms';
 import { getDragItemId } from '../../../../hooks/affine/use-sidebar-drag';
 import { useNavigateHelper } from '../../../../hooks/use-navigate-helper';
+import { MenuItem as CollectionItem } from '../../../app-sidebar';
 import { DragMenuItemOverlay } from '../components/drag-menu-item-overlay';
 import { PostfixItem } from '../components/postfix-item';
 import { ReferencePage } from '../components/reference-page';
@@ -24,11 +23,11 @@ export const Page = ({
   inAllowList,
   removeFromAllowList,
 }: {
-  page: PageMeta;
+  page: DocMeta;
   inAllowList: boolean;
   removeFromAllowList: (id: string) => void;
   workspace: Workspace;
-  allPageMeta: Record<string, PageMeta>;
+  allPageMeta: Record<string, DocMeta>;
 }) => {
   const [collapsed, setCollapsed] = React.useState(true);
   const params = useParams();
@@ -37,12 +36,13 @@ export const Page = ({
 
   const pageId = page.id;
   const active = params.pageId === pageId;
-  const setting = useAtomValue(pageSettingFamily(pageId));
+  const pageRecord = useLiveData(useService(PageRecordList).record(pageId));
+  const pageMode = useLiveData(pageRecord?.mode);
   const dragItemId = getDragItemId('collectionPage', pageId);
 
   const icon = useMemo(() => {
-    return setting?.mode === 'edgeless' ? <EdgelessIcon /> : <PageIcon />;
-  }, [setting?.mode]);
+    return pageMode === 'edgeless' ? <EdgelessIcon /> : <PageIcon />;
+  }, [pageMode]);
 
   const { jumpToPage } = useNavigateHelper();
   const clickPage = useCallback(() => {

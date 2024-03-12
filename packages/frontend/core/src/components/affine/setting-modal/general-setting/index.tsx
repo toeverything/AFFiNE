@@ -7,7 +7,7 @@ import {
 import type { ReactElement, SVGProps } from 'react';
 
 import { useCurrentLoginStatus } from '../../../../hooks/affine/use-current-login-status';
-import { useSelfHosted } from '../../../../hooks/affine/use-server-config';
+import { useServerFeatures } from '../../../../hooks/affine/use-server-config';
 import type { GeneralSettingKey } from '../types';
 import { AboutAffine } from './about';
 import { AppearanceSettings } from './appearance';
@@ -28,7 +28,7 @@ export type GeneralSettingList = GeneralSettingListItem[];
 export const useGeneralSettingList = (): GeneralSettingList => {
   const t = useAFFiNEI18N();
   const status = useCurrentLoginStatus();
-  const isSelfHosted = useSelfHosted();
+  const { payment: hasPaymentFeature } = useServerFeatures();
 
   const settings: GeneralSettingListItem[] = [
     {
@@ -51,7 +51,7 @@ export const useGeneralSettingList = (): GeneralSettingList => {
     },
   ];
 
-  if (!isSelfHosted) {
+  if (hasPaymentFeature) {
     settings.splice(3, 0, {
       key: 'plans',
       title: t['com.affine.payment.title'](),

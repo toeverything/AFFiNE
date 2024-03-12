@@ -2,7 +2,7 @@ import { Loading, Scrollable } from '@affine/component';
 import { EditorLoading } from '@affine/component/page-detail-skeleton';
 import { Button, IconButton } from '@affine/component/ui/button';
 import { ConfirmModal, Modal } from '@affine/component/ui/modal';
-import { openSettingModalAtom, type PageMode } from '@affine/core/atoms';
+import { openSettingModalAtom } from '@affine/core/atoms';
 import { useIsWorkspaceOwner } from '@affine/core/hooks/affine/use-is-workspace-owner';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { useBlockSuiteWorkspacePageTitle } from '@affine/core/hooks/use-block-suite-workspace-page-title';
@@ -10,15 +10,13 @@ import { useWorkspaceQuota } from '@affine/core/hooks/use-workspace-quota';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloseIcon, ToggleCollapseIcon } from '@blocksuite/icons';
-import {
-  type Page,
-  type Workspace as BlockSuiteWorkspace,
-} from '@blocksuite/store';
+import type { Doc as BlockSuiteDoc } from '@blocksuite/store';
+import { type Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import type { DialogContentProps } from '@radix-ui/react-dialog';
-import { Workspace } from '@toeverything/infra';
+import { Doc, type PageMode, Workspace } from '@toeverything/infra';
 import { useService } from '@toeverything/infra/di';
-import { atom, useAtom, useAtomValue, useSetAtom } from 'jotai';
+import { atom, useAtom, useSetAtom } from 'jotai';
 import {
   Fragment,
   type PropsWithChildren,
@@ -30,7 +28,6 @@ import {
 } from 'react';
 import { encodeStateAsUpdate } from 'yjs';
 
-import { currentModeAtom } from '../../../atoms/mode';
 import { pageHistoryModalAtom } from '../../../atoms/page-history';
 import { timestampToLocalTime } from '../../../utils';
 import { BlockSuiteEditor } from '../../blocksuite/block-suite-editor';
@@ -42,7 +39,7 @@ import {
 import { AffineErrorBoundary } from '../affine-error-boundary';
 import {
   historyListGroupByDay,
-  usePageSnapshotList,
+  useDocSnapshotList,
   useRestorePage,
   useSnapshotPage,
 } from './data';
@@ -93,7 +90,8 @@ const ModalContainer = ({
 
 interface HistoryEditorPreviewProps {
   ts?: string;
-  snapshotPage?: Page;
+  historyList: HistoryList;
+  snapshotPage?: BlockSuiteDoc;
   mode: PageMode;
   onModeChange: (mode: PageMode) => void;
   title: string;
@@ -101,6 +99,7 @@ interface HistoryEditorPreviewProps {
 
 const HistoryEditorPreview = ({
   ts,
+  historyList,
   snapshotPage,
   onModeChange,
   mode,
@@ -113,11 +112,9 @@ const HistoryEditorPreview = ({
     onModeChange('edgeless');
   }, [onModeChange]);
 
-  return (
-    <div className={styles.previewWrapper}>
-      <div className={styles.previewContainerStack2} />
-      <div className={styles.previewContainerStack1} />
-      <div className={styles.previewContainer}>
+  const content = useMemo(() => {
+    return (
+      <div className={styles.previewContent}>
         <div className={styles.previewHeader}>
           <StyledEditorModeSwitch switchLeft={mode === 'page'}>
             <PageSwitchItem
@@ -139,11 +136,16 @@ const HistoryEditorPreview = ({
 
         {snapshotPage ? (
           <AffineErrorBoundary>
-            <BlockSuiteEditor
-              className={styles.editor}
-              mode={mode}
-              page={snapshotPage}
-            />
+            <Scrollable.Root>
+              <Scrollable.Viewport>
+                <BlockSuiteEditor
+                  className={styles.editor}
+                  mode={mode}
+                  page={snapshotPage}
+                />
+              </Scrollable.Viewport>
+              <Scrollable.Scrollbar />
+            </Scrollable.Root>
           </AffineErrorBoundary>
         ) : (
           <div className={styles.loadingContainer}>
@@ -151,6 +153,37 @@ const HistoryEditorPreview = ({
           </div>
         )}
       </div>
+    );
+  }, [
+    mode,
+    onSwitchToEdgelessMode,
+    onSwitchToPageMode,
+    snapshotPage,
+    title,
+    ts,
+  ]);
+
+  return (
+    <div className={styles.previewWrapper}>
+      {historyList.map((item, i) => {
+        const historyIndex = historyList.findIndex(h => h.timestamp === ts);
+        const distance = i - historyIndex;
+        const flag =
+          distance > 20
+            ? '> 20'
+            : distance < -20
+              ? '< -20'
+              : distance.toString();
+        return (
+          <div
+            data-distance={flag}
+            key={item.id}
+            className={styles.previewContainer}
+          >
+            {historyIndex === i ? content : null}
+          </div>
+        );
+      })}
     </div>
   );
 };
@@ -238,21 +271,21 @@ const PlanPrompt = () => {
   ) : null;
 };
 
+type HistoryList = ReturnType<typeof useDocSnapshotList>[0];
+
 const PageHistoryList = ({
-  pageDocId,
-  workspaceId,
+  historyList,
+  onLoadMore,
+  loadingMore,
   activeVersion,
   onVersionChange,
 }: {
-  workspaceId: string;
-  pageDocId: string;
   activeVersion?: string;
   onVersionChange: (version: string) => void;
+  historyList: HistoryList;
+  onLoadMore: (() => void) | false;
+  loadingMore: boolean;
 }) => {
-  const [historyList, loadMore, loadingMore] = usePageSnapshotList(
-    workspaceId,
-    pageDocId
-  );
   const historyListByDay = useMemo(() => {
     return historyListGroupByDay(historyList);
   }, [historyList]);
@@ -328,13 +361,13 @@ const PageHistoryList = ({
               </Collapsible.Root>
             );
           })}
-          {loadMore ? (
+          {onLoadMore ? (
             <Button
               type="plain"
               loading={loadingMore}
               disabled={loadingMore}
               className={styles.historyItemLoadMore}
-              onClick={loadMore}
+              onClick={onLoadMore}
             >
               {t['com.affine.history.confirm-restore-modal.load-more']()}
             </Button>
@@ -423,7 +456,7 @@ const PageHistoryManager = ({
   const [activeVersion, setActiveVersion] = useState<string>();
 
   const pageDocId = useMemo(() => {
-    return workspace.getPage(pageId)?.spaceDoc.guid ?? pageId;
+    return workspace.getDoc(pageId)?.spaceDoc.guid ?? pageId;
   }, [pageId, workspace]);
 
   const snapshotPage = useSnapshotPage(workspace, pageDocId, activeVersion);
@@ -445,8 +478,8 @@ const PageHistoryManager = ({
     [activeVersion, onClose, onRestore, snapshotPage]
   );
 
-  const defaultPreviewPageMode = useAtomValue(currentModeAtom);
-  const [mode, setMode] = useState<PageMode>(defaultPreviewPageMode);
+  const page = useService(Doc);
+  const [mode, setMode] = useState<PageMode>(page.mode.value);
 
   const title = useBlockSuiteWorkspacePageTitle(workspace, pageId);
 
@@ -466,11 +499,17 @@ const PageHistoryManager = ({
     [handleRestore]
   );
 
+  const [historyList, loadMore, loadingMore] = useDocSnapshotList(
+    workspaceId,
+    pageDocId
+  );
+
   return (
     <div className={styles.root}>
       <div className={styles.modalContent} data-empty={!activeVersion}>
         <HistoryEditorPreview
           ts={activeVersion}
+          historyList={historyList}
           snapshotPage={snapshotPage}
           mode={mode}
           onModeChange={setMode}
@@ -478,8 +517,9 @@ const PageHistoryManager = ({
         />
 
         <PageHistoryList
-          workspaceId={workspaceId}
-          pageDocId={pageDocId}
+          historyList={historyList}
+          onLoadMore={loadMore}
+          loadingMore={loadingMore}
           activeVersion={activeVersion}
           onVersionChange={setActiveVersion}
         />

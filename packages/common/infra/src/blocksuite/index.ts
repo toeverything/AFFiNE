@@ -1,4 +1,3 @@
-export * from './initialization';
 export {
   migratePages as forceUpgradePages,
   migrateGuidCompatibility,

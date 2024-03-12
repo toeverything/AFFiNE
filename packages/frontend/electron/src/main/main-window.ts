@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { BrowserWindow, type CookiesSetDetails, nativeTheme } from 'electron';
 import electronWindowState from 'electron-window-state';
 
-import { isMacOS, isWindows } from '../shared/utils';
+import { isLinux, isMacOS, isWindows } from '../shared/utils';
 import { mainWindowOrigin } from './constants';
 import { ensureHelperProcess } from './helper-process';
 import { logger } from './logger';
@@ -49,10 +49,12 @@ async function createWindow(additionalArguments: string[]) {
     x: mainWindowState.x,
     y: mainWindowState.y,
     width: mainWindowState.width,
+    autoHideMenuBar: isLinux(),
     minWidth: 640,
     minHeight: 480,
     visualEffectState: 'active',
     vibrancy: 'under-window',
+    backgroundMaterial: 'mica',
     height: mainWindowState.height,
     show: false, // Use 'ready-to-show' event to show window
     webPreferences: {

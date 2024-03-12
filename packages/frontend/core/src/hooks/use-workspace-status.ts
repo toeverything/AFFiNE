@@ -25,9 +25,11 @@ export function useWorkspaceStatus<
     setStatus(
       cachedSelector ? cachedSelector(workspace.status) : workspace.status
     );
-    return workspace.onStatusChange.on(status =>
-      setStatus(cachedSelector ? cachedSelector(status) : status)
-    ).dispose;
+    return workspace.onStatusChange.on(status => {
+      requestAnimationFrame(() => {
+        setStatus(cachedSelector ? cachedSelector(status) : status);
+      });
+    }).dispose;
   }, [cachedSelector, workspace]);
 
   return status;

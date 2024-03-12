@@ -2,7 +2,6 @@ import { StorybookConfig } from '@storybook/react-vite';
 import { vanillaExtractPlugin } from '@vanilla-extract/vite-plugin';
 import { fileURLToPath } from 'url';
 import { mergeConfig } from 'vite';
-import tsconfigPaths from 'vite-tsconfig-paths';
 import { getRuntimeConfig } from '../../core/.webpack/runtime-config';
 
 export default {
@@ -26,13 +25,7 @@ export default {
   },
   async viteFinal(config, _options) {
     return mergeConfig(config, {
-      plugins: [
-        vanillaExtractPlugin(),
-        tsconfigPaths({
-          root: fileURLToPath(new URL('../../../../', import.meta.url)),
-          ignoreConfigErrors: true,
-        }),
-      ],
+      plugins: [vanillaExtractPlugin()],
       define: {
         'process.env': {},
         'process.env.COVERAGE': JSON.stringify(!!process.env.COVERAGE),

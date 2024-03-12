@@ -1,4 +1,5 @@
-import type { Request } from 'undici-types';
+import { Headers } from 'undici';
+import type { fetch, Request, RequestInfo } from 'undici-types';
 
 // cSpell:ignore Tolgee
 const TOLGEE_API_KEY = process.env['TOLGEE_API_KEY'];
@@ -8,32 +9,25 @@ if (!TOLGEE_API_KEY) {
   throw new Error(`Please set "TOLGEE_API_KEY" as environment variable!`);
 }
 
-const withTolgee = (
-  fetch: typeof globalThis.fetch
-): typeof globalThis.fetch => {
+const withTolgee = (f: typeof fetch): typeof fetch => {
   const baseUrl = `${TOLGEE_API_URL}/v2/projects`;
   const headers = new Headers({
     'X-API-Key': TOLGEE_API_KEY,
     'Content-Type': 'application/json',
   });
 
-  const isRequest = (input: NodeJS.fetch.RequestInfo): input is Request => {
+  const isRequest = (input: RequestInfo): input is Request => {
     return typeof input === 'object' && !('href' in input);
   };
 
-  return new Proxy(fetch, {
-    apply(
-      target,
-      thisArg: unknown,
-      argArray: Parameters<typeof globalThis.fetch>
-    ) {
+  return new Proxy(f, {
+    apply(target, thisArg: unknown, argArray: Parameters<typeof fetch>) {
       if (isRequest(argArray[0])) {
         // Request
         if (!argArray[0].headers) {
           argArray[0] = {
             ...argArray[0],
             url: `${baseUrl}${argArray[0].url}`,
-            // @ts-expect-error Node.js types incorrectly define RequestInit
             headers,
           };
         }
@@ -55,4 +49,4 @@ const withTolgee = (
   });
 };
 
-export const fetchTolgee = withTolgee(globalThis.fetch);
+export const fetchTolgee = withTolgee(globalThis.fetch as typeof fetch);

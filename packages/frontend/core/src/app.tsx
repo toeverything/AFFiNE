@@ -4,7 +4,6 @@ import '@affine/component/theme/theme.css';
 import { AffineContext } from '@affine/component/context';
 import { GlobalLoading } from '@affine/component/global-loading';
 import { NotificationCenter } from '@affine/component/notification-center';
-import { WorkspaceFallback } from '@affine/component/workspace';
 import { createI18n, setUpLanguage } from '@affine/i18n';
 import { CacheProvider } from '@emotion/react';
 import { getCurrentStore } from '@toeverything/infra/atom';
@@ -13,6 +12,7 @@ import type { PropsWithChildren, ReactElement } from 'react';
 import { lazy, memo, Suspense } from 'react';
 import { RouterProvider } from 'react-router-dom';
 
+import { WorkspaceFallback } from './components/workspace';
 import { GlobalScopeProvider } from './modules/infra-web/global-scope';
 import { CloudSessionProvider } from './providers/session-provider';
 import { router } from './router';

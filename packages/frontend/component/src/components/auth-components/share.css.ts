@@ -4,7 +4,7 @@ export const modalHeaderWrapper = style({});
 globalStyle(`${modalHeaderWrapper} .logo`, {
   fontSize: cssVar('fontH3'),
   fontWeight: 600,
-  color: cssVar('blue'),
+  color: cssVar('black'),
   marginRight: '6px',
   verticalAlign: 'middle',
 });
@@ -32,7 +32,7 @@ export const authInputWrapper = style({
 });
 globalStyle(`${authInputWrapper} label`, {
   display: 'block',
-  color: 'var(--light-text-color-text-secondary-color, #8E8D91)',
+  color: cssVar('textSecondaryColor'),
   marginBottom: '4px',
   fontSize: cssVar('fontSm'),
   fontWeight: 600,

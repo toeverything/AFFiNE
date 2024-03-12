@@ -34,7 +34,7 @@ import {
   openSignOutModalAtom,
 } from '../../../../atoms';
 import { useCurrentUser } from '../../../../hooks/affine/use-current-user';
-import { useSelfHosted } from '../../../../hooks/affine/use-server-config';
+import { useServerFeatures } from '../../../../hooks/affine/use-server-config';
 import { useMutation } from '../../../../hooks/use-mutation';
 import { useQuery } from '../../../../hooks/use-query';
 import { useUserSubscription } from '../../../../hooks/use-subscription';
@@ -169,7 +169,7 @@ export const AvatarAndName = () => {
 
 const StoragePanel = () => {
   const t = useAFFiNEI18N();
-  const isSelfHosted = useSelfHosted();
+  const { payment: hasPaymentFeature } = useServerFeatures();
 
   const { data } = useQuery({
     query: allBlobSizesQuery,
@@ -205,7 +205,7 @@ const StoragePanel = () => {
         plan={plan}
         value={data.collectAllBlobSizes.size}
         onUpgrade={onUpgrade}
-        upgradable={!isSelfHosted}
+        upgradable={hasPaymentFeature}
       />
     </SettingRow>
   );

@@ -7,6 +7,7 @@ import {
   useCallback,
   useEffect,
   useImperativeHandle,
+  useMemo,
   useRef,
   useState,
 } from 'react';
@@ -139,6 +140,11 @@ export const InlineEdit = ({
     setEditingValue(value);
   }, [value]);
 
+  // to make sure text is not wrapped, and multi-space is shown normally
+  const displayValue = useMemo(() => {
+    return editingValue ? editingValue.replace(/\n/g, '') : '';
+  }, [editingValue]);
+
   // to make sure input's style is the same as displayed text
   const inputWrapperInheritsStyles = {
     margin: 'inherit',
@@ -172,9 +178,9 @@ export const InlineEdit = ({
         onDoubleClick={onDoubleClick}
         className={clsx(styles.inlineEdit)}
       >
-        {editingValue}
+        {displayValue}
 
-        {!editingValue && (
+        {!displayValue && (
           <Placeholder
             className={placeholderClassName}
             label={placeholder}

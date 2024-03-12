@@ -235,7 +235,7 @@ const ActionButton = ({
 
   // contact
   if (detail.type === 'dynamic') {
-    return <ContactSales />;
+    return <BookDemo plan={detail.plan} />;
   }
 
   // not signed in
@@ -334,17 +334,28 @@ const Downgrade = ({
   );
 };
 
-const ContactSales = () => {
+const BookDemo = ({ plan }: { plan: SubscriptionPlan }) => {
   const t = useAFFiNEI18N();
+  const url = useMemo(() => {
+    switch (plan) {
+      case SubscriptionPlan.Team:
+        return 'https://6dxre9ihosp.typeform.com/to/niBcdkvs';
+      case SubscriptionPlan.Enterprise:
+        return 'https://6dxre9ihosp.typeform.com/to/rFfobTjf';
+      default:
+        return 'https://affine.pro/pricing';
+    }
+  }, [plan]);
+
   return (
     <a
       className={styles.planAction}
-      href="https://6dxre9ihosp.typeform.com/to/uZeBtpPm"
+      href={url}
       target="_blank"
       rel="noreferrer"
     >
       <Button className={styles.planAction} type="primary">
-        {t['com.affine.payment.contact-sales']()}
+        {t['com.affine.payment.book-a-demo']()}
       </Button>
     </a>
   );

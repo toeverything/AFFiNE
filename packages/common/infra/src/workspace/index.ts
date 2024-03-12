@@ -6,13 +6,14 @@ export * from './list';
 export * from './manager';
 export * from './metadata';
 export * from './service-scope';
+export * from './storage';
 export * from './testing';
 export * from './upgrade';
 export * from './workspace';
 
 import { type ServiceCollection, ServiceProvider } from '../di';
 import { CleanupService } from '../lifecycle';
-import { GlobalCache, GlobalState } from '../storage';
+import { GlobalCache, GlobalState, MemoryMemento } from '../storage';
 import {
   BlockSuiteWorkspaceContext,
   RootYDocContext,
@@ -33,6 +34,7 @@ import { WorkspaceFactory } from './factory';
 import { WorkspaceListProvider, WorkspaceListService } from './list';
 import { WorkspaceManager } from './manager';
 import { WorkspaceScope } from './service-scope';
+import { WorkspaceLocalState } from './storage';
 import {
   TestingLocalWorkspaceFactory,
   TestingLocalWorkspaceListProvider,
@@ -83,5 +85,7 @@ export function configureTestingWorkspaceServices(services: ServiceCollection) {
     )
     .override(WorkspaceFactory('local'), TestingLocalWorkspaceFactory, [
       GlobalState,
-    ]);
+    ])
+    .scope(WorkspaceScope)
+    .override(WorkspaceLocalState, MemoryMemento);
 }

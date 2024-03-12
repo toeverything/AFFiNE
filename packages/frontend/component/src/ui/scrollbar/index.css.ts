@@ -6,6 +6,7 @@ export const scrollableContainerRoot = style({
     '--scrollbar-width': '8px',
   },
   height: '100%',
+  overflowY: 'hidden',
 });
 export const scrollTopBorder = style({
   position: 'absolute',

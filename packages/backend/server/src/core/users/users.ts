@@ -1,10 +1,9 @@
 import { Injectable } from '@nestjs/common';
-
-import { PrismaService } from '../../fundamentals';
+import { PrismaClient } from '@prisma/client';
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaClient) {}
 
   async findUserByEmail(email: string) {
     return this.prisma.user.findFirst({

@@ -7,6 +7,7 @@ import {
 import type { Collection, DeleteCollectionInfo } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { DeleteIcon, EditIcon, FilterIcon } from '@blocksuite/icons';
+import { useService } from '@toeverything/infra/di';
 import {
   type PropsWithChildren,
   type ReactElement,
@@ -14,7 +15,7 @@ import {
   useMemo,
 } from 'react';
 
-import type { useCollectionManager } from '../use-collection-manager';
+import { CollectionService } from '../../../modules/collection';
 import * as styles from './collection-operations.css';
 import type { AllPageListConfig } from './index';
 import {
@@ -25,7 +26,6 @@ import {
 export const CollectionOperations = ({
   collection,
   config,
-  setting,
   info,
   openRenameModal,
   children,
@@ -33,9 +33,9 @@ export const CollectionOperations = ({
   info: DeleteCollectionInfo;
   collection: Collection;
   config: AllPageListConfig;
-  setting: ReturnType<typeof useCollectionManager>;
   openRenameModal?: () => void;
 }>) => {
+  const service = useService(CollectionService);
   const { open: openEditCollectionModal, node: editModal } =
     useEditCollection(config);
   const t = useAFFiNEI18N();
@@ -51,22 +51,25 @@ export const CollectionOperations = ({
     }
     openEditCollectionNameModal(collection.name)
       .then(name => {
-        return setting.updateCollection({ ...collection, name });
+        return service.updateCollection(collection.id, () => ({
+          ...collection,
+          name,
+        }));
       })
       .catch(err => {
         console.error(err);
       });
-  }, [openRenameModal, openEditCollectionNameModal, collection, setting]);
+  }, [openRenameModal, openEditCollectionNameModal, collection, service]);
 
   const showEdit = useCallback(() => {
     openEditCollectionModal(collection)
       .then(collection => {
-        return setting.updateCollection(collection);
+        return service.updateCollection(collection.id, () => collection);
       })
       .catch(err => {
         console.error(err);
       });
-  }, [setting, collection, openEditCollectionModal]);
+  }, [openEditCollectionModal, collection, service]);
 
   const actions = useMemo<
     Array<
@@ -112,12 +115,12 @@ export const CollectionOperations = ({
         ),
         name: t['Delete'](),
         click: () => {
-          setting.deleteCollection(info, collection.id);
+          service.deleteCollection(info, collection.id);
         },
         type: 'danger',
       },
     ],
-    [t, showEditName, showEdit, setting, info, collection.id]
+    [t, showEditName, showEdit, service, info, collection.id]
   );
   return (
     <>

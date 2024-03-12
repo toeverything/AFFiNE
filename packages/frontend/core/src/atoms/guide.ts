@@ -1,7 +1,8 @@
 // these atoms cannot be moved to @affine/jotai since they use atoms from @affine/component
-import { appSidebarOpenAtom } from '@affine/component/app-sidebar';
 import { atom } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
+
+import { appSidebarOpenAtom } from '../components/app-sidebar';
 
 export type Guide = {
   // should show quick search tips
@@ -52,21 +53,6 @@ export const guideChangeLogAtom = atom<
     set(guidePrimitiveAtom, tips => ({
       ...tips,
       changeLog: open,
-    }));
-  }
-);
-export const guideOnboardingAtom = atom<
-  Guide['onBoarding'],
-  [open: boolean],
-  void
->(
-  get => {
-    return get(guidePrimitiveAtom).onBoarding;
-  },
-  (_, set, open) => {
-    set(guidePrimitiveAtom, tips => ({
-      ...tips,
-      onBoarding: open,
     }));
   }
 );

@@ -5,7 +5,7 @@ import {
   OnModuleInit,
 } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { Snapshot, Update } from '@prisma/client';
+import { PrismaClient, Snapshot, Update } from '@prisma/client';
 import { chunk } from 'lodash-es';
 import { defer, retry } from 'rxjs';
 import {
@@ -25,7 +25,6 @@ import {
   mergeUpdatesInApplyWay as jwstMergeUpdates,
   metrics,
   OnEvent,
-  PrismaService,
 } from '../../fundamentals';
 
 function compare(yBinary: Buffer, jwstBinary: Buffer, strict = false): boolean {
@@ -72,7 +71,7 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
   private busy = false;
 
   constructor(
-    private readonly db: PrismaService,
+    private readonly db: PrismaClient,
     private readonly config: Config,
     private readonly cache: Cache,
     private readonly event: EventEmitter

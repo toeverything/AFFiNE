@@ -6,6 +6,7 @@ const require = createRequire(import.meta.url);
 const packageJson = require('../package.json');
 
 const editorFlags: BlockSuiteFeatureFlags = {
+  enable_synced_doc_block: true,
   enable_expand_database_block: false,
   enable_bultin_ledits: false,
 };
@@ -16,6 +17,7 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       enableTestProperties: false,
       enableBroadcastChannelProvider: true,
       enableDebugPage: true,
+      githubUrl: 'https://github.com/toeverything/AFFiNE',
       changelogUrl: 'https://affine.pro/what-is-new',
       downloadUrl: 'https://affine.pro/download',
       imageProxyUrl: '/api/worker/image-proxy',
@@ -31,6 +33,7 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       enableEnhanceShareMode: false,
       enablePayment: true,
       enablePageHistory: true,
+      allowLocalWorkspace: false,
       serverUrlPrefix: 'https://app.affine.pro',
       editorFlags,
       appVersion: packageJson.version,
@@ -57,6 +60,7 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       enableTestProperties: true,
       enableBroadcastChannelProvider: true,
       enableDebugPage: true,
+      githubUrl: 'https://github.com/toeverything/AFFiNE',
       changelogUrl: 'https://github.com/toeverything/AFFiNE/releases',
       downloadUrl: 'https://affine.pro/download',
       imageProxyUrl: '/api/worker/image-proxy',
@@ -72,6 +76,7 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       enableEnhanceShareMode: false,
       enablePayment: true,
       enablePageHistory: true,
+      allowLocalWorkspace: false,
       serverUrlPrefix: 'https://affine.fail',
       editorFlags,
       appVersion: packageJson.version,
@@ -135,6 +140,16 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       : buildFlags.mode === 'development'
         ? true
         : currentBuildPreset.enablePageHistory,
+    allowLocalWorkspace: process.env.ALLOW_LOCAL_WORKSPACE
+      ? process.env.ALLOW_LOCAL_WORKSPACE === 'true'
+      : buildFlags.mode === 'development'
+        ? true
+        : currentBuildPreset.allowLocalWorkspace,
+    isSelfHosted: process.env.SELF_HOSTED === 'true',
+  };
+
+  const testEnvironmentPreset = {
+    allowLocalWorkspace: true,
   };
 
   if (buildFlags.mode === 'development') {
@@ -147,5 +162,9 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
     // this environment variable is for debug proposes only
     // do not put them into CI
     ...(process.env.CI ? {} : environmentPreset),
+
+    // test environment preset will overwrite current build preset
+    // this environment variable is for github workflow e2e-test only
+    ...(process.env.IN_CI_TEST ? testEnvironmentPreset : {}),
   };
 }

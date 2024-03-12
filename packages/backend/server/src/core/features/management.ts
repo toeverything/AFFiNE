@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { PrismaClient } from '@prisma/client';
 
-import { Config, PrismaService } from '../../fundamentals';
+import { Config } from '../../fundamentals';
 import { FeatureService } from './service';
 import { FeatureType } from './types';
 
@@ -12,7 +13,7 @@ export class FeatureManagementService {
 
   constructor(
     private readonly feature: FeatureService,
-    private readonly prisma: PrismaService,
+    private readonly prisma: PrismaClient,
     private readonly config: Config
   ) {}
 

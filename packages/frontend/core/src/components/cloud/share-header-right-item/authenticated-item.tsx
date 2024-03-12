@@ -1,12 +1,17 @@
 import { Button } from '@affine/component/ui/button';
+import { useCurrentUser } from '@affine/core/hooks/affine/use-current-user';
+import { useMembers } from '@affine/core/hooks/affine/use-members';
+import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useCallback, useEffect } from 'react';
 
-import { useCurrentUser } from '../../../hooks/affine/use-current-user';
-import { useMembers } from '../../../hooks/affine/use-members';
-import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
 import type { ShareHeaderRightItemProps } from './index';
+import * as styles from './styles.css';
 
-export const AuthenticatedItem = ({ ...props }: ShareHeaderRightItemProps) => {
+export const AuthenticatedItem = ({
+  setIsMember,
+  ...props
+}: { setIsMember: (value: boolean) => void } & ShareHeaderRightItemProps) => {
   const { workspaceId, pageId } = props;
   const user = useCurrentUser();
   const members = useMembers(workspaceId, 0);
@@ -14,11 +19,21 @@ export const AuthenticatedItem = ({ ...props }: ShareHeaderRightItemProps) => {
   const t = useAFFiNEI18N();
   const { jumpToPage } = useNavigateHelper();
 
+  const handleEdit = useCallback(() => {
+    jumpToPage(workspaceId, pageId);
+  }, [workspaceId, pageId, jumpToPage]);
+
+  useEffect(() => {
+    if (isMember) {
+      setIsMember(true);
+    }
+  }, [isMember, setIsMember]);
+
   if (isMember) {
     return (
       <Button
-        type="plain"
-        onClick={() => jumpToPage(workspaceId, pageId)}
+        className={styles.editButton}
+        onClick={handleEdit}
         data-testid="share-page-edit-button"
       >
         {t['Edit']()}

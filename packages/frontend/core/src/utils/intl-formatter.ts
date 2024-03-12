@@ -1,3 +1,5 @@
+import dayjs from 'dayjs';
+
 const timeFormatter = new Intl.DateTimeFormat(undefined, {
   timeStyle: 'short',
 });
@@ -8,10 +10,10 @@ const dateFormatter = new Intl.DateTimeFormat(undefined, {
   day: 'numeric',
 });
 
-export const timestampToLocalTime = (ts: string) => {
-  return timeFormatter.format(new Date(ts));
+export const timestampToLocalTime = (ts: string | number) => {
+  return timeFormatter.format(dayjs(ts).toDate());
 };
 
-export const timestampToLocalDate = (ts: string) => {
-  return dateFormatter.format(new Date(ts));
+export const timestampToLocalDate = (ts: string | number) => {
+  return dateFormatter.format(dayjs(ts).toDate());
 };

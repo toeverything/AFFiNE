@@ -24,11 +24,12 @@ export type ServiceIdentifier<T> = {
   __TYPE__: T;
 };
 
-export type ServiceIdentifierType<T> = T extends ServiceIdentifier<infer R>
-  ? R
-  : T extends Type<infer R>
+export type ServiceIdentifierType<T> =
+  T extends ServiceIdentifier<infer R>
     ? R
-    : never;
+    : T extends Type<infer R>
+      ? R
+      : never;
 
 export type TypesToDeps<T extends any[]> = {
   [index in keyof T]:

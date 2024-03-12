@@ -365,7 +365,6 @@
   "com.affine.auth.sign.message": "點擊上方「使用 Google/電子郵件地址 繼續」，即表示您確認同意 AFFiNE 的 <1>Terms of Conditions</1> and <3>Privacy Policy</3>。",
   "com.affine.auth.sign.policy": "隱私政策",
   "com.affine.auth.sign.sent.email.message.end": "您可以點擊連結自動建立帳號。",
-  "com.affine.auth.sign.sent.email.message.sent-tips": "一封帶有魔法連結的電子郵件已發送至 <a>{{email}}</a>。",
   "com.affine.auth.sign.up": "建立帳號",
   "com.affine.auth.sign.up.sent.email.subtitle": "建立您的帳號",
   "com.affine.auth.sign.up.success.subtitle": "應用將自動打開或重定向到網頁版本。如果您遇到任何問題，您還可以點擊下面的按鈕手動打開 AFFiNE 應用程序。",

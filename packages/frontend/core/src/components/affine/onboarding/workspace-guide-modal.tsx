@@ -1,14 +1,11 @@
-import { Button, Modal, type ModalProps } from '@affine/component';
+import { OverlayModal } from '@affine/component';
+import type { ModalProps } from '@affine/component/ui/modal';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { memo, useCallback, useEffect, useState } from 'react';
 
 import { useAppConfigStorage } from '../../../hooks/use-app-config-storage';
 import Thumb from './assets/thumb';
-import * as styles from './workspace-guide-modal.css';
 
-const contentOptions: ModalProps['contentOptions'] = {
-  style: { padding: 0, overflow: 'hidden' },
-};
 const overlayOptions: ModalProps['overlayOptions'] = {
   style: {
     background:
@@ -36,7 +33,6 @@ export const WorkspaceGuideModal = memo(function WorkspaceGuideModal() {
   }, [open]);
 
   const gotIt = useCallback(() => {
-    setOpen(false);
     setDismiss(true);
   }, [setDismiss]);
 
@@ -47,28 +43,23 @@ export const WorkspaceGuideModal = memo(function WorkspaceGuideModal() {
   }, []);
 
   return (
-    <Modal
-      withoutCloseButton
-      contentOptions={contentOptions}
-      overlayOptions={overlayOptions}
+    <OverlayModal
       open={open}
-      width={400}
       onOpenChange={onOpenChange}
-    >
-      <Thumb />
-      <div className={styles.title}>
-        {t['com.affine.onboarding.workspace-guide.title']()}
-      </div>
-      <div className={styles.content}>
-        {t['com.affine.onboarding.workspace-guide.content']()}
-      </div>
-      <div className={styles.footer}>
-        <Button type="primary" size="large" onClick={gotIt}>
-          <span className={styles.gotItBtn}>
-            {t['com.affine.onboarding.workspace-guide.got-it']()}
-          </span>
-        </Button>
-      </div>
-    </Modal>
+      topImage={<Thumb />}
+      title={t['com.affine.onboarding.workspace-guide.title']()}
+      description={t['com.affine.onboarding.workspace-guide.content']()}
+      onConfirm={gotIt}
+      overlayOptions={overlayOptions}
+      withoutCancelButton
+      confirmButtonOptions={{
+        style: {
+          fontWeight: 500,
+        },
+        type: 'primary',
+        size: 'large',
+      }}
+      confirmText={t['com.affine.onboarding.workspace-guide.got-it']()}
+    />
   );
 });

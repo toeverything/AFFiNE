@@ -7,7 +7,6 @@ import {
   getLatestMailMessage,
 } from '@affine-test/kit/utils/cloud';
 import { TestingModule } from '@nestjs/testing';
-import { PrismaClient } from '@prisma/client';
 import ava, { type TestFn } from 'ava';
 
 import { AuthService } from '../src/core/auth/service';
@@ -19,13 +18,6 @@ const test = ava as TestFn<{
   module: TestingModule;
   skip: boolean;
 }>;
-
-// cleanup database before each test
-test.beforeEach(async () => {
-  const client = new PrismaClient();
-  await client.$connect();
-  await client.user.deleteMany({});
-});
 
 test.beforeEach(async t => {
   t.context.module = await createTestingModule({

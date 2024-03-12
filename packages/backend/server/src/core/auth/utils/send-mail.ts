@@ -11,7 +11,7 @@ export async function sendVerificationRequest(
   session: SessionService,
   params: SendVerificationRequestParams
 ) {
-  const { identifier, url, provider } = params;
+  const { identifier, url } = params;
   const urlWithToken = new URL(url);
   const callbackUrl = urlWithToken.searchParams.get('callbackUrl') || '';
   if (!callbackUrl) {
@@ -28,7 +28,6 @@ export async function sendVerificationRequest(
 
   const result = await mailer.sendSignInEmail(urlWithToken.toString(), {
     to: identifier,
-    from: provider.from,
   });
   logger.log(`send verification email success: ${result.accepted.join(', ')}`);
 

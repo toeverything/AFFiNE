@@ -46,6 +46,7 @@ export class ServerConfigType {
   @Field(() => [ServerFeature], { description: 'enabled server features' })
   features!: ServerFeature[];
 }
+
 export class ServerConfigResolver {
   @Query(() => ServerConfigType, {
     description: 'server config',

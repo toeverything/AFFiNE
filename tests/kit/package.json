@@ -11,8 +11,8 @@
   },
   "devDependencies": {
     "@affine/electron-api": "workspace:*",
-    "@node-rs/argon2": "^1.5.2",
-    "@playwright/test": "^1.41.0",
+    "@node-rs/argon2": "^1.7.2",
+    "@playwright/test": "^1.41.2",
     "express": "^4.18.2",
     "http-proxy-middleware": "^3.0.0-beta.1"
   },
