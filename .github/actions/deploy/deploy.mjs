@@ -21,6 +21,7 @@ const {
   AFFINE_GOOGLE_CLIENT_ID,
   AFFINE_GOOGLE_CLIENT_SECRET,
   CLOUD_SQL_IAM_ACCOUNT,
+  CLOUD_LOGGER_IAM_ACCOUNT,
   GCLOUD_CONNECTION_NAME,
   GCLOUD_CLOUD_SQL_INTERNAL_ENDPOINT,
   REDIS_HOST,
@@ -59,7 +60,9 @@ const createHelmCommand = ({ isDryRun }) => {
       ? [
           `--set-json   web.service.annotations=\"{ \\"cloud.google.com/neg\\": \\"{\\\\\\"ingress\\\\\\": true}\\" }\"`,
           `--set-json   graphql.service.annotations=\"{ \\"cloud.google.com/neg\\": \\"{\\\\\\"ingress\\\\\\": true}\\" }\"`,
+          `--set-json   graphql.serviceAccount.annotations=\"{ \\"iam.gke.io/gcp-service-account\\": \\"${CLOUD_LOGGER_IAM_ACCOUNT}\\"}\"`,
           `--set-json   sync.service.annotations=\"{ \\"cloud.google.com/neg\\": \\"{\\\\\\"ingress\\\\\\": true}\\" }\"`,
+          `--set-json   sync.serviceAccount.annotations=\"{ \\"iam.gke.io/gcp-service-account\\": \\"${CLOUD_LOGGER_IAM_ACCOUNT}\\"}\"`,
           `--set-json   cloud-sql-proxy.serviceAccount.annotations=\"{ \\"iam.gke.io/gcp-service-account\\": \\"${CLOUD_SQL_IAM_ACCOUNT}\\" }\"`,
           `--set-json   cloud-sql-proxy.nodeSelector=\"{ \\"iam.gke.io/gke-metadata-server-enabled\\": \\"true\\" }\"`,
         ]
