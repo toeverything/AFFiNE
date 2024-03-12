@@ -185,4 +185,42 @@ describe('livedata', () => {
     });
     expect(value).toBe(1);
   });
+
+  test('flat', () => {
+    {
+      const wrapped = new LiveData(new LiveData(0));
+      const flatten = wrapped.flat();
+      expect(flatten.value).toBe(0);
+
+      wrapped.next(new LiveData(1));
+      expect(flatten.value).toBe(1);
+
+      wrapped.next(LiveData.from(of(2, 3), 0));
+      expect(flatten.value).toBe(3);
+    }
+
+    {
+      const wrapped = new LiveData(
+        new LiveData([
+          new LiveData(new LiveData(1)),
+          new LiveData(new LiveData(2)),
+        ])
+      );
+      const flatten = wrapped.flat();
+      expect(flatten.value).toStrictEqual([1, 2]);
+    }
+
+    {
+      const wrapped = new LiveData([new LiveData(0), new LiveData(1)]);
+      const flatten = wrapped.flat();
+
+      expect(flatten.value).toEqual([0, 1]);
+
+      const inner = new LiveData(2);
+      wrapped.next([inner, new LiveData(3)]);
+      expect(flatten.value).toEqual([2, 3]);
+      inner.next(4);
+      expect(flatten.value).toEqual([4, 3]);
+    }
+  });
 });
