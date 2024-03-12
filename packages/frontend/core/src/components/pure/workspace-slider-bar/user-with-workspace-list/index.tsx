@@ -1,3 +1,4 @@
+import { Loading } from '@affine/component';
 import { Divider } from '@affine/component/ui/divider';
 import { MenuItem } from '@affine/component/ui/menu';
 import { useSession } from '@affine/core/hooks/affine/use-current-user';
@@ -8,7 +9,7 @@ import { WorkspaceManager } from '@toeverything/infra';
 import { useService } from '@toeverything/infra/di';
 import { useLiveData } from '@toeverything/infra/livedata';
 import { useSetAtom } from 'jotai';
-import { useCallback, useEffect } from 'react';
+import { Suspense, useCallback, useEffect } from 'react';
 
 import {
   authAtom,
@@ -62,11 +63,21 @@ const SignInItem = () => {
   );
 };
 
-export const UserWithWorkspaceList = ({
-  onEventEnd,
-}: {
+const UserWithWorkspaceListLoading = () => {
+  return (
+    <div className={styles.loadingWrapper}>
+      <Loading size={24} />
+    </div>
+  );
+};
+
+interface UserWithWorkspaceListProps {
   onEventEnd?: () => void;
-}) => {
+}
+
+const UserWithWorkspaceListInner = ({
+  onEventEnd,
+}: UserWithWorkspaceListProps) => {
   const { user, status } = useSession();
 
   const isAuthenticated = status === 'authenticated';
@@ -137,5 +148,13 @@ export const UserWithWorkspaceList = ({
         onNewWorkspace={onNewWorkspace}
       />
     </div>
+  );
+};
+
+export const UserWithWorkspaceList = (props: UserWithWorkspaceListProps) => {
+  return (
+    <Suspense fallback={<UserWithWorkspaceListLoading />}>
+      <UserWithWorkspaceListInner {...props} />
+    </Suspense>
   );
 };
