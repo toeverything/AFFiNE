@@ -221,6 +221,31 @@ export class SyncPeer {
 
       // Finally: start sync
       await Promise.all([
+        // push updates
+        (async () => {
+          while (throwIfAborted(abortInner.signal)) {
+            const { id, data } = await this.state.pushUpdatesQueue.next(
+              abortInner.signal
+            );
+            this.state.pushingUpdate = true;
+            this.reportSyncStatus();
+
+            const merged = mergeUpdates(data);
+
+            // don't push empty data or Uint8Array([0, 0])
+            if (
+              !(
+                merged.byteLength === 0 ||
+                (merged.byteLength === 2 && merged[0] === 0 && merged[1] === 0)
+              )
+            ) {
+              await this.storage.push(id, merged);
+            }
+
+            this.state.pushingUpdate = false;
+            this.reportSyncStatus();
+          }
+        })(),
         // load subdocs
         (async () => {
           while (throwIfAborted(abortInner.signal)) {
@@ -252,31 +277,6 @@ export class SyncPeer {
                 applyUpdate(subdoc, data, this.name);
               }
             }
-            this.reportSyncStatus();
-          }
-        })(),
-        // push updates
-        (async () => {
-          while (throwIfAborted(abortInner.signal)) {
-            const { id, data } = await this.state.pushUpdatesQueue.next(
-              abortInner.signal
-            );
-            this.state.pushingUpdate = true;
-            this.reportSyncStatus();
-
-            const merged = mergeUpdates(data);
-
-            // don't push empty data or Uint8Array([0, 0])
-            if (
-              !(
-                merged.byteLength === 0 ||
-                (merged.byteLength === 2 && merged[0] === 0 && merged[1] === 0)
-              )
-            ) {
-              await this.storage.push(id, merged);
-            }
-
-            this.state.pushingUpdate = false;
             this.reportSyncStatus();
           }
         })(),
