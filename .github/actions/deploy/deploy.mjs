@@ -111,7 +111,7 @@ const createHelmCommand = ({ isDryRun }) => {
     `--set-string graphql.app.oauth.google.clientSecret="${AFFINE_GOOGLE_CLIENT_SECRET}"`,
     `--set-string graphql.app.payment.stripe.apiKey="${STRIPE_API_KEY}"`,
     `--set-string graphql.app.payment.stripe.webhookKey="${STRIPE_WEBHOOK_KEY}"`,
-    `--set        graphql.app.experimental.enableJwstCodec=true`,
+    `--set        graphql.app.experimental.enableJwstCodec=${isInternal}`,
     `--set        graphql.app.features.earlyAccessPreview=false`,
     `--set        graphql.app.features.syncClientVersionCheck=true`,
     `--set        sync.replicaCount=${syncReplicaCount}`,
