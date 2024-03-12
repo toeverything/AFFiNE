@@ -117,3 +117,30 @@ db.create(blockTable, {
   pageId: pageA.id,
 });
 console.log(doc.toJSON());
+
+const workspace = db.create(workspaceTable, {
+  name: 'first workspace',
+});
+const workspace$ = db.observeFirst(workspaceTable, {
+  id: workspace.id,
+});
+workspace$
+  .pipe(
+    switchMap(workspace => {
+      return getPages(workspace).pipe(
+        map(pages => {
+          return {
+            ...workspace,
+            pages,
+          };
+        })
+      );
+    })
+  )
+  .subscribe(workspace => {
+    console.log(JSON.stringify(workspace, null, 2));
+  });
+
+db.delete(pageTable, {
+  id: pageA.id,
+});
