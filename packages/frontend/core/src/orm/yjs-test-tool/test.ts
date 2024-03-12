@@ -1,7 +1,6 @@
 import Y from 'yjs';
 
 import { ServerClient } from './client';
-import { toSnapshot } from './snapshot';
 import { timeline } from './timeline';
 
 const nestedExample = async () => {
@@ -36,9 +35,8 @@ const migrateTest = async (
     );
   };
   const doc1 = new Y.Doc();
-  const initSnapshot = toSnapshot(doc1);
 
-  const serverClient = ServerClient.fromSnapshot(initSnapshot);
+  const serverClient = ServerClient.fromDoc(doc1);
   const clientA = serverClient.forkClient();
   const clientB = serverClient.forkClient();
   dataLog();
