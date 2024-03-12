@@ -1,6 +1,7 @@
 import { Scrollable } from '@affine/component';
 import { PageDetailSkeleton } from '@affine/component/page-detail-skeleton';
 import { useBlockSuiteDocMeta } from '@affine/core/hooks/use-block-suite-page-meta';
+import type { PageRootService } from '@blocksuite/blocks';
 import {
   BookmarkService,
   customImageProxyMiddleware,
@@ -136,7 +137,8 @@ const DetailPageImpl = memo(function DetailPageImpl() {
       EmbedLoomService.setLinkPreviewEndpoint(runtimeConfig.linkPreviewUrl);
 
       // provide page mode and updated date to blocksuite
-      const pageService = editorHost.std.spec.getService('affine:page');
+      const pageService =
+        editorHost.std.spec.getService<PageRootService>('affine:page');
       const disposable = new DisposableGroup();
 
       pageService.getEditorMode = (pageId: string) =>
@@ -153,12 +155,12 @@ const DetailPageImpl = memo(function DetailPageImpl() {
       page.setMode(mode);
       // fixme: it seems pageLinkClicked is not triggered sometimes?
       disposable.add(
-        editor.slots.docLinkClicked.on(({ docId }) => {
+        pageService.slots.docLinkClicked.on(({ docId }) => {
           return openPage(blockSuiteWorkspace.id, docId);
         })
       );
       disposable.add(
-        editor.slots.tagClicked.on(({ tagId }) => {
+        pageService.slots.tagClicked.on(({ tagId }) => {
           jumpToTag(currentWorkspace.id, tagId);
         })
       );
