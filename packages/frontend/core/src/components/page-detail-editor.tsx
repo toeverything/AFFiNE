@@ -88,6 +88,7 @@ const PageDetailEditorMain = memo(function PageDetailEditorMain({
       if (onLoad) {
         // Invoke onLoad once the editor has been mounted to the DOM.
         editor.updateComplete
+          .then(() => editor.host.updateComplete)
           .then(() => {
             disposableGroup.add(onLoad(page, editor));
           })
