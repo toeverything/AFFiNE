@@ -22,6 +22,7 @@ import {
 } from '@toeverything/infra';
 import { Workspace } from '@toeverything/infra';
 import { useService } from '@toeverything/infra';
+import clsx from 'clsx';
 import { useSetAtom } from 'jotai';
 import {
   memo,
@@ -198,9 +199,15 @@ const DetailPageImpl = memo(function DetailPageImpl() {
         <div className={styles.mainContainer}>
           {/* Add a key to force rerender when page changed, to avoid error boundary persisting. */}
           <AffineErrorBoundary key={currentPageId}>
+            <TopTip pageId={currentPageId} workspace={currentWorkspace} />
             <Scrollable.Root>
-              <Scrollable.Viewport className={styles.editorContainer}>
-                <TopTip pageId={currentPageId} workspace={currentWorkspace} />
+              <Scrollable.Viewport
+                className={clsx(
+                  'affine-page-viewport',
+                  styles.affineDocViewport,
+                  styles.editorContainer
+                )}
+              >
                 <PageDetailEditor
                   pageId={currentPageId}
                   onLoad={onLoad}
