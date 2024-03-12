@@ -25,12 +25,19 @@ export interface Props {
 const ToggleButton = ({
   onToggle,
   className,
+  show,
 }: {
   onToggle?: () => void;
   className: string;
+  show: boolean;
 }) => {
   return (
-    <IconButton size="large" onClick={onToggle} className={className}>
+    <IconButton
+      size="large"
+      onClick={onToggle}
+      className={className}
+      data-show={show}
+    >
       <RightSidebarIcon />
     </IconButton>
   );
@@ -50,14 +57,18 @@ export const RouteContainer = ({ route }: Props) => {
   return (
     <div className={styles.root}>
       <div className={styles.header}>
-        {viewPosition.isFirst && !leftSidebarOpen && (
-          <SidebarSwitch className={styles.leftSidebarButton} />
+        {viewPosition.isFirst && (
+          <SidebarSwitch
+            show={!leftSidebarOpen}
+            className={styles.leftSidebarButton}
+          />
         )}
         <view.header.Target className={styles.viewHeaderContainer} />
-        {viewPosition.isLast && !rightSidebarOpen && (
+        {viewPosition.isLast && (
           <>
             {rightSidebarHasViews && (
               <ToggleButton
+                show={!rightSidebarOpen}
                 className={styles.rightSidebarButton}
                 onToggle={handleToggleRightSidebar}
               />
