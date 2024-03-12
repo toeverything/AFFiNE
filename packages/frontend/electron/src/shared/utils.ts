@@ -13,7 +13,7 @@ export const isWindows = () => {
 };
 
 export const isLinux = () => {
-  return process.platform === 'win32';
+  return process.platform === 'linux';
 };
 
 interface MessagePortLike {
