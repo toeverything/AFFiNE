@@ -255,6 +255,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
 });
 
 export const DetailPage = ({ pageId }: { pageId: string }): ReactElement => {
+  const currentWorkspace = useService(Workspace);
   const pageRecordList = useService(PageRecordList);
 
   const pageListReady = useLiveData(pageRecordList.isReady);
@@ -280,6 +281,11 @@ export const DetailPage = ({ pageId }: { pageId: string }): ReactElement => {
       release();
     };
   }, [pageManager, pageRecord]);
+
+  // set sync engine priority target
+  useEffect(() => {
+    currentWorkspace.setPriorityRule(id => id.endsWith(pageId));
+  }, [currentWorkspace, pageId]);
 
   const jumpOnce = useLiveData(pageRecord?.meta.map(meta => meta.jumpOnce));
 
