@@ -54,12 +54,14 @@ export const RouteContainer = ({ route }: Props) => {
           <SidebarSwitch className={styles.leftSidebarButton} />
         )}
         <view.header.Target className={styles.viewHeaderContainer} />
-        {viewPosition.isLast && !rightSidebarOpen && rightSidebarHasViews && (
+        {viewPosition.isLast && !rightSidebarOpen && (
           <>
-            <ToggleButton
-              className={styles.rightSidebarButton}
-              onToggle={handleToggleRightSidebar}
-            />
+            {rightSidebarHasViews && (
+              <ToggleButton
+                className={styles.rightSidebarButton}
+                onToggle={handleToggleRightSidebar}
+              />
+            )}
             {isWindowsDesktop && (
               <div className={styles.windowsAppControlsContainer}>
                 <WindowsAppControls />
