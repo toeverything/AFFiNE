@@ -78,7 +78,6 @@
     "lottie-web": "^5.12.2",
     "mini-css-extract-plugin": "^2.8.0",
     "nanoid": "^5.0.6",
-    "next-auth": "^4.24.5",
     "next-themes": "^0.2.1",
     "postcss-loader": "^8.1.0",
     "react": "18.2.0",

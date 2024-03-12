@@ -11,7 +11,7 @@ import {
   FeatureService,
   FeatureType,
 } from '../src/core/features';
-import { UserType } from '../src/core/users/types';
+import { UserType } from '../src/core/user/types';
 import { WorkspaceResolver } from '../src/core/workspaces/resolvers';
 import { Permission } from '../src/core/workspaces/types';
 import { ConfigModule } from '../src/fundamentals/config';
@@ -54,11 +54,6 @@ test.beforeEach(async t => {
   const { app } = await createTestingApp({
     imports: [
       ConfigModule.forRoot({
-        auth: {
-          accessTokenExpiresIn: 1,
-          refreshTokenExpiresIn: 1,
-          leeway: 1,
-        },
         host: 'example.org',
         https: true,
         featureFlags: {

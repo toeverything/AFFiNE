@@ -1,6 +1,14 @@
-import { createUnionType, Field, ID, ObjectType } from '@nestjs/graphql';
+import {
+  createUnionType,
+  Field,
+  ID,
+  InputType,
+  ObjectType,
+} from '@nestjs/graphql';
 import type { User } from '@prisma/client';
 import { SafeIntResolver } from 'graphql-scalars';
+
+import { CurrentUser } from '../auth/current-user';
 
 @ObjectType('UserQuotaHumanReadable')
 export class UserQuotaHumanReadableType {
@@ -42,7 +50,7 @@ export class UserQuotaType {
 }
 
 @ObjectType()
-export class UserType implements Partial<User> {
+export class UserType implements CurrentUser {
   @Field(() => ID)
   id!: string;
 
@@ -53,19 +61,25 @@ export class UserType implements Partial<User> {
   email!: string;
 
   @Field(() => String, { description: 'User avatar url', nullable: true })
-  avatarUrl: string | null = null;
+  avatarUrl!: string | null;
 
-  @Field(() => Date, { description: 'User email verified', nullable: true })
-  emailVerified: Date | null = null;
-
-  @Field({ description: 'User created date', nullable: true })
-  createdAt!: Date;
+  @Field(() => Boolean, {
+    description: 'User email verified',
+  })
+  emailVerified!: boolean;
 
   @Field(() => Boolean, {
     description: 'User password has been set',
     nullable: true,
   })
-  hasPassword?: boolean;
+  hasPassword!: boolean | null;
+
+  @Field(() => Date, {
+    deprecationReason: 'useless',
+    description: 'User email verified',
+    nullable: true,
+  })
+  createdAt?: Date | null;
 }
 
 @ObjectType()
@@ -77,7 +91,7 @@ export class LimitedUserType implements Partial<User> {
     description: 'User password has been set',
     nullable: true,
   })
-  hasPassword?: boolean;
+  hasPassword!: boolean | null;
 }
 
 export const UserOrLimitedUser = createUnionType({
@@ -100,4 +114,10 @@ export class DeleteAccount {
 export class RemoveAvatar {
   @Field()
   success!: boolean;
+}
+
+@InputType()
+export class UpdateUserInput implements Partial<User> {
+  @Field({ description: 'User name', nullable: true })
+  name?: string;
 }

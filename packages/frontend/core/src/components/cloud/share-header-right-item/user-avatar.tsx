@@ -26,7 +26,7 @@ const UserInfo = () => {
       <Avatar
         size={28}
         name={user.name}
-        url={user.image}
+        url={user.avatarUrl}
         className={styles.avatar}
       />
 
@@ -51,7 +51,7 @@ export const PublishPageUserAvatar = () => {
   const location = useLocation();
 
   const handleSignOut = useAsyncCallback(async () => {
-    await signOutCloud({ callbackUrl: location.pathname });
+    await signOutCloud(location.pathname);
   }, [location.pathname]);
 
   const menuItem = useMemo(() => {
@@ -84,7 +84,7 @@ export const PublishPageUserAvatar = () => {
       }}
     >
       <div className={styles.iconWrapper} data-testid="share-page-user-avatar">
-        <Avatar size={24} url={user.image} name={user.name} />
+        <Avatar size={24} url={user.avatarUrl} name={user.name} />
       </div>
     </Menu>
   );

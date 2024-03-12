@@ -11,10 +11,9 @@ import { PrismaClient } from '@prisma/client';
 import type { Response } from 'express';
 
 import { CallTimer } from '../../fundamentals';
-import { Auth, CurrentUser, Publicable } from '../auth';
+import { CurrentUser, Public } from '../auth';
 import { DocHistoryManager, DocManager } from '../doc';
 import { WorkspaceBlobStorage } from '../storage';
-import { UserType } from '../users';
 import { DocID } from '../utils/doc';
 import { PermissionService, PublicPageMode } from './permission';
 import { Permission } from './types';
@@ -63,11 +62,10 @@ export class WorkspacesController {
 
   // get doc binary
   @Get('/:id/docs/:guid')
-  @Auth()
-  @Publicable()
+  @Public()
   @CallTimer('controllers', 'workspace_get_doc')
   async doc(
-    @CurrentUser() user: UserType | undefined,
+    @CurrentUser() user: CurrentUser | undefined,
     @Param('id') ws: string,
     @Param('guid') guid: string,
     @Res() res: Response
@@ -112,10 +110,9 @@ export class WorkspacesController {
   }
 
   @Get('/:id/docs/:guid/histories/:timestamp')
-  @Auth()
   @CallTimer('controllers', 'workspace_get_history')
   async history(
-    @CurrentUser() user: UserType,
+    @CurrentUser() user: CurrentUser,
     @Param('id') ws: string,
     @Param('guid') guid: string,
     @Param('timestamp') timestamp: string,

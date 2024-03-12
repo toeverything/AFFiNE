@@ -1,20 +1,20 @@
 import { join } from 'node:path';
 
 import { Logger, Module } from '@nestjs/common';
-import { APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { get } from 'lodash-es';
 
 import { AppController } from './app.controller';
-import { AuthModule } from './core/auth';
+import { AuthGuard, AuthModule } from './core/auth';
 import { ADD_ENABLED_FEATURES, ServerConfigModule } from './core/config';
 import { DocModule } from './core/doc';
 import { FeatureModule } from './core/features';
 import { QuotaModule } from './core/quota';
 import { StorageModule } from './core/storage';
 import { SyncModule } from './core/sync';
-import { UsersModule } from './core/users';
+import { UserModule } from './core/user';
 import { WorkspaceModule } from './core/workspaces';
 import { getOptionalModuleMetadata } from './fundamentals';
 import { CacheInterceptor, CacheModule } from './fundamentals/cache';
@@ -25,14 +25,14 @@ import {
 } from './fundamentals/config';
 import { EventModule } from './fundamentals/event';
 import { GqlModule } from './fundamentals/graphql';
+import { HelpersModule } from './fundamentals/helpers';
 import { MailModule } from './fundamentals/mailer';
 import { MetricsModule } from './fundamentals/metrics';
 import { PrismaModule } from './fundamentals/prisma';
-import { SessionModule } from './fundamentals/session';
 import { StorageProviderModule } from './fundamentals/storage';
 import { RateLimiterModule } from './fundamentals/throttler';
 import { WebSocketModule } from './fundamentals/websocket';
-import { pluginsMap } from './plugins';
+import { REGISTERED_PLUGINS } from './plugins';
 
 export const FunctionalityModules = [
   ConfigModule.forRoot(),
@@ -42,9 +42,9 @@ export const FunctionalityModules = [
   PrismaModule,
   MetricsModule,
   RateLimiterModule,
-  SessionModule,
   MailModule,
   StorageProviderModule,
+  HelpersModule,
 ];
 
 export class AppModuleBuilder {
@@ -109,6 +109,10 @@ export class AppModuleBuilder {
           provide: APP_INTERCEPTOR,
           useClass: CacheInterceptor,
         },
+        {
+          provide: APP_GUARD,
+          useClass: AuthGuard,
+        },
       ],
       imports: this.modules,
       controllers: this.config.isSelfhosted ? [] : [AppController],
@@ -141,7 +145,7 @@ function buildAppModule() {
       WebSocketModule,
       GqlModule,
       StorageModule,
-      UsersModule,
+      UserModule,
       WorkspaceModule,
       FeatureModule,
       QuotaModule
@@ -157,7 +161,7 @@ function buildAppModule() {
 
   // plugin modules
   AFFiNE.plugins.enabled.forEach(name => {
-    const plugin = pluginsMap.get(name as AvailablePlugins);
+    const plugin = REGISTERED_PLUGINS.get(name as AvailablePlugins);
     if (!plugin) {
       throw new Error(`Unknown plugin ${name}`);
     }

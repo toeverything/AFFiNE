@@ -1,10 +1,11 @@
 import { Global } from '@nestjs/common';
 
-import { OptionalModule } from '../../fundamentals';
+import { Plugin } from '../registry';
 import { GCloudMetrics } from './metrics';
 
 @Global()
-@OptionalModule({
+@Plugin({
+  name: 'gcloud',
   imports: [GCloudMetrics],
 })
 export class GCloudModule {}

@@ -10,6 +10,7 @@ import type {
 import { PrismaClient } from '@prisma/client';
 import Stripe from 'stripe';
 
+import { CurrentUser } from '../../core/auth';
 import { FeatureManagementService } from '../../core/features';
 import { EventEmitter } from '../../fundamentals';
 import { ScheduleManager } from './schedule';
@@ -75,7 +76,7 @@ export class SubscriptionService {
     redirectUrl,
     idempotencyKey,
   }: {
-    user: User;
+    user: CurrentUser;
     recurring: SubscriptionRecurring;
     plan: SubscriptionPlan;
     promotionCode?: string | null;
@@ -549,7 +550,7 @@ export class SubscriptionService {
 
   private async getOrCreateCustomer(
     idempotencyKey: string,
-    user: User
+    user: CurrentUser
   ): Promise<UserStripeCustomer> {
     const customer = await this.db.userStripeCustomer.findUnique({
       where: {
@@ -649,7 +650,7 @@ export class SubscriptionService {
   }
 
   private async getAvailableCoupon(
-    user: User,
+    user: CurrentUser,
     couponType: CouponType
   ): Promise<string | null> {
     const earlyAccess = await this.features.isEarlyAccessUser(user.email);

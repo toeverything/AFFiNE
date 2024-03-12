@@ -2,9 +2,10 @@ import { Global, Provider, Type } from '@nestjs/common';
 import { Redis, type RedisOptions } from 'ioredis';
 import { ThrottlerStorageRedisService } from 'nestjs-throttler-storage-redis';
 
-import { Cache, OptionalModule, SessionCache } from '../../fundamentals';
+import { Cache, SessionCache } from '../../fundamentals';
 import { ThrottlerStorage } from '../../fundamentals/throttler';
 import { SocketIoAdapterImpl } from '../../fundamentals/websocket';
+import { Plugin } from '../registry';
 import { RedisCache } from './cache';
 import {
   CacheRedis,
@@ -47,7 +48,8 @@ const socketIoRedisAdapterProvider: Provider = {
 };
 
 @Global()
-@OptionalModule({
+@Plugin({
+  name: 'redis',
   providers: [CacheRedis, SessionRedis, ThrottlerRedis, SocketIoRedis],
   overrides: [
     cacheProvider,

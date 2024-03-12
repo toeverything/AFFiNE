@@ -1,13 +1,14 @@
 import { ServerFeature } from '../../core/config';
 import { FeatureModule } from '../../core/features';
-import { OptionalModule } from '../../fundamentals';
+import { Plugin } from '../registry';
 import { SubscriptionResolver, UserSubscriptionResolver } from './resolver';
 import { ScheduleManager } from './schedule';
 import { SubscriptionService } from './service';
 import { StripeProvider } from './stripe';
 import { StripeWebhook } from './webhook';
 
-@OptionalModule({
+@Plugin({
+  name: 'payment',
   imports: [FeatureModule],
   providers: [
     ScheduleManager,

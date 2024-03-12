@@ -1,5 +1,6 @@
 import { Divider } from '@affine/component/ui/divider';
 import { MenuItem } from '@affine/component/ui/menu';
+import { useSession } from '@affine/core/hooks/affine/use-current-user';
 import { Unreachable } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { Logo1Icon } from '@blocksuite/icons';
@@ -7,9 +8,7 @@ import { WorkspaceManager } from '@toeverything/infra';
 import { useService } from '@toeverything/infra/di';
 import { useLiveData } from '@toeverything/infra/livedata';
 import { useSetAtom } from 'jotai';
-// eslint-disable-next-line @typescript-eslint/no-restricted-imports
-import { useSession } from 'next-auth/react';
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect } from 'react';
 
 import {
   authAtom,
@@ -68,9 +67,9 @@ export const UserWithWorkspaceList = ({
 }: {
   onEventEnd?: () => void;
 }) => {
-  const { data: session, status } = useSession();
+  const { user, status } = useSession();
 
-  const isAuthenticated = useMemo(() => status === 'authenticated', [status]);
+  const isAuthenticated = status === 'authenticated';
 
   const setOpenCreateWorkspaceModal = useSetAtom(openCreateWorkspaceModalAtom);
   const setDisableCloudOpen = useSetAtom(openDisableCloudAlertModalAtom);
@@ -124,7 +123,7 @@ export const UserWithWorkspaceList = ({
     <div className={styles.workspaceListWrapper}>
       {isAuthenticated ? (
         <UserAccountItem
-          email={session?.user.email ?? 'Unknown User'}
+          email={user?.email ?? 'Unknown User'}
           onEventEnd={onEventEnd}
         />
       ) : (

@@ -21,8 +21,8 @@ import type { User, UserInvoice, UserSubscription } from '@prisma/client';
 import { PrismaClient } from '@prisma/client';
 import { groupBy } from 'lodash-es';
 
-import { Auth, CurrentUser, Public } from '../../core/auth';
-import { UserType } from '../../core/users';
+import { CurrentUser, Public } from '../../core/auth';
+import { UserType } from '../../core/user';
 import { Config } from '../../fundamentals';
 import { decodeLookupKey, SubscriptionService } from './service';
 import {
@@ -155,7 +155,6 @@ class CreateCheckoutSessionInput {
   idempotencyKey!: string;
 }
 
-@Auth()
 @Resolver(() => UserSubscriptionType)
 export class SubscriptionResolver {
   constructor(
@@ -217,7 +216,7 @@ export class SubscriptionResolver {
     description: 'Create a subscription checkout link of stripe',
   })
   async checkout(
-    @CurrentUser() user: User,
+    @CurrentUser() user: CurrentUser,
     @Args({ name: 'recurring', type: () => SubscriptionRecurring })
     recurring: SubscriptionRecurring,
     @Args('idempotencyKey') idempotencyKey: string
@@ -241,7 +240,7 @@ export class SubscriptionResolver {
     description: 'Create a subscription checkout link of stripe',
   })
   async createCheckoutSession(
-    @CurrentUser() user: User,
+    @CurrentUser() user: CurrentUser,
     @Args({ name: 'input', type: () => CreateCheckoutSessionInput })
     input: CreateCheckoutSessionInput
   ) {
@@ -265,13 +264,13 @@ export class SubscriptionResolver {
   @Mutation(() => String, {
     description: 'Create a stripe customer portal to manage payment methods',
   })
-  async createCustomerPortal(@CurrentUser() user: User) {
+  async createCustomerPortal(@CurrentUser() user: CurrentUser) {
     return this.service.createCustomerPortal(user.id);
   }
 
   @Mutation(() => UserSubscriptionType)
   async cancelSubscription(
-    @CurrentUser() user: User,
+    @CurrentUser() user: CurrentUser,
     @Args('idempotencyKey') idempotencyKey: string
   ) {
     return this.service.cancelSubscription(idempotencyKey, user.id);
@@ -279,7 +278,7 @@ export class SubscriptionResolver {
 
   @Mutation(() => UserSubscriptionType)
   async resumeSubscription(
-    @CurrentUser() user: User,
+    @CurrentUser() user: CurrentUser,
     @Args('idempotencyKey') idempotencyKey: string
   ) {
     return this.service.resumeCanceledSubscription(idempotencyKey, user.id);
@@ -287,7 +286,7 @@ export class SubscriptionResolver {
 
   @Mutation(() => UserSubscriptionType)
   async updateSubscriptionRecurring(
-    @CurrentUser() user: User,
+    @CurrentUser() user: CurrentUser,
     @Args({ name: 'recurring', type: () => SubscriptionRecurring })
     recurring: SubscriptionRecurring,
     @Args('idempotencyKey') idempotencyKey: string

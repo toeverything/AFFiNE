@@ -167,7 +167,6 @@
     "unbox-primitive": "npm:@nolyfill/unbox-primitive@latest",
     "which-boxed-primitive": "npm:@nolyfill/which-boxed-primitive@latest",
     "which-typed-array": "npm:@nolyfill/which-typed-array@latest",
-    "next-auth@^4.24.5": "patch:next-auth@npm%3A4.24.5#~/.yarn/patches/next-auth-npm-4.24.5-8428e11927.patch",
     "@reforged/maker-appimage/@electron-forge/maker-base": "7.3.0",
     "macos-alias": "npm:@napi-rs/macos-alias@latest",
     "fs-xattr": "npm:@napi-rs/xattr@latest",

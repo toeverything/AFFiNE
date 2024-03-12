@@ -10,24 +10,22 @@ import {
   Mutation,
   ObjectType,
   Parent,
+  Query,
   ResolveField,
   Resolver,
 } from '@nestjs/graphql';
-import type { Request } from 'express';
-import { nanoid } from 'nanoid';
+import type { Request, Response } from 'express';
 
-import {
-  CloudThrottlerGuard,
-  Config,
-  SessionService,
-  Throttle,
-} from '../../fundamentals';
-import { UserType } from '../users';
-import { Auth, CurrentUser } from './guard';
+import { CloudThrottlerGuard, Config, Throttle } from '../../fundamentals';
+import { UserType } from '../user/types';
+import { validators } from '../utils/validators';
+import { CurrentUser } from './current-user';
+import { Public } from './guard';
 import { AuthService } from './service';
+import { TokenService, TokenType } from './token';
 
-@ObjectType()
-export class TokenType {
+@ObjectType('tokenType')
+export class ClientTokenType {
   @Field()
   token!: string;
 
@@ -50,8 +48,24 @@ export class AuthResolver {
   constructor(
     private readonly config: Config,
     private readonly auth: AuthService,
-    private readonly session: SessionService
+    private readonly token: TokenService
   ) {}
+
+  @Throttle({
+    default: {
+      limit: 10,
+      ttl: 60,
+    },
+  })
+  @Public()
+  @Query(() => UserType, {
+    name: 'currentUser',
+    description: 'Get current user',
+    nullable: true,
+  })
+  currentUser(@CurrentUser() user?: CurrentUser): UserType | undefined {
+    return user;
+  }
 
   @Throttle({
     default: {
@@ -59,37 +73,32 @@ export class AuthResolver {
       ttl: 60,
     },
   })
-  @ResolveField(() => TokenType)
-  async token(
-    @Context() ctx: { req: Request },
-    @CurrentUser() currentUser: UserType,
+  @ResolveField(() => ClientTokenType, {
+    name: 'token',
+    deprecationReason: 'use [/api/auth/authorize]',
+  })
+  async clientToken(
+    @CurrentUser() currentUser: CurrentUser,
     @Parent() user: UserType
-  ) {
+  ): Promise<ClientTokenType> {
     if (user.id !== currentUser.id) {
-      throw new BadRequestException('Invalid user');
+      throw new ForbiddenException('Invalid user');
     }
 
-    let sessionToken: string | undefined;
-
-    // only return session if the request is from the same origin & path == /open-app
-    if (
-      ctx.req.headers.referer &&
-      ctx.req.headers.host &&
-      new URL(ctx.req.headers.referer).pathname.startsWith('/open-app') &&
-      ctx.req.headers.host === new URL(this.config.origin).host
-    ) {
-      const cookiePrefix = this.config.node.prod ? '__Secure-' : '';
-      const sessionCookieName = `${cookiePrefix}next-auth.session-token`;
-      sessionToken = ctx.req.cookies?.[sessionCookieName];
-    }
+    const session = await this.auth.createUserSession(
+      user,
+      undefined,
+      this.config.auth.accessToken.ttl
+    );
 
     return {
-      sessionToken,
-      token: this.auth.sign(user),
-      refresh: this.auth.refresh(user),
+      sessionToken: session.sessionId,
+      token: session.sessionId,
+      refresh: '',
     };
   }
 
+  @Public()
   @Throttle({
     default: {
       limit: 10,
@@ -98,16 +107,19 @@ export class AuthResolver {
   })
   @Mutation(() => UserType)
   async signUp(
-    @Context() ctx: { req: Request },
+    @Context() ctx: { req: Request; res: Response },
     @Args('name') name: string,
     @Args('email') email: string,
     @Args('password') password: string
   ) {
+    validators.assertValidCredential({ email, password });
     const user = await this.auth.signUp(name, email, password);
+    await this.auth.setCookie(ctx.req, ctx.res, user);
     ctx.req.user = user;
     return user;
   }
 
+  @Public()
   @Throttle({
     default: {
       limit: 10,
@@ -116,11 +128,13 @@ export class AuthResolver {
   })
   @Mutation(() => UserType)
   async signIn(
-    @Context() ctx: { req: Request },
+    @Context() ctx: { req: Request; res: Response },
     @Args('email') email: string,
     @Args('password') password: string
   ) {
+    validators.assertValidCredential({ email, password });
     const user = await this.auth.signIn(email, password);
+    await this.auth.setCookie(ctx.req, ctx.res, user);
     ctx.req.user = user;
     return user;
   }
@@ -132,28 +146,26 @@ export class AuthResolver {
     },
   })
   @Mutation(() => UserType)
-  @Auth()
   async changePassword(
-    @CurrentUser() user: UserType,
+    @CurrentUser() user: CurrentUser,
     @Args('token') token: string,
     @Args('newPassword') newPassword: string
   ) {
-    const id = await this.session.get(token);
-    if (!user.emailVerified) {
-      throw new ForbiddenException('Please verify the email first');
-    }
-    if (
-      !id ||
-      (id !== user.id &&
-        // change password after sign in with email link
-        // we only create user account after user sign in with email link
-        id !== user.email)
-    ) {
+    validators.assertValidPassword(newPassword);
+    // NOTE: Set & Change password are using the same token type.
+    const valid = await this.token.verifyToken(
+      TokenType.ChangePassword,
+      token,
+      {
+        credential: user.id,
+      }
+    );
+
+    if (!valid) {
       throw new ForbiddenException('Invalid token');
     }
 
     await this.auth.changePassword(user.email, newPassword);
-    await this.session.delete(token);
 
     return user;
   }
@@ -165,25 +177,24 @@ export class AuthResolver {
     },
   })
   @Mutation(() => UserType)
-  @Auth()
   async changeEmail(
-    @CurrentUser() user: UserType,
-    @Args('token') token: string
+    @CurrentUser() user: CurrentUser,
+    @Args('token') token: string,
+    @Args('email') email: string
   ) {
-    const key = await this.session.get(token);
-    if (!key) {
+    validators.assertValidEmail(email);
+    // @see [sendChangeEmail]
+    const valid = await this.token.verifyToken(TokenType.VerifyEmail, token, {
+      credential: user.id,
+    });
+
+    if (!valid) {
       throw new ForbiddenException('Invalid token');
     }
 
-    // email has set token in `sendVerifyChangeEmail`
-    const [id, email] = key.split(',');
-    if (!id || id !== user.id || !email) {
-      throw new ForbiddenException('Invalid token');
-    }
+    email = decodeURIComponent(email);
 
-    await this.auth.changeEmail(id, email);
-    await this.session.delete(token);
-
+    await this.auth.changeEmail(user.id, email);
     await this.auth.sendNotificationChangeEmail(email);
 
     return user;
@@ -196,19 +207,29 @@ export class AuthResolver {
     },
   })
   @Mutation(() => Boolean)
-  @Auth()
   async sendChangePasswordEmail(
-    @CurrentUser() user: UserType,
-    @Args('email') email: string,
-    @Args('callbackUrl') callbackUrl: string
+    @CurrentUser() user: CurrentUser,
+    @Args('callbackUrl') callbackUrl: string,
+    // @deprecated
+    @Args('email', { nullable: true }) _email?: string
   ) {
-    const token = nanoid();
-    await this.session.set(token, user.id);
+    if (!user.emailVerified) {
+      throw new ForbiddenException('Please verify your email first.');
+    }
+
+    const token = await this.token.createToken(
+      TokenType.ChangePassword,
+      user.id
+    );
 
     const url = new URL(callbackUrl, this.config.baseUrl);
     url.searchParams.set('token', token);
 
-    const res = await this.auth.sendChangePasswordEmail(email, url.toString());
+    const res = await this.auth.sendChangePasswordEmail(
+      user.email,
+      url.toString()
+    );
+
     return !res.rejected.length;
   }
 
@@ -219,19 +240,27 @@ export class AuthResolver {
     },
   })
   @Mutation(() => Boolean)
-  @Auth()
   async sendSetPasswordEmail(
-    @CurrentUser() user: UserType,
-    @Args('email') email: string,
-    @Args('callbackUrl') callbackUrl: string
+    @CurrentUser() user: CurrentUser,
+    @Args('callbackUrl') callbackUrl: string,
+    @Args('email', { nullable: true }) _email?: string
   ) {
-    const token = nanoid();
-    await this.session.set(token, user.id);
+    if (!user.emailVerified) {
+      throw new ForbiddenException('Please verify your email first.');
+    }
+
+    const token = await this.token.createToken(
+      TokenType.ChangePassword,
+      user.id
+    );
 
     const url = new URL(callbackUrl, this.config.baseUrl);
     url.searchParams.set('token', token);
 
-    const res = await this.auth.sendSetPasswordEmail(email, url.toString());
+    const res = await this.auth.sendSetPasswordEmail(
+      user.email,
+      url.toString()
+    );
     return !res.rejected.length;
   }
 
@@ -249,19 +278,22 @@ export class AuthResolver {
     },
   })
   @Mutation(() => Boolean)
-  @Auth()
   async sendChangeEmail(
-    @CurrentUser() user: UserType,
-    @Args('email') email: string,
-    @Args('callbackUrl') callbackUrl: string
+    @CurrentUser() user: CurrentUser,
+    @Args('callbackUrl') callbackUrl: string,
+    // @deprecated
+    @Args('email', { nullable: true }) _email?: string
   ) {
-    const token = nanoid();
-    await this.session.set(token, user.id);
+    if (!user.emailVerified) {
+      throw new ForbiddenException('Please verify your email first.');
+    }
+
+    const token = await this.token.createToken(TokenType.ChangeEmail, user.id);
 
     const url = new URL(callbackUrl, this.config.baseUrl);
     url.searchParams.set('token', token);
 
-    const res = await this.auth.sendChangeEmail(email, url.toString());
+    const res = await this.auth.sendChangeEmail(user.email, url.toString());
     return !res.rejected.length;
   }
 
@@ -272,34 +304,92 @@ export class AuthResolver {
     },
   })
   @Mutation(() => Boolean)
-  @Auth()
   async sendVerifyChangeEmail(
-    @CurrentUser() user: UserType,
+    @CurrentUser() user: CurrentUser,
     @Args('token') token: string,
     @Args('email') email: string,
     @Args('callbackUrl') callbackUrl: string
   ) {
-    const id = await this.session.get(token);
-    if (!id || id !== user.id) {
+    validators.assertValidEmail(email);
+    const valid = await this.token.verifyToken(TokenType.ChangeEmail, token, {
+      credential: user.id,
+    });
+
+    if (!valid) {
       throw new ForbiddenException('Invalid token');
     }
 
     const hasRegistered = await this.auth.getUserByEmail(email);
 
     if (hasRegistered) {
-      throw new BadRequestException(`Invalid user email`);
+      if (hasRegistered.id !== user.id) {
+        throw new BadRequestException(`The email provided has been taken.`);
+      } else {
+        throw new BadRequestException(
+          `The email provided is the same as the current email.`
+        );
+      }
     }
 
-    const withEmailToken = nanoid();
-    await this.session.set(withEmailToken, `${user.id},${email}`);
+    const verifyEmailToken = await this.token.createToken(
+      TokenType.VerifyEmail,
+      user.id
+    );
 
     const url = new URL(callbackUrl, this.config.baseUrl);
-    url.searchParams.set('token', withEmailToken);
+    url.searchParams.set('token', verifyEmailToken);
+    url.searchParams.set('email', email);
 
     const res = await this.auth.sendVerifyChangeEmail(email, url.toString());
 
-    await this.session.delete(token);
-
     return !res.rejected.length;
+  }
+
+  @Throttle({
+    default: {
+      limit: 5,
+      ttl: 60,
+    },
+  })
+  @Mutation(() => Boolean)
+  async sendVerifyEmail(
+    @CurrentUser() user: CurrentUser,
+    @Args('callbackUrl') callbackUrl: string
+  ) {
+    const token = await this.token.createToken(TokenType.VerifyEmail, user.id);
+
+    const url = new URL(callbackUrl, this.config.baseUrl);
+    url.searchParams.set('token', token);
+
+    const res = await this.auth.sendVerifyEmail(user.email, url.toString());
+    return !res.rejected.length;
+  }
+
+  @Throttle({
+    default: {
+      limit: 5,
+      ttl: 60,
+    },
+  })
+  @Mutation(() => Boolean)
+  async verifyEmail(
+    @CurrentUser() user: CurrentUser,
+    @Args('token') token: string
+  ) {
+    if (!token) {
+      throw new BadRequestException('Invalid token');
+    }
+
+    const valid = await this.token.verifyToken(TokenType.VerifyEmail, token, {
+      credential: user.id,
+    });
+
+    if (!valid) {
+      throw new ForbiddenException('Invalid token');
+    }
+
+    const { emailVerifiedAt } = await this.auth.setEmailVerified(user.id);
+
+    return emailVerifiedAt !== null;
   }
 }

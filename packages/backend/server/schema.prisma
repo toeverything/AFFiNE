@@ -10,26 +10,78 @@ datasource db {
 }
 
 model User {
-  id            String    @id @default(uuid()) @db.VarChar
-  name          String
-  email         String    @unique
-  emailVerified DateTime? @map("email_verified")
-  // image field is for the next-auth
-  avatarUrl     String?   @map("avatar_url") @db.VarChar
-  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  id              String    @id @default(uuid()) @db.VarChar
+  name            String
+  email           String    @unique
+  emailVerifiedAt DateTime? @map("email_verified")
+  avatarUrl       String?   @map("avatar_url") @db.VarChar
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   /// Not available if user signed up through OAuth providers
-  password      String?   @db.VarChar
+  password        String?   @db.VarChar
 
-  accounts             Account[]
-  sessions             Session[]
   features             UserFeatures[]
   customer             UserStripeCustomer?
   subscription         UserSubscription?
   invoices             UserInvoice[]
   workspacePermissions WorkspaceUserPermission[]
   pagePermissions      WorkspacePageUserPermission[]
+  connectedAccounts    ConnectedAccount[]
+  sessions             UserSession[]
 
   @@map("users")
+}
+
+model ConnectedAccount {
+  id                String    @id @default(uuid()) @db.VarChar(36)
+  userId            String    @map("user_id") @db.VarChar(36)
+  provider          String    @db.VarChar
+  providerAccountId String    @map("provider_account_id") @db.VarChar
+  scope             String?   @db.Text
+  accessToken       String?   @map("access_token") @db.Text
+  refreshToken      String?   @map("refresh_token") @db.Text
+  expiresAt         DateTime? @map("expires_at") @db.Timestamptz(6)
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([providerAccountId])
+  @@map("user_connected_accounts")
+}
+
+model Session {
+  id        String    @id @default(uuid()) @db.VarChar(36)
+  expiresAt DateTime? @map("expires_at") @db.Timestamptz(6)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  userSessions UserSession[]
+
+  @@map("multiple_users_sessions")
+}
+
+model UserSession {
+  id        String    @id @default(uuid()) @db.VarChar(36)
+  sessionId String    @map("session_id") @db.VarChar(36)
+  userId    String    @map("user_id") @db.VarChar(36)
+  expiresAt DateTime? @map("expires_at") @db.Timestamptz(6)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, userId])
+  @@map("user_sessions")
+}
+
+model VerificationToken {
+  token      String   @db.VarChar(36)
+  type       Int      @db.SmallInt
+  credential String?  @db.Text
+  expiresAt  DateTime @db.Timestamptz(6)
+
+  @@unique([type, token])
+  @@map("verification_tokens")
 }
 
 model Workspace {
@@ -186,7 +238,7 @@ model Features {
   @@map("features")
 }
 
-model Account {
+model DeprecatedNextAuthAccount {
   id                String  @id @default(cuid())
   userId            String  @map("user_id")
   type              String
@@ -200,23 +252,20 @@ model Account {
   id_token          String? @db.Text
   session_state     String?
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
   @@unique([provider, providerAccountId])
   @@map("accounts")
 }
 
-model Session {
+model DeprecatedNextAuthSession {
   id           String   @id @default(cuid())
   sessionToken String   @unique @map("session_token")
   userId       String   @map("user_id")
   expires      DateTime
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("sessions")
 }
 
-model VerificationToken {
+model DeprecatedNextAuthVerificationToken {
   identifier String
   token      String   @unique
   expires    DateTime

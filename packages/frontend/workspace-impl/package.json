@@ -21,7 +21,6 @@
     "is-svg": "^5.0.0",
     "lodash-es": "^4.17.21",
     "nanoid": "^5.0.6",
-    "next-auth": "^4.24.5",
     "socket.io-client": "^4.7.4",
     "y-protocols": "^1.0.6",
     "yjs": "^13.6.12"

@@ -15,7 +15,7 @@ import {
   ResolveField,
   Resolver,
 } from '@nestjs/graphql';
-import { PrismaClient, type User } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import { getStreamAsBuffer } from 'get-stream';
 import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 import { applyUpdate, Doc } from 'yjs';
@@ -27,11 +27,10 @@ import {
   MailService,
   Throttle,
 } from '../../../fundamentals';
-import { Auth, CurrentUser, Public } from '../../auth';
-import { AuthService } from '../../auth/service';
+import { CurrentUser, Public } from '../../auth';
 import { QuotaManagementService, QuotaQueryType } from '../../quota';
 import { WorkspaceBlobStorage } from '../../storage';
-import { UsersService, UserType } from '../../users';
+import { UserService, UserType } from '../../user';
 import { PermissionService } from '../permission';
 import {
   InvitationType,
@@ -48,18 +47,16 @@ import { defaultWorkspaceAvatar } from '../utils';
  * Other rate limit: 120 req/m
  */
 @UseGuards(CloudThrottlerGuard)
-@Auth()
 @Resolver(() => WorkspaceType)
 export class WorkspaceResolver {
   private readonly logger = new Logger(WorkspaceResolver.name);
 
   constructor(
-    private readonly auth: AuthService,
     private readonly mailer: MailService,
     private readonly prisma: PrismaClient,
     private readonly permissions: PermissionService,
     private readonly quota: QuotaManagementService,
-    private readonly users: UsersService,
+    private readonly users: UserService,
     private readonly event: EventEmitter,
     private readonly blobStorage: WorkspaceBlobStorage
   ) {}
@@ -69,7 +66,7 @@ export class WorkspaceResolver {
     complexity: 2,
   })
   async permission(
-    @CurrentUser() user: UserType,
+    @CurrentUser() user: CurrentUser,
     @Parent() workspace: WorkspaceType
   ) {
     // may applied in workspaces query
@@ -160,7 +157,7 @@ export class WorkspaceResolver {
     complexity: 2,
   })
   async isOwner(
-    @CurrentUser() user: UserType,
+    @CurrentUser() user: CurrentUser,
     @Args('workspaceId') workspaceId: string
   ) {
     const data = await this.permissions.tryGetWorkspaceOwner(workspaceId);
@@ -172,7 +169,7 @@ export class WorkspaceResolver {
     description: 'Get all accessible workspaces for current user',
     complexity: 2,
   })
-  async workspaces(@CurrentUser() user: User) {
+  async workspaces(@CurrentUser() user: CurrentUser) {
     const data = await this.prisma.workspaceUserPermission.findMany({
       where: {
         userId: user.id,
@@ -216,7 +213,7 @@ export class WorkspaceResolver {
   @Query(() => WorkspaceType, {
     description: 'Get workspace by id',
   })
-  async workspace(@CurrentUser() user: UserType, @Args('id') id: string) {
+  async workspace(@CurrentUser() user: CurrentUser, @Args('id') id: string) {
     await this.permissions.checkWorkspace(id, user.id);
     const workspace = await this.prisma.workspace.findUnique({ where: { id } });
 
@@ -231,7 +228,7 @@ export class WorkspaceResolver {
     description: 'Create a new workspace',
   })
   async createWorkspace(
-    @CurrentUser() user: UserType,
+    @CurrentUser() user: CurrentUser,
     // we no longer support init workspace with a preload file
     // use sync system to uploading them once created
     @Args({ name: 'init', type: () => GraphQLUpload, nullable: true })
@@ -289,7 +286,7 @@ export class WorkspaceResolver {
     description: 'Update workspace',
   })
   async updateWorkspace(
-    @CurrentUser() user: UserType,
+    @CurrentUser() user: CurrentUser,
     @Args({ name: 'input', type: () => UpdateWorkspaceInput })
     { id, ...updates }: UpdateWorkspaceInput
   ) {
@@ -304,7 +301,10 @@ export class WorkspaceResolver {
   }
 
   @Mutation(() => Boolean)
-  async deleteWorkspace(@CurrentUser() user: UserType, @Args('id') id: string) {
+  async deleteWorkspace(
+    @CurrentUser() user: CurrentUser,
+    @Args('id') id: string
+  ) {
     await this.permissions.checkWorkspace(id, user.id, Permission.Owner);
 
     await this.prisma.workspace.delete({
@@ -320,7 +320,7 @@ export class WorkspaceResolver {
 
   @Mutation(() => String)
   async invite(
-    @CurrentUser() user: UserType,
+    @CurrentUser() user: CurrentUser,
     @Args('workspaceId') workspaceId: string,
     @Args('email') email: string,
     @Args('permission', { type: () => Permission }) permission: Permission,
@@ -358,7 +358,7 @@ export class WorkspaceResolver {
       // only invite if the user is not already in the workspace
       if (originRecord) return originRecord.id;
     } else {
-      target = await this.auth.createAnonymousUser(email);
+      target = await this.users.createAnonymousUser(email);
     }
 
     const inviteId = await this.permissions.grant(
@@ -470,7 +470,7 @@ export class WorkspaceResolver {
 
   @Mutation(() => Boolean)
   async revoke(
-    @CurrentUser() user: UserType,
+    @CurrentUser() user: CurrentUser,
     @Args('workspaceId') workspaceId: string,
     @Args('userId') userId: string
   ) {
@@ -514,7 +514,7 @@ export class WorkspaceResolver {
 
   @Mutation(() => Boolean)
   async leaveWorkspace(
-    @CurrentUser() user: UserType,
+    @CurrentUser() user: CurrentUser,
     @Args('workspaceId') workspaceId: string,
     @Args('workspaceName') workspaceName: string,
     @Args('sendLeaveMail', { nullable: true }) sendLeaveMail: boolean

@@ -1,18 +1,21 @@
-import { Global, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 
-import { NextAuthController } from './next-auth.controller';
-import { NextAuthOptionsProvider } from './next-auth-options';
+import { FeatureModule } from '../features';
+import { UserModule } from '../user';
+import { AuthController } from './controller';
 import { AuthResolver } from './resolver';
 import { AuthService } from './service';
+import { TokenService } from './token';
 
-@Global()
 @Module({
-  providers: [AuthService, AuthResolver, NextAuthOptionsProvider],
-  exports: [AuthService, NextAuthOptionsProvider],
-  controllers: [NextAuthController],
+  imports: [FeatureModule, UserModule],
+  providers: [AuthService, AuthResolver, TokenService],
+  exports: [AuthService],
+  controllers: [AuthController],
 })
 export class AuthModule {}
 
 export * from './guard';
-export { TokenType } from './resolver';
+export { ClientTokenType } from './resolver';
 export { AuthService };
+export * from './current-user';

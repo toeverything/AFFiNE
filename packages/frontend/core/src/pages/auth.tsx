@@ -12,6 +12,7 @@ import {
   changeEmailMutation,
   changePasswordMutation,
   sendVerifyChangeEmailMutation,
+  verifyEmailMutation,
 } from '@affine/graphql';
 import { fetcher } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
@@ -42,6 +43,7 @@ const authTypeSchema = z.enum([
   'changeEmail',
   'confirm-change-email',
   'subscription-redirect',
+  'verify-email',
 ]);
 
 export const AuthPage = (): ReactElement | null => {
@@ -73,12 +75,10 @@ export const AuthPage = (): ReactElement | null => {
       // FIXME: There is not notification
       if (res?.sendVerifyChangeEmail) {
         pushNotification({
-          title: t['com.affine.auth.sent.change.email.hint'](),
+          title: t['com.affine.auth.sent.verify.email.hint'](),
           type: 'success',
         });
-      }
-
-      if (!res?.sendVerifyChangeEmail) {
+      } else {
         pushNotification({
           title: t['com.affine.auth.sent.change.email.fail'](),
           type: 'error',
@@ -156,6 +156,9 @@ export const AuthPage = (): ReactElement | null => {
     case 'subscription-redirect': {
       return <SubscriptionRedirect />;
     }
+    case 'verify-email': {
+      return <ConfirmChangeEmail onOpenAffine={onOpenAffine} />;
+    }
   }
   return null;
 };
@@ -171,20 +174,37 @@ export const loader: LoaderFunction = async args => {
   if (args.params.authType === 'confirm-change-email') {
     const url = new URL(args.request.url);
     const searchParams = url.searchParams;
-    const token = searchParams.get('token');
+    const token = searchParams.get('token') ?? '';
+    const email = decodeURIComponent(searchParams.get('email') ?? '');
     const res = await fetcher({
       query: changeEmailMutation,
       variables: {
-        token: token || '',
+        token: token,
+        email: email,
       },
     }).catch(console.error);
     // TODO: Add error handling
     if (!res?.changeEmail) {
       return redirect('/expired');
     }
+  } else if (args.params.authType === 'verify-email') {
+    const url = new URL(args.request.url);
+    const searchParams = url.searchParams;
+    const token = searchParams.get('token') ?? '';
+    const res = await fetcher({
+      query: verifyEmailMutation,
+      variables: {
+        token: token,
+      },
+    }).catch(console.error);
+
+    if (!res?.verifyEmail) {
+      return redirect('/expired');
+    }
   }
   return null;
 };
+
 export const Component = () => {
   const loginStatus = useCurrentLoginStatus();
   const { jumpToExpired } = useNavigateHelper();

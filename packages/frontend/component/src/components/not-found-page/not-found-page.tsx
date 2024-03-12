@@ -4,6 +4,7 @@ import { SignOutIcon } from '@blocksuite/icons';
 import { Avatar } from '../../ui/avatar';
 import { Button, IconButton } from '../../ui/button';
 import { Tooltip } from '../../ui/tooltip';
+import type { User } from '../auth-components';
 import { NotFoundPattern } from './not-found-pattern';
 import {
   largeButtonEffect,
@@ -12,11 +13,7 @@ import {
 } from './styles.css';
 
 export interface NotFoundPageProps {
-  user: {
-    name: string;
-    email: string;
-    avatar: string;
-  } | null;
+  user?: User | null;
   onBack: () => void;
   onSignOut: () => void;
 }
@@ -47,7 +44,7 @@ export const NotFoundPage = ({
 
         {user ? (
           <div className={wrapper}>
-            <Avatar url={user.avatar} name={user.name} />
+            <Avatar url={user.avatarUrl ?? user.image} name={user.name} />
             <span style={{ margin: '0 12px' }}>{user.email}</span>
             <Tooltip content={t['404.signOut']()}>
               <IconButton onClick={onSignOut}>

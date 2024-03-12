@@ -1,0 +1,3 @@
+mutation sendVerifyEmail($callbackUrl: String!) {
+  sendVerifyEmail(callbackUrl: $callbackUrl)
+}

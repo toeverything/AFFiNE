@@ -1,16 +1,18 @@
 import type { INestApplication } from '@nestjs/common';
+import { PrismaClient } from '@prisma/client';
 import request from 'supertest';
 
-import type { TokenType } from '../../src/core/auth';
-import type { UserType } from '../../src/core/users';
+import type { ClientTokenType } from '../../src/core/auth';
+import type { UserType } from '../../src/core/user';
 import { gql } from './common';
 
 export async function signUp(
   app: INestApplication,
   name: string,
   email: string,
-  password: string
-): Promise<UserType & { token: TokenType }> {
+  password: string,
+  autoVerifyEmail = true
+): Promise<UserType & { token: ClientTokenType }> {
   const res = await request(app.getHttpServer())
     .post(gql)
     .set({ 'x-request-id': 'test', 'x-operation-name': 'test' })
@@ -24,7 +26,21 @@ export async function signUp(
           `,
     })
     .expect(200);
+
+  if (autoVerifyEmail) {
+    await setEmailVerified(app, email);
+  }
+
   return res.body.data.signUp;
+}
+
+async function setEmailVerified(app: INestApplication, email: string) {
+  await app.get(PrismaClient).user.update({
+    where: { email },
+    data: {
+      emailVerifiedAt: new Date(),
+    },
+  });
 }
 
 export async function currentUser(app: INestApplication, token: string) {
@@ -36,7 +52,7 @@ export async function currentUser(app: INestApplication, token: string) {
       query: `
             query {
               currentUser {
-                id, name, email, emailVerified, avatarUrl, createdAt, hasPassword,
+                id, name, email, emailVerified, avatarUrl, hasPassword,
                 token { token }
               }
             }
@@ -94,8 +110,9 @@ export async function sendVerifyChangeEmail(
 export async function changeEmail(
   app: INestApplication,
   userToken: string,
-  token: string
-): Promise<UserType & { token: TokenType }> {
+  token: string,
+  email: string
+): Promise<UserType & { token: ClientTokenType }> {
   const res = await request(app.getHttpServer())
     .post(gql)
     .auth(userToken, { type: 'bearer' })
@@ -103,7 +120,7 @@ export async function changeEmail(
     .send({
       query: `
             mutation {
-               changeEmail(token: "${token}") {
+               changeEmail(token: "${token}", email: "${email}") {
                 id
                 name
                 avatarUrl

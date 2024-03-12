@@ -1,67 +1,74 @@
-import type { CanActivate, ExecutionContext } from '@nestjs/common';
+import type {
+  CanActivate,
+  ExecutionContext,
+  OnModuleInit,
+} from '@nestjs/common';
 import {
-  createParamDecorator,
-  Inject,
   Injectable,
   SetMetadata,
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
-import { Reflector } from '@nestjs/core';
-import { PrismaClient } from '@prisma/client';
-import type { NextAuthOptions } from 'next-auth';
-import { AuthHandler } from 'next-auth/core';
+import { ModuleRef, Reflector } from '@nestjs/core';
 
-import { getRequestResponseFromContext } from '../../fundamentals';
-import { NextAuthOptionsProvide } from './next-auth-options';
-import { AuthService } from './service';
+import { Config, getRequestResponseFromContext } from '../../fundamentals';
+import { AuthService, parseAuthUserSeqNum } from './service';
 
-export function getUserFromContext(context: ExecutionContext) {
-  return getRequestResponseFromContext(context).req.user;
+function extractTokenFromHeader(authorization: string) {
+  if (!/^Bearer\s/i.test(authorization)) {
+    return;
+  }
+
+  return authorization.substring(7);
 }
 
-/**
- * Used to fetch current user from the request context.
- *
- * > The user may be undefined if authorization token is not provided.
- *
- * @example
- *
- * ```typescript
- * // Graphql Query
- * \@Query(() => UserType)
- * user(@CurrentUser() user?: User) {
- *  return user;
- * }
- * ```
- *
- * ```typescript
- * // HTTP Controller
- * \@Get('/user)
- * user(@CurrentUser() user?: User) {
- *   return user;
- * }
- * ```
- */
-export const CurrentUser = createParamDecorator(
-  (_: unknown, context: ExecutionContext) => {
-    return getUserFromContext(context);
-  }
-);
-
 @Injectable()
-class AuthGuard implements CanActivate {
+export class AuthGuard implements CanActivate, OnModuleInit {
+  private auth!: AuthService;
+
   constructor(
-    @Inject(NextAuthOptionsProvide)
-    private readonly nextAuthOptions: NextAuthOptions,
-    private readonly auth: AuthService,
-    private readonly prisma: PrismaClient,
+    private readonly config: Config,
+    private readonly ref: ModuleRef,
     private readonly reflector: Reflector
   ) {}
 
+  onModuleInit() {
+    this.auth = this.ref.get(AuthService, { strict: false });
+  }
+
   async canActivate(context: ExecutionContext) {
-    const { req, res } = getRequestResponseFromContext(context);
-    const token = req.headers.authorization;
+    const { req } = getRequestResponseFromContext(context);
+
+    // check cookie
+    let sessionToken: string | undefined =
+      req.cookies[AuthService.sessionCookieName];
+
+    // backward compatibility for client older then 0.12
+    // TODO: remove
+    if (!sessionToken) {
+      sessionToken =
+        req.cookies[
+          this.config.https
+            ? '__Secure-next-auth.session-token'
+            : 'next-auth.session-token'
+        ];
+    }
+
+    if (!sessionToken && req.headers.authorization) {
+      sessionToken = extractTokenFromHeader(req.headers.authorization);
+    }
+
+    if (sessionToken) {
+      const userSeq = parseAuthUserSeqNum(
+        req.headers[AuthService.authUserSeqHeaderName]
+      );
+
+      const user = await this.auth.getUser(sessionToken, userSeq);
+
+      if (user) {
+        req.user = user;
+      }
+    }
 
     // api is public
     const isPublic = this.reflector.get<boolean>(
@@ -69,63 +76,15 @@ class AuthGuard implements CanActivate {
       context.getHandler()
     );
 
-    // FIXME(@forehalo): @Publicable() is duplicated with @CurrentUser() user?: User
-    //                                                                       ^ optional
-    //   we can prefetch user session in each request even before this `Guard`
-    // api can be public, but if user is logged in, we can get user info
-    const isPublicable = this.reflector.get<boolean>(
-      'isPublicable',
-      context.getHandler()
-    );
-
     if (isPublic) {
       return true;
-    } else if (!token) {
-      if (!req.cookies) {
-        return isPublicable;
-      }
-
-      const session = await AuthHandler({
-        req: {
-          cookies: req.cookies,
-          action: 'session',
-          method: 'GET',
-          headers: req.headers,
-        },
-        options: this.nextAuthOptions,
-      });
-
-      const { body = {}, cookies, status = 200 } = session;
-      if (!body && !isPublicable) {
-        throw new UnauthorizedException('You are not signed in.');
-      }
-
-      // @ts-expect-error body is user here
-      req.user = body.user;
-      if (cookies && res) {
-        for (const cookie of cookies) {
-          res.cookie(cookie.name, cookie.value, cookie.options);
-        }
-      }
-
-      return Boolean(
-        status === 200 &&
-          typeof body !== 'string' &&
-          // ignore body if api is publicable
-          (Object.keys(body).length || isPublicable)
-      );
-    } else {
-      const [type, jwt] = token.split(' ') ?? [];
-
-      if (type === 'Bearer') {
-        const claims = await this.auth.verify(jwt);
-        req.user = await this.prisma.user.findUnique({
-          where: { id: claims.id },
-        });
-        return !!req.user;
-      }
     }
-    return false;
+
+    if (!req.user) {
+      throw new UnauthorizedException('You are not signed in.');
+    }
+
+    return true;
   }
 }
 
@@ -140,7 +99,7 @@ class AuthGuard implements CanActivate {
  * ```typescript
  * \@Auth()
  * \@Query(() => UserType)
- * user(@CurrentUser() user: User) {
+ * user(@CurrentUser() user: CurrentUser) {
  *   return user;
  * }
  * ```
@@ -151,5 +110,3 @@ export const Auth = () => {
 
 // api is public accessible
 export const Public = () => SetMetadata('isPublic', true);
-// api is public accessible, but if user is logged in, we can get user info
-export const Publicable = () => SetMetadata('isPublicable', true);

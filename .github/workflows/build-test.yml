@@ -336,17 +336,11 @@ jobs:
         env:
           PGPASSWORD: affine
 
-      - name: Generate prisma client
+      - name: Run init-db script
         run: |
           yarn workspace @affine/server exec prisma generate
           yarn workspace @affine/server exec prisma db push
-        env:
-          DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
-
-      - name: Run init-db script
-        run: |
           yarn workspace @affine/server data-migration run
-          yarn workspace @affine/server exec node --loader ts-node/esm/transpile-only ./scripts/init-db.ts
         env:
           DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
 
@@ -435,17 +429,11 @@ jobs:
         env:
           PGPASSWORD: affine
 
-      - name: Generate prisma client
+      - name: Run init-db script
         run: |
           yarn workspace @affine/server exec prisma generate
           yarn workspace @affine/server exec prisma db push
-        env:
-          DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
-
-      - name: Run init-db script
-        run: |
           yarn workspace @affine/server data-migration run
-          yarn workspace @affine/server exec node --loader ts-node/esm/transpile-only ./scripts/init-db.ts
 
       - name: ${{ matrix.tests.name }}
         run: |
