@@ -64,6 +64,7 @@
     "zod": "^3.22.4"
   },
   "dependencies": {
+    "@toinane/electron-forge-maker-nsis": "^1.0.0",
     "async-call-rpc": "^6.4.0",
     "electron-updater": "^6.1.9",
     "link-preview-js": "^3.0.5",

@@ -549,7 +549,6 @@ jobs:
         env:
           SKIP_BUNDLE: true
           SKIP_WEB_BUILD: true
-          HOIST_NODE_MODULES: 1
         run: yarn workspace @affine/electron package --platform=darwin --arch=arm64
 
       - name: Make AppImage
@@ -558,7 +557,6 @@ jobs:
         env:
           SKIP_PLUGIN_BUILD: 1
           SKIP_WEB_BUILD: 1
-          HOIST_NODE_MODULES: 1
 
       - name: Output check
         if: ${{ matrix.spec.os == 'macos-14' && matrix.spec.arch == 'arm64' }}
