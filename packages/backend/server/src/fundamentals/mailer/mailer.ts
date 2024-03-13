@@ -1,4 +1,4 @@
-import { FactoryProvider } from '@nestjs/common';
+import { FactoryProvider, Logger } from '@nestjs/common';
 import { createTransport, Transporter } from 'nodemailer';
 import SMTPTransport from 'nodemailer/lib/smtp-transport';
 
@@ -15,7 +15,19 @@ export const MAILER: FactoryProvider<
 > = {
   provide: MAILER_SERVICE,
   useFactory: (config: Config) => {
-    return config.mailer ? createTransport(config.mailer) : undefined;
+    if (config.mailer) {
+      const logger = new Logger('Mailer');
+      const auth = config.mailer.auth;
+      if (auth && auth.user && !('pass' in auth)) {
+        logger.warn(
+          'Mailer service has not configured password, please make sure your mailer service allow empty password.'
+        );
+      }
+
+      return createTransport(config.mailer);
+    } else {
+      return undefined;
+    }
   },
   inject: [Config],
 };
