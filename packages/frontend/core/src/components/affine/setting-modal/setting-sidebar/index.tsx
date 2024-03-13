@@ -265,7 +265,7 @@ const WorkspaceListItem = ({
         if (key === 'experimental-features') {
           return (
             isOwner &&
-            currentWorkspace.flavour === WorkspaceFlavour.AFFINE_CLOUD &&
+            meta.flavour === WorkspaceFlavour.AFFINE_CLOUD &&
             availableFeatures.length > 0
           );
         }
@@ -290,8 +290,8 @@ const WorkspaceListItem = ({
   }, [
     activeSubTab,
     availableFeatures.length,
-    currentWorkspace.flavour,
     isOwner,
+    meta.flavour,
     onClick,
     t,
   ]);
