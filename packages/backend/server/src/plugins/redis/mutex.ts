@@ -1,11 +1,15 @@
-import { randomUUID } from 'node:crypto';
 import { setTimeout } from 'node:timers/promises';
 
 import { Injectable, Logger } from '@nestjs/common';
 import Redis, { Command } from 'ioredis';
 import { ClsService } from 'nestjs-cls';
 
-import { MUTEX_RETRY, MUTEX_WAIT } from '../../fundamentals';
+import {
+  LockGuard,
+  MUTEX_RETRY,
+  MUTEX_WAIT,
+  MutexService,
+} from '../../fundamentals';
 
 const lockScript = `local key = KEYS[1]
 local clientId = ARGV[1]
@@ -26,44 +30,36 @@ else
 end`;
 
 @Injectable()
-export class MutexRedisService {
-  private readonly logger = new Logger(MutexRedisService.name);
-
+export class MutexRedisService extends MutexService {
   constructor(
     private readonly redis: Redis,
-    private readonly cls: ClsService
-  ) {}
-
-  private getId() {
-    let id = this.cls.get('asyncId');
-
-    if (!id) {
-      id = randomUUID();
-      this.cls.set('asyncId', id);
-    }
-
-    return id;
+    cls: ClsService
+  ) {
+    super(cls);
+    this.logger = new Logger(MutexRedisService.name);
   }
 
-  async lock(key: string, releaseTimeInMS: number = 200): Promise<boolean> {
+  override async lock(
+    key: string,
+    releaseTimeInMS: number = 200
+  ): Promise<LockGuard | undefined> {
     const clientId = this.getId();
-    console.error('lock', key, clientId);
-    this.logger.debug(`Client ID is ${clientId}`);
+    this.logger.debug(`Client ${clientId} lock try to lock ${key}`);
     const releaseTime = releaseTimeInMS.toString();
 
-    const fetchLock = async (retry: number): Promise<boolean> => {
+    const fetchLock = async (retry: number): Promise<LockGuard | undefined> => {
       if (retry === 0) {
         this.logger.error(
           `Failed to fetch lock ${key} after ${MUTEX_RETRY} retry`
         );
-        return false;
+        return undefined;
       }
       try {
         const success = await this.redis.sendCommand(
           new Command('EVAL', [lockScript, '1', key, clientId, releaseTime])
         );
         if (success === 1) {
-          return true;
+          return new LockGuard(this, key);
         } else {
           this.logger.warn(
             `Failed to fetch lock ${key}, retrying in ${MUTEX_WAIT} ms`
@@ -75,14 +71,14 @@ export class MutexRedisService {
         this.logger.error(
           `Unexpected error when fetch lock ${key}: ${error.message}`
         );
-        return false;
+        return undefined;
       }
     };
 
     return fetchLock(MUTEX_RETRY);
   }
 
-  async unlock(key: string, ignoreUnlockFail = false): Promise<void> {
+  override async unlock(key: string, ignoreUnlockFail = false): Promise<void> {
     const clientId = this.getId();
     const result = await this.redis.sendCommand(
       new Command('EVAL', [unlockScript, '1', key, clientId])

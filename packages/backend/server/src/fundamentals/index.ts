@@ -16,7 +16,7 @@ export * from './error';
 export { EventEmitter, type EventPayload, OnEvent } from './event';
 export { MailService } from './mailer';
 export { CallCounter, CallTimer, metrics } from './metrics';
-export { MUTEX_RETRY, MUTEX_WAIT, MutexService } from './mutex';
+export { LockGuard, MUTEX_RETRY, MUTEX_WAIT, MutexService } from './mutex';
 export {
   getOptionalModuleMetadata,
   GlobalExceptionFilter,

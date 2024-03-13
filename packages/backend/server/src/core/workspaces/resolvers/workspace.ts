@@ -340,80 +340,79 @@ export class WorkspaceResolver {
     }
 
     try {
+      // lock to prevent concurrent invite
       const lockFlag = `invite:${workspaceId}`;
-      return this.mutex.lockWith(lockFlag, async () => {
-        // member limit check
-        const [memberCount, quota] = await Promise.all([
-          this.prisma.workspaceUserPermission.count({
-            where: { workspaceId },
-          }),
-          this.quota.getWorkspaceUsage(workspaceId),
-        ]);
-        if (memberCount >= quota.memberLimit) {
-          return new PayloadTooLargeException(
-            'Workspace member limit reached.'
+      await using _lock = await this.mutex.lock(lockFlag);
+
+      // member limit check
+      const [memberCount, quota] = await Promise.all([
+        this.prisma.workspaceUserPermission.count({
+          where: { workspaceId },
+        }),
+        this.quota.getWorkspaceUsage(workspaceId),
+      ]);
+      if (memberCount >= quota.memberLimit) {
+        return new PayloadTooLargeException('Workspace member limit reached.');
+      }
+
+      let target = await this.users.findUserByEmail(email);
+      if (target) {
+        const originRecord =
+          await this.prisma.workspaceUserPermission.findFirst({
+            where: {
+              workspaceId,
+              userId: target.id,
+            },
+          });
+        // only invite if the user is not already in the workspace
+        if (originRecord) {
+          return originRecord.id;
+        }
+      } else {
+        target = await this.auth.createAnonymousUser(email);
+      }
+
+      const inviteId = await this.permissions.grant(
+        workspaceId,
+        target.id,
+        permission
+      );
+      if (sendInviteMail) {
+        const inviteInfo = await this.getInviteInfo(inviteId);
+
+        try {
+          await this.mailer.sendInviteEmail(email, inviteId, {
+            workspace: {
+              id: inviteInfo.workspace.id,
+              name: inviteInfo.workspace.name,
+              avatar: inviteInfo.workspace.avatar,
+            },
+            user: {
+              avatar: inviteInfo.user?.avatarUrl || '',
+              name: inviteInfo.user?.name || '',
+            },
+          });
+        } catch (e) {
+          const ret = await this.permissions.revokeWorkspace(
+            workspaceId,
+            target.id
+          );
+
+          if (!ret) {
+            this.logger.fatal(
+              `failed to send ${workspaceId} invite email to ${email} and failed to revoke permission: ${inviteId}, ${e}`
+            );
+          } else {
+            this.logger.warn(
+              `failed to send ${workspaceId} invite email to ${email}, but successfully revoked permission: ${e}`
+            );
+          }
+          return new InternalServerErrorException(
+            'Failed to send invite email. Please try again.'
           );
         }
-
-        let target = await this.users.findUserByEmail(email);
-        if (target) {
-          const originRecord =
-            await this.prisma.workspaceUserPermission.findFirst({
-              where: {
-                workspaceId,
-                userId: target.id,
-              },
-            });
-          // only invite if the user is not already in the workspace
-          if (originRecord) {
-            return originRecord.id;
-          }
-        } else {
-          target = await this.auth.createAnonymousUser(email);
-        }
-
-        const inviteId = await this.permissions.grant(
-          workspaceId,
-          target.id,
-          permission
-        );
-        if (sendInviteMail) {
-          const inviteInfo = await this.getInviteInfo(inviteId);
-
-          try {
-            await this.mailer.sendInviteEmail(email, inviteId, {
-              workspace: {
-                id: inviteInfo.workspace.id,
-                name: inviteInfo.workspace.name,
-                avatar: inviteInfo.workspace.avatar,
-              },
-              user: {
-                avatar: inviteInfo.user?.avatarUrl || '',
-                name: inviteInfo.user?.name || '',
-              },
-            });
-          } catch (e) {
-            const ret = await this.permissions.revokeWorkspace(
-              workspaceId,
-              target.id
-            );
-
-            if (!ret) {
-              this.logger.fatal(
-                `failed to send ${workspaceId} invite email to ${email} and failed to revoke permission: ${inviteId}, ${e}`
-              );
-            } else {
-              this.logger.warn(
-                `failed to send ${workspaceId} invite email to ${email}, but successfully revoked permission: ${e}`
-              );
-            }
-            return new InternalServerErrorException(
-              'Failed to send invite email. Please try again.'
-            );
-          }
-        }
-        return inviteId;
-      });
+      }
+      return inviteId;
     } catch (e) {
       this.logger.error('failed to invite user', e);
       return new TooManyRequestsException('Server is busy');

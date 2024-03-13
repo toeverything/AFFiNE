@@ -1,26 +1,33 @@
 import { randomUUID } from 'node:crypto';
 import { setTimeout } from 'node:timers/promises';
 
-import {
-  ForbiddenException,
-  Global,
-  Injectable,
-  Logger,
-  Module,
-} from '@nestjs/common';
+import { Global, Injectable, Logger, Module } from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
 
 export const MUTEX_RETRY = 3;
 export const MUTEX_WAIT = 100;
 
+export class LockGuard<M extends MutexService = MutexService>
+  implements AsyncDisposable
+{
+  constructor(
+    private readonly mutex: M,
+    private readonly key: string
+  ) {}
+
+  async [Symbol.asyncDispose]() {
+    return this.mutex.unlock(this.key);
+  }
+}
+
 @Injectable()
 export class MutexService {
-  private readonly logger = new Logger(MutexService.name);
+  protected logger = new Logger(MutexService.name);
   private readonly bucket = new Map<string, string>();
 
-  constructor(private readonly cls: ClsService) {}
+  constructor(protected readonly cls: ClsService) {}
 
-  private getId() {
+  protected getId() {
     let id = this.cls.get('asyncId');
 
     if (!id) {
@@ -31,34 +38,37 @@ export class MutexService {
     return id;
   }
 
-  /// `lockWith` will only throw error if failed to acquire lock
-  /// if the callback throws error, it will be returned as result
-  async lockWith<R>(key: string, cb: () => Promise<R>): Promise<R | Error> {
-    const locked = await this.lock(key);
-    if (locked) {
-      let result: R | Error;
-      try {
-        result = await cb();
-      } catch (e: any) {
-        // return error as result
-        result = e;
-      } finally {
-        await this.unlock(key);
-      }
-      return result;
-    } else {
-      throw new ForbiddenException(`Failed to acquire lock: ${key}`);
-    }
-  }
-
-  async lock(key: string): Promise<boolean> {
+  ///
+  ///
+  /**
+   * lock an resource and return a lock guard, which will release the lock when disposed
+   *
+   * if the lock is not available, it will retry for [MUTEX_RETRY] times
+   *
+   * usage:
+   * ```typescript
+   * {
+   *   // lock is acquired here
+   *   await using lock = await mutex.lock('resource-key');
+   *   if (lock) {
+   *     // do something
+   *   } else {
+   *     // failed to lock
+   *   }
+   * }
+   * // lock is released here
+   * ```
+   * @param key resource key
+   * @returns LockGuard
+   */
+  async lock(key: string): Promise<LockGuard | undefined> {
     const id = this.getId();
-    const fetchLock = async (retry: number): Promise<boolean> => {
+    const fetchLock = async (retry: number): Promise<LockGuard | undefined> => {
       if (retry === 0) {
         this.logger.error(
           `Failed to fetch lock ${key} after ${MUTEX_RETRY} retry`
         );
-        return false;
+        return undefined;
       }
       const current = this.bucket.get(key);
       if (current && current !== id) {
@@ -69,7 +79,7 @@ export class MutexService {
         return fetchLock(retry - 1);
       }
       this.bucket.set(key, id);
-      return true;
+      return new LockGuard(this, key);
     };
 
     return fetchLock(MUTEX_RETRY);
