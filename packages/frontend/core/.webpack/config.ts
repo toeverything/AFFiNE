@@ -33,7 +33,7 @@ const OptimizeOptionOptions: (
   minimize: buildFlags.mode === 'production',
   minimizer: [
     new TerserPlugin({
-      minify: TerserPlugin.swcMinify,
+      minify: TerserPlugin.esbuildMinify,
       exclude: [/plugins\/.+\/.+\.js$/, /plugins\/.+\/.+\.mjs$/],
       parallel: true,
       extractComments: true,
