@@ -191,7 +191,7 @@ export class OAuthController {
   ) {
     return this.user.createUser({
       email: externalAccount.email,
-      name: 'Unnamed',
+      name: externalAccount.email.split('@')[0],
       avatarUrl: externalAccount.avatarUrl,
       emailVerifiedAt: new Date(),
       connectedAccounts: {
