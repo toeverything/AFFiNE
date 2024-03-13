@@ -72,7 +72,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
   const { openPage, jumpToTag } = useNavigateHelper();
   const [editor, setEditor] = useState<AffineEditorContainer | null>(null);
   const currentWorkspace = useService(Workspace);
-  const blockSuiteWorkspace = currentWorkspace.blockSuiteWorkspace;
+  const docCollection = currentWorkspace.docCollection;
 
   const isActiveView = useIsActiveView();
   // TODO: remove jotai here
@@ -88,7 +88,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
     null
   );
 
-  const pageMeta = useBlockSuiteDocMeta(blockSuiteWorkspace).find(
+  const pageMeta = useBlockSuiteDocMeta(docCollection).find(
     meta => meta.id === page.id
   );
 
@@ -156,7 +156,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
       // fixme: it seems pageLinkClicked is not triggered sometimes?
       disposable.add(
         pageService.slots.docLinkClicked.on(({ docId }) => {
-          return openPage(blockSuiteWorkspace.id, docId);
+          return openPage(docCollection.id, docId);
         })
       );
       disposable.add(
@@ -177,7 +177,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
       };
     },
     [
-      blockSuiteWorkspace.id,
+      docCollection.id,
       currentWorkspace.id,
       jumpToTag,
       mode,
@@ -213,7 +213,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
                 <PageDetailEditor
                   pageId={currentPageId}
                   onLoad={onLoad}
-                  workspace={blockSuiteWorkspace}
+                  docCollection={docCollection}
                 />
               </Scrollable.Viewport>
               <Scrollable.Scrollbar />
@@ -254,10 +254,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
         }
       />
 
-      <ImagePreviewModal
-        pageId={currentPageId}
-        workspace={blockSuiteWorkspace}
-      />
+      <ImagePreviewModal pageId={currentPageId} docCollection={docCollection} />
       <GlobalPageHistoryModal />
     </>
   );

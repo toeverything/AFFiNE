@@ -24,7 +24,7 @@ export const Default = () => {
   const [page, setPage] = useState<Doc | null>(null);
 
   useEffect(() => {
-    const bsPage = workspace.blockSuiteWorkspace.createDoc('page0');
+    const bsPage = workspace.docCollection.createDoc('page0');
     initEmptyPage(bsPage);
 
     const { page, release } = pageManager.open(bsPage.meta!.id);
@@ -32,7 +32,7 @@ export const Default = () => {
     fetch(new URL('@affine-test/fixtures/large-image.png', import.meta.url))
       .then(res => res.arrayBuffer())
       .then(async buffer => {
-        const id = await workspace.blockSuiteWorkspace.blob.set(
+        const id = await workspace.docCollection.blob.set(
           new Blob([buffer], { type: 'image/png' })
         );
         const frameId = bsPage.getBlockByFlavour('affine:note')[0].id;
@@ -80,7 +80,7 @@ export const Default = () => {
         {createPortal(
           <ImagePreviewModal
             pageId={page.id}
-            workspace={page.blockSuiteDoc.workspace}
+            docCollection={page.blockSuiteDoc.collection}
           />,
           document.body
         )}

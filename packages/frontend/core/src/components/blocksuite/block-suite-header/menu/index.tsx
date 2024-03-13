@@ -47,11 +47,11 @@ export const PageHeaderMenuButton = ({
   const t = useAFFiNEI18N();
 
   const workspace = useService(Workspace);
-  const blockSuiteWorkspace = workspace.blockSuiteWorkspace;
-  const currentPage = blockSuiteWorkspace.getDoc(pageId);
+  const docCollection = workspace.docCollection;
+  const currentPage = docCollection.getDoc(pageId);
   assertExists(currentPage);
 
-  const pageMeta = useBlockSuiteDocMeta(blockSuiteWorkspace).find(
+  const pageMeta = useBlockSuiteDocMeta(docCollection).find(
     meta => meta.id === pageId
   );
   const page = useService(Doc);
@@ -59,9 +59,9 @@ export const PageHeaderMenuButton = ({
 
   const { favorite, toggleFavorite } = useFavorite(pageId);
 
-  const { duplicate } = useBlockSuiteMetaHelper(blockSuiteWorkspace);
-  const { importFile } = usePageHelper(blockSuiteWorkspace);
-  const { setTrashModal } = useTrashModalHelper(blockSuiteWorkspace);
+  const { duplicate } = useBlockSuiteMetaHelper(docCollection);
+  const { importFile } = usePageHelper(docCollection);
+  const { setTrashModal } = useTrashModalHelper(docCollection);
 
   const [historyModalOpen, setHistoryModalOpen] = useState(false);
   const setOpenHistoryTipsModal = useSetAtom(openHistoryTipsModalAtom);
@@ -227,7 +227,7 @@ export const PageHeaderMenuButton = ({
       </Menu>
       {workspace.flavour === WorkspaceFlavour.AFFINE_CLOUD ? (
         <PageHistoryModal
-          workspace={workspace.blockSuiteWorkspace}
+          docCollection={workspace.docCollection}
           open={historyModalOpen}
           pageId={pageId}
           onOpenChange={setHistoryModalOpen}

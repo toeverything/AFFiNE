@@ -11,7 +11,9 @@ import * as styles from './styles.css';
 
 const emptyPageIdSet = new Set<string>();
 
-export const FavoriteList = ({ workspace }: FavoriteListProps) => {
+export const FavoriteList = ({
+  docCollection: workspace,
+}: FavoriteListProps) => {
   const metas = useBlockSuiteDocMeta(workspace);
   const dropItemId = getDropItemId('favorites');
 
@@ -51,7 +53,7 @@ export const FavoriteList = ({ workspace }: FavoriteListProps) => {
             pageId={pageMeta.id}
             // memo?
             parentIds={emptyPageIdSet}
-            workspace={workspace}
+            docCollection={workspace}
           />
         );
       })}

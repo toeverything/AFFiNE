@@ -18,7 +18,7 @@ export const PageListNewPageButton = ({
 }>) => {
   const currentWorkspace = useService(Workspace);
   const { importFile, createEdgeless, createPage } = usePageHelper(
-    currentWorkspace.blockSuiteWorkspace
+    currentWorkspace.docCollection
   );
   return (
     <div className={className} data-testid={testId}>

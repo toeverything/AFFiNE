@@ -2,7 +2,7 @@ import {
   useBlockSuiteDocMeta,
   useDocMetaHelper,
 } from '@affine/core/hooks/use-block-suite-page-meta';
-import { useGetBlockSuiteWorkspacePageTitle } from '@affine/core/hooks/use-block-suite-workspace-page-title';
+import { useGetDocCollectionPageTitle } from '@affine/core/hooks/use-block-suite-workspace-page-title';
 import { useJournalHelper } from '@affine/core/hooks/use-journal';
 import { CollectionService } from '@affine/core/modules/collection';
 import { WorkspaceSubPath } from '@affine/core/shared';
@@ -79,7 +79,7 @@ function getAllCommand(context: CommandContext) {
 
 const useWorkspacePages = () => {
   const workspace = useService(Workspace);
-  const pages = useBlockSuiteDocMeta(workspace.blockSuiteWorkspace);
+  const pages = useBlockSuiteDocMeta(workspace.docCollection);
   return pages;
 };
 
@@ -100,7 +100,7 @@ export const pageToCommand = (
   category: CommandCategory,
   page: DocMeta,
   navigationHelper: ReturnType<typeof useNavigateHelper>,
-  getPageTitle: ReturnType<typeof useGetBlockSuiteWorkspacePageTitle>,
+  getPageTitle: ReturnType<typeof useGetDocCollectionPageTitle>,
   isPageJournal: (pageId: string) => boolean,
   t: ReturnType<typeof useAFFiNEI18N>,
   workspace: Workspace,
@@ -151,16 +151,14 @@ export const usePageCommands = () => {
   const recentPages = useRecentPages();
   const pages = useWorkspacePages();
   const workspace = useService(Workspace);
-  const pageHelper = usePageHelper(workspace.blockSuiteWorkspace);
-  const pageMetaHelper = useDocMetaHelper(workspace.blockSuiteWorkspace);
+  const pageHelper = usePageHelper(workspace.docCollection);
+  const pageMetaHelper = useDocMetaHelper(workspace.docCollection);
   const query = useAtomValue(cmdkQueryAtom);
   const navigationHelper = useNavigateHelper();
-  const journalHelper = useJournalHelper(workspace.blockSuiteWorkspace);
+  const journalHelper = useJournalHelper(workspace.docCollection);
   const t = useAFFiNEI18N();
-  const getPageTitle = useGetBlockSuiteWorkspacePageTitle(
-    workspace.blockSuiteWorkspace
-  );
-  const { isPageJournal } = useJournalHelper(workspace.blockSuiteWorkspace);
+  const getPageTitle = useGetDocCollectionPageTitle(workspace.docCollection);
+  const { isPageJournal } = useJournalHelper(workspace.docCollection);
 
   const [searchTime, setSearchTime] = useState<number>(0);
 
@@ -197,7 +195,7 @@ export const usePageCommands = () => {
     } else {
       // queried pages that has matched contents
       // TODO: we shall have a debounce for global search here
-      const searchResults = workspace.blockSuiteWorkspace.search({
+      const searchResults = workspace.docCollection.search({
         query,
       }) as unknown as Map<string, SearchResultsValue>;
       const resultValues = Array.from(searchResults.values());
@@ -242,7 +240,7 @@ export const usePageCommands = () => {
             if (!appendRes) return;
             const { page, blockId } = appendRes;
             navigationHelper.jumpToPageBlock(
-              page.workspace.id,
+              page.collection.id,
               page.id,
               blockId
             );

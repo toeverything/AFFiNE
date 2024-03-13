@@ -33,7 +33,7 @@ const EmptyTagListHeader = () => {
 
 export const AllTag = () => {
   const currentWorkspace = useService(Workspace);
-  const pageMetas = useBlockSuiteDocMeta(currentWorkspace.blockSuiteWorkspace);
+  const pageMetas = useBlockSuiteDocMeta(currentWorkspace.docCollection);
 
   const { tags, tagMetas, deleteTags } = useTagMetas(pageMetas);
 

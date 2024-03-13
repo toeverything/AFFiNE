@@ -64,7 +64,7 @@ export const BlocksuiteDocEditor = forwardRef<
   const docRef = useRef<PageEditor | null>(null);
   const [docPage, setDocPage] =
     useState<HTMLElementTagNameMap['affine-page-root']>();
-  const { isJournal } = useJournalInfoHelper(page.workspace, page.id);
+  const { isJournal } = useJournalInfoHelper(page.collection, page.id);
 
   const onDocRef = useCallback(
     (el: PageEditor) => {

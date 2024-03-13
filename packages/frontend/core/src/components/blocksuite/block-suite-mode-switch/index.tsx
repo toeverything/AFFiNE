@@ -10,14 +10,14 @@ import {
 import type { CSSProperties } from 'react';
 import { useCallback, useEffect } from 'react';
 
-import type { BlockSuiteWorkspace } from '../../../shared';
+import type { DocCollection } from '../../../shared';
 import { toast } from '../../../utils';
 import { StyledEditorModeSwitch, StyledKeyboardItem } from './style';
 import { EdgelessSwitchItem, PageSwitchItem } from './switch-items';
 
 export type EditorModeSwitchProps = {
   // todo(himself65): combine these two properties
-  blockSuiteWorkspace: BlockSuiteWorkspace;
+  docCollection: DocCollection;
   pageId: string;
   style?: CSSProperties;
   isPublic?: boolean;
@@ -36,13 +36,13 @@ const TooltipContent = () => {
 };
 export const EditorModeSwitch = ({
   style,
-  blockSuiteWorkspace,
+  docCollection,
   pageId,
   isPublic,
   publicMode,
 }: EditorModeSwitchProps) => {
   const t = useAFFiNEI18N();
-  const pageMeta = useBlockSuiteDocMeta(blockSuiteWorkspace).find(
+  const pageMeta = useBlockSuiteDocMeta(docCollection).find(
     meta => meta.id === pageId
   );
   const trash = pageMeta?.trash ?? false;

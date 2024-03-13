@@ -162,7 +162,7 @@ export const Component = () => {
       .then(() => {
         const { page } = workspace.services.get(PageManager).open(pageId);
 
-        workspace.blockSuiteWorkspace.awarenessStore.setReadonly(
+        workspace.docCollection.awarenessStore.setReadonly(
           page.blockSuiteDoc,
           true
         );
@@ -200,14 +200,14 @@ export const Component = () => {
               <ShareHeader
                 pageId={page.id}
                 publishMode={publishMode}
-                blockSuiteWorkspace={page.blockSuiteDoc.workspace}
+                docCollection={page.blockSuiteDoc.collection}
               />
               <Scrollable.Root>
                 <Scrollable.Viewport className={styles.editorContainer}>
                   <PageDetailEditor
                     isPublic
                     publishMode={publishMode}
-                    workspace={page.blockSuiteDoc.workspace}
+                    docCollection={page.blockSuiteDoc.collection}
                     pageId={page.id}
                     onLoad={() => noop}
                   />

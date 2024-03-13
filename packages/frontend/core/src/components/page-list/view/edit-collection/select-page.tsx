@@ -76,7 +76,9 @@ export const SelectPage = ({
             <Menu
               items={
                 <VariableSelect
-                  propertiesMeta={allPageListConfig.workspace.meta.properties}
+                  propertiesMeta={
+                    allPageListConfig.docCollection.meta.properties
+                  }
                   selected={filters}
                   onSelect={createFilter}
                 />
@@ -103,7 +105,7 @@ export const SelectPage = ({
         {showFilter ? (
           <div style={{ padding: '12px 16px 16px' }}>
             <FilterList
-              propertiesMeta={allPageListConfig.workspace.meta.properties}
+              propertiesMeta={allPageListConfig.docCollection.meta.properties}
               value={filters}
               onChange={updateFilters}
             />
@@ -113,7 +115,7 @@ export const SelectPage = ({
           <VirtualizedList
             className={styles.pageList}
             items={searchedList}
-            blockSuiteWorkspace={allPageListConfig.workspace}
+            docCollection={allPageListConfig.docCollection}
             selectable
             groupBy={false}
             onSelectedIdsChange={onChange}

@@ -6,7 +6,7 @@ import {
 } from '@affine/component';
 import type { Collection } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import type { DocMeta, Workspace } from '@blocksuite/store';
+import type { DocCollection, DocMeta } from '@blocksuite/store';
 import type { DialogContentProps } from '@radix-ui/react-dialog';
 import { type ReactNode, useCallback, useMemo, useState } from 'react';
 
@@ -199,7 +199,7 @@ export const EditCollection = ({
 
 export type AllPageListConfig = {
   allPages: DocMeta[];
-  workspace: Workspace;
+  docCollection: DocCollection;
   isEdgeless: (id: string) => boolean;
   /**
    * Return `undefined` if the page is not public

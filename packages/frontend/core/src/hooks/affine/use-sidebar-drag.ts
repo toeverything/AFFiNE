@@ -70,7 +70,7 @@ export function getDragItemId(
 export const useSidebarDrag = () => {
   const t = useAFFiNEI18N();
   const currentWorkspace = useService(Workspace);
-  const workspace = currentWorkspace.blockSuiteWorkspace;
+  const workspace = currentWorkspace.docCollection;
   const { setTrashModal } = useTrashModalHelper(workspace);
   const { addToFavorite, removeFromFavorite } =
     useBlockSuiteMetaHelper(workspace);

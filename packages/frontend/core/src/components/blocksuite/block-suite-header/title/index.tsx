@@ -3,14 +3,14 @@ import {
   useBlockSuiteDocMeta,
   useDocMetaHelper,
 } from '@affine/core/hooks/use-block-suite-page-meta';
-import type { BlockSuiteWorkspace } from '@affine/core/shared';
+import type { DocCollection } from '@affine/core/shared';
 import type { HTMLAttributes } from 'react';
 import { useCallback } from 'react';
 
 import * as styles from './style.css';
 
 export interface BlockSuiteHeaderTitleProps {
-  blockSuiteWorkspace: BlockSuiteWorkspace;
+  docCollection: DocCollection;
   pageId: string;
   /** if set, title cannot be edited */
   isPublic?: boolean;
@@ -21,18 +21,13 @@ const inputAttrs = {
   'data-testid': 'title-content',
 } as HTMLAttributes<HTMLInputElement>;
 export const BlocksuiteHeaderTitle = (props: BlockSuiteHeaderTitleProps) => {
-  const {
-    blockSuiteWorkspace: workspace,
-    pageId,
-    isPublic,
-    inputHandleRef,
-  } = props;
-  const currentPage = workspace.getDoc(pageId);
-  const pageMeta = useBlockSuiteDocMeta(workspace).find(
+  const { docCollection, pageId, isPublic, inputHandleRef } = props;
+  const currentPage = docCollection.getDoc(pageId);
+  const pageMeta = useBlockSuiteDocMeta(docCollection).find(
     meta => meta.id === currentPage?.id
   );
   const title = pageMeta?.title;
-  const { setDocTitle } = useDocMetaHelper(workspace);
+  const { setDocTitle } = useDocMetaHelper(docCollection);
 
   const onChange = useCallback(
     (v: string) => {

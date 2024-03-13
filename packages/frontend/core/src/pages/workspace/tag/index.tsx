@@ -20,7 +20,7 @@ import * as styles from './index.css';
 
 export const TagDetail = ({ tagId }: { tagId?: string }) => {
   const currentWorkspace = useService(Workspace);
-  const pageMetas = useBlockSuiteDocMeta(currentWorkspace.blockSuiteWorkspace);
+  const pageMetas = useBlockSuiteDocMeta(currentWorkspace.docCollection);
 
   const { tags, filterPageMetaByTag } = useTagMetas(pageMetas);
   const tagPageMetas = useMemo(() => {
@@ -57,7 +57,7 @@ export const TagDetail = ({ tagId }: { tagId?: string }) => {
                   workspaceId={currentWorkspace.id}
                 />
               }
-              blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
+              docCollection={currentWorkspace.docCollection}
             />
           )}
         </div>

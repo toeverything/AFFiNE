@@ -1,5 +1,5 @@
 import type { Collection, Tag } from '@affine/env/filter';
-import type { DocMeta, Workspace } from '@blocksuite/store';
+import type { DocCollection, DocMeta } from '@blocksuite/store';
 import type { PropsWithChildren, ReactNode } from 'react';
 import type { To } from 'react-router-dom';
 
@@ -86,7 +86,7 @@ export type DateKey = 'createDate' | 'updatedDate';
 export interface ListProps<T> {
   // required data:
   items: T[];
-  blockSuiteWorkspace: Workspace;
+  docCollection: DocCollection;
   className?: string;
   hideHeader?: boolean; // whether or not to hide the header. default is false (showing header)
   groupBy?: ItemGroupByType | false;

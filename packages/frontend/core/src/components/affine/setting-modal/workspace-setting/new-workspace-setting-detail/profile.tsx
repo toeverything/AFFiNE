@@ -46,17 +46,13 @@ export const ProfilePanel = ({ isOwner, workspace }: ProfilePanelProps) => {
   const avatarUrl = useWorkspaceBlobObjectUrl(workspace?.meta, avatarBlob);
 
   useEffect(() => {
-    if (workspace?.blockSuiteWorkspace) {
-      setAvatarBlob(workspace.blockSuiteWorkspace.meta.avatar ?? null);
-      setName(
-        workspace.blockSuiteWorkspace.meta.name ?? UNTITLED_WORKSPACE_NAME
-      );
-      const dispose = workspace.blockSuiteWorkspace.meta.commonFieldsUpdated.on(
+    if (workspace?.docCollection) {
+      setAvatarBlob(workspace.docCollection.meta.avatar ?? null);
+      setName(workspace.docCollection.meta.name ?? UNTITLED_WORKSPACE_NAME);
+      const dispose = workspace.docCollection.meta.commonFieldsUpdated.on(
         () => {
-          setAvatarBlob(workspace.blockSuiteWorkspace.meta.avatar ?? null);
-          setName(
-            workspace.blockSuiteWorkspace.meta.name ?? UNTITLED_WORKSPACE_NAME
-          );
+          setAvatarBlob(workspace.docCollection.meta.avatar ?? null);
+          setName(workspace.docCollection.meta.name ?? UNTITLED_WORKSPACE_NAME);
         }
       );
       return () => {
@@ -75,14 +71,14 @@ export const ProfilePanel = ({ isOwner, workspace }: ProfilePanelProps) => {
         return;
       }
       if (!file) {
-        workspace.blockSuiteWorkspace.meta.setAvatar('');
+        workspace.docCollection.meta.setAvatar('');
         return;
       }
       try {
         const reducedFile = await validateAndReduceImage(file);
-        const blobs = workspace.blockSuiteWorkspace.blob;
+        const blobs = workspace.docCollection.blob;
         const blobId = await blobs.set(reducedFile);
-        workspace.blockSuiteWorkspace.meta.setAvatar(blobId);
+        workspace.docCollection.meta.setAvatar(blobId);
       } catch (error) {
         console.error(error);
         throw error;
@@ -96,7 +92,7 @@ export const ProfilePanel = ({ isOwner, workspace }: ProfilePanelProps) => {
       if (!workspace) {
         return;
       }
-      workspace.blockSuiteWorkspace.meta.setName(name);
+      workspace.docCollection.meta.setName(name);
     },
     [workspace]
   );

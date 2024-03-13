@@ -98,7 +98,7 @@ export const VirtualizedTagList = ({
         items={tagMetas}
         itemRenderer={tagItemRenderer}
         rowAsLink
-        blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
+        docCollection={currentWorkspace.docCollection}
         operationsRenderer={tagOperationRenderer}
         headerRenderer={tagHeaderRenderer}
       />

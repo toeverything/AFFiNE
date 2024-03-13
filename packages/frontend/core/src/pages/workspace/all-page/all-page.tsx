@@ -19,7 +19,7 @@ import { AllPageHeader } from './all-page-header';
 
 export const AllPage = () => {
   const currentWorkspace = useService(Workspace);
-  const pageMetas = useBlockSuiteDocMeta(currentWorkspace.blockSuiteWorkspace);
+  const pageMetas = useBlockSuiteDocMeta(currentWorkspace.docCollection);
   const [hideHeaderCreateNew, setHideHeaderCreateNew] = useState(true);
 
   const [filters, setFilters] = useState<Filter[]>([]);
@@ -48,7 +48,7 @@ export const AllPage = () => {
             <EmptyPageList
               type="all"
               heading={<PageListHeader />}
-              blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
+              docCollection={currentWorkspace.docCollection}
             />
           )}
         </div>
@@ -65,10 +65,10 @@ export const Component = () => {
 
   useEffect(() => {
     function checkJumpOnce() {
-      for (const [pageId] of currentWorkspace.blockSuiteWorkspace.docs) {
-        const page = currentWorkspace.blockSuiteWorkspace.getDoc(pageId);
+      for (const [pageId] of currentWorkspace.docCollection.docs) {
+        const page = currentWorkspace.docCollection.getDoc(pageId);
         if (page && page.meta?.jumpOnce) {
-          currentWorkspace.blockSuiteWorkspace.meta.setDocMeta(page.id, {
+          currentWorkspace.docCollection.meta.setDocMeta(page.id, {
             jumpOnce: false,
           });
           navigateHelper.jumpToPage(currentWorkspace.id, pageId);
@@ -76,14 +76,9 @@ export const Component = () => {
       }
     }
     checkJumpOnce();
-    return currentWorkspace.blockSuiteWorkspace.slots.docUpdated.on(
-      checkJumpOnce
-    ).dispose;
-  }, [
-    currentWorkspace.blockSuiteWorkspace,
-    currentWorkspace.id,
-    navigateHelper,
-  ]);
+    return currentWorkspace.docCollection.slots.docUpdated.on(checkJumpOnce)
+      .dispose;
+  }, [currentWorkspace.docCollection, currentWorkspace.id, navigateHelper]);
 
   return <AllPage />;
 };

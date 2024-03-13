@@ -1,6 +1,6 @@
 import { DebugLogger } from '@affine/debug';
 import type { WorkspaceFlavour } from '@affine/env/workspace';
-import type { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
+import type { DocCollection } from '@blocksuite/store';
 import { differenceWith } from 'lodash-es';
 
 import { createIdentifier } from '../../di';
@@ -34,7 +34,7 @@ export interface WorkspaceListProvider {
    */
   create(
     initial: (
-      workspace: BlockSuiteWorkspace,
+      docCollection: DocCollection,
       blobStorage: BlobStorage
     ) => Promise<void>
   ): Promise<WorkspaceMetadata>;
@@ -124,7 +124,7 @@ export class WorkspaceListService {
   async create(
     flavour: WorkspaceFlavour,
     initial: (
-      workspace: BlockSuiteWorkspace,
+      docCollection: DocCollection,
       blobStorage: BlobStorage
     ) => Promise<void> = () => Promise.resolve()
   ) {

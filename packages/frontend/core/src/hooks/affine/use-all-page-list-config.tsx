@@ -17,7 +17,7 @@ import { usePublicPages } from './use-is-shared-page';
 export const useAllPageListConfig = () => {
   const currentWorkspace = useService(Workspace);
   const { getPublicMode } = usePublicPages(currentWorkspace);
-  const workspace = currentWorkspace.blockSuiteWorkspace;
+  const workspace = currentWorkspace.docCollection;
   const pageMetas = useBlockSuiteDocMeta(workspace);
   const { isPreferredEdgeless } = usePageHelper(workspace);
   const pageMap = useMemo(
@@ -25,7 +25,7 @@ export const useAllPageListConfig = () => {
     [pageMetas]
   );
   const { toggleFavorite } = useBlockSuiteMetaHelper(
-    currentWorkspace.blockSuiteWorkspace
+    currentWorkspace.docCollection
   );
   const t = useAFFiNEI18N();
   const onToggleFavoritePage = useCallback(
@@ -45,7 +45,7 @@ export const useAllPageListConfig = () => {
       allPages: pageMetas,
       isEdgeless: isPreferredEdgeless,
       getPublicMode,
-      workspace: currentWorkspace.blockSuiteWorkspace,
+      docCollection: currentWorkspace.docCollection,
       getPage: id => pageMap[id],
       favoriteRender: page => {
         return (
@@ -61,7 +61,7 @@ export const useAllPageListConfig = () => {
     pageMetas,
     isPreferredEdgeless,
     getPublicMode,
-    currentWorkspace.blockSuiteWorkspace,
+    currentWorkspace.docCollection,
     pageMap,
     onToggleFavoritePage,
   ]);
