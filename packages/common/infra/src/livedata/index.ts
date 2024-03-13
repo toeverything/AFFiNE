@@ -1,5 +1,6 @@
 import { DebugLogger } from '@affine/debug';
 import {
+  combineLatest,
   distinctUntilChanged,
   EMPTY,
   filter,
@@ -192,7 +193,7 @@ export class LiveData<T = unknown> implements InteropObservable<T> {
     return subscription;
   }
 
-  map<R>(mapper: (v: T) => R): LiveData<R> {
+  map<R>(mapper: (v: T) => R) {
     const sub = LiveData.from(
       new Observable<R>(subscriber =>
         this.subscribe({
@@ -268,6 +269,42 @@ export class LiveData<T = unknown> implements InteropObservable<T> {
     this.upstreamSubscription?.unsubscribe();
   }
 
+  /**
+   * flatten the livedata
+   *
+   * ```
+   * new LiveData(new LiveData(0)).flat() // LiveData<number>
+   * ```
+   *
+   * ```
+   * new LiveData([new LiveData(0)]).flat() // LiveData<number[]>
+   * ```
+   */
+  flat(): Flat<this> {
+    return LiveData.from(
+      this.pipe(
+        switchMap(v => {
+          if (v instanceof LiveData) {
+            return (v as LiveData<any>).flat();
+          } else if (Array.isArray(v)) {
+            return combineLatest(
+              v.map(v => {
+                if (v instanceof LiveData) {
+                  return v.flat();
+                } else {
+                  return of(v);
+                }
+              })
+            );
+          } else {
+            return of(v);
+          }
+        })
+      ),
+      null as any
+    ) as any;
+  }
+
   reactSubscribe = (cb: () => void) => {
     this.ops.next('watch');
     const subscription = this.raw
@@ -297,3 +334,12 @@ export class LiveData<T = unknown> implements InteropObservable<T> {
 }
 
 export type LiveDataOperation = 'set' | 'get' | 'watch' | 'unwatch';
+
+export type Unwrap<T> =
+  T extends LiveData<infer Z>
+    ? Unwrap<Z>
+    : T extends LiveData<infer A>[]
+      ? Unwrap<A>[]
+      : T;
+
+export type Flat<T> = T extends LiveData<infer P> ? LiveData<Unwrap<P>> : T;
