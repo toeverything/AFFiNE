@@ -110,8 +110,8 @@ const BlockSuiteEditorImpl = forwardRef<AffineEditorContainer, EditorProps>(
       };
     }, []);
 
-    const pageMetaHelper = useDocMetaHelper(page.workspace);
-    const journalHelper = useJournalHelper(page.workspace);
+    const pageMetaHelper = useDocMetaHelper(page.collection);
+    const journalHelper = useJournalHelper(page.collection);
     const t = useAFFiNEI18N();
 
     const customRenderers = useMemo(() => {

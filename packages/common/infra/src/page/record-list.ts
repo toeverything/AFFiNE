@@ -18,7 +18,7 @@ export class PageRecordList {
     new Observable(subscriber => {
       const emit = () => {
         subscriber.next(
-          this.workspace.blockSuiteWorkspace.meta.docMetas.map(
+          this.workspace.docCollection.meta.docMetas.map(
             v => new PageRecord(v.id, this.workspace, this.localState)
           )
         );
@@ -27,7 +27,7 @@ export class PageRecordList {
       emit();
 
       const dispose =
-        this.workspace.blockSuiteWorkspace.meta.docMetaUpdated.on(emit).dispose;
+        this.workspace.docCollection.meta.docMetaUpdated.on(emit).dispose;
       return () => {
         dispose();
       };

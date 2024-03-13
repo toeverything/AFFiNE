@@ -61,7 +61,7 @@ const PageItem = ({
   const mode = useLiveData(pageRecord.mode);
   const workspace = useService(Workspace);
   const { isJournal } = useJournalInfoHelper(
-    workspace.blockSuiteWorkspace,
+    workspace.docCollection,
     pageRecord.id
   );
 
@@ -100,10 +100,10 @@ const EditorJournalPanel = () => {
   const doc = useService(Doc);
   const workspace = useService(Workspace);
   const { journalDate, isJournal } = useJournalInfoHelper(
-    workspace.blockSuiteWorkspace,
+    workspace.docCollection,
     doc.id
   );
-  const { openJournal } = useJournalRouteHelper(workspace.blockSuiteWorkspace);
+  const { openJournal } = useJournalRouteHelper(workspace.docCollection);
   const [date, setDate] = useState(dayjs().format('YYYY-MM-DD'));
 
   useEffect(() => {
@@ -314,7 +314,7 @@ const ConflictList = ({
   const navigateHelper = useNavigateHelper();
   const workspace = useService(Workspace);
   const currentDoc = useService(Doc);
-  const { setTrashModal } = useTrashModalHelper(workspace.blockSuiteWorkspace);
+  const { setTrashModal } = useTrashModalHelper(workspace.docCollection);
 
   const handleOpenTrashModal = useCallback(
     (pageRecord: PageRecord) => {
@@ -361,7 +361,7 @@ const JournalConflictBlock = ({ date }: JournalBlockProps) => {
   const t = useAFFiNEI18N();
   const workspace = useService(Workspace);
   const pageRecordList = useService(PageRecordList);
-  const journalHelper = useJournalHelper(workspace.blockSuiteWorkspace);
+  const journalHelper = useJournalHelper(workspace.docCollection);
   const docs = journalHelper.getJournalsByDate(date.format('YYYY-MM-DD'));
   const pageRecords = useLiveData(pageRecordList.records).filter(v => {
     return docs.some(doc => doc.id === v.id);

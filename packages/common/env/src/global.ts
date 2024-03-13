@@ -1,6 +1,6 @@
 /// <reference types="@blocksuite/global" />
 import { assertEquals } from '@blocksuite/global/utils';
-import type { Workspace } from '@blocksuite/store';
+import type { DocCollection } from '@blocksuite/store';
 import { z } from 'zod';
 
 import { isDesktop, isServer } from './constant.js';
@@ -154,9 +154,9 @@ export function setupGlobal() {
   globalThis.$AFFINE_SETUP = true;
 }
 
-export function setupEditorFlags(workspace: Workspace) {
+export function setupEditorFlags(docCollection: DocCollection) {
   Object.entries(runtimeConfig.editorFlags).forEach(([key, value]) => {
-    workspace.awarenessStore.setFlag(
+    docCollection.awarenessStore.setFlag(
       key as keyof BlockSuiteFeatureFlags,
       value
     );

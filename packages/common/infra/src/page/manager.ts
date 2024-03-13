@@ -20,7 +20,7 @@ export class PageManager {
     if (!pageRecord) {
       throw new Error('Page record not found');
     }
-    const blockSuitePage = this.workspace.blockSuiteWorkspace.getDoc(pageId);
+    const blockSuitePage = this.workspace.docCollection.getDoc(pageId);
     if (!blockSuitePage) {
       throw new Error('Page not found');
     }

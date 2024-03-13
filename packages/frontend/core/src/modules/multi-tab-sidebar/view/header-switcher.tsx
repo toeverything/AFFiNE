@@ -28,10 +28,7 @@ export const MultiTabSidebarHeaderSwitcher = ({
     FeatureType.Copilot
   );
 
-  const { isJournal } = useJournalInfoHelper(
-    workspace.blockSuiteWorkspace,
-    doc.id
-  );
+  const { isJournal } = useJournalInfoHelper(workspace.docCollection, doc.id);
 
   const exts = useMemo(
     () =>

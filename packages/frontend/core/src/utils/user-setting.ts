@@ -1,16 +1,16 @@
 import type { Collection } from '@affine/env/filter';
-import type { Workspace } from '@blocksuite/store';
+import type { DocCollection } from '@blocksuite/store';
 import { nanoid } from 'nanoid';
 import type { Map as YMap } from 'yjs';
 import { Doc as YDoc } from 'yjs';
 export class UserSetting {
   constructor(
-    private readonly workspace: Workspace,
+    private readonly docCollection: DocCollection,
     private readonly userId: string
   ) {}
 
   get setting(): YDoc {
-    const rootDoc = this.workspace.doc;
+    const rootDoc = this.docCollection.doc;
     const settingMap = rootDoc.getMap('settings') as YMap<YDoc>;
     if (!settingMap.has(this.userId)) {
       settingMap.set(
@@ -38,6 +38,9 @@ export class UserSetting {
   }
 }
 
-export const getUserSetting = (workspace: Workspace, userId: string) => {
-  return new UserSetting(workspace, userId);
+export const getUserSetting = (
+  docCollection: DocCollection,
+  userId: string
+) => {
+  return new UserSetting(docCollection, userId);
 };

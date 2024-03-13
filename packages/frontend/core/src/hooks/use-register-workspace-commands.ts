@@ -24,7 +24,7 @@ export function useRegisterWorkspaceCommands() {
   const theme = useTheme();
   const currentWorkspace = useService(Workspace);
   const languageHelper = useLanguageHelper();
-  const pageHelper = usePageHelper(currentWorkspace.blockSuiteWorkspace);
+  const pageHelper = usePageHelper(currentWorkspace.docCollection);
   const navigationHelper = useNavigateHelper();
   const [editor] = useActiveBlocksuiteEditor();
 
@@ -45,14 +45,14 @@ export function useRegisterWorkspaceCommands() {
     const unsub = registerAffineNavigationCommands({
       store,
       t,
-      workspace: currentWorkspace.blockSuiteWorkspace,
+      docCollection: currentWorkspace.docCollection,
       navigationHelper,
     });
 
     return () => {
       unsub();
     };
-  }, [store, t, currentWorkspace.blockSuiteWorkspace, navigationHelper]);
+  }, [store, t, currentWorkspace.docCollection, navigationHelper]);
 
   // register AffineSettingsCommands
   useEffect(() => {

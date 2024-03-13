@@ -49,17 +49,17 @@ const TrashHeader = () => {
 
 export const TrashPage = () => {
   const currentWorkspace = useService(Workspace);
-  const blockSuiteWorkspace = currentWorkspace.blockSuiteWorkspace;
-  assertExists(blockSuiteWorkspace);
+  const docCollection = currentWorkspace.docCollection;
+  assertExists(docCollection);
 
-  const pageMetas = useBlockSuiteDocMeta(blockSuiteWorkspace);
+  const pageMetas = useBlockSuiteDocMeta(docCollection);
   const filteredPageMetas = useFilteredPageMetas(currentWorkspace, pageMetas, {
     trash: true,
   });
 
   const { restoreFromTrash, permanentlyDeletePage } =
-    useBlockSuiteMetaHelper(blockSuiteWorkspace);
-  const { isPreferredEdgeless } = usePageHelper(blockSuiteWorkspace);
+    useBlockSuiteMetaHelper(docCollection);
+  const { isPreferredEdgeless } = usePageHelper(docCollection);
   const t = useAFFiNEI18N();
 
   const pageOperationsRenderer = useCallback(
@@ -107,7 +107,7 @@ export const TrashPage = () => {
               rowAsLink
               groupBy={false}
               isPreferredEdgeless={isPreferredEdgeless}
-              blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
+              docCollection={currentWorkspace.docCollection}
               operationsRenderer={pageOperationsRenderer}
               itemRenderer={pageItemRenderer}
               headerRenderer={pageHeaderRenderer}
@@ -115,7 +115,7 @@ export const TrashPage = () => {
           ) : (
             <EmptyPageList
               type="trash"
-              blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
+              docCollection={currentWorkspace.docCollection}
             />
           )}
         </div>

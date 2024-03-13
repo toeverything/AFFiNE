@@ -1,7 +1,7 @@
 import { useBlockSuitePageReferences } from '@affine/core/hooks/use-block-suite-page-references';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
-import type { DocMeta, Workspace } from '@blocksuite/store';
+import type { DocCollection, DocMeta } from '@blocksuite/store';
 import { useDraggable } from '@dnd-kit/core';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import { PageRecordList, useLiveData, useService } from '@toeverything/infra';
@@ -18,7 +18,7 @@ import * as styles from './styles.css';
 
 export const Page = ({
   page,
-  workspace,
+  docCollection,
   allPageMeta,
   inAllowList,
   removeFromAllowList,
@@ -26,7 +26,7 @@ export const Page = ({
   page: DocMeta;
   inAllowList: boolean;
   removeFromAllowList: (id: string) => void;
-  workspace: Workspace;
+  docCollection: DocCollection;
   allPageMeta: Record<string, DocMeta>;
 }) => {
   const [collapsed, setCollapsed] = React.useState(true);
@@ -46,10 +46,10 @@ export const Page = ({
 
   const { jumpToPage } = useNavigateHelper();
   const clickPage = useCallback(() => {
-    jumpToPage(workspace.id, page.id);
-  }, [jumpToPage, page.id, workspace.id]);
+    jumpToPage(docCollection.id, page.id);
+  }, [jumpToPage, page.id, docCollection.id]);
 
-  const references = useBlockSuitePageReferences(workspace, pageId);
+  const references = useBlockSuitePageReferences(docCollection, pageId);
   const referencesToRender = references.filter(
     id => allPageMeta[id] && !allPageMeta[id]?.trash
   );
@@ -85,7 +85,7 @@ export const Page = ({
         onCollapsedChange={setCollapsed}
         postfix={
           <PostfixItem
-            workspace={workspace}
+            docCollection={docCollection}
             pageId={pageId}
             pageTitle={pageTitle}
             removeFromAllowList={removeFromAllowList}
@@ -103,7 +103,7 @@ export const Page = ({
           return (
             <ReferencePage
               key={id}
-              workspace={workspace}
+              docCollection={docCollection}
               pageId={id}
               metaMapping={allPageMeta}
               parentIds={new Set([pageId])}

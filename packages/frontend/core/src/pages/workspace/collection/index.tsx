@@ -98,7 +98,7 @@ export const Component = function CollectionPage() {
     navigate,
     params.collectionId,
     pushNotification,
-    workspace.blockSuiteWorkspace,
+    workspace.docCollection,
     workspace.id,
   ]);
   if (!collection) {

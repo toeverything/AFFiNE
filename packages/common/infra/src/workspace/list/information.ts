@@ -57,13 +57,13 @@ export class WorkspaceInformation {
    */
   syncWithWorkspace(workspace: Workspace) {
     this.info = {
-      avatar: workspace.blockSuiteWorkspace.meta.avatar ?? this.info.avatar,
-      name: workspace.blockSuiteWorkspace.meta.name ?? this.info.name,
+      avatar: workspace.docCollection.meta.avatar ?? this.info.avatar,
+      name: workspace.docCollection.meta.name ?? this.info.name,
     };
-    workspace.blockSuiteWorkspace.meta.commonFieldsUpdated.on(() => {
+    workspace.docCollection.meta.commonFieldsUpdated.on(() => {
       this.info = {
-        avatar: workspace.blockSuiteWorkspace.meta.avatar ?? this.info.avatar,
-        name: workspace.blockSuiteWorkspace.meta.name ?? this.info.name,
+        avatar: workspace.docCollection.meta.avatar ?? this.info.avatar,
+        name: workspace.docCollection.meta.name ?? this.info.name,
       };
     });
   }

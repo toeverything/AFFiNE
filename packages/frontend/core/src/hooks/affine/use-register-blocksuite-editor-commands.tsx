@@ -24,9 +24,9 @@ export function useRegisterBlocksuiteEditorCommands() {
   const mode = useLiveData(page.mode);
   const t = useAFFiNEI18N();
   const workspace = useService(Workspace);
-  const blockSuiteWorkspace = workspace.blockSuiteWorkspace;
-  const { getDocMeta } = useDocMetaHelper(blockSuiteWorkspace);
-  const currentPage = blockSuiteWorkspace.getDoc(pageId);
+  const docCollection = workspace.docCollection;
+  const { getDocMeta } = useDocMetaHelper(docCollection);
+  const currentPage = docCollection.getDoc(pageId);
   assertExists(currentPage);
   const pageMeta = getDocMeta(pageId);
   assertExists(pageMeta);
@@ -43,9 +43,9 @@ export function useRegisterBlocksuiteEditorCommands() {
   }, [pageId, setPageHistoryModalState]);
 
   const { toggleFavorite, restoreFromTrash, duplicate } =
-    useBlockSuiteMetaHelper(blockSuiteWorkspace);
+    useBlockSuiteMetaHelper(docCollection);
   const exportHandler = useExportPage(currentPage);
-  const { setTrashModal } = useTrashModalHelper(blockSuiteWorkspace);
+  const { setTrashModal } = useTrashModalHelper(docCollection);
   const onClickDelete = useCallback(() => {
     setTrashModal({
       open: true,

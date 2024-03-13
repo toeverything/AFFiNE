@@ -14,7 +14,7 @@ const SyncAwarenessInnerLoggedIn = () => {
 
   useEffect(() => {
     if (user && currentWorkspace) {
-      currentWorkspace.blockSuiteWorkspace.awarenessStore.awareness.setLocalStateField(
+      currentWorkspace.docCollection.awarenessStore.awareness.setLocalStateField(
         'user',
         {
           name: user.name,
@@ -23,7 +23,7 @@ const SyncAwarenessInnerLoggedIn = () => {
       );
 
       return () => {
-        currentWorkspace.blockSuiteWorkspace.awarenessStore.awareness.setLocalStateField(
+        currentWorkspace.docCollection.awarenessStore.awareness.setLocalStateField(
           'user',
           null
         );

@@ -1,12 +1,12 @@
 import type { DeleteCollectionInfo } from '@affine/env/filter';
-import type { Workspace } from '@blocksuite/store';
+import type { DocCollection } from '@blocksuite/store';
 
 export type FavoriteListProps = {
-  workspace: Workspace;
+  docCollection: DocCollection;
 };
 
 export type CollectionsListProps = {
-  workspace: Workspace;
+  docCollection: DocCollection;
   info: DeleteCollectionInfo;
   onCreate?: () => void;
 };

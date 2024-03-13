@@ -1,11 +1,11 @@
-import type { Doc, Workspace } from '@blocksuite/store';
+import type { Doc, DocCollection } from '@blocksuite/store';
 import { type Atom, atom, useAtomValue } from 'jotai';
 
-import { useBlockSuiteWorkspacePage } from './use-block-suite-workspace-page';
+import { useDocCollectionPage } from './use-block-suite-workspace-page';
 
 const weakMap = new WeakMap<Doc, Atom<string[]>>();
 function getPageBacklinks(page: Doc): string[] {
-  return page.workspace.indexer.backlink
+  return page.collection.indexer.backlink
     .getBacklink(page.id)
     .map(linkNode => linkNode.pageId)
     .filter(id => id !== page.id);
@@ -23,7 +23,7 @@ const getPageBacklinksAtom = (page: Doc | null) => {
         page.slots.ready.on(() => {
           set(getPageBacklinks(page));
         }),
-        page.workspace.indexer.backlink.slots.indexUpdated.on(() => {
+        page.collection.indexer.backlink.slots.indexUpdated.on(() => {
           set(getPageBacklinks(page));
         }),
       ];
@@ -38,9 +38,9 @@ const getPageBacklinksAtom = (page: Doc | null) => {
 };
 
 export function useBlockSuitePageBacklinks(
-  blockSuiteWorkspace: Workspace,
-  pageId: string
+  docCollection: DocCollection,
+  docId: string
 ): string[] {
-  const page = useBlockSuiteWorkspacePage(blockSuiteWorkspace, pageId);
-  return useAtomValue(getPageBacklinksAtom(page));
+  const doc = useDocCollectionPage(docCollection, docId);
+  return useAtomValue(getPageBacklinksAtom(doc));
 }

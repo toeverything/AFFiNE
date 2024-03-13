@@ -15,17 +15,17 @@ export interface FavoriteButtonProps {
 export const useFavorite = (pageId: string) => {
   const t = useAFFiNEI18N();
   const workspace = useService(Workspace);
-  const blockSuiteWorkspace = workspace.blockSuiteWorkspace;
-  const currentPage = blockSuiteWorkspace.getDoc(pageId);
+  const docCollection = workspace.docCollection;
+  const currentPage = docCollection.getDoc(pageId);
   assertExists(currentPage);
 
-  const pageMeta = useBlockSuiteDocMeta(blockSuiteWorkspace).find(
+  const pageMeta = useBlockSuiteDocMeta(docCollection).find(
     meta => meta.id === pageId
   );
   const favorite = pageMeta?.favorite ?? false;
 
   const { toggleFavorite: _toggleFavorite } =
-    useBlockSuiteMetaHelper(blockSuiteWorkspace);
+    useBlockSuiteMetaHelper(docCollection);
 
   const toggleFavorite = useCallback(() => {
     _toggleFavorite(pageId);

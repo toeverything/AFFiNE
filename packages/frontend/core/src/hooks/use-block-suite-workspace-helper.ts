@@ -1,13 +1,13 @@
-import type { Doc, Workspace } from '@blocksuite/store';
+import type { Doc, DocCollection } from '@blocksuite/store';
 import { useMemo } from 'react';
 
-export function useBlockSuiteWorkspaceHelper(blockSuiteWorkspace: Workspace) {
+export function useDocCollectionHelper(docCollection: DocCollection) {
   return useMemo(
     () => ({
       createDoc: (pageId?: string): Doc => {
-        return blockSuiteWorkspace.createDoc({ id: pageId });
+        return docCollection.createDoc({ id: pageId });
       },
     }),
-    [blockSuiteWorkspace]
+    [docCollection]
   );
 }
