@@ -8,11 +8,11 @@ import {
   Cache,
   type GraphqlContext,
   MutexService,
-  OptionalModule,
   SessionCache,
 } from '../../fundamentals';
 import { ThrottlerStorage } from '../../fundamentals/throttler';
 import { SocketIoAdapterImpl } from '../../fundamentals/websocket';
+import { Plugin } from '../registry';
 import { RedisCache } from './cache';
 import {
   CacheRedis,
@@ -66,7 +66,8 @@ const mutexRedisAdapterProvider: Provider = {
 };
 
 @Global()
-@OptionalModule({
+@Plugin({
+  name: 'redis',
   providers: [
     CacheRedis,
     SessionRedis,

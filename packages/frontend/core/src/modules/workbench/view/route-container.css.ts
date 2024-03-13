@@ -39,7 +39,20 @@ export const leftSidebarButton = style({
 });
 
 export const rightSidebarButton = style({
-  margin: '0 0 0 16px',
+  transition: 'all 0.2s ease-in-out',
+  selectors: {
+    '&[data-show=true]': {
+      opacity: 1,
+      width: 32,
+      maxWidth: 32,
+      marginLeft: 16,
+    },
+    '&[data-show=false]': {
+      opacity: 0,
+      maxWidth: 0,
+      marginLeft: 0,
+    },
+  },
 });
 
 export const viewHeaderContainer = style({

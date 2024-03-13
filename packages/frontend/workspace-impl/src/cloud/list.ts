@@ -2,6 +2,7 @@ import { WorkspaceFlavour } from '@affine/env/workspace';
 import {
   createWorkspaceMutation,
   deleteWorkspaceMutation,
+  findGraphQLError,
   getWorkspacesQuery,
 } from '@affine/graphql';
 import { fetcher } from '@affine/graphql';
@@ -16,7 +17,6 @@ import {
 import { globalBlockSuiteSchema } from '@toeverything/infra';
 import { difference } from 'lodash-es';
 import { nanoid } from 'nanoid';
-import { getSession } from 'next-auth/react';
 import { applyUpdate, encodeStateAsUpdate } from 'yjs';
 
 import { IndexedDBBlobStorage } from '../local/blob-indexeddb';
@@ -27,13 +27,11 @@ import { CLOUD_WORKSPACE_CHANGED_BROADCAST_CHANNEL_KEY } from './consts';
 import { AffineStaticSyncStorage } from './sync';
 
 async function getCloudWorkspaceList() {
-  const session = await getSession();
-  if (!session) {
-    return [];
-  }
   try {
     const { workspaces } = await fetcher({
       query: getWorkspacesQuery,
+    }).catch(() => {
+      return { workspaces: [] };
     });
     const ids = workspaces.map(({ id }) => id);
     return ids.map(id => ({
@@ -41,10 +39,13 @@ async function getCloudWorkspaceList() {
       flavour: WorkspaceFlavour.AFFINE_CLOUD,
     }));
   } catch (err) {
-    if (err instanceof Array && err[0]?.message === 'Forbidden resource') {
+    console.log(err);
+    const e = findGraphQLError(err, e => e.extensions.code === 401);
+    if (e) {
       // user not logged in
       return [];
     }
+
     throw err;
   }
 }

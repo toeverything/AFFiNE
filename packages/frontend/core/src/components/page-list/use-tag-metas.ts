@@ -43,6 +43,9 @@ export function useTagMetas(pageMetas: DocMeta[]) {
   const filterPageMetaByTag = useCallback(
     (tagId: string) => {
       return pageMetas.filter(page => {
+        if (!page.tags) {
+          return false;
+        }
         return page.tags.includes(tagId);
       });
     },

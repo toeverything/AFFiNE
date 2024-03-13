@@ -49,22 +49,18 @@ postgres=# \du
 
 ### Set the following config to `packages/backend/server/.env`
 
+In the following setup, we assume you have postgres server running at localhost:5432 and mailhog running at localhost:1025.
+
+When logging in via email, you will see the mail arriving at localhost:8025 in a browser.
+
 ```
 DATABASE_URL="postgresql://affine:affine@localhost:5432/affine"
-NEXTAUTH_URL="http://localhost:8080/"
-```
-
-You may need additional env for auth login. You may want to put your own one if you are not part of the AFFiNE team
-
-For email login & password, please refer to https://nodemailer.com/usage/using-gmail/
-
-```
-MAILER_SENDER=
-MAILER_USER=
-MAILER_PASSWORD=
-OAUTH_GOOGLE_ENABLED="true"
-OAUTH_GOOGLE_CLIENT_ID=
-OAUTH_GOOGLE_CLIENT_SECRET=
+NEXTAUTH_URL="http://localhost:8080"
+MAILER_SENDER="noreply@toeverything.info"
+MAILER_USER="auth"
+MAILER_PASSWORD="auth"
+MAILER_HOST="localhost"
+MAILER_PORT="1025"
 ```
 
 ## Prepare prisma

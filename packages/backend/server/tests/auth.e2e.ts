@@ -39,7 +39,7 @@ test('change email', async t => {
   if (mail.hasConfigured()) {
     const u1Email = 'u1@affine.pro';
     const u2Email = 'u2@affine.pro';
-    const tokenRegex = /token=3D([^"&\s]+)/;
+    const tokenRegex = /token=3D([^"&]+)/;
 
     const u1 = await signUp(app, 'u1', u1Email, '1');
 
@@ -57,7 +57,7 @@ test('change email', async t => {
 
     const changeTokenMatch = changeEmailContent.Content.Body.match(tokenRegex);
     const changeEmailToken = changeTokenMatch
-      ? decodeURIComponent(changeTokenMatch[1].replace(/=3D/g, '='))
+      ? decodeURIComponent(changeTokenMatch[1].replace(/=\r\n/, ''))
       : null;
 
     t.not(
@@ -85,7 +85,7 @@ test('change email', async t => {
 
     const verifyTokenMatch = verifyEmailContent.Content.Body.match(tokenRegex);
     const verifyEmailToken = verifyTokenMatch
-      ? decodeURIComponent(verifyTokenMatch[1].replace(/=3D/g, '='))
+      ? decodeURIComponent(verifyTokenMatch[1].replace(/=\r\n/, ''))
       : null;
 
     t.not(
@@ -94,7 +94,7 @@ test('change email', async t => {
       'fail to get verify change email token from email content'
     );
 
-    await changeEmail(app, u1.token.token, verifyEmailToken as string);
+    await changeEmail(app, u1.token.token, verifyEmailToken as string, u2Email);
 
     const afterNotificationMailCount = await getCurrentMailMessageCount();
 

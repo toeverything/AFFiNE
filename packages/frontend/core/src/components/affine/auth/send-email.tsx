@@ -12,6 +12,7 @@ import {
   sendChangeEmailMutation,
   sendChangePasswordEmailMutation,
   sendSetPasswordEmailMutation,
+  sendVerifyEmailMutation,
 } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useSetAtom } from 'jotai/react';
@@ -29,7 +30,9 @@ const useEmailTitle = (emailType: AuthPanelProps['emailType']) => {
     case 'changePassword':
       return t['com.affine.auth.reset.password']();
     case 'changeEmail':
-      return t['com.affine.settings.email.action']();
+      return t['com.affine.settings.email.action.change']();
+    case 'verifyEmail':
+      return t['com.affine.settings.email.action.verify']();
   }
 };
 const useContent = (emailType: AuthPanelProps['emailType'], email: string) => {
@@ -41,7 +44,8 @@ const useContent = (emailType: AuthPanelProps['emailType'], email: string) => {
     case 'changePassword':
       return t['com.affine.auth.reset.password.message']();
     case 'changeEmail':
-      return t['com.affine.auth.change.email.message']({
+    case 'verifyEmail':
+      return t['com.affine.auth.verify.email.message']({
         email,
       });
   }
@@ -56,7 +60,8 @@ const useNotificationHint = (emailType: AuthPanelProps['emailType']) => {
     case 'changePassword':
       return t['com.affine.auth.sent.change.password.hint']();
     case 'changeEmail':
-      return t['com.affine.auth.sent.change.email.hint']();
+    case 'verifyEmail':
+      return t['com.affine.auth.sent.verify.email.hint']();
   }
 };
 const useButtonContent = (emailType: AuthPanelProps['emailType']) => {
@@ -68,7 +73,8 @@ const useButtonContent = (emailType: AuthPanelProps['emailType']) => {
     case 'changePassword':
       return t['com.affine.auth.send.reset.password.link']();
     case 'changeEmail':
-      return t['com.affine.auth.send.change.email.link']();
+    case 'verifyEmail':
+      return t['com.affine.auth.send.verify.email.hint']();
   }
 };
 
@@ -87,12 +93,17 @@ const useSendEmail = (emailType: AuthPanelProps['emailType']) => {
     useMutation({
       mutation: sendChangeEmailMutation,
     });
+  const { trigger: sendVerifyEmail, isMutating: isVerifyEmailMutation } =
+    useMutation({
+      mutation: sendVerifyEmailMutation,
+    });
 
   return {
     loading:
       isChangePasswordMutating ||
       isSetPasswordMutating ||
-      isChangeEmailMutating,
+      isChangeEmailMutating ||
+      isVerifyEmailMutation,
     sendEmail: useCallback(
       (email: string) => {
         let trigger: (args: {
@@ -113,6 +124,10 @@ const useSendEmail = (emailType: AuthPanelProps['emailType']) => {
             trigger = sendChangeEmail;
             callbackUrl = 'changeEmail';
             break;
+          case 'verifyEmail':
+            trigger = sendVerifyEmail;
+            callbackUrl = 'verify-email';
+            break;
         }
         // TODO: add error handler
         return trigger({
@@ -127,6 +142,7 @@ const useSendEmail = (emailType: AuthPanelProps['emailType']) => {
         sendChangeEmail,
         sendChangePasswordEmail,
         sendSetPasswordEmail,
+        sendVerifyEmail,
       ]
     ),
   };

@@ -12,7 +12,7 @@ import {
 } from '@affine/graphql';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { ArrowDownBigIcon, GoogleDuotoneIcon } from '@blocksuite/icons';
+import { ArrowDownBigIcon } from '@blocksuite/icons';
 import { type FC, useState } from 'react';
 import { useCallback } from 'react';
 
@@ -20,6 +20,7 @@ import { useCurrentLoginStatus } from '../../../hooks/affine/use-current-login-s
 import { useMutation } from '../../../hooks/use-mutation';
 import { emailRegex } from '../../../utils/email-regex';
 import type { AuthPanelProps } from './index';
+import { OAuth } from './oauth';
 import * as style from './style.css';
 import { INTERNAL_BETA_URL, useAuth } from './use-auth';
 import { Captcha, useCaptcha } from './use-captcha';
@@ -46,7 +47,6 @@ export const SignIn: FC<AuthPanelProps> = ({
     allowSendEmail,
     signIn,
     signUp,
-    signInWithGoogle,
   } = useAuth();
 
   const { trigger: verifyUser, isMutating } = useMutation({
@@ -59,6 +59,10 @@ export const SignIn: FC<AuthPanelProps> = ({
   }
 
   const onContinue = useAsyncCallback(async () => {
+    if (!allowSendEmail) {
+      return;
+    }
+
     if (!validateEmail(email)) {
       setIsValidEmail(false);
       return;
@@ -99,13 +103,14 @@ export const SignIn: FC<AuthPanelProps> = ({
         const res = await signUp(email, verifyToken, challenge);
         if (res?.status === 403 && res?.url === INTERNAL_BETA_URL) {
           return setAuthState('noAccess');
-        } else if (!res || res.status >= 400 || res.error) {
+        } else if (!res || res.status >= 400) {
           return;
         }
         setAuthState('afterSignUpSendEmail');
       }
     }
   }, [
+    allowSendEmail,
     subscriptionData,
     challenge,
     email,
@@ -124,20 +129,7 @@ export const SignIn: FC<AuthPanelProps> = ({
         subTitle={t['com.affine.brand.affineCloud']()}
       />
 
-      <Button
-        type="primary"
-        block
-        size="extraLarge"
-        style={{
-          marginTop: 30,
-        }}
-        icon={<GoogleDuotoneIcon />}
-        onClick={useCallback(() => {
-          signInWithGoogle();
-        }, [signInWithGoogle])}
-      >
-        {t['Continue with Google']()}
-      </Button>
+      <OAuth />
 
       <div className={style.authModalContent}>
         <AuthInput

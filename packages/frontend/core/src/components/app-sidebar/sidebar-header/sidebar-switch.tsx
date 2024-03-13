@@ -8,10 +8,10 @@ import { appSidebarOpenAtom } from '../index.jotai';
 import * as styles from './sidebar-switch.css';
 
 export const SidebarSwitch = ({
-  show = true,
+  show,
   className,
 }: {
-  show?: boolean;
+  show: boolean;
   className?: string;
 }) => {
   const [open, setOpen] = useAtom(appSidebarOpenAtom);

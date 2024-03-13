@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 
-import { UserType } from '../users/types';
 import { WorkspaceType } from '../workspaces/types';
 import { FeatureConfigType, getFeature } from './feature';
 import { FeatureKind, FeatureType } from './types';
@@ -158,7 +157,7 @@ export class FeatureService {
     return configs.filter(feature => !!feature.feature);
   }
 
-  async listFeatureUsers(feature: FeatureType): Promise<UserType[]> {
+  async listFeatureUsers(feature: FeatureType) {
     return this.prisma.userFeatures
       .findMany({
         where: {
@@ -175,7 +174,7 @@ export class FeatureService {
               name: true,
               avatarUrl: true,
               email: true,
-              emailVerified: true,
+              emailVerifiedAt: true,
               createdAt: true,
             },
           },

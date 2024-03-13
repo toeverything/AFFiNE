@@ -21,15 +21,7 @@ const test = ava as TestFn<{
 
 test.beforeEach(async t => {
   t.context.module = await createTestingModule({
-    imports: [
-      ConfigModule.forRoot({
-        auth: {
-          accessTokenExpiresIn: 1,
-          refreshTokenExpiresIn: 1,
-          leeway: 1,
-        },
-      }),
-    ],
+    imports: [ConfigModule.forRoot({})],
   });
   t.context.auth = t.context.module.get(AuthService);
 });

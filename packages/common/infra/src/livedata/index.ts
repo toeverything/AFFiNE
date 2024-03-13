@@ -1,5 +1,6 @@
 import { DebugLogger } from '@affine/debug';
 import {
+  combineLatest,
   distinctUntilChanged,
   EMPTY,
   filter,
@@ -131,9 +132,99 @@ export class LiveData<T = unknown> implements InteropObservable<T> {
     return data;
   }
 
+  private static GLOBAL_COMPUTED_RECURSIVE_COUNT = 0;
+
+  /**
+   * @example
+   * ```ts
+   * const a = new LiveData('v1');
+   * const v1 = new LiveData(100);
+   * const v2 = new LiveData(200);
+   *
+   * const v = LiveData.computed(get => {
+   *   return get(a) === 'v1' ? get(v1) : get(v2);
+   * });
+   *
+   * expect(v.value).toBe(100);
+   * ```
+   */
+  static computed<T>(
+    compute: (get: <L>(data: LiveData<L>) => L) => T
+  ): LiveData<T> {
+    return LiveData.from(
+      new Observable(subscribe => {
+        const execute = (next: () => void) => {
+          const subscriptions: Subscription[] = [];
+          const getfn = <L>(data: LiveData<L>) => {
+            let value = null as L;
+            let first = true;
+            subscriptions.push(
+              data.subscribe({
+                error(err) {
+                  subscribe.error(err);
+                },
+                next(v) {
+                  value = v;
+                  if (!first) {
+                    next();
+                  }
+                  first = false;
+                },
+              })
+            );
+            return value;
+          };
+
+          LiveData.GLOBAL_COMPUTED_RECURSIVE_COUNT++;
+
+          try {
+            if (LiveData.GLOBAL_COMPUTED_RECURSIVE_COUNT > 10) {
+              subscribe.error(new Error('computed recursive limit exceeded'));
+            } else {
+              subscribe.next(compute(getfn));
+            }
+          } catch (err) {
+            subscribe.error(err);
+          } finally {
+            LiveData.GLOBAL_COMPUTED_RECURSIVE_COUNT--;
+          }
+
+          return () => {
+            subscriptions.forEach(s => s.unsubscribe());
+          };
+        };
+
+        let prev = () => {};
+
+        const looper = () => {
+          const dispose = execute(looper);
+          prev();
+          prev = dispose;
+        };
+
+        looper();
+
+        return () => {
+          prev();
+        };
+      }),
+      null as any
+    );
+  }
+
   private readonly raw: BehaviorSubject<T>;
   private readonly ops = new Subject<LiveDataOperation>();
   private readonly upstreamSubscription: Subscription | undefined;
+
+  /**
+   * When the upstream Observable of livedata throws an error, livedata will enter poisoned state. This is an
+   * unrecoverable abnormal state. Any operation on livedata will throw a PoisonedError.
+   *
+   * Since the development specification for livedata is not to throw any error, entering the poisoned state usually
+   * means a programming error.
+   */
+  private isPoisoned = false;
+  private poisonedError: PoisonedError | null = null;
 
   constructor(
     initialValue: T,
@@ -154,17 +245,26 @@ export class LiveData<T = unknown> implements InteropObservable<T> {
         },
         error: err => {
           logger.error('uncatched error in livedata', err);
+          this.isPoisoned = true;
+          this.poisonedError = new PoisonedError(err);
+          this.raw.error(this.poisonedError);
         },
       });
     }
   }
 
   getValue(): T {
+    if (this.isPoisoned) {
+      throw this.poisonedError;
+    }
     this.ops.next('get');
     return this.raw.value;
   }
 
   setValue(v: T) {
+    if (this.isPoisoned) {
+      throw this.poisonedError;
+    }
     this.raw.next(v);
     this.ops.next('set');
   }
@@ -174,10 +274,13 @@ export class LiveData<T = unknown> implements InteropObservable<T> {
   }
 
   set value(v: T) {
-    this.setValue(v);
+    this.next(v);
   }
 
   next(v: T) {
+    if (this.isPoisoned) {
+      throw this.poisonedError;
+    }
     this.setValue(v);
   }
 
@@ -192,7 +295,7 @@ export class LiveData<T = unknown> implements InteropObservable<T> {
     return subscription;
   }
 
-  map<R>(mapper: (v: T) => R): LiveData<R> {
+  map<R>(mapper: (v: T) => R) {
     const sub = LiveData.from(
       new Observable<R>(subscriber =>
         this.subscribe({
@@ -268,7 +371,46 @@ export class LiveData<T = unknown> implements InteropObservable<T> {
     this.upstreamSubscription?.unsubscribe();
   }
 
+  /**
+   * flatten the livedata
+   *
+   * ```
+   * new LiveData(new LiveData(0)).flat() // LiveData<number>
+   * ```
+   *
+   * ```
+   * new LiveData([new LiveData(0)]).flat() // LiveData<number[]>
+   * ```
+   */
+  flat(): Flat<this> {
+    return LiveData.from(
+      this.pipe(
+        switchMap(v => {
+          if (v instanceof LiveData) {
+            return (v as LiveData<any>).flat();
+          } else if (Array.isArray(v)) {
+            return combineLatest(
+              v.map(v => {
+                if (v instanceof LiveData) {
+                  return v.flat();
+                } else {
+                  return of(v);
+                }
+              })
+            );
+          } else {
+            return of(v);
+          }
+        })
+      ),
+      null as any
+    ) as any;
+  }
+
   reactSubscribe = (cb: () => void) => {
+    if (this.isPoisoned) {
+      throw this.poisonedError;
+    }
     this.ops.next('watch');
     const subscription = this.raw
       .pipe(distinctUntilChanged(), skip(1))
@@ -280,6 +422,9 @@ export class LiveData<T = unknown> implements InteropObservable<T> {
   };
 
   reactGetSnapshot = () => {
+    if (this.isPoisoned) {
+      throw this.poisonedError;
+    }
     this.ops.next('watch');
     setImmediate(() => {
       this.ops.next('unwatch');
@@ -297,3 +442,21 @@ export class LiveData<T = unknown> implements InteropObservable<T> {
 }
 
 export type LiveDataOperation = 'set' | 'get' | 'watch' | 'unwatch';
+
+export type Unwrap<T> =
+  T extends LiveData<infer Z>
+    ? Unwrap<Z>
+    : T extends LiveData<infer A>[]
+      ? Unwrap<A>[]
+      : T;
+
+export type Flat<T> = T extends LiveData<infer P> ? LiveData<Unwrap<P>> : T;
+
+export class PoisonedError extends Error {
+  constructor(originalError: any) {
+    super(
+      'The livedata is poisoned, original error: ' +
+        (originalError instanceof Error ? originalError.stack : originalError)
+    );
+  }
+}

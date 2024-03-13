@@ -3,21 +3,21 @@ import { useLiveData } from '@toeverything/infra/livedata';
 import { Suspense, useEffect } from 'react';
 
 import { useCurrentLoginStatus } from '../../../hooks/affine/use-current-login-status';
-import { useCurrentUser } from '../../../hooks/affine/use-current-user';
+import { useSession } from '../../../hooks/affine/use-current-user';
 import { CurrentWorkspaceService } from '../../../modules/workspace/current-workspace';
 
 const SyncAwarenessInnerLoggedIn = () => {
-  const currentUser = useCurrentUser();
+  const { user } = useSession();
   const currentWorkspace = useLiveData(
     useService(CurrentWorkspaceService).currentWorkspace
   );
 
   useEffect(() => {
-    if (currentUser && currentWorkspace) {
+    if (user && currentWorkspace) {
       currentWorkspace.blockSuiteWorkspace.awarenessStore.awareness.setLocalStateField(
         'user',
         {
-          name: currentUser.name,
+          name: user.name,
           // todo: add avatar?
         }
       );
@@ -30,7 +30,7 @@ const SyncAwarenessInnerLoggedIn = () => {
       };
     }
     return;
-  }, [currentUser, currentWorkspace]);
+  }, [user, currentWorkspace]);
 
   return null;
 };

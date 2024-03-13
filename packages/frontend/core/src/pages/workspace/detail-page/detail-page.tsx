@@ -1,6 +1,7 @@
 import { Scrollable } from '@affine/component';
 import { PageDetailSkeleton } from '@affine/component/page-detail-skeleton';
 import { useBlockSuiteDocMeta } from '@affine/core/hooks/use-block-suite-page-meta';
+import type { PageRootService } from '@blocksuite/blocks';
 import {
   BookmarkService,
   customImageProxyMiddleware,
@@ -22,6 +23,7 @@ import {
 } from '@toeverything/infra';
 import { Workspace } from '@toeverything/infra';
 import { useService } from '@toeverything/infra';
+import clsx from 'clsx';
 import { useSetAtom } from 'jotai';
 import {
   memo,
@@ -135,7 +137,8 @@ const DetailPageImpl = memo(function DetailPageImpl() {
       EmbedLoomService.setLinkPreviewEndpoint(runtimeConfig.linkPreviewUrl);
 
       // provide page mode and updated date to blocksuite
-      const pageService = editorHost.std.spec.getService('affine:page');
+      const pageService =
+        editorHost.std.spec.getService<PageRootService>('affine:page');
       const disposable = new DisposableGroup();
 
       pageService.getEditorMode = (pageId: string) =>
@@ -152,12 +155,12 @@ const DetailPageImpl = memo(function DetailPageImpl() {
       page.setMode(mode);
       // fixme: it seems pageLinkClicked is not triggered sometimes?
       disposable.add(
-        editor.slots.docLinkClicked.on(({ docId }) => {
+        pageService.slots.docLinkClicked.on(({ docId }) => {
           return openPage(blockSuiteWorkspace.id, docId);
         })
       );
       disposable.add(
-        editor.slots.tagClicked.on(({ tagId }) => {
+        pageService.slots.tagClicked.on(({ tagId }) => {
           jumpToTag(currentWorkspace.id, tagId);
         })
       );
@@ -198,9 +201,15 @@ const DetailPageImpl = memo(function DetailPageImpl() {
         <div className={styles.mainContainer}>
           {/* Add a key to force rerender when page changed, to avoid error boundary persisting. */}
           <AffineErrorBoundary key={currentPageId}>
+            <TopTip pageId={currentPageId} workspace={currentWorkspace} />
             <Scrollable.Root>
-              <Scrollable.Viewport className={styles.editorContainer}>
-                <TopTip pageId={currentPageId} workspace={currentWorkspace} />
+              <Scrollable.Viewport
+                className={clsx(
+                  'affine-page-viewport',
+                  styles.affineDocViewport,
+                  styles.editorContainer
+                )}
+              >
                 <PageDetailEditor
                   pageId={currentPageId}
                   onLoad={onLoad}
@@ -255,6 +264,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
 });
 
 export const DetailPage = ({ pageId }: { pageId: string }): ReactElement => {
+  const currentWorkspace = useService(Workspace);
   const pageRecordList = useService(PageRecordList);
 
   const pageListReady = useLiveData(pageRecordList.isReady);
@@ -280,6 +290,11 @@ export const DetailPage = ({ pageId }: { pageId: string }): ReactElement => {
       release();
     };
   }, [pageManager, pageRecord]);
+
+  // set sync engine priority target
+  useEffect(() => {
+    currentWorkspace.setPriorityRule(id => id.endsWith(pageId));
+  }, [currentWorkspace, pageId]);
 
   const jumpOnce = useLiveData(pageRecord?.meta.map(meta => meta.jumpOnce));
 

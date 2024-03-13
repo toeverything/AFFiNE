@@ -2,7 +2,7 @@ import { Field, ObjectType } from '@nestjs/graphql';
 import { SafeIntResolver } from 'graphql-scalars';
 import { z } from 'zod';
 
-import { commonFeatureSchema, FeatureKind } from '../features';
+import { commonFeatureSchema, FeatureKind } from '../features/types';
 import { ByteUnit, OneDay, OneKB } from './constant';
 
 /// ======== quota define ========

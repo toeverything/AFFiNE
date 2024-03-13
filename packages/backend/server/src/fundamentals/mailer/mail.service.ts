@@ -1,12 +1,14 @@
 import { Inject, Injectable, Optional } from '@nestjs/common';
 
 import { Config } from '../config';
+import { URLHelper } from '../helpers';
 import { MAILER_SERVICE, type MailerService, type Options } from './mailer';
 import { emailTemplate } from './template';
 @Injectable()
 export class MailService {
   constructor(
     private readonly config: Config,
+    private readonly url: URLHelper,
     @Optional() @Inject(MAILER_SERVICE) private readonly mailer?: MailerService
   ) {}
 
@@ -41,7 +43,7 @@ export class MailService {
     }
   ) {
     // TODO: use callback url when need support desktop app
-    const buttonUrl = `${this.config.origin}/invite/${inviteId}`;
+    const buttonUrl = this.url.link(`/invite/${inviteId}`);
     const workspaceAvatar = invitationInfo.workspace.avatar;
 
     const content = `<p style="margin:0">${
@@ -92,7 +94,23 @@ export class MailService {
     });
   }
 
-  async sendSignInEmail(url: string, options: Options) {
+  async sendSignUpMail(url: string, options: Options) {
+    const html = emailTemplate({
+      title: 'Create AFFiNE Account',
+      content:
+        'Click the button below to complete your account creation and sign in. This magic link will expire in 30 minutes.',
+      buttonContent: ' Create account and sign in',
+      buttonUrl: url,
+    });
+
+    return this.sendMail({
+      html,
+      subject: 'Your AFFiNE account is waiting for you!',
+      ...options,
+    });
+  }
+
+  async sendSignInMail(url: string, options: Options) {
     const html = emailTemplate({
       title: 'Sign in to AFFiNE',
       content:
@@ -161,6 +179,20 @@ export class MailService {
     return this.sendMail({
       to,
       subject: `Verify your new email for AFFiNE`,
+      html,
+    });
+  }
+  async sendVerifyEmail(to: string, url: string) {
+    const html = emailTemplate({
+      title: 'Verify your email address',
+      content:
+        'You recently requested to verify the email address associated with your AFFiNE account. To complete this process, please click on the verification link below. This magic link will expire in 30 minutes.',
+      buttonContent: 'Verify your email address',
+      buttonUrl: url,
+    });
+    return this.sendMail({
+      to,
+      subject: `Verify your email for AFFiNE`,
       html,
     });
   }

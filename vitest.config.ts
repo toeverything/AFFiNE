@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 
 import { vanillaExtractPlugin } from '@vanilla-extract/vite-plugin';
 import react from '@vitejs/plugin-react-swc';
+import * as fg from 'fast-glob';
 import { defineConfig } from 'vitest/config';
 
 const rootDir = fileURLToPath(new URL('.', import.meta.url));
@@ -26,10 +27,9 @@ export default defineConfig({
       resolve(rootDir, './scripts/setup/global.ts'),
     ],
     include: [
-      resolve(rootDir, 'packages/common/**/*.spec.ts'),
-      resolve(rootDir, 'packages/common/**/*.spec.tsx'),
-      resolve(rootDir, 'packages/frontend/**/*.spec.ts'),
-      resolve(rootDir, 'packages/frontend/**/*.spec.tsx'),
+      // rootDir cannot be used as a pattern on windows
+      fg.convertPathToPattern(rootDir) +
+        'packages/{common,frontend}/**/*.spec.{ts,tsx}',
     ],
     exclude: [
       '**/node_modules',

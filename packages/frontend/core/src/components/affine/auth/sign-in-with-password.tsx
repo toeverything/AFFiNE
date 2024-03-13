@@ -5,10 +5,9 @@ import {
   ModalHeader,
 } from '@affine/component/auth-components';
 import { Button } from '@affine/component/ui/button';
+import { useSession } from '@affine/core/hooks/affine/use-current-user';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-// eslint-disable-next-line @typescript-eslint/no-restricted-imports
-import { useSession } from 'next-auth/react';
 import type { FC } from 'react';
 import { useCallback, useState } from 'react';
 
@@ -25,7 +24,7 @@ export const SignInWithPassword: FC<AuthPanelProps> = ({
   onSignedIn,
 }) => {
   const t = useAFFiNEI18N();
-  const { update } = useSession();
+  const { reload } = useSession();
 
   const [password, setPassword] = useState('');
   const [passwordError, setPasswordError] = useState(false);
@@ -39,7 +38,6 @@ export const SignInWithPassword: FC<AuthPanelProps> = ({
 
   const onSignIn = useAsyncCallback(async () => {
     const res = await signInCloud('credentials', {
-      redirect: false,
       email,
       password,
     }).catch(console.error);
@@ -48,9 +46,9 @@ export const SignInWithPassword: FC<AuthPanelProps> = ({
       return setPasswordError(true);
     }
 
-    await update();
+    await reload();
     onSignedIn?.();
-  }, [email, password, onSignedIn, update]);
+  }, [email, password, onSignedIn, reload]);
 
   const sendMagicLink = useAsyncCallback(async () => {
     if (allowSendEmail && verifyToken && !sendingEmail) {

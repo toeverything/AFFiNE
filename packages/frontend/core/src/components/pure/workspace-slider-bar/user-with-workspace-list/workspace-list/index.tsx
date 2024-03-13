@@ -1,6 +1,7 @@
 import { ScrollableContainer } from '@affine/component';
 import { Divider } from '@affine/component/ui/divider';
 import { WorkspaceList } from '@affine/component/workspace-list';
+import { useSession } from '@affine/core/hooks/affine/use-current-user';
 import {
   useWorkspaceAvatar,
   useWorkspaceName,
@@ -12,8 +13,6 @@ import { WorkspaceManager, type WorkspaceMetadata } from '@toeverything/infra';
 import { useService } from '@toeverything/infra/di';
 import { useLiveData } from '@toeverything/infra/livedata';
 import { useSetAtom } from 'jotai';
-// eslint-disable-next-line @typescript-eslint/no-restricted-imports
-import { useSession } from 'next-auth/react';
 import { useCallback, useMemo } from 'react';
 
 import {
@@ -119,10 +118,9 @@ export const AFFiNEWorkspaceList = ({
 
   const setOpenSettingModalAtom = useSetAtom(openSettingModalAtom);
 
-  // TODO: AFFiNE Cloud support
   const { status } = useSession();
 
-  const isAuthenticated = useMemo(() => status === 'authenticated', [status]);
+  const isAuthenticated = status === 'authenticated';
 
   const cloudWorkspaces = useMemo(
     () =>

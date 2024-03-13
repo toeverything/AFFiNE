@@ -8,7 +8,6 @@ import { logger } from './logger';
 import {
   getMainWindow,
   handleOpenUrlInHiddenWindow,
-  removeCookie,
   setCookie,
 } from './main-window';
 
@@ -82,27 +81,15 @@ async function handleOauthJwt(url: string) {
         return;
       }
 
-      const isSecure = CLOUD_BASE_URL.startsWith('https://');
-
       // set token to cookie
       await setCookie({
         url: CLOUD_BASE_URL,
         httpOnly: true,
         value: token,
         secure: true,
-        name: isSecure
-          ? '__Secure-next-auth.session-token'
-          : 'next-auth.session-token',
+        name: 'sid',
         expirationDate: Math.floor(Date.now() / 1000 + 3600 * 24 * 7),
       });
-
-      // force reset next-auth.callback-url
-      // there could be incorrect callback-url in cookie that will cause auth failure
-      // so we need to reset it to empty to mitigate this issue
-      await removeCookie(
-        CLOUD_BASE_URL,
-        isSecure ? '__Secure-next-auth.callback-url' : 'next-auth.callback-url'
-      );
 
       let hiddenWindow: BrowserWindow | null = null;
 

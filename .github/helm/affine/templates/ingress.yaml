@@ -60,6 +60,13 @@ spec:
                 name: affine-graphql
                 port:
                   number: {{ .Values.graphql.service.port }}
+          - path: /oauth
+            pathType: Prefix
+            backend:
+              service:
+                name: affine-graphql
+                port:
+                  number: {{ .Values.graphql.service.port }}
           - path: /
             pathType: Prefix
             backend:

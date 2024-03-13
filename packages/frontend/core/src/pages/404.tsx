@@ -1,7 +1,6 @@
 import { NotFoundPage } from '@affine/component/not-found-page';
+import { useSession } from '@affine/core/hooks/affine/use-current-user';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-// eslint-disable-next-line @typescript-eslint/no-restricted-imports
-import { useSession } from 'next-auth/react';
 import type { ReactElement } from 'react';
 import { useCallback, useState } from 'react';
 
@@ -10,7 +9,7 @@ import { RouteLogic, useNavigateHelper } from '../hooks/use-navigate-helper';
 import { signOutCloud } from '../utils/cloud-utils';
 
 export const PageNotFound = (): ReactElement => {
-  const { data: session } = useSession();
+  const { user } = useSession();
   const { jumpToIndex } = useNavigateHelper();
   const [open, setOpen] = useState(false);
 
@@ -25,22 +24,12 @@ export const PageNotFound = (): ReactElement => {
 
   const onConfirmSignOut = useAsyncCallback(async () => {
     setOpen(false);
-    await signOutCloud({
-      callbackUrl: '/signIn',
-    });
+    await signOutCloud('/signIn');
   }, [setOpen]);
   return (
     <>
       <NotFoundPage
-        user={
-          session?.user
-            ? {
-                name: session.user.name || '',
-                email: session.user.email || '',
-                avatar: session.user.image || '',
-              }
-            : null
-        }
+        user={user}
         onBack={handleBackButtonClick}
         onSignOut={handleOpenSignOutModal}
       />

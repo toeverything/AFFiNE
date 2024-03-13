@@ -2,7 +2,6 @@ import clsx from 'clsx';
 import type {
   ChangeEvent,
   CSSProperties,
-  FocusEvent,
   FocusEventHandler,
   ForwardedRef,
   InputHTMLAttributes,
@@ -10,7 +9,7 @@ import type {
   KeyboardEventHandler,
   ReactNode,
 } from 'react';
-import { forwardRef, useCallback, useState } from 'react';
+import { forwardRef, useCallback } from 'react';
 
 import { input, inputWrapper } from './style.css';
 
@@ -39,8 +38,6 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
     style = {},
     inputStyle = {},
     size = 'default',
-    onFocus,
-    onBlur,
     preFix,
     endFix,
     onEnter,
@@ -50,8 +47,6 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
   }: InputProps,
   ref: ForwardedRef<HTMLInputElement>
 ) {
-  const [isFocus, setIsFocus] = useState(false);
-
   const handleAutoFocus = useCallback((ref: HTMLInputElement | null) => {
     if (ref) {
       window.setTimeout(() => ref.focus(), 0);
@@ -64,7 +59,6 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
         // status
         disabled: disabled,
         'no-border': noBorder,
-        focus: isFocus,
         // color
         error: status === 'error',
         success: status === 'success',
@@ -87,20 +81,6 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
         ref={autoFocus ? handleAutoFocus : ref}
         disabled={disabled}
         style={inputStyle}
-        onFocus={useCallback(
-          (e: FocusEvent<HTMLInputElement>) => {
-            setIsFocus(true);
-            onFocus?.(e);
-          },
-          [onFocus]
-        )}
-        onBlur={useCallback(
-          (e: FocusEvent<HTMLInputElement>) => {
-            setIsFocus(false);
-            onBlur?.(e);
-          },
-          [onBlur]
-        )}
         onChange={useCallback(
           (e: ChangeEvent<HTMLInputElement>) => {
             propsOnChange?.(e.target.value);

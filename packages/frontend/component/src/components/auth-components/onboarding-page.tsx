@@ -37,7 +37,7 @@ function getCallbackUrl(location: Location) {
   try {
     const url =
       location.state?.callbackURL ||
-      new URLSearchParams(location.search).get('callbackUrl');
+      new URLSearchParams(location.search).get('redirect_uri');
     if (typeof url === 'string' && url) {
       if (!url.startsWith('http:') && !url.startsWith('https:')) {
         return url;

@@ -1,53 +1,8 @@
 import type { ArgumentsHost, ExecutionContext } from '@nestjs/common';
 import type { GqlContextType } from '@nestjs/graphql';
-import { GqlArgumentsHost, GqlExecutionContext } from '@nestjs/graphql';
+import { GqlArgumentsHost } from '@nestjs/graphql';
 import type { Request, Response } from 'express';
-
-export function getRequestResponseFromContext(context: ExecutionContext) {
-  switch (context.getType<GqlContextType>()) {
-    case 'graphql': {
-      const gqlContext = GqlExecutionContext.create(context).getContext<{
-        req: Request;
-      }>();
-      return {
-        req: gqlContext.req,
-        res: gqlContext.req.res,
-      };
-    }
-    case 'http': {
-      const http = context.switchToHttp();
-      return {
-        req: http.getRequest<Request>(),
-        res: http.getResponse<Response>(),
-      };
-    }
-    case 'ws': {
-      const ws = context.switchToWs();
-      const req = ws.getClient().handshake;
-
-      const cookies = req?.headers?.cookie;
-      // patch cookies to match auth guard logic
-      if (typeof cookies === 'string') {
-        req.cookies = cookies
-          .split(';')
-          .map(v => v.split('='))
-          .reduce(
-            (acc, v) => {
-              acc[decodeURIComponent(v[0].trim())] = decodeURIComponent(
-                v[1].trim()
-              );
-              return acc;
-            },
-            {} as Record<string, string>
-          );
-      }
-
-      return { req };
-    }
-    default:
-      throw new Error('Unknown context type for getting request and response');
-  }
-}
+import type { Socket } from 'socket.io';
 
 export function getRequestResponseFromHost(host: ArgumentsHost) {
   switch (host.getType<GqlContextType>()) {
@@ -67,11 +22,47 @@ export function getRequestResponseFromHost(host: ArgumentsHost) {
         res: http.getResponse<Response>(),
       };
     }
-    default:
-      throw new Error('Unknown host type for getting request and response');
+    case 'ws': {
+      const ws = host.switchToWs();
+      const req = ws.getClient<Socket>().client.conn.request as Request;
+
+      const cookieStr = req?.headers?.cookie;
+      // patch cookies to match auth guard logic
+      if (typeof cookieStr === 'string') {
+        req.cookies = cookieStr.split(';').reduce(
+          (cookies, cookie) => {
+            const [key, val] = cookie.split('=');
+
+            if (key) {
+              cookies[decodeURIComponent(key.trim())] = val
+                ? decodeURIComponent(val.trim())
+                : val;
+            }
+
+            return cookies;
+          },
+          {} as Record<string, string>
+        );
+      }
+
+      return { req };
+    }
+    case 'rpc': {
+      const rpc = host.switchToRpc();
+      const { req } = rpc.getContext<{ req: Request }>();
+
+      return {
+        req,
+        res: req.res,
+      };
+    }
   }
 }
 
 export function getRequestFromHost(host: ArgumentsHost) {
   return getRequestResponseFromHost(host).req;
+}
+
+export function getRequestResponseFromContext(ctx: ExecutionContext) {
+  return getRequestResponseFromHost(ctx);
 }

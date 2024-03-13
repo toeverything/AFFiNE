@@ -2,9 +2,11 @@ import { Module } from '@nestjs/common';
 import { Field, ObjectType, Query, registerEnumType } from '@nestjs/graphql';
 
 import { DeploymentType } from '../fundamentals';
+import { Public } from './auth';
 
 export enum ServerFeature {
   Payment = 'payment',
+  OAuth = 'oauth',
 }
 
 registerEnumType(ServerFeature, {
@@ -15,9 +17,9 @@ registerEnumType(DeploymentType, {
   name: 'ServerDeploymentType',
 });
 
-const ENABLED_FEATURES: ServerFeature[] = [];
+const ENABLED_FEATURES: Set<ServerFeature> = new Set();
 export function ADD_ENABLED_FEATURES(feature: ServerFeature) {
-  ENABLED_FEATURES.push(feature);
+  ENABLED_FEATURES.add(feature);
 }
 
 @ObjectType()
@@ -48,6 +50,7 @@ export class ServerConfigType {
 }
 
 export class ServerConfigResolver {
+  @Public()
   @Query(() => ServerConfigType, {
     description: 'server config',
   })
@@ -61,7 +64,7 @@ export class ServerConfigResolver {
       // the old flavors contains `selfhosted` but it actually not flavor but deployment type
       // this field should be removed after frontend feature flags implemented
       flavor: AFFiNE.type,
-      features: ENABLED_FEATURES,
+      features: Array.from(ENABLED_FEATURES),
     };
   }
 }

@@ -74,7 +74,6 @@
     "nanoid": "^5.0.6",
     "nest-commander": "^3.12.5",
     "nestjs-throttler-storage-redis": "^0.4.1",
-    "next-auth": "^4.24.5",
     "nodemailer": "^6.9.10",
     "on-headers": "^1.0.2",
     "parse-duration": "^1.1.0",
@@ -143,7 +142,8 @@
       "MAILER_USER": "noreply@toeverything.info",
       "MAILER_PASSWORD": "affine",
       "MAILER_SENDER": "noreply@toeverything.info",
-      "FEATURES_EARLY_ACCESS_PREVIEW": "false"
+      "FEATURES_EARLY_ACCESS_PREVIEW": "false",
+      "DEPLOYMENT_TYPE": "affine"
     }
   },
   "nodemonConfig": {
