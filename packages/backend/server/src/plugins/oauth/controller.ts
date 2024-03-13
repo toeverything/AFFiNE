@@ -160,7 +160,16 @@ export class OAuthController {
       }
 
       await this.user.fulfillUser(externalAccount.email, {
+        emailVerifiedAt: new Date(),
         registered: true,
+      });
+      await this.db.connectedAccount.create({
+        data: {
+          userId: user.id,
+          provider,
+          providerAccountId: externalAccount.id,
+          ...tokens,
+        },
       });
 
       return user;
@@ -191,7 +200,7 @@ export class OAuthController {
   ) {
     return this.user.createUser({
       email: externalAccount.email,
-      name: 'Unnamed',
+      name: externalAccount.email.split('@')[0],
       avatarUrl: externalAccount.avatarUrl,
       emailVerifiedAt: new Date(),
       connectedAccounts: {
