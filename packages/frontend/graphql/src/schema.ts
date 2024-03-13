@@ -394,14 +394,18 @@ export type GetUserQueryVariables = Exact<{
 export type GetUserQuery = {
   __typename?: 'Query';
   user:
-    | { __typename: 'LimitedUserType'; email: string; hasPassword: boolean }
+    | {
+        __typename: 'LimitedUserType';
+        email: string;
+        hasPassword: boolean | null;
+      }
     | {
         __typename: 'UserType';
         id: string;
         name: string;
         avatarUrl: string | null;
         email: string;
-        hasPassword: boolean;
+        hasPassword: boolean | null;
       }
     | null;
 };
