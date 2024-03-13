@@ -152,8 +152,9 @@ export class AuthController {
       throw new BadRequestException('Invalid Sign-in mail Token');
     }
 
-    const user = await this.user.findOrCreateUser(email, {
+    const user = await this.user.fulfillUser(email, {
       emailVerifiedAt: new Date(),
+      registered: true,
     });
 
     await this.auth.setCookie(req, res, user);

@@ -42,7 +42,9 @@ export class UserManagementResolver {
     if (user) {
       return this.feature.addEarlyAccess(user.id);
     } else {
-      const user = await this.users.createAnonymousUser(email);
+      const user = await this.users.createAnonymousUser(email, {
+        registered: false,
+      });
       return this.feature.addEarlyAccess(user.id);
     }
   }

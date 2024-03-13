@@ -11,11 +11,12 @@ export class UserService {
     email: true,
     emailVerifiedAt: true,
     avatarUrl: true,
+    registered: true,
   } satisfies Prisma.UserSelect;
 
   constructor(private readonly prisma: PrismaClient) {}
 
-  get userCreatingData(): Partial<Prisma.UserCreateInput> {
+  get userCreatingData() {
     return {
       name: 'Unnamed',
       features: {
@@ -104,6 +105,26 @@ export class UserService {
       return user;
     }
     return this.createAnonymousUser(email, data);
+  }
+
+  async fulfillUser(
+    email: string,
+    data: Partial<
+      Pick<Prisma.UserCreateInput, 'emailVerifiedAt' | 'registered'>
+    >
+  ) {
+    return this.prisma.user.upsert({
+      select: this.defaultUserSelect,
+      where: {
+        email,
+      },
+      update: data,
+      create: {
+        email,
+        ...this.userCreatingData,
+        ...data,
+      },
+    });
   }
 
   async deleteUser(id: string) {

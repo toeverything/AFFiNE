@@ -18,6 +18,9 @@ model User {
   createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   /// Not available if user signed up through OAuth providers
   password        String?   @db.VarChar
+  /// Indicate whether the user finished the signup progress.
+  /// for example, the value will be false if user never registered and invited into a workspace by others.
+  registered      Boolean   @default(true)
 
   features             UserFeatures[]
   customer             UserStripeCustomer?

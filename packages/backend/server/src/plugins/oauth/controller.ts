@@ -153,9 +153,17 @@ export class OAuthController {
     if (user) {
       // we can't directly connect the external account with given email in sign in scenario for safety concern.
       // let user manually connect in account sessions instead.
-      throw new BadRequestException(
-        'The account with provided email is not register in the same way.'
-      );
+      if (user.registered) {
+        throw new BadRequestException(
+          'The account with provided email is not register in the same way.'
+        );
+      }
+
+      await this.user.fulfillUser(externalAccount.email, {
+        registered: true,
+      });
+
+      return user;
     } else {
       user = await this.createUserWithConnectedAccount(
         provider,

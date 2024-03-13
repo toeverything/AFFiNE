@@ -49,7 +49,7 @@ export const CurrentUser = createParamDecorator(
 );
 
 export interface CurrentUser
-  extends Omit<User, 'password' | 'createdAt' | 'emailVerifiedAt'> {
+  extends Pick<User, 'id' | 'email' | 'avatarUrl' | 'name'> {
   hasPassword: boolean | null;
   emailVerified: boolean;
 }

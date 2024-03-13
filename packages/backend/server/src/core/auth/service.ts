@@ -36,12 +36,18 @@ export function parseAuthUserSeqNum(value: any) {
 }
 
 export function sessionUser(
-  user: Omit<User, 'password'> & { password?: string | null }
+  user: Pick<
+    User,
+    'id' | 'email' | 'avatarUrl' | 'name' | 'emailVerifiedAt'
+  > & { password?: string | null }
 ): CurrentUser {
-  return assign(omit(user, 'password', 'emailVerifiedAt', 'createdAt'), {
-    hasPassword: user.password !== null,
-    emailVerified: user.emailVerifiedAt !== null,
-  });
+  return assign(
+    omit(user, 'password', 'registered', 'emailVerifiedAt', 'createdAt'),
+    {
+      hasPassword: user.password !== null,
+      emailVerified: user.emailVerifiedAt !== null,
+    }
+  );
 }
 
 @Injectable()
