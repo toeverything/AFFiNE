@@ -14,9 +14,16 @@ export {
 } from './config';
 export * from './error';
 export { EventEmitter, type EventPayload, OnEvent } from './event';
+export type { GraphqlContext } from './graphql';
 export { MailService } from './mailer';
 export { CallCounter, CallTimer, metrics } from './metrics';
-export { LockGuard, MUTEX_RETRY, MUTEX_WAIT, MutexService } from './mutex';
+export {
+  BucketService,
+  LockGuard,
+  MUTEX_RETRY,
+  MUTEX_WAIT,
+  MutexService,
+} from './mutex';
 export {
   getOptionalModuleMetadata,
   GlobalExceptionFilter,

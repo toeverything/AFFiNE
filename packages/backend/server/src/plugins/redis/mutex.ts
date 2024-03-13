@@ -2,9 +2,10 @@ import { setTimeout } from 'node:timers/promises';
 
 import { Injectable, Logger } from '@nestjs/common';
 import Redis, { Command } from 'ioredis';
-import { ClsService } from 'nestjs-cls';
 
 import {
+  BucketService,
+  type GraphqlContext,
   LockGuard,
   MUTEX_RETRY,
   MUTEX_WAIT,
@@ -33,9 +34,10 @@ end`;
 export class MutexRedisService extends MutexService {
   constructor(
     private readonly redis: Redis,
-    cls: ClsService
+    context: GraphqlContext,
+    bucket: BucketService
   ) {
-    super(cls);
+    super(context, bucket);
     this.logger = new Logger(MutexRedisService.name);
   }
 

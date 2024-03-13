@@ -5,7 +5,6 @@ import { APP_INTERCEPTOR } from '@nestjs/core';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { get } from 'lodash-es';
-import { ClsModule } from 'nestjs-cls';
 
 import { AppController } from './app.controller';
 import { AuthModule } from './core/auth';
@@ -41,15 +40,6 @@ export const FunctionalityModules = [
   ScheduleModule.forRoot(),
   EventModule,
   CacheModule,
-  // async context binding for nestjs
-  // now we use it alloc an unique id for each request
-  // currently we use this id to identify the mutex lock owner
-  // an mutex lock will only be released by the owner or expired
-  ClsModule.forRoot({
-    global: true,
-    middleware: { mount: true },
-    interceptor: { mount: true },
-  }),
   MutexModule,
   PrismaModule,
   MetricsModule,

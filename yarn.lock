@@ -695,7 +695,6 @@ __metadata:
     lodash-es: "npm:^4.17.21"
     nanoid: "npm:^5.0.6"
     nest-commander: "npm:^3.12.5"
-    nestjs-cls: "npm:^4.2.0"
     nestjs-throttler-storage-redis: "npm:^0.4.1"
     next-auth: "npm:^4.24.5"
     nodemailer: "npm:^6.9.10"
@@ -27639,18 +27638,6 @@ __metadata:
     "@nestjs/core": ^8.0.0 || ^9.0.0 || ^10.0.0
     "@types/inquirer": ^8.1.3
   checksum: 10/eea0b534c4d37eb553823851cec06b8c1f8ff14b6eb993021a3fa7e621c2033303ec03a336735be47742a7aae63793e390dd0e254a13721856a25259e4839c25
-  languageName: node
-  linkType: hard
-
-"nestjs-cls@npm:^4.2.0":
-  version: 4.2.0
-  resolution: "nestjs-cls@npm:4.2.0"
-  peerDependencies:
-    "@nestjs/common": "> 7.0.0 < 11"
-    "@nestjs/core": "> 7.0.0 < 11"
-    reflect-metadata: "*"
-    rxjs: ">= 7"
-  checksum: 10/b79255e565687bf6600d1a16f4cf939a738b098d033ead9e5081e2919ffa33ed98587a107085a9e6c7ae7e124ce92139b0d5b1993e7dc990fee7b000d9e336c0
   languageName: node
   linkType: hard
 

@@ -1,10 +1,12 @@
 import { Global, Provider, Type } from '@nestjs/common';
+import { CONTEXT } from '@nestjs/graphql';
 import { Redis, type RedisOptions } from 'ioredis';
-import { ClsService } from 'nestjs-cls';
 import { ThrottlerStorageRedisService } from 'nestjs-throttler-storage-redis';
 
 import {
+  BucketService,
   Cache,
+  type GraphqlContext,
   MutexService,
   OptionalModule,
   SessionCache,
@@ -57,10 +59,10 @@ const socketIoRedisAdapterProvider: Provider = {
 // mutex
 const mutexRedisAdapterProvider: Provider = {
   provide: MutexService,
-  useFactory: (redis: Redis, cls: ClsService) => {
-    return new MutexRedisService(redis, cls);
+  useFactory: (redis: Redis, ctx: GraphqlContext, bucket: BucketService) => {
+    return new MutexRedisService(redis, ctx, bucket);
   },
-  inject: [MutexRedis, ClsService],
+  inject: [MutexRedis, CONTEXT, BucketService],
 };
 
 @Global()

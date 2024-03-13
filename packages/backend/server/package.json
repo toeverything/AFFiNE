@@ -73,7 +73,6 @@
     "lodash-es": "^4.17.21",
     "nanoid": "^5.0.6",
     "nest-commander": "^3.12.5",
-    "nestjs-cls": "^4.2.0",
     "nestjs-throttler-storage-redis": "^0.4.1",
     "next-auth": "^4.24.5",
     "nodemailer": "^6.9.10",
