@@ -115,4 +115,10 @@ export class FeatureManagementService {
   async listFeatureWorkspaces(feature: FeatureType) {
     return this.feature.listFeatureWorkspaces(feature);
   }
+
+  async getUserFeatures(userId: string): Promise<FeatureType[]> {
+    return (await this.feature.getUserFeatures(userId)).map(
+      f => f.feature.name
+    );
+  }
 }

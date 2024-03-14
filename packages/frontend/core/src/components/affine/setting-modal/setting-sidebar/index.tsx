@@ -5,11 +5,10 @@ import {
 import { Avatar } from '@affine/component/ui/avatar';
 import { Tooltip } from '@affine/component/ui/tooltip';
 import { useIsWorkspaceOwner } from '@affine/core/hooks/affine/use-is-workspace-owner';
+import { useIsEarlyAccess } from '@affine/core/hooks/affine/use-user-features';
 import { useWorkspaceBlobObjectUrl } from '@affine/core/hooks/use-workspace-blob';
-import { useWorkspaceAvailableFeatures } from '@affine/core/hooks/use-workspace-features';
 import { useWorkspaceInfo } from '@affine/core/hooks/use-workspace-info';
 import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
-import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { Logo1Icon } from '@blocksuite/icons';
 import {
@@ -253,7 +252,7 @@ const WorkspaceListItem = ({
   const isCurrent = currentWorkspace.id === meta.id;
   const t = useAFFiNEI18N();
   const isOwner = useIsWorkspaceOwner(meta);
-  const availableFeatures = useWorkspaceAvailableFeatures(meta);
+  const isEarlyAccess = useIsEarlyAccess();
 
   const onClickPreference = useCallback(() => {
     onClick('preference');
@@ -263,11 +262,7 @@ const WorkspaceListItem = ({
     return subTabConfigs
       .filter(({ key }) => {
         if (key === 'experimental-features') {
-          return (
-            isOwner &&
-            meta.flavour === WorkspaceFlavour.AFFINE_CLOUD &&
-            availableFeatures.length > 0
-          );
+          return isOwner && isEarlyAccess;
         }
         return true;
       })
@@ -287,14 +282,7 @@ const WorkspaceListItem = ({
           </div>
         );
       });
-  }, [
-    activeSubTab,
-    availableFeatures.length,
-    isOwner,
-    meta.flavour,
-    onClick,
-    t,
-  ]);
+  }, [activeSubTab, isEarlyAccess, isOwner, onClick, t]);
 
   return (
     <>

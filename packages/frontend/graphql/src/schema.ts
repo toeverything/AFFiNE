@@ -387,6 +387,13 @@ export type GetPublicWorkspaceQuery = {
   publicWorkspace: { __typename?: 'WorkspaceType'; id: string };
 };
 
+export type GetUserFeaturesQueryVariables = Exact<{ [key: string]: never }>;
+
+export type GetUserFeaturesQuery = {
+  __typename?: 'Query';
+  currentUser: { __typename?: 'UserType'; features: Array<FeatureType> } | null;
+};
+
 export type GetUserQueryVariables = Exact<{
   email: Scalars['String']['input'];
 }>;
@@ -952,6 +959,11 @@ export type Queries =
       name: 'getPublicWorkspaceQuery';
       variables: GetPublicWorkspaceQueryVariables;
       response: GetPublicWorkspaceQuery;
+    }
+  | {
+      name: 'getUserFeaturesQuery';
+      variables: GetUserFeaturesQueryVariables;
+      response: GetUserFeaturesQuery;
     }
   | {
       name: 'getUserQuery';

@@ -21,7 +21,7 @@ import {
 import { CurrentUser } from '../auth/current-user';
 import { Public } from '../auth/guard';
 import { sessionUser } from '../auth/service';
-import { FeatureManagementService } from '../features';
+import { FeatureManagementService, FeatureType } from '../features';
 import { QuotaService } from '../quota';
 import { AvatarStorage } from '../storage';
 import { UserService } from './service';
@@ -106,6 +106,15 @@ export class UserResolver {
     return this.prisma.userInvoice.count({
       where: { userId: user.id },
     });
+  }
+
+  @Throttle({ default: { limit: 10, ttl: 60 } })
+  @ResolveField(() => [FeatureType], {
+    name: 'features',
+    description: 'Enabled features of a user',
+  })
+  async userFeatures(@CurrentUser() user: CurrentUser) {
+    return this.feature.getUserFeatures(user.id);
   }
 
   @Throttle({

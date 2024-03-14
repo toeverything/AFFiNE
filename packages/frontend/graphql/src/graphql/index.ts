@@ -343,6 +343,19 @@ query getPublicWorkspace($id: String!) {
 }`,
 };
 
+export const getUserFeaturesQuery = {
+  id: 'getUserFeaturesQuery' as const,
+  operationName: 'getUserFeatures',
+  definitionName: 'currentUser',
+  containsFile: false,
+  query: `
+query getUserFeatures {
+  currentUser {
+    features
+  }
+}`,
+};
+
 export const getUserQuery = {
   id: 'getUserQuery' as const,
   operationName: 'getUser',

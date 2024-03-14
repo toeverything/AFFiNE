@@ -25,6 +25,7 @@ export type AppSetting = {
   enableNoisyBackground: boolean;
   autoCheckUpdate: boolean;
   autoDownloadUpdate: boolean;
+  enableMultiView: boolean;
 };
 export const windowFrameStyleOptions: AppSetting['windowFrameStyle'][] = [
   'frameless',
@@ -63,6 +64,7 @@ const appSettingBaseAtom = atomWithStorage<AppSetting>('affine-settings', {
   enableNoisyBackground: true,
   autoCheckUpdate: true,
   autoDownloadUpdate: true,
+  enableMultiView: false,
 });
 
 type SetStateAction<Value> = Value | ((prev: Value) => Value);

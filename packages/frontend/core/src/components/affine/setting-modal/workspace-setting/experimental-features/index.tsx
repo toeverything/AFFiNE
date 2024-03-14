@@ -1,5 +1,6 @@
 import { Button, Checkbox, Loading, Switch } from '@affine/component';
 import { SettingHeader } from '@affine/component/setting-components';
+import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import {
   useSetWorkspaceFeature,
@@ -79,6 +80,29 @@ interface ExperimentalFeaturesItemProps {
 }
 
 const ExperimentalFeaturesItem = ({
+  title,
+  isMutating,
+  checked,
+  onChange,
+}: {
+  title: React.ReactNode;
+  isMutating?: boolean;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+}) => {
+  return (
+    <div className={styles.switchRow}>
+      {title}
+      <Switch
+        checked={checked}
+        onChange={onChange}
+        className={isMutating ? styles.switchDisabled : ''}
+      />
+    </div>
+  );
+};
+
+const WorkspaceFeaturesSettingItem = ({
   feature,
   title,
   workspaceMetadata,
@@ -96,14 +120,51 @@ const ExperimentalFeaturesItem = ({
   );
 
   return (
-    <div className={styles.switchRow}>
-      {title}
-      <Switch
-        checked={localEnabled}
-        onChange={onChange}
-        className={isMutating ? styles.switchDisabled : ''}
-      />
-    </div>
+    <ExperimentalFeaturesItem
+      title={title}
+      isMutating={isMutating}
+      checked={localEnabled}
+      onChange={onChange}
+    />
+  );
+};
+
+const CopilotSettingRow = ({
+  workspaceMetadata,
+}: {
+  workspaceMetadata: WorkspaceMetadata;
+}) => {
+  const features = useWorkspaceAvailableFeatures(workspaceMetadata);
+
+  return features.includes(FeatureType.Copilot) ? (
+    <WorkspaceFeaturesSettingItem
+      title="AI POC"
+      workspaceMetadata={workspaceMetadata}
+      feature={FeatureType.Copilot}
+    />
+  ) : null;
+};
+
+const SplitViewSettingRow = () => {
+  const { appSettings, updateSettings } = useAppSettingHelper();
+
+  const onToggle = useCallback(
+    (checked: boolean) => {
+      updateSettings('enableMultiView', checked);
+    },
+    [updateSettings]
+  );
+
+  if (!environment.isDesktop) {
+    return null; // only enable on desktop
+  }
+
+  return (
+    <ExperimentalFeaturesItem
+      title="Split View"
+      checked={appSettings.enableMultiView}
+      onChange={onToggle}
+    />
   );
 };
 
@@ -113,7 +174,6 @@ const ExperimentalFeaturesMain = ({
   workspaceMetadata: WorkspaceMetadata;
 }) => {
   const t = useAFFiNEI18N();
-  const features = useWorkspaceAvailableFeatures(workspaceMetadata);
 
   return (
     <>
@@ -122,14 +182,8 @@ const ExperimentalFeaturesMain = ({
           'com.affine.settings.workspace.experimental-features.header.plugins'
         ]()}
       />
-
-      {features.includes(FeatureType.Copilot) ? (
-        <ExperimentalFeaturesItem
-          title="AI POC"
-          workspaceMetadata={workspaceMetadata}
-          feature={FeatureType.Copilot}
-        />
-      ) : null}
+      <CopilotSettingRow workspaceMetadata={workspaceMetadata} />
+      <SplitViewSettingRow />
     </>
   );
 };
