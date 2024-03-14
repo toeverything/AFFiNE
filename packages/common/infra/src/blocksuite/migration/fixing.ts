@@ -13,6 +13,9 @@ export function fixWorkspaceVersion(rootDoc: YDoc) {
    * Blocksuite just set the value, do nothing else.
    */
   function doFix() {
+    if (meta.size === 0) {
+      return;
+    }
     const workspaceVersion = meta.get('workspaceVersion');
     if (typeof workspaceVersion !== 'number' || workspaceVersion < 2) {
       transact(
