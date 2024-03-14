@@ -32,6 +32,7 @@ export class WorkspacesController {
   // get workspace blob
   //
   // NOTE: because graphql can't represent a File, so we have to use REST API to get blob
+  @Public()
   @Get('/:id/blobs/:name')
   @CallTimer('controllers', 'workspace_get_blob')
   async blob(
@@ -61,8 +62,8 @@ export class WorkspacesController {
   }
 
   // get doc binary
-  @Get('/:id/docs/:guid')
   @Public()
+  @Get('/:id/docs/:guid')
   @CallTimer('controllers', 'workspace_get_doc')
   async doc(
     @CurrentUser() user: CurrentUser | undefined,
