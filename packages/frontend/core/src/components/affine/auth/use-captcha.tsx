@@ -91,7 +91,7 @@ export const useCaptcha = (): [string | undefined, string?] => {
           console.error('Error getting challenge response:', err);
         });
     }
-  }, [challenge, setResponse]);
+  }, [challenge, hasCaptchaFeature, setResponse]);
 
   if (!hasCaptchaFeature) {
     return ['XXXX.DUMMY.TOKEN.XXXX'];
