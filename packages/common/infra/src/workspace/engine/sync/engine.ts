@@ -68,15 +68,17 @@ export class SyncEngine {
     this.onStatusChange.emit(s);
   }
   isRootDocLoaded = LiveData.from(
-    new Observable(observer => {
+    new Observable<boolean>(observer => {
       observer.next(
-        this.status.local
-          ? this.status.local.step > SyncPeerStep.LoadingRootDoc
-          : false
+        [this.status?.local, ...(this.status?.remotes ?? [])].some(
+          p => p?.rootDocLoaded === true
+        )
       );
       this.onStatusChange.on(status => {
         observer.next(
-          status.local ? status.local.step > SyncPeerStep.LoadingRootDoc : false
+          [status?.local, ...(status?.remotes ?? [])].some(
+            p => p?.rootDocLoaded === true
+          )
         );
       });
     }),

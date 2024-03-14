@@ -2,6 +2,7 @@ import { toast } from '@affine/component';
 import { useBlockSuiteMetaHelper } from '@affine/core/hooks/affine/use-block-suite-meta-helper';
 import { useTrashModalHelper } from '@affine/core/hooks/affine/use-trash-modal-helper';
 import { useBlockSuiteDocMeta } from '@affine/core/hooks/use-block-suite-page-meta';
+import { Workbench } from '@affine/core/modules/workbench';
 import type { Collection, Filter } from '@affine/env/filter';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
@@ -33,6 +34,7 @@ const usePageOperationsRenderer = () => {
     currentWorkspace.docCollection
   );
   const t = useAFFiNEI18N();
+  const workbench = useService(Workbench);
 
   const pageOperationsRenderer = useCallback(
     (page: DocMeta) => {
@@ -48,6 +50,7 @@ const usePageOperationsRenderer = () => {
           isPublic={!!page.isPublic}
           onDisablePublicSharing={onDisablePublicSharing}
           link={`/workspace/${currentWorkspace.id}/${page.id}`}
+          onOpenInSplitView={() => workbench.openPage(page.id, { at: 'tail' })}
           onDuplicate={() => {
             duplicate(page.id, false);
           }}
@@ -70,7 +73,14 @@ const usePageOperationsRenderer = () => {
         />
       );
     },
-    [currentWorkspace.id, setTrashModal, t, toggleFavorite, duplicate]
+    [
+      currentWorkspace.id,
+      workbench,
+      duplicate,
+      setTrashModal,
+      toggleFavorite,
+      t,
+    ]
   );
 
   return pageOperationsRenderer;
