@@ -8,7 +8,7 @@ import { MAILER } from './mailer';
 @OptionalModule({
   providers: [MAILER],
   exports: [MAILER],
-  requires: ['mailer.auth.user', 'mailer.auth.pass'],
+  requires: ['mailer.auth.user'],
 })
 class MailerModule {}
 

@@ -6,7 +6,7 @@ import * as styles from './styles.css';
 
 export const BlocksuiteEditorJournalDocTitle = ({ page }: { page: Doc }) => {
   const { localizedJournalDate, isTodayJournal, journalDate } =
-    useJournalInfoHelper(page.workspace, page.id);
+    useJournalInfoHelper(page.collection, page.id);
   const t = useAFFiNEI18N();
 
   // TODO: i18n

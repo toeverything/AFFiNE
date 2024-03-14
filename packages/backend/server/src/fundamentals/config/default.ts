@@ -3,7 +3,6 @@
 import { createPrivateKey, createPublicKey } from 'node:crypto';
 
 import { merge } from 'lodash-es';
-import parse from 'parse-duration';
 
 import pkg from '../../../package.json' assert { type: 'json' };
 import {
@@ -23,7 +22,9 @@ AwEHoUQDQgAEF3U/0wIeJ3jRKXeFKqQyBKlr9F7xaAUScRrAuSP33rajm3cdfihI
 3JvMxVNsS2lE8PSGQrvDrJZaDo0L+Lq9Gg==
 -----END EC PRIVATE KEY-----`;
 
-const jwtKeyPair = (function () {
+const ONE_DAY_IN_SEC = 60 * 60 * 24;
+
+const keyPair = (function () {
   const AUTH_PRIVATE_KEY = process.env.AUTH_PRIVATE_KEY ?? examplePrivateKey;
   const privateKey = createPrivateKey({
     key: Buffer.from(AUTH_PRIVATE_KEY),
@@ -114,6 +115,10 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
     get deploy() {
       return !this.node.dev && !this.node.test;
     },
+    secrets: {
+      privateKey: keyPair.privateKey,
+      publicKey: keyPair.publicKey,
+    },
     featureFlags: {
       earlyAccessPreview: false,
       syncClientVersionCheck: false,
@@ -145,11 +150,13 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
       playground: true,
     },
     auth: {
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      accessTokenExpiresIn: parse('1h')! / 1000,
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      refreshTokenExpiresIn: parse('7d')! / 1000,
-      leeway: 60,
+      session: {
+        ttl: 15 * ONE_DAY_IN_SEC,
+      },
+      accessToken: {
+        ttl: 7 * ONE_DAY_IN_SEC,
+        refreshTokenTtl: 30 * ONE_DAY_IN_SEC,
+      },
       captcha: {
         enable: false,
         turnstile: {
@@ -159,14 +166,6 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
           bits: 20,
         },
       },
-      privateKey: jwtKeyPair.privateKey,
-      publicKey: jwtKeyPair.publicKey,
-      enableSignup: true,
-      enableOauth: false,
-      get nextAuthSecret() {
-        return this.privateKey;
-      },
-      oauthProviders: {},
     },
     storage: getDefaultAFFiNEStorageConfig(),
     rateLimiter: {
@@ -188,10 +187,10 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
       enabled: false,
     },
     plugins: {
-      enabled: [],
+      enabled: new Set(),
       use(plugin, config) {
         this[plugin] = merge(this[plugin], config || {});
-        this.enabled.push(plugin);
+        this.enabled.add(plugin);
       },
     },
   } satisfies AFFiNEConfig;

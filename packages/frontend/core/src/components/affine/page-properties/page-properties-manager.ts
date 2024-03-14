@@ -124,7 +124,7 @@ export class PagePropertiesMetaManager {
   // returns page schema properties -> related page
   getPropertyStatistics() {
     const mapping = new Map<string, Set<string>>();
-    for (const page of this.adapter.workspace.blockSuiteWorkspace.docs.values()) {
+    for (const page of this.adapter.workspace.docCollection.docs.values()) {
       const properties = this.adapter.getPageProperties(page.id);
       for (const id of Object.keys(properties.custom)) {
         if (!mapping.has(id)) mapping.set(id, new Set());
@@ -169,7 +169,7 @@ export class PagePropertiesManager {
   }
 
   get page() {
-    return this.adapter.workspace.blockSuiteWorkspace.getDoc(this.pageId);
+    return this.adapter.workspace.docCollection.getDoc(this.pageId);
   }
 
   get intrinsicMeta() {

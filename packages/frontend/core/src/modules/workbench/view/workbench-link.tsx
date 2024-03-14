@@ -1,3 +1,4 @@
+import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
 import { useService } from '@toeverything/infra/di';
 import type { To } from 'history';
 import { useCallback } from 'react';
@@ -13,12 +14,13 @@ export const WorkbenchLink = ({
   { to: To } & React.HTMLProps<HTMLAnchorElement>
 >) => {
   const workbench = useService(Workbench);
+  const { appSettings } = useAppSettingHelper();
   const handleClick = useCallback(
     (event: React.MouseEvent<HTMLAnchorElement>) => {
       event.preventDefault();
       // TODO: open this when multi view control is implemented
       if (
-        (window as any).enableMultiView &&
+        appSettings.enableMultiView &&
         environment.isDesktop &&
         (event.ctrlKey || event.metaKey)
       ) {
@@ -29,7 +31,7 @@ export const WorkbenchLink = ({
 
       onClick?.(event);
     },
-    [onClick, to, workbench]
+    [appSettings.enableMultiView, onClick, to, workbench]
   );
   return (
     <a {...other} href="#" onClick={handleClick}>

@@ -73,6 +73,7 @@ test.describe('login first', () => {
     await page.getByTestId('workspace-modal-account-option').click();
     await page.getByTestId('workspace-modal-sign-out-option').click();
     await page.getByTestId('confirm-sign-out-button').click();
+    await page.reload();
     await clickSideBarCurrentWorkspaceBanner(page);
     const signInButton = page.getByTestId('cloud-signin-button');
     await expect(signInButton).toBeVisible();

@@ -10,7 +10,7 @@ import { CollectionService } from '@affine/core/modules/collection';
 import type { Collection, DeleteCollectionInfo } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { MoreHorizontalIcon, ViewLayersIcon } from '@blocksuite/icons';
-import type { DocMeta, Workspace } from '@blocksuite/store';
+import type { DocCollection, DocMeta } from '@blocksuite/store';
 import { useDroppable } from '@dnd-kit/core';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import { useService } from '@toeverything/infra';
@@ -30,12 +30,12 @@ import * as styles from './styles.css';
 const CollectionRenderer = ({
   collection,
   pages,
-  workspace,
+  docCollection,
   info,
 }: {
   collection: Collection;
   pages: DocMeta[];
-  workspace: Workspace;
+  docCollection: DocCollection;
   info: DeleteCollectionInfo;
 }) => {
   const [collapsed, setCollapsed] = useState(true);
@@ -159,7 +159,7 @@ const CollectionRenderer = ({
                 allPageMeta={allPagesMeta}
                 page={page}
                 key={page.id}
-                workspace={workspace}
+                docCollection={docCollection}
               />
             );
           })}
@@ -169,7 +169,7 @@ const CollectionRenderer = ({
   );
 };
 export const CollectionsList = ({
-  workspace,
+  docCollection: workspace,
   info,
   onCreate,
 }: CollectionsListProps) => {
@@ -205,7 +205,7 @@ export const CollectionsList = ({
             key={view.id}
             collection={view}
             pages={metas}
-            workspace={workspace}
+            docCollection={workspace}
           />
         );
       })}

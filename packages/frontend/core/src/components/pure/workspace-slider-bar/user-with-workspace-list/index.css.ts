@@ -49,3 +49,10 @@ export const signInTextSecondary = style({
 export const menuItem = style({
   borderRadius: '8px',
 });
+export const loadingWrapper = style({
+  height: 42,
+  width: '100%',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+});

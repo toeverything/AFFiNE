@@ -2,10 +2,11 @@ import { WorkspaceFlavour } from '@affine/env/workspace';
 import {
   createWorkspaceMutation,
   deleteWorkspaceMutation,
+  findGraphQLError,
   getWorkspacesQuery,
 } from '@affine/graphql';
 import { fetcher } from '@affine/graphql';
-import { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
+import { DocCollection } from '@blocksuite/store';
 import type { WorkspaceListProvider } from '@toeverything/infra';
 import {
   type BlobStorage,
@@ -16,7 +17,6 @@ import {
 import { globalBlockSuiteSchema } from '@toeverything/infra';
 import { difference } from 'lodash-es';
 import { nanoid } from 'nanoid';
-import { getSession } from 'next-auth/react';
 import { applyUpdate, encodeStateAsUpdate } from 'yjs';
 
 import { IndexedDBBlobStorage } from '../local/blob-indexeddb';
@@ -27,13 +27,11 @@ import { CLOUD_WORKSPACE_CHANGED_BROADCAST_CHANNEL_KEY } from './consts';
 import { AffineStaticSyncStorage } from './sync';
 
 async function getCloudWorkspaceList() {
-  const session = await getSession();
-  if (!session) {
-    return [];
-  }
   try {
     const { workspaces } = await fetcher({
       query: getWorkspacesQuery,
+    }).catch(() => {
+      return { workspaces: [] };
     });
     const ids = workspaces.map(({ id }) => id);
     return ids.map(id => ({
@@ -41,10 +39,13 @@ async function getCloudWorkspaceList() {
       flavour: WorkspaceFlavour.AFFINE_CLOUD,
     }));
   } catch (err) {
-    if (err instanceof Array && err[0]?.message === 'Forbidden resource') {
+    console.log(err);
+    const e = findGraphQLError(err, e => e.extensions.code === 401);
+    if (e) {
       // user not logged in
       return [];
     }
+
     throw err;
   }
 }
@@ -70,13 +71,13 @@ export class CloudWorkspaceListProvider implements WorkspaceListProvider {
   }
   async create(
     initial: (
-      workspace: BlockSuiteWorkspace,
+      docCollection: DocCollection,
       blobStorage: BlobStorage
     ) => Promise<void>
   ): Promise<WorkspaceMetadata> {
     const tempId = nanoid();
 
-    const workspace = new BlockSuiteWorkspace({
+    const docCollection = new DocCollection({
       id: tempId,
       idGenerator: () => nanoid(),
       schema: globalBlockSuiteSchema,
@@ -98,11 +99,11 @@ export class CloudWorkspaceListProvider implements WorkspaceListProvider {
       : new IndexedDBSyncStorage(workspaceId);
 
     // apply initial state
-    await initial(workspace, blobStorage);
+    await initial(docCollection, blobStorage);
 
     // save workspace to local storage, should be vary fast
-    await syncStorage.push(workspaceId, encodeStateAsUpdate(workspace.doc));
-    for (const subdocs of workspace.doc.getSubdocs()) {
+    await syncStorage.push(workspaceId, encodeStateAsUpdate(docCollection.doc));
+    for (const subdocs of docCollection.doc.getSubdocs()) {
       await syncStorage.push(subdocs.guid, encodeStateAsUpdate(subdocs));
     }
 
@@ -166,7 +167,7 @@ export class CloudWorkspaceListProvider implements WorkspaceListProvider {
       return;
     }
 
-    const bs = new BlockSuiteWorkspace({
+    const bs = new DocCollection({
       id,
       schema: globalBlockSuiteSchema,
     });

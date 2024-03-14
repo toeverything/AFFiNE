@@ -14,7 +14,6 @@ import { encodeStateAsUpdate, encodeStateVector } from 'yjs';
 import { CallTimer, metrics } from '../../../fundamentals';
 import { Auth, CurrentUser } from '../../auth';
 import { DocManager } from '../../doc';
-import { UserType } from '../../users';
 import { DocID } from '../../utils/doc';
 import { PermissionService } from '../../workspaces/permission';
 import { Permission } from '../../workspaces/types';
@@ -53,6 +52,7 @@ export const GatewayErrorWrapper = (): MethodDecorator => {
       if (result instanceof Promise) {
         return result.catch(e => {
           metrics.socketio.counter('unhandled_errors').add(1);
+          new Logger('EventsGateway').error(e, e.stack);
           return {
             error: new InternalError(e),
           };
@@ -139,7 +139,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @Auth()
   @SubscribeMessage('client-handshake-sync')
   async handleClientHandshakeSync(
-    @CurrentUser() user: UserType,
+    @CurrentUser() user: CurrentUser,
     @MessageBody('workspaceId') workspaceId: string,
     @MessageBody('version') version: string | undefined,
     @ConnectedSocket() client: Socket
@@ -172,7 +172,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @Auth()
   @SubscribeMessage('client-handshake-awareness')
   async handleClientHandshakeAwareness(
-    @CurrentUser() user: UserType,
+    @CurrentUser() user: CurrentUser,
     @MessageBody('workspaceId') workspaceId: string,
     @MessageBody('version') version: string | undefined,
     @ConnectedSocket() client: Socket
@@ -290,7 +290,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('doc-load-v2')
   async loadDocV2(
     @ConnectedSocket() client: Socket,
-    @CurrentUser() user: UserType,
+    @CurrentUser() user: CurrentUser,
     @MessageBody()
     {
       workspaceId,
@@ -339,6 +339,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     };
   }
 
+  @Auth()
   @SubscribeMessage('awareness-init')
   async handleInitAwareness(
     @MessageBody() workspaceId: string,

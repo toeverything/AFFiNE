@@ -25,7 +25,7 @@ const SignInButton = () => {
     <StyledSignInButton
       data-testid="sign-in-button"
       onClick={useCallback(() => {
-        signInCloud().catch(console.error);
+        signInCloud('email').catch(console.error);
       }, [])}
     >
       <div className="circle">

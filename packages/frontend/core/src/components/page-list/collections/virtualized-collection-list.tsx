@@ -31,7 +31,7 @@ const useCollectionOperationsRenderer = ({
   config: AllPageListConfig;
   service: CollectionService;
 }) => {
-  const pageOperationsRenderer = useCallback(
+  const collectionOperationsRenderer = useCallback(
     (collection: Collection) => {
       return (
         <CollectionOperationCell
@@ -45,7 +45,7 @@ const useCollectionOperationsRenderer = ({
     [config, info, service]
   );
 
-  return pageOperationsRenderer;
+  return collectionOperationsRenderer;
 };
 
 export const VirtualizedCollectionList = ({
@@ -125,7 +125,7 @@ export const VirtualizedCollectionList = ({
         items={collectionMetas}
         itemRenderer={collectionItemRenderer}
         rowAsLink
-        blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
+        docCollection={currentWorkspace.docCollection}
         operationsRenderer={collectionOperationRenderer}
         headerRenderer={collectionHeaderRenderer}
       />

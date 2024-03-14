@@ -87,7 +87,9 @@ export const PagesMode = ({
               <Menu
                 items={
                   <VariableSelect
-                    propertiesMeta={allPageListConfig.workspace.meta.properties}
+                    propertiesMeta={
+                      allPageListConfig.docCollection.meta.properties
+                    }
                     selected={filters}
                     onSelect={createFilter}
                   />
@@ -114,7 +116,7 @@ export const PagesMode = ({
           {showFilter ? (
             <div style={{ padding: '12px 16px 16px' }}>
               <FilterList
-                propertiesMeta={allPageListConfig.workspace.meta.properties}
+                propertiesMeta={allPageListConfig.docCollection.meta.properties}
                 value={filters}
                 onChange={updateFilters}
               />
@@ -125,7 +127,7 @@ export const PagesMode = ({
               className={styles.pageList}
               items={searchedList}
               groupBy={false}
-              blockSuiteWorkspace={allPageListConfig.workspace}
+              docCollection={allPageListConfig.docCollection}
               selectable
               onSelectedIdsChange={ids => {
                 updateCollection({

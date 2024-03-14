@@ -29,7 +29,7 @@ export const AllPageHeader = ({
         <AllPageListOperationsMenu
           filterList={filters}
           onChangeFilterList={onChangeFilters}
-          propertiesMeta={workspace.blockSuiteWorkspace.meta.properties}
+          propertiesMeta={workspace.docCollection.meta.properties}
         />
       }
       right={

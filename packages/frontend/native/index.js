@@ -88,7 +88,7 @@ switch (platform) {
         }
         break
       default:
-        throw new Error(`Unsupported architecture on Android ${arch}`)
+        loadError = new Error(`Unsupported architecture on Android ${arch}`)
     }
     break
   case 'win32':
@@ -136,7 +136,7 @@ switch (platform) {
         }
         break
       default:
-        throw new Error(`Unsupported architecture on Windows: ${arch}`)
+        loadError = new Error(`Unsupported architecture on Windows: ${arch}`)
     }
     break
   case 'darwin':
@@ -177,22 +177,37 @@ switch (platform) {
         }
         break
       default:
-        throw new Error(`Unsupported architecture on macOS: ${arch}`)
+        loadError = new Error(`Unsupported architecture on macOS: ${arch}`)
     }
     break
   case 'freebsd':
-    if (arch !== 'x64') {
-      throw new Error(`Unsupported architecture on FreeBSD: ${arch}`)
-    }
-    localFileExisted = existsSync(join(__dirname, 'affine.freebsd-x64.node'))
-    try {
-      if (localFileExisted) {
-        nativeBinding = require('./affine.freebsd-x64.node')
-      } else {
-        nativeBinding = require('@affine/native-freebsd-x64')
-      }
-    } catch (e) {
-      loadError = e
+    switch (arch) {
+      case 'x64':
+        localFileExisted = existsSync(join(__dirname, 'affine.freebsd-x64.node'))
+        try {
+          if (localFileExisted) {
+            nativeBinding = require('./affine.freebsd-x64.node')
+          } else {
+            nativeBinding = require('@affine/native-freebsd-x64')
+          }
+        } catch (e) {
+          loadError = e
+        }
+        break
+      case 'arm64':
+        localFileExisted = existsSync(join(__dirname, 'affine.freebsd-arm64.node'))
+        try {
+          if (localFileExisted) {
+            nativeBinding = require('./affine.freebsd-arm64.node')
+          } else {
+            nativeBinding = require('@affine/native-freebsd-arm64')
+          }
+        } catch (e) {
+          loadError = e
+        }
+        break
+      default:
+        loadError = new Error(`Unsupported architecture on FreeBSD: ${arch}`)
     }
     break
   case 'linux':
@@ -298,25 +313,43 @@ switch (platform) {
           }
         }
         break
+      case 's390x':
+        localFileExisted = existsSync(
+          join(__dirname, 'affine.linux-s390x-gnu.node')
+        )
+        try {
+          if (localFileExisted) {
+            nativeBinding = require('./affine.linux-s390x-gnu.node')
+          } else {
+            nativeBinding = require('@affine/native-linux-s390x-gnu')
+          }
+        } catch (e) {
+          loadError = e
+        }
+        break
       default:
-        throw new Error(`Unsupported architecture on Linux: ${arch}`)
+        loadError = new Error(`Unsupported architecture on Linux: ${arch}`)
     }
     break
   default:
-    throw new Error(`Unsupported OS: ${platform}, architecture: ${arch}`)
+    loadError = new Error(`Unsupported OS: ${platform}, architecture: ${arch}`)
 }
 
 if (!nativeBinding || process.env.NAPI_RS_FORCE_WASI) {
   try {
     nativeBinding = require('./affine.wasi.cjs')
-  } catch {
-    // ignore
+  } catch (err) {
+    if (process.env.NAPI_RS_FORCE_WASI) {
+      console.error(err)
+    }
   }
   if (!nativeBinding) {
     try {
       nativeBinding = require('@affine/native-wasm32-wasi')
     } catch (err) {
-      console.error(err)
+      if (process.env.NAPI_RS_FORCE_WASI) {
+        console.error(err)
+      }
     }
   }
 }

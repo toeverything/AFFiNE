@@ -1,6 +1,6 @@
 declare namespace Express {
   interface Request {
-    user?: import('@prisma/client').User | null;
+    user?: import('./core/auth/current-user').CurrentUser;
   }
 }
 

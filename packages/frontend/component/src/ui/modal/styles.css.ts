@@ -72,6 +72,7 @@ export const confirmModalContent = style({
   marginBottom: '20px',
   height: '100%',
   overflowY: 'auto',
+  padding: '0 4px',
 });
 export const confirmModalContainer = style({
   display: 'flex',

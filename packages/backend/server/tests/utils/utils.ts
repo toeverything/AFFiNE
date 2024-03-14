@@ -1,11 +1,13 @@
 import { INestApplication, ModuleMetadata } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { Query, Resolver } from '@nestjs/graphql';
 import { Test, TestingModuleBuilder } from '@nestjs/testing';
 import { PrismaClient } from '@prisma/client';
+import cookieParser from 'cookie-parser';
 import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 
 import { AppModule, FunctionalityModules } from '../../src/app.module';
-import { AuthModule } from '../../src/core/auth';
+import { AuthGuard, AuthModule } from '../../src/core/auth';
 import { UserFeaturesInit1698652531198 } from '../../src/data/migrations/1698652531198-user-features-init';
 import { GqlModule } from '../../src/fundamentals/graphql';
 
@@ -78,7 +80,14 @@ export async function createTestingModule(
 
   const builder = Test.createTestingModule({
     imports,
-    providers: [MockResolver, ...(moduleDef.providers ?? [])],
+    providers: [
+      {
+        provide: APP_GUARD,
+        useClass: AuthGuard,
+      },
+      MockResolver,
+      ...(moduleDef.providers ?? []),
+    ],
     controllers: moduleDef.controllers,
   });
 
@@ -112,6 +121,8 @@ export async function createTestingApp(moduleDef: TestingModuleMeatdata = {}) {
       maxFiles: 5,
     })
   );
+
+  app.use(cookieParser());
 
   if (moduleDef.tapApp) {
     moduleDef.tapApp(app);

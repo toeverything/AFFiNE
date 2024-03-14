@@ -24,6 +24,9 @@ test('Create new workspace, then delete it', async ({ page, workspace }) => {
   await openSettingModal(page);
   await openWorkspaceSettingPanel(page, 'Test Workspace');
   await page.getByTestId('delete-workspace-button').click();
+  await expect(
+    page.getByTestId('affine-notification').first()
+  ).not.toBeVisible();
   const workspaceNameDom = page.getByTestId('workspace-name');
   const currentWorkspaceName = (await workspaceNameDom.evaluate(
     node => node.textContent

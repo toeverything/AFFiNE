@@ -9,6 +9,7 @@ import {
 } from '@nestjs/graphql';
 import { PrismaClient, type User } from '@prisma/client';
 import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
+import { isNil, omitBy } from 'lodash-es';
 
 import {
   CloudThrottlerGuard,
@@ -17,67 +18,37 @@ import {
   PaymentRequiredException,
   Throttle,
 } from '../../fundamentals';
-import { Auth, CurrentUser, Public, Publicable } from '../auth/guard';
-import { FeatureManagementService } from '../features';
+import { CurrentUser } from '../auth/current-user';
+import { Public } from '../auth/guard';
+import { sessionUser } from '../auth/service';
+import { FeatureManagementService, FeatureType } from '../features';
 import { QuotaService } from '../quota';
 import { AvatarStorage } from '../storage';
+import { UserService } from './service';
 import {
   DeleteAccount,
   RemoveAvatar,
+  UpdateUserInput,
   UserOrLimitedUser,
   UserQuotaType,
   UserType,
 } from './types';
-import { UsersService } from './users';
 
 /**
  * User resolver
  * All op rate limit: 10 req/m
  */
 @UseGuards(CloudThrottlerGuard)
-@Auth()
 @Resolver(() => UserType)
 export class UserResolver {
   constructor(
     private readonly prisma: PrismaClient,
     private readonly storage: AvatarStorage,
-    private readonly users: UsersService,
+    private readonly users: UserService,
     private readonly feature: FeatureManagementService,
     private readonly quota: QuotaService,
     private readonly event: EventEmitter
   ) {}
-
-  @Throttle({
-    default: {
-      limit: 10,
-      ttl: 60,
-    },
-  })
-  @Publicable()
-  @Query(() => UserType, {
-    name: 'currentUser',
-    description: 'Get current user',
-    nullable: true,
-  })
-  async currentUser(@CurrentUser() user?: UserType) {
-    if (!user) {
-      return null;
-    }
-
-    const storedUser = await this.users.findUserById(user.id);
-    if (!storedUser) {
-      throw new BadRequestException(`User ${user.id} not found in db`);
-    }
-    return {
-      id: storedUser.id,
-      name: storedUser.name,
-      email: storedUser.email,
-      emailVerified: storedUser.emailVerified,
-      avatarUrl: storedUser.avatarUrl,
-      createdAt: storedUser.createdAt,
-      hasPassword: !!storedUser.password,
-    };
-  }
 
   @Throttle({
     default: {
@@ -92,9 +63,9 @@ export class UserResolver {
   })
   @Public()
   async user(
-    @CurrentUser() currentUser?: UserType,
+    @CurrentUser() currentUser?: CurrentUser,
     @Args('email') email?: string
-  ) {
+  ): Promise<typeof UserOrLimitedUser | null> {
     if (!email || !(await this.feature.canEarlyAccess(email))) {
       throw new PaymentRequiredException(
         `You don't have early access permission\nVisit https://community.affine.pro/c/insider-general/ for more information`
@@ -102,16 +73,19 @@ export class UserResolver {
     }
 
     // TODO: need to limit a user can only get another user witch is in the same workspace
-    const user = await this.users.findUserByEmail(email);
-    if (currentUser) return user;
+    const user = await this.users.findUserWithHashedPasswordByEmail(email);
 
     // return empty response when user not exists
     if (!user) return null;
 
+    if (currentUser) {
+      return sessionUser(user);
+    }
+
     // only return limited info when not logged in
     return {
-      email: user?.email,
-      hasPassword: !!user?.password,
+      email: user.email,
+      hasPassword: !!user.password,
     };
   }
 
@@ -128,10 +102,19 @@ export class UserResolver {
     name: 'invoiceCount',
     description: 'Get user invoice count',
   })
-  async invoiceCount(@CurrentUser() user: UserType) {
+  async invoiceCount(@CurrentUser() user: CurrentUser) {
     return this.prisma.userInvoice.count({
       where: { userId: user.id },
     });
+  }
+
+  @Throttle({ default: { limit: 10, ttl: 60 } })
+  @ResolveField(() => [FeatureType], {
+    name: 'features',
+    description: 'Enabled features of a user',
+  })
+  async userFeatures(@CurrentUser() user: CurrentUser) {
+    return this.feature.getUserFeatures(user.id);
   }
 
   @Throttle({
@@ -145,7 +128,7 @@ export class UserResolver {
     description: 'Upload user avatar',
   })
   async uploadAvatar(
-    @CurrentUser() user: UserType,
+    @CurrentUser() user: CurrentUser,
     @Args({ name: 'avatar', type: () => GraphQLUpload })
     avatar: FileUpload
   ) {
@@ -175,11 +158,38 @@ export class UserResolver {
       ttl: 60,
     },
   })
+  @Mutation(() => UserType, {
+    name: 'updateProfile',
+  })
+  async updateUserProfile(
+    @CurrentUser() user: CurrentUser,
+    @Args('input', { type: () => UpdateUserInput }) input: UpdateUserInput
+  ): Promise<UserType> {
+    input = omitBy(input, isNil);
+
+    if (Object.keys(input).length === 0) {
+      return user;
+    }
+
+    return sessionUser(
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: input,
+      })
+    );
+  }
+
+  @Throttle({
+    default: {
+      limit: 10,
+      ttl: 60,
+    },
+  })
   @Mutation(() => RemoveAvatar, {
     name: 'removeAvatar',
     description: 'Remove user avatar',
   })
-  async removeAvatar(@CurrentUser() user: UserType) {
+  async removeAvatar(@CurrentUser() user: CurrentUser) {
     if (!user) {
       throw new BadRequestException(`User not found`);
     }
@@ -197,7 +207,9 @@ export class UserResolver {
     },
   })
   @Mutation(() => DeleteAccount)
-  async deleteAccount(@CurrentUser() user: UserType): Promise<DeleteAccount> {
+  async deleteAccount(
+    @CurrentUser() user: CurrentUser
+  ): Promise<DeleteAccount> {
     const deletedUser = await this.users.deleteUser(user.id);
     this.event.emit('user.deleted', deletedUser);
     return { success: true };

@@ -1,6 +1,6 @@
 import { DebugLogger } from '@affine/debug';
 import { Slot } from '@blocksuite/global/utils';
-import type { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
+import type { DocCollection } from '@blocksuite/store';
 
 import type { ServiceProvider } from '../di';
 import { CleanupService } from '../lifecycle';
@@ -10,7 +10,7 @@ import { type WorkspaceMetadata } from './metadata';
 import type { WorkspaceUpgradeController } from './upgrade';
 import { type WorkspaceUpgradeStatus } from './upgrade';
 
-export type { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
+export type { DocCollection } from '@blocksuite/store';
 
 const logger = new DebugLogger('affine:workspace');
 
@@ -67,7 +67,7 @@ export class Workspace {
   constructor(
     public meta: WorkspaceMetadata,
     public engine: WorkspaceEngine,
-    public blockSuiteWorkspace: BlockSuiteWorkspace,
+    public docCollection: DocCollection,
     public upgrade: WorkspaceUpgradeController,
     public services: ServiceProvider
   ) {

@@ -351,7 +351,7 @@ jobs:
           RELEASE_VERSION: ${{ needs.before-make.outputs.RELEASE_VERSION }}
       - name: Create Release Draft
         if: ${{ github.ref_type == 'tag' }}
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           name: ${{ needs.before-make.outputs.RELEASE_VERSION }}
           body: ''
@@ -367,7 +367,7 @@ jobs:
             ./*.yml
       - name: Create Nightly Release Draft
         if: ${{ github.ref_type == 'branch' }}
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
         with:

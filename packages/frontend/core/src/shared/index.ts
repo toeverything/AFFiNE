@@ -1,7 +1,7 @@
 import { DebugLogger } from '@affine/debug';
-import { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
+import { DocCollection } from '@blocksuite/store';
 
-export { BlockSuiteWorkspace };
+export { DocCollection };
 
 export enum WorkspaceSubPath {
   ALL = 'all',

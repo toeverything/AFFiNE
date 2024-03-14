@@ -11,9 +11,7 @@ export const AppContainer = (props: WorkspaceRootProps) => {
     <AppContainerWithoutSettings
       useNoisyBackground={appSettings.enableNoisyBackground}
       useBlurBackground={
-        appSettings.enableBlurBackground &&
-        environment.isDesktop &&
-        environment.isMacOs
+        appSettings.enableBlurBackground && environment.isDesktop
       }
       {...props}
     />

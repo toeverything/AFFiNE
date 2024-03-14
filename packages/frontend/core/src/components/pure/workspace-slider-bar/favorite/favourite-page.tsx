@@ -20,7 +20,7 @@ import {
 import * as styles from './styles.css';
 
 export const FavouritePage = ({
-  workspace,
+  docCollection: workspace,
   pageId,
   metaMapping,
   parentIds,
@@ -86,7 +86,7 @@ export const FavouritePage = ({
         {...listeners}
         postfix={
           <PostfixItem
-            workspace={workspace}
+            docCollection={workspace}
             pageId={pageId}
             pageTitle={pageTitle}
             inFavorites={true}
@@ -102,7 +102,7 @@ export const FavouritePage = ({
           return (
             <ReferencePage
               key={id}
-              workspace={workspace}
+              docCollection={workspace}
               pageId={id}
               metaMapping={metaMapping}
               parentIds={new Set([pageId])}

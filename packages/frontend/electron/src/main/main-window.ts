@@ -54,6 +54,7 @@ async function createWindow(additionalArguments: string[]) {
     minHeight: 480,
     visualEffectState: 'active',
     vibrancy: 'under-window',
+    backgroundMaterial: 'mica',
     height: mainWindowState.height,
     show: false, // Use 'ready-to-show' event to show window
     webPreferences: {

@@ -1,5 +1,6 @@
 import { Button, Checkbox, Loading, Switch } from '@affine/component';
 import { SettingHeader } from '@affine/component/setting-components';
+import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import {
   useSetWorkspaceFeature,
@@ -79,6 +80,29 @@ interface ExperimentalFeaturesItemProps {
 }
 
 const ExperimentalFeaturesItem = ({
+  title,
+  isMutating,
+  checked,
+  onChange,
+}: {
+  title: React.ReactNode;
+  isMutating?: boolean;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+}) => {
+  return (
+    <div className={styles.switchRow}>
+      {title}
+      <Switch
+        checked={checked}
+        onChange={onChange}
+        className={isMutating ? styles.switchDisabled : ''}
+      />
+    </div>
+  );
+};
+
+const WorkspaceFeaturesSettingItem = ({
   feature,
   title,
   workspaceMetadata,
@@ -96,14 +120,88 @@ const ExperimentalFeaturesItem = ({
   );
 
   return (
-    <div className={styles.switchRow}>
-      {title}
-      <Switch
-        checked={localEnabled}
-        onChange={onChange}
-        className={isMutating ? styles.switchDisabled : ''}
-      />
-    </div>
+    <ExperimentalFeaturesItem
+      title={title}
+      isMutating={isMutating}
+      checked={localEnabled}
+      onChange={onChange}
+    />
+  );
+};
+
+const CopilotSettingRow = ({
+  workspaceMetadata,
+}: {
+  workspaceMetadata: WorkspaceMetadata;
+}) => {
+  const features = useWorkspaceAvailableFeatures(workspaceMetadata);
+
+  return features.includes(FeatureType.Copilot) ? (
+    <WorkspaceFeaturesSettingItem
+      title="AI POC"
+      workspaceMetadata={workspaceMetadata}
+      feature={FeatureType.Copilot}
+    />
+  ) : null;
+};
+
+const SplitViewSettingRow = () => {
+  const { appSettings, updateSettings } = useAppSettingHelper();
+
+  const onToggle = useCallback(
+    (checked: boolean) => {
+      updateSettings('enableMultiView', checked);
+    },
+    [updateSettings]
+  );
+
+  if (!environment.isDesktop) {
+    return null; // only enable on desktop
+  }
+
+  return (
+    <ExperimentalFeaturesItem
+      title="Split View"
+      checked={appSettings.enableMultiView}
+      onChange={onToggle}
+    />
+  );
+};
+
+// feature flag -> display name
+const blocksuiteFeatureFlags: Partial<Record<keyof BlockSuiteFlags, string>> = {
+  enable_synced_doc_block: 'Enable Synced Doc Block',
+  enable_expand_database_block: 'Enable Expand Database Block',
+  enable_bultin_ledits: 'Edit with LEDITS',
+};
+
+const BlocksuiteFeatureFlagSettings = () => {
+  const { appSettings, updateSettings } = useAppSettingHelper();
+  const toggleSetting = useCallback(
+    (flag: keyof BlockSuiteFlags, checked: boolean) => {
+      updateSettings('editorFlags', {
+        ...appSettings.editorFlags,
+        [flag]: checked,
+      });
+    },
+    [appSettings.editorFlags, updateSettings]
+  );
+
+  type EditorFlag = keyof typeof appSettings.editorFlags;
+
+  return (
+    <>
+      {Object.entries(blocksuiteFeatureFlags).map(([flag, displayName]) => (
+        <ExperimentalFeaturesItem
+          key={flag}
+          title={'Block Suite: ' + displayName}
+          checked={!!appSettings.editorFlags?.[flag as EditorFlag]}
+          onChange={checked =>
+            toggleSetting(flag as keyof BlockSuiteFlags, checked)
+          }
+        />
+      ))}
+    </>
   );
 };
 
@@ -113,7 +211,6 @@ const ExperimentalFeaturesMain = ({
   workspaceMetadata: WorkspaceMetadata;
 }) => {
   const t = useAFFiNEI18N();
-  const features = useWorkspaceAvailableFeatures(workspaceMetadata);
 
   return (
     <>
@@ -122,14 +219,11 @@ const ExperimentalFeaturesMain = ({
           'com.affine.settings.workspace.experimental-features.header.plugins'
         ]()}
       />
-
-      {features.includes(FeatureType.Copilot) ? (
-        <ExperimentalFeaturesItem
-          title="AI POC"
-          workspaceMetadata={workspaceMetadata}
-          feature={FeatureType.Copilot}
-        />
-      ) : null}
+      <div className={styles.settingsContainer}>
+        <CopilotSettingRow workspaceMetadata={workspaceMetadata} />
+        <SplitViewSettingRow />
+        <BlocksuiteFeatureFlagSettings />
+      </div>
     </>
   );
 };

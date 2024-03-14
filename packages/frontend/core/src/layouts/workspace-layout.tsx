@@ -94,7 +94,7 @@ export const WorkspaceLayout = function WorkspaceLayout({
 export const WorkspaceLayoutInner = ({ children }: PropsWithChildren) => {
   const currentWorkspace = useService(Workspace);
   const { openPage } = useNavigateHelper();
-  const pageHelper = usePageHelper(currentWorkspace.blockSuiteWorkspace);
+  const pageHelper = usePageHelper(currentWorkspace.docCollection);
 
   useRegisterWorkspaceCommands();
 
@@ -104,7 +104,7 @@ export const WorkspaceLayoutInner = ({ children }: PropsWithChildren) => {
     //    0.8.0 ~ 0.8.1
     //    0.8.0-beta.0 ~ 0.8.0-beta.3
     //    0.8.0-canary.17 ~ 0.9.0-canary.3
-    const meta = currentWorkspace.blockSuiteWorkspace.doc.getMap('meta');
+    const meta = currentWorkspace.docCollection.doc.getMap('meta');
     const blockVersions = meta.get('blockVersions');
     if (
       !(blockVersions instanceof YMap) &&
@@ -117,7 +117,7 @@ export const WorkspaceLayoutInner = ({ children }: PropsWithChildren) => {
         new YMap(Object.entries(blockVersions as Record<string, number>))
       );
     }
-  }, [currentWorkspace.blockSuiteWorkspace.doc]);
+  }, [currentWorkspace.docCollection.doc]);
 
   const handleCreatePage = useCallback(() => {
     return pageHelper.createPage();

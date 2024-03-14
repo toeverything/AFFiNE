@@ -1,9 +1,9 @@
 import type { WorkspaceFlavour } from '@affine/env/workspace';
 import type {
+  CollectionInfoSnapshot,
   Doc,
   DocSnapshot,
   JobMiddleware,
-  WorkspaceInfoSnapshot,
 } from '@blocksuite/store';
 import { Job } from '@blocksuite/store';
 import { Map as YMap } from 'yjs';
@@ -49,17 +49,17 @@ export async function buildShowcaseWorkspace(
 ) {
   const meta = await workspaceManager.createWorkspace(
     flavour,
-    async (blockSuiteWorkspace, blobStorage) => {
-      blockSuiteWorkspace.meta.setName(workspaceName);
+    async (docCollection, blobStorage) => {
+      docCollection.meta.setName(workspaceName);
       const { onboarding } = await import('@affine/templates');
 
-      const info = onboarding['info.json'] as WorkspaceInfoSnapshot;
+      const info = onboarding['info.json'] as CollectionInfoSnapshot;
       const blob = onboarding['blob.json'] as { [key: string]: string };
 
-      const migrationMiddleware: JobMiddleware = ({ slots, workspace }) => {
+      const migrationMiddleware: JobMiddleware = ({ slots, collection }) => {
         slots.afterImport.on(payload => {
           if (payload.type === 'page') {
-            workspace.schema.upgradeDoc(
+            collection.schema.upgradeDoc(
               info?.pageVersion ?? 0,
               {},
               payload.page.spaceDoc
@@ -69,11 +69,11 @@ export async function buildShowcaseWorkspace(
       };
 
       const job = new Job({
-        workspace: blockSuiteWorkspace,
+        collection: docCollection,
         middlewares: [replaceIdMiddleware, migrationMiddleware],
       });
 
-      job.snapshotToWorkspaceInfo(info);
+      job.snapshotToCollectionInfo(info);
 
       // for now all onboarding assets are considered served via CDN
       // hack assets so that every blob exists
@@ -92,8 +92,8 @@ export async function buildShowcaseWorkspace(
         })
       );
 
-      const newVersions = getLatestVersions(blockSuiteWorkspace.schema);
-      blockSuiteWorkspace.doc
+      const newVersions = getLatestVersions(docCollection.schema);
+      docCollection.doc
         .getMap('meta')
         .set('blockVersions', new YMap(Object.entries(newVersions)));
 

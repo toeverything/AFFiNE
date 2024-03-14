@@ -1,7 +1,7 @@
 import { pushNotificationAtom } from '@affine/component/notification-center';
 import type { Notification } from '@affine/component/notification-center/index.jotai';
+import type { OAuthProviderType } from '@affine/graphql';
 import { atom, useAtom, useSetAtom } from 'jotai';
-import { type SignInResponse } from 'next-auth/react';
 import { useCallback } from 'react';
 
 import { signInCloud } from '../../../utils/cloud-utils';
@@ -11,10 +11,10 @@ const COUNT_DOWN_TIME = 60;
 export const INTERNAL_BETA_URL = `https://community.affine.pro/c/insider-general/`;
 
 function handleSendEmailError(
-  res: SignInResponse | undefined | void,
+  res: Response | undefined | void,
   pushNotification: (notification: Notification) => void
 ) {
-  if (res?.error) {
+  if (!res?.ok) {
     pushNotification({
       title: 'Send email error',
       message: 'Please back to home and try again',
@@ -64,8 +64,13 @@ export const useAuth = () => {
   const [authStore, setAuthStore] = useAtom(authStoreAtom);
   const startResendCountDown = useSetAtom(countDownAtom);
 
-  const signIn = useCallback(
-    async (email: string, verifyToken: string, challenge?: string) => {
+  const sendEmailMagicLink = useCallback(
+    async (
+      signUp: boolean,
+      email: string,
+      verifyToken: string,
+      challenge?: string
+    ) => {
       setAuthStore(prev => {
         return {
           ...prev,
@@ -76,18 +81,19 @@ export const useAuth = () => {
       const res = await signInCloud(
         'email',
         {
-          email: email,
-          callbackUrl: subscriptionData
-            ? subscriptionData.getRedirectUrl(false)
-            : '/auth/signIn',
-          redirect: false,
+          email,
         },
-        challenge
-          ? {
-              challenge,
-              token: verifyToken,
-            }
-          : { token: verifyToken }
+        {
+          ...(challenge
+            ? {
+                challenge,
+                token: verifyToken,
+              }
+            : { token: verifyToken }),
+          callbackUrl: subscriptionData
+            ? subscriptionData.getRedirectUrl(signUp)
+            : '/auth/signIn',
+        }
       ).catch(console.error);
 
       handleSendEmailError(res, pushNotification);
@@ -107,47 +113,24 @@ export const useAuth = () => {
 
   const signUp = useCallback(
     async (email: string, verifyToken: string, challenge?: string) => {
-      setAuthStore(prev => {
-        return {
-          ...prev,
-          isMutating: true,
-        };
-      });
-
-      const res = await signInCloud(
-        'email',
-        {
-          email: email,
-          callbackUrl: subscriptionData
-            ? subscriptionData.getRedirectUrl(true)
-            : '/auth/signUp',
-          redirect: false,
-        },
-        challenge
-          ? {
-              challenge,
-              token: verifyToken,
-            }
-          : { token: verifyToken }
-      ).catch(console.error);
-
-      handleSendEmailError(res, pushNotification);
-
-      setAuthStore({
-        isMutating: false,
-        allowSendEmail: false,
-        resendCountDown: COUNT_DOWN_TIME,
-      });
-
-      startResendCountDown();
-
-      return res;
+      return sendEmailMagicLink(true, email, verifyToken, challenge).catch(
+        console.error
+      );
     },
-    [pushNotification, setAuthStore, startResendCountDown, subscriptionData]
+    [sendEmailMagicLink]
   );
 
-  const signInWithGoogle = useCallback(() => {
-    signInCloud('google').catch(console.error);
+  const signIn = useCallback(
+    async (email: string, verifyToken: string, challenge?: string) => {
+      return sendEmailMagicLink(false, email, verifyToken, challenge).catch(
+        console.error
+      );
+    },
+    [sendEmailMagicLink]
+  );
+
+  const oauthSignIn = useCallback((provider: OAuthProviderType) => {
+    signInCloud(provider).catch(console.error);
   }, []);
 
   const resetCountDown = useCallback(() => {
@@ -165,6 +148,6 @@ export const useAuth = () => {
     isMutating: authStore.isMutating,
     signUp,
     signIn,
-    signInWithGoogle,
+    oauthSignIn,
   };
 };

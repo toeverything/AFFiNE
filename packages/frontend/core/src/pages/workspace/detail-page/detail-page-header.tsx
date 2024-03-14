@@ -46,16 +46,16 @@ export function JournalPageHeader({ page, workspace }: PageHeaderProps) {
   return (
     <Header className={styles.header}>
       <EditorModeSwitch
-        blockSuiteWorkspace={workspace.blockSuiteWorkspace}
+        docCollection={workspace.docCollection}
         pageId={page?.id}
       />
       <div className={styles.journalWeekPicker}>
         <JournalWeekDatePicker
-          workspace={workspace.blockSuiteWorkspace}
+          docCollection={workspace.docCollection}
           page={page}
         />
       </div>
-      <JournalTodayButton workspace={workspace.blockSuiteWorkspace} />
+      <JournalTodayButton docCollection={workspace.docCollection} />
       <HeaderDivider />
       <PageHeaderMenuButton isJournal pageId={page?.id} />
       {page ? (
@@ -74,13 +74,13 @@ export function NormalPageHeader({ page, workspace }: PageHeaderProps) {
   return (
     <Header className={styles.header}>
       <EditorModeSwitch
-        blockSuiteWorkspace={workspace.blockSuiteWorkspace}
+        docCollection={workspace.docCollection}
         pageId={page?.id}
       />
       <BlocksuiteHeaderTitle
         inputHandleRef={titleInputHandleRef}
         pageId={page?.id}
-        blockSuiteWorkspace={workspace.blockSuiteWorkspace}
+        docCollection={workspace.docCollection}
       />
       <PageHeaderMenuButton rename={onRename} pageId={page?.id} />
       <FavoriteButton pageId={page?.id} />
@@ -92,7 +92,7 @@ export function NormalPageHeader({ page, workspace }: PageHeaderProps) {
 
 export function DetailPageHeader(props: PageHeaderProps) {
   const { page } = props;
-  const { isJournal } = useJournalInfoHelper(page.workspace, page.id);
+  const { isJournal } = useJournalInfoHelper(page.collection, page.id);
   const isInTrash = page.meta?.trash;
 
   return isJournal && !isInTrash ? (

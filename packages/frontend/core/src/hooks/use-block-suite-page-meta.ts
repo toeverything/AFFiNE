@@ -1,6 +1,6 @@
 import type { RootBlockModel } from '@blocksuite/blocks';
 import { assertExists } from '@blocksuite/global/utils';
-import type { DocMeta, Workspace } from '@blocksuite/store';
+import type { DocCollection, DocMeta } from '@blocksuite/store';
 import { useMemo } from 'react';
 
 import { useAllBlockSuiteDocMeta } from './use-all-block-suite-page-meta';
@@ -11,9 +11,9 @@ import { useJournalHelper } from './use-journal';
  * If you want to get all pageMetas, use `useAllBlockSuitePageMeta` instead
  * @returns
  */
-export function useBlockSuiteDocMeta(blocksuiteWorkspace: Workspace) {
-  const pageMetas = useAllBlockSuiteDocMeta(blocksuiteWorkspace);
-  const { isPageJournal } = useJournalHelper(blocksuiteWorkspace);
+export function useBlockSuiteDocMeta(docCollection: DocCollection) {
+  const pageMetas = useAllBlockSuiteDocMeta(docCollection);
+  const { isPageJournal } = useJournalHelper(docCollection);
   return useMemo(
     () =>
       pageMetas.filter(
@@ -23,11 +23,11 @@ export function useBlockSuiteDocMeta(blocksuiteWorkspace: Workspace) {
   );
 }
 
-export function useDocMetaHelper(blockSuiteWorkspace: Workspace) {
+export function useDocMetaHelper(docCollection: DocCollection) {
   return useMemo(
     () => ({
       setDocTitle: (docId: string, newTitle: string) => {
-        const page = blockSuiteWorkspace.getDoc(docId);
+        const page = docCollection.getDoc(docId);
         assertExists(page);
         const pageBlock = page
           .getBlockByFlavour('affine:page')
@@ -37,20 +37,20 @@ export function useDocMetaHelper(blockSuiteWorkspace: Workspace) {
           pageBlock.title.delete(0, pageBlock.title.length);
           pageBlock.title.insert(newTitle, 0);
         });
-        blockSuiteWorkspace.meta.setDocMeta(docId, { title: newTitle });
+        docCollection.meta.setDocMeta(docId, { title: newTitle });
       },
       setDocReadonly: (docId: string, readonly: boolean) => {
-        const page = blockSuiteWorkspace.getDoc(docId);
+        const page = docCollection.getDoc(docId);
         assertExists(page);
         page.awarenessStore.setReadonly(page, readonly);
       },
       setDocMeta: (docId: string, docMeta: Partial<DocMeta>) => {
-        blockSuiteWorkspace.meta.setDocMeta(docId, docMeta);
+        docCollection.meta.setDocMeta(docId, docMeta);
       },
       getDocMeta: (docId: string) => {
-        return blockSuiteWorkspace.meta.getDocMeta(docId);
+        return docCollection.meta.getDocMeta(docId);
       },
     }),
-    [blockSuiteWorkspace]
+    [docCollection]
   );
 }

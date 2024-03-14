@@ -1,9 +1,10 @@
 import { ResizePanel } from '@affine/component/resize-panel';
+import { appSidebarOpenAtom } from '@affine/core/components/app-sidebar';
 import { appSettingAtom } from '@toeverything/infra/atom';
 import { useService } from '@toeverything/infra/di';
 import { useLiveData } from '@toeverything/infra/livedata';
 import { useAtomValue } from 'jotai';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { RightSidebar } from '../entities/right-sidebar';
 import * as styles from './container.css';
@@ -20,6 +21,18 @@ export const RightSidebarContainer = () => {
 
   const frontView = useLiveData(rightSidebar.front);
   const open = useLiveData(rightSidebar.isOpen) && frontView !== undefined;
+  const [floating, setFloating] = useState(false);
+  const appSidebarOpened = useAtomValue(appSidebarOpenAtom);
+
+  useEffect(() => {
+    const onResize = () =>
+      setFloating(!!(window.innerWidth < 1200 && appSidebarOpened));
+    onResize();
+    window.addEventListener('resize', onResize);
+    return () => {
+      window.removeEventListener('resize', onResize);
+    };
+  }, [appSidebarOpened]);
 
   const handleOpenChange = useCallback(
     (open: boolean) => {
@@ -38,8 +51,9 @@ export const RightSidebarContainer = () => {
 
   return (
     <ResizePanel
+      floating={floating}
       resizeHandlePos="left"
-      resizeHandleOffset={clientBorder ? 4 : 0}
+      resizeHandleOffset={clientBorder ? 3.5 : 0}
       width={width}
       resizing={resizing}
       onResizing={setResizing}

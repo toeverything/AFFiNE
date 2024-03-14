@@ -405,7 +405,7 @@ export const PageBacklinksPopup = ({
               key={pageId}
               wrapper={MenuItem}
               pageId={pageId}
-              workspace={manager.workspace.blockSuiteWorkspace}
+              docCollection={manager.workspace.docCollection}
             />
           ))}
         </div>
@@ -600,7 +600,7 @@ export const PagePropertiesTableHeader = ({
 
   const t = useAFFiNEI18N();
   const backlinks = useBlockSuitePageBacklinks(
-    manager.workspace.blockSuiteWorkspace,
+    manager.workspace.docCollection,
     manager.pageId
   );
 
@@ -1015,7 +1015,7 @@ export const PagePropertiesAddProperty = () => {
 const PagePropertiesTableInner = () => {
   const manager = useContext(managerContext);
   const [expanded, setExpanded] = useState(false);
-  use(manager.workspace.blockSuiteWorkspace.doc.whenSynced);
+  use(manager.workspace.docCollection.doc.whenSynced);
   return (
     <div className={styles.root}>
       <Collapsible.Root
@@ -1049,7 +1049,7 @@ export const PagePropertiesTable = ({ page }: { page: Doc }) => {
   // if the given page is not in the current workspace, then we don't render anything
   // eg. when it is in history modal
 
-  if (!manager.page) {
+  if (!manager.page || manager.readonly) {
     return null;
   }
 

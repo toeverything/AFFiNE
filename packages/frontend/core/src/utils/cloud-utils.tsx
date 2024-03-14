@@ -1,12 +1,12 @@
 import {
   generateRandUTF16Chars,
+  getBaseUrl,
+  OAuthProviderType,
   SPAN_ID_BYTES,
   TRACE_ID_BYTES,
   traceReporter,
 } from '@affine/graphql';
 import { CLOUD_WORKSPACE_CHANGED_BROADCAST_CHANNEL_KEY } from '@affine/workspace-impl';
-// eslint-disable-next-line @typescript-eslint/no-restricted-imports
-import { signIn, signOut } from 'next-auth/react';
 
 type TraceParams = {
   startTime: string;
@@ -43,62 +43,95 @@ function onRejectHandleTrace<T>(
   return Promise.reject(res);
 }
 
-export const signInCloud: typeof signIn = async (provider, ...rest) => {
+type Providers = 'credentials' | 'email' | OAuthProviderType;
+
+export const signInCloud = async (
+  provider: Providers,
+  credentials?: { email: string; password?: string },
+  searchParams: Record<string, any> = {}
+): Promise<Response | undefined> => {
   const traceParams = genTraceParams();
-  if (environment.isDesktop) {
-    if (provider === 'google') {
+
+  if (provider === 'credentials' || provider === 'email') {
+    if (!credentials) {
+      throw new Error('Invalid Credentials');
+    }
+
+    return signIn(credentials, searchParams)
+      .then(res => onResolveHandleTrace(res, traceParams))
+      .catch(err => onRejectHandleTrace(err, traceParams));
+  } else if (OAuthProviderType[provider]) {
+    if (environment.isDesktop) {
       open(
         `${
           runtimeConfig.serverUrlPrefix
-        }/desktop-signin?provider=google&callback_url=${buildCallbackUrl(
+        }/desktop-signin?provider=${provider}&redirect_uri=${buildRedirectUri(
           '/open-app/signin-redirect'
         )}`,
         '_target'
       );
-      return;
     } else {
-      const [options, ...tail] = rest;
-      const callbackUrl =
-        runtimeConfig.serverUrlPrefix +
-        (provider === 'email'
-          ? '/open-app/signin-redirect'
-          : location.pathname);
-      return signIn(
-        provider,
-        {
-          ...options,
-          callbackUrl: buildCallbackUrl(callbackUrl),
-        },
-        ...tail
-      )
-        .then(res => onResolveHandleTrace(res, traceParams))
-        .catch(err => onRejectHandleTrace(err, traceParams));
+      location.href = `${
+        runtimeConfig.serverUrlPrefix
+      }/oauth/login?provider=${provider}&redirect_uri=${encodeURIComponent(
+        searchParams.redirectUri ?? location.pathname
+      )}`;
     }
+
+    return;
   } else {
-    return signIn(provider, ...rest)
-      .then(res => onResolveHandleTrace(res, traceParams))
-      .catch(err => onRejectHandleTrace(err, traceParams));
+    throw new Error('Invalid Provider');
   }
 };
 
-export const signOutCloud: typeof signOut = async options => {
+async function signIn(
+  credential: { email: string; password?: string },
+  searchParams: Record<string, any> = {}
+) {
+  const url = new URL(getBaseUrl() + '/api/auth/sign-in');
+
+  for (const key in searchParams) {
+    url.searchParams.set(key, searchParams[key]);
+  }
+
+  const redirectUri =
+    runtimeConfig.serverUrlPrefix +
+    (environment.isDesktop
+      ? buildRedirectUri('/open-app/signin-redirect')
+      : location.pathname);
+
+  url.searchParams.set('redirect_uri', redirectUri);
+
+  return fetch(url.toString(), {
+    method: 'POST',
+    body: JSON.stringify(credential),
+    headers: {
+      'content-type': 'application/json',
+    },
+  });
+}
+
+export const signOutCloud = async (redirectUri?: string) => {
   const traceParams = genTraceParams();
-  return signOut({
-    callbackUrl: '/',
-    ...options,
-  })
+  return fetch(getBaseUrl() + '/api/auth/sign-out')
     .then(result => {
-      if (result) {
+      if (result.ok) {
         new BroadcastChannel(
           CLOUD_WORKSPACE_CHANGED_BROADCAST_CHANNEL_KEY
         ).postMessage(1);
+
+        if (redirectUri && location.href !== redirectUri) {
+          setTimeout(() => {
+            location.href = redirectUri;
+          }, 0);
+        }
       }
       return onResolveHandleTrace(result, traceParams);
     })
     .catch(err => onRejectHandleTrace(err, traceParams));
 };
 
-export function buildCallbackUrl(callbackUrl: string) {
+export function buildRedirectUri(callbackUrl: string) {
   const params: string[][] = [];
   if (environment.isDesktop && window.appInfo.schema) {
     params.push(['schema', window.appInfo.schema]);

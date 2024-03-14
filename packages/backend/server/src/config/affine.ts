@@ -115,3 +115,27 @@ AFFiNE.plugins.use('payment', {
 // /* Update the provider of storages */
 // AFFiNE.storage.storages.blob.provider = 'r2';
 // AFFiNE.storage.storages.avatar.provider = 'r2';
+//
+// /* OAuth Plugin */
+// AFFiNE.plugins.use('oauth', {
+//   providers: {
+//     github: {
+//       clientId: '',
+//       clientSecret: '',
+//       // See https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps
+//       args: {
+//         scope: 'user',
+//       },
+//     },
+//     google: {
+//       clientId: '',
+//       clientSecret: '',
+//       args: {
+//         // See https://developers.google.com/identity/protocols/oauth2
+//         scope: 'openid email profile',
+//         promot: 'select_account',
+//         access_type: 'offline',
+//       },
+//     },
+//   },
+// });

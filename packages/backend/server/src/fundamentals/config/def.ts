@@ -88,6 +88,22 @@ export interface AFFiNEConfig {
   };
 
   /**
+   * Application secrets for authentication and data encryption
+   */
+  secrets: {
+    /**
+     * Application public key
+     *
+     */
+    publicKey: string;
+    /**
+     * Application private key
+     *
+     */
+    privateKey: string;
+  };
+
+  /**
    * Deployment environment
    */
   readonly AFFINE_ENV: AFFINE_ENV;
@@ -204,67 +220,32 @@ export interface AFFiNEConfig {
    * authentication config
    */
   auth: {
+    session: {
+      /**
+       * Application auth expiration time in seconds
+       *
+       * @default 15 days
+       */
+      ttl: number;
+    };
+
     /**
-     * Application access token expiration time
+     * Application access token config
      */
-    readonly accessTokenExpiresIn: number;
-    /**
-     * Application refresh token expiration time
-     */
-    readonly refreshTokenExpiresIn: number;
-    /**
-     * Add some leeway (in seconds) to the exp and nbf validation to account for clock skew.
-     * Defaults to 60 if omitted.
-     */
-    readonly leeway: number;
-    /**
-     * Application public key
-     *
-     */
-    readonly publicKey: string;
-    /**
-     * Application private key
-     *
-     */
-    readonly privateKey: string;
-    /**
-     * whether allow user to signup with email directly
-     */
-    enableSignup: boolean;
-    /**
-     * whether allow user to signup by oauth providers
-     */
-    enableOauth: boolean;
-    /**
-     * NEXTAUTH_SECRET
-     */
-    nextAuthSecret: string;
-    /**
-     * all available oauth providers
-     */
-    oauthProviders: Partial<
-      Record<
-        ExternalAccount,
-        {
-          enabled: boolean;
-          clientId: string;
-          clientSecret: string;
-          /**
-           * uri to start oauth flow
-           */
-          authorizationUri?: string;
-          /**
-           * uri to authenticate `access_token` when user is redirected back from oauth provider with `code`
-           */
-          accessTokenUri?: string;
-          /**
-           * uri to get user info with authenticated `access_token`
-           */
-          userInfoUri?: string;
-          args?: Record<string, any>;
-        }
-      >
-    >;
+    accessToken: {
+      /**
+       * Application access token expiration time in seconds
+       *
+       * @default 7 days
+       */
+      ttl: number;
+      /**
+       * Application refresh token expiration time in seconds
+       *
+       * @default 30 days
+       */
+      refreshTokenTtl: number;
+    };
     captcha: {
       /**
        * whether to enable captcha

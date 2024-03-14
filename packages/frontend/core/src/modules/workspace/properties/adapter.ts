@@ -30,7 +30,7 @@ export class WorkspacePropertiesAdapter {
 
   constructor(public readonly workspace: Workspace) {
     // check if properties exists, if not, create one
-    const rootDoc = workspace.blockSuiteWorkspace.doc;
+    const rootDoc = workspace.docCollection.doc;
     this.properties = rootDoc.getMap(AFFINE_PROPERTIES_ID);
     this.proxy = createYProxy(this.properties);
 
@@ -58,8 +58,8 @@ export class WorkspacePropertiesAdapter {
               source: 'system',
               type: PagePropertyType.Tags,
               options:
-                this.workspace.blockSuiteWorkspace.meta.properties.tags
-                  ?.options ?? [], // better use a one time migration
+                this.workspace.docCollection.meta.properties.tags?.options ??
+                [], // better use a one time migration
             },
           },
         },
@@ -89,8 +89,8 @@ export class WorkspacePropertiesAdapter {
   }
 
   // leak some yjs abstraction to modify multiple properties at once
-  transact = this.workspace.blockSuiteWorkspace.doc.transact.bind(
-    this.workspace.blockSuiteWorkspace.doc
+  transact = this.workspace.docCollection.doc.transact.bind(
+    this.workspace.docCollection.doc
   );
 
   get schema() {

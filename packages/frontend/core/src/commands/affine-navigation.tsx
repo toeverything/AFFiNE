@@ -1,7 +1,7 @@
 import { WorkspaceSubPath } from '@affine/core/shared';
 import type { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowRightBigIcon } from '@blocksuite/icons';
-import type { Workspace } from '@blocksuite/store';
+import type { DocCollection } from '@blocksuite/store';
 import { registerAffineCommand } from '@toeverything/infra/command';
 import type { createStore } from 'jotai';
 
@@ -11,13 +11,13 @@ import type { useNavigateHelper } from '../hooks/use-navigate-helper';
 export function registerAffineNavigationCommands({
   t,
   store,
-  workspace,
+  docCollection,
   navigationHelper,
 }: {
   t: ReturnType<typeof useAFFiNEI18N>;
   store: ReturnType<typeof createStore>;
   navigationHelper: ReturnType<typeof useNavigateHelper>;
-  workspace: Workspace;
+  docCollection: DocCollection;
 }) {
   const unsubs: Array<() => void> = [];
   unsubs.push(
@@ -27,7 +27,7 @@ export function registerAffineNavigationCommands({
       icon: <ArrowRightBigIcon />,
       label: t['com.affine.cmdk.affine.navigation.goto-all-pages'](),
       run() {
-        navigationHelper.jumpToSubPath(workspace.id, WorkspaceSubPath.ALL);
+        navigationHelper.jumpToSubPath(docCollection.id, WorkspaceSubPath.ALL);
       },
     })
   );
@@ -39,7 +39,7 @@ export function registerAffineNavigationCommands({
       icon: <ArrowRightBigIcon />,
       label: 'Go to Collection List',
       run() {
-        navigationHelper.jumpToCollections(workspace.id);
+        navigationHelper.jumpToCollections(docCollection.id);
       },
     })
   );
@@ -51,7 +51,7 @@ export function registerAffineNavigationCommands({
       icon: <ArrowRightBigIcon />,
       label: 'Go to Tag List',
       run() {
-        navigationHelper.jumpToTags(workspace.id);
+        navigationHelper.jumpToTags(docCollection.id);
       },
     })
   );
@@ -91,7 +91,10 @@ export function registerAffineNavigationCommands({
       icon: <ArrowRightBigIcon />,
       label: t['com.affine.cmdk.affine.navigation.goto-trash'](),
       run() {
-        navigationHelper.jumpToSubPath(workspace.id, WorkspaceSubPath.TRASH);
+        navigationHelper.jumpToSubPath(
+          docCollection.id,
+          WorkspaceSubPath.TRASH
+        );
       },
     })
   );

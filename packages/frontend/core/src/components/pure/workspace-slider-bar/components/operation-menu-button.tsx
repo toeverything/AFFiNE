@@ -1,9 +1,11 @@
 import { toast } from '@affine/component';
 import { IconButton } from '@affine/component/ui/button';
 import { Menu } from '@affine/component/ui/menu';
+import { Workbench } from '@affine/core/modules/workbench';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { MoreHorizontalIcon } from '@blocksuite/icons';
-import type { Workspace } from '@blocksuite/store';
+import type { DocCollection } from '@blocksuite/store';
+import { useService } from '@toeverything/infra/di';
 import { useCallback } from 'react';
 
 import { useBlockSuiteMetaHelper } from '../../../../hooks/affine/use-block-suite-meta-helper';
@@ -13,7 +15,7 @@ import { OperationItems } from './operation-item';
 
 export type OperationMenuButtonProps = {
   pageId: string;
-  workspace: Workspace;
+  docCollection: DocCollection;
   pageTitle: string;
   setRenameModalOpen: () => void;
   inFavorites?: boolean;
@@ -24,7 +26,7 @@ export type OperationMenuButtonProps = {
 
 export const OperationMenuButton = ({ ...props }: OperationMenuButtonProps) => {
   const {
-    workspace,
+    docCollection,
     pageId,
     pageTitle,
     setRenameModalOpen,
@@ -34,9 +36,10 @@ export const OperationMenuButton = ({ ...props }: OperationMenuButtonProps) => {
     isReferencePage,
   } = props;
   const t = useAFFiNEI18N();
-  const { createLinkedPage } = usePageHelper(workspace);
-  const { setTrashModal } = useTrashModalHelper(workspace);
-  const { removeFromFavorite } = useBlockSuiteMetaHelper(workspace);
+  const { createLinkedPage } = usePageHelper(docCollection);
+  const { setTrashModal } = useTrashModalHelper(docCollection);
+  const { removeFromFavorite } = useBlockSuiteMetaHelper(docCollection);
+  const workbench = useService(Workbench);
 
   const handleRename = useCallback(() => {
     setRenameModalOpen?.();
@@ -64,6 +67,10 @@ export const OperationMenuButton = ({ ...props }: OperationMenuButtonProps) => {
     removeFromAllowList?.(pageId);
   }, [pageId, removeFromAllowList]);
 
+  const handleOpenInSplitView = useCallback(() => {
+    workbench.openPage(pageId, { at: 'tail' });
+  }, [pageId, workbench]);
+
   return (
     <Menu
       items={
@@ -73,6 +80,7 @@ export const OperationMenuButton = ({ ...props }: OperationMenuButtonProps) => {
           onRemoveFromAllowList={handleRemoveFromAllowList}
           onRemoveFromFavourites={handleRemoveFromFavourites}
           onRename={handleRename}
+          onOpenInSplitView={handleOpenInSplitView}
           inAllowList={inAllowList}
           inFavorites={inFavorites}
           isReferencePage={isReferencePage}

@@ -22,7 +22,7 @@ describe('Workspace System', () => {
 
     expect(workspaceListService.workspaceList.value.length).toBe(1);
 
-    const page = workspace.blockSuiteWorkspace.createDoc({
+    const page = workspace.docCollection.createDoc({
       id: 'page0',
     });
     page.load();
@@ -30,7 +30,7 @@ describe('Workspace System', () => {
       title: new page.Text('test-page'),
     });
 
-    expect(workspace.blockSuiteWorkspace.docs.size).toBe(1);
+    expect(workspace.docCollection.docs.size).toBe(1);
     expect(
       (page!.getBlockByFlavour('affine:page')[0] as any).title.toString()
     ).toBe('test-page');

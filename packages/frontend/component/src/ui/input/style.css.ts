@@ -42,8 +42,9 @@ export const inputWrapper = style({
     '&.default': {
       borderColor: cssVar('borderColor'),
     },
-    '&.default.focus': {
+    '&.default:is(:focus-within, :focus, :focus-visible)': {
       borderColor: cssVar('primaryColor'),
+      outline: 'none',
       boxShadow: '0px 0px 0px 2px rgba(30, 150, 235, 0.30);',
     },
   },

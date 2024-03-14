@@ -58,7 +58,7 @@ export const SplitView = ({
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 2,
+        distance: 0,
       },
     })
   );

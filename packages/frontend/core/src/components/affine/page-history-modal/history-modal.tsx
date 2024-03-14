@@ -5,13 +5,13 @@ import { ConfirmModal, Modal } from '@affine/component/ui/modal';
 import { openSettingModalAtom } from '@affine/core/atoms';
 import { useIsWorkspaceOwner } from '@affine/core/hooks/affine/use-is-workspace-owner';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import { useBlockSuiteWorkspacePageTitle } from '@affine/core/hooks/use-block-suite-workspace-page-title';
+import { useDocCollectionPageTitle } from '@affine/core/hooks/use-block-suite-workspace-page-title';
 import { useWorkspaceQuota } from '@affine/core/hooks/use-workspace-quota';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloseIcon, ToggleCollapseIcon } from '@blocksuite/icons';
 import type { Doc as BlockSuiteDoc } from '@blocksuite/store';
-import { type Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
+import { type DocCollection } from '@blocksuite/store';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import type { DialogContentProps } from '@radix-ui/react-dialog';
 import { Doc, type PageMode, Workspace } from '@toeverything/infra';
@@ -49,7 +49,7 @@ import * as styles from './styles.css';
 export interface PageHistoryModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  workspace: BlockSuiteWorkspace;
+  docCollection: DocCollection;
   pageId: string;
 }
 
@@ -444,26 +444,26 @@ const EmptyHistoryPrompt = () => {
 };
 
 const PageHistoryManager = ({
-  workspace,
+  docCollection,
   pageId,
   onClose,
 }: {
-  workspace: BlockSuiteWorkspace;
+  docCollection: DocCollection;
   pageId: string;
   onClose: () => void;
 }) => {
-  const workspaceId = workspace.id;
+  const workspaceId = docCollection.id;
   const [activeVersion, setActiveVersion] = useState<string>();
 
   const pageDocId = useMemo(() => {
-    return workspace.getDoc(pageId)?.spaceDoc.guid ?? pageId;
-  }, [pageId, workspace]);
+    return docCollection.getDoc(pageId)?.spaceDoc.guid ?? pageId;
+  }, [pageId, docCollection]);
 
-  const snapshotPage = useSnapshotPage(workspace, pageDocId, activeVersion);
+  const snapshotPage = useSnapshotPage(docCollection, pageDocId, activeVersion);
 
   const t = useAFFiNEI18N();
 
-  const { onRestore, isMutating } = useRestorePage(workspace, pageId);
+  const { onRestore, isMutating } = useRestorePage(docCollection, pageId);
 
   const handleRestore = useMemo(
     () => async () => {
@@ -481,7 +481,7 @@ const PageHistoryManager = ({
   const page = useService(Doc);
   const [mode, setMode] = useState<PageMode>(page.mode.value);
 
-  const title = useBlockSuiteWorkspacePageTitle(workspace, pageId);
+  const title = useDocCollectionPageTitle(docCollection, pageId);
 
   const [showRestoreConfirmModal, setShowRestoreConfirmModal] = useState(false);
 
@@ -558,7 +558,7 @@ export const PageHistoryModal = ({
   onOpenChange,
   open,
   pageId,
-  workspace,
+  docCollection: workspace,
 }: PageHistoryModalProps) => {
   const onClose = useCallback(() => {
     onOpenChange(false);
@@ -570,7 +570,7 @@ export const PageHistoryModal = ({
         <PageHistoryManager
           onClose={onClose}
           pageId={pageId}
-          workspace={workspace}
+          docCollection={workspace}
         />
       </Suspense>
     </ModalContainer>
@@ -595,7 +595,7 @@ export const GlobalPageHistoryModal = () => {
       open={open}
       onOpenChange={handleOpenChange}
       pageId={pageId}
-      workspace={workspace.blockSuiteWorkspace}
+      docCollection={workspace.docCollection}
     />
   );
 };

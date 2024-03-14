@@ -9,7 +9,7 @@ import { omit } from 'lodash-es';
 
 import { Config, ConfigPaths } from '../config';
 
-interface OptionalModuleMetadata extends ModuleMetadata {
+export interface OptionalModuleMetadata extends ModuleMetadata {
   /**
    * Only install module if given config paths are defined in AFFiNE config.
    */

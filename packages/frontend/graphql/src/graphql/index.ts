@@ -101,11 +101,9 @@ export const changeEmailMutation = {
   definitionName: 'changeEmail',
   containsFile: false,
   query: `
-mutation changeEmail($token: String!) {
-  changeEmail(token: $token) {
+mutation changeEmail($token: String!, $email: String!) {
+  changeEmail(token: $token, email: $email) {
     id
-    name
-    avatarUrl
     email
   }
 }`,
@@ -120,9 +118,6 @@ export const changePasswordMutation = {
 mutation changePassword($token: String!, $newPassword: String!) {
   changePassword(token: $token, newPassword: $newPassword) {
     id
-    name
-    avatarUrl
-    email
   }
 }`,
 };
@@ -212,7 +207,6 @@ query earlyAccessUsers {
     email
     avatarUrl
     emailVerified
-    createdAt
     subscription {
       plan
       recurring
@@ -248,7 +242,6 @@ query getCurrentUser {
     email
     emailVerified
     avatarUrl
-    createdAt
     token {
       sessionToken
     }
@@ -324,6 +317,19 @@ query getMembersByWorkspaceId($workspaceId: String!, $skip: Int!, $take: Int!) {
 }`,
 };
 
+export const oauthProvidersQuery = {
+  id: 'oauthProvidersQuery' as const,
+  operationName: 'oauthProviders',
+  definitionName: 'serverConfig',
+  containsFile: false,
+  query: `
+query oauthProviders {
+  serverConfig {
+    oauthProviders
+  }
+}`,
+};
+
 export const getPublicWorkspaceQuery = {
   id: 'getPublicWorkspaceQuery' as const,
   operationName: 'getPublicWorkspace',
@@ -333,6 +339,19 @@ export const getPublicWorkspaceQuery = {
 query getPublicWorkspace($id: String!) {
   publicWorkspace(id: $id) {
     id
+  }
+}`,
+};
+
+export const getUserFeaturesQuery = {
+  id: 'getUserFeaturesQuery' as const,
+  operationName: 'getUserFeatures',
+  definitionName: 'currentUser',
+  containsFile: false,
+  query: `
+query getUserFeatures {
+  currentUser {
+    features
   }
 }`,
 };
@@ -627,8 +646,8 @@ export const sendChangeEmailMutation = {
   definitionName: 'sendChangeEmail',
   containsFile: false,
   query: `
-mutation sendChangeEmail($email: String!, $callbackUrl: String!) {
-  sendChangeEmail(email: $email, callbackUrl: $callbackUrl)
+mutation sendChangeEmail($callbackUrl: String!) {
+  sendChangeEmail(callbackUrl: $callbackUrl)
 }`,
 };
 
@@ -638,8 +657,8 @@ export const sendChangePasswordEmailMutation = {
   definitionName: 'sendChangePasswordEmail',
   containsFile: false,
   query: `
-mutation sendChangePasswordEmail($email: String!, $callbackUrl: String!) {
-  sendChangePasswordEmail(email: $email, callbackUrl: $callbackUrl)
+mutation sendChangePasswordEmail($callbackUrl: String!) {
+  sendChangePasswordEmail(callbackUrl: $callbackUrl)
 }`,
 };
 
@@ -649,8 +668,8 @@ export const sendSetPasswordEmailMutation = {
   definitionName: 'sendSetPasswordEmail',
   containsFile: false,
   query: `
-mutation sendSetPasswordEmail($email: String!, $callbackUrl: String!) {
-  sendSetPasswordEmail(email: $email, callbackUrl: $callbackUrl)
+mutation sendSetPasswordEmail($callbackUrl: String!) {
+  sendSetPasswordEmail(callbackUrl: $callbackUrl)
 }`,
 };
 
@@ -662,6 +681,17 @@ export const sendVerifyChangeEmailMutation = {
   query: `
 mutation sendVerifyChangeEmail($token: String!, $email: String!, $callbackUrl: String!) {
   sendVerifyChangeEmail(token: $token, email: $email, callbackUrl: $callbackUrl)
+}`,
+};
+
+export const sendVerifyEmailMutation = {
+  id: 'sendVerifyEmailMutation' as const,
+  operationName: 'sendVerifyEmail',
+  definitionName: 'sendVerifyEmail',
+  containsFile: false,
+  query: `
+mutation sendVerifyEmail($callbackUrl: String!) {
+  sendVerifyEmail(callbackUrl: $callbackUrl)
 }`,
 };
 
@@ -691,36 +721,6 @@ export const setWorkspacePublicByIdMutation = {
 mutation setWorkspacePublicById($id: ID!, $public: Boolean!) {
   updateWorkspace(input: {id: $id, public: $public}) {
     id
-  }
-}`,
-};
-
-export const signInMutation = {
-  id: 'signInMutation' as const,
-  operationName: 'signIn',
-  definitionName: 'signIn',
-  containsFile: false,
-  query: `
-mutation signIn($email: String!, $password: String!) {
-  signIn(email: $email, password: $password) {
-    token {
-      token
-    }
-  }
-}`,
-};
-
-export const signUpMutation = {
-  id: 'signUpMutation' as const,
-  operationName: 'signUp',
-  definitionName: 'signUp',
-  containsFile: false,
-  query: `
-mutation signUp($name: String!, $email: String!, $password: String!) {
-  signUp(name: $name, email: $email, password: $password) {
-    token {
-      token
-    }
   }
 }`,
 };
@@ -766,6 +766,20 @@ mutation updateSubscription($recurring: SubscriptionRecurring!, $idempotencyKey:
 }`,
 };
 
+export const updateUserProfileMutation = {
+  id: 'updateUserProfileMutation' as const,
+  operationName: 'updateUserProfile',
+  definitionName: 'updateProfile',
+  containsFile: false,
+  query: `
+mutation updateUserProfile($input: UpdateUserInput!) {
+  updateProfile(input: $input) {
+    id
+    name
+  }
+}`,
+};
+
 export const uploadAvatarMutation = {
   id: 'uploadAvatarMutation' as const,
   operationName: 'uploadAvatar',
@@ -779,6 +793,17 @@ mutation uploadAvatar($avatar: Upload!) {
     avatarUrl
     email
   }
+}`,
+};
+
+export const verifyEmailMutation = {
+  id: 'verifyEmailMutation' as const,
+  operationName: 'verifyEmail',
+  definitionName: 'verifyEmail',
+  containsFile: false,
+  query: `
+mutation verifyEmail($token: String!) {
+  verifyEmail(token: $token)
 }`,
 };
 

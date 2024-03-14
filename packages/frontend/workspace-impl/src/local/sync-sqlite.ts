@@ -20,6 +20,13 @@ export class SQLiteSyncStorage implements SyncStorage {
     );
 
     if (update) {
+      if (
+        update.byteLength === 0 ||
+        (update.byteLength === 2 && update[0] === 0 && update[1] === 0)
+      ) {
+        return null;
+      }
+
       return {
         data: update,
         state: encodeStateVectorFromUpdate(update),

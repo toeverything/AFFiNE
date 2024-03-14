@@ -8,7 +8,6 @@ import {
   PageEditor,
 } from '@blocksuite/presets';
 import { type Doc } from '@blocksuite/store';
-import clsx from 'clsx';
 import React, {
   forwardRef,
   useCallback,
@@ -65,7 +64,7 @@ export const BlocksuiteDocEditor = forwardRef<
   const docRef = useRef<PageEditor | null>(null);
   const [docPage, setDocPage] =
     useState<HTMLElementTagNameMap['affine-page-root']>();
-  const { isJournal } = useJournalInfoHelper(page.workspace, page.id);
+  const { isJournal } = useJournalInfoHelper(page.collection, page.id);
 
   const onDocRef = useCallback(
     (el: PageEditor) => {
@@ -103,10 +102,7 @@ export const BlocksuiteDocEditor = forwardRef<
 
   return (
     <div className={styles.docEditorRoot}>
-      <div
-        className={clsx('affine-page-viewport', styles.affineDocViewport)}
-        data-doc-viewport={true}
-      >
+      <div className={styles.affineDocViewport}>
         {!isJournal ? (
           <adapted.DocTitle doc={page} ref={titleRef} />
         ) : (
@@ -128,7 +124,7 @@ export const BlocksuiteDocEditor = forwardRef<
             }}
           ></div>
         ) : null}
-        {docPage ? (
+        {docPage && !page.readonly ? (
           <adapted.BiDirectionalLinkPanel doc={page} pageRoot={docPage} />
         ) : null}
       </div>

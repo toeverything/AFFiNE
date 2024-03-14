@@ -13,6 +13,7 @@ import {
   allBlobSizesQuery,
   removeAvatarMutation,
   SubscriptionPlan,
+  updateUserProfileMutation,
   uploadAvatarMutation,
 } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
@@ -58,11 +59,10 @@ export const UserAvatar = () => {
     async (file: File) => {
       try {
         const reducedFile = await validateAndReduceImage(file);
-        await avatarTrigger({
+        const data = await avatarTrigger({
           avatar: reducedFile, // Pass the reducedFile directly to the avatarTrigger
         });
-        // XXX: This is a hack to force the user to update, since next-auth can not only use update function without params
-        await user.update({ name: user.name });
+        user.update({ avatarUrl: data.uploadAvatar.avatarUrl });
         pushNotification({
           title: 'Update user avatar success',
           type: 'success',
@@ -82,8 +82,7 @@ export const UserAvatar = () => {
     async (e: MouseEvent<HTMLButtonElement>) => {
       e.stopPropagation();
       await removeAvatarTrigger();
-      // XXX: This is a hack to force the user to update, since next-auth can not only use update function without params
-      user.update({ name: user.name }).catch(console.error);
+      user.update({ avatarUrl: null });
     },
     [removeAvatarTrigger, user]
   );
@@ -97,9 +96,9 @@ export const UserAvatar = () => {
       <Avatar
         size={56}
         name={user.name}
-        url={user.image}
+        url={user.avatarUrl}
         hoverIcon={<CameraIcon />}
-        onRemove={user.image ? handleRemoveUserAvatar : undefined}
+        onRemove={user.avatarUrl ? handleRemoveUserAvatar : undefined}
         avatarTooltipOptions={{ content: t['Click to replace photo']() }}
         removeTooltipOptions={{ content: t['Remove photo']() }}
         data-testid="user-setting-avatar"
@@ -115,14 +114,30 @@ export const AvatarAndName = () => {
   const t = useAFFiNEI18N();
   const user = useCurrentUser();
   const [input, setInput] = useState<string>(user.name);
+  const pushNotification = useSetAtom(pushNotificationAtom);
 
+  const { trigger: updateProfile } = useMutation({
+    mutation: updateUserProfileMutation,
+  });
   const allowUpdate = !!input && input !== user.name;
-  const handleUpdateUserName = useCallback(() => {
+  const handleUpdateUserName = useAsyncCallback(async () => {
     if (!allowUpdate) {
       return;
     }
-    user.update({ name: input }).catch(console.error);
-  }, [allowUpdate, input, user]);
+
+    try {
+      const data = await updateProfile({
+        input: { name: input },
+      });
+      user.update({ name: data.updateProfile.name });
+    } catch (e) {
+      pushNotification({
+        title: 'Failed to update user name.',
+        message: String(e),
+        type: 'error',
+      });
+    }
+  }, [allowUpdate, input, user, updateProfile, pushNotification]);
 
   return (
     <SettingRow
@@ -222,9 +237,9 @@ export const AccountSetting: FC = () => {
       openModal: true,
       state: 'sendEmail',
       email: user.email,
-      emailType: 'changeEmail',
+      emailType: user.emailVerified ? 'changeEmail' : 'verifyEmail',
     });
-  }, [setAuthModal, user.email]);
+  }, [setAuthModal, user.email, user.emailVerified]);
 
   const onPasswordButtonClick = useCallback(() => {
     setAuthModal({
@@ -249,7 +264,9 @@ export const AccountSetting: FC = () => {
       <AvatarAndName />
       <SettingRow name={t['com.affine.settings.email']()} desc={user.email}>
         <Button onClick={onChangeEmail} className={styles.button}>
-          {t['com.affine.settings.email.action']()}
+          {user.emailVerified
+            ? t['com.affine.settings.email.action.change']()
+            : t['com.affine.settings.email.action.verify']()}
         </Button>
       </SettingRow>
       <SettingRow

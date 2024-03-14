@@ -1,9 +1,9 @@
 import './page-detail-editor.css';
 
-import { useBlockSuiteWorkspacePage } from '@affine/core/hooks/use-block-suite-workspace-page';
+import { useDocCollectionPage } from '@affine/core/hooks/use-block-suite-workspace-page';
 import { assertExists, DisposableGroup } from '@blocksuite/global/utils';
 import type { AffineEditorContainer } from '@blocksuite/presets';
-import type { Workspace } from '@blocksuite/store';
+import type { DocCollection } from '@blocksuite/store';
 import type { Doc as BlockSuiteDoc } from '@blocksuite/store';
 import {
   Doc,
@@ -34,7 +34,7 @@ export type OnLoadEditor = (
 export interface PageDetailEditorProps {
   isPublic?: boolean;
   publishMode?: PageMode;
-  workspace: Workspace;
+  docCollection: DocCollection;
   pageId: string;
   onLoad?: OnLoadEditor;
 }
@@ -78,7 +78,7 @@ const PageDetailEditorMain = memo(function PageDetailEditorMain({
       const disposableGroup = new DisposableGroup();
       disposableGroup.add(
         page.slots.blockUpdated.once(() => {
-          page.workspace.setDocMeta(page.id, {
+          page.collection.setDocMeta(page.id, {
             updatedDate: Date.now(),
           });
         })
@@ -88,6 +88,7 @@ const PageDetailEditorMain = memo(function PageDetailEditorMain({
       if (onLoad) {
         // Invoke onLoad once the editor has been mounted to the DOM.
         editor.updateComplete
+          .then(() => editor.host.updateComplete)
           .then(() => {
             disposableGroup.add(onLoad(page, editor));
           })
@@ -120,8 +121,8 @@ const PageDetailEditorMain = memo(function PageDetailEditorMain({
 });
 
 export const PageDetailEditor = (props: PageDetailEditorProps) => {
-  const { workspace, pageId } = props;
-  const page = useBlockSuiteWorkspacePage(workspace, pageId);
+  const { docCollection, pageId } = props;
+  const page = useDocCollectionPage(docCollection, pageId);
   if (!page) {
     return null;
   }

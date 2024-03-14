@@ -9,7 +9,7 @@ import {
   ToggleCollapseIcon,
   ViewLayersIcon,
 } from '@blocksuite/icons';
-import type { DocMeta, Workspace } from '@blocksuite/store';
+import type { DocCollection, DocMeta } from '@blocksuite/store';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import { useService } from '@toeverything/infra';
 import { useLiveData } from '@toeverything/infra';
@@ -196,7 +196,7 @@ export const ItemGroup = <T extends ListItem>({
 
 // todo: optimize how to render page meta list item
 const requiredPropNames = [
-  'blockSuiteWorkspace',
+  'docCollection',
   'rowAsLink',
   'isPreferredEdgeless',
   'operationsRenderer',
@@ -266,9 +266,9 @@ export const TagListItemRenderer = (item: ListItem) => {
 
 function tagIdToTagOption(
   tagId: string,
-  blockSuiteWorkspace: Workspace
+  docCollection: DocCollection
 ): Tag | undefined {
-  return blockSuiteWorkspace.meta.properties.tags?.options.find(
+  return docCollection.meta.properties.tags?.options.find(
     opt => opt.id === tagId
   );
 }
@@ -286,15 +286,15 @@ const PageTitle = ({ id }: { id: string }) => {
 
 const UnifiedPageIcon = ({
   id,
-  workspace,
+  docCollection,
   isPreferredEdgeless,
 }: {
   id: string;
-  workspace: Workspace;
+  docCollection: DocCollection;
   isPreferredEdgeless?: (id: string) => boolean;
 }) => {
   const isEdgeless = isPreferredEdgeless ? isPreferredEdgeless(id) : false;
-  const { isJournal } = useJournalInfoHelper(workspace, id);
+  const { isJournal } = useJournalInfoHelper(docCollection, id);
   if (isJournal) {
     return <TodayIcon />;
   }
@@ -325,7 +325,7 @@ function pageMetaToListItemProp(
     pageId: item.id,
     title: <PageTitle id={item.id} />,
     preview: (
-      <PagePreview workspace={props.blockSuiteWorkspace} pageId={item.id} />
+      <PagePreview docCollection={props.docCollection} pageId={item.id} />
     ),
     createDate: new Date(item.createDate),
     updatedDate: item.updatedDate ? new Date(item.updatedDate) : undefined,
@@ -334,13 +334,13 @@ function pageMetaToListItemProp(
     icon: (
       <UnifiedPageIcon
         id={item.id}
-        workspace={props.blockSuiteWorkspace}
+        docCollection={props.docCollection}
         isPreferredEdgeless={props.isPreferredEdgeless}
       />
     ),
     tags:
       item.tags
-        ?.map(id => tagIdToTagOption(id, props.blockSuiteWorkspace))
+        ?.map(id => tagIdToTagOption(id, props.docCollection))
         .filter((v): v is Tag => v != null) ?? [],
     operations: props.operationsRenderer?.(item),
     selectable: props.selectable,

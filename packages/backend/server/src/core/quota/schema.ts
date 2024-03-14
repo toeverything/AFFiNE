@@ -1,4 +1,4 @@
-import { FeatureKind } from '../features';
+import { FeatureKind } from '../features/types';
 import { OneDay, OneGB, OneMB } from './constant';
 import { Quota, QuotaType } from './types';
 

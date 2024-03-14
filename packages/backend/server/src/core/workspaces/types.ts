@@ -11,7 +11,7 @@ import {
 import type { Workspace } from '@prisma/client';
 import { SafeIntResolver } from 'graphql-scalars';
 
-import { UserType } from '../users/types';
+import { UserType } from '../user/types';
 
 export enum Permission {
   Read = 0,

@@ -1,4 +1,4 @@
-import type { Workspace } from '@blocksuite/store';
+import type { DocCollection } from '@blocksuite/store';
 import type { Array as YArray, Doc as YDoc, Map as YMap } from 'yjs';
 
 /**
@@ -11,14 +11,14 @@ export enum MigrationPoint {
 }
 
 export function checkWorkspaceCompatibility(
-  workspace: Workspace,
+  docCollection: DocCollection,
   isCloud: boolean
 ): MigrationPoint | null {
   // check if there is any key starts with 'space:' on root doc
-  const spaceMetaObj = workspace.doc.share.get('space:meta') as
+  const spaceMetaObj = docCollection.doc.share.get('space:meta') as
     | YMap<any>
     | undefined;
-  const docKeys = Array.from(workspace.doc.share.keys());
+  const docKeys = Array.from(docCollection.doc.share.keys());
   const haveSpaceMeta = !!spaceMetaObj && spaceMetaObj.size > 0;
   const haveLegacySpace = docKeys.some(key => key.startsWith('space:'));
 
@@ -28,12 +28,12 @@ export function checkWorkspaceCompatibility(
   }
 
   // exit if no pages
-  if (!workspace.meta.docs?.length) {
+  if (!docCollection.meta.docs?.length) {
     return null;
   }
 
   // check guid compatibility
-  const meta = workspace.doc.getMap('meta') as YMap<unknown>;
+  const meta = docCollection.doc.getMap('meta') as YMap<unknown>;
   const pages = meta.get('pages') as YArray<YMap<unknown>>;
   for (const page of pages) {
     const pageId = page.get('id') as string | undefined;
@@ -41,23 +41,23 @@ export function checkWorkspaceCompatibility(
       return MigrationPoint.GuidFix;
     }
   }
-  const spaces = workspace.doc.getMap('spaces') as YMap<YDoc>;
+  const spaces = docCollection.doc.getMap('spaces') as YMap<YDoc>;
   for (const [pageId, _] of spaces) {
     if (pageId.includes(':')) {
       return MigrationPoint.GuidFix;
     }
   }
 
-  const hasVersion = workspace.meta.hasVersion;
+  const hasVersion = docCollection.meta.hasVersion;
   if (!hasVersion) {
     return MigrationPoint.BlockVersion;
   }
 
   // TODO: Catch compatibility error from blocksuite to show upgrade page.
   // Temporarily follow the check logic of blocksuite.
-  if ((workspace.meta.docs?.length ?? 0) <= 1) {
+  if ((docCollection.meta.docs?.length ?? 0) <= 1) {
     try {
-      workspace.meta.validateVersion(workspace);
+      docCollection.meta.validateVersion(docCollection);
     } catch (e) {
       console.info('validateVersion error', e);
       return MigrationPoint.BlockVersion;
@@ -65,9 +65,9 @@ export function checkWorkspaceCompatibility(
   }
 
   // From v2, we depend on blocksuite to check and migrate data.
-  const blockVersions = workspace.meta.blockVersions;
+  const blockVersions = docCollection.meta.blockVersions;
   for (const [flavour, version] of Object.entries(blockVersions ?? {})) {
-    const schema = workspace.schema.flavourSchemaMap.get(flavour);
+    const schema = docCollection.schema.flavourSchemaMap.get(flavour);
     if (schema?.version !== version) {
       return MigrationPoint.BlockVersion;
     }

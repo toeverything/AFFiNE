@@ -1,10 +1,10 @@
 import { DebugLogger } from '@affine/debug';
-import { setupEditorFlags } from '@affine/env/global';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { assertEquals } from '@blocksuite/global/utils';
-import type { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
+import type { DocCollection } from '@blocksuite/store';
 import { applyUpdate, encodeStateAsUpdate } from 'yjs';
 
+import { setupEditorFlags } from '../atom/settings';
 import { fixWorkspaceVersion } from '../blocksuite';
 import type { ServiceCollection, ServiceProvider } from '../di';
 import { ObjectPool } from '../utils/object-pool';
@@ -105,7 +105,7 @@ export class WorkspaceManager {
   createWorkspace(
     flavour: WorkspaceFlavour,
     initial?: (
-      workspace: BlockSuiteWorkspace,
+      docCollection: DocCollection,
       blobStorage: BlobStorage
     ) => Promise<void>
   ): Promise<WorkspaceMetadata> {
@@ -131,9 +131,9 @@ export class WorkspaceManager {
     const newId = await this.list.create(
       WorkspaceFlavour.AFFINE_CLOUD,
       async (ws, bs) => {
-        applyUpdate(ws.doc, encodeStateAsUpdate(local.blockSuiteWorkspace.doc));
+        applyUpdate(ws.doc, encodeStateAsUpdate(local.docCollection.doc));
 
-        for (const subdoc of local.blockSuiteWorkspace.doc.getSubdocs()) {
+        for (const subdoc of local.docCollection.doc.getSubdocs()) {
           for (const newSubdoc of ws.doc.getSubdocs()) {
             if (newSubdoc.guid === subdoc.guid) {
               applyUpdate(newSubdoc, encodeStateAsUpdate(subdoc));
@@ -191,9 +191,9 @@ export class WorkspaceManager {
     const workspace = provider.get(Workspace);
 
     // apply compatibility fix
-    fixWorkspaceVersion(workspace.blockSuiteWorkspace.doc);
+    fixWorkspaceVersion(workspace.docCollection.doc);
 
-    setupEditorFlags(workspace.blockSuiteWorkspace);
+    setupEditorFlags(workspace.docCollection);
 
     return workspace;
   }

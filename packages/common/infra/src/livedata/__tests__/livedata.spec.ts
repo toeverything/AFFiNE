@@ -2,7 +2,7 @@ import type { Subscriber } from 'rxjs';
 import { combineLatest, Observable, of } from 'rxjs';
 import { describe, expect, test, vitest } from 'vitest';
 
-import { LiveData } from '..';
+import { LiveData, PoisonedError } from '..';
 
 describe('livedata', () => {
   test('LiveData', async () => {
@@ -133,6 +133,47 @@ describe('livedata', () => {
     }
   });
 
+  test('poisoned', () => {
+    {
+      let subscriber: Subscriber<number> = null!;
+      const livedata = LiveData.from<number>(
+        new Observable(sub => {
+          subscriber = sub;
+        }),
+        1
+      );
+
+      let value: number = 0;
+      let error: any = null;
+      livedata.subscribe({
+        next: v => {
+          value = v;
+        },
+        error: e => {
+          error = e;
+        },
+      });
+      expect(value).toBe(1);
+      subscriber.next(2);
+      expect(value).toBe(2);
+
+      expect(error).toBe(null);
+      subscriber.error('error');
+      expect(error).toBeInstanceOf(PoisonedError);
+
+      expect(() => livedata.next(3)).toThrowError(PoisonedError);
+      expect(() => livedata.value).toThrowError(PoisonedError);
+
+      let error2: any = null;
+      livedata.subscribe({
+        error: e => {
+          error2 = e;
+        },
+      });
+      expect(error2).toBeInstanceOf(PoisonedError);
+    }
+  });
+
   test('map', () => {
     {
       const livedata = new LiveData(0);
@@ -184,5 +225,106 @@ describe('livedata', () => {
       value = v[0];
     });
     expect(value).toBe(1);
+  });
+
+  test('flat', () => {
+    {
+      const wrapped = new LiveData(new LiveData(0));
+      const flatten = wrapped.flat();
+      expect(flatten.value).toBe(0);
+
+      wrapped.next(new LiveData(1));
+      expect(flatten.value).toBe(1);
+
+      wrapped.next(LiveData.from(of(2, 3), 0));
+      expect(flatten.value).toBe(3);
+    }
+
+    {
+      const wrapped = new LiveData(
+        new LiveData([
+          new LiveData(new LiveData(1)),
+          new LiveData(new LiveData(2)),
+        ])
+      );
+      const flatten = wrapped.flat();
+      expect(flatten.value).toStrictEqual([1, 2]);
+    }
+
+    {
+      const wrapped = new LiveData([new LiveData(0), new LiveData(1)]);
+      const flatten = wrapped.flat();
+
+      expect(flatten.value).toEqual([0, 1]);
+
+      const inner = new LiveData(2);
+      wrapped.next([inner, new LiveData(3)]);
+      expect(flatten.value).toEqual([2, 3]);
+      inner.next(4);
+      expect(flatten.value).toEqual([4, 3]);
+    }
+  });
+
+  test('computed', () => {
+    {
+      const a = new LiveData(1);
+      const b = LiveData.computed(get => get(a) + 1);
+      expect(b.value).toBe(2);
+    }
+
+    {
+      const a = new LiveData('v1');
+      const v1 = new LiveData(100);
+      const v2 = new LiveData(200);
+
+      const v = LiveData.computed(get => {
+        return get(a) === 'v1' ? get(v1) : get(v2);
+      });
+
+      expect(v.value).toBe(100);
+
+      a.next('v2');
+      expect(v.value).toBe(200);
+    }
+
+    {
+      let watched = false;
+      let count = 0;
+      let subscriber: Subscriber<number> = null!;
+      const a = LiveData.from<number>(
+        new Observable(sub => {
+          count++;
+          watched = true;
+          subscriber = sub;
+          sub.next(1);
+          return () => {
+            watched = false;
+          };
+        }),
+        0
+      );
+      const b = LiveData.computed(get => get(a) + 1);
+
+      expect(watched).toBe(false);
+      expect(count).toBe(0);
+
+      const subscription = b.subscribe(_ => {});
+      expect(watched).toBe(true);
+      expect(count).toBe(1);
+      subscriber.next(2);
+      expect(b.value).toBe(3);
+
+      subscription.unsubscribe();
+      expect(watched).toBe(false);
+      expect(count).toBe(1);
+    }
+
+    {
+      let c = null! as LiveData<number>;
+      const b = LiveData.computed(get => get(c) + 1);
+      c = LiveData.computed(get => get(b) + 1);
+
+      expect(() => b.value).toThrowError(PoisonedError);
+    }
   });
 });

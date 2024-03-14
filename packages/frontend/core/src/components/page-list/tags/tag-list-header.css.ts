@@ -16,6 +16,7 @@ export const tagListHeaderTitle = style({
   display: 'flex',
   alignItems: 'center',
   gap: 8,
+  userSelect: 'none',
 });
 export const newTagButton = style({
   padding: '6px 10px',

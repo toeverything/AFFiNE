@@ -210,7 +210,7 @@ test('select two pages and delete', async ({ page }) => {
   // the floating popover should appear
   await expect(page.locator('[data-testid="floating-toolbar"]')).toBeVisible();
   await expect(page.locator('[data-testid="floating-toolbar"]')).toHaveText(
-    '2 selected'
+    '2 doc(s) selected'
   );
 
   // click delete button
@@ -253,6 +253,6 @@ test('select a group of items by clicking "Select All" in group header', async (
 
   // check the selected count is equal to the one displayed in the floating toolbar
   await expect(page.locator('[data-testid="floating-toolbar"]')).toHaveText(
-    `${selectedItemCount} selected`
+    `${selectedItemCount} doc(s) selected`
   );
 });

@@ -2,7 +2,7 @@ import 'reflect-metadata';
 
 import { cpSync } from 'node:fs';
 import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { config } from 'dotenv';
 import { omit } from 'lodash-es';
@@ -21,7 +21,7 @@ async function loadRemote(remoteDir: string, file: string) {
     });
   }
 
-  await import(filePath);
+  await import(pathToFileURL(filePath).href);
 }
 
 async function load() {

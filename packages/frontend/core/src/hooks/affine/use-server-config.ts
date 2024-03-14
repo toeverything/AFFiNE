@@ -1,5 +1,5 @@
 import type { ServerFeature } from '@affine/graphql';
-import { serverConfigQuery } from '@affine/graphql';
+import { oauthProvidersQuery, serverConfigQuery } from '@affine/graphql';
 import type { BareFetcher, Middleware } from 'swr';
 
 import { useQueryImmutable } from '../use-query';
@@ -42,6 +42,21 @@ export const useServerFeatures = (): ServerFeatureRecord => {
     acc[cur.toLowerCase() as LowercaseServerFeature] = true;
     return acc;
   }, {} as ServerFeatureRecord);
+};
+
+export const useOAuthProviders = () => {
+  const { data, error } = useQueryImmutable(
+    { query: oauthProvidersQuery },
+    {
+      use: [errorHandler],
+    }
+  );
+
+  if (error || !data) {
+    return [];
+  }
+
+  return data.serverConfig.oauthProviders;
 };
 
 export const useServerBaseUrl = () => {

@@ -100,7 +100,7 @@ export const RootAppSidebar = ({
 }: RootAppSidebarProps): ReactElement => {
   const currentWorkspaceId = currentWorkspace.id;
   const { appSettings } = useAppSettingHelper();
-  const blockSuiteWorkspace = currentWorkspace.blockSuiteWorkspace;
+  const docCollection = currentWorkspace.docCollection;
   const t = useAFFiNEI18N();
   const [openUserWorkspaceList, setOpenUserWorkspaceList] = useAtom(
     openWorkspaceListModalAtom
@@ -114,7 +114,7 @@ export const RootAppSidebar = ({
   }, [createPage, openPage]);
 
   const { trashModal, setTrashModal, handleOnConfirm } =
-    useTrashModalHelper(blockSuiteWorkspace);
+    useTrashModalHelper(docCollection);
   const deletePageTitles = trashModal.pageTitles;
   const trashConfirmOpen = trashModal.open;
   const onTrashConfirmOpenChange = useCallback(
@@ -164,12 +164,12 @@ export const RootAppSidebar = ({
       .then(name => {
         const id = nanoid();
         collection.addCollection(createEmptyCollection(id, { name }));
-        navigateHelper.jumpToCollection(blockSuiteWorkspace.id, id);
+        navigateHelper.jumpToCollection(docCollection.id, id);
       })
       .catch(err => {
         console.error(err);
       });
-  }, [blockSuiteWorkspace.id, collection, navigateHelper, open]);
+  }, [docCollection.id, collection, navigateHelper, open]);
 
   const allPageActive = currentPath === '/all';
 
@@ -178,11 +178,7 @@ export const RootAppSidebar = ({
   return (
     <AppSidebar
       hasBackground={
-        !(
-          appSettings.enableBlurBackground &&
-          environment.isDesktop &&
-          environment.isMacOs
-        )
+        !(appSettings.enableBlurBackground && environment.isDesktop)
       }
     >
       <MoveToTrash.ConfirmModal
@@ -231,7 +227,7 @@ export const RootAppSidebar = ({
           </span>
         </RouteMenuLinkItem>
         <AppSidebarJournalButton
-          workspace={currentWorkspace.blockSuiteWorkspace}
+          docCollection={currentWorkspace.docCollection}
         />
         {runtimeConfig.enableNewSettingModal ? (
           <MenuItem
@@ -248,14 +244,14 @@ export const RootAppSidebar = ({
 
       <SidebarScrollableContainer>
         <CategoryDivider label={t['com.affine.rootAppSidebar.favorites']()}>
-          <AddFavouriteButton workspace={blockSuiteWorkspace} />
+          <AddFavouriteButton docCollection={docCollection} />
         </CategoryDivider>
-        <FavoriteList workspace={blockSuiteWorkspace} />
+        <FavoriteList docCollection={docCollection} />
         <CategoryDivider label={t['com.affine.rootAppSidebar.collections']()}>
           <AddCollectionButton node={node} onClick={handleCreateCollection} />
         </CategoryDivider>
         <CollectionsList
-          workspace={blockSuiteWorkspace}
+          docCollection={docCollection}
           info={userInfo}
           onCreate={handleCreateCollection}
         />
@@ -272,7 +268,7 @@ export const RootAppSidebar = ({
             {t['com.affine.workspaceSubPath.trash']()}
           </span>
         </RouteMenuLinkItem>
-        <ImportPage blocksuiteWorkspace={blockSuiteWorkspace} />
+        <ImportPage docCollection={docCollection} />
       </SidebarScrollableContainer>
       <SidebarContainer>
         {environment.isDesktop ? <UpdaterButton /> : <AppDownloadButton />}

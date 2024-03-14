@@ -1,11 +1,12 @@
-// eslint-disable-next-line @typescript-eslint/no-restricted-imports
-import { useSession } from 'next-auth/react';
 import { useMemo } from 'react';
 
+import { useSession } from './use-current-user';
+
 export const useDeleteCollectionInfo = () => {
-  const user = useSession().data?.user;
+  const { user } = useSession();
+
   return useMemo(
-    () => (user ? { userName: user.name ?? '', userId: user.id } : null),
+    () => (user ? { userName: user.name, userId: user.id } : null),
     [user]
   );
 };

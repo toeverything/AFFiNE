@@ -1,7 +1,7 @@
 import 'fake-indexeddb/auto';
 
 import { AffineSchemas } from '@blocksuite/blocks/schemas';
-import { Schema, Workspace } from '@blocksuite/store';
+import { DocCollection, Schema } from '@blocksuite/store';
 import { SyncPeer, SyncPeerStep } from '@toeverything/infra';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
@@ -19,19 +19,19 @@ describe('SyncPeer', () => {
   test('basic - indexeddb', async () => {
     let prev: any;
     {
-      const workspace = new Workspace({
+      const docCollection = new DocCollection({
         id: 'test - syncpeer - indexeddb',
 
         schema,
       });
 
       const syncPeer = new SyncPeer(
-        workspace.doc,
-        new IndexedDBSyncStorage(workspace.doc.guid)
+        docCollection.doc,
+        new IndexedDBSyncStorage(docCollection.doc.guid)
       );
       await syncPeer.waitForLoaded();
 
-      const page = workspace.createDoc({
+      const page = docCollection.createDoc({
         id: 'page0',
       });
       page.load();
@@ -58,21 +58,21 @@ describe('SyncPeer', () => {
       );
       await syncPeer.waitForSynced();
       syncPeer.stop();
-      prev = workspace.doc.toJSON();
+      prev = docCollection.doc.toJSON();
     }
 
     {
-      const workspace = new Workspace({
+      const docCollection = new DocCollection({
         id: 'test - syncpeer - indexeddb',
 
         schema,
       });
       const syncPeer = new SyncPeer(
-        workspace.doc,
-        new IndexedDBSyncStorage(workspace.doc.guid)
+        docCollection.doc,
+        new IndexedDBSyncStorage(docCollection.doc.guid)
       );
       await syncPeer.waitForSynced();
-      expect(workspace.doc.toJSON()).toEqual({
+      expect(docCollection.doc.toJSON()).toEqual({
         ...prev,
       });
       syncPeer.stop();
@@ -80,21 +80,21 @@ describe('SyncPeer', () => {
   });
 
   test('status', async () => {
-    const workspace = new Workspace({
+    const docCollection = new DocCollection({
       id: 'test - syncpeer - status',
 
       schema,
     });
 
     const syncPeer = new SyncPeer(
-      workspace.doc,
-      new IndexedDBSyncStorage(workspace.doc.guid)
+      docCollection.doc,
+      new IndexedDBSyncStorage(docCollection.doc.guid)
     );
     expect(syncPeer.status.step).toBe(SyncPeerStep.LoadingRootDoc);
     await syncPeer.waitForSynced();
     expect(syncPeer.status.step).toBe(SyncPeerStep.Synced);
 
-    const page = workspace.createDoc({
+    const page = docCollection.createDoc({
       id: 'page0',
     });
     expect(syncPeer.status.step).toBe(SyncPeerStep.LoadingSubDoc);

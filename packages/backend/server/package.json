@@ -45,11 +45,11 @@
     "@opentelemetry/exporter-zipkin": "^1.21.0",
     "@opentelemetry/host-metrics": "^0.35.0",
     "@opentelemetry/instrumentation": "^0.49.0",
-    "@opentelemetry/instrumentation-graphql": "^0.37.0",
+    "@opentelemetry/instrumentation-graphql": "^0.38.0",
     "@opentelemetry/instrumentation-http": "^0.49.0",
-    "@opentelemetry/instrumentation-ioredis": "^0.37.0",
-    "@opentelemetry/instrumentation-nestjs-core": "^0.34.0",
-    "@opentelemetry/instrumentation-socket.io": "^0.36.0",
+    "@opentelemetry/instrumentation-ioredis": "^0.38.0",
+    "@opentelemetry/instrumentation-nestjs-core": "^0.35.0",
+    "@opentelemetry/instrumentation-socket.io": "^0.37.0",
     "@opentelemetry/resources": "^1.21.0",
     "@opentelemetry/sdk-metrics": "^1.21.0",
     "@opentelemetry/sdk-node": "^0.49.0",
@@ -74,7 +74,6 @@
     "nanoid": "^5.0.6",
     "nest-commander": "^3.12.5",
     "nestjs-throttler-storage-redis": "^0.4.1",
-    "next-auth": "^4.24.5",
     "nodemailer": "^6.9.10",
     "on-headers": "^1.0.2",
     "parse-duration": "^1.1.0",
@@ -143,7 +142,8 @@
       "MAILER_USER": "noreply@toeverything.info",
       "MAILER_PASSWORD": "affine",
       "MAILER_SENDER": "noreply@toeverything.info",
-      "FEATURES_EARLY_ACCESS_PREVIEW": "false"
+      "FEATURES_EARLY_ACCESS_PREVIEW": "false",
+      "DEPLOYMENT_TYPE": "affine"
     }
   },
   "nodemonConfig": {

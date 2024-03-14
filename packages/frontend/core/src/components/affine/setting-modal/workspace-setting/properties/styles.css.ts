@@ -65,8 +65,8 @@ export const propertyDocCount = style({
 
 export const divider = style({
   width: '100%',
-  height: 1,
-  backgroundColor: cssVar('dividerColor'),
+  height: 0,
+  borderTop: `1px solid ${cssVar('borderColor')}`,
 });
 
 export const spacer = style({

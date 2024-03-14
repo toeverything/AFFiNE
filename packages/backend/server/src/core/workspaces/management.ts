@@ -10,14 +10,12 @@ import {
 } from '@nestjs/graphql';
 
 import { CloudThrottlerGuard, Throttle } from '../../fundamentals';
-import { Auth, CurrentUser } from '../auth';
+import { CurrentUser } from '../auth';
 import { FeatureManagementService, FeatureType } from '../features';
-import { UserType } from '../users';
 import { PermissionService } from './permission';
 import { WorkspaceType } from './types';
 
 @UseGuards(CloudThrottlerGuard)
-@Auth()
 @Resolver(() => WorkspaceType)
 export class WorkspaceManagementResolver {
   constructor(
@@ -33,7 +31,7 @@ export class WorkspaceManagementResolver {
   })
   @Mutation(() => Int)
   async addWorkspaceFeature(
-    @CurrentUser() currentUser: UserType,
+    @CurrentUser() currentUser: CurrentUser,
     @Args('workspaceId') workspaceId: string,
     @Args('feature', { type: () => FeatureType }) feature: FeatureType
   ): Promise<number> {
@@ -52,7 +50,7 @@ export class WorkspaceManagementResolver {
   })
   @Mutation(() => Int)
   async removeWorkspaceFeature(
-    @CurrentUser() currentUser: UserType,
+    @CurrentUser() currentUser: CurrentUser,
     @Args('workspaceId') workspaceId: string,
     @Args('feature', { type: () => FeatureType }) feature: FeatureType
   ): Promise<boolean> {
@@ -71,7 +69,7 @@ export class WorkspaceManagementResolver {
   })
   @Query(() => [WorkspaceType])
   async listWorkspaceFeatures(
-    @CurrentUser() user: UserType,
+    @CurrentUser() user: CurrentUser,
     @Args('feature', { type: () => FeatureType }) feature: FeatureType
   ): Promise<WorkspaceType[]> {
     if (!this.feature.isStaff(user.email)) {
@@ -83,7 +81,7 @@ export class WorkspaceManagementResolver {
 
   @Mutation(() => Boolean)
   async setWorkspaceExperimentalFeature(
-    @CurrentUser() user: UserType,
+    @CurrentUser() user: CurrentUser,
     @Args('workspaceId') workspaceId: string,
     @Args('feature', { type: () => FeatureType }) feature: FeatureType,
     @Args('enable') enable: boolean
@@ -117,7 +115,7 @@ export class WorkspaceManagementResolver {
     complexity: 2,
   })
   async availableFeatures(
-    @CurrentUser() user: UserType
+    @CurrentUser() user: CurrentUser
   ): Promise<FeatureType[]> {
     const isEarlyAccessUser = await this.feature.isEarlyAccessUser(user.email);
     if (isEarlyAccessUser) {

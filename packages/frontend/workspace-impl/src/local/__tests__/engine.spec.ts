@@ -1,7 +1,7 @@
 import 'fake-indexeddb/auto';
 
 import { AffineSchemas } from '@blocksuite/blocks/schemas';
-import { Schema, Workspace } from '@blocksuite/store';
+import { DocCollection, Schema } from '@blocksuite/store';
 import { SyncEngine, SyncEngineStep, SyncPeerStep } from '@toeverything/infra';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { Doc } from 'yjs';
@@ -21,23 +21,23 @@ describe('SyncEngine', () => {
   test('basic - indexeddb', async () => {
     let prev: any;
     {
-      const workspace = new Workspace({
+      const docCollection = new DocCollection({
         id: 'test - syncengine - indexeddb',
 
         schema,
       });
 
       const syncEngine = new SyncEngine(
-        workspace.doc,
-        new IndexedDBSyncStorage(workspace.doc.guid),
+        docCollection.doc,
+        new IndexedDBSyncStorage(docCollection.doc.guid),
         [
-          new IndexedDBSyncStorage(workspace.doc.guid + '1'),
-          new IndexedDBSyncStorage(workspace.doc.guid + '2'),
+          new IndexedDBSyncStorage(docCollection.doc.guid + '1'),
+          new IndexedDBSyncStorage(docCollection.doc.guid + '2'),
         ]
       );
       syncEngine.start();
 
-      const page = workspace.createDoc({
+      const page = docCollection.createDoc({
         id: 'page0',
       });
       page.load();
@@ -64,61 +64,61 @@ describe('SyncEngine', () => {
       );
       await syncEngine.waitForSynced();
       syncEngine.forceStop();
-      prev = workspace.doc.toJSON();
+      prev = docCollection.doc.toJSON();
     }
 
     {
-      const workspace = new Workspace({
+      const docCollection = new DocCollection({
         id: 'test - syncengine - indexeddb',
 
         schema,
       });
       const syncEngine = new SyncEngine(
-        workspace.doc,
-        new IndexedDBSyncStorage(workspace.doc.guid),
+        docCollection.doc,
+        new IndexedDBSyncStorage(docCollection.doc.guid),
         []
       );
       syncEngine.start();
       await syncEngine.waitForSynced();
-      expect(workspace.doc.toJSON()).toEqual({
+      expect(docCollection.doc.toJSON()).toEqual({
         ...prev,
       });
       syncEngine.forceStop();
     }
 
     {
-      const workspace = new Workspace({
+      const docCollection = new DocCollection({
         id: 'test - syncengine - indexeddb',
 
         schema,
       });
       const syncEngine = new SyncEngine(
-        workspace.doc,
-        new IndexedDBSyncStorage(workspace.doc.guid + '1'),
+        docCollection.doc,
+        new IndexedDBSyncStorage(docCollection.doc.guid + '1'),
         []
       );
       syncEngine.start();
       await syncEngine.waitForSynced();
-      expect(workspace.doc.toJSON()).toEqual({
+      expect(docCollection.doc.toJSON()).toEqual({
         ...prev,
       });
       syncEngine.forceStop();
     }
 
     {
-      const workspace = new Workspace({
+      const docCollection = new DocCollection({
         id: 'test - syncengine - indexeddb',
 
         schema,
       });
       const syncEngine = new SyncEngine(
-        workspace.doc,
-        new IndexedDBSyncStorage(workspace.doc.guid + '2'),
+        docCollection.doc,
+        new IndexedDBSyncStorage(docCollection.doc.guid + '2'),
         []
       );
       syncEngine.start();
       await syncEngine.waitForSynced();
-      expect(workspace.doc.toJSON()).toEqual({
+      expect(docCollection.doc.toJSON()).toEqual({
         ...prev,
       });
       syncEngine.forceStop();

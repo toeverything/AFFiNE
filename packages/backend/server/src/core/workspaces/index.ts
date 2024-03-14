@@ -4,7 +4,7 @@ import { DocModule } from '../doc';
 import { FeatureModule } from '../features';
 import { QuotaModule } from '../quota';
 import { StorageModule } from '../storage';
-import { UsersService } from '../users';
+import { UserModule } from '../user';
 import { WorkspacesController } from './controller';
 import { WorkspaceManagementResolver } from './management';
 import { PermissionService } from './permission';
@@ -16,13 +16,12 @@ import {
 } from './resolvers';
 
 @Module({
-  imports: [DocModule, FeatureModule, QuotaModule, StorageModule],
+  imports: [DocModule, FeatureModule, QuotaModule, StorageModule, UserModule],
   controllers: [WorkspacesController],
   providers: [
     WorkspaceResolver,
     WorkspaceManagementResolver,
     PermissionService,
-    UsersService,
     PagePermissionResolver,
     DocHistoryResolver,
     WorkspaceBlobResolver,
