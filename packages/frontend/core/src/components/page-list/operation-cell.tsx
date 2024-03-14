@@ -7,6 +7,7 @@ import {
   toast,
   Tooltip,
 } from '@affine/component';
+import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
 import type { Collection, DeleteCollectionInfo } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
@@ -20,6 +21,7 @@ import {
   MoreVerticalIcon,
   OpenInNewIcon,
   ResetIcon,
+  SplitViewIcon,
 } from '@blocksuite/icons';
 import { useCallback, useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -45,6 +47,7 @@ export interface PageOperationCellProps {
   onRemoveToTrash: () => void;
   onDuplicate: () => void;
   onDisablePublicSharing: () => void;
+  onOpenInSplitView: () => void;
 }
 
 export const PageOperationCell = ({
@@ -55,8 +58,10 @@ export const PageOperationCell = ({
   onRemoveToTrash,
   onDuplicate,
   onDisablePublicSharing,
+  onOpenInSplitView,
 }: PageOperationCellProps) => {
   const t = useAFFiNEI18N();
+  const { appSettings } = useAppSettingHelper();
   const [openDisableShared, setOpenDisableShared] = useState(false);
   const OperationMenu = (
     <>
@@ -84,6 +89,20 @@ export const PageOperationCell = ({
           ? t['com.affine.favoritePageOperation.remove']()
           : t['com.affine.favoritePageOperation.add']()}
       </MenuItem>
+
+      {environment.isDesktop && appSettings.enableMultiView ? (
+        <MenuItem
+          onClick={onOpenInSplitView}
+          preFix={
+            <MenuIcon>
+              <SplitViewIcon />
+            </MenuIcon>
+          }
+        >
+          {t['com.affine.workbench.split-view.page-menu-open']()}
+        </MenuItem>
+      ) : null}
+
       {!environment.isDesktop && (
         <Link
           className={styles.clearLinkStyle}

@@ -17,7 +17,7 @@ export const splitViewRoot = style({
   selectors: {
     '&[data-client-border="true"]': {
       vars: {
-        [gap]: '6px',
+        [gap]: '8px',
         [borderRadius]: '6px',
       },
     },
@@ -40,7 +40,7 @@ export const splitViewPanel = style({
     '[data-orientation="horizontal"] &': {
       width: 0,
     },
-    '[data-client-border="false"] &:not(:last-child):not([data-is-dragging="true"])':
+    '[data-client-border="false"] &:not([data-is-last="true"]):not([data-is-dragging="true"])':
       {
         borderRight: `1px solid ${cssVar('borderColor')}`,
       },
@@ -63,6 +63,10 @@ export const splitViewPanelDrag = style({
       borderRadius: 'inherit',
       pointerEvents: 'none',
       zIndex: 10,
+
+      // animate border in/out
+      boxShadow: `inset 0 0 0 0 transparent`,
+      transition: 'box-shadow 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
     },
 
     '[data-is-dragging="true"] &::after': {
@@ -124,12 +128,4 @@ export const resizeHandle = style({
     // vertical
     // TODO
   },
-});
-
-export const menuTrigger = style({
-  position: 'absolute',
-  left: '50%',
-  top: 3,
-  transform: 'translateX(-50%)',
-  zIndex: 10,
 });

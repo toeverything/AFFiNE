@@ -4,9 +4,16 @@ import {
   MenuItem,
   type MenuItemProps,
 } from '@affine/component';
+import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
+import { Workbench } from '@affine/core/modules/workbench';
 import type { Collection, DeleteCollectionInfo } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { DeleteIcon, EditIcon, FilterIcon } from '@blocksuite/icons';
+import {
+  DeleteIcon,
+  EditIcon,
+  FilterIcon,
+  SplitViewIcon,
+} from '@blocksuite/icons';
 import { useService } from '@toeverything/infra/di';
 import {
   type PropsWithChildren,
@@ -35,7 +42,9 @@ export const CollectionOperations = ({
   config: AllPageListConfig;
   openRenameModal?: () => void;
 }>) => {
+  const { appSettings } = useAppSettingHelper();
   const service = useService(CollectionService);
+  const workbench = useService(Workbench);
   const { open: openEditCollectionModal, node: editModal } =
     useEditCollection(config);
   const t = useAFFiNEI18N();
@@ -71,6 +80,10 @@ export const CollectionOperations = ({
       });
   }, [openEditCollectionModal, collection, service]);
 
+  const openCollectionSplitView = useCallback(() => {
+    workbench.openCollection(collection.id, { at: 'tail' });
+  }, [collection.id, workbench]);
+
   const actions = useMemo<
     Array<
       | {
@@ -104,6 +117,19 @@ export const CollectionOperations = ({
         name: t['com.affine.collection.menu.edit'](),
         click: showEdit,
       },
+      ...(appSettings.enableMultiView
+        ? [
+            {
+              icon: (
+                <MenuIcon>
+                  <SplitViewIcon />
+                </MenuIcon>
+              ),
+              name: t['com.affine.workbench.split-view.page-menu-open'](),
+              click: openCollectionSplitView,
+            },
+          ]
+        : []),
       {
         element: <div key="divider" className={styles.divider}></div>,
       },
@@ -120,7 +146,16 @@ export const CollectionOperations = ({
         type: 'danger',
       },
     ],
-    [t, showEditName, showEdit, service, info, collection.id]
+    [
+      t,
+      showEditName,
+      showEdit,
+      appSettings.enableMultiView,
+      openCollectionSplitView,
+      service,
+      info,
+      collection.id,
+    ]
   );
   return (
     <>

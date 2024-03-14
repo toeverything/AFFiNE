@@ -8,15 +8,24 @@ export const sidebarContainerInner = style({
   overflow: 'hidden',
   height: '100%',
   width: '100%',
+  borderRadius: 'inherit',
+  selectors: {
+    ['[data-client-border=true][data-is-floating="true"] &']: {
+      boxShadow: cssVar('shadow3'),
+      border: `1px solid ${cssVar('borderColor')}`,
+    },
+  },
 });
 
 export const sidebarContainer = style({
   display: 'flex',
   flexShrink: 0,
   height: '100%',
+  right: 0,
   selectors: {
     [`&[data-client-border=true]`]: {
-      paddingLeft: 9,
+      paddingLeft: 8,
+      borderRadius: 6,
     },
     [`&[data-client-border=false]`]: {
       borderLeft: `1px solid ${cssVar('borderColor')}`,

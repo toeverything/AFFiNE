@@ -1,10 +1,10 @@
-import { Menu, MenuIcon, MenuItem, type MenuProps } from '@affine/component';
+import { MenuIcon, MenuItem } from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
-  CloseIcon,
-  ExpandFullIcon,
-  InsertLeftIcon,
-  InsertRightIcon,
+  ExpandCloseIcon,
+  KeepThisOneIcon,
+  MoveToLeftIcon,
+  MoveToRightIcon,
 } from '@blocksuite/icons';
 import { useSortable } from '@dnd-kit/sortable';
 import { useService } from '@toeverything/infra/di';
@@ -26,7 +26,7 @@ import {
 
 import type { View } from '../../entities/view';
 import { Workbench } from '../../entities/workbench';
-import { SplitViewMenuIndicator } from './indicator';
+import { SplitViewIndicator } from './indicator';
 import * as styles from './split-view.css';
 
 export interface SplitViewPanelProps
@@ -43,22 +43,24 @@ export const SplitViewPanel = memo(function SplitViewPanel({
   view,
   setSlots,
 }: SplitViewPanelProps) {
+  const [indicatorPressed, setIndicatorPressed] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const size = useLiveData(view.size);
-  const [menuOpen, setMenuOpen] = useState(false);
   const workbench = useService(Workbench);
   const activeView = useLiveData(workbench.activeView);
   const views = useLiveData(workbench.views);
+  const isLast = views[views.length - 1] === view;
+
   const {
     attributes,
     listeners,
     transform,
     transition,
-    isDragging,
+    isDragging: dndIsDragging,
     setNodeRef,
-    setActivatorNodeRef,
   } = useSortable({ id: view.id, attributes: { role: 'group' } });
 
+  const isDragging = dndIsDragging || indicatorPressed;
   const isActive = activeView === view;
 
   useEffect(() => {
@@ -66,12 +68,6 @@ export const SplitViewPanel = memo(function SplitViewPanel({
       setSlots?.(slots => ({ ...slots, [view.id]: ref }));
     }
   }, [setSlots, view.id]);
-
-  useEffect(() => {
-    if (isDragging) {
-      setMenuOpen(false);
-    }
-  }, [isDragging]);
 
   const style = useMemo(
     () => ({
@@ -86,27 +82,14 @@ export const SplitViewPanel = memo(function SplitViewPanel({
     }),
     [transform, transition]
   );
-  const menuRootOptions = useMemo(
-    () =>
-      ({
-        open: menuOpen,
-        onOpenChange: setMenuOpen,
-      }) satisfies MenuProps['rootOptions'],
-    [menuOpen]
-  );
-  const menuContentOptions = useMemo(
-    () =>
-      ({
-        align: 'center',
-      }) satisfies MenuProps['contentOptions'],
-    []
-  );
 
   return (
     <div
       style={style}
       className={styles.splitViewPanel}
       data-is-dragging={isDragging}
+      data-is-active={isActive && views.length > 1}
+      data-is-last={isLast}
     >
       <div
         ref={setNodeRef}
@@ -116,18 +99,13 @@ export const SplitViewPanel = memo(function SplitViewPanel({
       >
         <div className={styles.splitViewPanelContent} ref={ref} />
         {views.length > 1 ? (
-          <Menu
-            contentOptions={menuContentOptions}
-            items={<SplitViewMenu view={view} />}
-            rootOptions={menuRootOptions}
-          >
-            <SplitViewMenuIndicator
-              ref={setActivatorNodeRef}
-              active={isDragging || isActive}
-              className={styles.menuTrigger}
-              {...listeners}
-            />
-          </Menu>
+          <SplitViewIndicator
+            listeners={listeners}
+            isDragging={isDragging}
+            isActive={isActive}
+            menuItems={<SplitViewMenu view={view} />}
+            setPressed={setIndicatorPressed}
+          />
         ) : null}
       </div>
       {children}
@@ -135,10 +113,7 @@ export const SplitViewPanel = memo(function SplitViewPanel({
   );
 });
 
-interface SplitViewMenuProps {
-  view: View;
-}
-const SplitViewMenu = ({ view }: SplitViewMenuProps) => {
+const SplitViewMenu = ({ view }: { view: View }) => {
   const t = useAFFiNEI18N();
   const workbench = useService(Workbench);
   const views = useLiveData(workbench.views);
@@ -155,14 +130,14 @@ const SplitViewMenu = ({ view }: SplitViewMenuProps) => {
   const handleMoveRight = useCallback(() => {
     workbench.moveView(viewIndex, viewIndex + 1);
   }, [viewIndex, workbench]);
-  const handleFullScreen = useCallback(() => {
+  const handleCloseOthers = useCallback(() => {
     workbench.closeOthers(view);
   }, [view, workbench]);
 
   const CloseItem =
     views.length > 1 ? (
       <MenuItem
-        preFix={<MenuIcon icon={<CloseIcon />} />}
+        preFix={<MenuIcon icon={<ExpandCloseIcon />} />}
         onClick={handleClose}
       >
         {t['com.affine.workbench.split-view-menu.close']()}
@@ -173,7 +148,7 @@ const SplitViewMenu = ({ view }: SplitViewMenuProps) => {
     viewIndex > 0 && views.length > 1 ? (
       <MenuItem
         onClick={handleMoveLeft}
-        preFix={<MenuIcon icon={<InsertLeftIcon />} />}
+        preFix={<MenuIcon icon={<MoveToLeftIcon />} />}
       >
         {t['com.affine.workbench.split-view-menu.move-left']()}
       </MenuItem>
@@ -182,10 +157,10 @@ const SplitViewMenu = ({ view }: SplitViewMenuProps) => {
   const FullScreenItem =
     views.length > 1 ? (
       <MenuItem
-        onClick={handleFullScreen}
-        preFix={<MenuIcon icon={<ExpandFullIcon />} />}
+        onClick={handleCloseOthers}
+        preFix={<MenuIcon icon={<KeepThisOneIcon />} />}
       >
-        {t['com.affine.workbench.split-view-menu.full-screen']()}
+        {t['com.affine.workbench.split-view-menu.keep-this-one']()}
       </MenuItem>
     ) : null;
 
@@ -193,7 +168,7 @@ const SplitViewMenu = ({ view }: SplitViewMenuProps) => {
     viewIndex < views.length - 1 ? (
       <MenuItem
         onClick={handleMoveRight}
-        preFix={<MenuIcon icon={<InsertRightIcon />} />}
+        preFix={<MenuIcon icon={<MoveToRightIcon />} />}
       >
         {t['com.affine.workbench.split-view-menu.move-right']()}
       </MenuItem>
