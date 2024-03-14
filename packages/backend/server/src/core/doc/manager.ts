@@ -229,12 +229,12 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
     update: Buffer,
     retryTimes = 10
   ) {
-    await new Promise<void>((resolve, reject) => {
+    const timestamp = await new Promise<number>((resolve, reject) => {
       defer(async () => {
         const seq = await this.getUpdateSeq(workspaceId, guid);
-        await this.db.update.create({
+        const { createdAt } = await this.db.update.create({
           select: {
-            seq: true,
+            createdAt: true,
           },
           data: {
             workspaceId,
@@ -243,23 +243,27 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
             blob: update,
           },
         });
+
+        return createdAt.getTime();
       })
         .pipe(retry(retryTimes)) // retry until seq num not conflict
         .subscribe({
-          next: () => {
+          next: timestamp => {
             this.logger.debug(
               `pushed 1 update for ${guid} in workspace ${workspaceId}`
             );
-            resolve();
+            resolve(timestamp);
           },
           error: e => {
             this.logger.error('Failed to push updates', e);
             reject(new Error('Failed to push update'));
           },
         });
-    }).then(() => {
-      return this.updateCachedUpdatesCount(workspaceId, guid, 1);
     });
+
+    await this.updateCachedUpdatesCount(workspaceId, guid, 1);
+
+    return timestamp;
   }
 
   async batchPush(
@@ -268,24 +272,34 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
     updates: Buffer[],
     retryTimes = 10
   ) {
+    const lastSeq = await this.getUpdateSeq(workspaceId, guid, updates.length);
+    const now = Date.now();
+    let timestamp = now;
     await new Promise<void>((resolve, reject) => {
       defer(async () => {
-        const seq = await this.getUpdateSeq(workspaceId, guid, updates.length);
         let turn = 0;
         const batchCount = 10;
         for (const batch of chunk(updates, batchCount)) {
           await this.db.update.createMany({
-            data: batch.map((update, i) => ({
-              workspaceId,
-              id: guid,
+            data: batch.map((update, i) => {
+              const subSeq = turn * batchCount + i + 1;
               // `seq` is the last seq num of the batch
               // example for 11 batched updates, start from seq num 20
               // seq for first update in the batch should be:
-              // 31             - 11                + 0        * 10          + 0 + 1 = 21
-              // ^ last seq num   ^ updates.length    ^ turn     ^ batchCount  ^i
-              seq: seq - updates.length + turn * batchCount + i + 1,
-              blob: update,
-            })),
+              // 31             - 11                + subSeq(0        * 10          + 0 + 1) = 21
+              // ^ last seq num   ^ updates.length           ^ turn     ^ batchCount  ^i
+              const seq = lastSeq - updates.length + subSeq;
+              const createdAt = now + subSeq;
+              timestamp = Math.max(timestamp, createdAt);
+
+              return {
+                workspaceId,
+                id: guid,
+                blob: update,
+                seq,
+                createdAt: new Date(createdAt), // make sure the updates can be ordered by create time
+              };
+            }),
           });
           turn++;
         }
@@ -303,9 +317,56 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
             reject(new Error('Failed to push update'));
           },
         });
-    }).then(() => {
-      return this.updateCachedUpdatesCount(workspaceId, guid, updates.length);
     });
+    await this.updateCachedUpdatesCount(workspaceId, guid, updates.length);
+
+    return timestamp;
+  }
+
+  /**
+   * Get latest timestamp of all docs in the workspace.
+   */
+  @CallTimer('doc', 'get_stats')
+  async getStats(workspaceId: string, after: number | undefined = 0) {
+    const snapshots = await this.db.snapshot.findMany({
+      where: {
+        workspaceId,
+        updatedAt: {
+          gt: new Date(after),
+        },
+      },
+      select: {
+        id: true,
+        updatedAt: true,
+      },
+    });
+
+    const updates = await this.db.update.groupBy({
+      where: {
+        workspaceId,
+        createdAt: {
+          gt: new Date(after),
+        },
+      },
+      by: ['id'],
+      _max: {
+        createdAt: true,
+      },
+    });
+
+    const result: Record<string, number> = {};
+
+    snapshots.forEach(s => {
+      result[s.id] = s.updatedAt.getTime();
+    });
+
+    updates.forEach(u => {
+      if (u._max.createdAt) {
+        result[u.id] = u._max.createdAt.getTime();
+      }
+    });
+
+    return result;
   }
 
   /**

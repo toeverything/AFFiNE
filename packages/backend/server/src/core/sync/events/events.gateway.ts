@@ -86,7 +86,7 @@ type EventResponse<Data = any> =
         });
 
 @WebSocketGateway({
-  cors: process.env.NODE_ENV !== 'production',
+  cors: !AFFiNE.node.prod,
   transports: ['websocket'],
   // see: https://socket.io/docs/v4/server-options/#maxhttpbuffersize
   maxHttpBufferSize: 1e8, // 100 MB
@@ -251,6 +251,25 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
+  @SubscribeMessage('client-pre-sync')
+  async loadDocStats(
+    @ConnectedSocket() client: Socket,
+    @MessageBody()
+    { workspaceId, timestamp }: { workspaceId: string; timestamp?: number }
+  ): Promise<EventResponse<Record<string, number>>> {
+    if (!client.rooms.has(`${workspaceId}:sync`)) {
+      return {
+        error: new NotInWorkspaceError(workspaceId),
+      };
+    }
+
+    const stats = await this.docManager.getStats(workspaceId, timestamp);
+
+    return {
+      data: stats,
+    };
+  }
+
   @SubscribeMessage('client-update-v2')
   async handleClientUpdateV2(
     @MessageBody()
@@ -264,7 +283,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       updates: string[];
     },
     @ConnectedSocket() client: Socket
-  ): Promise<EventResponse<{ accepted: true }>> {
+  ): Promise<EventResponse<{ accepted: true; timestamp?: number }>> {
     if (!client.rooms.has(`${workspaceId}:sync`)) {
       return {
         error: new NotInWorkspaceError(workspaceId),
@@ -272,16 +291,21 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     const docId = new DocID(guid, workspaceId);
+    const buffers = updates.map(update => Buffer.from(update, 'base64'));
+    const timestamp = await this.docManager.batchPush(
+      docId.workspace,
+      docId.guid,
+      buffers
+    );
+
     client
       .to(`${docId.workspace}:sync`)
-      .emit('server-updates', { workspaceId, guid, updates });
+      .emit('server-updates', { workspaceId, guid, updates, timestamp });
 
-    const buffers = updates.map(update => Buffer.from(update, 'base64'));
-
-    await this.docManager.batchPush(docId.workspace, docId.guid, buffers);
     return {
       data: {
         accepted: true,
+        timestamp,
       },
     };
   }
