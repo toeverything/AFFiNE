@@ -20,7 +20,7 @@ export class LockGuard<M extends MutexService = MutexService>
   }
 }
 
-export const MUTEX_RETRY = 3;
+export const MUTEX_RETRY = 5;
 export const MUTEX_WAIT = 100;
 
 @Injectable({ scope: Scope.REQUEST })

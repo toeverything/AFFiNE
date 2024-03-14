@@ -342,7 +342,10 @@ export class WorkspaceResolver {
     try {
       // lock to prevent concurrent invite
       const lockFlag = `invite:${workspaceId}`;
-      await using _lock = await this.mutex.lock(lockFlag);
+      await using lock = await this.mutex.lock(lockFlag);
+      if (!lock) {
+        return new TooManyRequestsException('Server is busy');
+      }
 
       // member limit check
       const [memberCount, quota] = await Promise.all([
