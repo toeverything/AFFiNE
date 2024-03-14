@@ -168,6 +168,43 @@ const SplitViewSettingRow = () => {
   );
 };
 
+// feature flag -> display name
+const blocksuiteFeatureFlags: Partial<Record<keyof BlockSuiteFlags, string>> = {
+  enable_synced_doc_block: 'Enable Synced Doc Block',
+  enable_expand_database_block: 'Enable Expand Database Block',
+  enable_bultin_ledits: 'Edit with LEDITS',
+};
+
+const BlocksuiteFeatureFlagSettings = () => {
+  const { appSettings, updateSettings } = useAppSettingHelper();
+  const toggleSetting = useCallback(
+    (flag: keyof BlockSuiteFlags, checked: boolean) => {
+      updateSettings('editorFlags', {
+        ...appSettings.editorFlags,
+        [flag]: checked,
+      });
+    },
+    [appSettings.editorFlags, updateSettings]
+  );
+
+  type EditorFlag = keyof typeof appSettings.editorFlags;
+
+  return (
+    <>
+      {Object.entries(blocksuiteFeatureFlags).map(([flag, displayName]) => (
+        <ExperimentalFeaturesItem
+          key={flag}
+          title={'Block Suite: ' + displayName}
+          checked={!!appSettings.editorFlags?.[flag as EditorFlag]}
+          onChange={checked =>
+            toggleSetting(flag as keyof BlockSuiteFlags, checked)
+          }
+        />
+      ))}
+    </>
+  );
+};
+
 const ExperimentalFeaturesMain = ({
   workspaceMetadata,
 }: {
@@ -182,8 +219,11 @@ const ExperimentalFeaturesMain = ({
           'com.affine.settings.workspace.experimental-features.header.plugins'
         ]()}
       />
-      <CopilotSettingRow workspaceMetadata={workspaceMetadata} />
-      <SplitViewSettingRow />
+      <div className={styles.settingsContainer}>
+        <CopilotSettingRow workspaceMetadata={workspaceMetadata} />
+        <SplitViewSettingRow />
+        <BlocksuiteFeatureFlagSettings />
+      </div>
     </>
   );
 };

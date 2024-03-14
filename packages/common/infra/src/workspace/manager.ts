@@ -1,10 +1,10 @@
 import { DebugLogger } from '@affine/debug';
-import { setupEditorFlags } from '@affine/env/global';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { assertEquals } from '@blocksuite/global/utils';
 import type { DocCollection } from '@blocksuite/store';
 import { applyUpdate, encodeStateAsUpdate } from 'yjs';
 
+import { setupEditorFlags } from '../atom/settings';
 import { fixWorkspaceVersion } from '../blocksuite';
 import type { ServiceCollection, ServiceProvider } from '../di';
 import { ObjectPool } from '../utils/object-pool';

@@ -1,15 +1,9 @@
-import type { BlockSuiteFeatureFlags, RuntimeConfig } from '@affine/env/global';
+import type { RuntimeConfig } from '@affine/env/global';
 import type { BuildFlags } from '@affine/cli/config';
 import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
 const packageJson = require('../package.json');
-
-const editorFlags: BlockSuiteFeatureFlags = {
-  enable_synced_doc_block: true,
-  enable_expand_database_block: false,
-  enable_bultin_ledits: false,
-};
 
 export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
   const buildPreset: Record<BuildFlags['channel'], RuntimeConfig> = {
@@ -35,7 +29,6 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       enablePageHistory: true,
       allowLocalWorkspace: false,
       serverUrlPrefix: 'https://app.affine.pro',
-      editorFlags,
       appVersion: packageJson.version,
       editorVersion: packageJson.dependencies['@blocksuite/presets'],
       appBuildType: 'stable',
@@ -78,7 +71,6 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       enablePageHistory: true,
       allowLocalWorkspace: false,
       serverUrlPrefix: 'https://affine.fail',
-      editorFlags,
       appVersion: packageJson.version,
       editorVersion: packageJson.dependencies['@blocksuite/presets'],
       appBuildType: 'canary',

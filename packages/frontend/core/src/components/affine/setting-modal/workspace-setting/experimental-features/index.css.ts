@@ -39,6 +39,13 @@ export const promptDisclaimer = style({
   marginBottom: 32,
   gap: 4,
 });
+
+export const settingsContainer = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 24,
+});
+
 export const promptDisclaimerConfirm = style({
   display: 'flex',
   justifyContent: 'center',
@@ -47,9 +54,13 @@ export const switchRow = style({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'space-between',
-  marginBottom: 32,
 });
 export const switchDisabled = style({
   opacity: 0.5,
   pointerEvents: 'none',
+});
+export const subHeader = style({
+  fontWeight: '600',
+  color: cssVar('textSecondaryColor'),
+  marginBottom: 8,
 });
