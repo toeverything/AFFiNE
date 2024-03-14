@@ -6,7 +6,8 @@ import {
   workspaceListLoadingStatusAtom,
   workspaceManagerAtom,
 } from '@affine/core/modules/workspace';
-import { type Workspace } from '@affine/workspace';
+import type { Workspace } from '@affine/workspace';
+import { type SyncEngineStatus } from '@affine/workspace';
 import { useAtom, useAtomValue } from 'jotai';
 import {
   type ReactElement,
@@ -75,25 +76,32 @@ export const Component = (): ReactElement => {
 
   const [workspaceIsLoading, setWorkspaceIsLoading] = useState(true);
 
+  const [syncEngineStatus, setSyncEngineStatus] = useState<SyncEngineStatus>();
+
+  useEffect(() => {
+    if (!workspace) {
+      setSyncEngineStatus(undefined);
+    }
+    return workspace?.engine.sync.onStatusChange.on(setSyncEngineStatus)
+      .dispose;
+  }, [workspace]);
+
   // hotfix: avoid doing operation, before workspace is loaded
   useEffect(() => {
     if (!workspace) {
       setWorkspaceIsLoading(true);
       return;
     }
-    const metaYMap = workspace.blockSuiteWorkspace.doc.getMap('meta');
-
-    const handleYMapChanged = () => {
-      setWorkspaceIsLoading(metaYMap.size === 0);
-    };
-
-    handleYMapChanged();
-
-    metaYMap.observe(handleYMapChanged);
-    return () => {
-      metaYMap.unobserve(handleYMapChanged);
-    };
-  }, [workspace]);
+    if (
+      [syncEngineStatus?.local, ...(syncEngineStatus?.remotes ?? [])].some(
+        p => p?.rootDocLoaded === true
+      )
+    ) {
+      setWorkspaceIsLoading(false);
+    } else {
+      setWorkspaceIsLoading(true);
+    }
+  }, [syncEngineStatus, workspace]);
 
   // if listLoading is false, we can show 404 page, otherwise we should show loading page.
   if (listLoading === false && meta === undefined) {
