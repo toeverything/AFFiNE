@@ -19,6 +19,7 @@ export interface SyncPeerStatus {
   loadedDocs: number;
   pendingPullUpdates: number;
   pendingPushUpdates: number;
+  rootDocLoaded: boolean;
 }
 
 /**
@@ -54,6 +55,7 @@ export class SyncPeer {
     loadedDocs: 0,
     pendingPullUpdates: 0,
     pendingPushUpdates: 0,
+    rootDocLoaded: false,
   };
   onStatusChange = new Slot<SyncPeerStatus>();
   readonly abort = new AbortController();
@@ -119,6 +121,7 @@ export class SyncPeer {
           loadedDocs: 0,
           pendingPullUpdates: 0,
           pendingPushUpdates: 0,
+          rootDocLoaded: this.status.rootDocLoaded,
         };
         await Promise.race([
           new Promise<void>(resolve => {
@@ -291,6 +294,13 @@ export class SyncPeer {
       (await this.storage.pull(doc.guid, encodeStateVector(doc))) ?? {};
     throwIfAborted(abort);
 
+    if (docData !== undefined && doc.guid === this.rootDoc.guid) {
+      this.status = {
+        ...this.status,
+        rootDocLoaded: true,
+      };
+    }
+
     if (docData) {
       applyUpdate(doc, docData, 'load');
     }
@@ -391,6 +401,7 @@ export class SyncPeer {
         this.state.pullUpdatesQueue.length + (this.state.subdocLoading ? 1 : 0),
       pendingPushUpdates:
         this.state.pushUpdatesQueue.length + (this.state.pushingUpdate ? 1 : 0),
+      rootDocLoaded: this.status.rootDocLoaded,
     };
   }
 
