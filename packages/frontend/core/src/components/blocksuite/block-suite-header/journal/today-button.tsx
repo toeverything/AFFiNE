@@ -1,16 +1,18 @@
 import { Button } from '@affine/component';
 import { useJournalRouteHelper } from '@affine/core/hooks/use-journal';
-import type { BlockSuiteWorkspace } from '@affine/core/shared';
+import type { DocCollection } from '@affine/core/shared';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useCallback } from 'react';
 
 export interface JournalTodayButtonProps {
-  workspace: BlockSuiteWorkspace;
+  docCollection: DocCollection;
 }
 
-export const JournalTodayButton = ({ workspace }: JournalTodayButtonProps) => {
+export const JournalTodayButton = ({
+  docCollection,
+}: JournalTodayButtonProps) => {
   const t = useAFFiNEI18N();
-  const journalHelper = useJournalRouteHelper(workspace);
+  const journalHelper = useJournalRouteHelper(docCollection);
 
   const onToday = useCallback(() => {
     journalHelper.openToday();

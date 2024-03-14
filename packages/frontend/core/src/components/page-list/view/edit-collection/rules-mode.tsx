@@ -123,7 +123,7 @@ export const RulesMode = ({
               }}
             >
               <FilterList
-                propertiesMeta={allPageListConfig.workspace.meta.properties}
+                propertiesMeta={allPageListConfig.docCollection.meta.properties}
                 value={collection.filterList}
                 onChange={useCallback(
                   filterList => updateCollection({ ...collection, filterList }),
@@ -265,7 +265,7 @@ export const RulesMode = ({
               className={styles.resultPages}
               items={rulesPages}
               groupBy={false}
-              blockSuiteWorkspace={allPageListConfig.workspace}
+              docCollection={allPageListConfig.docCollection}
               isPreferredEdgeless={allPageListConfig.isEdgeless}
               operationsRenderer={operationsRenderer}
             ></List>
@@ -285,7 +285,7 @@ export const RulesMode = ({
                 className={styles.resultPages}
                 items={allowListPages}
                 groupBy={false}
-                blockSuiteWorkspace={allPageListConfig.workspace}
+                docCollection={allPageListConfig.docCollection}
                 isPreferredEdgeless={allPageListConfig.isEdgeless}
                 operationsRenderer={operationsRenderer}
               ></List>

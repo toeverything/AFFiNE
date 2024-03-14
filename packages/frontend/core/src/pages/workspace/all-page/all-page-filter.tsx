@@ -40,7 +40,7 @@ export const FilterContainer = ({
     <div className={filterContainerStyle}>
       <div style={{ flex: 1 }}>
         <FilterList
-          propertiesMeta={currentWorkspace.blockSuiteWorkspace.meta.properties}
+          propertiesMeta={currentWorkspace.docCollection.meta.properties}
           value={filters}
           onChange={onChangeFilters}
         />

@@ -28,11 +28,9 @@ import {
 
 const usePageOperationsRenderer = () => {
   const currentWorkspace = useService(Workspace);
-  const { setTrashModal } = useTrashModalHelper(
-    currentWorkspace.blockSuiteWorkspace
-  );
+  const { setTrashModal } = useTrashModalHelper(currentWorkspace.docCollection);
   const { toggleFavorite, duplicate } = useBlockSuiteMetaHelper(
-    currentWorkspace.blockSuiteWorkspace
+    currentWorkspace.docCollection
   );
   const t = useAFFiNEI18N();
 
@@ -97,11 +95,9 @@ export const VirtualizedPageList = ({
   const [showFloatingToolbar, setShowFloatingToolbar] = useState(false);
   const [selectedPageIds, setSelectedPageIds] = useState<string[]>([]);
   const currentWorkspace = useService(Workspace);
-  const pageMetas = useBlockSuiteDocMeta(currentWorkspace.blockSuiteWorkspace);
+  const pageMetas = useBlockSuiteDocMeta(currentWorkspace.docCollection);
   const pageOperations = usePageOperationsRenderer();
-  const { isPreferredEdgeless } = usePageHelper(
-    currentWorkspace.blockSuiteWorkspace
-  );
+  const { isPreferredEdgeless } = usePageHelper(currentWorkspace.docCollection);
 
   const filteredPageMetas = useFilteredPageMetas(currentWorkspace, pageMetas, {
     filters,
@@ -155,9 +151,7 @@ export const VirtualizedPageList = ({
     return <PageListHeader />;
   }, [collection, config, currentWorkspace.id, tag]);
 
-  const { setTrashModal } = useTrashModalHelper(
-    currentWorkspace.blockSuiteWorkspace
-  );
+  const { setTrashModal } = useTrashModalHelper(currentWorkspace.docCollection);
 
   const handleMultiDelete = useCallback(() => {
     const pageNameMapping = Object.fromEntries(
@@ -190,7 +184,7 @@ export const VirtualizedPageList = ({
         items={pageMetasToRender}
         rowAsLink
         isPreferredEdgeless={isPreferredEdgeless}
-        blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
+        docCollection={currentWorkspace.docCollection}
         operationsRenderer={pageOperationRenderer}
         itemRenderer={pageItemRenderer}
         headerRenderer={pageHeaderRenderer}

@@ -35,7 +35,7 @@ export async function migratePages(
       console.error(e);
     }
   });
-  schema.upgradeWorkspace(rootDoc);
+  schema.upgradeCollection(rootDoc);
 
   // Hard code to upgrade page version to 2.
   // Let e2e to ensure the data version is correct.

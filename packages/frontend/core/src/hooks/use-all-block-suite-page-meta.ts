@@ -1,25 +1,25 @@
-import type { DocMeta, Workspace } from '@blocksuite/store';
+import type { DocCollection, DocMeta } from '@blocksuite/store';
 import type { Atom } from 'jotai';
 import { atom, useAtomValue } from 'jotai';
 
-const weakMap = new WeakMap<Workspace, Atom<DocMeta[]>>();
+const weakMap = new WeakMap<DocCollection, Atom<DocMeta[]>>();
 
 // this hook is extracted from './use-block-suite-page-meta.ts' to avoid circular dependency
 export function useAllBlockSuiteDocMeta(
-  blockSuiteWorkspace: Workspace
+  docCollection: DocCollection
 ): DocMeta[] {
-  if (!weakMap.has(blockSuiteWorkspace)) {
-    const baseAtom = atom<DocMeta[]>(blockSuiteWorkspace.meta.docMetas);
-    weakMap.set(blockSuiteWorkspace, baseAtom);
+  if (!weakMap.has(docCollection)) {
+    const baseAtom = atom<DocMeta[]>(docCollection.meta.docMetas);
+    weakMap.set(docCollection, baseAtom);
     baseAtom.onMount = set => {
-      set(blockSuiteWorkspace.meta.docMetas);
-      const dispose = blockSuiteWorkspace.meta.docMetaUpdated.on(() => {
-        set(blockSuiteWorkspace.meta.docMetas);
+      set(docCollection.meta.docMetas);
+      const dispose = docCollection.meta.docMetaUpdated.on(() => {
+        set(docCollection.meta.docMetas);
       });
       return () => {
         dispose.dispose();
       };
     };
   }
-  return useAtomValue(weakMap.get(blockSuiteWorkspace) as Atom<DocMeta[]>);
+  return useAtomValue(weakMap.get(docCollection) as Atom<DocMeta[]>);
 }

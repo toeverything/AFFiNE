@@ -1,6 +1,6 @@
 import { apis } from '@affine/electron-api';
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
+import { DocCollection } from '@blocksuite/store';
 import type { WorkspaceListProvider } from '@toeverything/infra';
 import {
   type BlobStorage,
@@ -53,7 +53,7 @@ export class LocalWorkspaceListProvider implements WorkspaceListProvider {
 
   async create(
     initial: (
-      workspace: BlockSuiteWorkspace,
+      docCollection: DocCollection,
       blobStorage: BlobStorage
     ) => Promise<void>
   ): Promise<WorkspaceMetadata> {
@@ -66,7 +66,7 @@ export class LocalWorkspaceListProvider implements WorkspaceListProvider {
       ? new SQLiteSyncStorage(id)
       : new IndexedDBSyncStorage(id);
 
-    const workspace = new BlockSuiteWorkspace({
+    const workspace = new DocCollection({
       id: id,
       idGenerator: () => nanoid(),
       schema: globalBlockSuiteSchema,
@@ -136,7 +136,7 @@ export class LocalWorkspaceListProvider implements WorkspaceListProvider {
       return;
     }
 
-    const bs = new BlockSuiteWorkspace({
+    const bs = new DocCollection({
       id,
       schema: globalBlockSuiteSchema,
     });

@@ -1,12 +1,12 @@
-import type { Doc, Workspace } from '@blocksuite/store';
+import type { Doc, DocCollection } from '@blocksuite/store';
 import { type Atom, atom, useAtomValue } from 'jotai';
 
-import { useBlockSuiteWorkspacePage } from './use-block-suite-workspace-page';
+import { useDocCollectionPage } from './use-block-suite-workspace-page';
 
 const weakMap = new WeakMap<Doc, Atom<string[]>>();
 function getPageReferences(page: Doc): string[] {
   return Object.values(
-    page.workspace.indexer.backlink.linkIndexMap[page.id] ?? {}
+    page.collection.indexer.backlink.linkIndexMap[page.id] ?? {}
   ).flatMap(linkNodes => linkNodes.map(linkNode => linkNode.pageId));
 }
 
@@ -22,7 +22,7 @@ const getPageReferencesAtom = (page: Doc | null) => {
         page.slots.ready.on(() => {
           set(getPageReferences(page));
         }),
-        page.workspace.indexer.backlink.slots.indexUpdated.on(() => {
+        page.collection.indexer.backlink.slots.indexUpdated.on(() => {
           set(getPageReferences(page));
         }),
       ];
@@ -37,9 +37,9 @@ const getPageReferencesAtom = (page: Doc | null) => {
 };
 
 export function useBlockSuitePageReferences(
-  blockSuiteWorkspace: Workspace,
+  docCollection: DocCollection,
   pageId: string
 ): string[] {
-  const page = useBlockSuiteWorkspacePage(blockSuiteWorkspace, pageId);
+  const page = useDocCollectionPage(docCollection, pageId);
   return useAtomValue(getPageReferencesAtom(page));
 }

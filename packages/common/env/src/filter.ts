@@ -1,4 +1,4 @@
-import type { Workspace } from '@blocksuite/store';
+import type { DocCollection } from '@blocksuite/store';
 import { z } from 'zod';
 
 export const literalValueSchema: z.ZodType<LiteralValue, z.ZodTypeDef> =
@@ -81,4 +81,4 @@ export const tagSchema = z.object({
 });
 export type Tag = z.input<typeof tagSchema>;
 
-export type PropertiesMeta = Workspace['meta']['properties'];
+export type PropertiesMeta = DocCollection['meta']['properties'];

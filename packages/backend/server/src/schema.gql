@@ -374,6 +374,9 @@ type UserType {
   """User email verified"""
   emailVerified: Boolean!
 
+  """Enabled features of a user"""
+  features: [FeatureType!]!
+
   """User password has been set"""
   hasPassword: Boolean
   id: ID!

@@ -1,14 +1,14 @@
 import { assertExists } from '@blocksuite/global/utils';
-import type { Workspace } from '@blocksuite/store';
+import type { DocCollection } from '@blocksuite/store';
 import type { Atom } from 'jotai';
 import { atom, useAtomValue } from 'jotai';
 import { useCallback } from 'react';
 
 import { useJournalHelper, useJournalInfoHelper } from './use-journal';
 
-const weakMap = new WeakMap<Workspace, Map<string, Atom<string>>>();
+const weakMap = new WeakMap<DocCollection, Map<string, Atom<string>>>();
 
-function getAtom(w: Workspace, pageId: string): Atom<string> {
+function getAtom(w: DocCollection, pageId: string): Atom<string> {
   if (!weakMap.has(w)) {
     weakMap.set(w, new Map());
   }
@@ -32,33 +32,27 @@ function getAtom(w: Workspace, pageId: string): Atom<string> {
   }
 }
 
-export function useBlockSuiteWorkspacePageTitle(
-  blockSuiteWorkspace: Workspace,
+export function useDocCollectionPageTitle(
+  docCollection: DocCollection,
   pageId: string
 ) {
-  const titleAtom = getAtom(blockSuiteWorkspace, pageId);
+  const titleAtom = getAtom(docCollection, pageId);
   assertExists(titleAtom);
   const title = useAtomValue(titleAtom);
-  const { localizedJournalDate } = useJournalInfoHelper(
-    blockSuiteWorkspace,
-    pageId
-  );
+  const { localizedJournalDate } = useJournalInfoHelper(docCollection, pageId);
   return localizedJournalDate || title;
 }
 
 // This hook is NOT reactive to the page title change
-export function useGetBlockSuiteWorkspacePageTitle(
-  blockSuiteWorkspace: Workspace
-) {
-  const { getLocalizedJournalDateString } =
-    useJournalHelper(blockSuiteWorkspace);
+export function useGetDocCollectionPageTitle(docCollection: DocCollection) {
+  const { getLocalizedJournalDateString } = useJournalHelper(docCollection);
   return useCallback(
     (pageId: string) => {
       return (
         getLocalizedJournalDateString(pageId) ||
-        blockSuiteWorkspace.getDoc(pageId)?.meta?.title
+        docCollection.getDoc(pageId)?.meta?.title
       );
     },
-    [blockSuiteWorkspace, getLocalizedJournalDateString]
+    [docCollection, getLocalizedJournalDateString]
   );
 }

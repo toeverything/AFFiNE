@@ -17,11 +17,11 @@ export class CollectionService {
   constructor(private readonly workspace: Workspace) {}
 
   private get doc() {
-    return this.workspace.blockSuiteWorkspace.doc;
+    return this.workspace.docCollection.doc;
   }
 
   private get setting() {
-    return this.workspace.blockSuiteWorkspace.doc.getMap(SETTING_KEY);
+    return this.workspace.docCollection.doc.getMap(SETTING_KEY);
   }
 
   private get collectionsYArray(): YArray<Collection> | undefined {
@@ -96,7 +96,7 @@ export class CollectionService {
       return;
     }
     const set = new Set(ids);
-    this.workspace.blockSuiteWorkspace.doc.transact(() => {
+    this.workspace.docCollection.doc.transact(() => {
       const indexList: number[] = [];
       const list: Collection[] = [];
       collectionsYArray.forEach((collection, i) => {

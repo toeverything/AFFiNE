@@ -1,5 +1,5 @@
 // This file should has not side effect
-import type { Workspace } from '@blocksuite/store';
+import type { DocCollection } from '@blocksuite/store';
 
 declare global {
   interface Window {
@@ -95,12 +95,12 @@ export const Messages = {
 };
 
 export class PageNotFoundError extends TypeError {
-  readonly workspace: Workspace;
+  readonly docCollection: DocCollection;
   readonly pageId: string;
 
-  constructor(workspace: Workspace, pageId: string) {
+  constructor(docCollection: DocCollection, pageId: string) {
     super();
-    this.workspace = workspace;
+    this.docCollection = docCollection;
     this.pageId = pageId;
   }
 }

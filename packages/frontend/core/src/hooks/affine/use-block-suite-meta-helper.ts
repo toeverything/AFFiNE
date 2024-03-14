@@ -1,22 +1,20 @@
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { useDocMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
-import { useBlockSuiteWorkspaceHelper } from '@affine/core/hooks/use-block-suite-workspace-helper';
+import { useDocCollectionHelper } from '@affine/core/hooks/use-block-suite-workspace-helper';
 import { CollectionService } from '@affine/core/modules/collection';
 import { PageRecordList, useService } from '@toeverything/infra';
 import { useCallback } from 'react';
 import { applyUpdate, encodeStateAsUpdate } from 'yjs';
 
-import type { BlockSuiteWorkspace } from '../../shared';
+import type { DocCollection } from '../../shared';
 import { useNavigateHelper } from '../use-navigate-helper';
 import { useReferenceLinkHelper } from './use-reference-link-helper';
 
-export function useBlockSuiteMetaHelper(
-  blockSuiteWorkspace: BlockSuiteWorkspace
-) {
+export function useBlockSuiteMetaHelper(docCollection: DocCollection) {
   const { setDocMeta, getDocMeta, setDocReadonly, setDocTitle } =
-    useDocMetaHelper(blockSuiteWorkspace);
-  const { addReferenceLink } = useReferenceLinkHelper(blockSuiteWorkspace);
-  const { createDoc } = useBlockSuiteWorkspaceHelper(blockSuiteWorkspace);
+    useDocMetaHelper(docCollection);
+  const { addReferenceLink } = useReferenceLinkHelper(docCollection);
+  const { createDoc } = useDocCollectionHelper(docCollection);
   const { openPage } = useNavigateHelper();
   const collectionService = useService(CollectionService);
   const pageRecordList = useService(PageRecordList);
@@ -82,9 +80,9 @@ export function useBlockSuiteMetaHelper(
 
   const permanentlyDeletePage = useCallback(
     (pageId: string) => {
-      blockSuiteWorkspace.removeDoc(pageId);
+      docCollection.removeDoc(pageId);
     },
-    [blockSuiteWorkspace]
+    [docCollection]
   );
 
   /**
@@ -116,7 +114,7 @@ export function useBlockSuiteMetaHelper(
       const currentPageMode = pageRecordList.record(pageId).value?.mode.value;
       const currentPageMeta = getDocMeta(pageId);
       const newPage = createDoc();
-      const currentPage = blockSuiteWorkspace.getDoc(pageId);
+      const currentPage = docCollection.getDoc(pageId);
 
       newPage.load();
       if (!currentPageMeta || !currentPage) {
@@ -142,10 +140,10 @@ export function useBlockSuiteMetaHelper(
         .record(newPage.id)
         .value?.setMode(currentPageMode || 'page');
       setDocTitle(newPage.id, newPageTitle);
-      openPageAfterDuplication && openPage(blockSuiteWorkspace.id, newPage.id);
+      openPageAfterDuplication && openPage(docCollection.id, newPage.id);
     },
     [
-      blockSuiteWorkspace,
+      docCollection,
       createDoc,
       getDocMeta,
       openPage,

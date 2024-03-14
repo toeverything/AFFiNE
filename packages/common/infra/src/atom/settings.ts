@@ -1,9 +1,15 @@
+import { DebugLogger } from '@affine/debug';
 import { setupGlobal } from '@affine/env/global';
+import type { DocCollection } from '@blocksuite/store';
 import { atom } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
 import { atomEffect } from 'jotai-effect';
 
+import { getCurrentStore } from './root-store';
+
 setupGlobal();
+
+const logger = new DebugLogger('affine:settings');
 
 export type DateFormats =
   | 'MM/dd/YYYY'
@@ -25,6 +31,8 @@ export type AppSetting = {
   enableNoisyBackground: boolean;
   autoCheckUpdate: boolean;
   autoDownloadUpdate: boolean;
+  enableMultiView: boolean;
+  editorFlags: Partial<Omit<BlockSuiteFlags, 'readonly'>>;
 };
 export const windowFrameStyleOptions: AppSetting['windowFrameStyle'][] = [
   'frameless',
@@ -63,7 +71,28 @@ const appSettingBaseAtom = atomWithStorage<AppSetting>('affine-settings', {
   enableNoisyBackground: true,
   autoCheckUpdate: true,
   autoDownloadUpdate: true,
+  enableMultiView: false,
+  editorFlags: {},
 });
+
+export function setupEditorFlags(docCollection: DocCollection) {
+  const store = getCurrentStore();
+  const syncEditorFlags = () => {
+    try {
+      const editorFlags = getCurrentStore().get(appSettingBaseAtom).editorFlags;
+      Object.entries(editorFlags).forEach(([key, value]) => {
+        docCollection.awarenessStore.setFlag(
+          key as keyof BlockSuiteFlags,
+          value
+        );
+      });
+    } catch (err) {
+      logger.error('syncEditorFlags', err);
+    }
+  };
+  store.sub(appSettingBaseAtom, syncEditorFlags);
+  syncEditorFlags();
+}
 
 type SetStateAction<Value> = Value | ((prev: Value) => Value);
 
@@ -71,7 +100,7 @@ const appSettingEffect = atomEffect(get => {
   const settings = get(appSettingBaseAtom);
   // some values in settings should be synced into electron side
   if (environment.isDesktop) {
-    console.log('set config', settings);
+    logger.debug('sync settings to electron', settings);
     // this api type in @affine/electron-api, but it is circular dependency this package, use any here
     (window as any).apis?.updater
       .setConfig({

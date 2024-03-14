@@ -177,8 +177,8 @@ export const NumberValue = ({ property }: PropertyRowValueProps) => {
 export const TagsValue = () => {
   const workspace = useService(Workspace);
   const page = useService(Doc);
-  const blockSuiteWorkspace = workspace.blockSuiteWorkspace;
-  const pageMetas = useAllBlockSuiteDocMeta(blockSuiteWorkspace);
+  const docCollection = workspace.docCollection;
+  const pageMetas = useAllBlockSuiteDocMeta(docCollection);
   const legacyProperties = useService(WorkspaceLegacyProperties);
   const options = useLiveData(legacyProperties.tagOptions$);
 

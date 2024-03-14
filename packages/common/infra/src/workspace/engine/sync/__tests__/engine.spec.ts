@@ -1,5 +1,5 @@
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import { Workspace } from '@blocksuite/store';
+import { DocCollection } from '@blocksuite/store';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { Doc } from 'yjs';
 
@@ -26,14 +26,14 @@ describe('SyncEngine', () => {
     const storage2 = new MemoryMemento();
     let prev: any;
     {
-      const workspace = new Workspace({
+      const docCollection = new DocCollection({
         id: 'test',
 
         schema: globalBlockSuiteSchema,
       });
 
       const syncEngine = new SyncEngine(
-        workspace.doc,
+        docCollection.doc,
         new TestingSyncStorage(testMeta, storage),
         [
           new TestingSyncStorage(testMeta, storage1),
@@ -42,7 +42,7 @@ describe('SyncEngine', () => {
       );
       syncEngine.start();
 
-      const page = workspace.createDoc({
+      const page = docCollection.createDoc({
         id: 'page0',
       });
       page.load();
@@ -69,23 +69,23 @@ describe('SyncEngine', () => {
       );
       await syncEngine.waitForSynced();
       syncEngine.forceStop();
-      prev = workspace.doc.toJSON();
+      prev = docCollection.doc.toJSON();
     }
 
     for (const current of [storage, storage1, storage2]) {
-      const workspace = new Workspace({
+      const docCollection = new DocCollection({
         id: 'test',
 
         schema: globalBlockSuiteSchema,
       });
       const syncEngine = new SyncEngine(
-        workspace.doc,
+        docCollection.doc,
         new TestingSyncStorage(testMeta, current),
         []
       );
       syncEngine.start();
       await syncEngine.waitForSynced();
-      expect(workspace.doc.toJSON()).toEqual({
+      expect(docCollection.doc.toJSON()).toEqual({
         ...prev,
       });
       syncEngine.forceStop();

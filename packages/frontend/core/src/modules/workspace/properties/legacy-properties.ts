@@ -14,19 +14,18 @@ export class WorkspaceLegacyProperties {
   }
 
   get properties() {
-    return this.workspace.blockSuiteWorkspace.meta.properties;
+    return this.workspace.docCollection.meta.properties;
   }
   get tagOptions() {
     return this.properties.tags?.options ?? [];
   }
 
   updateProperties = (properties: DocsPropertiesMeta) => {
-    this.workspace.blockSuiteWorkspace.meta.setProperties(properties);
+    this.workspace.docCollection.meta.setProperties(properties);
   };
 
   subscribe(cb: () => void) {
-    const disposable =
-      this.workspace.blockSuiteWorkspace.meta.docMetaUpdated.on(cb);
+    const disposable = this.workspace.docCollection.meta.docMetaUpdated.on(cb);
     return disposable.dispose;
   }
 
@@ -58,10 +57,10 @@ export class WorkspaceLegacyProperties {
   };
 
   removeTagOption = (id: string) => {
-    this.workspace.blockSuiteWorkspace.doc.transact(() => {
+    this.workspace.docCollection.doc.transact(() => {
       this.updateTagOptions(this.tagOptions.filter(o => o.id !== id));
       // need to remove tag from all pages
-      this.workspace.blockSuiteWorkspace.docs.forEach(doc => {
+      this.workspace.docCollection.docs.forEach(doc => {
         const tags = doc.meta?.tags ?? [];
         if (tags.includes(id)) {
           this.updatePageTags(
@@ -74,7 +73,7 @@ export class WorkspaceLegacyProperties {
   };
 
   updatePageTags = (pageId: string, tags: string[]) => {
-    this.workspace.blockSuiteWorkspace.setDocMeta(pageId, {
+    this.workspace.docCollection.setDocMeta(pageId, {
       tags,
     });
   };

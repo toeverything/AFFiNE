@@ -1,5 +1,5 @@
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import { Workspace } from '@blocksuite/store';
+import { DocCollection } from '@blocksuite/store';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { MemoryMemento } from '../../../../storage';
@@ -23,19 +23,19 @@ describe('SyncPeer', () => {
 
     let prev: any;
     {
-      const workspace = new Workspace({
+      const docCollection = new DocCollection({
         id: 'test',
 
         schema: globalBlockSuiteSchema,
       });
 
       const syncPeer = new SyncPeer(
-        workspace.doc,
+        docCollection.doc,
         new TestingSyncStorage(testMeta, storage)
       );
       await syncPeer.waitForLoaded();
 
-      const page = workspace.createDoc({
+      const page = docCollection.createDoc({
         id: 'page0',
       });
       page.load();
@@ -62,21 +62,21 @@ describe('SyncPeer', () => {
       );
       await syncPeer.waitForSynced();
       syncPeer.stop();
-      prev = workspace.doc.toJSON();
+      prev = docCollection.doc.toJSON();
     }
 
     {
-      const workspace = new Workspace({
+      const docCollection = new DocCollection({
         id: 'test',
 
         schema: globalBlockSuiteSchema,
       });
       const syncPeer = new SyncPeer(
-        workspace.doc,
+        docCollection.doc,
         new TestingSyncStorage(testMeta, storage)
       );
       await syncPeer.waitForSynced();
-      expect(workspace.doc.toJSON()).toEqual({
+      expect(docCollection.doc.toJSON()).toEqual({
         ...prev,
       });
       syncPeer.stop();
@@ -86,21 +86,21 @@ describe('SyncPeer', () => {
   test('status', async () => {
     const storage = new MemoryMemento();
 
-    const workspace = new Workspace({
+    const docCollection = new DocCollection({
       id: 'test',
 
       schema: globalBlockSuiteSchema,
     });
 
     const syncPeer = new SyncPeer(
-      workspace.doc,
+      docCollection.doc,
       new TestingSyncStorage(testMeta, storage)
     );
     expect(syncPeer.status.step).toBe(SyncPeerStep.LoadingRootDoc);
     await syncPeer.waitForSynced();
     expect(syncPeer.status.step).toBe(SyncPeerStep.Synced);
 
-    const page = workspace.createDoc({
+    const page = docCollection.createDoc({
       id: 'page0',
     });
     expect(syncPeer.status.step).toBe(SyncPeerStep.LoadingSubDoc);

@@ -16,7 +16,7 @@ import {
 import { workbenchRoutes } from '@affine/core/router';
 import { AffineSchemas } from '@blocksuite/blocks/schemas';
 import { PageIcon, TagsIcon } from '@blocksuite/icons';
-import { Schema, Workspace } from '@blocksuite/store';
+import { DocCollection, Schema } from '@blocksuite/store';
 import { expect } from '@storybook/jest';
 import type { Meta, StoryFn } from '@storybook/react';
 import { userEvent } from '@storybook/testing-library';
@@ -237,49 +237,49 @@ PageListStory.argTypes = {
 };
 
 async function createAndInitPage(
-  workspace: Workspace,
+  docCollection: DocCollection,
   title: string,
   preview: string
 ) {
-  const page = workspace.createDoc();
-  initEmptyPage(page, title);
-  page.getBlockByFlavour('affine:paragraph').at(0)?.text?.insert(preview, 0);
-  return page;
+  const doc = docCollection.createDoc();
+  initEmptyPage(doc, title);
+  doc.getBlockByFlavour('affine:paragraph').at(0)?.text?.insert(preview, 0);
+  return doc;
 }
 
 PageListStory.loaders = [
   async () => {
     const schema = new Schema();
     schema.register(AffineSchemas);
-    const workspace = new Workspace({
+    const docCollection = new DocCollection({
       id: 'test-workspace-id',
       schema,
     });
 
-    workspace.meta.setProperties({
+    docCollection.meta.setProperties({
       tags: {
         options: structuredClone(testTags),
       },
     });
 
     const page1 = await createAndInitPage(
-      workspace,
+      docCollection,
       'This is page 1',
       'Hello World from page 1'
     );
     const page2 = await createAndInitPage(
-      workspace,
+      docCollection,
       'This is page 2',
       'Hello World from page 2'
     );
     const page3 = await createAndInitPage(
-      workspace,
+      docCollection,
       'This is page 3',
       'Hello World from page 3Hello World from page 3Hello World from page 3Hello World from page 3Hello World from page 3'
     );
 
     await createAndInitPage(
-      workspace,
+      docCollection,
       'This is page 4',
       'Hello World from page 3Hello World from page 3Hello World from page 3Hello World from page 3Hello World from page 3'
     );
@@ -288,12 +288,12 @@ PageListStory.loaders = [
     page2.meta!.createDate = page2.meta!.createDate - 3600 * 1000 * 24;
     page3.meta!.createDate = page3.meta!.createDate - 3600 * 1000 * 24 * 7;
 
-    workspace.meta.docMetas[3].tags = testTags.slice(0, 3).map(t => t.id);
-    workspace.meta.docMetas[2].tags = testTags.slice(0, 12).map(t => t.id);
+    docCollection.meta.docMetas[3].tags = testTags.slice(0, 3).map(t => t.id);
+    docCollection.meta.docMetas[2].tags = testTags.slice(0, 12).map(t => t.id);
 
     return {
-      blockSuiteWorkspace: workspace,
-      pages: workspace.meta.docs,
+      blockSuiteWorkspace: docCollection,
+      pages: docCollection.meta.docs,
     };
   },
 ];

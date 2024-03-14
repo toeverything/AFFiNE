@@ -1,13 +1,11 @@
 import { useCallback } from 'react';
 
-import type { BlockSuiteWorkspace } from '../../shared';
+import type { DocCollection } from '../../shared';
 
-export function useReferenceLinkHelper(
-  blockSuiteWorkspace: BlockSuiteWorkspace
-) {
+export function useReferenceLinkHelper(docCollection: DocCollection) {
   const addReferenceLink = useCallback(
     (pageId: string, referenceId: string) => {
-      const page = blockSuiteWorkspace?.getDoc(pageId);
+      const page = docCollection?.getDoc(pageId);
       if (!page) {
         return;
       }
@@ -26,7 +24,7 @@ export function useReferenceLinkHelper(
 
       frame && page.addBlock('affine:paragraph', { text }, frame.id);
     },
-    [blockSuiteWorkspace]
+    [docCollection]
   );
 
   return {

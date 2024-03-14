@@ -22,15 +22,15 @@ export const TrashPageFooter = ({ pageId }: { pageId: string }) => {
     useService(CurrentWorkspaceService).currentWorkspace
   );
   assertExists(workspace);
-  const blockSuiteWorkspace = workspace.blockSuiteWorkspace;
-  const pageMeta = useBlockSuiteDocMeta(blockSuiteWorkspace).find(
+  const docCollection = workspace.docCollection;
+  const pageMeta = useBlockSuiteDocMeta(docCollection).find(
     meta => meta.id === pageId
   );
   assertExists(pageMeta);
   const t = useAFFiNEI18N();
   const { appSettings } = useAppSettingHelper();
   const { jumpToSubPath } = useNavigateHelper();
-  const { restoreFromTrash } = useBlockSuiteMetaHelper(blockSuiteWorkspace);
+  const { restoreFromTrash } = useBlockSuiteMetaHelper(docCollection);
   const [open, setOpen] = useState(false);
   const hintText = t['com.affine.cmdk.affine.editor.trash-footer-hint']();
 
@@ -45,9 +45,9 @@ export const TrashPageFooter = ({ pageId }: { pageId: string }) => {
 
   const onConfirmDelete = useCallback(() => {
     jumpToSubPath(workspace.id, WorkspaceSubPath.ALL);
-    blockSuiteWorkspace.removeDoc(pageId);
+    docCollection.removeDoc(pageId);
     toast(t['com.affine.toastMessage.permanentlyDeleted']());
-  }, [blockSuiteWorkspace, jumpToSubPath, pageId, workspace.id, t]);
+  }, [docCollection, jumpToSubPath, pageId, workspace.id, t]);
 
   const onDelete = useCallback(() => {
     setOpen(true);

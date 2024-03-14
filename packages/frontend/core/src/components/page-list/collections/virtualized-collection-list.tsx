@@ -125,7 +125,7 @@ export const VirtualizedCollectionList = ({
         items={collectionMetas}
         itemRenderer={collectionItemRenderer}
         rowAsLink
-        blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
+        docCollection={currentWorkspace.docCollection}
         operationsRenderer={collectionOperationRenderer}
         headerRenderer={collectionHeaderRenderer}
       />

@@ -1,7 +1,7 @@
 import { toast } from '@affine/component';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { useDocMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
-import { useBlockSuiteWorkspaceHelper } from '@affine/core/hooks/use-block-suite-workspace-helper';
+import { useDocCollectionHelper } from '@affine/core/hooks/use-block-suite-workspace-helper';
 import { WorkspaceSubPath } from '@affine/core/shared';
 import { useService } from '@toeverything/infra';
 import { PageRecordList } from '@toeverything/infra';
@@ -9,12 +9,12 @@ import { initEmptyPage } from '@toeverything/infra';
 import { useCallback, useMemo } from 'react';
 
 import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
-import type { BlockSuiteWorkspace } from '../../../shared';
+import type { DocCollection } from '../../../shared';
 
-export const usePageHelper = (blockSuiteWorkspace: BlockSuiteWorkspace) => {
+export const usePageHelper = (docCollection: DocCollection) => {
   const { openPage, jumpToSubPath } = useNavigateHelper();
-  const { createDoc } = useBlockSuiteWorkspaceHelper(blockSuiteWorkspace);
-  const { setDocMeta } = useDocMetaHelper(blockSuiteWorkspace);
+  const { createDoc } = useDocCollectionHelper(docCollection);
+  const { setDocMeta } = useDocMetaHelper(docCollection);
   const pageRecordList = useService(PageRecordList);
 
   const isPreferredEdgeless = useCallback(
@@ -28,10 +28,10 @@ export const usePageHelper = (blockSuiteWorkspace: BlockSuiteWorkspace) => {
       const page = createDoc();
       initEmptyPage(page);
       pageRecordList.record(page.id).value?.setMode(mode || 'page');
-      openPage(blockSuiteWorkspace.id, page.id);
+      openPage(docCollection.id, page.id);
       return page;
     },
-    [blockSuiteWorkspace.id, createDoc, openPage, pageRecordList]
+    [docCollection.id, createDoc, openPage, pageRecordList]
   );
 
   const createEdgelessAndOpen = useCallback(() => {
@@ -50,7 +50,7 @@ export const usePageHelper = (blockSuiteWorkspace: BlockSuiteWorkspace) => {
         }.`
       );
       if (options.isWorkspaceFile) {
-        jumpToSubPath(blockSuiteWorkspace.id, WorkspaceSubPath.ALL);
+        jumpToSubPath(docCollection.id, WorkspaceSubPath.ALL);
         return;
       }
 
@@ -58,16 +58,16 @@ export const usePageHelper = (blockSuiteWorkspace: BlockSuiteWorkspace) => {
         return;
       }
       const pageId = pageIds[0];
-      openPage(blockSuiteWorkspace.id, pageId);
+      openPage(docCollection.id, pageId);
     };
-    showImportModal({ workspace: blockSuiteWorkspace, onSuccess });
-  }, [blockSuiteWorkspace, openPage, jumpToSubPath]);
+    showImportModal({ collection: docCollection, onSuccess });
+  }, [docCollection, openPage, jumpToSubPath]);
 
   const createLinkedPageAndOpen = useAsyncCallback(
     async (pageId: string) => {
       const page = createPageAndOpen();
       page.load();
-      const parentPage = blockSuiteWorkspace.getDoc(pageId);
+      const parentPage = docCollection.getDoc(pageId);
       if (parentPage) {
         parentPage.load();
         const text = parentPage.Text.fromDelta([
@@ -86,7 +86,7 @@ export const usePageHelper = (blockSuiteWorkspace: BlockSuiteWorkspace) => {
         setDocMeta(page.id, {});
       }
     },
-    [blockSuiteWorkspace, createPageAndOpen, setDocMeta]
+    [docCollection, createPageAndOpen, setDocMeta]
   );
 
   return useMemo(() => {

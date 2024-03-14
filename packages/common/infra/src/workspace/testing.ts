@@ -1,5 +1,5 @@
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
+import { DocCollection } from '@blocksuite/store';
 import { differenceBy } from 'lodash-es';
 import { nanoid } from 'nanoid';
 import { applyUpdate, encodeStateAsUpdate } from 'yjs';
@@ -43,7 +43,7 @@ export class TestingLocalWorkspaceListProvider
   }
   async create(
     initial: (
-      workspace: BlockSuiteWorkspace,
+      docCollection: DocCollection,
       blobStorage: BlobStorage
     ) => Promise<void>
   ): Promise<WorkspaceMetadata> {
@@ -53,18 +53,18 @@ export class TestingLocalWorkspaceListProvider
     const blobStorage = new TestingBlobStorage(meta, this.state);
     const syncStorage = new TestingSyncStorage(meta, this.state);
 
-    const workspace = new BlockSuiteWorkspace({
+    const docCollection = new DocCollection({
       id: id,
       idGenerator: () => nanoid(),
       schema: globalBlockSuiteSchema,
     });
 
     // apply initial state
-    await initial(workspace, blobStorage);
+    await initial(docCollection, blobStorage);
 
     // save workspace to storage
-    await syncStorage.push(id, encodeStateAsUpdate(workspace.doc));
-    for (const subdocs of workspace.doc.getSubdocs()) {
+    await syncStorage.push(id, encodeStateAsUpdate(docCollection.doc));
+    for (const subdocs of docCollection.doc.getSubdocs()) {
       await syncStorage.push(subdocs.guid, encodeStateAsUpdate(subdocs));
     }
 
@@ -117,7 +117,7 @@ export class TestingLocalWorkspaceListProvider
       return;
     }
 
-    const bs = new BlockSuiteWorkspace({
+    const bs = new DocCollection({
       id,
       schema: globalBlockSuiteSchema,
     });

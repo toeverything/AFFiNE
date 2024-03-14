@@ -6,7 +6,7 @@ import {
   getWorkspacesQuery,
 } from '@affine/graphql';
 import { fetcher } from '@affine/graphql';
-import { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
+import { DocCollection } from '@blocksuite/store';
 import type { WorkspaceListProvider } from '@toeverything/infra';
 import {
   type BlobStorage,
@@ -71,13 +71,13 @@ export class CloudWorkspaceListProvider implements WorkspaceListProvider {
   }
   async create(
     initial: (
-      workspace: BlockSuiteWorkspace,
+      docCollection: DocCollection,
       blobStorage: BlobStorage
     ) => Promise<void>
   ): Promise<WorkspaceMetadata> {
     const tempId = nanoid();
 
-    const workspace = new BlockSuiteWorkspace({
+    const docCollection = new DocCollection({
       id: tempId,
       idGenerator: () => nanoid(),
       schema: globalBlockSuiteSchema,
@@ -99,11 +99,11 @@ export class CloudWorkspaceListProvider implements WorkspaceListProvider {
       : new IndexedDBSyncStorage(workspaceId);
 
     // apply initial state
-    await initial(workspace, blobStorage);
+    await initial(docCollection, blobStorage);
 
     // save workspace to local storage, should be vary fast
-    await syncStorage.push(workspaceId, encodeStateAsUpdate(workspace.doc));
-    for (const subdocs of workspace.doc.getSubdocs()) {
+    await syncStorage.push(workspaceId, encodeStateAsUpdate(docCollection.doc));
+    for (const subdocs of docCollection.doc.getSubdocs()) {
       await syncStorage.push(subdocs.guid, encodeStateAsUpdate(subdocs));
     }
 
@@ -167,7 +167,7 @@ export class CloudWorkspaceListProvider implements WorkspaceListProvider {
       return;
     }
 
-    const bs = new BlockSuiteWorkspace({
+    const bs = new DocCollection({
       id,
       schema: globalBlockSuiteSchema,
     });
