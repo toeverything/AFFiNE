@@ -12,33 +12,28 @@ test('can validate', t => {
   t.throws(() => validators.assertValidPassword(''));
   t.throws(() => validators.assertValidPassword('aaaaaaaaaaaaaaaaaaaaa'));
 
+  // verify with captcha
   t.notThrows(() =>
     validators.assertValidCredential({
       email: 'test@example.com',
       password: 'password',
+      token: 'captchaToken',
     })
   );
+  // verify with challenge
   t.notThrows(() =>
     validators.assertValidCredential({
       email: 'test@example.com',
       password: 'password',
+      token: 'verifyToken',
       challenge: 'challenge',
     })
   );
-  t.notThrows(() =>
-    validators.assertValidCredential({
-      email: 'test@example.com',
-      password: 'password',
-      verifyToken: 'verifyToken',
-    })
-  );
-  // challenge and verifyToken should not be both provided
   t.throws(() =>
     validators.assertValidCredential({
       email: 'test@example.com',
       password: 'password',
       challenge: 'challenge',
-      verifyToken: 'verifyToken',
     })
   );
 });

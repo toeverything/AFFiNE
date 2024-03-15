@@ -1,11 +1,12 @@
 import assert from 'node:assert';
 import { randomUUID } from 'node:crypto';
 
-import { Injectable, Logger } from '@nestjs/common';
-import type { Request, Response } from 'express';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import type { Request } from 'express';
 import { nanoid } from 'nanoid';
 
 import { TokenService, TokenType } from '../../core/auth/token';
+import { Credential } from '../../core/utils/validators';
 import { Config, verifyChallengeResponse } from '../../fundamentals';
 import { CaptchaConfig } from './types';
 
@@ -68,52 +69,38 @@ export class CaptchaService {
     };
   }
 
-  private rejectResponse(res: Response, error: string, status = 400) {
-    res.status(status);
-    res.json({
-      url: `${this.config.baseUrl}/api/auth/error?${new URLSearchParams({
-        error,
-      }).toString()}`,
-      error,
-    });
-  }
-
-  async verifyRequest(req: Request, res: Response): Promise<boolean> {
-    const challenge = req.query?.challenge;
+  async verifyRequest(credential: Credential, req: Request) {
+    const challenge = credential.challenge;
     if (typeof challenge === 'string' && challenge) {
       const resource = await this.token
         .verifyToken(TokenType.Challenge, challenge)
         .then(token => token?.credential);
 
       if (!resource) {
-        this.rejectResponse(res, 'Invalid Challenge');
-        return false;
+        throw new BadRequestException('Invalid Challenge');
       }
 
       const isChallengeVerified = await this.verifyChallengeResponse(
-        req.query?.token,
+        credential.token,
         resource
       );
 
       this.logger.debug(
-        `Challenge: ${challenge}, Resource: ${resource}, Response: ${req.query?.token}, isChallengeVerified: ${isChallengeVerified}`
+        `Challenge: ${challenge}, Resource: ${resource}, Response: ${credential.token}, isChallengeVerified: ${isChallengeVerified}`
       );
 
       if (!isChallengeVerified) {
-        this.rejectResponse(res, 'Invalid Challenge Response');
-        return false;
+        throw new BadRequestException('Invalid Challenge Response');
       }
     } else {
       const isTokenVerified = await this.verifyCaptchaToken(
-        req.query?.token,
+        credential.token,
         req.headers['CF-Connecting-IP'] as string
       );
 
       if (!isTokenVerified) {
-        this.rejectResponse(res, 'Invalid Captcha Response');
-        return false;
+        throw new BadRequestException('Invalid Captcha Response');
       }
     }
-    return true;
   }
 }

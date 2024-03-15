@@ -17,33 +17,13 @@ function getAuthCredentialValidator() {
     .object({
       email,
       password,
-    })
-    .required();
-}
-
-function getAuthCredentialWithCaptchaValidator() {
-  return getAuthCredentialValidator()
-    .extend({
-      verifyToken: z.string().optional(),
+      token: z.string(),
       challenge: z.string().optional(),
     })
-    .refine(
-      data => {
-        const hasChallenge = !!data.challenge;
-        const hasVerifyToken = !!data.verifyToken;
-        return (
-          (!hasChallenge && !hasVerifyToken) ||
-          (hasChallenge && !hasVerifyToken) ||
-          (!hasChallenge && hasVerifyToken)
-        );
-      },
-      {
-        message: 'verifyToken and challenge should not be both provided',
-      }
-    );
+    .strict();
 }
 
-function assertValid<T>(z: z.ZodType<T>, value: unknown) {
+function assertValid<T>(z: z.ZodType<T>, value: unknown): T {
   const result = z.safeParse(value);
 
   if (!result.success) {
@@ -54,24 +34,24 @@ function assertValid<T>(z: z.ZodType<T>, value: unknown) {
       throw new BadRequestException('Invalid credential');
     }
   }
+  return result.data;
 }
 
 export function assertValidEmail(email: string) {
-  assertValid(getAuthCredentialValidator().shape.email, email);
+  return assertValid(getAuthCredentialValidator().shape.email, email);
 }
 
 export function assertValidPassword(password: string) {
-  assertValid(getAuthCredentialValidator().shape.password, password);
+  return assertValid(getAuthCredentialValidator().shape.password, password);
 }
 
-export function assertValidCredential(credential: {
-  email: string;
-  password: string;
-  challenge?: string;
-  verifyToken?: string;
-}) {
-  assertValid(getAuthCredentialWithCaptchaValidator(), credential);
+export function assertValidCredential(
+  credential: Omit<Credential, 'token'> & { token?: string }
+) {
+  return assertValid(getAuthCredentialValidator(), credential);
 }
+
+export type Credential = z.infer<ReturnType<typeof getAuthCredentialValidator>>;
 
 export const validators = {
   assertValidEmail,
