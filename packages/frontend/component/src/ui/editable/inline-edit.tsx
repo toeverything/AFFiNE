@@ -3,6 +3,7 @@ import {
   type CSSProperties,
   type ForwardedRef,
   type HTMLAttributes,
+  type KeyboardEvent,
   type PropsWithChildren,
   useCallback,
   useEffect,
@@ -29,6 +30,10 @@ export interface InlineEditProps
    * Whether the content is editable
    */
   editable?: boolean;
+  /**
+   * Whether to exit when pressing `Escape`
+   */
+  exitible?: boolean;
 
   onInput?: (v: string) => void;
   onChange?: (v: string) => void;
@@ -68,6 +73,7 @@ export interface InlineEditProps
 export const InlineEdit = ({
   value,
   editable,
+  exitible,
   className,
   style,
   trigger = 'doubleClick',
@@ -126,6 +132,12 @@ export const InlineEdit = ({
     // to reset input's scroll position to match actual display
     inputRef.current?.scrollTo(0, 0);
   }, [submit]);
+
+  const onKeyDown = useCallback((e: KeyboardEvent<HTMLInputElement>) => {
+    if (!exitible) return;
+    if (e.key !== 'Escape') return;
+    inputRef.current?.blur();
+  }, []);
 
   const inputHandler = useCallback(
     (v: string) => {
@@ -198,6 +210,7 @@ export const InlineEdit = ({
           placeholder={placeholder}
           onBlur={onBlur}
           onEnter={onEnter}
+          onKeyDown={onKeyDown}
           onChange={inputHandler}
           style={inputWrapperInheritsStyles}
           inputStyle={inputInheritsStyles}
