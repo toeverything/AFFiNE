@@ -18,11 +18,16 @@ export const CallTimer = (
       return desc;
     }
 
-    desc.value = function (...args: any[]) {
+    desc.value = async function (...args: any[]) {
       const timer = metrics[scope].histogram(name, {
         description: `function call time costs of ${name}`,
         unit: 'ms',
       });
+      metrics[scope]
+        .counter(`${name}_calls`, {
+          description: `function call counts of ${name}`,
+        })
+        .add(1, attrs);
 
       const start = Date.now();
 
@@ -30,19 +35,10 @@ export const CallTimer = (
         timer.record(Date.now() - start, attrs);
       };
 
-      let result: any;
       try {
-        result = originalMethod.apply(this, args);
-      } catch (e) {
+        return await originalMethod.apply(this, args);
+      } finally {
         end();
-        throw e;
-      }
-
-      if (result instanceof Promise) {
-        return result.finally(end);
-      } else {
-        end();
-        return result;
       }
     };
 
