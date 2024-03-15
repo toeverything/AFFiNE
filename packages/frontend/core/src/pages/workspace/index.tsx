@@ -1,14 +1,7 @@
 import { useWorkspace } from '@affine/core/hooks/use-workspace';
-import {
-  Workspace,
-  WorkspaceListService,
-  WorkspaceManager,
-} from '@toeverything/infra';
-import {
-  ServiceProviderContext,
-  useService,
-  useServiceOptional,
-} from '@toeverything/infra/di';
+import type { Workspace } from '@toeverything/infra';
+import { WorkspaceListService, WorkspaceManager } from '@toeverything/infra';
+import { ServiceProviderContext, useService } from '@toeverything/infra/di';
 import { useLiveData } from '@toeverything/infra/livedata';
 import { type ReactElement, Suspense, useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
@@ -20,6 +13,10 @@ import { WorkspaceLayout } from '../../layouts/workspace-layout';
 import { RightSidebarContainer } from '../../modules/right-sidebar';
 import { WorkbenchRoot } from '../../modules/workbench';
 import { CurrentWorkspaceService } from '../../modules/workspace/current-workspace';
+import {
+  AllWorkspaceModals,
+  CurrentWorkspaceModals,
+} from '../../providers/modal-provider';
 import { performanceRenderLogger } from '../../shared';
 import { PageNotFound } from '../404';
 
@@ -72,8 +69,6 @@ export const Component = (): ReactElement => {
     localStorage.setItem('last_workspace_id', workspace.id);
   }, [meta, workspaceManager, workspace, currentWorkspaceService]);
 
-  const currentWorkspace = useServiceOptional(Workspace);
-
   //  avoid doing operation, before workspace is loaded
   const isRootDocLoaded = useLiveData(workspace?.engine.sync.isRootDocLoaded);
 
@@ -82,12 +77,22 @@ export const Component = (): ReactElement => {
     return <PageNotFound />;
   }
 
-  if (!currentWorkspace || !isRootDocLoaded) {
+  if (!workspace) {
     return <WorkspaceFallback key="workspaceLoading" />;
   }
 
+  if (!isRootDocLoaded) {
+    return (
+      <ServiceProviderContext.Provider value={workspace.services}>
+        <WorkspaceFallback key="workspaceLoading" />
+        <AllWorkspaceModals />
+        <CurrentWorkspaceModals />
+      </ServiceProviderContext.Provider>
+    );
+  }
+
   return (
-    <ServiceProviderContext.Provider value={currentWorkspace.services}>
+    <ServiceProviderContext.Provider value={workspace.services}>
       <Suspense fallback={<WorkspaceFallback key="workspaceFallback" />}>
         <AffineErrorBoundary height="100vh">
           <WorkspaceLayout>

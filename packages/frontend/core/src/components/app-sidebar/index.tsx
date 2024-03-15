@@ -1,10 +1,13 @@
 import { Skeleton } from '@affine/component';
 import { ResizePanel } from '@affine/component/resize-panel';
+import { Workspace } from '@toeverything/infra';
+import { useServiceOptional } from '@toeverything/infra/di';
 import { useAtom, useAtomValue } from 'jotai';
 import { debounce } from 'lodash-es';
 import type { PropsWithChildren, ReactElement } from 'react';
 import { useEffect } from 'react';
 
+import { WorkspaceSelector } from '../workspace-selector';
 import { fallbackHeaderStyle, fallbackStyle } from './fallback.css';
 import {
   floatingMaxWidth,
@@ -113,6 +116,8 @@ export function AppSidebar(props: AppSidebarProps): ReactElement {
 
 export const AppSidebarFallback = (): ReactElement | null => {
   const width = useAtomValue(appSidebarWidthAtom);
+
+  const currentWorkspace = useServiceOptional(Workspace);
   return (
     <div
       style={{ width }}
@@ -125,8 +130,14 @@ export const AppSidebarFallback = (): ReactElement | null => {
         <div className={navBodyStyle}>
           <div className={fallbackStyle}>
             <div className={fallbackHeaderStyle}>
-              <Skeleton variant="circular" width={40} height={40} />
-              <Skeleton variant="rectangular" width={150} height={40} />
+              {currentWorkspace ? (
+                <WorkspaceSelector />
+              ) : (
+                <>
+                  <Skeleton variant="circular" width={40} height={40} />
+                  <Skeleton variant="rectangular" width={150} height={40} />
+                </>
+              )}
             </div>
           </div>
         </div>

@@ -7,13 +7,15 @@ import { NotificationCenter } from '@affine/component/notification-center';
 import { createI18n, setUpLanguage } from '@affine/i18n';
 import { CacheProvider } from '@emotion/react';
 import { getCurrentStore } from '@toeverything/infra/atom';
-import { ServiceCollection } from '@toeverything/infra/di';
+import {
+  ServiceCollection,
+  ServiceProviderContext,
+} from '@toeverything/infra/di';
 import type { PropsWithChildren, ReactElement } from 'react';
 import { lazy, memo, Suspense } from 'react';
 import { RouterProvider } from 'react-router-dom';
 
 import { WorkspaceFallback } from './components/workspace';
-import { GlobalScopeProvider } from './modules/infra-web/global-scope';
 import { CloudSessionProvider } from './providers/session-provider';
 import { router } from './router';
 import { performanceLogger, performanceRenderLogger } from './shared';
@@ -68,7 +70,7 @@ export const App = memo(function App() {
 
   return (
     <Suspense>
-      <GlobalScopeProvider provider={serviceProvider}>
+      <ServiceProviderContext.Provider value={serviceProvider}>
         <CacheProvider value={cache}>
           <AffineContext store={getCurrentStore()}>
             <CloudSessionProvider>
@@ -86,7 +88,7 @@ export const App = memo(function App() {
             </CloudSessionProvider>
           </AffineContext>
         </CacheProvider>
-      </GlobalScopeProvider>
+      </ServiceProviderContext.Provider>
     </Suspense>
   );
 });
