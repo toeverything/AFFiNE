@@ -7,6 +7,7 @@ export const StyledSelectorContainer = styled('div')({
   padding: '0 6px',
   borderRadius: '8px',
   outline: 'none',
+  width: '100%',
   color: 'var(--affine-text-primary-color)',
   ':hover': {
     cursor: 'pointer',
