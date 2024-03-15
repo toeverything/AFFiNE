@@ -243,6 +243,12 @@ export const createConfiguration: (
           },
         },
         {
+          test: /\.js$/,
+          enforce: 'pre',
+          include: /@blocksuite/,
+          use: ['source-map-loader'],
+        },
+        {
           oneOf: [
             {
               test: /\.tsx?$/,
