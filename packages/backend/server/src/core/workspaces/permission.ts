@@ -73,6 +73,28 @@ export class PermissionService {
     return this.tryCheckPage(ws, id, user);
   }
 
+  /**
+   * Returns whether a given user is a member of a workspace and has the given or higher permission.
+   */
+  async isWorkspaceMember(
+    ws: string,
+    user: string,
+    permission: Permission
+  ): Promise<boolean> {
+    const count = await this.prisma.workspaceUserPermission.count({
+      where: {
+        workspaceId: ws,
+        userId: user,
+        accepted: true,
+        type: {
+          gte: permission,
+        },
+      },
+    });
+
+    return count !== 0;
+  }
+
   async checkWorkspace(
     ws: string,
     user?: string,

@@ -42,10 +42,16 @@ export class AffineSyncStorage implements SyncStorage {
   }
 
   handleConnect = () => {
-    this.socket.emit('client-handshake-sync', {
-      workspaceId: this.workspaceId,
-      version: runtimeConfig.appVersion,
-    });
+    this.socket.emit(
+      'client-handshake-sync',
+      {
+        workspaceId: this.workspaceId,
+        version: runtimeConfig.appVersion,
+      },
+      (res: any) => {
+        logger.debug('client handshake finished', res);
+      }
+    );
   };
 
   handleReject = (message: RejectByVersion) => {
