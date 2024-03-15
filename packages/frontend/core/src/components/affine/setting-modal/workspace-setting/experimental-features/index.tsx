@@ -172,7 +172,6 @@ const SplitViewSettingRow = () => {
 const blocksuiteFeatureFlags: Partial<Record<keyof BlockSuiteFlags, string>> = {
   enable_synced_doc_block: 'Enable Synced Doc Block',
   enable_expand_database_block: 'Enable Expand Database Block',
-  enable_bultin_ledits: 'Edit with LEDITS',
 };
 
 const BlocksuiteFeatureFlagSettings = () => {
