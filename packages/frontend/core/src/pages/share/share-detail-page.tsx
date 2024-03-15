@@ -1,5 +1,6 @@
 import { Scrollable } from '@affine/component';
 import { useCurrentLoginStatus } from '@affine/core/hooks/affine/use-current-login-status';
+import { useActiveBlocksuiteEditor } from '@affine/core/hooks/use-block-suite-editor';
 import { usePageDocumentTitle } from '@affine/core/hooks/use-global-state';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { fetchWithTraceReport } from '@affine/graphql';
@@ -8,7 +9,10 @@ import {
   AffineCloudBlobStorage,
   StaticBlobStorage,
 } from '@affine/workspace-impl';
+import { noop } from '@blocksuite/global/utils';
 import { Logo1Icon } from '@blocksuite/icons';
+import type { AffineEditorContainer } from '@blocksuite/presets';
+import type { Doc as BlockSuiteDoc } from '@blocksuite/store';
 import type { Doc } from '@toeverything/infra';
 import {
   EmptyBlobStorage,
@@ -25,8 +29,7 @@ import {
   WorkspaceManager,
   WorkspaceScope,
 } from '@toeverything/infra';
-import { noop } from 'foxact/noop';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { LoaderFunction } from 'react-router-dom';
 import {
   isRouteErrorResponse,
@@ -131,6 +134,7 @@ export const Component = () => {
   const currentWorkspace = useService(CurrentWorkspaceService);
   const t = useAFFiNEI18N();
   const [page, setPage] = useState<Doc | null>(null);
+  const [_, setActiveBlocksuiteEditor] = useActiveBlocksuiteEditor();
 
   useEffect(() => {
     // create a workspace for share page
@@ -187,6 +191,14 @@ export const Component = () => {
   usePageDocumentTitle(pageTitle);
   const loginStatus = useCurrentLoginStatus();
 
+  const onEditorLoad = useCallback(
+    (_: BlockSuiteDoc, editor: AffineEditorContainer) => {
+      setActiveBlocksuiteEditor(editor);
+      return noop;
+    },
+    [setActiveBlocksuiteEditor]
+  );
+
   if (!page) {
     return;
   }
@@ -209,7 +221,7 @@ export const Component = () => {
                     publishMode={publishMode}
                     docCollection={page.blockSuiteDoc.collection}
                     pageId={page.id}
-                    onLoad={() => noop}
+                    onLoad={onEditorLoad}
                   />
                   {publishMode === 'page' ? <ShareFooter /> : null}
                 </Scrollable.Viewport>
