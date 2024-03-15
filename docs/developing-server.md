@@ -61,6 +61,8 @@ MAILER_USER="auth"
 MAILER_PASSWORD="auth"
 MAILER_HOST="localhost"
 MAILER_PORT="1025"
+STRIPE_API_KEY=sk_live_1
+STRIPE_WEBHOOK_KEY=1
 ```
 
 ## Prepare prisma
