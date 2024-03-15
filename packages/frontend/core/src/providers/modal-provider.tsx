@@ -1,6 +1,11 @@
 import { events } from '@affine/electron-api';
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import { useLiveData, useService, WorkspaceManager } from '@toeverything/infra';
+import {
+  useLiveData,
+  useService,
+  Workspace,
+  WorkspaceManager,
+} from '@toeverything/infra';
 import { useAtom } from 'jotai';
 import type { ReactElement } from 'react';
 import { lazy, Suspense, useCallback, useEffect } from 'react';
@@ -184,9 +189,7 @@ export const AuthModal = (): ReactElement => {
 };
 
 export function CurrentWorkspaceModals() {
-  const currentWorkspace = useLiveData(
-    useService(CurrentWorkspaceService).currentWorkspace$
-  );
+  const currentWorkspace = useService(Workspace);
   const [openDisableCloudAlertModal, setOpenDisableCloudAlertModal] = useAtom(
     openDisableCloudAlertModalAtom
   );
