@@ -98,8 +98,9 @@ export class Workbench {
     if (index === -1) return;
     const newViews = [...this.views.value];
     newViews.splice(index, 1);
-    if (index !== 0) {
-      this.active(index - 1);
+    const activeViewIndex = this.activeViewIndex.value;
+    if (activeViewIndex !== 0 && activeViewIndex >= index) {
+      this.active(activeViewIndex - 1);
     }
     this.views.next(newViews);
   }
