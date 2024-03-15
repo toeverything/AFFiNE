@@ -1,5 +1,6 @@
 import { Button, Input, Modal } from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { type KeyboardEvent } from 'react';
 import { useCallback, useMemo, useState } from 'react';
 
 import * as styles from './create-collection.css';
@@ -73,6 +74,19 @@ export const CreateCollection = ({
     }
     onConfirm(value);
   }, [onConfirm, value, isNameEmpty]);
+  const onKeyDown = useCallback(
+    (e: KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === 'Escape') {
+        if (isNameEmpty) {
+          return;
+        } else {
+          e.currentTarget.blur();
+        }
+      }
+      e.stopPropagation();
+    },
+    [isNameEmpty]
+  );
   return (
     <div>
       <div className={styles.content}>
@@ -82,13 +96,11 @@ export const CreateCollection = ({
         <Input
           autoFocus
           value={value}
-          onKeyDown={e => {
-            e.stopPropagation();
-          }}
           data-testid="input-collection-title"
           placeholder={t['com.affine.editCollectionName.name.placeholder']()}
           onChange={useCallback((value: string) => onChange(value), [onChange])}
           onEnter={save}
+          onKeyDown={onKeyDown}
         ></Input>
         {showTips ? (
           <div className={styles.createTips}>
