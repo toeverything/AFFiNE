@@ -104,7 +104,7 @@ test('should create user if not exist', async t => {
 
   const user = await auth.getUserByEmail('u2@affine.pro');
   t.not(user, undefined, 'failed to create user');
-  t.is(user?.name, 'Unnamed', 'failed to create user');
+  t.is(user?.name, 'u2', 'failed to create user');
 });
 
 test('should invite a user by link', async t => {
@@ -254,4 +254,26 @@ test('should support pagination for member', async t => {
     2
   );
   t.is(secondPageWorkspace.members.length, 1, 'failed to check invite id');
+});
+
+test('should limit member count correctly', async t => {
+  const { app } = t.context;
+  const u1 = await signUp(app, 'u1', 'u1@affine.pro', '1');
+  for (let i = 0; i < 10; i++) {
+    const workspace = await createWorkspace(app, u1.token.token);
+    await Promise.allSettled(
+      Array.from({ length: 10 }).map(async (_, i) =>
+        inviteUser(
+          app,
+          u1.token.token,
+          workspace.id,
+          `u${i}@affine.pro`,
+          'Admin'
+        )
+      )
+    );
+
+    const ws = await getWorkspace(app, u1.token.token, workspace.id);
+    t.assert(ws.members.length <= 3, 'failed to check member list');
+  }
 });

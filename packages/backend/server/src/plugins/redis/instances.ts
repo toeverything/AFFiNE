@@ -54,3 +54,10 @@ export class SocketIoRedis extends Redis {
     super({ ...config.plugins.redis, db: (config.plugins.redis?.db ?? 0) + 3 });
   }
 }
+
+@Injectable()
+export class MutexRedis extends Redis {
+  constructor(config: Config) {
+    super({ ...config.plugins.redis, db: (config.plugins.redis?.db ?? 0) + 4 });
+  }
+}
