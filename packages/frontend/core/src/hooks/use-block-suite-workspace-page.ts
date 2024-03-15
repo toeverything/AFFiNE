@@ -1,6 +1,9 @@
+import { DebugLogger } from '@affine/debug';
 import { DisposableGroup } from '@blocksuite/global/utils';
 import type { Doc, DocCollection } from '@blocksuite/store';
 import { useEffect, useState } from 'react';
+
+const logger = new DebugLogger('use-doc-collection-page');
 
 export function useDocCollectionPage(
   docCollection: DocCollection,
@@ -33,7 +36,11 @@ export function useDocCollectionPage(
 
   useEffect(() => {
     if (page && !page.loaded) {
-      page.load();
+      try {
+        page.load();
+      } catch (err) {
+        logger.error('Failed to load page', err);
+      }
     }
   }, [page]);
 
