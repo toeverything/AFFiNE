@@ -21,6 +21,28 @@ function getAuthCredentialValidator() {
     .required();
 }
 
+function getAuthCredentialWithCaptchaValidator() {
+  return getAuthCredentialValidator()
+    .extend({
+      verifyToken: z.string().optional(),
+      challenge: z.string().optional(),
+    })
+    .refine(
+      data => {
+        const hasChallenge = !!data.challenge;
+        const hasVerifyToken = !!data.verifyToken;
+        return (
+          (!hasChallenge && !hasVerifyToken) ||
+          (hasChallenge && !hasVerifyToken) ||
+          (!hasChallenge && hasVerifyToken)
+        );
+      },
+      {
+        message: 'verifyToken and challenge should not be both provided',
+      }
+    );
+}
+
 function assertValid<T>(z: z.ZodType<T>, value: unknown) {
   const result = z.safeParse(value);
 
@@ -45,8 +67,10 @@ export function assertValidPassword(password: string) {
 export function assertValidCredential(credential: {
   email: string;
   password: string;
+  challenge?: string;
+  verifyToken?: string;
 }) {
-  assertValid(getAuthCredentialValidator(), credential);
+  assertValid(getAuthCredentialWithCaptchaValidator(), credential);
 }
 
 export const validators = {
