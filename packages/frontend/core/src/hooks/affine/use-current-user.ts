@@ -38,15 +38,25 @@ export async function getSession(
     }
 
     logger.error('Failed to fetch session', res.statusText);
-    return { user: null };
+    throw new Error('Failed to fetch session');
   } catch (e) {
     logger.error('Failed to fetch session', e);
-    return { user: null };
+    throw new Error('Failed to fetch session');
   }
 }
 
 export function useSession(): Session {
-  const { data, mutate, isLoading } = useSWR('session', () => getSession());
+  const {
+    data,
+    mutate,
+    isLoading,
+    error: _error, // use error here to avoid uncaught error in the console
+  } = useSWR('session', () => getSession(), {
+    errorRetryCount: 3,
+    errorRetryInterval: 500,
+    shouldRetryOnError: true,
+    suspense: false,
+  });
 
   return {
     user: data?.user,
