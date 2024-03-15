@@ -54,7 +54,7 @@ export class UserService {
 
     return this.createUser({
       email,
-      name: email.split('@')[0],
+      name: 'Unnamed',
       ...data,
     });
   }

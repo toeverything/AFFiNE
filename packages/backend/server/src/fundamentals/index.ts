@@ -14,23 +14,14 @@ export {
 } from './config';
 export * from './error';
 export { EventEmitter, type EventPayload, OnEvent } from './event';
-export type { GraphqlContext } from './graphql';
 export { CryptoHelper, URLHelper } from './helpers';
 export { MailService } from './mailer';
 export { CallCounter, CallTimer, metrics } from './metrics';
-export {
-  BucketService,
-  LockGuard,
-  MUTEX_RETRY,
-  MUTEX_WAIT,
-  MutexService,
-} from './mutex';
 export {
   getOptionalModuleMetadata,
   GlobalExceptionFilter,
   OptionalModule,
 } from './nestjs';
-export type { PrismaTransaction } from './prisma';
 export * from './storage';
 export { type StorageProvider, StorageProviderFactory } from './storage';
 export { AuthThrottlerGuard, CloudThrottlerGuard, Throttle } from './throttler';

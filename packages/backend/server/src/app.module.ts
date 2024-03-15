@@ -28,7 +28,6 @@ import { GqlModule } from './fundamentals/graphql';
 import { HelpersModule } from './fundamentals/helpers';
 import { MailModule } from './fundamentals/mailer';
 import { MetricsModule } from './fundamentals/metrics';
-import { MutexModule } from './fundamentals/mutex';
 import { PrismaModule } from './fundamentals/prisma';
 import { StorageProviderModule } from './fundamentals/storage';
 import { RateLimiterModule } from './fundamentals/throttler';
@@ -40,7 +39,6 @@ export const FunctionalityModules = [
   ScheduleModule.forRoot(),
   EventModule,
   CacheModule,
-  MutexModule,
   PrismaModule,
   MetricsModule,
   RateLimiterModule,

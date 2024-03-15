@@ -1,4 +1,5 @@
-import { PrismaTransaction } from '../../fundamentals';
+import { PrismaClient } from '@prisma/client';
+
 import { Feature, FeatureSchema, FeatureType } from './types';
 
 class FeatureConfig {
@@ -66,7 +67,7 @@ export type FeatureConfigType<F extends FeatureType> = InstanceType<
 
 const FeatureCache = new Map<number, FeatureConfigType<FeatureType>>();
 
-export async function getFeature(prisma: PrismaTransaction, featureId: number) {
+export async function getFeature(prisma: PrismaClient, featureId: number) {
   const cachedQuota = FeatureCache.get(featureId);
 
   if (cachedQuota) {

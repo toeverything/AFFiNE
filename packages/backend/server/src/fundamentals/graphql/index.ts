@@ -11,12 +11,6 @@ import { GraphQLError } from 'graphql';
 import { Config } from '../config';
 import { GQLLoggerPlugin } from './logger-plugin';
 
-export type GraphqlContext = {
-  req: Request;
-  res: Response;
-  isAdminQuery: boolean;
-};
-
 @Global()
 @Module({
   imports: [
@@ -36,13 +30,7 @@ export type GraphqlContext = {
               : '../../../schema.gql'
           ),
           sortSchema: true,
-          context: ({
-            req,
-            res,
-          }: {
-            req: Request;
-            res: Response;
-          }): GraphqlContext => ({
+          context: ({ req, res }: { req: Request; res: Response }) => ({
             req,
             res,
             isAdminQuery: false,
