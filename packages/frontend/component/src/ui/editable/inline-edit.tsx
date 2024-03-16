@@ -1,10 +1,12 @@
 import clsx from 'clsx';
+import type {
+  CSSProperties,
+  ForwardedRef,
+  HTMLAttributes,
+  KeyboardEvent,
+  PropsWithChildren,
+} from 'react';
 import {
-  type CSSProperties,
-  type ForwardedRef,
-  type HTMLAttributes,
-  type KeyboardEvent,
-  type PropsWithChildren,
   useCallback,
   useEffect,
   useImperativeHandle,
@@ -133,11 +135,15 @@ export const InlineEdit = ({
     inputRef.current?.scrollTo(0, 0);
   }, [submit]);
 
-  const onKeyDown = useCallback((e: KeyboardEvent<HTMLInputElement>) => {
-    if (!exitible) return;
-    if (e.key !== 'Escape') return;
-    inputRef.current?.blur();
-  }, []);
+  const onKeyDown = useCallback(
+    (e: KeyboardEvent<HTMLInputElement>) => {
+      e.stopPropagation();
+      if (!exitible) return;
+      if (e.key !== 'Escape') return;
+      inputRef.current?.blur();
+    },
+    [exitible]
+  );
 
   const inputHandler = useCallback(
     (v: string) => {
