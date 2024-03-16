@@ -1,9 +1,12 @@
 import clsx from 'clsx';
+import type {
+  CSSProperties,
+  ForwardedRef,
+  HTMLAttributes,
+  KeyboardEvent,
+  PropsWithChildren,
+} from 'react';
 import {
-  type CSSProperties,
-  type ForwardedRef,
-  type HTMLAttributes,
-  type PropsWithChildren,
   useCallback,
   useEffect,
   useImperativeHandle,
@@ -29,6 +32,10 @@ export interface InlineEditProps
    * Whether the content is editable
    */
   editable?: boolean;
+  /**
+   * Whether to exit when pressing `Escape`
+   */
+  exitible?: boolean;
 
   onInput?: (v: string) => void;
   onChange?: (v: string) => void;
@@ -68,6 +75,7 @@ export interface InlineEditProps
 export const InlineEdit = ({
   value,
   editable,
+  exitible,
   className,
   style,
   trigger = 'doubleClick',
@@ -126,6 +134,16 @@ export const InlineEdit = ({
     // to reset input's scroll position to match actual display
     inputRef.current?.scrollTo(0, 0);
   }, [submit]);
+
+  const onKeyDown = useCallback(
+    (e: KeyboardEvent<HTMLInputElement>) => {
+      e.stopPropagation();
+      if (!exitible) return;
+      if (e.key !== 'Escape') return;
+      inputRef.current?.blur();
+    },
+    [exitible]
+  );
 
   const inputHandler = useCallback(
     (v: string) => {
@@ -198,6 +216,7 @@ export const InlineEdit = ({
           placeholder={placeholder}
           onBlur={onBlur}
           onEnter={onEnter}
+          onKeyDown={onKeyDown}
           onChange={inputHandler}
           style={inputWrapperInheritsStyles}
           inputStyle={inputInheritsStyles}

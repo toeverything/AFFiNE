@@ -43,6 +43,7 @@ export const BlocksuiteHeaderTitle = (props: BlockSuiteHeaderTitleProps) => {
       value={title}
       onChange={onChange}
       editable={!isPublic}
+      exitible={true}
       placeholder="Untitled"
       data-testid="title-edit-button"
       handleRef={inputHandleRef}
