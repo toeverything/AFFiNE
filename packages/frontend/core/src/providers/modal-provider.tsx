@@ -1,5 +1,5 @@
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import { WorkspaceManager } from '@toeverything/infra';
+import { Workspace, WorkspaceManager } from '@toeverything/infra';
 import { useService } from '@toeverything/infra/di';
 import { useLiveData } from '@toeverything/infra/livedata';
 import { useAtom } from 'jotai';
@@ -172,9 +172,7 @@ export const AuthModal = (): ReactElement => {
 };
 
 export function CurrentWorkspaceModals() {
-  const currentWorkspace = useLiveData(
-    useService(CurrentWorkspaceService).currentWorkspace
-  );
+  const currentWorkspace = useService(Workspace);
   const [openDisableCloudAlertModal, setOpenDisableCloudAlertModal] = useAtom(
     openDisableCloudAlertModalAtom
   );
