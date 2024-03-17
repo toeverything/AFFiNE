@@ -118,7 +118,7 @@ export const OperationItems = ({
         : []),
 
       {
-        element: <MenuSeparator />,
+        element: <MenuSeparator key="menu-separator" />,
       },
       {
         icon: (
