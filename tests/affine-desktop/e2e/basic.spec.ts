@@ -2,7 +2,9 @@ import { test } from '@affine-test/kit/electron';
 import { withCtrlOrMeta } from '@affine-test/kit/utils/keyboard';
 import {
   clickNewPageButton,
+  createLinkedPage,
   getBlockSuiteEditorTitle,
+  waitForEmptyEditor,
 } from '@affine-test/kit/utils/page-logic';
 import {
   clickSideBarCurrentWorkspaceBanner,
@@ -25,8 +27,6 @@ test('new page', async ({ page, workspace }) => {
   expect(flavour).toBe('local');
 });
 
-// macOS only
-// if (platform() === 'darwin') {
 test('app sidebar router forward/back', async ({ page }) => {
   {
     // create pages
@@ -83,7 +83,6 @@ test('app sidebar router forward/back', async ({ page }) => {
     await expect(getBlockSuiteEditorTitle(page)).toHaveText('test3');
   }
 });
-// }
 
 test('clientBorder value should disable by default on window', async ({
   page,
@@ -165,4 +164,46 @@ test('delete workspace', async ({ page }) => {
   expect(await page.getByTestId('workspace-name').textContent()).toBe(
     'Demo Workspace'
   );
+});
+
+// temporary way to enable split view
+async function enableSplitView(page: Page) {
+  await page.evaluate(() => {
+    const settingKey = 'affine-settings';
+    window.localStorage.setItem(
+      settingKey,
+      JSON.stringify({
+        clientBorder: false,
+        fullWidthLayout: false,
+        windowFrameStyle: 'frameless',
+        fontStyle: 'Serif',
+        dateFormat: 'MM/dd/YYYY',
+        startWeekOnMonday: false,
+        enableBlurBackground: true,
+        enableNoisyBackground: true,
+        autoCheckUpdate: true,
+        autoDownloadUpdate: true,
+        enableMultiView: true,
+        editorFlags: {},
+      })
+    );
+  });
+  await page.reload();
+}
+
+test('open split view', async ({ page }) => {
+  await enableSplitView(page);
+  await page.getByTestId('sidebar-new-page-button').click({
+    delay: 100,
+  });
+  await waitForEmptyEditor(page);
+  await page.waitForTimeout(500);
+  await page.keyboard.press('Enter');
+  await createLinkedPage(page, 'hi from another page');
+  await page
+    .locator('.affine-reference-title:has-text("hi from another page")')
+    .click({
+      modifiers: [process.platform === 'darwin' ? 'Meta' : 'Control'],
+    });
+  await expect(page.locator('.doc-title-container')).toHaveCount(2);
 });

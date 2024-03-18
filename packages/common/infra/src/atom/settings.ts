@@ -80,7 +80,7 @@ export function setupEditorFlags(docCollection: DocCollection) {
   const syncEditorFlags = () => {
     try {
       const editorFlags = getCurrentStore().get(appSettingBaseAtom).editorFlags;
-      Object.entries(editorFlags).forEach(([key, value]) => {
+      Object.entries(editorFlags ?? {}).forEach(([key, value]) => {
         docCollection.awarenessStore.setFlag(
           key as keyof BlockSuiteFlags,
           value

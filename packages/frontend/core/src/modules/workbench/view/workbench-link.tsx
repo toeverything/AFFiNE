@@ -18,6 +18,7 @@ export const WorkbenchLink = ({
   const handleClick = useCallback(
     (event: React.MouseEvent<HTMLAnchorElement>) => {
       event.preventDefault();
+      event.stopPropagation();
       // TODO: open this when multi view control is implemented
       if (
         appSettings.enableMultiView &&

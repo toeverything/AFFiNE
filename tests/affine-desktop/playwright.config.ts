@@ -1,3 +1,5 @@
+import assert from 'node:assert';
+
 import { testResultDir } from '@affine-test/kit/playwright';
 import type { PlaywrightTestConfig } from '@playwright/test';
 // import { devices } from '@playwright/test';
@@ -24,6 +26,25 @@ const config: PlaywrightTestConfig = {
 if (process.env.CI) {
   config.retries = 3;
   config.workers = '50%';
+}
+
+if (process.env.DEV_SERVER_URL) {
+  const devServerUrl = new URL(process.env.DEV_SERVER_URL);
+  assert(
+    devServerUrl.origin === 'http://localhost:8080',
+    'DEV_SERVER_URL must be http://localhost:8080'
+  );
+  config.webServer = [
+    {
+      command: 'yarn run start:web-static',
+      port: 8080,
+      timeout: 120 * 1000,
+      reuseExistingServer: !process.env.CI,
+      env: {
+        COVERAGE: process.env.COVERAGE || 'false',
+      },
+    },
+  ];
 }
 
 export default config;
