@@ -54,7 +54,7 @@ async function createWindow(additionalArguments: string[]) {
     minHeight: 480,
     visualEffectState: 'active',
     vibrancy: 'under-window',
-    backgroundMaterial: 'mica',
+    // backgroundMaterial: 'mica',
     height: mainWindowState.height,
     show: false, // Use 'ready-to-show' event to show window
     webPreferences: {
@@ -117,15 +117,18 @@ async function createWindow(additionalArguments: string[]) {
 
   browserWindow.on('maximize', () => {
     uiSubjects.onMaximized.next(true);
+    browserWindow.setBackgroundMaterial('none');
   });
 
   // full-screen == maximized in UI on windows
   browserWindow.on('enter-full-screen', () => {
     uiSubjects.onMaximized.next(true);
+    browserWindow.setBackgroundMaterial('none');
   });
 
   browserWindow.on('unmaximize', () => {
     uiSubjects.onMaximized.next(false);
+    browserWindow.setBackgroundMaterial('none');
   });
 
   /**

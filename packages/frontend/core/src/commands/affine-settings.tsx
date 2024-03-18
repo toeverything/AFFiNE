@@ -252,7 +252,7 @@ export function registerAffineSettingsCommands({
         ]()}`,
       category: 'affine:settings',
       icon: <SettingsIcon />,
-      preconditionStrategy: () => environment.isDesktop,
+      preconditionStrategy: () => environment.isDesktop && environment.isMacOs,
       run() {
         store.set(appSettingAtom, prev => ({
           ...prev,
