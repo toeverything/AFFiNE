@@ -1,3 +1,4 @@
+import { apis } from '@affine/electron-api';
 import {
   generateRandUTF16Chars,
   getBaseUrl,
@@ -62,13 +63,12 @@ export const signInCloud = async (
       .catch(err => onRejectHandleTrace(err, traceParams));
   } else if (OAuthProviderType[provider]) {
     if (environment.isDesktop) {
-      open(
+      await apis?.ui.openExternal(
         `${
           runtimeConfig.serverUrlPrefix
         }/desktop-signin?provider=${provider}&redirect_uri=${buildRedirectUri(
           '/open-app/signin-redirect'
-        )}`,
-        '_target'
+        )}`
       );
     } else {
       location.href = `${

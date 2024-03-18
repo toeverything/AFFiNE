@@ -1,4 +1,4 @@
-import { app, nativeTheme } from 'electron';
+import { app, nativeTheme, shell } from 'electron';
 import { getLinkPreview } from 'link-preview-js';
 
 import { isMacOS } from '../../shared/utils';
@@ -121,5 +121,8 @@ export const uiHandlers = {
         image: previewData.images[0],
       };
     }
+  },
+  openExternal(_, url: string) {
+    return shell.openExternal(url);
   },
 } satisfies NamespaceHandlers;
