@@ -684,7 +684,7 @@ __metadata:
     dotenv-cli: "npm:^7.3.0"
     express: "npm:^4.18.2"
     file-type: "npm:^19.0.0"
-    get-stream: "npm:^8.0.1"
+    get-stream: "npm:^9.0.0"
     graphql: "npm:^16.8.1"
     graphql-scalars: "npm:^1.22.4"
     graphql-type-json: "npm:^0.3.2"
@@ -11094,6 +11094,13 @@ __metadata:
     colors: "npm:~1.2.1"
     string-argv: "npm:~0.3.1"
   checksum: 10/75407f6a42fda364ec9f945ebd346c632a23dd97d7ed5ad108c264d72ee0370d3d912cc6c16af6973bbc3f5f92b845b63fb13da75a077d61f7e34e69f00b8823
+  languageName: node
+  linkType: hard
+
+"@sec-ant/readable-stream@npm:^0.3.2":
+  version: 0.3.2
+  resolution: "@sec-ant/readable-stream@npm:0.3.2"
+  checksum: 10/e7f1347704562824bbfef9a9a68cb4dcf75ff2cd8f4df81840de315a84c628a82e7731a8810abe98ba4b970ff8afb7a2debef2e003c530514d60bcb8317b94c9
   languageName: node
   linkType: hard
 
@@ -22028,6 +22035,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"get-stream@npm:^9.0.0":
+  version: 9.0.0
+  resolution: "get-stream@npm:9.0.0"
+  dependencies:
+    "@sec-ant/readable-stream": "npm:^0.3.2"
+    is-stream: "npm:^4.0.1"
+  checksum: 10/557175d0f58169cb92b0835d0db418605d02dc4bb124081bb86063d5b11667155e877411d6b7e5dfd752da216e98d250d7fb08825e357558198130d7df2ee6e7
+  languageName: node
+  linkType: hard
+
 "get-tsconfig@npm:^4.7.2":
   version: 4.7.2
   resolution: "get-tsconfig@npm:4.7.2"
@@ -23888,6 +23905,13 @@ __metadata:
   version: 3.0.0
   resolution: "is-stream@npm:3.0.0"
   checksum: 10/172093fe99119ffd07611ab6d1bcccfe8bc4aa80d864b15f43e63e54b7abc71e779acd69afdb854c4e2a67fdc16ae710e370eda40088d1cfc956a50ed82d8f16
+  languageName: node
+  linkType: hard
+
+"is-stream@npm:^4.0.1":
+  version: 4.0.1
+  resolution: "is-stream@npm:4.0.1"
+  checksum: 10/cbea3f1fc271b21ceb228819d0c12a0965a02b57f39423925f99530b4eb86935235f258f06310b67cd02b2d10b49e9a0998f5ececf110ab7d3760bae4055ad23
   languageName: node
   linkType: hard
 
