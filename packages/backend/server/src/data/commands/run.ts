@@ -23,6 +23,8 @@ export async function collectMigrations(): Promise<Migration[]> {
     )
     .map(desc => join(folder, desc));
 
+  migrationFiles.sort((a, b) => a.localeCompare(b));
+
   const migrations: Migration[] = await Promise.all(
     migrationFiles.map(async file => {
       return import(pathToFileURL(file).href).then(mod => {

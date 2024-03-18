@@ -4,7 +4,7 @@ import { PrismaClient } from '@prisma/client';
 import { UserService } from '../../core/user';
 import { Config, CryptoHelper } from '../../fundamentals';
 
-export class SelfHostAdmin1605053000403 {
+export class SelfHostAdmin99999999 {
   // do the migration
   static async up(_db: PrismaClient, ref: ModuleRef) {
     const config = ref.get(Config, { strict: false });
