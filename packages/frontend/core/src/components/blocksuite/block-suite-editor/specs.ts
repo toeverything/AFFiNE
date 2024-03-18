@@ -1,3 +1,4 @@
+import type { ElementOrFactory } from '@affine/component';
 import type { BlockSpec } from '@blocksuite/block-std';
 import type { ParagraphService, RootService } from '@blocksuite/blocks';
 import {
@@ -9,8 +10,7 @@ import {
   PageRootService,
 } from '@blocksuite/blocks';
 import bytes from 'bytes';
-import { html, unsafeStatic } from 'lit/static-html.js';
-import ReactDOMServer from 'react-dom/server';
+import type { TemplateResult } from 'lit';
 
 class CustomAttachmentService extends AttachmentService {
   override mounted(): void {
@@ -53,12 +53,12 @@ export interface InlineRenderers {
 
 function patchSpecsWithReferenceRenderer(
   specs: BlockSpec<string>[],
-  pageReferenceRenderer: PageReferenceRenderer
+  pageReferenceRenderer: PageReferenceRenderer,
+  toLitTemplate: (element: ElementOrFactory) => TemplateResult
 ) {
   const renderer = (reference: AffineReference) => {
     const node = pageReferenceRenderer(reference);
-    const inner = ReactDOMServer.renderToString(node);
-    return html`${unsafeStatic(inner)}`;
+    return toLitTemplate(node);
   };
   return specs.map(spec => {
     if (
@@ -84,13 +84,15 @@ function patchSpecsWithReferenceRenderer(
  */
 export function patchSpecs(
   specs: BlockSpec<string>[],
+  toLitTemplate: (element: ElementOrFactory) => TemplateResult,
   inlineRenderers?: InlineRenderers
 ) {
   let newSpecs = specs;
   if (inlineRenderers?.pageReference) {
     newSpecs = patchSpecsWithReferenceRenderer(
       newSpecs,
-      inlineRenderers.pageReference
+      inlineRenderers.pageReference,
+      toLitTemplate
     );
   }
   return newSpecs;

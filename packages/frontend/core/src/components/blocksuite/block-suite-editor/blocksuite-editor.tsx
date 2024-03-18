@@ -18,7 +18,7 @@ import {
 } from 'react';
 
 import {
-  pageReferenceRenderer,
+  AffinePageReference,
   type PageReferenceRendererOptions,
 } from '../../affine/reference-link';
 import { BlocksuiteEditorContainer } from './blocksuite-editor-container';
@@ -61,7 +61,6 @@ function usePageRoot(page: Doc) {
   return page.root;
 }
 
-// we cannot pass components to lit renderers, but give them the rendered elements
 const customRenderersFactory: (
   opts: Omit<PageReferenceRendererOptions, 'pageId'>
 ) => InlineRenderers = opts => ({
@@ -70,10 +69,9 @@ const customRenderersFactory: (
     if (!pageId) {
       return <span />;
     }
-    return pageReferenceRenderer({
-      ...opts,
-      pageId,
-    });
+    return (
+      <AffinePageReference docCollection={opts.docCollection} pageId={pageId} />
+    );
   },
 });
 
@@ -119,8 +117,9 @@ const BlockSuiteEditorImpl = forwardRef<AffineEditorContainer, EditorProps>(
         pageMetaHelper,
         journalHelper,
         t,
+        docCollection: page.collection,
       });
-    }, [journalHelper, pageMetaHelper, t]);
+    }, [journalHelper, page.collection, pageMetaHelper, t]);
 
     return (
       <BlocksuiteEditorContainer

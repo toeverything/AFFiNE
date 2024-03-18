@@ -4,12 +4,13 @@ import { WorkbenchLink } from '@affine/core/modules/workbench';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { LinkedPageIcon, TodayIcon } from '@blocksuite/icons';
 import type { DocCollection } from '@blocksuite/store';
-import type { PropsWithChildren } from 'react';
+import { type PropsWithChildren } from 'react';
 
 import * as styles from './styles.css';
 
 export interface PageReferenceRendererOptions {
   pageId: string;
+  docCollection: DocCollection;
   pageMetaHelper: ReturnType<typeof useDocMetaHelper>;
   journalHelper: ReturnType<typeof useJournalHelper>;
   t: ReturnType<typeof useAFFiNEI18N>;
@@ -32,6 +33,7 @@ export function pageReferenceRenderer({
     title = localizedJournalDate;
     icon = <TodayIcon className={styles.pageReferenceIcon} />;
   }
+
   return (
     <>
       {icon}
@@ -58,6 +60,7 @@ export function AffinePageReference({
     pageId,
     pageMetaHelper,
     journalHelper,
+    docCollection,
     t,
   });
 

@@ -1,4 +1,7 @@
-import { createReactComponentFromLit } from '@affine/component';
+import {
+  createReactComponentFromLit,
+  useLitPortalFactory,
+} from '@affine/component';
 import { useJournalInfoHelper } from '@affine/core/hooks/use-journal';
 import {
   BiDirectionalLinkPanel,
@@ -10,6 +13,7 @@ import {
 import { type Doc } from '@blocksuite/store';
 import React, {
   forwardRef,
+  Fragment,
   useCallback,
   useEffect,
   useMemo,
@@ -80,9 +84,11 @@ export const BlocksuiteDocEditor = forwardRef<
     [ref]
   );
 
+  const [litToTemplate, portals] = useLitPortalFactory();
+
   const specs = useMemo(() => {
-    return patchSpecs(docModeSpecs, customRenderers);
-  }, [customRenderers]);
+    return patchSpecs(docModeSpecs, litToTemplate, customRenderers);
+  }, [customRenderers, litToTemplate]);
 
   useEffect(() => {
     // auto focus the title
@@ -128,6 +134,9 @@ export const BlocksuiteDocEditor = forwardRef<
           <adapted.BiDirectionalLinkPanel doc={page} pageRoot={docPage} />
         ) : null}
       </div>
+      {portals.map(p => (
+        <Fragment key={p.id}>{p.portal}</Fragment>
+      ))}
     </div>
   );
 });
@@ -136,8 +145,16 @@ export const BlocksuiteEdgelessEditor = forwardRef<
   EdgelessEditor,
   BlocksuiteDocEditorProps
 >(function BlocksuiteEdgelessEditor({ page, customRenderers }, ref) {
+  const [litToTemplate, portals] = useLitPortalFactory();
   const specs = useMemo(() => {
-    return patchSpecs(edgelessModeSpecs, customRenderers);
-  }, [customRenderers]);
-  return <adapted.EdgelessEditor ref={ref} doc={page} specs={specs} />;
+    return patchSpecs(edgelessModeSpecs, litToTemplate, customRenderers);
+  }, [customRenderers, litToTemplate]);
+  return (
+    <>
+      <adapted.EdgelessEditor ref={ref} doc={page} specs={specs} />
+      {portals.map(p => (
+        <Fragment key={p.id}>{p.portal}</Fragment>
+      ))}
+    </>
+  );
 });
