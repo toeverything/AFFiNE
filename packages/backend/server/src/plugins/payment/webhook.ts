@@ -12,6 +12,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import type { Request } from 'express';
 import Stripe from 'stripe';
 
+import { Public } from '../../core/auth';
 import { Config } from '../../fundamentals';
 
 @Controller('/api/stripe')
@@ -28,6 +29,7 @@ export class StripeWebhook {
     this.webhookKey = config.plugins.payment.stripe.keys.webhookKey;
   }
 
+  @Public()
   @Post('/webhook')
   async handleWebhook(@Req() req: RawBodyRequest<Request>) {
     // Check if webhook signing is configured.
