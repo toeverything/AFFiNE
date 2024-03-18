@@ -272,11 +272,15 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
     updates: Buffer[],
     retryTimes = 10
   ) {
-    const lastSeq = await this.getUpdateSeq(workspaceId, guid, updates.length);
-    const now = Date.now();
-    let timestamp = now;
-    await new Promise<void>((resolve, reject) => {
+    const timestamp = await new Promise<number>((resolve, reject) => {
       defer(async () => {
+        const lastSeq = await this.getUpdateSeq(
+          workspaceId,
+          guid,
+          updates.length
+        );
+        const now = Date.now();
+        let timestamp = now;
         let turn = 0;
         const batchCount = 10;
         for (const batch of chunk(updates, batchCount)) {
@@ -303,14 +307,16 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
           });
           turn++;
         }
+
+        return timestamp;
       })
         .pipe(retry(retryTimes)) // retry until seq num not conflict
         .subscribe({
-          next: () => {
+          next: timestamp => {
             this.logger.debug(
               `pushed ${updates.length} updates for ${guid} in workspace ${workspaceId}`
             );
-            resolve();
+            resolve(timestamp);
           },
           error: e => {
             this.logger.error('Failed to push updates', e);

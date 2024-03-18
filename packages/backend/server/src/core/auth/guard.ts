@@ -11,7 +11,7 @@ import {
 } from '@nestjs/common';
 import { ModuleRef, Reflector } from '@nestjs/core';
 
-import { Config, getRequestResponseFromContext } from '../../fundamentals';
+import { getRequestResponseFromContext } from '../../fundamentals';
 import { AuthService, parseAuthUserSeqNum } from './service';
 
 function extractTokenFromHeader(authorization: string) {
@@ -27,7 +27,6 @@ export class AuthGuard implements CanActivate, OnModuleInit {
   private auth!: AuthService;
 
   constructor(
-    private readonly config: Config,
     private readonly ref: ModuleRef,
     private readonly reflector: Reflector
   ) {}
@@ -42,17 +41,6 @@ export class AuthGuard implements CanActivate, OnModuleInit {
     // check cookie
     let sessionToken: string | undefined =
       req.cookies[AuthService.sessionCookieName];
-
-    // backward compatibility for client older then 0.12
-    // TODO: remove
-    if (!sessionToken) {
-      sessionToken =
-        req.cookies[
-          this.config.https
-            ? '__Secure-next-auth.session-token'
-            : 'next-auth.session-token'
-        ];
-    }
 
     if (!sessionToken && req.headers.authorization) {
       sessionToken = extractTokenFromHeader(req.headers.authorization);
