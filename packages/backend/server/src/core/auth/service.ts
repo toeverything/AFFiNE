@@ -226,6 +226,10 @@ export class AuthService implements OnApplicationBootstrap {
   }
 
   async getSession(token: string) {
+    if (!token) {
+      return null;
+    }
+
     return this.db.$transaction(async tx => {
       const session = await tx.session.findUnique({
         where: {
