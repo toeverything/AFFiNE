@@ -60,10 +60,10 @@ jobs:
           SKIP_PLUGIN_BUILD: 'true'
           SKIP_NX_CACHE: 'true'
 
-      - name: Upload core artifact
+      - name: Upload web artifact
         uses: actions/upload-artifact@v4
         with:
-          name: core
+          name: web
           path: packages/frontend/electron/resources/web-static
 
   make-distribution:
@@ -110,7 +110,7 @@ jobs:
           nx_token: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
       - uses: actions/download-artifact@v4
         with:
-          name: core
+          name: web
           path: packages/frontend/electron/resources/web-static
 
       - name: Build Desktop Layers
@@ -188,7 +188,7 @@ jobs:
           nx_token: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
       - uses: actions/download-artifact@v4
         with:
-          name: core
+          name: web
           path: packages/frontend/electron/resources/web-static
 
       - name: Build Desktop Layers
@@ -317,7 +317,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
-          name: core
+          name: web
           path: web-static
       - name: Zip web-static
         run: zip -r web-static.zip web-static

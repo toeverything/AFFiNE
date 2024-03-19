@@ -2,25 +2,45 @@
   "name": "@affine/cli",
   "type": "module",
   "private": true,
-  "bin": {
-    "build-core": "./src/bin/build-core.mjs",
-    "dev-core": "./src/bin/dev-core.mjs"
-  },
-  "exports": {
-    "./config": "./src/config/index.ts"
-  },
   "devDependencies": {
+    "@affine/env": "workspace:*",
+    "@affine/templates": "workspace:*",
+    "@aws-sdk/client-s3": "3.536.0",
+    "@blocksuite/presets": "0.13.0-canary-202403140735-2367cd5",
     "@clack/core": "^0.3.4",
     "@clack/prompts": "^0.7.0",
     "@magic-works/i18n-codegen": "^0.5.0",
-    "ts-node": "^10.9.2"
-  },
-  "dependencies": {
+    "@napi-rs/simple-git": "^0.1.16",
+    "@perfsee/webpack": "^1.12.2",
+    "@pmmmwh/react-refresh-webpack-plugin": "^0.5.11",
+    "@sentry/webpack-plugin": "^2.14.2",
+    "@types/webpack-env": "^1.18.4",
+    "@vanilla-extract/webpack-plugin": "^2.3.7",
+    "copy-webpack-plugin": "^12.0.2",
+    "css-loader": "^6.10.0",
+    "cssnano": "^6.1.0",
     "dotenv": "^16.4.5",
-    "vite": "^5.1.4"
+    "html-webpack-plugin": "^5.6.0",
+    "lodash-es": "^4.17.21",
+    "mime-types": "^2.1.35",
+    "mini-css-extract-plugin": "^2.8.1",
+    "postcss-loader": "^8.1.0",
+    "raw-loader": "^4.0.2",
+    "source-map-loader": "^5.0.0",
+    "style-loader": "^3.3.4",
+    "swc-loader": "^0.2.6",
+    "terser-webpack-plugin": "^5.3.10",
+    "thread-loader": "^4.0.2",
+    "ts-node": "^10.9.2",
+    "vite": "^5.1.4",
+    "webpack": "^5.90.3",
+    "webpack-cli": "^5.1.4",
+    "webpack-dev-server": "^5.0.2",
+    "webpack-merge": "^5.10.0"
   },
-  "peerDependencies": {
-    "ts-node": "*"
+  "scripts": {
+    "build": "node --loader ts-node/esm/transpile-only.mjs ./src/bin/build.ts",
+    "dev": "node --loader ts-node/esm/transpile-only.mjs ./src/bin/dev.ts"
   },
   "version": "0.14.0"
 }

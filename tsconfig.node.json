@@ -7,12 +7,7 @@
     "allowSyntheticDefaultImports": true,
     "outDir": "lib"
   },
-  "include": [
-    "vite.config.ts",
-    "vitest.config.ts",
-    "scripts",
-    "packages/frontend/core/.webpack/runtime-config.ts"
-  ],
+  "include": ["vite.config.ts", "vitest.config.ts", "scripts"],
   "references": [
     {
       "path": "./packages/common/env"

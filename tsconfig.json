@@ -48,6 +48,7 @@
     "skipLibCheck": true, // skip all type checks for .d.ts files
     "paths": {
       "@affine/core/*": ["./packages/frontend/core/src/*"],
+      "@affine/core": ["./packages/frontend/core/src/index.ts"],
       "@affine/cli/*": ["./tools/cli/src/*"],
       "@affine/server/*": ["./packages/backend/server/src/*"],
       "@affine/component": ["./packages/frontend/component/src/index"],
@@ -91,7 +92,13 @@
       "path": "./packages/frontend/core"
     },
     {
+      "path": "./packages/frontend/web"
+    },
+    {
       "path": "./packages/frontend/electron/tsconfig.test.json"
+    },
+    {
+      "path": "./packages/frontend/electron/renderer/tsconfig.json"
     },
     {
       "path": "./packages/frontend/graphql"

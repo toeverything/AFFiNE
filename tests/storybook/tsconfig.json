@@ -16,6 +16,9 @@
       "path": "../../packages/frontend/component"
     },
     {
+      "path": "../../tools/cli"
+    },
+    {
       "path": "../../packages/common/env"
     },
     {

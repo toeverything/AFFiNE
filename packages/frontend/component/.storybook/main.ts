@@ -1,8 +1,7 @@
 import { StorybookConfig } from '@storybook/react-vite';
 import { vanillaExtractPlugin } from '@vanilla-extract/vite-plugin';
-import { fileURLToPath } from 'url';
 import { mergeConfig } from 'vite';
-import { getRuntimeConfig } from '../../core/.webpack/runtime-config';
+import { getRuntimeConfig } from '@affine/cli/src/webpack/runtime-config';
 
 export default {
   stories: ['../src/ui/**/*.stories.@(js|jsx|ts|tsx|mdx)'],

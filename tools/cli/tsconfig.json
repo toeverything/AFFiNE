@@ -6,5 +6,6 @@
     "moduleResolution": "Node",
     "outDir": "lib"
   },
-  "include": ["src"]
+  "include": ["src", "package.json"],
+  "references": [{ "path": "../../packages/common/env" }]
 }

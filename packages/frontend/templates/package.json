@@ -9,7 +9,8 @@
   "type": "module",
   "exports": {
     ".": "./templates.gen.ts",
-    "./edgeless": "./edgeless-templates.gen.ts"
+    "./edgeless": "./edgeless-templates.gen.ts",
+    "./build-edgeless": "./build-edgeless.mjs"
   },
   "devDependencies": {
     "jszip": "^3.10.1"

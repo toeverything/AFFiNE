@@ -1,11 +1,13 @@
-import { spawn } from 'node:child_process';
 import path from 'node:path';
+
+import webpack from 'webpack';
 
 import type { BuildFlags } from '../config/index.js';
 import { projectRoot } from '../config/index.js';
 import { buildI18N } from '../util/i18n.js';
+import { createWebpackConfig } from '../webpack/webpack.config.js';
 
-const cwd = path.resolve(projectRoot, 'packages/frontend/core');
+let cwd: string;
 
 // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
 const buildType = process.env.BUILD_TYPE_OVERRIDE || process.env.BUILD_TYPE;
@@ -31,15 +33,20 @@ const getChannel = () => {
   }
 };
 
+let entry: string | undefined;
+
+const { DISTRIBUTION } = process.env;
+
 const getDistribution = () => {
-  switch (process.env.DISTRIBUTION) {
+  switch (DISTRIBUTION) {
     case 'browser':
-    case 'desktop':
-      return process.env.DISTRIBUTION;
-    case undefined: {
-      console.log('DISTRIBUTION is not set, defaulting to browser');
+    case undefined:
+      cwd = path.join(projectRoot, 'packages/frontend/web');
       return 'browser';
-    }
+    case 'desktop':
+      cwd = path.join(projectRoot, 'packages/frontend/electron');
+      entry = path.join(cwd, 'renderer', 'index.tsx');
+      return DISTRIBUTION;
     default: {
       throw new Error('DISTRIBUTION must be one of browser, desktop');
     }
@@ -51,24 +58,19 @@ const flags = {
   mode: 'production',
   channel: getChannel(),
   coverage: process.env.COVERAGE === 'true',
+  entry,
 } satisfies BuildFlags;
 
 buildI18N();
-spawn(
-  'node',
-  [
-    '--loader',
-    'ts-node/esm/transpile-only',
-    '../../../node_modules/webpack/bin/webpack.js',
-    '--mode',
-    'production',
-    '--env',
-    'flags=' + Buffer.from(JSON.stringify(flags), 'utf-8').toString('hex'),
-  ].filter((v): v is string => !!v),
-  {
-    cwd,
-    stdio: 'inherit',
-    shell: true,
-    env: process.env,
+
+// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+webpack(createWebpackConfig(cwd!, flags), (err, stats) => {
+  if (err) {
+    console.error(err);
+    process.exit(1);
   }
-);
+  if (stats?.hasErrors()) {
+    console.error(stats.toString('errors-only'));
+    process.exit(1);
+  }
+});

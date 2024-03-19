@@ -3,7 +3,7 @@ import type { StorybookConfig } from '@storybook/react-vite';
 import { fileURLToPath } from 'node:url';
 import { mergeConfig } from 'vite';
 import { vanillaExtractPlugin } from '@vanilla-extract/vite-plugin';
-import { getRuntimeConfig } from '../../../packages/frontend/core/.webpack/runtime-config';
+import { getRuntimeConfig } from '@affine/cli/src/webpack/runtime-config';
 
 runCli(
   {

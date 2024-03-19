@@ -1,6 +1,8 @@
 import { configureWorkspaceImplServices } from '@affine/workspace-impl';
-import type { ServiceCollection } from '@toeverything/infra';
-import { configureInfraServices } from '@toeverything/infra';
+import {
+  configureInfraServices,
+  type ServiceCollection,
+} from '@toeverything/infra';
 
 import {
   configureBusinessServices,

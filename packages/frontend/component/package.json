@@ -20,6 +20,7 @@
     "@blocksuite/store": "*"
   },
   "dependencies": {
+    "@affine/cli": "workspace:*",
     "@affine/debug": "workspace:*",
     "@affine/electron-api": "workspace:*",
     "@affine/graphql": "workspace:*",

@@ -6,6 +6,7 @@ export type BuildFlags = {
   channel: 'stable' | 'beta' | 'canary' | 'internal';
   coverage?: boolean;
   localBlockSuite?: string;
+  entry?: string;
 };
 
 export const projectRoot = fileURLToPath(

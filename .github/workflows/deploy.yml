@@ -38,8 +38,8 @@ jobs:
           name: server-dist
           path: ./packages/backend/server/dist
           if-no-files-found: error
-  build-core:
-    name: Build @affine/core
+  build-web:
+    name: Build @affine/web
     runs-on: ubuntu-latest
     environment: ${{ github.event.inputs.flavor }}
     steps:
@@ -50,7 +50,7 @@ jobs:
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
       - name: Build Core
-        run: yarn nx build @affine/core --skip-nx-cache
+        run: yarn nx build @affine/web --skip-nx-cache
         env:
           R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
@@ -64,15 +64,15 @@ jobs:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
           PERFSEE_TOKEN: ${{ secrets.PERFSEE_TOKEN }}
-      - name: Upload core artifact
+      - name: Upload web artifact
         uses: actions/upload-artifact@v4
         with:
-          name: core
-          path: ./packages/frontend/core/dist
+          name: web
+          path: ./packages/frontend/web/dist
           if-no-files-found: error
 
-  build-core-selfhost:
-    name: Build @affine/core selfhost
+  build-web-selfhost:
+    name: Build @affine/web selfhost
     runs-on: ubuntu-latest
     environment: ${{ github.event.inputs.flavor }}
     steps:
@@ -83,7 +83,7 @@ jobs:
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
       - name: Build Core
-        run: yarn nx build @affine/core --skip-nx-cache
+        run: yarn nx build @affine/web --skip-nx-cache
         env:
           BUILD_TYPE: ${{ github.event.inputs.flavor }}
           SHOULD_REPORT_TRACE: false
@@ -91,11 +91,11 @@ jobs:
           SELF_HOSTED: true
       - name: Download selfhost fonts
         run: node ./scripts/download-blocksuite-fonts.mjs
-      - name: Upload core artifact
+      - name: Upload web artifact
         uses: actions/upload-artifact@v4
         with:
-          name: selfhost-core
-          path: ./packages/frontend/core/dist
+          name: selfhost-web
+          path: ./packages/frontend/web/dist
           if-no-files-found: error
 
   build-storage:
@@ -143,16 +143,16 @@ jobs:
       packages: 'write'
     needs:
       - build-server
-      - build-core
-      - build-core-selfhost
+      - build-web
+      - build-web-selfhost
       - build-storage
     steps:
       - uses: actions/checkout@v4
       - name: Download core artifact
         uses: actions/download-artifact@v4
         with:
-          name: core
-          path: ./packages/frontend/core/dist
+          name: web
+          path: ./packages/frontend/web/dist
       - name: Download server dist
         uses: actions/download-artifact@v4
         with:
@@ -218,14 +218,14 @@ jobs:
           registry-url: https://npm.pkg.github.com
           scope: '@toeverything'
 
-      - name: Remove core dist
-        run: rm -rf ./packages/frontend/core/dist
+      - name: Remove web dist
+        run: rm -rf ./packages/frontend/web/dist
 
-      - name: Download selfhost core artifact
+      - name: Download selfhost web artifact
         uses: actions/download-artifact@v4
         with:
-          name: selfhost-core
-          path: ./packages/frontend/core/dist
+          name: selfhost-web
+          path: ./packages/frontend/web/dist
 
       - name: Install Node.js dependencies
         run: |

@@ -1,6 +1,6 @@
 FROM openresty/openresty:1.25.3.1-0-buster
 WORKDIR /app
-COPY ./packages/frontend/core/dist ./dist
+COPY ./packages/frontend/web/dist ./dist
 COPY ./.github/deployment/front/nginx.conf /usr/local/openresty/nginx/conf/nginx.conf
 COPY ./.github/deployment/front/affine.nginx.conf /etc/nginx/conf.d/affine.nginx.conf
 

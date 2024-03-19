@@ -306,9 +306,5 @@ export const builtInTemplates = {
   });
 };
 
-async function main() {
-  const templatesInGroup = await parseSnapshot();
-  await buildScript(templatesInGroup);
-}
-
-main();
+const templatesInGroup = await parseSnapshot();
+await buildScript(templatesInGroup);

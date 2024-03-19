@@ -11,7 +11,7 @@ runs:
     - name: Download tar.gz
       uses: actions/download-artifact@v4
       with:
-        name: core
+        name: web
         path: .
 
     - name: Extract core artifacts

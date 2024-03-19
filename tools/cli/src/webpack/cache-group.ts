@@ -69,7 +69,7 @@ export const productionCacheGroups = {
     test: (module: any) =>
       module.nameForCondition &&
       /\.css$/.test(module.nameForCondition()) &&
-      !/^javascript/.test(module.type),
+      !module.type.startsWith('javascript'),
     chunks: 'all' as const,
     minSize: 1,
     minChunks: 1,

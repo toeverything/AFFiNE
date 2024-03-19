@@ -1,9 +1,7 @@
 import type { RuntimeConfig } from '@affine/env/global';
-import type { BuildFlags } from '@affine/cli/config';
-import { createRequire } from 'node:module';
 
-const require = createRequire(import.meta.url);
-const packageJson = require('../package.json');
+import packageJson from '../../package.json' assert { type: 'json' };
+import type { BuildFlags } from '../config';
 
 export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
   const buildPreset: Record<BuildFlags['channel'], RuntimeConfig> = {
@@ -21,7 +19,6 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       enableNewSettingUnstableApi: false,
       enableSQLiteProvider: true,
       enableMoveDatabase: false,
-      enableNotificationCenter: true,
       enableCloud: true,
       enableCaptcha: true,
       enableEnhanceShareMode: false,
@@ -30,7 +27,7 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       allowLocalWorkspace: false,
       serverUrlPrefix: 'https://app.affine.pro',
       appVersion: packageJson.version,
-      editorVersion: packageJson.dependencies['@blocksuite/presets'],
+      editorVersion: packageJson.devDependencies['@blocksuite/presets'],
       appBuildType: 'stable',
     },
     get beta() {
@@ -63,7 +60,6 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       enableNewSettingUnstableApi: false,
       enableSQLiteProvider: true,
       enableMoveDatabase: false,
-      enableNotificationCenter: true,
       enableCloud: true,
       enableCaptcha: true,
       enableEnhanceShareMode: false,
@@ -72,7 +68,7 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       allowLocalWorkspace: false,
       serverUrlPrefix: 'https://affine.fail',
       appVersion: packageJson.version,
-      editorVersion: packageJson.dependencies['@blocksuite/presets'],
+      editorVersion: packageJson.devDependencies['@blocksuite/presets'],
       appBuildType: 'canary',
     },
   };
@@ -105,9 +101,6 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
     enableNewSettingUnstableApi: process.env.ENABLE_NEW_SETTING_UNSTABLE_API
       ? process.env.ENABLE_NEW_SETTING_UNSTABLE_API === 'true'
       : currentBuildPreset.enableNewSettingUnstableApi,
-    enableNotificationCenter: process.env.ENABLE_NOTIFICATION_CENTER
-      ? process.env.ENABLE_NOTIFICATION_CENTER === 'true'
-      : currentBuildPreset.enableNotificationCenter,
     enableCloud: process.env.ENABLE_CLOUD
       ? process.env.ENABLE_CLOUD === 'true'
       : currentBuildPreset.enableCloud,

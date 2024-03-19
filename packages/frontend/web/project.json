@@ -1,5 +1,5 @@
 {
-  "name": "@affine/core",
+  "name": "@affine/web",
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
   "targets": {
     "build": {
@@ -13,9 +13,9 @@
         "^build"
       ],
       "inputs": [
-        "{projectRoot}/.webpack/**/*",
         "{projectRoot}/**/*",
-        "{projectRoot}/public/**/*",
+        "{workspaceRoot}/tools/**/*",
+        "{workspaceRoot}/packages/frontend/core/**/*",
         "{workspaceRoot}/packages/**/*",
         {
           "env": "BUILD_TYPE"

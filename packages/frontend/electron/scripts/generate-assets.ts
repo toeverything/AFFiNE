@@ -12,8 +12,8 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const repoRootDir = path.join(__dirname, '..', '..', '..', '..');
 const electronRootDir = path.join(__dirname, '..');
 const publicDistDir = path.join(electronRootDir, 'resources');
-const affineCoreDir = path.join(repoRootDir, 'packages', 'frontend', 'core');
-const affineCoreOutDir = path.join(affineCoreDir, 'dist');
+const webDir = path.join(repoRootDir, 'packages', 'frontend', 'electron');
+const affineWebOutDir = path.join(webDir, 'dist');
 const publicAffineOutDir = path.join(publicDistDir, `web-static`);
 const releaseVersionEnv = process.env.RELEASE_VERSION || '';
 
@@ -21,8 +21,8 @@ console.log('build with following variables', {
   repoRootDir,
   electronRootDir,
   publicDistDir,
-  affineSrcDir: affineCoreDir,
-  affineSrcOutDir: affineCoreOutDir,
+  affineSrcDir: webDir,
+  affineSrcOutDir: affineWebOutDir,
   publicAffineOutDir,
   releaseVersionEnv,
 });
@@ -45,7 +45,7 @@ const nxFlag = SKIP_NX_CACHE ? '--skip-nx-cache' : '';
 
 // step 1: build web dist
 if (!process.env.SKIP_WEB_BUILD) {
-  spawnSync('yarn', ['nx', 'build', '@affine/core', nxFlag], {
+  spawnSync('yarn', ['nx', 'build', '@affine/web', nxFlag], {
     stdio: 'inherit',
     env: process.env,
     cwd,
@@ -58,10 +58,10 @@ if (!process.env.SKIP_WEB_BUILD) {
   });
 
   // step 1.5: amend sourceMappingURL to allow debugging in devtools
-  await glob('**/*.{js,css}', { cwd: affineCoreOutDir }).then(files => {
+  await glob('**/*.{js,css}', { cwd: affineWebOutDir }).then(files => {
     return files.map(async file => {
       const dir = path.dirname(file);
-      const fullpath = path.join(affineCoreOutDir, file);
+      const fullpath = path.join(affineWebOutDir, file);
       let content = await fs.readFile(fullpath, 'utf-8');
       // replace # sourceMappingURL=76-6370cd185962bc89.js.map
       // to      # sourceMappingURL=assets://./{dir}/76-6370cd185962bc89.js.map
@@ -78,7 +78,7 @@ if (!process.env.SKIP_WEB_BUILD) {
     });
   });
 
-  await fs.move(affineCoreOutDir, publicAffineOutDir, { overwrite: true });
+  await fs.move(affineWebOutDir, publicAffineOutDir, { overwrite: true });
 }
 
 // step 2: update app-updater.yml content with build type in resources folder

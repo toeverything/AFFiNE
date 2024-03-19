@@ -1,7 +1,7 @@
 FROM node:20-bookworm-slim
 
 COPY ./packages/backend/server /app
-COPY ./packages/frontend/core/dist /app/static
+COPY ./packages/frontend/web/dist /app/static
 WORKDIR /app
 
 RUN apt-get update && \

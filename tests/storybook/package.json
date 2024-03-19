@@ -7,6 +7,7 @@
     "test": "test-storybook"
   },
   "dependencies": {
+    "@affine/cli": "workspace:*",
     "@affine/component": "workspace:*",
     "@affine/i18n": "workspace:*",
     "@affine/workspace-impl": "workspace:*",

@@ -266,8 +266,8 @@ jobs:
           path: ./packages/backend/storage/storage.node
           if-no-files-found: error
 
-  build-core:
-    name: Build @affine/core
+  build-web:
+    name: Build @affine/web
     runs-on: ubuntu-latest
 
     steps:
@@ -277,15 +277,15 @@ jobs:
         with:
           electron-install: false
           full-cache: true
-      - name: Build Core
+      - name: Build Web
         # always skip cache because its fast, and cache configuration is always changing
-        run: yarn nx build @affine/core --skip-nx-cache
-      - name: zip core
-        run: tar -czf dist.tar.gz --directory=packages/frontend/core/dist .
-      - name: Upload core artifact
+        run: yarn nx build @affine/web --skip-nx-cache
+      - name: zip web
+        run: tar -czf dist.tar.gz --directory=packages/frontend/web/dist .
+      - name: Upload web artifact
         uses: actions/upload-artifact@v4
         with:
-          name: core
+          name: web
           path: dist.tar.gz
           if-no-files-found: error
 
@@ -485,7 +485,7 @@ jobs:
               test: true,
             }
     needs:
-      - build-core
+      - build-web
       - build-native
     steps:
       - uses: actions/checkout@v4
@@ -516,8 +516,8 @@ jobs:
         shell: bash
         run: yarn workspace @affine/electron vitest
 
-      - name: Download core artifact
-        uses: ./.github/actions/download-core
+      - name: Download web artifact
+        uses: ./.github/actions/download-web
         with:
           path: packages/frontend/electron/resources/web-static
 

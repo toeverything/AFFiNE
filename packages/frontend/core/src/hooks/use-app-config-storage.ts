@@ -1,4 +1,5 @@
 import { apis } from '@affine/electron-api';
+import { setupGlobal } from '@affine/env/global';
 import { assertExists } from '@blocksuite/global/utils';
 import {
   type AppConfigSchema,
@@ -34,6 +35,8 @@ class AppConfigProxy {
   }
 }
 export const appConfigProxy = new AppConfigProxy();
+
+setupGlobal();
 
 const storage = environment.isDesktop
   ? new AppConfigStorage({
