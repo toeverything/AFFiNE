@@ -575,7 +575,7 @@ __metadata:
     eslint-plugin-unused-imports: "npm:^3.1.0"
     eslint-plugin-vue: "npm:^9.22.0"
     fake-indexeddb: "npm:5.0.2"
-    happy-dom: "npm:^13.4.1"
+    happy-dom: "npm:^14.0.0"
     husky: "npm:^9.0.11"
     lint-staged: "npm:^15.2.2"
     msw: "npm:^2.2.1"
@@ -22573,14 +22573,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"happy-dom@npm:^13.4.1":
-  version: 13.4.1
-  resolution: "happy-dom@npm:13.4.1"
+"happy-dom@npm:^14.0.0":
+  version: 14.0.0
+  resolution: "happy-dom@npm:14.0.0"
   dependencies:
     entities: "npm:^4.5.0"
     webidl-conversions: "npm:^7.0.0"
     whatwg-mimetype: "npm:^3.0.0"
-  checksum: 10/d5b16fc4908656fb73b284065a3c248fd9b5e45661d67afd3056a0ca36d515961c1c6db3089ab43104a41a609a0103e5eea8a154a1743ff5aaf28487e6e4fb32
+  checksum: 10/5e618ec7ab64123c4b1118da756fec7d281d70da460d38e713be5a9064cc676d82da66f9adf109753413bf8659d8c204cb116a9d9e5d11748449c9f0383ad980
   languageName: node
   linkType: hard
 
