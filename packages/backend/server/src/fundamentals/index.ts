@@ -22,6 +22,7 @@ export {
   GlobalExceptionFilter,
   OptionalModule,
 } from './nestjs';
+export { Runtime } from './runtime';
 export * from './storage';
 export { type StorageProvider, StorageProviderFactory } from './storage';
 export { AuthThrottlerGuard, CloudThrottlerGuard, Throttle } from './throttler';

@@ -429,3 +429,11 @@ model DataMigration {
 
   @@map("_data_migrations")
 }
+
+model ApplicationSetting {
+  key   String @id @db.VarChar(36)
+  // JSON strinfied value
+  value String @db.Text
+
+  @@map("application_settings")
+}

@@ -29,6 +29,7 @@ import { HelpersModule } from './fundamentals/helpers';
 import { MailModule } from './fundamentals/mailer';
 import { MetricsModule } from './fundamentals/metrics';
 import { PrismaModule } from './fundamentals/prisma';
+import { RuntimeSettingModule } from './fundamentals/runtime';
 import { StorageProviderModule } from './fundamentals/storage';
 import { RateLimiterModule } from './fundamentals/throttler';
 import { WebSocketModule } from './fundamentals/websocket';
@@ -45,6 +46,7 @@ export const FunctionalityModules = [
   MailModule,
   StorageProviderModule,
   HelpersModule,
+  RuntimeSettingModule,
 ];
 
 export class AppModuleBuilder {
