@@ -132,7 +132,7 @@ export class AuthResolver {
     @Args('email') email: string,
     @Args('password') password: string
   ) {
-    validators.assertValidCredential({ email, password });
+    validators.assertValidEmail(email);
     const user = await this.auth.signIn(email, password);
     await this.auth.setCookie(ctx.req, ctx.res, user);
     ctx.req.user = user;
