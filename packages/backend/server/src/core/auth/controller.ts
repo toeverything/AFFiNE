@@ -58,7 +58,6 @@ export class AuthController {
     }
 
     if (credential.password) {
-      validators.assertValidPassword(credential.password);
       const user = await this.auth.signIn(
         credential.email,
         credential.password
