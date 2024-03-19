@@ -6,7 +6,7 @@ import { MutexService } from './mutex';
 @Global()
 @Module({
   providers: [MutexService, Locker],
-  exports: [MutexService, Locker],
+  exports: [MutexService],
 })
 export class MutexModule {}
 

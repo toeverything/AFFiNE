@@ -4,19 +4,33 @@ import { Command } from 'ioredis';
 import { ILocker, Lock } from '../../fundamentals';
 import { SessionRedis } from './instances';
 
+// === atomic mutex lock ===
+// acquire lock
+// return 1 if lock is acquired
+// return 0 if lock is not acquired
 const lockScript = `local key = KEYS[1]
-local clientId = ARGV[1]
+local owner = ARGV[1]
 
-if redis.call("get", key) == clientId or redis.call("set", key, clientId, "NX", "EX", 60) then
+-- if lock is not exists or lock is owned by the owner
+-- then set lock to the owner and return 1, otherwise return 0
+-- if the lock is not released correctly due to unexpected reasons
+-- lock will be released after 60 seconds
+if redis.call("get", key) == owner or redis.call("set", key, owner, "NX", "EX", 60) then
   return 1
 else
   return 0
 end`;
+// release lock
+// return 1 if lock is released or lock is not exists
+// return 0 if lock is not owned by the owner
 const unlockScript = `local key = KEYS[1]
-local clientId = ARGV[1]
+local owner = ARGV[1]
 
-if redis.call("get", key) == clientId then
+local value = redis.call("get", key)
+if value == owner then
   return redis.call("del", key)
+elseif value == nil then
+  return 1
 else
   return 0
 end`;
@@ -40,7 +54,6 @@ export class RedisMutexLocker implements ILocker {
           new Command('EVAL', [unlockScript, '1', lockKey, owner])
         );
 
-        // TODO(@darksky): lock expired condition is not handled
         if (result === 0) {
           throw new Error(`Failed to release lock ${key}`);
         }
