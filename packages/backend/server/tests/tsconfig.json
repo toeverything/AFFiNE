@@ -2,7 +2,7 @@
   "extends": "../../../../tsconfig.json",
   "compilerOptions": {
     "composite": true,
-    "target": "ESNext",
+    "target": "ES2022",
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "rootDir": ".",
