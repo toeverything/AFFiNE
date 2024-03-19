@@ -1,24 +1,12 @@
 import { randomUUID } from 'node:crypto';
-import { setTimeout } from 'node:timers/promises';
 
 import { Inject, Injectable, Logger, Scope } from '@nestjs/common';
+import { ModuleRef } from '@nestjs/core';
 import { CONTEXT } from '@nestjs/graphql';
 
 import type { GraphqlContext } from '../graphql';
-import { BucketService } from './bucket';
-
-export class LockGuard<M extends MutexService = MutexService>
-  implements AsyncDisposable
-{
-  constructor(
-    private readonly mutex: M,
-    private readonly key: string
-  ) {}
-
-  async [Symbol.asyncDispose]() {
-    return this.mutex.unlock(this.key);
-  }
-}
+import { retryable } from '../utils/promise';
+import { Locker } from './local-lock';
 
 export const MUTEX_RETRY = 5;
 export const MUTEX_WAIT = 100;
@@ -29,7 +17,7 @@ export class MutexService {
 
   constructor(
     @Inject(CONTEXT) private readonly context: GraphqlContext,
-    private readonly bucket: BucketService
+    private readonly ref: ModuleRef
   ) {}
 
   protected getId() {
@@ -64,33 +52,22 @@ export class MutexService {
    * @param key resource key
    * @returns LockGuard
    */
-  async lock(key: string): Promise<LockGuard | undefined> {
-    const id = this.getId();
-    const fetchLock = async (retry: number): Promise<LockGuard | undefined> => {
-      if (retry === 0) {
-        this.logger.error(
-          `Failed to fetch lock ${key} after ${MUTEX_RETRY} retry`
-        );
-        return undefined;
-      }
-      const current = this.bucket.get(key);
-      if (current && current !== id) {
-        this.logger.warn(
-          `Failed to fetch lock ${key}, retrying in ${MUTEX_WAIT} ms`
-        );
-        await setTimeout(MUTEX_WAIT * (MUTEX_RETRY - retry + 1));
-        return fetchLock(retry - 1);
-      }
-      this.bucket.set(key, id);
-      return new LockGuard(this, key);
-    };
-
-    return fetchLock(MUTEX_RETRY);
-  }
-
-  async unlock(key: string): Promise<void> {
-    if (this.bucket.get(key) === this.getId()) {
-      this.bucket.delete(key);
+  async lock(key: string) {
+    try {
+      return await retryable(
+        () => {
+          const locker = this.ref.get(Locker, { strict: false });
+          return locker.lock(this.getId(), key);
+        },
+        MUTEX_RETRY,
+        MUTEX_WAIT
+      );
+    } catch (e) {
+      this.logger.error(
+        `Failed to lock resource [${key}] after retry ${MUTEX_RETRY} times`,
+        e
+      );
+      return undefined;
     }
   }
 }

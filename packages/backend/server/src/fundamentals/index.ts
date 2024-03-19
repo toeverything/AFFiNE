@@ -18,13 +18,7 @@ export type { GraphqlContext } from './graphql';
 export { CryptoHelper, URLHelper } from './helpers';
 export { MailService } from './mailer';
 export { CallCounter, CallTimer, metrics } from './metrics';
-export {
-  BucketService,
-  LockGuard,
-  MUTEX_RETRY,
-  MUTEX_WAIT,
-  MutexService,
-} from './mutex';
+export { type ILocker, Lock, Locker, MutexService } from './mutex';
 export {
   getOptionalModuleMetadata,
   GlobalExceptionFilter,

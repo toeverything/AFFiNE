@@ -1,14 +1,14 @@
 import { Global, Module } from '@nestjs/common';
 
-import { BucketService } from './bucket';
+import { Locker } from './local-lock';
 import { MutexService } from './mutex';
 
 @Global()
 @Module({
-  providers: [BucketService, MutexService],
-  exports: [BucketService, MutexService],
+  providers: [MutexService, Locker],
+  exports: [MutexService, Locker],
 })
 export class MutexModule {}
 
-export { BucketService, MutexService };
-export { LockGuard, MUTEX_RETRY, MUTEX_WAIT } from './mutex';
+export { Locker, MutexService };
+export { type Locker as ILocker, Lock } from './lock';
