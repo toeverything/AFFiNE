@@ -220,6 +220,20 @@ export interface AFFiNEConfig {
    * authentication config
    */
   auth: {
+    password: {
+      /**
+       * The minimum and maximum length of the password when registering new users
+       *
+       * @default 8
+       */
+      minLength: number;
+      /**
+       * The maximum length of the password
+       *
+       * @default 20
+       */
+      maxLength: number;
+    };
     session: {
       /**
        * Application auth expiration time in seconds

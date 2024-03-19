@@ -5,12 +5,13 @@ function getAuthCredentialValidator() {
   const email = z.string().email({ message: 'Invalid email address' });
   let password = z.string();
 
-  const minPasswordLength = AFFiNE.node.prod ? 8 : 1;
   password = password
-    .min(minPasswordLength, {
-      message: `Password must be ${minPasswordLength} or more charactors long`,
+    .min(AFFiNE.auth.password.minLength, {
+      message: `Password must be ${AFFiNE.auth.password.minLength} or more charactors long`,
     })
-    .max(20, { message: 'Password must be 20 or fewer charactors long' });
+    .max(AFFiNE.auth.password.maxLength, {
+      message: `Password must be ${AFFiNE.auth.password.maxLength} or fewer charactors long`,
+    });
 
   return z
     .object({

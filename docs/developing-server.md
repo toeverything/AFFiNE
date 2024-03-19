@@ -61,14 +61,13 @@ MAILER_USER="auth"
 MAILER_PASSWORD="auth"
 MAILER_HOST="localhost"
 MAILER_PORT="1025"
-STRIPE_API_KEY=sk_live_1
-STRIPE_WEBHOOK_KEY=1
 ```
 
 ## Prepare prisma
 
 ```
 yarn workspace @affine/server prisma db push
+yarn workspace @affine/server data-migration run
 ```
 
 Note, you may need to do it again if db schema changed.

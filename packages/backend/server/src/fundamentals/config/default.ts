@@ -77,7 +77,16 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
     Object.values(DeploymentType)
   );
   const isSelfhosted = deploymentType === DeploymentType.Selfhosted;
-
+  const affine = {
+    canary: AFFINE_ENV === 'dev',
+    beta: AFFINE_ENV === 'beta',
+    stable: AFFINE_ENV === 'production',
+  };
+  const node = {
+    prod: NODE_ENV === 'production',
+    dev: NODE_ENV === 'development',
+    test: NODE_ENV === 'test',
+  };
   const defaultConfig = {
     serverId: 'affine-nestjs-server',
     serverName: isSelfhosted ? 'Self-Host Cloud' : 'AFFiNE Cloud',
@@ -98,19 +107,11 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
     ENV_MAP: {},
     AFFINE_ENV,
     get affine() {
-      return {
-        canary: AFFINE_ENV === 'dev',
-        beta: AFFINE_ENV === 'beta',
-        stable: AFFINE_ENV === 'production',
-      };
+      return affine;
     },
     NODE_ENV,
     get node() {
-      return {
-        prod: NODE_ENV === 'production',
-        dev: NODE_ENV === 'development',
-        test: NODE_ENV === 'test',
-      };
+      return node;
     },
     get deploy() {
       return !this.node.dev && !this.node.test;
@@ -150,6 +151,10 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
       playground: true,
     },
     auth: {
+      password: {
+        minLength: node.prod ? 8 : 1,
+        maxLength: 32,
+      },
       session: {
         ttl: 15 * ONE_DAY_IN_SEC,
       },

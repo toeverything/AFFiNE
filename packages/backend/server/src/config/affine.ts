@@ -52,6 +52,18 @@ AFFiNE.port = 3010;
 // /* The metrics will be available at `http://localhost:9464/metrics` with [Prometheus] format exported */
 // AFFiNE.metrics.enabled = true;
 //
+// /* Authentication Settings */
+// /* User Signup password limitation */
+// AFFiNE.auth.password = {
+//   minLength: 8,
+//   maxLength: 20,
+// };
+//
+// /* How long the login session would last by default */
+// AFFiNE.auth.session = {
+//   ttl: 15 * 24 * 60 * 60, // 15 days
+// };
+//
 // /* GraphQL configurations that control the behavior of the Apollo Server behind */
 // /* @see https://www.apollographql.com/docs/apollo-server/api/apollo-server */
 // AFFiNE.graphql = {
@@ -84,15 +96,15 @@ AFFiNE.port = 3010;
 // /* Redis Plugin */
 // /* Provide caching and session storing backed by Redis. */
 // /* Useful when you deploy AFFiNE server in a cluster. */
-AFFiNE.plugins.use('redis', {
-  /* override options */
-});
+// AFFiNE.plugins.use('redis', {
+//   /* override options */
+// });
 //
 //
 // /* Payment Plugin */
-AFFiNE.plugins.use('payment', {
-  stripe: { keys: {}, apiVersion: '2023-10-16' },
-});
+// AFFiNE.plugins.use('payment', {
+//   stripe: { keys: {}, apiVersion: '2023-10-16' },
+// });
 //
 //
 // /* Cloudflare R2 Plugin */

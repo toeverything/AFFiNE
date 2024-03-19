@@ -39,7 +39,15 @@ if (env.R2_OBJECT_STORAGE_ACCOUNT_ID) {
 }
 
 AFFiNE.plugins.use('redis');
-AFFiNE.plugins.use('payment');
+AFFiNE.plugins.use('payment', {
+  stripe: {
+    keys: {
+      // fake the key to ensure the server generate full GraphQL Schema even env vars are not set
+      APIKey: '1',
+      webhookKey: '1',
+    },
+  },
+});
 AFFiNE.plugins.use('oauth');
 
 if (AFFiNE.deploy) {
