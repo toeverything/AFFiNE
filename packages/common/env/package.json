@@ -7,7 +7,7 @@
     "@blocksuite/store": "0.13.0-canary-202403140735-2367cd5",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "vitest": "1.3.1"
+    "vitest": "1.4.0"
   },
   "exports": {
     "./automation": "./src/automation.ts",
