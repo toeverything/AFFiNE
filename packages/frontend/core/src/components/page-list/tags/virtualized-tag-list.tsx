@@ -1,7 +1,7 @@
 import { toast } from '@affine/component';
+import type { Tag } from '@affine/core/modules/tag';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import type { Tag } from '@blocksuite/store';
 import { useService } from '@toeverything/infra';
 import { Workspace } from '@toeverything/infra';
 import { useCallback, useMemo, useRef, useState } from 'react';

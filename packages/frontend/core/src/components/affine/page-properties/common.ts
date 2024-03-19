@@ -7,7 +7,7 @@ import type { PagePropertiesManager } from './page-properties-manager';
 export const managerContext = createContext<PagePropertiesManager>();
 
 type TagColorHelper<T> = T extends `paletteLine${infer Color}` ? Color : never;
-type TagColorName = TagColorHelper<Parameters<typeof cssVar>[0]>;
+export type TagColorName = TagColorHelper<Parameters<typeof cssVar>[0]>;
 
 const tagColorIds: TagColorName[] = [
   'Red',

@@ -7,8 +7,8 @@ export type ListItem = DocMeta | CollectionMeta | TagMeta;
 
 export interface CollectionMeta extends Collection {
   title: string;
-  createDate?: Date;
-  updatedDate?: Date;
+  createDate?: Date | number;
+  updatedDate?: Date | number;
 }
 
 export type TagMeta = {
@@ -16,8 +16,8 @@ export type TagMeta = {
   title: string;
   color: string;
   pageCount?: number;
-  createDate?: Date;
-  updatedDate?: Date;
+  createDate?: Date | number;
+  updatedDate?: Date | number;
 };
 // TODO: consider reducing the number of props here
 // using type instead of interface to make it Record compatible
@@ -59,8 +59,8 @@ export type TagListItemProps = {
   color: string;
   title: ReactNode; // using ReactNode to allow for rich content rendering
   pageCount?: number;
-  createDate?: Date;
-  updatedDate?: Date;
+  createDate?: Date | number;
+  updatedDate?: Date | number;
   to?: To; // whether or not to render this item as a Link
   draggable?: boolean; // whether or not to allow dragging this item
   selectable?: boolean; // show selection checkbox

@@ -1,5 +1,7 @@
 import { Checkbox } from '@affine/component';
+import { TagService } from '@affine/core/modules/tag';
 import { useDraggable } from '@dnd-kit/core';
+import { useLiveData, useService } from '@toeverything/infra';
 import { type PropsWithChildren, useCallback, useMemo } from 'react';
 
 import { WorkbenchLink } from '../../../modules/workbench/view/workbench-link';
@@ -65,7 +67,11 @@ const PageSelectionCell = ({
   );
 };
 
-export const PageTagsCell = ({ tags }: Pick<PageListItemProps, 'tags'>) => {
+export const PageTagsCell = ({ pageId }: Pick<PageListItemProps, 'pageId'>) => {
+  const tagsService = useService(TagService);
+  const tagsLiveData = tagsService.tagsByPageId(pageId);
+  const tags = useLiveData(tagsLiveData);
+
   return (
     <div data-testid="page-list-item-tags" className={styles.tagsCell}>
       <PageTags
@@ -177,7 +183,7 @@ export const PageListItem = (props: PageListItemProps) => {
           <ListTitleCell title={props.title} preview={props.preview} />
         </ColWrapper>
         <ColWrapper flex={4} alignment="end" style={{ overflow: 'visible' }}>
-          <PageTagsCell tags={props.tags} />
+          <PageTagsCell pageId={props.pageId} />
         </ColWrapper>
       </ColWrapper>
       <ColWrapper flex={1} alignment="end" hideInSmallContainer>

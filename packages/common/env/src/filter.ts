@@ -53,6 +53,8 @@ export const collectionSchema = z.object({
   name: z.string(),
   filterList: z.array(filterSchema),
   allowList: z.array(z.string()),
+  createDate: z.union([z.date(), z.number()]).optional(),
+  updateDate: z.union([z.date(), z.number()]).optional(),
 });
 export const deletedCollectionSchema = z.object({
   userId: z.string().optional(),
@@ -78,6 +80,8 @@ export const tagSchema = z.object({
   value: z.string(),
   color: z.string(),
   parentId: z.string().optional(),
+  createDate: z.union([z.date(), z.number()]).optional(),
+  updateDate: z.union([z.date(), z.number()]).optional(),
 });
 export type Tag = z.input<typeof tagSchema>;
 

@@ -1,11 +1,12 @@
 import { Menu } from '@affine/component';
-import type { Tag } from '@affine/env/filter';
+import { type Tag } from '@affine/core/modules/tag';
 import { CloseIcon, MoreHorizontalIcon } from '@blocksuite/icons';
+import { LiveData, useLiveData } from '@toeverything/infra';
 import { assignInlineVars } from '@vanilla-extract/dynamic';
 import clsx from 'clsx';
 import { type MouseEventHandler, useCallback, useMemo } from 'react';
 
-import { stopPropagation, tagColorMap } from '../utils';
+import { stopPropagation } from '../utils';
 import * as styles from './page-tags.css';
 
 export interface PageTagsProps {
@@ -16,13 +17,37 @@ export interface PageTagsProps {
 }
 
 interface TagItemProps {
-  tag: Tag;
+  tag?: Tag;
   idx?: number;
   maxWidth?: number | string;
   mode: 'inline' | 'list-item';
   onRemoved?: () => void;
   style?: React.CSSProperties;
 }
+
+export const TempTagItem = ({
+  value,
+  color,
+  maxWidth = '100%',
+}: {
+  value: string;
+  color: string;
+  maxWidth?: number | string;
+}) => {
+  return (
+    <div className={styles.tag} title={value}>
+      <div style={{ maxWidth: maxWidth }} className={styles.tagInline}>
+        <div
+          className={styles.tagIndicator}
+          style={{
+            backgroundColor: color,
+          }}
+        />
+        <div className={styles.tagLabel}>{value}</div>
+      </div>
+    </div>
+  );
+};
 
 export const TagItem = ({
   tag,
@@ -32,6 +57,8 @@ export const TagItem = ({
   style,
   maxWidth,
 }: TagItemProps) => {
+  const value = useLiveData(tag?.value);
+  const color = useLiveData(tag?.color);
   const handleRemove: MouseEventHandler = useCallback(
     e => {
       e.stopPropagation();
@@ -44,9 +71,9 @@ export const TagItem = ({
       data-testid="page-tag"
       className={styles.tag}
       data-idx={idx}
-      data-tag-id={tag.id}
-      data-tag-value={tag.value}
-      title={tag.value}
+      data-tag-id={tag?.id}
+      data-tag-value={value}
+      title={value}
       style={style}
     >
       <div
@@ -56,10 +83,10 @@ export const TagItem = ({
         <div
           className={styles.tagIndicator}
           style={{
-            backgroundColor: tagColorMap(tag.color),
+            backgroundColor: color,
           }}
         />
-        <div className={styles.tagLabel}>{tag.value}</div>
+        <div className={styles.tagLabel}>{value}</div>
         {onRemoved ? (
           <div
             data-testid="remove-tag-button"
@@ -71,6 +98,34 @@ export const TagItem = ({
         ) : null}
       </div>
     </div>
+  );
+};
+
+const TagItemNormal = ({
+  tags,
+  maxItems,
+}: {
+  tags: Tag[];
+  maxItems?: number;
+}) => {
+  const nTags = useMemo(() => {
+    return maxItems ? tags.slice(0, maxItems) : tags;
+  }, [maxItems, tags]);
+
+  const tagsOrderedLiveData = useMemo(() => {
+    return LiveData.computed(get =>
+      [...nTags].sort((a, b) => get(a.value).length - get(b.value).length)
+    );
+  }, [nTags]);
+
+  const tagsOrdered = useLiveData(tagsOrderedLiveData);
+
+  return useMemo(
+    () =>
+      tagsOrdered.map((tag, idx) => (
+        <TagItem key={tag.id} tag={tag} idx={idx} mode="inline" />
+      )),
+    [tagsOrdered]
   );
 };
 
@@ -97,16 +152,6 @@ export const PageTags = ({
     );
   }, [maxItems, tags]);
 
-  const tagsNormal = useMemo(() => {
-    const nTags = maxItems ? tags.slice(0, maxItems) : tags;
-
-    // sort tags by length
-    nTags.sort((a, b) => a.value.length - b.value.length);
-
-    return nTags.map((tag, idx) => (
-      <TagItem key={tag.id} tag={tag} idx={idx} mode="inline" />
-    ));
-  }, [maxItems, tags]);
   return (
     <div
       data-testid="page-tags"
@@ -123,7 +168,9 @@ export const PageTags = ({
         className={clsx(styles.innerContainer)}
       >
         <div className={styles.innerBackdrop} />
-        <div className={styles.tagsScrollContainer}>{tagsNormal}</div>
+        <div className={styles.tagsScrollContainer}>
+          <TagItemNormal tags={tags} maxItems={maxItems} />
+        </div>
         {maxItems && tags.length > maxItems ? (
           <Menu
             items={tagsInPopover}

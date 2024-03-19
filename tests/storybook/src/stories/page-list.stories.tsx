@@ -201,7 +201,8 @@ export const ListItemTags: StoryFn<PageTagsProps> = props => (
 );
 
 ListItemTags.args = {
-  tags: testTags,
+  // FIXME: this is a hack to make the storybook work
+  // tags: testTags,
   hoverExpandDirection: 'left',
   widthOnHover: 600,
   maxItems: 5,

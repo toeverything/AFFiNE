@@ -1,6 +1,5 @@
 import { Checkbox, DatePicker, Menu } from '@affine/component';
 import { useAllBlockSuiteDocMeta } from '@affine/core/hooks/use-all-block-suite-page-meta';
-import { WorkspaceLegacyProperties } from '@affine/core/modules/workspace';
 import type {
   PageInfoCustomProperty,
   PageInfoCustomPropertyMeta,
@@ -9,7 +8,7 @@ import type {
 import { timestampToLocalDate } from '@affine/core/utils';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
-import { Doc, useLiveData, useService, Workspace } from '@toeverything/infra';
+import { Doc, useService, Workspace } from '@toeverything/infra';
 import { noop } from 'lodash-es';
 import {
   type ChangeEventHandler,
@@ -179,29 +178,17 @@ export const TagsValue = () => {
   const page = useService(Doc);
   const docCollection = workspace.docCollection;
   const pageMetas = useAllBlockSuiteDocMeta(docCollection);
-  const legacyProperties = useService(WorkspaceLegacyProperties);
-  const options = useLiveData(legacyProperties.tagOptions$);
 
   const pageMeta = pageMetas.find(x => x.id === page.id);
   assertExists(pageMeta, 'pageMeta should exist');
-  const tagIds = pageMeta.tags;
   const t = useAFFiNEI18N();
-  const onChange = useCallback(
-    (tags: string[]) => {
-      legacyProperties.updatePageTags(page.id, tags);
-    },
-    [legacyProperties, page.id]
-  );
 
   return (
     <TagsInlineEditor
       className={styles.propertyRowValueCell}
       placeholder={t['com.affine.page-properties.property-value-placeholder']()}
-      value={tagIds}
-      options={options}
+      pageId={page.id}
       readonly={page.blockSuiteDoc.readonly}
-      onChange={onChange}
-      onOptionsChange={legacyProperties.updateTagOptions}
     />
   );
 };

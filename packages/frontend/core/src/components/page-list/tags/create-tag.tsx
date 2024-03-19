@@ -1,9 +1,8 @@
 import { Button, Input, Menu, toast } from '@affine/component';
-import { WorkspaceLegacyProperties } from '@affine/core/modules/workspace';
+import { TagService } from '@affine/core/modules/tag';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useLiveData, useService } from '@toeverything/infra';
 import clsx from 'clsx';
-import { nanoid } from 'nanoid';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { tagColors } from '../../affine/page-properties/common';
@@ -21,7 +20,7 @@ const TagIcon = ({ color, large }: { color: string; large?: boolean }) => (
 
 const randomTagColor = () => {
   const randomIndex = Math.floor(Math.random() * tagColors.length);
-  return tagColors[randomIndex];
+  return tagColors[randomIndex][1];
 };
 
 export const CreateOrEditTag = ({
@@ -33,39 +32,44 @@ export const CreateOrEditTag = ({
   onOpenChange: (open: boolean) => void;
   tagMeta?: TagMeta;
 }) => {
-  const legacyProperties = useService(WorkspaceLegacyProperties);
-  const tagOptions = useLiveData(legacyProperties.tagOptions$);
+  const tagService = useService(TagService);
+  const tagOptions = useLiveData(tagService.tagMetas);
+  const tag = useLiveData(tagService.tagByTagId(tagMeta?.id));
   const t = useAFFiNEI18N();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [tagName, setTagName] = useState(tagMeta?.title || '');
-  const [activeTagIcon, setActiveTagIcon] = useState(() => {
-    return (
-      tagColors.find(([_, color]) => color === tagMeta?.color) ||
-      randomTagColor()
-    );
-  });
+
+  const [tagName, setTagName] = useState(tagMeta?.title);
+  const handleChangeName = useCallback((value: string) => {
+    setTagName(value);
+  }, []);
+
+  const [tagIcon, setTagIcon] = useState(tagMeta?.color || randomTagColor());
+
+  const handleChangeIcon = useCallback((value: string) => {
+    setTagIcon(value);
+  }, []);
 
   const tags = useMemo(() => {
-    return tagColors.map(([name, color]) => {
+    return tagColors.map(([_, color]) => {
       return {
         name: name,
         color: color,
         onClick: () => {
-          setActiveTagIcon([name, color]);
+          handleChangeIcon(color);
           setMenuOpen(false);
         },
       };
     });
-  }, []);
+  }, [handleChangeIcon]);
 
   const items = useMemo(() => {
     const tagItems = tags.map(item => {
       return (
         <div
-          key={item.name}
+          key={item.color}
           onClick={item.onClick}
           className={clsx(styles.tagItem, {
-            ['active']: item.name === activeTagIcon[0],
+            ['active']: item.color === tagIcon,
           })}
         >
           <TagIcon color={item.color} large={true} />
@@ -73,52 +77,38 @@ export const CreateOrEditTag = ({
       );
     });
     return <div className={styles.tagItemsWrapper}>{tagItems}</div>;
-  }, [activeTagIcon, tags]);
+  }, [tagIcon, tags]);
 
   const onClose = useCallback(() => {
     if (!tagMeta) {
-      setActiveTagIcon(randomTagColor);
+      handleChangeIcon(randomTagColor());
       setTagName('');
     }
     onOpenChange(false);
-  }, [onOpenChange, tagMeta]);
+  }, [handleChangeIcon, onOpenChange, tagMeta]);
 
   const onConfirm = useCallback(() => {
-    if (!tagName.trim()) return;
-    if (tagOptions.some(tag => tag.value === tagName.trim()) && !tagMeta) {
+    if (!tagName?.trim()) return;
+    if (
+      tagOptions.some(
+        tag => tag.title === tagName.trim() && tag.id !== tagMeta?.id
+      )
+    ) {
       return toast(t['com.affine.tags.create-tag.toast.exist']());
     }
     if (!tagMeta) {
-      const newTag = {
-        id: nanoid(),
-        value: tagName.trim(),
-        color: activeTagIcon[1] || tagColors[0][1],
-      };
-
-      legacyProperties.updateTagOptions([...tagOptions, newTag]);
+      tagService.createTag(tagName.trim(), tagIcon);
       toast(t['com.affine.tags.create-tag.toast.success']());
       onClose();
       return;
     }
+    tag?.rename(tagName.trim());
+    tag?.changeColor(tagIcon);
 
-    const updatedTag = {
-      id: tagMeta.id,
-      value: tagName.trim(),
-      color: activeTagIcon[1] || tagColors[0][1],
-    };
-    legacyProperties.updateTagOption(tagMeta.id, updatedTag);
     toast(t['com.affine.tags.edit-tag.toast.success']());
     onClose();
     return;
-  }, [
-    activeTagIcon,
-    legacyProperties,
-    onClose,
-    t,
-    tagMeta,
-    tagName,
-    tagOptions,
-  ]);
+  }, [onClose, t, tag, tagIcon, tagMeta, tagName, tagOptions, tagService]);
 
   useEffect(() => {
     if (!open) return;
@@ -137,6 +127,11 @@ export const CreateOrEditTag = ({
     };
   }, [open, onOpenChange, menuOpen, onClose]);
 
+  useEffect(() => {
+    setTagName(tagMeta?.title);
+    setTagIcon(tagMeta?.color || randomTagColor());
+  }, [tagMeta?.color, tagMeta?.title]);
+
   return (
     <div className={styles.createTagWrapper} data-show={open}>
       <Menu
@@ -147,7 +142,7 @@ export const CreateOrEditTag = ({
         items={items}
       >
         <Button className={styles.menuBtn}>
-          <TagIcon color={activeTagIcon[1] || ''} />
+          <TagIcon color={tagIcon} />
         </Button>
       </Menu>
 
@@ -156,7 +151,7 @@ export const CreateOrEditTag = ({
         inputStyle={{ fontSize: 'var(--affine-font-xs)' }}
         onEnter={onConfirm}
         value={tagName}
-        onChange={setTagName}
+        onChange={handleChangeName}
       />
       <Button className={styles.cancelBtn} onClick={onClose}>
         {t['Cancel']()}

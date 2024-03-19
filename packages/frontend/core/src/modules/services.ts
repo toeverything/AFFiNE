@@ -1,6 +1,7 @@
 import {
   GlobalCache,
   GlobalState,
+  PageRecordList,
   type ServiceCollection,
   Workspace,
   WorkspaceScope,
@@ -13,6 +14,7 @@ import {
 } from './infra-web/storage';
 import { Navigator } from './navigation';
 import { RightSidebar } from './right-sidebar/entities/right-sidebar';
+import { TagService } from './tag';
 import { Workbench } from './workbench';
 import {
   CurrentWorkspaceService,
@@ -29,7 +31,8 @@ export function configureBusinessServices(services: ServiceCollection) {
     .add(RightSidebar)
     .add(WorkspacePropertiesAdapter, [Workspace])
     .add(CollectionService, [Workspace])
-    .add(WorkspaceLegacyProperties, [Workspace]);
+    .add(WorkspaceLegacyProperties, [Workspace])
+    .add(TagService, [WorkspaceLegacyProperties, PageRecordList]);
 }
 
 export function configureWebInfraServices(services: ServiceCollection) {

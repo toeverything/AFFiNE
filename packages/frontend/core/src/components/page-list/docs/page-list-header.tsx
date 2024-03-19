@@ -1,8 +1,8 @@
 import { Button, Divider, Menu, Scrollable } from '@affine/component';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
-import { WorkspaceLegacyProperties } from '@affine/core/modules/workspace';
-import type { Collection, Tag } from '@affine/env/filter';
+import { type Tag, TagService } from '@affine/core/modules/tag';
+import type { Collection } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   ArrowDownSmallIcon,
@@ -18,7 +18,6 @@ import { Link } from 'react-router-dom';
 import { CollectionService } from '../../../modules/collection';
 import { createTagFilter } from '../filter/utils';
 import { createEmptyCollection } from '../use-collection-manager';
-import { tagColorMap } from '../utils';
 import type { AllPageListConfig } from '../view/edit-collection/edit-collection';
 import {
   useEditCollection,
@@ -95,8 +94,9 @@ export const TagPageListHeader = ({
   tag: Tag;
   workspaceId: string;
 }) => {
-  const legacyProperties = useService(WorkspaceLegacyProperties);
-  const options = useLiveData(legacyProperties.tagOptions$);
+  const tagColor = useLiveData(tag.color);
+  const tagTitle = useLiveData(tag.value);
+
   const t = useAFFiNEI18N();
   const { jumpToTags, jumpToCollection } = useNavigateHelper();
   const collectionService = useService(CollectionService);
@@ -153,16 +153,16 @@ export const TagPageListHeader = ({
               avoidCollisions: false,
               className: styles.tagsMenu,
             }}
-            items={<TagsEditor options={options} onClick={setOpenMenu} />}
+            items={<SwitchTag onClick={setOpenMenu} />}
           >
             <div className={styles.tagSticky}>
               <div
                 className={styles.tagIndicator}
                 style={{
-                  backgroundColor: tagColorMap(tag.color),
+                  backgroundColor: tagColor,
                 }}
               />
-              <div className={styles.tagLabel}>{tag.value}</div>
+              <div className={styles.tagLabel}>{tagTitle}</div>
               <ArrowDownSmallIcon className={styles.arrowDownSmallIcon} />
             </div>
           </Menu>
@@ -175,25 +175,21 @@ export const TagPageListHeader = ({
   );
 };
 
-const filterOption = (option: Tag, inputValue?: string) => {
-  const trimmedValue = inputValue?.trim().toLowerCase() ?? '';
-  const trimmedOptionValue = option.value.trim().toLowerCase();
-  return trimmedOptionValue.includes(trimmedValue);
-};
-
-interface TagsEditorProps {
-  options: Tag[];
+interface SwitchTagProps {
   onClick: (open: boolean) => void;
 }
 
-export const TagsEditor = ({ options, onClick }: TagsEditorProps) => {
+export const SwitchTag = ({ onClick }: SwitchTagProps) => {
   const t = useAFFiNEI18N();
   const [inputValue, setInputValue] = useState('');
-  const filteredOptions = useMemo(
-    () =>
-      options.filter(o => (inputValue ? filterOption(o, inputValue) : true)),
-    [inputValue, options]
-  );
+  const tagService = useService(TagService);
+  const filteredLiveData = useMemo(() => {
+    if (inputValue) {
+      return tagService.filterTagsByName(inputValue);
+    }
+    return tagService.tags;
+  }, [inputValue, tagService]);
+  const filteredTags = useLiveData(filteredLiveData);
 
   const onInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -225,25 +221,10 @@ export const TagsEditor = ({ options, onClick }: TagsEditorProps) => {
           <Scrollable.Viewport
             className={styles.tagSelectorTagsScrollContainer}
           >
-            {filteredOptions.map(tag => {
-              return (
-                <Link
-                  key={tag.id}
-                  className={styles.tagSelectorItem}
-                  data-tag-id={tag.id}
-                  data-tag-value={tag.value}
-                  to={`/tag/${tag.id}`}
-                  onClick={handleClick}
-                >
-                  <div
-                    className={styles.tagIcon}
-                    style={{ background: tag.color }}
-                  />
-                  <div className={styles.tagSelectorItemText}>{tag.value}</div>
-                </Link>
-              );
+            {filteredTags.map(tag => {
+              return <TagLink key={tag.id} tag={tag} onClick={handleClick} />;
             })}
-            {filteredOptions.length === 0 ? (
+            {filteredTags.length === 0 ? (
               <div className={clsx(styles.tagSelectorItem, 'disable')}>
                 {t['Find 0 result']()}
               </div>
@@ -253,5 +234,23 @@ export const TagsEditor = ({ options, onClick }: TagsEditorProps) => {
         </Scrollable.Root>
       </div>
     </div>
+  );
+};
+
+const TagLink = ({ tag, onClick }: { tag: Tag; onClick: () => void }) => {
+  const tagColor = useLiveData(tag.color);
+  const tagTitle = useLiveData(tag.value);
+  return (
+    <Link
+      key={tag.id}
+      className={styles.tagSelectorItem}
+      data-tag-id={tag.id}
+      data-tag-value={tagTitle}
+      to={`/tag/${tag.id}`}
+      onClick={onClick}
+    >
+      <div className={styles.tagIcon} style={{ background: tagColor }} />
+      <div className={styles.tagSelectorItemText}>{tagTitle}</div>
+    </Link>
   );
 };

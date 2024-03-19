@@ -5,7 +5,7 @@ import { type PropsWithChildren, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 
 import type { DraggableTitleCellData, TagListItemProps } from '../types';
-import { ColWrapper, stopPropagation, tagColorMap } from '../utils';
+import { ColWrapper, stopPropagation } from '../utils';
 import * as styles from './tag-list-item.css';
 
 const TagListTitleCell = ({
@@ -37,7 +37,7 @@ const ListIconCell = ({ color }: Pick<TagListItemProps, 'color'>) => {
       <div
         className={styles.tagIndicator}
         style={{
-          backgroundColor: tagColorMap(color),
+          backgroundColor: color,
         }}
       />
     </div>

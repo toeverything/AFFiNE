@@ -1,14 +1,14 @@
 import {
   TagPageListHeader,
-  useTagMetas,
   VirtualizedPageList,
 } from '@affine/core/components/page-list';
 import { useBlockSuiteDocMeta } from '@affine/core/hooks/use-block-suite-page-meta';
+import { TagService } from '@affine/core/modules/tag';
 import {
   ViewBodyIsland,
   ViewHeaderIsland,
 } from '@affine/core/modules/workbench';
-import { useService } from '@toeverything/infra';
+import { LiveData, useLiveData, useService } from '@toeverything/infra';
 import { Workspace } from '@toeverything/infra';
 import { useMemo } from 'react';
 import { useParams } from 'react-router-dom';
@@ -22,18 +22,27 @@ export const TagDetail = ({ tagId }: { tagId?: string }) => {
   const currentWorkspace = useService(Workspace);
   const pageMetas = useBlockSuiteDocMeta(currentWorkspace.docCollection);
 
-  const { tags, filterPageMetaByTag } = useTagMetas(pageMetas);
-  const tagPageMetas = useMemo(() => {
-    if (tagId) {
-      return filterPageMetaByTag(tagId);
-    }
-    return [];
-  }, [filterPageMetaByTag, tagId]);
+  const tagService = useService(TagService);
+  const currentTagLiveData = tagService.tagByTagId(tagId);
+  const currentTag = useLiveData(currentTagLiveData);
 
-  const currentTag = useMemo(
-    () => tags.find(tag => tag.id === tagId),
-    [tagId, tags]
+  const pageIdsLiveData = useMemo(
+    () =>
+      LiveData.computed(get => {
+        const liveTag = get(currentTagLiveData);
+        if (liveTag?.pageIds) {
+          return get(liveTag.pageIds);
+        }
+        return [];
+      }),
+    [currentTagLiveData]
   );
+  const pageIds = useLiveData(pageIdsLiveData);
+
+  const filteredPageMetas = useMemo(() => {
+    const pageIdsSet = new Set(pageIds);
+    return pageMetas.filter(page => pageIdsSet.has(page.id));
+  }, [pageIds, pageMetas]);
 
   if (!currentTag) {
     return <PageNotFound />;
@@ -46,8 +55,11 @@ export const TagDetail = ({ tagId }: { tagId?: string }) => {
       </ViewHeaderIsland>
       <ViewBodyIsland>
         <div className={styles.body}>
-          {tagPageMetas.length > 0 ? (
-            <VirtualizedPageList tag={currentTag} listItem={tagPageMetas} />
+          {filteredPageMetas.length > 0 ? (
+            <VirtualizedPageList
+              tag={currentTag}
+              listItem={filteredPageMetas}
+            />
           ) : (
             <EmptyPageList
               type="all"

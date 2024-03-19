@@ -6,13 +6,13 @@ import {
   Scrollable,
 } from '@affine/component';
 import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
+import { TagService } from '@affine/core/modules/tag';
 import { WorkspaceLegacyProperties } from '@affine/core/modules/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { DeleteIcon, MoreHorizontalIcon, TagsIcon } from '@blocksuite/icons';
-import type { Tag } from '@blocksuite/store';
+import { useLiveData } from '@toeverything/infra';
 import { useService } from '@toeverything/infra/di';
 import clsx from 'clsx';
-import { nanoid } from 'nanoid';
 import {
   type HTMLAttributes,
   type PropsWithChildren,
@@ -22,16 +22,13 @@ import {
   useState,
 } from 'react';
 
-import { TagItem } from '../../page-list';
+import { TagItem, TempTagItem } from '../../page-list';
 import { tagColors } from './common';
 import { type MenuItemOption, renderMenuItemOptions } from './menu-items';
 import * as styles from './tags-inline-editor.css';
 
 interface TagsEditorProps {
-  value: string[]; // selected tag ids
-  onChange?: (value: string[]) => void;
-  options: Tag[];
-  onOptionsChange?: (options: Tag[]) => void; // adding/updating/removing tags
+  pageId: string;
   readonly?: boolean;
 }
 
@@ -40,25 +37,26 @@ interface InlineTagsListProps
     Omit<TagsEditorProps, 'onOptionsChange'> {}
 
 const InlineTagsList = ({
-  value,
-  onChange,
-  options,
+  pageId,
   readonly,
   children,
 }: PropsWithChildren<InlineTagsListProps>) => {
+  const tagService = useService(TagService);
+  const tags = useLiveData(tagService.tags);
+  const tagIds = useLiveData(tagService.tagIdsByPageId(pageId));
+
   return (
     <div className={styles.inlineTagsContainer} data-testid="inline-tags-list">
-      {value.map((tagId, idx) => {
-        const tag = options.find(t => t.id === tagId);
+      {tagIds.map((tagId, idx) => {
+        const tag = tags.find(t => t.id === tagId);
         if (!tag) {
           return null;
         }
-        const onRemoved =
-          readonly || !onChange
-            ? undefined
-            : () => {
-                onChange(value.filter(v => v !== tagId));
-              };
+        const onRemoved = readonly
+          ? undefined
+          : () => {
+              tag.untag(pageId);
+            };
         return (
           <TagItem
             key={tagId}
@@ -74,18 +72,16 @@ const InlineTagsList = ({
   );
 };
 
-const filterOption = (option: Tag, inputValue?: string) => {
-  const trimmedValue = inputValue?.trim().toLowerCase() ?? '';
-  const trimmedOptionValue = option.value.trim().toLowerCase();
-  return trimmedOptionValue.includes(trimmedValue);
-};
-
 export const EditTagMenu = ({
-  tag,
+  tagId,
   children,
-}: PropsWithChildren<{ tag: Tag }>) => {
+}: PropsWithChildren<{ tagId: string }>) => {
   const t = useAFFiNEI18N();
   const legacyProperties = useService(WorkspaceLegacyProperties);
+  const tagService = useService(TagService);
+  const tag = useLiveData(tagService.tagByTagId(tagId));
+  const tagColor = useLiveData(tag?.color);
+  const tagValue = useLiveData(tag?.value);
   const navigate = useNavigateHelper();
 
   const menuProps = useMemo(() => {
@@ -94,14 +90,11 @@ export const EditTagMenu = ({
       if (name.trim() === '') {
         return;
       }
-      legacyProperties.updateTagOption(tag.id, {
-        ...tag,
-        value: name,
-      });
+      tag?.rename(name);
     };
     options.push(
       <Input
-        defaultValue={tag.value}
+        defaultValue={tagValue}
         onBlur={e => {
           updateTagName(e.currentTarget.value);
         }}
@@ -123,7 +116,7 @@ export const EditTagMenu = ({
       icon: <DeleteIcon />,
       type: 'danger',
       onClick() {
-        legacyProperties.removeTagOption(tag.id);
+        tagService.deleteTag(tag?.id || '');
       },
     });
 
@@ -131,7 +124,7 @@ export const EditTagMenu = ({
       text: t['com.affine.page-properties.tags.open-tags-page'](),
       icon: <TagsIcon />,
       onClick() {
-        navigate.jumpToTag(legacyProperties.workspaceId, tag.id);
+        navigate.jumpToTag(legacyProperties.workspaceId, tag?.id || '');
       },
     });
 
@@ -151,12 +144,9 @@ export const EditTagMenu = ({
               />
             </div>
           ),
-          checked: tag.color === color,
+          checked: tagColor === color,
           onClick() {
-            legacyProperties.updateTagOption(tag.id, {
-              ...tag,
-              color,
-            });
+            tag?.changeColor(color);
           },
         };
       })
@@ -171,26 +161,35 @@ export const EditTagMenu = ({
       },
       items,
     } satisfies Partial<MenuProps>;
-  }, [legacyProperties, navigate, t, tag]);
+  }, [
+    legacyProperties.workspaceId,
+    navigate,
+    t,
+    tag,
+    tagColor,
+    tagService,
+    tagValue,
+  ]);
 
   return <Menu {...menuProps}>{children}</Menu>;
 };
 
-export const TagsEditor = ({
-  options,
-  value,
-  onChange,
-  onOptionsChange,
-  readonly,
-}: TagsEditorProps) => {
+export const TagsEditor = ({ pageId, readonly }: TagsEditorProps) => {
   const t = useAFFiNEI18N();
+  const tagService = useService(TagService);
+  const tags = useLiveData(tagService.tags);
+  const tagIds = useLiveData(tagService.tagIdsByPageId(pageId));
   const [inputValue, setInputValue] = useState('');
-  const exactMatch = options.find(o => o.value === inputValue);
-  const filteredOptions = useMemo(
-    () =>
-      options.filter(o => (inputValue ? filterOption(o, inputValue) : true)),
-    [inputValue, options]
-  );
+
+  const exactMatch = useLiveData(tagService.tagByTagValue(inputValue));
+
+  const filteredLiveData = useMemo(() => {
+    if (inputValue) {
+      return tagService.filterTagsByName(inputValue);
+    }
+    return tagService.tags;
+  }, [inputValue, tagService]);
+  const filteredTags = useLiveData(filteredLiveData);
 
   const onInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -201,11 +200,11 @@ export const TagsEditor = ({
 
   const onAddTag = useCallback(
     (id: string) => {
-      if (!value.includes(id)) {
-        onChange?.([...value, id]);
+      if (!tagIds.includes(id)) {
+        tags.find(o => o.id === id)?.tag(pageId);
       }
     },
-    [onChange, value]
+    [pageId, tagIds, tags]
   );
 
   const [nextColor, rotateNextColor] = useReducer(
@@ -221,17 +220,11 @@ export const TagsEditor = ({
       if (!name.trim()) {
         return;
       }
-
-      const newTag = {
-        id: nanoid(),
-        value: name.trim(),
-        color: nextColor,
-      };
       rotateNextColor();
-      onOptionsChange?.([...options, newTag]);
-      onChange?.([...value, newTag.id]);
+      const newTag = tagService.createTag(name.trim(), nextColor);
+      newTag.tag(pageId);
     },
-    [nextColor, onChange, onOptionsChange, options, value]
+    [nextColor, pageId, tagService]
   );
 
   const onInputKeyDown = useCallback(
@@ -243,22 +236,18 @@ export const TagsEditor = ({
           onCreateTag(inputValue);
         }
         setInputValue('');
-      } else if (e.key === 'Backspace' && inputValue === '' && value.length) {
-        onChange?.(value.slice(0, value.length - 1));
+      } else if (e.key === 'Backspace' && inputValue === '' && tagIds.length) {
+        const lastTagId = tagIds[tagIds.length - 1];
+        tags.find(tag => tag.id === lastTagId)?.untag(pageId);
       }
     },
-    [exactMatch, inputValue, onAddTag, onChange, onCreateTag, value]
+    [exactMatch, inputValue, onAddTag, onCreateTag, pageId, tagIds, tags]
   );
 
   return (
     <div data-testid="tags-editor-popup" className={styles.tagsEditorRoot}>
       <div className={styles.tagsEditorSelectedTags}>
-        <InlineTagsList
-          options={options}
-          value={value}
-          onChange={onChange}
-          readonly={readonly}
-        >
+        <InlineTagsList pageId={pageId} readonly={readonly}>
           <input
             value={inputValue}
             onChange={onInputChange}
@@ -277,7 +266,7 @@ export const TagsEditor = ({
           <Scrollable.Viewport
             className={styles.tagSelectorTagsScrollContainer}
           >
-            {filteredOptions.map(tag => {
+            {filteredTags.map(tag => {
               return (
                 <div
                   key={tag.id}
@@ -291,7 +280,7 @@ export const TagsEditor = ({
                 >
                   <TagItem maxWidth="100%" tag={tag} mode="inline" />
                   <div className={styles.spacer} />
-                  <EditTagMenu tag={tag}>
+                  <EditTagMenu tagId={tag.id}>
                     <IconButton
                       className={styles.tagEditIcon}
                       type="plain"
@@ -311,15 +300,7 @@ export const TagsEditor = ({
                 }}
               >
                 {t['Create']()}{' '}
-                <TagItem
-                  maxWidth="100%"
-                  tag={{
-                    id: inputValue,
-                    value: inputValue,
-                    color: nextColor,
-                  }}
-                  mode="inline"
-                />
+                <TempTagItem value={inputValue} color={nextColor} />
               </div>
             )}
           </Scrollable.Viewport>
@@ -337,15 +318,14 @@ interface TagsInlineEditorProps extends TagsEditorProps {
 
 // this tags value renderer right now only renders the legacy tags for now
 export const TagsInlineEditor = ({
-  value,
-  onChange,
-  options,
-  onOptionsChange,
+  pageId,
   readonly,
   placeholder,
   className,
 }: TagsInlineEditorProps) => {
-  const empty = !value || value.length === 0;
+  const tagService = useService(TagService);
+  const tagIds = useLiveData(tagService.tagIdsByPageId(pageId));
+  const empty = !tagIds || tagIds.length === 0;
   return (
     <Menu
       contentOptions={{
@@ -358,31 +338,14 @@ export const TagsInlineEditor = ({
           e.stopPropagation();
         },
       }}
-      items={
-        <TagsEditor
-          value={value}
-          options={options}
-          onChange={onChange}
-          onOptionsChange={onOptionsChange}
-          readonly={readonly}
-        />
-      }
+      items={<TagsEditor pageId={pageId} readonly={readonly} />}
     >
       <div
         className={clsx(styles.tagsInlineEditor, className)}
         data-empty={empty}
         data-readonly={readonly}
       >
-        {empty ? (
-          placeholder
-        ) : (
-          <InlineTagsList
-            value={value}
-            onChange={onChange}
-            options={options}
-            readonly
-          />
-        )}
+        {empty ? placeholder : <InlineTagsList pageId={pageId} readonly />}
       </div>
     </Menu>
   );
