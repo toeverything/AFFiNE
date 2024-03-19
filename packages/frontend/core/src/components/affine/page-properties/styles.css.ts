@@ -7,7 +7,7 @@ export const root = style({
   display: 'flex',
   width: '100%',
   justifyContent: 'center',
-  fontFamily: cssVar('fontFamily'),
+  fontFamily: cssVar('fontSansFamily'),
   vars: {
     [propertyNameCellWidth]: '160px',
   },
