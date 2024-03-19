@@ -1,6 +1,8 @@
 import './polyfill/intl-segmenter';
 import './polyfill/request-idle-callback';
 import './polyfill/resize-observer';
+import './orm/test';
+import './orm/yjs-test-tool/test';
 
 import { assertExists } from '@blocksuite/global/utils';
 import { StrictMode } from 'react';
