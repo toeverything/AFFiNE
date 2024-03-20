@@ -229,17 +229,19 @@ export const RootAppSidebar = ({
         <CategoryDivider label={t['com.affine.rootAppSidebar.others']()} />
         {/* fixme: remove the following spacer */}
         <div style={{ height: '4px' }} />
-        <RouteMenuLinkItem
-          ref={trashDroppable.setNodeRef}
-          icon={<AnimatedDeleteIcon closed={trashDroppable.isOver} />}
-          active={trashActive}
-          path={paths.trash(currentWorkspaceId)}
-        >
-          <span data-testid="trash-page">
-            {t['com.affine.workspaceSubPath.trash']()}
-          </span>
-        </RouteMenuLinkItem>
-        <ImportPage docCollection={docCollection} />
+        <div style={{ padding: '0 8px' }}>
+          <RouteMenuLinkItem
+            ref={trashDroppable.setNodeRef}
+            icon={<AnimatedDeleteIcon closed={trashDroppable.isOver} />}
+            active={trashActive}
+            path={paths.trash(currentWorkspaceId)}
+          >
+            <span data-testid="trash-page">
+              {t['com.affine.workspaceSubPath.trash']()}
+            </span>
+          </RouteMenuLinkItem>
+          <ImportPage docCollection={docCollection} />
+        </div>
       </SidebarScrollableContainer>
       <SidebarContainer>
         {environment.isDesktop ? <UpdaterButton /> : <AppDownloadButton />}
