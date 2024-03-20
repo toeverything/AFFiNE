@@ -100,6 +100,9 @@ export const resizeHandle = style({
     '[data-client-border="true"] &': {
       right: `calc(-5px - ${gap} / 2)`,
     },
+    [`.${splitViewPanel}[data-is-dragging="true"] &`]: {
+      display: 'none',
+    },
 
     // horizontal
     '[data-orientation="horizontal"] &::before, [data-orientation="horizontal"] &::after':
