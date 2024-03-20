@@ -39,6 +39,10 @@ export const WorkbenchRoot = () => {
     [workbench]
   );
 
+  useEffect(() => {
+    workbench.basename.next(basename);
+  }, [basename, workbench.basename]);
+
   return (
     <SplitView
       className={styles.workbenchRootContainer}

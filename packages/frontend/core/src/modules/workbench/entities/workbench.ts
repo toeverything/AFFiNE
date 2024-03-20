@@ -23,6 +23,8 @@ export class Workbench {
     this.views.value[this.activeViewIndex.value]
   );
 
+  basename = new LiveData('/');
+
   location = LiveData.from(
     this.activeView.pipe(switchMap(view => view.location)),
     this.views.value[this.activeViewIndex.value].history.location
