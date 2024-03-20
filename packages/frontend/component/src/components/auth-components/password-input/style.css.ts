@@ -1,7 +1,11 @@
 import { cssVar } from '@toeverything/theme';
 import { style } from '@vanilla-extract/css';
+export const statusWrapper = style({
+  marginLeft: 8,
+  marginRight: 10,
+});
 export const tag = style({
-  padding: '0 15px',
+  padding: '2px 15px',
   height: 20,
   lineHeight: '20px',
   borderRadius: 10,

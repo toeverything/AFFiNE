@@ -6,10 +6,14 @@ import { useCallback, useState } from 'react';
 import { Input, type InputProps } from '../../../ui/input';
 import * as styles from '../share.css';
 import { ErrorIcon } from './error';
+import { statusWrapper } from './style.css';
 import { SuccessIcon } from './success';
 import { Tag } from './tag';
 
 export type Status = 'weak' | 'medium' | 'strong' | 'maximum';
+
+const MIN_LENGTH = 8;
+const MAX_LENGTH = 20;
 
 export const PasswordInput: FC<
   InputProps & {
@@ -28,11 +32,12 @@ export const PasswordInput: FC<
   const [confirmPassword, setConfirmPassword] = useState('');
 
   const onPasswordChange = useCallback((value: string) => {
+    value = value.trim();
     setPassWord(value);
     if (!value) {
       return setStatus(null);
     }
-    if (value.length > 20) {
+    if (value.length > MAX_LENGTH) {
       return setStatus('maximum');
     }
     switch (passwordStrength(value).id) {
@@ -50,7 +55,7 @@ export const PasswordInput: FC<
   }, []);
 
   const onConfirmPasswordChange = useCallback((value: string) => {
-    setConfirmPassword(value);
+    setConfirmPassword(value.trim());
   }, []);
 
   useEffect(() => {
@@ -65,7 +70,7 @@ export const PasswordInput: FC<
   }, [confirmPassword, password]);
 
   useEffect(() => {
-    if (confirmStatus === 'success' && password.length > 7) {
+    if (confirmStatus === 'success' && password.length >= MIN_LENGTH) {
       onPass(password);
     } else {
       onPrevent();
@@ -78,24 +83,38 @@ export const PasswordInput: FC<
         className={styles.input}
         type="password"
         size="extraLarge"
+        minLength={MIN_LENGTH}
+        maxLength={MAX_LENGTH}
         style={{ marginBottom: 20 }}
         placeholder={t['com.affine.auth.set.password.placeholder']()}
         onChange={onPasswordChange}
-        endFix={status ? <Tag status={status} /> : null}
+        endFix={
+          status ? (
+            <div className={statusWrapper}>
+              <Tag status={status} />
+            </div>
+          ) : null
+        }
         {...inputProps}
       />
       <Input
         className={styles.input}
         type="password"
         size="extraLarge"
+        minLength={MIN_LENGTH}
+        maxLength={MAX_LENGTH}
         placeholder={t['com.affine.auth.set.password.placeholder.confirm']()}
         onChange={onConfirmPasswordChange}
         endFix={
           confirmStatus ? (
             confirmStatus === 'success' ? (
-              <SuccessIcon />
+              <div className={statusWrapper}>
+                <SuccessIcon />
+              </div>
             ) : (
-              <ErrorIcon />
+              <div className={statusWrapper}>
+                <ErrorIcon />
+              </div>
             )
           ) : null
         }
