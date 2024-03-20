@@ -10,7 +10,7 @@ import { statusWrapper } from './style.css';
 import { SuccessIcon } from './success';
 import { Tag } from './tag';
 
-export type Status = 'weak' | 'medium' | 'strong' | 'maximum';
+export type Status = 'weak' | 'medium' | 'strong' | 'minimum' | 'maximum';
 
 const MIN_LENGTH = 8;
 const MAX_LENGTH = 20;
@@ -36,6 +36,9 @@ export const PasswordInput: FC<
     setPassWord(value);
     if (!value) {
       return setStatus(null);
+    }
+    if (value.length < MIN_LENGTH) {
+      return setStatus('minimum');
     }
     if (value.length > MAX_LENGTH) {
       return setStatus('maximum');
@@ -89,11 +92,9 @@ export const PasswordInput: FC<
         placeholder={t['com.affine.auth.set.password.placeholder']()}
         onChange={onPasswordChange}
         endFix={
-          status ? (
-            <div className={statusWrapper}>
-              <Tag status={status} />
-            </div>
-          ) : null
+          <div className={statusWrapper}>
+            {status ? <Tag status={status} /> : null}
+          </div>
         }
         {...inputProps}
       />
@@ -106,17 +107,15 @@ export const PasswordInput: FC<
         placeholder={t['com.affine.auth.set.password.placeholder.confirm']()}
         onChange={onConfirmPasswordChange}
         endFix={
-          confirmStatus ? (
-            confirmStatus === 'success' ? (
-              <div className={statusWrapper}>
+          <div className={statusWrapper}>
+            {confirmStatus ? (
+              confirmStatus === 'success' ? (
                 <SuccessIcon />
-              </div>
-            ) : (
-              <div className={statusWrapper}>
+              ) : (
                 <ErrorIcon />
-              </div>
-            )
-          ) : null
+              )
+            ) : null}
+          </div>
         }
         {...inputProps}
       />

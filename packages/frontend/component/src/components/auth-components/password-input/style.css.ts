@@ -23,7 +23,7 @@ export const tag = style({
       backgroundColor: cssVar('tagGreen'),
       color: cssVar('successColor'),
     },
-    '&.maximum': {
+    '&.minimum, &.maximum': {
       backgroundColor: cssVar('tagRed'),
       color: cssVar('errorColor'),
     },

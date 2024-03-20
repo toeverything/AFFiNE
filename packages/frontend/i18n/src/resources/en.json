@@ -444,6 +444,8 @@
   "com.affine.auth.sent.set.password.success.message": "Your password has saved! You can sign in AFFiNE Cloud with email and password!",
   "com.affine.auth.set.email.save": "Save Email",
   "com.affine.auth.set.password": "Set password",
+  "com.affine.auth.set.password.minlength": "Minimum 8 characters",
+  "com.affine.auth.set.password.maxlength": "Maximum 20 characters",
   "com.affine.auth.set.password.message": "Please set a password of 8-20 characters with both letters and numbers to continue signing up with ",
   "com.affine.auth.set.password.page.success": "Password set successful",
   "com.affine.auth.set.password.page.title": "Set your AFFiNE Cloud password",
