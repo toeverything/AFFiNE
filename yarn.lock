@@ -28891,25 +28891,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"openai@npm:^4.29.2":
-  version: 4.29.2
-  resolution: "openai@npm:4.29.2"
-  dependencies:
-    "@types/node": "npm:^18.11.18"
-    "@types/node-fetch": "npm:^2.6.4"
-    abort-controller: "npm:^3.0.0"
-    agentkeepalive: "npm:^4.2.1"
-    digest-fetch: "npm:^1.3.0"
-    form-data-encoder: "npm:1.7.2"
-    formdata-node: "npm:^4.3.2"
-    node-fetch: "npm:^2.6.7"
-    web-streams-polyfill: "npm:^3.2.1"
-  bin:
-    openai: bin/cli
-  checksum: 10/6babfb0000d564cfcf89e1ac171fadfc3b75468c814c2559df9da352803e6f3879bb864d1c20bf0501c54daaf9a26cf4f117107acbd646bf29b6fee257c6beb9
-  languageName: node
-  linkType: hard
-
 "optionator@npm:^0.9.3":
   version: 0.9.3
   resolution: "optionator@npm:0.9.3"
