@@ -1,6 +1,6 @@
 import assert from 'node:assert';
 
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 
 import { Config } from '../../fundamentals';
 import {
@@ -27,7 +27,7 @@ interface CopilotProviderDefinition<C extends CopilotProviderConfig> {
 // registered provider factory
 const COPILOT_PROVIDER = new Map<
   CopilotProviderType,
-  (config: Config) => CopilotProvider
+  (config: Config, logger: Logger) => CopilotProvider
 >();
 
 // map of capabilities to providers
@@ -42,26 +42,36 @@ const ASSERT_CONFIG = new Map<CopilotProviderType, (config: Config) => void>();
 export function registerCopilotProvider<
   C extends CopilotProviderConfig = CopilotProviderConfig,
 >(provider: CopilotProviderDefinition<C>) {
-  const factory = (config: Config) => {
-    assert(config.plugins.copilot);
-    assert(config.plugins.copilot[provider.type]);
+  const type = provider.type;
 
-    return new provider(config.plugins.copilot[provider.type] as C);
+  const factory = (config: Config, logger: Logger) => {
+    const providerConfig = config.plugins.copilot?.[type];
+    if (!provider.assetsConfig(providerConfig as C)) {
+      throw new Error(
+        `Invalid configuration for copilot provider ${type}: ${providerConfig}`
+      );
+    }
+    const instance = new provider(providerConfig as C);
+    logger.log(
+      `Copilot provider ${type} registered, capabilities: ${provider.capabilities.join(', ')}`
+    );
+
+    return instance;
   };
   // register the provider
-  COPILOT_PROVIDER.set(provider.type, factory);
+  COPILOT_PROVIDER.set(type, factory);
   // register the provider capabilities
   for (const capability of provider.capabilities) {
     const providers = PROVIDER_CAPABILITY_MAP.get(capability) || [];
-    if (!providers.includes(provider.type)) {
-      providers.push(provider.type);
+    if (!providers.includes(type)) {
+      providers.push(type);
     }
     PROVIDER_CAPABILITY_MAP.set(capability, providers);
   }
   // register the provider config assertion
-  ASSERT_CONFIG.set(provider.type, (config: Config) => {
+  ASSERT_CONFIG.set(type, (config: Config) => {
     assert(config.plugins.copilot);
-    const providerConfig = config.plugins.copilot[provider.type];
+    const providerConfig = config.plugins.copilot[type];
     if (!providerConfig) return false;
     return provider.assetsConfig(providerConfig as C);
   });
@@ -78,6 +88,7 @@ export function assertProvidersConfigs(config: Config) {
 
 @Injectable()
 export class CopilotProviderService {
+  private readonly logger = new Logger(CopilotProviderService.name);
   constructor(private readonly config: Config) {}
 
   private readonly cachedProviders = new Map<
@@ -93,7 +104,7 @@ export class CopilotProviderService {
       throw new Error(`Unknown copilot provider type: ${provider}`);
     }
 
-    return providerFactory(this.config);
+    return providerFactory(this.config, this.logger);
   }
 
   getProvider(provider: CopilotProviderType): CopilotProvider {
