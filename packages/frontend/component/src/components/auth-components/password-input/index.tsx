@@ -73,7 +73,11 @@ export const PasswordInput: FC<
   }, [confirmPassword, password]);
 
   useEffect(() => {
-    if (confirmStatus === 'success' && password.length >= MIN_LENGTH) {
+    if (
+      confirmStatus === 'success' &&
+      password.length >= MIN_LENGTH &&
+      password.length <= MAX_LENGTH
+    ) {
       onPass(password);
     } else {
       onPrevent();
