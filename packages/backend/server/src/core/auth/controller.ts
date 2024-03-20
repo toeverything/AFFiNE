@@ -141,6 +141,7 @@ export class AuthController {
     }
 
     email = decodeURIComponent(email);
+    token = decodeURIComponent(token);
     validators.assertValidEmail(email);
 
     const valid = await this.token.verifyToken(TokenType.SignIn, token, {
