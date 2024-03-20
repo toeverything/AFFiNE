@@ -2,9 +2,9 @@ import { MenuIcon, MenuItem } from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   ExpandCloseIcon,
-  KeepThisOneIcon,
   MoveToLeftIcon,
   MoveToRightIcon,
+  SoloViewIcon,
 } from '@blocksuite/icons';
 import { useSortable } from '@dnd-kit/sortable';
 import { useService } from '@toeverything/infra/di';
@@ -158,7 +158,7 @@ const SplitViewMenu = ({ view }: { view: View }) => {
     views.length > 1 ? (
       <MenuItem
         onClick={handleCloseOthers}
-        preFix={<MenuIcon icon={<KeepThisOneIcon />} />}
+        preFix={<MenuIcon icon={<SoloViewIcon />} />}
       >
         {t['com.affine.workbench.split-view-menu.keep-this-one']()}
       </MenuItem>
