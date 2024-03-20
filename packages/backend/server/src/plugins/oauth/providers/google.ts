@@ -36,7 +36,7 @@ export class GoogleOAuthProvider extends AutoRegisteredOAuthProvider {
       redirect_uri: this.url.link('/oauth/callback'),
       response_type: 'code',
       scope: 'openid email profile',
-      promot: 'select_account',
+      prompt: 'select_account',
       access_type: 'offline',
       ...this.config.args,
       state,
