@@ -251,7 +251,7 @@ export const createConfiguration: (
             {
               test: /\.tsx?$/,
               exclude: /node_modules/,
-              loader: require.resolve('swc-loader'),
+              loader: 'swc-loader',
               options: {
                 // https://swc.rs/docs/configuring-swc/
                 jsc: {
@@ -277,6 +277,8 @@ export const createConfiguration: (
                     useDefineForClassFields: false,
                   },
                 },
+                sourceMaps: true,
+                inlineSourcesContent: true,
               },
             },
             {
