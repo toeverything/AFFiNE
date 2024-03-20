@@ -5,7 +5,7 @@ import {
 } from '@affine/core/hooks/affine/use-server-config';
 import { OAuthProviderType } from '@affine/graphql';
 import { GithubIcon, GoogleDuotoneIcon } from '@blocksuite/icons';
-import { type ReactElement, useCallback } from 'react';
+import { type ReactElement, useCallback, useState } from 'react';
 
 import { useAuth } from './use-auth';
 
@@ -45,8 +45,10 @@ function OAuthProviders() {
 function OAuthProvider({ provider }: { provider: OAuthProviderType }) {
   const { icon } = OAuthProviderMap[provider];
   const { oauthSignIn } = useAuth();
+  const [isConnecting, setIsConnecting] = useState(false);
 
   const onClick = useCallback(() => {
+    setIsConnecting(true);
     oauthSignIn(provider);
   }, [provider, oauthSignIn]);
 
@@ -61,6 +63,7 @@ function OAuthProvider({ provider }: { provider: OAuthProviderType }) {
       onClick={onClick}
     >
       Continue with {provider}
+      {isConnecting && '...'}
     </Button>
   );
 }
