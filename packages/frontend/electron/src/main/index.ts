@@ -18,6 +18,8 @@ import { launchStage } from './windows-manager/stage';
 
 app.enableSandbox();
 
+app.commandLine.appendSwitch('enable-features', 'CSSTextAutoSpace');
+
 // use the same data for internal & beta for testing
 if (overrideSession) {
   const appName = buildType === 'stable' ? 'AFFiNE' : `AFFiNE-${buildType}`;
