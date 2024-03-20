@@ -1,6 +1,7 @@
 import './register-blocksuite-components';
 import './edgeless-template';
 
+import { apis, events } from '@affine/electron-api';
 import { setupGlobal } from '@affine/env/global';
 import * as Sentry from '@sentry/react';
 import { useEffect } from 'react';
@@ -51,10 +52,16 @@ export function setup() {
 
   // load persistent config for electron
   // TODO: should be sync, but it's not necessary for now
-  environment.isDesktop &&
+  if (environment.isDesktop) {
     appConfigProxy
       .getSync()
       .catch(() => console.error('failed to load app config'));
+    const handleMaximized = (maximized: boolean | undefined) => {
+      document.documentElement.dataset.maximized = String(maximized);
+    };
+    apis?.ui.isMaximized().then(handleMaximized).catch(console.error);
+    events?.ui.onMaximized(handleMaximized);
+  }
 
   performanceSetupLogger.info('done');
 }

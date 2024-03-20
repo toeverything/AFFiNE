@@ -21,7 +21,11 @@ type ClientHandler = {
       arg0: any,
       ...rest: infer A
     ) => any
-      ? (...args: A) => Promise<ReturnType<MainHandlers[namespace][method]>>
+      ? (
+          ...args: A
+        ) => ReturnType<MainHandlers[namespace][method]> extends Promise<any>
+          ? ReturnType<MainHandlers[namespace][method]>
+          : Promise<ReturnType<MainHandlers[namespace][method]>>
       : never;
   };
 } & HelperHandlers;

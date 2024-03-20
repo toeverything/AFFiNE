@@ -96,6 +96,10 @@ async function createWindow(additionalArguments: string[]) {
     );
 
     logger.info('main window is ready to show');
+
+    if (browserWindow.isMaximized() || browserWindow.isFullScreen()) {
+      uiSubjects.onMaximized.next(true);
+    }
   });
 
   browserWindow.on('close', e => {

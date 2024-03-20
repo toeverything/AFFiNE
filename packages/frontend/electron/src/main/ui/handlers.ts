@@ -12,6 +12,10 @@ import { getChallengeResponse } from './challenge';
 import { getGoogleOauthCode } from './google-auth';
 
 export const uiHandlers = {
+  isMaximized: async () => {
+    const window = await getMainWindow();
+    return window?.isMaximized();
+  },
   handleThemeChange: async (_, theme: (typeof nativeTheme)['themeSource']) => {
     nativeTheme.themeSource = theme;
   },
