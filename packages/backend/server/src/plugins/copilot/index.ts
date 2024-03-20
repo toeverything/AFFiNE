@@ -1,9 +1,6 @@
 import { ServerFeature } from '../../core/config';
 import { Plugin } from '../registry';
-import {
-  assertProvidersConfigs,
-  CopilotProviderService,
-} from './provider';
+import { assertProvidersConfigs, CopilotProviderService } from './provider';
 
 @Plugin({
   name: 'copilot',
