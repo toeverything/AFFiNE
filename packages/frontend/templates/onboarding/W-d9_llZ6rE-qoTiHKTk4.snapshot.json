@@ -24,6 +24,949 @@
     "children": [
       {
         "type": "block",
+        "id": "YSoxDTnsIMu8JquYH3TKA",
+        "flavour": "affine:note",
+        "version": 1,
+        "props": {
+          "xywh": "[438.73809335123497,-1277.4147764053048,800,418.90625]",
+          "background": "--affine-tag-red",
+          "index": "aK",
+          "hidden": false,
+          "displayMode": "both",
+          "edgeless": {
+            "style": {
+              "borderRadius": 8,
+              "borderSize": 4,
+              "borderStyle": "solid",
+              "shadowType": "--affine-note-shadow-film"
+            },
+            "collapse": true
+          }
+        },
+        "children": [
+          {
+            "type": "block",
+            "id": "07zREpqxTFSI4sHOJqXqj",
+            "flavour": "affine:paragraph",
+            "version": 1,
+            "props": {
+              "type": "text",
+              "text": {
+                "$blocksuite:internal:text$": true,
+                "delta": [
+                  {
+                    "insert": "AFFiNE is an open source all in one workspace, an operating system for all the building blocks of your team wiki, knowledge management and digital assets and a better alternative to Notion and Miro. "
+                  }
+                ]
+              }
+            },
+            "children": []
+          },
+          {
+            "type": "block",
+            "id": "fxH1CmEwujpj7i6Fqw_63",
+            "flavour": "affine:paragraph",
+            "version": 1,
+            "props": {
+              "type": "text",
+              "text": {
+                "$blocksuite:internal:text$": true,
+                "delta": []
+              }
+            },
+            "children": []
+          },
+          {
+            "type": "block",
+            "id": "6a5cXjLNUBkRK3q9mFCho",
+            "flavour": "affine:paragraph",
+            "version": 1,
+            "props": {
+              "type": "h1",
+              "text": {
+                "$blocksuite:internal:text$": true,
+                "delta": [
+                  {
+                    "insert": "You own your data, with no compromises"
+                  }
+                ]
+              }
+            },
+            "children": []
+          },
+          {
+            "type": "block",
+            "id": "PnIQI6toa9gtAEFoaQ6pa",
+            "flavour": "affine:paragraph",
+            "version": 1,
+            "props": {
+              "type": "h2",
+              "text": {
+                "$blocksuite:internal:text$": true,
+                "delta": [
+                  {
+                    "insert": "Local-first & Real-time collaborative"
+                  }
+                ]
+              }
+            },
+            "children": []
+          },
+          {
+            "type": "block",
+            "id": "0ijZZYbxui80wOpm4Fskj",
+            "flavour": "affine:paragraph",
+            "version": 1,
+            "props": {
+              "type": "text",
+              "text": {
+                "$blocksuite:internal:text$": true,
+                "delta": [
+                  {
+                    "insert": "We love the idea proposed by Ink & Switch in the famous article about you owning your data, despite the cloud. Furthermore, AFFiNE is the first all-in-one workspace that keeps your data ownership with no compromises on real-time collaboration and editing experience."
+                  }
+                ]
+              }
+            },
+            "children": []
+          },
+          {
+            "type": "block",
+            "id": "6y_K3csyYwe60f-zCxqjU",
+            "flavour": "affine:paragraph",
+            "version": 1,
+            "props": {
+              "type": "text",
+              "text": {
+                "$blocksuite:internal:text$": true,
+                "delta": [
+                  {
+                    "insert": "AFFiNE is a local-first application upon CRDTs with real-time collaboration support. Your data is always stored locally while multiple nodes remain synced in real-time."
+                  }
+                ]
+              }
+            },
+            "children": []
+          },
+          {
+            "type": "block",
+            "id": "d5CL4nNGlE-d4X3XlHHRF",
+            "flavour": "affine:paragraph",
+            "version": 1,
+            "props": {
+              "type": "text",
+              "text": {
+                "$blocksuite:internal:text$": true,
+                "delta": []
+              }
+            },
+            "children": []
+          }
+        ]
+      },
+      {
+        "type": "block",
+        "id": "7oV3CPynT-XYdFFY5c_mi",
+        "flavour": "affine:note",
+        "version": 1,
+        "props": {
+          "xywh": "[2484.0157497641612,-1051.5730113850618,800,134]",
+          "background": "--affine-tag-yellow",
+          "index": "aU",
+          "hidden": false,
+          "displayMode": "both",
+          "edgeless": {
+            "style": {
+              "borderRadius": 8,
+              "borderSize": 4,
+              "borderStyle": "solid",
+              "shadowType": "--affine-note-shadow-film"
+            }
+          }
+        },
+        "children": [
+          {
+            "type": "block",
+            "id": "sss6le3aF4LkE9FobdMf5",
+            "flavour": "affine:paragraph",
+            "version": 1,
+            "props": {
+              "type": "h3",
+              "text": {
+                "$blocksuite:internal:text$": true,
+                "delta": [
+                  {
+                    "insert": "Blocks that assemble your next docs, tasks kanban or whiteboard"
+                  }
+                ]
+              }
+            },
+            "children": []
+          }
+        ]
+      },
+      {
+        "type": "block",
+        "id": "ZcshKhs7PFzYxJMgEHCOm",
+        "flavour": "affine:note",
+        "version": 1,
+        "props": {
+          "xywh": "[886.5945663000393,-785.2596531832153,800,305]",
+          "background": "--affine-background-secondary-color",
+          "index": "aL",
+          "hidden": false,
+          "displayMode": "both",
+          "edgeless": {
+            "style": {
+              "borderRadius": 8,
+              "borderSize": 4,
+              "borderStyle": "solid",
+              "shadowType": "--affine-note-shadow-film"
+            }
+          }
+        },
+        "children": [
+          {
+            "type": "block",
+            "id": "d6XZGgdQDcMXysIZkhavO",
+            "flavour": "affine:paragraph",
+            "version": 1,
+            "props": {
+              "type": "text",
+              "text": {
+                "$blocksuite:internal:text$": true,
+                "delta": [
+                  {
+                    "insert": "There is a large overlap of their atomic \"building blocks\" between these apps. They are neither open source nor have a plugin system like VS Code for contributors to customize. We want to have something that contains all the features we love and goes one step further. "
+                  }
+                ]
+              }
+            },
+            "children": []
+          },
+          {
+            "type": "block",
+            "id": "VDgeXK0K8ktCT0qOfnEKq",
+            "flavour": "affine:paragraph",
+            "version": 1,
+            "props": {
+              "type": "text",
+              "text": {
+                "$blocksuite:internal:text$": true,
+                "delta": [
+                  {
+                    "insert": "We are building AFFiNE to be a fundamental open source platform that contains all the building blocks for docs, task management and visual collaboration, hoping you can shape your next workflow with us that can make your life better and also connect others, too."
+                  }
+                ]
+              }
+            },
+            "children": []
+          },
+          {
+            "type": "block",
+            "id": "ExioNpVxh9yu6sbttKl_A",
+            "flavour": "affine:paragraph",
+            "version": 1,
+            "props": {
+              "type": "text",
+              "text": {
+                "$blocksuite:internal:text$": true,
+                "delta": [
+                  {
+                    "insert": "If you want to learn more about the product design of AFFiNE, here goes the concepts:"
+                  }
+                ]
+              }
+            },
+            "children": []
+          },
+          {
+            "type": "block",
+            "id": "1eyjujzWkARvzIEt_NO_0",
+            "flavour": "affine:paragraph",
+            "version": 1,
+            "props": {
+              "type": "text",
+              "text": {
+                "$blocksuite:internal:text$": true,
+                "delta": [
+                  {
+                    "insert": "To Shape, not to adapt. AFFiNE is built for individuals & teams who care about their data, who refuse vendor lock-in, and who want to have control over their essential tools."
+                  }
+                ]
+              }
+            },
+            "children": []
+          }
+        ]
+      },
+      {
+        "type": "block",
+        "id": "ZNSCuf1BqiNh3AlWyHY0t",
+        "flavour": "affine:note",
+        "version": 1,
+        "props": {
+          "xywh": "[1322.8919532481555,-1287.8991514053048,800,446]",
+          "background": "--affine-tag-green",
+          "index": "aM",
+          "hidden": false,
+          "displayMode": "both",
+          "edgeless": {
+            "style": {
+              "borderRadius": 8,
+              "borderSize": 4,
+              "borderStyle": "solid",
+              "shadowType": "--affine-note-shadow-film"
+            }
+          }
+        },
+        "children": [
+          {
+            "type": "block",
+            "id": "XtY2gZutHqlucdQRLYfLv",
+            "flavour": "affine:paragraph",
+            "version": 1,
+            "props": {
+              "type": "h2",
+              "text": {
+                "$blocksuite:internal:text$": true,
+                "delta": [
+                  {
+                    "insert": "A true canvas for blocks in any form"
+                  }
+                ]
+              }
+            },
+            "children": []
+          },
+          {
+            "type": "block",
+            "id": "ERXI-KCSmMxuigTuyqpBh",
+            "flavour": "affine:paragraph",
+            "version": 1,
+            "props": {
+              "type": "text",
+              "text": {
+                "$blocksuite:internal:text$": true,
+                "delta": [
+                  {
+                    "insert": "Many editor apps ",
+                    "attributes": {
+                      "link": "http://notion.so"
+                    }
+                  },
+                  {
+                    "insert": "claimed to be a canvas for productivity. Since "
+                  },
+                  {
+                    "insert": "the Mother of All Demos, ",
+                    "attributes": {
+                      "italic": true
+                    }
+                  },
+                  {
+                    "insert": "Douglas Engelbart, a creative and programable digital workspace has been a pursuit and an ultimate mission for generations of tool makers. "
+                  }
+                ]
+              }
+            },
+            "children": []
+          },
+          {
+            "type": "block",
+            "id": "HSl6Bq8rNCLUEcfTId6Mr",
+            "flavour": "affine:paragraph",
+            "version": 1,
+            "props": {
+              "type": "text",
+              "text": {
+                "$blocksuite:internal:text$": true,
+                "delta": []
+              }
+            },
+            "children": []
+          },
+          {
+            "type": "block",
+            "id": "jfCmCiTXQN1AtM_K_DWX4",
+            "flavour": "affine:paragraph",
+            "version": 1,
+            "props": {
+              "type": "text",
+              "text": {
+                "$blocksuite:internal:text$": true,
+                "delta": [
+                  {
+                    "insert": "\"We shape our tools and thereafter our tools shape us”. A lot of pioneers have inspired us a long the way, e.g.:"
+                  }
+                ]
+              }
+            },
+            "children": []
+          },
+          {
+            "type": "block",
+            "id": "yBHetcOAeSfZ-smN9qMH-",
+            "flavour": "affine:list",
+            "version": 1,
+            "props": {
+              "type": "bulleted",
+              "text": {
+                "$blocksuite:internal:text$": true,
+                "delta": [
+                  {
+                    "insert": "Quip & Notion with their great concept of \"everything is a block\""
+                  }
+                ]
+              },
+              "checked": false,
+              "collapsed": false
+            },
+            "children": []
+          },
+          {
+            "type": "block",
+            "id": "hquAycZ8LIBIjfhWgqSdy",
+            "flavour": "affine:list",
+            "version": 1,
+            "props": {
+              "type": "bulleted",
+              "text": {
+                "$blocksuite:internal:text$": true,
+                "delta": [
+                  {
+                    "insert": "Trello with their Kanban"
+                  }
+                ]
+              },
+              "checked": false,
+              "collapsed": false
+            },
+            "children": []
+          },
+          {
+            "type": "block",
+            "id": "VziHUXzoONYBwoX8ZJe2Q",
+            "flavour": "affine:list",
+            "version": 1,
+            "props": {
+              "type": "bulleted",
+              "text": {
+                "$blocksuite:internal:text$": true,
+                "delta": [
+                  {
+                    "insert": "Airtable & Miro with their no-code programable datasheets"
+                  }
+                ]
+              },
+              "checked": false,
+              "collapsed": false
+            },
+            "children": []
+          },
+          {
+            "type": "block",
+            "id": "kfP3ZyrbceVljpp2zx-yN",
+            "flavour": "affine:list",
+            "version": 1,
+            "props": {
+              "type": "bulleted",
+              "text": {
+                "$blocksuite:internal:text$": true,
+                "delta": [
+                  {
+                    "insert": "Miro & Whimiscal with their edgeless visual whiteboard"
+                  }
+                ]
+              },
+              "checked": false,
+              "collapsed": false
+            },
+            "children": []
+          },
+          {
+            "type": "block",
+            "id": "QgyKTOLP3RqDnV7Dn59yK",
+            "flavour": "affine:list",
+            "version": 1,
+            "props": {
+              "type": "bulleted",
+              "text": {
+                "$blocksuite:internal:text$": true,
+                "delta": [
+                  {
+                    "insert": "Remnote & Capacities with their object-based tag system"
+                  }
+                ]
+              },
+              "checked": false,
+              "collapsed": false
+            },
+            "children": []
+          }
+        ]
+      },
+      {
+        "type": "block",
+        "id": "vRgSpk57kZbASGEZGq848",
+        "flavour": "affine:note",
+        "version": 1,
+        "props": {
+          "xywh": "[988.4153663986212,-9.650269435294504,800,174]",
+          "background": "--affine-background-secondary-color",
+          "index": "aXl",
+          "hidden": false,
+          "displayMode": "both",
+          "edgeless": {
+            "style": {
+              "borderRadius": 8,
+              "borderSize": 4,
+              "borderStyle": "solid",
+              "shadowType": "--affine-note-shadow-film"
+            }
+          }
+        },
+        "children": [
+          {
+            "type": "block",
+            "id": "IGAoDfBpsl4dekAajnnz4",
+            "flavour": "affine:paragraph",
+            "version": 1,
+            "props": {
+              "type": "text",
+              "text": {
+                "$blocksuite:internal:text$": true,
+                "delta": [
+                  {
+                    "insert": "For more details, please refer to our "
+                  },
+                  {
+                    "insert": "RoadMap",
+                    "attributes": {
+                      "link": "https://docs.affine.pro/docs/core-concepts/roadmap"
+                    }
+                  }
+                ]
+              }
+            },
+            "children": []
+          },
+          {
+            "type": "block",
+            "id": "DQRA1VFJfngFp4zUzInSh",
+            "flavour": "affine:paragraph",
+            "version": 1,
+            "props": {
+              "type": "h2",
+              "text": {
+                "$blocksuite:internal:text$": true,
+                "delta": [
+                  {
+                    "insert": "Self Host"
+                  }
+                ]
+              }
+            },
+            "children": []
+          },
+          {
+            "type": "block",
+            "id": "UUGpsr6PzhwTGD1sXGc2P",
+            "flavour": "affine:paragraph",
+            "version": 1,
+            "props": {
+              "type": "text",
+              "text": {
+                "$blocksuite:internal:text$": true,
+                "delta": [
+                  {
+                    "insert": "Self host AFFiNE"
+                  }
+                ]
+              }
+            },
+            "children": []
+          }
+        ]
+      },
+      {
+        "type": "block",
+        "id": "ti3bUhK2TwBdOzJik6e3S",
+        "flavour": "affine:note",
+        "version": 1,
+        "props": {
+          "xywh": "[-175.61424738883917,-187.42202027192565,800,630]",
+          "background": "--affine-palette-transparent",
+          "index": "aUV",
+          "hidden": false,
+          "displayMode": "both",
+          "edgeless": {
+            "style": {
+              "borderRadius": 8,
+              "borderSize": 4,
+              "borderStyle": "solid",
+              "shadowType": "--affine-note-shadow-film"
+            }
+          }
+        },
+        "children": [
+          {
+            "type": "block",
+            "id": "ca52PVhUmUI4rcalZcNIP",
+            "flavour": "affine:database",
+            "version": 3,
+            "props": {
+              "views": [
+                {
+                  "id": "Gt8Hbz0vBy33WSl58VH2Y",
+                  "name": "Table View",
+                  "mode": "table",
+                  "columns": [],
+                  "filter": {
+                    "type": "group",
+                    "op": "and",
+                    "conditions": []
+                  },
+                  "header": {
+                    "titleColumn": "tEvV9x-oBP3m4MwVyFH1Z",
+                    "iconColumn": "type"
+                  }
+                },
+                {
+                  "id": "43eIk3skKQWFlamyg8IIn",
+                  "name": "Kanban View",
+                  "mode": "kanban",
+                  "columns": [
+                    {
+                      "id": "tEvV9x-oBP3m4MwVyFH1Z",
+                      "hide": false
+                    },
+                    {
+                      "id": "sC99IAB2x_QM0zaPEj2ow",
+                      "hide": false
+                    }
+                  ],
+                  "filter": {
+                    "type": "group",
+                    "op": "and",
+                    "conditions": []
+                  },
+                  "groupBy": {
+                    "type": "groupBy",
+                    "columnId": "sC99IAB2x_QM0zaPEj2ow",
+                    "name": "multi-select"
+                  },
+                  "header": {
+                    "titleColumn": "tEvV9x-oBP3m4MwVyFH1Z",
+                    "iconColumn": "type"
+                  },
+                  "groupProperties": []
+                }
+              ],
+              "title": {
+                "$blocksuite:internal:text$": true,
+                "delta": [
+                  {
+                    "insert": "Learning From"
+                  }
+                ]
+              },
+              "cells": {
+                "ZfDcoflQ7MExWUITd3KrK": {
+                  "sC99IAB2x_QM0zaPEj2ow": {
+                    "columnId": "sC99IAB2x_QM0zaPEj2ow",
+                    "value": [
+                      "AxSe-53xjX"
+                    ]
+                  }
+                },
+                "Yf71D3Dlr73G18wDZuQqE": {
+                  "sC99IAB2x_QM0zaPEj2ow": {
+                    "columnId": "sC99IAB2x_QM0zaPEj2ow",
+                    "value": [
+                      "0jh9gNw4Yl"
+                    ]
+                  }
+                },
+                "SUg3un_w_z8TUEtHfh8ut": {
+                  "sC99IAB2x_QM0zaPEj2ow": {
+                    "columnId": "sC99IAB2x_QM0zaPEj2ow",
+                    "value": [
+                      "HgHsKOUINZ"
+                    ]
+                  }
+                },
+                "-aZgjpp_AnbWd8Dw2Ztgf": {
+                  "sC99IAB2x_QM0zaPEj2ow": {
+                    "columnId": "sC99IAB2x_QM0zaPEj2ow",
+                    "value": [
+                      "HgHsKOUINZ"
+                    ]
+                  }
+                },
+                "TBmAnCe_VyLufkGcXxoqa": {
+                  "sC99IAB2x_QM0zaPEj2ow": {
+                    "columnId": "sC99IAB2x_QM0zaPEj2ow",
+                    "value": [
+                      "HgHsKOUINZ"
+                    ]
+                  }
+                },
+                "5X09XHOGZocBet9Gc8jLg": {
+                  "sC99IAB2x_QM0zaPEj2ow": {
+                    "columnId": "sC99IAB2x_QM0zaPEj2ow",
+                    "value": [
+                      "HgHsKOUINZ"
+                    ]
+                  }
+                }
+              },
+              "columns": [
+                {
+                  "type": "title",
+                  "name": "Title",
+                  "data": {},
+                  "id": "tEvV9x-oBP3m4MwVyFH1Z"
+                },
+                {
+                  "type": "multi-select",
+                  "name": "Tag",
+                  "data": {
+                    "options": [
+                      {
+                        "id": "HgHsKOUINZ",
+                        "value": "Reference",
+                        "color": "var(--affine-tag-blue)"
+                      },
+                      {
+                        "id": "0jh9gNw4Yl",
+                        "value": "Developers",
+                        "color": "var(--affine-tag-orange)"
+                      },
+                      {
+                        "id": "AxSe-53xjX",
+                        "value": "AFFiNE",
+                        "color": "var(--affine-tag-pink)"
+                      }
+                    ]
+                  },
+                  "id": "sC99IAB2x_QM0zaPEj2ow"
+                }
+              ]
+            },
+            "children": [
+              {
+                "type": "block",
+                "id": "ZfDcoflQ7MExWUITd3KrK",
+                "flavour": "affine:paragraph",
+                "version": 1,
+                "props": {
+                  "type": "text",
+                  "text": {
+                    "$blocksuite:internal:text$": true,
+                    "delta": [
+                      {
+                        "insert": "Affine Development"
+                      }
+                    ]
+                  }
+                },
+                "children": []
+              },
+              {
+                "type": "block",
+                "id": "Yf71D3Dlr73G18wDZuQqE",
+                "flavour": "affine:paragraph",
+                "version": 1,
+                "props": {
+                  "type": "text",
+                  "text": {
+                    "$blocksuite:internal:text$": true,
+                    "delta": [
+                      {
+                        "insert": "For developers or installations guides, please go to AFFiNE Doc"
+                      }
+                    ]
+                  }
+                },
+                "children": []
+              },
+              {
+                "type": "block",
+                "id": "SUg3un_w_z8TUEtHfh8ut",
+                "flavour": "affine:paragraph",
+                "version": 1,
+                "props": {
+                  "type": "text",
+                  "text": {
+                    "$blocksuite:internal:text$": true,
+                    "delta": [
+                      {
+                        "insert": "Quip & Notion with their great concept of \"everything is a block\""
+                      }
+                    ]
+                  }
+                },
+                "children": []
+              },
+              {
+                "type": "block",
+                "id": "-aZgjpp_AnbWd8Dw2Ztgf",
+                "flavour": "affine:paragraph",
+                "version": 1,
+                "props": {
+                  "type": "text",
+                  "text": {
+                    "$blocksuite:internal:text$": true,
+                    "delta": [
+                      {
+                        "insert": "Trello with their Kanban"
+                      }
+                    ]
+                  }
+                },
+                "children": []
+              },
+              {
+                "type": "block",
+                "id": "TBmAnCe_VyLufkGcXxoqa",
+                "flavour": "affine:paragraph",
+                "version": 1,
+                "props": {
+                  "type": "text",
+                  "text": {
+                    "$blocksuite:internal:text$": true,
+                    "delta": [
+                      {
+                        "insert": "Airtable & Miro with their no-code programable datasheets"
+                      }
+                    ]
+                  }
+                },
+                "children": []
+              },
+              {
+                "type": "block",
+                "id": "5X09XHOGZocBet9Gc8jLg",
+                "flavour": "affine:paragraph",
+                "version": 1,
+                "props": {
+                  "type": "text",
+                  "text": {
+                    "$blocksuite:internal:text$": true,
+                    "delta": [
+                      {
+                        "insert": "Miro & Whimiscal with their edgeless visual whiteboard"
+                      }
+                    ]
+                  }
+                },
+                "children": []
+              },
+              {
+                "type": "block",
+                "id": "AQlHIrBsnVvXbcv7CkfIb",
+                "flavour": "affine:paragraph",
+                "version": 1,
+                "props": {
+                  "type": "text",
+                  "text": {
+                    "$blocksuite:internal:text$": true,
+                    "delta": [
+                      {
+                        "insert": "Remnote & Capacities with their object-based tag system"
+                      }
+                    ]
+                  }
+                },
+                "children": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "block",
+        "id": "WroyA5reQf_79VDO8Ydbe",
+        "flavour": "affine:note",
+        "version": 1,
+        "props": {
+          "xywh": "[2451.5708243349773,387.12444894259284,777.7775400037704,132.5246263504423]",
+          "background": "--affine-background-secondary-color",
+          "index": "ah-",
+          "hidden": false,
+          "displayMode": "both",
+          "edgeless": {
+            "style": {
+              "borderRadius": 8,
+              "borderSize": 4,
+              "borderStyle": "solid",
+              "shadowType": "--affine-note-shadow-film"
+            },
+            "collapse": true
+          }
+        },
+        "children": [
+          {
+            "type": "block",
+            "id": "UjEFRdtgkPYh5hxZMueYw",
+            "flavour": "affine:paragraph",
+            "version": 1,
+            "props": {
+              "type": "h2",
+              "text": {
+                "$blocksuite:internal:text$": true,
+                "delta": [
+                  {
+                    "insert": "Affine Development"
+                  }
+                ]
+              }
+            },
+            "children": []
+          },
+          {
+            "type": "block",
+            "id": "hYAZBSl_jFeVWTiMQlKvj",
+            "flavour": "affine:paragraph",
+            "version": 1,
+            "props": {
+              "type": "text",
+              "text": {
+                "$blocksuite:internal:text$": true,
+                "delta": [
+                  {
+                    "insert": "For developer or installation guides, please go to "
+                  },
+                  {
+                    "insert": "AFFiNE Development",
+                    "attributes": {
+                      "link": "https://docs.affine.pro/docs/development/quick-start"
+                    }
+                  }
+                ]
+              }
+            },
+            "children": []
+          },
+          {
+            "type": "block",
+            "id": "3yGs4dQr_ohw6Qs22iTKS",
+            "flavour": "affine:paragraph",
+            "version": 1,
+            "props": {
+              "type": "text",
+              "text": {
+                "$blocksuite:internal:text$": true,
+                "delta": []
+              }
+            },
+            "children": []
+          }
+        ]
+      },
+      {
+        "type": "block",
         "id": "gsihee3VzYjV0p_A6Lksi",
         "flavour": "affine:surface",
         "version": 5,
@@ -415,7 +1358,7 @@
             },
             "w86OKmzMtn": {
               "type": "shape",
-              "xywh": "[-1055.7017064945487,-981.0008617000956,634.709612282481,295.7649942194072]",
+              "xywh": "[-1055.7017064945487,-981.0008617000956,702.1470991695091,295.7649942194072]",
               "rotate": 0,
               "shapeType": "rect",
               "shapeStyle": "General",
@@ -500,13 +1443,13 @@
             },
             "F-GXtb8ubm": {
               "type": "text",
-              "xywh": "[-183.35234372014295,-333.83661977719123,689.3569488978001,92.25]",
+              "xywh": "[-183.35234372014293,-333.83661977719123,744.8157214875225,92]",
               "rotate": 0,
               "text": {
                 "affine:surface:text": true,
                 "delta": [
                   {
-                    "insert": "Database reference"
+                    "insert": "Database Reference"
                   }
                 ]
               },
@@ -714,960 +1657,6 @@
               "xywh": "[3446.6044934637607,-1339.9783466050073,122.45568062094182,197.1792165914935]",
               "rotate": 10.938230891828395,
               "size": 71614
-            },
-            "children": []
-          }
-        ]
-      },
-      {
-        "type": "block",
-        "id": "YSoxDTnsIMu8JquYH3TKA",
-        "flavour": "affine:note",
-        "version": 1,
-        "props": {
-          "xywh": "[438.73809335123497,-1277.4147764053048,800,418.90625]",
-          "background": "--affine-tag-red",
-          "index": "aK",
-          "hidden": false,
-          "edgeless": {
-            "style": {
-              "borderRadius": 8,
-              "borderSize": 4,
-              "borderStyle": "solid",
-              "shadowType": "--affine-note-shadow-film"
-            },
-            "collapse": true
-          },
-          "displayMode": "both"
-        },
-        "children": [
-          {
-            "type": "block",
-            "id": "07zREpqxTFSI4sHOJqXqj",
-            "flavour": "affine:paragraph",
-            "version": 1,
-            "props": {
-              "type": "text",
-              "text": {
-                "$blocksuite:internal:text$": true,
-                "delta": [
-                  {
-                    "insert": "AFFiNE is an open source all in one workspace, an operating system for all the building blocks of your team wiki, knowledge management and digital assets, an better alternative to Notion and Miro. "
-                  }
-                ]
-              }
-            },
-            "children": []
-          },
-          {
-            "type": "block",
-            "id": "fxH1CmEwujpj7i6Fqw_63",
-            "flavour": "affine:paragraph",
-            "version": 1,
-            "props": {
-              "type": "text",
-              "text": {
-                "$blocksuite:internal:text$": true,
-                "delta": []
-              }
-            },
-            "children": []
-          },
-          {
-            "type": "block",
-            "id": "6a5cXjLNUBkRK3q9mFCho",
-            "flavour": "affine:paragraph",
-            "version": 1,
-            "props": {
-              "type": "h1",
-              "text": {
-                "$blocksuite:internal:text$": true,
-                "delta": [
-                  {
-                    "insert": "You own your data, with no compromises"
-                  }
-                ]
-              }
-            },
-            "children": []
-          },
-          {
-            "type": "block",
-            "id": "PnIQI6toa9gtAEFoaQ6pa",
-            "flavour": "affine:paragraph",
-            "version": 1,
-            "props": {
-              "type": "h2",
-              "text": {
-                "$blocksuite:internal:text$": true,
-                "delta": [
-                  {
-                    "insert": "Local-first & Real-time collaborative"
-                  }
-                ]
-              }
-            },
-            "children": []
-          },
-          {
-            "type": "block",
-            "id": "0ijZZYbxui80wOpm4Fskj",
-            "flavour": "affine:paragraph",
-            "version": 1,
-            "props": {
-              "type": "text",
-              "text": {
-                "$blocksuite:internal:text$": true,
-                "delta": [
-                  {
-                    "insert": "We love the idea proposed by ink&switch in the famous article of @you own your data, inspite of the cloud. Further more, AFFiNE is the first all-in-one workspace that keep your data ownership with no compromises on real-time collaboration and editing experience."
-                  }
-                ]
-              }
-            },
-            "children": []
-          },
-          {
-            "type": "block",
-            "id": "6y_K3csyYwe60f-zCxqjU",
-            "flavour": "affine:paragraph",
-            "version": 1,
-            "props": {
-              "type": "text",
-              "text": {
-                "$blocksuite:internal:text$": true,
-                "delta": [
-                  {
-                    "insert": "AFFiNE is a local-first application upon CRDTs with real-time collaboration support. Your data is always stored locally while multiple nodes remains synced in real-time."
-                  }
-                ]
-              }
-            },
-            "children": []
-          },
-          {
-            "type": "block",
-            "id": "d5CL4nNGlE-d4X3XlHHRF",
-            "flavour": "affine:paragraph",
-            "version": 1,
-            "props": {
-              "type": "text",
-              "text": {
-                "$blocksuite:internal:text$": true,
-                "delta": []
-              }
-            },
-            "children": []
-          }
-        ]
-      },
-      {
-        "type": "block",
-        "id": "7oV3CPynT-XYdFFY5c_mi",
-        "flavour": "affine:note",
-        "version": 1,
-        "props": {
-          "xywh": "[2484.0157497641612,-1051.5730113850618,800,134]",
-          "background": "--affine-tag-yellow",
-          "index": "aU",
-          "hidden": false,
-          "edgeless": {
-            "style": {
-              "borderRadius": 8,
-              "borderSize": 4,
-              "borderStyle": "solid",
-              "shadowType": "--affine-note-shadow-film"
-            }
-          },
-          "displayMode": "both"
-        },
-        "children": [
-          {
-            "type": "block",
-            "id": "sss6le3aF4LkE9FobdMf5",
-            "flavour": "affine:paragraph",
-            "version": 1,
-            "props": {
-              "type": "h3",
-              "text": {
-                "$blocksuite:internal:text$": true,
-                "delta": [
-                  {
-                    "insert": "Blocks that assemable your next docs, tasks kanban or whiteboard"
-                  }
-                ]
-              }
-            },
-            "children": []
-          }
-        ]
-      },
-      {
-        "type": "block",
-        "id": "ZcshKhs7PFzYxJMgEHCOm",
-        "flavour": "affine:note",
-        "version": 1,
-        "props": {
-          "xywh": "[886.5945663000393,-785.2596531832153,800,305]",
-          "background": "--affine-background-secondary-color",
-          "index": "aL",
-          "hidden": false,
-          "edgeless": {
-            "style": {
-              "borderRadius": 8,
-              "borderSize": 4,
-              "borderStyle": "solid",
-              "shadowType": "--affine-note-shadow-film"
-            }
-          },
-          "displayMode": "both"
-        },
-        "children": [
-          {
-            "type": "block",
-            "id": "d6XZGgdQDcMXysIZkhavO",
-            "flavour": "affine:paragraph",
-            "version": 1,
-            "props": {
-              "type": "text",
-              "text": {
-                "$blocksuite:internal:text$": true,
-                "delta": [
-                  {
-                    "insert": "There are a large overlap of their atomic \"buliding blocks\" beween these apps. And they are not open souce, nor do they have a plugin system like Vscode for contributors to customize. We want to have something that contains all the features we love and also go one step even further. "
-                  }
-                ]
-              }
-            },
-            "children": []
-          },
-          {
-            "type": "block",
-            "id": "VDgeXK0K8ktCT0qOfnEKq",
-            "flavour": "affine:paragraph",
-            "version": 1,
-            "props": {
-              "type": "text",
-              "text": {
-                "$blocksuite:internal:text$": true,
-                "delta": [
-                  {
-                    "insert": "We are building AFFiNE to be a fundamental open souce platform that caintains all the building blocks for docs, task management and visual collaboration, hoping you can shaping your next workflow with us that can make your life better and also connecting others, too."
-                  }
-                ]
-              }
-            },
-            "children": []
-          },
-          {
-            "type": "block",
-            "id": "ExioNpVxh9yu6sbttKl_A",
-            "flavour": "affine:paragraph",
-            "version": 1,
-            "props": {
-              "type": "text",
-              "text": {
-                "$blocksuite:internal:text$": true,
-                "delta": [
-                  {
-                    "insert": "If you want to learn more about the product design of AFFiNE, here goes the concepts:"
-                  }
-                ]
-              }
-            },
-            "children": []
-          },
-          {
-            "type": "block",
-            "id": "1eyjujzWkARvzIEt_NO_0",
-            "flavour": "affine:paragraph",
-            "version": 1,
-            "props": {
-              "type": "text",
-              "text": {
-                "$blocksuite:internal:text$": true,
-                "delta": [
-                  {
-                    "insert": "To Shape, not to adapt. AFFiNE is built for individual & teams who care their data, who refuse vendor lock-in, and who want to have control over their essential tools."
-                  }
-                ]
-              }
-            },
-            "children": []
-          }
-        ]
-      },
-      {
-        "type": "block",
-        "id": "ZNSCuf1BqiNh3AlWyHY0t",
-        "flavour": "affine:note",
-        "version": 1,
-        "props": {
-          "xywh": "[1322.8919532481555,-1287.8991514053048,800,440]",
-          "background": "--affine-tag-green",
-          "index": "aM",
-          "hidden": false,
-          "edgeless": {
-            "style": {
-              "borderRadius": 8,
-              "borderSize": 4,
-              "borderStyle": "solid",
-              "shadowType": "--affine-note-shadow-film"
-            }
-          },
-          "displayMode": "both"
-        },
-        "children": [
-          {
-            "type": "block",
-            "id": "XtY2gZutHqlucdQRLYfLv",
-            "flavour": "affine:paragraph",
-            "version": 1,
-            "props": {
-              "type": "h2",
-              "text": {
-                "$blocksuite:internal:text$": true,
-                "delta": [
-                  {
-                    "insert": "A true canvas for blocks in any form"
-                  }
-                ]
-              }
-            },
-            "children": []
-          },
-          {
-            "type": "block",
-            "id": "ERXI-KCSmMxuigTuyqpBh",
-            "flavour": "affine:paragraph",
-            "version": 1,
-            "props": {
-              "type": "text",
-              "text": {
-                "$blocksuite:internal:text$": true,
-                "delta": [
-                  {
-                    "insert": "Many editor app ",
-                    "attributes": {
-                      "link": "http://notion.so"
-                    }
-                  },
-                  {
-                    "insert": "claimed to be a canvas for productivity. Since "
-                  },
-                  {
-                    "insert": "the Mother of All Demos, ",
-                    "attributes": {
-                      "italic": true
-                    }
-                  },
-                  {
-                    "insert": "Douglas Engelbart, a creative and programable digital workspace has been a pursuit and an ultimate mission for generations of tool makers. "
-                  }
-                ]
-              }
-            },
-            "children": []
-          },
-          {
-            "type": "block",
-            "id": "HSl6Bq8rNCLUEcfTId6Mr",
-            "flavour": "affine:paragraph",
-            "version": 1,
-            "props": {
-              "type": "text",
-              "text": {
-                "$blocksuite:internal:text$": true,
-                "delta": []
-              }
-            },
-            "children": []
-          },
-          {
-            "type": "block",
-            "id": "jfCmCiTXQN1AtM_K_DWX4",
-            "flavour": "affine:paragraph",
-            "version": 1,
-            "props": {
-              "type": "text",
-              "text": {
-                "$blocksuite:internal:text$": true,
-                "delta": [
-                  {
-                    "insert": "\"We shape our tools and thereafter our tools shape us”. A lot of pioneers have inspired us a long the way, e.g.:"
-                  }
-                ]
-              }
-            },
-            "children": []
-          },
-          {
-            "type": "block",
-            "id": "yBHetcOAeSfZ-smN9qMH-",
-            "flavour": "affine:list",
-            "version": 1,
-            "props": {
-              "type": "bulleted",
-              "text": {
-                "$blocksuite:internal:text$": true,
-                "delta": [
-                  {
-                    "insert": "Quip & Notion with their great concept of \"everything is a block\""
-                  }
-                ]
-              },
-              "checked": false,
-              "collapsed": false
-            },
-            "children": []
-          },
-          {
-            "type": "block",
-            "id": "hquAycZ8LIBIjfhWgqSdy",
-            "flavour": "affine:list",
-            "version": 1,
-            "props": {
-              "type": "bulleted",
-              "text": {
-                "$blocksuite:internal:text$": true,
-                "delta": [
-                  {
-                    "insert": "Trello with their Kanban"
-                  }
-                ]
-              },
-              "checked": false,
-              "collapsed": false
-            },
-            "children": []
-          },
-          {
-            "type": "block",
-            "id": "VziHUXzoONYBwoX8ZJe2Q",
-            "flavour": "affine:list",
-            "version": 1,
-            "props": {
-              "type": "bulleted",
-              "text": {
-                "$blocksuite:internal:text$": true,
-                "delta": [
-                  {
-                    "insert": "Airtable & Miro with their no-code programable datasheets"
-                  }
-                ]
-              },
-              "checked": false,
-              "collapsed": false
-            },
-            "children": []
-          },
-          {
-            "type": "block",
-            "id": "kfP3ZyrbceVljpp2zx-yN",
-            "flavour": "affine:list",
-            "version": 1,
-            "props": {
-              "type": "bulleted",
-              "text": {
-                "$blocksuite:internal:text$": true,
-                "delta": [
-                  {
-                    "insert": "Miro & Whimiscal with their edgeless visual whiteboard"
-                  }
-                ]
-              },
-              "checked": false,
-              "collapsed": false
-            },
-            "children": []
-          },
-          {
-            "type": "block",
-            "id": "QgyKTOLP3RqDnV7Dn59yK",
-            "flavour": "affine:list",
-            "version": 1,
-            "props": {
-              "type": "bulleted",
-              "text": {
-                "$blocksuite:internal:text$": true,
-                "delta": [
-                  {
-                    "insert": "Remnote & Capacities with their object-based tag system"
-                  }
-                ]
-              },
-              "checked": false,
-              "collapsed": false
-            },
-            "children": []
-          }
-        ]
-      },
-      {
-        "type": "block",
-        "id": "vRgSpk57kZbASGEZGq848",
-        "flavour": "affine:note",
-        "version": 1,
-        "props": {
-          "xywh": "[988.4153663986212,-9.650269435294504,800,174]",
-          "background": "--affine-background-secondary-color",
-          "index": "aXl",
-          "hidden": false,
-          "edgeless": {
-            "style": {
-              "borderRadius": 8,
-              "borderSize": 4,
-              "borderStyle": "solid",
-              "shadowType": "--affine-note-shadow-film"
-            }
-          },
-          "displayMode": "both"
-        },
-        "children": [
-          {
-            "type": "block",
-            "id": "IGAoDfBpsl4dekAajnnz4",
-            "flavour": "affine:paragraph",
-            "version": 1,
-            "props": {
-              "type": "text",
-              "text": {
-                "$blocksuite:internal:text$": true,
-                "delta": [
-                  {
-                    "insert": "For more details, please refer to our "
-                  },
-                  {
-                    "insert": "RoadMap",
-                    "attributes": {
-                      "link": "https://docs.affine.pro/docs/core-concepts/roadmap"
-                    }
-                  }
-                ]
-              }
-            },
-            "children": []
-          },
-          {
-            "type": "block",
-            "id": "DQRA1VFJfngFp4zUzInSh",
-            "flavour": "affine:paragraph",
-            "version": 1,
-            "props": {
-              "type": "h2",
-              "text": {
-                "$blocksuite:internal:text$": true,
-                "delta": [
-                  {
-                    "insert": "Self Host"
-                  }
-                ]
-              }
-            },
-            "children": []
-          },
-          {
-            "type": "block",
-            "id": "UUGpsr6PzhwTGD1sXGc2P",
-            "flavour": "affine:paragraph",
-            "version": 1,
-            "props": {
-              "type": "text",
-              "text": {
-                "$blocksuite:internal:text$": true,
-                "delta": [
-                  {
-                    "insert": "Self host AFFiNE"
-                  }
-                ]
-              }
-            },
-            "children": []
-          }
-        ]
-      },
-      {
-        "type": "block",
-        "id": "ti3bUhK2TwBdOzJik6e3S",
-        "flavour": "affine:note",
-        "version": 1,
-        "props": {
-          "xywh": "[-175.61424738883917,-187.42202027192565,800,623]",
-          "background": "--affine-palette-transparent",
-          "index": "aUV",
-          "hidden": false,
-          "edgeless": {
-            "style": {
-              "borderRadius": 8,
-              "borderSize": 4,
-              "borderStyle": "solid",
-              "shadowType": "--affine-note-shadow-film"
-            }
-          },
-          "displayMode": "both"
-        },
-        "children": [
-          {
-            "type": "block",
-            "id": "DOEBUiGBJe0WGe17AZiHJ",
-            "flavour": "affine:database",
-            "version": 3,
-            "props": {
-              "views": [
-                {
-                  "id": "tE0D6DseeMRXaSzpSJytA",
-                  "name": "Table View",
-                  "mode": "table",
-                  "columns": [],
-                  "filter": {
-                    "type": "group",
-                    "op": "and",
-                    "conditions": []
-                  },
-                  "header": {
-                    "titleColumn": "W6655a0z7d1iC7Z2-rB3c",
-                    "iconColumn": "type"
-                  }
-                },
-                {
-                  "id": "_JRgwepFt0wkVYZGDae0D",
-                  "name": "Kanban View",
-                  "mode": "kanban",
-                  "columns": [
-                    {
-                      "id": "W6655a0z7d1iC7Z2-rB3c",
-                      "hide": false
-                    },
-                    {
-                      "id": "9rjKL3rri5C11CLq8ts98",
-                      "hide": false
-                    }
-                  ],
-                  "filter": {
-                    "type": "group",
-                    "op": "and",
-                    "conditions": []
-                  },
-                  "groupBy": {
-                    "type": "groupBy",
-                    "columnId": "9rjKL3rri5C11CLq8ts98",
-                    "name": "multi-select"
-                  },
-                  "header": {
-                    "titleColumn": "W6655a0z7d1iC7Z2-rB3c",
-                    "iconColumn": "type"
-                  },
-                  "groupProperties": []
-                }
-              ],
-              "title": {
-                "$blocksuite:internal:text$": true,
-                "delta": [
-                  {
-                    "insert": "Learning From"
-                  }
-                ]
-              },
-              "cells": {
-                "pJwXp3NaljCUiEejT8Cmu": {
-                  "9rjKL3rri5C11CLq8ts98": {
-                    "columnId": "9rjKL3rri5C11CLq8ts98",
-                    "value": [
-                      "Qb9BdsIMB9"
-                    ]
-                  }
-                },
-                "qenLhiUYrSm7o7MCYmUHz": {
-                  "9rjKL3rri5C11CLq8ts98": {
-                    "columnId": "9rjKL3rri5C11CLq8ts98",
-                    "value": [
-                      "XUeSPO6byK"
-                    ]
-                  }
-                },
-                "OpHLROzS-6pjaFyEngltT": {
-                  "9rjKL3rri5C11CLq8ts98": {
-                    "columnId": "9rjKL3rri5C11CLq8ts98",
-                    "value": [
-                      "DSQfU41IDb"
-                    ]
-                  }
-                },
-                "4PxjIkId2XDoOShorMcsE": {
-                  "9rjKL3rri5C11CLq8ts98": {
-                    "columnId": "9rjKL3rri5C11CLq8ts98",
-                    "value": [
-                      "DSQfU41IDb"
-                    ]
-                  }
-                },
-                "2kGxlew9btFtIw6BiDlvw": {
-                  "9rjKL3rri5C11CLq8ts98": {
-                    "columnId": "9rjKL3rri5C11CLq8ts98",
-                    "value": [
-                      "DSQfU41IDb"
-                    ]
-                  }
-                },
-                "XjbM-_AQurMMI1Q4qrXeJ": {
-                  "9rjKL3rri5C11CLq8ts98": {
-                    "columnId": "9rjKL3rri5C11CLq8ts98",
-                    "value": [
-                      "DSQfU41IDb"
-                    ]
-                  }
-                },
-                "33FUixhN50VX2kfB3TNiG": {
-                  "9rjKL3rri5C11CLq8ts98": {
-                    "columnId": "9rjKL3rri5C11CLq8ts98",
-                    "value": []
-                  }
-                }
-              },
-              "columns": [
-                {
-                  "type": "title",
-                  "name": "Title",
-                  "data": {},
-                  "id": "W6655a0z7d1iC7Z2-rB3c"
-                },
-                {
-                  "type": "multi-select",
-                  "name": "Tag",
-                  "data": {
-                    "options": [
-                      {
-                        "id": "DSQfU41IDb",
-                        "value": "Reference",
-                        "color": "var(--affine-tag-blue)"
-                      },
-                      {
-                        "id": "XUeSPO6byK",
-                        "value": "Developers",
-                        "color": "var(--affine-tag-red)"
-                      },
-                      {
-                        "id": "Qb9BdsIMB9",
-                        "value": "AFFiNE",
-                        "color": "var(--affine-tag-pink)"
-                      }
-                    ]
-                  },
-                  "id": "9rjKL3rri5C11CLq8ts98"
-                }
-              ]
-            },
-            "children": [
-              {
-                "type": "block",
-                "id": "pJwXp3NaljCUiEejT8Cmu",
-                "flavour": "affine:paragraph",
-                "version": 1,
-                "props": {
-                  "type": "h2",
-                  "text": {
-                    "$blocksuite:internal:text$": true,
-                    "delta": [
-                      {
-                        "insert": "Affine Development"
-                      }
-                    ]
-                  }
-                },
-                "children": []
-              },
-              {
-                "type": "block",
-                "id": "qenLhiUYrSm7o7MCYmUHz",
-                "flavour": "affine:paragraph",
-                "version": 1,
-                "props": {
-                  "type": "text",
-                  "text": {
-                    "$blocksuite:internal:text$": true,
-                    "delta": [
-                      {
-                        "insert": "For developers or installations guilds, please go to "
-                      },
-                      {
-                        "insert": " ",
-                        "attributes": {
-                          "reference": {
-                            "type": "LinkedPage",
-                            "pageId": "7iq0MM5AwfHRa0pbRUyaa"
-                          }
-                        }
-                      }
-                    ]
-                  }
-                },
-                "children": []
-              },
-              {
-                "type": "block",
-                "id": "OpHLROzS-6pjaFyEngltT",
-                "flavour": "affine:list",
-                "version": 1,
-                "props": {
-                  "type": "bulleted",
-                  "text": {
-                    "$blocksuite:internal:text$": true,
-                    "delta": [
-                      {
-                        "insert": "Quip & Notion with their great concept of \"everything is a block\""
-                      }
-                    ]
-                  },
-                  "checked": false,
-                  "collapsed": false
-                },
-                "children": []
-              },
-              {
-                "type": "block",
-                "id": "4PxjIkId2XDoOShorMcsE",
-                "flavour": "affine:list",
-                "version": 1,
-                "props": {
-                  "type": "bulleted",
-                  "text": {
-                    "$blocksuite:internal:text$": true,
-                    "delta": [
-                      {
-                        "insert": "Trello with their Kanban"
-                      }
-                    ]
-                  },
-                  "checked": false,
-                  "collapsed": false
-                },
-                "children": []
-              },
-              {
-                "type": "block",
-                "id": "2kGxlew9btFtIw6BiDlvw",
-                "flavour": "affine:list",
-                "version": 1,
-                "props": {
-                  "type": "bulleted",
-                  "text": {
-                    "$blocksuite:internal:text$": true,
-                    "delta": [
-                      {
-                        "insert": "Airtable & Miro with their no-code programable datasheets"
-                      }
-                    ]
-                  },
-                  "checked": false,
-                  "collapsed": false
-                },
-                "children": []
-              },
-              {
-                "type": "block",
-                "id": "XjbM-_AQurMMI1Q4qrXeJ",
-                "flavour": "affine:list",
-                "version": 1,
-                "props": {
-                  "type": "bulleted",
-                  "text": {
-                    "$blocksuite:internal:text$": true,
-                    "delta": [
-                      {
-                        "insert": "Miro & Whimiscal with their edgeless visual whiteboard"
-                      }
-                    ]
-                  },
-                  "checked": false,
-                  "collapsed": false
-                },
-                "children": []
-              },
-              {
-                "type": "block",
-                "id": "33FUixhN50VX2kfB3TNiG",
-                "flavour": "affine:list",
-                "version": 1,
-                "props": {
-                  "type": "bulleted",
-                  "text": {
-                    "$blocksuite:internal:text$": true,
-                    "delta": [
-                      {
-                        "insert": "Remnote & Capacities with their object-based tag system"
-                      }
-                    ]
-                  },
-                  "checked": false,
-                  "collapsed": false
-                },
-                "children": []
-              }
-            ]
-          }
-        ]
-      },
-      {
-        "type": "block",
-        "id": "WroyA5reQf_79VDO8Ydbe",
-        "flavour": "affine:note",
-        "version": 1,
-        "props": {
-          "xywh": "[2451.5708243349773,387.12444894259284,777.7775400037704,132.5246263504423]",
-          "background": "--affine-background-secondary-color",
-          "index": "ah-",
-          "hidden": false,
-          "edgeless": {
-            "style": {
-              "borderRadius": 8,
-              "borderSize": 4,
-              "borderStyle": "solid",
-              "shadowType": "--affine-note-shadow-film"
-            },
-            "collapse": true
-          },
-          "displayMode": "both"
-        },
-        "children": [
-          {
-            "type": "block",
-            "id": "UjEFRdtgkPYh5hxZMueYw",
-            "flavour": "affine:paragraph",
-            "version": 1,
-            "props": {
-              "type": "h2",
-              "text": {
-                "$blocksuite:internal:text$": true,
-                "delta": [
-                  {
-                    "insert": "Affine Development"
-                  }
-                ]
-              }
-            },
-            "children": []
-          },
-          {
-            "type": "block",
-            "id": "hYAZBSl_jFeVWTiMQlKvj",
-            "flavour": "affine:paragraph",
-            "version": 1,
-            "props": {
-              "type": "text",
-              "text": {
-                "$blocksuite:internal:text$": true,
-                "delta": [
-                  {
-                    "insert": "For developers or installations guilds, please go to "
-                  },
-                  {
-                    "insert": "AFFiNE Development",
-                    "attributes": {
-                      "link": "https://docs.affine.pro/docs/development/quick-start"
-                    }
-                  }
-                ]
-              }
             },
             "children": []
           }
