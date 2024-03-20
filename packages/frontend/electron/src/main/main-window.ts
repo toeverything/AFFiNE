@@ -27,6 +27,14 @@ const getWindowAdditionalArguments = async () => {
   ];
 };
 
+function closeAllWindows() {
+  BrowserWindow.getAllWindows().forEach(w => {
+    if (!w.isDestroyed()) {
+      w.destroy();
+    }
+  });
+}
+
 async function createWindow(additionalArguments: string[]) {
   logger.info('create window');
   const mainWindowState = electronWindowState({
@@ -82,12 +90,7 @@ async function createWindow(additionalArguments: string[]) {
    * @see https://github.com/electron/electron/issues/25012
    */
   browserWindow.on('ready-to-show', () => {
-    if (IS_DEV) {
-      // do not gain focus in dev mode
-      browserWindow.showInactive();
-    } else {
-      browserWindow.show();
-    }
+    helperConnectionUnsub?.();
     helperConnectionUnsub = helperProcessManager.connectRenderer(
       browserWindow.webContents
     );
@@ -96,15 +99,26 @@ async function createWindow(additionalArguments: string[]) {
   });
 
   browserWindow.on('close', e => {
-    e.preventDefault();
-    // close and destroy all windows
-    BrowserWindow.getAllWindows().forEach(w => {
-      if (!w.isDestroyed()) {
-        w.destroy();
-      }
-    });
-    helperConnectionUnsub?.();
     // TODO: gracefully close the app, for example, ask user to save unsaved changes
+    e.preventDefault();
+    if (!isMacOS()) {
+      closeAllWindows();
+    } else {
+      // hide window on macOS
+      // application quit will be handled by closing the hidden window
+      //
+      // explanation:
+      // - closing the top window (by clicking close button or CMD-w)
+      //   - will be captured in "close" event here
+      //   - hiding the app to make the app open faster when user click the app icon
+      // - quit the app by "cmd+q" or right click on the dock icon and select "quit"
+      //   - all browser windows will capture the "close" event
+      //   - the hidden window will close all windows
+      //   - "window-all-closed" event will be emitted and eventually quit the app
+      browserWindow.hide();
+    }
+    helperConnectionUnsub?.();
+    helperConnectionUnsub = undefined;
   });
 
   browserWindow.on('leave-full-screen', () => {
@@ -148,15 +162,37 @@ async function createWindow(additionalArguments: string[]) {
 // singleton
 let browserWindow$: Promise<BrowserWindow> | undefined;
 
+// a hidden window that prevents the app from quitting on MacOS
+let hiddenMacWindow: BrowserWindow | undefined;
+
 /**
  * Init main BrowserWindow. Will create a new window if it's not created yet.
  */
-export async function initMainWindow() {
+export async function initAndShowMainWindow() {
   if (!browserWindow$ || (await browserWindow$.then(w => w.isDestroyed()))) {
     const additionalArguments = await getWindowAdditionalArguments();
     browserWindow$ = createWindow(additionalArguments);
   }
   const mainWindow = await browserWindow$;
+
+  if (IS_DEV) {
+    // do not gain focus in dev mode
+    mainWindow.showInactive();
+  } else {
+    mainWindow.show();
+  }
+
+  if (!hiddenMacWindow && isMacOS()) {
+    hiddenMacWindow = new BrowserWindow({
+      show: false,
+      width: 100,
+      height: 100,
+    });
+    hiddenMacWindow.on('close', () => {
+      closeAllWindows();
+    });
+  }
+
   return mainWindow;
 }
 

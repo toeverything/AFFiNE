@@ -4,7 +4,7 @@ import { getLinkPreview } from 'link-preview-js';
 import { isMacOS } from '../../shared/utils';
 import { persistentConfig } from '../config-storage/persist';
 import { logger } from '../logger';
-import { getMainWindow, initMainWindow } from '../main-window';
+import { getMainWindow, initAndShowMainWindow } from '../main-window';
 import { getOnboardingWindow } from '../onboarding';
 import type { NamespaceHandlers } from '../type';
 import { launchStage } from '../windows-manager/stage';
@@ -58,7 +58,7 @@ export const uiHandlers = {
     try {
       const onboarding = await getOnboardingWindow();
       onboarding?.hide();
-      await initMainWindow();
+      await initAndShowMainWindow();
       // need to destroy onboarding window after main window is ready
       // otherwise the main window will be closed as well
       onboarding?.destroy();

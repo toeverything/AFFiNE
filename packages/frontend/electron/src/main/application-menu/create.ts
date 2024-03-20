@@ -2,6 +2,7 @@ import { app, Menu } from 'electron';
 
 import { isMacOS } from '../../shared/utils';
 import { revealLogFile } from '../logger';
+import { initAndShowMainWindow } from '../main-window';
 import { checkForUpdates } from '../updater';
 import { applicationMenuSubjects } from './subject';
 
@@ -42,7 +43,9 @@ export function createApplicationMenu() {
           id: MENUITEM_NEW_PAGE,
           label: 'New Doc',
           accelerator: isMac ? 'Cmd+N' : 'Ctrl+N',
-          click: () => {
+          click: async () => {
+            await initAndShowMainWindow();
+            // fixme: if the window is just created, the new page action will not be triggered
             applicationMenuSubjects.newPageAction.next();
           },
         },
@@ -100,7 +103,12 @@ export function createApplicationMenu() {
               { type: 'separator' },
               { role: 'front' },
               { type: 'separator' },
-              { role: 'window' },
+              {
+                role: 'window',
+                click: async () => {
+                  await initAndShowMainWindow();
+                },
+              },
             ]
           : [{ role: 'close' }]),
       ],
@@ -125,6 +133,7 @@ export function createApplicationMenu() {
         {
           label: 'Check for Updates',
           click: async () => {
+            await initAndShowMainWindow();
             await checkForUpdates();
           },
         },
