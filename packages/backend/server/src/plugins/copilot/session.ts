@@ -8,18 +8,22 @@ import { ChatMessage } from './types';
 const CHAT_SESSION_KEY = 'chat-session';
 const CHAT_SESSION_TTL = 3600 * 12 * 1000; // 12 hours
 
-type ChatSessionState = {
+export type ChatSessionState = {
+  sessionId?: string;
   promptName: string;
   prompt?: ChatMessage[];
   messages: ChatMessage[];
 };
 
-export class ChatSession implements Disposable {
+export class ChatSession implements AsyncDisposable {
   private readonly encoder: Tiktoken;
   private readonly promptTokenSize: number;
   constructor(
-    private readonly state: ChatSessionState,
+    private readonly state: Required<ChatSessionState>,
     model: TiktokenModel,
+    private readonly dispose?: (
+      state: Required<ChatSessionState>
+    ) => Promise<void>,
     private readonly maxTokenSize = 3840
   ) {
     this.encoder = encoding_for_model(model);
@@ -58,8 +62,9 @@ export class ChatSession implements Disposable {
     return [...(this.state.prompt || []), messages];
   }
 
-  [Symbol.dispose]() {
+  async [Symbol.asyncDispose]() {
     this.encoder.free();
+    await this.dispose?.(this.state);
   }
 }
 
@@ -73,27 +78,35 @@ export class ChatSessionService {
   private async set(
     sessionId: string,
     state: ChatSessionState
-  ): Promise<ChatSessionState> {
+  ): Promise<Required<ChatSessionState>> {
     const { promptName, messages } = state;
     let { prompt } = state;
     if (!Array.isArray(prompt)) {
       prompt = await this.prompt.get(promptName);
     }
-    await this.cache.set(`${CHAT_SESSION_KEY}:${sessionId}`, state, {
+    const finalState: Required<ChatSessionState> = {
+      sessionId,
+      promptName,
+      prompt,
+      messages,
+    };
+    await this.cache.set(`${CHAT_SESSION_KEY}:${sessionId}`, finalState, {
       ttl: CHAT_SESSION_TTL,
     });
-    return { promptName, prompt, messages };
+    return finalState;
   }
 
   private async get(
     sessionId: string,
     model: TiktokenModel
   ): Promise<ChatSession | null> {
-    const state = await this.cache.get<ChatSessionState>(
+    const state = await this.cache.get<Required<ChatSessionState>>(
       `${CHAT_SESSION_KEY}:${sessionId}`
     );
     if (state) {
-      return new ChatSession(state, model);
+      return new ChatSession(state, model, async state => {
+        await this.set(sessionId, state);
+      });
     }
     return null;
   }
@@ -103,7 +116,7 @@ export class ChatSessionService {
    * ``` typescript
    * {
    *     // allocate a session, can be reused chat in about 12 hours with same session
-   *     using session = await session.getOrCreate(sessionId, promptName, model);
+   *     await using session = await session.getOrCreate(sessionId, promptName, model);
    *     session.push(message);
    *     copilot.generateText(session.finish(), model);
    * }
@@ -122,6 +135,8 @@ export class ChatSessionService {
     if (session) return session;
 
     const state = await this.set(sessionId, { promptName, messages: [] });
-    return new ChatSession(state, model);
+    return new ChatSession(state, model, async state => {
+      await this.set(sessionId, state);
+    });
   }
 }
