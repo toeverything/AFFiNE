@@ -17,6 +17,7 @@ AFFiNE.ENV_MAP = {
   MAILER_PASSWORD: 'mailer.auth.pass',
   MAILER_SENDER: 'mailer.from.address',
   MAILER_SECURE: ['mailer.secure', 'boolean'],
+  MAILER_TLS_VERIFICATION: ['mailer.tls.rejectUnauthorized', 'boolean']
   THROTTLE_TTL: ['rateLimiter.ttl', 'int'],
   THROTTLE_LIMIT: ['rateLimiter.limit', 'int'],
   REDIS_SERVER_HOST: 'plugins.redis.host',
