@@ -105,7 +105,7 @@ export async function buildShowcaseWorkspace(
 
   const { workspace, release } = workspaceManager.open(meta);
 
-  await workspace.engine.sync.waitForLoadedRootDoc();
+  await workspace.engine.doc.waitForReady(meta.id);
 
   const pageRecordList = workspace.services.get(PageRecordList);
 

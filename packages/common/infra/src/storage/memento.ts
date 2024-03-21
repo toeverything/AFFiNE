@@ -10,6 +10,7 @@ export interface Memento {
   get<T>(key: string): T | null;
   watch<T>(key: string): Observable<T | null>;
   set<T>(key: string, value: T | null): void;
+  keys(): string[];
 }
 
 /**
@@ -54,4 +55,27 @@ export class MemoryMemento implements Memento {
   set<T>(key: string, value: T | null): void {
     this.getLiveData(key).next(value);
   }
+  keys(): string[] {
+    return Array.from(this.data.keys());
+  }
+}
+
+export function wrapMemento(memento: Memento, prefix: string): Memento {
+  return {
+    get<T>(key: string): T | null {
+      return memento.get(prefix + key);
+    },
+    watch(key: string) {
+      return memento.watch(prefix + key);
+    },
+    set<T>(key: string, value: T | null): void {
+      memento.set(prefix + key, value);
+    },
+    keys(): string[] {
+      return memento
+        .keys()
+        .filter(k => k.startsWith(prefix))
+        .map(k => k.slice(prefix.length));
+    },
+  };
 }

@@ -3914,6 +3914,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@datastructures-js/binary-search-tree@npm:^5.3.2":
+  version: 5.3.2
+  resolution: "@datastructures-js/binary-search-tree@npm:5.3.2"
+  checksum: 10/05936b8710e7db5f6e748ffbcd857ca692ba5de8edb87988d5f093085df9e9a15af5caa1a9de020682703ba15f425e2fd513c540a1cb1da293bf0c67793cdae7
+  languageName: node
+  linkType: hard
+
 "@develar/schema-utils@npm:~2.1.0":
   version: 2.1.0
   resolution: "@develar/schema-utils@npm:2.1.0"
@@ -13426,6 +13433,7 @@ __metadata:
     "@blocksuite/lit": "npm:0.13.0-canary-202403140735-2367cd5"
     "@blocksuite/presets": "npm:0.13.0-canary-202403140735-2367cd5"
     "@blocksuite/store": "npm:0.13.0-canary-202403140735-2367cd5"
+    "@datastructures-js/binary-search-tree": "npm:^5.3.2"
     "@testing-library/react": "npm:^14.2.1"
     async-call-rpc: "npm:^6.4.0"
     foxact: "npm:^0.2.31"

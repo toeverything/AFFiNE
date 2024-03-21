@@ -10,7 +10,6 @@ import { DocCollection } from '@blocksuite/store';
 import type { WorkspaceListProvider } from '@toeverything/infra';
 import {
   type BlobStorage,
-  type SyncStorage,
   type WorkspaceInfo,
   type WorkspaceMetadata,
 } from '@toeverything/infra';
@@ -21,10 +20,10 @@ import { applyUpdate, encodeStateAsUpdate } from 'yjs';
 
 import { IndexedDBBlobStorage } from '../local/blob-indexeddb';
 import { SQLiteBlobStorage } from '../local/blob-sqlite';
-import { IndexedDBSyncStorage } from '../local/sync-indexeddb';
-import { SQLiteSyncStorage } from '../local/sync-sqlite';
+import { IndexedDBDocStorage } from '../local/doc-indexeddb';
+import { SqliteDocStorage } from '../local/doc-sqlite';
 import { CLOUD_WORKSPACE_CHANGED_BROADCAST_CHANNEL_KEY } from './consts';
-import { AffineStaticSyncStorage } from './sync';
+import { AffineStaticDocStorage } from './doc-static';
 
 async function getCloudWorkspaceList() {
   try {
@@ -94,17 +93,20 @@ export class CloudWorkspaceListProvider implements WorkspaceListProvider {
     const blobStorage = environment.isDesktop
       ? new SQLiteBlobStorage(workspaceId)
       : new IndexedDBBlobStorage(workspaceId);
-    const syncStorage = environment.isDesktop
-      ? new SQLiteSyncStorage(workspaceId)
-      : new IndexedDBSyncStorage(workspaceId);
+    const docStorage = environment.isDesktop
+      ? new SqliteDocStorage(workspaceId)
+      : new IndexedDBDocStorage(workspaceId);
 
     // apply initial state
     await initial(docCollection, blobStorage);
 
     // save workspace to local storage, should be vary fast
-    await syncStorage.push(workspaceId, encodeStateAsUpdate(docCollection.doc));
+    await docStorage.doc.set(
+      workspaceId,
+      encodeStateAsUpdate(docCollection.doc)
+    );
     for (const subdocs of docCollection.doc.getSubdocs()) {
-      await syncStorage.push(subdocs.guid, encodeStateAsUpdate(subdocs));
+      await docStorage.doc.set(subdocs.guid, encodeStateAsUpdate(subdocs));
     }
 
     // notify all browser tabs, so they can update their workspace list
@@ -155,13 +157,13 @@ export class CloudWorkspaceListProvider implements WorkspaceListProvider {
     // get information from both cloud and local storage
 
     // we use affine 'static' storage here, which use http protocol, no need to websocket.
-    const cloudStorage: SyncStorage = new AffineStaticSyncStorage(id);
-    const localStorage = environment.isDesktop
-      ? new SQLiteSyncStorage(id)
-      : new IndexedDBSyncStorage(id);
+    const cloudStorage = new AffineStaticDocStorage(id);
+    const docStorage = environment.isDesktop
+      ? new SqliteDocStorage(id)
+      : new IndexedDBDocStorage(id);
     // download root doc
-    const localData = await localStorage.pull(id, new Uint8Array([]));
-    const cloudData = await cloudStorage.pull(id, new Uint8Array([]));
+    const localData = await docStorage.doc.get(id);
+    const cloudData = await cloudStorage.pull(id);
 
     if (!cloudData && !localData) {
       return;
@@ -172,7 +174,7 @@ export class CloudWorkspaceListProvider implements WorkspaceListProvider {
       schema: globalBlockSuiteSchema,
     });
 
-    if (localData) applyUpdate(bs.doc, localData.data);
+    if (localData) applyUpdate(bs.doc, localData);
     if (cloudData) applyUpdate(bs.doc, cloudData.data);
 
     return {

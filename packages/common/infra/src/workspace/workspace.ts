@@ -126,8 +126,7 @@ export class Workspace {
     this.services.get(CleanupService).cleanup();
   }
 
-  // same as `WorkspaceEngine.sync.setPriorityRule`
-  setPriorityRule(target: ((id: string) => boolean) | null) {
-    this.engine.sync.setPriorityRule(target);
+  setPriorityLoad(docId: string, priority: number) {
+    this.engine.doc.setPriority(docId, priority);
   }
 }

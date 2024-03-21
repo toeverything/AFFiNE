@@ -5,13 +5,12 @@ import { Button } from '@affine/component/ui/button';
 import { Upload } from '@affine/core/components/pure/file-upload';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { useWorkspaceBlobObjectUrl } from '@affine/core/hooks/use-workspace-blob';
-import { useWorkspaceStatus } from '@affine/core/hooks/use-workspace-status';
 import { validateAndReduceImage } from '@affine/core/utils/reduce-image';
 import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CameraIcon } from '@blocksuite/icons';
 import type { Workspace } from '@toeverything/infra';
-import { SyncPeerStep } from '@toeverything/infra';
+import { useLiveData } from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
 import {
   type KeyboardEvent,
@@ -32,13 +31,9 @@ export const ProfilePanel = ({ isOwner, workspace }: ProfilePanelProps) => {
   const t = useAFFiNEI18N();
   const pushNotification = useSetAtom(pushNotificationAtom);
 
-  const workspaceIsLoading =
-    useWorkspaceStatus(
-      workspace,
-      status =>
-        !status.engine.sync.local ||
-        status.engine.sync.local?.step <= SyncPeerStep.LoadingRootDoc
-    ) ?? true;
+  const workspaceIsLoading = !useLiveData(
+    workspace?.engine.doc.docState(workspace.id)
+  )?.ready;
 
   const [avatarBlob, setAvatarBlob] = useState<string | null>(null);
   const [name, setName] = useState('');

@@ -302,7 +302,9 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       guid: string;
       stateVector?: string;
     }
-  ): Promise<EventResponse<{ missing: string; state?: string }>> {
+  ): Promise<
+    EventResponse<{ missing: string; state?: string; timestamp: number }>
+  > {
     this.assertInWorkspace(client, Sync(workspaceId));
 
     const docId = new DocID(guid, workspaceId);
@@ -326,6 +328,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       data: {
         missing,
         state,
+        timestamp: Date.now(),
       },
     };
   }

@@ -126,7 +126,7 @@ export class WorkspaceManager {
   async transformLocalToCloud(local: Workspace): Promise<WorkspaceMetadata> {
     assertEquals(local.flavour, WorkspaceFlavour.LOCAL);
 
-    await local.engine.sync.waitForSynced();
+    await local.engine.doc.waitForSynced();
 
     const newId = await this.list.create(
       WorkspaceFlavour.AFFINE_CLOUD,

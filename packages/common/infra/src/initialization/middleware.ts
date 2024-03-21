@@ -11,7 +11,7 @@ import type {
 import { assertExists } from '@blocksuite/global/utils';
 import type { DeltaOperation, JobMiddleware } from '@blocksuite/store';
 
-export const replaceIdMiddleware: JobMiddleware = ({ slots, workspace }) => {
+export const replaceIdMiddleware: JobMiddleware = ({ slots, collection }) => {
   const idMap = new Map<string, string>();
   slots.afterImport.on(payload => {
     if (
@@ -61,7 +61,7 @@ export const replaceIdMiddleware: JobMiddleware = ({ slots, workspace }) => {
   });
   slots.beforeImport.on(payload => {
     if (payload.type === 'page') {
-      const newId = workspace.idGenerator('page');
+      const newId = collection.idGenerator('page');
       idMap.set(payload.snapshot.meta.id, newId);
       payload.snapshot.meta.id = newId;
       return;
@@ -84,7 +84,7 @@ export const replaceIdMiddleware: JobMiddleware = ({ slots, workspace }) => {
       if (idMap.has(original)) {
         newId = idMap.get(original)!;
       } else {
-        newId = workspace.idGenerator('block');
+        newId = collection.idGenerator('block');
         idMap.set(original, newId);
       }
       snapshot.id = newId;
@@ -96,7 +96,7 @@ export const replaceIdMiddleware: JobMiddleware = ({ slots, workspace }) => {
           if (idMap.has(original)) {
             newId = idMap.get(original)!;
           } else {
-            newId = workspace.idGenerator('block');
+            newId = collection.idGenerator('block');
             idMap.set(original, newId);
           }
         });
