@@ -4,7 +4,7 @@ import { PrismaClient } from '@prisma/client';
 import { ChatMessage } from './types';
 
 @Injectable()
-export class CopilotPromptService {
+export class PromptService {
   constructor(private readonly db: PrismaClient) {}
 
   // list prompt names
