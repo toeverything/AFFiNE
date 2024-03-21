@@ -393,7 +393,7 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
     if (result) {
       if ('doc' in result) {
         return result;
-      } else if ('snapshot' in result) {
+      } else {
         const doc = await this.recoverDoc(result.binary);
 
         return {
@@ -420,7 +420,7 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
           binary: Buffer.from(encodeStateAsUpdate(result.doc)),
           timestamp: result.timestamp,
         };
-      } else if ('snapshot' in result) {
+      } else {
         return result;
       }
     }
