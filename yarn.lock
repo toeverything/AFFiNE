@@ -7366,9 +7366,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@napi-rs/macos-alias-darwin-universal@npm:0.0.3":
-  version: 0.0.3
-  resolution: "@napi-rs/macos-alias-darwin-universal@npm:0.0.3"
+"@napi-rs/macos-alias-darwin-universal@npm:0.0.4":
+  version: 0.0.4
+  resolution: "@napi-rs/macos-alias-darwin-universal@npm:0.0.4"
   conditions: os=darwin
   languageName: node
   linkType: hard
@@ -25996,11 +25996,11 @@ __metadata:
   languageName: node
   linkType: hard
 
-"macos-alias@npm:@napi-rs/macos-alias@latest":
-  version: 0.0.3
-  resolution: "@napi-rs/macos-alias@npm:0.0.3"
+"macos-alias@npm:@napi-rs/macos-alias@0.0.4":
+  version: 0.0.4
+  resolution: "@napi-rs/macos-alias@npm:0.0.4"
   dependencies:
-    "@napi-rs/macos-alias-darwin-universal": "npm:0.0.3"
+    "@napi-rs/macos-alias-darwin-universal": "npm:0.0.4"
   dependenciesMeta:
     "@napi-rs/macos-alias-darwin-universal":
       optional: true
