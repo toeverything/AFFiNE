@@ -4,7 +4,7 @@ import { ClientOptions, OpenAI } from 'openai';
 
 import {
   ChatMessage,
-  CopilotProviderCapability,
+  CopilotCapability,
   CopilotProviderType,
   CopilotTextToTextProvider,
 } from '../types';
@@ -15,9 +15,9 @@ export class OpenAIProvider
 {
   static readonly type = CopilotProviderType.OpenAI;
   static readonly capabilities = [
-    CopilotProviderCapability.TextToText,
-    CopilotProviderCapability.TextToEmbedding,
-    CopilotProviderCapability.TextToImage,
+    CopilotCapability.TextToText,
+    CopilotCapability.TextToEmbedding,
+    CopilotCapability.TextToImage,
   ];
 
   readonly availableModels = ['gpt-3.5-turbo'];
@@ -31,7 +31,7 @@ export class OpenAIProvider
     return !!config.apiKey;
   }
 
-  getCapabilities(): CopilotProviderCapability[] {
+  getCapabilities(): CopilotCapability[] {
     return OpenAIProvider.capabilities;
   }
 
