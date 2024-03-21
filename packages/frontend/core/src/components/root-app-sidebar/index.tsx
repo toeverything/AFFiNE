@@ -1,5 +1,4 @@
 import { AnimatedDeleteIcon } from '@affine/component';
-import { openSettingModalAtom } from '@affine/core/atoms';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { CollectionService } from '@affine/core/modules/collection';
 import { apis, events } from '@affine/electron-api';
@@ -8,7 +7,7 @@ import { FolderIcon, SettingsIcon } from '@blocksuite/icons';
 import { type Doc } from '@blocksuite/store';
 import { useDroppable } from '@dnd-kit/core';
 import { useLiveData, useService, type Workspace } from '@toeverything/infra';
-import { useAtomValue, useSetAtom } from 'jotai';
+import { useAtomValue } from 'jotai';
 import { nanoid } from 'nanoid';
 import type { HTMLAttributes, ReactElement } from 'react';
 import { forwardRef, useCallback, useEffect } from 'react';
@@ -101,7 +100,6 @@ export const RootAppSidebar = ({
   const docCollection = currentWorkspace.docCollection;
   const t = useAFFiNEI18N();
   const currentPath = useLiveData(useService(Workbench).location).pathname;
-  const setOpenSettingModalAtom = useSetAtom(openSettingModalAtom);
 
   const onClickNewPage = useAsyncCallback(async () => {
     const page = createPage();
@@ -131,18 +129,6 @@ export const RootAppSidebar = ({
     }
     return;
   }, [onClickNewPage]);
-
-  useEffect(() => {
-    if (environment.isDesktop) {
-      return events?.applicationMenu.openAboutPageInSettingModal(() =>
-        setOpenSettingModalAtom({
-          activeTab: 'about',
-          open: true,
-        })
-      );
-    }
-    return;
-  }, [setOpenSettingModalAtom]);
 
   const sidebarOpen = useAtomValue(appSidebarOpenAtom);
   useEffect(() => {

@@ -1,10 +1,11 @@
+import { events } from '@affine/electron-api';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { WorkspaceManager } from '@toeverything/infra';
 import { useService } from '@toeverything/infra/di';
 import { useLiveData } from '@toeverything/infra/livedata';
 import { useAtom } from 'jotai';
 import type { ReactElement } from 'react';
-import { lazy, Suspense, useCallback } from 'react';
+import { lazy, Suspense, useCallback, useEffect } from 'react';
 
 import {
   authAtom,
@@ -115,6 +116,18 @@ export const Setting = () => {
     },
     [setOpenSettingModalAtom]
   );
+
+  useEffect(() => {
+    if (environment.isDesktop) {
+      return events?.applicationMenu.openAboutPageInSettingModal(() =>
+        setOpenSettingModalAtom({
+          activeTab: 'about',
+          open: true,
+        })
+      );
+    }
+    return;
+  }, [setOpenSettingModalAtom]);
 
   if (!open) {
     return null;
