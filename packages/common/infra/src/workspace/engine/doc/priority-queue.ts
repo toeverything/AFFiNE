@@ -41,7 +41,7 @@ export class PriorityQueue {
 
   remove(id: string, priority?: number) {
     priority ??= this.priorityMap.get(id);
-    if (!priority) {
+    if (priority === undefined) {
       return false;
     }
     const removed = this.tree.remove({ id, priority });

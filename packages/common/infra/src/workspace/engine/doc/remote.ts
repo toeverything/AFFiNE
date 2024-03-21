@@ -143,12 +143,11 @@ export class DocEngineRemotePart {
       );
       const seqNum = await this.storage.loadDocSeqNum(docId, signal);
 
-      console.log('pushedSeqNum', pushedSeqNum, 'seqNum', seqNum);
       if (pushedSeqNum === null || pushedSeqNum !== seqNum) {
         await this.jobs.pullAndPush(docId, signal);
       } else {
         const pulled = await this.storage.loadDocServerClockPulled(docId);
-        if (pulled !== this.status.serverClocks.get(docId)) {
+        if (pulled === null || pulled !== this.status.serverClocks.get(docId)) {
           await this.jobs.pull(docId, signal);
         }
       }

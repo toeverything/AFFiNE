@@ -138,6 +138,9 @@ export class StorageInner {
     const bytes = await this.behavior.syncMetadata.get(
       Keys.ServerClockPulled(docId)
     );
+    if (bytes === null) {
+      return null;
+    }
     return bytes ? Values.UInt64.parse(bytes) : 0;
   }
 
@@ -149,8 +152,8 @@ export class StorageInner {
     throwIfAborted(signal);
     await this.behavior.syncMetadata.transaction(async transaction => {
       const oldBytes = await transaction.get(Keys.ServerClockPulled(docId));
-      const old = oldBytes ? Values.UInt64.parse(oldBytes) : 0;
-      if (old < serverClock) {
+      const old = oldBytes ? Values.UInt64.parse(oldBytes) : null;
+      if (old === null || old < serverClock) {
         await transaction.set(
           Keys.ServerClockPulled(docId),
           Values.UInt64.serialize(serverClock)
