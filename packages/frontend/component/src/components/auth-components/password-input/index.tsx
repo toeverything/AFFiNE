@@ -12,8 +12,8 @@ import { Tag } from './tag';
 
 export type Status = 'weak' | 'medium' | 'strong' | 'minimum' | 'maximum';
 
-const MIN_LENGTH = 8;
-const MAX_LENGTH = 20;
+export const MIN_LENGTH = 8;
+export const MAX_LENGTH = 20;
 
 export const PasswordInput: FC<
   InputProps & {
@@ -93,11 +93,23 @@ export const PasswordInput: FC<
         minLength={MIN_LENGTH}
         maxLength={MAX_LENGTH}
         style={{ marginBottom: 20 }}
-        placeholder={t['com.affine.auth.set.password.placeholder']()}
+        placeholder={t['com.affine.auth.set.password.placeholder']({
+          min: String(MIN_LENGTH),
+        })}
         onChange={onPasswordChange}
         endFix={
           <div className={statusWrapper}>
-            {status ? <Tag status={status} /> : null}
+            {status ? (
+              <Tag
+                status={status}
+                minimum={t['com.affine.auth.set.password.message.minlength']({
+                  min: String(MIN_LENGTH),
+                })}
+                maximum={t['com.affine.auth.set.password.message.maxlength']({
+                  max: String(MAX_LENGTH),
+                })}
+              />
+            ) : null}
           </div>
         }
         {...inputProps}

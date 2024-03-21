@@ -6,6 +6,7 @@ import { useCallback, useState } from 'react';
 import { Button } from '../../ui/button';
 import { pushNotificationAtom } from '../notification-center';
 import { AuthPageContainer } from './auth-page-container';
+import { MAX_LENGTH, MIN_LENGTH } from './password-input';
 import { SetPassword } from './set-password';
 import type { User } from './type';
 
@@ -46,7 +47,10 @@ export const SetPasswordPage: FC<{
           t['com.affine.auth.sent.set.password.success.message']()
         ) : (
           <>
-            {t['com.affine.auth.page.sent.email.subtitle']()}
+            {t['com.affine.auth.page.sent.email.subtitle']({
+              min: String(MIN_LENGTH),
+              max: String(MAX_LENGTH),
+            })}
             <a href={`mailto:${email}`}>{email}</a>
           </>
         )

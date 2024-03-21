@@ -3,6 +3,8 @@ import {
   AuthContent,
   AuthInput,
   BackButton,
+  MAX_LENGTH,
+  MIN_LENGTH,
   ModalHeader,
 } from '@affine/component/auth-components';
 import { pushNotificationAtom } from '@affine/component/notification-center';
@@ -40,7 +42,10 @@ const useContent = (emailType: AuthPanelProps['emailType'], email: string) => {
 
   switch (emailType) {
     case 'setPassword':
-      return t['com.affine.auth.set.password.message']();
+      return t['com.affine.auth.set.password.message']({
+        min: String(MIN_LENGTH),
+        max: String(MAX_LENGTH),
+      });
     case 'changePassword':
       return t['com.affine.auth.reset.password.message']();
     case 'changeEmail':
