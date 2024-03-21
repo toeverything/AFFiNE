@@ -127,10 +127,13 @@ async function createWindow(additionalArguments: string[]) {
   });
 
   browserWindow.on('leave-full-screen', () => {
-    // FIXME: workaround for theme bug in full screen mode
-    const size = browserWindow.getSize();
-    browserWindow.setSize(size[0] + 1, size[1] + 1);
-    browserWindow.setSize(size[0], size[1]);
+    // seems call this too soon may cause the app to crash
+    setTimeout(() => {
+      // FIXME: workaround for theme bug in full screen mode
+      const size = browserWindow.getSize();
+      browserWindow.setSize(size[0] + 1, size[1] + 1);
+      browserWindow.setSize(size[0], size[1]);
+    });
     uiSubjects.onMaximized.next(false);
   });
 
