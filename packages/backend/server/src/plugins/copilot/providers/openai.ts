@@ -4,6 +4,7 @@ import { ClientOptions, OpenAI } from 'openai';
 
 import {
   ChatMessage,
+  ChatMessageRole,
   CopilotCapability,
   CopilotProviderType,
   CopilotTextToEmbeddingProvider,
@@ -21,7 +22,19 @@ export class OpenAIProvider
     CopilotCapability.TextToImage,
   ];
 
-  readonly availableModels = ['gpt-3.5-turbo'];
+  readonly availableModels = [
+    // text to text
+    'gpt-4-vision-preview',
+    'gpt-4-turbo-preview',
+    'gpt-3.5-turbo',
+    // embeddings
+    'text-embedding-3-large',
+    'text-embedding-3-small',
+    'text-embedding-ada-002',
+    // moderation
+    'text-moderation-latest',
+    'text-moderation-stable',
+  ];
 
   constructor(config: ClientOptions) {
     assert(OpenAIProvider.assetsConfig(config));
@@ -44,6 +57,51 @@ export class OpenAIProvider
     }));
   }
 
+  private checkParams({
+    messages,
+    embeddings,
+    model,
+  }: {
+    messages?: ChatMessage[];
+    embeddings?: string[];
+    model: string;
+  }) {
+    if (!this.availableModels.includes(model)) {
+      throw new Error(`Invalid model: ${model}`);
+    }
+    if (Array.isArray(messages) && messages.length > 0) {
+      if (
+        messages.some(
+          m =>
+            // check non-object
+            typeof m !== 'object' ||
+            !m ||
+            // check content
+            typeof m.content !== 'string' ||
+            !m.content ||
+            !m.content.trim()
+        )
+      ) {
+        throw new Error('Empty message content');
+      }
+      if (
+        messages.some(
+          m =>
+            typeof m.role !== 'string' ||
+            !m.role ||
+            !ChatMessageRole.includes(m.role)
+        )
+      ) {
+        throw new Error('Invalid message role');
+      }
+    } else if (
+      Array.isArray(embeddings) &&
+      embeddings.some(e => typeof e !== 'string' || !e || !e.trim())
+    ) {
+      throw new Error('Invalid embedding');
+    }
+  }
+
   // ====== text to text ======
 
   async generateText(
@@ -56,9 +114,7 @@ export class OpenAIProvider
       user?: string;
     } = {}
   ): Promise<string> {
-    if (!this.availableModels.includes(model)) {
-      throw new Error(`Invalid model: ${model}`);
-    }
+    this.checkParams({ messages, model });
     const result = await this.chat.completions.create(
       {
         messages: this.chatToGPTMessage(messages),
@@ -86,9 +142,7 @@ export class OpenAIProvider
       user?: string;
     } = {}
   ): AsyncIterable<string> {
-    if (!this.availableModels.includes(model)) {
-      throw new Error(`Invalid model: ${model}`);
-    }
+    this.checkParams({ messages, model });
     const result = await this.chat.completions.create(
       {
         stream: true,
@@ -127,6 +181,8 @@ export class OpenAIProvider
     } = { dimensions: 256 }
   ): Promise<number[][]> {
     messages = Array.isArray(messages) ? messages : [messages];
+    this.checkParams({ embeddings: messages, model });
+
     const result = await this.embeddings.create({
       model: model,
       input: messages,
