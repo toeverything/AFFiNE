@@ -22,6 +22,7 @@ export const docEditorGap = style({
   margin: '0 auto',
   paddingTop: 50,
   paddingBottom: 50,
+  cursor: 'text',
 });
 
 const titleTagBasic = style({
