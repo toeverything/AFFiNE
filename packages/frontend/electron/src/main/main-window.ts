@@ -5,6 +5,7 @@ import { BrowserWindow, type CookiesSetDetails, nativeTheme } from 'electron';
 import electronWindowState from 'electron-window-state';
 
 import { isLinux, isMacOS, isWindows } from '../shared/utils';
+import { buildType } from './config';
 import { mainWindowOrigin } from './constants';
 import { ensureHelperProcess } from './helper-process';
 import { logger } from './logger';
@@ -75,6 +76,12 @@ async function createWindow(additionalArguments: string[]) {
       additionalArguments: additionalArguments,
     },
   });
+
+  if (isLinux()) {
+    browserWindow.setIcon(
+      join(__dirname, `../resources/icons/icon_${buildType}_64x64.png`)
+    );
+  }
 
   nativeTheme.themeSource = 'light';
 

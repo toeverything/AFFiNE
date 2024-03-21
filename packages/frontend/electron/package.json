@@ -42,7 +42,7 @@
     "@electron-forge/plugin-auto-unpack-natives": "^7.3.0",
     "@electron-forge/shared-types": "^7.3.0",
     "@emotion/react": "^11.11.4",
-    "@pengx17/electron-forge-maker-appimage": "^1.0.2",
+    "@pengx17/electron-forge-maker-appimage": "^1.1.1",
     "@toeverything/infra": "workspace:*",
     "@types/uuid": "^9.0.8",
     "builder-util-runtime": "^9.2.4",

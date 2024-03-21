@@ -20,6 +20,11 @@ const icoPath = path.join(
     : './resources/icons/icon.ico'
 );
 
+const iconX64PngPath = path.join(
+  ROOT,
+  `./resources/icons/icon_${buildType}_64x64.png`
+);
+
 const icnsPath = path.join(
   ROOT,
   !stableBuild
@@ -46,6 +51,7 @@ export {
   icnsPath,
   iconPngPath,
   iconUrl,
+  iconX64PngPath,
   icoPath,
   platform,
   productName,
