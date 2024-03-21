@@ -137,7 +137,6 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       : buildFlags.mode === 'development'
         ? true
         : currentBuildPreset.allowLocalWorkspace,
-    isSelfHosted: process.env.SELF_HOSTED === 'true',
   };
 
   const testEnvironmentPreset = {
@@ -149,6 +148,8 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
   }
 
   return {
+    // Downloads fonts to self-hosted image
+    isSelfHosted: process.env.SELF_HOSTED === 'true',
     ...currentBuildPreset,
     // environment preset will overwrite current build preset
     // this environment variable is for debug proposes only
