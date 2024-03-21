@@ -194,7 +194,7 @@ export class WorkspaceResolver {
   @Throttle({
     default: {
       limit: 10,
-      ttl: 30,
+      ttl: 30 * 1000,
     },
   })
   @Public()
@@ -227,6 +227,12 @@ export class WorkspaceResolver {
     return workspace;
   }
 
+  @Throttle({
+    default: {
+      limit: 10,
+      ttl: 120 * 1000,
+    },
+  })
   @Mutation(() => WorkspaceType, {
     description: 'Create a new workspace',
   })
@@ -303,6 +309,12 @@ export class WorkspaceResolver {
     });
   }
 
+  @Throttle({
+    default: {
+      limit: 10,
+      ttl: 120 * 1000,
+    },
+  })
   @Mutation(() => Boolean)
   async deleteWorkspace(
     @CurrentUser() user: CurrentUser,
@@ -321,6 +333,12 @@ export class WorkspaceResolver {
     return true;
   }
 
+  @Throttle({
+    default: {
+      limit: 10,
+      ttl: 120 * 1000,
+    },
+  })
   @Mutation(() => String)
   async invite(
     @CurrentUser() user: CurrentUser,
@@ -425,7 +443,7 @@ export class WorkspaceResolver {
   @Throttle({
     default: {
       limit: 10,
-      ttl: 30,
+      ttl: 30 * 1000,
     },
   })
   @Public()
@@ -486,6 +504,12 @@ export class WorkspaceResolver {
     };
   }
 
+  @Throttle({
+    default: {
+      limit: 10,
+      ttl: 120 * 1000,
+    },
+  })
   @Mutation(() => Boolean)
   async revoke(
     @CurrentUser() user: CurrentUser,
@@ -530,6 +554,12 @@ export class WorkspaceResolver {
     return this.permissions.acceptWorkspaceInvitation(inviteId, workspaceId);
   }
 
+  @Throttle({
+    default: {
+      limit: 10,
+      ttl: 120 * 1000,
+    },
+  })
   @Mutation(() => Boolean)
   async leaveWorkspace(
     @CurrentUser() user: CurrentUser,
