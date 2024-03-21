@@ -32,6 +32,11 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
+          - name: AFFINE_PRIVATE_KEY
+            valueFrom:
+              secretKeyRef:
+                name: "{{ .Values.global.secret.secretName }}"
+                key: key
           - name: NODE_ENV
             value: "{{ .Values.env }}"
           - name: NO_COLOR
@@ -40,8 +45,6 @@ spec:
             value: "affine"
           - name: SERVER_FLAVOR
             value: "sync"
-          - name: NEXTAUTH_URL
-            value: "{{ .Values.global.ingress.host }}"
           - name: AFFINE_ENV
             value: "{{ .Release.Namespace }}"
           - name: DATABASE_PASSWORD

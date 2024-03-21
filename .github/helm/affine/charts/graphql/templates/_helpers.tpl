@@ -61,18 +61,3 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
-
-{{- define "jwt.key" -}}
-{{- $secret := lookup "v1" "Secret" .Release.Namespace .Values.app.jwt.secretName -}}
-{{- if and $secret $secret.data.private -}}
-{{/*
-   Reusing existing secret data
-*/}}
-key: {{ $secret.data.private }}
-{{- else -}}
-{{/*
-    Generate new data
-*/}}
-key: {{ genPrivateKey "ecdsa" | b64enc }}
-{{- end -}}
-{{- end -}}

@@ -25,9 +25,10 @@ AwEHoUQDQgAEF3U/0wIeJ3jRKXeFKqQyBKlr9F7xaAUScRrAuSP33rajm3cdfihI
 const ONE_DAY_IN_SEC = 60 * 60 * 24;
 
 const keyPair = (function () {
-  const AUTH_PRIVATE_KEY = process.env.AUTH_PRIVATE_KEY ?? examplePrivateKey;
+  const AFFINE_PRIVATE_KEY =
+    process.env.AFFINE_PRIVATE_KEY ?? examplePrivateKey;
   const privateKey = createPrivateKey({
-    key: Buffer.from(AUTH_PRIVATE_KEY),
+    key: Buffer.from(AFFINE_PRIVATE_KEY),
     format: 'pem',
     type: 'sec1',
   })
@@ -37,7 +38,7 @@ const keyPair = (function () {
     })
     .toString('utf8');
   const publicKey = createPublicKey({
-    key: Buffer.from(AUTH_PRIVATE_KEY),
+    key: Buffer.from(AFFINE_PRIVATE_KEY),
     format: 'pem',
     type: 'spki',
   })

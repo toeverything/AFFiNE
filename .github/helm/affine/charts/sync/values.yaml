@@ -12,7 +12,6 @@ env: 'production'
 app:
   # AFFINE_SERVER_HOST
   host: '0.0.0.0'
-
 serviceAccount:
   create: true
   annotations: {}
