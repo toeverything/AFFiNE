@@ -422,6 +422,27 @@ model UserInvoice {
   @@map("user_invoices")
 }
 
+enum AiPromptRole {
+  system
+  assistant
+  user
+}
+
+model AiPrompt {
+  id        String       @id @default(uuid()) @db.VarChar
+  // prompt name
+  name      String       @unique @db.VarChar(20)
+  // if a group of prompts contains multiple sentences, idx specifies the order of each sentence
+  idx       Int          @db.Integer
+  // system/assistant/user
+  role      AiPromptRole
+  // prompt content
+  content   String       @db.Text
+  createdAt DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@map("ai_prompts")
+}
+
 model DataMigration {
   id         String    @id @default(uuid()) @db.VarChar(36)
   name       String    @db.VarChar
