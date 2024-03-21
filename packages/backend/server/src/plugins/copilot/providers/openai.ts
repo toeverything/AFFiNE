@@ -6,12 +6,13 @@ import {
   ChatMessage,
   CopilotCapability,
   CopilotProviderType,
+  CopilotTextToEmbeddingProvider,
   CopilotTextToTextProvider,
 } from '../types';
 
 export class OpenAIProvider
   extends OpenAI
-  implements CopilotTextToTextProvider
+  implements CopilotTextToTextProvider, CopilotTextToEmbeddingProvider
 {
   static readonly type = CopilotProviderType.OpenAI;
   static readonly capabilities = [
@@ -43,19 +44,31 @@ export class OpenAIProvider
     }));
   }
 
+  // ====== text to text ======
+
   async generateText(
     messages: ChatMessage[],
-    model: string = 'gpt-3.5-turbo'
+    model: string = 'gpt-3.5-turbo',
+    options: {
+      temperature?: number;
+      maxTokens?: number;
+      signal?: AbortSignal;
+      user?: string;
+    } = {}
   ): Promise<string> {
     if (!this.availableModels.includes(model)) {
       throw new Error(`Invalid model: ${model}`);
     }
-    const result = await this.chat.completions.create({
-      messages: this.chatToGPTMessage(messages),
-      model: model,
-      temperature: 0,
-      max_tokens: 4096,
-    });
+    const result = await this.chat.completions.create(
+      {
+        messages: this.chatToGPTMessage(messages),
+        model: model,
+        temperature: options.temperature || 0,
+        max_tokens: options.maxTokens || 4096,
+        user: options.user,
+      },
+      { signal: options.signal }
+    );
     const { content } = result.choices[0].message;
     if (!content) {
       throw new Error('Failed to generate text');
@@ -65,24 +78,61 @@ export class OpenAIProvider
 
   async *generateTextStream(
     messages: ChatMessage[],
-    model: string
+    model: string,
+    options: {
+      temperature?: number;
+      maxTokens?: number;
+      signal?: AbortSignal;
+      user?: string;
+    } = {}
   ): AsyncIterable<string> {
     if (!this.availableModels.includes(model)) {
       throw new Error(`Invalid model: ${model}`);
     }
-    const result = await this.chat.completions.create({
-      stream: true,
-      messages: this.chatToGPTMessage(messages),
-      model: model,
-      temperature: 0,
-      max_tokens: 4096,
-    });
+    const result = await this.chat.completions.create(
+      {
+        stream: true,
+        messages: this.chatToGPTMessage(messages),
+        model: model,
+        temperature: options.temperature || 0,
+        max_tokens: options.maxTokens || 4096,
+        user: options.user,
+      },
+      {
+        signal: options.signal,
+      }
+    );
 
     for await (const message of result) {
       const content = message.choices[0].delta.content;
       if (content) {
         yield content;
+        if (options.signal?.aborted) {
+          result.controller.abort();
+          break;
+        }
       }
     }
+  }
+
+  // ====== text to embedding ======
+
+  async generateEmbedding(
+    messages: string | string[],
+    model: string,
+    options: {
+      dimensions: number;
+      signal?: AbortSignal;
+      user?: string;
+    } = { dimensions: 256 }
+  ): Promise<number[][]> {
+    messages = Array.isArray(messages) ? messages : [messages];
+    const result = await this.embeddings.create({
+      model: model,
+      input: messages,
+      dimensions: options.dimensions,
+      user: options.user,
+    });
+    return result.data.map(e => e.embedding);
   }
 }
