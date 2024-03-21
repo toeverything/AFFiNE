@@ -4,7 +4,11 @@ import { getLinkPreview } from 'link-preview-js';
 import { isMacOS } from '../../shared/utils';
 import { persistentConfig } from '../config-storage/persist';
 import { logger } from '../logger';
-import { getMainWindow, initAndShowMainWindow } from '../main-window';
+import {
+  getMainWindow,
+  handleWebContentsResize,
+  initAndShowMainWindow,
+} from '../main-window';
 import { getOnboardingWindow } from '../onboarding';
 import type { NamespaceHandlers } from '../type';
 import { launchStage } from '../windows-manager/stage';
@@ -43,6 +47,9 @@ export const uiHandlers = {
     } else {
       window.maximize();
     }
+  },
+  handleWindowResize: async () => {
+    await handleWebContentsResize();
   },
   handleCloseApp: async () => {
     app.quit();

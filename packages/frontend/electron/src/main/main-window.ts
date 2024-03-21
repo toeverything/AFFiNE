@@ -53,7 +53,6 @@ async function createWindow(additionalArguments: string[]) {
       : isWindows()
         ? 'hidden'
         : 'default',
-    trafficLightPosition: { x: 20, y: 16 },
     x: mainWindowState.x,
     y: mainWindowState.y,
     width: mainWindowState.width,
@@ -100,6 +99,8 @@ async function createWindow(additionalArguments: string[]) {
     if (browserWindow.isMaximized() || browserWindow.isFullScreen()) {
       uiSubjects.onMaximized.next(true);
     }
+
+    handleWebContentsResize().catch(logger.error);
   });
 
   browserWindow.on('close', e => {
@@ -135,18 +136,15 @@ async function createWindow(additionalArguments: string[]) {
 
   browserWindow.on('maximize', () => {
     uiSubjects.onMaximized.next(true);
-    browserWindow.setBackgroundMaterial('none');
   });
 
   // full-screen == maximized in UI on windows
   browserWindow.on('enter-full-screen', () => {
     uiSubjects.onMaximized.next(true);
-    browserWindow.setBackgroundMaterial('none');
   });
 
   browserWindow.on('unmaximize', () => {
     uiSubjects.onMaximized.next(false);
-    browserWindow.setBackgroundMaterial('none');
   });
 
   /**
@@ -273,4 +271,15 @@ export async function getCookie(url?: string, name?: string) {
     name,
   });
   return cookies;
+}
+
+// there is no proper way to listen to webContents resize event
+// we will rely on window.resize event in renderer instead
+export async function handleWebContentsResize() {
+  // right now when window is resized, we will relocate the traffic light positions
+  if (isMacOS()) {
+    const window = await getMainWindow();
+    const factor = window?.webContents.getZoomFactor() || 1;
+    window?.setWindowButtonPosition({ x: 20 * factor, y: 24 * factor - 6 });
+  }
 }

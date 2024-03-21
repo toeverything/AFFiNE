@@ -4,6 +4,7 @@ import './edgeless-template';
 import { apis, events } from '@affine/electron-api';
 import { setupGlobal } from '@affine/env/global';
 import * as Sentry from '@sentry/react';
+import { debounce } from 'lodash-es';
 import { useEffect } from 'react';
 import {
   createRoutesFromChildren,
@@ -61,6 +62,11 @@ export function setup() {
     };
     apis?.ui.isMaximized().then(handleMaximized).catch(console.error);
     events?.ui.onMaximized(handleMaximized);
+
+    const handleResize = debounce(() => {
+      apis?.ui.handleWindowResize().catch(console.error);
+    }, 50);
+    window.addEventListener('resize', handleResize);
   }
 
   performanceSetupLogger.info('done');
