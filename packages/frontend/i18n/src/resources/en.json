@@ -1118,6 +1118,8 @@
   "com.affine.workspaceType.offline": "Available Offline",
   "com.affine.write_with_a_blank_page": "Write with a blank page",
   "com.affine.yesterday": "Yesterday",
+  "com.affine.telemetry.enable": "Enable Telemetry",
+  "com.affine.telemetry.enable.desc": "Telemetry is a feature that allows us to collect data on how you use the app. This data helps us improve the app and provide better features.",
   "core": "core",
   "dark": "Dark",
   "emptyAllPages": "Click on the <1>$t(New Doc)</1> button to create your first doc.",
