@@ -88,11 +88,10 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
-    "@aws-sdk/client-s3": "3.537.0",
     "@perfsee/webpack": "^1.12.2",
     "@pmmmwh/react-refresh-webpack-plugin": "^0.5.11",
     "@sentry/webpack-plugin": "^2.14.2",
-    "@swc/core": "^1.4.2",
+    "@swc/core": "^1.4.8",
     "@testing-library/react": "^14.2.1",
     "@types/animejs": "^3.1.12",
     "@types/bytes": "^3.1.4",
