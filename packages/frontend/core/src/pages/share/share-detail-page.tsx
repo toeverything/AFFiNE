@@ -15,12 +15,11 @@ import type { AffineEditorContainer } from '@blocksuite/presets';
 import type { Doc as BlockSuiteDoc } from '@blocksuite/store';
 import type { Doc } from '@toeverything/infra';
 import {
+  DocStorageImpl,
   EmptyBlobStorage,
   LocalBlobStorage,
-  LocalSyncStorage,
   PageManager,
   type PageMode,
-  ReadonlyMappingSyncStorage,
   RemoteBlobStorage,
   ServiceProviderContext,
   useLiveData,
@@ -29,6 +28,7 @@ import {
   WorkspaceManager,
   WorkspaceScope,
 } from '@toeverything/infra';
+import { ReadonlyDocStorage } from '@toeverything/infra';
 import { useCallback, useEffect, useState } from 'react';
 import type { LoaderFunction } from 'react-router-dom';
 import {
@@ -152,8 +152,8 @@ export const Component = () => {
           ])
           .addImpl(RemoteBlobStorage('static'), StaticBlobStorage)
           .addImpl(
-            LocalSyncStorage,
-            ReadonlyMappingSyncStorage({
+            DocStorageImpl,
+            new ReadonlyDocStorage({
               [workspaceId]: new Uint8Array(workspaceArrayBuffer),
               [pageId]: new Uint8Array(pageArrayBuffer),
             })
@@ -161,8 +161,8 @@ export const Component = () => {
       }
     );
 
-    workspace.engine.sync
-      .waitForSynced()
+    workspace.engine
+      .waitForRootDocReady()
       .then(() => {
         const { page } = workspace.services.get(PageManager).open(pageId);
 

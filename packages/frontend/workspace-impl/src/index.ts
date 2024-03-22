@@ -9,11 +9,8 @@ import {
 } from '@toeverything/infra';
 
 import { CloudWorkspaceFactory, CloudWorkspaceListProvider } from './cloud';
-import {
-  LOCAL_WORKSPACE_LOCAL_STORAGE_KEY,
-  LocalWorkspaceFactory,
-  LocalWorkspaceListProvider,
-} from './local';
+import { LocalWorkspaceFactory, LocalWorkspaceListProvider } from './local';
+import { LOCAL_WORKSPACE_LOCAL_STORAGE_KEY } from './local/consts';
 import { WorkspaceLocalStateImpl } from './local-state';
 
 export * from './cloud';

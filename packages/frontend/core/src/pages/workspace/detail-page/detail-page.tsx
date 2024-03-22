@@ -304,7 +304,10 @@ export const DetailPage = ({ pageId }: { pageId: string }): ReactElement => {
 
   // set sync engine priority target
   useEffect(() => {
-    currentWorkspace.setPriorityRule(id => id.endsWith(pageId));
+    currentWorkspace.setPriorityLoad(pageId, 10);
+    return () => {
+      currentWorkspace.setPriorityLoad(pageId, 5);
+    };
   }, [currentWorkspace, pageId]);
 
   const jumpOnce = useLiveData(pageRecord?.meta.map(meta => meta.jumpOnce));

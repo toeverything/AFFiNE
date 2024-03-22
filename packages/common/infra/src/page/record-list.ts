@@ -2,11 +2,7 @@ import { isEqual } from 'lodash-es';
 import { distinctUntilChanged, map, Observable } from 'rxjs';
 
 import { LiveData } from '../livedata';
-import {
-  SyncEngineStep,
-  type Workspace,
-  type WorkspaceLocalState,
-} from '../workspace';
+import { type Workspace, type WorkspaceLocalState } from '../workspace';
 import { PageRecord } from './record';
 
 export class PageRecordList {
@@ -39,22 +35,8 @@ export class PageRecordList {
     []
   );
 
-  public readonly isReady = LiveData.from<boolean>(
-    new Observable(subscriber => {
-      subscriber.next(
-        this.workspace.engine.status.sync.step === SyncEngineStep.Synced
-      );
-
-      const dispose = this.workspace.engine.onStatusChange.on(() => {
-        subscriber.next(
-          this.workspace.engine.status.sync.step === SyncEngineStep.Synced
-        );
-      }).dispose;
-      return () => {
-        dispose();
-      };
-    }),
-    false
+  public readonly isReady = this.workspace.engine.rootDocState.map(
+    state => !state.syncing
   );
 
   public record(id: string) {

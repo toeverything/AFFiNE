@@ -1,5 +1,5 @@
 import { DebugLogger } from '@affine/debug';
-import type { AwarenessProvider, RejectByVersion } from '@toeverything/infra';
+import type { AwarenessProvider } from '@toeverything/infra';
 import {
   applyAwarenessUpdate,
   type Awareness,
@@ -135,7 +135,7 @@ export class AffineCloudAwarenessProvider implements AwarenessProvider {
     );
   };
 
-  handleReject = (_msg: RejectByVersion) => {
+  handleReject = () => {
     this.socket.off('server-version-rejected', this.handleReject);
     this.disconnect();
     this.socket.disconnect();

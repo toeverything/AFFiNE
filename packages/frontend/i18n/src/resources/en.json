@@ -1167,5 +1167,7 @@
   "com.affine.delete-tags.count_other": "{{count}} tags deleted",
   "com.affine.workbench.split-view-menu.keep-this-one": "Solo View",
   "com.affine.workbench.split-view.page-menu-open": "Open in split view",
-  "com.affine.search-tags.placeholder": "Type here ..."
+  "com.affine.search-tags.placeholder": "Type here ...",
+  "com.affine.resetSyncStatus.button": "Reset Sync",
+  "com.affine.resetSyncStatus.description": "This operation may fix some synchronization issues."
 }
