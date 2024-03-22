@@ -1,8 +1,4 @@
-import {
-  BadGatewayException,
-  ForbiddenException,
-  InternalServerErrorException,
-} from '@nestjs/common';
+import { BadGatewayException, ForbiddenException } from '@nestjs/common';
 import {
   Args,
   Context,
@@ -48,11 +44,11 @@ class SubscriptionPrice {
   @Field()
   currency!: string;
 
-  @Field()
-  amount!: number;
+  @Field(() => Int, { nullable: true })
+  amount?: number | null;
 
-  @Field()
-  yearlyAmount!: number;
+  @Field(() => Int, { nullable: true })
+  yearlyAmount?: number | null;
 }
 
 @ObjectType('UserSubscription')
@@ -176,64 +172,39 @@ export class SubscriptionResolver {
       }
     );
 
-    return Object.entries(group).map(([plan, prices]) => {
-      const yearly = prices.find(
-        price =>
-          decodeLookupKey(
-            // @ts-expect-error empty lookup key is filtered out
-            price.lookup_key
-          )[1] === SubscriptionRecurring.Yearly
-      );
-      const monthly = prices.find(
-        price =>
-          decodeLookupKey(
-            // @ts-expect-error empty lookup key is filtered out
-            price.lookup_key
-          )[1] === SubscriptionRecurring.Monthly
-      );
+    function findPrice(plan: SubscriptionPlan) {
+      const prices = group[plan];
 
-      if (!yearly || !monthly) {
-        throw new InternalServerErrorException(
-          'The prices are not configured correctly.'
-        );
+      if (!prices) {
+        return null;
       }
 
+      const monthlyPrice = prices.find(p => p.recurring?.interval === 'month');
+      const yearlyPrice = prices.find(p => p.recurring?.interval === 'year');
+      const currency = monthlyPrice?.currency ?? yearlyPrice?.currency ?? 'usd';
       return {
-        type: 'fixed',
-        plan: plan as SubscriptionPlan,
-        currency: monthly.currency,
-        amount: monthly.unit_amount ?? 0,
-        yearlyAmount: yearly.unit_amount ?? 0,
+        currency,
+        amount: monthlyPrice?.unit_amount,
+        yearlyAmount: yearlyPrice?.unit_amount,
       };
-    });
-  }
-
-  /**
-   * @deprecated
-   */
-  @Mutation(() => String, {
-    deprecationReason: 'use `createCheckoutSession` instead',
-    description: 'Create a subscription checkout link of stripe',
-  })
-  async checkout(
-    @CurrentUser() user: CurrentUser,
-    @Args({ name: 'recurring', type: () => SubscriptionRecurring })
-    recurring: SubscriptionRecurring,
-    @Args('idempotencyKey') idempotencyKey: string
-  ) {
-    const session = await this.service.createCheckoutSession({
-      user,
-      plan: SubscriptionPlan.Pro,
-      recurring,
-      redirectUrl: `${this.config.baseUrl}/upgrade-success`,
-      idempotencyKey,
-    });
-
-    if (!session.url) {
-      throw new BadGatewayException('Failed to create checkout session.');
     }
 
-    return session.url;
+    // extend it when new plans are added
+    const fixedPlans = [SubscriptionPlan.Pro];
+
+    return fixedPlans.reduce((prices, plan) => {
+      const price = findPrice(plan);
+
+      if (price && (price.amount || price.yearlyAmount)) {
+        prices.push({
+          type: 'fixed',
+          plan,
+          ...price,
+        });
+      }
+
+      return prices;
+    }, [] as SubscriptionPrice[]);
   }
 
   @Mutation(() => String, {

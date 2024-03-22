@@ -115,9 +115,6 @@ type Mutation {
   changePassword(newPassword: String!, token: String!): UserType!
 
   """Create a subscription checkout link of stripe"""
-  checkout(idempotencyKey: String!, recurring: SubscriptionRecurring!): String! @deprecated(reason: "use `createCheckoutSession` instead")
-
-  """Create a subscription checkout link of stripe"""
   createCheckoutSession(input: CreateCheckoutSessionInput!): String!
 
   """Create a stripe customer portal to manage payment methods"""
@@ -275,11 +272,11 @@ enum SubscriptionPlan {
 }
 
 type SubscriptionPrice {
-  amount: Int!
+  amount: Int
   currency: String!
   plan: SubscriptionPlan!
   type: String!
-  yearlyAmount: Int!
+  yearlyAmount: Int
 }
 
 enum SubscriptionRecurring {

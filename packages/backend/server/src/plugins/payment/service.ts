@@ -65,7 +65,9 @@ export class SubscriptionService {
   ) {}
 
   async listPrices() {
-    return this.stripe.prices.list();
+    return this.stripe.prices.list({
+      active: true,
+    });
   }
 
   async createCheckoutSession({
