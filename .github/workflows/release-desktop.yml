@@ -33,6 +33,7 @@ env:
   DEBUG: napi:*
   APP_NAME: affine
   MACOSX_DEPLOYMENT_TARGET: '10.13'
+  MIXPANEL_TOKEN: '389c0615a69b57cca7d3fa0a4824c930'
 
 jobs:
   before-make:

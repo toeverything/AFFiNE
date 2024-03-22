@@ -15,6 +15,7 @@ on:
 env:
   APP_NAME: affine
   NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
+  MIXPANEL_TOKEN: '389c0615a69b57cca7d3fa0a4824c930'
 
 jobs:
   build-server:

@@ -192,6 +192,10 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
     metrics: {
       enabled: false,
     },
+    telemetry: {
+      enabled: isSelfhosted && !process.env.DISABLE_SERVER_TELEMETRY,
+      token: '389c0615a69b57cca7d3fa0a4824c930',
+    },
     plugins: {
       enabled: new Set(),
       use(plugin, config) {

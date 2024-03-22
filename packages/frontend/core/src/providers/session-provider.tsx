@@ -13,6 +13,7 @@ import {
 } from 'react';
 
 import { useOnceSignedInEvents } from '../atoms/event';
+import { mixpanel } from '../utils';
 
 export const CloudSessionProvider = (props: PropsWithChildren) => {
   const session = useSession();
@@ -27,6 +28,12 @@ export const CloudSessionProvider = (props: PropsWithChildren) => {
       CLOUD_WORKSPACE_CHANGED_BROADCAST_CHANNEL_KEY
     ).postMessage(1);
   }, [onceSignedInEvents]);
+
+  useEffect(() => {
+    if (session.user?.id) {
+      mixpanel.identify(session.user.id);
+    }
+  }, [session]);
 
   useEffect(() => {
     if (prevSession.current !== session && session.status !== 'loading') {

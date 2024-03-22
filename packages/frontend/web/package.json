@@ -15,11 +15,13 @@
     "@affine/env": "workspace:*",
     "@juggle/resize-observer": "^3.4.0",
     "intl-segmenter-polyfill-rs": "^0.1.7",
+    "mixpanel-browser": "^2.49.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
     "@affine/cli": "workspace:*",
+    "@types/mixpanel-browser": "^2.49.0",
     "@types/react": "^18.2.60",
     "@types/react-dom": "^18.2.19",
     "typescript": "^5.3.3"

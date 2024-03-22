@@ -43,5 +43,12 @@ export async function createApp() {
     app.useWebSocketAdapter(adapter);
   }
 
+  if (AFFiNE.isSelfhosted && AFFiNE.telemetry.enabled) {
+    const mixpanel = await import('mixpanel');
+    mixpanel.init(AFFiNE.telemetry.token).track('selfhost-server-started', {
+      version: AFFiNE.version,
+    });
+  }
+
   return app;
 }
