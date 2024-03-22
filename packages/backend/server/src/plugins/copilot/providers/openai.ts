@@ -11,6 +11,8 @@ import {
   CopilotTextToTextProvider,
 } from '../types';
 
+const DEFAULT_DIMENSIONS = 256;
+
 export class OpenAIProvider
   extends OpenAI
   implements CopilotTextToTextProvider, CopilotTextToEmbeddingProvider
@@ -178,7 +180,7 @@ export class OpenAIProvider
       dimensions: number;
       signal?: AbortSignal;
       user?: string;
-    } = { dimensions: 256 }
+    } = { dimensions: DEFAULT_DIMENSIONS }
   ): Promise<number[][]> {
     messages = Array.isArray(messages) ? messages : [messages];
     this.checkParams({ embeddings: messages, model });
@@ -186,7 +188,7 @@ export class OpenAIProvider
     const result = await this.embeddings.create({
       model: model,
       input: messages,
-      dimensions: options.dimensions,
+      dimensions: options.dimensions || DEFAULT_DIMENSIONS,
       user: options.user,
     });
     return result.data.map(e => e.embedding);
