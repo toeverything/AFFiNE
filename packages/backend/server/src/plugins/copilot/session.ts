@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+
 import { Injectable } from '@nestjs/common';
 import { encoding_for_model, Tiktoken, TiktokenModel } from 'tiktoken';
 
@@ -9,9 +11,10 @@ const CHAT_SESSION_KEY = 'chat-session';
 const CHAT_SESSION_TTL = 3600 * 12 * 1000; // 12 hours
 
 export type ChatSessionState = {
-  sessionId?: string;
+  sessionId: string;
   promptName: string;
-  prompt?: ChatMessage[];
+  model: TiktokenModel;
+  prompt: ChatMessage[];
   messages: ChatMessage[];
 };
 
@@ -19,17 +22,19 @@ export class ChatSession implements AsyncDisposable {
   private readonly encoder: Tiktoken;
   private readonly promptTokenSize: number;
   constructor(
-    private readonly state: Required<ChatSessionState>,
+    private readonly state: ChatSessionState,
     model: TiktokenModel,
-    private readonly dispose?: (
-      state: Required<ChatSessionState>
-    ) => Promise<void>,
+    private readonly dispose?: (state: ChatSessionState) => Promise<void>,
     private readonly maxTokenSize = 3840
   ) {
     this.encoder = encoding_for_model(model);
     this.promptTokenSize = this.encoder.encode_ordinary(
       state.prompt?.map(m => m.content).join('') || ''
     ).length;
+  }
+
+  get model() {
+    return this.state.model;
   }
 
   push(message: ChatMessage) {
@@ -57,15 +62,25 @@ export class ChatSession implements AsyncDisposable {
     return ret;
   }
 
-  finish() {
+  finish(): ChatMessage[] {
     const messages = this.takeMessages();
-    return [...(this.state.prompt || []), messages];
+    return [...(this.state.prompt || []), ...messages];
+  }
+
+  async save() {
+    await this.dispose?.(this.state);
   }
 
   async [Symbol.asyncDispose]() {
     this.encoder.free();
-    await this.dispose?.(this.state);
+    await this.save?.();
   }
+}
+
+export interface ChatSessionOptions {
+  promptName: string;
+  model: TiktokenModel;
+  user?: string;
 }
 
 @Injectable()
@@ -75,40 +90,34 @@ export class ChatSessionService {
     private readonly prompt: PromptService
   ) {}
 
-  private async set(
-    sessionId: string,
-    state: ChatSessionState
-  ): Promise<Required<ChatSessionState>> {
-    const { promptName, messages } = state;
-    let { prompt } = state;
-    if (!Array.isArray(prompt)) {
-      prompt = await this.prompt.get(promptName);
-    }
-    const finalState: Required<ChatSessionState> = {
-      sessionId,
-      promptName,
-      prompt,
-      messages,
-    };
-    await this.cache.set(`${CHAT_SESSION_KEY}:${sessionId}`, finalState, {
+  private async setState(state: ChatSessionState): Promise<void> {
+    await this.cache.set(`${CHAT_SESSION_KEY}:${state.sessionId}`, state, {
       ttl: CHAT_SESSION_TTL,
     });
-    return finalState;
   }
 
-  private async get(
-    sessionId: string,
-    model: TiktokenModel
-  ): Promise<ChatSession | null> {
-    const state = await this.cache.get<Required<ChatSessionState>>(
+  private async getState(
+    sessionId: string
+  ): Promise<ChatSessionState | undefined> {
+    return await this.cache.get<ChatSessionState>(
       `${CHAT_SESSION_KEY}:${sessionId}`
     );
-    if (state) {
-      return new ChatSession(state, model, async state => {
-        await this.set(sessionId, state);
-      });
+  }
+
+  async create(options: ChatSessionOptions): Promise<string> {
+    const sessionId = randomUUID();
+    const prompt = await this.prompt.get(options.promptName);
+    if (!prompt.length) {
+      throw new Error(`Prompt not found: ${options.promptName}`);
     }
-    return null;
+    await this.setState({
+      sessionId,
+      model: options.model,
+      promptName: options.promptName,
+      prompt,
+      messages: [],
+    });
+    return sessionId;
   }
 
   /**
@@ -126,17 +135,13 @@ export class ChatSessionService {
    * @param model model name, used to estimate token size
    * @returns
    */
-  async getOrCreate(
-    sessionId: string,
-    promptName: string,
-    model: TiktokenModel
-  ): Promise<ChatSession> {
-    const session = await this.get(sessionId, model);
-    if (session) return session;
-
-    const state = await this.set(sessionId, { promptName, messages: [] });
-    return new ChatSession(state, model, async state => {
-      await this.set(sessionId, state);
-    });
+  async get(sessionId: string): Promise<ChatSession | null> {
+    const state = await this.getState(sessionId);
+    if (state) {
+      return new ChatSession(state, state.model, async state => {
+        await this.setState(state);
+      });
+    }
+    return null;
   }
 }
