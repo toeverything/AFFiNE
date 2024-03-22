@@ -99,11 +99,16 @@ flags.distribution = buildFlags.distribution;
 flags.mode = buildFlags.mode;
 flags.channel = buildFlags.channel;
 flags.coverage = buildFlags.coverage;
+flags.entry = undefined;
 
 const cwd =
   flags.distribution === 'browser'
     ? join(projectRoot, 'packages', 'frontend', 'web')
     : join(projectRoot, 'packages', 'frontend', 'electron');
+
+if (flags.distribution === 'desktop') {
+  flags.entry = join(cwd, 'renderer', 'index.tsx');
+}
 
 if (buildFlags.debugBlockSuite) {
   const { config } = await import('dotenv');
