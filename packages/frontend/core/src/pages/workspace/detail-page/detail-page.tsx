@@ -16,6 +16,8 @@ import type { Doc as BlockSuiteDoc } from '@blocksuite/store';
 import {
   Doc,
   globalBlockSuiteSchema,
+  GlobalState,
+  LiveData,
   PageManager,
   PageRecordList,
   ServiceProviderContext,
@@ -65,7 +67,23 @@ import { PageNotFound } from '../../404';
 import * as styles from './detail-page.css';
 import { DetailPageHeader } from './detail-page-header';
 
+const RIGHT_SIDEBAR_TABS_ACTIVE_KEY = 'app:settings:rightsidebar:tabs:active';
+
 const DetailPageImpl = memo(function DetailPageImpl() {
+  const globalState = useService(GlobalState);
+  const activeTabName = useLiveData(
+    LiveData.from(
+      globalState.watch<SidebarTabName>(RIGHT_SIDEBAR_TABS_ACTIVE_KEY),
+      'journal'
+    )
+  );
+  const setActiveTabName = useCallback(
+    (name: string) => {
+      globalState.set(RIGHT_SIDEBAR_TABS_ACTIVE_KEY, name);
+    },
+    [globalState]
+  );
+
   const page = useService(Doc);
   const pageRecordList = useService(PageRecordList);
   const currentPageId = page.id;
@@ -83,10 +101,6 @@ const DetailPageImpl = memo(function DetailPageImpl() {
       setActiveBlockSuiteEditor(editor);
     }
   }, [editor, isActiveView, setActiveBlockSuiteEditor]);
-
-  const [activeTabName, setActiveTabName] = useState<SidebarTabName | null>(
-    null
-  );
 
   const pageMeta = useBlockSuiteDocMeta(docCollection).find(
     meta => meta.id === page.id
