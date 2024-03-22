@@ -20,6 +20,7 @@ export enum SubscriptionRecurring {
 export enum SubscriptionPlan {
   Free = 'free',
   Pro = 'pro',
+  AI = 'ai',
   Team = 'team',
   Enterprise = 'enterprise',
   SelfHosted = 'selfhosted',

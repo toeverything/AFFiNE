@@ -110,7 +110,7 @@ type Mutation {
   acceptInviteById(inviteId: String!, sendAcceptMail: Boolean, workspaceId: String!): Boolean!
   addToEarlyAccess(email: String!): Int!
   addWorkspaceFeature(feature: FeatureType!, workspaceId: String!): Int!
-  cancelSubscription(idempotencyKey: String!): UserSubscription!
+  cancelSubscription(idempotencyKey: String!, plan: SubscriptionPlan = Pro): UserSubscription!
   changeEmail(email: String!, token: String!): UserType!
   changePassword(newPassword: String!, token: String!): UserType!
 
@@ -134,7 +134,7 @@ type Mutation {
   removeAvatar: RemoveAvatar!
   removeEarlyAccess(email: String!): Int!
   removeWorkspaceFeature(feature: FeatureType!, workspaceId: String!): Int!
-  resumeSubscription(idempotencyKey: String!): UserSubscription!
+  resumeSubscription(idempotencyKey: String!, plan: SubscriptionPlan = Pro): UserSubscription!
   revoke(userId: String!, workspaceId: String!): Boolean!
   revokePage(pageId: String!, workspaceId: String!): Boolean! @deprecated(reason: "use revokePublicPage")
   revokePublicPage(pageId: String!, workspaceId: String!): WorkspacePage!
@@ -149,7 +149,7 @@ type Mutation {
   signIn(email: String!, password: String!): UserType!
   signUp(email: String!, name: String!, password: String!): UserType!
   updateProfile(input: UpdateUserInput!): UserType!
-  updateSubscriptionRecurring(idempotencyKey: String!, recurring: SubscriptionRecurring!): UserSubscription!
+  updateSubscriptionRecurring(idempotencyKey: String!, plan: SubscriptionPlan = Pro, recurring: SubscriptionRecurring!): UserSubscription!
 
   """Update workspace"""
   updateWorkspace(input: UpdateWorkspaceInput!): WorkspaceType!
@@ -264,6 +264,7 @@ enum ServerFeature {
 }
 
 enum SubscriptionPlan {
+  AI
   Enterprise
   Free
   Pro
@@ -385,7 +386,8 @@ type UserType {
   """User name"""
   name: String!
   quota: UserQuota
-  subscription: UserSubscription
+  subscription(plan: SubscriptionPlan = Pro): UserSubscription @deprecated(reason: "use `UserType.subscriptions`")
+  subscriptions: [UserSubscription!]!
   token: tokenType! @deprecated(reason: "use [/api/auth/authorize]")
 }
 

@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { OnEvent as RawOnEvent } from '@nestjs/event-emitter';
 import type {
   Prisma,
@@ -88,12 +88,15 @@ export class SubscriptionService {
     const currentSubscription = await this.db.userSubscription.findFirst({
       where: {
         userId: user.id,
+        plan,
         status: SubscriptionStatus.Active,
       },
     });
 
     if (currentSubscription) {
-      throw new Error('You already have a subscription');
+      throw new BadRequestException(
+        `You've already subscripted to the ${plan} plan`
+      );
     }
 
     const price = await this.getPrice(plan, recurring);
@@ -154,35 +157,47 @@ export class SubscriptionService {
 
   async cancelSubscription(
     idempotencyKey: string,
-    userId: string
+    userId: string,
+    plan: SubscriptionPlan
   ): Promise<UserSubscription> {
     const user = await this.db.user.findUnique({
       where: {
         id: userId,
       },
       include: {
-        subscription: true,
+        subscriptions: {
+          where: {
+            plan,
+          },
+        },
       },
     });
 
-    if (!user?.subscription) {
-      throw new Error('You do not have any subscription');
+    if (!user) {
+      throw new BadRequestException('Unknown user');
     }
 
-    if (user.subscription.canceledAt) {
-      throw new Error('Your subscription has already been canceled');
+    const subscriptionInDB = user?.subscriptions.find(s => s.plan === plan);
+    if (!subscriptionInDB) {
+      throw new BadRequestException(`You didn't subscript to the ${plan} plan`);
+    }
+
+    if (subscriptionInDB.canceledAt) {
+      throw new BadRequestException(
+        'Your subscription has already been canceled'
+      );
     }
 
     // should release the schedule first
-    if (user.subscription.stripeScheduleId) {
+    if (subscriptionInDB.stripeScheduleId) {
       const manager = await this.scheduleManager.fromSchedule(
-        user.subscription.stripeScheduleId
+        subscriptionInDB.stripeScheduleId
       );
       await manager.cancel(idempotencyKey);
       return this.saveSubscription(
         user,
         await this.stripe.subscriptions.retrieve(
-          user.subscription.stripeSubscriptionId
+          subscriptionInDB.stripeSubscriptionId
         ),
         false
       );
@@ -190,7 +205,7 @@ export class SubscriptionService {
       // let customer contact support if they want to cancel immediately
       // see https://stripe.com/docs/billing/subscriptions/cancel
       const subscription = await this.stripe.subscriptions.update(
-        user.subscription.stripeSubscriptionId,
+        subscriptionInDB.stripeSubscriptionId,
         { cancel_at_period_end: true },
         { idempotencyKey }
       );
@@ -200,44 +215,52 @@ export class SubscriptionService {
 
   async resumeCanceledSubscription(
     idempotencyKey: string,
-    userId: string
+    userId: string,
+    plan: SubscriptionPlan
   ): Promise<UserSubscription> {
     const user = await this.db.user.findUnique({
       where: {
         id: userId,
       },
       include: {
-        subscription: true,
+        subscriptions: true,
       },
     });
 
-    if (!user?.subscription) {
-      throw new Error('You do not have any subscription');
+    if (!user) {
+      throw new BadRequestException('Unknown user');
     }
 
-    if (!user.subscription.canceledAt) {
-      throw new Error('Your subscription has not been canceled');
+    const subscriptionInDB = user?.subscriptions.find(s => s.plan === plan);
+    if (!subscriptionInDB) {
+      throw new BadRequestException(`You didn't subscript to the ${plan} plan`);
     }
 
-    if (user.subscription.end < new Date()) {
-      throw new Error('Your subscription is expired, please checkout again.');
+    if (!subscriptionInDB.canceledAt) {
+      throw new BadRequestException('Your subscription has not been canceled');
     }
 
-    if (user.subscription.stripeScheduleId) {
+    if (subscriptionInDB.end < new Date()) {
+      throw new BadRequestException(
+        'Your subscription is expired, please checkout again.'
+      );
+    }
+
+    if (subscriptionInDB.stripeScheduleId) {
       const manager = await this.scheduleManager.fromSchedule(
-        user.subscription.stripeScheduleId
+        subscriptionInDB.stripeScheduleId
       );
       await manager.resume(idempotencyKey);
       return this.saveSubscription(
         user,
         await this.stripe.subscriptions.retrieve(
-          user.subscription.stripeSubscriptionId
+          subscriptionInDB.stripeSubscriptionId
         ),
         false
       );
     } else {
       const subscription = await this.stripe.subscriptions.update(
-        user.subscription.stripeSubscriptionId,
+        subscriptionInDB.stripeSubscriptionId,
         { cancel_at_period_end: false },
         { idempotencyKey }
       );
@@ -249,6 +272,7 @@ export class SubscriptionService {
   async updateSubscriptionRecurring(
     idempotencyKey: string,
     userId: string,
+    plan: SubscriptionPlan,
     recurring: SubscriptionRecurring
   ): Promise<UserSubscription> {
     const user = await this.db.user.findUnique({
@@ -256,30 +280,38 @@ export class SubscriptionService {
         id: userId,
       },
       include: {
-        subscription: true,
+        subscriptions: true,
       },
     });
 
-    if (!user?.subscription) {
-      throw new Error('You do not have any subscription');
+    if (!user) {
+      throw new BadRequestException('Unknown user');
+    }
+    const subscriptionInDB = user?.subscriptions.find(s => s.plan === plan);
+    if (!subscriptionInDB) {
+      throw new BadRequestException(`You didn't subscript to the ${plan} plan`);
     }
 
-    if (user.subscription.canceledAt) {
-      throw new Error('Your subscription has already been canceled ');
+    if (subscriptionInDB.canceledAt) {
+      throw new BadRequestException(
+        'Your subscription has already been canceled '
+      );
     }
 
-    if (user.subscription.recurring === recurring) {
-      throw new Error('You have already subscribed to this plan');
+    if (subscriptionInDB.recurring === recurring) {
+      throw new BadRequestException(
+        `You are already in ${recurring} recurring`
+      );
     }
 
     const price = await this.getPrice(
-      user.subscription.plan as SubscriptionPlan,
+      subscriptionInDB.plan as SubscriptionPlan,
       recurring
     );
 
     const manager = await this.scheduleManager.fromSubscription(
       `${idempotencyKey}-fromSubscription`,
-      user.subscription.stripeSubscriptionId
+      subscriptionInDB.stripeSubscriptionId
     );
 
     await manager.update(
@@ -295,7 +327,7 @@ export class SubscriptionService {
 
     return await this.db.userSubscription.update({
       where: {
-        id: user.subscription.id,
+        id: subscriptionInDB.id,
       },
       data: {
         stripeScheduleId: manager.schedule?.id ?? null, // update schedule id or set to null(undefined means untouched)
@@ -312,7 +344,7 @@ export class SubscriptionService {
     });
 
     if (!user) {
-      throw new Error('Unknown user');
+      throw new BadRequestException('Unknown user');
     }
 
     try {
@@ -323,7 +355,7 @@ export class SubscriptionService {
       return portal.url;
     } catch (e) {
       this.logger.error('Failed to create customer portal.', e);
-      throw new Error('Failed to create customer portal');
+      throw new BadRequestException('Failed to create customer portal');
     }
   }
 
@@ -520,7 +552,10 @@ export class SubscriptionService {
 
     const currentSubscription = await this.db.userSubscription.findUnique({
       where: {
-        userId: user.id,
+        userId_plan: {
+          userId: user.id,
+          plan,
+        },
       },
     });
 
@@ -643,8 +678,8 @@ export class SubscriptionService {
     });
 
     if (!prices.data.length) {
-      throw new Error(
-        `Unknown subscription plan ${plan} with recurring ${recurring}`
+      throw new BadRequestException(
+        `Unknown subscription plan ${plan} with ${recurring} recurring`
       );
     }
 

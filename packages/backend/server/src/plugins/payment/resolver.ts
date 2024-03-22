@@ -190,7 +190,7 @@ export class SubscriptionResolver {
     }
 
     // extend it when new plans are added
-    const fixedPlans = [SubscriptionPlan.Pro];
+    const fixedPlans = [SubscriptionPlan.Pro, SubscriptionPlan.AI];
 
     return fixedPlans.reduce((prices, plan) => {
       const price = findPrice(plan);
@@ -242,17 +242,35 @@ export class SubscriptionResolver {
   @Mutation(() => UserSubscriptionType)
   async cancelSubscription(
     @CurrentUser() user: CurrentUser,
+    @Args({
+      name: 'plan',
+      type: () => SubscriptionPlan,
+      nullable: true,
+      defaultValue: SubscriptionPlan.Pro,
+    })
+    plan: SubscriptionPlan,
     @Args('idempotencyKey') idempotencyKey: string
   ) {
-    return this.service.cancelSubscription(idempotencyKey, user.id);
+    return this.service.cancelSubscription(idempotencyKey, user.id, plan);
   }
 
   @Mutation(() => UserSubscriptionType)
   async resumeSubscription(
     @CurrentUser() user: CurrentUser,
+    @Args({
+      name: 'plan',
+      type: () => SubscriptionPlan,
+      nullable: true,
+      defaultValue: SubscriptionPlan.Pro,
+    })
+    plan: SubscriptionPlan,
     @Args('idempotencyKey') idempotencyKey: string
   ) {
-    return this.service.resumeCanceledSubscription(idempotencyKey, user.id);
+    return this.service.resumeCanceledSubscription(
+      idempotencyKey,
+      user.id,
+      plan
+    );
   }
 
   @Mutation(() => UserSubscriptionType)
@@ -260,11 +278,19 @@ export class SubscriptionResolver {
     @CurrentUser() user: CurrentUser,
     @Args({ name: 'recurring', type: () => SubscriptionRecurring })
     recurring: SubscriptionRecurring,
+    @Args({
+      name: 'plan',
+      type: () => SubscriptionPlan,
+      nullable: true,
+      defaultValue: SubscriptionPlan.Pro,
+    })
+    plan: SubscriptionPlan,
     @Args('idempotencyKey') idempotencyKey: string
   ) {
     return this.service.updateSubscriptionRecurring(
       idempotencyKey,
       user.id,
+      plan,
       recurring
     );
   }
@@ -277,11 +303,21 @@ export class UserSubscriptionResolver {
     private readonly db: PrismaClient
   ) {}
 
-  @ResolveField(() => UserSubscriptionType, { nullable: true })
+  @ResolveField(() => UserSubscriptionType, {
+    nullable: true,
+    deprecationReason: 'use `UserType.subscriptions`',
+  })
   async subscription(
     @Context() ctx: { isAdminQuery: boolean },
     @CurrentUser() me: User,
-    @Parent() user: User
+    @Parent() user: User,
+    @Args({
+      name: 'plan',
+      type: () => SubscriptionPlan,
+      nullable: true,
+      defaultValue: SubscriptionPlan.Pro,
+    })
+    plan: SubscriptionPlan
   ) {
     // allow admin to query other user's subscription
     if (!ctx.isAdminQuery && me.id !== user.id) {
@@ -311,8 +347,29 @@ export class UserSubscriptionResolver {
 
     return this.db.userSubscription.findUnique({
       where: {
-        userId: user.id,
+        userId_plan: {
+          userId: user.id,
+          plan,
+        },
         status: SubscriptionStatus.Active,
+      },
+    });
+  }
+
+  @ResolveField(() => [UserSubscriptionType])
+  async subscriptions(
+    @CurrentUser() me: User,
+    @Parent() user: User
+  ): Promise<UserSubscription[]> {
+    if (me.id !== user.id) {
+      throw new ForbiddenException(
+        'You are not allowed to access this subscription.'
+      );
+    }
+
+    return this.db.userSubscription.findMany({
+      where: {
+        userId: user.id,
       },
     });
   }

@@ -24,7 +24,7 @@ model User {
 
   features             UserFeatures[]
   customer             UserStripeCustomer?
-  subscription         UserSubscription?
+  subscriptions        UserSubscription[]
   invoices             UserInvoice[]
   workspacePermissions WorkspaceUserPermission[]
   pagePermissions      WorkspacePageUserPermission[]
@@ -369,7 +369,7 @@ model UserStripeCustomer {
 
 model UserSubscription {
   id                   Int       @id @default(autoincrement()) @db.Integer
-  userId               String    @unique @map("user_id") @db.VarChar(36)
+  userId               String    @map("user_id") @db.VarChar(36)
   plan                 String    @db.VarChar(20)
   // yearly/monthly
   recurring            String    @db.VarChar(20)
@@ -395,6 +395,7 @@ model UserSubscription {
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@unique([userId, plan])
   @@map("user_subscriptions")
 }
 
