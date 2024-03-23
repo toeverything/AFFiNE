@@ -18,6 +18,7 @@ import { useCallback } from 'react';
 
 import { useCurrentLoginStatus } from '../../../hooks/affine/use-current-login-status';
 import { useMutation } from '../../../hooks/use-mutation';
+import { mixpanel } from '../../../utils';
 import { emailRegex } from '../../../utils/email-regex';
 import type { AuthPanelProps } from './index';
 import { OAuth } from './oauth';
@@ -96,6 +97,10 @@ export const SignIn: FC<AuthPanelProps> = ({
           const res = await signIn(email, verifyToken, challenge);
           if (res?.status === 403 && res?.url === INTERNAL_BETA_URL) {
             return setAuthState('noAccess');
+          }
+          // TODO, should always get id from user
+          if ('id' in user) {
+            mixpanel.identify(user.id);
           }
           setAuthState('afterSignInSendEmail');
         }

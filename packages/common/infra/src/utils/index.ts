@@ -1,3 +1,4 @@
+export * from './async-lock';
 export * from './async-queue';
 export * from './merge-updates';
 export * from './object-pool';

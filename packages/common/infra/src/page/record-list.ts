@@ -1,11 +1,8 @@
-import { Observable } from 'rxjs';
+import { isEqual } from 'lodash-es';
+import { distinctUntilChanged, map, Observable } from 'rxjs';
 
 import { LiveData } from '../livedata';
-import {
-  SyncEngineStep,
-  type Workspace,
-  type WorkspaceLocalState,
-} from '../workspace';
+import { type Workspace, type WorkspaceLocalState } from '../workspace';
 import { PageRecord } from './record';
 
 export class PageRecordList {
@@ -15,12 +12,10 @@ export class PageRecordList {
   ) {}
 
   public readonly records = LiveData.from<PageRecord[]>(
-    new Observable(subscriber => {
+    new Observable<string[]>(subscriber => {
       const emit = () => {
         subscriber.next(
-          this.workspace.docCollection.meta.docMetas.map(
-            v => new PageRecord(v.id, this.workspace, this.localState)
-          )
+          this.workspace.docCollection.meta.docMetas.map(v => v.id)
         );
       };
 
@@ -31,26 +26,17 @@ export class PageRecordList {
       return () => {
         dispose();
       };
-    }),
+    }).pipe(
+      distinctUntilChanged((p, c) => isEqual(p, c)),
+      map(ids =>
+        ids.map(id => new PageRecord(id, this.workspace, this.localState))
+      )
+    ),
     []
   );
 
-  public readonly isReady = LiveData.from<boolean>(
-    new Observable(subscriber => {
-      subscriber.next(
-        this.workspace.engine.status.sync.step === SyncEngineStep.Synced
-      );
-
-      const dispose = this.workspace.engine.onStatusChange.on(() => {
-        subscriber.next(
-          this.workspace.engine.status.sync.step === SyncEngineStep.Synced
-        );
-      }).dispose;
-      return () => {
-        dispose();
-      };
-    }),
-    false
+  public readonly isReady = this.workspace.engine.rootDocState.map(
+    state => !state.syncing
   );
 
   public record(id: string) {

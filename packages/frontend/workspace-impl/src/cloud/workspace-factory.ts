@@ -3,19 +3,19 @@ import type { WorkspaceFactory } from '@toeverything/infra';
 import {
   AwarenessContext,
   AwarenessProvider,
+  DocServerImpl,
   RemoteBlobStorage,
-  RemoteSyncStorage,
   WorkspaceIdContext,
   WorkspaceScope,
 } from '@toeverything/infra';
 import type { ServiceCollection } from '@toeverything/infra/di';
-import { CleanupService } from '@toeverything/infra/lifecycle';
 
 import { LocalWorkspaceFactory } from '../local';
-import { IndexedDBBlobStorage, SQLiteBlobStorage } from '../local';
+import { IndexedDBBlobStorage } from '../local/blob-indexeddb';
+import { SQLiteBlobStorage } from '../local/blob-sqlite';
 import { AffineCloudAwarenessProvider } from './awareness';
 import { AffineCloudBlobStorage } from './blob';
-import { AffineSyncStorage } from './sync';
+import { AffineCloudDocEngineServer } from './doc';
 
 export class CloudWorkspaceFactory implements WorkspaceFactory {
   name = WorkspaceFlavour.AFFINE_CLOUD;
@@ -28,10 +28,7 @@ export class CloudWorkspaceFactory implements WorkspaceFactory {
       .addImpl(RemoteBlobStorage('affine-cloud'), AffineCloudBlobStorage, [
         WorkspaceIdContext,
       ])
-      .addImpl(RemoteSyncStorage('affine-cloud'), AffineSyncStorage, [
-        WorkspaceIdContext,
-        CleanupService,
-      ])
+      .addImpl(DocServerImpl, AffineCloudDocEngineServer, [WorkspaceIdContext])
       .addImpl(
         AwarenessProvider('affine-cloud'),
         AffineCloudAwarenessProvider,

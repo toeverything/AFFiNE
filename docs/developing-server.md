@@ -55,7 +55,6 @@ When logging in via email, you will see the mail arriving at localhost:8025 in a
 
 ```
 DATABASE_URL="postgresql://affine:affine@localhost:5432/affine"
-NEXTAUTH_URL="http://localhost:8080"
 MAILER_SENDER="noreply@toeverything.info"
 MAILER_USER="auth"
 MAILER_PASSWORD="auth"

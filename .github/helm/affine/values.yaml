@@ -4,6 +4,9 @@ global:
     className: ''
     host: affine.pro
     tls: []
+  secret:
+    secretName: 'server-private-key'
+    privateKey: ''
   database:
     user: 'postgres'
     url: 'pg-postgresql'

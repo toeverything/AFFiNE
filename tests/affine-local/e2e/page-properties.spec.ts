@@ -1,6 +1,5 @@
 /* eslint-disable unicorn/prefer-dom-node-dataset */
 import { test } from '@affine-test/kit/playwright';
-import { clickPageModeButton } from '@affine-test/kit/utils/editor';
 import {
   openHomePage,
   openJournalsPage,
@@ -28,7 +27,6 @@ import { expect } from '@playwright/test';
 
 test.beforeEach(async ({ page }) => {
   await openHomePage(page);
-  await clickPageModeButton(page);
   await clickNewPageButton(page);
   await waitForEmptyEditor(page);
   await ensurePagePropertiesVisible(page);

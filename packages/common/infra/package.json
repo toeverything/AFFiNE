@@ -20,6 +20,7 @@
     "@blocksuite/blocks": "0.13.0-canary-202403140735-2367cd5",
     "@blocksuite/global": "0.13.0-canary-202403140735-2367cd5",
     "@blocksuite/store": "0.13.0-canary-202403140735-2367cd5",
+    "@datastructures-js/binary-search-tree": "^5.3.2",
     "foxact": "^0.2.31",
     "jotai": "^2.6.5",
     "jotai-effect": "^0.6.0",

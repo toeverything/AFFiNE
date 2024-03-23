@@ -1,9 +1,16 @@
 import { LiveData } from '@toeverything/infra/livedata';
+import type { GlobalState } from '@toeverything/infra/storage';
 
 import type { RightSidebarView } from './right-sidebar-view';
 
+const RIGHT_SIDEBAR_KEY = 'app:settings:rightsidebar';
+
 export class RightSidebar {
-  readonly isOpen = new LiveData(false);
+  constructor(private readonly globalState: GlobalState) {}
+  readonly isOpen = LiveData.from(
+    this.globalState.watch<boolean>(RIGHT_SIDEBAR_KEY),
+    false
+  ).map(Boolean);
   readonly views = new LiveData<RightSidebarView[]>([]);
   readonly front = this.views.map(
     stack => stack[0] as RightSidebarView | undefined
@@ -11,15 +18,19 @@ export class RightSidebar {
   readonly hasViews = this.views.map(stack => stack.length > 0);
 
   open() {
-    this.isOpen.next(true);
+    this._set(true);
   }
 
   toggle() {
-    this.isOpen.next(!this.isOpen.value);
+    this._set(!this.isOpen.value);
   }
 
   close() {
-    this.isOpen.next(false);
+    this._set(false);
+  }
+
+  _set(value: boolean) {
+    this.globalState.set(RIGHT_SIDEBAR_KEY, value);
   }
 
   /**

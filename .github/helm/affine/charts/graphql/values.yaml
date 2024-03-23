@@ -19,10 +19,6 @@ app:
   https: true
   doc:
     mergeInterval: "3000"
-  jwt:
-    secretName: jwt-private-key
-    # base64 encoded ecdsa private key
-    privateKey: ''
   captcha:
     enable: false
     secretName: captcha

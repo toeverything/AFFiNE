@@ -1,31 +1,38 @@
-import type {
-  GlobalState,
-  Workspace,
-  WorkspaceLocalState,
+import {
+  type GlobalState,
+  type Memento,
+  type Workspace,
+  type WorkspaceLocalState,
+  wrapMemento,
 } from '@toeverything/infra';
 
 export class WorkspaceLocalStateImpl implements WorkspaceLocalState {
-  constructor(
-    private readonly workspace: Workspace,
-    private readonly globalState: GlobalState
-  ) {}
+  wrapped: Memento;
+  constructor(workspace: Workspace, globalState: GlobalState) {
+    this.wrapped = wrapMemento(globalState, `workspace-state:${workspace.id}:`);
+  }
+
+  keys(): string[] {
+    return this.wrapped.keys();
+  }
 
   get<T>(key: string): T | null {
-    return this.globalState.get<T>(
-      `workspace-state:${this.workspace.id}:${key}`
-    );
+    return this.wrapped.get<T>(key);
   }
 
   watch<T>(key: string) {
-    return this.globalState.watch<T>(
-      `workspace-state:${this.workspace.id}:${key}`
-    );
+    return this.wrapped.watch<T>(key);
   }
 
   set<T>(key: string, value: T | null): void {
-    return this.globalState.set<T>(
-      `workspace-state:${this.workspace.id}:${key}`,
-      value
-    );
+    return this.wrapped.set<T>(key, value);
+  }
+
+  del(key: string): void {
+    return this.wrapped.del(key);
+  }
+
+  clear(): void {
+    return this.wrapped.clear();
   }
 }

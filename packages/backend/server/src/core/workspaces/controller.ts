@@ -51,7 +51,7 @@ export class WorkspacesController {
     // metadata should always exists if body is not null
     if (metadata) {
       res.setHeader('content-type', metadata.contentType);
-      res.setHeader('last-modified', metadata.lastModified.toISOString());
+      res.setHeader('last-modified', metadata.lastModified.toUTCString());
       res.setHeader('content-length', metadata.contentLength);
     } else {
       this.logger.warn(`Blob ${workspaceId}/${name} has no metadata`);
@@ -83,9 +83,12 @@ export class WorkspacesController {
       throw new ForbiddenException('Permission denied');
     }
 
-    const update = await this.docManager.getBinary(docId.workspace, docId.guid);
+    const binResponse = await this.docManager.getBinary(
+      docId.workspace,
+      docId.guid
+    );
 
-    if (!update) {
+    if (!binResponse) {
       throw new NotFoundException('Doc not found');
     }
 
@@ -106,8 +109,12 @@ export class WorkspacesController {
     }
 
     res.setHeader('content-type', 'application/octet-stream');
-    res.setHeader('cache-control', 'no-cache');
-    res.send(update);
+    res.setHeader(
+      'last-modified',
+      new Date(binResponse.timestamp).toUTCString()
+    );
+    res.setHeader('cache-control', 'private, max-age=2592000');
+    res.send(binResponse.binary);
   }
 
   @Get('/:id/docs/:guid/histories/:timestamp')
@@ -142,7 +149,7 @@ export class WorkspacesController {
 
     if (history) {
       res.setHeader('content-type', 'application/octet-stream');
-      res.setHeader('cache-control', 'public, max-age=2592000, immutable');
+      res.setHeader('cache-control', 'private, max-age=2592000, immutable');
       res.send(history.blob);
     } else {
       throw new NotFoundException('Doc history not found');

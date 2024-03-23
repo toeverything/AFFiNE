@@ -28,10 +28,10 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
-          - name: AUTH_PRIVATE_KEY
+          - name: AFFINE_PRIVATE_KEY
             valueFrom:
               secretKeyRef:
-                name: "{{ .Values.app.jwt.secretName }}"
+                name: "{{ .Values.global.secret.secretName }}"
                 key: key
           - name: NODE_ENV
             value: "{{ .Values.env }}"
@@ -45,8 +45,6 @@ spec:
             value: "graphql"
           - name: AFFINE_ENV
             value: "{{ .Release.Namespace }}"
-          - name: NEXTAUTH_URL
-            value: "{{ .Values.global.ingress.host }}"
           - name: DATABASE_PASSWORD
             valueFrom:
               secretKeyRef:

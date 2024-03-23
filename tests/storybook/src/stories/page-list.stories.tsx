@@ -13,7 +13,7 @@ import {
   PageTags,
   type PageTagsProps,
 } from '@affine/core/components/page-list';
-import { workbenchRoutes } from '@affine/core/router';
+import { topLevelRoutes } from '@affine/core/router';
 import { AffineSchemas } from '@blocksuite/blocks/schemas';
 import { PageIcon, TagsIcon } from '@blocksuite/icons';
 import { DocCollection, Schema } from '@blocksuite/store';
@@ -49,7 +49,7 @@ AffineOperationCell.args = {
 };
 AffineOperationCell.parameters = {
   reactRouter: reactRouterParameters({
-    routing: reactRouterOutlets(workbenchRoutes),
+    routing: reactRouterOutlets(topLevelRoutes),
   }),
 };
 AffineOperationCell.play = async ({ canvasElement }) => {

@@ -333,6 +333,11 @@ export interface AFFiNEConfig {
   metrics: {
     enabled: boolean;
   };
+
+  telemetry: {
+    enabled: boolean;
+    token: string;
+  };
 }
 
 export * from './storage';

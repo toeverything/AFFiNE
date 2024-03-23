@@ -108,8 +108,8 @@ const SubscriptionSettings = () => {
       ? '0'
       : price
         ? recurring === SubscriptionRecurring.Monthly
-          ? String(price.amount / 100)
-          : String(price.yearlyAmount / 100)
+          ? String((price.amount ?? 0) / 100)
+          : String((price.yearlyAmount ?? 0) / 100)
         : '?';
 
   const t = useAFFiNEI18N();

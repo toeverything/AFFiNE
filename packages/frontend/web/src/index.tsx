@@ -1,3 +1,4 @@
+import './polyfill/dispose';
 import './polyfill/intl-segmenter';
 import './polyfill/request-idle-callback';
 import './polyfill/resize-observer';

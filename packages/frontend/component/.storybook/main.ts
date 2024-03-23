@@ -25,6 +25,9 @@ export default {
   async viteFinal(config, _options) {
     return mergeConfig(config, {
       plugins: [vanillaExtractPlugin()],
+      esbuild: {
+        target: 'ES2022',
+      },
       define: {
         'process.env': {},
         'process.env.COVERAGE': JSON.stringify(!!process.env.COVERAGE),

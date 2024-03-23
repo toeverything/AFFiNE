@@ -68,8 +68,8 @@ test('can enable share page', async ({ page, browser }) => {
     await page2.goto(url);
     await waitForEditorLoad(page2);
     const title = getBlockSuiteEditorTitle(page2);
-    expect(await title.innerText()).toBe('TEST TITLE');
-    expect(await page2.textContent('affine-paragraph')).toContain(
+    await expect(title).toContainText('TEST TITLE');
+    expect(page2.locator('affine-paragraph').first()).toContainText(
       'TEST CONTENT'
     );
   }
@@ -112,7 +112,7 @@ test('share page with default edgeless', async ({ page, browser }) => {
     await expect(page.locator('affine-edgeless-root')).toBeVisible({
       timeout: 1000,
     });
-    expect(await page2.textContent('affine-paragraph')).toContain(
+    expect(page2.locator('affine-paragraph').first()).toContainText(
       'TEST CONTENT'
     );
     const editButton = page2.getByTestId('share-page-edit-button');
@@ -155,7 +155,7 @@ test('can collaborate with other user and name should display when editing', asy
   await page2.waitForTimeout(200);
   {
     const title = getBlockSuiteEditorTitle(page2);
-    expect(await title.innerText()).toBe('TEST TITLE');
+    await expect(title).toHaveText('TEST TITLE');
     const typingPromise = (async () => {
       await page.keyboard.press('Enter', { delay: 50 });
       await page.keyboard.type('TEST CONTENT', { delay: 50 });

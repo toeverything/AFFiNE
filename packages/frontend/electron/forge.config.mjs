@@ -10,6 +10,7 @@ import {
   buildType,
   icnsPath,
   iconUrl,
+  iconX64PngPath,
   icoPath,
   platform,
   productName,
@@ -77,6 +78,14 @@ const makers = [
   !process.env.SKIP_BUNDLE && {
     name: '@pengx17/electron-forge-maker-appimage',
     platforms: ['linux'],
+    config: {
+      icons: [
+        {
+          file: iconX64PngPath,
+          size: 64,
+        },
+      ],
+    },
   },
 ].filter(Boolean);
 

@@ -3,8 +3,7 @@ import { WorkspaceManager } from '@toeverything/infra';
 import { useService } from '@toeverything/infra/di';
 import { useLiveData } from '@toeverything/infra/livedata';
 import { useAtom } from 'jotai';
-import type { ReactElement } from 'react';
-import { lazy, Suspense, useCallback } from 'react';
+import { lazy, type ReactElement, Suspense, useCallback } from 'react';
 
 import {
   authAtom,
@@ -19,6 +18,7 @@ import { useAsyncCallback } from '../hooks/affine-async-hooks';
 import { useNavigateHelper } from '../hooks/use-navigate-helper';
 import { CurrentWorkspaceService } from '../modules/workspace/current-workspace';
 import { WorkspaceSubPath } from '../shared';
+import { mixpanel } from '../utils';
 import { signOutCloud } from '../utils/cloud-utils';
 
 const SettingModal = lazy(() =>
@@ -217,6 +217,8 @@ export const SignOutConfirmModal = () => {
   const onConfirm = useAsyncCallback(async () => {
     setOpen(false);
     await signOutCloud();
+
+    mixpanel.reset();
 
     // if current workspace is affine cloud, switch to local workspace
     if (currentWorkspace?.flavour === WorkspaceFlavour.AFFINE_CLOUD) {

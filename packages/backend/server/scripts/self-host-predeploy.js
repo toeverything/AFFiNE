@@ -1,6 +1,9 @@
 import { execSync } from 'node:child_process';
+import { generateKeyPairSync } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
+
+import { parse } from 'dotenv';
 
 const SELF_HOST_CONFIG_DIR = '/root/.affine/config';
 /**
@@ -34,6 +37,26 @@ function prepare() {
         fs.cpSync(from, targetFilePath, {
           force: false,
         });
+      }
+    }
+
+    // make the default .env
+    if (to === '.env') {
+      const dotenvFile = fs.readFileSync(targetFilePath, 'utf-8');
+      const envs = parse(dotenvFile);
+      // generate a new private key
+      if (!envs.AFFINE_PRIVATE_KEY) {
+        const privateKey = generateKeyPairSync('ec', {
+          namedCurve: 'prime256v1',
+        }).privateKey.export({
+          type: 'sec1',
+          format: 'pem',
+        });
+
+        fs.writeFileSync(
+          targetFilePath,
+          `AFFINE_PRIVATE_KEY=${privateKey}\n` + dotenvFile
+        );
       }
     }
   }
