@@ -4,7 +4,7 @@ import {
 } from '@affine/core/components/page-list/tags';
 import { CreateOrEditTag } from '@affine/core/components/page-list/tags/create-tag';
 import type { TagMeta } from '@affine/core/components/page-list/types';
-import { TagService } from '@affine/core/modules/tag';
+import { DeleteTagConfirmModal, TagService } from '@affine/core/modules/tag';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useCallback, useState } from 'react';
 
@@ -33,16 +33,25 @@ const EmptyTagListHeader = () => {
 export const AllTag = () => {
   const tagService = useService(TagService);
   const tags = useLiveData(tagService.tags);
+  const [open, setOpen] = useState(false);
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
 
   const tagMetas: TagMeta[] = useLiveData(tagService.tagMetas);
 
-  const handleDelete = useCallback(
-    (tagIds: string[]) => {
-      tagIds.forEach(tagId => {
-        tagService.deleteTag(tagId);
-      });
+  const handleCloseModal = useCallback(
+    (open: boolean) => {
+      setOpen(open);
+      setSelectedTagIds([]);
     },
-    [tagService]
+    [setOpen]
+  );
+
+  const onTagDelete = useCallback(
+    (tagIds: string[]) => {
+      setOpen(true);
+      setSelectedTagIds(tagIds);
+    },
+    [setOpen, setSelectedTagIds]
   );
 
   return (
@@ -56,13 +65,18 @@ export const AllTag = () => {
             <VirtualizedTagList
               tags={tags}
               tagMetas={tagMetas}
-              onTagDelete={handleDelete}
+              onTagDelete={onTagDelete}
             />
           ) : (
             <EmptyTagList heading={<EmptyTagListHeader />} />
           )}
         </div>
       </ViewBodyIsland>
+      <DeleteTagConfirmModal
+        open={open}
+        onOpenChange={handleCloseModal}
+        selectedTagIds={selectedTagIds}
+      />
     </>
   );
 };
