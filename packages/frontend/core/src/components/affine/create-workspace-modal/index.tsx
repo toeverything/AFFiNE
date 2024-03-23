@@ -39,6 +39,7 @@ interface ModalProps {
 }
 
 interface NameWorkspaceContentProps extends ConfirmModalProps {
+  loading: boolean;
   onConfirmName: (
     name: string,
     workspaceFlavour: WorkspaceFlavour,
@@ -50,6 +51,7 @@ const shouldEnableCloud =
   !runtimeConfig.allowLocalWorkspace && !environment.isDesktop;
 
 const NameWorkspaceContent = ({
+  loading,
   onConfirmName,
   ...props
 }: NameWorkspaceContentProps) => {
@@ -108,7 +110,7 @@ const NameWorkspaceContent = ({
       cancelText={t['com.affine.nameWorkspace.button.cancel']()}
       confirmButtonOptions={{
         type: 'primary',
-        disabled: !workspaceName,
+        disabled: !workspaceName || loading,
         ['data-testid' as string]: 'create-workspace-create-button',
         children: t['com.affine.nameWorkspace.button.create'](),
       }}
@@ -180,6 +182,7 @@ export const CreateWorkspaceModal = ({
   const [step, setStep] = useState<CreateWorkspaceStep>();
   const t = useAFFiNEI18N();
   const workspaceManager = useService(WorkspaceManager);
+  const [loading, setLoading] = useState(false);
 
   // todo: maybe refactor using xstate?
   useLayoutEffect(() => {
@@ -224,6 +227,9 @@ export const CreateWorkspaceModal = ({
 
   const onConfirmName = useAsyncCallback(
     async (name: string, workspaceFlavour: WorkspaceFlavour) => {
+      if (loading) return;
+      setLoading(true);
+
       // this will be the last step for web for now
       // fix me later
       if (runtimeConfig.enablePreloading) {
@@ -247,8 +253,10 @@ export const CreateWorkspaceModal = ({
         );
         onCreate(id);
       }
+
+      setLoading(false);
     },
-    [onCreate, workspaceManager]
+    [loading, onCreate, workspaceManager]
   );
 
   const onOpenChange = useCallback(
@@ -259,9 +267,11 @@ export const CreateWorkspaceModal = ({
     },
     [onClose]
   );
+
   if (step === 'name-workspace') {
     return (
       <NameWorkspaceContent
+        loading={loading}
         open={mode !== false && !!step}
         onOpenChange={onOpenChange}
         onConfirmName={onConfirmName}
