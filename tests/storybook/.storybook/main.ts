@@ -1,7 +1,7 @@
 import { runCli } from '@magic-works/i18n-codegen';
 import type { StorybookConfig } from '@storybook/react-vite';
 import { fileURLToPath } from 'node:url';
-import { mergeConfig } from 'vite';
+import { mergeConfig, type InlineConfig } from 'vite';
 import { vanillaExtractPlugin } from '@vanilla-extract/vite-plugin';
 import { getRuntimeConfig } from '@affine/cli/src/webpack/runtime-config';
 
@@ -40,7 +40,7 @@ export default {
     });
     // disable for storybook build
     runtimeConfig.enableCloud = false;
-    return mergeConfig(config, {
+    return mergeConfig<InlineConfig, InlineConfig>(config, {
       assetsInclude: ['**/*.md'],
       resolve: {
         alias: {
@@ -50,6 +50,9 @@ export default {
             new URL('../../../packages/frontend/core/src', import.meta.url)
           ),
         },
+      },
+      esbuild: {
+        target: 'ES2022',
       },
       plugins: [vanillaExtractPlugin()],
       define: {

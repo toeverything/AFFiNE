@@ -75,7 +75,7 @@
   "devDependencies": {
     "@blocksuite/blocks": "0.13.0-canary-202403140735-2367cd5",
     "@blocksuite/global": "0.13.0-canary-202403140735-2367cd5",
-    "@blocksuite/icons": "2.1.45",
+    "@blocksuite/icons": "2.1.46",
     "@blocksuite/lit": "0.13.0-canary-202403140735-2367cd5",
     "@blocksuite/presets": "0.13.0-canary-202403140735-2367cd5",
     "@blocksuite/store": "0.13.0-canary-202403140735-2367cd5",
