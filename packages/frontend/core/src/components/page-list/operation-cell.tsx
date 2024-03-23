@@ -4,7 +4,6 @@ import {
   Menu,
   MenuIcon,
   MenuItem,
-  toast,
   Tooltip,
 } from '@affine/component';
 import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
@@ -334,8 +333,7 @@ export const TagOperationCell = ({
 
   const handleDelete = useCallback(() => {
     onTagDelete([tag.id]);
-    toast(t['com.affine.tags.delete-tags.toast']());
-  }, [onTagDelete, t, tag.id]);
+  }, [onTagDelete, tag.id]);
   return (
     <>
       <div className={styles.editTagWrapper} data-show={open}>

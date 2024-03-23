@@ -6,7 +6,7 @@ import {
   Scrollable,
 } from '@affine/component';
 import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
-import { TagService } from '@affine/core/modules/tag';
+import { DeleteTagConfirmModal, TagService } from '@affine/core/modules/tag';
 import { WorkspaceLegacyProperties } from '@affine/core/modules/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { DeleteIcon, MoreHorizontalIcon, TagsIcon } from '@blocksuite/icons';
@@ -74,8 +74,12 @@ const InlineTagsList = ({
 
 export const EditTagMenu = ({
   tagId,
+  onTagDelete,
   children,
-}: PropsWithChildren<{ tagId: string }>) => {
+}: PropsWithChildren<{
+  tagId: string;
+  onTagDelete: (tagIds: string[]) => void;
+}>) => {
   const t = useAFFiNEI18N();
   const legacyProperties = useService(WorkspaceLegacyProperties);
   const tagService = useService(TagService);
@@ -116,7 +120,7 @@ export const EditTagMenu = ({
       icon: <DeleteIcon />,
       type: 'danger',
       onClick() {
-        tagService.deleteTag(tag?.id || '');
+        onTagDelete([tag?.id || '']);
       },
     });
 
@@ -164,10 +168,10 @@ export const EditTagMenu = ({
   }, [
     legacyProperties.workspaceId,
     navigate,
+    onTagDelete,
     t,
     tag,
     tagColor,
-    tagService,
     tagValue,
   ]);
 
@@ -180,6 +184,24 @@ export const TagsEditor = ({ pageId, readonly }: TagsEditorProps) => {
   const tags = useLiveData(tagService.tags);
   const tagIds = useLiveData(tagService.tagIdsByPageId(pageId));
   const [inputValue, setInputValue] = useState('');
+  const [open, setOpen] = useState(false);
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+
+  const handleCloseModal = useCallback(
+    (open: boolean) => {
+      setOpen(open);
+      setSelectedTagIds([]);
+    },
+    [setOpen]
+  );
+
+  const onTagDelete = useCallback(
+    (tagIds: string[]) => {
+      setOpen(true);
+      setSelectedTagIds(tagIds);
+    },
+    [setOpen, setSelectedTagIds]
+  );
 
   const exactMatch = useLiveData(tagService.tagByTagValue(inputValue));
 
@@ -280,7 +302,7 @@ export const TagsEditor = ({ pageId, readonly }: TagsEditorProps) => {
                 >
                   <TagItem maxWidth="100%" tag={tag} mode="inline" />
                   <div className={styles.spacer} />
-                  <EditTagMenu tagId={tag.id}>
+                  <EditTagMenu tagId={tag.id} onTagDelete={onTagDelete}>
                     <IconButton
                       className={styles.tagEditIcon}
                       type="plain"
@@ -307,6 +329,11 @@ export const TagsEditor = ({ pageId, readonly }: TagsEditorProps) => {
           <Scrollable.Scrollbar style={{ transform: 'translateX(6px)' }} />
         </Scrollable.Root>
       </div>
+      <DeleteTagConfirmModal
+        open={open}
+        onOpenChange={handleCloseModal}
+        selectedTagIds={selectedTagIds}
+      />
     </div>
   );
 };

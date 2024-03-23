@@ -1,7 +1,5 @@
-import { toast } from '@affine/component';
 import type { Tag } from '@affine/core/modules/tag';
 import { Trans } from '@affine/i18n';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useService } from '@toeverything/infra';
 import { Workspace } from '@toeverything/infra';
 import { useCallback, useMemo, useRef, useState } from 'react';
@@ -25,7 +23,6 @@ export const VirtualizedTagList = ({
   tagMetas: TagMeta[];
   onTagDelete: (tagIds: string[]) => void;
 }) => {
-  const t = useAFFiNEI18N();
   const listRef = useRef<ItemListHandle>(null);
   const [showFloatingToolbar, setShowFloatingToolbar] = useState(false);
   const [showCreateTagInput, setShowCreateTagInput] = useState(false);
@@ -74,10 +71,9 @@ export const VirtualizedTagList = ({
 
   const handleDelete = useCallback(() => {
     onTagDelete(selectedTagIds);
-    toast(t['com.affine.delete-tags.count']({ count: selectedTagIds.length }));
     hideFloatingToolbar();
     return;
-  }, [hideFloatingToolbar, onTagDelete, selectedTagIds, t]);
+  }, [hideFloatingToolbar, onTagDelete, selectedTagIds]);
 
   const onOpenCreate = useCallback(() => {
     setShowCreateTagInput(true);
