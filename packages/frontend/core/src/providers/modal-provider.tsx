@@ -4,7 +4,13 @@ import { WorkspaceManager } from '@toeverything/infra';
 import { useService } from '@toeverything/infra/di';
 import { useLiveData } from '@toeverything/infra/livedata';
 import { useAtom } from 'jotai';
-import { lazy, type ReactElement, Suspense, useCallback } from 'react';
+import {
+  lazy,
+  type ReactElement,
+  Suspense,
+  useCallback,
+  useEffect,
+} from 'react';
 
 import {
   authAtom,
