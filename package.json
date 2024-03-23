@@ -168,7 +168,7 @@
     "which-boxed-primitive": "npm:@nolyfill/which-boxed-primitive@latest",
     "which-typed-array": "npm:@nolyfill/which-typed-array@latest",
     "@reforged/maker-appimage/@electron-forge/maker-base": "7.3.0",
-    "macos-alias": "npm:@napi-rs/macos-alias@latest",
+    "macos-alias": "npm:@napi-rs/macos-alias@0.0.4",
     "fs-xattr": "npm:@napi-rs/xattr@latest",
     "@radix-ui/react-dialog": "npm:@radix-ui/react-dialog@latest"
   }

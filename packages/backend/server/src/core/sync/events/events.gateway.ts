@@ -246,7 +246,10 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   ): Promise<EventResponse<Record<string, number>>> {
     this.assertInWorkspace(client, Sync(workspaceId));
 
-    const stats = await this.docManager.getStats(workspaceId, timestamp);
+    const stats = await this.docManager.getDocTimestamps(
+      workspaceId,
+      timestamp
+    );
 
     return {
       data: stats,
@@ -302,13 +305,15 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       guid: string;
       stateVector?: string;
     }
-  ): Promise<EventResponse<{ missing: string; state?: string }>> {
+  ): Promise<
+    EventResponse<{ missing: string; state?: string; timestamp: number }>
+  > {
     this.assertInWorkspace(client, Sync(workspaceId));
 
     const docId = new DocID(guid, workspaceId);
-    const doc = await this.docManager.get(docId.workspace, docId.guid);
+    const res = await this.docManager.get(docId.workspace, docId.guid);
 
-    if (!doc) {
+    if (!res) {
       return {
         error: new DocNotFoundError(workspaceId, docId.guid),
       };
@@ -316,16 +321,17 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     const missing = Buffer.from(
       encodeStateAsUpdate(
-        doc,
+        res.doc,
         stateVector ? Buffer.from(stateVector, 'base64') : undefined
       )
     ).toString('base64');
-    const state = Buffer.from(encodeStateVector(doc)).toString('base64');
+    const state = Buffer.from(encodeStateVector(res.doc)).toString('base64');
 
     return {
       data: {
         missing,
         state,
+        timestamp: res.timestamp,
       },
     };
   }

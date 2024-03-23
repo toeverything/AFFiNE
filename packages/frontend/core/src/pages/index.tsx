@@ -4,12 +4,11 @@ import { WorkspaceListService } from '@toeverything/infra';
 import { useService } from '@toeverything/infra';
 import { useLiveData } from '@toeverything/infra';
 import { lazy, useEffect, useLayoutEffect, useState } from 'react';
-import { type LoaderFunction, redirect } from 'react-router-dom';
+import { type LoaderFunction } from 'react-router-dom';
 
 import { createFirstAppData } from '../bootstrap/first-app-data';
 import { UserWithWorkspaceList } from '../components/pure/workspace-slider-bar/user-with-workspace-list';
 import { WorkspaceFallback } from '../components/workspace';
-import { appConfigStorage } from '../hooks/use-app-config-storage';
 import { useNavigateHelper } from '../hooks/use-navigate-helper';
 import { WorkspaceSubPath } from '../shared';
 
@@ -20,9 +19,6 @@ const AllWorkspaceModals = lazy(() =>
 );
 
 export const loader: LoaderFunction = async () => {
-  if (!environment.isDesktop && appConfigStorage.get('onBoarding')) {
-    return redirect('/onboarding');
-  }
   return null;
 };
 

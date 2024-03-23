@@ -23,11 +23,11 @@ import {
   AwarenessEngine,
   AwarenessProvider,
   BlobEngine,
+  DocEngine,
+  DocServerImpl,
+  DocStorageImpl,
   LocalBlobStorage,
-  LocalSyncStorage,
   RemoteBlobStorage,
-  RemoteSyncStorage,
-  SyncEngine,
   WorkspaceEngine,
 } from './engine';
 import { WorkspaceFactory } from './factory';
@@ -63,13 +63,23 @@ export function configureWorkspaceServices(services: ServiceCollection) {
       WorkspaceUpgradeController,
       ServiceProvider,
     ])
-    .add(WorkspaceEngine, [BlobEngine, SyncEngine, AwarenessEngine])
+    .add(WorkspaceEngine, [
+      BlobEngine,
+      DocEngine,
+      AwarenessEngine,
+      RootYDocContext,
+    ])
     .add(AwarenessEngine, [[AwarenessProvider]])
     .add(BlobEngine, [LocalBlobStorage, [RemoteBlobStorage]])
-    .add(SyncEngine, [RootYDocContext, LocalSyncStorage, [RemoteSyncStorage]])
+    .addImpl(DocEngine, services => {
+      return new DocEngine(
+        services.get(DocStorageImpl),
+        services.getOptional(DocServerImpl)
+      );
+    })
     .add(WorkspaceUpgradeController, [
       BlockSuiteWorkspaceContext,
-      SyncEngine,
+      DocEngine,
       WorkspaceMetadataContext,
     ]);
 }

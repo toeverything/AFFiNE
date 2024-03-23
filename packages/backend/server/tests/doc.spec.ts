@@ -127,7 +127,7 @@ test('should merge update when intervel due', async t => {
   await manager.autoSquash();
 
   t.deepEqual(
-    (await manager.getBinary(ws.id, '1'))?.toString('hex'),
+    (await manager.getBinary(ws.id, '1'))?.binary.toString('hex'),
     Buffer.from(update.buffer).toString('hex')
   );
 
@@ -150,7 +150,7 @@ test('should merge update when intervel due', async t => {
   await manager.autoSquash();
 
   t.deepEqual(
-    (await manager.getBinary(ws.id, '1'))?.toString('hex'),
+    (await manager.getBinary(ws.id, '1'))?.binary.toString('hex'),
     Buffer.from(encodeStateAsUpdate(doc)).toString('hex')
   );
 });
@@ -275,20 +275,21 @@ test('should throw if meet max retry times', async t => {
 test('should be able to insert the snapshot if it is new created', async t => {
   const manager = m.get(DocManager);
 
-  const doc = new YDoc();
-  const text = doc.getText('content');
-  text.insert(0, 'hello');
-  const update = encodeStateAsUpdate(doc);
+  {
+    const doc = new YDoc();
+    const text = doc.getText('content');
+    text.insert(0, 'hello');
+    const update = encodeStateAsUpdate(doc);
 
-  await manager.push('1', '1', Buffer.from(update));
-
+    await manager.push('1', '1', Buffer.from(update));
+  }
   const updates = await manager.getUpdates('1', '1');
   t.is(updates.length, 1);
   // @ts-expect-error private
-  const snapshot = await manager.squash(null, updates);
+  const { doc } = await manager.squash(null, updates);
 
-  t.truthy(snapshot);
-  t.is(snapshot.getText('content').toString(), 'hello');
+  t.truthy(doc);
+  t.is(doc.getText('content').toString(), 'hello');
 
   const restUpdates = await manager.getUpdates('1', '1');
 
@@ -315,14 +316,14 @@ test('should be able to merge updates into snapshot', async t => {
   {
     await manager.batchPush('1', '1', updates.slice(0, 2));
     // do the merge
-    const doc = (await manager.get('1', '1'))!;
+    const { doc } = (await manager.get('1', '1'))!;
 
     t.is(doc.getText('content').toString(), 'helloworld');
   }
 
   {
     await manager.batchPush('1', '1', updates.slice(2));
-    const doc = (await manager.get('1', '1'))!;
+    const { doc } = (await manager.get('1', '1'))!;
 
     t.is(doc.getText('content').toString(), 'hello world!');
   }
@@ -372,7 +373,7 @@ test('should not update snapshot if doc is outdated', async t => {
     const updateRecords = await manager.getUpdates('2', '1');
 
     // @ts-expect-error private
-    const doc = await manager.squash(snapshot, updateRecords);
+    const { doc } = await manager.squash(snapshot, updateRecords);
 
     // all updated will merged into doc not matter it's timestamp is outdated or not,
     // but the snapshot record will not be updated

@@ -1,9 +1,3 @@
-export * from './awareness';
-export * from './blob-indexeddb';
-export * from './blob-sqlite';
-export * from './blob-static';
-export * from './consts';
+export { StaticBlobStorage } from './blob-static';
 export * from './list';
-export * from './sync-indexeddb';
-export * from './sync-sqlite';
 export * from './workspace-factory';

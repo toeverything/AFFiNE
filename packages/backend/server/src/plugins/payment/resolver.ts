@@ -1,8 +1,4 @@
-import {
-  BadGatewayException,
-  ForbiddenException,
-  InternalServerErrorException,
-} from '@nestjs/common';
+import { BadGatewayException, ForbiddenException } from '@nestjs/common';
 import {
   Args,
   Context,
@@ -48,11 +44,11 @@ class SubscriptionPrice {
   @Field()
   currency!: string;
 
-  @Field()
-  amount!: number;
+  @Field(() => Int, { nullable: true })
+  amount?: number | null;
 
-  @Field()
-  yearlyAmount!: number;
+  @Field(() => Int, { nullable: true })
+  yearlyAmount?: number | null;
 }
 
 @ObjectType('UserSubscription')
@@ -176,64 +172,39 @@ export class SubscriptionResolver {
       }
     );
 
-    return Object.entries(group).map(([plan, prices]) => {
-      const yearly = prices.find(
-        price =>
-          decodeLookupKey(
-            // @ts-expect-error empty lookup key is filtered out
-            price.lookup_key
-          )[1] === SubscriptionRecurring.Yearly
-      );
-      const monthly = prices.find(
-        price =>
-          decodeLookupKey(
-            // @ts-expect-error empty lookup key is filtered out
-            price.lookup_key
-          )[1] === SubscriptionRecurring.Monthly
-      );
+    function findPrice(plan: SubscriptionPlan) {
+      const prices = group[plan];
 
-      if (!yearly || !monthly) {
-        throw new InternalServerErrorException(
-          'The prices are not configured correctly.'
-        );
+      if (!prices) {
+        return null;
       }
 
+      const monthlyPrice = prices.find(p => p.recurring?.interval === 'month');
+      const yearlyPrice = prices.find(p => p.recurring?.interval === 'year');
+      const currency = monthlyPrice?.currency ?? yearlyPrice?.currency ?? 'usd';
       return {
-        type: 'fixed',
-        plan: plan as SubscriptionPlan,
-        currency: monthly.currency,
-        amount: monthly.unit_amount ?? 0,
-        yearlyAmount: yearly.unit_amount ?? 0,
+        currency,
+        amount: monthlyPrice?.unit_amount,
+        yearlyAmount: yearlyPrice?.unit_amount,
       };
-    });
-  }
-
-  /**
-   * @deprecated
-   */
-  @Mutation(() => String, {
-    deprecationReason: 'use `createCheckoutSession` instead',
-    description: 'Create a subscription checkout link of stripe',
-  })
-  async checkout(
-    @CurrentUser() user: CurrentUser,
-    @Args({ name: 'recurring', type: () => SubscriptionRecurring })
-    recurring: SubscriptionRecurring,
-    @Args('idempotencyKey') idempotencyKey: string
-  ) {
-    const session = await this.service.createCheckoutSession({
-      user,
-      plan: SubscriptionPlan.Pro,
-      recurring,
-      redirectUrl: `${this.config.baseUrl}/upgrade-success`,
-      idempotencyKey,
-    });
-
-    if (!session.url) {
-      throw new BadGatewayException('Failed to create checkout session.');
     }
 
-    return session.url;
+    // extend it when new plans are added
+    const fixedPlans = [SubscriptionPlan.Pro, SubscriptionPlan.AI];
+
+    return fixedPlans.reduce((prices, plan) => {
+      const price = findPrice(plan);
+
+      if (price && (price.amount || price.yearlyAmount)) {
+        prices.push({
+          type: 'fixed',
+          plan,
+          ...price,
+        });
+      }
+
+      return prices;
+    }, [] as SubscriptionPrice[]);
   }
 
   @Mutation(() => String, {
@@ -271,17 +242,35 @@ export class SubscriptionResolver {
   @Mutation(() => UserSubscriptionType)
   async cancelSubscription(
     @CurrentUser() user: CurrentUser,
+    @Args({
+      name: 'plan',
+      type: () => SubscriptionPlan,
+      nullable: true,
+      defaultValue: SubscriptionPlan.Pro,
+    })
+    plan: SubscriptionPlan,
     @Args('idempotencyKey') idempotencyKey: string
   ) {
-    return this.service.cancelSubscription(idempotencyKey, user.id);
+    return this.service.cancelSubscription(idempotencyKey, user.id, plan);
   }
 
   @Mutation(() => UserSubscriptionType)
   async resumeSubscription(
     @CurrentUser() user: CurrentUser,
+    @Args({
+      name: 'plan',
+      type: () => SubscriptionPlan,
+      nullable: true,
+      defaultValue: SubscriptionPlan.Pro,
+    })
+    plan: SubscriptionPlan,
     @Args('idempotencyKey') idempotencyKey: string
   ) {
-    return this.service.resumeCanceledSubscription(idempotencyKey, user.id);
+    return this.service.resumeCanceledSubscription(
+      idempotencyKey,
+      user.id,
+      plan
+    );
   }
 
   @Mutation(() => UserSubscriptionType)
@@ -289,11 +278,19 @@ export class SubscriptionResolver {
     @CurrentUser() user: CurrentUser,
     @Args({ name: 'recurring', type: () => SubscriptionRecurring })
     recurring: SubscriptionRecurring,
+    @Args({
+      name: 'plan',
+      type: () => SubscriptionPlan,
+      nullable: true,
+      defaultValue: SubscriptionPlan.Pro,
+    })
+    plan: SubscriptionPlan,
     @Args('idempotencyKey') idempotencyKey: string
   ) {
     return this.service.updateSubscriptionRecurring(
       idempotencyKey,
       user.id,
+      plan,
       recurring
     );
   }
@@ -306,11 +303,21 @@ export class UserSubscriptionResolver {
     private readonly db: PrismaClient
   ) {}
 
-  @ResolveField(() => UserSubscriptionType, { nullable: true })
+  @ResolveField(() => UserSubscriptionType, {
+    nullable: true,
+    deprecationReason: 'use `UserType.subscriptions`',
+  })
   async subscription(
     @Context() ctx: { isAdminQuery: boolean },
     @CurrentUser() me: User,
-    @Parent() user: User
+    @Parent() user: User,
+    @Args({
+      name: 'plan',
+      type: () => SubscriptionPlan,
+      nullable: true,
+      defaultValue: SubscriptionPlan.Pro,
+    })
+    plan: SubscriptionPlan
   ) {
     // allow admin to query other user's subscription
     if (!ctx.isAdminQuery && me.id !== user.id) {
@@ -340,8 +347,29 @@ export class UserSubscriptionResolver {
 
     return this.db.userSubscription.findUnique({
       where: {
-        userId: user.id,
+        userId_plan: {
+          userId: user.id,
+          plan,
+        },
         status: SubscriptionStatus.Active,
+      },
+    });
+  }
+
+  @ResolveField(() => [UserSubscriptionType])
+  async subscriptions(
+    @CurrentUser() me: User,
+    @Parent() user: User
+  ): Promise<UserSubscription[]> {
+    if (me.id !== user.id) {
+      throw new ForbiddenException(
+        'You are not allowed to access this subscription.'
+      );
+    }
+
+    return this.db.userSubscription.findMany({
+      where: {
+        userId: user.id,
       },
     });
   }

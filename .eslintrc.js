@@ -32,11 +32,6 @@ const createPattern = packageName => [
     importNames: ['useNavigate'],
   },
   {
-    group: ['yjs'],
-    message: 'Do not use this API because it has a bug',
-    importNames: ['mergeUpdates'],
-  },
-  {
     group: ['@affine/env/constant'],
     message:
       'Do not import from @affine/env/constant. Use `environment.isDesktop` instead',
@@ -167,11 +162,6 @@ const config = {
             group: ['react-router-dom'],
             message: 'Use `useNavigateHelper` instead',
             importNames: ['useNavigate'],
-          },
-          {
-            group: ['yjs'],
-            message: 'Do not use this API because it has a bug',
-            importNames: ['mergeUpdates'],
           },
         ],
       },

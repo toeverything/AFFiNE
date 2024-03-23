@@ -55,6 +55,16 @@ export function isEmptyBuffer(buf: Buffer): boolean {
 const MAX_SEQ_NUM = 0x3fffffff; // u31
 const UPDATES_QUEUE_CACHE_KEY = 'doc:manager:updates';
 
+interface DocResponse {
+  doc: Doc;
+  timestamp: number;
+}
+
+interface BinaryResponse {
+  binary: Buffer;
+  timestamp: number;
+}
+
 /**
  * Since we can't directly save all client updates into database, in which way the database will overload,
  * we need to buffer the updates and merge them to reduce db write.
@@ -332,8 +342,8 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
   /**
    * Get latest timestamp of all docs in the workspace.
    */
-  @CallTimer('doc', 'get_stats')
-  async getStats(workspaceId: string, after: number | undefined = 0) {
+  @CallTimer('doc', 'get_doc_timestamps')
+  async getDocTimestamps(workspaceId: string, after: number | undefined = 0) {
     const snapshots = await this.db.snapshot.findMany({
       where: {
         workspaceId,
@@ -378,13 +388,18 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
   /**
    * get the latest doc with all update applied.
    */
-  async get(workspaceId: string, guid: string): Promise<Doc | null> {
+  async get(workspaceId: string, guid: string): Promise<DocResponse | null> {
     const result = await this._get(workspaceId, guid);
     if (result) {
       if ('doc' in result) {
-        return result.doc;
-      } else if ('snapshot' in result) {
-        return this.recoverDoc(result.snapshot);
+        return result;
+      } else {
+        const doc = await this.recoverDoc(result.binary);
+
+        return {
+          doc,
+          timestamp: result.timestamp,
+        };
       }
     }
 
@@ -394,13 +409,19 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
   /**
    * get the latest doc binary with all update applied.
    */
-  async getBinary(workspaceId: string, guid: string): Promise<Buffer | null> {
+  async getBinary(
+    workspaceId: string,
+    guid: string
+  ): Promise<BinaryResponse | null> {
     const result = await this._get(workspaceId, guid);
     if (result) {
       if ('doc' in result) {
-        return Buffer.from(encodeStateAsUpdate(result.doc));
-      } else if ('snapshot' in result) {
-        return result.snapshot;
+        return {
+          binary: Buffer.from(encodeStateAsUpdate(result.doc)),
+          timestamp: result.timestamp,
+        };
+      } else {
+        return result;
       }
     }
 
@@ -410,16 +431,27 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
   /**
    * get the latest doc state vector with all update applied.
    */
-  async getState(workspaceId: string, guid: string): Promise<Buffer | null> {
+  async getDocState(
+    workspaceId: string,
+    guid: string
+  ): Promise<BinaryResponse | null> {
     const snapshot = await this.getSnapshot(workspaceId, guid);
     const updates = await this.getUpdates(workspaceId, guid);
 
     if (updates.length) {
-      const doc = await this.squash(snapshot, updates);
-      return Buffer.from(encodeStateVector(doc));
+      const { doc, timestamp } = await this.squash(snapshot, updates);
+      return {
+        binary: Buffer.from(encodeStateVector(doc)),
+        timestamp,
+      };
     }
 
-    return snapshot ? snapshot.state : null;
+    return snapshot?.state
+      ? {
+          binary: snapshot.state,
+          timestamp: snapshot.updatedAt.getTime(),
+        }
+      : null;
   }
 
   /**
@@ -587,17 +619,17 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
   private async _get(
     workspaceId: string,
     guid: string
-  ): Promise<{ doc: Doc } | { snapshot: Buffer } | null> {
+  ): Promise<DocResponse | BinaryResponse | null> {
     const snapshot = await this.getSnapshot(workspaceId, guid);
     const updates = await this.getUpdates(workspaceId, guid);
 
     if (updates.length) {
-      return {
-        doc: await this.squash(snapshot, updates),
-      };
+      return this.squash(snapshot, updates);
     }
 
-    return snapshot ? { snapshot: snapshot.blob } : null;
+    return snapshot
+      ? { binary: snapshot.blob, timestamp: snapshot.updatedAt.getTime() }
+      : null;
   }
 
   /**
@@ -605,7 +637,10 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
    * and delete the updates records at the same time.
    */
   @CallTimer('doc', 'squash')
-  private async squash(snapshot: Snapshot | null, updates: Update[]) {
+  private async squash(
+    snapshot: Snapshot | null,
+    updates: Update[]
+  ): Promise<DocResponse> {
     if (!updates.length) {
       throw new Error('No updates to squash');
     }
@@ -664,7 +699,7 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
       await this.updateCachedUpdatesCount(workspaceId, id, -count);
     }
 
-    return doc;
+    return { doc, timestamp: last.createdAt.getTime() };
   }
 
   private async getUpdateSeq(workspaceId: string, guid: string, batch = 1) {

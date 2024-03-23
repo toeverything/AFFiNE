@@ -28,7 +28,7 @@ export function configureBusinessServices(services: ServiceCollection) {
     .scope(WorkspaceScope)
     .add(Workbench)
     .add(Navigator, [Workbench])
-    .add(RightSidebar)
+    .add(RightSidebar, [GlobalState])
     .add(WorkspacePropertiesAdapter, [Workspace])
     .add(CollectionService, [Workspace])
     .add(WorkspaceLegacyProperties, [Workspace])

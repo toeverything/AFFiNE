@@ -52,7 +52,6 @@ const config: PlaywrightTestConfig = {
         DEBUG: 'affine:*',
         FORCE_COLOR: 'true',
         DEBUG_COLORS: 'true',
-        NEXTAUTH_URL: 'http://localhost:8080',
         MAILER_HOST: '0.0.0.0',
         MAILER_PORT: '1025',
         MAILER_SENDER: 'noreply@toeverything.info',

@@ -538,8 +538,8 @@ export type PricesQuery = {
     type: string;
     plan: SubscriptionPlan;
     currency: string;
-    amount: number;
-    yearlyAmount: number;
+    amount: number | null;
+    yearlyAmount: number | null;
   }>;
 };
 

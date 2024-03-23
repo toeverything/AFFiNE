@@ -18,6 +18,7 @@ import { createI18n, setUpLanguage } from '@affine/i18n';
 import { CacheProvider } from '@emotion/react';
 import { getCurrentStore } from '@toeverything/infra/atom';
 import { ServiceCollection } from '@toeverything/infra/di';
+import mixpanel from 'mixpanel-browser';
 import type { PropsWithChildren, ReactElement } from 'react';
 import { lazy, Suspense } from 'react';
 import { RouterProvider } from 'react-router-dom';
@@ -61,6 +62,13 @@ const serviceProvider = services.provider();
 
 export function App() {
   performanceRenderLogger.info('App');
+
+  if (process.env.MIXPANEL_TOKEN) {
+    mixpanel.init(process.env.MIXPANEL_TOKEN || '', {
+      track_pageview: true,
+      persistence: 'localStorage',
+    });
+  }
 
   if (!languageLoadingPromise) {
     languageLoadingPromise = loadLanguage().catch(console.error);

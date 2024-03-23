@@ -1,3 +1,4 @@
+import './polyfill/dispose';
 // Side effect import, "declare global"
 import '@affine/env/constant';
 

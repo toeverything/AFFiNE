@@ -1,13 +1,12 @@
 import { Slot } from '@blocksuite/global/utils';
+import type { Doc as YDoc } from 'yjs';
 
 import { throwIfAborted } from '../../utils/throw-if-aborted';
 import type { AwarenessEngine } from './awareness';
 import type { BlobEngine, BlobStatus } from './blob';
-import type { SyncEngine } from './sync';
-import { type SyncEngineStatus } from './sync';
+import type { DocEngine } from './doc';
 
 export interface WorkspaceEngineStatus {
-  sync: SyncEngineStatus;
   blob: BlobStatus;
 }
 
@@ -31,51 +30,57 @@ export class WorkspaceEngine {
 
   constructor(
     public blob: BlobEngine,
-    public sync: SyncEngine,
-    public awareness: AwarenessEngine
+    public doc: DocEngine,
+    public awareness: AwarenessEngine,
+    private readonly yDoc: YDoc
   ) {
     this._status = {
-      sync: sync.status,
       blob: blob.status,
     };
-    sync.onStatusChange.on(status => {
-      this.status = {
-        sync: status,
-        blob: blob.status,
-      };
-    });
     blob.onStatusChange.on(status => {
       this.status = {
-        sync: sync.status,
         blob: status,
       };
     });
+    this.doc.addDoc(yDoc);
   }
 
   start() {
-    this.sync.start();
+    this.doc.start();
     this.awareness.connect();
     this.blob.start();
   }
 
   canGracefulStop() {
-    return this.sync.canGracefulStop();
+    return this.doc.engineState.value.saving === 0;
   }
 
   async waitForGracefulStop(abort?: AbortSignal) {
-    await this.sync.waitForGracefulStop(abort);
+    await this.doc.waitForSaved();
     throwIfAborted(abort);
     this.forceStop();
   }
 
   forceStop() {
-    this.sync.forceStop();
+    this.doc.stop();
     this.awareness.disconnect();
     this.blob.stop();
+  }
+
+  docEngineState = this.doc.engineState;
+
+  rootDocState = this.doc.docState(this.yDoc.guid);
+
+  waitForSynced() {
+    return this.doc.waitForSynced();
+  }
+
+  waitForRootDocReady() {
+    return this.doc.waitForReady(this.yDoc.guid);
   }
 }
 
 export * from './awareness';
 export * from './blob';
+export * from './doc';
 export * from './error';
-export * from './sync';
