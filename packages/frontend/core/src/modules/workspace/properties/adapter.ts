@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 // the adapter is to bridge the workspace rootdoc & native js bindings
 
 import { createYProxy, type Y } from '@blocksuite/store';
@@ -7,7 +8,6 @@ import { defaultsDeep } from 'lodash-es';
 import {
   PagePropertyType,
   PageSystemPropertyId,
-  type TagOption,
   type WorkspaceAffineProperties,
   type WorkspaceFavoriteItem,
 } from './schema';
@@ -28,17 +28,21 @@ export class WorkspacePropertiesAdapter {
   public readonly proxy: WorkspaceAffineProperties;
   public readonly properties: Y.Map<any>;
 
+  private ensuredRoot = false;
+  private ensuredPages = {} as Record<string, boolean>;
+
   constructor(public readonly workspace: Workspace) {
     // check if properties exists, if not, create one
     const rootDoc = workspace.docCollection.doc;
     this.properties = rootDoc.getMap(AFFINE_PROPERTIES_ID);
     this.proxy = createYProxy(this.properties);
-
-    // fixme: deal with migration issue?
-    this.ensureRootProperties();
   }
 
   private ensureRootProperties() {
+    if (this.ensuredRoot) {
+      return;
+    }
+    this.ensuredRoot = true;
     // todo: deal with schema change issue
     // fixme: may not to be called every time
     defaultsDeep(this.proxy, {
@@ -70,6 +74,11 @@ export class WorkspacePropertiesAdapter {
   }
 
   ensurePageProperties(pageId: string) {
+    this.ensureRootProperties();
+    if (this.ensuredPages[pageId]) {
+      return;
+    }
+    this.ensuredPages[pageId] = true;
     // fixme: may not to be called every time
     defaultsDeep(this.proxy.pageProperties, {
       [pageId]: {
@@ -108,65 +117,21 @@ export class WorkspacePropertiesAdapter {
   // ====== utilities ======
 
   getPageProperties(pageId: string) {
-    this.ensurePageProperties(pageId);
-    return this.pageProperties[pageId];
+    return this.pageProperties?.[pageId] ?? null;
   }
 
   isFavorite(id: string, type: WorkspaceFavoriteItem['type']) {
-    return this.favorites[id]?.type === type;
+    return this.favorites?.[id]?.type === type;
   }
 
   getJournalPageDateString(id: string) {
-    return this.pageProperties[id]?.system[PageSystemPropertyId.Journal]?.value;
+    return this.pageProperties?.[id]?.system[PageSystemPropertyId.Journal]
+      ?.value;
   }
 
   setJournalPageDateString(id: string, date: string) {
     this.ensurePageProperties(id);
-    const pageProperties = this.pageProperties[id];
-    pageProperties.system[PageSystemPropertyId.Journal].value = date;
-  }
-
-  get tagOptions() {
-    return this.schema.pageProperties.system[PageSystemPropertyId.Tags].options;
-  }
-
-  // page tags could be reactive
-  getPageTags(pageId: string) {
-    const tags =
-      this.getPageProperties(pageId)?.system[PageSystemPropertyId.Tags].value ??
-      [];
-    const optionsMap = Object.fromEntries(this.tagOptions.map(o => [o.id, o]));
-    return tags.map(tag => optionsMap[tag]).filter((t): t is TagOption => !!t);
-  }
-
-  addPageTag(pageId: string, tag: TagOption | string) {
-    this.ensurePageProperties(pageId);
-    const tags = this.getPageTags(pageId);
-    const tagId = typeof tag === 'string' ? tag : tag.id;
-    if (tags.some(t => t.id === tagId)) {
-      return;
-    }
-    // add tag option if not exist
-    if (!this.tagOptions.some(t => t.id === tagId)) {
-      if (typeof tag === 'string') {
-        throw new Error(`Tag ${tag} does not exist`);
-      } else {
-        this.tagOptions.push(tag);
-      }
-    }
-    const pageProperties = this.pageProperties[pageId];
-    pageProperties.system[PageSystemPropertyId.Tags].value.push(tagId);
-  }
-
-  removePageTag(pageId: string, tag: TagOption | string) {
-    this.ensurePageProperties(pageId);
-    const tags = this.getPageTags(pageId);
-    const tagId = typeof tag === 'string' ? tag : tag.id;
-    const index = tags.findIndex(t => t.id === tagId);
-    if (index === -1) {
-      return;
-    }
-    const pageProperties = this.pageProperties[pageId];
-    pageProperties.system[PageSystemPropertyId.Tags].value.splice(index, 1);
+    const pageProperties = this.pageProperties?.[id];
+    pageProperties!.system[PageSystemPropertyId.Journal].value = date;
   }
 }

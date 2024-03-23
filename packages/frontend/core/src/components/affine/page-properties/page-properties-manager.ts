@@ -1,8 +1,8 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { WorkspacePropertiesAdapter } from '@affine/core/modules/workspace';
 import type {
   PageInfoCustomProperty,
   PageInfoCustomPropertyMeta,
-  TagOption,
 } from '@affine/core/modules/workspace/properties/schema';
 import { PagePropertyType } from '@affine/core/modules/workspace/properties/schema';
 import { DebugLogger } from '@affine/debug';
@@ -41,20 +41,16 @@ export const newPropertyTypes: PagePropertyType[] = [
 export class PagePropertiesMetaManager {
   constructor(private readonly adapter: WorkspacePropertiesAdapter) {}
 
-  get tagOptions() {
-    return this.adapter.tagOptions;
-  }
-
   get propertiesSchema() {
-    return this.adapter.schema.pageProperties;
+    return this.adapter.schema?.pageProperties ?? {};
   }
 
   get systemPropertiesSchema() {
-    return this.adapter.schema.pageProperties.system;
+    return this.adapter.schema?.pageProperties.system ?? {};
   }
 
   get customPropertiesSchema() {
-    return this.adapter.schema.pageProperties.custom;
+    return this.adapter.schema?.pageProperties.custom ?? {};
   }
 
   getOrderedPropertiesSchema() {
@@ -126,9 +122,11 @@ export class PagePropertiesMetaManager {
     const mapping = new Map<string, Set<string>>();
     for (const page of this.adapter.workspace.docCollection.docs.values()) {
       const properties = this.adapter.getPageProperties(page.id);
-      for (const id of Object.keys(properties.custom)) {
-        if (!mapping.has(id)) mapping.set(id, new Set());
-        mapping.get(id)?.add(page.id);
+      if (properties) {
+        for (const id of Object.keys(properties.custom)) {
+          if (!mapping.has(id)) mapping.set(id, new Set());
+          mapping.get(id)?.add(page.id);
+        }
       }
     }
     return mapping;
@@ -145,13 +143,14 @@ export class PagePropertiesManager {
     private readonly adapter: WorkspacePropertiesAdapter,
     public readonly pageId: string
   ) {
-    this.adapter.ensurePageProperties(this.pageId);
     this.metaManager = new PagePropertiesMetaManager(this.adapter);
+    this.ensureRequiredProperties();
   }
 
   // prevent infinite loop
   private ensuring = false;
   ensureRequiredProperties() {
+    this.adapter.ensurePageProperties(this.pageId);
     if (this.ensuring) return;
     this.ensuring = true;
     this.transact(() => {
@@ -184,12 +183,7 @@ export class PagePropertiesManager {
     return this.intrinsicMeta?.createDate;
   }
 
-  get pageTags() {
-    return this.adapter.getPageTags(this.pageId);
-  }
-
   get properties() {
-    this.ensureRequiredProperties();
     return this.adapter.getPageProperties(this.pageId);
   }
 
@@ -197,23 +191,17 @@ export class PagePropertiesManager {
     return !!this.page?.readonly;
   }
 
-  addPageTag(pageId: string, tag: TagOption | string) {
-    this.adapter.addPageTag(pageId, tag);
-  }
-
-  removePageTag(pageId: string, tag: TagOption | string) {
-    this.adapter.removePageTag(pageId, tag);
-  }
-
   /**
    * get custom properties (filter out properties that are not in schema)
    */
   getCustomProperties(): Record<string, PageInfoCustomProperty> {
-    return Object.fromEntries(
-      Object.entries(this.properties.custom).filter(([id]) =>
-        this.metaManager.checkPropertyExists(id)
-      )
-    );
+    return this.properties
+      ? Object.fromEntries(
+          Object.entries(this.properties.custom).filter(([id]) =>
+            this.metaManager.checkPropertyExists(id)
+          )
+        )
+      : {};
   }
 
   getOrderedCustomProperties() {
@@ -231,10 +219,11 @@ export class PagePropertiesManager {
   }
 
   getCustomProperty(id: string) {
-    return this.properties.custom[id];
+    return this.properties?.custom[id];
   }
 
   addCustomProperty(id: string, value?: any) {
+    this.ensureRequiredProperties();
     if (!this.metaManager.checkPropertyExists(id)) {
       logger.warn(`property ${id} not found`);
       return;
@@ -246,11 +235,11 @@ export class PagePropertiesManager {
     }
 
     const newOrder = generateKeyBetween(this.largestOrder(), null);
-    if (this.properties.custom[id]) {
+    if (this.properties!.custom[id]) {
       logger.warn(`custom property ${id} already exists`);
     }
 
-    this.properties.custom[id] = {
+    this.properties!.custom[id] = {
       id,
       value,
       order: newOrder,
@@ -259,6 +248,7 @@ export class PagePropertiesManager {
   }
 
   moveCustomProperty(from: number, to: number) {
+    this.ensureRequiredProperties();
     // move from -> to means change from's order to a new order between to and to -1/+1
     const properties = this.getOrderedCustomProperties();
     const fromProperty = properties[from];
@@ -269,19 +259,21 @@ export class PagePropertiesManager {
         ? [toProperty.order, toNextProperty?.order ?? null]
         : [toNextProperty?.order ?? null, toProperty.order];
     const newOrder = generateKeyBetween(...args);
-    this.properties.custom[fromProperty.id].order = newOrder;
+    this.properties!.custom[fromProperty.id].order = newOrder;
   }
 
   hasCustomProperty(id: string) {
-    return !!this.properties.custom[id];
+    return !!this.properties?.custom[id];
   }
 
   removeCustomProperty(id: string) {
-    delete this.properties.custom[id];
+    this.ensureRequiredProperties();
+    delete this.properties!.custom[id];
   }
 
   updateCustomProperty(id: string, opt: Partial<PageInfoCustomProperty>) {
-    if (!this.properties.custom[id]) {
+    this.ensureRequiredProperties();
+    if (!this.properties?.custom[id]) {
       logger.warn(`custom property ${id} not found`);
       return;
     }
