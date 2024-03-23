@@ -17,4 +17,11 @@ export const applicationMenuEvents = {
       sub.unsubscribe();
     };
   },
+  openAboutPageInSettingModal: (fn: () => void) => {
+    const sub =
+      applicationMenuSubjects.openAboutPageInSettingModal.subscribe(fn);
+    return () => {
+      sub.unsubscribe();
+    };
+  },
 } satisfies Record<string, MainEventRegister>;

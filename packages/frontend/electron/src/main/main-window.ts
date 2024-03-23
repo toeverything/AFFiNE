@@ -215,6 +215,15 @@ export async function getMainWindow() {
   return window;
 }
 
+export async function showMainWindow() {
+  const window = await getMainWindow();
+  if (!window) return;
+  if (window.isMinimized()) {
+    window.restore();
+  }
+  window.focus();
+}
+
 export async function handleOpenUrlInHiddenWindow(url: string) {
   const win = new BrowserWindow({
     width: 1200,

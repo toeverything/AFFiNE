@@ -2,7 +2,7 @@ import { app, Menu } from 'electron';
 
 import { isMacOS } from '../../shared/utils';
 import { revealLogFile } from '../logger';
-import { initAndShowMainWindow } from '../main-window';
+import { initAndShowMainWindow, showMainWindow } from '../main-window';
 import { checkForUpdates } from '../updater';
 import { applicationMenuSubjects } from './subject';
 
@@ -22,7 +22,13 @@ export function createApplicationMenu() {
           {
             label: app.name,
             submenu: [
-              { role: 'about' },
+              {
+                label: `About ${app.getName()}`,
+                click: async () => {
+                  await showMainWindow();
+                  applicationMenuSubjects.openAboutPageInSettingModal.next();
+                },
+              },
               { type: 'separator' },
               { role: 'services' },
               { type: 'separator' },
