@@ -30,7 +30,7 @@ import {
 } from '@blocksuite/icons';
 import type { DocMeta } from '@blocksuite/store';
 import { useLiveData, useService, Workspace } from '@toeverything/infra';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import type { CollectionService } from '../../modules/collection';
@@ -60,9 +60,7 @@ export const PageOperationCell = ({
   const { setTrashModal } = useTrashModalHelper(currentWorkspace.docCollection);
   const [openDisableShared, setOpenDisableShared] = useState(false);
   const favAdapter = useService(FavoriteItemsAdapter);
-  const favourite = useLiveData(
-    useMemo(() => favAdapter.isFavorite$(page.id, 'doc'), [favAdapter, page.id])
-  );
+  const favourite = useLiveData(favAdapter.isFavorite$(page.id, 'doc'));
   const workbench = useService(Workbench);
   const { duplicate } = useBlockSuiteMetaHelper(currentWorkspace.docCollection);
 

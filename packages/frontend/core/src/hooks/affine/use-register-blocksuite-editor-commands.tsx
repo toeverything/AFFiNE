@@ -14,7 +14,7 @@ import {
   Workspace,
 } from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect } from 'react';
 
 import { pageHistoryModalAtom } from '../../atoms/page-history';
 import { useBlockSuiteMetaHelper } from './use-block-suite-meta-helper';
@@ -35,9 +35,7 @@ export function useRegisterBlocksuiteEditorCommands() {
   assertExists(pageMeta);
 
   const favAdapter = useService(FavoriteItemsAdapter);
-  const favorite = useLiveData(
-    useMemo(() => favAdapter.isFavorite$(pageId, 'doc'), [favAdapter, pageId])
-  );
+  const favorite = useLiveData(favAdapter.isFavorite$(pageId, 'doc'));
   const trash = pageMeta.trash ?? false;
 
   const setPageHistoryModalState = useSetAtom(pageHistoryModalAtom);
