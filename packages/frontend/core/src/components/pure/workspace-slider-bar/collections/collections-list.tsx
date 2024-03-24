@@ -8,10 +8,10 @@ import {
 } from '@affine/core/components/page-list';
 import { CollectionService } from '@affine/core/modules/collection';
 import { FavoriteItemsAdapter } from '@affine/core/modules/workspace';
-import type { Collection, DeleteCollectionInfo } from '@affine/env/filter';
+import type { Collection } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { MoreHorizontalIcon, ViewLayersIcon } from '@blocksuite/icons';
-import type { DocCollection, DocMeta } from '@blocksuite/store';
+import type { DocCollection } from '@blocksuite/store';
 import { useDroppable } from '@dnd-kit/core';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import { useLiveData, useService } from '@toeverything/infra';
@@ -27,17 +27,16 @@ import type { CollectionsListProps } from '../index';
 import { Page } from './page';
 import * as styles from './styles.css';
 
-const CollectionRenderer = ({
+export const CollectionSidebarNavItem = ({
   collection,
-  pages,
   docCollection,
-  info,
+  className,
 }: {
   collection: Collection;
-  pages: DocMeta[];
   docCollection: DocCollection;
-  info: DeleteCollectionInfo;
+  className?: string;
 }) => {
+  const pages = useBlockSuiteDocMeta(docCollection);
   const [collapsed, setCollapsed] = useState(true);
   const [open, setOpen] = useState(false);
   const collectionService = useService(CollectionService);
@@ -112,7 +111,12 @@ const CollectionRenderer = ({
   }, []);
 
   return (
-    <Collapsible.Root open={!collapsed} ref={setNodeRef}>
+    <Collapsible.Root
+      open={!collapsed}
+      ref={setNodeRef}
+      data-testid="collection-"
+      className={className}
+    >
       <SidebarMenuLinkItem
         data-testid="collection-item"
         data-type="collection-list-item"
@@ -127,7 +131,6 @@ const CollectionRenderer = ({
             style={{ display: 'flex', alignItems: 'center' }}
           >
             <CollectionOperations
-              info={info}
               collection={collection}
               config={config}
               openRenameModal={handleOpen}
@@ -174,12 +177,11 @@ const CollectionRenderer = ({
 };
 export const CollectionsList = ({
   docCollection: workspace,
-  info,
   onCreate,
 }: CollectionsListProps) => {
-  const metas = useBlockSuiteDocMeta(workspace);
   const collections = useLiveData(useService(CollectionService).collections$);
   const t = useAFFiNEI18N();
+
   if (collections.length === 0) {
     return (
       <div className={styles.emptyCollectionWrapper}>
@@ -204,11 +206,9 @@ export const CollectionsList = ({
     <div data-testid="collections" className={styles.wrapper}>
       {collections.map(view => {
         return (
-          <CollectionRenderer
-            info={info}
+          <CollectionSidebarNavItem
             key={view.id}
             collection={view}
-            pages={metas}
             docCollection={workspace}
           />
         );

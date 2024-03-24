@@ -14,7 +14,6 @@ import type { HTMLAttributes, ReactElement } from 'react';
 import { forwardRef, useCallback, useEffect } from 'react';
 
 import { useAppSettingHelper } from '../../hooks/affine/use-app-setting-helper';
-import { useDeleteCollectionInfo } from '../../hooks/affine/use-delete-collection-info';
 import { getDropItemId } from '../../hooks/affine/use-sidebar-drag';
 import { useTrashModalHelper } from '../../hooks/affine/use-trash-modal-helper';
 import { useNavigateHelper } from '../../hooks/use-navigate-helper';
@@ -163,7 +162,6 @@ export const RootAppSidebar = ({
         console.error(err);
       });
   }, [docCollection.id, collection, navigateHelper, open]);
-  const userInfo = useDeleteCollectionInfo();
 
   const allPageActive = currentPath === '/all';
 
@@ -226,7 +224,6 @@ export const RootAppSidebar = ({
         </CategoryDivider>
         <CollectionsList
           docCollection={docCollection}
-          info={userInfo}
           onCreate={handleCreateCollection}
         />
         <CategoryDivider label={t['com.affine.rootAppSidebar.others']()} />

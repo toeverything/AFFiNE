@@ -1,16 +1,20 @@
 import type { MenuItemProps } from '@affine/component';
 import { Menu, MenuIcon, MenuItem } from '@affine/component';
 import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
+import { useDeleteCollectionInfo } from '@affine/core/hooks/affine/use-delete-collection-info';
 import { Workbench } from '@affine/core/modules/workbench';
-import type { Collection, DeleteCollectionInfo } from '@affine/env/filter';
+import { FavoriteItemsAdapter } from '@affine/core/modules/workspace';
+import type { Collection } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   DeleteIcon,
   EditIcon,
+  FavoritedIcon,
+  FavoriteIcon,
   FilterIcon,
   SplitViewIcon,
 } from '@blocksuite/icons';
-import { useService } from '@toeverything/infra';
+import { useLiveData, useService } from '@toeverything/infra';
 import type { PropsWithChildren, ReactElement } from 'react';
 import { useCallback, useMemo } from 'react';
 
@@ -25,15 +29,14 @@ import {
 export const CollectionOperations = ({
   collection,
   config,
-  info,
   openRenameModal,
   children,
 }: PropsWithChildren<{
-  info: DeleteCollectionInfo;
   collection: Collection;
   config: AllPageListConfig;
   openRenameModal?: () => void;
 }>) => {
+  const deleteInfo = useDeleteCollectionInfo();
   const { appSettings } = useAppSettingHelper();
   const service = useService(CollectionService);
   const workbench = useService(Workbench);
@@ -76,6 +79,19 @@ export const CollectionOperations = ({
     workbench.openCollection(collection.id, { at: 'tail' });
   }, [collection.id, workbench]);
 
+  const favAdapter = useService(FavoriteItemsAdapter);
+
+  const onToggleFavoritePage = useCallback(() => {
+    favAdapter.toggle(collection.id, 'collection');
+  }, [favAdapter, collection.id]);
+
+  const favorite = useLiveData(
+    useMemo(
+      () => favAdapter.isFavorite$(collection.id, 'collection'),
+      [collection.id, favAdapter]
+    )
+  );
+
   const actions = useMemo<
     Array<
       | {
@@ -109,6 +125,21 @@ export const CollectionOperations = ({
         name: t['com.affine.collection.menu.edit'](),
         click: showEdit,
       },
+      {
+        icon: (
+          <MenuIcon>
+            {favorite ? (
+              <FavoritedIcon style={{ color: 'var(--affine-primary-color)' }} />
+            ) : (
+              <FavoriteIcon />
+            )}
+          </MenuIcon>
+        ),
+        name: favorite
+          ? t['com.affine.favoritePageOperation.remove']()
+          : t['com.affine.favoritePageOperation.add'](),
+        click: onToggleFavoritePage,
+      },
       ...(appSettings.enableMultiView
         ? [
             {
@@ -133,7 +164,7 @@ export const CollectionOperations = ({
         ),
         name: t['Delete'](),
         click: () => {
-          service.deleteCollection(info, collection.id);
+          service.deleteCollection(deleteInfo, collection.id);
         },
         type: 'danger',
       },
@@ -142,10 +173,12 @@ export const CollectionOperations = ({
       t,
       showEditName,
       showEdit,
+      favorite,
+      onToggleFavoritePage,
       appSettings.enableMultiView,
       openCollectionSplitView,
       service,
-      info,
+      deleteInfo,
       collection.id,
     ]
   );
