@@ -4,7 +4,7 @@ import { toast } from '@affine/core/utils';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
 import { useLiveData, useService, Workspace } from '@toeverything/infra';
-import { useCallback, useMemo } from 'react';
+import { useCallback } from 'react';
 
 export interface FavoriteButtonProps {
   pageId: string;
@@ -18,9 +18,7 @@ export const useFavorite = (pageId: string) => {
   const favAdapter = useService(FavoriteItemsAdapter);
   assertExists(currentPage);
 
-  const favorite = useLiveData(
-    useMemo(() => favAdapter.isFavorite$(pageId, 'doc'), [favAdapter, pageId])
-  );
+  const favorite = useLiveData(favAdapter.isFavorite$(pageId, 'doc'));
 
   const toggleFavorite = useCallback(() => {
     favAdapter.toggle(pageId, 'doc');

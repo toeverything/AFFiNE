@@ -41,9 +41,16 @@ export class WorkspacePropertiesAdapter {
 
     this.properties$ = LiveData.from(
       new Observable(observer => {
-        this.properties.observeDeep(() => {
-          requestAnimationFrame(() => observer.next(this.proxy));
-        });
+        const update = () => {
+          requestAnimationFrame(() => {
+            observer.next(new Proxy(this.proxy, {}));
+          });
+        };
+        update();
+        this.properties.observeDeep(update);
+        return () => {
+          this.properties.unobserveDeep(update);
+        };
       }),
       this.proxy
     );

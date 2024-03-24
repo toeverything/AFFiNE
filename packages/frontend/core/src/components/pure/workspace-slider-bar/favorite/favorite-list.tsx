@@ -20,15 +20,13 @@ export const FavoriteList = ({
   const favAdapter = useService(FavoriteItemsAdapter);
   const dropItemId = getDropItemId('favorites');
 
-  const favourites = useLiveData(favAdapter.favorites$);
-
-  const favoriteList = useMemo(
-    () =>
+  const favourites = useLiveData(
+    favAdapter.favorites$.map(favourites =>
       favourites.filter(fav => {
         const meta = metas.find(m => m.id === fav.id);
         return meta && !meta.trash;
-      }),
-    [favourites, metas]
+      })
+    )
   );
 
   const metaMapping = useMemo(
@@ -54,7 +52,7 @@ export const FavoriteList = ({
       ref={setNodeRef}
       data-over={isOver}
     >
-      {favoriteList.map((pageMeta, index) => {
+      {favourites.map((pageMeta, index) => {
         return (
           <FavouritePage
             key={`${pageMeta}-${index}`}
@@ -66,7 +64,7 @@ export const FavoriteList = ({
           />
         );
       })}
-      {favoriteList.length === 0 && <EmptyItem />}
+      {favourites.length === 0 && <EmptyItem />}
     </div>
   );
 };
