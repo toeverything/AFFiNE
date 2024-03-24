@@ -7,6 +7,7 @@ import {
   stopPropagation,
 } from '@affine/core/components/page-list';
 import { CollectionService } from '@affine/core/modules/collection';
+import { FavoriteItemsAdapter } from '@affine/core/modules/workspace';
 import type { Collection, DeleteCollectionInfo } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { MoreHorizontalIcon, ViewLayersIcon } from '@blocksuite/icons';
@@ -40,8 +41,11 @@ const CollectionRenderer = ({
   const [collapsed, setCollapsed] = useState(true);
   const [open, setOpen] = useState(false);
   const collectionService = useService(CollectionService);
+  const favAdapter = useService(FavoriteItemsAdapter);
   const t = useAFFiNEI18N();
   const dragItemId = getDropItemId('collections', collection.id);
+
+  const favourites = useLiveData(favAdapter.favorites$);
 
   const removeFromAllowList = useCallback(
     (id: string) => {
@@ -85,6 +89,7 @@ const CollectionRenderer = ({
     const pageData = {
       meta,
       publicMode: config.getPublicMode(meta.id),
+      favorite: favourites.some(fav => fav.id === meta.id),
     };
     return filterPage(collection, pageData);
   });

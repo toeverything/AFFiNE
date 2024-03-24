@@ -1,8 +1,10 @@
 import { Button, Menu } from '@affine/component';
+import { FavoriteItemsAdapter } from '@affine/core/modules/workspace';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { FilterIcon } from '@blocksuite/icons';
 import type { DocMeta } from '@blocksuite/store';
+import { useLiveData, useService } from '@toeverything/infra';
 import clsx from 'clsx';
 import { useCallback, useState } from 'react';
 
@@ -35,6 +37,8 @@ export const SelectPage = ({
   const clearSelected = useCallback(() => {
     onChange([]);
   }, []);
+  const favAdapter = useService(FavoriteItemsAdapter);
+  const favourites = useLiveData(favAdapter.favorites$);
   const {
     clickFilter,
     createFilter,
@@ -46,6 +50,7 @@ export const SelectPage = ({
     allPageListConfig.allPages.map(meta => ({
       meta,
       publicMode: allPageListConfig.getPublicMode(meta.id),
+      favorite: favourites.some(fav => fav.id === meta.id),
     }))
   );
   const { searchText, updateSearchText, searchedList } =

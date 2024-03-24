@@ -1,6 +1,7 @@
+import { FavoriteItemsAdapter } from '@affine/core/modules/workspace';
 import type { Collection, Filter } from '@affine/env/filter';
 import type { DocMeta } from '@blocksuite/store';
-import type { Workspace } from '@toeverything/infra';
+import { useLiveData, useService, type Workspace } from '@toeverything/infra';
 import { useMemo } from 'react';
 
 import { usePublicPages } from '../../hooks/affine/use-is-shared-page';
@@ -16,6 +17,8 @@ export const useFilteredPageMetas = (
   } = {}
 ) => {
   const { getPublicMode } = usePublicPages(workspace);
+  const favAdapter = useService(FavoriteItemsAdapter);
+  const favoriteItems = useLiveData(favAdapter.favorites$);
 
   const filteredPageMetas = useMemo(
     () =>
@@ -29,6 +32,7 @@ export const useFilteredPageMetas = (
         }
         const pageData = {
           meta: pageMeta,
+          favorite: favoriteItems.some(fav => fav.id === pageMeta.id),
           publicMode: getPublicMode(pageMeta.id),
         };
         if (
@@ -49,6 +53,7 @@ export const useFilteredPageMetas = (
       options.trash,
       options.filters,
       options.collection,
+      favoriteItems,
       getPublicMode,
     ]
   );

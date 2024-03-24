@@ -1,3 +1,4 @@
+import { FavoriteItemsAdapter } from '@affine/core/modules/workspace';
 import type { Collection } from '@affine/env/filter';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
@@ -9,6 +10,7 @@ import {
   ToggleCollapseIcon,
 } from '@blocksuite/icons';
 import type { DocMeta } from '@blocksuite/store';
+import { useLiveData, useService } from '@toeverything/infra';
 import clsx from 'clsx';
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useState } from 'react';
@@ -42,6 +44,8 @@ export const RulesMode = ({
   const allowListPages: DocMeta[] = [];
   const rulesPages: DocMeta[] = [];
   const [showTips, setShowTips] = useState(false);
+  const favAdapter = useService(FavoriteItemsAdapter);
+  const favorites = useLiveData(favAdapter.favorites$);
   useEffect(() => {
     setShowTips(!localStorage.getItem('hide-rules-mode-include-page-tips'));
   }, []);
@@ -56,6 +60,7 @@ export const RulesMode = ({
     const pageData = {
       meta,
       publicMode: allPageListConfig.getPublicMode(meta.id),
+      favorite: favorites.some(f => f.id === meta.id),
     };
     if (
       collection.filterList.length &&

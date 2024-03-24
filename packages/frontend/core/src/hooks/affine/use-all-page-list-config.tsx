@@ -2,13 +2,13 @@ import { toast } from '@affine/component';
 import type { AllPageListConfig } from '@affine/core/components/page-list';
 import { FavoriteTag } from '@affine/core/components/page-list';
 import { useBlockSuiteDocMeta } from '@affine/core/hooks/use-block-suite-page-meta';
+import { FavoriteItemsAdapter } from '@affine/core/modules/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { DocMeta } from '@blocksuite/store';
-import { useService, Workspace } from '@toeverything/infra';
+import { useLiveData, useService, Workspace } from '@toeverything/infra';
 import { useCallback, useMemo } from 'react';
 
 import { usePageHelper } from '../../components/blocksuite/block-suite-page-list/utils';
-import { useBlockSuiteMetaHelper } from './use-block-suite-meta-helper';
 import { usePublicPages } from './use-is-shared-page';
 
 export const useAllPageListConfig = () => {
@@ -21,22 +21,29 @@ export const useAllPageListConfig = () => {
     () => Object.fromEntries(pageMetas.map(page => [page.id, page])),
     [pageMetas]
   );
-  const { toggleFavorite } = useBlockSuiteMetaHelper(
-    currentWorkspace.docCollection
-  );
+  const favAdapter = useService(FavoriteItemsAdapter);
   const t = useAFFiNEI18N();
+  const favoriteItems = useLiveData(favAdapter.favorites$);
+
+  const isActive = useCallback(
+    (page: DocMeta) => {
+      return favoriteItems.some(fav => fav.id === page.id);
+    },
+    [favoriteItems]
+  );
   const onToggleFavoritePage = useCallback(
     (page: DocMeta) => {
-      const status = page.favorite;
-      toggleFavorite(page.id);
+      const status = isActive(page);
+      favAdapter.toggle(page.id, 'doc');
       toast(
         status
           ? t['com.affine.toastMessage.removedFavorites']()
           : t['com.affine.toastMessage.addedFavorites']()
       );
     },
-    [t, toggleFavorite]
+    [favAdapter, isActive, t]
   );
+
   return useMemo<AllPageListConfig>(() => {
     return {
       allPages: pageMetas,
@@ -49,7 +56,7 @@ export const useAllPageListConfig = () => {
           <FavoriteTag
             style={{ marginRight: 8 }}
             onClick={() => onToggleFavoritePage(page)}
-            active={!!page.favorite}
+            active={isActive(page)}
           />
         );
       },
@@ -60,6 +67,7 @@ export const useAllPageListConfig = () => {
     getPublicMode,
     currentWorkspace.docCollection,
     pageMap,
+    isActive,
     onToggleFavoritePage,
   ]);
 };

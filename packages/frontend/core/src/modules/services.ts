@@ -18,6 +18,7 @@ import { TagService } from './tag';
 import { Workbench } from './workbench';
 import {
   CurrentWorkspaceService,
+  FavoriteItemsAdapter,
   WorkspaceLegacyProperties,
   WorkspacePropertiesAdapter,
 } from './workspace';
@@ -30,6 +31,7 @@ export function configureBusinessServices(services: ServiceCollection) {
     .add(Navigator, [Workbench])
     .add(RightSidebar, [GlobalState])
     .add(WorkspacePropertiesAdapter, [Workspace])
+    .add(FavoriteItemsAdapter, [WorkspacePropertiesAdapter])
     .add(CollectionService, [Workspace])
     .add(WorkspaceLegacyProperties, [Workspace])
     .add(TagService, [WorkspaceLegacyProperties, PageRecordList]);
