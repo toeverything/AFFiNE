@@ -40,7 +40,7 @@ export const ConfirmModal = ({
         <DialogTrigger asChild>
           <Button {...cancelButtonOptions}>{cancelText}</Button>
         </DialogTrigger>
-        <Button onClick={onConfirm} {...confirmButtonOptions}></Button>
+        <Button autoFocus onClick={onConfirm} {...confirmButtonOptions}></Button>
       </div>
     </Modal>
   );
