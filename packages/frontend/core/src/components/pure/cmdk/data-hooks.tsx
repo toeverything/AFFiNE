@@ -107,8 +107,8 @@ export const pageToCommand = (
   subTitle?: string,
   blockId?: string
 ): CMDKCommand => {
-  const pageMode = workspace.services.get(PageRecordList).record(page.id).value
-    ?.mode.value;
+  const pageMode = workspace.services.get(PageRecordList).record$(page.id).value
+    ?.mode$.value;
 
   const title = getPageTitle(page.id) || t['Untitled']();
   const commandLabel = {
@@ -320,7 +320,7 @@ export const collectionToCommand = (
 export const useCollectionsCommands = () => {
   // todo: considering collections for searching pages
   const collectionService = useService(CollectionService);
-  const collections = useLiveData(collectionService.collections);
+  const collections = useLiveData(collectionService.collections$);
   const query = useAtomValue(cmdkQueryAtom);
   const navigationHelper = useNavigateHelper();
   const t = useAFFiNEI18N();
@@ -356,7 +356,7 @@ export const useCMDKCommandGroups = () => {
   const collectionCommands = useCollectionsCommands();
 
   const currentPage = useServiceOptional(Doc);
-  const currentPageMode = useLiveData(currentPage?.mode);
+  const currentPageMode = useLiveData(currentPage?.mode$);
   const affineCommands = useMemo(() => {
     return getAllCommand({
       pageMode: currentPageMode,

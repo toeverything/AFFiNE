@@ -66,7 +66,7 @@ export const AffineSharePage = (props: ShareMenuProps) => {
     disableShare,
   } = useIsSharedPage(workspaceId, currentPage.id);
 
-  const currentPageMode = useLiveData(page.mode);
+  const currentPageMode = useLiveData(page.mode$);
 
   const defaultMode = useMemo(() => {
     if (isSharedPage) {

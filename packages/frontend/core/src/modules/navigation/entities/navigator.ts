@@ -7,12 +7,12 @@ import type { Workbench } from '../../workbench';
 export class Navigator {
   constructor(private readonly workbench: Workbench) {}
 
-  private readonly history = this.workbench.activeView.map(
+  private readonly history$ = this.workbench.activeView$.map(
     view => view.history
   );
 
-  private readonly location = LiveData.from(
-    this.history.pipe(
+  private readonly location$ = LiveData.from(
+    this.history$.pipe(
       switchMap(
         history =>
           new Observable<{ index: number; entries: Location[] }>(subscriber => {
@@ -29,11 +29,11 @@ export class Navigator {
     { index: 0, entries: [] }
   );
 
-  readonly backable = this.location.map(
+  readonly backable$ = this.location$.map(
     ({ index, entries }) => index > 0 && entries.length > 1
   );
 
-  readonly forwardable = this.location.map(
+  readonly forwardable$ = this.location$.map(
     ({ index, entries }) => index < entries.length - 1
   );
 
@@ -41,7 +41,7 @@ export class Navigator {
     if (!environment.isDesktop) {
       window.history.back();
     } else {
-      this.history.value.back();
+      this.history$.value.back();
     }
   }
 
@@ -49,7 +49,7 @@ export class Navigator {
     if (!environment.isDesktop) {
       window.history.forward();
     } else {
-      this.history.value.forward();
+      this.history$.value.forward();
     }
   }
 }

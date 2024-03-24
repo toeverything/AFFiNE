@@ -186,7 +186,7 @@ export const Component = () => {
     workspaceManager,
   ]);
 
-  const pageTitle = useLiveData(page?.title);
+  const pageTitle = useLiveData(page?.title$);
 
   usePageDocumentTitle(pageTitle);
   const loginStatus = useCurrentLoginStatus();

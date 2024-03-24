@@ -48,7 +48,7 @@ export interface LocalDocState {
  */
 export class DocEngineLocalPart {
   private readonly prioritySettings = new Map<string, number>();
-  private readonly statusUpdatedSubject = new Subject<string>();
+  private readonly statusUpdatedSubject$ = new Subject<string>();
 
   private readonly status = {
     docs: new Map<string, YDoc>(),
@@ -59,7 +59,7 @@ export class DocEngineLocalPart {
     currentJob: null as { docId: string; jobs: Job[] } | null,
   };
 
-  engineState = LiveData.from<LocalEngineState>(
+  engineState$ = LiveData.from<LocalEngineState>(
     new Observable(subscribe => {
       const next = () => {
         subscribe.next({
@@ -68,14 +68,14 @@ export class DocEngineLocalPart {
         });
       };
       next();
-      return this.statusUpdatedSubject.subscribe(() => {
+      return this.statusUpdatedSubject$.subscribe(() => {
         next();
       });
     }),
     { syncing: 0, total: 0 }
   );
 
-  docState(docId: string) {
+  docState$(docId: string) {
     return LiveData.from<LocalDocState>(
       new Observable(subscribe => {
         const next = () => {
@@ -87,7 +87,7 @@ export class DocEngineLocalPart {
           });
         };
         next();
-        return this.statusUpdatedSubject.subscribe(updatedId => {
+        return this.statusUpdatedSubject$.subscribe(updatedId => {
           if (updatedId === docId) next();
         });
       }),
@@ -120,7 +120,7 @@ export class DocEngineLocalPart {
         }
 
         this.status.currentJob = { docId, jobs };
-        this.statusUpdatedSubject.next(docId);
+        this.statusUpdatedSubject$.next(docId);
 
         const { apply, load, save } = groupBy(jobs, job => job.type) as {
           [key in Job['type']]?: Job[];
@@ -139,7 +139,7 @@ export class DocEngineLocalPart {
         }
 
         this.status.currentJob = null;
-        this.statusUpdatedSubject.next(docId);
+        this.statusUpdatedSubject$.next(docId);
       }
     } finally {
       dispose();
@@ -161,7 +161,7 @@ export class DocEngineLocalPart {
       });
 
       this.status.docs.set(doc.guid, doc);
-      this.statusUpdatedSubject.next(doc.guid);
+      this.statusUpdatedSubject$.next(doc.guid);
     },
   };
 
@@ -186,7 +186,7 @@ export class DocEngineLocalPart {
       doc.on('update', this.handleDocUpdate);
 
       this.status.connectedDocs.add(job.docId);
-      this.statusUpdatedSubject.next(job.docId);
+      this.statusUpdatedSubject$.next(job.docId);
 
       const docData = await this.storage.loadDocFromLocal(job.docId, signal);
 
@@ -196,7 +196,7 @@ export class DocEngineLocalPart {
 
       this.applyUpdate(job.docId, docData);
       this.status.readyDocs.add(job.docId);
-      this.statusUpdatedSubject.next(job.docId);
+      this.statusUpdatedSubject$.next(job.docId);
     },
     save: async (
       docId: string,
@@ -292,7 +292,7 @@ export class DocEngineLocalPart {
     const existingJobs = this.status.jobMap.get(job.docId) ?? [];
     existingJobs.push(job);
     this.status.jobMap.set(job.docId, existingJobs);
-    this.statusUpdatedSubject.next(job.docId);
+    this.statusUpdatedSubject$.next(job.docId);
   }
 
   setPriority(docId: string, priority: number) {

@@ -31,9 +31,9 @@ export function useBindWorkbenchToDesktopRouter(
       return;
     }
     if (
-      workbench.location.value.pathname === newLocation.pathname &&
-      workbench.location.value.search === newLocation.search &&
-      workbench.location.value.hash === newLocation.hash
+      workbench.location$.value.pathname === newLocation.pathname &&
+      workbench.location$.value.search === newLocation.search &&
+      workbench.location$.value.hash === newLocation.hash
     ) {
       return;
     }

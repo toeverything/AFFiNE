@@ -99,7 +99,7 @@ export const RootAppSidebar = ({
   const { appSettings } = useAppSettingHelper();
   const docCollection = currentWorkspace.docCollection;
   const t = useAFFiNEI18N();
-  const currentPath = useLiveData(useService(Workbench).location).pathname;
+  const currentPath = useLiveData(useService(Workbench).location$).pathname;
 
   const onClickNewPage = useAsyncCallback(async () => {
     const page = createPage();

@@ -7,6 +7,6 @@ import { useView } from './use-view';
 export function useIsActiveView() {
   const workbench = useService(Workbench);
   const currentView = useView();
-  const activeView = useLiveData(workbench.activeView);
+  const activeView = useLiveData(workbench.activeView$);
   return currentView === activeView;
 }

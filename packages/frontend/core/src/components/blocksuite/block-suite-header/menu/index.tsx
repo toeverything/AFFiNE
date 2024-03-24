@@ -55,7 +55,7 @@ export const PageHeaderMenuButton = ({
     meta => meta.id === pageId
   );
   const page = useService(Doc);
-  const currentMode = useLiveData(page.mode);
+  const currentMode = useLiveData(page.mode$);
 
   const { favorite, toggleFavorite } = useFavorite(pageId);
 

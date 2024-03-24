@@ -14,6 +14,7 @@ import {
   skip,
   type Subscription,
   switchMap,
+  type TeardownLogic,
 } from 'rxjs';
 import { BehaviorSubject, Subject } from 'rxjs';
 
@@ -78,20 +79,23 @@ const logger = new DebugLogger('livedata');
  * @see {@link https://rxjs.dev/api/index/class/BehaviorSubject}
  * @see {@link https://developer.android.com/topic/libraries/architecture/livedata}
  */
-export class LiveData<T = unknown> implements InteropObservable<T> {
+export class LiveData<T = unknown>
+  extends Observable<T>
+  implements InteropObservable<T>
+{
   static from<T>(
-    upstream:
+    upstream$:
       | Observable<T>
       | InteropObservable<T>
       | ((stream: Observable<LiveDataOperation>) => Observable<T>),
     initialValue: T
   ): LiveData<T> {
-    const data = new LiveData(
+    const data$ = new LiveData(
       initialValue,
-      typeof upstream === 'function'
-        ? upstream
-        : stream =>
-            stream.pipe(
+      typeof upstream$ === 'function'
+        ? upstream$
+        : stream$ =>
+            stream$.pipe(
               filter(
                 (op): op is Exclude<LiveDataOperation, 'set'> => op !== 'set'
               ),
@@ -121,7 +125,7 @@ export class LiveData<T = unknown> implements InteropObservable<T> {
               distinctUntilChanged(),
               switchMap(op => {
                 if (op === 'watch') {
-                  return upstream;
+                  return upstream$;
                 } else {
                   return EMPTY;
                 }
@@ -129,7 +133,7 @@ export class LiveData<T = unknown> implements InteropObservable<T> {
             )
     );
 
-    return data;
+    return data$;
   }
 
   private static GLOBAL_COMPUTED_RECURSIVE_COUNT = 0;
@@ -155,11 +159,11 @@ export class LiveData<T = unknown> implements InteropObservable<T> {
       new Observable(subscribe => {
         const execute = (next: () => void) => {
           const subscriptions: Subscription[] = [];
-          const getfn = <L>(data: LiveData<L>) => {
+          const getfn = <L>(data$: LiveData<L>) => {
             let value = null as L;
             let first = true;
             subscriptions.push(
-              data.subscribe({
+              data$.subscribe({
                 error(err) {
                   subscribe.error(err);
                 },
@@ -212,8 +216,8 @@ export class LiveData<T = unknown> implements InteropObservable<T> {
     );
   }
 
-  private readonly raw: BehaviorSubject<T>;
-  private readonly ops = new Subject<LiveDataOperation>();
+  private readonly raw$: BehaviorSubject<T>;
+  private readonly ops$ = new Subject<LiveDataOperation>();
   private readonly upstreamSubscription: Subscription | undefined;
 
   /**
@@ -232,14 +236,15 @@ export class LiveData<T = unknown> implements InteropObservable<T> {
       | ((upstream: Observable<LiveDataOperation>) => Observable<T>)
       | undefined = undefined
   ) {
-    this.raw = new BehaviorSubject(initialValue);
+    super();
+    this.raw$ = new BehaviorSubject(initialValue);
     if (upstream) {
-      this.upstreamSubscription = upstream(this.ops).subscribe({
+      this.upstreamSubscription = upstream(this.ops$).subscribe({
         next: v => {
-          this.raw.next(v);
+          this.raw$.next(v);
         },
         complete: () => {
-          if (!this.raw.closed) {
+          if (!this.raw$.closed) {
             logger.error('livedata upstream unexpected complete');
           }
         },
@@ -247,7 +252,7 @@ export class LiveData<T = unknown> implements InteropObservable<T> {
           logger.error('uncatched error in livedata', err);
           this.isPoisoned = true;
           this.poisonedError = new PoisonedError(err);
-          this.raw.error(this.poisonedError);
+          this.raw$.error(this.poisonedError);
         },
       });
     }
@@ -257,16 +262,16 @@ export class LiveData<T = unknown> implements InteropObservable<T> {
     if (this.isPoisoned) {
       throw this.poisonedError;
     }
-    this.ops.next('get');
-    return this.raw.value;
+    this.ops$.next('get');
+    return this.raw$.value;
   }
 
   setValue(v: T) {
     if (this.isPoisoned) {
       throw this.poisonedError;
     }
-    this.raw.next(v);
-    this.ops.next('set');
+    this.raw$.next(v);
+    this.ops$.next('set');
   }
 
   get value(): T {
@@ -284,66 +289,81 @@ export class LiveData<T = unknown> implements InteropObservable<T> {
     this.setValue(v);
   }
 
-  subscribe(
-    observer?: Partial<Observer<T>> | ((value: T) => void) | undefined
+  override subscribe(
+    observerOrNext?: Partial<Observer<T>> | ((value: T) => void)
+  ): Subscription;
+  override subscribe(
+    next?: ((value: T) => void) | null,
+    error?: ((error: any) => void) | null,
+    complete?: (() => void) | null
+  ): Subscription;
+  override subscribe(
+    observerOrNext?: Partial<Observer<T>> | ((value: T) => void) | null,
+    error?: ((error: any) => void) | null,
+    complete?: (() => void) | null
   ): Subscription {
-    this.ops.next('watch');
-    const subscription = this.raw.subscribe(observer);
+    this.ops$.next('watch');
+    const subscription = this.raw$.subscribe(
+      observerOrNext as any,
+      error,
+      complete
+    );
     subscription.add(() => {
-      this.ops.next('unwatch');
+      this.ops$.next('unwatch');
     });
     return subscription;
   }
 
-  map<R>(mapper: (v: T) => R) {
-    const sub = LiveData.from(
+  map<R>(mapper: (v: T) => R): LiveData<R> {
+    const sub$ = LiveData.from(
       new Observable<R>(subscriber =>
         this.subscribe({
           next: v => {
             subscriber.next(mapper(v));
           },
           complete: () => {
-            sub.complete();
+            sub$.complete();
           },
         })
       ),
       undefined as R // is safe
     );
 
-    return sub;
+    return sub$;
   }
 
+  // eslint-disable-next-line rxjs/finnish
   asObservable(): Observable<T> {
     return new Observable<T>(subscriber => {
       return this.subscribe(subscriber);
     });
   }
 
-  pipe(): Observable<T>;
-  pipe<A>(op1: OperatorFunction<T, A>): Observable<A>;
-  pipe<A, B>(
+  override pipe(): Observable<T>;
+  override pipe<A>(op1: OperatorFunction<T, A>): Observable<A>;
+  override pipe<A, B>(
     op1: OperatorFunction<T, A>,
     op2: OperatorFunction<A, B>
   ): Observable<B>;
-  pipe<A, B, C>(
+  override pipe<A, B, C>(
     op1: OperatorFunction<T, A>,
     op2: OperatorFunction<A, B>,
     op3: OperatorFunction<B, C>
   ): Observable<C>;
-  pipe<A, B, C, D>(
+  override pipe<A, B, C, D>(
     op1: OperatorFunction<T, A>,
     op2: OperatorFunction<A, B>,
     op3: OperatorFunction<B, C>,
     op4: OperatorFunction<C, D>
   ): Observable<D>;
-  pipe<A, B, C, D, E>(
+  override pipe<A, B, C, D, E>(
     op1: OperatorFunction<T, A>,
     op2: OperatorFunction<A, B>,
     op3: OperatorFunction<B, C>,
     op4: OperatorFunction<C, D>,
     op5: OperatorFunction<D, E>
   ): Observable<E>;
-  pipe<A, B, C, D, E, F>(
+  override pipe<A, B, C, D, E, F>(
     op1: OperatorFunction<T, A>,
     op2: OperatorFunction<A, B>,
     op3: OperatorFunction<B, C>,
@@ -351,23 +371,23 @@ export class LiveData<T = unknown> implements InteropObservable<T> {
     op5: OperatorFunction<D, E>,
     op6: OperatorFunction<E, F>
   ): Observable<F>;
-  pipe(...args: any[]) {
+  override pipe(...args: any[]) {
     return new Observable(subscriber => {
-      this.ops.next('watch');
+      this.ops$.next('watch');
       // eslint-disable-next-line prefer-spread
-      const subscription = this.raw.pipe
-        .apply(this.raw, args as any)
+      const subscription = this.raw$.pipe
+        .apply(this.raw$, args as any)
         .subscribe(subscriber);
       subscription.add(() => {
-        this.ops.next('unwatch');
+        this.ops$.next('unwatch');
       });
       return subscription;
     });
   }
 
   complete() {
-    this.ops.complete();
-    this.raw.complete();
+    this.ops$.complete();
+    this.raw$.complete();
     this.upstreamSubscription?.unsubscribe();
   }
 
@@ -411,12 +431,12 @@ export class LiveData<T = unknown> implements InteropObservable<T> {
     if (this.isPoisoned) {
       throw this.poisonedError;
     }
-    this.ops.next('watch');
-    const subscription = this.raw
+    this.ops$.next('watch');
+    const subscription = this.raw$
       .pipe(distinctUntilChanged(), skip(1))
       .subscribe(cb);
     subscription.add(() => {
-      this.ops.next('unwatch');
+      this.ops$.next('unwatch');
     });
     return () => subscription.unsubscribe();
   };
@@ -425,12 +445,16 @@ export class LiveData<T = unknown> implements InteropObservable<T> {
     if (this.isPoisoned) {
       throw this.poisonedError;
     }
-    this.ops.next('watch');
+    this.ops$.next('watch');
     setImmediate(() => {
-      this.ops.next('unwatch');
+      this.ops$.next('unwatch');
     });
-    return this.raw.value;
+    return this.raw$.value;
   };
+
+  protected _subscribe(): TeardownLogic {
+    throw new Error('Method not implemented.');
+  }
 
   [Symbol.observable || '@@observable']() {
     return this;

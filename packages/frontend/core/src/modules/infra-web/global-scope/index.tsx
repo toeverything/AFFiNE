@@ -16,7 +16,7 @@ export const GlobalScopeProvider: React.FC<
   });
 
   const workspaceProvider = useLiveData(
-    currentWorkspaceService.currentWorkspace
+    currentWorkspaceService.currentWorkspace$
   )?.services;
 
   return (

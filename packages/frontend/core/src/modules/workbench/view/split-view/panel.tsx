@@ -45,10 +45,10 @@ export const SplitViewPanel = memo(function SplitViewPanel({
 }: SplitViewPanelProps) {
   const [indicatorPressed, setIndicatorPressed] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const size = useLiveData(view.size);
+  const size = useLiveData(view.size$);
   const workbench = useService(Workbench);
-  const activeView = useLiveData(workbench.activeView);
-  const views = useLiveData(workbench.views);
+  const activeView = useLiveData(workbench.activeView$);
+  const views = useLiveData(workbench.views$);
   const isLast = views[views.length - 1] === view;
 
   const {
@@ -116,7 +116,7 @@ export const SplitViewPanel = memo(function SplitViewPanel({
 const SplitViewMenu = ({ view }: { view: View }) => {
   const t = useAFFiNEI18N();
   const workbench = useService(Workbench);
-  const views = useLiveData(workbench.views);
+  const views = useLiveData(workbench.views$);
 
   const viewIndex = views.findIndex(v => v === view);
 

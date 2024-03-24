@@ -192,7 +192,7 @@ export const AuthModal = (): ReactElement => {
 
 export function CurrentWorkspaceModals() {
   const currentWorkspace = useLiveData(
-    useService(CurrentWorkspaceService).currentWorkspace
+    useService(CurrentWorkspaceService).currentWorkspace$
   );
   const [openDisableCloudAlertModal, setOpenDisableCloudAlertModal] = useAtom(
     openDisableCloudAlertModalAtom
@@ -227,10 +227,10 @@ export const SignOutConfirmModal = () => {
   const { openPage } = useNavigateHelper();
   const [open, setOpen] = useAtom(openSignOutModalAtom);
   const currentWorkspace = useLiveData(
-    useService(CurrentWorkspaceService).currentWorkspace
+    useService(CurrentWorkspaceService).currentWorkspace$
   );
   const workspaces = useLiveData(
-    useService(WorkspaceManager).list.workspaceList
+    useService(WorkspaceManager).list.workspaceList$
   );
 
   const onConfirm = useAsyncCallback(async () => {

@@ -3,7 +3,7 @@ import { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 
 export const createIsland = () => {
-  const targetLiveData = new LiveData<HTMLDivElement | null>(null);
+  const targetLiveData$ = new LiveData<HTMLDivElement | null>(null);
   let mounted = false;
   let provided = false;
   return {
@@ -14,16 +14,16 @@ export const createIsland = () => {
           throw new Error('Island should not be mounted more than once');
         }
         mounted = true;
-        targetLiveData.next(target.current);
+        targetLiveData$.next(target.current);
         return () => {
           mounted = false;
-          targetLiveData.next(null);
+          targetLiveData$.next(null);
         };
       }, []);
       return <div {...other} ref={target}></div>;
     },
     Provider: ({ children }: React.PropsWithChildren) => {
-      const target = useLiveData(targetLiveData);
+      const target = useLiveData(targetLiveData$);
       useEffect(() => {
         if (provided === true && process.env.NODE_ENV !== 'production') {
           throw new Error('Island should not be provided more than once');

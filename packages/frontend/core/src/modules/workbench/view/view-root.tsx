@@ -33,7 +33,7 @@ const warpedRoutes = viewRoutes.map(({ path, lazy }) => {
 export const ViewRoot = ({ view }: { view: View }) => {
   const viewRouter = useMemo(() => createMemoryRouter(warpedRoutes), []);
 
-  const location = useLiveData(view.location);
+  const location = useLiveData(view.location$);
 
   useEffect(() => {
     viewRouter.navigate(location).catch(err => {

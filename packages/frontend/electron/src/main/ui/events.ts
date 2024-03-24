@@ -6,7 +6,7 @@ import { uiSubjects } from './subject';
  */
 export const uiEvents = {
   onMaximized: (fn: (maximized: boolean) => void) => {
-    const sub = uiSubjects.onMaximized.subscribe(fn);
+    const sub = uiSubjects.onMaximized$.subscribe(fn);
     return () => {
       sub.unsubscribe();
     };

@@ -67,7 +67,7 @@ export const CollectionDetail = ({
 export const Component = function CollectionPage() {
   const collectionService = useService(CollectionService);
 
-  const collections = useLiveData(collectionService.collections);
+  const collections = useLiveData(collectionService.collections$);
   const navigate = useNavigateHelper();
   const params = useParams();
   const workspace = useService(Workspace);
@@ -76,7 +76,7 @@ export const Component = function CollectionPage() {
   useEffect(() => {
     if (!collection) {
       navigate.jumpToSubPath(workspace.id, WorkspaceSubPath.ALL);
-      const collection = collectionService.collectionsTrash.value.find(
+      const collection = collectionService.collectionsTrash$.value.find(
         v => v.collection.id === params.collectionId
       );
       let text = 'Collection does not exist';
@@ -94,7 +94,7 @@ export const Component = function CollectionPage() {
     }
   }, [
     collection,
-    collectionService.collectionsTrash.value,
+    collectionService.collectionsTrash$.value,
     navigate,
     params.collectionId,
     pushNotification,

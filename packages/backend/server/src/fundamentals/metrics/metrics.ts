@@ -43,9 +43,9 @@ const metricCreators: MetricCreators = {
   gauge(meter: Meter, name: string, opts?: MetricOptions) {
     let value: any;
     let attrs: Attributes | undefined;
-    const ob = meter.createObservableGauge(name, opts);
+    const ob$ = meter.createObservableGauge(name, opts);
 
-    ob.addCallback(result => {
+    ob$.addCallback(result => {
       result.observe(value, attrs);
     });
 

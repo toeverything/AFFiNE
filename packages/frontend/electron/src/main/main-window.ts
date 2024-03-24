@@ -104,7 +104,7 @@ async function createWindow(additionalArguments: string[]) {
     logger.info('main window is ready to show');
 
     if (browserWindow.isMaximized() || browserWindow.isFullScreen()) {
-      uiSubjects.onMaximized.next(true);
+      uiSubjects.onMaximized$.next(true);
     }
 
     handleWebContentsResize().catch(logger.error);
@@ -141,20 +141,20 @@ async function createWindow(additionalArguments: string[]) {
       browserWindow.setSize(size[0] + 1, size[1] + 1);
       browserWindow.setSize(size[0], size[1]);
     });
-    uiSubjects.onMaximized.next(false);
+    uiSubjects.onMaximized$.next(false);
   });
 
   browserWindow.on('maximize', () => {
-    uiSubjects.onMaximized.next(true);
+    uiSubjects.onMaximized$.next(true);
   });
 
   // full-screen == maximized in UI on windows
   browserWindow.on('enter-full-screen', () => {
-    uiSubjects.onMaximized.next(true);
+    uiSubjects.onMaximized$.next(true);
   });
 
   browserWindow.on('unmaximize', () => {
-    uiSubjects.onMaximized.next(false);
+    uiSubjects.onMaximized$.next(false);
   });
 
   /**
@@ -172,7 +172,7 @@ async function createWindow(additionalArguments: string[]) {
 }
 
 // singleton
-let browserWindow$: Promise<BrowserWindow> | undefined;
+let browserWindow: Promise<BrowserWindow> | undefined;
 
 // a hidden window that prevents the app from quitting on MacOS
 let hiddenMacWindow: BrowserWindow | undefined;
@@ -181,11 +181,11 @@ let hiddenMacWindow: BrowserWindow | undefined;
  * Init main BrowserWindow. Will create a new window if it's not created yet.
  */
 export async function initAndShowMainWindow() {
-  if (!browserWindow$ || (await browserWindow$.then(w => w.isDestroyed()))) {
+  if (!browserWindow || (await browserWindow.then(w => w.isDestroyed()))) {
     const additionalArguments = await getWindowAdditionalArguments();
-    browserWindow$ = createWindow(additionalArguments);
+    browserWindow = createWindow(additionalArguments);
   }
-  const mainWindow = await browserWindow$;
+  const mainWindow = await browserWindow;
 
   if (IS_DEV) {
     // do not gain focus in dev mode
@@ -209,8 +209,8 @@ export async function initAndShowMainWindow() {
 }
 
 export async function getMainWindow() {
-  if (!browserWindow$) return;
-  const window = await browserWindow$;
+  if (!browserWindow) return;
+  const window = await browserWindow;
   if (window.isDestroyed()) return;
   return window;
 }
@@ -251,7 +251,7 @@ export async function setCookie(
   arg0: CookiesSetDetails | string,
   arg1?: string
 ) {
-  const window = await browserWindow$;
+  const window = await browserWindow;
   if (!window) {
     // do nothing if window is not ready
     return;
@@ -271,7 +271,7 @@ export async function setCookie(
 }
 
 export async function removeCookie(url: string, name: string): Promise<void> {
-  const window = await browserWindow$;
+  const window = await browserWindow;
   if (!window) {
     // do nothing if window is not ready
     return;
@@ -280,7 +280,7 @@ export async function removeCookie(url: string, name: string): Promise<void> {
 }
 
 export async function getCookie(url?: string, name?: string) {
-  const window = await browserWindow$;
+  const window = await browserWindow;
   if (!window) {
     // do nothing if window is not ready
     return;

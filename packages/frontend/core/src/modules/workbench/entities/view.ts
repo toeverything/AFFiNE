@@ -21,7 +21,7 @@ export class View {
     initialIndex: 0,
   });
 
-  location = LiveData.from<Location>(
+  location$ = LiveData.from<Location>(
     new Observable(subscriber => {
       subscriber.next(this.history.location);
       return this.history.listen(update => {
@@ -31,7 +31,7 @@ export class View {
     this.history.location
   );
 
-  entries = LiveData.from<Location[]>(
+  entries$ = LiveData.from<Location[]>(
     new Observable(subscriber => {
       subscriber.next(this.history.entries);
       return this.history.listen(() => {
@@ -41,7 +41,7 @@ export class View {
     this.history.entries
   );
 
-  size = new LiveData(100);
+  size$ = new LiveData(100);
 
   header = createIsland();
   body = createIsland();
@@ -59,6 +59,6 @@ export class View {
   }
 
   setSize(size?: number) {
-    this.size.next(size ?? 100);
+    this.size$.next(size ?? 100);
   }
 }

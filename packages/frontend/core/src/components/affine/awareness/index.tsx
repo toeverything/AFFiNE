@@ -9,7 +9,7 @@ import { CurrentWorkspaceService } from '../../../modules/workspace/current-work
 const SyncAwarenessInnerLoggedIn = () => {
   const { user } = useSession();
   const currentWorkspace = useLiveData(
-    useService(CurrentWorkspaceService).currentWorkspace
+    useService(CurrentWorkspaceService).currentWorkspace$
   );
 
   useEffect(() => {

@@ -10,7 +10,7 @@ export const workspaceEvents = {
   onMetaChange: (
     fn: (meta: { workspaceId: string; meta: WorkspaceMeta }) => void
   ) => {
-    const sub = workspaceSubjects.meta.subscribe(fn);
+    const sub = workspaceSubjects.meta$.subscribe(fn);
     return () => {
       sub.unsubscribe();
     };

@@ -13,7 +13,7 @@ export default {
 } satisfies Meta<WorkspaceListProps>;
 
 export const Default = () => {
-  const list = useLiveData(useService(WorkspaceManager).list.workspaceList);
+  const list = useLiveData(useService(WorkspaceManager).list.workspaceList$);
   return (
     <WorkspaceList
       currentWorkspaceId={null}

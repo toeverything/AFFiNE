@@ -105,7 +105,7 @@ export const AFFiNEWorkspaceList = ({
   onEventEnd?: () => void;
 }) => {
   const workspaces = useLiveData(
-    useService(WorkspaceManager).list.workspaceList
+    useService(WorkspaceManager).list.workspaceList$
   );
 
   const setOpenCreateWorkspaceModal = useSetAtom(openCreateWorkspaceModalAtom);
@@ -113,7 +113,7 @@ export const AFFiNEWorkspaceList = ({
   const { jumpToSubPath } = useNavigateHelper();
 
   const currentWorkspace = useLiveData(
-    useService(CurrentWorkspaceService).currentWorkspace
+    useService(CurrentWorkspaceService).currentWorkspace$
   );
 
   const setOpenSettingModalAtom = useSetAtom(openSettingModalAtom);

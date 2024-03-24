@@ -57,8 +57,8 @@ const PageItem = ({
   className,
   ...attrs
 }: PageItemProps) => {
-  const title = useLiveData(pageRecord.title);
-  const mode = useLiveData(pageRecord.mode);
+  const title = useLiveData(pageRecord.title$);
+  const mode = useLiveData(pageRecord.mode$);
   const workspace = useService(Workspace);
   const { isJournal } = useJournalInfoHelper(
     workspace.docCollection,
@@ -171,7 +171,7 @@ const sortPagesByDate = (
   return [...pages].sort((a, b) => {
     return (
       (order === 'asc' ? 1 : -1) *
-      dayjs(b.meta.value[field]).diff(dayjs(a.meta.value[field]))
+      dayjs(b.meta$.value[field]).diff(dayjs(a.meta$.value[field]))
     );
   });
 };
@@ -193,7 +193,7 @@ const JournalDailyCountBlock = ({ date }: JournalBlockProps) => {
   const t = useAFFiNEI18N();
   const [activeItem, setActiveItem] = useState<NavItemName>('createdToday');
   const pageRecordList = useService(PageRecordList);
-  const pageRecords = useLiveData(pageRecordList.records);
+  const pageRecords = useLiveData(pageRecordList.records$);
 
   const navigateHelper = useNavigateHelper();
 
@@ -201,10 +201,10 @@ const JournalDailyCountBlock = ({ date }: JournalBlockProps) => {
     (field: 'createDate' | 'updatedDate') => {
       return sortPagesByDate(
         pageRecords.filter(pageRecord => {
-          if (pageRecord.meta.value.trash) return false;
+          if (pageRecord.meta$.value.trash) return false;
           return (
-            pageRecord.meta.value[field] &&
-            dayjs(pageRecord.meta.value[field]).isSame(date, 'day')
+            pageRecord.meta$.value[field] &&
+            dayjs(pageRecord.meta$.value[field]).isSame(date, 'day')
           );
         }),
         field
@@ -321,7 +321,7 @@ const ConflictList = ({
       setTrashModal({
         open: true,
         pageIds: [pageRecord.id],
-        pageTitles: [pageRecord.meta.value.title],
+        pageTitles: [pageRecord.meta$.value.title],
       });
     },
     [setTrashModal]
@@ -363,7 +363,7 @@ const JournalConflictBlock = ({ date }: JournalBlockProps) => {
   const pageRecordList = useService(PageRecordList);
   const journalHelper = useJournalHelper(workspace.docCollection);
   const docs = journalHelper.getJournalsByDate(date.format('YYYY-MM-DD'));
-  const pageRecords = useLiveData(pageRecordList.records).filter(v => {
+  const pageRecords = useLiveData(pageRecordList.records$).filter(v => {
     return docs.some(doc => doc.id === v.id);
   });
 

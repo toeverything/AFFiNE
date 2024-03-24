@@ -21,7 +21,7 @@ export const WorkbenchRoot = () => {
   // for debugging
   (window as any).workbench = workbench;
 
-  const views = useLiveData(workbench.views);
+  const views = useLiveData(workbench.views$);
 
   const location = useLocation();
   const basename = location.pathname.match(/\/workspace\/[^/]+/g)?.[0] ?? '/';
@@ -40,8 +40,8 @@ export const WorkbenchRoot = () => {
   );
 
   useEffect(() => {
-    workbench.basename.next(basename);
-  }, [basename, workbench.basename]);
+    workbench.basename$.next(basename);
+  }, [basename, workbench.basename$]);
 
   return (
     <SplitView

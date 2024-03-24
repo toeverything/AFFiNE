@@ -67,7 +67,7 @@ export const downloadUpdate = async () => {
     return;
   }
   downloading = true;
-  updaterSubjects.downloadProgress.next(0);
+  updaterSubjects.downloadProgress$.next(0);
   autoUpdater.downloadUpdate().catch(e => {
     downloading = false;
     logger.error('Failed to download update', e);
@@ -115,7 +115,7 @@ export const registerUpdater = async () => {
         console.error(err);
       });
     }
-    updaterSubjects.updateAvailable.next({
+    updaterSubjects.updateAvailable$.next({
       version: info.version,
       allowAutoUpdate,
     });
@@ -125,11 +125,11 @@ export const registerUpdater = async () => {
   });
   autoUpdater.on('download-progress', e => {
     logger.info(`Download progress: ${e.percent}`);
-    updaterSubjects.downloadProgress.next(e.percent);
+    updaterSubjects.downloadProgress$.next(e.percent);
   });
   autoUpdater.on('update-downloaded', e => {
     downloading = false;
-    updaterSubjects.updateReady.next({
+    updaterSubjects.updateReady$.next({
       version: e.version,
       allowAutoUpdate,
     });

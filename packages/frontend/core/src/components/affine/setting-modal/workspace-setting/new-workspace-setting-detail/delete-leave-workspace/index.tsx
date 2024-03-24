@@ -34,7 +34,7 @@ export const DeleteLeaveWorkspace = ({
   const setSettingModal = useSetAtom(openSettingModalAtom);
 
   const workspaceManager = useService(WorkspaceManager);
-  const workspaceList = useLiveData(workspaceManager.list.workspaceList);
+  const workspaceList = useLiveData(workspaceManager.list.workspaceList$);
   const currentWorkspace = useService(Workspace);
   const pushNotification = useSetAtom(pushNotificationAtom);
 

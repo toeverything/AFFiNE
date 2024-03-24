@@ -113,8 +113,8 @@ export async function buildShowcaseWorkspace(
   // perhaps put them into middleware?
   {
     // the "Write, Draw, Plan all at Once." page should be set to edgeless mode
-    const edgelessPage1 = pageRecordList.records.value.find(
-      p => p.title.value === 'Write, Draw, Plan all at Once.'
+    const edgelessPage1 = pageRecordList.records$.value.find(
+      p => p.title$.value === 'Write, Draw, Plan all at Once.'
     );
 
     if (edgelessPage1) {
@@ -122,8 +122,8 @@ export async function buildShowcaseWorkspace(
     }
 
     // should jump to "Write, Draw, Plan all at Once." by default
-    const defaultPage = pageRecordList.records.value.find(p =>
-      p.title.value.startsWith('Write, Draw, Plan all at Once.')
+    const defaultPage = pageRecordList.records$.value.find(p =>
+      p.title$.value.startsWith('Write, Draw, Plan all at Once.')
     );
 
     if (defaultPage) {

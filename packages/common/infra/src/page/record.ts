@@ -13,7 +13,7 @@ export class PageRecord {
     private readonly localState: WorkspaceLocalState
   ) {}
 
-  meta = LiveData.from<DocMeta>(
+  meta$ = LiveData.from<DocMeta>(
     new Observable(subscriber => {
       const emit = () => {
         const meta = this.workspace.docCollection.meta.docMetas.find(
@@ -45,7 +45,7 @@ export class PageRecord {
     this.workspace.docCollection.setDocMeta(this.id, meta);
   }
 
-  mode: LiveData<PageMode> = LiveData.from(
+  mode$: LiveData<PageMode> = LiveData.from(
     this.localState.watch<PageMode>(`page:${this.id}:mode`),
     'page'
   ).map(mode => (mode === 'edgeless' ? 'edgeless' : 'page'));
@@ -55,9 +55,9 @@ export class PageRecord {
   }
 
   toggleMode() {
-    this.setMode(this.mode.value === 'edgeless' ? 'page' : 'edgeless');
-    return this.mode.value;
+    this.setMode(this.mode$.value === 'edgeless' ? 'page' : 'edgeless');
+    return this.mode$.value;
   }
 
-  title = this.meta.map(meta => meta.title);
+  title$ = this.meta$.map(meta => meta.title);
 }

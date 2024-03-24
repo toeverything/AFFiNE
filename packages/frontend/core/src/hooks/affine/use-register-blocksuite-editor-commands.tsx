@@ -21,7 +21,7 @@ import { useTrashModalHelper } from './use-trash-modal-helper';
 export function useRegisterBlocksuiteEditorCommands() {
   const page = useService(Doc);
   const pageId = page.id;
-  const mode = useLiveData(page.mode);
+  const mode = useLiveData(page.mode$);
   const t = useAFFiNEI18N();
   const workspace = useService(Workspace);
   const docCollection = workspace.docCollection;

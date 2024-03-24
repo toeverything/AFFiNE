@@ -90,7 +90,7 @@ test('on applyUpdate (from renderer), will trigger update', async () => {
 
   const db = await openWorkspaceDatabase(workspaceId);
   db.update$.subscribe(onUpdate);
-  const sub = dbSubjects.externalUpdate.subscribe(onExternalUpdate);
+  const sub = dbSubjects.externalUpdate$.subscribe(onExternalUpdate);
   db.applyUpdate(getTestUpdates(), 'renderer');
   expect(onUpdate).toHaveBeenCalled();
   sub.unsubscribe();
@@ -134,7 +134,7 @@ test('on applyUpdate (from external), will trigger update & send external update
 
   const db = await openWorkspaceDatabase(workspaceId);
   db.update$.subscribe(onUpdate);
-  const sub = dbSubjects.externalUpdate.subscribe(onExternalUpdate);
+  const sub = dbSubjects.externalUpdate$.subscribe(onExternalUpdate);
   db.applyUpdate(getTestUpdates(), 'external');
   expect(onUpdate).toHaveBeenCalled();
   expect(onExternalUpdate).toHaveBeenCalled();

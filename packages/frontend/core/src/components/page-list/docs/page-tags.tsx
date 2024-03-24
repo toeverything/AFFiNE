@@ -57,8 +57,8 @@ export const TagItem = ({
   style,
   maxWidth,
 }: TagItemProps) => {
-  const value = useLiveData(tag?.value);
-  const color = useLiveData(tag?.color);
+  const value = useLiveData(tag?.value$);
+  const color = useLiveData(tag?.color$);
   const handleRemove: MouseEventHandler = useCallback(
     e => {
       e.stopPropagation();
@@ -112,13 +112,13 @@ const TagItemNormal = ({
     return maxItems ? tags.slice(0, maxItems) : tags;
   }, [maxItems, tags]);
 
-  const tagsOrderedLiveData = useMemo(() => {
-    return LiveData.computed(get =>
-      [...nTags].sort((a, b) => get(a.value).length - get(b.value).length)
-    );
-  }, [nTags]);
-
-  const tagsOrdered = useLiveData(tagsOrderedLiveData);
+  const tagsOrdered = useLiveData(
+    useMemo(() => {
+      return LiveData.computed(get =>
+        [...nTags].sort((a, b) => get(a.value$).length - get(b.value$).length)
+      );
+    }, [nTags])
+  );
 
   return useMemo(
     () =>

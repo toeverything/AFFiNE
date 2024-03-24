@@ -1,7 +1,7 @@
 import { Subject } from 'rxjs';
 
 export const dbSubjects = {
-  externalUpdate: new Subject<{
+  externalUpdate$: new Subject<{
     workspaceId: string;
     update: Uint8Array;
     docId?: string;

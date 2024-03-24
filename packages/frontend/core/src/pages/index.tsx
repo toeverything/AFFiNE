@@ -27,7 +27,7 @@ export const Component = () => {
   const [navigating, setNavigating] = useState(false);
   const [creating, setCreating] = useState(false);
 
-  const list = useLiveData(useService(WorkspaceListService).workspaceList);
+  const list = useLiveData(useService(WorkspaceListService).workspaceList$);
 
   const { openPage } = useNavigateHelper();
 

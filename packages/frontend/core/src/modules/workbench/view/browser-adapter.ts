@@ -29,7 +29,7 @@ export function useBindWorkbenchToBrowserRouter(
   const navigate = useNavigate();
   const browserLocation = useLocation();
 
-  const view = useLiveData(workbench.activeView);
+  const view = useLiveData(workbench.activeView$);
 
   useEffect(() => {
     return view.history.listen(update => {

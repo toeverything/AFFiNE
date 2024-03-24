@@ -98,6 +98,7 @@ const config = {
     'i',
     'unused-imports',
     'unicorn',
+    'rxjs',
   ],
   rules: {
     'array-callback-return': 'error',
@@ -202,6 +203,21 @@ const config = {
     'sonarjs/no-collection-size-mischeck': 'error',
     'sonarjs/no-useless-catch': 'error',
     'sonarjs/no-identical-functions': 'error',
+    'rxjs/finnish': [
+      'error',
+      {
+        functions: false,
+        methods: false,
+        strict: true,
+        types: {
+          '^LiveData$': true,
+          // some yjs classes are Observables, but they don't need to be in Finnish notation
+          '^Doc$': false, // yjs Doc
+          '^Awareness$': false, // yjs Awareness
+          '^UndoManager$': false, // yjs UndoManager
+        },
+      },
+    ],
   },
   overrides: [
     {

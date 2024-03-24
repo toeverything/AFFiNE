@@ -36,8 +36,8 @@ export const Page = ({
 
   const pageId = page.id;
   const active = params.pageId === pageId;
-  const pageRecord = useLiveData(useService(PageRecordList).record(pageId));
-  const pageMode = useLiveData(pageRecord?.mode);
+  const pageRecord = useLiveData(useService(PageRecordList).record$(pageId));
+  const pageMode = useLiveData(pageRecord?.mode$);
   const dragItemId = getDragItemId('collectionPage', pageId);
 
   const icon = useMemo(() => {

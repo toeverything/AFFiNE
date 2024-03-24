@@ -17,11 +17,11 @@ export const DeleteTagConfirmModal = ({
 }) => {
   const t = useAFFiNEI18N();
   const tagService = useService(TagService);
-  const tags = useLiveData(tagService.tags);
+  const tags = useLiveData(tagService.tags$);
   const selectedTags = useMemo(() => {
     return tags.filter(tag => selectedTagIds.includes(tag.id));
   }, [selectedTagIds, tags]);
-  const tagName = useLiveData(selectedTags[0]?.value || '');
+  const tagName = useLiveData(selectedTags[0]?.value$ || '');
 
   const handleDelete = useCallback(() => {
     selectedTagIds.forEach(tagId => {

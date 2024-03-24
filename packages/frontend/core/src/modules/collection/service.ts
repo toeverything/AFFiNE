@@ -32,7 +32,7 @@ export class CollectionService {
     return this.setting.get(COLLECTIONS_TRASH_KEY) as YArray<DeletedCollection>;
   }
 
-  readonly collections = LiveData.from(
+  readonly collections$ = LiveData.from(
     new Observable<Collection[]>(subscriber => {
       subscriber.next(this.collectionsYArray?.toArray() ?? []);
       const fn = () => {
@@ -46,7 +46,7 @@ export class CollectionService {
     []
   );
 
-  readonly collectionsTrash = LiveData.from(
+  readonly collectionsTrash$ = LiveData.from(
     new Observable<DeletedCollection[]>(subscriber => {
       subscriber.next(this.collectionsTrashYArray?.toArray() ?? []);
       const fn = () => {
@@ -148,7 +148,7 @@ export class CollectionService {
   deletePagesFromCollections(ids: string[]) {
     const idSet = new Set(ids);
     this.doc.transact(() => {
-      this.collections.value.forEach(collection => {
+      this.collections$.value.forEach(collection => {
         this.deletePagesFromCollection(collection, idSet);
       });
     });

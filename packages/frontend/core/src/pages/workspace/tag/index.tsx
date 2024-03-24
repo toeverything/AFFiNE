@@ -8,7 +8,7 @@ import {
   ViewBodyIsland,
   ViewHeaderIsland,
 } from '@affine/core/modules/workbench';
-import { LiveData, useLiveData, useService } from '@toeverything/infra';
+import { useLiveData, useService } from '@toeverything/infra';
 import { Workspace } from '@toeverything/infra';
 import { useMemo } from 'react';
 import { useParams } from 'react-router-dom';
@@ -23,21 +23,9 @@ export const TagDetail = ({ tagId }: { tagId?: string }) => {
   const pageMetas = useBlockSuiteDocMeta(currentWorkspace.docCollection);
 
   const tagService = useService(TagService);
-  const currentTagLiveData = tagService.tagByTagId(tagId);
-  const currentTag = useLiveData(currentTagLiveData);
+  const currentTag = useLiveData(tagService.tagByTagId$(tagId));
 
-  const pageIdsLiveData = useMemo(
-    () =>
-      LiveData.computed(get => {
-        const liveTag = get(currentTagLiveData);
-        if (liveTag?.pageIds) {
-          return get(liveTag.pageIds);
-        }
-        return [];
-      }),
-    [currentTagLiveData]
-  );
-  const pageIds = useLiveData(pageIdsLiveData);
+  const pageIds = useLiveData(currentTag?.pageIds$);
 
   const filteredPageMetas = useMemo(() => {
     const pageIdsSet = new Set(pageIds);

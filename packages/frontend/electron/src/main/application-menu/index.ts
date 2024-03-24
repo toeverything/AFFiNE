@@ -12,14 +12,14 @@ export const applicationMenuEvents = {
    * File -> New Doc
    */
   onNewPageAction: (fn: () => void) => {
-    const sub = applicationMenuSubjects.newPageAction.subscribe(fn);
+    const sub = applicationMenuSubjects.newPageAction$.subscribe(fn);
     return () => {
       sub.unsubscribe();
     };
   },
   openAboutPageInSettingModal: (fn: () => void) => {
     const sub =
-      applicationMenuSubjects.openAboutPageInSettingModal.subscribe(fn);
+      applicationMenuSubjects.openAboutPageInSettingModal$.subscribe(fn);
     return () => {
       sub.unsubscribe();
     };

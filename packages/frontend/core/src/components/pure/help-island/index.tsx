@@ -30,7 +30,7 @@ const showList = environment.isDesktop ? DESKTOP_SHOW_LIST : DEFAULT_SHOW_LIST;
 export const HelpIsland = () => {
   const page = useServiceOptional(Doc);
   const pageId = page?.id;
-  const mode = useLiveData(page?.mode);
+  const mode = useLiveData(page?.mode$);
   const setOpenSettingModalAtom = useSetAtom(openSettingModalAtom);
   const [spread, setShowSpread] = useState(false);
   const t = useAFFiNEI18N();

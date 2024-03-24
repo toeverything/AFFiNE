@@ -31,7 +31,7 @@ export const ProfilePanel = ({ isOwner, workspace }: ProfilePanelProps) => {
   const t = useAFFiNEI18N();
   const pushNotification = useSetAtom(pushNotificationAtom);
 
-  const workspaceIsReady = useLiveData(workspace?.engine.rootDocState)?.ready;
+  const workspaceIsReady = useLiveData(workspace?.engine.rootDocState$)?.ready;
 
   const [avatarBlob, setAvatarBlob] = useState<string | null>(null);
   const [name, setName] = useState('');

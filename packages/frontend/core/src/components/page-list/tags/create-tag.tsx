@@ -33,8 +33,8 @@ export const CreateOrEditTag = ({
   tagMeta?: TagMeta;
 }) => {
   const tagService = useService(TagService);
-  const tagOptions = useLiveData(tagService.tagMetas);
-  const tag = useLiveData(tagService.tagByTagId(tagMeta?.id));
+  const tagOptions = useLiveData(tagService.tagMetas$);
+  const tag = useLiveData(tagService.tagByTagId$(tagMeta?.id));
   const t = useAFFiNEI18N();
   const [menuOpen, setMenuOpen] = useState(false);
 

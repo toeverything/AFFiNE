@@ -10,11 +10,11 @@ import { LiveData, useLiveData } from '..';
 
 describe('livedata', () => {
   test('react', () => {
-    const livedata = new LiveData(0);
+    const livedata$ = new LiveData(0);
     const Component = () => {
       const renderCount = useRef(0);
       renderCount.current++;
-      const value = useLiveData(livedata);
+      const value = useLiveData(livedata$);
       return (
         <main>
           {renderCount.current}:{value}
@@ -23,7 +23,7 @@ describe('livedata', () => {
     };
     const { rerender } = render(<Component />);
     expect(screen.getByRole('main').innerText).toBe('1:0');
-    livedata.next(1);
+    livedata$.next(1);
     rerender(<Component />);
     expect(screen.getByRole('main').innerText).toBe('3:1');
   });
@@ -31,7 +31,7 @@ describe('livedata', () => {
   test('lifecycle', async () => {
     let observableSubscribed = false;
     let observableClosed = false;
-    const observable = new Observable<number>(subscriber => {
+    const observable$ = new Observable<number>(subscriber => {
       observableSubscribed = true;
       subscriber.next(1);
       console.log(1);
@@ -40,9 +40,9 @@ describe('livedata', () => {
       };
     });
 
-    const livedata = LiveData.from(observable, 0);
+    const livedata$ = LiveData.from(observable$, 0);
     const Component1 = () => {
-      const value = useLiveData(livedata);
+      const value = useLiveData(livedata$);
       return <main>{value}</main>;
     };
 

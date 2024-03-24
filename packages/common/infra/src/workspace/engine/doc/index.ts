@@ -32,10 +32,10 @@ export class DocEngine {
 
   storage: DocStorageInner;
 
-  engineState = LiveData.computed(get => {
-    const localState = get(this.localPart.engineState);
+  engineState$ = LiveData.computed(get => {
+    const localState = get(this.localPart.engineState$);
     if (this.remotePart) {
-      const remoteState = get(this.remotePart?.engineState);
+      const remoteState = get(this.remotePart?.engineState$);
       return {
         total: remoteState.total,
         syncing: remoteState.syncing,
@@ -53,12 +53,12 @@ export class DocEngine {
     };
   });
 
-  docState(docId: string) {
-    const localState = this.localPart.docState(docId);
-    const remoteState = this.remotePart?.docState(docId);
+  docState$(docId: string) {
+    const localState$ = this.localPart.docState$(docId);
+    const remoteState$ = this.remotePart?.docState$(docId);
     return LiveData.computed(get => {
-      const local = get(localState);
-      const remote = remoteState ? get(remoteState) : null;
+      const local = get(localState$);
+      const remote = remoteState$ ? get(remoteState$) : null;
       return {
         ready: local.ready,
         saving: local.syncing,
@@ -134,7 +134,7 @@ export class DocEngine {
    */
   waitForSaved() {
     return new Promise<void>(resolve => {
-      this.engineState
+      this.engineState$
         .pipe(map(state => state.saving === 0))
         .subscribe(saved => {
           if (saved) {
@@ -150,7 +150,7 @@ export class DocEngine {
    */
   waitForSynced() {
     return new Promise<void>(resolve => {
-      this.engineState
+      this.engineState$
         .pipe(map(state => state.syncing === 0 && state.saving === 0))
         .subscribe(synced => {
           if (synced) {
@@ -175,7 +175,7 @@ export class DocEngine {
    */
   waitForReady(docId: string) {
     return new Promise<void>(resolve => {
-      this.docState(docId)
+      this.docState$(docId)
         .pipe(map(state => state.ready))
         .subscribe(ready => {
           if (ready) {

@@ -19,7 +19,7 @@ import * as styles from './styles.css';
 
 export const TrashPageFooter = ({ pageId }: { pageId: string }) => {
   const workspace = useLiveData(
-    useService(CurrentWorkspaceService).currentWorkspace
+    useService(CurrentWorkspaceService).currentWorkspace$
   );
   assertExists(workspace);
   const docCollection = workspace.docCollection;

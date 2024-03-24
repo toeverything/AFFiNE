@@ -26,7 +26,7 @@ export function createApplicationMenu() {
                 label: `About ${app.getName()}`,
                 click: async () => {
                   await showMainWindow();
-                  applicationMenuSubjects.openAboutPageInSettingModal.next();
+                  applicationMenuSubjects.openAboutPageInSettingModal$.next();
                 },
               },
               { type: 'separator' },
@@ -52,7 +52,7 @@ export function createApplicationMenu() {
           click: async () => {
             await initAndShowMainWindow();
             // fixme: if the window is just created, the new page action will not be triggered
-            applicationMenuSubjects.newPageAction.next();
+            applicationMenuSubjects.newPageAction$.next();
           },
         },
         { type: 'separator' },

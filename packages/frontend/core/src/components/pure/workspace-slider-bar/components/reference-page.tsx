@@ -27,8 +27,8 @@ export const ReferencePage = ({
   const params = useParams();
   const active = params.pageId === pageId;
 
-  const pageRecord = useLiveData(useService(PageRecordList).record(pageId));
-  const pageMode = useLiveData(pageRecord?.mode);
+  const pageRecord = useLiveData(useService(PageRecordList).record$(pageId));
+  const pageMode = useLiveData(pageRecord?.mode$);
   const icon = useMemo(() => {
     return pageMode === 'edgeless' ? <EdgelessIcon /> : <PageIcon />;
   }, [pageMode]);

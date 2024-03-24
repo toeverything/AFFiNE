@@ -10,11 +10,11 @@ export const useViewPosition = () => {
   const view = useView();
 
   const [position, setPosition] = useState(() =>
-    calcPosition(view, workbench.views.value)
+    calcPosition(view, workbench.views$.value)
   );
 
   useEffect(() => {
-    const subscription = workbench.views.subscribe(views => {
+    const subscription = workbench.views$.subscribe(views => {
       setPosition(calcPosition(view, views));
     });
     return () => {

@@ -14,7 +14,7 @@ export const DumpInfo = (_props: DumpInfoProps) => {
   const location = useLocation();
   const workspaceList = useService(WorkspaceListService);
   const currentWorkspace = useLiveData(
-    useService(CurrentWorkspaceService).currentWorkspace
+    useService(CurrentWorkspaceService).currentWorkspace$
   );
   const path = location.pathname;
   const query = useParams();

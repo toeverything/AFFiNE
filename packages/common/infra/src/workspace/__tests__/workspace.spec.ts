@@ -14,13 +14,13 @@ describe('Workspace System', () => {
     const provider = services.provider();
     const workspaceManager = provider.get(WorkspaceManager);
     const workspaceListService = provider.get(WorkspaceListService);
-    expect(workspaceListService.workspaceList.value.length).toBe(0);
+    expect(workspaceListService.workspaceList$.value.length).toBe(0);
 
     const { workspace } = workspaceManager.open(
       await workspaceManager.createWorkspace(WorkspaceFlavour.LOCAL)
     );
 
-    expect(workspaceListService.workspaceList.value.length).toBe(1);
+    expect(workspaceListService.workspaceList$.value.length).toBe(1);
 
     const page = workspace.docCollection.createDoc({
       id: 'page0',

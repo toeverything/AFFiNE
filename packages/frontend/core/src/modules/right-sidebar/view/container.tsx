@@ -19,8 +19,8 @@ export const RightSidebarContainer = () => {
   const [resizing, setResizing] = useState(false);
   const rightSidebar = useService(RightSidebar);
 
-  const frontView = useLiveData(rightSidebar.front);
-  const open = useLiveData(rightSidebar.isOpen) && frontView !== undefined;
+  const frontView = useLiveData(rightSidebar.front$);
+  const open = useLiveData(rightSidebar.isOpen$) && frontView !== undefined;
   const [floating, setFloating] = useState(false);
   const appSidebarOpened = useAtomValue(appSidebarOpenAtom);
 

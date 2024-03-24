@@ -16,7 +16,7 @@ export class PageManager {
   ) {}
 
   open(pageId: string) {
-    const pageRecord = this.pageRecordList.record(pageId).value;
+    const pageRecord = this.pageRecordList.record$(pageId).value;
     if (!pageRecord) {
       throw new Error('Page record not found');
     }

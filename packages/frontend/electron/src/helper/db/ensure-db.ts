@@ -38,9 +38,9 @@ export const db$Map = new Map<string, Observable<WorkspaceSQLiteDB>>();
 const beforeQuit$ = defer(() => fromEvent(process, 'beforeExit'));
 
 // return a stream that emit a single event when the subject completes
-function completed<T>(subject: Subject<T>) {
+function completed<T>(subject$: Subject<T>) {
   return new Observable(subscriber => {
-    const sub = subject.subscribe({
+    const sub = subject$.subscribe({
       complete: () => {
         subscriber.next();
         subscriber.complete();
@@ -50,7 +50,7 @@ function completed<T>(subject: Subject<T>) {
   });
 }
 
-function getWorkspaceDB$(id: string) {
+function getWorkspaceDB(id: string) {
   if (!db$Map.has(id)) {
     db$Map.set(
       id,
@@ -103,7 +103,7 @@ function getWorkspaceDB$(id: string) {
 function startPollingSecondaryDB(db: WorkspaceSQLiteDB) {
   return merge(
     getWorkspaceMeta(db.workspaceId),
-    workspaceSubjects.meta.pipe(
+    workspaceSubjects.meta$.pipe(
       map(({ meta }) => meta),
       filter(meta => meta.id === db.workspaceId)
     )
@@ -141,5 +141,5 @@ function startPollingSecondaryDB(db: WorkspaceSQLiteDB) {
 }
 
 export function ensureSQLiteDB(id: string) {
-  return lastValueFrom(getWorkspaceDB$(id).pipe(take(1)));
+  return lastValueFrom(getWorkspaceDB(id).pipe(take(1)));
 }

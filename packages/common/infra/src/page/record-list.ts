@@ -11,7 +11,7 @@ export class PageRecordList {
     private readonly localState: WorkspaceLocalState
   ) {}
 
-  public readonly records = LiveData.from<PageRecord[]>(
+  public readonly records$ = LiveData.from<PageRecord[]>(
     new Observable<string[]>(subscriber => {
       const emit = () => {
         subscriber.next(
@@ -35,11 +35,11 @@ export class PageRecordList {
     []
   );
 
-  public readonly isReady = this.workspace.engine.rootDocState.map(
+  public readonly isReady$ = this.workspace.engine.rootDocState$.map(
     state => !state.syncing
   );
 
-  public record(id: string) {
-    return this.records.map(record => record.find(record => record.id === id));
+  public record$(id: string) {
+    return this.records$.map(record => record.find(record => record.id === id));
   }
 }

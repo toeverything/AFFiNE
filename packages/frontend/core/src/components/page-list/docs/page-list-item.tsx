@@ -69,8 +69,7 @@ const PageSelectionCell = ({
 
 export const PageTagsCell = ({ pageId }: Pick<PageListItemProps, 'pageId'>) => {
   const tagsService = useService(TagService);
-  const tagsLiveData = tagsService.tagsByPageId(pageId);
-  const tags = useLiveData(tagsLiveData);
+  const tags = useLiveData(tagsService.tagsByPageId$(pageId));
 
   return (
     <div data-testid="page-list-item-tags" className={styles.tagsCell}>

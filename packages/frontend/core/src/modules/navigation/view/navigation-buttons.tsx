@@ -33,8 +33,8 @@ export const NavigationButtons = () => {
 
   const navigator = useService(Navigator);
 
-  const backable = useLiveData(navigator.backable);
-  const forwardable = useLiveData(navigator.forwardable);
+  const backable = useLiveData(navigator.backable$);
+  const forwardable = useLiveData(navigator.forwardable$);
 
   const handleBack = useCallback(() => {
     navigator.back();

@@ -49,7 +49,7 @@ const PageDetailEditorMain = memo(function PageDetailEditorMain({
   isPublic,
   publishMode,
 }: PageDetailEditorProps & { page: BlockSuiteDoc }) {
-  const currentMode = useLiveData(useService(Doc).mode);
+  const currentMode = useLiveData(useService(Doc).mode$);
   const mode = useMemo(() => {
     const shareMode = publishMode || currentMode;
 

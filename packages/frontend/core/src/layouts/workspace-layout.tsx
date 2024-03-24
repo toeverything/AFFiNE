@@ -56,14 +56,14 @@ export const QuickSearch = () => {
   );
 
   const workbench = useService(Workbench);
-  const currentPath = useLiveData(workbench.location.map(l => l.pathname));
+  const currentPath = useLiveData(workbench.location$.map(l => l.pathname));
   const pageRecordList = useService(PageRecordList);
   const currentPathId = matchPath('/:pageId', currentPath)?.params.pageId;
   // TODO: getting pageid from route is fragile, get current page from context
   const currentPage = useLiveData(
-    currentPathId ? pageRecordList.record(currentPathId) : null
+    currentPathId ? pageRecordList.record$(currentPathId) : null
   );
-  const pageMeta = useLiveData(currentPage?.meta);
+  const pageMeta = useLiveData(currentPage?.meta$);
 
   return (
     <CMDKQuickSearchModal

@@ -275,11 +275,11 @@ function tagIdToTagOption(
 
 const PageTitle = ({ id }: { id: string }) => {
   const page = useLiveData(
-    useService(PageRecordList).records.map(record => {
+    useService(PageRecordList).records$.map(record => {
       return record.find(p => p.id === id);
     })
   );
-  const title = useLiveData(page?.title);
+  const title = useLiveData(page?.title$);
   const t = useAFFiNEI18N();
   return title || t['Untitled']();
 };

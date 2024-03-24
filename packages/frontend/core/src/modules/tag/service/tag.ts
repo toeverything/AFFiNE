@@ -10,7 +10,7 @@ export class TagService {
     private readonly pageRecordList: PageRecordList
   ) {}
 
-  readonly tags = this.properties.tagOptions$.map(tags =>
+  readonly tags$ = this.properties.tagOptions$.map(tags =>
     tags.map(tag => new Tag(tag.id, this.properties, this.pageRecordList))
   );
 
@@ -34,33 +34,33 @@ export class TagService {
     this.properties.removeTagOption(tagId);
   }
 
-  tagsByPageId(pageId: string) {
+  tagsByPageId$(pageId: string) {
     return LiveData.computed(get => {
-      const pageRecord = get(this.pageRecordList.record(pageId));
+      const pageRecord = get(this.pageRecordList.record$(pageId));
       if (!pageRecord) return [];
-      const tagIds = get(pageRecord.meta).tags;
+      const tagIds = get(pageRecord.meta$).tags;
 
-      return get(this.tags).filter(tag => tagIds.includes(tag.id));
+      return get(this.tags$).filter(tag => tagIds.includes(tag.id));
     });
   }
 
-  tagIdsByPageId(pageId: string) {
-    return this.tagsByPageId(pageId).map(tags => tags.map(tag => tag.id));
+  tagIdsByPageId$(pageId: string) {
+    return this.tagsByPageId$(pageId).map(tags => tags.map(tag => tag.id));
   }
 
-  tagByTagId(tagId?: string) {
-    return this.tags.map(tags => tags.find(tag => tag.id === tagId));
+  tagByTagId$(tagId?: string) {
+    return this.tags$.map(tags => tags.find(tag => tag.id === tagId));
   }
 
-  tagMetas = LiveData.computed(get => {
-    return get(this.tags).map(tag => {
+  tagMetas$ = LiveData.computed(get => {
+    return get(this.tags$).map(tag => {
       return {
         id: tag.id,
-        title: get(tag.value),
-        color: get(tag.color),
-        pageCount: get(tag.pageIds).length,
-        createDate: get(tag.createDate),
-        updatedDate: get(tag.updateDate),
+        title: get(tag.value$),
+        color: get(tag.color$),
+        pageCount: get(tag.pageIds$).length,
+        createDate: get(tag.createDate$),
+        updatedDate: get(tag.updateDate$),
       };
     });
   });
@@ -71,15 +71,17 @@ export class TagService {
     return trimmedValue.includes(trimmedQuery);
   }
 
-  filterTagsByName(name: string) {
+  filterTagsByName$(name: string) {
     return LiveData.computed(get => {
-      return get(this.tags).filter(tag => this.filterFn(get(tag.value), name));
+      return get(this.tags$).filter(tag =>
+        this.filterFn(get(tag.value$), name)
+      );
     });
   }
 
-  tagByTagValue(value: string) {
+  tagByTagValue$(value: string) {
     return LiveData.computed(get => {
-      return get(this.tags).find(tag => this.filterFn(get(tag.value), value));
+      return get(this.tags$).find(tag => this.filterFn(get(tag.value$), value));
     });
   }
 }

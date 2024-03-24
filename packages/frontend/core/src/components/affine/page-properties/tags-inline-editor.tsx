@@ -42,8 +42,8 @@ const InlineTagsList = ({
   children,
 }: PropsWithChildren<InlineTagsListProps>) => {
   const tagService = useService(TagService);
-  const tags = useLiveData(tagService.tags);
-  const tagIds = useLiveData(tagService.tagIdsByPageId(pageId));
+  const tags = useLiveData(tagService.tags$);
+  const tagIds = useLiveData(tagService.tagIdsByPageId$(pageId));
 
   return (
     <div className={styles.inlineTagsContainer} data-testid="inline-tags-list">
@@ -83,9 +83,9 @@ export const EditTagMenu = ({
   const t = useAFFiNEI18N();
   const legacyProperties = useService(WorkspaceLegacyProperties);
   const tagService = useService(TagService);
-  const tag = useLiveData(tagService.tagByTagId(tagId));
-  const tagColor = useLiveData(tag?.color);
-  const tagValue = useLiveData(tag?.value);
+  const tag = useLiveData(tagService.tagByTagId$(tagId));
+  const tagColor = useLiveData(tag?.color$);
+  const tagValue = useLiveData(tag?.value$);
   const navigate = useNavigateHelper();
 
   const menuProps = useMemo(() => {
@@ -135,11 +135,11 @@ export const EditTagMenu = ({
     options.push('-');
 
     options.push(
-      tagColors.map(([name, color]) => {
+      tagColors.map(([name, color], i) => {
         return {
           text: name,
           icon: (
-            <div className={styles.tagColorIconWrapper}>
+            <div key={i} className={styles.tagColorIconWrapper}>
               <div
                 className={styles.tagColorIcon}
                 style={{
@@ -181,8 +181,8 @@ export const EditTagMenu = ({
 export const TagsEditor = ({ pageId, readonly }: TagsEditorProps) => {
   const t = useAFFiNEI18N();
   const tagService = useService(TagService);
-  const tags = useLiveData(tagService.tags);
-  const tagIds = useLiveData(tagService.tagIdsByPageId(pageId));
+  const tags = useLiveData(tagService.tags$);
+  const tagIds = useLiveData(tagService.tagIdsByPageId$(pageId));
   const [inputValue, setInputValue] = useState('');
   const [open, setOpen] = useState(false);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
@@ -203,15 +203,11 @@ export const TagsEditor = ({ pageId, readonly }: TagsEditorProps) => {
     [setOpen, setSelectedTagIds]
   );
 
-  const exactMatch = useLiveData(tagService.tagByTagValue(inputValue));
+  const exactMatch = useLiveData(tagService.tagByTagValue$(inputValue));
 
-  const filteredLiveData = useMemo(() => {
-    if (inputValue) {
-      return tagService.filterTagsByName(inputValue);
-    }
-    return tagService.tags;
-  }, [inputValue, tagService]);
-  const filteredTags = useLiveData(filteredLiveData);
+  const filteredTags = useLiveData(
+    inputValue ? tagService.filterTagsByName$(inputValue) : tagService.tags$
+  );
 
   const onInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -295,7 +291,7 @@ export const TagsEditor = ({ pageId, readonly }: TagsEditorProps) => {
                   className={styles.tagSelectorItem}
                   data-testid="tag-selector-item"
                   data-tag-id={tag.id}
-                  data-tag-value={tag.value}
+                  data-tag-value={tag.value$}
                   onClick={() => {
                     onAddTag(tag.id);
                   }}
@@ -351,7 +347,7 @@ export const TagsInlineEditor = ({
   className,
 }: TagsInlineEditorProps) => {
   const tagService = useService(TagService);
-  const tagIds = useLiveData(tagService.tagIdsByPageId(pageId));
+  const tagIds = useLiveData(tagService.tagIdsByPageId$(pageId));
   const empty = !tagIds || tagIds.length === 0;
   return (
     <Menu

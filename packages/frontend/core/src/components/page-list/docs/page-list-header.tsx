@@ -94,8 +94,8 @@ export const TagPageListHeader = ({
   tag: Tag;
   workspaceId: string;
 }) => {
-  const tagColor = useLiveData(tag.color);
-  const tagTitle = useLiveData(tag.value);
+  const tagColor = useLiveData(tag.color$);
+  const tagTitle = useLiveData(tag.value$);
 
   const t = useAFFiNEI18N();
   const { jumpToTags, jumpToCollection } = useNavigateHelper();
@@ -183,13 +183,9 @@ export const SwitchTag = ({ onClick }: SwitchTagProps) => {
   const t = useAFFiNEI18N();
   const [inputValue, setInputValue] = useState('');
   const tagService = useService(TagService);
-  const filteredLiveData = useMemo(() => {
-    if (inputValue) {
-      return tagService.filterTagsByName(inputValue);
-    }
-    return tagService.tags;
-  }, [inputValue, tagService]);
-  const filteredTags = useLiveData(filteredLiveData);
+  const filteredTags = useLiveData(
+    inputValue ? tagService.filterTagsByName$(inputValue) : tagService.tags$
+  );
 
   const onInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -238,8 +234,8 @@ export const SwitchTag = ({ onClick }: SwitchTagProps) => {
 };
 
 const TagLink = ({ tag, onClick }: { tag: Tag; onClick: () => void }) => {
-  const tagColor = useLiveData(tag.color);
-  const tagTitle = useLiveData(tag.value);
+  const tagColor = useLiveData(tag.color$);
+  const tagTitle = useLiveData(tag.value$);
   return (
     <Link
       key={tag.id}

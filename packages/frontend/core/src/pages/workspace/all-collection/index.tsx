@@ -26,7 +26,7 @@ export const AllCollection = () => {
   const [hideHeaderCreateNew, setHideHeaderCreateNew] = useState(true);
 
   const collectionService = useService(CollectionService);
-  const collections = useLiveData(collectionService.collections);
+  const collections = useLiveData(collectionService.collections$);
   const config = useAllPageListConfig();
 
   const collectionMetas = useMemo(() => {

@@ -86,18 +86,18 @@ export class WorkspaceListService {
     WorkspaceInformation
   >();
 
-  status = new LiveData<WorkspaceListStatus>({
+  status$ = new LiveData<WorkspaceListStatus>({
     loading: true,
     workspaceList: [],
   });
 
   setStatus(status: WorkspaceListStatus) {
-    this.status.next(status);
+    this.status$.next(status);
     // update cache
     writeWorkspaceListCache(this.cache, status.workspaceList);
   }
 
-  workspaceList = this.status.map(x => x.workspaceList);
+  workspaceList$ = this.status$.map(x => x.workspaceList);
 
   constructor(
     private readonly providers: WorkspaceListProvider[],
@@ -106,8 +106,8 @@ export class WorkspaceListService {
     // initialize workspace list from cache
     const cached = readWorkspaceListCache(cache);
     const workspaceList = cached;
-    this.status.next({
-      ...this.status.value,
+    this.status$.next({
+      ...this.status$.value,
       workspaceList,
     });
 
@@ -134,7 +134,7 @@ export class WorkspaceListService {
     }
     const metadata = await provider.create(initial);
     // update workspace list
-    this.setStatus(this.addWorkspace(this.status.value, metadata));
+    this.setStatus(this.addWorkspace(this.status$.value, metadata));
     return metadata;
   }
 
@@ -157,7 +157,7 @@ export class WorkspaceListService {
     await provider.delete(workspaceMetadata.id);
 
     // delete workspace from list
-    this.setStatus(this.deleteWorkspace(this.status.value, workspaceMetadata));
+    this.setStatus(this.deleteWorkspace(this.status$.value, workspaceMetadata));
   }
 
   /**
@@ -201,7 +201,7 @@ export class WorkspaceListService {
     added?: WorkspaceMetadata[];
     deleted?: WorkspaceMetadata[];
   }) {
-    let status = this.status.value;
+    let status = this.status$.value;
 
     for (const added of changed.added ?? []) {
       status = this.addWorkspace(status, added);
@@ -239,7 +239,7 @@ export class WorkspaceListService {
       })
       .finally(() => {
         this.setStatus({
-          ...this.status.value,
+          ...this.status$.value,
           loading: false,
         });
       });
@@ -250,7 +250,7 @@ export class WorkspaceListService {
       this.providers.map(async provider => {
         try {
           const list = await provider.getList();
-          const oldList = this.workspaceList.value.filter(
+          const oldList = this.workspaceList$.value.filter(
             w => w.flavour === provider.name
           );
           this.handleWorkspaceChange({

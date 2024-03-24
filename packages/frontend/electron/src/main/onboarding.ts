@@ -96,23 +96,23 @@ async function createOnboardingWindow(additionalArguments: string[]) {
   return browserWindow;
 }
 
-let onBoardingWindow$: Promise<BrowserWindow> | undefined;
+let onBoardingWindow: Promise<BrowserWindow> | undefined;
 
 export async function getOrCreateOnboardingWindow() {
   const additionalArguments = await getWindowAdditionalArguments();
   if (
-    !onBoardingWindow$ ||
-    (await onBoardingWindow$.then(w => w.isDestroyed()))
+    !onBoardingWindow ||
+    (await onBoardingWindow.then(w => w.isDestroyed()))
   ) {
-    onBoardingWindow$ = createOnboardingWindow(additionalArguments);
+    onBoardingWindow = createOnboardingWindow(additionalArguments);
   }
 
-  return onBoardingWindow$;
+  return onBoardingWindow;
 }
 
 export async function getOnboardingWindow() {
-  if (!onBoardingWindow$) return;
-  const window = await onBoardingWindow$;
+  if (!onBoardingWindow) return;
+  const window = await onBoardingWindow;
   if (window.isDestroyed()) return;
   return window;
 }

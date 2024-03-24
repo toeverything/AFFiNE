@@ -108,9 +108,9 @@ const DetailPageImpl = memo(function DetailPageImpl() {
 
   const isInTrash = pageMeta?.trash;
 
-  const mode = useLiveData(page.mode);
+  const mode = useLiveData(page.mode$);
   useRegisterBlocksuiteEditorCommands();
-  const title = useLiveData(page.title);
+  const title = useLiveData(page.title$);
   usePageDocumentTitle(title);
 
   const onLoad = useCallback(
@@ -156,13 +156,13 @@ const DetailPageImpl = memo(function DetailPageImpl() {
       const disposable = new DisposableGroup();
 
       pageService.getEditorMode = (pageId: string) =>
-        pageRecordList.record(pageId).value?.mode.value ?? 'page';
+        pageRecordList.record$(pageId).value?.mode$.value ?? 'page';
       pageService.getDocUpdatedAt = (pageId: string) => {
-        const linkedPage = pageRecordList.record(pageId).value;
+        const linkedPage = pageRecordList.record$(pageId).value;
         if (!linkedPage) return new Date();
 
-        const updatedDate = linkedPage.meta.value.updatedDate;
-        const createDate = linkedPage.meta.value.createDate;
+        const updatedDate = linkedPage.meta$.value.updatedDate;
+        const createDate = linkedPage.meta$.value.createDate;
         return updatedDate ? new Date(updatedDate) : new Date(createDate);
       };
 
@@ -278,9 +278,9 @@ export const DetailPage = ({ pageId }: { pageId: string }): ReactElement => {
   const currentWorkspace = useService(Workspace);
   const pageRecordList = useService(PageRecordList);
 
-  const pageListReady = useLiveData(pageRecordList.isReady);
+  const pageListReady = useLiveData(pageRecordList.isReady$);
 
-  const pageRecords = useLiveData(pageRecordList.records);
+  const pageRecords = useLiveData(pageRecordList.records$);
 
   const pageRecord = useMemo(
     () => pageRecords.find(page => page.id === pageId),
@@ -310,7 +310,7 @@ export const DetailPage = ({ pageId }: { pageId: string }): ReactElement => {
     };
   }, [currentWorkspace, pageId]);
 
-  const jumpOnce = useLiveData(pageRecord?.meta.map(meta => meta.jumpOnce));
+  const jumpOnce = useLiveData(pageRecord?.meta$.map(meta => meta.jumpOnce));
 
   useEffect(() => {
     if (jumpOnce) {

@@ -14,9 +14,9 @@ export class Doc {
     return this.record.id;
   }
 
-  readonly mete = this.record.meta;
-  readonly mode = this.record.mode;
-  readonly title = this.record.title;
+  readonly mete$ = this.record.meta$;
+  readonly mode$ = this.record.mode$;
+  readonly title$ = this.record.title$;
 
   setMode(mode: PageMode) {
     this.record.setMode(mode);

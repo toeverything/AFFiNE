@@ -48,8 +48,8 @@ export const RouteContainer = ({ route }: Props) => {
   const viewPosition = useViewPosition();
   const leftSidebarOpen = useAtomValue(appSidebarOpenAtom);
   const rightSidebar = useService(RightSidebar);
-  const rightSidebarOpen = useLiveData(rightSidebar.isOpen);
-  const rightSidebarHasViews = useLiveData(rightSidebar.hasViews);
+  const rightSidebarOpen = useLiveData(rightSidebar.isOpen$);
+  const rightSidebarHasViews = useLiveData(rightSidebar.hasViews$);
   const handleToggleRightSidebar = useCallback(() => {
     rightSidebar.toggle();
   }, [rightSidebar]);

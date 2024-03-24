@@ -66,7 +66,7 @@ export class WorkspaceSQLiteDB extends BaseSQLiteAdapter {
         if (origin === 'renderer') {
           await this.addUpdateToSQLite(insertRows);
         } else if (origin === 'external') {
-          dbSubjects.externalUpdate.next({
+          dbSubjects.externalUpdate$.next({
             workspaceId: this.workspaceId,
             update,
             docId,

@@ -121,7 +121,7 @@ const UserWithWorkspaceListInner = ({
   }, [onEventEnd, setOpenCreateWorkspaceModal]);
 
   const workspaceManager = useService(WorkspaceManager);
-  const workspaces = useLiveData(workspaceManager.list.workspaceList);
+  const workspaces = useLiveData(workspaceManager.list.workspaceList$);
 
   // revalidate workspace list when mounted
   useEffect(() => {

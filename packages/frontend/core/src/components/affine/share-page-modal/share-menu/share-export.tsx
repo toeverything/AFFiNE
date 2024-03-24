@@ -26,7 +26,7 @@ export const ShareExport = ({
     urlType: 'workspace',
   });
   const exportHandler = useExportPage(currentPage);
-  const currentMode = useLiveData(page.mode);
+  const currentMode = useLiveData(page.mode$);
 
   return (
     <>

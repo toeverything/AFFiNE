@@ -48,7 +48,7 @@ export const EditorModeSwitch = ({
   const trash = pageMeta?.trash ?? false;
   const page = useService(Doc);
 
-  const currentMode = useLiveData(page.mode);
+  const currentMode = useLiveData(page.mode$);
 
   useEffect(() => {
     if (trash || isPublic) {

@@ -195,7 +195,7 @@ export const WorkspaceList = ({
   activeSubTab: WorkspaceSubTab;
 }) => {
   const workspaces = useLiveData(
-    useService(WorkspaceManager).list.workspaceList
+    useService(WorkspaceManager).list.workspaceList$
   );
   return (
     <>

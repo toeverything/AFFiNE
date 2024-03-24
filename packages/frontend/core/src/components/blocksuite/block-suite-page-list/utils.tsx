@@ -19,7 +19,7 @@ export const usePageHelper = (docCollection: DocCollection) => {
 
   const isPreferredEdgeless = useCallback(
     (pageId: string) =>
-      pageRecordList.record(pageId).value?.mode.value === 'edgeless',
+      pageRecordList.record$(pageId).value?.mode$.value === 'edgeless',
     [pageRecordList]
   );
 
@@ -27,7 +27,7 @@ export const usePageHelper = (docCollection: DocCollection) => {
     (mode?: 'page' | 'edgeless') => {
       const page = createDoc();
       initEmptyPage(page);
-      pageRecordList.record(page.id).value?.setMode(mode || 'page');
+      pageRecordList.record$(page.id).value?.setMode(mode || 'page');
       openPage(docCollection.id, page.id);
       return page;
     },

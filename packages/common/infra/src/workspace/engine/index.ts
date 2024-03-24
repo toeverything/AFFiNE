@@ -52,7 +52,7 @@ export class WorkspaceEngine {
   }
 
   canGracefulStop() {
-    return this.doc.engineState.value.saving === 0;
+    return this.doc.engineState$.value.saving === 0;
   }
 
   async waitForGracefulStop(abort?: AbortSignal) {
@@ -67,9 +67,9 @@ export class WorkspaceEngine {
     this.blob.stop();
   }
 
-  docEngineState = this.doc.engineState;
+  docEngineState$ = this.doc.engineState$;
 
-  rootDocState = this.doc.docState(this.yDoc.guid);
+  rootDocState$ = this.doc.docState$(this.yDoc.guid);
 
   waitForSynced() {
     return this.doc.waitForSynced();

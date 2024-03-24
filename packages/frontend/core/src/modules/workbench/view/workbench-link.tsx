@@ -16,7 +16,7 @@ export const WorkbenchLink = ({
 >) => {
   const workbench = useService(Workbench);
   const { appSettings } = useAppSettingHelper();
-  const basename = useLiveData(workbench.basename);
+  const basename = useLiveData(workbench.basename$);
   const handleClick = useCallback(
     (event: React.MouseEvent<HTMLAnchorElement>) => {
       event.preventDefault();

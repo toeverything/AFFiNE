@@ -40,12 +40,12 @@ export class MemoryMemento implements Memento {
   private readonly data = new Map<string, LiveData<any>>();
 
   private getLiveData(key: string): LiveData<any> {
-    let data = this.data.get(key);
-    if (!data) {
-      data = new LiveData<any>(null);
-      this.data.set(key, data);
+    let data$ = this.data.get(key);
+    if (!data$) {
+      data$ = new LiveData<any>(null);
+      this.data.set(key, data$);
     }
-    return data;
+    return data$;
   }
 
   get<T>(key: string): T | null {

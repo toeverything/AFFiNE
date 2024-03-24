@@ -81,9 +81,9 @@ export class DocEngineRemotePart {
     retrying: false,
     errorMessage: null,
   };
-  private readonly statusUpdatedSubject = new Subject<string | true>();
+  private readonly statusUpdatedSubject$ = new Subject<string | true>();
 
-  engineState = LiveData.from<RemoteEngineState>(
+  engineState$ = LiveData.from<RemoteEngineState>(
     new Observable(subscribe => {
       const next = () => {
         if (!this.status.syncing) {
@@ -103,7 +103,7 @@ export class DocEngineRemotePart {
         });
       };
       next();
-      return this.statusUpdatedSubject.subscribe(() => {
+      return this.statusUpdatedSubject$.subscribe(() => {
         next();
       });
     }),
@@ -115,7 +115,7 @@ export class DocEngineRemotePart {
     }
   );
 
-  docState(docId: string) {
+  docState$(docId: string) {
     return LiveData.from<RemoteDocState>(
       new Observable(subscribe => {
         const next = () => {
@@ -126,7 +126,7 @@ export class DocEngineRemotePart {
           });
         };
         next();
-        return this.statusUpdatedSubject.subscribe(updatedId => {
+        return this.statusUpdatedSubject$.subscribe(updatedId => {
           if (updatedId === true || updatedId === docId) next();
         });
       }),
@@ -152,7 +152,7 @@ export class DocEngineRemotePart {
       }
 
       this.status.connectedDocs.add(docId);
-      this.statusUpdatedSubject.next(docId);
+      this.statusUpdatedSubject$.next(docId);
     },
     push: async (
       docId: string,
@@ -321,7 +321,7 @@ export class DocEngineRemotePart {
     addDoc: (docId: string) => {
       if (!this.status.docs.has(docId)) {
         this.status.docs.add(docId);
-        this.statusUpdatedSubject.next(docId);
+        this.statusUpdatedSubject$.next(docId);
         this.schedule({
           type: 'connect',
           docId,
@@ -359,7 +359,7 @@ export class DocEngineRemotePart {
         logger.error('Remote sync error, retry in 5s', err);
         this.status.errorMessage =
           err instanceof Error ? err.message : `${err}`;
-        this.statusUpdatedSubject.next(true);
+        this.statusUpdatedSubject$.next(true);
       } finally {
         this.status = {
           docs: this.status.docs,
@@ -371,7 +371,7 @@ export class DocEngineRemotePart {
           retrying: true,
           errorMessage: this.status.errorMessage,
         };
-        this.statusUpdatedSubject.next(true);
+        this.statusUpdatedSubject$.next(true);
       }
       await Promise.race([
         new Promise<void>(resolve => {
@@ -420,7 +420,7 @@ export class DocEngineRemotePart {
 
       logger.info('Remote sync started');
       this.status.syncing = true;
-      this.statusUpdatedSubject.next(true);
+      this.statusUpdatedSubject$.next(true);
 
       this.server.onInterrupted(reason => {
         abort.abort(reason);
@@ -471,7 +471,7 @@ export class DocEngineRemotePart {
           const jobs = this.status.jobMap.get(docId);
           if (!jobs || jobs.length === 0) {
             this.status.jobMap.delete(docId);
-            this.statusUpdatedSubject.next(docId);
+            this.statusUpdatedSubject$.next(docId);
             break;
           }
 
@@ -535,7 +535,7 @@ export class DocEngineRemotePart {
     const existingJobs = this.status.jobMap.get(job.docId) ?? [];
     existingJobs.push(job);
     this.status.jobMap.set(job.docId, existingJobs);
-    this.statusUpdatedSubject.next(job.docId);
+    this.statusUpdatedSubject$.next(job.docId);
   }
 
   setPriority(docId: string, priority: number) {

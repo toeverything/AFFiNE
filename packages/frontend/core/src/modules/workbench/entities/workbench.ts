@@ -13,32 +13,32 @@ interface WorkbenchOpenOptions {
 }
 
 export class Workbench {
-  readonly views = new LiveData([new View()]);
+  readonly views$ = new LiveData([new View()]);
 
-  activeViewIndex = new LiveData(0);
-  activeView = LiveData.from(
-    combineLatest([this.views, this.activeViewIndex]).pipe(
+  activeViewIndex$ = new LiveData(0);
+  activeView$ = LiveData.from(
+    combineLatest([this.views$, this.activeViewIndex$]).pipe(
       map(([views, index]) => views[index])
     ),
-    this.views.value[this.activeViewIndex.value]
+    this.views$.value[this.activeViewIndex$.value]
   );
 
-  basename = new LiveData('/');
+  basename$ = new LiveData('/');
 
-  location = LiveData.from(
-    this.activeView.pipe(switchMap(view => view.location)),
-    this.views.value[this.activeViewIndex.value].history.location
+  location$ = LiveData.from(
+    this.activeView$.pipe(switchMap(view => view.location$)),
+    this.views$.value[this.activeViewIndex$.value].history.location
   );
 
   active(index: number) {
-    this.activeViewIndex.next(index);
+    this.activeViewIndex$.next(index);
   }
 
   createView(at: WorkbenchPosition = 'beside', defaultLocation: To) {
     const view = new View(defaultLocation);
-    const newViews = [...this.views.value];
+    const newViews = [...this.views$.value];
     newViews.splice(this.indexAt(at), 0, view);
-    this.views.next(newViews);
+    this.views$.next(newViews);
     return newViews.indexOf(view);
   }
 
@@ -91,33 +91,33 @@ export class Workbench {
   }
 
   viewAt(positionIndex: WorkbenchPosition): View | undefined {
-    return this.views.value[this.indexAt(positionIndex)];
+    return this.views$.value[this.indexAt(positionIndex)];
   }
 
   close(view: View) {
-    if (this.views.value.length === 1) return;
-    const index = this.views.value.indexOf(view);
+    if (this.views$.value.length === 1) return;
+    const index = this.views$.value.indexOf(view);
     if (index === -1) return;
-    const newViews = [...this.views.value];
+    const newViews = [...this.views$.value];
     newViews.splice(index, 1);
-    const activeViewIndex = this.activeViewIndex.value;
+    const activeViewIndex = this.activeViewIndex$.value;
     if (activeViewIndex !== 0 && activeViewIndex >= index) {
       this.active(activeViewIndex - 1);
     }
-    this.views.next(newViews);
+    this.views$.next(newViews);
   }
 
   closeOthers(view: View) {
-    view.size.next(100);
-    this.views.next([view]);
+    view.size$.next(100);
+    this.views$.next([view]);
     this.active(0);
   }
 
   moveView(from: number, to: number) {
-    const views = [...this.views.value];
+    const views = [...this.views$.value];
     const [removed] = views.splice(from, 1);
     views.splice(to, 0, removed);
-    this.views.next(views);
+    this.views$.next(views);
     this.active(to);
   }
 
@@ -128,18 +128,18 @@ export class Workbench {
    * @returns
    */
   resize(index: number, percent: number) {
-    const view = this.views.value[index];
-    const nextView = this.views.value[index + 1];
+    const view = this.views$.value[index];
+    const nextView = this.views$.value[index + 1];
     if (!nextView) return;
 
-    const totalViewSize = this.views.value.reduce(
-      (sum, v) => sum + v.size.value,
+    const totalViewSize = this.views$.value.reduce(
+      (sum, v) => sum + v.size$.value,
       0
     );
     const percentOfTotal = totalViewSize * percent;
-    const newSize = Number((view.size.value + percentOfTotal).toFixed(4));
+    const newSize = Number((view.size$.value + percentOfTotal).toFixed(4));
     const newNextSize = Number(
-      (nextView.size.value - percentOfTotal).toFixed(4)
+      (nextView.size$.value - percentOfTotal).toFixed(4)
     );
     // TODO: better strategy to limit size
     if (newSize / totalViewSize < 0.2 || newNextSize / totalViewSize < 0.2)
@@ -150,16 +150,16 @@ export class Workbench {
 
   private indexAt(positionIndex: WorkbenchPosition): number {
     if (positionIndex === 'active') {
-      return this.activeViewIndex.value;
+      return this.activeViewIndex$.value;
     }
     if (positionIndex === 'beside') {
-      return this.activeViewIndex.value + 1;
+      return this.activeViewIndex$.value + 1;
     }
     if (positionIndex === 'head') {
       return 0;
     }
     if (positionIndex === 'tail') {
-      return this.views.value.length;
+      return this.views$.value.length;
     }
     return positionIndex;
   }

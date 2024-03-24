@@ -89,7 +89,7 @@ const CollectionRenderer = ({
     };
     return filterPage(collection, pageData);
   });
-  const location = useLiveData(useService(Workbench).location);
+  const location = useLiveData(useService(Workbench).location$);
   const currentPath = location.pathname;
   const path = `/collection/${collection.id}`;
 
@@ -174,7 +174,7 @@ export const CollectionsList = ({
   onCreate,
 }: CollectionsListProps) => {
   const metas = useBlockSuiteDocMeta(workspace);
-  const collections = useLiveData(useService(CollectionService).collections);
+  const collections = useLiveData(useService(CollectionService).collections$);
   const t = useAFFiNEI18N();
   if (collections.length === 0) {
     return (

@@ -97,7 +97,7 @@ export async function storeWorkspaceMeta(
       ...meta,
     };
     await fs.writeJSON(metaPath, newMeta);
-    workspaceSubjects.meta.next({
+    workspaceSubjects.meta$.next({
       workspaceId,
       meta: newMeta,
     });

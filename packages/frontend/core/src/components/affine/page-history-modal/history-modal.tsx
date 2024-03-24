@@ -479,7 +479,7 @@ const PageHistoryManager = ({
   );
 
   const page = useService(Doc);
-  const [mode, setMode] = useState<PageMode>(page.mode.value);
+  const [mode, setMode] = useState<PageMode>(page.mode$.value);
 
   const title = useDocCollectionPageTitle(docCollection, pageId);
 

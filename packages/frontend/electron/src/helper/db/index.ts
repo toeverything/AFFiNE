@@ -48,7 +48,7 @@ export const dbEvents = {
       docId?: string;
     }) => void
   ) => {
-    const sub = dbSubjects.externalUpdate.subscribe(fn);
+    const sub = dbSubjects.externalUpdate$.subscribe(fn);
     return () => {
       sub.unsubscribe();
     };
