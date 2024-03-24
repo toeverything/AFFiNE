@@ -21,6 +21,7 @@ export const filterByFilterList = (filterList: Filter[], varMap: VariableMap) =>
 
 export type PageDataForFilter = {
   meta: DocMeta;
+  favorite: boolean;
   publicMode: undefined | 'page' | 'edgeless';
 };
 
@@ -33,13 +34,13 @@ export const filterPage = (collection: Collection, page: PageDataForFilter) => {
 export const filterPageByRules = (
   rules: Filter[],
   allowList: string[],
-  { meta, publicMode }: PageDataForFilter
+  { meta, publicMode, favorite }: PageDataForFilter
 ) => {
   if (allowList?.includes(meta.id)) {
     return true;
   }
   return filterByFilterList(rules, {
-    'Is Favourited': !!meta.favorite,
+    'Is Favourited': !!favorite,
     'Is Public': !!publicMode,
     Created: meta.createDate,
     Updated: meta.updatedDate ?? meta.createDate,

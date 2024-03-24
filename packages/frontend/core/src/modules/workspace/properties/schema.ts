@@ -64,8 +64,9 @@ export type PageInfoTagsItem = z.infer<typeof PageInfoTagsItemSchema>;
 // ====== workspace properties schema ======
 export const WorkspaceFavoriteItemSchema = z.object({
   id: z.string(),
-  order: z.number(),
-  type: z.enum(['page', 'collection']),
+  order: z.string(),
+  type: z.enum(['doc', 'collection']),
+  value: z.boolean(),
 });
 
 export type WorkspaceFavoriteItem = z.infer<typeof WorkspaceFavoriteItemSchema>;

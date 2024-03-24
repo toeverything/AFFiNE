@@ -1,5 +1,6 @@
 import { toast } from '@affine/component';
 import { useDocMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
+import { FavoriteItemsAdapter } from '@affine/core/modules/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
@@ -13,7 +14,7 @@ import {
   Workspace,
 } from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 
 import { pageHistoryModalAtom } from '../../atoms/page-history';
 import { useBlockSuiteMetaHelper } from './use-block-suite-meta-helper';
@@ -32,7 +33,11 @@ export function useRegisterBlocksuiteEditorCommands() {
   assertExists(currentPage);
   const pageMeta = getDocMeta(pageId);
   assertExists(pageMeta);
-  const favorite = pageMeta.favorite ?? false;
+
+  const favAdapter = useService(FavoriteItemsAdapter);
+  const favorite = useLiveData(
+    useMemo(() => favAdapter.isFavorite$(pageId, 'doc'), [favAdapter, pageId])
+  );
   const trash = pageMeta.trash ?? false;
 
   const setPageHistoryModalState = useSetAtom(pageHistoryModalAtom);
@@ -44,7 +49,7 @@ export function useRegisterBlocksuiteEditorCommands() {
     }));
   }, [pageId, setPageHistoryModalState]);
 
-  const { toggleFavorite, restoreFromTrash, duplicate } =
+  const { restoreFromTrash, duplicate } =
     useBlockSuiteMetaHelper(docCollection);
   const exportHandler = useExportPage(currentPage);
   const { setTrashModal } = useTrashModalHelper(docCollection);
@@ -94,7 +99,7 @@ export function useRegisterBlocksuiteEditorCommands() {
           ? t['com.affine.favoritePageOperation.remove']()
           : t['com.affine.favoritePageOperation.add'](),
         run() {
-          toggleFavorite(pageId);
+          favAdapter.toggle(pageId, 'doc');
           toast(
             favorite
               ? t['com.affine.cmdk.affine.editor.remove-from-favourites']()
@@ -246,11 +251,11 @@ export function useRegisterBlocksuiteEditorCommands() {
     pageId,
     restoreFromTrash,
     t,
-    toggleFavorite,
     trash,
     isCloudWorkspace,
     openHistoryModal,
     duplicate,
     page,
+    favAdapter,
   ]);
 }

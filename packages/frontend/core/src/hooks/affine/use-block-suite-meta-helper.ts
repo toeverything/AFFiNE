@@ -19,32 +19,6 @@ export function useBlockSuiteMetaHelper(docCollection: DocCollection) {
   const collectionService = useService(CollectionService);
   const pageRecordList = useService(PageRecordList);
 
-  const addToFavorite = useCallback(
-    (pageId: string) => {
-      setDocMeta(pageId, {
-        favorite: true,
-      });
-    },
-    [setDocMeta]
-  );
-  const removeFromFavorite = useCallback(
-    (pageId: string) => {
-      setDocMeta(pageId, {
-        favorite: false,
-      });
-    },
-    [setDocMeta]
-  );
-  const toggleFavorite = useCallback(
-    (pageId: string) => {
-      const { favorite } = getDocMeta(pageId) ?? {};
-      setDocMeta(pageId, {
-        favorite: !favorite,
-      });
-    },
-    [getDocMeta, setDocMeta]
-  );
-
   // TODO-Doma
   // "Remove" may cause ambiguity here. Consider renaming as "moveToTrash".
   const removeToTrash = useCallback(
@@ -126,7 +100,6 @@ export function useBlockSuiteMetaHelper(docCollection: DocCollection) {
 
       setDocMeta(newPage.id, {
         tags: currentPageMeta.tags,
-        favorite: currentPageMeta.favorite,
       });
 
       const lastDigitRegex = /\((\d+)\)$/;
@@ -156,10 +129,6 @@ export function useBlockSuiteMetaHelper(docCollection: DocCollection) {
   return {
     publicPage,
     cancelPublicPage,
-
-    addToFavorite,
-    removeFromFavorite,
-    toggleFavorite,
 
     removeToTrash,
     restoreFromTrash,
