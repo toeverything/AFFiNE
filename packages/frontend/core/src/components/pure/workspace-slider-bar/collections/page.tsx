@@ -8,7 +8,10 @@ import { PageRecordList, useLiveData, useService } from '@toeverything/infra';
 import React, { useCallback, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 
-import { getDragItemId } from '../../../../hooks/affine/use-sidebar-drag';
+import {
+  type DNDIdentifier,
+  getDNDId,
+} from '../../../../hooks/affine/use-global-dnd-helper';
 import { useNavigateHelper } from '../../../../hooks/use-navigate-helper';
 import { MenuItem as CollectionItem } from '../../../app-sidebar';
 import { DragMenuItemOverlay } from '../components/drag-menu-item-overlay';
@@ -18,11 +21,13 @@ import * as styles from './styles.css';
 
 export const Page = ({
   page,
+  parentId,
   docCollection,
   allPageMeta,
   inAllowList,
   removeFromAllowList,
 }: {
+  parentId: DNDIdentifier;
   page: DocMeta;
   inAllowList: boolean;
   removeFromAllowList: (id: string) => void;
@@ -38,7 +43,7 @@ export const Page = ({
   const active = params.pageId === pageId;
   const pageRecord = useLiveData(useService(PageRecordList).record$(pageId));
   const pageMode = useLiveData(pageRecord?.mode$);
-  const dragItemId = getDragItemId('collectionPage', pageId);
+  const dragItemId = getDNDId('collection-list', 'doc', pageId, parentId);
 
   const icon = useMemo(() => {
     return pageMode === 'edgeless' ? <EdgelessIcon /> : <PageIcon />;
@@ -56,15 +61,13 @@ export const Page = ({
 
   const pageTitle = page.title || t['Untitled']();
   const pageTitleElement = useMemo(() => {
-    return <DragMenuItemOverlay icon={icon} pageTitle={pageTitle} />;
+    return <DragMenuItemOverlay icon={icon} title={pageTitle} />;
   }, [icon, pageTitle]);
 
   const { setNodeRef, attributes, listeners, isDragging } = useDraggable({
     id: dragItemId,
     data: {
-      pageId,
-      pageTitle: pageTitleElement,
-      removeFromCollection: () => removeFromAllowList(pageId),
+      preview: pageTitleElement,
     },
   });
 

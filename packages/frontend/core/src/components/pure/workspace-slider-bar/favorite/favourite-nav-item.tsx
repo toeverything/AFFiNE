@@ -1,30 +1,40 @@
+import {
+  getDNDId,
+  parseDNDId,
+} from '@affine/core/hooks/affine/use-global-dnd-helper';
 import { useBlockSuitePageReferences } from '@affine/core/hooks/use-block-suite-page-references';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
-import { useDraggable } from '@dnd-kit/core';
+import { type AnimateLayoutChanges, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import { PageRecordList, useLiveData, useService } from '@toeverything/infra';
 import { useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
-import { getDragItemId } from '../../../../hooks/affine/use-sidebar-drag';
 import { MenuLinkItem } from '../../../app-sidebar';
 import { DragMenuItemOverlay } from '../components/drag-menu-item-overlay';
+import * as draggableMenuItemStyles from '../components/draggable-menu-item.css';
 import { PostfixItem } from '../components/postfix-item';
 import type { ReferencePageProps } from '../components/reference-page';
 import { ReferencePage } from '../components/reference-page';
 import * as styles from './styles.css';
 
-export const FavouritePage = ({
+const animateLayoutChanges: AnimateLayoutChanges = ({
+  isSorting,
+  wasDragging,
+}) => (isSorting || wasDragging ? false : true);
+
+export const FavouriteDocSidebarNavItem = ({
   docCollection: workspace,
   pageId,
   metaMapping,
-  parentIds,
-}: ReferencePageProps) => {
+}: ReferencePageProps & {
+  sortable?: boolean;
+}) => {
   const t = useAFFiNEI18N();
   const params = useParams();
-  const active = params.pageId === pageId;
-  const dragItemId = getDragItemId('favouritePage', pageId);
+  const linkActive = params.pageId === pageId;
   const pageRecord = useLiveData(useService(PageRecordList).record$(pageId));
   const pageMode = useLiveData(pageRecord?.mode$);
 
@@ -43,43 +53,57 @@ export const FavouritePage = ({
 
   const [collapsed, setCollapsed] = useState(true);
   const collapsible = referencesToShow.length > 0;
-  const nestedItem = parentIds.size > 0;
 
   const untitled = !metaMapping[pageId]?.title;
   const pageTitle = metaMapping[pageId]?.title || t['Untitled']();
 
-  const pageTitleElement = useMemo(() => {
-    return <DragMenuItemOverlay icon={icon} pageTitle={pageTitle} />;
+  const overlayPreview = useMemo(() => {
+    return <DragMenuItemOverlay icon={icon} title={pageTitle} />;
   }, [icon, pageTitle]);
 
-  const { setNodeRef, attributes, listeners, isDragging } = useDraggable({
+  const dragItemId = getDNDId('sidebar-pin', 'doc', pageId);
+
+  const {
+    setNodeRef,
+    isDragging,
+    attributes,
+    listeners,
+    transform,
+    transition,
+    active,
+  } = useSortable({
     id: dragItemId,
     data: {
-      pageId,
-      pageTitle: pageTitleElement,
+      preview: overlayPreview,
     },
+    animateLayoutChanges,
   });
+
+  const isSorting = parseDNDId(active?.id)?.where === 'sidebar-pin';
+  const style = {
+    transform: CSS.Translate.toString(transform),
+    transition: isSorting ? transition : undefined,
+  };
 
   return (
     <Collapsible.Root
       className={styles.favItemWrapper}
-      data-nested={nestedItem}
       open={!collapsed}
-      data-draggable={true}
-      data-dragging={isDragging}
+      style={style}
+      ref={setNodeRef}
+      {...attributes}
     >
       <MenuLinkItem
+        {...listeners}
         data-testid={`favourite-page-${pageId}`}
-        data-type="favourite-list-item"
         icon={icon}
-        className={styles.favItem}
-        active={active}
+        data-draggable={true}
+        data-dragging={isDragging}
+        className={draggableMenuItemStyles.draggableMenuItem}
+        active={linkActive}
         to={`/workspace/${workspace.id}/${pageId}`}
         collapsed={collapsible ? collapsed : undefined}
         onCollapsedChange={setCollapsed}
-        ref={setNodeRef}
-        {...attributes}
-        {...listeners}
         postfix={
           <PostfixItem
             docCollection={workspace}

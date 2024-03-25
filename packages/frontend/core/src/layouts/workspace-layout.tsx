@@ -4,7 +4,6 @@ import {
   DndContext,
   DragOverlay,
   MouseSensor,
-  pointerWithin,
   useDndContext,
   useSensor,
   useSensors,
@@ -18,6 +17,7 @@ import {
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import type { PropsWithChildren, ReactNode } from 'react';
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { matchPath } from 'react-router-dom';
 import { Map as YMap } from 'yjs';
 
@@ -30,12 +30,14 @@ import {
 } from '../components/app-sidebar';
 import { usePageHelper } from '../components/blocksuite/block-suite-page-list/utils';
 import type { DraggableTitleCellData } from '../components/page-list';
-import { PageListDragOverlay } from '../components/page-list';
 import { RootAppSidebar } from '../components/root-app-sidebar';
 import { MainContainer, WorkspaceFallback } from '../components/workspace';
 import { WorkspaceUpgrade } from '../components/workspace-upgrade';
 import { useAppSettingHelper } from '../hooks/affine/use-app-setting-helper';
-import { useSidebarDrag } from '../hooks/affine/use-sidebar-drag';
+import {
+  resolveDragEndIntent,
+  useGlobalDNDHelper,
+} from '../hooks/affine/use-global-dnd-helper';
 import { useNavigateHelper } from '../hooks/use-navigate-helper';
 import { useRegisterWorkspaceCommands } from '../hooks/use-register-workspace-commands';
 import { Workbench } from '../modules/workbench';
@@ -45,6 +47,7 @@ import {
 } from '../providers/modal-provider';
 import { SWRConfigProvider } from '../providers/swr-config-provider';
 import { pathGenerator } from '../shared';
+import * as styles from './styles.css';
 
 const CMDKQuickSearchModal = lazy(() =>
   import('../components/pure/cmdk').then(module => ({
@@ -149,20 +152,14 @@ export const WorkspaceLayoutInner = ({ children }: PropsWithChildren) => {
     })
   );
 
-  const handleDragEnd = useSidebarDrag();
-
+  const { handleDragEnd } = useGlobalDNDHelper();
   const { appSettings } = useAppSettingHelper();
-
   const upgradeStatus = useWorkspaceStatus(currentWorkspace, s => s.upgrade);
 
   return (
     <>
       {/* This DndContext is used for drag page from all-pages list into a folder in sidebar */}
-      <DndContext
-        sensors={sensors}
-        collisionDetection={pointerWithin}
-        onDragEnd={handleDragEnd}
-      >
+      <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
         <AppContainer resizing={resizing}>
           <Suspense fallback={<AppSidebarFallback />}>
             <RootAppSidebar
@@ -191,7 +188,7 @@ export const WorkspaceLayoutInner = ({ children }: PropsWithChildren) => {
             </Suspense>
           </MainContainer>
         </AppContainer>
-        <PageListTitleCellDragOverlay />
+        <GlobalDragOverlay />
       </DndContext>
       <QuickSearch />
       <SyncAwareness />
@@ -199,26 +196,48 @@ export const WorkspaceLayoutInner = ({ children }: PropsWithChildren) => {
   );
 };
 
-function PageListTitleCellDragOverlay() {
+function GlobalDragOverlay() {
   const { active, over } = useDndContext();
-  const [content, setContent] = useState<ReactNode>();
+  const [preview, setPreview] = useState<ReactNode>();
 
   useEffect(() => {
     if (active) {
       const data = active.data.current as DraggableTitleCellData;
-      setContent(data.pageTitle);
+      setPreview(data.preview);
     }
     // do not update content since it may disappear because of virtual rendering
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active?.id]);
 
-  const renderChildren = useCallback(() => {
-    return <PageListDragOverlay over={!!over}>{content}</PageListDragOverlay>;
-  }, [content, over]);
+  const intent = resolveDragEndIntent(active, over);
 
-  return (
-    <DragOverlay dropAnimation={null}>
-      {active ? renderChildren() : null}
-    </DragOverlay>
+  const overDropZone =
+    intent === 'pin:add' ||
+    intent === 'collection:add' ||
+    intent === 'trash:move-to';
+
+  const accent =
+    intent === 'pin:remove'
+      ? 'warning'
+      : intent === 'trash:move-to'
+        ? 'error'
+        : 'normal';
+
+  const sorting = intent === 'pin:reorder';
+
+  return createPortal(
+    <DragOverlay adjustScale={false} dropAnimation={null}>
+      {preview ? (
+        <div
+          data-over-drop={overDropZone}
+          data-sorting={sorting}
+          data-accent={accent}
+          className={styles.dragOverlay}
+        >
+          {preview}
+        </div>
+      ) : null}
+    </DragOverlay>,
+    document.body
   );
 }
