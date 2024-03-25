@@ -5,12 +5,14 @@ import { test } from '@affine-test/kit/playwright';
 import { openHomePage } from '@affine-test/kit/utils/load-page';
 import {
   clickNewPageButton,
+  focusInlineEditor,
   getBlockSuiteEditorTitle,
   waitForEditorLoad,
 } from '@affine-test/kit/utils/page-logic';
 import { expect, type Page } from '@playwright/test';
 
 async function importImage(page: Page, url: string) {
+  await focusInlineEditor(page);
   await page.evaluate(
     ([url]) => {
       const clipData = {

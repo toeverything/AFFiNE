@@ -87,3 +87,13 @@ export const dragTo = async (page: Page, locator: Locator, target: Locator) => {
   await target.hover();
   await page.mouse.up();
 };
+
+// sometimes editor loses focus, this function is to focus the editor
+export const focusInlineEditor = async (page: Page) => {
+  await page
+    .locator(
+      `.affine-paragraph-rich-text-wrapper:has(.visible):has-text("Type '/' for commands")`
+    )
+    .locator('.inline-editor')
+    .focus();
+};
