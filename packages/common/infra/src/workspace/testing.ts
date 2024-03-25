@@ -4,12 +4,13 @@ import { differenceBy } from 'lodash-es';
 import { nanoid } from 'nanoid';
 import { applyUpdate, encodeStateAsUpdate } from 'yjs';
 
-import { type ServiceCollection } from '../di';
-import { GlobalState, type Memento } from '../storage';
+import type { ServiceCollection } from '../di';
+import type { Memento } from '../storage';
+import { GlobalState } from '../storage';
 import { WorkspaceMetadataContext } from './context';
+import type { BlobStorage } from './engine';
 import {
   AwarenessProvider,
-  type BlobStorage,
   DocStorageImpl,
   LocalBlobStorage,
   MemoryDocStorage,
@@ -17,9 +18,8 @@ import {
 import { MemoryStorage } from './engine/doc/storage';
 import type { WorkspaceFactory } from './factory';
 import { globalBlockSuiteSchema } from './global-schema';
-import type { WorkspaceListProvider } from './list';
-import { type WorkspaceInfo } from './list';
-import { type WorkspaceMetadata } from './metadata';
+import type { WorkspaceInfo, WorkspaceListProvider } from './list';
+import type { WorkspaceMetadata } from './metadata';
 import { WorkspaceScope } from './service-scope';
 
 const LIST_STORE_KEY = 'testing-workspace-list';

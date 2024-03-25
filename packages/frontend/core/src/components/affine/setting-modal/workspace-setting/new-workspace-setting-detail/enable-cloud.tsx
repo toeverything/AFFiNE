@@ -5,8 +5,8 @@ import { useWorkspaceInfo } from '@affine/core/hooks/use-workspace-info';
 import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { type Workspace, WorkspaceManager } from '@toeverything/infra';
-import { useService } from '@toeverything/infra';
+import type { Workspace } from '@toeverything/infra';
+import { useService, WorkspaceManager } from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
 import { useState } from 'react';
 

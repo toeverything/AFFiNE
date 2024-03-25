@@ -22,14 +22,14 @@ import {
   PageRecordList,
   ServiceProviderContext,
   useLiveData,
+  useService,
+  Workspace,
 } from '@toeverything/infra';
-import { Workspace } from '@toeverything/infra';
-import { useService } from '@toeverything/infra';
 import clsx from 'clsx';
 import { useSetAtom } from 'jotai';
+import type { ReactElement } from 'react';
 import {
   memo,
-  type ReactElement,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -50,12 +50,12 @@ import { useRegisterBlocksuiteEditorCommands } from '../../../hooks/affine/use-r
 import { useActiveBlocksuiteEditor } from '../../../hooks/use-block-suite-editor';
 import { usePageDocumentTitle } from '../../../hooks/use-global-state';
 import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
+import type { SidebarTabName } from '../../../modules/multi-tab-sidebar';
 import {
   MultiTabSidebarBody,
   MultiTabSidebarHeaderSwitcher,
-  type SidebarTabName,
+  sidebarTabs,
 } from '../../../modules/multi-tab-sidebar';
-import { sidebarTabs } from '../../../modules/multi-tab-sidebar';
 import { RightSidebarViewIsland } from '../../../modules/right-sidebar';
 import {
   useIsActiveView,

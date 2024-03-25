@@ -1,5 +1,6 @@
 import type { AffineEditorContainer } from '@blocksuite/presets';
-import { atom, type SetStateAction, useAtom } from 'jotai';
+import type { SetStateAction } from 'jotai';
+import { atom, useAtom } from 'jotai';
 
 const activeEditorContainerAtom = atom<AffineEditorContainer | null>(null);
 

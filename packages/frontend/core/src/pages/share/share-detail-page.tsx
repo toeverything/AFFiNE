@@ -13,13 +13,13 @@ import { noop } from '@blocksuite/global/utils';
 import { Logo1Icon } from '@blocksuite/icons';
 import type { AffineEditorContainer } from '@blocksuite/presets';
 import type { Doc as BlockSuiteDoc } from '@blocksuite/store';
-import type { Doc } from '@toeverything/infra';
+import type { Doc, PageMode } from '@toeverything/infra';
 import {
   DocStorageImpl,
   EmptyBlobStorage,
   LocalBlobStorage,
   PageManager,
-  type PageMode,
+  ReadonlyDocStorage,
   RemoteBlobStorage,
   ServiceProviderContext,
   useLiveData,
@@ -28,7 +28,6 @@ import {
   WorkspaceManager,
   WorkspaceScope,
 } from '@toeverything/infra';
-import { ReadonlyDocStorage } from '@toeverything/infra';
 import { useCallback, useEffect, useState } from 'react';
 import type { LoaderFunction } from 'react-router-dom';
 import {

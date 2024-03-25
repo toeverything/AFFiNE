@@ -1,7 +1,8 @@
 import { useHasScrollTop } from '@affine/component';
 import * as ScrollArea from '@radix-ui/react-scroll-area';
 import clsx from 'clsx';
-import { type PropsWithChildren, useRef } from 'react';
+import type { PropsWithChildren } from 'react';
+import { useRef } from 'react';
 
 import * as styles from './index.css';
 

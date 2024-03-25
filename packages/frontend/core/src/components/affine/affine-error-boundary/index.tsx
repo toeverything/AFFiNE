@@ -3,7 +3,7 @@ import type { FC, PropsWithChildren } from 'react';
 import { useCallback } from 'react';
 
 import { AffineErrorFallback } from './affine-error-fallback';
-import { type FallbackProps } from './error-basic/fallback-creator';
+import type { FallbackProps } from './error-basic/fallback-creator';
 
 export { type FallbackProps } from './error-basic/fallback-creator';
 

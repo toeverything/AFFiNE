@@ -1,14 +1,8 @@
 import { Scrollable } from '@affine/component';
 import clsx from 'clsx';
 import { selectAtom } from 'jotai/utils';
-import {
-  forwardRef,
-  type HTMLAttributes,
-  type PropsWithChildren,
-  useCallback,
-  useMemo,
-  useState,
-} from 'react';
+import type { HTMLAttributes, PropsWithChildren } from 'react';
+import { forwardRef, useCallback, useMemo, useState } from 'react';
 import { Virtuoso } from 'react-virtuoso';
 
 import { ListInnerWrapper } from './list';

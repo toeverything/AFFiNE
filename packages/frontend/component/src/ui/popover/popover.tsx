@@ -5,7 +5,8 @@ import type {
 } from '@radix-ui/react-popover';
 import * as PopoverPrimitive from '@radix-ui/react-popover';
 import clsx from 'clsx';
-import { type ReactNode, useMemo } from 'react';
+import type { ReactNode } from 'react';
+import { useMemo } from 'react';
 
 import * as styles from './styles.css';
 

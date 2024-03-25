@@ -1,5 +1,6 @@
 import type { Doc, DocCollection } from '@blocksuite/store';
-import { type Atom, atom, useAtomValue } from 'jotai';
+import type { Atom } from 'jotai';
+import { atom, useAtomValue } from 'jotai';
 
 import { useDocCollectionPage } from './use-block-suite-workspace-page';
 

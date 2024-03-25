@@ -1,4 +1,5 @@
-import { type CSSProperties, memo } from 'react';
+import type { CSSProperties } from 'react';
+import { memo } from 'react';
 
 import { toolbar, toolbarPop } from './style.css';
 

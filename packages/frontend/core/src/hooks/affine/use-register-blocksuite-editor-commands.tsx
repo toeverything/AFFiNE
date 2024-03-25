@@ -4,12 +4,14 @@ import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
 import { EdgelessIcon, HistoryIcon, PageIcon } from '@blocksuite/icons';
-import { Doc, useLiveData, Workspace } from '@toeverything/infra';
 import {
+  Doc,
   PreconditionStrategy,
   registerAffineCommand,
+  useLiveData,
+  useService,
+  Workspace,
 } from '@toeverything/infra';
-import { useService } from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
 import { useCallback, useEffect } from 'react';
 

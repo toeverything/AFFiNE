@@ -1,9 +1,7 @@
 import type { Meta, StoryFn } from '@storybook/react';
 
-import {
-  AnimatedCollectionsIcon,
-  type CollectionsIconProps,
-} from './collections-icon';
+import type { CollectionsIconProps } from './collections-icon';
+import { AnimatedCollectionsIcon } from './collections-icon';
 
 export default {
   title: 'UI/Lottie/Collection Icons',

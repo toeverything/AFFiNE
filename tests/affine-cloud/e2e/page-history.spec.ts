@@ -11,7 +11,8 @@ import {
   waitForEditorLoad,
 } from '@affine-test/kit/utils/page-logic';
 import { createLocalWorkspace } from '@affine-test/kit/utils/workspace';
-import { expect, type Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
+import { expect } from '@playwright/test';
 
 let user: {
   id: string;

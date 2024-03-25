@@ -1,5 +1,5 @@
 import type { Doc } from '@blocksuite/store';
-import { type Map as YMap } from 'yjs';
+import type { Map as YMap } from 'yjs';
 
 /**
  * TODO: Define error to unexpected state together in the future.

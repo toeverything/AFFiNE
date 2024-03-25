@@ -1,6 +1,7 @@
 import type { Meta, StoryFn } from '@storybook/react';
 
-import { ScrollableContainer, type ScrollableContainerProps } from './index';
+import type { ScrollableContainerProps } from './index';
+import { ScrollableContainer } from './index';
 
 export default {
   title: 'UI/Scrollbar',

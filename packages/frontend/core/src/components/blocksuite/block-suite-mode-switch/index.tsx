@@ -1,12 +1,8 @@
 import { Tooltip } from '@affine/component/ui/tooltip';
 import { useBlockSuiteDocMeta } from '@affine/core/hooks/use-block-suite-page-meta';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import {
-  Doc,
-  type PageMode,
-  useLiveData,
-  useService,
-} from '@toeverything/infra';
+import type { PageMode } from '@toeverything/infra';
+import { Doc, useLiveData, useService } from '@toeverything/infra';
 import type { CSSProperties } from 'react';
 import { useCallback, useEffect } from 'react';
 

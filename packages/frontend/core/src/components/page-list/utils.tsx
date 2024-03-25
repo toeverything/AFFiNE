@@ -1,5 +1,6 @@
 import clsx from 'clsx';
-import { type BaseSyntheticEvent, forwardRef } from 'react';
+import type { BaseSyntheticEvent } from 'react';
+import { forwardRef } from 'react';
 
 import * as styles from './list.css';
 import type { ColWrapperProps } from './types';

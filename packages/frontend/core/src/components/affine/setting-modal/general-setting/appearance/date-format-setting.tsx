@@ -1,5 +1,6 @@
 import { Menu, MenuItem, MenuTrigger } from '@affine/component/ui/menu';
-import { dateFormatOptions, type DateFormats } from '@toeverything/infra';
+import type { DateFormats } from '@toeverything/infra';
+import { dateFormatOptions } from '@toeverything/infra';
 import dayjs from 'dayjs';
 import { useCallback } from 'react';
 

@@ -1,5 +1,4 @@
-import { useService } from '@toeverything/infra';
-import { useLiveData } from '@toeverything/infra';
+import { useLiveData, useService } from '@toeverything/infra';
 
 import { Workbench } from '../entities/workbench';
 import { useView } from './use-view';

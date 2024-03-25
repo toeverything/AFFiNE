@@ -3,7 +3,8 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { chunk } from 'lodash-es';
 import { useEffect, useRef } from 'react';
 
-import { iconNames, nameToIcon, type PagePropertyIcon } from './icons-mapping';
+import type { PagePropertyIcon } from './icons-mapping';
+import { iconNames, nameToIcon } from './icons-mapping';
 import * as styles from './icons-selector.css';
 
 const iconsPerRow = 6;

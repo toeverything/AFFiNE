@@ -7,14 +7,15 @@ import {
   ResolveField,
   Resolver,
 } from '@nestjs/graphql';
-import { PrismaClient, type User } from '@prisma/client';
+import type { User } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 import { isNil, omitBy } from 'lodash-es';
 
+import type { FileUpload } from '../../fundamentals';
 import {
   CloudThrottlerGuard,
   EventEmitter,
-  type FileUpload,
   PaymentRequiredException,
   Throttle,
 } from '../../fundamentals';

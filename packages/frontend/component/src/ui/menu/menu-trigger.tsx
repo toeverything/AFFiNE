@@ -1,13 +1,13 @@
 import { ArrowDownSmallIcon } from '@blocksuite/icons';
 import { assignInlineVars } from '@vanilla-extract/dynamic';
 import clsx from 'clsx';
-import type { PropsWithChildren } from 'react';
-import {
-  type CSSProperties,
-  forwardRef,
-  type HTMLAttributes,
-  type ReactNode,
+import type {
+  CSSProperties,
+  HTMLAttributes,
+  PropsWithChildren,
+  ReactNode,
 } from 'react';
+import { forwardRef } from 'react';
 
 import { MenuIcon } from './menu-icon';
 import * as styles from './styles.css';

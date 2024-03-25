@@ -5,7 +5,8 @@ import {
 } from '@affine/core/hooks/affine/use-server-config';
 import { OAuthProviderType } from '@affine/graphql';
 import { GithubIcon, GoogleDuotoneIcon } from '@blocksuite/icons';
-import { type ReactElement, useCallback, useState } from 'react';
+import type { ReactElement } from 'react';
+import { useCallback, useState } from 'react';
 
 import { useAuth } from './use-auth';
 

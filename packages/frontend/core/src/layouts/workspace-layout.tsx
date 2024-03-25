@@ -9,8 +9,12 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
-import { PageRecordList, useLiveData, Workspace } from '@toeverything/infra';
-import { useService } from '@toeverything/infra';
+import {
+  PageRecordList,
+  useLiveData,
+  useService,
+  Workspace,
+} from '@toeverything/infra';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import type { PropsWithChildren, ReactNode } from 'react';
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
@@ -25,10 +29,8 @@ import {
   appSidebarResizingAtom,
 } from '../components/app-sidebar';
 import { usePageHelper } from '../components/blocksuite/block-suite-page-list/utils';
-import {
-  type DraggableTitleCellData,
-  PageListDragOverlay,
-} from '../components/page-list';
+import type { DraggableTitleCellData } from '../components/page-list';
+import { PageListDragOverlay } from '../components/page-list';
 import { RootAppSidebar } from '../components/root-app-sidebar';
 import { MainContainer, WorkspaceFallback } from '../components/workspace';
 import { WorkspaceUpgrade } from '../components/workspace-upgrade';

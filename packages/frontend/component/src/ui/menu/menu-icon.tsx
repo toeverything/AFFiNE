@@ -1,6 +1,6 @@
 import clsx from 'clsx';
-import type { PropsWithChildren, ReactNode } from 'react';
-import { forwardRef, type HTMLAttributes, useMemo } from 'react';
+import type { HTMLAttributes, PropsWithChildren, ReactNode } from 'react';
+import { forwardRef, useMemo } from 'react';
 
 import { menuItemIcon } from './styles.css';
 

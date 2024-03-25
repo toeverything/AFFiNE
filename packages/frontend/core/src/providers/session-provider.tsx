@@ -5,12 +5,8 @@ import { affine } from '@affine/electron-api';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CLOUD_WORKSPACE_CHANGED_BROADCAST_CHANNEL_KEY } from '@affine/workspace-impl';
 import { useSetAtom } from 'jotai';
-import {
-  type PropsWithChildren,
-  startTransition,
-  useEffect,
-  useRef,
-} from 'react';
+import type { PropsWithChildren } from 'react';
+import { startTransition, useEffect, useRef } from 'react';
 
 import { useOnceSignedInEvents } from '../atoms/event';
 import { mixpanel } from '../utils';

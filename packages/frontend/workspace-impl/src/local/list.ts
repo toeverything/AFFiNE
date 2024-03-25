@@ -1,11 +1,11 @@
 import { apis } from '@affine/electron-api';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { DocCollection } from '@blocksuite/store';
-import type { WorkspaceListProvider } from '@toeverything/infra';
-import {
-  type BlobStorage,
-  type WorkspaceInfo,
-  type WorkspaceMetadata,
+import type {
+  BlobStorage,
+  WorkspaceInfo,
+  WorkspaceListProvider,
+  WorkspaceMetadata,
 } from '@toeverything/infra';
 import { globalBlockSuiteSchema } from '@toeverything/infra';
 import { difference } from 'lodash-es';

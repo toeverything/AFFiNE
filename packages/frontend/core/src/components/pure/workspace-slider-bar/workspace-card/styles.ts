@@ -1,5 +1,4 @@
-import { displayFlex, textEllipsis } from '@affine/component';
-import { styled } from '@affine/component';
+import { displayFlex, styled, textEllipsis } from '@affine/component';
 export const StyledSelectorContainer = styled('div')({
   height: '58px',
   display: 'flex',

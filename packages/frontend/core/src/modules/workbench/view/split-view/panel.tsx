@@ -7,22 +7,16 @@ import {
   SoloViewIcon,
 } from '@blocksuite/icons';
 import { useSortable } from '@dnd-kit/sortable';
-import { useService } from '@toeverything/infra';
-import { useLiveData } from '@toeverything/infra';
+import { useLiveData, useService } from '@toeverything/infra';
 import { assignInlineVars } from '@vanilla-extract/dynamic';
 import type { SetStateAction } from 'jotai';
-import {
-  type Dispatch,
-  type HTMLAttributes,
-  memo,
-  type PropsWithChildren,
-  type RefObject,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
+import type {
+  Dispatch,
+  HTMLAttributes,
+  PropsWithChildren,
+  RefObject,
 } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import type { View } from '../../entities/view';
 import { Workbench } from '../../entities/workbench';

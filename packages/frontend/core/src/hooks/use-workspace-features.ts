@@ -5,7 +5,7 @@ import {
   enabledFeaturesQuery,
   setWorkspaceExperimentalFeatureMutation,
 } from '@affine/graphql';
-import { type WorkspaceMetadata } from '@toeverything/infra';
+import type { WorkspaceMetadata } from '@toeverything/infra';
 
 import { useAsyncCallback } from './affine-async-hooks';
 import { useMutateQueryResource, useMutation } from './use-mutation';

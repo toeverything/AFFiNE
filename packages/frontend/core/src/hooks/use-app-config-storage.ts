@@ -1,13 +1,10 @@
 import { apis } from '@affine/electron-api';
 import { setupGlobal } from '@affine/env/global';
 import { assertExists } from '@blocksuite/global/utils';
-import {
-  type AppConfigSchema,
-  AppConfigStorage,
-  defaultAppConfig,
-} from '@toeverything/infra';
-import { type Dispatch, useEffect, useState } from 'react';
-import { useMemo } from 'react';
+import type { AppConfigSchema } from '@toeverything/infra';
+import { AppConfigStorage, defaultAppConfig } from '@toeverything/infra';
+import type { Dispatch } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 /**
  * Helper class to get/set app config from main process

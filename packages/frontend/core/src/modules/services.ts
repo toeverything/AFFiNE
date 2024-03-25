@@ -1,8 +1,8 @@
+import type { ServiceCollection } from '@toeverything/infra';
 import {
   GlobalCache,
   GlobalState,
   PageRecordList,
-  type ServiceCollection,
   Workspace,
   WorkspaceScope,
 } from '@toeverything/infra';

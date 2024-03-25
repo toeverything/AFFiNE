@@ -1,7 +1,11 @@
 import { Trans } from '@affine/i18n';
 
-import type { ItemGroupDefinition, ItemGroupProps, ListItem } from './types';
-import { type DateKey } from './types';
+import type {
+  DateKey,
+  ItemGroupDefinition,
+  ItemGroupProps,
+  ListItem,
+} from './types';
 import { betweenDaysAgo, withinDaysAgo } from './utils';
 
 // todo: optimize date matchers

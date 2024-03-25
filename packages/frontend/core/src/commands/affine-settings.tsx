@@ -1,12 +1,12 @@
 import type { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { SettingsIcon } from '@blocksuite/icons';
 import type { AffineEditorContainer } from '@blocksuite/presets';
-import { appSettingAtom } from '@toeverything/infra';
 import {
+  appSettingAtom,
   PreconditionStrategy,
   registerAffineCommand,
 } from '@toeverything/infra';
-import { type createStore } from 'jotai';
+import type { createStore } from 'jotai';
 import type { useTheme } from 'next-themes';
 
 import { openQuickSearchModalAtom } from '../atoms';

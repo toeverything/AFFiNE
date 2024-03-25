@@ -1,11 +1,11 @@
-import {
-  InviteModal,
-  type InviteModalProps,
-  MemberLimitModal,
+import type {
+  InviteModalProps,
+  PaginationProps,
 } from '@affine/component/member-components';
 import {
+  InviteModal,
+  MemberLimitModal,
   Pagination,
-  type PaginationProps,
 } from '@affine/component/member-components';
 import { pushNotificationAtom } from '@affine/component/notification-center';
 import { SettingRow } from '@affine/component/setting-components';
@@ -20,7 +20,8 @@ import type { CheckedUser } from '@affine/core/hooks/affine/use-current-user';
 import { useCurrentUser } from '@affine/core/hooks/affine/use-current-user';
 import { useInviteMember } from '@affine/core/hooks/affine/use-invite-member';
 import { useMemberCount } from '@affine/core/hooks/affine/use-member-count';
-import { type Member, useMembers } from '@affine/core/hooks/affine/use-members';
+import type { Member } from '@affine/core/hooks/affine/use-members';
+import { useMembers } from '@affine/core/hooks/affine/use-members';
 import { useRevokeMemberPermission } from '@affine/core/hooks/affine/use-revoke-member-permission';
 import { useWorkspaceQuota } from '@affine/core/hooks/use-quota';
 import { useUserSubscription } from '@affine/core/hooks/use-subscription';

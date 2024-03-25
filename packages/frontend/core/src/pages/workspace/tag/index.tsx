@@ -8,8 +8,7 @@ import {
   ViewBodyIsland,
   ViewHeaderIsland,
 } from '@affine/core/modules/workbench';
-import { useLiveData, useService } from '@toeverything/infra';
-import { Workspace } from '@toeverything/infra';
+import { useLiveData, useService, Workspace } from '@toeverything/infra';
 import { useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 

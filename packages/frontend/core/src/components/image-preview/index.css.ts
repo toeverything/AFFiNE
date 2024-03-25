@@ -1,5 +1,4 @@
-import { cssVar } from '@toeverything/theme';
-import { baseTheme } from '@toeverything/theme';
+import { baseTheme, cssVar } from '@toeverything/theme';
 import { keyframes, style } from '@vanilla-extract/css';
 const fadeInAnimation = keyframes({
   from: {

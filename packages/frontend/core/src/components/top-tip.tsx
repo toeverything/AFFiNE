@@ -1,11 +1,10 @@
-import { BrowserWarning } from '@affine/component/affine-banner';
-import { LocalDemoTips } from '@affine/component/affine-banner';
+import { BrowserWarning, LocalDemoTips } from '@affine/component/affine-banner';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { type Workspace, WorkspaceManager } from '@toeverything/infra';
-import { useService } from '@toeverything/infra';
+import type { Workspace } from '@toeverything/infra';
+import { useService, WorkspaceManager } from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
 import { useCallback, useState } from 'react';
 

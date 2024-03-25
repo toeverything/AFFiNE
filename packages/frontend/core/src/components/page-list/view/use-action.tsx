@@ -1,7 +1,8 @@
 import type { Collection } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { DeleteIcon, FilterIcon } from '@blocksuite/icons';
-import { type ReactNode, useMemo } from 'react';
+import type { ReactNode } from 'react';
+import { useMemo } from 'react';
 
 interface CollectionBarAction {
   icon: ReactNode;

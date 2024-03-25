@@ -1,4 +1,5 @@
-import { InlineEdit, type InlineEditProps } from '@affine/component';
+import type { InlineEditProps } from '@affine/component';
+import { InlineEdit } from '@affine/component';
 import {
   useBlockSuiteDocMeta,
   useDocMetaHelper,

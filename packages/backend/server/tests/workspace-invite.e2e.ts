@@ -4,7 +4,8 @@ import {
 } from '@affine-test/kit/utils/cloud';
 import type { INestApplication } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
-import ava, { type TestFn } from 'ava';
+import type { TestFn } from 'ava';
+import ava from 'ava';
 
 import { AppModule } from '../src/app.module';
 import { AuthService } from '../src/core/auth/service';

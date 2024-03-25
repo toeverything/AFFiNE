@@ -1,17 +1,19 @@
 import { toast } from '@affine/component';
+import type {
+  ListItem,
+  ListProps,
+  PageListItemProps,
+  PageOperationCellProps,
+  PageTagsProps,
+} from '@affine/core/components/page-list';
 import {
   FloatingToolbar,
   List,
-  type ListItem,
-  type ListProps,
   ListScrollContainer,
   NewPageButton,
   PageListItem,
-  type PageListItemProps,
   PageOperationCell,
-  type PageOperationCellProps,
   PageTags,
-  type PageTagsProps,
 } from '@affine/core/components/page-list';
 import { topLevelRoutes } from '@affine/core/router';
 import { AffineSchemas } from '@blocksuite/blocks/schemas';

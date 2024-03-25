@@ -7,8 +7,7 @@ import { useBlockSuiteDocMeta } from '@affine/core/hooks/use-block-suite-page-me
 import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
 import { performanceRenderLogger } from '@affine/core/shared';
 import type { Filter } from '@affine/env/filter';
-import { useService } from '@toeverything/infra';
-import { Workspace } from '@toeverything/infra';
+import { useService, Workspace } from '@toeverything/infra';
 import { useEffect, useState } from 'react';
 
 import { ViewBodyIsland, ViewHeaderIsland } from '../../../modules/workbench';

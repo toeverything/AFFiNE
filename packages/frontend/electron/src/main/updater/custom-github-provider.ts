@@ -6,16 +6,16 @@ import type {
   XElement,
 } from 'builder-util-runtime';
 import { HttpError, newError, parseXml } from 'builder-util-runtime';
-import {
-  type AppUpdater,
-  CancellationToken,
-  type ResolvedUpdateFileInfo,
-  type UpdateInfo,
+import type {
+  AppUpdater,
+  ResolvedUpdateFileInfo,
+  UpdateInfo,
 } from 'electron-updater';
+import { CancellationToken } from 'electron-updater';
 import { BaseGitHubProvider } from 'electron-updater/out/providers/GitHubProvider';
+import type { ProviderRuntimeOptions } from 'electron-updater/out/providers/Provider';
 import {
   parseUpdateInfo,
-  type ProviderRuntimeOptions,
   resolveFiles,
 } from 'electron-updater/out/providers/Provider';
 import * as semver from 'semver';

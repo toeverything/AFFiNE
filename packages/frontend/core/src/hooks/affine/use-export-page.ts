@@ -5,12 +5,8 @@ import {
 import { pushNotificationAtom } from '@affine/component/notification-center';
 import { apis } from '@affine/electron-api';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import type { PageRootService } from '@blocksuite/blocks';
-import {
-  HtmlTransformer,
-  MarkdownTransformer,
-  type RootBlockModel,
-} from '@blocksuite/blocks';
+import type { PageRootService, RootBlockModel } from '@blocksuite/blocks';
+import { HtmlTransformer, MarkdownTransformer } from '@blocksuite/blocks';
 import type { Doc } from '@blocksuite/store';
 import { useSetAtom } from 'jotai';
 import { nanoid } from 'nanoid';

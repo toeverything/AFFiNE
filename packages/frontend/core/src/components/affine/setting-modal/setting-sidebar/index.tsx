@@ -11,16 +11,17 @@ import { useWorkspaceInfo } from '@affine/core/hooks/use-workspace-info';
 import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { Logo1Icon } from '@blocksuite/icons';
+import type { WorkspaceMetadata } from '@toeverything/infra';
 import {
+  useLiveData,
+  useService,
   Workspace,
   WorkspaceManager,
-  type WorkspaceMetadata,
 } from '@toeverything/infra';
-import { useService } from '@toeverything/infra';
-import { useLiveData } from '@toeverything/infra';
 import clsx from 'clsx';
 import { useAtom } from 'jotai/react';
-import { type ReactElement, Suspense, useCallback, useMemo } from 'react';
+import type { ReactElement } from 'react';
+import { Suspense, useCallback, useMemo } from 'react';
 
 import { authAtom } from '../../../../atoms';
 import { useCurrentLoginStatus } from '../../../../hooks/affine/use-current-login-status';

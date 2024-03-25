@@ -20,10 +20,10 @@ import { getStreamAsBuffer } from 'get-stream';
 import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 import { applyUpdate, Doc } from 'yjs';
 
+import type { FileUpload } from '../../../fundamentals';
 import {
   CloudThrottlerGuard,
   EventEmitter,
-  type FileUpload,
   MailService,
   MutexService,
   Throttle,

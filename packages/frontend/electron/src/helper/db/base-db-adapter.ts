@@ -1,8 +1,5 @@
-import {
-  type InsertRow,
-  SqliteConnection,
-  ValidationResult,
-} from '@affine/native';
+import type { InsertRow } from '@affine/native';
+import { SqliteConnection, ValidationResult } from '@affine/native';
 import { WorkspaceVersion } from '@toeverything/infra';
 
 import { applyGuidCompatibilityFix, migrateToLatest } from '../db/migration';

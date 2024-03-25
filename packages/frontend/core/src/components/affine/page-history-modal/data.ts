@@ -2,9 +2,9 @@ import { useDocMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
 import { useDocCollectionPage } from '@affine/core/hooks/use-block-suite-workspace-page';
 import { timestampToLocalDate } from '@affine/core/utils';
 import { DebugLogger } from '@affine/debug';
+import type { ListHistoryQuery } from '@affine/graphql';
 import {
   fetchWithTraceReport,
-  type ListHistoryQuery,
   listHistoryQuery,
   recoverDocMutation,
 } from '@affine/graphql';

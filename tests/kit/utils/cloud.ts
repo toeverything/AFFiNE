@@ -10,12 +10,8 @@ import {
 } from '@affine-test/kit/utils/sidebar';
 import { faker } from '@faker-js/faker';
 import { hash } from '@node-rs/argon2';
-import {
-  type BrowserContext,
-  type Cookie,
-  expect,
-  type Page,
-} from '@playwright/test';
+import type { BrowserContext, Cookie, Page } from '@playwright/test';
+import { expect } from '@playwright/test';
 import { z } from 'zod';
 
 export async function getCurrentMailMessageCount() {

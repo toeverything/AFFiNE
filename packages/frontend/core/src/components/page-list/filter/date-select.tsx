@@ -1,4 +1,5 @@
-import { DatePicker, Popover, type PopoverProps } from '@affine/component';
+import type { PopoverProps } from '@affine/component';
+import { DatePicker, Popover } from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import dayjs from 'dayjs';
 import { useCallback, useState } from 'react';

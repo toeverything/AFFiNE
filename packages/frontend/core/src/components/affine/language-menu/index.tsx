@@ -1,5 +1,6 @@
 import { Menu, MenuItem, MenuTrigger } from '@affine/component/ui/menu';
-import { memo, type ReactElement } from 'react';
+import type { ReactElement } from 'react';
+import { memo } from 'react';
 
 import { useLanguageHelper } from '../../../hooks/affine/use-language-helper';
 

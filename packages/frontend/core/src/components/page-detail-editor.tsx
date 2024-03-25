@@ -3,15 +3,14 @@ import './page-detail-editor.css';
 import { useDocCollectionPage } from '@affine/core/hooks/use-block-suite-workspace-page';
 import { assertExists, DisposableGroup } from '@blocksuite/global/utils';
 import type { AffineEditorContainer } from '@blocksuite/presets';
-import type { DocCollection } from '@blocksuite/store';
-import type { Doc as BlockSuiteDoc } from '@blocksuite/store';
+import type { Doc as BlockSuiteDoc, DocCollection } from '@blocksuite/store';
+import type { PageMode } from '@toeverything/infra';
 import {
   Doc,
-  type PageMode,
+  fontStyleOptions,
   useLiveData,
   useService,
 } from '@toeverything/infra';
-import { fontStyleOptions } from '@toeverything/infra';
 import clsx from 'clsx';
 import type { CSSProperties } from 'react';
 import { memo, Suspense, useCallback, useMemo } from 'react';

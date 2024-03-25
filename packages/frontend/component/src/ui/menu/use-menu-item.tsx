@@ -2,7 +2,7 @@ import { DoneIcon } from '@blocksuite/icons';
 import clsx from 'clsx';
 import { useMemo } from 'react';
 
-import { type MenuItemProps } from './menu.types';
+import type { MenuItemProps } from './menu.types';
 import { MenuIcon } from './menu-icon';
 import * as styles from './styles.css';
 

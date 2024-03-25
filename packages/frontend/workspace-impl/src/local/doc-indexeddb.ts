@@ -1,10 +1,6 @@
 import type { ByteKV, ByteKVBehavior, DocStorage } from '@toeverything/infra';
-import {
-  type DBSchema,
-  type IDBPDatabase,
-  type IDBPObjectStore,
-  openDB,
-} from 'idb';
+import type { DBSchema, IDBPDatabase, IDBPObjectStore } from 'idb';
+import { openDB } from 'idb';
 import { mergeUpdates } from 'yjs';
 
 import { BroadcastChannelDocEventBus } from './doc-broadcast-channel';

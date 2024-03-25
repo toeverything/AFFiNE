@@ -1,6 +1,7 @@
 import type { Meta, StoryFn } from '@storybook/react';
 
-import { AnimatedDeleteIcon, type DeleteIconProps } from './delete-icon';
+import type { DeleteIconProps } from './delete-icon';
+import { AnimatedDeleteIcon } from './delete-icon';
 
 export default {
   title: 'UI/Lottie/Delete Icon',

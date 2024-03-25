@@ -4,13 +4,14 @@ import type {
   EdgelessEditor,
   PageEditor,
 } from '@blocksuite/presets';
-import { type Doc, Slot } from '@blocksuite/store';
+import type { Doc } from '@blocksuite/store';
+import { Slot } from '@blocksuite/store';
 import type { PageMode } from '@toeverything/infra';
 import clsx from 'clsx';
 import type React from 'react';
+import type { RefObject } from 'react';
 import {
   forwardRef,
-  type RefObject,
   useEffect,
   useLayoutEffect,
   useMemo,

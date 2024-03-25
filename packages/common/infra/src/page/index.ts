@@ -4,7 +4,8 @@ export * from './record';
 export * from './record-list';
 export * from './service-scope';
 
-import { type ServiceCollection, ServiceProvider } from '../di';
+import type { ServiceCollection } from '../di';
+import { ServiceProvider } from '../di';
 import { CleanupService } from '../lifecycle';
 import { Workspace, WorkspaceLocalState, WorkspaceScope } from '../workspace';
 import { BlockSuitePageContext, PageRecordContext } from './context';

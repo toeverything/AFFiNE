@@ -2,12 +2,10 @@ import { toast } from '@affine/component';
 import { PublicLinkDisableModal } from '@affine/component/disable-public-link';
 import { ShareMenu } from '@affine/core/components/affine/share-page-modal/share-menu';
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import { type Doc } from '@blocksuite/store';
+import type { Doc } from '@blocksuite/store';
 import { expect } from '@storybook/jest';
 import type { Meta, StoryFn } from '@storybook/react';
-import { Workspace } from '@toeverything/infra';
-import { initEmptyPage } from '@toeverything/infra';
-import { useService } from '@toeverything/infra';
+import { initEmptyPage, useService, Workspace } from '@toeverything/infra';
 import { nanoid } from 'nanoid';
 import { useEffect, useState } from 'react';
 

@@ -1,12 +1,12 @@
 import * as Popover from '@radix-ui/react-popover';
 import * as Toolbar from '@radix-ui/react-toolbar';
 import clsx from 'clsx';
-import {
-  type CSSProperties,
-  type HTMLAttributes,
-  type MouseEventHandler,
-  type PropsWithChildren,
-  type ReactNode,
+import type {
+  CSSProperties,
+  HTMLAttributes,
+  MouseEventHandler,
+  PropsWithChildren,
+  ReactNode,
 } from 'react';
 
 import * as styles from './floating-toolbar.css';

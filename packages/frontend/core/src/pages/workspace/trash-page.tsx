@@ -1,7 +1,7 @@
 import { toast } from '@affine/component';
 import { usePageHelper } from '@affine/core/components/blocksuite/block-suite-page-list/utils';
+import type { ListItem } from '@affine/core/components/page-list';
 import {
-  type ListItem,
   ListTableHeader,
   PageListItemRenderer,
   TrashOperationCell,
@@ -17,8 +17,7 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
 import { DeleteIcon } from '@blocksuite/icons';
 import type { DocMeta } from '@blocksuite/store';
-import { Workspace } from '@toeverything/infra';
-import { useService } from '@toeverything/infra';
+import { useService, Workspace } from '@toeverything/infra';
 import { useCallback } from 'react';
 
 import { ViewBodyIsland, ViewHeaderIsland } from '../../modules/workbench';

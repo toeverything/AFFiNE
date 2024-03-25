@@ -16,9 +16,9 @@ import {
 import { SafeIntResolver } from 'graphql-scalars';
 import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 
+import type { FileUpload } from '../../../fundamentals';
 import {
   CloudThrottlerGuard,
-  type FileUpload,
   MakeCache,
   PreventCache,
 } from '../../../fundamentals';

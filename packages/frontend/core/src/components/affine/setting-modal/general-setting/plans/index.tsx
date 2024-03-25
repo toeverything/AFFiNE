@@ -16,7 +16,8 @@ import { useCurrentLoginStatus } from '../../../../../hooks/affine/use-current-l
 import { useQuery } from '../../../../../hooks/use-query';
 import { useUserSubscription } from '../../../../../hooks/use-subscription';
 import { PlanLayout } from './layout';
-import { type FixedPrice, getPlanDetail, PlanCard } from './plan-card';
+import type { FixedPrice } from './plan-card';
+import { getPlanDetail, PlanCard } from './plan-card';
 import { PlansSkeleton } from './skeleton';
 import * as styles from './style.css';
 

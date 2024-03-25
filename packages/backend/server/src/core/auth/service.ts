@@ -5,7 +5,8 @@ import {
   NotFoundException,
   OnApplicationBootstrap,
 } from '@nestjs/common';
-import { PrismaClient, type User } from '@prisma/client';
+import type { User } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import type { CookieOptions, Request, Response } from 'express';
 import { assign, omit } from 'lodash-es';
 

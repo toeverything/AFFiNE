@@ -1,24 +1,17 @@
 import { events } from '@affine/electron-api';
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import { WorkspaceManager } from '@toeverything/infra';
-import { useService } from '@toeverything/infra';
-import { useLiveData } from '@toeverything/infra';
+import { useLiveData, useService, WorkspaceManager } from '@toeverything/infra';
 import { useAtom } from 'jotai';
-import {
-  lazy,
-  type ReactElement,
-  Suspense,
-  useCallback,
-  useEffect,
-} from 'react';
+import type { ReactElement } from 'react';
+import { lazy, Suspense, useCallback, useEffect } from 'react';
 
+import type { SettingAtom } from '../atoms';
 import {
   authAtom,
   openCreateWorkspaceModalAtom,
   openDisableCloudAlertModalAtom,
   openSettingModalAtom,
   openSignOutModalAtom,
-  type SettingAtom,
 } from '../atoms';
 import { PaymentDisableModal } from '../components/affine/payment-disable';
 import { useAsyncCallback } from '../hooks/affine-async-hooks';

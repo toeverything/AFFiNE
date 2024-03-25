@@ -1,9 +1,11 @@
-import { SettingHeader } from '@affine/component/setting-components';
-import { SettingWrapper } from '@affine/component/setting-components';
+import {
+  SettingHeader,
+  SettingWrapper,
+} from '@affine/component/setting-components';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 
+import type { ShortcutsInfo } from '../../../../../hooks/affine/use-shortcuts';
 import {
-  type ShortcutsInfo,
   useEdgelessShortcuts,
   useGeneralShortcuts,
   useMarkdownShortcuts,

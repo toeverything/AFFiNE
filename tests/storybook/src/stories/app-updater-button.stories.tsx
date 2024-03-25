@@ -1,7 +1,5 @@
-import {
-  type AddPageButtonProps,
-  AppUpdaterButton,
-} from '@affine/core/components/app-sidebar';
+import type { AddPageButtonProps } from '@affine/core/components/app-sidebar';
+import { AppUpdaterButton } from '@affine/core/components/app-sidebar';
 import type { Meta, StoryFn } from '@storybook/react';
 import type { PropsWithChildren } from 'react';
 

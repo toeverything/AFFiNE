@@ -1,4 +1,5 @@
-import mixpanelBrowser, { type OverridedMixpanel } from 'mixpanel-browser';
+import type { OverridedMixpanel } from 'mixpanel-browser';
+import mixpanelBrowser from 'mixpanel-browser';
 
 export const mixpanel = process.env.MIXPANEL_TOKEN
   ? mixpanelBrowser

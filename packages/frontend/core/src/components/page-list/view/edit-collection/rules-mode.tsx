@@ -10,7 +10,8 @@ import {
 } from '@blocksuite/icons';
 import type { DocMeta } from '@blocksuite/store';
 import clsx from 'clsx';
-import { type ReactNode, useCallback, useEffect, useState } from 'react';
+import type { ReactNode } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { FilterList } from '../../filter';
 import { List, ListScrollContainer } from '../../list';

@@ -1,6 +1,11 @@
 import { nanoid } from 'nanoid';
-import { Array as YArray, Doc as YDoc, Map as YMap } from 'yjs';
-import { applyUpdate, encodeStateAsUpdate } from 'yjs';
+import {
+  applyUpdate,
+  Array as YArray,
+  Doc as YDoc,
+  encodeStateAsUpdate,
+  Map as YMap,
+} from 'yjs';
 
 const migrationOrigin = 'affine-migration';
 

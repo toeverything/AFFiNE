@@ -1,9 +1,6 @@
 import { Avatar, Input, Switch, toast } from '@affine/component';
-import {
-  ConfirmModal,
-  type ConfirmModalProps,
-  Modal,
-} from '@affine/component/ui/modal';
+import type { ConfirmModalProps } from '@affine/component/ui/modal';
+import { ConfirmModal, Modal } from '@affine/component/ui/modal';
 import { authAtom, openDisableCloudAlertModalAtom } from '@affine/core/atoms';
 import { useCurrentLoginStatus } from '@affine/core/hooks/affine/use-current-login-status';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
@@ -12,13 +9,15 @@ import { apis } from '@affine/electron-api';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { _addLocalWorkspace } from '@affine/workspace-impl';
-import { WorkspaceManager } from '@toeverything/infra';
-import { buildShowcaseWorkspace, initEmptyPage } from '@toeverything/infra';
-import { useService } from '@toeverything/infra';
+import {
+  buildShowcaseWorkspace,
+  initEmptyPage,
+  useService,
+  WorkspaceManager,
+} from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
 import type { KeyboardEvent } from 'react';
-import { useLayoutEffect } from 'react';
-import { useCallback, useState } from 'react';
+import { useCallback, useLayoutEffect, useState } from 'react';
 
 import { CloudSvg } from '../share-page-modal/cloud-svg';
 import * as styles from './index.css';

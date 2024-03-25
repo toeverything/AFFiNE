@@ -2,16 +2,16 @@ import { WorkspaceFlavour } from '@affine/env/workspace';
 import {
   createWorkspaceMutation,
   deleteWorkspaceMutation,
+  fetcher,
   findGraphQLError,
   getWorkspacesQuery,
 } from '@affine/graphql';
-import { fetcher } from '@affine/graphql';
 import { DocCollection } from '@blocksuite/store';
-import type { WorkspaceListProvider } from '@toeverything/infra';
-import {
-  type BlobStorage,
-  type WorkspaceInfo,
-  type WorkspaceMetadata,
+import type {
+  BlobStorage,
+  WorkspaceInfo,
+  WorkspaceListProvider,
+  WorkspaceMetadata,
 } from '@toeverything/infra';
 import { globalBlockSuiteSchema } from '@toeverything/infra';
 import { difference } from 'lodash-es';

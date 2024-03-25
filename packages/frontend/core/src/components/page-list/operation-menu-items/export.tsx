@@ -7,7 +7,8 @@ import {
   ExportToPdfIcon,
   ExportToPngIcon,
 } from '@blocksuite/icons';
-import { type ReactNode, useMemo } from 'react';
+import type { ReactNode } from 'react';
+import { useMemo } from 'react';
 
 import { transitionStyle } from './index.css';
 

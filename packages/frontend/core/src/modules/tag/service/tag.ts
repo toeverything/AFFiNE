@@ -1,4 +1,5 @@
-import { LiveData, type PageRecordList } from '@toeverything/infra';
+import type { PageRecordList } from '@toeverything/infra';
+import { LiveData } from '@toeverything/infra';
 import { nanoid } from 'nanoid';
 
 import type { WorkspaceLegacyProperties } from '../../workspace';

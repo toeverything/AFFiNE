@@ -1,7 +1,9 @@
 import { Switch } from '@affine/component';
-import { SettingHeader } from '@affine/component/setting-components';
-import { SettingRow } from '@affine/component/setting-components';
-import { SettingWrapper } from '@affine/component/setting-components';
+import {
+  SettingHeader,
+  SettingRow,
+  SettingWrapper,
+} from '@affine/component/setting-components';
 import { useAppUpdater } from '@affine/core/hooks/use-app-updater';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowRightSmallIcon, OpenInNewIcon } from '@blocksuite/icons';

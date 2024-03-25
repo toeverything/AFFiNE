@@ -1,19 +1,27 @@
 import { CloseIcon } from '@blocksuite/icons';
+import type {
+  AvatarFallbackProps,
+  AvatarImageProps,
+  AvatarProps as RadixAvatarProps,
+} from '@radix-ui/react-avatar';
 import {
-  type AvatarFallbackProps,
-  type AvatarImageProps,
-  type AvatarProps as RadixAvatarProps,
   Fallback as AvatarFallback,
   Image as AvatarImage,
   Root as AvatarRoot,
 } from '@radix-ui/react-avatar';
 import { assignInlineVars } from '@vanilla-extract/dynamic';
 import clsx from 'clsx';
-import type { CSSProperties, HTMLAttributes, MouseEvent } from 'react';
-import { forwardRef, type ReactElement, useMemo, useState } from 'react';
+import type {
+  CSSProperties,
+  HTMLAttributes,
+  MouseEvent,
+  ReactElement,
+} from 'react';
+import { forwardRef, useMemo, useState } from 'react';
 
 import { IconButton } from '../button';
-import { Tooltip, type TooltipProps } from '../tooltip';
+import type { TooltipProps } from '../tooltip';
+import { Tooltip } from '../tooltip';
 import { ColorfulFallback } from './colorful-fallback';
 import * as style from './style.css';
 import { sizeVar } from './style.css';

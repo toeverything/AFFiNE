@@ -1,6 +1,7 @@
 import type { Meta, StoryFn } from '@storybook/react';
 
-import { MenuTrigger, type MenuTriggerProps } from './index';
+import type { MenuTriggerProps } from './index';
+import { MenuTrigger } from './index';
 
 export default {
   title: 'UI/MenuTrigger',

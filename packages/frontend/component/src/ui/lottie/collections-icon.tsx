@@ -1,5 +1,6 @@
 import clsx from 'clsx';
-import Lottie, { type LottieRef } from 'lottie-react';
+import type { LottieRef } from 'lottie-react';
+import Lottie from 'lottie-react';
 import { useEffect, useRef } from 'react';
 
 import animationData from './collections-icon.json';

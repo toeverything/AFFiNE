@@ -1,8 +1,6 @@
 import { useAppSettingHelper } from '../../hooks/affine/use-app-setting-helper';
-import {
-  AppContainer as AppContainerWithoutSettings,
-  type WorkspaceRootProps,
-} from '../workspace';
+import type { WorkspaceRootProps } from '../workspace';
+import { AppContainer as AppContainerWithoutSettings } from '../workspace';
 
 export const AppContainer = (props: WorkspaceRootProps) => {
   const { appSettings } = useAppSettingHelper();

@@ -1,8 +1,7 @@
 import { IconButton } from '@affine/component';
 import { WindowsAppControls } from '@affine/core/components/pure/header/windows-app-controls';
 import { RightSidebarIcon } from '@blocksuite/icons';
-import { useLiveData } from '@toeverything/infra';
-import { useService } from '@toeverything/infra';
+import { useLiveData, useService } from '@toeverything/infra';
 import { useAtomValue } from 'jotai';
 import { Suspense, useCallback } from 'react';
 

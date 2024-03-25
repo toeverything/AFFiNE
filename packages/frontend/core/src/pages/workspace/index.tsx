@@ -1,9 +1,14 @@
 import { useWorkspace } from '@affine/core/hooks/use-workspace';
 import type { Workspace } from '@toeverything/infra';
-import { WorkspaceListService, WorkspaceManager } from '@toeverything/infra';
-import { ServiceProviderContext, useService } from '@toeverything/infra';
-import { useLiveData } from '@toeverything/infra';
-import { type ReactElement, Suspense, useEffect, useMemo } from 'react';
+import {
+  ServiceProviderContext,
+  useLiveData,
+  useService,
+  WorkspaceListService,
+  WorkspaceManager,
+} from '@toeverything/infra';
+import type { ReactElement } from 'react';
+import { Suspense, useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 
 import { AffineErrorBoundary } from '../../components/affine/affine-error-boundary';

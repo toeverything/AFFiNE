@@ -1,10 +1,5 @@
-import {
-  type DateCell,
-  DatePicker,
-  IconButton,
-  Menu,
-  Scrollable,
-} from '@affine/component';
+import type { DateCell } from '@affine/component';
+import { DatePicker, IconButton, Menu, Scrollable } from '@affine/component';
 import { MoveToTrash } from '@affine/core/components/page-list';
 import { useTrashModalHelper } from '@affine/core/hooks/affine/use-trash-modal-helper';
 import {
@@ -25,9 +20,9 @@ import {
   Doc,
   PageRecordList,
   useLiveData,
+  useService,
   Workspace,
 } from '@toeverything/infra';
-import { useService } from '@toeverything/infra';
 import { assignInlineVars } from '@vanilla-extract/dynamic';
 import clsx from 'clsx';
 import dayjs from 'dayjs';

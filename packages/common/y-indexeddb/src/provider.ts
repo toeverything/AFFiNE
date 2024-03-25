@@ -1,22 +1,17 @@
 import { assertExists } from '@blocksuite/global/utils';
 import type { IDBPDatabase } from 'idb';
 import { openDB } from 'idb';
-import {
-  createLazyProvider,
-  type DocDataSource,
-  writeOperation,
-} from 'y-provider';
+import type { DocDataSource } from 'y-provider';
+import { createLazyProvider, writeOperation } from 'y-provider';
 import type { Doc } from 'yjs';
 import { diffUpdate, encodeStateVectorFromUpdate } from 'yjs';
 
-import {
-  type BlockSuiteBinaryDB,
-  dbVersion,
-  DEFAULT_DB_NAME,
-  type IndexedDBProvider,
-  type UpdateMessage,
-  upgradeDB,
+import type {
+  BlockSuiteBinaryDB,
+  IndexedDBProvider,
+  UpdateMessage,
 } from './shared';
+import { dbVersion, DEFAULT_DB_NAME, upgradeDB } from './shared';
 import { mergeUpdates } from './utils';
 
 let mergeCount = 500;

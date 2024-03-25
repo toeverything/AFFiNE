@@ -95,7 +95,7 @@ const config = {
     '@typescript-eslint',
     'simple-import-sort',
     'sonarjs',
-    'i',
+    'import-x',
     'unused-imports',
     'unicorn',
     'rxjs',
@@ -131,6 +131,7 @@ const config = {
     'unused-imports/no-unused-imports': 'error',
     'simple-import-sort/imports': 'error',
     'simple-import-sort/exports': 'error',
+    'import-x/no-duplicates': 'error',
     '@typescript-eslint/ban-ts-comment': [
       'error',
       {
@@ -253,7 +254,7 @@ const config = {
         ],
         '@typescript-eslint/no-misused-promises': ['error'],
         '@typescript-eslint/prefer-readonly': 'error',
-        'i/no-extraneous-dependencies': ['error'],
+        'import-x/no-extraneous-dependencies': ['error'],
         'react-hooks/exhaustive-deps': [
           'warn',
           {

@@ -10,16 +10,15 @@ import { useWorkspaceQuota } from '@affine/core/hooks/use-workspace-quota';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloseIcon, ToggleCollapseIcon } from '@blocksuite/icons';
-import type { Doc as BlockSuiteDoc } from '@blocksuite/store';
-import { type DocCollection } from '@blocksuite/store';
+import type { Doc as BlockSuiteDoc, DocCollection } from '@blocksuite/store';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import type { DialogContentProps } from '@radix-ui/react-dialog';
-import { Doc, type PageMode, Workspace } from '@toeverything/infra';
-import { useService } from '@toeverything/infra';
+import type { PageMode } from '@toeverything/infra';
+import { Doc, useService, Workspace } from '@toeverything/infra';
 import { atom, useAtom, useSetAtom } from 'jotai';
+import type { PropsWithChildren } from 'react';
 import {
   Fragment,
-  type PropsWithChildren,
   Suspense,
   useCallback,
   useLayoutEffect,

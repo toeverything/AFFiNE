@@ -5,13 +5,8 @@ import { createPrivateKey, createPublicKey } from 'node:crypto';
 import { merge } from 'lodash-es';
 
 import pkg from '../../../package.json' assert { type: 'json' };
-import {
-  type AFFINE_ENV,
-  AFFiNEConfig,
-  DeploymentType,
-  type NODE_ENV,
-  type ServerFlavor,
-} from './def';
+import type { AFFINE_ENV, NODE_ENV, ServerFlavor } from './def';
+import { AFFiNEConfig, DeploymentType } from './def';
 import { readEnv } from './env';
 import { getDefaultAFFiNEStorageConfig } from './storage';
 

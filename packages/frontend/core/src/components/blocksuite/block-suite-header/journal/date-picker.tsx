@@ -1,4 +1,5 @@
-import { WeekDatePicker, type WeekDatePickerHandle } from '@affine/component';
+import type { WeekDatePickerHandle } from '@affine/component';
+import { WeekDatePicker } from '@affine/component';
 import {
   useJournalInfoHelper,
   useJournalRouteHelper,

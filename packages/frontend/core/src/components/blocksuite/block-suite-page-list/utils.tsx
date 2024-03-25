@@ -3,9 +3,7 @@ import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { useDocMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
 import { useDocCollectionHelper } from '@affine/core/hooks/use-block-suite-workspace-helper';
 import { WorkspaceSubPath } from '@affine/core/shared';
-import { useService } from '@toeverything/infra';
-import { PageRecordList } from '@toeverything/infra';
-import { initEmptyPage } from '@toeverything/infra';
+import { initEmptyPage, PageRecordList, useService } from '@toeverything/infra';
 import { useCallback, useMemo } from 'react';
 
 import { useNavigateHelper } from '../../../hooks/use-navigate-helper';

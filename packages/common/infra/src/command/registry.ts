@@ -2,11 +2,8 @@ import { DebugLogger } from '@affine/debug';
 // @ts-expect-error upstream type is wrong
 import { tinykeys } from 'tinykeys';
 
-import {
-  type AffineCommand,
-  type AffineCommandOptions,
-  createAffineCommand,
-} from './command';
+import type { AffineCommand, AffineCommandOptions } from './command';
+import { createAffineCommand } from './command';
 
 const commandLogger = new DebugLogger('command:registry');
 

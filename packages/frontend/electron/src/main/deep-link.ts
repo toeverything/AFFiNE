@@ -1,6 +1,7 @@
 import path from 'node:path';
 
-import { type App, type BrowserWindow, ipcMain } from 'electron';
+import type { App, BrowserWindow } from 'electron';
+import { ipcMain } from 'electron';
 
 import { buildType, CLOUD_BASE_URL, isDev } from './config';
 import { mainWindowOrigin } from './constants';

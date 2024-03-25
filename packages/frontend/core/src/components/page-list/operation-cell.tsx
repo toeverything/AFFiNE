@@ -32,11 +32,8 @@ import { DisablePublicSharing, MoveToTrash } from './operation-menu-items';
 import { CreateOrEditTag } from './tags/create-tag';
 import type { TagMeta } from './types';
 import { ColWrapper, stopPropagationWithoutPrevent } from './utils';
-import {
-  type AllPageListConfig,
-  useEditCollection,
-  useEditCollectionName,
-} from './view';
+import type { AllPageListConfig } from './view';
+import { useEditCollection, useEditCollectionName } from './view';
 
 export interface PageOperationCellProps {
   favorite: boolean;

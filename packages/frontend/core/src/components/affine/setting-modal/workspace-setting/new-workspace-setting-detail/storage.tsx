@@ -5,8 +5,7 @@ import { Tooltip } from '@affine/component/ui/tooltip';
 import { apis, events } from '@affine/electron-api';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { WorkspaceMetadata } from '@toeverything/infra';
-import { useMemo } from 'react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 const useDBFileSecondaryPath = (workspaceId: string) => {
   const [path, setPath] = useState<string | undefined>(undefined);

@@ -1,13 +1,8 @@
 import { Button } from '@affine/component';
 import clsx from 'clsx';
 import { debounce } from 'lodash-es';
-import {
-  type CSSProperties,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from 'react';
+import type { CSSProperties } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import Logo from '../assets/logo';
 import { OnboardingBlock } from '../switch-widgets/block';

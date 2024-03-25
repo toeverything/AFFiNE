@@ -1,7 +1,8 @@
 import type { Meta, StoryFn } from '@storybook/react';
 
 import { Button } from '../button';
-import Tooltip, { type TooltipProps } from './index';
+import type { TooltipProps } from './index';
+import Tooltip from './index';
 
 export default {
   title: 'UI/Tooltip',

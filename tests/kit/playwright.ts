@@ -5,7 +5,8 @@ import path, { resolve } from 'node:path';
 import process from 'node:process';
 
 import type { DocCollection } from '@blocksuite/store';
-import { type BrowserContext, test as baseTest } from '@playwright/test';
+import type { BrowserContext } from '@playwright/test';
+import { test as baseTest } from '@playwright/test';
 
 export const rootDir = resolve(__dirname, '..', '..');
 // assert that the rootDir is the root of the project

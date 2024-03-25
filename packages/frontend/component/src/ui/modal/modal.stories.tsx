@@ -2,10 +2,14 @@ import type { Meta, StoryFn } from '@storybook/react';
 import { useCallback, useState } from 'react';
 
 import { Button } from '../button';
-import { Input, type InputProps } from '../input';
-import { ConfirmModal, type ConfirmModalProps } from './confirm-modal';
-import { Modal, type ModalProps } from './modal';
-import { OverlayModal, type OverlayModalProps } from './overlay-modal';
+import type { InputProps } from '../input';
+import { Input } from '../input';
+import type { ConfirmModalProps } from './confirm-modal';
+import { ConfirmModal } from './confirm-modal';
+import type { ModalProps } from './modal';
+import { Modal } from './modal';
+import type { OverlayModalProps } from './overlay-modal';
+import { OverlayModal } from './overlay-modal';
 
 export default {
   title: 'UI/Modal',

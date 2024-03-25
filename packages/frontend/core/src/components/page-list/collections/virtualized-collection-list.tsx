@@ -1,15 +1,9 @@
 import { useDeleteCollectionInfo } from '@affine/core/hooks/affine/use-delete-collection-info';
 import type { Collection, DeleteCollectionInfo } from '@affine/env/filter';
 import { Trans } from '@affine/i18n';
-import { useService } from '@toeverything/infra';
-import { Workspace } from '@toeverything/infra';
-import {
-  type ReactElement,
-  useCallback,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import { useService, Workspace } from '@toeverything/infra';
+import type { ReactElement } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 
 import { CollectionService } from '../../../modules/collection';
 import { ListFloatingToolbar } from '../components/list-floating-toolbar';

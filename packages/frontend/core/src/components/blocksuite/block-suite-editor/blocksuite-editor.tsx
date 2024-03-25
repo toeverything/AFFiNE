@@ -17,10 +17,8 @@ import {
   useRef,
 } from 'react';
 
-import {
-  AffinePageReference,
-  type PageReferenceRendererOptions,
-} from '../../affine/reference-link';
+import type { PageReferenceRendererOptions } from '../../affine/reference-link';
+import { AffinePageReference } from '../../affine/reference-link';
 import { BlocksuiteEditorContainer } from './blocksuite-editor-container';
 import { NoPageRootError } from './no-page-error';
 import type { InlineRenderers } from './specs';

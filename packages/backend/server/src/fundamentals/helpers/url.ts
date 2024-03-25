@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { type Response } from 'express';
+import type { Response } from 'express';
 
 import { Config } from '../config';
 

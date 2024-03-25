@@ -3,8 +3,10 @@ import { cssVar } from '@toeverything/theme';
 import { memo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 
-import { Button, type ButtonProps } from '../button';
-import { Modal, type ModalProps } from './modal';
+import type { ButtonProps } from '../button';
+import { Button } from '../button';
+import type { ModalProps } from './modal';
+import { Modal } from './modal';
 import * as styles from './overlay-modal.css';
 
 const defaultContentOptions: ModalProps['contentOptions'] = {

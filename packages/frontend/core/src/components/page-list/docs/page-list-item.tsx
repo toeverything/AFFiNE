@@ -2,7 +2,8 @@ import { Checkbox } from '@affine/component';
 import { TagService } from '@affine/core/modules/tag';
 import { useDraggable } from '@dnd-kit/core';
 import { useLiveData, useService } from '@toeverything/infra';
-import { type PropsWithChildren, useCallback, useMemo } from 'react';
+import type { PropsWithChildren } from 'react';
+import { useCallback, useMemo } from 'react';
 
 import { WorkbenchLink } from '../../../modules/workbench/view/workbench-link';
 import type { DraggableTitleCellData, PageListItemProps } from '../types';

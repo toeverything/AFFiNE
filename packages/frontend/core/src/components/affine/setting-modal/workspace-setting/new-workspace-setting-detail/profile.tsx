@@ -12,13 +12,8 @@ import { CameraIcon } from '@blocksuite/icons';
 import type { Workspace } from '@toeverything/infra';
 import { useLiveData } from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
-import {
-  type KeyboardEvent,
-  type MouseEvent,
-  useCallback,
-  useEffect,
-  useState,
-} from 'react';
+import type { KeyboardEvent, MouseEvent } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import * as style from './style.css';
 import type { WorkspaceSettingDetailProps } from './types';

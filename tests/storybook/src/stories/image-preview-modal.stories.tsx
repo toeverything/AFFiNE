@@ -3,12 +3,12 @@ import { ImagePreviewModal } from '@affine/core/components/image-preview';
 import type { Meta } from '@storybook/react';
 import type { Doc } from '@toeverything/infra';
 import {
+  initEmptyPage,
   PageManager,
   ServiceProviderContext,
   useService,
   Workspace,
 } from '@toeverything/infra';
-import { initEmptyPage } from '@toeverything/infra';
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 

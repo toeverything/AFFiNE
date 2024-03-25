@@ -1,4 +1,5 @@
-import { expect, type Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
+import { expect } from '@playwright/test';
 
 export const getPropertyValueLocator = (page: Page, property: string) => {
   return page.locator(

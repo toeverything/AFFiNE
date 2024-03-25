@@ -1,6 +1,5 @@
-import type { WorkspaceMetadata } from '@toeverything/infra';
-import { type Workspace, WorkspaceManager } from '@toeverything/infra';
-import { useService } from '@toeverything/infra';
+import type { Workspace, WorkspaceMetadata } from '@toeverything/infra';
+import { useService, WorkspaceManager } from '@toeverything/infra';
 import { useEffect, useState } from 'react';
 
 /**

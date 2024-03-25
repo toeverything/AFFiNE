@@ -1,8 +1,7 @@
-import {
-  AuthModal as AuthModalBase,
-  type AuthModalProps as AuthModalBaseProps,
-} from '@affine/component/auth-components';
-import { type FC, useCallback, useMemo } from 'react';
+import type { AuthModalProps as AuthModalBaseProps } from '@affine/component/auth-components';
+import { AuthModal as AuthModalBase } from '@affine/component/auth-components';
+import type { FC } from 'react';
+import { useCallback, useMemo } from 'react';
 
 import { AfterSignInSendEmail } from './after-sign-in-send-email';
 import { AfterSignUpSendEmail } from './after-sign-up-send-email';

@@ -4,7 +4,8 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { FilterIcon } from '@blocksuite/icons';
 import type { DocMeta } from '@blocksuite/store';
 import clsx from 'clsx';
-import { type ReactNode, useCallback } from 'react';
+import type { ReactNode } from 'react';
+import { useCallback } from 'react';
 
 import { FilterList } from '../../filter/filter-list';
 import { VariableSelect } from '../../filter/vars';

@@ -4,12 +4,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaClient } from '@prisma/client';
 
-import {
-  Config,
-  type EventPayload,
-  metrics,
-  OnEvent,
-} from '../../fundamentals';
+import type { EventPayload } from '../../fundamentals';
+import { Config, metrics, OnEvent } from '../../fundamentals';
 import { QuotaService } from '../quota';
 import { Permission } from '../workspaces/types';
 import { isEmptyBuffer } from './manager';

@@ -1,16 +1,16 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 // the adapter is to bridge the workspace rootdoc & native js bindings
 
-import { createYProxy, type Y } from '@blocksuite/store';
+import type { Y } from '@blocksuite/store';
+import { createYProxy } from '@blocksuite/store';
 import type { Workspace } from '@toeverything/infra';
 import { defaultsDeep } from 'lodash-es';
 
-import {
-  PagePropertyType,
-  PageSystemPropertyId,
-  type WorkspaceAffineProperties,
-  type WorkspaceFavoriteItem,
+import type {
+  WorkspaceAffineProperties,
+  WorkspaceFavoriteItem,
 } from './schema';
+import { PagePropertyType, PageSystemPropertyId } from './schema';
 
 const AFFINE_PROPERTIES_ID = 'affine:workspace-properties';
 

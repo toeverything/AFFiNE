@@ -1,10 +1,5 @@
-import {
-  ConfirmModal,
-  type ConfirmModalProps,
-  MenuIcon,
-  MenuItem,
-  type MenuItemProps,
-} from '@affine/component';
+import type { ConfirmModalProps, MenuItemProps } from '@affine/component';
+import { ConfirmModal, MenuIcon, MenuItem } from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { DeleteIcon } from '@blocksuite/icons';
 

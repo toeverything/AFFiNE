@@ -1,14 +1,8 @@
-import { Menu, type MenuProps } from '@affine/component';
+import type { MenuProps } from '@affine/component';
+import { Menu } from '@affine/component';
 import clsx from 'clsx';
-import {
-  forwardRef,
-  type HTMLAttributes,
-  memo,
-  type MouseEventHandler,
-  useCallback,
-  useMemo,
-  useState,
-} from 'react';
+import type { HTMLAttributes, MouseEventHandler } from 'react';
+import { forwardRef, memo, useCallback, useMemo, useState } from 'react';
 
 import * as styles from './indicator.css';
 

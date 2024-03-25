@@ -2,7 +2,8 @@ import { Empty } from '@affine/component';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { DocCollection } from '@blocksuite/store';
-import { type ReactNode, useCallback } from 'react';
+import type { ReactNode } from 'react';
+import { useCallback } from 'react';
 
 import { usePageHelper } from '../../components/blocksuite/block-suite-page-list/utils';
 import * as styles from './page-list-empty.css';

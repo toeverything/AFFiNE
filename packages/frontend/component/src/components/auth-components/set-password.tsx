@@ -1,5 +1,6 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { type FC, useCallback, useRef, useState } from 'react';
+import type { FC } from 'react';
+import { useCallback, useRef, useState } from 'react';
 
 import { Button } from '../../ui/button';
 import { Wrapper } from '../../ui/layout';

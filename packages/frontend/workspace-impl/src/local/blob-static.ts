@@ -1,4 +1,4 @@
-import { type BlobStorage } from '@toeverything/infra';
+import type { BlobStorage } from '@toeverything/infra';
 
 export const predefinedStaticFiles = [
   '029uztLz2CzJezK7UUhrbGiWUdZ0J7NVs_qR6RDsvb8=',

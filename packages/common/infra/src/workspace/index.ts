@@ -11,7 +11,8 @@ export * from './testing';
 export * from './upgrade';
 export * from './workspace';
 
-import { type ServiceCollection, ServiceProvider } from '../di';
+import type { ServiceCollection } from '../di';
+import { ServiceProvider } from '../di';
 import { CleanupService } from '../lifecycle';
 import { GlobalCache, GlobalState, MemoryMemento } from '../storage';
 import {

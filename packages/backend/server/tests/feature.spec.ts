@@ -2,7 +2,8 @@
 
 import { INestApplication, Injectable } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
-import ava, { type TestFn } from 'ava';
+import type { TestFn } from 'ava';
+import ava from 'ava';
 
 import { AuthService } from '../src/core/auth/service';
 import {

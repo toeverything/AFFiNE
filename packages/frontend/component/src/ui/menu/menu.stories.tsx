@@ -1,15 +1,15 @@
 import { InformationIcon } from '@blocksuite/icons';
 import type { Meta, StoryFn } from '@storybook/react';
-import { type ReactNode, useCallback, useState } from 'react';
+import type { ReactNode } from 'react';
+import { useCallback, useState } from 'react';
 
 import { Button } from '../button';
 import { Tooltip } from '../tooltip';
+import type { MenuItemProps, MenuProps } from './index';
 import {
   Menu,
   MenuIcon,
   MenuItem,
-  type MenuItemProps,
-  type MenuProps,
   MenuSeparator,
   MenuSub,
   MenuTrigger,

@@ -1,5 +1,5 @@
+import type { ServiceProvider } from '@toeverything/infra';
 import {
-  type ServiceProvider,
   ServiceProviderContext,
   useLiveData,
   useService,

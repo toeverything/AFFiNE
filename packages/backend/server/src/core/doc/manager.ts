@@ -16,12 +16,12 @@ import {
   transact,
 } from 'yjs';
 
+import type { EventPayload } from '../../fundamentals';
 import {
   Cache,
   CallTimer,
   Config,
   EventEmitter,
-  type EventPayload,
   mergeUpdatesInApplyWay as jwstMergeUpdates,
   metrics,
   OnEvent,

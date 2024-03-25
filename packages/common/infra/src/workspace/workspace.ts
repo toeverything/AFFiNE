@@ -4,11 +4,12 @@ import type { DocCollection } from '@blocksuite/store';
 
 import type { ServiceProvider } from '../di';
 import { CleanupService } from '../lifecycle';
-import type { WorkspaceEngine } from './engine';
-import { type WorkspaceEngineStatus } from './engine';
-import { type WorkspaceMetadata } from './metadata';
-import type { WorkspaceUpgradeController } from './upgrade';
-import { type WorkspaceUpgradeStatus } from './upgrade';
+import type { WorkspaceEngine, WorkspaceEngineStatus } from './engine';
+import type { WorkspaceMetadata } from './metadata';
+import type {
+  WorkspaceUpgradeController,
+  WorkspaceUpgradeStatus,
+} from './upgrade';
 
 export type { DocCollection } from '@blocksuite/store';
 

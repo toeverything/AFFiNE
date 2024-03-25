@@ -1,10 +1,12 @@
 import { Menu } from '@affine/component/ui/menu';
-import { WorkspaceManager } from '@toeverything/infra';
-import { WorkspaceListService } from '@toeverything/infra';
-import { useService } from '@toeverything/infra';
-import { useLiveData } from '@toeverything/infra';
+import {
+  useLiveData,
+  useService,
+  WorkspaceListService,
+  WorkspaceManager,
+} from '@toeverything/infra';
 import { lazy, useEffect, useLayoutEffect, useState } from 'react';
-import { type LoaderFunction } from 'react-router-dom';
+import type { LoaderFunction } from 'react-router-dom';
 
 import { createFirstAppData } from '../bootstrap/first-app-data';
 import { UserWithWorkspaceList } from '../components/pure/workspace-slider-bar/user-with-workspace-list';

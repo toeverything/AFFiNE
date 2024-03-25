@@ -6,10 +6,10 @@ import {
   ServiceNotFoundError,
 } from './error';
 import { parseIdentifier } from './identifier';
-import {
-  type GeneralServiceIdentifier,
-  type ServiceIdentifierValue,
-  type ServiceVariant,
+import type {
+  GeneralServiceIdentifier,
+  ServiceIdentifierValue,
+  ServiceVariant,
 } from './types';
 
 export interface ResolveOptions {

@@ -1,4 +1,5 @@
-import { PrismaClient, type User } from '@prisma/client';
+import type { User } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 
 export class UnamedAccount1703756315970 {
   // do the migration

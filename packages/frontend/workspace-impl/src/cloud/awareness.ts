@@ -1,8 +1,8 @@
 import { DebugLogger } from '@affine/debug';
 import type { AwarenessProvider } from '@toeverything/infra';
+import type { Awareness } from 'y-protocols/awareness';
 import {
   applyAwarenessUpdate,
-  type Awareness,
   encodeAwarenessUpdate,
   removeAwarenessStates,
 } from 'y-protocols/awareness';

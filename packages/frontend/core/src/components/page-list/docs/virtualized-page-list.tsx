@@ -8,8 +8,7 @@ import type { Collection, Filter } from '@affine/env/filter';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { DocMeta } from '@blocksuite/store';
-import { useService } from '@toeverything/infra';
-import { Workspace } from '@toeverything/infra';
+import { useService, Workspace } from '@toeverything/infra';
 import { useCallback, useMemo, useRef, useState } from 'react';
 
 import { usePageHelper } from '../../blocksuite/block-suite-page-list/utils';

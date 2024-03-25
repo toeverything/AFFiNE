@@ -8,10 +8,10 @@ import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { DeleteIcon, FilterIcon, MoreHorizontalIcon } from '@blocksuite/icons';
 import type { Workspace, WorkspaceMetadata } from '@toeverything/infra';
+import type { MouseEvent } from 'react';
 import {
   createContext,
   Fragment,
-  type MouseEvent,
   useCallback,
   useContext,
   useEffect,
@@ -19,16 +19,16 @@ import {
   useState,
 } from 'react';
 
+import type { PagePropertyIcon } from '../../../page-properties';
 import {
   nameToIcon,
   PagePropertiesCreatePropertyMenuItems,
   PagePropertiesMetaManager,
-  type PagePropertyIcon,
 } from '../../../page-properties';
 import { ConfirmDeletePropertyModal } from '../../../page-properties/confirm-delete-property-modal';
+import type { MenuItemOption } from '../../../page-properties/menu-items';
 import {
   EditPropertyNameMenuItem,
-  type MenuItemOption,
   PropertyTypeMenuItem,
   renderMenuItemOptions,
 } from '../../../page-properties/menu-items';

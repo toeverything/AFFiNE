@@ -8,7 +8,8 @@ import type { Collection } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { DocCollection, DocMeta } from '@blocksuite/store';
 import type { DialogContentProps } from '@radix-ui/react-dialog';
-import { type ReactNode, useCallback, useMemo, useState } from 'react';
+import type { ReactNode } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import * as styles from './edit-collection.css';
 import { PagesMode } from './pages-mode';

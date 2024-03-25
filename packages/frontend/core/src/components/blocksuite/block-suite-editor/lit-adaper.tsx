@@ -10,7 +10,7 @@ import {
   EdgelessEditor,
   PageEditor,
 } from '@blocksuite/presets';
-import { type Doc } from '@blocksuite/store';
+import type { Doc } from '@blocksuite/store';
 import React, {
   forwardRef,
   Fragment,
@@ -23,12 +23,8 @@ import React, {
 
 import { PagePropertiesTable } from '../../affine/page-properties';
 import { BlocksuiteEditorJournalDocTitle } from './journal-doc-title';
-import {
-  docModeSpecs,
-  edgelessModeSpecs,
-  type InlineRenderers,
-  patchSpecs,
-} from './specs';
+import type { InlineRenderers } from './specs';
+import { docModeSpecs, edgelessModeSpecs, patchSpecs } from './specs';
 import * as styles from './styles.css';
 
 const adapted = {

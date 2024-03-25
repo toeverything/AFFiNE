@@ -1,8 +1,5 @@
-import {
-  type GetMembersByWorkspaceIdQuery,
-  getMembersByWorkspaceIdQuery,
-  Permission,
-} from '@affine/graphql';
+import type { GetMembersByWorkspaceIdQuery } from '@affine/graphql';
+import { getMembersByWorkspaceIdQuery, Permission } from '@affine/graphql';
 import { useMemo } from 'react';
 
 import { useQuery } from '../use-query';

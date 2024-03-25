@@ -3,7 +3,8 @@ import { useCallback, useRef, useState } from 'react';
 
 import { Button } from '../button';
 import { ResizePanel } from '../resize-panel/resize-panel';
-import { InlineEdit, type InlineEditHandle } from './inline-edit';
+import type { InlineEditHandle } from './inline-edit';
+import { InlineEdit } from './inline-edit';
 
 export default {
   title: 'UI/Editable/Inline Edit',

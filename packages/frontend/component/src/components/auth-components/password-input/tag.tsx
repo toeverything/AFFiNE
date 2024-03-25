@@ -1,5 +1,6 @@
 import clsx from 'clsx';
-import { type FC, useMemo } from 'react';
+import type { FC } from 'react';
+import { useMemo } from 'react';
 
 import type { Status } from './index';
 import { tag } from './style.css';

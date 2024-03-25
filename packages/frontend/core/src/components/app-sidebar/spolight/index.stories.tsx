@@ -1,5 +1,5 @@
 import type { Meta, StoryFn } from '@storybook/react';
-import { type PropsWithChildren } from 'react';
+import type { PropsWithChildren } from 'react';
 
 import { Spotlight } from './index';
 

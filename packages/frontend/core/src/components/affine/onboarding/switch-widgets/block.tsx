@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react';
 
-import { type EdgelessSwitchMode, type OnboardingBlockOption } from '../types';
+import type { EdgelessSwitchMode, OnboardingBlockOption } from '../types';
 import { onboardingBlock } from './style.css';
 
 interface OnboardingBlockProps extends OnboardingBlockOption {

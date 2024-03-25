@@ -1,10 +1,6 @@
 import clsx from 'clsx';
-import {
-  type HTMLAttributes,
-  type PropsWithChildren,
-  useEffect,
-  useRef,
-} from 'react';
+import type { HTMLAttributes, PropsWithChildren } from 'react';
+import { useEffect, useRef } from 'react';
 
 import * as styles from './styles.css';
 

@@ -1,6 +1,5 @@
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import type { WorkspaceFactory } from '@toeverything/infra';
-import type { ServiceCollection } from '@toeverything/infra';
+import type { ServiceCollection, WorkspaceFactory } from '@toeverything/infra';
 import {
   AwarenessContext,
   AwarenessProvider,

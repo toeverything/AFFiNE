@@ -4,8 +4,7 @@ import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
 import { useWorkspaceStatus } from '@affine/core/hooks/use-workspace-status';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { Workspace, WorkspaceManager } from '@toeverything/infra';
-import { useService } from '@toeverything/infra';
+import { useService, Workspace, WorkspaceManager } from '@toeverything/infra';
 import { useState } from 'react';
 
 import { WorkspaceSubPath } from '../../shared';

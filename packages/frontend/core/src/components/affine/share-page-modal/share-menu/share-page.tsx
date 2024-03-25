@@ -13,11 +13,9 @@ import { useServerBaseUrl } from '@affine/core/hooks/affine/use-server-config';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowRightSmallIcon } from '@blocksuite/icons';
-import { useService } from '@toeverything/infra';
-import { useLiveData } from '@toeverything/infra';
-import { Doc, type PageMode } from '@toeverything/infra';
-import { useMemo, useState } from 'react';
-import { useCallback } from 'react';
+import type { PageMode } from '@toeverything/infra';
+import { Doc, useLiveData, useService } from '@toeverything/infra';
+import { useCallback, useMemo, useState } from 'react';
 
 import { CloudSvg } from '../cloud-svg';
 import * as styles from './index.css';

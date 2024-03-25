@@ -1,6 +1,6 @@
 import clsx from 'clsx';
-import type { HTMLAttributes, PropsWithChildren } from 'react';
-import { forwardRef, type ReactElement } from 'react';
+import type { HTMLAttributes, PropsWithChildren, ReactElement } from 'react';
+import { forwardRef } from 'react';
 
 import { Loading } from '../loading';
 import type { ButtonType } from './button';

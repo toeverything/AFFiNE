@@ -2,7 +2,7 @@ import { isEqual } from 'lodash-es';
 import { distinctUntilChanged, map, Observable } from 'rxjs';
 
 import { LiveData } from '../livedata';
-import { type Workspace, type WorkspaceLocalState } from '../workspace';
+import type { Workspace, WorkspaceLocalState } from '../workspace';
 import { PageRecord } from './record';
 
 export class PageRecordList {

@@ -1,6 +1,6 @@
+import type { CollectionMeta } from '@affine/core/components/page-list';
 import {
   CollectionListHeader,
-  type CollectionMeta,
   createEmptyCollection,
   useEditCollectionName,
   VirtualizedCollectionList,
@@ -8,9 +8,7 @@ import {
 import { useAllPageListConfig } from '@affine/core/hooks/affine/use-all-page-list-config';
 import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { useService } from '@toeverything/infra';
-import { useLiveData } from '@toeverything/infra';
-import { Workspace } from '@toeverything/infra';
+import { useLiveData, useService, Workspace } from '@toeverything/infra';
 import { nanoid } from 'nanoid';
 import { useCallback, useMemo, useState } from 'react';
 

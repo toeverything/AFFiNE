@@ -9,10 +9,8 @@ import {
   ResolveField,
   Resolver,
 } from '@nestjs/graphql';
-import {
-  PrismaClient,
-  type WorkspacePage as PrismaWorkspacePage,
-} from '@prisma/client';
+import type { WorkspacePage as PrismaWorkspacePage } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 
 import { CloudThrottlerGuard } from '../../../fundamentals';
 import { CurrentUser } from '../../auth';

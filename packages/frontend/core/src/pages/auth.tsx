@@ -11,20 +11,16 @@ import { pushNotificationAtom } from '@affine/component/notification-center';
 import {
   changeEmailMutation,
   changePasswordMutation,
+  fetcher,
   sendVerifyChangeEmailMutation,
   verifyEmailMutation,
 } from '@affine/graphql';
-import { fetcher } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useSetAtom } from 'jotai/react';
 import type { ReactElement } from 'react';
 import { useCallback } from 'react';
-import {
-  type LoaderFunction,
-  redirect,
-  useParams,
-  useSearchParams,
-} from 'react-router-dom';
+import type { LoaderFunction } from 'react-router-dom';
+import { redirect, useParams, useSearchParams } from 'react-router-dom';
 import { z } from 'zod';
 
 import { SubscriptionRedirect } from '../components/affine/auth/subscription-redirect';

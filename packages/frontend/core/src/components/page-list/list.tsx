@@ -1,10 +1,9 @@
 import { Scrollable, useHasScrollTop } from '@affine/component';
 import clsx from 'clsx';
+import type { ForwardedRef, PropsWithChildren } from 'react';
 import {
-  type ForwardedRef,
   forwardRef,
   memo,
-  type PropsWithChildren,
   useCallback,
   useEffect,
   useImperativeHandle,

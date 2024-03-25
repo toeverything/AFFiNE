@@ -1,6 +1,5 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { Workspace } from '@toeverything/infra';
-import { useService } from '@toeverything/infra';
+import { useService, Workspace } from '@toeverything/infra';
 import { useStore } from 'jotai';
 import { useTheme } from 'next-themes';
 import { useEffect } from 'react';

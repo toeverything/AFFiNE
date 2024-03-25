@@ -1,14 +1,14 @@
 import path from 'node:path';
 
-import { type _AsyncVersionOf, AsyncCall } from 'async-call-rpc';
+import type { _AsyncVersionOf } from 'async-call-rpc';
+import { AsyncCall } from 'async-call-rpc';
+import type { UtilityProcess, WebContents } from 'electron';
 import {
   app,
   dialog,
   MessageChannelMain,
   shell,
-  type UtilityProcess,
   utilityProcess,
-  type WebContents,
 } from 'electron';
 
 import type { HelperToMain, MainToHelper } from '../shared/type';

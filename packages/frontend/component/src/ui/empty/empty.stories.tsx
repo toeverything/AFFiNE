@@ -1,6 +1,7 @@
 import type { Meta, StoryFn } from '@storybook/react';
 
-import { Empty, type EmptyContentProps } from './index';
+import type { EmptyContentProps } from './index';
+import { Empty } from './index';
 
 export default {
   title: 'UI/Empty',

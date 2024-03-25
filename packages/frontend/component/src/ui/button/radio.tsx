@@ -4,7 +4,8 @@ import type {
 } from '@radix-ui/react-radio-group';
 import * as RadioGroup from '@radix-ui/react-radio-group';
 import clsx from 'clsx';
-import { type CSSProperties, forwardRef } from 'react';
+import type { CSSProperties } from 'react';
+import { forwardRef } from 'react';
 
 import * as styles from './styles.css';
 

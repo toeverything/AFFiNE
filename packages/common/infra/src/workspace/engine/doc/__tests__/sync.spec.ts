@@ -1,7 +1,12 @@
 import { nanoid } from 'nanoid';
 import { describe, expect, test, vitest } from 'vitest';
-import { Doc as YDoc, encodeStateAsUpdate } from 'yjs';
-import { diffUpdate, encodeStateVectorFromUpdate, mergeUpdates } from 'yjs';
+import {
+  diffUpdate,
+  Doc as YDoc,
+  encodeStateAsUpdate,
+  encodeStateVectorFromUpdate,
+  mergeUpdates,
+} from 'yjs';
 
 import { AsyncLock } from '../../../../utils';
 import { DocEngine } from '..';

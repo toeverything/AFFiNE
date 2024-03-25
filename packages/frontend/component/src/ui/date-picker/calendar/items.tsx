@@ -1,13 +1,8 @@
 import { ArrowLeftSmallIcon, ArrowRightSmallIcon } from '@blocksuite/icons';
 import { assignInlineVars } from '@vanilla-extract/dynamic';
 import clsx from 'clsx';
-import {
-  forwardRef,
-  type HTMLAttributes,
-  memo,
-  type PropsWithChildren,
-  type ReactNode,
-} from 'react';
+import type { HTMLAttributes, PropsWithChildren, ReactNode } from 'react';
+import { forwardRef, memo } from 'react';
 
 import { IconButton } from '../../button';
 import * as styles from './calendar.css';

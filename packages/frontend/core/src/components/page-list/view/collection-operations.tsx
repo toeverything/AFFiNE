@@ -1,9 +1,5 @@
-import {
-  Menu,
-  MenuIcon,
-  MenuItem,
-  type MenuItemProps,
-} from '@affine/component';
+import type { MenuItemProps } from '@affine/component';
+import { Menu, MenuIcon, MenuItem } from '@affine/component';
 import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
 import { Workbench } from '@affine/core/modules/workbench';
 import type { Collection, DeleteCollectionInfo } from '@affine/env/filter';
@@ -15,12 +11,8 @@ import {
   SplitViewIcon,
 } from '@blocksuite/icons';
 import { useService } from '@toeverything/infra';
-import {
-  type PropsWithChildren,
-  type ReactElement,
-  useCallback,
-  useMemo,
-} from 'react';
+import type { PropsWithChildren, ReactElement } from 'react';
+import { useCallback, useMemo } from 'react';
 
 import { CollectionService } from '../../../modules/collection';
 import * as styles from './collection-operations.css';

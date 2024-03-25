@@ -1,17 +1,8 @@
 import { apis } from '@affine/electron-api';
-import {
-  AsyncLock,
-  type ByteKV,
-  type ByteKVBehavior,
-  type DocStorage,
-  MemoryDocEventBus,
-} from '@toeverything/infra';
-import {
-  type DBSchema,
-  type IDBPDatabase,
-  type IDBPObjectStore,
-  openDB,
-} from 'idb';
+import type { ByteKV, ByteKVBehavior, DocStorage } from '@toeverything/infra';
+import { AsyncLock, MemoryDocEventBus } from '@toeverything/infra';
+import type { DBSchema, IDBPDatabase, IDBPObjectStore } from 'idb';
+import { openDB } from 'idb';
 
 export class SqliteDocStorage implements DocStorage {
   constructor(private readonly workspaceId: string) {}

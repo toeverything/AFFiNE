@@ -17,7 +17,8 @@ import {
 } from './data-hooks';
 import { HighlightLabel } from './highlight';
 import * as styles from './main.css';
-import { CMDKModal, type CMDKModalProps } from './modal';
+import type { CMDKModalProps } from './modal';
+import { CMDKModal } from './modal';
 import { NotFoundGroup } from './not-found';
 import type { CMDKCommand } from './types';
 

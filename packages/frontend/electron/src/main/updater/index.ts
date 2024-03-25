@@ -1,13 +1,14 @@
-import { app, type IpcMainInvokeEvent } from 'electron';
+import type { IpcMainInvokeEvent } from 'electron';
+import { app } from 'electron';
 
 import type { NamespaceHandlers } from '../type';
+import type { UpdaterConfig } from './electron-updater';
 import {
   checkForUpdates,
   downloadUpdate,
   getConfig,
   quitAndInstall,
   setConfig,
-  type UpdaterConfig,
 } from './electron-updater';
 
 export const updaterHandlers = {

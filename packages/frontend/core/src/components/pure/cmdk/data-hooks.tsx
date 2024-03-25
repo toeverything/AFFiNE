@@ -15,19 +15,17 @@ import {
   ViewLayersIcon,
 } from '@blocksuite/icons';
 import type { DocMeta } from '@blocksuite/store';
+import type { AffineCommand, CommandCategory } from '@toeverything/infra';
 import {
+  AffineCommandRegistry,
   Doc,
   PageRecordList,
+  PreconditionStrategy,
   useLiveData,
+  useService,
+  useServiceOptional,
   Workspace,
 } from '@toeverything/infra';
-import {
-  type AffineCommand,
-  AffineCommandRegistry,
-  type CommandCategory,
-  PreconditionStrategy,
-} from '@toeverything/infra';
-import { useService, useServiceOptional } from '@toeverything/infra';
 import { atom, useAtomValue } from 'jotai';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 

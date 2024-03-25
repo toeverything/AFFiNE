@@ -1,7 +1,6 @@
 import { CollectionService } from '@affine/core/modules/collection';
 import type { Collection, Filter } from '@affine/env/filter';
-import { useService } from '@toeverything/infra';
-import { Workspace } from '@toeverything/infra';
+import { useService, Workspace } from '@toeverything/infra';
 import { useCallback } from 'react';
 
 import { filterContainerStyle } from '../../../components/filter-container.css';

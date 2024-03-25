@@ -1,10 +1,10 @@
+import type { MenuProps } from '@affine/component';
 import {
   Button,
   IconButton,
   Menu,
   MenuIcon,
   MenuItem,
-  type MenuProps,
   Tooltip,
 } from '@affine/component';
 import { useCurrentWorkspacePropertiesAdapter } from '@affine/core/hooks/use-affine-adapter';
@@ -28,10 +28,9 @@ import {
   ViewIcon,
 } from '@blocksuite/icons';
 import type { Doc } from '@blocksuite/store';
+import type { DragEndEvent, DraggableAttributes } from '@dnd-kit/core';
 import {
   DndContext,
-  type DragEndEvent,
-  type DraggableAttributes,
   PointerSensor,
   useSensor,
   useSensors,
@@ -46,11 +45,13 @@ import clsx from 'clsx';
 import { use } from 'foxact/use';
 import { atom, useAtomValue, useSetAtom } from 'jotai';
 import type React from 'react';
+import type {
+  CSSProperties,
+  MouseEvent,
+  MouseEventHandler,
+  PropsWithChildren,
+} from 'react';
 import {
-  type CSSProperties,
-  type MouseEvent,
-  type MouseEventHandler,
-  type PropsWithChildren,
   Suspense,
   useCallback,
   useContext,
@@ -62,14 +63,11 @@ import {
 import { AffinePageReference } from '../reference-link';
 import { managerContext } from './common';
 import { ConfirmDeletePropertyModal } from './confirm-delete-property-modal';
-import {
-  getDefaultIconName,
-  nameToIcon,
-  type PagePropertyIcon,
-} from './icons-mapping';
+import type { PagePropertyIcon } from './icons-mapping';
+import { getDefaultIconName, nameToIcon } from './icons-mapping';
+import type { MenuItemOption } from './menu-items';
 import {
   EditPropertyNameMenuItem,
-  type MenuItemOption,
   PropertyTypeMenuItem,
   renderMenuItemOptions,
 } from './menu-items';

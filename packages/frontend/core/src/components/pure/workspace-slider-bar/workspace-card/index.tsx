@@ -17,18 +17,11 @@ import {
   NoNetworkIcon,
   UnsyncIcon,
 } from '@blocksuite/icons';
-import { Workspace } from '@toeverything/infra';
-import { useService } from '@toeverything/infra';
+import { useService, Workspace } from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
 import { debounce } from 'lodash-es';
-import {
-  forwardRef,
-  type HTMLAttributes,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
+import type { HTMLAttributes } from 'react';
+import { forwardRef, useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useSystemOnline } from '../../../../hooks/use-system-online';
 import {

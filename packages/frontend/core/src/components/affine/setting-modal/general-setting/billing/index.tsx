@@ -8,10 +8,10 @@ import {
 import { Button, IconButton } from '@affine/component/ui/button';
 import { Loading } from '@affine/component/ui/loading';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
+import type { InvoicesQuery } from '@affine/graphql';
 import {
   createCustomerPortalMutation,
   getInvoicesCountQuery,
-  type InvoicesQuery,
   invoicesQuery,
   InvoiceStatus,
   pricesQuery,
@@ -29,10 +29,8 @@ import { openSettingModalAtom } from '../../../../../atoms';
 import { useCurrentLoginStatus } from '../../../../../hooks/affine/use-current-login-status';
 import { useMutation } from '../../../../../hooks/use-mutation';
 import { useQuery } from '../../../../../hooks/use-query';
-import {
-  type SubscriptionMutator,
-  useUserSubscription,
-} from '../../../../../hooks/use-subscription';
+import type { SubscriptionMutator } from '../../../../../hooks/use-subscription';
+import { useUserSubscription } from '../../../../../hooks/use-subscription';
 import { SWRErrorBoundary } from '../../../../pure/swr-error-bundary';
 import { CancelAction, ResumeAction } from '../plans/actions';
 import * as styles from './style.css';

@@ -1,5 +1,5 @@
 import type { GlobalCache } from '../../storage';
-import { type WorkspaceMetadata } from '../metadata';
+import type { WorkspaceMetadata } from '../metadata';
 
 const CACHE_STORAGE_KEY = 'jotai-workspaces';
 

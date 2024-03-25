@@ -1,4 +1,5 @@
-import { apis, events, type UpdateMeta } from '@affine/electron-api';
+import type { UpdateMeta } from '@affine/electron-api';
+import { apis, events } from '@affine/electron-api';
 import { isBrowser } from '@affine/env/constant';
 import { appSettingAtom } from '@toeverything/infra';
 import { atom, useAtom, useAtomValue } from 'jotai';

@@ -1,8 +1,8 @@
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import type { Doc } from '@blocksuite/store';
-import { type Workspace, WorkspaceManager } from '@toeverything/infra';
-import { useService } from '@toeverything/infra';
+import type { Workspace } from '@toeverything/infra';
+import { useService, WorkspaceManager } from '@toeverything/infra';
 import { useState } from 'react';
 
 import { useNavigateHelper } from '../../../hooks/use-navigate-helper';

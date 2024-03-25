@@ -6,8 +6,8 @@ import * as styles from './calendar.css';
 import { DATE_MAX, DATE_MIN } from './constants';
 import { DayPicker } from './day-picker';
 import { MonthPicker } from './month-picker';
-import type { SelectMode } from './types';
-import { type DatePickerProps, defaultDatePickerProps } from './types';
+import type { DatePickerProps, SelectMode } from './types';
+import { defaultDatePickerProps } from './types';
 import { YearPicker } from './year-picker';
 
 export type { DatePickerProps } from './types';

@@ -1,5 +1,8 @@
-import { cssVar } from '@toeverything/theme';
-import { darkCssVariables, lightCssVariables } from '@toeverything/theme';
+import {
+  cssVar,
+  darkCssVariables,
+  lightCssVariables,
+} from '@toeverything/theme';
 import { globalStyle } from '@vanilla-extract/css';
 globalStyle('body', {
   color: cssVar('textPrimaryColor'),

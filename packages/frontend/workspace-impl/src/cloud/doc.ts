@@ -1,5 +1,6 @@
 import { DebugLogger } from '@affine/debug';
-import { type DocServer, throwIfAborted } from '@toeverything/infra';
+import type { DocServer } from '@toeverything/infra';
+import { throwIfAborted } from '@toeverything/infra';
 import type { Socket } from 'socket.io-client';
 
 import { getIoManager } from '../utils/affine-io';

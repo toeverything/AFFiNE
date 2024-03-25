@@ -1,5 +1,6 @@
 import type { Tag as TagSchema } from '@affine/env/filter';
-import { LiveData, type PageRecordList } from '@toeverything/infra';
+import type { PageRecordList } from '@toeverything/infra';
+import { LiveData } from '@toeverything/infra';
 
 import type { WorkspaceLegacyProperties } from '../../workspace';
 

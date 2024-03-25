@@ -1,5 +1,5 @@
 import { AuthPageContainer } from '@affine/component/auth-components';
-import { type GetInviteInfoQuery } from '@affine/graphql';
+import type { GetInviteInfoQuery } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 
 import { Avatar } from '../../ui/avatar';

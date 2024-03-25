@@ -1,4 +1,5 @@
-import { forwardRef, type HTMLAttributes } from 'react';
+import type { HTMLAttributes } from 'react';
+import { forwardRef } from 'react';
 
 const formatTime = (time: number): string => {
   const minutes = Math.floor(time / 60);

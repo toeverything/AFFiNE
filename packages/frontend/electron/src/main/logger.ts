@@ -1,5 +1,4 @@
-import { shell } from 'electron';
-import { app } from 'electron';
+import { app, shell } from 'electron';
 import log from 'electron-log';
 
 export const logger = log.scope('main');

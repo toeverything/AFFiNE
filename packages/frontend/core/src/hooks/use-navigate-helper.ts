@@ -1,11 +1,7 @@
 import type { WorkspaceSubPath } from '@affine/core/shared';
 import { createContext, useCallback, useContext, useMemo } from 'react';
-import {
-  type NavigateFunction,
-  type NavigateOptions,
-  type To,
-  useLocation,
-} from 'react-router-dom';
+import type { NavigateFunction, NavigateOptions, To } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 
 import { router } from '../router';
 

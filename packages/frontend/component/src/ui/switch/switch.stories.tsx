@@ -1,6 +1,7 @@
 import type { Meta, StoryFn } from '@storybook/react';
 
-import { Switch, type SwitchProps } from './index';
+import type { SwitchProps } from './index';
+import { Switch } from './index';
 
 export default {
   title: 'UI/Switch',

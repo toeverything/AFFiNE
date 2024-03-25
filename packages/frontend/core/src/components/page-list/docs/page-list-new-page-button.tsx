@@ -1,5 +1,4 @@
-import { Workspace } from '@toeverything/infra';
-import { useService } from '@toeverything/infra';
+import { useService, Workspace } from '@toeverything/infra';
 import type { PropsWithChildren } from 'react';
 
 import { usePageHelper } from '../../blocksuite/block-suite-page-list/utils';

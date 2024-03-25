@@ -1,4 +1,5 @@
-import { createIdentifier, type ServiceCollection } from '../di';
+import type { ServiceCollection } from '../di';
+import { createIdentifier } from '../di';
 
 export interface WorkspaceFactory {
   name: string;

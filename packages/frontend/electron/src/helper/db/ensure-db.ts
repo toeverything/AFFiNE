@@ -1,5 +1,4 @@
 import type { Subject } from 'rxjs';
-import { Observable } from 'rxjs';
 import {
   concat,
   defer,
@@ -8,6 +7,7 @@ import {
   interval,
   lastValueFrom,
   merge,
+  Observable,
 } from 'rxjs';
 import {
   concatMap,

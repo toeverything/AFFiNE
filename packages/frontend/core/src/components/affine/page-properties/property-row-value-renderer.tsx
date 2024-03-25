@@ -10,13 +10,8 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
 import { Doc, useService, Workspace } from '@toeverything/infra';
 import { noop } from 'lodash-es';
-import {
-  type ChangeEventHandler,
-  useCallback,
-  useContext,
-  useEffect,
-  useState,
-} from 'react';
+import type { ChangeEventHandler } from 'react';
+import { useCallback, useContext, useEffect, useState } from 'react';
 
 import { managerContext } from './common';
 import * as styles from './styles.css';

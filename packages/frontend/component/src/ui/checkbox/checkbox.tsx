@@ -1,6 +1,7 @@
 // components/checkbox.tsx
 import clsx from 'clsx';
-import { type HTMLAttributes, useCallback, useEffect, useRef } from 'react';
+import type { HTMLAttributes } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 
 import * as icons from './icons';
 import * as styles from './index.css';

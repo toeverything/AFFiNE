@@ -1,5 +1,4 @@
-import { ExecutionContext, Injectable } from '@nestjs/common';
-import { Global, Module } from '@nestjs/common';
+import { ExecutionContext, Global, Injectable, Module } from '@nestjs/common';
 import {
   Throttle,
   ThrottlerGuard,

@@ -1,7 +1,6 @@
 import { PagePropertiesTable } from '@affine/core/components/affine/page-properties';
 import { AffineSchemas } from '@blocksuite/blocks/schemas';
-import { DocCollection } from '@blocksuite/store';
-import { Schema } from '@blocksuite/store';
+import { DocCollection, Schema } from '@blocksuite/store';
 import type { StoryFn } from '@storybook/react';
 import { initEmptyPage } from '@toeverything/infra';
 

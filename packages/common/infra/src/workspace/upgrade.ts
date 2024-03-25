@@ -4,12 +4,16 @@ import { Slot } from '@blocksuite/global/utils';
 import type { DocCollection } from '@blocksuite/store';
 import { applyUpdate, Doc as YDoc, encodeStateAsUpdate } from 'yjs';
 
-import { checkWorkspaceCompatibility, MigrationPoint } from '../blocksuite';
-import { forceUpgradePages, upgradeV1ToV2 } from '../blocksuite';
-import { migrateGuidCompatibility } from '../blocksuite';
+import {
+  checkWorkspaceCompatibility,
+  forceUpgradePages,
+  migrateGuidCompatibility,
+  MigrationPoint,
+  upgradeV1ToV2,
+} from '../blocksuite';
 import type { DocEngine } from './engine';
 import type { WorkspaceManager } from './manager';
-import { type WorkspaceMetadata } from './metadata';
+import type { WorkspaceMetadata } from './metadata';
 
 export interface WorkspaceUpgradeStatus {
   needUpgrade: boolean;

@@ -7,7 +7,8 @@ import {
   waitForEditorLoad,
 } from '@affine-test/kit/utils/page-logic';
 import { clickSideBarAllPageButton } from '@affine-test/kit/utils/sidebar';
-import { expect, type Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
+import { expect } from '@playwright/test';
 
 const historyShortcut = async (page: Page, command: 'goBack' | 'goForward') => {
   await withCtrlOrMeta(page, () =>

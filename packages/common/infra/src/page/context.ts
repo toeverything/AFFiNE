@@ -1,6 +1,7 @@
 import type { Doc as BlockSuiteDoc } from '@blocksuite/store';
 
-import { createIdentifier, type ServiceCollection } from '../di';
+import type { ServiceCollection } from '../di';
+import { createIdentifier } from '../di';
 import type { PageRecord } from './record';
 import { PageScope } from './service-scope';
 

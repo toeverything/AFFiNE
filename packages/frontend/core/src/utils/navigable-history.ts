@@ -1,11 +1,12 @@
-import type { Blocker, Listener, Location, To } from 'history';
-import {
-  Action,
-  createPath,
-  type MemoryHistory,
-  type MemoryHistoryOptions,
-  parsePath,
+import type {
+  Blocker,
+  Listener,
+  Location,
+  MemoryHistory,
+  MemoryHistoryOptions,
+  To,
 } from 'history';
+import { Action, createPath, parsePath } from 'history';
 
 export interface NavigableHistory extends MemoryHistory {
   entries: Location[];

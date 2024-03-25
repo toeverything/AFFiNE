@@ -1,7 +1,8 @@
 import anime from 'animejs';
 import { useEffect } from 'react';
 
-import { Paper, type PaperProps } from '../curve-paper/paper';
+import type { PaperProps } from '../curve-paper/paper';
+import { Paper } from '../curve-paper/paper';
 import * as paperStyles from '../curve-paper/paper.css';
 import type { ArticleOption } from '../types';
 import * as styles from './animate-in.css';

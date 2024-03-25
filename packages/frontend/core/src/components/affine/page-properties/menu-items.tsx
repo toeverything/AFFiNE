@@ -1,26 +1,21 @@
+import type { MenuItemProps } from '@affine/component';
 import {
   Input,
   MenuIcon,
   MenuItem,
-  type MenuItemProps,
   MenuSeparator,
   Scrollable,
 } from '@affine/component';
 import type { PageInfoCustomPropertyMeta } from '@affine/core/modules/workspace/properties/schema';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import {
-  cloneElement,
-  isValidElement,
-  type KeyboardEventHandler,
-  type MouseEventHandler,
-  useCallback,
-} from 'react';
+import type { KeyboardEventHandler, MouseEventHandler } from 'react';
+import { cloneElement, isValidElement, useCallback } from 'react';
 
+import type { PagePropertyIcon } from './icons-mapping';
 import {
   getDefaultIconName,
   getSafeIconName,
   nameToIcon,
-  type PagePropertyIcon,
 } from './icons-mapping';
 import { IconsSelectorButton } from './icons-selector';
 import * as styles from './styles.css';

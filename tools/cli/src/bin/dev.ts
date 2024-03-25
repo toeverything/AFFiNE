@@ -6,7 +6,8 @@ import { config } from 'dotenv';
 import webpack from 'webpack';
 import WebpackDevServer from 'webpack-dev-server';
 
-import { type BuildFlags, projectRoot } from '../config/index.js';
+import type { BuildFlags } from '../config/index.js';
+import { projectRoot } from '../config/index.js';
 import { watchI18N } from '../util/i18n.js';
 import { createWebpackConfig } from '../webpack/webpack.config.js';
 

@@ -5,7 +5,8 @@ import { useCallback, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import { authAtom } from '../atoms';
-import { AuthPanel, type AuthProps } from '../components/affine/auth';
+import type { AuthProps } from '../components/affine/auth';
+import { AuthPanel } from '../components/affine/auth';
 import { SubscriptionRedirect } from '../components/affine/auth/subscription-redirect';
 import { useSubscriptionSearch } from '../components/affine/auth/use-subscription';
 import { useCurrentLoginStatus } from '../hooks/affine/use-current-login-status';

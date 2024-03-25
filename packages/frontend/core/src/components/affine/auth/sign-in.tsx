@@ -5,16 +5,13 @@ import {
 } from '@affine/component/auth-components';
 import { Button } from '@affine/component/ui/button';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import {
-  findGraphQLError,
-  type GetUserQuery,
-  getUserQuery,
-} from '@affine/graphql';
+import type { GetUserQuery } from '@affine/graphql';
+import { findGraphQLError, getUserQuery } from '@affine/graphql';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowDownBigIcon } from '@blocksuite/icons';
-import { type FC, useState } from 'react';
-import { useCallback } from 'react';
+import type { FC } from 'react';
+import { useCallback, useState } from 'react';
 
 import { useCurrentLoginStatus } from '../../../hooks/affine/use-current-login-status';
 import { useMutation } from '../../../hooks/use-mutation';

@@ -1,5 +1,6 @@
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import { type SubscriptionQuery, subscriptionQuery } from '@affine/graphql';
+import type { SubscriptionQuery } from '@affine/graphql';
+import { subscriptionQuery } from '@affine/graphql';
 
 import { useServerFeatures } from './affine/use-server-config';
 import { useQuery } from './use-query';

@@ -1,9 +1,5 @@
-import {
-  MenuIcon,
-  MenuItem,
-  type MenuItemProps,
-  MenuSeparator,
-} from '@affine/component';
+import type { MenuItemProps } from '@affine/component';
+import { MenuIcon, MenuItem, MenuSeparator } from '@affine/component';
 import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
@@ -14,7 +10,8 @@ import {
   LinkedPageIcon,
   SplitViewIcon,
 } from '@blocksuite/icons';
-import { type ReactElement, useMemo } from 'react';
+import type { ReactElement } from 'react';
+import { useMemo } from 'react';
 
 type OperationItemsProps = {
   inFavorites?: boolean;

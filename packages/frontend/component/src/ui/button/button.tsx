@@ -1,12 +1,11 @@
 import clsx from 'clsx';
-import {
-  type FC,
-  forwardRef,
-  type HTMLAttributes,
-  type PropsWithChildren,
-  type ReactElement,
-  useMemo,
+import type {
+  FC,
+  HTMLAttributes,
+  PropsWithChildren,
+  ReactElement,
 } from 'react';
+import { forwardRef, useMemo } from 'react';
 
 import { Loading } from '../loading';
 import { button, buttonIcon } from './button.css';

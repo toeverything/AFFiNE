@@ -1,6 +1,5 @@
 import { Menu, MenuItem } from '@affine/component';
-import type { Filter, Literal } from '@affine/env/filter';
-import type { PropertiesMeta } from '@affine/env/filter';
+import type { Filter, Literal, PropertiesMeta } from '@affine/env/filter';
 import type { ReactNode } from 'react';
 import { useMemo } from 'react';
 

@@ -7,7 +7,8 @@ import {
   waitForEditorLoad,
 } from '@affine-test/kit/utils/page-logic';
 import { clickSideBarAllPageButton } from '@affine-test/kit/utils/sidebar';
-import { expect, type Locator, type Page } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
+import { expect } from '@playwright/test';
 
 const openQuickSearchByShortcut = async (page: Page, checkVisible = true) => {
   await withCtrlOrMeta(page, () => page.keyboard.press('k', { delay: 50 }));

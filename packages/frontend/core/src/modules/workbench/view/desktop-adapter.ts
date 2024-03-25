@@ -1,4 +1,4 @@
-import { type Location } from 'history';
+import type { Location } from 'history';
 import { useEffect } from 'react';
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import { useLocation } from 'react-router-dom';

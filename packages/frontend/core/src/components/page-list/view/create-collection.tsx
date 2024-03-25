@@ -1,6 +1,6 @@
 import { Button, Input, Modal } from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { type KeyboardEvent } from 'react';
+import type { KeyboardEvent } from 'react';
 import { useCallback, useMemo, useState } from 'react';
 
 import * as styles from './create-collection.css';

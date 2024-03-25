@@ -2,7 +2,8 @@ import { DropdownButton, Menu } from '@affine/component';
 import { BlockCard } from '@affine/component/card/block-card';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { EdgelessIcon, ImportIcon, PageIcon } from '@blocksuite/icons';
-import { type PropsWithChildren, useCallback, useState } from 'react';
+import type { PropsWithChildren } from 'react';
+import { useCallback, useState } from 'react';
 
 import { menuContent } from './new-page-button.css';
 

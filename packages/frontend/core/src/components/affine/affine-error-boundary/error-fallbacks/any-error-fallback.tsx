@@ -1,5 +1,6 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { type FC, useCallback } from 'react';
+import type { FC } from 'react';
+import { useCallback } from 'react';
 
 import { ErrorDetail } from '../error-basic/error-detail';
 import type { FallbackProps } from '../error-basic/fallback-creator';

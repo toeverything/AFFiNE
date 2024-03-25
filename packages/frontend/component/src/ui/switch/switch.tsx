@@ -1,11 +1,7 @@
 // components/switch.tsx
 import clsx from 'clsx';
-import {
-  type HTMLAttributes,
-  type ReactNode,
-  useCallback,
-  useState,
-} from 'react';
+import type { HTMLAttributes, ReactNode } from 'react';
+import { useCallback, useState } from 'react';
 
 import * as styles from './index.css';
 

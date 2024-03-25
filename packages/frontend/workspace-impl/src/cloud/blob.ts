@@ -1,13 +1,14 @@
 import {
   deleteBlobMutation,
+  fetcher,
   fetchWithTraceReport,
   findGraphQLError,
   getBaseUrl,
   listBlobsQuery,
   setBlobMutation,
 } from '@affine/graphql';
-import { fetcher } from '@affine/graphql';
-import { type BlobStorage, BlobStorageOverCapacity } from '@toeverything/infra';
+import type { BlobStorage } from '@toeverything/infra';
+import { BlobStorageOverCapacity } from '@toeverything/infra';
 
 import { bufferToBlob } from '../utils/buffer-to-blob';
 

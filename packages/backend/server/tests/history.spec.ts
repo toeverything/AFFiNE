@@ -7,7 +7,7 @@ import * as Sinon from 'sinon';
 import { DocHistoryManager } from '../src/core/doc';
 import { QuotaModule } from '../src/core/quota';
 import { StorageModule } from '../src/core/storage';
-import { type EventPayload } from '../src/fundamentals/event';
+import type { EventPayload } from '../src/fundamentals/event';
 import { createTestingModule } from './utils';
 
 let m: TestingModule;

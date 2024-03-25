@@ -1,5 +1,5 @@
-import { IconButton, type IconButtonProps } from '@affine/component';
-import { Tooltip } from '@affine/component';
+import type { IconButtonProps } from '@affine/component';
+import { IconButton, Tooltip } from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { FavoritedIcon, FavoriteIcon } from '@blocksuite/icons';
 import Lottie from 'lottie-react';

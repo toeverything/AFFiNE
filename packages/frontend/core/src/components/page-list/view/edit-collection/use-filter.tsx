@@ -1,10 +1,9 @@
 import type { Filter } from '@affine/env/filter';
-import { type MouseEvent, useCallback, useState } from 'react';
+import type { MouseEvent } from 'react';
+import { useCallback, useState } from 'react';
 
-import {
-  filterPageByRules,
-  type PageDataForFilter,
-} from '../../use-collection-manager';
+import type { PageDataForFilter } from '../../use-collection-manager';
+import { filterPageByRules } from '../../use-collection-manager';
 
 export const useFilter = (list: PageDataForFilter[]) => {
   const [filters, changeFilters] = useState<Filter[]>([]);

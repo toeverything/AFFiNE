@@ -1,6 +1,5 @@
 import { Button, IconButton, Menu } from '@affine/component';
-import type { Filter } from '@affine/env/filter';
-import type { PropertiesMeta } from '@affine/env/filter';
+import type { Filter, PropertiesMeta } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloseIcon, PlusIcon } from '@blocksuite/icons';
 

@@ -1,6 +1,6 @@
 import { Input, Menu, MenuItem } from '@affine/component';
 import type { LiteralValue, Tag } from '@affine/env/filter';
-import { type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 
 import { DateSelect } from './date-select';
 import { FilterTag } from './filter-tag-translation';

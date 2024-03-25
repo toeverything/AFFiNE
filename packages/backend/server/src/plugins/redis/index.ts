@@ -1,5 +1,6 @@
 import { Global, Provider, Type } from '@nestjs/common';
-import { Redis, type RedisOptions } from 'ioredis';
+import type { RedisOptions } from 'ioredis';
+import { Redis } from 'ioredis';
 import { ThrottlerStorageRedisService } from 'nestjs-throttler-storage-redis';
 
 import { Cache, Locker, SessionCache } from '../../fundamentals';

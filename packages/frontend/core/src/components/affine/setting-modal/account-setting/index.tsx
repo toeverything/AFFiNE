@@ -20,14 +20,8 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowRightSmallIcon, CameraIcon } from '@blocksuite/icons';
 import bytes from 'bytes';
 import { useSetAtom } from 'jotai';
-import {
-  type FC,
-  type MouseEvent,
-  Suspense,
-  useCallback,
-  useMemo,
-  useState,
-} from 'react';
+import type { FC, MouseEvent } from 'react';
+import { Suspense, useCallback, useMemo, useState } from 'react';
 
 import {
   authAtom,

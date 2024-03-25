@@ -9,8 +9,7 @@ import type { Doc } from '@blocksuite/store';
 import { DocCollection, Schema } from '@blocksuite/store';
 import { renderHook } from '@testing-library/react';
 import { useAtomValue } from 'jotai';
-import { describe, expect, test, vi } from 'vitest';
-import { beforeEach } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { useBlockSuitePagePreview } from '../use-block-suite-page-preview';
 let docCollection: DocCollection;

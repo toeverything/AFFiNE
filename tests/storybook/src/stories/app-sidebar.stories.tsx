@@ -1,22 +1,21 @@
 import {
+  AddPageButton,
   AppSidebar,
   AppSidebarFallback,
   appSidebarOpenAtom,
-  SidebarSwitch,
-} from '@affine/core/components/app-sidebar';
-import { AddPageButton } from '@affine/core/components/app-sidebar';
-import { CategoryDivider } from '@affine/core/components/app-sidebar';
-import { navHeaderStyle } from '@affine/core/components/app-sidebar';
-import { MenuLinkItem } from '@affine/core/components/app-sidebar';
-import { QuickSearchInput } from '@affine/core/components/app-sidebar';
-import {
+  CategoryDivider,
+  MenuLinkItem,
+  navHeaderStyle,
+  QuickSearchInput,
   SidebarContainer,
   SidebarScrollableContainer,
+  SidebarSwitch,
 } from '@affine/core/components/app-sidebar';
 import { DeleteTemporarilyIcon, SettingsIcon } from '@blocksuite/icons';
 import type { Meta, StoryFn } from '@storybook/react';
 import { useAtom } from 'jotai';
-import { type PropsWithChildren, useState } from 'react';
+import type { PropsWithChildren } from 'react';
+import { useState } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 
 export default {

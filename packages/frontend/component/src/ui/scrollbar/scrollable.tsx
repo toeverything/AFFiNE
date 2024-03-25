@@ -1,6 +1,7 @@
 import * as ScrollArea from '@radix-ui/react-scroll-area';
 import clsx from 'clsx';
-import { forwardRef, type RefAttributes } from 'react';
+import type { RefAttributes } from 'react';
+import { forwardRef } from 'react';
 
 import * as styles from './index.css';
 

@@ -11,12 +11,11 @@ import {
 } from '@blocksuite/icons';
 import type { DocCollection, DocMeta } from '@blocksuite/store';
 import * as Collapsible from '@radix-ui/react-collapsible';
-import { useService } from '@toeverything/infra';
-import { useLiveData } from '@toeverything/infra';
-import { PageRecordList } from '@toeverything/infra';
+import { PageRecordList, useLiveData, useService } from '@toeverything/infra';
 import clsx from 'clsx';
 import { selectAtom } from 'jotai/utils';
-import { type MouseEventHandler, useCallback, useMemo, useState } from 'react';
+import type { MouseEventHandler } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import { CollectionListItem } from './collections/collection-list-item';
 import { PageListItem } from './docs/page-list-item';

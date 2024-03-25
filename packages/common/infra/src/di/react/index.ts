@@ -1,7 +1,7 @@
 import React, { useContext } from 'react';
 
-import type { ServiceProvider } from '../core';
-import { type GeneralServiceIdentifier, ServiceCollection } from '../core';
+import type { GeneralServiceIdentifier, ServiceProvider } from '../core';
+import { ServiceCollection } from '../core';
 
 export const ServiceProviderContext = React.createContext(
   ServiceCollection.EMPTY.provider()

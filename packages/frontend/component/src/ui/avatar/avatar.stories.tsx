@@ -1,7 +1,8 @@
 import { CameraIcon } from '@blocksuite/icons';
 import type { Meta, StoryFn } from '@storybook/react';
 
-import { Avatar, type AvatarProps } from './avatar';
+import type { AvatarProps } from './avatar';
+import { Avatar } from './avatar';
 
 export default {
   title: 'UI/Avatar',

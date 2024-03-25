@@ -15,17 +15,10 @@ import {
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { DoneIcon } from '@blocksuite/icons';
-import { useSetAtom } from 'jotai';
-import { useAtom } from 'jotai';
+import { useAtom, useSetAtom } from 'jotai';
 import { nanoid } from 'nanoid';
-import {
-  type PropsWithChildren,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import type { PropsWithChildren } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { openPaymentDisableAtom } from '../../../../../atoms';
 import { authAtom } from '../../../../../atoms/index';

@@ -1,4 +1,5 @@
-import { clipboard, type IpcMainInvokeEvent, nativeImage } from 'electron';
+import type { IpcMainInvokeEvent } from 'electron';
+import { clipboard, nativeImage } from 'electron';
 
 import type { NamespaceHandlers } from '../type';
 

@@ -1,8 +1,8 @@
 import type { i18n, Resource } from 'i18next';
 import i18next from 'i18next';
+import type { I18nextProviderProps } from 'react-i18next';
 import {
   I18nextProvider,
-  type I18nextProviderProps,
   initReactI18next,
   Trans,
   useTranslation as useRootTranslation,

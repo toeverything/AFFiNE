@@ -18,11 +18,8 @@ import { UserModule } from './core/user';
 import { WorkspaceModule } from './core/workspaces';
 import { getOptionalModuleMetadata } from './fundamentals';
 import { CacheInterceptor, CacheModule } from './fundamentals/cache';
-import {
-  type AvailablePlugins,
-  Config,
-  ConfigModule,
-} from './fundamentals/config';
+import type { AvailablePlugins } from './fundamentals/config';
+import { Config, ConfigModule } from './fundamentals/config';
 import { EventModule } from './fundamentals/event';
 import { GqlModule } from './fundamentals/graphql';
 import { HelpersModule } from './fundamentals/helpers';

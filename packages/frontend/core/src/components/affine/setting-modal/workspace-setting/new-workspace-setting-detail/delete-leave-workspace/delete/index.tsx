@@ -1,8 +1,6 @@
 import { Input } from '@affine/component';
-import {
-  ConfirmModal,
-  type ConfirmModalProps,
-} from '@affine/component/ui/modal';
+import type { ConfirmModalProps } from '@affine/component/ui/modal';
+import { ConfirmModal } from '@affine/component/ui/modal';
 import { useWorkspaceInfo } from '@affine/core/hooks/use-workspace-info';
 import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
 import { WorkspaceFlavour } from '@affine/env/workspace';

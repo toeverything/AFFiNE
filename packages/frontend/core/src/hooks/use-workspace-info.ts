@@ -1,5 +1,5 @@
-import { WorkspaceManager, type WorkspaceMetadata } from '@toeverything/infra';
-import { useService } from '@toeverything/infra';
+import type { WorkspaceMetadata } from '@toeverything/infra';
+import { useService, WorkspaceManager } from '@toeverything/infra';
 import { useEffect, useState } from 'react';
 
 import { useWorkspaceBlobObjectUrl } from './use-workspace-blob';

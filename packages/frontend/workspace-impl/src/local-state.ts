@@ -1,10 +1,10 @@
-import {
-  type GlobalState,
-  type Memento,
-  type Workspace,
-  type WorkspaceLocalState,
-  wrapMemento,
+import type {
+  GlobalState,
+  Memento,
+  Workspace,
+  WorkspaceLocalState,
 } from '@toeverything/infra';
+import { wrapMemento } from '@toeverything/infra';
 
 export class WorkspaceLocalStateImpl implements WorkspaceLocalState {
   wrapped: Memento;

@@ -1,7 +1,5 @@
-import {
-  ConfirmModal,
-  type ConfirmModalProps,
-} from '@affine/component/ui/modal';
+import type { ConfirmModalProps } from '@affine/component/ui/modal';
+import { ConfirmModal } from '@affine/component/ui/modal';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useMemo } from 'react';
 

@@ -1,4 +1,5 @@
-import { forwardRef, type HTMLAttributes, type ReactNode } from 'react';
+import type { HTMLAttributes, ReactNode } from 'react';
+import { forwardRef } from 'react';
 
 import * as styles from './styles.css';
 

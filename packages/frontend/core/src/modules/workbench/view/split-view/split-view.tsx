@@ -1,8 +1,8 @@
 import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
+import type { DragEndEvent } from '@dnd-kit/core';
 import {
   closestCenter,
   DndContext,
-  type DragEndEvent,
   PointerSensor,
   useSensor,
   useSensors,
@@ -13,13 +13,8 @@ import {
 } from '@dnd-kit/sortable';
 import { useService } from '@toeverything/infra';
 import clsx from 'clsx';
-import {
-  type HTMLAttributes,
-  type RefObject,
-  useCallback,
-  useRef,
-  useState,
-} from 'react';
+import type { HTMLAttributes, RefObject } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 import type { View } from '../../entities/view';

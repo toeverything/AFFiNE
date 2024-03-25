@@ -8,9 +8,11 @@ import type {
 import * as Dialog from '@radix-ui/react-dialog';
 import { assignInlineVars } from '@vanilla-extract/dynamic';
 import clsx from 'clsx';
-import { type CSSProperties, forwardRef } from 'react';
+import type { CSSProperties } from 'react';
+import { forwardRef } from 'react';
 
-import { IconButton, type IconButtonProps } from '../button';
+import type { IconButtonProps } from '../button';
+import { IconButton } from '../button';
 import * as styles from './styles.css';
 
 export interface ModalProps extends DialogProps {

@@ -1,4 +1,4 @@
-import { type BlobStorage } from '@toeverything/infra';
+import type { BlobStorage } from '@toeverything/infra';
 import { createStore, del, get, keys, set } from 'idb-keyval';
 
 import { bufferToBlob } from '../utils/buffer-to-blob';

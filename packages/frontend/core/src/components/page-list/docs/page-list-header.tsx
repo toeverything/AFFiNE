@@ -1,7 +1,8 @@
 import { Button, Divider, Menu, Scrollable } from '@affine/component';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
-import { type Tag, TagService } from '@affine/core/modules/tag';
+import type { Tag } from '@affine/core/modules/tag';
+import { TagService } from '@affine/core/modules/tag';
 import type { Collection } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {

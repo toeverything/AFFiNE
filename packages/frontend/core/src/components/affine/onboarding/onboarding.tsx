@@ -1,4 +1,5 @@
-import { type CSSProperties, useCallback, useState } from 'react';
+import type { CSSProperties } from 'react';
+import { useCallback, useState } from 'react';
 
 import { AnimateInTooltip } from './animate-in-tooltip';
 import { articles } from './articles';

@@ -1,14 +1,9 @@
 import { assertExists } from '@blocksuite/global/utils';
-import {
-  applyUpdate,
-  type Doc,
-  encodeStateAsUpdate,
-  encodeStateVector,
-} from 'yjs';
+import type { Doc } from 'yjs';
+import { applyUpdate, encodeStateAsUpdate, encodeStateVector } from 'yjs';
 
 import type { DocDataSource } from './data-source';
-import type { DataSourceAdapter } from './types';
-import type { Status } from './types';
+import type { DataSourceAdapter, Status } from './types';
 
 function getDoc(doc: Doc, guid: string): Doc | undefined {
   if (doc.guid === guid) {

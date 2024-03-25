@@ -9,7 +9,8 @@ import type { GlobalCache } from '../../storage';
 import type { BlobStorage } from '../engine';
 import type { WorkspaceMetadata } from '../metadata';
 import { readWorkspaceListCache, writeWorkspaceListCache } from './cache';
-import { type WorkspaceInfo, WorkspaceInformation } from './information';
+import type { WorkspaceInfo } from './information';
+import { WorkspaceInformation } from './information';
 
 export * from './information';
 

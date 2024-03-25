@@ -1,19 +1,17 @@
-import { Button } from '@affine/component';
-import { FlexWrapper } from '@affine/component';
-import { Menu } from '@affine/component';
+import { Button, FlexWrapper, Menu } from '@affine/component';
 import type {
   Collection,
   DeleteCollectionInfo,
   Filter,
+  PropertiesMeta,
 } from '@affine/env/filter';
-import type { PropertiesMeta } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { FilterIcon } from '@blocksuite/icons';
 
 import { CreateFilterMenu } from '../filter/vars';
 import * as styles from './collection-list.css';
 import { CollectionOperations } from './collection-operations';
-import { type AllPageListConfig } from './edit-collection/edit-collection';
+import type { AllPageListConfig } from './edit-collection/edit-collection';
 
 export const CollectionPageListOperationsMenu = ({
   collection,

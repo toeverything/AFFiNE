@@ -1,13 +1,12 @@
 import { RadioButton, RadioButtonGroup, Switch } from '@affine/component';
-import { SettingHeader } from '@affine/component/setting-components';
-import { SettingRow } from '@affine/component/setting-components';
-import { SettingWrapper } from '@affine/component/setting-components';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
-  type AppSetting,
-  fontStyleOptions,
-  windowFrameStyleOptions,
-} from '@toeverything/infra';
+  SettingHeader,
+  SettingRow,
+  SettingWrapper,
+} from '@affine/component/setting-components';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import type { AppSetting } from '@toeverything/infra';
+import { fontStyleOptions, windowFrameStyleOptions } from '@toeverything/infra';
 import { useTheme } from 'next-themes';
 import { useCallback } from 'react';
 

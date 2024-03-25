@@ -1,4 +1,5 @@
-import { type HTMLAttributes, useCallback } from 'react';
+import type { HTMLAttributes } from 'react';
+import { useCallback } from 'react';
 
 import * as styles from './split-view.css';
 

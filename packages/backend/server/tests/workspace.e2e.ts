@@ -1,6 +1,7 @@
 import type { INestApplication } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
-import ava, { type TestFn } from 'ava';
+import type { TestFn } from 'ava';
+import ava from 'ava';
 import request from 'supertest';
 
 import { AppModule } from '../src/app.module';

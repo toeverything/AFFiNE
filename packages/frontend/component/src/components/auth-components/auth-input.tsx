@@ -1,6 +1,7 @@
 import clsx from 'clsx';
 
-import { Input, type InputProps } from '../../ui/input';
+import type { InputProps } from '../../ui/input';
+import { Input } from '../../ui/input';
 import * as styles from './share.css';
 export type AuthInputProps = InputProps & {
   label?: string;

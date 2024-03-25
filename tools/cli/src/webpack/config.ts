@@ -14,7 +14,8 @@ import TerserPlugin from 'terser-webpack-plugin';
 import webpack from 'webpack';
 import type { Configuration as DevServerConfiguration } from 'webpack-dev-server';
 
-import { type BuildFlags, projectRoot } from '../config/index.js';
+import type { BuildFlags } from '../config/index.js';
+import { projectRoot } from '../config/index.js';
 import { productionCacheGroups } from './cache-group.js';
 import { WebpackS3Plugin } from './s3-plugin.js';
 

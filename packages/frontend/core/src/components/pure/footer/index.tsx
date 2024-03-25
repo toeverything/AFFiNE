@@ -1,6 +1,7 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloudWorkspaceIcon } from '@blocksuite/icons';
-import { type CSSProperties, type FC, forwardRef, useCallback } from 'react';
+import type { CSSProperties, FC } from 'react';
+import { forwardRef, useCallback } from 'react';
 
 import { useCurrentLoginStatus } from '../../../hooks/affine/use-current-login-status';
 import { stringToColour } from '../../../utils';

@@ -1,30 +1,19 @@
-import {
-  IconButton,
-  Input,
-  Menu,
-  type MenuProps,
-  Scrollable,
-} from '@affine/component';
+import type { MenuProps } from '@affine/component';
+import { IconButton, Input, Menu, Scrollable } from '@affine/component';
 import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
 import { DeleteTagConfirmModal, TagService } from '@affine/core/modules/tag';
 import { WorkspaceLegacyProperties } from '@affine/core/modules/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { DeleteIcon, MoreHorizontalIcon, TagsIcon } from '@blocksuite/icons';
-import { useLiveData } from '@toeverything/infra';
-import { useService } from '@toeverything/infra';
+import { useLiveData, useService } from '@toeverything/infra';
 import clsx from 'clsx';
-import {
-  type HTMLAttributes,
-  type PropsWithChildren,
-  useCallback,
-  useMemo,
-  useReducer,
-  useState,
-} from 'react';
+import type { HTMLAttributes, PropsWithChildren } from 'react';
+import { useCallback, useMemo, useReducer, useState } from 'react';
 
 import { TagItem, TempTagItem } from '../../page-list';
 import { tagColors } from './common';
-import { type MenuItemOption, renderMenuItemOptions } from './menu-items';
+import type { MenuItemOption } from './menu-items';
+import { renderMenuItemOptions } from './menu-items';
 import * as styles from './tags-inline-editor.css';
 
 interface TagsEditorProps {

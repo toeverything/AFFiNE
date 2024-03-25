@@ -3,7 +3,8 @@ import clsx from 'clsx';
 
 import type { ButtonProps } from '../button';
 import { Button } from '../button';
-import { Modal, type ModalProps } from './modal';
+import type { ModalProps } from './modal';
+import { Modal } from './modal';
 import * as styles from './styles.css';
 
 export interface ConfirmModalProps extends ModalProps {

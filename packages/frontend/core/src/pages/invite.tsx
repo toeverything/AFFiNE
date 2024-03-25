@@ -1,14 +1,15 @@
 import { AcceptInvitePage } from '@affine/component/member-components';
 import { WorkspaceSubPath } from '@affine/core/shared';
+import type { GetInviteInfoQuery } from '@affine/graphql';
 import {
   acceptInviteByInviteIdMutation,
-  type GetInviteInfoQuery,
+  fetcher,
   getInviteInfoQuery,
 } from '@affine/graphql';
-import { fetcher } from '@affine/graphql';
 import { useSetAtom } from 'jotai';
 import { useCallback, useEffect } from 'react';
-import { type LoaderFunction, redirect, useLoaderData } from 'react-router-dom';
+import type { LoaderFunction } from 'react-router-dom';
+import { redirect, useLoaderData } from 'react-router-dom';
 
 import { authAtom } from '../atoms';
 import { setOnceSignedInEventAtom } from '../atoms/event';

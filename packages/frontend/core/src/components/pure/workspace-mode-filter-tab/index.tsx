@@ -4,8 +4,7 @@ import { allPageFilterSelectAtom } from '@affine/core/atoms';
 import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
 import { WorkspaceSubPath } from '@affine/core/shared';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { useService } from '@toeverything/infra';
-import { Workspace } from '@toeverything/infra';
+import { useService, Workspace } from '@toeverything/infra';
 import { useAtom } from 'jotai';
 import { useCallback, useEffect, useState } from 'react';
 

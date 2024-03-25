@@ -1,10 +1,5 @@
-import {
-  type FC,
-  type PropsWithChildren,
-  type ReactNode,
-  useEffect,
-  useState,
-} from 'react';
+import type { FC, PropsWithChildren, ReactNode } from 'react';
+import { useEffect, useState } from 'react';
 
 import { Empty } from '../../ui/empty';
 import { AffineOtherPageLayout } from '../affine-other-page-layout';

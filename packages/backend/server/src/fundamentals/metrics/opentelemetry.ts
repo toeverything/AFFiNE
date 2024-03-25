@@ -15,11 +15,8 @@ import { IORedisInstrumentation } from '@opentelemetry/instrumentation-ioredis';
 import { NestInstrumentation } from '@opentelemetry/instrumentation-nestjs-core';
 import { SocketIoInstrumentation } from '@opentelemetry/instrumentation-socket.io';
 import { Resource } from '@opentelemetry/resources';
-import {
-  type MeterProvider,
-  MetricProducer,
-  MetricReader,
-} from '@opentelemetry/sdk-metrics';
+import type { MeterProvider } from '@opentelemetry/sdk-metrics';
+import { MetricProducer, MetricReader } from '@opentelemetry/sdk-metrics';
 import { NodeSDK } from '@opentelemetry/sdk-node';
 import {
   BatchSpanProcessor,

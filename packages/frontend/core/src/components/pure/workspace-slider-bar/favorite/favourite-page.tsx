@@ -3,9 +3,7 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
 import { useDraggable } from '@dnd-kit/core';
 import * as Collapsible from '@radix-ui/react-collapsible';
-import { useService } from '@toeverything/infra';
-import { useLiveData } from '@toeverything/infra';
-import { PageRecordList } from '@toeverything/infra';
+import { PageRecordList, useLiveData, useService } from '@toeverything/infra';
 import { useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
@@ -13,10 +11,8 @@ import { getDragItemId } from '../../../../hooks/affine/use-sidebar-drag';
 import { MenuLinkItem } from '../../../app-sidebar';
 import { DragMenuItemOverlay } from '../components/drag-menu-item-overlay';
 import { PostfixItem } from '../components/postfix-item';
-import {
-  ReferencePage,
-  type ReferencePageProps,
-} from '../components/reference-page';
+import type { ReferencePageProps } from '../components/reference-page';
+import { ReferencePage } from '../components/reference-page';
 import * as styles from './styles.css';
 
 export const FavouritePage = ({

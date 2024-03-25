@@ -2,7 +2,8 @@ import { Inject, Injectable, Optional } from '@nestjs/common';
 
 import { Config } from '../config';
 import { URLHelper } from '../helpers';
-import { MAILER_SERVICE, type MailerService, type Options } from './mailer';
+import type { MailerService, Options } from './mailer';
+import { MAILER_SERVICE } from './mailer';
 import { emailTemplate } from './template';
 @Injectable()
 export class MailService {

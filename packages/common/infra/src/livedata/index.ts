@@ -1,22 +1,25 @@
 import { DebugLogger } from '@affine/debug';
+import type {
+  InteropObservable,
+  Observer,
+  OperatorFunction,
+  Subscription,
+  TeardownLogic,
+} from 'rxjs';
 import {
+  BehaviorSubject,
   combineLatest,
   distinctUntilChanged,
   EMPTY,
   filter,
-  type InteropObservable,
   map,
   Observable,
-  type Observer,
   of,
-  type OperatorFunction,
   scan,
   skip,
-  type Subscription,
+  Subject,
   switchMap,
-  type TeardownLogic,
 } from 'rxjs';
-import { BehaviorSubject, Subject } from 'rxjs';
 
 export * from './react';
 

@@ -1,5 +1,5 @@
 import { OAuthProviderType } from '@affine/graphql';
-import { type LoaderFunction } from 'react-router-dom';
+import type { LoaderFunction } from 'react-router-dom';
 import { z } from 'zod';
 
 import { getSession } from '../hooks/affine/use-current-user';

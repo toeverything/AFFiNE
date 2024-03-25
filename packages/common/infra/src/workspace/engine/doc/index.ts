@@ -9,7 +9,8 @@ import { MANUALLY_STOP } from '../../../utils';
 import { DocEngineLocalPart } from './local';
 import { DocEngineRemotePart } from './remote';
 import type { DocServer } from './server';
-import { type DocStorage, DocStorageInner } from './storage';
+import type { DocStorage } from './storage';
+import { DocStorageInner } from './storage';
 
 const logger = new DebugLogger('doc-engine');
 
