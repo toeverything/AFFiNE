@@ -18,10 +18,7 @@ import { WorkspaceLayout } from '../../layouts/workspace-layout';
 import { RightSidebarContainer } from '../../modules/right-sidebar';
 import { WorkbenchRoot } from '../../modules/workbench';
 import { CurrentWorkspaceService } from '../../modules/workspace/current-workspace';
-import {
-  AllWorkspaceModals,
-  CurrentWorkspaceModals,
-} from '../../providers/modal-provider';
+import { AllWorkspaceModals } from '../../providers/modal-provider';
 import { performanceRenderLogger } from '../../shared';
 import { PageNotFound } from '../404';
 
@@ -92,7 +89,6 @@ export const Component = (): ReactElement => {
       <ServiceProviderContext.Provider value={workspace.services}>
         <WorkspaceFallback key="workspaceLoading" />
         <AllWorkspaceModals />
-        <CurrentWorkspaceModals />
       </ServiceProviderContext.Provider>
     );
   }
