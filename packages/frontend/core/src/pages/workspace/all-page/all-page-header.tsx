@@ -1,5 +1,6 @@
 import {
   AllPageListOperationsMenu,
+  PageDisplayMenu,
   PageListNewPageButton,
 } from '@affine/core/components/page-list';
 import { Header } from '@affine/core/components/pure/header';
@@ -32,15 +33,18 @@ export const AllPageHeader = ({
         />
       }
       right={
-        <PageListNewPageButton
-          size="small"
-          className={clsx(
-            styles.headerCreateNewButton,
-            !showCreateNew && styles.headerCreateNewButtonHidden
-          )}
-        >
-          <PlusIcon />
-        </PageListNewPageButton>
+        <>
+          <PageListNewPageButton
+            size="small"
+            className={clsx(
+              styles.headerCreateNewButton,
+              !showCreateNew && styles.headerCreateNewButtonHidden
+            )}
+          >
+            <PlusIcon />
+          </PageListNewPageButton>
+          <PageDisplayMenu />
+        </>
       }
       center={<WorkspaceModeFilterTab activeFilter={'docs'} />}
     />

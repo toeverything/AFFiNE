@@ -75,6 +75,7 @@ export const ColWrapper = forwardRef<HTMLDivElement, ColWrapperProps>(
       flex,
       alignment,
       hideInSmallContainer,
+      hidden,
       className,
       style,
       children,
@@ -95,6 +96,7 @@ export const ColWrapper = forwardRef<HTMLDivElement, ColWrapperProps>(
         }}
         data-hide-item={hideInSmallContainer ? true : undefined}
         className={clsx(className, styles.colWrapper, {
+          [styles.hidden]: hidden,
           [styles.hideInSmallContainer]: hideInSmallContainer,
         })}
       >

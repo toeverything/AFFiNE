@@ -7,6 +7,7 @@ import { useCallback, useMemo } from 'react';
 
 import { WorkbenchLink } from '../../../modules/workbench/view/workbench-link';
 import type { DraggableTitleCellData, PageListItemProps } from '../types';
+import { usePageDisplayProperties } from '../use-page-display-properties';
 import { ColWrapper, formatDate, stopPropagation } from '../utils';
 import * as styles from './page-list-item.css';
 import { PageTags } from './page-tags';
@@ -15,6 +16,7 @@ const ListTitleCell = ({
   title,
   preview,
 }: Pick<PageListItemProps, 'title' | 'preview'>) => {
+  const [displayProperties] = usePageDisplayProperties();
   return (
     <div data-testid="page-list-item-title" className={styles.titleCell}>
       <div
@@ -23,7 +25,7 @@ const ListTitleCell = ({
       >
         {title}
       </div>
-      {preview ? (
+      {preview && displayProperties['bodyNotes'] ? (
         <div
           data-testid="page-list-item-preview-text"
           className={styles.titleCellPreview}
@@ -123,6 +125,7 @@ const PageListOperationsCell = ({
 };
 
 export const PageListItem = (props: PageListItemProps) => {
+  const [displayProperties] = usePageDisplayProperties();
   const pageTitleElement = useMemo(() => {
     return (
       <div className={styles.dragPageItemOverlay}>
@@ -182,14 +185,29 @@ export const PageListItem = (props: PageListItemProps) => {
           </div>
           <ListTitleCell title={props.title} preview={props.preview} />
         </ColWrapper>
-        <ColWrapper flex={4} alignment="end" style={{ overflow: 'visible' }}>
+        <ColWrapper
+          flex={4}
+          alignment="end"
+          style={{ overflow: 'visible' }}
+          hidden={!displayProperties['tags']}
+        >
           <PageTagsCell pageId={props.pageId} />
         </ColWrapper>
       </ColWrapper>
-      <ColWrapper flex={1} alignment="end" hideInSmallContainer>
+      <ColWrapper
+        flex={1}
+        alignment="end"
+        hideInSmallContainer
+        hidden={!displayProperties['createDate']}
+      >
         <PageCreateDateCell createDate={props.createDate} />
       </ColWrapper>
-      <ColWrapper flex={1} alignment="end" hideInSmallContainer>
+      <ColWrapper
+        flex={1}
+        alignment="end"
+        hideInSmallContainer
+        hidden={!displayProperties['updatedDate']}
+      >
         <PageUpdatedDateCell updatedDate={props.updatedDate} />
       </ColWrapper>
       {props.operations ? (

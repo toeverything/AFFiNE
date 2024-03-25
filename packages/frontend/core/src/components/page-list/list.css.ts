@@ -37,6 +37,10 @@ export const hideInSmallContainer = style({
     },
   },
 });
+
+export const hidden = style({
+  display: 'none',
+});
 export const favoriteCell = style({
   display: 'flex',
   alignItems: 'center',

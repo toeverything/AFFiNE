@@ -114,6 +114,7 @@ export const ListTableHeader = ({
       data-selection-active={selectionState.selectionActive}
     >
       {headerCols.map(col => {
+        const isTagHidden = col.key === 'tags' && col.hidden;
         return (
           <ListHeaderCell
             flex={col.flex}
@@ -123,8 +124,12 @@ export const ListTableHeader = ({
             sortable={col.sortable}
             sorting={sorter.key === col.key}
             order={sorter.order}
+            hidden={isTagHidden ? false : col.hidden}
             onSort={onSort}
-            style={{ overflow: 'visible' }}
+            style={{
+              overflow: 'visible',
+              visibility: isTagHidden ? 'hidden' : 'visible',
+            }}
             hideInSmallContainer={col.hideInSmallContainer}
           >
             {col.content}

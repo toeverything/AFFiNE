@@ -7,6 +7,7 @@ export const scrollContainer = style({
 export const headerCreateNewButton = style({
   transition: 'opacity 0.1s ease-in-out',
 });
+
 export const headerCreateNewCollectionIconButton = style({
   padding: '4px 8px',
   fontSize: '16px',

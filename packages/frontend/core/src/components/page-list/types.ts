@@ -82,6 +82,12 @@ export interface SortBy {
 }
 
 export type DateKey = 'createDate' | 'updatedDate';
+export type PageGroupByType =
+  | 'createDate'
+  | 'updatedDate'
+  | 'tag'
+  | 'favourites'
+  | 'none';
 
 export interface ListProps<T> {
   // required data:
@@ -89,7 +95,7 @@ export interface ListProps<T> {
   docCollection: DocCollection;
   className?: string;
   hideHeader?: boolean; // whether or not to hide the header. default is false (showing header)
-  groupBy?: ItemGroupByType | false;
+  groupBy?: ItemGroupDefinition<T>[];
   isPreferredEdgeless?: (pageId: string) => boolean; // determines the icon used for each row
   rowAsLink?: boolean;
   selectable?: 'toggle' | boolean; // show selection checkbox. toggle means showing a toggle selection in header on click; boolean == true means showing a selection checkbox for each item
@@ -117,7 +123,7 @@ export interface ItemListHandle {
 export interface ItemGroupDefinition<T> {
   id: string;
   // using a function to render custom group header
-  label: (() => ReactNode) | ReactNode;
+  label: ((count: number) => ReactNode) | ReactNode;
   match: (item: T) => boolean;
 }
 
@@ -146,6 +152,7 @@ export type HeaderColDef = {
   alignment?: ColWrapperProps['alignment'];
   sortable?: boolean;
   hideInSmallContainer?: boolean;
+  hidden?: boolean;
 };
 
 export type ColWrapperProps = PropsWithChildren<{
@@ -155,3 +162,10 @@ export type ColWrapperProps = PropsWithChildren<{
   hideInSmallContainer?: boolean;
 }> &
   React.HTMLAttributes<Element>;
+
+export type PageDisplayProperties = {
+  bodyNotes: boolean;
+  tags: boolean;
+  createDate: boolean;
+  updatedDate: boolean;
+};

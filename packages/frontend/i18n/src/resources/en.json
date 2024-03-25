@@ -1172,5 +1172,15 @@
   "com.affine.workbench.split-view.page-menu-open": "Open in split view",
   "com.affine.search-tags.placeholder": "Type here ...",
   "com.affine.resetSyncStatus.button": "Reset Sync",
-  "com.affine.resetSyncStatus.description": "This operation may fix some synchronization issues."
+  "com.affine.resetSyncStatus.description": "This operation may fix some synchronization issues.",
+  "com.affine.page.group-header.favourited": "Favourited",
+  "com.affine.page.group-header.not-favourited": "Not Favourited",
+  "com.affine.page.display": "Display",
+  "com.affine.page.display.grouping": "Grouping",
+  "com.affine.page.display.grouping.no-grouping": "No Grouping",
+  "com.affine.page.display.grouping.group-by-tag": "Tag",
+  "com.affine.page.display.grouping.group-by-favourites": "Favourites",
+  "com.affine.page.display.list-option": "List option",
+  "com.affine.page.display.display-properties": "Display properties",
+  "com.affine.page.display.display-properties.body-notes": "Body notes"
 }

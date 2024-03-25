@@ -9,7 +9,7 @@ import { useCallback } from 'react';
 
 import { FilterList } from '../../filter/filter-list';
 import { VariableSelect } from '../../filter/vars';
-import { pageHeaderColsDef } from '../../header-col-def';
+import { usePageHeaderColsDef } from '../../header-col-def';
 import { PageListItemRenderer } from '../../page-group';
 import { ListTableHeader } from '../../page-header';
 import type { ListItem } from '../../types';
@@ -47,6 +47,7 @@ export const PagesMode = ({
       publicMode: allPageListConfig.getPublicMode(meta.id),
     }))
   );
+  const pageHeaderColsDef = usePageHeaderColsDef();
   const { searchText, updateSearchText, searchedList } =
     useSearch(filteredList);
   const clearSelected = useCallback(() => {
@@ -68,7 +69,7 @@ export const PagesMode = ({
   }, []);
   const pageHeaderRenderer = useCallback(() => {
     return <ListTableHeader headerCols={pageHeaderColsDef} />;
-  }, []);
+  }, [pageHeaderColsDef]);
   return (
     <>
       <input
@@ -127,7 +128,6 @@ export const PagesMode = ({
             <VirtualizedList
               className={styles.pageList}
               items={searchedList}
-              groupBy={false}
               docCollection={allPageListConfig.docCollection}
               selectable
               onSelectedIdsChange={ids => {

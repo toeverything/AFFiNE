@@ -226,7 +226,13 @@ export const PageListStory: StoryFn<ListProps<ListItem>> = (
 };
 
 PageListStory.args = {
-  groupBy: 'createDate',
+  groupBy: [
+    {
+      id: 'all',
+      label: count => `All Pages (${count})`,
+      match: () => true,
+    },
+  ],
 };
 
 PageListStory.argTypes = {

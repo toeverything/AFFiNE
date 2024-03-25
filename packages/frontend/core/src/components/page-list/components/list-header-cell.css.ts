@@ -16,7 +16,6 @@ export const headerCell = style({
       borderRight: `1px solid ${cssVar('hoverColorFilled')}`,
     },
   },
-  display: 'flex',
   alignItems: 'center',
   columnGap: '4px',
   position: 'relative',

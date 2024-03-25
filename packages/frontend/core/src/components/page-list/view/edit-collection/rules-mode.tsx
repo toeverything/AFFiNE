@@ -265,7 +265,6 @@ export const RulesMode = ({
               hideHeader
               className={styles.resultPages}
               items={rulesPages}
-              groupBy={false}
               docCollection={allPageListConfig.docCollection}
               isPreferredEdgeless={allPageListConfig.isEdgeless}
               operationsRenderer={operationsRenderer}
@@ -285,7 +284,6 @@ export const RulesMode = ({
                 hideHeader
                 className={styles.resultPages}
                 items={allowListPages}
-                groupBy={false}
                 docCollection={allPageListConfig.docCollection}
                 isPreferredEdgeless={allPageListConfig.isEdgeless}
                 operationsRenderer={operationsRenderer}

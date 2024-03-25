@@ -15,6 +15,7 @@ import {
 import { openHomePage } from '@affine-test/kit/utils/load-page';
 import {
   clickNewPageButton,
+  clickPageMoreActions,
   getBlockSuiteEditorTitle,
   waitForAllPagesLoad,
   waitForEditorLoad,
@@ -255,4 +256,55 @@ test('select a group of items by clicking "Select All" in group header', async (
   await expect(page.locator('[data-testid="floating-toolbar"]')).toHaveText(
     `${selectedItemCount} doc(s) selected`
   );
+});
+
+test('click display button to group pages', async ({ page }) => {
+  await openHomePage(page);
+  await waitForEditorLoad(page);
+  await clickNewPageButton(page);
+  await getBlockSuiteEditorTitle(page).click();
+  await getBlockSuiteEditorTitle(page).fill('this is a new page to favorite');
+
+  await clickPageMoreActions(page);
+  const favoriteBtn = page.getByTestId('editor-option-menu-favorite');
+  await favoriteBtn.click();
+
+  await clickSideBarAllPageButton(page);
+  await waitForAllPagesLoad(page);
+  // click the display button
+  await page.locator('[data-testid="page-display-menu-button"]').click();
+  await page.locator('[data-testid="page-display-grouping-menuItem"]').click();
+  await page.locator('[data-testid="group-by-favourites"]').click();
+
+  // the group header should appear
+  await expect(
+    page.locator('[data-testid="group-label-favourited-1"]')
+  ).toBeVisible();
+
+  await expect(
+    page.locator('[data-testid="group-label-notFavourited-1"]')
+  ).toBeVisible();
+});
+
+test('select display properties to hide bodyNotes', async ({ page }) => {
+  await openHomePage(page);
+  await waitForEditorLoad(page);
+  await clickNewPageButton(page);
+  await getBlockSuiteEditorTitle(page).click();
+  await getBlockSuiteEditorTitle(page).fill(
+    'this is a new page to test display properties'
+  );
+  await page.keyboard.press('Enter', { delay: 10 });
+  await page.keyboard.insertText('DRAGON BALL: Sparking! ZERO');
+  await clickSideBarAllPageButton(page);
+  await waitForAllPagesLoad(page);
+  const cell = page
+    .getByTestId('page-list-item')
+    .getByText('DRAGON BALL: Sparking! ZERO');
+  await expect(cell).toBeVisible();
+  await page.locator('[data-testid="page-display-menu-button"]').click();
+  await page.locator('[data-testid="property-bodyNotes"]').click();
+  await expect(cell).not.toBeVisible();
+  await page.locator('[data-testid="property-bodyNotes"]').click();
+  await expect(cell).toBeVisible();
 });

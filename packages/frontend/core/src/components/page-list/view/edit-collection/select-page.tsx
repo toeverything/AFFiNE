@@ -117,7 +117,6 @@ export const SelectPage = ({
             items={searchedList}
             docCollection={allPageListConfig.docCollection}
             selectable
-            groupBy={false}
             onSelectedIdsChange={onChange}
             selectedIds={value}
             isPreferredEdgeless={allPageListConfig.isEdgeless}

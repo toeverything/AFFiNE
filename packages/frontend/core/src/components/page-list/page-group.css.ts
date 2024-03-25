@@ -45,7 +45,6 @@ export const header = style({
   display: 'flex',
   alignItems: 'center',
   padding: '0px 16px 0px 6px',
-  gap: 4,
   height: '28px',
   background: cssVar('backgroundPrimaryColor'),
   ':hover': {
@@ -88,6 +87,8 @@ export const selectAllButton = style({
 });
 export const collapsedIcon = style({
   opacity: 0,
+  fontSize: '20px',
+  color: cssVar('iconColor'),
   transition: 'transform 0.2s ease-in-out',
   selectors: {
     '&[data-collapsed="false"]': {
@@ -99,8 +100,6 @@ export const collapsedIcon = style({
   },
 });
 export const collapsedIconContainer = style({
-  width: '16px',
-  height: '16px',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
