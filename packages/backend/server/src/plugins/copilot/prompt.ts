@@ -42,6 +42,17 @@ export class PromptService {
     });
   }
 
+  async update(name: string, messages: ChatMessage[]) {
+    return this.db.$transaction(async tx => {
+      await tx.aiPrompt.deleteMany({ where: { name } });
+      return tx.aiPrompt
+        .createMany({
+          data: messages.map((m, idx) => ({ name, idx, ...m })),
+        })
+        .then(ret => ret.count);
+    });
+  }
+
   async delete(name: string) {
     return this.db.aiPrompt
       .deleteMany({
