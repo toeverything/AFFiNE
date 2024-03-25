@@ -582,6 +582,7 @@ __metadata:
     "@vitejs/plugin-react-swc": "npm:^3.6.0"
     "@vitest/coverage-istanbul": "npm:1.4.0"
     "@vitest/ui": "npm:1.4.0"
+    cross-env: "npm:^7.0.3"
     electron: "npm:^29.0.1"
     eslint: "npm:^8.56.0"
     eslint-config-prettier: "npm:^9.1.0"

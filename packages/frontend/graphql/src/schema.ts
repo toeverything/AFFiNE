@@ -87,6 +87,7 @@ export enum ServerFeature {
 }
 
 export enum SubscriptionPlan {
+  AI = 'AI',
   Enterprise = 'Enterprise',
   Free = 'Free',
   Pro = 'Pro',

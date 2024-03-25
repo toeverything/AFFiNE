@@ -26,7 +26,7 @@
     "start:web-static": "yarn workspace @affine/web static-server",
     "start:storybook": "yarn exec serve tests/storybook/storybook-static -l 6006",
     "serve:test-static": "yarn exec serve tests/fixtures --cors -p 8081",
-    "lint:eslint": "eslint . --ext .js,mjs,.ts,.tsx --cache",
+    "lint:eslint": "cross-env NODE_OPTIONS=\"--max-old-space-size=8192\" eslint . --ext .js,mjs,.ts,.tsx --cache",
     "lint:eslint:fix": "yarn lint:eslint --fix",
     "lint:prettier": "prettier --ignore-unknown --cache --check .",
     "lint:prettier:fix": "prettier --ignore-unknown --cache --write .",
@@ -44,7 +44,7 @@
     "*": "prettier --write --ignore-unknown --cache",
     "*.{ts,tsx,mjs,js,jsx}": [
       "prettier --ignore-unknown --write",
-      "eslint --cache --fix"
+      "cross-env NODE_OPTIONS=\"--max-old-space-size=8192\" eslint --cache --fix"
     ],
     "*.toml": [
       "taplo format"
@@ -76,6 +76,7 @@
     "@vitejs/plugin-react-swc": "^3.6.0",
     "@vitest/coverage-istanbul": "1.4.0",
     "@vitest/ui": "1.4.0",
+    "cross-env": "^7.0.3",
     "electron": "^29.0.1",
     "eslint": "^8.56.0",
     "eslint-config-prettier": "^9.1.0",

@@ -1,4 +1,4 @@
-const { resolve } = require('node:path');
+const { join } = require('node:path');
 
 const createPattern = packageName => [
   {
@@ -88,7 +88,7 @@ const config = {
     },
     ecmaVersion: 'latest',
     sourceType: 'module',
-    project: resolve(__dirname, './tsconfig.eslint.json'),
+    project: join(__dirname, 'tsconfig.eslint.json'),
   },
   plugins: [
     'react',
@@ -235,9 +235,6 @@ const config = {
     },
     ...allPackages.map(pkg => ({
       files: [`${pkg}/src/**/*.ts`, `${pkg}/src/**/*.tsx`],
-      parserOptions: {
-        project: resolve(__dirname, './tsconfig.eslint.json'),
-      },
       rules: {
         '@typescript-eslint/no-restricted-imports': [
           'error',
