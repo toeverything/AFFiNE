@@ -1,4 +1,4 @@
-import type { BlockElement } from '@blocksuite/lit';
+import type { BlockElement } from '@blocksuite/block-std';
 import type {
   AffineEditorContainer,
   EdgelessEditor,
