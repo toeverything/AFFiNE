@@ -14,7 +14,7 @@ import {
   FilterIcon,
   SplitViewIcon,
 } from '@blocksuite/icons';
-import { useService } from '@toeverything/infra/di';
+import { useService } from '@toeverything/infra';
 import {
   type PropsWithChildren,
   type ReactElement,

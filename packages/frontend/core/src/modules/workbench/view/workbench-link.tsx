@@ -1,6 +1,6 @@
 import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
-import { useService } from '@toeverything/infra/di';
-import { useLiveData } from '@toeverything/infra/livedata';
+import { useService } from '@toeverything/infra';
+import { useLiveData } from '@toeverything/infra';
 import type { To } from 'history';
 import { useCallback } from 'react';
 

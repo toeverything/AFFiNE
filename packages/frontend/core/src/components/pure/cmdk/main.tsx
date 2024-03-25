@@ -4,7 +4,7 @@ import { useDocEngineStatus } from '@affine/core/hooks/affine/use-doc-engine-sta
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { DocMeta } from '@blocksuite/store';
-import type { CommandCategory } from '@toeverything/infra/command';
+import type { CommandCategory } from '@toeverything/infra';
 import clsx from 'clsx';
 import { Command } from 'cmdk';
 import { useAtom } from 'jotai';

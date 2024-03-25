@@ -5,7 +5,7 @@ import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { LinkIcon } from '@blocksuite/icons';
 import { Doc, useLiveData } from '@toeverything/infra';
-import { useService } from '@toeverything/infra/di';
+import { useService } from '@toeverything/infra';
 
 import { useExportPage } from '../../../../hooks/affine/use-export-page';
 import * as styles from './index.css';

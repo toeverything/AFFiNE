@@ -5,7 +5,7 @@ import { toast } from '@affine/core/utils';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
 import { Workspace } from '@toeverything/infra';
-import { useService } from '@toeverything/infra/di';
+import { useService } from '@toeverything/infra';
 import { useCallback } from 'react';
 
 export interface FavoriteButtonProps {

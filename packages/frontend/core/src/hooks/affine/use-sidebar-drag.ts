@@ -4,7 +4,7 @@ import { useDocMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { DragEndEvent, UniqueIdentifier } from '@dnd-kit/core';
 import { Workspace } from '@toeverything/infra';
-import { useService } from '@toeverything/infra/di';
+import { useService } from '@toeverything/infra';
 import { useCallback } from 'react';
 
 import { useBlockSuiteMetaHelper } from './use-block-suite-meta-helper';

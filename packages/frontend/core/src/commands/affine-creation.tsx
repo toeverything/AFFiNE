@@ -1,6 +1,6 @@
 import type { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ImportIcon, PlusIcon } from '@blocksuite/icons';
-import { registerAffineCommand } from '@toeverything/infra/command';
+import { registerAffineCommand } from '@toeverything/infra';
 import type { createStore } from 'jotai';
 
 import { openCreateWorkspaceModalAtom } from '../atoms';

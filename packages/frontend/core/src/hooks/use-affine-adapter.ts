@@ -1,5 +1,5 @@
 import type { Workspace } from '@toeverything/infra';
-import { useService } from '@toeverything/infra/di';
+import { useService } from '@toeverything/infra';
 import { useDebouncedState } from 'foxact/use-debounced-state';
 import { useEffect, useMemo } from 'react';
 

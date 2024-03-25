@@ -3,7 +3,7 @@ import { WorkspacePropertiesAdapter } from '@affine/core/modules/workspace';
 import type { PageInfoCustomPropertyMeta } from '@affine/core/modules/workspace/properties/schema';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { useService } from '@toeverything/infra/di';
+import { useService } from '@toeverything/infra';
 import { useMemo } from 'react';
 
 import { PagePropertiesMetaManager } from './page-properties-manager';

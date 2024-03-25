@@ -1,8 +1,8 @@
 import { IconButton, Tooltip } from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowLeftSmallIcon, ArrowRightSmallIcon } from '@blocksuite/icons';
-import { useService } from '@toeverything/infra/di';
-import { useLiveData } from '@toeverything/infra/livedata';
+import { useService } from '@toeverything/infra';
+import { useLiveData } from '@toeverything/infra';
 import { useCallback, useEffect, useMemo } from 'react';
 
 import { useGeneralShortcuts } from '../../../hooks/affine/use-shortcuts';

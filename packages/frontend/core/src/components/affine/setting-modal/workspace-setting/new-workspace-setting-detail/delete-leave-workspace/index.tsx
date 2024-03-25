@@ -5,8 +5,8 @@ import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowRightSmallIcon } from '@blocksuite/icons';
 import { Workspace, WorkspaceManager } from '@toeverything/infra';
-import { useService } from '@toeverything/infra/di';
-import { useLiveData } from '@toeverything/infra/livedata';
+import { useService } from '@toeverything/infra';
+import { useLiveData } from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
 import { useCallback, useState } from 'react';
 

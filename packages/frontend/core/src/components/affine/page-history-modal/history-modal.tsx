@@ -15,7 +15,7 @@ import { type DocCollection } from '@blocksuite/store';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import type { DialogContentProps } from '@radix-ui/react-dialog';
 import { Doc, type PageMode, Workspace } from '@toeverything/infra';
-import { useService } from '@toeverything/infra/di';
+import { useService } from '@toeverything/infra';
 import { atom, useAtom, useSetAtom } from 'jotai';
 import {
   Fragment,

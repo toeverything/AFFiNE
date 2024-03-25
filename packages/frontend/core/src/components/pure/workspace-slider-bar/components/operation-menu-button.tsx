@@ -5,7 +5,7 @@ import { Workbench } from '@affine/core/modules/workbench';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { MoreHorizontalIcon } from '@blocksuite/icons';
 import type { DocCollection } from '@blocksuite/store';
-import { useService } from '@toeverything/infra/di';
+import { useService } from '@toeverything/infra';
 import { useCallback } from 'react';
 
 import { useBlockSuiteMetaHelper } from '../../../../hooks/affine/use-block-suite-meta-helper';

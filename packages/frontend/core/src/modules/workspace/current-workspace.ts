@@ -1,5 +1,5 @@
 import type { Workspace } from '@toeverything/infra';
-import { LiveData } from '@toeverything/infra/livedata';
+import { LiveData } from '@toeverything/infra';
 
 /**
  * service to manage current workspace

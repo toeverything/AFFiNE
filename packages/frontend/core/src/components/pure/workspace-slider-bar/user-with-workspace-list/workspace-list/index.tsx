@@ -10,8 +10,8 @@ import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { DragEndEvent } from '@dnd-kit/core';
 import { WorkspaceManager, type WorkspaceMetadata } from '@toeverything/infra';
-import { useService } from '@toeverything/infra/di';
-import { useLiveData } from '@toeverything/infra/livedata';
+import { useService } from '@toeverything/infra';
+import { useLiveData } from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
 import { useCallback, useMemo } from 'react';
 

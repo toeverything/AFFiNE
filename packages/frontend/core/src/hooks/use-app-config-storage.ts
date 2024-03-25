@@ -5,7 +5,7 @@ import {
   type AppConfigSchema,
   AppConfigStorage,
   defaultAppConfig,
-} from '@toeverything/infra/app-config-storage';
+} from '@toeverything/infra';
 import { type Dispatch, useEffect, useState } from 'react';
 import { useMemo } from 'react';
 

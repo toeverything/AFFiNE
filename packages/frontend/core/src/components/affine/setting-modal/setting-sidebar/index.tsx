@@ -16,8 +16,8 @@ import {
   WorkspaceManager,
   type WorkspaceMetadata,
 } from '@toeverything/infra';
-import { useService } from '@toeverything/infra/di';
-import { useLiveData } from '@toeverything/infra/livedata';
+import { useService } from '@toeverything/infra';
+import { useLiveData } from '@toeverything/infra';
 import clsx from 'clsx';
 import { useAtom } from 'jotai/react';
 import { type ReactElement, Suspense, useCallback, useMemo } from 'react';

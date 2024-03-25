@@ -1,6 +1,6 @@
 import { WorkspaceListService } from '@toeverything/infra';
-import { useService } from '@toeverything/infra/di';
-import { useLiveData } from '@toeverything/infra/livedata';
+import { useService } from '@toeverything/infra';
+import { useLiveData } from '@toeverything/infra';
 import { useEffect } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 

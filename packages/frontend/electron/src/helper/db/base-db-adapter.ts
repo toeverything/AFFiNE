@@ -3,7 +3,7 @@ import {
   SqliteConnection,
   ValidationResult,
 } from '@affine/native';
-import { WorkspaceVersion } from '@toeverything/infra/blocksuite';
+import { WorkspaceVersion } from '@toeverything/infra';
 
 import { applyGuidCompatibilityFix, migrateToLatest } from '../db/migration';
 import { logger } from '../logger';

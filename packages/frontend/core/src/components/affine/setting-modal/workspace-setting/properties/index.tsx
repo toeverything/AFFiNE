@@ -7,10 +7,7 @@ import type { PageInfoCustomPropertyMeta } from '@affine/core/modules/workspace/
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { DeleteIcon, FilterIcon, MoreHorizontalIcon } from '@blocksuite/icons';
-import type {
-  Workspace,
-  WorkspaceMetadata,
-} from '@toeverything/infra/workspace';
+import type { Workspace, WorkspaceMetadata } from '@toeverything/infra';
 import {
   createContext,
   Fragment,

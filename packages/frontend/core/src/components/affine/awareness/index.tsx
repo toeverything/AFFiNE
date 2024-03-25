@@ -1,5 +1,5 @@
-import { useService } from '@toeverything/infra/di';
-import { useLiveData } from '@toeverything/infra/livedata';
+import { useService } from '@toeverything/infra';
+import { useLiveData } from '@toeverything/infra';
 import { Suspense, useEffect } from 'react';
 
 import { useCurrentLoginStatus } from '../../../hooks/affine/use-current-login-status';

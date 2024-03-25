@@ -1,7 +1,7 @@
 import type { Tag } from '@affine/env/filter';
 import type { DocsPropertiesMeta } from '@blocksuite/store';
-import { LiveData } from '@toeverything/infra/livedata';
-import type { Workspace } from '@toeverything/infra/workspace';
+import type { Workspace } from '@toeverything/infra';
+import { LiveData } from '@toeverything/infra';
 import { Observable } from 'rxjs';
 
 /**

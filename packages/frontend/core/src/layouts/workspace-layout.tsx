@@ -10,7 +10,7 @@ import {
   useSensors,
 } from '@dnd-kit/core';
 import { PageRecordList, useLiveData, Workspace } from '@toeverything/infra';
-import { useService } from '@toeverything/infra/di';
+import { useService } from '@toeverything/infra';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import type { PropsWithChildren, ReactNode } from 'react';
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react';

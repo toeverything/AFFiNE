@@ -1,10 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import {
-  AppConfigStorage,
-  defaultAppConfig,
-} from '@toeverything/infra/app-config-storage';
+import { AppConfigStorage, defaultAppConfig } from '@toeverything/infra';
 import { app } from 'electron';
 
 const FILENAME = 'config.json';

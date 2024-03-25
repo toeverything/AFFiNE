@@ -1,5 +1,5 @@
-import { LiveData } from '@toeverything/infra/livedata';
-import type { GlobalState } from '@toeverything/infra/storage';
+import type { GlobalState } from '@toeverything/infra';
+import { LiveData } from '@toeverything/infra';
 
 import type { RightSidebarView } from './right-sidebar-view';
 

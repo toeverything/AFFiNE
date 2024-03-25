@@ -18,7 +18,7 @@ import { assertExists } from '@blocksuite/global/utils';
 import { DeleteIcon } from '@blocksuite/icons';
 import type { DocMeta } from '@blocksuite/store';
 import { Workspace } from '@toeverything/infra';
-import { useService } from '@toeverything/infra/di';
+import { useService } from '@toeverything/infra';
 import { useCallback } from 'react';
 
 import { ViewBodyIsland, ViewHeaderIsland } from '../../modules/workbench';

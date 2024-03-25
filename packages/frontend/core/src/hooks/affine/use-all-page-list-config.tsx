@@ -7,7 +7,7 @@ import { useBlockSuiteDocMeta } from '@affine/core/hooks/use-block-suite-page-me
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { DocMeta } from '@blocksuite/store';
 import { Workspace } from '@toeverything/infra';
-import { useService } from '@toeverything/infra/di';
+import { useService } from '@toeverything/infra';
 import { useCallback, useMemo } from 'react';
 
 import { usePageHelper } from '../../components/blocksuite/block-suite-page-list/utils';

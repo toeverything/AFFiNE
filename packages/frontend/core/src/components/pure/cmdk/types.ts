@@ -1,4 +1,4 @@
-import type { CommandCategory } from '@toeverything/infra/command';
+import type { CommandCategory } from '@toeverything/infra';
 
 export interface CommandContext {
   pageMode: 'page' | 'edgeless' | undefined;

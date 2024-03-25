@@ -1,4 +1,4 @@
-import { useLiveData } from '@toeverything/infra/livedata';
+import { useLiveData } from '@toeverything/infra';
 import { type Location } from 'history';
 import { useEffect } from 'react';
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports

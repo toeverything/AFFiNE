@@ -6,7 +6,7 @@ import 'fake-indexeddb/auto';
 import { WorkspacePropertiesAdapter } from '@affine/core/modules/workspace';
 import { render } from '@testing-library/react';
 import { Workspace } from '@toeverything/infra';
-import { ServiceProviderContext, useService } from '@toeverything/infra/di';
+import { ServiceProviderContext, useService } from '@toeverything/infra';
 import { createStore, Provider } from 'jotai';
 import { Suspense } from 'react';
 import { describe, expect, test, vi } from 'vitest';

@@ -67,7 +67,7 @@
       "@affine-test/kit/*": ["./tests/kit/*"],
       "@affine-test/fixtures/*": ["./tests/fixtures/*"],
       "@toeverything/y-indexeddb": ["./packages/common/y-indexeddb/src"],
-      "@toeverything/infra/*": ["./packages/common/infra/src/*"],
+      "@toeverything/infra": ["./packages/common/infra/src"],
       "@affine/native": ["./packages/frontend/native/index.d.ts"],
       "@affine/native/*": ["./packages/frontend/native/*"],
       "@affine/storage": ["./packages/backend/storage/index.d.ts"],
@@ -115,9 +115,6 @@
     },
     {
       "path": "./packages/common/env"
-    },
-    {
-      "path": "./packages/common/infra"
     },
     {
       "path": "./packages/common/infra"

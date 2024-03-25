@@ -26,8 +26,8 @@ import {
   AffineCommandRegistry,
   type CommandCategory,
   PreconditionStrategy,
-} from '@toeverything/infra/command';
-import { useService, useServiceOptional } from '@toeverything/infra/di';
+} from '@toeverything/infra';
+import { useService, useServiceOptional } from '@toeverything/infra';
 import { atom, useAtomValue } from 'jotai';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 

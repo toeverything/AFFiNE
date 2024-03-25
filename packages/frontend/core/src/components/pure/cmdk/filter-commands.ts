@@ -1,4 +1,4 @@
-import type { CommandCategory } from '@toeverything/infra/command';
+import type { CommandCategory } from '@toeverything/infra';
 import { commandScore } from 'cmdk';
 import { groupBy } from 'lodash-es';
 

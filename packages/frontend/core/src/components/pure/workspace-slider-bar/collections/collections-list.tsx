@@ -14,7 +14,7 @@ import type { DocCollection, DocMeta } from '@blocksuite/store';
 import { useDroppable } from '@dnd-kit/core';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import { useService } from '@toeverything/infra';
-import { useLiveData } from '@toeverything/infra/livedata';
+import { useLiveData } from '@toeverything/infra';
 import { useCallback, useMemo, useState } from 'react';
 
 import { useAllPageListConfig } from '../../../../hooks/affine/use-all-page-list-config';

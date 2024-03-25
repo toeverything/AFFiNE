@@ -17,8 +17,8 @@ import {
   ViewLayersIcon,
 } from '@blocksuite/icons';
 import { Workspace } from '@toeverything/infra';
-import { useService } from '@toeverything/infra/di';
-import { useLiveData } from '@toeverything/infra/livedata';
+import { useService } from '@toeverything/infra';
+import { useLiveData } from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
 import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';

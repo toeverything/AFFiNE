@@ -11,7 +11,7 @@ import {
   horizontalListSortingStrategy,
   SortableContext,
 } from '@dnd-kit/sortable';
-import { useService } from '@toeverything/infra/di';
+import { useService } from '@toeverything/infra';
 import clsx from 'clsx';
 import {
   type HTMLAttributes,

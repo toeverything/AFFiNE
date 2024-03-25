@@ -1,4 +1,4 @@
-import { LiveData, useLiveData } from '@toeverything/infra/livedata';
+import { LiveData, useLiveData } from '@toeverything/infra';
 import { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 

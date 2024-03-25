@@ -1,5 +1,6 @@
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import type { WorkspaceFactory } from '@toeverything/infra';
+import type { ServiceCollection } from '@toeverything/infra';
 import {
   AwarenessContext,
   AwarenessProvider,
@@ -8,7 +9,6 @@ import {
   WorkspaceIdContext,
   WorkspaceScope,
 } from '@toeverything/infra';
-import type { ServiceCollection } from '@toeverything/infra/di';
 
 import { LocalWorkspaceFactory } from '../local';
 import { IndexedDBBlobStorage } from '../local/blob-indexeddb';

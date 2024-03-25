@@ -1,7 +1,7 @@
 import path from 'node:path';
 
 import { ValidationResult } from '@affine/native';
-import { WorkspaceVersion } from '@toeverything/infra/blocksuite';
+import { WorkspaceVersion } from '@toeverything/infra';
 import fs from 'fs-extra';
 import { nanoid } from 'nanoid';
 

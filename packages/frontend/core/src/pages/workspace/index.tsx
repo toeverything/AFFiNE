@@ -1,8 +1,8 @@
 import { useWorkspace } from '@affine/core/hooks/use-workspace';
 import type { Workspace } from '@toeverything/infra';
 import { WorkspaceListService, WorkspaceManager } from '@toeverything/infra';
-import { ServiceProviderContext, useService } from '@toeverything/infra/di';
-import { useLiveData } from '@toeverything/infra/livedata';
+import { ServiceProviderContext, useService } from '@toeverything/infra';
+import { useLiveData } from '@toeverything/infra';
 import { type ReactElement, Suspense, useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 

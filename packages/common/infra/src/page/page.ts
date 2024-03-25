@@ -1,5 +1,5 @@
 import type { Doc as BlockSuiteDoc } from '@blocksuite/store';
-import type { ServiceProvider } from '@toeverything/infra/di';
+import type { ServiceProvider } from '@toeverything/infra';
 
 import type { PageMode, PageRecord } from './record';
 

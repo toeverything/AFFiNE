@@ -1,8 +1,8 @@
 import { ResizePanel } from '@affine/component/resize-panel';
 import { appSidebarOpenAtom } from '@affine/core/components/app-sidebar';
-import { appSettingAtom } from '@toeverything/infra/atom';
-import { useService } from '@toeverything/infra/di';
-import { useLiveData } from '@toeverything/infra/livedata';
+import { appSettingAtom } from '@toeverything/infra';
+import { useService } from '@toeverything/infra';
+import { useLiveData } from '@toeverything/infra';
 import { useAtomValue } from 'jotai';
 import { useCallback, useEffect, useState } from 'react';
 

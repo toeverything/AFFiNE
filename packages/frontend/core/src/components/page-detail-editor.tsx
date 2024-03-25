@@ -11,7 +11,7 @@ import {
   useLiveData,
   useService,
 } from '@toeverything/infra';
-import { fontStyleOptions } from '@toeverything/infra/atom';
+import { fontStyleOptions } from '@toeverything/infra';
 import clsx from 'clsx';
 import type { CSSProperties } from 'react';
 import { memo, Suspense, useCallback, useMemo } from 'react';

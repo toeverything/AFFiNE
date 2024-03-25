@@ -1,8 +1,8 @@
 import { events } from '@affine/electron-api';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { WorkspaceManager } from '@toeverything/infra';
-import { useService } from '@toeverything/infra/di';
-import { useLiveData } from '@toeverything/infra/livedata';
+import { useService } from '@toeverything/infra';
+import { useLiveData } from '@toeverything/infra';
 import { useAtom } from 'jotai';
 import {
   lazy,

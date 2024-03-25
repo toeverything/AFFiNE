@@ -1,4 +1,4 @@
-import { getCurrentStore } from '@toeverything/infra/atom';
+import { getCurrentStore } from '@toeverything/infra';
 import { Provider } from 'jotai/react';
 import type { FC } from 'react';
 import { useMemo } from 'react';

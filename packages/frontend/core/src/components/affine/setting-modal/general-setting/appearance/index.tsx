@@ -7,7 +7,7 @@ import {
   type AppSetting,
   fontStyleOptions,
   windowFrameStyleOptions,
-} from '@toeverything/infra/atom';
+} from '@toeverything/infra';
 import { useTheme } from 'next-themes';
 import { useCallback } from 'react';
 

@@ -1,4 +1,4 @@
-import { useLiveData } from '@toeverything/infra/livedata';
+import { useLiveData } from '@toeverything/infra';
 import { lazy as reactLazy, useEffect, useMemo } from 'react';
 import {
   createMemoryRouter,

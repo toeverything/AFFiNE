@@ -8,8 +8,8 @@ import { Doc, useLiveData, Workspace } from '@toeverything/infra';
 import {
   PreconditionStrategy,
   registerAffineCommand,
-} from '@toeverything/infra/command';
-import { useService } from '@toeverything/infra/di';
+} from '@toeverything/infra';
+import { useService } from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
 import { useCallback, useEffect } from 'react';
 

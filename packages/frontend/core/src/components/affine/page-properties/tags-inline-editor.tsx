@@ -11,7 +11,7 @@ import { WorkspaceLegacyProperties } from '@affine/core/modules/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { DeleteIcon, MoreHorizontalIcon, TagsIcon } from '@blocksuite/icons';
 import { useLiveData } from '@toeverything/infra';
-import { useService } from '@toeverything/infra/di';
+import { useService } from '@toeverything/infra';
 import clsx from 'clsx';
 import {
   type HTMLAttributes,

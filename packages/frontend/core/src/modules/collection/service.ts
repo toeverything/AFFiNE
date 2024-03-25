@@ -4,7 +4,7 @@ import type {
   DeletedCollection,
 } from '@affine/env/filter';
 import type { Workspace } from '@toeverything/infra';
-import { LiveData } from '@toeverything/infra/livedata';
+import { LiveData } from '@toeverything/infra';
 import { Observable } from 'rxjs';
 import { Array as YArray } from 'yjs';
 

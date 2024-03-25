@@ -14,7 +14,7 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { _addLocalWorkspace } from '@affine/workspace-impl';
 import { WorkspaceManager } from '@toeverything/infra';
 import { buildShowcaseWorkspace, initEmptyPage } from '@toeverything/infra';
-import { useService } from '@toeverything/infra/di';
+import { useService } from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
 import type { KeyboardEvent } from 'react';
 import { useLayoutEffect } from 'react';

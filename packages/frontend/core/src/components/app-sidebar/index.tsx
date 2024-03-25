@@ -1,7 +1,7 @@
 import { Skeleton } from '@affine/component';
 import { ResizePanel } from '@affine/component/resize-panel';
 import { Workspace } from '@toeverything/infra';
-import { useServiceOptional } from '@toeverything/infra/di';
+import { useServiceOptional } from '@toeverything/infra';
 import { useAtom, useAtomValue } from 'jotai';
 import { debounce } from 'lodash-es';
 import type { PropsWithChildren, ReactElement } from 'react';

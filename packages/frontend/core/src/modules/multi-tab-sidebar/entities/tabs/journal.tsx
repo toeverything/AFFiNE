@@ -27,7 +27,7 @@ import {
   useLiveData,
   Workspace,
 } from '@toeverything/infra';
-import { useService } from '@toeverything/infra/di';
+import { useService } from '@toeverything/infra';
 import { assignInlineVars } from '@vanilla-extract/dynamic';
 import clsx from 'clsx';
 import dayjs from 'dayjs';

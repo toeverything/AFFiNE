@@ -18,7 +18,7 @@ import {
   UnsyncIcon,
 } from '@blocksuite/icons';
 import { Workspace } from '@toeverything/infra';
-import { useService } from '@toeverything/infra/di';
+import { useService } from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
 import { debounce } from 'lodash-es';
 import {

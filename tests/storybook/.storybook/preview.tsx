@@ -7,14 +7,14 @@ import { useDarkMode } from 'storybook-dark-mode';
 import { AffineContext } from '@affine/component/context';
 import useSWR from 'swr';
 import type { Decorator } from '@storybook/react';
-import { _setCurrentStore } from '@toeverything/infra/atom';
+import { _setCurrentStore } from '@toeverything/infra';
 import { setupGlobal, type Environment } from '@affine/env/global';
 
 import type { Preview } from '@storybook/react';
 import { useLayoutEffect, useRef } from 'react';
 import { setup } from '@affine/core/bootstrap/setup';
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import { ServiceCollection } from '@toeverything/infra/di';
+import { ServiceCollection } from '@toeverything/infra';
 import {
   WorkspaceManager,
   configureInfraServices,
