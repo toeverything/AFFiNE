@@ -38,7 +38,7 @@ export const CreateOrEditTag = ({
   const t = useAFFiNEI18N();
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const [tagName, setTagName] = useState(tagMeta?.title);
+  const [tagName, setTagName] = useState(tagMeta?.title || '');
   const handleChangeName = useCallback((value: string) => {
     setTagName(value);
   }, []);
@@ -128,9 +128,13 @@ export const CreateOrEditTag = ({
   }, [open, onOpenChange, menuOpen, onClose]);
 
   useEffect(() => {
-    setTagName(tagMeta?.title);
+    setTagName(tagMeta?.title || '');
     setTagIcon(tagMeta?.color || randomTagColor());
   }, [tagMeta?.color, tagMeta?.title]);
+
+  if (!open) {
+    return null;
+  }
 
   return (
     <div className={styles.createTagWrapper} data-show={open}>
@@ -152,6 +156,7 @@ export const CreateOrEditTag = ({
         onEnter={onConfirm}
         value={tagName}
         onChange={handleChangeName}
+        autoFocus
       />
       <Button className={styles.cancelBtn} onClick={onClose}>
         {t['Cancel']()}
