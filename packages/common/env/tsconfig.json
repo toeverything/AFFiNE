@@ -6,9 +6,5 @@
     "noEmit": false,
     "outDir": "lib"
   },
-  "references": [
-    {
-      "path": "../../../tests/fixtures"
-    }
-  ]
+  "references": []
 }

@@ -3,11 +3,11 @@
   "compilerOptions": {
     "composite": true,
     "skipLibCheck": true,
-    "target": "ESNext",
+    "target": "ES2022",
     "module": "ESNext",
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
-    "types": ["node"],
+    "types": ["node", "affine__env"],
     "outDir": "lib",
     "moduleResolution": "node",
     "resolveJsonModule": true,

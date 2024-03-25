@@ -6,6 +6,7 @@ async function buildLayers() {
   const common = config();
 
   const define: Record<string, string> = {
+    ...common.define,
     'process.env.NODE_ENV': `"${mode}"`,
     'process.env.BUILD_TYPE': `"${process.env.BUILD_TYPE || 'stable'}"`,
   };

@@ -9,7 +9,7 @@
     "allowSyntheticDefaultImports": true,
     "noEmit": false,
     "outDir": "./lib/tests",
-    "types": ["node"],
+    "types": ["node", "affine__env"],
     "allowJs": true
   },
   "references": [
