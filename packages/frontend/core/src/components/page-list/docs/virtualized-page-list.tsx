@@ -2,6 +2,7 @@ import { toast } from '@affine/component';
 import { useBlockSuiteMetaHelper } from '@affine/core/hooks/affine/use-block-suite-meta-helper';
 import { useTrashModalHelper } from '@affine/core/hooks/affine/use-trash-modal-helper';
 import { useBlockSuiteDocMeta } from '@affine/core/hooks/use-block-suite-page-meta';
+import { CollectionService } from '@affine/core/modules/collection';
 import type { Tag } from '@affine/core/modules/tag';
 import { Workbench } from '@affine/core/modules/workbench';
 import type { Collection, Filter } from '@affine/env/filter';
@@ -36,9 +37,17 @@ const usePageOperationsRenderer = () => {
   );
   const t = useAFFiNEI18N();
   const workbench = useService(Workbench);
+  const collectionService = useService(CollectionService);
+  const removeFromAllowList = useCallback(
+    (id: string) => {
+      collectionService.deletePagesFromCollections([id]);
+      toast(t['com.affine.collection.removePage.success']());
+    },
+    [collectionService, t]
+  );
 
   const pageOperationsRenderer = useCallback(
-    (page: DocMeta) => {
+    (page: DocMeta, isInAllowList?: boolean) => {
       const onDisablePublicSharing = () => {
         toast('Successfully disabled', {
           portal: document.body,
@@ -49,6 +58,7 @@ const usePageOperationsRenderer = () => {
         <PageOperationCell
           favorite={!!page.favorite}
           isPublic={!!page.isPublic}
+          isInAllowList={isInAllowList}
           onDisablePublicSharing={onDisablePublicSharing}
           link={`/workspace/${currentWorkspace.id}/${page.id}`}
           onOpenInSplitView={() => workbench.openPage(page.id, { at: 'tail' })}
@@ -71,6 +81,7 @@ const usePageOperationsRenderer = () => {
                 : t['com.affine.toastMessage.addedFavorites']()
             );
           }}
+          onRemoveFromAllowList={() => removeFromAllowList(page.id)}
         />
       );
     },
@@ -81,6 +92,7 @@ const usePageOperationsRenderer = () => {
       setTrashModal,
       toggleFavorite,
       t,
+      removeFromAllowList,
     ]
   );
 
@@ -134,9 +146,10 @@ export const VirtualizedPageList = ({
   const pageOperationRenderer = useCallback(
     (item: ListItem) => {
       const page = item as DocMeta;
-      return pageOperations(page);
+      const isInAllowList = collection?.allowList?.includes(page.id);
+      return pageOperations(page, isInAllowList);
     },
-    [pageOperations]
+    [collection, pageOperations]
   );
 
   const pageHeaderRenderer = useCallback(() => {
