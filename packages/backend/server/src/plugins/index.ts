@@ -1,3 +1,4 @@
+import './captcha';
 import './gcloud';
 import './oauth';
 import './payment';

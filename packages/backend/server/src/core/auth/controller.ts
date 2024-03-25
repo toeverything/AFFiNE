@@ -1,5 +1,3 @@
-import { randomUUID } from 'node:crypto';
-
 import {
   BadRequestException,
   Body,
@@ -28,6 +26,8 @@ import { TokenService, TokenType } from './token';
 class SignInCredential {
   email!: string;
   password?: string;
+  token?: string;
+  challenge?: string;
 }
 
 @Controller('/api/auth')
@@ -198,16 +198,6 @@ export class AuthController {
 
     return {
       users: await this.auth.getUserList(token),
-    };
-  }
-
-  @Public()
-  @Get('/challenge')
-  async challenge() {
-    // TODO: impl in following PR
-    return {
-      challenge: randomUUID(),
-      resource: randomUUID(),
     };
   }
 }

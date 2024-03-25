@@ -17,6 +17,7 @@ import {
 import type { Request, Response } from 'express';
 
 import { CloudThrottlerGuard, Config, Throttle } from '../../fundamentals';
+import { CaptchaService } from '../../plugins/captcha/service';
 import { UserType } from '../user/types';
 import { validators } from '../utils/validators';
 import { CurrentUser } from './current-user';
@@ -48,7 +49,8 @@ export class AuthResolver {
   constructor(
     private readonly config: Config,
     private readonly auth: AuthService,
-    private readonly token: TokenService
+    private readonly token: TokenService,
+    private readonly captcha?: CaptchaService
   ) {}
 
   @Throttle({
@@ -110,9 +112,18 @@ export class AuthResolver {
     @Context() ctx: { req: Request; res: Response },
     @Args('name') name: string,
     @Args('email') email: string,
-    @Args('password') password: string
+    @Args('password') password: string,
+    @Args('token') token: string,
+    @Args('challenge') challenge?: string
   ) {
-    validators.assertValidCredential({ email, password });
+    const credential = validators.assertValidCredential({
+      email,
+      password,
+      challenge,
+      token,
+    });
+    await this.captcha?.verifyRequest(credential, ctx.req);
+
     const user = await this.auth.signUp(name, email, password);
     await this.auth.setCookie(ctx.req, ctx.res, user);
     ctx.req.user = user;
@@ -130,9 +141,18 @@ export class AuthResolver {
   async signIn(
     @Context() ctx: { req: Request; res: Response },
     @Args('email') email: string,
-    @Args('password') password: string
+    @Args('password') password: string,
+    @Args('token') token: string,
+    @Args('challenge') challenge?: string
   ) {
-    validators.assertValidEmail(email);
+    const credential = validators.assertValidCredential({
+      email,
+      password,
+      challenge,
+      token,
+    });
+    await this.captcha?.verifyRequest(credential, ctx.req);
+
     const user = await this.auth.signIn(email, password);
     await this.auth.setCookie(ctx.req, ctx.res, user);
     ctx.req.user = user;

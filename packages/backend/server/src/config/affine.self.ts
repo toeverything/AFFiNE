@@ -50,6 +50,14 @@ AFFiNE.plugins.use('payment', {
 });
 AFFiNE.plugins.use('oauth');
 
+/* Captcha Plugin Default Config */
+AFFiNE.plugins.use('captcha', {
+  turnstile: {},
+  challenge: {
+    bits: 20,
+  },
+});
+
 if (AFFiNE.deploy) {
   AFFiNE.mailer = {
     service: 'gmail',
