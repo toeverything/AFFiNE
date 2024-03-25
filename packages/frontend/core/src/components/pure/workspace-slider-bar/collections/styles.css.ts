@@ -102,6 +102,9 @@ export const collapsibleContent = style({
   overflow: 'hidden',
   marginTop: '4px',
   selectors: {
+    '&[data-hidden="true"]': {
+      display: 'none',
+    },
     '&[data-state="open"]': {
       animation: `${slideDown} 0.2s ease-in-out`,
     },

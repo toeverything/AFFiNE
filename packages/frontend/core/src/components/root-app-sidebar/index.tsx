@@ -1,4 +1,5 @@
 import { AnimatedDeleteIcon } from '@affine/component';
+import { getDNDId } from '@affine/core/hooks/affine/use-global-dnd-helper';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { CollectionService } from '@affine/core/modules/collection';
 import { apis, events } from '@affine/electron-api';
@@ -14,7 +15,6 @@ import type { HTMLAttributes, ReactElement } from 'react';
 import { forwardRef, useCallback, useEffect } from 'react';
 
 import { useAppSettingHelper } from '../../hooks/affine/use-app-setting-helper';
-import { getDropItemId } from '../../hooks/affine/use-sidebar-drag';
 import { useTrashModalHelper } from '../../hooks/affine/use-trash-modal-helper';
 import { useNavigateHelper } from '../../hooks/use-navigate-helper';
 import { Workbench } from '../../modules/workbench';
@@ -37,7 +37,6 @@ import {
 } from '../page-list';
 import { CollectionsList } from '../pure/workspace-slider-bar/collections';
 import { AddCollectionButton } from '../pure/workspace-slider-bar/collections/add-collection-button';
-import { AddFavouriteButton } from '../pure/workspace-slider-bar/favorite/add-favourite-button';
 import FavoriteList from '../pure/workspace-slider-bar/favorite/favorite-list';
 import { WorkspaceSelector } from '../workspace-selector';
 import ImportPage from './import-page';
@@ -141,7 +140,7 @@ export const RootAppSidebar = ({
     }
   }, [sidebarOpen]);
 
-  const dropItemId = getDropItemId('trash');
+  const dropItemId = getDNDId('sidebar-trash', 'container', 'trash');
   const trashDroppable = useDroppable({
     id: dropItemId,
   });
@@ -215,9 +214,6 @@ export const RootAppSidebar = ({
       </SidebarContainer>
 
       <SidebarScrollableContainer>
-        <CategoryDivider label={t['com.affine.rootAppSidebar.favorites']()}>
-          <AddFavouriteButton docCollection={docCollection} />
-        </CategoryDivider>
         <FavoriteList docCollection={docCollection} />
         <CategoryDivider label={t['com.affine.rootAppSidebar.collections']()}>
           <AddCollectionButton node={node} onClick={handleCreateCollection} />
@@ -233,7 +229,7 @@ export const RootAppSidebar = ({
           <RouteMenuLinkItem
             ref={trashDroppable.setNodeRef}
             icon={<AnimatedDeleteIcon closed={trashDroppable.isOver} />}
-            active={trashActive}
+            active={trashActive || trashDroppable.isOver}
             path={paths.trash(currentWorkspaceId)}
           >
             <span data-testid="trash-page">
