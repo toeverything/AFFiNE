@@ -116,6 +116,10 @@ export function registerProtocol() {
             .join('; ');
           details.requestHeaders['cookie'] = cookieString;
         }
+
+        // add the referer and origin headers
+        details.requestHeaders['referer'] ??= CLOUD_BASE_URL;
+        details.requestHeaders['origin'] ??= CLOUD_BASE_URL;
       }
       callback({
         cancel: false,
