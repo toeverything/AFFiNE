@@ -1,8 +1,9 @@
 import { clsx } from 'clsx';
+import { useAtomValue } from 'jotai';
 import type { HTMLAttributes, PropsWithChildren, ReactElement } from 'react';
 import { forwardRef } from 'react';
 
-import { AppSidebarFallback } from '../app-sidebar';
+import { AppSidebarFallback, appSidebarOpenAtom } from '../app-sidebar';
 import { appStyle, mainContainerStyle, toolStyle } from './index.css';
 
 export type WorkspaceRootProps = PropsWithChildren<{
@@ -33,25 +34,25 @@ export const AppContainer = ({
 };
 
 export interface MainContainerProps extends HTMLAttributes<HTMLDivElement> {
-  className?: string;
-  padding?: boolean;
-  transparent?: boolean;
+  clientBorder?: boolean;
 }
 
 export const MainContainer = forwardRef<
   HTMLDivElement,
   PropsWithChildren<MainContainerProps>
 >(function MainContainer(
-  { className, padding, children, transparent, ...props },
+  { className, children, clientBorder, ...props },
   ref
 ): ReactElement {
+  const appSideBarOpen = useAtomValue(appSidebarOpenAtom);
   return (
     <div
       {...props}
       className={clsx(mainContainerStyle, className)}
       data-is-macos={environment.isDesktop && environment.isMacOs}
-      data-show-padding={!!padding}
-      data-transparent={transparent}
+      data-transparent={false}
+      data-client-border={clientBorder}
+      data-side-bar-open={appSideBarOpen}
       ref={ref}
     >
       {children}

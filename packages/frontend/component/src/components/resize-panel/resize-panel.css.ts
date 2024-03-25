@@ -60,7 +60,7 @@ export const resizeHandleContainer = style({
   opacity: 0,
   display: 'flex',
   justifyContent: 'center',
-  cursor: 'ew-resize',
+  cursor: 'col-resize',
   '@media': {
     '(max-width: 600px)': {
       // do not allow resizing on small screen
