@@ -1,7 +1,7 @@
 import { use } from 'foxact/use';
 import { useSyncExternalStore } from 'react';
 
-import type { LiveData } from './index';
+import type { LiveData } from './livedata';
 
 function noopSubscribe() {
   return () => {};
