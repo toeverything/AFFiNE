@@ -46,6 +46,7 @@
     "@toeverything/infra": "workspace:*",
     "@types/mixpanel-browser": "^2.49.0",
     "@types/uuid": "^9.0.8",
+    "@vitejs/plugin-react-swc": "^3.6.0",
     "builder-util-runtime": "^9.2.4",
     "core-js": "^3.36.1",
     "cross-env": "^7.0.3",

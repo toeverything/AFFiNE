@@ -468,6 +468,7 @@ __metadata:
     "@toeverything/infra": "workspace:*"
     "@types/mixpanel-browser": "npm:^2.49.0"
     "@types/uuid": "npm:^9.0.8"
+    "@vitejs/plugin-react-swc": "npm:^3.6.0"
     async-call-rpc: "npm:^6.4.0"
     builder-util-runtime: "npm:^9.2.4"
     core-js: "npm:^3.36.1"
