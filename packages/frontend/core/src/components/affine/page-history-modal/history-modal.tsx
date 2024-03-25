@@ -137,7 +137,7 @@ const HistoryEditorPreview = ({
         {snapshotPage ? (
           <AffineErrorBoundary>
             <Scrollable.Root>
-              <Scrollable.Viewport>
+              <Scrollable.Viewport className="affine-page-viewport">
                 <BlockSuiteEditor
                   className={styles.editor}
                   mode={mode}
@@ -165,7 +165,7 @@ const HistoryEditorPreview = ({
 
   return (
     <div className={styles.previewWrapper}>
-      {historyList.map((item, i) => {
+      {historyList.map((_item, i) => {
         const historyIndex = historyList.findIndex(h => h.timestamp === ts);
         const distance = i - historyIndex;
         const flag =
@@ -175,11 +175,7 @@ const HistoryEditorPreview = ({
               ? '< -20'
               : distance.toString();
         return (
-          <div
-            data-distance={flag}
-            key={item.id}
-            className={styles.previewContainer}
-          >
+          <div data-distance={flag} key={i} className={styles.previewContainer}>
             {historyIndex === i ? content : null}
           </div>
         );
