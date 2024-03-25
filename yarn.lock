@@ -798,6 +798,7 @@ __metadata:
     storybook: "npm:^7.6.17"
     storybook-addon-react-router-v6: "npm:^2.0.10"
     storybook-dark-mode: "npm:^3.0.3"
+    storybook-mock-date-decorator: "npm:^1.0.2"
     wait-on: "npm:^7.2.0"
   peerDependencies:
     "@blocksuite/blocks": "*"
@@ -27865,6 +27866,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"mockdate@npm:^3.0.5":
+  version: 3.0.5
+  resolution: "mockdate@npm:3.0.5"
+  checksum: 10/ff74f43f56a12e1339e838aee623e37b6e4c378173905697f2a006a5c581eea9c71da54fcea76c27e7e744422e49395c668932bf09e67f024841240ffef91fd2
+  languageName: node
+  linkType: hard
+
 "modern-ahocorasick@npm:^1.0.0":
   version: 1.0.1
   resolution: "modern-ahocorasick@npm:1.0.1"
@@ -32893,6 +32901,17 @@ __metadata:
     react-dom:
       optional: true
   checksum: 10/59e2f4c69abcf4b65941e7fb4c26d748c9d303e2904ba79def6ad624076a9440e1bdbebf36631c16693bb384703384c3931550680969a4b98589cb9ff458a6e8
+  languageName: node
+  linkType: hard
+
+"storybook-mock-date-decorator@npm:^1.0.2":
+  version: 1.0.2
+  resolution: "storybook-mock-date-decorator@npm:1.0.2"
+  dependencies:
+    mockdate: "npm:^3.0.5"
+  peerDependencies:
+    "@storybook/addons": ">=6"
+  checksum: 10/c8e8b6966b58bd830c4837e6940328b9d32776c216bfcbc9f55bb38c5c192ab511670ff77505577737589bf83a7ad98538da1e62a2aa9c628e42e5998f2f6147
   languageName: node
   linkType: hard
 

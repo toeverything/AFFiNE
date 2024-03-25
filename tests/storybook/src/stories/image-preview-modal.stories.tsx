@@ -1,6 +1,6 @@
 import { BlockSuiteEditor } from '@affine/core/components/blocksuite/block-suite-editor';
 import { ImagePreviewModal } from '@affine/core/components/image-preview';
-import type { Meta } from '@storybook/react';
+import type { Meta, StoryFn } from '@storybook/react';
 import type { Doc } from '@toeverything/infra';
 import {
   initEmptyPage,
@@ -11,13 +11,14 @@ import {
 } from '@toeverything/infra';
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { mockDateDecorator } from 'storybook-mock-date-decorator';
 
 export default {
   title: 'Component/ImagePreviewModal',
   component: ImagePreviewModal,
 } satisfies Meta;
 
-export const Default = () => {
+export const Default: StoryFn = () => {
   const workspace = useService(Workspace);
   const pageManager = useService(PageManager);
 
@@ -64,7 +65,7 @@ export const Default = () => {
   }, [pageManager, workspace]);
 
   if (!page) {
-    return null;
+    return <div />;
   }
 
   return (
@@ -87,4 +88,9 @@ export const Default = () => {
       </div>
     </ServiceProviderContext.Provider>
   );
+};
+
+Default.decorators = [mockDateDecorator];
+Default.parameters = {
+  date: new Date('Mon, 25 Mar 2024 08:39:07 GMT'),
 };

@@ -9,6 +9,7 @@ import {
   reactRouterParameters,
   withRouter,
 } from 'storybook-addon-react-router-v6';
+import { mockDateDecorator } from 'storybook-mock-date-decorator';
 
 const FakeApp = () => {
   const location = useLocation();
@@ -196,7 +197,7 @@ ImportPage.play = async ({ canvasElement }) => {
   });
   await userEvent.click(screen.getByTestId('editor-option-menu-import'));
 };
-ImportPage.decorators = [withRouter];
+ImportPage.decorators = [withRouter, mockDateDecorator];
 ImportPage.parameters = {
   reactRouter: reactRouterParameters({
     routing: reactRouterOutlets(topLevelRoutes),
@@ -204,6 +205,7 @@ ImportPage.parameters = {
       path: '/',
     },
   }),
+  date: new Date('Mon, 25 Mar 2024 08:39:07 GMT'),
 };
 
 export const OpenAppPage: StoryFn = () => {
