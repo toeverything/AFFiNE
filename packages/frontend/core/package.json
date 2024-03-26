@@ -99,7 +99,7 @@
     "@types/mixpanel-browser": "^2.49.0",
     "@types/uuid": "^9.0.8",
     "@vanilla-extract/css": "^1.14.1",
-    "express": "^4.18.2",
+    "express": "^4.19.2",
     "fake-indexeddb": "^5.0.2",
     "lodash-es": "^4.17.21",
     "mime-types": "^2.1.35",
