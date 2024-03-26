@@ -155,7 +155,7 @@ export const CMDKContainer = ({
   open: boolean;
   className?: string;
   query: string;
-  pageMeta?: DocMeta;
+  pageMeta?: Partial<DocMeta>;
   groups: ReturnType<typeof useCMDKCommandGroups>;
   onQueryChange: (query: string) => void;
 }>) => {
@@ -234,7 +234,7 @@ const CMDKQuickSearchModalInner = ({
   pageMeta,
   open,
   ...props
-}: CMDKModalProps & { pageMeta?: DocMeta }) => {
+}: CMDKModalProps & { pageMeta?: Partial<DocMeta> }) => {
   const [query, setQuery] = useAtom(cmdkQueryAtom);
   useLayoutEffect(() => {
     if (open) {
@@ -260,7 +260,7 @@ export const CMDKQuickSearchModal = ({
   pageMeta,
   open,
   ...props
-}: CMDKModalProps & { pageMeta?: DocMeta }) => {
+}: CMDKModalProps & { pageMeta?: Partial<DocMeta> }) => {
   return (
     <CMDKModal open={open} {...props}>
       <Suspense fallback={<Command.Loading />}>

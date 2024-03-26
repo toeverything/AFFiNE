@@ -163,7 +163,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
 
         const updatedDate = linkedPage.meta$.value.updatedDate;
         const createDate = linkedPage.meta$.value.createDate;
-        return updatedDate ? new Date(updatedDate) : new Date(createDate);
+        return new Date(updatedDate || createDate || Date.now());
       };
 
       page.setMode(mode);

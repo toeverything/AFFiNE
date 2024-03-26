@@ -50,7 +50,7 @@ export class Tag {
       return;
     }
     pageRecord?.setMeta({
-      tags: [...pageRecord.meta$.value.tags, this.id],
+      tags: [...(pageRecord.meta$.value.tags ?? []), this.id],
     });
   }
 
@@ -60,14 +60,14 @@ export class Tag {
       return;
     }
     pageRecord?.setMeta({
-      tags: pageRecord.meta$.value.tags.filter(tagId => tagId !== this.id),
+      tags: pageRecord.meta$.value.tags?.filter(tagId => tagId !== this.id),
     });
   }
 
   readonly pageIds$ = LiveData.computed(get => {
     const pages = get(this.pageRecordList.records$);
     return pages
-      .filter(page => get(page.meta$).tags.includes(this.id))
+      .filter(page => get(page.meta$).tags?.includes(this.id))
       .map(page => page.id);
   });
 }

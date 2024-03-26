@@ -41,7 +41,7 @@ export class TagService {
       if (!pageRecord) return [];
       const tagIds = get(pageRecord.meta$).tags;
 
-      return get(this.tags$).filter(tag => tagIds.includes(tag.id));
+      return get(this.tags$).filter(tag => (tagIds ?? []).includes(tag.id));
     });
   }
 

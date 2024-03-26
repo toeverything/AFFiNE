@@ -14,7 +14,7 @@ export class PageRecord {
     private readonly localState: WorkspaceLocalState
   ) {}
 
-  meta$ = LiveData.from<DocMeta>(
+  meta$ = LiveData.from<Partial<DocMeta>>(
     new Observable<DocMeta>(subscriber => {
       const emit = () => {
         const meta = this.workspace.docCollection.meta.docMetas.find(
@@ -60,5 +60,5 @@ export class PageRecord {
     return this.mode$.value;
   }
 
-  title$ = this.meta$.map(meta => meta.title);
+  title$ = this.meta$.map(meta => meta.title ?? '');
 }
