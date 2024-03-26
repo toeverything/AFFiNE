@@ -2,8 +2,8 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Get,
   InternalServerErrorException,
-  Optional,
   Param,
   Post,
   Query,
@@ -55,14 +55,13 @@ export class CopilotController {
   }
 
   @Public()
-  @Sse('/chat/:sessionId')
+  @Get('/chat/:sessionId')
   async chat(
     @CurrentUser() user: CurrentUser | undefined,
     @Req() req: Request,
     @Param('sessionId') sessionId: string,
-    @Query('message') content: string,
-    @Optional() @Query('stream') stream = false
-  ): Promise<Observable<ChatEvent> | string> {
+    @Query('message') content: string
+  ): Promise<string> {
     const provider = this.provider.getProviderByCapability(
       CopilotCapability.TextToText
     );
@@ -74,46 +73,69 @@ export class CopilotController {
       throw new BadRequestException('Session not found');
     }
     session.push({ role: 'user', content: decodeURIComponent(content) });
-    if (stream) {
-      return from(
-        provider.generateTextStream(session.finish(), session.model, {
+
+    try {
+      const content = await provider.generateText(
+        session.finish(),
+        session.model,
+        {
           signal: req.signal,
           user: user?.id,
-        })
-      ).pipe(
-        connect(shared$ =>
-          merge(
-            // actual chat event stream
-            shared$.pipe(map(data => ({ id: sessionId, data }))),
-            // save the generated text to the session
-            shared$.pipe(
-              toArray(),
-              concatMap(values => {
-                session.push({ role: 'assistant', content: values.join('') });
-                return from(session.save());
-              }),
-              switchMap(() => EMPTY)
-            )
+        }
+      );
+
+      session.push({ role: 'assistant', content });
+      await session.save();
+
+      return content;
+    } catch (e: any) {
+      throw new InternalServerErrorException(
+        e.message || "Couldn't generate text"
+      );
+    }
+  }
+
+  @Public()
+  @Sse('/chat/:sessionId/stream')
+  async chatStream(
+    @CurrentUser() user: CurrentUser | undefined,
+    @Req() req: Request,
+    @Param('sessionId') sessionId: string,
+    @Query('message') content: string
+  ): Promise<Observable<ChatEvent>> {
+    const provider = this.provider.getProviderByCapability(
+      CopilotCapability.TextToText
+    );
+    if (!provider) {
+      throw new InternalServerErrorException('No provider available');
+    }
+    const session = await this.chatSession.get(sessionId);
+    if (!session) {
+      throw new BadRequestException('Session not found');
+    }
+    session.push({ role: 'user', content: decodeURIComponent(content) });
+
+    return from(
+      provider.generateTextStream(session.finish(), session.model, {
+        signal: req.signal,
+        user: user?.id,
+      })
+    ).pipe(
+      connect(shared$ =>
+        merge(
+          // actual chat event stream
+          shared$.pipe(map(data => ({ id: sessionId, data }))),
+          // save the generated text to the session
+          shared$.pipe(
+            toArray(),
+            concatMap(values => {
+              session.push({ role: 'assistant', content: values.join('') });
+              return from(session.save());
+            }),
+            switchMap(() => EMPTY)
           )
         )
-      );
-    } else {
-      try {
-        return await provider
-          .generateText(session.finish(), session.model, {
-            signal: req.signal,
-            user: user?.id,
-          })
-          .then(async data => {
-            session.push({ role: 'assistant', content: data });
-            await session.save();
-            return data;
-          });
-      } catch (e: any) {
-        throw new InternalServerErrorException(
-          e.message || "Couldn't generate text"
-        );
-      }
-    }
+      )
+    );
   }
 }
