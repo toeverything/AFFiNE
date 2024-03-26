@@ -8,7 +8,7 @@ import {
   migrateGuidCompatibility,
   migrateToSubdoc,
   WorkspaceVersion,
-} from '@toeverything/infra';
+} from '@toeverything/infra/blocksuite';
 import fs from 'fs-extra';
 import { nanoid } from 'nanoid';
 import { applyUpdate, Doc as YDoc, encodeStateAsUpdate } from 'yjs';

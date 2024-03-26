@@ -10,16 +10,20 @@ export const workspaceListWrapper = style({
   display: 'flex',
   width: '100%',
   flexDirection: 'column',
-  gap: '4px',
+  gap: 2,
 });
 export const workspaceType = style({
   display: 'flex',
   alignItems: 'center',
-  justifyContent: 'space-between',
+  gap: 4,
   padding: '0px 12px',
+  fontWeight: 500,
   fontSize: cssVar('fontXs'),
   lineHeight: '20px',
   color: cssVar('textSecondaryColor'),
+});
+export const workspaceTypeIcon = style({
+  color: cssVar('iconSecondary'),
 });
 export const scrollbar = style({
   transform: 'translateX(8px)',

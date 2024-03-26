@@ -27,7 +27,7 @@ export type CheckboxProps = Omit<
 export const Checkbox = ({
   checked,
   onChange,
-  indeterminate: indeterminate,
+  indeterminate,
   disabled,
   animation,
   name,

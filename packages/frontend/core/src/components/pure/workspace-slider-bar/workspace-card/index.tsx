@@ -1,7 +1,7 @@
+import { Tooltip } from '@affine/component';
 import { pushNotificationAtom } from '@affine/component/notification-center';
-import { Avatar } from '@affine/component/ui/avatar';
+import { Avatar, type AvatarProps } from '@affine/component/ui/avatar';
 import { Loading } from '@affine/component/ui/loading';
-import { Tooltip } from '@affine/component/ui/tooltip';
 import { openSettingModalAtom } from '@affine/core/atoms';
 import { useDocEngineStatus } from '@affine/core/hooks/affine/use-doc-engine-status';
 import { useIsWorkspaceOwner } from '@affine/core/hooks/affine/use-is-workspace-owner';
@@ -24,21 +24,15 @@ import type { HTMLAttributes } from 'react';
 import { forwardRef, useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useSystemOnline } from '../../../../hooks/use-system-online';
-import {
-  StyledSelectorContainer,
-  StyledSelectorWrapper,
-  StyledWorkspaceName,
-  StyledWorkspaceStatus,
-} from './styles';
+import * as styles from './styles.css';
 
 // FIXME:
-// 1. Remove mui style
 // 2. Refactor the code to improve readability
 const CloudWorkspaceStatus = () => {
   return (
     <>
       <CloudWorkspaceIcon />
-      AFFiNE Cloud
+      Cloud
     </>
   );
 };
@@ -196,21 +190,49 @@ const useSyncEngineSyncProgress = () => {
       ) : (
         <LocalWorkspaceStatus />
       ),
+    active:
+      currentWorkspace.flavour === WorkspaceFlavour.AFFINE_CLOUD &&
+      (syncing || retrying || isOverCapacity),
   };
 };
 
-const WorkspaceStatus = () => {
-  const { message, icon } = useSyncEngineSyncProgress();
+const WorkspaceInfo = ({ name }: { name: string }) => {
+  const { message, icon, active } = useSyncEngineSyncProgress();
+  const currentWorkspace = useService(Workspace);
+  const isCloud = currentWorkspace.flavour === WorkspaceFlavour.AFFINE_CLOUD;
+
+  // to make sure that animation will play first time
+  const [delayActive, setDelayActive] = useState(false);
+  useEffect(() => {
+    setDelayActive(active);
+  }, [active]);
 
   return (
-    <div style={{ display: 'flex' }}>
-      <Tooltip content={message}>
-        <StyledWorkspaceStatus>{icon}</StyledWorkspaceStatus>
-      </Tooltip>
+    <div className={styles.workspaceInfoSlider} data-active={delayActive}>
+      <div className={styles.workspaceInfoSlide}>
+        <div className={styles.workspaceInfo} data-type="normal">
+          <div className={styles.workspaceName} data-testid="workspace-name">
+            {name}
+          </div>
+          <div className={styles.workspaceStatus}>
+            {isCloud ? <CloudWorkspaceStatus /> : <LocalWorkspaceStatus />}
+          </div>
+        </div>
+
+        {/* when syncing/offline/... */}
+        <div className={styles.workspaceInfo} data-type="events">
+          <div className={styles.workspaceActiveStatus}>
+            <Tooltip content={message}>{icon}</Tooltip>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
 
+const avatarImageProps = {
+  style: { borderRadius: 3 },
+} satisfies AvatarProps['imageProps'];
 export const WorkspaceCard = forwardRef<
   HTMLDivElement,
   HTMLAttributes<HTMLDivElement>
@@ -227,7 +249,8 @@ export const WorkspaceCard = forwardRef<
   const name = information?.name ?? UNTITLED_WORKSPACE_NAME;
 
   return (
-    <StyledSelectorContainer
+    <div
+      className={styles.container}
       role="button"
       tabIndex={0}
       data-testid="current-workspace"
@@ -236,19 +259,16 @@ export const WorkspaceCard = forwardRef<
       {...props}
     >
       <Avatar
+        imageProps={avatarImageProps}
+        fallbackProps={avatarImageProps}
         data-testid="workspace-avatar"
-        size={40}
+        size={32}
         url={avatarUrl}
         name={name}
         colorfulFallback
       />
-      <StyledSelectorWrapper>
-        <StyledWorkspaceName data-testid="workspace-name">
-          {name}
-        </StyledWorkspaceName>
-        <WorkspaceStatus />
-      </StyledSelectorWrapper>
-    </StyledSelectorContainer>
+      <WorkspaceInfo name={name} />
+    </div>
   );
 });
 

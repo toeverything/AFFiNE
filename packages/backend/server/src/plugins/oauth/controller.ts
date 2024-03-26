@@ -40,7 +40,7 @@ export class OAuthController {
     const provider = this.providerFactory.get(providerName);
 
     if (!provider) {
-      throw new BadRequestException('Invalid provider');
+      throw new BadRequestException('Invalid OAuth provider');
     }
 
     const state = await this.oauth.saveOAuthState({

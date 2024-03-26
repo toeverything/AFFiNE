@@ -183,8 +183,10 @@ let hiddenMacWindow: BrowserWindow | undefined;
  */
 export async function initAndShowMainWindow() {
   if (!browserWindow || (await browserWindow.then(w => w.isDestroyed()))) {
-    const additionalArguments = await getWindowAdditionalArguments();
-    browserWindow = createWindow(additionalArguments);
+    browserWindow = (async () => {
+      const additionalArguments = await getWindowAdditionalArguments();
+      return createWindow(additionalArguments);
+    })();
   }
   const mainWindow = await browserWindow;
 

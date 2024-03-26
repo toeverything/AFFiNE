@@ -1,68 +1,17 @@
 import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
-import { WorkspaceFlavour } from '@affine/env/workspace';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import type { WorkspaceFlavour } from '@affine/env/workspace';
 import { CollaborationIcon, SettingsIcon } from '@blocksuite/icons';
 import type { WorkspaceMetadata } from '@toeverything/infra';
 import { useCallback } from 'react';
 
-import { Avatar } from '../../../ui/avatar';
-import { Divider } from '../../../ui/divider';
+import { Avatar, type AvatarProps } from '../../../ui/avatar';
 import { Skeleton } from '../../../ui/skeleton';
-import { Tooltip } from '../../../ui/tooltip';
-import {
-  StyledCard,
-  StyledIconContainer,
-  StyledSettingLink,
-  StyledWorkspaceInfo,
-  StyledWorkspaceTitle,
-  StyledWorkspaceTitleArea,
-  StyledWorkspaceType,
-  StyledWorkspaceTypeEllipse,
-  StyledWorkspaceTypeText,
-} from './styles';
+import * as styles from './styles.css';
 
 export interface WorkspaceTypeProps {
   flavour: WorkspaceFlavour;
   isOwner: boolean;
 }
-
-const WorkspaceType = ({ flavour, isOwner }: WorkspaceTypeProps) => {
-  const t = useAFFiNEI18N();
-  if (flavour === WorkspaceFlavour.LOCAL) {
-    return (
-      <StyledWorkspaceType>
-        <StyledWorkspaceTypeEllipse />
-        <StyledWorkspaceTypeText>{t['Local']()}</StyledWorkspaceTypeText>
-      </StyledWorkspaceType>
-    );
-  }
-
-  return isOwner ? (
-    <StyledWorkspaceType>
-      <StyledWorkspaceTypeEllipse cloud={true} />
-      <StyledWorkspaceTypeText>
-        {t['com.affine.brand.affineCloud']()}
-      </StyledWorkspaceTypeText>
-    </StyledWorkspaceType>
-  ) : (
-    <StyledWorkspaceType>
-      <StyledWorkspaceTypeEllipse cloud={true} />
-      <StyledWorkspaceTypeText>
-        {t['com.affine.brand.affineCloud']()}
-      </StyledWorkspaceTypeText>
-      <Divider
-        orientation="vertical"
-        size="thinner"
-        style={{ margin: '0px 8px', height: '7px' }}
-      />
-      <Tooltip content={t['com.affine.workspaceType.joined']()}>
-        <StyledIconContainer>
-          <CollaborationIcon />
-        </StyledIconContainer>
-      </Tooltip>
-    </StyledWorkspaceType>
-  );
-};
 
 export interface WorkspaceCardProps {
   currentWorkspaceId?: string | null;
@@ -77,7 +26,7 @@ export interface WorkspaceCardProps {
 export const WorkspaceCardSkeleton = () => {
   return (
     <div>
-      <StyledCard data-testid="workspace-card">
+      <div className={styles.card} data-testid="workspace-card">
         <Skeleton variant="circular" width={28} height={28} />
         <Skeleton
           variant="rectangular"
@@ -85,11 +34,14 @@ export const WorkspaceCardSkeleton = () => {
           width={220}
           style={{ marginLeft: '12px' }}
         />
-      </StyledCard>
+      </div>
     </div>
   );
 };
 
+const avatarImageProps = {
+  style: { borderRadius: 3, overflow: 'hidden' },
+} satisfies AvatarProps['imageProps'];
 export const WorkspaceCard = ({
   onClick,
   onSettingClick,
@@ -101,32 +53,38 @@ export const WorkspaceCard = ({
 }: WorkspaceCardProps) => {
   const displayName = name ?? UNTITLED_WORKSPACE_NAME;
   return (
-    <StyledCard
+    <div
+      className={styles.card}
+      data-active={meta.id === currentWorkspaceId}
       data-testid="workspace-card"
       onClick={useCallback(() => {
         onClick(meta);
       }, [onClick, meta])}
-      active={meta.id === currentWorkspaceId}
     >
-      <Avatar size={28} url={avatar} name={name} colorfulFallback />
-      <StyledWorkspaceInfo>
-        <StyledWorkspaceTitleArea style={{ display: 'flex' }}>
-          <StyledWorkspaceTitle>{displayName}</StyledWorkspaceTitle>
+      <Avatar
+        imageProps={avatarImageProps}
+        fallbackProps={avatarImageProps}
+        size={28}
+        url={avatar}
+        name={name}
+        colorfulFallback
+      />
+      <div className={styles.workspaceInfo}>
+        <div className={styles.workspaceTitle}>{displayName}</div>
 
-          <StyledSettingLink
-            size="small"
-            className="setting-entry"
+        <div className={styles.actionButtons}>
+          {isOwner ? null : <CollaborationIcon />}
+          <div
+            className={styles.settingButton}
             onClick={e => {
               e.stopPropagation();
               onSettingClick(meta);
             }}
-            withoutHoverStyle={true}
           >
-            <SettingsIcon />
-          </StyledSettingLink>
-        </StyledWorkspaceTitleArea>
-        <WorkspaceType isOwner={isOwner} flavour={meta.flavour} />
-      </StyledWorkspaceInfo>
-    </StyledCard>
+            <SettingsIcon width={16} height={16} />
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };

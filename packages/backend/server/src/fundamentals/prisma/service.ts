@@ -19,6 +19,9 @@ export class PrismaService
   }
 
   async onModuleDestroy(): Promise<void> {
-    await this.$disconnect();
+    if (!AFFiNE.node.test) {
+      await this.$disconnect();
+      PrismaService.INSTANCE = null;
+    }
   }
 }

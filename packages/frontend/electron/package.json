@@ -61,6 +61,7 @@
     "jotai-devtools": "^0.8.0",
     "lodash-es": "^4.17.21",
     "mixpanel-browser": "^2.49.0",
+    "nanoid": "^5.0.6",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.22.3",
@@ -79,7 +80,6 @@
     "async-call-rpc": "^6.4.0",
     "electron-updater": "^6.1.9",
     "link-preview-js": "^3.0.5",
-    "nanoid": "^5.0.6",
     "yjs": "^13.6.12"
   },
   "build": {

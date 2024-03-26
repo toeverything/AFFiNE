@@ -171,7 +171,7 @@ legend {
   outline: 0;
   border: 0;
   font-size: var(--affine-font-base);
-  font-family: var(--affine-font-family);
+  font-family: inherit;
   font-feature-settings: 'calt' 0;
 }
 

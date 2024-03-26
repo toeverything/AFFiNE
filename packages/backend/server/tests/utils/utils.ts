@@ -113,6 +113,7 @@ export async function createTestingApp(moduleDef: TestingModuleMeatdata = {}) {
     cors: true,
     bodyParser: true,
     rawBody: true,
+    logger: ['warn'],
   });
 
   app.use(

@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 
 import { Injectable } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaClient } from '@prisma/client';
 
 import { CryptoHelper } from '../../fundamentals/helpers';
@@ -80,5 +81,16 @@ export class TokenService {
     }
 
     return valid ? record : null;
+  }
+
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+  cleanExpiredTokens() {
+    return this.db.verificationToken.deleteMany({
+      where: {
+        expiresAt: {
+          lte: new Date(),
+        },
+      },
+    });
   }
 }

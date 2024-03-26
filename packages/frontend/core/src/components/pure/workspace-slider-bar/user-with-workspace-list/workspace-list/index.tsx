@@ -8,6 +8,7 @@ import {
 } from '@affine/core/hooks/use-workspace-info';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { CloudWorkspaceIcon, LocalWorkspaceIcon } from '@blocksuite/icons';
 import type { DragEndEvent } from '@dnd-kit/core';
 import type { WorkspaceMetadata } from '@toeverything/infra';
 import { useLiveData, useService, WorkspaceManager } from '@toeverything/infra';
@@ -49,6 +50,11 @@ const CloudWorkSpaceList = ({
   return (
     <div className={styles.workspaceListWrapper}>
       <div className={styles.workspaceType}>
+        <CloudWorkspaceIcon
+          width={14}
+          height={14}
+          className={styles.workspaceTypeIcon}
+        />
         {t['com.affine.workspaceList.workspaceListType.cloud']()}
       </div>
       <WorkspaceList
@@ -81,6 +87,11 @@ const LocalWorkspaces = ({
   return (
     <div className={styles.workspaceListWrapper}>
       <div className={styles.workspaceType}>
+        <LocalWorkspaceIcon
+          width={14}
+          height={14}
+          className={styles.workspaceTypeIcon}
+        />
         {t['com.affine.workspaceList.workspaceListType.local']()}
       </div>
       <WorkspaceList

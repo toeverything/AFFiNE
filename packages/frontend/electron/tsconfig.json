@@ -11,7 +11,10 @@
     "outDir": "lib",
     "moduleResolution": "node",
     "resolveJsonModule": true,
-    "noImplicitOverride": true
+    "noImplicitOverride": true,
+    "paths": {
+      "@toeverything/infra/*": ["../../common/infra/src/*"]
+    }
   },
   "include": ["./src"],
   "exclude": ["renderer", "node_modules", "lib", "dist", "**/__tests__/**/*"],
