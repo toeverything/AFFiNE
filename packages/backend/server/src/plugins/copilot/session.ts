@@ -126,15 +126,13 @@ export class ChatSessionService {
         id: state.sessionId,
       },
       update: {
-        messages: {
-          create: state.messages.map((m, idx) => ({ idx, ...m })),
-        },
+        messages: state.messages,
       },
       create: {
         id: state.sessionId,
         action: state.action,
         model: state.model,
-        messages: { create: state.messages },
+        messages: state.messages,
         // connect
         user: { connect: { id: state.userId } },
         workspace: { connect: { id: state.workspaceId } },
@@ -205,25 +203,30 @@ export class ChatSessionService {
           action: options?.action,
           id: options?.sessionId ? { equals: options.sessionId } : undefined,
         },
-        take: options?.limit,
+        take: options?.limit || 10,
         skip: options?.skip,
         orderBy: { createdAt: 'desc' },
       })
-      .then(sessions =>
-        sessions
+      .then(sessions => {
+        return sessions
           .map(({ id, model, messages }) => {
-            const ret = ChatMessageSchema.array().safeParse(messages);
-            if (ret.success) {
-              const encoder = getTokenEncoder(model as AvailableModel);
-              const tokens = ret.data.reduce((total, m) => {
-                return total + encoder.encode_ordinary(m.content).length;
-              }, 0);
-              return { sessionId: id, tokens, messages: ret.data };
+            try {
+              const ret = ChatMessageSchema.array().safeParse(messages);
+              if (ret.success) {
+                const encoder = getTokenEncoder(model as AvailableModel);
+                const tokens = ret.data.reduce((total, m) => {
+                  return total + encoder.encode_ordinary(m.content).length;
+                }, 0);
+                return { sessionId: id, tokens, messages: ret.data };
+              }
+              return undefined;
+            } catch (e) {
+              this.logger.error('Unexpected error in listHistories', e);
+              return undefined;
             }
-            return undefined;
           })
-          .filter((v): v is NonNullable<typeof v> => !!v)
-      );
+          .filter((v): v is NonNullable<typeof v> => !!v);
+      });
   }
 
   async create(options: ChatSessionOptions): Promise<string> {

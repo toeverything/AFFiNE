@@ -6,7 +6,6 @@ import {
   Mutation,
   ObjectType,
   Parent,
-  Query,
   registerEnumType,
   ResolveField,
   Resolver,
@@ -123,14 +122,22 @@ export class CopilotResolver {
   async histories(
     @Parent() copilot: CopilotType,
     @CurrentUser() user: CurrentUser,
-    @Args('docId') docId: string,
-    @Args({ name: 'input', type: () => QueryChatHistoriesInput })
-    input: QueryChatHistoriesInput
+    @Args('docId', { nullable: true }) docId?: string,
+    @Args({
+      name: 'options',
+      type: () => QueryChatHistoriesInput,
+      nullable: true,
+    })
+    options?: QueryChatHistoriesInput
   ) {
     const workspaceId = copilot.workspaceId;
-    await this.permissions.checkPagePermission(workspaceId, docId, user.id);
+    if (docId) {
+      await this.permissions.checkPagePermission(workspaceId, docId, user.id);
+    } else {
+      await this.permissions.checkWorkspace(workspaceId, user.id);
+    }
 
-    return await this.chatSession.listHistories(workspaceId, docId, input);
+    return await this.chatSession.listHistories(workspaceId, docId, options);
   }
 
   @Mutation(() => String, {
@@ -138,11 +145,11 @@ export class CopilotResolver {
   })
   async createCopilotSession(
     @CurrentUser() user: CurrentUser,
-    @Args({ name: 'input', type: () => CreateChatSessionInput })
-    input: CreateChatSessionInput
+    @Args({ name: 'options', type: () => CreateChatSessionInput })
+    options: CreateChatSessionInput
   ) {
     const session = await this.chatSession.create({
-      ...input,
+      ...options,
       // todo: force user to be logged in
       userId: user?.id ?? '',
     });
@@ -154,7 +161,7 @@ export class CopilotResolver {
 export class UserCopilotResolver {
   constructor(private readonly permissions: PermissionService) {}
 
-  @Query(() => CopilotType)
+  @ResolveField(() => CopilotType)
   async copilot(
     @CurrentUser() user: CurrentUser,
     @Args('workspaceId') workspaceId: string
