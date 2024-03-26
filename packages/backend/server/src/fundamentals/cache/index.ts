@@ -1,11 +1,12 @@
 import { Global, Module } from '@nestjs/common';
 
 import { Cache, SessionCache } from './instances';
+import { CacheInterceptor } from './interceptor';
 
 @Global()
 @Module({
-  providers: [Cache, SessionCache],
-  exports: [Cache, SessionCache],
+  providers: [Cache, SessionCache, CacheInterceptor],
+  exports: [Cache, SessionCache, CacheInterceptor],
 })
 export class CacheModule {}
 export { Cache, SessionCache };
