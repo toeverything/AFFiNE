@@ -64,7 +64,7 @@ export class ChatSession implements AsyncDisposable {
   }
 
   get model() {
-    return this.state.model;
+    return AvailableModels[this.state.model];
   }
 
   push(message: ChatMessage) {
@@ -194,19 +194,19 @@ export class ChatSessionService {
 
   async listHistories(
     workspaceId: string,
-    docId: string,
-    options: ListHistoriesOptions
+    docId?: string,
+    options?: ListHistoriesOptions
   ): Promise<ChatHistory[]> {
     return await this.db.aiSession
       .findMany({
         where: {
           workspaceId: workspaceId,
           docId: workspaceId === docId ? undefined : docId,
-          action: options.action,
-          id: options.sessionId ? { equals: options.sessionId } : undefined,
+          action: options?.action,
+          id: options?.sessionId ? { equals: options.sessionId } : undefined,
         },
-        take: options.limit,
-        skip: options.skip,
+        take: options?.limit,
+        skip: options?.skip,
         orderBy: { createdAt: 'desc' },
       })
       .then(sessions =>

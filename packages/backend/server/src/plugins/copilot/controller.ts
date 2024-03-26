@@ -99,10 +99,16 @@ export class CopilotController {
       );
     } else {
       try {
-        return await provider.generateText(session.finish(), session.model, {
-          signal: req.signal,
-          user: user?.id,
-        });
+        return await provider
+          .generateText(session.finish(), session.model, {
+            signal: req.signal,
+            user: user?.id,
+          })
+          .then(async data => {
+            session.push({ role: 'assistant', content: data });
+            await session.save();
+            return data;
+          });
       } catch (e: any) {
         throw new InternalServerErrorException(
           e.message || "Couldn't generate text"

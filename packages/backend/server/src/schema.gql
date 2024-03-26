@@ -14,7 +14,7 @@ type Copilot {
 
   """Get the number of chats in the workspace"""
   chatCount: Int!
-  histories(docId: String!, input: QueryChatHistoriesInput!): [CopilotHistories!]!
+  histories(docId: String, options: QueryChatHistoriesInput): [CopilotHistories!]!
 
   """Get the number of tokens used by the workspace"""
   tokens: Int!
@@ -155,7 +155,7 @@ type Mutation {
   createCheckoutSession(input: CreateCheckoutSessionInput!): String!
 
   """Create a chat session"""
-  createCopilotSession(input: CreateChatSessionInput!): String!
+  createCopilotSession(options: CreateChatSessionInput!): String!
 
   """Create a stripe customer portal to manage payment methods"""
   createCustomerPortal: String!
@@ -226,7 +226,6 @@ enum PublicPageMode {
 type Query {
   checkBlobSize(size: SafeInt!, workspaceId: String!): WorkspaceBlobSizes! @deprecated(reason: "no more needed")
   collectAllBlobSizes: WorkspaceBlobSizes! @deprecated(reason: "use `user.storageUsage` instead")
-  copilot(workspaceId: String!): Copilot!
 
   """Get current user"""
   currentUser: UserType
@@ -419,6 +418,7 @@ type UserSubscription {
 type UserType {
   """User avatar url"""
   avatarUrl: String
+  copilot(workspaceId: String!): Copilot!
 
   """User email verified"""
   createdAt: DateTime @deprecated(reason: "useless")
