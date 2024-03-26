@@ -79,7 +79,6 @@ export const DefaultAvatarContainerStyle = style({
   width: '100%',
   height: '100%',
   position: 'relative',
-  borderRadius: '50%',
   overflow: 'hidden',
 });
 export const DefaultAvatarMiddleItemStyle = style({
@@ -155,6 +154,7 @@ export const avatarFallback = style({
   width: '100%',
   height: '100%',
   borderRadius: '50%',
+  overflow: 'hidden',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',

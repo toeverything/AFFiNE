@@ -12,6 +12,10 @@ export async function clickSideBarCurrentWorkspaceBanner(page: Page) {
   return page.getByTestId('current-workspace').click();
 }
 
+export async function clickSideBarUseAvatar(page: Page) {
+  return page.getByTestId('sidebar-user-avatar').click();
+}
+
 export async function clickNewPageButton(page: Page) {
   return page.getByTestId('sidebar-new-page-button').click();
 }

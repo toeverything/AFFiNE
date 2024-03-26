@@ -11,6 +11,7 @@ import {
   clickSideBarAllPageButton,
   clickSideBarCurrentWorkspaceBanner,
   clickSideBarSettingButton,
+  clickSideBarUseAvatar,
 } from '@affine-test/kit/utils/sidebar';
 import { createLocalWorkspace } from '@affine-test/kit/utils/workspace';
 import { expect } from '@playwright/test';
@@ -69,14 +70,13 @@ test.describe('login first', () => {
     );
     await clickSideBarAllPageButton(page);
     const currentUrl = page.url();
-    await clickSideBarCurrentWorkspaceBanner(page);
-    await page.getByTestId('workspace-modal-account-option').click();
+    await clickSideBarUseAvatar(page);
     await page.getByTestId('workspace-modal-sign-out-option').click();
     await page.getByTestId('confirm-sign-out-button').click();
     await page.reload();
-    await clickSideBarCurrentWorkspaceBanner(page);
-    const signInButton = page.getByTestId('cloud-signin-button');
-    await expect(signInButton).toBeVisible();
+    await clickSideBarUseAvatar(page);
+    const authModal = page.getByTestId('auth-modal');
+    await expect(authModal).toBeVisible();
     expect(page.url()).toBe(currentUrl);
   });
 

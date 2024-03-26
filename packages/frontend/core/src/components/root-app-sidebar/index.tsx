@@ -42,8 +42,10 @@ import { AddFavouriteButton } from '../pure/workspace-slider-bar/favorite/add-fa
 import FavoriteList from '../pure/workspace-slider-bar/favorite/favorite-list';
 import { WorkspaceSelector } from '../workspace-selector';
 import ImportPage from './import-page';
+import { workspaceAndUserWrapper, workspaceWrapper } from './index.css';
 import { AppSidebarJournalButton } from './journal-button';
 import { UpdaterButton } from './updater-button';
+import { UserInfo } from './user-info';
 
 export type RootAppSidebarProps = {
   isPublicWorkspace: boolean;
@@ -179,7 +181,12 @@ export const RootAppSidebar = ({
         titles={deletePageTitles}
       />
       <SidebarContainer>
-        <WorkspaceSelector />
+        <div className={workspaceAndUserWrapper}>
+          <div className={workspaceWrapper}>
+            <WorkspaceSelector />
+          </div>
+          <UserInfo />
+        </div>
         <QuickSearchInput
           data-testid="slider-bar-quick-search-button"
           onClick={onOpenQuickSearchModal}
