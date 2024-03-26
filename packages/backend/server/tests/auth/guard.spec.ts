@@ -73,7 +73,7 @@ test('should be able to visit public api if signed in', async t => {
 
   const res = await request(app.getHttpServer())
     .get('/public')
-    .set('Cookie', 'sid=1')
+    .set('Cookie', `${AuthService.sessionCookieName}=1`)
     .expect(HttpStatus.OK);
 
   t.is(res.body.user.id, '1');
@@ -102,7 +102,7 @@ test('should be able to visit private api if signed in', async t => {
 
   const res = await request(app.getHttpServer())
     .get('/private')
-    .set('Cookie', 'sid=1')
+    .set('Cookie', `${AuthService.sessionCookieName}=1`)
     .expect(HttpStatus.OK);
 
   t.is(res.body.user.id, '1');
@@ -113,7 +113,7 @@ test('should be able to parse session cookie', async t => {
 
   await request(app.getHttpServer())
     .get('/public')
-    .set('cookie', 'sid=1')
+    .set('cookie', `${AuthService.sessionCookieName}=1`)
     .expect(200);
 
   t.deepEqual(auth.getUser.firstCall.args, ['1', 0]);

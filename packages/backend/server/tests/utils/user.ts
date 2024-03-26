@@ -2,13 +2,17 @@ import type { INestApplication } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import request, { type Response } from 'supertest';
 
-import type { ClientTokenType, CurrentUser } from '../../src/core/auth';
+import {
+  AuthService,
+  type ClientTokenType,
+  type CurrentUser,
+} from '../../src/core/auth';
 import type { UserType } from '../../src/core/user';
 import { gql } from './common';
 
 export function sessionCookie(headers: any) {
   const cookie = headers['set-cookie']?.find((c: string) =>
-    c.startsWith('sid=')
+    c.startsWith(`${AuthService.sessionCookieName}=`)
   );
 
   if (!cookie) {

@@ -309,7 +309,7 @@ test('should throw if oauth account already connected', async t => {
 
   const res = await request(app.getHttpServer())
     .get(`/oauth/callback?code=1&state=1`)
-    .set('cookie', 'sid=1')
+    .set('cookie', `${AuthService.sessionCookieName}=1`)
     .expect(HttpStatus.FOUND);
 
   const link = new URL(res.headers.location);
@@ -331,7 +331,7 @@ test('should be able to connect oauth account', async t => {
 
   await request(app.getHttpServer())
     .get(`/oauth/callback?code=1&state=1`)
-    .set('cookie', 'sid=1')
+    .set('cookie', `${AuthService.sessionCookieName}=1`)
     .expect(HttpStatus.FOUND);
 
   const account = await db.connectedAccount.findFirst({

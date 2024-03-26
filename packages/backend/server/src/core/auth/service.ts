@@ -60,7 +60,7 @@ export class AuthService implements OnApplicationBootstrap {
     path: '/',
     secure: this.config.https,
   };
-  static readonly sessionCookieName = 'sid';
+  static readonly sessionCookieName = 'affine_session';
   static readonly authUserSeqHeaderName = 'x-auth-user';
 
   constructor(
@@ -299,10 +299,11 @@ export class AuthService implements OnApplicationBootstrap {
     }
   }
 
-  async setCookie(req: Request, res: Response, user: { id: string }) {
+  async setCookie(_req: Request, res: Response, user: { id: string }) {
     const session = await this.createUserSession(
-      user,
-      req.cookies[AuthService.sessionCookieName]
+      user
+      // TODO(@forehalo): enable multi user session
+      // req.cookies[AuthService.sessionCookieName]
     );
 
     res.cookie(AuthService.sessionCookieName, session.sessionId, {
