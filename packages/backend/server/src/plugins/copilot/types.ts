@@ -36,19 +36,6 @@ export function AvailableModelToTiktokenModel(
   }
 }
 
-export const CopilotSchema = z
-  .object({
-    // total used token of workspace
-    tokens: z.number(),
-    // count for chat of workspace
-    chatCount: z.number(),
-    // count for action of workspace
-    actionCount: z.number(),
-  })
-  .strict();
-
-export type Copilot = z.infer<typeof CopilotSchema>;
-
 // ======== ChatMessage ========
 
 export const ChatMessageRole = ['system', 'assistant', 'user'] as const;
@@ -61,6 +48,16 @@ export const ChatMessageSchema = z
   .strict();
 
 export type ChatMessage = z.infer<typeof ChatMessageSchema>;
+
+export const ChatHistorySchema = z
+  .object({
+    sessionId: z.string(),
+    tokens: z.number(),
+    messages: z.array(ChatMessageSchema),
+  })
+  .strict();
+
+export type ChatHistory = z.infer<typeof ChatHistorySchema>;
 
 // ======== Provider Interface ========
 

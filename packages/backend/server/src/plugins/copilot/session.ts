@@ -8,7 +8,9 @@ import { SessionCache } from '../../fundamentals';
 import { PromptService } from './prompt';
 import {
   AvailableModel,
+  AvailableModels,
   AvailableModelToTiktokenModel,
+  ChatHistory,
   ChatMessage,
   ChatMessageSchema,
 } from './types';
@@ -35,6 +37,17 @@ export interface ChatSessionState extends ChatSessionOptions {
   messages: ChatMessage[];
 }
 
+export type ListHistoriesOptions = {
+  action: boolean | undefined;
+  limit: number | undefined;
+  skip: number | undefined;
+  sessionId: string | undefined;
+};
+
+function getTokenEncoder(model: AvailableModel): Tiktoken {
+  return encoding_for_model(AvailableModelToTiktokenModel(model));
+}
+
 export class ChatSession implements AsyncDisposable {
   private readonly encoder: Tiktoken;
   private readonly promptTokenSize: number;
@@ -44,7 +57,7 @@ export class ChatSession implements AsyncDisposable {
     private readonly dispose?: (state: ChatSessionState) => Promise<void>,
     private readonly maxTokenSize = 3840
   ) {
-    this.encoder = encoding_for_model(AvailableModelToTiktokenModel(model));
+    this.encoder = getTokenEncoder(model);
     this.promptTokenSize = this.encoder.encode_ordinary(
       state.prompt?.map(m => m.content).join('') || ''
     ).length;
@@ -179,11 +192,48 @@ export class ChatSessionService {
     return await this.getSession(sessionId);
   }
 
+  async listHistories(
+    workspaceId: string,
+    docId: string,
+    options: ListHistoriesOptions
+  ): Promise<ChatHistory[]> {
+    return await this.db.aiSession
+      .findMany({
+        where: {
+          workspaceId: workspaceId,
+          docId: workspaceId === docId ? undefined : docId,
+          action: options.action,
+          id: options.sessionId ? { equals: options.sessionId } : undefined,
+        },
+        take: options.limit,
+        skip: options.skip,
+        orderBy: { createdAt: 'desc' },
+      })
+      .then(sessions =>
+        sessions
+          .map(({ id, model, messages }) => {
+            const ret = ChatMessageSchema.array().safeParse(messages);
+            if (ret.success) {
+              const encoder = getTokenEncoder(model as AvailableModel);
+              const tokens = ret.data.reduce((total, m) => {
+                return total + encoder.encode_ordinary(m.content).length;
+              }, 0);
+              return { sessionId: id, tokens, messages: ret.data };
+            }
+            return undefined;
+          })
+          .filter((v): v is NonNullable<typeof v> => !!v)
+      );
+  }
+
   async create(options: ChatSessionOptions): Promise<string> {
     const sessionId = randomUUID();
     const prompt = await this.prompt.get(options.promptName);
     if (!prompt.length) {
       this.logger.warn(`Prompt not found: ${options.promptName}`);
+    }
+    if (!AvailableModels[options.model]) {
+      throw new Error(`Invalid model: ${options.model}`);
     }
     await this.setState({
       ...options,

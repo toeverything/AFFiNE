@@ -2,6 +2,39 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+type ChatMessage {
+  attachments: [String!]
+  content: String!
+  role: String!
+}
+
+type Copilot {
+  """Get the number of actions in the workspace"""
+  actionCount: Int!
+
+  """Get the number of chats in the workspace"""
+  chatCount: Int!
+  histories(docId: String!, input: QueryChatHistoriesInput!): [CopilotHistories!]!
+
+  """Get the number of tokens used by the workspace"""
+  tokens: Int!
+  workspaceId: ID!
+}
+
+type CopilotHistories {
+  messages: [ChatMessage!]!
+  sessionId: String!
+  tokens: Int!
+}
+
+input CreateChatSessionInput {
+  action: Boolean!
+  docId: String!
+  model: String!
+  promptName: String!
+  workspaceId: String!
+}
+
 input CreateCheckoutSessionInput {
   coupon: String
   idempotencyKey: String!
@@ -121,6 +154,9 @@ type Mutation {
   """Create a subscription checkout link of stripe"""
   createCheckoutSession(input: CreateCheckoutSessionInput!): String!
 
+  """Create a chat session"""
+  createCopilotSession(input: CreateChatSessionInput!): String!
+
   """Create a stripe customer portal to manage payment methods"""
   createCustomerPortal: String!
 
@@ -190,6 +226,7 @@ enum PublicPageMode {
 type Query {
   checkBlobSize(size: SafeInt!, workspaceId: String!): WorkspaceBlobSizes! @deprecated(reason: "no more needed")
   collectAllBlobSizes: WorkspaceBlobSizes! @deprecated(reason: "use `user.storageUsage` instead")
+  copilot(workspaceId: String!): Copilot!
 
   """Get current user"""
   currentUser: UserType
@@ -220,6 +257,13 @@ type Query {
 
   """Get all accessible workspaces for current user"""
   workspaces: [WorkspaceType!]!
+}
+
+input QueryChatHistoriesInput {
+  action: Boolean
+  limit: Int
+  sessionId: String
+  skip: Int
 }
 
 type QuotaQueryType {
