@@ -68,6 +68,9 @@ export class ChatSession implements AsyncDisposable {
   }
 
   push(message: ChatMessage) {
+    if (this.state.action && this.state.messages.length > 0) {
+      throw new Error('Action has been taken, no more messages allowed');
+    }
     this.state.messages.push(message);
   }
 
