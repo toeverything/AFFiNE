@@ -9,15 +9,12 @@ type ChatMessage {
 }
 
 type Copilot {
-  """Get the number of actions in the workspace"""
-  actionCount: Int!
+  """Get the session list of actions in the workspace"""
+  actions: [String!]!
 
-  """Get the number of chats in the workspace"""
-  chatCount: Int!
+  """Get the session list of chats in the workspace"""
+  chats: [String!]!
   histories(docId: String, options: QueryChatHistoriesInput): [CopilotHistories!]!
-
-  """Get the number of tokens used by the workspace"""
-  tokens: Int!
   workspaceId: ID!
 }
 

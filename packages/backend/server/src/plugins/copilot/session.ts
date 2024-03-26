@@ -190,6 +190,34 @@ export class ChatSessionService {
     return await this.getSession(sessionId);
   }
 
+  private calculateTokenSize(
+    messages: ChatMessage[],
+    model: AvailableModel
+  ): number {
+    const encoder = getTokenEncoder(model);
+    return messages.reduce((total, m) => {
+      return total + encoder.encode_ordinary(m.content).length;
+    }, 0);
+  }
+
+  async listSessions(
+    userId: string,
+    workspaceId: string,
+    options?: { docId?: string; action?: boolean }
+  ): Promise<string[]> {
+    return await this.db.aiSession
+      .findMany({
+        where: {
+          userId,
+          workspaceId,
+          docId: workspaceId === options?.docId ? undefined : options?.docId,
+          action: options?.action,
+        },
+        select: { id: true },
+      })
+      .then(sessions => sessions.map(({ id }) => id));
+  }
+
   async listHistories(
     workspaceId: string,
     docId?: string,
@@ -213,10 +241,10 @@ export class ChatSessionService {
             try {
               const ret = ChatMessageSchema.array().safeParse(messages);
               if (ret.success) {
-                const encoder = getTokenEncoder(model as AvailableModel);
-                const tokens = ret.data.reduce((total, m) => {
-                  return total + encoder.encode_ordinary(m.content).length;
-                }, 0);
+                const tokens = this.calculateTokenSize(
+                  ret.data,
+                  model as AvailableModel
+                );
                 return { sessionId: id, tokens, messages: ret.data };
               }
               return undefined;

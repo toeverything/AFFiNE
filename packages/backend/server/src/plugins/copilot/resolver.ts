@@ -94,28 +94,28 @@ export class CopilotResolver {
     private readonly chatSession: ChatSessionService
   ) {}
 
-  @ResolveField(() => Number, {
-    description: 'Get the number of tokens used by the workspace',
+  @ResolveField(() => [String], {
+    description: 'Get the session list of chats in the workspace',
     complexity: 2,
   })
-  async tokens(@Parent() _copilot: CopilotType) {
-    throw new Error('Not implemented');
+  async chats(
+    @Parent() copilot: CopilotType,
+    @CurrentUser() user: CurrentUser
+  ) {
+    return await this.chatSession.listSessions(user.id, copilot.workspaceId);
   }
 
-  @ResolveField(() => Number, {
-    description: 'Get the number of chats in the workspace',
+  @ResolveField(() => [String], {
+    description: 'Get the session list of actions in the workspace',
     complexity: 2,
   })
-  async chatCount(@Parent() _copilot: CopilotType) {
-    throw new Error('Not implemented');
-  }
-
-  @ResolveField(() => Number, {
-    description: 'Get the number of actions in the workspace',
-    complexity: 2,
-  })
-  async actionCount(@Parent() _copilot: CopilotType) {
-    throw new Error('Not implemented');
+  async actions(
+    @Parent() copilot: CopilotType,
+    @CurrentUser() user: CurrentUser
+  ) {
+    return await this.chatSession.listSessions(user.id, copilot.workspaceId, {
+      action: true,
+    });
   }
 
   @ResolveField(() => [CopilotHistoriesType], {})
