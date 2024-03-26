@@ -1,6 +1,6 @@
 import type { InsertRow } from '@affine/native';
 import { SqliteConnection, ValidationResult } from '@affine/native';
-import { WorkspaceVersion } from '@toeverything/infra';
+import { WorkspaceVersion } from '@toeverything/infra/blocksuite';
 
 import { applyGuidCompatibilityFix, migrateToLatest } from '../db/migration';
 import { logger } from '../logger';
