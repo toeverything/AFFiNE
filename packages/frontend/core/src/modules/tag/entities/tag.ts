@@ -3,6 +3,7 @@ import type { PageRecordList } from '@toeverything/infra';
 import { LiveData } from '@toeverything/infra';
 
 import type { WorkspaceLegacyProperties } from '../../workspace';
+import { tagColorMap } from './utils';
 
 export class Tag {
   constructor(
@@ -17,7 +18,7 @@ export class Tag {
 
   value$ = this.tagOption$.map(tag => tag?.value || '');
 
-  color$ = this.tagOption$.map(tag => tag?.color || '');
+  color$ = this.tagOption$.map(tag => tagColorMap(tag?.color) || '');
 
   createDate$ = this.tagOption$.map(tag => tag?.createDate || Date.now());
 
