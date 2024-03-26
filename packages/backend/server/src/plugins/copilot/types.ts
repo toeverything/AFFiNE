@@ -1,4 +1,5 @@
 import type { ClientOptions as OpenAIClientOptions } from 'openai';
+import { TiktokenModel } from 'tiktoken';
 import { z } from 'zod';
 
 export interface CopilotConfig {
@@ -7,6 +8,61 @@ export interface CopilotConfig {
     secret: string;
   };
 }
+
+export enum AvailableModels {
+  // text to text
+  Gpt4VisionPreview = 'gpt-4-vision-preview',
+  Gpt4TurboPreview = 'gpt-4-turbo-preview',
+  Gpt35Turbo = 'gpt-3.5-turbo',
+  // embeddings
+  TextEmbedding3Large = 'text-embedding-3-large',
+  TextEmbedding3Small = 'text-embedding-3-small',
+  TextEmbeddingAda002 = 'text-embedding-ada-002',
+  // moderation
+  TextModerationLatest = 'text-moderation-latest',
+  TextModerationStable = 'text-moderation-stable',
+}
+
+export type AvailableModel = keyof typeof AvailableModels;
+
+export function AvailableModelToTiktokenModel(
+  model: AvailableModel
+): TiktokenModel {
+  const modelStr = AvailableModels[model];
+  if (modelStr.startsWith('gpt')) {
+    return modelStr as TiktokenModel;
+  } else {
+    return 'cl100k_base' as TiktokenModel;
+  }
+}
+
+export const CopilotSchema = z
+  .object({
+    // total used token of workspace
+    tokens: z.number(),
+    // count for chat of workspace
+    chatCount: z.number(),
+    // count for action of workspace
+    actionCount: z.number(),
+  })
+  .strict();
+
+export type Copilot = z.infer<typeof CopilotSchema>;
+
+// ======== ChatMessage ========
+
+export const ChatMessageRole = ['system', 'assistant', 'user'] as const;
+
+export const ChatMessageSchema = z
+  .object({
+    role: z.enum(ChatMessageRole),
+    content: z.string(),
+  })
+  .strict();
+
+export type ChatMessage = z.infer<typeof ChatMessageSchema>;
+
+// ======== Provider Interface ========
 
 export enum CopilotProviderType {
   FAL = 'fal',
@@ -23,17 +79,6 @@ export enum CopilotCapability {
 export interface CopilotProvider {
   getCapabilities(): CopilotCapability[];
 }
-
-export const ChatMessageRole = ['system', 'assistant', 'user'] as const;
-
-export const ChatMessageSchema = z
-  .object({
-    role: z.enum(ChatMessageRole),
-    content: z.string(),
-  })
-  .strict();
-
-export type ChatMessage = z.infer<typeof ChatMessageSchema>;
 
 export interface CopilotTextToTextProvider extends CopilotProvider {
   generateText(

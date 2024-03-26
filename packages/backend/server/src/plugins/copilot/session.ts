@@ -2,11 +2,16 @@ import { randomUUID } from 'node:crypto';
 
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
-import { encoding_for_model, Tiktoken, TiktokenModel } from 'tiktoken';
+import { encoding_for_model, Tiktoken } from 'tiktoken';
 
 import { SessionCache } from '../../fundamentals';
 import { PromptService } from './prompt';
-import { ChatMessage, ChatMessageSchema } from './types';
+import {
+  AvailableModel,
+  AvailableModelToTiktokenModel,
+  ChatMessage,
+  ChatMessageSchema,
+} from './types';
 
 const CHAT_SESSION_KEY = 'chat-session';
 const CHAT_SESSION_TTL = 3600 * 12 * 1000; // 12 hours
@@ -19,7 +24,7 @@ export interface ChatSessionOptions {
   promptName: string;
   // options
   action: boolean;
-  model: TiktokenModel;
+  model: AvailableModel;
 }
 
 export interface ChatSessionState extends ChatSessionOptions {
@@ -35,11 +40,11 @@ export class ChatSession implements AsyncDisposable {
   private readonly promptTokenSize: number;
   constructor(
     private readonly state: ChatSessionState,
-    model: TiktokenModel,
+    model: AvailableModel,
     private readonly dispose?: (state: ChatSessionState) => Promise<void>,
     private readonly maxTokenSize = 3840
   ) {
-    this.encoder = encoding_for_model(model);
+    this.encoder = encoding_for_model(AvailableModelToTiktokenModel(model));
     this.promptTokenSize = this.encoder.encode_ordinary(
       state.prompt?.map(m => m.content).join('') || ''
     ).length;
@@ -148,7 +153,7 @@ export class ChatSessionService {
           docId: session.docId,
           promptName: session.promptName,
           action: session.action,
-          model: session.model as TiktokenModel,
+          model: session.model as AvailableModel,
           prompt: await this.prompt.get(session.promptName),
           messages: messages.success ? messages.data : [],
         };
