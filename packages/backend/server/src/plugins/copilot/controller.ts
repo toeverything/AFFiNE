@@ -1,11 +1,9 @@
 import {
   BadRequestException,
-  Body,
   Controller,
   Get,
   InternalServerErrorException,
   Param,
-  Post,
   Query,
   Req,
   Sse,
@@ -25,7 +23,7 @@ import {
 import { Public } from '../../core/auth';
 import { CurrentUser } from '../../core/auth/current-user';
 import { ProviderService } from './providers';
-import { type ChatSessionOptions, ChatSessionService } from './session';
+import { ChatSessionService } from './session';
 import { CopilotCapability } from './types';
 
 export interface ChatEvent {
@@ -39,20 +37,6 @@ export class CopilotController {
     private readonly chatSession: ChatSessionService,
     private readonly provider: ProviderService
   ) {}
-
-  @Public()
-  @Post('/chat')
-  async createSession(
-    @CurrentUser() user: CurrentUser | undefined,
-    @Body() options: ChatSessionOptions
-  ): Promise<{ session: string }> {
-    const session = await this.chatSession.create({
-      ...options,
-      // todo: force user to be logged in
-      userId: user?.id ?? '',
-    });
-    return { session };
-  }
 
   @Public()
   @Get('/chat/:sessionId')
