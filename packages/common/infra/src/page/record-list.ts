@@ -11,6 +11,8 @@ export class PageRecordList {
     private readonly localState: WorkspaceLocalState
   ) {}
 
+  private readonly recordsPool = new Map<string, PageRecord>();
+
   public readonly records$ = LiveData.from<PageRecord[]>(
     new Observable<string[]>(subscriber => {
       const emit = () => {
@@ -29,7 +31,15 @@ export class PageRecordList {
     }).pipe(
       distinctUntilChanged((p, c) => isEqual(p, c)),
       map(ids =>
-        ids.map(id => new PageRecord(id, this.workspace, this.localState))
+        ids.map(id => {
+          const exists = this.recordsPool.get(id);
+          if (exists) {
+            return exists;
+          }
+          const record = new PageRecord(id, this.workspace, this.localState);
+          this.recordsPool.set(id, record);
+          return record;
+        })
       )
     ),
     []
