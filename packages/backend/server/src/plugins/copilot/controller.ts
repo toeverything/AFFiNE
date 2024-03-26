@@ -3,6 +3,7 @@ import {
   Body,
   Controller,
   InternalServerErrorException,
+  Optional,
   Param,
   Post,
   Query,
@@ -47,7 +48,8 @@ export class CopilotController {
   ): Promise<{ session: string }> {
     const session = await this.chatSession.create({
       ...options,
-      user: user?.id,
+      // todo: force user to be logged in
+      userId: user?.id ?? '',
     });
     return { session };
   }
@@ -58,8 +60,9 @@ export class CopilotController {
     @CurrentUser() user: CurrentUser | undefined,
     @Req() req: Request,
     @Param('sessionId') sessionId: string,
-    @Query('message') content: string
-  ): Promise<Observable<ChatEvent>> {
+    @Query('message') content: string,
+    @Optional() @Query('stream') stream = false
+  ): Promise<Observable<ChatEvent> | string> {
     const provider = this.provider.getProviderByCapability(
       CopilotCapability.TextToText
     );
@@ -71,28 +74,40 @@ export class CopilotController {
       throw new BadRequestException('Session not found');
     }
     session.push({ role: 'user', content: decodeURIComponent(content) });
-
-    return from(
-      provider.generateTextStream(session.finish(), session.model, {
-        signal: req.signal,
-        user: user?.id,
-      })
-    ).pipe(
-      connect(shared =>
-        merge(
-          // actual chat event stream
-          shared.pipe(map(data => ({ id: sessionId, data }))),
-          // save the generated text to the session
-          shared.pipe(
-            toArray(),
-            concatMap(values => {
-              session.push({ role: 'assistant', content: values.join('') });
-              return from(session.save());
-            }),
-            switchMap(() => EMPTY)
+    if (stream) {
+      return from(
+        provider.generateTextStream(session.finish(), session.model, {
+          signal: req.signal,
+          user: user?.id,
+        })
+      ).pipe(
+        connect(shared$ =>
+          merge(
+            // actual chat event stream
+            shared$.pipe(map(data => ({ id: sessionId, data }))),
+            // save the generated text to the session
+            shared$.pipe(
+              toArray(),
+              concatMap(values => {
+                session.push({ role: 'assistant', content: values.join('') });
+                return from(session.save());
+              }),
+              switchMap(() => EMPTY)
+            )
           )
         )
-      )
-    );
+      );
+    } else {
+      try {
+        return await provider.generateText(session.finish(), session.model, {
+          signal: req.signal,
+          user: user?.id,
+        });
+      } catch (e: any) {
+        throw new InternalServerErrorException(
+          e.message || "Couldn't generate text"
+        );
+      }
+    }
   }
 }
