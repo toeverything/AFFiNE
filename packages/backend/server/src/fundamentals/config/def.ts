@@ -13,12 +13,6 @@ declare global {
   }
 }
 
-export enum ExternalAccount {
-  github = 'github',
-  google = 'google',
-  firebase = 'firebase',
-}
-
 export type ServerFlavor = 'allinone' | 'graphql' | 'sync';
 export type AFFINE_ENV = 'dev' | 'beta' | 'production';
 export type NODE_ENV = 'development' | 'test' | 'production';

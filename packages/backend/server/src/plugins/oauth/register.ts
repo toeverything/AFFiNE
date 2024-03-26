@@ -16,7 +16,7 @@ export function registerOAuthProvider(
 @Injectable()
 export class OAuthProviderFactory {
   get providers() {
-    return PROVIDERS.keys();
+    return Array.from(PROVIDERS.keys());
   }
 
   get(name: OAuthProviderName): OAuthProvider | undefined {

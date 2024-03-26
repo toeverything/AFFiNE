@@ -6,6 +6,7 @@ import {
   Controller,
   Get,
   Header,
+  HttpStatus,
   Post,
   Query,
   Req,
@@ -13,11 +14,7 @@ import {
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
 
-import {
-  Config,
-  PaymentRequiredException,
-  URLHelper,
-} from '../../fundamentals';
+import { PaymentRequiredException, URLHelper } from '../../fundamentals';
 import { UserService } from '../user';
 import { validators } from '../utils/validators';
 import { CurrentUser } from './current-user';
@@ -33,7 +30,6 @@ class SignInCredential {
 @Controller('/api/auth')
 export class AuthController {
   constructor(
-    private readonly config: Config,
     private readonly url: URLHelper,
     private readonly auth: AuthService,
     private readonly user: UserService,
@@ -64,7 +60,7 @@ export class AuthController {
       );
 
       await this.auth.setCookie(req, res, user);
-      res.send(user);
+      res.status(HttpStatus.OK).send(user);
     } else {
       // send email magic link
       const user = await this.user.findUserByEmail(credential.email);
@@ -77,7 +73,7 @@ export class AuthController {
         throw new Error('Failed to send sign-in email.');
       }
 
-      res.send({
+      res.status(HttpStatus.OK).send({
         email: credential.email,
       });
     }
@@ -160,22 +156,6 @@ export class AuthController {
     await this.auth.setCookie(req, res, user);
 
     return this.url.safeRedirect(res, redirectUri);
-  }
-
-  @Get('/authorize')
-  async authorize(
-    @CurrentUser() user: CurrentUser,
-    @Query('redirect_uri') redirect_uri?: string
-  ) {
-    const session = await this.auth.createUserSession(
-      user,
-      undefined,
-      this.config.auth.accessToken.ttl
-    );
-
-    this.url.link(redirect_uri ?? '/open-app/redirect', {
-      token: session.sessionId,
-    });
   }
 
   @Public()

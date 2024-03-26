@@ -1,10 +1,35 @@
 import type { INestApplication } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
-import request from 'supertest';
+import request, { type Response } from 'supertest';
 
-import type { ClientTokenType } from '../../src/core/auth';
+import type { ClientTokenType, CurrentUser } from '../../src/core/auth';
 import type { UserType } from '../../src/core/user';
 import { gql } from './common';
+
+export function sessionCookie(headers: any) {
+  const cookie = headers['set-cookie']?.find((c: string) =>
+    c.startsWith('sid=')
+  );
+
+  if (!cookie) {
+    return null;
+  }
+
+  return cookie.split(';')[0];
+}
+
+export async function getSession(
+  app: INestApplication,
+  signInRes: Response
+): Promise<{ user?: CurrentUser }> {
+  const cookie = sessionCookie(signInRes.headers);
+  const res = await request(app.getHttpServer())
+    .get('/api/auth/session')
+    .set('cookie', cookie)
+    .expect(200);
+
+  return res.body;
+}
 
 export async function signUp(
   app: INestApplication,

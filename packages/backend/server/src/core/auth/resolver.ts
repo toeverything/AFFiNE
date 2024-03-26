@@ -17,6 +17,7 @@ import {
 import type { Request, Response } from 'express';
 
 import { CloudThrottlerGuard, Config, Throttle } from '../../fundamentals';
+import { UserService } from '../user';
 import { UserType } from '../user/types';
 import { validators } from '../utils/validators';
 import { CurrentUser } from './current-user';
@@ -48,6 +49,7 @@ export class AuthResolver {
   constructor(
     private readonly config: Config,
     private readonly auth: AuthService,
+    private readonly user: UserService,
     private readonly token: TokenService
   ) {}
 
@@ -165,7 +167,7 @@ export class AuthResolver {
       throw new ForbiddenException('Invalid token');
     }
 
-    await this.auth.changePassword(user.email, newPassword);
+    await this.auth.changePassword(user.id, newPassword);
 
     return user;
   }
@@ -319,7 +321,7 @@ export class AuthResolver {
       throw new ForbiddenException('Invalid token');
     }
 
-    const hasRegistered = await this.auth.getUserByEmail(email);
+    const hasRegistered = await this.user.findUserByEmail(email);
 
     if (hasRegistered) {
       if (hasRegistered.id !== user.id) {

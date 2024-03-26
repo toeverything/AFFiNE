@@ -5,7 +5,7 @@ import { UserModule } from '../user';
 import { AuthController } from './controller';
 import { AuthResolver } from './resolver';
 import { AuthService } from './service';
-import { TokenService } from './token';
+import { TokenService, TokenType } from './token';
 
 @Module({
   imports: [FeatureModule, UserModule],
@@ -17,5 +17,5 @@ export class AuthModule {}
 
 export * from './guard';
 export { ClientTokenType } from './resolver';
-export { AuthService };
+export { AuthService, TokenService, TokenType };
 export * from './current-user';

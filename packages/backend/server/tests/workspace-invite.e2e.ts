@@ -9,6 +9,7 @@ import ava from 'ava';
 
 import { AppModule } from '../src/app.module';
 import { AuthService } from '../src/core/auth/service';
+import { UserService } from '../src/core/user';
 import { MailService } from '../src/fundamentals/mailer';
 import {
   acceptInviteById,
@@ -26,6 +27,7 @@ const test = ava as TestFn<{
   client: PrismaClient;
   auth: AuthService;
   mail: MailService;
+  user: UserService;
 }>;
 
 test.beforeEach(async t => {
@@ -36,6 +38,7 @@ test.beforeEach(async t => {
   t.context.client = app.get(PrismaClient);
   t.context.auth = app.get(AuthService);
   t.context.mail = app.get(MailService);
+  t.context.user = app.get(UserService);
 });
 
 test.afterEach.always(async t => {
@@ -96,16 +99,16 @@ test('should revoke a user', async t => {
 });
 
 test('should create user if not exist', async t => {
-  const { app, auth } = t.context;
+  const { app, user } = t.context;
   const u1 = await signUp(app, 'u1', 'u1@affine.pro', '1');
 
   const workspace = await createWorkspace(app, u1.token.token);
 
   await inviteUser(app, u1.token.token, workspace.id, 'u2@affine.pro', 'Admin');
 
-  const user = await auth.getUserByEmail('u2@affine.pro');
-  t.not(user, undefined, 'failed to create user');
-  t.is(user?.name, 'u2', 'failed to create user');
+  const u2 = await user.findUserByEmail('u2@affine.pro');
+  t.not(u2, undefined, 'failed to create user');
+  t.is(u2?.name, 'u2', 'failed to create user');
 });
 
 test('should invite a user by link', async t => {

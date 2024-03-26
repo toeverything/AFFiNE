@@ -6,7 +6,13 @@ import { PrismaService } from './service';
 // only `PrismaClient` can be injected
 const clientProvider: Provider = {
   provide: PrismaClient,
-  useClass: PrismaService,
+  useFactory: () => {
+    if (PrismaService.INSTANCE) {
+      return PrismaService.INSTANCE;
+    }
+
+    return new PrismaService();
+  },
 };
 
 @Global()
