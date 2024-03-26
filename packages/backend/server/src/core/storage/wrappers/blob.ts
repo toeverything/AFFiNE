@@ -1,15 +1,13 @@
-import { Injectable } from '@nestjs/common';
+import { forwardRef, Inject, Injectable } from '@nestjs/common';
 
-import type {
+import {
   BlobInputType,
   Cache,
-  EventPayload,
-  StorageProvider,
-} from '../../../fundamentals';
-import {
   EventEmitter,
+  type EventPayload,
   ListObjectsMetadata,
   OnEvent,
+  StorageProvider,
   StorageProviderFactory,
 } from '../../../fundamentals';
 
@@ -20,7 +18,7 @@ export class WorkspaceBlobStorage {
   constructor(
     private readonly event: EventEmitter,
     private readonly storageFactory: StorageProviderFactory,
-    private readonly cache: Cache
+    @Inject(forwardRef(() => Cache)) private readonly cache: Cache
   ) {
     this.provider = this.storageFactory.create('blob');
   }
