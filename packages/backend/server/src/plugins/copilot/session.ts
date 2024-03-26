@@ -58,6 +58,10 @@ export class ChatSession implements AsyncDisposable {
   }
 
   private takeMessages(): ChatMessage[] {
+    if (this.state.action) {
+      const messages = this.state.messages;
+      return messages.slice(messages.length - 1);
+    }
     const ret = [];
     const messages = [...this.state.messages];
     messages.reverse();
@@ -76,7 +80,7 @@ export class ChatSession implements AsyncDisposable {
 
   finish(): ChatMessage[] {
     const messages = this.takeMessages();
-    return [...(this.state.prompt || []), ...messages];
+    return [...this.state.prompt, ...messages];
   }
 
   async save() {
