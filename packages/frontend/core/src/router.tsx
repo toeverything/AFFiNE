@@ -14,6 +14,10 @@ function RootRouter() {
   useEffect(() => {
     mixpanel.track_pageview({
       page: location.pathname,
+      appVersion: runtimeConfig.appVersion,
+      environment: runtimeConfig.appBuildType,
+      editorVersion: runtimeConfig.editorVersion,
+      isSelfHosted: Boolean(runtimeConfig.isSelfHosted),
     });
   }, [location]);
   return <Outlet />;
