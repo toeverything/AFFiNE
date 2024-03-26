@@ -304,6 +304,7 @@ __metadata:
     vite: "npm:^5.1.4"
     vitest: "npm:1.4.0"
     yjs: "npm:^13.6.12"
+    zod: "npm:^3.22.4"
   peerDependencies:
     "@blocksuite/blocks": "*"
     "@blocksuite/global": "*"

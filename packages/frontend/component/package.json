@@ -70,7 +70,8 @@
     "react-virtuoso": "^4.7.0",
     "rxjs": "^7.8.1",
     "swr": "^2.2.5",
-    "uuid": "^9.0.1"
+    "uuid": "^9.0.1",
+    "zod": "^3.22.4"
   },
   "devDependencies": {
     "@blocksuite/block-std": "0.14.0-canary-202403250855-4171ecd",

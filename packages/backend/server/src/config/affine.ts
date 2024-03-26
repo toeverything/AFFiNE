@@ -56,7 +56,7 @@ AFFiNE.port = 3010;
 // /* User Signup password limitation */
 // AFFiNE.auth.password = {
 //   minLength: 8,
-//   maxLength: 20,
+//   maxLength: 32,
 // };
 //
 // /* How long the login session would last by default */

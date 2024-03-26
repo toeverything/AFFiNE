@@ -7,6 +7,17 @@ export interface GraphQLQuery {
   containsFile?: boolean;
 }
 
+export const passwordLimitsFragment = `
+fragment PasswordLimits on PasswordLimitsType {
+  minLength
+  maxLength
+}`
+export const credentialsRequirementFragment = `
+fragment CredentialsRequirement on CredentialsRequirementType {
+  password {
+    ...PasswordLimits
+  }
+}`
 export const checkBlobSizesQuery = {
   id: 'checkBlobSizesQuery' as const,
   operationName: 'checkBlobSizes',
@@ -708,8 +719,12 @@ query serverConfig {
     name
     features
     type
+    credentialsRequirement {
+      ...CredentialsRequirement
+    }
   }
-}`,
+}${passwordLimitsFragment}
+${credentialsRequirementFragment}`,
 };
 
 export const setWorkspacePublicByIdMutation = {

@@ -4,15 +4,23 @@ import { useMemo } from 'react';
 
 import type { Status } from './index';
 import { tag } from './style.css';
-export const Tag: FC<{ status: Status }> = ({ status }) => {
+
+type TagProps = {
+  status: Status;
+  minimum: string;
+  maximum: string;
+};
+
+export const Tag: FC<TagProps> = ({ status, minimum, maximum }) => {
   const textMap = useMemo<{ [K in Status]: string }>(() => {
     return {
       weak: 'Weak',
       medium: 'Medium',
       strong: 'Strong',
-      maximum: 'Maximum',
+      minimum,
+      maximum,
     };
-  }, []);
+  }, [minimum, maximum]);
 
   return (
     <div
@@ -20,6 +28,7 @@ export const Tag: FC<{ status: Status }> = ({ status }) => {
         weak: status === 'weak',
         medium: status === 'medium',
         strong: status === 'strong',
+        minimum: status === 'minimum',
         maximum: status === 'maximum',
       })}
     >
