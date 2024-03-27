@@ -42,6 +42,7 @@ export class WorkspaceEngine {
         blob: status,
       };
     });
+    this.doc.setPriority(yDoc.guid, 100);
     this.doc.addDoc(yDoc);
   }
 
