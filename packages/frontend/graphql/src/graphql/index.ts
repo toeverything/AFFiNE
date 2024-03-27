@@ -144,6 +144,17 @@ mutation createCheckoutSession($input: CreateCheckoutSessionInput!) {
 }`,
 };
 
+export const createCopilotSessionMutation = {
+  id: 'createCopilotSessionMutation' as const,
+  operationName: 'createCopilotSession',
+  definitionName: 'createCopilotSession',
+  containsFile: false,
+  query: `
+mutation createCopilotSession($options: CreateChatSessionInput!) {
+  createCopilotSession(options: $options)
+}`,
+};
+
 export const createCustomerPortalMutation = {
   id: 'createCustomerPortalMutation' as const,
   operationName: 'createCustomerPortal',
@@ -237,6 +248,45 @@ export const removeEarlyAccessMutation = {
   query: `
 mutation removeEarlyAccess($email: String!) {
   removeEarlyAccess(email: $email)
+}`,
+};
+
+export const getCopilotHistoriesQuery = {
+  id: 'getCopilotHistoriesQuery' as const,
+  operationName: 'getCopilotHistories',
+  definitionName: 'currentUser',
+  containsFile: false,
+  query: `
+query getCopilotHistories($workspaceId: String!, $docId: String, $options: QueryChatHistoriesInput) {
+  currentUser {
+    copilot(workspaceId: $workspaceId) {
+      histories(docId: $docId, options: $options) {
+        sessionId
+        tokens
+        messages {
+          role
+          content
+          attachments
+        }
+      }
+    }
+  }
+}`,
+};
+
+export const getCopilotSessionsQuery = {
+  id: 'getCopilotSessionsQuery' as const,
+  operationName: 'getCopilotSessions',
+  definitionName: 'currentUser',
+  containsFile: false,
+  query: `
+query getCopilotSessions($workspaceId: String!) {
+  currentUser {
+    copilot(workspaceId: $workspaceId) {
+      chats
+      actions
+    }
+  }
 }`,
 };
 
