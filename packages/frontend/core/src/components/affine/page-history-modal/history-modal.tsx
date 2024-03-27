@@ -1,10 +1,9 @@
 import { Loading, Scrollable } from '@affine/component';
 import { EditorLoading } from '@affine/component/page-detail-skeleton';
 import { Button, IconButton } from '@affine/component/ui/button';
-import { ConfirmModal, Modal } from '@affine/component/ui/modal';
+import { Modal, useConfirmModal } from '@affine/component/ui/modal';
 import { openSettingModalAtom } from '@affine/core/atoms';
 import { useIsWorkspaceOwner } from '@affine/core/hooks/affine/use-is-workspace-owner';
-import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { useDocCollectionPageTitle } from '@affine/core/hooks/use-block-suite-workspace-page-title';
 import { useWorkspaceQuota } from '@affine/core/hooks/use-workspace-quota';
 import { Trans } from '@affine/i18n';
@@ -374,51 +373,6 @@ const PageHistoryList = ({
   );
 };
 
-interface ConfirmRestoreModalProps {
-  open: boolean;
-  onConfirm: (res: boolean) => void;
-  isMutating: boolean;
-}
-
-const ConfirmRestoreModal = ({
-  isMutating,
-  open,
-  onConfirm,
-}: ConfirmRestoreModalProps) => {
-  const t = useAFFiNEI18N();
-
-  const handleConfirm = useCallback(() => {
-    onConfirm(true);
-  }, [onConfirm]);
-
-  const handleCancel = useCallback(() => {
-    onConfirm(false);
-  }, [onConfirm]);
-
-  return (
-    <ConfirmModal
-      open={open}
-      onOpenChange={handleCancel}
-      title={t['com.affine.history.restore-current-version']()}
-      description={t['com.affine.history.confirm-restore-modal.hint']()}
-      cancelText={t['Cancel']()}
-      contentOptions={{
-        ['data-testid' as string]: 'confirm-restore-history-modal',
-        style: {
-          padding: '20px 26px',
-        },
-      }}
-      confirmButtonOptions={{
-        loading: isMutating,
-        type: 'primary',
-        ['data-testid' as string]: 'confirm-restore-history-button',
-        children: t['com.affine.history.confirm-restore-modal.restore'](),
-      }}
-      onConfirm={handleConfirm}
-    ></ConfirmModal>
-  );
-};
-
 const EmptyHistoryPrompt = () => {
   const t = useAFFiNEI18N();
 
@@ -453,6 +407,7 @@ const PageHistoryManager = ({
   const pageDocId = useMemo(() => {
     return docCollection.getDoc(pageId)?.spaceDoc.guid ?? pageId;
   }, [pageId, docCollection]);
+  const { openConfirmModal } = useConfirmModal();
 
   const snapshotPage = useSnapshotPage(docCollection, pageDocId, activeVersion);
 
@@ -478,21 +433,23 @@ const PageHistoryManager = ({
 
   const title = useDocCollectionPageTitle(docCollection, pageId);
 
-  const [showRestoreConfirmModal, setShowRestoreConfirmModal] = useState(false);
-
-  const showRestoreConfirm = useCallback(() => {
-    setShowRestoreConfirmModal(true);
-  }, []);
-
-  const onConfirmRestore = useAsyncCallback(
-    async res => {
-      if (res) {
-        await handleRestore();
-      }
-      setShowRestoreConfirmModal(false);
-    },
-    [handleRestore]
-  );
+  const onConfirmRestore = useCallback(() => {
+    openConfirmModal({
+      title: t['com.affine.history.restore-current-version'](),
+      description: t['com.affine.history.confirm-restore-modal.hint'](),
+      cancelText: t['Cancel'](),
+      contentOptions: {
+        ['data-testid' as string]: 'confirm-restore-history-modal',
+        style: { padding: '20px 26px' },
+      },
+      confirmButtonOptions: {
+        type: 'primary',
+        ['data-testid' as string]: 'confirm-restore-history-button',
+        children: t['com.affine.history.confirm-restore-modal.restore'](),
+      },
+      onConfirm: handleRestore,
+    });
+  }, [handleRestore, openConfirmModal, t]);
 
   const [historyList, loadMore, loadingMore] = useDocSnapshotList(
     workspaceId,
@@ -533,18 +490,12 @@ const PageHistoryManager = ({
         <div className={styles.spacer} />
         <Button
           type="primary"
-          onClick={showRestoreConfirm}
+          onClick={onConfirmRestore}
           disabled={isMutating || !activeVersion}
         >
           {t['com.affine.history.restore-current-version']()}
         </Button>
       </div>
-
-      <ConfirmRestoreModal
-        open={showRestoreConfirmModal}
-        isMutating={isMutating}
-        onConfirm={onConfirmRestore}
-      />
     </div>
   );
 };
