@@ -1,4 +1,5 @@
 import { ServerFeature } from '../../core/config';
+import { QuotaService } from '../../core/quota';
 import { PermissionService } from '../../core/workspaces/permission';
 import { Plugin } from '../registry';
 import { CopilotController } from './controller';
@@ -18,6 +19,7 @@ registerCopilotProvider(OpenAIProvider);
   name: 'copilot',
   providers: [
     PermissionService,
+    QuotaService,
     ChatSessionService,
     CopilotResolver,
     UserCopilotResolver,

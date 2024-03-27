@@ -12,8 +12,14 @@ import {
 } from '@nestjs/graphql';
 
 import { CurrentUser } from '../../core/auth';
+import { QuotaService } from '../../core/quota';
 import { UserType } from '../../core/user';
 import { PermissionService } from '../../core/workspaces/permission';
+import {
+  MutexService,
+  PaymentRequiredException,
+  TooManyRequestsException,
+} from '../../fundamentals';
 import { ChatSessionService, ListHistoriesOptions } from './session';
 import {
   type AvailableModel,
@@ -91,6 +97,8 @@ class CopilotHistoriesType implements Partial<ChatHistory> {
 export class CopilotResolver {
   constructor(
     private readonly permissions: PermissionService,
+    private readonly quota: QuotaService,
+    private readonly mutex: MutexService,
     private readonly chatSession: ChatSessionService
   ) {}
 
@@ -148,6 +156,26 @@ export class CopilotResolver {
     @Args({ name: 'options', type: () => CreateChatSessionInput })
     options: CreateChatSessionInput
   ) {
+    const lockFlag = `invite:${user.id}:${options.workspaceId}`;
+    await using lock = await this.mutex.lock(lockFlag);
+    if (!lock) {
+      return new TooManyRequestsException('Server is busy');
+    }
+    if (options.action) {
+      const quota = await this.quota.getUserQuota(user.id);
+      const actions = await this.chatSession.countSessions(
+        user.id,
+        options.workspaceId,
+        { docId: options.docId, action: true }
+      );
+      const limit = quota.feature.copilotActionLimit;
+      if (limit && Number.isFinite(limit) && actions >= limit) {
+        return new PaymentRequiredException(
+          `You have reached the limit of actions in this workspace, please upgrade your plan.`
+        );
+      }
+    }
+
     const session = await this.chatSession.create({
       ...options,
       // todo: force user to be logged in

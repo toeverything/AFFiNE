@@ -203,6 +203,21 @@ export class ChatSessionService {
     }, 0);
   }
 
+  async countSessions(
+    userId: string,
+    workspaceId: string,
+    options?: { docId?: string; action?: boolean }
+  ): Promise<number> {
+    return await this.db.aiSession.count({
+      where: {
+        userId,
+        workspaceId,
+        docId: workspaceId === options?.docId ? undefined : options?.docId,
+        action: options?.action,
+      },
+    });
+  }
+
   async listSessions(
     userId: string,
     workspaceId: string,
