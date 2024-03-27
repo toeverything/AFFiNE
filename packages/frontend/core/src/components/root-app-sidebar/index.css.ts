@@ -1,4 +1,4 @@
-import { style } from '@vanilla-extract/css';
+import { globalStyle, style } from '@vanilla-extract/css';
 
 export const workspaceAndUserWrapper = style({
   display: 'flex',
@@ -14,6 +14,12 @@ export const workspaceWrapper = style({
 
 export const userInfoWrapper = style({
   flexShrink: 0,
-  width: 28,
-  height: 28,
+  width: 'auto',
+  height: 'auto',
+  padding: '4px 0',
+});
+
+// TODO:
+globalStyle(`button.${userInfoWrapper} > span`, {
+  lineHeight: 0,
 });

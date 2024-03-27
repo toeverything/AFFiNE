@@ -4,7 +4,7 @@ import { globalStyle, style } from '@vanilla-extract/css';
 const wsSlideAnim = {
   ease: 'cubic-bezier(.45,.21,0,1)',
   duration: '0.5s',
-  delay: '0.23s',
+  delay: '0s',
 };
 
 export const container = style({

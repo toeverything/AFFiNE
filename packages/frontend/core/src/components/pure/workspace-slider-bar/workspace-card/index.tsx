@@ -192,19 +192,32 @@ const useSyncEngineSyncProgress = () => {
       ),
     active:
       currentWorkspace.flavour === WorkspaceFlavour.AFFINE_CLOUD &&
-      (syncing || retrying || isOverCapacity),
+      ((syncing && progress !== undefined) || isOverCapacity || !isOnline),
   };
 };
 
 const WorkspaceInfo = ({ name }: { name: string }) => {
-  const { message, icon, active } = useSyncEngineSyncProgress();
+  const { message, active } = useSyncEngineSyncProgress();
   const currentWorkspace = useService(Workspace);
   const isCloud = currentWorkspace.flavour === WorkspaceFlavour.AFFINE_CLOUD;
+  const { progress } = useDocEngineStatus();
 
   // to make sure that animation will play first time
   const [delayActive, setDelayActive] = useState(false);
   useEffect(() => {
-    setDelayActive(active);
+    const delayOpen = 300;
+    const delayClose = 200;
+    let timer: ReturnType<typeof setTimeout>;
+    if (active) {
+      timer = setTimeout(() => {
+        setDelayActive(active);
+      }, delayOpen);
+    } else {
+      timer = setTimeout(() => {
+        setDelayActive(active);
+      }, delayClose);
+    }
+    return () => clearTimeout(timer);
   }, [active]);
 
   return (
@@ -221,9 +234,11 @@ const WorkspaceInfo = ({ name }: { name: string }) => {
 
         {/* when syncing/offline/... */}
         <div className={styles.workspaceInfo} data-type="events">
-          <div className={styles.workspaceActiveStatus}>
-            <Tooltip content={message}>{icon}</Tooltip>
-          </div>
+          <Tooltip content={message}>
+            <div className={styles.workspaceActiveStatus}>
+              <SyncingWorkspaceStatus progress={progress} />
+            </div>
+          </Tooltip>
         </div>
       </div>
     </div>

@@ -18,11 +18,11 @@ import {
 } from '@affine/core/hooks/affine/use-current-user';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { AccountIcon, SignOutIcon } from '@blocksuite/icons';
-import { cssVar } from '@toeverything/theme';
 import { useSetAtom } from 'jotai';
 import { useCallback } from 'react';
 
 import * as styles from './index.css';
+import { UnknownUserIcon } from './unknow-user';
 
 export const UserInfo = () => {
   const { status } = useSession();
@@ -39,7 +39,7 @@ const AuthorizedUserInfo = () => {
         type="plain"
         className={styles.userInfoWrapper}
       >
-        <Avatar size={20} name={user.name} url={user.avatarUrl} />
+        <Avatar size={24} name={user.name} url={user.avatarUrl} />
       </Button>
     </Menu>
   );
@@ -61,11 +61,7 @@ const UnauthorizedUserInfo = () => {
       type="plain"
       className={styles.userInfoWrapper}
     >
-      <Avatar
-        style={{ color: cssVar('black') }}
-        size={20}
-        url={'/imgs/unknown-user.svg'}
-      />
+      <UnknownUserIcon width={24} height={24} />
     </Button>
   );
 };
