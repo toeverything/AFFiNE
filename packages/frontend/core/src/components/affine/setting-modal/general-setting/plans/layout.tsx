@@ -13,6 +13,7 @@ export interface PlanLayoutProps
   tabs: ReactNode;
   scroll: ReactNode;
   footer?: ReactNode;
+  ai?: ReactNode;
   scrollRef?: React.RefObject<HTMLDivElement>;
 }
 
@@ -38,6 +39,7 @@ export const PlanLayout = ({
   scroll,
   title,
   footer = <SeeAllLink />,
+  ai,
   scrollRef,
 }: PlanLayoutProps) => {
   const t = useAFFiNEI18N();
@@ -63,6 +65,7 @@ export const PlanLayout = ({
         </ScrollArea.Scrollbar>
       </ScrollArea.Root>
       {footer}
+      {ai}
     </div>
   );
 };

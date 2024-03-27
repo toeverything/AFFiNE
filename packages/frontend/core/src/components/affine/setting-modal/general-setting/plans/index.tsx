@@ -15,6 +15,7 @@ import { SWRErrorBoundary } from '../../../../../components/pure/swr-error-bunda
 import { useCurrentLoginStatus } from '../../../../../hooks/affine/use-current-login-status';
 import { useQuery } from '../../../../../hooks/use-query';
 import { useUserSubscription } from '../../../../../hooks/use-subscription';
+import { AIPlanCard } from './ai';
 import { PlanLayout } from './layout';
 import type { FixedPrice } from './plan-card';
 import { getPlanDetail, PlanCard } from './plan-card';
@@ -190,8 +191,13 @@ const Settings = () => {
     </div>
   );
 
+  const aiPrice = prices.find(price => price.plan === SubscriptionPlan.AI);
+  const ai = (
+    <AIPlanCard onSubscriptionUpdate={mutateSubscription} price={aiPrice} />
+  );
+
   return (
-    <PlanLayout scrollRef={scrollWrapper} {...{ subtitle, tabs, scroll }} />
+    <PlanLayout scrollRef={scrollWrapper} {...{ subtitle, tabs, scroll, ai }} />
   );
 };
 
