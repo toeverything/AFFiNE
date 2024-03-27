@@ -13,6 +13,7 @@ import * as styles from './style.css';
 
 interface WorkspaceDeleteProps extends ConfirmModalProps {
   workspaceMetadata: WorkspaceMetadata;
+  onConfirm?: () => void;
 }
 
 export const WorkspaceDeleteModal = ({

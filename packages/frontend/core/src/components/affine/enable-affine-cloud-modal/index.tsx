@@ -11,7 +11,7 @@ import { useCurrentLoginStatus } from '../../../hooks/affine/use-current-login-s
 export const EnableAffineCloudModal = ({
   onConfirm: propsOnConfirm,
   ...props
-}: ConfirmModalProps) => {
+}: Omit<ConfirmModalProps, 'onConfirm'> & { onConfirm: () => void }) => {
   const t = useAFFiNEI18N();
   const loginStatus = useCurrentLoginStatus();
   const setAuthAtom = useSetAtom(authAtom);
