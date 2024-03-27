@@ -1,3 +1,4 @@
+import type { Tag } from '@affine/core/modules/tag';
 import { TagService } from '@affine/core/modules/tag';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { FavoritedIcon, FavoriteIcon } from '@blocksuite/icons';
@@ -28,7 +29,7 @@ const GroupLabel = ({
   id,
 }: {
   id: string;
-  label: string;
+  label: ReactNode;
   count: number;
   icon?: ReactNode;
 }) => (
@@ -115,30 +116,38 @@ export const useDateGroupDefinitions = <T extends ListItem>(
     [key, t]
   );
 };
+
+const GroupTagLabel = ({ tag, count }: { tag: Tag; count: number }) => {
+  const tagValue = useLiveData(tag.value$);
+  const tagColor = useLiveData(tag.color$);
+  return (
+    <GroupLabel
+      id={tag.id}
+      label={tagValue}
+      count={count}
+      icon={
+        <div
+          className={styles.tagIcon}
+          style={{
+            backgroundColor: tagColor,
+          }}
+        ></div>
+      }
+    ></GroupLabel>
+  );
+};
 export const useTagGroupDefinitions = (): ItemGroupDefinition<ListItem>[] => {
   const tagService = useService(TagService);
-  const tagMetas = useLiveData(tagService.tagMetas$);
+  const tags = useLiveData(tagService.tags$);
   return useMemo(() => {
-    return tagMetas.map(tag => ({
+    return tags.map(tag => ({
       id: tag.id,
-      label: count => (
-        <GroupLabel
-          id={tag.title}
-          label={tag.title}
-          count={count}
-          icon={
-            <div
-              className={styles.tagIcon}
-              style={{
-                backgroundColor: tag.color,
-              }}
-            ></div>
-          }
-        />
-      ),
+      label: count => {
+        return <GroupTagLabel tag={tag} count={count} />;
+      },
       match: item => (item as DocMeta).tags?.includes(tag.id),
     }));
-  }, [tagMetas]);
+  }, [tags]);
 };
 
 export const useFavoriteGroupDefinitions = <
