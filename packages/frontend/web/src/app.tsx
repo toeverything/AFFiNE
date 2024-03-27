@@ -12,12 +12,12 @@ import {
   performanceLogger,
   performanceRenderLogger,
 } from '@affine/core/shared';
+import { Telemetry } from '@affine/core/telemetry';
 import createEmotionCache from '@affine/core/utils/create-emotion-cache';
 import { configureWebServices } from '@affine/core/web';
 import { createI18n, setUpLanguage } from '@affine/i18n';
 import { CacheProvider } from '@emotion/react';
 import { getCurrentStore, ServiceCollection } from '@toeverything/infra';
-import mixpanel from 'mixpanel-browser';
 import type { PropsWithChildren, ReactElement } from 'react';
 import { lazy, Suspense } from 'react';
 import { RouterProvider } from 'react-router-dom';
@@ -62,13 +62,6 @@ const serviceProvider = services.provider();
 export function App() {
   performanceRenderLogger.info('App');
 
-  if (process.env.MIXPANEL_TOKEN) {
-    mixpanel.init(process.env.MIXPANEL_TOKEN || '', {
-      track_pageview: true,
-      persistence: 'localStorage',
-    });
-  }
-
   if (!languageLoadingPromise) {
     languageLoadingPromise = loadLanguage().catch(console.error);
   }
@@ -79,6 +72,7 @@ export function App() {
         <CacheProvider value={cache}>
           <AffineContext store={getCurrentStore()}>
             <CloudSessionProvider>
+              <Telemetry />
               <DebugProvider>
                 <GlobalLoading />
                 <NotificationCenter />
