@@ -2,6 +2,7 @@ import { SignUpPage } from '@affine/component/auth-components';
 import { Button } from '@affine/component/ui/button';
 import { Loading } from '@affine/component/ui/loading';
 import { AffineShapeIcon } from '@affine/core/components/page-list';
+import { useCredentialsRequirement } from '@affine/core/hooks/affine/use-server-config';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import type { SubscriptionPlan, SubscriptionRecurring } from '@affine/graphql';
 import {
@@ -106,6 +107,7 @@ const SubscriptionRedirectWithData = () => {
   const user = useCurrentUser();
   const searchData = useSubscriptionSearch();
   const openPaymentUrl = usePaymentRedirect();
+  const { password: passwordLimits } = useCredentialsRequirement();
 
   const { trigger: changePassword } = useMutation({
     mutation: changePasswordMutation,
@@ -128,6 +130,7 @@ const SubscriptionRedirectWithData = () => {
     return (
       <SignUpPage
         user={user}
+        passwordLimits={passwordLimits}
         onSetPassword={onSetPassword}
         onOpenAffine={openPaymentUrl}
         openButtonText={t['com.affine.payment.subscription.go-to-subscribe']()}

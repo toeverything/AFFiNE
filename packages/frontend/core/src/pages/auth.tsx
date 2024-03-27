@@ -8,6 +8,7 @@ import {
   SignUpPage,
 } from '@affine/component/auth-components';
 import { pushNotificationAtom } from '@affine/component/notification-center';
+import { useCredentialsRequirement } from '@affine/core/hooks/affine/use-server-config';
 import {
   changeEmailMutation,
   changePasswordMutation,
@@ -45,6 +46,7 @@ const authTypeSchema = z.enum([
 export const AuthPage = (): ReactElement | null => {
   const user = useCurrentUser();
   const t = useAFFiNEI18N();
+  const { password: passwordLimits } = useCredentialsRequirement();
 
   const { authType } = useParams();
   const [searchParams] = useSearchParams();
@@ -112,6 +114,7 @@ export const AuthPage = (): ReactElement | null => {
       return (
         <SignUpPage
           user={user}
+          passwordLimits={passwordLimits}
           onSetPassword={onSetPassword}
           onOpenAffine={onOpenAffine}
         />
@@ -124,6 +127,7 @@ export const AuthPage = (): ReactElement | null => {
       return (
         <ChangePasswordPage
           user={user}
+          passwordLimits={passwordLimits}
           onSetPassword={onSetPassword}
           onOpenAffine={onOpenAffine}
         />
@@ -133,6 +137,7 @@ export const AuthPage = (): ReactElement | null => {
       return (
         <SetPasswordPage
           user={user}
+          passwordLimits={passwordLimits}
           onSetPassword={onSetPassword}
           onOpenAffine={onOpenAffine}
         />

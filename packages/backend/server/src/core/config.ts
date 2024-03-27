@@ -23,6 +23,20 @@ export function ADD_ENABLED_FEATURES(feature: ServerFeature) {
 }
 
 @ObjectType()
+export class PasswordLimitsType {
+  @Field()
+  minLength!: number;
+  @Field()
+  maxLength!: number;
+}
+
+@ObjectType()
+export class CredentialsRequirementType {
+  @Field()
+  password!: PasswordLimitsType;
+}
+
+@ObjectType()
 export class ServerConfigType {
   @Field({
     description:
@@ -47,6 +61,11 @@ export class ServerConfigType {
 
   @Field(() => [ServerFeature], { description: 'enabled server features' })
   features!: ServerFeature[];
+
+  @Field(() => CredentialsRequirementType, {
+    description: 'credentials requirement',
+  })
+  credentialsRequirement!: CredentialsRequirementType;
 }
 
 export class ServerConfigResolver {
@@ -65,6 +84,9 @@ export class ServerConfigResolver {
       // this field should be removed after frontend feature flags implemented
       flavor: AFFiNE.type,
       features: Array.from(ENABLED_FEATURES),
+      credentialsRequirement: {
+        password: AFFiNE.auth.password,
+      },
     };
   }
 }

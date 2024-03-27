@@ -304,6 +304,7 @@ __metadata:
     vite: "npm:^5.1.4"
     vitest: "npm:1.4.0"
     yjs: "npm:^13.6.12"
+    zod: "npm:^3.22.4"
   peerDependencies:
     "@blocksuite/blocks": "*"
     "@blocksuite/global": "*"
@@ -465,7 +466,6 @@ __metadata:
     "@emotion/react": "npm:^11.11.4"
     "@pengx17/electron-forge-maker-appimage": "npm:^1.1.1"
     "@toeverything/infra": "workspace:*"
-    "@types/mixpanel-browser": "npm:^2.49.0"
     "@types/uuid": "npm:^9.0.8"
     "@vitejs/plugin-react-swc": "npm:^3.6.0"
     async-call-rpc: "npm:^6.4.0"
@@ -484,7 +484,6 @@ __metadata:
     jotai-devtools: "npm:^0.8.0"
     link-preview-js: "npm:^3.0.5"
     lodash-es: "npm:^4.17.21"
-    mixpanel-browser: "npm:^2.49.0"
     nanoid: "npm:^5.0.6"
     react: "npm:^18.2.0"
     react-dom: "npm:^18.2.0"
@@ -826,12 +825,11 @@ __metadata:
     "@affine/core": "workspace:*"
     "@affine/env": "workspace:*"
     "@juggle/resize-observer": "npm:^3.4.0"
-    "@types/mixpanel-browser": "npm:^2.49.0"
     "@types/react": "npm:^18.2.60"
     "@types/react-dom": "npm:^18.2.19"
     core-js: "npm:^3.36.1"
     intl-segmenter-polyfill-rs: "npm:^0.1.7"
-    mixpanel-browser: "npm:^2.49.0"
+    jotai: "npm:^2.7.1"
     react: "npm:^18.2.0"
     react-dom: "npm:^18.2.0"
     typescript: "npm:^5.3.3"
@@ -25241,9 +25239,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"jotai@npm:^2.6.5":
-  version: 2.6.5
-  resolution: "jotai@npm:2.6.5"
+"jotai@npm:^2.6.5, jotai@npm:^2.7.1":
+  version: 2.7.1
+  resolution: "jotai@npm:2.7.1"
   peerDependencies:
     "@types/react": ">=17.0.0"
     react: ">=17.0.0"
@@ -25252,7 +25250,7 @@ __metadata:
       optional: true
     react:
       optional: true
-  checksum: 10/21461f2d97158607a72848c09ac6a46142f28b1cc6b1c9c026d9b48129627ca581307789670232e4ff3bede678ccc57f937edd5c40efaa9bce4a2daed43dcd26
+  checksum: 10/7f735bb771885bee5dcd7e807458281d5422526837bbc52d9bcca9a093117245880794a868ff4e19fcd016064353d64e8d6f7b7485c081d678c51ac7fc459da8
   languageName: node
   linkType: hard
 

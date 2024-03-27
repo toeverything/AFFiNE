@@ -1,3 +1,4 @@
+import type { PasswordLimitsFragment } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useSetAtom } from 'jotai';
 import type { FC } from 'react';
@@ -10,11 +11,13 @@ import { SetPassword } from './set-password';
 import type { User } from './type';
 
 export const SignUpPage: FC<{
+  passwordLimits: PasswordLimitsFragment;
   user: User;
   onSetPassword: (password: string) => Promise<void>;
   openButtonText?: string;
   onOpenAffine: () => void;
 }> = ({
+  passwordLimits,
   user: { email },
   onSetPassword: propsOnSetPassword,
   onOpenAffine,
@@ -55,7 +58,10 @@ export const SignUpPage: FC<{
           t['com.affine.auth.sign.up.success.subtitle']()
         ) : (
           <>
-            {t['com.affine.auth.page.sent.email.subtitle']()}
+            {t['com.affine.auth.page.sent.email.subtitle']({
+              min: String(passwordLimits.minLength),
+              max: String(passwordLimits.maxLength),
+            })}
             <a href={`mailto:${email}`}>{email}</a>
           </>
         )
@@ -67,6 +73,7 @@ export const SignUpPage: FC<{
         </Button>
       ) : (
         <SetPassword
+          passwordLimits={passwordLimits}
           onSetPassword={onSetPassword}
           onLater={onLater}
           showLater={true}

@@ -1,3 +1,4 @@
+import type { PasswordLimitsFragment } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useSetAtom } from 'jotai';
 import type { FC } from 'react';
@@ -11,9 +12,15 @@ import type { User } from './type';
 
 export const SetPasswordPage: FC<{
   user: User;
+  passwordLimits: PasswordLimitsFragment;
   onSetPassword: (password: string) => Promise<void>;
   onOpenAffine: () => void;
-}> = ({ user: { email }, onSetPassword: propsOnSetPassword, onOpenAffine }) => {
+}> = ({
+  user: { email },
+  passwordLimits,
+  onSetPassword: propsOnSetPassword,
+  onOpenAffine,
+}) => {
   const t = useAFFiNEI18N();
   const [hasSetUp, setHasSetUp] = useState(false);
   const pushNotification = useSetAtom(pushNotificationAtom);
@@ -46,7 +53,10 @@ export const SetPasswordPage: FC<{
           t['com.affine.auth.sent.set.password.success.message']()
         ) : (
           <>
-            {t['com.affine.auth.page.sent.email.subtitle']()}
+            {t['com.affine.auth.page.sent.email.subtitle']({
+              min: String(passwordLimits.minLength),
+              max: String(passwordLimits.maxLength),
+            })}
             <a href={`mailto:${email}`}>{email}</a>
           </>
         )
@@ -57,7 +67,10 @@ export const SetPasswordPage: FC<{
           {t['com.affine.auth.open.affine']()}
         </Button>
       ) : (
-        <SetPassword onSetPassword={onSetPassword} />
+        <SetPassword
+          passwordLimits={passwordLimits}
+          onSetPassword={onSetPassword}
+        />
       )}
     </AuthPageContainer>
   );

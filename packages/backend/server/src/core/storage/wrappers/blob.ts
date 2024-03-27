@@ -1,13 +1,13 @@
-import { forwardRef, Inject, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
 import {
-  BlobInputType,
+  type BlobInputType,
   Cache,
   EventEmitter,
   type EventPayload,
-  ListObjectsMetadata,
+  type ListObjectsMetadata,
   OnEvent,
-  StorageProvider,
+  type StorageProvider,
   StorageProviderFactory,
 } from '../../../fundamentals';
 
@@ -18,14 +18,14 @@ export class WorkspaceBlobStorage {
   constructor(
     private readonly event: EventEmitter,
     private readonly storageFactory: StorageProviderFactory,
-    @Inject(forwardRef(() => Cache)) private readonly cache: Cache
+    private readonly cache: Cache
   ) {
     this.provider = this.storageFactory.create('blob');
   }
 
   async put(workspaceId: string, key: string, blob: BlobInputType) {
     await this.provider.put(`${workspaceId}/${key}`, blob);
-    await this.cache.delete(`blobs:${workspaceId}`);
+    await this.cache.delete(`blob-list:${workspaceId}`);
   }
 
   async get(workspaceId: string, key: string) {
@@ -34,7 +34,7 @@ export class WorkspaceBlobStorage {
 
   async list(workspaceId: string) {
     const cachedList = await this.cache.list<ListObjectsMetadata>(
-      `blobs:${workspaceId}`,
+      `blob-list:${workspaceId}`,
       0,
       -1
     );
@@ -50,7 +50,7 @@ export class WorkspaceBlobStorage {
       item.key = item.key.slice(workspaceId.length + 1);
     });
 
-    await this.cache.pushBack(`blobs:${workspaceId}`, ...blobs);
+    await this.cache.pushBack(`blob-list:${workspaceId}`, ...blobs);
 
     return blobs;
   }

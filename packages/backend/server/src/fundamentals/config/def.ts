@@ -214,9 +214,14 @@ export interface AFFiNEConfig {
    * authentication config
    */
   auth: {
+    /**
+     * The minimum and maximum length of the password when registering new users
+     *
+     * @default [8,32]
+     */
     password: {
       /**
-       * The minimum and maximum length of the password when registering new users
+       * The minimum length of the password
        *
        * @default 8
        */
@@ -224,7 +229,7 @@ export interface AFFiNEConfig {
       /**
        * The maximum length of the password
        *
-       * @default 20
+       * @default 32
        */
       maxLength: number;
     };

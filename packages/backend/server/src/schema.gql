@@ -10,6 +10,10 @@ input CreateCheckoutSessionInput {
   successCallbackLink: String
 }
 
+type CredentialsRequirementType {
+  password: PasswordLimitsType!
+}
+
 """
 A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
 """
@@ -164,6 +168,11 @@ enum OAuthProviderType {
   Google
 }
 
+type PasswordLimitsType {
+  maxLength: Int!
+  minLength: Int!
+}
+
 """User permission in workspace"""
 enum Permission {
   Admin
@@ -235,6 +244,9 @@ scalar SafeInt @specifiedBy(url: "https://www.ecma-international.org/ecma-262/#s
 type ServerConfigType {
   """server base url"""
   baseUrl: String!
+
+  """credentials requirement"""
+  credentialsRequirement: CredentialsRequirementType!
 
   """enabled server features"""
   features: [ServerFeature!]!

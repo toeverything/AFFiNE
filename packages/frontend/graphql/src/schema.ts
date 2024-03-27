@@ -292,6 +292,21 @@ export type RemoveEarlyAccessMutation = {
   removeEarlyAccess: number;
 };
 
+export type CredentialsRequirementFragment = {
+  __typename?: 'CredentialsRequirementType';
+  password: {
+    __typename?: 'PasswordLimitsType';
+    minLength: number;
+    maxLength: number;
+  };
+};
+
+export type PasswordLimitsFragment = {
+  __typename?: 'PasswordLimitsType';
+  minLength: number;
+  maxLength: number;
+};
+
 export type GetCurrentUserQueryVariables = Exact<{ [key: string]: never }>;
 
 export type GetCurrentUserQuery = {
@@ -701,6 +716,14 @@ export type ServerConfigQuery = {
     name: string;
     features: Array<ServerFeature>;
     type: ServerDeploymentType;
+    credentialsRequirement: {
+      __typename?: 'CredentialsRequirementType';
+      password: {
+        __typename?: 'PasswordLimitsType';
+        minLength: number;
+        maxLength: number;
+      };
+    };
   };
 };
 

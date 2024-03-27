@@ -1,4 +1,4 @@
-import type { ServerFeature } from '@affine/graphql';
+import type { ServerConfigQuery, ServerFeature } from '@affine/graphql';
 import { oauthProvidersQuery, serverConfigQuery } from '@affine/graphql';
 import type { BareFetcher, Middleware } from 'swr';
 
@@ -72,4 +72,14 @@ export const useServerBaseUrl = () => {
   }
 
   return config.baseUrl;
+};
+
+export const useCredentialsRequirement = () => {
+  const config = useServerConfig();
+
+  if (!config) {
+    return {} as ServerConfigQuery['serverConfig']['credentialsRequirement'];
+  }
+
+  return config.credentialsRequirement;
 };

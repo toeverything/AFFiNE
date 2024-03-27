@@ -1,4 +1,8 @@
-<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+import { memo } from 'react';
+
+export const UnknownUserIcon = memo(
+  ({ width = 20, height = 20 }: { width?: number; height?: number }) => {
+    const svgRaw = `<svg width="${width}" height="${height}" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
   <g clip-path="url(#clip0_19485_742)">
     <rect width="20" height="20" rx="10" fill="currentColor" fill-opacity="0.1" />
     <path
@@ -13,5 +17,9 @@
       <rect width="20" height="20" rx="10" fill="white" />
     </clipPath>
   </defs>
-</svg>
-  
+</svg>`;
+
+    return <div dangerouslySetInnerHTML={{ __html: svgRaw }} />;
+  }
+);
+UnknownUserIcon.displayName = 'UnknownUserIcon';

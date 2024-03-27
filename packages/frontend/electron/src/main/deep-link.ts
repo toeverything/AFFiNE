@@ -88,7 +88,7 @@ async function handleOauthJwt(url: string) {
         httpOnly: true,
         value: token,
         secure: true,
-        name: 'sid',
+        name: 'affine_session',
         expirationDate: Math.floor(Date.now() / 1000 + 3600 * 24 * 7),
       });
 

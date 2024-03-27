@@ -316,7 +316,7 @@ const ConflictList = ({
       setTrashModal({
         open: true,
         pageIds: [pageRecord.id],
-        pageTitles: [pageRecord.meta$.value.title],
+        pageTitles: [pageRecord.title$.value],
       });
     },
     [setTrashModal]

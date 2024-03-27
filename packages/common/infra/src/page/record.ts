@@ -1,5 +1,6 @@
 import type { DocMeta } from '@blocksuite/store';
-import { Observable } from 'rxjs';
+import { isEqual } from 'lodash-es';
+import { distinctUntilChanged, Observable } from 'rxjs';
 
 import { LiveData } from '../livedata';
 import type { Workspace, WorkspaceLocalState } from '../workspace';
@@ -13,8 +14,8 @@ export class PageRecord {
     private readonly localState: WorkspaceLocalState
   ) {}
 
-  meta$ = LiveData.from<DocMeta>(
-    new Observable(subscriber => {
+  meta$ = LiveData.from<Partial<DocMeta>>(
+    new Observable<DocMeta>(subscriber => {
       const emit = () => {
         const meta = this.workspace.docCollection.meta.docMetas.find(
           page => page.id === this.id
@@ -32,7 +33,7 @@ export class PageRecord {
       return () => {
         dispose();
       };
-    }),
+    }).pipe(distinctUntilChanged((p, c) => isEqual(p, c))),
     {
       id: this.id,
       title: '',
@@ -59,5 +60,5 @@ export class PageRecord {
     return this.mode$.value;
   }
 
-  title$ = this.meta$.map(meta => meta.title);
+  title$ = this.meta$.map(meta => meta.title ?? '');
 }
