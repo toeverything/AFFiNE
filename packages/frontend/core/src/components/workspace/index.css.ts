@@ -49,7 +49,7 @@ export const mainContainerStyle = style({
   width: 0,
   display: 'flex',
   flex: 1,
-  overflow: 'hidden',
+  overflow: 'clip',
   maxWidth: '100%',
   transition: 'margin-left 0.2s ease',
   selectors: {
