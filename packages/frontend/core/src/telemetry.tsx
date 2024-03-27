@@ -12,7 +12,7 @@ export function Telemetry() {
         persistence: 'localStorage',
       });
     }
-    if (settings.enableTelemetry !== false) {
+    if (settings.enableTelemetry === false) {
       mixpanel.opt_out_tracking();
     }
   }, [settings.enableTelemetry]);
