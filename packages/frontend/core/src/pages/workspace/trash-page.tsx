@@ -10,7 +10,6 @@ import {
 } from '@affine/core/components/page-list';
 import { usePageHeaderColsDef } from '@affine/core/components/page-list/header-col-def';
 import { Header } from '@affine/core/components/pure/header';
-import { WindowsAppControls } from '@affine/core/components/pure/header/windows-app-controls';
 import { useBlockSuiteMetaHelper } from '@affine/core/hooks/affine/use-block-suite-meta-helper';
 import { useBlockSuiteDocMeta } from '@affine/core/hooks/use-block-suite-page-meta';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
@@ -24,7 +23,6 @@ import { ViewBodyIsland, ViewHeaderIsland } from '../../modules/workbench';
 import { EmptyPageList } from './page-list-empty';
 import * as styles from './trash-page.css';
 
-const isWindowsDesktop = environment.isDesktop && environment.isWindows;
 const TrashHeader = () => {
   const t = useAFFiNEI18N();
   return (
@@ -34,13 +32,6 @@ const TrashHeader = () => {
           <DeleteIcon className={styles.trashIcon} />
           {t['com.affine.workspaceSubPath.trash']()}
         </div>
-      }
-      right={
-        isWindowsDesktop ? (
-          <div style={{ marginRight: -16 }}>
-            <WindowsAppControls />
-          </div>
-        ) : null
       }
     />
   );
