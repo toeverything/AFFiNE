@@ -11,7 +11,7 @@ export class PromptService {
   async list() {
     return this.db.aiPrompt
       .findMany({ select: { name: true } })
-      .then(prompts => prompts.map(p => p.name));
+      .then(prompts => Array.from(new Set(prompts.map(p => p.name))));
   }
 
   async get(name: string): Promise<ChatMessage[]> {
@@ -31,7 +31,8 @@ export class PromptService {
 
   async set(name: string, messages: ChatMessage[]) {
     return this.db.$transaction(async tx => {
-      if (await tx.aiPrompt.findUnique({ where: { name } })) {
+      const prompts = await tx.aiPrompt.count({ where: { name } });
+      if (prompts > 0) {
         return 0;
       }
       return tx.aiPrompt
