@@ -27,14 +27,13 @@ import {
 } from '@toeverything/infra';
 import clsx from 'clsx';
 import { useSetAtom } from 'jotai';
-import type { KeyboardEventHandler, ReactElement } from 'react';
+import type { ReactElement } from 'react';
 import {
   memo,
   useCallback,
   useEffect,
   useLayoutEffect,
   useMemo,
-  useRef,
   useState,
 } from 'react';
 import { useParams } from 'react-router-dom';
@@ -203,17 +202,6 @@ const DetailPageImpl = memo(function DetailPageImpl() {
   );
 
   const isWindowsDesktop = environment.isDesktop && environment.isWindows;
-  const scrollableRef = useRef<HTMLDivElement>(null);
-  const keydownHandler: KeyboardEventHandler = useCallback(e => {
-    // prevent pgup/pgdown from scrolling the page
-    if (e.key === 'PageUp' || e.key === 'PageDown') {
-      e.preventDefault();
-      scrollableRef.current?.scrollBy({
-        top: e.key === 'PageUp' ? -window.innerHeight : window.innerHeight,
-        behavior: 'smooth',
-      });
-    }
-  }, []);
 
   return (
     <>
@@ -230,8 +218,6 @@ const DetailPageImpl = memo(function DetailPageImpl() {
             <TopTip pageId={currentPageId} workspace={currentWorkspace} />
             <Scrollable.Root>
               <Scrollable.Viewport
-                ref={scrollableRef}
-                onKeyDown={keydownHandler}
                 className={clsx(
                   'affine-page-viewport',
                   styles.affineDocViewport,
