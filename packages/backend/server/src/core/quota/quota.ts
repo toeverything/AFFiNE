@@ -79,6 +79,10 @@ export class QuotaConfig {
     return this.config.configs.memberLimit;
   }
 
+  get copilotActionLimit() {
+    return this.config.configs.copilotActionLimit || undefined;
+  }
+
   get humanReadable() {
     return {
       name: this.config.configs.name,
@@ -86,6 +90,9 @@ export class QuotaConfig {
       storageQuota: formatSize(this.storageQuota),
       historyPeriod: formatDate(this.historyPeriod),
       memberLimit: this.memberLimit.toString(),
+      copilotActionLimit: this.copilotActionLimit
+        ? `${this.copilotActionLimit} times`
+        : 'Unlimited',
     };
   }
 }

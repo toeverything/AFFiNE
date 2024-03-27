@@ -68,6 +68,7 @@ enum FeatureType {
 
 type HumanReadableQuotaType {
   blobLimit: String!
+  copilotActionLimit: String
   historyPeriod: String!
   memberLimit: String!
   name: String!
@@ -264,6 +265,7 @@ input QueryChatHistoriesInput {
 
 type QuotaQueryType {
   blobLimit: SafeInt!
+  copilotActionLimit: SafeInt
   historyPeriod: SafeInt!
   humanReadable: HumanReadableQuotaType!
   memberLimit: SafeInt!
