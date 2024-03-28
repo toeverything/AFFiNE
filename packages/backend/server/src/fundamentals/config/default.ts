@@ -119,6 +119,7 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
     featureFlags: {
       earlyAccessPreview: false,
       syncClientVersionCheck: false,
+      copilotAuthorization: false,
     },
     https: false,
     host: 'localhost',

@@ -57,6 +57,7 @@ app:
   features:
     earlyAccessPreview: false
     syncClientVersionCheck: false
+    copilotAuthorization: false
 
 serviceAccount:
   create: true

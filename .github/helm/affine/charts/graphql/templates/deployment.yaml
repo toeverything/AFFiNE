@@ -83,6 +83,8 @@ spec:
             value: "{{ .Values.app.features.earlyAccessPreview }}"
           - name: FEATURES_SYNC_CLIENT_VERSION_CHECK
             value: "{{ .Values.app.features.syncClientVersionCheck }}"
+          - name: FEATURES_COPILOT_SKIP_AUTHORIZATION
+            value: "{{ .Values.app.features.copilotAuthorization }}"
           - name: MAILER_HOST
             valueFrom:
               secretKeyRef:
