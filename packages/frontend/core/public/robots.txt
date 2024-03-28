@@ -1,10 +1,12 @@
 User-agent: *
 Allow: /
-Disallow: /oauth/
-Disallow: /workspace/
-Disallow: /public-workspace/
-
-Disallow: /*/invite/
+Disallow: /oauth/*
+Disallow: /workspace/*
+Disallow: /public-workspace/*
+Disallow: /auth/*
+Disallow: /_next/*
+Disallow: /invite/*
+Disallow: /*/invite/*
 Disallow: /api/*
 
 User-agent: PetalBot
