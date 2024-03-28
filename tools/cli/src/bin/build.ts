@@ -2,10 +2,10 @@ import path from 'node:path';
 
 import webpack from 'webpack';
 
-import type { BuildFlags } from '../config/index.js';
-import { projectRoot } from '../config/index.js';
-import { buildI18N } from '../util/i18n.js';
-import { createWebpackConfig } from '../webpack/webpack.config.js';
+import type { BuildFlags } from '../config/index';
+import { projectRoot } from '../config/index';
+import { buildI18N } from '../util/i18n';
+import { createWebpackConfig } from '../webpack/webpack.config';
 
 let cwd: string;
 

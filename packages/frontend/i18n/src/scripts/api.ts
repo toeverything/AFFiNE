@@ -1,7 +1,7 @@
 import type { Response } from 'undici-types';
 
 // cSpell:ignore Tolgee
-import { fetchTolgee } from './request.js';
+import { fetchTolgee } from './request';
 
 /**
  * Returns all project languages

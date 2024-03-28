@@ -2,8 +2,8 @@
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
-import { createsNewKey, getRemoteTranslations } from './api.js';
-import type { TranslationRes } from './utils.js';
+import { createsNewKey, getRemoteTranslations } from './api';
+import type { TranslationRes } from './utils';
 
 const BASE_JSON_PATH = resolve(process.cwd(), 'src', 'resources', 'en.json');
 const BASE_LANGUAGES = 'en' as const;

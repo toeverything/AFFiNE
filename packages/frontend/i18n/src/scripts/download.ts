@@ -4,9 +4,9 @@ import * as path from 'node:path';
 
 import { format } from 'prettier';
 
-import { getAllProjectLanguages, getRemoteTranslations } from './api.js';
-import type { TranslationRes } from './utils.js';
-import { flattenTranslation } from './utils.js';
+import { getAllProjectLanguages, getRemoteTranslations } from './api';
+import type { TranslationRes } from './utils';
+import { flattenTranslation } from './utils';
 
 const INDENT = 2;
 const RES_DIR = path.resolve(process.cwd(), 'src', 'resources');

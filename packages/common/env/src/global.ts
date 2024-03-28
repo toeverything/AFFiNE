@@ -2,8 +2,8 @@
 import { assertEquals } from '@blocksuite/global/utils';
 import { z } from 'zod';
 
-import { isDesktop, isServer } from './constant.js';
-import { UaHelper } from './ua-helper.js';
+import { isDesktop, isServer } from './constant';
+import { UaHelper } from './ua-helper';
 
 export const runtimeFlagsSchema = z.object({
   enableTestProperties: z.boolean(),

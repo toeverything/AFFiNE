@@ -7,8 +7,8 @@ import HTMLPlugin from 'html-webpack-plugin';
 import { once } from 'lodash-es';
 import { merge } from 'webpack-merge';
 
-import { createConfiguration, rootPath, workspaceRoot } from './config.js';
-import { getRuntimeConfig } from './runtime-config.js';
+import { createConfiguration, rootPath, workspaceRoot } from './config';
+import { getRuntimeConfig } from './runtime-config';
 
 const DESCRIPTION = `There can be more than Notion and Miro. AFFiNE is a next-gen knowledge base that brings planning, sorting and creating all together.`;
 

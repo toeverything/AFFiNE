@@ -7,7 +7,7 @@ import type {
   DatabaseBlockModel,
   ListBlockModel,
   ParagraphBlockModel,
-} from '@blocksuite/blocks/dist/models.js';
+} from '@blocksuite/blocks/dist/models';
 import { assertExists } from '@blocksuite/global/utils';
 import type { DeltaOperation, JobMiddleware } from '@blocksuite/store';
 

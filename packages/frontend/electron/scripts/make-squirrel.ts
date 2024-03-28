@@ -12,7 +12,7 @@ import {
   platform,
   productName,
   ROOT,
-} from './make-env.js';
+} from './make-env';
 
 async function ensureDirectory(dir: string) {
   if (await fs.pathExists(dir)) {
