@@ -5,7 +5,7 @@
 type ChatMessage {
   attachments: [String!]
   content: String!
-  createdAt: DateTime!
+  createdAt: DateTime
   role: String!
 }
 
