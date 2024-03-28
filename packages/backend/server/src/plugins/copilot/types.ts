@@ -23,8 +23,10 @@ export interface CopilotProvider {
   getCapabilities(): CopilotProviderCapability[];
 }
 
+export const ChatMessageRole = ['system', 'assistant', 'user'] as const;
+
 export type ChatMessage = {
-  role: 'system' | 'assistant' | 'user';
+  role: (typeof ChatMessageRole)[number];
   content: string;
 };
 
