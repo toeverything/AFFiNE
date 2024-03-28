@@ -230,24 +230,38 @@ export class ChatSessionService {
     workspaceId: string,
     options?: { docId?: string; action?: boolean }
   ): Promise<number> {
-    return await this.db.aiSession
-      .count({
-        where: {
-          userId,
-          workspaceId,
-          docId: workspaceId === options?.docId ? undefined : options?.docId,
-          action: options?.action,
-        },
-      })
-      // NOTE: only used for anonymous session in development
-      .then(count => count + this.unsavedSessions.size);
+    // NOTE: only used for anonymous session in development
+    if (
+      !userId &&
+      AFFiNE.node.dev &&
+      AFFiNE.featureFlags.copilotAuthorization
+    ) {
+      return this.unsavedSessions.size;
+    }
+    return await this.db.aiSession.count({
+      where: {
+        userId,
+        workspaceId,
+        docId: workspaceId === options?.docId ? undefined : options?.docId,
+        action: options?.action,
+      },
+    });
   }
 
   async listSessions(
-    userId: string,
+    userId: string | undefined,
     workspaceId: string,
     options?: { docId?: string; action?: boolean }
   ): Promise<string[]> {
+    // NOTE: only used for anonymous session in development
+    if (
+      !userId &&
+      AFFiNE.node.dev &&
+      AFFiNE.featureFlags.copilotAuthorization
+    ) {
+      return Array.from(this.unsavedSessions.keys());
+    }
+
     return await this.db.aiSession
       .findMany({
         where: {
@@ -258,14 +272,7 @@ export class ChatSessionService {
         },
         select: { id: true },
       })
-      .then(sessions => sessions.map(({ id }) => id))
-      // NOTE: only used for anonymous session in development
-      .then(ids => {
-        if (AFFiNE.node.dev && AFFiNE.featureFlags.copilotAuthorization) {
-          return ids.concat([...this.unsavedSessions.keys()]);
-        }
-        return ids;
-      });
+      .then(sessions => sessions.map(({ id }) => id));
   }
 
   async listHistories(

@@ -224,6 +224,7 @@ enum PublicPageMode {
 type Query {
   checkBlobSize(size: SafeInt!, workspaceId: String!): WorkspaceBlobSizes! @deprecated(reason: "no more needed")
   collectAllBlobSizes: WorkspaceBlobSizes! @deprecated(reason: "use `user.storageUsage` instead")
+  copilotAnonymous(workspaceId: String!): Copilot!
 
   """Get current user"""
   currentUser: UserType

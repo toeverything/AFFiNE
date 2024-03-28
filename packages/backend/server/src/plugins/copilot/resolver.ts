@@ -1,3 +1,4 @@
+import { ForbiddenException } from '@nestjs/common';
 import {
   Args,
   Field,
@@ -6,12 +7,13 @@ import {
   Mutation,
   ObjectType,
   Parent,
+  Query,
   registerEnumType,
   ResolveField,
   Resolver,
 } from '@nestjs/graphql';
 
-import { CurrentUser } from '../../core/auth';
+import { CurrentUser, Public } from '../../core/auth';
 import { QuotaService } from '../../core/quota';
 import { UserType } from '../../core/user';
 import { PermissionService } from '../../core/workspaces/permission';
@@ -108,9 +110,9 @@ export class CopilotResolver {
   })
   async chats(
     @Parent() copilot: CopilotType,
-    @CurrentUser() user: CurrentUser
+    @CurrentUser() user?: CurrentUser
   ) {
-    return await this.chatSession.listSessions(user.id, copilot.workspaceId);
+    return await this.chatSession.listSessions(user?.id, copilot.workspaceId);
   }
 
   @ResolveField(() => [String], {
@@ -119,9 +121,9 @@ export class CopilotResolver {
   })
   async actions(
     @Parent() copilot: CopilotType,
-    @CurrentUser() user: CurrentUser
+    @CurrentUser() user?: CurrentUser
   ) {
-    return await this.chatSession.listSessions(user.id, copilot.workspaceId, {
+    return await this.chatSession.listSessions(user?.id, copilot.workspaceId, {
       action: true,
     });
   }
@@ -129,7 +131,7 @@ export class CopilotResolver {
   @ResolveField(() => [CopilotHistoriesType], {})
   async histories(
     @Parent() copilot: CopilotType,
-    @CurrentUser() user: CurrentUser,
+    @CurrentUser() user?: CurrentUser,
     @Args('docId', { nullable: true }) docId?: string,
     @Args({
       name: 'options',
@@ -139,29 +141,44 @@ export class CopilotResolver {
     options?: QueryChatHistoriesInput
   ) {
     const workspaceId = copilot.workspaceId;
-    if (docId) {
-      await this.permissions.checkPagePermission(workspaceId, docId, user.id);
-    } else {
-      await this.permissions.checkWorkspace(workspaceId, user.id);
+    // todo(@darkskygit): remove this after the feature is stable
+    const publishable =
+      AFFiNE.node.dev && AFFiNE.featureFlags.copilotAuthorization;
+    if (user) {
+      if (docId) {
+        await this.permissions.checkPagePermission(workspaceId, docId, user.id);
+      } else {
+        await this.permissions.checkWorkspace(workspaceId, user.id);
+      }
+    } else if (!publishable) {
+      return new ForbiddenException('Login required');
     }
 
     return await this.chatSession.listHistories(workspaceId, docId, options);
   }
 
+  @Public()
   @Mutation(() => String, {
     description: 'Create a chat session',
   })
   async createCopilotSession(
-    @CurrentUser() user: CurrentUser,
+    @CurrentUser() user: CurrentUser | undefined,
     @Args({ name: 'options', type: () => CreateChatSessionInput })
     options: CreateChatSessionInput
   ) {
-    const lockFlag = `invite:${user.id}:${options.workspaceId}`;
+    // todo(@darkskygit): remove this after the feature is stable
+    const publishable =
+      AFFiNE.node.dev && AFFiNE.featureFlags.copilotAuthorization;
+    if (!user && !publishable) {
+      return new ForbiddenException('Login required');
+    }
+
+    const lockFlag = `invite:${user?.id}:${options.workspaceId}`;
     await using lock = await this.mutex.lock(lockFlag);
     if (!lock) {
       return new TooManyRequestsException('Server is busy');
     }
-    if (options.action) {
+    if (options.action && user) {
       const quota = await this.quota.getUserQuota(user.id);
       const actions = await this.chatSession.countSessions(
         user.id,
@@ -195,6 +212,13 @@ export class UserCopilotResolver {
     @Args('workspaceId') workspaceId: string
   ) {
     await this.permissions.checkWorkspace(workspaceId, user.id);
+    return { workspaceId };
+  }
+
+  @Public()
+  @Query(() => CopilotType)
+  async copilotAnonymous(@Args('workspaceId') workspaceId: string) {
+    if (!AFFiNE.featureFlags.copilotAuthorization) return;
     return { workspaceId };
   }
 }
