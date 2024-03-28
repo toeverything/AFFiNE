@@ -168,8 +168,22 @@ export class FavoriteItemsAdapter {
     this.getItems().filter(i => i.value)
   );
 
+  orderedFavorites$ = this.adapter.properties$.map(() => {
+    const seen = new Set<string>();
+    return this.sorter.getOrderedItems().filter(item => {
+      const key = FavoriteItemsAdapter.getFavItemKey(item.id, item.type);
+      if (seen.has(key) || !item.value) {
+        return null;
+      }
+      seen.add(key);
+      return item;
+    });
+  });
+
   getItems() {
-    return Object.values(this.adapter.favorites ?? {});
+    return Object.entries(this.adapter.favorites ?? {})
+      .filter(([k]) => k.includes(':'))
+      .map(([, v]) => v);
   }
 
   get favorites() {

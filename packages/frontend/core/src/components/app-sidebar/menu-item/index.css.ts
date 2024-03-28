@@ -40,13 +40,12 @@ export const root = style({
       paddingLeft: '4px',
       paddingRight: '4px',
     },
-    '&[data-type="collection-list-item"][data-collapsible="false"][data-active="true"],&[data-type="reference-page"][data-collapsible="false"][data-active="true"], &[data-type="reference-page"][data-collapsible="false"]:hover, &[data-type="collection-list-item"][data-collapsible="false"]:hover':
-      {
-        width: 'calc(100% + 8px)',
-        transform: 'translateX(-8px)',
-        paddingLeft: '20px',
-        paddingRight: '12px',
-      },
+    '&[data-collapsible="false"]:is([data-active="true"], :hover)': {
+      width: 'calc(100% + 8px)',
+      transform: 'translateX(-8px)',
+      paddingLeft: '20px',
+      paddingRight: '12px',
+    },
     [`${linkItemRoot}:first-of-type &`]: {
       marginTop: '0px',
     },
