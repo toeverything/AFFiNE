@@ -132,11 +132,7 @@ export class ChatSessionService {
   ) {}
 
   private async setSession(state: ChatSessionState): Promise<void> {
-    if (
-      !state.userId &&
-      AFFiNE.node.dev &&
-      AFFiNE.featureFlags.copilotAuthorization
-    ) {
+    if (!state.userId && AFFiNE.featureFlags.copilotAuthorization) {
       // todo(@darkskygit): allow anonymous session in development
       // remove this after the feature is stable
       this.unsavedSessions.set(state.sessionId, state);
@@ -176,8 +172,7 @@ export class ChatSessionService {
       })
       .then(async session => {
         if (!session) {
-          const publishable =
-            AFFiNE.node.dev && AFFiNE.featureFlags.copilotAuthorization;
+          const publishable = AFFiNE.featureFlags.copilotAuthorization;
           if (publishable) {
             // todo(@darkskygit): allow anonymous session in development
             // remove this after the feature is stable
@@ -243,11 +238,7 @@ export class ChatSessionService {
     options?: { docId?: string; action?: boolean }
   ): Promise<number> {
     // NOTE: only used for anonymous session in development
-    if (
-      !userId &&
-      AFFiNE.node.dev &&
-      AFFiNE.featureFlags.copilotAuthorization
-    ) {
+    if (!userId && AFFiNE.featureFlags.copilotAuthorization) {
       return this.unsavedSessions.size;
     }
     return await this.db.aiSession.count({
@@ -266,11 +257,7 @@ export class ChatSessionService {
     options?: { docId?: string; action?: boolean }
   ): Promise<string[]> {
     // NOTE: only used for anonymous session in development
-    if (
-      !userId &&
-      AFFiNE.node.dev &&
-      AFFiNE.featureFlags.copilotAuthorization
-    ) {
+    if (!userId && AFFiNE.featureFlags.copilotAuthorization) {
       return Array.from(this.unsavedSessions.keys());
     }
 
@@ -294,11 +281,7 @@ export class ChatSessionService {
     options?: ListHistoriesOptions
   ): Promise<ChatHistory[]> {
     // NOTE: only used for anonymous session in development
-    if (
-      !userId &&
-      AFFiNE.node.dev &&
-      AFFiNE.featureFlags.copilotAuthorization
-    ) {
+    if (!userId && AFFiNE.featureFlags.copilotAuthorization) {
       return [...this.unsavedSessions.values()]
         .map(state => {
           const ret = ChatMessageSchema.array().safeParse(state.messages);

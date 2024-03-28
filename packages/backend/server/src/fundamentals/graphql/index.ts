@@ -23,8 +23,7 @@ export type GraphqlContext = {
     GraphQLModule.forRootAsync<ApolloDriverConfig>({
       driver: ApolloDriver,
       useFactory: (config: Config) => {
-        const copilotAuthorization =
-          config.node.dev && config.featureFlags.copilotAuthorization;
+        const copilotAuthorization = config.featureFlags.copilotAuthorization;
         const cors = {
           cors: {
             origin: [

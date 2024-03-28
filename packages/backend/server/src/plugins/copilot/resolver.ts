@@ -145,8 +145,7 @@ export class CopilotResolver {
   ) {
     const workspaceId = copilot.workspaceId;
     // todo(@darkskygit): remove this after the feature is stable
-    const publishable =
-      AFFiNE.node.dev && AFFiNE.featureFlags.copilotAuthorization;
+    const publishable = AFFiNE.featureFlags.copilotAuthorization;
     if (user) {
       if (docId) {
         await this.permissions.checkPagePermission(workspaceId, docId, user.id);
@@ -175,8 +174,7 @@ export class CopilotResolver {
     options: CreateChatSessionInput
   ) {
     // todo(@darkskygit): remove this after the feature is stable
-    const publishable =
-      AFFiNE.node.dev && AFFiNE.featureFlags.copilotAuthorization;
+    const publishable = AFFiNE.featureFlags.copilotAuthorization;
     if (!user && !publishable) {
       return new ForbiddenException('Login required');
     }

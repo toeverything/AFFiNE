@@ -116,7 +116,7 @@ const createHelmCommand = ({ isDryRun }) => {
     `--set        graphql.app.experimental.enableJwstCodec=${namespace === 'dev'}`,
     `--set        graphql.app.features.earlyAccessPreview=false`,
     `--set        graphql.app.features.syncClientVersionCheck=true`,
-    `--set        graphql.app.features.copilotAuthorization=true`,
+    `--set        graphql.app.features.copilotAuthorization=${namespace === 'dev'}`,
     `--set        sync.replicaCount=${syncReplicaCount}`,
     `--set-string sync.image.tag="${imageTag}"`,
     ...serviceAnnotations,
