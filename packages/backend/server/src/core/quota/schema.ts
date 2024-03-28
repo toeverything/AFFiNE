@@ -120,8 +120,8 @@ export const Quotas: Quota[] = [
 ];
 
 export const Quota_FreePlanV1_1 = {
-  feature: Quotas[4].feature,
-  version: Quotas[4].version,
+  feature: Quotas[5].feature,
+  version: Quotas[5].version,
 };
 
 export const Quota_ProPlanV1 = {
