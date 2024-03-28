@@ -4,7 +4,6 @@ import '@affine/core/bootstrap/preload';
 import { appConfigProxy } from '@affine/core/hooks/use-app-config-storage';
 import { performanceLogger } from '@affine/core/shared';
 import { apis, events } from '@affine/electron-api';
-import { ResizeObserver } from '@juggle/resize-observer';
 import { init, replayIntegration, setTags } from '@sentry/electron/renderer';
 import {
   init as reactInit,
@@ -21,8 +20,6 @@ import {
 } from 'react-router-dom';
 
 import { App } from './app';
-
-window.ResizeObserver = ResizeObserver;
 
 const performanceMainLogger = performanceLogger.namespace('main');
 function main() {
