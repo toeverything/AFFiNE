@@ -5,9 +5,9 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Config } from '../../../fundamentals';
 import {
   CapabilityToCopilotProvider,
+  CopilotCapability,
   CopilotConfig,
   CopilotProvider,
-  CopilotProviderCapability,
   CopilotProviderType,
 } from '../types';
 
@@ -19,7 +19,7 @@ interface CopilotProviderDefinition<C extends CopilotProviderConfig> {
   // type of the provider
   readonly type: CopilotProviderType;
   // capabilities of the provider, like text to text, text to image, etc.
-  readonly capabilities: CopilotProviderCapability[];
+  readonly capabilities: CopilotCapability[];
   // asserts that the config is valid for this provider
   assetsConfig(config: C): boolean;
 }
@@ -32,7 +32,7 @@ const COPILOT_PROVIDER = new Map<
 
 // map of capabilities to providers
 const PROVIDER_CAPABILITY_MAP = new Map<
-  CopilotProviderCapability,
+  CopilotCapability,
   CopilotProviderType[]
 >();
 
@@ -116,7 +116,7 @@ export class ProviderService {
     return this.cachedProviders.get(provider)!;
   }
 
-  getProviderByCapability<C extends CopilotProviderCapability>(
+  getProviderByCapability<C extends CopilotCapability>(
     capability: C,
     prefer?: CopilotProviderType
   ): CapabilityToCopilotProvider[C] | null {
@@ -133,3 +133,5 @@ export class ProviderService {
     return null;
   }
 }
+
+export { OpenAIProvider } from './openai';

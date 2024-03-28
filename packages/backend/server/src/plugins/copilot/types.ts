@@ -13,7 +13,7 @@ export enum CopilotProviderType {
   OpenAI = 'openai',
 }
 
-export enum CopilotProviderCapability {
+export enum CopilotCapability {
   TextToText = 'text-to-text',
   TextToEmbedding = 'text-to-embedding',
   TextToImage = 'text-to-image',
@@ -21,7 +21,7 @@ export enum CopilotProviderCapability {
 }
 
 export interface CopilotProvider {
-  getCapabilities(): CopilotProviderCapability[];
+  getCapabilities(): CopilotCapability[];
 }
 
 export const ChatMessageRole = ['system', 'assistant', 'user'] as const;
@@ -36,22 +36,47 @@ export const ChatMessageSchema = z
 export type ChatMessage = z.infer<typeof ChatMessageSchema>;
 
 export interface CopilotTextToTextProvider extends CopilotProvider {
-  generateText(messages: ChatMessage[], model: string): Promise<string>;
+  generateText(
+    messages: ChatMessage[],
+    model: string,
+    options: {
+      temperature?: number;
+      maxTokens?: number;
+      signal?: AbortSignal;
+      user?: string;
+    }
+  ): Promise<string>;
   generateTextStream(
     messages: ChatMessage[],
-    model: string
+    model: string,
+    options: {
+      temperature?: number;
+      maxTokens?: number;
+      signal?: AbortSignal;
+      user?: string;
+    }
   ): AsyncIterable<string>;
 }
 
-export interface CopilotTextToEmbeddingProvider extends CopilotProvider {}
+export interface CopilotTextToEmbeddingProvider extends CopilotProvider {
+  generateEmbedding(
+    messages: string[] | string,
+    model: string,
+    options: {
+      dimensions: number;
+      signal?: AbortSignal;
+      user?: string;
+    }
+  ): Promise<number[][]>;
+}
 
 export interface CopilotTextToImageProvider extends CopilotProvider {}
 
 export interface CopilotImageToImageProvider extends CopilotProvider {}
 
 export type CapabilityToCopilotProvider = {
-  [CopilotProviderCapability.TextToText]: CopilotTextToTextProvider;
-  [CopilotProviderCapability.TextToEmbedding]: CopilotTextToEmbeddingProvider;
-  [CopilotProviderCapability.TextToImage]: CopilotTextToImageProvider;
-  [CopilotProviderCapability.ImageToImage]: CopilotImageToImageProvider;
+  [CopilotCapability.TextToText]: CopilotTextToTextProvider;
+  [CopilotCapability.TextToEmbedding]: CopilotTextToEmbeddingProvider;
+  [CopilotCapability.TextToImage]: CopilotTextToImageProvider;
+  [CopilotCapability.ImageToImage]: CopilotImageToImageProvider;
 };
