@@ -150,6 +150,13 @@ spec:
                 name: "{{ .Values.app.captcha.secretName }}"
                 key: turnstileSecret
           {{ end }}
+          {{ if .Values.app.copilot.enabled }}
+          - name: COPILOT_OPENAI_API_KEY
+            valueFrom:
+              secretKeyRef:
+                name: "{{ .Values.app.copilot.secretName }}"
+                key: openaiSecret
+          {{ end }}
           {{ if .Values.app.oauth.google.enabled }}
           - name: OAUTH_GOOGLE_ENABLED
             value: "true"
