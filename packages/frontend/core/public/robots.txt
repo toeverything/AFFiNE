@@ -2,6 +2,8 @@ User-agent: *
 Allow: /
 Disallow: /oauth/
 Disallow: /workspace/
+Disallow: /public-workspace/
+
 Disallow: /*/invite/
 Disallow: /api/*
 
