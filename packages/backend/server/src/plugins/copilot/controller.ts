@@ -59,7 +59,7 @@ export class CopilotController {
     session.push({
       role: 'user',
       content: decodeURIComponent(content),
-      createdAt: Date.now(),
+      createdAt: new Date(),
     });
 
     try {
@@ -75,7 +75,7 @@ export class CopilotController {
       session.push({
         role: 'assistant',
         content,
-        createdAt: Date.now(),
+        createdAt: new Date(),
       });
       await session.save();
 
@@ -108,7 +108,7 @@ export class CopilotController {
     session.push({
       role: 'user',
       content: decodeURIComponent(content),
-      createdAt: Date.now(),
+      createdAt: new Date(),
     });
 
     return from(
@@ -128,7 +128,7 @@ export class CopilotController {
               session.push({
                 role: 'assistant',
                 content: values.join(''),
-                createdAt: Date.now(),
+                createdAt: new Date(),
               });
               return from(session.save());
             }),

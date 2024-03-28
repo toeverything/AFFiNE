@@ -277,13 +277,31 @@ export class ChatSessionService {
   }
 
   async listHistories(
+    userId: string | undefined,
     workspaceId: string,
     docId?: string,
     options?: ListHistoriesOptions
   ): Promise<ChatHistory[]> {
+    // NOTE: only used for anonymous session in development
+    if (
+      !userId &&
+      AFFiNE.node.dev &&
+      AFFiNE.featureFlags.copilotAuthorization
+    ) {
+      return [...this.unsavedSessions.values()].map(state => {
+        const tokens = this.calculateTokenSize(state.messages, state.model);
+        return {
+          sessionId: state.sessionId,
+          tokens,
+          messages: state.messages,
+        };
+      });
+    }
+
     return await this.db.aiSession
       .findMany({
         where: {
+          userId,
           workspaceId: workspaceId,
           docId: workspaceId === docId ? undefined : docId,
           action: options?.action,
@@ -312,21 +330,6 @@ export class ChatSessionService {
             }
           })
           .filter((v): v is NonNullable<typeof v> => !!v);
-      })
-      // NOTE: only used for anonymous session in development
-      .then(histories => {
-        if (AFFiNE.node.dev && AFFiNE.featureFlags.copilotAuthorization) {
-          const unsaved = [...this.unsavedSessions.values()].map(state => {
-            const tokens = this.calculateTokenSize(state.messages, state.model);
-            return {
-              sessionId: state.sessionId,
-              tokens,
-              messages: state.messages,
-            };
-          });
-          return histories.concat(unsaved);
-        }
-        return histories;
       });
   }
 

@@ -49,7 +49,7 @@ export const PromptMessageSchema = z.object({
 export type PromptMessage = z.infer<typeof PromptMessageSchema>;
 
 export const ChatMessageSchema = PromptMessageSchema.extend({
-  createdAt: z.number(),
+  createdAt: z.date(),
 }).strict();
 
 export type ChatMessage = z.infer<typeof ChatMessageSchema>;

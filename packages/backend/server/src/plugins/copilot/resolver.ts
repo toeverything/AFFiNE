@@ -82,8 +82,8 @@ class ChatMessageType implements Partial<ChatMessage> {
   @Field(() => [String], { nullable: true })
   attachments!: string[];
 
-  @Field(() => Number)
-  createdAt!: number;
+  @Field(() => Date)
+  createdAt!: Date;
 }
 
 @ObjectType('CopilotHistories')
@@ -157,7 +157,12 @@ export class CopilotResolver {
       return new ForbiddenException('Login required');
     }
 
-    return await this.chatSession.listHistories(workspaceId, docId, options);
+    return await this.chatSession.listHistories(
+      user?.id,
+      workspaceId,
+      docId,
+      options
+    );
   }
 
   @Public()
