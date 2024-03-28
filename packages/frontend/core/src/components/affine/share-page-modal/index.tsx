@@ -22,7 +22,11 @@ export const SharePageButton = ({
       isJournal={isJournal}
       workspaceMetadata={workspace.meta}
       currentPage={page}
-      onEnableAffineCloud={() => confirmEnableCloud(workspace)}
+      onEnableAffineCloud={() =>
+        confirmEnableCloud(workspace, {
+          openPageId: page.id,
+        })
+      }
     />
   );
 };
