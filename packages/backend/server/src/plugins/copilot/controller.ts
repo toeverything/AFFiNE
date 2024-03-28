@@ -56,6 +56,9 @@ export class CopilotController {
     if (!session) {
       throw new BadRequestException('Session not found');
     }
+    if (!content || !content.trim()) {
+      throw new BadRequestException('Message is empty');
+    }
     session.push({
       role: 'user',
       content: decodeURIComponent(content),
@@ -104,6 +107,9 @@ export class CopilotController {
     const session = await this.chatSession.get(sessionId);
     if (!session) {
       throw new BadRequestException('Session not found');
+    }
+    if (!content || !content.trim()) {
+      throw new BadRequestException('Message is empty');
     }
     session.push({
       role: 'user',
