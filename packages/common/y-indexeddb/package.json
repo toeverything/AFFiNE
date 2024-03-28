@@ -42,7 +42,7 @@
     "@blocksuite/store": "0.14.0-canary-202403250855-4171ecd",
     "fake-indexeddb": "^5.0.2",
     "vite": "^5.1.4",
-    "vite-plugin-dts": "3.7.3",
+    "vite-plugin-dts": "3.8.1",
     "vitest": "1.4.0",
     "y-indexeddb": "^9.0.12",
     "yjs": "^13.6.12"
