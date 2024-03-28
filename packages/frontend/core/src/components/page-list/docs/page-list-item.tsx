@@ -6,6 +6,7 @@ import type { PropsWithChildren } from 'react';
 import { useCallback, useMemo } from 'react';
 
 import { WorkbenchLink } from '../../../modules/workbench/view/workbench-link';
+import { selectionStateAtom, useAtom } from '../scoped-atoms';
 import type { DraggableTitleCellData, PageListItemProps } from '../types';
 import { usePageDisplayProperties } from '../use-page-display-properties';
 import { ColWrapper, formatDate, stopPropagation } from '../utils';
@@ -237,14 +238,22 @@ function PageListItemWrapper({
   children,
   draggable,
 }: PageListWrapperProps) {
+  const [selectionState, setSelectionActive] = useAtom(selectionStateAtom);
   const handleClick = useCallback(
     (e: React.MouseEvent) => {
-      if (onClick) {
-        stopPropagation(e);
-        onClick();
+      if (!selectionState.selectable) {
+        return false;
       }
+      stopPropagation(e);
+      if (e.shiftKey) {
+        setSelectionActive(true);
+        onClick?.();
+        return true;
+      }
+      onClick?.();
+      return false;
     },
-    [onClick]
+    [onClick, selectionState.selectable, setSelectionActive]
   );
 
   const commonProps = useMemo(
@@ -255,7 +264,7 @@ function PageListItemWrapper({
       className: styles.root,
       'data-clickable': !!onClick || !!to,
       'data-dragging': isDragging,
-      onClick: handleClick,
+      onClick: onClick ? handleClick : undefined,
     }),
     [pageId, draggable, onClick, to, isDragging, handleClick]
   );

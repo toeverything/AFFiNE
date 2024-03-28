@@ -329,7 +329,7 @@ function pageMetaToListItemProp(
     createDate: new Date(item.createDate),
     updatedDate: item.updatedDate ? new Date(item.updatedDate) : undefined,
     to: props.rowAsLink && !props.selectable ? `/${item.id}` : undefined,
-    onClick: props.selectable ? toggleSelection : undefined,
+    onClick: toggleSelection,
     icon: (
       <UnifiedPageIcon
         id={item.id}
@@ -378,7 +378,7 @@ function collectionMetaToListItemProp(
       props.rowAsLink && !props.selectable
         ? `/collection/${item.id}`
         : undefined,
-    onClick: props.selectable ? toggleSelection : undefined,
+    onClick: toggleSelection,
     icon: <ViewLayersIcon />,
     operations: props.operationsRenderer?.(item),
     selectable: props.selectable,
@@ -412,7 +412,7 @@ function tagMetaToListItemProp(
     tagId: item.id,
     title: item.title,
     to: props.rowAsLink && !props.selectable ? `/tag/${item.id}` : undefined,
-    onClick: props.selectable ? toggleSelection : undefined,
+    onClick: toggleSelection,
     color: item.color,
     pageCount: item.pageCount,
     operations: props.operationsRenderer?.(item),

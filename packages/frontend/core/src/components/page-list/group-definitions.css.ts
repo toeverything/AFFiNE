@@ -25,6 +25,7 @@ export const pageCount = style({
   fontSize: cssVar('fontBase'),
   lineHeight: '1.6em',
   color: cssVar('textSecondaryColor'),
+  marginRight: '12px',
 });
 
 export const favouritedIcon = style({

@@ -20,6 +20,9 @@ export const WorkbenchLink = ({
     (event: React.MouseEvent<HTMLAnchorElement>) => {
       event.preventDefault();
       event.stopPropagation();
+      if (onClick?.(event)) {
+        return;
+      }
 
       if (event.ctrlKey || event.metaKey) {
         if (appSettings.enableMultiView && environment.isDesktop) {
@@ -34,7 +37,6 @@ export const WorkbenchLink = ({
       } else {
         workbench.open(to);
       }
-      onClick?.(event);
     },
     [appSettings.enableMultiView, basename, onClick, to, workbench]
   );

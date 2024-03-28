@@ -5,6 +5,7 @@ import type { PropsWithChildren } from 'react';
 import { useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 
+import { selectionStateAtom, useAtom } from '../scoped-atoms';
 import type {
   CollectionListItemProps,
   DraggableTitleCellData,
@@ -172,14 +173,28 @@ function CollectionListItemWrapper({
   children,
   draggable,
 }: collectionListWrapperProps) {
+  const [selectionState, setSelectionActive] = useAtom(selectionStateAtom);
   const handleClick = useCallback(
     (e: React.MouseEvent) => {
-      if (onClick) {
+      if (!selectionState.selectable) {
+        return;
+      }
+      if (e.shiftKey) {
         stopPropagation(e);
-        onClick();
+        setSelectionActive(true);
+        onClick?.();
+        return;
+      }
+      if (selectionState.selectionActive) {
+        return onClick?.();
       }
     },
-    [onClick]
+    [
+      onClick,
+      selectionState.selectable,
+      selectionState.selectionActive,
+      setSelectionActive,
+    ]
   );
 
   const commonProps = useMemo(

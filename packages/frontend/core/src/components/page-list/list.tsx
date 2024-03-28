@@ -67,6 +67,7 @@ const useItemSelectionStateEffect = () => {
           return;
         }
         setSelectionActive(false);
+        selectionState.onSelectedIdsChange?.([]);
       };
 
       const escHandler = (e: KeyboardEvent) => {
@@ -75,6 +76,7 @@ const useItemSelectionStateEffect = () => {
         }
         if (e.key === 'Escape') {
           setSelectionActive(false);
+          selectionState.onSelectedIdsChange?.([]);
         }
       };
 
@@ -88,6 +90,7 @@ const useItemSelectionStateEffect = () => {
     }
     return;
   }, [
+    selectionState,
     selectionState.selectable,
     selectionState.selectionActive,
     setSelectionActive,
