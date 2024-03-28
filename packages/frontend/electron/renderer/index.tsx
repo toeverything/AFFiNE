@@ -1,13 +1,28 @@
 import './polyfill/dispose';
-// Side effect import, "declare global"
-import '@affine/env/constant';
+import '@affine/core/bootstrap/preload';
 
-import { setup } from '@affine/core/bootstrap/setup';
+import { appConfigProxy } from '@affine/core/hooks/use-app-config-storage';
 import { performanceLogger } from '@affine/core/shared';
-import { StrictMode } from 'react';
+import { apis, events } from '@affine/electron-api';
+import { ResizeObserver } from '@juggle/resize-observer';
+import { init, replayIntegration, setTags } from '@sentry/electron/renderer';
+import {
+  init as reactInit,
+  reactRouterV6BrowserTracingIntegration,
+} from '@sentry/react';
+import { debounce } from 'lodash-es';
+import { StrictMode, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
+import {
+  createRoutesFromChildren,
+  matchRoutes,
+  useLocation,
+  useNavigationType,
+} from 'react-router-dom';
 
 import { App } from './app';
+
+window.ResizeObserver = ResizeObserver;
 
 const performanceMainLogger = performanceLogger.namespace('main');
 function main() {
@@ -18,7 +33,56 @@ function main() {
     performanceMainLogger.info('skip setup');
   } else {
     performanceMainLogger.info('setup start');
-    setup();
+    if (window.SENTRY_RELEASE || environment.isDebug) {
+      // https://docs.sentry.io/platforms/javascript/guides/electron/
+      init(
+        {
+          dsn: process.env.SENTRY_DSN,
+          environment: process.env.BUILD_TYPE ?? 'development',
+          integrations: [
+            reactRouterV6BrowserTracingIntegration({
+              useEffect,
+              useLocation,
+              useNavigationType,
+              createRoutesFromChildren,
+              matchRoutes,
+            }),
+            replayIntegration(),
+          ],
+        },
+        reactInit
+      );
+      setTags({
+        appVersion: runtimeConfig.appVersion,
+        editorVersion: runtimeConfig.editorVersion,
+      });
+      window.addEventListener('offline', () => {
+        apis?.ui.handleNetworkChange(false);
+      });
+      window.addEventListener('online', () => {
+        apis?.ui.handleNetworkChange(true);
+      });
+    }
+    // load persistent config for electron
+    // TODO: should be sync, but it's not necessary for now
+    appConfigProxy
+      .getSync()
+      .catch(() => console.error('failed to load app config'));
+    const handleMaximized = (maximized: boolean | undefined) => {
+      document.documentElement.dataset.maximized = String(maximized);
+    };
+    const handleFullscreen = (fullscreen: boolean | undefined) => {
+      document.documentElement.dataset.fullscreen = String(fullscreen);
+    };
+    apis?.ui.isMaximized().then(handleMaximized).catch(console.error);
+    apis?.ui.isFullScreen().then(handleFullscreen).catch(console.error);
+    events?.ui.onMaximized(handleMaximized);
+    events?.ui.onFullScreen(handleFullscreen);
+
+    const handleResize = debounce(() => {
+      apis?.ui.handleWindowResize().catch(console.error);
+    }, 50);
+    window.addEventListener('resize', handleResize);
     performanceMainLogger.info('setup done');
   }
 

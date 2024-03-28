@@ -2,6 +2,7 @@ import './security-restrictions';
 
 import path from 'node:path';
 
+import { init, IPCMode } from '@sentry/electron/main';
 import { app } from 'electron';
 
 import { createApplicationMenu } from './application-menu/create';
@@ -12,6 +13,7 @@ import { registerEvents } from './events';
 import { registerHandlers } from './handlers';
 import { logger } from './logger';
 import { registerProtocol } from './protocol';
+import { isOnline } from './ui/handlers';
 import { registerUpdater } from './updater';
 import { launch } from './windows-manager/launcher';
 import { launchStage } from './windows-manager/stage';
@@ -63,6 +65,19 @@ app.on('activate', () => {
 });
 
 setupDeepLink(app);
+
+// https://docs.sentry.io/platforms/javascript/guides/electron/
+if (process.env.SENTRY_DSN) {
+  init({
+    dsn: process.env.SENTRY_DSN,
+    ipcMode: IPCMode.Protocol,
+    transportOptions: {
+      maxQueueAgeDays: 30,
+      maxQueueCount: 100,
+      beforeSend: () => (isOnline ? 'send' : 'queue'),
+    },
+  });
+}
 
 /**
  * Create app window when background process will be ready

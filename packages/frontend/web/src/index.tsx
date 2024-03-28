@@ -2,12 +2,24 @@ import './polyfill/dispose';
 import './polyfill/intl-segmenter';
 import './polyfill/request-idle-callback';
 import './polyfill/resize-observer';
+import '@affine/core/bootstrap/preload';
 
-import { setup } from '@affine/core/bootstrap/setup';
 import { performanceLogger } from '@affine/core/shared';
 import { isDesktop } from '@affine/env/constant';
-import { StrictMode } from 'react';
+import {
+  init,
+  reactRouterV6BrowserTracingIntegration,
+  replayIntegration,
+  setTags,
+} from '@sentry/react';
+import { StrictMode, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
+import {
+  createRoutesFromChildren,
+  matchRoutes,
+  useLocation,
+  useNavigationType,
+} from 'react-router-dom';
 
 import { App } from './app';
 
@@ -20,7 +32,27 @@ function main() {
     performanceMainLogger.info('skip setup');
   } else {
     performanceMainLogger.info('setup start');
-    setup();
+    if (window.SENTRY_RELEASE || environment.isDebug) {
+      // https://docs.sentry.io/platforms/javascript/guides/react/#configure
+      init({
+        dsn: process.env.SENTRY_DSN,
+        environment: process.env.BUILD_TYPE ?? 'development',
+        integrations: [
+          reactRouterV6BrowserTracingIntegration({
+            useEffect,
+            useLocation,
+            useNavigationType,
+            createRoutesFromChildren,
+            matchRoutes,
+          }),
+          replayIntegration(),
+        ],
+      });
+      setTags({
+        appVersion: runtimeConfig.appVersion,
+        editorVersion: runtimeConfig.editorVersion,
+      });
+    }
     performanceMainLogger.info('setup done');
   }
 

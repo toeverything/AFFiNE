@@ -14,6 +14,7 @@
     "@affine/core": "workspace:*",
     "@affine/env": "workspace:*",
     "@juggle/resize-observer": "^3.4.0",
+    "@sentry/react": "^7.108.0",
     "core-js": "^3.36.1",
     "intl-segmenter-polyfill-rs": "^0.1.7",
     "jotai": "^2.7.1",

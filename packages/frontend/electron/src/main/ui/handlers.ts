@@ -15,6 +15,8 @@ import { launchStage } from '../windows-manager/stage';
 import { getChallengeResponse } from './challenge';
 import { getGoogleOauthCode } from './google-auth';
 
+export let isOnline = true;
+
 export const uiHandlers = {
   isMaximized: async () => {
     const window = await getMainWindow();
@@ -57,6 +59,9 @@ export const uiHandlers = {
   },
   handleCloseApp: async () => {
     app.quit();
+  },
+  handleNetworkChange: async (_, _isOnline: boolean) => {
+    isOnline = _isOnline;
   },
   getGoogleOauthCode: async () => {
     return getGoogleOauthCode();
