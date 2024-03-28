@@ -1,10 +1,9 @@
 import { FavoriteTag } from '@affine/core/components/page-list';
-import { useBlockSuiteMetaHelper } from '@affine/core/hooks/affine/use-block-suite-meta-helper';
-import { useBlockSuiteDocMeta } from '@affine/core/hooks/use-block-suite-page-meta';
+import { FavoriteItemsAdapter } from '@affine/core/modules/workspace';
 import { toast } from '@affine/core/utils';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
-import { useService, Workspace } from '@toeverything/infra';
+import { useLiveData, useService, Workspace } from '@toeverything/infra';
 import { useCallback } from 'react';
 
 export interface FavoriteButtonProps {
@@ -16,24 +15,19 @@ export const useFavorite = (pageId: string) => {
   const workspace = useService(Workspace);
   const docCollection = workspace.docCollection;
   const currentPage = docCollection.getDoc(pageId);
+  const favAdapter = useService(FavoriteItemsAdapter);
   assertExists(currentPage);
 
-  const pageMeta = useBlockSuiteDocMeta(docCollection).find(
-    meta => meta.id === pageId
-  );
-  const favorite = pageMeta?.favorite ?? false;
-
-  const { toggleFavorite: _toggleFavorite } =
-    useBlockSuiteMetaHelper(docCollection);
+  const favorite = useLiveData(favAdapter.isFavorite$(pageId, 'doc'));
 
   const toggleFavorite = useCallback(() => {
-    _toggleFavorite(pageId);
+    favAdapter.toggle(pageId, 'doc');
     toast(
       favorite
         ? t['com.affine.toastMessage.removedFavorites']()
         : t['com.affine.toastMessage.addedFavorites']()
     );
-  }, [favorite, pageId, t, _toggleFavorite]);
+  }, [favorite, pageId, t, favAdapter]);
 
   return { favorite, toggleFavorite };
 };

@@ -1,10 +1,8 @@
 import { toast } from '@affine/component';
-import { useBlockSuiteMetaHelper } from '@affine/core/hooks/affine/use-block-suite-meta-helper';
 import { useTrashModalHelper } from '@affine/core/hooks/affine/use-trash-modal-helper';
 import { useBlockSuiteDocMeta } from '@affine/core/hooks/use-block-suite-page-meta';
 import { CollectionService } from '@affine/core/modules/collection';
 import type { Tag } from '@affine/core/modules/tag';
-import { Workbench } from '@affine/core/modules/workbench';
 import type { Collection, Filter } from '@affine/env/filter';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
@@ -30,13 +28,7 @@ import {
 } from './page-list-header';
 
 const usePageOperationsRenderer = () => {
-  const currentWorkspace = useService(Workspace);
-  const { setTrashModal } = useTrashModalHelper(currentWorkspace.docCollection);
-  const { toggleFavorite, duplicate } = useBlockSuiteMetaHelper(
-    currentWorkspace.docCollection
-  );
   const t = useAFFiNEI18N();
-  const workbench = useService(Workbench);
   const collectionService = useService(CollectionService);
   const removeFromAllowList = useCallback(
     (id: string) => {
@@ -45,57 +37,18 @@ const usePageOperationsRenderer = () => {
     },
     [collectionService, t]
   );
-
   const pageOperationsRenderer = useCallback(
     (page: DocMeta, isInAllowList?: boolean) => {
-      const onDisablePublicSharing = () => {
-        toast('Successfully disabled', {
-          portal: document.body,
-        });
-      };
-
       return (
         <PageOperationCell
-          favorite={!!page.favorite}
-          isPublic={!!page.isPublic}
+          page={page}
           isInAllowList={isInAllowList}
-          onDisablePublicSharing={onDisablePublicSharing}
-          link={`/workspace/${currentWorkspace.id}/${page.id}`}
-          onOpenInSplitView={() => workbench.openPage(page.id, { at: 'tail' })}
-          onDuplicate={() => {
-            duplicate(page.id, false);
-          }}
-          onRemoveToTrash={() =>
-            setTrashModal({
-              open: true,
-              pageIds: [page.id],
-              pageTitles: [page.title],
-            })
-          }
-          onToggleFavoritePage={() => {
-            const status = page.favorite;
-            toggleFavorite(page.id);
-            toast(
-              status
-                ? t['com.affine.toastMessage.removedFavorites']()
-                : t['com.affine.toastMessage.addedFavorites']()
-            );
-          }}
           onRemoveFromAllowList={() => removeFromAllowList(page.id)}
         />
       );
     },
-    [
-      currentWorkspace.id,
-      workbench,
-      duplicate,
-      setTrashModal,
-      toggleFavorite,
-      t,
-      removeFromAllowList,
-    ]
+    [removeFromAllowList]
   );
-
   return pageOperationsRenderer;
 };
 

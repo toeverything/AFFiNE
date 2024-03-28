@@ -4,9 +4,14 @@ import {
   Menu,
   MenuIcon,
   MenuItem,
+  toast,
   Tooltip,
 } from '@affine/component';
 import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
+import { useBlockSuiteMetaHelper } from '@affine/core/hooks/affine/use-block-suite-meta-helper';
+import { useTrashModalHelper } from '@affine/core/hooks/affine/use-trash-modal-helper';
+import { Workbench } from '@affine/core/modules/workbench';
+import { FavoriteItemsAdapter } from '@affine/core/modules/workspace';
 import type { Collection, DeleteCollectionInfo } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
@@ -23,6 +28,8 @@ import {
   ResetIcon,
   SplitViewIcon,
 } from '@blocksuite/icons';
+import type { DocMeta } from '@blocksuite/store';
+import { useLiveData, useService, Workspace } from '@toeverything/infra';
 import { useCallback, useState } from 'react';
 import { Link } from 'react-router-dom';
 
@@ -37,37 +44,61 @@ import type { AllPageListConfig } from './view';
 import { useEditCollection, useEditCollectionName } from './view';
 
 export interface PageOperationCellProps {
-  favorite: boolean;
-  isPublic: boolean;
-  link: string;
+  page: DocMeta;
   isInAllowList?: boolean;
-  onToggleFavoritePage: () => void;
-  onRemoveToTrash: () => void;
-  onDuplicate: () => void;
-  onDisablePublicSharing: () => void;
-  onOpenInSplitView: () => void;
   onRemoveFromAllowList?: () => void;
 }
 
 export const PageOperationCell = ({
-  favorite,
-  isPublic,
   isInAllowList,
-  link,
-  onToggleFavoritePage,
-  onRemoveToTrash,
-  onDuplicate,
-  onDisablePublicSharing,
-  onOpenInSplitView,
+  page,
   onRemoveFromAllowList,
 }: PageOperationCellProps) => {
   const t = useAFFiNEI18N();
+  const currentWorkspace = useService(Workspace);
   const { appSettings } = useAppSettingHelper();
+  const { setTrashModal } = useTrashModalHelper(currentWorkspace.docCollection);
   const [openDisableShared, setOpenDisableShared] = useState(false);
+  const favAdapter = useService(FavoriteItemsAdapter);
+  const favourite = useLiveData(favAdapter.isFavorite$(page.id, 'doc'));
+  const workbench = useService(Workbench);
+  const { duplicate } = useBlockSuiteMetaHelper(currentWorkspace.docCollection);
+
+  const onDisablePublicSharing = useCallback(() => {
+    toast('Successfully disabled', {
+      portal: document.body,
+    });
+  }, []);
+
+  const onRemoveToTrash = useCallback(() => {
+    setTrashModal({
+      open: true,
+      pageIds: [page.id],
+      pageTitles: [page.title],
+    });
+  }, [page.id, page.title, setTrashModal]);
+
+  const onOpenInSplitView = useCallback(() => {
+    workbench.openPage(page.id, { at: 'tail' });
+  }, [page.id, workbench]);
+
+  const onToggleFavoritePage = useCallback(() => {
+    const status = favAdapter.isFavorite(page.id, 'doc');
+    favAdapter.toggle(page.id, 'doc');
+    toast(
+      status
+        ? t['com.affine.toastMessage.removedFavorites']()
+        : t['com.affine.toastMessage.addedFavorites']()
+    );
+  }, [page.id, favAdapter, t]);
+
+  const onDuplicate = useCallback(() => {
+    duplicate(page.id, false);
+  }, [duplicate, page.id]);
 
   const OperationMenu = (
     <>
-      {isPublic && (
+      {page.isPublic && (
         <DisablePublicSharing
           data-testid="disable-public-sharing"
           onSelect={() => {
@@ -91,7 +122,7 @@ export const PageOperationCell = ({
         onClick={onToggleFavoritePage}
         preFix={
           <MenuIcon>
-            {favorite ? (
+            {favourite ? (
               <FavoritedIcon style={{ color: 'var(--affine-primary-color)' }} />
             ) : (
               <FavoriteIcon />
@@ -99,7 +130,7 @@ export const PageOperationCell = ({
           </MenuIcon>
         }
       >
-        {favorite
+        {favourite
           ? t['com.affine.favoritePageOperation.remove']()
           : t['com.affine.favoritePageOperation.add']()}
       </MenuItem>
@@ -121,7 +152,7 @@ export const PageOperationCell = ({
         <Link
           className={styles.clearLinkStyle}
           onClick={stopPropagationWithoutPrevent}
-          to={link}
+          to={`/workspace/${currentWorkspace.id}/${page.id}`}
           target={'_blank'}
           rel="noopener noreferrer"
         >
@@ -157,10 +188,10 @@ export const PageOperationCell = ({
       <ColWrapper
         hideInSmallContainer
         data-testid="page-list-item-favorite"
-        data-favorite={favorite ? true : undefined}
+        data-favorite={favourite ? true : undefined}
         className={styles.favoriteCell}
       >
-        <FavoriteTag onClick={onToggleFavoritePage} active={favorite} />
+        <FavoriteTag onClick={onToggleFavoritePage} active={favourite} />
       </ColWrapper>
       <ColWrapper alignment="start">
         <Menu
