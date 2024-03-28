@@ -1,4 +1,5 @@
 import type { ClientOptions as OpenAIClientOptions } from 'openai';
+import { z } from 'zod';
 
 export interface CopilotConfig {
   openai: OpenAIClientOptions;
@@ -25,10 +26,14 @@ export interface CopilotProvider {
 
 export const ChatMessageRole = ['system', 'assistant', 'user'] as const;
 
-export type ChatMessage = {
-  role: (typeof ChatMessageRole)[number];
-  content: string;
-};
+export const ChatMessageSchema = z
+  .object({
+    role: z.enum(ChatMessageRole),
+    content: z.string(),
+  })
+  .strict();
+
+export type ChatMessage = z.infer<typeof ChatMessageSchema>;
 
 export interface CopilotTextToTextProvider extends CopilotProvider {
   generateText(messages: ChatMessage[], model: string): Promise<string>;

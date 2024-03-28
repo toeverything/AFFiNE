@@ -87,8 +87,8 @@ export function assertProvidersConfigs(config: Config) {
 }
 
 @Injectable()
-export class CopilotProviderService {
-  private readonly logger = new Logger(CopilotProviderService.name);
+export class ProviderService {
+  private readonly logger = new Logger(ProviderService.name);
   constructor(private readonly config: Config) {}
 
   private readonly cachedProviders = new Map<

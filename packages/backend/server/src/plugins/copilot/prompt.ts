@@ -4,7 +4,7 @@ import { PrismaClient } from '@prisma/client';
 import { ChatMessage } from './types';
 
 @Injectable()
-export class CopilotPromptService {
+export class PromptService {
   constructor(private readonly db: PrismaClient) {}
 
   // list prompt names
@@ -34,6 +34,17 @@ export class CopilotPromptService {
       if (await tx.aiPrompt.findUnique({ where: { name } })) {
         return 0;
       }
+      return tx.aiPrompt
+        .createMany({
+          data: messages.map((m, idx) => ({ name, idx, ...m })),
+        })
+        .then(ret => ret.count);
+    });
+  }
+
+  async update(name: string, messages: ChatMessage[]) {
+    return this.db.$transaction(async tx => {
+      await tx.aiPrompt.deleteMany({ where: { name } });
       return tx.aiPrompt
         .createMany({
           data: messages.map((m, idx) => ({ name, idx, ...m })),

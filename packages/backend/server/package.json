@@ -87,6 +87,7 @@
     "semver": "^7.6.0",
     "socket.io": "^4.7.4",
     "stripe": "^14.18.0",
+    "tiktoken": "^1.0.13",
     "ts-node": "^10.9.2",
     "typescript": "^5.3.3",
     "ws": "^8.16.0",

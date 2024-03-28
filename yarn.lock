@@ -731,6 +731,7 @@ __metadata:
     socket.io: "npm:^4.7.4"
     stripe: "npm:^14.18.0"
     supertest: "npm:^6.3.4"
+    tiktoken: "npm:^1.0.13"
     ts-node: "npm:^10.9.2"
     typescript: "npm:^5.3.3"
     ws: "npm:^8.16.0"
@@ -33760,6 +33761,13 @@ __metadata:
   version: 1.1.0
   resolution: "thunky@npm:1.1.0"
   checksum: 10/825e3bd07ab3c9fd6f753c457a60957c628cacba5dd0656fd93b037c445e2828b43cf0805a9f2b16b0c5f5a10fd561206271acddb568df4f867f0aea0eb2772f
+  languageName: node
+  linkType: hard
+
+"tiktoken@npm:^1.0.13":
+  version: 1.0.13
+  resolution: "tiktoken@npm:1.0.13"
+  checksum: 10/4217ffbcd4126dc2dd17503fda35be91cf4be64c514f70e1049982d1bd2b5cea6334e76812411cb284dfa7b412159839d546048ac98220faf3c629e217266ddc
   languageName: node
   linkType: hard
 
