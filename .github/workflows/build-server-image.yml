@@ -1,0 +1,191 @@
+name: Build Images
+
+on:
+  workflow_call:
+    inputs:
+      flavor:
+        type: string
+        required: true
+
+env:
+  NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
+
+permissions:
+  contents: 'write'
+  id-token: 'write'
+  packages: 'write'
+
+jobs:
+  build-server:
+    name: Build Server
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Version
+        id: version
+        uses: ./.github/actions/setup-version
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          electron-install: false
+          extra-flags: workspaces focus @affine/server
+      - name: Build Server
+        run: yarn workspace @affine/server build
+      - name: Upload server dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-dist
+          path: ./packages/backend/server/dist
+          if-no-files-found: error
+
+  build-web-selfhost:
+    name: Build @affine/web selfhost
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.flavor }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Version
+        id: version
+        uses: ./.github/actions/setup-version
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+      - name: Build Core
+        run: yarn nx build @affine/web --skip-nx-cache
+        env:
+          BUILD_TYPE: ${{ github.event.inputs.flavor }}
+          SHOULD_REPORT_TRACE: false
+          PUBLIC_PATH: '/'
+          SELF_HOSTED: true
+      - name: Download selfhost fonts
+        run: node ./scripts/download-blocksuite-fonts.mjs
+      - name: Upload web artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: selfhost-web
+          path: ./packages/frontend/web/dist
+          if-no-files-found: error
+
+  build-storage:
+    name: Build Storage - ${{ matrix.targets.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        targets:
+          - name: x86_64-unknown-linux-gnu
+            file: storage.node
+          - name: aarch64-unknown-linux-gnu
+            file: storage.arm64.node
+          - name: armv7-unknown-linux-gnueabihf
+            file: storage.armv7.node
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Version
+        id: version
+        uses: ./.github/actions/setup-version
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          electron-install: false
+          extra-flags: workspaces focus @affine/storage
+      - name: Build Rust
+        uses: ./.github/actions/build-rust
+        with:
+          target: ${{ matrix.targets.name }}
+          package: '@affine/storage'
+          nx_token: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
+      - name: Upload ${{ matrix.targets.file }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.targets.file }}
+          path: ./packages/backend/storage/storage.node
+          if-no-files-found: error
+
+  build-docker:
+    name: Build Docker
+    runs-on: ubuntu-latest
+    needs:
+      - build-server
+      - build-web-selfhost
+      - build-storage
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download server dist
+        uses: actions/download-artifact@v4
+        with:
+          name: server-dist
+          path: ./packages/backend/server/dist
+      - name: Download storage.node
+        uses: actions/download-artifact@v4
+        with:
+          name: storage.node
+          path: ./packages/backend/server
+      - name: Download storage.node arm64
+        uses: actions/download-artifact@v4
+        with:
+          name: storage.arm64.node
+          path: ./packages/backend/storage
+      - name: Download storage.node arm64
+        uses: actions/download-artifact@v4
+        with:
+          name: storage.armv7.node
+          path: .
+      - name: move storage files
+        run: |
+          mv ./packages/backend/storage/storage.node ./packages/backend/server/storage.arm64.node
+          mv storage.node ./packages/backend/server/storage.armv7.node
+      - name: Setup env
+        run: |
+          echo "GIT_SHORT_HASH=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
+          if [ -z "${{ inputs.flavor }}" ]
+          then
+            echo "RELEASE_FLAVOR=canary" >> "$GITHUB_ENV"
+          else
+            echo "RELEASE_FLAVOR=${{ inputs.flavor }}" >> "$GITHUB_ENV"
+          fi
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          logout: false
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      # setup node without cache configuration
+      # Prisma cache is not compatible with docker build cache
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          registry-url: https://npm.pkg.github.com
+          scope: '@toeverything'
+
+      - name: Download selfhost web artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: selfhost-web
+          path: ./packages/frontend/web/dist
+
+      - name: Install Node.js dependencies
+        run: |
+          yarn config set --json supportedArchitectures.cpu '["x64", "arm64", "arm"]'
+          yarn config set --json supportedArchitectures.libc '["glibc"]'
+          yarn workspaces focus @affine/server --production
+
+      - name: Generate Prisma client
+        run: yarn workspace @affine/server prisma generate
+
+      - name: Build graphql Dockerfile
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          pull: true
+          platforms: linux/amd64,linux/arm64,linux/arm/v7
+          provenance: true
+          file: .github/deployment/node/Dockerfile
+          tags: ghcr.io/toeverything/affine-graphql:${{env.RELEASE_FLAVOR}}-${{ env.GIT_SHORT_HASH }},ghcr.io/toeverything/affine-graphql:${{env.RELEASE_FLAVOR}}

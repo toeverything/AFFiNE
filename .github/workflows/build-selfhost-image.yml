@@ -1,0 +1,25 @@
+name: Build Selfhost Image
+
+on:
+  workflow_dispatch:
+    inputs:
+      flavor:
+        description: 'Select distribution to build'
+        type: choice
+        default: canary
+        options:
+          - canary
+          - beta
+          - stable
+
+permissions:
+  contents: 'write'
+  id-token: 'write'
+  packages: 'write'
+
+jobs:
+  build-image:
+    name: Build Image
+    uses: ./.github/workflows/build-server-image.yml
+    with:
+      flavor: ${{ github.event.inputs.flavor }}
