@@ -56,9 +56,16 @@ export const ConfirmModal = ({
   );
 };
 
+interface OpenConfirmModalOptions {
+  autoClose?: boolean;
+  onSuccess?: () => void;
+}
 interface ConfirmModalContextProps {
   modalProps: ConfirmModalProps;
-  openConfirmModal: (props?: ConfirmModalProps) => void;
+  openConfirmModal: (
+    props?: ConfirmModalProps,
+    options?: OpenConfirmModalOptions
+  ) => void;
   closeConfirmModal: () => void;
 }
 const ConfirmModalContext = createContext<ConfirmModalContextProps>({
@@ -86,7 +93,8 @@ export const ConfirmModalProvider = ({ children }: PropsWithChildren) => {
   }, []);
 
   const openConfirmModal = useCallback(
-    (props?: ConfirmModalProps) => {
+    (props?: ConfirmModalProps, options?: OpenConfirmModalOptions) => {
+      const { autoClose = true, onSuccess } = options ?? {};
       if (!props) {
         setModalProps({ open: true });
         return;
@@ -97,17 +105,22 @@ export const ConfirmModalProvider = ({ children }: PropsWithChildren) => {
       const onConfirm = () => {
         setLoading(true);
         _onConfirm?.()
-          ?.catch(console.error)
-          ?.finally(() => closeConfirmModal());
+          ?.then(() => onSuccess?.())
+          .catch(console.error)
+          .finally(() => autoClose && closeConfirmModal());
       };
       setModalProps({ ...otherProps, onConfirm, open: true });
     },
     [closeConfirmModal, setLoading]
   );
 
-  const onOpenChange = useCallback((open: boolean) => {
-    setModalProps(props => ({ ...props, open }));
-  }, []);
+  const onOpenChange = useCallback(
+    (open: boolean) => {
+      modalProps.onOpenChange?.(open);
+      setModalProps(props => ({ ...props, open }));
+    },
+    [modalProps]
+  );
 
   return (
     <ConfirmModalContext.Provider
@@ -115,7 +128,7 @@ export const ConfirmModalProvider = ({ children }: PropsWithChildren) => {
     >
       {children}
       {/* TODO: multi-instance support(unnecessary for now) */}
-      <ConfirmModal onOpenChange={onOpenChange} {...modalProps} />
+      <ConfirmModal {...modalProps} onOpenChange={onOpenChange} />
     </ConfirmModalContext.Provider>
   );
 };
