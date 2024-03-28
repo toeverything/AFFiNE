@@ -20,6 +20,10 @@ export const uiHandlers = {
     const window = await getMainWindow();
     return window?.isMaximized();
   },
+  isFullScreen: async () => {
+    const window = await getMainWindow();
+    return window?.isFullScreen();
+  },
   handleThemeChange: async (_, theme: (typeof nativeTheme)['themeSource']) => {
     nativeTheme.themeSource = theme;
   },

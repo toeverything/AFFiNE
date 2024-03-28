@@ -60,8 +60,13 @@ export function setup() {
     const handleMaximized = (maximized: boolean | undefined) => {
       document.documentElement.dataset.maximized = String(maximized);
     };
+    const handleFullscreen = (fullscreen: boolean | undefined) => {
+      document.documentElement.dataset.fullscreen = String(fullscreen);
+    };
     apis?.ui.isMaximized().then(handleMaximized).catch(console.error);
+    apis?.ui.isFullScreen().then(handleFullscreen).catch(console.error);
     events?.ui.onMaximized(handleMaximized);
+    events?.ui.onFullScreen(handleFullscreen);
 
     const handleResize = debounce(() => {
       apis?.ui.handleWindowResize().catch(console.error);

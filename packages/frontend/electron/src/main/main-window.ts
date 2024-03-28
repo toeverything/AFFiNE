@@ -104,9 +104,8 @@ async function createWindow(additionalArguments: string[]) {
 
     logger.info('main window is ready to show');
 
-    if (browserWindow.isMaximized() || browserWindow.isFullScreen()) {
-      uiSubjects.onMaximized$.next(true);
-    }
+    uiSubjects.onMaximized$.next(browserWindow.isMaximized());
+    uiSubjects.onFullScreen$.next(browserWindow.isFullScreen());
 
     handleWebContentsResize().catch(logger.error);
   });
@@ -143,19 +142,24 @@ async function createWindow(additionalArguments: string[]) {
       browserWindow.setSize(size[0], size[1]);
     });
     uiSubjects.onMaximized$.next(false);
+    uiSubjects.onFullScreen$.next(false);
   });
 
   browserWindow.on('maximize', () => {
     uiSubjects.onMaximized$.next(true);
   });
 
-  // full-screen == maximized in UI on windows
-  browserWindow.on('enter-full-screen', () => {
-    uiSubjects.onMaximized$.next(true);
-  });
-
   browserWindow.on('unmaximize', () => {
     uiSubjects.onMaximized$.next(false);
+  });
+
+  // full-screen == maximized in UI on windows
+  browserWindow.on('enter-full-screen', () => {
+    uiSubjects.onFullScreen$.next(true);
+  });
+
+  browserWindow.on('leave-full-screen', () => {
+    uiSubjects.onFullScreen$.next(false);
   });
 
   /**
