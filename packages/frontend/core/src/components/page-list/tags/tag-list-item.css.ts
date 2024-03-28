@@ -112,7 +112,7 @@ export const titleCellMain = style({
   fontWeight: 600,
   whiteSpace: 'nowrap',
   textOverflow: 'ellipsis',
-  alignSelf: 'stretch',
+  alignSelf: 'center',
   paddingRight: '4px',
 });
 export const titleCellPreview = style({
@@ -122,7 +122,7 @@ export const titleCellPreview = style({
   flexShrink: 0,
   whiteSpace: 'nowrap',
   textOverflow: 'ellipsis',
-  alignSelf: 'stretch',
+  alignSelf: 'center',
 });
 export const iconCell = style({
   display: 'flex',

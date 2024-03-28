@@ -42,11 +42,17 @@ function useRegisterCommands() {
         languageHelper: {
           onLanguageChange: () => {},
           languagesList: [
-            { tag: 'en', name: 'English', originalName: 'English' },
+            {
+              tag: 'en',
+              name: 'English',
+              originalName: 'English',
+              Completeness: 1,
+            },
             {
               tag: 'zh-Hans',
               name: 'Simplified Chinese',
               originalName: '简体中文',
+              Completeness: 1,
             },
           ],
           currentLanguage: undefined,

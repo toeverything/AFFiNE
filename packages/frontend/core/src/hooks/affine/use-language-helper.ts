@@ -14,6 +14,7 @@ export function useLanguageHelper() {
         tag: item.tag,
         originalName: item.originalName,
         name: item.name,
+        Completeness: item.completeRate,
       })),
     []
   );
