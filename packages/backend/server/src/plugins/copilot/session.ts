@@ -216,7 +216,14 @@ export class ChatSessionService {
     const state = await this.cache.get<ChatSessionState>(
       `${CHAT_SESSION_KEY}:${sessionId}`
     );
-    if (state) return state;
+    if (state) {
+      state.messages.forEach(m => {
+        if (typeof m.createdAt === 'string') {
+          m.createdAt = new Date(m.createdAt);
+        }
+      });
+      return state;
+    }
     return await this.getSession(sessionId);
   }
 
@@ -292,14 +299,21 @@ export class ChatSessionService {
       AFFiNE.node.dev &&
       AFFiNE.featureFlags.copilotAuthorization
     ) {
-      return [...this.unsavedSessions.values()].map(state => {
-        const tokens = this.calculateTokenSize(state.messages, state.model);
-        return {
-          sessionId: state.sessionId,
-          tokens,
-          messages: state.messages,
-        };
-      });
+      return [...this.unsavedSessions.values()]
+        .map(state => {
+          const ret = ChatMessageSchema.array().safeParse(state.messages);
+          if (ret.success) {
+            const tokens = this.calculateTokenSize(state.messages, state.model);
+            return {
+              sessionId: state.sessionId,
+              tokens,
+              messages: ret.data,
+            };
+          }
+          console.error('Unexpected error in listHistories', ret.error);
+          return undefined;
+        })
+        .filter((v): v is NonNullable<typeof v> => !!v);
     }
 
     return await this.db.aiSession
