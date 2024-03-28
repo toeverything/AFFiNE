@@ -5,6 +5,7 @@ import { DeploymentType } from '../fundamentals';
 import { Public } from './auth';
 
 export enum ServerFeature {
+  Copilot = 'copilot',
   Payment = 'payment',
   OAuth = 'oauth',
 }
