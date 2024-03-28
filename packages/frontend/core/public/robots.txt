@@ -1,3 +1,5 @@
+# If you would like to crawl AFFiNE public workspace contact us via developer@toeverything.info
+
 User-agent: *
 Allow: /
 Disallow: /oauth/*
