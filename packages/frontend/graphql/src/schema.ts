@@ -743,7 +743,7 @@ export type SubscriptionQuery = {
   __typename?: 'Query';
   currentUser: {
     __typename?: 'UserType';
-    subscription: {
+    subscriptions: Array<{
       __typename?: 'UserSubscription';
       id: string;
       status: SubscriptionStatus;
@@ -753,7 +753,7 @@ export type SubscriptionQuery = {
       end: string;
       nextBillAt: string | null;
       canceledAt: string | null;
-    } | null;
+    }>;
   } | null;
 };
 

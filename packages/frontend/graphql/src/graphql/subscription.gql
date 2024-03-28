@@ -1,6 +1,6 @@
 query subscription {
   currentUser {
-    subscription {
+    subscriptions {
       id
       status
       plan
