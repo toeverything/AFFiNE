@@ -1,0 +1,25 @@
+# If you would like to crawl AFFiNE public workspace contact us via developer@toeverything.info
+
+User-agent: *
+Allow: /
+Disallow: /oauth/*
+Disallow: /workspace/*
+Disallow: /public-workspace/*
+Disallow: /auth/*
+Disallow: /signin/*
+Disallow: /_next/*
+Disallow: /invite/*
+Disallow: /*/invite/*
+Disallow: /api/*
+
+User-agent: PetalBot
+Disallow: /
+
+User-agent: BLEXBot
+Disallow: /
+
+User-agent: Bytespider
+Disallow: /
+
+User-agent: Barkrowler
+Disallow: /
