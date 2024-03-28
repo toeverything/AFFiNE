@@ -50,7 +50,7 @@ export const ConfirmModal = ({
             {cancelText}
           </Button>
         </DialogTrigger>
-        <Button onClick={onConfirm} {...confirmButtonOptions}></Button>
+        <Button autoFocus onClick={onConfirm} {...confirmButtonOptions}></Button>
       </div>
     </Modal>
   );
