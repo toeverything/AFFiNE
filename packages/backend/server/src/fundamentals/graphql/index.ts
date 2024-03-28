@@ -23,6 +23,16 @@ export type GraphqlContext = {
     GraphQLModule.forRootAsync<ApolloDriverConfig>({
       driver: ApolloDriver,
       useFactory: (config: Config) => {
+        const copilotAuthorization =
+          config.node.dev && config.featureFlags.copilotAuthorization;
+        const cors = {
+          cors: {
+            origin: [
+              'https://try-blocksuite.vercel.app/',
+              'http://localhost:5173/',
+            ],
+          },
+        };
         return {
           ...config.graphql,
           path: `${config.path}/graphql`,
@@ -78,6 +88,7 @@ export type GraphqlContext = {
 
             return formattedError;
           },
+          ...(copilotAuthorization ? cors : {}),
         };
       },
       inject: [Config],
