@@ -1,4 +1,6 @@
 import { ServerFeature } from '../../core/config';
+import { QuotaService } from '../../core/quota';
+import { PermissionService } from '../../core/workspaces/permission';
 import { Plugin } from '../registry';
 import { CopilotController } from './controller';
 import { PromptService } from './prompt';
@@ -8,13 +10,22 @@ import {
   ProviderService,
   registerCopilotProvider,
 } from './providers';
+import { CopilotResolver, UserCopilotResolver } from './resolver';
 import { ChatSessionService } from './session';
 
 registerCopilotProvider(OpenAIProvider);
 
 @Plugin({
   name: 'copilot',
-  providers: [ChatSessionService, PromptService, ProviderService],
+  providers: [
+    PermissionService,
+    QuotaService,
+    ChatSessionService,
+    CopilotResolver,
+    UserCopilotResolver,
+    PromptService,
+    ProviderService,
+  ],
   controllers: [CopilotController],
   contributesTo: ServerFeature.Copilot,
   if: config => {

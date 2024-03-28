@@ -34,6 +34,7 @@ const quotaPlan = z.object({
     historyPeriod: z.number().positive().int(),
     memberLimit: z.number().positive().int(),
     businessBlobLimit: z.number().positive().int().nullish(),
+    copilotActionLimit: z.number().positive().int().nullish(),
   }),
 });
 
@@ -65,6 +66,9 @@ export class HumanReadableQuotaType {
 
   @Field(() => String)
   memberLimit!: string;
+
+  @Field(() => String, { nullable: true })
+  copilotActionLimit?: string;
 }
 
 @ObjectType()
@@ -83,6 +87,9 @@ export class QuotaQueryType {
 
   @Field(() => SafeIntResolver)
   storageQuota!: number;
+
+  @Field(() => SafeIntResolver, { nullable: true })
+  copilotActionLimit?: number;
 
   @Field(() => HumanReadableQuotaType)
   humanReadable!: HumanReadableQuotaType;

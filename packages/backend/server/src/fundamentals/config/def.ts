@@ -185,6 +185,7 @@ export interface AFFiNEConfig {
   featureFlags: {
     earlyAccessPreview: boolean;
     syncClientVersionCheck: boolean;
+    copilotAuthorization: boolean;
   };
 
   /**

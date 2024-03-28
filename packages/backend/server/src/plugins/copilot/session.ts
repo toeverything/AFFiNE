@@ -2,11 +2,19 @@ import { randomUUID } from 'node:crypto';
 
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
-import { encoding_for_model, Tiktoken, TiktokenModel } from 'tiktoken';
+import { encoding_for_model, Tiktoken } from 'tiktoken';
 
 import { SessionCache } from '../../fundamentals';
 import { PromptService } from './prompt';
-import { ChatMessage, ChatMessageSchema } from './types';
+import {
+  AvailableModel,
+  AvailableModels,
+  AvailableModelToTiktokenModel,
+  ChatHistory,
+  ChatMessage,
+  ChatMessageSchema,
+  PromptMessage,
+} from './types';
 
 const CHAT_SESSION_KEY = 'chat-session';
 const CHAT_SESSION_TTL = 3600 * 12 * 1000; // 12 hours
@@ -19,15 +27,26 @@ export interface ChatSessionOptions {
   promptName: string;
   // options
   action: boolean;
-  model: TiktokenModel;
+  model: AvailableModel;
 }
 
 export interface ChatSessionState extends ChatSessionOptions {
   // connect ids
   sessionId: string;
   // states
-  prompt: ChatMessage[];
+  prompt: PromptMessage[];
   messages: ChatMessage[];
+}
+
+export type ListHistoriesOptions = {
+  action: boolean | undefined;
+  limit: number | undefined;
+  skip: number | undefined;
+  sessionId: string | undefined;
+};
+
+function getTokenEncoder(model: AvailableModel): Tiktoken {
+  return encoding_for_model(AvailableModelToTiktokenModel(model));
 }
 
 export class ChatSession implements AsyncDisposable {
@@ -35,21 +54,28 @@ export class ChatSession implements AsyncDisposable {
   private readonly promptTokenSize: number;
   constructor(
     private readonly state: ChatSessionState,
-    model: TiktokenModel,
+    model: AvailableModel,
     private readonly dispose?: (state: ChatSessionState) => Promise<void>,
     private readonly maxTokenSize = 3840
   ) {
-    this.encoder = encoding_for_model(model);
+    this.encoder = getTokenEncoder(model);
     this.promptTokenSize = this.encoder.encode_ordinary(
       state.prompt?.map(m => m.content).join('') || ''
     ).length;
   }
 
   get model() {
-    return this.state.model;
+    return AvailableModels[this.state.model];
   }
 
   push(message: ChatMessage) {
+    if (
+      this.state.action &&
+      this.state.messages.length > 0 &&
+      message.role === 'user'
+    ) {
+      throw new Error('Action has been taken, no more messages allowed');
+    }
     this.state.messages.push(message);
   }
 
@@ -78,7 +104,7 @@ export class ChatSession implements AsyncDisposable {
     return ret;
   }
 
-  finish(): ChatMessage[] {
+  finish(): PromptMessage[] {
     const messages = this.takeMessages();
     return [...this.state.prompt, ...messages];
   }
@@ -96,6 +122,9 @@ export class ChatSession implements AsyncDisposable {
 @Injectable()
 export class ChatSessionService {
   private readonly logger = new Logger(ChatSessionService.name);
+  // NOTE: only used for anonymous session in development
+  private readonly unsavedSessions = new Map<string, ChatSessionState>();
+
   constructor(
     private readonly db: PrismaClient,
     private readonly cache: SessionCache,
@@ -103,20 +132,24 @@ export class ChatSessionService {
   ) {}
 
   private async setSession(state: ChatSessionState): Promise<void> {
+    if (!state.userId && AFFiNE.featureFlags.copilotAuthorization) {
+      // todo(@darkskygit): allow anonymous session in development
+      // remove this after the feature is stable
+      this.unsavedSessions.set(state.sessionId, state);
+      return;
+    }
     await this.db.aiSession.upsert({
       where: {
         id: state.sessionId,
       },
       update: {
-        messages: {
-          create: state.messages.map((m, idx) => ({ idx, ...m })),
-        },
+        messages: state.messages,
       },
       create: {
         id: state.sessionId,
         action: state.action,
         model: state.model,
-        messages: { create: state.messages },
+        messages: state.messages,
         // connect
         user: { connect: { id: state.userId } },
         workspace: { connect: { id: state.workspaceId } },
@@ -138,7 +171,15 @@ export class ChatSessionService {
         where: { id: sessionId },
       })
       .then(async session => {
-        if (!session) return;
+        if (!session) {
+          const publishable = AFFiNE.featureFlags.copilotAuthorization;
+          if (publishable) {
+            // todo(@darkskygit): allow anonymous session in development
+            // remove this after the feature is stable
+            return this.unsavedSessions.get(sessionId);
+          }
+          return;
+        }
         const messages = ChatMessageSchema.array().safeParse(session.messages);
 
         return {
@@ -148,7 +189,7 @@ export class ChatSessionService {
           docId: session.docId,
           promptName: session.promptName,
           action: session.action,
-          model: session.model as TiktokenModel,
+          model: session.model as AvailableModel,
           prompt: await this.prompt.get(session.promptName),
           messages: messages.success ? messages.data : [],
         };
@@ -170,8 +211,127 @@ export class ChatSessionService {
     const state = await this.cache.get<ChatSessionState>(
       `${CHAT_SESSION_KEY}:${sessionId}`
     );
-    if (state) return state;
+    if (state) {
+      state.messages.forEach(m => {
+        if (typeof m.createdAt === 'string') {
+          m.createdAt = new Date(m.createdAt);
+        }
+      });
+      return state;
+    }
     return await this.getSession(sessionId);
+  }
+
+  private calculateTokenSize(
+    messages: ChatMessage[],
+    model: AvailableModel
+  ): number {
+    const encoder = getTokenEncoder(model);
+    return messages.reduce((total, m) => {
+      return total + encoder.encode_ordinary(m.content).length;
+    }, 0);
+  }
+
+  async countSessions(
+    userId: string,
+    workspaceId: string,
+    options?: { docId?: string; action?: boolean }
+  ): Promise<number> {
+    // NOTE: only used for anonymous session in development
+    if (!userId && AFFiNE.featureFlags.copilotAuthorization) {
+      return this.unsavedSessions.size;
+    }
+    return await this.db.aiSession.count({
+      where: {
+        userId,
+        workspaceId,
+        docId: workspaceId === options?.docId ? undefined : options?.docId,
+        action: options?.action,
+      },
+    });
+  }
+
+  async listSessions(
+    userId: string | undefined,
+    workspaceId: string,
+    options?: { docId?: string; action?: boolean }
+  ): Promise<string[]> {
+    // NOTE: only used for anonymous session in development
+    if (!userId && AFFiNE.featureFlags.copilotAuthorization) {
+      return Array.from(this.unsavedSessions.keys());
+    }
+
+    return await this.db.aiSession
+      .findMany({
+        where: {
+          userId,
+          workspaceId,
+          docId: workspaceId === options?.docId ? undefined : options?.docId,
+          action: options?.action,
+        },
+        select: { id: true },
+      })
+      .then(sessions => sessions.map(({ id }) => id));
+  }
+
+  async listHistories(
+    userId: string | undefined,
+    workspaceId: string,
+    docId?: string,
+    options?: ListHistoriesOptions
+  ): Promise<ChatHistory[]> {
+    // NOTE: only used for anonymous session in development
+    if (!userId && AFFiNE.featureFlags.copilotAuthorization) {
+      return [...this.unsavedSessions.values()]
+        .map(state => {
+          const ret = ChatMessageSchema.array().safeParse(state.messages);
+          if (ret.success) {
+            const tokens = this.calculateTokenSize(state.messages, state.model);
+            return {
+              sessionId: state.sessionId,
+              tokens,
+              messages: ret.data,
+            };
+          }
+          console.error('Unexpected error in listHistories', ret.error);
+          return undefined;
+        })
+        .filter((v): v is NonNullable<typeof v> => !!v);
+    }
+
+    return await this.db.aiSession
+      .findMany({
+        where: {
+          userId,
+          workspaceId: workspaceId,
+          docId: workspaceId === docId ? undefined : docId,
+          action: options?.action,
+          id: options?.sessionId ? { equals: options.sessionId } : undefined,
+        },
+        take: options?.limit || 10,
+        skip: options?.skip,
+        orderBy: { createdAt: 'desc' },
+      })
+      .then(sessions => {
+        return sessions
+          .map(({ id, model, messages }) => {
+            try {
+              const ret = ChatMessageSchema.array().safeParse(messages);
+              if (ret.success) {
+                const tokens = this.calculateTokenSize(
+                  ret.data,
+                  model as AvailableModel
+                );
+                return { sessionId: id, tokens, messages: ret.data };
+              }
+              return undefined;
+            } catch (e) {
+              this.logger.error('Unexpected error in listHistories', e);
+              return undefined;
+            }
+          })
+          .filter((v): v is NonNullable<typeof v> => !!v);
+      });
   }
 
   async create(options: ChatSessionOptions): Promise<string> {
@@ -179,6 +339,9 @@ export class ChatSessionService {
     const prompt = await this.prompt.get(options.promptName);
     if (!prompt.length) {
       this.logger.warn(`Prompt not found: ${options.promptName}`);
+    }
+    if (!AvailableModels[options.model]) {
+      throw new Error(`Invalid model: ${options.model}`);
     }
     await this.setState({
       ...options,

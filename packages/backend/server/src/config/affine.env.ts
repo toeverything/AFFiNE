@@ -37,4 +37,8 @@ AFFiNE.ENV_MAP = {
     'featureFlags.syncClientVersionCheck',
     'boolean',
   ],
+  FEATURES_COPILOT_SKIP_AUTHORIZATION: [
+    'featureFlags.copilotAuthorization',
+    'boolean',
+  ],
 };
