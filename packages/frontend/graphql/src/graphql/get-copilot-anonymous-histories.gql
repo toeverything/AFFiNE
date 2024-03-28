@@ -11,6 +11,7 @@ query getCopilotAnonymousHistories(
         role
         content
         attachments
+        createdAt
       }
     }
   }

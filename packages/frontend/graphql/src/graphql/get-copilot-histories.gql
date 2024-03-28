@@ -12,6 +12,7 @@ query getCopilotHistories(
           role
           content
           attachments
+          createdAt
         }
       }
     }

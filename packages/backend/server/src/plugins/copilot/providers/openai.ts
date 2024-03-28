@@ -3,12 +3,12 @@ import assert from 'node:assert';
 import { ClientOptions, OpenAI } from 'openai';
 
 import {
-  ChatMessage,
   ChatMessageRole,
   CopilotCapability,
   CopilotProviderType,
   CopilotTextToEmbeddingProvider,
   CopilotTextToTextProvider,
+  PromptMessage,
 } from '../types';
 
 const DEFAULT_DIMENSIONS = 256;
@@ -51,7 +51,7 @@ export class OpenAIProvider
     return OpenAIProvider.capabilities;
   }
 
-  private chatToGPTMessage(messages: ChatMessage[]) {
+  private chatToGPTMessage(messages: PromptMessage[]) {
     // filter redundant fields
     return messages.map(message => ({
       role: message.role,
@@ -64,7 +64,7 @@ export class OpenAIProvider
     embeddings,
     model,
   }: {
-    messages?: ChatMessage[];
+    messages?: PromptMessage[];
     embeddings?: string[];
     model: string;
   }) {
@@ -107,7 +107,7 @@ export class OpenAIProvider
   // ====== text to text ======
 
   async generateText(
-    messages: ChatMessage[],
+    messages: PromptMessage[],
     model: string = 'gpt-3.5-turbo',
     options: {
       temperature?: number;
@@ -135,7 +135,7 @@ export class OpenAIProvider
   }
 
   async *generateTextStream(
-    messages: ChatMessage[],
+    messages: PromptMessage[],
     model: string,
     options: {
       temperature?: number;

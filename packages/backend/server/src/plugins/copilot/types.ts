@@ -40,12 +40,17 @@ export function AvailableModelToTiktokenModel(
 
 export const ChatMessageRole = ['system', 'assistant', 'user'] as const;
 
-export const ChatMessageSchema = z
-  .object({
-    role: z.enum(ChatMessageRole),
-    content: z.string(),
-  })
-  .strict();
+export const PromptMessageSchema = z.object({
+  role: z.enum(ChatMessageRole),
+  content: z.string(),
+  attachments: z.array(z.string()).optional(),
+});
+
+export type PromptMessage = z.infer<typeof PromptMessageSchema>;
+
+export const ChatMessageSchema = PromptMessageSchema.extend({
+  createdAt: z.number(),
+}).strict();
 
 export type ChatMessage = z.infer<typeof ChatMessageSchema>;
 
@@ -79,7 +84,7 @@ export interface CopilotProvider {
 
 export interface CopilotTextToTextProvider extends CopilotProvider {
   generateText(
-    messages: ChatMessage[],
+    messages: PromptMessage[],
     model: string,
     options: {
       temperature?: number;
@@ -89,7 +94,7 @@ export interface CopilotTextToTextProvider extends CopilotProvider {
     }
   ): Promise<string>;
   generateTextStream(
-    messages: ChatMessage[],
+    messages: PromptMessage[],
     model: string,
     options: {
       temperature?: number;

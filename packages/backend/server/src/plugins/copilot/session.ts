@@ -13,6 +13,7 @@ import {
   ChatHistory,
   ChatMessage,
   ChatMessageSchema,
+  PromptMessage,
 } from './types';
 
 const CHAT_SESSION_KEY = 'chat-session';
@@ -33,7 +34,7 @@ export interface ChatSessionState extends ChatSessionOptions {
   // connect ids
   sessionId: string;
   // states
-  prompt: ChatMessage[];
+  prompt: PromptMessage[];
   messages: ChatMessage[];
 }
 
@@ -99,7 +100,7 @@ export class ChatSession implements AsyncDisposable {
     return ret;
   }
 
-  finish(): ChatMessage[] {
+  finish(): PromptMessage[] {
     const messages = this.takeMessages();
     return [...this.state.prompt, ...messages];
   }

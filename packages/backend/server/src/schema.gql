@@ -5,6 +5,7 @@
 type ChatMessage {
   attachments: [String!]
   content: String!
+  createdAt: Int!
   role: String!
 }
 

@@ -81,6 +81,9 @@ class ChatMessageType implements Partial<ChatMessage> {
 
   @Field(() => [String], { nullable: true })
   attachments!: string[];
+
+  @Field(() => Number)
+  createdAt!: number;
 }
 
 @ObjectType('CopilotHistories')

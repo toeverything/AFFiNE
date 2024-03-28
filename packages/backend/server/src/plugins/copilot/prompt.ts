@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 
-import { ChatMessage } from './types';
+import { PromptMessage } from './types';
 
 @Injectable()
 export class PromptService {
@@ -14,7 +14,7 @@ export class PromptService {
       .then(prompts => Array.from(new Set(prompts.map(p => p.name))));
   }
 
-  async get(name: string): Promise<ChatMessage[]> {
+  async get(name: string): Promise<PromptMessage[]> {
     return this.db.aiPrompt.findMany({
       where: {
         name,
@@ -29,7 +29,7 @@ export class PromptService {
     });
   }
 
-  async set(name: string, messages: ChatMessage[]) {
+  async set(name: string, messages: PromptMessage[]) {
     return this.db.$transaction(async tx => {
       const prompts = await tx.aiPrompt.count({ where: { name } });
       if (prompts > 0) {
@@ -43,7 +43,7 @@ export class PromptService {
     });
   }
 
-  async update(name: string, messages: ChatMessage[]) {
+  async update(name: string, messages: PromptMessage[]) {
     return this.db.$transaction(async tx => {
       await tx.aiPrompt.deleteMany({ where: { name } });
       return tx.aiPrompt

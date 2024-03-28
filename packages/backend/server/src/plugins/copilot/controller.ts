@@ -56,7 +56,11 @@ export class CopilotController {
     if (!session) {
       throw new BadRequestException('Session not found');
     }
-    session.push({ role: 'user', content: decodeURIComponent(content) });
+    session.push({
+      role: 'user',
+      content: decodeURIComponent(content),
+      createdAt: Date.now(),
+    });
 
     try {
       const content = await provider.generateText(
@@ -68,7 +72,11 @@ export class CopilotController {
         }
       );
 
-      session.push({ role: 'assistant', content });
+      session.push({
+        role: 'assistant',
+        content,
+        createdAt: Date.now(),
+      });
       await session.save();
 
       return content;
@@ -97,7 +105,11 @@ export class CopilotController {
     if (!session) {
       throw new BadRequestException('Session not found');
     }
-    session.push({ role: 'user', content: decodeURIComponent(content) });
+    session.push({
+      role: 'user',
+      content: decodeURIComponent(content),
+      createdAt: Date.now(),
+    });
 
     return from(
       provider.generateTextStream(session.finish(), session.model, {
@@ -113,7 +125,11 @@ export class CopilotController {
           shared$.pipe(
             toArray(),
             concatMap(values => {
-              session.push({ role: 'assistant', content: values.join('') });
+              session.push({
+                role: 'assistant',
+                content: values.join(''),
+                createdAt: Date.now(),
+              });
               return from(session.save());
             }),
             switchMap(() => EMPTY)
