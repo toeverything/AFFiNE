@@ -54,6 +54,7 @@ export class AuthGuard implements CanActivate, OnModuleInit {
       const user = await this.auth.getUser(sessionToken, userSeq);
 
       if (user) {
+        req.sid = sessionToken;
         req.user = user;
       }
     }

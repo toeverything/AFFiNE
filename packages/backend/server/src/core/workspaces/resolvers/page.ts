@@ -1,4 +1,4 @@
-import { BadRequestException, UseGuards } from '@nestjs/common';
+import { BadRequestException } from '@nestjs/common';
 import {
   Args,
   Field,
@@ -12,7 +12,6 @@ import {
 import type { WorkspacePage as PrismaWorkspacePage } from '@prisma/client';
 import { PrismaClient } from '@prisma/client';
 
-import { CloudThrottlerGuard } from '../../../fundamentals';
 import { CurrentUser } from '../../auth';
 import { DocID } from '../../utils/doc';
 import { PermissionService, PublicPageMode } from '../permission';
@@ -38,7 +37,6 @@ class WorkspacePage implements Partial<PrismaWorkspacePage> {
   public!: boolean;
 }
 
-@UseGuards(CloudThrottlerGuard)
 @Resolver(() => WorkspaceType)
 export class PagePermissionResolver {
   constructor(

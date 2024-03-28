@@ -2,7 +2,6 @@ import {
   ForbiddenException,
   Logger,
   PayloadTooLargeException,
-  UseGuards,
 } from '@nestjs/common';
 import {
   Args,
@@ -17,11 +16,7 @@ import { SafeIntResolver } from 'graphql-scalars';
 import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 
 import type { FileUpload } from '../../../fundamentals';
-import {
-  CloudThrottlerGuard,
-  MakeCache,
-  PreventCache,
-} from '../../../fundamentals';
+import { MakeCache, PreventCache } from '../../../fundamentals';
 import { CurrentUser } from '../../auth';
 import { FeatureManagementService, FeatureType } from '../../features';
 import { QuotaManagementService } from '../../quota';
@@ -29,7 +24,6 @@ import { WorkspaceBlobStorage } from '../../storage';
 import { PermissionService } from '../permission';
 import { Permission, WorkspaceBlobSizes, WorkspaceType } from '../types';
 
-@UseGuards(CloudThrottlerGuard)
 @Resolver(() => WorkspaceType)
 export class WorkspaceBlobResolver {
   logger = new Logger(WorkspaceBlobResolver.name);

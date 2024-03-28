@@ -1,4 +1,4 @@
-import { BadRequestException, UseGuards } from '@nestjs/common';
+import { BadRequestException } from '@nestjs/common';
 import {
   Args,
   Int,
@@ -14,7 +14,6 @@ import { isNil, omitBy } from 'lodash-es';
 
 import type { FileUpload } from '../../fundamentals';
 import {
-  CloudThrottlerGuard,
   EventEmitter,
   PaymentRequiredException,
   Throttle,
@@ -35,11 +34,6 @@ import {
   UserType,
 } from './types';
 
-/**
- * User resolver
- * All op rate limit: 10 req/m
- */
-@UseGuards(CloudThrottlerGuard)
 @Resolver(() => UserType)
 export class UserResolver {
   constructor(
@@ -51,12 +45,7 @@ export class UserResolver {
     private readonly event: EventEmitter
   ) {}
 
-  @Throttle({
-    default: {
-      limit: 10,
-      ttl: 60,
-    },
-  })
+  @Throttle('strict')
   @Query(() => UserOrLimitedUser, {
     name: 'user',
     description: 'Get user by email',
@@ -90,7 +79,6 @@ export class UserResolver {
     };
   }
 
-  @Throttle({ default: { limit: 10, ttl: 60 } })
   @ResolveField(() => UserQuotaType, { name: 'quota', nullable: true })
   async getQuota(@CurrentUser() me: User) {
     const quota = await this.quota.getUserQuota(me.id);
@@ -98,7 +86,6 @@ export class UserResolver {
     return quota.feature;
   }
 
-  @Throttle({ default: { limit: 10, ttl: 60 } })
   @ResolveField(() => Int, {
     name: 'invoiceCount',
     description: 'Get user invoice count',
@@ -109,7 +96,6 @@ export class UserResolver {
     });
   }
 
-  @Throttle({ default: { limit: 10, ttl: 60 } })
   @ResolveField(() => [FeatureType], {
     name: 'features',
     description: 'Enabled features of a user',
@@ -118,12 +104,6 @@ export class UserResolver {
     return this.feature.getUserFeatures(user.id);
   }
 
-  @Throttle({
-    default: {
-      limit: 10,
-      ttl: 60,
-    },
-  })
   @Mutation(() => UserType, {
     name: 'uploadAvatar',
     description: 'Upload user avatar',
@@ -153,12 +133,6 @@ export class UserResolver {
     });
   }
 
-  @Throttle({
-    default: {
-      limit: 10,
-      ttl: 60,
-    },
-  })
   @Mutation(() => UserType, {
     name: 'updateProfile',
   })
@@ -180,12 +154,6 @@ export class UserResolver {
     );
   }
 
-  @Throttle({
-    default: {
-      limit: 10,
-      ttl: 60,
-    },
-  })
   @Mutation(() => RemoveAvatar, {
     name: 'removeAvatar',
     description: 'Remove user avatar',
@@ -201,12 +169,6 @@ export class UserResolver {
     return { success: true };
   }
 
-  @Throttle({
-    default: {
-      limit: 10,
-      ttl: 60,
-    },
-  })
   @Mutation(() => DeleteAccount)
   async deleteAccount(
     @CurrentUser() user: CurrentUser

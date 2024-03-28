@@ -4,7 +4,12 @@ import type { NestExpressApplication } from '@nestjs/platform-express';
 import cookieParser from 'cookie-parser';
 import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 
-import { GlobalExceptionFilter } from './fundamentals';
+import { AuthGuard } from './core/auth';
+import {
+  CacheInterceptor,
+  CloudThrottlerGuard,
+  GlobalExceptionFilter,
+} from './fundamentals';
 import { SocketIoAdapter, SocketIoAdapterImpl } from './fundamentals/websocket';
 import { serverTimingAndCache } from './middleware/timing';
 
@@ -28,6 +33,9 @@ export async function createApp() {
     })
   );
 
+  app.useGlobalGuards(app.get(AuthGuard));
+  app.useGlobalGuards(app.get(CloudThrottlerGuard));
+  app.useGlobalInterceptors(app.get(CacheInterceptor));
   app.useGlobalFilters(new GlobalExceptionFilter(app.getHttpAdapter()));
   app.use(cookieParser());
 

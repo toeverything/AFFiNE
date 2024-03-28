@@ -1,4 +1,4 @@
-import { ForbiddenException, UseGuards } from '@nestjs/common';
+import { ForbiddenException } from '@nestjs/common';
 import {
   Args,
   Int,
@@ -9,13 +9,11 @@ import {
   Resolver,
 } from '@nestjs/graphql';
 
-import { CloudThrottlerGuard, Throttle } from '../../fundamentals';
 import { CurrentUser } from '../auth';
 import { FeatureManagementService, FeatureType } from '../features';
 import { PermissionService } from './permission';
 import { WorkspaceType } from './types';
 
-@UseGuards(CloudThrottlerGuard)
 @Resolver(() => WorkspaceType)
 export class WorkspaceManagementResolver {
   constructor(
@@ -23,12 +21,6 @@ export class WorkspaceManagementResolver {
     private readonly permission: PermissionService
   ) {}
 
-  @Throttle({
-    default: {
-      limit: 10,
-      ttl: 60,
-    },
-  })
   @Mutation(() => Int)
   async addWorkspaceFeature(
     @CurrentUser() currentUser: CurrentUser,
@@ -42,12 +34,6 @@ export class WorkspaceManagementResolver {
     return this.feature.addWorkspaceFeatures(workspaceId, feature);
   }
 
-  @Throttle({
-    default: {
-      limit: 10,
-      ttl: 60,
-    },
-  })
   @Mutation(() => Int)
   async removeWorkspaceFeature(
     @CurrentUser() currentUser: CurrentUser,
@@ -61,12 +47,6 @@ export class WorkspaceManagementResolver {
     return this.feature.removeWorkspaceFeature(workspaceId, feature);
   }
 
-  @Throttle({
-    default: {
-      limit: 10,
-      ttl: 60,
-    },
-  })
   @Query(() => [WorkspaceType])
   async listWorkspaceFeatures(
     @CurrentUser() user: CurrentUser,

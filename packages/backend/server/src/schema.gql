@@ -195,7 +195,7 @@ type Query {
   currentUser: UserType
   earlyAccessUsers: [UserType!]!
 
-  """Update workspace"""
+  """send workspace invitation"""
   getInviteInfo(inviteId: String!): InvitationType!
 
   """Get is owner of workspace"""
