@@ -10,6 +10,8 @@ export const label = style({
 export const favItemWrapper = style({
   display: 'flex',
   flexDirection: 'column',
+  flexShrink: 0,
+  userSelect: 'none',
   selectors: {
     '&[data-nested="true"]': {
       marginLeft: '20px',
@@ -40,6 +42,9 @@ export const collapsibleContent = style({
   overflow: 'hidden',
   marginTop: '4px',
   selectors: {
+    '&[data-hidden="true"]': {
+      display: 'none',
+    },
     '&[data-state="open"]': {
       animation: `${slideDown} 0.2s ease-out`,
     },
@@ -52,33 +57,7 @@ export const collapsibleContentInner = style({
   display: 'flex',
   flexDirection: 'column',
 });
-export const favItem = style({});
-globalStyle(`[data-draggable=true] ${favItem}:before`, {
-  content: '""',
-  position: 'absolute',
-  top: '50%',
-  transform: 'translateY(-50%)',
-  left: 0,
-  width: 4,
-  height: 4,
-  transition: 'height 0.2s, opacity 0.2s',
-  backgroundColor: cssVar('placeholderColor'),
-  borderRadius: '2px',
-  opacity: 0,
-  willChange: 'height, opacity',
-});
-globalStyle(`[data-draggable=true] ${favItem}:hover:before`, {
-  height: 12,
-  opacity: 1,
-});
-globalStyle(`[data-draggable=true][data-dragging=true] ${favItem}`, {
-  opacity: 0.5,
-});
-globalStyle(`[data-draggable=true][data-dragging=true] ${favItem}:before`, {
-  height: 32,
-  width: 2,
-  opacity: 1,
-});
+
 export const dragPageItemOverlay = style({
   display: 'flex',
   alignItems: 'center',
@@ -91,7 +70,6 @@ export const dragPageItemOverlay = style({
   gap: '8px',
   padding: '4px',
   borderRadius: '4px',
-  cursor: 'grabbing',
 });
 globalStyle(`${dragPageItemOverlay} svg`, {
   width: '20px',
@@ -104,6 +82,7 @@ globalStyle(`${dragPageItemOverlay} span`, {
   overflow: 'hidden',
 });
 export const favoriteList = style({
+  overflow: 'hidden',
   selectors: {
     '&[data-over="true"]': {
       background: cssVar('hoverColorFilled'),
