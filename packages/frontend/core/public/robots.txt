@@ -1,0 +1,18 @@
+User-agent: *
+Allow: /
+Disallow: /oauth/
+Disallow: /workspace/
+Disallow: /*/invite/
+Disallow: /api/*
+
+User-agent: PetalBot
+Disallow: /
+
+User-agent: BLEXBot
+Disallow: /
+
+User-agent: Bytespider
+Disallow: /
+
+User-agent: Barkrowler
+Disallow: /
