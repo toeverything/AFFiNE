@@ -5,20 +5,22 @@ import type {
   OperatorFunction,
   Subscription,
   TeardownLogic,
+  ThrottleConfig,
 } from 'rxjs';
 import {
   BehaviorSubject,
   combineLatest,
   distinctUntilChanged,
   EMPTY,
-  filter,
   map,
+  mergeMap,
   Observable,
   of,
   scan,
   skip,
   Subject,
   switchMap,
+  throttleTime,
 } from 'rxjs';
 
 const logger = new DebugLogger('livedata');
@@ -97,11 +99,10 @@ export class LiveData<T = unknown>
         ? upstream$
         : stream$ =>
             stream$.pipe(
-              filter(
-                (op): op is Exclude<LiveDataOperation, 'set'> => op !== 'set'
-              ),
-              switchMap(v => {
-                if (v === 'get') {
+              mergeMap(v => {
+                if (v === 'set') {
+                  return EMPTY;
+                } else if (v === 'get') {
                   return of('watch' as const, 'unwatch' as const);
                 } else {
                   return of(v);
@@ -331,6 +332,23 @@ export class LiveData<T = unknown>
     );
 
     return sub$;
+  }
+
+  distinctUntilChanged(comparator?: (previous: T, current: T) => boolean) {
+    return LiveData.from(
+      this.pipe(distinctUntilChanged(comparator)),
+      null as any
+    );
+  }
+
+  throttleTime(
+    duration: number,
+    { trailing = true, leading = true }: ThrottleConfig = {}
+  ) {
+    return LiveData.from(
+      this.pipe(throttleTime(duration, undefined, { trailing, leading })),
+      null as any
+    );
   }
 
   // eslint-disable-next-line rxjs/finnish

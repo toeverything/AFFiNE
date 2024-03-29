@@ -45,7 +45,7 @@ export const navHeaderStyle = style({
 });
 
 globalStyle(
-  `html[data-maximized="false"]
+  `html[data-fullscreen="false"]
   ${navHeaderStyle}[data-is-macos-electron="true"]`,
   {
     paddingLeft: '90px',

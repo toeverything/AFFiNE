@@ -1,8 +1,10 @@
 import { Menu, MenuItem, MenuTrigger } from '@affine/component/ui/menu';
+import { DoneIcon } from '@blocksuite/icons';
 import type { ReactElement } from 'react';
 import { memo } from 'react';
 
 import { useLanguageHelper } from '../../../hooks/affine/use-language-helper';
+import * as styles from './style.css';
 
 // Fixme: keyboard focus should be supported by Menu component
 const LanguageMenuContent = memo(function LanguageMenuContent() {
@@ -11,15 +13,21 @@ const LanguageMenuContent = memo(function LanguageMenuContent() {
   return (
     <>
       {languagesList.map(option => {
+        const selected = currentLanguage?.originalName === option.originalName;
         return (
           <MenuItem
             key={option.name}
-            selected={currentLanguage?.originalName === option.originalName}
             title={option.name}
             lang={option.tag}
             onSelect={() => onLanguageChange(option.tag)}
+            endFix={(option.Completeness * 100).toFixed(0) + '%'}
+            data-selected={selected}
+            className={styles.menuItem}
           >
-            {option.originalName}
+            <div className={styles.languageLabelWrapper}>
+              <div>{option.originalName}</div>
+              {selected && <DoneIcon fontSize={'16px'} />}
+            </div>
           </MenuItem>
         );
       })}
@@ -33,10 +41,7 @@ export const LanguageMenu = () => {
     <Menu
       items={(<LanguageMenuContent />) as ReactElement}
       contentOptions={{
-        style: {
-          background: 'var(--affine-white)',
-          width: '250px',
-        },
+        className: styles.menu,
         align: 'end',
       }}
     >

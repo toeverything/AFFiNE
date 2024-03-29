@@ -104,7 +104,8 @@ const PageDetailEditorMain = memo(function PageDetailEditorMain({
   return (
     <Editor
       className={clsx(styles.editor, {
-        'full-screen': appSettings.fullWidthLayout,
+        'full-screen': !isPublic && appSettings.fullWidthLayout,
+        'is-public': isPublic,
       })}
       style={
         {

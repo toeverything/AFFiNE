@@ -35,20 +35,26 @@ export const SignInWithPassword: FC<AuthPanelProps> = ({
     isMutating: sendingEmail,
   } = useAuth();
   const [verifyToken, challenge] = useCaptcha();
+  const [isLoading, setIsLoading] = useState(false);
 
   const onSignIn = useAsyncCallback(async () => {
+    if (isLoading) return;
+    setIsLoading(true);
+
     const res = await signInCloud('credentials', {
       email,
       password,
     }).catch(console.error);
 
-    if (!res?.ok) {
-      return setPasswordError(true);
+    if (res?.ok) {
+      await reload();
+      onSignedIn?.();
+    } else {
+      setPasswordError(true);
     }
 
-    await reload();
-    onSignedIn?.();
-  }, [email, password, onSignedIn, reload]);
+    setIsLoading(false);
+  }, [email, password, isLoading, onSignedIn, reload]);
 
   const sendMagicLink = useAsyncCallback(async () => {
     if (allowSendEmail && verifyToken && !sendingEmail) {
@@ -134,6 +140,7 @@ export const SignInWithPassword: FC<AuthPanelProps> = ({
           type="primary"
           size="extraLarge"
           style={{ width: '100%' }}
+          disabled={isLoading}
           onClick={onSignIn}
         >
           {t['com.affine.auth.sign.in']()}

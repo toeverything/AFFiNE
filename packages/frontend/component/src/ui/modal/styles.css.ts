@@ -65,6 +65,10 @@ export const modalFooter = style({
     '&.modalFooterWithChildren': {
       paddingTop: '20px',
     },
+    '&.reverse': {
+      flexDirection: 'row-reverse',
+      justifyContent: 'flex-start',
+    },
   },
 });
 export const confirmModalContent = style({

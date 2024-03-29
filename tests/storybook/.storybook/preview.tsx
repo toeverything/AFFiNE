@@ -1,6 +1,7 @@
 import './polyfill';
 import '@affine/component/theme/global.css';
 import '@affine/component/theme/theme.css';
+import '@affine/core/bootstrap/preload';
 import { createI18n } from '@affine/i18n';
 import { ThemeProvider, useTheme } from 'next-themes';
 import { useDarkMode } from 'storybook-dark-mode';
@@ -12,7 +13,6 @@ import { setupGlobal, type Environment } from '@affine/env/global';
 
 import type { Preview } from '@storybook/react';
 import { useLayoutEffect, useRef } from 'react';
-import { setup } from '@affine/core/bootstrap/setup';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { ServiceCollection } from '@toeverything/infra';
 import {
@@ -81,7 +81,6 @@ const provider = services.provider();
 
 const store = createStore();
 _setCurrentStore(store);
-setup();
 
 provider
   .get(WorkspaceManager)

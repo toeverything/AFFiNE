@@ -6,7 +6,6 @@
   "exports": {
     "./app": "./src/app.tsx",
     "./router": "./src/router.tsx",
-    "./bootstrap/setup": "./src/bootstrap/setup.ts",
     "./bootstrap/register-plugins": "./src/bootstrap/register-plugins.ts",
     "./*": "./src/*"
   },
@@ -34,6 +33,7 @@
     "@emotion/react": "^11.11.3",
     "@emotion/server": "^11.11.0",
     "@emotion/styled": "^11.11.0",
+    "@juggle/resize-observer": "^3.4.0",
     "@marsidev/react-turnstile": "^0.5.3",
     "@radix-ui/react-collapsible": "^1.0.3",
     "@radix-ui/react-dialog": "^1.0.5",
@@ -42,8 +42,8 @@
     "@radix-ui/react-select": "^2.0.0",
     "@radix-ui/react-toolbar": "^1.0.4",
     "@react-hookz/web": "^24.0.4",
-    "@sentry/integrations": "^7.102.1",
-    "@sentry/react": "^7.102.1",
+    "@sentry/integrations": "^7.108.0",
+    "@sentry/react": "^7.108.0",
     "@toeverything/theme": "^0.7.29",
     "@vanilla-extract/dynamic": "^2.1.0",
     "animejs": "^3.2.2",

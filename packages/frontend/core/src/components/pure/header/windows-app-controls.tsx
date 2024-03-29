@@ -2,17 +2,34 @@ import { apis, events } from '@affine/electron-api';
 import { useAtomValue } from 'jotai';
 import { atomWithObservable } from 'jotai/utils';
 import { useCallback } from 'react';
-import { Observable } from 'rxjs';
+import { combineLatest, map, Observable } from 'rxjs';
 
 import * as style from './style.css';
 
-const maximizedAtom = atomWithObservable(() => {
-  return new Observable<boolean>(subscriber => {
-    subscriber.next(false);
-    return events?.ui.onMaximized(maximized => {
-      return subscriber.next(maximized);
+const maximized$ = new Observable<boolean>(subscriber => {
+  subscriber.next(false);
+  if (events) {
+    return events.ui.onMaximized(res => {
+      subscriber.next(res);
     });
-  });
+  }
+  return () => {};
+});
+
+const fullscreen$ = new Observable<boolean>(subscriber => {
+  subscriber.next(false);
+  if (events) {
+    return events.ui.onFullScreen(res => {
+      subscriber.next(res);
+    });
+  }
+  return () => {};
+});
+
+const maximizedAtom = atomWithObservable(() => {
+  return combineLatest([maximized$, fullscreen$]).pipe(
+    map(([maximized, fullscreen]) => maximized || fullscreen)
+  );
 });
 
 const minimizeSVG = (

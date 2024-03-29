@@ -55,7 +55,7 @@ export const ConfirmLoadingModal = ({
       onOpenChange={onOpenChange}
       onConfirm={() => {
         confirmed.current = true;
-        onConfirm?.();
+        onConfirm?.()?.catch(console.error);
       }}
       {...props}
     >

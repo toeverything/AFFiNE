@@ -8,6 +8,7 @@ import type { Workspace, WorkspaceLocalState } from '../workspace';
 export type PageMode = 'edgeless' | 'page';
 
 export class PageRecord {
+  meta: Partial<DocMeta> | null = null;
   constructor(
     public readonly id: string,
     private readonly workspace: Workspace,
@@ -15,15 +16,14 @@ export class PageRecord {
   ) {}
 
   meta$ = LiveData.from<Partial<DocMeta>>(
-    new Observable<DocMeta>(subscriber => {
+    new Observable<Partial<DocMeta>>(subscriber => {
       const emit = () => {
-        const meta = this.workspace.docCollection.meta.docMetas.find(
-          page => page.id === this.id
-        );
-        if (meta === undefined) {
-          return;
+        if (this.meta === null) {
+          // getDocMeta is heavy, so we cache the doc meta reference
+          this.meta =
+            this.workspace.docCollection.meta.getDocMeta(this.id) || null;
         }
-        subscriber.next(meta);
+        subscriber.next({ ...this.meta });
       };
 
       emit();

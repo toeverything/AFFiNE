@@ -228,6 +228,7 @@ export class DocEngineLocalPart {
       }
       if (job.isInitialize && !isEmptyUpdate(job.update)) {
         this.status.readyDocs.add(job.docId);
+        this.statusUpdatedSubject$.next(job.docId);
       }
     },
   };

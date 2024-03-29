@@ -11,4 +11,10 @@ export const uiEvents = {
       sub.unsubscribe();
     };
   },
+  onFullScreen: (fn: (fullScreen: boolean) => void) => {
+    const sub = uiSubjects.onFullScreen$.subscribe(fn);
+    return () => {
+      sub.unsubscribe();
+    };
+  },
 } satisfies Record<string, MainEventRegister>;

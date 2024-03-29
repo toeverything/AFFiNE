@@ -96,4 +96,12 @@ export const workspaceActiveStatus = style({
 globalStyle(`.${workspaceActiveStatus} svg`, {
   width: 16,
   height: 16,
+  color: cssVar('iconSecondary'),
+});
+
+export const workspaceInfoTooltip = style({
+  fontSize: cssVar('fontXs'),
+  lineHeight: '20px',
+  padding: '0 8px',
+  minHeight: 20,
 });

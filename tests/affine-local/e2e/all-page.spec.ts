@@ -74,7 +74,8 @@ test('allow creation of filters by favorite', async ({ page }) => {
   await openHomePage(page);
   await waitForEditorLoad(page);
   await clickSideBarAllPageButton(page);
-  await createFirstFilter(page, 'Favourited');
+  // playwright first language is en-US
+  await createFirstFilter(page, 'Favorited');
   await page
     .locator('[data-testid="filter-arg"]', { hasText: 'true' })
     .locator('div')

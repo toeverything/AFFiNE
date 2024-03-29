@@ -1,10 +1,12 @@
 import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
-import type { WorkspaceFlavour } from '@affine/env/workspace';
+import { WorkspaceFlavour } from '@affine/env/workspace';
 import { CollaborationIcon, SettingsIcon } from '@blocksuite/icons';
 import type { WorkspaceMetadata } from '@toeverything/infra';
-import { useCallback } from 'react';
+import clsx from 'clsx';
+import { type MouseEvent, useCallback } from 'react';
 
 import { Avatar, type AvatarProps } from '../../../ui/avatar';
+import { Button } from '../../../ui/button';
 import { Skeleton } from '../../../ui/skeleton';
 import * as styles from './styles.css';
 
@@ -18,7 +20,10 @@ export interface WorkspaceCardProps {
   meta: WorkspaceMetadata;
   onClick: (metadata: WorkspaceMetadata) => void;
   onSettingClick: (metadata: WorkspaceMetadata) => void;
+  onEnableCloudClick?: (meta: WorkspaceMetadata) => void;
   isOwner?: boolean;
+  openingId?: string | null;
+  enableCloudText?: string;
   avatar?: string;
   name?: string;
 }
@@ -45,13 +50,25 @@ const avatarImageProps = {
 export const WorkspaceCard = ({
   onClick,
   onSettingClick,
+  onEnableCloudClick,
+  openingId,
   currentWorkspaceId,
   meta,
   isOwner = true,
+  enableCloudText = 'Enable Cloud',
   name,
   avatar,
 }: WorkspaceCardProps) => {
+  const isLocal = meta.flavour === WorkspaceFlavour.LOCAL;
   const displayName = name ?? UNTITLED_WORKSPACE_NAME;
+
+  const onEnableCloud = useCallback(
+    (e: MouseEvent) => {
+      e.stopPropagation();
+      onEnableCloudClick?.(meta);
+    },
+    [meta, onEnableCloudClick]
+  );
   return (
     <div
       className={styles.card}
@@ -73,6 +90,17 @@ export const WorkspaceCard = ({
         <div className={styles.workspaceTitle}>{displayName}</div>
 
         <div className={styles.actionButtons}>
+          {isLocal ? (
+            <Button
+              loading={!!openingId && openingId === meta.id}
+              disabled={!!openingId}
+              type="default"
+              className={clsx(styles.enableCloudButton, styles.showOnCardHover)}
+              onClick={onEnableCloud}
+            >
+              {enableCloudText}
+            </Button>
+          ) : null}
           {isOwner ? null : <CollaborationIcon />}
           <div
             className={styles.settingButton}

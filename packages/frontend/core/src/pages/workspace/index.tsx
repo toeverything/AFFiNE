@@ -73,7 +73,7 @@ export const Component = (): ReactElement => {
 
   //  avoid doing operation, before workspace is loaded
   const isRootDocReady =
-    useLiveData(workspace?.engine.rootDocState$)?.ready ?? false;
+    useLiveData(workspace?.engine.rootDocState$.map(v => v.ready)) ?? false;
 
   // if listLoading is false, we can show 404 page, otherwise we should show loading page.
   if (listLoading === false && meta === undefined) {

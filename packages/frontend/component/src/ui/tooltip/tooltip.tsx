@@ -4,6 +4,7 @@ import type {
   TooltipProps as RootProps,
 } from '@radix-ui/react-tooltip';
 import * as TooltipPrimitive from '@radix-ui/react-tooltip';
+import clsx from 'clsx';
 import type { ReactElement, ReactNode } from 'react';
 
 import * as styles from './styles.css';
@@ -32,6 +33,7 @@ export const Tooltip = ({
   if (!content) {
     return children;
   }
+  const { className, ...contentOptions } = options || {};
   return (
     <TooltipPrimitive.Provider>
       <TooltipPrimitive.Root delayDuration={500} {...rootOptions}>
@@ -39,12 +41,12 @@ export const Tooltip = ({
 
         <TooltipPrimitive.Portal {...portalOptions}>
           <TooltipPrimitive.Content
-            className={styles.tooltipContent}
+            className={clsx(styles.tooltipContent, className)}
             side={side}
             align={align}
             sideOffset={5}
             style={{ zIndex: 'var(--affine-z-index-popover)' }}
-            {...options}
+            {...contentOptions}
           >
             {content}
             <TooltipPrimitive.Arrow

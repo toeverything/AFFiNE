@@ -196,11 +196,9 @@ const JournalDailyCountBlock = ({ date }: JournalBlockProps) => {
     (field: 'createDate' | 'updatedDate') => {
       return sortPagesByDate(
         pageRecords.filter(pageRecord => {
-          if (pageRecord.meta$.value.trash) return false;
-          return (
-            pageRecord.meta$.value[field] &&
-            dayjs(pageRecord.meta$.value[field]).isSame(date, 'day')
-          );
+          const meta = pageRecord.meta$.value;
+          if (meta.trash) return false;
+          return meta[field] && dayjs(meta[field]).isSame(date, 'day');
         }),
         field
       );
