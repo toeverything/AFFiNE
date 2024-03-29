@@ -19,8 +19,10 @@ export interface WorkspaceListProps {
   disabled?: boolean;
   currentWorkspaceId?: string | null;
   items: WorkspaceMetadata[];
+  openingId?: string | null;
   onClick: (workspace: WorkspaceMetadata) => void;
   onSettingClick: (workspace: WorkspaceMetadata) => void;
+  onEnableCloudClick?: (meta: WorkspaceMetadata) => void;
   onDragEnd: (event: DragEndEvent) => void;
   useIsWorkspaceOwner: (workspaceMetadata: WorkspaceMetadata) => boolean;
   useWorkspaceAvatar: (
@@ -38,12 +40,14 @@ interface SortableWorkspaceItemProps extends Omit<WorkspaceListProps, 'items'> {
 const SortableWorkspaceItem = ({
   disabled,
   item,
+  openingId,
   useIsWorkspaceOwner,
   useWorkspaceAvatar,
   useWorkspaceName,
   currentWorkspaceId,
   onClick,
   onSettingClick,
+  onEnableCloudClick,
 }: SortableWorkspaceItemProps) => {
   const { setNodeRef, attributes, listeners, transform, transition } =
     useSortable({
@@ -77,6 +81,8 @@ const SortableWorkspaceItem = ({
         meta={item}
         onClick={onClick}
         onSettingClick={onSettingClick}
+        onEnableCloudClick={onEnableCloudClick}
+        openingId={openingId}
         isOwner={isOwner}
         name={name}
         avatar={avatar}

@@ -84,3 +84,16 @@ export const settingButton = style({
     // },
   },
 });
+
+export const enableCloudButton = style({
+  background: 'transparent',
+});
+
+export const showOnCardHover = style({
+  display: 'none',
+  selectors: {
+    [`.${card}:hover &`]: {
+      display: 'block',
+    },
+  },
+});
