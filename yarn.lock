@@ -465,7 +465,7 @@ __metadata:
     "@electron-forge/plugin-auto-unpack-natives": "npm:^7.3.0"
     "@electron-forge/shared-types": "npm:^7.3.0"
     "@emotion/react": "npm:^11.11.4"
-    "@pengx17/electron-forge-maker-appimage": "npm:^1.1.1"
+    "@pengx17/electron-forge-maker-appimage": "npm:^1.2.0"
     "@sentry/electron": "npm:^4.21.0"
     "@sentry/esbuild-plugin": "npm:^2.16.0"
     "@sentry/react": "npm:^7.108.0"
@@ -9516,14 +9516,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@pengx17/electron-forge-maker-appimage@npm:^1.1.1":
-  version: 1.1.1
-  resolution: "@pengx17/electron-forge-maker-appimage@npm:1.1.1"
+"@pengx17/electron-forge-maker-appimage@npm:^1.2.0":
+  version: 1.2.0
+  resolution: "@pengx17/electron-forge-maker-appimage@npm:1.2.0"
   dependencies:
     "@electron-forge/maker-base": "npm:^7.3.0"
     "@electron-forge/shared-types": "npm:^7.3.0"
     app-builder-lib: "npm:^24.13.3"
-  checksum: 10/6c9b785f3fa8582c8eaa78d571582a75b1ba07da65f56f576b2b156522decbc5a2fcaeea4fbad8fd035897c8a46e6ff74b617c637f754b596dbf89925b00d1ac
+  checksum: 10/f5e8927810b5381462ec2cde8fcbbaab74b66e025e549d49707c1d855a9618c1b88bf136a4a0df9bc2b80a19ea136443115c462feb2a5b8b0311ec6c6c0ea1fa
   languageName: node
   linkType: hard
 
