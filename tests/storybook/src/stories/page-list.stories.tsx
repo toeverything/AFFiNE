@@ -43,11 +43,12 @@ export const AffineOperationCell: StoryFn<PageOperationCellProps> = ({
 }) => <PageOperationCell {...props} />;
 
 AffineOperationCell.args = {
-  favorite: false,
-  isPublic: true,
-  onToggleFavoritePage: () => toast('Toggle favorite page'),
-  onDisablePublicSharing: () => toast('Disable public sharing'),
-  onRemoveToTrash: () => toast('Remove to trash'),
+  page: {
+    id: '123',
+    title: 'Test Page Title',
+    tags: ['tag1', 'tag2'],
+    createDate: new Date('2021-01-01').getTime(),
+  },
 };
 AffineOperationCell.parameters = {
   reactRouter: reactRouterParameters({

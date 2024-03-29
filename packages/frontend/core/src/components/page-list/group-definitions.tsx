@@ -1,5 +1,6 @@
 import type { Tag } from '@affine/core/modules/tag';
 import { TagService } from '@affine/core/modules/tag';
+import { FavoriteItemsAdapter } from '@affine/core/modules/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { FavoritedIcon, FavoriteIcon } from '@blocksuite/icons';
 import type { DocMeta } from '@blocksuite/store';
@@ -154,6 +155,8 @@ export const useFavoriteGroupDefinitions = <
   T extends ListItem,
 >(): ItemGroupDefinition<T>[] => {
   const t = useAFFiNEI18N();
+  const favAdapter = useService(FavoriteItemsAdapter);
+  const favourites = useLiveData(favAdapter.favorites$);
   return useMemo(
     () => [
       {
@@ -166,7 +169,7 @@ export const useFavoriteGroupDefinitions = <
             icon={<FavoritedIcon className={styles.favouritedIcon} />}
           />
         ),
-        match: item => !!(item as DocMeta).favorite,
+        match: item => favourites.some(fav => fav.id === item.id),
       },
       {
         id: 'notFavourited',
@@ -178,10 +181,10 @@ export const useFavoriteGroupDefinitions = <
             icon={<FavoriteIcon className={styles.notFavouritedIcon} />}
           />
         ),
-        match: item => !(item as DocMeta).favorite,
+        match: item => !favourites.some(fav => fav.id === item.id),
       },
     ],
-    [t]
+    [t, favourites]
   );
 };
 

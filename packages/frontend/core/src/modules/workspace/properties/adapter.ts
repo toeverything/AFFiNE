@@ -1,16 +1,17 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 // the adapter is to bridge the workspace rootdoc & native js bindings
-
-import type { Y } from '@blocksuite/store';
-import { createYProxy } from '@blocksuite/store';
-import type { Workspace } from '@toeverything/infra';
+import { createFractionalIndexingSortableHelper } from '@affine/core/utils';
+import { createYProxy, type Y } from '@blocksuite/store';
+import { LiveData, type Workspace } from '@toeverything/infra';
 import { defaultsDeep } from 'lodash-es';
+import { Observable } from 'rxjs';
 
-import type {
-  WorkspaceAffineProperties,
-  WorkspaceFavoriteItem,
+import {
+  PagePropertyType,
+  PageSystemPropertyId,
+  type WorkspaceAffineProperties,
+  type WorkspaceFavoriteItem,
 } from './schema';
-import { PagePropertyType, PageSystemPropertyId } from './schema';
 
 const AFFINE_PROPERTIES_ID = 'affine:workspace-properties';
 
@@ -27,6 +28,7 @@ export class WorkspacePropertiesAdapter {
   // provides a easy-to-use interface for workspace properties
   public readonly proxy: WorkspaceAffineProperties;
   public readonly properties: Y.Map<any>;
+  public readonly properties$: LiveData<WorkspaceAffineProperties>;
 
   private ensuredRoot = false;
   private ensuredPages = {} as Record<string, boolean>;
@@ -36,9 +38,25 @@ export class WorkspacePropertiesAdapter {
     const rootDoc = workspace.docCollection.doc;
     this.properties = rootDoc.getMap(AFFINE_PROPERTIES_ID);
     this.proxy = createYProxy(this.properties);
+
+    this.properties$ = LiveData.from(
+      new Observable(observer => {
+        const update = () => {
+          requestAnimationFrame(() => {
+            observer.next(new Proxy(this.proxy, {}));
+          });
+        };
+        update();
+        this.properties.observeDeep(update);
+        return () => {
+          this.properties.unobserveDeep(update);
+        };
+      }),
+      this.proxy
+    );
   }
 
-  private ensureRootProperties() {
+  public ensureRootProperties() {
     if (this.ensuredRoot) {
       return;
     }
@@ -120,10 +138,6 @@ export class WorkspacePropertiesAdapter {
     return this.pageProperties?.[pageId] ?? null;
   }
 
-  isFavorite(id: string, type: WorkspaceFavoriteItem['type']) {
-    return this.favorites?.[id]?.type === type;
-  }
-
   getJournalPageDateString(id: string) {
     return this.pageProperties?.[id]?.system[PageSystemPropertyId.Journal]
       ?.value;
@@ -133,5 +147,121 @@ export class WorkspacePropertiesAdapter {
     this.ensurePageProperties(id);
     const pageProperties = this.pageProperties?.[id];
     pageProperties!.system[PageSystemPropertyId.Journal].value = date;
+  }
+}
+
+export class FavoriteItemsAdapter {
+  constructor(private readonly adapter: WorkspacePropertiesAdapter) {
+    this.migrateFavorites();
+  }
+
+  readonly sorter = createFractionalIndexingSortableHelper<
+    WorkspaceFavoriteItem,
+    string
+  >(this);
+
+  static getFavItemKey(id: string, type: WorkspaceFavoriteItem['type']) {
+    return `${type}:${id}`;
+  }
+
+  favorites$ = this.adapter.properties$.map(() =>
+    this.getItems().filter(i => i.value)
+  );
+
+  getItems() {
+    return Object.values(this.adapter.favorites ?? {});
+  }
+
+  get favorites() {
+    return this.adapter.favorites;
+  }
+
+  get workspace() {
+    return this.adapter.workspace;
+  }
+
+  getItemId(item: WorkspaceFavoriteItem) {
+    return item.id;
+  }
+
+  getItemOrder(item: WorkspaceFavoriteItem) {
+    return item.order;
+  }
+
+  setItemOrder(item: WorkspaceFavoriteItem, order: string) {
+    item.order = order;
+  }
+
+  // read from the workspace meta and migrate to the properties
+  private migrateFavorites() {
+    // only migrate if favorites is empty
+    if (Object.keys(this.favorites ?? {}).length > 0) {
+      return;
+    }
+
+    // old favorited pages
+    const oldFavorites = this.workspace.docCollection.meta.docMetas
+      .filter(meta => meta.favorite)
+      .map(meta => meta.id);
+
+    this.adapter.transact(() => {
+      for (const id of oldFavorites) {
+        this.set(id, 'doc', true);
+      }
+    });
+  }
+
+  isFavorite(id: string, type: WorkspaceFavoriteItem['type']) {
+    const existing = this.getFavoriteItem(id, type);
+    return existing?.value ?? false;
+  }
+
+  isFavorite$(id: string, type: WorkspaceFavoriteItem['type']) {
+    return this.favorites$.map(() => {
+      return this.isFavorite(id, type);
+    });
+  }
+
+  private getFavoriteItem(id: string, type: WorkspaceFavoriteItem['type']) {
+    return this.favorites?.[FavoriteItemsAdapter.getFavItemKey(id, type)];
+  }
+
+  // add or set a new fav item to the list. note the id added with prefix
+  set(
+    id: string,
+    type: WorkspaceFavoriteItem['type'],
+    value: boolean,
+    order?: string
+  ) {
+    this.adapter.ensureRootProperties();
+    if (!this.favorites) {
+      throw new Error('Favorites is not initialized');
+    }
+    const existing = this.getFavoriteItem(id, type);
+    if (!existing) {
+      this.favorites[FavoriteItemsAdapter.getFavItemKey(id, type)] = {
+        id,
+        type,
+        value: true,
+        order: order ?? this.sorter.getNewItemOrder(),
+      };
+    } else {
+      Object.assign(existing, {
+        value,
+        order: order ?? existing.order,
+      });
+    }
+  }
+
+  toggle(id: string, type: WorkspaceFavoriteItem['type']) {
+    this.set(id, type, !this.isFavorite(id, type));
+  }
+
+  remove(id: string, type: WorkspaceFavoriteItem['type']) {
+    this.adapter.ensureRootProperties();
+    const existing = this.getFavoriteItem(id, type);
+    if (existing) {
+      existing.value = false;
+    }
   }
 }

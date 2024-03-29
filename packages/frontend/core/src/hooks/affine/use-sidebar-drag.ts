@@ -1,12 +1,12 @@
 import { toast } from '@affine/component';
 import type { DraggableTitleCellData } from '@affine/core/components/page-list';
 import { useDocMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
+import { FavoriteItemsAdapter } from '@affine/core/modules/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { DragEndEvent, UniqueIdentifier } from '@dnd-kit/core';
 import { useService, Workspace } from '@toeverything/infra';
 import { useCallback } from 'react';
 
-import { useBlockSuiteMetaHelper } from './use-block-suite-meta-helper';
 import { useTrashModalHelper } from './use-trash-modal-helper';
 
 // Unique droppable IDs
@@ -69,10 +69,10 @@ export function getDragItemId(
 export const useSidebarDrag = () => {
   const t = useAFFiNEI18N();
   const currentWorkspace = useService(Workspace);
+  const favAdapter = useService(FavoriteItemsAdapter);
   const workspace = currentWorkspace.docCollection;
   const { setTrashModal } = useTrashModalHelper(workspace);
-  const { addToFavorite, removeFromFavorite } =
-    useBlockSuiteMetaHelper(workspace);
+
   const { getDocMeta } = useDocMetaHelper(workspace);
 
   const isDropArea = useCallback(
@@ -123,7 +123,7 @@ export const useSidebarDrag = () => {
   const processFavouritesDrag = useCallback(
     (e: DragEndEvent) => {
       const { pageId } = e.active.data.current as DraggableTitleCellData;
-      const isFavourited = getDocMeta(pageId)?.favorite;
+      const isFavourited = favAdapter.isFavorite(pageId, 'doc');
       const isFavouriteDrag = String(e.over?.id).startsWith(
         DropPrefix.SidebarFavorites
       );
@@ -131,11 +131,11 @@ export const useSidebarDrag = () => {
         return toast(t['com.affine.collection.addPage.alreadyExists']());
       }
       processDrag(e, DropPrefix.SidebarFavorites, pageId => {
-        addToFavorite(pageId);
+        favAdapter.set(pageId, 'doc', true);
         toast(t['com.affine.cmdk.affine.editor.add-to-favourites']());
       });
     },
-    [getDocMeta, processDrag, addToFavorite, t]
+    [processDrag, t, favAdapter]
   );
 
   const processRemoveDrag = useCallback(
@@ -146,7 +146,7 @@ export const useSidebarDrag = () => {
 
       if (String(e.active.id).startsWith(DragPrefix.FavouriteListItem)) {
         const pageId = e.active.data.current?.pageId;
-        removeFromFavorite(pageId);
+        favAdapter.remove(pageId, 'doc');
         toast(t['com.affine.cmdk.affine.editor.remove-from-favourites']());
         return;
       }
@@ -155,7 +155,7 @@ export const useSidebarDrag = () => {
       }
     },
 
-    [removeFromFavorite, t]
+    [favAdapter, t]
   );
 
   return useCallback(
