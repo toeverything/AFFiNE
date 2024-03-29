@@ -67,6 +67,7 @@ jobs:
     needs:
       - build-web
     steps:
+      - uses: actions/checkout@v4
       - name: Download web artifact
         uses: actions/download-artifact@v4
         with:
