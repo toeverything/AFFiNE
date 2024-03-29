@@ -14,6 +14,12 @@ export const footerContainer = style({
   paddingLeft: cssVar('editorSidePadding'),
   paddingRight: cssVar('editorSidePadding'),
   marginBottom: '200px',
+  '@media': {
+    'screen and (max-width: 800px)': {
+      paddingLeft: '24px',
+      paddingRight: '24px',
+    },
+  },
 });
 export const footer = style({
   display: 'flex',

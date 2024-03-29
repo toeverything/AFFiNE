@@ -9,6 +9,18 @@ export const editor = style({
       },
     },
   },
+  '@media': {
+    'screen and (max-width: 800px)': {
+      selectors: {
+        '&.is-public': {
+          vars: {
+            '--affine-editor-width': '100%',
+            '--affine-editor-side-padding': '24px',
+          },
+        },
+      },
+    },
+  },
 });
 globalStyle(
   `${editor} .affine-page-viewport:not(.affine-embed-synced-doc-editor)`,
