@@ -27,6 +27,7 @@
     "url": "git+https://github.com/toeverything/AFFiNE.git"
   },
   "dependencies": {
+    "@magic-works/i18n-codegen": "^0.5.0",
     "i18next": "^23.10.0",
     "react-i18next": "^14.0.5",
     "undici": "^6.6.2"

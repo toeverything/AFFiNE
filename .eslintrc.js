@@ -234,7 +234,7 @@ const config = {
       },
     },
     ...allPackages.map(pkg => ({
-      files: [`${pkg}/src/**/*.ts`, `${pkg}/src/**/*.tsx`],
+      files: [`${pkg}/src/**/*.ts`, `${pkg}/src/**/*.tsx`, `${pkg}/**/*.mjs`],
       rules: {
         '@typescript-eslint/no-restricted-imports': [
           'error',
