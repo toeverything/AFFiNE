@@ -1,8 +1,10 @@
 import { Menu } from '@affine/component';
+import { FavoriteItemsAdapter } from '@affine/core/modules/workspace';
 import type { Collection } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { FilterIcon } from '@blocksuite/icons';
 import type { DocMeta } from '@blocksuite/store';
+import { useLiveData, useService } from '@toeverything/infra';
 import clsx from 'clsx';
 import type { ReactNode } from 'react';
 import { useCallback } from 'react';
@@ -34,6 +36,8 @@ export const PagesMode = ({
   allPageListConfig: AllPageListConfig;
 }) => {
   const t = useAFFiNEI18N();
+  const favAdapter = useService(FavoriteItemsAdapter);
+  const favorites = useLiveData(favAdapter.favorites$);
   const {
     showFilter,
     filters,
@@ -45,6 +49,7 @@ export const PagesMode = ({
     allPageListConfig.allPages.map(meta => ({
       meta,
       publicMode: allPageListConfig.getPublicMode(meta.id),
+      favorite: favorites.some(f => f.id === meta.id),
     }))
   );
   const pageHeaderColsDef = usePageHeaderColsDef();

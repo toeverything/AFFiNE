@@ -1,6 +1,8 @@
 import { useBlockSuiteDocMeta } from '@affine/core/hooks/use-block-suite-page-meta';
+import { FavoriteItemsAdapter } from '@affine/core/modules/workspace';
 import type { DocMeta } from '@blocksuite/store';
 import { useDroppable } from '@dnd-kit/core';
+import { useLiveData, useService } from '@toeverything/infra';
 import { useMemo } from 'react';
 
 import { getDropItemId } from '../../../../hooks/affine/use-sidebar-drag';
@@ -15,11 +17,16 @@ export const FavoriteList = ({
   docCollection: workspace,
 }: FavoriteListProps) => {
   const metas = useBlockSuiteDocMeta(workspace);
+  const favAdapter = useService(FavoriteItemsAdapter);
   const dropItemId = getDropItemId('favorites');
 
-  const favoriteList = useMemo(
-    () => metas.filter(p => p.favorite && !p.trash),
-    [metas]
+  const favourites = useLiveData(
+    favAdapter.favorites$.map(favourites =>
+      favourites.filter(fav => {
+        const meta = metas.find(m => m.id === fav.id);
+        return meta && !meta.trash;
+      })
+    )
   );
 
   const metaMapping = useMemo(
@@ -45,7 +52,7 @@ export const FavoriteList = ({
       ref={setNodeRef}
       data-over={isOver}
     >
-      {favoriteList.map((pageMeta, index) => {
+      {favourites.map((pageMeta, index) => {
         return (
           <FavouritePage
             key={`${pageMeta}-${index}`}
@@ -57,7 +64,7 @@ export const FavoriteList = ({
           />
         );
       })}
-      {favoriteList.length === 0 && <EmptyItem />}
+      {favourites.length === 0 && <EmptyItem />}
     </div>
   );
 };

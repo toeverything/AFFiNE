@@ -5,8 +5,8 @@ import type {
   PageInfoCustomPropertyMeta,
 } from '@affine/core/modules/workspace/properties/schema';
 import { PagePropertyType } from '@affine/core/modules/workspace/properties/schema';
+import { createFractionalIndexingSortableHelper } from '@affine/core/utils';
 import { DebugLogger } from '@affine/debug';
-import { generateKeyBetween } from 'fractional-indexing';
 import { nanoid } from 'nanoid';
 
 import { getDefaultIconName } from './icons-mapping';
@@ -147,6 +147,11 @@ export class PagePropertiesManager {
     this.ensureRequiredProperties();
   }
 
+  readonly sorter = createFractionalIndexingSortableHelper<
+    PageInfoCustomProperty,
+    string | number
+  >(this);
+
   // prevent infinite loop
   private ensuring = false;
   ensureRequiredProperties() {
@@ -161,6 +166,22 @@ export class PagePropertiesManager {
       });
     });
     this.ensuring = false;
+  }
+
+  getItems() {
+    return Object.values(this.getCustomProperties());
+  }
+
+  getItemOrder(item: PageInfoCustomProperty): string {
+    return item.order;
+  }
+
+  setItemOrder(item: PageInfoCustomProperty, order: string) {
+    item.order = order;
+  }
+
+  getItemId(item: PageInfoCustomProperty) {
+    return item.id;
   }
 
   get workspace() {
@@ -204,16 +225,6 @@ export class PagePropertiesManager {
       : {};
   }
 
-  getOrderedCustomProperties() {
-    return Object.values(this.getCustomProperties()).sort((a, b) =>
-      a.order > b.order ? 1 : a.order < b.order ? -1 : 0
-    );
-  }
-
-  largestOrder() {
-    return this.getOrderedCustomProperties().at(-1)?.order ?? null;
-  }
-
   getCustomPropertyMeta(id: string): PageInfoCustomPropertyMeta | undefined {
     return this.metaManager.customPropertiesSchema[id];
   }
@@ -234,7 +245,7 @@ export class PagePropertiesManager {
       return;
     }
 
-    const newOrder = generateKeyBetween(this.largestOrder(), null);
+    const newOrder = this.sorter.getNewItemOrder();
     if (this.properties!.custom[id]) {
       logger.warn(`custom property ${id} already exists`);
     }
@@ -245,21 +256,6 @@ export class PagePropertiesManager {
       order: newOrder,
       visibility: 'visible',
     };
-  }
-
-  moveCustomProperty(from: number, to: number) {
-    this.ensureRequiredProperties();
-    // move from -> to means change from's order to a new order between to and to -1/+1
-    const properties = this.getOrderedCustomProperties();
-    const fromProperty = properties[from];
-    const toProperty = properties[to];
-    const toNextProperty = properties[from < to ? to + 1 : to - 1];
-    const args: [string?, string?] =
-      from < to
-        ? [toProperty.order, toNextProperty?.order ?? null]
-        : [toNextProperty?.order ?? null, toProperty.order];
-    const newOrder = generateKeyBetween(...args);
-    this.properties!.custom[fromProperty.id].order = newOrder;
   }
 
   hasCustomProperty(id: string) {

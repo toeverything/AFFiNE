@@ -101,10 +101,7 @@ interface SortablePropertiesProps {
 
 const SortableProperties = ({ children }: SortablePropertiesProps) => {
   const manager = useContext(managerContext);
-  const properties = useMemo(
-    () => manager.getOrderedCustomProperties(),
-    [manager]
-  );
+  const properties = useMemo(() => manager.sorter.getOrderedItems(), [manager]);
   const editingItem = useAtomValue(editingPropertyAtom);
   const draggable = !manager.readonly && !editingItem;
   const sensors = useSensors(
@@ -128,15 +125,12 @@ const SortableProperties = ({ children }: SortablePropertiesProps) => {
         return;
       }
       const { active, over } = event;
-      const fromIndex = properties.findIndex(p => p.id === active.id);
-      const toIndex = properties.findIndex(p => p.id === over?.id);
-
-      if (fromIndex !== -1 && toIndex !== -1 && fromIndex !== toIndex) {
-        manager.moveCustomProperty(fromIndex, toIndex);
-        setLocalProperties(manager.getOrderedCustomProperties());
+      if (over) {
+        manager.sorter.move(active.id, over.id);
       }
+      setLocalProperties(manager.sorter.getOrderedItems());
     },
-    [manager, properties, draggable]
+    [manager, draggable]
   );
 
   const filteredProperties = useMemo(
@@ -636,7 +630,7 @@ export const PagePropertiesTableHeader = ({
     onOpenChange(!open);
   }, [onOpenChange, open]);
 
-  const properties = manager.getOrderedCustomProperties();
+  const properties = manager.sorter.getOrderedItems();
 
   return (
     <div className={clsx(styles.tableHeader, className)} style={style}>
