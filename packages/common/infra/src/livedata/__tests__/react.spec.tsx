@@ -1,31 +1,155 @@
 /**
  * @vitest-environment happy-dom
  */
-import { render, screen } from '@testing-library/react';
-import { useRef } from 'react';
+
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { useMemo } from 'react';
+import type { Subscriber } from 'rxjs';
 import { Observable } from 'rxjs';
-import { describe, expect, test, vi } from 'vitest';
+import { afterEach, describe, expect, test, vi } from 'vitest';
 
 import { LiveData, useLiveData } from '..';
 
 describe('livedata', () => {
-  test('react', () => {
+  afterEach(() => {
+    cleanup();
+  });
+  test('react', async () => {
     const livedata$ = new LiveData(0);
+    let renderCount = 0;
     const Component = () => {
-      const renderCount = useRef(0);
-      renderCount.current++;
+      renderCount++;
       const value = useLiveData(livedata$);
-      return (
-        <main>
-          {renderCount.current}:{value}
-        </main>
+      return <main>{value}</main>;
+    };
+    render(<Component />);
+    expect(screen.getByRole('main').innerText).toBe('0');
+    livedata$.next(1);
+    // wait for rerender
+    await waitFor(() => expect(screen.getByRole('main').innerText).toBe('1'));
+    expect(renderCount).toBe(2);
+  });
+
+  test('react livedata.map', async () => {
+    const livedata$ = new LiveData(0);
+    let renderCount = 0;
+    const Component = () => {
+      renderCount++;
+      const value = useLiveData(livedata$.map(v => v + 1));
+      return <main>{value}</main>;
+    };
+    render(<Component />);
+    expect(screen.getByRole('main').innerText).toBe('1');
+    livedata$.next(1);
+    // wait for rerender
+    await waitFor(() => expect(screen.getByRole('main').innerText).toBe('2'));
+    expect(renderCount).toBe(2);
+  });
+
+  test('react livedata.map heavy object copy', async () => {
+    const livedata$ = new LiveData({ hello: 'world' });
+    let renderCount = 0;
+    let objectCopyCount = 0;
+    const Component = () => {
+      renderCount++;
+
+      const value = useLiveData(
+        livedata$.map(v => {
+          objectCopyCount++;
+          return { ...v };
+        })
       );
+      return <main>{value.hello}</main>;
     };
     const { rerender } = render(<Component />);
-    expect(screen.getByRole('main').innerText).toBe('1:0');
-    livedata$.next(1);
+    expect(screen.getByRole('main').innerText).toBe('world');
+    livedata$.next({ hello: 'foobar' });
+    // wait for rerender
+    await waitFor(() =>
+      expect(screen.getByRole('main').innerText).toBe('foobar')
+    );
+    expect(renderCount).toBe(2);
+    expect(objectCopyCount).toBe(3);
+
     rerender(<Component />);
-    expect(screen.getByRole('main').innerText).toBe('3:1');
+    expect(renderCount).toBe(3);
+    expect(objectCopyCount).toBe(4);
+  });
+
+  test('react useMemo livedata.map heavy object copy', async () => {
+    const livedata$ = new LiveData({ hello: 'world' });
+    let renderCount = 0;
+    let objectCopyCount = 0;
+    const Component = () => {
+      renderCount++;
+      const value = useLiveData(
+        useMemo(
+          () =>
+            livedata$.map(v => {
+              objectCopyCount++;
+              return { ...v };
+            }),
+          []
+        )
+      );
+      return <main>{value.hello}</main>;
+    };
+    const { rerender } = render(<Component />);
+    expect(screen.getByRole('main').innerText).toBe('world');
+    livedata$.next({ hello: 'foobar' });
+    // wait for rerender
+    await waitFor(() =>
+      expect(screen.getByRole('main').innerText).toBe('foobar')
+    );
+    expect(renderCount).toBe(2);
+    expect(objectCopyCount).toBe(2);
+
+    rerender(<Component />);
+    expect(renderCount).toBe(3);
+    expect(objectCopyCount).toBe(2);
+  });
+
+  test('react useLiveData with livedata from observable', async () => {
+    let subscribeCount = 0;
+    let renderCount = 0;
+
+    let innerSubscriber: Subscriber<{
+      value: number;
+    }> = null!;
+
+    const livedata$ = LiveData.from(
+      new Observable<{ value: number }>(subscriber => {
+        subscribeCount++;
+        subscriber.next({ value: 1 });
+        innerSubscriber = subscriber;
+      }),
+      { value: 0 }
+    );
+
+    const Component = () => {
+      renderCount++;
+      const value = useLiveData(
+        livedata$.map(v => ({
+          value: v.value + 1,
+        }))
+      ).value;
+      return <main>{value}</main>;
+    };
+    const { rerender } = render(<Component />);
+    expect(screen.getByRole('main').innerText).toBe('2');
+
+    expect(subscribeCount).toBe(1);
+    expect(renderCount).toBe(1);
+
+    innerSubscriber.next({ value: 2 });
+
+    await waitFor(() => expect(screen.getByRole('main').innerText).toBe('3'));
+    expect(subscribeCount).toBe(1);
+    expect(renderCount).toBe(2);
+
+    rerender(<Component />);
+    expect(subscribeCount).toBe(1);
+    expect(renderCount).toBe(3);
   });
 
   test('lifecycle', async () => {
@@ -34,7 +158,6 @@ describe('livedata', () => {
     const observable$ = new Observable<number>(subscriber => {
       observableSubscribed = true;
       subscriber.next(1);
-      console.log(1);
       return () => {
         observableClosed = true;
       };
