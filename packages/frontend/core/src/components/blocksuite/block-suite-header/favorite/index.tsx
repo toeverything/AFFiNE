@@ -35,5 +35,11 @@ export const useFavorite = (pageId: string) => {
 export const FavoriteButton = ({ pageId }: FavoriteButtonProps) => {
   const { favorite, toggleFavorite } = useFavorite(pageId);
 
-  return <FavoriteTag active={!!favorite} onClick={toggleFavorite} />;
+  return (
+    <FavoriteTag
+      data-testid="pin-button"
+      active={!!favorite}
+      onClick={toggleFavorite}
+    />
+  );
 };

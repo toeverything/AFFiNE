@@ -90,6 +90,15 @@ export class CollectionService {
     });
   }
 
+  deletePageFromCollection(collectionId: string, pageId: string) {
+    this.updateCollection(collectionId, old => {
+      return {
+        ...old,
+        allowList: old.allowList?.filter(id => id !== pageId),
+      };
+    });
+  }
+
   deleteCollection(info: DeleteCollectionInfo, ...ids: string[]) {
     const collectionsYArray = this.collectionsYArray;
     if (!collectionsYArray) {
