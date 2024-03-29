@@ -1,4 +1,5 @@
 import { useBlockSuiteDocMeta } from '@affine/core/hooks/use-block-suite-page-meta';
+import { CollectionService } from '@affine/core/modules/collection';
 import { FavoriteItemsAdapter } from '@affine/core/modules/workspace';
 import type { DocMeta } from '@blocksuite/store';
 import { useDroppable } from '@dnd-kit/core';
@@ -6,6 +7,7 @@ import { useLiveData, useService } from '@toeverything/infra';
 import { useMemo } from 'react';
 
 import { getDropItemId } from '../../../../hooks/affine/use-sidebar-drag';
+import { CollectionSidebarNavItem } from '../collections';
 import type { FavoriteListProps } from '../index';
 import EmptyItem from './empty-item';
 import { FavouritePage } from './favourite-page';
@@ -18,18 +20,10 @@ export const FavoriteList = ({
 }: FavoriteListProps) => {
   const metas = useBlockSuiteDocMeta(workspace);
   const favAdapter = useService(FavoriteItemsAdapter);
+  const collections = useLiveData(useService(CollectionService).collections$);
   const dropItemId = getDropItemId('favorites');
 
-  const favourites = useLiveData(
-    favAdapter.favorites$.map(favourites =>
-      favourites.filter(fav => {
-        const meta = metas.find(m => m.id === fav.id);
-        return meta && !meta.trash;
-      })
-    )
-  );
-
-  const metaMapping = useMemo(
+  const docMetaMapping = useMemo(
     () =>
       metas.reduce(
         (acc, meta) => {
@@ -39,6 +33,17 @@ export const FavoriteList = ({
         {} as Record<string, DocMeta>
       ),
     [metas]
+  );
+
+  const favourites = useLiveData(
+    favAdapter.orderedFavorites$.map(favs => {
+      return favs.filter(fav => {
+        if (fav.type === 'doc') {
+          return !!docMetaMapping[fav.id] && !docMetaMapping[fav.id].trash;
+        }
+        return true;
+      });
+    })
   );
 
   const { setNodeRef, isOver } = useDroppable({
@@ -52,17 +57,32 @@ export const FavoriteList = ({
       ref={setNodeRef}
       data-over={isOver}
     >
-      {favourites.map((pageMeta, index) => {
-        return (
-          <FavouritePage
-            key={`${pageMeta}-${index}`}
-            metaMapping={metaMapping}
-            pageId={pageMeta.id}
-            // memo?
-            parentIds={emptyPageIdSet}
-            docCollection={workspace}
-          />
-        );
+      {favourites.map(item => {
+        if (item.type === 'collection') {
+          const collection = collections.find(c => c.id === item.id);
+          if (collection) {
+            return (
+              <CollectionSidebarNavItem
+                key={item.id}
+                className={styles.favItemWrapper}
+                docCollection={workspace}
+                collection={collection}
+              />
+            );
+          }
+        } else if (item.type === 'doc' && !docMetaMapping[item.id].trash) {
+          return (
+            <FavouritePage
+              key={item.id}
+              metaMapping={docMetaMapping}
+              pageId={item.id}
+              // memo?
+              parentIds={emptyPageIdSet}
+              docCollection={workspace}
+            />
+          );
+        }
+        return null;
       })}
       {favourites.length === 0 && <EmptyItem />}
     </div>
