@@ -106,6 +106,7 @@ export const titleCell = style({
   maxWidth: 'calc(100% - 64px)',
   flex: 1,
   whiteSpace: 'nowrap',
+  userSelect: 'none',
 });
 export const titleCellMain = style({
   overflow: 'hidden',

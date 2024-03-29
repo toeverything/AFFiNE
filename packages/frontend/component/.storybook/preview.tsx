@@ -8,6 +8,7 @@ import { useDarkMode } from 'storybook-dark-mode';
 
 import type { Preview } from '@storybook/react';
 import React from 'react';
+import { ConfirmModalProvider } from '../src/ui/modal/confirm-modal';
 
 export const parameters: Preview = {
   argTypes: {
@@ -53,9 +54,11 @@ export const decorators = [
   (Story: ComponentType, context) => {
     return (
       <ThemeProvider themes={['dark', 'light']} enableSystem={true}>
-        <ThemeChange />
-        <Component />
-        <Story {...context} />
+        <ConfirmModalProvider>
+          <ThemeChange />
+          <Component />
+          <Story {...context} />
+        </ConfirmModalProvider>
       </ThemeProvider>
     );
   },

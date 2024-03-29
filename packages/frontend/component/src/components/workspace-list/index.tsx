@@ -1,10 +1,5 @@
 import type { DragEndEvent } from '@dnd-kit/core';
-import {
-  DndContext,
-  PointerSensor,
-  useSensor,
-  useSensors,
-} from '@dnd-kit/core';
+import { DndContext, MouseSensor, useSensor, useSensors } from '@dnd-kit/core';
 import {
   restrictToParentElement,
   restrictToVerticalAxis,
@@ -24,8 +19,10 @@ export interface WorkspaceListProps {
   disabled?: boolean;
   currentWorkspaceId?: string | null;
   items: WorkspaceMetadata[];
+  openingId?: string | null;
   onClick: (workspace: WorkspaceMetadata) => void;
   onSettingClick: (workspace: WorkspaceMetadata) => void;
+  onEnableCloudClick?: (meta: WorkspaceMetadata) => void;
   onDragEnd: (event: DragEndEvent) => void;
   useIsWorkspaceOwner: (workspaceMetadata: WorkspaceMetadata) => boolean;
   useWorkspaceAvatar: (
@@ -43,12 +40,14 @@ interface SortableWorkspaceItemProps extends Omit<WorkspaceListProps, 'items'> {
 const SortableWorkspaceItem = ({
   disabled,
   item,
+  openingId,
   useIsWorkspaceOwner,
   useWorkspaceAvatar,
   useWorkspaceName,
   currentWorkspaceId,
   onClick,
   onSettingClick,
+  onEnableCloudClick,
 }: SortableWorkspaceItemProps) => {
   const { setNodeRef, attributes, listeners, transform, transition } =
     useSortable({
@@ -82,6 +81,8 @@ const SortableWorkspaceItem = ({
         meta={item}
         onClick={onClick}
         onSettingClick={onSettingClick}
+        onEnableCloudClick={onEnableCloudClick}
+        openingId={openingId}
         isOwner={isOwner}
         name={name}
         avatar={avatar}
@@ -94,7 +95,7 @@ const modifiers = [restrictToParentElement, restrictToVerticalAxis];
 
 export const WorkspaceList = (props: WorkspaceListProps) => {
   const sensors = useSensors(
-    useSensor(PointerSensor, {
+    useSensor(MouseSensor, {
       activationConstraint: {
         distance: 8,
       },

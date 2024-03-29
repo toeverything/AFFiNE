@@ -10,7 +10,7 @@
 </a>
 <br/>
 <p align="center">
-  A privacy-focussed, local-first, open-source, and ready-to-use alternative for Notion & Miro. <br />
+  A privacy-focused, local-first, open-source, and ready-to-use alternative for Notion & Miro. <br />
   One hyper-fused platform for wildly creative minds.
 </p>
 
@@ -49,7 +49,7 @@
 
 ## Getting started & staying tuned with us.
 
-Star us, and you will receive all releases notifications from GitHub without any delay!
+Star us, and you will receive all release notifications from GitHub without any delay!
 
 <img src="https://user-images.githubusercontent.com/79301703/230891830-0110681e-8c7e-483b-b6d9-9e42b291b9ef.gif" style="width: 100%"/>
 
@@ -65,7 +65,7 @@ AFFiNE is an open-source, all-in-one workspace and an operating system for all t
 
 **Multimodal AI partner ready to kick in any work**
 
-- Write up professional work report? Turn an outline into expressive and presentable slides? Summary an article into a well-structured mindmap? Sorting your job plan and backlog for tasks? Or....draw and code prototype apps and web pages directly all with one prompt? With you, AFFiNE AI pushes your creativity to the edge of your imagination.
+- Write up professional work report? Turn an outline into expressive and presentable slides? Summary an article into a well-structured mindmap? Sorting your job plan and backlog for tasks? Or... draw and code prototype apps and web pages directly all with one prompt? With you, AFFiNE AI pushes your creativity to the edge of your imagination.
 
 **Local-first & Real-time collaborative**
 
@@ -73,7 +73,7 @@ AFFiNE is an open-source, all-in-one workspace and an operating system for all t
 
 **Self-host & Shape your own AFFiNE**
 
-- You have the freedom to manage, self-host, fork and build your own AFFiNE. Plugin community and third-party blocks is coming soon. More tractions on [Blocksuite](block-suite.com). Check there to learn how to [self-host AFFiNE](https://docs.affine.pro/docs/self-host-affine-).
+- You have the freedom to manage, self-host, fork and build your own AFFiNE. Plugin community and third-party blocks are coming soon. More tractions on [Blocksuite](block-suite.com). Check there to learn how to [self-host AFFiNE](https://docs.affine.pro/docs/self-host-affine-).
 
 ## Acknowledgement
 
@@ -83,7 +83,7 @@ AFFiNE is an open-source, all-in-one workspace and an operating system for all t
 - Trello with their Kanban
 - Airtable & Miro with their no-code programable datasheets
 - Miro & Whimiscal with their edgeless visual whiteboard
-- Remnote & Capacities with their object-based tag system
+- Remote & Capacities with their object-based tag system
 
 There is a large overlap of their atomic “building blocks” between these apps. They are not open source, nor do they have a plugin system like Vscode for contributors to customize. We want to have something that contains all the features we love and also goes one step even further.
 
@@ -104,7 +104,7 @@ For **bug reports**, **feature requests** and other **suggestions** you can also
 
 For **translation** and **language support** you can visit our [i18n General Space](https://community.affine.pro/c/i18n-general).
 
-Looking for **others ways to contribute** and wondering where to start? Check out the [AFFiNE Ambassador program](https://community.affine.pro/c/start-here/affine-ambassador), we work closely with passionate community members and provide them with a wide-range of support and resources.
+Looking for **other ways to contribute** and wondering where to start? Check out the [AFFiNE Ambassador program](https://community.affine.pro/c/start-here/affine-ambassador), we work closely with passionate community members and provide them with a wide range of support and resources.
 
 If you have questions, you are welcome to contact us. One of the best places to get more info and learn more is in the [AFFiNE Community](https://community.affine.pro) where you can engage with other like-minded individuals.
 
@@ -147,11 +147,11 @@ Begin with Docker to deploy your own feature-rich, unrestricted version of AFFiN
 
 ## Hiring
 
-Some amazing companies including AFFiNE are looking for developers! Are you interesgo to iour discord channel AFFiNE and/or its partners? Check out some of the latest [jobs available].
+Some amazing companies, including AFFiNE, are looking for developers! Are you interested in joining AFFiNE or its partners? Check out our Discord channel for some of the latest jobs available.
 
 ## Feature Request
 
-For feature request, please see [community.affine.pro](https://community.affine.pro/c/feature-requests/).
+For feature requests, please see [community.affine.pro](https://community.affine.pro/c/feature-requests/).
 
 ## Building
 
@@ -186,7 +186,7 @@ See [LICENSE] for details.
 [jobs available]: ./docs/jobs.md
 [latest packages]: https://github.com/toeverything/AFFiNE/pkgs/container/affine-self-hosted
 [contributor license agreement]: https://github.com/toeverything/affine/edit/canary/.github/CLA.md
-[rust-version-icon]: https://img.shields.io/badge/Rust-1.76.0-dea584
+[rust-version-icon]: https://img.shields.io/badge/Rust-1.77.0-dea584
 [stars-icon]: https://img.shields.io/github/stars/toeverything/AFFiNE.svg?style=flat&logo=github&colorB=red&label=stars
 [codecov]: https://codecov.io/gh/toeverything/affine/branch/canary/graphs/badge.svg?branch=canary
 [node-version-icon]: https://img.shields.io/badge/node-%3E=18.16.1-success

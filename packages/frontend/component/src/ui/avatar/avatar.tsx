@@ -112,7 +112,7 @@ export const Avatar = forwardRef<HTMLSpanElement, AvatarProps>(
               {colorfulFallback ? (
                 <ColorfulFallback char={firstCharOfName} />
               ) : (
-                firstCharOfName
+                firstCharOfName.toUpperCase()
               )}
             </AvatarFallback>
             {hoverIcon ? (

@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import { getRuntimeConfig } from '@affine/cli/src/webpack/runtime-config';
+import { sentryEsbuildPlugin } from '@sentry/esbuild-plugin';
 import type { BuildOptions } from 'esbuild';
 
 export const electronDir = fileURLToPath(new URL('..', import.meta.url));
@@ -28,6 +29,26 @@ export const config = (): BuildOptions => {
     })
   );
 
+  if (process.env.GITHUB_SHA) {
+    define['process.env.GITHUB_SHA'] = `"${process.env.GITHUB_SHA}"`;
+  }
+
+  const plugins = [];
+
+  if (
+    process.env.SENTRY_AUTH_TOKEN &&
+    process.env.SENTRY_ORG &&
+    process.env.SENTRY_PROJECT
+  ) {
+    plugins.push(
+      sentryEsbuildPlugin({
+        org: process.env.SENTRY_ORG,
+        project: process.env.SENTRY_PROJECT,
+        authToken: process.env.SENTRY_AUTH_TOKEN,
+      })
+    );
+  }
+
   return {
     entryPoints: [
       resolve(electronDir, './src/main/index.ts'),
@@ -48,5 +69,6 @@ export const config = (): BuildOptions => {
     assetNames: '[name]',
     treeShaking: true,
     sourcemap: 'linked',
+    plugins,
   };
 };

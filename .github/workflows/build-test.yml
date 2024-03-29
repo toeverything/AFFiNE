@@ -280,8 +280,10 @@ jobs:
       - name: Build Web
         # always skip cache because its fast, and cache configuration is always changing
         run: yarn nx build @affine/web --skip-nx-cache
+        env:
+          DISTRIBUTION: 'desktop'
       - name: zip web
-        run: tar -czf dist.tar.gz --directory=packages/frontend/web/dist .
+        run: tar -czf dist.tar.gz --directory=packages/frontend/electron/dist .
       - name: Upload web artifact
         uses: actions/upload-artifact@v4
         with:

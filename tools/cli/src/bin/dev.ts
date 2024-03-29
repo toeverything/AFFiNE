@@ -12,7 +12,8 @@ import { watchI18N } from '../util/i18n.js';
 import { createWebpackConfig } from '../webpack/webpack.config.js';
 
 const flags: BuildFlags = {
-  distribution: 'browser',
+  distribution:
+    (process.env.DISTRIBUTION as BuildFlags['distribution']) ?? 'browser',
   mode: 'development',
   channel: 'canary',
   coverage: process.env.COVERAGE === 'true',
@@ -131,6 +132,8 @@ if (buildFlags.debugBlockSuite) {
   }
   flags.localBlockSuite = localBlockSuite;
 }
+
+console.info(flags);
 
 watchI18N();
 

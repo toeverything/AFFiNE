@@ -19,6 +19,7 @@ import {
   openSignOutModalAtom,
 } from '../atoms';
 import { PaymentDisableModal } from '../components/affine/payment-disable';
+import { useSession } from '../hooks/affine/use-current-user';
 import { useAsyncCallback } from '../hooks/affine-async-hooks';
 import { useNavigateHelper } from '../hooks/use-navigate-helper';
 import { CurrentWorkspaceService } from '../modules/workspace/current-workspace';
@@ -221,6 +222,7 @@ export function CurrentWorkspaceModals() {
 
 export const SignOutConfirmModal = () => {
   const { openPage } = useNavigateHelper();
+  const { reload } = useSession();
   const [open, setOpen] = useAtom(openSignOutModalAtom);
   const currentWorkspace = useLiveData(
     useService(CurrentWorkspaceService).currentWorkspace$
@@ -232,6 +234,7 @@ export const SignOutConfirmModal = () => {
   const onConfirm = useAsyncCallback(async () => {
     setOpen(false);
     await signOutCloud();
+    await reload();
 
     mixpanel.reset();
 
@@ -244,7 +247,7 @@ export const SignOutConfirmModal = () => {
         openPage(localWorkspace.id, WorkspaceSubPath.ALL);
       }
     }
-  }, [currentWorkspace?.flavour, openPage, setOpen, workspaces]);
+  }, [currentWorkspace?.flavour, openPage, reload, setOpen, workspaces]);
 
   return (
     <SignOutModal open={open} onOpenChange={setOpen} onConfirm={onConfirm} />

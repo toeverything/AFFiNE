@@ -18,6 +18,7 @@ import {
   UnsyncIcon,
 } from '@blocksuite/icons';
 import { useService, Workspace } from '@toeverything/infra';
+import { cssVar } from '@toeverything/theme';
 import { useSetAtom } from 'jotai';
 import { debounce } from 'lodash-es';
 import type { HTMLAttributes } from 'react';
@@ -59,7 +60,7 @@ const LocalWorkspaceStatus = () => {
   return (
     <>
       {!environment.isDesktop ? (
-        <InformationFillDuotoneIcon data-warning-color="true" />
+        <InformationFillDuotoneIcon style={{ color: cssVar('errorColor') }} />
       ) : (
         <LocalWorkspaceIcon />
       )}
@@ -234,7 +235,10 @@ const WorkspaceInfo = ({ name }: { name: string }) => {
 
         {/* when syncing/offline/... */}
         <div className={styles.workspaceInfo} data-type="events">
-          <Tooltip content={message}>
+          <Tooltip
+            content={message}
+            options={{ className: styles.workspaceInfoTooltip }}
+          >
             <div className={styles.workspaceActiveStatus}>
               <SyncingWorkspaceStatus progress={progress} />
             </div>
