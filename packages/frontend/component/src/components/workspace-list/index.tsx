@@ -1,10 +1,5 @@
 import type { DragEndEvent } from '@dnd-kit/core';
-import {
-  DndContext,
-  PointerSensor,
-  useSensor,
-  useSensors,
-} from '@dnd-kit/core';
+import { DndContext, MouseSensor, useSensor, useSensors } from '@dnd-kit/core';
 import {
   restrictToParentElement,
   restrictToVerticalAxis,
@@ -94,7 +89,7 @@ const modifiers = [restrictToParentElement, restrictToVerticalAxis];
 
 export const WorkspaceList = (props: WorkspaceListProps) => {
   const sensors = useSensors(
-    useSensor(PointerSensor, {
+    useSensor(MouseSensor, {
       activationConstraint: {
         distance: 8,
       },
