@@ -1,6 +1,6 @@
 import { DebugLogger } from '@affine/debug';
 import { getBaseUrl } from '@affine/graphql';
-import { useMemo, useReducer } from 'react';
+import { useEffect, useMemo, useReducer } from 'react';
 import useSWR from 'swr';
 
 import { SessionFetchErrorRightAfterLoginOrSignUp } from '../../unexpected-application-state/errors';
@@ -144,6 +144,21 @@ export function useCurrentUser(): CheckedUser {
     },
     [dispatcher, session]
   );
+
+  // update user when session reloaded
+  // maybe lift user state up to global state?
+  useEffect(() => {
+    if (session.user) {
+      dispatcher({ type: 'update', payload: session.user });
+    } else {
+      dispatcher({ type: 'fetchError', payload: null });
+    }
+  }, [
+    session.user,
+    session.user?.id,
+    session.user?.name,
+    session.user?.avatarUrl,
+  ]);
 
   return useMemo(
     () => ({
