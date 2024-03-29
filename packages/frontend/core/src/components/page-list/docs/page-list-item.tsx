@@ -1,4 +1,5 @@
 import { Checkbox } from '@affine/component';
+import { getDNDId } from '@affine/core/hooks/affine/use-global-dnd-helper';
 import { TagService } from '@affine/core/modules/tag';
 import { useDraggable } from '@dnd-kit/core';
 import { useLiveData, useService } from '@toeverything/infra';
@@ -152,10 +153,9 @@ export const PageListItem = (props: PageListItemProps) => {
 
   // TODO: use getDropItemId
   const { setNodeRef, attributes, listeners, isDragging } = useDraggable({
-    id: 'page-list-item-title-' + props.pageId,
+    id: getDNDId('doc-list', 'doc', props.pageId),
     data: {
-      pageId: props.pageId,
-      pageTitle: pageTitleElement,
+      preview: pageTitleElement,
     } satisfies DraggableTitleCellData,
     disabled: !props.draggable,
   });
@@ -279,16 +279,3 @@ function PageListItemWrapper({
     return <div {...commonProps}>{children}</div>;
   }
 }
-
-export const PageListDragOverlay = ({
-  children,
-  over,
-}: PropsWithChildren<{
-  over?: boolean;
-}>) => {
-  return (
-    <div data-over={over} className={styles.dragOverlay}>
-      {children}
-    </div>
-  );
-};

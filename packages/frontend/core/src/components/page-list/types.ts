@@ -141,8 +141,7 @@ type MakeRecord<T> = {
 export type MetaRecord<T> = MakeRecord<T>;
 
 export type DraggableTitleCellData = {
-  pageId: string;
-  pageTitle: ReactNode;
+  preview: ReactNode;
 };
 
 export type HeaderColDef = {

@@ -6,34 +6,49 @@ import {
   filterPage,
   stopPropagation,
 } from '@affine/core/components/page-list';
+import {
+  type DNDIdentifier,
+  getDNDId,
+  parseDNDId,
+  resolveDragEndIntent,
+} from '@affine/core/hooks/affine/use-global-dnd-helper';
 import { CollectionService } from '@affine/core/modules/collection';
 import { FavoriteItemsAdapter } from '@affine/core/modules/workspace';
 import type { Collection } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { MoreHorizontalIcon, ViewLayersIcon } from '@blocksuite/icons';
 import type { DocCollection } from '@blocksuite/store';
-import { useDroppable } from '@dnd-kit/core';
+import { type AnimateLayoutChanges, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useCallback, useMemo, useState } from 'react';
 
 import { useAllPageListConfig } from '../../../../hooks/affine/use-all-page-list-config';
-import { getDropItemId } from '../../../../hooks/affine/use-sidebar-drag';
 import { useBlockSuiteDocMeta } from '../../../../hooks/use-block-suite-page-meta';
 import { Workbench } from '../../../../modules/workbench';
 import { WorkbenchLink } from '../../../../modules/workbench/view/workbench-link';
 import { MenuLinkItem as SidebarMenuLinkItem } from '../../../app-sidebar';
+import { DragMenuItemOverlay } from '../components/drag-menu-item-overlay';
+import * as draggableMenuItemStyles from '../components/draggable-menu-item.css';
 import type { CollectionsListProps } from '../index';
 import { Page } from './page';
 import * as styles from './styles.css';
+
+const animateLayoutChanges: AnimateLayoutChanges = ({
+  isSorting,
+  wasDragging,
+}) => (isSorting || wasDragging ? false : true);
 
 export const CollectionSidebarNavItem = ({
   collection,
   docCollection,
   className,
+  dndId,
 }: {
   collection: Collection;
   docCollection: DocCollection;
+  dndId: DNDIdentifier;
   className?: string;
 }) => {
   const pages = useBlockSuiteDocMeta(docCollection);
@@ -42,36 +57,49 @@ export const CollectionSidebarNavItem = ({
   const collectionService = useService(CollectionService);
   const favAdapter = useService(FavoriteItemsAdapter);
   const t = useAFFiNEI18N();
-  const dragItemId = getDropItemId('collections', collection.id);
 
   const favourites = useLiveData(favAdapter.favorites$);
 
   const removeFromAllowList = useCallback(
     (id: string) => {
-      collectionService.updateCollection(collection.id, () => ({
-        ...collection,
-        allowList: collection.allowList?.filter(v => v !== id),
-      }));
-
+      collectionService.deletePageFromCollection(collection.id, id);
       toast(t['com.affine.collection.removePage.success']());
     },
     [collection, collectionService, t]
   );
 
-  const { setNodeRef, isOver } = useDroppable({
-    id: dragItemId,
+  const overlayPreview = useMemo(() => {
+    return (
+      <DragMenuItemOverlay icon={<ViewLayersIcon />} title={collection.name} />
+    );
+  }, [collection.name]);
+
+  const {
+    setNodeRef,
+    isDragging,
+    attributes,
+    listeners,
+    transform,
+    over,
+    active,
+    transition,
+  } = useSortable({
+    id: dndId,
     data: {
-      addToCollection: (id: string) => {
-        if (collection.allowList.includes(id)) {
-          toast(t['com.affine.collection.addPage.alreadyExists']());
-          return;
-        } else {
-          toast(t['com.affine.collection.addPage.success']());
-        }
-        collectionService.addPageToCollection(collection.id, id);
-      },
+      preview: overlayPreview,
     },
+    animateLayoutChanges,
   });
+
+  const isSorting = parseDNDId(active?.id)?.where === 'sidebar-pin';
+  const dragOverIntent = resolveDragEndIntent(active, over);
+
+  const style = {
+    transform: CSS.Translate.toString(transform),
+    transition: isSorting ? transition : undefined,
+  };
+
+  const isOver = over?.id === dndId && dragOverIntent === 'collection:add';
 
   const config = useAllPageListConfig();
   const allPagesMeta = useMemo(
@@ -113,12 +141,18 @@ export const CollectionSidebarNavItem = ({
   return (
     <Collapsible.Root
       open={!collapsed}
-      ref={setNodeRef}
-      data-testid="collection-"
       className={className}
+      style={style}
+      ref={setNodeRef}
+      {...attributes}
     >
       <SidebarMenuLinkItem
+        {...listeners}
+        data-draggable={true}
+        data-dragging={isDragging}
+        className={draggableMenuItemStyles.draggableMenuItem}
         data-testid="collection-item"
+        data-collection-id={collection.id}
         data-type="collection-list-item"
         onCollapsedChange={setCollapsed}
         active={isOver || currentPath === path}
@@ -161,6 +195,7 @@ export const CollectionSidebarNavItem = ({
           {pagesToRender.map(page => {
             return (
               <Page
+                parentId={dndId}
                 inAllowList={allowList.has(page.id)}
                 removeFromAllowList={removeFromAllowList}
                 allPageMeta={allPagesMeta}
@@ -205,11 +240,18 @@ export const CollectionsList = ({
   return (
     <div data-testid="collections" className={styles.wrapper}>
       {collections.map(view => {
+        const dragItemId = getDNDId(
+          'sidebar-collections',
+          'collection',
+          view.id
+        );
+
         return (
           <CollectionSidebarNavItem
             key={view.id}
             collection={view}
             docCollection={workspace}
+            dndId={dragItemId}
           />
         );
       })}

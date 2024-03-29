@@ -106,7 +106,7 @@ export const VirtualizedCollectionList = ({
       <VirtualizedList
         ref={listRef}
         selectable="toggle"
-        draggable={false}
+        draggable
         atTopThreshold={80}
         atTopStateChange={setHideHeaderCreateNewCollection}
         onSelectionActiveChange={setShowFloatingToolbar}

@@ -14,7 +14,7 @@ export interface ReferencePageProps {
   docCollection: DocCollection;
   pageId: string;
   metaMapping: Record<string, DocMeta>;
-  parentIds: Set<string>;
+  parentIds?: Set<string>;
 }
 
 export const ReferencePage = ({
@@ -44,7 +44,7 @@ export const ReferencePage = ({
 
   const [collapsed, setCollapsed] = useState(true);
   const collapsible = referencesToShow.length > 0;
-  const nestedItem = parentIds.size > 0;
+  const nestedItem = parentIds && parentIds.size > 0;
 
   const untitled = !metaMapping[pageId]?.title;
   const pageTitle = metaMapping[pageId]?.title || t['Untitled']();
@@ -86,7 +86,7 @@ export const ReferencePage = ({
                   docCollection={docCollection}
                   pageId={ref}
                   metaMapping={metaMapping}
-                  parentIds={new Set([...parentIds, pageId])}
+                  parentIds={new Set([...(parentIds ?? []), pageId])}
                 />
               );
             })}

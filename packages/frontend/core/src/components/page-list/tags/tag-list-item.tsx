@@ -1,4 +1,5 @@
 import { Checkbox } from '@affine/component';
+import { getDNDId } from '@affine/core/hooks/affine/use-global-dnd-helper';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useDraggable } from '@dnd-kit/core';
 import type { PropsWithChildren } from 'react';
@@ -99,10 +100,9 @@ export const TagListItem = (props: TagListItemProps) => {
 
   // TODO: use getDropItemId
   const { setNodeRef, attributes, listeners, isDragging } = useDraggable({
-    id: 'tag-list-item-title-' + props.tagId,
+    id: getDNDId('tag-list', 'tag', props.tagId),
     data: {
-      pageId: props.tagId,
-      pageTitle: tagTitleElement,
+      preview: tagTitleElement,
     } satisfies DraggableTitleCellData,
     disabled: !props.draggable,
   });

@@ -195,7 +195,7 @@ export class FavoriteItemsAdapter {
   }
 
   getItemId(item: WorkspaceFavoriteItem) {
-    return item.id;
+    return FavoriteItemsAdapter.getFavItemKey(item.id, item.type);
   }
 
   getItemOrder(item: WorkspaceFavoriteItem) {
