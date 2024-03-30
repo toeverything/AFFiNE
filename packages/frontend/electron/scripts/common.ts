@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import { getRuntimeConfig } from '@affine/cli/src/webpack/runtime-config';
 import { sentryEsbuildPlugin } from '@sentry/esbuild-plugin';
-import type { BuildOptions } from 'esbuild';
+import type { BuildOptions, Plugin } from 'esbuild';
 
 export const electronDir = fileURLToPath(new URL('..', import.meta.url));
 
@@ -33,7 +33,7 @@ export const config = (): BuildOptions => {
     define['process.env.GITHUB_SHA'] = `"${process.env.GITHUB_SHA}"`;
   }
 
-  const plugins = [];
+  const plugins: Plugin[] = [];
 
   if (
     process.env.SENTRY_AUTH_TOKEN &&
@@ -48,6 +48,28 @@ export const config = (): BuildOptions => {
       })
     );
   }
+
+  plugins.push({
+    name: 'no-side-effects',
+    setup(build) {
+      build.onResolve({ filter: /\.js/ }, async args => {
+        if (args.pluginData) return; // Ignore this if we called ourselves
+
+        const { path, ...rest } = args;
+
+        // mark all blocksuite packages as side-effect free
+        // because they will include a lot of files that are not used in node_modules
+        if (rest.resolveDir.includes('blocksuite')) {
+          rest.pluginData = true; // Avoid infinite recursion
+          const result = await build.resolve(path, rest);
+
+          result.sideEffects = false;
+          return result;
+        }
+        return null;
+      });
+    },
+  });
 
   return {
     entryPoints: [
