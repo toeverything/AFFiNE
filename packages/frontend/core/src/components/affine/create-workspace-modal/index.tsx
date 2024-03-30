@@ -19,6 +19,7 @@ import { useSetAtom } from 'jotai';
 import type { KeyboardEvent } from 'react';
 import { useCallback, useLayoutEffect, useState } from 'react';
 
+import { mixpanel } from '../../../utils';
 import { CloudSvg } from '../share-page-modal/cloud-svg';
 import * as styles from './index.css';
 
@@ -226,6 +227,9 @@ export const CreateWorkspaceModal = ({
 
   const onConfirmName = useAsyncCallback(
     async (name: string, workspaceFlavour: WorkspaceFlavour) => {
+      mixpanel.track_forms('CreateWorkspaceModel', 'CreateWorkspace', {
+        workspaceFlavour,
+      });
       if (loading) return;
       setLoading(true);
 

@@ -91,6 +91,9 @@ export const SignIn: FC<AuthPanelProps> = ({
         if (user.hasPassword && !subscriptionData) {
           setAuthState('signInWithPassword');
         } else {
+          mixpanel.track_forms('SignIn', 'Email', {
+            email,
+          });
           const res = await signIn(email, verifyToken, challenge);
           if (res?.status === 403 && res?.url === INTERNAL_BETA_URL) {
             return setAuthState('noAccess');
@@ -103,6 +106,9 @@ export const SignIn: FC<AuthPanelProps> = ({
         }
       } else {
         const res = await signUp(email, verifyToken, challenge);
+        mixpanel.track_forms('SignUp', 'Email', {
+          email,
+        });
         if (res?.status === 403 && res?.url === INTERNAL_BETA_URL) {
           return setAuthState('noAccess');
         } else if (!res || res.status >= 400) {

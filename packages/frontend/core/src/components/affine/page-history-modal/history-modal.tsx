@@ -27,7 +27,7 @@ import {
 import { encodeStateAsUpdate } from 'yjs';
 
 import { pageHistoryModalAtom } from '../../../atoms/page-history';
-import { timestampToLocalTime } from '../../../utils';
+import { mixpanel, timestampToLocalTime } from '../../../utils';
 import { BlockSuiteEditor } from '../../blocksuite/block-suite-editor';
 import { StyledEditorModeSwitch } from '../../blocksuite/block-suite-mode-switch/style';
 import {
@@ -104,9 +104,15 @@ const HistoryEditorPreview = ({
   title,
 }: HistoryEditorPreviewProps) => {
   const onSwitchToPageMode = useCallback(() => {
+    mixpanel.track('Button', {
+      resolve: 'HistorySwitchToPageMode',
+    });
     onModeChange('page');
   }, [onModeChange]);
   const onSwitchToEdgelessMode = useCallback(() => {
+    mixpanel.track('Button', {
+      resolve: 'HistorySwitchToEdgelessMode',
+    });
     onModeChange('edgeless');
   }, [onModeChange]);
 
@@ -528,6 +534,9 @@ export const GlobalPageHistoryModal = () => {
   const workspace = useService(Workspace);
   const handleOpenChange = useCallback(
     (open: boolean) => {
+      mixpanel.track('Button', {
+        resolve: open ? 'OpenPageHistoryModal' : 'ClosePageHistoryModal',
+      });
       setState(prev => ({
         ...prev,
         open,

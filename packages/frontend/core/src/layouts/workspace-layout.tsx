@@ -47,6 +47,7 @@ import {
 } from '../providers/modal-provider';
 import { SWRConfigProvider } from '../providers/swr-config-provider';
 import { pathGenerator } from '../shared';
+import { mixpanel } from '../utils';
 import * as styles from './styles.css';
 
 const CMDKQuickSearchModal = lazy(() =>
@@ -58,6 +59,14 @@ const CMDKQuickSearchModal = lazy(() =>
 export const QuickSearch = () => {
   const [openQuickSearchModal, setOpenQuickSearchModalAtom] = useAtom(
     openQuickSearchModalAtom
+  );
+
+  const onToggleQuickSearch = useCallback(
+    (open: boolean) => {
+      mixpanel.track('QuickSearch', { open });
+      setOpenQuickSearchModalAtom(open);
+    },
+    [setOpenQuickSearchModalAtom]
   );
 
   const workbench = useService(Workbench);
@@ -73,7 +82,7 @@ export const QuickSearch = () => {
   return (
     <CMDKQuickSearchModal
       open={openQuickSearchModal}
-      onOpenChange={setOpenQuickSearchModalAtom}
+      onOpenChange={onToggleQuickSearch}
       pageMeta={pageMeta}
     />
   );

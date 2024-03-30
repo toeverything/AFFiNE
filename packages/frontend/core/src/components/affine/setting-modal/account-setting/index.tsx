@@ -33,6 +33,7 @@ import { useServerFeatures } from '../../../../hooks/affine/use-server-config';
 import { useMutation } from '../../../../hooks/use-mutation';
 import { useQuery } from '../../../../hooks/use-query';
 import { useUserSubscription } from '../../../../hooks/use-subscription';
+import { mixpanel } from '../../../../utils';
 import { validateAndReduceImage } from '../../../../utils/reduce-image';
 import { Upload } from '../../../pure/file-upload';
 import * as styles from './style.css';
@@ -52,6 +53,9 @@ export const UserAvatar = () => {
   const handleUpdateUserAvatar = useAsyncCallback(
     async (file: File) => {
       try {
+        mixpanel.track_forms('UpdateProfile', 'UploadAvatar', {
+          userId: user.id,
+        });
         const reducedFile = await validateAndReduceImage(file);
         const data = await avatarTrigger({
           avatar: reducedFile, // Pass the reducedFile directly to the avatarTrigger
@@ -74,6 +78,9 @@ export const UserAvatar = () => {
 
   const handleRemoveUserAvatar = useCallback(
     async (e: MouseEvent<HTMLButtonElement>) => {
+      mixpanel.track('RemoveAvatar', {
+        userId: user.id,
+      });
       e.stopPropagation();
       await removeAvatarTrigger();
       user.update({ avatarUrl: null });
@@ -120,6 +127,9 @@ export const AvatarAndName = () => {
     }
 
     try {
+      mixpanel.track_forms('UpdateProfile', 'UpdateUsername', {
+        userId: user.id,
+      });
       const data = await updateProfile({
         input: { name: input },
       });
@@ -197,6 +207,9 @@ const StoragePanel = () => {
 
   const setSettingModalAtom = useSetAtom(openSettingModalAtom);
   const onUpgrade = useCallback(() => {
+    mixpanel.track('Button', {
+      resolve: 'UpgradeStorage',
+    });
     setSettingModalAtom({
       open: true,
       activeTab: 'plans',

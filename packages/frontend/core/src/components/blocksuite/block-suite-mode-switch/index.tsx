@@ -7,7 +7,7 @@ import type { CSSProperties } from 'react';
 import { useCallback, useEffect } from 'react';
 
 import type { DocCollection } from '../../../shared';
-import { toast } from '../../../utils';
+import { mixpanel, toast } from '../../../utils';
 import { StyledEditorModeSwitch, StyledKeyboardItem } from './style';
 import { EdgelessSwitchItem, PageSwitchItem } from './switch-items';
 
@@ -67,6 +67,9 @@ export const EditorModeSwitch = ({
   }, [currentMode, isPublic, page, pageId, t, trash]);
 
   const onSwitchToPageMode = useCallback(() => {
+    mixpanel.track('Button', {
+      resolve: 'SwitchToPageMode',
+    });
     if (currentMode === 'page' || isPublic) {
       return;
     }
@@ -75,6 +78,9 @@ export const EditorModeSwitch = ({
   }, [currentMode, isPublic, page, t]);
 
   const onSwitchToEdgelessMode = useCallback(() => {
+    mixpanel.track('Button', {
+      resolve: 'SwitchToEdgelessMode',
+    });
     if (currentMode === 'edgeless' || isPublic) {
       return;
     }

@@ -8,6 +8,7 @@ import { GithubIcon, GoogleDuotoneIcon } from '@blocksuite/icons';
 import type { ReactElement } from 'react';
 import { useCallback, useState } from 'react';
 
+import { mixpanel } from '../../../utils';
 import { useAuth } from './use-auth';
 
 const OAuthProviderMap: Record<
@@ -51,6 +52,7 @@ function OAuthProvider({ provider }: { provider: OAuthProviderType }) {
   const onClick = useCallback(() => {
     setIsConnecting(true);
     oauthSignIn(provider);
+    mixpanel.track('OAuth', { provider });
   }, [provider, oauthSignIn]);
 
   return (

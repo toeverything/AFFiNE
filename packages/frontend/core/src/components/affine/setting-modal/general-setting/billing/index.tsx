@@ -31,6 +31,7 @@ import { useMutation } from '../../../../../hooks/use-mutation';
 import { useQuery } from '../../../../../hooks/use-query';
 import type { SubscriptionMutator } from '../../../../../hooks/use-subscription';
 import { useUserSubscription } from '../../../../../hooks/use-subscription';
+import { mixpanel } from '../../../../../utils';
 import { SWRErrorBoundary } from '../../../../pure/swr-error-bundary';
 import { CancelAction, ResumeAction } from '../plans/actions';
 import * as styles from './style.css';
@@ -115,11 +116,15 @@ const SubscriptionSettings = () => {
   const setOpenSettingModalAtom = useSetAtom(openSettingModalAtom);
 
   const gotoPlansSetting = useCallback(() => {
+    mixpanel.track('Button', {
+      resolve: 'ChangePlan',
+      currentPlan: plan,
+    });
     setOpenSettingModalAtom({
       open: true,
       activeTab: 'plans',
     });
-  }, [setOpenSettingModalAtom]);
+  }, [setOpenSettingModalAtom, plan]);
 
   const currentPlanDesc = useMemo(() => {
     const messageKey = getMessageKey(plan, recurring);

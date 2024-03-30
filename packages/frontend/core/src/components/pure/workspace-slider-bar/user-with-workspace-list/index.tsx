@@ -14,6 +14,7 @@ import {
   openCreateWorkspaceModalAtom,
   openDisableCloudAlertModalAtom,
 } from '../../../../atoms';
+import { mixpanel } from '../../../../utils';
 import { AddWorkspace } from './add-workspace';
 import * as styles from './index.css';
 import { UserAccountItem } from './user-account';
@@ -27,6 +28,9 @@ export const SignInItem = () => {
   const t = useAFFiNEI18N();
 
   const onClickSignIn = useCallback(() => {
+    mixpanel.track('Button', {
+      resolve: 'SignIn',
+    });
     if (!runtimeConfig.enableCloud) {
       setDisableCloudOpen(true);
     } else {
@@ -104,6 +108,9 @@ const UserWithWorkspaceListInner = ({
     ) {
       return openSignInModal();
     }
+    mixpanel.track('Button', {
+      resolve: 'NewWorkspace',
+    });
     setOpenCreateWorkspaceModal('new');
     onEventEnd?.();
   }, [
@@ -114,6 +121,9 @@ const UserWithWorkspaceListInner = ({
   ]);
 
   const onAddWorkspace = useCallback(() => {
+    mixpanel.track('Button', {
+      resolve: 'AddWorkspace',
+    });
     setOpenCreateWorkspaceModal('add');
     onEventEnd?.();
   }, [onEventEnd, setOpenCreateWorkspaceModal]);

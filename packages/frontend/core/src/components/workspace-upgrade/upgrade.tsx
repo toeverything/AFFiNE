@@ -8,6 +8,7 @@ import { useService, Workspace, WorkspaceManager } from '@toeverything/infra';
 import { useState } from 'react';
 
 import { WorkspaceSubPath } from '../../shared';
+import { mixpanel } from '../../utils';
 import * as styles from './upgrade.css';
 import { ArrowCircleIcon, HeartBreakIcon } from './upgrade-icon';
 
@@ -26,6 +27,10 @@ export const WorkspaceUpgrade = function WorkspaceUpgrade() {
     if (upgradeStatus?.upgrading) {
       return;
     }
+
+    mixpanel.track('Button', {
+      resolve: 'UpgradeWorkspace',
+    });
 
     try {
       const newWorkspace =

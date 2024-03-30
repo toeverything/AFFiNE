@@ -24,6 +24,7 @@ import { openPaymentDisableAtom } from '../../../../../atoms';
 import { authAtom } from '../../../../../atoms/index';
 import { useCurrentLoginStatus } from '../../../../../hooks/affine/use-current-login-status';
 import { useMutation } from '../../../../../hooks/use-mutation';
+import { mixpanel } from '../../../../../utils';
 import { CancelAction, ResumeAction } from './actions';
 import { BulledListIcon } from './icons/bulled-list';
 import { ConfirmLoadingModal } from './modals';
@@ -206,6 +207,7 @@ const ActionButton = ({
 
   const mutateAndNotify = useCallback(
     (sub: Parameters<SubscriptionMutator>[0]) => {
+      mixpanel.track_forms('Subscription', detail.plan, sub);
       onSubscriptionUpdate?.(sub);
       onNotify?.({ detail, recurring });
     },
@@ -346,6 +348,12 @@ const BookDemo = ({ plan }: { plan: SubscriptionPlan }) => {
       href={url}
       target="_blank"
       rel="noreferrer"
+      onClick={() => {
+        mixpanel.track('Button', {
+          resolve: 'BookDemo',
+          url,
+        });
+      }}
     >
       <Button className={styles.planAction} type="primary">
         {t['com.affine.payment.book-a-demo']()}

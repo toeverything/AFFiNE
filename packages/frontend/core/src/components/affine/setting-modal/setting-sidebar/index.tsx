@@ -26,6 +26,7 @@ import { Suspense, useCallback, useMemo } from 'react';
 import { authAtom } from '../../../../atoms';
 import { useCurrentLoginStatus } from '../../../../hooks/affine/use-current-login-status';
 import { useCurrentUser } from '../../../../hooks/affine/use-current-user';
+import { mixpanel } from '../../../../utils';
 import { UserPlanButton } from '../../auth/user-plan-button';
 import { useGeneralSettingList } from '../general-setting';
 import type { ActiveTab, WorkspaceSubTab } from '../types';
@@ -115,10 +116,17 @@ export const SettingSidebar = ({
   const loginStatus = useCurrentLoginStatus();
   const generalList = useGeneralSettingList();
   const onAccountSettingClick = useCallback(() => {
+    mixpanel.track('Button', {
+      resolve: 'AccountSetting',
+    });
     onTabChange('account', null);
   }, [onTabChange]);
   const onWorkspaceSettingClick = useCallback(
     (subTab: WorkspaceSubTab, workspaceMetadata: WorkspaceMetadata) => {
+      mixpanel.track('Button', {
+        resolve: 'WorkspaceSetting',
+        workspaceId: workspaceMetadata.id,
+      });
       onTabChange(`workspace:${subTab}`, workspaceMetadata);
     },
     [onTabChange]
@@ -141,6 +149,9 @@ export const SettingSidebar = ({
               key={key}
               title={title}
               onClick={() => {
+                mixpanel.track('Button', {
+                  resolve: key,
+                });
                 onTabChange(key, null);
               }}
               data-testid={testId}
