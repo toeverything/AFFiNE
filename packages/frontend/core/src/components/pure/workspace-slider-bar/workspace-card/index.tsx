@@ -196,17 +196,37 @@ const useSyncEngineSyncProgress = () => {
       ((syncing && progress !== undefined) || isOverCapacity || !isOnline),
   };
 };
+const usePauseAnimation = (timeToResume = 5000) => {
+  const [paused, setPaused] = useState(false);
+
+  const resume = useCallback(() => {
+    setPaused(false);
+  }, []);
+
+  const pause = useCallback(() => {
+    setPaused(true);
+    if (timeToResume > 0) {
+      setTimeout(resume, timeToResume);
+    }
+  }, [resume, timeToResume]);
+
+  return { paused, pause };
+};
 
 const WorkspaceInfo = ({ name }: { name: string }) => {
   const { message, active } = useSyncEngineSyncProgress();
   const currentWorkspace = useService(Workspace);
   const isCloud = currentWorkspace.flavour === WorkspaceFlavour.AFFINE_CLOUD;
   const { progress } = useDocEngineStatus();
+  const { paused, pause } = usePauseAnimation();
 
   // to make sure that animation will play first time
   const [delayActive, setDelayActive] = useState(false);
   useEffect(() => {
-    const delayOpen = 300;
+    if (paused) {
+      return;
+    }
+    const delayOpen = 0;
     const delayClose = 200;
     let timer: ReturnType<typeof setTimeout>;
     if (active) {
@@ -216,10 +236,11 @@ const WorkspaceInfo = ({ name }: { name: string }) => {
     } else {
       timer = setTimeout(() => {
         setDelayActive(active);
+        pause();
       }, delayClose);
     }
     return () => clearTimeout(timer);
-  }, [active]);
+  }, [active, pause, paused]);
 
   return (
     <div className={styles.workspaceInfoSlider} data-active={delayActive}>
