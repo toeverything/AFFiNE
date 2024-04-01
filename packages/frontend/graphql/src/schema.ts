@@ -34,6 +34,13 @@ export interface Scalars {
   Upload: { input: File; output: File };
 }
 
+export interface CreateChatMessageInput {
+  attachments: InputMaybe<Array<Scalars['String']['input']>>;
+  content: Scalars['String']['input'];
+  params: InputMaybe<Scalars['String']['input']>;
+  sessionId: Scalars['String']['input'];
+}
+
 export interface CreateChatSessionInput {
   /** An mark identifying which view to use to display the session */
   action: InputMaybe<Scalars['String']['input']>;

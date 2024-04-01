@@ -275,12 +275,6 @@ export class CopilotResolver {
     @Args({ name: 'options', type: () => CreateChatMessageInput })
     options: CreateChatMessageInput
   ) {
-    // todo(@darkskygit): remove this after the feature is stable
-    const publishable = AFFiNE.featureFlags.copilotAuthorization;
-    if (!user && !publishable) {
-      return new ForbiddenException('Login required');
-    }
-
     const lockFlag = `${COPILOT_LOCKER}:message:${user?.id}:${options.sessionId}`;
     await using lock = await this.mutex.lock(lockFlag);
     if (!lock) {

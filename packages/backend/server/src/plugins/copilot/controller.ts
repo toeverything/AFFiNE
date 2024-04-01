@@ -68,6 +68,7 @@ export class CopilotController {
 
     try {
       delete params.message;
+      delete params.messageId;
       const content = await provider.generateText(
         session.finish(params),
         session.model,
@@ -98,7 +99,8 @@ export class CopilotController {
     @CurrentUser() user: CurrentUser,
     @Req() req: Request,
     @Param('sessionId') sessionId: string,
-    @Query('message') content: string,
+    @Query('message') content: string | undefined,
+    @Query('messageId') messageId: string | undefined,
     @Query() params: Record<string, string>
   ): Promise<Observable<ChatEvent>> {
     const provider = this.provider.getProviderByCapability(
@@ -111,16 +113,22 @@ export class CopilotController {
     if (!session) {
       throw new BadRequestException('Session not found');
     }
-    if (!content || !content.trim()) {
-      throw new BadRequestException('Message is empty');
+
+    if (messageId) {
+      await session.pushByMessageId(messageId);
+    } else {
+      if (!content || !content.trim()) {
+        throw new BadRequestException('Message is empty');
+      }
+      session.push({
+        role: 'user',
+        content: decodeURIComponent(content),
+        createdAt: new Date(),
+      });
     }
-    session.push({
-      role: 'user',
-      content: decodeURIComponent(content),
-      createdAt: new Date(),
-    });
 
     delete params.message;
+    delete params.messageId;
     return from(
       provider.generateTextStream(session.finish(params), session.model, {
         signal: req.signal,
