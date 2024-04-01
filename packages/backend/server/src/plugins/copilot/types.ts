@@ -187,8 +187,8 @@ export interface CopilotTextToImageProvider extends CopilotProvider {
   ): Promise<Array<string>>;
   generateImagesStream(
     messages: PromptMessage[],
-    model: string,
-    options: {
+    model?: string,
+    options?: {
       signal?: AbortSignal;
       user?: string;
     }

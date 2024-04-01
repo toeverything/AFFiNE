@@ -23,7 +23,7 @@ import {
 import { Public } from '../../core/auth';
 import { CurrentUser } from '../../core/auth/current-user';
 import { CopilotProviderService } from './providers';
-import { ChatSessionService } from './session';
+import { ChatSession, ChatSessionService } from './session';
 import { CopilotCapability } from './types';
 
 export interface ChatEvent {
@@ -39,13 +39,39 @@ export class CopilotController {
     private readonly provider: CopilotProviderService
   ) {}
 
+  private async appendSessionMessage(
+    sessionId: string,
+    message?: string,
+    messageId?: string
+  ): Promise<ChatSession> {
+    const session = await this.chatSession.get(sessionId);
+    if (!session) {
+      throw new BadRequestException('Session not found');
+    }
+
+    if (messageId) {
+      await session.pushByMessageId(messageId);
+    } else {
+      if (!message || !message.trim()) {
+        throw new BadRequestException('Message is empty');
+      }
+      session.push({
+        role: 'user',
+        content: decodeURIComponent(message),
+        createdAt: new Date(),
+      });
+    }
+    return session;
+  }
+
   @Public()
   @Get('/chat/:sessionId')
   async chat(
     @CurrentUser() user: CurrentUser,
     @Req() req: Request,
     @Param('sessionId') sessionId: string,
-    @Query('message') content: string,
+    @Query('message') message: string | undefined,
+    @Query('messageId') messageId: string | undefined,
     @Query() params: Record<string, string | string[]>
   ): Promise<string> {
     const provider = this.provider.getProviderByCapability(
@@ -54,18 +80,12 @@ export class CopilotController {
     if (!provider) {
       throw new InternalServerErrorException('No provider available');
     }
-    const session = await this.chatSession.get(sessionId);
-    if (!session) {
-      throw new BadRequestException('Session not found');
-    }
-    if (!content || !content.trim()) {
-      throw new BadRequestException('Message is empty');
-    }
-    session.push({
-      role: 'user',
-      content: decodeURIComponent(content),
-      createdAt: new Date(),
-    });
+
+    const session = await this.appendSessionMessage(
+      sessionId,
+      message,
+      messageId
+    );
 
     try {
       delete params.message;
@@ -100,7 +120,7 @@ export class CopilotController {
     @CurrentUser() user: CurrentUser,
     @Req() req: Request,
     @Param('sessionId') sessionId: string,
-    @Query('message') content: string | undefined,
+    @Query('message') message: string | undefined,
     @Query('messageId') messageId: string | undefined,
     @Query() params: Record<string, string>
   ): Promise<Observable<ChatEvent>> {
@@ -110,23 +130,12 @@ export class CopilotController {
     if (!provider) {
       throw new InternalServerErrorException('No provider available');
     }
-    const session = await this.chatSession.get(sessionId);
-    if (!session) {
-      throw new BadRequestException('Session not found');
-    }
 
-    if (messageId) {
-      await session.pushByMessageId(messageId);
-    } else {
-      if (!content || !content.trim()) {
-        throw new BadRequestException('Message is empty');
-      }
-      session.push({
-        role: 'user',
-        content: decodeURIComponent(content),
-        createdAt: new Date(),
-      });
-    }
+    const session = await this.appendSessionMessage(
+      sessionId,
+      message,
+      messageId
+    );
 
     delete params.message;
     delete params.messageId;
@@ -166,7 +175,9 @@ export class CopilotController {
     @CurrentUser() user: CurrentUser | undefined,
     @Req() req: Request,
     @Param('sessionId') sessionId: string,
-    @Query('messageId') messageId: string
+    @Query('message') message: string | undefined,
+    @Query('messageId') messageId: string | undefined,
+    @Query() params: Record<string, string>
   ): Promise<Observable<ChatEvent>> {
     const provider = this.provider.getProviderByCapability(
       CopilotCapability.TextToImage
@@ -174,15 +185,17 @@ export class CopilotController {
     if (!provider) {
       throw new InternalServerErrorException('No provider available');
     }
-    const session = await this.chatSession.get(sessionId);
-    if (!session) {
-      throw new BadRequestException('Session not found');
-    }
 
-    await session.pushByMessageId(messageId);
+    const session = await this.appendSessionMessage(
+      sessionId,
+      message,
+      messageId
+    );
 
+    delete params.message;
+    delete params.messageId;
     return from(
-      provider.generateImagesStream(session.finish(), session.model, {
+      provider.generateImagesStream(session.finish(params), session.model, {
         signal: req.signal,
         user: user?.id,
       })
