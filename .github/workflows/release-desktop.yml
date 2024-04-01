@@ -128,6 +128,12 @@ jobs:
           p12-file-base64: ${{ secrets.CERTIFICATES_P12 }}
           p12-password: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
 
+      - name: Install fuse on Linux (for patching AppImage)
+        if: ${{ matrix.spec.platform == 'linux' }}
+        run: |
+          sudo add-apt-repository universe
+          sudo apt install libfuse2 -y
+
       - name: make
         run: yarn workspace @affine/electron make --platform=${{ matrix.spec.platform }} --arch=${{ matrix.spec.arch }}
         env:
