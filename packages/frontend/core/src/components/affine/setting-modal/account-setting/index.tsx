@@ -3,25 +3,20 @@ import { pushNotificationAtom } from '@affine/component/notification-center';
 import {
   SettingHeader,
   SettingRow,
-  StorageProgress,
 } from '@affine/component/setting-components';
 import { Avatar } from '@affine/component/ui/avatar';
 import { Button } from '@affine/component/ui/button';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import { useUserQuota } from '@affine/core/hooks/use-quota';
 import {
-  allBlobSizesQuery,
   removeAvatarMutation,
-  SubscriptionPlan,
   updateUserProfileMutation,
   uploadAvatarMutation,
 } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowRightSmallIcon, CameraIcon } from '@blocksuite/icons';
-import bytes from 'bytes';
 import { useSetAtom } from 'jotai';
 import type { FC, MouseEvent } from 'react';
-import { Suspense, useCallback, useMemo, useState } from 'react';
+import { Suspense, useCallback, useState } from 'react';
 
 import {
   authAtom,
@@ -31,11 +26,10 @@ import {
 import { useCurrentUser } from '../../../../hooks/affine/use-current-user';
 import { useServerFeatures } from '../../../../hooks/affine/use-server-config';
 import { useMutation } from '../../../../hooks/use-mutation';
-import { useQuery } from '../../../../hooks/use-query';
-import { useUserSubscription } from '../../../../hooks/use-subscription';
 import { mixpanel } from '../../../../utils';
 import { validateAndReduceImage } from '../../../../utils/reduce-image';
 import { Upload } from '../../../pure/file-upload';
+import { StorageProgress } from './storage-progress';
 import * as styles from './style.css';
 
 export const UserAvatar = () => {
@@ -190,21 +184,6 @@ const StoragePanel = () => {
   const t = useAFFiNEI18N();
   const { payment: hasPaymentFeature } = useServerFeatures();
 
-  const { data } = useQuery({
-    query: allBlobSizesQuery,
-  });
-
-  const [subscription] = useUserSubscription();
-  const plan = subscription?.plan ?? SubscriptionPlan.Free;
-
-  const quota = useUserQuota();
-  const maxLimit = useMemo(() => {
-    if (quota) {
-      return quota.storageQuota;
-    }
-    return bytes.parse(plan === SubscriptionPlan.Free ? '10GB' : '100GB');
-  }, [plan, quota]);
-
   const setSettingModalAtom = useSetAtom(openSettingModalAtom);
   const onUpgrade = useCallback(() => {
     mixpanel.track('Button', {
@@ -222,13 +201,7 @@ const StoragePanel = () => {
       desc=""
       spreadCol={false}
     >
-      <StorageProgress
-        max={maxLimit}
-        plan={plan}
-        value={data.collectAllBlobSizes.size}
-        onUpgrade={onUpgrade}
-        upgradable={hasPaymentFeature}
-      />
+      <StorageProgress onUpgrade={onUpgrade} upgradable={hasPaymentFeature} />
     </SettingRow>
   );
 };

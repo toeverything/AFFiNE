@@ -1,19 +1,14 @@
+import { Button, Tooltip } from '@affine/component';
+import { useCloudStorageUsage } from '@affine/core/hooks/affine/use-cloud-storage-usage';
 import { SubscriptionPlan } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import bytes from 'bytes';
-import clsx from 'clsx';
 import { useMemo } from 'react';
 
-import { Button } from '../../ui/button';
-import { Tooltip } from '../../ui/tooltip';
-import * as styles from './share.css';
+import * as styles from './storage-progress.css';
 
 export interface StorageProgressProgress {
-  max: number;
-  value: number;
   upgradable?: boolean;
   onUpgrade: () => void;
-  plan: SubscriptionPlan;
 }
 
 enum ButtonType {
@@ -22,20 +17,12 @@ enum ButtonType {
 }
 
 export const StorageProgress = ({
-  max: upperLimit,
-  value,
   upgradable = true,
   onUpgrade,
-  plan,
 }: StorageProgressProgress) => {
   const t = useAFFiNEI18N();
-  const percent = useMemo(
-    () => Math.round((value / upperLimit) * 100),
-    [upperLimit, value]
-  );
-
-  const used = useMemo(() => bytes.format(value), [value]);
-  const max = useMemo(() => bytes.format(upperLimit), [upperLimit]);
+  const { plan, usedText, color, percent, maxLimitText } =
+    useCloudStorageUsage();
 
   const buttonType = useMemo(() => {
     if (plan === SubscriptionPlan.Free) {
@@ -50,17 +37,15 @@ export const StorageProgress = ({
         <div className="storage-progress-desc">
           <span>{t['com.affine.storage.used.hint']()}</span>
           <span>
-            {used}/{max}
+            {usedText}/{maxLimitText}
             {` (${plan} ${t['com.affine.storage.plan']()})`}
           </span>
         </div>
 
         <div className="storage-progress-bar-wrapper">
           <div
-            className={clsx(styles.storageProgressBar, {
-              danger: percent > 80,
-            })}
-            style={{ width: `${percent > 100 ? '100' : percent}%` }}
+            className={styles.storageProgressBar}
+            style={{ width: `${percent}%`, backgroundColor: color }}
           ></div>
         </div>
       </div>

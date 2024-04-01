@@ -12,12 +12,18 @@ import {
   openSettingModalAtom,
   openSignOutModalAtom,
 } from '@affine/core/atoms';
+import { useCloudStorageUsage } from '@affine/core/hooks/affine/use-cloud-storage-usage';
 import {
   useCurrentUser,
   useSession,
 } from '@affine/core/hooks/affine/use-current-user';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { AccountIcon, SignOutIcon } from '@blocksuite/icons';
+import {
+  AccountIcon,
+  ArrowRightSmallIcon,
+  SignOutIcon,
+} from '@blocksuite/icons';
+import { assignInlineVars } from '@vanilla-extract/dynamic';
 import { useSetAtom } from 'jotai';
 import { useCallback } from 'react';
 
@@ -92,6 +98,11 @@ const AccountMenu = () => {
             <AccountIcon />
           </MenuIcon>
         }
+        endFix={
+          <MenuIcon position="end">
+            <ArrowRightSmallIcon />
+          </MenuIcon>
+        }
         data-testid="workspace-modal-account-settings-option"
         onClick={onOpenAccountSetting}
       >
@@ -104,6 +115,11 @@ const AccountMenu = () => {
             <SignOutIcon />
           </MenuIcon>
         }
+        endFix={
+          <MenuIcon position="end">
+            <ArrowRightSmallIcon />
+          </MenuIcon>
+        }
         data-testid="workspace-modal-sign-out-option"
         onClick={onOpenSignOutModal}
       >
@@ -113,13 +129,37 @@ const AccountMenu = () => {
   );
 };
 
-const OperationMenu = () => {
-  // TODO: display usage progress bar
-  const StorageUsage = null;
+const CloudUsage = () => {
+  const { color, usedText, maxLimitText, percent } = useCloudStorageUsage();
 
   return (
+    <div
+      className={styles.cloudUsage}
+      style={assignInlineVars({
+        [styles.progressColorVar]: color,
+      })}
+    >
+      <div className={styles.cloudUsageLabel}>
+        <span className={styles.cloudUsageLabelUsed}>{usedText}</span>
+        <span>&nbsp;/&nbsp;</span>
+        <span>{maxLimitText}</span>
+      </div>
+
+      <div className={styles.cloudUsageBar}>
+        <div
+          className={styles.cloudUsageBarInner}
+          style={{ width: `${percent}%` }}
+        />
+      </div>
+    </div>
+  );
+};
+
+const OperationMenu = () => {
+  return (
     <>
-      {StorageUsage}
+      <CloudUsage />
+      <Divider />
       <AccountMenu />
     </>
   );
