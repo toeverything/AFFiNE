@@ -3,6 +3,7 @@ import { QuotaService } from '../../core/quota';
 import { PermissionService } from '../../core/workspaces/permission';
 import { Plugin } from '../registry';
 import { CopilotController } from './controller';
+import { ChatMessageCache } from './message';
 import { PromptService } from './prompt';
 import {
   assertProvidersConfigs,
@@ -22,6 +23,7 @@ registerCopilotProvider(OpenAIProvider);
     QuotaService,
     ChatSessionService,
     CopilotResolver,
+    ChatMessageCache,
     UserCopilotResolver,
     PromptService,
     CopilotProviderService,

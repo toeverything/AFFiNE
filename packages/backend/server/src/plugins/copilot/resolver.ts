@@ -1,3 +1,4 @@
+import { ForbiddenException } from '@nestjs/common';
 import {
   Args,
   Field,
@@ -21,10 +22,18 @@ import {
   PaymentRequiredException,
   TooManyRequestsException,
 } from '../../fundamentals';
-import { ChatSessionService, ListHistoriesOptions } from './session';
-import { AvailableModels, type ChatHistory, type ChatMessage } from './types';
+import { ChatSessionService } from './session';
+import {
+  AvailableModels,
+  type ChatHistory,
+  type ChatMessage,
+  type ListHistoriesOptions,
+  SubmittedMessage,
+} from './types';
 
 registerEnumType(AvailableModels, { name: 'CopilotModel' });
+
+const COPILOT_LOCKER = 'copilot';
 
 // ================== Input Types ==================
 
@@ -46,6 +55,21 @@ class CreateChatSessionInput {
     description: 'The prompt name to use for the session',
   })
   promptName!: string;
+}
+
+@InputType()
+class CreateChatMessageInput implements SubmittedMessage {
+  @Field(() => String)
+  sessionId!: string;
+
+  @Field(() => String)
+  content!: string;
+
+  @Field(() => [String], { nullable: true })
+  attachments!: string[] | undefined;
+
+  @Field(() => String, { nullable: true })
+  params!: string | undefined;
 }
 
 @InputType()
@@ -222,7 +246,7 @@ export class CopilotResolver {
       options.docId,
       user.id
     );
-    const lockFlag = `session:${user.id}:${options.workspaceId}`;
+    const lockFlag = `${COPILOT_LOCKER}:session:${user.id}:${options.workspaceId}`;
     await using lock = await this.mutex.lock(lockFlag);
     if (!lock) {
       return new TooManyRequestsException('Server is busy');
@@ -240,6 +264,29 @@ export class CopilotResolver {
       userId: user.id,
     });
     return session;
+  }
+
+  @Public()
+  @Mutation(() => String, {
+    description: 'Create a chat message',
+  })
+  async createCopilotMessage(
+    @CurrentUser() user: CurrentUser | undefined,
+    @Args({ name: 'options', type: () => CreateChatMessageInput })
+    options: CreateChatMessageInput
+  ) {
+    // todo(@darkskygit): remove this after the feature is stable
+    const publishable = AFFiNE.featureFlags.copilotAuthorization;
+    if (!user && !publishable) {
+      return new ForbiddenException('Login required');
+    }
+
+    const lockFlag = `${COPILOT_LOCKER}:message:${user?.id}:${options.sessionId}`;
+    await using lock = await this.mutex.lock(lockFlag);
+    if (!lock) {
+      return new TooManyRequestsException('Server is busy');
+    }
+    return await this.chatSession.createMessage(options);
   }
 }
 
