@@ -277,7 +277,6 @@ const DetailPageImpl = memo(function DetailPageImpl() {
 export const DetailPage = ({ pageId }: { pageId: string }): ReactElement => {
   const currentWorkspace = useService(Workspace);
   const pageRecordList = useService(PageRecordList);
-
   const pageListReady = useLiveData(pageRecordList.isReady$);
 
   const pageRecords = useLiveData(pageRecordList.records$);
@@ -286,7 +285,6 @@ export const DetailPage = ({ pageId }: { pageId: string }): ReactElement => {
     () => pageRecords.find(page => page.id === pageId),
     [pageRecords, pageId]
   );
-
   const pageManager = useService(PageManager);
 
   const [page, setPage] = useState<Doc | null>(null);
@@ -317,6 +315,19 @@ export const DetailPage = ({ pageId }: { pageId: string }): ReactElement => {
       pageRecord?.setMeta({ jumpOnce: false });
     }
   }, [jumpOnce, pageRecord]);
+
+  useEffect(() => {
+    if (page && pageRecord?.meta?.trash) {
+      currentWorkspace.docCollection.awarenessStore.setReadonly(
+        page.blockSuiteDoc,
+        true
+      );
+    }
+  }, [
+    currentWorkspace.docCollection.awarenessStore,
+    page,
+    pageRecord?.meta?.trash,
+  ]);
 
   // if sync engine has been synced and the page is null, show 404 page.
   if (pageListReady && !page) {
