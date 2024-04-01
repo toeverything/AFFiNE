@@ -283,7 +283,7 @@ jobs:
         env:
           DISTRIBUTION: 'desktop'
       - name: zip web
-        run: tar -czf dist.tar.gz --directory=packages/frontend/electron/dist .
+        run: tar -czf dist.tar.gz --directory=packages/frontend/electron/renderer/dist .
       - name: Upload web artifact
         uses: actions/upload-artifact@v4
         with:

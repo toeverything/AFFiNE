@@ -12,7 +12,13 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const repoRootDir = path.join(__dirname, '..', '..', '..', '..');
 const electronRootDir = path.join(__dirname, '..');
 const publicDistDir = path.join(electronRootDir, 'resources');
-const webDir = path.join(repoRootDir, 'packages', 'frontend', 'electron');
+const webDir = path.join(
+  repoRootDir,
+  'packages',
+  'frontend',
+  'electron',
+  'renderer'
+);
 const affineWebOutDir = path.join(webDir, 'dist');
 const publicAffineOutDir = path.join(publicDistDir, `web-static`);
 const releaseVersionEnv = process.env.RELEASE_VERSION || '';
