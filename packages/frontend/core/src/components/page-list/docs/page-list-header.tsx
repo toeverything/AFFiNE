@@ -10,13 +10,14 @@ import {
   SearchIcon,
   ViewLayersIcon,
 } from '@blocksuite/icons';
-import { useLiveData, useService } from '@toeverything/infra';
+import { useLiveData, useService, Workspace } from '@toeverything/infra';
 import clsx from 'clsx';
 import { nanoid } from 'nanoid';
 import { useCallback, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { CollectionService } from '../../../modules/collection';
+import { usePageHelper } from '../../blocksuite/block-suite-page-list/utils';
 import { createTagFilter } from '../filter/utils';
 import { createEmptyCollection } from '../use-collection-manager';
 import type { AllPageListConfig } from '../view/edit-collection/edit-collection';
@@ -29,6 +30,10 @@ import { PageListNewPageButton } from './page-list-new-page-button';
 
 export const PageListHeader = () => {
   const t = useAFFiNEI18N();
+  const workspace = useService(Workspace);
+  const { importFile, createEdgeless, createPage } = usePageHelper(
+    workspace.docCollection
+  );
 
   const title = useMemo(() => {
     return t['com.affine.all-pages.header']();
@@ -37,8 +42,14 @@ export const PageListHeader = () => {
   return (
     <div className={styles.docListHeader}>
       <div className={styles.docListHeaderTitle}>{title}</div>
-      <PageListNewPageButton testId="new-page-button-trigger">
-        {t['New Page']()}
+      <PageListNewPageButton
+        size="small"
+        testId="new-page-button-trigger"
+        onCreateEdgeless={createEdgeless}
+        onCreatePage={createPage}
+        onImportFile={importFile}
+      >
+        <div className={styles.buttonText}>{t['New Page']()}</div>
       </PageListNewPageButton>
     </div>
   );
@@ -62,10 +73,22 @@ export const CollectionPageListHeader = ({
   const collectionService = useService(CollectionService);
   const { node, open } = useEditCollection(config);
 
-  const handleAddPage = useAsyncCallback(async () => {
+  const handleEdit = useAsyncCallback(async () => {
     const ret = await open({ ...collection }, 'page');
     collectionService.updateCollection(collection.id, () => ret);
   }, [collection, collectionService, open]);
+
+  const workspace = useService(Workspace);
+  const { createEdgeless, createPage } = usePageHelper(workspace.docCollection);
+
+  const handleCreateEdgeless = useCallback(() => {
+    const newDoc = createEdgeless();
+    collectionService.addPageToCollection(collection.id, newDoc.id);
+  }, [collection.id, collectionService, createEdgeless]);
+  const handleCreatePage = useCallback(() => {
+    const newDoc = createPage();
+    collectionService.addPageToCollection(collection.id, newDoc.id);
+  }, [collection.id, collectionService, createPage]);
 
   return (
     <>
@@ -80,9 +103,19 @@ export const CollectionPageListHeader = ({
           </div>
           <div className={styles.titleCollectionName}>{collection.name}</div>
         </div>
-        <Button className={styles.addPageButton} onClick={handleAddPage}>
-          {t['com.affine.collection.addPages']()}
-        </Button>
+        <div className={styles.rightButtonGroup}>
+          <Button className={styles.addPageButton} onClick={handleEdit}>
+            {t['Edit']()}
+          </Button>
+          <PageListNewPageButton
+            size="small"
+            testId="new-page-button-trigger"
+            onCreateEdgeless={handleCreateEdgeless}
+            onCreatePage={handleCreatePage}
+          >
+            <div className={styles.buttonText}>{t['New Page']()}</div>
+          </PageListNewPageButton>
+        </div>
       </div>
     </>
   );

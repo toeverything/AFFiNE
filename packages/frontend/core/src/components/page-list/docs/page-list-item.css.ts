@@ -133,7 +133,7 @@ export const dateCell = style({
   display: 'flex',
   alignItems: 'center',
   fontSize: cssVar('fontXs'),
-  color: cssVar('textSecondaryColor'),
+  color: cssVar('textPrimaryColor'),
   flexShrink: 0,
   flexWrap: 'nowrap',
   padding: '0 8px',

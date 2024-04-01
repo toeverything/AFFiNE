@@ -892,7 +892,7 @@
   "com.affine.payment.member-limit.pro.confirm": "知道了",
   "com.affine.payment.member-limit.pro.description": "每个 {{planName}} 用户最多可以邀请 {{quota}} 个成员加入他们的工作区。 如果您想继续添加协作成员，可以创建新的工作区。",
   "com.affine.payment.member-limit.title": "成员数量已达到极限",
-  "com.affine.payment.member.description": "在此处管理成员。{{planName}} 用户可以邀请最多 {{memberLimit}} 人。",
+  "com.affine.payment.member.description": "在此处管理成员。{{planName}} 用户可以邀请最多 {{memberLimit}} 人",
   "com.affine.payment.member.description.go-upgrade": "前往升级",
   "com.affine.payment.modal.change.cancel": "取消",
   "com.affine.payment.modal.change.confirm": "更改",

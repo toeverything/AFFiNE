@@ -147,6 +147,6 @@ export const emptyCollectionMessage = style({
 });
 export const emptyCollectionNewButton = style({
   padding: '0 8px',
-  height: '30px',
-  fontSize: cssVar('fontSm'),
+  height: '28px',
+  fontSize: cssVar('fontXs'),
 });

@@ -1,3 +1,4 @@
+import { usePageHelper } from '@affine/core/components/blocksuite/block-suite-page-list/utils';
 import {
   AllPageListOperationsMenu,
   PageDisplayMenu,
@@ -22,7 +23,9 @@ export const AllPageHeader = ({
   onChangeFilters: (filters: Filter[]) => void;
 }) => {
   const workspace = useService(Workspace);
-
+  const { importFile, createEdgeless, createPage } = usePageHelper(
+    workspace.docCollection
+  );
   return (
     <Header
       left={
@@ -40,6 +43,9 @@ export const AllPageHeader = ({
               styles.headerCreateNewButton,
               !showCreateNew && styles.headerCreateNewButtonHidden
             )}
+            onCreateEdgeless={createEdgeless}
+            onCreatePage={createPage}
+            onImportFile={importFile}
           >
             <PlusIcon />
           </PageListNewPageButton>
