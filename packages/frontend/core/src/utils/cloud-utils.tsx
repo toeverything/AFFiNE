@@ -94,13 +94,13 @@ async function signIn(
     url.searchParams.set(key, searchParams[key]);
   }
 
-  const redirectUri =
-    runtimeConfig.serverUrlPrefix +
-    (environment.isDesktop
-      ? buildRedirectUri('/open-app/signin-redirect')
-      : location.pathname);
+  const redirectUri = new URL(location.href);
 
-  url.searchParams.set('redirect_uri', redirectUri);
+  if (environment.isDesktop) {
+    redirectUri.pathname = buildRedirectUri('/open-app/signin-redirect');
+  }
+
+  url.searchParams.set('redirect_uri', redirectUri.toString());
 
   return fetch(url.toString(), {
     method: 'POST',
