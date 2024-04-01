@@ -29,6 +29,8 @@ export enum AvailableModels {
   // moderation
   TextModerationLatest = 'text-moderation-latest',
   TextModerationStable = 'text-moderation-stable',
+  // text to image
+  DallE3 = 'dall-e-3',
 }
 
 export type AvailableModel = keyof typeof AvailableModels;
@@ -174,7 +176,24 @@ export interface CopilotTextToEmbeddingProvider extends CopilotProvider {
   ): Promise<number[][]>;
 }
 
-export interface CopilotTextToImageProvider extends CopilotProvider {}
+export interface CopilotTextToImageProvider extends CopilotProvider {
+  generateImages(
+    messages: PromptMessage[],
+    model: string,
+    options: {
+      signal?: AbortSignal;
+      user?: string;
+    }
+  ): Promise<Array<string>>;
+  generateImagesStream(
+    messages: PromptMessage[],
+    model: string,
+    options: {
+      signal?: AbortSignal;
+      user?: string;
+    }
+  ): AsyncIterable<string>;
+}
 
 export interface CopilotImageToImageProvider extends CopilotProvider {}
 

@@ -27,8 +27,9 @@ import { ChatSessionService } from './session';
 import { CopilotCapability } from './types';
 
 export interface ChatEvent {
-  data: string;
+  type: 'attachment' | 'message';
   id?: string;
+  data: string;
 }
 
 @Controller('/api/copilot')
@@ -138,7 +139,9 @@ export class CopilotController {
       connect(shared$ =>
         merge(
           // actual chat event stream
-          shared$.pipe(map(data => ({ id: sessionId, data }))),
+          shared$.pipe(
+            map(data => ({ type: 'message' as const, id: sessionId, data }))
+          ),
           // save the generated text to the session
           shared$.pipe(
             toArray(),
@@ -146,6 +149,62 @@ export class CopilotController {
               session.push({
                 role: 'assistant',
                 content: values.join(''),
+                createdAt: new Date(),
+              });
+              return from(session.save());
+            }),
+            switchMap(() => EMPTY)
+          )
+        )
+      )
+    );
+  }
+
+  @Public()
+  @Sse('/chat/:sessionId/images')
+  async chatImagesStream(
+    @CurrentUser() user: CurrentUser | undefined,
+    @Req() req: Request,
+    @Param('sessionId') sessionId: string,
+    @Query('messageId') messageId: string
+  ): Promise<Observable<ChatEvent>> {
+    const provider = this.provider.getProviderByCapability(
+      CopilotCapability.TextToImage
+    );
+    if (!provider) {
+      throw new InternalServerErrorException('No provider available');
+    }
+    const session = await this.chatSession.get(sessionId);
+    if (!session) {
+      throw new BadRequestException('Session not found');
+    }
+
+    await session.pushByMessageId(messageId);
+
+    return from(
+      provider.generateImagesStream(session.finish(), session.model, {
+        signal: req.signal,
+        user: user?.id,
+      })
+    ).pipe(
+      connect(shared$ =>
+        merge(
+          // actual chat event stream
+          shared$.pipe(
+            map(attachment => ({
+              type: 'attachment' as const,
+              id: sessionId,
+              data: attachment,
+            }))
+          ),
+          // save the generated text to the session
+          shared$.pipe(
+            toArray(),
+            concatMap(attachments => {
+              session.push({
+                role: 'assistant',
+                content: '',
+                attachments: attachments,
                 createdAt: new Date(),
               });
               return from(session.save());
