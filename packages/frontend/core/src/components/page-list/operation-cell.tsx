@@ -285,6 +285,10 @@ export const CollectionOperationCell = ({
   info,
 }: CollectionOperationCellProps) => {
   const t = useAFFiNEI18N();
+  const favAdapter = useService(FavoriteItemsAdapter);
+  const favourite = useLiveData(
+    favAdapter.isFavorite$(collection.id, 'collection')
+  );
 
   const { open: openEditCollectionModal, node: editModal } =
     useEditCollection(config);
@@ -322,10 +326,28 @@ export const CollectionOperationCell = ({
     return service.deleteCollection(info, collection.id);
   }, [service, info, collection]);
 
+  const onToggleFavoriteCollection = useCallback(() => {
+    const status = favAdapter.isFavorite(collection.id, 'collection');
+    favAdapter.toggle(collection.id, 'collection');
+    toast(
+      status
+        ? t['com.affine.toastMessage.removedFavorites']()
+        : t['com.affine.toastMessage.addedFavorites']()
+    );
+  }, [favAdapter, collection.id, t]);
+
   return (
     <>
       {editModal}
       {editNameModal}
+      <ColWrapper
+        hideInSmallContainer
+        data-testid="page-list-item-favorite"
+        data-favorite={favourite ? true : undefined}
+        className={styles.favoriteCell}
+      >
+        <FavoriteTag onClick={onToggleFavoriteCollection} active={favourite} />
+      </ColWrapper>
       <Tooltip content={t['com.affine.collection.menu.rename']()} side="top">
         <IconButton onClick={handleEditName}>
           <EditIcon />
@@ -336,21 +358,40 @@ export const CollectionOperationCell = ({
           <FilterIcon />
         </IconButton>
       </Tooltip>
-
       <ColWrapper alignment="start">
         <Menu
           items={
-            <MenuItem
-              onClick={handleDelete}
-              preFix={
-                <MenuIcon>
-                  <DeleteIcon />
-                </MenuIcon>
-              }
-              type="danger"
-            >
-              {t['Delete']()}
-            </MenuItem>
+            <>
+              <MenuItem
+                onClick={onToggleFavoriteCollection}
+                preFix={
+                  <MenuIcon>
+                    {favourite ? (
+                      <FavoritedIcon
+                        style={{ color: 'var(--affine-primary-color)' }}
+                      />
+                    ) : (
+                      <FavoriteIcon />
+                    )}
+                  </MenuIcon>
+                }
+              >
+                {favourite
+                  ? t['com.affine.favoritePageOperation.remove']()
+                  : t['com.affine.favoritePageOperation.add']()}
+              </MenuItem>
+              <MenuItem
+                onClick={handleDelete}
+                preFix={
+                  <MenuIcon>
+                    <DeleteIcon />
+                  </MenuIcon>
+                }
+                type="danger"
+              >
+                {t['Delete']()}
+              </MenuItem>
+            </>
           }
           contentOptions={{
             align: 'end',
