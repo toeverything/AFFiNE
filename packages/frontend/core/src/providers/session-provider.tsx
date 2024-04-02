@@ -1,10 +1,9 @@
-import { pushNotificationAtom } from '@affine/component/notification-center';
+import { notify } from '@affine/component';
 import { useSession } from '@affine/core/hooks/affine/use-current-user';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { affine } from '@affine/electron-api';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CLOUD_WORKSPACE_CHANGED_BROADCAST_CHANNEL_KEY } from '@affine/workspace-impl';
-import { useSetAtom } from 'jotai';
 import type { PropsWithChildren } from 'react';
 import { startTransition, useEffect, useRef } from 'react';
 
@@ -14,7 +13,6 @@ import { mixpanel } from '../utils';
 export const CloudSessionProvider = (props: PropsWithChildren) => {
   const session = useSession();
   const prevSession = useRef<ReturnType<typeof useSession>>();
-  const pushNotification = useSetAtom(pushNotificationAtom);
   const onceSignedInEvents = useOnceSignedInEvents();
   const t = useAFFiNEI18N();
 
@@ -39,10 +37,9 @@ export const CloudSessionProvider = (props: PropsWithChildren) => {
         session.status === 'authenticated'
       ) {
         startTransition(() => refreshAfterSignedInEvents());
-        pushNotification({
+        notify.success({
           title: t['com.affine.auth.has.signed'](),
           message: t['com.affine.auth.has.signed.message'](),
-          type: 'success',
         });
 
         if (environment.isDesktop) {
@@ -51,7 +48,7 @@ export const CloudSessionProvider = (props: PropsWithChildren) => {
       }
       prevSession.current = session;
     }
-  }, [session, prevSession, pushNotification, refreshAfterSignedInEvents, t]);
+  }, [session, prevSession, refreshAfterSignedInEvents, t]);
 
   return props.children;
 };

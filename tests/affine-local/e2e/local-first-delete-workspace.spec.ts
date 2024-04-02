@@ -27,7 +27,7 @@ test('Create new workspace, then delete it', async ({ page, workspace }) => {
   await openWorkspaceSettingPanel(page, 'Test Workspace');
   await page.getByTestId('delete-workspace-button').click();
   await expect(
-    page.getByTestId('affine-notification').first()
+    page.locator('.affine-notification-center').first()
   ).not.toBeVisible();
   const workspaceNameDom = page.getByTestId('workspace-name');
   const currentWorkspaceName = (await workspaceNameDom.evaluate(
@@ -38,7 +38,8 @@ test('Create new workspace, then delete it', async ({ page, workspace }) => {
     .getByTestId('delete-workspace-input')
     .pressSequentially(currentWorkspaceName);
   const promise = page
-    .getByTestId('affine-notification')
+    .locator('.affine-notification-center')
+    .first()
     .waitFor({ state: 'attached' });
   await page.getByTestId('delete-workspace-confirm-button').click();
   await promise;

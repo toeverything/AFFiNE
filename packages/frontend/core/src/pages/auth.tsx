@@ -1,3 +1,4 @@
+import { notify } from '@affine/component';
 import {
   ChangeEmailPage,
   ChangePasswordPage,
@@ -7,7 +8,6 @@ import {
   SignInSuccessPage,
   SignUpPage,
 } from '@affine/component/auth-components';
-import { pushNotificationAtom } from '@affine/component/notification-center';
 import { useCredentialsRequirement } from '@affine/core/hooks/affine/use-server-config';
 import {
   changeEmailMutation,
@@ -17,7 +17,6 @@ import {
   verifyEmailMutation,
 } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { useSetAtom } from 'jotai/react';
 import type { ReactElement } from 'react';
 import { useCallback } from 'react';
 import type { LoaderFunction } from 'react-router-dom';
@@ -50,7 +49,6 @@ export const AuthPage = (): ReactElement | null => {
 
   const { authType } = useParams();
   const [searchParams] = useSearchParams();
-  const pushNotification = useSetAtom(pushNotificationAtom);
 
   const { trigger: changePassword } = useMutation({
     mutation: changePasswordMutation,
@@ -72,20 +70,18 @@ export const AuthPage = (): ReactElement | null => {
 
       // FIXME: There is not notification
       if (res?.sendVerifyChangeEmail) {
-        pushNotification({
+        notify.success({
           title: t['com.affine.auth.sent.verify.email.hint'](),
-          type: 'success',
         });
       } else {
-        pushNotification({
+        notify.error({
           title: t['com.affine.auth.sent.change.email.fail'](),
-          type: 'error',
         });
       }
 
       return !!res?.sendVerifyChangeEmail;
     },
-    [pushNotification, searchParams, sendVerifyChangeEmail, t]
+    [searchParams, sendVerifyChangeEmail, t]
   );
 
   const onSetPassword = useCallback(

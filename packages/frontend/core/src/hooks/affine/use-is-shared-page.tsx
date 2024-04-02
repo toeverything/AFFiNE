@@ -1,4 +1,4 @@
-import { pushNotificationAtom } from '@affine/component/notification-center';
+import { notify } from '@affine/component';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import {
   getWorkspacePublicPagesQuery,
@@ -7,8 +7,9 @@ import {
   revokePublicPageMutation,
 } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { SingleSelectSelectSolidIcon } from '@blocksuite/icons';
 import type { PageMode, Workspace } from '@toeverything/infra';
-import { useSetAtom } from 'jotai';
+import { cssVar } from '@toeverything/theme';
 import { useCallback, useMemo } from 'react';
 
 import { useMutation } from '../use-mutation';
@@ -69,7 +70,6 @@ export function useIsSharedPage(
   enableShare: (mode: PageMode) => void;
 } {
   const t = useAFFiNEI18N();
-  const pushNotification = useSetAtom(pushNotificationAtom);
   const { data, mutate } = useQuery({
     query: getWorkspacePublicPagesQuery,
     variables: {
@@ -103,24 +103,25 @@ export function useIsSharedPage(
 
       enableSharePage({ workspaceId, pageId, mode: publishMode })
         .then(() => {
-          pushNotification({
+          notify.success({
             title: t[notificationToI18nKey['enableSuccessTitle']](),
             message: t[notificationToI18nKey['enableSuccessMessage']](),
-            type: 'success',
-            theme: 'default',
+            style: 'normal',
+            icon: (
+              <SingleSelectSelectSolidIcon color={cssVar('primaryColor')} />
+            ),
           });
           return mutate();
         })
         .catch(e => {
-          pushNotification({
+          notify.error({
             title: t[notificationToI18nKey['enableErrorTitle']](),
             message: t[notificationToI18nKey['enableErrorMessage']](),
-            type: 'error',
           });
           console.error(e);
         });
     },
-    [enableSharePage, mutate, pageId, pushNotification, t, workspaceId]
+    [enableSharePage, mutate, pageId, t, workspaceId]
   );
 
   const changeShare = useCallback(
@@ -130,7 +131,7 @@ export function useIsSharedPage(
 
       enableSharePage({ workspaceId, pageId, mode: publishMode })
         .then(() => {
-          pushNotification({
+          notify.success({
             title: t[notificationToI18nKey['changeSuccessTitle']](),
             message: t[
               'com.affine.share-menu.confirm-modify-mode.notification.success.message'
@@ -144,43 +145,43 @@ export function useIsSharedPage(
                   ? t['Edgeless']()
                   : t['Page'](),
             }),
-            type: 'success',
-            theme: 'default',
+            style: 'normal',
+            icon: (
+              <SingleSelectSelectSolidIcon color={cssVar('primaryColor')} />
+            ),
           });
           return mutate();
         })
         .catch(e => {
-          pushNotification({
+          notify.error({
             title: t[notificationToI18nKey['changeErrorTitle']](),
             message: t[notificationToI18nKey['changeErrorMessage']](),
-            type: 'error',
           });
           console.error(e);
         });
     },
-    [enableSharePage, mutate, pageId, pushNotification, t, workspaceId]
+    [enableSharePage, mutate, pageId, t, workspaceId]
   );
 
   const disableShare = useCallback(() => {
     disableSharePage({ workspaceId, pageId })
       .then(() => {
-        pushNotification({
+        notify.success({
           title: t[notificationToI18nKey['disableSuccessTitle']](),
           message: t[notificationToI18nKey['disableSuccessMessage']](),
-          type: 'success',
-          theme: 'default',
+          style: 'normal',
+          icon: <SingleSelectSelectSolidIcon color={cssVar('primaryColor')} />,
         });
         return mutate();
       })
       .catch(e => {
-        pushNotification({
+        notify.error({
           title: t[notificationToI18nKey['disableErrorTitle']](),
           message: t[notificationToI18nKey['disableErrorMessage']](),
-          type: 'error',
         });
         console.error(e);
       });
-  }, [disableSharePage, mutate, pageId, pushNotification, t, workspaceId]);
+  }, [disableSharePage, mutate, pageId, t, workspaceId]);
 
   return useMemo(
     () => ({

@@ -1,7 +1,6 @@
-import { pushNotificationAtom } from '@affine/component/notification-center';
+import { notify } from '@affine/component';
 import { assertExists } from '@blocksuite/global/utils';
 import { GraphQLError } from 'graphql';
-import { useSetAtom } from 'jotai';
 import type { PropsWithChildren, ReactNode } from 'react';
 import { useCallback } from 'react';
 import type { SWRConfiguration } from 'swr';
@@ -11,7 +10,6 @@ const swrConfig: SWRConfiguration = {
   suspense: true,
   use: [
     useSWRNext => (key, fetcher, config) => {
-      const pushNotification = useSetAtom(pushNotificationAtom);
       const fetcherWrapper = useCallback(
         async (...args: any[]) => {
           assertExists(fetcher);
@@ -23,18 +21,14 @@ const swrConfig: SWRConfiguration = {
                 (Array.isArray(e) && e[0] instanceof GraphQLError)
               ) {
                 const graphQLError = e instanceof GraphQLError ? e : e[0];
-                pushNotification({
+                notify.error({
                   title: 'GraphQL Error',
                   message: graphQLError.toString(),
-                  key: Date.now().toString(),
-                  type: 'error',
                 });
               } else {
-                pushNotification({
+                notify.error({
                   title: 'Error',
                   message: e.toString(),
-                  key: Date.now().toString(),
-                  type: 'error',
                 });
               }
               throw e;
@@ -42,7 +36,7 @@ const swrConfig: SWRConfiguration = {
           }
           return d;
         },
-        [fetcher, pushNotification]
+        [fetcher]
       );
       return useSWRNext(key, fetcher ? fetcherWrapper : fetcher, config);
     },

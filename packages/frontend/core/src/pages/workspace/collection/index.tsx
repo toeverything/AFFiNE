@@ -1,4 +1,4 @@
-import { pushNotificationAtom } from '@affine/component/notification-center';
+import { notify } from '@affine/component';
 import {
   AffineShapeIcon,
   useEditCollection,
@@ -17,7 +17,6 @@ import {
   ViewLayersIcon,
 } from '@blocksuite/icons';
 import { useLiveData, useService, Workspace } from '@toeverything/infra';
-import { useSetAtom } from 'jotai';
 import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
@@ -70,7 +69,6 @@ export const Component = function CollectionPage() {
   const params = useParams();
   const workspace = useService(Workspace);
   const collection = collections.find(v => v.id === params.collectionId);
-  const pushNotification = useSetAtom(pushNotificationAtom);
   useEffect(() => {
     if (!collection) {
       navigate.jumpToSubPath(workspace.id, WorkspaceSubPath.ALL);
@@ -85,17 +83,13 @@ export const Component = function CollectionPage() {
           text = `${collection.collection.name} has been deleted`;
         }
       }
-      pushNotification({
-        type: 'error',
-        title: text,
-      });
+      notify.error({ title: text });
     }
   }, [
     collection,
     collectionService.collectionsTrash$.value,
     navigate,
     params.collectionId,
-    pushNotification,
     workspace.docCollection,
     workspace.id,
   ]);

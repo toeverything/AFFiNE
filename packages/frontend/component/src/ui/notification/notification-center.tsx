@@ -1,3 +1,4 @@
+import { SingleSelectSelectSolidIcon } from '@blocksuite/icons';
 import { assignInlineVars } from '@vanilla-extract/dynamic';
 import { type CSSProperties, type FC, useMemo } from 'react';
 import { type ExternalToast, toast, Toaster } from 'sonner';
@@ -53,6 +54,29 @@ export function notify(notification: Notification, options?: ExternalToast) {
     );
   }, options);
 }
+
+notify.error = (notification: Notification, options?: ExternalToast) => {
+  return notify({ style: 'alert', theme: 'error', ...notification }, options);
+};
+
+notify.success = (notification: Notification, options?: ExternalToast) => {
+  return notify(
+    {
+      icon: <SingleSelectSelectSolidIcon />,
+      style: 'alert',
+      theme: 'success',
+      ...notification,
+    },
+    options
+  );
+};
+
+notify.warning = (notification: Notification, options?: ExternalToast) => {
+  return notify(
+    { style: 'information', theme: 'warning', ...notification },
+    options
+  );
+};
 
 notify.custom = (
   Component: FC<NotificationCustomRendererProps>,

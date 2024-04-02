@@ -1,5 +1,4 @@
-import { Tooltip } from '@affine/component';
-import { pushNotificationAtom } from '@affine/component/notification-center';
+import { notify, Tooltip } from '@affine/component';
 import { Avatar, type AvatarProps } from '@affine/component/ui/avatar';
 import { Loading } from '@affine/component/ui/loading';
 import { openSettingModalAtom } from '@affine/core/atoms';
@@ -81,7 +80,6 @@ const OfflineStatus = () => {
 const useSyncEngineSyncProgress = () => {
   const t = useAFFiNEI18N();
   const isOnline = useSystemOnline();
-  const pushNotification = useSetAtom(pushNotificationAtom);
   const { syncing, progress, retrying, errorMessage } = useDocEngineStatus();
   const [isOverCapacity, setIsOverCapacity] = useState(false);
 
@@ -89,7 +87,7 @@ const useSyncEngineSyncProgress = () => {
   const isOwner = useIsWorkspaceOwner(currentWorkspace.meta);
 
   const setSettingModalAtom = useSetAtom(openSettingModalAtom);
-  const jumpToPricePlan = useCallback(async () => {
+  const jumpToPricePlan = useCallback(() => {
     setSettingModalAtom({
       open: true,
       activeTab: 'plans',
@@ -108,17 +106,17 @@ const useSyncEngineSyncProgress = () => {
           }
           setIsOverCapacity(true);
           if (isOwner) {
-            pushNotification({
-              type: 'warning',
+            notify.warning({
               title: t['com.affine.payment.storage-limit.title'](),
               message:
                 t['com.affine.payment.storage-limit.description.owner'](),
-              actionLabel: t['com.affine.payment.storage-limit.view'](),
-              action: jumpToPricePlan,
+              action: {
+                label: t['com.affine.payment.storage-limit.view'](),
+                onClick: jumpToPricePlan,
+              },
             });
           } else {
-            pushNotification({
-              type: 'warning',
+            notify.warning({
               title: t['com.affine.payment.storage-limit.title'](),
               message:
                 t['com.affine.payment.storage-limit.description.member'](),
@@ -129,7 +127,7 @@ const useSyncEngineSyncProgress = () => {
     return () => {
       disposableOverCapacity?.dispose();
     };
-  }, [currentWorkspace, isOwner, jumpToPricePlan, pushNotification, t]);
+  }, [currentWorkspace, isOwner, jumpToPricePlan, t]);
 
   const content = useMemo(() => {
     // TODO: add i18n

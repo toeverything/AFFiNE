@@ -1,11 +1,10 @@
-import { Wrapper } from '@affine/component';
+import { notify, Wrapper } from '@affine/component';
 import {
   AuthContent,
   AuthInput,
   BackButton,
   ModalHeader,
 } from '@affine/component/auth-components';
-import { pushNotificationAtom } from '@affine/component/notification-center';
 import { Button } from '@affine/component/ui/button';
 import { useCredentialsRequirement } from '@affine/core/hooks/affine/use-server-config';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
@@ -17,7 +16,6 @@ import {
   sendVerifyEmailMutation,
 } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { useSetAtom } from 'jotai/react';
 import { useCallback, useState } from 'react';
 
 import { useMutation } from '../../../hooks/use-mutation';
@@ -165,7 +163,6 @@ export const SendEmail = ({
   const t = useAFFiNEI18N();
   const { password: passwordLimits } = useCredentialsRequirement();
   const [hasSentEmail, setHasSentEmail] = useState(false);
-  const pushNotification = useSetAtom(pushNotificationAtom);
 
   const title = useEmailTitle(emailType);
   const hint = useNotificationHint(emailType);
@@ -177,14 +174,9 @@ export const SendEmail = ({
     // TODO: add error handler
     await sendEmail(email);
 
-    pushNotification({
-      title: hint,
-      message: '',
-      key: Date.now().toString(),
-      type: 'success',
-    });
+    notify.success({ title: hint });
     setHasSentEmail(true);
-  }, [email, hint, pushNotification, sendEmail]);
+  }, [email, hint, sendEmail]);
 
   return (
     <>

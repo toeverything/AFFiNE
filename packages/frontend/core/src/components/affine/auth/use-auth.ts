@@ -1,5 +1,4 @@
-import { pushNotificationAtom } from '@affine/component/notification-center';
-import type { Notification } from '@affine/component/notification-center/index.jotai';
+import { notify } from '@affine/component';
 import type { OAuthProviderType } from '@affine/graphql';
 import { atom, useAtom, useSetAtom } from 'jotai';
 import { useCallback } from 'react';
@@ -9,19 +8,6 @@ import { useSubscriptionSearch } from './use-subscription';
 
 const COUNT_DOWN_TIME = 60;
 export const INTERNAL_BETA_URL = `https://community.affine.pro/c/insider-general/`;
-
-function handleSendEmailError(
-  res: Response | undefined | void,
-  pushNotification: (notification: Notification) => void
-) {
-  if (!res?.ok) {
-    pushNotification({
-      title: 'Send email error',
-      message: 'Please back to home and try again',
-      type: 'error',
-    });
-  }
-}
 
 type AuthStoreAtom = {
   allowSendEmail: boolean;
@@ -60,7 +46,6 @@ const countDownAtom = atom(
 
 export const useAuth = () => {
   const subscriptionData = useSubscriptionSearch();
-  const pushNotification = useSetAtom(pushNotificationAtom);
   const [authStore, setAuthStore] = useAtom(authStoreAtom);
   const startResendCountDown = useSetAtom(countDownAtom);
 
@@ -96,7 +81,13 @@ export const useAuth = () => {
         }
       ).catch(console.error);
 
-      handleSendEmailError(res, pushNotification);
+      if (!res?.ok) {
+        // TODO: i18n
+        notify.error({
+          title: 'Send email error',
+          message: 'Please back to home and try again',
+        });
+      }
 
       setAuthStore({
         isMutating: false,
@@ -104,11 +95,12 @@ export const useAuth = () => {
         resendCountDown: COUNT_DOWN_TIME,
       });
 
+      // TODO: when errored, should reset the count down
       startResendCountDown();
 
       return res;
     },
-    [pushNotification, setAuthStore, startResendCountDown, subscriptionData]
+    [setAuthStore, startResendCountDown, subscriptionData]
   );
 
   const signUp = useCallback(

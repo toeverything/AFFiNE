@@ -1,4 +1,4 @@
-import { pushNotificationAtom } from '@affine/component/notification-center';
+import { notify } from '@affine/component';
 import { SettingRow } from '@affine/component/setting-components';
 import { Button } from '@affine/component/ui/button';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
@@ -6,7 +6,6 @@ import { useSystemOnline } from '@affine/core/hooks/use-system-online';
 import { apis } from '@affine/electron-api';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { Workspace, WorkspaceMetadata } from '@toeverything/infra';
-import { useSetAtom } from 'jotai';
 import { useState } from 'react';
 
 interface ExportPanelProps {
@@ -23,7 +22,6 @@ export const ExportPanel = ({
   const [saving, setSaving] = useState(false);
   const isOnline = useSystemOnline();
 
-  const pushNotification = useSetAtom(pushNotificationAtom);
   const onExport = useAsyncCallback(async () => {
     if (saving || !workspace) {
       return;
@@ -39,21 +37,14 @@ export const ExportPanel = ({
       if (result?.error) {
         throw new Error(result.error);
       } else if (!result?.canceled) {
-        pushNotification({
-          type: 'success',
-          title: t['Export success'](),
-        });
+        notify.success({ title: t['Export success']() });
       }
     } catch (e: any) {
-      pushNotification({
-        type: 'error',
-        title: t['Export failed'](),
-        message: e.message,
-      });
+      notify.error({ title: t['Export failed'](), message: e.message });
     } finally {
       setSaving(false);
     }
-  }, [isOnline, pushNotification, saving, t, workspace, workspaceId]);
+  }, [isOnline, saving, t, workspace, workspaceId]);
 
   return (
     <SettingRow name={t['Export']()} desc={t['Export Description']()}>

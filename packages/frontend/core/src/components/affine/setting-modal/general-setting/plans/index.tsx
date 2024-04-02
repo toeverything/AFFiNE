@@ -1,5 +1,4 @@
-import { RadioButton, RadioButtonGroup } from '@affine/component';
-import { pushNotificationAtom } from '@affine/component/notification-center';
+import { notify, RadioButton, RadioButtonGroup } from '@affine/component';
 import {
   pricesQuery,
   SubscriptionPlan,
@@ -7,7 +6,8 @@ import {
 } from '@affine/graphql';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { useSetAtom } from 'jotai';
+import { SingleSelectSelectSolidIcon } from '@blocksuite/icons';
+import { cssVar } from '@toeverything/theme';
 import { Suspense, useEffect, useRef, useState } from 'react';
 import type { FallbackProps } from 'react-error-boundary';
 
@@ -36,7 +36,6 @@ const getRecurringLabel = ({
 const Settings = () => {
   const t = useAFFiNEI18N();
   const [subscription, mutateSubscription] = useUserSubscription();
-  const pushNotification = useSetAtom(pushNotificationAtom);
 
   const loggedIn = useCurrentLoginStatus() === 'authenticated';
   const planDetail = getPlanDetail(t);
@@ -165,9 +164,11 @@ const Settings = () => {
             key={detail.plan}
             onSubscriptionUpdate={mutateSubscription}
             onNotify={({ detail, recurring }) => {
-              pushNotification({
-                type: 'success',
-                theme: 'default',
+              notify({
+                style: 'normal',
+                icon: (
+                  <SingleSelectSelectSolidIcon color={cssVar('primaryColor')} />
+                ),
                 title: t['com.affine.payment.updated-notify-title'](),
                 message:
                   detail.plan === SubscriptionPlan.Free

@@ -1,5 +1,4 @@
-import { FlexWrapper, Input } from '@affine/component';
-import { pushNotificationAtom } from '@affine/component/notification-center';
+import { FlexWrapper, Input, notify } from '@affine/component';
 import {
   SettingHeader,
   SettingRow,
@@ -35,7 +34,6 @@ import * as styles from './style.css';
 export const UserAvatar = () => {
   const t = useAFFiNEI18N();
   const user = useCurrentUser();
-  const pushNotification = useSetAtom(pushNotificationAtom);
 
   const { trigger: avatarTrigger } = useMutation({
     mutation: uploadAvatarMutation,
@@ -55,19 +53,17 @@ export const UserAvatar = () => {
           avatar: reducedFile, // Pass the reducedFile directly to the avatarTrigger
         });
         user.update({ avatarUrl: data.uploadAvatar.avatarUrl });
-        pushNotification({
-          title: 'Update user avatar success',
-          type: 'success',
-        });
+        // TODO: i18n
+        notify.success({ title: 'Update user avatar success' });
       } catch (e) {
-        pushNotification({
+        // TODO: i18n
+        notify.error({
           title: 'Update user avatar failed',
           message: String(e),
-          type: 'error',
         });
       }
     },
-    [avatarTrigger, pushNotification, user]
+    [avatarTrigger, user]
   );
 
   const handleRemoveUserAvatar = useCallback(
@@ -109,7 +105,6 @@ export const AvatarAndName = () => {
   const t = useAFFiNEI18N();
   const user = useCurrentUser();
   const [input, setInput] = useState<string>(user.name);
-  const pushNotification = useSetAtom(pushNotificationAtom);
 
   const { trigger: updateProfile } = useMutation({
     mutation: updateUserProfileMutation,
@@ -129,13 +124,12 @@ export const AvatarAndName = () => {
       });
       user.update({ name: data.updateProfile.name });
     } catch (e) {
-      pushNotification({
+      notify.error({
         title: 'Failed to update user name.',
         message: String(e),
-        type: 'error',
       });
     }
-  }, [allowUpdate, input, user, updateProfile, pushNotification]);
+  }, [allowUpdate, input, user, updateProfile]);
 
   return (
     <SettingRow

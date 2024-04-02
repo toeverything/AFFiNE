@@ -1,3 +1,4 @@
+import { notify } from '@affine/component';
 import type {
   InviteModalProps,
   PaginationProps,
@@ -7,7 +8,6 @@ import {
   MemberLimitModal,
   Pagination,
 } from '@affine/component/member-components';
-import { pushNotificationAtom } from '@affine/component/notification-center';
 import { SettingRow } from '@affine/component/setting-components';
 import { Avatar } from '@affine/component/ui/avatar';
 import { Button, IconButton } from '@affine/component/ui/button';
@@ -90,8 +90,6 @@ export const CloudWorkspaceMembersPanel = ({
   const [open, setOpen] = useState(false);
   const [memberSkip, setMemberSkip] = useState(0);
 
-  const pushNotification = useSetAtom(pushNotificationAtom);
-
   const openModal = useCallback(() => {
     setOpen(true);
   }, []);
@@ -109,15 +107,14 @@ export const CloudWorkspaceMembersPanel = ({
         true
       );
       if (success) {
-        pushNotification({
+        notify.success({
           title: t['Invitation sent'](),
           message: t['Invitation sent hint'](),
-          type: 'success',
         });
         setOpen(false);
       }
     },
-    [invite, pushNotification, t]
+    [invite, t]
   );
 
   const setSettingModalAtom = useSetAtom(openSettingModalAtom);
@@ -146,13 +143,10 @@ export const CloudWorkspaceMembersPanel = ({
     async memberId => {
       const res = await revokeMemberPermission(memberId);
       if (res?.revoke) {
-        pushNotification({
-          title: t['Removed successfully'](),
-          type: 'success',
-        });
+        notify.success({ title: t['Removed successfully']() });
       }
     },
-    [pushNotification, revokeMemberPermission, t]
+    [revokeMemberPermission, t]
   );
 
   const desc = useMemo(() => {

@@ -1,9 +1,9 @@
 import '@affine/component/theme/global.css';
 import '@affine/component/theme/theme.css';
 
+import { NotificationCenter } from '@affine/component';
 import { AffineContext } from '@affine/component/context';
 import { GlobalLoading } from '@affine/component/global-loading';
-import { NotificationCenter } from '@affine/component/notification-center';
 import { WorkspaceFallback } from '@affine/core/components/workspace';
 import { GlobalScopeProvider } from '@affine/core/modules/infra-web/global-scope';
 import { CloudSessionProvider } from '@affine/core/providers/session-provider';

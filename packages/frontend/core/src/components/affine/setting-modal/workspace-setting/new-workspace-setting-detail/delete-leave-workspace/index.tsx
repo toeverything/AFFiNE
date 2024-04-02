@@ -1,4 +1,4 @@
-import { pushNotificationAtom } from '@affine/component/notification-center';
+import { notify } from '@affine/component';
 import { SettingRow } from '@affine/component/setting-components';
 import { ConfirmModal } from '@affine/component/ui/modal';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
@@ -39,7 +39,6 @@ export const DeleteLeaveWorkspace = ({
   const workspaceManager = useService(WorkspaceManager);
   const workspaceList = useLiveData(workspaceManager.list.workspaceList$);
   const currentWorkspace = useService(Workspace);
-  const pushNotification = useSetAtom(pushNotificationAtom);
 
   const onLeaveOrDelete = useCallback(() => {
     if (isOwner) {
@@ -69,15 +68,11 @@ export const DeleteLeaveWorkspace = ({
     }
 
     await workspaceManager.deleteWorkspace(workspaceMetadata);
-    pushNotification({
-      title: t['Successfully deleted'](),
-      type: 'success',
-    });
+    notify.success({ title: t['Successfully deleted']() });
   }, [
     currentWorkspace?.id,
     jumpToIndex,
     jumpToSubPath,
-    pushNotification,
     setSettingModal,
     t,
     workspaceList,
