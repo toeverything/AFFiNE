@@ -36,4 +36,5 @@ AFFiNE.ENV_MAP = {
     'featureFlags.syncClientVersionCheck',
     'boolean',
   ],
+  TELEMETRY_ENABLE: ['telemetry.enabled', 'boolean'],
 };

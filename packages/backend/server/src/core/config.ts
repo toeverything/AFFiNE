@@ -66,6 +66,9 @@ export class ServerConfigType {
     description: 'credentials requirement',
   })
   credentialsRequirement!: CredentialsRequirementType;
+
+  @Field({ description: 'enable telemetry' })
+  enableTelemetry!: boolean;
 }
 
 export class ServerConfigResolver {
@@ -87,6 +90,7 @@ export class ServerConfigResolver {
       credentialsRequirement: {
         password: AFFiNE.auth.password,
       },
+      enableTelemetry: AFFiNE.telemetry.enabled,
     };
   }
 }
