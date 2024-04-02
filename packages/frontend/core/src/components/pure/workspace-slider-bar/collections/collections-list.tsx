@@ -162,6 +162,10 @@ export const CollectionSidebarNavItem = ({
         postfix={
           <div
             onClick={stopPropagation}
+            onMouseDown={e => {
+              // prevent drag
+              e.stopPropagation();
+            }}
             style={{ display: 'flex', alignItems: 'center' }}
           >
             <CollectionOperations
