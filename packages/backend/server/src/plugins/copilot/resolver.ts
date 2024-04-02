@@ -271,7 +271,7 @@ export class CopilotResolver {
     description: 'Create a chat message',
   })
   async createCopilotMessage(
-    @CurrentUser() user: CurrentUser | undefined,
+    @CurrentUser() user: CurrentUser,
     @Args({ name: 'options', type: () => CreateChatMessageInput })
     options: CreateChatMessageInput
   ) {
