@@ -1,4 +1,6 @@
+import { AiPromptRole } from '@prisma/client';
 import type { ClientOptions as OpenAIClientOptions } from 'openai';
+import { z } from 'zod';
 
 export interface CopilotConfig {
   openai: OpenAIClientOptions;
@@ -23,10 +25,18 @@ export interface CopilotProvider {
   getCapabilities(): CopilotProviderCapability[];
 }
 
-export type ChatMessage = {
-  role: 'system' | 'assistant' | 'user';
-  content: string;
-};
+export const ChatMessageSchema = z
+  .object({
+    role: z.enum(
+      Array.from(Object.values(AiPromptRole)) as [
+        'system' | 'assistant' | 'user',
+      ]
+    ),
+    content: z.string(),
+  })
+  .strict();
+
+export type ChatMessage = z.infer<typeof ChatMessageSchema>;
 
 export interface CopilotTextToTextProvider extends CopilotProvider {
   generateText(messages: ChatMessage[], model: string): Promise<string>;

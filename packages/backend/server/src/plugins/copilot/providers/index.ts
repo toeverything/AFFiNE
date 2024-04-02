@@ -2,14 +2,14 @@ import assert from 'node:assert';
 
 import { Injectable, Logger } from '@nestjs/common';
 
-import { Config } from '../../fundamentals';
+import { Config } from '../../../fundamentals';
 import {
   CapabilityToCopilotProvider,
   CopilotConfig,
   CopilotProvider,
   CopilotProviderCapability,
   CopilotProviderType,
-} from './types';
+} from '../types';
 
 type CopilotProviderConfig = CopilotConfig[keyof CopilotConfig];
 
