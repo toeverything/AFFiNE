@@ -17,10 +17,6 @@ const RoundedSkeleton = ({
   <Skeleton {...props} style={{ borderRadius: `${radius}px` }} />
 );
 
-const SubtitleSkeleton = () => (
-  <Skeleton variant="text" width="100%" height="20px" />
-);
-
 const TabsSkeleton = () => (
   // TODO: height should be `32px` by design
   // but the RadioGroup component is not matching with the design currently
@@ -52,9 +48,11 @@ const ScrollSkeleton = () => (
 export const PlansSkeleton = () => {
   return (
     <PlanLayout
-      subtitle={<SubtitleSkeleton />}
-      tabs={<TabsSkeleton />}
-      scroll={<ScrollSkeleton />}
+      cloudToggle={
+        <RoundedSkeleton variant="rounded" width="100%" height="32px" />
+      }
+      cloudSelect={<TabsSkeleton />}
+      cloudScroll={<ScrollSkeleton />}
     />
   );
 };

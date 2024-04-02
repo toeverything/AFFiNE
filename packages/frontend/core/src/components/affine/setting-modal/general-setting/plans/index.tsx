@@ -1,4 +1,4 @@
-import { notify, RadioButton, RadioButtonGroup } from '@affine/component';
+import { Button, notify, Switch } from '@affine/component';
 import {
   pricesQuery,
   SubscriptionPlan,
@@ -15,7 +15,6 @@ import { SWRErrorBoundary } from '../../../../../components/pure/swr-error-bunda
 import { useCurrentLoginStatus } from '../../../../../hooks/affine/use-current-login-status';
 import { useQuery } from '../../../../../hooks/use-query';
 import { useUserSubscription } from '../../../../../hooks/use-subscription';
-import { AIPlanCard } from './ai';
 import { PlanLayout } from './layout';
 import type { FixedPrice } from './plan-card';
 import { getPlanDetail, PlanCard } from './plan-card';
@@ -101,7 +100,7 @@ const Settings = () => {
     };
   }, [recurring]);
 
-  const subtitle = loggedIn ? (
+  const cloudCaption = loggedIn ? (
     isCanceled ? (
       <p>
         {t['com.affine.payment.subtitle-canceled']({
@@ -134,30 +133,43 @@ const Settings = () => {
     <p>{t['com.affine.payment.subtitle-not-signed-in']()}</p>
   );
 
-  const tabs = (
-    <RadioButtonGroup
-      className={styles.recurringRadioGroup}
-      value={recurring}
-      onValueChange={setRecurring}
-    >
-      {Object.values(SubscriptionRecurring).map(recurring => (
-        <RadioButton key={recurring} value={recurring}>
-          <span className={styles.radioButtonText}>
-            {getRecurringLabel({ recurring, t })}
-          </span>
-          {recurring === SubscriptionRecurring.Yearly && yearlyDiscount && (
-            <span className={styles.radioButtonDiscount}>
-              {t['com.affine.payment.discount-amount']({
-                amount: yearlyDiscount,
-              })}
-            </span>
-          )}
-        </RadioButton>
-      ))}
-    </RadioButtonGroup>
+  const cloudToggle = (
+    <div className={styles.recurringToggleWrapper}>
+      <div>
+        {recurring === SubscriptionRecurring.Yearly ? (
+          <div className={styles.recurringToggleRecurring}>Yearly</div>
+        ) : (
+          <>
+            <div className={styles.recurringToggleRecurring}>
+              <span>Billed </span>
+              <span>
+                {recurring === SubscriptionRecurring.Yearly
+                  ? 'Yearly'
+                  : 'Monthly'}
+              </span>
+            </div>
+            {yearlyDiscount ? (
+              <div className={styles.recurringToggleDiscount}>
+                Saving {yearlyDiscount}%
+              </div>
+            ) : null}
+          </>
+        )}
+      </div>
+      <Switch
+        checked={recurring === SubscriptionRecurring.Yearly}
+        onChange={checked =>
+          setRecurring(
+            checked
+              ? SubscriptionRecurring.Yearly
+              : SubscriptionRecurring.Monthly
+          )
+        }
+      />
+    </div>
   );
 
-  const scroll = (
+  const cloudScroll = (
     <div className={styles.planCardsWrapper} ref={scrollWrapper}>
       {Array.from(planDetail.values()).map(detail => {
         return (
@@ -191,13 +203,13 @@ const Settings = () => {
     </div>
   );
 
-  const aiPrice = prices.find(price => price.plan === SubscriptionPlan.AI);
-  const ai = (
-    <AIPlanCard onSubscriptionUpdate={mutateSubscription} price={aiPrice} />
-  );
+  const cloudSelect = <Button>AFFiNE.Pro</Button>;
 
   return (
-    <PlanLayout scrollRef={scrollWrapper} {...{ subtitle, tabs, scroll, ai }} />
+    <PlanLayout
+      cloudScrollRef={scrollWrapper}
+      {...{ cloudSelect, cloudToggle, cloudScroll, cloudCaption }}
+    />
   );
 };
 
@@ -214,11 +226,6 @@ export const AFFiNECloudPlans = () => {
 const PlansErrorBoundary = ({ resetErrorBoundary }: FallbackProps) => {
   const t = useAFFiNEI18N();
 
-  const title = t['com.affine.payment.title']();
-  const subtitle = '';
-  const tabs = '';
-  const footer = '';
-
   const scroll = (
     <div className={styles.errorTip}>
       <span>{t['com.affine.payment.plans-error-tip']()}</span>
@@ -228,5 +235,5 @@ const PlansErrorBoundary = ({ resetErrorBoundary }: FallbackProps) => {
     </div>
   );
 
-  return <PlanLayout {...{ title, subtitle, tabs, scroll, footer }} />;
+  return <PlanLayout cloudScroll={scroll} />;
 };

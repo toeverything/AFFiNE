@@ -2,16 +2,17 @@ import { cssVar } from '@toeverything/theme';
 import { globalStyle, style } from '@vanilla-extract/css';
 export const settingHeader = style({
   borderBottom: `1px solid ${cssVar('borderColor')}`,
-  paddingBottom: '24px',
+  paddingBottom: '16px',
   marginBottom: '24px',
 });
 globalStyle(`${settingHeader} .title`, {
   fontSize: cssVar('fontBase'),
   fontWeight: 600,
   lineHeight: '24px',
-  marginBottom: '4px',
 });
 globalStyle(`${settingHeader} .subtitle`, {
+  paddingTop: '4px',
+  paddingBottom: '8px',
   fontSize: cssVar('fontXs'),
   lineHeight: '16px',
   color: cssVar('textSecondaryColor'),

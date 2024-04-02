@@ -3,8 +3,24 @@ import { style } from '@vanilla-extract/css';
 export const wrapper = style({
   width: '100%',
 });
-export const recurringRadioGroup = style({
-  width: '256px',
+export const recurringToggleWrapper = style({
+  display: 'flex',
+  alignItems: 'center',
+  gap: 16,
+  minHeight: 40,
+});
+// export const recurringToggleLabel = style({});
+export const recurringToggleRecurring = style({
+  fontWeight: 400,
+  fontSize: cssVar('fontXs'),
+  lineHeight: '20px',
+  color: cssVar('textSecondaryColor'),
+});
+export const recurringToggleDiscount = style({
+  fontWeight: 600,
+  fontSize: cssVar('fontXs'),
+  lineHeight: '20px',
+  color: cssVar('brandColor'),
 });
 export const radioButtonDiscount = style({
   marginLeft: '4px',
