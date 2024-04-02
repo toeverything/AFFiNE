@@ -726,6 +726,7 @@ __metadata:
     nodemailer: "npm:^6.9.10"
     nodemon: "npm:^3.1.0"
     on-headers: "npm:^1.0.2"
+    openai: "npm:^4.29.2"
     parse-duration: "npm:^1.1.0"
     pretty-time: "npm:^1.1.0"
     prisma: "npm:^5.10.2"

@@ -1,3 +1,4 @@
+import { CopilotConfig } from './copilot';
 import { GCloudConfig } from './gcloud/config';
 import { OAuthConfig } from './oauth';
 import { PaymentConfig } from './payment';
@@ -6,6 +7,7 @@ import { R2StorageConfig, S3StorageConfig } from './storage';
 
 declare module '../fundamentals/config' {
   interface PluginsConfig {
+    readonly copilot: CopilotConfig;
     readonly payment: PaymentConfig;
     readonly redis: RedisOptions;
     readonly gcloud: GCloudConfig;

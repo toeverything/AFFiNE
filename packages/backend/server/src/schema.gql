@@ -271,6 +271,7 @@ enum ServerDeploymentType {
 }
 
 enum ServerFeature {
+  Copilot
   OAuth
   Payment
 }
