@@ -1,0 +1,6 @@
+query getCopilotAnonymousSessions($workspaceId: String!) {
+  copilotAnonymous(workspaceId: $workspaceId) {
+    chats
+    actions
+  }
+}

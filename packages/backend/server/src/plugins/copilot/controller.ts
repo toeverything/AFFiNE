@@ -82,7 +82,7 @@ export class CopilotController {
   @Public()
   @Get('/chat/:sessionId')
   async chat(
-    @CurrentUser() user: CurrentUser,
+    @CurrentUser() user: CurrentUser | undefined,
     @Req() req: Request,
     @Param('sessionId') sessionId: string,
     @Query('message') message: string | undefined,
@@ -110,7 +110,7 @@ export class CopilotController {
         session.model,
         {
           signal: req.signal,
-          user: user.id,
+          user: user?.id,
         }
       );
 
@@ -132,7 +132,7 @@ export class CopilotController {
   @Public()
   @Sse('/chat/:sessionId/stream')
   async chatStream(
-    @CurrentUser() user: CurrentUser,
+    @CurrentUser() user: CurrentUser | undefined,
     @Req() req: Request,
     @Param('sessionId') sessionId: string,
     @Query('message') message: string | undefined,
@@ -157,7 +157,7 @@ export class CopilotController {
     return from(
       provider.generateTextStream(session.finish(params), session.model, {
         signal: req.signal,
-        user: user.id,
+        user: user?.id,
       })
     ).pipe(
       connect(shared$ =>

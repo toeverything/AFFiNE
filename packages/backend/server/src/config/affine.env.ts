@@ -38,5 +38,9 @@ AFFiNE.ENV_MAP = {
     'featureFlags.syncClientVersionCheck',
     'boolean',
   ],
+  FEATURES_COPILOT_SKIP_AUTHORIZATION: [
+    'featureFlags.copilotAuthorization',
+    'boolean',
+  ],
   TELEMETRY_ENABLE: ['telemetry.enabled', 'boolean'],
 };
