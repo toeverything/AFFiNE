@@ -296,6 +296,7 @@ __metadata:
     react-transition-state: "npm:^2.1.1"
     react-virtuoso: "npm:^4.7.0"
     rxjs: "npm:^7.8.1"
+    sonner: "npm:^1.4.41"
     storybook: "npm:^7.6.17"
     storybook-dark-mode: "npm:^3.0.3"
     swr: "npm:^2.2.5"
@@ -32742,6 +32743,16 @@ __metadata:
     ip: "npm:^2.0.0"
     smart-buffer: "npm:^4.2.0"
   checksum: 10/5074f7d6a13b3155fa655191df1c7e7a48ce3234b8ccf99afa2ccb56591c195e75e8bb78486f8e9ea8168e95a29573cbaad55b2b5e195160ae4d2ea6811ba833
+  languageName: node
+  linkType: hard
+
+"sonner@npm:^1.4.41":
+  version: 1.4.41
+  resolution: "sonner@npm:1.4.41"
+  peerDependencies:
+    react: ^18.0.0
+    react-dom: ^18.0.0
+  checksum: 10/f300db8b2603e72fad94d895935c17f13c93b91396333a7f77f028c1d0f605d9929ea0c36ead1df0b4ded66dfaa7a20c58cd9bd31b70f6efcd0fbcce91e4487f
   languageName: node
   linkType: hard
 

@@ -69,6 +69,7 @@
     "react-transition-state": "^2.1.1",
     "react-virtuoso": "^4.7.0",
     "rxjs": "^7.8.1",
+    "sonner": "^1.4.41",
     "swr": "^2.2.5",
     "uuid": "^9.0.1",
     "zod": "^3.22.4"
