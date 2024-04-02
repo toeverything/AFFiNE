@@ -5,6 +5,7 @@ import { ClientOptions, OpenAI } from 'openai';
 import {
   ChatMessageRole,
   CopilotCapability,
+  CopilotImageToTextProvider,
   CopilotProviderType,
   CopilotTextToEmbeddingProvider,
   CopilotTextToImageProvider,
@@ -18,13 +19,15 @@ export class OpenAIProvider
   implements
     CopilotTextToTextProvider,
     CopilotTextToEmbeddingProvider,
-    CopilotTextToImageProvider
+    CopilotTextToImageProvider,
+    CopilotImageToTextProvider
 {
   static readonly type = CopilotProviderType.OpenAI;
   static readonly capabilities = [
     CopilotCapability.TextToText,
     CopilotCapability.TextToEmbedding,
     CopilotCapability.TextToImage,
+    CopilotCapability.ImageToText,
   ];
 
   readonly availableModels = [

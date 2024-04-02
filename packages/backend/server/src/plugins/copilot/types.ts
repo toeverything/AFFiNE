@@ -135,6 +135,7 @@ export enum CopilotCapability {
   TextToEmbedding = 'text-to-embedding',
   TextToImage = 'text-to-image',
   ImageToImage = 'image-to-image',
+  ImageToText = 'image-to-text',
 }
 
 export interface CopilotProvider {
@@ -195,11 +196,35 @@ export interface CopilotTextToImageProvider extends CopilotProvider {
   ): AsyncIterable<string>;
 }
 
+export interface CopilotImageToTextProvider extends CopilotProvider {
+  generateText(
+    messages: PromptMessage[],
+    model: string,
+    options: {
+      temperature?: number;
+      maxTokens?: number;
+      signal?: AbortSignal;
+      user?: string;
+    }
+  ): Promise<string>;
+  generateTextStream(
+    messages: PromptMessage[],
+    model: string,
+    options: {
+      temperature?: number;
+      maxTokens?: number;
+      signal?: AbortSignal;
+      user?: string;
+    }
+  ): AsyncIterable<string>;
+}
+
 export interface CopilotImageToImageProvider extends CopilotProvider {}
 
 export type CapabilityToCopilotProvider = {
   [CopilotCapability.TextToText]: CopilotTextToTextProvider;
   [CopilotCapability.TextToEmbedding]: CopilotTextToEmbeddingProvider;
   [CopilotCapability.TextToImage]: CopilotTextToImageProvider;
+  [CopilotCapability.ImageToText]: CopilotImageToTextProvider;
   [CopilotCapability.ImageToImage]: CopilotImageToImageProvider;
 };
