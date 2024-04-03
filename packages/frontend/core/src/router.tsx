@@ -76,6 +76,10 @@ export const topLevelRoutes = [
         lazy: () => import('./pages/onboarding'),
       },
       {
+        path: '/redirect-proxy',
+        lazy: () => import('./pages/redirect'),
+      },
+      {
         path: '*',
         lazy: () => import('./pages/404'),
       },

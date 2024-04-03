@@ -1,6 +1,7 @@
 import { Button } from '@affine/component';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { useMutation } from '@affine/core/hooks/use-mutation';
+import { popupWindow } from '@affine/core/utils';
 import { createCheckoutSessionMutation } from '@affine/graphql';
 import { nanoid } from 'nanoid';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
@@ -51,11 +52,7 @@ export const AISubscribe = ({
       },
       {
         onSuccess: data => {
-          const newTab = window.open(
-            data.createCheckoutSession,
-            '_blank',
-            'noopener noreferrer'
-          );
+          const newTab = popupWindow(data.createCheckoutSession);
           if (newTab) {
             newTabRef.current = newTab;
             newTab.addEventListener('close', onClose);

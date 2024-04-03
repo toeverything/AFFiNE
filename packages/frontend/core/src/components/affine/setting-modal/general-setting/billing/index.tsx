@@ -31,7 +31,7 @@ import { useMutation } from '../../../../../hooks/use-mutation';
 import { useQuery } from '../../../../../hooks/use-query';
 import type { SubscriptionMutator } from '../../../../../hooks/use-subscription';
 import { useUserSubscription } from '../../../../../hooks/use-subscription';
-import { mixpanel } from '../../../../../utils';
+import { mixpanel, popupWindow } from '../../../../../utils';
 import { SWRErrorBoundary } from '../../../../pure/swr-error-bundary';
 import { CancelAction, ResumeAction } from '../plans/actions';
 import * as styles from './style.css';
@@ -262,7 +262,7 @@ const PaymentMethodUpdater = () => {
   const update = useAsyncCallback(async () => {
     await trigger(null, {
       onSuccess: data => {
-        window.open(data.createCustomerPortal, '_blank', 'noopener noreferrer');
+        popupWindow(data.createCustomerPortal);
       },
     });
   }, [trigger]);
@@ -361,7 +361,7 @@ const InvoiceLine = ({
 
   const open = useCallback(() => {
     if (invoice.link) {
-      window.open(invoice.link, '_blank', 'noopener noreferrer');
+      popupWindow(invoice.link);
     }
   }, [invoice.link]);
 

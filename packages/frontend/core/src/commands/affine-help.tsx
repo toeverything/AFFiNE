@@ -4,6 +4,7 @@ import { registerAffineCommand } from '@toeverything/infra';
 import type { createStore } from 'jotai';
 
 import { openSettingModalAtom } from '../atoms';
+import { popupWindow } from '../utils';
 
 export function registerAffineHelpCommands({
   t,
@@ -20,7 +21,7 @@ export function registerAffineHelpCommands({
       icon: <NewIcon />,
       label: t['com.affine.cmdk.affine.whats-new'](),
       run() {
-        window.open(runtimeConfig.changelogUrl, '_blank');
+        popupWindow(runtimeConfig.changelogUrl);
       },
     })
   );

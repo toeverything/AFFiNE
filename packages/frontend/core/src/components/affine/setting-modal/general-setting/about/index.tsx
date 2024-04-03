@@ -11,7 +11,7 @@ import { useCallback } from 'react';
 
 import { useAppSettingHelper } from '../../../../../hooks/affine/use-app-setting-helper';
 import { appIconMap, appNames } from '../../../../../pages/open-app';
-import { mixpanel } from '../../../../../utils';
+import { mixpanel, popupWindow } from '../../../../../utils';
 import { relatedLinks } from './config';
 import * as styles from './style.css';
 import { UpdateCheckSection } from './update-check-section';
@@ -99,7 +99,7 @@ export const AboutAffine = () => {
               desc={t['com.affine.aboutAFFiNE.changelog.description']()}
               style={{ cursor: 'pointer' }}
               onClick={() => {
-                window.open(runtimeConfig.changelogUrl, '_blank');
+                popupWindow(runtimeConfig.changelogUrl);
               }}
             >
               <ArrowRightSmallIcon />
@@ -143,7 +143,7 @@ export const AboutAffine = () => {
               <div
                 className={styles.communityItem}
                 onClick={() => {
-                  window.open(link, '_blank');
+                  popupWindow(link);
                 }}
                 key={title}
               >

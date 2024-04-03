@@ -1,4 +1,5 @@
 import { Tooltip } from '@affine/component/ui/tooltip';
+import { popupWindow } from '@affine/core/utils';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloseIcon, NewIcon } from '@blocksuite/icons';
 import { Doc, useLiveData, useServiceOptional } from '@toeverything/infra';
@@ -70,7 +71,7 @@ export const HelpIsland = () => {
             <StyledIconWrapper
               data-testid="right-bottom-change-log-icon"
               onClick={() => {
-                window.open(runtimeConfig.changelogUrl, '_blank');
+                popupWindow(runtimeConfig.changelogUrl);
               }}
             >
               <NewIcon />

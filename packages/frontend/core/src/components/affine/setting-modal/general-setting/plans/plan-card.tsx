@@ -5,6 +5,7 @@ import type {
   Subscription,
   SubscriptionMutator,
 } from '@affine/core/hooks/use-subscription';
+import { popupWindow } from '@affine/core/utils';
 import type { SubscriptionRecurring } from '@affine/graphql';
 import {
   createCheckoutSessionMutation,
@@ -309,13 +310,7 @@ const Upgrade = ({
         },
         {
           onSuccess: data => {
-            // FIXME: safari prevents from opening new tab by window api
-            // TODO(@xp): what if electron?
-            const newTab = window.open(
-              data.createCheckoutSession,
-              '_blank',
-              'noopener noreferrer'
-            );
+            const newTab = popupWindow(data.createCheckoutSession);
 
             if (newTab) {
               newTabRef.current = newTab;

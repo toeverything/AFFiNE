@@ -4,6 +4,7 @@ import { Loading } from '@affine/component/ui/loading';
 import { AffineShapeIcon } from '@affine/core/components/page-list';
 import { useCredentialsRequirement } from '@affine/core/hooks/affine/use-server-config';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
+import { popupWindow } from '@affine/core/utils';
 import { SubscriptionPlan, type SubscriptionRecurring } from '@affine/graphql';
 import {
   changePasswordMutation,
@@ -48,7 +49,7 @@ const usePaymentRedirect = () => {
         successCallbackLink: null,
       },
     });
-    window.open(checkoutUrl, '_self', 'norefferer');
+    popupWindow(checkoutUrl);
   }, [recurring, plan, coupon, idempotencyKey, checkoutSubscription]);
 };
 

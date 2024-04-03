@@ -7,7 +7,7 @@ import { atomWithObservable, atomWithStorage } from 'jotai/utils';
 import { useCallback, useState } from 'react';
 import { Observable } from 'rxjs';
 
-import { mixpanel } from '../utils';
+import { mixpanel, popupWindow } from '../utils';
 import { useAsyncCallback } from './affine-async-hooks';
 
 function rpcToObservable<
@@ -191,7 +191,7 @@ export const useAppUpdater = () => {
     mixpanel.track('Button', {
       resolve: 'OpenChangelog',
     });
-    window.open(runtimeConfig.changelogUrl, '_blank');
+    popupWindow(runtimeConfig.changelogUrl);
     await setChangelogUnread(true);
   }, [setChangelogUnread]);
 
