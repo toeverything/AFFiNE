@@ -1,5 +1,6 @@
 import { DebugLogger } from '@affine/debug';
 import { getBaseUrl } from '@affine/graphql';
+import { AIProvider } from '@blocksuite/presets';
 import { useEffect, useMemo, useReducer } from 'react';
 import useSWR from 'swr';
 
@@ -149,7 +150,12 @@ export function useCurrentUser(): CheckedUser {
   // maybe lift user state up to global state?
   useEffect(() => {
     if (session.user) {
-      dispatcher({ type: 'update', payload: session.user });
+      const user = session.user;
+      dispatcher({ type: 'update', payload: user });
+      // todo: move this to a better place!
+      AIProvider.provideUserInfo(() => {
+        return user;
+      });
     } else {
       dispatcher({ type: 'fetchError', payload: null });
     }
