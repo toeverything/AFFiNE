@@ -1,4 +1,10 @@
-import { Button, Divider, Menu, Scrollable } from '@affine/component';
+import {
+  Button,
+  Divider,
+  Menu,
+  Scrollable,
+  useConfirmModal,
+} from '@affine/component';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
 import type { Tag } from '@affine/core/modules/tag';
@@ -10,6 +16,7 @@ import {
   SearchIcon,
   ViewLayersIcon,
 } from '@blocksuite/icons';
+import type { Doc } from '@blocksuite/store';
 import { useLiveData, useService, Workspace } from '@toeverything/infra';
 import clsx from 'clsx';
 import { nanoid } from 'nanoid';
@@ -80,15 +87,40 @@ export const CollectionPageListHeader = ({
 
   const workspace = useService(Workspace);
   const { createEdgeless, createPage } = usePageHelper(workspace.docCollection);
+  const { openConfirmModal } = useConfirmModal();
 
-  const handleCreateEdgeless = useCallback(() => {
-    const newDoc = createEdgeless();
-    collectionService.addPageToCollection(collection.id, newDoc.id);
-  }, [collection.id, collectionService, createEdgeless]);
-  const handleCreatePage = useCallback(() => {
-    const newDoc = createPage();
-    collectionService.addPageToCollection(collection.id, newDoc.id);
-  }, [collection.id, collectionService, createPage]);
+  const createAndAddDocument = useCallback(
+    (createDocumentFn: () => Doc) => {
+      const newDoc = createDocumentFn();
+      collectionService.addPageToCollection(collection.id, newDoc.id);
+    },
+    [collection.id, collectionService]
+  );
+
+  const onConfirmAddDocument = useCallback(
+    (createDocumentFn: () => Doc) => {
+      openConfirmModal({
+        title: t['com.affine.collection.add-doc.confirm.title'](),
+        description: t['com.affine.collection.add-doc.confirm.description'](),
+        cancelText: t['Cancel'](),
+        confirmButtonOptions: {
+          type: 'primary',
+          children: t['Confirm'](),
+        },
+        onConfirm: () => createAndAddDocument(createDocumentFn),
+      });
+    },
+    [openConfirmModal, t, createAndAddDocument]
+  );
+
+  const onCreateEdgeless = useCallback(
+    () => onConfirmAddDocument(createEdgeless),
+    [createEdgeless, onConfirmAddDocument]
+  );
+  const onCreatePage = useCallback(
+    () => onConfirmAddDocument(createPage),
+    [createPage, onConfirmAddDocument]
+  );
 
   return (
     <>
@@ -110,8 +142,8 @@ export const CollectionPageListHeader = ({
           <PageListNewPageButton
             size="small"
             testId="new-page-button-trigger"
-            onCreateEdgeless={handleCreateEdgeless}
-            onCreatePage={handleCreatePage}
+            onCreateEdgeless={onCreateEdgeless}
+            onCreatePage={onCreatePage}
           >
             <div className={styles.buttonText}>{t['New Page']()}</div>
           </PageListNewPageButton>
