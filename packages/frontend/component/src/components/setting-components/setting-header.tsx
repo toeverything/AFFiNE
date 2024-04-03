@@ -16,7 +16,7 @@ export const SettingHeader = ({
   return (
     <div className={settingHeader} {...otherProps}>
       <div className="title">{title}</div>
-      <div className="subtitle">{subtitle}</div>
+      {subtitle ? <div className="subtitle">{subtitle}</div> : null}
     </div>
   );
 };

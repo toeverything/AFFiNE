@@ -43,3 +43,30 @@ export const allPlansLink = style({
   borderColor: 'transparent',
   fontSize: cssVar('fontXs'),
 });
+
+export const collapsibleHeader = style({
+  display: 'flex',
+  marginBottom: 8,
+});
+export const collapsibleHeaderContent = style({
+  width: 0,
+  flex: 1,
+});
+export const collapsibleHeaderTitle = style({
+  fontWeight: 600,
+  fontSize: cssVar('fontBase'),
+  lineHeight: '22px',
+});
+export const collapsibleHeaderCaption = style({
+  fontWeight: 400,
+  fontSize: cssVar('fontXs'),
+  lineHeight: '20px',
+  color: cssVar('textSecondaryColor'),
+});
+
+export const affineCloudHeader = style({
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  marginBottom: 24,
+});

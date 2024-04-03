@@ -1,6 +1,6 @@
 import { Skeleton } from '@affine/component';
 
-import { PlanLayout } from './layout';
+import { CloudPlanLayout, PlanLayout } from './layout';
 import * as styles from './skeleton.css';
 
 /**
@@ -15,10 +15,6 @@ const RoundedSkeleton = ({
   radius?: number;
 } & React.ComponentProps<typeof Skeleton>) => (
   <Skeleton {...props} style={{ borderRadius: `${radius}px` }} />
-);
-
-const SubtitleSkeleton = () => (
-  <Skeleton variant="text" width="100%" height="20px" />
 );
 
 const TabsSkeleton = () => (
@@ -52,9 +48,15 @@ const ScrollSkeleton = () => (
 export const PlansSkeleton = () => {
   return (
     <PlanLayout
-      subtitle={<SubtitleSkeleton />}
-      tabs={<TabsSkeleton />}
-      scroll={<ScrollSkeleton />}
+      cloud={
+        <CloudPlanLayout
+          toggle={
+            <RoundedSkeleton variant="rounded" width="100%" height="32px" />
+          }
+          select={<TabsSkeleton />}
+          scroll={<ScrollSkeleton />}
+        />
+      }
     />
   );
 };

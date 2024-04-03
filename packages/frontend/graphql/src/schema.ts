@@ -173,6 +173,7 @@ export type AllBlobSizesQuery = {
 
 export type CancelSubscriptionMutationVariables = Exact<{
   idempotencyKey: Scalars['String']['input'];
+  plan?: InputMaybe<SubscriptionPlan>;
 }>;
 
 export type CancelSubscriptionMutation = {
@@ -619,6 +620,7 @@ export type RemoveAvatarMutation = {
 
 export type ResumeSubscriptionMutationVariables = Exact<{
   idempotencyKey: Scalars['String']['input'];
+  plan?: InputMaybe<SubscriptionPlan>;
 }>;
 
 export type ResumeSubscriptionMutation = {
@@ -758,8 +760,9 @@ export type SubscriptionQuery = {
 };
 
 export type UpdateSubscriptionMutationVariables = Exact<{
-  recurring: SubscriptionRecurring;
   idempotencyKey: Scalars['String']['input'];
+  plan?: InputMaybe<SubscriptionPlan>;
+  recurring: SubscriptionRecurring;
 }>;
 
 export type UpdateSubscriptionMutation = {

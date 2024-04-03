@@ -248,6 +248,9 @@ type ServerConfigType {
   """credentials requirement"""
   credentialsRequirement: CredentialsRequirementType!
 
+  """enable telemetry"""
+  enableTelemetry: Boolean!
+
   """enabled server features"""
   features: [ServerFeature!]!
 

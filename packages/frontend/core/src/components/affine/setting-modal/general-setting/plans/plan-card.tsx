@@ -5,10 +5,10 @@ import type {
   Subscription,
   SubscriptionMutator,
 } from '@affine/core/hooks/use-subscription';
+import type { SubscriptionRecurring } from '@affine/graphql';
 import {
   createCheckoutSessionMutation,
   SubscriptionPlan,
-  SubscriptionRecurring,
   SubscriptionStatus,
   updateSubscriptionMutation,
 } from '@affine/graphql';
@@ -26,30 +26,14 @@ import { useCurrentLoginStatus } from '../../../../../hooks/affine/use-current-l
 import { useMutation } from '../../../../../hooks/use-mutation';
 import { mixpanel } from '../../../../../utils';
 import { CancelAction, ResumeAction } from './actions';
-import { BulledListIcon } from './icons/bulled-list';
+import type { DynamicPrice, FixedPrice } from './cloud-plans';
 import { ConfirmLoadingModal } from './modals';
 import * as styles from './style.css';
-
-export interface FixedPrice {
-  type: 'fixed';
-  plan: SubscriptionPlan;
-  price: string;
-  yearlyPrice: string;
-  discount?: string;
-  benefits: string[];
-}
-
-export interface DynamicPrice {
-  type: 'dynamic';
-  plan: SubscriptionPlan;
-  contact: boolean;
-  benefits: string[];
-}
 
 interface PlanCardProps {
   detail: FixedPrice | DynamicPrice;
   subscription?: Subscription | null;
-  recurring: string;
+  recurring: SubscriptionRecurring;
   onSubscriptionUpdate: SubscriptionMutator;
   onNotify: (info: {
     detail: FixedPrice | DynamicPrice;
@@ -57,79 +41,15 @@ interface PlanCardProps {
   }) => void;
 }
 
-export function getPlanDetail(t: ReturnType<typeof useAFFiNEI18N>) {
-  return new Map<SubscriptionPlan, FixedPrice | DynamicPrice>([
-    [
-      SubscriptionPlan.Free,
-      {
-        type: 'fixed',
-        plan: SubscriptionPlan.Free,
-        price: '0',
-        yearlyPrice: '0',
-        benefits: [
-          t['com.affine.payment.benefit-1'](),
-          t['com.affine.payment.benefit-2'](),
-          t['com.affine.payment.benefit-3'](),
-          t['com.affine.payment.benefit-4']({ capacity: '10GB' }),
-          t['com.affine.payment.benefit-5']({ capacity: '10M' }),
-          t['com.affine.payment.benefit-6']({ capacity: '3' }),
-          t['com.affine.payment.benefit-7']({ capacity: '7' }),
-        ],
-      },
-    ],
-    [
-      SubscriptionPlan.Pro,
-      {
-        type: 'fixed',
-        plan: SubscriptionPlan.Pro,
-        price: '1',
-        yearlyPrice: '1',
-        benefits: [
-          t['com.affine.payment.benefit-1'](),
-          t['com.affine.payment.benefit-2'](),
-          t['com.affine.payment.benefit-3'](),
-          t['com.affine.payment.benefit-4']({ capacity: '100GB' }),
-          t['com.affine.payment.benefit-5']({ capacity: '100M' }),
-          t['com.affine.payment.benefit-6']({ capacity: '10' }),
-          t['com.affine.payment.benefit-7']({ capacity: '30' }),
-        ],
-      },
-    ],
-    [
-      SubscriptionPlan.Team,
-      {
-        type: 'dynamic',
-        plan: SubscriptionPlan.Team,
-        contact: true,
-        benefits: [
-          t['com.affine.payment.dynamic-benefit-1'](),
-          t['com.affine.payment.dynamic-benefit-2'](),
-          t['com.affine.payment.dynamic-benefit-3'](),
-        ],
-      },
-    ],
-    [
-      SubscriptionPlan.Enterprise,
-      {
-        type: 'dynamic',
-        plan: SubscriptionPlan.Enterprise,
-        contact: true,
-        benefits: [
-          t['com.affine.payment.dynamic-benefit-4'](),
-          t['com.affine.payment.dynamic-benefit-5'](),
-        ],
-      },
-    ],
-  ]);
-}
-
 export const PlanCard = (props: PlanCardProps) => {
-  const t = useAFFiNEI18N();
   const { detail, subscription, recurring } = props;
   const loggedIn = useCurrentLoginStatus() === 'authenticated';
   const currentPlan = subscription?.plan ?? SubscriptionPlan.Free;
 
-  const isCurrent = loggedIn && detail.plan === currentPlan;
+  const isCurrent =
+    loggedIn &&
+    detail.plan === currentPlan &&
+    recurring === subscription?.recurring;
   const isPro = detail.plan === SubscriptionPlan.Pro;
 
   return (
@@ -138,56 +58,39 @@ export const PlanCard = (props: PlanCardProps) => {
       key={detail.plan}
       className={isPro ? styles.proPlanCard : styles.planCard}
     >
+      <div className={styles.planCardBorderMock} />
       <div className={styles.planTitle}>
-        <p>
-          <span className={isCurrent ? styles.proPlanTitle : ''}>
-            {detail.plan}
-          </span>{' '}
-          {'discount' in detail &&
-            recurring === SubscriptionRecurring.Yearly && (
-              <span className={styles.discountLabel}>
-                {detail.discount}% off
-              </span>
-            )}
-        </p>
-        <div className={styles.planPriceWrapper}>
-          <p>
-            {detail.type === 'dynamic' ? (
-              <span className={styles.planPriceDesc}>Coming soon...</span>
-            ) : (
-              <>
-                <span className={styles.planPrice}>
-                  $
-                  {recurring === SubscriptionRecurring.Monthly
-                    ? detail.price
-                    : detail.yearlyPrice}
-                </span>
-                <span className={styles.planPriceDesc}>
-                  {t['com.affine.payment.price-description.per-month']()}
-                </span>
-              </>
-            )}
-          </p>
+        <div style={{ paddingBottom: 12 }}>
+          <section className={styles.planTitleName}>{detail.name}</section>
+          <section className={styles.planTitleDescription}>
+            {detail.description}
+          </section>
+          <section className={styles.planTitleTitle}>
+            {detail.titleRenderer(recurring, detail as any)}
+          </section>
         </div>
         <ActionButton {...props} />
       </div>
       <div className={styles.planBenefits}>
-        {detail.benefits.map((content, i) => (
-          <div key={i} className={styles.planBenefit}>
-            <div className={styles.planBenefitIcon}>
-              {detail.type === 'dynamic' ? (
-                <BulledListIcon color="var(--affine-processing-color)" />
-              ) : (
-                <DoneIcon
-                  width="16"
-                  height="16"
-                  color="var(--affine-processing-color)"
-                />
-              )}
-            </div>
-            <div className={styles.planBenefitText}>{content}</div>
-          </div>
-        ))}
+        {Object.entries(detail.benefits).map(([groupName, benefitList]) => {
+          return (
+            <ul className={styles.planBenefitGroup} key={groupName}>
+              <section className={styles.planBenefitGroupTitle}>
+                {groupName}:
+              </section>
+              {benefitList.map(({ icon, title }, index) => {
+                return (
+                  <li className={styles.planBenefit} key={index}>
+                    <div className={styles.planBenefitIcon}>
+                      {icon ?? <DoneIcon />}
+                    </div>
+                    <div className={styles.planBenefitText}>{title}</div>
+                  </li>
+                );
+              })}
+            </ul>
+          );
+        })}
       </div>
     </div>
   );
