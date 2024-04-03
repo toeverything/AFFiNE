@@ -5,6 +5,7 @@ import { resumeSubscriptionMutation } from '@affine/graphql';
 import { nanoid } from 'nanoid';
 import { useState } from 'react';
 
+import { purchaseButton } from './ai-plan-card.css';
 import type { BaseActionProps } from './types';
 
 interface AIResumeProps extends BaseActionProps {}
@@ -30,7 +31,12 @@ export const AIResume = ({ plan, onSubscriptionUpdate }: AIResumeProps) => {
   }, [trigger, idempotencyKey, plan, onSubscriptionUpdate]);
 
   return (
-    <Button loading={isMutating} onClick={resume}>
+    <Button
+      loading={isMutating}
+      onClick={resume}
+      className={purchaseButton}
+      type="primary"
+    >
       Resume
     </Button>
   );

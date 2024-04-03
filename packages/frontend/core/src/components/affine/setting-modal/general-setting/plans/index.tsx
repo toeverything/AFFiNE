@@ -15,9 +15,9 @@ import { SWRErrorBoundary } from '../../../../../components/pure/swr-error-bunda
 import { useCurrentLoginStatus } from '../../../../../hooks/affine/use-current-login-status';
 import { useQuery } from '../../../../../hooks/use-query';
 import { useUserSubscription } from '../../../../../hooks/use-subscription';
-import { AIPlanCard } from './ai';
+import { AIPlan } from './ai/ai-plan';
 import { type FixedPrice, getPlanDetail } from './cloud-plans';
-import { PlanLayout } from './layout';
+import { CloudPlanLayout, PlanLayout } from './layout';
 import { PlanCard } from './plan-card';
 import { PlansSkeleton } from './skeleton';
 import * as styles from './style.css';
@@ -206,17 +206,23 @@ const Settings = () => {
     </div>
   );
 
-  const aiPlanCard = (
-    <AIPlanCard
-      price={prices.find(p => p.plan === SubscriptionPlan.AI)}
-      onSubscriptionUpdate={mutateSubscription}
-    />
-  );
-
   return (
     <PlanLayout
-      cloudScrollRef={scrollWrapper}
-      {...{ cloudSelect, cloudToggle, cloudScroll, cloudCaption, aiPlanCard }}
+      cloud={
+        <CloudPlanLayout
+          caption={cloudCaption}
+          select={cloudSelect}
+          toggle={cloudToggle}
+          scroll={cloudScroll}
+          scrollRef={scrollWrapper}
+        />
+      }
+      ai={
+        <AIPlan
+          price={prices.find(p => p.plan === SubscriptionPlan.AI)}
+          onSubscriptionUpdate={mutateSubscription}
+        />
+      }
     />
   );
 };
@@ -243,5 +249,5 @@ const PlansErrorBoundary = ({ resetErrorBoundary }: FallbackProps) => {
     </div>
   );
 
-  return <PlanLayout cloudScroll={scroll} />;
+  return <PlanLayout cloud={<CloudPlanLayout scroll={scroll} />} />;
 };

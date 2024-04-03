@@ -5,6 +5,7 @@ import { createCheckoutSessionMutation } from '@affine/graphql';
 import { nanoid } from 'nanoid';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 
+import { purchaseButton } from './ai-plan-card.css';
 import type { BaseActionProps } from './types';
 
 interface AISubscribeProps extends BaseActionProps {}
@@ -67,8 +68,13 @@ export const AISubscribe = ({
   if (!price.yearlyAmount) return null;
 
   return (
-    <Button loading={isMutating} onClick={subscribe}>
-      ${price.yearlyAmount / 100}
+    <Button
+      loading={isMutating}
+      onClick={subscribe}
+      className={purchaseButton}
+      type="primary"
+    >
+      ${price.yearlyAmount / 100} / Year
     </Button>
   );
 };

@@ -5,6 +5,7 @@ import { cancelSubscriptionMutation } from '@affine/graphql';
 import { nanoid } from 'nanoid';
 import { useState } from 'react';
 
+import { purchaseButton } from './ai-plan-card.css';
 import type { BaseActionProps } from './types';
 
 interface AICancelProps extends BaseActionProps {}
@@ -28,7 +29,12 @@ export const AICancel = ({ plan, onSubscriptionUpdate }: AICancelProps) => {
   }, [trigger, idempotencyKey, plan, onSubscriptionUpdate]);
 
   return (
-    <Button onClick={cancel} loading={isMutating}>
+    <Button
+      onClick={cancel}
+      loading={isMutating}
+      className={purchaseButton}
+      type="primary"
+    >
       Cancel subscription
     </Button>
   );

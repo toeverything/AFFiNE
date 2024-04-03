@@ -6,6 +6,7 @@ import * as Collapsible from '@radix-ui/react-collapsible';
 import * as ScrollArea from '@radix-ui/react-scroll-area';
 import {
   type HtmlHTMLAttributes,
+  type PropsWithChildren,
   type ReactNode,
   useCallback,
   useState,
@@ -62,32 +63,12 @@ const PricingCollapsible = ({
   );
 };
 
-export interface PlanLayoutProps
-  extends Omit<HtmlHTMLAttributes<HTMLDivElement>, 'title'> {
-  cloudTitle?: ReactNode;
-  cloudCaption?: ReactNode;
-  cloudSelect?: ReactNode;
-  cloudToggle?: ReactNode;
-  cloudScroll?: ReactNode;
-  cloudScrollRef?: React.RefObject<HTMLDivElement>;
-
-  aiTitle?: ReactNode;
-  aiCaption?: ReactNode;
-  aiPlanCard?: ReactNode;
+export interface PlanLayoutProps {
+  cloud?: ReactNode;
+  ai?: ReactNode;
 }
 
-export const PlanLayout = ({
-  cloudTitle = 'AFFiNE Cloud',
-  cloudCaption,
-  cloudSelect,
-  cloudToggle,
-  cloudScroll,
-  cloudScrollRef,
-
-  // aiTitle = 'AFFiNE AI',
-  // aiCaption,
-  // aiPlanCard,
-}: PlanLayoutProps) => {
+export const PlanLayout = ({ cloud }: PlanLayoutProps) => {
   const t = useAFFiNEI18N();
   return (
     <div className={styles.plansLayoutRoot}>
@@ -96,35 +77,62 @@ export const PlanLayout = ({
         style={{ marginBottom: '0px' }}
         title={t['com.affine.payment.title']()}
       />
-
-      <PricingCollapsible title={cloudTitle} caption={cloudCaption}>
-        <div className={styles.affineCloudHeader}>
-          <div>{cloudSelect}</div>
-          <div>{cloudToggle}</div>
-        </div>
-        <ScrollArea.Root>
-          <ScrollArea.Viewport
-            ref={cloudScrollRef}
-            className={styles.scrollArea}
-          >
-            {cloudScroll}
-          </ScrollArea.Viewport>
-          <ScrollArea.Scrollbar
-            forceMount
-            orientation="horizontal"
-            className={styles.scrollBar}
-          >
-            <ScrollArea.Thumb className={styles.scrollThumb}></ScrollArea.Thumb>
-          </ScrollArea.Scrollbar>
-        </ScrollArea.Root>
-      </PricingCollapsible>
-
-      {/* TODO: Hide AI temporarily */}
-      {/* <Divider />
-
-      <PricingCollapsible title={aiTitle} caption={aiCaption}>
-        {aiPlanCard}
-      </PricingCollapsible> */}
+      {cloud}
+      {/* Hide AI subscription temporarily */}
     </div>
+  );
+};
+
+export interface PlanCardProps {
+  title?: ReactNode;
+  caption?: ReactNode;
+  select?: ReactNode;
+  toggle?: ReactNode;
+  scroll?: ReactNode;
+  scrollRef?: React.RefObject<HTMLDivElement>;
+}
+export const CloudPlanLayout = ({
+  title = 'AFFiNE Cloud',
+  caption,
+  select,
+  toggle,
+  scroll,
+  scrollRef,
+}: PlanCardProps) => {
+  return (
+    <PricingCollapsible title={title} caption={caption}>
+      <div className={styles.affineCloudHeader}>
+        <div>{select}</div>
+        <div>{toggle}</div>
+      </div>
+      <ScrollArea.Root>
+        <ScrollArea.Viewport ref={scrollRef} className={styles.scrollArea}>
+          {scroll}
+        </ScrollArea.Viewport>
+        <ScrollArea.Scrollbar
+          forceMount
+          orientation="horizontal"
+          className={styles.scrollBar}
+        >
+          <ScrollArea.Thumb className={styles.scrollThumb}></ScrollArea.Thumb>
+        </ScrollArea.Scrollbar>
+      </ScrollArea.Root>
+    </PricingCollapsible>
+  );
+};
+
+export interface AIPlanLayoutProps {
+  title?: ReactNode;
+  caption?: ReactNode;
+}
+export const AIPlanLayout = ({
+  title = 'AFFiNE AI',
+  caption,
+  children,
+}: PropsWithChildren<AIPlanLayoutProps>) => {
+  return (
+    <PricingCollapsible title={title} caption={caption}>
+      {children}
+    </PricingCollapsible>
   );
 };

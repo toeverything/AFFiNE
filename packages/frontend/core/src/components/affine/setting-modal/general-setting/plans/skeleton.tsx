@@ -1,6 +1,6 @@
 import { Skeleton } from '@affine/component';
 
-import { PlanLayout } from './layout';
+import { CloudPlanLayout, PlanLayout } from './layout';
 import * as styles from './skeleton.css';
 
 /**
@@ -48,11 +48,15 @@ const ScrollSkeleton = () => (
 export const PlansSkeleton = () => {
   return (
     <PlanLayout
-      cloudToggle={
-        <RoundedSkeleton variant="rounded" width="100%" height="32px" />
+      cloud={
+        <CloudPlanLayout
+          toggle={
+            <RoundedSkeleton variant="rounded" width="100%" height="32px" />
+          }
+          select={<TabsSkeleton />}
+          scroll={<ScrollSkeleton />}
+        />
       }
-      cloudSelect={<TabsSkeleton />}
-      cloudScroll={<ScrollSkeleton />}
     />
   );
 };
