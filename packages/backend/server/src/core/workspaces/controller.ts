@@ -109,11 +109,6 @@ export class WorkspacesController {
     }
 
     res.setHeader('content-type', 'application/octet-stream');
-    res.setHeader(
-      'last-modified',
-      new Date(binResponse.timestamp).toUTCString()
-    );
-    res.setHeader('cache-control', 'private, max-age=2592000');
     res.send(binResponse.binary);
   }
 
