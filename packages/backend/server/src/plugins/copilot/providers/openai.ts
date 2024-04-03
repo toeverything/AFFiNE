@@ -15,6 +15,8 @@ import {
 
 const DEFAULT_DIMENSIONS = 256;
 
+const SIMPLE_IMAGE_URL_REGEX = /^(https?:\/\/|data:image\/)/;
+
 export class OpenAIProvider
   implements
     CopilotTextToTextProvider,
@@ -61,12 +63,29 @@ export class OpenAIProvider
     return OpenAIProvider.capabilities;
   }
 
-  private chatToGPTMessage(messages: PromptMessage[]) {
+  private chatToGPTMessage(
+    messages: PromptMessage[]
+  ): OpenAI.Chat.Completions.ChatCompletionMessageParam[] {
     // filter redundant fields
-    return messages.map(message => ({
-      role: message.role,
-      content: message.content,
-    }));
+    return messages.map(({ role, content, attachments }) => {
+      if (Array.isArray(attachments)) {
+        const contents = [
+          { type: 'text', text: content },
+          ...attachments
+            .filter(url => SIMPLE_IMAGE_URL_REGEX.test(url))
+            .map(url => ({
+              type: 'image_url',
+              image_url: { url, detail: 'low' },
+            })),
+        ];
+        return {
+          role,
+          content: contents,
+        } as OpenAI.Chat.Completions.ChatCompletionMessageParam;
+      } else {
+        return { role, content };
+      }
+    });
   }
 
   private checkParams({

@@ -32,6 +32,12 @@ export const prompts: Prompt[] = [
     messages: [],
   },
   {
+    name: 'debug:action:dalle3',
+    action: 'image',
+    model: 'dall-e-3',
+    messages: [],
+  },
+  {
     name: 'Summary',
     action: 'text',
     model: 'gpt-3.5-turbo',
