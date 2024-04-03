@@ -32,14 +32,14 @@
     }
   },
   "dependencies": {
-    "@blocksuite/global": "0.14.0-canary-202403250855-4171ecd",
+    "@blocksuite/global": "0.14.0-canary-202404030511-2656c97",
     "idb": "^8.0.0",
     "nanoid": "^5.0.6",
     "y-provider": "workspace:*"
   },
   "devDependencies": {
-    "@blocksuite/blocks": "0.14.0-canary-202403250855-4171ecd",
-    "@blocksuite/store": "0.14.0-canary-202403250855-4171ecd",
+    "@blocksuite/blocks": "0.14.0-canary-202404030511-2656c97",
+    "@blocksuite/store": "0.14.0-canary-202404030511-2656c97",
     "fake-indexeddb": "^5.0.2",
     "vite": "^5.1.4",
     "vite-plugin-dts": "3.7.3",
