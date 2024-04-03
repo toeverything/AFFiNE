@@ -22,6 +22,12 @@ export const optionList = style({
   flexDirection: 'column',
   gap: 4,
   padding: '0 4px',
+  maxHeight: '220px',
+});
+export const scrollbar = style({
+  vars: {
+    '--scrollbar-width': '4px',
+  },
 });
 export const selectOption = style({
   display: 'flex',

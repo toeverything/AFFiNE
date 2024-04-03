@@ -1193,5 +1193,6 @@
   "will be moved to Trash": "{{title}} will be moved to Trash",
   "will delete member": "will delete member",
   "com.affine.collection.add-doc.confirm.title": "Add new doc to this collection",
-  "com.affine.collection.add-doc.confirm.description": "Do you want to add a document to the current collection? If it is filtered based on rules, this will add a set of included rules."
+  "com.affine.collection.add-doc.confirm.description": "Do you want to add a document to the current collection? If it is filtered based on rules, this will add a set of included rules.",
+  "com.affine.filter.empty-tag": "Empty"
 }
