@@ -116,7 +116,7 @@ export class SubscriptionService {
         discount ??= {};
         discount.promotion_code = code;
       }
-    } else {
+    } else if (plan === SubscriptionPlan.Pro) {
       const coupon = await this.getAvailableCoupon(
         user,
         CouponType.EarlyAccess
