@@ -74,7 +74,7 @@ export const AISubscribe = ({
       className={purchaseButton}
       type="primary"
     >
-      ${price.yearlyAmount / 100} / Year
+      ${(price.yearlyAmount / 100).toFixed(2)} / Year
     </Button>
   );
 };

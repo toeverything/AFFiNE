@@ -39,7 +39,6 @@ export const AIPlan = ({ price, onSubscriptionUpdate }: AIPlanProps) => {
     recurring,
     onSubscriptionUpdate,
   };
-  // const isCancelled = subscription.status === SubscriptionStatus.Canceled;
   const isCancelled = !!subscription?.canceledAt;
 
   const Action = !loggedIn
