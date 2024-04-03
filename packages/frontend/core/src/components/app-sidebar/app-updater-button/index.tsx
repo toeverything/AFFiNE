@@ -1,4 +1,5 @@
 import { Tooltip } from '@affine/component';
+import { popupWindow } from '@affine/core/utils';
 import { Unreachable } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloseIcon, NewIcon, ResetIcon } from '@blocksuite/icons';
@@ -181,13 +182,12 @@ export function AppUpdaterButton({
           onDownloadUpdate();
         }
       } else {
-        window.open(
-          `https://github.com/toeverything/AFFiNE/releases/tag/v${updateAvailable.version}`,
-          '_blank'
+        popupWindow(
+          `https://github.com/toeverything/AFFiNE/releases/tag/v${updateAvailable.version}`
         );
       }
     } else if (changelogUnread) {
-      window.open(runtimeConfig.changelogUrl, '_blank');
+      popupWindow(runtimeConfig.changelogUrl);
       onOpenChangelog();
     } else {
       throw new Unreachable();

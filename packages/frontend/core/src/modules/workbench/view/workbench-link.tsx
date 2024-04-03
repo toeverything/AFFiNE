@@ -1,4 +1,5 @@
 import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
+import { popupWindow } from '@affine/core/utils';
 import { useLiveData, useService } from '@toeverything/infra';
 import type { To } from 'history';
 import { useCallback } from 'react';
@@ -32,7 +33,7 @@ export const WorkbenchLink = ({
             typeof to === 'string'
               ? to
               : `${to.pathname}${to.search}${to.hash}`;
-          window.open(basename + href, '_blank');
+          popupWindow(basename + href);
         }
       } else {
         workbench.open(to);
