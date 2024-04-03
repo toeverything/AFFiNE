@@ -1,4 +1,4 @@
-import { ForbiddenException } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
 import {
   Args,
   Field,
@@ -58,7 +58,7 @@ class CreateChatSessionInput {
 }
 
 @InputType()
-class CreateChatMessageInput implements SubmittedMessage {
+class CreateChatMessageInput implements Omit<SubmittedMessage, 'params'> {
   @Field(() => String)
   sessionId!: string;
 
@@ -142,6 +142,8 @@ export class CopilotType {
 
 @Resolver(() => CopilotType)
 export class CopilotResolver {
+  private readonly logger = new Logger(CopilotResolver.name);
+
   constructor(
     private readonly permissions: PermissionService,
     private readonly quota: QuotaService,
@@ -280,7 +282,17 @@ export class CopilotResolver {
     if (!lock) {
       return new TooManyRequestsException('Server is busy');
     }
-    return await this.chatSession.createMessage(options);
+    try {
+      const { params, ...rest } = options;
+      const record: SubmittedMessage['params'] = {};
+      new URLSearchParams(params).forEach((value, key) => {
+        record[key] = value;
+      });
+      return await this.chatSession.createMessage({ ...rest, params: record });
+    } catch (e: any) {
+      this.logger.error(`Failed to create chat message: ${e.message}`);
+      throw new Error('Failed to create chat message');
+    }
   }
 }
 

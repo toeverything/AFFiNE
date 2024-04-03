@@ -21,14 +21,10 @@ export class ChatMessageCache {
     try {
       const parsed = SubmittedMessageSchema.safeParse(message);
       if (parsed.success) {
-        const params = new URLSearchParams(parsed.data.params);
-
         const id = randomUUID();
-        await this.cache.set(
-          `${CHAT_MESSAGE_KEY}:${id}`,
-          { ...parsed.data, params: params.toString() },
-          { ttl: CHAT_MESSAGE_TTL }
-        );
+        await this.cache.set(`${CHAT_MESSAGE_KEY}:${id}`, parsed.data, {
+          ttl: CHAT_MESSAGE_TTL,
+        });
         return id;
       }
     } catch (e: any) {

@@ -8,7 +8,7 @@ import {
 } from 'tiktoken';
 import { z } from 'zod';
 
-import { ChatPrompt } from './prompt';
+import type { ChatPrompt } from './prompt';
 
 export interface CopilotConfig {
   openai: OpenAIClientOptions;
