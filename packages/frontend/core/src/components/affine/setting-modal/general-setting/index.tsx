@@ -13,7 +13,7 @@ import { AboutAffine } from './about';
 import { AppearanceSettings } from './appearance';
 import { BillingSettings } from './billing';
 import { PaymentIcon, UpgradeIcon } from './icons';
-import { AFFiNECloudPlans } from './plans';
+import { AFFiNEPricingPlans } from './plans';
 import { Shortcuts } from './shortcuts';
 
 interface GeneralSettingListItem {
@@ -84,7 +84,7 @@ export const GeneralSetting = ({ generalKey }: GeneralSettingProps) => {
     case 'about':
       return <AboutAffine />;
     case 'plans':
-      return <AFFiNECloudPlans />;
+      return <AFFiNEPricingPlans />;
     case 'billing':
       return <BillingSettings />;
     default:

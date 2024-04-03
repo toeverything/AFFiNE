@@ -1,4 +1,4 @@
-import { Divider, IconButton } from '@affine/component';
+import { IconButton } from '@affine/component';
 import { SettingHeader } from '@affine/component/setting-components';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowRightBigIcon, ArrowUpSmallIcon } from '@blocksuite/icons';
@@ -73,6 +73,7 @@ export interface PlanLayoutProps
 
   aiTitle?: ReactNode;
   aiCaption?: ReactNode;
+  aiPlanCard?: ReactNode;
 }
 
 export const PlanLayout = ({
@@ -83,8 +84,9 @@ export const PlanLayout = ({
   cloudScroll,
   cloudScrollRef,
 
-  aiTitle = 'AFFiNE AI',
-  aiCaption,
+  // aiTitle = 'AFFiNE AI',
+  // aiCaption,
+  // aiPlanCard,
 }: PlanLayoutProps) => {
   const t = useAFFiNEI18N();
   return (
@@ -117,11 +119,12 @@ export const PlanLayout = ({
         </ScrollArea.Root>
       </PricingCollapsible>
 
-      <Divider />
+      {/* TODO: Hide AI temporarily */}
+      {/* <Divider />
 
       <PricingCollapsible title={aiTitle} caption={aiCaption}>
-        AI
-      </PricingCollapsible>
+        {aiPlanCard}
+      </PricingCollapsible> */}
     </div>
   );
 };

@@ -1,4 +1,4 @@
-import { Button, notify, Switch } from '@affine/component';
+import { notify, Switch } from '@affine/component';
 import {
   pricesQuery,
   SubscriptionPlan,
@@ -15,9 +15,10 @@ import { SWRErrorBoundary } from '../../../../../components/pure/swr-error-bunda
 import { useCurrentLoginStatus } from '../../../../../hooks/affine/use-current-login-status';
 import { useQuery } from '../../../../../hooks/use-query';
 import { useUserSubscription } from '../../../../../hooks/use-subscription';
+import { AIPlanCard } from './ai';
+import { type FixedPrice, getPlanDetail } from './cloud-plans';
 import { PlanLayout } from './layout';
-import type { FixedPrice } from './plan-card';
-import { getPlanDetail, PlanCard } from './plan-card';
+import { PlanCard } from './plan-card';
 import { PlansSkeleton } from './skeleton';
 import * as styles from './style.css';
 
@@ -38,7 +39,7 @@ const Settings = () => {
   const [subscription, mutateSubscription] = useUserSubscription();
 
   const loggedIn = useCurrentLoginStatus() === 'authenticated';
-  const planDetail = getPlanDetail(t);
+  const planDetail = getPlanDetail();
   const scrollWrapper = useRef<HTMLDivElement>(null);
 
   const {
@@ -62,7 +63,7 @@ const Settings = () => {
     }
   });
 
-  const [recurring, setRecurring] = useState<string>(
+  const [recurring, setRecurring] = useState<SubscriptionRecurring>(
     subscription?.recurring ?? SubscriptionRecurring.Yearly
   );
 
@@ -141,12 +142,7 @@ const Settings = () => {
         ) : (
           <>
             <div className={styles.recurringToggleRecurring}>
-              <span>Billed </span>
-              <span>
-                {recurring === SubscriptionRecurring.Yearly
-                  ? 'Yearly'
-                  : 'Monthly'}
-              </span>
+              <span>Billed Yearly</span>
             </div>
             {yearlyDiscount ? (
               <div className={styles.recurringToggleDiscount}>
@@ -203,17 +199,29 @@ const Settings = () => {
     </div>
   );
 
-  const cloudSelect = <Button>AFFiNE.Pro</Button>;
+  const cloudSelect = (
+    <div className={styles.cloudSelect}>
+      <b>Hosted by AFFiNE.Pro</b>
+      <span>We host, no technical setup required.</span>
+    </div>
+  );
+
+  const aiPlanCard = (
+    <AIPlanCard
+      price={prices.find(p => p.plan === SubscriptionPlan.AI)}
+      onSubscriptionUpdate={mutateSubscription}
+    />
+  );
 
   return (
     <PlanLayout
       cloudScrollRef={scrollWrapper}
-      {...{ cloudSelect, cloudToggle, cloudScroll, cloudCaption }}
+      {...{ cloudSelect, cloudToggle, cloudScroll, cloudCaption, aiPlanCard }}
     />
   );
 };
 
-export const AFFiNECloudPlans = () => {
+export const AFFiNEPricingPlans = () => {
   return (
     <SWRErrorBoundary FallbackComponent={PlansErrorBoundary}>
       <Suspense fallback={<PlansSkeleton />}>
