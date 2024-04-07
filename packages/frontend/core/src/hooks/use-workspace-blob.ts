@@ -1,12 +1,12 @@
 import type { WorkspaceMetadata } from '@toeverything/infra';
-import { useService, WorkspaceManager } from '@toeverything/infra';
+import { useService, WorkspacesService } from '@toeverything/infra';
 import { useEffect, useState } from 'react';
 
 export function useWorkspaceBlobObjectUrl(
   meta?: WorkspaceMetadata,
   blobKey?: string | null
 ) {
-  const workspaceManager = useService(WorkspaceManager);
+  const workspacesService = useService(WorkspacesService);
 
   const [blob, setBlob] = useState<string | undefined>(undefined);
 
@@ -17,7 +17,7 @@ export function useWorkspaceBlobObjectUrl(
     }
     let canceled = false;
     let objectUrl: string = '';
-    workspaceManager
+    workspacesService
       .getWorkspaceBlob(meta, blobKey)
       .then(blob => {
         if (blob && !canceled) {
@@ -33,7 +33,7 @@ export function useWorkspaceBlobObjectUrl(
       canceled = true;
       URL.revokeObjectURL(objectUrl);
     };
-  }, [meta, blobKey, workspaceManager]);
+  }, [meta, blobKey, workspacesService]);
 
   return blob;
 }

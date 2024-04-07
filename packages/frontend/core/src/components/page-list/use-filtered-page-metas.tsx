@@ -1,4 +1,4 @@
-import { FavoriteItemsAdapter } from '@affine/core/modules/workspace';
+import { FavoriteItemsAdapter } from '@affine/core/modules/properties';
 import type { Collection, Filter } from '@affine/env/filter';
 import type { DocMeta } from '@blocksuite/store';
 import { useLiveData, useService, type Workspace } from '@toeverything/infra';

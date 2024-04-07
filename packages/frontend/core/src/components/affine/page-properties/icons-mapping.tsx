@@ -1,4 +1,4 @@
-import { PagePropertyType } from '@affine/core/modules/workspace/properties/schema';
+import { PagePropertyType } from '@affine/core/modules/properties/services/schema';
 import * as icons from '@blocksuite/icons';
 import type { SVGProps } from 'react';
 

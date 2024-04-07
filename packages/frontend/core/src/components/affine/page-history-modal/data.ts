@@ -8,7 +8,6 @@ import {
   listHistoryQuery,
   recoverDocMutation,
 } from '@affine/graphql';
-import { AffineCloudBlobStorage } from '@affine/workspace-impl';
 import { assertEquals } from '@blocksuite/global/utils';
 import { DocCollection } from '@blocksuite/store';
 import { globalBlockSuiteSchema } from '@toeverything/infra';
@@ -22,6 +21,7 @@ import {
   useMutation,
 } from '../../../hooks/use-mutation';
 import { useQueryInfinite } from '../../../hooks/use-query';
+import { CloudBlobStorage } from '../../../modules/workspace-engine/impls/engine/blob-cloud';
 
 const logger = new DebugLogger('page-history');
 
@@ -104,7 +104,7 @@ const docCollectionMap = new Map<string, DocCollection>();
 const getOrCreateShellWorkspace = (workspaceId: string) => {
   let docCollection = docCollectionMap.get(workspaceId);
   if (!docCollection) {
-    const blobStorage = new AffineCloudBlobStorage(workspaceId);
+    const blobStorage = new CloudBlobStorage(workspaceId);
     docCollection = new DocCollection({
       id: workspaceId,
       blobStorages: [

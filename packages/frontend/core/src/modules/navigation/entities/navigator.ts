@@ -1,13 +1,15 @@
-import { LiveData } from '@toeverything/infra';
+import { Entity, LiveData } from '@toeverything/infra';
 import type { Location } from 'history';
 import { Observable, switchMap } from 'rxjs';
 
-import type { Workbench } from '../../workbench';
+import type { WorkbenchService } from '../../workbench';
 
-export class Navigator {
-  constructor(private readonly workbench: Workbench) {}
+export class Navigator extends Entity {
+  constructor(private readonly workbenchService: WorkbenchService) {
+    super();
+  }
 
-  private readonly history$ = this.workbench.activeView$.map(
+  private readonly history$ = this.workbenchService.workbench.activeView$.map(
     view => view.history
   );
 

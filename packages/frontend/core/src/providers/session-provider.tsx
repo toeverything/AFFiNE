@@ -3,11 +3,11 @@ import { useSession } from '@affine/core/hooks/affine/use-current-user';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { affine } from '@affine/electron-api';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { CLOUD_WORKSPACE_CHANGED_BROADCAST_CHANNEL_KEY } from '@affine/workspace-impl';
 import type { PropsWithChildren } from 'react';
 import { startTransition, useEffect, useRef } from 'react';
 
 import { useOnceSignedInEvents } from '../atoms/event';
+import { CLOUD_WORKSPACE_CHANGED_BROADCAST_CHANNEL_KEY } from '../modules/workspace-engine';
 import { mixpanel } from '../utils';
 
 export const CloudSessionProvider = (props: PropsWithChildren) => {

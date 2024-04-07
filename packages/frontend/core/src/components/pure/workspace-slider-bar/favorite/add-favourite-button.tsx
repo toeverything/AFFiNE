@@ -1,6 +1,6 @@
 import { IconButton } from '@affine/component/ui/button';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import { FavoriteItemsAdapter } from '@affine/core/modules/workspace';
+import { FavoriteItemsAdapter } from '@affine/core/modules/properties';
 import { PlusIcon } from '@blocksuite/icons';
 import type { DocCollection } from '@blocksuite/store';
 import { useService } from '@toeverything/infra';

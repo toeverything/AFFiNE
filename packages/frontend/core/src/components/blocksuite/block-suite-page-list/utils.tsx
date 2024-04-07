@@ -3,7 +3,7 @@ import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { useDocMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
 import { useDocCollectionHelper } from '@affine/core/hooks/use-block-suite-workspace-helper';
 import { WorkspaceSubPath } from '@affine/core/shared';
-import { initEmptyPage, PageRecordList, useService } from '@toeverything/infra';
+import { DocsService, initEmptyPage, useService } from '@toeverything/infra';
 import { useCallback, useMemo } from 'react';
 
 import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
@@ -13,23 +13,23 @@ export const usePageHelper = (docCollection: DocCollection) => {
   const { openPage, jumpToSubPath } = useNavigateHelper();
   const { createDoc } = useDocCollectionHelper(docCollection);
   const { setDocMeta } = useDocMetaHelper(docCollection);
-  const pageRecordList = useService(PageRecordList);
+  const docRecordList = useService(DocsService).docRecordList;
 
   const isPreferredEdgeless = useCallback(
     (pageId: string) =>
-      pageRecordList.record$(pageId).value?.mode$.value === 'edgeless',
-    [pageRecordList]
+      docRecordList.record$(pageId).value?.mode$.value === 'edgeless',
+    [docRecordList]
   );
 
   const createPageAndOpen = useCallback(
     (mode?: 'page' | 'edgeless') => {
       const page = createDoc();
       initEmptyPage(page);
-      pageRecordList.record$(page.id).value?.setMode(mode || 'page');
+      docRecordList.record$(page.id).value?.setMode(mode || 'page');
       openPage(docCollection.id, page.id);
       return page;
     },
-    [docCollection.id, createDoc, openPage, pageRecordList]
+    [docCollection.id, createDoc, openPage, docRecordList]
   );
 
   const createEdgelessAndOpen = useCallback(() => {

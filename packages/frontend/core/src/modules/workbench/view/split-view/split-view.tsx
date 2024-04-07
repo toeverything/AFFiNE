@@ -18,7 +18,7 @@ import { useCallback, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 import type { View } from '../../entities/view';
-import { Workbench } from '../../entities/workbench';
+import { WorkbenchService } from '../../services/workbench';
 import { SplitViewPanel } from './panel';
 import { ResizeHandle } from './resize-handle';
 import * as styles from './split-view.css';
@@ -48,7 +48,7 @@ export const SplitView = ({
   const [slots, setSlots] = useState<SlotsMap>({});
   const [resizingViewId, setResizingViewId] = useState<View['id'] | null>(null);
   const { appSettings } = useAppSettingHelper();
-  const workbench = useService(Workbench);
+  const workbench = useService(WorkbenchService).workbench;
 
   const sensors = useSensors(
     useSensor(PointerSensor, {

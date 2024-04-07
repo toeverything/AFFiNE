@@ -5,7 +5,12 @@ import { NotificationCenter } from '@affine/component';
 import { AffineContext } from '@affine/component/context';
 import { GlobalLoading } from '@affine/component/global-loading';
 import { WorkspaceFallback } from '@affine/core/components/workspace';
-import { GlobalScopeProvider } from '@affine/core/modules/infra-web/global-scope';
+import { configureCommonModules } from '@affine/core/modules';
+import { configureBrowserStorageImpls } from '@affine/core/modules/storage';
+import {
+  configureBrowserWorkspaceFlavours,
+  configureSqliteWorkspaceEngineStorageProvider,
+} from '@affine/core/modules/workspace-engine';
 import { CloudSessionProvider } from '@affine/core/providers/session-provider';
 import { router } from '@affine/core/router';
 import {
@@ -14,10 +19,14 @@ import {
 } from '@affine/core/shared';
 import { Telemetry } from '@affine/core/telemetry';
 import createEmotionCache from '@affine/core/utils/create-emotion-cache';
-import { configureWebServices } from '@affine/core/web';
 import { createI18n, setUpLanguage } from '@affine/i18n';
 import { CacheProvider } from '@emotion/react';
-import { getCurrentStore, ServiceCollection } from '@toeverything/infra';
+import {
+  Framework,
+  FrameworkRoot,
+  getCurrentStore,
+  LifecycleService,
+} from '@toeverything/infra';
 import type { PropsWithChildren, ReactElement } from 'react';
 import { lazy, Suspense } from 'react';
 import { RouterProvider } from 'react-router-dom';
@@ -55,9 +64,14 @@ async function loadLanguage() {
 
 let languageLoadingPromise: Promise<void> | null = null;
 
-const services = new ServiceCollection();
-configureWebServices(services);
-const serviceProvider = services.provider();
+const framework = new Framework();
+configureCommonModules(framework);
+configureBrowserStorageImpls(framework);
+configureBrowserWorkspaceFlavours(framework);
+configureSqliteWorkspaceEngineStorageProvider(framework);
+const frameworkProvider = framework.provider();
+
+frameworkProvider.get(LifecycleService).applicationStart();
 
 export function App() {
   performanceRenderLogger.info('App');
@@ -68,7 +82,7 @@ export function App() {
 
   return (
     <Suspense>
-      <GlobalScopeProvider provider={serviceProvider}>
+      <FrameworkRoot framework={frameworkProvider}>
         <CacheProvider value={cache}>
           <AffineContext store={getCurrentStore()}>
             <CloudSessionProvider>
@@ -85,7 +99,7 @@ export function App() {
             </CloudSessionProvider>
           </AffineContext>
         </CacheProvider>
-      </GlobalScopeProvider>
+      </FrameworkRoot>
     </Suspense>
   );
 }

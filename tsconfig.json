@@ -40,7 +40,7 @@
     "target": "ES2022",
     "useDefineForClassFields": false,
     "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
+    "emitDecoratorMetadata": false,
     // Projects
     "composite": true,
     "incremental": true,
@@ -61,7 +61,6 @@
       "@affine/debug": ["./packages/common/debug"],
       "@affine/env": ["./packages/common/env/src"],
       "@affine/env/*": ["./packages/common/env/src/*"],
-      "@affine/workspace-impl/*": ["./packages/frontend/workspace-impl/src/*"],
       "@affine/graphql": ["./packages/frontend/graphql/src"],
       "@affine/electron/scripts/*": ["./packages/frontend/electron/scripts/*"],
       "@affine-test/kit/*": ["./tests/kit/*"],
@@ -105,9 +104,6 @@
     },
     {
       "path": "./packages/frontend/i18n"
-    },
-    {
-      "path": "./packages/frontend/workspace-impl"
     },
     // Common
     {

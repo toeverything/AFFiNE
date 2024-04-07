@@ -2,17 +2,17 @@ import { toast } from '@affine/component';
 import type { AllPageListConfig } from '@affine/core/components/page-list';
 import { FavoriteTag } from '@affine/core/components/page-list';
 import { useBlockSuiteDocMeta } from '@affine/core/hooks/use-block-suite-page-meta';
-import { FavoriteItemsAdapter } from '@affine/core/modules/workspace';
+import { FavoriteItemsAdapter } from '@affine/core/modules/properties';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { DocMeta } from '@blocksuite/store';
-import { useLiveData, useService, Workspace } from '@toeverything/infra';
+import { useLiveData, useService, WorkspaceService } from '@toeverything/infra';
 import { useCallback, useMemo } from 'react';
 
 import { usePageHelper } from '../../components/blocksuite/block-suite-page-list/utils';
 import { usePublicPages } from './use-is-shared-page';
 
 export const useAllPageListConfig = () => {
-  const currentWorkspace = useService(Workspace);
+  const currentWorkspace = useService(WorkspaceService).workspace;
   const { getPublicMode } = usePublicPages(currentWorkspace);
   const workspace = currentWorkspace.docCollection;
   const pageMetas = useBlockSuiteDocMeta(workspace);

@@ -1,5 +1,5 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { useService, Workspace } from '@toeverything/infra';
+import { useService, WorkspaceService } from '@toeverything/infra';
 import { useStore } from 'jotai';
 import { useTheme } from 'next-themes';
 import { useEffect } from 'react';
@@ -21,7 +21,7 @@ export function useRegisterWorkspaceCommands() {
   const store = useStore();
   const t = useAFFiNEI18N();
   const theme = useTheme();
-  const currentWorkspace = useService(Workspace);
+  const currentWorkspace = useService(WorkspaceService).workspace;
   const languageHelper = useLanguageHelper();
   const pageHelper = usePageHelper(currentWorkspace.docCollection);
   const navigationHelper = useNavigateHelper();

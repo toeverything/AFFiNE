@@ -12,19 +12,24 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloudWorkspaceIcon, LocalWorkspaceIcon } from '@blocksuite/icons';
 import type { DragEndEvent } from '@dnd-kit/core';
 import type { WorkspaceMetadata } from '@toeverything/infra';
-import { useLiveData, useService, WorkspaceManager } from '@toeverything/infra';
+import {
+  GlobalContextService,
+  useLiveData,
+  useService,
+  WorkspacesService,
+} from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 
 import {
   openCreateWorkspaceModalAtom,
   openSettingModalAtom,
 } from '../../../../../atoms';
-import { CurrentWorkspaceService } from '../../../../../modules/workspace/current-workspace';
 import { WorkspaceSubPath } from '../../../../../shared';
 import { useIsWorkspaceOwner } from '../.././../../../hooks/affine/use-is-workspace-owner';
 import { useNavigateHelper } from '../.././../../../hooks/use-navigate-helper';
 import * as styles from './index.css';
+
 interface WorkspaceModalProps {
   disabled?: boolean;
   workspaces: WorkspaceMetadata[];
@@ -121,19 +126,16 @@ export const AFFiNEWorkspaceList = ({
 }: {
   onEventEnd?: () => void;
 }) => {
-  const openWsRef = useRef<ReturnType<typeof workspaceManager.open>>();
-  const workspaceManager = useService(WorkspaceManager);
-  const workspaces = useLiveData(workspaceManager.list.workspaceList$);
+  const workspacesService = useService(WorkspacesService);
+  const workspaces = useLiveData(workspacesService.list.workspaces$);
+  const currentWorkspaceId = useLiveData(
+    useService(GlobalContextService).globalContext.workspaceId.$
+  );
 
   const setOpenCreateWorkspaceModal = useSetAtom(openCreateWorkspaceModalAtom);
-  const [openingId, setOpeningId] = useState<string | null>(null);
   const confirmEnableCloud = useEnableCloud();
 
   const { jumpToSubPath } = useNavigateHelper();
-
-  const currentWorkspace = useLiveData(
-    useService(CurrentWorkspaceService).currentWorkspace$
-  );
 
   const setOpenSettingModalAtom = useSetAtom(openSettingModalAtom);
 
@@ -171,25 +173,15 @@ export const AFFiNEWorkspaceList = ({
 
   const onClickEnableCloud = useCallback(
     (meta: WorkspaceMetadata) => {
-      openWsRef.current?.release();
-      openWsRef.current = workspaceManager.open(meta);
-      confirmEnableCloud(openWsRef.current.workspace, {
+      const { workspace, dispose } = workspacesService.open({ metadata: meta });
+      confirmEnableCloud(workspace, {
         onFinished: () => {
-          openWsRef.current?.release();
-          openWsRef.current = undefined;
-          setOpeningId(null);
+          dispose();
         },
       });
-      setOpeningId(meta.id);
     },
-    [confirmEnableCloud, workspaceManager]
+    [confirmEnableCloud, workspacesService]
   );
-
-  useEffect(() => {
-    return () => {
-      openWsRef.current?.release();
-    };
-  }, []);
 
   const onMoveWorkspace = useCallback((_activeId: string, _overId: string) => {
     // TODO: order
@@ -241,7 +233,7 @@ export const AFFiNEWorkspaceList = ({
             onClickWorkspaceSetting={onClickWorkspaceSetting}
             onNewWorkspace={onNewWorkspace}
             onAddWorkspace={onAddWorkspace}
-            currentWorkspaceId={currentWorkspace?.id}
+            currentWorkspaceId={currentWorkspaceId}
             onDragEnd={onDragEnd}
           />
           {localWorkspaces.length > 0 && cloudWorkspaces.length > 0 ? (
@@ -250,14 +242,13 @@ export const AFFiNEWorkspaceList = ({
         </div>
       ) : null}
       <LocalWorkspaces
-        openingId={openingId}
         workspaces={localWorkspaces}
         onClickWorkspace={onClickWorkspace}
         onClickWorkspaceSetting={onClickWorkspaceSetting}
         onClickEnableCloud={onClickEnableCloud}
         onNewWorkspace={onNewWorkspace}
         onAddWorkspace={onAddWorkspace}
-        currentWorkspaceId={currentWorkspace?.id}
+        currentWorkspaceId={currentWorkspaceId}
         onDragEnd={onDragEnd}
       />
     </ScrollableContainer>

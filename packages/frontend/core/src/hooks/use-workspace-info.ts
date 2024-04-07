@@ -1,26 +1,29 @@
 import type { WorkspaceMetadata } from '@toeverything/infra';
-import { useService, WorkspaceManager } from '@toeverything/infra';
+import {
+  useLiveData,
+  useService,
+  WorkspacesService,
+} from '@toeverything/infra';
 import { useEffect, useState } from 'react';
 
 import { useWorkspaceBlobObjectUrl } from './use-workspace-blob';
 
 export function useWorkspaceInfo(meta: WorkspaceMetadata) {
-  const workspaceManager = useService(WorkspaceManager);
+  const workspacesService = useService(WorkspacesService);
 
-  const [information, setInformation] = useState(
-    () => workspaceManager.list.getInformation(meta).info
+  const [profile, setProfile] = useState(() =>
+    workspacesService.getProfile(meta)
   );
 
   useEffect(() => {
-    const information = workspaceManager.list.getInformation(meta);
+    const profile = workspacesService.getProfile(meta);
 
-    setInformation(information.info);
-    return information.onUpdated.on(info => {
-      setInformation(info);
-    }).dispose;
-  }, [meta, workspaceManager]);
+    profile.revalidate();
 
-  return information;
+    setProfile(profile);
+  }, [meta, workspacesService]);
+
+  return useLiveData(profile.profile$);
 }
 
 export function useWorkspaceName(meta: WorkspaceMetadata) {

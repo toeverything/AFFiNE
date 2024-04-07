@@ -1,15 +1,12 @@
-import { useLiveData, useService } from '@toeverything/infra';
+import { useService, WorkspaceService } from '@toeverything/infra';
 import { Suspense, useEffect } from 'react';
 
 import { useCurrentLoginStatus } from '../../../hooks/affine/use-current-login-status';
 import { useSession } from '../../../hooks/affine/use-current-user';
-import { CurrentWorkspaceService } from '../../../modules/workspace/current-workspace';
 
 const SyncAwarenessInnerLoggedIn = () => {
   const { user } = useSession();
-  const currentWorkspace = useLiveData(
-    useService(CurrentWorkspaceService).currentWorkspace$
-  );
+  const currentWorkspace = useService(WorkspaceService).workspace;
 
   useEffect(() => {
     if (user && currentWorkspace) {

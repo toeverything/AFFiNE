@@ -1,8 +1,8 @@
 import { toast } from '@affine/component';
 import { IconButton } from '@affine/component/ui/button';
 import { Menu } from '@affine/component/ui/menu';
-import { Workbench } from '@affine/core/modules/workbench';
-import { FavoriteItemsAdapter } from '@affine/core/modules/workspace';
+import { FavoriteItemsAdapter } from '@affine/core/modules/properties';
+import { WorkbenchService } from '@affine/core/modules/workbench';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { MoreHorizontalIcon } from '@blocksuite/icons';
 import type { DocCollection } from '@blocksuite/store';
@@ -40,7 +40,7 @@ export const OperationMenuButton = ({ ...props }: OperationMenuButtonProps) => {
   const { setTrashModal } = useTrashModalHelper(docCollection);
 
   const favAdapter = useService(FavoriteItemsAdapter);
-  const workbench = useService(Workbench);
+  const workbench = useService(WorkbenchService).workbench;
 
   const handleRename = useCallback(() => {
     setRenameModalOpen?.();

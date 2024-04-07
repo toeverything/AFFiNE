@@ -1,7 +1,11 @@
 import { Button } from '@affine/component/ui/button';
 import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { useLiveData, useService, WorkspaceManager } from '@toeverything/infra';
+import {
+  useLiveData,
+  useService,
+  WorkspacesService,
+} from '@toeverything/infra';
 import { useCallback, useEffect } from 'react';
 
 import type { ShareHeaderRightItemProps } from './index';
@@ -13,11 +17,9 @@ export const AuthenticatedItem = ({
 }: { setIsMember: (value: boolean) => void } & ShareHeaderRightItemProps) => {
   const { workspaceId, pageId } = props;
 
-  const workspaceManager = useService(WorkspaceManager);
-  const workspaceList = useLiveData(workspaceManager.list.workspaceList$);
-  const isMember = workspaceList?.some(
-    workspace => workspace.id === workspaceId
-  );
+  const workspacesService = useService(WorkspacesService);
+  const workspaces = useLiveData(workspacesService.list.workspaces$);
+  const isMember = workspaces?.some(workspace => workspace.id === workspaceId);
   const t = useAFFiNEI18N();
   const { jumpToPage } = useNavigateHelper();
 

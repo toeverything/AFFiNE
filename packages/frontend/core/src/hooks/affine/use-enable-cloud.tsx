@@ -4,7 +4,7 @@ import { setOnceSignedInEventAtom } from '@affine/core/atoms/event';
 import { WorkspaceSubPath } from '@affine/core/shared';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { Workspace } from '@toeverything/infra';
-import { useService, WorkspaceManager } from '@toeverything/infra';
+import { useService, WorkspacesService } from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
 import { useCallback } from 'react';
 
@@ -30,17 +30,17 @@ export const useEnableCloud = () => {
   const setAuthAtom = useSetAtom(authAtom);
   const setOnceSignedInEvent = useSetAtom(setOnceSignedInEventAtom);
   const { openConfirmModal, closeConfirmModal } = useConfirmModal();
-  const workspaceManager = useService(WorkspaceManager);
+  const workspacesService = useService(WorkspacesService);
   const { openPage } = useNavigateHelper();
 
   const enableCloud = useCallback(
     async (ws: Workspace | null, options?: ConfirmEnableCloudOptions) => {
       if (!ws) return;
-      const { id: newId } = await workspaceManager.transformLocalToCloud(ws);
+      const { id: newId } = await workspacesService.transformLocalToCloud(ws);
       openPage(newId, options?.openPageId || WorkspaceSubPath.ALL);
       options?.onSuccess?.();
     },
-    [openPage, workspaceManager]
+    [openPage, workspacesService]
   );
 
   const openSignIn = useCallback(

@@ -1,4 +1,4 @@
-import { useLiveData } from '@toeverything/infra';
+import { FrameworkScope, useLiveData } from '@toeverything/infra';
 import { lazy as reactLazy, useEffect, useMemo } from 'react';
 import {
   createMemoryRouter,
@@ -10,7 +10,6 @@ import {
 import { viewRoutes } from '../../../router';
 import type { View } from '../entities/view';
 import { RouteContainer } from './route-container';
-import { ViewContext } from './use-view';
 
 const warpedRoutes = viewRoutes.map(({ path, lazy }) => {
   const Component = reactLazy(() =>
@@ -43,7 +42,7 @@ export const ViewRoot = ({ view }: { view: View }) => {
 
   // https://github.com/remix-run/react-router/issues/7375#issuecomment-975431736
   return (
-    <ViewContext.Provider value={view}>
+    <FrameworkScope scope={view.scope}>
       <UNSAFE_LocationContext.Provider value={null as any}>
         <UNSAFE_RouteContext.Provider
           value={{
@@ -55,6 +54,6 @@ export const ViewRoot = ({ view }: { view: View }) => {
           <RouterProvider router={viewRouter} />
         </UNSAFE_RouteContext.Provider>
       </UNSAFE_LocationContext.Provider>
-    </ViewContext.Provider>
+    </FrameworkScope>
   );
 };

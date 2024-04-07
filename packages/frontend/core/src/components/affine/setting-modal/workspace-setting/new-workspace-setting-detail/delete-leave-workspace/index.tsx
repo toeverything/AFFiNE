@@ -7,8 +7,8 @@ import { ArrowRightSmallIcon } from '@blocksuite/icons';
 import {
   useLiveData,
   useService,
-  Workspace,
-  WorkspaceManager,
+  WorkspaceService,
+  WorkspacesService,
 } from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
 import { useCallback, useState } from 'react';
@@ -36,9 +36,9 @@ export const DeleteLeaveWorkspace = ({
   const [showLeave, setShowLeave] = useState(false);
   const setSettingModal = useSetAtom(openSettingModalAtom);
 
-  const workspaceManager = useService(WorkspaceManager);
-  const workspaceList = useLiveData(workspaceManager.list.workspaceList$);
-  const currentWorkspace = useService(Workspace);
+  const workspacesService = useService(WorkspacesService);
+  const workspaceList = useLiveData(workspacesService.list.workspaces$);
+  const currentWorkspace = useService(WorkspaceService).workspace;
 
   const onLeaveOrDelete = useCallback(() => {
     if (isOwner) {
@@ -67,7 +67,7 @@ export const DeleteLeaveWorkspace = ({
       }
     }
 
-    await workspaceManager.deleteWorkspace(workspaceMetadata);
+    await workspacesService.deleteWorkspace(workspaceMetadata);
     notify.success({ title: t['Successfully deleted']() });
   }, [
     currentWorkspace?.id,
@@ -76,7 +76,7 @@ export const DeleteLeaveWorkspace = ({
     setSettingModal,
     t,
     workspaceList,
-    workspaceManager,
+    workspacesService,
     workspaceMetadata,
   ]);
 

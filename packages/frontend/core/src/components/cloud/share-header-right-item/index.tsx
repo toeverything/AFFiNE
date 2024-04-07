@@ -1,4 +1,4 @@
-import type { PageMode } from '@toeverything/infra';
+import type { DocMode } from '@toeverything/infra';
 import { useState } from 'react';
 
 import { useCurrentLoginStatus } from '../../../hooks/affine/use-current-login-status';
@@ -10,7 +10,7 @@ import { PublishPageUserAvatar } from './user-avatar';
 export type ShareHeaderRightItemProps = {
   workspaceId: string;
   pageId: string;
-  publishMode: PageMode;
+  publishMode: DocMode;
 };
 
 const ShareHeaderRightItem = ({ ...props }: ShareHeaderRightItemProps) => {

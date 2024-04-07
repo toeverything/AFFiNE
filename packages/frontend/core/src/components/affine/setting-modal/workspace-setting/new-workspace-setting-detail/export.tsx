@@ -29,7 +29,7 @@ export const ExportPanel = ({
     setSaving(true);
     try {
       if (isOnline) {
-        await workspace.engine.waitForSynced();
+        await workspace.engine.waitForDocSynced();
         await workspace.engine.blob.sync();
       }
 

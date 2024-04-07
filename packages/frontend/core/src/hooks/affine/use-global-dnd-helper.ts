@@ -1,7 +1,7 @@
 import { toast } from '@affine/component';
 import { useDocMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
 import { CollectionService } from '@affine/core/modules/collection';
-import { FavoriteItemsAdapter } from '@affine/core/modules/workspace';
+import { FavoriteItemsAdapter } from '@affine/core/modules/properties';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type {
   Active,
@@ -9,7 +9,7 @@ import type {
   Over,
   UniqueIdentifier,
 } from '@dnd-kit/core';
-import { useLiveData, useService, Workspace } from '@toeverything/infra';
+import { useLiveData, useService, WorkspaceService } from '@toeverything/infra';
 import { useMemo } from 'react';
 
 import { useDeleteCollectionInfo } from './use-delete-collection-info';
@@ -153,7 +153,7 @@ export type GlobalDragEndIntent = ReturnType<typeof resolveDragEndIntent>;
 
 export const useGlobalDNDHelper = () => {
   const t = useAFFiNEI18N();
-  const currentWorkspace = useService(Workspace);
+  const currentWorkspace = useService(WorkspaceService).workspace;
   const favAdapter = useService(FavoriteItemsAdapter);
   const workspace = currentWorkspace.docCollection;
   const { setTrashModal } = useTrashModalHelper(workspace);

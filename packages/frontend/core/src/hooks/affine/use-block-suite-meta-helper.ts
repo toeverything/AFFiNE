@@ -2,7 +2,7 @@ import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { useDocMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
 import { useDocCollectionHelper } from '@affine/core/hooks/use-block-suite-workspace-helper';
 import { CollectionService } from '@affine/core/modules/collection';
-import { PageRecordList, useService } from '@toeverything/infra';
+import { DocsService, useService } from '@toeverything/infra';
 import { useCallback } from 'react';
 import { applyUpdate, encodeStateAsUpdate } from 'yjs';
 
@@ -17,7 +17,7 @@ export function useBlockSuiteMetaHelper(docCollection: DocCollection) {
   const { createDoc } = useDocCollectionHelper(docCollection);
   const { openPage } = useNavigateHelper();
   const collectionService = useService(CollectionService);
-  const pageRecordList = useService(PageRecordList);
+  const pageRecordList = useService(DocsService).docRecordList;
 
   // TODO-Doma
   // "Remove" may cause ambiguity here. Consider renaming as "moveToTrash".

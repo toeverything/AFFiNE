@@ -7,7 +7,7 @@ import type { Collection, Filter } from '@affine/env/filter';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { DocMeta } from '@blocksuite/store';
-import { useService, Workspace } from '@toeverything/infra';
+import { useService, WorkspaceService } from '@toeverything/infra';
 import { useCallback, useMemo, useRef, useState } from 'react';
 
 import { usePageHelper } from '../../blocksuite/block-suite-page-list/utils';
@@ -70,7 +70,7 @@ export const VirtualizedPageList = ({
   const listRef = useRef<ItemListHandle>(null);
   const [showFloatingToolbar, setShowFloatingToolbar] = useState(false);
   const [selectedPageIds, setSelectedPageIds] = useState<string[]>([]);
-  const currentWorkspace = useService(Workspace);
+  const currentWorkspace = useService(WorkspaceService).workspace;
   const pageMetas = useBlockSuiteDocMeta(currentWorkspace.docCollection);
   const pageOperations = usePageOperationsRenderer();
   const { isPreferredEdgeless } = usePageHelper(currentWorkspace.docCollection);

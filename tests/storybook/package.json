@@ -10,7 +10,6 @@
     "@affine/cli": "workspace:*",
     "@affine/component": "workspace:*",
     "@affine/i18n": "workspace:*",
-    "@affine/workspace-impl": "workspace:*",
     "@dnd-kit/sortable": "^8.0.0",
     "@storybook/jest": "^0.2.3",
     "@storybook/testing-library": "^0.2.2",

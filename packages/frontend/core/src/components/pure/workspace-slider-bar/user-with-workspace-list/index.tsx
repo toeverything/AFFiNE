@@ -2,10 +2,13 @@ import { Loading } from '@affine/component';
 import { Divider } from '@affine/component/ui/divider';
 import { MenuItem } from '@affine/component/ui/menu';
 import { useSession } from '@affine/core/hooks/affine/use-current-user';
-import { Unreachable } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { Logo1Icon } from '@blocksuite/icons';
-import { useLiveData, useService, WorkspaceManager } from '@toeverything/infra';
+import {
+  useLiveData,
+  useService,
+  WorkspacesService,
+} from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
 import { Suspense, useCallback, useEffect } from 'react';
 
@@ -128,14 +131,12 @@ const UserWithWorkspaceListInner = ({
     onEventEnd?.();
   }, [onEventEnd, setOpenCreateWorkspaceModal]);
 
-  const workspaceManager = useService(WorkspaceManager);
-  const workspaces = useLiveData(workspaceManager.list.workspaceList$);
+  const workspaceManager = useService(WorkspacesService);
+  const workspaces = useLiveData(workspaceManager.list.workspaces$);
 
   // revalidate workspace list when mounted
   useEffect(() => {
-    workspaceManager.list.revalidate().catch(err => {
-      throw new Unreachable('revlidate should never throw, ' + err);
-    });
+    workspaceManager.list.revalidate(true);
   }, [workspaceManager]);
 
   return (

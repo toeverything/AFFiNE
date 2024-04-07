@@ -3,8 +3,9 @@ import { WorkspaceFlavour } from '@affine/env/workspace';
 import {
   useLiveData,
   useService,
-  Workspace,
-  WorkspaceManager,
+  useServiceOptional,
+  WorkspaceService,
+  WorkspacesService,
 } from '@toeverything/infra';
 import { useAtom } from 'jotai';
 import type { ReactElement } from 'react';
@@ -22,7 +23,6 @@ import { PaymentDisableModal } from '../components/affine/payment-disable';
 import { useSession } from '../hooks/affine/use-current-user';
 import { useAsyncCallback } from '../hooks/affine-async-hooks';
 import { useNavigateHelper } from '../hooks/use-navigate-helper';
-import { CurrentWorkspaceService } from '../modules/workspace/current-workspace';
 import { WorkspaceSubPath } from '../shared';
 import { mixpanel } from '../utils';
 import { signOutCloud } from '../utils/cloud-utils';
@@ -182,7 +182,7 @@ export const AuthModal = (): ReactElement => {
 };
 
 export function CurrentWorkspaceModals() {
-  const currentWorkspace = useService(Workspace);
+  const currentWorkspace = useService(WorkspaceService).workspace;
   const [openDisableCloudAlertModal, setOpenDisableCloudAlertModal] = useAtom(
     openDisableCloudAlertModalAtom
   );
@@ -215,11 +215,9 @@ export const SignOutConfirmModal = () => {
   const { openPage } = useNavigateHelper();
   const { reload } = useSession();
   const [open, setOpen] = useAtom(openSignOutModalAtom);
-  const currentWorkspace = useLiveData(
-    useService(CurrentWorkspaceService).currentWorkspace$
-  );
+  const currentWorkspace = useServiceOptional(WorkspaceService)?.workspace;
   const workspaces = useLiveData(
-    useService(WorkspaceManager).list.workspaceList$
+    useService(WorkspacesService).list.workspaces$
   );
 
   const onConfirm = useAsyncCallback(async () => {

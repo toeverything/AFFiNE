@@ -11,7 +11,7 @@ import {
 } from '@blocksuite/icons';
 import type { DocCollection, DocMeta } from '@blocksuite/store';
 import * as Collapsible from '@radix-ui/react-collapsible';
-import { PageRecordList, useLiveData, useService } from '@toeverything/infra';
+import { DocsService, useLiveData, useService } from '@toeverything/infra';
 import clsx from 'clsx';
 import { selectAtom } from 'jotai/utils';
 import type { MouseEventHandler } from 'react';
@@ -273,12 +273,8 @@ function tagIdToTagOption(
 }
 
 const PageTitle = ({ id }: { id: string }) => {
-  const page = useLiveData(
-    useService(PageRecordList).records$.map(record => {
-      return record.find(p => p.id === id);
-    })
-  );
-  const title = useLiveData(page?.title$);
+  const doc = useLiveData(useService(DocsService).docRecordList.record$(id));
+  const title = useLiveData(doc?.title$);
   const t = useAFFiNEI18N();
   return title || t['Untitled']();
 };

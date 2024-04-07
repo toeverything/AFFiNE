@@ -15,8 +15,8 @@ import type { WorkspaceMetadata } from '@toeverything/infra';
 import {
   useLiveData,
   useService,
-  Workspace,
-  WorkspaceManager,
+  WorkspaceService,
+  WorkspacesService,
 } from '@toeverything/infra';
 import clsx from 'clsx';
 import { useAtom } from 'jotai/react';
@@ -207,7 +207,7 @@ export const WorkspaceList = ({
   activeSubTab: WorkspaceSubTab;
 }) => {
   const workspaces = useLiveData(
-    useService(WorkspaceManager).list.workspaceList$
+    useService(WorkspacesService).list.workspaces$
   );
   return (
     <>
@@ -260,7 +260,7 @@ const WorkspaceListItem = ({
   const information = useWorkspaceInfo(meta);
   const avatarUrl = useWorkspaceBlobObjectUrl(meta, information?.avatar);
   const name = information?.name ?? UNTITLED_WORKSPACE_NAME;
-  const currentWorkspace = useService(Workspace);
+  const currentWorkspace = useService(WorkspaceService).workspace;
   const isCurrent = currentWorkspace.id === meta.id;
   const t = useAFFiNEI18N();
   const isOwner = useIsWorkspaceOwner(meta);

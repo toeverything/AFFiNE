@@ -4,8 +4,7 @@ import {
   initEmptyPage,
   useLiveData,
   useService,
-  WorkspaceListService,
-  WorkspaceManager,
+  WorkspacesService,
 } from '@toeverything/infra';
 import {
   lazy,
@@ -39,11 +38,10 @@ export const Component = () => {
   const [navigating, setNavigating] = useState(false);
   const [creating, setCreating] = useState(false);
   const { status } = useSession();
-  const workspaceManager = useService(WorkspaceManager);
 
-  const workspaceListService = useService(WorkspaceListService);
-  const list = useLiveData(workspaceListService.workspaceList$);
-  const workspaceListStatus = useLiveData(workspaceListService.status$);
+  const workspacesService = useService(WorkspacesService);
+  const list = useLiveData(workspacesService.list.workspaces$);
+  const listIsLoading = useLiveData(workspacesService.list.isLoading$);
 
   const { openPage } = useNavigateHelper();
   const [searchParams] = useSearchParams();
@@ -53,18 +51,18 @@ export const Component = () => {
   const createCloudWorkspace = useCallback(() => {
     if (createOnceRef.current) return;
     createOnceRef.current = true;
-    workspaceManager
-      .createWorkspace(WorkspaceFlavour.AFFINE_CLOUD, async workspace => {
+    workspacesService
+      .create(WorkspaceFlavour.AFFINE_CLOUD, async workspace => {
         workspace.meta.setName('AFFiNE Cloud');
         const page = workspace.createDoc();
         initEmptyPage(page);
       })
       .then(workspace => openPage(workspace.id, WorkspaceSubPath.ALL))
       .catch(err => console.error('Failed to create cloud workspace', err));
-  }, [openPage, workspaceManager]);
+  }, [openPage, workspacesService]);
 
   useLayoutEffect(() => {
-    if (workspaceListStatus.loading) {
+    if (listIsLoading) {
       return;
     }
 
@@ -96,19 +94,19 @@ export const Component = () => {
     openPage,
     searchParams,
     status,
-    workspaceListStatus.loading,
+    listIsLoading,
   ]);
 
   useEffect(() => {
     setCreating(true);
-    createFirstAppData(workspaceManager)
+    createFirstAppData(workspacesService)
       .catch(err => {
         console.error('Failed to create first app data', err);
       })
       .finally(() => {
         setCreating(false);
       });
-  }, [workspaceManager]);
+  }, [workspacesService]);
 
   if (navigating || creating) {
     return <WorkspaceFallback></WorkspaceFallback>;

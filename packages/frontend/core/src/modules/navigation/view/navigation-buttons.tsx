@@ -5,7 +5,7 @@ import { useLiveData, useService } from '@toeverything/infra';
 import { useCallback, useEffect, useMemo } from 'react';
 
 import { useGeneralShortcuts } from '../../../hooks/affine/use-shortcuts';
-import { Navigator } from '../entities/navigator';
+import { NavigatorService } from '../services/navigator';
 import * as styles from './navigation-buttons.css';
 import { useRegisterNavigationCommands } from './use-register-navigation-commands';
 
@@ -30,7 +30,7 @@ export const NavigationButtons = () => {
     };
   }, [shortcuts, t]);
 
-  const navigator = useService(Navigator);
+  const navigator = useService(NavigatorService).navigator;
 
   const backable = useLiveData(navigator.backable$);
   const forwardable = useLiveData(navigator.forwardable$);

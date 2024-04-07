@@ -16,8 +16,8 @@ import {
   SearchIcon,
   ViewLayersIcon,
 } from '@blocksuite/icons';
-import type { Doc } from '@blocksuite/store';
-import { useLiveData, useService, Workspace } from '@toeverything/infra';
+import type { Doc as BlockSuiteDoc } from '@blocksuite/store';
+import { useLiveData, useService, WorkspaceService } from '@toeverything/infra';
 import clsx from 'clsx';
 import { nanoid } from 'nanoid';
 import { useCallback, useMemo, useState } from 'react';
@@ -37,7 +37,7 @@ import { PageListNewPageButton } from './page-list-new-page-button';
 
 export const PageListHeader = () => {
   const t = useAFFiNEI18N();
-  const workspace = useService(Workspace);
+  const workspace = useService(WorkspaceService).workspace;
   const { importFile, createEdgeless, createPage } = usePageHelper(
     workspace.docCollection
   );
@@ -85,12 +85,12 @@ export const CollectionPageListHeader = ({
     collectionService.updateCollection(collection.id, () => ret);
   }, [collection, collectionService, open]);
 
-  const workspace = useService(Workspace);
+  const workspace = useService(WorkspaceService).workspace;
   const { createEdgeless, createPage } = usePageHelper(workspace.docCollection);
   const { openConfirmModal } = useConfirmModal();
 
   const createAndAddDocument = useCallback(
-    (createDocumentFn: () => Doc) => {
+    (createDocumentFn: () => BlockSuiteDoc) => {
       const newDoc = createDocumentFn();
       collectionService.addPageToCollection(collection.id, newDoc.id);
     },
@@ -98,7 +98,7 @@ export const CollectionPageListHeader = ({
   );
 
   const onConfirmAddDocument = useCallback(
-    (createDocumentFn: () => Doc) => {
+    (createDocumentFn: () => BlockSuiteDoc) => {
       openConfirmModal({
         title: t['com.affine.collection.add-doc.confirm.title'](),
         description: t['com.affine.collection.add-doc.confirm.description'](),
@@ -248,9 +248,9 @@ interface SwitchTagProps {
 export const SwitchTag = ({ onClick }: SwitchTagProps) => {
   const t = useAFFiNEI18N();
   const [inputValue, setInputValue] = useState('');
-  const tagService = useService(TagService);
+  const tagList = useService(TagService).tagList;
   const filteredTags = useLiveData(
-    inputValue ? tagService.filterTagsByName$(inputValue) : tagService.tags$
+    inputValue ? tagList.filterTagsByName$(inputValue) : tagList.tags$
   );
 
   const onInputChange = useCallback(

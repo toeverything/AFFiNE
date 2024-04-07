@@ -1,9 +1,14 @@
 import { notify } from '@affine/component';
-import { CurrentWorkspaceService } from '@affine/core/modules/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { AiIcon } from '@blocksuite/icons';
-import { Doc, LiveData, useLiveData, useService } from '@toeverything/infra';
+import {
+  DocService,
+  LiveData,
+  useLiveData,
+  useService,
+  WorkspaceService,
+} from '@toeverything/infra';
 import { cssVar } from '@toeverything/theme';
 import Lottie from 'lottie-react';
 import { useTheme } from 'next-themes';
@@ -40,12 +45,11 @@ export const AIOnboardingEdgeless = ({
   const t = useAFFiNEI18N();
   const notifyId = useLiveData(notifyId$);
   const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
-  const currentWorkspace = useLiveData(
-    useService(CurrentWorkspaceService).currentWorkspace$
-  );
-  const isCloud = currentWorkspace?.flavour === WorkspaceFlavour.AFFINE_CLOUD;
+  const isCloud =
+    useService(WorkspaceService).workspace.flavour ===
+    WorkspaceFlavour.AFFINE_CLOUD;
 
-  const doc = useService(Doc);
+  const doc = useService(DocService).doc;
   const mode = useLiveData(doc.mode$);
 
   useEffect(() => {

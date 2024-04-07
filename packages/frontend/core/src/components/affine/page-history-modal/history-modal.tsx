@@ -12,8 +12,12 @@ import { CloseIcon, ToggleCollapseIcon } from '@blocksuite/icons';
 import type { Doc as BlockSuiteDoc, DocCollection } from '@blocksuite/store';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import type { DialogContentProps } from '@radix-ui/react-dialog';
-import type { PageMode } from '@toeverything/infra';
-import { Doc, useService, Workspace } from '@toeverything/infra';
+import {
+  type DocMode,
+  DocService,
+  useService,
+  WorkspaceService,
+} from '@toeverything/infra';
 import { atom, useAtom, useSetAtom } from 'jotai';
 import type { PropsWithChildren } from 'react';
 import {
@@ -90,8 +94,8 @@ interface HistoryEditorPreviewProps {
   ts?: string;
   historyList: HistoryList;
   snapshotPage?: BlockSuiteDoc;
-  mode: PageMode;
-  onModeChange: (mode: PageMode) => void;
+  mode: DocMode;
+  onModeChange: (mode: DocMode) => void;
   title: string;
 }
 
@@ -190,7 +194,7 @@ const HistoryEditorPreview = ({
 const planPromptClosedAtom = atom(false);
 
 const PlanPrompt = () => {
-  const workspace = useService(Workspace);
+  const workspace = useService(WorkspaceService).workspace;
   const workspaceQuota = useWorkspaceQuota(workspace.id);
   const isProWorkspace = useMemo(() => {
     return workspaceQuota?.humanReadable.name.toLowerCase() !== 'free';
@@ -434,8 +438,8 @@ const PageHistoryManager = ({
     [activeVersion, onClose, onRestore, snapshotPage]
   );
 
-  const page = useService(Doc);
-  const [mode, setMode] = useState<PageMode>(page.mode$.value);
+  const doc = useService(DocService).doc;
+  const [mode, setMode] = useState<DocMode>(doc.mode$.value);
 
   const title = useDocCollectionPageTitle(docCollection, pageId);
 
@@ -531,7 +535,7 @@ export const PageHistoryModal = ({
 
 export const GlobalPageHistoryModal = () => {
   const [{ open, pageId }, setState] = useAtom(pageHistoryModalAtom);
-  const workspace = useService(Workspace);
+  const workspace = useService(WorkspaceService).workspace;
   const handleOpenChange = useCallback(
     (open: boolean) => {
       mixpanel.track('Button', {

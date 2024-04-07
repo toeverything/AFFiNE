@@ -1,6 +1,6 @@
 import type { Tag } from '@affine/core/modules/tag';
 import { Trans } from '@affine/i18n';
-import { useService, Workspace } from '@toeverything/infra';
+import { useService, WorkspaceService } from '@toeverything/infra';
 import { useCallback, useMemo, useRef, useState } from 'react';
 
 import { ListFloatingToolbar } from '../components/list-floating-toolbar';
@@ -26,7 +26,7 @@ export const VirtualizedTagList = ({
   const [showFloatingToolbar, setShowFloatingToolbar] = useState(false);
   const [showCreateTagInput, setShowCreateTagInput] = useState(false);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
-  const currentWorkspace = useService(Workspace);
+  const currentWorkspace = useService(WorkspaceService).workspace;
 
   const tagOperations = useCallback(
     (tag: TagMeta) => {

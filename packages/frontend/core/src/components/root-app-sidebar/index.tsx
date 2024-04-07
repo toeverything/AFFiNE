@@ -17,7 +17,7 @@ import { forwardRef, useCallback, useEffect } from 'react';
 import { useAppSettingHelper } from '../../hooks/affine/use-app-setting-helper';
 import { useTrashModalHelper } from '../../hooks/affine/use-trash-modal-helper';
 import { useNavigateHelper } from '../../hooks/use-navigate-helper';
-import { Workbench } from '../../modules/workbench';
+import { WorkbenchService } from '../../modules/workbench';
 import {
   AddPageButton,
   AppDownloadButton,
@@ -100,7 +100,11 @@ export const RootAppSidebar = ({
   const { appSettings } = useAppSettingHelper();
   const docCollection = currentWorkspace.docCollection;
   const t = useAFFiNEI18N();
-  const currentPath = useLiveData(useService(Workbench).location$).pathname;
+  const currentPath = useLiveData(
+    useService(WorkbenchService).workbench.location$.map(
+      location => location.pathname
+    )
+  );
 
   const onClickNewPage = useAsyncCallback(async () => {
     const page = createPage();

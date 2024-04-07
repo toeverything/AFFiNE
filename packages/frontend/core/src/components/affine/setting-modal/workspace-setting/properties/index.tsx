@@ -1,13 +1,11 @@
 import { Button, IconButton, Menu } from '@affine/component';
 import { SettingHeader } from '@affine/component/setting-components';
-import { useWorkspacePropertiesAdapter } from '@affine/core/hooks/use-affine-adapter';
-import { useWorkspace } from '@affine/core/hooks/use-workspace';
 import { useWorkspaceInfo } from '@affine/core/hooks/use-workspace-info';
-import type { PageInfoCustomPropertyMeta } from '@affine/core/modules/workspace/properties/schema';
+import type { PageInfoCustomPropertyMeta } from '@affine/core/modules/properties/services/schema';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { DeleteIcon, FilterIcon, MoreHorizontalIcon } from '@blocksuite/icons';
-import type { Workspace, WorkspaceMetadata } from '@toeverything/infra';
+import { FrameworkScope, type WorkspaceMetadata } from '@toeverything/infra';
 import type { MouseEvent } from 'react';
 import {
   createContext,
@@ -19,6 +17,8 @@ import {
   useState,
 } from 'react';
 
+import { useCurrentWorkspacePropertiesAdapter } from '../../../../../hooks/use-affine-adapter';
+import { useWorkspace } from '../../../../../hooks/use-workspace';
 import type { PagePropertyIcon } from '../../../page-properties';
 import {
   nameToIcon,
@@ -37,11 +37,11 @@ import * as styles from './styles.css';
 // @ts-expect-error this should always be set
 const managerContext = createContext<PagePropertiesMetaManager>();
 
-const usePagePropertiesMetaManager = (workspace: Workspace) => {
+const usePagePropertiesMetaManager = () => {
   // the workspace properties adapter adapter is reactive,
   // which means it's reference will change when any of the properties change
   // also it will trigger a re-render of the component
-  const adapter = useWorkspacePropertiesAdapter(workspace);
+  const adapter = useCurrentWorkspacePropertiesAdapter();
   const manager = useMemo(() => {
     return new PagePropertiesMetaManager(adapter);
   }, [adapter]);
@@ -372,12 +372,8 @@ const WorkspaceSettingPropertiesMain = () => {
   );
 };
 
-const WorkspaceSettingPropertiesInner = ({
-  workspace,
-}: {
-  workspace: Workspace;
-}) => {
-  const manager = usePagePropertiesMetaManager(workspace);
+const WorkspaceSettingPropertiesInner = () => {
+  const manager = usePagePropertiesMetaManager();
   return (
     <managerContext.Provider value={manager}>
       <WorkspaceSettingPropertiesMain />
@@ -393,10 +389,14 @@ export const WorkspaceSettingProperties = ({
   const t = useAFFiNEI18N();
   const workspace = useWorkspace(workspaceMetadata);
   const workspaceInfo = useWorkspaceInfo(workspaceMetadata);
-  const title = workspaceInfo.name || 'untitled';
+  const title = workspaceInfo?.name || 'untitled';
+
+  if (workspace === null) {
+    return null;
+  }
 
   return (
-    <>
+    <FrameworkScope scope={workspace?.scope}>
       <SettingHeader
         title={t['com.affine.settings.workspace.properties.header.title']()}
         subtitle={
@@ -410,9 +410,7 @@ export const WorkspaceSettingProperties = ({
           </Trans>
         }
       />
-      {workspace ? (
-        <WorkspaceSettingPropertiesInner workspace={workspace} />
-      ) : null}
-    </>
+      <WorkspaceSettingPropertiesInner />
+    </FrameworkScope>
   );
 };

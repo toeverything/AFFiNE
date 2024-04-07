@@ -8,17 +8,17 @@ import { DebugLogger } from '@affine/debug';
 import { apis } from '@affine/electron-api';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { _addLocalWorkspace } from '@affine/workspace-impl';
 import {
   initEmptyPage,
   useService,
-  WorkspaceManager,
+  WorkspacesService,
 } from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
 import type { KeyboardEvent } from 'react';
 import { useCallback, useLayoutEffect, useState } from 'react';
 
 import { buildShowcaseWorkspace } from '../../../bootstrap/first-app-data';
+import { _addLocalWorkspace } from '../../../modules/workspace-engine';
 import { mixpanel } from '../../../utils';
 import { CloudSvg } from '../share-page-modal/cloud-svg';
 import * as styles from './index.css';
@@ -181,7 +181,7 @@ export const CreateWorkspaceModal = ({
 }: ModalProps) => {
   const [step, setStep] = useState<CreateWorkspaceStep>();
   const t = useAFFiNEI18N();
-  const workspaceManager = useService(WorkspaceManager);
+  const workspacesService = useService(WorkspacesService);
   const [loading, setLoading] = useState(false);
 
   // todo: maybe refactor using xstate?
@@ -202,9 +202,7 @@ export const CreateWorkspaceModal = ({
         const result = await apis.dialog.loadDBFile();
         if (result.workspaceId && !canceled) {
           _addLocalWorkspace(result.workspaceId);
-          workspaceManager.list.revalidate().catch(err => {
-            logger.error("can't revalidate workspace list", err);
-          });
+          workspacesService.list.revalidate(true);
           onCreate(result.workspaceId);
         } else if (result.error || result.canceled) {
           if (result.error) {
@@ -223,7 +221,7 @@ export const CreateWorkspaceModal = ({
     return () => {
       canceled = true;
     };
-  }, [mode, onClose, onCreate, t, workspaceManager]);
+  }, [mode, onClose, onCreate, t, workspacesService]);
 
   const onConfirmName = useAsyncCallback(
     async (name: string, workspaceFlavour: WorkspaceFlavour) => {
@@ -237,13 +235,13 @@ export const CreateWorkspaceModal = ({
       // fix me later
       if (runtimeConfig.enablePreloading) {
         const { id } = await buildShowcaseWorkspace(
-          workspaceManager,
+          workspacesService,
           workspaceFlavour,
           name
         );
         onCreate(id);
       } else {
-        const { id } = await workspaceManager.createWorkspace(
+        const { id } = await workspacesService.create(
           workspaceFlavour,
           async workspace => {
             workspace.meta.setName(name);
@@ -259,7 +257,7 @@ export const CreateWorkspaceModal = ({
 
       setLoading(false);
     },
-    [loading, onCreate, workspaceManager]
+    [loading, onCreate, workspacesService]
   );
 
   const onOpenChange = useCallback(

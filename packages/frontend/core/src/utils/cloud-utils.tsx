@@ -7,7 +7,8 @@ import {
   TRACE_ID_BYTES,
   traceReporter,
 } from '@affine/graphql';
-import { CLOUD_WORKSPACE_CHANGED_BROADCAST_CHANNEL_KEY } from '@affine/workspace-impl';
+
+import { CLOUD_WORKSPACE_CHANGED_BROADCAST_CHANNEL_KEY } from '../modules/workspace-engine';
 
 type TraceParams = {
   startTime: string;

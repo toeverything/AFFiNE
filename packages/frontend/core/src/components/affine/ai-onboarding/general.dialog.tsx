@@ -1,11 +1,10 @@
 import { Button, Modal } from '@affine/component';
 import { openSettingModalAtom } from '@affine/core/atoms';
 import { useBlurRoot } from '@affine/core/hooks/use-blur-root';
-import { CurrentWorkspaceService } from '@affine/core/modules/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { useLiveData, useService } from '@toeverything/infra';
+import { useService, WorkspaceService } from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -66,10 +65,9 @@ export const AIOnboardingGeneral = ({
 }: BaseAIOnboardingDialogProps) => {
   const videoWrapperRef = useRef<HTMLDivElement | null>(null);
   const prevVideoRef = useRef<HTMLVideoElement | null>(null);
-  const currentWorkspace = useLiveData(
-    useService(CurrentWorkspaceService).currentWorkspace$
-  );
-  const isCloud = currentWorkspace?.flavour === WorkspaceFlavour.AFFINE_CLOUD;
+  const isCloud =
+    useService(WorkspaceService).workspace.flavour ===
+    WorkspaceFlavour.AFFINE_CLOUD;
   const t = useAFFiNEI18N();
   const [open, setOpen] = useState(true);
   const [index, setIndex] = useState(0);

@@ -327,7 +327,6 @@ __metadata:
     "@affine/graphql": "workspace:*"
     "@affine/i18n": "workspace:*"
     "@affine/templates": "workspace:*"
-    "@affine/workspace-impl": "workspace:*"
     "@blocksuite/block-std": "npm:0.14.0-canary-202404151235-655ec84"
     "@blocksuite/blocks": "npm:0.14.0-canary-202404151235-655ec84"
     "@blocksuite/global": "npm:0.14.0-canary-202404151235-655ec84"
@@ -382,7 +381,9 @@ __metadata:
     graphql: "npm:^16.8.1"
     history: "npm:^5.3.0"
     idb: "npm:^8.0.0"
+    idb-keyval: "npm:^6.2.1"
     image-blob-reduce: "npm:^4.1.0"
+    is-svg: "npm:^5.0.0"
     jotai: "npm:^2.8.0"
     jotai-devtools: "npm:^0.8.0"
     jotai-effect: "npm:^1.0.0"
@@ -404,6 +405,7 @@ __metadata:
     react-virtuoso: "npm:^4.7.8"
     rxjs: "npm:^7.8.1"
     ses: "npm:^1.4.1"
+    socket.io-client: "npm:^4.7.5"
     swr: "npm:2.2.5"
     uuid: "npm:^9.0.1"
     valtio: "npm:^1.13.2"
@@ -769,7 +771,6 @@ __metadata:
     "@affine/cli": "workspace:*"
     "@affine/component": "workspace:*"
     "@affine/i18n": "workspace:*"
-    "@affine/workspace-impl": "workspace:*"
     "@blocksuite/block-std": "npm:0.14.0-canary-202404151235-655ec84"
     "@blocksuite/blocks": "npm:0.14.0-canary-202404151235-655ec84"
     "@blocksuite/global": "npm:0.14.0-canary-202404151235-655ec84"
@@ -852,33 +853,6 @@ __metadata:
   resolution: "@affine/workers@workspace:tools/workers"
   dependencies:
     wrangler: "npm:^3.49.0"
-  languageName: unknown
-  linkType: soft
-
-"@affine/workspace-impl@workspace:*, @affine/workspace-impl@workspace:packages/frontend/workspace-impl":
-  version: 0.0.0-use.local
-  resolution: "@affine/workspace-impl@workspace:packages/frontend/workspace-impl"
-  dependencies:
-    "@affine/debug": "workspace:*"
-    "@affine/electron-api": "workspace:*"
-    "@affine/env": "workspace:*"
-    "@affine/graphql": "workspace:*"
-    "@toeverything/infra": "workspace:*"
-    fake-indexeddb: "npm:^5.0.2"
-    idb: "npm:^8.0.0"
-    idb-keyval: "npm:^6.2.1"
-    is-svg: "npm:^5.0.0"
-    lodash-es: "npm:^4.17.21"
-    nanoid: "npm:^5.0.7"
-    socket.io-client: "npm:^4.7.5"
-    vitest: "npm:1.4.0"
-    ws: "npm:^8.16.0"
-    y-protocols: "npm:^1.0.6"
-    yjs: "npm:^13.6.14"
-  peerDependencies:
-    "@blocksuite/blocks": "*"
-    "@blocksuite/global": "*"
-    "@blocksuite/store": "*"
   languageName: unknown
   linkType: soft
 

@@ -16,7 +16,7 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
 import { DeleteIcon } from '@blocksuite/icons';
 import type { DocMeta } from '@blocksuite/store';
-import { useService, Workspace } from '@toeverything/infra';
+import { useService, WorkspaceService } from '@toeverything/infra';
 import { useCallback } from 'react';
 
 import { ViewBodyIsland, ViewHeaderIsland } from '../../modules/workbench';
@@ -38,7 +38,7 @@ const TrashHeader = () => {
 };
 
 export const TrashPage = () => {
-  const currentWorkspace = useService(Workspace);
+  const currentWorkspace = useService(WorkspaceService).workspace;
   const docCollection = currentWorkspace.docCollection;
   assertExists(docCollection);
 

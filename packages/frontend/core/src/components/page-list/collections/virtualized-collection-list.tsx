@@ -1,7 +1,7 @@
 import { useDeleteCollectionInfo } from '@affine/core/hooks/affine/use-delete-collection-info';
 import type { Collection, DeleteCollectionInfo } from '@affine/env/filter';
 import { Trans } from '@affine/i18n';
-import { useService, Workspace } from '@toeverything/infra';
+import { useService, WorkspaceService } from '@toeverything/infra';
 import type { ReactElement } from 'react';
 import { useCallback, useMemo, useRef, useState } from 'react';
 
@@ -63,7 +63,7 @@ export const VirtualizedCollectionList = ({
     []
   );
   const collectionService = useService(CollectionService);
-  const currentWorkspace = useService(Workspace);
+  const currentWorkspace = useService(WorkspaceService).workspace;
   const info = useDeleteCollectionInfo();
 
   const collectionOperations = useCollectionOperationsRenderer({

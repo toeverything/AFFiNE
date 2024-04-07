@@ -1,12 +1,10 @@
 import {
+  GlobalContextService,
   useLiveData,
   useService,
-  WorkspaceListService,
 } from '@toeverything/infra';
 import { useEffect } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
-
-import { CurrentWorkspaceService } from '../../../../modules/workspace/current-workspace';
 
 export interface DumpInfoProps {
   error: any;
@@ -14,9 +12,8 @@ export interface DumpInfoProps {
 
 export const DumpInfo = (_props: DumpInfoProps) => {
   const location = useLocation();
-  const workspaceList = useService(WorkspaceListService);
-  const currentWorkspace = useLiveData(
-    useService(CurrentWorkspaceService).currentWorkspace$
+  const currentWorkspaceId = useLiveData(
+    useService(GlobalContextService).globalContext.workspaceId.$
   );
   const path = location.pathname;
   const query = useParams();
@@ -24,9 +21,8 @@ export const DumpInfo = (_props: DumpInfoProps) => {
     console.info('DumpInfo', {
       path,
       query,
-      currentWorkspaceId: currentWorkspace?.id,
-      workspaceList,
+      currentWorkspaceId: currentWorkspaceId,
     });
-  }, [path, query, currentWorkspace, workspaceList]);
+  }, [path, query, currentWorkspaceId]);
   return null;
 };
