@@ -17,7 +17,7 @@
     "@types/webpack-env": "^1.18.4",
     "@vanilla-extract/webpack-plugin": "^2.3.7",
     "copy-webpack-plugin": "^12.0.2",
-    "css-loader": "^6.10.0",
+    "css-loader": "^7.0.0",
     "cssnano": "^6.1.0",
     "dotenv": "^16.4.5",
     "html-webpack-plugin": "^5.6.0",
