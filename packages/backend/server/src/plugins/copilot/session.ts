@@ -43,6 +43,14 @@ export class ChatSession implements AsyncDisposable {
     this.state.messages.push(message);
   }
 
+  async getMessageById(messageId: string) {
+    const message = await this.messageCache.get(messageId);
+    if (!message || message.sessionId !== this.state.sessionId) {
+      throw new Error(`Message not found: ${messageId}`);
+    }
+    return message;
+  }
+
   async pushByMessageId(messageId: string) {
     const message = await this.messageCache.get(messageId);
     if (!message || message.sessionId !== this.state.sessionId) {

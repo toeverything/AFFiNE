@@ -24,7 +24,7 @@ import { Public } from '../../core/auth';
 import { CurrentUser } from '../../core/auth/current-user';
 import { CopilotProviderService } from './providers';
 import { ChatSession, ChatSessionService } from './session';
-import { CopilotCapability, CopilotProviderType } from './types';
+import { CopilotCapability } from './types';
 
 export interface ChatEvent {
   type: 'attachment' | 'message';
@@ -38,6 +38,21 @@ export class CopilotController {
     private readonly chatSession: ChatSessionService,
     private readonly provider: CopilotProviderService
   ) {}
+
+  private async hasAttachment(sessionId: string, messageId?: string) {
+    const session = await this.chatSession.get(sessionId);
+    if (!session) {
+      throw new BadRequestException('Session not found');
+    }
+
+    if (messageId) {
+      const message = await session.getMessageById(messageId);
+      if (Array.isArray(message.attachments) && message.attachments.length) {
+        return true;
+      }
+    }
+    return false;
+  }
 
   private async appendSessionMessage(
     sessionId: string,
@@ -180,8 +195,9 @@ export class CopilotController {
     @Query() params: Record<string, string>
   ): Promise<Observable<ChatEvent>> {
     const provider = this.provider.getProviderByCapability(
-      CopilotCapability.ImageToImage,
-      CopilotProviderType.FAL
+      (await this.hasAttachment(sessionId, messageId))
+        ? CopilotCapability.ImageToImage
+        : CopilotCapability.TextToImage
     );
     if (!provider) {
       throw new InternalServerErrorException('No provider available');
