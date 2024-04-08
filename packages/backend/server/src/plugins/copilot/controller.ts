@@ -24,7 +24,7 @@ import { Public } from '../../core/auth';
 import { CurrentUser } from '../../core/auth/current-user';
 import { CopilotProviderService } from './providers';
 import { ChatSession, ChatSessionService } from './session';
-import { CopilotCapability } from './types';
+import { CopilotCapability, CopilotProviderType } from './types';
 
 export interface ChatEvent {
   type: 'attachment' | 'message';
@@ -180,7 +180,8 @@ export class CopilotController {
     @Query() params: Record<string, string>
   ): Promise<Observable<ChatEvent>> {
     const provider = this.provider.getProviderByCapability(
-      CopilotCapability.TextToImage
+      CopilotCapability.ImageToImage,
+      CopilotProviderType.FAL
     );
     if (!provider) {
       throw new InternalServerErrorException('No provider available');

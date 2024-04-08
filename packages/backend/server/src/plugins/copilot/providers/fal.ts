@@ -11,6 +11,10 @@ export type FalConfig = {
   apiKey: string;
 };
 
+export type FalResponse = {
+  images: Array<{ url: string }>;
+};
+
 export class FalProvider implements CopilotImageToImageProvider {
   static readonly type = CopilotProviderType.FAL;
   static readonly capabilities = [CopilotCapability.ImageToImage];
@@ -53,7 +57,7 @@ export class FalProvider implements CopilotImageToImageProvider {
       throw new Error('Attachments is required');
     }
 
-    const data = await fetch(`https://${model}.gateway.alpha.fal.ai/`, {
+    const data = (await fetch(`https://${model}.gateway.alpha.fal.ai/`, {
       method: 'POST',
       headers: {
         Authorization: `key ${this.config.apiKey}`,
@@ -67,9 +71,9 @@ export class FalProvider implements CopilotImageToImageProvider {
         enable_safety_checks: false,
       }),
       signal: options.signal,
-    }).then(res => res.json());
+    }).then(res => res.json())) as FalResponse;
 
-    return data.images[0].url;
+    return data.images.map(image => image.url);
   }
 
   async *generateImagesStream(

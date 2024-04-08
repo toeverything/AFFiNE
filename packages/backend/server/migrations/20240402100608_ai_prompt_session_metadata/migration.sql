@@ -26,6 +26,7 @@ CREATE TABLE "ai_prompts_messages" (
     "idx" INTEGER NOT NULL,
     "role" "AiPromptRole" NOT NULL,
     "content" TEXT NOT NULL,
+    "attachments" JSON,
     "params" JSON,
     "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -47,6 +48,8 @@ CREATE TABLE "ai_sessions_messages" (
     "session_id" VARCHAR(36) NOT NULL,
     "role" "AiPromptRole" NOT NULL,
     "content" TEXT NOT NULL,
+    "attachments" JSON,
+    "params" JSON,
     "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMPTZ(6) NOT NULL,
 
