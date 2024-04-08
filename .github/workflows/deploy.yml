@@ -135,6 +135,7 @@ jobs:
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           CAPTCHA_TURNSTILE_SECRET: ${{ secrets.CAPTCHA_TURNSTILE_SECRET }}
           COPILOT_OPENAI_API_KEY: ${{ secrets.COPILOT_OPENAI_API_KEY }}
+          COPILOT_FAL_API_KEY: ${{ secrets.COPILOT_FAL_API_KEY }}
           MAILER_SENDER: ${{ secrets.OAUTH_EMAIL_SENDER }}
           MAILER_USER: ${{ secrets.OAUTH_EMAIL_LOGIN }}
           MAILER_PASSWORD: ${{ secrets.OAUTH_EMAIL_PASSWORD }}

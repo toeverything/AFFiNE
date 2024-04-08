@@ -13,7 +13,7 @@ import type { ChatPrompt } from './prompt';
 export interface CopilotConfig {
   openai: OpenAIClientOptions;
   fal: {
-    secret: string;
+    apiKey: string;
   };
 }
 
@@ -219,7 +219,24 @@ export interface CopilotImageToTextProvider extends CopilotProvider {
   ): AsyncIterable<string>;
 }
 
-export interface CopilotImageToImageProvider extends CopilotProvider {}
+export interface CopilotImageToImageProvider extends CopilotProvider {
+  generateImages(
+    messages: PromptMessage[],
+    model: string,
+    options: {
+      signal?: AbortSignal;
+      user?: string;
+    }
+  ): Promise<Array<string>>;
+  generateImagesStream(
+    messages: PromptMessage[],
+    model?: string,
+    options?: {
+      signal?: AbortSignal;
+      user?: string;
+    }
+  ): AsyncIterable<string>;
+}
 
 export type CapabilityToCopilotProvider = {
   [CopilotCapability.TextToText]: CopilotTextToTextProvider;

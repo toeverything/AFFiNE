@@ -20,6 +20,7 @@ AFFiNE.ENV_MAP = {
   THROTTLE_TTL: ['rateLimiter.ttl', 'int'],
   THROTTLE_LIMIT: ['rateLimiter.limit', 'int'],
   COPILOT_OPENAI_API_KEY: 'plugins.copilot.openai.apiKey',
+  COPILOT_FAL_API_KEY: 'plugins.copilot.fal.apiKey',
   REDIS_SERVER_HOST: 'plugins.redis.host',
   REDIS_SERVER_PORT: ['plugins.redis.port', 'int'],
   REDIS_SERVER_USER: 'plugins.redis.username',

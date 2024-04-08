@@ -8,12 +8,14 @@ import { PromptService } from './prompt';
 import {
   assertProvidersConfigs,
   CopilotProviderService,
+  FalProvider,
   OpenAIProvider,
   registerCopilotProvider,
 } from './providers';
 import { CopilotResolver, UserCopilotResolver } from './resolver';
 import { ChatSessionService } from './session';
 
+registerCopilotProvider(FalProvider);
 registerCopilotProvider(OpenAIProvider);
 
 @Plugin({

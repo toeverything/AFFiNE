@@ -38,9 +38,15 @@ export const prompts: Prompt[] = [
     messages: [],
   },
   {
+    name: 'debug:action:fal-sd15',
+    action: 'image',
+    model: '110602490-lcm-sd15-i2i',
+    messages: [],
+  },
+  {
     name: 'Summary',
     action: 'text',
-    model: 'gpt-3.5-turbo',
+    model: 'gpt-4-turbo-preview',
     messages: [
       {
         role: 'assistant',
@@ -52,7 +58,7 @@ export const prompts: Prompt[] = [
   {
     name: 'Summary the webpage',
     action: 'text',
-    model: 'gpt-3.5-turbo',
+    model: 'gpt-4-turbo-preview',
     messages: [
       {
         role: 'assistant',
@@ -64,7 +70,7 @@ export const prompts: Prompt[] = [
   {
     name: 'Explain this image',
     action: 'text',
-    model: 'gpt-3.5-turbo',
+    model: 'gpt-4-turbo-preview',
     messages: [
       {
         role: 'assistant',
@@ -76,7 +82,7 @@ export const prompts: Prompt[] = [
   {
     name: 'Explain this code',
     action: 'text',
-    model: 'gpt-3.5-turbo',
+    model: 'gpt-4-turbo-preview',
     messages: [
       {
         role: 'assistant',
@@ -88,7 +94,7 @@ export const prompts: Prompt[] = [
   {
     name: 'Translate to',
     action: 'text',
-    model: 'gpt-3.5-turbo',
+    model: 'gpt-4-turbo-preview',
     messages: [
       {
         role: 'assistant',
@@ -114,7 +120,7 @@ export const prompts: Prompt[] = [
   {
     name: 'Write an article about this',
     action: 'text',
-    model: 'gpt-3.5-turbo',
+    model: 'gpt-4-turbo-preview',
     messages: [
       {
         role: 'assistant',
@@ -125,7 +131,7 @@ export const prompts: Prompt[] = [
   {
     name: 'Write a twitter about this',
     action: 'text',
-    model: 'gpt-3.5-turbo',
+    model: 'gpt-4-turbo-preview',
     messages: [
       {
         role: 'assistant',
@@ -136,7 +142,7 @@ export const prompts: Prompt[] = [
   {
     name: 'Write a poem about this',
     action: 'text',
-    model: 'gpt-3.5-turbo',
+    model: 'gpt-4-turbo-preview',
     messages: [
       {
         role: 'assistant',
@@ -147,7 +153,7 @@ export const prompts: Prompt[] = [
   {
     name: 'Write a blog post about this',
     action: 'text',
-    model: 'gpt-3.5-turbo',
+    model: 'gpt-4-turbo-preview',
     messages: [
       {
         role: 'assistant',
@@ -158,7 +164,7 @@ export const prompts: Prompt[] = [
   {
     name: 'Change tone to',
     action: 'text',
-    model: 'gpt-3.5-turbo',
+    model: 'gpt-4-turbo-preview',
     messages: [
       {
         role: 'assistant',
@@ -171,7 +177,7 @@ export const prompts: Prompt[] = [
   {
     name: 'Brainstorm ideas about this',
     action: 'text',
-    model: 'gpt-3.5-turbo',
+    model: 'gpt-4-turbo-preview',
     messages: [
       {
         role: 'assistant',
@@ -183,7 +189,7 @@ export const prompts: Prompt[] = [
   {
     name: 'Improve writing for it',
     action: 'text',
-    model: 'gpt-3.5-turbo',
+    model: 'gpt-4-turbo-preview',
     messages: [
       {
         role: 'assistant',
@@ -195,7 +201,7 @@ export const prompts: Prompt[] = [
   {
     name: 'Improve grammar for it',
     action: 'text',
-    model: 'gpt-3.5-turbo',
+    model: 'gpt-4-turbo-preview',
     messages: [
       {
         role: 'assistant',
@@ -207,7 +213,7 @@ export const prompts: Prompt[] = [
   {
     name: 'Fix spelling for it',
     action: 'text',
-    model: 'gpt-3.5-turbo',
+    model: 'gpt-4-turbo-preview',
     messages: [
       {
         role: 'assistant',
@@ -233,7 +239,7 @@ export const prompts: Prompt[] = [
   {
     name: 'Find action items from it',
     action: 'todo-list',
-    model: 'gpt-3.5-turbo',
+    model: 'gpt-4-turbo-preview',
     messages: [
       {
         role: 'assistant',
@@ -245,7 +251,7 @@ export const prompts: Prompt[] = [
   {
     name: 'Check code error',
     action: 'text',
-    model: 'gpt-3.5-turbo',
+    model: 'gpt-4-turbo-preview',
     messages: [
       {
         role: 'assistant',
@@ -257,7 +263,7 @@ export const prompts: Prompt[] = [
   {
     name: 'Create a presentation',
     action: 'text',
-    model: 'gpt-3.5-turbo',
+    model: 'gpt-4-turbo-preview',
     messages: [
       {
         role: 'assistant',
@@ -269,7 +275,7 @@ export const prompts: Prompt[] = [
   {
     name: 'Create headings',
     action: 'text',
-    model: 'gpt-3.5-turbo',
+    model: 'gpt-4-turbo-preview',
     messages: [
       {
         role: 'assistant',

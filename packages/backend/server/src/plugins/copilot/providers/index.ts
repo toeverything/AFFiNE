@@ -134,4 +134,5 @@ export class CopilotProviderService {
   }
 }
 
+export { FalProvider } from './fal';
 export { OpenAIProvider } from './openai';
