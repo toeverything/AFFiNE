@@ -5,6 +5,7 @@ import {
   Menu,
   MenuIcon,
   MenuItem,
+  Skeleton,
 } from '@affine/component';
 import {
   authAtom,
@@ -25,7 +26,7 @@ import {
 } from '@blocksuite/icons';
 import { assignInlineVars } from '@vanilla-extract/dynamic';
 import { useSetAtom } from 'jotai';
-import { useCallback } from 'react';
+import { Suspense, useCallback } from 'react';
 
 import * as styles from './index.css';
 import { UnknownUserIcon } from './unknow-user';
@@ -155,12 +156,27 @@ const CloudUsage = () => {
   );
 };
 
-const OperationMenu = () => {
+const MenuFallback = () => {
   return (
     <>
+      <div>
+        <Skeleton height={15} width={50} />
+        <Skeleton height={10} style={{ marginTop: 4 }} />
+      </div>
+      <Divider />
+      <Skeleton height={30} />
+      <Divider />
+      <Skeleton height={30} />
+    </>
+  );
+};
+
+const OperationMenu = () => {
+  return (
+    <Suspense fallback={<MenuFallback />}>
       <CloudUsage />
       <Divider />
       <AccountMenu />
-    </>
+    </Suspense>
   );
 };
