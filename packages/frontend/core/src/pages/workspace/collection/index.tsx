@@ -69,30 +69,29 @@ export const Component = function CollectionPage() {
   const params = useParams();
   const workspace = useService(Workspace);
   const collection = collections.find(v => v.id === params.collectionId);
+
+  const notifyCollectionDeleted = useCallback(() => {
+    navigate.jumpToSubPath(workspace.id, WorkspaceSubPath.ALL);
+    const collection = collectionService.collectionsTrash$.value.find(
+      v => v.collection.id === params.collectionId
+    );
+    let text = 'Collection does not exist';
+    if (collection) {
+      if (collection.userId) {
+        text = `${collection.collection.name} has been deleted by ${collection.userName}`;
+      } else {
+        text = `${collection.collection.name} has been deleted`;
+      }
+    }
+    return notify.error({ title: text });
+  }, [collectionService, navigate, params.collectionId, workspace.id]);
+
   useEffect(() => {
     if (!collection) {
-      navigate.jumpToSubPath(workspace.id, WorkspaceSubPath.ALL);
-      const collection = collectionService.collectionsTrash$.value.find(
-        v => v.collection.id === params.collectionId
-      );
-      let text = 'Collection does not exist';
-      if (collection) {
-        if (collection.userId) {
-          text = `${collection.collection.name} has been deleted by ${collection.userName}`;
-        } else {
-          text = `${collection.collection.name} has been deleted`;
-        }
-      }
-      notify.error({ title: text });
+      notifyCollectionDeleted();
     }
-  }, [
-    collection,
-    collectionService.collectionsTrash$.value,
-    navigate,
-    params.collectionId,
-    workspace.docCollection,
-    workspace.id,
-  ]);
+  }, [collection, notifyCollectionDeleted]);
+
   if (!collection) {
     return null;
   }
