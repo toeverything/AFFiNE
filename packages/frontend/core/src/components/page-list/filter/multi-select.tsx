@@ -1,5 +1,6 @@
-import { Menu, MenuItem, Scrollable } from '@affine/component';
+import { Menu, MenuItem, Scrollable, Tooltip } from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import clsx from 'clsx';
 import type { MouseEvent } from 'react';
 import { useMemo } from 'react';
 
@@ -21,6 +22,11 @@ export const MultiSelect = ({
   const optionMap = useMemo(
     () => Object.fromEntries(options.map(v => [v.value, v])),
     [options]
+  );
+
+  const content = useMemo(
+    () => value.map(id => optionMap[id]?.label).join(', '),
+    [optionMap, value]
   );
 
   const items = useMemo(() => {
@@ -67,15 +73,19 @@ export const MultiSelect = ({
   return (
     <Menu items={items}>
       <div className={styles.content}>
-        {value.length ? (
-          <div className={styles.text}>
-            {value.map(id => optionMap[id]?.label).join(', ')}
-          </div>
-        ) : (
-          <div style={{ color: 'var(--affine-text-secondary-color)' }}>
-            {t['com.affine.filter.empty-tag']()}
-          </div>
-        )}
+        <Tooltip
+          content={
+            content.length ? content : t['com.affine.filter.empty-tag']()
+          }
+        >
+          {value.length ? (
+            <div className={styles.text}>{content}</div>
+          ) : (
+            <div className={clsx(styles.text, 'empty')}>
+              {t['com.affine.filter.empty-tag']()}
+            </div>
+          )}
+        </Tooltip>
       </div>
     </Menu>
   );

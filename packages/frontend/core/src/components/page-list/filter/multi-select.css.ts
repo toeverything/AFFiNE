@@ -16,6 +16,11 @@ export const text = style({
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',
   maxWidth: 350,
+  selectors: {
+    '&.empty': {
+      color: 'var(--affine-text-secondary-color)',
+    },
+  },
 });
 export const optionList = style({
   display: 'flex',

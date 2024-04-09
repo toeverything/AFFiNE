@@ -1,5 +1,7 @@
+import { Tooltip } from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 
+import { ellipsisTextStyle } from './index.css';
 type FilterTagProps = {
   name: string;
 };
@@ -49,5 +51,11 @@ const useFilterTag = ({ name }: FilterTagProps) => {
 export const FilterTag = ({ name }: FilterTagProps) => {
   const tag = useFilterTag({ name });
 
-  return <span data-testid={`filler-tag-${tag}`}>{tag}</span>;
+  return (
+    <Tooltip content={tag}>
+      <span className={ellipsisTextStyle} data-testid={`filler-tag-${tag}`}>
+        {tag}
+      </span>
+    </Tooltip>
+  );
 };
