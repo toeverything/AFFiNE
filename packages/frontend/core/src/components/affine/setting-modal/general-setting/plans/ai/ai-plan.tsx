@@ -1,9 +1,7 @@
-import { useCurrentLoginStatus } from '@affine/core/hooks/affine/use-current-login-status';
 import {
   type SubscriptionMutator,
   useUserSubscription,
 } from '@affine/core/hooks/use-subscription';
-import { timestampToLocalDate } from '@affine/core/utils';
 import {
   type PricesQuery,
   SubscriptionPlan,
@@ -13,42 +11,27 @@ import {
 import { AIPlanLayout } from '../layout';
 import * as styles from './ai-plan.css';
 import { AIBenefits } from './benefits';
-import { AICancel } from './cancel';
-import { AILogin } from './login';
-import { AIResume } from './resume';
-import { AISubscribe } from './subscribe';
 import type { BaseActionProps } from './types';
+import { useAffineAISubscription } from './use-affine-ai-subscription';
 
 interface AIPlanProps {
   price?: PricesQuery['prices'][number];
   onSubscriptionUpdate: SubscriptionMutator;
 }
 export const AIPlan = ({ price, onSubscriptionUpdate }: AIPlanProps) => {
-  const plan = SubscriptionPlan.AI;
   const recurring = SubscriptionRecurring.Yearly;
 
-  const loggedIn = useCurrentLoginStatus() === 'authenticated';
-
-  const [subscription] = useUserSubscription(plan);
+  const { Action, billingTip } = useAffineAISubscription();
+  const [subscription] = useUserSubscription(SubscriptionPlan.AI);
 
   // yearly subscription should always be available
   if (!price?.yearlyAmount) return null;
 
   const baseActionProps: BaseActionProps = {
-    plan,
     price,
     recurring,
     onSubscriptionUpdate,
   };
-  const isCancelled = !!subscription?.canceledAt;
-
-  const Action = !loggedIn
-    ? AILogin
-    : !subscription
-      ? AISubscribe
-      : isCancelled
-        ? AIResume
-        : AICancel;
 
   return (
     <AIPlanLayout
@@ -70,9 +53,9 @@ export const AIPlan = ({ price, onSubscriptionUpdate }: AIPlanProps) => {
         </div>
 
         <div className={styles.actionBlock}>
-          <Action {...baseActionProps} />
-          {subscription?.nextBillAt ? (
-            <PurchasedTip due={timestampToLocalDate(subscription.nextBillAt)} />
+          <Action {...baseActionProps} className={styles.purchaseButton} />
+          {billingTip ? (
+            <div className={styles.agreement}>{billingTip}</div>
           ) : null}
         </div>
 
@@ -81,9 +64,3 @@ export const AIPlan = ({ price, onSubscriptionUpdate }: AIPlanProps) => {
     </AIPlanLayout>
   );
 };
-
-const PurchasedTip = ({ due }: { due: string }) => (
-  <div className={styles.agreement}>
-    You have purchased AFFiNE AI. The next payment date is {due}.
-  </div>
-);

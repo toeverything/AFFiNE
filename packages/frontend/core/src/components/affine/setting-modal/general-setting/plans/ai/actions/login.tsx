@@ -1,9 +1,11 @@
-import { Button } from '@affine/component';
+import { Button, type ButtonProps } from '@affine/component';
 import { authAtom } from '@affine/core/atoms';
 import { useSetAtom } from 'jotai';
 import { useCallback } from 'react';
 
-export const AILogin = () => {
+import type { BaseActionProps } from '../types';
+
+export const AILogin = (btnProps: BaseActionProps & ButtonProps) => {
   const setOpen = useSetAtom(authAtom);
 
   const onClickSignIn = useCallback(() => {
@@ -13,5 +15,9 @@ export const AILogin = () => {
     }));
   }, [setOpen]);
 
-  return <Button onClick={onClickSignIn}>Login</Button>;
+  return (
+    <Button onClick={onClickSignIn} type="primary" {...btnProps}>
+      Login
+    </Button>
+  );
 };

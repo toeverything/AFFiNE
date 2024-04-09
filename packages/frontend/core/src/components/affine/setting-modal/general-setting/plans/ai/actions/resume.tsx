@@ -1,18 +1,25 @@
-import { Button, notify, useConfirmModal } from '@affine/component';
+import {
+  Button,
+  type ButtonProps,
+  notify,
+  useConfirmModal,
+} from '@affine/component';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { useMutation } from '@affine/core/hooks/use-mutation';
-import { resumeSubscriptionMutation } from '@affine/graphql';
+import { resumeSubscriptionMutation, SubscriptionPlan } from '@affine/graphql';
 import { SingleSelectSelectSolidIcon } from '@blocksuite/icons';
 import { cssVar } from '@toeverything/theme';
 import { nanoid } from 'nanoid';
 import { useState } from 'react';
 
-import { purchaseButton } from './ai-plan.css';
-import type { BaseActionProps } from './types';
+import type { BaseActionProps } from '../types';
 
-interface AIResumeProps extends BaseActionProps {}
+export interface AIResumeProps extends BaseActionProps, ButtonProps {}
 
-export const AIResume = ({ plan, onSubscriptionUpdate }: AIResumeProps) => {
+export const AIResume = ({
+  onSubscriptionUpdate,
+  ...btnProps
+}: AIResumeProps) => {
   const [idempotencyKey, setIdempotencyKey] = useState(nanoid());
 
   const { isMutating, trigger } = useMutation({
@@ -31,7 +38,7 @@ export const AIResume = ({ plan, onSubscriptionUpdate }: AIResumeProps) => {
       },
       onConfirm: async () => {
         await trigger(
-          { idempotencyKey, plan },
+          { idempotencyKey, plan: SubscriptionPlan.AI },
           {
             onSuccess: data => {
               // refresh idempotency key
@@ -51,15 +58,10 @@ export const AIResume = ({ plan, onSubscriptionUpdate }: AIResumeProps) => {
         );
       },
     });
-  }, [openConfirmModal, trigger, idempotencyKey, plan, onSubscriptionUpdate]);
+  }, [openConfirmModal, trigger, idempotencyKey, onSubscriptionUpdate]);
 
   return (
-    <Button
-      loading={isMutating}
-      onClick={resume}
-      className={purchaseButton}
-      type="primary"
-    >
+    <Button loading={isMutating} onClick={resume} type="primary" {...btnProps}>
       Resume
     </Button>
   );

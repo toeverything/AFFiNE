@@ -21,6 +21,7 @@ import {
 } from '@affine/graphql';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { assertExists } from '@blocksuite/global/utils';
 import { ArrowRightSmallIcon } from '@blocksuite/icons';
 import { useSetAtom } from 'jotai';
 import { Suspense, useCallback, useMemo, useState } from 'react';
@@ -34,6 +35,8 @@ import { useUserSubscription } from '../../../../../hooks/use-subscription';
 import { mixpanel, popupWindow } from '../../../../../utils';
 import { SWRErrorBoundary } from '../../../../pure/swr-error-bundary';
 import { CancelAction, ResumeAction } from '../plans/actions';
+import { useAffineAIPrice } from '../plans/ai/use-affine-ai-price';
+import { useAffineAISubscription } from '../plans/ai/use-affine-ai-subscription';
 import * as styles from './style.css';
 
 enum DescriptionI18NKey {
@@ -93,6 +96,11 @@ export const BillingSettings = () => {
 const SubscriptionSettings = () => {
   const [subscription, mutateSubscription] = useUserSubscription();
   const [openCancelModal, setOpenCancelModal] = useState(false);
+  const {
+    actionType: aiActionType,
+    Action: AIAction,
+    billingTip,
+  } = useAffineAISubscription();
 
   const { data: pricesQueryResult } = useQuery({
     query: pricesQuery,
@@ -102,6 +110,10 @@ const SubscriptionSettings = () => {
   const recurring = subscription?.recurring ?? SubscriptionRecurring.Monthly;
 
   const price = pricesQueryResult.prices.find(price => price.plan === plan);
+  const aiPrice = pricesQueryResult.prices.find(
+    price => price.plan === SubscriptionPlan.AI
+  );
+  assertExists(aiPrice);
   const amount =
     plan === SubscriptionPlan.Free
       ? '0'
@@ -111,6 +123,8 @@ const SubscriptionSettings = () => {
           : String((price.yearlyAmount ?? 0) / 100)
         : '?';
 
+  const { priceReadable: aiPriceReadable, priceFrequency: aiPriceFrequency } =
+    useAffineAIPrice(aiPrice);
   const t = useAFFiNEI18N();
 
   const setOpenSettingModalAtom = useSetAtom(openSettingModalAtom);
@@ -165,6 +179,30 @@ const SubscriptionSettings = () => {
               ? t['com.affine.payment.billing-setting.month']()
               : t['com.affine.payment.billing-setting.year']()}
           </span>
+        </p>
+      </div>
+
+      <div className={styles.planCard} style={{ marginTop: 24 }}>
+        <div className={styles.currentPlan}>
+          <SettingRow
+            spreadCol={false}
+            name={t['com.affine.payment.billing-setting.ai-plan']()}
+            desc={billingTip}
+          />
+          {aiPrice?.yearlyAmount ? (
+            <AIAction
+              className={styles.planAction}
+              price={aiPrice}
+              recurring={SubscriptionRecurring.Yearly}
+              onSubscriptionUpdate={mutateSubscription}
+            >
+              {aiActionType === 'subscribe' ? 'Purchase' : null}
+            </AIAction>
+          ) : null}
+        </div>
+        <p className={styles.planPrice}>
+          {aiPriceReadable}
+          <span className={styles.billingFrequency}>/{aiPriceFrequency}</span>
         </p>
       </div>
       {subscription?.status === SubscriptionStatus.Active && (
@@ -365,6 +403,13 @@ const InvoiceLine = ({
     }
   }, [invoice.link]);
 
+  const planText =
+    invoice.plan === SubscriptionPlan.AI
+      ? 'AFFiNE AI'
+      : invoice.plan === SubscriptionPlan.Pro
+        ? 'AFFiNE Cloud'
+        : null;
+
   return (
     <SettingRow
       key={invoice.id}
@@ -374,7 +419,7 @@ const InvoiceLine = ({
         invoice.status === InvoiceStatus.Paid
           ? t['com.affine.payment.billing-setting.paid']()
           : ''
-      } $${invoice.amount / 100}`}
+      } $${invoice.amount / 100} - ${planText}`}
     >
       <Button className={styles.button} onClick={open}>
         {t['com.affine.payment.billing-setting.view-invoice']()}

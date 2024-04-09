@@ -1,23 +1,27 @@
-import { Button } from '@affine/component';
+import { Button, type ButtonProps } from '@affine/component';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { useMutation } from '@affine/core/hooks/use-mutation';
 import { popupWindow } from '@affine/core/utils';
-import { createCheckoutSessionMutation } from '@affine/graphql';
+import {
+  createCheckoutSessionMutation,
+  SubscriptionPlan,
+} from '@affine/graphql';
 import { nanoid } from 'nanoid';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 
-import { purchaseButton } from './ai-plan.css';
-import type { BaseActionProps } from './types';
+import type { BaseActionProps } from '../types';
+import { useAffineAIPrice } from '../use-affine-ai-price';
 
-interface AISubscribeProps extends BaseActionProps {}
+export interface AISubscribeProps extends BaseActionProps, ButtonProps {}
 
 export const AISubscribe = ({
   price,
-  plan,
   recurring,
   onSubscriptionUpdate,
+  ...btnProps
 }: AISubscribeProps) => {
   const idempotencyKey = useMemo(() => `${nanoid()}-${recurring}`, [recurring]);
+  const { priceReadable, priceFrequency } = useAffineAIPrice(price);
 
   const newTabRef = useRef<Window | null>(null);
 
@@ -45,7 +49,7 @@ export const AISubscribe = ({
         input: {
           recurring,
           idempotencyKey,
-          plan,
+          plan: SubscriptionPlan.AI,
           coupon: null,
           successCallbackLink: null,
         },
@@ -60,7 +64,7 @@ export const AISubscribe = ({
         },
       }
     );
-  }, [idempotencyKey, onClose, plan, recurring, trigger]);
+  }, [idempotencyKey, onClose, recurring, trigger]);
 
   if (!price.yearlyAmount) return null;
 
@@ -68,10 +72,10 @@ export const AISubscribe = ({
     <Button
       loading={isMutating}
       onClick={subscribe}
-      className={purchaseButton}
       type="primary"
+      {...btnProps}
     >
-      ${(price.yearlyAmount / 100).toFixed(2)} / Year
+      {btnProps.children ?? `${priceReadable} / ${priceFrequency}`}
     </Button>
   );
 };

@@ -1,15 +1,17 @@
-import { Button, useConfirmModal } from '@affine/component';
+import { Button, type ButtonProps, useConfirmModal } from '@affine/component';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { useMutation } from '@affine/core/hooks/use-mutation';
-import { cancelSubscriptionMutation } from '@affine/graphql';
+import { cancelSubscriptionMutation, SubscriptionPlan } from '@affine/graphql';
 import { nanoid } from 'nanoid';
 import { useState } from 'react';
 
-import { purchaseButton } from './ai-plan.css';
-import type { BaseActionProps } from './types';
+import type { BaseActionProps } from '../types';
 
-interface AICancelProps extends BaseActionProps {}
-export const AICancel = ({ plan, onSubscriptionUpdate }: AICancelProps) => {
+export interface AICancelProps extends BaseActionProps, ButtonProps {}
+export const AICancel = ({
+  onSubscriptionUpdate,
+  ...btnProps
+}: AICancelProps) => {
   const [idempotencyKey, setIdempotencyKey] = useState(nanoid());
   const { trigger, isMutating } = useMutation({
     mutation: cancelSubscriptionMutation,
@@ -32,7 +34,7 @@ export const AICancel = ({ plan, onSubscriptionUpdate }: AICancelProps) => {
       },
       onConfirm: async () => {
         await trigger(
-          { idempotencyKey, plan },
+          { idempotencyKey, plan: SubscriptionPlan.AI },
           {
             onSuccess: data => {
               // refresh idempotency key
@@ -43,15 +45,10 @@ export const AICancel = ({ plan, onSubscriptionUpdate }: AICancelProps) => {
         );
       },
     });
-  }, [openConfirmModal, trigger, idempotencyKey, plan, onSubscriptionUpdate]);
+  }, [openConfirmModal, trigger, idempotencyKey, onSubscriptionUpdate]);
 
   return (
-    <Button
-      onClick={cancel}
-      loading={isMutating}
-      className={purchaseButton}
-      type="primary"
-    >
+    <Button onClick={cancel} loading={isMutating} type="primary" {...btnProps}>
       Cancel subscription
     </Button>
   );
