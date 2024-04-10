@@ -251,41 +251,6 @@ mutation removeEarlyAccess($email: String!) {
 }`,
 };
 
-export const getCopilotAnonymousHistoriesQuery = {
-  id: 'getCopilotAnonymousHistoriesQuery' as const,
-  operationName: 'getCopilotAnonymousHistories',
-  definitionName: 'copilotAnonymous',
-  containsFile: false,
-  query: `
-query getCopilotAnonymousHistories($workspaceId: String!, $docId: String, $options: QueryChatHistoriesInput) {
-  copilotAnonymous(workspaceId: $workspaceId) {
-    histories(docId: $docId, options: $options) {
-      sessionId
-      tokens
-      messages {
-        role
-        content
-        attachments
-      }
-    }
-  }
-}`,
-};
-
-export const getCopilotAnonymousSessionsQuery = {
-  id: 'getCopilotAnonymousSessionsQuery' as const,
-  operationName: 'getCopilotAnonymousSessions',
-  definitionName: 'copilotAnonymous',
-  containsFile: false,
-  query: `
-query getCopilotAnonymousSessions($workspaceId: String!) {
-  copilotAnonymous(workspaceId: $workspaceId) {
-    chats
-    actions
-  }
-}`,
-};
-
 export const getCopilotHistoriesQuery = {
   id: 'getCopilotHistoriesQuery' as const,
   operationName: 'getCopilotHistories',
@@ -302,7 +267,26 @@ query getCopilotHistories($workspaceId: String!, $docId: String, $options: Query
           role
           content
           attachments
+          createdAt
         }
+      }
+    }
+  }
+}`,
+};
+
+export const getCopilotQuotaQuery = {
+  id: 'getCopilotQuotaQuery' as const,
+  operationName: 'getCopilotQuota',
+  definitionName: 'currentUser',
+  containsFile: false,
+  query: `
+query getCopilotQuota($workspaceId: String!, $docId: String!) {
+  currentUser {
+    copilot {
+      quota {
+        limit
+        used
       }
     }
   }
@@ -318,8 +302,8 @@ export const getCopilotSessionsQuery = {
 query getCopilotSessions($workspaceId: String!) {
   currentUser {
     copilot(workspaceId: $workspaceId) {
-      chats
       actions
+      chats
     }
   }
 }`,

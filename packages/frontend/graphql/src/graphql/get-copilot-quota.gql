@@ -1,0 +1,10 @@
+query getCopilotQuota($workspaceId: String!, $docId: String!) {
+  currentUser {
+    copilot {
+      quota {
+        limit
+        used
+      }
+    }
+  }
+}

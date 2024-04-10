@@ -38,16 +38,16 @@ export class ChatPrompt {
   ) {
     return new ChatPrompt(
       options.name,
-      options.action,
-      options.model,
+      options.action || undefined,
+      options.model || undefined,
       options.messages
     );
   }
 
   constructor(
     public readonly name: string,
-    public readonly action: string | null,
-    public readonly model: string | null,
+    public readonly action: string | undefined,
+    public readonly model: string | undefined,
     private readonly messages: PromptMessage[]
   ) {
     this.encoder = getTokenEncoder(model);

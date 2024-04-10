@@ -2,6 +2,51 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+type ChatMessage {
+  attachments: [String!]
+  content: String!
+  createdAt: DateTime
+  role: String!
+}
+
+type Copilot {
+  """Get the session list of actions in the workspace"""
+  actions: [String!]!
+
+  """Get the session list of chats in the workspace"""
+  chats: [String!]!
+  histories(docId: String, options: QueryChatHistoriesInput): [CopilotHistories!]!
+
+  """Get the quota of the user in the workspace"""
+  quota: CopilotQuota!
+  workspaceId: ID
+}
+
+type CopilotHistories {
+  """An mark identifying which view to use to display the session"""
+  action: String!
+  messages: [ChatMessage!]!
+  sessionId: String!
+
+  """The number of tokens used in the session"""
+  tokens: Int!
+}
+
+type CopilotQuota {
+  limit: SafeInt!
+  used: SafeInt!
+}
+
+input CreateChatSessionInput {
+  """An mark identifying which view to use to display the session"""
+  action: String
+  docId: String!
+
+  """The prompt name to use for the session"""
+  promptName: String!
+  workspaceId: String!
+}
+
 input CreateCheckoutSessionInput {
   coupon: String
   idempotencyKey: String!
@@ -122,6 +167,9 @@ type Mutation {
   """Create a subscription checkout link of stripe"""
   createCheckoutSession(input: CreateCheckoutSessionInput!): String!
 
+  """Create a chat session"""
+  createCopilotSession(options: CreateChatSessionInput!): String!
+
   """Create a stripe customer portal to manage payment methods"""
   createCustomerPortal: String!
 
@@ -221,6 +269,13 @@ type Query {
 
   """Get all accessible workspaces for current user"""
   workspaces: [WorkspaceType!]!
+}
+
+input QueryChatHistoriesInput {
+  action: Boolean
+  limit: Int
+  sessionId: String
+  skip: Int
 }
 
 type QuotaQueryType {
@@ -380,6 +435,7 @@ type UserSubscription {
 type UserType {
   """User avatar url"""
   avatarUrl: String
+  copilot(workspaceId: String): Copilot!
 
   """User email verified"""
   createdAt: DateTime @deprecated(reason: "useless")
