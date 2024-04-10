@@ -5,22 +5,31 @@ import { ClientOptions, OpenAI } from 'openai';
 import {
   ChatMessageRole,
   CopilotCapability,
+  CopilotImageToTextProvider,
   CopilotProviderType,
   CopilotTextToEmbeddingProvider,
+  CopilotTextToImageProvider,
   CopilotTextToTextProvider,
   PromptMessage,
 } from '../types';
 
 const DEFAULT_DIMENSIONS = 256;
 
+const SIMPLE_IMAGE_URL_REGEX = /^(https?:\/\/|data:image\/)/;
+
 export class OpenAIProvider
-  implements CopilotTextToTextProvider, CopilotTextToEmbeddingProvider
+  implements
+    CopilotTextToTextProvider,
+    CopilotTextToEmbeddingProvider,
+    CopilotTextToImageProvider,
+    CopilotImageToTextProvider
 {
   static readonly type = CopilotProviderType.OpenAI;
   static readonly capabilities = [
     CopilotCapability.TextToText,
     CopilotCapability.TextToEmbedding,
     CopilotCapability.TextToImage,
+    CopilotCapability.ImageToText,
   ];
 
   readonly availableModels = [
@@ -35,6 +44,8 @@ export class OpenAIProvider
     // moderation
     'text-moderation-latest',
     'text-moderation-stable',
+    // text to image
+    'dall-e-3',
   ];
 
   private readonly instance: OpenAI;
@@ -52,12 +63,29 @@ export class OpenAIProvider
     return OpenAIProvider.capabilities;
   }
 
-  private chatToGPTMessage(messages: PromptMessage[]) {
+  private chatToGPTMessage(
+    messages: PromptMessage[]
+  ): OpenAI.Chat.Completions.ChatCompletionMessageParam[] {
     // filter redundant fields
-    return messages.map(message => ({
-      role: message.role,
-      content: message.content,
-    }));
+    return messages.map(({ role, content, attachments }) => {
+      if (Array.isArray(attachments)) {
+        const contents = [
+          { type: 'text', text: content },
+          ...attachments
+            .filter(url => SIMPLE_IMAGE_URL_REGEX.test(url))
+            .map(url => ({
+              type: 'image_url',
+              image_url: { url, detail: 'low' },
+            })),
+        ];
+        return {
+          role,
+          content: contents,
+        } as OpenAI.Chat.Completions.ChatCompletionMessageParam;
+      } else {
+        return { role, content };
+      }
+    });
   }
 
   private checkParams({
@@ -193,5 +221,45 @@ export class OpenAIProvider
       user: options.user,
     });
     return result.data.map(e => e.embedding);
+  }
+
+  // ====== text to image ======
+  async generateImages(
+    messages: PromptMessage[],
+    model: string = 'dall-e-3',
+    options: {
+      signal?: AbortSignal;
+      user?: string;
+    } = {}
+  ): Promise<Array<string>> {
+    const { content: prompt } = messages.pop() || {};
+    if (!prompt) {
+      throw new Error('Prompt is required');
+    }
+    const result = await this.instance.images.generate(
+      {
+        prompt,
+        model,
+        response_format: 'url',
+        user: options.user,
+      },
+      { signal: options.signal }
+    );
+
+    return result.data.map(image => image.url).filter((v): v is string => !!v);
+  }
+
+  async *generateImagesStream(
+    messages: PromptMessage[],
+    model: string = 'dall-e-3',
+    options: {
+      signal?: AbortSignal;
+      user?: string;
+    } = {}
+  ): AsyncIterable<string> {
+    const ret = await this.generateImages(messages, model, options);
+    for (const url of ret) {
+      yield url;
+    }
   }
 }

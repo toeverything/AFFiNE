@@ -430,15 +430,16 @@ enum AiPromptRole {
 }
 
 model AiPromptMessage {
-  promptId  Int          @map("prompt_id") @db.Integer
+  promptId    Int          @map("prompt_id") @db.Integer
   // if a group of prompts contains multiple sentences, idx specifies the order of each sentence
-  idx       Int          @db.Integer
+  idx         Int          @db.Integer
   // system/assistant/user
-  role      AiPromptRole
+  role        AiPromptRole
   // prompt content
-  content   String       @db.Text
-  params    Json?        @db.Json
-  createdAt DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  content     String       @db.Text
+  attachments Json?        @db.Json
+  params      Json?        @db.Json
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
 
   prompt AiPrompt @relation(fields: [promptId], references: [id], onDelete: Cascade)
 
@@ -462,12 +463,14 @@ model AiPrompt {
 }
 
 model AiSessionMessage {
-  id        String       @id @default(uuid()) @db.VarChar(36)
-  sessionId String       @map("session_id") @db.VarChar(36)
-  role      AiPromptRole
-  content   String       @db.Text
-  createdAt DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id          String       @id @default(uuid()) @db.VarChar(36)
+  sessionId   String       @map("session_id") @db.VarChar(36)
+  role        AiPromptRole
+  content     String       @db.Text
+  attachments Json?        @db.Json
+  params      Json?        @db.Json
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   session AiSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 

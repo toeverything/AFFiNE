@@ -154,6 +154,11 @@ spec:
               secretKeyRef:
                 name: "{{ .Values.app.copilot.secretName }}"
                 key: openaiSecret
+          - name: COPILOT_FAL_API_KEY
+            valueFrom:
+              secretKeyRef:
+                name: "{{ .Values.app.copilot.secretName }}"
+                key: falSecret
           {{ end }}
           {{ if .Values.app.oauth.google.enabled }}
           - name: OAUTH_GOOGLE_ENABLED

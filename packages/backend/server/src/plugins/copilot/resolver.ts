@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import {
   Args,
   Field,
@@ -12,7 +13,7 @@ import {
 } from '@nestjs/graphql';
 import { SafeIntResolver } from 'graphql-scalars';
 
-import { CurrentUser, Public } from '../../core/auth';
+import { CurrentUser } from '../../core/auth';
 import { QuotaService } from '../../core/quota';
 import { UserType } from '../../core/user';
 import { PermissionService } from '../../core/workspaces/permission';
@@ -21,10 +22,18 @@ import {
   PaymentRequiredException,
   TooManyRequestsException,
 } from '../../fundamentals';
-import { ChatSessionService, ListHistoriesOptions } from './session';
-import { AvailableModels, type ChatHistory, type ChatMessage } from './types';
+import { ChatSessionService } from './session';
+import {
+  AvailableModels,
+  type ChatHistory,
+  type ChatMessage,
+  type ListHistoriesOptions,
+  SubmittedMessage,
+} from './types';
 
 registerEnumType(AvailableModels, { name: 'CopilotModel' });
+
+const COPILOT_LOCKER = 'copilot';
 
 // ================== Input Types ==================
 
@@ -46,6 +55,21 @@ class CreateChatSessionInput {
     description: 'The prompt name to use for the session',
   })
   promptName!: string;
+}
+
+@InputType()
+class CreateChatMessageInput implements Omit<SubmittedMessage, 'params'> {
+  @Field(() => String)
+  sessionId!: string;
+
+  @Field(() => String)
+  content!: string;
+
+  @Field(() => [String], { nullable: true })
+  attachments!: string[] | undefined;
+
+  @Field(() => String, { nullable: true })
+  params!: string | undefined;
 }
 
 @InputType()
@@ -118,6 +142,8 @@ export class CopilotType {
 
 @Resolver(() => CopilotType)
 export class CopilotResolver {
+  private readonly logger = new Logger(CopilotResolver.name);
+
   constructor(
     private readonly permissions: PermissionService,
     private readonly quota: QuotaService,
@@ -208,7 +234,6 @@ export class CopilotResolver {
     );
   }
 
-  @Public()
   @Mutation(() => String, {
     description: 'Create a chat session',
   })
@@ -222,7 +247,7 @@ export class CopilotResolver {
       options.docId,
       user.id
     );
-    const lockFlag = `session:${user.id}:${options.workspaceId}`;
+    const lockFlag = `${COPILOT_LOCKER}:session:${user.id}:${options.workspaceId}`;
     await using lock = await this.mutex.lock(lockFlag);
     if (!lock) {
       return new TooManyRequestsException('Server is busy');
@@ -240,6 +265,32 @@ export class CopilotResolver {
       userId: user.id,
     });
     return session;
+  }
+
+  @Mutation(() => String, {
+    description: 'Create a chat message',
+  })
+  async createCopilotMessage(
+    @CurrentUser() user: CurrentUser,
+    @Args({ name: 'options', type: () => CreateChatMessageInput })
+    options: CreateChatMessageInput
+  ) {
+    const lockFlag = `${COPILOT_LOCKER}:message:${user?.id}:${options.sessionId}`;
+    await using lock = await this.mutex.lock(lockFlag);
+    if (!lock) {
+      return new TooManyRequestsException('Server is busy');
+    }
+    try {
+      const { params, ...rest } = options;
+      const record: SubmittedMessage['params'] = {};
+      new URLSearchParams(params).forEach((value, key) => {
+        record[key] = value;
+      });
+      return await this.chatSession.createMessage({ ...rest, params: record });
+    } catch (e: any) {
+      this.logger.error(`Failed to create chat message: ${e.message}`);
+      throw new Error('Failed to create chat message');
+    }
   }
 }
 

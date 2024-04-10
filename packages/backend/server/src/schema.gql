@@ -37,6 +37,13 @@ type CopilotQuota {
   used: SafeInt!
 }
 
+input CreateChatMessageInput {
+  attachments: [String!]
+  content: String!
+  params: String
+  sessionId: String!
+}
+
 input CreateChatSessionInput {
   """An mark identifying which view to use to display the session"""
   action: String
@@ -166,6 +173,9 @@ type Mutation {
 
   """Create a subscription checkout link of stripe"""
   createCheckoutSession(input: CreateCheckoutSessionInput!): String!
+
+  """Create a chat message"""
+  createCopilotMessage(options: CreateChatMessageInput!): String!
 
   """Create a chat session"""
   createCopilotSession(options: CreateChatSessionInput!): String!

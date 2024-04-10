@@ -8,10 +8,12 @@ import {
 } from 'tiktoken';
 import { z } from 'zod';
 
+import type { ChatPrompt } from './prompt';
+
 export interface CopilotConfig {
   openai: OpenAIClientOptions;
   fal: {
-    secret: string;
+    apiKey: string;
   };
 }
 
@@ -27,6 +29,8 @@ export enum AvailableModels {
   // moderation
   TextModerationLatest = 'text-moderation-latest',
   TextModerationStable = 'text-moderation-stable',
+  // text to image
+  DallE3 = 'dall-e-3',
 }
 
 export type AvailableModel = keyof typeof AvailableModels;
@@ -53,8 +57,7 @@ export const ChatMessageRole = Object.values(AiPromptRole) as [
   'user',
 ];
 
-export const PromptMessageSchema = z.object({
-  role: z.enum(ChatMessageRole),
+const PureMessageSchema = z.object({
   content: z.string(),
   attachments: z.array(z.string()).optional(),
   params: z
@@ -62,6 +65,10 @@ export const PromptMessageSchema = z.object({
     .optional()
     .nullable(),
 });
+
+export const PromptMessageSchema = PureMessageSchema.extend({
+  role: z.enum(ChatMessageRole),
+}).strict();
 
 export type PromptMessage = z.infer<typeof PromptMessageSchema>;
 
@@ -73,6 +80,12 @@ export const ChatMessageSchema = PromptMessageSchema.extend({
 
 export type ChatMessage = z.infer<typeof ChatMessageSchema>;
 
+export const SubmittedMessageSchema = PureMessageSchema.extend({
+  sessionId: z.string(),
+}).strict();
+
+export type SubmittedMessage = z.infer<typeof SubmittedMessageSchema>;
+
 export const ChatHistorySchema = z
   .object({
     sessionId: z.string(),
@@ -83,6 +96,32 @@ export const ChatHistorySchema = z
   .strict();
 
 export type ChatHistory = z.infer<typeof ChatHistorySchema>;
+
+// ======== Chat Session ========
+
+export interface ChatSessionOptions {
+  // connect ids
+  userId: string;
+  workspaceId: string;
+  docId: string;
+  promptName: string;
+}
+
+export interface ChatSessionState
+  extends Omit<ChatSessionOptions, 'promptName'> {
+  // connect ids
+  sessionId: string;
+  // states
+  prompt: ChatPrompt;
+  messages: ChatMessage[];
+}
+
+export type ListHistoriesOptions = {
+  action: boolean | undefined;
+  limit: number | undefined;
+  skip: number | undefined;
+  sessionId: string | undefined;
+};
 
 // ======== Provider Interface ========
 
@@ -96,6 +135,7 @@ export enum CopilotCapability {
   TextToEmbedding = 'text-to-embedding',
   TextToImage = 'text-to-image',
   ImageToImage = 'image-to-image',
+  ImageToText = 'image-to-text',
 }
 
 export interface CopilotProvider {
@@ -137,13 +177,71 @@ export interface CopilotTextToEmbeddingProvider extends CopilotProvider {
   ): Promise<number[][]>;
 }
 
-export interface CopilotTextToImageProvider extends CopilotProvider {}
+export interface CopilotTextToImageProvider extends CopilotProvider {
+  generateImages(
+    messages: PromptMessage[],
+    model: string,
+    options: {
+      signal?: AbortSignal;
+      user?: string;
+    }
+  ): Promise<Array<string>>;
+  generateImagesStream(
+    messages: PromptMessage[],
+    model?: string,
+    options?: {
+      signal?: AbortSignal;
+      user?: string;
+    }
+  ): AsyncIterable<string>;
+}
 
-export interface CopilotImageToImageProvider extends CopilotProvider {}
+export interface CopilotImageToTextProvider extends CopilotProvider {
+  generateText(
+    messages: PromptMessage[],
+    model: string,
+    options: {
+      temperature?: number;
+      maxTokens?: number;
+      signal?: AbortSignal;
+      user?: string;
+    }
+  ): Promise<string>;
+  generateTextStream(
+    messages: PromptMessage[],
+    model: string,
+    options: {
+      temperature?: number;
+      maxTokens?: number;
+      signal?: AbortSignal;
+      user?: string;
+    }
+  ): AsyncIterable<string>;
+}
+
+export interface CopilotImageToImageProvider extends CopilotProvider {
+  generateImages(
+    messages: PromptMessage[],
+    model: string,
+    options: {
+      signal?: AbortSignal;
+      user?: string;
+    }
+  ): Promise<Array<string>>;
+  generateImagesStream(
+    messages: PromptMessage[],
+    model?: string,
+    options?: {
+      signal?: AbortSignal;
+      user?: string;
+    }
+  ): AsyncIterable<string>;
+}
 
 export type CapabilityToCopilotProvider = {
   [CopilotCapability.TextToText]: CopilotTextToTextProvider;
   [CopilotCapability.TextToEmbedding]: CopilotTextToEmbeddingProvider;
   [CopilotCapability.TextToImage]: CopilotTextToImageProvider;
+  [CopilotCapability.ImageToText]: CopilotImageToTextProvider;
   [CopilotCapability.ImageToImage]: CopilotImageToImageProvider;
 };
