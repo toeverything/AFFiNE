@@ -331,7 +331,7 @@ export const DetailPage = ({ pageId }: { pageId: string }): ReactElement => {
 
   // if sync engine has been synced and the page is null, show 404 page.
   if (pageListReady && !page) {
-    return <PageNotFound />;
+    return <PageNotFound noPermission />;
   }
 
   if (!page) {

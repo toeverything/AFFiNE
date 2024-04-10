@@ -1,13 +1,11 @@
 import { Button } from '@affine/component/ui/button';
 import { AffineShapeIcon } from '@affine/core/components/page-list'; // TODO: import from page-list temporarily, need to defined common svg icon/images management.
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
 import { useWorkspaceStatus } from '@affine/core/hooks/use-workspace-status';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useService, Workspace, WorkspaceManager } from '@toeverything/infra';
 import { useState } from 'react';
 
-import { WorkspaceSubPath } from '../../shared';
 import { mixpanel } from '../../utils';
 import * as styles from './upgrade.css';
 import { ArrowCircleIcon, HeartBreakIcon } from './upgrade-icon';
@@ -20,7 +18,6 @@ export const WorkspaceUpgrade = function WorkspaceUpgrade() {
   const currentWorkspace = useService(Workspace);
   const workspaceManager = useService(WorkspaceManager);
   const upgradeStatus = useWorkspaceStatus(currentWorkspace, s => s.upgrade);
-  const { openPage } = useNavigateHelper();
   const t = useAFFiNEI18N();
 
   const onButtonClick = useAsyncCallback(async () => {
@@ -36,7 +33,10 @@ export const WorkspaceUpgrade = function WorkspaceUpgrade() {
       const newWorkspace =
         await currentWorkspace.upgrade.upgrade(workspaceManager);
       if (newWorkspace) {
-        openPage(newWorkspace.id, WorkspaceSubPath.ALL);
+        location.pathname = `/workspace/${newWorkspace.id}/all`;
+        //FIXME: use openPage will cause a bug, which will cause the 'v1 to v4' test fail.
+        // params.workspaceId will not be updated, so the page will not be re-rendered and still show the 404 page.
+        // openPage(newWorkspace.id, WorkspaceSubPath.ALL);
       } else {
         // blocksuite may enter an incorrect state, reload to reset it.
         location.reload();
@@ -44,12 +44,7 @@ export const WorkspaceUpgrade = function WorkspaceUpgrade() {
     } catch (error) {
       setError(error instanceof Error ? error.message : '' + error);
     }
-  }, [
-    upgradeStatus?.upgrading,
-    currentWorkspace.upgrade,
-    workspaceManager,
-    openPage,
-  ]);
+  }, [upgradeStatus?.upgrading, currentWorkspace.upgrade, workspaceManager]);
 
   return (
     <div className={styles.layout}>

@@ -1,3 +1,4 @@
+import { AffineOtherPageLayout } from '@affine/component/affine-other-page-layout';
 import { SignInPageContainer } from '@affine/component/auth-components';
 import { useAtom } from 'jotai';
 import { useCallback, useEffect, useRef } from 'react';
@@ -17,7 +18,7 @@ interface LocationState {
     callbackURL?: string;
   };
 }
-export const Component = () => {
+export const SignIn = () => {
   const paymentRedirectRef = useRef<'redirect' | 'ignore' | null>(null);
   const [{ state, email = '', emailType = 'changePassword' }, setAuthAtom] =
     useAtom(authAtom);
@@ -87,14 +88,26 @@ export const Component = () => {
 
   return (
     <SignInPageContainer>
-      <AuthPanel
-        state={state}
-        email={email}
-        emailType={emailType}
-        setEmailType={onSetEmailType}
-        setAuthState={onSetAuthState}
-        setAuthEmail={onSetAuthEmail}
-      />
+      <div style={{ maxWidth: '400px' }}>
+        <AuthPanel
+          state={state}
+          email={email}
+          emailType={emailType}
+          setEmailType={onSetEmailType}
+          setAuthState={onSetAuthState}
+          setAuthEmail={onSetAuthEmail}
+        />
+      </div>
     </SignInPageContainer>
+  );
+};
+
+export const Component = () => {
+  return (
+    <AffineOtherPageLayout>
+      <div style={{ padding: '0 20px' }}>
+        <SignIn />
+      </div>
+    </AffineOtherPageLayout>
   );
 };

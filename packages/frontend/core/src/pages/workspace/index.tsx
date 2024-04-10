@@ -77,9 +77,8 @@ export const Component = (): ReactElement => {
 
   // if listLoading is false, we can show 404 page, otherwise we should show loading page.
   if (listLoading === false && meta === undefined) {
-    return <PageNotFound />;
+    return <PageNotFound noPermission />;
   }
-
   if (!workspace) {
     return <WorkspaceFallback key="workspaceLoading" />;
   }
