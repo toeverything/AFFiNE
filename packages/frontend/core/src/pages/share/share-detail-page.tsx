@@ -28,6 +28,7 @@ import {
   WorkspaceManager,
   WorkspaceScope,
 } from '@toeverything/infra';
+import clsx from 'clsx';
 import { useCallback, useEffect, useState } from 'react';
 import type { LoaderFunction } from 'react-router-dom';
 import {
@@ -214,7 +215,12 @@ export const Component = () => {
                 docCollection={page.blockSuiteDoc.collection}
               />
               <Scrollable.Root>
-                <Scrollable.Viewport className={styles.editorContainer}>
+                <Scrollable.Viewport
+                  className={clsx(
+                    'affine-page-viewport',
+                    styles.editorContainer
+                  )}
+                >
                   <PageDetailEditor
                     isPublic
                     publishMode={publishMode}
