@@ -66,10 +66,7 @@ const ThemeChange = () => {
 localStorage.clear();
 
 // do not show onboarding for storybook
-window.localStorage.setItem(
-  'app_config',
-  '{"onBoarding":false, "dismissWorkspaceGuideModal":true}'
-);
+window.localStorage.setItem('app_config', '{"onBoarding":false}');
 
 const services = new ServiceCollection();
 

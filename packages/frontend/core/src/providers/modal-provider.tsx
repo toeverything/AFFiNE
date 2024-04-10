@@ -53,14 +53,6 @@ const TmpDisableAffineCloudModal = lazy(() =>
   )
 );
 
-const WorkspaceGuideModal = lazy(() =>
-  import('../components/affine/onboarding/workspace-guide-modal').then(
-    module => ({
-      default: module.WorkspaceGuideModal,
-    })
-  )
-);
-
 const SignOutModal = lazy(() =>
   import('../components/affine/sign-out-modal').then(module => ({
     default: module.SignOutModal,
@@ -205,7 +197,6 @@ export function CurrentWorkspaceModals() {
       </Suspense>
       <StarAFFiNEModal />
       <IssueFeedbackModal />
-      <WorkspaceGuideModal />
       {currentWorkspace ? <Setting /> : null}
       {currentWorkspace?.flavour === WorkspaceFlavour.LOCAL && (
         <>
