@@ -33,6 +33,7 @@ export class QuotaManagementService {
       storageQuota: quota.feature.storageQuota,
       historyPeriod: quota.feature.historyPeriod,
       memberLimit: quota.feature.memberLimit,
+      copilotActionLimit: quota.feature.copilotActionLimit,
     };
   }
 
@@ -72,6 +73,7 @@ export class QuotaManagementService {
         historyPeriod,
         memberLimit,
         storageQuota,
+        copilotActionLimit,
         humanReadable,
       },
     } = await this.quota.getUserQuota(owner.id);
@@ -85,6 +87,7 @@ export class QuotaManagementService {
       historyPeriod,
       memberLimit,
       storageQuota,
+      copilotActionLimit,
       humanReadable,
       usedSize,
     };

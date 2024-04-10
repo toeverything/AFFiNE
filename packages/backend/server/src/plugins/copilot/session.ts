@@ -5,8 +5,11 @@ import { PrismaClient } from '@prisma/client';
 
 import { ChatPrompt, PromptService } from './prompt';
 import {
+  AvailableModel,
+  ChatHistory,
   ChatMessage,
   ChatMessageSchema,
+  getTokenEncoder,
   PromptMessage,
   PromptParams,
 } from './types';
@@ -27,6 +30,13 @@ export interface ChatSessionState
   messages: ChatMessage[];
 }
 
+export type ListHistoriesOptions = {
+  action: boolean | undefined;
+  limit: number | undefined;
+  skip: number | undefined;
+  sessionId: string | undefined;
+};
+
 export class ChatSession implements AsyncDisposable {
   constructor(
     private readonly state: ChatSessionState,
@@ -39,6 +49,13 @@ export class ChatSession implements AsyncDisposable {
   }
 
   push(message: ChatMessage) {
+    if (
+      this.state.prompt.action &&
+      this.state.messages.length > 0 &&
+      message.role === 'user'
+    ) {
+      throw new Error('Action has been taken, no more messages allowed');
+    }
     this.state.messages.push(message);
   }
 
@@ -165,6 +182,53 @@ export class ChatSessionService {
           messages: messages.success ? messages.data : [],
         };
       });
+  }
+
+  async listHistories(
+    workspaceId: string,
+    docId: string,
+    options: ListHistoriesOptions
+  ): Promise<ChatHistory[]> {
+    return await this.db.aiSession
+      .findMany({
+        where: {
+          workspaceId: workspaceId,
+          docId: workspaceId === docId ? undefined : docId,
+          prompt: { action: { not: null } },
+          id: options.sessionId ? { equals: options.sessionId } : undefined,
+        },
+        select: {
+          id: true,
+          prompt: true,
+          messages: {
+            select: {
+              role: true,
+              content: true,
+            },
+            orderBy: {
+              createdAt: 'asc',
+            },
+          },
+        },
+        take: options.limit,
+        skip: options.skip,
+        orderBy: { createdAt: 'desc' },
+      })
+      .then(sessions =>
+        sessions
+          .map(({ id, prompt, messages }) => {
+            const ret = ChatMessageSchema.array().safeParse(messages);
+            if (ret.success) {
+              const encoder = getTokenEncoder(prompt.model as AvailableModel);
+              const tokens = ret.data
+                .map(m => encoder?.encode_ordinary(m.content).length || 0)
+                .reduce((total, length) => total + length, 0);
+              return { sessionId: id, tokens, messages: ret.data };
+            }
+            return undefined;
+          })
+          .filter((v): v is NonNullable<typeof v> => !!v)
+      );
   }
 
   async create(options: ChatSessionOptions): Promise<string> {

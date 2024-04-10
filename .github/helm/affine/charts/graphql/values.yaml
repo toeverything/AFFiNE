@@ -24,6 +24,11 @@ app:
     secretName: captcha
     turnstile:
       secret: ''
+  copilot:
+    enable: false
+    secretName: copilot
+    openai:
+      key: ''
   objectStorage:
     r2:
       enabled: false
