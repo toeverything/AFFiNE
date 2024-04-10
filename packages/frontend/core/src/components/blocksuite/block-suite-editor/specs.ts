@@ -4,13 +4,18 @@ import type { ParagraphService, RootService } from '@blocksuite/blocks';
 import {
   AttachmentService,
   CanvasTextFonts,
-  EdgelessEditorBlockSpecs,
   EdgelessRootService,
-  PageEditorBlockSpecs,
   PageRootService,
 } from '@blocksuite/blocks';
 import bytes from 'bytes';
 import type { TemplateResult } from 'lit';
+
+import { getParsedAISpecs } from './ai/spec';
+
+const {
+  pageModeSpecs: PageEditorBlockSpecs,
+  edgelessModeSpecs: EdgelessEditorBlockSpecs,
+} = getParsedAISpecs();
 
 class CustomAttachmentService extends AttachmentService {
   override mounted(): void {

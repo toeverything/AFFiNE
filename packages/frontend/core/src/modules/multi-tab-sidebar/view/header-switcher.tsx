@@ -33,7 +33,7 @@ export const MultiTabSidebarHeaderSwitcher = ({
   const exts = useMemo(
     () =>
       tabs.filter(ext => {
-        if (ext.name === 'copilot' && !copilotEnabled) return false;
+        if (ext.name === 'chat' && !copilotEnabled) return false;
         return true;
       }),
     [copilotEnabled, tabs]
