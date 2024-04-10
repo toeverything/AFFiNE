@@ -13,7 +13,7 @@ import {
 } from '@nestjs/graphql';
 import { SafeIntResolver } from 'graphql-scalars';
 
-import { CurrentUser, Public } from '../../core/auth';
+import { CurrentUser } from '../../core/auth';
 import { QuotaService } from '../../core/quota';
 import { UserType } from '../../core/user';
 import { PermissionService } from '../../core/workspaces/permission';
@@ -234,7 +234,6 @@ export class CopilotResolver {
     );
   }
 
-  @Public()
   @Mutation(() => String, {
     description: 'Create a chat session',
   })
@@ -268,7 +267,6 @@ export class CopilotResolver {
     return session;
   }
 
-  @Public()
   @Mutation(() => String, {
     description: 'Create a chat message',
   })
