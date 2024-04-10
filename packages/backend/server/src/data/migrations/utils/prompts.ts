@@ -70,7 +70,7 @@ export const prompts: Prompt[] = [
   {
     name: 'Explain this image',
     action: 'text',
-    model: 'gpt-4-turbo-preview',
+    model: 'gpt-4-vision-preview',
     messages: [
       {
         role: 'assistant',
