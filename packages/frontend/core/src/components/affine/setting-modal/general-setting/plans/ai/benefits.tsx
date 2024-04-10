@@ -1,38 +1,42 @@
-import { ShapeIcon } from '@blocksuite/icons';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { CheckBoxCheckLinearIcon, PenIcon, TextIcon } from '@blocksuite/icons';
+import { useMemo } from 'react';
 
 import * as styles from './ai-plan.css';
 
-const benefits = [
+const benefitsGetter = (t: ReturnType<typeof useAFFiNEI18N>) => [
   {
-    name: 'Write with you',
-    icon: <ShapeIcon />,
+    name: t['com.affine.payment.ai.benefit.g1'](),
+    icon: <TextIcon />,
     items: [
-      'Create quality content from sentences to articles on topics you need',
-      'Rewrite like the professionals',
-      'Change the tones / fix spelling & grammar',
+      t['com.affine.payment.ai.benefit.g1-1'](),
+      t['com.affine.payment.ai.benefit.g1-2'](),
+      t['com.affine.payment.ai.benefit.g1-3'](),
     ],
   },
   {
-    name: 'Draw with you',
-    icon: <ShapeIcon />,
+    name: t['com.affine.payment.ai.benefit.g2'](),
+    icon: <PenIcon />,
     items: [
-      'Visualize your mind, magically',
-      'Turn your outline into beautiful, engaging presentations',
-      'Summarize your content into structured mind-map',
+      t['com.affine.payment.ai.benefit.g2-1'](),
+      t['com.affine.payment.ai.benefit.g2-2'](),
+      t['com.affine.payment.ai.benefit.g2-3'](),
     ],
   },
   {
-    name: 'Plan with you',
-    icon: <ShapeIcon />,
+    name: t['com.affine.payment.ai.benefit.g3'](),
+    icon: <CheckBoxCheckLinearIcon />,
     items: [
-      'Memorize and tidy up your knowledge',
-      'Auto-sorting and auto-tagging',
-      'Open source & Privacy ensured',
+      t['com.affine.payment.ai.benefit.g3-1'](),
+      t['com.affine.payment.ai.benefit.g3-2'](),
+      t['com.affine.payment.ai.benefit.g3-3'](),
     ],
   },
 ];
 
 export const AIBenefits = () => {
+  const t = useAFFiNEI18N();
+  const benefits = useMemo(() => benefitsGetter(t), [t]);
   // TODO: responsive
   return (
     <div className={styles.benefits}>

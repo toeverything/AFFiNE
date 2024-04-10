@@ -7,6 +7,7 @@ import {
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { useMutation } from '@affine/core/hooks/use-mutation';
 import { resumeSubscriptionMutation, SubscriptionPlan } from '@affine/graphql';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { SingleSelectSelectSolidIcon } from '@blocksuite/icons';
 import { cssVar } from '@toeverything/theme';
 import { nanoid } from 'nanoid';
@@ -20,6 +21,7 @@ export const AIResume = ({
   onSubscriptionUpdate,
   ...btnProps
 }: AIResumeProps) => {
+  const t = useAFFiNEI18N();
   const [idempotencyKey, setIdempotencyKey] = useState(nanoid());
 
   const { isMutating, trigger } = useMutation({
@@ -29,13 +31,16 @@ export const AIResume = ({
 
   const resume = useAsyncCallback(async () => {
     openConfirmModal({
-      title: 'Resume Auto-Renewal?',
+      title: t['com.affine.payment.ai.action.resume.confirm.title'](),
       description:
-        'Are you sure you want to resume the subscription for AFFiNE AI? This means your payment method will be charged automatically at the end of each billing cycle, starting from the next billing cycle.',
+        t['com.affine.payment.ai.action.resume.confirm.description'](),
       confirmButtonOptions: {
-        children: 'Confirm',
+        children:
+          t['com.affine.payment.ai.action.resume.confirm.confirm-text'](),
         type: 'primary',
       },
+      cancelText:
+        t['com.affine.payment.ai.action.resume.confirm.cancel-text'](),
       onConfirm: async () => {
         await trigger(
           { idempotencyKey, plan: SubscriptionPlan.AI },
@@ -50,19 +55,23 @@ export const AIResume = ({
                     color={cssVar('processingColor')}
                   />
                 ),
-                title: 'Subscription Updated',
-                message: 'You will be charged in the next billing cycle.',
+                title:
+                  t[
+                    'com.affine.payment.ai.action.resume.confirm.notify.title'
+                  ](),
+                message:
+                  t['com.affine.payment.ai.action.resume.confirm.notify.msg'](),
               });
             },
           }
         );
       },
     });
-  }, [openConfirmModal, trigger, idempotencyKey, onSubscriptionUpdate]);
+  }, [openConfirmModal, t, trigger, idempotencyKey, onSubscriptionUpdate]);
 
   return (
     <Button loading={isMutating} onClick={resume} type="primary" {...btnProps}>
-      Resume
+      {t['com.affine.payment.ai.action.resume.button-label']()}
     </Button>
   );
 };

@@ -1,3 +1,4 @@
+import { Button } from '@affine/component';
 import {
   type SubscriptionMutator,
   useUserSubscription,
@@ -7,6 +8,7 @@ import {
   SubscriptionPlan,
   SubscriptionRecurring,
 } from '@affine/graphql';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 
 import { AIPlanLayout } from '../layout';
 import * as styles from './ai-plan.css';
@@ -19,6 +21,7 @@ interface AIPlanProps {
   onSubscriptionUpdate: SubscriptionMutator;
 }
 export const AIPlan = ({ price, onSubscriptionUpdate }: AIPlanProps) => {
+  const t = useAFFiNEI18N();
   const recurring = SubscriptionRecurring.Yearly;
 
   const { Action, billingTip } = useAffineAISubscription();
@@ -35,25 +38,37 @@ export const AIPlan = ({ price, onSubscriptionUpdate }: AIPlanProps) => {
 
   return (
     <AIPlanLayout
+      title={t['com.affine.payment.ai.pricing-plan.title']()}
       caption={
         subscription
-          ? 'You have purchased AFFiNE AI'
-          : 'You are current on the Basic plan.'
+          ? t['com.affine.payment.ai.pricing-plan.caption-purchased']()
+          : t['com.affine.payment.ai.pricing-plan.caption-free']()
       }
     >
       <div className={styles.card}>
         <div className={styles.titleBlock}>
           <section className={styles.titleCaption1}>
-            Turn all your ideas into reality
+            {t['com.affine.payment.ai.pricing-plan.title-caption-1']()}
           </section>
-          <section className={styles.title}>AFFiNE AI</section>
+          <section className={styles.title}>
+            {t['com.affine.payment.ai.pricing-plan.title']()}
+          </section>
           <section className={styles.titleCaption2}>
-            A true multimodal AI copilot.
+            {t['com.affine.payment.ai.pricing-plan.title-caption-2']()}
           </section>
         </div>
 
         <div className={styles.actionBlock}>
-          <Action {...baseActionProps} className={styles.purchaseButton} />
+          <div className={styles.actionButtons}>
+            <Action {...baseActionProps} className={styles.purchaseButton} />
+            {subscription ? null : (
+              <a href="https://ai.affine.pro" target="_blank" rel="noreferrer">
+                <Button className={styles.learnAIButton}>
+                  {t['com.affine.payment.ai.pricing-plan.learn']()}
+                </Button>
+              </a>
+            )}
+          </div>
           {billingTip ? (
             <div className={styles.agreement}>{billingTip}</div>
           ) : null}

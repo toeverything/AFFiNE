@@ -153,6 +153,13 @@ export const planTitleTitle = style({
   fontSize: cssVar('fontBase'),
   lineHeight: '20px',
 });
+export const planTitleTitleCaption = style({
+  fontWeight: 500,
+  fontSize: cssVar('fontXs'),
+  lineHeight: '20px',
+  color: cssVar('textSecondaryColor'),
+  marginLeft: 4,
+});
 export const planPriceWrapper = style({
   minHeight: '28px',
   lineHeight: 1,

@@ -8,7 +8,7 @@ import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { SingleSelectSelectSolidIcon } from '@blocksuite/icons';
 import { cssVar } from '@toeverything/theme';
-import { Suspense, useEffect, useRef, useState } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import type { FallbackProps } from 'react-error-boundary';
 
 import { SWRErrorBoundary } from '../../../../../components/pure/swr-error-bundary';
@@ -39,7 +39,7 @@ const Settings = () => {
   const [subscription, mutateSubscription] = useUserSubscription();
 
   const loggedIn = useCurrentLoginStatus() === 'authenticated';
-  const planDetail = getPlanDetail();
+  const planDetail = useMemo(() => getPlanDetail(t), [t]);
   const scrollWrapper = useRef<HTMLDivElement>(null);
 
   const {
@@ -138,15 +138,23 @@ const Settings = () => {
     <div className={styles.recurringToggleWrapper}>
       <div>
         {recurring === SubscriptionRecurring.Yearly ? (
-          <div className={styles.recurringToggleRecurring}>Yearly</div>
+          <div className={styles.recurringToggleRecurring}>
+            {t['com.affine.payment.cloud.pricing-plan.toggle-yearly']()}
+          </div>
         ) : (
           <>
             <div className={styles.recurringToggleRecurring}>
-              <span>Billed Yearly</span>
+              <span>
+                {t[
+                  'com.affine.payment.cloud.pricing-plan.toggle-billed-yearly'
+                ]()}
+              </span>
             </div>
             {yearlyDiscount ? (
               <div className={styles.recurringToggleDiscount}>
-                Saving {yearlyDiscount}%
+                {t['com.affine.payment.cloud.pricing-plan.toggle-discount']({
+                  discount: yearlyDiscount,
+                })}
               </div>
             ) : null}
           </>
@@ -201,8 +209,8 @@ const Settings = () => {
 
   const cloudSelect = (
     <div className={styles.cloudSelect}>
-      <b>Hosted by AFFiNE.Pro</b>
-      <span>We host, no technical setup required.</span>
+      <b>{t['com.affine.payment.cloud.pricing-plan.select.title']()}</b>
+      <span>{t['com.affine.payment.cloud.pricing-plan.select.caption']()}</span>
     </div>
   );
 

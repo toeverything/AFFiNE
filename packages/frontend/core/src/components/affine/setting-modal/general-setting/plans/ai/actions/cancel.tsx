@@ -2,6 +2,7 @@ import { Button, type ButtonProps, useConfirmModal } from '@affine/component';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { useMutation } from '@affine/core/hooks/use-mutation';
 import { cancelSubscriptionMutation, SubscriptionPlan } from '@affine/graphql';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { nanoid } from 'nanoid';
 import { useState } from 'react';
 
@@ -12,6 +13,7 @@ export const AICancel = ({
   onSubscriptionUpdate,
   ...btnProps
 }: AICancelProps) => {
+  const t = useAFFiNEI18N();
   const [idempotencyKey, setIdempotencyKey] = useState(nanoid());
   const { trigger, isMutating } = useMutation({
     mutation: cancelSubscriptionMutation,
@@ -20,15 +22,17 @@ export const AICancel = ({
 
   const cancel = useAsyncCallback(async () => {
     openConfirmModal({
-      title: 'Cancel Subscription',
+      title: t['com.affine.payment.ai.action.cancel.confirm.title'](),
       description:
-        'If you end your subscription now, you can still use AFFiNE AI until the end of this billing period.',
+        t['com.affine.payment.ai.action.cancel.confirm.description'](),
       reverseFooter: true,
       confirmButtonOptions: {
-        children: 'Cancel Subscription',
+        children:
+          t['com.affine.payment.ai.action.cancel.confirm.confirm-text'](),
         type: 'default',
       },
-      cancelText: 'Keep AFFiNE AI',
+      cancelText:
+        t['com.affine.payment.ai.action.cancel.confirm.cancel-text'](),
       cancelButtonOptions: {
         type: 'primary',
       },
@@ -45,11 +49,11 @@ export const AICancel = ({
         );
       },
     });
-  }, [openConfirmModal, trigger, idempotencyKey, onSubscriptionUpdate]);
+  }, [openConfirmModal, t, trigger, idempotencyKey, onSubscriptionUpdate]);
 
   return (
     <Button onClick={cancel} loading={isMutating} type="primary" {...btnProps}>
-      Cancel subscription
+      {t['com.affine.payment.ai.action.cancel.button-label']()}
     </Button>
   );
 };

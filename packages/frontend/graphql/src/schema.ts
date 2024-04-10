@@ -82,6 +82,7 @@ export enum ServerDeploymentType {
 }
 
 export enum ServerFeature {
+  Copilot = 'Copilot',
   OAuth = 'OAuth',
   Payment = 'Payment',
 }

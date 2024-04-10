@@ -2,6 +2,7 @@ import { useCurrentLoginStatus } from '@affine/core/hooks/affine/use-current-log
 import { useUserSubscription } from '@affine/core/hooks/use-subscription';
 import { timestampToLocalDate } from '@affine/core/utils';
 import { SubscriptionPlan } from '@affine/graphql';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 
 import { AICancel, AILogin, AIResume, AISubscribe } from './actions';
 
@@ -10,6 +11,7 @@ const plan = SubscriptionPlan.AI;
 export type ActionType = 'login' | 'subscribe' | 'resume' | 'cancel';
 
 export const useAffineAISubscription = () => {
+  const t = useAFFiNEI18N();
   const loggedIn = useCurrentLoginStatus() === 'authenticated';
 
   const [subscription] = useUserSubscription(plan);
@@ -31,9 +33,13 @@ export const useAffineAISubscription = () => {
   }[actionType];
 
   const billingTip = subscription?.nextBillAt
-    ? `You have purchased AFFiNE AI. The next payment date is ${timestampToLocalDate(subscription.nextBillAt)}.`
+    ? t['com.affine.payment.ai.billing-tip.next-bill-at']({
+        due: timestampToLocalDate(subscription.nextBillAt),
+      })
     : subscription?.canceledAt && subscription.end
-      ? `You have purchased AFFiNE AI. The expiration date is ${timestampToLocalDate(subscription.end)}.`
+      ? t['com.affine.payment.ai.billing-tip.end-at']({
+          end: timestampToLocalDate(subscription.end),
+        })
       : null;
 
   return { actionType, Action, billingTip };

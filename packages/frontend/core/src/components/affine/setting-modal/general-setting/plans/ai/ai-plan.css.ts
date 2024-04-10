@@ -41,6 +41,10 @@ export const actionBlock = style({
   alignItems: 'start',
   marginBottom: 24,
 });
+export const actionButtons = style({
+  display: 'flex',
+  gap: 12,
+});
 export const purchaseButton = style({
   minWidth: 160,
   height: 37,
@@ -50,6 +54,14 @@ export const purchaseButton = style({
   lineHeight: '14px',
   letterSpacing: '-1%',
 });
+export const learnAIButton = style([
+  purchaseButton,
+  {
+    color: cssVar('textEmphasisColor'),
+    paddingLeft: 16,
+    paddingRight: 16,
+  },
+]);
 export const agreement = style({
   fontSize: cssVar('fontXs'),
   fontWeight: 400,
