@@ -39,9 +39,7 @@ if (env.R2_OBJECT_STORAGE_ACCOUNT_ID) {
 }
 
 AFFiNE.plugins.use('copilot', {
-  openai: {
-    apiKey: 'test',
-  },
+  openai: {},
 });
 AFFiNE.plugins.use('redis');
 AFFiNE.plugins.use('payment', {

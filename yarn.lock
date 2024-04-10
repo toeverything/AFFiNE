@@ -697,6 +697,7 @@ __metadata:
     "@types/keyv": "npm:^4.2.0"
     "@types/lodash-es": "npm:^4.17.12"
     "@types/mixpanel": "npm:^2.14.8"
+    "@types/mustache": "npm:^4"
     "@types/node": "npm:^20.11.20"
     "@types/nodemailer": "npm:^6.4.14"
     "@types/on-headers": "npm:^1.0.3"
@@ -720,6 +721,7 @@ __metadata:
     keyv: "npm:^4.5.4"
     lodash-es: "npm:^4.17.21"
     mixpanel: "npm:^0.18.0"
+    mustache: "npm:^4.2.0"
     nanoid: "npm:^5.0.6"
     nest-commander: "npm:^3.12.5"
     nestjs-throttler-storage-redis: "npm:^0.4.1"
@@ -738,6 +740,7 @@ __metadata:
     socket.io: "npm:^4.7.4"
     stripe: "npm:^14.18.0"
     supertest: "npm:^6.3.4"
+    tiktoken: "npm:^1.0.13"
     ts-node: "npm:^10.9.2"
     typescript: "npm:^5.3.3"
     ws: "npm:^8.16.0"
@@ -14486,6 +14489,13 @@ __metadata:
   version: 0.7.34
   resolution: "@types/ms@npm:0.7.34"
   checksum: 10/f38d36e7b6edecd9badc9cf50474159e9da5fa6965a75186cceaf883278611b9df6669dc3a3cc122b7938d317b68a9e3d573d316fcb35d1be47ec9e468c6bd8a
+  languageName: node
+  linkType: hard
+
+"@types/mustache@npm:^4":
+  version: 4.2.5
+  resolution: "@types/mustache@npm:4.2.5"
+  checksum: 10/29581027fe420120ae0591e28d44209d0e01adf5175910d03401327777ee9c649a1508e2aa63147c782c7e53fcea4b69b5f9a2fbedcadc5500561d1161ae5ded
   languageName: node
   linkType: hard
 
@@ -33965,6 +33975,13 @@ __metadata:
   version: 1.1.0
   resolution: "thunky@npm:1.1.0"
   checksum: 10/825e3bd07ab3c9fd6f753c457a60957c628cacba5dd0656fd93b037c445e2828b43cf0805a9f2b16b0c5f5a10fd561206271acddb568df4f867f0aea0eb2772f
+  languageName: node
+  linkType: hard
+
+"tiktoken@npm:^1.0.13":
+  version: 1.0.13
+  resolution: "tiktoken@npm:1.0.13"
+  checksum: 10/4217ffbcd4126dc2dd17503fda35be91cf4be64c514f70e1049982d1bd2b5cea6334e76812411cb284dfa7b412159839d546048ac98220faf3c629e217266ddc
   languageName: node
   linkType: hard
 

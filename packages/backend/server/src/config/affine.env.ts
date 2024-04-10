@@ -19,6 +19,7 @@ AFFiNE.ENV_MAP = {
   MAILER_SECURE: ['mailer.secure', 'boolean'],
   THROTTLE_TTL: ['rateLimiter.ttl', 'int'],
   THROTTLE_LIMIT: ['rateLimiter.limit', 'int'],
+  COPILOT_OPENAI_API_KEY: 'plugins.copilot.openai.apiKey',
   REDIS_SERVER_HOST: 'plugins.redis.host',
   REDIS_SERVER_PORT: ['plugins.redis.port', 'int'],
   REDIS_SERVER_USER: 'plugins.redis.username',

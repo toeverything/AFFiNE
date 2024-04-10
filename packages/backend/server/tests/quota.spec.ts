@@ -49,7 +49,7 @@ test('should be able to set quota', async t => {
   const q1 = await quota.getUserQuota(u1.id);
   t.truthy(q1, 'should have quota');
   t.is(q1?.feature.name, QuotaType.FreePlanV1, 'should be free plan');
-  t.is(q1?.feature.version, 3, 'should be version 2');
+  t.is(q1?.feature.version, 3, 'should be version 3');
 
   await quota.switchUserQuota(u1.id, QuotaType.ProPlanV1);
 

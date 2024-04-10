@@ -1,5 +1,11 @@
 import { AiPromptRole } from '@prisma/client';
 import type { ClientOptions as OpenAIClientOptions } from 'openai';
+import {
+  encoding_for_model,
+  get_encoding,
+  Tiktoken,
+  TiktokenModel,
+} from 'tiktoken';
 import { z } from 'zod';
 
 export interface CopilotConfig {
@@ -8,6 +14,76 @@ export interface CopilotConfig {
     secret: string;
   };
 }
+
+export enum AvailableModels {
+  // text to text
+  Gpt4VisionPreview = 'gpt-4-vision-preview',
+  Gpt4TurboPreview = 'gpt-4-turbo-preview',
+  Gpt35Turbo = 'gpt-3.5-turbo',
+  // embeddings
+  TextEmbedding3Large = 'text-embedding-3-large',
+  TextEmbedding3Small = 'text-embedding-3-small',
+  TextEmbeddingAda002 = 'text-embedding-ada-002',
+  // moderation
+  TextModerationLatest = 'text-moderation-latest',
+  TextModerationStable = 'text-moderation-stable',
+}
+
+export type AvailableModel = keyof typeof AvailableModels;
+
+export function getTokenEncoder(model?: string | null): Tiktoken | undefined {
+  if (!model) return undefined;
+  const modelStr = AvailableModels[model as AvailableModel];
+  if (!modelStr) return undefined;
+  if (modelStr.startsWith('gpt')) {
+    return encoding_for_model(modelStr as TiktokenModel);
+  } else if (modelStr.startsWith('dall')) {
+    // dalle don't need to calc the token
+    return undefined;
+  } else {
+    return get_encoding('cl100k_base');
+  }
+}
+
+// ======== ChatMessage ========
+
+export const ChatMessageRole = Object.values(AiPromptRole) as [
+  'system',
+  'assistant',
+  'user',
+];
+
+export const PromptMessageSchema = z.object({
+  role: z.enum(ChatMessageRole),
+  content: z.string(),
+  attachments: z.array(z.string()).optional(),
+  params: z
+    .record(z.union([z.string(), z.array(z.string())]))
+    .optional()
+    .nullable(),
+});
+
+export type PromptMessage = z.infer<typeof PromptMessageSchema>;
+
+export type PromptParams = NonNullable<PromptMessage['params']>;
+
+export const ChatMessageSchema = PromptMessageSchema.extend({
+  createdAt: z.date(),
+}).strict();
+
+export type ChatMessage = z.infer<typeof ChatMessageSchema>;
+
+export const ChatHistorySchema = z
+  .object({
+    sessionId: z.string(),
+    tokens: z.number(),
+    messages: z.array(ChatMessageSchema),
+  })
+  .strict();
+
+export type ChatHistory = z.infer<typeof ChatHistorySchema>;
+
+// ======== Provider Interface ========
 
 export enum CopilotProviderType {
   FAL = 'fal',
@@ -25,24 +101,26 @@ export interface CopilotProvider {
   getCapabilities(): CopilotProviderCapability[];
 }
 
-export const ChatMessageSchema = z
-  .object({
-    role: z.enum(
-      Array.from(Object.values(AiPromptRole)) as [
-        'system' | 'assistant' | 'user',
-      ]
-    ),
-    content: z.string(),
-  })
-  .strict();
-
-export type ChatMessage = z.infer<typeof ChatMessageSchema>;
-
 export interface CopilotTextToTextProvider extends CopilotProvider {
-  generateText(messages: ChatMessage[], model: string): Promise<string>;
+  generateText(
+    messages: PromptMessage[],
+    model: string,
+    options: {
+      temperature?: number;
+      maxTokens?: number;
+      signal?: AbortSignal;
+      user?: string;
+    }
+  ): Promise<string>;
   generateTextStream(
-    messages: ChatMessage[],
-    model: string
+    messages: PromptMessage[],
+    model: string,
+    options: {
+      temperature?: number;
+      maxTokens?: number;
+      signal?: AbortSignal;
+      user?: string;
+    }
   ): AsyncIterable<string>;
 }
 

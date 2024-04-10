@@ -1,11 +1,12 @@
 -- CreateTable
 CREATE TABLE "ai_sessions" (
-    "id" VARCHAR NOT NULL,
+    "id" VARCHAR(36) NOT NULL,
     "user_id" VARCHAR NOT NULL,
     "workspace_id" VARCHAR NOT NULL,
     "doc_id" VARCHAR NOT NULL,
     "prompt_name" VARCHAR NOT NULL,
     "action" BOOLEAN NOT NULL,
+    "flavor" VARCHAR NOT NULL,
     "model" VARCHAR NOT NULL,
     "messages" JSON NOT NULL,
     "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
