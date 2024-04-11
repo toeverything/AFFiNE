@@ -138,6 +138,11 @@ export class ChatSessionService {
         if (id) sessionId = id;
       }
 
+      const messages = state.messages.map(m => ({
+        ...m,
+        params: m.params || undefined,
+      }));
+
       await tx.aiSession.upsert({
         where: {
           id: sessionId,
@@ -145,12 +150,9 @@ export class ChatSessionService {
         },
         update: {
           messages: {
-            // delete old messages
-            deleteMany: {},
-            create: state.messages.map(m => ({
-              ...m,
-              params: m.params || undefined,
-            })),
+            // skip delete old messages if no new messages
+            deleteMany: messages.length ? {} : undefined,
+            create: messages,
           },
         },
         create: {
@@ -158,10 +160,7 @@ export class ChatSessionService {
           workspaceId: state.workspaceId,
           docId: state.docId,
           messages: {
-            create: state.messages.map(m => ({
-              ...m,
-              params: m.params || undefined,
-            })),
+            create: messages,
           },
           // connect
           user: { connect: { id: state.userId } },
