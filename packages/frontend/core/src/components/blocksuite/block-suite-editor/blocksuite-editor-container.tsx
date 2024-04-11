@@ -164,6 +164,9 @@ export const BlocksuiteEditorContainer = forwardRef<
           ? docRef.current?.updateComplete
           : edgelessRef.current?.updateComplete;
       },
+      get mode() {
+        return mode;
+      },
     };
 
     const proxy = new Proxy(api, {
