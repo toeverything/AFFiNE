@@ -970,6 +970,8 @@
   "com.affine.payment.member-limit.title": "You have reached the limit",
   "com.affine.payment.member.description": "Manage members here. {{planName}} Users can invite up to {{memberLimit}}",
   "com.affine.payment.member.description.go-upgrade": "go upgrade",
+  "com.affine.payment.member.description.choose-plan": "Choose your plan",
+  "com.affine.payment.member.description2": "Looking to collaborate with more people?",
   "com.affine.payment.modal.change.cancel": "Cancel",
   "com.affine.payment.modal.change.confirm": "Change",
   "com.affine.payment.modal.change.title": "Change your subscription",

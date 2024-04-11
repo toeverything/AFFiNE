@@ -28,7 +28,7 @@ import { useUserSubscription } from '@affine/core/hooks/use-subscription';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { Permission, SubscriptionPlan } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { ArrowRightBigIcon, MoreVerticalIcon } from '@blocksuite/icons';
+import { MoreVerticalIcon } from '@blocksuite/icons';
 import clsx from 'clsx';
 import { useSetAtom } from 'jotai';
 import type { ReactElement } from 'react';
@@ -81,7 +81,7 @@ export const CloudWorkspaceMembersPanel = ({
   const quota = useWorkspaceQuota(workspaceId);
   const [subscription] = useUserSubscription();
   const plan = subscription?.plan ?? SubscriptionPlan.Free;
-  const isLimited = checkMemberCountLimit(memberCount, quota?.memberLimit);
+  const isLimited = checkMemberCountLimit(memberCount, quota.memberLimit);
 
   const t = useAFFiNEI18N();
   const { invite, isMutating } = useInviteMember(workspaceId);
@@ -151,27 +151,18 @@ export const CloudWorkspaceMembersPanel = ({
 
   const desc = useMemo(() => {
     if (!quota) return null;
-
-    const humanReadable = quota.humanReadable;
     return (
       <span>
-        {t['com.affine.payment.member.description']({
-          planName: humanReadable.name,
-          memberLimit: humanReadable.memberLimit,
-        })}
+        {t['com.affine.payment.member.description2']()}
         {upgradable ? (
-          <>
-            ,
-            <div
-              className={style.goUpgradeWrapper}
-              onClick={handleUpgradeConfirm}
-            >
-              <span className={style.goUpgrade}>
-                {t['com.affine.payment.member.description.go-upgrade']()}
-              </span>
-              <ArrowRightBigIcon className={style.arrowRight} />
-            </div>
-          </>
+          <div
+            className={style.goUpgradeWrapper}
+            onClick={handleUpgradeConfirm}
+          >
+            <span className={style.goUpgrade}>
+              {t['com.affine.payment.member.description.choose-plan']()}
+            </span>
+          </div>
         ) : null}
       </span>
     );
@@ -180,7 +171,7 @@ export const CloudWorkspaceMembersPanel = ({
   return (
     <>
       <SettingRow
-        name={`${t['Members']()} (${memberCount})`}
+        name={`${t['Members']()} (${memberCount}/${quota.humanReadable.memberLimit})`}
         desc={desc}
         spreadCol={isOwner}
       >
@@ -191,8 +182,8 @@ export const CloudWorkspaceMembersPanel = ({
               <MemberLimitModal
                 isFreePlan={plan === SubscriptionPlan.Free}
                 open={open}
-                plan={quota?.humanReadable.name ?? ''}
-                quota={quota?.humanReadable.memberLimit ?? ''}
+                plan={quota.humanReadable.name}
+                quota={quota.humanReadable.memberLimit}
                 setOpen={setOpen}
                 onConfirm={handleUpgradeConfirm}
               />

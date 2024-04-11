@@ -894,6 +894,8 @@
   "com.affine.payment.member-limit.title": "成员数量已达到极限",
   "com.affine.payment.member.description": "在此处管理成员。{{planName}} 用户可以邀请最多 {{memberLimit}} 人",
   "com.affine.payment.member.description.go-upgrade": "前往升级",
+  "com.affine.payment.member.description.choose-plan": "选择你的计划",
+  "com.affine.payment.member.description2": "希望与更多人协作？",
   "com.affine.payment.modal.change.cancel": "取消",
   "com.affine.payment.modal.change.confirm": "更改",
   "com.affine.payment.modal.change.title": "更改您的订阅",
