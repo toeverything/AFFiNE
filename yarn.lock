@@ -264,7 +264,7 @@ __metadata:
     "@storybook/react-vite": "npm:^7.6.17"
     "@storybook/test-runner": "npm:^0.17.0"
     "@storybook/testing-library": "npm:^0.2.2"
-    "@testing-library/react": "npm:^14.2.1"
+    "@testing-library/react": "npm:^15.0.0"
     "@toeverything/theme": "npm:^0.7.29"
     "@types/bytes": "npm:^3.1.4"
     "@types/react": "npm:^18.2.58"
@@ -358,7 +358,7 @@ __metadata:
     "@sentry/react": "npm:^7.108.0"
     "@sentry/webpack-plugin": "npm:^2.14.2"
     "@swc/core": "npm:^1.4.8"
-    "@testing-library/react": "npm:^14.2.1"
+    "@testing-library/react": "npm:^15.0.0"
     "@toeverything/theme": "npm:^0.7.29"
     "@types/animejs": "npm:^3.1.12"
     "@types/bytes": "npm:^3.1.4"
@@ -575,7 +575,7 @@ __metadata:
     "@nx/vite": "npm:18.1.2"
     "@playwright/test": "npm:^1.41.2"
     "@taplo/cli": "npm:^0.7.0"
-    "@testing-library/react": "npm:^14.2.1"
+    "@testing-library/react": "npm:^15.0.0"
     "@toeverything/infra": "workspace:*"
     "@types/affine__env": "workspace:*"
     "@types/eslint": "npm:^8.56.3"
@@ -13906,6 +13906,22 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@testing-library/dom@npm:^10.0.0":
+  version: 10.0.0
+  resolution: "@testing-library/dom@npm:10.0.0"
+  dependencies:
+    "@babel/code-frame": "npm:^7.10.4"
+    "@babel/runtime": "npm:^7.12.5"
+    "@types/aria-query": "npm:^5.0.1"
+    aria-query: "npm:5.3.0"
+    chalk: "npm:^4.1.0"
+    dom-accessibility-api: "npm:^0.5.9"
+    lz-string: "npm:^1.5.0"
+    pretty-format: "npm:^27.0.2"
+  checksum: 10/d0d0ffffed0dae705c5c615d8779348743e66704b2da1ce3e2df7c2d038cde55d7f11819e9b50ca53d3ec815050fab928c8845316c2f713141b9fb8ad50921f6
+  languageName: node
+  linkType: hard
+
 "@testing-library/dom@npm:^9.0.0":
   version: 9.3.3
   resolution: "@testing-library/dom@npm:9.3.3"
@@ -13952,17 +13968,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@testing-library/react@npm:^14.2.1":
-  version: 14.2.1
-  resolution: "@testing-library/react@npm:14.2.1"
+"@testing-library/react@npm:^15.0.0":
+  version: 15.0.0
+  resolution: "@testing-library/react@npm:15.0.0"
   dependencies:
     "@babel/runtime": "npm:^7.12.5"
-    "@testing-library/dom": "npm:^9.0.0"
+    "@testing-library/dom": "npm:^10.0.0"
     "@types/react-dom": "npm:^18.0.0"
   peerDependencies:
     react: ^18.0.0
     react-dom: ^18.0.0
-  checksum: 10/e02b2f32ae79665a79fc4d8ee053fd3832bfcd4753aa1dba05cdece1a9f59c72a0fae91e0a9387597dcb686d631a722729f2878e38dc95e6f23b291ad8d09b6c
+  checksum: 10/78217cb67c2e0fb72dc4f51d19a25fbc290f298f3ca73a517ceda67a352741405740e0daa9ba5d93e4496a8f51f1465774e84d2a828863133b539304e0759dad
   languageName: node
   linkType: hard
 
@@ -13989,7 +14005,7 @@ __metadata:
     "@blocksuite/presets": "npm:0.14.0-canary-202404090831-25c5310"
     "@blocksuite/store": "npm:0.14.0-canary-202404090831-25c5310"
     "@datastructures-js/binary-search-tree": "npm:^5.3.2"
-    "@testing-library/react": "npm:^14.2.1"
+    "@testing-library/react": "npm:^15.0.0"
     async-call-rpc: "npm:^6.4.0"
     foxact: "npm:^0.2.31"
     jotai: "npm:^2.6.5"
@@ -16654,7 +16670,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"aria-query@npm:^5.0.0":
+"aria-query@npm:5.3.0, aria-query@npm:^5.0.0":
   version: 5.3.0
   resolution: "aria-query@npm:5.3.0"
   dependencies:
