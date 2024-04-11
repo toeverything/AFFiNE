@@ -111,8 +111,9 @@ class CopilotHistoriesType implements Partial<ChatHistory> {
 
   @Field(() => String, {
     description: 'An mark identifying which view to use to display the session',
+    nullable: true,
   })
-  action!: string;
+  action!: string | undefined;
 
   @Field(() => Number, {
     description: 'The number of tokens used in the session',
