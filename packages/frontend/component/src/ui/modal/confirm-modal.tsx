@@ -30,6 +30,11 @@ export const ConfirmModal = ({
   width = 480,
   ...props
 }: ConfirmModalProps) => {
+  const onConfirmClick = useCallback(() => {
+    Promise.resolve(onConfirm?.()).catch(err => {
+      console.error(err);
+    });
+  }, [onConfirm]);
   return (
     <Modal
       contentOptions={{ className: styles.confirmModalContainer }}
@@ -50,7 +55,7 @@ export const ConfirmModal = ({
             {cancelText}
           </Button>
         </DialogTrigger>
-        <Button onClick={onConfirm} {...confirmButtonOptions}></Button>
+        <Button onClick={onConfirmClick} {...confirmButtonOptions}></Button>
       </div>
     </Modal>
   );

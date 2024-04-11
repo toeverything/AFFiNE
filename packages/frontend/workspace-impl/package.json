@@ -20,10 +20,10 @@
     "idb-keyval": "^6.2.1",
     "is-svg": "^5.0.0",
     "lodash-es": "^4.17.21",
-    "nanoid": "^5.0.6",
-    "socket.io-client": "^4.7.4",
+    "nanoid": "^5.0.7",
+    "socket.io-client": "^4.7.5",
     "y-protocols": "^1.0.6",
-    "yjs": "^13.6.12"
+    "yjs": "^13.6.14"
   },
   "devDependencies": {
     "fake-indexeddb": "^5.0.2",

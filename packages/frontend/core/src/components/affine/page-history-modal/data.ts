@@ -115,7 +115,7 @@ const getOrCreateShellWorkspace = (workspaceId: string) => {
       schema: globalBlockSuiteSchema,
     });
     docCollectionMap.set(workspaceId, docCollection);
-    docCollection.doc.emit('sync', []);
+    docCollection.doc.emit('sync', [true, docCollection.doc]);
   }
   return docCollection;
 };

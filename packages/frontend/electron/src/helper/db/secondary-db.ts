@@ -177,12 +177,20 @@ export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
 
     // listen to upstream update
     this.upstream.yDoc.on('update', onUpstreamUpdate);
-    doc.on('update', onSelfUpdate);
+    doc.on('update', (update, origin) => {
+      onSelfUpdate(update, origin).catch(err => {
+        logger.error(err);
+      });
+    });
     doc.on('subdocs', onSubdocs);
 
     this.unsubscribers.add(() => {
       this.upstream.yDoc.off('update', onUpstreamUpdate);
-      doc.off('update', onSelfUpdate);
+      doc.off('update', (update, origin) => {
+        onSelfUpdate(update, origin).catch(err => {
+          logger.error(err);
+        });
+      });
       doc.off('subdocs', onSubdocs);
     });
   }

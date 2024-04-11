@@ -52,20 +52,18 @@ export const StyledFooter = styled('div')({
   ...displayFlex('space-between', 'center'),
 });
 
-export const StyleUserInfo = styled('div')(() => {
-  return {
-    textAlign: 'left',
-    marginLeft: '16px',
-    flex: 1,
-    p: {
-      lineHeight: '24px',
-      color: 'var(--affine-icon-color)',
-    },
-    'p:first-of-type': {
-      color: 'var(--affine-text-primary-color)',
-      fontWeight: 600,
-    },
-  };
+export const StyleUserInfo = styled('div')({
+  textAlign: 'left',
+  marginLeft: '16px',
+  flex: 1,
+  p: {
+    lineHeight: '24px',
+    color: 'var(--affine-icon-color)',
+  },
+  'p:first-of-type': {
+    color: 'var(--affine-text-primary-color)',
+    fontWeight: 600,
+  },
 });
 
 export const StyledModalHeaderLeft = styled('div')(() => {
@@ -113,17 +111,15 @@ export const StyleWorkspaceAdd = styled('div')(() => {
     ...displayFlex('center', 'center'),
   };
 });
-export const StyledModalHeader = styled('div')(() => {
-  return {
-    width: '100%',
-    height: '72px',
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    borderRadius: '24px 24px 0 0',
-    padding: '0 40px',
-    ...displayFlex('space-between', 'center'),
-  };
+export const StyledModalHeader = styled('div')({
+  width: '100%',
+  height: '72px',
+  position: 'absolute',
+  left: 0,
+  top: 0,
+  borderRadius: '24px 24px 0 0',
+  padding: '0 40px',
+  ...displayFlex('space-between', 'center'),
 });
 
 export const StyledSignInButton = styled('button')(() => {

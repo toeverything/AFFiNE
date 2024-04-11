@@ -36,22 +36,20 @@ export const StyledIsland = styled('div')<{
     },
   };
 });
-export const StyledIconWrapper = styled('div')(() => {
-  return {
-    color: 'var(--affine-icon-color)',
-    ...displayFlex('center', 'center'),
-    cursor: 'pointer',
-    fontSize: '24px',
-    borderRadius: '5px',
-    width: '36px',
-    height: '36px',
-    margin: '4px auto 4px',
-    transition: 'background-color 0.2s',
-    position: 'relative',
-    ':hover': {
-      backgroundColor: 'var(--affine-hover-color)',
-    },
-  };
+export const StyledIconWrapper = styled('div')({
+  color: 'var(--affine-icon-color)',
+  ...displayFlex('center', 'center'),
+  cursor: 'pointer',
+  fontSize: '24px',
+  borderRadius: '5px',
+  width: '36px',
+  height: '36px',
+  margin: '4px auto 4px',
+  transition: 'background-color 0.2s',
+  position: 'relative',
+  ':hover': {
+    backgroundColor: 'var(--affine-hover-color)',
+  },
 });
 
 export const StyledAnimateWrapper = styled('div')(() => ({

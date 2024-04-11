@@ -85,7 +85,11 @@ export class WorkspaceSQLiteDB extends BaseSQLiteAdapter {
         });
       };
 
-      doc.on('update', onUpdate);
+      doc.on('update', (update, origin) => {
+        onUpdate(update, origin).catch(err => {
+          logger.error(err);
+        });
+      });
       doc.on('subdocs', onSubdocs);
     } else {
       logger.error('setupListener: doc not found', docId);

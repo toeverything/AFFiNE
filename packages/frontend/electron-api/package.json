@@ -9,6 +9,6 @@
   },
   "devDependencies": {
     "@toeverything/infra": "workspace:*",
-    "electron": "^29.0.1"
+    "electron": "^29.3.0"
   }
 }

@@ -74,17 +74,15 @@ export const StyledTableHead = styled('thead')(() => {
   };
 });
 
-export const StyledTHeadRow = styled('tr')(() => {
-  return {
-    td: {
-      whiteSpace: 'nowrap',
-      // How to set tbody height with overflow scroll
-      // see https://stackoverflow.com/questions/23989463/how-to-set-tbody-height-with-overflow-scroll
-      position: 'sticky',
-      top: 0,
-      background: 'var(--affine-background-primary-color)',
-    },
-  };
+export const StyledTHeadRow = styled('tr')({
+  td: {
+    whiteSpace: 'nowrap',
+    // How to set tbody height with overflow scroll
+    // see https://stackoverflow.com/questions/23989463/how-to-set-tbody-height-with-overflow-scroll
+    position: 'sticky',
+    top: 0,
+    background: 'var(--affine-background-primary-color)',
+  },
 });
 
 export const StyledTBodyRow = styled('tr')(() => {

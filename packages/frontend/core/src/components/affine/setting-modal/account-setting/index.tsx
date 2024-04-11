@@ -66,7 +66,7 @@ export const UserAvatar = () => {
     [avatarTrigger, user]
   );
 
-  const handleRemoveUserAvatar = useCallback(
+  const handleRemoveUserAvatar = useAsyncCallback(
     async (e: MouseEvent<HTMLButtonElement>) => {
       mixpanel.track('RemoveAvatar', {
         userId: user.id,

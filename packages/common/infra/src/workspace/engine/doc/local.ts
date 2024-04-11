@@ -182,7 +182,7 @@ export class DocEngineLocalPart {
       }
 
       // mark doc as loaded
-      doc.emit('sync', [true]);
+      doc.emit('sync', [true, doc]);
       doc.on('update', this.handleDocUpdate);
 
       this.status.connectedDocs.add(job.docId);
