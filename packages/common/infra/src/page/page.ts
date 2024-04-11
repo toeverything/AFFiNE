@@ -1,6 +1,6 @@
 import type { Doc as BlockSuiteDoc } from '@blocksuite/store';
-import type { ServiceProvider } from '@toeverything/infra';
 
+import type { ServiceProvider } from '../di/core';
 import type { PageMode, PageRecord } from './record';
 
 export class Doc {

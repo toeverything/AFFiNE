@@ -1,7 +1,7 @@
 import { DebugLogger } from '@affine/debug';
 import { Slot } from '@blocksuite/global/utils';
 
-import type { Memento } from '../..';
+import type { Memento } from '../../storage/memento';
 import type { WorkspaceMetadata } from '../metadata';
 import type { Workspace } from '../workspace';
 import type { WorkspaceListProvider } from '.';

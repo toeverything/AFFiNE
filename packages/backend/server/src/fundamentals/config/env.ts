@@ -1,8 +1,7 @@
 import { set } from 'lodash-es';
 
-import type { AFFiNEConfig } from './def';
+import type { AFFiNEConfig, EnvConfigType } from './def';
 
-export type EnvConfigType = 'string' | 'int' | 'float' | 'boolean';
 /**
  * parse number value from environment variables
  */

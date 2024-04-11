@@ -2,7 +2,6 @@ import type { ApolloDriverConfig } from '@nestjs/apollo';
 import SMTPTransport from 'nodemailer/lib/smtp-transport';
 
 import type { LeafPaths } from '../utils/types';
-import { EnvConfigType } from './env';
 import type { AFFiNEStorageConfig } from './storage';
 
 declare global {
@@ -13,6 +12,7 @@ declare global {
   }
 }
 
+export type EnvConfigType = 'string' | 'int' | 'float' | 'boolean';
 export type ServerFlavor = 'allinone' | 'graphql' | 'sync';
 export type AFFINE_ENV = 'dev' | 'beta' | 'production';
 export type NODE_ENV = 'development' | 'test' | 'production';
