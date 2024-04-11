@@ -45,6 +45,7 @@ export const MultiTabSidebarHeaderSwitcher = ({
   useEffect(() => {
     const journalExtension = tabs.find(ext => ext.name === 'journal');
     isJournal && journalExtension && setActiveTabName('journal');
+    !isJournal && setActiveTabName('outline');
   }, [tabs, isJournal, setActiveTabName]);
 
   const vars = assignInlineVars({
