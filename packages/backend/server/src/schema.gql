@@ -24,7 +24,7 @@ type Copilot {
 
 type CopilotHistories {
   """An mark identifying which view to use to display the session"""
-  action: String!
+  action: String
   messages: [ChatMessage!]!
   sessionId: String!
 
