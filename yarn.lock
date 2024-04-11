@@ -738,7 +738,7 @@ __metadata:
     semver: "npm:^7.6.0"
     sinon: "npm:^17.0.1"
     socket.io: "npm:^4.7.4"
-    stripe: "npm:^14.18.0"
+    stripe: "npm:^15.0.0"
     supertest: "npm:^6.3.4"
     tiktoken: "npm:^1.0.13"
     ts-node: "npm:^10.9.2"
@@ -34036,13 +34036,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"stripe@npm:^14.18.0":
-  version: 14.18.0
-  resolution: "stripe@npm:14.18.0"
+"stripe@npm:^15.0.0":
+  version: 15.0.0
+  resolution: "stripe@npm:15.0.0"
   dependencies:
     "@types/node": "npm:>=8.1.0"
     qs: "npm:^6.11.0"
-  checksum: 10/3cc5bb4db1ea8be1012f75bb1716a91a81c3c01f0908721cfaad79f4e5e83df04efaf7d007aa1e9cf095cf1f6c43052069eea4c9ba698a4884edc321bb42e826
+  checksum: 10/d80dc1196335fa4095001bafe3a8ba3e567e32885b4b22cf1221a7b37801c891378cefe435137bdbbe9cc89bb58030fa0da58fd1703d4124fac15083250278b2
   languageName: node
   linkType: hard
 
