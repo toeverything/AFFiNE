@@ -1,16 +1,26 @@
 import { Menu } from '@affine/component/ui/menu';
+import { WorkspaceFlavour } from '@affine/env/workspace';
 import {
+  initEmptyPage,
   useLiveData,
   useService,
   WorkspaceListService,
   WorkspaceManager,
 } from '@toeverything/infra';
-import { lazy, useEffect, useLayoutEffect, useState } from 'react';
-import type { LoaderFunction } from 'react-router-dom';
+import {
+  lazy,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
+import { type LoaderFunction, useSearchParams } from 'react-router-dom';
 
 import { createFirstAppData } from '../bootstrap/first-app-data';
 import { UserWithWorkspaceList } from '../components/pure/workspace-slider-bar/user-with-workspace-list';
 import { WorkspaceFallback } from '../components/workspace';
+import { useSession } from '../hooks/affine/use-current-user';
 import { useNavigateHelper } from '../hooks/use-navigate-helper';
 import { WorkspaceSubPath } from '../shared';
 
@@ -28,12 +38,48 @@ export const Component = () => {
   // navigating and creating may be slow, to avoid flickering, we show workspace fallback
   const [navigating, setNavigating] = useState(false);
   const [creating, setCreating] = useState(false);
+  const { status } = useSession();
+  const workspaceManager = useService(WorkspaceManager);
 
-  const list = useLiveData(useService(WorkspaceListService).workspaceList$);
+  const workspaceListService = useService(WorkspaceListService);
+  const list = useLiveData(workspaceListService.workspaceList$);
+  const workspaceListStatus = useLiveData(workspaceListService.status$);
 
   const { openPage } = useNavigateHelper();
+  const [searchParams] = useSearchParams();
+
+  const createOnceRef = useRef(false);
+
+  const createCloudWorkspace = useCallback(() => {
+    if (createOnceRef.current) return;
+    createOnceRef.current = true;
+    workspaceManager
+      .createWorkspace(WorkspaceFlavour.AFFINE_CLOUD, async workspace => {
+        workspace.meta.setName('AFFiNE Cloud');
+        const page = workspace.createDoc();
+        initEmptyPage(page);
+      })
+      .then(workspace => openPage(workspace.id, WorkspaceSubPath.ALL))
+      .catch(err => console.error('Failed to create cloud workspace', err));
+  }, [openPage, workspaceManager]);
 
   useLayoutEffect(() => {
+    if (workspaceListStatus.loading) {
+      return;
+    }
+
+    // check is user logged in && has cloud workspace
+    if (
+      searchParams.get('initCloud') === 'true' &&
+      status === 'authenticated'
+    ) {
+      searchParams.delete('initCloud');
+      if (list.every(w => w.flavour !== WorkspaceFlavour.AFFINE_CLOUD)) {
+        createCloudWorkspace();
+        return;
+      }
+    }
+
     if (list.length === 0) {
       return;
     }
@@ -44,9 +90,14 @@ export const Component = () => {
     const openWorkspace = list.find(w => w.id === lastId) ?? list[0];
     openPage(openWorkspace.id, WorkspaceSubPath.ALL);
     setNavigating(true);
-  }, [list, openPage]);
-
-  const workspaceManager = useService(WorkspaceManager);
+  }, [
+    createCloudWorkspace,
+    list,
+    openPage,
+    searchParams,
+    status,
+    workspaceListStatus.loading,
+  ]);
 
   useEffect(() => {
     setCreating(true);

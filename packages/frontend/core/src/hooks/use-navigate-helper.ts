@@ -130,10 +130,13 @@ export function useNavigateHelper() {
   );
 
   const jumpToIndex = useCallback(
-    (logic: RouteLogic = RouteLogic.PUSH) => {
-      return navigate('/', {
-        replace: logic === RouteLogic.REPLACE,
-      });
+    (logic: RouteLogic = RouteLogic.PUSH, opt?: { search?: string }) => {
+      return navigate(
+        { pathname: '/', search: opt?.search },
+        {
+          replace: logic === RouteLogic.REPLACE,
+        }
+      );
     },
     [navigate]
   );

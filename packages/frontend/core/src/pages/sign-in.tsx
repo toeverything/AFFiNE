@@ -3,7 +3,7 @@ import { SignInPageContainer } from '@affine/component/auth-components';
 import { useAtom } from 'jotai';
 import { useCallback, useEffect, useRef } from 'react';
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 
 import { authAtom } from '../atoms';
 import type { AuthProps } from '../components/affine/auth';
@@ -27,6 +27,7 @@ export const SignIn = () => {
   const navigate = useNavigate();
   const { jumpToIndex } = useNavigateHelper();
   const subscriptionData = useSubscriptionSearch();
+  const [searchParams] = useSearchParams();
 
   const isLoggedIn = loginStatus === 'authenticated';
 
@@ -49,7 +50,9 @@ export const SignIn = () => {
           replace: true,
         });
       } else {
-        jumpToIndex(RouteLogic.REPLACE);
+        jumpToIndex(RouteLogic.REPLACE, {
+          search: searchParams.toString(),
+        });
       }
     }
   }, [
@@ -59,6 +62,7 @@ export const SignIn = () => {
     setAuthAtom,
     subscriptionData,
     isLoggedIn,
+    searchParams,
   ]);
 
   const onSetEmailType = useCallback(
