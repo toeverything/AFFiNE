@@ -45,7 +45,7 @@ export const prompts: Prompt[] = [
   },
   {
     name: 'Summary',
-    action: 'text',
+    action: 'Summary',
     model: 'gpt-4-turbo-preview',
     messages: [
       {
@@ -57,7 +57,7 @@ export const prompts: Prompt[] = [
   },
   {
     name: 'Summary the webpage',
-    action: 'text',
+    action: 'Summary the webpage',
     model: 'gpt-4-turbo-preview',
     messages: [
       {
@@ -69,7 +69,7 @@ export const prompts: Prompt[] = [
   },
   {
     name: 'Explain this image',
-    action: 'text',
+    action: 'Explain this image',
     model: 'gpt-4-vision-preview',
     messages: [
       {
@@ -81,7 +81,7 @@ export const prompts: Prompt[] = [
   },
   {
     name: 'Explain this code',
-    action: 'text',
+    action: 'Explain this code',
     model: 'gpt-4-turbo-preview',
     messages: [
       {
@@ -93,7 +93,7 @@ export const prompts: Prompt[] = [
   },
   {
     name: 'Translate to',
-    action: 'text',
+    action: 'Translate',
     model: 'gpt-4-turbo-preview',
     messages: [
       {
@@ -119,7 +119,7 @@ export const prompts: Prompt[] = [
   },
   {
     name: 'Write an article about this',
-    action: 'text',
+    action: 'Write an article about this',
     model: 'gpt-4-turbo-preview',
     messages: [
       {
@@ -130,7 +130,7 @@ export const prompts: Prompt[] = [
   },
   {
     name: 'Write a twitter about this',
-    action: 'text',
+    action: 'Write a twitter about this',
     model: 'gpt-4-turbo-preview',
     messages: [
       {
@@ -141,7 +141,7 @@ export const prompts: Prompt[] = [
   },
   {
     name: 'Write a poem about this',
-    action: 'text',
+    action: 'Write a poem about this',
     model: 'gpt-4-turbo-preview',
     messages: [
       {
@@ -152,7 +152,7 @@ export const prompts: Prompt[] = [
   },
   {
     name: 'Write a blog post about this',
-    action: 'text',
+    action: 'Write a blog post about this',
     model: 'gpt-4-turbo-preview',
     messages: [
       {
@@ -163,7 +163,7 @@ export const prompts: Prompt[] = [
   },
   {
     name: 'Change tone to',
-    action: 'text',
+    action: 'Change tone',
     model: 'gpt-4-turbo-preview',
     messages: [
       {
@@ -176,7 +176,7 @@ export const prompts: Prompt[] = [
   },
   {
     name: 'Brainstorm ideas about this',
-    action: 'text',
+    action: 'Brainstorm ideas about this',
     model: 'gpt-4-turbo-preview',
     messages: [
       {
@@ -188,7 +188,7 @@ export const prompts: Prompt[] = [
   },
   {
     name: 'Improve writing for it',
-    action: 'text',
+    action: 'Improve writing for it',
     model: 'gpt-4-turbo-preview',
     messages: [
       {
@@ -200,7 +200,7 @@ export const prompts: Prompt[] = [
   },
   {
     name: 'Improve grammar for it',
-    action: 'text',
+    action: 'Improve grammar for it',
     model: 'gpt-4-turbo-preview',
     messages: [
       {
@@ -212,7 +212,7 @@ export const prompts: Prompt[] = [
   },
   {
     name: 'Fix spelling for it',
-    action: 'text',
+    action: 'Fix spelling for it',
     model: 'gpt-4-turbo-preview',
     messages: [
       {
@@ -238,7 +238,7 @@ export const prompts: Prompt[] = [
   },
   {
     name: 'Find action items from it',
-    action: 'todo-list',
+    action: 'Find action items from it',
     model: 'gpt-4-turbo-preview',
     messages: [
       {
@@ -250,7 +250,7 @@ export const prompts: Prompt[] = [
   },
   {
     name: 'Check code error',
-    action: 'text',
+    action: 'Check code error',
     model: 'gpt-4-turbo-preview',
     messages: [
       {
@@ -262,7 +262,7 @@ export const prompts: Prompt[] = [
   },
   {
     name: 'Create a presentation',
-    action: 'text',
+    action: 'Create a presentation',
     model: 'gpt-4-turbo-preview',
     messages: [
       {
@@ -274,7 +274,7 @@ export const prompts: Prompt[] = [
   },
   {
     name: 'Create headings',
-    action: 'text',
+    action: 'Create headings',
     model: 'gpt-4-turbo-preview',
     messages: [
       {
