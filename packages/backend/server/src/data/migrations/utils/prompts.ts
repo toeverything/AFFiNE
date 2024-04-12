@@ -44,6 +44,12 @@ export const prompts: Prompt[] = [
     messages: [],
   },
   {
+    name: 'debug:action:fal-sdturbo',
+    action: 'image',
+    model: 'fast-turbo-diffusion',
+    messages: [],
+  },
+  {
     name: 'Summary',
     action: 'Summary',
     model: 'gpt-4-turbo-preview',

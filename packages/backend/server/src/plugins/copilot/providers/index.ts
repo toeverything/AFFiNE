@@ -118,17 +118,36 @@ export class CopilotProviderService {
 
   getProviderByCapability<C extends CopilotCapability>(
     capability: C,
+    model?: string,
     prefer?: CopilotProviderType
   ): CapabilityToCopilotProvider[C] | null {
     const providers = PROVIDER_CAPABILITY_MAP.get(capability);
     if (Array.isArray(providers) && providers.length) {
-      const selectedCapability =
-        prefer && providers.includes(prefer) ? prefer : providers[0];
+      let selectedProvider: CopilotProviderType | undefined = prefer;
+      let currentIndex = -1;
 
-      const provider = this.getProvider(selectedCapability);
-      assert(provider.getCapabilities().includes(capability));
+      if (!selectedProvider) {
+        currentIndex = 0;
+        selectedProvider = providers[currentIndex];
+      }
 
-      return provider as CapabilityToCopilotProvider[C];
+      while (selectedProvider) {
+        // find first provider that supports the capability and model
+        if (providers.includes(selectedProvider)) {
+          const provider = this.getProvider(selectedProvider);
+          if (provider.getCapabilities().includes(capability)) {
+            if (model) {
+              if (provider.isModelAvailable(model)) {
+                return provider as CapabilityToCopilotProvider[C];
+              }
+            } else {
+              return provider as CapabilityToCopilotProvider[C];
+            }
+          }
+        }
+        currentIndex += 1;
+        selectedProvider = providers[currentIndex];
+      }
     }
     return null;
   }

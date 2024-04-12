@@ -4,6 +4,7 @@ import {
   CopilotCapability,
   CopilotImageToImageProvider,
   CopilotProviderType,
+  CopilotTextToImageProvider,
   PromptMessage,
 } from '../types';
 
@@ -12,17 +13,24 @@ export type FalConfig = {
 };
 
 export type FalResponse = {
+  detail: Array<{ msg: string }>;
   images: Array<{ url: string }>;
 };
 
-export class FalProvider implements CopilotImageToImageProvider {
+export class FalProvider
+  implements CopilotTextToImageProvider, CopilotImageToImageProvider
+{
   static readonly type = CopilotProviderType.FAL;
-  static readonly capabilities = [CopilotCapability.ImageToImage];
+  static readonly capabilities = [
+    CopilotCapability.TextToImage,
+    CopilotCapability.ImageToImage,
+  ];
 
   readonly availableModels = [
+    // text to image
+    'fast-turbo-diffusion',
     // image to image
-    // https://blog.fal.ai/building-applications-with-real-time-stable-diffusion-apis/
-    '110602490-lcm-sd15-i2i',
+    'lcm-sd15-i2i',
   ];
 
   constructor(private readonly config: FalConfig) {
@@ -35,6 +43,10 @@ export class FalProvider implements CopilotImageToImageProvider {
 
   getCapabilities(): CopilotCapability[] {
     return FalProvider.capabilities;
+  }
+
+  isModelAvailable(model: string): boolean {
+    return this.availableModels.includes(model);
   }
 
   // ====== image to image ======
@@ -50,21 +62,20 @@ export class FalProvider implements CopilotImageToImageProvider {
     if (!this.availableModels.includes(model)) {
       throw new Error(`Invalid model: ${model}`);
     }
-    if (!content) {
-      throw new Error('Prompt is required');
-    }
-    if (!Array.isArray(attachments) || !attachments.length) {
-      throw new Error('Attachments is required');
+
+    // prompt attachments require at least one
+    if (!content && (!Array.isArray(attachments) || !attachments.length)) {
+      throw new Error('Prompt or Attachments is empty');
     }
 
-    const data = (await fetch(`https://${model}.gateway.alpha.fal.ai/`, {
+    const data = (await fetch(`https://fal.run/fal-ai/${model}`, {
       method: 'POST',
       headers: {
         Authorization: `key ${this.config.apiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        image_url: attachments[0],
+        image_url: attachments?.[0],
         prompt: content,
         sync_mode: true,
         seed: 42,
@@ -73,7 +84,13 @@ export class FalProvider implements CopilotImageToImageProvider {
       signal: options.signal,
     }).then(res => res.json())) as FalResponse;
 
-    return data.images.map(image => image.url);
+    if (!data.images?.length) {
+      const error = data.detail?.[0]?.msg;
+      throw new Error(
+        error ? `Invalid message: ${error}` : 'No images generated'
+      );
+    }
+    return data.images?.map(image => image.url) || [];
   }
 
   async *generateImagesStream(

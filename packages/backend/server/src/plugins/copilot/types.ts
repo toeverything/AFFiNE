@@ -141,6 +141,7 @@ export enum CopilotCapability {
 
 export interface CopilotProvider {
   getCapabilities(): CopilotCapability[];
+  isModelAvailable(model: string): boolean;
 }
 
 export interface CopilotTextToTextProvider extends CopilotProvider {

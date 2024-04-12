@@ -89,8 +89,10 @@ export class CopilotController {
     @Query('messageId') messageId: string | undefined,
     @Query() params: Record<string, string | string[]>
   ): Promise<string> {
+    const model = await this.chatSession.get(sessionId).then(s => s?.model);
     const provider = this.provider.getProviderByCapability(
-      CopilotCapability.TextToText
+      CopilotCapability.TextToText,
+      model
     );
     if (!provider) {
       throw new InternalServerErrorException('No provider available');
@@ -139,8 +141,10 @@ export class CopilotController {
     @Query('messageId') messageId: string | undefined,
     @Query() params: Record<string, string>
   ): Promise<Observable<ChatEvent>> {
+    const model = await this.chatSession.get(sessionId).then(s => s?.model);
     const provider = this.provider.getProviderByCapability(
-      CopilotCapability.TextToText
+      CopilotCapability.TextToText,
+      model
     );
     if (!provider) {
       throw new InternalServerErrorException('No provider available');
@@ -194,10 +198,13 @@ export class CopilotController {
     @Query('messageId') messageId: string | undefined,
     @Query() params: Record<string, string>
   ): Promise<Observable<ChatEvent>> {
+    const hasAttachment = await this.hasAttachment(sessionId, messageId);
+    const model = await this.chatSession.get(sessionId).then(s => s?.model);
     const provider = this.provider.getProviderByCapability(
-      (await this.hasAttachment(sessionId, messageId))
+      hasAttachment
         ? CopilotCapability.ImageToImage
-        : CopilotCapability.TextToImage
+        : CopilotCapability.TextToImage,
+      model
     );
     if (!provider) {
       throw new InternalServerErrorException('No provider available');

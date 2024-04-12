@@ -63,6 +63,10 @@ export class OpenAIProvider
     return OpenAIProvider.capabilities;
   }
 
+  isModelAvailable(model: string): boolean {
+    return this.availableModels.includes(model);
+  }
+
   private chatToGPTMessage(
     messages: PromptMessage[]
   ): OpenAI.Chat.Completions.ChatCompletionMessageParam[] {
