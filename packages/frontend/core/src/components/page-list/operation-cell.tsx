@@ -6,6 +6,7 @@ import {
   MenuItem,
   toast,
   Tooltip,
+  useConfirmModal,
 } from '@affine/component';
 import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
 import { useBlockSuiteMetaHelper } from '@affine/core/hooks/affine/use-block-suite-meta-helper';
@@ -25,6 +26,7 @@ import {
   FilterMinusIcon,
   MoreVerticalIcon,
   OpenInNewIcon,
+  PlusIcon,
   ResetIcon,
   SplitViewIcon,
 } from '@blocksuite/icons';
@@ -34,6 +36,7 @@ import { useCallback, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import type { CollectionService } from '../../modules/collection';
+import { usePageHelper } from '../blocksuite/block-suite-page-list/utils';
 import { FavoriteTag } from './components/favorite-tag';
 import * as styles from './list.css';
 import { DisablePublicSharing, MoveToTrash } from './operation-menu-items';
@@ -285,7 +288,10 @@ export const CollectionOperationCell = ({
   info,
 }: CollectionOperationCellProps) => {
   const t = useAFFiNEI18N();
+
   const favAdapter = useService(FavoriteItemsAdapter);
+  const { createPage } = usePageHelper(config.docCollection);
+  const { openConfirmModal } = useConfirmModal();
   const favourite = useLiveData(
     favAdapter.isFavorite$(collection.id, 'collection')
   );
@@ -336,6 +342,24 @@ export const CollectionOperationCell = ({
     );
   }, [favAdapter, collection.id, t]);
 
+  const createAndAddDocument = useCallback(() => {
+    const newDoc = createPage();
+    service.addPageToCollection(collection.id, newDoc.id);
+  }, [collection.id, createPage, service]);
+
+  const onConfirmAddDocToCollection = useCallback(() => {
+    openConfirmModal({
+      title: t['com.affine.collection.add-doc.confirm.title'](),
+      description: t['com.affine.collection.add-doc.confirm.description'](),
+      cancelText: t['Cancel'](),
+      confirmButtonOptions: {
+        type: 'primary',
+        children: t['Confirm'](),
+      },
+      onConfirm: createAndAddDocument,
+    });
+  }, [createAndAddDocument, openConfirmModal, t]);
+
   return (
     <>
       {editModal}
@@ -379,6 +403,16 @@ export const CollectionOperationCell = ({
                 {favourite
                   ? t['com.affine.favoritePageOperation.remove']()
                   : t['com.affine.favoritePageOperation.add']()}
+              </MenuItem>
+              <MenuItem
+                onClick={onConfirmAddDocToCollection}
+                preFix={
+                  <MenuIcon>
+                    <PlusIcon />
+                  </MenuIcon>
+                }
+              >
+                {t['New Page']()}
               </MenuItem>
               <MenuItem
                 onClick={handleDelete}

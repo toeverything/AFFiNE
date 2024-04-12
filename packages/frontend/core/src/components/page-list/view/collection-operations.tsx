@@ -12,6 +12,7 @@ import {
   FavoritedIcon,
   FavoriteIcon,
   FilterIcon,
+  PlusIcon,
   SplitViewIcon,
 } from '@blocksuite/icons';
 import { useLiveData, useService } from '@toeverything/infra';
@@ -30,11 +31,13 @@ export const CollectionOperations = ({
   collection,
   config,
   openRenameModal,
+  onAddDocToCollection,
   children,
 }: PropsWithChildren<{
   collection: Collection;
   config: AllPageListConfig;
   openRenameModal?: () => void;
+  onAddDocToCollection?: () => void;
 }>) => {
   const deleteInfo = useDeleteCollectionInfo();
   const { appSettings } = useAppSettingHelper();
@@ -125,6 +128,19 @@ export const CollectionOperations = ({
         name: t['com.affine.collection.menu.edit'](),
         click: showEdit,
       },
+      ...(onAddDocToCollection
+        ? [
+            {
+              icon: (
+                <MenuIcon>
+                  <PlusIcon />
+                </MenuIcon>
+              ),
+              name: t['New Page'](),
+              click: onAddDocToCollection,
+            },
+          ]
+        : []),
       {
         icon: (
           <MenuIcon>
@@ -173,6 +189,7 @@ export const CollectionOperations = ({
       t,
       showEditName,
       showEdit,
+      onAddDocToCollection,
       favorite,
       onToggleFavoritePage,
       appSettings.enableMultiView,

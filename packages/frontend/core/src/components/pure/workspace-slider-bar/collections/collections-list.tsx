@@ -1,6 +1,11 @@
-import { AnimatedCollectionsIcon, toast } from '@affine/component';
+import {
+  AnimatedCollectionsIcon,
+  toast,
+  useConfirmModal,
+} from '@affine/component';
 import { RenameModal } from '@affine/component/rename-modal';
 import { Button, IconButton } from '@affine/component/ui/button';
+import { usePageHelper } from '@affine/core/components/blocksuite/block-suite-page-list/utils';
 import {
   CollectionOperations,
   filterPage,
@@ -16,7 +21,11 @@ import { CollectionService } from '@affine/core/modules/collection';
 import { FavoriteItemsAdapter } from '@affine/core/modules/workspace';
 import type { Collection } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { MoreHorizontalIcon, ViewLayersIcon } from '@blocksuite/icons';
+import {
+  MoreHorizontalIcon,
+  PlusIcon,
+  ViewLayersIcon,
+} from '@blocksuite/icons';
 import type { DocCollection } from '@blocksuite/store';
 import { type AnimateLayoutChanges, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -56,6 +65,8 @@ export const CollectionSidebarNavItem = ({
   const [open, setOpen] = useState(false);
   const collectionService = useService(CollectionService);
   const favAdapter = useService(FavoriteItemsAdapter);
+  const { createPage } = usePageHelper(docCollection);
+  const { openConfirmModal } = useConfirmModal();
   const t = useAFFiNEI18N();
 
   const favourites = useLiveData(favAdapter.favorites$);
@@ -138,6 +149,24 @@ export const CollectionSidebarNavItem = ({
     setOpen(true);
   }, []);
 
+  const createAndAddDocument = useCallback(() => {
+    const newDoc = createPage();
+    collectionService.addPageToCollection(collection.id, newDoc.id);
+  }, [collection.id, collectionService, createPage]);
+
+  const onConfirmAddDocToCollection = useCallback(() => {
+    openConfirmModal({
+      title: t['com.affine.collection.add-doc.confirm.title'](),
+      description: t['com.affine.collection.add-doc.confirm.description'](),
+      cancelText: t['Cancel'](),
+      confirmButtonOptions: {
+        type: 'primary',
+        children: t['Confirm'](),
+      },
+      onConfirm: createAndAddDocument,
+    });
+  }, [createAndAddDocument, openConfirmModal, t]);
+
   return (
     <Collapsible.Root
       open={!collapsed}
@@ -168,10 +197,14 @@ export const CollectionSidebarNavItem = ({
             }}
             style={{ display: 'flex', alignItems: 'center' }}
           >
+            <IconButton onClick={onConfirmAddDocToCollection} size="small">
+              <PlusIcon />
+            </IconButton>
             <CollectionOperations
               collection={collection}
               config={config}
               openRenameModal={handleOpen}
+              onAddDocToCollection={onConfirmAddDocToCollection}
             >
               <IconButton
                 data-testid="collection-options"
