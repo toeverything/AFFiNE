@@ -28,6 +28,8 @@ export interface Scalars {
   Float: { input: number; output: number };
   /** A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format. */
   DateTime: { input: string; output: string };
+  /** The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf). */
+  JSON: { input: string; output: string };
   /** The `SafeInt` scalar type represents non-fractional signed whole numeric values that are considered safe as defined by the ECMAScript specification. */
   SafeInt: { input: number; output: number };
   /** The `Upload` scalar type represents a file upload. */
@@ -36,14 +38,12 @@ export interface Scalars {
 
 export interface CreateChatMessageInput {
   attachments: InputMaybe<Array<Scalars['String']['input']>>;
-  content: Scalars['String']['input'];
-  params: InputMaybe<Scalars['String']['input']>;
+  content: InputMaybe<Scalars['String']['input']>;
+  params: InputMaybe<Scalars['JSON']['input']>;
   sessionId: Scalars['String']['input'];
 }
 
 export interface CreateChatSessionInput {
-  /** An mark identifying which view to use to display the session */
-  action: InputMaybe<Scalars['String']['input']>;
   docId: Scalars['String']['input'];
   /** The prompt name to use for the session */
   promptName: Scalars['String']['input'];

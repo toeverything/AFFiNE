@@ -187,7 +187,16 @@ export class ChatSessionService {
           userId: true,
           workspaceId: true,
           docId: true,
-          messages: true,
+          messages: {
+            select: {
+              role: true,
+              content: true,
+              createdAt: true,
+            },
+            orderBy: {
+              createdAt: 'asc',
+            },
+          },
           prompt: {
             select: {
               name: true,
@@ -197,6 +206,7 @@ export class ChatSessionService {
                 select: {
                   role: true,
                   content: true,
+                  createdAt: true,
                 },
                 orderBy: {
                   idx: 'asc',
