@@ -23,7 +23,7 @@ export const WorkspaceSetting = ({
         />
       );
     case 'experimental-features':
-      return <ExperimentalFeatures workspaceMetadata={workspaceMetadata} />;
+      return <ExperimentalFeatures />;
     case 'properties':
       return (
         <WorkspaceSettingProperties workspaceMetadata={workspaceMetadata} />
