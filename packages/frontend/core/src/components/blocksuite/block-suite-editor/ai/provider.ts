@@ -1,7 +1,11 @@
 import { assertExists } from '@blocksuite/global/utils';
 import { AIProvider } from '@blocksuite/presets';
 
-import { imageToTextStream, textToTextStream } from './request';
+import {
+  imageToImagesStream,
+  imageToTextStream,
+  textToTextStream,
+} from './request';
 
 export function setupAIProvider() {
   AIProvider.provideAction('chat', options => {
@@ -282,6 +286,19 @@ export function setupAIProvider() {
       content:
         options.content ||
         'Here are the latest wireframes. Could you make a new website based on these wireframes and notes and send back just the html file?',
+    });
+  });
+
+  AIProvider.provideAction('generateAImage', options => {
+    assertExists(options.stream);
+    const promptName = 'Generate a image about this';
+    return imageToImagesStream({
+      promptName,
+      docId: options.docId,
+      workspaceId: options.workspaceId,
+      params: options.params,
+      attachments: options.attachments,
+      content: options.content || '',
     });
   });
 }
