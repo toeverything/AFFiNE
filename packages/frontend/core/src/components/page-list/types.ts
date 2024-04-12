@@ -168,3 +168,8 @@ export type PageDisplayProperties = {
   createDate: boolean;
   updatedDate: boolean;
 };
+
+export type DisplayProperties = {
+  groupBy: PageGroupByType;
+  displayProperties: PageDisplayProperties;
+};

@@ -5,23 +5,12 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { FavoritedIcon, FavoriteIcon } from '@blocksuite/icons';
 import type { DocMeta } from '@blocksuite/store';
 import { useLiveData, useService } from '@toeverything/infra';
-import { useAtomValue } from 'jotai';
-import { atomWithStorage } from 'jotai/utils';
 import { type ReactNode, useMemo } from 'react';
 
 import * as styles from './group-definitions.css';
-import type {
-  DateKey,
-  ItemGroupDefinition,
-  ListItem,
-  PageGroupByType,
-} from './types';
+import type { DateKey, ItemGroupDefinition, ListItem } from './types';
+import { useAllDocDisplayProperties } from './use-all-doc-display-properties';
 import { betweenDaysAgo, withinDaysAgo } from './utils';
-
-export const pageGroupByTypeAtom = atomWithStorage<PageGroupByType>(
-  'pageGroupByType',
-  'updatedDate'
-);
 
 const GroupLabel = ({
   label,
@@ -189,7 +178,7 @@ export const useFavoriteGroupDefinitions = <
 };
 
 export const usePageItemGroupDefinitions = () => {
-  const key = useAtomValue(pageGroupByTypeAtom);
+  const [workspaceProperties] = useAllDocDisplayProperties();
   const tagGroupDefinitions = useTagGroupDefinitions();
   const createDateGroupDefinitions = useDateGroupDefinitions('createDate');
   const updatedDateGroupDefinitions = useDateGroupDefinitions('updatedDate');
@@ -206,12 +195,12 @@ export const usePageItemGroupDefinitions = () => {
       // add more here later
       // todo: some page group definitions maybe dynamic
     };
-    return itemGroupDefinitions[key];
+    return itemGroupDefinitions[workspaceProperties.groupBy];
   }, [
     createDateGroupDefinitions,
     favouriteGroupDefinitions,
-    key,
     tagGroupDefinitions,
     updatedDateGroupDefinitions,
+    workspaceProperties.groupBy,
   ]);
 };

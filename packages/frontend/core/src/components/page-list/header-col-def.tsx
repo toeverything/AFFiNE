@@ -3,9 +3,10 @@ import { useMemo } from 'react';
 
 import { ListHeaderTitleCell } from './page-header';
 import type { HeaderColDef } from './types';
-import { usePageDisplayProperties } from './use-page-display-properties';
+import { useAllDocDisplayProperties } from './use-all-doc-display-properties';
 export const usePageHeaderColsDef = (): HeaderColDef[] => {
-  const [displayProperties] = usePageDisplayProperties();
+  const [displayProperties] = useAllDocDisplayProperties();
+
   return useMemo(
     () => [
       {
@@ -20,7 +21,7 @@ export const usePageHeaderColsDef = (): HeaderColDef[] => {
         content: <Trans i18nKey="Tags" />,
         flex: 3,
         alignment: 'end',
-        hidden: !displayProperties['tags'],
+        hidden: !displayProperties.displayProperties.tags,
       },
       {
         key: 'createDate',
@@ -29,7 +30,7 @@ export const usePageHeaderColsDef = (): HeaderColDef[] => {
         sortable: true,
         alignment: 'end',
         hideInSmallContainer: true,
-        hidden: !displayProperties['createDate'],
+        hidden: !displayProperties.displayProperties.createDate,
       },
       {
         key: 'updatedDate',
@@ -38,7 +39,7 @@ export const usePageHeaderColsDef = (): HeaderColDef[] => {
         sortable: true,
         alignment: 'end',
         hideInSmallContainer: true,
-        hidden: !displayProperties['updatedDate'],
+        hidden: !displayProperties.displayProperties.updatedDate,
       },
       {
         key: 'actions',
