@@ -144,6 +144,17 @@ mutation createCheckoutSession($input: CreateCheckoutSessionInput!) {
 }`,
 };
 
+export const createCopilotMessageMutation = {
+  id: 'createCopilotMessageMutation' as const,
+  operationName: 'createCopilotMessage',
+  definitionName: 'createCopilotMessage',
+  containsFile: false,
+  query: `
+mutation createCopilotMessage($options: CreateChatMessageInput!) {
+  createCopilotMessage(options: $options)
+}`,
+};
+
 export const createCopilotSessionMutation = {
   id: 'createCopilotSessionMutation' as const,
   operationName: 'createCopilotSession',

@@ -74,6 +74,18 @@ export const prompts: Prompt[] = [
     ],
   },
   {
+    name: 'Explain this',
+    action: 'Explain this',
+    model: 'gpt-4-turbo-preview',
+    messages: [
+      {
+        role: 'assistant',
+        content:
+          'Explain the following content in a clear and concise manner, ensuring that the information is easy to understand and provides a comprehensive overview of the topic:\n\n{{content}}',
+      },
+    ],
+  },
+  {
     name: 'Explain this image',
     action: 'Explain this image',
     model: 'gpt-4-vision-preview',
@@ -168,6 +180,18 @@ export const prompts: Prompt[] = [
     ],
   },
   {
+    name: 'Write outline',
+    action: 'Write outline',
+    model: 'gpt-4-turbo-preview',
+    messages: [
+      {
+        role: 'assistant',
+        content:
+          'Write an outline based on the following content, organizing the main points, subtopics, and structure:\n\n{{content}}',
+      },
+    ],
+  },
+  {
     name: 'Change tone to',
     action: 'Change tone',
     model: 'gpt-4-turbo-preview',
@@ -189,6 +213,18 @@ export const prompts: Prompt[] = [
         role: 'assistant',
         content:
           'Using the information following content, brainstorm ideas and output your thoughts in a bulleted points format.\n\n{{content}}',
+      },
+    ],
+  },
+  {
+    name: 'Brainstorm mindmap',
+    action: 'Brainstorm mindmap',
+    model: 'gpt-4-turbo-preview',
+    messages: [
+      {
+        role: 'assistant',
+        content:
+          'Use the nested unordered list syntax without other extra text style in Markdown to create a structure similar to a mind map without any unnecessary plain text description. Analyze the following questions or topics: \n\n{{content}}',
       },
     ],
   },
@@ -326,6 +362,28 @@ export const prompts: Prompt[] = [
 
   {{image}}
   `,
+      },
+    ],
+  },
+  {
+    name: 'Make it longer',
+    action: 'Make it longer',
+    model: 'gpt-4-turbo-preview',
+    messages: [
+      {
+        role: 'assistant',
+        content: 'Make the following content longer:\n\n{{content}}',
+      },
+    ],
+  },
+  {
+    name: 'Make it shorter',
+    action: 'Make it shorter',
+    model: 'gpt-4-turbo-preview',
+    messages: [
+      {
+        role: 'assistant',
+        content: 'Make the following content shorter:\n\n{{content}}',
       },
     ],
   },

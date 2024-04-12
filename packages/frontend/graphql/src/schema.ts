@@ -29,7 +29,7 @@ export interface Scalars {
   /** A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format. */
   DateTime: { input: string; output: string };
   /** The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf). */
-  JSON: { input: string; output: string };
+  JSON: { input: Record<string, string>; output: Record<string, string> };
   /** The `SafeInt` scalar type represents non-fractional signed whole numeric values that are considered safe as defined by the ECMAScript specification. */
   SafeInt: { input: number; output: number };
   /** The `Upload` scalar type represents a file upload. */
@@ -238,6 +238,15 @@ export type CreateCheckoutSessionMutationVariables = Exact<{
 export type CreateCheckoutSessionMutation = {
   __typename?: 'Mutation';
   createCheckoutSession: string;
+};
+
+export type CreateCopilotMessageMutationVariables = Exact<{
+  options: CreateChatMessageInput;
+}>;
+
+export type CreateCopilotMessageMutation = {
+  __typename?: 'Mutation';
+  createCopilotMessage: string;
 };
 
 export type CreateCopilotSessionMutationVariables = Exact<{
@@ -1213,6 +1222,11 @@ export type Mutations =
       name: 'createCheckoutSessionMutation';
       variables: CreateCheckoutSessionMutationVariables;
       response: CreateCheckoutSessionMutation;
+    }
+  | {
+      name: 'createCopilotMessageMutation';
+      variables: CreateCopilotMessageMutationVariables;
+      response: CreateCopilotMessageMutation;
     }
   | {
       name: 'createCopilotSessionMutation';

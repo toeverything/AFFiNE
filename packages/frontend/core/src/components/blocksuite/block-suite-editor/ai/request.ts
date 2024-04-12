@@ -1,107 +1,135 @@
-import { getBaseUrl } from '@affine/graphql';
-import { CopilotClient, toTextStream } from '@blocksuite/presets';
+import { toTextStream } from '@blocksuite/presets';
 
-const TIMEOUT = 500000;
+import { CopilotClient } from './copilot-client';
+import type { PromptKey } from './prompt';
 
-export function textToTextStream({
-  docId,
-  workspaceId,
-  prompt,
-  attachments,
-  params,
-}: {
+const TIMEOUT = 50000;
+
+const client = new CopilotClient();
+
+function readBlobAsURL(blob: Blob) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      if (typeof e.target?.result === 'string') {
+        resolve(e.target.result);
+      } else {
+        reject();
+      }
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+export type TextToTextOptions = {
   docId: string;
   workspaceId: string;
-  prompt: string;
-  attachments?: string[];
-  params?: string;
-}): BlockSuitePresets.TextStream {
-  const client = new CopilotClient(getBaseUrl());
-  return {
-    [Symbol.asyncIterator]: async function* () {
-      const hasAttachments = attachments && attachments.length > 0;
-      const session = await client.createSession({
-        workspaceId,
-        docId,
-        promptName: hasAttachments ? 'debug:action:vision4' : 'Summary',
-      });
-      if (hasAttachments) {
-        const messageId = await client.createMessage({
-          sessionId: session,
-          content: prompt,
+  promptName: PromptKey;
+  content?: string;
+  attachments?: (string | Blob)[];
+  params?: Record<string, string>;
+  timeout?: number;
+  stream?: boolean;
+};
+
+async function createSessionMessage({
+  docId,
+  workspaceId,
+  promptName,
+  content,
+  attachments,
+  params,
+}: TextToTextOptions) {
+  const hasAttachments = attachments && attachments.length > 0;
+  const session = await client.createSession({
+    workspaceId,
+    docId,
+    promptName,
+  });
+  if (hasAttachments) {
+    const normalizedAttachments = await Promise.all(
+      attachments.map(async attachment => {
+        if (typeof attachment === 'string') {
+          return attachment;
+        }
+        const url = await readBlobAsURL(attachment);
+        return url;
+      })
+    );
+    const messageId = await client.createMessage({
+      sessionId: session,
+      content,
+      attachments: normalizedAttachments,
+      params,
+    });
+    return {
+      messageId,
+      session,
+    };
+  } else if (content) {
+    return {
+      message: content,
+      session,
+    };
+  } else {
+    throw new Error('No content or attachments provided');
+  }
+}
+
+export function textToText({
+  docId,
+  workspaceId,
+  promptName,
+  content,
+  attachments,
+  params,
+  stream,
+  timeout = TIMEOUT,
+}: TextToTextOptions) {
+  if (stream) {
+    return {
+      [Symbol.asyncIterator]: async function* () {
+        const message = await createSessionMessage({
+          docId,
+          workspaceId,
+          promptName,
+          content,
           attachments,
           params,
         });
-        const eventSource = client.textStream(messageId, session);
-        yield* toTextStream(eventSource, { timeout: TIMEOUT });
-      } else {
-        const eventSource = client.textToTextStream(prompt, session);
-        yield* toTextStream(eventSource, { timeout: TIMEOUT });
-      }
-    },
-  };
-}
 
-// Image to text(html)
-export function imageToTextStream({
-  docId,
-  workspaceId,
-  promptName,
-  ...options
-}: {
-  docId: string;
-  workspaceId: string;
-  promptName: string;
-  params?: string;
-  content: string;
-  attachments?: string[];
-}) {
-  const client = new CopilotClient(getBaseUrl());
-  return {
-    [Symbol.asyncIterator]: async function* () {
-      const sessionId = await client.createSession({
-        workspaceId,
+        const eventSource = client.chatTextStream({
+          sessionId: message.session,
+          messageId: message.messageId,
+          message: message.message,
+        });
+        yield* toTextStream(eventSource, { timeout: timeout });
+      },
+    };
+  } else {
+    return Promise.race([
+      timeout
+        ? new Promise((_res, rej) => {
+            setTimeout(() => {
+              rej(new Error('Timeout'));
+            }, timeout);
+          })
+        : null,
+      createSessionMessage({
         docId,
-        promptName,
-      });
-      const messageId = await client.createMessage({
-        sessionId,
-        ...options,
-      });
-      const eventSource = client.textStream(messageId, sessionId);
-      yield* toTextStream(eventSource, { timeout: TIMEOUT });
-    },
-  };
-}
-
-// Image to images
-export function imageToImagesStream({
-  docId,
-  workspaceId,
-  promptName,
-  ...options
-}: {
-  docId: string;
-  workspaceId: string;
-  promptName: string;
-  content: string;
-  params?: string;
-  attachments?: string[];
-}) {
-  const client = new CopilotClient(getBaseUrl());
-  return {
-    [Symbol.asyncIterator]: async function* () {
-      const sessionId = await client.createSession({
         workspaceId,
-        docId,
         promptName,
-      });
-      const messageId = await client.createMessage({
-        sessionId,
-        ...options,
-      });
-      const eventSource = client.imagesStream(messageId, sessionId);
-      yield* toTextStream(eventSource, { timeout: TIMEOUT });
-    },
-  };
+        content,
+        attachments,
+        params,
+      }).then(message => {
+        return client.chatText({
+          sessionId: message.session,
+          messageId: message.messageId,
+          message: message.message,
+        });
+      }),
+    ]);
+  }
 }
