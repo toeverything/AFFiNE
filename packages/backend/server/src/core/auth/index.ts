@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 
 import { FeatureModule } from '../features';
+import { QuotaModule } from '../quota';
 import { UserModule } from '../user';
 import { AuthController } from './controller';
 import { AuthResolver } from './resolver';
@@ -8,7 +9,7 @@ import { AuthService } from './service';
 import { TokenService, TokenType } from './token';
 
 @Module({
-  imports: [FeatureModule, UserModule],
+  imports: [FeatureModule, UserModule, QuotaModule],
   providers: [AuthService, AuthResolver, TokenService],
   exports: [AuthService],
   controllers: [AuthController],

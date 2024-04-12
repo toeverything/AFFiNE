@@ -11,6 +11,8 @@ import { assign, omit } from 'lodash-es';
 
 import { Config, CryptoHelper, MailService } from '../../fundamentals';
 import { FeatureManagementService } from '../features/management';
+import { QuotaService } from '../quota/service';
+import { QuotaType } from '../quota/types';
 import { UserService } from '../user/service';
 import type { CurrentUser } from './current-user';
 
@@ -68,15 +70,21 @@ export class AuthService implements OnApplicationBootstrap {
     private readonly db: PrismaClient,
     private readonly mailer: MailService,
     private readonly feature: FeatureManagementService,
+    private readonly quota: QuotaService,
     private readonly user: UserService,
     private readonly crypto: CryptoHelper
   ) {}
 
   async onApplicationBootstrap() {
     if (this.config.node.dev) {
-      await this.signUp('Dev User', 'dev@affine.pro', 'dev').catch(() => {
+      try {
+        const devUser = await this.signUp('Dev User', 'dev@affine.pro', 'dev');
+        if (devUser) {
+          await this.quota.switchUserQuota(devUser?.id, QuotaType.ProPlanV1);
+        }
+      } catch (e) {
         // ignore
-      });
+      }
     }
   }
 

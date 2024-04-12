@@ -5,6 +5,7 @@ import ava, { TestFn } from 'ava';
 import { CurrentUser } from '../../src/core/auth';
 import { AuthService, parseAuthUserSeqNum } from '../../src/core/auth/service';
 import { FeatureModule } from '../../src/core/features';
+import { QuotaModule } from '../../src/core/quota';
 import { UserModule, UserService } from '../../src/core/user';
 import { createTestingModule } from '../utils';
 
@@ -18,7 +19,7 @@ const test = ava as TestFn<{
 
 test.beforeEach(async t => {
   const m = await createTestingModule({
-    imports: [FeatureModule, UserModule],
+    imports: [QuotaModule, FeatureModule, UserModule],
     providers: [AuthService],
   });
 
