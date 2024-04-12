@@ -107,11 +107,12 @@ export class ChatPrompt {
    * @param params record of params, e.g. { name: 'Alice' }
    * @returns e.g. [{ role: 'system', content: 'Hello, {{name}}' }] => [{ role: 'system', content: 'Hello, Alice' }]
    */
-  finish(params: PromptParams) {
+  finish(params: PromptParams): PromptMessage[] {
     this.checkParams(params);
-    return this.messages.map(m => ({
-      ...m,
-      content: Mustache.render(m.content, params),
+    return this.messages.map(({ content, params: _, ...rest }) => ({
+      ...rest,
+      params,
+      content: Mustache.render(content, params),
     }));
   }
 
@@ -122,6 +123,8 @@ export class ChatPrompt {
 
 @Injectable()
 export class PromptService {
+  private readonly cache = new Map<string, ChatPrompt>();
+
   constructor(private readonly db: PrismaClient) {}
 
   /**
@@ -140,34 +143,40 @@ export class PromptService {
    * @returns prompt messages
    */
   async get(name: string): Promise<ChatPrompt | null> {
-    return this.db.aiPrompt
-      .findUnique({
-        where: {
-          name,
-        },
-        select: {
-          name: true,
-          action: true,
-          model: true,
-          messages: {
-            select: {
-              role: true,
-              content: true,
-              params: true,
-            },
-            orderBy: {
-              idx: 'asc',
-            },
+    const cached = this.cache.get(name);
+    if (cached) return cached;
+
+    const prompt = await this.db.aiPrompt.findUnique({
+      where: {
+        name,
+      },
+      select: {
+        name: true,
+        action: true,
+        model: true,
+        messages: {
+          select: {
+            role: true,
+            content: true,
+            params: true,
+          },
+          orderBy: {
+            idx: 'asc',
           },
         },
-      })
-      .then(p => {
-        const messages = PromptMessageSchema.array().safeParse(p?.messages);
-        if (p && messages.success) {
-          return ChatPrompt.createFromPrompt({ ...p, messages: messages.data });
-        }
-        return null;
+      },
+    });
+
+    const messages = PromptMessageSchema.array().safeParse(prompt?.messages);
+    if (prompt && messages.success) {
+      const chatPrompt = ChatPrompt.createFromPrompt({
+        ...prompt,
+        messages: messages.data,
       });
+      this.cache.set(name, chatPrompt);
+      return chatPrompt;
+    }
+    return null;
   }
 
   async set(name: string, messages: PromptMessage[]) {
@@ -188,25 +197,28 @@ export class PromptService {
   }
 
   async update(name: string, messages: PromptMessage[]) {
-    return this.db.aiPrompt
-      .update({
-        where: { name },
-        data: {
-          messages: {
-            // cleanup old messages
-            deleteMany: {},
-            create: messages.map((m, idx) => ({
-              idx,
-              ...m,
-              params: m.params || undefined,
-            })),
-          },
+    const { id } = await this.db.aiPrompt.update({
+      where: { name },
+      data: {
+        messages: {
+          // cleanup old messages
+          deleteMany: {},
+          create: messages.map((m, idx) => ({
+            idx,
+            ...m,
+            params: m.params || undefined,
+          })),
         },
-      })
-      .then(ret => ret.id);
+      },
+    });
+
+    this.cache.delete(name);
+    return id;
   }
 
   async delete(name: string) {
-    return this.db.aiPrompt.delete({ where: { name } }).then(ret => ret.id);
+    const { id } = await this.db.aiPrompt.delete({ where: { name } });
+    this.cache.delete(name);
+    return id;
   }
 }

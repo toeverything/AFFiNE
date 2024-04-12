@@ -11,7 +11,7 @@ import {
   ResolveField,
   Resolver,
 } from '@nestjs/graphql';
-import { SafeIntResolver } from 'graphql-scalars';
+import { GraphQLJSON, SafeIntResolver } from 'graphql-scalars';
 
 import { CurrentUser } from '../../core/auth';
 import { QuotaService } from '../../core/quota';
@@ -46,30 +46,24 @@ class CreateChatSessionInput {
   docId!: string;
 
   @Field(() => String, {
-    description: 'An mark identifying which view to use to display the session',
-    nullable: true,
-  })
-  action!: string | undefined;
-
-  @Field(() => String, {
     description: 'The prompt name to use for the session',
   })
   promptName!: string;
 }
 
 @InputType()
-class CreateChatMessageInput implements Omit<SubmittedMessage, 'params'> {
+class CreateChatMessageInput implements Omit<SubmittedMessage, 'content'> {
   @Field(() => String)
   sessionId!: string;
 
-  @Field(() => String)
-  content!: string;
+  @Field(() => String, { nullable: true })
+  content!: string | undefined;
 
   @Field(() => [String], { nullable: true })
   attachments!: string[] | undefined;
 
-  @Field(() => String, { nullable: true })
-  params!: string | undefined;
+  @Field(() => GraphQLJSON, { nullable: true })
+  params!: Record<string, string> | undefined;
 }
 
 @InputType()
@@ -99,6 +93,9 @@ class ChatMessageType implements Partial<ChatMessage> {
 
   @Field(() => [String], { nullable: true })
   attachments!: string[];
+
+  @Field(() => GraphQLJSON, { nullable: true })
+  params!: Record<string, string> | undefined;
 
   @Field(() => Date, { nullable: true })
   createdAt!: Date | undefined;
@@ -227,12 +224,18 @@ export class CopilotResolver {
       await this.permissions.checkCloudWorkspace(workspaceId, user.id);
     }
 
-    return await this.chatSession.listHistories(
+    const histories = await this.chatSession.listHistories(
       user.id,
       workspaceId,
       docId,
-      options
+      options,
+      true
     );
+    return histories.map(h => ({
+      ...h,
+      // filter out empty messages
+      messages: h.messages.filter(m => m.content || m.attachments?.length),
+    }));
   }
 
   @Mutation(() => String, {
@@ -282,12 +285,7 @@ export class CopilotResolver {
       return new TooManyRequestsException('Server is busy');
     }
     try {
-      const { params, ...rest } = options;
-      const record: SubmittedMessage['params'] = {};
-      new URLSearchParams(params).forEach((value, key) => {
-        record[key] = value;
-      });
-      return await this.chatSession.createMessage({ ...rest, params: record });
+      return await this.chatSession.createMessage(options);
     } catch (e: any) {
       this.logger.error(`Failed to create chat message: ${e.message}`);
       throw new Error('Failed to create chat message');

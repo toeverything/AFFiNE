@@ -59,7 +59,7 @@ export class ChatSession implements AsyncDisposable {
 
     this.push({
       role: 'user',
-      content: message.content,
+      content: message.content || '',
       attachments: message.attachments,
       params: message.params,
       createdAt: new Date(),
@@ -96,7 +96,12 @@ export class ChatSession implements AsyncDisposable {
 
   finish(params: PromptParams): PromptMessage[] {
     const messages = this.takeMessages();
-    return [...this.state.prompt.finish(params), ...messages];
+    return [
+      ...this.state.prompt.finish(
+        Object.keys(params).length ? params : messages[0]?.params || {}
+      ),
+      ...messages.filter(m => m.content || m.attachments?.length),
+    ];
   }
 
   async save() {
@@ -257,7 +262,8 @@ export class ChatSessionService {
     userId: string,
     workspaceId?: string,
     docId?: string,
-    options?: ListHistoriesOptions
+    options?: ListHistoriesOptions,
+    withPrompt = false
   ): Promise<ChatHistory[]> {
     return await this.db.aiSession
       .findMany({
@@ -272,11 +278,12 @@ export class ChatSessionService {
         },
         select: {
           id: true,
-          prompt: true,
+          promptName: true,
           messages: {
             select: {
               role: true,
               content: true,
+              params: true,
             },
             orderBy: {
               createdAt: 'asc',
@@ -288,20 +295,30 @@ export class ChatSessionService {
         orderBy: { createdAt: 'desc' },
       })
       .then(sessions =>
-        sessions
-          .map(({ id, prompt, messages }) => {
+        Promise.all(
+          sessions.map(async ({ id, promptName, messages }) => {
             try {
               const ret = PromptMessageSchema.array().safeParse(messages);
               if (ret.success) {
+                const prompt = await this.prompt.get(promptName);
+                if (!prompt) {
+                  throw new Error(`Prompt not found: ${promptName}`);
+                }
                 const tokens = this.calculateTokenSize(
                   ret.data,
                   prompt.model as AvailableModel
                 );
+
+                // render system prompt
+                const preload = withPrompt
+                  ? prompt.finish(ret.data[0]?.params || {})
+                  : [];
+
                 return {
                   sessionId: id,
                   action: prompt.action || undefined,
                   tokens,
-                  messages: ret.data,
+                  messages: preload.concat(ret.data),
                 };
               } else {
                 this.logger.error(
@@ -313,7 +330,10 @@ export class ChatSessionService {
             }
             return undefined;
           })
-          .filter((v): v is NonNullable<typeof v> => !!v)
+        )
+      )
+      .then(histories =>
+        histories.filter((v): v is NonNullable<typeof v> => !!v)
       );
   }
 

@@ -6,6 +6,7 @@ type ChatMessage {
   attachments: [String!]
   content: String!
   createdAt: DateTime
+  params: JSON
   role: String!
 }
 
@@ -39,14 +40,12 @@ type CopilotQuota {
 
 input CreateChatMessageInput {
   attachments: [String!]
-  content: String!
-  params: String
+  content: String
+  params: JSON
   sessionId: String!
 }
 
 input CreateChatSessionInput {
-  """An mark identifying which view to use to display the session"""
-  action: String
   docId: String!
 
   """The prompt name to use for the session"""
@@ -154,6 +153,11 @@ enum InvoiceStatus {
   Uncollectible
   Void
 }
+
+"""
+The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
+"""
+scalar JSON @specifiedBy(url: "http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf")
 
 type LimitedUserType {
   """User email"""

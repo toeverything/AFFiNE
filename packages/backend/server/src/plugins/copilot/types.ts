@@ -82,6 +82,7 @@ export type ChatMessage = z.infer<typeof ChatMessageSchema>;
 
 export const SubmittedMessageSchema = PureMessageSchema.extend({
   sessionId: z.string(),
+  content: z.string().optional(),
 }).strict();
 
 export type SubmittedMessage = z.infer<typeof SubmittedMessageSchema>;
