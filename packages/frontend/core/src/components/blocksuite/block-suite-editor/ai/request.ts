@@ -74,8 +74,8 @@ export function imageToTextStream({
   };
 }
 
-// Image to images
-export function imageToImagesStream({
+// Image or text to images
+export function toImagesStream({
   docId,
   workspaceId,
   promptName,

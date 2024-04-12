@@ -1,11 +1,7 @@
 import { assertExists } from '@blocksuite/global/utils';
 import { AIProvider } from '@blocksuite/presets';
 
-import {
-  imageToImagesStream,
-  imageToTextStream,
-  textToTextStream,
-} from './request';
+import { imageToTextStream, textToTextStream, toImagesStream } from './request';
 
 export function setupAIProvider() {
   AIProvider.provideAction('chat', options => {
@@ -292,13 +288,13 @@ export function setupAIProvider() {
   AIProvider.provideAction('generateAImage', options => {
     assertExists(options.stream);
     const promptName = 'debug:action:fal-sd15';
-    return imageToImagesStream({
+    return toImagesStream({
       promptName,
       docId: options.docId,
       workspaceId: options.workspaceId,
       params: options.params,
       attachments: options.attachments,
-      content: options.content || '',
+      content: options.content,
     });
   });
 }
