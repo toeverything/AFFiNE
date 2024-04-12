@@ -291,7 +291,7 @@ export function setupAIProvider() {
 
   AIProvider.provideAction('generateAImage', options => {
     assertExists(options.stream);
-    const promptName = 'Generate a image about this';
+    const promptName = 'debug:action:fal-sd15';
     return imageToImagesStream({
       promptName,
       docId: options.docId,

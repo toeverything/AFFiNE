@@ -323,18 +323,4 @@ export const prompts: Prompt[] = [
       },
     ],
   },
-  {
-    name: 'Generate a image about this',
-    action: 'Generate a image about this',
-    model: 'gpt-4-vision-preview',
-    messages: [
-      {
-        role: 'system',
-        content: `
-
-  {{image}}
-        `,
-      },
-    ],
-  },
 ];
