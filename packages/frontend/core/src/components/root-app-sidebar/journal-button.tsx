@@ -2,11 +2,11 @@ import {
   useJournalInfoHelper,
   useJournalRouteHelper,
 } from '@affine/core/hooks/use-journal';
+import { Workbench } from '@affine/core/modules/workbench';
 import type { DocCollection } from '@affine/core/shared';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { TodayIcon, TomorrowIcon, YesterdayIcon } from '@blocksuite/icons';
-import { Doc, useServiceOptional } from '@toeverything/infra';
-import { useParams } from 'react-router-dom';
+import { useLiveData, useService } from '@toeverything/infra';
 
 import { MenuItem } from '../app-sidebar';
 
@@ -18,17 +18,16 @@ export const AppSidebarJournalButton = ({
   docCollection,
 }: AppSidebarJournalButtonProps) => {
   const t = useAFFiNEI18N();
-  const currentPage = useServiceOptional(Doc);
+  const workbench = useService(Workbench);
+  const location = useLiveData(workbench.location$);
   const { openToday } = useJournalRouteHelper(docCollection);
   const { journalDate, isJournal } = useJournalInfoHelper(
     docCollection,
-    currentPage?.id
+    location.pathname.split('/')[1]
   );
-  const params = useParams();
-  const isJournalActive = isJournal && !!params.pageId;
 
   const Icon =
-    isJournalActive && journalDate
+    isJournal && journalDate
       ? journalDate.isBefore(new Date(), 'day')
         ? YesterdayIcon
         : journalDate.isAfter(new Date(), 'day')
@@ -39,7 +38,7 @@ export const AppSidebarJournalButton = ({
   return (
     <MenuItem
       data-testid="slider-bar-journals-button"
-      active={isJournalActive}
+      active={isJournal}
       onClick={openToday}
       icon={<Icon />}
     >

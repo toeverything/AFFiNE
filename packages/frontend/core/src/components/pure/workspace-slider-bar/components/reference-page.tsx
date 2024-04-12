@@ -1,11 +1,11 @@
 import { useBlockSuitePageReferences } from '@affine/core/hooks/use-block-suite-page-references';
+import { Workbench } from '@affine/core/modules/workbench';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
 import type { DocCollection, DocMeta } from '@blocksuite/store';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import { PageRecordList, useLiveData, useService } from '@toeverything/infra';
 import { useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
 
 import { MenuLinkItem } from '../../../app-sidebar';
 import * as styles from '../favorite/styles.css';
@@ -24,8 +24,9 @@ export const ReferencePage = ({
   parentIds,
 }: ReferencePageProps) => {
   const t = useAFFiNEI18N();
-  const params = useParams();
-  const active = params.pageId === pageId;
+  const workbench = useService(Workbench);
+  const location = useLiveData(workbench.location$);
+  const active = location.pathname === '/' + pageId;
 
   const pageRecord = useLiveData(useService(PageRecordList).record$(pageId));
   const pageMode = useLiveData(pageRecord?.mode$);

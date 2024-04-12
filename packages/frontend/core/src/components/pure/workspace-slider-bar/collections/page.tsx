@@ -1,4 +1,5 @@
 import { useBlockSuitePageReferences } from '@affine/core/hooks/use-block-suite-page-references';
+import { Workbench } from '@affine/core/modules/workbench';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
 import type { DocCollection, DocMeta } from '@blocksuite/store';
@@ -6,7 +7,6 @@ import { useDraggable } from '@dnd-kit/core';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import { PageRecordList, useLiveData, useService } from '@toeverything/infra';
 import React, { useCallback, useMemo } from 'react';
-import { useParams } from 'react-router-dom';
 
 import {
   type DNDIdentifier,
@@ -35,12 +35,13 @@ export const Page = ({
   allPageMeta: Record<string, DocMeta>;
 }) => {
   const [collapsed, setCollapsed] = React.useState(true);
-  const params = useParams();
+  const workbench = useService(Workbench);
+  const location = useLiveData(workbench.location$);
 
   const t = useAFFiNEI18N();
 
   const pageId = page.id;
-  const active = params.pageId === pageId;
+  const active = location.pathname === '/' + pageId;
   const pageRecord = useLiveData(useService(PageRecordList).record$(pageId));
   const pageMode = useLiveData(pageRecord?.mode$);
   const dragItemId = getDNDId('collection-list', 'doc', pageId, parentId);

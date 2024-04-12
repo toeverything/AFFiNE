@@ -3,6 +3,7 @@ import {
   parseDNDId,
 } from '@affine/core/hooks/affine/use-global-dnd-helper';
 import { useBlockSuitePageReferences } from '@affine/core/hooks/use-block-suite-page-references';
+import { Workbench } from '@affine/core/modules/workbench';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
 import { type AnimateLayoutChanges, useSortable } from '@dnd-kit/sortable';
@@ -10,7 +11,6 @@ import { CSS } from '@dnd-kit/utilities';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import { PageRecordList, useLiveData, useService } from '@toeverything/infra';
 import { useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
 
 import { MenuLinkItem } from '../../../app-sidebar';
 import { DragMenuItemOverlay } from '../components/drag-menu-item-overlay';
@@ -33,8 +33,9 @@ export const FavouriteDocSidebarNavItem = ({
   sortable?: boolean;
 }) => {
   const t = useAFFiNEI18N();
-  const params = useParams();
-  const linkActive = params.pageId === pageId;
+  const workbench = useService(Workbench);
+  const location = useLiveData(workbench.location$);
+  const linkActive = location.pathname === '/' + pageId;
   const pageRecord = useLiveData(useService(PageRecordList).record$(pageId));
   const pageMode = useLiveData(pageRecord?.mode$);
 
