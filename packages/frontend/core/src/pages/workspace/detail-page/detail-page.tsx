@@ -11,7 +11,7 @@ import {
   ImageService,
 } from '@blocksuite/blocks';
 import { DisposableGroup } from '@blocksuite/global/utils';
-import type { AffineEditorContainer } from '@blocksuite/presets';
+import { type AffineEditorContainer, AIProvider } from '@blocksuite/presets';
 import type { Doc as BlockSuiteDoc } from '@blocksuite/store';
 import {
   Doc,
@@ -56,7 +56,10 @@ import {
   MultiTabSidebarHeaderSwitcher,
   sidebarTabs,
 } from '../../../modules/multi-tab-sidebar';
-import { RightSidebarViewIsland } from '../../../modules/right-sidebar';
+import {
+  RightSidebar,
+  RightSidebarViewIsland,
+} from '../../../modules/right-sidebar';
 import {
   useIsActiveView,
   ViewBodyIsland,
@@ -71,6 +74,7 @@ const RIGHT_SIDEBAR_TABS_ACTIVE_KEY = 'app:settings:rightsidebar:tabs:active';
 
 const DetailPageImpl = memo(function DetailPageImpl() {
   const globalState = useService(GlobalState);
+  const rightSidebar = useService(RightSidebar);
   const activeTabName = useLiveData(
     LiveData.from(
       globalState.watch<SidebarTabName>(RIGHT_SIDEBAR_TABS_ACTIVE_KEY),
@@ -101,6 +105,15 @@ const DetailPageImpl = memo(function DetailPageImpl() {
       setActiveBlockSuiteEditor(editor);
     }
   }, [editor, isActiveView, setActiveBlockSuiteEditor]);
+
+  useEffect(() => {
+    AIProvider.slots.requestContinueInChat.on(() => {
+      rightSidebar.open();
+      if (activeTabName !== 'chat') {
+        setActiveTabName('chat');
+      }
+    });
+  }, [activeTabName, rightSidebar, setActiveTabName]);
 
   const pageMeta = useBlockSuiteDocMeta(docCollection).find(
     meta => meta.id === page.id
