@@ -75,7 +75,7 @@ export class OpenAIProvider
             .filter(url => SIMPLE_IMAGE_URL_REGEX.test(url))
             .map(url => ({
               type: 'image_url',
-              image_url: { url, detail: 'low' },
+              image_url: { url, detail: 'high' },
             })),
         ];
         return {
