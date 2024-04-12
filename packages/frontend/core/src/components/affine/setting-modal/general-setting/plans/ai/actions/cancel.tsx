@@ -43,7 +43,7 @@ export const AICancel = ({
             onSuccess: data => {
               // refresh idempotency key
               setIdempotencyKey(nanoid());
-              onSubscriptionUpdate(data.cancelSubscription);
+              onSubscriptionUpdate?.(data.cancelSubscription);
             },
           }
         );

@@ -5,7 +5,9 @@ import { popupWindow } from '@affine/core/utils';
 import {
   createCheckoutSessionMutation,
   SubscriptionPlan,
+  SubscriptionRecurring,
 } from '@affine/graphql';
+import { assertExists } from '@blocksuite/global/utils';
 import { nanoid } from 'nanoid';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 
@@ -16,10 +18,11 @@ export interface AISubscribeProps extends BaseActionProps, ButtonProps {}
 
 export const AISubscribe = ({
   price,
-  recurring,
+  recurring = SubscriptionRecurring.Yearly,
   onSubscriptionUpdate,
   ...btnProps
 }: AISubscribeProps) => {
+  assertExists(price);
   const idempotencyKey = useMemo(() => `${nanoid()}-${recurring}`, [recurring]);
   const { priceReadable, priceFrequency } = useAffineAIPrice(price);
 
@@ -31,7 +34,7 @@ export const AISubscribe = ({
 
   const onClose = useCallback(() => {
     newTabRef.current = null;
-    onSubscriptionUpdate();
+    onSubscriptionUpdate?.();
   }, [onSubscriptionUpdate]);
 
   useEffect(() => {

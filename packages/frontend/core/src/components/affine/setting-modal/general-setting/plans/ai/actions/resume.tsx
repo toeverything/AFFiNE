@@ -48,7 +48,7 @@ export const AIResume = ({
             onSuccess: data => {
               // refresh idempotency key
               setIdempotencyKey(nanoid());
-              onSubscriptionUpdate(data.resumeSubscription);
+              onSubscriptionUpdate?.(data.resumeSubscription);
               notify({
                 icon: (
                   <SingleSelectSelectSolidIcon

@@ -369,10 +369,7 @@ export type GetCopilotHistoriesQuery = {
   } | null;
 };
 
-export type GetCopilotQuotaQueryVariables = Exact<{
-  workspaceId: Scalars['String']['input'];
-  docId: Scalars['String']['input'];
-}>;
+export type GetCopilotQuotaQueryVariables = Exact<{ [key: string]: never }>;
 
 export type GetCopilotQuotaQuery = {
   __typename?: 'Query';

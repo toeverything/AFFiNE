@@ -281,7 +281,7 @@ export const getCopilotQuotaQuery = {
   definitionName: 'currentUser',
   containsFile: false,
   query: `
-query getCopilotQuota($workspaceId: String!, $docId: String!) {
+query getCopilotQuota {
   currentUser {
     copilot {
       quota {

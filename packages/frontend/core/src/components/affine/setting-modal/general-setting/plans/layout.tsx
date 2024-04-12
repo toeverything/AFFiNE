@@ -1,14 +1,18 @@
 import { Divider, IconButton } from '@affine/component';
 import { SettingHeader } from '@affine/component/setting-components';
+import { openSettingModalAtom } from '@affine/core/atoms';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowRightBigIcon, ArrowUpSmallIcon } from '@blocksuite/icons';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import * as ScrollArea from '@radix-ui/react-scroll-area';
+import { useAtom } from 'jotai';
 import {
   type HtmlHTMLAttributes,
   type PropsWithChildren,
   type ReactNode,
   useCallback,
+  useLayoutEffect,
+  useRef,
   useState,
 } from 'react';
 
@@ -70,6 +74,20 @@ export interface PlanLayoutProps {
 
 export const PlanLayout = ({ cloud, ai }: PlanLayoutProps) => {
   const t = useAFFiNEI18N();
+  const [{ scrollAnchor }, setOpenSettingModal] = useAtom(openSettingModalAtom);
+  const aiPricingPlanRef = useRef<HTMLDivElement>(null);
+
+  // TODO: Need a better solution to handle this situation
+  useLayoutEffect(() => {
+    if (!scrollAnchor) return;
+    setTimeout(() => {
+      if (scrollAnchor === 'aiPricingPlan' && aiPricingPlanRef.current) {
+        aiPricingPlanRef.current.scrollIntoView();
+        setOpenSettingModal(prev => ({ ...prev, scrollAnchor: undefined }));
+      }
+    });
+  }, [scrollAnchor, setOpenSettingModal]);
+
   return (
     <div className={styles.plansLayoutRoot}>
       {/* TODO: SettingHeader component shouldn't have margin itself  */}
@@ -81,7 +99,9 @@ export const PlanLayout = ({ cloud, ai }: PlanLayoutProps) => {
       {ai ? (
         <>
           <Divider />
-          {ai}
+          <div ref={aiPricingPlanRef} id="aiPricingPlan">
+            {ai}
+          </div>
         </>
       ) : null}
     </div>

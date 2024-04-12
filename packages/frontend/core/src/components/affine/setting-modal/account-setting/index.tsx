@@ -5,6 +5,7 @@ import {
 } from '@affine/component/setting-components';
 import { Avatar } from '@affine/component/ui/avatar';
 import { Button } from '@affine/component/ui/button';
+import { SWRErrorBoundary } from '@affine/core/components/pure/swr-error-bundary';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import {
   removeAvatarMutation,
@@ -28,6 +29,7 @@ import { useMutation } from '../../../../hooks/use-mutation';
 import { mixpanel } from '../../../../utils';
 import { validateAndReduceImage } from '../../../../utils/reduce-image';
 import { Upload } from '../../../pure/file-upload';
+import { AIUsagePanel } from './ai-usage-panel';
 import { StorageProgress } from './storage-progress';
 import * as styles from './style.css';
 
@@ -256,6 +258,11 @@ export const AccountSetting: FC = () => {
       <Suspense>
         <StoragePanel />
       </Suspense>
+      <SWRErrorBoundary fallback={<div />}>
+        <Suspense>
+          <AIUsagePanel />
+        </Suspense>
+      </SWRErrorBoundary>
       <SettingRow
         name={t[`Sign out`]()}
         desc={t['com.affine.setting.sign.out.message']()}
