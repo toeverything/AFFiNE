@@ -19,7 +19,8 @@ import { createI18n, setUpLanguage } from '@affine/i18n';
 import { CacheProvider } from '@emotion/react';
 import { getCurrentStore, ServiceCollection } from '@toeverything/infra';
 import type { PropsWithChildren, ReactElement } from 'react';
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
+import toast, { Toaster } from 'react-hot-toast';
 import { RouterProvider } from 'react-router-dom';
 
 const performanceI18nLogger = performanceLogger.namespace('i18n');
@@ -66,6 +67,29 @@ export function App() {
     languageLoadingPromise = loadLanguage().catch(console.error);
   }
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      console.log('Key pressed:', e.key);
+      if (
+        e.key === 's' &&
+        (navigator.platform.match('Mac') ? e.metaKey : e.ctrlKey)
+      ) {
+        e.preventDefault();
+        toast.success('Save');
+      }
+    };
+
+    try {
+      document.addEventListener('keydown', handleKeyDown, false);
+    } catch (error) {
+      console.error('Error attaching event listener:', error);
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown, false);
+    };
+  }, []);
+
   return (
     <Suspense>
       <GlobalScopeProvider provider={serviceProvider}>
@@ -73,6 +97,7 @@ export function App() {
           <AffineContext store={getCurrentStore()}>
             <CloudSessionProvider>
               <Telemetry />
+              <Toaster position="bottom-right" />
               <DebugProvider>
                 <GlobalLoading />
                 <NotificationCenter />
