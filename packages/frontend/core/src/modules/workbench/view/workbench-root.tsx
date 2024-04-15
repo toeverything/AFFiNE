@@ -1,3 +1,4 @@
+import { HubIsland } from '@affine/core/components/affine/hub-island';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useCallback, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
@@ -43,12 +44,16 @@ export const WorkbenchRoot = () => {
   }, [basename, workbench.basename$]);
 
   return (
-    <SplitView
-      className={styles.workbenchRootContainer}
-      views={views}
-      renderer={panelRenderer}
-      onMove={onMove}
-    />
+    <>
+      <HubIsland />
+
+      <SplitView
+        className={styles.workbenchRootContainer}
+        views={views}
+        renderer={panelRenderer}
+        onMove={onMove}
+      />
+    </>
   );
 };
 

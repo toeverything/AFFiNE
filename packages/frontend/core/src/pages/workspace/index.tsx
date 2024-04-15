@@ -13,7 +13,6 @@ import { Suspense, useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 
 import { AffineErrorBoundary } from '../../components/affine/affine-error-boundary';
-import { HubIsland } from '../../components/affine/hub-island';
 import { WorkspaceFallback } from '../../components/workspace';
 import { WorkspaceLayout } from '../../layouts/workspace-layout';
 import { RightSidebarContainer } from '../../modules/right-sidebar';
@@ -115,7 +114,6 @@ export const Component = (): ReactElement => {
           <WorkspaceLayout>
             <WorkbenchRoot />
             <RightSidebarContainer />
-            <HubIsland />
           </WorkspaceLayout>
         </AffineErrorBoundary>
       </Suspense>
