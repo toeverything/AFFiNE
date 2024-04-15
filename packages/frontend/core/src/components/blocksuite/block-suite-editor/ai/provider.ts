@@ -1,7 +1,12 @@
 import { assertExists } from '@blocksuite/global/utils';
 import { AIProvider } from '@blocksuite/presets';
 
-import { createChatSession, listHistories, textToText } from './request';
+import {
+  createChatSession,
+  listHistories,
+  textToText,
+  toImage,
+} from './request';
 
 export function setupAIProvider() {
   // a single workspace should have only a single chat session
@@ -234,5 +239,15 @@ export function setupAIProvider() {
       // @ts-expect-error - 'action' is missing in server impl
       return (await listHistories(workspaceId, docId)) ?? [];
     },
+  });
+
+  AIProvider.provide('createImage', options => {
+    // const promptName = 'debug:action:fal-sd15';
+    const promptName = 'debug:action:dalle3';
+    return toImage({
+      ...options,
+      promptName,
+      forceToImage: true,
+    });
   });
 }

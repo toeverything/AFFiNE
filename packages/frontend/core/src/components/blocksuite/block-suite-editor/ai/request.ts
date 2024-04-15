@@ -32,6 +32,7 @@ export type TextToTextOptions = {
   params?: Record<string, string>;
   timeout?: number;
   stream?: boolean;
+  forceToImage?: boolean; // force to image
 };
 
 export function createChatSession({
@@ -56,33 +57,43 @@ async function createSessionMessage({
   sessionId: providedSessionId,
   attachments,
   params,
+  forceToImage,
 }: TextToTextOptions) {
-  const hasAttachments = attachments && attachments.length > 0;
   if (!promptName && !providedSessionId) {
     throw new Error('promptName or sessionId is required');
   }
+  const hasAttachments = attachments && attachments.length > 0;
   const sessionId = await (providedSessionId ??
     client.createSession({
       workspaceId,
       docId,
       promptName: promptName as string,
     }));
-  if (hasAttachments) {
-    const normalizedAttachments = await Promise.all(
-      attachments.map(async attachment => {
-        if (typeof attachment === 'string') {
-          return attachment;
-        }
-        const url = await readBlobAsURL(attachment);
-        return url;
-      })
-    );
-    const messageId = await client.createMessage({
-      sessionId: sessionId,
+
+  if (forceToImage || hasAttachments) {
+    const options = {
+      sessionId,
       content,
-      attachments: normalizedAttachments,
       params,
-    });
+    } as {
+      sessionId: string;
+      content?: string;
+      params?: Record<string, string>;
+      attachments?: string[];
+    };
+    if (hasAttachments) {
+      const normalizedAttachments = await Promise.all(
+        attachments.map(async attachment => {
+          if (typeof attachment === 'string') {
+            return attachment;
+          }
+          const url = await readBlobAsURL(attachment);
+          return url;
+        })
+      );
+      options.attachments = normalizedAttachments;
+    }
+    const messageId = await client.createMessage(options);
     return {
       messageId,
       sessionId,
@@ -126,7 +137,7 @@ export function textToText({
           messageId: message.messageId,
           message: message.message,
         });
-        yield* toTextStream(eventSource, { timeout: timeout });
+        yield* toTextStream(eventSource, { timeout });
       },
     };
   } else {
@@ -158,3 +169,36 @@ export function textToText({
 }
 
 export const listHistories = client.getHistories;
+
+// Only one image is currently being processed
+export function toImage({
+  docId,
+  workspaceId,
+  promptName,
+  content,
+  attachments,
+  params,
+  forceToImage,
+  timeout = TIMEOUT,
+}: TextToTextOptions) {
+  return {
+    [Symbol.asyncIterator]: async function* () {
+      const { messageId, sessionId } = await createSessionMessage({
+        docId,
+        workspaceId,
+        promptName,
+        content,
+        attachments,
+        params,
+        forceToImage,
+      });
+
+      const eventSource = client.imagesStream(
+        // @ts-expect-error: messageId should exist
+        messageId,
+        sessionId
+      );
+      yield* toTextStream(eventSource, { timeout, type: 'attachment' });
+    },
+  };
+}
