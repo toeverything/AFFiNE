@@ -52,7 +52,9 @@ export class CopilotClient {
   async getHistories(
     workspaceId: string,
     docId?: string,
-    options?: OptionsField<typeof getCopilotHistoriesQuery>
+    options?: RequestOptions<
+      typeof getCopilotHistoriesQuery
+    >['variables']['options']
   ) {
     const res = await fetcher({
       query: getCopilotHistoriesQuery,
@@ -64,20 +66,6 @@ export class CopilotClient {
     });
 
     return res.currentUser?.copilot?.histories;
-  }
-
-  async textToText(message: string, sessionId: string) {
-    const res = await fetch(
-      `${this.backendUrl}/api/copilot/chat/${sessionId}?message=${encodeURIComponent(message)}`
-    );
-    if (!res.ok) return;
-    return res.text();
-  }
-
-  textToTextStream(message: string, sessionId: string) {
-    return new EventSource(
-      `${this.backendUrl}/api/copilot/chat/${sessionId}/stream?message=${encodeURIComponent(message)}`
-    );
   }
 
   chatText({

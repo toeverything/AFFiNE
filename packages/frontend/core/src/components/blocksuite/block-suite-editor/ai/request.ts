@@ -7,7 +7,7 @@ const TIMEOUT = 50000;
 
 const client = new CopilotClient();
 
-function readBlobAsURL(blob: Blob) {
+function readBlobAsURL(blob: Blob | File) {
   return new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = e => {
@@ -25,28 +25,48 @@ function readBlobAsURL(blob: Blob) {
 export type TextToTextOptions = {
   docId: string;
   workspaceId: string;
-  promptName: PromptKey;
+  promptName?: PromptKey;
+  sessionId?: string | Promise<string>;
   content?: string;
-  attachments?: (string | Blob)[];
+  attachments?: (string | Blob | File)[];
   params?: Record<string, string>;
   timeout?: number;
   stream?: boolean;
 };
+
+export function createChatSession({
+  workspaceId,
+  docId,
+}: {
+  workspaceId: string;
+  docId: string;
+}) {
+  return client.createSession({
+    workspaceId,
+    docId,
+    promptName: 'debug:chat:gpt4',
+  });
+}
 
 async function createSessionMessage({
   docId,
   workspaceId,
   promptName,
   content,
+  sessionId: providedSessionId,
   attachments,
   params,
 }: TextToTextOptions) {
   const hasAttachments = attachments && attachments.length > 0;
-  const session = await client.createSession({
-    workspaceId,
-    docId,
-    promptName,
-  });
+  if (!promptName && !providedSessionId) {
+    throw new Error('promptName or sessionId is required');
+  }
+  const sessionId = await (providedSessionId ??
+    client.createSession({
+      workspaceId,
+      docId,
+      promptName: promptName as string,
+    }));
   if (hasAttachments) {
     const normalizedAttachments = await Promise.all(
       attachments.map(async attachment => {
@@ -58,19 +78,19 @@ async function createSessionMessage({
       })
     );
     const messageId = await client.createMessage({
-      sessionId: session,
+      sessionId: sessionId,
       content,
       attachments: normalizedAttachments,
       params,
     });
     return {
       messageId,
-      session,
+      sessionId,
     };
   } else if (content) {
     return {
       message: content,
-      session,
+      sessionId,
     };
   } else {
     throw new Error('No content or attachments provided');
@@ -84,6 +104,7 @@ export function textToText({
   content,
   attachments,
   params,
+  sessionId,
   stream,
   timeout = TIMEOUT,
 }: TextToTextOptions) {
@@ -97,10 +118,11 @@ export function textToText({
           content,
           attachments,
           params,
+          sessionId,
         });
 
         const eventSource = client.chatTextStream({
-          sessionId: message.session,
+          sessionId: message.sessionId,
           messageId: message.messageId,
           message: message.message,
         });
@@ -123,9 +145,10 @@ export function textToText({
         content,
         attachments,
         params,
-      }).then(message => {
-        return client.chatText({
-          sessionId: message.session,
+        sessionId,
+      }).then(async message => {
+        return await client.chatText({
+          sessionId: message.sessionId,
           messageId: message.messageId,
           message: message.message,
         });
@@ -133,3 +156,5 @@ export function textToText({
     ]);
   }
 }
+
+export const listHistories = client.getHistories;

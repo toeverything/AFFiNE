@@ -153,7 +153,7 @@ export function useCurrentUser(): CheckedUser {
       const user = session.user;
       dispatcher({ type: 'update', payload: user });
       // todo: move this to a better place!
-      AIProvider.provideUserInfo(() => {
+      AIProvider.provide('userInfo', () => {
         return user;
       });
     } else {

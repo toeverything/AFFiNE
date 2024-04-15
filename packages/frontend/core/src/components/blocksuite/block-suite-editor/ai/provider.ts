@@ -1,17 +1,39 @@
+import { assertExists } from '@blocksuite/global/utils';
 import { AIProvider } from '@blocksuite/presets';
 
-import { textToText } from './request';
+import { createChatSession, listHistories, textToText } from './request';
 
 export function setupAIProvider() {
-  AIProvider.provideAction('chat', options => {
+  // a single workspace should have only a single chat session
+  // workspace-id:doc-id -> chat session id
+  const chatSessions = new Map<string, Promise<string>>();
+
+  async function getChatSessionId(workspaceId: string, docId: string) {
+    const storeKey = `${workspaceId}:${docId}`;
+    if (!chatSessions.has(storeKey)) {
+      chatSessions.set(
+        storeKey,
+        createChatSession({
+          workspaceId,
+          docId,
+        })
+      );
+    }
+    const sessionId = await chatSessions.get(storeKey);
+    assertExists(sessionId);
+    return sessionId;
+  }
+
+  AIProvider.provide('chat', options => {
+    const sessionId = getChatSessionId(options.workspaceId, options.docId);
     return textToText({
       ...options,
       content: options.input,
-      promptName: 'debug:chat:gpt4',
+      sessionId,
     });
   });
 
-  AIProvider.provideAction('summary', options => {
+  AIProvider.provide('summary', options => {
     return textToText({
       ...options,
       content: options.input,
@@ -19,7 +41,7 @@ export function setupAIProvider() {
     });
   });
 
-  AIProvider.provideAction('translate', options => {
+  AIProvider.provide('translate', options => {
     return textToText({
       ...options,
       promptName: 'Translate to',
@@ -30,7 +52,7 @@ export function setupAIProvider() {
     });
   });
 
-  AIProvider.provideAction('changeTone', options => {
+  AIProvider.provide('changeTone', options => {
     return textToText({
       ...options,
       content: options.input,
@@ -38,7 +60,7 @@ export function setupAIProvider() {
     });
   });
 
-  AIProvider.provideAction('improveWriting', options => {
+  AIProvider.provide('improveWriting', options => {
     return textToText({
       ...options,
       content: options.input,
@@ -46,7 +68,7 @@ export function setupAIProvider() {
     });
   });
 
-  AIProvider.provideAction('improveGrammar', options => {
+  AIProvider.provide('improveGrammar', options => {
     return textToText({
       ...options,
       content: options.input,
@@ -54,7 +76,7 @@ export function setupAIProvider() {
     });
   });
 
-  AIProvider.provideAction('fixSpelling', options => {
+  AIProvider.provide('fixSpelling', options => {
     return textToText({
       ...options,
       content: options.input,
@@ -62,7 +84,7 @@ export function setupAIProvider() {
     });
   });
 
-  AIProvider.provideAction('createHeadings', options => {
+  AIProvider.provide('createHeadings', options => {
     return textToText({
       ...options,
       content: options.input,
@@ -70,7 +92,7 @@ export function setupAIProvider() {
     });
   });
 
-  AIProvider.provideAction('makeLonger', options => {
+  AIProvider.provide('makeLonger', options => {
     return textToText({
       ...options,
       content: options.input,
@@ -78,7 +100,7 @@ export function setupAIProvider() {
     });
   });
 
-  AIProvider.provideAction('makeShorter', options => {
+  AIProvider.provide('makeShorter', options => {
     return textToText({
       ...options,
       content: options.input,
@@ -86,7 +108,7 @@ export function setupAIProvider() {
     });
   });
 
-  AIProvider.provideAction('checkCodeErrors', options => {
+  AIProvider.provide('checkCodeErrors', options => {
     return textToText({
       ...options,
       content: options.input,
@@ -94,7 +116,7 @@ export function setupAIProvider() {
     });
   });
 
-  AIProvider.provideAction('explainCode', options => {
+  AIProvider.provide('explainCode', options => {
     return textToText({
       ...options,
       content: options.input,
@@ -102,7 +124,7 @@ export function setupAIProvider() {
     });
   });
 
-  AIProvider.provideAction('writeArticle', options => {
+  AIProvider.provide('writeArticle', options => {
     return textToText({
       ...options,
       content: options.input,
@@ -110,7 +132,7 @@ export function setupAIProvider() {
     });
   });
 
-  AIProvider.provideAction('writeTwitterPost', options => {
+  AIProvider.provide('writeTwitterPost', options => {
     return textToText({
       ...options,
       content: options.input,
@@ -118,7 +140,7 @@ export function setupAIProvider() {
     });
   });
 
-  AIProvider.provideAction('writePoem', options => {
+  AIProvider.provide('writePoem', options => {
     return textToText({
       ...options,
       content: options.input,
@@ -126,7 +148,7 @@ export function setupAIProvider() {
     });
   });
 
-  AIProvider.provideAction('writeOutline', options => {
+  AIProvider.provide('writeOutline', options => {
     return textToText({
       ...options,
       content: options.input,
@@ -134,7 +156,7 @@ export function setupAIProvider() {
     });
   });
 
-  AIProvider.provideAction('writeBlogPost', options => {
+  AIProvider.provide('writeBlogPost', options => {
     return textToText({
       ...options,
       content: options.input,
@@ -142,7 +164,7 @@ export function setupAIProvider() {
     });
   });
 
-  AIProvider.provideAction('brainstorm', options => {
+  AIProvider.provide('brainstorm', options => {
     return textToText({
       ...options,
       content: options.input,
@@ -150,7 +172,7 @@ export function setupAIProvider() {
     });
   });
 
-  AIProvider.provideAction('findActions', options => {
+  AIProvider.provide('findActions', options => {
     return textToText({
       ...options,
       content: options.input,
@@ -158,7 +180,7 @@ export function setupAIProvider() {
     });
   });
 
-  AIProvider.provideAction('brainstormMindmap', options => {
+  AIProvider.provide('brainstormMindmap', options => {
     return textToText({
       ...options,
       content: options.input,
@@ -166,7 +188,7 @@ export function setupAIProvider() {
     });
   });
 
-  AIProvider.provideAction('explain', options => {
+  AIProvider.provide('explain', options => {
     return textToText({
       ...options,
       content: options.input,
@@ -174,7 +196,7 @@ export function setupAIProvider() {
     });
   });
 
-  AIProvider.provideAction('explainImage', options => {
+  AIProvider.provide('explainImage', options => {
     return textToText({
       ...options,
       content: options.input,
@@ -182,7 +204,7 @@ export function setupAIProvider() {
     });
   });
 
-  AIProvider.provideAction('makeItReal', options => {
+  AIProvider.provide('makeItReal', options => {
     return textToText({
       ...options,
       promptName: 'Make it real',
@@ -191,5 +213,26 @@ export function setupAIProvider() {
         options.content ||
         'Here are the latest wireframes. Could you make a new website based on these wireframes and notes and send back just the html file?',
     });
+  });
+
+  AIProvider.provide('histories', {
+    actions: async (
+      workspaceId: string,
+      docId?: string
+    ): Promise<BlockSuitePresets.AIHistory[]> => {
+      // @ts-expect-error - 'action' is missing in server impl
+      return (
+        (await listHistories(workspaceId, docId, {
+          action: true,
+        })) ?? []
+      );
+    },
+    chats: async (
+      workspaceId: string,
+      docId?: string
+    ): Promise<BlockSuitePresets.AIHistory[]> => {
+      // @ts-expect-error - 'action' is missing in server impl
+      return (await listHistories(workspaceId, docId)) ?? [];
+    },
   });
 }
