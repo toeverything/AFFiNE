@@ -220,6 +220,14 @@ export function setupAIProvider() {
     });
   });
 
+  AIProvider.provide('createSlides', options => {
+    return textToText({
+      ...options,
+      content: options.input,
+      promptName: 'Create a presentation',
+    });
+  });
+
   AIProvider.provide('histories', {
     actions: async (
       workspaceId: string,
