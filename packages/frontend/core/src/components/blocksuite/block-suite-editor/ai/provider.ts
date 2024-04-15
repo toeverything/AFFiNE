@@ -1,6 +1,7 @@
 import { assertExists } from '@blocksuite/global/utils';
 import { AIProvider } from '@blocksuite/presets';
 
+import type { PromptKey } from './prompt';
 import {
   createChatSession,
   listHistories,
@@ -250,8 +251,12 @@ export function setupAIProvider() {
   });
 
   AIProvider.provide('createImage', options => {
-    // const promptName = 'debug:action:fal-sd15';
-    const promptName = 'debug:action:dalle3';
+    // test to image
+    let promptName: PromptKey = 'debug:action:dalle3';
+    // image to image
+    if (options.attachments?.length) {
+      promptName = 'debug:action:fal-sd15';
+    }
     return toImage({
       ...options,
       promptName,
