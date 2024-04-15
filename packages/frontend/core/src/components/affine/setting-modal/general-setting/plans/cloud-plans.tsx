@@ -116,7 +116,9 @@ export function getPlanDetail(t: T) {
               : detail.price;
           return (
             <>
-              {t['com.affine.payment.cloud.pro.title.price-monthly']({ price })}
+              {t['com.affine.payment.cloud.pro.title.price-monthly']({
+                price: '$' + price,
+              })}
               {recurring === SubscriptionRecurring.Yearly ? (
                 <span className={planTitleTitleCaption}>
                   {t['com.affine.payment.cloud.pro.title.billed-yearly']()}

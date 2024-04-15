@@ -254,9 +254,7 @@ const SubscriptionSettings = () => {
                 ]()}
                 desc={t[
                   'com.affine.payment.billing-setting.cancel-subscription.description'
-                ]({
-                  cancelDate: new Date(subscription.end).toLocaleDateString(),
-                })}
+                ]()}
               >
                 <CancelSubscription />
               </SettingRow>

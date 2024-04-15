@@ -924,7 +924,7 @@
   "com.affine.payment.benefit-6": "Number of members per Workspace ≤ {{capacity}}",
   "com.affine.payment.benefit-7": "{{capacity}}-days version history",
   "com.affine.payment.billing-setting.cancel-subscription": "Cancel Subscription",
-  "com.affine.payment.billing-setting.cancel-subscription.description": "Subscription cancelled, your pro account will expire on {{cancelDate}}",
+  "com.affine.payment.billing-setting.cancel-subscription.description": "Once you canceled subscription you will no longer enjoy the plan benefits.",
   "com.affine.payment.billing-setting.change-plan": "Change Plan",
   "com.affine.payment.billing-setting.current-plan": "AFFiNE Cloud",
   "com.affine.payment.billing-setting.current-plan.description": "You are currently on the <1>{{planName}} plan</1>.",
