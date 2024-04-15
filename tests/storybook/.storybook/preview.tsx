@@ -67,6 +67,9 @@ localStorage.clear();
 
 // do not show onboarding for storybook
 window.localStorage.setItem('app_config', '{"onBoarding":false}');
+window.localStorage.setItem('dismissAiOnboarding', 'true');
+window.localStorage.setItem('dismissAiOnboardingEdgeless', 'true');
+window.localStorage.setItem('dismissAiOnboardingLocal', 'true');
 
 const services = new ServiceCollection();
 

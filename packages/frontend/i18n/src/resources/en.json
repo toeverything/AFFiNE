@@ -1279,5 +1279,20 @@
   "unnamed": "unnamed",
   "upgradeBrowser": "Please upgrade to the latest version of Chrome for the best experience.",
   "will be moved to Trash": "{{title}} will be moved to Trash",
-  "will delete member": "will delete member"
+  "will delete member": "will delete member",
+  "com.affine.ai-onboarding.general.1.title": "Meet AFFiNE AI",
+  "com.affine.ai-onboarding.general.1.description": "Lets you think bigger, create faster, work smarter and save time for every project.",
+  "com.affine.ai-onboarding.general.2.title": "Chat with AFFiNE AI",
+  "com.affine.ai-onboarding.general.2.description": "Get instant insights to all your questions.",
+  "com.affine.ai-onboarding.general.3.title": "Edit Inline with AFFiNE AI",
+  "com.affine.ai-onboarding.general.3.description": "Perfect tone, spelling, and summaries in seconds.",
+  "com.affine.ai-onboarding.general.4.title": "Make it Real with AFFiNE AI",
+  "com.affine.ai-onboarding.general.4.description": "From concept to completion, turn ideas into reality.",
+  "com.affine.ai-onboarding.general.5.title": "AFFiNE AI is ready",
+  "com.affine.ai-onboarding.general.5.description": "Go to <a>{{link}}</a> for learn more details about AFFiNE AI.",
+  "com.affine.ai-onboarding.general.skip": "Alert me later",
+  "com.affine.ai-onboarding.general.next": "Next",
+  "com.affine.ai-onboarding.general.prev": "Back",
+  "com.affine.ai-onboarding.general.try-for-free": "Tree for Free",
+  "com.affine.ai-onboarding.general.purchase": "Get Unlimited Usage"
 }

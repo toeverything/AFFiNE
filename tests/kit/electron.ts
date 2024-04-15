@@ -36,6 +36,11 @@ export const test = base.extend<{
 }>({
   page: async ({ electronApp }, use) => {
     const page = await electronApp.firstWindow();
+    await page.evaluate(() => {
+      window.localStorage.setItem('dismissAiOnboarding', 'true');
+      window.localStorage.setItem('dismissAiOnboardingEdgeless', 'true');
+      window.localStorage.setItem('dismissAiOnboardingLocal', 'true');
+    });
     // wait for blocksuite to be loaded
     await page.waitForSelector('v-line');
     if (enableCoverage) {

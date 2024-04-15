@@ -22,6 +22,7 @@ import { matchPath } from 'react-router-dom';
 import { Map as YMap } from 'yjs';
 
 import { openQuickSearchModalAtom, openSettingModalAtom } from '../atoms';
+import { AIOnboarding } from '../components/affine/ai-onboarding';
 import { AppContainer } from '../components/affine/app-container';
 import { SyncAwareness } from '../components/affine/awareness';
 import {
@@ -100,6 +101,8 @@ export const WorkspaceLayout = function WorkspaceLayout({
       </Suspense>
       <Suspense fallback={<WorkspaceFallback />}>
         <WorkspaceLayoutInner>{children}</WorkspaceLayoutInner>
+        {/* should show after workspace loaded */}
+        <AIOnboarding />
       </Suspense>
     </SWRConfigProvider>
   );
