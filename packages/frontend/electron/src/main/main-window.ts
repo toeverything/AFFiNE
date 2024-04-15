@@ -127,7 +127,14 @@ async function createWindow(additionalArguments: string[]) {
       //   - all browser windows will capture the "close" event
       //   - the hidden window will close all windows
       //   - "window-all-closed" event will be emitted and eventually quit the app
-      browserWindow.hide();
+      if (browserWindow.isFullScreen()) {
+        browserWindow.once('leave-full-screen', () => {
+          browserWindow.hide();
+        });
+        browserWindow.setFullScreen(false);
+      } else {
+        browserWindow.hide();
+      }
     }
     helperConnectionUnsub?.();
     helperConnectionUnsub = undefined;
