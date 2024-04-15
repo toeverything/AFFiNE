@@ -57,6 +57,13 @@ export class TestingLocalWorkspaceListProvider
       id: id,
       idGenerator: () => nanoid(),
       schema: globalBlockSuiteSchema,
+      blobStorages: [
+        () => {
+          return {
+            crud: blobStorage,
+          };
+        },
+      ],
     });
 
     // apply initial state

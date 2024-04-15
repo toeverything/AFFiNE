@@ -76,12 +76,6 @@ export class CloudWorkspaceListProvider implements WorkspaceListProvider {
   ): Promise<WorkspaceMetadata> {
     const tempId = nanoid();
 
-    const docCollection = new DocCollection({
-      id: tempId,
-      idGenerator: () => nanoid(),
-      schema: globalBlockSuiteSchema,
-    });
-
     // create workspace on cloud, get workspace id
     const {
       createWorkspace: { id: workspaceId },
@@ -96,6 +90,19 @@ export class CloudWorkspaceListProvider implements WorkspaceListProvider {
     const docStorage = environment.isDesktop
       ? new SqliteDocStorage(workspaceId)
       : new IndexedDBDocStorage(workspaceId);
+
+    const docCollection = new DocCollection({
+      id: tempId,
+      idGenerator: () => nanoid(),
+      schema: globalBlockSuiteSchema,
+      blobStorages: [
+        () => {
+          return {
+            crud: blobStorage,
+          };
+        },
+      ],
+    });
 
     // apply initial state
     await initial(docCollection, blobStorage);

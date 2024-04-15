@@ -10,7 +10,6 @@ import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { _addLocalWorkspace } from '@affine/workspace-impl';
 import {
-  buildShowcaseWorkspace,
   initEmptyPage,
   useService,
   WorkspaceManager,
@@ -19,6 +18,7 @@ import { useSetAtom } from 'jotai';
 import type { KeyboardEvent } from 'react';
 import { useCallback, useLayoutEffect, useState } from 'react';
 
+import { buildShowcaseWorkspace } from '../../../bootstrap/first-app-data';
 import { mixpanel } from '../../../utils';
 import { CloudSvg } from '../share-page-modal/cloud-svg';
 import * as styles from './index.css';
