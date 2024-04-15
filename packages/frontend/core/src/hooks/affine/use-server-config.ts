@@ -1,5 +1,9 @@
 import type { ServerConfigQuery, ServerFeature } from '@affine/graphql';
-import { oauthProvidersQuery, serverConfigQuery } from '@affine/graphql';
+import {
+  getBaseUrl,
+  oauthProvidersQuery,
+  serverConfigQuery,
+} from '@affine/graphql';
 import type { BareFetcher, Middleware } from 'swr';
 
 import { useQueryImmutable } from '../use-query';
@@ -60,9 +64,9 @@ export const useOAuthProviders = () => {
 };
 
 export const useServerBaseUrl = () => {
-  const config = useServerConfig();
+  const baseUrl = getBaseUrl();
 
-  if (!config) {
+  if (!baseUrl) {
     if (environment.isDesktop) {
       // don't use window.location in electron
       return null;
@@ -71,7 +75,7 @@ export const useServerBaseUrl = () => {
     return `${protocol}//${hostname}${port ? `:${port}` : ''}`;
   }
 
-  return config.baseUrl;
+  return baseUrl;
 };
 
 export const useCredentialsRequirement = () => {
