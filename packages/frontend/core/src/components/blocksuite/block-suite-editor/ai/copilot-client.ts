@@ -89,7 +89,14 @@ export class CopilotClient {
     if (message) {
       url.searchParams.set('message', message);
     }
-    return fetch(url.toString());
+
+    return new Promise(resolve => {
+      fetch(url.toString())
+        .then(res => {
+          resolve(res.text());
+        })
+        .catch(console.error);
+    });
   }
 
   // Text or image to text

@@ -8,6 +8,7 @@ query getCopilotHistories(
       histories(docId: $docId, options: $options) {
         sessionId
         tokens
+        action
         messages {
           role
           content
