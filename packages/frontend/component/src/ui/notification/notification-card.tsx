@@ -15,20 +15,19 @@ import {
 
 export interface NotificationCardProps extends HTMLAttributes<HTMLDivElement> {
   notification: Notification;
-  onDismiss?: () => void;
 }
 
-export const NotificationCard = ({
-  notification,
-  onDismiss,
-}: NotificationCardProps) => {
+export const NotificationCard = ({ notification }: NotificationCardProps) => {
   const {
     theme = 'info',
     style = 'normal',
     icon = <InformationFillDuotoneIcon />,
+    thumb,
     action,
     title,
     footer,
+    alignMessage = 'title',
+    onDismiss,
   } = notification;
 
   const onActionClicked = useCallback(() => {
@@ -49,33 +48,41 @@ export const NotificationCard = ({
       data-with-icon={icon ? '' : undefined}
       className={styles.card}
     >
-      <header className={styles.header}>
-        {icon ? (
-          <div className={clsx(styles.icon, styles.headAlignWrapper)}>
-            {icon}
-          </div>
-        ) : null}
-        <div className={styles.title}>{title}</div>
+      {thumb}
+      <div className={styles.cardInner}>
+        <header className={styles.header}>
+          {icon ? (
+            <div className={clsx(styles.icon, styles.headAlignWrapper)}>
+              {icon}
+            </div>
+          ) : null}
+          <div className={styles.title}>{title}</div>
 
-        {action ? (
-          <div className={clsx(styles.headAlignWrapper, styles.action)}>
-            <Button
-              className={styles.actionButton}
-              onClick={onActionClicked}
-              {...action.buttonProps}
-            >
-              {action.label}
-            </Button>
+          {action ? (
+            <div className={clsx(styles.headAlignWrapper, styles.action)}>
+              <Button
+                className={styles.actionButton}
+                onClick={onActionClicked}
+                {...action.buttonProps}
+              >
+                {action.label}
+              </Button>
+            </div>
+          ) : null}
+          <div
+            data-float={!!thumb}
+            className={clsx(styles.headAlignWrapper, styles.closeButton)}
+          >
+            <IconButton onClick={onDismiss}>
+              <CloseIcon className={styles.closeIcon} width={16} height={16} />
+            </IconButton>
           </div>
-        ) : null}
-        <div className={styles.headAlignWrapper}>
-          <IconButton onClick={onDismiss}>
-            <CloseIcon className={styles.closeIcon} width={16} height={16} />
-          </IconButton>
-        </div>
-      </header>
-      <main className={styles.main}>{notification.message}</main>
-      <footer>{footer}</footer>
+        </header>
+        <main data-align={alignMessage} className={styles.main}>
+          {notification.message}
+        </main>
+        <footer>{footer}</footer>
+      </div>
     </div>
   );
 };

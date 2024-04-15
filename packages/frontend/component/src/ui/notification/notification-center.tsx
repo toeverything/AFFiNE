@@ -46,12 +46,11 @@ export function NotificationCenter({ width = 380 }: NotificationCenterProps) {
  */
 export function notify(notification: Notification, options?: ExternalToast) {
   return toast.custom(id => {
-    return (
-      <NotificationCard
-        notification={notification}
-        onDismiss={() => toast.dismiss(id)}
-      />
-    );
+    const onDismiss = () => {
+      notification.onDismiss?.();
+      toast.dismiss(id);
+    };
+    return <NotificationCard notification={{ ...notification, onDismiss }} />;
   }, options);
 }
 

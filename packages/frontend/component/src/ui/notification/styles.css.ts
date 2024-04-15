@@ -10,11 +10,13 @@ export const card = style({
   borderRadius: 8,
   borderWidth: 1,
   borderStyle: 'solid',
-  padding: 16,
   boxShadow: cssVar('shadow1'),
   backgroundColor: cardColor,
   borderColor: cardBorderColor,
   color: cardForeground,
+});
+export const cardInner = style({
+  padding: 16,
 });
 
 export const header = style({
@@ -68,17 +70,26 @@ export const actionButton = style({
     boxShadow: 'none !important',
   },
 });
+export const closeButton = style({
+  selectors: {
+    '&[data-float="true"]': {
+      position: 'absolute',
+      top: 16,
+      right: 16,
+    },
+  },
+});
 export const closeIcon = style({
   color: `${cardForeground} !important`,
 });
 
 export const main = style({
   marginTop: 5,
-  fontSize: 14,
+  fontSize: cssVar('fontSm'),
   lineHeight: '22px',
 
   selectors: {
-    '[data-with-icon] &': {
+    '[data-with-icon] &[data-align="title"]': {
       paddingLeft: 34,
     },
   },

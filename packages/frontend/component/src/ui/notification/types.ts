@@ -12,6 +12,7 @@ export interface Notification {
   borderColor?: string;
   background?: string;
   foreground?: string;
+  alignMessage?: 'title' | 'icon';
   action?: {
     label: string;
     onClick: (() => void) | (() => Promise<void>);
@@ -23,10 +24,14 @@ export interface Notification {
   };
 
   // custom slots
+  thumb?: ReactNode;
   title?: ReactNode;
   message?: ReactNode;
   icon?: ReactNode;
   footer?: ReactNode;
+
+  // events
+  onDismiss?: () => void;
 }
 
 export interface NotificationCenterProps {

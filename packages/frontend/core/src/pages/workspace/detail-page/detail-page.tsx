@@ -1,5 +1,6 @@
 import { Scrollable } from '@affine/component';
 import { PageDetailSkeleton } from '@affine/component/page-detail-skeleton';
+import { PageAIOnboarding } from '@affine/core/components/affine/ai-onboarding';
 import { useBlockSuiteDocMeta } from '@affine/core/hooks/use-block-suite-page-meta';
 import type { PageRootService } from '@blocksuite/blocks';
 import {
@@ -283,6 +284,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
 
       <ImagePreviewModal pageId={currentPageId} docCollection={docCollection} />
       <GlobalPageHistoryModal />
+      <PageAIOnboarding />
     </>
   );
 });

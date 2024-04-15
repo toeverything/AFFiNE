@@ -16,12 +16,9 @@ const useDismiss = (key: AIOnboardingType) => {
   return [dismiss, onDismiss] as const;
 };
 
-export const AIOnboarding = () => {
+export const WorkspaceAIOnboarding = () => {
   const [dismissGeneral, onDismissGeneral] = useDismiss(
     AIOnboardingType.GENERAL
-  );
-  const [dismissEdgeless, onDismissEdgeless] = useDismiss(
-    AIOnboardingType.EDGELESS
   );
   const [dismissLocal, onDismissLocal] = useDismiss(AIOnboardingType.LOCAL);
 
@@ -30,10 +27,22 @@ export const AIOnboarding = () => {
       {dismissGeneral ? null : (
         <AIOnboardingGeneral onDismiss={onDismissGeneral} />
       )}
+
+      {dismissLocal ? null : <AIOnboardingLocal onDismiss={onDismissLocal} />}
+    </Suspense>
+  );
+};
+
+export const PageAIOnboarding = () => {
+  const [dismissEdgeless, onDismissEdgeless] = useDismiss(
+    AIOnboardingType.EDGELESS
+  );
+
+  return (
+    <Suspense>
       {dismissEdgeless ? null : (
         <AIOnboardingEdgeless onDismiss={onDismissEdgeless} />
       )}
-      {dismissLocal ? null : <AIOnboardingLocal onDismiss={onDismissLocal} />}
     </Suspense>
   );
 };
