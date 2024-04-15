@@ -63,14 +63,16 @@ export const useJournalHelper = (docCollection: DocCollection) => {
   const getJournalsByDate = useCallback(
     (maybeDate: MaybeDate) => {
       const day = dayjs(maybeDate);
-      return Array.from(docCollection.docs.values()).filter(page => {
-        const pageId = page.id;
-        if (!isPageJournal(pageId)) return false;
-        if (page.meta?.trash) return false;
-        const journalDate = adapter.getJournalPageDateString(page.id);
-        if (!journalDate) return false;
-        return day.isSame(journalDate, 'day');
-      });
+      return Array.from(docCollection.docs.values())
+        .map(blockCollection => blockCollection.getDoc())
+        .filter(page => {
+          const pageId = page.id;
+          if (!isPageJournal(pageId)) return false;
+          if (page.meta?.trash) return false;
+          const journalDate = adapter.getJournalPageDateString(page.id);
+          if (!journalDate) return false;
+          return day.isSame(journalDate, 'day');
+        });
     },
     [adapter, isPageJournal, docCollection.docs]
   );

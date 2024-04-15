@@ -65,7 +65,9 @@ export const Component = (): ReactElement => {
     window.exportWorkspaceSnapshot = async () => {
       const zip = await ZipTransformer.exportDocs(
         workspace.docCollection,
-        Array.from(workspace.docCollection.docs.values())
+        Array.from(workspace.docCollection.docs.values()).map(collection =>
+          collection.getDoc()
+        )
       );
       const url = URL.createObjectURL(zip);
       // download url

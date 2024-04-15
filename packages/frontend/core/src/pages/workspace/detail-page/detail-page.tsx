@@ -332,7 +332,7 @@ export const DetailPage = ({ pageId }: { pageId: string }): ReactElement => {
   useEffect(() => {
     if (page && pageRecord?.meta?.trash) {
       currentWorkspace.docCollection.awarenessStore.setReadonly(
-        page.blockSuiteDoc,
+        page.blockSuiteDoc.blockCollection,
         true
       );
     }

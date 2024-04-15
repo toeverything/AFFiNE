@@ -167,7 +167,7 @@ export const Component = () => {
         const { page } = workspace.services.get(PageManager).open(pageId);
 
         workspace.docCollection.awarenessStore.setReadonly(
-          page.blockSuiteDoc,
+          page.blockSuiteDoc.blockCollection,
           true
         );
 

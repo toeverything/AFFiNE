@@ -42,7 +42,7 @@ export function useDocMetaHelper(docCollection: DocCollection) {
       setDocReadonly: (docId: string, readonly: boolean) => {
         const page = docCollection.getDoc(docId);
         assertExists(page);
-        page.awarenessStore.setReadonly(page, readonly);
+        page.awarenessStore.setReadonly(page.blockCollection, readonly);
       },
       setDocMeta: (docId: string, docMeta: Partial<DocMeta>) => {
         docCollection.meta.setDocMeta(docId, docMeta);

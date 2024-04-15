@@ -25,7 +25,7 @@ export const Default: StoryFn = () => {
   const [page, setPage] = useState<Doc | null>(null);
 
   useEffect(() => {
-    const bsPage = workspace.docCollection.createDoc('page0');
+    const bsPage = workspace.docCollection.createDoc({ id: 'page0' });
     initEmptyPage(bsPage);
 
     const { page, release } = pageManager.open(bsPage.meta!.id);

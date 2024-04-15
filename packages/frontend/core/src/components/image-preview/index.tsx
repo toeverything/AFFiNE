@@ -100,7 +100,7 @@ const ImagePreviewModalImpl = (
       const block = page.getBlockById(blockId);
       assertExists(block);
       const nextBlock = page
-        .getNextSiblings(block)
+        .getNexts(block)
         .find(
           (block): block is ImageBlockModel => block.flavour === 'affine:image'
         );
@@ -120,7 +120,7 @@ const ImagePreviewModalImpl = (
       const block = page.getBlockById(blockId);
       assertExists(block);
       const prevBlock = page
-        .getPreviousSiblings(block)
+        .getPrevs(block)
         .findLast(
           (block): block is ImageBlockModel => block.flavour === 'affine:image'
         );
@@ -142,14 +142,14 @@ const ImagePreviewModalImpl = (
       assertExists(block);
       if (
         page
-          .getPreviousSiblings(block)
+          .getPrevs(block)
           .some(
             (block): block is ImageBlockModel =>
               block.flavour === 'affine:image'
           )
       ) {
         const prevBlock = page
-          .getPreviousSiblings(block)
+          .getPrevs(block)
           .findLast(
             (block): block is ImageBlockModel =>
               block.flavour === 'affine:image'
@@ -159,14 +159,14 @@ const ImagePreviewModalImpl = (
         }
       } else if (
         page
-          .getNextSiblings(block)
+          .getNexts(block)
           .some(
             (block): block is ImageBlockModel =>
               block.flavour === 'affine:image'
           )
       ) {
         const nextBlock = page
-          .getNextSiblings(block)
+          .getNexts(block)
           .find(
             (block): block is ImageBlockModel =>
               block.flavour === 'affine:image'
@@ -516,7 +516,7 @@ export const ImagePreviewModal = (
 
       if (event.key === 'ArrowLeft') {
         const prevBlock = page
-          .getPreviousSiblings(block)
+          .getPrevs(block)
           .findLast(
             (block): block is ImageBlockModel =>
               block.flavour === 'affine:image'
@@ -526,7 +526,7 @@ export const ImagePreviewModal = (
         }
       } else if (event.key === 'ArrowRight') {
         const nextBlock = page
-          .getNextSiblings(block)
+          .getNexts(block)
           .find(
             (block): block is ImageBlockModel =>
               block.flavour === 'affine:image'

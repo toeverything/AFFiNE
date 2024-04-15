@@ -186,7 +186,6 @@ export function setupAIProvider() {
     return textToText({
       ...options,
       promptName: 'Make it real',
-      // @ts-expect-error todo: fix this after blocksuite bump
       params: options.params,
       content:
         options.content ||

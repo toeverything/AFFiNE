@@ -27,7 +27,7 @@ export const Basic: StoryFn = () => {
   const [page, setPage] = useState<Doc | null>(null);
 
   useEffect(() => {
-    const page = workspace.docCollection.createDoc(nanoid());
+    const page = workspace.docCollection.createDoc({ id: nanoid() });
     initEmptyPage(page);
 
     setPage(page);
@@ -69,7 +69,7 @@ export const AffineBasic: StoryFn = () => {
   const [page, setPage] = useState<Doc | null>(null);
 
   useEffect(() => {
-    const page = workspace.docCollection.createDoc(nanoid());
+    const page = workspace.docCollection.createDoc({ id: nanoid() });
     initEmptyPage(page);
 
     setPage(page);
