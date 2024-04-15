@@ -14264,20 +14264,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@testing-library/react@npm:^14.2.1":
-  version: 14.2.1
-  resolution: "@testing-library/react@npm:14.2.1"
-  dependencies:
-    "@babel/runtime": "npm:^7.12.5"
-    "@testing-library/dom": "npm:^9.0.0"
-    "@types/react-dom": "npm:^18.0.0"
-  peerDependencies:
-    react: ^18.0.0
-    react-dom: ^18.0.0
-  checksum: 10/e02b2f32ae79665a79fc4d8ee053fd3832bfcd4753aa1dba05cdece1a9f59c72a0fae91e0a9387597dcb686d631a722729f2878e38dc95e6f23b291ad8d09b6c
-  languageName: node
-  linkType: hard
-
 "@testing-library/react@npm:^15.0.0":
   version: 15.0.0
   resolution: "@testing-library/react@npm:15.0.0"
@@ -14315,7 +14301,7 @@ __metadata:
     "@blocksuite/presets": "npm:0.14.0-canary-202404151235-655ec84"
     "@blocksuite/store": "npm:0.14.0-canary-202404151235-655ec84"
     "@datastructures-js/binary-search-tree": "npm:^5.3.2"
-    "@testing-library/react": "npm:^14.2.1"
+    "@testing-library/react": "npm:^15.0.0"
     async-call-rpc: "npm:^6.4.0"
     foxact: "npm:^0.2.33"
     jotai: "npm:^2.8.0"

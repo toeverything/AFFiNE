@@ -30,7 +30,7 @@
     "@affine/templates": "workspace:*",
     "@blocksuite/block-std": "0.14.0-canary-202404151235-655ec84",
     "@blocksuite/presets": "0.14.0-canary-202404151235-655ec84",
-    "@testing-library/react": "^14.2.1",
+    "@testing-library/react": "^15.0.0",
     "async-call-rpc": "^6.4.0",
     "react": "^18.2.0",
     "rxjs": "^7.8.1",
