@@ -3,7 +3,6 @@ import {
   RadioButton,
   RadioButtonGroup,
   Switch,
-  toast,
 } from '@affine/component';
 import { PublicLinkDisableModal } from '@affine/component/disable-public-link';
 import { Button } from '@affine/component/ui/button';
@@ -86,13 +85,15 @@ export const AffineSharePage = (props: ShareMenuProps) => {
 
   const onClickCreateLink = useCallback(() => {
     enableShare(mode);
-  }, [enableShare, mode]);
+    if (sharingUrl) {
+      navigator.clipboard.writeText(sharingUrl).catch(err => {
+        console.error(err);
+      });
+    }
+  }, [enableShare, mode, sharingUrl]);
 
   const onDisablePublic = useCallback(() => {
     disableShare();
-    toast('Successfully disabled', {
-      portal: document.body,
-    });
     setShowDisable(false);
   }, [disableShare]);
 
