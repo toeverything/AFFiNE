@@ -35,6 +35,18 @@ export class ChatSession implements AsyncDisposable {
     return this.state.prompt.model;
   }
 
+  get config() {
+    const {
+      sessionId,
+      userId,
+      workspaceId,
+      docId,
+      prompt: { name: promptName },
+    } = this.state;
+
+    return { sessionId, userId, workspaceId, docId, promptName };
+  }
+
   push(message: ChatMessage) {
     if (
       this.state.prompt.action &&

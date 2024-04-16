@@ -1,25 +1,23 @@
 import { Injectable, PayloadTooLargeException } from '@nestjs/common';
-import { Args, Mutation, Resolver } from '@nestjs/graphql';
-import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 
-import { CurrentUser } from '../../core/auth';
 import { QuotaManagementService } from '../../core/quota';
-import { PermissionService } from '../../core/workspaces/permission';
 import {
   type BlobInputType,
-  FileUpload,
-  MutexService,
+  Config,
+  type FileUpload,
   type StorageProvider,
   StorageProviderFactory,
-  TooManyRequestsException,
 } from '../../fundamentals';
-import { COPILOT_LOCKER, CopilotType } from './resolver';
 
 @Injectable()
 export class CopilotStorage {
   public readonly provider: StorageProvider;
 
-  constructor(private readonly storageFactory: StorageProviderFactory) {
+  constructor(
+    private readonly config: Config,
+    private readonly storageFactory: StorageProviderFactory,
+    private readonly quota: QuotaManagementService
+  ) {
     this.provider = this.storageFactory.create('copilot');
   }
 
@@ -29,7 +27,9 @@ export class CopilotStorage {
     key: string,
     blob: BlobInputType
   ) {
-    await this.provider.put(`${userId}/${workspaceId}/${key}`, blob);
+    const name = `${userId}/${workspaceId}/${key}`;
+    await this.provider.put(name, blob);
+    return `${this.config.baseUrl}/${name}`;
   }
 
   async get(userId: string, workspaceId: string, key: string) {
@@ -39,37 +39,9 @@ export class CopilotStorage {
   async delete(userId: string, workspaceId: string, key: string) {
     return this.provider.delete(`${userId}/${workspaceId}/${key}`);
   }
-}
 
-@Resolver(() => CopilotType)
-export class CopilotStorageResolver {
-  constructor(
-    private readonly permissions: PermissionService,
-    private readonly mutex: MutexService,
-    private readonly quota: QuotaManagementService,
-    private readonly storage: CopilotStorage
-  ) {}
-
-  @Mutation(() => String)
-  async setCopilotBlob(
-    @CurrentUser() user: CurrentUser,
-    @Args('workspaceId') workspaceId: string,
-    @Args('docId') docId: string,
-    @Args({ name: 'blob', type: () => GraphQLUpload })
-    blob: FileUpload
-  ) {
-    await this.permissions.checkCloudPagePermission(
-      workspaceId,
-      docId,
-      user.id
-    );
-    const lockFlag = `${COPILOT_LOCKER}:session:${user.id}:${workspaceId}`;
-    await using lock = await this.mutex.lock(lockFlag);
-    if (!lock) {
-      return new TooManyRequestsException('Server is busy');
-    }
-
-    const checkExceeded = await this.quota.getQuotaCalculator(user.id);
+  async handleUpload(userId: string, blob: FileUpload) {
+    const checkExceeded = await this.quota.getQuotaCalculator(userId);
 
     if (checkExceeded(0)) {
       throw new PayloadTooLargeException(
@@ -102,7 +74,9 @@ export class CopilotStorageResolver {
       });
     });
 
-    await this.storage.put(user.id, workspaceId, blob.filename, buffer);
-    return blob.filename;
+    return {
+      buffer,
+      filename: blob.filename,
+    };
   }
 }
