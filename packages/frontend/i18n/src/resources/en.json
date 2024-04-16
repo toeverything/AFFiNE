@@ -909,6 +909,8 @@
   "com.affine.payment.billing-setting.upgrade": "Upgrade",
   "com.affine.payment.billing-setting.view-invoice": "View Invoice",
   "com.affine.payment.billing-setting.year": "year",
+  "com.affine.payment.billing-setting.ai.free-desc": "Yue are current on the Free plan.",
+  "com.affine.payment.billing-setting.ai.purchase": "Purchase",
   "com.affine.payment.blob-limit.description.local": "The maximum file upload size for local workspaces is {{quota}}.",
   "com.affine.payment.blob-limit.description.member": "The maximum file upload size for this joined workspace is {{quota}}. You can contact the owner of this workspace.",
   "com.affine.payment.blob-limit.description.owner.free": "{{planName}} users can upload files with a maximum size of {{currentQuota}}. You can upgrade your account to unlock a maximum file size of {{upgradeQuota}}.",

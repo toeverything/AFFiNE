@@ -97,6 +97,7 @@ const SubscriptionSettings = () => {
   const [subscription, mutateSubscription] = useUserSubscription();
   const [openCancelModal, setOpenCancelModal] = useState(false);
   const {
+    isFree: isFreeAI,
     actionType: aiActionType,
     Action: AIAction,
     billingTip,
@@ -187,7 +188,11 @@ const SubscriptionSettings = () => {
           <SettingRow
             spreadCol={false}
             name={t['com.affine.payment.billing-setting.ai-plan']()}
-            desc={billingTip}
+            desc={
+              isFreeAI
+                ? t['com.affine.payment.billing-setting.ai.free-desc']()
+                : billingTip
+            }
           />
           {aiPrice?.yearlyAmount ? (
             <AIAction
@@ -196,12 +201,14 @@ const SubscriptionSettings = () => {
               recurring={SubscriptionRecurring.Yearly}
               onSubscriptionUpdate={mutateSubscription}
             >
-              {aiActionType === 'subscribe' ? 'Purchase' : null}
+              {aiActionType === 'subscribe'
+                ? t['com.affine.payment.billing-setting.ai.purchase']()
+                : null}
             </AIAction>
           ) : null}
         </div>
         <p className={styles.planPrice}>
-          {aiPriceReadable}
+          {isFreeAI ? '$0' : aiPriceReadable}
           <span className={styles.billingFrequency}>/{aiPriceFrequency}</span>
         </p>
       </div>
