@@ -8,6 +8,7 @@ export * from './ui/date-picker';
 export * from './ui/divider';
 export * from './ui/editable';
 export * from './ui/empty';
+export * from './ui/error-message';
 export * from './ui/input';
 export * from './ui/layout';
 export * from './ui/loading';

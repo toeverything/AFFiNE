@@ -3,11 +3,7 @@ import { useDocCollectionPage } from '@affine/core/hooks/use-block-suite-workspa
 import { timestampToLocalDate } from '@affine/core/utils';
 import { DebugLogger } from '@affine/debug';
 import type { ListHistoryQuery } from '@affine/graphql';
-import {
-  fetchWithTraceReport,
-  listHistoryQuery,
-  recoverDocMutation,
-} from '@affine/graphql';
+import { listHistoryQuery, recoverDocMutation } from '@affine/graphql';
 import { assertEquals } from '@blocksuite/global/utils';
 import { DocCollection } from '@blocksuite/store';
 import { globalBlockSuiteSchema } from '@toeverything/infra';
@@ -76,11 +72,8 @@ const snapshotFetcher = async (
   if (!ts) {
     return null;
   }
-  const res = await fetchWithTraceReport(
-    `/api/workspaces/${workspaceId}/docs/${pageDocId}/histories/${ts}`,
-    {
-      priority: 'high',
-    }
+  const res = await fetch(
+    `/api/workspaces/${workspaceId}/docs/${pageDocId}/histories/${ts}`
   );
 
   if (!res.ok) {

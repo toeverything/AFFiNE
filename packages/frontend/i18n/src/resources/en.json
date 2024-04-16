@@ -872,7 +872,7 @@
   "com.affine.payment.ai.pricing-plan.title-caption-2": "A true multimodal AI copilot.",
   "com.affine.payment.ai.usage-description-purchased": "You have purchased AFFiNE AI.",
   "com.affine.payment.ai.usage-title": "AFFiNE AI Usage",
-  "com.affine.payment.ai.usage.change-button-label": "Upgraded",
+  "com.affine.payment.ai.usage.change-button-label": "Change",
   "com.affine.payment.ai.usage.purchase-button-label": "Upgrade",
   "com.affine.payment.ai.usage.used-caption": "Times used",
   "com.affine.payment.ai.usage.used-detail": "{{used}}/{{limit}} Times",

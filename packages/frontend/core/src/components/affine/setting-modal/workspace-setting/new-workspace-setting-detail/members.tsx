@@ -16,38 +16,45 @@ import { Menu, MenuItem } from '@affine/component/ui/menu';
 import { Tooltip } from '@affine/component/ui/tooltip';
 import { openSettingModalAtom } from '@affine/core/atoms';
 import { AffineErrorBoundary } from '@affine/core/components/affine/affine-error-boundary';
-import type { CheckedUser } from '@affine/core/hooks/affine/use-current-user';
-import { useCurrentUser } from '@affine/core/hooks/affine/use-current-user';
 import { useInviteMember } from '@affine/core/hooks/affine/use-invite-member';
 import { useMemberCount } from '@affine/core/hooks/affine/use-member-count';
 import type { Member } from '@affine/core/hooks/affine/use-members';
 import { useMembers } from '@affine/core/hooks/affine/use-members';
 import { useRevokeMemberPermission } from '@affine/core/hooks/affine/use-revoke-member-permission';
-import { useWorkspaceQuota } from '@affine/core/hooks/use-quota';
-import { useUserSubscription } from '@affine/core/hooks/use-subscription';
+import { WorkspacePermissionService } from '@affine/core/modules/permissions';
+import { WorkspaceQuotaService } from '@affine/core/modules/quota';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { Permission, SubscriptionPlan } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { MoreVerticalIcon } from '@blocksuite/icons';
+import {
+  useEnsureLiveData,
+  useLiveData,
+  useService,
+  WorkspaceService,
+} from '@toeverything/infra';
 import clsx from 'clsx';
 import { useSetAtom } from 'jotai';
 import type { ReactElement } from 'react';
 import {
   Suspense,
   useCallback,
+  useEffect,
   useLayoutEffect,
   useMemo,
   useRef,
   useState,
 } from 'react';
 
+import {
+  type AuthAccountInfo,
+  AuthService,
+  ServerConfigService,
+  SubscriptionService,
+} from '../../../../../modules/cloud';
 import * as style from './style.css';
-import type { WorkspaceSettingDetailProps } from './types';
 
 const COUNT_PER_PAGE = 8;
-export interface MembersPanelProps extends WorkspaceSettingDetailProps {
-  upgradable: boolean;
-}
 type OnRevoke = (memberId: string) => void;
 const MembersPanelLocal = () => {
   const t = useAFFiNEI18N();
@@ -62,13 +69,19 @@ const MembersPanelLocal = () => {
   );
 };
 
-export const CloudWorkspaceMembersPanel = ({
-  isOwner,
-  upgradable,
-  workspaceMetadata,
-}: MembersPanelProps) => {
-  const workspaceId = workspaceMetadata.id;
-  const memberCount = useMemberCount(workspaceId);
+export const CloudWorkspaceMembersPanel = () => {
+  const serverConfig = useService(ServerConfigService).serverConfig;
+  const hasPaymentFeature = useLiveData(
+    serverConfig.features$.map(f => f?.payment)
+  );
+  const workspace = useService(WorkspaceService).workspace;
+  const memberCount = useMemberCount(workspace.id);
+
+  const permissionService = useService(WorkspacePermissionService);
+  const isOwner = useLiveData(permissionService.permission.isOwner$);
+  useEffect(() => {
+    permissionService.permission.revalidate();
+  }, [permissionService]);
 
   const checkMemberCountLimit = useCallback(
     (memberCount: number, memberLimit?: number) => {
@@ -78,14 +91,22 @@ export const CloudWorkspaceMembersPanel = ({
     []
   );
 
-  const quota = useWorkspaceQuota(workspaceId);
-  const [subscription] = useUserSubscription();
-  const plan = subscription?.plan ?? SubscriptionPlan.Free;
-  const isLimited = checkMemberCountLimit(memberCount, quota.memberLimit);
+  const workspaceQuotaService = useService(WorkspaceQuotaService);
+  useEffect(() => {
+    workspaceQuotaService.quota.revalidate();
+  }, [workspaceQuotaService]);
+  const workspaceQuota = useLiveData(workspaceQuotaService.quota.quota$);
+  const subscriptionService = useService(SubscriptionService);
+  const plan = useLiveData(
+    subscriptionService.subscription.primary$.map(s => s?.plan)
+  );
+  const isLimited = workspaceQuota
+    ? checkMemberCountLimit(memberCount, workspaceQuota.memberLimit)
+    : null;
 
   const t = useAFFiNEI18N();
-  const { invite, isMutating } = useInviteMember(workspaceId);
-  const revokeMemberPermission = useRevokeMemberPermission(workspaceId);
+  const { invite, isMutating } = useInviteMember(workspace.id);
+  const revokeMemberPermission = useRevokeMemberPermission(workspace.id);
 
   const [open, setOpen] = useState(false);
   const [memberSkip, setMemberSkip] = useState(0);
@@ -150,11 +171,11 @@ export const CloudWorkspaceMembersPanel = ({
   );
 
   const desc = useMemo(() => {
-    if (!quota) return null;
+    if (!workspaceQuota) return null;
     return (
       <span>
         {t['com.affine.payment.member.description2']()}
-        {upgradable ? (
+        {hasPaymentFeature ? (
           <div
             className={style.goUpgradeWrapper}
             onClick={handleUpgradeConfirm}
@@ -166,14 +187,19 @@ export const CloudWorkspaceMembersPanel = ({
         ) : null}
       </span>
     );
-  }, [handleUpgradeConfirm, quota, t, upgradable]);
+  }, [handleUpgradeConfirm, hasPaymentFeature, t, workspaceQuota]);
+
+  if (workspaceQuota === null) {
+    // TODO: loading ui
+    return null;
+  }
 
   return (
     <>
       <SettingRow
-        name={`${t['Members']()} (${memberCount}/${quota.humanReadable.memberLimit})`}
+        name={`${t['Members']()} (${memberCount}/${workspaceQuota.humanReadable.memberLimit})`}
         desc={desc}
-        spreadCol={isOwner}
+        spreadCol={!!isOwner}
       >
         {isOwner ? (
           <>
@@ -182,8 +208,8 @@ export const CloudWorkspaceMembersPanel = ({
               <MemberLimitModal
                 isFreePlan={plan === SubscriptionPlan.Free}
                 open={open}
-                plan={quota.humanReadable.name}
-                quota={quota.humanReadable.memberLimit}
+                plan={workspaceQuota?.humanReadable.name ?? ''}
+                quota={workspaceQuota?.humanReadable.memberLimit ?? ''}
                 setOpen={setOpen}
                 onConfirm={handleUpgradeConfirm}
               />
@@ -206,8 +232,8 @@ export const CloudWorkspaceMembersPanel = ({
       >
         <Suspense fallback={<MemberListFallback memberCount={memberCount} />}>
           <MemberList
-            workspaceId={workspaceId}
-            isOwner={isOwner}
+            workspaceId={workspace.id}
+            isOwner={!!isOwner}
             skip={memberSkip}
             onRevoke={onRevoke}
           />
@@ -259,16 +285,17 @@ const MemberList = ({
   onRevoke: OnRevoke;
 }) => {
   const members = useMembers(workspaceId, skip, COUNT_PER_PAGE);
-  const currentUser = useCurrentUser();
+  const session = useService(AuthService).session;
+  const account = useEnsureLiveData(session.account$);
 
   return (
     <div className={style.memberList}>
       {members.map(member => (
         <MemberItem
+          currentAccount={account}
           key={member.id}
           member={member}
           isOwner={isOwner}
-          currentUser={currentUser}
           onRevoke={onRevoke}
         />
       ))}
@@ -279,12 +306,12 @@ const MemberList = ({
 const MemberItem = ({
   member,
   isOwner,
-  currentUser,
+  currentAccount,
   onRevoke,
 }: {
   member: Member;
   isOwner: boolean;
-  currentUser: CheckedUser;
+  currentAccount: AuthAccountInfo;
   onRevoke: OnRevoke;
 }) => {
   const t = useAFFiNEI18N();
@@ -295,10 +322,10 @@ const MemberItem = ({
 
   const operationButtonInfo = useMemo(() => {
     return {
-      show: isOwner && currentUser.id !== member.id,
+      show: isOwner && currentAccount.id !== member.id,
       leaveOrRevokeText: t['Remove from workspace'](),
     };
-  }, [currentUser.id, isOwner, member.id, t]);
+  }, [currentAccount.id, isOwner, member.id, t]);
 
   return (
     <div
@@ -354,14 +381,15 @@ const MemberItem = ({
   );
 };
 
-export const MembersPanel = (props: MembersPanelProps): ReactElement | null => {
-  if (props.workspaceMetadata.flavour === WorkspaceFlavour.LOCAL) {
+export const MembersPanel = (): ReactElement | null => {
+  const workspace = useService(WorkspaceService).workspace;
+  if (workspace.flavour === WorkspaceFlavour.LOCAL) {
     return <MembersPanelLocal />;
   }
   return (
     <AffineErrorBoundary>
       <Suspense>
-        <CloudWorkspaceMembersPanel {...props} />
+        <CloudWorkspaceMembersPanel />
       </Suspense>
     </AffineErrorBoundary>
   );

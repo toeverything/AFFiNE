@@ -19,8 +19,8 @@ import { type LoaderFunction, useSearchParams } from 'react-router-dom';
 import { createFirstAppData } from '../bootstrap/first-app-data';
 import { UserWithWorkspaceList } from '../components/pure/workspace-slider-bar/user-with-workspace-list';
 import { WorkspaceFallback } from '../components/workspace';
-import { useSession } from '../hooks/affine/use-current-user';
 import { useNavigateHelper } from '../hooks/use-navigate-helper';
+import { AuthService } from '../modules/cloud';
 import { WorkspaceSubPath } from '../shared';
 
 const AllWorkspaceModals = lazy(() =>
@@ -37,7 +37,10 @@ export const Component = () => {
   // navigating and creating may be slow, to avoid flickering, we show workspace fallback
   const [navigating, setNavigating] = useState(false);
   const [creating, setCreating] = useState(false);
-  const { status } = useSession();
+  const authService = useService(AuthService);
+  const loggedIn = useLiveData(
+    authService.session.status$.map(s => s === 'authenticated')
+  );
 
   const workspacesService = useService(WorkspacesService);
   const list = useLiveData(workspacesService.list.workspaces$);
@@ -67,10 +70,7 @@ export const Component = () => {
     }
 
     // check is user logged in && has cloud workspace
-    if (
-      searchParams.get('initCloud') === 'true' &&
-      status === 'authenticated'
-    ) {
+    if (searchParams.get('initCloud') === 'true' && loggedIn) {
       searchParams.delete('initCloud');
       if (list.every(w => w.flavour !== WorkspaceFlavour.AFFINE_CLOUD)) {
         createCloudWorkspace();
@@ -93,8 +93,8 @@ export const Component = () => {
     list,
     openPage,
     searchParams,
-    status,
     listIsLoading,
+    loggedIn,
   ]);
 
   useEffect(() => {
@@ -108,7 +108,7 @@ export const Component = () => {
       });
   }, [workspacesService]);
 
-  if (navigating || creating) {
+  if (navigating || creating || listIsLoading) {
     return <WorkspaceFallback></WorkspaceFallback>;
   }
 

@@ -3,9 +3,9 @@ import { EditorLoading } from '@affine/component/page-detail-skeleton';
 import { Button, IconButton } from '@affine/component/ui/button';
 import { Modal, useConfirmModal } from '@affine/component/ui/modal';
 import { openSettingModalAtom } from '@affine/core/atoms';
-import { useIsWorkspaceOwner } from '@affine/core/hooks/affine/use-is-workspace-owner';
 import { useDocCollectionPageTitle } from '@affine/core/hooks/use-block-suite-workspace-page-title';
-import { useWorkspaceQuota } from '@affine/core/hooks/use-workspace-quota';
+import { WorkspacePermissionService } from '@affine/core/modules/permissions';
+import { WorkspaceQuotaService } from '@affine/core/modules/quota';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloseIcon, ToggleCollapseIcon } from '@blocksuite/icons';
@@ -15,6 +15,7 @@ import type { DialogContentProps } from '@radix-ui/react-dialog';
 import {
   type DocMode,
   DocService,
+  useLiveData,
   useService,
   WorkspaceService,
 } from '@toeverything/infra';
@@ -24,6 +25,7 @@ import {
   Fragment,
   Suspense,
   useCallback,
+  useEffect,
   useLayoutEffect,
   useMemo,
   useState,
@@ -194,12 +196,22 @@ const HistoryEditorPreview = ({
 const planPromptClosedAtom = atom(false);
 
 const PlanPrompt = () => {
-  const workspace = useService(WorkspaceService).workspace;
-  const workspaceQuota = useWorkspaceQuota(workspace.id);
+  const workspaceQuotaService = useService(WorkspaceQuotaService);
+  useEffect(() => {
+    workspaceQuotaService.quota.revalidate();
+  }, [workspaceQuotaService]);
+  const workspaceQuota = useLiveData(workspaceQuotaService.quota.quota$);
   const isProWorkspace = useMemo(() => {
-    return workspaceQuota?.humanReadable.name.toLowerCase() !== 'free';
+    return workspaceQuota
+      ? workspaceQuota.humanReadable.name.toLowerCase() !== 'free'
+      : null;
   }, [workspaceQuota]);
-  const isOwner = useIsWorkspaceOwner(workspace.meta);
+  const permissionService = useService(WorkspacePermissionService);
+  const isOwner = useLiveData(permissionService.permission.isOwner$);
+  useEffect(() => {
+    // revalidate permission
+    permissionService.permission.revalidate();
+  }, [permissionService]);
 
   const setSettingModalAtom = useSetAtom(openSettingModalAtom);
   const [planPromptClosed, setPlanPromptClosed] = useAtom(planPromptClosedAtom);
@@ -220,11 +232,17 @@ const PlanPrompt = () => {
   const planTitle = useMemo(() => {
     return (
       <div className={styles.planPromptTitle}>
-        {!isProWorkspace
-          ? t[
-              'com.affine.history.confirm-restore-modal.plan-prompt.limited-title'
-            ]()
-          : t['com.affine.history.confirm-restore-modal.plan-prompt.title']()}
+        {
+          isProWorkspace === null
+            ? !isProWorkspace
+              ? t[
+                  'com.affine.history.confirm-restore-modal.plan-prompt.limited-title'
+                ]()
+              : t[
+                  'com.affine.history.confirm-restore-modal.plan-prompt.title'
+                ]()
+            : '' /* TODO: loading UI */
+        }
 
         <IconButton
           size="small"

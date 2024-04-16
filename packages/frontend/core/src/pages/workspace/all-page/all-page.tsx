@@ -22,7 +22,7 @@ export const AllPage = () => {
   const [hideHeaderCreateNew, setHideHeaderCreateNew] = useState(true);
 
   const [filters, setFilters] = useState<Filter[]>([]);
-  const filteredPageMetas = useFilteredPageMetas(currentWorkspace, pageMetas, {
+  const filteredPageMetas = useFilteredPageMetas(pageMetas, {
     filters: filters,
   });
 

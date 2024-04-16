@@ -9,8 +9,9 @@ import type {
   WorkspaceMetadata,
   WorkspaceProfileInfo,
 } from '@toeverything/infra';
-import { globalBlockSuiteSchema, Service } from '@toeverything/infra';
+import { globalBlockSuiteSchema, LiveData, Service } from '@toeverything/infra';
 import { nanoid } from 'nanoid';
+import { Observable } from 'rxjs';
 import { applyUpdate, encodeStateAsUpdate } from 'yjs';
 
 import type { WorkspaceEngineStorageProvider } from '../providers/engine';
@@ -93,34 +94,35 @@ export class LocalWorkspaceFlavourProvider
 
     return { id, flavour: WorkspaceFlavour.LOCAL };
   }
-  async getWorkspaces(): Promise<WorkspaceMetadata[]> {
-    return JSON.parse(
-      localStorage.getItem(LOCAL_WORKSPACE_LOCAL_STORAGE_KEY) ?? '[]'
-    ).map((id: string) => ({ id, flavour: WorkspaceFlavour.LOCAL }));
+  workspaces$ = LiveData.from(
+    new Observable<WorkspaceMetadata[]>(subscriber => {
+      const emit = () => {
+        subscriber.next(
+          JSON.parse(
+            localStorage.getItem(LOCAL_WORKSPACE_LOCAL_STORAGE_KEY) ?? '[]'
+          ).map((id: string) => ({ id, flavour: WorkspaceFlavour.LOCAL }))
+        );
+      };
+
+      emit();
+      const channel = new BroadcastChannel(
+        LOCAL_WORKSPACE_CHANGED_BROADCAST_CHANNEL_KEY
+      );
+      channel.addEventListener('message', emit);
+
+      return () => {
+        channel.removeEventListener('message', emit);
+        channel.close();
+      };
+    }),
+    []
+  );
+  isLoading$ = new LiveData(false);
+  revalidate(): void {
+    // notify livedata to re-scan workspaces
+    this.notifyChannel.postMessage(null);
   }
-  subscribeWorkspaces(
-    cb: (workspaces: WorkspaceMetadata[]) => void
-  ): () => void {
-    const scan = () => {
-      (async () => {
-        cb(await this.getWorkspaces());
-      })().catch(err => {
-        console.error(err);
-      });
-    };
 
-    scan();
-
-    const channel = new BroadcastChannel(
-      LOCAL_WORKSPACE_CHANGED_BROADCAST_CHANNEL_KEY
-    );
-    channel.addEventListener('message', scan);
-
-    return () => {
-      channel.removeEventListener('message', scan);
-      channel.close();
-    };
-  }
   async getWorkspaceProfile(
     id: string
   ): Promise<WorkspaceProfileInfo | undefined> {
@@ -141,6 +143,7 @@ export class LocalWorkspaceFlavourProvider
     return {
       name: bs.meta.name,
       avatar: bs.meta.avatar,
+      isOwner: true,
     };
   }
   getWorkspaceBlob(id: string, blob: string): Promise<Blob | null> {

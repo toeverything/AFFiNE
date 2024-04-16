@@ -1,9 +1,8 @@
-import { useMemo } from 'react';
+import { WorkspacePermissionService } from '@affine/core/modules/permissions';
+import { useLiveData, useService, WorkspaceService } from '@toeverything/infra';
+import { useEffect, useMemo } from 'react';
 
 import * as style from './style.css';
-import type { WorkspaceSettingDetailProps } from './types';
-
-export interface LabelsPanelProps extends WorkspaceSettingDetailProps {}
 
 type WorkspaceStatus =
   | 'local'
@@ -35,10 +34,13 @@ const Label = ({ value, background }: LabelProps) => {
     </div>
   );
 };
-export const LabelsPanel = ({
-  workspaceMetadata,
-  isOwner,
-}: LabelsPanelProps) => {
+export const LabelsPanel = () => {
+  const workspace = useService(WorkspaceService).workspace;
+  const permissionService = useService(WorkspacePermissionService);
+  const isOwner = useLiveData(permissionService.permission.isOwner$);
+  useEffect(() => {
+    permissionService.permission.revalidate();
+  }, [permissionService]);
   const labelMap: LabelMap = useMemo(
     () => ({
       local: {
@@ -74,9 +76,9 @@ export const LabelsPanel = ({
   );
   const labelConditions: labelConditionsProps[] = [
     { condition: !isOwner, label: 'joinedWorkspace' },
-    { condition: workspaceMetadata.flavour === 'local', label: 'local' },
+    { condition: workspace.flavour === 'local', label: 'local' },
     {
-      condition: workspaceMetadata.flavour === 'affine-cloud',
+      condition: workspace.flavour === 'affine-cloud',
       label: 'syncCloud',
     },
     //TODO: add these labels

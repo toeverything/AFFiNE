@@ -4,9 +4,7 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useSetAtom } from 'jotai';
 import { useCallback } from 'react';
 
-import type { BaseActionProps } from '../types';
-
-export const AILogin = (btnProps: BaseActionProps & ButtonProps) => {
+export const AILogin = (btnProps: ButtonProps) => {
   const t = useAFFiNEI18N();
   const setOpen = useSetAtom(authAtom);
 

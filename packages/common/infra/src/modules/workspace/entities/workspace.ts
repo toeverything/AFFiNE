@@ -1,8 +1,10 @@
 import { DocCollection } from '@blocksuite/store';
 import { nanoid } from 'nanoid';
+import { Observable } from 'rxjs';
 import type { Awareness } from 'y-protocols/awareness.js';
 
 import { Entity } from '../../../framework';
+import { LiveData } from '../../../livedata';
 import { globalBlockSuiteSchema } from '../global-schema';
 import type { WorkspaceScope } from '../scopes/workspace';
 import { WorkspaceEngineService } from '../services/engine';
@@ -76,4 +78,24 @@ export class Workspace extends Entity {
   get flavourProvider() {
     return this.scope.props.flavourProvider;
   }
+
+  name$ = LiveData.from<string | undefined>(
+    new Observable(subscriber => {
+      subscriber.next(this.docCollection.meta.name);
+      return this.docCollection.meta.commonFieldsUpdated.on(() => {
+        subscriber.next(this.docCollection.meta.name);
+      }).dispose;
+    }),
+    undefined
+  );
+
+  avatar$ = LiveData.from<string | undefined>(
+    new Observable(subscriber => {
+      subscriber.next(this.docCollection.meta.avatar);
+      return this.docCollection.meta.commonFieldsUpdated.on(() => {
+        subscriber.next(this.docCollection.meta.avatar);
+      }).dispose;
+    }),
+    undefined
+  );
 }

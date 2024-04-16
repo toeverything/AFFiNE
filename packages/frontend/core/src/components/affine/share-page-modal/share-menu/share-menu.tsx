@@ -8,7 +8,6 @@ import type { Doc } from '@blocksuite/store';
 import type { WorkspaceMetadata } from '@toeverything/infra';
 import clsx from 'clsx';
 
-import { useIsSharedPage } from '../../../../hooks/affine/use-is-shared-page';
 import * as styles from './index.css';
 import { ShareExport } from './share-export';
 import { SharePage } from './share-page';
@@ -65,11 +64,6 @@ const LocalShareMenu = (props: ShareMenuProps) => {
 
 const CloudShareMenu = (props: ShareMenuProps) => {
   const t = useAFFiNEI18N();
-  const {
-    workspaceMetadata: { id: workspaceId },
-    currentPage,
-  } = props;
-  const { isSharedPage } = useIsSharedPage(workspaceId, currentPage.id);
 
   return (
     <Menu
@@ -87,9 +81,7 @@ const CloudShareMenu = (props: ShareMenuProps) => {
         data-testid="cloud-share-menu-button"
         type="primary"
       >
-        {isSharedPage
-          ? t['com.affine.share-menu.sharedButton']()
-          : t['com.affine.share-menu.shareButton']()}
+        {t['com.affine.share-menu.shareButton']()}
       </Button>
     </Menu>
   );

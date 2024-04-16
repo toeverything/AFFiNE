@@ -52,10 +52,7 @@ export function configureWorkspaceModule(framework: Framework) {
     .service(WorkspaceDestroyService, [[WorkspaceFlavourProvider]])
     .service(WorkspaceListService)
     .service(WorkspaceListCacheStoreService, [GlobalCache])
-    .entity(WorkspaceList, [
-      [WorkspaceFlavourProvider],
-      WorkspaceListCacheStoreService,
-    ])
+    .entity(WorkspaceList, [[WorkspaceFlavourProvider]])
     .service(WorkspaceProfileService)
     .service(WorkspaceProfileCacheStore, [GlobalCache])
     .entity(WorkspaceProfile, [

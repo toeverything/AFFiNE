@@ -76,7 +76,7 @@ export const VirtualizedPageList = ({
   const { isPreferredEdgeless } = usePageHelper(currentWorkspace.docCollection);
   const pageHeaderColsDef = usePageHeaderColsDef();
 
-  const filteredPageMetas = useFilteredPageMetas(currentWorkspace, pageMetas, {
+  const filteredPageMetas = useFilteredPageMetas(pageMetas, {
     filters,
     collection,
   });

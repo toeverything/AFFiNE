@@ -14,29 +14,29 @@ import {
   getInvoicesCountQuery,
   invoicesQuery,
   InvoiceStatus,
-  pricesQuery,
   SubscriptionPlan,
   SubscriptionRecurring,
   SubscriptionStatus,
 } from '@affine/graphql';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { assertExists } from '@blocksuite/global/utils';
 import { ArrowRightSmallIcon } from '@blocksuite/icons';
+import { useLiveData, useService } from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
-import { Suspense, useCallback, useMemo, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 
 import { openSettingModalAtom } from '../../../../../atoms';
-import { useCurrentLoginStatus } from '../../../../../hooks/affine/use-current-login-status';
 import { useMutation } from '../../../../../hooks/use-mutation';
 import { useQuery } from '../../../../../hooks/use-query';
-import type { SubscriptionMutator } from '../../../../../hooks/use-subscription';
-import { useUserSubscription } from '../../../../../hooks/use-subscription';
-import { mixpanel, popupWindow } from '../../../../../utils';
+import { SubscriptionService } from '../../../../../modules/cloud';
+import {
+  mixpanel,
+  popupWindow,
+  timestampToLocalDate,
+} from '../../../../../utils';
 import { SWRErrorBoundary } from '../../../../pure/swr-error-bundary';
 import { CancelAction, ResumeAction } from '../plans/actions';
-import { useAffineAIPrice } from '../plans/ai/use-affine-ai-price';
-import { useAffineAISubscription } from '../plans/ai/use-affine-ai-subscription';
+import { AICancel, AIResume, AISubscribe } from '../plans/ai/actions';
 import * as styles from './style.css';
 
 enum DescriptionI18NKey {
@@ -58,12 +58,7 @@ const getMessageKey = (
 };
 
 export const BillingSettings = () => {
-  const status = useCurrentLoginStatus();
   const t = useAFFiNEI18N();
-
-  if (status !== 'authenticated') {
-    return null;
-  }
 
   return (
     <>
@@ -94,38 +89,32 @@ export const BillingSettings = () => {
 };
 
 const SubscriptionSettings = () => {
-  const [subscription, mutateSubscription] = useUserSubscription();
-  const [openCancelModal, setOpenCancelModal] = useState(false);
-  const {
-    actionType: aiActionType,
-    Action: AIAction,
-    billingTip,
-  } = useAffineAISubscription();
+  const t = useAFFiNEI18N();
+  const subscriptionService = useService(SubscriptionService);
+  useEffect(() => {
+    subscriptionService.subscription.revalidate();
+    subscriptionService.prices.revalidate();
+  }, [subscriptionService]);
 
-  const { data: pricesQueryResult } = useQuery({
-    query: pricesQuery,
-  });
-
-  const plan = subscription?.plan ?? SubscriptionPlan.Free;
-  const recurring = subscription?.recurring ?? SubscriptionRecurring.Monthly;
-
-  const price = pricesQueryResult.prices.find(price => price.plan === plan);
-  const aiPrice = pricesQueryResult.prices.find(
-    price => price.plan === SubscriptionPlan.AI
+  const primarySubscription = useLiveData(
+    subscriptionService.subscription.primary$
   );
-  assertExists(aiPrice);
+  const proPrice = useLiveData(subscriptionService.prices.proPrice$);
+
+  const [openCancelModal, setOpenCancelModal] = useState(false);
+
+  const plan = primarySubscription?.plan;
+  const recurring =
+    primarySubscription?.recurring ?? SubscriptionRecurring.Monthly;
+
   const amount =
     plan === SubscriptionPlan.Free
       ? '0'
-      : price
+      : proPrice
         ? recurring === SubscriptionRecurring.Monthly
-          ? String((price.amount ?? 0) / 100)
-          : String((price.yearlyAmount ?? 0) / 100)
+          ? String((proPrice.amount ?? 0) / 100)
+          : String((proPrice.yearlyAmount ?? 0) / 100)
         : '?';
-
-  const { priceReadable: aiPriceReadable, priceFrequency: aiPriceFrequency } =
-    useAffineAIPrice(aiPrice);
-  const t = useAFFiNEI18N();
 
   const setOpenSettingModalAtom = useSetAtom(openSettingModalAtom);
 
@@ -141,6 +130,9 @@ const SubscriptionSettings = () => {
   }, [setOpenSettingModalAtom, plan]);
 
   const currentPlanDesc = useMemo(() => {
+    if (!plan) {
+      return;
+    }
     const messageKey = getMessageKey(plan, recurring);
     return (
       <Trans
@@ -162,106 +154,149 @@ const SubscriptionSettings = () => {
 
   return (
     <div className={styles.subscription}>
-      <div className={styles.planCard}>
-        <div className={styles.currentPlan}>
-          <SettingRow
-            spreadCol={false}
-            name={t['com.affine.payment.billing-setting.current-plan']()}
-            desc={currentPlanDesc}
-          />
-          <PlanAction plan={plan} gotoPlansSetting={gotoPlansSetting} />
-        </div>
-        <p className={styles.planPrice}>
-          ${amount}
-          <span className={styles.billingFrequency}>
-            /
-            {recurring === SubscriptionRecurring.Monthly
-              ? t['com.affine.payment.billing-setting.month']()
-              : t['com.affine.payment.billing-setting.year']()}
-          </span>
-        </p>
-      </div>
-
-      <div className={styles.planCard} style={{ marginTop: 24 }}>
-        <div className={styles.currentPlan}>
-          <SettingRow
-            spreadCol={false}
-            name={t['com.affine.payment.billing-setting.ai-plan']()}
-            desc={billingTip}
-          />
-          {aiPrice?.yearlyAmount ? (
-            <AIAction
-              className={styles.planAction}
-              price={aiPrice}
-              recurring={SubscriptionRecurring.Yearly}
-              onSubscriptionUpdate={mutateSubscription}
-            >
-              {aiActionType === 'subscribe' ? 'Purchase' : null}
-            </AIAction>
-          ) : null}
-        </div>
-        <p className={styles.planPrice}>
-          {aiPriceReadable}
-          <span className={styles.billingFrequency}>/{aiPriceFrequency}</span>
-        </p>
-      </div>
-      {subscription?.status === SubscriptionStatus.Active && (
-        <>
-          <SettingRow
-            className={styles.paymentMethod}
-            name={t['com.affine.payment.billing-setting.payment-method']()}
-            desc={t[
-              'com.affine.payment.billing-setting.payment-method.description'
-            ]()}
-          >
-            <PaymentMethodUpdater />
-          </SettingRow>
-          {subscription.nextBillAt && (
+      {plan !== null ? (
+        <div className={styles.planCard}>
+          <div className={styles.currentPlan}>
             <SettingRow
-              name={t['com.affine.payment.billing-setting.renew-date']()}
-              desc={t[
-                'com.affine.payment.billing-setting.renew-date.description'
-              ]({
-                renewDate: new Date(
-                  subscription.nextBillAt
-                ).toLocaleDateString(),
-              })}
+              spreadCol={false}
+              name={t['com.affine.payment.billing-setting.current-plan']()}
+              desc={currentPlanDesc}
             />
-          )}
-          {subscription.canceledAt ? (
-            <SettingRow
-              name={t['com.affine.payment.billing-setting.expiration-date']()}
-              desc={t[
-                'com.affine.payment.billing-setting.expiration-date.description'
-              ]({
-                expirationDate: new Date(subscription.end).toLocaleDateString(),
-              })}
-            >
-              <ResumeSubscription onSubscriptionUpdate={mutateSubscription} />
-            </SettingRow>
-          ) : (
-            <CancelAction
-              open={openCancelModal}
-              onOpenChange={setOpenCancelModal}
-              onSubscriptionUpdate={mutateSubscription}
-            >
-              <SettingRow
-                style={{ cursor: 'pointer' }}
-                onClick={() => setOpenCancelModal(true)}
-                className="dangerous-setting"
-                name={t[
-                  'com.affine.payment.billing-setting.cancel-subscription'
-                ]()}
-                desc={t[
-                  'com.affine.payment.billing-setting.cancel-subscription.description'
-                ]()}
-              >
-                <CancelSubscription />
-              </SettingRow>
-            </CancelAction>
-          )}
-        </>
+            <PlanAction
+              plan={plan ?? SubscriptionPlan.Free}
+              gotoPlansSetting={gotoPlansSetting}
+            />
+          </div>
+          <p className={styles.planPrice}>
+            ${amount}
+            <span className={styles.billingFrequency}>
+              /
+              {recurring === SubscriptionRecurring.Monthly
+                ? t['com.affine.payment.billing-setting.month']()
+                : t['com.affine.payment.billing-setting.year']()}
+            </span>
+          </p>
+        </div>
+      ) : (
+        <SubscriptionSettingSkeleton />
       )}
+
+      <AIPlanCard />
+      {primarySubscription !== null ? (
+        primarySubscription?.status === SubscriptionStatus.Active && (
+          <>
+            <SettingRow
+              className={styles.paymentMethod}
+              name={t['com.affine.payment.billing-setting.payment-method']()}
+              desc={t[
+                'com.affine.payment.billing-setting.payment-method.description'
+              ]()}
+            >
+              <PaymentMethodUpdater />
+            </SettingRow>
+            {primarySubscription.nextBillAt && (
+              <SettingRow
+                name={t['com.affine.payment.billing-setting.renew-date']()}
+                desc={t[
+                  'com.affine.payment.billing-setting.renew-date.description'
+                ]({
+                  renewDate: new Date(
+                    primarySubscription.nextBillAt
+                  ).toLocaleDateString(),
+                })}
+              />
+            )}
+            {primarySubscription.canceledAt ? (
+              <SettingRow
+                name={t['com.affine.payment.billing-setting.expiration-date']()}
+                desc={t[
+                  'com.affine.payment.billing-setting.expiration-date.description'
+                ]({
+                  expirationDate: new Date(
+                    primarySubscription.end
+                  ).toLocaleDateString(),
+                })}
+              >
+                <ResumeSubscription />
+              </SettingRow>
+            ) : (
+              <CancelAction
+                open={openCancelModal}
+                onOpenChange={setOpenCancelModal}
+              >
+                <SettingRow
+                  style={{ cursor: 'pointer' }}
+                  onClick={() => setOpenCancelModal(true)}
+                  className="dangerous-setting"
+                  name={t[
+                    'com.affine.payment.billing-setting.cancel-subscription'
+                  ]()}
+                  desc={t[
+                    'com.affine.payment.billing-setting.cancel-subscription.description'
+                  ]()}
+                >
+                  <CancelSubscription />
+                </SettingRow>
+              </CancelAction>
+            )}
+          </>
+        )
+      ) : (
+        <SubscriptionSettingSkeleton />
+      )}
+    </div>
+  );
+};
+
+const AIPlanCard = () => {
+  const t = useAFFiNEI18N();
+  const subscriptionService = useService(SubscriptionService);
+  useEffect(() => {
+    subscriptionService.subscription.revalidate();
+    subscriptionService.prices.revalidate();
+  }, [subscriptionService]);
+  const price = useLiveData(subscriptionService.prices.aiPrice$);
+  const subscription = useLiveData(subscriptionService.subscription.ai$);
+
+  const priceReadable = price?.yearlyAmount
+    ? `$${(price.yearlyAmount / 100).toFixed(2)}`
+    : '?';
+  const priceFrequency = t['com.affine.payment.billing-setting.year']();
+
+  const billingTip = subscription?.nextBillAt
+    ? t['com.affine.payment.ai.billing-tip.next-bill-at']({
+        due: timestampToLocalDate(subscription.nextBillAt),
+      })
+    : subscription?.canceledAt && subscription.end
+      ? t['com.affine.payment.ai.billing-tip.end-at']({
+          end: timestampToLocalDate(subscription.end),
+        })
+      : null;
+
+  return (
+    <div className={styles.planCard} style={{ marginTop: 24 }}>
+      <div className={styles.currentPlan}>
+        <SettingRow
+          spreadCol={false}
+          name={t['com.affine.payment.billing-setting.ai-plan']()}
+          desc={billingTip}
+        />
+        {price?.yearlyAmount ? (
+          subscription ? (
+            subscription.canceledAt ? (
+              <AIResume />
+            ) : (
+              <AICancel />
+            )
+          ) : (
+            <AISubscribe>Purchase</AISubscribe>
+          )
+        ) : null}
+      </div>
+      <p className={styles.planPrice}>
+        {priceReadable}
+        <span className={styles.billingFrequency}>/{priceFrequency}</span>
+      </p>
     </div>
   );
 };
@@ -315,20 +350,12 @@ const PaymentMethodUpdater = () => {
   );
 };
 
-const ResumeSubscription = ({
-  onSubscriptionUpdate,
-}: {
-  onSubscriptionUpdate: SubscriptionMutator;
-}) => {
+const ResumeSubscription = () => {
   const t = useAFFiNEI18N();
   const [open, setOpen] = useState(false);
 
   return (
-    <ResumeAction
-      open={open}
-      onOpenChange={setOpen}
-      onSubscriptionUpdate={onSubscriptionUpdate}
-    >
+    <ResumeAction open={open} onOpenChange={setOpen}>
       <Button className={styles.button} onClick={() => setOpen(true)}>
         {t['com.affine.payment.billing-setting.resume-subscription']()}
       </Button>

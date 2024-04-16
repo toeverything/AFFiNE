@@ -2,9 +2,6 @@ import { OAuthProviderType } from '@affine/graphql';
 import type { LoaderFunction } from 'react-router-dom';
 import { z } from 'zod';
 
-import { getSession } from '../hooks/affine/use-current-user';
-import { signInCloud, signOutCloud } from '../utils/cloud-utils';
-
 const supportedProvider = z.enum([
   'google',
   ...Object.values(OAuthProviderType),
@@ -22,12 +19,8 @@ export const loader: LoaderFunction = async ({ request }) => {
     return null;
   }
 
-  const session = await getSession();
-
-  if (session.user) {
-    // already signed in, need to sign out first
-    await signOutCloud(request.url);
-  }
+  // sign out first
+  await fetch('/api/auth/sign-out');
 
   const maybeProvider = supportedProvider.safeParse(provider);
   if (maybeProvider.success) {
@@ -36,9 +29,11 @@ export const loader: LoaderFunction = async ({ request }) => {
     if (provider === 'google') {
       provider = OAuthProviderType.Google;
     }
-    await signInCloud(provider, undefined, {
-      redirectUri,
-    });
+    location.href = `${
+      runtimeConfig.serverUrlPrefix
+    }/oauth/login?provider=${provider}&redirect_uri=${encodeURIComponent(
+      redirectUri
+    )}`;
   }
   return null;
 };

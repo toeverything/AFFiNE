@@ -14,7 +14,7 @@ import {
   pipe,
   retry,
   switchMap,
-  tap,
+  throwError,
   timer,
 } from 'rxjs';
 
@@ -29,21 +29,13 @@ export function mapInto<T>(l$: LiveData<T>) {
   );
 }
 
-export function catchErrorInto(l$: LiveData<any>) {
+export function catchErrorInto(l$: LiveData<any>, cb?: (error: any) => void) {
   return pipe(
+    onComplete(() => l$.next(null)),
     catchError((error: any) => {
       l$.next(error);
+      cb?.(error);
       return EMPTY;
-    })
-  );
-}
-
-export function tapError(cb: (value: any) => void) {
-  return pipe(
-    tap({
-      error(err) {
-        cb(err);
-      },
     })
   );
 }
@@ -97,17 +89,26 @@ export function fromPromise<T>(
 }
 
 export function backoffRetry<T>({
+  when,
   count = 3,
   delay = 200,
   maxDelay = 15000,
-}: { count?: number; delay?: number; maxDelay?: number } = {}) {
+}: {
+  when?: (err: any) => boolean;
+  count?: number;
+  delay?: number;
+  maxDelay?: number;
+} = {}) {
   return (obs$: Observable<T>) =>
     obs$.pipe(
       retry({
         count,
-        delay: (_, retryIndex) => {
+        delay: (err, retryIndex) => {
+          if (when && !when(err)) {
+            return throwError(() => err);
+          }
           const d = Math.pow(2, retryIndex - 1) * delay;
-          return timer(Math.max(d, maxDelay));
+          return timer(Math.min(d, maxDelay));
         },
       })
     );

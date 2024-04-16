@@ -1,7 +1,7 @@
 import { Loading } from '@affine/component';
 import { Divider } from '@affine/component/ui/divider';
 import { MenuItem } from '@affine/component/ui/menu';
-import { useSession } from '@affine/core/hooks/affine/use-current-user';
+import { AuthService } from '@affine/core/modules/cloud';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { Logo1Icon } from '@blocksuite/icons';
 import {
@@ -83,9 +83,9 @@ interface UserWithWorkspaceListProps {
 const UserWithWorkspaceListInner = ({
   onEventEnd,
 }: UserWithWorkspaceListProps) => {
-  const { user, status } = useSession();
+  const session = useLiveData(useService(AuthService).session.session$);
 
-  const isAuthenticated = status === 'authenticated';
+  const isAuthenticated = session.status === 'authenticated';
 
   const setOpenCreateWorkspaceModal = useSetAtom(openCreateWorkspaceModalAtom);
   const setDisableCloudOpen = useSetAtom(openDisableCloudAlertModalAtom);
@@ -136,14 +136,14 @@ const UserWithWorkspaceListInner = ({
 
   // revalidate workspace list when mounted
   useEffect(() => {
-    workspaceManager.list.revalidate(true);
+    workspaceManager.list.revalidate();
   }, [workspaceManager]);
 
   return (
     <div className={styles.workspaceListWrapper}>
       {isAuthenticated ? (
         <UserAccountItem
-          email={user?.email ?? 'Unknown User'}
+          email={session.session.account.email ?? 'Unknown User'}
           onEventEnd={onEventEnd}
         />
       ) : (

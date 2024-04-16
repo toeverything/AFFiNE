@@ -5,13 +5,11 @@ import { NotificationCenter } from '@affine/component';
 import { AffineContext } from '@affine/component/context';
 import { GlobalLoading } from '@affine/component/global-loading';
 import { WorkspaceFallback } from '@affine/core/components/workspace';
-import { configureCommonModules } from '@affine/core/modules';
-import { configureBrowserStorageImpls } from '@affine/core/modules/storage';
+import { configureCommonModules, configureImpls } from '@affine/core/modules';
 import {
   configureBrowserWorkspaceFlavours,
   configureSqliteWorkspaceEngineStorageProvider,
 } from '@affine/core/modules/workspace-engine';
-import { CloudSessionProvider } from '@affine/core/providers/session-provider';
 import { router } from '@affine/core/router';
 import {
   performanceLogger,
@@ -66,7 +64,7 @@ let languageLoadingPromise: Promise<void> | null = null;
 
 const framework = new Framework();
 configureCommonModules(framework);
-configureBrowserStorageImpls(framework);
+configureImpls(framework);
 configureBrowserWorkspaceFlavours(framework);
 configureSqliteWorkspaceEngineStorageProvider(framework);
 const frameworkProvider = framework.provider();
@@ -85,18 +83,16 @@ export function App() {
       <FrameworkRoot framework={frameworkProvider}>
         <CacheProvider value={cache}>
           <AffineContext store={getCurrentStore()}>
-            <CloudSessionProvider>
-              <Telemetry />
-              <DebugProvider>
-                <GlobalLoading />
-                <NotificationCenter />
-                <RouterProvider
-                  fallbackElement={<WorkspaceFallback key="RouterFallback" />}
-                  router={router}
-                  future={future}
-                />
-              </DebugProvider>
-            </CloudSessionProvider>
+            <Telemetry />
+            <DebugProvider>
+              <GlobalLoading />
+              <NotificationCenter />
+              <RouterProvider
+                fallbackElement={<WorkspaceFallback key="RouterFallback" />}
+                router={router}
+                future={future}
+              />
+            </DebugProvider>
           </AffineContext>
         </CacheProvider>
       </FrameworkRoot>

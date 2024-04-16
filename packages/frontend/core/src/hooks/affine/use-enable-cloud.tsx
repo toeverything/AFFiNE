@@ -1,15 +1,19 @@
 import { useConfirmModal } from '@affine/component';
 import { authAtom } from '@affine/core/atoms';
 import { setOnceSignedInEventAtom } from '@affine/core/atoms/event';
+import { AuthService } from '@affine/core/modules/cloud';
 import { WorkspaceSubPath } from '@affine/core/shared';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { Workspace } from '@toeverything/infra';
-import { useService, WorkspacesService } from '@toeverything/infra';
+import {
+  useLiveData,
+  useService,
+  WorkspacesService,
+} from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
 import { useCallback } from 'react';
 
 import { useNavigateHelper } from '../use-navigate-helper';
-import { useCurrentLoginStatus } from './use-current-login-status';
 
 interface ConfirmEnableCloudOptions {
   /**
@@ -26,7 +30,7 @@ type ConfirmEnableArgs = [Workspace, ConfirmEnableCloudOptions | undefined];
 
 export const useEnableCloud = () => {
   const t = useAFFiNEI18N();
-  const loginStatus = useCurrentLoginStatus();
+  const loginStatus = useLiveData(useService(AuthService).session.status$);
   const setAuthAtom = useSetAtom(authAtom);
   const setOnceSignedInEvent = useSetAtom(setOnceSignedInEventAtom);
   const { openConfirmModal, closeConfirmModal } = useConfirmModal();

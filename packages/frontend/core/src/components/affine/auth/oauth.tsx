@@ -1,15 +1,13 @@
 import { Button } from '@affine/component/ui/button';
-import {
-  useOAuthProviders,
-  useServerFeatures,
-} from '@affine/core/hooks/affine/use-server-config';
+import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { OAuthProviderType } from '@affine/graphql';
 import { GithubIcon, GoogleDuotoneIcon } from '@blocksuite/icons';
+import { useLiveData, useService } from '@toeverything/infra';
 import type { ReactElement } from 'react';
-import { useCallback, useState } from 'react';
+import { useEffect, useState } from 'react';
 
+import { AuthService, ServerConfigService } from '../../../modules/cloud';
 import { mixpanel } from '../../../utils';
-import { useAuth } from './use-auth';
 
 const OAuthProviderMap: Record<
   OAuthProviderType,
@@ -27,33 +25,36 @@ const OAuthProviderMap: Record<
 };
 
 export function OAuth() {
-  const { oauth } = useServerFeatures();
+  const serverConfig = useService(ServerConfigService).serverConfig;
+  useEffect(() => {
+    // load server config
+    serverConfig.revalidateIfNeeded();
+  }, [serverConfig]);
+  const oauth = useLiveData(serverConfig.features$.map(r => r?.oauth));
+  const oauthProviders = useLiveData(
+    serverConfig.config$.map(r => r?.oauthProviders)
+  );
 
   if (!oauth) {
+    // TODO: loading & error UI
     return null;
   }
 
-  return <OAuthProviders />;
-}
-
-function OAuthProviders() {
-  const providers = useOAuthProviders();
-
-  return providers.map(provider => (
+  return oauthProviders?.map(provider => (
     <OAuthProvider key={provider} provider={provider} />
   ));
 }
 
 function OAuthProvider({ provider }: { provider: OAuthProviderType }) {
   const { icon } = OAuthProviderMap[provider];
-  const { oauthSignIn } = useAuth();
+  const authService = useService(AuthService);
   const [isConnecting, setIsConnecting] = useState(false);
 
-  const onClick = useCallback(() => {
+  const onClick = useAsyncCallback(async () => {
     setIsConnecting(true);
-    oauthSignIn(provider);
+    await authService.signInOauth(provider);
     mixpanel.track('OAuth', { provider });
-  }, [provider, oauthSignIn]);
+  }, [authService, provider]);
 
   return (
     <Button

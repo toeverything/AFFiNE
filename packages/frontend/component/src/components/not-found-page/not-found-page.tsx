@@ -48,7 +48,7 @@ export const NoPermissionOrNotFound = ({
                 </Button>
               </div>
               <div className={wrapper}>
-                <Avatar url={user.avatarUrl ?? user.image} name={user.name} />
+                <Avatar url={user.avatar ?? user.image} name={user.label} />
                 <span style={{ margin: '0 12px' }}>{user.email}</span>
                 <Tooltip content={t['404.signOut']()}>
                   <IconButton onClick={onSignOut}>
@@ -94,7 +94,7 @@ export const NotFoundPage = ({
 
           {user ? (
             <div className={wrapper}>
-              <Avatar url={user.avatarUrl ?? user.image} name={user.name} />
+              <Avatar url={user.avatar ?? user.image} name={user.label} />
               <span style={{ margin: '0 12px' }}>{user.email}</span>
               <Tooltip content={t['404.signOut']()}>
                 <IconButton onClick={onSignOut}>

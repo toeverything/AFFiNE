@@ -2,6 +2,7 @@ import type { WorkspaceFlavour } from '@affine/env/workspace';
 import type { DocCollection } from '@blocksuite/store';
 
 import { createIdentifier } from '../../../framework';
+import type { LiveData } from '../../../livedata';
 import type {
   AwarenessConnection,
   BlobStorage,
@@ -32,11 +33,19 @@ export interface WorkspaceFlavourProvider {
     ) => Promise<void>
   ): Promise<WorkspaceMetadata>;
 
-  getWorkspaces(): Promise<WorkspaceMetadata[]>;
+  workspaces$: LiveData<WorkspaceMetadata[]>;
 
-  subscribeWorkspaces(
-    cb: (workspaces: WorkspaceMetadata[]) => void
-  ): () => void;
+  /**
+   * means the workspace list is loading. if it's true, the workspace page will show loading spinner.
+   */
+  isLoading$?: LiveData<boolean>;
+
+  /**
+   * revalidate the workspace list.
+   *
+   * will be called when user open workspace list, or workspace not found.
+   */
+  revalidate?: () => void;
 
   getWorkspaceProfile(id: string): Promise<WorkspaceProfileInfo | undefined>;
 

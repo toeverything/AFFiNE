@@ -8,6 +8,5 @@ export {
   mapInto,
   onComplete,
   onStart,
-  tapError,
 } from './ops';
 export { useEnsureLiveData, useLiveData } from './react';

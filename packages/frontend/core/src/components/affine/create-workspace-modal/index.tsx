@@ -2,7 +2,6 @@ import { Avatar, Input, Switch, toast } from '@affine/component';
 import type { ConfirmModalProps } from '@affine/component/ui/modal';
 import { ConfirmModal, Modal } from '@affine/component/ui/modal';
 import { authAtom, openDisableCloudAlertModalAtom } from '@affine/core/atoms';
-import { useCurrentLoginStatus } from '@affine/core/hooks/affine/use-current-login-status';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { DebugLogger } from '@affine/debug';
 import { apis } from '@affine/electron-api';
@@ -10,6 +9,7 @@ import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   initEmptyPage,
+  useLiveData,
   useService,
   WorkspacesService,
 } from '@toeverything/infra';
@@ -18,6 +18,7 @@ import type { KeyboardEvent } from 'react';
 import { useCallback, useLayoutEffect, useState } from 'react';
 
 import { buildShowcaseWorkspace } from '../../../bootstrap/first-app-data';
+import { AuthService } from '../../../modules/cloud';
 import { _addLocalWorkspace } from '../../../modules/workspace-engine';
 import { mixpanel } from '../../../utils';
 import { CloudSvg } from '../share-page-modal/cloud-svg';
@@ -58,7 +59,9 @@ const NameWorkspaceContent = ({
   const t = useAFFiNEI18N();
   const [workspaceName, setWorkspaceName] = useState('');
   const [enable, setEnable] = useState(shouldEnableCloud);
-  const loginStatus = useCurrentLoginStatus();
+  const session = useService(AuthService).session;
+  const loginStatus = useLiveData(session.status$);
+
   const setDisableCloudOpen = useSetAtom(openDisableCloudAlertModalAtom);
 
   const setOpenSignIn = useSetAtom(authAtom);
@@ -202,7 +205,7 @@ export const CreateWorkspaceModal = ({
         const result = await apis.dialog.loadDBFile();
         if (result.workspaceId && !canceled) {
           _addLocalWorkspace(result.workspaceId);
-          workspacesService.list.revalidate(true);
+          workspacesService.list.revalidate();
           onCreate(result.workspaceId);
         } else if (result.error || result.canceled) {
           if (result.error) {

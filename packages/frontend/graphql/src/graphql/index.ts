@@ -18,19 +18,6 @@ fragment CredentialsRequirement on CredentialsRequirementType {
     ...PasswordLimits
   }
 }`
-export const checkBlobSizesQuery = {
-  id: 'checkBlobSizesQuery' as const,
-  operationName: 'checkBlobSizes',
-  definitionName: 'checkBlobSize',
-  containsFile: false,
-  query: `
-query checkBlobSizes($workspaceId: String!, $size: SafeInt!) {
-  checkBlobSize(workspaceId: $workspaceId, size: $size) {
-    size
-  }
-}`,
-};
-
 export const deleteBlobMutation = {
   id: 'deleteBlobMutation' as const,
   operationName: 'deleteBlob',
@@ -61,32 +48,6 @@ export const setBlobMutation = {
   query: `
 mutation setBlob($workspaceId: String!, $blob: Upload!) {
   setBlob(workspaceId: $workspaceId, blob: $blob)
-}`,
-};
-
-export const blobSizesQuery = {
-  id: 'blobSizesQuery' as const,
-  operationName: 'blobSizes',
-  definitionName: 'workspace',
-  containsFile: false,
-  query: `
-query blobSizes($workspaceId: String!) {
-  workspace(id: $workspaceId) {
-    blobsSize
-  }
-}`,
-};
-
-export const allBlobSizesQuery = {
-  id: 'allBlobSizesQuery' as const,
-  operationName: 'allBlobSizes',
-  definitionName: 'collectAllBlobSizes',
-  containsFile: false,
-  query: `
-query allBlobSizes {
-  collectAllBlobSizes {
-    size
-  }
 }`,
 };
 
@@ -395,6 +356,7 @@ export const getMembersByWorkspaceIdQuery = {
   query: `
 query getMembersByWorkspaceId($workspaceId: String!, $skip: Int!, $take: Int!) {
   workspace(id: $workspaceId) {
+    memberCount
     members(skip: $skip, take: $take) {
       id
       name
@@ -498,6 +460,22 @@ query getWorkspacePublicById($id: String!) {
 }`,
 };
 
+export const getWorkspacePublicPageByIdQuery = {
+  id: 'getWorkspacePublicPageByIdQuery' as const,
+  operationName: 'getWorkspacePublicPageById',
+  definitionName: 'workspace',
+  containsFile: false,
+  query: `
+query getWorkspacePublicPageById($workspaceId: String!, $pageId: String!) {
+  workspace(id: $workspaceId) {
+    publicPage(pageId: $pageId) {
+      id
+      mode
+    }
+  }
+}`,
+};
+
 export const getWorkspacePublicPagesQuery = {
   id: 'getWorkspacePublicPagesQuery' as const,
   operationName: 'getWorkspacePublicPages',
@@ -536,6 +514,9 @@ export const getWorkspacesQuery = {
 query getWorkspaces {
   workspaces {
     id
+    owner {
+      id
+    }
   }
 }`,
 };
@@ -642,11 +623,18 @@ mutation publishPage($workspaceId: String!, $pageId: String!, $mode: PublicPageM
 export const quotaQuery = {
   id: 'quotaQuery' as const,
   operationName: 'quota',
-  definitionName: 'currentUser',
+  definitionName: 'currentUser,collectAllBlobSizes',
   containsFile: false,
   query: `
 query quota {
   currentUser {
+    id
+    copilot {
+      quota {
+        limit
+        used
+      }
+    }
     quota {
       name
       blobLimit
@@ -661,6 +649,9 @@ query quota {
         memberLimit
       }
     }
+  }
+  collectAllBlobSizes {
+    size
   }
 }`,
 };
@@ -829,6 +820,7 @@ export const subscriptionQuery = {
   query: `
 query subscription {
   currentUser {
+    id
     subscriptions {
       id
       status

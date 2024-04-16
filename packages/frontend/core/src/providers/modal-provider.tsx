@@ -1,3 +1,4 @@
+import { notify } from '@affine/component';
 import { events } from '@affine/electron-api';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import {
@@ -20,12 +21,10 @@ import {
   openSignOutModalAtom,
 } from '../atoms';
 import { PaymentDisableModal } from '../components/affine/payment-disable';
-import { useSession } from '../hooks/affine/use-current-user';
 import { useAsyncCallback } from '../hooks/affine-async-hooks';
 import { useNavigateHelper } from '../hooks/use-navigate-helper';
+import { AuthService } from '../modules/cloud/services/auth';
 import { WorkspaceSubPath } from '../shared';
-import { mixpanel } from '../utils';
-import { signOutCloud } from '../utils/cloud-utils';
 
 const SettingModal = lazy(() =>
   import('../components/affine/setting-modal').then(module => ({
@@ -213,7 +212,7 @@ export function CurrentWorkspaceModals() {
 
 export const SignOutConfirmModal = () => {
   const { openPage } = useNavigateHelper();
-  const { reload } = useSession();
+  const authService = useService(AuthService);
   const [open, setOpen] = useAtom(openSignOutModalAtom);
   const currentWorkspace = useServiceOptional(WorkspaceService)?.workspace;
   const workspaces = useLiveData(
@@ -222,10 +221,16 @@ export const SignOutConfirmModal = () => {
 
   const onConfirm = useAsyncCallback(async () => {
     setOpen(false);
-    await signOutCloud();
-    await reload();
-
-    mixpanel.reset();
+    try {
+      await authService.signOut();
+    } catch (err) {
+      console.error(err);
+      // TODO: i18n
+      notify({
+        style: 'alert',
+        message: 'Failed to sign out',
+      });
+    }
 
     // if current workspace is affine cloud, switch to local workspace
     if (currentWorkspace?.flavour === WorkspaceFlavour.AFFINE_CLOUD) {
@@ -236,7 +241,7 @@ export const SignOutConfirmModal = () => {
         openPage(localWorkspace.id, WorkspaceSubPath.ALL);
       }
     }
-  }, [currentWorkspace?.flavour, openPage, reload, setOpen, workspaces]);
+  }, [authService, currentWorkspace, openPage, setOpen, workspaces]);
 
   return (
     <SignOutModal open={open} onOpenChange={setOpen} onConfirm={onConfirm} />

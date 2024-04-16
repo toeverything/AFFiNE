@@ -13,6 +13,7 @@ const logger = new DebugLogger('affine:workspace-profile');
 export interface WorkspaceProfileInfo {
   avatar?: string;
   name?: string;
+  isOwner?: boolean;
 }
 
 /**
@@ -61,7 +62,7 @@ export class WorkspaceProfile extends Entity<{ metadata: WorkspaceMetadata }> {
       ).pipe(
         mergeMap(info => {
           if (info) {
-            this.setCache(info);
+            this.setCache({ ...this.profile$.value, ...info });
           }
           return EMPTY;
         }),
@@ -76,17 +77,13 @@ export class WorkspaceProfile extends Entity<{ metadata: WorkspaceMetadata }> {
   );
 
   syncWithWorkspace(workspace: Workspace) {
-    this.setCache({
-      avatar:
-        workspace.docCollection.meta.avatar ?? this.profile$.value?.avatar,
-      name: workspace.docCollection.meta.name ?? this.profile$.value?.name,
+    workspace.name$.subscribe(name => {
+      const old = this.profile$.value;
+      this.setCache({ ...old, name: name ?? old?.name });
     });
-    workspace.docCollection.meta.commonFieldsUpdated.on(() => {
-      this.setCache({
-        avatar:
-          workspace.docCollection.meta.avatar ?? this.profile$.value?.avatar,
-        name: workspace.docCollection.meta.name ?? this.profile$.value?.name,
-      });
+    workspace.avatar$.subscribe(avatar => {
+      const old = this.profile$.value;
+      this.setCache({ ...old, avatar: avatar ?? old?.avatar });
     });
   }
 }

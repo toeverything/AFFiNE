@@ -3,9 +3,9 @@ import { Avatar, type AvatarProps } from '@affine/component/ui/avatar';
 import { Loading } from '@affine/component/ui/loading';
 import { openSettingModalAtom } from '@affine/core/atoms';
 import { useDocEngineStatus } from '@affine/core/hooks/affine/use-doc-engine-status';
-import { useIsWorkspaceOwner } from '@affine/core/hooks/affine/use-is-workspace-owner';
 import { useWorkspaceBlobObjectUrl } from '@affine/core/hooks/use-workspace-blob';
 import { useWorkspaceInfo } from '@affine/core/hooks/use-workspace-info';
+import { WorkspacePermissionService } from '@affine/core/modules/permissions';
 import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
@@ -16,7 +16,7 @@ import {
   NoNetworkIcon,
   UnsyncIcon,
 } from '@blocksuite/icons';
-import { useService, WorkspaceService } from '@toeverything/infra';
+import { useLiveData, useService, WorkspaceService } from '@toeverything/infra';
 import { cssVar } from '@toeverything/theme';
 import { useSetAtom } from 'jotai';
 import { debounce } from 'lodash-es';
@@ -84,7 +84,12 @@ const useSyncEngineSyncProgress = () => {
   const [isOverCapacity, setIsOverCapacity] = useState(false);
 
   const currentWorkspace = useService(WorkspaceService).workspace;
-  const isOwner = useIsWorkspaceOwner(currentWorkspace.meta);
+  const permissionService = useService(WorkspacePermissionService);
+  const isOwner = useLiveData(permissionService.permission.isOwner$);
+  useEffect(() => {
+    // revalidate permission
+    permissionService.permission.revalidate();
+  }, [permissionService]);
 
   const setSettingModalAtom = useSetAtom(openSettingModalAtom);
   const jumpToPricePlan = useCallback(() => {

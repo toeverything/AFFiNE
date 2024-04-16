@@ -1,15 +1,8 @@
-import { nanoid } from 'nanoid';
 import type { Mock } from 'vitest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { gqlFetcherFactory } from '../fetcher';
 import type { GraphQLQuery } from '../graphql';
-import {
-  generateRandUTF16Chars,
-  SPAN_ID_BYTES,
-  TRACE_ID_BYTES,
-  TraceReporter,
-} from '../utils';
 
 const query: GraphQLQuery = {
   id: 'query',
@@ -117,43 +110,5 @@ describe('GraphQL fetcher', () => {
         [GraphQLError: error],
       ]
     `);
-  });
-});
-
-describe('Trace Reporter', () => {
-  const startTime = new Date().toISOString();
-  const traceId = generateRandUTF16Chars(TRACE_ID_BYTES);
-  const spanId = generateRandUTF16Chars(SPAN_ID_BYTES);
-  const requestId = nanoid();
-
-  it('spanId, traceId should be right format', () => {
-    expect(
-      new RegExp(`^[0-9a-f]{${SPAN_ID_BYTES * 2}}$`).test(
-        generateRandUTF16Chars(SPAN_ID_BYTES)
-      )
-    ).toBe(true);
-    expect(
-      new RegExp(`^[0-9a-f]{${TRACE_ID_BYTES * 2}}$`).test(
-        generateRandUTF16Chars(TRACE_ID_BYTES)
-      )
-    ).toBe(true);
-  });
-
-  it('test createTraceSpan', () => {
-    const traceSpan = TraceReporter.createTraceSpan(
-      traceId,
-      spanId,
-      startTime,
-      { requestId }
-    );
-    expect(traceSpan.startTime).toBe(startTime);
-    expect(
-      traceSpan.name ===
-        `projects/{GCP_PROJECT_ID}/traces/${traceId}/spans/${spanId}`
-    ).toBe(true);
-    expect(traceSpan.spanId).toBe(spanId);
-    expect(traceSpan.attributes.attributeMap.requestId?.stringValue.value).toBe(
-      requestId
-    );
   });
 });

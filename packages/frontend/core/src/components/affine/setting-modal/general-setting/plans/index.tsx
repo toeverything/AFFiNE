@@ -1,20 +1,15 @@
 import { notify, Switch } from '@affine/component';
-import {
-  pricesQuery,
-  SubscriptionPlan,
-  SubscriptionRecurring,
-} from '@affine/graphql';
+import { SubscriptionPlan, SubscriptionRecurring } from '@affine/graphql';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { SingleSelectSelectSolidIcon } from '@blocksuite/icons';
+import { useLiveData, useService } from '@toeverything/infra';
 import { cssVar } from '@toeverything/theme';
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import type { FallbackProps } from 'react-error-boundary';
 
 import { SWRErrorBoundary } from '../../../../../components/pure/swr-error-bundary';
-import { useCurrentLoginStatus } from '../../../../../hooks/affine/use-current-login-status';
-import { useQuery } from '../../../../../hooks/use-query';
-import { useUserSubscription } from '../../../../../hooks/use-subscription';
+import { AuthService, SubscriptionService } from '../../../../../modules/cloud';
 import { AIPlan } from './ai/ai-plan';
 import { type FixedPrice, getPlanDetail } from './cloud-plans';
 import { CloudPlanLayout, PlanLayout } from './layout';
@@ -36,41 +31,29 @@ const getRecurringLabel = ({
 
 const Settings = () => {
   const t = useAFFiNEI18N();
-  const [subscription, mutateSubscription] = useUserSubscription();
 
-  const loggedIn = useCurrentLoginStatus() === 'authenticated';
+  const loggedIn =
+    useLiveData(useService(AuthService).session.status$) === 'authenticated';
   const planDetail = useMemo(() => getPlanDetail(t), [t]);
   const scrollWrapper = useRef<HTMLDivElement>(null);
 
-  const {
-    data: { prices },
-  } = useQuery({
-    query: pricesQuery,
-  });
-
-  prices.forEach(price => {
-    const detail = planDetail.get(price.plan);
-
-    if (detail?.type === 'fixed') {
-      detail.price = ((price.amount ?? 0) / 100).toFixed(2);
-      detail.yearlyPrice = ((price.yearlyAmount ?? 0) / 100 / 12).toFixed(2);
-      detail.discount =
-        price.yearlyAmount && price.amount
-          ? Math.floor(
-              (1 - price.yearlyAmount / 12 / price.amount) * 100
-            ).toString()
-          : undefined;
-    }
-  });
-
-  const [recurring, setRecurring] = useState<SubscriptionRecurring>(
-    subscription?.recurring ?? SubscriptionRecurring.Yearly
+  const subscriptionService = useService(SubscriptionService);
+  const primarySubscription = useLiveData(
+    subscriptionService.subscription.primary$
   );
 
-  const currentPlan = subscription?.plan ?? SubscriptionPlan.Free;
-  const isCanceled = !!subscription?.canceledAt;
+  useEffect(() => {
+    subscriptionService.subscription.revalidate();
+  }, [subscriptionService]);
+
+  const [recurring, setRecurring] = useState<SubscriptionRecurring>(
+    primarySubscription?.recurring ?? SubscriptionRecurring.Yearly
+  );
+
+  const currentPlan = primarySubscription?.plan ?? SubscriptionPlan.Free;
+  const isCanceled = !!primarySubscription?.canceledAt;
   const currentRecurring =
-    subscription?.recurring ?? SubscriptionRecurring.Monthly;
+    primarySubscription?.recurring ?? SubscriptionRecurring.Monthly;
 
   const yearlyDiscount = (
     planDetail.get(SubscriptionPlan.Pro) as FixedPrice | undefined
@@ -179,7 +162,6 @@ const Settings = () => {
         return (
           <PlanCard
             key={detail.plan}
-            onSubscriptionUpdate={mutateSubscription}
             onNotify={({ detail, recurring }) => {
               notify({
                 style: 'normal',
@@ -200,7 +182,7 @@ const Settings = () => {
                       }),
               });
             }}
-            {...{ detail, subscription, recurring }}
+            {...{ detail, recurring }}
           />
         );
       })}
@@ -225,12 +207,7 @@ const Settings = () => {
           scrollRef={scrollWrapper}
         />
       }
-      ai={
-        <AIPlan
-          price={prices.find(p => p.plan === SubscriptionPlan.AI)}
-          onSubscriptionUpdate={mutateSubscription}
-        />
-      }
+      ai={<AIPlan />}
     />
   );
 };

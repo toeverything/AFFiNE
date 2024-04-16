@@ -1,12 +1,13 @@
 import { ScrollableContainer } from '@affine/component';
 import { Divider } from '@affine/component/ui/divider';
 import { WorkspaceList } from '@affine/component/workspace-list';
-import { useSession } from '@affine/core/hooks/affine/use-current-user';
 import { useEnableCloud } from '@affine/core/hooks/affine/use-enable-cloud';
 import {
   useWorkspaceAvatar,
+  useWorkspaceInfo,
   useWorkspaceName,
 } from '@affine/core/hooks/use-workspace-info';
+import { AuthService } from '@affine/core/modules/cloud';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloudWorkspaceIcon, LocalWorkspaceIcon } from '@blocksuite/icons';
@@ -26,9 +27,14 @@ import {
   openSettingModalAtom,
 } from '../../../../../atoms';
 import { WorkspaceSubPath } from '../../../../../shared';
-import { useIsWorkspaceOwner } from '../.././../../../hooks/affine/use-is-workspace-owner';
 import { useNavigateHelper } from '../.././../../../hooks/use-navigate-helper';
 import * as styles from './index.css';
+
+function useIsWorkspaceOwner(meta: WorkspaceMetadata) {
+  const info = useWorkspaceInfo(meta);
+
+  return info?.isOwner;
+}
 
 interface WorkspaceModalProps {
   disabled?: boolean;
@@ -139,7 +145,8 @@ export const AFFiNEWorkspaceList = ({
 
   const setOpenSettingModalAtom = useSetAtom(openSettingModalAtom);
 
-  const { status } = useSession();
+  const session = useService(AuthService).session;
+  const status = useLiveData(session.status$);
 
   const isAuthenticated = status === 'authenticated';
 

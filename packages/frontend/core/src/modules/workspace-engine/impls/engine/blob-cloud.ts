@@ -1,7 +1,6 @@
 import {
   deleteBlobMutation,
   fetcher,
-  fetchWithTraceReport,
   findGraphQLError,
   getBaseUrl,
   listBlobsQuery,
@@ -23,7 +22,7 @@ export class CloudBlobStorage implements BlobStorage {
       ? key
       : `/api/workspaces/${this.workspaceId}/blobs/${key}`;
 
-    return fetchWithTraceReport(getBaseUrl() + suffix).then(async res => {
+    return fetch(getBaseUrl() + suffix).then(async res => {
       if (!res.ok) {
         // status not in the range 200-299
         return null;

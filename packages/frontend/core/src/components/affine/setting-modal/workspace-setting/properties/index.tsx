@@ -396,7 +396,7 @@ export const WorkspaceSettingProperties = ({
   }
 
   return (
-    <FrameworkScope scope={workspace?.scope}>
+    <FrameworkScope scope={workspace.scope}>
       <SettingHeader
         title={t['com.affine.settings.workspace.properties.header.title']()}
         subtitle={

@@ -43,7 +43,7 @@ export const TrashPage = () => {
   assertExists(docCollection);
 
   const pageMetas = useBlockSuiteDocMeta(docCollection);
-  const filteredPageMetas = useFilteredPageMetas(currentWorkspace, pageMetas, {
+  const filteredPageMetas = useFilteredPageMetas(pageMetas, {
     trash: true,
   });
 

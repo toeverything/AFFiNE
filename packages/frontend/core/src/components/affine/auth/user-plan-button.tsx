@@ -1,17 +1,28 @@
 import { Tooltip } from '@affine/component/ui/tooltip';
-import { SubscriptionPlan } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useLiveData, useService } from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { withErrorBoundary } from 'react-error-boundary';
 
 import { openSettingModalAtom } from '../../../atoms';
-import { useUserSubscription } from '../../../hooks/use-subscription';
+import {
+  ServerConfigService,
+  SubscriptionService,
+} from '../../../modules/cloud';
 import * as styles from './style.css';
 
 const UserPlanButtonWithData = () => {
-  const [subscription] = useUserSubscription();
-  const plan = subscription?.plan ?? SubscriptionPlan.Free;
+  const serverConfig = useService(ServerConfigService).serverConfig;
+  const subscription = useService(SubscriptionService).subscription;
+
+  useEffect(() => {
+    // revalidate subscription to get the latest status
+    subscription.revalidate();
+  }, [serverConfig, subscription]);
+
+  const hasPayment = useLiveData(serverConfig.features$.map(r => r?.payment));
+  const plan = useLiveData(subscription.primary$)?.plan;
 
   const setSettingModalAtom = useSetAtom(openSettingModalAtom);
   const handleClick = useCallback(
@@ -27,9 +38,14 @@ const UserPlanButtonWithData = () => {
 
   const t = useAFFiNEI18N();
 
-  if (plan === SubscriptionPlan.SelfHosted) {
-    // Self hosted version doesn't have a payment apis.
-    return <div className={styles.userPlanButton}>{plan}</div>;
+  if (!hasPayment) {
+    // no payment feature
+    return;
+  }
+
+  if (!plan) {
+    // TODO: loading
+    return;
   }
 
   return (

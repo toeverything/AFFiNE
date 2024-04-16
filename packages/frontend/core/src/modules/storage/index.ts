@@ -5,7 +5,7 @@ import {
   LocalStorageGlobalState,
 } from './impls/storage';
 
-export function configureBrowserStorageImpls(framework: Framework) {
+export function configureStorageImpls(framework: Framework) {
   framework.impl(GlobalCache, LocalStorageGlobalCache);
   framework.impl(GlobalState, LocalStorageGlobalState);
 }

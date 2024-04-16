@@ -336,7 +336,7 @@ export const DetailPage = ({ pageId }: { pageId: string }): ReactElement => {
   const isInTrash = useLiveData(doc?.meta$.map(meta => meta.trash));
 
   useEffect(() => {
-    if (doc) {
+    if (doc && isInTrash) {
       currentWorkspace.docCollection.awarenessStore.setReadonly(
         doc.blockSuiteDoc.blockCollection,
         true

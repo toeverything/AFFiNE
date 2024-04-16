@@ -5,29 +5,21 @@ import {
 } from '@affine/component/setting-components';
 import { Avatar } from '@affine/component/ui/avatar';
 import { Button } from '@affine/component/ui/button';
-import { SWRErrorBoundary } from '@affine/core/components/pure/swr-error-bundary';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import {
-  removeAvatarMutation,
-  updateUserProfileMutation,
-  uploadAvatarMutation,
-} from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowRightSmallIcon, CameraIcon } from '@blocksuite/icons';
+import { useEnsureLiveData, useService } from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
 import type { FC, MouseEvent } from 'react';
-import { Suspense, useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import {
   authAtom,
   openSettingModalAtom,
   openSignOutModalAtom,
 } from '../../../../atoms';
-import { useCurrentUser } from '../../../../hooks/affine/use-current-user';
-import { useServerFeatures } from '../../../../hooks/affine/use-server-config';
-import { useMutation } from '../../../../hooks/use-mutation';
+import { AuthService } from '../../../../modules/cloud';
 import { mixpanel } from '../../../../utils';
-import { validateAndReduceImage } from '../../../../utils/reduce-image';
 import { Upload } from '../../../pure/file-upload';
 import { AIUsagePanel } from './ai-usage-panel';
 import { StorageProgress } from './storage-progress';
@@ -35,27 +27,16 @@ import * as styles from './style.css';
 
 export const UserAvatar = () => {
   const t = useAFFiNEI18N();
-  const user = useCurrentUser();
-
-  const { trigger: avatarTrigger } = useMutation({
-    mutation: uploadAvatarMutation,
-  });
-  const { trigger: removeAvatarTrigger } = useMutation({
-    mutation: removeAvatarMutation,
-  });
+  const session = useService(AuthService).session;
+  const account = useEnsureLiveData(session.account$);
 
   const handleUpdateUserAvatar = useAsyncCallback(
     async (file: File) => {
       try {
         mixpanel.track_forms('UpdateProfile', 'UploadAvatar', {
-          userId: user.id,
+          userId: account.id,
         });
-        const reducedFile = await validateAndReduceImage(file);
-        const data = await avatarTrigger({
-          avatar: reducedFile, // Pass the reducedFile directly to the avatarTrigger
-        });
-        user.update({ avatarUrl: data.uploadAvatar.avatarUrl });
-        // TODO: i18n
+        await session.uploadAvatar(file);
         notify.success({ title: 'Update user avatar success' });
       } catch (e) {
         // TODO: i18n
@@ -65,19 +46,18 @@ export const UserAvatar = () => {
         });
       }
     },
-    [avatarTrigger, user]
+    [account, session]
   );
 
   const handleRemoveUserAvatar = useAsyncCallback(
     async (e: MouseEvent<HTMLButtonElement>) => {
       mixpanel.track('RemoveAvatar', {
-        userId: user.id,
+        userId: account.id,
       });
       e.stopPropagation();
-      await removeAvatarTrigger();
-      user.update({ avatarUrl: null });
+      await session.removeAvatar();
     },
-    [removeAvatarTrigger, user]
+    [account, session]
   );
 
   return (
@@ -88,10 +68,10 @@ export const UserAvatar = () => {
     >
       <Avatar
         size={56}
-        name={user.name}
-        url={user.avatarUrl}
+        name={account.label}
+        url={account.avatar}
         hoverIcon={<CameraIcon />}
-        onRemove={user.avatarUrl ? handleRemoveUserAvatar : undefined}
+        onRemove={account.avatar ? handleRemoveUserAvatar : undefined}
         avatarTooltipOptions={{ content: t['Click to replace photo']() }}
         removeTooltipOptions={{ content: t['Remove photo']() }}
         data-testid="user-setting-avatar"
@@ -105,33 +85,31 @@ export const UserAvatar = () => {
 
 export const AvatarAndName = () => {
   const t = useAFFiNEI18N();
-  const user = useCurrentUser();
-  const [input, setInput] = useState<string>(user.name);
+  const session = useService(AuthService).session;
+  const account = useEnsureLiveData(session.account$);
+  const [input, setInput] = useState<string>(account.label);
 
-  const { trigger: updateProfile } = useMutation({
-    mutation: updateUserProfileMutation,
-  });
-  const allowUpdate = !!input && input !== user.name;
+  const allowUpdate = !!input && input !== account.label;
   const handleUpdateUserName = useAsyncCallback(async () => {
+    if (account === null) {
+      return;
+    }
     if (!allowUpdate) {
       return;
     }
 
     try {
       mixpanel.track_forms('UpdateProfile', 'UpdateUsername', {
-        userId: user.id,
+        userId: account.id,
       });
-      const data = await updateProfile({
-        input: { name: input },
-      });
-      user.update({ name: data.updateProfile.name });
+      await session.updateLabel(input);
     } catch (e) {
       notify.error({
         title: 'Failed to update user name.',
         message: String(e),
       });
     }
-  }, [allowUpdate, input, user, updateProfile]);
+  }, [account, allowUpdate, session, input]);
 
   return (
     <SettingRow
@@ -140,9 +118,7 @@ export const AvatarAndName = () => {
       spreadCol={false}
     >
       <FlexWrapper style={{ margin: '12px 0 24px 0' }} alignItems="center">
-        <Suspense>
-          <UserAvatar />
-        </Suspense>
+        <UserAvatar />
 
         <div className={styles.profileInputWrapper}>
           <label>{t['com.affine.settings.profile.name']()}</label>
@@ -178,7 +154,6 @@ export const AvatarAndName = () => {
 
 const StoragePanel = () => {
   const t = useAFFiNEI18N();
-  const { payment: hasPaymentFeature } = useServerFeatures();
 
   const setSettingModalAtom = useSetAtom(openSettingModalAtom);
   const onUpgrade = useCallback(() => {
@@ -197,14 +172,18 @@ const StoragePanel = () => {
       desc=""
       spreadCol={false}
     >
-      <StorageProgress onUpgrade={onUpgrade} upgradable={hasPaymentFeature} />
+      <StorageProgress onUpgrade={onUpgrade} />
     </SettingRow>
   );
 };
 
 export const AccountSetting: FC = () => {
   const t = useAFFiNEI18N();
-  const user = useCurrentUser();
+  const session = useService(AuthService).session;
+  useEffect(() => {
+    session.revalidate();
+  }, [session]);
+  const account = useEnsureLiveData(session.account$);
   const setAuthModal = useSetAtom(authAtom);
   const setSignOutModal = useSetAtom(openSignOutModalAtom);
 
@@ -212,19 +191,19 @@ export const AccountSetting: FC = () => {
     setAuthModal({
       openModal: true,
       state: 'sendEmail',
-      email: user.email,
-      emailType: user.emailVerified ? 'changeEmail' : 'verifyEmail',
+      email: account.email,
+      emailType: account.info?.emailVerified ? 'changeEmail' : 'verifyEmail',
     });
-  }, [setAuthModal, user.email, user.emailVerified]);
+  }, [account.email, account.info?.emailVerified, setAuthModal]);
 
   const onPasswordButtonClick = useCallback(() => {
     setAuthModal({
       openModal: true,
       state: 'sendEmail',
-      email: user.email,
-      emailType: user.hasPassword ? 'changePassword' : 'setPassword',
+      email: account.email,
+      emailType: account.info?.hasPassword ? 'changePassword' : 'setPassword',
     });
-  }, [setAuthModal, user.email, user.hasPassword]);
+  }, [account.email, account.info?.hasPassword, setAuthModal]);
 
   const onOpenSignOutModal = useCallback(() => {
     setSignOutModal(true);
@@ -238,9 +217,9 @@ export const AccountSetting: FC = () => {
         data-testid="account-title"
       />
       <AvatarAndName />
-      <SettingRow name={t['com.affine.settings.email']()} desc={user.email}>
+      <SettingRow name={t['com.affine.settings.email']()} desc={account.email}>
         <Button onClick={onChangeEmail} className={styles.button}>
-          {user.emailVerified
+          {account.info?.emailVerified
             ? t['com.affine.settings.email.action.change']()
             : t['com.affine.settings.email.action.verify']()}
         </Button>
@@ -250,19 +229,13 @@ export const AccountSetting: FC = () => {
         desc={t['com.affine.settings.password.message']()}
       >
         <Button onClick={onPasswordButtonClick} className={styles.button}>
-          {user.hasPassword
+          {account.info?.hasPassword
             ? t['com.affine.settings.password.action.change']()
             : t['com.affine.settings.password.action.set']()}
         </Button>
       </SettingRow>
-      <Suspense>
-        <StoragePanel />
-      </Suspense>
-      <SWRErrorBoundary fallback={<div />}>
-        <Suspense>
-          <AIUsagePanel />
-        </Suspense>
-      </SWRErrorBoundary>
+      <StoragePanel />
+      <AIUsagePanel />
       <SettingRow
         name={t[`Sign out`]()}
         desc={t['com.affine.setting.sign.out.message']()}
