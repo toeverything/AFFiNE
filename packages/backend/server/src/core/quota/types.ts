@@ -18,6 +18,7 @@ export enum QuotaType {
   FreePlanV1 = 'free_plan_v1',
   ProPlanV1 = 'pro_plan_v1',
   LifetimeProPlanV1 = 'lifetime_pro_plan_v1',
+  UnlimitedPlanV1 = 'unlimited_plan_v1',
   // only for test, smaller quota
   RestrictedPlanV1 = 'restricted_plan_v1',
 }
@@ -28,6 +29,7 @@ const quotaPlan = z.object({
     QuotaType.ProPlanV1,
     QuotaType.LifetimeProPlanV1,
     QuotaType.RestrictedPlanV1,
+    QuotaType.UnlimitedPlanV1,
   ]),
   configs: z.object({
     name: z.string(),

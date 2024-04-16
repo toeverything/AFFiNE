@@ -2,6 +2,7 @@ import { ModuleRef } from '@nestjs/core';
 import { PrismaClient } from '@prisma/client';
 
 import { FeatureManagementService } from '../../core/features';
+import { QuotaService, QuotaType } from '../../core/quota';
 import { UserService } from '../../core/user';
 import { Config, CryptoHelper } from '../../fundamentals';
 
@@ -13,6 +14,7 @@ export class SelfHostAdmin1 {
       const crypto = ref.get(CryptoHelper, { strict: false });
       const user = ref.get(UserService, { strict: false });
       const feature = ref.get(FeatureManagementService, { strict: false });
+      const quota = ref.get(QuotaService, { strict: false });
       if (
         !process.env.AFFINE_ADMIN_EMAIL ||
         !process.env.AFFINE_ADMIN_PASSWORD
@@ -37,6 +39,7 @@ export class SelfHostAdmin1 {
       });
       if (firstUser) {
         await feature.addAdmin(firstUser.id);
+        await quota.switchUserQuota(firstUser.id, QuotaType.UnlimitedPlanV1);
       }
     }
   }
