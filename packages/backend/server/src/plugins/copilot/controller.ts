@@ -19,6 +19,7 @@ import {
   from,
   map,
   merge,
+  mergeMap,
   Observable,
   switchMap,
   toArray,
@@ -237,12 +238,19 @@ export class CopilotController {
 
     delete params.message;
     delete params.messageId;
+    const handleRemoteLink = this.storage.handleRemoteLink.bind(
+      this.storage,
+      user.id,
+      sessionId
+    );
+
     return from(
       provider.generateImagesStream(session.finish(params), session.model, {
         signal: this.getSignal(req),
         user: user.id,
       })
     ).pipe(
+      mergeMap(handleRemoteLink),
       connect(shared$ =>
         merge(
           // actual chat event stream

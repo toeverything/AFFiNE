@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+
 import { Injectable, PayloadTooLargeException } from '@nestjs/common';
 
 import { QuotaManagementService } from '../../core/quota';
@@ -29,7 +31,7 @@ export class CopilotStorage {
   ) {
     const name = `${userId}/${workspaceId}/${key}`;
     await this.provider.put(name, blob);
-    return `${this.config.baseUrl}/${name}`;
+    return `${this.config.baseUrl}/api/copilot/blob/${name}`;
   }
 
   async get(userId: string, workspaceId: string, key: string) {
@@ -78,5 +80,12 @@ export class CopilotStorage {
       buffer,
       filename: blob.filename,
     };
+  }
+
+  async handleRemoteLink(userId: string, workspaceId: string, link: string) {
+    const response = await fetch(link);
+    const buffer = new Uint8Array(await response.arrayBuffer());
+    const filename = createHash('sha256').update(buffer).digest('base64url');
+    return this.put(userId, workspaceId, filename, Buffer.from(buffer));
   }
 }
