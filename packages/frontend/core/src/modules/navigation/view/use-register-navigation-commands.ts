@@ -47,12 +47,12 @@ export function useRegisterNavigationCommands() {
     unsubs.push(
       registerAffineCommand({
         id: 'alert-ctrl-s',
-        category: 'hidden',
-        preconditionStrategy: PreconditionStrategy.Always,
+        category: 'affine:general',
+        preconditionStrategy: PreconditionStrategy.Never,
         keyBinding: {
           binding: '$mod+s',
         },
-        label: 'Ignore Mod+S',
+        label: '',
         icon: null,
         run() {
           toast('save');
