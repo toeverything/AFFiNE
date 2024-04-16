@@ -1,8 +1,4 @@
-import {
-  ForbiddenException,
-  Logger,
-  PayloadTooLargeException,
-} from '@nestjs/common';
+import { Logger, PayloadTooLargeException, UseGuards } from '@nestjs/common';
 import {
   Args,
   Int,
@@ -16,14 +12,19 @@ import { SafeIntResolver } from 'graphql-scalars';
 import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 
 import type { FileUpload } from '../../../fundamentals';
-import { MakeCache, PreventCache } from '../../../fundamentals';
+import {
+  CloudThrottlerGuard,
+  MakeCache,
+  PreventCache,
+} from '../../../fundamentals';
 import { CurrentUser } from '../../auth';
-import { FeatureManagementService, FeatureType } from '../../features';
+import { FeatureManagementService } from '../../features';
 import { QuotaManagementService } from '../../quota';
 import { WorkspaceBlobStorage } from '../../storage';
 import { PermissionService } from '../permission';
 import { Permission, WorkspaceBlobSizes, WorkspaceType } from '../types';
 
+@UseGuards(CloudThrottlerGuard)
 @Resolver(() => WorkspaceType)
 export class WorkspaceBlobResolver {
   logger = new Logger(WorkspaceBlobResolver.name);
@@ -124,34 +125,8 @@ export class WorkspaceBlobResolver {
       Permission.Write
     );
 
-    const { storageQuota, usedSize, businessBlobLimit } =
-      await this.quota.getWorkspaceUsage(workspaceId);
-
-    const unlimited = await this.feature.hasWorkspaceFeature(
-      workspaceId,
-      FeatureType.UnlimitedWorkspace
-    );
-
-    const checkExceeded = (recvSize: number) => {
-      if (!storageQuota) {
-        throw new ForbiddenException('Cannot find user quota.');
-      }
-      const total = usedSize + recvSize;
-      // only skip total storage check if workspace has unlimited feature
-      if (total > storageQuota && !unlimited) {
-        this.logger.log(
-          `storage size limit exceeded: ${total} > ${storageQuota}`
-        );
-        return true;
-      } else if (recvSize > businessBlobLimit) {
-        this.logger.log(
-          `blob size limit exceeded: ${recvSize} > ${businessBlobLimit}`
-        );
-        return true;
-      } else {
-        return false;
-      }
-    };
+    const checkExceeded =
+      await this.quota.getQuotaCalculatorByWorkspace(workspaceId);
 
     if (checkExceeded(0)) {
       throw new PayloadTooLargeException(
