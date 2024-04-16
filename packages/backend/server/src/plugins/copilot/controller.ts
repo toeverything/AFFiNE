@@ -6,8 +6,10 @@ import {
   Param,
   Query,
   Req,
+  Res,
   Sse,
 } from '@nestjs/common';
+import type { Request, Response } from 'express';
 import {
   concatMap,
   connect,
@@ -21,6 +23,7 @@ import {
 } from 'rxjs';
 
 import { CurrentUser } from '../../core/auth/current-user';
+import { Config } from '../../fundamentals';
 import { CopilotProviderService } from './providers';
 import { ChatSession, ChatSessionService } from './session';
 import { CopilotCapability } from './types';
@@ -34,6 +37,7 @@ export interface ChatEvent {
 @Controller('/api/copilot')
 export class CopilotController {
   constructor(
+    private readonly config: Config,
     private readonly chatSession: ChatSessionService,
     private readonly provider: CopilotProviderService
   ) {}
@@ -78,6 +82,12 @@ export class CopilotController {
     return session;
   }
 
+  private getSignal(req: Request) {
+    const controller = new AbortController();
+    req.on('close', () => controller.abort());
+    return controller.signal;
+  }
+
   @Get('/chat/:sessionId')
   async chat(
     @CurrentUser() user: CurrentUser,
@@ -111,7 +121,7 @@ export class CopilotController {
         session.finish(params),
         session.model,
         {
-          signal: req.signal,
+          signal: this.getSignal(req),
           user: user.id,
         }
       );
@@ -161,7 +171,7 @@ export class CopilotController {
     delete params.messageId;
     return from(
       provider.generateTextStream(session.finish(params), session.model, {
-        signal: req.signal,
+        signal: this.getSignal(req),
         user: user.id,
       })
     ).pipe(
@@ -222,7 +232,7 @@ export class CopilotController {
     delete params.messageId;
     return from(
       provider.generateImagesStream(session.finish(params), session.model, {
-        signal: req.signal,
+        signal: this.getSignal(req),
         user: user.id,
       })
     ).pipe(
@@ -253,5 +263,35 @@ export class CopilotController {
         )
       )
     );
+  }
+
+  @Get('/unsplash/photos')
+  async unsplashPhotos(
+    @Req() req: Request,
+    @Res() res: Response,
+    @Query() params: Record<string, string>
+  ) {
+    const { unsplashKey } = this.config.plugins.copilot || {};
+    if (!unsplashKey) {
+      throw new InternalServerErrorException('Unsplash key is not configured');
+    }
+
+    const query = new URLSearchParams(params);
+    const response = await fetch(
+      `https://api.unsplash.com/search/photos?${query}`,
+      {
+        headers: { Authorization: `Client-ID ${unsplashKey}` },
+        signal: this.getSignal(req),
+      }
+    );
+
+    res.set({
+      'Content-Type': response.headers.get('Content-Type'),
+      'Content-Length': response.headers.get('Content-Length'),
+      'X-Ratelimit-Limit': response.headers.get('X-Ratelimit-Limit'),
+      'X-Ratelimit-Remaining': response.headers.get('X-Ratelimit-Remaining'),
+    });
+
+    res.status(response.status).send(await response.json());
   }
 }
