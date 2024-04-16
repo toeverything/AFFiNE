@@ -115,7 +115,7 @@ export class UserResolver {
     description: 'Enabled features of a user',
   })
   async userFeatures(@CurrentUser() user: CurrentUser) {
-    return this.feature.getUserFeatures(user.id);
+    return this.feature.getActivatedUserFeatures(user.id);
   }
 
   @Throttle({

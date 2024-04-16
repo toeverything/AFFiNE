@@ -34,7 +34,7 @@ type CopilotHistories {
 }
 
 type CopilotQuota {
-  limit: SafeInt!
+  limit: SafeInt
   used: SafeInt!
 }
 
@@ -84,6 +84,7 @@ type DocHistoryType {
 enum FeatureType {
   Copilot
   EarlyAccess
+  UnlimitedCopilot
   UnlimitedWorkspace
 }
 

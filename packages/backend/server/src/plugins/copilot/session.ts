@@ -1,8 +1,11 @@
 import { randomUUID } from 'node:crypto';
 
 import { Injectable, Logger } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+import { AiPromptRole, PrismaClient } from '@prisma/client';
 
+import { FeatureManagementService, FeatureType } from '../../core/features';
+import { QuotaService } from '../../core/quota';
+import { PaymentRequiredException } from '../../fundamentals';
 import { ChatMessageCache } from './message';
 import { ChatPrompt, PromptService } from './prompt';
 import {
@@ -120,6 +123,8 @@ export class ChatSessionService {
 
   constructor(
     private readonly db: PrismaClient,
+    private readonly feature: FeatureManagementService,
+    private readonly quota: QuotaService,
     private readonly messageCache: ChatMessageCache,
     private readonly prompt: PromptService
   ) {}
@@ -242,10 +247,22 @@ export class ChatSessionService {
       .reduce((total, length) => total + length, 0);
   }
 
-  async countUserActions(userId: string): Promise<number> {
+  private async countUserActions(userId: string): Promise<number> {
     return await this.db.aiSession.count({
       where: { userId, prompt: { action: { not: null } } },
     });
+  }
+
+  private async countUserChats(userId: string): Promise<number> {
+    const chats = await this.db.aiSession.findMany({
+      where: { userId, prompt: { action: null } },
+      select: {
+        _count: {
+          select: { messages: { where: { role: AiPromptRole.user } } },
+        },
+      },
+    });
+    return chats.reduce((prev, chat) => prev + chat._count.messages, 0);
   }
 
   async listSessions(
@@ -345,6 +362,32 @@ export class ChatSessionService {
       .then(histories =>
         histories.filter((v): v is NonNullable<typeof v> => !!v)
       );
+  }
+
+  async getQuota(userId: string) {
+    const hasCopilotFeature = await this.feature
+      .getActivatedUserFeatures(userId)
+      .then(f => f.includes(FeatureType.UnlimitedCopilot));
+
+    let limit: number | undefined;
+    if (!hasCopilotFeature) {
+      const quota = await this.quota.getUserQuota(userId);
+      limit = quota.feature.copilotActionLimit;
+    }
+
+    const actions = await this.countUserActions(userId);
+    const chats = await this.countUserChats(userId);
+
+    return { limit, used: actions + chats };
+  }
+
+  async checkQuota(userId: string) {
+    const { limit, used } = await this.getQuota(userId);
+    if (limit && Number.isFinite(limit) && used >= limit) {
+      throw new PaymentRequiredException(
+        `You have reached the limit of actions in this workspace, please upgrade your plan.`
+      );
+    }
   }
 
   async create(options: ChatSessionOptions): Promise<string> {

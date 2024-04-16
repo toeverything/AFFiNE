@@ -3,13 +3,17 @@ import { PrismaClient } from '@prisma/client';
 
 import type { EventPayload } from '../../fundamentals';
 import { OnEvent, PrismaTransaction } from '../../fundamentals';
-import { FeatureKind } from '../features';
+import { SubscriptionPlan } from '../../plugins/payment/types';
+import { FeatureKind, FeatureService, FeatureType } from '../features';
 import { QuotaConfig } from './quota';
 import { QuotaType } from './types';
 
 @Injectable()
 export class QuotaService {
-  constructor(private readonly prisma: PrismaClient) {}
+  constructor(
+    private readonly prisma: PrismaClient,
+    private readonly feature: FeatureService
+  ) {}
 
   // get activated user quota
   async getUserQuota(userId: string) {
@@ -159,22 +163,49 @@ export class QuotaService {
   @OnEvent('user.subscription.activated')
   async onSubscriptionUpdated({
     userId,
+    plan,
   }: EventPayload<'user.subscription.activated'>) {
-    await this.switchUserQuota(
-      userId,
-      QuotaType.ProPlanV1,
-      'subscription activated'
-    );
+    switch (plan) {
+      case SubscriptionPlan.AI:
+        await this.feature.addUserFeature(
+          userId,
+          FeatureType.UnlimitedCopilot,
+          'subscription activated'
+        );
+        break;
+      case SubscriptionPlan.Pro:
+        await this.switchUserQuota(
+          userId,
+          QuotaType.ProPlanV1,
+          'subscription activated'
+        );
+        break;
+      default:
+        break;
+    }
   }
 
   @OnEvent('user.subscription.canceled')
-  async onSubscriptionCanceled(
-    userId: EventPayload<'user.subscription.canceled'>
-  ) {
-    await this.switchUserQuota(
-      userId,
-      QuotaType.FreePlanV1,
-      'subscription canceled'
-    );
+  async onSubscriptionCanceled({
+    userId,
+    plan,
+  }: EventPayload<'user.subscription.canceled'>) {
+    switch (plan) {
+      case SubscriptionPlan.AI:
+        await this.feature.removeUserFeature(
+          userId,
+          FeatureType.UnlimitedCopilot
+        );
+        break;
+      case SubscriptionPlan.Pro:
+        await this.switchUserQuota(
+          userId,
+          QuotaType.FreePlanV1,
+          'subscription canceled'
+        );
+        break;
+      default:
+        break;
+    }
   }
 }

@@ -35,7 +35,6 @@ export class FeatureManagementService {
     return this.feature.addUserFeature(
       userId,
       FeatureType.EarlyAccess,
-      2,
       'Early access user'
     );
   }
@@ -116,9 +115,9 @@ export class FeatureManagementService {
     return this.feature.listFeatureWorkspaces(feature);
   }
 
-  async getUserFeatures(userId: string): Promise<FeatureType[]> {
-    return (await this.feature.getUserFeatures(userId)).map(
-      f => f.feature.name
-    );
+  // ======== User Feature ========
+  async getActivatedUserFeatures(userId: string): Promise<FeatureType[]> {
+    const features = await this.feature.getActivatedUserFeatures(userId);
+    return features.map(f => f.feature.name);
   }
 }

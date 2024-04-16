@@ -70,7 +70,9 @@ export const AIUsagePanelNotSubscripted = () => {
   const { data: quota } = useQuery({
     query: getCopilotQuotaQuery,
   });
-  const { limit = 10, used = 0 } = quota.currentUser?.copilot.quota || {};
+  const { limit: nullableLimit, used = 0 } =
+    quota.currentUser?.copilot.quota || {};
+  const limit = nullableLimit || 10;
   const percent = Math.min(
     100,
     Math.max(0.5, Number(((used / limit) * 100).toFixed(4)))

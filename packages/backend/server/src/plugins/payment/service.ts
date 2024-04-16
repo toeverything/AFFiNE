@@ -527,7 +527,10 @@ export class SubscriptionService {
         nextBillAt = new Date(subscription.current_period_end * 1000);
       }
     } else {
-      this.event.emit('user.subscription.canceled', user.id);
+      this.event.emit('user.subscription.canceled', {
+        userId: user.id,
+        plan,
+      });
     }
 
     const commonData = {

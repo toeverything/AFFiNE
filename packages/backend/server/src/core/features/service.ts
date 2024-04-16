@@ -59,11 +59,17 @@ export class FeatureService {
   async addUserFeature(
     userId: string,
     feature: FeatureType,
-    version: number,
     reason: string,
     expiredAt?: Date | string
   ) {
     return this.prisma.$transaction(async tx => {
+      const latestVersion = await tx.features
+        .aggregate({
+          where: { feature },
+          _max: { version: true },
+        })
+        .then(r => r._max.version || 1);
+
       const latestFlag = await tx.userFeatures.findFirst({
         where: {
           userId,
@@ -95,7 +101,7 @@ export class FeatureService {
                 connect: {
                   feature_version: {
                     feature,
-                    version,
+                    version: latestVersion,
                   },
                   type: FeatureKind.Feature,
                 },
@@ -137,6 +143,33 @@ export class FeatureService {
         feature: {
           type: FeatureKind.Feature,
         },
+      },
+      select: {
+        activated: true,
+        reason: true,
+        createdAt: true,
+        expiredAt: true,
+        featureId: true,
+      },
+    });
+
+    const configs = await Promise.all(
+      features.map(async feature => ({
+        ...feature,
+        feature: await getFeature(this.prisma, feature.featureId),
+      }))
+    );
+
+    return configs.filter(feature => !!feature.feature);
+  }
+
+  async getActivatedUserFeatures(userId: string) {
+    const features = await this.prisma.userFeatures.findMany({
+      where: {
+        user: { id: userId },
+        feature: { type: FeatureKind.Feature },
+        activated: true,
+        OR: [{ expiredAt: null }, { expiredAt: { gt: new Date() } }],
       },
       select: {
         activated: true,

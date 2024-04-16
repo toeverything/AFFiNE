@@ -53,7 +53,10 @@ declare module '../../fundamentals/event/def' {
         userId: User['id'];
         plan: SubscriptionPlan;
       }>;
-      canceled: Payload<User['id']>;
+      canceled: Payload<{
+        userId: User['id'];
+        plan: SubscriptionPlan;
+      }>;
     };
   }
 }

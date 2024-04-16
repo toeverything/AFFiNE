@@ -20,7 +20,6 @@ import {
   toArray,
 } from 'rxjs';
 
-import { Public } from '../../core/auth';
 import { CurrentUser } from '../../core/auth/current-user';
 import { CopilotProviderService } from './providers';
 import { ChatSession, ChatSessionService } from './session';
@@ -79,7 +78,6 @@ export class CopilotController {
     return session;
   }
 
-  @Public()
   @Get('/chat/:sessionId')
   async chat(
     @CurrentUser() user: CurrentUser,
@@ -89,6 +87,8 @@ export class CopilotController {
     @Query('messageId') messageId: string | undefined,
     @Query() params: Record<string, string | string[]>
   ): Promise<string> {
+    await this.chatSession.checkQuota(user.id);
+
     const model = await this.chatSession.get(sessionId).then(s => s?.model);
     const provider = this.provider.getProviderByCapability(
       CopilotCapability.TextToText,
@@ -131,7 +131,6 @@ export class CopilotController {
     }
   }
 
-  @Public()
   @Sse('/chat/:sessionId/stream')
   async chatStream(
     @CurrentUser() user: CurrentUser,
@@ -141,6 +140,8 @@ export class CopilotController {
     @Query('messageId') messageId: string | undefined,
     @Query() params: Record<string, string>
   ): Promise<Observable<ChatEvent>> {
+    await this.chatSession.checkQuota(user.id);
+
     const model = await this.chatSession.get(sessionId).then(s => s?.model);
     const provider = this.provider.getProviderByCapability(
       CopilotCapability.TextToText,
@@ -188,16 +189,17 @@ export class CopilotController {
     );
   }
 
-  @Public()
   @Sse('/chat/:sessionId/images')
   async chatImagesStream(
-    @CurrentUser() user: CurrentUser | undefined,
+    @CurrentUser() user: CurrentUser,
     @Req() req: Request,
     @Param('sessionId') sessionId: string,
     @Query('message') message: string | undefined,
     @Query('messageId') messageId: string | undefined,
     @Query() params: Record<string, string>
   ): Promise<Observable<ChatEvent>> {
+    await this.chatSession.checkQuota(user.id);
+
     const hasAttachment = await this.hasAttachment(sessionId, messageId);
     const model = await this.chatSession.get(sessionId).then(s => s?.model);
     const provider = this.provider.getProviderByCapability(
@@ -221,7 +223,7 @@ export class CopilotController {
     return from(
       provider.generateImagesStream(session.finish(params), session.model, {
         signal: req.signal,
-        user: user?.id,
+        user: user.id,
       })
     ).pipe(
       connect(shared$ =>

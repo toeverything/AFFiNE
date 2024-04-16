@@ -117,12 +117,7 @@ export class WorkspaceManagementResolver {
   async availableFeatures(
     @CurrentUser() user: CurrentUser
   ): Promise<FeatureType[]> {
-    const isEarlyAccessUser = await this.feature.isEarlyAccessUser(user.email);
-    if (isEarlyAccessUser) {
-      return [FeatureType.Copilot];
-    } else {
-      return [];
-    }
+    return await this.feature.getActivatedUserFeatures(user.id);
   }
 
   @ResolveField(() => [FeatureType], {
