@@ -9,4 +9,13 @@ export const thumb = style({
   height: 211,
   background: cssVar('backgroundOverlayPanelColor'),
   overflow: 'hidden',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+});
+
+export const thumbContent = style({
+  borderRadius: 'inherit',
+  width: 'calc(100% + 4px)',
+  height: 'calc(100% + 4px)',
 });

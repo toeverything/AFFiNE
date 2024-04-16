@@ -13,6 +13,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as baseStyles from './base-style.css';
 import * as styles from './general.dialog.css';
 import { Slider } from './slider';
+import { showAIOnboardingGeneral$ } from './state';
 import type { BaseAIOnboardingDialogProps } from './type';
 
 type PlayListItem = { video: string; title: ReactNode; desc: ReactNode };
@@ -71,7 +72,8 @@ export const AIOnboardingGeneral = ({
   );
   const isCloud = currentWorkspace?.flavour === WorkspaceFlavour.AFFINE_CLOUD;
   const t = useAFFiNEI18N();
-  const [open, setOpen] = useState(true);
+  // const [open, setOpen] = useState(true);
+  const open = useLiveData(showAIOnboardingGeneral$);
   const [index, setIndex] = useState(0);
   const list = useMemo(() => getPlayList(t), [t]);
   const setSettingModal = useSetAtom(openSettingModalAtom);
@@ -81,7 +83,7 @@ export const AIOnboardingGeneral = ({
   const isLast = index === list.length - 1;
 
   const closeAndDismiss = useCallback(() => {
-    setOpen(false);
+    showAIOnboardingGeneral$.next(false);
     onDismiss();
   }, [onDismiss]);
   const goToPricingPlans = useCallback(() => {
@@ -92,7 +94,7 @@ export const AIOnboardingGeneral = ({
     });
     closeAndDismiss();
   }, [closeAndDismiss, setSettingModal]);
-  const onClose = useCallback(() => setOpen(false), []);
+  const onClose = useCallback(() => showAIOnboardingGeneral$.next(false), []);
   const onPrev = useCallback(() => {
     setIndex(i => Math.max(0, i - 1));
   }, []);
@@ -101,9 +103,16 @@ export const AIOnboardingGeneral = ({
   }, [list.length]);
 
   const videoRenderer = useCallback(
-    ({ video }: PlayListItem) => (
+    ({ video }: PlayListItem, index: number) => (
       <div className={styles.videoWrapper}>
-        <video src={video} className={styles.video} loop muted playsInline />
+        <video
+          autoPlay={index === 0}
+          src={video}
+          className={styles.video}
+          loop
+          muted
+          playsInline
+        />
       </div>
     ),
     []
@@ -116,6 +125,11 @@ export const AIOnboardingGeneral = ({
     ({ desc }: PlayListItem) => <p className={styles.description}>{desc}</p>,
     []
   );
+
+  // show dialog when it's mounted
+  useEffect(() => {
+    showAIOnboardingGeneral$.next(true);
+  }, []);
 
   useEffect(() => {
     const videoWrapper = videoWrapperRef.current;
@@ -136,7 +150,7 @@ export const AIOnboardingGeneral = ({
   return isCloud ? (
     <Modal
       open={open}
-      onOpenChange={setOpen}
+      onOpenChange={v => showAIOnboardingGeneral$.next(v)}
       contentOptions={{ className: styles.dialog }}
       overlayOptions={{ className: baseStyles.dialogOverlay }}
     >
