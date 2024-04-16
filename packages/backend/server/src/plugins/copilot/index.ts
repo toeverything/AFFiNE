@@ -15,6 +15,7 @@ import {
 } from './providers';
 import { CopilotResolver, UserCopilotResolver } from './resolver';
 import { ChatSessionService } from './session';
+import { CopilotStorage, CopilotStorageResolver } from './storage';
 
 registerCopilotProvider(FalProvider);
 registerCopilotProvider(OpenAIProvider);
@@ -32,6 +33,8 @@ registerCopilotProvider(OpenAIProvider);
     UserCopilotResolver,
     PromptService,
     CopilotProviderService,
+    CopilotStorage,
+    CopilotStorageResolver,
   ],
   controllers: [CopilotController],
   contributesTo: ServerFeature.Copilot,

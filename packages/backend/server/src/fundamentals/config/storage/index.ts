@@ -19,6 +19,7 @@ export type StorageConfig<Ext = unknown> = {
 export interface StoragesConfig {
   avatar: StorageConfig<{ publicLinkFactory: (key: string) => string }>;
   blob: StorageConfig;
+  copilot: StorageConfig;
 }
 
 export interface AFFiNEStorageConfig {
@@ -50,6 +51,10 @@ export function getDefaultAFFiNEStorageConfig(): AFFiNEStorageConfig {
       blob: {
         provider: 'fs',
         bucket: 'blobs',
+      },
+      copilot: {
+        provider: 'fs',
+        bucket: 'copilot',
       },
     },
   };

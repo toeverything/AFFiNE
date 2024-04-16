@@ -28,7 +28,7 @@ import {
 
 registerEnumType(AvailableModels, { name: 'CopilotModel' });
 
-const COPILOT_LOCKER = 'copilot';
+export const COPILOT_LOCKER = 'copilot';
 
 // ================== Input Types ==================
 
