@@ -26,7 +26,8 @@ export type CommandCategory =
   | 'affine:updates'
   | 'affine:help'
   | 'affine:general'
-  | 'affine:results';
+  | 'affine:results'
+  | 'hidden';
 
 export interface KeybindingOptions {
   binding: string;

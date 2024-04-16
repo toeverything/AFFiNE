@@ -1,3 +1,4 @@
+import { toast } from '@affine/component';
 import {
   PreconditionStrategy,
   registerAffineCommand,
@@ -39,6 +40,22 @@ export function useRegisterNavigationCommands() {
         },
         run() {
           navigator.forward();
+        },
+      })
+    );
+
+    unsubs.push(
+      registerAffineCommand({
+        id: 'alert-ctrl-s',
+        category: 'hidden',
+        preconditionStrategy: PreconditionStrategy.Always,
+        keyBinding: {
+          binding: '$mod+s',
+        },
+        label: 'Ignore Mod+S',
+        icon: null,
+        run() {
+          toast('save');
         },
       })
     );
