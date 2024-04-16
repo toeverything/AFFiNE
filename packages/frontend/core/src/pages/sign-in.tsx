@@ -92,7 +92,7 @@ export const SignIn = () => {
 
   return (
     <SignInPageContainer>
-      <div style={{ maxWidth: '400px' }}>
+      <div style={{ maxWidth: '400px', width: '100%' }}>
         <AuthPanel
           state={state}
           email={email}

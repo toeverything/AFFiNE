@@ -5,6 +5,7 @@ export const notFoundPageContainer = style({
   color: cssVar('textPrimaryColor'),
   height: '100vh',
   display: 'flex',
+  flexDirection: 'column',
   alignItems: 'center',
   justifyContent: 'center',
   width: '100%',

@@ -30,37 +30,35 @@ export const NoPermissionOrNotFound = ({
   return (
     <AffineOtherPageLayout>
       <div className={notFoundPageContainer} data-testid="not-found">
-        <div>
-          {user ? (
-            <>
-              <div className={wrapper}>
-                <NotFoundPattern />
-              </div>
-              <p className={wrapper}>{t['404.hint']()}</p>
-              <div className={wrapper}>
-                <Button
-                  type="primary"
-                  size="extraLarge"
-                  onClick={onBack}
-                  className={largeButtonEffect}
-                >
-                  {t['404.back']()}
-                </Button>
-              </div>
-              <div className={wrapper}>
-                <Avatar url={user.avatarUrl ?? user.image} name={user.name} />
-                <span style={{ margin: '0 12px' }}>{user.email}</span>
-                <Tooltip content={t['404.signOut']()}>
-                  <IconButton onClick={onSignOut}>
-                    <SignOutIcon />
-                  </IconButton>
-                </Tooltip>
-              </div>
-            </>
-          ) : (
-            signInComponent
-          )}
-        </div>
+        {user ? (
+          <>
+            <div className={wrapper}>
+              <NotFoundPattern />
+            </div>
+            <p className={wrapper}>{t['404.hint']()}</p>
+            <div className={wrapper}>
+              <Button
+                type="primary"
+                size="extraLarge"
+                onClick={onBack}
+                className={largeButtonEffect}
+              >
+                {t['404.back']()}
+              </Button>
+            </div>
+            <div className={wrapper}>
+              <Avatar url={user.avatarUrl ?? user.image} name={user.name} />
+              <span style={{ margin: '0 12px' }}>{user.email}</span>
+              <Tooltip content={t['404.signOut']()}>
+                <IconButton onClick={onSignOut}>
+                  <SignOutIcon />
+                </IconButton>
+              </Tooltip>
+            </div>
+          </>
+        ) : (
+          signInComponent
+        )}
       </div>
     </AffineOtherPageLayout>
   );
@@ -76,34 +74,32 @@ export const NotFoundPage = ({
   return (
     <AffineOtherPageLayout>
       <div className={notFoundPageContainer} data-testid="not-found">
-        <div>
-          <div className={wrapper}>
-            <NotFoundPattern />
-          </div>
-          <p className={wrapper}>{t['404.hint']()}</p>
-          <div className={wrapper}>
-            <Button
-              type="primary"
-              size="extraLarge"
-              onClick={onBack}
-              className={largeButtonEffect}
-            >
-              {t['404.back']()}
-            </Button>
-          </div>
-
-          {user ? (
-            <div className={wrapper}>
-              <Avatar url={user.avatarUrl ?? user.image} name={user.name} />
-              <span style={{ margin: '0 12px' }}>{user.email}</span>
-              <Tooltip content={t['404.signOut']()}>
-                <IconButton onClick={onSignOut}>
-                  <SignOutIcon />
-                </IconButton>
-              </Tooltip>
-            </div>
-          ) : null}
+        <div className={wrapper}>
+          <NotFoundPattern />
         </div>
+        <p className={wrapper}>{t['404.hint']()}</p>
+        <div className={wrapper}>
+          <Button
+            type="primary"
+            size="extraLarge"
+            onClick={onBack}
+            className={largeButtonEffect}
+          >
+            {t['404.back']()}
+          </Button>
+        </div>
+
+        {user ? (
+          <div className={wrapper}>
+            <Avatar url={user.avatarUrl ?? user.image} name={user.name} />
+            <span style={{ margin: '0 12px' }}>{user.email}</span>
+            <Tooltip content={t['404.signOut']()}>
+              <IconButton onClick={onSignOut}>
+                <SignOutIcon />
+              </IconButton>
+            </Tooltip>
+          </div>
+        ) : null}
       </div>
     </AffineOtherPageLayout>
   );
