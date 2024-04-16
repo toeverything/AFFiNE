@@ -3,6 +3,7 @@ import { registerEnumType } from '@nestjs/graphql';
 export enum FeatureType {
   // user feature
   EarlyAccess = 'early_access',
+  AIEarlyAccess = 'ai_early_access',
   UnlimitedCopilot = 'unlimited_copilot',
   // workspace feature
   Copilot = 'copilot',

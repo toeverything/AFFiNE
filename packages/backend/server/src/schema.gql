@@ -80,8 +80,14 @@ type DocHistoryType {
   workspaceId: String!
 }
 
+enum EarlyAccessType {
+  AI
+  App
+}
+
 """The type of workspace feature"""
 enum FeatureType {
+  AIEarlyAccess
   Copilot
   EarlyAccess
   UnlimitedCopilot
@@ -170,7 +176,7 @@ type LimitedUserType {
 
 type Mutation {
   acceptInviteById(inviteId: String!, sendAcceptMail: Boolean, workspaceId: String!): Boolean!
-  addToEarlyAccess(email: String!): Int!
+  addToEarlyAccess(email: String!, type: EarlyAccessType!): Int!
   addWorkspaceFeature(feature: FeatureType!, workspaceId: String!): Int!
   cancelSubscription(idempotencyKey: String!, plan: SubscriptionPlan = Pro): UserSubscription!
   changeEmail(email: String!, token: String!): UserType!

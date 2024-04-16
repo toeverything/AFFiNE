@@ -63,13 +63,6 @@ export class FeatureService {
     expiredAt?: Date | string
   ) {
     return this.prisma.$transaction(async tx => {
-      const latestVersion = await tx.features
-        .aggregate({
-          where: { feature },
-          _max: { version: true },
-        })
-        .then(r => r._max.version || 1);
-
       const latestFlag = await tx.userFeatures.findFirst({
         where: {
           userId,
@@ -83,9 +76,21 @@ export class FeatureService {
           createdAt: 'desc',
         },
       });
+
       if (latestFlag) {
         return latestFlag.id;
       } else {
+        const latestVersion = await tx.features
+          .aggregate({
+            where: { feature },
+            _max: { version: true },
+          })
+          .then(r => r._max.version);
+
+        if (!latestVersion) {
+          throw new Error(`Feature ${feature} not found`);
+        }
+
         return tx.userFeatures
           .create({
             data: {

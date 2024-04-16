@@ -61,7 +61,18 @@ export class UnlimitedCopilotFeatureConfig extends FeatureConfig {
     super(data);
 
     if (this.config.feature !== FeatureType.UnlimitedCopilot) {
-      throw new Error('Invalid feature config: type is not UnlimitedWorkspace');
+      throw new Error('Invalid feature config: type is not AIEarlyAccess');
+    }
+  }
+}
+export class AIEarlyAccessFeatureConfig extends FeatureConfig {
+  override config!: Feature & { feature: FeatureType.AIEarlyAccess };
+
+  constructor(data: any) {
+    super(data);
+
+    if (this.config.feature !== FeatureType.AIEarlyAccess) {
+      throw new Error('Invalid feature config: type is not AIEarlyAccess');
     }
   }
 }
@@ -69,6 +80,7 @@ export class UnlimitedCopilotFeatureConfig extends FeatureConfig {
 const FeatureConfigMap = {
   [FeatureType.Copilot]: CopilotFeatureConfig,
   [FeatureType.EarlyAccess]: EarlyAccessFeatureConfig,
+  [FeatureType.AIEarlyAccess]: AIEarlyAccessFeatureConfig,
   [FeatureType.UnlimitedWorkspace]: UnlimitedWorkspaceFeatureConfig,
   [FeatureType.UnlimitedCopilot]: UnlimitedCopilotFeatureConfig,
 };

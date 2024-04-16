@@ -188,7 +188,7 @@ export class ScheduleManager {
     });
   }
 
-  async update(idempotencyKey: string, price: string, coupon?: string) {
+  async update(idempotencyKey: string, price: string) {
     if (!this._schedule) {
       throw new Error('No schedule');
     }
@@ -198,10 +198,7 @@ export class ScheduleManager {
     }
 
     // if current phase's plan matches target, and no coupon change, just release the schedule
-    if (
-      this.currentPhase.items[0].price === price &&
-      (!coupon || this.currentPhase.coupon === coupon)
-    ) {
+    if (this.currentPhase.items[0].price === price) {
       await this.stripe.subscriptionSchedules.release(this._schedule.id, {
         idempotencyKey,
       });
@@ -227,7 +224,10 @@ export class ScheduleManager {
                   quantity: 1,
                 },
               ],
-              coupon,
+              coupon:
+                typeof this.currentPhase.coupon === 'string'
+                  ? this.currentPhase.coupon
+                  : this.currentPhase.coupon?.id ?? undefined,
             },
           ],
         },

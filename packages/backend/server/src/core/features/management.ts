@@ -7,6 +7,11 @@ import { FeatureType } from './types';
 
 const STAFF = ['@toeverything.info'];
 
+export enum EarlyAccessType {
+  App = 'app',
+  AI = 'ai',
+}
+
 @Injectable()
 export class FeatureManagementService {
   protected logger = new Logger(FeatureManagementService.name);
@@ -30,24 +35,43 @@ export class FeatureManagementService {
   }
 
   // ======== Early Access ========
-
-  async addEarlyAccess(userId: string) {
+  async addEarlyAccess(
+    userId: string,
+    type: EarlyAccessType = EarlyAccessType.App
+  ) {
     return this.feature.addUserFeature(
       userId,
-      FeatureType.EarlyAccess,
+      type === EarlyAccessType.App
+        ? FeatureType.EarlyAccess
+        : FeatureType.AIEarlyAccess,
       'Early access user'
     );
   }
 
-  async removeEarlyAccess(userId: string) {
-    return this.feature.removeUserFeature(userId, FeatureType.EarlyAccess);
+  async removeEarlyAccess(
+    userId: string,
+    type: EarlyAccessType = EarlyAccessType.App
+  ) {
+    return this.feature.removeUserFeature(
+      userId,
+      type === EarlyAccessType.App
+        ? FeatureType.EarlyAccess
+        : FeatureType.AIEarlyAccess
+    );
   }
 
-  async listEarlyAccess() {
-    return this.feature.listFeatureUsers(FeatureType.EarlyAccess);
+  async listEarlyAccess(type: EarlyAccessType = EarlyAccessType.App) {
+    return this.feature.listFeatureUsers(
+      type === EarlyAccessType.App
+        ? FeatureType.EarlyAccess
+        : FeatureType.AIEarlyAccess
+    );
   }
 
-  async isEarlyAccessUser(email: string) {
+  async isEarlyAccessUser(
+    email: string,
+    type: EarlyAccessType = EarlyAccessType.App
+  ) {
     const user = await this.prisma.user.findFirst({
       where: {
         email: {
@@ -56,9 +80,15 @@ export class FeatureManagementService {
         },
       },
     });
+
     if (user) {
       const canEarlyAccess = await this.feature
-        .hasUserFeature(user.id, FeatureType.EarlyAccess)
+        .hasUserFeature(
+          user.id,
+          type === EarlyAccessType.App
+            ? FeatureType.EarlyAccess
+            : FeatureType.AIEarlyAccess
+        )
         .catch(() => false);
 
       return canEarlyAccess;
@@ -67,9 +97,12 @@ export class FeatureManagementService {
   }
 
   /// check early access by email
-  async canEarlyAccess(email: string) {
+  async canEarlyAccess(
+    email: string,
+    type: EarlyAccessType = EarlyAccessType.App
+  ) {
     if (this.config.featureFlags.earlyAccessPreview && !this.isStaff(email)) {
-      return this.isEarlyAccessUser(email);
+      return this.isEarlyAccessUser(email, type);
     } else {
       return true;
     }

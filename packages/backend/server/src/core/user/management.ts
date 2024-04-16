@@ -3,14 +3,26 @@ import {
   ForbiddenException,
   UseGuards,
 } from '@nestjs/common';
-import { Args, Context, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
+import {
+  Args,
+  Context,
+  Int,
+  Mutation,
+  Query,
+  registerEnumType,
+  Resolver,
+} from '@nestjs/graphql';
 
 import { CloudThrottlerGuard, Throttle } from '../../fundamentals';
 import { CurrentUser } from '../auth/current-user';
 import { sessionUser } from '../auth/service';
-import { FeatureManagementService } from '../features';
+import { EarlyAccessType, FeatureManagementService } from '../features';
 import { UserService } from './service';
 import { UserType } from './types';
+
+registerEnumType(EarlyAccessType, {
+  name: 'EarlyAccessType',
+});
 
 /**
  * User resolver
@@ -33,19 +45,20 @@ export class UserManagementResolver {
   @Mutation(() => Int)
   async addToEarlyAccess(
     @CurrentUser() currentUser: CurrentUser,
-    @Args('email') email: string
+    @Args('email') email: string,
+    @Args({ name: 'type', type: () => EarlyAccessType }) type: EarlyAccessType
   ): Promise<number> {
     if (!this.feature.isStaff(currentUser.email)) {
       throw new ForbiddenException('You are not allowed to do this');
     }
     const user = await this.users.findUserByEmail(email);
     if (user) {
-      return this.feature.addEarlyAccess(user.id);
+      return this.feature.addEarlyAccess(user.id, type);
     } else {
       const user = await this.users.createAnonymousUser(email, {
         registered: false,
       });
-      return this.feature.addEarlyAccess(user.id);
+      return this.feature.addEarlyAccess(user.id, type);
     }
   }
 
