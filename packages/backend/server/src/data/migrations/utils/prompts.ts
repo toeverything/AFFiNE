@@ -1,4 +1,4 @@
-import { AiPromptRole } from '@prisma/client';
+import { AiPromptRole, PrismaClient } from '@prisma/client';
 
 type PromptMessage = {
   role: AiPromptRole;
@@ -40,7 +40,7 @@ export const prompts: Prompt[] = [
   {
     name: 'debug:action:fal-sd15',
     action: 'image',
-    model: '110602490-lcm-sd15-i2i',
+    model: 'lcm-sd15-i2i',
     messages: [],
   },
   {
@@ -359,8 +359,6 @@ export const prompts: Prompt[] = [
   You love your designers and want them to be happy. Incorporating their feedback and notes and producing working websites makes them happy.
 
   When sent new wireframes, respond ONLY with the contents of the html file.
-
-  {{image}}
   `,
       },
     ],
@@ -388,3 +386,39 @@ export const prompts: Prompt[] = [
     ],
   },
 ];
+
+export async function refreshPrompts(db: PrismaClient) {
+  await db.$transaction(async tx => {
+    for (const prompt of prompts) {
+      await tx.aiPrompt.upsert({
+        create: {
+          name: prompt.name,
+          action: prompt.action,
+          model: prompt.model,
+          messages: {
+            create: prompt.messages.map((message, idx) => ({
+              idx,
+              role: message.role,
+              content: message.content,
+              params: message.params,
+            })),
+          },
+        },
+        where: { name: prompt.name },
+        update: {
+          action: prompt.action,
+          model: prompt.model,
+          messages: {
+            deleteMany: {},
+            create: prompt.messages.map((message, idx) => ({
+              idx,
+              role: message.role,
+              content: message.content,
+              params: message.params,
+            })),
+          },
+        },
+      });
+    }
+  });
+}
