@@ -24,6 +24,10 @@ export const AIUsagePanel = () => {
   );
   const subscriptionService = useService(SubscriptionService);
   const aiSubscription = useLiveData(subscriptionService.subscription.ai$);
+  useEffect(() => {
+    // revalidate latest subscription status
+    subscriptionService.subscription.revalidate();
+  }, [subscriptionService]);
   const quotaService = useService(UserQuotaService);
   useEffect(() => {
     quotaService.quota.revalidate();
