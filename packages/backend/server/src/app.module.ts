@@ -124,13 +124,12 @@ function buildAppModule() {
     .use(DocModule)
 
     // sync server only
-    .useIf(config => config.flavor.sync, SyncModule)
+    .useIf(config => config.flavor.sync, WebSocketModule, SyncModule)
 
     // graphql server only
     .useIf(
       config => config.flavor.graphql,
       ServerConfigModule,
-      WebSocketModule,
       GqlModule,
       StorageModule,
       UserModule,
