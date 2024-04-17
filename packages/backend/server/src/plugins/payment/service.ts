@@ -765,7 +765,9 @@ export class SubscriptionService {
       );
       return {
         price,
-        coupon: !subscribed ? CouponType.ProEarlyAccessOneYearFree : undefined,
+        coupon: canHaveEADiscount
+          ? CouponType.ProEarlyAccessOneYearFree
+          : undefined,
       };
     } else {
       const isAIEaUser = await this.features.isEarlyAccessUser(

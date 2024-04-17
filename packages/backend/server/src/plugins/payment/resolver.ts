@@ -369,6 +369,7 @@ export class UserSubscriptionResolver {
     return this.db.userSubscription.findMany({
       where: {
         userId: user.id,
+        status: SubscriptionStatus.Active,
       },
     });
   }
