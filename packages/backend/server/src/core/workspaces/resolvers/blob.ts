@@ -18,7 +18,6 @@ import {
   PreventCache,
 } from '../../../fundamentals';
 import { CurrentUser } from '../../auth';
-import { FeatureManagementService } from '../../features';
 import { QuotaManagementService } from '../../quota';
 import { WorkspaceBlobStorage } from '../../storage';
 import { PermissionService } from '../permission';
@@ -30,7 +29,6 @@ export class WorkspaceBlobResolver {
   logger = new Logger(WorkspaceBlobResolver.name);
   constructor(
     private readonly permissions: PermissionService,
-    private readonly feature: FeatureManagementService,
     private readonly quota: QuotaManagementService,
     private readonly storage: WorkspaceBlobStorage
   ) {}
