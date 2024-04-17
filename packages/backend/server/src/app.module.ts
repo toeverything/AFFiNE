@@ -1,13 +1,12 @@
 import { join } from 'node:path';
 
 import { Logger, Module } from '@nestjs/common';
-import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { get } from 'lodash-es';
 
 import { AppController } from './app.controller';
-import { AuthGuard, AuthModule } from './core/auth';
+import { AuthModule } from './core/auth';
 import { ADD_ENABLED_FEATURES, ServerConfigModule } from './core/config';
 import { DocModule } from './core/doc';
 import { FeatureModule } from './core/features';
@@ -17,7 +16,7 @@ import { SyncModule } from './core/sync';
 import { UserModule } from './core/user';
 import { WorkspaceModule } from './core/workspaces';
 import { getOptionalModuleMetadata } from './fundamentals';
-import { CacheInterceptor, CacheModule } from './fundamentals/cache';
+import { CacheModule } from './fundamentals/cache';
 import type { AvailablePlugins } from './fundamentals/config';
 import { Config, ConfigModule } from './fundamentals/config';
 import { EventModule } from './fundamentals/event';
@@ -103,16 +102,6 @@ export class AppModuleBuilder {
 
   compile() {
     @Module({
-      providers: [
-        {
-          provide: APP_INTERCEPTOR,
-          useClass: CacheInterceptor,
-        },
-        {
-          provide: APP_GUARD,
-          useClass: AuthGuard,
-        },
-      ],
       imports: this.modules,
       controllers: this.config.isSelfhosted ? [] : [AppController],
     })

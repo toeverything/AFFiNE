@@ -27,7 +27,7 @@ export {
 export type { PrismaTransaction } from './prisma';
 export * from './storage';
 export { type StorageProvider, StorageProviderFactory } from './storage';
-export { AuthThrottlerGuard, CloudThrottlerGuard, Throttle } from './throttler';
+export { CloudThrottlerGuard, Throttle } from './throttler';
 export {
   getRequestFromHost,
   getRequestResponseFromContext,

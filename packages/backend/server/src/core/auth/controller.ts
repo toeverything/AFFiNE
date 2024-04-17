@@ -14,7 +14,11 @@ import {
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
 
-import { PaymentRequiredException, URLHelper } from '../../fundamentals';
+import {
+  PaymentRequiredException,
+  Throttle,
+  URLHelper,
+} from '../../fundamentals';
 import { UserService } from '../user';
 import { validators } from '../utils/validators';
 import { CurrentUser } from './current-user';
@@ -27,6 +31,7 @@ class SignInCredential {
   password?: string;
 }
 
+@Throttle('strict')
 @Controller('/api/auth')
 export class AuthController {
   constructor(
@@ -158,6 +163,7 @@ export class AuthController {
     return this.url.safeRedirect(res, redirectUri);
   }
 
+  @Throttle('default', { limit: 1200 })
   @Public()
   @Get('/session')
   async currentSessionUser(@CurrentUser() user?: CurrentUser) {
@@ -166,6 +172,7 @@ export class AuthController {
     };
   }
 
+  @Throttle('default', { limit: 1200 })
   @Public()
   @Get('/sessions')
   async currentSessionUsers(@Req() req: Request) {
