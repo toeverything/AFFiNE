@@ -1,5 +1,5 @@
 import { wrapCreateBrowserRouter } from '@sentry/react';
-import { createContext, useEffect } from 'react';
+import { createContext, useEffect, useState } from 'react';
 import type { NavigateFunction, RouteObject } from 'react-router-dom';
 import {
   createBrowserRouter as reactRouterCreateBrowserRouter,
@@ -16,6 +16,12 @@ export const NavigateContext = createContext<NavigateFunction | null>(null);
 function RootRouter() {
   const location = useLocation();
   const navigate = useNavigate();
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    // a hack to make sure router is ready
+    setReady(true);
+  }, []);
+
   useEffect(() => {
     mixpanel.track_pageview({
       page: location.pathname,
@@ -26,9 +32,11 @@ function RootRouter() {
     });
   }, [location]);
   return (
-    <NavigateContext.Provider value={navigate}>
-      <Outlet />
-    </NavigateContext.Provider>
+    ready && (
+      <NavigateContext.Provider value={navigate}>
+        <Outlet />
+      </NavigateContext.Provider>
+    )
   );
 }
 
