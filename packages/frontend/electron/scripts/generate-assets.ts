@@ -55,12 +55,14 @@ if (!process.env.SKIP_WEB_BUILD) {
     stdio: 'inherit',
     env: process.env,
     cwd,
+    shell: true,
   });
 
   spawnSync('yarn', ['workspace', '@affine/electron', 'build'], {
     stdio: 'inherit',
     env: process.env,
     cwd,
+    shell: true,
   });
 
   // step 1.5: amend sourceMappingURL to allow debugging in devtools

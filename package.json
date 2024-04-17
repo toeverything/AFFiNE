@@ -113,7 +113,6 @@
   },
   "packageManager": "yarn@4.1.1",
   "resolutions": {
-    "vite": "^5.0.6",
     "array-buffer-byte-length": "npm:@nolyfill/array-buffer-byte-length@latest",
     "array-includes": "npm:@nolyfill/array-includes@latest",
     "array.prototype.flat": "npm:@nolyfill/array.prototype.flat@latest",

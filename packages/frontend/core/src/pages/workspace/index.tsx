@@ -1,4 +1,5 @@
 import { useWorkspace } from '@affine/core/hooks/use-workspace';
+import { ZipTransformer } from '@blocksuite/blocks';
 import type { Workspace } from '@toeverything/infra';
 import {
   ServiceProviderContext,
@@ -12,7 +13,6 @@ import { Suspense, useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 
 import { AffineErrorBoundary } from '../../components/affine/affine-error-boundary';
-import { HubIsland } from '../../components/affine/hub-island';
 import { WorkspaceFallback } from '../../components/workspace';
 import { WorkspaceLayout } from '../../layouts/workspace-layout';
 import { RightSidebarContainer } from '../../modules/right-sidebar';
@@ -28,6 +28,8 @@ declare global {
    */
   // eslint-disable-next-line no-var
   var currentWorkspace: Workspace | undefined;
+  // eslint-disable-next-line no-var
+  var exportWorkspaceSnapshot: () => Promise<void>;
   interface WindowEventMap {
     'affine:workspace:change': CustomEvent<{ id: string }>;
   }
@@ -60,6 +62,21 @@ export const Component = (): ReactElement => {
 
     // for debug purpose
     window.currentWorkspace = workspace;
+    window.exportWorkspaceSnapshot = async () => {
+      const zip = await ZipTransformer.exportDocs(
+        workspace.docCollection,
+        Array.from(workspace.docCollection.docs.values()).map(collection =>
+          collection.getDoc()
+        )
+      );
+      const url = URL.createObjectURL(zip);
+      // download url
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${workspace.docCollection.meta.name}.zip`;
+      a.click();
+      URL.revokeObjectURL(url);
+    };
     window.dispatchEvent(
       new CustomEvent('affine:workspace:change', {
         detail: {
@@ -99,7 +116,6 @@ export const Component = (): ReactElement => {
           <WorkspaceLayout>
             <WorkbenchRoot />
             <RightSidebarContainer />
-            <HubIsland />
           </WorkspaceLayout>
         </AffineErrorBoundary>
       </Suspense>

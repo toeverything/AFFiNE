@@ -160,17 +160,16 @@ export class SubscriptionResolver {
 
   @Public()
   @Query(() => [SubscriptionPrice])
-  async prices(): Promise<SubscriptionPrice[]> {
-    const prices = await this.service.listPrices();
+  async prices(
+    @CurrentUser() user?: CurrentUser
+  ): Promise<SubscriptionPrice[]> {
+    const prices = await this.service.listPrices(user);
 
-    const group = groupBy(
-      prices.data.filter(price => !!price.lookup_key),
-      price => {
-        // @ts-expect-error empty lookup key is filtered out
-        const [plan] = decodeLookupKey(price.lookup_key);
-        return plan;
-      }
-    );
+    const group = groupBy(prices, price => {
+      // @ts-expect-error empty lookup key is filtered out
+      const [plan] = decodeLookupKey(price.lookup_key);
+      return plan;
+    });
 
     function findPrice(plan: SubscriptionPlan) {
       const prices = group[plan];

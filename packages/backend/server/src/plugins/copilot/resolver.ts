@@ -14,14 +14,9 @@ import {
 import { GraphQLJSON, SafeIntResolver } from 'graphql-scalars';
 
 import { CurrentUser } from '../../core/auth';
-import { QuotaService } from '../../core/quota';
 import { UserType } from '../../core/user';
 import { PermissionService } from '../../core/workspaces/permission';
-import {
-  MutexService,
-  PaymentRequiredException,
-  TooManyRequestsException,
-} from '../../fundamentals';
+import { MutexService, TooManyRequestsException } from '../../fundamentals';
 import { ChatSessionService } from './session';
 import {
   AvailableModels,
@@ -123,8 +118,8 @@ class CopilotHistoriesType implements Partial<ChatHistory> {
 
 @ObjectType('CopilotQuota')
 class CopilotQuotaType {
-  @Field(() => SafeIntResolver)
-  limit!: number;
+  @Field(() => SafeIntResolver, { nullable: true })
+  limit?: number;
 
   @Field(() => SafeIntResolver)
   used!: number;
@@ -144,7 +139,6 @@ export class CopilotResolver {
 
   constructor(
     private readonly permissions: PermissionService,
-    private readonly quota: QuotaService,
     private readonly mutex: MutexService,
     private readonly chatSession: ChatSessionService
   ) {}
@@ -155,20 +149,7 @@ export class CopilotResolver {
     complexity: 2,
   })
   async getQuota(@CurrentUser() user: CurrentUser) {
-    const quota = await this.quota.getUserQuota(user.id);
-    const limit = quota.feature.copilotActionLimit;
-
-    const actions = await this.chatSession.countUserActions(user.id);
-    const chats = await this.chatSession
-      .listHistories(user.id)
-      .then(histories =>
-        histories.reduce(
-          (acc, h) => acc + h.messages.filter(m => m.role === 'user').length,
-          0
-        )
-      );
-
-    return { limit, used: actions + chats };
+    return await this.chatSession.getQuota(user.id);
   }
 
   @ResolveField(() => [String], {
@@ -257,12 +238,7 @@ export class CopilotResolver {
       return new TooManyRequestsException('Server is busy');
     }
 
-    const { limit, used } = await this.getQuota(user);
-    if (limit && Number.isFinite(limit) && used >= limit) {
-      return new PaymentRequiredException(
-        `You have reached the limit of actions in this workspace, please upgrade your plan.`
-      );
-    }
+    await this.chatSession.checkQuota(user.id);
 
     const session = await this.chatSession.create({
       ...options,

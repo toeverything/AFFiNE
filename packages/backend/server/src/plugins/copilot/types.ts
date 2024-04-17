@@ -9,12 +9,12 @@ import {
 import { z } from 'zod';
 
 import type { ChatPrompt } from './prompt';
+import type { FalConfig } from './providers/fal';
 
 export interface CopilotConfig {
   openai: OpenAIClientOptions;
-  fal: {
-    apiKey: string;
-  };
+  fal: FalConfig;
+  unsplashKey: string;
 }
 
 export enum AvailableModels {

@@ -8,7 +8,7 @@ interface CreateWorkspaceParams {
 }
 
 export async function openWorkspaceListModal(page: Page) {
-  await page.getByTestId('workspace-name').click({
+  await page.getByTestId('app-sidebar').getByTestId('workspace-name').click({
     delay: 50,
   });
 }

@@ -4,11 +4,11 @@
   "sideEffect": false,
   "version": "0.14.0",
   "scripts": {
-    "postinstall": "node ./build.mjs && node ./build-edgeless.mjs"
+    "postinstall": "node ./build-edgeless.mjs"
   },
   "type": "module",
   "exports": {
-    ".": "./templates.gen.ts",
+    "./onboarding.zip": "./onboarding/onboarding.zip",
     "./edgeless": "./edgeless-templates.gen.ts",
     "./build-edgeless": "./build-edgeless.mjs"
   },

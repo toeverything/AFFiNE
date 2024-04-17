@@ -26,6 +26,10 @@ export enum SubscriptionPlan {
   SelfHosted = 'selfhosted',
 }
 
+export enum SubscriptionPriceVariant {
+  EA = 'earlyaccess',
+}
+
 // see https://stripe.com/docs/api/subscriptions/object#subscription_object-status
 export enum SubscriptionStatus {
   Active = 'active',
@@ -53,7 +57,10 @@ declare module '../../fundamentals/event/def' {
         userId: User['id'];
         plan: SubscriptionPlan;
       }>;
-      canceled: Payload<User['id']>;
+      canceled: Payload<{
+        userId: User['id'];
+        plan: SubscriptionPlan;
+      }>;
     };
   }
 }

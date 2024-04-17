@@ -33,7 +33,6 @@ env:
   DEBUG: napi:*
   APP_NAME: affine
   MACOSX_DEPLOYMENT_TARGET: '10.13'
-  MIXPANEL_TOKEN: '389c0615a69b57cca7d3fa0a4824c930'
 
 jobs:
   before-make:
@@ -54,12 +53,13 @@ jobs:
         run: yarn workspace @affine/electron generate-assets
         env:
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+          SENTRY_PROJECT: 'affine'
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
           RELEASE_VERSION: ${{ steps.version.outputs.APP_VERSION }}
           SKIP_PLUGIN_BUILD: 'true'
           SKIP_NX_CACHE: 'true'
+          MIXPANEL_TOKEN: ${{ secrets.MIXPANEL_TOKEN }}
 
       - name: Upload web artifact
         uses: actions/upload-artifact@v4
@@ -91,9 +91,10 @@ jobs:
       APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
       SKIP_GENERATE_ASSETS: 1
       SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-      SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+      SENTRY_PROJECT: 'affine'
       SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
       SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+      MIXPANEL_TOKEN: ${{ secrets.MIXPANEL_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - name: Setup Version
@@ -180,9 +181,10 @@ jobs:
     env:
       SKIP_GENERATE_ASSETS: 1
       SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-      SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+      SENTRY_PROJECT: 'affine'
       SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
       SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+      MIXPANEL_TOKEN: ${{ secrets.MIXPANEL_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - name: Setup Version

@@ -10,7 +10,7 @@ const rootDir = fileURLToPath(new URL('.', import.meta.url));
 
 export default defineConfig({
   plugins: [react(), vanillaExtractPlugin()],
-  assetsInclude: ['**/*.md'],
+  assetsInclude: ['**/*.md', '**/*.zip'],
   resolve: {
     alias: {
       // prevent tests using two different sources of yjs

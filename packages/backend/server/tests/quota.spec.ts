@@ -8,10 +8,10 @@ import { AuthService } from '../src/core/auth';
 import {
   QuotaManagementService,
   QuotaModule,
-  Quotas,
   QuotaService,
   QuotaType,
 } from '../src/core/quota';
+import { FreePlan, ProPlan } from '../src/core/quota/schema';
 import { StorageModule } from '../src/core/storage';
 import { createTestingModule } from './utils';
 
@@ -63,33 +63,43 @@ test('should be able to set quota', async t => {
 test('should be able to check storage quota', async t => {
   const { auth, quota, quotaManager } = t.context;
   const u1 = await auth.signUp('DarkSky', 'darksky@example.org', '123456');
+  const freePlan = FreePlan.configs;
+  const proPlan = ProPlan.configs;
 
   const q1 = await quotaManager.getUserQuota(u1.id);
-  t.is(q1?.blobLimit, Quotas[5].configs.blobLimit, 'should be free plan');
-  t.is(q1?.storageQuota, Quotas[5].configs.storageQuota, 'should be free plan');
+  t.is(q1?.blobLimit, freePlan.blobLimit, 'should be free plan');
+  t.is(q1?.storageQuota, freePlan.storageQuota, 'should be free plan');
 
   await quota.switchUserQuota(u1.id, QuotaType.ProPlanV1);
   const q2 = await quotaManager.getUserQuota(u1.id);
-  t.is(q2?.blobLimit, Quotas[1].configs.blobLimit, 'should be pro plan');
-  t.is(q2?.storageQuota, Quotas[1].configs.storageQuota, 'should be pro plan');
+  t.is(q2?.blobLimit, proPlan.blobLimit, 'should be pro plan');
+  t.is(q2?.storageQuota, proPlan.storageQuota, 'should be pro plan');
 });
 
 test('should be able revert quota', async t => {
   const { auth, quota, quotaManager } = t.context;
   const u1 = await auth.signUp('DarkSky', 'darksky@example.org', '123456');
+  const freePlan = FreePlan.configs;
+  const proPlan = ProPlan.configs;
 
   const q1 = await quotaManager.getUserQuota(u1.id);
-  t.is(q1?.blobLimit, Quotas[5].configs.blobLimit, 'should be free plan');
-  t.is(q1?.storageQuota, Quotas[5].configs.storageQuota, 'should be free plan');
+
+  t.is(q1?.blobLimit, freePlan.blobLimit, 'should be free plan');
+  t.is(q1?.storageQuota, freePlan.storageQuota, 'should be free plan');
 
   await quota.switchUserQuota(u1.id, QuotaType.ProPlanV1);
   const q2 = await quotaManager.getUserQuota(u1.id);
-  t.is(q2?.blobLimit, Quotas[1].configs.blobLimit, 'should be pro plan');
-  t.is(q2?.storageQuota, Quotas[1].configs.storageQuota, 'should be pro plan');
+  t.is(q2?.blobLimit, proPlan.blobLimit, 'should be pro plan');
+  t.is(q2?.storageQuota, proPlan.storageQuota, 'should be pro plan');
+  t.is(
+    q2?.copilotActionLimit,
+    proPlan.copilotActionLimit!,
+    'should be pro plan'
+  );
 
   await quota.switchUserQuota(u1.id, QuotaType.FreePlanV1);
   const q3 = await quotaManager.getUserQuota(u1.id);
-  t.is(q3?.blobLimit, Quotas[5].configs.blobLimit, 'should be free plan');
+  t.is(q3?.blobLimit, freePlan.blobLimit, 'should be free plan');
 
   const quotas = await quota.getUserQuotas(u1.id);
   t.is(quotas.length, 3, 'should have 3 quotas');
@@ -104,9 +114,9 @@ test('should be able revert quota', async t => {
 test('should be able to check quota', async t => {
   const { auth, quotaManager } = t.context;
   const u1 = await auth.signUp('DarkSky', 'darksky@example.org', '123456');
+  const freePlan = FreePlan.configs;
 
   const q1 = await quotaManager.getUserQuota(u1.id);
-  const freePlan = Quotas[5].configs;
   t.assert(q1, 'should have quota');
   t.is(q1.blobLimit, freePlan.blobLimit, 'should be free plan');
   t.is(q1.storageQuota, freePlan.storageQuota, 'should be free plan');

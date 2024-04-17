@@ -32,6 +32,8 @@ export const useAffineAISubscription = () => {
     cancel: AICancel,
   }[actionType];
 
+  const isFree = !subscription;
+
   const billingTip = subscription?.nextBillAt
     ? t['com.affine.payment.ai.billing-tip.next-bill-at']({
         due: timestampToLocalDate(subscription.nextBillAt),
@@ -42,5 +44,5 @@ export const useAffineAISubscription = () => {
         })
       : null;
 
-  return { actionType, Action, billingTip };
+  return { actionType, Action, billingTip, isFree };
 };

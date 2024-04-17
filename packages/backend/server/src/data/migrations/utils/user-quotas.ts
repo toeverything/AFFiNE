@@ -1,7 +1,8 @@
 import { PrismaClient } from '@prisma/client';
 
 import { FeatureKind } from '../../../core/features';
-import { Quota } from '../../../core/quota/types';
+import { getLatestQuota } from '../../../core/quota/schema';
+import { Quota, QuotaType } from '../../../core/quota/types';
 import { upsertFeature } from './user-features';
 
 export async function upgradeQuotaVersion(
@@ -20,10 +21,10 @@ export async function upgradeQuotaVersion(
     });
 
     // find all users that have old free plan
-    const userIds = await db.user.findMany({
+    const userIds = await tx.user.findMany({
       where: {
         features: {
-          every: {
+          some: {
             feature: {
               type: FeatureKind.Quota,
               feature: quota.feature,
@@ -62,4 +63,21 @@ export async function upgradeQuotaVersion(
       })),
     });
   });
+}
+
+export async function upsertLatestQuotaVersion(
+  db: PrismaClient,
+  type: QuotaType
+) {
+  const latestQuota = getLatestQuota(type);
+  await upsertFeature(db, latestQuota);
+}
+
+export async function upgradeLatestQuotaVersion(
+  db: PrismaClient,
+  type: QuotaType,
+  reason: string
+) {
+  const latestQuota = getLatestQuota(type);
+  await upgradeQuotaVersion(db, latestQuota, reason);
 }

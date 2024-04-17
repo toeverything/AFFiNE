@@ -280,7 +280,7 @@ export const createConfiguration: (
               },
             },
             {
-              test: /\.(png|jpg|gif|svg|webp|mp4)$/,
+              test: /\.(png|jpg|gif|svg|webp|mp4|zip)$/,
               type: 'asset/resource',
             },
             {

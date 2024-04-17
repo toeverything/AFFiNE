@@ -1,3 +1,4 @@
+import { DebugLogger } from '@affine/debug';
 import { type LoaderFunction, Navigate, useLoaderData } from 'react-router-dom';
 
 const trustedDomain = [
@@ -10,6 +11,8 @@ const trustedDomain = [
   'reddit.com',
 ];
 
+const logger = new DebugLogger('redirect_proxy');
+
 export const loader: LoaderFunction = async ({ request }) => {
   const url = new URL(request.url);
   const searchParams = url.searchParams;
@@ -19,14 +22,21 @@ export const loader: LoaderFunction = async ({ request }) => {
     return { allow: false };
   }
 
-  const target = new URL(redirectUri);
+  try {
+    const target = new URL(redirectUri);
 
-  if (
-    trustedDomain.some(domain =>
-      new RegExp(`.?${domain}$`).test(target.hostname)
-    )
-  ) {
-    location.href = redirectUri;
+    if (
+      target.hostname === window.location.hostname ||
+      trustedDomain.some(domain =>
+        new RegExp(`.?${domain}$`).test(target.hostname)
+      )
+    ) {
+      location.href = redirectUri;
+      return { allow: true };
+    }
+  } catch (e) {
+    logger.error('Failed to parse redirect uri', e);
+    return { allow: false };
   }
 
   return { allow: true };

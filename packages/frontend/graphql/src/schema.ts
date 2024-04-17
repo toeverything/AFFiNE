@@ -62,6 +62,7 @@ export interface CreateCheckoutSessionInput {
 export enum FeatureType {
   Copilot = 'Copilot',
   EarlyAccess = 'EarlyAccess',
+  UnlimitedCopilot = 'UnlimitedCopilot',
   UnlimitedWorkspace = 'UnlimitedWorkspace',
 }
 
@@ -366,6 +367,7 @@ export type GetCopilotHistoriesQuery = {
         __typename?: 'CopilotHistories';
         sessionId: string;
         tokens: number;
+        action: string | null;
         messages: Array<{
           __typename?: 'ChatMessage';
           role: string;
@@ -386,7 +388,11 @@ export type GetCopilotQuotaQuery = {
     __typename?: 'UserType';
     copilot: {
       __typename?: 'Copilot';
-      quota: { __typename?: 'CopilotQuota'; limit: number; used: number };
+      quota: {
+        __typename?: 'CopilotQuota';
+        limit: number | null;
+        used: number;
+      };
     };
   } | null;
 };

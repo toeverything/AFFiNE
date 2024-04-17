@@ -56,6 +56,7 @@ jobs:
           SHOULD_REPORT_TRACE: false
           PUBLIC_PATH: '/'
           SELF_HOSTED: true
+          MIXPANEL_TOKEN: ${{ secrets.MIXPANEL_TOKEN }}
       - name: Download selfhost fonts
         run: node ./scripts/download-blocksuite-fonts.mjs
       - name: Upload web artifact

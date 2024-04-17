@@ -41,7 +41,7 @@ export default {
     // disable for storybook build
     runtimeConfig.enableCloud = false;
     return mergeConfig<InlineConfig, InlineConfig>(config, {
-      assetsInclude: ['**/*.md'],
+      assetsInclude: ['**/*.md', '**/*.zip'],
       resolve: {
         alias: {
           // workaround for https://github.com/vitejs/vite/issues/9731
