@@ -5,7 +5,7 @@ import {
   useService,
 } from '@toeverything/infra';
 import { useEffect } from 'react';
-
+import i18n from 'i18next';
 import { Navigator } from '../entities/navigator';
 
 export function useRegisterNavigationCommands() {
@@ -47,15 +47,16 @@ export function useRegisterNavigationCommands() {
     unsubs.push(
       registerAffineCommand({
         id: 'alert-ctrl-s',
-        category: 'hidden',
-        preconditionStrategy: PreconditionStrategy.Always,
+        category: 'affine:general',
+        preconditionStrategy: PreconditionStrategy.Never,
         keyBinding: {
           binding: '$mod+s',
         },
-        label: 'Ignore Mod+S',
+        label: '',
         icon: null,
         run() {
-          toast('save');
+          const savingMessage = i18n.t('Save') || 'save';
+          toast(savingMessage);
         },
       })
     );
