@@ -1,5 +1,7 @@
+import { openSettingModalAtom } from '@affine/core/atoms';
 import { assertExists } from '@blocksuite/global/utils';
 import { AIProvider } from '@blocksuite/presets';
+import { getCurrentStore } from '@toeverything/infra';
 
 import type { PromptKey } from './prompt';
 import {
@@ -261,6 +263,13 @@ export function setupAIProvider() {
       ...options,
       promptName,
       forceToImage: true,
+    });
+  });
+
+  AIProvider.slots.requestUpgradePlan.on(() => {
+    getCurrentStore().set(openSettingModalAtom, {
+      activeTab: 'billing',
+      open: true,
     });
   });
 }
