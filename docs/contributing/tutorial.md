@@ -54,12 +54,6 @@ yarn dev
 
 See [building desktop client app](../building-desktop-client-app.md).
 
-### `@affine/storybook`
-
-```shell
-yarn workspace @affine/storybook storybook
-```
-
 ## What's next?
 
 - [Behind the code](./behind-the-code.md)

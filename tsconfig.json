@@ -127,9 +127,6 @@
       "path": "./tests/kit"
     },
     {
-      "path": "./tests/storybook"
-    },
-    {
       "path": "./tests/affine-local"
     },
     {
