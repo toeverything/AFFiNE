@@ -88,10 +88,12 @@ export class CopilotClient {
     sessionId,
     messageId,
     message,
+    params,
   }: {
     sessionId: string;
     messageId?: string;
     message?: string;
+    params?: Record<string, string>;
   }) {
     if (messageId && message) {
       throw new Error('Only one of messageId or message can be provided');
@@ -104,6 +106,11 @@ export class CopilotClient {
     }
     if (message) {
       url.searchParams.set('message', message);
+    }
+    if (!messageId && params) {
+      Object.entries(params).forEach(([key, value]) => {
+        url.searchParams.set(key, value);
+      });
     }
 
     return new Promise(resolve => {
@@ -120,10 +127,12 @@ export class CopilotClient {
     sessionId,
     messageId,
     message,
+    params,
   }: {
     sessionId: string;
     messageId?: string;
     message?: string;
+    params?: Record<string, string>;
   }) {
     if (messageId && message) {
       throw new Error('Only one of messageId or message can be provided');
@@ -138,6 +147,11 @@ export class CopilotClient {
     }
     if (message) {
       url.searchParams.set('message', message);
+    }
+    if (!messageId && params) {
+      Object.entries(params).forEach(([key, value]) => {
+        url.searchParams.set(key, value);
+      });
     }
     return new EventSource(url.toString());
   }

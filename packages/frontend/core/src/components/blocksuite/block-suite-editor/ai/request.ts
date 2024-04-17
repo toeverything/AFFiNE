@@ -136,6 +136,7 @@ export function textToText({
           sessionId: message.sessionId,
           messageId: message.messageId,
           message: message.message,
+          params,
         });
         yield* toTextStream(eventSource, { timeout });
       },
@@ -162,6 +163,7 @@ export function textToText({
           sessionId: message.sessionId,
           messageId: message.messageId,
           message: message.message,
+          params,
         });
       }),
     ]);
