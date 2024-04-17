@@ -44,9 +44,8 @@ export const AIResume = ({ ...btnProps }: AIResumeProps) => {
           SubscriptionPlan.AI
         );
         notify({
-          icon: (
-            <SingleSelectSelectSolidIcon color={cssVar('processingColor')} />
-          ),
+          icon: <SingleSelectSelectSolidIcon />,
+          iconColor: cssVar('processingColor'),
           title:
             t['com.affine.payment.ai.action.resume.confirm.notify.title'](),
           message:

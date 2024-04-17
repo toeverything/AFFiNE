@@ -70,7 +70,8 @@ export const AIOnboardingEdgeless = ({
           {
             title: t['com.affine.ai-onboarding.edgeless.title'](),
             message: t['com.affine.ai-onboarding.edgeless.message'](),
-            icon: <AiIcon color={cssVar('processingColor')} />,
+            icon: <AiIcon />,
+            iconColor: cssVar('brandColor'),
             thumb: <EdgelessOnboardingAnimation />,
             alignMessage: 'icon',
             onDismiss,

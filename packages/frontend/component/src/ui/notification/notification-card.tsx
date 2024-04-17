@@ -11,6 +11,7 @@ import {
   getCardBorderColor,
   getCardColor,
   getCardForegroundColor,
+  getIconColor,
 } from './utils';
 
 export interface NotificationCardProps extends HTMLAttributes<HTMLDivElement> {
@@ -22,6 +23,7 @@ export const NotificationCard = ({ notification }: NotificationCardProps) => {
     theme = 'info',
     style = 'normal',
     icon = <InformationFillDuotoneIcon />,
+    iconColor,
     thumb,
     action,
     title,
@@ -44,6 +46,7 @@ export const NotificationCard = ({ notification }: NotificationCardProps) => {
         [styles.cardBorderColor]: getCardBorderColor(style),
         [styles.cardForeground]: getCardForegroundColor(style),
         [styles.actionTextColor]: getActionTextColor(style, theme),
+        [styles.iconColor]: getIconColor(style, theme, iconColor),
       })}
       data-with-icon={icon ? '' : undefined}
       className={styles.card}

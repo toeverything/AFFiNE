@@ -1,4 +1,7 @@
-import { SingleSelectSelectSolidIcon } from '@blocksuite/icons';
+import {
+  InformationFillDuotoneIcon,
+  SingleSelectSelectSolidIcon,
+} from '@blocksuite/icons';
 import { assignInlineVars } from '@vanilla-extract/dynamic';
 import { type CSSProperties, type FC, useMemo } from 'react';
 import { type ExternalToast, toast, Toaster } from 'sonner';
@@ -55,14 +58,22 @@ export function notify(notification: Notification, options?: ExternalToast) {
 }
 
 notify.error = (notification: Notification, options?: ExternalToast) => {
-  return notify({ style: 'alert', theme: 'error', ...notification }, options);
+  return notify(
+    {
+      icon: <InformationFillDuotoneIcon />,
+      style: 'normal',
+      theme: 'error',
+      ...notification,
+    },
+    options
+  );
 };
 
 notify.success = (notification: Notification, options?: ExternalToast) => {
   return notify(
     {
       icon: <SingleSelectSelectSolidIcon />,
-      style: 'alert',
+      style: 'normal',
       theme: 'success',
       ...notification,
     },
@@ -72,7 +83,12 @@ notify.success = (notification: Notification, options?: ExternalToast) => {
 
 notify.warning = (notification: Notification, options?: ExternalToast) => {
   return notify(
-    { style: 'information', theme: 'warning', ...notification },
+    {
+      icon: <InformationFillDuotoneIcon />,
+      style: 'normal',
+      theme: 'warning',
+      ...notification,
+    },
     options
   );
 };

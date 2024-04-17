@@ -5,6 +5,7 @@ export const cardColor = createVar();
 export const cardForeground = createVar();
 export const cardBorderColor = createVar();
 export const actionTextColor = createVar();
+export const iconColor = createVar();
 
 export const card = style({
   borderRadius: 8,
@@ -38,6 +39,7 @@ export const icon = style({
 globalStyle(`${icon} svg`, {
   width: '100%',
   height: '100%',
+  color: iconColor,
 });
 export const title = style({
   width: 0,
