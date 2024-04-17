@@ -8,7 +8,6 @@ import { Workbench } from '../entities/workbench';
 
 export const WorkbenchLink = ({
   to,
-  children,
   onClick,
   ...other
 }: React.PropsWithChildren<
@@ -17,6 +16,9 @@ export const WorkbenchLink = ({
   const workbench = useService(Workbench);
   const { appSettings } = useAppSettingHelper();
   const basename = useLiveData(workbench.basename$);
+  const link =
+    basename +
+    (typeof to === 'string' ? to : `${to.pathname}${to.search}${to.hash}`);
   const handleClick = useCallback(
     (event: React.MouseEvent<HTMLAnchorElement>) => {
       event.preventDefault();
@@ -29,21 +31,16 @@ export const WorkbenchLink = ({
         if (appSettings.enableMultiView && environment.isDesktop) {
           workbench.open(to, { at: 'beside' });
         } else if (!environment.isDesktop) {
-          const href =
-            typeof to === 'string'
-              ? to
-              : `${to.pathname}${to.search}${to.hash}`;
-          popupWindow(basename + href);
+          popupWindow(link);
         }
       } else {
         workbench.open(to);
       }
     },
-    [appSettings.enableMultiView, basename, onClick, to, workbench]
+    [appSettings.enableMultiView, link, onClick, to, workbench]
   );
-  return (
-    <a {...other} href="#" onClick={handleClick}>
-      {children}
-    </a>
-  );
+
+  // eslint suspicious runtime error
+  // eslint-disable-next-line react/no-danger-with-children
+  return <a {...other} href={link} onClick={handleClick} />;
 };
