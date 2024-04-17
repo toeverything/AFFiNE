@@ -38,6 +38,7 @@ export interface Scalars {
 
 export interface CreateChatMessageInput {
   attachments: InputMaybe<Array<Scalars['String']['input']>>;
+  blobs: InputMaybe<Array<Scalars['Upload']['input']>>;
   content: InputMaybe<Scalars['String']['input']>;
   params: InputMaybe<Scalars['JSON']['input']>;
   sessionId: Scalars['String']['input'];

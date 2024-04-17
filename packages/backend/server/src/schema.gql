@@ -40,6 +40,7 @@ type CopilotQuota {
 
 input CreateChatMessageInput {
   attachments: [String!]
+  blobs: [Upload!]
   content: String
   params: JSON
   sessionId: String!

@@ -3,6 +3,8 @@ import {
   Controller,
   Get,
   InternalServerErrorException,
+  Logger,
+  NotFoundException,
   Param,
   Query,
   Req,
@@ -17,15 +19,18 @@ import {
   from,
   map,
   merge,
+  mergeMap,
   Observable,
   switchMap,
   toArray,
 } from 'rxjs';
 
+import { Public } from '../../core/auth';
 import { CurrentUser } from '../../core/auth/current-user';
 import { Config } from '../../fundamentals';
 import { CopilotProviderService } from './providers';
 import { ChatSession, ChatSessionService } from './session';
+import { CopilotStorage } from './storage';
 import { CopilotCapability } from './types';
 
 export interface ChatEvent {
@@ -36,10 +41,13 @@ export interface ChatEvent {
 
 @Controller('/api/copilot')
 export class CopilotController {
+  private readonly logger = new Logger(CopilotController.name);
+
   constructor(
     private readonly config: Config,
     private readonly chatSession: ChatSessionService,
-    private readonly provider: CopilotProviderService
+    private readonly provider: CopilotProviderService,
+    private readonly storage: CopilotStorage
   ) {}
 
   private async hasAttachment(sessionId: string, messageId?: string) {
@@ -230,12 +238,19 @@ export class CopilotController {
 
     delete params.message;
     delete params.messageId;
+    const handleRemoteLink = this.storage.handleRemoteLink.bind(
+      this.storage,
+      user.id,
+      sessionId
+    );
+
     return from(
       provider.generateImagesStream(session.finish(params), session.model, {
         signal: this.getSignal(req),
         user: user.id,
       })
     ).pipe(
+      mergeMap(handleRemoteLink),
       connect(shared$ =>
         merge(
           // actual chat event stream
@@ -293,5 +308,34 @@ export class CopilotController {
     });
 
     res.status(response.status).send(await response.json());
+  }
+
+  @Public()
+  @Get('/blob/:userId/:workspaceId/:key')
+  async getBlob(
+    @Res() res: Response,
+    @Param('userId') userId: string,
+    @Param('workspaceId') workspaceId: string,
+    @Param('key') key: string
+  ) {
+    const { body, metadata } = await this.storage.get(userId, workspaceId, key);
+
+    if (!body) {
+      throw new NotFoundException(
+        `Blob not found in ${userId}'s workspace ${workspaceId}: ${key}`
+      );
+    }
+
+    // metadata should always exists if body is not null
+    if (metadata) {
+      res.setHeader('content-type', metadata.contentType);
+      res.setHeader('last-modified', metadata.lastModified.toUTCString());
+      res.setHeader('content-length', metadata.contentLength);
+    } else {
+      this.logger.warn(`Blob ${workspaceId}/${key} has no metadata`);
+    }
+
+    res.setHeader('cache-control', 'public, max-age=2592000, immutable');
+    body.pipe(res);
   }
 }
