@@ -1,4 +1,5 @@
 import { openSettingModalAtom } from '@affine/core/atoms';
+import { getBaseUrl } from '@affine/graphql';
 import { assertExists } from '@blocksuite/global/utils';
 import { AIProvider } from '@blocksuite/presets';
 import { getCurrentStore } from '@toeverything/infra';
@@ -264,6 +265,29 @@ export function setupAIProvider() {
       promptName,
       forceToImage: true,
     });
+  });
+
+  AIProvider.provide('photoEngine', {
+    async searchImages(options): Promise<string[]> {
+      const url = new URL(getBaseUrl() + '/api/copilot/unsplash/photos');
+      url.searchParams.set('query', options.query);
+      const result: {
+        results: {
+          urls: {
+            regular: string;
+          };
+        }[];
+      } = await fetch(url.toString()).then(res => res.json());
+      return result.results.map(r => {
+        const url = new URL(r.urls.regular);
+        url.searchParams.set('fit', 'crop');
+        url.searchParams.set('crop', 'edges');
+        url.searchParams.set('dpr', (window.devicePixelRatio ?? 2).toString());
+        url.searchParams.set('w', `${options.width}`);
+        url.searchParams.set('h', `${options.height}`);
+        return url.toString();
+      });
+    },
   });
 
   AIProvider.slots.requestUpgradePlan.on(() => {
