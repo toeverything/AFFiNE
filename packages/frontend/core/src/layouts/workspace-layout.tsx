@@ -1,4 +1,3 @@
-import { useWorkspaceStatus } from '@affine/core/hooks/use-workspace-status';
 import { assertExists } from '@blocksuite/global/utils';
 import {
   DndContext,
@@ -9,16 +8,16 @@ import {
   useSensors,
 } from '@dnd-kit/core';
 import {
-  PageRecordList,
+  DocsService,
+  GlobalContextService,
   useLiveData,
   useService,
-  Workspace,
+  WorkspaceService,
 } from '@toeverything/infra';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import type { PropsWithChildren, ReactNode } from 'react';
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { matchPath } from 'react-router-dom';
 import { Map as YMap } from 'yjs';
 
 import { openQuickSearchModalAtom, openSettingModalAtom } from '../atoms';
@@ -41,7 +40,6 @@ import {
 } from '../hooks/affine/use-global-dnd-helper';
 import { useNavigateHelper } from '../hooks/use-navigate-helper';
 import { useRegisterWorkspaceCommands } from '../hooks/use-register-workspace-commands';
-import { Workbench } from '../modules/workbench';
 import {
   AllWorkspaceModals,
   CurrentWorkspaceModals,
@@ -70,13 +68,12 @@ export const QuickSearch = () => {
     [setOpenQuickSearchModalAtom]
   );
 
-  const workbench = useService(Workbench);
-  const currentPath = useLiveData(workbench.location$.map(l => l.pathname));
-  const pageRecordList = useService(PageRecordList);
-  const currentPathId = matchPath('/:pageId', currentPath)?.params.pageId;
-  // TODO: getting pageid from route is fragile, get current page from context
+  const docRecordList = useService(DocsService).list;
+  const currentDocId = useLiveData(
+    useService(GlobalContextService).globalContext.docId.$
+  );
   const currentPage = useLiveData(
-    currentPathId ? pageRecordList.record$(currentPathId) : null
+    currentDocId ? docRecordList.doc$(currentDocId) : null
   );
   const pageMeta = useLiveData(currentPage?.meta$);
 
@@ -109,9 +106,12 @@ export const WorkspaceLayout = function WorkspaceLayout({
 };
 
 export const WorkspaceLayoutInner = ({ children }: PropsWithChildren) => {
-  const currentWorkspace = useService(Workspace);
+  const currentWorkspace = useService(WorkspaceService).workspace;
   const { openPage } = useNavigateHelper();
   const pageHelper = usePageHelper(currentWorkspace.docCollection);
+
+  const upgrading = useLiveData(currentWorkspace.upgrade.upgrading$);
+  const needUpgrade = useLiveData(currentWorkspace.upgrade.needUpgrade$);
 
   useRegisterWorkspaceCommands();
 
@@ -166,7 +166,6 @@ export const WorkspaceLayoutInner = ({ children }: PropsWithChildren) => {
 
   const { handleDragEnd } = useGlobalDNDHelper();
   const { appSettings } = useAppSettingHelper();
-  const upgradeStatus = useWorkspaceStatus(currentWorkspace, s => s.upgrade);
 
   return (
     <>
@@ -192,11 +191,7 @@ export const WorkspaceLayoutInner = ({ children }: PropsWithChildren) => {
           </Suspense>
           <MainContainer clientBorder={appSettings.clientBorder}>
             <Suspense>
-              {upgradeStatus?.needUpgrade || upgradeStatus?.upgrading ? (
-                <WorkspaceUpgrade />
-              ) : (
-                children
-              )}
+              {needUpgrade || upgrading ? <WorkspaceUpgrade /> : children}
             </Suspense>
           </MainContainer>
         </AppContainer>

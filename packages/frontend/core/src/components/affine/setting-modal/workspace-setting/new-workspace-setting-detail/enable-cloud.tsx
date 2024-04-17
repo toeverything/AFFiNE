@@ -1,30 +1,33 @@
 import { SettingRow } from '@affine/component/setting-components';
 import { Button } from '@affine/component/ui/button';
 import { useEnableCloud } from '@affine/core/hooks/affine/use-enable-cloud';
-import { useWorkspaceInfo } from '@affine/core/hooks/use-workspace-info';
 import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import type { Workspace } from '@toeverything/infra';
+import {
+  useLiveData,
+  useService,
+  type Workspace,
+  WorkspaceService,
+} from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
 import { useCallback, useState } from 'react';
 
 import { openSettingModalAtom } from '../../../../../atoms';
 import { TmpDisableAffineCloudModal } from '../../../tmp-disable-affine-cloud-modal';
-import type { WorkspaceSettingDetailProps } from './types';
 
-export interface PublishPanelProps extends WorkspaceSettingDetailProps {
+export interface PublishPanelProps {
   workspace: Workspace | null;
 }
 
-export const EnableCloudPanel = ({
-  workspaceMetadata,
-  workspace,
-}: PublishPanelProps) => {
+export const EnableCloudPanel = () => {
   const t = useAFFiNEI18N();
   const confirmEnableCloud = useEnableCloud();
 
-  const workspaceInfo = useWorkspaceInfo(workspaceMetadata);
+  const workspace = useService(WorkspaceService).workspace;
+  const name = useLiveData(workspace.name$);
+  const flavour = workspace.flavour;
+
   const setSettingModal = useSetAtom(openSettingModalAtom);
 
   const [open, setOpen] = useState(false);
@@ -38,7 +41,7 @@ export const EnableCloudPanel = ({
     });
   }, [confirmEnableCloud, setSettingModal, workspace]);
 
-  if (workspaceMetadata.flavour !== WorkspaceFlavour.LOCAL) {
+  if (flavour !== WorkspaceFlavour.LOCAL) {
     return null;
   }
 
@@ -46,7 +49,7 @@ export const EnableCloudPanel = ({
     <>
       <SettingRow
         name={t['Workspace saved locally']({
-          name: workspaceInfo?.name ?? UNTITLED_WORKSPACE_NAME,
+          name: name ?? UNTITLED_WORKSPACE_NAME,
         })}
         desc={t['Enable cloud hint']()}
         spreadCol={false}

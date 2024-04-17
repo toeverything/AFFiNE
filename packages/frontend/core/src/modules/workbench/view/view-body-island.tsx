@@ -1,6 +1,8 @@
-import { useView } from './use-view';
+import { useService } from '@toeverything/infra';
+
+import { ViewService } from '../services/view';
 
 export const ViewBodyIsland = ({ children }: React.PropsWithChildren) => {
-  const view = useView();
+  const view = useService(ViewService).view;
   return <view.body.Provider>{children}</view.body.Provider>;
 };

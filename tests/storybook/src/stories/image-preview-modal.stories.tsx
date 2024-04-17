@@ -3,11 +3,11 @@ import { ImagePreviewModal } from '@affine/core/components/image-preview';
 import type { Meta, StoryFn } from '@storybook/react';
 import type { Doc } from '@toeverything/infra';
 import {
+  DocsService,
+  FrameworkScope,
   initEmptyPage,
-  PageManager,
-  ServiceProviderContext,
   useService,
-  Workspace,
+  WorkspaceService,
 } from '@toeverything/infra';
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -19,16 +19,16 @@ export default {
 } satisfies Meta;
 
 export const Default: StoryFn = () => {
-  const workspace = useService(Workspace);
-  const pageManager = useService(PageManager);
+  const workspace = useService(WorkspaceService).workspace;
+  const docsService = useService(DocsService);
 
-  const [page, setPage] = useState<Doc | null>(null);
+  const [doc, setDoc] = useState<Doc | null>(null);
 
   useEffect(() => {
-    const bsPage = workspace.docCollection.createDoc({ id: 'page0' });
-    initEmptyPage(bsPage);
+    const bsDoc = workspace.docCollection.createDoc({ id: 'page0' });
+    initEmptyPage(bsDoc);
 
-    const { page, release } = pageManager.open(bsPage.meta!.id);
+    const { doc, release } = docsService.open(bsDoc.meta!.id);
 
     fetch(new URL('@affine-test/fixtures/large-image.png', import.meta.url))
       .then(res => res.arrayBuffer())
@@ -36,17 +36,17 @@ export const Default: StoryFn = () => {
         const id = await workspace.docCollection.blob.set(
           new Blob([buffer], { type: 'image/png' })
         );
-        const frameId = bsPage.getBlockByFlavour('affine:note')[0].id;
-        bsPage.addBlock(
+        const frameId = bsDoc.getBlockByFlavour('affine:note')[0].id;
+        bsDoc.addBlock(
           'affine:paragraph',
           {
-            text: new bsPage.Text(
+            text: new bsDoc.Text(
               'Please double click the image to preview it.'
             ),
           },
           frameId
         );
-        bsPage.addBlock(
+        bsDoc.addBlock(
           'affine:image',
           {
             sourceId: id,
@@ -57,19 +57,19 @@ export const Default: StoryFn = () => {
       .catch(err => {
         console.error('Failed to load large-image.png', err);
       });
-    setPage(page);
+    setDoc(doc);
 
     return () => {
       release();
     };
-  }, [pageManager, workspace]);
+  }, [docsService, workspace]);
 
-  if (!page) {
+  if (!doc) {
     return <div />;
   }
 
   return (
-    <ServiceProviderContext.Provider value={page.services}>
+    <FrameworkScope scope={doc.scope}>
       <div
         style={{
           height: '100vh',
@@ -77,16 +77,16 @@ export const Default: StoryFn = () => {
           overflow: 'auto',
         }}
       >
-        <BlockSuiteEditor mode="page" page={page.blockSuiteDoc} />
+        <BlockSuiteEditor mode="page" page={doc.blockSuiteDoc} />
         {createPortal(
           <ImagePreviewModal
-            pageId={page.id}
-            docCollection={page.blockSuiteDoc.collection}
+            pageId={doc.id}
+            docCollection={doc.blockSuiteDoc.collection}
           />,
           document.body
         )}
       </div>
-    </ServiceProviderContext.Provider>
+    </FrameworkScope>
   );
 };
 

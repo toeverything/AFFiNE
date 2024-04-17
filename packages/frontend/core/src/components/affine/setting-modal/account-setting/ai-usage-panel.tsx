@@ -1,28 +1,37 @@
-import { Button } from '@affine/component';
+import { Button, ErrorMessage, Skeleton } from '@affine/component';
 import { SettingRow } from '@affine/component/setting-components';
 import { openSettingModalAtom } from '@affine/core/atoms';
-import { useQuery } from '@affine/core/hooks/use-query';
-import { useUserSubscription } from '@affine/core/hooks/use-subscription';
 import {
-  getCopilotQuotaQuery,
-  pricesQuery,
-  SubscriptionPlan,
-  SubscriptionRecurring,
-} from '@affine/graphql';
+  ServerConfigService,
+  SubscriptionService,
+  UserQuotaService,
+} from '@affine/core/modules/cloud';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { assertExists } from '@blocksuite/global/utils';
+import { useLiveData, useService } from '@toeverything/infra';
 import { cssVar } from '@toeverything/theme';
 import { useSetAtom } from 'jotai';
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 
-import { useAffineAISubscription } from '../general-setting/plans/ai/use-affine-ai-subscription';
+import { AIResume, AISubscribe } from '../general-setting/plans/ai/actions';
 import * as styles from './storage-progress.css';
 
 export const AIUsagePanel = () => {
   const t = useAFFiNEI18N();
   const setOpenSettingModal = useSetAtom(openSettingModalAtom);
-  const [, mutateSubscription] = useUserSubscription();
-  const { actionType, Action } = useAffineAISubscription();
+  const serverConfigService = useService(ServerConfigService);
+  const hasPaymentFeature = useLiveData(
+    serverConfigService.serverConfig.features$.map(f => f?.payment)
+  );
+  const subscriptionService = useService(SubscriptionService);
+  const aiSubscription = useLiveData(subscriptionService.subscription.ai$);
+  const quotaService = useService(UserQuotaService);
+  useEffect(() => {
+    quotaService.quota.revalidate();
+  }, [quotaService]);
+  const aiActionLimit = useLiveData(quotaService.quota.aiActionLimit$);
+  const aiActionUsed = useLiveData(quotaService.quota.aiActionUsed$);
+  const loading = aiActionLimit === null || aiActionUsed === null;
+  const loadError = useLiveData(quotaService.quota.error$);
 
   const openAiPricingPlan = useCallback(() => {
     setOpenSettingModal({
@@ -32,95 +41,89 @@ export const AIUsagePanel = () => {
     });
   }, [setOpenSettingModal]);
 
-  if (actionType === 'cancel') {
+  if (loading) {
+    if (loadError) {
+      return (
+        <SettingRow
+          name={t['com.affine.payment.ai.usage-title']()}
+          desc={''}
+          spreadCol={false}
+        >
+          {/* TODO: i18n */}
+          <ErrorMessage>Load error</ErrorMessage>
+        </SettingRow>
+      );
+    }
     return (
       <SettingRow
-        desc={t['com.affine.payment.ai.usage-description-purchased']()}
         name={t['com.affine.payment.ai.usage-title']()}
+        desc={''}
+        spreadCol={false}
       >
-        <Button onClick={openAiPricingPlan}>
-          {t['com.affine.payment.ai.usage.change-button-label']()}
-        </Button>
+        <Skeleton height={42} />
       </SettingRow>
     );
   }
 
-  if (actionType === 'resume') {
-    return (
-      <SettingRow
-        desc={t['com.affine.payment.ai.usage-description-purchased']()}
-        name={t['com.affine.payment.ai.usage-title']()}
-      >
-        <Action onSubscriptionUpdate={mutateSubscription} />
-      </SettingRow>
-    );
-  }
-
-  return <AIUsagePanelNotSubscripted />;
-};
-
-export const AIUsagePanelNotSubscripted = () => {
-  const t = useAFFiNEI18N();
-  const [, mutateSubscription] = useUserSubscription();
-  const { actionType, Action } = useAffineAISubscription();
-
-  const {
-    data: { prices },
-  } = useQuery({ query: pricesQuery });
-  const { data: quota } = useQuery({
-    query: getCopilotQuotaQuery,
-  });
-  const { limit: nullableLimit, used = 0 } =
-    quota.currentUser?.copilot.quota || {};
-  const limit = nullableLimit || 10;
-  const percent = Math.min(
-    100,
-    Math.max(0.5, Number(((used / limit) * 100).toFixed(4)))
-  );
-
-  const price = prices.find(p => p.plan === SubscriptionPlan.AI);
-  assertExists(price);
+  const percent =
+    aiActionLimit === 'unlimited'
+      ? 0
+      : Math.min(
+          100,
+          Math.max(
+            0.5,
+            Number(((aiActionUsed / aiActionLimit) * 100).toFixed(4))
+          )
+        );
 
   const color = percent > 80 ? cssVar('errorColor') : cssVar('processingColor');
 
   return (
     <SettingRow
-      spreadCol={false}
-      desc=""
+      spreadCol={aiSubscription ? true : false}
+      desc={
+        aiSubscription
+          ? t['com.affine.payment.ai.usage-description-purchased']()
+          : ''
+      }
       name={t['com.affine.payment.ai.usage-title']()}
     >
-      <div className={styles.storageProgressContainer}>
-        <div className={styles.storageProgressWrapper}>
-          <div className="storage-progress-desc">
-            <span>{t['com.affine.payment.ai.usage.used-caption']()}</span>
-            <span>
-              {t['com.affine.payment.ai.usage.used-detail']({
-                used: used.toString(),
-                limit: limit.toString(),
-              })}
-            </span>
+      {aiActionLimit === 'unlimited' ? (
+        hasPaymentFeature && aiSubscription?.canceledAt ? (
+          <AIResume />
+        ) : (
+          <Button onClick={openAiPricingPlan}>
+            {t['com.affine.payment.ai.usage.change-button-label']()}
+          </Button>
+        )
+      ) : (
+        <div className={styles.storageProgressContainer}>
+          <div className={styles.storageProgressWrapper}>
+            <div className="storage-progress-desc">
+              <span>{t['com.affine.payment.ai.usage.used-caption']()}</span>
+              <span>
+                {t['com.affine.payment.ai.usage.used-detail']({
+                  used: aiActionUsed.toString(),
+                  limit: aiActionLimit.toString(),
+                })}
+              </span>
+            </div>
+
+            <div className="storage-progress-bar-wrapper">
+              <div
+                className={styles.storageProgressBar}
+                style={{ width: `${percent}%`, backgroundColor: color }}
+              ></div>
+            </div>
           </div>
 
-          <div className="storage-progress-bar-wrapper">
-            <div
-              className={styles.storageProgressBar}
-              style={{ width: `${percent}%`, backgroundColor: color }}
-            ></div>
-          </div>
+          {hasPaymentFeature && (
+            <AISubscribe type="primary" className={styles.storageButton}>
+              {t['com.affine.payment.ai.usage.purchase-button-label']()}
+            </AISubscribe>
+          )}
         </div>
-
-        <Action
-          recurring={SubscriptionRecurring.Yearly}
-          onSubscriptionUpdate={mutateSubscription}
-          price={price}
-          type="primary"
-          className={styles.storageButton}
-        >
-          {actionType === 'subscribe'
-            ? t['com.affine.payment.ai.usage.purchase-button-label']()
-            : null}
-        </Action>
-      </div>
+      )}
     </SettingRow>
   );
 };

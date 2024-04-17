@@ -5,5 +5,6 @@ export function popupWindow(target: string) {
     : runtimeConfig.serverUrlPrefix + target;
   url.searchParams.set('redirect_uri', target);
 
+  console.log(url.href);
   return window.open(url, '_blank', `noreferrer noopener`);
 }

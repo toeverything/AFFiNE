@@ -1,20 +1,13 @@
-import { notify, Switch } from '@affine/component';
-import {
-  pricesQuery,
-  SubscriptionPlan,
-  SubscriptionRecurring,
-} from '@affine/graphql';
+import { Switch } from '@affine/component';
+import { SubscriptionPlan, SubscriptionRecurring } from '@affine/graphql';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { SingleSelectSelectSolidIcon } from '@blocksuite/icons';
-import { cssVar } from '@toeverything/theme';
-import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { useLiveData, useService } from '@toeverything/infra';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { FallbackProps } from 'react-error-boundary';
 
 import { SWRErrorBoundary } from '../../../../../components/pure/swr-error-bundary';
-import { useCurrentLoginStatus } from '../../../../../hooks/affine/use-current-login-status';
-import { useQuery } from '../../../../../hooks/use-query';
-import { useUserSubscription } from '../../../../../hooks/use-subscription';
+import { AuthService, SubscriptionService } from '../../../../../modules/cloud';
 import { AIPlan } from './ai/ai-plan';
 import { type FixedPrice, getPlanDetail } from './cloud-plans';
 import { CloudPlanLayout, PlanLayout } from './layout';
@@ -36,19 +29,24 @@ const getRecurringLabel = ({
 
 const Settings = () => {
   const t = useAFFiNEI18N();
-  const [subscription, mutateSubscription] = useUserSubscription();
 
-  const loggedIn = useCurrentLoginStatus() === 'authenticated';
+  const loggedIn =
+    useLiveData(useService(AuthService).session.status$) === 'authenticated';
   const planDetail = useMemo(() => getPlanDetail(t), [t]);
   const scrollWrapper = useRef<HTMLDivElement>(null);
 
-  const {
-    data: { prices },
-  } = useQuery({
-    query: pricesQuery,
-  });
+  const subscriptionService = useService(SubscriptionService);
+  const primarySubscription = useLiveData(
+    subscriptionService.subscription.primary$
+  );
+  const prices = useLiveData(subscriptionService.prices.prices$);
 
-  prices.forEach(price => {
+  useEffect(() => {
+    subscriptionService.subscription.revalidate();
+    subscriptionService.prices.revalidate();
+  }, [subscriptionService]);
+
+  prices?.forEach(price => {
     const detail = planDetail.get(price.plan);
 
     if (detail?.type === 'fixed') {
@@ -64,13 +62,13 @@ const Settings = () => {
   });
 
   const [recurring, setRecurring] = useState<SubscriptionRecurring>(
-    subscription?.recurring ?? SubscriptionRecurring.Yearly
+    primarySubscription?.recurring ?? SubscriptionRecurring.Yearly
   );
 
-  const currentPlan = subscription?.plan ?? SubscriptionPlan.Free;
-  const isCanceled = !!subscription?.canceledAt;
+  const currentPlan = primarySubscription?.plan ?? SubscriptionPlan.Free;
+  const isCanceled = !!primarySubscription?.canceledAt;
   const currentRecurring =
-    subscription?.recurring ?? SubscriptionRecurring.Monthly;
+    primarySubscription?.recurring ?? SubscriptionRecurring.Monthly;
 
   const yearlyDiscount = (
     planDetail.get(SubscriptionPlan.Pro) as FixedPrice | undefined
@@ -176,33 +174,7 @@ const Settings = () => {
   const cloudScroll = (
     <div className={styles.planCardsWrapper} ref={scrollWrapper}>
       {Array.from(planDetail.values()).map(detail => {
-        return (
-          <PlanCard
-            key={detail.plan}
-            onSubscriptionUpdate={mutateSubscription}
-            onNotify={({ detail, recurring }) => {
-              notify({
-                style: 'normal',
-                icon: (
-                  <SingleSelectSelectSolidIcon color={cssVar('primaryColor')} />
-                ),
-                title: t['com.affine.payment.updated-notify-title'](),
-                message:
-                  detail.plan === SubscriptionPlan.Free
-                    ? t[
-                        'com.affine.payment.updated-notify-msg.cancel-subscription'
-                      ]()
-                    : t['com.affine.payment.updated-notify-msg']({
-                        plan: getRecurringLabel({
-                          recurring: recurring as SubscriptionRecurring,
-                          t,
-                        }),
-                      }),
-              });
-            }}
-            {...{ detail, subscription, recurring }}
-          />
-        );
+        return <PlanCard key={detail.plan} {...{ detail, recurring }} />;
       })}
     </div>
   );
@@ -213,6 +185,10 @@ const Settings = () => {
       <span>{t['com.affine.payment.cloud.pricing-plan.select.caption']()}</span>
     </div>
   );
+
+  if (prices === null) {
+    return <PlansSkeleton />;
+  }
 
   return (
     <PlanLayout
@@ -225,12 +201,7 @@ const Settings = () => {
           scrollRef={scrollWrapper}
         />
       }
-      ai={
-        <AIPlan
-          price={prices.find(p => p.plan === SubscriptionPlan.AI)}
-          onSubscriptionUpdate={mutateSubscription}
-        />
-      }
+      ai={<AIPlan />}
     />
   );
 };
@@ -238,9 +209,7 @@ const Settings = () => {
 export const AFFiNEPricingPlans = () => {
   return (
     <SWRErrorBoundary FallbackComponent={PlansErrorBoundary}>
-      <Suspense fallback={<PlansSkeleton />}>
-        <Settings />
-      </Suspense>
+      <Settings />
     </SWRErrorBoundary>
   );
 };

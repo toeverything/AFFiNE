@@ -1,6 +1,5 @@
 import type { Observable } from 'rxjs';
 
-import { createIdentifier } from '../di';
 import { LiveData } from '../livedata';
 
 /**
@@ -14,24 +13,6 @@ export interface Memento {
   clear(): void;
   keys(): string[];
 }
-
-/**
- * A memento object that stores the entire application state.
- *
- * State is persisted, even the application is closed.
- */
-export interface GlobalState extends Memento {}
-
-export const GlobalState = createIdentifier<GlobalState>('GlobalState');
-
-/**
- * A memento object that stores the entire application cache.
- *
- * Cache may be deleted from time to time, business logic should not rely on cache.
- */
-export interface GlobalCache extends Memento {}
-
-export const GlobalCache = createIdentifier<GlobalCache>('GlobalCache');
 
 /**
  * A simple implementation of Memento. Used for testing.

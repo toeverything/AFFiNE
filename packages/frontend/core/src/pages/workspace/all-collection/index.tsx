@@ -8,7 +8,7 @@ import {
 import { useAllPageListConfig } from '@affine/core/hooks/affine/use-all-page-list-config';
 import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { useLiveData, useService, Workspace } from '@toeverything/infra';
+import { useLiveData, useService, WorkspaceService } from '@toeverything/infra';
 import { nanoid } from 'nanoid';
 import { useCallback, useMemo, useState } from 'react';
 
@@ -20,7 +20,7 @@ import * as styles from './index.css';
 
 export const AllCollection = () => {
   const t = useAFFiNEI18N();
-  const currentWorkspace = useService(Workspace);
+  const currentWorkspace = useService(WorkspaceService).workspace;
   const [hideHeaderCreateNew, setHideHeaderCreateNew] = useState(true);
 
   const collectionService = useService(CollectionService);

@@ -1,10 +1,10 @@
 import { ConfirmModal } from '@affine/component/ui/modal';
 import { openQuotaModalAtom, openSettingModalAtom } from '@affine/core/atoms';
-import { useIsWorkspaceOwner } from '@affine/core/hooks/affine/use-is-workspace-owner';
-import { useUserQuota } from '@affine/core/hooks/use-quota';
-import { useWorkspaceQuota } from '@affine/core/hooks/use-workspace-quota';
+import { UserQuotaService } from '@affine/core/modules/cloud';
+import { WorkspacePermissionService } from '@affine/core/modules/permissions';
+import { WorkspaceQuotaService } from '@affine/core/modules/quota';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { useService, Workspace } from '@toeverything/infra';
+import { useLiveData, useService, WorkspaceService } from '@toeverything/infra';
 import bytes from 'bytes';
 import { useAtom, useSetAtom } from 'jotai';
 import { useCallback, useEffect, useMemo } from 'react';
@@ -13,53 +13,74 @@ import { mixpanel } from '../../../utils';
 
 export const CloudQuotaModal = () => {
   const t = useAFFiNEI18N();
-  const currentWorkspace = useService(Workspace);
+  const currentWorkspace = useService(WorkspaceService).workspace;
   const [open, setOpen] = useAtom(openQuotaModalAtom);
-  const workspaceQuota = useWorkspaceQuota(currentWorkspace.id);
-  const isOwner = useIsWorkspaceOwner(currentWorkspace.meta);
-  const userQuota = useUserQuota();
+  const workspaceQuotaService = useService(WorkspaceQuotaService);
+  useEffect(() => {
+    workspaceQuotaService.quota.revalidate();
+  }, [workspaceQuotaService]);
+  const workspaceQuota = useLiveData(workspaceQuotaService.quota.quota$);
+  const permissionService = useService(WorkspacePermissionService);
+  const isOwner = useLiveData(permissionService.permission.isOwner$);
+  useEffect(() => {
+    // revalidate permission
+    permissionService.permission.revalidate();
+  }, [permissionService]);
+
+  const quotaService = useService(UserQuotaService);
+  const userQuota = useLiveData(
+    quotaService.quota.quota$.map(q =>
+      q
+        ? {
+            name: q.humanReadable.name,
+            blobLimit: q.humanReadable.blobLimit,
+          }
+        : null
+    )
+  );
+
   const isFreePlanOwner = useMemo(() => {
-    return isOwner && userQuota?.humanReadable.name.toLowerCase() === 'free';
-  }, [isOwner, userQuota?.humanReadable.name]);
+    return isOwner && userQuota?.name === 'free';
+  }, [isOwner, userQuota]);
 
   const setSettingModalAtom = useSetAtom(openSettingModalAtom);
   const handleUpgradeConfirm = useCallback(() => {
-    if (isFreePlanOwner) {
-      setSettingModalAtom({
-        open: true,
-        activeTab: 'plans',
-      });
-    }
+    setSettingModalAtom({
+      open: true,
+      activeTab: 'plans',
+    });
 
     setOpen(false);
-  }, [isFreePlanOwner, setOpen, setSettingModalAtom]);
+  }, [setOpen, setSettingModalAtom]);
 
   const description = useMemo(() => {
     if (userQuota && isFreePlanOwner) {
       return t['com.affine.payment.blob-limit.description.owner.free']({
-        planName: userQuota.humanReadable.name,
-        currentQuota: userQuota.humanReadable.blobLimit,
+        planName: userQuota.name,
+        currentQuota: userQuota.blobLimit,
         upgradeQuota: '100MB',
       });
     }
-    if (isOwner && userQuota?.humanReadable.name.toLowerCase() === 'pro') {
+    if (isOwner && userQuota && userQuota.name.toLowerCase() === 'pro') {
       return t['com.affine.payment.blob-limit.description.owner.pro']({
-        planName: userQuota.humanReadable.name,
-        quota: userQuota.humanReadable.blobLimit,
+        planName: userQuota.name,
+        quota: userQuota.blobLimit,
       });
     }
-    return t['com.affine.payment.blob-limit.description.member']({
-      quota: workspaceQuota.humanReadable.blobLimit,
-    });
-  }, [
-    isFreePlanOwner,
-    isOwner,
-    t,
-    userQuota,
-    workspaceQuota.humanReadable.blobLimit,
-  ]);
+    if (workspaceQuota) {
+      return t['com.affine.payment.blob-limit.description.member']({
+        quota: workspaceQuota.humanReadable.blobLimit,
+      });
+    } else {
+      // loading
+      return null;
+    }
+  }, [userQuota, isFreePlanOwner, isOwner, workspaceQuota, t]);
 
   useEffect(() => {
+    if (!workspaceQuota) {
+      return;
+    }
     currentWorkspace.engine.blob.singleBlobSizeLimit = bytes.parse(
       workspaceQuota.blobLimit.toString()
     );
@@ -70,15 +91,15 @@ export const CloudQuotaModal = () => {
     return () => {
       disposable?.dispose();
     };
-  }, [currentWorkspace.engine.blob, setOpen, workspaceQuota.blobLimit]);
+  }, [currentWorkspace.engine.blob, setOpen, workspaceQuota]);
 
   useEffect(() => {
-    if (userQuota?.humanReadable) {
+    if (userQuota?.name) {
       mixpanel.people.set({
-        plan: userQuota.humanReadable.name,
+        plan: userQuota.name,
       });
     }
-  }, [userQuota]);
+  }, [userQuota?.name]);
 
   return (
     <ConfirmModal

@@ -1,5 +1,4 @@
-import { NavigateContext } from '@affine/core/hooks/use-navigate-helper';
-import { topLevelRoutes } from '@affine/core/router';
+import { NavigateContext, topLevelRoutes } from '@affine/core/router';
 import { assertExists } from '@blocksuite/global/utils';
 import type { StoryFn } from '@storybook/react';
 import { screen, userEvent, waitFor, within } from '@storybook/testing-library';
@@ -35,7 +34,9 @@ export const Index: StoryFn = () => {
 Index.decorators = [withRouter];
 Index.parameters = {
   reactRouter: reactRouterParameters({
-    routing: reactRouterOutlets(topLevelRoutes),
+    routing: reactRouterOutlets(
+      topLevelRoutes[0].children /* skip root wrapper */
+    ),
   }),
 };
 

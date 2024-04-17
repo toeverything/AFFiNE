@@ -1,7 +1,7 @@
-import type { CommandCategory } from '@toeverything/infra';
+import type { CommandCategory, DocMode } from '@toeverything/infra';
 
 export interface CommandContext {
-  pageMode: 'page' | 'edgeless' | undefined;
+  docMode: DocMode | undefined;
 }
 
 // similar to AffineCommand, but for rendering into the UI

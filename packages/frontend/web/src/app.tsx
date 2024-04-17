@@ -5,8 +5,11 @@ import { NotificationCenter } from '@affine/component';
 import { AffineContext } from '@affine/component/context';
 import { GlobalLoading } from '@affine/component/global-loading';
 import { WorkspaceFallback } from '@affine/core/components/workspace';
-import { GlobalScopeProvider } from '@affine/core/modules/infra-web/global-scope';
-import { CloudSessionProvider } from '@affine/core/providers/session-provider';
+import { configureCommonModules, configureImpls } from '@affine/core/modules';
+import {
+  configureBrowserWorkspaceFlavours,
+  configureIndexedDBWorkspaceEngineStorageProvider,
+} from '@affine/core/modules/workspace-engine';
 import { router } from '@affine/core/router';
 import {
   performanceLogger,
@@ -14,13 +17,22 @@ import {
 } from '@affine/core/shared';
 import { Telemetry } from '@affine/core/telemetry';
 import createEmotionCache from '@affine/core/utils/create-emotion-cache';
-import { configureWebServices } from '@affine/core/web';
 import { createI18n, setUpLanguage } from '@affine/i18n';
 import { CacheProvider } from '@emotion/react';
-import { getCurrentStore, ServiceCollection } from '@toeverything/infra';
+import {
+  Framework,
+  FrameworkRoot,
+  getCurrentStore,
+  LifecycleService,
+} from '@toeverything/infra';
 import type { PropsWithChildren, ReactElement } from 'react';
 import { lazy, Suspense } from 'react';
 import { RouterProvider } from 'react-router-dom';
+
+if (!environment.isBrowser && environment.isDebug) {
+  document.body.innerHTML = `<h1 style="color:red;font-size:5rem;text-align:center;">Don't run web entry in electron.</h1>`;
+  throw new Error('Wrong distribution');
+}
 
 const performanceI18nLogger = performanceLogger.namespace('i18n');
 const cache = createEmotionCache();
@@ -55,9 +67,18 @@ async function loadLanguage() {
 
 let languageLoadingPromise: Promise<void> | null = null;
 
-const services = new ServiceCollection();
-configureWebServices(services);
-const serviceProvider = services.provider();
+const framework = new Framework();
+configureCommonModules(framework);
+configureImpls(framework);
+configureBrowserWorkspaceFlavours(framework);
+configureIndexedDBWorkspaceEngineStorageProvider(framework);
+const frameworkProvider = framework.provider();
+
+// setup application lifecycle events, and emit application start event
+window.addEventListener('focus', () => {
+  frameworkProvider.get(LifecycleService).applicationFocus();
+});
+frameworkProvider.get(LifecycleService).applicationStart();
 
 export function App() {
   performanceRenderLogger.info('App');
@@ -68,24 +89,22 @@ export function App() {
 
   return (
     <Suspense>
-      <GlobalScopeProvider provider={serviceProvider}>
+      <FrameworkRoot framework={frameworkProvider}>
         <CacheProvider value={cache}>
           <AffineContext store={getCurrentStore()}>
-            <CloudSessionProvider>
-              <Telemetry />
-              <DebugProvider>
-                <GlobalLoading />
-                <NotificationCenter />
-                <RouterProvider
-                  fallbackElement={<WorkspaceFallback key="RouterFallback" />}
-                  router={router}
-                  future={future}
-                />
-              </DebugProvider>
-            </CloudSessionProvider>
+            <Telemetry />
+            <DebugProvider>
+              <GlobalLoading />
+              <NotificationCenter />
+              <RouterProvider
+                fallbackElement={<WorkspaceFallback key="RouterFallback" />}
+                router={router}
+                future={future}
+              />
+            </DebugProvider>
           </AffineContext>
         </CacheProvider>
-      </GlobalScopeProvider>
+      </FrameworkRoot>
     </Suspense>
   );
 }

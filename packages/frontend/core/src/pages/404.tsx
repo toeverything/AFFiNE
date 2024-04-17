@@ -2,14 +2,14 @@ import {
   NoPermissionOrNotFound,
   NotFoundPage,
 } from '@affine/component/not-found-page';
-import { useSession } from '@affine/core/hooks/affine/use-current-user';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
+import { useLiveData, useService } from '@toeverything/infra';
 import type { ReactElement } from 'react';
 import { useCallback, useState } from 'react';
 
 import { SignOutModal } from '../components/affine/sign-out-modal';
 import { RouteLogic, useNavigateHelper } from '../hooks/use-navigate-helper';
-import { signOutCloud } from '../utils/cloud-utils';
+import { AuthService } from '../modules/cloud';
 import { SignIn } from './sign-in';
 
 export const PageNotFound = ({
@@ -17,9 +17,9 @@ export const PageNotFound = ({
 }: {
   noPermission?: boolean;
 }): ReactElement => {
-  const { user } = useSession();
+  const authService = useService(AuthService);
+  const account = useLiveData(authService.session.account$);
   const { jumpToIndex } = useNavigateHelper();
-  const { reload } = useSession();
   const [open, setOpen] = useState(false);
 
   const handleBackButtonClick = useCallback(
@@ -33,21 +33,21 @@ export const PageNotFound = ({
 
   const onConfirmSignOut = useAsyncCallback(async () => {
     setOpen(false);
-    await signOutCloud();
-    await reload();
-  }, [reload]);
+    await authService.signOut();
+  }, [authService]);
+
   return (
     <>
       {noPermission ? (
         <NoPermissionOrNotFound
-          user={user}
+          user={account}
           onBack={handleBackButtonClick}
           onSignOut={handleOpenSignOutModal}
           signInComponent={<SignIn />}
         />
       ) : (
         <NotFoundPage
-          user={user}
+          user={account}
           onBack={handleBackButtonClick}
           onSignOut={handleOpenSignOutModal}
         />

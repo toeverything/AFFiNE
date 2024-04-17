@@ -6,19 +6,19 @@ import {
   ModalHeader,
 } from '@affine/component/auth-components';
 import { Button } from '@affine/component/ui/button';
-import { useCredentialsRequirement } from '@affine/core/hooks/affine/use-server-config';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import {
-  type PasswordLimitsFragment,
   sendChangeEmailMutation,
   sendChangePasswordEmailMutation,
   sendSetPasswordEmailMutation,
   sendVerifyEmailMutation,
 } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useLiveData, useService } from '@toeverything/infra';
 import { useCallback, useState } from 'react';
 
 import { useMutation } from '../../../hooks/use-mutation';
+import { ServerConfigService } from '../../../modules/cloud';
 import type { AuthPanelProps } from './index';
 
 const useEmailTitle = (emailType: AuthPanelProps['emailType']) => {
@@ -33,28 +33,6 @@ const useEmailTitle = (emailType: AuthPanelProps['emailType']) => {
       return t['com.affine.settings.email.action.change']();
     case 'verifyEmail':
       return t['com.affine.settings.email.action.verify']();
-  }
-};
-const useContent = (
-  emailType: AuthPanelProps['emailType'],
-  email: string,
-  passwordLimits: PasswordLimitsFragment
-) => {
-  const t = useAFFiNEI18N();
-
-  switch (emailType) {
-    case 'setPassword':
-      return t['com.affine.auth.set.password.message']({
-        min: String(passwordLimits.minLength),
-        max: String(passwordLimits.maxLength),
-      });
-    case 'changePassword':
-      return t['com.affine.auth.reset.password.message']();
-    case 'changeEmail':
-    case 'verifyEmail':
-      return t['com.affine.auth.verify.email.message']({
-        email,
-      });
   }
 };
 
@@ -161,12 +139,15 @@ export const SendEmail = ({
   emailType,
 }: AuthPanelProps) => {
   const t = useAFFiNEI18N();
-  const { password: passwordLimits } = useCredentialsRequirement();
+  const serverConfig = useService(ServerConfigService).serverConfig;
+
+  const passwordLimits = useLiveData(
+    serverConfig.credentialsRequirement$.map(r => r?.password)
+  );
   const [hasSentEmail, setHasSentEmail] = useState(false);
 
   const title = useEmailTitle(emailType);
   const hint = useNotificationHint(emailType);
-  const content = useContent(emailType, email, passwordLimits);
   const buttonContent = useButtonContent(emailType);
   const { loading, sendEmail } = useSendEmail(emailType);
 
@@ -177,6 +158,27 @@ export const SendEmail = ({
     notify.success({ title: hint });
     setHasSentEmail(true);
   }, [email, hint, sendEmail]);
+
+  const onBack = useCallback(() => {
+    setAuthState('signIn');
+  }, [setAuthState]);
+
+  if (!passwordLimits) {
+    // TODO: loading & error UI
+    return null;
+  }
+
+  const content =
+    emailType === 'setPassword'
+      ? t['com.affine.auth.set.password.message']({
+          min: String(passwordLimits.minLength),
+          max: String(passwordLimits.maxLength),
+        })
+      : emailType === 'changePassword'
+        ? t['com.affine.auth.reset.password.message']()
+        : emailType === 'changeEmail' || emailType === 'verifyEmail'
+          ? t['com.affine.auth.verify.email.message']({ email })
+          : null;
 
   return (
     <>
@@ -210,11 +212,7 @@ export const SendEmail = ({
       >
         {hasSentEmail ? t['com.affine.auth.sent']() : buttonContent}
       </Button>
-      <BackButton
-        onClick={useCallback(() => {
-          setAuthState('signIn');
-        }, [setAuthState])}
-      />
+      <BackButton onClick={onBack} />
     </>
   );
 };

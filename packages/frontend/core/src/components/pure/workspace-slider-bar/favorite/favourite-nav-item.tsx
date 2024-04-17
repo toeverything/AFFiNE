@@ -3,13 +3,13 @@ import {
   parseDNDId,
 } from '@affine/core/hooks/affine/use-global-dnd-helper';
 import { useBlockSuitePageReferences } from '@affine/core/hooks/use-block-suite-page-references';
-import { Workbench } from '@affine/core/modules/workbench';
+import { WorkbenchService } from '@affine/core/modules/workbench';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
 import { type AnimateLayoutChanges, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import * as Collapsible from '@radix-ui/react-collapsible';
-import { PageRecordList, useLiveData, useService } from '@toeverything/infra';
+import { DocsService, useLiveData, useService } from '@toeverything/infra';
 import { useMemo, useState } from 'react';
 
 import { MenuLinkItem } from '../../../app-sidebar';
@@ -33,15 +33,15 @@ export const FavouriteDocSidebarNavItem = ({
   sortable?: boolean;
 }) => {
   const t = useAFFiNEI18N();
-  const workbench = useService(Workbench);
+  const workbench = useService(WorkbenchService).workbench;
   const location = useLiveData(workbench.location$);
   const linkActive = location.pathname === '/' + pageId;
-  const pageRecord = useLiveData(useService(PageRecordList).record$(pageId));
-  const pageMode = useLiveData(pageRecord?.mode$);
+  const docRecord = useLiveData(useService(DocsService).list.doc$(pageId));
+  const docMode = useLiveData(docRecord?.mode$);
 
   const icon = useMemo(() => {
-    return pageMode === 'edgeless' ? <EdgelessIcon /> : <PageIcon />;
-  }, [pageMode]);
+    return docMode === 'edgeless' ? <EdgelessIcon /> : <PageIcon />;
+  }, [docMode]);
 
   const references = useBlockSuitePageReferences(workspace, pageId);
   const referencesToShow = useMemo(() => {

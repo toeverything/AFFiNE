@@ -2,8 +2,8 @@ import type { MenuItemProps } from '@affine/component';
 import { Menu, MenuIcon, MenuItem } from '@affine/component';
 import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
 import { useDeleteCollectionInfo } from '@affine/core/hooks/affine/use-delete-collection-info';
-import { Workbench } from '@affine/core/modules/workbench';
-import { FavoriteItemsAdapter } from '@affine/core/modules/workspace';
+import { FavoriteItemsAdapter } from '@affine/core/modules/properties';
+import { WorkbenchService } from '@affine/core/modules/workbench';
 import type { Collection } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
@@ -42,7 +42,7 @@ export const CollectionOperations = ({
   const deleteInfo = useDeleteCollectionInfo();
   const { appSettings } = useAppSettingHelper();
   const service = useService(CollectionService);
-  const workbench = useService(Workbench);
+  const workbench = useService(WorkbenchService).workbench;
   const { open: openEditCollectionModal, node: editModal } =
     useEditCollection(config);
   const t = useAFFiNEI18N();

@@ -11,10 +11,8 @@ import { Export, MoveToTrash } from '@affine/core/components/page-list';
 import { useBlockSuiteMetaHelper } from '@affine/core/hooks/affine/use-block-suite-meta-helper';
 import { useExportPage } from '@affine/core/hooks/affine/use-export-page';
 import { useTrashModalHelper } from '@affine/core/hooks/affine/use-trash-modal-helper';
-import { useBlockSuiteDocMeta } from '@affine/core/hooks/use-block-suite-page-meta';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { assertExists } from '@blocksuite/global/utils';
 import {
   DuplicateIcon,
   EdgelessIcon,
@@ -25,7 +23,12 @@ import {
   ImportIcon,
   PageIcon,
 } from '@blocksuite/icons';
-import { Doc, useLiveData, useService, Workspace } from '@toeverything/infra';
+import {
+  DocService,
+  useLiveData,
+  useService,
+  WorkspaceService,
+} from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
 import { useCallback, useState } from 'react';
 
@@ -46,16 +49,12 @@ export const PageHeaderMenuButton = ({
 }: PageMenuProps) => {
   const t = useAFFiNEI18N();
 
-  const workspace = useService(Workspace);
+  const workspace = useService(WorkspaceService).workspace;
   const docCollection = workspace.docCollection;
-  const currentPage = docCollection.getDoc(pageId);
-  assertExists(currentPage);
 
-  const pageMeta = useBlockSuiteDocMeta(docCollection).find(
-    meta => meta.id === pageId
-  );
-  const page = useService(Doc);
-  const currentMode = useLiveData(page.mode$);
+  const doc = useService(DocService).doc;
+  const isInTrash = useLiveData(doc.meta$.map(m => m.trash));
+  const currentMode = useLiveData(doc.mode$);
 
   const { favorite, toggleFavorite } = useFavorite(pageId);
 
@@ -74,30 +73,27 @@ export const PageHeaderMenuButton = ({
   }, [setOpenHistoryTipsModal, workspace.flavour]);
 
   const handleOpenTrashModal = useCallback(() => {
-    if (!pageMeta) {
-      return;
-    }
     setTrashModal({
       open: true,
       pageIds: [pageId],
-      pageTitles: [pageMeta.title],
+      pageTitles: [doc.meta$.value.title ?? ''],
     });
-  }, [pageId, pageMeta, setTrashModal]);
+  }, [doc.meta$.value.title, pageId, setTrashModal]);
 
   const handleSwitchMode = useCallback(() => {
-    page.toggleMode();
+    doc.toggleMode();
     toast(
       currentMode === 'page'
         ? t['com.affine.toastMessage.edgelessMode']()
         : t['com.affine.toastMessage.pageMode']()
     );
-  }, [currentMode, page, t]);
+  }, [currentMode, doc, t]);
   const menuItemStyle = {
     padding: '4px 12px',
     transition: 'all 0.3s',
   };
 
-  const exportHandler = useExportPage(currentPage);
+  const exportHandler = useExportPage(doc.blockSuiteDoc);
 
   const handleDuplicate = useCallback(() => {
     duplicate(pageId);
@@ -212,7 +208,7 @@ export const PageHeaderMenuButton = ({
       />
     </>
   );
-  if (pageMeta?.trash) {
+  if (isInTrash) {
     return null;
   }
   return (

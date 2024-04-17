@@ -138,7 +138,6 @@ test('create multi workspace in the workspace list', async ({
   await page.waitForTimeout(1000);
   // check workspace list length
   {
-    await page.waitForTimeout(1000);
     const workspaceCards = page.getByTestId('workspace-card');
     await expect(workspaceCards).toHaveCount(3);
   }

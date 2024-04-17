@@ -1,10 +1,14 @@
 import { notify } from '@affine/component';
 import { openSettingModalAtom } from '@affine/core/atoms';
-import { CurrentWorkspaceService } from '@affine/core/modules/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { AiIcon } from '@blocksuite/icons';
-import { Doc, useLiveData, useService } from '@toeverything/infra';
+import {
+  DocService,
+  useLiveData,
+  useServices,
+  WorkspaceService,
+} from '@toeverything/infra';
 import { cssVar } from '@toeverything/theme';
 import { useAtomValue } from 'jotai';
 import Lottie from 'lottie-react';
@@ -39,17 +43,20 @@ const EdgelessOnboardingAnimation = () => {
 export const AIOnboardingEdgeless = ({
   onDismiss,
 }: BaseAIOnboardingDialogProps) => {
+  const { workspaceService, docService } = useServices({
+    WorkspaceService,
+    DocService,
+  });
+
   const t = useAFFiNEI18N();
   const notifyId = useLiveData(edgelessNotifyId$);
   const generalAIOnboardingOpened = useLiveData(showAIOnboardingGeneral$);
   const settingModalOpen = useAtomValue(openSettingModalAtom);
   const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
-  const currentWorkspace = useLiveData(
-    useService(CurrentWorkspaceService).currentWorkspace$
-  );
-  const isCloud = currentWorkspace?.flavour === WorkspaceFlavour.AFFINE_CLOUD;
+  const isCloud =
+    workspaceService.workspace.flavour === WorkspaceFlavour.AFFINE_CLOUD;
 
-  const doc = useService(Doc);
+  const doc = docService.doc;
   const mode = useLiveData(doc.mode$);
 
   useEffect(() => {

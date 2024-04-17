@@ -13,7 +13,7 @@ import type {
   PageInfoCustomProperty,
   PageInfoCustomPropertyMeta,
   PagePropertyType,
-} from '@affine/core/modules/workspace/properties/schema';
+} from '@affine/core/modules/properties/services/schema';
 import { timestampToLocalDate } from '@affine/core/utils';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';

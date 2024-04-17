@@ -1,16 +1,21 @@
 import { wrapCreateBrowserRouter } from '@sentry/react';
-import { useEffect } from 'react';
-import type { RouteObject } from 'react-router-dom';
+import { createContext, useEffect } from 'react';
+import type { NavigateFunction, RouteObject } from 'react-router-dom';
 import {
   createBrowserRouter as reactRouterCreateBrowserRouter,
   Outlet,
   useLocation,
+  // eslint-disable-next-line @typescript-eslint/no-restricted-imports
+  useNavigate,
 } from 'react-router-dom';
 
 import { mixpanel } from './utils';
 
+export const NavigateContext = createContext<NavigateFunction | null>(null);
+
 function RootRouter() {
   const location = useLocation();
+  const navigate = useNavigate();
   useEffect(() => {
     mixpanel.track_pageview({
       page: location.pathname,
@@ -20,7 +25,11 @@ function RootRouter() {
       isSelfHosted: Boolean(runtimeConfig.isSelfHosted),
     });
   }, [location]);
-  return <Outlet />;
+  return (
+    <NavigateContext.Provider value={navigate}>
+      <Outlet />
+    </NavigateContext.Provider>
+  );
 }
 
 export const topLevelRoutes = [

@@ -1,7 +1,6 @@
 import { Scrollable } from '@affine/component';
 import { PageDetailSkeleton } from '@affine/component/page-detail-skeleton';
 import { PageAIOnboarding } from '@affine/core/components/affine/ai-onboarding';
-import { useBlockSuiteDocMeta } from '@affine/core/hooks/use-block-suite-page-meta';
 import type { PageRootService } from '@blocksuite/blocks';
 import {
   BookmarkService,
@@ -14,29 +13,23 @@ import {
 import { DisposableGroup } from '@blocksuite/global/utils';
 import { type AffineEditorContainer, AIProvider } from '@blocksuite/presets';
 import type { Doc as BlockSuiteDoc } from '@blocksuite/store';
+import type { Doc } from '@toeverything/infra';
 import {
-  Doc,
+  DocService,
+  DocsService,
+  FrameworkScope,
   globalBlockSuiteSchema,
-  GlobalState,
+  GlobalContextService,
+  GlobalStateService,
   LiveData,
-  PageManager,
-  PageRecordList,
-  ServiceProviderContext,
   useLiveData,
   useService,
-  Workspace,
+  WorkspaceService,
 } from '@toeverything/infra';
 import clsx from 'clsx';
 import { useSetAtom } from 'jotai';
 import type { ReactElement } from 'react';
-import {
-  memo,
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useState,
-} from 'react';
+import { memo, useCallback, useEffect, useLayoutEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import type { Map as YMap } from 'yjs';
 
@@ -58,7 +51,7 @@ import {
   sidebarTabs,
 } from '../../../modules/multi-tab-sidebar';
 import {
-  RightSidebar,
+  RightSidebarService,
   RightSidebarViewIsland,
 } from '../../../modules/right-sidebar';
 import {
@@ -74,8 +67,7 @@ import { DetailPageHeader } from './detail-page-header';
 const RIGHT_SIDEBAR_TABS_ACTIVE_KEY = 'app:settings:rightsidebar:tabs:active';
 
 const DetailPageImpl = memo(function DetailPageImpl() {
-  const globalState = useService(GlobalState);
-  const rightSidebar = useService(RightSidebar);
+  const globalState = useService(GlobalStateService).globalState;
   const activeTabName = useLiveData(
     LiveData.from(
       globalState.watch<SidebarTabName>(RIGHT_SIDEBAR_TABS_ACTIVE_KEY),
@@ -89,13 +81,15 @@ const DetailPageImpl = memo(function DetailPageImpl() {
     [globalState]
   );
 
-  const page = useService(Doc);
-  const pageRecordList = useService(PageRecordList);
-  const currentPageId = page.id;
+  const doc = useService(DocService).doc;
+  const docRecordList = useService(DocsService).list;
   const { openPage, jumpToTag } = useNavigateHelper();
   const [editor, setEditor] = useState<AffineEditorContainer | null>(null);
-  const currentWorkspace = useService(Workspace);
-  const docCollection = currentWorkspace.docCollection;
+  const workspace = useService(WorkspaceService).workspace;
+  const globalContext = useService(GlobalContextService).globalContext;
+  const rightSidebar = useService(RightSidebarService).rightSidebar;
+  const docCollection = workspace.docCollection;
+  const mode = useLiveData(doc.mode$);
 
   const isActiveView = useIsActiveView();
   // TODO: remove jotai here
@@ -116,15 +110,32 @@ const DetailPageImpl = memo(function DetailPageImpl() {
     });
   }, [activeTabName, rightSidebar, setActiveTabName]);
 
-  const pageMeta = useBlockSuiteDocMeta(docCollection).find(
-    meta => meta.id === page.id
-  );
+  useEffect(() => {
+    if (isActiveView) {
+      globalContext.docId.set(doc.id);
 
-  const isInTrash = pageMeta?.trash;
+      return () => {
+        globalContext.docId.set(null);
+      };
+    }
+    return;
+  }, [doc, globalContext, isActiveView]);
 
-  const mode = useLiveData(page.mode$);
+  useEffect(() => {
+    if (isActiveView) {
+      globalContext.docMode.set(mode);
+
+      return () => {
+        globalContext.docId.set(null);
+      };
+    }
+    return;
+  }, [doc, globalContext, isActiveView, mode]);
+
+  const isInTrash = useLiveData(doc.meta$.map(meta => meta.trash));
+
   useRegisterBlocksuiteEditorCommands();
-  const title = useLiveData(page.title$);
+  const title = useLiveData(doc.title$);
   usePageDocumentTitle(title);
 
   const onLoad = useCallback(
@@ -170,9 +181,9 @@ const DetailPageImpl = memo(function DetailPageImpl() {
       const disposable = new DisposableGroup();
 
       pageService.getEditorMode = (pageId: string) =>
-        pageRecordList.record$(pageId).value?.mode$.value ?? 'page';
+        docRecordList.doc$(pageId).value?.mode$.value ?? 'page';
       pageService.getDocUpdatedAt = (pageId: string) => {
-        const linkedPage = pageRecordList.record$(pageId).value;
+        const linkedPage = docRecordList.doc$(pageId).value;
         if (!linkedPage) return new Date();
 
         const updatedDate = linkedPage.meta$.value.updatedDate;
@@ -180,7 +191,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
         return new Date(updatedDate || createDate || Date.now());
       };
 
-      page.setMode(mode);
+      doc.setMode(mode);
       // fixme: it seems pageLinkClicked is not triggered sometimes?
       disposable.add(
         pageService.slots.docLinkClicked.on(({ docId }) => {
@@ -189,12 +200,12 @@ const DetailPageImpl = memo(function DetailPageImpl() {
       );
       disposable.add(
         pageService.slots.tagClicked.on(({ tagId }) => {
-          jumpToTag(currentWorkspace.id, tagId);
+          jumpToTag(workspace.id, tagId);
         })
       );
       disposable.add(
         pageService.slots.editorModeSwitch.on(mode => {
-          page.setMode(mode);
+          doc.setMode(mode);
         })
       );
 
@@ -205,13 +216,13 @@ const DetailPageImpl = memo(function DetailPageImpl() {
       };
     },
     [
-      docCollection.id,
-      currentWorkspace.id,
-      jumpToTag,
+      doc,
       mode,
+      docRecordList,
       openPage,
-      page,
-      pageRecordList,
+      docCollection.id,
+      jumpToTag,
+      workspace.id,
     ]
   );
 
@@ -220,16 +231,13 @@ const DetailPageImpl = memo(function DetailPageImpl() {
   return (
     <>
       <ViewHeaderIsland>
-        <DetailPageHeader
-          page={page.blockSuiteDoc}
-          workspace={currentWorkspace}
-        />
+        <DetailPageHeader page={doc.blockSuiteDoc} workspace={workspace} />
       </ViewHeaderIsland>
       <ViewBodyIsland>
         <div className={styles.mainContainer}>
           {/* Add a key to force rerender when page changed, to avoid error boundary persisting. */}
-          <AffineErrorBoundary key={currentPageId}>
-            <TopTip pageId={currentPageId} workspace={currentWorkspace} />
+          <AffineErrorBoundary key={doc.id}>
+            <TopTip pageId={doc.id} workspace={workspace} />
             <Scrollable.Root>
               <Scrollable.Viewport
                 className={clsx(
@@ -239,7 +247,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
                 )}
               >
                 <PageDetailEditor
-                  pageId={currentPageId}
+                  pageId={doc.id}
                   onLoad={onLoad}
                   docCollection={docCollection}
                 />
@@ -247,7 +255,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
               <Scrollable.Scrollbar />
             </Scrollable.Root>
           </AffineErrorBoundary>
-          {isInTrash ? <TrashPageFooter pageId={page.id} /> : null}
+          {isInTrash ? <TrashPageFooter /> : null}
         </div>
       </ViewBodyIsland>
 
@@ -282,7 +290,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
         }
       />
 
-      <ImagePreviewModal pageId={currentPageId} docCollection={docCollection} />
+      <ImagePreviewModal pageId={doc.id} docCollection={docCollection} />
       <GlobalPageHistoryModal />
       <PageAIOnboarding />
     </>
@@ -290,73 +298,65 @@ const DetailPageImpl = memo(function DetailPageImpl() {
 });
 
 export const DetailPage = ({ pageId }: { pageId: string }): ReactElement => {
-  const currentWorkspace = useService(Workspace);
-  const pageRecordList = useService(PageRecordList);
-  const pageListReady = useLiveData(pageRecordList.isReady$);
+  const currentWorkspace = useService(WorkspaceService).workspace;
+  const docsService = useService(DocsService);
+  const docRecordList = docsService.list;
+  const docListReady = useLiveData(docRecordList.isReady$);
+  const docRecord = docRecordList.doc$(pageId).value;
 
-  const pageRecords = useLiveData(pageRecordList.records$);
-
-  const pageRecord = useMemo(
-    () => pageRecords.find(page => page.id === pageId),
-    [pageRecords, pageId]
-  );
-  const pageManager = useService(PageManager);
-
-  const [page, setPage] = useState<Doc | null>(null);
+  const [doc, setDoc] = useState<Doc | null>(null);
 
   useLayoutEffect(() => {
-    if (!pageRecord) {
+    if (!docRecord) {
       return;
     }
-    const { page, release } = pageManager.open(pageRecord.id);
-    setPage(page);
+    const { doc: opened, release } = docsService.open(pageId);
+    setDoc(opened);
     return () => {
       release();
     };
-  }, [pageManager, pageRecord]);
+  }, [docRecord, docsService, pageId]);
 
   // set sync engine priority target
   useEffect(() => {
-    currentWorkspace.setPriorityLoad(pageId, 10);
+    currentWorkspace.engine.doc.setPriority(pageId, 10);
     return () => {
-      currentWorkspace.setPriorityLoad(pageId, 5);
+      currentWorkspace.engine.doc.setPriority(pageId, 5);
     };
   }, [currentWorkspace, pageId]);
 
-  const jumpOnce = useLiveData(pageRecord?.meta$.map(meta => meta.jumpOnce));
+  const jumpOnce = useLiveData(doc?.meta$.map(meta => meta.jumpOnce));
 
   useEffect(() => {
     if (jumpOnce) {
-      pageRecord?.setMeta({ jumpOnce: false });
+      doc?.record.setMeta({ jumpOnce: false });
     }
-  }, [jumpOnce, pageRecord]);
+  }, [doc?.record, jumpOnce]);
+
+  const isInTrash = useLiveData(doc?.meta$.map(meta => meta.trash));
 
   useEffect(() => {
-    if (page && pageRecord?.meta?.trash) {
+    if (doc && isInTrash) {
       currentWorkspace.docCollection.awarenessStore.setReadonly(
-        page.blockSuiteDoc.blockCollection,
+        doc.blockSuiteDoc.blockCollection,
         true
       );
     }
-  }, [
-    currentWorkspace.docCollection.awarenessStore,
-    page,
-    pageRecord?.meta?.trash,
-  ]);
+  }, [currentWorkspace.docCollection.awarenessStore, doc, isInTrash]);
 
   // if sync engine has been synced and the page is null, show 404 page.
-  if (pageListReady && !page) {
+  if (docListReady && !doc) {
     return <PageNotFound noPermission />;
   }
 
-  if (!page) {
+  if (!doc) {
     return <PageDetailSkeleton key="current-page-is-null" />;
   }
 
   return (
-    <ServiceProviderContext.Provider value={page.services}>
+    <FrameworkScope scope={doc.scope}>
       <DetailPageImpl />
-    </ServiceProviderContext.Provider>
+    </FrameworkScope>
   );
 };
 

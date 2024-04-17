@@ -8,7 +8,7 @@ import {
 } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { SingleSelectSelectSolidIcon } from '@blocksuite/icons';
-import type { PageMode, Workspace } from '@toeverything/infra';
+import type { DocMode, Workspace } from '@toeverything/infra';
 import { cssVar } from '@toeverything/theme';
 import { useCallback, useMemo } from 'react';
 
@@ -64,10 +64,10 @@ export function useIsSharedPage(
   pageId: string
 ): {
   isSharedPage: boolean;
-  changeShare: (mode: PageMode) => void;
+  changeShare: (mode: DocMode) => void;
   disableShare: () => void;
-  currentShareMode: PageMode;
-  enableShare: (mode: PageMode) => void;
+  currentShareMode: DocMode;
+  enableShare: (mode: DocMode) => void;
 } {
   const t = useAFFiNEI18N();
   const { data, mutate } = useQuery({
@@ -90,14 +90,14 @@ export function useIsSharedPage(
     );
     const isPageShared = !!publicPage;
 
-    const currentShareMode: PageMode =
+    const currentShareMode: DocMode =
       publicPage?.mode === PublicPageMode.Edgeless ? 'edgeless' : 'page';
 
     return [isPageShared, currentShareMode];
   }, [data?.workspace.publicPages, pageId]);
 
   const enableShare = useCallback(
-    (mode: PageMode) => {
+    (mode: DocMode) => {
       const publishMode =
         mode === 'edgeless' ? PublicPageMode.Edgeless : PublicPageMode.Page;
 
@@ -125,7 +125,7 @@ export function useIsSharedPage(
   );
 
   const changeShare = useCallback(
-    (mode: PageMode) => {
+    (mode: DocMode) => {
       const publishMode =
         mode === 'edgeless' ? PublicPageMode.Edgeless : PublicPageMode.Page;
 
@@ -211,7 +211,7 @@ export function usePublicPages(workspace: Workspace) {
 
   const publicPages: {
     id: string;
-    mode: PageMode;
+    mode: DocMode;
   }[] = useMemo(
     () =>
       maybeData?.workspace.publicPages.map(i => ({

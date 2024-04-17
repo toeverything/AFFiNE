@@ -5,28 +5,24 @@ import {
   useConfirmModal,
 } from '@affine/component';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import { useMutation } from '@affine/core/hooks/use-mutation';
-import { resumeSubscriptionMutation, SubscriptionPlan } from '@affine/graphql';
+import { SubscriptionService } from '@affine/core/modules/cloud';
+import { SubscriptionPlan } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { SingleSelectSelectSolidIcon } from '@blocksuite/icons';
+import { useService } from '@toeverything/infra';
 import { cssVar } from '@toeverything/theme';
 import { nanoid } from 'nanoid';
 import { useState } from 'react';
 
-import type { BaseActionProps } from '../types';
+export interface AIResumeProps extends ButtonProps {}
 
-export interface AIResumeProps extends BaseActionProps, ButtonProps {}
-
-export const AIResume = ({
-  onSubscriptionUpdate,
-  ...btnProps
-}: AIResumeProps) => {
+export const AIResume = ({ ...btnProps }: AIResumeProps) => {
   const t = useAFFiNEI18N();
   const [idempotencyKey, setIdempotencyKey] = useState(nanoid());
+  const subscription = useService(SubscriptionService).subscription;
 
-  const { isMutating, trigger } = useMutation({
-    mutation: resumeSubscriptionMutation,
-  });
+  const [isMutating, setIsMutating] = useState(false);
+
   const { openConfirmModal } = useConfirmModal();
 
   const resume = useAsyncCallback(async () => {
@@ -42,32 +38,24 @@ export const AIResume = ({
       cancelText:
         t['com.affine.payment.ai.action.resume.confirm.cancel-text'](),
       onConfirm: async () => {
-        await trigger(
-          { idempotencyKey, plan: SubscriptionPlan.AI },
-          {
-            onSuccess: data => {
-              // refresh idempotency key
-              setIdempotencyKey(nanoid());
-              onSubscriptionUpdate?.(data.resumeSubscription);
-              notify({
-                icon: (
-                  <SingleSelectSelectSolidIcon
-                    color={cssVar('processingColor')}
-                  />
-                ),
-                title:
-                  t[
-                    'com.affine.payment.ai.action.resume.confirm.notify.title'
-                  ](),
-                message:
-                  t['com.affine.payment.ai.action.resume.confirm.notify.msg'](),
-              });
-            },
-          }
+        setIsMutating(true);
+        await subscription.resumeSubscription(
+          idempotencyKey,
+          SubscriptionPlan.AI
         );
+        notify({
+          icon: (
+            <SingleSelectSelectSolidIcon color={cssVar('processingColor')} />
+          ),
+          title:
+            t['com.affine.payment.ai.action.resume.confirm.notify.title'](),
+          message:
+            t['com.affine.payment.ai.action.resume.confirm.notify.msg'](),
+        });
+        setIdempotencyKey(nanoid());
       },
     });
-  }, [openConfirmModal, t, trigger, idempotencyKey, onSubscriptionUpdate]);
+  }, [openConfirmModal, t, subscription, idempotencyKey]);
 
   return (
     <Button loading={isMutating} onClick={resume} type="primary" {...btnProps}>
