@@ -95,7 +95,10 @@ export class SubscriptionService {
       });
 
       oldSubscriptions.data.forEach(sub => {
-        if (sub.items.data[0].price.lookup_key) {
+        if (
+          (sub.status === 'past_due' || sub.status === 'canceled') &&
+          sub.items.data[0].price.lookup_key
+        ) {
           const [oldPlan] = decodeLookupKey(sub.items.data[0].price.lookup_key);
           if (oldPlan === SubscriptionPlan.Pro) {
             canHaveEarlyAccessDiscount = false;
@@ -415,23 +418,22 @@ export class SubscriptionService {
   @OnEvent('customer.subscription.created')
   @OnEvent('customer.subscription.updated')
   async onSubscriptionChanges(subscription: Stripe.Subscription) {
-    const user = await this.retrieveUserFromCustomer(
-      subscription.customer as string
-    );
+    if (subscription.status === 'active') {
+      const user = await this.retrieveUserFromCustomer(
+        subscription.customer as string
+      );
 
-    await this.saveSubscription(user, subscription);
+      await this.saveSubscription(user, subscription);
+    } else {
+      await this.onSubscriptionDeleted(subscription);
+    }
   }
 
   @OnEvent('customer.subscription.deleted')
   async onSubscriptionDeleted(subscription: Stripe.Subscription) {
-    const user = await this.retrieveUserFromCustomer(
-      subscription.customer as string
-    );
-
     await this.db.userSubscription.deleteMany({
       where: {
         stripeSubscriptionId: subscription.id,
-        userId: user.id,
       },
     });
   }
@@ -749,7 +751,10 @@ export class SubscriptionService {
     const subscribed = oldSubscriptions.data.some(sub => {
       if (sub.items.data[0].price.lookup_key) {
         const [oldPlan] = decodeLookupKey(sub.items.data[0].price.lookup_key);
-        return oldPlan === plan;
+        return (
+          oldPlan === plan &&
+          (sub.status === 'past_due' || sub.status === 'canceled')
+        );
       }
       return false;
     });
