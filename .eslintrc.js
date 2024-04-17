@@ -54,7 +54,6 @@ const allPackages = [
   'packages/common/theme',
   'packages/common/y-indexeddb',
   'tools/cli',
-  'tests/storybook',
 ];
 
 /**
