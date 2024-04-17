@@ -1,6 +1,6 @@
+import { FavoriteItemsAdapter } from '@affine/core/modules/properties';
 import type { Tag } from '@affine/core/modules/tag';
 import { TagService } from '@affine/core/modules/tag';
-import { FavoriteItemsAdapter } from '@affine/core/modules/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { FavoritedIcon, FavoriteIcon } from '@blocksuite/icons';
 import type { DocMeta } from '@blocksuite/store';
@@ -127,8 +127,8 @@ const GroupTagLabel = ({ tag, count }: { tag: Tag; count: number }) => {
   );
 };
 export const useTagGroupDefinitions = (): ItemGroupDefinition<ListItem>[] => {
-  const tagService = useService(TagService);
-  const tags = useLiveData(tagService.tags$);
+  const tagList = useService(TagService).tagList;
+  const tags = useLiveData(tagList.tags$);
   return useMemo(() => {
     return tags.map(tag => ({
       id: tag.id,

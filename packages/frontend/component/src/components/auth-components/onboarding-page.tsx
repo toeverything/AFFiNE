@@ -1,5 +1,4 @@
 import { apis } from '@affine/electron-api';
-import { fetchWithTraceReport } from '@affine/graphql';
 import { ArrowRightSmallIcon } from '@blocksuite/icons';
 import clsx from 'clsx';
 import { useEffect, useMemo, useState } from 'react';
@@ -112,7 +111,7 @@ export const OnboardingPage = ({
   const [questionIdx, setQuestionIdx] = useState(0);
   const { data: questions } = useSWR<Question[]>(
     '/api/worker/questionnaire',
-    url => fetchWithTraceReport(url).then(r => r.json()),
+    url => fetch(url).then(r => r.json()),
     { suspense: true, revalidateOnFocus: false }
   );
   const [options, setOptions] = useState(new Set<string>());
@@ -242,7 +241,7 @@ export const OnboardingPage = ({
                   };
 
                   // eslint-disable-next-line @typescript-eslint/no-floating-promises
-                  fetchWithTraceReport('/api/worker/questionnaire', {
+                  fetch('/api/worker/questionnaire', {
                     method: 'POST',
                     body: JSON.stringify(answer),
                   }).finally(() => {

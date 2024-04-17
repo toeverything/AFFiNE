@@ -8,22 +8,24 @@ import { useDarkMode } from 'storybook-dark-mode';
 import { AffineContext } from '@affine/component/context';
 import useSWR from 'swr';
 import type { Decorator } from '@storybook/react';
-import { _setCurrentStore } from '@toeverything/infra';
+import {
+  FrameworkRoot,
+  FrameworkScope,
+  GlobalContextService,
+  LifecycleService,
+  WorkspacesService,
+  _setCurrentStore,
+  configureTestingInfraModules,
+  useLiveData,
+} from '@toeverything/infra';
 import { setupGlobal, type Environment } from '@affine/env/global';
 
 import type { Preview } from '@storybook/react';
-import { useLayoutEffect, useRef } from 'react';
+import { useLayoutEffect, useMemo, useRef } from 'react';
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import { ServiceCollection } from '@toeverything/infra';
-import {
-  WorkspaceManager,
-  configureInfraServices,
-  configureTestingInfraServices,
-} from '@toeverything/infra';
-import { CurrentWorkspaceService } from '@affine/core/modules/workspace';
-import { configureBusinessServices } from '@affine/core/modules/services';
+import { Framework } from '@toeverything/infra';
+import { configureCommonModules } from '@affine/core/modules';
 import { createStore } from 'jotai';
-import { GlobalScopeProvider } from '@affine/core/modules/infra-web/global-scope';
 
 setupGlobal();
 export const parameters = {
@@ -71,41 +73,59 @@ window.localStorage.setItem('dismissAiOnboarding', 'true');
 window.localStorage.setItem('dismissAiOnboardingEdgeless', 'true');
 window.localStorage.setItem('dismissAiOnboardingLocal', 'true');
 
-const services = new ServiceCollection();
+const framework = new Framework();
 
-configureInfraServices(services);
-configureTestingInfraServices(services);
-configureBusinessServices(services);
+configureCommonModules(framework);
+configureTestingInfraModules(framework);
 
-const provider = services.provider();
+const frameworkProvider = framework.provider();
+
+frameworkProvider.get(LifecycleService).applicationStart();
+const globalContextService = frameworkProvider.get(GlobalContextService);
 
 const store = createStore();
 _setCurrentStore(store);
 
-provider
-  .get(WorkspaceManager)
-  .createWorkspace(WorkspaceFlavour.LOCAL, async w => {
+frameworkProvider
+  .get(WorkspacesService)
+  .create(WorkspaceFlavour.LOCAL, async w => {
     w.meta.setName('test-workspace');
     w.meta.writeVersion(w);
   })
-  .then(workspaceMetadata => {
-    const currentWorkspace = provider.get(CurrentWorkspaceService);
-    const workspaceManager = provider.get(WorkspaceManager);
-    currentWorkspace.openWorkspace(
-      workspaceManager.open(workspaceMetadata).workspace
-    );
+  .then(meta => {
+    globalContextService.globalContext.workspaceId.set(meta.id);
   });
 
 const withContextDecorator: Decorator = (Story, context) => {
+  const workspaceId = useLiveData(
+    globalContextService.globalContext.workspaceId.$
+  );
+
+  const { workspace } =
+    useMemo(() => {
+      if (!workspaceId) {
+        return null;
+      }
+      return frameworkProvider.get(WorkspacesService).open({
+        metadata: { flavour: WorkspaceFlavour.LOCAL, id: workspaceId },
+      });
+    }, []) ?? {};
+
+  if (!workspace) {
+    return <>loading..</>;
+  }
+
   return (
-    <GlobalScopeProvider provider={provider}>
-      <ThemeProvider>
-        <AffineContext store={store}>
-          <ThemeChange />
-          <Story {...context} />
-        </AffineContext>
-      </ThemeProvider>
-    </GlobalScopeProvider>
+    <FrameworkRoot framework={frameworkProvider}>
+      <FrameworkScope scope={workspace.scope}>
+        <ThemeProvider>
+          <AffineContext store={store}>
+            <ThemeChange />
+            <Story {...context} />
+          </AffineContext>
+        </ThemeProvider>
+      </FrameworkScope>
+    </FrameworkRoot>
   );
 };
 

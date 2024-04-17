@@ -78,12 +78,30 @@ export class PagePermissionResolver {
     });
   }
 
+  @ResolveField(() => WorkspacePage, {
+    description: 'Get public page of a workspace by page id.',
+    complexity: 2,
+    nullable: true,
+  })
+  async publicPage(
+    @Parent() workspace: WorkspaceType,
+    @Args('pageId') pageId: string
+  ) {
+    return this.prisma.workspacePage.findFirst({
+      where: {
+        workspaceId: workspace.id,
+        pageId,
+        public: true,
+      },
+    });
+  }
+
   /**
    * @deprecated
    */
   @Mutation(() => Boolean, {
     name: 'sharePage',
-    deprecationReason: 'renamed to publicPage',
+    deprecationReason: 'renamed to publishPage',
   })
   async deprecatedSharePage(
     @CurrentUser() user: CurrentUser,

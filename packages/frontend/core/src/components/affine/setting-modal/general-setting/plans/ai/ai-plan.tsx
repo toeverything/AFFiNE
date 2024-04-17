@@ -1,40 +1,45 @@
 import { Button } from '@affine/component';
-import {
-  type SubscriptionMutator,
-  useUserSubscription,
-} from '@affine/core/hooks/use-subscription';
-import {
-  type PricesQuery,
-  SubscriptionPlan,
-  SubscriptionRecurring,
-} from '@affine/graphql';
+import { AuthService, SubscriptionService } from '@affine/core/modules/cloud';
+import { timestampToLocalDate } from '@affine/core/utils';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useLiveData, useService } from '@toeverything/infra';
+import { useEffect } from 'react';
 
 import { AIPlanLayout } from '../layout';
+import { AICancel, AILogin, AIResume, AISubscribe } from './actions';
 import * as styles from './ai-plan.css';
 import { AIBenefits } from './benefits';
-import type { BaseActionProps } from './types';
-import { useAffineAISubscription } from './use-affine-ai-subscription';
 
-interface AIPlanProps {
-  price?: PricesQuery['prices'][number];
-  onSubscriptionUpdate: SubscriptionMutator;
-}
-export const AIPlan = ({ price, onSubscriptionUpdate }: AIPlanProps) => {
+export const AIPlan = () => {
   const t = useAFFiNEI18N();
-  const recurring = SubscriptionRecurring.Yearly;
 
-  const { Action, billingTip } = useAffineAISubscription();
-  const [subscription] = useUserSubscription(SubscriptionPlan.AI);
+  const authService = useService(AuthService);
+  const subscriptionService = useService(SubscriptionService);
+  const subscription = useLiveData(subscriptionService.subscription.ai$);
+  const price = useLiveData(subscriptionService.prices.aiPrice$);
+  const isLoggedIn =
+    useLiveData(authService.session.status$) === 'authenticated';
+
+  useEffect(() => {
+    subscriptionService.subscription.revalidate();
+    subscriptionService.prices.revalidate();
+  }, [subscriptionService]);
 
   // yearly subscription should always be available
-  if (!price?.yearlyAmount) return null;
+  if (!price?.yearlyAmount || subscription === null) {
+    // TODO: loading UI
+    return null;
+  }
 
-  const baseActionProps: BaseActionProps = {
-    price,
-    recurring,
-    onSubscriptionUpdate,
-  };
+  const billingTip = subscription?.nextBillAt
+    ? t['com.affine.payment.ai.billing-tip.next-bill-at']({
+        due: timestampToLocalDate(subscription.nextBillAt),
+      })
+    : subscription?.canceledAt && subscription.end
+      ? t['com.affine.payment.ai.billing-tip.end-at']({
+          end: timestampToLocalDate(subscription.end),
+        })
+      : null;
 
   return (
     <AIPlanLayout
@@ -60,13 +65,29 @@ export const AIPlan = ({ price, onSubscriptionUpdate }: AIPlanProps) => {
 
         <div className={styles.actionBlock}>
           <div className={styles.actionButtons}>
-            <Action {...baseActionProps} className={styles.purchaseButton} />
-            {subscription ? null : (
-              <a href="https://ai.affine.pro" target="_blank" rel="noreferrer">
-                <Button className={styles.learnAIButton}>
-                  {t['com.affine.payment.ai.pricing-plan.learn']()}
-                </Button>
-              </a>
+            {isLoggedIn ? (
+              subscription ? (
+                subscription.canceledAt ? (
+                  <AIResume className={styles.purchaseButton} />
+                ) : (
+                  <AICancel className={styles.purchaseButton} />
+                )
+              ) : (
+                <>
+                  <AISubscribe className={styles.learnAIButton} />
+                  <a
+                    href="https://ai.affine.pro"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    <Button className={styles.learnAIButton}>
+                      {t['com.affine.payment.ai.pricing-plan.learn']()}
+                    </Button>
+                  </a>
+                </>
+              )
+            ) : (
+              <AILogin className={styles.purchaseButton} />
             )}
           </div>
           {billingTip ? (

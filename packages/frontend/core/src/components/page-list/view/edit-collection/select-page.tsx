@@ -1,5 +1,5 @@
 import { Button, Menu } from '@affine/component';
-import { FavoriteItemsAdapter } from '@affine/core/modules/workspace';
+import { FavoriteItemsAdapter } from '@affine/core/modules/properties';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { FilterIcon } from '@blocksuite/icons';

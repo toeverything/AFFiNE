@@ -8,7 +8,7 @@ import {
   ViewBodyIsland,
   ViewHeaderIsland,
 } from '@affine/core/modules/workbench';
-import { useLiveData, useService, Workspace } from '@toeverything/infra';
+import { useLiveData, useService, WorkspaceService } from '@toeverything/infra';
 import { useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 
@@ -18,11 +18,11 @@ import { TagDetailHeader } from './header';
 import * as styles from './index.css';
 
 export const TagDetail = ({ tagId }: { tagId?: string }) => {
-  const currentWorkspace = useService(Workspace);
+  const currentWorkspace = useService(WorkspaceService).workspace;
   const pageMetas = useBlockSuiteDocMeta(currentWorkspace.docCollection);
 
-  const tagService = useService(TagService);
-  const currentTag = useLiveData(tagService.tagByTagId$(tagId));
+  const tagList = useService(TagService).tagList;
+  const currentTag = useLiveData(tagList.tagByTagId$(tagId));
 
   const pageIds = useLiveData(currentTag?.pageIds$);
 

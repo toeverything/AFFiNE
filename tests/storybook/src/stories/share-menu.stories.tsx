@@ -5,7 +5,11 @@ import { WorkspaceFlavour } from '@affine/env/workspace';
 import type { Doc } from '@blocksuite/store';
 import { expect } from '@storybook/jest';
 import type { Meta, StoryFn } from '@storybook/react';
-import { initEmptyPage, useService, Workspace } from '@toeverything/infra';
+import {
+  initEmptyPage,
+  useService,
+  WorkspaceService,
+} from '@toeverything/infra';
 import { nanoid } from 'nanoid';
 import { useEffect, useState } from 'react';
 
@@ -22,7 +26,7 @@ async function unimplemented() {
 }
 
 export const Basic: StoryFn = () => {
-  const workspace = useService(Workspace);
+  const workspace = useService(WorkspaceService).workspace;
 
   const [page, setPage] = useState<Doc | null>(null);
 
@@ -64,7 +68,7 @@ Basic.play = async ({ canvasElement }) => {
 };
 
 export const AffineBasic: StoryFn = () => {
-  const workspace = useService(Workspace);
+  const workspace = useService(WorkspaceService).workspace;
 
   const [page, setPage] = useState<Doc | null>(null);
 

@@ -24,7 +24,9 @@ export interface WorkspaceListProps {
   onSettingClick: (workspace: WorkspaceMetadata) => void;
   onEnableCloudClick?: (meta: WorkspaceMetadata) => void;
   onDragEnd: (event: DragEndEvent) => void;
-  useIsWorkspaceOwner: (workspaceMetadata: WorkspaceMetadata) => boolean;
+  useIsWorkspaceOwner: (
+    workspaceMetadata: WorkspaceMetadata
+  ) => boolean | undefined;
   useWorkspaceAvatar: (
     workspaceMetadata: WorkspaceMetadata
   ) => string | undefined;

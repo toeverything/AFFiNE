@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-import type { WorkspacePropertiesAdapter } from '@affine/core/modules/workspace';
+import type { WorkspacePropertiesAdapter } from '@affine/core/modules/properties';
 import type {
   PageInfoCustomProperty,
   PageInfoCustomPropertyMeta,
-} from '@affine/core/modules/workspace/properties/schema';
-import { PagePropertyType } from '@affine/core/modules/workspace/properties/schema';
+} from '@affine/core/modules/properties/services/schema';
+import { PagePropertyType } from '@affine/core/modules/properties/services/schema';
 import { createFractionalIndexingSortableHelper } from '@affine/core/utils';
 import { DebugLogger } from '@affine/debug';
 import { nanoid } from 'nanoid';

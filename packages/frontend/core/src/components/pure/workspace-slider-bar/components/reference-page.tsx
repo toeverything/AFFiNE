@@ -1,10 +1,10 @@
 import { useBlockSuitePageReferences } from '@affine/core/hooks/use-block-suite-page-references';
-import { Workbench } from '@affine/core/modules/workbench';
+import { WorkbenchService } from '@affine/core/modules/workbench';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
 import type { DocCollection, DocMeta } from '@blocksuite/store';
 import * as Collapsible from '@radix-ui/react-collapsible';
-import { PageRecordList, useLiveData, useService } from '@toeverything/infra';
+import { DocsService, useLiveData, useService } from '@toeverything/infra';
 import { useMemo, useState } from 'react';
 
 import { MenuLinkItem } from '../../../app-sidebar';
@@ -24,11 +24,11 @@ export const ReferencePage = ({
   parentIds,
 }: ReferencePageProps) => {
   const t = useAFFiNEI18N();
-  const workbench = useService(Workbench);
+  const workbench = useService(WorkbenchService).workbench;
   const location = useLiveData(workbench.location$);
   const active = location.pathname === '/' + pageId;
 
-  const pageRecord = useLiveData(useService(PageRecordList).record$(pageId));
+  const pageRecord = useLiveData(useService(DocsService).list.doc$(pageId));
   const pageMode = useLiveData(pageRecord?.mode$);
   const icon = useMemo(() => {
     return pageMode === 'edgeless' ? <EdgelessIcon /> : <PageIcon />;

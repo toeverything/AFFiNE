@@ -1,10 +1,10 @@
 import { IconButton } from '@affine/component';
 import { useJournalInfoHelper } from '@affine/core/hooks/use-journal';
-import { Doc, useService, Workspace } from '@toeverything/infra';
+import { DocService, useService, WorkspaceService } from '@toeverything/infra';
 import { assignInlineVars } from '@vanilla-extract/dynamic';
 import { useEffect } from 'react';
 
-import type { SidebarTab, SidebarTabName } from '../entities/sidebar-tab';
+import type { SidebarTab, SidebarTabName } from '../multi-tabs/sidebar-tab';
 import * as styles from './header-switcher.css';
 
 export interface MultiTabSidebarHeaderSwitcherProps {
@@ -20,8 +20,8 @@ export const MultiTabSidebarHeaderSwitcher = ({
   activeTabName,
   setActiveTabName,
 }: MultiTabSidebarHeaderSwitcherProps) => {
-  const workspace = useService(Workspace);
-  const doc = useService(Doc);
+  const workspace = useService(WorkspaceService).workspace;
+  const doc = useService(DocService).doc;
 
   const { isJournal } = useJournalInfoHelper(workspace.docCollection, doc.id);
 

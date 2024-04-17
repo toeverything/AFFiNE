@@ -58,8 +58,14 @@ export interface CreateCheckoutSessionInput {
   successCallbackLink: InputMaybe<Scalars['String']['input']>;
 }
 
+export enum EarlyAccessType {
+  AI = 'AI',
+  App = 'App',
+}
+
 /** The type of workspace feature */
 export enum FeatureType {
+  AIEarlyAccess = 'AIEarlyAccess',
   Copilot = 'Copilot',
   EarlyAccess = 'EarlyAccess',
   UnlimitedCopilot = 'UnlimitedCopilot',
@@ -147,16 +153,6 @@ export interface UpdateWorkspaceInput {
   public: InputMaybe<Scalars['Boolean']['input']>;
 }
 
-export type CheckBlobSizesQueryVariables = Exact<{
-  workspaceId: Scalars['String']['input'];
-  size: Scalars['SafeInt']['input'];
-}>;
-
-export type CheckBlobSizesQuery = {
-  __typename?: 'Query';
-  checkBlobSize: { __typename?: 'WorkspaceBlobSizes'; size: number };
-};
-
 export type DeleteBlobMutationVariables = Exact<{
   workspaceId: Scalars['String']['input'];
   hash: Scalars['String']['input'];
@@ -179,22 +175,6 @@ export type SetBlobMutationVariables = Exact<{
 }>;
 
 export type SetBlobMutation = { __typename?: 'Mutation'; setBlob: string };
-
-export type BlobSizesQueryVariables = Exact<{
-  workspaceId: Scalars['String']['input'];
-}>;
-
-export type BlobSizesQuery = {
-  __typename?: 'Query';
-  workspace: { __typename?: 'WorkspaceType'; blobsSize: number };
-};
-
-export type AllBlobSizesQueryVariables = Exact<{ [key: string]: never }>;
-
-export type AllBlobSizesQuery = {
-  __typename?: 'Query';
-  collectAllBlobSizes: { __typename?: 'WorkspaceBlobSizes'; size: number };
-};
 
 export type CancelSubscriptionMutationVariables = Exact<{
   idempotencyKey: Scalars['String']['input'];
@@ -294,15 +274,6 @@ export type DeleteWorkspaceMutationVariables = Exact<{
 export type DeleteWorkspaceMutation = {
   __typename?: 'Mutation';
   deleteWorkspace: boolean;
-};
-
-export type AddToEarlyAccessMutationVariables = Exact<{
-  email: Scalars['String']['input'];
-}>;
-
-export type AddToEarlyAccessMutation = {
-  __typename?: 'Mutation';
-  addToEarlyAccess: number;
 };
 
 export type EarlyAccessUsersQueryVariables = Exact<{ [key: string]: never }>;
@@ -476,6 +447,7 @@ export type GetMembersByWorkspaceIdQuery = {
   __typename?: 'Query';
   workspace: {
     __typename?: 'WorkspaceType';
+    memberCount: number;
     members: Array<{
       __typename?: 'InviteUserType';
       id: string;
@@ -513,7 +485,11 @@ export type GetUserFeaturesQueryVariables = Exact<{ [key: string]: never }>;
 
 export type GetUserFeaturesQuery = {
   __typename?: 'Query';
-  currentUser: { __typename?: 'UserType'; features: Array<FeatureType> } | null;
+  currentUser: {
+    __typename?: 'UserType';
+    id: string;
+    features: Array<FeatureType>;
+  } | null;
 };
 
 export type GetUserQueryVariables = Exact<{
@@ -557,6 +533,23 @@ export type GetWorkspacePublicByIdQuery = {
   workspace: { __typename?: 'WorkspaceType'; public: boolean };
 };
 
+export type GetWorkspacePublicPageByIdQueryVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+  pageId: Scalars['String']['input'];
+}>;
+
+export type GetWorkspacePublicPageByIdQuery = {
+  __typename?: 'Query';
+  workspace: {
+    __typename?: 'WorkspaceType';
+    publicPage: {
+      __typename?: 'WorkspacePage';
+      id: string;
+      mode: PublicPageMode;
+    } | null;
+  };
+};
+
 export type GetWorkspacePublicPagesQueryVariables = Exact<{
   workspaceId: Scalars['String']['input'];
 }>;
@@ -586,7 +579,11 @@ export type GetWorkspacesQueryVariables = Exact<{ [key: string]: never }>;
 
 export type GetWorkspacesQuery = {
   __typename?: 'Query';
-  workspaces: Array<{ __typename?: 'WorkspaceType'; id: string }>;
+  workspaces: Array<{
+    __typename?: 'WorkspaceType';
+    id: string;
+    owner: { __typename?: 'UserType'; id: string };
+  }>;
 };
 
 export type ListHistoryQueryVariables = Exact<{
@@ -686,6 +683,15 @@ export type QuotaQuery = {
   __typename?: 'Query';
   currentUser: {
     __typename?: 'UserType';
+    id: string;
+    copilot: {
+      __typename?: 'Copilot';
+      quota: {
+        __typename?: 'CopilotQuota';
+        limit: number | null;
+        used: number;
+      };
+    };
     quota: {
       __typename?: 'UserQuota';
       name: string;
@@ -703,6 +709,7 @@ export type QuotaQuery = {
       };
     } | null;
   } | null;
+  collectAllBlobSizes: { __typename?: 'WorkspaceBlobSizes'; size: number };
 };
 
 export type RecoverDocMutationVariables = Exact<{
@@ -850,6 +857,7 @@ export type SubscriptionQuery = {
   __typename?: 'Query';
   currentUser: {
     __typename?: 'UserType';
+    id: string;
     subscriptions: Array<{
       __typename?: 'UserSubscription';
       id: string;
@@ -1033,24 +1041,9 @@ export type WorkspaceQuotaQuery = {
 
 export type Queries =
   | {
-      name: 'checkBlobSizesQuery';
-      variables: CheckBlobSizesQueryVariables;
-      response: CheckBlobSizesQuery;
-    }
-  | {
       name: 'listBlobsQuery';
       variables: ListBlobsQueryVariables;
       response: ListBlobsQuery;
-    }
-  | {
-      name: 'blobSizesQuery';
-      variables: BlobSizesQueryVariables;
-      response: BlobSizesQuery;
-    }
-  | {
-      name: 'allBlobSizesQuery';
-      variables: AllBlobSizesQueryVariables;
-      response: AllBlobSizesQuery;
     }
   | {
       name: 'earlyAccessUsersQuery';
@@ -1126,6 +1119,11 @@ export type Queries =
       name: 'getWorkspacePublicByIdQuery';
       variables: GetWorkspacePublicByIdQueryVariables;
       response: GetWorkspacePublicByIdQuery;
+    }
+  | {
+      name: 'getWorkspacePublicPageByIdQuery';
+      variables: GetWorkspacePublicPageByIdQueryVariables;
+      response: GetWorkspacePublicPageByIdQuery;
     }
   | {
       name: 'getWorkspacePublicPagesQuery';
@@ -1258,11 +1256,6 @@ export type Mutations =
       name: 'deleteWorkspaceMutation';
       variables: DeleteWorkspaceMutationVariables;
       response: DeleteWorkspaceMutation;
-    }
-  | {
-      name: 'addToEarlyAccessMutation';
-      variables: AddToEarlyAccessMutationVariables;
-      response: AddToEarlyAccessMutation;
     }
   | {
       name: 'removeEarlyAccessMutation';

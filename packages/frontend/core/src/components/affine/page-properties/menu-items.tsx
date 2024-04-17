@@ -6,7 +6,7 @@ import {
   MenuSeparator,
   Scrollable,
 } from '@affine/component';
-import type { PageInfoCustomPropertyMeta } from '@affine/core/modules/workspace/properties/schema';
+import type { PageInfoCustomPropertyMeta } from '@affine/core/modules/properties/services/schema';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { KeyboardEventHandler, MouseEventHandler } from 'react';
 import { cloneElement, isValidElement, useCallback } from 'react';

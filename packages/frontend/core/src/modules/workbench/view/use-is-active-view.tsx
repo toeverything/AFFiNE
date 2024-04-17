@@ -1,11 +1,12 @@
 import { useLiveData, useService } from '@toeverything/infra';
 
-import { Workbench } from '../entities/workbench';
-import { useView } from './use-view';
+import { ViewService } from '../services/view';
+import { WorkbenchService } from '../services/workbench';
 
 export function useIsActiveView() {
-  const workbench = useService(Workbench);
-  const currentView = useView();
+  const workbench = useService(WorkbenchService).workbench;
+  const view = useService(ViewService).view;
+
   const activeView = useLiveData(workbench.activeView$);
-  return currentView === activeView;
+  return view === activeView;
 }

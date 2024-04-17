@@ -1,75 +1,64 @@
 import { Button, type ButtonProps } from '@affine/component';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import { useMutation } from '@affine/core/hooks/use-mutation';
+import { SubscriptionService } from '@affine/core/modules/cloud';
 import { popupWindow } from '@affine/core/utils';
-import {
-  createCheckoutSessionMutation,
-  SubscriptionPlan,
-  SubscriptionRecurring,
-} from '@affine/graphql';
-import { assertExists } from '@blocksuite/global/utils';
+import { SubscriptionPlan, SubscriptionRecurring } from '@affine/graphql';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useLiveData, useService } from '@toeverything/infra';
 import { nanoid } from 'nanoid';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useEffect, useState } from 'react';
 
-import type { BaseActionProps } from '../types';
-import { useAffineAIPrice } from '../use-affine-ai-price';
+export interface AISubscribeProps extends ButtonProps {}
 
-export interface AISubscribeProps extends BaseActionProps, ButtonProps {}
+export const AISubscribe = ({ ...btnProps }: AISubscribeProps) => {
+  const [idempotencyKey, setIdempotencyKey] = useState(nanoid());
+  const [isMutating, setMutating] = useState(false);
+  const [isOpenedExternalWindow, setOpenedExternalWindow] = useState(false);
 
-export const AISubscribe = ({
-  price,
-  recurring = SubscriptionRecurring.Yearly,
-  onSubscriptionUpdate,
-  ...btnProps
-}: AISubscribeProps) => {
-  assertExists(price);
-  const idempotencyKey = useMemo(() => `${nanoid()}-${recurring}`, [recurring]);
-  const { priceReadable, priceFrequency } = useAffineAIPrice(price);
+  const subscriptionService = useService(SubscriptionService);
+  const price = useLiveData(subscriptionService.prices.aiPrice$);
+  useEffect(() => {
+    subscriptionService.prices.revalidate();
+  }, [subscriptionService]);
 
-  const newTabRef = useRef<Window | null>(null);
-
-  const { isMutating, trigger } = useMutation({
-    mutation: createCheckoutSessionMutation,
-  });
-
-  const onClose = useCallback(() => {
-    newTabRef.current = null;
-    onSubscriptionUpdate?.();
-  }, [onSubscriptionUpdate]);
+  const t = useAFFiNEI18N();
 
   useEffect(() => {
-    return () => {
-      if (newTabRef.current) {
-        newTabRef.current.removeEventListener('close', onClose);
-        newTabRef.current = null;
-      }
-    };
-  }, [onClose]);
+    if (isOpenedExternalWindow) {
+      // when the external window is opened, revalidate the subscription status every 3 seconds
+      const timer = setInterval(() => {
+        subscriptionService.subscription.revalidate();
+      }, 3000);
+      return () => clearInterval(timer);
+    }
+    return;
+  }, [isOpenedExternalWindow, subscriptionService]);
 
   const subscribe = useAsyncCallback(async () => {
-    await trigger(
-      {
-        input: {
-          recurring,
-          idempotencyKey,
-          plan: SubscriptionPlan.AI,
-          coupon: null,
-          successCallbackLink: null,
-        },
-      },
-      {
-        onSuccess: data => {
-          const newTab = popupWindow(data.createCheckoutSession);
-          if (newTab) {
-            newTabRef.current = newTab;
-            newTab.addEventListener('close', onClose);
-          }
-        },
-      }
-    );
-  }, [idempotencyKey, onClose, recurring, trigger]);
+    setMutating(true);
+    try {
+      const session = await subscriptionService.createCheckoutSession({
+        recurring: SubscriptionRecurring.Yearly,
+        idempotencyKey,
+        plan: SubscriptionPlan.AI,
+        coupon: null,
+        successCallbackLink: null,
+      });
+      popupWindow(session);
+      setOpenedExternalWindow(true);
+      setIdempotencyKey(nanoid());
+    } finally {
+      setMutating(false);
+    }
+  }, [idempotencyKey, subscriptionService]);
 
-  if (!price.yearlyAmount) return null;
+  if (!price || !price.yearlyAmount) {
+    // TODO: loading UI
+    return null;
+  }
+
+  const priceReadable = `$${(price.yearlyAmount / 100).toFixed(2)}`;
+  const priceFrequency = t['com.affine.payment.billing-setting.year']();
 
   return (
     <Button

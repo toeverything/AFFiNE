@@ -1,8 +1,8 @@
 import type { MenuProps } from '@affine/component';
 import { IconButton, Input, Menu, Scrollable } from '@affine/component';
 import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
+import { WorkspaceLegacyProperties } from '@affine/core/modules/properties';
 import { DeleteTagConfirmModal, TagService } from '@affine/core/modules/tag';
-import { WorkspaceLegacyProperties } from '@affine/core/modules/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { DeleteIcon, MoreHorizontalIcon, TagsIcon } from '@blocksuite/icons';
 import { useLiveData, useService } from '@toeverything/infra';
@@ -30,9 +30,9 @@ const InlineTagsList = ({
   readonly,
   children,
 }: PropsWithChildren<InlineTagsListProps>) => {
-  const tagService = useService(TagService);
-  const tags = useLiveData(tagService.tags$);
-  const tagIds = useLiveData(tagService.tagIdsByPageId$(pageId));
+  const tagList = useService(TagService).tagList;
+  const tags = useLiveData(tagList.tags$);
+  const tagIds = useLiveData(tagList.tagIdsByPageId$(pageId));
 
   return (
     <div className={styles.inlineTagsContainer} data-testid="inline-tags-list">
@@ -71,8 +71,8 @@ export const EditTagMenu = ({
 }>) => {
   const t = useAFFiNEI18N();
   const legacyProperties = useService(WorkspaceLegacyProperties);
-  const tagService = useService(TagService);
-  const tag = useLiveData(tagService.tagByTagId$(tagId));
+  const tagList = useService(TagService).tagList;
+  const tag = useLiveData(tagList.tagByTagId$(tagId));
   const tagColor = useLiveData(tag?.color$);
   const tagValue = useLiveData(tag?.value$);
   const navigate = useNavigateHelper();
@@ -169,9 +169,9 @@ export const EditTagMenu = ({
 
 export const TagsEditor = ({ pageId, readonly }: TagsEditorProps) => {
   const t = useAFFiNEI18N();
-  const tagService = useService(TagService);
-  const tags = useLiveData(tagService.tags$);
-  const tagIds = useLiveData(tagService.tagIdsByPageId$(pageId));
+  const tagList = useService(TagService).tagList;
+  const tags = useLiveData(tagList.tags$);
+  const tagIds = useLiveData(tagList.tagIdsByPageId$(pageId));
   const [inputValue, setInputValue] = useState('');
   const [open, setOpen] = useState(false);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
@@ -192,10 +192,10 @@ export const TagsEditor = ({ pageId, readonly }: TagsEditorProps) => {
     [setOpen, setSelectedTagIds]
   );
 
-  const exactMatch = useLiveData(tagService.tagByTagValue$(inputValue));
+  const exactMatch = useLiveData(tagList.tagByTagValue$(inputValue));
 
   const filteredTags = useLiveData(
-    inputValue ? tagService.filterTagsByName$(inputValue) : tagService.tags$
+    inputValue ? tagList.filterTagsByName$(inputValue) : tagList.tags$
   );
 
   const onInputChange = useCallback(
@@ -228,10 +228,10 @@ export const TagsEditor = ({ pageId, readonly }: TagsEditorProps) => {
         return;
       }
       rotateNextColor();
-      const newTag = tagService.createTag(name.trim(), nextColor);
+      const newTag = tagList.createTag(name.trim(), nextColor);
       newTag.tag(pageId);
     },
-    [nextColor, pageId, tagService]
+    [nextColor, pageId, tagList]
   );
 
   const onInputKeyDown = useCallback(
@@ -335,8 +335,8 @@ export const TagsInlineEditor = ({
   placeholder,
   className,
 }: TagsInlineEditorProps) => {
-  const tagService = useService(TagService);
-  const tagIds = useLiveData(tagService.tagIdsByPageId$(pageId));
+  const tagList = useService(TagService).tagList;
+  const tagIds = useLiveData(tagList.tagIdsByPageId$(pageId));
   const empty = !tagIds || tagIds.length === 0;
   return (
     <Menu

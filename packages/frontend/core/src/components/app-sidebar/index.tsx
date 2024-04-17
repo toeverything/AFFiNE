@@ -1,6 +1,6 @@
 import { Skeleton } from '@affine/component';
 import { ResizePanel } from '@affine/component/resize-panel';
-import { useServiceOptional, Workspace } from '@toeverything/infra';
+import { useServiceOptional, WorkspaceService } from '@toeverything/infra';
 import { useAtom, useAtomValue } from 'jotai';
 import { debounce } from 'lodash-es';
 import type { PropsWithChildren, ReactElement } from 'react';
@@ -121,7 +121,7 @@ export function AppSidebar({
 export const AppSidebarFallback = (): ReactElement | null => {
   const width = useAtomValue(appSidebarWidthAtom);
 
-  const currentWorkspace = useServiceOptional(Workspace);
+  const currentWorkspace = useServiceOptional(WorkspaceService);
   return (
     <div
       style={{ width }}

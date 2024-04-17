@@ -17,7 +17,7 @@ export const DeleteTagConfirmModal = ({
 }) => {
   const t = useAFFiNEI18N();
   const tagService = useService(TagService);
-  const tags = useLiveData(tagService.tags$);
+  const tags = useLiveData(tagService.tagList.tags$);
   const selectedTags = useMemo(() => {
     return tags.filter(tag => selectedTagIds.includes(tag.id));
   }, [selectedTagIds, tags]);
@@ -25,7 +25,7 @@ export const DeleteTagConfirmModal = ({
 
   const handleDelete = useCallback(() => {
     selectedTagIds.forEach(tagId => {
-      tagService.deleteTag(tagId);
+      tagService.tagList.deleteTag(tagId);
     });
 
     toast(

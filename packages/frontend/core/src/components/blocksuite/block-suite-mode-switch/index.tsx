@@ -1,8 +1,12 @@
 import { Tooltip } from '@affine/component/ui/tooltip';
 import { useBlockSuiteDocMeta } from '@affine/core/hooks/use-block-suite-page-meta';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import type { PageMode } from '@toeverything/infra';
-import { Doc, useLiveData, useService } from '@toeverything/infra';
+import {
+  type DocMode,
+  DocService,
+  useLiveData,
+  useService,
+} from '@toeverything/infra';
 import type { CSSProperties } from 'react';
 import { useCallback, useEffect } from 'react';
 
@@ -17,7 +21,7 @@ export type EditorModeSwitchProps = {
   pageId: string;
   style?: CSSProperties;
   isPublic?: boolean;
-  publicMode?: PageMode;
+  publicMode?: DocMode;
 };
 const TooltipContent = () => {
   const t = useAFFiNEI18N();
@@ -42,9 +46,9 @@ export const EditorModeSwitch = ({
     meta => meta.id === pageId
   );
   const trash = pageMeta?.trash ?? false;
-  const page = useService(Doc);
+  const doc = useService(DocService).doc;
 
-  const currentMode = useLiveData(page.mode$);
+  const currentMode = useLiveData(doc.mode$);
 
   useEffect(() => {
     if (trash || isPublic) {
@@ -53,7 +57,7 @@ export const EditorModeSwitch = ({
     const keydown = (e: KeyboardEvent) => {
       if (e.code === 'KeyS' && e.altKey) {
         e.preventDefault();
-        page.toggleMode();
+        doc.toggleMode();
         toast(
           currentMode === 'page'
             ? t['com.affine.toastMessage.edgelessMode']()
@@ -64,7 +68,7 @@ export const EditorModeSwitch = ({
     document.addEventListener('keydown', keydown, { capture: true });
     return () =>
       document.removeEventListener('keydown', keydown, { capture: true });
-  }, [currentMode, isPublic, page, pageId, t, trash]);
+  }, [currentMode, isPublic, doc, pageId, t, trash]);
 
   const onSwitchToPageMode = useCallback(() => {
     mixpanel.track('Button', {
@@ -73,9 +77,9 @@ export const EditorModeSwitch = ({
     if (currentMode === 'page' || isPublic) {
       return;
     }
-    page.setMode('page');
+    doc.setMode('page');
     toast(t['com.affine.toastMessage.pageMode']());
-  }, [currentMode, isPublic, page, t]);
+  }, [currentMode, isPublic, doc, t]);
 
   const onSwitchToEdgelessMode = useCallback(() => {
     mixpanel.track('Button', {
@@ -84,18 +88,18 @@ export const EditorModeSwitch = ({
     if (currentMode === 'edgeless' || isPublic) {
       return;
     }
-    page.setMode('edgeless');
+    doc.setMode('edgeless');
     toast(t['com.affine.toastMessage.edgelessMode']());
-  }, [currentMode, isPublic, page, t]);
+  }, [currentMode, isPublic, doc, t]);
 
   const shouldHide = useCallback(
-    (mode: PageMode) =>
+    (mode: DocMode) =>
       (trash && currentMode !== mode) || (isPublic && publicMode !== mode),
     [currentMode, isPublic, publicMode, trash]
   );
 
   const shouldActive = useCallback(
-    (mode: PageMode) => (isPublic ? false : currentMode === mode),
+    (mode: DocMode) => (isPublic ? false : currentMode === mode),
     [currentMode, isPublic]
   );
 

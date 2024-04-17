@@ -3,12 +3,7 @@ import { useDocCollectionPage } from '@affine/core/hooks/use-block-suite-workspa
 import { timestampToLocalDate } from '@affine/core/utils';
 import { DebugLogger } from '@affine/debug';
 import type { ListHistoryQuery } from '@affine/graphql';
-import {
-  fetchWithTraceReport,
-  listHistoryQuery,
-  recoverDocMutation,
-} from '@affine/graphql';
-import { AffineCloudBlobStorage } from '@affine/workspace-impl';
+import { listHistoryQuery, recoverDocMutation } from '@affine/graphql';
 import { assertEquals } from '@blocksuite/global/utils';
 import { DocCollection } from '@blocksuite/store';
 import { globalBlockSuiteSchema } from '@toeverything/infra';
@@ -22,6 +17,7 @@ import {
   useMutation,
 } from '../../../hooks/use-mutation';
 import { useQueryInfinite } from '../../../hooks/use-query';
+import { CloudBlobStorage } from '../../../modules/workspace-engine/impls/engine/blob-cloud';
 
 const logger = new DebugLogger('page-history');
 
@@ -76,11 +72,8 @@ const snapshotFetcher = async (
   if (!ts) {
     return null;
   }
-  const res = await fetchWithTraceReport(
-    `/api/workspaces/${workspaceId}/docs/${pageDocId}/histories/${ts}`,
-    {
-      priority: 'high',
-    }
+  const res = await fetch(
+    `/api/workspaces/${workspaceId}/docs/${pageDocId}/histories/${ts}`
   );
 
   if (!res.ok) {
@@ -104,7 +97,7 @@ const docCollectionMap = new Map<string, DocCollection>();
 const getOrCreateShellWorkspace = (workspaceId: string) => {
   let docCollection = docCollectionMap.get(workspaceId);
   if (!docCollection) {
-    const blobStorage = new AffineCloudBlobStorage(workspaceId);
+    const blobStorage = new CloudBlobStorage(workspaceId);
     docCollection = new DocCollection({
       id: workspaceId,
       blobStorages: [

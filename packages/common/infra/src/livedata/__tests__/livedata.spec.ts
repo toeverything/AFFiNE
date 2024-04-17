@@ -263,6 +263,13 @@ describe('livedata', () => {
       inner$.next(4);
       expect(flatten$.value).toEqual([4, 3]);
     }
+
+    {
+      const wrapped$ = new LiveData([] as LiveData<number>[]);
+      const flatten$ = wrapped$.flat();
+
+      expect(flatten$.value).toEqual([]);
+    }
   });
 
   test('computed', () => {

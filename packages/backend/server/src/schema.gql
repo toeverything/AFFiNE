@@ -219,7 +219,7 @@ type Mutation {
   sendVerifyEmail(callbackUrl: String!): Boolean!
   setBlob(blob: Upload!, workspaceId: String!): String!
   setWorkspaceExperimentalFeature(enable: Boolean!, feature: FeatureType!, workspaceId: String!): Boolean!
-  sharePage(pageId: String!, workspaceId: String!): Boolean! @deprecated(reason: "renamed to publicPage")
+  sharePage(pageId: String!, workspaceId: String!): Boolean! @deprecated(reason: "renamed to publishPage")
   signIn(email: String!, password: String!): UserType!
   signUp(email: String!, name: String!, password: String!): UserType!
   updateProfile(input: UpdateUserInput!): UserType!
@@ -529,6 +529,9 @@ type WorkspaceType {
 
   """is Public workspace"""
   public: Boolean!
+
+  """Get public page of a workspace by page id."""
+  publicPage(pageId: String!): WorkspacePage
 
   """Public pages of a workspace"""
   publicPages: [WorkspacePage!]!

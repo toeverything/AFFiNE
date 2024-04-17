@@ -6,13 +6,11 @@ import { useAtomValue } from 'jotai';
 import { Suspense, useCallback } from 'react';
 
 import { AffineErrorBoundary } from '../../../components/affine/affine-error-boundary';
-import {
-  appSidebarOpenAtom,
-  SidebarSwitch,
-} from '../../../components/app-sidebar';
-import { RightSidebar } from '../../right-sidebar';
+import { appSidebarOpenAtom } from '../../../components/app-sidebar/index.jotai';
+import { SidebarSwitch } from '../../../components/app-sidebar/sidebar-header/sidebar-switch';
+import { RightSidebarService } from '../../right-sidebar';
+import { ViewService } from '../services/view';
 import * as styles from './route-container.css';
-import { useView } from './use-view';
 import { useViewPosition } from './use-view-position';
 
 export interface Props {
@@ -43,10 +41,10 @@ const ToggleButton = ({
 };
 
 export const RouteContainer = ({ route }: Props) => {
-  const view = useView();
+  const view = useService(ViewService).view;
   const viewPosition = useViewPosition();
   const leftSidebarOpen = useAtomValue(appSidebarOpenAtom);
-  const rightSidebar = useService(RightSidebar);
+  const rightSidebar = useService(RightSidebarService).rightSidebar;
   const rightSidebarOpen = useLiveData(rightSidebar.isOpen$);
   const rightSidebarHasViews = useLiveData(rightSidebar.hasViews$);
   const handleToggleRightSidebar = useCallback(() => {

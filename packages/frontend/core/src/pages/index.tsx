@@ -4,8 +4,7 @@ import {
   initEmptyPage,
   useLiveData,
   useService,
-  WorkspaceListService,
-  WorkspaceManager,
+  WorkspacesService,
 } from '@toeverything/infra';
 import {
   lazy,
@@ -20,8 +19,8 @@ import { type LoaderFunction, useSearchParams } from 'react-router-dom';
 import { createFirstAppData } from '../bootstrap/first-app-data';
 import { UserWithWorkspaceList } from '../components/pure/workspace-slider-bar/user-with-workspace-list';
 import { WorkspaceFallback } from '../components/workspace';
-import { useSession } from '../hooks/affine/use-current-user';
 import { useNavigateHelper } from '../hooks/use-navigate-helper';
+import { AuthService } from '../modules/cloud';
 import { WorkspaceSubPath } from '../shared';
 
 const AllWorkspaceModals = lazy(() =>
@@ -36,14 +35,16 @@ export const loader: LoaderFunction = async () => {
 
 export const Component = () => {
   // navigating and creating may be slow, to avoid flickering, we show workspace fallback
-  const [navigating, setNavigating] = useState(false);
+  const [navigating, setNavigating] = useState(true);
   const [creating, setCreating] = useState(false);
-  const { status } = useSession();
-  const workspaceManager = useService(WorkspaceManager);
+  const authService = useService(AuthService);
+  const loggedIn = useLiveData(
+    authService.session.status$.map(s => s === 'authenticated')
+  );
 
-  const workspaceListService = useService(WorkspaceListService);
-  const list = useLiveData(workspaceListService.workspaceList$);
-  const workspaceListStatus = useLiveData(workspaceListService.status$);
+  const workspacesService = useService(WorkspacesService);
+  const list = useLiveData(workspacesService.list.workspaces$);
+  const listIsLoading = useLiveData(workspacesService.list.isLoading$);
 
   const { openPage } = useNavigateHelper();
   const [searchParams] = useSearchParams();
@@ -53,26 +54,23 @@ export const Component = () => {
   const createCloudWorkspace = useCallback(() => {
     if (createOnceRef.current) return;
     createOnceRef.current = true;
-    workspaceManager
-      .createWorkspace(WorkspaceFlavour.AFFINE_CLOUD, async workspace => {
+    workspacesService
+      .create(WorkspaceFlavour.AFFINE_CLOUD, async workspace => {
         workspace.meta.setName('AFFiNE Cloud');
         const page = workspace.createDoc();
         initEmptyPage(page);
       })
       .then(workspace => openPage(workspace.id, WorkspaceSubPath.ALL))
       .catch(err => console.error('Failed to create cloud workspace', err));
-  }, [openPage, workspaceManager]);
+  }, [openPage, workspacesService]);
 
   useLayoutEffect(() => {
-    if (workspaceListStatus.loading) {
+    if (listIsLoading) {
       return;
     }
 
     // check is user logged in && has cloud workspace
-    if (
-      searchParams.get('initCloud') === 'true' &&
-      status === 'authenticated'
-    ) {
+    if (searchParams.get('initCloud') === 'true' && loggedIn) {
       searchParams.delete('initCloud');
       if (list.every(w => w.flavour !== WorkspaceFlavour.AFFINE_CLOUD)) {
         createCloudWorkspace();
@@ -81,6 +79,7 @@ export const Component = () => {
     }
 
     if (list.length === 0) {
+      setNavigating(false);
       return;
     }
 
@@ -89,26 +88,31 @@ export const Component = () => {
 
     const openWorkspace = list.find(w => w.id === lastId) ?? list[0];
     openPage(openWorkspace.id, WorkspaceSubPath.ALL);
-    setNavigating(true);
   }, [
     createCloudWorkspace,
     list,
     openPage,
     searchParams,
-    status,
-    workspaceListStatus.loading,
+    listIsLoading,
+    loggedIn,
+    navigating,
   ]);
 
   useEffect(() => {
     setCreating(true);
-    createFirstAppData(workspaceManager)
+    createFirstAppData(workspacesService)
+      .then(workspaceMeta => {
+        if (workspaceMeta) {
+          openPage(workspaceMeta.id, WorkspaceSubPath.ALL);
+        }
+      })
       .catch(err => {
         console.error('Failed to create first app data', err);
       })
       .finally(() => {
         setCreating(false);
       });
-  }, [workspaceManager]);
+  }, [openPage, workspacesService]);
 
   if (navigating || creating) {
     return <WorkspaceFallback></WorkspaceFallback>;

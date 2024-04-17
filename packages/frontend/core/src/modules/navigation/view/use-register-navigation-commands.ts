@@ -5,10 +5,10 @@ import {
 } from '@toeverything/infra';
 import { useEffect } from 'react';
 
-import { Navigator } from '../entities/navigator';
+import { NavigatorService } from '../services/navigator';
 
 export function useRegisterNavigationCommands() {
-  const navigator = useService(Navigator);
+  const navigator = useService(NavigatorService).navigator;
   useEffect(() => {
     const unsubs: Array<() => void> = [];
 

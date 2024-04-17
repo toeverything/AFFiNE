@@ -1,16 +1,15 @@
 import { AffineOtherPageLayout } from '@affine/component/affine-other-page-layout';
 import { SignInPageContainer } from '@affine/component/auth-components';
+import { AuthService } from '@affine/core/modules/cloud';
+import { useLiveData, useService } from '@toeverything/infra';
 import { useAtom } from 'jotai';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect } from 'react';
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 
 import { authAtom } from '../atoms';
 import type { AuthProps } from '../components/affine/auth';
 import { AuthPanel } from '../components/affine/auth';
-import { SubscriptionRedirect } from '../components/affine/auth/subscription-redirect';
-import { useSubscriptionSearch } from '../components/affine/auth/use-subscription';
-import { useCurrentLoginStatus } from '../hooks/affine/use-current-login-status';
 import { RouteLogic, useNavigateHelper } from '../hooks/use-navigate-helper';
 
 interface LocationState {
@@ -19,31 +18,18 @@ interface LocationState {
   };
 }
 export const SignIn = () => {
-  const paymentRedirectRef = useRef<'redirect' | 'ignore' | null>(null);
   const [{ state, email = '', emailType = 'changePassword' }, setAuthAtom] =
     useAtom(authAtom);
-  const loginStatus = useCurrentLoginStatus();
+  const session = useService(AuthService).session;
+  const status = useLiveData(session.status$);
+  const isRevalidating = useLiveData(session.isRevalidating$);
   const location = useLocation() as LocationState;
   const navigate = useNavigate();
   const { jumpToIndex } = useNavigateHelper();
-  const subscriptionData = useSubscriptionSearch();
   const [searchParams] = useSearchParams();
-
-  const isLoggedIn = loginStatus === 'authenticated';
-
-  // Check payment redirect once after session loaded, to avoid unnecessary page rendering.
-  if (loginStatus !== 'loading' && !paymentRedirectRef.current) {
-    // If user is logged in and visit sign in page with subscription query, redirect to stripe payment page immediately.
-    // Otherwise, user will login through email, and then redirect to payment page.
-    paymentRedirectRef.current =
-      subscriptionData && isLoggedIn ? 'redirect' : 'ignore';
-  }
+  const isLoggedIn = status === 'authenticated' && !isRevalidating;
 
   useEffect(() => {
-    if (paymentRedirectRef.current === 'redirect') {
-      return;
-    }
-
     if (isLoggedIn) {
       if (location.state?.callbackURL) {
         navigate(location.state.callbackURL, {
@@ -57,10 +43,9 @@ export const SignIn = () => {
     }
   }, [
     jumpToIndex,
-    location.state?.callbackURL,
+    location.state,
     navigate,
     setAuthAtom,
-    subscriptionData,
     isLoggedIn,
     searchParams,
   ]);
@@ -85,10 +70,6 @@ export const SignIn = () => {
     },
     [setAuthAtom]
   );
-
-  if (paymentRedirectRef.current === 'redirect') {
-    return <SubscriptionRedirect />;
-  }
 
   return (
     <SignInPageContainer>
