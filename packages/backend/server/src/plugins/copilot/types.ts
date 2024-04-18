@@ -93,6 +93,7 @@ export const ChatHistorySchema = z
     action: z.string().optional(),
     tokens: z.number(),
     messages: z.array(PromptMessageSchema.or(ChatMessageSchema)),
+    createdAt: z.date(),
   })
   .strict();
 

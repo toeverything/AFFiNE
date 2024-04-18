@@ -123,6 +123,9 @@ class CopilotHistoriesType implements Partial<ChatHistory> {
 
   @Field(() => [ChatMessageType])
   messages!: ChatMessageType[];
+
+  @Field(() => Date)
+  createdAt!: Date;
 }
 
 @ObjectType('CopilotQuota')
