@@ -340,6 +340,7 @@ export type GetCopilotHistoriesQuery = {
         sessionId: string;
         tokens: number;
         action: string | null;
+        createdAt: string;
         messages: Array<{
           __typename?: 'ChatMessage';
           role: string;
