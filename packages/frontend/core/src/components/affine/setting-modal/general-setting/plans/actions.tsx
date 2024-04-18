@@ -1,14 +1,10 @@
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import type { SubscriptionMutator } from '@affine/core/hooks/use-subscription';
-import {
-  cancelSubscriptionMutation,
-  resumeSubscriptionMutation,
-} from '@affine/graphql';
+import { useService } from '@toeverything/infra';
 import { nanoid } from 'nanoid';
 import type { PropsWithChildren } from 'react';
 import { useState } from 'react';
 
-import { useMutation } from '../../../../../hooks/use-mutation';
+import { SubscriptionService } from '../../../../../modules/cloud';
 import { ConfirmLoadingModal, DowngradeModal } from './modals';
 
 /**
@@ -20,30 +16,27 @@ export const CancelAction = ({
   children,
   open,
   onOpenChange,
-  onSubscriptionUpdate,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubscriptionUpdate: SubscriptionMutator;
 } & PropsWithChildren) => {
   const [idempotencyKey, setIdempotencyKey] = useState(nanoid());
-  const { trigger, isMutating } = useMutation({
-    mutation: cancelSubscriptionMutation,
-  });
+  const [isMutating, setIsMutating] = useState(false);
+  const subscription = useService(SubscriptionService).subscription;
 
   const downgrade = useAsyncCallback(async () => {
-    await trigger(
-      { idempotencyKey },
-      {
-        onSuccess: data => {
-          // refresh idempotency key
-          setIdempotencyKey(nanoid());
-          onSubscriptionUpdate(data.cancelSubscription);
-          onOpenChange(false);
-        },
-      }
-    );
-  }, [trigger, idempotencyKey, onSubscriptionUpdate, onOpenChange]);
+    try {
+      setIsMutating(true);
+      await subscription.cancelSubscription(idempotencyKey);
+      subscription.revalidate();
+      await subscription.isRevalidating$.waitFor(v => !v);
+      // refresh idempotency key
+      setIdempotencyKey(nanoid());
+      onOpenChange(false);
+    } finally {
+      setIsMutating(false);
+    }
+  }, [subscription, idempotencyKey, onOpenChange]);
 
   return (
     <>
@@ -67,31 +60,28 @@ export const ResumeAction = ({
   children,
   open,
   onOpenChange,
-  onSubscriptionUpdate,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubscriptionUpdate: SubscriptionMutator;
 } & PropsWithChildren) => {
   // allow replay request on network error until component unmount or success
   const [idempotencyKey, setIdempotencyKey] = useState(nanoid());
-  const { isMutating, trigger } = useMutation({
-    mutation: resumeSubscriptionMutation,
-  });
+  const [isMutating, setIsMutating] = useState(false);
+  const subscription = useService(SubscriptionService).subscription;
 
   const resume = useAsyncCallback(async () => {
-    await trigger(
-      { idempotencyKey },
-      {
-        onSuccess: data => {
-          // refresh idempotency key
-          setIdempotencyKey(nanoid());
-          onSubscriptionUpdate(data.resumeSubscription);
-          onOpenChange(false);
-        },
-      }
-    );
-  }, [trigger, idempotencyKey, onSubscriptionUpdate, onOpenChange]);
+    try {
+      setIsMutating(true);
+      await subscription.resumeSubscription(idempotencyKey);
+      subscription.revalidate();
+      await subscription.isRevalidating$.waitFor(v => !v);
+      // refresh idempotency key
+      setIdempotencyKey(nanoid());
+      onOpenChange(false);
+    } finally {
+      setIsMutating(false);
+    }
+  }, [subscription, idempotencyKey, onOpenChange]);
 
   return (
     <>

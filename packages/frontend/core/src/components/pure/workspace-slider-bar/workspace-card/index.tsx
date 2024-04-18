@@ -3,9 +3,9 @@ import { Avatar, type AvatarProps } from '@affine/component/ui/avatar';
 import { Loading } from '@affine/component/ui/loading';
 import { openSettingModalAtom } from '@affine/core/atoms';
 import { useDocEngineStatus } from '@affine/core/hooks/affine/use-doc-engine-status';
-import { useIsWorkspaceOwner } from '@affine/core/hooks/affine/use-is-workspace-owner';
 import { useWorkspaceBlobObjectUrl } from '@affine/core/hooks/use-workspace-blob';
 import { useWorkspaceInfo } from '@affine/core/hooks/use-workspace-info';
+import { WorkspacePermissionService } from '@affine/core/modules/permissions';
 import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
@@ -16,7 +16,7 @@ import {
   NoNetworkIcon,
   UnsyncIcon,
 } from '@blocksuite/icons';
-import { useService, Workspace } from '@toeverything/infra';
+import { useLiveData, useService, WorkspaceService } from '@toeverything/infra';
 import { cssVar } from '@toeverything/theme';
 import { useSetAtom } from 'jotai';
 import { debounce } from 'lodash-es';
@@ -83,8 +83,13 @@ const useSyncEngineSyncProgress = () => {
   const { syncing, progress, retrying, errorMessage } = useDocEngineStatus();
   const [isOverCapacity, setIsOverCapacity] = useState(false);
 
-  const currentWorkspace = useService(Workspace);
-  const isOwner = useIsWorkspaceOwner(currentWorkspace.meta);
+  const currentWorkspace = useService(WorkspaceService).workspace;
+  const permissionService = useService(WorkspacePermissionService);
+  const isOwner = useLiveData(permissionService.permission.isOwner$);
+  useEffect(() => {
+    // revalidate permission
+    permissionService.permission.revalidate();
+  }, [permissionService]);
 
   const setSettingModalAtom = useSetAtom(openSettingModalAtom);
   const jumpToPricePlan = useCallback(() => {
@@ -97,9 +102,9 @@ const useSyncEngineSyncProgress = () => {
   // debounce sync engine status
   useEffect(() => {
     const disposableOverCapacity =
-      currentWorkspace.engine.blob.onStatusChange.on(
-        debounce(status => {
-          const isOver = status?.isStorageOverCapacity;
+      currentWorkspace.engine.blob.isStorageOverCapacity$.subscribe(
+        debounce((isStorageOverCapacity: boolean) => {
+          const isOver = isStorageOverCapacity;
           if (!isOver) {
             setIsOverCapacity(false);
             return;
@@ -125,7 +130,7 @@ const useSyncEngineSyncProgress = () => {
         })
       );
     return () => {
-      disposableOverCapacity?.dispose();
+      disposableOverCapacity?.unsubscribe();
     };
   }, [currentWorkspace, isOwner, jumpToPricePlan, t]);
 
@@ -213,7 +218,7 @@ const usePauseAnimation = (timeToResume = 5000) => {
 
 const WorkspaceInfo = ({ name }: { name: string }) => {
   const { message, active } = useSyncEngineSyncProgress();
-  const currentWorkspace = useService(Workspace);
+  const currentWorkspace = useService(WorkspaceService).workspace;
   const isCloud = currentWorkspace.flavour === WorkspaceFlavour.AFFINE_CLOUD;
   const { progress } = useDocEngineStatus();
   const { paused, pause } = usePauseAnimation();
@@ -275,7 +280,7 @@ export const WorkspaceCard = forwardRef<
   HTMLDivElement,
   HTMLAttributes<HTMLDivElement>
 >(({ ...props }, ref) => {
-  const currentWorkspace = useService(Workspace);
+  const currentWorkspace = useService(WorkspaceService).workspace;
 
   const information = useWorkspaceInfo(currentWorkspace.meta);
 

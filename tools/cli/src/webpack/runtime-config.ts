@@ -17,14 +17,13 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       enablePreloading: true,
       enableNewSettingModal: true,
       enableNewSettingUnstableApi: false,
-      enableSQLiteProvider: true,
       enableMoveDatabase: false,
       enableCloud: true,
       enableCaptcha: true,
       enableEnhanceShareMode: false,
       enablePayment: true,
       enablePageHistory: true,
-      allowLocalWorkspace: false,
+      allowLocalWorkspace: buildFlags.distribution === 'desktop' ? true : false,
       serverUrlPrefix: 'https://app.affine.pro',
       appVersion: packageJson.version,
       editorVersion: packageJson.devDependencies['@blocksuite/presets'],
@@ -58,14 +57,13 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       enablePreloading: true,
       enableNewSettingModal: true,
       enableNewSettingUnstableApi: false,
-      enableSQLiteProvider: true,
       enableMoveDatabase: false,
       enableCloud: true,
       enableCaptcha: true,
       enableEnhanceShareMode: false,
       enablePayment: true,
       enablePageHistory: true,
-      allowLocalWorkspace: false,
+      allowLocalWorkspace: buildFlags.distribution === 'desktop' ? true : false,
       serverUrlPrefix: 'https://affine.fail',
       appVersion: packageJson.version,
       editorVersion: packageJson.devDependencies['@blocksuite/presets'],
@@ -95,9 +93,6 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
     enableNewSettingModal: process.env.ENABLE_NEW_SETTING_MODAL
       ? process.env.ENABLE_NEW_SETTING_MODAL === 'true'
       : currentBuildPreset.enableNewSettingModal,
-    enableSQLiteProvider: process.env.ENABLE_SQLITE_PROVIDER
-      ? process.env.ENABLE_SQLITE_PROVIDER === 'true'
-      : currentBuildPreset.enableSQLiteProvider,
     enableNewSettingUnstableApi: process.env.ENABLE_NEW_SETTING_UNSTABLE_API
       ? process.env.ENABLE_NEW_SETTING_UNSTABLE_API === 'true'
       : currentBuildPreset.enableNewSettingUnstableApi,

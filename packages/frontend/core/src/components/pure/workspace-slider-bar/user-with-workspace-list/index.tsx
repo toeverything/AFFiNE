@@ -1,11 +1,14 @@
 import { Loading } from '@affine/component';
 import { Divider } from '@affine/component/ui/divider';
 import { MenuItem } from '@affine/component/ui/menu';
-import { useSession } from '@affine/core/hooks/affine/use-current-user';
-import { Unreachable } from '@affine/env/constant';
+import { AuthService } from '@affine/core/modules/cloud';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { Logo1Icon } from '@blocksuite/icons';
-import { useLiveData, useService, WorkspaceManager } from '@toeverything/infra';
+import {
+  useLiveData,
+  useService,
+  WorkspacesService,
+} from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
 import { Suspense, useCallback, useEffect } from 'react';
 
@@ -80,9 +83,9 @@ interface UserWithWorkspaceListProps {
 const UserWithWorkspaceListInner = ({
   onEventEnd,
 }: UserWithWorkspaceListProps) => {
-  const { user, status } = useSession();
+  const session = useLiveData(useService(AuthService).session.session$);
 
-  const isAuthenticated = status === 'authenticated';
+  const isAuthenticated = session.status === 'authenticated';
 
   const setOpenCreateWorkspaceModal = useSetAtom(openCreateWorkspaceModalAtom);
   const setDisableCloudOpen = useSetAtom(openDisableCloudAlertModalAtom);
@@ -101,11 +104,7 @@ const UserWithWorkspaceListInner = ({
   }, [setDisableCloudOpen, setOpenSignIn]);
 
   const onNewWorkspace = useCallback(() => {
-    if (
-      !isAuthenticated &&
-      !environment.isDesktop &&
-      !runtimeConfig.allowLocalWorkspace
-    ) {
+    if (!isAuthenticated && !runtimeConfig.allowLocalWorkspace) {
       return openSignInModal();
     }
     mixpanel.track('Button', {
@@ -128,21 +127,19 @@ const UserWithWorkspaceListInner = ({
     onEventEnd?.();
   }, [onEventEnd, setOpenCreateWorkspaceModal]);
 
-  const workspaceManager = useService(WorkspaceManager);
-  const workspaces = useLiveData(workspaceManager.list.workspaceList$);
+  const workspaceManager = useService(WorkspacesService);
+  const workspaces = useLiveData(workspaceManager.list.workspaces$);
 
   // revalidate workspace list when mounted
   useEffect(() => {
-    workspaceManager.list.revalidate().catch(err => {
-      throw new Unreachable('revlidate should never throw, ' + err);
-    });
+    workspaceManager.list.revalidate();
   }, [workspaceManager]);
 
   return (
     <div className={styles.workspaceListWrapper}>
       {isAuthenticated ? (
         <UserAccountItem
-          email={user?.email ?? 'Unknown User'}
+          email={session.session.account.email ?? 'Unknown User'}
           onEventEnd={onEventEnd}
         />
       ) : (

@@ -77,7 +77,5 @@ test('Delete last workspace', async ({ page }) => {
   await page.getByTestId('create-workspace-create-button').click();
   await page.waitForTimeout(1000);
   await page.waitForSelector('[data-testid="workspace-name"]');
-  expect(await page.getByTestId('workspace-name').textContent()).toBe(
-    'Test Workspace'
-  );
+  await expect(page.getByTestId('workspace-name')).toHaveText('Test Workspace');
 });

@@ -5,7 +5,7 @@ import {
 } from '@affine/core/atoms';
 import { useEnableCloud } from '@affine/core/hooks/affine/use-enable-cloud';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { useService, Workspace } from '@toeverything/infra';
+import { useService, WorkspaceService } from '@toeverything/infra';
 import { useAtom, useSetAtom } from 'jotai';
 import { useCallback } from 'react';
 
@@ -13,7 +13,7 @@ import TopSvg from './top-svg';
 
 export const HistoryTipsModal = () => {
   const t = useAFFiNEI18N();
-  const currentWorkspace = useService(Workspace);
+  const currentWorkspace = useService(WorkspaceService).workspace;
   const [open, setOpen] = useAtom(openHistoryTipsModalAtom);
   const setTempDisableCloudOpen = useSetAtom(openDisableCloudAlertModalAtom);
   const confirmEnableCloud = useEnableCloud();

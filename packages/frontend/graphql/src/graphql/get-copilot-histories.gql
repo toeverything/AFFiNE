@@ -9,6 +9,7 @@ query getCopilotHistories(
         sessionId
         tokens
         action
+        createdAt
         messages {
           role
           content

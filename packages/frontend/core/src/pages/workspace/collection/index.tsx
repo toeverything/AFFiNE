@@ -16,7 +16,7 @@ import {
   PageIcon,
   ViewLayersIcon,
 } from '@blocksuite/icons';
-import { useLiveData, useService, Workspace } from '@toeverything/infra';
+import { useLiveData, useService, WorkspaceService } from '@toeverything/infra';
 import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
@@ -67,7 +67,7 @@ export const Component = function CollectionPage() {
   const collections = useLiveData(collectionService.collections$);
   const navigate = useNavigateHelper();
   const params = useParams();
-  const workspace = useService(Workspace);
+  const workspace = useService(WorkspaceService).workspace;
   const collection = collections.find(v => v.id === params.collectionId);
 
   const notifyCollectionDeleted = useCallback(() => {
@@ -103,7 +103,7 @@ export const Component = function CollectionPage() {
 };
 
 const Placeholder = ({ collection }: { collection: Collection }) => {
-  const workspace = useService(Workspace);
+  const workspace = useService(WorkspaceService).workspace;
   const collectionService = useService(CollectionService);
   const { node, open } = useEditCollection(useAllPageListConfig());
   const { jumpToCollections } = useNavigateHelper();

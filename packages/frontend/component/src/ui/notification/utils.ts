@@ -53,3 +53,21 @@ export const getCardBorderColor = (style: NotificationStyle) => {
 export const getCardForegroundColor = (style: NotificationStyle) => {
   return style === 'alert' ? cssVar('pureWhite') : cssVar('textPrimaryColor');
 };
+
+export const getIconColor = (
+  style: NotificationStyle,
+  theme: NotificationTheme,
+  iconColor?: string
+) => {
+  if (style === 'normal') {
+    const map: Record<NotificationTheme, string> = {
+      error: cssVar('errorColor'),
+      info: cssVar('processingColor'),
+      success: cssVar('successColor'),
+      warning: cssVar('warningColor'),
+    };
+    return iconColor || map[theme];
+  }
+
+  return iconColor || cssVar('pureWhite');
+};

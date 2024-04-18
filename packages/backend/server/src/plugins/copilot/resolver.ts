@@ -1,4 +1,4 @@
-import { Logger } from '@nestjs/common';
+import { BadRequestException, Logger } from '@nestjs/common';
 import {
   Args,
   Field,
@@ -12,12 +12,18 @@ import {
   Resolver,
 } from '@nestjs/graphql';
 import { GraphQLJSON, SafeIntResolver } from 'graphql-scalars';
+import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 
 import { CurrentUser } from '../../core/auth';
 import { UserType } from '../../core/user';
 import { PermissionService } from '../../core/workspaces/permission';
-import { MutexService, TooManyRequestsException } from '../../fundamentals';
+import {
+  FileUpload,
+  MutexService,
+  TooManyRequestsException,
+} from '../../fundamentals';
 import { ChatSessionService } from './session';
+import { CopilotStorage } from './storage';
 import {
   AvailableModels,
   type ChatHistory,
@@ -28,7 +34,7 @@ import {
 
 registerEnumType(AvailableModels, { name: 'CopilotModel' });
 
-const COPILOT_LOCKER = 'copilot';
+export const COPILOT_LOCKER = 'copilot';
 
 // ================== Input Types ==================
 
@@ -56,6 +62,9 @@ class CreateChatMessageInput implements Omit<SubmittedMessage, 'content'> {
 
   @Field(() => [String], { nullable: true })
   attachments!: string[] | undefined;
+
+  @Field(() => [GraphQLUpload], { nullable: true })
+  blobs!: Promise<FileUpload>[] | undefined;
 
   @Field(() => GraphQLJSON, { nullable: true })
   params!: Record<string, string> | undefined;
@@ -114,6 +123,9 @@ class CopilotHistoriesType implements Partial<ChatHistory> {
 
   @Field(() => [ChatMessageType])
   messages!: ChatMessageType[];
+
+  @Field(() => Date)
+  createdAt!: Date;
 }
 
 @ObjectType('CopilotQuota')
@@ -140,7 +152,8 @@ export class CopilotResolver {
   constructor(
     private readonly permissions: PermissionService,
     private readonly mutex: MutexService,
-    private readonly chatSession: ChatSessionService
+    private readonly chatSession: ChatSessionService,
+    private readonly storage: CopilotStorage
   ) {}
 
   @ResolveField(() => CopilotQuotaType, {
@@ -260,6 +273,26 @@ export class CopilotResolver {
     if (!lock) {
       return new TooManyRequestsException('Server is busy');
     }
+    const session = await this.chatSession.get(options.sessionId);
+    if (!session) return new BadRequestException('Session not found');
+
+    if (options.blobs) {
+      options.attachments = options.attachments || [];
+      const { workspaceId } = session.config;
+
+      for (const blob of await Promise.all(options.blobs)) {
+        const uploaded = await this.storage.handleUpload(user.id, blob);
+        const link = await this.storage.put(
+          user.id,
+          workspaceId,
+          uploaded.filename,
+          uploaded.buffer
+        );
+        options.attachments.push(link);
+        delete options.blobs;
+      }
+    }
+
     try {
       return await this.chatSession.createMessage(options);
     } catch (e: any) {

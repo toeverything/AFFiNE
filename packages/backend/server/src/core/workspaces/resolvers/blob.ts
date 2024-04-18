@@ -1,9 +1,4 @@
-import {
-  ForbiddenException,
-  Logger,
-  PayloadTooLargeException,
-  UseGuards,
-} from '@nestjs/common';
+import { Logger, PayloadTooLargeException, UseGuards } from '@nestjs/common';
 import {
   Args,
   Int,
@@ -23,7 +18,6 @@ import {
   PreventCache,
 } from '../../../fundamentals';
 import { CurrentUser } from '../../auth';
-import { FeatureManagementService, FeatureType } from '../../features';
 import { QuotaManagementService } from '../../quota';
 import { WorkspaceBlobStorage } from '../../storage';
 import { PermissionService } from '../permission';
@@ -35,7 +29,6 @@ export class WorkspaceBlobResolver {
   logger = new Logger(WorkspaceBlobResolver.name);
   constructor(
     private readonly permissions: PermissionService,
-    private readonly feature: FeatureManagementService,
     private readonly quota: QuotaManagementService,
     private readonly storage: WorkspaceBlobStorage
   ) {}
@@ -130,34 +123,8 @@ export class WorkspaceBlobResolver {
       Permission.Write
     );
 
-    const { storageQuota, usedSize, businessBlobLimit } =
-      await this.quota.getWorkspaceUsage(workspaceId);
-
-    const unlimited = await this.feature.hasWorkspaceFeature(
-      workspaceId,
-      FeatureType.UnlimitedWorkspace
-    );
-
-    const checkExceeded = (recvSize: number) => {
-      if (!storageQuota) {
-        throw new ForbiddenException('Cannot find user quota.');
-      }
-      const total = usedSize + recvSize;
-      // only skip total storage check if workspace has unlimited feature
-      if (total > storageQuota && !unlimited) {
-        this.logger.log(
-          `storage size limit exceeded: ${total} > ${storageQuota}`
-        );
-        return true;
-      } else if (recvSize > businessBlobLimit) {
-        this.logger.log(
-          `blob size limit exceeded: ${recvSize} > ${businessBlobLimit}`
-        );
-        return true;
-      } else {
-        return false;
-      }
-    };
+    const checkExceeded =
+      await this.quota.getQuotaCalculatorByWorkspace(workspaceId);
 
     if (checkExceeded(0)) {
       throw new PayloadTooLargeException(

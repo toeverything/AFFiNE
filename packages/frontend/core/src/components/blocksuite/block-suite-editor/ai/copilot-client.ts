@@ -1,16 +1,32 @@
 import {
   createCopilotMessageMutation,
   createCopilotSessionMutation,
-  fetcher,
+  fetcher as defaultFetcher,
   getBaseUrl,
   getCopilotHistoriesQuery,
   getCopilotSessionsQuery,
   type GraphQLQuery,
+  type QueryOptions,
   type RequestOptions,
 } from '@affine/graphql';
+import { GeneralNetworkError, PaymentRequiredError } from '@blocksuite/blocks';
 
 type OptionsField<T extends GraphQLQuery> =
   RequestOptions<T>['variables'] extends { options: infer U } ? U : never;
+
+const fetcher = async <Query extends GraphQLQuery>(
+  options: QueryOptions<Query>
+) => {
+  try {
+    return await defaultFetcher<Query>(options);
+  } catch (_err) {
+    const error = Array.isArray(_err) ? _err.at(0) : _err;
+    if (error.extensions?.code === 402) {
+      throw new PaymentRequiredError();
+    }
+    throw new GeneralNetworkError();
+  }
+};
 
 export class CopilotClient {
   readonly backendUrl = getBaseUrl();
@@ -72,10 +88,12 @@ export class CopilotClient {
     sessionId,
     messageId,
     message,
+    params,
   }: {
     sessionId: string;
     messageId?: string;
     message?: string;
+    params?: Record<string, string>;
   }) {
     if (messageId && message) {
       throw new Error('Only one of messageId or message can be provided');
@@ -88,6 +106,11 @@ export class CopilotClient {
     }
     if (message) {
       url.searchParams.set('message', message);
+    }
+    if (!messageId && params) {
+      Object.entries(params).forEach(([key, value]) => {
+        url.searchParams.set(key, value);
+      });
     }
 
     return new Promise(resolve => {
@@ -104,10 +127,12 @@ export class CopilotClient {
     sessionId,
     messageId,
     message,
+    params,
   }: {
     sessionId: string;
     messageId?: string;
     message?: string;
+    params?: Record<string, string>;
   }) {
     if (messageId && message) {
       throw new Error('Only one of messageId or message can be provided');
@@ -122,6 +147,11 @@ export class CopilotClient {
     }
     if (message) {
       url.searchParams.set('message', message);
+    }
+    if (!messageId && params) {
+      Object.entries(params).forEach(([key, value]) => {
+        url.searchParams.set(key, value);
+      });
     }
     return new EventSource(url.toString());
   }

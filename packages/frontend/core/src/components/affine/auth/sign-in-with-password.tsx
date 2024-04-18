@@ -1,20 +1,19 @@
-import { Wrapper } from '@affine/component';
+import { notify, Wrapper } from '@affine/component';
 import {
   AuthInput,
   BackButton,
   ModalHeader,
 } from '@affine/component/auth-components';
 import { Button } from '@affine/component/ui/button';
-import { useSession } from '@affine/core/hooks/affine/use-current-user';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
+import { AuthService } from '@affine/core/modules/cloud';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useService } from '@toeverything/infra';
 import type { FC } from 'react';
 import { useCallback, useState } from 'react';
 
-import { signInCloud } from '../../../utils/cloud-utils';
 import type { AuthPanelProps } from './index';
 import * as styles from './style.css';
-import { INTERNAL_BETA_URL, useAuth } from './use-auth';
 import { useCaptcha } from './use-captcha';
 
 export const SignInWithPassword: FC<AuthPanelProps> = ({
@@ -24,57 +23,49 @@ export const SignInWithPassword: FC<AuthPanelProps> = ({
   onSignedIn,
 }) => {
   const t = useAFFiNEI18N();
-  const { reload } = useSession();
+  const authService = useService(AuthService);
 
   const [password, setPassword] = useState('');
   const [passwordError, setPasswordError] = useState(false);
-  const {
-    signIn,
-    allowSendEmail,
-    resetCountDown,
-    isMutating: sendingEmail,
-  } = useAuth();
   const [verifyToken, challenge] = useCaptcha();
   const [isLoading, setIsLoading] = useState(false);
+  const [sendingEmail, setSendingEmail] = useState(false);
 
   const onSignIn = useAsyncCallback(async () => {
     if (isLoading) return;
     setIsLoading(true);
 
-    const res = await signInCloud('credentials', {
-      email,
-      password,
-    }).catch(console.error);
-
-    if (res?.ok) {
-      await reload();
+    try {
+      await authService.signInPassword({
+        email,
+        password,
+      });
       onSignedIn?.();
-    } else {
+    } catch (err) {
+      console.error(err);
       setPasswordError(true);
+    } finally {
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
-  }, [email, password, isLoading, onSignedIn, reload]);
+  }, [isLoading, authService, email, password, onSignedIn]);
 
   const sendMagicLink = useAsyncCallback(async () => {
-    if (allowSendEmail && verifyToken && !sendingEmail) {
-      const res = await signIn(email, verifyToken, challenge);
-      if (res?.status === 403 && res?.url === INTERNAL_BETA_URL) {
-        resetCountDown();
-        return setAuthState('noAccess');
+    if (sendingEmail) return;
+    setSendingEmail(true);
+    try {
+      if (verifyToken) {
+        await authService.sendEmailMagicLink(email, verifyToken, challenge);
+        setAuthState('afterSignInSendEmail');
       }
-      setAuthState('afterSignInSendEmail');
+    } catch (err) {
+      console.error(err);
+      notify.error({
+        message: 'Failed to send email, please try again.',
+      });
+      // TODO: handle error better
     }
-  }, [
-    email,
-    signIn,
-    allowSendEmail,
-    sendingEmail,
-    setAuthState,
-    verifyToken,
-    challenge,
-    resetCountDown,
-  ]);
+    setSendingEmail(false);
+  }, [sendingEmail, verifyToken, authService, email, challenge, setAuthState]);
 
   const sendChangePasswordEmail = useCallback(() => {
     setEmailType('changePassword');

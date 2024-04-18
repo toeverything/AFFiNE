@@ -1,0 +1,180 @@
+import { apis } from '@affine/electron-api';
+import { WorkspaceFlavour } from '@affine/env/workspace';
+import { DocCollection } from '@blocksuite/store';
+import type {
+  BlobStorage,
+  Workspace,
+  WorkspaceEngineProvider,
+  WorkspaceFlavourProvider,
+  WorkspaceMetadata,
+  WorkspaceProfileInfo,
+} from '@toeverything/infra';
+import { globalBlockSuiteSchema, LiveData, Service } from '@toeverything/infra';
+import { nanoid } from 'nanoid';
+import { Observable } from 'rxjs';
+import { applyUpdate, encodeStateAsUpdate } from 'yjs';
+
+import type { WorkspaceEngineStorageProvider } from '../providers/engine';
+import { BroadcastChannelAwarenessConnection } from './engine/awareness-broadcast-channel';
+
+export const LOCAL_WORKSPACE_LOCAL_STORAGE_KEY = 'affine-local-workspace';
+const LOCAL_WORKSPACE_CHANGED_BROADCAST_CHANNEL_KEY =
+  'affine-local-workspace-changed';
+
+export class LocalWorkspaceFlavourProvider
+  extends Service
+  implements WorkspaceFlavourProvider
+{
+  constructor(
+    private readonly storageProvider: WorkspaceEngineStorageProvider
+  ) {
+    super();
+  }
+
+  flavour: WorkspaceFlavour = WorkspaceFlavour.LOCAL;
+  notifyChannel = new BroadcastChannel(
+    LOCAL_WORKSPACE_CHANGED_BROADCAST_CHANNEL_KEY
+  );
+
+  async deleteWorkspace(id: string): Promise<void> {
+    const allWorkspaceIDs: string[] = JSON.parse(
+      localStorage.getItem(LOCAL_WORKSPACE_LOCAL_STORAGE_KEY) ?? '[]'
+    );
+    localStorage.setItem(
+      LOCAL_WORKSPACE_LOCAL_STORAGE_KEY,
+      JSON.stringify(allWorkspaceIDs.filter(x => x !== id))
+    );
+
+    if (apis && environment.isDesktop) {
+      await apis.workspace.delete(id);
+    }
+
+    // notify all browser tabs, so they can update their workspace list
+    this.notifyChannel.postMessage(id);
+  }
+  async createWorkspace(
+    initial: (
+      docCollection: DocCollection,
+      blobStorage: BlobStorage
+    ) => Promise<void>
+  ): Promise<WorkspaceMetadata> {
+    const id = nanoid();
+
+    // save the initial state to local storage, then sync to cloud
+    const blobStorage = this.storageProvider.getBlobStorage(id);
+    const docStorage = this.storageProvider.getDocStorage(id);
+
+    const docCollection = new DocCollection({
+      id: id,
+      idGenerator: () => nanoid(),
+      schema: globalBlockSuiteSchema,
+      blobStorages: [() => ({ crud: blobStorage })],
+    });
+
+    // apply initial state
+    await initial(docCollection, blobStorage);
+
+    // save workspace to local storage, should be vary fast
+    await docStorage.doc.set(id, encodeStateAsUpdate(docCollection.doc));
+    for (const subdocs of docCollection.doc.getSubdocs()) {
+      await docStorage.doc.set(subdocs.guid, encodeStateAsUpdate(subdocs));
+    }
+
+    // save workspace id to local storage
+    const allWorkspaceIDs: string[] = JSON.parse(
+      localStorage.getItem(LOCAL_WORKSPACE_LOCAL_STORAGE_KEY) ?? '[]'
+    );
+    allWorkspaceIDs.push(id);
+    localStorage.setItem(
+      LOCAL_WORKSPACE_LOCAL_STORAGE_KEY,
+      JSON.stringify(allWorkspaceIDs)
+    );
+
+    // notify all browser tabs, so they can update their workspace list
+    this.notifyChannel.postMessage(id);
+
+    return { id, flavour: WorkspaceFlavour.LOCAL };
+  }
+  workspaces$ = LiveData.from(
+    new Observable<WorkspaceMetadata[]>(subscriber => {
+      const emit = () => {
+        subscriber.next(
+          JSON.parse(
+            localStorage.getItem(LOCAL_WORKSPACE_LOCAL_STORAGE_KEY) ?? '[]'
+          ).map((id: string) => ({ id, flavour: WorkspaceFlavour.LOCAL }))
+        );
+      };
+
+      emit();
+      const channel = new BroadcastChannel(
+        LOCAL_WORKSPACE_CHANGED_BROADCAST_CHANNEL_KEY
+      );
+      channel.addEventListener('message', emit);
+
+      return () => {
+        channel.removeEventListener('message', emit);
+        channel.close();
+      };
+    }),
+    []
+  );
+  isLoading$ = new LiveData(false);
+  revalidate(): void {
+    // notify livedata to re-scan workspaces
+    this.notifyChannel.postMessage(null);
+  }
+
+  async getWorkspaceProfile(
+    id: string
+  ): Promise<WorkspaceProfileInfo | undefined> {
+    const docStorage = this.storageProvider.getDocStorage(id);
+    const localData = await docStorage.doc.get(id);
+
+    if (!localData) {
+      return {
+        isOwner: true,
+      };
+    }
+
+    const bs = new DocCollection({
+      id,
+      schema: globalBlockSuiteSchema,
+    });
+
+    if (localData) applyUpdate(bs.doc, localData);
+
+    return {
+      name: bs.meta.name,
+      avatar: bs.meta.avatar,
+      isOwner: true,
+    };
+  }
+  getWorkspaceBlob(id: string, blob: string): Promise<Blob | null> {
+    return this.storageProvider.getBlobStorage(id).get(blob);
+  }
+
+  getEngineProvider(workspace: Workspace): WorkspaceEngineProvider {
+    return {
+      getAwarenessConnections() {
+        return [
+          new BroadcastChannelAwarenessConnection(
+            workspace.id,
+            workspace.awareness
+          ),
+        ];
+      },
+      getDocServer() {
+        return null;
+      },
+      getDocStorage: () => {
+        return this.storageProvider.getDocStorage(workspace.id);
+      },
+      getLocalBlobStorage: () => {
+        return this.storageProvider.getBlobStorage(workspace.id);
+      },
+      getRemoteBlobStorages() {
+        return [];
+      },
+    };
+  }
+}

@@ -2,18 +2,26 @@ import { toast } from '@affine/component';
 import type { AllPageListConfig } from '@affine/core/components/page-list';
 import { FavoriteTag } from '@affine/core/components/page-list';
 import { useBlockSuiteDocMeta } from '@affine/core/hooks/use-block-suite-page-meta';
-import { FavoriteItemsAdapter } from '@affine/core/modules/workspace';
+import { FavoriteItemsAdapter } from '@affine/core/modules/properties';
+import { ShareDocsService } from '@affine/core/modules/share-doc';
+import { PublicPageMode } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { DocMeta } from '@blocksuite/store';
-import { useLiveData, useService, Workspace } from '@toeverything/infra';
-import { useCallback, useMemo } from 'react';
+import { useLiveData, useService, WorkspaceService } from '@toeverything/infra';
+import { useCallback, useEffect, useMemo } from 'react';
 
 import { usePageHelper } from '../../components/blocksuite/block-suite-page-list/utils';
-import { usePublicPages } from './use-is-shared-page';
 
 export const useAllPageListConfig = () => {
-  const currentWorkspace = useService(Workspace);
-  const { getPublicMode } = usePublicPages(currentWorkspace);
+  const currentWorkspace = useService(WorkspaceService).workspace;
+  const shareDocService = useService(ShareDocsService);
+  const shareDocs = useLiveData(shareDocService.shareDocs.list$);
+
+  useEffect(() => {
+    // TODO: loading & error UI
+    shareDocService.shareDocs.revalidate();
+  }, [shareDocService]);
+
   const workspace = currentWorkspace.docCollection;
   const pageMetas = useBlockSuiteDocMeta(workspace);
   const { isPreferredEdgeless } = usePageHelper(workspace);
@@ -48,7 +56,16 @@ export const useAllPageListConfig = () => {
     return {
       allPages: pageMetas,
       isEdgeless: isPreferredEdgeless,
-      getPublicMode,
+      getPublicMode(id) {
+        const mode = shareDocs?.find(shareDoc => shareDoc.id === id)?.mode;
+        if (mode === PublicPageMode.Edgeless) {
+          return 'edgeless';
+        } else if (mode === PublicPageMode.Page) {
+          return 'page';
+        } else {
+          return undefined;
+        }
+      },
       docCollection: currentWorkspace.docCollection,
       getPage: id => pageMap[id],
       favoriteRender: page => {
@@ -64,8 +81,8 @@ export const useAllPageListConfig = () => {
   }, [
     pageMetas,
     isPreferredEdgeless,
-    getPublicMode,
     currentWorkspace.docCollection,
+    shareDocs,
     pageMap,
     isActive,
     onToggleFavoritePage,

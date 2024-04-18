@@ -4,7 +4,7 @@ import { useLiveData, useService } from '@toeverything/infra';
 import type { To } from 'history';
 import { useCallback } from 'react';
 
-import { Workbench } from '../entities/workbench';
+import { WorkbenchService } from '../services/workbench';
 
 export const WorkbenchLink = ({
   to,
@@ -13,7 +13,7 @@ export const WorkbenchLink = ({
 }: React.PropsWithChildren<
   { to: To } & React.HTMLProps<HTMLAnchorElement>
 >) => {
-  const workbench = useService(Workbench);
+  const workbench = useService(WorkbenchService).workbench;
   const { appSettings } = useAppSettingHelper();
   const basename = useLiveData(workbench.basename$);
   const link =

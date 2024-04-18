@@ -4,25 +4,26 @@ import { Button } from '@affine/component/ui/button';
 import { Upload } from '@affine/core/components/pure/file-upload';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { useWorkspaceBlobObjectUrl } from '@affine/core/hooks/use-workspace-blob';
+import { WorkspacePermissionService } from '@affine/core/modules/permissions';
 import { validateAndReduceImage } from '@affine/core/utils/reduce-image';
 import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CameraIcon } from '@blocksuite/icons';
-import type { Workspace } from '@toeverything/infra';
-import { useLiveData } from '@toeverything/infra';
+import { useLiveData, useService, WorkspaceService } from '@toeverything/infra';
 import type { KeyboardEvent, MouseEvent } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 
 import * as style from './style.css';
-import type { WorkspaceSettingDetailProps } from './types';
 
-export interface ProfilePanelProps extends WorkspaceSettingDetailProps {
-  workspace: Workspace | null;
-}
-
-export const ProfilePanel = ({ isOwner, workspace }: ProfilePanelProps) => {
+export const ProfilePanel = () => {
   const t = useAFFiNEI18N();
 
+  const workspace = useService(WorkspaceService).workspace;
+  const permissionService = useService(WorkspacePermissionService);
+  const isOwner = useLiveData(permissionService.permission.isOwner$);
+  useEffect(() => {
+    permissionService.permission.revalidate();
+  }, [permissionService]);
   const workspaceIsReady = useLiveData(workspace?.engine.rootDocState$)?.ready;
 
   const [avatarBlob, setAvatarBlob] = useState<string | null>(null);

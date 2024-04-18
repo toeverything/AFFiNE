@@ -1,44 +1,44 @@
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import type { Doc as BlockSuiteDoc } from '@blocksuite/store';
 import {
-  configureTestingInfraServices,
-  PageManager,
-  ServiceCollection,
-  WorkspaceManager,
+  configureTestingInfraModules,
+  DocsService,
+  Framework,
+  WorkspacesService,
 } from '@toeverything/infra';
 
-import { CurrentWorkspaceService } from './modules/workspace';
-import { configureWebServices } from './web';
+import { configureCommonModules } from './modules';
 
 export async function configureTestingEnvironment() {
-  const serviceCollection = new ServiceCollection();
+  const framework = new Framework();
 
-  configureWebServices(serviceCollection);
-  configureTestingInfraServices(serviceCollection);
+  configureCommonModules(framework);
+  configureTestingInfraModules(framework);
 
-  const rootServices = serviceCollection.provider();
+  const frameworkProvider = framework.provider();
 
-  const workspaceManager = rootServices.get(WorkspaceManager);
+  const workspaceManager = frameworkProvider.get(WorkspacesService);
 
-  const { workspace } = workspaceManager.open(
-    await workspaceManager.createWorkspace(WorkspaceFlavour.LOCAL, async ws => {
-      const initPage = async (page: BlockSuiteDoc) => {
-        page.load();
-        const pageBlockId = page.addBlock('affine:page', {
-          title: new page.Text(''),
-        });
-        const frameId = page.addBlock('affine:note', {}, pageBlockId);
-        page.addBlock('affine:paragraph', {}, frameId);
-      };
-      await initPage(ws.createDoc({ id: 'page0' }));
-    })
-  );
+  const { workspace } = workspaceManager.open({
+    metadata: await workspaceManager.create(
+      WorkspaceFlavour.LOCAL,
+      async ws => {
+        const initDoc = async (page: BlockSuiteDoc) => {
+          page.load();
+          const pageBlockId = page.addBlock('affine:page', {
+            title: new page.Text(''),
+          });
+          const frameId = page.addBlock('affine:note', {}, pageBlockId);
+          page.addBlock('affine:paragraph', {}, frameId);
+        };
+        await initDoc(ws.createDoc({ id: 'page0' }));
+      }
+    ),
+  });
 
-  await workspace.engine.waitForSynced();
+  await workspace.engine.waitForDocSynced();
 
-  const { page } = workspace.services.get(PageManager).open('page0');
+  const { doc } = workspace.scope.get(DocsService).open('page0');
 
-  rootServices.get(CurrentWorkspaceService).openWorkspace(workspace);
-
-  return { services: rootServices, workspace, page };
+  return { framework: frameworkProvider, workspace, doc };
 }

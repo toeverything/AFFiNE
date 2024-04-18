@@ -11,8 +11,8 @@ import {
 import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
 import { useBlockSuiteMetaHelper } from '@affine/core/hooks/affine/use-block-suite-meta-helper';
 import { useTrashModalHelper } from '@affine/core/hooks/affine/use-trash-modal-helper';
-import { Workbench } from '@affine/core/modules/workbench';
-import { FavoriteItemsAdapter } from '@affine/core/modules/workspace';
+import { FavoriteItemsAdapter } from '@affine/core/modules/properties';
+import { WorkbenchService } from '@affine/core/modules/workbench';
 import type { Collection, DeleteCollectionInfo } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
@@ -31,7 +31,7 @@ import {
   SplitViewIcon,
 } from '@blocksuite/icons';
 import type { DocMeta } from '@blocksuite/store';
-import { useLiveData, useService, Workspace } from '@toeverything/infra';
+import { useLiveData, useService, WorkspaceService } from '@toeverything/infra';
 import { useCallback, useState } from 'react';
 import { Link } from 'react-router-dom';
 
@@ -58,13 +58,13 @@ export const PageOperationCell = ({
   onRemoveFromAllowList,
 }: PageOperationCellProps) => {
   const t = useAFFiNEI18N();
-  const currentWorkspace = useService(Workspace);
+  const currentWorkspace = useService(WorkspaceService).workspace;
   const { appSettings } = useAppSettingHelper();
   const { setTrashModal } = useTrashModalHelper(currentWorkspace.docCollection);
   const [openDisableShared, setOpenDisableShared] = useState(false);
   const favAdapter = useService(FavoriteItemsAdapter);
   const favourite = useLiveData(favAdapter.isFavorite$(page.id, 'doc'));
-  const workbench = useService(Workbench);
+  const workbench = useService(WorkbenchService).workbench;
   const { duplicate } = useBlockSuiteMetaHelper(currentWorkspace.docCollection);
 
   const onDisablePublicSharing = useCallback(() => {

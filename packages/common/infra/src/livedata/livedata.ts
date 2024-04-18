@@ -428,6 +428,9 @@ export class LiveData<T = unknown>
           if (v instanceof LiveData) {
             return (v as LiveData<any>).flat();
           } else if (Array.isArray(v)) {
+            if (v.length === 0) {
+              return of([]);
+            }
             return combineLatest(
               v.map(v => {
                 if (v instanceof LiveData) {
@@ -444,6 +447,29 @@ export class LiveData<T = unknown>
       ),
       null as any
     ) as any;
+  }
+
+  waitFor(predicate: (v: T) => unknown, signal?: AbortSignal): Promise<T> {
+    return new Promise((resolve, reject) => {
+      const subscription = this.subscribe(v => {
+        if (predicate(v)) {
+          resolve(v as any);
+          setImmediate(() => {
+            subscription.unsubscribe();
+          });
+        }
+      });
+      signal?.addEventListener('abort', reason => {
+        subscription.unsubscribe();
+        reject(reason);
+      });
+    });
+  }
+
+  waitForNonNull(signal?: AbortSignal) {
+    return this.waitFor(v => v !== null && v !== undefined, signal) as Promise<
+      NonNullable<T>
+    >;
   }
 
   reactSubscribe = (cb: () => void) => {

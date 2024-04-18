@@ -1,8 +1,8 @@
-import { useLiveData, useService, Workspace } from '@toeverything/infra';
+import { useLiveData, useService, WorkspaceService } from '@toeverything/infra';
 import { useMemo } from 'react';
 
 export function useDocEngineStatus() {
-  const workspace = useService(Workspace);
+  const workspace = useService(WorkspaceService).workspace;
 
   const engineState = useLiveData(
     workspace.engine.docEngineState$.throttleTime(100)

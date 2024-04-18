@@ -35,6 +35,18 @@ export class ChatSession implements AsyncDisposable {
     return this.state.prompt.model;
   }
 
+  get config() {
+    const {
+      sessionId,
+      userId,
+      workspaceId,
+      docId,
+      prompt: { name: promptName },
+    } = this.state;
+
+    return { sessionId, userId, workspaceId, docId, promptName };
+  }
+
   push(message: ChatMessage) {
     if (
       this.state.prompt.action &&
@@ -306,6 +318,7 @@ export class ChatSessionService {
         select: {
           id: true,
           promptName: true,
+          createdAt: true,
           messages: {
             select: {
               role: true,
@@ -323,7 +336,7 @@ export class ChatSessionService {
       })
       .then(sessions =>
         Promise.all(
-          sessions.map(async ({ id, promptName, messages }) => {
+          sessions.map(async ({ id, promptName, messages, createdAt }) => {
             try {
               const ret = PromptMessageSchema.array().safeParse(messages);
               if (ret.success) {
@@ -345,6 +358,7 @@ export class ChatSessionService {
                   sessionId: id,
                   action: prompt.action || undefined,
                   tokens,
+                  createdAt,
                   messages: preload.concat(ret.data),
                 };
               } else {

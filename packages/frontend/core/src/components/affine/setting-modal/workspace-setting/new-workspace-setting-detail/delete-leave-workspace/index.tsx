@@ -2,16 +2,18 @@ import { notify } from '@affine/component';
 import { SettingRow } from '@affine/component/setting-components';
 import { ConfirmModal } from '@affine/component/ui/modal';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
+import { WorkspacePermissionService } from '@affine/core/modules/permissions';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowRightSmallIcon } from '@blocksuite/icons';
 import {
+  GlobalContextService,
   useLiveData,
   useService,
-  Workspace,
-  WorkspaceManager,
+  WorkspaceService,
+  WorkspacesService,
 } from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { openSettingModalAtom } from '../../../../../../atoms';
 import {
@@ -19,41 +21,45 @@ import {
   useNavigateHelper,
 } from '../../../../../../hooks/use-navigate-helper';
 import { WorkspaceSubPath } from '../../../../../../shared';
-import type { WorkspaceSettingDetailProps } from '../types';
 import { WorkspaceDeleteModal } from './delete';
 
-export interface DeleteLeaveWorkspaceProps
-  extends WorkspaceSettingDetailProps {}
-
-export const DeleteLeaveWorkspace = ({
-  workspaceMetadata,
-  isOwner,
-}: DeleteLeaveWorkspaceProps) => {
+export const DeleteLeaveWorkspace = () => {
   const t = useAFFiNEI18N();
+  const workspace = useService(WorkspaceService).workspace;
   const { jumpToSubPath, jumpToIndex } = useNavigateHelper();
   // fixme: cloud regression
   const [showDelete, setShowDelete] = useState(false);
   const [showLeave, setShowLeave] = useState(false);
   const setSettingModal = useSetAtom(openSettingModalAtom);
 
-  const workspaceManager = useService(WorkspaceManager);
-  const workspaceList = useLiveData(workspaceManager.list.workspaceList$);
-  const currentWorkspace = useService(Workspace);
+  const workspacesService = useService(WorkspacesService);
+  const workspaceList = useLiveData(workspacesService.list.workspaces$);
+  const currentWorkspaceId = useLiveData(
+    useService(GlobalContextService).globalContext.workspaceId.$
+  );
+
+  const permissionService = useService(WorkspacePermissionService);
+  const isOwner = useLiveData(permissionService.permission.isOwner$);
+  useEffect(() => {
+    permissionService.permission.revalidate();
+  }, [permissionService]);
 
   const onLeaveOrDelete = useCallback(() => {
-    if (isOwner) {
-      setShowDelete(true);
-    } else {
-      setShowLeave(true);
+    if (isOwner !== null) {
+      if (isOwner) {
+        setShowDelete(true);
+      } else {
+        setShowLeave(true);
+      }
     }
   }, [isOwner]);
 
   const onDeleteConfirm = useAsyncCallback(async () => {
     setSettingModal(prev => ({ ...prev, open: false, workspaceId: null }));
 
-    if (currentWorkspace?.id === workspaceMetadata.id) {
+    if (currentWorkspaceId === workspace.id) {
       const backWorkspace = workspaceList.find(
-        ws => ws.id !== workspaceMetadata.id
+        ws => ws.id !== currentWorkspaceId
       );
       // TODO: if there is no workspace, jump to a new page(wait for design)
       if (backWorkspace) {
@@ -67,17 +73,18 @@ export const DeleteLeaveWorkspace = ({
       }
     }
 
-    await workspaceManager.deleteWorkspace(workspaceMetadata);
+    await workspacesService.deleteWorkspace(workspace.meta);
     notify.success({ title: t['Successfully deleted']() });
   }, [
-    currentWorkspace?.id,
-    jumpToIndex,
-    jumpToSubPath,
     setSettingModal,
+    currentWorkspaceId,
+    workspace.id,
+    workspace.meta,
+    workspacesService,
     t,
     workspaceList,
-    workspaceManager,
-    workspaceMetadata,
+    jumpToSubPath,
+    jumpToIndex,
   ]);
 
   return (
@@ -102,7 +109,7 @@ export const DeleteLeaveWorkspace = ({
           onConfirm={onDeleteConfirm}
           open={showDelete}
           onOpenChange={setShowDelete}
-          workspaceMetadata={workspaceMetadata}
+          workspaceMetadata={workspace.meta}
         />
       ) : (
         <ConfirmModal

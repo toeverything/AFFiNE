@@ -1,9 +1,12 @@
 import { Unreachable } from '@affine/env/constant';
-import { LiveData } from '@toeverything/infra';
+import { Entity, LiveData } from '@toeverything/infra';
 import type { To } from 'history';
+import { nanoid } from 'nanoid';
 import { combineLatest, map, switchMap } from 'rxjs';
 
-import { View } from './view';
+import { ViewScope } from '../scopes/view';
+import { ViewService } from '../services/view';
+import type { View } from './view';
 
 export type WorkbenchPosition = 'beside' | 'active' | 'head' | 'tail' | number;
 
@@ -12,8 +15,11 @@ interface WorkbenchOpenOptions {
   replaceHistory?: boolean;
 }
 
-export class Workbench {
-  readonly views$ = new LiveData([new View()]);
+export class Workbench extends Entity {
+  readonly views$ = new LiveData([
+    this.framework.createScope(ViewScope, { id: nanoid() }).get(ViewService)
+      .view,
+  ]);
 
   activeViewIndex$ = new LiveData(0);
   activeView$ = LiveData.from(
@@ -35,7 +41,9 @@ export class Workbench {
   }
 
   createView(at: WorkbenchPosition = 'beside', defaultLocation: To) {
-    const view = new View(defaultLocation);
+    const view = this.framework
+      .createScope(ViewScope, { id: nanoid(), defaultLocation })
+      .get(ViewService).view;
     const newViews = [...this.views$.value];
     newViews.splice(this.indexAt(at), 0, view);
     this.views$.next(newViews);

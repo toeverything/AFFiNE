@@ -8,7 +8,6 @@ import {
   SignInSuccessPage,
   SignUpPage,
 } from '@affine/component/auth-components';
-import { useCredentialsRequirement } from '@affine/core/hooks/affine/use-server-config';
 import {
   changeEmailMutation,
   changePasswordMutation,
@@ -17,18 +16,17 @@ import {
   verifyEmailMutation,
 } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useLiveData, useService } from '@toeverything/infra';
 import type { ReactElement } from 'react';
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import type { LoaderFunction } from 'react-router-dom';
 import { redirect, useParams, useSearchParams } from 'react-router-dom';
 import { z } from 'zod';
 
-import { SubscriptionRedirect } from '../components/affine/auth/subscription-redirect';
 import { WindowsAppControls } from '../components/pure/header/windows-app-controls';
-import { useCurrentLoginStatus } from '../hooks/affine/use-current-login-status';
-import { useCurrentUser } from '../hooks/affine/use-current-user';
 import { useMutation } from '../hooks/use-mutation';
 import { RouteLogic, useNavigateHelper } from '../hooks/use-navigate-helper';
+import { AuthService, ServerConfigService } from '../modules/cloud';
 
 const authTypeSchema = z.enum([
   'onboarding',
@@ -43,9 +41,13 @@ const authTypeSchema = z.enum([
 ]);
 
 export const AuthPage = (): ReactElement | null => {
-  const user = useCurrentUser();
+  const authService = useService(AuthService);
+  const account = useLiveData(authService.session.account$);
   const t = useAFFiNEI18N();
-  const { password: passwordLimits } = useCredentialsRequirement();
+  const serverConfig = useService(ServerConfigService).serverConfig;
+  const passwordLimits = useLiveData(
+    serverConfig.credentialsRequirement$.map(r => r?.password)
+  );
 
   const { authType } = useParams();
   const [searchParams] = useSearchParams();
@@ -97,11 +99,16 @@ export const AuthPage = (): ReactElement | null => {
     jumpToIndex(RouteLogic.REPLACE);
   }, [jumpToIndex]);
 
+  if (!passwordLimits || !account) {
+    // TODO: loading UI
+    return null;
+  }
+
   switch (authType) {
     case 'onboarding':
       return (
         <OnboardingPage
-          user={user}
+          user={account}
           onOpenAffine={onOpenAffine}
           windowControl={<WindowsAppControls />}
         />
@@ -109,7 +116,7 @@ export const AuthPage = (): ReactElement | null => {
     case 'signUp': {
       return (
         <SignUpPage
-          user={user}
+          user={account}
           passwordLimits={passwordLimits}
           onSetPassword={onSetPassword}
           onOpenAffine={onOpenAffine}
@@ -122,7 +129,7 @@ export const AuthPage = (): ReactElement | null => {
     case 'changePassword': {
       return (
         <ChangePasswordPage
-          user={user}
+          user={account}
           passwordLimits={passwordLimits}
           onSetPassword={onSetPassword}
           onOpenAffine={onOpenAffine}
@@ -132,7 +139,7 @@ export const AuthPage = (): ReactElement | null => {
     case 'setPassword': {
       return (
         <SetPasswordPage
-          user={user}
+          user={account}
           passwordLimits={passwordLimits}
           onSetPassword={onSetPassword}
           onOpenAffine={onOpenAffine}
@@ -149,9 +156,6 @@ export const AuthPage = (): ReactElement | null => {
     }
     case 'confirm-change-email': {
       return <ConfirmChangeEmail onOpenAffine={onOpenAffine} />;
-    }
-    case 'subscription-redirect': {
-      return <SubscriptionRedirect />;
     }
     case 'verify-email': {
       return <ConfirmChangeEmail onOpenAffine={onOpenAffine} />;
@@ -203,10 +207,16 @@ export const loader: LoaderFunction = async args => {
 };
 
 export const Component = () => {
-  const loginStatus = useCurrentLoginStatus();
+  const authService = useService(AuthService);
+  const isRevalidating = useLiveData(authService.session.isRevalidating$);
+  const loginStatus = useLiveData(authService.session.status$);
   const { jumpToExpired } = useNavigateHelper();
 
-  if (loginStatus === 'unauthenticated') {
+  useEffect(() => {
+    authService.session.revalidate();
+  }, [authService]);
+
+  if (loginStatus === 'unauthenticated' && !isRevalidating) {
     jumpToExpired(RouteLogic.REPLACE);
   }
 
@@ -214,5 +224,6 @@ export const Component = () => {
     return <AuthPage />;
   }
 
+  // TODO: loading UI
   return null;
 };

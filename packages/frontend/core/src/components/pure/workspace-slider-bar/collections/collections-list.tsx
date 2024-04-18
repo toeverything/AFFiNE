@@ -18,7 +18,7 @@ import {
   resolveDragEndIntent,
 } from '@affine/core/hooks/affine/use-global-dnd-helper';
 import { CollectionService } from '@affine/core/modules/collection';
-import { FavoriteItemsAdapter } from '@affine/core/modules/workspace';
+import { FavoriteItemsAdapter } from '@affine/core/modules/properties';
 import type { Collection } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
@@ -35,13 +35,13 @@ import { useCallback, useMemo, useState } from 'react';
 
 import { useAllPageListConfig } from '../../../../hooks/affine/use-all-page-list-config';
 import { useBlockSuiteDocMeta } from '../../../../hooks/use-block-suite-page-meta';
-import { Workbench } from '../../../../modules/workbench';
+import { WorkbenchService } from '../../../../modules/workbench';
 import { WorkbenchLink } from '../../../../modules/workbench/view/workbench-link';
 import { MenuLinkItem as SidebarMenuLinkItem } from '../../../app-sidebar';
 import { DragMenuItemOverlay } from '../components/drag-menu-item-overlay';
 import * as draggableMenuItemStyles from '../components/draggable-menu-item.css';
 import type { CollectionsListProps } from '../index';
-import { Page } from './page';
+import { Doc } from './doc';
 import * as styles from './styles.css';
 
 const animateLayoutChanges: AnimateLayoutChanges = ({
@@ -131,8 +131,11 @@ export const CollectionSidebarNavItem = ({
     };
     return filterPage(collection, pageData);
   });
-  const location = useLiveData(useService(Workbench).location$);
-  const currentPath = location.pathname;
+  const currentPath = useLiveData(
+    useService(WorkbenchService).workbench.location$.map(
+      location => location.pathname
+    )
+  );
   const path = `/collection/${collection.id}`;
 
   const onRename = useCallback(
@@ -231,12 +234,12 @@ export const CollectionSidebarNavItem = ({
         <div style={{ marginLeft: 20, marginTop: -4 }}>
           {pagesToRender.map(page => {
             return (
-              <Page
+              <Doc
                 parentId={dndId}
                 inAllowList={allowList.has(page.id)}
                 removeFromAllowList={removeFromAllowList}
                 allPageMeta={allPagesMeta}
-                page={page}
+                doc={page}
                 key={page.id}
                 docCollection={docCollection}
               />

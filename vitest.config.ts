@@ -9,7 +9,12 @@ import { defineConfig } from 'vitest/config';
 const rootDir = fileURLToPath(new URL('.', import.meta.url));
 
 export default defineConfig({
-  plugins: [react(), vanillaExtractPlugin()],
+  plugins: [
+    react({
+      tsDecorators: true,
+    }),
+    vanillaExtractPlugin(),
+  ],
   assetsInclude: ['**/*.md', '**/*.zip'],
   resolve: {
     alias: {

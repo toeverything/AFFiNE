@@ -2,32 +2,40 @@ export * from './app-config-storage';
 export * from './atom';
 export * from './blocksuite';
 export * from './command';
-export * from './di';
+export * from './framework';
 export * from './initialization';
-export * from './lifecycle';
 export * from './livedata';
-export * from './page';
+export * from './modules/doc';
+export * from './modules/global-context';
+export * from './modules/lifecycle';
+export * from './modules/storage';
+export * from './modules/workspace';
 export * from './storage';
+export * from './sync';
 export * from './utils';
-export * from './workspace';
 
-import type { ServiceCollection } from './di';
-import { CleanupService } from './lifecycle';
-import { configurePageServices } from './page';
-import { GlobalCache, GlobalState, MemoryMemento } from './storage';
+import type { Framework } from './framework';
+import { configureDocModule } from './modules/doc';
+import { configureGlobalContextModule } from './modules/global-context';
+import { configureLifecycleModule } from './modules/lifecycle';
 import {
-  configureTestingWorkspaceServices,
-  configureWorkspaceServices,
-} from './workspace';
+  configureGlobalStorageModule,
+  configureTestingGlobalStorage,
+} from './modules/storage';
+import {
+  configureTestingWorkspaceProvider,
+  configureWorkspaceModule,
+} from './modules/workspace';
 
-export function configureInfraServices(services: ServiceCollection) {
-  services.add(CleanupService);
-  configureWorkspaceServices(services);
-  configurePageServices(services);
+export function configureInfraModules(framework: Framework) {
+  configureWorkspaceModule(framework);
+  configureDocModule(framework);
+  configureGlobalStorageModule(framework);
+  configureGlobalContextModule(framework);
+  configureLifecycleModule(framework);
 }
 
-export function configureTestingInfraServices(services: ServiceCollection) {
-  configureTestingWorkspaceServices(services);
-  services.override(GlobalCache, MemoryMemento);
-  services.override(GlobalState, MemoryMemento);
+export function configureTestingInfraModules(framework: Framework) {
+  configureTestingGlobalStorage(framework);
+  configureTestingWorkspaceProvider(framework);
 }

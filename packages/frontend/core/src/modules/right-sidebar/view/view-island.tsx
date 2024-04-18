@@ -1,8 +1,8 @@
 import { useService } from '@toeverything/infra';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 
-import { RightSidebar } from '../entities/right-sidebar';
-import { RightSidebarView } from '../entities/right-sidebar-view';
+import type { RightSidebarView } from '../entities/right-sidebar-view';
+import { RightSidebarService } from '../services/right-sidebar';
 
 export interface RightSidebarViewProps {
   body: JSX.Element;
@@ -16,22 +16,28 @@ export const RightSidebarViewIsland = ({
   header,
   active,
 }: RightSidebarViewProps) => {
-  const rightSidebar = useService(RightSidebar);
+  const rightSidebar = useService(RightSidebarService).rightSidebar;
 
-  const view = useMemo(() => new RightSidebarView(), []);
+  const [view, setView] = useState<RightSidebarView | null>(null);
 
   useEffect(() => {
-    rightSidebar._append(view);
+    const view = rightSidebar._append();
+    setView(view);
     return () => {
       rightSidebar._remove(view);
+      setView(null);
     };
-  }, [rightSidebar, view]);
+  }, [rightSidebar]);
 
   useEffect(() => {
-    if (active) {
+    if (active && view) {
       rightSidebar._moveToFront(view);
     }
   }, [active, rightSidebar, view]);
+
+  if (!view) {
+    return null;
+  }
 
   return (
     <>

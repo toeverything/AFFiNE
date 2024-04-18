@@ -1,12 +1,15 @@
 import type { GlobalState } from '@toeverything/infra';
-import { LiveData } from '@toeverything/infra';
+import { Entity, LiveData } from '@toeverything/infra';
 
-import type { RightSidebarView } from './right-sidebar-view';
+import { RightSidebarView } from './right-sidebar-view';
 
 const RIGHT_SIDEBAR_KEY = 'app:settings:rightsidebar';
 
-export class RightSidebar {
-  constructor(private readonly globalState: GlobalState) {}
+export class RightSidebar extends Entity {
+  constructor(private readonly globalState: GlobalState) {
+    super();
+  }
+
   readonly isOpen$ = LiveData.from(
     this.globalState.watch<boolean>(RIGHT_SIDEBAR_KEY),
     false
@@ -36,8 +39,10 @@ export class RightSidebar {
   /**
    * @private use `RightSidebarViewIsland` instead
    */
-  _append(view: RightSidebarView) {
+  _append() {
+    const view = this.framework.createEntity(RightSidebarView);
     this.views$.next([...this.views$.value, view]);
+    return view;
   }
 
   /**

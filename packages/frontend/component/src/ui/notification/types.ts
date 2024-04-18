@@ -28,6 +28,7 @@ export interface Notification {
   title?: ReactNode;
   message?: ReactNode;
   icon?: ReactNode;
+  iconColor?: string;
   footer?: ReactNode;
 
   // events

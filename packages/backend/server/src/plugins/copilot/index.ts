@@ -1,6 +1,6 @@
 import { ServerFeature } from '../../core/config';
-import { FeatureManagementService, FeatureService } from '../../core/features';
-import { QuotaService } from '../../core/quota';
+import { FeatureModule } from '../../core/features';
+import { QuotaModule } from '../../core/quota';
 import { PermissionService } from '../../core/workspaces/permission';
 import { Plugin } from '../registry';
 import { CopilotController } from './controller';
@@ -15,23 +15,23 @@ import {
 } from './providers';
 import { CopilotResolver, UserCopilotResolver } from './resolver';
 import { ChatSessionService } from './session';
+import { CopilotStorage } from './storage';
 
 registerCopilotProvider(FalProvider);
 registerCopilotProvider(OpenAIProvider);
 
 @Plugin({
   name: 'copilot',
+  imports: [FeatureModule, QuotaModule],
   providers: [
     PermissionService,
-    FeatureService,
-    FeatureManagementService,
-    QuotaService,
     ChatSessionService,
     CopilotResolver,
     ChatMessageCache,
     UserCopilotResolver,
     PromptService,
     CopilotProviderService,
+    CopilotStorage,
   ],
   controllers: [CopilotController],
   contributesTo: ServerFeature.Copilot,

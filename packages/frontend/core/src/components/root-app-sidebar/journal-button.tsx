@@ -2,7 +2,7 @@ import {
   useJournalInfoHelper,
   useJournalRouteHelper,
 } from '@affine/core/hooks/use-journal';
-import { Workbench } from '@affine/core/modules/workbench';
+import { WorkbenchService } from '@affine/core/modules/workbench';
 import type { DocCollection } from '@affine/core/shared';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { TodayIcon, TomorrowIcon, YesterdayIcon } from '@blocksuite/icons';
@@ -18,7 +18,7 @@ export const AppSidebarJournalButton = ({
   docCollection,
 }: AppSidebarJournalButtonProps) => {
   const t = useAFFiNEI18N();
-  const workbench = useService(Workbench);
+  const workbench = useService(WorkbenchService).workbench;
   const location = useLiveData(workbench.location$);
   const { openToday } = useJournalRouteHelper(docCollection);
   const { journalDate, isJournal } = useJournalInfoHelper(

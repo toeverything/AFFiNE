@@ -1,31 +1,33 @@
-import type { Tag as TagSchema } from '@affine/env/filter';
-import type { PageRecordList } from '@toeverything/infra';
-import { LiveData } from '@toeverything/infra';
+import type { DocsService } from '@toeverything/infra';
+import { Entity, LiveData } from '@toeverything/infra';
 
-import type { WorkspaceLegacyProperties } from '../../workspace';
+import type { TagStore } from '../stores/tag';
 import { tagColorMap } from './utils';
 
-export class Tag {
+export class Tag extends Entity<{ id: string }> {
+  id = this.props.id;
   constructor(
-    readonly id: string,
-    private readonly properties: WorkspaceLegacyProperties,
-    private readonly pageRecordList: PageRecordList
-  ) {}
+    private readonly store: TagStore,
+    private readonly docs: DocsService
+  ) {
+    super();
+  }
 
-  private readonly tagOption$ = this.properties.tagOptions$.map(
-    tags => tags.find(tag => tag.id === this.id) as TagSchema
-  );
+  private readonly tagOption$ = LiveData.from(
+    this.store.watchTagInfo(this.id),
+    undefined
+  ).map(tagInfo => tagInfo);
 
   value$ = this.tagOption$.map(tag => tag?.value || '');
 
-  color$ = this.tagOption$.map(tag => tagColorMap(tag?.color) || '');
+  color$ = this.tagOption$.map(tag => tagColorMap(tag?.color ?? '') || '');
 
   createDate$ = this.tagOption$.map(tag => tag?.createDate || Date.now());
 
   updateDate$ = this.tagOption$.map(tag => tag?.updateDate || Date.now());
 
   rename(value: string) {
-    this.properties.updateTagOption(this.id, {
+    this.store.updateTagInfo(this.id, {
       id: this.id,
       value,
       color: this.color$.value,
@@ -35,17 +37,13 @@ export class Tag {
   }
 
   changeColor(color: string) {
-    this.properties.updateTagOption(this.id, {
-      id: this.id,
-      value: this.value$.value,
+    this.store.updateTagInfo(this.id, {
       color,
-      createDate: this.createDate$.value,
-      updateDate: Date.now(),
     });
   }
 
   tag(pageId: string) {
-    const pageRecord = this.pageRecordList.record$(pageId).value;
+    const pageRecord = this.docs.list.doc$(pageId).value;
     if (!pageRecord) {
       return;
     }
@@ -55,7 +53,7 @@ export class Tag {
   }
 
   untag(pageId: string) {
-    const pageRecord = this.pageRecordList.record$(pageId).value;
+    const pageRecord = this.docs.list.doc$(pageId).value;
     if (!pageRecord) {
       return;
     }
@@ -65,7 +63,7 @@ export class Tag {
   }
 
   readonly pageIds$ = LiveData.computed(get => {
-    const pages = get(this.pageRecordList.records$);
+    const pages = get(this.docs.list.docs$);
     return pages
       .filter(page => get(page.meta$).tags?.includes(this.id))
       .map(page => page.id);

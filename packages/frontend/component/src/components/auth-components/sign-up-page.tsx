@@ -7,11 +7,10 @@ import { Button } from '../../ui/button';
 import { notify } from '../../ui/notification';
 import { AuthPageContainer } from './auth-page-container';
 import { SetPassword } from './set-password';
-import type { User } from './type';
 
 export const SignUpPage: FC<{
   passwordLimits: PasswordLimitsFragment;
-  user: User;
+  user: { email?: string };
   onSetPassword: (password: string) => Promise<void>;
   openButtonText?: string;
   onOpenAffine: () => void;
