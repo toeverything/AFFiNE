@@ -84,7 +84,7 @@ export class CopilotClient {
     return res.currentUser?.copilot?.histories;
   }
 
-  chatText({
+  async chatText({
     sessionId,
     messageId,
     message,
@@ -113,13 +113,8 @@ export class CopilotClient {
       });
     }
 
-    return new Promise(resolve => {
-      fetch(url.toString())
-        .then(res => {
-          resolve(res.text());
-        })
-        .catch(console.error);
-    });
+    const response = await fetch(url.toString());
+    return response.text();
   }
 
   // Text or image to text
