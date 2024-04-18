@@ -50,43 +50,30 @@ export class CopilotController {
     private readonly storage: CopilotStorage
   ) {}
 
-  private async hasAttachment(sessionId: string, messageId?: string) {
+  private async hasAttachment(sessionId: string, messageId: string) {
     const session = await this.chatSession.get(sessionId);
     if (!session) {
       throw new BadRequestException('Session not found');
     }
 
-    if (messageId) {
-      const message = await session.getMessageById(messageId);
-      if (Array.isArray(message.attachments) && message.attachments.length) {
-        return true;
-      }
+    const message = await session.getMessageById(messageId);
+    if (Array.isArray(message.attachments) && message.attachments.length) {
+      return true;
     }
     return false;
   }
 
   private async appendSessionMessage(
     sessionId: string,
-    message?: string,
-    messageId?: string
+    messageId: string
   ): Promise<ChatSession> {
     const session = await this.chatSession.get(sessionId);
     if (!session) {
       throw new BadRequestException('Session not found');
     }
 
-    if (messageId) {
-      await session.pushByMessageId(messageId);
-    } else {
-      if (!message || !message.trim()) {
-        throw new BadRequestException('Message is empty');
-      }
-      session.push({
-        role: 'user',
-        content: decodeURIComponent(message),
-        createdAt: new Date(),
-      });
-    }
+    await session.pushByMessageId(messageId);
+
     return session;
   }
 
@@ -101,8 +88,7 @@ export class CopilotController {
     @CurrentUser() user: CurrentUser,
     @Req() req: Request,
     @Param('sessionId') sessionId: string,
-    @Query('message') message: string | undefined,
-    @Query('messageId') messageId: string | undefined,
+    @Query('messageId') messageId: string,
     @Query() params: Record<string, string | string[]>
   ): Promise<string> {
     await this.chatSession.checkQuota(user.id);
@@ -116,14 +102,9 @@ export class CopilotController {
       throw new InternalServerErrorException('No provider available');
     }
 
-    const session = await this.appendSessionMessage(
-      sessionId,
-      message,
-      messageId
-    );
+    const session = await this.appendSessionMessage(sessionId, messageId);
 
     try {
-      delete params.message;
       delete params.messageId;
       const content = await provider.generateText(
         session.finish(params),
@@ -154,8 +135,7 @@ export class CopilotController {
     @CurrentUser() user: CurrentUser,
     @Req() req: Request,
     @Param('sessionId') sessionId: string,
-    @Query('message') message: string | undefined,
-    @Query('messageId') messageId: string | undefined,
+    @Query('messageId') messageId: string,
     @Query() params: Record<string, string>
   ): Promise<Observable<ChatEvent>> {
     await this.chatSession.checkQuota(user.id);
@@ -169,14 +149,9 @@ export class CopilotController {
       throw new InternalServerErrorException('No provider available');
     }
 
-    const session = await this.appendSessionMessage(
-      sessionId,
-      message,
-      messageId
-    );
-
-    delete params.message;
+    const session = await this.appendSessionMessage(sessionId, messageId);
     delete params.messageId;
+
     return from(
       provider.generateTextStream(session.finish(params), session.model, {
         signal: this.getSignal(req),
@@ -212,8 +187,7 @@ export class CopilotController {
     @CurrentUser() user: CurrentUser,
     @Req() req: Request,
     @Param('sessionId') sessionId: string,
-    @Query('message') message: string | undefined,
-    @Query('messageId') messageId: string | undefined,
+    @Query('messageId') messageId: string,
     @Query() params: Record<string, string>
   ): Promise<Observable<ChatEvent>> {
     await this.chatSession.checkQuota(user.id);
@@ -230,14 +204,9 @@ export class CopilotController {
       throw new InternalServerErrorException('No provider available');
     }
 
-    const session = await this.appendSessionMessage(
-      sessionId,
-      message,
-      messageId
-    );
-
-    delete params.message;
+    const session = await this.appendSessionMessage(sessionId, messageId);
     delete params.messageId;
+
     const handleRemoteLink = this.storage.handleRemoteLink.bind(
       this.storage,
       user.id,
