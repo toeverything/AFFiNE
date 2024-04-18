@@ -1,11 +1,10 @@
-import { toast } from '@affine/component';
 import {
   PreconditionStrategy,
   registerAffineCommand,
   useService,
 } from '@toeverything/infra';
 import { useEffect } from 'react';
-import i18n from 'i18next';
+
 import { Navigator } from '../entities/navigator';
 
 export function useRegisterNavigationCommands() {
@@ -40,23 +39,6 @@ export function useRegisterNavigationCommands() {
         },
         run() {
           navigator.forward();
-        },
-      })
-    );
-
-    unsubs.push(
-      registerAffineCommand({
-        id: 'alert-ctrl-s',
-        category: 'affine:general',
-        preconditionStrategy: PreconditionStrategy.Never,
-        keyBinding: {
-          binding: '$mod+s',
-        },
-        label: '',
-        icon: null,
-        run() {
-          const savingMessage = i18n.t('Save') || 'save';
-          toast(savingMessage);
         },
       })
     );

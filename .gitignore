@@ -26,7 +26,6 @@ node_modules
 *.launch
 .settings/
 *.sublime-workspace
-eslint.config.js
 
 # IDE - VSCode
 .vscode/*

@@ -238,6 +238,22 @@ export function useRegisterBlocksuiteEditorCommands() {
       );
     }
 
+    unsubs.push(
+      registerAffineCommand({
+        id: 'alert-ctrl-s',
+        category: 'affine:general',
+        preconditionStrategy: PreconditionStrategy.Never,
+        keyBinding: {
+          binding: '$mod+s',
+        },
+        label: '',
+        icon: null,
+        run() {
+          toast(t['Save']());
+        },
+      })
+    );
+
     return () => {
       unsubs.forEach(unsub => unsub());
     };
