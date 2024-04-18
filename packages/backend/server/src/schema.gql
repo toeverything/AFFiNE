@@ -278,9 +278,6 @@ type Query {
   listWorkspaceFeatures(feature: FeatureType!): [WorkspaceType!]!
   prices: [SubscriptionPrice!]!
 
-  """Get public workspace by id"""
-  publicWorkspace(id: String!): WorkspaceType!
-
   """server config"""
   serverConfig: ServerConfigType!
 

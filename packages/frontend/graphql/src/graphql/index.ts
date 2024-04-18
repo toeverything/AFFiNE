@@ -374,19 +374,6 @@ query oauthProviders {
 }`,
 };
 
-export const getPublicWorkspaceQuery = {
-  id: 'getPublicWorkspaceQuery' as const,
-  operationName: 'getPublicWorkspace',
-  definitionName: 'publicWorkspace',
-  containsFile: false,
-  query: `
-query getPublicWorkspace($id: String!) {
-  publicWorkspace(id: $id) {
-    id
-  }
-}`,
-};
-
 export const getUserFeaturesQuery = {
   id: 'getUserFeaturesQuery' as const,
   operationName: 'getUserFeatures',

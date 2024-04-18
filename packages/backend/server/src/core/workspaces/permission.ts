@@ -81,10 +81,22 @@ export class PermissionService {
     });
   }
 
+  /**
+   * check if a doc binary is accessible by a user
+   */
   async isAccessible(ws: string, id: string, user?: string): Promise<boolean> {
-    // workspace
     if (ws === id) {
-      return this.tryCheckWorkspace(ws, user, Permission.Read);
+      // if workspace is public or have any public page, then allow to access
+      const [isPublicWorkspace, publicPages] = await Promise.all([
+        this.tryCheckWorkspace(ws, user, Permission.Read),
+        await this.prisma.workspacePage.count({
+          where: {
+            workspaceId: ws,
+            public: true,
+          },
+        }),
+      ]);
+      return isPublicWorkspace || publicPages > 0;
     }
 
     return this.tryCheckPage(ws, id, user);
@@ -153,21 +165,6 @@ export class PermissionService {
       // workspace is public
       // accessible
       if (count > 0) {
-        return true;
-      }
-
-      const publicPage = await this.prisma.workspacePage.findFirst({
-        select: {
-          pageId: true,
-        },
-        where: {
-          workspaceId: ws,
-          public: true,
-        },
-      });
-
-      // has any public pages
-      if (publicPage) {
         return true;
       }
     }

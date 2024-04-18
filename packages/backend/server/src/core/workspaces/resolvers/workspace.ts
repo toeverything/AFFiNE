@@ -188,23 +188,6 @@ export class WorkspaceResolver {
     });
   }
 
-  @Throttle('strict')
-  @Public()
-  @Query(() => WorkspaceType, {
-    description: 'Get public workspace by id',
-  })
-  async publicWorkspace(@Args('id') id: string) {
-    const workspace = await this.prisma.workspace.findUnique({
-      where: { id },
-    });
-
-    if (workspace?.public) {
-      return workspace;
-    }
-
-    throw new NotFoundException("Workspace doesn't exist");
-  }
-
   @Query(() => WorkspaceType, {
     description: 'Get workspace by id',
   })

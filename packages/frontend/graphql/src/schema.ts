@@ -474,15 +474,6 @@ export type OauthProvidersQuery = {
   };
 };
 
-export type GetPublicWorkspaceQueryVariables = Exact<{
-  id: Scalars['String']['input'];
-}>;
-
-export type GetPublicWorkspaceQuery = {
-  __typename?: 'Query';
-  publicWorkspace: { __typename?: 'WorkspaceType'; id: string };
-};
-
 export type GetUserFeaturesQueryVariables = Exact<{ [key: string]: never }>;
 
 export type GetUserFeaturesQuery = {
@@ -1096,11 +1087,6 @@ export type Queries =
       name: 'oauthProvidersQuery';
       variables: OauthProvidersQueryVariables;
       response: OauthProvidersQuery;
-    }
-  | {
-      name: 'getPublicWorkspaceQuery';
-      variables: GetPublicWorkspaceQueryVariables;
-      response: GetPublicWorkspaceQuery;
     }
   | {
       name: 'getUserFeaturesQuery';
