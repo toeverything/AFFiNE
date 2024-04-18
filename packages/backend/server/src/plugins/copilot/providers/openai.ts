@@ -113,8 +113,9 @@ export class OpenAIProvider
             !m ||
             // check content
             typeof m.content !== 'string' ||
-            !m.content ||
-            !m.content.trim()
+            // content and attachments must exist at least one
+            ((!m.content || !m.content.trim()) &&
+              (!Array.isArray(m.attachments) || !m.attachments.length))
         )
       ) {
         throw new Error('Empty message content');

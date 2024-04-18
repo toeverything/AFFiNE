@@ -280,7 +280,10 @@ export class CopilotResolver {
       options.attachments = options.attachments || [];
       const { workspaceId } = session.config;
 
-      for (const blob of await Promise.all(options.blobs)) {
+      const blobs = await Promise.all(options.blobs);
+      delete options.blobs;
+
+      for (const blob of blobs) {
         const uploaded = await this.storage.handleUpload(user.id, blob);
         const link = await this.storage.put(
           user.id,
@@ -289,7 +292,6 @@ export class CopilotResolver {
           uploaded.buffer
         );
         options.attachments.push(link);
-        delete options.blobs;
       }
     }
 
