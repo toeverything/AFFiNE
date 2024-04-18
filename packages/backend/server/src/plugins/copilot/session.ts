@@ -5,7 +5,7 @@ import { AiPromptRole, PrismaClient } from '@prisma/client';
 
 import { FeatureManagementService, FeatureType } from '../../core/features';
 import { QuotaService } from '../../core/quota';
-import { PaymentRequiredException } from '../../fundamentals';
+import { CryptoHelper, PaymentRequiredException } from '../../fundamentals';
 import { ChatMessageCache } from './message';
 import { ChatPrompt, PromptService } from './prompt';
 import {
@@ -135,6 +135,7 @@ export class ChatSessionService {
 
   constructor(
     private readonly db: PrismaClient,
+    private readonly crypto: CryptoHelper,
     private readonly feature: FeatureManagementService,
     private readonly quota: QuotaService,
     private readonly messageCache: ChatMessageCache,
@@ -144,24 +145,28 @@ export class ChatSessionService {
   private async setSession(state: ChatSessionState): Promise<string> {
     return await this.db.$transaction(async tx => {
       let sessionId = state.sessionId;
+      let encrypted = true;
 
       // find existing session if session is chat session
       if (!state.prompt.action) {
-        const { id } =
-          (await tx.aiSession.findFirst({
-            where: {
-              userId: state.userId,
-              workspaceId: state.workspaceId,
-              docId: state.docId,
-              prompt: { action: { equals: null } },
-            },
-            select: { id: true },
-          })) || {};
-        if (id) sessionId = id;
+        const session = await tx.aiSession.findFirst({
+          where: {
+            userId: state.userId,
+            workspaceId: state.workspaceId,
+            docId: state.docId,
+            prompt: { action: { equals: null } },
+          },
+          select: { id: true, encrypted: true },
+        });
+        if (session) {
+          if (session.id) sessionId = session.id;
+          if ('encrypted' in session) encrypted = session.encrypted;
+        }
       }
 
       const messages = state.messages.map(m => ({
         ...m,
+        content: encrypted ? this.crypto.encrypt(m.content) : m.content,
         params: m.params || undefined,
       }));
 
@@ -181,6 +186,7 @@ export class ChatSessionService {
           id: sessionId,
           workspaceId: state.workspaceId,
           docId: state.docId,
+          encrypted,
           messages: {
             create: messages,
           },
@@ -204,6 +210,7 @@ export class ChatSessionService {
           userId: true,
           workspaceId: true,
           docId: true,
+          encrypted: true,
           messages: {
             select: {
               role: true,
@@ -244,7 +251,14 @@ export class ChatSessionService {
           workspaceId: session.workspaceId,
           docId: session.docId,
           prompt: ChatPrompt.createFromPrompt(session.prompt),
-          messages: messages.success ? messages.data : [],
+          messages: messages.success
+            ? messages.data.map(({ content, ...rest }) => ({
+                ...rest,
+                content: session.encrypted
+                  ? this.crypto.decrypt(content)
+                  : content,
+              }))
+            : [],
         };
       });
   }
