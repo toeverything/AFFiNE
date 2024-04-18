@@ -28,7 +28,6 @@ export type TextToTextOptions = {
   params?: Record<string, string>;
   timeout?: number;
   stream?: boolean;
-  forceCreate?: boolean; // force to create a message
 };
 
 export function createChatSession({
@@ -53,7 +52,6 @@ async function createSessionMessage({
   sessionId: providedSessionId,
   attachments,
   params,
-  forceCreate,
 }: TextToTextOptions) {
   if (!promptName && !providedSessionId) {
     throw new Error('promptName or sessionId is required');
@@ -66,41 +64,33 @@ async function createSessionMessage({
       promptName: promptName as string,
     }));
 
-  if (forceCreate || hasAttachments) {
-    const options: Parameters<CopilotClient['createMessage']>[0] = {
-      sessionId,
-      content,
-      params,
-    };
-    if (hasAttachments) {
-      const [stringAttachments, blobs] = partition(
-        attachments,
-        attachment => typeof attachment === 'string'
-      ) as [string[], (Blob | File)[]];
-      options.attachments = stringAttachments;
-      options.blobs = await Promise.all(
-        blobs.map(async blob => {
-          if (blob instanceof File) {
-            return blob;
-          } else {
-            return new File([blob], await calculateBlobHash(blob));
-          }
-        })
-      );
-    }
-    const messageId = await client.createMessage(options);
-    return {
-      messageId,
-      sessionId,
-    };
-  } else if (content) {
-    return {
-      message: content,
-      sessionId,
-    };
-  } else {
-    throw new Error('No content or attachments provided');
+  const options: Parameters<CopilotClient['createMessage']>[0] = {
+    sessionId,
+    content,
+    params,
+  };
+
+  if (hasAttachments) {
+    const [stringAttachments, blobs] = partition(
+      attachments,
+      attachment => typeof attachment === 'string'
+    ) as [string[], (Blob | File)[]];
+    options.attachments = stringAttachments;
+    options.blobs = await Promise.all(
+      blobs.map(async blob => {
+        if (blob instanceof File) {
+          return blob;
+        } else {
+          return new File([blob], await calculateBlobHash(blob));
+        }
+      })
+    );
   }
+  const messageId = await client.createMessage(options);
+  return {
+    messageId,
+    sessionId,
+  };
 }
 
 export function textToText({
@@ -130,8 +120,6 @@ export function textToText({
         const eventSource = client.chatTextStream({
           sessionId: message.sessionId,
           messageId: message.messageId,
-          message: message.message,
-          params,
         });
         yield* toTextStream(eventSource, { timeout });
       },
@@ -157,8 +145,6 @@ export function textToText({
         return await client.chatText({
           sessionId: message.sessionId,
           messageId: message.messageId,
-          message: message.message,
-          params,
         });
       }),
     ]);
@@ -175,7 +161,6 @@ export function toImage({
   content,
   attachments,
   params,
-  forceCreate,
   timeout = TIMEOUT,
 }: TextToTextOptions) {
   return {
@@ -187,14 +172,9 @@ export function toImage({
         content,
         attachments,
         params,
-        forceCreate,
       });
 
-      const eventSource = client.imagesStream(
-        // @ts-expect-error: messageId should exist
-        messageId,
-        sessionId
-      );
+      const eventSource = client.imagesStream(messageId, sessionId);
       yield* toTextStream(eventSource, { timeout, type: 'attachment' });
     },
   };

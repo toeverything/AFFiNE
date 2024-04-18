@@ -87,32 +87,12 @@ export class CopilotClient {
   async chatText({
     sessionId,
     messageId,
-    message,
-    params,
   }: {
     sessionId: string;
-    messageId?: string;
-    message?: string;
-    params?: Record<string, string>;
+    messageId: string;
   }) {
-    if (messageId && message) {
-      throw new Error('Only one of messageId or message can be provided');
-    } else if (!messageId && !message) {
-      throw new Error('Either messageId or message must be provided');
-    }
     const url = new URL(`${this.backendUrl}/api/copilot/chat/${sessionId}`);
-    if (messageId) {
-      url.searchParams.set('messageId', messageId);
-    }
-    if (message) {
-      url.searchParams.set('message', message);
-    }
-    if (!messageId && params) {
-      Object.entries(params).forEach(([key, value]) => {
-        url.searchParams.set(key, value);
-      });
-    }
-
+    url.searchParams.set('messageId', messageId);
     const response = await fetch(url.toString());
     return response.text();
   }
@@ -121,33 +101,14 @@ export class CopilotClient {
   chatTextStream({
     sessionId,
     messageId,
-    message,
-    params,
   }: {
     sessionId: string;
-    messageId?: string;
-    message?: string;
-    params?: Record<string, string>;
+    messageId: string;
   }) {
-    if (messageId && message) {
-      throw new Error('Only one of messageId or message can be provided');
-    } else if (!messageId && !message) {
-      throw new Error('Either messageId or message must be provided');
-    }
     const url = new URL(
       `${this.backendUrl}/api/copilot/chat/${sessionId}/stream`
     );
-    if (messageId) {
-      url.searchParams.set('messageId', messageId);
-    }
-    if (message) {
-      url.searchParams.set('message', message);
-    }
-    if (!messageId && params) {
-      Object.entries(params).forEach(([key, value]) => {
-        url.searchParams.set(key, value);
-      });
-    }
+    url.searchParams.set('messageId', messageId);
     return new EventSource(url.toString());
   }
 

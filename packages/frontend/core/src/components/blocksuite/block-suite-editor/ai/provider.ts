@@ -263,7 +263,6 @@ export function setupAIProvider() {
     return toImage({
       ...options,
       promptName,
-      forceCreate: true,
     });
   });
 
