@@ -4,11 +4,13 @@ export const browserWarningStyle = style({
   backgroundColor: cssVar('backgroundWarningColor'),
   color: cssVar('warningColor'),
   height: '36px',
+  width: '100%',
   fontSize: cssVar('fontSm'),
   display: 'flex',
   justifyContent: 'center',
   alignItems: 'center',
-  position: 'relative',
+  position: 'absolute',
+  zIndex: 1,
 });
 export const closeButtonStyle = style({
   width: '36px',
