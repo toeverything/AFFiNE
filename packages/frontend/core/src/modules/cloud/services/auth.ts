@@ -1,5 +1,6 @@
 import { apis } from '@affine/electron-api';
 import type { OAuthProviderType } from '@affine/graphql';
+import { AIProvider } from '@blocksuite/presets';
 import {
   ApplicationFocused,
   ApplicationStarted,
@@ -33,6 +34,17 @@ export class AuthService extends Service {
     private readonly store: AuthStore
   ) {
     super();
+
+    AIProvider.provide('userInfo', () => {
+      const account = this.session.account$.value;
+      if (!account) return null;
+      return {
+        avatarUrl: account.avatar ?? '',
+        email: account.email ?? '',
+        id: account.id,
+        name: account.label,
+      };
+    });
 
     this.session.account$
       .pipe(
