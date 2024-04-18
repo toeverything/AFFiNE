@@ -109,7 +109,7 @@ export const createCopilotMessageMutation = {
   id: 'createCopilotMessageMutation' as const,
   operationName: 'createCopilotMessage',
   definitionName: 'createCopilotMessage',
-  containsFile: false,
+  containsFile: true,
   query: `
 mutation createCopilotMessage($options: CreateChatMessageInput!) {
   createCopilotMessage(options: $options)

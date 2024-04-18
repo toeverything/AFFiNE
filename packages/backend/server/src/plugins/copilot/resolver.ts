@@ -64,7 +64,7 @@ class CreateChatMessageInput implements Omit<SubmittedMessage, 'content'> {
   attachments!: string[] | undefined;
 
   @Field(() => [GraphQLUpload], { nullable: true })
-  blobs!: FileUpload[] | undefined;
+  blobs!: Promise<FileUpload>[] | undefined;
 
   @Field(() => GraphQLJSON, { nullable: true })
   params!: Record<string, string> | undefined;
@@ -277,7 +277,7 @@ export class CopilotResolver {
       options.attachments = options.attachments || [];
       const { workspaceId } = session.config;
 
-      for (const blob of options.blobs) {
+      for (const blob of await Promise.all(options.blobs)) {
         const uploaded = await this.storage.handleUpload(user.id, blob);
         const link = await this.storage.put(
           user.id,
@@ -286,6 +286,7 @@ export class CopilotResolver {
           uploaded.buffer
         );
         options.attachments.push(link);
+        delete options.blobs;
       }
     }
 

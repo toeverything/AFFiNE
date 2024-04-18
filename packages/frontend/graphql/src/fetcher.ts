@@ -115,17 +115,26 @@ export function transformToForm(body: RequestBody) {
   if (body.operationName) {
     gqlBody.name = body.operationName;
   }
-  const map: Record<string, [string]> = {};
+  const map: Record<string, string[]> = {};
   const files: File[] = [];
   if (body.variables) {
     let i = 0;
-    Object.entries(body.variables).forEach(([key, value]) => {
+    const buildMap = (key: string, value: any) => {
       if (value instanceof File) {
-        map['0'] = [`variables.${key}`];
+        map['' + i] = [key];
         files[i] = value;
         i++;
+      } else if (Array.isArray(value)) {
+        value.forEach((v, index) => {
+          buildMap(`${key}.${index}`, v);
+        });
+      } else if (isObject(value)) {
+        Object.entries(value).forEach(([k, v]) => {
+          buildMap(`${key}.${k}`, v);
+        });
       }
-    });
+    };
+    buildMap('variables', body.variables);
   }
 
   form.set('operations', JSON.stringify(gqlBody));

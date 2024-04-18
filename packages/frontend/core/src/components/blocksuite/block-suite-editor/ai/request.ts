@@ -1,4 +1,5 @@
 import { toTextStream } from '@blocksuite/presets';
+import { partition } from 'lodash-es';
 
 import { CopilotClient } from './copilot-client';
 import type { PromptKey } from './prompt';
@@ -7,19 +8,14 @@ const TIMEOUT = 50000;
 
 const client = new CopilotClient();
 
-function readBlobAsURL(blob: Blob | File) {
-  return new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = e => {
-      if (typeof e.target?.result === 'string') {
-        resolve(e.target.result);
-      } else {
-        reject();
-      }
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
+async function calculateBlobHash(blob: Blob) {
+  const buffer = await blob.arrayBuffer();
+  const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray
+    .map(byte => byte.toString(16).padStart(2, '0'))
+    .join('')
+    .slice(0, 32);
 }
 
 export type TextToTextOptions = {
@@ -32,7 +28,7 @@ export type TextToTextOptions = {
   params?: Record<string, string>;
   timeout?: number;
   stream?: boolean;
-  forceToImage?: boolean; // force to image
+  forceCreate?: boolean; // force to create a message
 };
 
 export function createChatSession({
@@ -57,7 +53,7 @@ async function createSessionMessage({
   sessionId: providedSessionId,
   attachments,
   params,
-  forceToImage,
+  forceCreate,
 }: TextToTextOptions) {
   if (!promptName && !providedSessionId) {
     throw new Error('promptName or sessionId is required');
@@ -70,28 +66,27 @@ async function createSessionMessage({
       promptName: promptName as string,
     }));
 
-  if (forceToImage || hasAttachments) {
-    const options = {
+  if (forceCreate || hasAttachments) {
+    const options: Parameters<CopilotClient['createMessage']>[0] = {
       sessionId,
       content,
       params,
-    } as {
-      sessionId: string;
-      content?: string;
-      params?: Record<string, string>;
-      attachments?: string[];
     };
     if (hasAttachments) {
-      const normalizedAttachments = await Promise.all(
-        attachments.map(async attachment => {
-          if (typeof attachment === 'string') {
-            return attachment;
+      const [stringAttachments, blobs] = partition(
+        attachments,
+        attachment => typeof attachment === 'string'
+      ) as [string[], (Blob | File)[]];
+      options.attachments = stringAttachments;
+      options.blobs = await Promise.all(
+        blobs.map(async blob => {
+          if (blob instanceof File) {
+            return blob;
+          } else {
+            return new File([blob], await calculateBlobHash(blob));
           }
-          const url = await readBlobAsURL(attachment);
-          return url;
         })
       );
-      options.attachments = normalizedAttachments;
     }
     const messageId = await client.createMessage(options);
     return {
@@ -180,7 +175,7 @@ export function toImage({
   content,
   attachments,
   params,
-  forceToImage,
+  forceCreate,
   timeout = TIMEOUT,
 }: TextToTextOptions) {
   return {
@@ -192,7 +187,7 @@ export function toImage({
         content,
         attachments,
         params,
-        forceToImage,
+        forceCreate,
       });
 
       const eventSource = client.imagesStream(
