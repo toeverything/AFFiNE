@@ -89,7 +89,12 @@ async function handleOauthJwt(url: string) {
         value: token,
         secure: true,
         name: 'affine_session',
-        expirationDate: Math.floor(Date.now() / 1000 + 3600 * 24 * 7),
+        expirationDate: Math.floor(
+          Date.now() / 1000 +
+            3600 *
+              24 *
+              399 /* as long as possible, cookie max expires is 400 days */
+        ),
       });
 
       let hiddenWindow: BrowserWindow | null = null;
