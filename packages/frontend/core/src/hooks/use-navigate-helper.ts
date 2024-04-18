@@ -137,13 +137,20 @@ export function useNavigateHelper() {
   );
   const jumpToSignIn = useCallback(
     (
+      redirectUri?: string,
       logic: RouteLogic = RouteLogic.PUSH,
       otherOptions?: Omit<NavigateOptions, 'replace'>
     ) => {
-      return navigate('/signIn', {
-        replace: logic === RouteLogic.REPLACE,
-        ...otherOptions,
-      });
+      return navigate(
+        '/signIn' +
+          (redirectUri
+            ? `?redirect_uri=${encodeURIComponent(redirectUri)}`
+            : ''),
+        {
+          replace: logic === RouteLogic.REPLACE,
+          ...otherOptions,
+        }
+      );
     },
     [navigate]
   );

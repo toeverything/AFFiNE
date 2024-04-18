@@ -25,7 +25,7 @@ const OAuthProviderMap: Record<
   },
 };
 
-export function OAuth() {
+export function OAuth({ redirectUri }: { redirectUri?: string | null }) {
   const serverConfig = useService(ServerConfigService).serverConfig;
   const oauth = useLiveData(serverConfig.features$.map(r => r?.oauth));
   const oauthProviders = useLiveData(
@@ -42,11 +42,21 @@ export function OAuth() {
   }
 
   return oauthProviders?.map(provider => (
-    <OAuthProvider key={provider} provider={provider} />
+    <OAuthProvider
+      key={provider}
+      provider={provider}
+      redirectUri={redirectUri}
+    />
   ));
 }
 
-function OAuthProvider({ provider }: { provider: OAuthProviderType }) {
+function OAuthProvider({
+  provider,
+  redirectUri,
+}: {
+  provider: OAuthProviderType;
+  redirectUri?: string | null;
+}) {
   const { icon } = OAuthProviderMap[provider];
   const authService = useService(AuthService);
   const [isConnecting, setIsConnecting] = useState(false);
@@ -54,7 +64,7 @@ function OAuthProvider({ provider }: { provider: OAuthProviderType }) {
   const onClick = useAsyncCallback(async () => {
     try {
       setIsConnecting(true);
-      await authService.signInOauth(provider);
+      await authService.signInOauth(provider, redirectUri);
     } catch (err) {
       console.error(err);
       notify.error({ message: 'Failed to sign in, please try again.' });
@@ -62,7 +72,7 @@ function OAuthProvider({ provider }: { provider: OAuthProviderType }) {
       setIsConnecting(false);
       mixpanel.track('OAuth', { provider });
     }
-  }, [authService, provider]);
+  }, [authService, provider, redirectUri]);
 
   return (
     <Button

@@ -76,18 +76,18 @@ export class AuthService extends Service {
   async sendEmailMagicLink(
     email: string,
     verifyToken: string,
-    challenge?: string
+    challenge?: string,
+    redirectUri?: string | null
   ) {
     const searchParams = new URLSearchParams();
     if (challenge) {
       searchParams.set('challenge', challenge);
     }
     searchParams.set('token', verifyToken);
-    const redirectUri = new URL(location.href);
-    if (environment.isDesktop) {
-      redirectUri.pathname = this.buildRedirectUri('/open-app/signin-redirect');
-    }
-    searchParams.set('redirect_uri', redirectUri.toString());
+    const redirect = environment.isDesktop
+      ? this.buildRedirectUri('/open-app/signin-redirect')
+      : redirectUri ?? location.href;
+    searchParams.set('redirect_uri', redirect.toString());
 
     const res = await this.fetchService.fetch(
       '/api/auth/sign-in?' + searchParams.toString(),
@@ -104,7 +104,7 @@ export class AuthService extends Service {
     }
   }
 
-  async signInOauth(provider: OAuthProviderType) {
+  async signInOauth(provider: OAuthProviderType, redirectUri?: string | null) {
     if (environment.isDesktop) {
       await apis?.ui.openExternal(
         `${
@@ -117,7 +117,7 @@ export class AuthService extends Service {
       location.href = `${
         runtimeConfig.serverUrlPrefix
       }/oauth/login?provider=${provider}&redirect_uri=${encodeURIComponent(
-        location.pathname
+        redirectUri ?? location.pathname
       )}`;
     }
 

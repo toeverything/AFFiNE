@@ -106,9 +106,12 @@ export class AuthSession extends Entity {
     }
   }
 
-  async waitForRevalidation() {
+  async waitForRevalidation(signal?: AbortSignal) {
     this.revalidate();
-    await this.isRevalidating$.waitFor(isRevalidating => !isRevalidating);
+    await this.isRevalidating$.waitFor(
+      isRevalidating => !isRevalidating,
+      signal
+    );
   }
 
   async removeAvatar() {

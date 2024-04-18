@@ -97,6 +97,10 @@ export const topLevelRoutes = [
         lazy: () => import('./pages/redirect'),
       },
       {
+        path: '/subscribe',
+        lazy: () => import('./pages/subscribe'),
+      },
+      {
         path: '*',
         lazy: () => import('./pages/404'),
       },

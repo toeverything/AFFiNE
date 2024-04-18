@@ -84,9 +84,12 @@ export class Subscription extends Entity {
     await this.waitForRevalidation();
   }
 
-  async waitForRevalidation() {
+  async waitForRevalidation(signal?: AbortSignal) {
     this.revalidate();
-    await this.isRevalidating$.waitFor(isRevalidating => !isRevalidating);
+    await this.isRevalidating$.waitFor(
+      isRevalidating => !isRevalidating,
+      signal
+    );
   }
 
   revalidate = effect(

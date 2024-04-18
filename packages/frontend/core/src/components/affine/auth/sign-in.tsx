@@ -8,6 +8,7 @@ import { ArrowDownBigIcon } from '@blocksuite/icons';
 import { useLiveData, useService } from '@toeverything/infra';
 import type { FC } from 'react';
 import { useCallback, useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 
 import { AuthService } from '../../../modules/cloud';
 import { mixpanel } from '../../../utils';
@@ -29,7 +30,7 @@ export const SignIn: FC<AuthPanelProps> = ({
 }) => {
   const t = useAFFiNEI18N();
   const authService = useService(AuthService);
-
+  const [searchParams] = useSearchParams();
   const [isMutating, setIsMutating] = useState(false);
   const [verifyToken, challenge] = useCaptcha();
 
@@ -74,11 +75,21 @@ export const SignIn: FC<AuthPanelProps> = ({
             mixpanel.track_forms('SignIn', 'Email', {
               email,
             });
-            await authService.sendEmailMagicLink(email, verifyToken, challenge);
+            await authService.sendEmailMagicLink(
+              email,
+              verifyToken,
+              challenge,
+              searchParams.get('redirect_uri')
+            );
             setAuthState('afterSignInSendEmail');
           }
         } else {
-          await authService.sendEmailMagicLink(email, verifyToken, challenge);
+          await authService.sendEmailMagicLink(
+            email,
+            verifyToken,
+            challenge,
+            searchParams.get('redirect_uri')
+          );
           mixpanel.track_forms('SignUp', 'Email', {
             email,
           });
@@ -95,7 +106,15 @@ export const SignIn: FC<AuthPanelProps> = ({
     }
 
     setIsMutating(false);
-  }, [authService, challenge, email, setAuthEmail, setAuthState, verifyToken]);
+  }, [
+    authService,
+    challenge,
+    email,
+    searchParams,
+    setAuthEmail,
+    setAuthState,
+    verifyToken,
+  ]);
 
   return (
     <>
@@ -104,7 +123,7 @@ export const SignIn: FC<AuthPanelProps> = ({
         subTitle={t['com.affine.brand.affineCloud']()}
       />
 
-      <OAuth />
+      <OAuth redirectUri={searchParams.get('redirect_uri')} />
 
       <div className={style.authModalContent}>
         <AuthInput

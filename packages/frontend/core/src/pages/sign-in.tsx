@@ -5,25 +5,19 @@ import { useLiveData, useService } from '@toeverything/infra';
 import { useAtom } from 'jotai';
 import { useCallback, useEffect } from 'react';
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
-import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { authAtom } from '../atoms';
 import type { AuthProps } from '../components/affine/auth';
 import { AuthPanel } from '../components/affine/auth';
 import { RouteLogic, useNavigateHelper } from '../hooks/use-navigate-helper';
 
-interface LocationState {
-  state?: {
-    callbackURL?: string;
-  };
-}
 export const SignIn = () => {
   const [{ state, email = '', emailType = 'changePassword' }, setAuthAtom] =
     useAtom(authAtom);
   const session = useService(AuthService).session;
   const status = useLiveData(session.status$);
   const isRevalidating = useLiveData(session.isRevalidating$);
-  const location = useLocation() as LocationState;
   const navigate = useNavigate();
   const { jumpToIndex } = useNavigateHelper();
   const [searchParams] = useSearchParams();
@@ -31,8 +25,9 @@ export const SignIn = () => {
 
   useEffect(() => {
     if (isLoggedIn) {
-      if (location.state?.callbackURL) {
-        navigate(location.state.callbackURL, {
+      const redirectUri = searchParams.get('redirect_uri');
+      if (redirectUri) {
+        navigate(redirectUri, {
           replace: true,
         });
       } else {
@@ -41,14 +36,7 @@ export const SignIn = () => {
         });
       }
     }
-  }, [
-    jumpToIndex,
-    location.state,
-    navigate,
-    setAuthAtom,
-    isLoggedIn,
-    searchParams,
-  ]);
+  }, [jumpToIndex, navigate, setAuthAtom, isLoggedIn, searchParams]);
 
   const onSetEmailType = useCallback(
     (emailType: AuthProps['emailType']) => {

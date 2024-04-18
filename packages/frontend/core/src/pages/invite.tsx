@@ -79,11 +79,10 @@ export const Component = () => {
     if (loginStatus === 'unauthenticated' && !isRevalidating) {
       // We can not pass function to navigate state, so we need to save it in atom
       setOnceSignedInEvent(openWorkspace);
-      jumpToSignIn(RouteLogic.REPLACE, {
-        state: {
-          callbackURL: `/workspace/${inviteInfo.workspace.id}/all`,
-        },
-      });
+      jumpToSignIn(
+        `/workspace/${inviteInfo.workspace.id}/all`,
+        RouteLogic.REPLACE
+      );
     }
   }, [
     inviteInfo.workspace.id,
