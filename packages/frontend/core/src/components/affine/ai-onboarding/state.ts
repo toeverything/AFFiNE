@@ -5,4 +5,10 @@ import { LiveData } from '@toeverything/infra';
 export const showAIOnboardingGeneral$ = new LiveData(false);
 
 // avoid notifying multiple times
-export const edgelessNotifyId$ = new LiveData<string | number | null>(null);
+export const edgelessNotifyId$ = new LiveData<string | number | undefined>(
+  undefined
+);
+
+export const localNotifyId$ = new LiveData<string | number | undefined>(
+  undefined
+);

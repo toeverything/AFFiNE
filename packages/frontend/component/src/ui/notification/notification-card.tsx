@@ -30,6 +30,7 @@ export const NotificationCard = ({ notification }: NotificationCardProps) => {
     footer,
     alignMessage = 'title',
     onDismiss,
+    rootAttrs,
   } = notification;
 
   const onActionClicked = useCallback(() => {
@@ -49,7 +50,8 @@ export const NotificationCard = ({ notification }: NotificationCardProps) => {
         [styles.iconColor]: getIconColor(style, theme, iconColor),
       })}
       data-with-icon={icon ? '' : undefined}
-      className={styles.card}
+      {...rootAttrs}
+      className={clsx(styles.card, rootAttrs?.className)}
     >
       {thumb}
       <div className={styles.cardInner}>

@@ -18,7 +18,11 @@ import { useEffect, useMemo, useRef } from 'react';
 import * as styles from './edgeless.dialog.css';
 import mouseTrackDark from './lottie/edgeless/mouse-track-dark.json';
 import mouseTrackLight from './lottie/edgeless/mouse-track-light.json';
-import { edgelessNotifyId$, showAIOnboardingGeneral$ } from './state';
+import {
+  edgelessNotifyId$,
+  localNotifyId$,
+  showAIOnboardingGeneral$,
+} from './state';
 import type { BaseAIOnboardingDialogProps } from './type';
 
 const EdgelessOnboardingAnimation = () => {
@@ -63,24 +67,27 @@ export const AIOnboardingEdgeless = ({
     if (settingModalOpen.open) return;
     if (generalAIOnboardingOpened) return;
     if (notifyId) return;
-    if (isCloud && mode === 'edgeless') {
-      clearTimeout(timeoutRef.current);
-      timeoutRef.current = setTimeout(() => {
-        const id = notify(
-          {
-            title: t['com.affine.ai-onboarding.edgeless.title'](),
-            message: t['com.affine.ai-onboarding.edgeless.message'](),
-            icon: <AiIcon />,
-            iconColor: cssVar('brandColor'),
-            thumb: <EdgelessOnboardingAnimation />,
-            alignMessage: 'icon',
-            onDismiss,
-          },
-          { duration: 1000 * 60 * 10 }
-        );
-        edgelessNotifyId$.next(id);
-      }, 1000);
-    }
+    if (mode !== 'edgeless') return;
+    if (!isCloud) return;
+    clearTimeout(timeoutRef.current);
+    timeoutRef.current = setTimeout(() => {
+      // try to close local onboarding
+      notify.dismiss(localNotifyId$.value);
+
+      const id = notify(
+        {
+          title: t['com.affine.ai-onboarding.edgeless.title'](),
+          message: t['com.affine.ai-onboarding.edgeless.message'](),
+          icon: <AiIcon />,
+          iconColor: cssVar('processingColor'),
+          thumb: <EdgelessOnboardingAnimation />,
+          alignMessage: 'icon',
+          onDismiss,
+        },
+        { duration: 1000 * 60 * 10 }
+      );
+      edgelessNotifyId$.next(id);
+    }, 1000);
   }, [
     generalAIOnboardingOpened,
     isCloud,

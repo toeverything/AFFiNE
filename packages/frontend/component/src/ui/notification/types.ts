@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { HTMLAttributes, ReactNode } from 'react';
 
 import type { ButtonProps } from '../button';
 
@@ -22,6 +22,8 @@ export interface Notification {
      */
     autoClose?: boolean;
   };
+
+  rootAttrs?: HTMLAttributes<HTMLDivElement>;
 
   // custom slots
   thumb?: ReactNode;
