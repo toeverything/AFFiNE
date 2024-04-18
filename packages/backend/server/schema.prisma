@@ -483,7 +483,6 @@ model AiSession {
   workspaceId String   @map("workspace_id") @db.VarChar(36)
   docId       String   @map("doc_id") @db.VarChar(36)
   promptName  String   @map("prompt_name") @db.VarChar(32)
-  encrypted   Boolean  @default(true)
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   user     User               @relation(fields: [userId], references: [id], onDelete: Cascade)
