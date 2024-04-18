@@ -142,6 +142,27 @@ export class ChatSessionService {
     private readonly prompt: PromptService
   ) {}
 
+  private decryptMessages<M extends PromptMessage>(
+    messages: M[],
+    encrypted: boolean
+  ): M[] {
+    if (encrypted) {
+      return messages.map(m => ({
+        ...m,
+        content: this.crypto.decrypt(m.content),
+      }));
+    }
+    return messages;
+  }
+
+  private encryptMessages(messages: PromptMessage[], encrypted: boolean) {
+    return messages.map(m => ({
+      ...m,
+      content: encrypted ? this.crypto.encrypt(m.content) : m.content,
+      params: m.params || undefined,
+    }));
+  }
+
   private async setSession(state: ChatSessionState): Promise<string> {
     return await this.db.$transaction(async tx => {
       let sessionId = state.sessionId;
@@ -164,11 +185,7 @@ export class ChatSessionService {
         }
       }
 
-      const messages = state.messages.map(m => ({
-        ...m,
-        content: encrypted ? this.crypto.encrypt(m.content) : m.content,
-        params: m.params || undefined,
-      }));
+      const messages = this.encryptMessages(state.messages, encrypted);
 
       await tx.aiSession.upsert({
         where: {
@@ -252,12 +269,7 @@ export class ChatSessionService {
           docId: session.docId,
           prompt: ChatPrompt.createFromPrompt(session.prompt),
           messages: messages.success
-            ? messages.data.map(({ content, ...rest }) => ({
-                ...rest,
-                content: session.encrypted
-                  ? this.crypto.decrypt(content)
-                  : content,
-              }))
+            ? this.decryptMessages(messages.data, session.encrypted)
             : [],
         };
       });
@@ -331,6 +343,7 @@ export class ChatSessionService {
         },
         select: {
           id: true,
+          encrypted: true,
           promptName: true,
           createdAt: true,
           messages: {
@@ -350,41 +363,45 @@ export class ChatSessionService {
       })
       .then(sessions =>
         Promise.all(
-          sessions.map(async ({ id, promptName, messages, createdAt }) => {
-            try {
-              const ret = PromptMessageSchema.array().safeParse(messages);
-              if (ret.success) {
-                const prompt = await this.prompt.get(promptName);
-                if (!prompt) {
-                  throw new Error(`Prompt not found: ${promptName}`);
+          sessions.map(
+            async ({ id, encrypted, promptName, messages, createdAt }) => {
+              try {
+                const ret = PromptMessageSchema.array().safeParse(messages);
+                if (ret.success) {
+                  const prompt = await this.prompt.get(promptName);
+                  if (!prompt) {
+                    throw new Error(`Prompt not found: ${promptName}`);
+                  }
+                  const tokens = this.calculateTokenSize(
+                    ret.data,
+                    prompt.model as AvailableModel
+                  );
+
+                  // render system prompt
+                  const preload = withPrompt
+                    ? prompt.finish(ret.data[0]?.params || {})
+                    : [];
+
+                  return {
+                    sessionId: id,
+                    action: prompt.action || undefined,
+                    tokens,
+                    createdAt,
+                    messages: preload.concat(
+                      this.decryptMessages(ret.data, encrypted)
+                    ),
+                  };
+                } else {
+                  this.logger.error(
+                    `Unexpected message schema: ${JSON.stringify(ret.error)}`
+                  );
                 }
-                const tokens = this.calculateTokenSize(
-                  ret.data,
-                  prompt.model as AvailableModel
-                );
-
-                // render system prompt
-                const preload = withPrompt
-                  ? prompt.finish(ret.data[0]?.params || {})
-                  : [];
-
-                return {
-                  sessionId: id,
-                  action: prompt.action || undefined,
-                  tokens,
-                  createdAt,
-                  messages: preload.concat(ret.data),
-                };
-              } else {
-                this.logger.error(
-                  `Unexpected message schema: ${JSON.stringify(ret.error)}`
-                );
+              } catch (e) {
+                this.logger.error('Unexpected error in listHistories', e);
               }
-            } catch (e) {
-              this.logger.error('Unexpected error in listHistories', e);
+              return undefined;
             }
-            return undefined;
-          })
+          )
         )
       )
       .then(histories =>
