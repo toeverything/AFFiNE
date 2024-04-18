@@ -47,15 +47,19 @@ export const video = style({
   height: 'calc(100% + 4px)',
 });
 
+export const mainContent = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 4,
+  padding: '20px 24px 0px 24px',
+});
 export const title = style({
-  padding: '20px 24px 8px 24px',
   fontSize: cssVar('fontH6'),
   fontWeight: 600,
   lineHeight: '26px',
   color: cssVar('textPrimaryColor'),
 });
 export const description = style({
-  padding: '0px 24px',
   fontSize: cssVar('fontBase'),
   lineHeight: '24px',
   minHeight: 48,
@@ -66,14 +70,45 @@ export const link = style({
   color: cssVar('textEmphasisColor'),
   textDecoration: 'underline',
 });
+export const privacy = style({
+  padding: '20px 24px 0px 24px',
+  color: cssVar('textSecondaryColor'),
+  fontSize: cssVar('fontXs'),
+  fontWeight: 400,
+  lineHeight: '20px',
+  height: 44,
+  transition: 'all 0.3s',
+  overflow: 'hidden',
+
+  selectors: {
+    '&[aria-hidden="true"]': {
+      paddingTop: 0,
+      height: 0,
+    },
+  },
+});
+export const privacyLink = style({
+  color: 'inherit',
+  textDecoration: 'underline',
+});
 
 export const footer = style({
+  width: '100%',
   padding: '20px 28px',
   gap: 12,
   display: 'flex',
-  justifyContent: 'flex-end',
+  justifyContent: 'space-between',
+  selectors: {
+    '&[data-is-last="true"], &[data-is-first="true"]': {
+      justifyContent: 'flex-end',
+    },
+  },
 });
-
-export const skipButton = style({
-  fontWeight: 500,
+export const baseActionButton = style({
+  fontSize: cssVar('fontBase'),
+  selectors: {
+    '&.large': {
+      fontWeight: 500,
+    },
+  },
 });

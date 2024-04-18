@@ -1,9 +1,11 @@
 import { Button, Modal } from '@affine/component';
 import { openSettingModalAtom } from '@affine/core/atoms';
 import { useBlurRoot } from '@affine/core/hooks/use-blur-root';
+import { SubscriptionService } from '@affine/core/modules/cloud';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { ArrowLeftSmallIcon } from '@blocksuite/icons';
 import {
   useLiveData,
   useServices,
@@ -68,7 +70,10 @@ const getPlayList = (t: Translate): Array<PlayListItem> => [
 export const AIOnboardingGeneral = ({
   onDismiss,
 }: BaseAIOnboardingDialogProps) => {
-  const { workspaceService } = useServices({ WorkspaceService });
+  const { workspaceService, subscriptionService } = useServices({
+    WorkspaceService,
+    SubscriptionService,
+  });
 
   const videoWrapperRef = useRef<HTMLDivElement | null>(null);
   const prevVideoRef = useRef<HTMLVideoElement | null>(null);
@@ -76,6 +81,7 @@ export const AIOnboardingGeneral = ({
     workspaceService.workspace.flavour === WorkspaceFlavour.AFFINE_CLOUD;
   const t = useAFFiNEI18N();
   const open = useLiveData(showAIOnboardingGeneral$);
+  const aiSubscription = useLiveData(subscriptionService.subscription.ai$);
   const [index, setIndex] = useState(0);
   const list = useMemo(() => getPlayList(t), [t]);
   const setSettingModal = useSetAtom(openSettingModalAtom);
@@ -96,13 +102,16 @@ export const AIOnboardingGeneral = ({
     });
     closeAndDismiss();
   }, [closeAndDismiss, setSettingModal]);
-  const onClose = useCallback(() => showAIOnboardingGeneral$.next(false), []);
   const onPrev = useCallback(() => {
     setIndex(i => Math.max(0, i - 1));
   }, []);
   const onNext = useCallback(() => {
     setIndex(i => Math.min(list.length - 1, i + 1));
   }, [list.length]);
+
+  useEffect(() => {
+    subscriptionService.subscription.revalidate();
+  }, [subscriptionService]);
 
   const videoRenderer = useCallback(
     ({ video }: PlayListItem, index: number) => (
@@ -152,7 +161,10 @@ export const AIOnboardingGeneral = ({
   return isCloud ? (
     <Modal
       open={open}
-      onOpenChange={v => showAIOnboardingGeneral$.next(v)}
+      onOpenChange={v => {
+        showAIOnboardingGeneral$.next(v);
+        if (!v && isLast) onDismiss();
+      }}
       contentOptions={{ className: styles.dialog }}
       overlayOptions={{ className: baseStyles.dialogOverlay }}
     >
@@ -166,7 +178,7 @@ export const AIOnboardingGeneral = ({
           itemRenderer={videoRenderer}
         />
 
-        <main>
+        <main className={styles.mainContent}>
           <Slider<PlayListItem>
             items={list}
             activeIndex={index}
@@ -181,28 +193,76 @@ export const AIOnboardingGeneral = ({
           />
         </main>
 
-        <footer className={styles.footer}>
+        <section
+          className={styles.privacy}
+          aria-hidden={!isLast || !!aiSubscription}
+        >
+          <Trans
+            i18nKey="com.affine.ai-onboarding.general.privacy"
+            components={{
+              a: (
+                <a
+                  className={styles.privacyLink}
+                  href="https://ai.affine.pro"
+                />
+              ),
+            }}
+          />
+        </section>
+
+        <footer
+          className={styles.footer}
+          data-is-last={isLast}
+          data-is-first={isFirst}
+        >
           {isLast ? (
-            <>
-              <Button onClick={closeAndDismiss}>
-                {t['com.affine.ai-onboarding.general.try-for-free']()}
+            aiSubscription ? (
+              <Button
+                className={styles.baseActionButton}
+                size="large"
+                onClick={closeAndDismiss}
+                type="primary"
+              >
+                {t['com.affine.ai-onboarding.general.get-started']()}
               </Button>
-              <Button onClick={goToPricingPlans} type="primary">
-                {t['com.affine.ai-onboarding.general.purchase']()}
-              </Button>
-            </>
+            ) : (
+              <>
+                <Button
+                  className={styles.baseActionButton}
+                  size="large"
+                  onClick={closeAndDismiss}
+                >
+                  {t['com.affine.ai-onboarding.general.try-for-free']()}
+                </Button>
+                <Button
+                  className={styles.baseActionButton}
+                  size="large"
+                  onClick={goToPricingPlans}
+                  type="primary"
+                >
+                  {t['com.affine.ai-onboarding.general.purchase']()}
+                </Button>
+              </>
+            )
           ) : (
             <>
-              {isFirst ? (
-                <Button onClick={onClose} className={styles.skipButton}>
-                  {t['com.affine.ai-onboarding.general.skip']()}
-                </Button>
-              ) : (
-                <Button onClick={onPrev}>
+              {isFirst ? null : (
+                <Button
+                  icon={<ArrowLeftSmallIcon />}
+                  className={styles.baseActionButton}
+                  onClick={onPrev}
+                  type="plain"
+                  size="large"
+                >
                   {t['com.affine.ai-onboarding.general.prev']()}
                 </Button>
               )}
-              <Button type="primary" onClick={onNext}>
+              <Button
+                className={styles.baseActionButton}
+                size="large"
+                type="primary"
+                onClick={onNext}
+              >
                 {t['com.affine.ai-onboarding.general.next']()}
               </Button>
             </>
