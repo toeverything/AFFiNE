@@ -26,7 +26,7 @@ import {
 } from '@toeverything/infra';
 import { effect, globalBlockSuiteSchema, Service } from '@toeverything/infra';
 import { nanoid } from 'nanoid';
-import { EMPTY, lastValueFrom, map, mergeMap, timeout } from 'rxjs';
+import { EMPTY, map, mergeMap } from 'rxjs';
 import { applyUpdate, encodeStateAsUpdate } from 'yjs';
 
 import type {
@@ -179,7 +179,8 @@ export class CloudWorkspaceFlavourProviderService
   isLoading$ = new LiveData(false);
   workspaces$ = new LiveData<WorkspaceMetadata[]>([]);
   async getWorkspaceProfile(
-    id: string
+    id: string,
+    signal?: AbortSignal
   ): Promise<WorkspaceProfileInfo | undefined> {
     // get information from both cloud and local storage
 
@@ -190,7 +191,7 @@ export class CloudWorkspaceFlavourProviderService
     const localData = await docStorage.doc.get(id);
     const cloudData = await cloudStorage.pull(id);
 
-    const isOwner = await this.getIsOwner(id);
+    const isOwner = await this.getIsOwner(id, signal);
 
     if (!cloudData && !localData) {
       return {
@@ -255,18 +256,15 @@ export class CloudWorkspaceFlavourProviderService
     };
   }
 
-  private async getIsOwner(workspaceId: string) {
+  private async getIsOwner(workspaceId: string, signal?: AbortSignal) {
     return (
-      await lastValueFrom(
-        this.graphqlService
-          .rxGql({
-            query: getIsOwnerQuery,
-            variables: {
-              workspaceId,
-            },
-          })
-          .pipe(timeout(3000))
-      )
+      await this.graphqlService.gql({
+        query: getIsOwnerQuery,
+        variables: {
+          workspaceId,
+        },
+        context: { signal },
+      })
     ).isOwner;
   }
 

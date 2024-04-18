@@ -1,8 +1,14 @@
 import { DebugLogger } from '@affine/debug';
-import { catchError, EMPTY, from, mergeMap, switchMap } from 'rxjs';
+import { catchError, EMPTY, mergeMap, switchMap } from 'rxjs';
 
 import { Entity } from '../../../framework';
-import { effect, LiveData, onComplete, onStart } from '../../../livedata';
+import {
+  effect,
+  fromPromise,
+  LiveData,
+  onComplete,
+  onStart,
+} from '../../../livedata';
 import type { WorkspaceMetadata } from '../metadata';
 import type { WorkspaceFlavourProvider } from '../providers/flavour';
 import type { WorkspaceProfileCacheStore } from '../stores/profile-cache';
@@ -54,11 +60,12 @@ export class WorkspaceProfile extends Entity<{ metadata: WorkspaceMetadata }> {
 
   revalidate = effect(
     switchMap(() => {
-      if (!this.provider) {
+      const provider = this.provider;
+      if (!provider) {
         return EMPTY;
       }
-      return from(
-        this.provider.getWorkspaceProfile(this.props.metadata.id)
+      return fromPromise(signal =>
+        provider.getWorkspaceProfile(this.props.metadata.id, signal)
       ).pipe(
         mergeMap(info => {
           if (info) {

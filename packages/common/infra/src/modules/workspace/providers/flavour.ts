@@ -47,7 +47,10 @@ export interface WorkspaceFlavourProvider {
    */
   revalidate?: () => void;
 
-  getWorkspaceProfile(id: string): Promise<WorkspaceProfileInfo | undefined>;
+  getWorkspaceProfile(
+    id: string,
+    signal?: AbortSignal
+  ): Promise<WorkspaceProfileInfo | undefined>;
 
   getWorkspaceBlob(id: string, blob: string): Promise<Blob | null>;
 
