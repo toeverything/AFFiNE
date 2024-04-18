@@ -225,6 +225,7 @@ query getCopilotHistories($workspaceId: String!, $docId: String, $options: Query
         sessionId
         tokens
         action
+        createdAt
         messages {
           role
           content

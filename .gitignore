@@ -82,4 +82,3 @@ apps/web/next-routes.conf
 
 packages/frontend/templates/edgeless
 packages/frontend/core/public/static/templates
-packages/frontend/templates/templates.gen.ts
