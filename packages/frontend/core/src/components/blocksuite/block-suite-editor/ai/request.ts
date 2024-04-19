@@ -1,7 +1,7 @@
-import { toTextStream } from '@blocksuite/presets';
 import { partition } from 'lodash-es';
 
 import { CopilotClient } from './copilot-client';
+import { delay, toTextStream } from './event-source';
 import type { PromptKey } from './prompt';
 
 const TIMEOUT = 50000;
@@ -116,21 +116,22 @@ export function textToText({
           params,
           sessionId,
         });
-
         const eventSource = client.chatTextStream({
           sessionId: message.sessionId,
           messageId: message.messageId,
         });
-        yield* toTextStream(eventSource, { timeout });
+        for await (const event of toTextStream(eventSource, { timeout })) {
+          if (event.type === 'message') {
+            yield event.data;
+          }
+        }
       },
     };
   } else {
     return Promise.race([
       timeout
-        ? new Promise((_res, rej) => {
-            setTimeout(() => {
-              rej(new Error('Timeout'));
-            }, timeout);
+        ? delay(timeout).then(() => {
+            throw new Error('Timeout');
           })
         : null,
       createSessionMessage({
@@ -141,8 +142,8 @@ export function textToText({
         attachments,
         params,
         sessionId,
-      }).then(async message => {
-        return await client.chatText({
+      }).then(message => {
+        return client.chatText({
           sessionId: message.sessionId,
           messageId: message.messageId,
         });
@@ -175,7 +176,11 @@ export function toImage({
       });
 
       const eventSource = client.imagesStream(messageId, sessionId);
-      yield* toTextStream(eventSource, { timeout, type: 'attachment' });
+      for await (const event of toTextStream(eventSource, { timeout })) {
+        if (event.type === 'attachment') {
+          yield event.data;
+        }
+      }
     },
   };
 }
