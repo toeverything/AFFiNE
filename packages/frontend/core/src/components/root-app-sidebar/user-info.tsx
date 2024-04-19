@@ -15,11 +15,7 @@ import {
   openSignOutModalAtom,
 } from '@affine/core/atoms';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import {
-  AccountIcon,
-  ArrowRightSmallIcon,
-  SignOutIcon,
-} from '@blocksuite/icons';
+import { AccountIcon, SignOutIcon } from '@blocksuite/icons';
 import { useLiveData, useService } from '@toeverything/infra';
 import { assignInlineVars } from '@vanilla-extract/dynamic';
 import { useSetAtom } from 'jotai';
@@ -104,11 +100,6 @@ const AccountMenu = () => {
             <AccountIcon />
           </MenuIcon>
         }
-        endFix={
-          <MenuIcon position="end">
-            <ArrowRightSmallIcon />
-          </MenuIcon>
-        }
         data-testid="workspace-modal-account-settings-option"
         onClick={onOpenAccountSetting}
       >
@@ -119,11 +110,6 @@ const AccountMenu = () => {
         preFix={
           <MenuIcon>
             <SignOutIcon />
-          </MenuIcon>
-        }
-        endFix={
-          <MenuIcon position="end">
-            <ArrowRightSmallIcon />
           </MenuIcon>
         }
         data-testid="workspace-modal-sign-out-option"
