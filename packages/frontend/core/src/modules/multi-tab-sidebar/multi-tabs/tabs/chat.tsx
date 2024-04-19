@@ -1,7 +1,7 @@
 import { assertExists } from '@blocksuite/global/utils';
 import { AiIcon } from '@blocksuite/icons';
 import { ChatPanel } from '@blocksuite/presets';
-import { useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 
 import type { SidebarTab, SidebarTabProps } from '../sidebar-tab';
 import * as styles from './chat.css';
@@ -17,6 +17,13 @@ const EditorChatPanel = ({ editor }: SidebarTabProps) => {
     }
   }, []);
 
+  useEffect(() => {
+    if (!editor) return;
+    editor.host.spec.getService('affine:page').slots.docLinkClicked.on(() => {
+      (chatPanelRef.current as ChatPanel).doc = editor.doc;
+    });
+  }, [editor]);
+
   if (!editor) {
     return;
   }
@@ -27,6 +34,7 @@ const EditorChatPanel = ({ editor }: SidebarTabProps) => {
 
   if (editor !== chatPanelRef.current?.editor) {
     (chatPanelRef.current as ChatPanel).editor = editor;
+    (chatPanelRef.current as ChatPanel).doc = editor.doc;
     // (copilotPanelRef.current as CopilotPanel).fitPadding = [20, 20, 20, 20];
   }
 
