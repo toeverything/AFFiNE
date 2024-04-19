@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+
 import { BadRequestException, Logger } from '@nestjs/common';
 import {
   Args,
@@ -285,10 +287,13 @@ export class CopilotResolver {
 
       for (const blob of blobs) {
         const uploaded = await this.storage.handleUpload(user.id, blob);
+        const filename = createHash('sha256')
+          .update(uploaded.buffer)
+          .digest('base64url');
         const link = await this.storage.put(
           user.id,
           workspaceId,
-          uploaded.filename,
+          filename,
           uploaded.buffer
         );
         options.attachments.push(link);

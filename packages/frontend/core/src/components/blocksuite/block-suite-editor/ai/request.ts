@@ -40,7 +40,7 @@ export function createChatSession({
   return client.createSession({
     workspaceId,
     docId,
-    promptName: 'debug:chat:gpt4',
+    promptName: 'chat:gpt4',
   });
 }
 

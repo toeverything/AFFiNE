@@ -351,7 +351,9 @@ export class ChatSessionService {
 
                 // render system prompt
                 const preload = withPrompt
-                  ? prompt.finish(ret.data[0]?.params || {})
+                  ? prompt
+                      .finish(ret.data[0]?.params || {})
+                      .filter(({ role }) => role !== 'system')
                   : [];
 
                 return {
