@@ -9,7 +9,11 @@ import {
   type QueryOptions,
   type RequestOptions,
 } from '@affine/graphql';
-import { GeneralNetworkError, PaymentRequiredError } from '@blocksuite/blocks';
+import {
+  GeneralNetworkError,
+  PaymentRequiredError,
+  UnauthorizedError,
+} from '@blocksuite/blocks';
 
 type OptionsField<T extends GraphQLQuery> =
   RequestOptions<T>['variables'] extends { options: infer U } ? U : never;
@@ -21,10 +25,16 @@ const fetcher = async <Query extends GraphQLQuery>(
     return await defaultFetcher<Query>(options);
   } catch (_err) {
     const error = Array.isArray(_err) ? _err.at(0) : _err;
-    if (error.extensions?.code === 402) {
-      throw new PaymentRequiredError();
+    const code = error.extensions?.code;
+
+    switch (code) {
+      case 401:
+        throw new UnauthorizedError();
+      case 402:
+        throw new PaymentRequiredError();
+      default:
+        throw new GeneralNetworkError();
     }
-    throw new GeneralNetworkError();
   }
 };
 

@@ -1,4 +1,4 @@
-import { openSettingModalAtom } from '@affine/core/atoms';
+import { authAtom, openSettingModalAtom } from '@affine/core/atoms';
 import { getBaseUrl } from '@affine/graphql';
 import { assertExists } from '@blocksuite/global/utils';
 import { AIProvider } from '@blocksuite/presets';
@@ -294,5 +294,12 @@ export function setupAIProvider() {
       activeTab: 'billing',
       open: true,
     });
+  });
+
+  AIProvider.slots.requestLogin.on(() => {
+    getCurrentStore().set(authAtom, s => ({
+      ...s,
+      openModal: true,
+    }));
   });
 }
