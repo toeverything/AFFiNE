@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { Injectable, Logger } from '@nestjs/common';
 import { AiPromptRole, PrismaClient } from '@prisma/client';
 
-import { FeatureManagementService, FeatureType } from '../../core/features';
+import { FeatureManagementService } from '../../core/features';
 import { QuotaService } from '../../core/quota';
 import { PaymentRequiredException } from '../../fundamentals';
 import { ChatMessageCache } from './message';
@@ -379,12 +379,10 @@ export class ChatSessionService {
   }
 
   async getQuota(userId: string) {
-    const hasCopilotFeature = await this.feature
-      .getActivatedUserFeatures(userId)
-      .then(f => f.includes(FeatureType.UnlimitedCopilot));
+    const isCopilotUser = await this.feature.isCopilotUser(userId);
 
     let limit: number | undefined;
-    if (!hasCopilotFeature) {
+    if (!isCopilotUser) {
       const quota = await this.quota.getUserQuota(userId);
       limit = quota.feature.copilotActionLimit;
     }

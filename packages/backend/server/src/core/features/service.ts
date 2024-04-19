@@ -231,6 +231,7 @@ export class FeatureService {
             feature,
             type: FeatureKind.Feature,
           },
+          OR: [{ expiredAt: null }, { expiredAt: { gt: new Date() } }],
         },
       })
       .then(count => count > 0);

@@ -88,6 +88,7 @@ export class AuthService implements OnApplicationBootstrap {
           });
         }
         await this.quota.switchUserQuota(devUser.id, QuotaType.ProPlanV1);
+        await this.feature.addCopilot(devUser.id);
       } catch (e) {
         // ignore
       }

@@ -108,6 +108,32 @@ export class FeatureManagementService {
     }
   }
 
+  // ======== CopilotFeature ========
+  async addCopilot(userId: string, reason = 'Copilot plan user') {
+    return this.feature.addUserFeature(
+      userId,
+      FeatureType.UnlimitedCopilot,
+      reason
+    );
+  }
+
+  async removeCopilot(userId: string) {
+    return this.feature.removeUserFeature(userId, FeatureType.UnlimitedCopilot);
+  }
+
+  async isCopilotUser(userId: string) {
+    return await this.feature.hasUserFeature(
+      userId,
+      FeatureType.UnlimitedCopilot
+    );
+  }
+
+  // ======== User Feature ========
+  async getActivatedUserFeatures(userId: string): Promise<FeatureType[]> {
+    const features = await this.feature.getActivatedUserFeatures(userId);
+    return features.map(f => f.feature.name);
+  }
+
   // ======== Workspace Feature ========
   async addWorkspaceFeatures(
     workspaceId: string,
@@ -146,11 +172,5 @@ export class FeatureManagementService {
 
   async listFeatureWorkspaces(feature: FeatureType) {
     return this.feature.listFeatureWorkspaces(feature);
-  }
-
-  // ======== User Feature ========
-  async getActivatedUserFeatures(userId: string): Promise<FeatureType[]> {
-    const features = await this.feature.getActivatedUserFeatures(userId);
-    return features.map(f => f.feature.name);
   }
 }

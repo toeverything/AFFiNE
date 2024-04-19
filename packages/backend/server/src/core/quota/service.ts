@@ -4,7 +4,7 @@ import { PrismaClient } from '@prisma/client';
 import type { EventPayload } from '../../fundamentals';
 import { OnEvent, PrismaTransaction } from '../../fundamentals';
 import { SubscriptionPlan } from '../../plugins/payment/types';
-import { FeatureKind, FeatureService, FeatureType } from '../features';
+import { FeatureKind, FeatureManagementService } from '../features';
 import { QuotaConfig } from './quota';
 import { QuotaType } from './types';
 
@@ -12,7 +12,7 @@ import { QuotaType } from './types';
 export class QuotaService {
   constructor(
     private readonly prisma: PrismaClient,
-    private readonly feature: FeatureService
+    private readonly feature: FeatureManagementService
   ) {}
 
   // get activated user quota
@@ -167,11 +167,7 @@ export class QuotaService {
   }: EventPayload<'user.subscription.activated'>) {
     switch (plan) {
       case SubscriptionPlan.AI:
-        await this.feature.addUserFeature(
-          userId,
-          FeatureType.UnlimitedCopilot,
-          'subscription activated'
-        );
+        await this.feature.addCopilot(userId, 'subscription activated');
         break;
       case SubscriptionPlan.Pro:
         await this.switchUserQuota(
@@ -192,10 +188,7 @@ export class QuotaService {
   }: EventPayload<'user.subscription.canceled'>) {
     switch (plan) {
       case SubscriptionPlan.AI:
-        await this.feature.removeUserFeature(
-          userId,
-          FeatureType.UnlimitedCopilot
-        );
+        await this.feature.removeCopilot(userId);
         break;
       case SubscriptionPlan.Pro:
         await this.switchUserQuota(
