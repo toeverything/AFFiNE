@@ -46,7 +46,10 @@ export const Component = () => {
           }
           setMessage('Checking subscription status...');
           await subscriptionService.subscription.waitForRevalidation(signal);
-          const subscribed = !!subscriptionService.subscription.ai$.value;
+          const subscribed =
+            plan?.toLowerCase() === 'ai'
+              ? !!subscriptionService.subscription.ai$.value
+              : !!subscriptionService.subscription.pro$.value;
           if (!subscribed) {
             setMessage('Creating checkout...');
             try {

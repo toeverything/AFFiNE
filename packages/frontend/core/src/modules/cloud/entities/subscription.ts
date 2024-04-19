@@ -46,6 +46,11 @@ export class Subscription extends Entity {
       ? subscriptions.some(sub => sub.plan === SubscriptionPlan.Pro)
       : null
   );
+  pro$ = this.subscription$.map(subscriptions =>
+    subscriptions
+      ? subscriptions.find(sub => sub.plan === SubscriptionPlan.Pro)
+      : null
+  );
   isSelfHosted$ = this.subscription$.map(subscriptions =>
     subscriptions
       ? subscriptions.some(sub => sub.plan === SubscriptionPlan.SelfHosted)
