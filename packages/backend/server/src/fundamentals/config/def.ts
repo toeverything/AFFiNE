@@ -240,6 +240,13 @@ export interface AFFiNEConfig {
        * @default 15 days
        */
       ttl: number;
+
+      /**
+       * Application auth time to refresh in seconds
+       *
+       * @default 7 days
+       */
+      ttr: number;
     };
 
     /**

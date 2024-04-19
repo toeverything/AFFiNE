@@ -153,6 +153,7 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
       },
       session: {
         ttl: 15 * ONE_DAY_IN_SEC,
+        ttr: 7 * ONE_DAY_IN_SEC,
       },
       accessToken: {
         ttl: 7 * ONE_DAY_IN_SEC,

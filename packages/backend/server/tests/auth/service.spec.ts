@@ -156,7 +156,7 @@ test('should be able to get user from session', async t => {
 
   const session = await auth.createUserSession(u1);
 
-  const user = await auth.getUser(session.sessionId);
+  const { user } = await auth.getUser(session.sessionId);
 
   t.not(user, null);
   t.is(user!.id, u1.id);
@@ -202,8 +202,8 @@ test('should be able to signout multi accounts session', async t => {
 
   t.not(signedOutSession, null);
 
-  const signedU2 = await auth.getUser(session.sessionId, 0);
-  const noUser = await auth.getUser(session.sessionId, 1);
+  const { user: signedU2 } = await auth.getUser(session.sessionId, 0);
+  const { user: noUser } = await auth.getUser(session.sessionId, 1);
 
   t.is(noUser, null);
   t.not(signedU2, null);
@@ -215,6 +215,6 @@ test('should be able to signout multi accounts session', async t => {
 
   t.is(signedOutSession, null);
 
-  const noUser2 = await auth.getUser(session.sessionId, 0);
+  const { user: noUser2 } = await auth.getUser(session.sessionId, 0);
   t.is(noUser2, null);
 });

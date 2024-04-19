@@ -36,7 +36,7 @@ export class AuthGuard implements CanActivate, OnModuleInit {
   }
 
   async canActivate(context: ExecutionContext) {
-    const { req } = getRequestResponseFromContext(context);
+    const { req, res } = getRequestResponseFromContext(context);
 
     // check cookie
     let sessionToken: string | undefined =
@@ -51,7 +51,19 @@ export class AuthGuard implements CanActivate, OnModuleInit {
         req.headers[AuthService.authUserSeqHeaderName]
       );
 
-      const user = await this.auth.getUser(sessionToken, userSeq);
+      const { user, expiresAt } = await this.auth.getUser(
+        sessionToken,
+        userSeq
+      );
+      if (res && user && expiresAt) {
+        await this.auth.refreshUserSessionIfNeeded(
+          req,
+          res,
+          sessionToken,
+          user.id,
+          expiresAt
+        );
+      }
 
       if (user) {
         req.sid = sessionToken;
