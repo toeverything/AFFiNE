@@ -78,10 +78,16 @@ export class AuthService implements OnApplicationBootstrap {
   async onApplicationBootstrap() {
     if (this.config.node.dev) {
       try {
-        const devUser = await this.signUp('Dev User', 'dev@affine.pro', 'dev');
-        if (devUser) {
-          await this.quota.switchUserQuota(devUser?.id, QuotaType.ProPlanV1);
+        const [email, name, pwd] = ['dev@affine.pro', 'Dev User', 'dev'];
+        let devUser = await this.user.findUserByEmail(email);
+        if (!devUser) {
+          devUser = await this.user.createUser({
+            email,
+            name,
+            password: await this.crypto.encryptPassword(pwd),
+          });
         }
+        await this.quota.switchUserQuota(devUser.id, QuotaType.ProPlanV1);
       } catch (e) {
         // ignore
       }
