@@ -24,7 +24,7 @@
     "build": "vite build"
   },
   "devDependencies": {
-    "@blocksuite/store": "0.14.0-canary-202404190214-78bb570",
+    "@blocksuite/store": "0.14.0-canary-202404190901-e1635aa",
     "vite": "^5.1.4",
     "vite-plugin-dts": "3.7.3",
     "vitest": "1.4.0",
