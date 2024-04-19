@@ -35,6 +35,8 @@ graphql:
   service:
     type: ClusterIP
     port: 3000
+    annotations:
+      cloud.google.com/backend-config: '{"default": "affine-backendconfig"}'
 
 sync:
   service:
