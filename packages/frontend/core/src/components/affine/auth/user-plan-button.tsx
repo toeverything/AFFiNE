@@ -21,7 +21,7 @@ export const UserPlanButton = () => {
     serverConfigService.serverConfig.features$.map(r => r?.payment)
   );
   const plan = useLiveData(
-    subscriptionService.subscription.primary$.map(subscription =>
+    subscriptionService.subscription.pro$.map(subscription =>
       subscription !== null ? subscription?.plan : null
     )
   );

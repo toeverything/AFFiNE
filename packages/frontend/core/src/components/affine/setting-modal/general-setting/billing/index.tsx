@@ -96,47 +96,39 @@ const SubscriptionSettings = () => {
     subscriptionService.prices.revalidate();
   }, [subscriptionService]);
 
-  const primarySubscription = useLiveData(
-    subscriptionService.subscription.primary$
-  );
+  const proSubscription = useLiveData(subscriptionService.subscription.pro$);
   const proPrice = useLiveData(subscriptionService.prices.proPrice$);
 
-  const currentPlan =
-    primarySubscription === null
-      ? null
-      : primarySubscription?.plan ?? SubscriptionPlan.Free;
-
   const [openCancelModal, setOpenCancelModal] = useState(false);
-
-  const recurring =
-    primarySubscription?.recurring ?? SubscriptionRecurring.Monthly;
-
   const setOpenSettingModalAtom = useSetAtom(openSettingModalAtom);
+
+  const currentPlan = proSubscription?.plan ?? SubscriptionPlan.Free;
+  const currentRecurring =
+    proSubscription?.recurring ?? SubscriptionRecurring.Monthly;
 
   const gotoPlansSetting = useCallback(() => {
     mixpanel.track('Button', {
       resolve: 'ChangePlan',
-      currentPlan: currentPlan,
+      currentPlan: proSubscription?.plan,
     });
     setOpenSettingModalAtom({
       open: true,
       activeTab: 'plans',
     });
-  }, [currentPlan, setOpenSettingModalAtom]);
+  }, [proSubscription, setOpenSettingModalAtom]);
 
-  const amount = currentPlan
-    ? currentPlan === SubscriptionPlan.Free
-      ? '0'
-      : proPrice
-        ? recurring === SubscriptionRecurring.Monthly
-          ? String((proPrice.amount ?? 0) / 100)
-          : String((proPrice.yearlyAmount ?? 0) / 100)
-        : '?'
-    : '?';
+  const amount = proSubscription
+    ? proPrice
+      ? proSubscription.recurring === SubscriptionRecurring.Monthly
+        ? String((proPrice.amount ?? 0) / 100)
+        : String((proPrice.yearlyAmount ?? 0) / 100)
+      : '?'
+    : '0';
 
   return (
     <div className={styles.subscription}>
-      {currentPlan !== null ? (
+      {/* loaded  */}
+      {proSubscription !== null ? (
         <div className={styles.planCard}>
           <div className={styles.currentPlan}>
             <SettingRow
@@ -144,7 +136,7 @@ const SubscriptionSettings = () => {
               name={t['com.affine.payment.billing-setting.current-plan']()}
               desc={
                 <Trans
-                  i18nKey={getMessageKey(currentPlan, recurring)}
+                  i18nKey={getMessageKey(currentPlan, currentRecurring)}
                   values={{
                     planName: currentPlan,
                   }}
@@ -168,7 +160,7 @@ const SubscriptionSettings = () => {
             ${amount}
             <span className={styles.billingFrequency}>
               /
-              {recurring === SubscriptionRecurring.Monthly
+              {currentRecurring === SubscriptionRecurring.Monthly
                 ? t['com.affine.payment.billing-setting.month']()
                 : t['com.affine.payment.billing-setting.year']()}
             </span>
@@ -179,8 +171,8 @@ const SubscriptionSettings = () => {
       )}
 
       <AIPlanCard />
-      {primarySubscription !== null ? (
-        primarySubscription?.status === SubscriptionStatus.Active && (
+      {proSubscription !== null ? (
+        proSubscription?.status === SubscriptionStatus.Active && (
           <>
             <SettingRow
               className={styles.paymentMethod}
@@ -191,26 +183,26 @@ const SubscriptionSettings = () => {
             >
               <PaymentMethodUpdater />
             </SettingRow>
-            {primarySubscription.nextBillAt && (
+            {proSubscription.nextBillAt && (
               <SettingRow
                 name={t['com.affine.payment.billing-setting.renew-date']()}
                 desc={t[
                   'com.affine.payment.billing-setting.renew-date.description'
                 ]({
                   renewDate: new Date(
-                    primarySubscription.nextBillAt
+                    proSubscription.nextBillAt
                   ).toLocaleDateString(),
                 })}
               />
             )}
-            {primarySubscription.canceledAt ? (
+            {proSubscription.canceledAt ? (
               <SettingRow
                 name={t['com.affine.payment.billing-setting.expiration-date']()}
                 desc={t[
                   'com.affine.payment.billing-setting.expiration-date.description'
                 ]({
                   expirationDate: new Date(
-                    primarySubscription.end
+                    proSubscription.end
                   ).toLocaleDateString(),
                 })}
               >
@@ -322,9 +314,9 @@ const PlanAction = ({
       type="primary"
       onClick={gotoPlansSetting}
     >
-      {plan === SubscriptionPlan.Free
-        ? t['com.affine.payment.billing-setting.upgrade']()
-        : t['com.affine.payment.billing-setting.change-plan']()}
+      {plan === SubscriptionPlan.Pro
+        ? t['com.affine.payment.billing-setting.change-plan']()
+        : t['com.affine.payment.billing-setting.upgrade']()}
     </Button>
   );
 };

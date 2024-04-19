@@ -443,6 +443,11 @@ type UserSubscription {
   end: DateTime!
   id: String!
   nextBillAt: DateTime
+
+  """
+  The 'Free' plan just exists to be a placeholder and for the type convenience of frontend.
+  There won't actually be a subscription with plan 'Free'
+  """
   plan: SubscriptionPlan!
   recurring: SubscriptionRecurring!
   start: DateTime!

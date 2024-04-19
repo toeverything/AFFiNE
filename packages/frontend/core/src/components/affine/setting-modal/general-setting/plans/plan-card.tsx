@@ -32,15 +32,13 @@ export const PlanCard = (props: PlanCardProps) => {
   const loggedIn =
     useLiveData(useService(AuthService).session.status$) === 'authenticated';
   const subscriptionService = useService(SubscriptionService);
-  const primarySubscription = useLiveData(
-    subscriptionService.subscription.primary$
-  );
-  const currentPlan = primarySubscription?.plan ?? SubscriptionPlan.Free;
+  const proSubscription = useLiveData(subscriptionService.subscription.pro$);
+  const currentPlan = proSubscription?.plan ?? SubscriptionPlan.Free;
 
   const isCurrent =
     loggedIn &&
     detail.plan === currentPlan &&
-    recurring === primarySubscription?.recurring;
+    recurring === proSubscription?.recurring;
   const isPro = detail.plan === SubscriptionPlan.Pro;
 
   return (
@@ -93,7 +91,7 @@ const ActionButton = ({ detail, recurring }: PlanCardProps) => {
     useLiveData(useService(AuthService).session.status$) === 'authenticated';
   const subscriptionService = useService(SubscriptionService);
   const primarySubscription = useLiveData(
-    subscriptionService.subscription.primary$
+    subscriptionService.subscription.pro$
   );
   const currentPlan = primarySubscription?.plan ?? SubscriptionPlan.Free;
   const currentRecurring = primarySubscription?.recurring;

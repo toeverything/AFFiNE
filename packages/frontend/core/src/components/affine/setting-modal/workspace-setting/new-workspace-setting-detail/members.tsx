@@ -24,7 +24,7 @@ import { useRevokeMemberPermission } from '@affine/core/hooks/affine/use-revoke-
 import { WorkspacePermissionService } from '@affine/core/modules/permissions';
 import { WorkspaceQuotaService } from '@affine/core/modules/quota';
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import { Permission, SubscriptionPlan } from '@affine/graphql';
+import { Permission } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { MoreVerticalIcon } from '@blocksuite/icons';
 import {
@@ -98,7 +98,7 @@ export const CloudWorkspaceMembersPanel = () => {
   const workspaceQuota = useLiveData(workspaceQuotaService.quota.quota$);
   const subscriptionService = useService(SubscriptionService);
   const plan = useLiveData(
-    subscriptionService.subscription.primary$.map(s => s?.plan)
+    subscriptionService.subscription.pro$.map(s => s?.plan)
   );
   const isLimited = workspaceQuota
     ? checkMemberCountLimit(memberCount, workspaceQuota.memberLimit)
@@ -206,7 +206,7 @@ export const CloudWorkspaceMembersPanel = () => {
             <Button onClick={openModal}>{t['Invite Members']()}</Button>
             {isLimited ? (
               <MemberLimitModal
-                isFreePlan={plan === SubscriptionPlan.Free}
+                isFreePlan={!!plan}
                 open={open}
                 plan={workspaceQuota?.humanReadable.name ?? ''}
                 quota={workspaceQuota?.humanReadable.memberLimit ?? ''}

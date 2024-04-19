@@ -28,32 +28,9 @@ export class Subscription extends Entity {
   isRevalidating$ = new LiveData(false);
   error$ = new LiveData<any | null>(null);
 
-  /**
-   * Primary subscription is the subscription that is not AI.
-   */
-  primary$ = this.subscription$.map(subscriptions =>
-    subscriptions
-      ? subscriptions.find(sub => sub.plan !== SubscriptionPlan.AI)
-      : null
-  );
-  isFree$ = this.subscription$.map(subscriptions =>
-    subscriptions
-      ? subscriptions.some(sub => sub.plan === SubscriptionPlan.Free)
-      : null
-  );
-  isPro$ = this.subscription$.map(subscriptions =>
-    subscriptions
-      ? subscriptions.some(sub => sub.plan === SubscriptionPlan.Pro)
-      : null
-  );
   pro$ = this.subscription$.map(subscriptions =>
     subscriptions
       ? subscriptions.find(sub => sub.plan === SubscriptionPlan.Pro)
-      : null
-  );
-  isSelfHosted$ = this.subscription$.map(subscriptions =>
-    subscriptions
-      ? subscriptions.some(sub => sub.plan === SubscriptionPlan.SelfHosted)
       : null
   );
   ai$ = this.subscription$.map(subscriptions =>

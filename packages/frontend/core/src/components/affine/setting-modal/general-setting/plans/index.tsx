@@ -36,9 +36,7 @@ const Settings = () => {
   const scrollWrapper = useRef<HTMLDivElement>(null);
 
   const subscriptionService = useService(SubscriptionService);
-  const primarySubscription = useLiveData(
-    subscriptionService.subscription.primary$
-  );
+  const proSubscription = useLiveData(subscriptionService.subscription.pro$);
   const prices = useLiveData(subscriptionService.prices.prices$);
 
   useEffect(() => {
@@ -62,13 +60,13 @@ const Settings = () => {
   });
 
   const [recurring, setRecurring] = useState<SubscriptionRecurring>(
-    primarySubscription?.recurring ?? SubscriptionRecurring.Yearly
+    proSubscription?.recurring ?? SubscriptionRecurring.Yearly
   );
 
-  const currentPlan = primarySubscription?.plan ?? SubscriptionPlan.Free;
-  const isCanceled = !!primarySubscription?.canceledAt;
+  const currentPlan = proSubscription?.plan ?? SubscriptionPlan.Free;
+  const isCanceled = !!proSubscription?.canceledAt;
   const currentRecurring =
-    primarySubscription?.recurring ?? SubscriptionRecurring.Monthly;
+    proSubscription?.recurring ?? SubscriptionRecurring.Monthly;
 
   const yearlyDiscount = (
     planDetail.get(SubscriptionPlan.Pro) as FixedPrice | undefined

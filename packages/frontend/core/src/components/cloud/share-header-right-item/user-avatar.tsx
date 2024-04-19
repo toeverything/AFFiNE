@@ -21,8 +21,7 @@ const UserInfo = () => {
   useEffect(() => {
     subscription.revalidate();
   }, [subscription]);
-  const primary = useLiveData(subscription.primary$);
-  const plan = primary?.plan;
+  const plan = useLiveData(subscription.pro$)?.plan;
 
   if (!user) {
     // TODO: loading UI

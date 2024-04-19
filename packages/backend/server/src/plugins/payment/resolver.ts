@@ -56,7 +56,10 @@ export class UserSubscriptionType implements Partial<UserSubscription> {
   @Field({ name: 'id' })
   stripeSubscriptionId!: string;
 
-  @Field(() => SubscriptionPlan)
+  @Field(() => SubscriptionPlan, {
+    description:
+      "The 'Free' plan just exists to be a placeholder and for the type convenience of frontend.\nThere won't actually be a subscription with plan 'Free'",
+  })
   plan!: SubscriptionPlan;
 
   @Field(() => SubscriptionRecurring)

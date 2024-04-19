@@ -1,5 +1,4 @@
 import { Button, ErrorMessage, Skeleton, Tooltip } from '@affine/component';
-import { SubscriptionPlan } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useLiveData, useService } from '@toeverything/infra';
 import { cssVar } from '@toeverything/theme';
@@ -45,15 +44,14 @@ export const StorageProgress = ({ onUpgrade }: StorageProgressProgress) => {
     subscription.revalidate();
   }, [subscription]);
 
-  const primarySubscription = useLiveData(subscription.primary$);
-  const isFreeUser =
-    !primarySubscription || primarySubscription?.plan === SubscriptionPlan.Free;
+  const proSubscription = useLiveData(subscription.pro$);
+  const isFreeUser = !proSubscription;
   const quotaName = useLiveData(
     quota.quota$.map(q => (q !== null ? q?.humanReadable.name : null))
   );
 
   const loading =
-    primarySubscription === null || percent === null || quotaName === null;
+    proSubscription === null || percent === null || quotaName === null;
   const loadError = useLiveData(quota.error$);
 
   const buttonType = useMemo(() => {
