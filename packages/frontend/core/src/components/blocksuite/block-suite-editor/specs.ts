@@ -22,6 +22,7 @@ class CustomAttachmentService extends AttachmentService {
     // blocksuite default max file size is 10MB, we override it to 2GB
     // but the real place to limit blob size is CloudQuotaModal / LocalQuotaModal
     this.maxFileSize = bytes.parse('2GB');
+    super.mounted();
   }
 }
 
