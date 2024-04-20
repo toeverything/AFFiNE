@@ -1,4 +1,5 @@
 import { authAtom, openSettingModalAtom } from '@affine/core/atoms';
+import { mixpanel } from '@affine/core/utils';
 import { getBaseUrl } from '@affine/graphql';
 import { assertExists } from '@blocksuite/global/utils';
 import { AIProvider } from '@blocksuite/presets';
@@ -11,6 +12,59 @@ import {
   textToText,
   toImage,
 } from './request';
+
+type AIAction = keyof BlockSuitePresets.AIActions;
+
+const TRACKED_ACTIONS: Record<AIAction, boolean> = {
+  chat: true,
+  summary: true,
+  translate: true,
+  changeTone: true,
+  improveWriting: true,
+  improveGrammar: true,
+  fixSpelling: true,
+  createHeadings: true,
+  makeLonger: true,
+  makeShorter: true,
+  checkCodeErrors: true,
+  explainCode: true,
+  writeArticle: true,
+  writeTwitterPost: true,
+  writePoem: true,
+  writeOutline: true,
+  writeBlogPost: true,
+  brainstorm: true,
+  findActions: true,
+  brainstormMindmap: true,
+  explain: true,
+  explainImage: true,
+  makeItReal: true,
+  createSlides: true,
+  createImage: true,
+  expandMindmap: true,
+};
+
+const provideAction = <T extends AIAction>(
+  id: T,
+  action: (
+    ...options: Parameters<BlockSuitePresets.AIActions[T]>
+  ) => ReturnType<BlockSuitePresets.AIActions[T]>
+) => {
+  if (TRACKED_ACTIONS[id]) {
+    const wrappedFn: typeof action = (opts, ...rest) => {
+      mixpanel.track('AI', {
+        resolve: action,
+        docId: opts.docId,
+        workspaceId: opts.workspaceId,
+      });
+      // @ts-expect-error - todo: add a middleware in blocksuite instead?
+      return action(opts, ...rest);
+    };
+    AIProvider.provide(id, wrappedFn);
+  } else {
+    AIProvider.provide(id, action);
+  }
+};
 
 export function setupAIProvider() {
   // a single workspace should have only a single chat session
@@ -33,7 +87,8 @@ export function setupAIProvider() {
     return sessionId;
   }
 
-  AIProvider.provide('chat', options => {
+  //#region actions
+  provideAction('chat', options => {
     const sessionId = getChatSessionId(options.workspaceId, options.docId);
     return textToText({
       ...options,
@@ -42,7 +97,7 @@ export function setupAIProvider() {
     });
   });
 
-  AIProvider.provide('summary', options => {
+  provideAction('summary', options => {
     return textToText({
       ...options,
       content: options.input,
@@ -50,7 +105,7 @@ export function setupAIProvider() {
     });
   });
 
-  AIProvider.provide('translate', options => {
+  provideAction('translate', options => {
     return textToText({
       ...options,
       promptName: 'Translate to',
@@ -61,7 +116,7 @@ export function setupAIProvider() {
     });
   });
 
-  AIProvider.provide('changeTone', options => {
+  provideAction('changeTone', options => {
     return textToText({
       ...options,
       content: options.input,
@@ -69,7 +124,7 @@ export function setupAIProvider() {
     });
   });
 
-  AIProvider.provide('improveWriting', options => {
+  provideAction('improveWriting', options => {
     return textToText({
       ...options,
       content: options.input,
@@ -77,7 +132,7 @@ export function setupAIProvider() {
     });
   });
 
-  AIProvider.provide('improveGrammar', options => {
+  provideAction('improveGrammar', options => {
     return textToText({
       ...options,
       content: options.input,
@@ -85,7 +140,7 @@ export function setupAIProvider() {
     });
   });
 
-  AIProvider.provide('fixSpelling', options => {
+  provideAction('fixSpelling', options => {
     return textToText({
       ...options,
       content: options.input,
@@ -93,7 +148,7 @@ export function setupAIProvider() {
     });
   });
 
-  AIProvider.provide('createHeadings', options => {
+  provideAction('createHeadings', options => {
     return textToText({
       ...options,
       content: options.input,
@@ -101,7 +156,7 @@ export function setupAIProvider() {
     });
   });
 
-  AIProvider.provide('makeLonger', options => {
+  provideAction('makeLonger', options => {
     return textToText({
       ...options,
       content: options.input,
@@ -109,7 +164,7 @@ export function setupAIProvider() {
     });
   });
 
-  AIProvider.provide('makeShorter', options => {
+  provideAction('makeShorter', options => {
     return textToText({
       ...options,
       content: options.input,
@@ -117,7 +172,7 @@ export function setupAIProvider() {
     });
   });
 
-  AIProvider.provide('checkCodeErrors', options => {
+  provideAction('checkCodeErrors', options => {
     return textToText({
       ...options,
       content: options.input,
@@ -125,7 +180,7 @@ export function setupAIProvider() {
     });
   });
 
-  AIProvider.provide('explainCode', options => {
+  provideAction('explainCode', options => {
     return textToText({
       ...options,
       content: options.input,
@@ -133,7 +188,7 @@ export function setupAIProvider() {
     });
   });
 
-  AIProvider.provide('writeArticle', options => {
+  provideAction('writeArticle', options => {
     return textToText({
       ...options,
       content: options.input,
@@ -141,7 +196,7 @@ export function setupAIProvider() {
     });
   });
 
-  AIProvider.provide('writeTwitterPost', options => {
+  provideAction('writeTwitterPost', options => {
     return textToText({
       ...options,
       content: options.input,
@@ -149,7 +204,7 @@ export function setupAIProvider() {
     });
   });
 
-  AIProvider.provide('writePoem', options => {
+  provideAction('writePoem', options => {
     return textToText({
       ...options,
       content: options.input,
@@ -157,7 +212,7 @@ export function setupAIProvider() {
     });
   });
 
-  AIProvider.provide('writeOutline', options => {
+  provideAction('writeOutline', options => {
     return textToText({
       ...options,
       content: options.input,
@@ -165,7 +220,7 @@ export function setupAIProvider() {
     });
   });
 
-  AIProvider.provide('writeBlogPost', options => {
+  provideAction('writeBlogPost', options => {
     return textToText({
       ...options,
       content: options.input,
@@ -173,7 +228,7 @@ export function setupAIProvider() {
     });
   });
 
-  AIProvider.provide('brainstorm', options => {
+  provideAction('brainstorm', options => {
     return textToText({
       ...options,
       content: options.input,
@@ -181,7 +236,7 @@ export function setupAIProvider() {
     });
   });
 
-  AIProvider.provide('findActions', options => {
+  provideAction('findActions', options => {
     return textToText({
       ...options,
       content: options.input,
@@ -189,7 +244,7 @@ export function setupAIProvider() {
     });
   });
 
-  AIProvider.provide('brainstormMindmap', options => {
+  provideAction('brainstormMindmap', options => {
     return textToText({
       ...options,
       content: options.input,
@@ -197,7 +252,7 @@ export function setupAIProvider() {
     });
   });
 
-  AIProvider.provide('explain', options => {
+  provideAction('explain', options => {
     return textToText({
       ...options,
       content: options.input,
@@ -205,7 +260,7 @@ export function setupAIProvider() {
     });
   });
 
-  AIProvider.provide('explainImage', options => {
+  provideAction('explainImage', options => {
     return textToText({
       ...options,
       content: options.input,
@@ -213,7 +268,7 @@ export function setupAIProvider() {
     });
   });
 
-  AIProvider.provide('makeItReal', options => {
+  provideAction('makeItReal', options => {
     return textToText({
       ...options,
       promptName: 'Make it real',
@@ -224,13 +279,27 @@ export function setupAIProvider() {
     });
   });
 
-  AIProvider.provide('createSlides', options => {
+  provideAction('createSlides', options => {
     return textToText({
       ...options,
       content: options.input,
       promptName: 'Create a presentation',
     });
   });
+
+  provideAction('createImage', options => {
+    // test to image
+    let promptName: PromptKey = 'debug:action:dalle3';
+    // image to image
+    if (options.attachments?.length) {
+      promptName = 'debug:action:fal-sd15';
+    }
+    return toImage({
+      ...options,
+      promptName,
+    });
+  });
+  //#endregion
 
   AIProvider.provide('histories', {
     actions: async (
@@ -251,19 +320,6 @@ export function setupAIProvider() {
       // @ts-expect-error - 'action' is missing in server impl
       return (await listHistories(workspaceId, docId)) ?? [];
     },
-  });
-
-  AIProvider.provide('createImage', options => {
-    // test to image
-    let promptName: PromptKey = 'debug:action:dalle3';
-    // image to image
-    if (options.attachments?.length) {
-      promptName = 'debug:action:fal-sd15';
-    }
-    return toImage({
-      ...options,
-      promptName,
-    });
   });
 
   AIProvider.provide('photoEngine', {
@@ -290,6 +346,9 @@ export function setupAIProvider() {
   });
 
   AIProvider.slots.requestUpgradePlan.on(() => {
+    mixpanel.track('AI', {
+      action: 'requestUpgradePlan',
+    });
     getCurrentStore().set(openSettingModalAtom, {
       activeTab: 'billing',
       open: true,
@@ -297,6 +356,9 @@ export function setupAIProvider() {
   });
 
   AIProvider.slots.requestLogin.on(() => {
+    mixpanel.track('AI', {
+      action: 'requestLogin',
+    });
     getCurrentStore().set(authAtom, s => ({
       ...s,
       openModal: true,
