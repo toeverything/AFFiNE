@@ -3,7 +3,6 @@ import { appSettingAtom, useLiveData, useService } from '@toeverything/infra';
 import { useAtomValue } from 'jotai';
 import { useCallback, useEffect, useState } from 'react';
 
-import { appSidebarOpenAtom } from '../../../components/app-sidebar/index.jotai';
 import { RightSidebarService } from '../services/right-sidebar';
 import * as styles from './container.css';
 import { Header } from './header';
@@ -20,17 +19,15 @@ export const RightSidebarContainer = () => {
   const frontView = useLiveData(rightSidebar.front$);
   const open = useLiveData(rightSidebar.isOpen$) && frontView !== undefined;
   const [floating, setFloating] = useState(false);
-  const appSidebarOpened = useAtomValue(appSidebarOpenAtom);
 
   useEffect(() => {
-    const onResize = () =>
-      setFloating(!!(window.innerWidth < 1200 && appSidebarOpened));
+    const onResize = () => setFloating(!!(window.innerWidth < 768));
     onResize();
     window.addEventListener('resize', onResize);
     return () => {
       window.removeEventListener('resize', onResize);
     };
-  }, [appSidebarOpened]);
+  }, []);
 
   const handleOpenChange = useCallback(
     (open: boolean) => {
