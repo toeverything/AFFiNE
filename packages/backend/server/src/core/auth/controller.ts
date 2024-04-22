@@ -31,6 +31,11 @@ class SignInCredential {
   password?: string;
 }
 
+class MagicLinkCredential {
+  email!: string;
+  token!: string;
+}
+
 @Throttle('strict')
 @Controller('/api/auth')
 export class AuthController {
@@ -90,7 +95,7 @@ export class AuthController {
   ) {
     const token = await this.token.createToken(TokenType.SignIn, email);
 
-    const magicLink = this.url.link('/api/auth/magic-link', {
+    const magicLink = this.url.link('/magic-link', {
       token,
       email,
       redirect_uri: redirectUri,
@@ -129,20 +134,16 @@ export class AuthController {
   }
 
   @Public()
-  @Get('/magic-link')
+  @Post('/magic-link')
   async magicLinkSignIn(
     @Req() req: Request,
     @Res() res: Response,
-    @Query('token') token?: string,
-    @Query('email') email?: string,
-    @Query('redirect_uri') redirectUri = this.url.home
+    @Body() { email, token }: MagicLinkCredential
   ) {
     if (!token || !email) {
-      throw new BadRequestException('Invalid Sign-in mail Token');
+      throw new BadRequestException('Missing sign-in mail token');
     }
 
-    email = decodeURIComponent(email);
-    token = decodeURIComponent(token);
     validators.assertValidEmail(email);
 
     const valid = await this.token.verifyToken(TokenType.SignIn, token, {
@@ -150,7 +151,7 @@ export class AuthController {
     });
 
     if (!valid) {
-      throw new BadRequestException('Invalid Sign-in mail Token');
+      throw new BadRequestException('Invalid sign-in mail token');
     }
 
     const user = await this.user.fulfillUser(email, {
@@ -160,7 +161,7 @@ export class AuthController {
 
     await this.auth.setCookie(req, res, user);
 
-    return this.url.safeRedirect(res, redirectUri);
+    res.send({ id: user.id, email: user.email, name: user.name });
   }
 
   @Throttle('default', { limit: 1200 })
