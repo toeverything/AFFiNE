@@ -60,6 +60,10 @@ export const topLevelRoutes = [
         lazy: () => import('./pages/sign-in'),
       },
       {
+        path: '/magic-link',
+        lazy: () => import('./pages/magic-link'),
+      },
+      {
         path: '/open-app/:action',
         lazy: () => import('./pages/open-app'),
       },

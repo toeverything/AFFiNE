@@ -70,14 +70,17 @@ export class TokenService {
       !expired && (!record.credential || record.credential === credential);
 
     if ((expired || valid) && !keep) {
-      await this.db.verificationToken.delete({
+      const deleted = await this.db.verificationToken.deleteMany({
         where: {
-          type_token: {
-            token,
-            type,
-          },
+          token,
+          type,
         },
       });
+
+      // already deleted, means token has been used
+      if (!deleted.count) {
+        return null;
+      }
     }
 
     return valid ? record : null;

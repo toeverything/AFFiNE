@@ -26,7 +26,7 @@ export function getRequestResponseFromHost(host: ArgumentsHost) {
       const ws = host.switchToWs();
       const req = ws.getClient<Socket>().client.conn.request as Request;
 
-      const cookieStr = req?.headers?.cookie;
+      const cookieStr = req?.headers?.cookie ?? '';
       // patch cookies to match auth guard logic
       if (typeof cookieStr === 'string') {
         req.cookies = cookieStr.split(';').reduce(
