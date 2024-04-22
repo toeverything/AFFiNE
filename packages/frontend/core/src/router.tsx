@@ -4,6 +4,7 @@ import type { NavigateFunction, RouteObject } from 'react-router-dom';
 import {
   createBrowserRouter as reactRouterCreateBrowserRouter,
   Outlet,
+  redirect,
   useLocation,
   // eslint-disable-next-line @typescript-eslint/no-restricted-imports
   useNavigate,
@@ -103,6 +104,14 @@ export const topLevelRoutes = [
       {
         path: '/subscribe',
         lazy: () => import('./pages/subscribe'),
+      },
+      {
+        path: '/try-cloud',
+        loader: () => {
+          return redirect(
+            `/signIn?redirect_uri=${encodeURIComponent('/?initCloud=true')}`
+          );
+        },
       },
       {
         path: '*',

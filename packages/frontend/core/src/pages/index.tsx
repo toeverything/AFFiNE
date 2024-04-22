@@ -77,7 +77,6 @@ export const Component = () => {
     // check is user logged in && has cloud workspace
     if (searchParams.get('initCloud') === 'true') {
       if (loggedIn) {
-        searchParams.delete('initCloud');
         if (list.every(w => w.flavour !== WorkspaceFlavour.AFFINE_CLOUD)) {
           createCloudWorkspace();
           return;
