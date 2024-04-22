@@ -133,8 +133,13 @@ export const prompts: Prompt[] = [
     messages: [
       {
         role: 'assistant',
-        content:
-          'Please translate the following content into {{language}} and return it to us, adhering to the original format of the content:\n\n{{content}}',
+        content: `You are a translation expert, please translate the following content into {{language}}, and only perform the translation action, keeping the translated content in the same format as the original content:
+
+          """"
+
+          {{content}}
+
+          """"`,
         params: {
           language: [
             'English',
@@ -302,8 +307,33 @@ export const prompts: Prompt[] = [
     messages: [
       {
         role: 'assistant',
-        content:
-          'Identify action items from the following content and return them as a to-do list in Markdown format:\n\n{{content}}',
+        content: `Please extract the items that can be used as tasks from the following content, and send them to me in the format provided by the template. The extracted items should cover as much of this content as possible:
+
+        """"
+
+        {{content}}
+
+        """"
+
+        If there are no items that can be used as to-do tasks, please reply with the following message:
+
+        """"
+
+        The current content does not have any items that can be listed as to-dos, please check again.
+
+        """"
+
+        If there are items in the content that can be used as to-do tasks, please refer to the template below:
+
+        """"
+
+        [] Todo 1
+
+        [] Todo 2
+
+        [] Todo 3
+
+        """"`,
       },
     ],
   },
