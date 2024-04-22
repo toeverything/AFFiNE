@@ -1,7 +1,6 @@
 import { Menu } from '@affine/component/ui/menu';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import {
-  initEmptyPage,
   useLiveData,
   useService,
   WorkspacesService,
@@ -16,7 +15,10 @@ import {
 } from 'react';
 import { type LoaderFunction, useSearchParams } from 'react-router-dom';
 
-import { createFirstAppData } from '../bootstrap/first-app-data';
+import {
+  buildShowcaseWorkspace,
+  createFirstAppData,
+} from '../bootstrap/first-app-data';
 import { UserWithWorkspaceList } from '../components/pure/workspace-slider-bar/user-with-workspace-list';
 import { WorkspaceFallback } from '../components/workspace';
 import { useNavigateHelper } from '../hooks/use-navigate-helper';
@@ -54,40 +56,52 @@ export const Component = () => {
   const createCloudWorkspace = useCallback(() => {
     if (createOnceRef.current) return;
     createOnceRef.current = true;
-    workspacesService
-      .create(WorkspaceFlavour.AFFINE_CLOUD, async workspace => {
-        workspace.meta.setName('AFFiNE Cloud');
-        const page = workspace.createDoc();
-        initEmptyPage(page);
-      })
+    buildShowcaseWorkspace(
+      workspacesService,
+      WorkspaceFlavour.AFFINE_CLOUD,
+      'AFFiNE Cloud'
+    )
       .then(workspace => openPage(workspace.id, WorkspaceSubPath.ALL))
       .catch(err => console.error('Failed to create cloud workspace', err));
   }, [openPage, workspacesService]);
 
   useLayoutEffect(() => {
+    if (!navigating) {
+      return;
+    }
+
     if (listIsLoading) {
       return;
     }
 
     // check is user logged in && has cloud workspace
-    if (searchParams.get('initCloud') === 'true' && loggedIn) {
-      searchParams.delete('initCloud');
-      if (list.every(w => w.flavour !== WorkspaceFlavour.AFFINE_CLOUD)) {
-        createCloudWorkspace();
+    if (searchParams.get('initCloud') === 'true') {
+      if (loggedIn) {
+        searchParams.delete('initCloud');
+        if (list.every(w => w.flavour !== WorkspaceFlavour.AFFINE_CLOUD)) {
+          createCloudWorkspace();
+          return;
+        }
+
+        // open first cloud workspace
+        const openWorkspace =
+          list.find(w => w.flavour === WorkspaceFlavour.AFFINE_CLOUD) ??
+          list[0];
+        openPage(openWorkspace.id, WorkspaceSubPath.ALL);
+      } else {
         return;
       }
+    } else {
+      if (list.length === 0) {
+        setNavigating(false);
+        return;
+      }
+      // open last workspace
+      const lastId = localStorage.getItem('last_workspace_id');
+
+      const openWorkspace = list.find(w => w.id === lastId) ?? list[0];
+      openPage(openWorkspace.id, WorkspaceSubPath.ALL);
     }
-
-    if (list.length === 0) {
-      setNavigating(false);
-      return;
-    }
-
-    // open last workspace
-    const lastId = localStorage.getItem('last_workspace_id');
-
-    const openWorkspace = list.find(w => w.id === lastId) ?? list[0];
-    openPage(openWorkspace.id, WorkspaceSubPath.ALL);
   }, [
     createCloudWorkspace,
     list,
