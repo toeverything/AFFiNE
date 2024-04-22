@@ -103,8 +103,8 @@ class ChatMessageType implements Partial<ChatMessage> {
   @Field(() => GraphQLJSON, { nullable: true })
   params!: Record<string, string> | undefined;
 
-  @Field(() => Date, { nullable: true })
-  createdAt!: Date | undefined;
+  @Field(() => Date)
+  createdAt!: Date;
 }
 
 @ObjectType('CopilotHistories')

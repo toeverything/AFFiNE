@@ -18,7 +18,6 @@ import {
   getTokenEncoder,
   ListHistoriesOptions,
   PromptMessage,
-  PromptMessageSchema,
   PromptParams,
   SubmittedMessage,
 } from './types';
@@ -324,6 +323,7 @@ export class ChatSessionService {
               role: true,
               content: true,
               params: true,
+              createdAt: true,
             },
             orderBy: {
               createdAt: 'asc',
@@ -338,7 +338,7 @@ export class ChatSessionService {
         Promise.all(
           sessions.map(async ({ id, promptName, messages, createdAt }) => {
             try {
-              const ret = PromptMessageSchema.array().safeParse(messages);
+              const ret = ChatMessageSchema.array().safeParse(messages);
               if (ret.success) {
                 const prompt = await this.prompt.get(promptName);
                 if (!prompt) {
@@ -355,6 +355,13 @@ export class ChatSessionService {
                       .finish(ret.data[0]?.params || {})
                       .filter(({ role }) => role !== 'system')
                   : [];
+
+                // `createdAt` is required for history sorting in frontend, let's fake the creating time of prompt messages
+                (preload as ChatMessage[]).forEach((msg, i) => {
+                  msg.createdAt = new Date(
+                    createdAt.getTime() - preload.length - i - 1
+                  );
+                });
 
                 return {
                   sessionId: id,
