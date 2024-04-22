@@ -28,6 +28,7 @@ export type TextToTextOptions = {
   params?: Record<string, string>;
   timeout?: number;
   stream?: boolean;
+  signal?: AbortSignal;
 };
 
 export function createChatSession({
@@ -102,6 +103,7 @@ export function textToText({
   params,
   sessionId,
   stream,
+  signal,
   timeout = TIMEOUT,
 }: TextToTextOptions) {
   if (stream) {
@@ -120,6 +122,15 @@ export function textToText({
           sessionId: message.sessionId,
           messageId: message.messageId,
         });
+        if (signal) {
+          if (signal.aborted) {
+            eventSource.close();
+            return;
+          }
+          signal.onabort = () => {
+            eventSource.close();
+          };
+        }
         for await (const event of toTextStream(eventSource, { timeout })) {
           if (event.type === 'message') {
             yield event.data;

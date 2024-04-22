@@ -100,13 +100,15 @@ export class CopilotClient {
   async chatText({
     sessionId,
     messageId,
+    signal,
   }: {
     sessionId: string;
     messageId: string;
+    signal?: AbortSignal;
   }) {
     const url = new URL(`${this.backendUrl}/api/copilot/chat/${sessionId}`);
     url.searchParams.set('messageId', messageId);
-    const response = await fetch(url.toString());
+    const response = await fetch(url.toString(), { signal });
     return response.text();
   }
 
