@@ -1,6 +1,7 @@
 import { Button, type ButtonProps } from '@affine/component';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { SubscriptionService } from '@affine/core/modules/cloud';
+import { getAffineCloudBaseUrl } from '@affine/core/modules/cloud/services/fetch';
 import { popupWindow } from '@affine/core/utils';
 import { SubscriptionPlan, SubscriptionRecurring } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
@@ -42,7 +43,7 @@ export const AISubscribe = ({ ...btnProps }: AISubscribeProps) => {
         idempotencyKey,
         plan: SubscriptionPlan.AI,
         coupon: null,
-        successCallbackLink: null,
+        successCallbackLink: getAffineCloudBaseUrl() + '/ai-upgrade-success',
       });
       popupWindow(session);
       setOpenedExternalWindow(true);

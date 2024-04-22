@@ -1022,6 +1022,8 @@
   "com.affine.payment.upgrade-success-page.support": "If you have any questions, please contact our <1> customer support</1>.",
   "com.affine.payment.upgrade-success-page.text": "Congratulations! Your AFFiNE account has been successfully upgraded to a Pro account.",
   "com.affine.payment.upgrade-success-page.title": "Upgrade Successful!",
+  "com.affine.payment.ai-upgrade-success-page.title": "Purchase Successful!",
+  "com.affine.payment.ai-upgrade-success-page.text": "Congratulations on your successful purchase of AFFiNE AI! You're now empowered to refine your content, generate images, and craft comprehensive mindmaps directly within AFFiNE AI, dramatically enhancing your productivity.",
   "com.affine.publicLinkDisableModal.button.cancel": "Cancel",
   "com.affine.publicLinkDisableModal.button.disable": "Disable",
   "com.affine.publicLinkDisableModal.description": "Disabling this public link will prevent anyone with the link from accessing this doc.",

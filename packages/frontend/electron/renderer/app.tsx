@@ -29,11 +29,16 @@ import type { PropsWithChildren, ReactElement } from 'react';
 import { lazy, Suspense } from 'react';
 import { RouterProvider } from 'react-router-dom';
 
+const desktopWhiteList = [
+  '/desktop-signin',
+  '/open-app/signin-redirect',
+  '/upgrade-success',
+  '/ai-upgrade-success',
+];
 if (
   !environment.isDesktop &&
   environment.isDebug &&
-  !location.pathname.includes('/desktop-signin') &&
-  !location.pathname.includes('/open-app/signin-redirect')
+  desktopWhiteList.every(path => !location.pathname.startsWith(path))
 ) {
   document.body.innerHTML = `<h1 style="color:red;font-size:5rem;text-align:center;">Don't run electron entry in browser.</h1>`;
   throw new Error('Wrong distribution');
