@@ -67,6 +67,12 @@ async function handleAffineUrl(url: string) {
   if (urlObj.hostname === 'signin-redirect') {
     await handleOauthJwt(url);
   }
+  if (urlObj.hostname === 'bring-to-front') {
+    const mainWindow = await getMainWindow();
+    if (mainWindow) {
+      mainWindow.show();
+    }
+  }
 }
 
 async function handleOauthJwt(url: string) {

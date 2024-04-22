@@ -1,6 +1,5 @@
 import type {
   CreateCheckoutSessionInput,
-  SubscriptionPlan,
   SubscriptionRecurring,
 } from '@affine/graphql';
 import {
@@ -8,6 +7,7 @@ import {
   createCheckoutSessionMutation,
   pricesQuery,
   resumeSubscriptionMutation,
+  SubscriptionPlan,
   subscriptionQuery,
   updateSubscriptionMutation,
 } from '@affine/graphql';
@@ -15,9 +15,23 @@ import type { GlobalCacheService } from '@toeverything/infra';
 import { Store } from '@toeverything/infra';
 
 import type { SubscriptionType } from '../entities/subscription';
+import { getAffineCloudBaseUrl } from '../services/fetch';
 import type { GraphQLService } from '../services/graphql';
 
 const SUBSCRIPTION_CACHE_KEY = 'subscription:';
+
+const getDefaultSubscriptionSuccessCallbackLink = (
+  plan: SubscriptionPlan | null
+) => {
+  const path =
+    plan === SubscriptionPlan.AI ? '/ai-upgrade-success' : '/upgrade-success';
+  const urlString = getAffineCloudBaseUrl() + path;
+  const url = new URL(urlString);
+  if (environment.isDesktop) {
+    url.searchParams.set('schema', window.appInfo.schema);
+  }
+  return url.toString();
+};
 
 export class SubscriptionStore extends Store {
   constructor(
@@ -112,7 +126,14 @@ export class SubscriptionStore extends Store {
   async createCheckoutSession(input: CreateCheckoutSessionInput) {
     const data = await this.gqlService.gql({
       query: createCheckoutSessionMutation,
-      variables: { input },
+      variables: {
+        input: {
+          ...input,
+          successCallbackLink:
+            input.successCallbackLink ||
+            getDefaultSubscriptionSuccessCallbackLink(input.plan),
+        },
+      },
     });
     return data.createCheckoutSession;
   }

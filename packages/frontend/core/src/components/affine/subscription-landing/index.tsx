@@ -4,6 +4,7 @@ import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { type ReactNode, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 
 import * as styles from './styles.css';
 
@@ -15,11 +16,16 @@ const UpgradeSuccessLayout = ({
   description?: ReactNode;
 }) => {
   const t = useAFFiNEI18N();
+  const [params] = useSearchParams();
 
-  const { jumpToIndex } = useNavigateHelper();
+  const { jumpToIndex, openInApp } = useNavigateHelper();
   const openAffine = useCallback(() => {
-    jumpToIndex();
-  }, [jumpToIndex]);
+    if (params.get('schema')) {
+      openInApp(params.get('schema') ?? 'affine', 'bring-to-front');
+    } else {
+      jumpToIndex();
+    }
+  }, [jumpToIndex, openInApp, params]);
 
   const subtitle = (
     <div className={styles.leftContentText}>

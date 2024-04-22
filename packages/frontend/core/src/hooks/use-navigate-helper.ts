@@ -155,6 +155,14 @@ export function useNavigateHelper() {
     [navigate]
   );
 
+  const openInApp = useCallback(
+    (schema: string, path: string) => {
+      const encodedUrl = encodeURIComponent(`${schema}://${path}`);
+      return navigate(`/open-app/url?schema=${schema}&url=${encodedUrl}`);
+    },
+    [navigate]
+  );
+
   return useMemo(
     () => ({
       jumpToPage,
@@ -169,6 +177,7 @@ export function useNavigateHelper() {
       jumpToCollections,
       jumpToTags,
       jumpToTag,
+      openInApp,
     }),
     [
       jumpToPage,
@@ -183,6 +192,7 @@ export function useNavigateHelper() {
       jumpToCollections,
       jumpToTags,
       jumpToTag,
+      openInApp,
     ]
   );
 }

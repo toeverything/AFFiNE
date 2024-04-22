@@ -32,6 +32,7 @@ import { RouterProvider } from 'react-router-dom';
 const desktopWhiteList = [
   '/desktop-signin',
   '/open-app/signin-redirect',
+  '/open-app/url',
   '/upgrade-success',
   '/ai-upgrade-success',
 ];
