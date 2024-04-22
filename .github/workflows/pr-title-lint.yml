@@ -18,8 +18,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        env:
-          TITLE: ${{ github.event.pull_request.title }}
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -27,4 +25,7 @@ jobs:
           node-version-file: '.nvmrc'
       - name: Install dependencies
         run: yarn workspaces focus @affine/commitlint-config
-      - run: echo "$TITLE" | yarn workspace @affine/commitlint-config commitlint -g ./.commitlintrc.json
+      - name: Check PR title
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: echo "$TITLE" | yarn workspace @affine/commitlint-config commitlint -g ./.commitlintrc.json
