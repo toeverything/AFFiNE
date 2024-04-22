@@ -1,3 +1,4 @@
+import { showAILoginRequiredAtom } from '@affine/core/components/affine/auth/ai-login-required';
 import {
   createCopilotMessageMutation,
   createCopilotSessionMutation,
@@ -14,6 +15,7 @@ import {
   PaymentRequiredError,
   UnauthorizedError,
 } from '@blocksuite/blocks';
+import { getCurrentStore } from '@toeverything/infra';
 
 type OptionsField<T extends GraphQLQuery> =
   RequestOptions<T>['variables'] extends { options: infer U } ? U : never;
@@ -29,6 +31,7 @@ const fetcher = async <Query extends GraphQLQuery>(
 
     switch (code) {
       case 401:
+        getCurrentStore().set(showAILoginRequiredAtom, true);
         throw new UnauthorizedError();
       case 402:
         throw new PaymentRequiredError();

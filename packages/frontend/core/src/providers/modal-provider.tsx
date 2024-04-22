@@ -88,6 +88,12 @@ const HistoryTipsModal = lazy(() =>
   }))
 );
 
+const AiLoginRequiredModal = lazy(() =>
+  import('../components/affine/auth/ai-login-required').then(module => ({
+    default: module.AiLoginRequiredModal,
+  }))
+);
+
 export const Setting = () => {
   const [{ open, workspaceMetadata, activeTab }, setOpenSettingModalAtom] =
     useAtom(openSettingModalAtom);
@@ -206,6 +212,7 @@ export function CurrentWorkspaceModals() {
       {currentWorkspace?.flavour === WorkspaceFlavour.AFFINE_CLOUD && (
         <CloudQuotaModal />
       )}
+      <AiLoginRequiredModal />
     </>
   );
 }

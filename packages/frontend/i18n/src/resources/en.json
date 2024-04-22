@@ -1304,5 +1304,9 @@
   "com.affine.ai-onboarding.local.action-dismiss": "Dismiss",
   "com.affine.ai-onboarding.local.action-learn-more": "Learn More",
   "com.affine.ai-onboarding.edgeless.title": "Meet AFFiNE AI",
-  "com.affine.ai-onboarding.edgeless.message": "Lets you think bigger, create faster, work smarter and save time for every project."
+  "com.affine.ai-onboarding.edgeless.message": "Lets you think bigger, create faster, work smarter and save time for every project.",
+  "com.affine.ai.login-required.dialog-title": "Sign in to Continue",
+  "com.affine.ai.login-required.dialog-content": "To use AFFiNE AI, please sign in to your AFFiNE Cloud account.",
+  "com.affine.ai.login-required.dialog-confirm": "Sign in",
+  "com.affine.ai.login-required.dialog-cancel": "Cancel"
 }
