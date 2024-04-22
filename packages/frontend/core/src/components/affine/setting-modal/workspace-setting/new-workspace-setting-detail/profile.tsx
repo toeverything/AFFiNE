@@ -15,6 +15,8 @@ import { useCallback, useEffect, useState } from 'react';
 
 import * as style from './style.css';
 
+const avatarImageProps = { style: { borderRadius: 8 } };
+
 export const ProfilePanel = () => {
   const t = useAFFiNEI18N();
 
@@ -151,6 +153,8 @@ export const ProfilePanel = () => {
           size={56}
           url={avatarUrl}
           name={name}
+          imageProps={avatarImageProps}
+          fallbackProps={avatarImageProps}
           colorfulFallback
           hoverIcon={isOwner ? <CameraIcon /> : undefined}
           onRemove={canAdjustAvatar ? handleRemoveUserAvatar : undefined}
