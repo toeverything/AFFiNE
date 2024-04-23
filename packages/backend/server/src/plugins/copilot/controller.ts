@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Controller,
   Get,
+  HttpException,
   InternalServerErrorException,
   Logger,
   NotFoundException,
@@ -13,6 +14,7 @@ import {
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import {
+  catchError,
   concatMap,
   connect,
   EMPTY,
@@ -21,6 +23,7 @@ import {
   merge,
   mergeMap,
   Observable,
+  of,
   switchMap,
   toArray,
 } from 'rxjs';
@@ -34,7 +37,7 @@ import { CopilotStorage } from './storage';
 import { CopilotCapability } from './types';
 
 export interface ChatEvent {
-  type: 'attachment' | 'message';
+  type: 'attachment' | 'message' | 'error';
   id?: string;
   data: string;
 }
@@ -81,6 +84,19 @@ export class CopilotController {
     const controller = new AbortController();
     req.on('close', () => controller.abort());
     return controller.signal;
+  }
+
+  private handleError(err: any) {
+    if (err instanceof Error) {
+      const ret = {
+        message: err.message,
+        status: (err as any).status,
+      };
+      if (err instanceof HttpException) {
+        ret.status = err.getStatus();
+      }
+    }
+    return err;
   }
 
   @Get('/chat/:sessionId')
@@ -138,7 +154,14 @@ export class CopilotController {
     @Query('messageId') messageId: string,
     @Query() params: Record<string, string>
   ): Promise<Observable<ChatEvent>> {
-    await this.chatSession.checkQuota(user.id);
+    try {
+      await this.chatSession.checkQuota(user.id);
+    } catch (err) {
+      return of({
+        type: 'error' as const,
+        data: this.handleError(err),
+      });
+    }
 
     const model = await this.chatSession.get(sessionId).then(s => s?.model);
     const provider = this.provider.getProviderByCapability(
@@ -178,6 +201,12 @@ export class CopilotController {
             switchMap(() => EMPTY)
           )
         )
+      ),
+      catchError(err =>
+        of({
+          type: 'error' as const,
+          data: this.handleError(err),
+        })
       )
     );
   }
@@ -190,7 +219,14 @@ export class CopilotController {
     @Query('messageId') messageId: string,
     @Query() params: Record<string, string>
   ): Promise<Observable<ChatEvent>> {
-    await this.chatSession.checkQuota(user.id);
+    try {
+      await this.chatSession.checkQuota(user.id);
+    } catch (err) {
+      return of({
+        type: 'error' as const,
+        data: this.handleError(err),
+      });
+    }
 
     const hasAttachment = await this.hasAttachment(sessionId, messageId);
     const model = await this.chatSession.get(sessionId).then(s => s?.model);
@@ -245,6 +281,12 @@ export class CopilotController {
             switchMap(() => EMPTY)
           )
         )
+      ),
+      catchError(err =>
+        of({
+          type: 'error' as const,
+          data: this.handleError(err),
+        })
       )
     );
   }
