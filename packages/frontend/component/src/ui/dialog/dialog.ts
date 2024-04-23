@@ -7,7 +7,7 @@ let _internalId = 0;
  * Create/Open a dialog
  */
 export const dialog = (info: DialogOptions) => {
-  const id = info.id ?? `${_internalId++}`;
+  const id = info.id ?? `system:${_internalId++}`;
   dialogs$.next({
     [id]: {
       ...dialogs$.value[id],
@@ -22,6 +22,9 @@ export const dialog = (info: DialogOptions) => {
  * Close specific dialog
  */
 dialog.close = (id: Dialog['id']) => {
+  if (id.startsWith('system:')) {
+    return dialog.destroy(id);
+  }
   dialogs$.next({
     ...dialogs$.value,
     [id]: { ...dialogs$.value[id], open: false },
