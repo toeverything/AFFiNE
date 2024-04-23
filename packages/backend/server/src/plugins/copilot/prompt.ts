@@ -188,6 +188,7 @@ export class PromptService {
             create: messages.map((m, idx) => ({
               idx,
               ...m,
+              attachments: m.attachments || undefined,
               params: m.params || undefined,
             })),
           },
@@ -206,6 +207,7 @@ export class PromptService {
           create: messages.map((m, idx) => ({
             idx,
             ...m,
+            attachments: m.attachments || undefined,
             params: m.params || undefined,
           })),
         },

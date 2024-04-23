@@ -161,6 +161,7 @@ export class ChatSessionService {
 
       const messages = state.messages.map(m => ({
         ...m,
+        attachments: m.attachments || undefined,
         params: m.params || undefined,
       }));
 
@@ -322,6 +323,7 @@ export class ChatSessionService {
             select: {
               role: true,
               content: true,
+              attachments: true,
               params: true,
               createdAt: true,
             },

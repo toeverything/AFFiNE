@@ -59,7 +59,7 @@ export const ChatMessageRole = Object.values(AiPromptRole) as [
 
 const PureMessageSchema = z.object({
   content: z.string(),
-  attachments: z.array(z.string()).optional(),
+  attachments: z.array(z.string()).optional().nullable(),
   params: z
     .record(z.union([z.string(), z.array(z.string())]))
     .optional()
