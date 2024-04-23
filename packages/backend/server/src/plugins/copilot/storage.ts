@@ -31,6 +31,10 @@ export class CopilotStorage {
   ) {
     const name = `${userId}/${workspaceId}/${key}`;
     await this.provider.put(name, blob);
+    if (this.config.node.dev) {
+      // return image base64url for dev environment
+      return `data:image/png;base64,${blob.toString('base64')}`;
+    }
     return `${this.config.baseUrl}/api/copilot/blob/${name}`;
   }
 
