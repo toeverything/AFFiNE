@@ -5,6 +5,7 @@ export * from './ui/avatar';
 export * from './ui/button';
 export * from './ui/checkbox';
 export * from './ui/date-picker';
+export * from './ui/dialog';
 export * from './ui/divider';
 export * from './ui/editable';
 export * from './ui/empty';

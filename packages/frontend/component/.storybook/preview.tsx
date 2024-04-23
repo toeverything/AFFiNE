@@ -9,6 +9,8 @@ import { useDarkMode } from 'storybook-dark-mode';
 import type { Preview } from '@storybook/react';
 import React from 'react';
 import { ConfirmModalProvider } from '../src/ui/modal/confirm-modal';
+import { DialogCenter } from '../src/ui/dialog/dialog-center';
+import 'setimmediate';
 
 export const parameters: Preview = {
   argTypes: {
@@ -58,6 +60,7 @@ export const decorators = [
           <ThemeChange />
           <Component />
           <Story {...context} />
+          <DialogCenter />
         </ConfirmModalProvider>
       </ThemeProvider>
     );

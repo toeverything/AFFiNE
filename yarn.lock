@@ -270,6 +270,7 @@ __metadata:
     "@types/react": "npm:^18.2.75"
     "@types/react-dnd": "npm:^3.0.2"
     "@types/react-dom": "npm:^18.2.24"
+    "@types/setimmediate": "npm:^1"
     "@vanilla-extract/css": "npm:^1.14.2"
     "@vanilla-extract/dynamic": "npm:^2.1.0"
     bytes: "npm:^3.1.2"
@@ -296,6 +297,7 @@ __metadata:
     react-transition-state: "npm:^2.1.1"
     react-virtuoso: "npm:^4.7.8"
     rxjs: "npm:^7.8.1"
+    setimmediate: "npm:^1.0.5"
     sonner: "npm:^1.4.41"
     storybook: "npm:^7.6.17"
     storybook-dark-mode: "npm:^4.0.0"
@@ -15461,6 +15463,13 @@ __metadata:
     "@types/node": "npm:*"
     "@types/send": "npm:*"
   checksum: 10/c5a7171d5647f9fbd096ed1a26105759f3153ccf683824d99fee4c7eb9cde2953509621c56a070dd9fb1159e799e86d300cbe4e42245ebc5b0c1767e8ca94a67
+  languageName: node
+  linkType: hard
+
+"@types/setimmediate@npm:^1":
+  version: 1.0.4
+  resolution: "@types/setimmediate@npm:1.0.4"
+  checksum: 10/7edf9938b3587fe4797264070db2e19b30547612726f018083c80bc5498fe0b92e7b8b65add5073638de67c8172befa4a8ca38f0d9e0b35e20beb667327917d0
   languageName: node
   linkType: hard
 
