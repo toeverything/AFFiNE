@@ -1,4 +1,4 @@
-import { GeneralNetworkError } from '@blocksuite/blocks';
+import { handleError } from './copilot-client';
 
 export function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -13,6 +13,17 @@ type AffineTextStream = AsyncIterable<AffineTextEvent>;
 
 type toTextStreamOptions = {
   timeout?: number;
+};
+
+// todo: may need to extend the error type
+const safeParseError = (data: string): { status: number } => {
+  try {
+    return JSON.parse(data);
+  } catch {
+    return {
+      status: 500,
+    };
+  }
 };
 
 export function toTextStream(
@@ -52,7 +63,9 @@ export function toTextStream(
         // if there is data in Error event, it means the server sent an error message
         // otherwise, the stream is finished successfully
         if (event.type === 'error' && errorMessage) {
-          rejectMessagePromise(new GeneralNetworkError(errorMessage));
+          // try to parse the error message as a JSON object
+          const error = safeParseError(errorMessage);
+          rejectMessagePromise(handleError(error));
         } else {
           resolveMessagePromise();
         }
