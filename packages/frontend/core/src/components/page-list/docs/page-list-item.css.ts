@@ -137,6 +137,7 @@ export const dateCell = style({
   flexShrink: 0,
   flexWrap: 'nowrap',
   padding: '0 8px',
+  userSelect: 'none',
 });
 export const actionsCellWrapper = style({
   display: 'flex',

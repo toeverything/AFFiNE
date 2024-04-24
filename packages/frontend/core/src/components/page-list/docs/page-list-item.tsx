@@ -4,10 +4,15 @@ import { TagService } from '@affine/core/modules/tag';
 import { useDraggable } from '@dnd-kit/core';
 import { useLiveData, useService } from '@toeverything/infra';
 import type { PropsWithChildren } from 'react';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 
 import { WorkbenchLink } from '../../../modules/workbench/view/workbench-link';
-import { selectionStateAtom, useAtom } from '../scoped-atoms';
+import {
+  anchorIndexAtom,
+  rangeIdsAtom,
+  selectionStateAtom,
+  useAtom,
+} from '../scoped-atoms';
 import type { DraggableTitleCellData, PageListItemProps } from '../types';
 import { useAllDocDisplayProperties } from '../use-all-doc-display-properties';
 import { ColWrapper, formatDate, stopPropagation } from '../utils';
@@ -167,6 +172,7 @@ export const PageListItem = (props: PageListItemProps) => {
       pageId={props.pageId}
       draggable={props.draggable}
       isDragging={isDragging}
+      pageIds={props.pageIds || []}
     >
       <ColWrapper flex={9}>
         <ColWrapper
@@ -227,6 +233,7 @@ export const PageListItem = (props: PageListItemProps) => {
 type PageListWrapperProps = PropsWithChildren<
   Pick<PageListItemProps, 'to' | 'pageId' | 'onClick' | 'draggable'> & {
     isDragging: boolean;
+    pageIds: string[];
   }
 >;
 
@@ -234,26 +241,84 @@ function PageListItemWrapper({
   to,
   isDragging,
   pageId,
+  pageIds,
   onClick,
   children,
   draggable,
 }: PageListWrapperProps) {
   const [selectionState, setSelectionActive] = useAtom(selectionStateAtom);
+  const [anchorIndex, setAnchorIndex] = useAtom(anchorIndexAtom);
+  const [rangeIds, setRangeIds] = useAtom(rangeIdsAtom);
+
+  const handleShiftClick = useCallback(
+    (currentIndex: number) => {
+      if (anchorIndex === undefined) {
+        setAnchorIndex(currentIndex);
+        onClick?.();
+        return;
+      }
+
+      const lowerIndex = Math.min(anchorIndex, currentIndex);
+      const upperIndex = Math.max(anchorIndex, currentIndex);
+      const newRangeIds = pageIds.slice(lowerIndex, upperIndex + 1);
+
+      const currentSelected = selectionState.selectedIds || [];
+
+      // Set operations
+      const setRange = new Set(rangeIds);
+      const newSelected = new Set(
+        currentSelected.filter(id => !setRange.has(id)).concat(newRangeIds)
+      );
+
+      selectionState.onSelectedIdsChange?.([...newSelected]);
+      setRangeIds(newRangeIds);
+    },
+    [
+      anchorIndex,
+      onClick,
+      pageIds,
+      selectionState,
+      setAnchorIndex,
+      rangeIds,
+      setRangeIds,
+    ]
+  );
+
   const handleClick = useCallback(
     (e: React.MouseEvent) => {
       if (!selectionState.selectable) {
         return false;
       }
       stopPropagation(e);
+      const currentIndex = pageIds.indexOf(pageId);
+
       if (e.shiftKey) {
-        setSelectionActive(true);
-        onClick?.();
+        if (!selectionState.selectionActive) {
+          setSelectionActive(true);
+          setAnchorIndex(currentIndex);
+          onClick?.();
+          return true;
+        }
+        handleShiftClick(currentIndex);
         return true;
+      } else {
+        setAnchorIndex(undefined);
+        setRangeIds([]);
+        onClick?.();
+        return false;
       }
-      onClick?.();
-      return false;
     },
-    [onClick, selectionState.selectable, setSelectionActive]
+    [
+      handleShiftClick,
+      onClick,
+      pageId,
+      pageIds,
+      selectionState.selectable,
+      selectionState.selectionActive,
+      setAnchorIndex,
+      setRangeIds,
+      setSelectionActive,
+    ]
   );
 
   const commonProps = useMemo(
@@ -268,6 +333,28 @@ function PageListItemWrapper({
     }),
     [pageId, draggable, onClick, to, isDragging, handleClick]
   );
+
+  useEffect(() => {
+    if (selectionState.selectionActive) {
+      // listen for shift key up
+      const handleKeyUp = (e: KeyboardEvent) => {
+        if (e.key === 'Shift') {
+          setAnchorIndex(undefined);
+          setRangeIds([]);
+        }
+      };
+      window.addEventListener('keyup', handleKeyUp);
+      return () => {
+        window.removeEventListener('keyup', handleKeyUp);
+      };
+    }
+    return;
+  }, [
+    selectionState.selectionActive,
+    setAnchorIndex,
+    setRangeIds,
+    setSelectionActive,
+  ]);
 
   if (to) {
     return (

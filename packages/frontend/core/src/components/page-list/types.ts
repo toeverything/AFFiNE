@@ -23,6 +23,7 @@ export type TagMeta = {
 // using type instead of interface to make it Record compatible
 export type PageListItemProps = {
   pageId: string;
+  pageIds?: string[];
   icon: JSX.Element;
   title: ReactNode; // using ReactNode to allow for rich content rendering
   preview?: ReactNode; // using ReactNode to allow for rich content rendering
