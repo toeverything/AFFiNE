@@ -82,7 +82,9 @@ async function createSessionMessage({
         if (blob instanceof File) {
           return blob;
         } else {
-          return new File([blob], await calculateBlobHash(blob));
+          return new File([blob], await calculateBlobHash(blob), {
+            type: blob.type,
+          });
         }
       })
     );
