@@ -61,7 +61,7 @@ export const ConfirmModal = ({
   );
 };
 
-interface OpenConfirmModalOptions {
+export interface OpenConfirmModalOptions {
   autoClose?: boolean;
   onSuccess?: () => void;
 }
