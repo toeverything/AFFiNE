@@ -106,16 +106,25 @@ const SubscriptionSettings = () => {
   const currentRecurring =
     proSubscription?.recurring ?? SubscriptionRecurring.Monthly;
 
-  const gotoPlansSetting = useCallback(() => {
-    mixpanel.track('Button', {
-      resolve: 'ChangePlan',
-      currentPlan: proSubscription?.plan,
-    });
-    setOpenSettingModalAtom({
-      open: true,
-      activeTab: 'plans',
-    });
-  }, [proSubscription, setOpenSettingModalAtom]);
+  const openPlans = useCallback(
+    (scrollAnchor?: string) => {
+      mixpanel.track('Button', {
+        resolve: 'ChangePlan',
+        currentPlan: proSubscription?.plan,
+      });
+      setOpenSettingModalAtom({
+        open: true,
+        activeTab: 'plans',
+        scrollAnchor: scrollAnchor,
+      });
+    },
+    [proSubscription?.plan, setOpenSettingModalAtom]
+  );
+  const gotoCloudPlansSetting = useCallback(() => openPlans(), [openPlans]);
+  const gotoAiPlanSetting = useCallback(
+    () => openPlans('aiPricingPlan'),
+    [openPlans]
+  );
 
   const amount = proSubscription
     ? proPrice
@@ -143,7 +152,7 @@ const SubscriptionSettings = () => {
                   components={{
                     1: (
                       <span
-                        onClick={gotoPlansSetting}
+                        onClick={gotoCloudPlansSetting}
                         className={styles.currentPlanName}
                       />
                     ),
@@ -153,7 +162,7 @@ const SubscriptionSettings = () => {
             />
             <PlanAction
               plan={currentPlan}
-              gotoPlansSetting={gotoPlansSetting}
+              gotoPlansSetting={gotoCloudPlansSetting}
             />
           </div>
           <p className={styles.planPrice}>
@@ -170,7 +179,7 @@ const SubscriptionSettings = () => {
         <SubscriptionSettingSkeleton />
       )}
 
-      <AIPlanCard />
+      <AIPlanCard onClick={gotoAiPlanSetting} />
       {proSubscription !== null ? (
         proSubscription?.status === SubscriptionStatus.Active && (
           <>
@@ -237,7 +246,7 @@ const SubscriptionSettings = () => {
   );
 };
 
-const AIPlanCard = () => {
+const AIPlanCard = ({ onClick }: { onClick: () => void }) => {
   const t = useAFFiNEI18N();
   const subscriptionService = useService(SubscriptionService);
   useEffect(() => {
@@ -257,17 +266,24 @@ const AIPlanCard = () => {
   }
 
   const billingTip =
-    subscription === undefined
-      ? t['com.affine.payment.billing-setting.ai.free-desc']()
-      : subscription?.nextBillAt
-        ? t['com.affine.payment.ai.billing-tip.next-bill-at']({
-            due: timestampToLocalDate(subscription.nextBillAt),
-          })
-        : subscription?.canceledAt && subscription.end
-          ? t['com.affine.payment.ai.billing-tip.end-at']({
-              end: timestampToLocalDate(subscription.end),
-            })
-          : null;
+    subscription === undefined ? (
+      <Trans
+        i18nKey={'com.affine.payment.billing-setting.ai.free-desc'}
+        components={{
+          a: (
+            <a href="#" onClick={onClick} className={styles.currentPlanName} />
+          ),
+        }}
+      />
+    ) : subscription?.nextBillAt ? (
+      t['com.affine.payment.ai.billing-tip.next-bill-at']({
+        due: timestampToLocalDate(subscription.nextBillAt),
+      })
+    ) : subscription?.canceledAt && subscription.end ? (
+      t['com.affine.payment.ai.billing-tip.end-at']({
+        end: timestampToLocalDate(subscription.end),
+      })
+    ) : null;
 
   return (
     <div className={styles.planCard} style={{ marginTop: 24 }}>
@@ -280,12 +296,12 @@ const AIPlanCard = () => {
         {price?.yearlyAmount ? (
           subscription ? (
             subscription.canceledAt ? (
-              <AIResume />
+              <AIResume className={styles.planAction} />
             ) : (
-              <AICancel />
+              <AICancel className={styles.planAction} />
             )
           ) : (
-            <AISubscribe>
+            <AISubscribe className={styles.planAction}>
               {t['com.affine.payment.billing-setting.ai.purchase']()}
             </AISubscribe>
           )

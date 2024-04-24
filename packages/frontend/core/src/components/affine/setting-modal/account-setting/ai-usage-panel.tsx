@@ -37,11 +37,10 @@ export const AIUsagePanel = () => {
   const loading = aiActionLimit === null || aiActionUsed === null;
   const loadError = useLiveData(quotaService.quota.error$);
 
-  const openAiPricingPlan = useCallback(() => {
+  const openBilling = useCallback(() => {
     setOpenSettingModal({
       open: true,
-      activeTab: 'plans',
-      scrollAnchor: 'aiPricingPlan',
+      activeTab: 'billing',
     });
   }, [setOpenSettingModal]);
 
@@ -96,7 +95,7 @@ export const AIUsagePanel = () => {
         hasPaymentFeature && aiSubscription?.canceledAt ? (
           <AIResume />
         ) : (
-          <Button onClick={openAiPricingPlan}>
+          <Button onClick={openBilling}>
             {t['com.affine.payment.ai.usage.change-button-label']()}
           </Button>
         )
