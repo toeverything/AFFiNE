@@ -155,7 +155,18 @@ runs:
     # playwright to install everything for us.
     - name: Install Playwright's dependencies
       shell: bash
-      if: inputs.playwright-install == 'true'
+      if: inputs.playwright-install == 'true' && runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        yarn playwright install --with-deps chromium
+      env:
+        PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/node_modules/.cache/ms-playwright
+
+    # If the Playwright browser binaries weren't able to be restored, we tell
+    # playwright to install everything for us.
+    - name: Install Playwright's dependencies
+      shell: bash
+      if: inputs.playwright-install == 'true' && runner.os != 'Linux'
       run: yarn playwright install --with-deps chromium
       env:
         PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/node_modules/.cache/ms-playwright
