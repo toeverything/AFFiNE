@@ -252,6 +252,14 @@ export function setupAIProvider() {
     });
   });
 
+  provideAction('expandMindmap', options => {
+    return textToText({
+      ...options,
+      content: options.input,
+      promptName: 'Expand mind map',
+    });
+  });
+
   provideAction('explain', options => {
     return textToText({
       ...options,

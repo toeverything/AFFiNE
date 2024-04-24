@@ -251,6 +251,21 @@ export const prompts: Prompt[] = [
     ],
   },
   {
+    name: 'Expand mind map',
+    action: 'Expand mind map',
+    model: 'gpt-4-turbo-preview',
+    messages: [
+      {
+        role: 'assistant',
+        content: `An existing mind map is displayed as a markdown list:
+
+          {{mindmap}}.
+
+          Please expand the node “{{content}}", adding more essential details and subtopics to the existing mind map in the same markdown list format. Only output the expand part without the original mind map. No need to include any additional text or explanation`,
+      },
+    ],
+  },
+  {
     name: 'Improve writing for it',
     action: 'Improve writing for it',
     model: 'gpt-4-turbo-preview',

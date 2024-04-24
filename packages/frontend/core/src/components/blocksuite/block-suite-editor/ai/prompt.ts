@@ -21,6 +21,7 @@ export const promptKeys = [
   'Change tone to',
   'Brainstorm ideas about this',
   'Brainstorm mindmap',
+  'Expand mind map',
   'Improve writing for it',
   'Improve grammar for it',
   'Fix spelling for it',
