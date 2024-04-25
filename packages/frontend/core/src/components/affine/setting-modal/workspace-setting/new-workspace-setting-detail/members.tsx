@@ -208,8 +208,8 @@ export const CloudWorkspaceMembersPanel = () => {
               <MemberLimitModal
                 isFreePlan={!!plan}
                 open={open}
-                plan={workspaceQuota?.humanReadable.name ?? ''}
-                quota={workspaceQuota?.humanReadable.memberLimit ?? ''}
+                plan={workspaceQuota.humanReadable.name ?? ''}
+                quota={workspaceQuota.humanReadable.memberLimit ?? ''}
                 setOpen={setOpen}
                 onConfirm={handleUpgradeConfirm}
               />
@@ -250,6 +250,21 @@ export const CloudWorkspaceMembersPanel = () => {
     </>
   );
 };
+export const MembersPanelFallback = () => {
+  const t = useAFFiNEI18N();
+
+  return (
+    <>
+      <SettingRow
+        name={t['Members']()}
+        desc={t['com.affine.payment.member.description2']()}
+      />
+      <div className={style.membersPanel}>
+        <MemberListFallback memberCount={1} />
+      </div>
+    </>
+  );
+};
 
 const MemberListFallback = ({ memberCount }: { memberCount: number }) => {
   // prevent page jitter
@@ -260,6 +275,7 @@ const MemberListFallback = ({ memberCount }: { memberCount: number }) => {
     }
     return 'auto';
   }, [memberCount]);
+  const t = useAFFiNEI18N();
 
   return (
     <div
@@ -268,7 +284,8 @@ const MemberListFallback = ({ memberCount }: { memberCount: number }) => {
       }}
       className={style.membersFallback}
     >
-      <Loading size={40} />
+      <Loading size={20} />
+      <span>{t['com.affine.settings.member.loading']()}</span>
     </div>
   );
 };
@@ -388,7 +405,7 @@ export const MembersPanel = (): ReactElement | null => {
   }
   return (
     <AffineErrorBoundary>
-      <Suspense>
+      <Suspense fallback={<MembersPanelFallback />}>
         <CloudWorkspaceMembersPanel />
       </Suspense>
     </AffineErrorBoundary>

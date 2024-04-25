@@ -1075,6 +1075,7 @@
   "com.affine.settings.email.action.change": "Change Email",
   "com.affine.settings.email.action.verify": "Verify Email",
   "com.affine.settings.member-tooltip": "Enable AFFiNE Cloud to collaborate with others",
+  "com.affine.settings.member.loading": "Loading member list...",
   "com.affine.settings.noise-style": "Noise background on the sidebar",
   "com.affine.settings.noise-style-description": "Use background noise effect on the sidebar.",
   "com.affine.settings.password": "Password",
