@@ -593,37 +593,35 @@ export const prompts: Prompt[] = [
 ];
 
 export async function refreshPrompts(db: PrismaClient) {
-  await db.$transaction(async tx => {
-    for (const prompt of prompts) {
-      await tx.aiPrompt.upsert({
-        create: {
-          name: prompt.name,
-          action: prompt.action,
-          model: prompt.model,
-          messages: {
-            create: prompt.messages.map((message, idx) => ({
-              idx,
-              role: message.role,
-              content: message.content,
-              params: message.params,
-            })),
-          },
+  for (const prompt of prompts) {
+    await db.aiPrompt.upsert({
+      create: {
+        name: prompt.name,
+        action: prompt.action,
+        model: prompt.model,
+        messages: {
+          create: prompt.messages.map((message, idx) => ({
+            idx,
+            role: message.role,
+            content: message.content,
+            params: message.params,
+          })),
         },
-        where: { name: prompt.name },
-        update: {
-          action: prompt.action,
-          model: prompt.model,
-          messages: {
-            deleteMany: {},
-            create: prompt.messages.map((message, idx) => ({
-              idx,
-              role: message.role,
-              content: message.content,
-              params: message.params,
-            })),
-          },
+      },
+      where: { name: prompt.name },
+      update: {
+        action: prompt.action,
+        model: prompt.model,
+        messages: {
+          deleteMany: {},
+          create: prompt.messages.map((message, idx) => ({
+            idx,
+            role: message.role,
+            content: message.content,
+            params: message.params,
+          })),
         },
-      });
-    }
-  });
+      },
+    });
+  }
 }

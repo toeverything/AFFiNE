@@ -740,7 +740,7 @@ __metadata:
     sinon: "npm:^17.0.1"
     socket.io: "npm:^4.7.5"
     stripe: "npm:^15.0.0"
-    supertest: "npm:^6.3.4"
+    supertest: "npm:^7.0.0"
     tiktoken: "npm:^1.0.13"
     ts-node: "npm:^10.9.2"
     typescript: "npm:^5.4.5"
@@ -22847,15 +22847,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"formidable@npm:^2.1.2":
-  version: 2.1.2
-  resolution: "formidable@npm:2.1.2"
+"formidable@npm:^3.5.1":
+  version: 3.5.1
+  resolution: "formidable@npm:3.5.1"
   dependencies:
     dezalgo: "npm:^1.0.4"
     hexoid: "npm:^1.0.0"
     once: "npm:^1.4.0"
-    qs: "npm:^6.11.0"
-  checksum: 10/d385180e0461f65e6f7b70452859fe1c32aa97a290c2ca33f00cdc33145ef44fa68bbc9b93af2c3af73ae726e42c3477c6619c49f3c34b49934e9481275b7b4c
+  checksum: 10/c9a7bbbd4ca8142893da88b51cf7797adee022344ea180cf157a108bf999bed5ad8bc07a10a28d8a39fcbfaa02e8cba07f4ba336fbeb330deb23907336ba1fc2
   languageName: node
   linkType: hard
 
@@ -34751,21 +34750,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"superagent@npm:^8.1.2":
-  version: 8.1.2
-  resolution: "superagent@npm:8.1.2"
+"superagent@npm:^9.0.1":
+  version: 9.0.1
+  resolution: "superagent@npm:9.0.1"
   dependencies:
     component-emitter: "npm:^1.3.0"
     cookiejar: "npm:^2.1.4"
     debug: "npm:^4.3.4"
     fast-safe-stringify: "npm:^2.1.1"
     form-data: "npm:^4.0.0"
-    formidable: "npm:^2.1.2"
+    formidable: "npm:^3.5.1"
     methods: "npm:^1.1.2"
     mime: "npm:2.6.0"
     qs: "npm:^6.11.0"
     semver: "npm:^7.3.8"
-  checksum: 10/33d0072e051baf91c7d68131c70682a0650dd1bd0b8dfb6f88e5bdfcb02e18cc2b42a66e44b32fd405ac6bcf5fd57c6e267bf80e2a8ce57a18166a9d3a78f57d
+  checksum: 10/a6e7cd5b93aa51b297cc66ede2f08c5143d4645d3ec424f9ee45dd890e6ba33637e63ce0d724c2a9536f83a8d913c0e0a52575fd9c02e0043a5a7d61708a0a45
   languageName: node
   linkType: hard
 
@@ -34781,13 +34780,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"supertest@npm:^6.3.4":
-  version: 6.3.4
-  resolution: "supertest@npm:6.3.4"
+"supertest@npm:^7.0.0":
+  version: 7.0.0
+  resolution: "supertest@npm:7.0.0"
   dependencies:
     methods: "npm:^1.1.2"
-    superagent: "npm:^8.1.2"
-  checksum: 10/93015318f5a90398915a032747973d9eacf9aebec3f07b413eba9d8b3db83ff48fbf6f5a92f9526578cae50153b0f76a37de197141030d856db4371a711b86ee
+    superagent: "npm:^9.0.1"
+  checksum: 10/73bf2a37e13856a1b3e6a37b9df5cec8e506aa0360a5f5ecd989d1f4b0edf168883e306012e81e371d5252c17d4c7bef4ba30633dbf3877cbf52fc7af51cca9b
   languageName: node
   linkType: hard
 

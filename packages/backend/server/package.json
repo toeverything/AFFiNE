@@ -118,7 +118,7 @@
     "c8": "^9.1.0",
     "nodemon": "^3.1.0",
     "sinon": "^17.0.1",
-    "supertest": "^6.3.4"
+    "supertest": "^7.0.0"
   },
   "ava": {
     "timeout": "1m",
