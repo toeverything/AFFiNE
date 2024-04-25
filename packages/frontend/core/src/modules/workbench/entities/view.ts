@@ -1,20 +1,23 @@
-import { LiveData } from '@toeverything/infra';
+import { Entity, LiveData } from '@toeverything/infra';
 import type { Location, To } from 'history';
-import { nanoid } from 'nanoid';
 import { Observable } from 'rxjs';
 
 import { createIsland } from '../../../utils/island';
 import { createNavigableHistory } from '../../../utils/navigable-history';
+import type { ViewScope } from '../scopes/view';
 
-export class View {
-  constructor(defaultPath: To = { pathname: '/all' }) {
+export class View extends Entity {
+  id = this.scope.props.id;
+
+  constructor(public readonly scope: ViewScope) {
+    super();
     this.history = createNavigableHistory({
-      initialEntries: [defaultPath],
+      initialEntries: [
+        this.scope.props.defaultLocation ?? { pathname: '/all' },
+      ],
       initialIndex: 0,
     });
   }
-
-  id = nanoid();
 
   history = createNavigableHistory({
     initialEntries: ['/all'],

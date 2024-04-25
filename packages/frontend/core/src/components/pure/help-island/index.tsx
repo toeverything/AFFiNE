@@ -1,7 +1,13 @@
 import { Tooltip } from '@affine/component/ui/tooltip';
+import { popupWindow } from '@affine/core/utils';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloseIcon, NewIcon } from '@blocksuite/icons';
-import { Doc, useLiveData, useServiceOptional } from '@toeverything/infra';
+import {
+  DocsService,
+  GlobalContextService,
+  useLiveData,
+  useService,
+} from '@toeverything/infra';
 import { useSetAtom } from 'jotai/react';
 import { useCallback, useState } from 'react';
 
@@ -27,9 +33,12 @@ type IslandItemNames = 'whatNew' | 'contact' | 'shortcuts';
 const showList = environment.isDesktop ? DESKTOP_SHOW_LIST : DEFAULT_SHOW_LIST;
 
 export const HelpIsland = () => {
-  const page = useServiceOptional(Doc);
-  const pageId = page?.id;
-  const mode = useLiveData(page?.mode$);
+  const docId = useLiveData(
+    useService(GlobalContextService).globalContext.docId.$
+  );
+  const docRecordList = useService(DocsService).list;
+  const doc = useLiveData(docId ? docRecordList.doc$(docId) : undefined);
+  const mode = useLiveData(doc?.mode$);
   const setOpenSettingModalAtom = useSetAtom(openSettingModalAtom);
   const [spread, setShowSpread] = useState(false);
   const t = useAFFiNEI18N();
@@ -60,7 +69,7 @@ export const HelpIsland = () => {
       onClick={() => {
         setShowSpread(!spread);
       }}
-      inEdgelessPage={!!pageId && mode === 'edgeless'}
+      inEdgelessPage={!!docId && mode === 'edgeless'}
     >
       <StyledAnimateWrapper
         style={{ height: spread ? `${showList.length * 40 + 4}px` : 0 }}
@@ -70,7 +79,7 @@ export const HelpIsland = () => {
             <StyledIconWrapper
               data-testid="right-bottom-change-log-icon"
               onClick={() => {
-                window.open(runtimeConfig.changelogUrl, '_blank');
+                popupWindow(runtimeConfig.changelogUrl);
               }}
             >
               <NewIcon />

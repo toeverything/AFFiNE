@@ -3,8 +3,8 @@
   "version": "0.14.0",
   "private": true,
   "devDependencies": {
-    "@commitlint/cli": "^19.0.0",
-    "@commitlint/config-conventional": "^19.0.0",
-    "commitlint": "^19.0.0"
+    "@commitlint/cli": "^19.2.1",
+    "@commitlint/config-conventional": "^19.1.0",
+    "commitlint": "^19.2.1"
   }
 }

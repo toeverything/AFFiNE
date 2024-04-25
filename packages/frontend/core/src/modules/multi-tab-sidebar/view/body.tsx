@@ -1,6 +1,6 @@
 import type { PropsWithChildren } from 'react';
 
-import type { SidebarTab, SidebarTabProps } from '../entities/sidebar-tab';
+import type { SidebarTab, SidebarTabProps } from '../multi-tabs/sidebar-tab';
 import * as styles from './body.css';
 
 export const MultiTabSidebarBody = (

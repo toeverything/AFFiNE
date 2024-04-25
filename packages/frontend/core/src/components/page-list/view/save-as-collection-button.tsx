@@ -6,6 +6,7 @@ import { nanoid } from 'nanoid';
 import { useCallback } from 'react';
 
 import { createEmptyCollection } from '../use-collection-manager';
+import * as styles from './save-as-collection-button.css';
 import { useEditCollectionName } from './use-edit-collection';
 
 interface SaveAsCollectionButtonProps {
@@ -35,8 +36,7 @@ export const SaveAsCollectionButton = ({
         onClick={handleClick}
         data-testid="save-as-collection"
         icon={<SaveIcon />}
-        size="large"
-        style={{ padding: '7px 8px' }}
+        className={styles.button}
       >
         {t['com.affine.editCollection.saveCollection']()}
       </Button>

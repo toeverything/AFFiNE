@@ -1,8 +1,9 @@
 import { IconButton } from '@affine/component/ui/button';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import { useDocMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
+import { FavoriteItemsAdapter } from '@affine/core/modules/properties';
 import { PlusIcon } from '@blocksuite/icons';
 import type { DocCollection } from '@blocksuite/store';
+import { useService } from '@toeverything/infra';
 
 import { usePageHelper } from '../../../blocksuite/block-suite-page-list/utils';
 
@@ -16,7 +17,7 @@ export const AddFavouriteButton = ({
   pageId,
 }: AddFavouriteButtonProps) => {
   const { createPage, createLinkedPage } = usePageHelper(docCollection);
-  const { setDocMeta } = useDocMetaHelper(docCollection);
+  const favAdapter = useService(FavoriteItemsAdapter);
   const handleAddFavorite = useAsyncCallback(
     async e => {
       if (pageId) {
@@ -26,10 +27,10 @@ export const AddFavouriteButton = ({
       } else {
         const page = createPage();
         page.load();
-        setDocMeta(page.id, { favorite: true });
+        favAdapter.set(page.id, 'doc', true);
       }
     },
-    [pageId, createLinkedPage, createPage, setDocMeta]
+    [pageId, createLinkedPage, createPage, favAdapter]
   );
 
   return (

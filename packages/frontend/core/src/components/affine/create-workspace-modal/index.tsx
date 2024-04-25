@@ -2,23 +2,25 @@ import { Avatar, Input, Switch, toast } from '@affine/component';
 import type { ConfirmModalProps } from '@affine/component/ui/modal';
 import { ConfirmModal, Modal } from '@affine/component/ui/modal';
 import { authAtom, openDisableCloudAlertModalAtom } from '@affine/core/atoms';
-import { useCurrentLoginStatus } from '@affine/core/hooks/affine/use-current-login-status';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { DebugLogger } from '@affine/debug';
 import { apis } from '@affine/electron-api';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { _addLocalWorkspace } from '@affine/workspace-impl';
 import {
-  buildShowcaseWorkspace,
   initEmptyPage,
+  useLiveData,
   useService,
-  WorkspaceManager,
+  WorkspacesService,
 } from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
 import type { KeyboardEvent } from 'react';
 import { useCallback, useLayoutEffect, useState } from 'react';
 
+import { buildShowcaseWorkspace } from '../../../bootstrap/first-app-data';
+import { AuthService } from '../../../modules/cloud';
+import { _addLocalWorkspace } from '../../../modules/workspace-engine';
+import { mixpanel } from '../../../utils';
 import { CloudSvg } from '../share-page-modal/cloud-svg';
 import * as styles from './index.css';
 
@@ -46,8 +48,7 @@ interface NameWorkspaceContentProps extends ConfirmModalProps {
   ) => void;
 }
 
-const shouldEnableCloud =
-  !runtimeConfig.allowLocalWorkspace && !environment.isDesktop;
+const shouldEnableCloud = !runtimeConfig.allowLocalWorkspace;
 
 const NameWorkspaceContent = ({
   loading,
@@ -57,7 +58,9 @@ const NameWorkspaceContent = ({
   const t = useAFFiNEI18N();
   const [workspaceName, setWorkspaceName] = useState('');
   const [enable, setEnable] = useState(shouldEnableCloud);
-  const loginStatus = useCurrentLoginStatus();
+  const session = useService(AuthService).session;
+  const loginStatus = useLiveData(session.status$);
+
   const setDisableCloudOpen = useSetAtom(openDisableCloudAlertModalAtom);
 
   const setOpenSignIn = useSetAtom(authAtom);
@@ -180,7 +183,7 @@ export const CreateWorkspaceModal = ({
 }: ModalProps) => {
   const [step, setStep] = useState<CreateWorkspaceStep>();
   const t = useAFFiNEI18N();
-  const workspaceManager = useService(WorkspaceManager);
+  const workspacesService = useService(WorkspacesService);
   const [loading, setLoading] = useState(false);
 
   // todo: maybe refactor using xstate?
@@ -201,9 +204,7 @@ export const CreateWorkspaceModal = ({
         const result = await apis.dialog.loadDBFile();
         if (result.workspaceId && !canceled) {
           _addLocalWorkspace(result.workspaceId);
-          workspaceManager.list.revalidate().catch(err => {
-            logger.error("can't revalidate workspace list", err);
-          });
+          workspacesService.list.revalidate();
           onCreate(result.workspaceId);
         } else if (result.error || result.canceled) {
           if (result.error) {
@@ -222,10 +223,13 @@ export const CreateWorkspaceModal = ({
     return () => {
       canceled = true;
     };
-  }, [mode, onClose, onCreate, t, workspaceManager]);
+  }, [mode, onClose, onCreate, t, workspacesService]);
 
   const onConfirmName = useAsyncCallback(
     async (name: string, workspaceFlavour: WorkspaceFlavour) => {
+      mixpanel.track_forms('CreateWorkspaceModel', 'CreateWorkspace', {
+        workspaceFlavour,
+      });
       if (loading) return;
       setLoading(true);
 
@@ -233,13 +237,13 @@ export const CreateWorkspaceModal = ({
       // fix me later
       if (runtimeConfig.enablePreloading) {
         const { id } = await buildShowcaseWorkspace(
-          workspaceManager,
+          workspacesService,
           workspaceFlavour,
           name
         );
         onCreate(id);
       } else {
-        const { id } = await workspaceManager.createWorkspace(
+        const { id } = await workspacesService.create(
           workspaceFlavour,
           async workspace => {
             workspace.meta.setName(name);
@@ -255,7 +259,7 @@ export const CreateWorkspaceModal = ({
 
       setLoading(false);
     },
-    [loading, onCreate, workspaceManager]
+    [loading, onCreate, workspacesService]
   );
 
   const onOpenChange = useCallback(

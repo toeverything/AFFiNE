@@ -1,9 +1,10 @@
 import { Checkbox } from '@affine/component';
+import { getDNDId } from '@affine/core/hooks/affine/use-global-dnd-helper';
+import { WorkbenchLink } from '@affine/core/modules/workbench';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useDraggable } from '@dnd-kit/core';
 import type { PropsWithChildren } from 'react';
 import { useCallback, useMemo } from 'react';
-import { Link } from 'react-router-dom';
 
 import { selectionStateAtom, useAtom } from '../scoped-atoms';
 import type { DraggableTitleCellData, TagListItemProps } from '../types';
@@ -99,10 +100,9 @@ export const TagListItem = (props: TagListItemProps) => {
 
   // TODO: use getDropItemId
   const { setNodeRef, attributes, listeners, isDragging } = useDraggable({
-    id: 'tag-list-item-title-' + props.tagId,
+    id: getDNDId('tag-list', 'tag', props.tagId),
     data: {
-      pageId: props.tagId,
-      pageTitle: tagTitleElement,
+      preview: tagTitleElement,
     } satisfies DraggableTitleCellData,
     disabled: !props.draggable,
   });
@@ -205,9 +205,9 @@ function TagListItemWrapper({
 
   if (to) {
     return (
-      <Link {...commonProps} to={to}>
+      <WorkbenchLink {...commonProps} to={to}>
         {children}
-      </Link>
+      </WorkbenchLink>
     );
   } else {
     return <div {...commonProps}>{children}</div>;

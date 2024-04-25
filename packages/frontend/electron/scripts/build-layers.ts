@@ -1,6 +1,9 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
+
 import * as esbuild from 'esbuild';
 
-import { config, mode } from './common';
+import { config, mode, rootDir } from './common';
 
 async function buildLayers() {
   const common = config();
@@ -16,10 +19,20 @@ async function buildLayers() {
       `"${process.env.BUILD_TYPE_OVERRIDE}"`;
   }
 
-  await esbuild.build({
+  const metafile = process.env.METAFILE;
+
+  const result = await esbuild.build({
     ...common,
     define: define,
+    metafile: !!metafile,
   });
+
+  if (metafile) {
+    await fs.writeFile(
+      path.resolve(rootDir, `metafile-${Date.now()}.json`),
+      JSON.stringify(result.metafile, null, 2)
+    );
+  }
 }
 
 await buildLayers();

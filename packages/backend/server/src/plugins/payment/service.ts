@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { OnEvent as RawOnEvent } from '@nestjs/event-emitter';
 import type {
@@ -11,12 +13,13 @@ import { PrismaClient } from '@prisma/client';
 import Stripe from 'stripe';
 
 import { CurrentUser } from '../../core/auth';
-import { FeatureManagementService } from '../../core/features';
+import { EarlyAccessType, FeatureManagementService } from '../../core/features';
 import { EventEmitter } from '../../fundamentals';
 import { ScheduleManager } from './schedule';
 import {
   InvoiceStatus,
   SubscriptionPlan,
+  SubscriptionPriceVariant,
   SubscriptionRecurring,
   SubscriptionStatus,
 } from './types';
@@ -29,17 +32,22 @@ const OnEvent = (
 // Plan x Recurring make a stripe price lookup key
 export function encodeLookupKey(
   plan: SubscriptionPlan,
-  recurring: SubscriptionRecurring
+  recurring: SubscriptionRecurring,
+  variant?: SubscriptionPriceVariant
 ): string {
-  return plan + '_' + recurring;
+  return `${plan}_${recurring}` + (variant ? `_${variant}` : '');
 }
 
 export function decodeLookupKey(
   key: string
-): [SubscriptionPlan, SubscriptionRecurring] {
-  const [plan, recurring] = key.split('_');
+): [SubscriptionPlan, SubscriptionRecurring, SubscriptionPriceVariant?] {
+  const [plan, recurring, variant] = key.split('_');
 
-  return [plan as SubscriptionPlan, recurring as SubscriptionRecurring];
+  return [
+    plan as SubscriptionPlan,
+    recurring as SubscriptionRecurring,
+    variant as SubscriptionPriceVariant | undefined,
+  ];
 }
 
 const SubscriptionActivated: Stripe.Subscription.Status[] = [
@@ -48,8 +56,9 @@ const SubscriptionActivated: Stripe.Subscription.Status[] = [
 ];
 
 export enum CouponType {
-  EarlyAccess = 'earlyaccess',
-  EarlyAccessRenew = 'earlyaccessrenew',
+  ProEarlyAccessOneYearFree = 'pro_ea_one_year_free',
+  AIEarlyAccessOneYearFree = 'ai_ea_one_year_free',
+  ProEarlyAccessAIOneYearFree = 'ai_pro_ea_one_year_free',
 }
 
 @Injectable()
@@ -64,9 +73,72 @@ export class SubscriptionService {
     private readonly features: FeatureManagementService
   ) {}
 
-  async listPrices() {
-    return this.stripe.prices.list({
+  async listPrices(user?: CurrentUser) {
+    let canHaveEarlyAccessDiscount = false;
+    let canHaveAIEarlyAccessDiscount = false;
+    if (user) {
+      canHaveEarlyAccessDiscount = await this.features.isEarlyAccessUser(
+        user.email
+      );
+      canHaveAIEarlyAccessDiscount = await this.features.isEarlyAccessUser(
+        user.email,
+        EarlyAccessType.AI
+      );
+
+      const customer = await this.getOrCreateCustomer(
+        'list-price:' + randomUUID(),
+        user
+      );
+      const oldSubscriptions = await this.stripe.subscriptions.list({
+        customer: customer.stripeCustomerId,
+        status: 'all',
+      });
+
+      oldSubscriptions.data.forEach(sub => {
+        if (
+          (sub.status === 'past_due' || sub.status === 'canceled') &&
+          sub.items.data[0].price.lookup_key
+        ) {
+          const [oldPlan] = decodeLookupKey(sub.items.data[0].price.lookup_key);
+          if (oldPlan === SubscriptionPlan.Pro) {
+            canHaveEarlyAccessDiscount = false;
+          }
+          if (oldPlan === SubscriptionPlan.AI) {
+            canHaveAIEarlyAccessDiscount = false;
+          }
+        }
+      });
+    }
+
+    const list = await this.stripe.prices.list({
       active: true,
+    });
+
+    return list.data.filter(price => {
+      if (!price.lookup_key) {
+        return false;
+      }
+
+      const [plan, recurring, variant] = decodeLookupKey(price.lookup_key);
+      if (recurring === SubscriptionRecurring.Monthly) {
+        return !variant;
+      }
+
+      if (plan === SubscriptionPlan.Pro) {
+        return (
+          (canHaveEarlyAccessDiscount && variant) ||
+          (!canHaveEarlyAccessDiscount && !variant)
+        );
+      }
+
+      if (plan === SubscriptionPlan.AI) {
+        return (
+          (canHaveAIEarlyAccessDiscount && variant) ||
+          (!canHaveAIEarlyAccessDiscount && !variant)
+        );
+      }
+
+      return false;
     });
   }
 
@@ -99,13 +171,18 @@ export class SubscriptionService {
       );
     }
 
-    const price = await this.getPrice(plan, recurring);
     const customer = await this.getOrCreateCustomer(
       `${idempotencyKey}-getOrCreateCustomer`,
       user
     );
 
-    let discount: { coupon?: string; promotion_code?: string } | undefined;
+    const { price, coupon } = await this.getAvailablePrice(
+      customer,
+      plan,
+      recurring
+    );
+
+    let discounts: Stripe.Checkout.SessionCreateParams['discounts'] = [];
 
     if (promotionCode) {
       const code = await this.getAvailablePromotionCode(
@@ -113,18 +190,10 @@ export class SubscriptionService {
         customer.stripeCustomerId
       );
       if (code) {
-        discount ??= {};
-        discount.promotion_code = code;
+        discounts = [{ promotion_code: code }];
       }
-    } else {
-      const coupon = await this.getAvailableCoupon(
-        user,
-        CouponType.EarlyAccess
-      );
-      if (coupon) {
-        discount ??= {};
-        discount.coupon = coupon;
-      }
+    } else if (coupon) {
+      discounts = [{ coupon }];
     }
 
     return await this.stripe.checkout.sessions.create(
@@ -138,11 +207,7 @@ export class SubscriptionService {
         tax_id_collection: {
           enabled: true,
         },
-        ...(discount
-          ? {
-              discounts: [discount],
-            }
-          : { allow_promotion_codes: true }),
+        discounts,
         mode: 'subscription',
         success_url: redirectUrl,
         customer: customer.stripeCustomerId,
@@ -314,16 +379,7 @@ export class SubscriptionService {
       subscriptionInDB.stripeSubscriptionId
     );
 
-    await manager.update(
-      `${idempotencyKey}-update`,
-      price,
-      // if user is early access user, use early access coupon
-      manager.currentPhase?.coupon === CouponType.EarlyAccess ||
-        manager.currentPhase?.coupon === CouponType.EarlyAccessRenew ||
-        manager.nextPhase?.coupon === CouponType.EarlyAccessRenew
-        ? CouponType.EarlyAccessRenew
-        : undefined
-    );
+    await manager.update(`${idempotencyKey}-update`, price);
 
     return await this.db.userSubscription.update({
       where: {
@@ -362,23 +418,22 @@ export class SubscriptionService {
   @OnEvent('customer.subscription.created')
   @OnEvent('customer.subscription.updated')
   async onSubscriptionChanges(subscription: Stripe.Subscription) {
-    const user = await this.retrieveUserFromCustomer(
-      subscription.customer as string
-    );
+    if (subscription.status === 'active') {
+      const user = await this.retrieveUserFromCustomer(
+        subscription.customer as string
+      );
 
-    await this.saveSubscription(user, subscription);
+      await this.saveSubscription(user, subscription);
+    } else {
+      await this.onSubscriptionDeleted(subscription);
+    }
   }
 
   @OnEvent('customer.subscription.deleted')
   async onSubscriptionDeleted(subscription: Stripe.Subscription) {
-    const user = await this.retrieveUserFromCustomer(
-      subscription.customer as string
-    );
-
     await this.db.userSubscription.deleteMany({
       where: {
         stripeSubscriptionId: subscription.id,
-        userId: user.id,
       },
     });
   }
@@ -391,20 +446,6 @@ export class SubscriptionService {
 
     if (!line.price || line.price.type !== 'recurring') {
       throw new Error('Unknown invoice with no recurring price');
-    }
-
-    // deal with early access user
-    if (stripeInvoice.discount?.coupon.id === CouponType.EarlyAccess) {
-      const idempotencyKey = stripeInvoice.id + '_earlyaccess';
-      const manager = await this.scheduleManager.fromSubscription(
-        `${idempotencyKey}-fromSubscription`,
-        line.subscription as string
-      );
-      await manager.update(
-        `${idempotencyKey}-update`,
-        line.price.id,
-        CouponType.EarlyAccessRenew
-      );
     }
   }
 
@@ -527,7 +568,10 @@ export class SubscriptionService {
         nextBillAt = new Date(subscription.current_period_end * 1000);
       }
     } else {
-      this.event.emit('user.subscription.canceled', user.id);
+      this.event.emit('user.subscription.canceled', {
+        userId: user.id,
+        plan,
+      });
     }
 
     const commonData = {
@@ -588,38 +632,41 @@ export class SubscriptionService {
   private async getOrCreateCustomer(
     idempotencyKey: string,
     user: CurrentUser
-  ): Promise<UserStripeCustomer> {
-    const customer = await this.db.userStripeCustomer.findUnique({
+  ): Promise<UserStripeCustomer & { email: string }> {
+    let customer = await this.db.userStripeCustomer.findUnique({
       where: {
         userId: user.id,
       },
     });
 
-    if (customer) {
-      return customer;
+    if (!customer) {
+      const stripeCustomersList = await this.stripe.customers.list({
+        email: user.email,
+        limit: 1,
+      });
+
+      let stripeCustomer: Stripe.Customer | undefined;
+      if (stripeCustomersList.data.length) {
+        stripeCustomer = stripeCustomersList.data[0];
+      } else {
+        stripeCustomer = await this.stripe.customers.create(
+          { email: user.email },
+          { idempotencyKey }
+        );
+      }
+
+      customer = await this.db.userStripeCustomer.create({
+        data: {
+          userId: user.id,
+          stripeCustomerId: stripeCustomer.id,
+        },
+      });
     }
 
-    const stripeCustomersList = await this.stripe.customers.list({
+    return {
+      ...customer,
       email: user.email,
-      limit: 1,
-    });
-
-    let stripeCustomer: Stripe.Customer | undefined;
-    if (stripeCustomersList.data.length) {
-      stripeCustomer = stripeCustomersList.data[0];
-    } else {
-      stripeCustomer = await this.stripe.customers.create(
-        { email: user.email },
-        { idempotencyKey }
-      );
-    }
-
-    return await this.db.userStripeCustomer.create({
-      data: {
-        userId: user.id,
-        stripeCustomerId: stripeCustomer.id,
-      },
-    });
+    };
   }
 
   private async retrieveUserFromCustomer(customerId: string) {
@@ -671,10 +718,11 @@ export class SubscriptionService {
 
   private async getPrice(
     plan: SubscriptionPlan,
-    recurring: SubscriptionRecurring
+    recurring: SubscriptionRecurring,
+    variant?: SubscriptionPriceVariant
   ): Promise<string> {
     const prices = await this.stripe.prices.list({
-      lookup_keys: [encodeLookupKey(plan, recurring)],
+      lookup_keys: [encodeLookupKey(plan, recurring, variant)],
     });
 
     if (!prices.data.length) {
@@ -686,22 +734,72 @@ export class SubscriptionService {
     return prices.data[0].id;
   }
 
-  private async getAvailableCoupon(
-    user: CurrentUser,
-    couponType: CouponType
-  ): Promise<string | null> {
-    const earlyAccess = await this.features.isEarlyAccessUser(user.email);
-    if (earlyAccess) {
-      try {
-        const coupon = await this.stripe.coupons.retrieve(couponType);
-        return coupon.valid ? coupon.id : null;
-      } catch (e) {
-        this.logger.error('Failed to get early access coupon', e);
-        return null;
-      }
-    }
+  /**
+   * Get available for different plans with special early-access price and coupon
+   */
+  private async getAvailablePrice(
+    customer: UserStripeCustomer & { email: string },
+    plan: SubscriptionPlan,
+    recurring: SubscriptionRecurring
+  ): Promise<{ price: string; coupon?: string }> {
+    const isEaUser = await this.features.isEarlyAccessUser(customer.email);
+    const oldSubscriptions = await this.stripe.subscriptions.list({
+      customer: customer.stripeCustomerId,
+      status: 'all',
+    });
 
-    return null;
+    const subscribed = oldSubscriptions.data.some(sub => {
+      if (sub.items.data[0].price.lookup_key) {
+        const [oldPlan] = decodeLookupKey(sub.items.data[0].price.lookup_key);
+        return (
+          oldPlan === plan &&
+          (sub.status === 'past_due' || sub.status === 'canceled')
+        );
+      }
+      return false;
+    });
+
+    if (plan === SubscriptionPlan.Pro) {
+      const canHaveEADiscount = isEaUser && !subscribed;
+      const price = await this.getPrice(
+        plan,
+        recurring,
+        canHaveEADiscount && recurring === SubscriptionRecurring.Yearly
+          ? SubscriptionPriceVariant.EA
+          : undefined
+      );
+      return {
+        price,
+        coupon: canHaveEADiscount
+          ? CouponType.ProEarlyAccessOneYearFree
+          : undefined,
+      };
+    } else {
+      const isAIEaUser = await this.features.isEarlyAccessUser(
+        customer.email,
+        EarlyAccessType.AI
+      );
+
+      const canHaveEADiscount = isAIEaUser && !subscribed;
+      const price = await this.getPrice(
+        plan,
+        recurring,
+        canHaveEADiscount && recurring === SubscriptionRecurring.Yearly
+          ? SubscriptionPriceVariant.EA
+          : undefined
+      );
+
+      return {
+        price,
+        coupon: !subscribed
+          ? isAIEaUser
+            ? CouponType.AIEarlyAccessOneYearFree
+            : isEaUser
+              ? CouponType.ProEarlyAccessAIOneYearFree
+              : undefined
+          : undefined,
+      };
+    }
   }
 
   private async getAvailablePromotionCode(

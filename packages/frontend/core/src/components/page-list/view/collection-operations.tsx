@@ -1,16 +1,21 @@
 import type { MenuItemProps } from '@affine/component';
 import { Menu, MenuIcon, MenuItem } from '@affine/component';
 import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
-import { Workbench } from '@affine/core/modules/workbench';
-import type { Collection, DeleteCollectionInfo } from '@affine/env/filter';
+import { useDeleteCollectionInfo } from '@affine/core/hooks/affine/use-delete-collection-info';
+import { FavoriteItemsAdapter } from '@affine/core/modules/properties';
+import { WorkbenchService } from '@affine/core/modules/workbench';
+import type { Collection } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   DeleteIcon,
   EditIcon,
+  FavoritedIcon,
+  FavoriteIcon,
   FilterIcon,
+  PlusIcon,
   SplitViewIcon,
 } from '@blocksuite/icons';
-import { useService } from '@toeverything/infra';
+import { useLiveData, useService } from '@toeverything/infra';
 import type { PropsWithChildren, ReactElement } from 'react';
 import { useCallback, useMemo } from 'react';
 
@@ -25,18 +30,19 @@ import {
 export const CollectionOperations = ({
   collection,
   config,
-  info,
   openRenameModal,
+  onAddDocToCollection,
   children,
 }: PropsWithChildren<{
-  info: DeleteCollectionInfo;
   collection: Collection;
   config: AllPageListConfig;
   openRenameModal?: () => void;
+  onAddDocToCollection?: () => void;
 }>) => {
+  const deleteInfo = useDeleteCollectionInfo();
   const { appSettings } = useAppSettingHelper();
   const service = useService(CollectionService);
-  const workbench = useService(Workbench);
+  const workbench = useService(WorkbenchService).workbench;
   const { open: openEditCollectionModal, node: editModal } =
     useEditCollection(config);
   const t = useAFFiNEI18N();
@@ -76,6 +82,19 @@ export const CollectionOperations = ({
     workbench.openCollection(collection.id, { at: 'tail' });
   }, [collection.id, workbench]);
 
+  const favAdapter = useService(FavoriteItemsAdapter);
+
+  const onToggleFavoritePage = useCallback(() => {
+    favAdapter.toggle(collection.id, 'collection');
+  }, [favAdapter, collection.id]);
+
+  const favorite = useLiveData(
+    useMemo(
+      () => favAdapter.isFavorite$(collection.id, 'collection'),
+      [collection.id, favAdapter]
+    )
+  );
+
   const actions = useMemo<
     Array<
       | {
@@ -109,6 +128,34 @@ export const CollectionOperations = ({
         name: t['com.affine.collection.menu.edit'](),
         click: showEdit,
       },
+      ...(onAddDocToCollection
+        ? [
+            {
+              icon: (
+                <MenuIcon>
+                  <PlusIcon />
+                </MenuIcon>
+              ),
+              name: t['New Page'](),
+              click: onAddDocToCollection,
+            },
+          ]
+        : []),
+      {
+        icon: (
+          <MenuIcon>
+            {favorite ? (
+              <FavoritedIcon style={{ color: 'var(--affine-primary-color)' }} />
+            ) : (
+              <FavoriteIcon />
+            )}
+          </MenuIcon>
+        ),
+        name: favorite
+          ? t['com.affine.favoritePageOperation.remove']()
+          : t['com.affine.favoritePageOperation.add'](),
+        click: onToggleFavoritePage,
+      },
       ...(appSettings.enableMultiView
         ? [
             {
@@ -133,7 +180,7 @@ export const CollectionOperations = ({
         ),
         name: t['Delete'](),
         click: () => {
-          service.deleteCollection(info, collection.id);
+          service.deleteCollection(deleteInfo, collection.id);
         },
         type: 'danger',
       },
@@ -142,10 +189,13 @@ export const CollectionOperations = ({
       t,
       showEditName,
       showEdit,
+      onAddDocToCollection,
+      favorite,
+      onToggleFavoritePage,
       appSettings.enableMultiView,
       openCollectionSplitView,
       service,
-      info,
+      deleteInfo,
       collection.id,
     ]
   );

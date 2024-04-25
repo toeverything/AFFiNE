@@ -36,7 +36,6 @@ if (process.env.SKIP_ONBOARDING) {
   launchStage.value = 'main';
   persistentConfig.set({
     onBoarding: false,
-    dismissWorkspaceGuideModal: true,
   });
 }
 

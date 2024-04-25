@@ -3,8 +3,9 @@ import { style } from '@vanilla-extract/css';
 export const notFoundPageContainer = style({
   fontSize: cssVar('fontBase'),
   color: cssVar('textPrimaryColor'),
-  height: '100%',
+  height: '100vh',
   display: 'flex',
+  flexDirection: 'column',
   alignItems: 'center',
   justifyContent: 'center',
   width: '100%',

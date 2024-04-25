@@ -1,3 +1,4 @@
+import { notify } from '@affine/component';
 import {
   AuthContent,
   BackButton,
@@ -8,13 +9,13 @@ import { Button } from '@affine/component/ui/button';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useLiveData, useService } from '@toeverything/infra';
 import type { FC } from 'react';
-import { useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
-import { useCurrentLoginStatus } from '../../../hooks/affine/use-current-login-status';
+import { AuthService } from '../../../modules/cloud';
 import type { AuthPanelProps } from './index';
 import * as style from './style.css';
-import { useAuth } from './use-auth';
 import { Captcha, useCaptcha } from './use-captcha';
 
 export const AfterSignUpSendEmail: FC<AuthPanelProps> = ({
@@ -22,21 +23,52 @@ export const AfterSignUpSendEmail: FC<AuthPanelProps> = ({
   email,
   onSignedIn,
 }) => {
+  const [resendCountDown, setResendCountDown] = useState(60);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setResendCountDown(c => Math.max(c - 1, 0));
+    }, 1000);
+
+    return () => {
+      clearInterval(timer);
+    };
+  }, []);
+
+  const [isSending, setIsSending] = useState(false);
   const t = useAFFiNEI18N();
-  const loginStatus = useCurrentLoginStatus();
-  const [verifyToken, challenge] = useCaptcha();
-
-  const { resendCountDown, allowSendEmail, signUp } = useAuth();
-
+  const authService = useService(AuthService);
+  const loginStatus = useLiveData(authService.session.status$);
+  useEffect(() => {
+    const timeout = setInterval(() => {
+      // revalidate session to get the latest status
+      authService.session.revalidate();
+    }, 3000);
+    return () => {
+      clearInterval(timeout);
+    };
+  }, [authService]);
   if (loginStatus === 'authenticated') {
     onSignedIn?.();
   }
 
+  const [verifyToken, challenge] = useCaptcha();
+
   const onResendClick = useAsyncCallback(async () => {
-    if (verifyToken) {
-      await signUp(email, verifyToken, challenge);
+    setIsSending(true);
+    try {
+      if (verifyToken) {
+        await authService.sendEmailMagicLink(email, verifyToken, challenge);
+      }
+      setResendCountDown(60);
+    } catch (err) {
+      console.error(err);
+      notify.error({
+        message: 'Failed to send email, please try again.',
+      });
     }
-  }, [challenge, email, signUp, verifyToken]);
+    setIsSending(false);
+  }, [authService, challenge, email, verifyToken]);
 
   return (
     <>
@@ -54,12 +86,12 @@ export const AfterSignUpSendEmail: FC<AuthPanelProps> = ({
       </AuthContent>
 
       <div className={style.resendWrapper}>
-        {allowSendEmail ? (
+        {resendCountDown <= 0 ? (
           <>
             <Captcha />
             <Button
               style={!verifyToken ? { cursor: 'not-allowed' } : {}}
-              disabled={!verifyToken}
+              disabled={!verifyToken || isSending}
               type="plain"
               size="large"
               onClick={onResendClick}

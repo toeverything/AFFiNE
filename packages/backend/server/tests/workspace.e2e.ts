@@ -10,7 +10,6 @@ import {
   createTestingApp,
   createWorkspace,
   currentUser,
-  getPublicWorkspace,
   getWorkspacePublicPages,
   inviteUser,
   publishPage,
@@ -85,20 +84,6 @@ test('should can publish workspace', async t => {
     false
   );
   t.false(isPrivate, 'failed to unpublish workspace');
-});
-
-test('should can read published workspace', async t => {
-  const { app } = t.context;
-  const user = await signUp(app, 'u1', 'u1@affine.pro', '1');
-  const workspace = await createWorkspace(app, user.token.token);
-
-  await t.throwsAsync(() => getPublicWorkspace(app, 'not_exists_ws'));
-  await t.throwsAsync(() => getPublicWorkspace(app, workspace.id));
-
-  await updateWorkspace(app, user.token.token, workspace.id, true);
-
-  const publicWorkspace = await getPublicWorkspace(app, workspace.id);
-  t.is(publicWorkspace.id, workspace.id, 'failed to get public workspace');
 });
 
 test('should share a page', async t => {

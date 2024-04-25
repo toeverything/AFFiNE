@@ -19,7 +19,7 @@ import type {
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import type { View } from '../../entities/view';
-import { Workbench } from '../../entities/workbench';
+import { WorkbenchService } from '../../services/workbench';
 import { SplitViewIndicator } from './indicator';
 import * as styles from './split-view.css';
 
@@ -40,7 +40,7 @@ export const SplitViewPanel = memo(function SplitViewPanel({
   const [indicatorPressed, setIndicatorPressed] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const size = useLiveData(view.size$);
-  const workbench = useService(Workbench);
+  const workbench = useService(WorkbenchService).workbench;
   const activeView = useLiveData(workbench.activeView$);
   const views = useLiveData(workbench.views$);
   const isLast = views[views.length - 1] === view;
@@ -109,7 +109,7 @@ export const SplitViewPanel = memo(function SplitViewPanel({
 
 const SplitViewMenu = ({ view }: { view: View }) => {
   const t = useAFFiNEI18N();
-  const workbench = useService(Workbench);
+  const workbench = useService(WorkbenchService).workbench;
   const views = useLiveData(workbench.views$);
 
   const viewIndex = views.findIndex(v => v === view);

@@ -6,6 +6,7 @@ import {
   fetcher,
   getInviteInfoQuery,
 } from '@affine/graphql';
+import { useLiveData, useService } from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
 import { useCallback, useEffect } from 'react';
 import type { LoaderFunction } from 'react-router-dom';
@@ -13,8 +14,8 @@ import { redirect, useLoaderData } from 'react-router-dom';
 
 import { authAtom } from '../atoms';
 import { setOnceSignedInEventAtom } from '../atoms/event';
-import { useCurrentLoginStatus } from '../hooks/affine/use-current-login-status';
 import { RouteLogic, useNavigateHelper } from '../hooks/use-navigate-helper';
+import { AuthService } from '../modules/cloud';
 
 export const loader: LoaderFunction = async args => {
   const inviteId = args.params.inviteId || '';
@@ -47,7 +48,14 @@ export const loader: LoaderFunction = async args => {
 };
 
 export const Component = () => {
-  const loginStatus = useCurrentLoginStatus();
+  const authService = useService(AuthService);
+  const isRevalidating = useLiveData(authService.session.isRevalidating$);
+  const loginStatus = useLiveData(authService.session.status$);
+
+  useEffect(() => {
+    authService.session.revalidate();
+  }, [authService]);
+
   const { jumpToSignIn } = useNavigateHelper();
   const { jumpToSubPath } = useNavigateHelper();
 
@@ -68,17 +76,17 @@ export const Component = () => {
   }, [inviteInfo.workspace.id, jumpToSubPath]);
 
   useEffect(() => {
-    if (loginStatus === 'unauthenticated') {
+    if (loginStatus === 'unauthenticated' && !isRevalidating) {
       // We can not pass function to navigate state, so we need to save it in atom
       setOnceSignedInEvent(openWorkspace);
-      jumpToSignIn(RouteLogic.REPLACE, {
-        state: {
-          callbackURL: `/workspace/${inviteInfo.workspace.id}/all`,
-        },
-      });
+      jumpToSignIn(
+        `/workspace/${inviteInfo.workspace.id}/all`,
+        RouteLogic.REPLACE
+      );
     }
   }, [
     inviteInfo.workspace.id,
+    isRevalidating,
     jumpToSignIn,
     loginStatus,
     openWorkspace,

@@ -175,7 +175,7 @@ export const ResizePanel = forwardRef<HTMLDivElement, ResizePanelProps>(
         data-handle-position={resizeHandlePos}
         data-enable-animation={enableAnimation && !resizing}
       >
-        {children}
+        {status !== 'exited' && children}
         <ResizeHandle
           resizeHandlePos={resizeHandlePos}
           resizeHandleOffset={resizeHandleOffset}

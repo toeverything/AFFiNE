@@ -1,7 +1,7 @@
-import type { PageMode } from '@toeverything/infra';
+import { AuthService } from '@affine/core/modules/cloud';
+import { type DocMode, useLiveData, useService } from '@toeverything/infra';
 import { useState } from 'react';
 
-import { useCurrentLoginStatus } from '../../../hooks/affine/use-current-login-status';
 import { AuthenticatedItem } from './authenticated-item';
 import { PresentButton } from './present';
 import * as styles from './styles.css';
@@ -10,11 +10,11 @@ import { PublishPageUserAvatar } from './user-avatar';
 export type ShareHeaderRightItemProps = {
   workspaceId: string;
   pageId: string;
-  publishMode: PageMode;
+  publishMode: DocMode;
 };
 
 const ShareHeaderRightItem = ({ ...props }: ShareHeaderRightItemProps) => {
-  const loginStatus = useCurrentLoginStatus();
+  const loginStatus = useLiveData(useService(AuthService).session.status$);
   const { publishMode } = props;
   const [isMember, setIsMember] = useState(false);
 

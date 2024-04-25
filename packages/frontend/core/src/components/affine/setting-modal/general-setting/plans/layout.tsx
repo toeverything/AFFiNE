@@ -1,22 +1,24 @@
+import { Divider, IconButton } from '@affine/component';
 import { SettingHeader } from '@affine/component/setting-components';
+import { openSettingModalAtom } from '@affine/core/atoms';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { ArrowRightBigIcon } from '@blocksuite/icons';
+import { ArrowRightBigIcon, ArrowUpSmallIcon } from '@blocksuite/icons';
+import * as Collapsible from '@radix-ui/react-collapsible';
 import * as ScrollArea from '@radix-ui/react-scroll-area';
-import type { HtmlHTMLAttributes, ReactNode } from 'react';
+import { useAtom } from 'jotai';
+import {
+  type HtmlHTMLAttributes,
+  type PropsWithChildren,
+  type ReactNode,
+  useCallback,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
 
 import * as styles from './layout.css';
 
-export interface PlanLayoutProps
-  extends Omit<HtmlHTMLAttributes<HTMLDivElement>, 'title'> {
-  title?: ReactNode;
-  subtitle: ReactNode;
-  tabs: ReactNode;
-  scroll: ReactNode;
-  footer?: ReactNode;
-  scrollRef?: React.RefObject<HTMLDivElement>;
-}
-
-const SeeAllLink = () => {
+export const SeeAllLink = () => {
   const t = useAFFiNEI18N();
 
   return (
@@ -32,24 +34,102 @@ const SeeAllLink = () => {
   );
 };
 
-export const PlanLayout = ({
-  subtitle,
-  tabs,
-  scroll,
+interface PricingCollapsibleProps
+  extends Omit<HtmlHTMLAttributes<HTMLDivElement>, 'title'> {
+  title?: ReactNode;
+  caption?: ReactNode;
+}
+const PricingCollapsible = ({
   title,
-  footer = <SeeAllLink />,
-  scrollRef,
-}: PlanLayoutProps) => {
+  caption,
+  children,
+}: PricingCollapsibleProps) => {
+  const [open, setOpen] = useState(true);
+  const toggle = useCallback(() => setOpen(prev => !prev), []);
+  return (
+    <Collapsible.Root open={open} onOpenChange={setOpen}>
+      <section className={styles.collapsibleHeader}>
+        <div className={styles.collapsibleHeaderContent}>
+          <div className={styles.collapsibleHeaderTitle}>{title}</div>
+          <div className={styles.collapsibleHeaderCaption}>{caption}</div>
+        </div>
+        <IconButton onClick={toggle}>
+          <ArrowUpSmallIcon
+            style={{
+              transform: open ? 'rotate(0deg)' : 'rotate(180deg)',
+              transition: 'transform 0.23s ease',
+            }}
+          />
+        </IconButton>
+      </section>
+      <Collapsible.Content>{children}</Collapsible.Content>
+    </Collapsible.Root>
+  );
+};
+
+export interface PlanLayoutProps {
+  cloud?: ReactNode;
+  ai?: ReactNode;
+}
+
+export const PlanLayout = ({ cloud, ai }: PlanLayoutProps) => {
   const t = useAFFiNEI18N();
+  const [{ scrollAnchor }, setOpenSettingModal] = useAtom(openSettingModalAtom);
+  const aiPricingPlanRef = useRef<HTMLDivElement>(null);
+
+  // TODO: Need a better solution to handle this situation
+  useLayoutEffect(() => {
+    if (!scrollAnchor) return;
+    setTimeout(() => {
+      if (scrollAnchor === 'aiPricingPlan' && aiPricingPlanRef.current) {
+        aiPricingPlanRef.current.scrollIntoView();
+        setOpenSettingModal(prev => ({ ...prev, scrollAnchor: undefined }));
+      }
+    });
+  }, [scrollAnchor, setOpenSettingModal]);
+
   return (
     <div className={styles.plansLayoutRoot}>
       {/* TODO: SettingHeader component shouldn't have margin itself  */}
       <SettingHeader
         style={{ marginBottom: '0px' }}
-        title={title ?? t['com.affine.payment.title']()}
-        subtitle={subtitle}
+        title={t['com.affine.payment.title']()}
       />
-      {tabs}
+      {cloud}
+      {ai ? (
+        <>
+          <Divider />
+          <div ref={aiPricingPlanRef} id="aiPricingPlan">
+            {ai}
+          </div>
+        </>
+      ) : null}
+    </div>
+  );
+};
+
+export interface PlanCardProps {
+  title?: ReactNode;
+  caption?: ReactNode;
+  select?: ReactNode;
+  toggle?: ReactNode;
+  scroll?: ReactNode;
+  scrollRef?: React.RefObject<HTMLDivElement>;
+}
+export const CloudPlanLayout = ({
+  title = 'AFFiNE Cloud',
+  caption,
+  select,
+  toggle,
+  scroll,
+  scrollRef,
+}: PlanCardProps) => {
+  return (
+    <PricingCollapsible title={title} caption={caption}>
+      <div className={styles.affineCloudHeader}>
+        <div>{select}</div>
+        <div>{toggle}</div>
+      </div>
       <ScrollArea.Root>
         <ScrollArea.Viewport ref={scrollRef} className={styles.scrollArea}>
           {scroll}
@@ -62,7 +142,22 @@ export const PlanLayout = ({
           <ScrollArea.Thumb className={styles.scrollThumb}></ScrollArea.Thumb>
         </ScrollArea.Scrollbar>
       </ScrollArea.Root>
-      {footer}
-    </div>
+    </PricingCollapsible>
+  );
+};
+
+export interface AIPlanLayoutProps {
+  title?: ReactNode;
+  caption?: ReactNode;
+}
+export const AIPlanLayout = ({
+  title = 'AFFiNE AI',
+  caption,
+  children,
+}: PropsWithChildren<AIPlanLayoutProps>) => {
+  return (
+    <PricingCollapsible title={title} caption={caption}>
+      {children}
+    </PricingCollapsible>
   );
 };

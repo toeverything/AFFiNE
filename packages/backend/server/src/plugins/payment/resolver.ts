@@ -56,7 +56,10 @@ export class UserSubscriptionType implements Partial<UserSubscription> {
   @Field({ name: 'id' })
   stripeSubscriptionId!: string;
 
-  @Field(() => SubscriptionPlan)
+  @Field(() => SubscriptionPlan, {
+    description:
+      "The 'Free' plan just exists to be a placeholder and for the type convenience of frontend.\nThere won't actually be a subscription with plan 'Free'",
+  })
   plan!: SubscriptionPlan;
 
   @Field(() => SubscriptionRecurring)
@@ -160,17 +163,16 @@ export class SubscriptionResolver {
 
   @Public()
   @Query(() => [SubscriptionPrice])
-  async prices(): Promise<SubscriptionPrice[]> {
-    const prices = await this.service.listPrices();
+  async prices(
+    @CurrentUser() user?: CurrentUser
+  ): Promise<SubscriptionPrice[]> {
+    const prices = await this.service.listPrices(user);
 
-    const group = groupBy(
-      prices.data.filter(price => !!price.lookup_key),
-      price => {
-        // @ts-expect-error empty lookup key is filtered out
-        const [plan] = decodeLookupKey(price.lookup_key);
-        return plan;
-      }
-    );
+    const group = groupBy(prices, price => {
+      // @ts-expect-error empty lookup key is filtered out
+      const [plan] = decodeLookupKey(price.lookup_key);
+      return plan;
+    });
 
     function findPrice(plan: SubscriptionPlan) {
       const prices = group[plan];
@@ -370,6 +372,7 @@ export class UserSubscriptionResolver {
     return this.db.userSubscription.findMany({
       where: {
         userId: user.id,
+        status: SubscriptionStatus.Active,
       },
     });
   }

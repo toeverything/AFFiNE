@@ -4,7 +4,7 @@ import { allPageFilterSelectAtom } from '@affine/core/atoms';
 import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
 import { WorkspaceSubPath } from '@affine/core/shared';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { useService, Workspace } from '@toeverything/infra';
+import { useService, WorkspaceService } from '@toeverything/infra';
 import { useAtom } from 'jotai';
 import { useCallback, useEffect, useState } from 'react';
 
@@ -15,7 +15,7 @@ export const WorkspaceModeFilterTab = ({
 }: {
   activeFilter: AllPageFilterOption;
 }) => {
-  const workspace = useService(Workspace);
+  const workspace = useService(WorkspaceService).workspace;
   const t = useAFFiNEI18N();
   const [value, setValue] = useState(activeFilter);
   const [filterMode, setFilterMode] = useAtom(allPageFilterSelectAtom);

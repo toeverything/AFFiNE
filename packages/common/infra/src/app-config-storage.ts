@@ -3,8 +3,6 @@ import { z } from 'zod';
 const _appConfigSchema = z.object({
   /** whether to show onboarding first */
   onBoarding: z.boolean().optional().default(true),
-  /** whether to show change workspace guide modal */
-  dismissWorkspaceGuideModal: z.boolean().optional().default(false),
 });
 export type AppConfigSchema = z.infer<typeof _appConfigSchema>;
 export const defaultAppConfig = _appConfigSchema.parse({});

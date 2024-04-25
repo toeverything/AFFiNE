@@ -29,7 +29,7 @@ export const MobileNavbar = () => {
   );
 
   return (
-    <div>
+    <div className={styles.hideInWideScreen}>
       <Menu
         items={menuItems}
         contentOptions={{

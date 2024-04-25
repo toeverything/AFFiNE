@@ -4,19 +4,25 @@ import type { ParagraphService, RootService } from '@blocksuite/blocks';
 import {
   AttachmentService,
   CanvasTextFonts,
-  EdgelessEditorBlockSpecs,
   EdgelessRootService,
-  PageEditorBlockSpecs,
   PageRootService,
 } from '@blocksuite/blocks';
 import bytes from 'bytes';
 import type { TemplateResult } from 'lit';
+
+import { getParsedAISpecs } from './ai/spec';
+
+const {
+  pageModeSpecs: PageEditorBlockSpecs,
+  edgelessModeSpecs: EdgelessEditorBlockSpecs,
+} = getParsedAISpecs();
 
 class CustomAttachmentService extends AttachmentService {
   override mounted(): void {
     // blocksuite default max file size is 10MB, we override it to 2GB
     // but the real place to limit blob size is CloudQuotaModal / LocalQuotaModal
     this.maxFileSize = bytes.parse('2GB');
+    super.mounted();
   }
 }
 

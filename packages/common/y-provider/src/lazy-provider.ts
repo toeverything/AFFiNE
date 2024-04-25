@@ -154,7 +154,7 @@ export const createLazyProvider = (
       encodeStateAsUpdate(doc, remoteUpdate ? remoteUpdate.state : undefined)
     );
 
-    doc.emit('sync', []);
+    doc.emit('sync', [true, doc]);
   }
 
   /**

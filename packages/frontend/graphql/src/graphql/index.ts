@@ -18,19 +18,6 @@ fragment CredentialsRequirement on CredentialsRequirementType {
     ...PasswordLimits
   }
 }`
-export const checkBlobSizesQuery = {
-  id: 'checkBlobSizesQuery' as const,
-  operationName: 'checkBlobSizes',
-  definitionName: 'checkBlobSize',
-  containsFile: false,
-  query: `
-query checkBlobSizes($workspaceId: String!, $size: SafeInt!) {
-  checkBlobSize(workspaceId: $workspaceId, size: $size) {
-    size
-  }
-}`,
-};
-
 export const deleteBlobMutation = {
   id: 'deleteBlobMutation' as const,
   operationName: 'deleteBlob',
@@ -64,40 +51,14 @@ mutation setBlob($workspaceId: String!, $blob: Upload!) {
 }`,
 };
 
-export const blobSizesQuery = {
-  id: 'blobSizesQuery' as const,
-  operationName: 'blobSizes',
-  definitionName: 'workspace',
-  containsFile: false,
-  query: `
-query blobSizes($workspaceId: String!) {
-  workspace(id: $workspaceId) {
-    blobsSize
-  }
-}`,
-};
-
-export const allBlobSizesQuery = {
-  id: 'allBlobSizesQuery' as const,
-  operationName: 'allBlobSizes',
-  definitionName: 'collectAllBlobSizes',
-  containsFile: false,
-  query: `
-query allBlobSizes {
-  collectAllBlobSizes {
-    size
-  }
-}`,
-};
-
 export const cancelSubscriptionMutation = {
   id: 'cancelSubscriptionMutation' as const,
   operationName: 'cancelSubscription',
   definitionName: 'cancelSubscription',
   containsFile: false,
   query: `
-mutation cancelSubscription($idempotencyKey: String!) {
-  cancelSubscription(idempotencyKey: $idempotencyKey) {
+mutation cancelSubscription($idempotencyKey: String!, $plan: SubscriptionPlan = Pro) {
+  cancelSubscription(idempotencyKey: $idempotencyKey, plan: $plan) {
     id
     status
     nextBillAt
@@ -141,6 +102,28 @@ export const createCheckoutSessionMutation = {
   query: `
 mutation createCheckoutSession($input: CreateCheckoutSessionInput!) {
   createCheckoutSession(input: $input)
+}`,
+};
+
+export const createCopilotMessageMutation = {
+  id: 'createCopilotMessageMutation' as const,
+  operationName: 'createCopilotMessage',
+  definitionName: 'createCopilotMessage',
+  containsFile: true,
+  query: `
+mutation createCopilotMessage($options: CreateChatMessageInput!) {
+  createCopilotMessage(options: $options)
+}`,
+};
+
+export const createCopilotSessionMutation = {
+  id: 'createCopilotSessionMutation' as const,
+  operationName: 'createCopilotSession',
+  definitionName: 'createCopilotSession',
+  containsFile: false,
+  query: `
+mutation createCopilotSession($options: CreateChatSessionInput!) {
+  createCopilotSession(options: $options)
 }`,
 };
 
@@ -194,17 +177,6 @@ mutation deleteWorkspace($id: String!) {
 }`,
 };
 
-export const addToEarlyAccessMutation = {
-  id: 'addToEarlyAccessMutation' as const,
-  operationName: 'addToEarlyAccess',
-  definitionName: 'addToEarlyAccess',
-  containsFile: false,
-  query: `
-mutation addToEarlyAccess($email: String!) {
-  addToEarlyAccess(email: $email)
-}`,
-};
-
 export const earlyAccessUsersQuery = {
   id: 'earlyAccessUsersQuery' as const,
   operationName: 'earlyAccessUsers',
@@ -237,6 +209,66 @@ export const removeEarlyAccessMutation = {
   query: `
 mutation removeEarlyAccess($email: String!) {
   removeEarlyAccess(email: $email)
+}`,
+};
+
+export const getCopilotHistoriesQuery = {
+  id: 'getCopilotHistoriesQuery' as const,
+  operationName: 'getCopilotHistories',
+  definitionName: 'currentUser',
+  containsFile: false,
+  query: `
+query getCopilotHistories($workspaceId: String!, $docId: String, $options: QueryChatHistoriesInput) {
+  currentUser {
+    copilot(workspaceId: $workspaceId) {
+      histories(docId: $docId, options: $options) {
+        sessionId
+        tokens
+        action
+        createdAt
+        messages {
+          role
+          content
+          attachments
+          createdAt
+        }
+      }
+    }
+  }
+}`,
+};
+
+export const getCopilotQuotaQuery = {
+  id: 'getCopilotQuotaQuery' as const,
+  operationName: 'getCopilotQuota',
+  definitionName: 'currentUser',
+  containsFile: false,
+  query: `
+query getCopilotQuota {
+  currentUser {
+    copilot {
+      quota {
+        limit
+        used
+      }
+    }
+  }
+}`,
+};
+
+export const getCopilotSessionsQuery = {
+  id: 'getCopilotSessionsQuery' as const,
+  operationName: 'getCopilotSessions',
+  definitionName: 'currentUser',
+  containsFile: false,
+  query: `
+query getCopilotSessions($workspaceId: String!) {
+  currentUser {
+    copilot(workspaceId: $workspaceId) {
+      actions
+      chats
+    }
+  }
 }`,
 };
 
@@ -314,6 +346,7 @@ export const getMembersByWorkspaceIdQuery = {
   query: `
 query getMembersByWorkspaceId($workspaceId: String!, $skip: Int!, $take: Int!) {
   workspace(id: $workspaceId) {
+    memberCount
     members(skip: $skip, take: $take) {
       id
       name
@@ -341,19 +374,6 @@ query oauthProviders {
 }`,
 };
 
-export const getPublicWorkspaceQuery = {
-  id: 'getPublicWorkspaceQuery' as const,
-  operationName: 'getPublicWorkspace',
-  definitionName: 'publicWorkspace',
-  containsFile: false,
-  query: `
-query getPublicWorkspace($id: String!) {
-  publicWorkspace(id: $id) {
-    id
-  }
-}`,
-};
-
 export const getUserFeaturesQuery = {
   id: 'getUserFeaturesQuery' as const,
   operationName: 'getUserFeatures',
@@ -362,6 +382,7 @@ export const getUserFeaturesQuery = {
   query: `
 query getUserFeatures {
   currentUser {
+    id
     features
   }
 }`,
@@ -417,6 +438,22 @@ query getWorkspacePublicById($id: String!) {
 }`,
 };
 
+export const getWorkspacePublicPageByIdQuery = {
+  id: 'getWorkspacePublicPageByIdQuery' as const,
+  operationName: 'getWorkspacePublicPageById',
+  definitionName: 'workspace',
+  containsFile: false,
+  query: `
+query getWorkspacePublicPageById($workspaceId: String!, $pageId: String!) {
+  workspace(id: $workspaceId) {
+    publicPage(pageId: $pageId) {
+      id
+      mode
+    }
+  }
+}`,
+};
+
 export const getWorkspacePublicPagesQuery = {
   id: 'getWorkspacePublicPagesQuery' as const,
   operationName: 'getWorkspacePublicPages',
@@ -455,6 +492,9 @@ export const getWorkspacesQuery = {
 query getWorkspaces {
   workspaces {
     id
+    owner {
+      id
+    }
   }
 }`,
 };
@@ -561,11 +601,18 @@ mutation publishPage($workspaceId: String!, $pageId: String!, $mode: PublicPageM
 export const quotaQuery = {
   id: 'quotaQuery' as const,
   operationName: 'quota',
-  definitionName: 'currentUser',
+  definitionName: 'currentUser,collectAllBlobSizes',
   containsFile: false,
   query: `
 query quota {
   currentUser {
+    id
+    copilot {
+      quota {
+        limit
+        used
+      }
+    }
     quota {
       name
       blobLimit
@@ -580,6 +627,9 @@ query quota {
         memberLimit
       }
     }
+  }
+  collectAllBlobSizes {
+    size
   }
 }`,
 };
@@ -614,8 +664,8 @@ export const resumeSubscriptionMutation = {
   definitionName: 'resumeSubscription',
   containsFile: false,
   query: `
-mutation resumeSubscription($idempotencyKey: String!) {
-  resumeSubscription(idempotencyKey: $idempotencyKey) {
+mutation resumeSubscription($idempotencyKey: String!, $plan: SubscriptionPlan = Pro) {
+  resumeSubscription(idempotencyKey: $idempotencyKey, plan: $plan) {
     id
     status
     nextBillAt
@@ -748,7 +798,8 @@ export const subscriptionQuery = {
   query: `
 query subscription {
   currentUser {
-    subscription {
+    id
+    subscriptions {
       id
       status
       plan
@@ -768,10 +819,11 @@ export const updateSubscriptionMutation = {
   definitionName: 'updateSubscriptionRecurring',
   containsFile: false,
   query: `
-mutation updateSubscription($recurring: SubscriptionRecurring!, $idempotencyKey: String!) {
+mutation updateSubscription($idempotencyKey: String!, $plan: SubscriptionPlan = Pro, $recurring: SubscriptionRecurring!) {
   updateSubscriptionRecurring(
-    recurring: $recurring
     idempotencyKey: $idempotencyKey
+    plan: $plan
+    recurring: $recurring
   ) {
     id
     plan

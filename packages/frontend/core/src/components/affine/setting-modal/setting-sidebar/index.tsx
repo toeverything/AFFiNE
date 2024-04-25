@@ -4,10 +4,10 @@ import {
 } from '@affine/component/setting-components';
 import { Avatar } from '@affine/component/ui/avatar';
 import { Tooltip } from '@affine/component/ui/tooltip';
-import { useIsWorkspaceOwner } from '@affine/core/hooks/affine/use-is-workspace-owner';
-import { useIsEarlyAccess } from '@affine/core/hooks/affine/use-user-features';
 import { useWorkspaceBlobObjectUrl } from '@affine/core/hooks/use-workspace-blob';
 import { useWorkspaceInfo } from '@affine/core/hooks/use-workspace-info';
+import { AuthService } from '@affine/core/modules/cloud';
+import { UserFeatureService } from '@affine/core/modules/cloud/services/user-feature';
 import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { Logo1Icon } from '@blocksuite/icons';
@@ -15,17 +15,16 @@ import type { WorkspaceMetadata } from '@toeverything/infra';
 import {
   useLiveData,
   useService,
-  Workspace,
-  WorkspaceManager,
+  useServices,
+  WorkspaceService,
+  WorkspacesService,
 } from '@toeverything/infra';
 import clsx from 'clsx';
 import { useAtom } from 'jotai/react';
-import type { ReactElement } from 'react';
-import { Suspense, useCallback, useMemo } from 'react';
+import { Suspense, useCallback, useEffect, useMemo } from 'react';
 
 import { authAtom } from '../../../../atoms';
-import { useCurrentLoginStatus } from '../../../../hooks/affine/use-current-login-status';
-import { useCurrentUser } from '../../../../hooks/affine/use-current-user';
+import { mixpanel } from '../../../../utils';
 import { UserPlanButton } from '../../auth/user-plan-button';
 import { useGeneralSettingList } from '../general-setting';
 import type { ActiveTab, WorkspaceSubTab } from '../types';
@@ -36,11 +35,12 @@ export type UserInfoProps = {
   active?: boolean;
 };
 
-export const UserInfo = ({
-  onAccountSettingClick,
-  active,
-}: UserInfoProps): ReactElement => {
-  const user = useCurrentUser();
+export const UserInfo = ({ onAccountSettingClick, active }: UserInfoProps) => {
+  const account = useLiveData(useService(AuthService).session.account$);
+  if (!account) {
+    // TODO: loading ui
+    return;
+  }
   return (
     <div
       data-testid="user-info-card"
@@ -51,21 +51,21 @@ export const UserInfo = ({
     >
       <Avatar
         size={28}
-        name={user.name}
-        url={user.avatarUrl}
+        name={account.label}
+        url={account.avatar}
         className="avatar"
       />
 
       <div className="content">
         <div className="name-container">
-          <div className="name" title={user.name}>
-            {user.name}
+          <div className="name" title={account.label}>
+            {account.label}
           </div>
           <UserPlanButton />
         </div>
 
-        <div className="email" title={user.email}>
-          {user.email}
+        <div className="email" title={account.email}>
+          {account.email}
         </div>
       </div>
     </div>
@@ -112,13 +112,20 @@ export const SettingSidebar = ({
   selectedWorkspaceId: string | null;
 }) => {
   const t = useAFFiNEI18N();
-  const loginStatus = useCurrentLoginStatus();
+  const loginStatus = useLiveData(useService(AuthService).session.status$);
   const generalList = useGeneralSettingList();
   const onAccountSettingClick = useCallback(() => {
+    mixpanel.track('Button', {
+      resolve: 'AccountSetting',
+    });
     onTabChange('account', null);
   }, [onTabChange]);
   const onWorkspaceSettingClick = useCallback(
     (subTab: WorkspaceSubTab, workspaceMetadata: WorkspaceMetadata) => {
+      mixpanel.track('Button', {
+        resolve: 'WorkspaceSetting',
+        workspaceId: workspaceMetadata.id,
+      });
       onTabChange(`workspace:${subTab}`, workspaceMetadata);
     },
     [onTabChange]
@@ -141,6 +148,9 @@ export const SettingSidebar = ({
               key={key}
               title={title}
               onClick={() => {
+                mixpanel.track('Button', {
+                  resolve: key,
+                });
                 onTabChange(key, null);
               }}
               data-testid={testId}
@@ -196,7 +206,7 @@ export const WorkspaceList = ({
   activeSubTab: WorkspaceSubTab;
 }) => {
   const workspaces = useLiveData(
-    useService(WorkspaceManager).list.workspaceList$
+    useService(WorkspacesService).list.workspaces$
   );
   return (
     <>
@@ -246,14 +256,23 @@ const WorkspaceListItem = ({
   activeSubTab?: WorkspaceSubTab;
   onClick: (subTab: WorkspaceSubTab) => void;
 }) => {
+  const { workspaceService, userFeatureService } = useServices({
+    WorkspaceService,
+    UserFeatureService,
+  });
   const information = useWorkspaceInfo(meta);
   const avatarUrl = useWorkspaceBlobObjectUrl(meta, information?.avatar);
   const name = information?.name ?? UNTITLED_WORKSPACE_NAME;
-  const currentWorkspace = useService(Workspace);
+  const currentWorkspace = workspaceService.workspace;
   const isCurrent = currentWorkspace.id === meta.id;
   const t = useAFFiNEI18N();
-  const isOwner = useIsWorkspaceOwner(meta);
-  const isEarlyAccess = useIsEarlyAccess();
+  const isEarlyAccess = useLiveData(
+    userFeatureService.userFeature.isEarlyAccess$
+  );
+
+  useEffect(() => {
+    userFeatureService.userFeature.revalidate();
+  }, [userFeatureService]);
 
   const onClickPreference = useCallback(() => {
     onClick('preference');
@@ -263,7 +282,7 @@ const WorkspaceListItem = ({
     return subTabConfigs
       .filter(({ key }) => {
         if (key === 'experimental-features') {
-          return isOwner && isEarlyAccess;
+          return information?.isOwner && isEarlyAccess;
         }
         return true;
       })
@@ -283,7 +302,7 @@ const WorkspaceListItem = ({
           </div>
         );
       });
-  }, [activeSubTab, isEarlyAccess, isOwner, onClick, t]);
+  }, [activeSubTab, information?.isOwner, isEarlyAccess, onClick, t]);
 
   return (
     <>

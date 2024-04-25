@@ -1,10 +1,26 @@
 import { cssVar } from '@toeverything/theme';
-import { style } from '@vanilla-extract/css';
+import { globalStyle, style } from '@vanilla-extract/css';
 export const wrapper = style({
   width: '100%',
 });
-export const recurringRadioGroup = style({
-  width: '256px',
+export const recurringToggleWrapper = style({
+  display: 'flex',
+  alignItems: 'center',
+  gap: 16,
+  minHeight: 40,
+});
+// export const recurringToggleLabel = style({});
+export const recurringToggleRecurring = style({
+  fontWeight: 400,
+  fontSize: cssVar('fontXs'),
+  lineHeight: '20px',
+  color: cssVar('textSecondaryColor'),
+});
+export const recurringToggleDiscount = style({
+  fontWeight: 600,
+  fontSize: cssVar('fontXs'),
+  lineHeight: '20px',
+  color: cssVar('brandColor'),
 });
 export const radioButtonDiscount = style({
   marginLeft: '4px',
@@ -18,6 +34,13 @@ export const radioButtonText = style({
     },
   },
 });
+export const cloudSelect = style({
+  fontSize: cssVar('fontXs'),
+  lineHeight: '20px',
+  display: 'flex',
+  gap: 8,
+});
+globalStyle(`.${cloudSelect} > span`, { color: cssVar('textSecondaryColor') });
 export const planCardsWrapper = style({
   paddingRight: 'calc(var(--setting-modal-gap-x) + 30px)',
   display: 'flex',
@@ -29,9 +52,10 @@ export const planCard = style({
   minHeight: '426px',
   minWidth: '258px',
   borderRadius: '16px',
-  padding: '20px',
   border: `1px solid ${cssVar('borderColor')}`,
   position: 'relative',
+  userSelect: 'none',
+  transition: 'all 0.23s ease',
   selectors: {
     '&::before': {
       content: '',
@@ -39,27 +63,43 @@ export const planCard = style({
       right: 'calc(100% + var(--setting-modal-gap-x))',
       scrollSnapAlign: 'start',
     },
-  },
-});
-export const proPlanCard = style([
-  planCard,
-  {
-    borderWidth: '1px',
-    borderColor: cssVar('brandColor'),
-    boxShadow: cssVar('shadow2'),
-    position: 'relative',
-    '::after': {
-      content: '',
-      position: 'absolute',
-      inset: '-1px',
-      borderRadius: 'inherit',
-      boxShadow: `0px 0px 0px 2px ${cssVar('brandColor')}`,
-      opacity: 0.3,
-      zIndex: 1,
-      pointerEvents: 'none',
+    '&[data-current="true"]': {
+      borderColor: 'transparent',
     },
   },
-]);
+});
+export const planCardBorderMock = style({
+  position: 'absolute',
+  inset: 0,
+  borderRadius: 'inherit',
+  pointerEvents: 'none',
+  zIndex: 1,
+
+  '::after': {
+    content: '""',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: 'inherit',
+    border: `2px solid transparent`,
+    // TODO: brandColor with opacity, dark mode compatibility needed
+    background: `linear-gradient(180deg, ${cssVar('brandColor')}, #1E96EB33) border-box`,
+    ['WebkitMask']: `linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0)`,
+    [`WebkitMaskComposite`]: `destination-out`,
+    maskComposite: `exclude`,
+    opacity: 0,
+    transition: 'opacity 0.23s ease',
+  },
+
+  selectors: {
+    [`.${planCard}[data-current="true"] &::after`]: {
+      opacity: 1,
+    },
+  },
+});
+export const proPlanCard = style([planCard, {}]);
 export const proPlanTitle = style({
   backgroundColor: cssVar('brandColor'),
   color: cssVar('white'),
@@ -82,8 +122,43 @@ export const planTitle = style({
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'flex-start',
-  gap: '10px',
+  padding: '12px 16px',
+  background: cssVar('backgroundOverlayPanelColor'),
+  borderRadius: 'inherit',
+  borderBottomLeftRadius: 0,
+  borderBottomRightRadius: 0,
+  borderBottom: '1px solid ' + cssVar('borderColor'),
   fontWeight: 600,
+  overflow: 'hidden',
+  position: 'relative',
+});
+export const planTitleSpotlight = style({});
+globalStyle(`.${planTitle} > :not(.${planTitleSpotlight})`, {
+  position: 'relative',
+});
+export const planTitleName = style({
+  fontWeight: 600,
+  fontSize: cssVar('fontXs'),
+  lineHeight: '20px',
+});
+export const planTitleDescription = style({
+  fontWeight: 400,
+  fontSize: cssVar('fontXs'),
+  lineHeight: '20px',
+  color: cssVar('textSecondaryColor'),
+  marginBottom: 8,
+});
+export const planTitleTitle = style({
+  fontWeight: 600,
+  fontSize: cssVar('fontBase'),
+  lineHeight: '20px',
+});
+export const planTitleTitleCaption = style({
+  fontWeight: 500,
+  fontSize: cssVar('fontXs'),
+  lineHeight: '20px',
+  color: cssVar('textSecondaryColor'),
+  marginLeft: 4,
 });
 export const planPriceWrapper = style({
   minHeight: '28px',
@@ -103,28 +178,43 @@ export const planAction = style({
   width: '100%',
 });
 export const planBenefits = style({
-  marginTop: '20px',
   fontSize: cssVar('fontXs'),
   display: 'flex',
   flexDirection: 'column',
   gap: '8px',
+  padding: '12px 16px',
+});
+export const planBenefitGroup = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 4,
+});
+export const planBenefitGroupTitle = style({
+  fontWeight: 500,
+  fontSize: cssVar('fontXs'),
+  lineHeight: '20px',
+  color: cssVar('textSecondaryColor'),
 });
 export const planBenefit = style({
   display: 'flex',
   gap: '8px',
   lineHeight: '20px',
   alignItems: 'normal',
-  fontSize: '12px',
 });
 export const planBenefitIcon = style({
   display: 'flex',
   alignItems: 'center',
   height: '20px',
 });
+globalStyle(`.${planBenefitIcon} > svg`, {
+  color: cssVar('brandColor'),
+});
 export const planBenefitText = style({
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
+  color: cssVar('textPrimaryColor'),
+  fontSize: cssVar('fontXs'),
 });
 export const downgradeContentWrapper = style({
   padding: '12px 0 20px 0px',

@@ -1,3 +1,0 @@
-mutation addToEarlyAccess($email: String!) {
-  addToEarlyAccess(email: $email)
-}

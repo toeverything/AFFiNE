@@ -144,8 +144,8 @@ test('Add new favorite page via sidebar', async ({ page }) => {
   // enter random page title
   await getBlockSuiteEditorTitle(page).fill('this is a new fav page');
   // check if the page title is shown in the favorite list
-  const favItem = page.locator(
-    '[data-type=favourite-list-item] >> text=this is a new fav page'
-  );
+  const favItem = page
+    .getByTestId('favourites')
+    .locator('[data-draggable] >> text=this is a new fav page');
   await expect(favItem).toBeVisible();
 });

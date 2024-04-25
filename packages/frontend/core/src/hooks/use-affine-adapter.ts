@@ -1,9 +1,8 @@
-import type { Workspace } from '@toeverything/infra';
 import { useService } from '@toeverything/infra';
 import { useDebouncedState } from 'foxact/use-debounced-state';
-import { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 
-import { WorkspacePropertiesAdapter } from '../modules/workspace/properties';
+import { WorkspacePropertiesAdapter } from '../modules/properties';
 
 function getProxy<T extends object>(obj: T) {
   return new Proxy(obj, {});
@@ -36,13 +35,5 @@ const useReactiveAdapter = (adapter: WorkspacePropertiesAdapter) => {
 
 export function useCurrentWorkspacePropertiesAdapter() {
   const adapter = useService(WorkspacePropertiesAdapter);
-  return useReactiveAdapter(adapter);
-}
-
-export function useWorkspacePropertiesAdapter(workspace: Workspace) {
-  const adapter = useMemo(
-    () => new WorkspacePropertiesAdapter(workspace),
-    [workspace]
-  );
   return useReactiveAdapter(adapter);
 }

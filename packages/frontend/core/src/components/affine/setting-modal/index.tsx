@@ -6,14 +6,18 @@ import {
   openIssueFeedbackModalAtom,
   openStarAFFiNEModalAtom,
 } from '@affine/core/atoms';
+import { AuthService } from '@affine/core/modules/cloud';
 import { Trans } from '@affine/i18n';
 import { ContactWithUsIcon } from '@blocksuite/icons';
-import type { WorkspaceMetadata } from '@toeverything/infra';
+import {
+  useLiveData,
+  useService,
+  type WorkspaceMetadata,
+} from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
 import { debounce } from 'lodash-es';
 import { Suspense, useCallback, useLayoutEffect, useRef } from 'react';
 
-import { useCurrentLoginStatus } from '../../../hooks/affine/use-current-login-status';
 import { AccountSetting } from './account-setting';
 import { GeneralSetting } from './general-setting';
 import { SettingSidebar } from './setting-sidebar';
@@ -48,7 +52,7 @@ const SettingModalInner = ({
   onSettingClick,
   ...modalProps
 }: SettingProps) => {
-  const loginStatus = useCurrentLoginStatus();
+  const loginStatus = useLiveData(useService(AuthService).session.status$);
 
   const modalContentRef = useRef<HTMLDivElement>(null);
   const modalContentWrapperRef = useRef<HTMLDivElement>(null);

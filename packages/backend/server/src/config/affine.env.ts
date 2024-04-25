@@ -19,6 +19,9 @@ AFFiNE.ENV_MAP = {
   MAILER_SECURE: ['mailer.secure', 'boolean'],
   THROTTLE_TTL: ['rateLimiter.ttl', 'int'],
   THROTTLE_LIMIT: ['rateLimiter.limit', 'int'],
+  COPILOT_OPENAI_API_KEY: 'plugins.copilot.openai.apiKey',
+  COPILOT_FAL_API_KEY: 'plugins.copilot.fal.apiKey',
+  COPILOT_UNSPLASH_API_KEY: 'plugins.copilot.unsplashKey',
   REDIS_SERVER_HOST: 'plugins.redis.host',
   REDIS_SERVER_PORT: ['plugins.redis.port', 'int'],
   REDIS_SERVER_USER: 'plugins.redis.username',
@@ -36,4 +39,5 @@ AFFiNE.ENV_MAP = {
     'featureFlags.syncClientVersionCheck',
     'boolean',
   ],
+  TELEMETRY_ENABLE: ['telemetry.enabled', 'boolean'],
 };

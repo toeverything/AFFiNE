@@ -3,12 +3,12 @@ import {
   SettingRow,
   SettingWrapper,
 } from '@affine/component/setting-components';
-import { useServerFeatures } from '@affine/core/hooks/affine/use-server-config';
 import { useWorkspace } from '@affine/core/hooks/use-workspace';
 import { useWorkspaceInfo } from '@affine/core/hooks/use-workspace-info';
 import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowRightSmallIcon } from '@blocksuite/icons';
+import { FrameworkScope } from '@toeverything/infra';
 import { useCallback } from 'react';
 
 import { DeleteLeaveWorkspace } from './delete-leave-workspace';
@@ -20,10 +20,10 @@ import { ProfilePanel } from './profile';
 import { StoragePanel } from './storage';
 import type { WorkspaceSettingDetailProps } from './types';
 
-export const WorkspaceSettingDetail = (props: WorkspaceSettingDetailProps) => {
+export const WorkspaceSettingDetail = ({
+  workspaceMetadata,
+}: WorkspaceSettingDetailProps) => {
   const t = useAFFiNEI18N();
-  const { payment: hasPaymentFeature } = useServerFeatures();
-  const workspaceMetadata = props.workspaceMetadata;
 
   // useWorkspace hook is a vary heavy operation here, but we need syncing name and avatar changes here,
   // we don't have a better way to do this now
@@ -42,8 +42,12 @@ export const WorkspaceSettingDetail = (props: WorkspaceSettingDetailProps) => {
       });
   }, [workspace]);
 
+  if (!workspace) {
+    return null;
+  }
+
   return (
-    <>
+    <FrameworkScope scope={workspace.scope}>
       <SettingHeader
         title={t[`Workspace Settings with name`]({
           name: workspaceInfo?.name ?? UNTITLED_WORKSPACE_NAME,
@@ -56,13 +60,13 @@ export const WorkspaceSettingDetail = (props: WorkspaceSettingDetailProps) => {
           desc={t['com.affine.settings.workspace.not-owner']()}
           spreadCol={false}
         >
-          <ProfilePanel workspace={workspace} {...props} />
-          <LabelsPanel {...props} />
+          <ProfilePanel />
+          <LabelsPanel />
         </SettingRow>
       </SettingWrapper>
       <SettingWrapper title={t['com.affine.brand.affineCloud']()}>
-        <EnableCloudPanel workspace={workspace} {...props} />
-        <MembersPanel upgradable={hasPaymentFeature} {...props} />
+        <EnableCloudPanel />
+        <MembersPanel />
       </SettingWrapper>
       {environment.isDesktop && (
         <SettingWrapper title={t['Storage and Export']()}>
@@ -76,7 +80,7 @@ export const WorkspaceSettingDetail = (props: WorkspaceSettingDetailProps) => {
         </SettingWrapper>
       )}
       <SettingWrapper>
-        <DeleteLeaveWorkspace {...props} />
+        <DeleteLeaveWorkspace />
         <SettingRow
           name={
             <span style={{ color: 'var(--affine-text-secondary-color)' }}>
@@ -91,6 +95,6 @@ export const WorkspaceSettingDetail = (props: WorkspaceSettingDetailProps) => {
           <ArrowRightSmallIcon />
         </SettingRow>
       </SettingWrapper>
-    </>
+    </FrameworkScope>
   );
 };

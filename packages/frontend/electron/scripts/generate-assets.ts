@@ -12,7 +12,13 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const repoRootDir = path.join(__dirname, '..', '..', '..', '..');
 const electronRootDir = path.join(__dirname, '..');
 const publicDistDir = path.join(electronRootDir, 'resources');
-const webDir = path.join(repoRootDir, 'packages', 'frontend', 'electron');
+const webDir = path.join(
+  repoRootDir,
+  'packages',
+  'frontend',
+  'electron',
+  'renderer'
+);
 const affineWebOutDir = path.join(webDir, 'dist');
 const publicAffineOutDir = path.join(publicDistDir, `web-static`);
 const releaseVersionEnv = process.env.RELEASE_VERSION || '';
@@ -49,12 +55,14 @@ if (!process.env.SKIP_WEB_BUILD) {
     stdio: 'inherit',
     env: process.env,
     cwd,
+    shell: true,
   });
 
   spawnSync('yarn', ['workspace', '@affine/electron', 'build'], {
     stdio: 'inherit',
     env: process.env,
     cwd,
+    shell: true,
   });
 
   // step 1.5: amend sourceMappingURL to allow debugging in devtools

@@ -17,11 +17,12 @@ export const topNav = style({
   left: 0,
   right: 0,
   display: 'flex',
+  position: 'fixed',
   alignItems: 'center',
   justifyContent: 'space-between',
   padding: '16px 120px',
-  selectors: {
-    '&.mobile': {
+  '@media': {
+    'screen and (max-width: 1024px)': {
       padding: '16px 20px',
     },
   },
@@ -29,6 +30,11 @@ export const topNav = style({
 export const topNavLinks = style({
   display: 'flex',
   columnGap: 4,
+  '@media': {
+    'screen and (max-width: 1024px)': {
+      display: 'none',
+    },
+  },
 });
 export const topNavLink = style({
   color: cssVar('textPrimaryColor'),
@@ -43,6 +49,21 @@ export const iconButton = style({
   selectors: {
     '&.plain': {
       color: cssVar('textPrimaryColor'),
+    },
+  },
+});
+export const hideInWideScreen = style({
+  '@media': {
+    'screen and (min-width: 1024px)': {
+      display: 'none',
+      position: 'absolute',
+    },
+  },
+});
+export const hideInSmallScreen = style({
+  '@media': {
+    'screen and (max-width: 1024px)': {
+      display: 'none',
     },
   },
 });

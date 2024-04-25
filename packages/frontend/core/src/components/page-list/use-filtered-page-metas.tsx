@@ -1,13 +1,14 @@
+import { FavoriteItemsAdapter } from '@affine/core/modules/properties';
+import { ShareDocsService } from '@affine/core/modules/share-doc';
 import type { Collection, Filter } from '@affine/env/filter';
+import { PublicPageMode } from '@affine/graphql';
 import type { DocMeta } from '@blocksuite/store';
-import type { Workspace } from '@toeverything/infra';
-import { useMemo } from 'react';
+import { useLiveData, useService } from '@toeverything/infra';
+import { useCallback, useEffect, useMemo } from 'react';
 
-import { usePublicPages } from '../../hooks/affine/use-is-shared-page';
 import { filterPage, filterPageByRules } from './use-collection-manager';
 
 export const useFilteredPageMetas = (
-  workspace: Workspace,
   pageMetas: DocMeta[],
   options: {
     trash?: boolean;
@@ -15,7 +16,28 @@ export const useFilteredPageMetas = (
     collection?: Collection;
   } = {}
 ) => {
-  const { getPublicMode } = usePublicPages(workspace);
+  const shareDocsService = useService(ShareDocsService);
+  const shareDocs = useLiveData(shareDocsService.shareDocs.list$);
+
+  const getPublicMode = useCallback(
+    (id: string) => {
+      const mode = shareDocs?.find(shareDoc => shareDoc.id === id)?.mode;
+      return mode
+        ? mode === PublicPageMode.Edgeless
+          ? ('edgeless' as const)
+          : ('page' as const)
+        : undefined;
+    },
+    [shareDocs]
+  );
+
+  useEffect(() => {
+    // TODO: loading & error UI
+    shareDocsService.shareDocs.revalidate();
+  }, [shareDocsService]);
+
+  const favAdapter = useService(FavoriteItemsAdapter);
+  const favoriteItems = useLiveData(favAdapter.favorites$);
 
   const filteredPageMetas = useMemo(
     () =>
@@ -29,6 +51,7 @@ export const useFilteredPageMetas = (
         }
         const pageData = {
           meta: pageMeta,
+          favorite: favoriteItems.some(fav => fav.id === pageMeta.id),
           publicMode: getPublicMode(pageMeta.id),
         };
         if (
@@ -49,6 +72,7 @@ export const useFilteredPageMetas = (
       options.trash,
       options.filters,
       options.collection,
+      favoriteItems,
       getPublicMode,
     ]
   );

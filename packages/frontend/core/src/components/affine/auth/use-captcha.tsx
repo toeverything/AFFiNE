@@ -1,5 +1,4 @@
 import { apis } from '@affine/electron-api';
-import { fetchWithTraceReport } from '@affine/graphql';
 import { Turnstile } from '@marsidev/react-turnstile';
 import { atom, useAtom, useSetAtom } from 'jotai';
 import { useEffect, useRef } from 'react';
@@ -17,7 +16,7 @@ const challengeFetcher = async (url: string) => {
     return undefined;
   }
 
-  const res = await fetchWithTraceReport(url);
+  const res = await fetch(url);
   if (!res.ok) {
     throw new Error('Failed to fetch challenge');
   }

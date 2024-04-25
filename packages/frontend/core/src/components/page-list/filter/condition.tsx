@@ -1,5 +1,6 @@
-import { Menu, MenuItem } from '@affine/component';
+import { Menu, MenuItem, Tooltip } from '@affine/component';
 import type { Filter, Literal, PropertiesMeta } from '@affine/env/filter';
+import clsx from 'clsx';
 import type { ReactNode } from 'react';
 import { useMemo } from 'react';
 
@@ -45,14 +46,7 @@ export const Condition = ({
     (({ ast }) => {
       const args = renderArgs(value, onChange, data.type);
       return (
-        <div
-          style={{
-            display: 'flex',
-            userSelect: 'none',
-            alignItems: 'center',
-            overflow: 'hidden',
-          }}
-        >
+        <div className={styles.filterContainerStyle}>
           <Menu
             items={
               <VariableSelect
@@ -62,10 +56,15 @@ export const Condition = ({
               />
             }
           >
-            <div data-testid="variable-name" className={styles.filterTypeStyle}>
-              <div className={styles.filterTypeIconStyle}>
-                {variableDefineMap[ast.left.name].icon}
-              </div>
+            <div
+              data-testid="variable-name"
+              className={clsx(styles.filterTypeStyle, styles.ellipsisTextStyle)}
+            >
+              <Tooltip content={ast.left.name}>
+                <div className={styles.filterTypeIconStyle}>
+                  {variableDefineMap[ast.left.name].icon}
+                </div>
+              </Tooltip>
               <FilterTag name={ast.left.name} />
             </div>
           </Menu>
@@ -78,7 +77,10 @@ export const Condition = ({
               />
             }
           >
-            <div className={styles.switchStyle} data-testid="filter-name">
+            <div
+              className={clsx(styles.switchStyle, styles.ellipsisTextStyle)}
+              data-testid="filter-name"
+            >
               <FilterTag name={ast.funcName} />
             </div>
           </Menu>
@@ -141,7 +143,7 @@ export const Arg = ({
   return (
     <div
       data-testid="filter-arg"
-      style={{ marginLeft: 4, fontWeight: 600, overflow: 'hidden' }}
+      className={clsx(styles.argStyle, styles.ellipsisTextStyle)}
     >
       {data.render({
         type,

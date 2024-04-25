@@ -24,11 +24,11 @@
     "build": "vite build"
   },
   "devDependencies": {
-    "@blocksuite/store": "0.14.0-canary-202403250855-4171ecd",
+    "@blocksuite/store": "0.14.0-canary-202404250407-4c48d8d",
     "vite": "^5.1.4",
     "vite-plugin-dts": "3.7.3",
     "vitest": "1.4.0",
-    "yjs": "^13.6.12"
+    "yjs": "^13.6.14"
   },
   "peerDependencies": {
     "@blocksuite/global": "*",

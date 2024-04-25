@@ -20,6 +20,7 @@ export type SettingAtom = Pick<
   'activeTab' | 'workspaceMetadata'
 > & {
   open: boolean;
+  scrollAnchor?: string;
 };
 
 export const openSettingModalAtom = atom<SettingAtom>({

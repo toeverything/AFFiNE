@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 
-import { FeatureManagementService } from './management';
+import { EarlyAccessType, FeatureManagementService } from './management';
 import { FeatureService } from './service';
 
 /**
@@ -15,6 +15,11 @@ import { FeatureService } from './service';
 })
 export class FeatureModule {}
 
-export { type CommonFeature, commonFeatureSchema } from './types';
-export { FeatureKind, Features, FeatureType } from './types';
-export { FeatureManagementService, FeatureService };
+export {
+  type CommonFeature,
+  commonFeatureSchema,
+  FeatureKind,
+  Features,
+  FeatureType,
+} from './types';
+export { EarlyAccessType, FeatureManagementService, FeatureService };

@@ -4,9 +4,9 @@ import { useDocCollectionPage } from '@affine/core/hooks/use-block-suite-workspa
 import { assertExists, DisposableGroup } from '@blocksuite/global/utils';
 import type { AffineEditorContainer } from '@blocksuite/presets';
 import type { Doc as BlockSuiteDoc, DocCollection } from '@blocksuite/store';
-import type { PageMode } from '@toeverything/infra';
 import {
-  Doc,
+  type DocMode,
+  DocService,
   fontStyleOptions,
   useLiveData,
   useService,
@@ -32,7 +32,7 @@ export type OnLoadEditor = (
 
 export interface PageDetailEditorProps {
   isPublic?: boolean;
-  publishMode?: PageMode;
+  publishMode?: DocMode;
   docCollection: DocCollection;
   pageId: string;
   onLoad?: OnLoadEditor;
@@ -48,7 +48,7 @@ const PageDetailEditorMain = memo(function PageDetailEditorMain({
   isPublic,
   publishMode,
 }: PageDetailEditorProps & { page: BlockSuiteDoc }) {
-  const currentMode = useLiveData(useService(Doc).mode$);
+  const currentMode = useLiveData(useService(DocService).doc.mode$);
   const mode = useMemo(() => {
     const shareMode = publishMode || currentMode;
 

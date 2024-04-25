@@ -11,7 +11,7 @@ import {
 } from '@blocksuite/icons';
 import type { DocCollection, DocMeta } from '@blocksuite/store';
 import * as Collapsible from '@radix-ui/react-collapsible';
-import { PageRecordList, useLiveData, useService } from '@toeverything/infra';
+import { DocsService, useLiveData, useService } from '@toeverything/infra';
 import clsx from 'clsx';
 import { selectAtom } from 'jotai/utils';
 import type { MouseEventHandler } from 'react';
@@ -23,6 +23,7 @@ import { PagePreview } from './page-content-preview';
 import * as styles from './page-group.css';
 import {
   groupCollapseStateAtom,
+  groupsAtom,
   listPropsAtom,
   selectionStateAtom,
   useAtom,
@@ -224,13 +225,21 @@ const listsPropsAtom = selectAtom(
 export const PageListItemRenderer = (item: ListItem) => {
   const props = useAtomValue(listsPropsAtom);
   const { selectionActive } = useAtomValue(selectionStateAtom);
+  const groups = useAtomValue(groupsAtom);
+  const pageItems = groups.flatMap(group => group.items).map(item => item.id);
+
   const page = item as DocMeta;
   return (
     <PageListItem
-      {...pageMetaToListItemProp(page, {
-        ...props,
-        selectable: !!selectionActive,
-      })}
+      {...pageMetaToListItemProp(
+        page,
+        {
+          ...props,
+
+          selectable: !!selectionActive,
+        },
+        pageItems
+      )}
     />
   );
 };
@@ -273,12 +282,8 @@ function tagIdToTagOption(
 }
 
 const PageTitle = ({ id }: { id: string }) => {
-  const page = useLiveData(
-    useService(PageRecordList).records$.map(record => {
-      return record.find(p => p.id === id);
-    })
-  );
-  const title = useLiveData(page?.title$);
+  const doc = useLiveData(useService(DocsService).list.doc$(id));
+  const title = useLiveData(doc?.title$);
   const t = useAFFiNEI18N();
   return title || t['Untitled']();
 };
@@ -302,7 +307,8 @@ const UnifiedPageIcon = ({
 
 function pageMetaToListItemProp(
   item: DocMeta,
-  props: RequiredProps<DocMeta>
+  props: RequiredProps<DocMeta>,
+  pageIds?: string[]
 ): PageListItemProps {
   const toggleSelection = props.onSelectedIdsChange
     ? () => {
@@ -322,6 +328,7 @@ function pageMetaToListItemProp(
     : undefined;
   const itemProps: PageListItemProps = {
     pageId: item.id,
+    pageIds,
     title: <PageTitle id={item.id} />,
     preview: (
       <PagePreview docCollection={props.docCollection} pageId={item.id} />

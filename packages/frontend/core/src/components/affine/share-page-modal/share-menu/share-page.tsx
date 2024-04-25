@@ -1,22 +1,34 @@
 import {
   Input,
+  notify,
   RadioButton,
   RadioButtonGroup,
+  Skeleton,
   Switch,
-  toast,
 } from '@affine/component';
 import { PublicLinkDisableModal } from '@affine/component/disable-public-link';
 import { Button } from '@affine/component/ui/button';
 import { Menu, MenuItem, MenuTrigger } from '@affine/component/ui/menu';
-import { useIsSharedPage } from '@affine/core/hooks/affine/use-is-shared-page';
-import { useServerBaseUrl } from '@affine/core/hooks/affine/use-server-config';
+import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
+import { ShareService } from '@affine/core/modules/share-doc';
 import { WorkspaceFlavour } from '@affine/env/workspace';
+import { PublicPageMode } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { ArrowRightSmallIcon } from '@blocksuite/icons';
-import type { PageMode } from '@toeverything/infra';
-import { Doc, useLiveData, useService } from '@toeverything/infra';
-import { useCallback, useMemo, useState } from 'react';
+import {
+  ArrowRightSmallIcon,
+  SingleSelectSelectSolidIcon,
+} from '@blocksuite/icons';
+import {
+  type DocMode,
+  DocService,
+  useLiveData,
+  useService,
+} from '@toeverything/infra';
+import { cssVar } from '@toeverything/theme';
+import { Suspense, useEffect, useMemo, useState } from 'react';
+import { ErrorBoundary } from 'react-error-boundary';
 
+import { ServerConfigService } from '../../../../modules/cloud';
 import { CloudSvg } from '../cloud-svg';
 import * as styles from './index.css';
 import type { ShareMenuProps } from './share-menu';
@@ -51,60 +63,155 @@ export const LocalSharePage = (props: ShareMenuProps) => {
 export const AffineSharePage = (props: ShareMenuProps) => {
   const {
     workspaceMetadata: { id: workspaceId },
-    currentPage,
   } = props;
-  const pageId = currentPage.id;
-  const page = useService(Doc);
+  const doc = useService(DocService).doc;
+  const shareService = useService(ShareService);
+  const serverConfig = useService(ServerConfigService).serverConfig;
+  useEffect(() => {
+    shareService.share.revalidate();
+  }, [shareService]);
+  const isSharedPage = useLiveData(shareService.share.isShared$);
+  const sharedMode = useLiveData(shareService.share.sharedMode$);
+  const baseUrl = useLiveData(serverConfig.config$.map(c => c?.baseUrl));
+  const isLoading =
+    isSharedPage === null || sharedMode === null || baseUrl === null;
   const [showDisable, setShowDisable] = useState(false);
-  const {
-    isSharedPage,
-    enableShare,
-    changeShare,
-    currentShareMode,
-    disableShare,
-  } = useIsSharedPage(workspaceId, currentPage.id);
 
-  const currentPageMode = useLiveData(page.mode$);
+  const currentDocMode = useLiveData(doc.mode$);
 
-  const defaultMode = useMemo(() => {
-    if (isSharedPage) {
+  const mode = useMemo(() => {
+    if (isSharedPage && sharedMode) {
       // if it's a shared page, use the share mode
-      return currentShareMode;
+      return sharedMode.toLowerCase() as DocMode;
     }
     // default to  page mode
-    return currentPageMode;
-  }, [currentPageMode, currentShareMode, isSharedPage]);
-  const [mode, setMode] = useState<PageMode>(defaultMode);
+    return currentDocMode;
+  }, [currentDocMode, isSharedPage, sharedMode]);
 
   const { sharingUrl, onClickCopyLink } = useSharingUrl({
     workspaceId,
-    pageId,
+    pageId: doc.id,
     urlType: 'share',
   });
-  const baseUrl = useServerBaseUrl();
+
   const t = useAFFiNEI18N();
 
-  const onClickCreateLink = useCallback(() => {
-    enableShare(mode);
-  }, [enableShare, mode]);
+  const onClickCreateLink = useAsyncCallback(async () => {
+    try {
+      await shareService.share.enableShare(
+        mode === 'edgeless' ? PublicPageMode.Edgeless : PublicPageMode.Page
+      );
+      notify.success({
+        title:
+          t[
+            'com.affine.share-menu.create-public-link.notification.success.title'
+          ](),
+        message:
+          t[
+            'com.affine.share-menu.create-public-link.notification.success.message'
+          ](),
+        style: 'normal',
+        icon: <SingleSelectSelectSolidIcon color={cssVar('primaryColor')} />,
+      });
+      if (sharingUrl) {
+        navigator.clipboard.writeText(sharingUrl).catch(err => {
+          console.error(err);
+        });
+      }
+    } catch (err) {
+      notify.error({
+        title:
+          t[
+            'com.affine.share-menu.confirm-modify-mode.notification.fail.title'
+          ](),
+        message:
+          t[
+            'com.affine.share-menu.confirm-modify-mode.notification.fail.message'
+          ](),
+      });
+      console.error(err);
+    }
+  }, [mode, shareService.share, sharingUrl, t]);
 
-  const onDisablePublic = useCallback(() => {
-    disableShare();
-    toast('Successfully disabled', {
-      portal: document.body,
-    });
+  const onDisablePublic = useAsyncCallback(async () => {
+    try {
+      await shareService.share.disableShare();
+      notify.error({
+        title:
+          t[
+            'com.affine.share-menu.disable-publish-link.notification.success.title'
+          ](),
+        message:
+          t[
+            'com.affine.share-menu.disable-publish-link.notification.success.message'
+          ](),
+      });
+    } catch (err) {
+      notify.error({
+        title:
+          t[
+            'com.affine.share-menu.disable-publish-link.notification.fail.title'
+          ](),
+        message:
+          t[
+            'com.affine.share-menu.disable-publish-link.notification.fail.message'
+          ](),
+      });
+      console.log(err);
+    }
     setShowDisable(false);
-  }, [disableShare]);
+  }, [shareService, t]);
 
-  const onShareModeChange = useCallback(
-    (value: PageMode) => {
-      setMode(value);
-      if (isSharedPage) {
-        changeShare(value);
+  const onShareModeChange = useAsyncCallback(
+    async (value: DocMode) => {
+      try {
+        if (isSharedPage) {
+          await shareService.share.changeShare(
+            value === 'edgeless' ? PublicPageMode.Edgeless : PublicPageMode.Page
+          );
+          notify.success({
+            title:
+              t[
+                'com.affine.share-menu.confirm-modify-mode.notification.success.title'
+              ](),
+            message: t[
+              'com.affine.share-menu.confirm-modify-mode.notification.success.message'
+            ]({
+              preMode: value === 'edgeless' ? t['Page']() : t['Edgeless'](),
+              currentMode: value === 'edgeless' ? t['Edgeless']() : t['Page'](),
+            }),
+            style: 'normal',
+            icon: (
+              <SingleSelectSelectSolidIcon color={cssVar('primaryColor')} />
+            ),
+          });
+        }
+      } catch (err) {
+        notify.error({
+          title:
+            t[
+              'com.affine.share-menu.confirm-modify-mode.notification.fail.title'
+            ](),
+          message:
+            t[
+              'com.affine.share-menu.confirm-modify-mode.notification.fail.message'
+            ](),
+        });
+        console.error(err);
       }
     },
-    [changeShare, isSharedPage]
+    [isSharedPage, shareService.share, t]
   );
+
+  if (isLoading) {
+    // TODO: loading and error UI
+    return (
+      <>
+        <Skeleton height={100} />
+        <Skeleton height={40} />
+      </>
+    );
+  }
 
   return (
     <>
@@ -123,15 +230,7 @@ export const AffineSharePage = (props: ShareMenuProps) => {
             fontSize: 'var(--affine-font-xs)',
             lineHeight: '20px',
           }}
-          value={
-            (isSharedPage && sharingUrl) ||
-            `${
-              baseUrl ||
-              `${location.protocol}${
-                location.port ? `:${location.port}` : ''
-              }//${location.hostname}`
-            }/...`
-          }
+          value={(isSharedPage && sharingUrl) || `${baseUrl}/...`}
           readOnly
         />
         {isSharedPage ? (
@@ -161,7 +260,6 @@ export const AffineSharePage = (props: ShareMenuProps) => {
         <div>
           <RadioButtonGroup
             className={styles.radioButtonGroup}
-            defaultValue={defaultMode}
             value={mode}
             onValueChange={onShareModeChange}
           >
@@ -235,7 +333,14 @@ export const SharePage = (props: ShareMenuProps) => {
   } else if (
     props.workspaceMetadata.flavour === WorkspaceFlavour.AFFINE_CLOUD
   ) {
-    return <AffineSharePage {...props} />;
+    return (
+      // TODO: refactor this part
+      <ErrorBoundary fallback={null}>
+        <Suspense>
+          <AffineSharePage {...props} />
+        </Suspense>
+      </ErrorBoundary>
+    );
   }
   throw new Error('Unreachable');
 };

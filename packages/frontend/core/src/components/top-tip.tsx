@@ -2,13 +2,13 @@ import { BrowserWarning, LocalDemoTips } from '@affine/component/affine-banner';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import type { Workspace } from '@toeverything/infra';
+import { useLiveData, useService, type Workspace } from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
 import { useCallback, useState } from 'react';
 
 import { authAtom } from '../atoms';
-import { useCurrentLoginStatus } from '../hooks/affine/use-current-login-status';
 import { useEnableCloud } from '../hooks/affine/use-enable-cloud';
+import { AuthService } from '../modules/cloud';
 
 const minimumChromeVersion = 106;
 
@@ -59,7 +59,7 @@ export const TopTip = ({
   pageId?: string;
   workspace: Workspace;
 }) => {
-  const loginStatus = useCurrentLoginStatus();
+  const loginStatus = useLiveData(useService(AuthService).session.status$);
   const isLoggedIn = loginStatus === 'authenticated';
 
   const [showWarning, setShowWarning] = useState(shouldShowWarning);

@@ -1,15 +1,24 @@
-import { NotFoundPage } from '@affine/component/not-found-page';
-import { useSession } from '@affine/core/hooks/affine/use-current-user';
+import {
+  NoPermissionOrNotFound,
+  NotFoundPage,
+} from '@affine/component/not-found-page';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
+import { useLiveData, useService } from '@toeverything/infra';
 import type { ReactElement } from 'react';
 import { useCallback, useState } from 'react';
 
 import { SignOutModal } from '../components/affine/sign-out-modal';
 import { RouteLogic, useNavigateHelper } from '../hooks/use-navigate-helper';
-import { signOutCloud } from '../utils/cloud-utils';
+import { AuthService } from '../modules/cloud';
+import { SignIn } from './sign-in';
 
-export const PageNotFound = (): ReactElement => {
-  const { user } = useSession();
+export const PageNotFound = ({
+  noPermission,
+}: {
+  noPermission?: boolean;
+}): ReactElement => {
+  const authService = useService(AuthService);
+  const account = useLiveData(authService.session.account$);
   const { jumpToIndex } = useNavigateHelper();
   const [open, setOpen] = useState(false);
 
@@ -24,15 +33,26 @@ export const PageNotFound = (): ReactElement => {
 
   const onConfirmSignOut = useAsyncCallback(async () => {
     setOpen(false);
-    await signOutCloud('/signIn');
-  }, [setOpen]);
+    await authService.signOut();
+  }, [authService]);
+
   return (
     <>
-      <NotFoundPage
-        user={user}
-        onBack={handleBackButtonClick}
-        onSignOut={handleOpenSignOutModal}
-      />
+      {noPermission ? (
+        <NoPermissionOrNotFound
+          user={account}
+          onBack={handleBackButtonClick}
+          onSignOut={handleOpenSignOutModal}
+          signInComponent={<SignIn />}
+        />
+      ) : (
+        <NotFoundPage
+          user={account}
+          onBack={handleBackButtonClick}
+          onSignOut={handleOpenSignOutModal}
+        />
+      )}
+
       <SignOutModal
         open={open}
         onOpenChange={setOpen}

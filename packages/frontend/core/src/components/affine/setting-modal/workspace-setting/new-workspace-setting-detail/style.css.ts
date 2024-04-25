@@ -84,8 +84,11 @@ export const fakeWrapper = style({
 export const membersFallback = style({
   display: 'flex',
   justifyContent: 'center',
-  alignItems: 'center',
-  color: cssVar('primaryColor'),
+  alignItems: 'flexStart',
+  color: cssVar('textSecondaryColor'),
+  gap: '4px',
+  padding: '8px',
+  fontSize: cssVar('fontXs'),
 });
 export const membersPanel = style({
   padding: '4px',

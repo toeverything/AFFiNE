@@ -67,6 +67,12 @@ async function handleAffineUrl(url: string) {
   if (urlObj.hostname === 'signin-redirect') {
     await handleOauthJwt(url);
   }
+  if (urlObj.hostname === 'bring-to-front') {
+    const mainWindow = await getMainWindow();
+    if (mainWindow) {
+      mainWindow.show();
+    }
+  }
 }
 
 async function handleOauthJwt(url: string) {
@@ -89,7 +95,12 @@ async function handleOauthJwt(url: string) {
         value: token,
         secure: true,
         name: 'affine_session',
-        expirationDate: Math.floor(Date.now() / 1000 + 3600 * 24 * 7),
+        expirationDate: Math.floor(
+          Date.now() / 1000 +
+            3600 *
+              24 *
+              399 /* as long as possible, cookie max expires is 400 days */
+        ),
       });
 
       let hiddenWindow: BrowserWindow | null = null;

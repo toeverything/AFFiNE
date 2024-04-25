@@ -1,84 +1,63 @@
-import { FlexWrapper, Input } from '@affine/component';
-import { pushNotificationAtom } from '@affine/component/notification-center';
+import { FlexWrapper, Input, notify } from '@affine/component';
 import {
   SettingHeader,
   SettingRow,
-  StorageProgress,
 } from '@affine/component/setting-components';
 import { Avatar } from '@affine/component/ui/avatar';
 import { Button } from '@affine/component/ui/button';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import { useUserQuota } from '@affine/core/hooks/use-quota';
-import {
-  allBlobSizesQuery,
-  removeAvatarMutation,
-  SubscriptionPlan,
-  updateUserProfileMutation,
-  uploadAvatarMutation,
-} from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowRightSmallIcon, CameraIcon } from '@blocksuite/icons';
-import bytes from 'bytes';
+import { useEnsureLiveData, useService } from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
 import type { FC, MouseEvent } from 'react';
-import { Suspense, useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import {
   authAtom,
   openSettingModalAtom,
   openSignOutModalAtom,
 } from '../../../../atoms';
-import { useCurrentUser } from '../../../../hooks/affine/use-current-user';
-import { useServerFeatures } from '../../../../hooks/affine/use-server-config';
-import { useMutation } from '../../../../hooks/use-mutation';
-import { useQuery } from '../../../../hooks/use-query';
-import { useUserSubscription } from '../../../../hooks/use-subscription';
-import { validateAndReduceImage } from '../../../../utils/reduce-image';
+import { AuthService } from '../../../../modules/cloud';
+import { mixpanel } from '../../../../utils';
 import { Upload } from '../../../pure/file-upload';
+import { AIUsagePanel } from './ai-usage-panel';
+import { StorageProgress } from './storage-progress';
 import * as styles from './style.css';
 
 export const UserAvatar = () => {
   const t = useAFFiNEI18N();
-  const user = useCurrentUser();
-  const pushNotification = useSetAtom(pushNotificationAtom);
-
-  const { trigger: avatarTrigger } = useMutation({
-    mutation: uploadAvatarMutation,
-  });
-  const { trigger: removeAvatarTrigger } = useMutation({
-    mutation: removeAvatarMutation,
-  });
+  const session = useService(AuthService).session;
+  const account = useEnsureLiveData(session.account$);
 
   const handleUpdateUserAvatar = useAsyncCallback(
     async (file: File) => {
       try {
-        const reducedFile = await validateAndReduceImage(file);
-        const data = await avatarTrigger({
-          avatar: reducedFile, // Pass the reducedFile directly to the avatarTrigger
+        mixpanel.track_forms('UpdateProfile', 'UploadAvatar', {
+          userId: account.id,
         });
-        user.update({ avatarUrl: data.uploadAvatar.avatarUrl });
-        pushNotification({
-          title: 'Update user avatar success',
-          type: 'success',
-        });
+        await session.uploadAvatar(file);
+        notify.success({ title: 'Update user avatar success' });
       } catch (e) {
-        pushNotification({
+        // TODO: i18n
+        notify.error({
           title: 'Update user avatar failed',
           message: String(e),
-          type: 'error',
         });
       }
     },
-    [avatarTrigger, pushNotification, user]
+    [account, session]
   );
 
-  const handleRemoveUserAvatar = useCallback(
+  const handleRemoveUserAvatar = useAsyncCallback(
     async (e: MouseEvent<HTMLButtonElement>) => {
+      mixpanel.track('RemoveAvatar', {
+        userId: account.id,
+      });
       e.stopPropagation();
-      await removeAvatarTrigger();
-      user.update({ avatarUrl: null });
+      await session.removeAvatar();
     },
-    [removeAvatarTrigger, user]
+    [account, session]
   );
 
   return (
@@ -89,10 +68,10 @@ export const UserAvatar = () => {
     >
       <Avatar
         size={56}
-        name={user.name}
-        url={user.avatarUrl}
+        name={account.label}
+        url={account.avatar}
         hoverIcon={<CameraIcon />}
-        onRemove={user.avatarUrl ? handleRemoveUserAvatar : undefined}
+        onRemove={account.avatar ? handleRemoveUserAvatar : undefined}
         avatarTooltipOptions={{ content: t['Click to replace photo']() }}
         removeTooltipOptions={{ content: t['Remove photo']() }}
         data-testid="user-setting-avatar"
@@ -106,32 +85,31 @@ export const UserAvatar = () => {
 
 export const AvatarAndName = () => {
   const t = useAFFiNEI18N();
-  const user = useCurrentUser();
-  const [input, setInput] = useState<string>(user.name);
-  const pushNotification = useSetAtom(pushNotificationAtom);
+  const session = useService(AuthService).session;
+  const account = useEnsureLiveData(session.account$);
+  const [input, setInput] = useState<string>(account.label);
 
-  const { trigger: updateProfile } = useMutation({
-    mutation: updateUserProfileMutation,
-  });
-  const allowUpdate = !!input && input !== user.name;
+  const allowUpdate = !!input && input !== account.label;
   const handleUpdateUserName = useAsyncCallback(async () => {
+    if (account === null) {
+      return;
+    }
     if (!allowUpdate) {
       return;
     }
 
     try {
-      const data = await updateProfile({
-        input: { name: input },
+      mixpanel.track_forms('UpdateProfile', 'UpdateUsername', {
+        userId: account.id,
       });
-      user.update({ name: data.updateProfile.name });
+      await session.updateLabel(input);
     } catch (e) {
-      pushNotification({
+      notify.error({
         title: 'Failed to update user name.',
         message: String(e),
-        type: 'error',
       });
     }
-  }, [allowUpdate, input, user, updateProfile, pushNotification]);
+  }, [account, allowUpdate, session, input]);
 
   return (
     <SettingRow
@@ -140,9 +118,7 @@ export const AvatarAndName = () => {
       spreadCol={false}
     >
       <FlexWrapper style={{ margin: '12px 0 24px 0' }} alignItems="center">
-        <Suspense>
-          <UserAvatar />
-        </Suspense>
+        <UserAvatar />
 
         <div className={styles.profileInputWrapper}>
           <label>{t['com.affine.settings.profile.name']()}</label>
@@ -178,25 +154,12 @@ export const AvatarAndName = () => {
 
 const StoragePanel = () => {
   const t = useAFFiNEI18N();
-  const { payment: hasPaymentFeature } = useServerFeatures();
-
-  const { data } = useQuery({
-    query: allBlobSizesQuery,
-  });
-
-  const [subscription] = useUserSubscription();
-  const plan = subscription?.plan ?? SubscriptionPlan.Free;
-
-  const quota = useUserQuota();
-  const maxLimit = useMemo(() => {
-    if (quota) {
-      return quota.storageQuota;
-    }
-    return bytes.parse(plan === SubscriptionPlan.Free ? '10GB' : '100GB');
-  }, [plan, quota]);
 
   const setSettingModalAtom = useSetAtom(openSettingModalAtom);
   const onUpgrade = useCallback(() => {
+    mixpanel.track('Button', {
+      resolve: 'UpgradeStorage',
+    });
     setSettingModalAtom({
       open: true,
       activeTab: 'plans',
@@ -209,20 +172,18 @@ const StoragePanel = () => {
       desc=""
       spreadCol={false}
     >
-      <StorageProgress
-        max={maxLimit}
-        plan={plan}
-        value={data.collectAllBlobSizes.size}
-        onUpgrade={onUpgrade}
-        upgradable={hasPaymentFeature}
-      />
+      <StorageProgress onUpgrade={onUpgrade} />
     </SettingRow>
   );
 };
 
 export const AccountSetting: FC = () => {
   const t = useAFFiNEI18N();
-  const user = useCurrentUser();
+  const session = useService(AuthService).session;
+  useEffect(() => {
+    session.revalidate();
+  }, [session]);
+  const account = useEnsureLiveData(session.account$);
   const setAuthModal = useSetAtom(authAtom);
   const setSignOutModal = useSetAtom(openSignOutModalAtom);
 
@@ -230,19 +191,19 @@ export const AccountSetting: FC = () => {
     setAuthModal({
       openModal: true,
       state: 'sendEmail',
-      email: user.email,
-      emailType: user.emailVerified ? 'changeEmail' : 'verifyEmail',
+      email: account.email,
+      emailType: account.info?.emailVerified ? 'changeEmail' : 'verifyEmail',
     });
-  }, [setAuthModal, user.email, user.emailVerified]);
+  }, [account.email, account.info?.emailVerified, setAuthModal]);
 
   const onPasswordButtonClick = useCallback(() => {
     setAuthModal({
       openModal: true,
       state: 'sendEmail',
-      email: user.email,
-      emailType: user.hasPassword ? 'changePassword' : 'setPassword',
+      email: account.email,
+      emailType: account.info?.hasPassword ? 'changePassword' : 'setPassword',
     });
-  }, [setAuthModal, user.email, user.hasPassword]);
+  }, [account.email, account.info?.hasPassword, setAuthModal]);
 
   const onOpenSignOutModal = useCallback(() => {
     setSignOutModal(true);
@@ -256,9 +217,9 @@ export const AccountSetting: FC = () => {
         data-testid="account-title"
       />
       <AvatarAndName />
-      <SettingRow name={t['com.affine.settings.email']()} desc={user.email}>
+      <SettingRow name={t['com.affine.settings.email']()} desc={account.email}>
         <Button onClick={onChangeEmail} className={styles.button}>
-          {user.emailVerified
+          {account.info?.emailVerified
             ? t['com.affine.settings.email.action.change']()
             : t['com.affine.settings.email.action.verify']()}
         </Button>
@@ -268,14 +229,13 @@ export const AccountSetting: FC = () => {
         desc={t['com.affine.settings.password.message']()}
       >
         <Button onClick={onPasswordButtonClick} className={styles.button}>
-          {user.hasPassword
+          {account.info?.hasPassword
             ? t['com.affine.settings.password.action.change']()
             : t['com.affine.settings.password.action.set']()}
         </Button>
       </SettingRow>
-      <Suspense>
-        <StoragePanel />
-      </Suspense>
+      <StoragePanel />
+      <AIUsagePanel />
       <SettingRow
         name={t[`Sign out`]()}
         desc={t['com.affine.setting.sign.out.message']()}

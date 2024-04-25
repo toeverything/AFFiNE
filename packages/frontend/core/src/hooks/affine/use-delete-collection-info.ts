@@ -1,12 +1,15 @@
+import { AuthService } from '@affine/core/modules/cloud';
+import type { DeleteCollectionInfo } from '@affine/env/filter';
+import { useLiveData, useService } from '@toeverything/infra';
 import { useMemo } from 'react';
 
-import { useSession } from './use-current-user';
-
 export const useDeleteCollectionInfo = () => {
-  const { user } = useSession();
+  const authService = useService(AuthService);
 
-  return useMemo(
-    () => (user ? { userName: user.name, userId: user.id } : null),
+  const user = useLiveData(authService.session.account$);
+
+  return useMemo<DeleteCollectionInfo | null>(
+    () => (user ? { userName: user.label, userId: user.id } : null),
     [user]
   );
 };

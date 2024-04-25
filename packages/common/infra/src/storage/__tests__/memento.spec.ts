@@ -1,7 +1,6 @@
 import { describe, expect, test } from 'vitest';
 
-import { ServiceCollection } from '../../di';
-import { GlobalCache, GlobalState, MemoryMemento } from '..';
+import { MemoryMemento } from '..';
 
 describe('memento', () => {
   test('memory', () => {
@@ -22,19 +21,5 @@ describe('memento', () => {
     subscription.unsubscribe();
     memento.set('foo', 'hello');
     expect(subscribed).toEqual('baz');
-  });
-
-  test('service', () => {
-    const services = new ServiceCollection();
-
-    services
-      .addImpl(GlobalCache, MemoryMemento)
-      .addImpl(GlobalState, MemoryMemento);
-
-    const provider = services.provider();
-    const cache = provider.get(GlobalCache);
-    expect(cache).toBeInstanceOf(MemoryMemento);
-    const state = provider.get(GlobalState);
-    expect(state).toBeInstanceOf(MemoryMemento);
   });
 });

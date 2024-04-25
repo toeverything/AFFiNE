@@ -1,0 +1,10 @@
+{
+  "rules": {
+    "import/no-cycle": [
+      "error",
+      {
+        "ignoreTypes": true
+      }
+    ]
+  }
+}

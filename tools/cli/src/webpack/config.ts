@@ -119,7 +119,7 @@ export const createConfiguration: (
       assetModuleFilename:
         buildFlags.mode === 'production'
           ? 'assets/[name]-[contenthash:8][ext][query]'
-          : '[name][ext]',
+          : '[name]-[contenthash:8][ext]',
       devtoolModuleFilenameTemplate: 'webpack://[namespace]/[resource-path]',
       hotUpdateChunkFilename: 'hot/[id].[fullhash].js',
       hotUpdateMainFilename: 'hot/[runtime].[fullhash].json',
@@ -280,7 +280,7 @@ export const createConfiguration: (
               },
             },
             {
-              test: /\.(png|jpg|gif|svg|webp|mp4)$/,
+              test: /\.(png|jpg|gif|svg|webp|mp4|zip)$/,
               type: 'asset/resource',
             },
             {

@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 
-import { Quotas } from '../../core/quota';
+import { Quotas } from '../../core/quota/schema';
 import { upgradeQuotaVersion } from './utils/user-quotas';
 
 export class BusinessBlobLimit1706513866287 {

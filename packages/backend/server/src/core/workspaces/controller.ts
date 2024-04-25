@@ -36,10 +36,17 @@ export class WorkspacesController {
   @Get('/:id/blobs/:name')
   @CallTimer('controllers', 'workspace_get_blob')
   async blob(
+    @CurrentUser() user: CurrentUser | undefined,
     @Param('id') workspaceId: string,
     @Param('name') name: string,
     @Res() res: Response
   ) {
+    // if workspace is public or have any public page, then allow to access
+    // otherwise, check permission
+    if (!(await this.permission.tryCheckWorkspace(workspaceId, user?.id))) {
+      throw new ForbiddenException('Permission denied');
+    }
+
     const { body, metadata } = await this.storage.get(workspaceId, name);
 
     if (!body) {
@@ -109,11 +116,6 @@ export class WorkspacesController {
     }
 
     res.setHeader('content-type', 'application/octet-stream');
-    res.setHeader(
-      'last-modified',
-      new Date(binResponse.timestamp).toUTCString()
-    );
-    res.setHeader('cache-control', 'private, max-age=2592000');
     res.send(binResponse.binary);
   }
 

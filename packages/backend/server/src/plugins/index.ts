@@ -1,3 +1,4 @@
+import './copilot';
 import './gcloud';
 import './oauth';
 import './payment';

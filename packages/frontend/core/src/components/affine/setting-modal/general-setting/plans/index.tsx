@@ -1,23 +1,17 @@
-import { RadioButton, RadioButtonGroup } from '@affine/component';
-import { pushNotificationAtom } from '@affine/component/notification-center';
-import {
-  pricesQuery,
-  SubscriptionPlan,
-  SubscriptionRecurring,
-} from '@affine/graphql';
+import { Switch } from '@affine/component';
+import { SubscriptionPlan, SubscriptionRecurring } from '@affine/graphql';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { useSetAtom } from 'jotai';
-import { Suspense, useEffect, useRef, useState } from 'react';
+import { useLiveData, useService } from '@toeverything/infra';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { FallbackProps } from 'react-error-boundary';
 
 import { SWRErrorBoundary } from '../../../../../components/pure/swr-error-bundary';
-import { useCurrentLoginStatus } from '../../../../../hooks/affine/use-current-login-status';
-import { useQuery } from '../../../../../hooks/use-query';
-import { useUserSubscription } from '../../../../../hooks/use-subscription';
-import { PlanLayout } from './layout';
-import type { FixedPrice } from './plan-card';
-import { getPlanDetail, PlanCard } from './plan-card';
+import { AuthService, SubscriptionService } from '../../../../../modules/cloud';
+import { AIPlan } from './ai/ai-plan';
+import { type FixedPrice, getPlanDetail } from './cloud-plans';
+import { CloudPlanLayout, PlanLayout } from './layout';
+import { PlanCard } from './plan-card';
 import { PlansSkeleton } from './skeleton';
 import * as styles from './style.css';
 
@@ -35,20 +29,22 @@ const getRecurringLabel = ({
 
 const Settings = () => {
   const t = useAFFiNEI18N();
-  const [subscription, mutateSubscription] = useUserSubscription();
-  const pushNotification = useSetAtom(pushNotificationAtom);
 
-  const loggedIn = useCurrentLoginStatus() === 'authenticated';
-  const planDetail = getPlanDetail(t);
+  const loggedIn =
+    useLiveData(useService(AuthService).session.status$) === 'authenticated';
+  const planDetail = useMemo(() => getPlanDetail(t), [t]);
   const scrollWrapper = useRef<HTMLDivElement>(null);
 
-  const {
-    data: { prices },
-  } = useQuery({
-    query: pricesQuery,
-  });
+  const subscriptionService = useService(SubscriptionService);
+  const proSubscription = useLiveData(subscriptionService.subscription.pro$);
+  const prices = useLiveData(subscriptionService.prices.prices$);
 
-  prices.forEach(price => {
+  useEffect(() => {
+    subscriptionService.subscription.revalidate();
+    subscriptionService.prices.revalidate();
+  }, [subscriptionService]);
+
+  prices?.forEach(price => {
     const detail = planDetail.get(price.plan);
 
     if (detail?.type === 'fixed') {
@@ -63,14 +59,14 @@ const Settings = () => {
     }
   });
 
-  const [recurring, setRecurring] = useState<string>(
-    subscription?.recurring ?? SubscriptionRecurring.Yearly
+  const [recurring, setRecurring] = useState<SubscriptionRecurring>(
+    proSubscription?.recurring ?? SubscriptionRecurring.Yearly
   );
 
-  const currentPlan = subscription?.plan ?? SubscriptionPlan.Free;
-  const isCanceled = !!subscription?.canceledAt;
+  const currentPlan = proSubscription?.plan ?? SubscriptionPlan.Free;
+  const isCanceled = !!proSubscription?.canceledAt;
   const currentRecurring =
-    subscription?.recurring ?? SubscriptionRecurring.Monthly;
+    proSubscription?.recurring ?? SubscriptionRecurring.Monthly;
 
   const yearlyDiscount = (
     planDetail.get(SubscriptionPlan.Pro) as FixedPrice | undefined
@@ -101,7 +97,7 @@ const Settings = () => {
     };
   }, [recurring]);
 
-  const subtitle = loggedIn ? (
+  const cloudCaption = loggedIn ? (
     isCanceled ? (
       <p>
         {t['com.affine.payment.subtitle-canceled']({
@@ -134,83 +130,90 @@ const Settings = () => {
     <p>{t['com.affine.payment.subtitle-not-signed-in']()}</p>
   );
 
-  const tabs = (
-    <RadioButtonGroup
-      className={styles.recurringRadioGroup}
-      value={recurring}
-      onValueChange={setRecurring}
-    >
-      {Object.values(SubscriptionRecurring).map(recurring => (
-        <RadioButton key={recurring} value={recurring}>
-          <span className={styles.radioButtonText}>
-            {getRecurringLabel({ recurring, t })}
-          </span>
-          {recurring === SubscriptionRecurring.Yearly && yearlyDiscount && (
-            <span className={styles.radioButtonDiscount}>
-              {t['com.affine.payment.discount-amount']({
-                amount: yearlyDiscount,
-              })}
-            </span>
-          )}
-        </RadioButton>
-      ))}
-    </RadioButtonGroup>
+  const cloudToggle = (
+    <div className={styles.recurringToggleWrapper}>
+      <div>
+        {recurring === SubscriptionRecurring.Yearly ? (
+          <div className={styles.recurringToggleRecurring}>
+            {t['com.affine.payment.cloud.pricing-plan.toggle-yearly']()}
+          </div>
+        ) : (
+          <>
+            <div className={styles.recurringToggleRecurring}>
+              <span>
+                {t[
+                  'com.affine.payment.cloud.pricing-plan.toggle-billed-yearly'
+                ]()}
+              </span>
+            </div>
+            {yearlyDiscount ? (
+              <div className={styles.recurringToggleDiscount}>
+                {t['com.affine.payment.cloud.pricing-plan.toggle-discount']({
+                  discount: yearlyDiscount,
+                })}
+              </div>
+            ) : null}
+          </>
+        )}
+      </div>
+      <Switch
+        checked={recurring === SubscriptionRecurring.Yearly}
+        onChange={checked =>
+          setRecurring(
+            checked
+              ? SubscriptionRecurring.Yearly
+              : SubscriptionRecurring.Monthly
+          )
+        }
+      />
+    </div>
   );
 
-  const scroll = (
+  const cloudScroll = (
     <div className={styles.planCardsWrapper} ref={scrollWrapper}>
       {Array.from(planDetail.values()).map(detail => {
-        return (
-          <PlanCard
-            key={detail.plan}
-            onSubscriptionUpdate={mutateSubscription}
-            onNotify={({ detail, recurring }) => {
-              pushNotification({
-                type: 'success',
-                theme: 'default',
-                title: t['com.affine.payment.updated-notify-title'](),
-                message:
-                  detail.plan === SubscriptionPlan.Free
-                    ? t[
-                        'com.affine.payment.updated-notify-msg.cancel-subscription'
-                      ]()
-                    : t['com.affine.payment.updated-notify-msg']({
-                        plan: getRecurringLabel({
-                          recurring: recurring as SubscriptionRecurring,
-                          t,
-                        }),
-                      }),
-              });
-            }}
-            {...{ detail, subscription, recurring }}
-          />
-        );
+        return <PlanCard key={detail.plan} {...{ detail, recurring }} />;
       })}
     </div>
   );
 
+  const cloudSelect = (
+    <div className={styles.cloudSelect}>
+      <b>{t['com.affine.payment.cloud.pricing-plan.select.title']()}</b>
+      <span>{t['com.affine.payment.cloud.pricing-plan.select.caption']()}</span>
+    </div>
+  );
+
+  if (prices === null) {
+    return <PlansSkeleton />;
+  }
+
   return (
-    <PlanLayout scrollRef={scrollWrapper} {...{ subtitle, tabs, scroll }} />
+    <PlanLayout
+      cloud={
+        <CloudPlanLayout
+          caption={cloudCaption}
+          select={cloudSelect}
+          toggle={cloudToggle}
+          scroll={cloudScroll}
+          scrollRef={scrollWrapper}
+        />
+      }
+      ai={<AIPlan />}
+    />
   );
 };
 
-export const AFFiNECloudPlans = () => {
+export const AFFiNEPricingPlans = () => {
   return (
     <SWRErrorBoundary FallbackComponent={PlansErrorBoundary}>
-      <Suspense fallback={<PlansSkeleton />}>
-        <Settings />
-      </Suspense>
+      <Settings />
     </SWRErrorBoundary>
   );
 };
 
 const PlansErrorBoundary = ({ resetErrorBoundary }: FallbackProps) => {
   const t = useAFFiNEI18N();
-
-  const title = t['com.affine.payment.title']();
-  const subtitle = '';
-  const tabs = '';
-  const footer = '';
 
   const scroll = (
     <div className={styles.errorTip}>
@@ -221,5 +224,5 @@ const PlansErrorBoundary = ({ resetErrorBoundary }: FallbackProps) => {
     </div>
   );
 
-  return <PlanLayout {...{ title, subtitle, tabs, scroll, footer }} />;
+  return <PlanLayout cloud={<CloudPlanLayout scroll={scroll} />} />;
 };
