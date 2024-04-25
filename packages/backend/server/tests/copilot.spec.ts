@@ -105,9 +105,14 @@ test('should be able to render prompt', async t => {
     'should have param keys'
   );
   t.deepEqual(testPrompt?.params, msg.params, 'should have params');
-  t.throws(() => testPrompt?.finish({ src_language: 'abc' }), {
-    instanceOf: Error,
-  });
+  // will use first option if a params not provided
+  t.deepEqual(testPrompt?.finish({ src_language: 'abc' }), [
+    {
+      content: 'translate eng to chs: ',
+      params: { dest_language: 'chs', src_language: 'eng' },
+      role: 'system',
+    },
+  ]);
 });
 
 test('should be able to render listed prompt', async t => {
