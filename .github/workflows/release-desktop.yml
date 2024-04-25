@@ -325,7 +325,7 @@ jobs:
           mkdir -p builds
           mv packages/frontend/electron/out/*/make/zip/win32/x64/AFFiNE*-win32-x64-*.zip ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-windows-x64.zip
           mv packages/frontend/electron/out/*/make/squirrel.windows/x64/*.exe ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-windows-x64.exe
-          mv packages/frontend/electron/out/*/make/nsis.windows/x64/*.exe ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-windows-x64.snis.exe
+          mv packages/frontend/electron/out/*/make/nsis.windows/x64/*.exe ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-windows-x64.nsis.exe
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
