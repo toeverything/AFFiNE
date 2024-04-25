@@ -18,7 +18,8 @@
     "generate-assets": "node --loader ts-node/esm/transpile-only scripts/generate-assets.ts",
     "package": "cross-env NODE_OPTIONS=\"--loader ts-node/esm/transpile-only\" electron-forge package",
     "make": "cross-env NODE_OPTIONS=\"--loader ts-node/esm/transpile-only\" electron-forge make",
-    "make-squirrel": "node --loader ts-node/esm/transpile-only scripts/make-squirrel.ts"
+    "make-squirrel": "node --loader ts-node/esm/transpile-only scripts/make-squirrel.ts",
+    "make-nsis": "node --loader ts-node/esm/transpile-only scripts/make-nsis.ts"
   },
   "main": "./dist/main.js",
   "devDependencies": {
