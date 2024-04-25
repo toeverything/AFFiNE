@@ -32,6 +32,7 @@ export const promptKeys = [
   'Make it real',
   'Make it longer',
   'Make it shorter',
+  'Continue writing',
 ] as const;
 
 export type PromptKey = (typeof promptKeys)[number];

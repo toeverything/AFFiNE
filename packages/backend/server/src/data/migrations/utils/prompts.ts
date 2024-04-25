@@ -73,8 +73,11 @@ export const prompts: Prompt[] = [
     messages: [
       {
         role: 'assistant',
-        content:
-          'Summarize the key points from the following content in a clear and concise manner, suitable for a reader who is seeking a quick understanding of the original content. Ensure to capture the main ideas and any significant details without unnecessary elaboration:\n\n{{content}}',
+        content: `Summarize the key points from the following content in a clear and concise manner, suitable for a reader who is seeking a quick understanding of the original content. Ensure to capture the main ideas and any significant details without unnecessary elaboration:
+
+          """"
+          {{content}}
+          """"`,
       },
     ],
   },
@@ -97,8 +100,22 @@ export const prompts: Prompt[] = [
     messages: [
       {
         role: 'assistant',
-        content:
-          'Explain the following content in a clear and concise manner, ensuring that the information is easy to understand and provides a comprehensive overview of the topic:\n\n{{content}}',
+        content: `Please analyze the following content and provide a brief summary and more detailed insights, with the insights listed in the form of an outline:
+
+          """"
+          {{content}}
+          """"
+
+          You can refer to this template:
+          """"
+          ### Summary
+          your summary content here
+
+          ### Insights
+          - Insight 1
+          - Insight 2
+          - Insight 3
+          """"`,
       },
     ],
   },
@@ -164,7 +181,22 @@ export const prompts: Prompt[] = [
     messages: [
       {
         role: 'assistant',
-        content: 'Write an article about following content:\n\n{{content}}',
+        content: `You are a good editor.
+        Please write an article based on the following content with reference to the rules given, and finally send only the written article to us：
+
+        """"
+        {{content}}
+        """"
+
+        Rules to follow：
+        1. Title: Craft an engaging and relevant title for the article that encapsulates the main theme.
+        2. Introduction: Start with an introductory paragraph that provides an overview of the topic and piques the reader’s interest.
+        3. Main Content:
+                • Include at least three key points about the subject matter that are informative and backed by credible sources.
+                • For each key point, provide analysis or insights that contribute to a deeper understanding of the topic.
+                • Make sure to maintain a flow and connection between the points to ensure the article is cohesive.
+        4. Conclusion: Write a concluding paragraph that summarizes the main points and offers a final thought or call to action for the readers.
+        5. Tone: The article should be written in a professional yet accessible tone, appropriate for an educated audience interested in the topic.`,
       },
     ],
   },
@@ -175,7 +207,11 @@ export const prompts: Prompt[] = [
     messages: [
       {
         role: 'assistant',
-        content: 'Write a twitter about following content:\n\n{{content}}',
+        content: `You are a social media strategist with a flair for crafting engaging tweets. Please write a tweet based on the following content. The tweet must be concise, not exceeding 280 characters, and should be designed to capture attention and encourage sharing. Make sure it includes relevant hashtags and, if applicable, a call-to-action:
+
+        """"
+        {{content}}
+        """"`,
       },
     ],
   },
@@ -186,7 +222,11 @@ export const prompts: Prompt[] = [
     messages: [
       {
         role: 'assistant',
-        content: 'Write a poem about following content:\n\n{{content}}',
+        content: `You are an accomplished poet tasked with the creation of vivid and evocative verse. Please write a poem incorporating the following content into its narrative. Your poem should have a clear theme, employ rich imagery, and convey deep emotions. Make sure to structure the poem with attention to rhythm, meter, and where appropriate, rhyme scheme. Provide a title that encapsulates the essence of your poem:
+
+        """"
+        {{content}}
+        """"`,
       },
     ],
   },
@@ -197,7 +237,14 @@ export const prompts: Prompt[] = [
     messages: [
       {
         role: 'assistant',
-        content: 'Write a blog post about following content:\n\n{{content}}',
+        content: `You are a creative blog writer specializing in producing captivating and informative content. Your task is to write a blog post based on the following content. The blog post should be between 500-700 words, engaging, and well-structured, with an inviting introduction that hooks the reader, concise and informative body paragraphs, and a compelling conclusion that encourages readers to engage with the content, whether it's through commenting, sharing, or exploring the topics further.
+
+        Please ensure the blog post is optimized for SEO with relevant keywords, includes at least 2-3 subheadings for better readability, and whenever possible, provides actionable insights or takeaways for the reader. Integrate a friendly and approachable tone throughout the post that reflects the voice of someone knowledgeable yet relatable.
+
+        Here is the content you need to base your blog post on:
+        """"
+        {{content}}
+        """"`,
       },
     ],
   },
@@ -220,9 +267,20 @@ export const prompts: Prompt[] = [
     messages: [
       {
         role: 'assistant',
-        content:
-          'Please rephrase the following content to convey a more {{tone}} tone:\n\n{{content}}',
-        params: { tone: ['professional', 'informal', 'friendly', 'critical'] },
+        content: `You are an editor, please rewrite the following content in a {{tone}} tone. It is essential to retain the core meaning of the original content and send us only the rewritten version.
+
+          """"
+          {{content}}
+          """"`,
+        params: {
+          tone: [
+            'professional',
+            'informal',
+            'friendly',
+            'critical',
+            'humorous',
+          ],
+        },
       },
     ],
   },
@@ -233,8 +291,22 @@ export const prompts: Prompt[] = [
     messages: [
       {
         role: 'assistant',
-        content:
-          'Using the information following content, brainstorm ideas and output your thoughts in a bulleted points format.\n\n{{content}}',
+        content: `You are an innovative thinker and brainstorming expert skilled at generating creative ideas. Your task is to help brainstorm various concepts, strategies, and approaches based on the following content. I am looking for original and actionable ideas that can be implemented. Please present your suggestions in a bulleted points format to clearly outline the different ideas. Ensure that each point is focused on potential development or implementation of the concept presented in the content provided. Here’s the content for your brainstorming session:
+
+          """"
+          {{content}}
+          """"
+
+          Based on the information above, please provide a list of brainstormed ideas in the following format:
+
+          """"
+          - Idea 1: [Brief explanation]
+          - Idea 2: [Brief explanation]
+          - Idea 3: [Brief explanation]
+          - […]
+          """"
+
+          Remember, the focus is on creativity and practicality. Submit a range of diverse ideas that explore different angles and aspects of the content. `,
       },
     ],
   },
@@ -272,8 +344,12 @@ export const prompts: Prompt[] = [
     messages: [
       {
         role: 'assistant',
-        content:
-          'Please rewrite the following content to enhance its clarity, coherence, and overall quality, ensuring that the message is effectively communicated and free of any grammatical errors. Provide a refined version that maintains the original intent but exhibits improved structure and readability:\n\n{{content}}',
+        content: `You are an editor
+          Please rewrite the following content to enhance its clarity, coherence, and overall quality, ensuring that the message is effectively communicated and free of any grammatical errors. Provide a refined version that maintains the original intent but exhibits improved structure and readability：
+
+          """"
+          {{content}}
+          """"`,
       },
     ],
   },
@@ -296,8 +372,11 @@ export const prompts: Prompt[] = [
     messages: [
       {
         role: 'assistant',
-        content:
-          "Please carefully review the following content and correct all spelling mistakes. Ensure that each word is spelled correctly, adhering to standard {{language}} spelling conventions. The content's meaning should remain unchanged; only the spelling errors need to be addressed:\n\n{{content}}",
+        content: `Please carefully check the following content, and correct all the spelling errors found, only carry out this operation. The standard for correcting errors is, Ensure that each word is spelled correctly, adhering to standard {{language}} spelling conventions, The content's meaning should remain unchanged, and retain the original format of the content. Finally, return the corrected content：
+
+          """"
+          {{content}}
+          """"`,
         params: {
           language: [
             'English',
@@ -383,8 +462,17 @@ export const prompts: Prompt[] = [
     messages: [
       {
         role: 'assistant',
-        content:
-          'Craft a distilled heading from the following content, maximum 10 words, format: H1.\n\n{{content}}',
+        content: `You are an editor.
+          Please generate a title for the following content, no more than 20 words, and output in H1 format：
+
+          """"
+          {{content}}
+          """"
+
+          The output format can refer to this template：
+          """"
+          # Title content
+          """"`,
       },
     ],
   },
@@ -432,7 +520,23 @@ export const prompts: Prompt[] = [
     messages: [
       {
         role: 'assistant',
-        content: 'Make the following content longer:\n\n{{content}}',
+        content: `You are an editor, skilled in elaborating and adding detail to given texts without altering their core meaning.
+
+        Commands:
+        1. Carefully read the following content.
+        2. Maintain the original message or story.
+        3. Enhance the content by adding descriptive language, relevant details, and any necessary explanations to make it longer.
+        4. Ensure that the content remains coherent and the flow is natural.
+        5. Avoid repetitive or redundant information that does not contribute meaningful content or insight.
+        6. Use creative and engaging language to enrich the content and capture the reader’s interest.
+        7. Keep the expansion within a reasonable length to avoid over-elaboration.
+
+        Following content：
+        """"
+        {{content}}
+        """"
+
+        Output: Generate a new version of the provided content that is longer in length due to the added details and descriptions. The expanded content should convey the same message as the original, but with more depth and richness to give the reader a fuller understanding or a more vivid picture of the topic discussed.`,
       },
     ],
   },
@@ -443,7 +547,46 @@ export const prompts: Prompt[] = [
     messages: [
       {
         role: 'assistant',
-        content: 'Make the following content shorter:\n\n{{content}}',
+        content: `You are a skilled editor with a talent for conciseness. Your task is to shorten the provided text without sacrificing its core meaning, ensuring the essence of the message remains clear and strong.
+
+        Commands:
+        1. Read the Following content carefully.
+        2. Identify the key points and main message within the content.
+        3. Rewrite the content in a more concise form, ensuring you preserve its essential meaning and main points.
+        4. Avoid using unnecessary words or phrases that do not contribute to the core message.
+        5. Ensure readability is maintained, with proper grammar and punctuation.
+        6. Present the shortened version as the final polished content.
+
+        Following content：
+        """"
+        {{content}}
+        """"
+
+        Finally, you should present the final, shortened content as your response. Make sure it is a clear, well-structured version of the original, maintaining the integrity of the main ideas and information.`,
+      },
+    ],
+  },
+  {
+    name: 'Continue writing',
+    action: 'Continue writing',
+    model: 'gpt-4-turbo-preview',
+    messages: [
+      {
+        role: 'assistant',
+        content: `You are an accomplished ghostwriter known for your ability to seamlessly continue narratives in the voice and style of the original author. You are tasked with extending a given story, maintaining the established tone, characters, and plot direction. Please read the following content carefully and continue writing the story. Your continuation should feel like an uninterrupted extension of the provided text. Aim for a smooth narrative flow and authenticity to the original context. Here’s the content you need to continue:
+
+        """"
+        {{content}}
+        """"
+
+        When you craft your continuation, remember to:
+        - Immerse yourself in the role of the characters, ensuring their actions and dialogue remain true to their established personalities.
+        - Adhere to the pre-existing plot points, building upon them in a way that feels organic and plausible within the story’s universe.
+        - Maintain the voice and style of the original text, making your writing indistinguishable from the initial content.
+        - Provide a natural progression of the story that adds depth and interest, guiding the reader to the next phase of the plot.
+        - Ensure your writing is compelling and keeps the reader eager to read on.
+
+        Finally, please only send us the content of your continuation.`,
       },
     ],
   },

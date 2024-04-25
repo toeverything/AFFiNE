@@ -308,6 +308,14 @@ export function setupAIProvider() {
       promptName,
     });
   });
+
+  provideAction('continueWriting', options => {
+    return textToText({
+      ...options,
+      content: options.input,
+      promptName: 'Continue writing',
+    });
+  });
   //#endregion
 
   AIProvider.provide('histories', {
