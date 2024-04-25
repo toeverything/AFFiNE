@@ -12,7 +12,7 @@ import {
 } from '@nestjs/graphql';
 import type { Request, Response } from 'express';
 
-import { Config, Throttle } from '../../fundamentals';
+import { Config, SkipThrottle, Throttle } from '../../fundamentals';
 import { UserService } from '../user';
 import { UserType } from '../user/types';
 import { validators } from '../utils/validators';
@@ -33,12 +33,6 @@ export class ClientTokenType {
   sessionToken?: string;
 }
 
-/**
- * Auth resolver
- * Token rate limit: 20 req/m
- * Sign up/in rate limit: 10 req/m
- * Other rate limit: 5 req/m
- */
 @Throttle('strict')
 @Resolver(() => UserType)
 export class AuthResolver {
@@ -49,6 +43,7 @@ export class AuthResolver {
     private readonly token: TokenService
   ) {}
 
+  @SkipThrottle()
   @Public()
   @Query(() => UserType, {
     name: 'currentUser',

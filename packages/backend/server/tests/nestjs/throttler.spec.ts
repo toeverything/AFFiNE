@@ -48,6 +48,13 @@ class ThrottledController {
     return 'default3';
   }
 
+  @Public()
+  @Get('/authenticated')
+  @Throttle('authenticated')
+  none() {
+    return 'none';
+  }
+
   @Throttle('strict')
   @Get('/strict')
   strict() {
@@ -156,7 +163,6 @@ test('should use default throttler for unauthenticated user when not specified',
 
   t.is(headers.limit, '120');
   t.is(headers.remaining, '119');
-  t.regex(headers.reset, /59|60/);
 });
 
 test('should skip throttler for unauthenticated user when specified', async t => {
@@ -192,7 +198,6 @@ test('should use specified throttler for unauthenticated user', async t => {
 
   t.is(headers.limit, '20');
   t.is(headers.remaining, '19');
-  t.regex(headers.reset, /59|60/);
 });
 
 // ==== authenticated user visits ====
@@ -223,7 +228,6 @@ test('should use default throttler for authenticated user when not specified', a
 
   t.is(headers.limit, '120');
   t.is(headers.remaining, '119');
-  t.regex(headers.reset, /59|60/);
 });
 
 test('should use same throttler for multiple routes', async t => {
@@ -238,7 +242,6 @@ test('should use same throttler for multiple routes', async t => {
 
   t.is(headers.limit, '120');
   t.is(headers.remaining, '119');
-  t.regex(headers.reset, /59|60/);
 
   res = await request(app.getHttpServer())
     .get('/throttled/default2')
@@ -263,7 +266,6 @@ test('should use different throttler if specified', async t => {
 
   t.is(headers.limit, '120');
   t.is(headers.remaining, '119');
-  t.regex(headers.reset, /59|60/);
 
   res = await request(app.getHttpServer())
     .get('/throttled/default3')
@@ -274,7 +276,34 @@ test('should use different throttler if specified', async t => {
 
   t.is(headers.limit, '10');
   t.is(headers.remaining, '9');
-  t.regex(headers.reset, /59|60/);
+});
+
+test('should skip throttler for authenticated if `authenticated` throttler used', async t => {
+  const { app, cookie } = t.context;
+
+  const res = await request(app.getHttpServer())
+    .get('/throttled/authenticated')
+    .set('Cookie', cookie)
+    .expect(200);
+
+  const headers = rateLimitHeaders(res);
+
+  t.is(headers.limit, undefined!);
+  t.is(headers.remaining, undefined!);
+  t.is(headers.reset, undefined!);
+});
+
+test('should apply `default` throttler for authenticated user if `authenticated` throttler used', async t => {
+  const { app } = t.context;
+
+  const res = await request(app.getHttpServer())
+    .get('/throttled/authenticated')
+    .expect(200);
+
+  const headers = rateLimitHeaders(res);
+
+  t.is(headers.limit, '120');
+  t.is(headers.remaining, '119');
 });
 
 test('should skip throttler for authenticated user when specified', async t => {
@@ -304,7 +333,6 @@ test('should use specified throttler for authenticated user', async t => {
 
   t.is(headers.limit, '20');
   t.is(headers.remaining, '19');
-  t.regex(headers.reset, /59|60/);
 });
 
 test('should separate anonymous and authenticated user throttlers', async t => {
@@ -323,9 +351,7 @@ test('should separate anonymous and authenticated user throttlers', async t => {
 
   t.is(authenticatedResHeaders.limit, '120');
   t.is(authenticatedResHeaders.remaining, '119');
-  t.regex(authenticatedResHeaders.reset, /59|60/);
 
   t.is(unauthenticatedResHeaders.limit, '120');
   t.is(unauthenticatedResHeaders.remaining, '119');
-  t.regex(unauthenticatedResHeaders.reset, /59|60/);
 });

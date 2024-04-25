@@ -1,7 +1,7 @@
 import { applyDecorators, SetMetadata } from '@nestjs/common';
 import { SkipThrottle, Throttle as RawThrottle } from '@nestjs/throttler';
 
-export type Throttlers = 'default' | 'strict';
+export type Throttlers = 'default' | 'strict' | 'authenticated';
 export const THROTTLER_PROTECTED = 'affine_throttler:protected';
 
 /**
@@ -10,8 +10,9 @@ export const THROTTLER_PROTECTED = 'affine_throttler:protected';
  * If a Controller or Query do not protected behind a Throttler,
  * it will never be rate limited.
  *
- * - Ease: 120 calls within 60 seconds
- * - Strict: 10 calls within 60 seconds
+ * - default: 120 calls within 60 seconds
+ * - strict: 10 calls within 60 seconds
+ * - authenticated: no rate limit for authenticated users, apply [default] throttler for unauthenticated users
  *
  * @example
  *

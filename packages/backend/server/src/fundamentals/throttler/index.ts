@@ -166,10 +166,12 @@ export class CloudThrottlerGuard extends ThrottlerGuard {
   }
 
   getSpecifiedThrottler(context: ExecutionContext) {
-    return this.reflector.getAllAndOverride<Throttlers | undefined>(
+    const throttler = this.reflector.getAllAndOverride<Throttlers | undefined>(
       THROTTLER_PROTECTED,
       [context.getHandler(), context.getClass()]
     );
+
+    return throttler === 'authenticated' ? undefined : throttler;
   }
 }
 
