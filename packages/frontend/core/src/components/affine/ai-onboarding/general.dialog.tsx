@@ -1,4 +1,4 @@
-import { Button, Modal } from '@affine/component';
+import { Button, IconButton, Modal } from '@affine/component';
 import { openSettingModalAtom } from '@affine/core/atoms';
 import { useBlurRoot } from '@affine/core/hooks/use-blur-root';
 import { SubscriptionService } from '@affine/core/modules/cloud';
@@ -90,6 +90,9 @@ export const AIOnboardingGeneral = ({
   const isFirst = index === 0;
   const isLast = index === list.length - 1;
 
+  const remindLater = useCallback(() => {
+    showAIOnboardingGeneral$.next(false);
+  }, []);
   const closeAndDismiss = useCallback(() => {
     showAIOnboardingGeneral$.next(false);
     onDismiss();
@@ -216,37 +219,55 @@ export const AIOnboardingGeneral = ({
           data-is-first={isFirst}
         >
           {isLast ? (
-            aiSubscription ? (
-              <Button
+            <>
+              <IconButton
+                size="default"
+                icon={<ArrowLeftSmallIcon width={20} height={20} />}
+                onClick={onPrev}
+                type="plain"
                 className={styles.baseActionButton}
-                size="large"
-                onClick={closeAndDismiss}
-                type="primary"
-              >
-                {t['com.affine.ai-onboarding.general.get-started']()}
-              </Button>
-            ) : (
-              <>
+              />
+              {aiSubscription ? (
                 <Button
                   className={styles.baseActionButton}
                   size="large"
                   onClick={closeAndDismiss}
-                >
-                  {t['com.affine.ai-onboarding.general.try-for-free']()}
-                </Button>
-                <Button
-                  className={styles.baseActionButton}
-                  size="large"
-                  onClick={goToPricingPlans}
                   type="primary"
                 >
-                  {t['com.affine.ai-onboarding.general.purchase']()}
+                  {t['com.affine.ai-onboarding.general.get-started']()}
                 </Button>
-              </>
-            )
+              ) : (
+                <div className={styles.subscribeActions}>
+                  <Button
+                    className={styles.baseActionButton}
+                    size="large"
+                    onClick={closeAndDismiss}
+                  >
+                    {t['com.affine.ai-onboarding.general.try-for-free']()}
+                  </Button>
+                  <Button
+                    className={styles.baseActionButton}
+                    size="large"
+                    onClick={goToPricingPlans}
+                    type="primary"
+                  >
+                    {t['com.affine.ai-onboarding.general.purchase']()}
+                  </Button>
+                </div>
+              )}
+            </>
           ) : (
             <>
-              {isFirst ? null : (
+              {isFirst ? (
+                <Button
+                  className={styles.transparentActionButton}
+                  onClick={remindLater}
+                  size="large"
+                  type="default"
+                >
+                  {t['com.affine.ai-onboarding.general.skip']()}
+                </Button>
+              ) : (
                 <Button
                   icon={<ArrowLeftSmallIcon />}
                   className={styles.baseActionButton}
@@ -257,14 +278,19 @@ export const AIOnboardingGeneral = ({
                   {t['com.affine.ai-onboarding.general.prev']()}
                 </Button>
               )}
-              <Button
-                className={styles.baseActionButton}
-                size="large"
-                type="primary"
-                onClick={onNext}
-              >
-                {t['com.affine.ai-onboarding.general.next']()}
-              </Button>
+              <div className={styles.actionAndIndicator}>
+                <div>
+                  {index + 1} / {list.length}
+                </div>
+                <Button
+                  className={styles.baseActionButton}
+                  size="large"
+                  type="primary"
+                  onClick={onNext}
+                >
+                  {t['com.affine.ai-onboarding.general.next']()}
+                </Button>
+              </div>
             </>
           )}
         </footer>

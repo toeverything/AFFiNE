@@ -98,11 +98,21 @@ export const footer = style({
   gap: 12,
   display: 'flex',
   justifyContent: 'space-between',
-  selectors: {
-    '&[data-is-last="true"], &[data-is-first="true"]': {
-      justifyContent: 'flex-end',
-    },
-  },
+  alignItems: 'center',
+});
+export const actionAndIndicator = style({
+  display: 'flex',
+  gap: 16,
+  alignItems: 'center',
+  fontWeight: 500,
+  fontSize: cssVar('fontXs'),
+  lineHeight: '20px',
+  color: cssVar('textSecondaryColor'),
+});
+export const subscribeActions = style({
+  display: 'flex',
+  gap: 12,
+  alignItems: 'center',
 });
 export const baseActionButton = style({
   fontSize: cssVar('fontBase'),
@@ -112,3 +122,9 @@ export const baseActionButton = style({
     },
   },
 });
+export const transparentActionButton = style([
+  baseActionButton,
+  {
+    backgroundColor: 'transparent',
+  },
+]);
