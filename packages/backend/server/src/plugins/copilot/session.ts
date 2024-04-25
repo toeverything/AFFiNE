@@ -112,7 +112,8 @@ export class ChatSession implements AsyncDisposable {
     const messages = this.takeMessages();
     return [
       ...this.state.prompt.finish(
-        Object.keys(params).length ? params : messages[0]?.params || {}
+        Object.keys(params).length ? params : messages[0]?.params || {},
+        this.config.sessionId
       ),
       ...messages.filter(m => m.content || m.attachments?.length),
     ];
@@ -354,7 +355,7 @@ export class ChatSessionService {
                 // render system prompt
                 const preload = withPrompt
                   ? prompt
-                      .finish(ret.data[0]?.params || {})
+                      .finish(ret.data[0]?.params || {}, id)
                       .filter(({ role }) => role !== 'system')
                   : [];
 
