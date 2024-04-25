@@ -42,6 +42,7 @@ const TRACKED_ACTIONS: Record<AIAction, boolean> = {
   createSlides: true,
   createImage: true,
   expandMindmap: true,
+  continueWriting: true,
 };
 
 const provideAction = <T extends AIAction>(
