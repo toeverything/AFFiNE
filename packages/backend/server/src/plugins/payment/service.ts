@@ -95,11 +95,8 @@ export class SubscriptionService {
       });
 
       oldSubscriptions.data.forEach(sub => {
-        if (
-          (sub.status === 'past_due' || sub.status === 'canceled') &&
-          sub.items.data[0].price.lookup_key
-        ) {
-          const [oldPlan] = decodeLookupKey(sub.items.data[0].price.lookup_key);
+        if (sub.status === 'past_due' || sub.status === 'canceled') {
+          const [oldPlan] = this.decodePlanFromSubscription(sub);
           if (oldPlan === SubscriptionPlan.Pro) {
             canHaveEarlyAccessDiscount = false;
           }
@@ -418,9 +415,13 @@ export class SubscriptionService {
   @OnEvent('customer.subscription.created')
   @OnEvent('customer.subscription.updated')
   async onSubscriptionChanges(subscription: Stripe.Subscription) {
+    // webhook call may not in sequential order, get the latest status
+    subscription = await this.stripe.subscriptions.retrieve(subscription.id);
     if (subscription.status === 'active') {
       const user = await this.retrieveUserFromCustomer(
-        subscription.customer as string
+        typeof subscription.customer === 'string'
+          ? subscription.customer
+          : subscription.customer.id
       );
 
       await this.saveSubscription(user, subscription);
@@ -431,6 +432,19 @@ export class SubscriptionService {
 
   @OnEvent('customer.subscription.deleted')
   async onSubscriptionDeleted(subscription: Stripe.Subscription) {
+    subscription = await this.stripe.subscriptions.retrieve(subscription.id);
+    const user = await this.retrieveUserFromCustomer(
+      typeof subscription.customer === 'string'
+        ? subscription.customer
+        : subscription.customer.id
+    );
+
+    const [plan] = this.decodePlanFromSubscription(subscription);
+    this.event.emit('user.subscription.canceled', {
+      userId: user.id,
+      plan,
+    });
+
     await this.db.userSubscription.deleteMany({
       where: {
         stripeSubscriptionId: subscription.id,
@@ -440,6 +454,7 @@ export class SubscriptionService {
 
   @OnEvent('invoice.paid')
   async onInvoicePaid(stripeInvoice: Stripe.Invoice) {
+    stripeInvoice = await this.stripe.invoices.retrieve(stripeInvoice.id);
     await this.saveInvoice(stripeInvoice);
 
     const line = stripeInvoice.lines.data[0];
@@ -453,6 +468,7 @@ export class SubscriptionService {
   @OnEvent('invoice.finalization_failed')
   @OnEvent('invoice.payment_failed')
   async saveInvoice(stripeInvoice: Stripe.Invoice) {
+    stripeInvoice = await this.stripe.invoices.retrieve(stripeInvoice.id);
     if (!stripeInvoice.customer) {
       throw new Error('Unexpected invoice with no customer');
     }
@@ -552,26 +568,14 @@ export class SubscriptionService {
       throw new Error('Unexpected subscription with no key');
     }
 
-    const [plan, recurring] = decodeLookupKey(price.lookup_key);
+    const [plan, recurring] = this.decodePlanFromSubscription(subscription);
     const planActivated = SubscriptionActivated.includes(subscription.status);
 
     let nextBillAt: Date | null = null;
-    if (planActivated) {
-      this.event.emit('user.subscription.activated', {
-        userId: user.id,
-        plan,
-      });
-
+    if (planActivated && !subscription.canceled_at) {
       // get next bill date from upcoming invoice
       // see https://stripe.com/docs/api/invoices/upcoming
-      if (!subscription.canceled_at) {
-        nextBillAt = new Date(subscription.current_period_end * 1000);
-      }
-    } else {
-      this.event.emit('user.subscription.canceled', {
-        userId: user.id,
-        plan,
-      });
+      nextBillAt = new Date(subscription.current_period_end * 1000);
     }
 
     const commonData = {
@@ -620,6 +624,11 @@ export class SubscriptionService {
         data: update,
       });
     } else {
+      this.event.emit('user.subscription.activated', {
+        userId: user.id,
+        plan,
+      });
+
       return await this.db.userSubscription.create({
         data: {
           userId: user.id,
@@ -749,14 +758,11 @@ export class SubscriptionService {
     });
 
     const subscribed = oldSubscriptions.data.some(sub => {
-      if (sub.items.data[0].price.lookup_key) {
-        const [oldPlan] = decodeLookupKey(sub.items.data[0].price.lookup_key);
-        return (
-          oldPlan === plan &&
-          (sub.status === 'past_due' || sub.status === 'canceled')
-        );
-      }
-      return false;
+      const [oldPlan] = this.decodePlanFromSubscription(sub);
+      return (
+        oldPlan === plan &&
+        (sub.status === 'past_due' || sub.status === 'canceled')
+      );
     });
 
     if (plan === SubscriptionPlan.Pro) {
@@ -829,5 +835,15 @@ export class SubscriptionService {
     }
 
     return available ? code.id : null;
+  }
+
+  private decodePlanFromSubscription(sub: Stripe.Subscription) {
+    const price = sub.items.data[0].price;
+
+    if (!price.lookup_key) {
+      throw new Error('Unexpected subscription with no key');
+    }
+
+    return decodeLookupKey(price.lookup_key);
   }
 }
