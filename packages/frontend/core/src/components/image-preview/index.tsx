@@ -472,9 +472,7 @@ const ImagePreviewModalImpl = (
 };
 
 const ErrorLogger = (props: FallbackProps) => {
-  useEffect(() => {
-    console.error('image preview modal error', props.error);
-  }, [props.error]);
+  console.error('image preview modal error', props.error);
   return null;
 };
 
