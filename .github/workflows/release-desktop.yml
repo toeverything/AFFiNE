@@ -260,6 +260,10 @@ jobs:
       - name: Setup Node.js
         timeout-minutes: 10
         uses: ./.github/actions/setup-node
+        with:
+          extra-flags: workspaces focus @affine/electron @affine/monorepo
+          hard-link-nm: false
+          nmHoistingLimits: workspaces
       - name: Download and overwrite packaged artifacts
         uses: actions/download-artifact@v4
         with:
@@ -270,6 +274,9 @@ jobs:
 
       - name: Make squirrel.windows installer
         run: yarn workspace @affine/electron make-squirrel --platform=${{ matrix.spec.platform }} --arch=${{ matrix.spec.arch }}
+
+      - name: Make nsis.windows installer
+        run: yarn workspace @affine/electron make-nsis --platform=${{ matrix.spec.platform }} --arch=${{ matrix.spec.arch }}
 
       - name: Zip artifacts for faster upload
         run: Compress-Archive -CompressionLevel Fastest -Path packages/frontend/electron/out/${{ env.BUILD_TYPE }}/make/* -DestinationPath archive.zip
@@ -318,7 +325,7 @@ jobs:
           mkdir -p builds
           mv packages/frontend/electron/out/*/make/zip/win32/x64/AFFiNE*-win32-x64-*.zip ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-windows-x64.zip
           mv packages/frontend/electron/out/*/make/squirrel.windows/x64/*.exe ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-windows-x64.exe
-          mv packages/frontend/electron/out/*/make/squirrel.windows/x64/*.msi ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-windows-x64.msi
+          mv packages/frontend/electron/out/*/make/nsis.windows/x64/*.exe ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-windows-x64.snis.exe
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4

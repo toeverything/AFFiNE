@@ -16,7 +16,7 @@ import {
   ROOT,
 } from './make-env.js';
 
-const log = debug('electron-forge:make-nsis');
+const log = debug('make-nsis');
 
 async function make() {
   const appName = productName;
@@ -44,6 +44,8 @@ async function make() {
     { dir: tmpPath },
     {
       win: [`nsis:${arch}`],
+      // @ts-expect-error - upstream type is wrong
+      publish: null, // buildForge will incorrectly publish the build
       config: {
         appId: appIdMap[buildType],
         productName,
@@ -73,7 +75,7 @@ async function make() {
   );
 
   // Move the output to the actual output folder, app-builder-lib might get it wrong
-  log('Received output files', output);
+  log('making nsis.windows done:', output);
 
   const result: Array<string> = [];
   for (const file of output) {
