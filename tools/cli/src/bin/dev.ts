@@ -46,6 +46,9 @@ const buildFlags = process.argv.includes('--static')
               {
                 value: 'desktop',
               },
+              {
+                value: 'ios-bridge',
+              },
             ],
             initialValue: 'browser',
           }),
@@ -106,10 +109,22 @@ flags.entry = undefined;
 const cwd =
   flags.distribution === 'browser'
     ? join(projectRoot, 'packages', 'frontend', 'web')
-    : join(projectRoot, 'packages', 'frontend', 'electron');
+    : flags.distribution === 'desktop'
+      ? join(projectRoot, 'packages', 'frontend', 'electron')
+      : flags.distribution === 'ios-bridge'
+        ? join(projectRoot, 'packages', 'frontend', 'ios-bridge')
+        : null;
+
+if (!cwd) {
+  throw new Error('Invalid distribution');
+}
 
 if (flags.distribution === 'desktop') {
   flags.entry = join(cwd, 'renderer', 'index.tsx');
+}
+
+if (flags.distribution === 'ios-bridge') {
+  flags.entry = join(cwd, 'src', 'index.ts');
 }
 
 if (buildFlags.debugBlockSuite) {

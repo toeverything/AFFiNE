@@ -563,6 +563,20 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@affine/ios-bridge@workspace:packages/frontend/ios-bridge":
+  version: 0.0.0-use.local
+  resolution: "@affine/ios-bridge@workspace:packages/frontend/ios-bridge"
+  dependencies:
+    "@affine/cli": "workspace:*"
+    "@affine/core": "workspace:*"
+    "@affine/env": "workspace:*"
+    "@sentry/react": "npm:^7.109.0"
+    core-js: "npm:^3.36.1"
+    intl-segmenter-polyfill-rs: "npm:^0.1.7"
+    typescript: "npm:^5.4.5"
+  languageName: unknown
+  linkType: soft
+
 "@affine/monorepo@workspace:.":
   version: 0.0.0-use.local
   resolution: "@affine/monorepo@workspace:."
