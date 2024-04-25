@@ -5,6 +5,9 @@ import { fromPromise, Service } from '@toeverything/infra';
 import { BackendError, NetworkError } from '../error';
 
 export function getAffineCloudBaseUrl(): string {
+  if ((globalThis as any)['__AFFINE_CLOUD_BASE_URL__']) {
+    return (globalThis as any)['__AFFINE_CLOUD_BASE_URL__'];
+  }
   if (environment.isDesktop) {
     return runtimeConfig.serverUrlPrefix;
   }

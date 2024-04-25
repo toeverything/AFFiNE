@@ -1,0 +1,23 @@
+{
+  "name": "@affine/ios-bridge",
+  "version": "0.0.0",
+  "description": "AFFiNE API For iOS app",
+  "private": true,
+  "browser": "src/index.ts",
+  "scripts": {
+    "build": "DISTRIBUTION=ios-bridge yarn workspace @affine/cli build",
+    "dev": "DISTRIBUTION=ios-bridge yarn workspace @affine/cli dev",
+    "static-server": "DISTRIBUTION=ios-bridge yarn workspace @affine/cli dev --static"
+  },
+  "dependencies": {
+    "@affine/core": "workspace:*",
+    "@affine/env": "workspace:*",
+    "@sentry/react": "^7.109.0",
+    "core-js": "^3.36.1",
+    "intl-segmenter-polyfill-rs": "^0.1.7"
+  },
+  "devDependencies": {
+    "@affine/cli": "workspace:*",
+    "typescript": "^5.4.5"
+  }
+}

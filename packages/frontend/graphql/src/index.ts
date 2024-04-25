@@ -10,6 +10,9 @@ import { gqlFetcherFactory } from './fetcher';
 setupGlobal();
 
 export function getBaseUrl(): string {
+  if ((globalThis as any)['__AFFINE_CLOUD_BASE_URL__']) {
+    return (globalThis as any)['__AFFINE_CLOUD_BASE_URL__'];
+  }
   if (environment.isDesktop) {
     return runtimeConfig.serverUrlPrefix;
   }

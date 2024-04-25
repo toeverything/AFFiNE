@@ -1,3 +1,5 @@
+import { join } from 'node:path';
+
 import webpack from 'webpack';
 
 import { getCwdFromDistribution } from '../config/cwd.cjs';
@@ -37,6 +39,10 @@ const cwd = getCwdFromDistribution(DISTRIBUTION);
 
 if (DISTRIBUTION === 'desktop') {
   entry = { app: './index.tsx', shell: './shell/index.tsx' };
+}
+
+if (DISTRIBUTION === 'ios-bridge') {
+  entry = join(cwd, 'src', 'index.ts');
 }
 
 const flags = {

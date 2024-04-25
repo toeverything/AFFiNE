@@ -129,23 +129,13 @@ export class AuthService extends Service {
   }
 
   async signInPassword(credential: { email: string; password: string }) {
-    const searchParams = new URLSearchParams();
-    const redirectUri = new URL(location.href);
-    if (environment.isDesktop) {
-      redirectUri.pathname = this.buildRedirectUri('/open-app/signin-redirect');
-    }
-    searchParams.set('redirect_uri', redirectUri.toString());
-
-    const res = await this.fetchService.fetch(
-      '/api/auth/sign-in?' + searchParams.toString(),
-      {
-        method: 'POST',
-        body: JSON.stringify(credential),
-        headers: {
-          'content-type': 'application/json',
-        },
-      }
-    );
+    const res = await this.fetchService.fetch('/api/auth/sign-in', {
+      method: 'POST',
+      body: JSON.stringify(credential),
+      headers: {
+        'content-type': 'application/json',
+      },
+    });
     if (!res.ok) {
       throw new Error('Failed to sign in');
     }

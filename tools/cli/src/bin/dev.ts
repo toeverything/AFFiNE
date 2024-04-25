@@ -47,6 +47,9 @@ const buildFlags = process.argv.includes('--static')
                 value: 'desktop',
               },
               {
+                value: 'ios-bridge',
+              },
+              {
                 value: 'admin',
               },
             ],
@@ -115,6 +118,10 @@ if (flags.distribution === 'desktop') {
     app: join(cwd, 'index.tsx'),
     shell: join(cwd, 'shell/index.tsx'),
   };
+}
+
+if (flags.distribution === 'ios-bridge') {
+  flags.entry = join(cwd, 'src', 'index.ts');
 }
 
 if (buildFlags.debugBlockSuite) {
