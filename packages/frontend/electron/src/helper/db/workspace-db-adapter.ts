@@ -1,6 +1,6 @@
 import type { InsertRow } from '@affine/native';
 import { Subject } from 'rxjs';
-import { applyUpdate,Doc as YDoc } from 'yjs';
+import { applyUpdate, Doc as YDoc } from 'yjs';
 
 import { logger } from '../logger';
 import { getWorkspaceMeta } from '../workspace/meta';
