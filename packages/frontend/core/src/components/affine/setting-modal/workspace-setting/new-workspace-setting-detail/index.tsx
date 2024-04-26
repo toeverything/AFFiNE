@@ -17,7 +17,6 @@ import { ExportPanel } from './export';
 import { LabelsPanel } from './labels';
 import { MembersPanel } from './members';
 import { ProfilePanel } from './profile';
-import { StoragePanel } from './storage';
 import type { WorkspaceSettingDetailProps } from './types';
 
 export const WorkspaceSettingDetail = ({
@@ -70,9 +69,6 @@ export const WorkspaceSettingDetail = ({
       </SettingWrapper>
       {environment.isDesktop && (
         <SettingWrapper title={t['Storage and Export']()}>
-          {runtimeConfig.enableMoveDatabase ? (
-            <StoragePanel workspaceMetadata={workspaceMetadata} />
-          ) : null}
           <ExportPanel
             workspace={workspace}
             workspaceMetadata={workspaceMetadata}

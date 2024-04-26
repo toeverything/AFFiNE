@@ -52,26 +52,12 @@ export async function getWorkspaceMeta(
         .then(() => true)
         .catch(() => false))
     ) {
-      // since not meta is found, we will migrate symlinked db file if needed
       await fs.ensureDir(basePath);
       const dbPath = await getWorkspaceDBPath(workspaceId);
-
-      // todo: remove this after migration (in stable version)
-      const realDBPath = (await fs
-        .access(dbPath)
-        .then(() => true)
-        .catch(() => false))
-        ? await fs.realpath(dbPath)
-        : dbPath;
-      const isLink = realDBPath !== dbPath;
-      if (isLink) {
-        await fs.copy(realDBPath, dbPath);
-      }
       // create one if not exists
       const meta = {
         id: workspaceId,
         mainDBPath: dbPath,
-        secondaryDBPath: isLink ? realDBPath : undefined,
       };
       await fs.writeJSON(metaPath, meta);
       return meta;
