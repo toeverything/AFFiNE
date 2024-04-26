@@ -278,7 +278,9 @@ export class CopilotResolver {
       return new TooManyRequestsException('Server is busy');
     }
     const session = await this.chatSession.get(options.sessionId);
-    if (!session) return new BadRequestException('Session not found');
+    if (!session || session.config.userId !== user.id) {
+      return new BadRequestException('Session not found');
+    }
 
     if (options.blobs) {
       options.attachments = options.attachments || [];

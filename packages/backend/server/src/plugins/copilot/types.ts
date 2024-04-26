@@ -15,6 +15,7 @@ export interface CopilotConfig {
   openai: OpenAIClientOptions;
   fal: FalConfig;
   unsplashKey: string;
+  test: never;
 }
 
 export enum AvailableModels {
@@ -130,6 +131,8 @@ export type ListHistoriesOptions = {
 export enum CopilotProviderType {
   FAL = 'fal',
   OpenAI = 'openai',
+  // only for test
+  Test = 'test',
 }
 
 export enum CopilotCapability {
@@ -141,6 +144,7 @@ export enum CopilotCapability {
 }
 
 export interface CopilotProvider {
+  readonly type: CopilotProviderType;
   getCapabilities(): CopilotCapability[];
   isModelAvailable(model: string): boolean;
 }

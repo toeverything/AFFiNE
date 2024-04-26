@@ -41,6 +41,10 @@ export class FalProvider
     return !!config.apiKey;
   }
 
+  get type(): CopilotProviderType {
+    return FalProvider.type;
+  }
+
   getCapabilities(): CopilotCapability[] {
     return FalProvider.capabilities;
   }

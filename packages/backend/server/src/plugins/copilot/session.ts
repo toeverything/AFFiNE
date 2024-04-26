@@ -81,7 +81,7 @@ export class ChatSession implements AsyncDisposable {
   }
 
   pop() {
-    this.state.messages.pop();
+    return this.state.messages.pop();
   }
 
   private takeMessages(): ChatMessage[] {
@@ -115,7 +115,7 @@ export class ChatSession implements AsyncDisposable {
         Object.keys(params).length ? params : messages[0]?.params || {},
         this.config.sessionId
       ),
-      ...messages.filter(m => m.content || m.attachments?.length),
+      ...messages.filter(m => m.content?.trim() || m.attachments?.length),
     ];
   }
 

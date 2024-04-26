@@ -13,7 +13,7 @@ import {
   PromptMessage,
 } from '../types';
 
-const DEFAULT_DIMENSIONS = 256;
+export const DEFAULT_DIMENSIONS = 256;
 
 const SIMPLE_IMAGE_URL_REGEX = /^(https?:\/\/|data:image\/)/;
 
@@ -59,6 +59,10 @@ export class OpenAIProvider
     return !!config.apiKey;
   }
 
+  get type(): CopilotProviderType {
+    return OpenAIProvider.type;
+  }
+
   getCapabilities(): CopilotCapability[] {
     return OpenAIProvider.capabilities;
   }
@@ -67,7 +71,7 @@ export class OpenAIProvider
     return this.availableModels.includes(model);
   }
 
-  private chatToGPTMessage(
+  protected chatToGPTMessage(
     messages: PromptMessage[]
   ): OpenAI.Chat.Completions.ChatCompletionMessageParam[] {
     // filter redundant fields
@@ -92,7 +96,7 @@ export class OpenAIProvider
     });
   }
 
-  private checkParams({
+  protected checkParams({
     messages,
     embeddings,
     model,
