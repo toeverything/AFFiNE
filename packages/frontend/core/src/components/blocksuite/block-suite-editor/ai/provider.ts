@@ -54,7 +54,7 @@ const provideAction = <T extends AIAction>(
   if (TRACKED_ACTIONS[id]) {
     const wrappedFn: typeof action = (opts, ...rest) => {
       mixpanel.track('AI', {
-        resolve: action,
+        resolve: id,
         docId: opts.docId,
         workspaceId: opts.workspaceId,
       });
