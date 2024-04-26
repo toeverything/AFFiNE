@@ -17,7 +17,6 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       enablePreloading: true,
       enableNewSettingModal: true,
       enableNewSettingUnstableApi: false,
-      enableMoveDatabase: false,
       enableCloud: true,
       enableCaptcha: true,
       enableEnhanceShareMode: false,
@@ -57,7 +56,6 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       enablePreloading: true,
       enableNewSettingModal: true,
       enableNewSettingUnstableApi: false,
-      enableMoveDatabase: false,
       enableCloud: true,
       enableCaptcha: true,
       enableEnhanceShareMode: false,
@@ -107,9 +105,6 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
     enableEnhanceShareMode: process.env.ENABLE_ENHANCE_SHARE_MODE
       ? process.env.ENABLE_ENHANCE_SHARE_MODE === 'true'
       : currentBuildPreset.enableEnhanceShareMode,
-    enableMoveDatabase: process.env.ENABLE_MOVE_DATABASE
-      ? process.env.ENABLE_MOVE_DATABASE === 'true'
-      : currentBuildPreset.enableMoveDatabase,
     enablePayment: process.env.ENABLE_PAYMENT
       ? process.env.ENABLE_PAYMENT !== 'false'
       : buildFlags.mode === 'development'
