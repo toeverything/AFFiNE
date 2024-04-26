@@ -16,9 +16,16 @@ import {
 } from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
 import { debounce } from 'lodash-es';
-import { Suspense, useCallback, useLayoutEffect, useRef } from 'react';
+import {
+  Suspense,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+} from 'react';
 
 import { AccountSetting } from './account-setting';
+import { settingModalScrollContainerAtom } from './atoms';
 import { GeneralSetting } from './general-setting';
 import { SettingSidebar } from './setting-sidebar';
 import * as style from './style.css';
@@ -56,6 +63,9 @@ const SettingModalInner = ({
 
   const modalContentRef = useRef<HTMLDivElement>(null);
   const modalContentWrapperRef = useRef<HTMLDivElement>(null);
+  const setSettingModalScrollContainer = useSetAtom(
+    settingModalScrollContainerAtom
+  );
 
   useLayoutEffect(() => {
     if (!modalProps.open) return;
@@ -66,13 +76,24 @@ const SettingModalInner = ({
         if (!modalContentRef.current || !modalContentWrapperRef.current) return;
 
         const wrapperWidth = modalContentWrapperRef.current.offsetWidth;
+        const wrapperHeight = modalContentWrapperRef.current.offsetHeight;
         const contentWidth = modalContentRef.current.offsetWidth;
 
-        modalContentRef.current?.style.setProperty(
+        const wrapper = modalContentWrapperRef.current;
+
+        wrapper?.style.setProperty(
           '--setting-modal-width',
           `${wrapperWidth}px`
         );
-        modalContentRef.current?.style.setProperty(
+        wrapper?.style.setProperty(
+          '--setting-modal-height',
+          `${wrapperHeight}px`
+        );
+        wrapper?.style.setProperty(
+          '--setting-modal-content-width',
+          `${contentWidth}px`
+        );
+        wrapper?.style.setProperty(
           '--setting-modal-gap-x',
           `${(wrapperWidth - contentWidth) / 2}px`
         );
@@ -86,6 +107,13 @@ const SettingModalInner = ({
       window.removeEventListener('resize', onResize);
     };
   }, [modalProps.open]);
+
+  useEffect(() => {
+    setSettingModalScrollContainer(modalContentWrapperRef.current);
+    return () => {
+      setSettingModalScrollContainer(null);
+    };
+  }, [setSettingModalScrollContainer]);
 
   const onTabChange = useCallback(
     (key: ActiveTab, meta: WorkspaceMetadata | null) => {

@@ -1,21 +1,29 @@
-import { Divider, IconButton } from '@affine/component';
+import { Button, Divider, IconButton } from '@affine/component';
 import { SettingHeader } from '@affine/component/setting-components';
 import { openSettingModalAtom } from '@affine/core/atoms';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { ArrowRightBigIcon, ArrowUpSmallIcon } from '@blocksuite/icons';
+import {
+  ArrowDownBigIcon,
+  ArrowRightBigIcon,
+  ArrowUpSmallIcon,
+} from '@blocksuite/icons';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import * as ScrollArea from '@radix-ui/react-scroll-area';
-import { useAtom } from 'jotai';
+import { cssVar } from '@toeverything/theme';
+import { useAtom, useAtomValue } from 'jotai';
 import {
   type HtmlHTMLAttributes,
   type PropsWithChildren,
   type ReactNode,
   useCallback,
+  useEffect,
   useLayoutEffect,
   useRef,
   useState,
 } from 'react';
+import { createPortal } from 'react-dom';
 
+import { settingModalScrollContainerAtom } from '../../atoms';
 import * as styles from './layout.css';
 
 export const SeeAllLink = () => {
@@ -70,12 +78,32 @@ const PricingCollapsible = ({
 export interface PlanLayoutProps {
   cloud?: ReactNode;
   ai?: ReactNode;
+  aiTip?: boolean;
 }
 
-export const PlanLayout = ({ cloud, ai }: PlanLayoutProps) => {
+export const PlanLayout = ({ cloud, ai, aiTip }: PlanLayoutProps) => {
   const t = useAFFiNEI18N();
   const [{ scrollAnchor }, setOpenSettingModal] = useAtom(openSettingModalAtom);
   const aiPricingPlanRef = useRef<HTMLDivElement>(null);
+  const aiScrollTipRef = useRef<HTMLDivElement>(null);
+  const settingModalScrollContainer = useAtomValue(
+    settingModalScrollContainerAtom
+  );
+
+  const updateAiTipState = useCallback(() => {
+    if (!aiTip) return;
+    const aiContainer = aiPricingPlanRef.current;
+    if (!settingModalScrollContainer || !aiContainer) return;
+
+    const minVisibleHeight = 30;
+
+    const containerRect = settingModalScrollContainer.getBoundingClientRect();
+    const aiTop = aiContainer.getBoundingClientRect().top - containerRect.top;
+    const aiIntoView = aiTop < containerRect.height - minVisibleHeight;
+    if (aiIntoView) {
+      settingModalScrollContainer.dataset.aiVisible = '';
+    }
+  }, [aiTip, settingModalScrollContainer]);
 
   // TODO: Need a better solution to handle this situation
   useLayoutEffect(() => {
@@ -88,6 +116,23 @@ export const PlanLayout = ({ cloud, ai }: PlanLayoutProps) => {
     });
   }, [scrollAnchor, setOpenSettingModal]);
 
+  useEffect(() => {
+    if (!settingModalScrollContainer || !aiScrollTipRef.current) return;
+
+    settingModalScrollContainer.addEventListener('scroll', updateAiTipState);
+    updateAiTipState();
+    return () => {
+      settingModalScrollContainer.removeEventListener(
+        'scroll',
+        updateAiTipState
+      );
+    };
+  }, [settingModalScrollContainer, updateAiTipState]);
+
+  const scrollAiIntoView = useCallback(() => {
+    aiPricingPlanRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, []);
+
   return (
     <div className={styles.plansLayoutRoot}>
       {/* TODO: SettingHeader component shouldn't have margin itself  */}
@@ -98,12 +143,35 @@ export const PlanLayout = ({ cloud, ai }: PlanLayoutProps) => {
       {cloud}
       {ai ? (
         <>
-          <Divider />
+          <Divider className={styles.aiDivider} />
           <div ref={aiPricingPlanRef} id="aiPricingPlan">
             {ai}
           </div>
         </>
       ) : null}
+
+      {aiTip && settingModalScrollContainer
+        ? createPortal(
+            <div className={styles.aiScrollTip} ref={aiScrollTipRef}>
+              <div className={styles.aiScrollTipLabel}>
+                <ArrowDownBigIcon
+                  width={24}
+                  height={24}
+                  color={cssVar('iconColor')}
+                />
+                <div className={styles.aiScrollTipText}>Meet AFFiNE AI</div>
+                <div className={styles.aiScrollTipTag}>
+                  <div className={styles.aiScrollTipTagInner}>NEW</div>
+                </div>
+              </div>
+              <Button onClick={scrollAiIntoView} type="primary">
+                View
+              </Button>
+            </div>,
+            settingModalScrollContainer,
+            'aiScrollTip'
+          )
+        : null}
     </div>
   );
 };
