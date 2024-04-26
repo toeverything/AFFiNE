@@ -571,6 +571,13 @@ export class SubscriptionService {
     const [plan, recurring] = this.decodePlanFromSubscription(subscription);
     const planActivated = SubscriptionActivated.includes(subscription.status);
 
+    // update features first, features modify are idempotent
+    // so there is no need to skip if a subscription already exists.
+    this.event.emit('user.subscription.activated', {
+      userId: user.id,
+      plan,
+    });
+
     let nextBillAt: Date | null = null;
     if (planActivated && !subscription.canceled_at) {
       // get next bill date from upcoming invoice
@@ -624,11 +631,6 @@ export class SubscriptionService {
         data: update,
       });
     } else {
-      this.event.emit('user.subscription.activated', {
-        userId: user.id,
-        plan,
-      });
-
       return await this.db.userSubscription.create({
         data: {
           userId: user.id,
