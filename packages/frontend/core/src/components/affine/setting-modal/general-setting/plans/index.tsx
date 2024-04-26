@@ -190,6 +190,7 @@ const Settings = () => {
 
   return (
     <PlanLayout
+      aiTip
       cloud={
         <CloudPlanLayout
           caption={cloudCaption}

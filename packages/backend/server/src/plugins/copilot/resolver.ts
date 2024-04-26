@@ -22,6 +22,7 @@ import { PermissionService } from '../../core/workspaces/permission';
 import {
   FileUpload,
   MutexService,
+  Throttle,
   TooManyRequestsException,
 } from '../../fundamentals';
 import { ChatSessionService } from './session';
@@ -147,6 +148,7 @@ export class CopilotType {
   workspaceId!: string | undefined;
 }
 
+@Throttle()
 @Resolver(() => CopilotType)
 export class CopilotResolver {
   private readonly logger = new Logger(CopilotResolver.name);
@@ -309,6 +311,7 @@ export class CopilotResolver {
   }
 }
 
+@Throttle()
 @Resolver(() => UserType)
 export class UserCopilotResolver {
   constructor(private readonly permissions: PermissionService) {}
