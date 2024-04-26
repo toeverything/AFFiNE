@@ -100,6 +100,17 @@ export class CopilotController {
     return controller.signal;
   }
 
+  private parseNumber(value: string | string[] | undefined) {
+    if (!value) {
+      return undefined;
+    }
+    const num = Number.parseInt(Array.isArray(value) ? value[0] : value, 10);
+    if (Number.isNaN(num)) {
+      return undefined;
+    }
+    return num;
+  }
+
   private handleError(err: any) {
     if (err instanceof Error) {
       const ret = {
@@ -256,6 +267,7 @@ export class CopilotController {
 
       return from(
         provider.generateImagesStream(session.finish(params), session.model, {
+          seed: this.parseNumber(params.seed),
           signal: this.getSignal(req),
           user: user.id,
         })

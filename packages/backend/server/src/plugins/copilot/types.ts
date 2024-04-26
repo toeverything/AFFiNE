@@ -143,6 +143,32 @@ export enum CopilotCapability {
   ImageToText = 'image-to-text',
 }
 
+const CopilotProviderOptionsSchema = z.object({
+  signal: z.instanceof(AbortSignal).optional(),
+  user: z.string().optional(),
+});
+
+const CopilotChatOptionsSchema = CopilotProviderOptionsSchema.extend({
+  temperature: z.number().optional(),
+  maxTokens: z.number().optional(),
+}).optional();
+
+export type CopilotChatOptions = z.infer<typeof CopilotChatOptionsSchema>;
+
+const CopilotEmbeddingOptionsSchema = CopilotProviderOptionsSchema.extend({
+  dimensions: z.number(),
+}).optional();
+
+export type CopilotEmbeddingOptions = z.infer<
+  typeof CopilotEmbeddingOptionsSchema
+>;
+
+const CopilotImageOptionsSchema = CopilotProviderOptionsSchema.extend({
+  seed: z.number().optional(),
+}).optional();
+
+export type CopilotImageOptions = z.infer<typeof CopilotImageOptionsSchema>;
+
 export interface CopilotProvider {
   readonly type: CopilotProviderType;
   getCapabilities(): CopilotCapability[];
@@ -153,22 +179,12 @@ export interface CopilotTextToTextProvider extends CopilotProvider {
   generateText(
     messages: PromptMessage[],
     model?: string,
-    options?: {
-      temperature?: number;
-      maxTokens?: number;
-      signal?: AbortSignal;
-      user?: string;
-    }
+    options?: CopilotChatOptions
   ): Promise<string>;
   generateTextStream(
     messages: PromptMessage[],
     model?: string,
-    options?: {
-      temperature?: number;
-      maxTokens?: number;
-      signal?: AbortSignal;
-      user?: string;
-    }
+    options?: CopilotChatOptions
   ): AsyncIterable<string>;
 }
 
@@ -176,11 +192,7 @@ export interface CopilotTextToEmbeddingProvider extends CopilotProvider {
   generateEmbedding(
     messages: string[] | string,
     model: string,
-    options: {
-      dimensions: number;
-      signal?: AbortSignal;
-      user?: string;
-    }
+    options?: CopilotEmbeddingOptions
   ): Promise<number[][]>;
 }
 
@@ -188,18 +200,12 @@ export interface CopilotTextToImageProvider extends CopilotProvider {
   generateImages(
     messages: PromptMessage[],
     model: string,
-    options: {
-      signal?: AbortSignal;
-      user?: string;
-    }
+    options?: CopilotImageOptions
   ): Promise<Array<string>>;
   generateImagesStream(
     messages: PromptMessage[],
     model?: string,
-    options?: {
-      signal?: AbortSignal;
-      user?: string;
-    }
+    options?: CopilotImageOptions
   ): AsyncIterable<string>;
 }
 
@@ -207,22 +213,12 @@ export interface CopilotImageToTextProvider extends CopilotProvider {
   generateText(
     messages: PromptMessage[],
     model: string,
-    options: {
-      temperature?: number;
-      maxTokens?: number;
-      signal?: AbortSignal;
-      user?: string;
-    }
+    options?: CopilotChatOptions
   ): Promise<string>;
   generateTextStream(
     messages: PromptMessage[],
     model: string,
-    options: {
-      temperature?: number;
-      maxTokens?: number;
-      signal?: AbortSignal;
-      user?: string;
-    }
+    options?: CopilotChatOptions
   ): AsyncIterable<string>;
 }
 
@@ -230,18 +226,12 @@ export interface CopilotImageToImageProvider extends CopilotProvider {
   generateImages(
     messages: PromptMessage[],
     model: string,
-    options: {
-      signal?: AbortSignal;
-      user?: string;
-    }
+    options?: CopilotImageOptions
   ): Promise<Array<string>>;
   generateImagesStream(
     messages: PromptMessage[],
     model?: string,
-    options?: {
-      signal?: AbortSignal;
-      user?: string;
-    }
+    options?: CopilotImageOptions
   ): AsyncIterable<string>;
 }
 
