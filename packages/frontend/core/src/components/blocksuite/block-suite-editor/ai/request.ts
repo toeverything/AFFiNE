@@ -31,6 +31,10 @@ export type TextToTextOptions = {
   signal?: AbortSignal;
 };
 
+export type ToImageOptions = TextToTextOptions & {
+  seed?: string;
+};
+
 export function createChatSession({
   workspaceId,
   docId,
@@ -175,8 +179,9 @@ export function toImage({
   content,
   attachments,
   params,
+  seed,
   timeout = TIMEOUT,
-}: TextToTextOptions) {
+}: ToImageOptions) {
   return {
     [Symbol.asyncIterator]: async function* () {
       const { messageId, sessionId } = await createSessionMessage({
@@ -188,7 +193,7 @@ export function toImage({
         params,
       });
 
-      const eventSource = client.imagesStream(messageId, sessionId);
+      const eventSource = client.imagesStream(messageId, sessionId, seed);
       for await (const event of toTextStream(eventSource, { timeout })) {
         if (event.type === 'attachment') {
           yield event.data;
