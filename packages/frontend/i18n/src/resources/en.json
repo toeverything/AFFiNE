@@ -1311,5 +1311,6 @@
   "com.affine.ai.login-required.dialog-title": "Sign in to Continue",
   "com.affine.ai.login-required.dialog-content": "To use AFFiNE AI, please sign in to your AFFiNE Cloud account.",
   "com.affine.ai.login-required.dialog-confirm": "Sign in",
-  "com.affine.ai.login-required.dialog-cancel": "Cancel"
+  "com.affine.ai.login-required.dialog-cancel": "Cancel",
+  "com.affine.ai.action.edgeless-only.dialog-title": "Please switch to edgeless mode"
 }

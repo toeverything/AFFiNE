@@ -14,7 +14,7 @@ export interface Notification {
   foreground?: string;
   alignMessage?: 'title' | 'icon';
   action?: {
-    label: string;
+    label: ReactNode;
     onClick: (() => void) | (() => Promise<void>);
     buttonProps?: ButtonProps;
     /**

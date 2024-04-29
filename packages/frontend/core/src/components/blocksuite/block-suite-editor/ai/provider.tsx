@@ -1,6 +1,8 @@
+import { notify } from '@affine/component';
 import { authAtom, openSettingModalAtom } from '@affine/core/atoms';
 import { mixpanel } from '@affine/core/utils';
 import { getBaseUrl } from '@affine/graphql';
+import { Trans } from '@affine/i18n';
 import { assertExists } from '@blocksuite/global/utils';
 import { AIProvider } from '@blocksuite/presets';
 import { getCurrentStore } from '@toeverything/infra';
@@ -387,5 +389,13 @@ export function setupAIProvider() {
       ...s,
       openModal: true,
     }));
+  });
+
+  AIProvider.slots.requestRunInEdgeless.on(() => {
+    notify.warning({
+      title: (
+        <Trans i18nKey="com.affine.ai.action.edgeless-only.dialog-title" />
+      ),
+    });
   });
 }
