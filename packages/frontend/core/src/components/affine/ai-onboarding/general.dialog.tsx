@@ -67,6 +67,25 @@ const getPlayList = (t: Translate): Array<PlayListItem> => [
   },
 ];
 
+let prefetched = false;
+function prefetchVideos() {
+  if (prefetched) return;
+  const videos = [
+    '/onboarding/ai-onboarding.general.1.mp4',
+    '/onboarding/ai-onboarding.general.2.mp4',
+    '/onboarding/ai-onboarding.general.3.mp4',
+    '/onboarding/ai-onboarding.general.4.mp4',
+    '/onboarding/ai-onboarding.general.5.mp4',
+  ];
+  videos.forEach(video => {
+    const prefetchLink = document.createElement('link');
+    prefetchLink.href = video;
+    prefetchLink.rel = 'prefetch';
+    document.head.append(prefetchLink);
+  });
+  prefetched = true;
+}
+
 export const AIOnboardingGeneral = ({
   onDismiss,
 }: BaseAIOnboardingDialogProps) => {
@@ -115,6 +134,10 @@ export const AIOnboardingGeneral = ({
   useEffect(() => {
     subscriptionService.subscription.revalidate();
   }, [subscriptionService]);
+
+  useEffect(() => {
+    prefetchVideos();
+  }, []);
 
   const videoRenderer = useCallback(
     ({ video }: PlayListItem, index: number) => (
