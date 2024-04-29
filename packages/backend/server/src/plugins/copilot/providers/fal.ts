@@ -2,6 +2,7 @@ import assert from 'node:assert';
 
 import {
   CopilotCapability,
+  CopilotImageOptions,
   CopilotImageToImageProvider,
   CopilotProviderType,
   CopilotTextToImageProvider,
@@ -41,6 +42,10 @@ export class FalProvider
     return !!config.apiKey;
   }
 
+  get type(): CopilotProviderType {
+    return FalProvider.type;
+  }
+
   getCapabilities(): CopilotCapability[] {
     return FalProvider.capabilities;
   }
@@ -53,10 +58,7 @@ export class FalProvider
   async generateImages(
     messages: PromptMessage[],
     model: string = this.availableModels[0],
-    options: {
-      signal?: AbortSignal;
-      user?: string;
-    } = {}
+    options: CopilotImageOptions = {}
   ): Promise<Array<string>> {
     const { content, attachments } = messages.pop() || {};
     if (!this.availableModels.includes(model)) {
@@ -78,7 +80,7 @@ export class FalProvider
         image_url: attachments?.[0],
         prompt: content,
         sync_mode: true,
-        seed: 42,
+        seed: options.seed || 42,
         enable_safety_checks: false,
       }),
       signal: options.signal,
@@ -96,10 +98,7 @@ export class FalProvider
   async *generateImagesStream(
     messages: PromptMessage[],
     model: string = this.availableModels[0],
-    options: {
-      signal?: AbortSignal;
-      user?: string;
-    } = {}
+    options: CopilotImageOptions = {}
   ): AsyncIterable<string> {
     const ret = await this.generateImages(messages, model, options);
     for (const url of ret) {

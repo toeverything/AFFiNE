@@ -1,5 +1,5 @@
 {
-  "name": "@affine/storage",
+  "name": "@affine/server-native",
   "version": "0.14.0",
   "engines": {
     "node": ">= 10.16.0 < 11 || >= 11.8.0"
@@ -10,13 +10,13 @@
   "types": "index.d.ts",
   "exports": {
     ".": {
-      "require": "./storage.node",
+      "require": "./server-native.node",
       "import": "./index.js",
       "types": "./index.d.ts"
     }
   },
   "napi": {
-    "binaryName": "storage",
+    "binaryName": "server-native",
     "targets": [
       "aarch64-apple-darwin",
       "aarch64-unknown-linux-gnu",
@@ -29,10 +29,7 @@
   "scripts": {
     "test": "node --test ./__tests__/**/*.spec.js",
     "build": "napi build --release --strip --no-const-enum",
-    "build:debug": "napi build",
-    "prepublishOnly": "napi prepublish -t npm",
-    "artifacts": "napi artifacts",
-    "version": "napi version"
+    "build:debug": "napi build"
   },
   "devDependencies": {
     "@napi-rs/cli": "3.0.0-alpha.46",

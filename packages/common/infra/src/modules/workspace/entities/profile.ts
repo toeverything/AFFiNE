@@ -1,5 +1,5 @@
 import { DebugLogger } from '@affine/debug';
-import { catchError, EMPTY, mergeMap, switchMap } from 'rxjs';
+import { catchError, EMPTY, exhaustMap, mergeMap } from 'rxjs';
 
 import { Entity } from '../../../framework';
 import {
@@ -59,7 +59,7 @@ export class WorkspaceProfile extends Entity<{ metadata: WorkspaceMetadata }> {
   }
 
   revalidate = effect(
-    switchMap(() => {
+    exhaustMap(() => {
       const provider = this.provider;
       if (!provider) {
         return EMPTY;

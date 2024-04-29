@@ -52,7 +52,6 @@ const allPackages = [
   'packages/common/env',
   'packages/common/infra',
   'packages/common/theme',
-  'packages/common/y-indexeddb',
   'tools/cli',
 ];
 

@@ -81,7 +81,7 @@ yarn workspace @affine/server prisma studio
 
 ```
 # build native
-yarn workspace @affine/storage build
+yarn workspace @affine/server-native build
 yarn workspace @affine/native build
 ```
 

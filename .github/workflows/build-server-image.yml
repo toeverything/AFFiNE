@@ -66,18 +66,18 @@ jobs:
           path: ./packages/frontend/web/dist
           if-no-files-found: error
 
-  build-storage:
-    name: Build Storage - ${{ matrix.targets.name }}
+  build-server-native:
+    name: Build Server native - ${{ matrix.targets.name }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
         targets:
           - name: x86_64-unknown-linux-gnu
-            file: storage.node
+            file: server-native.node
           - name: aarch64-unknown-linux-gnu
-            file: storage.arm64.node
+            file: server-native.arm64.node
           - name: armv7-unknown-linux-gnueabihf
-            file: storage.armv7.node
+            file: server-native.armv7.node
 
     steps:
       - uses: actions/checkout@v4
@@ -88,18 +88,18 @@ jobs:
         uses: ./.github/actions/setup-node
         with:
           electron-install: false
-          extra-flags: workspaces focus @affine/storage
+          extra-flags: workspaces focus @affine/server-native
       - name: Build Rust
         uses: ./.github/actions/build-rust
         with:
           target: ${{ matrix.targets.name }}
-          package: '@affine/storage'
+          package: '@affine/server-native'
           nx_token: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
       - name: Upload ${{ matrix.targets.file }}
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.targets.file }}
-          path: ./packages/backend/storage/storage.node
+          path: ./packages/backend/native/server-native.node
           if-no-files-found: error
 
   build-docker:
@@ -108,7 +108,7 @@ jobs:
     needs:
       - build-server
       - build-web-selfhost
-      - build-storage
+      - build-server-native
     steps:
       - uses: actions/checkout@v4
       - name: Download server dist
@@ -116,25 +116,25 @@ jobs:
         with:
           name: server-dist
           path: ./packages/backend/server/dist
-      - name: Download storage.node
+      - name: Download server-native.node
         uses: actions/download-artifact@v4
         with:
-          name: storage.node
+          name: server-native.node
           path: ./packages/backend/server
-      - name: Download storage.node arm64
+      - name: Download server-native.node arm64
         uses: actions/download-artifact@v4
         with:
-          name: storage.arm64.node
-          path: ./packages/backend/storage
-      - name: Download storage.node arm64
+          name: server-native.arm64.node
+          path: ./packages/backend/native
+      - name: Download server-native.node arm64
         uses: actions/download-artifact@v4
         with:
-          name: storage.armv7.node
+          name: server-native.armv7.node
           path: .
-      - name: move storage files
+      - name: move server-native files
         run: |
-          mv ./packages/backend/storage/storage.node ./packages/backend/server/storage.arm64.node
-          mv storage.node ./packages/backend/server/storage.armv7.node
+          mv ./packages/backend/native/server-native.node ./packages/backend/server/server-native.arm64.node
+          mv server-native.node ./packages/backend/server/server-native.armv7.node
       - name: Setup env
         run: |
           echo "GIT_SHORT_HASH=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"

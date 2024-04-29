@@ -44,10 +44,10 @@ mod:component:
       - any-glob-to-any-file:
           - 'packages/frontend/component/**/*'
 
-mod:storage:
+mod:server-native:
   - changed-files:
       - any-glob-to-any-file:
-          - 'packages/backend/storage/**/*'
+          - 'packages/backend/native/**/*'
 
 mod:native:
   - changed-files:
@@ -68,11 +68,6 @@ rust:
           - '**/rust-toolchain'
           - '**/rust-toolchain.toml'
           - '**/rustfmt.toml'
-
-package:y-indexeddb:
-  - changed-files:
-      - any-glob-to-any-file:
-          - 'packages/common/y-indexeddb/**/*'
 
 app:core:
   - changed-files:

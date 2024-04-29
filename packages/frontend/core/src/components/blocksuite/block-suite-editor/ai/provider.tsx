@@ -1,6 +1,8 @@
+import { notify } from '@affine/component';
 import { authAtom, openSettingModalAtom } from '@affine/core/atoms';
 import { mixpanel } from '@affine/core/utils';
 import { getBaseUrl } from '@affine/graphql';
+import { Trans } from '@affine/i18n';
 import { assertExists } from '@blocksuite/global/utils';
 import { AIProvider } from '@blocksuite/presets';
 import { getCurrentStore } from '@toeverything/infra';
@@ -54,7 +56,7 @@ const provideAction = <T extends AIAction>(
   if (TRACKED_ACTIONS[id]) {
     const wrappedFn: typeof action = (opts, ...rest) => {
       mixpanel.track('AI', {
-        resolve: action,
+        resolve: id,
         docId: opts.docId,
         workspaceId: opts.workspaceId,
       });
@@ -120,6 +122,9 @@ export function setupAIProvider() {
   provideAction('changeTone', options => {
     return textToText({
       ...options,
+      params: {
+        tone: options.tone,
+      },
       content: options.input,
       promptName: 'Change tone to',
     });
@@ -256,6 +261,10 @@ export function setupAIProvider() {
   provideAction('expandMindmap', options => {
     return textToText({
       ...options,
+      params: {
+        mindmap: options.mindmap,
+        node: options.input,
+      },
       content: options.input,
       promptName: 'Expand mind map',
     });
@@ -278,10 +287,10 @@ export function setupAIProvider() {
   });
 
   provideAction('makeItReal', options => {
-    return textToText({
+    return toImage({
       ...options,
       promptName: 'Make it real',
-      params: options.params,
+      seed: options.seed,
       content:
         options.content ||
         'Here are the latest wireframes. Could you make a new website based on these wireframes and notes and send back just the html file?',
@@ -380,5 +389,13 @@ export function setupAIProvider() {
       ...s,
       openModal: true,
     }));
+  });
+
+  AIProvider.slots.requestRunInEdgeless.on(() => {
+    notify.warning({
+      title: (
+        <Trans i18nKey="com.affine.ai.action.edgeless-only.dialog-title" />
+      ),
+    });
   });
 }

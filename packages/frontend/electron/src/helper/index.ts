@@ -12,7 +12,7 @@ function setupRendererConnection(rendererPort: Electron.MessagePortMain) {
           try {
             const start = performance.now();
             const result = await handler(...args);
-            logger.info(
+            logger.debug(
               '[async-api]',
               `${namespace}.${name}`,
               args.filter(

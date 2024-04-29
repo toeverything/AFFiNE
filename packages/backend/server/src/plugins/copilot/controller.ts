@@ -42,6 +42,11 @@ export interface ChatEvent {
   data: string;
 }
 
+type CheckResult = {
+  model: string | undefined;
+  hasAttachment?: boolean;
+};
+
 @Controller('/api/copilot')
 export class CopilotController {
   private readonly logger = new Logger(CopilotController.name);
@@ -53,17 +58,26 @@ export class CopilotController {
     private readonly storage: CopilotStorage
   ) {}
 
-  private async hasAttachment(sessionId: string, messageId: string) {
+  private async checkRequest(
+    userId: string,
+    sessionId: string,
+    messageId?: string
+  ): Promise<CheckResult> {
+    await this.chatSession.checkQuota(userId);
     const session = await this.chatSession.get(sessionId);
-    if (!session) {
+    if (!session || session.config.userId !== userId) {
       throw new BadRequestException('Session not found');
     }
 
-    const message = await session.getMessageById(messageId);
-    if (Array.isArray(message.attachments) && message.attachments.length) {
-      return true;
+    const ret: CheckResult = { model: session.model };
+
+    if (messageId) {
+      const message = await session.getMessageById(messageId);
+      ret.hasAttachment =
+        Array.isArray(message.attachments) && !!message.attachments.length;
     }
-    return false;
+
+    return ret;
   }
 
   private async appendSessionMessage(
@@ -84,6 +98,17 @@ export class CopilotController {
     const controller = new AbortController();
     req.on('close', () => controller.abort());
     return controller.signal;
+  }
+
+  private parseNumber(value: string | string[] | undefined) {
+    if (!value) {
+      return undefined;
+    }
+    const num = Number.parseInt(Array.isArray(value) ? value[0] : value, 10);
+    if (Number.isNaN(num)) {
+      return undefined;
+    }
+    return num;
   }
 
   private handleError(err: any) {
@@ -107,9 +132,7 @@ export class CopilotController {
     @Query('messageId') messageId: string,
     @Query() params: Record<string, string | string[]>
   ): Promise<string> {
-    await this.chatSession.checkQuota(user.id);
-
-    const model = await this.chatSession.get(sessionId).then(s => s?.model);
+    const { model } = await this.checkRequest(user.id, sessionId);
     const provider = this.provider.getProviderByCapability(
       CopilotCapability.TextToText,
       model
@@ -155,60 +178,58 @@ export class CopilotController {
     @Query() params: Record<string, string>
   ): Promise<Observable<ChatEvent>> {
     try {
-      await this.chatSession.checkQuota(user.id);
+      const { model } = await this.checkRequest(user.id, sessionId);
+      const provider = this.provider.getProviderByCapability(
+        CopilotCapability.TextToText,
+        model
+      );
+      if (!provider) {
+        throw new InternalServerErrorException('No provider available');
+      }
+
+      const session = await this.appendSessionMessage(sessionId, messageId);
+      delete params.messageId;
+
+      return from(
+        provider.generateTextStream(session.finish(params), session.model, {
+          signal: this.getSignal(req),
+          user: user.id,
+        })
+      ).pipe(
+        connect(shared$ =>
+          merge(
+            // actual chat event stream
+            shared$.pipe(
+              map(data => ({ type: 'message' as const, id: messageId, data }))
+            ),
+            // save the generated text to the session
+            shared$.pipe(
+              toArray(),
+              concatMap(values => {
+                session.push({
+                  role: 'assistant',
+                  content: values.join(''),
+                  createdAt: new Date(),
+                });
+                return from(session.save());
+              }),
+              switchMap(() => EMPTY)
+            )
+          )
+        ),
+        catchError(err =>
+          of({
+            type: 'error' as const,
+            data: this.handleError(err),
+          })
+        )
+      );
     } catch (err) {
       return of({
         type: 'error' as const,
         data: this.handleError(err),
       });
     }
-
-    const model = await this.chatSession.get(sessionId).then(s => s?.model);
-    const provider = this.provider.getProviderByCapability(
-      CopilotCapability.TextToText,
-      model
-    );
-    if (!provider) {
-      throw new InternalServerErrorException('No provider available');
-    }
-
-    const session = await this.appendSessionMessage(sessionId, messageId);
-    delete params.messageId;
-
-    return from(
-      provider.generateTextStream(session.finish(params), session.model, {
-        signal: this.getSignal(req),
-        user: user.id,
-      })
-    ).pipe(
-      connect(shared$ =>
-        merge(
-          // actual chat event stream
-          shared$.pipe(
-            map(data => ({ type: 'message' as const, id: sessionId, data }))
-          ),
-          // save the generated text to the session
-          shared$.pipe(
-            toArray(),
-            concatMap(values => {
-              session.push({
-                role: 'assistant',
-                content: values.join(''),
-                createdAt: new Date(),
-              });
-              return from(session.save());
-            }),
-            switchMap(() => EMPTY)
-          )
-        )
-      ),
-      catchError(err =>
-        of({
-          type: 'error' as const,
-          data: this.handleError(err),
-        })
-      )
-    );
   }
 
   @Sse('/chat/:sessionId/images')
@@ -220,75 +241,77 @@ export class CopilotController {
     @Query() params: Record<string, string>
   ): Promise<Observable<ChatEvent>> {
     try {
-      await this.chatSession.checkQuota(user.id);
+      const { model, hasAttachment } = await this.checkRequest(
+        user.id,
+        sessionId,
+        messageId
+      );
+      const provider = this.provider.getProviderByCapability(
+        hasAttachment
+          ? CopilotCapability.ImageToImage
+          : CopilotCapability.TextToImage,
+        model
+      );
+      if (!provider) {
+        throw new InternalServerErrorException('No provider available');
+      }
+
+      const session = await this.appendSessionMessage(sessionId, messageId);
+      delete params.messageId;
+
+      const handleRemoteLink = this.storage.handleRemoteLink.bind(
+        this.storage,
+        user.id,
+        sessionId
+      );
+
+      return from(
+        provider.generateImagesStream(session.finish(params), session.model, {
+          seed: this.parseNumber(params.seed),
+          signal: this.getSignal(req),
+          user: user.id,
+        })
+      ).pipe(
+        mergeMap(handleRemoteLink),
+        connect(shared$ =>
+          merge(
+            // actual chat event stream
+            shared$.pipe(
+              map(attachment => ({
+                type: 'attachment' as const,
+                id: messageId,
+                data: attachment,
+              }))
+            ),
+            // save the generated text to the session
+            shared$.pipe(
+              toArray(),
+              concatMap(attachments => {
+                session.push({
+                  role: 'assistant',
+                  content: '',
+                  attachments: attachments,
+                  createdAt: new Date(),
+                });
+                return from(session.save());
+              }),
+              switchMap(() => EMPTY)
+            )
+          )
+        ),
+        catchError(err =>
+          of({
+            type: 'error' as const,
+            data: this.handleError(err),
+          })
+        )
+      );
     } catch (err) {
       return of({
         type: 'error' as const,
         data: this.handleError(err),
       });
     }
-
-    const hasAttachment = await this.hasAttachment(sessionId, messageId);
-    const model = await this.chatSession.get(sessionId).then(s => s?.model);
-    const provider = this.provider.getProviderByCapability(
-      hasAttachment
-        ? CopilotCapability.ImageToImage
-        : CopilotCapability.TextToImage,
-      model
-    );
-    if (!provider) {
-      throw new InternalServerErrorException('No provider available');
-    }
-
-    const session = await this.appendSessionMessage(sessionId, messageId);
-    delete params.messageId;
-
-    const handleRemoteLink = this.storage.handleRemoteLink.bind(
-      this.storage,
-      user.id,
-      sessionId
-    );
-
-    return from(
-      provider.generateImagesStream(session.finish(params), session.model, {
-        signal: this.getSignal(req),
-        user: user.id,
-      })
-    ).pipe(
-      mergeMap(handleRemoteLink),
-      connect(shared$ =>
-        merge(
-          // actual chat event stream
-          shared$.pipe(
-            map(attachment => ({
-              type: 'attachment' as const,
-              id: sessionId,
-              data: attachment,
-            }))
-          ),
-          // save the generated text to the session
-          shared$.pipe(
-            toArray(),
-            concatMap(attachments => {
-              session.push({
-                role: 'assistant',
-                content: '',
-                attachments: attachments,
-                createdAt: new Date(),
-              });
-              return from(session.save());
-            }),
-            switchMap(() => EMPTY)
-          )
-        )
-      ),
-      catchError(err =>
-        of({
-          type: 'error' as const,
-          data: this.handleError(err),
-        })
-      )
-    );
   }
 
   @Get('/unsplash/photos')

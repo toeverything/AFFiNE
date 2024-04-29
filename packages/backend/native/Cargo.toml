@@ -1,5 +1,5 @@
 [package]
-name = "affine_storage"
+name = "affine_server_native"
 version = "1.0.0"
 edition = "2021"
 
@@ -8,6 +8,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 chrono = "0.4"
+file-format = { version = "0.24", features = ["reader"] }
 napi = { version = "2", default-features = false, features = [
   "napi5",
   "async",

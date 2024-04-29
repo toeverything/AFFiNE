@@ -1,6 +1,5 @@
 import {
   loadDBFile,
-  moveDBFile,
   revealDBFile,
   saveDBFileAs,
   selectDBFileLocation,
@@ -16,9 +15,6 @@ export const dialogHandlers = {
   },
   saveDBFileAs: async (workspaceId: string) => {
     return saveDBFileAs(workspaceId);
-  },
-  moveDBFile: (workspaceId: string, dbFileLocation?: string) => {
-    return moveDBFile(workspaceId, dbFileLocation);
   },
   selectDBFileLocation: async () => {
     return selectDBFileLocation();

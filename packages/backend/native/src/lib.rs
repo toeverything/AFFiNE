@@ -1,5 +1,6 @@
 #![deny(clippy::all)]
 
+pub mod file_type;
 pub mod hashcash;
 
 use std::fmt::{Debug, Display};

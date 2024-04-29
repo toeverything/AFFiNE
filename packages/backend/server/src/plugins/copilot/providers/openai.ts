@@ -5,6 +5,9 @@ import { ClientOptions, OpenAI } from 'openai';
 import {
   ChatMessageRole,
   CopilotCapability,
+  CopilotChatOptions,
+  CopilotEmbeddingOptions,
+  CopilotImageOptions,
   CopilotImageToTextProvider,
   CopilotProviderType,
   CopilotTextToEmbeddingProvider,
@@ -13,7 +16,7 @@ import {
   PromptMessage,
 } from '../types';
 
-const DEFAULT_DIMENSIONS = 256;
+export const DEFAULT_DIMENSIONS = 256;
 
 const SIMPLE_IMAGE_URL_REGEX = /^(https?:\/\/|data:image\/)/;
 
@@ -59,6 +62,10 @@ export class OpenAIProvider
     return !!config.apiKey;
   }
 
+  get type(): CopilotProviderType {
+    return OpenAIProvider.type;
+  }
+
   getCapabilities(): CopilotCapability[] {
     return OpenAIProvider.capabilities;
   }
@@ -67,7 +74,7 @@ export class OpenAIProvider
     return this.availableModels.includes(model);
   }
 
-  private chatToGPTMessage(
+  protected chatToGPTMessage(
     messages: PromptMessage[]
   ): OpenAI.Chat.Completions.ChatCompletionMessageParam[] {
     // filter redundant fields
@@ -92,7 +99,7 @@ export class OpenAIProvider
     });
   }
 
-  private checkParams({
+  protected checkParams({
     messages,
     embeddings,
     model,
@@ -143,12 +150,7 @@ export class OpenAIProvider
   async generateText(
     messages: PromptMessage[],
     model: string = 'gpt-3.5-turbo',
-    options: {
-      temperature?: number;
-      maxTokens?: number;
-      signal?: AbortSignal;
-      user?: string;
-    } = {}
+    options: CopilotChatOptions = {}
   ): Promise<string> {
     this.checkParams({ messages, model });
     const result = await this.instance.chat.completions.create(
@@ -171,12 +173,7 @@ export class OpenAIProvider
   async *generateTextStream(
     messages: PromptMessage[],
     model: string = 'gpt-3.5-turbo',
-    options: {
-      temperature?: number;
-      maxTokens?: number;
-      signal?: AbortSignal;
-      user?: string;
-    } = {}
+    options: CopilotChatOptions = {}
   ): AsyncIterable<string> {
     this.checkParams({ messages, model });
     const result = await this.instance.chat.completions.create(
@@ -210,11 +207,7 @@ export class OpenAIProvider
   async generateEmbedding(
     messages: string | string[],
     model: string,
-    options: {
-      dimensions: number;
-      signal?: AbortSignal;
-      user?: string;
-    } = { dimensions: DEFAULT_DIMENSIONS }
+    options: CopilotEmbeddingOptions = { dimensions: DEFAULT_DIMENSIONS }
   ): Promise<number[][]> {
     messages = Array.isArray(messages) ? messages : [messages];
     this.checkParams({ embeddings: messages, model });
@@ -232,10 +225,7 @@ export class OpenAIProvider
   async generateImages(
     messages: PromptMessage[],
     model: string = 'dall-e-3',
-    options: {
-      signal?: AbortSignal;
-      user?: string;
-    } = {}
+    options: CopilotImageOptions = {}
   ): Promise<Array<string>> {
     const { content: prompt } = messages.pop() || {};
     if (!prompt) {
@@ -257,10 +247,7 @@ export class OpenAIProvider
   async *generateImagesStream(
     messages: PromptMessage[],
     model: string = 'dall-e-3',
-    options: {
-      signal?: AbortSignal;
-      user?: string;
-    } = {}
+    options: CopilotImageOptions = {}
   ): AsyncIterable<string> {
     const ret = await this.generateImages(messages, model, options);
     for (const url of ret) {

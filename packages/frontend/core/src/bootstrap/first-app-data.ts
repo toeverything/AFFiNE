@@ -24,31 +24,18 @@ export async function buildShowcaseWorkspace(
 
   const docsService = workspace.scope.get(DocsService);
 
-  // todo: find better way to do the following
-  // perhaps put them into middleware?
-  {
-    // the "Write, Draw, Plan all at Once." page should be set to edgeless mode
-    const edgelessPage1 = docsService.list.docs$.value.find(
-      p => p.title$.value === 'Write, Draw, Plan all at Once.'
-    );
+  // should jump to "Write, Draw, Plan all at Once." in edgeless by default
+  const defaultDoc = docsService.list.docs$.value.find(p =>
+    p.title$.value.startsWith('Write, Draw, Plan all at Once.')
+  );
 
-    if (edgelessPage1) {
-      edgelessPage1.setMode('edgeless');
-    }
-
-    // should jump to "Write, Draw, Plan all at Once." by default
-    const defaultPage = docsService.list.docs$.value.find(p =>
-      p.title$.value.startsWith('Write, Draw, Plan all at Once.')
-    );
-
-    if (defaultPage) {
-      defaultPage.setMeta({
-        jumpOnce: true,
-      });
-    }
+  if (defaultDoc) {
+    defaultDoc.setMode('edgeless');
   }
+
   dispose();
-  return meta;
+
+  return { meta, defaultDocId: defaultDoc?.id };
 }
 
 const logger = new DebugLogger('createFirstAppData');
@@ -59,26 +46,25 @@ export async function createFirstAppData(workspacesService: WorkspacesService) {
   }
   localStorage.setItem('is-first-open', 'false');
   if (runtimeConfig.enablePreloading) {
-    const workspaceMetadata = await buildShowcaseWorkspace(
+    const { meta, defaultDocId } = await buildShowcaseWorkspace(
       workspacesService,
       WorkspaceFlavour.LOCAL,
       DEFAULT_WORKSPACE_NAME
     );
-    logger.info('create first workspace', workspaceMetadata);
-    return workspaceMetadata;
+    logger.info('create first workspace', defaultDocId);
+    return { meta, defaultPageId: defaultDocId };
   } else {
+    let defaultPageId: string | undefined = undefined;
     const workspaceMetadata = await workspacesService.create(
       WorkspaceFlavour.LOCAL,
       async workspace => {
         workspace.meta.setName(DEFAULT_WORKSPACE_NAME);
         const page = workspace.createDoc();
-        workspace.setDocMeta(page.id, {
-          jumpOnce: true,
-        });
+        defaultPageId = page.id;
         initEmptyPage(page);
       }
     );
     logger.info('create first workspace', workspaceMetadata);
-    return workspaceMetadata;
+    return { meta: workspaceMetadata, defaultPageId };
   }
 }

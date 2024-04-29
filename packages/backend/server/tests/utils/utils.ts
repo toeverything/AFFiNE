@@ -5,6 +5,7 @@ import { Test, TestingModuleBuilder } from '@nestjs/testing';
 import { PrismaClient } from '@prisma/client';
 import cookieParser from 'cookie-parser';
 import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
+import type { Response } from 'supertest';
 
 import { AppModule, FunctionalityModules } from '../../src/app.module';
 import { AuthGuard, AuthModule } from '../../src/core/auth';
@@ -135,4 +136,13 @@ export async function createTestingApp(moduleDef: TestingModuleMeatdata = {}) {
     module: m,
     app,
   };
+}
+
+export function handleGraphQLError(resp: Response) {
+  const { errors } = resp.body;
+  if (errors) {
+    const cause = errors[0];
+    const stacktrace = cause.extensions?.stacktrace;
+    throw new Error(stacktrace ? stacktrace.join('\n') : cause.message, cause);
+  }
 }

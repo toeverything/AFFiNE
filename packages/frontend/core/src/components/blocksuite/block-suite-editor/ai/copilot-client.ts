@@ -158,9 +158,14 @@ export class CopilotClient {
   }
 
   // Text or image to images
-  imagesStream(messageId: string, sessionId: string) {
-    return new EventSource(
-      `${this.backendUrl}/api/copilot/chat/${sessionId}/images?messageId=${messageId}`
+  imagesStream(messageId: string, sessionId: string, seed?: string) {
+    const url = new URL(
+      `${this.backendUrl}/api/copilot/chat/${sessionId}/images`
     );
+    url.searchParams.set('messageId', messageId);
+    if (seed) {
+      url.searchParams.set('seed', seed);
+    }
+    return new EventSource(url);
   }
 }

@@ -233,9 +233,8 @@ export const SignOutConfirmModal = () => {
     } catch (err) {
       console.error(err);
       // TODO: i18n
-      notify({
-        style: 'alert',
-        message: 'Failed to sign out',
+      notify.error({
+        title: 'Failed to sign out',
       });
     }
 
@@ -260,7 +259,7 @@ export const AllWorkspaceModals = (): ReactElement => {
     openCreateWorkspaceModalAtom
   );
 
-  const { jumpToSubPath } = useNavigateHelper();
+  const { jumpToSubPath, jumpToPage } = useNavigateHelper();
 
   return (
     <>
@@ -271,15 +270,19 @@ export const AllWorkspaceModals = (): ReactElement => {
             setOpenCreateWorkspaceModal(false);
           }, [setOpenCreateWorkspaceModal])}
           onCreate={useCallback(
-            id => {
+            (id, defaultDocId) => {
               setOpenCreateWorkspaceModal(false);
               // if jumping immediately, the page may stuck in loading state
               // not sure why yet .. here is a workaround
               setTimeout(() => {
-                jumpToSubPath(id, WorkspaceSubPath.ALL);
+                if (!defaultDocId) {
+                  jumpToSubPath(id, WorkspaceSubPath.ALL);
+                } else {
+                  jumpToPage(id, defaultDocId);
+                }
               });
             },
-            [jumpToSubPath, setOpenCreateWorkspaceModal]
+            [jumpToPage, jumpToSubPath, setOpenCreateWorkspaceModal]
           )}
         />
       </Suspense>

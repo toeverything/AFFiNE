@@ -409,7 +409,6 @@ export const createConfiguration: (
   } satisfies webpack.Configuration;
 
   if (buildFlags.mode === 'production' && process.env.PERFSEE_TOKEN) {
-    config.devtool = 'hidden-nosources-source-map';
     config.plugins.push(
       new PerfseePlugin({
         project: 'affine-toeverything',

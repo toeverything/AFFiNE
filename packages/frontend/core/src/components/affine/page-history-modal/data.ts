@@ -7,10 +7,15 @@ import { listHistoryQuery, recoverDocMutation } from '@affine/graphql';
 import { assertEquals } from '@blocksuite/global/utils';
 import { DocCollection } from '@blocksuite/store';
 import { globalBlockSuiteSchema } from '@toeverything/infra';
-import { revertUpdate } from '@toeverything/y-indexeddb';
 import { useEffect, useMemo } from 'react';
 import useSWRImmutable from 'swr/immutable';
-import { applyUpdate, encodeStateAsUpdate } from 'yjs';
+import {
+  applyUpdate,
+  Doc as YDoc,
+  encodeStateAsUpdate,
+  encodeStateVector,
+  UndoManager,
+} from 'yjs';
 
 import {
   useMutateQueryResource,
@@ -179,6 +184,43 @@ export const historyListGroupByDay = (histories: DocHistory[]) => {
   }
   return [...map.entries()];
 };
+
+export function revertUpdate(
+  doc: YDoc,
+  snapshotUpdate: Uint8Array,
+  getMetadata: (key: string) => 'Text' | 'Map' | 'Array'
+) {
+  const snapshotDoc = new YDoc();
+  applyUpdate(snapshotDoc, snapshotUpdate);
+
+  const currentStateVector = encodeStateVector(doc);
+  const snapshotStateVector = encodeStateVector(snapshotDoc);
+
+  const changesSinceSnapshotUpdate = encodeStateAsUpdate(
+    doc,
+    snapshotStateVector
+  );
+  const undoManager = new UndoManager(
+    [...snapshotDoc.share.keys()].map(key => {
+      const type = getMetadata(key);
+      if (type === 'Text') {
+        return snapshotDoc.getText(key);
+      } else if (type === 'Map') {
+        return snapshotDoc.getMap(key);
+      } else if (type === 'Array') {
+        return snapshotDoc.getArray(key);
+      }
+      throw new Error('Unknown type');
+    })
+  );
+  applyUpdate(snapshotDoc, changesSinceSnapshotUpdate);
+  undoManager.undo();
+  const revertChangesSinceSnapshotUpdate = encodeStateAsUpdate(
+    snapshotDoc,
+    currentStateVector
+  );
+  applyUpdate(doc, revertChangesSinceSnapshotUpdate);
+}
 
 export const useRestorePage = (
   docCollection: DocCollection,
