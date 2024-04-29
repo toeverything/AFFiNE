@@ -155,6 +155,7 @@ export const ProfilePanel = () => {
           name={name}
           imageProps={avatarImageProps}
           fallbackProps={avatarImageProps}
+          hoverWrapperProps={avatarImageProps}
           colorfulFallback
           hoverIcon={isOwner ? <CameraIcon /> : undefined}
           onRemove={canAdjustAvatar ? handleRemoveUserAvatar : undefined}
