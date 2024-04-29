@@ -26,27 +26,27 @@ type Translate = ReturnType<typeof useAFFiNEI18N>;
 
 const getPlayList = (t: Translate): Array<PlayListItem> => [
   {
-    video: '/onboarding/ai-onboarding.general.1.mov',
+    video: '/onboarding/ai-onboarding.general.1.mp4',
     title: t['com.affine.ai-onboarding.general.1.title'](),
     desc: t['com.affine.ai-onboarding.general.1.description'](),
   },
   {
-    video: '/onboarding/ai-onboarding.general.2.mov',
+    video: '/onboarding/ai-onboarding.general.2.mp4',
     title: t['com.affine.ai-onboarding.general.2.title'](),
     desc: t['com.affine.ai-onboarding.general.2.description'](),
   },
   {
-    video: '/onboarding/ai-onboarding.general.3.mov',
+    video: '/onboarding/ai-onboarding.general.3.mp4',
     title: t['com.affine.ai-onboarding.general.3.title'](),
     desc: t['com.affine.ai-onboarding.general.3.description'](),
   },
   {
-    video: '/onboarding/ai-onboarding.general.4.mov',
+    video: '/onboarding/ai-onboarding.general.4.mp4',
     title: t['com.affine.ai-onboarding.general.4.title'](),
     desc: t['com.affine.ai-onboarding.general.4.description'](),
   },
   {
-    video: '/onboarding/ai-onboarding.general.1.mov',
+    video: '/onboarding/ai-onboarding.general.5.mp4',
     title: t['com.affine.ai-onboarding.general.5.title'](),
     desc: (
       <Trans
@@ -241,17 +241,17 @@ export const AIOnboardingGeneral = ({
                   <Button
                     className={styles.baseActionButton}
                     size="large"
-                    onClick={closeAndDismiss}
+                    onClick={goToPricingPlans}
                   >
-                    {t['com.affine.ai-onboarding.general.try-for-free']()}
+                    {t['com.affine.ai-onboarding.general.purchase']()}
                   </Button>
                   <Button
                     className={styles.baseActionButton}
                     size="large"
-                    onClick={goToPricingPlans}
+                    onClick={closeAndDismiss}
                     type="primary"
                   >
-                    {t['com.affine.ai-onboarding.general.purchase']()}
+                    {t['com.affine.ai-onboarding.general.try-for-free']()}
                   </Button>
                 </div>
               )}
