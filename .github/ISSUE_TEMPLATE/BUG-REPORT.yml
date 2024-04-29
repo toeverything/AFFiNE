@@ -30,6 +30,7 @@ body:
         - Web (app.affine.pro)
         - Web (affine.fail)
         - Web (insider.affine.pro)
+        - Web (self-hosted)
     validations:
       required: true
   - type: dropdown
