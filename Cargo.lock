@@ -49,6 +49,7 @@ name = "affine_server_native"
 version = "1.0.0"
 dependencies = [
  "chrono",
+ "file-format",
  "napi",
  "napi-build",
  "napi-derive",
@@ -433,6 +434,12 @@ name = "fastrand"
 version = "2.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "658bd65b1cf4c852a3cc96f18a8ce7b5640f6b703f905c7d74532294c2a63984"
+
+[[package]]
+name = "file-format"
+version = "0.24.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4ba1b81b3c213cf1c071f8bf3b83531f310df99642e58c48247272eef006cae5"
 
 [[package]]
 name = "filetime"

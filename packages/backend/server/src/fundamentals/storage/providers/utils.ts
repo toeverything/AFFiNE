@@ -1,9 +1,9 @@
 import { Readable } from 'node:stream';
 
 import { crc32 } from '@node-rs/crc32';
-import { fileTypeFromBuffer } from 'file-type';
 import { getStreamAsBuffer } from 'get-stream';
 
+import { getMime } from '../native';
 import { BlobInputType, PutObjectMetadata } from './provider';
 
 export async function toBuffer(input: BlobInputType): Promise<Buffer> {
@@ -35,8 +35,7 @@ export async function autoMetadata(
     // mime type
     if (!metadata.contentType) {
       try {
-        const typeResult = await fileTypeFromBuffer(blob);
-        metadata.contentType = typeResult?.mime ?? 'application/octet-stream';
+        metadata.contentType = getMime(blob);
       } catch {
         // ignore
       }

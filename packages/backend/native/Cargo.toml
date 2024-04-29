@@ -8,6 +8,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 chrono = "0.4"
+file-format = { version = "0.24", features = ["reader"] }
 napi = { version = "2", default-features = false, features = [
   "napi5",
   "async",

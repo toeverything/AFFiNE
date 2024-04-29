@@ -28,3 +28,5 @@ export const mintChallengeResponse = async (resource: string, bits: number) => {
   if (!resource) return null;
   return serverNativeModule.mintChallengeResponse(resource, bits);
 };
+
+export const getMime = serverNativeModule.getMime;
