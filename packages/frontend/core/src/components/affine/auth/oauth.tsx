@@ -67,7 +67,7 @@ function OAuthProvider({
       await authService.signInOauth(provider, redirectUri);
     } catch (err) {
       console.error(err);
-      notify.error({ message: 'Failed to sign in, please try again.' });
+      notify.error({ title: 'Failed to sign in, please try again.' });
     } finally {
       setIsConnecting(false);
       mixpanel.track('OAuth', { provider });

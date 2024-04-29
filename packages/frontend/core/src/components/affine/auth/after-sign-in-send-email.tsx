@@ -64,7 +64,7 @@ export const AfterSignInSendEmail = ({
     } catch (err) {
       console.error(err);
       notify.error({
-        message: 'Failed to send email, please try again.',
+        title: 'Failed to send email, please try again.',
       });
     }
     setIsSending(false);

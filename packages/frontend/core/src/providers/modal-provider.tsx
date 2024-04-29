@@ -233,9 +233,8 @@ export const SignOutConfirmModal = () => {
     } catch (err) {
       console.error(err);
       // TODO: i18n
-      notify({
-        style: 'alert',
-        message: 'Failed to sign out',
+      notify.error({
+        title: 'Failed to sign out',
       });
     }
 
