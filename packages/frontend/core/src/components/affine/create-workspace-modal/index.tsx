@@ -36,7 +36,7 @@ const logger = new DebugLogger('CreateWorkspaceModal');
 interface ModalProps {
   mode: CreateWorkspaceMode; // false means not open
   onClose: () => void;
-  onCreate: (id: string) => void;
+  onCreate: (id: string, defaultDocId?: string) => void;
 }
 
 interface NameWorkspaceContentProps extends ConfirmModalProps {
@@ -236,25 +236,24 @@ export const CreateWorkspaceModal = ({
       // this will be the last step for web for now
       // fix me later
       if (runtimeConfig.enablePreloading) {
-        const { id } = await buildShowcaseWorkspace(
+        const { meta, defaultDocId } = await buildShowcaseWorkspace(
           workspacesService,
           workspaceFlavour,
           name
         );
-        onCreate(id);
+        onCreate(meta.id, defaultDocId);
       } else {
+        let defaultDocId: string | undefined = undefined;
         const { id } = await workspacesService.create(
           workspaceFlavour,
           async workspace => {
             workspace.meta.setName(name);
             const page = workspace.createDoc();
-            workspace.setDocMeta(page.id, {
-              jumpOnce: true,
-            });
+            defaultDocId = page.id;
             initEmptyPage(page);
           }
         );
-        onCreate(id);
+        onCreate(id, defaultDocId);
       }
 
       setLoading(false);

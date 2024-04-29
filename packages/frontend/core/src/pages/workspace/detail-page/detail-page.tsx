@@ -325,14 +325,6 @@ export const DetailPage = ({ pageId }: { pageId: string }): ReactElement => {
     };
   }, [currentWorkspace, pageId]);
 
-  const jumpOnce = useLiveData(doc?.meta$.map(meta => meta.jumpOnce));
-
-  useEffect(() => {
-    if (jumpOnce) {
-      doc?.record.setMeta({ jumpOnce: false });
-    }
-  }, [doc?.record, jumpOnce]);
-
   const isInTrash = useLiveData(doc?.meta$.map(meta => meta.trash));
 
   useEffect(() => {

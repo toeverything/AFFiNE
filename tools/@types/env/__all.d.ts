@@ -30,7 +30,6 @@ declare module '@blocksuite/store' {
     trashDate?: number;
     updatedDate?: number;
     mode?: 'page' | 'edgeless';
-    jumpOnce?: boolean;
     // todo: support `number` in the future
     isPublic?: boolean;
   }

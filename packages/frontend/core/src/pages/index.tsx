@@ -48,7 +48,7 @@ export const Component = () => {
   const list = useLiveData(workspacesService.list.workspaces$);
   const listIsLoading = useLiveData(workspacesService.list.isLoading$);
 
-  const { openPage } = useNavigateHelper();
+  const { openPage, jumpToPage } = useNavigateHelper();
   const [searchParams] = useSearchParams();
 
   const createOnceRef = useRef(false);
@@ -61,9 +61,15 @@ export const Component = () => {
       WorkspaceFlavour.AFFINE_CLOUD,
       'AFFiNE Cloud'
     )
-      .then(workspace => openPage(workspace.id, WorkspaceSubPath.ALL))
+      .then(({ meta, defaultDocId }) => {
+        if (defaultDocId) {
+          jumpToPage(meta.id, defaultDocId);
+        } else {
+          openPage(meta.id, WorkspaceSubPath.ALL);
+        }
+      })
       .catch(err => console.error('Failed to create cloud workspace', err));
-  }, [openPage, workspacesService]);
+  }, [jumpToPage, openPage, workspacesService]);
 
   useLayoutEffect(() => {
     if (!navigating) {
@@ -114,9 +120,16 @@ export const Component = () => {
   useEffect(() => {
     setCreating(true);
     createFirstAppData(workspacesService)
-      .then(workspaceMeta => {
-        if (workspaceMeta) {
-          openPage(workspaceMeta.id, WorkspaceSubPath.ALL);
+      .then(createdWorkspace => {
+        if (createdWorkspace) {
+          if (createdWorkspace.defaultPageId) {
+            jumpToPage(
+              createdWorkspace.meta.id,
+              createdWorkspace.defaultPageId
+            );
+          } else {
+            openPage(createdWorkspace.meta.id, WorkspaceSubPath.ALL);
+          }
         }
       })
       .catch(err => {
@@ -125,7 +138,7 @@ export const Component = () => {
       .finally(() => {
         setCreating(false);
       });
-  }, [openPage, workspacesService]);
+  }, [jumpToPage, openPage, workspacesService]);
 
   if (navigating || creating) {
     return <WorkspaceFallback></WorkspaceFallback>;
