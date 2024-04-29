@@ -27,9 +27,6 @@
       "path": "../../common/env"
     },
     {
-      "path": "../../common/y-indexeddb"
-    },
-    {
       "path": "./tsconfig.node.json"
     },
     {

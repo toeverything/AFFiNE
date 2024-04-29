@@ -65,7 +65,6 @@
       "@affine/electron/scripts/*": ["./packages/frontend/electron/scripts/*"],
       "@affine-test/kit/*": ["./tests/kit/*"],
       "@affine-test/fixtures/*": ["./tests/fixtures/*"],
-      "@toeverything/y-indexeddb": ["./packages/common/y-indexeddb/src"],
       "@toeverything/infra": ["./packages/common/infra/src"],
       "@affine/native": ["./packages/frontend/native/index.d.ts"],
       "@affine/native/*": ["./packages/frontend/native/*"],
@@ -114,9 +113,6 @@
     },
     {
       "path": "./packages/common/infra"
-    },
-    {
-      "path": "./packages/common/y-indexeddb"
     },
     // Tools
     {

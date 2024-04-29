@@ -69,11 +69,6 @@ rust:
           - '**/rust-toolchain.toml'
           - '**/rustfmt.toml'
 
-package:y-indexeddb:
-  - changed-files:
-      - any-glob-to-any-file:
-          - 'packages/common/y-indexeddb/**/*'
-
 app:core:
   - changed-files:
       - any-glob-to-any-file:
