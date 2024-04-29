@@ -120,6 +120,9 @@ export function setupAIProvider() {
   provideAction('changeTone', options => {
     return textToText({
       ...options,
+      params: {
+        tone: options.tone,
+      },
       content: options.input,
       promptName: 'Change tone to',
     });
@@ -256,6 +259,10 @@ export function setupAIProvider() {
   provideAction('expandMindmap', options => {
     return textToText({
       ...options,
+      params: {
+        mindmap: options.mindmap,
+        node: options.input,
+      },
       content: options.input,
       promptName: 'Expand mind map',
     });
