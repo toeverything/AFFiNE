@@ -43,7 +43,7 @@
     "@electron-forge/plugin-auto-unpack-natives": "^7.3.0",
     "@electron-forge/shared-types": "^7.3.0",
     "@emotion/react": "^11.11.4",
-    "@pengx17/electron-forge-maker-appimage": "^1.2.0",
+    "@pengx17/electron-forge-maker-appimage": "^1.2.1",
     "@sentry/electron": "^4.22.0",
     "@sentry/esbuild-plugin": "^2.16.1",
     "@sentry/react": "^7.109.0",
