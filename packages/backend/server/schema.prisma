@@ -30,6 +30,7 @@ model User {
   pagePermissions      WorkspacePageUserPermission[]
   connectedAccounts    ConnectedAccount[]
   sessions             UserSession[]
+  aiSessions           AiSession[]
 
   @@map("users")
 }
@@ -420,6 +421,75 @@ model UserInvoice {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_invoices")
+}
+
+enum AiPromptRole {
+  system
+  assistant
+  user
+}
+
+model AiPromptMessage {
+  promptId    Int          @map("prompt_id") @db.Integer
+  // if a group of prompts contains multiple sentences, idx specifies the order of each sentence
+  idx         Int          @db.Integer
+  // system/assistant/user
+  role        AiPromptRole
+  // prompt content
+  content     String       @db.Text
+  attachments Json?        @db.Json
+  params      Json?        @db.Json
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  prompt AiPrompt @relation(fields: [promptId], references: [id], onDelete: Cascade)
+
+  @@unique([promptId, idx])
+  @@map("ai_prompts_messages")
+}
+
+model AiPrompt {
+  id        Int      @id @default(autoincrement()) @db.Integer
+  name      String   @unique @db.VarChar(32)
+  // an mark identifying which view to use to display the session
+  // it is only used in the frontend and does not affect the backend
+  action    String?  @db.VarChar
+  model     String?  @db.VarChar
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  messages AiPromptMessage[]
+  sessions AiSession[]
+
+  @@map("ai_prompts_metadata")
+}
+
+model AiSessionMessage {
+  id          String       @id @default(uuid()) @db.VarChar(36)
+  sessionId   String       @map("session_id") @db.VarChar(36)
+  role        AiPromptRole
+  content     String       @db.Text
+  attachments Json?        @db.Json
+  params      Json?        @db.Json
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  session AiSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@map("ai_sessions_messages")
+}
+
+model AiSession {
+  id          String   @id @default(uuid()) @db.VarChar(36)
+  userId      String   @map("user_id") @db.VarChar(36)
+  workspaceId String   @map("workspace_id") @db.VarChar(36)
+  docId       String   @map("doc_id") @db.VarChar(36)
+  promptName  String   @map("prompt_name") @db.VarChar(32)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user     User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  prompt   AiPrompt           @relation(fields: [promptName], references: [name], onDelete: Cascade)
+  messages AiSessionMessage[]
+
+  @@map("ai_sessions_metadata")
 }
 
 model DataMigration {

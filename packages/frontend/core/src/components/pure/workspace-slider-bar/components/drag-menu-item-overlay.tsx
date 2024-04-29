@@ -1,16 +1,16 @@
 import * as styles from '../favorite/styles.css';
 
 export const DragMenuItemOverlay = ({
-  pageTitle,
+  title,
   icon,
 }: {
   icon: React.ReactNode;
-  pageTitle: React.ReactNode;
+  title: React.ReactNode;
 }) => {
   return (
     <div className={styles.dragPageItemOverlay}>
       {icon}
-      <span>{pageTitle}</span>
+      <span>{title}</span>
     </div>
   );
 };

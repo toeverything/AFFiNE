@@ -15,7 +15,7 @@ export const AddWorkspace = ({
 
   return (
     <div>
-      {runtimeConfig.enableSQLiteProvider && environment.isDesktop ? (
+      {environment.isDesktop ? (
         <MenuItem
           block={true}
           preFix={<ImportIcon />}
@@ -36,7 +36,7 @@ export const AddWorkspace = ({
         className={styles.ItemContainer}
       >
         <div className={styles.ItemText}>
-          {runtimeConfig.enableSQLiteProvider && environment.isDesktop
+          {runtimeConfig.allowLocalWorkspace
             ? t['com.affine.workspaceList.addWorkspace.create']()
             : t['com.affine.workspaceList.addWorkspace.create-cloud']()}
         </div>

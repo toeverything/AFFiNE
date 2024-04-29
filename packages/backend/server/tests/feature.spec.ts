@@ -90,7 +90,7 @@ test('should be able to set user feature', async t => {
   const f1 = await feature.getUserFeatures(u1.id);
   t.is(f1.length, 0, 'should be empty');
 
-  await feature.addUserFeature(u1.id, FeatureType.EarlyAccess, 2, 'test');
+  await feature.addUserFeature(u1.id, FeatureType.EarlyAccess, 'test');
 
   const f2 = await feature.getUserFeatures(u1.id);
   t.is(f2.length, 1, 'should have 1 feature');

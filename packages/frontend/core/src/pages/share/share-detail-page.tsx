@@ -1,33 +1,25 @@
 import { Scrollable } from '@affine/component';
-import { useCurrentLoginStatus } from '@affine/core/hooks/affine/use-current-login-status';
 import { useActiveBlocksuiteEditor } from '@affine/core/hooks/use-block-suite-editor';
 import { usePageDocumentTitle } from '@affine/core/hooks/use-global-state';
+import { AuthService } from '@affine/core/modules/cloud';
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import { fetchWithTraceReport } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import {
-  AffineCloudBlobStorage,
-  StaticBlobStorage,
-} from '@affine/workspace-impl';
 import { noop } from '@blocksuite/global/utils';
 import { Logo1Icon } from '@blocksuite/icons';
 import type { AffineEditorContainer } from '@blocksuite/presets';
 import type { Doc as BlockSuiteDoc } from '@blocksuite/store';
-import type { Doc, PageMode } from '@toeverything/infra';
+import type { Doc, DocMode, Workspace } from '@toeverything/infra';
 import {
-  DocStorageImpl,
+  DocsService,
   EmptyBlobStorage,
-  LocalBlobStorage,
-  PageManager,
+  FrameworkScope,
   ReadonlyDocStorage,
-  RemoteBlobStorage,
-  ServiceProviderContext,
   useLiveData,
   useService,
-  WorkspaceIdContext,
-  WorkspaceManager,
-  WorkspaceScope,
+  WorkspaceFlavourProvider,
+  WorkspacesService,
 } from '@toeverything/infra';
+import clsx from 'clsx';
 import { useCallback, useEffect, useState } from 'react';
 import type { LoaderFunction } from 'react-router-dom';
 import {
@@ -41,7 +33,7 @@ import { AppContainer } from '../../components/affine/app-container';
 import { PageDetailEditor } from '../../components/page-detail-editor';
 import { SharePageNotFoundError } from '../../components/share-page-not-found-error';
 import { MainContainer } from '../../components/workspace';
-import { CurrentWorkspaceService } from '../../modules/workspace';
+import { CloudBlobStorage } from '../../modules/workspace-engine/impls/engine/blob-cloud';
 import * as styles from './share-detail-page.css';
 import { ShareFooter } from './share-footer';
 import { ShareHeader } from './share-header';
@@ -57,12 +49,7 @@ export async function downloadBinaryFromCloud(
   rootGuid: string,
   pageGuid: string
 ): Promise<CloudDoc | null> {
-  const response = await fetchWithTraceReport(
-    `/api/workspaces/${rootGuid}/docs/${pageGuid}`,
-    {
-      priority: 'high',
-    }
-  );
+  const response = await fetch(`/api/workspaces/${rootGuid}/docs/${pageGuid}`);
   if (response.ok) {
     const publishMode = (response.headers.get('publish-mode') ||
       'page') as DocPublishMode;
@@ -78,7 +65,7 @@ export async function downloadBinaryFromCloud(
 type LoaderData = {
   pageId: string;
   workspaceId: string;
-  publishMode: PageMode;
+  publishMode: DocMode;
   pageArrayBuffer: ArrayBuffer;
   workspaceArrayBuffer: ArrayBuffer;
 };
@@ -123,72 +110,90 @@ export const loader: LoaderFunction = async ({ params }) => {
 export const Component = () => {
   const {
     workspaceId,
-    pageId,
+    pageId: docId,
     publishMode,
     workspaceArrayBuffer,
     pageArrayBuffer,
   } = useLoaderData() as LoaderData;
-  const workspaceManager = useService(WorkspaceManager);
+  const workspacesService = useService(WorkspacesService);
 
-  const currentWorkspace = useService(CurrentWorkspaceService);
   const t = useAFFiNEI18N();
+  const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const [page, setPage] = useState<Doc | null>(null);
   const [_, setActiveBlocksuiteEditor] = useActiveBlocksuiteEditor();
 
+  const defaultCloudProvider = workspacesService.framework.get(
+    WorkspaceFlavourProvider('CLOUD')
+  );
+
   useEffect(() => {
     // create a workspace for share page
-    const workspace = workspaceManager.instantiate(
+    const { workspace } = workspacesService.open(
       {
-        id: workspaceId,
-        flavour: WorkspaceFlavour.AFFINE_CLOUD,
+        metadata: {
+          id: workspaceId,
+          flavour: WorkspaceFlavour.AFFINE_CLOUD,
+        },
+        isSharedMode: true,
       },
-      services => {
-        services
-          .scope(WorkspaceScope)
-          .addImpl(LocalBlobStorage, EmptyBlobStorage)
-          .addImpl(RemoteBlobStorage('affine'), AffineCloudBlobStorage, [
-            WorkspaceIdContext,
-          ])
-          .addImpl(RemoteBlobStorage('static'), StaticBlobStorage)
-          .addImpl(
-            DocStorageImpl,
-            new ReadonlyDocStorage({
-              [workspaceId]: new Uint8Array(workspaceArrayBuffer),
-              [pageId]: new Uint8Array(pageArrayBuffer),
-            })
-          );
+      {
+        ...defaultCloudProvider,
+        getEngineProvider(workspace) {
+          return {
+            getDocStorage() {
+              return new ReadonlyDocStorage({
+                [workspace.id]: new Uint8Array(workspaceArrayBuffer),
+                [docId]: new Uint8Array(pageArrayBuffer),
+              });
+            },
+            getAwarenessConnections() {
+              return [];
+            },
+            getDocServer() {
+              return null;
+            },
+            getLocalBlobStorage() {
+              return EmptyBlobStorage;
+            },
+            getRemoteBlobStorages() {
+              return [new CloudBlobStorage(workspace.id)];
+            },
+          };
+        },
       }
     );
+
+    setWorkspace(workspace);
 
     workspace.engine
       .waitForRootDocReady()
       .then(() => {
-        const { page } = workspace.services.get(PageManager).open(pageId);
+        const { doc } = workspace.scope.get(DocsService).open(docId);
 
         workspace.docCollection.awarenessStore.setReadonly(
-          page.blockSuiteDoc,
+          doc.blockSuiteDoc.blockCollection,
           true
         );
 
-        currentWorkspace.openWorkspace(workspace);
-        setPage(page);
+        setPage(doc);
       })
       .catch(err => {
         console.error(err);
       });
   }, [
-    currentWorkspace,
+    defaultCloudProvider,
     pageArrayBuffer,
-    pageId,
+    docId,
     workspaceArrayBuffer,
     workspaceId,
-    workspaceManager,
+    workspacesService,
   ]);
 
   const pageTitle = useLiveData(page?.title$);
 
   usePageDocumentTitle(pageTitle);
-  const loginStatus = useCurrentLoginStatus();
+  const authService = useService(AuthService);
+  const loginStatus = useLiveData(authService.session.status$);
 
   const onEditorLoad = useCallback(
     (_: BlockSuiteDoc, editor: AffineEditorContainer) => {
@@ -198,52 +203,59 @@ export const Component = () => {
     [setActiveBlocksuiteEditor]
   );
 
-  if (!page) {
+  if (!workspace || !page) {
     return;
   }
 
   return (
-    <ServiceProviderContext.Provider value={page.services}>
-      <AppContainer>
-        <MainContainer>
-          <div className={styles.root}>
-            <div className={styles.mainContainer}>
-              <ShareHeader
-                pageId={page.id}
-                publishMode={publishMode}
-                docCollection={page.blockSuiteDoc.collection}
-              />
-              <Scrollable.Root>
-                <Scrollable.Viewport className={styles.editorContainer}>
-                  <PageDetailEditor
-                    isPublic
-                    publishMode={publishMode}
-                    docCollection={page.blockSuiteDoc.collection}
-                    pageId={page.id}
-                    onLoad={onEditorLoad}
-                  />
-                  {publishMode === 'page' ? <ShareFooter /> : null}
-                </Scrollable.Viewport>
-                <Scrollable.Scrollbar />
-              </Scrollable.Root>
-              {loginStatus !== 'authenticated' ? (
-                <a
-                  href="https://affine.pro"
-                  target="_blank"
-                  className={styles.link}
-                  rel="noreferrer"
-                >
-                  <span className={styles.linkText}>
-                    {t['com.affine.share-page.footer.built-with']()}
-                  </span>
-                  <Logo1Icon fontSize={20} />
-                </a>
-              ) : null}
+    <FrameworkScope scope={workspace.scope}>
+      <FrameworkScope scope={page.scope}>
+        <AppContainer>
+          <MainContainer>
+            <div className={styles.root}>
+              <div className={styles.mainContainer}>
+                <ShareHeader
+                  pageId={page.id}
+                  publishMode={publishMode}
+                  docCollection={page.blockSuiteDoc.collection}
+                />
+                <Scrollable.Root>
+                  <Scrollable.Viewport
+                    className={clsx(
+                      'affine-page-viewport',
+                      styles.editorContainer
+                    )}
+                  >
+                    <PageDetailEditor
+                      isPublic
+                      publishMode={publishMode}
+                      docCollection={page.blockSuiteDoc.collection}
+                      pageId={page.id}
+                      onLoad={onEditorLoad}
+                    />
+                    {publishMode === 'page' ? <ShareFooter /> : null}
+                  </Scrollable.Viewport>
+                  <Scrollable.Scrollbar />
+                </Scrollable.Root>
+                {loginStatus !== 'authenticated' ? (
+                  <a
+                    href="https://affine.pro"
+                    target="_blank"
+                    className={styles.link}
+                    rel="noreferrer"
+                  >
+                    <span className={styles.linkText}>
+                      {t['com.affine.share-page.footer.built-with']()}
+                    </span>
+                    <Logo1Icon fontSize={20} />
+                  </a>
+                ) : null}
+              </div>
             </div>
-          </div>
-        </MainContainer>
-      </AppContainer>
-    </ServiceProviderContext.Provider>
+          </MainContainer>
+        </AppContainer>
+      </FrameworkScope>
+    </FrameworkScope>
   );
 };
 

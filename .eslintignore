@@ -12,4 +12,4 @@ static
 web-static
 public
 packages/frontend/i18n/src/i18n-generated.ts
-packages/frontend/templates/edgeless-templates.gen.ts
+packages/frontend/templates/*.gen.ts

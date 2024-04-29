@@ -37,6 +37,7 @@ function spawnOrReloadElectron() {
   spawnProcess = spawn(exe, ['.'], {
     cwd: electronDir,
     env: process.env,
+    shell: true,
   });
 
   spawnProcess.stdout.on('data', d => {

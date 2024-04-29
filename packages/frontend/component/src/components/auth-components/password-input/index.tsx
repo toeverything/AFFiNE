@@ -151,8 +151,6 @@ export const PasswordInput: FC<
         className={styles.input}
         type="password"
         size="extraLarge"
-        minLength={passwordLimits.minLength}
-        maxLength={passwordLimits.maxLength}
         style={{ marginBottom: 20 }}
         placeholder={t['com.affine.auth.set.password.placeholder']({
           min: String(passwordLimits.minLength),
@@ -180,8 +178,6 @@ export const PasswordInput: FC<
         className={styles.input}
         type="password"
         size="extraLarge"
-        minLength={passwordLimits.minLength}
-        maxLength={passwordLimits.maxLength}
         placeholder={t['com.affine.auth.set.password.placeholder.confirm']()}
         onChange={onConfirmPasswordChange}
         endFix={

@@ -4,7 +4,6 @@ import {
   Logger,
   NotFoundException,
   PayloadTooLargeException,
-  UseGuards,
 } from '@nestjs/common';
 import {
   Args,
@@ -22,7 +21,6 @@ import { applyUpdate, Doc } from 'yjs';
 
 import type { FileUpload } from '../../../fundamentals';
 import {
-  CloudThrottlerGuard,
   EventEmitter,
   MailService,
   MutexService,
@@ -48,7 +46,6 @@ import { defaultWorkspaceAvatar } from '../utils';
  * Public apis rate limit: 10 req/m
  * Other rate limit: 120 req/m
  */
-@UseGuards(CloudThrottlerGuard)
 @Resolver(() => WorkspaceType)
 export class WorkspaceResolver {
   private readonly logger = new Logger(WorkspaceResolver.name);
@@ -189,28 +186,6 @@ export class WorkspaceResolver {
         permission: type,
       };
     });
-  }
-
-  @Throttle({
-    default: {
-      limit: 10,
-      ttl: 30,
-    },
-  })
-  @Public()
-  @Query(() => WorkspaceType, {
-    description: 'Get public workspace by id',
-  })
-  async publicWorkspace(@Args('id') id: string) {
-    const workspace = await this.prisma.workspace.findUnique({
-      where: { id },
-    });
-
-    if (workspace?.public) {
-      return workspace;
-    }
-
-    throw new NotFoundException("Workspace doesn't exist");
   }
 
   @Query(() => WorkspaceType, {
@@ -422,15 +397,10 @@ export class WorkspaceResolver {
     }
   }
 
-  @Throttle({
-    default: {
-      limit: 10,
-      ttl: 30,
-    },
-  })
+  @Throttle('strict')
   @Public()
   @Query(() => InvitationType, {
-    description: 'Update workspace',
+    description: 'send workspace invitation',
   })
   async getInviteInfo(@Args('inviteId') inviteId: string) {
     const workspaceId = await this.prisma.workspaceUserPermission

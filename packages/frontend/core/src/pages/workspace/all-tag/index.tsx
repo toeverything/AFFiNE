@@ -31,12 +31,12 @@ const EmptyTagListHeader = () => {
 };
 
 export const AllTag = () => {
-  const tagService = useService(TagService);
-  const tags = useLiveData(tagService.tags$);
+  const tagList = useService(TagService).tagList;
+  const tags = useLiveData(tagList.tags$);
   const [open, setOpen] = useState(false);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
 
-  const tagMetas: TagMeta[] = useLiveData(tagService.tagMetas$);
+  const tagMetas: TagMeta[] = useLiveData(tagList.tagMetas$);
 
   const handleCloseModal = useCallback(
     (open: boolean) => {

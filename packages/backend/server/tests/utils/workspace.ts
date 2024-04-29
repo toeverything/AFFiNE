@@ -79,26 +79,6 @@ export async function getWorkspace(
   return res.body.data.workspace;
 }
 
-export async function getPublicWorkspace(
-  app: INestApplication,
-  workspaceId: string
-): Promise<WorkspaceType> {
-  const res = await request(app.getHttpServer())
-    .post(gql)
-    .set({ 'x-request-id': 'test', 'x-operation-name': 'test' })
-    .send({
-      query: `
-            query {
-              publicWorkspace(id: "${workspaceId}") {
-                id
-              }
-            }
-          `,
-    })
-    .expect(200);
-  return res.body.data.publicWorkspace;
-}
-
 export async function updateWorkspace(
   app: INestApplication,
   token: string,

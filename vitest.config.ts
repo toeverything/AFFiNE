@@ -9,8 +9,13 @@ import { defineConfig } from 'vitest/config';
 const rootDir = fileURLToPath(new URL('.', import.meta.url));
 
 export default defineConfig({
-  plugins: [react(), vanillaExtractPlugin()],
-  assetsInclude: ['**/*.md'],
+  plugins: [
+    react({
+      tsDecorators: true,
+    }),
+    vanillaExtractPlugin(),
+  ],
+  assetsInclude: ['**/*.md', '**/*.zip'],
   resolve: {
     alias: {
       // prevent tests using two different sources of yjs

@@ -1,0 +1,10 @@
+query getCopilotQuota {
+  currentUser {
+    copilot {
+      quota {
+        limit
+        used
+      }
+    }
+  }
+}

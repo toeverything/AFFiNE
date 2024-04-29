@@ -1,5 +1,6 @@
 import path from 'node:path';
 
+import debug from 'debug';
 import type { Options as ElectronWinstallerOptions } from 'electron-winstaller';
 import { convertVersion, createWindowsInstaller } from 'electron-winstaller';
 import fs from 'fs-extra';
@@ -14,12 +15,7 @@ import {
   ROOT,
 } from './make-env.js';
 
-async function ensureDirectory(dir: string) {
-  if (await fs.pathExists(dir)) {
-    await fs.remove(dir);
-  }
-  return fs.mkdirs(dir);
-}
+const log = debug('make-squirrel');
 
 // taking from https://github.com/electron/forge/blob/main/packages/maker/squirrel/src/MakerSquirrel.ts
 // it was for forge's maker, but can be used standalone as well
@@ -33,7 +29,7 @@ async function make() {
     buildType,
     `${appName}-${platform}-${arch}`
   );
-  await ensureDirectory(outPath);
+  await fs.ensureDir(outPath);
 
   const packageJSON = await fs.readJson(path.resolve(ROOT, 'package.json'));
 
@@ -78,7 +74,7 @@ async function make() {
   if (!winstallerConfig.noMsi && (await fs.pathExists(msiPath))) {
     artifacts.push(msiPath);
   }
-  console.log('making squirrel.windows done:', artifacts);
+  log('making squirrel.windows done:', artifacts);
   return artifacts;
 }
 

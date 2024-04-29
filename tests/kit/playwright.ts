@@ -35,10 +35,10 @@ type CurrentDocCollection = {
 
 export const skipOnboarding = async (context: BrowserContext) => {
   await context.addInitScript(() => {
-    window.localStorage.setItem(
-      'app_config',
-      '{"onBoarding":false, "dismissWorkspaceGuideModal":true}'
-    );
+    window.localStorage.setItem('app_config', '{"onBoarding":false}');
+    window.localStorage.setItem('dismissAiOnboarding', 'true');
+    window.localStorage.setItem('dismissAiOnboardingEdgeless', 'true');
+    window.localStorage.setItem('dismissAiOnboardingLocal', 'true');
   });
 };
 

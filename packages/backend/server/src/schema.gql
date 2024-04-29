@@ -2,6 +2,59 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+type ChatMessage {
+  attachments: [String!]
+  content: String!
+  createdAt: DateTime!
+  params: JSON
+  role: String!
+}
+
+type Copilot {
+  """Get the session list of actions in the workspace"""
+  actions: [String!]!
+
+  """Get the session list of chats in the workspace"""
+  chats: [String!]!
+  histories(docId: String, options: QueryChatHistoriesInput): [CopilotHistories!]!
+
+  """Get the quota of the user in the workspace"""
+  quota: CopilotQuota!
+  workspaceId: ID
+}
+
+type CopilotHistories {
+  """An mark identifying which view to use to display the session"""
+  action: String
+  createdAt: DateTime!
+  messages: [ChatMessage!]!
+  sessionId: String!
+
+  """The number of tokens used in the session"""
+  tokens: Int!
+}
+
+type CopilotQuota {
+  limit: SafeInt
+  used: SafeInt!
+}
+
+input CreateChatMessageInput {
+  attachments: [String!]
+  blobs: [Upload!]
+  content: String
+  params: JSON
+  sessionId: String!
+}
+
+input CreateChatSessionInput {
+  docId: String!
+
+  """The prompt name to use for the session"""
+  promptName: String!
+  workspaceId: String!
+}
+
 input CreateCheckoutSessionInput {
   coupon: String
   idempotencyKey: String!
@@ -29,15 +82,23 @@ type DocHistoryType {
   workspaceId: String!
 }
 
+enum EarlyAccessType {
+  AI
+  App
+}
+
 """The type of workspace feature"""
 enum FeatureType {
+  AIEarlyAccess
   Copilot
   EarlyAccess
+  UnlimitedCopilot
   UnlimitedWorkspace
 }
 
 type HumanReadableQuotaType {
   blobLimit: String!
+  copilotActionLimit: String
   historyPeriod: String!
   memberLimit: String!
   name: String!
@@ -102,6 +163,11 @@ enum InvoiceStatus {
   Void
 }
 
+"""
+The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
+"""
+scalar JSON @specifiedBy(url: "http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf")
+
 type LimitedUserType {
   """User email"""
   email: String!
@@ -112,7 +178,7 @@ type LimitedUserType {
 
 type Mutation {
   acceptInviteById(inviteId: String!, sendAcceptMail: Boolean, workspaceId: String!): Boolean!
-  addToEarlyAccess(email: String!): Int!
+  addToEarlyAccess(email: String!, type: EarlyAccessType!): Int!
   addWorkspaceFeature(feature: FeatureType!, workspaceId: String!): Int!
   cancelSubscription(idempotencyKey: String!, plan: SubscriptionPlan = Pro): UserSubscription!
   changeEmail(email: String!, token: String!): UserType!
@@ -120,6 +186,12 @@ type Mutation {
 
   """Create a subscription checkout link of stripe"""
   createCheckoutSession(input: CreateCheckoutSessionInput!): String!
+
+  """Create a chat message"""
+  createCopilotMessage(options: CreateChatMessageInput!): String!
+
+  """Create a chat session"""
+  createCopilotSession(options: CreateChatSessionInput!): String!
 
   """Create a stripe customer portal to manage payment methods"""
   createCustomerPortal: String!
@@ -149,7 +221,7 @@ type Mutation {
   sendVerifyEmail(callbackUrl: String!): Boolean!
   setBlob(blob: Upload!, workspaceId: String!): String!
   setWorkspaceExperimentalFeature(enable: Boolean!, feature: FeatureType!, workspaceId: String!): Boolean!
-  sharePage(pageId: String!, workspaceId: String!): Boolean! @deprecated(reason: "renamed to publicPage")
+  sharePage(pageId: String!, workspaceId: String!): Boolean! @deprecated(reason: "renamed to publishPage")
   signIn(email: String!, password: String!): UserType!
   signUp(email: String!, name: String!, password: String!): UserType!
   updateProfile(input: UpdateUserInput!): UserType!
@@ -195,7 +267,7 @@ type Query {
   currentUser: UserType
   earlyAccessUsers: [UserType!]!
 
-  """Update workspace"""
+  """send workspace invitation"""
   getInviteInfo(inviteId: String!): InvitationType!
 
   """Get is owner of workspace"""
@@ -205,9 +277,6 @@ type Query {
   listBlobs(workspaceId: String!): [String!]! @deprecated(reason: "use `workspace.blobs` instead")
   listWorkspaceFeatures(feature: FeatureType!): [WorkspaceType!]!
   prices: [SubscriptionPrice!]!
-
-  """Get public workspace by id"""
-  publicWorkspace(id: String!): WorkspaceType!
 
   """server config"""
   serverConfig: ServerConfigType!
@@ -222,8 +291,16 @@ type Query {
   workspaces: [WorkspaceType!]!
 }
 
+input QueryChatHistoriesInput {
+  action: Boolean
+  limit: Int
+  sessionId: String
+  skip: Int
+}
+
 type QuotaQueryType {
   blobLimit: SafeInt!
+  copilotActionLimit: SafeInt
   historyPeriod: SafeInt!
   humanReadable: HumanReadableQuotaType!
   memberLimit: SafeInt!
@@ -248,6 +325,9 @@ type ServerConfigType {
   """credentials requirement"""
   credentialsRequirement: CredentialsRequirementType!
 
+  """enable telemetry"""
+  enableTelemetry: Boolean!
+
   """enabled server features"""
   features: [ServerFeature!]!
 
@@ -271,6 +351,7 @@ enum ServerDeploymentType {
 }
 
 enum ServerFeature {
+  Copilot
   OAuth
   Payment
 }
@@ -362,6 +443,11 @@ type UserSubscription {
   end: DateTime!
   id: String!
   nextBillAt: DateTime
+
+  """
+  The 'Free' plan just exists to be a placeholder and for the type convenience of frontend.
+  There won't actually be a subscription with plan 'Free'
+  """
   plan: SubscriptionPlan!
   recurring: SubscriptionRecurring!
   start: DateTime!
@@ -374,6 +460,7 @@ type UserSubscription {
 type UserType {
   """User avatar url"""
   avatarUrl: String
+  copilot(workspaceId: String): Copilot!
 
   """User email verified"""
   createdAt: DateTime @deprecated(reason: "useless")
@@ -446,6 +533,9 @@ type WorkspaceType {
 
   """is Public workspace"""
   public: Boolean!
+
+  """Get public page of a workspace by page id."""
+  publicPage(pageId: String!): WorkspacePage
 
   """Public pages of a workspace"""
   publicPages: [WorkspacePage!]!

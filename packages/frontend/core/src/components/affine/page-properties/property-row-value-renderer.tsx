@@ -1,14 +1,12 @@
 import { Checkbox, DatePicker, Menu } from '@affine/component';
-import { useAllBlockSuiteDocMeta } from '@affine/core/hooks/use-all-block-suite-page-meta';
 import type {
   PageInfoCustomProperty,
   PageInfoCustomPropertyMeta,
   PagePropertyType,
-} from '@affine/core/modules/workspace/properties/schema';
+} from '@affine/core/modules/properties/services/schema';
 import { timestampToLocalDate } from '@affine/core/utils';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { assertExists } from '@blocksuite/global/utils';
-import { Doc, useService, Workspace } from '@toeverything/infra';
+import { DocService, useService } from '@toeverything/infra';
 import { noop } from 'lodash-es';
 import type { ChangeEventHandler } from 'react';
 import { useCallback, useContext, useEffect, useState } from 'react';
@@ -169,21 +167,16 @@ export const NumberValue = ({ property }: PropertyRowValueProps) => {
 };
 
 export const TagsValue = () => {
-  const workspace = useService(Workspace);
-  const page = useService(Doc);
-  const docCollection = workspace.docCollection;
-  const pageMetas = useAllBlockSuiteDocMeta(docCollection);
+  const doc = useService(DocService).doc;
 
-  const pageMeta = pageMetas.find(x => x.id === page.id);
-  assertExists(pageMeta, 'pageMeta should exist');
   const t = useAFFiNEI18N();
 
   return (
     <TagsInlineEditor
       className={styles.propertyRowValueCell}
       placeholder={t['com.affine.page-properties.property-value-placeholder']()}
-      pageId={page.id}
-      readonly={page.blockSuiteDoc.readonly}
+      pageId={doc.id}
+      readonly={doc.blockSuiteDoc.readonly}
     />
   );
 };

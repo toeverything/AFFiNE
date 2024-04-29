@@ -22,6 +22,10 @@ export const listPropsAtom = atom<
 // whether or not the table is in selection mode (showing selection checkbox & selection floating bar)
 const selectionActiveAtom = atom(false);
 
+export const anchorIndexAtom = atom<number | undefined>(undefined);
+
+export const rangeIdsAtom = atom<string[]>([]);
+
 export const selectionStateAtom = atom(
   get => {
     const baseAtom = selectAtom(

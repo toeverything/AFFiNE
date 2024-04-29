@@ -9,3 +9,8 @@ export const featureEarlyAccess = z.object({
     whitelist: z.string().array(),
   }),
 });
+
+export const featureAIEarlyAccess = z.object({
+  feature: z.literal(FeatureType.AIEarlyAccess),
+  configs: z.object({}),
+});

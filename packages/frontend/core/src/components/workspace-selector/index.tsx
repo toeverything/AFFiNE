@@ -3,6 +3,7 @@ import { useAtom } from 'jotai';
 import { Suspense, useCallback } from 'react';
 
 import { openWorkspaceListModalAtom } from '../../atoms';
+import { mixpanel } from '../../utils';
 import { UserWithWorkspaceList } from '../pure/workspace-slider-bar/user-with-workspace-list';
 import { WorkspaceCard } from '../pure/workspace-slider-bar/workspace-card';
 
@@ -14,6 +15,9 @@ export const WorkspaceSelector = () => {
     setOpenUserWorkspaceList(false);
   }, [setOpenUserWorkspaceList]);
   const openUserWorkspaceList = useCallback(() => {
+    mixpanel.track('Button', {
+      resolve: 'OpenWorkspaceList',
+    });
     setOpenUserWorkspaceList(true);
   }, [setOpenUserWorkspaceList]);
 

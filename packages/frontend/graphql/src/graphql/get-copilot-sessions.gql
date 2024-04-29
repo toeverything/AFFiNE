@@ -1,0 +1,8 @@
+query getCopilotSessions($workspaceId: String!) {
+  currentUser {
+    copilot(workspaceId: $workspaceId) {
+      actions
+      chats
+    }
+  }
+}

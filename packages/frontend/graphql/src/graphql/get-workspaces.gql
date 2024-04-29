@@ -1,5 +1,8 @@
 query getWorkspaces {
   workspaces {
     id
+    owner {
+      id
+    }
   }
 }

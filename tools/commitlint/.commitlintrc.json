@@ -19,8 +19,6 @@
         "i18n",
         "native",
         "templates",
-        "y-indexeddb",
-        "y-provider",
         "debug",
         "storage",
         "infra"

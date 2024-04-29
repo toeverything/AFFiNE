@@ -1,12 +1,7 @@
 import { IconButton } from '@affine/component';
-import { useJournalInfoHelper } from '@affine/core/hooks/use-journal';
-import { useWorkspaceEnabledFeatures } from '@affine/core/hooks/use-workspace-features';
-import { FeatureType } from '@affine/graphql';
-import { Doc, useService, Workspace } from '@toeverything/infra';
 import { assignInlineVars } from '@vanilla-extract/dynamic';
-import { useEffect, useMemo } from 'react';
 
-import type { SidebarTab, SidebarTabName } from '../entities/sidebar-tab';
+import type { SidebarTab, SidebarTabName } from '../multi-tabs/sidebar-tab';
 import * as styles from './header-switcher.css';
 
 export interface MultiTabSidebarHeaderSwitcherProps {
@@ -22,41 +17,18 @@ export const MultiTabSidebarHeaderSwitcher = ({
   activeTabName,
   setActiveTabName,
 }: MultiTabSidebarHeaderSwitcherProps) => {
-  const workspace = useService(Workspace);
-  const doc = useService(Doc);
-  const copilotEnabled = useWorkspaceEnabledFeatures(workspace.meta).includes(
-    FeatureType.Copilot
-  );
-
-  const { isJournal } = useJournalInfoHelper(workspace.docCollection, doc.id);
-
-  const exts = useMemo(
-    () =>
-      tabs.filter(ext => {
-        if (ext.name === 'copilot' && !copilotEnabled) return false;
-        return true;
-      }),
-    [copilotEnabled, tabs]
-  );
-
-  const activeExtension = exts.find(ext => ext.name === activeTabName);
-
-  // if journal is active, set selected to journal
-  useEffect(() => {
-    const journalExtension = tabs.find(ext => ext.name === 'journal');
-    isJournal && journalExtension && setActiveTabName('journal');
-  }, [tabs, isJournal, setActiveTabName]);
+  const activeExtension = tabs.find(ext => ext.name === activeTabName);
 
   const vars = assignInlineVars({
     [styles.activeIdx]: String(
-      exts.findIndex(ext => ext.name === activeExtension?.name) ?? 0
+      tabs.findIndex(ext => ext.name === activeExtension?.name) ?? 0
     ),
   });
 
   return (
     <div className={styles.switchRootWrapper}>
       <div className={styles.switchRoot} style={vars}>
-        {exts.map(extension => {
+        {tabs.map(extension => {
           return (
             <IconButton
               onClick={() => setActiveTabName(extension.name)}

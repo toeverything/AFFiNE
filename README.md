@@ -73,7 +73,7 @@ AFFiNE is an open-source, all-in-one workspace and an operating system for all t
 
 **Self-host & Shape your own AFFiNE**
 
-- You have the freedom to manage, self-host, fork and build your own AFFiNE. Plugin community and third-party blocks are coming soon. More tractions on [Blocksuite](block-suite.com). Check there to learn how to [self-host AFFiNE](https://docs.affine.pro/docs/self-host-affine-).
+- You have the freedom to manage, self-host, fork and build your own AFFiNE. Plugin community and third-party blocks are coming soon. More tractions on [Blocksuite](https://blocksuite.io). Check there to learn how to [self-host AFFiNE](https://docs.affine.pro/docs/self-host-affine).
 
 ## Acknowledgement
 
@@ -110,11 +110,10 @@ If you have questions, you are welcome to contact us. One of the best places to 
 
 ## Ecosystem
 
-| Name                                                     |                                    |                                                                                                                                                     |
-| -------------------------------------------------------- | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [@affine/component](packages/frontend/component)         | AFFiNE Component Resources         | [![](https://img.shields.io/codecov/c/github/toeverything/affine?style=flat-square)](https://affine-storybook.vercel.app/)                          |
-| [@toeverything/y-indexeddb](packages/common/y-indexeddb) | IndexedDB database adapter for Yjs | [![](https://img.shields.io/npm/dm/@toeverything/y-indexeddb?style=flat-square&color=eee)](https://www.npmjs.com/package/@toeverything/y-indexeddb) |
-| [@toeverything/theme](packages/common/theme)             | AFFiNE theme                       | [![](https://img.shields.io/npm/dm/@toeverything/theme?style=flat-square&color=eee)](https://www.npmjs.com/package/@toeverything/theme)             |
+| Name                                             |                            |                                                                                                                                         |
+| ------------------------------------------------ | -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| [@affine/component](packages/frontend/component) | AFFiNE Component Resources | ![](https://img.shields.io/codecov/c/github/toeverything/affine?style=flat-square)                                                      |
+| [@toeverything/theme](packages/common/theme)     | AFFiNE theme               | [![](https://img.shields.io/npm/dm/@toeverything/theme?style=flat-square&color=eee)](https://www.npmjs.com/package/@toeverything/theme) |
 
 ## Upstreams
 
@@ -143,7 +142,7 @@ We would like to express our gratitude to all the individuals who have already c
 
 ## Self-Host
 
-Begin with Docker to deploy your own feature-rich, unrestricted version of AFFiNE. Our team is diligently updating to the latest version. For more information on how to self-host AFFiNE, please refer to our [documentation](https://docs.affine.pro/docs/self-host-affine-).
+Begin with Docker to deploy your own feature-rich, unrestricted version of AFFiNE. Our team is diligently updating to the latest version. For more information on how to self-host AFFiNE, please refer to our [documentation](https://docs.affine.pro/docs/self-host-affine).
 
 ## Hiring
 
@@ -186,7 +185,7 @@ See [LICENSE] for details.
 [jobs available]: ./docs/jobs.md
 [latest packages]: https://github.com/toeverything/AFFiNE/pkgs/container/affine-self-hosted
 [contributor license agreement]: https://github.com/toeverything/affine/edit/canary/.github/CLA.md
-[rust-version-icon]: https://img.shields.io/badge/Rust-1.77.0-dea584
+[rust-version-icon]: https://img.shields.io/badge/Rust-1.77.2-dea584
 [stars-icon]: https://img.shields.io/github/stars/toeverything/AFFiNE.svg?style=flat&logo=github&colorB=red&label=stars
 [codecov]: https://codecov.io/gh/toeverything/affine/branch/canary/graphs/badge.svg?branch=canary
 [node-version-icon]: https://img.shields.io/badge/node-%3E=18.16.1-success

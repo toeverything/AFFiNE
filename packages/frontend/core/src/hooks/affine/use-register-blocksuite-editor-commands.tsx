@@ -1,16 +1,17 @@
 import { toast } from '@affine/component';
 import { useDocMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
+import { FavoriteItemsAdapter } from '@affine/core/modules/properties';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
 import { EdgelessIcon, HistoryIcon, PageIcon } from '@blocksuite/icons';
 import {
-  Doc,
+  DocService,
   PreconditionStrategy,
   registerAffineCommand,
   useLiveData,
   useService,
-  Workspace,
+  WorkspaceService,
 } from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
 import { useCallback, useEffect } from 'react';
@@ -21,40 +22,42 @@ import { useExportPage } from './use-export-page';
 import { useTrashModalHelper } from './use-trash-modal-helper';
 
 export function useRegisterBlocksuiteEditorCommands() {
-  const page = useService(Doc);
-  const pageId = page.id;
-  const mode = useLiveData(page.mode$);
+  const doc = useService(DocService).doc;
+  const docId = doc.id;
+  const mode = useLiveData(doc.mode$);
   const t = useAFFiNEI18N();
-  const workspace = useService(Workspace);
+  const workspace = useService(WorkspaceService).workspace;
   const docCollection = workspace.docCollection;
   const { getDocMeta } = useDocMetaHelper(docCollection);
-  const currentPage = docCollection.getDoc(pageId);
+  const currentPage = docCollection.getDoc(docId);
   assertExists(currentPage);
-  const pageMeta = getDocMeta(pageId);
+  const pageMeta = getDocMeta(docId);
   assertExists(pageMeta);
-  const favorite = pageMeta.favorite ?? false;
+
+  const favAdapter = useService(FavoriteItemsAdapter);
+  const favorite = useLiveData(favAdapter.isFavorite$(docId, 'doc'));
   const trash = pageMeta.trash ?? false;
 
   const setPageHistoryModalState = useSetAtom(pageHistoryModalAtom);
 
   const openHistoryModal = useCallback(() => {
     setPageHistoryModalState(() => ({
-      pageId,
+      pageId: docId,
       open: true,
     }));
-  }, [pageId, setPageHistoryModalState]);
+  }, [docId, setPageHistoryModalState]);
 
-  const { toggleFavorite, restoreFromTrash, duplicate } =
+  const { restoreFromTrash, duplicate } =
     useBlockSuiteMetaHelper(docCollection);
   const exportHandler = useExportPage(currentPage);
   const { setTrashModal } = useTrashModalHelper(docCollection);
   const onClickDelete = useCallback(() => {
     setTrashModal({
       open: true,
-      pageIds: [pageId],
+      pageIds: [docId],
       pageTitles: [pageMeta.title],
     });
-  }, [pageId, pageMeta.title, setTrashModal]);
+  }, [docId, pageMeta.title, setTrashModal]);
 
   const isCloudWorkspace = workspace.flavour === WorkspaceFlavour.AFFINE_CLOUD;
 
@@ -94,7 +97,7 @@ export function useRegisterBlocksuiteEditorCommands() {
           ? t['com.affine.favoritePageOperation.remove']()
           : t['com.affine.favoritePageOperation.add'](),
         run() {
-          toggleFavorite(pageId);
+          favAdapter.toggle(docId, 'doc');
           toast(
             favorite
               ? t['com.affine.cmdk.affine.editor.remove-from-favourites']()
@@ -118,7 +121,7 @@ export function useRegisterBlocksuiteEditorCommands() {
             : t['com.affine.pageMode.page']()
         }`,
         run() {
-          page.toggleMode();
+          doc.toggleMode();
           toast(
             mode === 'page'
               ? t['com.affine.toastMessage.edgelessMode']()
@@ -137,7 +140,7 @@ export function useRegisterBlocksuiteEditorCommands() {
         icon: mode === 'page' ? <PageIcon /> : <EdgelessIcon />,
         label: t['com.affine.header.option.duplicate'](),
         run() {
-          duplicate(pageId);
+          duplicate(docId);
         },
       })
     );
@@ -216,7 +219,7 @@ export function useRegisterBlocksuiteEditorCommands() {
         icon: mode === 'page' ? <PageIcon /> : <EdgelessIcon />,
         label: t['com.affine.cmdk.affine.editor.restore-from-trash'](),
         run() {
-          restoreFromTrash(pageId);
+          restoreFromTrash(docId);
         },
       })
     );
@@ -235,6 +238,22 @@ export function useRegisterBlocksuiteEditorCommands() {
       );
     }
 
+    unsubs.push(
+      registerAffineCommand({
+        id: 'alert-ctrl-s',
+        category: 'affine:general',
+        preconditionStrategy: PreconditionStrategy.Never,
+        keyBinding: {
+          binding: '$mod+s',
+        },
+        label: '',
+        icon: null,
+        run() {
+          toast(t['Save']());
+        },
+      })
+    );
+
     return () => {
       unsubs.forEach(unsub => unsub());
     };
@@ -243,14 +262,14 @@ export function useRegisterBlocksuiteEditorCommands() {
     mode,
     onClickDelete,
     exportHandler,
-    pageId,
     restoreFromTrash,
     t,
-    toggleFavorite,
     trash,
     isCloudWorkspace,
     openHistoryModal,
     duplicate,
-    page,
+    favAdapter,
+    docId,
+    doc,
   ]);
 }

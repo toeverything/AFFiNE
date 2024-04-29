@@ -1,5 +1,0 @@
-query blobSizes($workspaceId: String!) {
-  workspace(id: $workspaceId) {
-    blobsSize
-  }
-}

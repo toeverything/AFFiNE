@@ -89,7 +89,7 @@ export const toolStyle = style({
   position: 'absolute',
   right: '30px',
   bottom: '30px',
-  zIndex: cssVar('zIndexPopover'),
+  zIndex: 1,
   display: 'flex',
   flexDirection: 'column',
   gap: '12px',

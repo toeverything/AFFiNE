@@ -4,15 +4,17 @@
   "sideEffect": false,
   "version": "0.14.0",
   "scripts": {
-    "postinstall": "node ./build.mjs && node ./build-edgeless.mjs"
+    "postinstall": "node ./build-edgeless.mjs && node ./build-stickers.mjs"
   },
   "type": "module",
   "exports": {
-    ".": "./templates.gen.ts",
+    "./onboarding.zip": "./onboarding/onboarding.zip",
     "./edgeless": "./edgeless-templates.gen.ts",
+    "./stickers": "./stickers-templates.gen.ts",
     "./build-edgeless": "./build-edgeless.mjs"
   },
   "devDependencies": {
+    "glob": "^10.3.12",
     "jszip": "^3.10.1"
   }
 }

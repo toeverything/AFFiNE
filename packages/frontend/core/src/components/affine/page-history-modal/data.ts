@@ -3,25 +3,26 @@ import { useDocCollectionPage } from '@affine/core/hooks/use-block-suite-workspa
 import { timestampToLocalDate } from '@affine/core/utils';
 import { DebugLogger } from '@affine/debug';
 import type { ListHistoryQuery } from '@affine/graphql';
-import {
-  fetchWithTraceReport,
-  listHistoryQuery,
-  recoverDocMutation,
-} from '@affine/graphql';
-import { AffineCloudBlobStorage } from '@affine/workspace-impl';
+import { listHistoryQuery, recoverDocMutation } from '@affine/graphql';
 import { assertEquals } from '@blocksuite/global/utils';
 import { DocCollection } from '@blocksuite/store';
 import { globalBlockSuiteSchema } from '@toeverything/infra';
-import { revertUpdate } from '@toeverything/y-indexeddb';
 import { useEffect, useMemo } from 'react';
 import useSWRImmutable from 'swr/immutable';
-import { applyUpdate, encodeStateAsUpdate } from 'yjs';
+import {
+  applyUpdate,
+  Doc as YDoc,
+  encodeStateAsUpdate,
+  encodeStateVector,
+  UndoManager,
+} from 'yjs';
 
 import {
   useMutateQueryResource,
   useMutation,
 } from '../../../hooks/use-mutation';
 import { useQueryInfinite } from '../../../hooks/use-query';
+import { CloudBlobStorage } from '../../../modules/workspace-engine/impls/engine/blob-cloud';
 
 const logger = new DebugLogger('page-history');
 
@@ -76,11 +77,8 @@ const snapshotFetcher = async (
   if (!ts) {
     return null;
   }
-  const res = await fetchWithTraceReport(
-    `/api/workspaces/${workspaceId}/docs/${pageDocId}/histories/${ts}`,
-    {
-      priority: 'high',
-    }
+  const res = await fetch(
+    `/api/workspaces/${workspaceId}/docs/${pageDocId}/histories/${ts}`
   );
 
   if (!res.ok) {
@@ -104,7 +102,7 @@ const docCollectionMap = new Map<string, DocCollection>();
 const getOrCreateShellWorkspace = (workspaceId: string) => {
   let docCollection = docCollectionMap.get(workspaceId);
   if (!docCollection) {
-    const blobStorage = new AffineCloudBlobStorage(workspaceId);
+    const blobStorage = new CloudBlobStorage(workspaceId);
     docCollection = new DocCollection({
       id: workspaceId,
       blobStorages: [
@@ -115,7 +113,7 @@ const getOrCreateShellWorkspace = (workspaceId: string) => {
       schema: globalBlockSuiteSchema,
     });
     docCollectionMap.set(workspaceId, docCollection);
-    docCollection.doc.emit('sync', []);
+    docCollection.doc.emit('sync', [true, docCollection.doc]);
   }
   return docCollection;
 };
@@ -155,7 +153,7 @@ export const useSnapshotPage = (
       page = historyShellWorkspace.createDoc({
         id: pageId,
       });
-      page.awarenessStore.setReadonly(page, true);
+      page.awarenessStore.setReadonly(page.blockCollection, true);
       const spaceDoc = page.spaceDoc;
       page.load(() => {
         applyUpdate(spaceDoc, new Uint8Array(snapshot));
@@ -186,6 +184,43 @@ export const historyListGroupByDay = (histories: DocHistory[]) => {
   }
   return [...map.entries()];
 };
+
+export function revertUpdate(
+  doc: YDoc,
+  snapshotUpdate: Uint8Array,
+  getMetadata: (key: string) => 'Text' | 'Map' | 'Array'
+) {
+  const snapshotDoc = new YDoc();
+  applyUpdate(snapshotDoc, snapshotUpdate);
+
+  const currentStateVector = encodeStateVector(doc);
+  const snapshotStateVector = encodeStateVector(snapshotDoc);
+
+  const changesSinceSnapshotUpdate = encodeStateAsUpdate(
+    doc,
+    snapshotStateVector
+  );
+  const undoManager = new UndoManager(
+    [...snapshotDoc.share.keys()].map(key => {
+      const type = getMetadata(key);
+      if (type === 'Text') {
+        return snapshotDoc.getText(key);
+      } else if (type === 'Map') {
+        return snapshotDoc.getMap(key);
+      } else if (type === 'Array') {
+        return snapshotDoc.getArray(key);
+      }
+      throw new Error('Unknown type');
+    })
+  );
+  applyUpdate(snapshotDoc, changesSinceSnapshotUpdate);
+  undoManager.undo();
+  const revertChangesSinceSnapshotUpdate = encodeStateAsUpdate(
+    snapshotDoc,
+    currentStateVector
+  );
+  applyUpdate(doc, revertChangesSinceSnapshotUpdate);
+}
 
 export const useRestorePage = (
   docCollection: DocCollection,

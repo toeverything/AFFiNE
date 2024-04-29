@@ -1,3 +1,4 @@
+import { usePageHelper } from '@affine/core/components/blocksuite/block-suite-page-list/utils';
 import {
   AllPageListOperationsMenu,
   PageDisplayMenu,
@@ -7,7 +8,7 @@ import { Header } from '@affine/core/components/pure/header';
 import { WorkspaceModeFilterTab } from '@affine/core/components/pure/workspace-mode-filter-tab';
 import type { Filter } from '@affine/env/filter';
 import { PlusIcon } from '@blocksuite/icons';
-import { useService, Workspace } from '@toeverything/infra';
+import { useService, WorkspaceService } from '@toeverything/infra';
 import clsx from 'clsx';
 
 import * as styles from './all-page.css';
@@ -21,7 +22,10 @@ export const AllPageHeader = ({
   filters: Filter[];
   onChangeFilters: (filters: Filter[]) => void;
 }) => {
-  const workspace = useService(Workspace);
+  const workspace = useService(WorkspaceService).workspace;
+  const { importFile, createEdgeless, createPage } = usePageHelper(
+    workspace.docCollection
+  );
 
   return (
     <Header
@@ -40,6 +44,9 @@ export const AllPageHeader = ({
               styles.headerCreateNewButton,
               !showCreateNew && styles.headerCreateNewButtonHidden
             )}
+            onCreateEdgeless={createEdgeless}
+            onCreatePage={createPage}
+            onImportFile={importFile}
           >
             <PlusIcon />
           </PageListNewPageButton>

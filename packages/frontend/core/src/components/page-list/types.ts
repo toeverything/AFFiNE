@@ -23,6 +23,7 @@ export type TagMeta = {
 // using type instead of interface to make it Record compatible
 export type PageListItemProps = {
   pageId: string;
+  pageIds?: string[];
   icon: JSX.Element;
   title: ReactNode; // using ReactNode to allow for rich content rendering
   preview?: ReactNode; // using ReactNode to allow for rich content rendering
@@ -141,8 +142,7 @@ type MakeRecord<T> = {
 export type MetaRecord<T> = MakeRecord<T>;
 
 export type DraggableTitleCellData = {
-  pageId: string;
-  pageTitle: ReactNode;
+  preview: ReactNode;
 };
 
 export type HeaderColDef = {
@@ -168,4 +168,9 @@ export type PageDisplayProperties = {
   tags: boolean;
   createDate: boolean;
   updatedDate: boolean;
+};
+
+export type DisplayProperties = {
+  groupBy: PageGroupByType;
+  displayProperties: PageDisplayProperties;
 };

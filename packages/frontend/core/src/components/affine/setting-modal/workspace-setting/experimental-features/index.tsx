@@ -2,14 +2,7 @@ import { Button, Checkbox, Loading, Switch } from '@affine/component';
 import { SettingHeader } from '@affine/component/setting-components';
 import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import {
-  useSetWorkspaceFeature,
-  useWorkspaceAvailableFeatures,
-  useWorkspaceEnabledFeatures,
-} from '@affine/core/hooks/use-workspace-features';
-import { FeatureType } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import type { WorkspaceMetadata } from '@toeverything/infra';
 import { useAtom } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
 import { Suspense, useCallback, useState } from 'react';
@@ -73,12 +66,6 @@ const ExperimentalFeaturesPrompt = ({
   );
 };
 
-interface ExperimentalFeaturesItemProps {
-  feature: FeatureType;
-  title: React.ReactNode;
-  workspaceMetadata: WorkspaceMetadata;
-}
-
 const ExperimentalFeaturesItem = ({
   title,
   isMutating,
@@ -100,49 +87,6 @@ const ExperimentalFeaturesItem = ({
       />
     </div>
   );
-};
-
-const WorkspaceFeaturesSettingItem = ({
-  feature,
-  title,
-  workspaceMetadata,
-}: ExperimentalFeaturesItemProps) => {
-  const enabledFeatures = useWorkspaceEnabledFeatures(workspaceMetadata);
-  const enabled = enabledFeatures.includes(feature);
-  const [localEnabled, setLocalEnabled] = useState(enabled);
-  const { trigger, isMutating } = useSetWorkspaceFeature(workspaceMetadata);
-  const onChange = useCallback(
-    (checked: boolean) => {
-      setLocalEnabled(checked);
-      trigger(feature, checked);
-    },
-    [trigger, feature]
-  );
-
-  return (
-    <ExperimentalFeaturesItem
-      title={title}
-      isMutating={isMutating}
-      checked={localEnabled}
-      onChange={onChange}
-    />
-  );
-};
-
-const CopilotSettingRow = ({
-  workspaceMetadata,
-}: {
-  workspaceMetadata: WorkspaceMetadata;
-}) => {
-  const features = useWorkspaceAvailableFeatures(workspaceMetadata);
-
-  return features.includes(FeatureType.Copilot) ? (
-    <WorkspaceFeaturesSettingItem
-      title="AI POC"
-      workspaceMetadata={workspaceMetadata}
-      feature={FeatureType.Copilot}
-    />
-  ) : null;
 };
 
 const SplitViewSettingRow = () => {
@@ -204,11 +148,7 @@ const BlocksuiteFeatureFlagSettings = () => {
   );
 };
 
-const ExperimentalFeaturesMain = ({
-  workspaceMetadata,
-}: {
-  workspaceMetadata: WorkspaceMetadata;
-}) => {
+const ExperimentalFeaturesMain = () => {
   const t = useAFFiNEI18N();
 
   return (
@@ -219,7 +159,6 @@ const ExperimentalFeaturesMain = ({
         ]()}
       />
       <div className={styles.settingsContainer}>
-        <CopilotSettingRow workspaceMetadata={workspaceMetadata} />
         <SplitViewSettingRow />
         <BlocksuiteFeatureFlagSettings />
       </div>
@@ -233,11 +172,7 @@ const experimentalFeaturesDisclaimerAtom = atomWithStorage(
   false
 );
 
-export const ExperimentalFeatures = ({
-  workspaceMetadata,
-}: {
-  workspaceMetadata: WorkspaceMetadata;
-}) => {
+export const ExperimentalFeatures = () => {
   const [enabled, setEnabled] = useAtom(experimentalFeaturesDisclaimerAtom);
   const handleConfirm = useAsyncCallback(async () => {
     setEnabled(true);
@@ -247,7 +182,7 @@ export const ExperimentalFeatures = ({
   } else {
     return (
       <Suspense fallback={<Loading />}>
-        <ExperimentalFeaturesMain workspaceMetadata={workspaceMetadata} />
+        <ExperimentalFeaturesMain />
       </Suspense>
     );
   }

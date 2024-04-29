@@ -127,7 +127,6 @@ describe('getWorkspaceMeta', () => {
     expect(await getWorkspaceMeta(workspaceId)).toEqual({
       id: workspaceId,
       mainDBPath: path.join(workspacePath, 'storage.db'),
-      secondaryDBPath: sourcePath,
     });
 
     expect(
@@ -151,11 +150,4 @@ test('storeWorkspaceMeta', async () => {
   expect(await fs.readJSON(path.join(workspacePath, 'meta.json'))).toEqual(
     meta
   );
-  await storeWorkspaceMeta(workspaceId, {
-    secondaryDBPath: path.join(tmpDir, 'test.db'),
-  });
-  expect(await fs.readJSON(path.join(workspacePath, 'meta.json'))).toEqual({
-    ...meta,
-    secondaryDBPath: path.join(tmpDir, 'test.db'),
-  });
 });

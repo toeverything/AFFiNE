@@ -83,7 +83,6 @@ export const button = style({
       color: cssVar('pureWhite'),
       background: cssVar('primaryColor'),
       borderColor: cssVar('black10'),
-      boxShadow: cssVar('buttonInnerShadow'),
     },
     '&.primary:not(.without-hover):hover': {
       background: `linear-gradient(0deg, rgba(0, 0, 0, 0.04) 0%, rgba(0, 0, 0, 0.04) 100%), ${cssVar(
@@ -101,7 +100,6 @@ export const button = style({
       color: cssVar('pureWhite'),
       background: cssVar('errorColor'),
       borderColor: cssVar('black10'),
-      boxShadow: cssVar('buttonInnerShadow'),
     },
     '&.error:not(.without-hover):hover': {
       background: `linear-gradient(0deg, rgba(0, 0, 0, 0.04) 0%, rgba(0, 0, 0, 0.04) 100%), ${cssVar(
@@ -119,7 +117,6 @@ export const button = style({
       color: cssVar('pureWhite'),
       background: cssVar('warningColor'),
       borderColor: cssVar('black10'),
-      boxShadow: cssVar('buttonInnerShadow'),
     },
     '&.warning:not(.without-hover):hover': {
       background: `linear-gradient(0deg, rgba(0, 0, 0, 0.04) 0%, rgba(0, 0, 0, 0.04) 100%), ${cssVar(
@@ -137,7 +134,6 @@ export const button = style({
       color: cssVar('pureWhite'),
       background: cssVar('successColor'),
       borderColor: cssVar('black10'),
-      boxShadow: cssVar('buttonInnerShadow'),
     },
     '&.success:not(.without-hover):hover': {
       background: `linear-gradient(0deg, rgba(0, 0, 0, 0.04) 0%, rgba(0, 0, 0, 0.04) 100%), ${cssVar(
@@ -155,7 +151,6 @@ export const button = style({
       color: cssVar('pureWhite'),
       background: cssVar('processingColor'),
       borderColor: cssVar('black10'),
-      boxShadow: cssVar('buttonInnerShadow'),
     },
     '&.processing:not(.without-hover):hover': {
       background: `linear-gradient(0deg, rgba(0, 0, 0, 0.04) 0%, rgba(0, 0, 0, 0.04) 100%), ${cssVar(
@@ -283,7 +278,6 @@ export const iconButton = style({
       color: cssVar('white'),
       background: cssVar('primaryColor'),
       borderColor: cssVar('black10'),
-      boxShadow: '0px 1px 2px 0px rgba(255, 255, 255, 0.25) inset',
     },
     '&.primary:not(.without-hover):hover': {
       background: `linear-gradient(0deg, rgba(0, 0, 0, 0.04) 0%, rgba(0, 0, 0, 0.04) 100%), ${cssVar(
@@ -301,7 +295,6 @@ export const iconButton = style({
       color: cssVar('white'),
       background: cssVar('errorColor'),
       borderColor: cssVar('black10'),
-      boxShadow: '0px 1px 2px 0px rgba(255, 255, 255, 0.25) inset',
     },
     '&.error:not(.without-hover):hover': {
       background: `linear-gradient(0deg, rgba(0, 0, 0, 0.04) 0%, rgba(0, 0, 0, 0.04) 100%), ${cssVar(
@@ -319,7 +312,6 @@ export const iconButton = style({
       color: cssVar('white'),
       background: cssVar('warningColor'),
       borderColor: cssVar('black10'),
-      boxShadow: '0px 1px 2px 0px rgba(255, 255, 255, 0.25) inset',
     },
     '&.warning:not(.without-hover):hover': {
       background: `linear-gradient(0deg, rgba(0, 0, 0, 0.04) 0%, rgba(0, 0, 0, 0.04) 100%), ${cssVar(
@@ -337,7 +329,6 @@ export const iconButton = style({
       color: cssVar('white'),
       background: cssVar('successColor'),
       borderColor: cssVar('black10'),
-      boxShadow: '0px 1px 2px 0px rgba(255, 255, 255, 0.25) inset',
     },
     '&.success:not(.without-hover):hover': {
       background: `linear-gradient(0deg, rgba(0, 0, 0, 0.04) 0%, rgba(0, 0, 0, 0.04) 100%), ${cssVar(
@@ -355,7 +346,6 @@ export const iconButton = style({
       color: cssVar('white'),
       background: cssVar('processingColor'),
       borderColor: cssVar('black10'),
-      boxShadow: '0px 1px 2px 0px rgba(255, 255, 255, 0.25) inset',
     },
     '&.processing:not(.without-hover):hover': {
       background: `linear-gradient(0deg, rgba(0, 0, 0, 0.04) 0%, rgba(0, 0, 0, 0.04) 100%), ${cssVar(

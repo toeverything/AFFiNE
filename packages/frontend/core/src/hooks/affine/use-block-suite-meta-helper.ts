@@ -2,7 +2,7 @@ import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { useDocMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
 import { useDocCollectionHelper } from '@affine/core/hooks/use-block-suite-workspace-helper';
 import { CollectionService } from '@affine/core/modules/collection';
-import { PageRecordList, useService } from '@toeverything/infra';
+import { DocsService, useService } from '@toeverything/infra';
 import { useCallback } from 'react';
 import { applyUpdate, encodeStateAsUpdate } from 'yjs';
 
@@ -17,33 +17,7 @@ export function useBlockSuiteMetaHelper(docCollection: DocCollection) {
   const { createDoc } = useDocCollectionHelper(docCollection);
   const { openPage } = useNavigateHelper();
   const collectionService = useService(CollectionService);
-  const pageRecordList = useService(PageRecordList);
-
-  const addToFavorite = useCallback(
-    (pageId: string) => {
-      setDocMeta(pageId, {
-        favorite: true,
-      });
-    },
-    [setDocMeta]
-  );
-  const removeFromFavorite = useCallback(
-    (pageId: string) => {
-      setDocMeta(pageId, {
-        favorite: false,
-      });
-    },
-    [setDocMeta]
-  );
-  const toggleFavorite = useCallback(
-    (pageId: string) => {
-      const { favorite } = getDocMeta(pageId) ?? {};
-      setDocMeta(pageId, {
-        favorite: !favorite,
-      });
-    },
-    [getDocMeta, setDocMeta]
-  );
+  const pageRecordList = useService(DocsService).list;
 
   // TODO-Doma
   // "Remove" may cause ambiguity here. Consider renaming as "moveToTrash".
@@ -111,7 +85,7 @@ export function useBlockSuiteMetaHelper(docCollection: DocCollection) {
 
   const duplicate = useAsyncCallback(
     async (pageId: string, openPageAfterDuplication: boolean = true) => {
-      const currentPageMode = pageRecordList.record$(pageId).value?.mode$.value;
+      const currentPageMode = pageRecordList.doc$(pageId).value?.mode$.value;
       const currentPageMeta = getDocMeta(pageId);
       const newPage = createDoc();
       const currentPage = docCollection.getDoc(pageId);
@@ -126,7 +100,6 @@ export function useBlockSuiteMetaHelper(docCollection: DocCollection) {
 
       setDocMeta(newPage.id, {
         tags: currentPageMeta.tags,
-        favorite: currentPageMeta.favorite,
       });
 
       const lastDigitRegex = /\((\d+)\)$/;
@@ -136,9 +109,7 @@ export function useBlockSuiteMetaHelper(docCollection: DocCollection) {
       const newPageTitle =
         currentPageMeta.title.replace(lastDigitRegex, '') + `(${newNumber})`;
 
-      pageRecordList
-        .record$(newPage.id)
-        .value?.setMode(currentPageMode || 'page');
+      pageRecordList.doc$(newPage.id).value?.setMode(currentPageMode || 'page');
       setDocTitle(newPage.id, newPageTitle);
       openPageAfterDuplication && openPage(docCollection.id, newPage.id);
     },
@@ -156,10 +127,6 @@ export function useBlockSuiteMetaHelper(docCollection: DocCollection) {
   return {
     publicPage,
     cancelPublicPage,
-
-    addToFavorite,
-    removeFromFavorite,
-    toggleFavorite,
 
     removeToTrash,
     restoreFromTrash,

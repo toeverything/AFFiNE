@@ -1,10 +1,8 @@
 import { mainRPC } from '../main-rpc';
 import type { MainEventRegister } from '../type';
 import { ensureSQLiteDB } from './ensure-db';
-import { dbSubjects } from './subjects';
 
 export * from './ensure-db';
-export * from './subjects';
 
 export const dbHandlers = {
   getDocAsUpdates: async (workspaceId: string, subdocId?: string) => {
@@ -17,7 +15,12 @@ export const dbHandlers = {
     subdocId?: string
   ) => {
     const workspaceDB = await ensureSQLiteDB(workspaceId);
-    return workspaceDB.applyUpdate(update, 'renderer', subdocId);
+    return workspaceDB.addUpdateToSQLite([
+      {
+        data: update,
+        docId: subdocId,
+      },
+    ]);
   },
   addBlob: async (workspaceId: string, key: string, data: Uint8Array) => {
     const workspaceDB = await ensureSQLiteDB(workspaceId);
@@ -40,17 +43,4 @@ export const dbHandlers = {
   },
 };
 
-export const dbEvents = {
-  onExternalUpdate: (
-    fn: (update: {
-      workspaceId: string;
-      update: Uint8Array;
-      docId?: string;
-    }) => void
-  ) => {
-    const sub = dbSubjects.externalUpdate$.subscribe(fn);
-    return () => {
-      sub.unsubscribe();
-    };
-  },
-} satisfies Record<string, MainEventRegister>;
+export const dbEvents = {} satisfies Record<string, MainEventRegister>;

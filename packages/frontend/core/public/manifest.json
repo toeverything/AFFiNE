@@ -1,6 +1,11 @@
 {
-  "name": "AFFiNE",
+  "name": "AFFiNE: There can be more than Notion and Miro.",
   "short_name": "AFFiNE",
+  "description": "AFFiNE is a workspace with fully merged docs, whiteboards and databases. Get more things done, your creativity isn’t monotone.",
+  "start_url": "/?source=pwa",
+  "background_color": "#ffffff",
+  "display": "standalone",
+  "scope": "/",
   "icons": [
     {
       "src": "/favicon-36.png",
@@ -37,6 +42,26 @@
       "sizes": "192x192",
       "type": "image/png",
       "density": 4
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/imgs/screenshot1.png",
+      "type": "image/png",
+      "sizes": "1689x1117",
+      "form_factor": "wide"
+    },
+    {
+      "src": "/imgs/screenshot2.png",
+      "type": "image/png",
+      "sizes": "1689x1117",
+      "form_factor": "wide"
+    },
+    {
+      "src": "/imgs/screenshot3.png",
+      "type": "image/png",
+      "sizes": "759x1117",
+      "form_factor": "narrow"
     }
   ]
 }

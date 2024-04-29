@@ -1,14 +1,31 @@
 import nodePath from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import type { UpdateCheckResult } from 'electron-updater';
 import fs from 'fs-extra';
 import { flatten } from 'lodash-es';
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest';
 
 import { CustomGitHubProvider } from '../../src/main/updater/custom-github-provider';
 import { MockedAppAdapter, MockedUpdater } from './mocks';
+
+const __dirname = fileURLToPath(new URL('.', import.meta.url));
+
+vi.mock('electron', () => ({
+  app: {
+    getPath: () => __dirname,
+  },
+}));
 
 const platformTail = (() => {
   // https://github.com/electron-userland/electron-builder/blob/master/packages/electron-updater/src/providers/Provider.ts#L30

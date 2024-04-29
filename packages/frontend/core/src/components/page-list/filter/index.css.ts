@@ -1,5 +1,13 @@
 import { cssVar } from '@toeverything/theme';
 import { style } from '@vanilla-extract/css';
+
+export const filterContainerStyle = style({
+  display: 'flex',
+  userSelect: 'none',
+  alignItems: 'center',
+  overflow: 'hidden',
+});
+
 export const menuItemStyle = style({
   fontSize: cssVar('fontXs'),
 });
@@ -28,6 +36,7 @@ export const filterItemStyle = style({
   background: cssVar('white'),
   padding: '4px 8px',
   overflow: 'hidden',
+  justifyContent: 'space-between',
 });
 export const filterItemCloseStyle = style({
   display: 'flex',
@@ -53,12 +62,13 @@ export const switchStyle = style({
   transition: 'all 0.15s ease-in-out',
   display: 'flex',
   alignItems: 'center',
+  flex: '3 1 auto',
+  minWidth: '28px',
   ':hover': {
     cursor: 'pointer',
     background: cssVar('hoverColor'),
     borderRadius: '4px',
   },
-  whiteSpace: 'nowrap',
 });
 export const filterTypeStyle = style({
   fontSize: cssVar('fontSm'),
@@ -67,6 +77,7 @@ export const filterTypeStyle = style({
   padding: '2px 4px',
   transition: 'all 0.15s ease-in-out',
   marginRight: '6px',
+  flex: '1 0 auto',
   ':hover': {
     cursor: 'pointer',
     background: cssVar('hoverColor'),
@@ -80,4 +91,16 @@ export const filterTypeIconStyle = style({
   display: 'flex',
   alignItems: 'center',
   color: cssVar('iconColor'),
+});
+
+export const argStyle = style({
+  marginLeft: 4,
+  fontWeight: 600,
+  flex: '1 0 auto',
+});
+
+export const ellipsisTextStyle = style({
+  overflow: 'hidden',
+  whiteSpace: 'nowrap',
+  textOverflow: 'ellipsis',
 });

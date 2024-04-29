@@ -25,4 +25,7 @@ jobs:
           node-version-file: '.nvmrc'
       - name: Install dependencies
         run: yarn workspaces focus @affine/commitlint-config
-      - run: echo "${{ github.event.pull_request.title }}" | yarn workspace @affine/commitlint-config commitlint -g ./.commitlintrc.json
+      - name: Check PR title
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: echo "$TITLE" | yarn workspace @affine/commitlint-config commitlint -g ./.commitlintrc.json

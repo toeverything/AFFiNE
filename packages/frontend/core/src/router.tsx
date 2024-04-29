@@ -1,16 +1,28 @@
 import { wrapCreateBrowserRouter } from '@sentry/react';
-import { useEffect } from 'react';
-import type { RouteObject } from 'react-router-dom';
+import { createContext, useEffect, useState } from 'react';
+import type { NavigateFunction, RouteObject } from 'react-router-dom';
 import {
   createBrowserRouter as reactRouterCreateBrowserRouter,
   Outlet,
+  redirect,
   useLocation,
+  // eslint-disable-next-line @typescript-eslint/no-restricted-imports
+  useNavigate,
 } from 'react-router-dom';
 
 import { mixpanel } from './utils';
 
+export const NavigateContext = createContext<NavigateFunction | null>(null);
+
 function RootRouter() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    // a hack to make sure router is ready
+    setReady(true);
+  }, []);
+
   useEffect(() => {
     mixpanel.track_pageview({
       page: location.pathname,
@@ -20,7 +32,13 @@ function RootRouter() {
       isSelfHosted: Boolean(runtimeConfig.isSelfHosted),
     });
   }, [location]);
-  return <Outlet />;
+  return (
+    ready && (
+      <NavigateContext.Provider value={navigate}>
+        <Outlet />
+      </NavigateContext.Provider>
+    )
+  );
 }
 
 export const topLevelRoutes = [
@@ -60,6 +78,10 @@ export const topLevelRoutes = [
         lazy: () => import('./pages/sign-in'),
       },
       {
+        path: '/magic-link',
+        lazy: () => import('./pages/magic-link'),
+      },
+      {
         path: '/open-app/:action',
         lazy: () => import('./pages/open-app'),
       },
@@ -68,12 +90,32 @@ export const topLevelRoutes = [
         lazy: () => import('./pages/upgrade-success'),
       },
       {
+        path: '/ai-upgrade-success',
+        lazy: () => import('./pages/ai-upgrade-success'),
+      },
+      {
         path: '/desktop-signin',
         lazy: () => import('./pages/desktop-signin'),
       },
       {
         path: '/onboarding',
         lazy: () => import('./pages/onboarding'),
+      },
+      {
+        path: '/redirect-proxy',
+        lazy: () => import('./pages/redirect'),
+      },
+      {
+        path: '/subscribe',
+        lazy: () => import('./pages/subscribe'),
+      },
+      {
+        path: '/try-cloud',
+        loader: () => {
+          return redirect(
+            `/signIn?redirect_uri=${encodeURIComponent('/?initCloud=true')}`
+          );
+        },
       },
       {
         path: '*',

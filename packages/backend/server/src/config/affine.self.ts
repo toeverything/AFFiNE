@@ -36,8 +36,17 @@ if (env.R2_OBJECT_STORAGE_ACCOUNT_ID) {
   AFFiNE.storage.storages.blob.bucket = `workspace-blobs-${
     AFFiNE.affine.canary ? 'canary' : 'prod'
   }`;
+
+  AFFiNE.storage.storages.copilot.provider = 'cloudflare-r2';
+  AFFiNE.storage.storages.copilot.bucket = `workspace-copilot-${
+    AFFiNE.affine.canary ? 'canary' : 'prod'
+  }`;
 }
 
+AFFiNE.plugins.use('copilot', {
+  openai: {},
+  fal: {},
+});
 AFFiNE.plugins.use('redis');
 AFFiNE.plugins.use('payment', {
   stripe: {

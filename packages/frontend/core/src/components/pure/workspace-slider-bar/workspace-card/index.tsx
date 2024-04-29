@@ -1,12 +1,11 @@
-import { Tooltip } from '@affine/component';
-import { pushNotificationAtom } from '@affine/component/notification-center';
+import { notify, Tooltip } from '@affine/component';
 import { Avatar, type AvatarProps } from '@affine/component/ui/avatar';
 import { Loading } from '@affine/component/ui/loading';
 import { openSettingModalAtom } from '@affine/core/atoms';
 import { useDocEngineStatus } from '@affine/core/hooks/affine/use-doc-engine-status';
-import { useIsWorkspaceOwner } from '@affine/core/hooks/affine/use-is-workspace-owner';
 import { useWorkspaceBlobObjectUrl } from '@affine/core/hooks/use-workspace-blob';
 import { useWorkspaceInfo } from '@affine/core/hooks/use-workspace-info';
+import { WorkspacePermissionService } from '@affine/core/modules/permissions';
 import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
@@ -17,7 +16,7 @@ import {
   NoNetworkIcon,
   UnsyncIcon,
 } from '@blocksuite/icons';
-import { useService, Workspace } from '@toeverything/infra';
+import { useLiveData, useService, WorkspaceService } from '@toeverything/infra';
 import { cssVar } from '@toeverything/theme';
 import { useSetAtom } from 'jotai';
 import { debounce } from 'lodash-es';
@@ -81,15 +80,19 @@ const OfflineStatus = () => {
 const useSyncEngineSyncProgress = () => {
   const t = useAFFiNEI18N();
   const isOnline = useSystemOnline();
-  const pushNotification = useSetAtom(pushNotificationAtom);
   const { syncing, progress, retrying, errorMessage } = useDocEngineStatus();
   const [isOverCapacity, setIsOverCapacity] = useState(false);
 
-  const currentWorkspace = useService(Workspace);
-  const isOwner = useIsWorkspaceOwner(currentWorkspace.meta);
+  const currentWorkspace = useService(WorkspaceService).workspace;
+  const permissionService = useService(WorkspacePermissionService);
+  const isOwner = useLiveData(permissionService.permission.isOwner$);
+  useEffect(() => {
+    // revalidate permission
+    permissionService.permission.revalidate();
+  }, [permissionService]);
 
   const setSettingModalAtom = useSetAtom(openSettingModalAtom);
-  const jumpToPricePlan = useCallback(async () => {
+  const jumpToPricePlan = useCallback(() => {
     setSettingModalAtom({
       open: true,
       activeTab: 'plans',
@@ -99,26 +102,26 @@ const useSyncEngineSyncProgress = () => {
   // debounce sync engine status
   useEffect(() => {
     const disposableOverCapacity =
-      currentWorkspace.engine.blob.onStatusChange.on(
-        debounce(status => {
-          const isOver = status?.isStorageOverCapacity;
+      currentWorkspace.engine.blob.isStorageOverCapacity$.subscribe(
+        debounce((isStorageOverCapacity: boolean) => {
+          const isOver = isStorageOverCapacity;
           if (!isOver) {
             setIsOverCapacity(false);
             return;
           }
           setIsOverCapacity(true);
           if (isOwner) {
-            pushNotification({
-              type: 'warning',
+            notify.warning({
               title: t['com.affine.payment.storage-limit.title'](),
               message:
                 t['com.affine.payment.storage-limit.description.owner'](),
-              actionLabel: t['com.affine.payment.storage-limit.view'](),
-              action: jumpToPricePlan,
+              action: {
+                label: t['com.affine.payment.storage-limit.view'](),
+                onClick: jumpToPricePlan,
+              },
             });
           } else {
-            pushNotification({
-              type: 'warning',
+            notify.warning({
               title: t['com.affine.payment.storage-limit.title'](),
               message:
                 t['com.affine.payment.storage-limit.description.member'](),
@@ -127,9 +130,9 @@ const useSyncEngineSyncProgress = () => {
         })
       );
     return () => {
-      disposableOverCapacity?.dispose();
+      disposableOverCapacity?.unsubscribe();
     };
-  }, [currentWorkspace, isOwner, jumpToPricePlan, pushNotification, t]);
+  }, [currentWorkspace, isOwner, jumpToPricePlan, t]);
 
   const content = useMemo(() => {
     // TODO: add i18n
@@ -196,17 +199,37 @@ const useSyncEngineSyncProgress = () => {
       ((syncing && progress !== undefined) || isOverCapacity || !isOnline),
   };
 };
+const usePauseAnimation = (timeToResume = 5000) => {
+  const [paused, setPaused] = useState(false);
+
+  const resume = useCallback(() => {
+    setPaused(false);
+  }, []);
+
+  const pause = useCallback(() => {
+    setPaused(true);
+    if (timeToResume > 0) {
+      setTimeout(resume, timeToResume);
+    }
+  }, [resume, timeToResume]);
+
+  return { paused, pause };
+};
 
 const WorkspaceInfo = ({ name }: { name: string }) => {
   const { message, active } = useSyncEngineSyncProgress();
-  const currentWorkspace = useService(Workspace);
+  const currentWorkspace = useService(WorkspaceService).workspace;
   const isCloud = currentWorkspace.flavour === WorkspaceFlavour.AFFINE_CLOUD;
   const { progress } = useDocEngineStatus();
+  const { paused, pause } = usePauseAnimation();
 
   // to make sure that animation will play first time
   const [delayActive, setDelayActive] = useState(false);
   useEffect(() => {
-    const delayOpen = 300;
+    if (paused) {
+      return;
+    }
+    const delayOpen = 0;
     const delayClose = 200;
     let timer: ReturnType<typeof setTimeout>;
     if (active) {
@@ -216,10 +239,11 @@ const WorkspaceInfo = ({ name }: { name: string }) => {
     } else {
       timer = setTimeout(() => {
         setDelayActive(active);
+        pause();
       }, delayClose);
     }
     return () => clearTimeout(timer);
-  }, [active]);
+  }, [active, pause, paused]);
 
   return (
     <div className={styles.workspaceInfoSlider} data-active={delayActive}>
@@ -256,7 +280,7 @@ export const WorkspaceCard = forwardRef<
   HTMLDivElement,
   HTMLAttributes<HTMLDivElement>
 >(({ ...props }, ref) => {
-  const currentWorkspace = useService(Workspace);
+  const currentWorkspace = useService(WorkspaceService).workspace;
 
   const information = useWorkspaceInfo(currentWorkspace.meta);
 

@@ -10,13 +10,13 @@ import {
 import type { UserType } from '../../src/core/user';
 import { gql } from './common';
 
-export function sessionCookie(headers: any) {
+export function sessionCookie(headers: any): string {
   const cookie = headers['set-cookie']?.find((c: string) =>
     c.startsWith(`${AuthService.sessionCookieName}=`)
   );
 
   if (!cookie) {
-    return null;
+    return '';
   }
 
   return cookie.split(';')[0];
@@ -29,7 +29,7 @@ export async function getSession(
   const cookie = sessionCookie(signInRes.headers);
   const res = await request(app.getHttpServer())
     .get('/api/auth/session')
-    .set('cookie', cookie)
+    .set('cookie', cookie!)
     .expect(200);
 
   return res.body;

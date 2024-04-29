@@ -375,6 +375,9 @@ function NotificationCard(props: NotificationCardProps): ReactNode {
   );
 }
 
+/**
+ * @deprecated use `import { NotificationCenter } from '@affine/component'` instead
+ */
 export function NotificationCenter(): ReactNode {
   const notifications = useAtomValue(notificationsAtom);
   const [expand, setExpand] = useAtom(expandNotificationCenterAtom);

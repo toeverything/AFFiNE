@@ -1,9 +1,10 @@
 import { Checkbox } from '@affine/component';
+import { getDNDId } from '@affine/core/hooks/affine/use-global-dnd-helper';
+import { WorkbenchLink } from '@affine/core/modules/workbench';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useDraggable } from '@dnd-kit/core';
 import type { PropsWithChildren } from 'react';
 import { useCallback, useMemo } from 'react';
-import { Link } from 'react-router-dom';
 
 import { selectionStateAtom, useAtom } from '../scoped-atoms';
 import type {
@@ -97,16 +98,22 @@ export const CollectionListItem = (props: CollectionListItemProps) => {
           />
           <ListIconCell icon={props.icon} />
         </div>
+        <ListTitleCell title={props.title} />
       </div>
     );
-  }, [props.icon, props.onSelectedChange, props.selectable, props.selected]);
+  }, [
+    props.icon,
+    props.onSelectedChange,
+    props.selectable,
+    props.selected,
+    props.title,
+  ]);
 
   // TODO: use getDropItemId
   const { setNodeRef, attributes, listeners, isDragging } = useDraggable({
-    id: 'collection-list-item-title-' + props.collectionId,
+    id: getDNDId('collection-list', 'collection', props.collectionId),
     data: {
-      pageId: props.collectionId,
-      pageTitle: collectionTitleElement,
+      preview: collectionTitleElement,
     } satisfies DraggableTitleCellData,
     disabled: !props.draggable,
   });
@@ -212,9 +219,9 @@ function CollectionListItemWrapper({
 
   if (to) {
     return (
-      <Link {...commonProps} to={to}>
+      <WorkbenchLink {...commonProps} to={to}>
         {children}
-      </Link>
+      </WorkbenchLink>
     );
   } else {
     return <div {...commonProps}>{children}</div>;

@@ -7,7 +7,10 @@ import { OneGB } from './constant';
 import { QuotaService } from './service';
 import { formatSize, QuotaQueryType } from './types';
 
-type QuotaBusinessType = QuotaQueryType & { businessBlobLimit: number };
+type QuotaBusinessType = QuotaQueryType & {
+  businessBlobLimit: number;
+  unlimited: boolean;
+};
 
 @Injectable()
 export class QuotaManagementService {
@@ -33,6 +36,7 @@ export class QuotaManagementService {
       storageQuota: quota.feature.storageQuota,
       historyPeriod: quota.feature.historyPeriod,
       memberLimit: quota.feature.memberLimit,
+      copilotActionLimit: quota.feature.copilotActionLimit,
     };
   }
 
@@ -58,6 +62,52 @@ export class QuotaManagementService {
     }, 0);
   }
 
+  private generateQuotaCalculator(
+    quota: number,
+    blobLimit: number,
+    usedSize: number,
+    unlimited = false
+  ) {
+    const checkExceeded = (recvSize: number) => {
+      const total = usedSize + recvSize;
+      // only skip total storage check if workspace has unlimited feature
+      if (total > quota && !unlimited) {
+        this.logger.log(`storage size limit exceeded: ${total} > ${quota}`);
+        return true;
+      } else if (recvSize > blobLimit) {
+        this.logger.log(`blob size limit exceeded: ${recvSize} > ${blobLimit}`);
+        return true;
+      } else {
+        return false;
+      }
+    };
+    return checkExceeded;
+  }
+
+  async getQuotaCalculator(userId: string) {
+    const quota = await this.getUserQuota(userId);
+    const { storageQuota, businessBlobLimit } = quota;
+    const usedSize = await this.getUserUsage(userId);
+
+    return this.generateQuotaCalculator(
+      storageQuota,
+      businessBlobLimit,
+      usedSize
+    );
+  }
+
+  async getQuotaCalculatorByWorkspace(workspaceId: string) {
+    const { storageQuota, usedSize, businessBlobLimit, unlimited } =
+      await this.getWorkspaceUsage(workspaceId);
+
+    return this.generateQuotaCalculator(
+      storageQuota,
+      businessBlobLimit,
+      usedSize,
+      unlimited
+    );
+  }
+
   // get workspace's owner quota and total size of used
   // quota was apply to owner's account
   async getWorkspaceUsage(workspaceId: string): Promise<QuotaBusinessType> {
@@ -72,11 +122,18 @@ export class QuotaManagementService {
         historyPeriod,
         memberLimit,
         storageQuota,
+        copilotActionLimit,
         humanReadable,
       },
     } = await this.quota.getUserQuota(owner.id);
     // get all workspaces size of owner used
     const usedSize = await this.getUserUsage(owner.id);
+    // relax restrictions if workspace has unlimited feature
+    // todo(@darkskygit): need a mechanism to allow feature as a middleware to edit quota
+    const unlimited = await this.feature.hasWorkspaceFeature(
+      workspaceId,
+      FeatureType.UnlimitedWorkspace
+    );
 
     const quota = {
       name,
@@ -85,17 +142,13 @@ export class QuotaManagementService {
       historyPeriod,
       memberLimit,
       storageQuota,
+      copilotActionLimit,
       humanReadable,
       usedSize,
+      unlimited,
     };
 
-    // relax restrictions if workspace has unlimited feature
-    // todo(@darkskygit): need a mechanism to allow feature as a middleware to edit quota
-    const unlimited = await this.feature.hasWorkspaceFeature(
-      workspaceId,
-      FeatureType.UnlimitedWorkspace
-    );
-    if (unlimited) {
+    if (quota.unlimited) {
       return this.mergeUnlimitedQuota(quota);
     }
 

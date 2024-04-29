@@ -1,4 +1,8 @@
 // credits: migrated from https://github.com/electron-userland/electron-builder/blob/master/packages/electron-updater/src/providers/GitHubProvider.ts
+
+import fs from 'node:fs';
+import path from 'node:path';
+
 import type {
   CustomPublishOptions,
   GithubOptions,
@@ -6,6 +10,7 @@ import type {
   XElement,
 } from 'builder-util-runtime';
 import { HttpError, newError, parseXml } from 'builder-util-runtime';
+import { app } from 'electron';
 import type {
   AppUpdater,
   ResolvedUpdateFileInfo,
@@ -19,7 +24,6 @@ import {
   resolveFiles,
 } from 'electron-updater/out/providers/Provider';
 import * as semver from 'semver';
-
 interface GithubUpdateInfo extends UpdateInfo {
   tag: string;
 }
@@ -36,6 +40,13 @@ interface GithubRelease {
 }
 
 const hrefRegExp = /\/tag\/([^/]+)$/;
+
+function isSquirrelBuild() {
+  // if it is squirrel build, there will be 'squirrel.exe'
+  // otherwise it is in nsis web mode
+  const files = fs.readdirSync(path.dirname(app.getPath('exe')));
+  return files.some(it => it.includes('squirrel.exe'));
+}
 
 export class CustomGitHubProvider extends BaseGitHubProvider<GithubUpdateInfo> {
   constructor(
@@ -244,9 +255,21 @@ export class CustomGitHubProvider extends BaseGitHubProvider<GithubUpdateInfo> {
   }
 
   resolveFiles(updateInfo: GithubUpdateInfo): Array<ResolvedUpdateFileInfo> {
+    const filteredUpdateInfo = structuredClone(updateInfo);
+    // for windows, we need to determine its installer type (nsis or squirrel)
+    if (process.platform === 'win32' && updateInfo.files.length > 1) {
+      const isSquirrel = isSquirrelBuild();
+      // @ts-expect-error we should be able to modify the object
+      filteredUpdateInfo.files = updateInfo.files.filter(file => {
+        return isSquirrel
+          ? !file.url.includes('nsis.exe')
+          : file.url.includes('nsis.exe');
+      });
+    }
+
     // still replace space to - due to backward compatibility
-    return resolveFiles(updateInfo, this.baseUrl, p =>
-      this.getBaseDownloadPath(updateInfo.tag, p.replace(/ /g, '-'))
+    return resolveFiles(filteredUpdateInfo, this.baseUrl, p =>
+      this.getBaseDownloadPath(filteredUpdateInfo.tag, p.replace(/ /g, '-'))
     );
   }
 

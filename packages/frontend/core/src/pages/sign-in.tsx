@@ -1,64 +1,42 @@
+import { AffineOtherPageLayout } from '@affine/component/affine-other-page-layout';
 import { SignInPageContainer } from '@affine/component/auth-components';
+import { AuthService } from '@affine/core/modules/cloud';
+import { useLiveData, useService } from '@toeverything/infra';
 import { useAtom } from 'jotai';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect } from 'react';
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { authAtom } from '../atoms';
 import type { AuthProps } from '../components/affine/auth';
 import { AuthPanel } from '../components/affine/auth';
-import { SubscriptionRedirect } from '../components/affine/auth/subscription-redirect';
-import { useSubscriptionSearch } from '../components/affine/auth/use-subscription';
-import { useCurrentLoginStatus } from '../hooks/affine/use-current-login-status';
 import { RouteLogic, useNavigateHelper } from '../hooks/use-navigate-helper';
 
-interface LocationState {
-  state?: {
-    callbackURL?: string;
-  };
-}
-export const Component = () => {
-  const paymentRedirectRef = useRef<'redirect' | 'ignore' | null>(null);
+export const SignIn = () => {
   const [{ state, email = '', emailType = 'changePassword' }, setAuthAtom] =
     useAtom(authAtom);
-  const loginStatus = useCurrentLoginStatus();
-  const location = useLocation() as LocationState;
+  const session = useService(AuthService).session;
+  const status = useLiveData(session.status$);
+  const isRevalidating = useLiveData(session.isRevalidating$);
   const navigate = useNavigate();
   const { jumpToIndex } = useNavigateHelper();
-  const subscriptionData = useSubscriptionSearch();
-
-  const isLoggedIn = loginStatus === 'authenticated';
-
-  // Check payment redirect once after session loaded, to avoid unnecessary page rendering.
-  if (loginStatus !== 'loading' && !paymentRedirectRef.current) {
-    // If user is logged in and visit sign in page with subscription query, redirect to stripe payment page immediately.
-    // Otherwise, user will login through email, and then redirect to payment page.
-    paymentRedirectRef.current =
-      subscriptionData && isLoggedIn ? 'redirect' : 'ignore';
-  }
+  const [searchParams] = useSearchParams();
+  const isLoggedIn = status === 'authenticated' && !isRevalidating;
 
   useEffect(() => {
-    if (paymentRedirectRef.current === 'redirect') {
-      return;
-    }
-
     if (isLoggedIn) {
-      if (location.state?.callbackURL) {
-        navigate(location.state.callbackURL, {
+      const redirectUri = searchParams.get('redirect_uri');
+      if (redirectUri) {
+        navigate(redirectUri, {
           replace: true,
         });
       } else {
-        jumpToIndex(RouteLogic.REPLACE);
+        jumpToIndex(RouteLogic.REPLACE, {
+          search: searchParams.toString(),
+        });
       }
     }
-  }, [
-    jumpToIndex,
-    location.state?.callbackURL,
-    navigate,
-    setAuthAtom,
-    subscriptionData,
-    isLoggedIn,
-  ]);
+  }, [jumpToIndex, navigate, setAuthAtom, isLoggedIn, searchParams]);
 
   const onSetEmailType = useCallback(
     (emailType: AuthProps['emailType']) => {
@@ -81,20 +59,28 @@ export const Component = () => {
     [setAuthAtom]
   );
 
-  if (paymentRedirectRef.current === 'redirect') {
-    return <SubscriptionRedirect />;
-  }
-
   return (
     <SignInPageContainer>
-      <AuthPanel
-        state={state}
-        email={email}
-        emailType={emailType}
-        setEmailType={onSetEmailType}
-        setAuthState={onSetAuthState}
-        setAuthEmail={onSetAuthEmail}
-      />
+      <div style={{ maxWidth: '400px', width: '100%' }}>
+        <AuthPanel
+          state={state}
+          email={email}
+          emailType={emailType}
+          setEmailType={onSetEmailType}
+          setAuthState={onSetAuthState}
+          setAuthEmail={onSetAuthEmail}
+        />
+      </div>
     </SignInPageContainer>
+  );
+};
+
+export const Component = () => {
+  return (
+    <AffineOtherPageLayout>
+      <div style={{ padding: '0 20px' }}>
+        <SignIn />
+      </div>
+    </AffineOtherPageLayout>
   );
 };

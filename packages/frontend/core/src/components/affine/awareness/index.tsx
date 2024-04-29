@@ -1,22 +1,19 @@
-import { useLiveData, useService } from '@toeverything/infra';
+import { useLiveData, useService, WorkspaceService } from '@toeverything/infra';
 import { Suspense, useEffect } from 'react';
 
-import { useCurrentLoginStatus } from '../../../hooks/affine/use-current-login-status';
-import { useSession } from '../../../hooks/affine/use-current-user';
-import { CurrentWorkspaceService } from '../../../modules/workspace/current-workspace';
+import { AuthService } from '../../../modules/cloud';
 
 const SyncAwarenessInnerLoggedIn = () => {
-  const { user } = useSession();
-  const currentWorkspace = useLiveData(
-    useService(CurrentWorkspaceService).currentWorkspace$
-  );
+  const authService = useService(AuthService);
+  const account = useLiveData(authService.session.account$);
+  const currentWorkspace = useService(WorkspaceService).workspace;
 
   useEffect(() => {
-    if (user && currentWorkspace) {
+    if (account && currentWorkspace) {
       currentWorkspace.docCollection.awarenessStore.awareness.setLocalStateField(
         'user',
         {
-          name: user.name,
+          name: account.label,
           // todo: add avatar?
         }
       );
@@ -29,13 +26,14 @@ const SyncAwarenessInnerLoggedIn = () => {
       };
     }
     return;
-  }, [user, currentWorkspace]);
+  }, [currentWorkspace, account]);
 
   return null;
 };
 
 const SyncAwarenessInner = () => {
-  const loginStatus = useCurrentLoginStatus();
+  const session = useService(AuthService).session;
+  const loginStatus = useLiveData(session.status$);
 
   if (loginStatus === 'authenticated') {
     return <SyncAwarenessInnerLoggedIn />;

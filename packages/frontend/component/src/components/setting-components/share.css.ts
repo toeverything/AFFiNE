@@ -2,16 +2,17 @@ import { cssVar } from '@toeverything/theme';
 import { globalStyle, style } from '@vanilla-extract/css';
 export const settingHeader = style({
   borderBottom: `1px solid ${cssVar('borderColor')}`,
-  paddingBottom: '24px',
+  paddingBottom: '16px',
   marginBottom: '24px',
 });
 globalStyle(`${settingHeader} .title`, {
   fontSize: cssVar('fontBase'),
   fontWeight: 600,
   lineHeight: '24px',
-  marginBottom: '4px',
 });
 globalStyle(`${settingHeader} .subtitle`, {
+  paddingTop: '4px',
+  paddingBottom: '8px',
   fontSize: cssVar('fontXs'),
   lineHeight: '16px',
   color: cssVar('textSecondaryColor'),
@@ -84,40 +85,4 @@ globalStyle(`${settingRow} .right-col`, {
   justifyContent: 'flex-end',
   paddingLeft: '15px',
   flexShrink: 0,
-});
-export const storageProgressContainer = style({
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-});
-export const storageProgressWrapper = style({
-  flexGrow: 1,
-  marginRight: '20px',
-});
-globalStyle(`${storageProgressWrapper} .storage-progress-desc`, {
-  fontSize: cssVar('fontXs'),
-  color: cssVar('textSecondaryColor'),
-  height: '20px',
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  marginBottom: 2,
-});
-globalStyle(`${storageProgressWrapper} .storage-progress-bar-wrapper`, {
-  height: '8px',
-  borderRadius: '4px',
-  backgroundColor: cssVar('black10'),
-  overflow: 'hidden',
-});
-export const storageProgressBar = style({
-  height: '100%',
-  backgroundColor: cssVar('processingColor'),
-  selectors: {
-    '&.danger': {
-      backgroundColor: cssVar('errorColor'),
-    },
-  },
-});
-export const storageButton = style({
-  padding: '4px 12px',
 });

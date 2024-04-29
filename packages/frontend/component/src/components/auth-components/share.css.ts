@@ -179,14 +179,26 @@ globalStyle(`${authPageContainer} a`, {
   color: cssVar('linkColor'),
 });
 export const signInPageContainer = style({
-  width: '400px',
-  margin: '205px auto 0',
+  height: '100vh',
+  width: '100%',
+  display: 'flex',
+  flexDirection: 'column',
+  justifyContent: 'center',
+  alignItems: 'center',
 });
 export const input = style({
   width: '330px',
   '@media': {
     'screen and (max-width: 520px)': {
       width: '100%',
+    },
+  },
+});
+
+export const hideInSmallScreen = style({
+  '@media': {
+    'screen and (max-width: 1024px)': {
+      display: 'none',
     },
   },
 });

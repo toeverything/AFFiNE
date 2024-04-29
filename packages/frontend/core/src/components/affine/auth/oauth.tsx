@@ -1,14 +1,14 @@
+import { notify, Skeleton } from '@affine/component';
 import { Button } from '@affine/component/ui/button';
-import {
-  useOAuthProviders,
-  useServerFeatures,
-} from '@affine/core/hooks/affine/use-server-config';
+import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { OAuthProviderType } from '@affine/graphql';
 import { GithubIcon, GoogleDuotoneIcon } from '@blocksuite/icons';
+import { useLiveData, useService } from '@toeverything/infra';
 import type { ReactElement } from 'react';
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 
-import { useAuth } from './use-auth';
+import { AuthService, ServerConfigService } from '../../../modules/cloud';
+import { mixpanel } from '../../../utils';
 
 const OAuthProviderMap: Record<
   OAuthProviderType,
@@ -25,33 +25,54 @@ const OAuthProviderMap: Record<
   },
 };
 
-export function OAuth() {
-  const { oauth } = useServerFeatures();
+export function OAuth({ redirectUri }: { redirectUri?: string | null }) {
+  const serverConfig = useService(ServerConfigService).serverConfig;
+  const oauth = useLiveData(serverConfig.features$.map(r => r?.oauth));
+  const oauthProviders = useLiveData(
+    serverConfig.config$.map(r => r?.oauthProviders)
+  );
 
   if (!oauth) {
-    return null;
+    return (
+      <>
+        <br />
+        <Skeleton height={50} />
+      </>
+    );
   }
 
-  return <OAuthProviders />;
-}
-
-function OAuthProviders() {
-  const providers = useOAuthProviders();
-
-  return providers.map(provider => (
-    <OAuthProvider key={provider} provider={provider} />
+  return oauthProviders?.map(provider => (
+    <OAuthProvider
+      key={provider}
+      provider={provider}
+      redirectUri={redirectUri}
+    />
   ));
 }
 
-function OAuthProvider({ provider }: { provider: OAuthProviderType }) {
+function OAuthProvider({
+  provider,
+  redirectUri,
+}: {
+  provider: OAuthProviderType;
+  redirectUri?: string | null;
+}) {
   const { icon } = OAuthProviderMap[provider];
-  const { oauthSignIn } = useAuth();
+  const authService = useService(AuthService);
   const [isConnecting, setIsConnecting] = useState(false);
 
-  const onClick = useCallback(() => {
-    setIsConnecting(true);
-    oauthSignIn(provider);
-  }, [provider, oauthSignIn]);
+  const onClick = useAsyncCallback(async () => {
+    try {
+      setIsConnecting(true);
+      await authService.signInOauth(provider, redirectUri);
+    } catch (err) {
+      console.error(err);
+      notify.error({ title: 'Failed to sign in, please try again.' });
+    } finally {
+      setIsConnecting(false);
+      mixpanel.track('OAuth', { provider });
+    }
+  }, [authService, provider, redirectUri]);
 
   return (
     <Button

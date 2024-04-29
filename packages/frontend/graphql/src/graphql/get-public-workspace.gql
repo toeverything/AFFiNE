@@ -1,5 +1,0 @@
-query getPublicWorkspace($id: String!) {
-  publicWorkspace(id: $id) {
-    id
-  }
-}

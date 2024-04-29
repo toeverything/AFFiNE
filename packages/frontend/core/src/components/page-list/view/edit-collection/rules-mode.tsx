@@ -1,3 +1,5 @@
+import { Tooltip } from '@affine/component';
+import { FavoriteItemsAdapter } from '@affine/core/modules/properties';
 import type { Collection } from '@affine/env/filter';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
@@ -9,9 +11,10 @@ import {
   ToggleCollapseIcon,
 } from '@blocksuite/icons';
 import type { DocMeta } from '@blocksuite/store';
+import { useLiveData, useService } from '@toeverything/infra';
 import clsx from 'clsx';
 import type { ReactNode } from 'react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { FilterList } from '../../filter';
 import { List, ListScrollContainer } from '../../list';
@@ -42,6 +45,8 @@ export const RulesMode = ({
   const allowListPages: DocMeta[] = [];
   const rulesPages: DocMeta[] = [];
   const [showTips, setShowTips] = useState(false);
+  const favAdapter = useService(FavoriteItemsAdapter);
+  const favorites = useLiveData(favAdapter.favorites$);
   useEffect(() => {
     setShowTips(!localStorage.getItem('hide-rules-mode-include-page-tips'));
   }, []);
@@ -56,6 +61,7 @@ export const RulesMode = ({
     const pageData = {
       meta,
       publicMode: allPageListConfig.getPublicMode(meta.id),
+      favorite: favorites.some(f => f.id === meta.id),
     };
     if (
       collection.filterList.length &&
@@ -91,6 +97,22 @@ export const RulesMode = ({
     },
     [allPageListConfig]
   );
+
+  const tips = useMemo(
+    () => (
+      <Trans
+        i18nKey="com.affine.editCollection.rules.tips"
+        values={{
+          highlight: t['com.affine.editCollection.rules.tips.highlight'](),
+        }}
+        components={{
+          2: <span className={styles.rulesTitleHighlight} />,
+        }}
+      />
+    ),
+    [t]
+  );
+
   return (
     <>
       {/*prevents modal autofocus to the first input*/}
@@ -99,17 +121,10 @@ export const RulesMode = ({
         style={{ width: 0, height: 0 }}
         onFocus={e => requestAnimationFrame(() => e.target.blur())}
       />
-      <div className={clsx(styles.rulesTitle, styles.ellipsis)}>
-        <Trans
-          i18nKey="com.affine.editCollection.rules.tips"
-          values={{
-            highlight: t['com.affine.editCollection.rules.tips.highlight'](),
-          }}
-          components={{
-            2: <span className={styles.rulesTitleHighlight} />,
-          }}
-        />
-      </div>
+      <Tooltip content={tips}>
+        <div className={clsx(styles.rulesTitle, styles.ellipsis)}>{tips}</div>
+      </Tooltip>
+
       <div className={styles.rulesContainer}>
         <div className={styles.rulesContainerLeft}>
           <div className={styles.rulesContainerLeftTab}>{switchMode}</div>

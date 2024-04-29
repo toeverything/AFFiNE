@@ -1,74 +1,116 @@
-import { AnimatedCollectionsIcon, toast } from '@affine/component';
+import {
+  AnimatedCollectionsIcon,
+  toast,
+  useConfirmModal,
+} from '@affine/component';
 import { RenameModal } from '@affine/component/rename-modal';
 import { Button, IconButton } from '@affine/component/ui/button';
+import { usePageHelper } from '@affine/core/components/blocksuite/block-suite-page-list/utils';
 import {
   CollectionOperations,
   filterPage,
   stopPropagation,
 } from '@affine/core/components/page-list';
+import {
+  type DNDIdentifier,
+  getDNDId,
+  parseDNDId,
+  resolveDragEndIntent,
+} from '@affine/core/hooks/affine/use-global-dnd-helper';
 import { CollectionService } from '@affine/core/modules/collection';
-import type { Collection, DeleteCollectionInfo } from '@affine/env/filter';
+import { FavoriteItemsAdapter } from '@affine/core/modules/properties';
+import type { Collection } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { MoreHorizontalIcon, ViewLayersIcon } from '@blocksuite/icons';
-import type { DocCollection, DocMeta } from '@blocksuite/store';
-import { useDroppable } from '@dnd-kit/core';
+import {
+  MoreHorizontalIcon,
+  PlusIcon,
+  ViewLayersIcon,
+} from '@blocksuite/icons';
+import type { DocCollection } from '@blocksuite/store';
+import { type AnimateLayoutChanges, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useCallback, useMemo, useState } from 'react';
 
 import { useAllPageListConfig } from '../../../../hooks/affine/use-all-page-list-config';
-import { getDropItemId } from '../../../../hooks/affine/use-sidebar-drag';
 import { useBlockSuiteDocMeta } from '../../../../hooks/use-block-suite-page-meta';
-import { Workbench } from '../../../../modules/workbench';
+import { WorkbenchService } from '../../../../modules/workbench';
 import { WorkbenchLink } from '../../../../modules/workbench/view/workbench-link';
 import { MenuLinkItem as SidebarMenuLinkItem } from '../../../app-sidebar';
+import { DragMenuItemOverlay } from '../components/drag-menu-item-overlay';
+import * as draggableMenuItemStyles from '../components/draggable-menu-item.css';
 import type { CollectionsListProps } from '../index';
-import { Page } from './page';
+import { Doc } from './doc';
 import * as styles from './styles.css';
 
-const CollectionRenderer = ({
+const animateLayoutChanges: AnimateLayoutChanges = ({
+  isSorting,
+  wasDragging,
+}) => (isSorting || wasDragging ? false : true);
+
+export const CollectionSidebarNavItem = ({
   collection,
-  pages,
   docCollection,
-  info,
+  className,
+  dndId,
 }: {
   collection: Collection;
-  pages: DocMeta[];
   docCollection: DocCollection;
-  info: DeleteCollectionInfo;
+  dndId: DNDIdentifier;
+  className?: string;
 }) => {
+  const pages = useBlockSuiteDocMeta(docCollection);
   const [collapsed, setCollapsed] = useState(true);
   const [open, setOpen] = useState(false);
   const collectionService = useService(CollectionService);
+  const favAdapter = useService(FavoriteItemsAdapter);
+  const { createPage } = usePageHelper(docCollection);
+  const { openConfirmModal } = useConfirmModal();
   const t = useAFFiNEI18N();
-  const dragItemId = getDropItemId('collections', collection.id);
+
+  const favourites = useLiveData(favAdapter.favorites$);
 
   const removeFromAllowList = useCallback(
     (id: string) => {
-      collectionService.updateCollection(collection.id, () => ({
-        ...collection,
-        allowList: collection.allowList?.filter(v => v !== id),
-      }));
-
+      collectionService.deletePageFromCollection(collection.id, id);
       toast(t['com.affine.collection.removePage.success']());
     },
     [collection, collectionService, t]
   );
 
-  const { setNodeRef, isOver } = useDroppable({
-    id: dragItemId,
+  const overlayPreview = useMemo(() => {
+    return (
+      <DragMenuItemOverlay icon={<ViewLayersIcon />} title={collection.name} />
+    );
+  }, [collection.name]);
+
+  const {
+    setNodeRef,
+    isDragging,
+    attributes,
+    listeners,
+    transform,
+    over,
+    active,
+    transition,
+  } = useSortable({
+    id: dndId,
     data: {
-      addToCollection: (id: string) => {
-        if (collection.allowList.includes(id)) {
-          toast(t['com.affine.collection.addPage.alreadyExists']());
-          return;
-        } else {
-          toast(t['com.affine.collection.addPage.success']());
-        }
-        collectionService.addPageToCollection(collection.id, id);
-      },
+      preview: overlayPreview,
     },
+    animateLayoutChanges,
   });
+
+  const isSorting = parseDNDId(active?.id)?.where === 'sidebar-pin';
+  const dragOverIntent = resolveDragEndIntent(active, over);
+
+  const style = {
+    transform: CSS.Translate.toString(transform),
+    transition: isSorting ? transition : undefined,
+  };
+
+  const isOver = over?.id === dndId && dragOverIntent === 'collection:add';
 
   const config = useAllPageListConfig();
   const allPagesMeta = useMemo(
@@ -85,11 +127,15 @@ const CollectionRenderer = ({
     const pageData = {
       meta,
       publicMode: config.getPublicMode(meta.id),
+      favorite: favourites.some(fav => fav.id === meta.id),
     };
     return filterPage(collection, pageData);
   });
-  const location = useLiveData(useService(Workbench).location$);
-  const currentPath = location.pathname;
+  const currentPath = useLiveData(
+    useService(WorkbenchService).workbench.location$.map(
+      location => location.pathname
+    )
+  );
   const path = `/collection/${collection.id}`;
 
   const onRename = useCallback(
@@ -106,10 +152,39 @@ const CollectionRenderer = ({
     setOpen(true);
   }, []);
 
+  const createAndAddDocument = useCallback(() => {
+    const newDoc = createPage();
+    collectionService.addPageToCollection(collection.id, newDoc.id);
+  }, [collection.id, collectionService, createPage]);
+
+  const onConfirmAddDocToCollection = useCallback(() => {
+    openConfirmModal({
+      title: t['com.affine.collection.add-doc.confirm.title'](),
+      description: t['com.affine.collection.add-doc.confirm.description'](),
+      cancelText: t['Cancel'](),
+      confirmButtonOptions: {
+        type: 'primary',
+        children: t['Confirm'](),
+      },
+      onConfirm: createAndAddDocument,
+    });
+  }, [createAndAddDocument, openConfirmModal, t]);
+
   return (
-    <Collapsible.Root open={!collapsed} ref={setNodeRef}>
+    <Collapsible.Root
+      open={!collapsed}
+      className={className}
+      style={style}
+      ref={setNodeRef}
+      {...attributes}
+    >
       <SidebarMenuLinkItem
+        {...listeners}
+        data-draggable={true}
+        data-dragging={isDragging}
+        className={draggableMenuItemStyles.draggableMenuItem}
         data-testid="collection-item"
+        data-collection-id={collection.id}
         data-type="collection-list-item"
         onCollapsedChange={setCollapsed}
         active={isOver || currentPath === path}
@@ -119,13 +194,20 @@ const CollectionRenderer = ({
         postfix={
           <div
             onClick={stopPropagation}
+            onMouseDown={e => {
+              // prevent drag
+              e.stopPropagation();
+            }}
             style={{ display: 'flex', alignItems: 'center' }}
           >
+            <IconButton onClick={onConfirmAddDocToCollection} size="small">
+              <PlusIcon />
+            </IconButton>
             <CollectionOperations
-              info={info}
               collection={collection}
               config={config}
               openRenameModal={handleOpen}
+              onAddDocToCollection={onConfirmAddDocToCollection}
             >
               <IconButton
                 data-testid="collection-options"
@@ -152,11 +234,12 @@ const CollectionRenderer = ({
         <div style={{ marginLeft: 20, marginTop: -4 }}>
           {pagesToRender.map(page => {
             return (
-              <Page
+              <Doc
+                parentId={dndId}
                 inAllowList={allowList.has(page.id)}
                 removeFromAllowList={removeFromAllowList}
                 allPageMeta={allPagesMeta}
-                page={page}
+                doc={page}
                 key={page.id}
                 docCollection={docCollection}
               />
@@ -169,12 +252,11 @@ const CollectionRenderer = ({
 };
 export const CollectionsList = ({
   docCollection: workspace,
-  info,
   onCreate,
 }: CollectionsListProps) => {
-  const metas = useBlockSuiteDocMeta(workspace);
   const collections = useLiveData(useService(CollectionService).collections$);
   const t = useAFFiNEI18N();
+
   if (collections.length === 0) {
     return (
       <div className={styles.emptyCollectionWrapper}>
@@ -198,13 +280,18 @@ export const CollectionsList = ({
   return (
     <div data-testid="collections" className={styles.wrapper}>
       {collections.map(view => {
+        const dragItemId = getDNDId(
+          'sidebar-collections',
+          'collection',
+          view.id
+        );
+
         return (
-          <CollectionRenderer
-            info={info}
+          <CollectionSidebarNavItem
             key={view.id}
             collection={view}
-            pages={metas}
             docCollection={workspace}
+            dndId={dragItemId}
           />
         );
       })}

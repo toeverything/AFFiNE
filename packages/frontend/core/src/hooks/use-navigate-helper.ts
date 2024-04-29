@@ -1,9 +1,8 @@
 import type { WorkspaceSubPath } from '@affine/core/shared';
-import { createContext, useCallback, useContext, useMemo } from 'react';
-import type { NavigateFunction, NavigateOptions, To } from 'react-router-dom';
-import { useLocation } from 'react-router-dom';
+import { useCallback, useContext, useMemo } from 'react';
+import type { NavigateOptions, To } from 'react-router-dom';
 
-import { router } from '../router';
+import { NavigateContext, router } from '../router';
 
 export enum RouteLogic {
   REPLACE = 'replace',
@@ -11,17 +10,16 @@ export enum RouteLogic {
 }
 
 function defaultNavigate(to: To, option?: { replace?: boolean }) {
-  router.navigate(to, option).catch(err => {
-    console.error('Failed to navigate', err);
-  });
+  console.log(to, option);
+  setTimeout(() => {
+    router.navigate(to, option).catch(err => {
+      console.error('Failed to navigate', err);
+    });
+  }, 100);
 }
-
-export const NavigateContext = createContext<NavigateFunction | null>(null);
 
 // todo: add a name -> path helper in the results
 export function useNavigateHelper() {
-  const location = useLocation();
-
   const navigate = useContext(NavigateContext) ?? defaultNavigate;
 
   const jumpToPage = useCallback(
@@ -89,18 +87,6 @@ export function useNavigateHelper() {
     },
     [navigate]
   );
-  const jumpToPublicWorkspacePage = useCallback(
-    (
-      workspaceId: string,
-      pageId: string,
-      logic: RouteLogic = RouteLogic.PUSH
-    ) => {
-      return navigate(`/public-workspace/${workspaceId}/${pageId}`, {
-        replace: logic === RouteLogic.REPLACE,
-      });
-    },
-    [navigate]
-  );
   const jumpToSubPath = useCallback(
     (
       workspaceId: string,
@@ -114,26 +100,21 @@ export function useNavigateHelper() {
     [navigate]
   );
 
-  const isPublicWorkspace = useMemo(() => {
-    return location.pathname.indexOf('/public-workspace') === 0;
-  }, [location.pathname]);
-
   const openPage = useCallback(
     (workspaceId: string, pageId: string) => {
-      if (isPublicWorkspace) {
-        return jumpToPublicWorkspacePage(workspaceId, pageId);
-      } else {
-        return jumpToPage(workspaceId, pageId);
-      }
+      return jumpToPage(workspaceId, pageId);
     },
-    [jumpToPage, jumpToPublicWorkspacePage, isPublicWorkspace]
+    [jumpToPage]
   );
 
   const jumpToIndex = useCallback(
-    (logic: RouteLogic = RouteLogic.PUSH) => {
-      return navigate('/', {
-        replace: logic === RouteLogic.REPLACE,
-      });
+    (logic: RouteLogic = RouteLogic.PUSH, opt?: { search?: string }) => {
+      return navigate(
+        { pathname: '/', search: opt?.search },
+        {
+          replace: logic === RouteLogic.REPLACE,
+        }
+      );
     },
     [navigate]
   );
@@ -156,13 +137,28 @@ export function useNavigateHelper() {
   );
   const jumpToSignIn = useCallback(
     (
+      redirectUri?: string,
       logic: RouteLogic = RouteLogic.PUSH,
       otherOptions?: Omit<NavigateOptions, 'replace'>
     ) => {
-      return navigate('/signIn', {
-        replace: logic === RouteLogic.REPLACE,
-        ...otherOptions,
-      });
+      return navigate(
+        '/signIn' +
+          (redirectUri
+            ? `?redirect_uri=${encodeURIComponent(redirectUri)}`
+            : ''),
+        {
+          replace: logic === RouteLogic.REPLACE,
+          ...otherOptions,
+        }
+      );
+    },
+    [navigate]
+  );
+
+  const openInApp = useCallback(
+    (schema: string, path: string) => {
+      const encodedUrl = encodeURIComponent(`${schema}://${path}`);
+      return navigate(`/open-app/url?schema=${schema}&url=${encodedUrl}`);
     },
     [navigate]
   );
@@ -171,7 +167,6 @@ export function useNavigateHelper() {
     () => ({
       jumpToPage,
       jumpToPageBlock,
-      jumpToPublicWorkspacePage,
       jumpToSubPath,
       jumpToIndex,
       jumpTo404,
@@ -182,11 +177,11 @@ export function useNavigateHelper() {
       jumpToCollections,
       jumpToTags,
       jumpToTag,
+      openInApp,
     }),
     [
       jumpToPage,
       jumpToPageBlock,
-      jumpToPublicWorkspacePage,
       jumpToSubPath,
       jumpToIndex,
       jumpTo404,
@@ -197,6 +192,7 @@ export function useNavigateHelper() {
       jumpToCollections,
       jumpToTags,
       jumpToTag,
+      openInApp,
     ]
   );
 }

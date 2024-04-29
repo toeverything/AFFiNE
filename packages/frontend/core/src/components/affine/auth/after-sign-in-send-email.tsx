@@ -1,3 +1,4 @@
+import { notify } from '@affine/component';
 import {
   AuthContent,
   BackButton,
@@ -6,37 +7,68 @@ import {
 } from '@affine/component/auth-components';
 import { Button } from '@affine/component/ui/button';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
+import { AuthService } from '@affine/core/modules/cloud';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import React, { useCallback } from 'react';
+import { useLiveData, useService } from '@toeverything/infra';
+import { useCallback, useEffect, useState } from 'react';
 
-import { useCurrentLoginStatus } from '../../../hooks/affine/use-current-login-status';
 import type { AuthPanelProps } from './index';
 import * as style from './style.css';
-import { useAuth } from './use-auth';
 import { Captcha, useCaptcha } from './use-captcha';
-import { useSubscriptionSearch } from './use-subscription';
 
 export const AfterSignInSendEmail = ({
   setAuthState,
   email,
   onSignedIn,
 }: AuthPanelProps) => {
-  const t = useAFFiNEI18N();
-  const loginStatus = useCurrentLoginStatus();
-  const [verifyToken, challenge] = useCaptcha();
-  const subscriptionData = useSubscriptionSearch();
+  const [resendCountDown, setResendCountDown] = useState(60);
 
-  const { resendCountDown, allowSendEmail, signIn } = useAuth();
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setResendCountDown(c => Math.max(c - 1, 0));
+    }, 1000);
+
+    return () => {
+      clearInterval(timer);
+    };
+  }, []);
+
+  const [isSending, setIsSending] = useState(false);
+
+  const t = useAFFiNEI18N();
+  const authService = useService(AuthService);
+  useEffect(() => {
+    const timer = setInterval(() => {
+      authService.session.revalidate();
+    }, 3000);
+
+    return () => {
+      clearInterval(timer);
+    };
+  }, [authService]);
+  const loginStatus = useLiveData(authService.session.status$);
+  const [verifyToken, challenge] = useCaptcha();
+
   if (loginStatus === 'authenticated') {
     onSignedIn?.();
   }
 
   const onResendClick = useAsyncCallback(async () => {
-    if (verifyToken) {
-      await signIn(email, verifyToken, challenge);
+    setIsSending(true);
+    try {
+      if (verifyToken) {
+        setResendCountDown(60);
+        await authService.sendEmailMagicLink(email, verifyToken, challenge);
+      }
+    } catch (err) {
+      console.error(err);
+      notify.error({
+        title: 'Failed to send email, please try again.',
+      });
     }
-  }, [challenge, email, signIn, verifyToken]);
+    setIsSending(false);
+  }, [authService, challenge, email, verifyToken]);
 
   const onSignInWithPasswordClick = useCallback(() => {
     setAuthState('signInWithPassword');
@@ -62,12 +94,12 @@ export const AfterSignInSendEmail = ({
       </AuthContent>
 
       <div className={style.resendWrapper}>
-        {allowSendEmail ? (
+        {resendCountDown <= 0 ? (
           <>
             <Captcha />
             <Button
               style={!verifyToken ? { cursor: 'not-allowed' } : {}}
-              disabled={!verifyToken}
+              disabled={!verifyToken || isSending}
               type="plain"
               size="large"
               onClick={onResendClick}
@@ -90,23 +122,19 @@ export const AfterSignInSendEmail = ({
 
       <div className={style.authMessage} style={{ marginTop: 20 }}>
         {t['com.affine.auth.sign.auth.code.message']()}
-        {subscriptionData ? null : ( // If with payment, just support email sign in to avoid duplicate redirect to the same stripe url.
-          <React.Fragment>
-            &nbsp;
-            <Trans
-              i18nKey="com.affine.auth.sign.auth.code.message.password"
-              components={{
-                1: (
-                  <span
-                    className="link"
-                    data-testid="sign-in-with-password"
-                    onClick={onSignInWithPasswordClick}
-                  />
-                ),
-              }}
-            />
-          </React.Fragment>
-        )}
+        &nbsp;
+        <Trans
+          i18nKey="com.affine.auth.sign.auth.code.message.password"
+          components={{
+            1: (
+              <span
+                className="link"
+                data-testid="sign-in-with-password"
+                onClick={onSignInWithPasswordClick}
+              />
+            ),
+          }}
+        />
       </div>
 
       <BackButton onClick={onBackBottomClick} />

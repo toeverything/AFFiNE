@@ -48,14 +48,11 @@ const allPackages = [
   'packages/frontend/i18n',
   'packages/frontend/native',
   'packages/frontend/templates',
-  'packages/frontend/workspace-impl',
   'packages/common/debug',
   'packages/common/env',
   'packages/common/infra',
   'packages/common/theme',
-  'packages/common/y-indexeddb',
   'tools/cli',
-  'tests/storybook',
 ];
 
 /**
@@ -234,7 +231,7 @@ const config = {
       },
     },
     ...allPackages.map(pkg => ({
-      files: [`${pkg}/src/**/*.ts`, `${pkg}/src/**/*.tsx`],
+      files: [`${pkg}/src/**/*.ts`, `${pkg}/src/**/*.tsx`, `${pkg}/**/*.mjs`],
       rules: {
         '@typescript-eslint/no-restricted-imports': [
           'error',

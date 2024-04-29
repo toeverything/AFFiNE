@@ -69,13 +69,15 @@ test('should be able to sign in with email', async t => {
   t.is(res.body.email, u1.email);
   t.true(mailer.sendSignInMail.calledOnce);
 
-  let [signInLink] = mailer.sendSignInMail.firstCall.args;
+  const [signInLink] = mailer.sendSignInMail.firstCall.args;
   const url = new URL(signInLink);
-  signInLink = url.pathname + url.search;
+  const email = url.searchParams.get('email');
+  const token = url.searchParams.get('token');
 
   const signInRes = await request(app.getHttpServer())
-    .get(signInLink)
-    .expect(302);
+    .post('/api/auth/magic-link')
+    .send({ email, token })
+    .expect(201);
 
   const session = await getSession(app, signInRes);
   t.is(session.user!.id, u1.id);
@@ -95,13 +97,15 @@ test('should be able to sign up with email', async t => {
   t.is(res.body.email, 'u2@affine.pro');
   t.true(mailer.sendSignUpMail.calledOnce);
 
-  let [signUpLink] = mailer.sendSignUpMail.firstCall.args;
+  const [signUpLink] = mailer.sendSignUpMail.firstCall.args;
   const url = new URL(signUpLink);
-  signUpLink = url.pathname + url.search;
+  const email = url.searchParams.get('email');
+  const token = url.searchParams.get('token');
 
   const signInRes = await request(app.getHttpServer())
-    .get(signUpLink)
-    .expect(302);
+    .post('/api/auth/magic-link')
+    .send({ email, token })
+    .expect(201);
 
   const session = await getSession(app, signInRes);
   t.is(session.user!.email, 'u2@affine.pro');
