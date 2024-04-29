@@ -45,7 +45,7 @@ name = "affine_schema"
 version = "0.0.0"
 
 [[package]]
-name = "affine_storage"
+name = "affine_server_native"
 version = "1.0.0"
 dependencies = [
  "chrono",

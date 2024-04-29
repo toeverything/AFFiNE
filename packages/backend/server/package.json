@@ -96,7 +96,7 @@
   },
   "devDependencies": {
     "@affine-test/kit": "workspace:*",
-    "@affine/storage": "workspace:*",
+    "@affine/server-native": "workspace:*",
     "@napi-rs/image": "^1.9.1",
     "@nestjs/testing": "^10.3.7",
     "@types/cookie-parser": "^1.4.7",

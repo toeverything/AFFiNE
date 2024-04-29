@@ -69,7 +69,7 @@
       "@toeverything/infra": ["./packages/common/infra/src"],
       "@affine/native": ["./packages/frontend/native/index.d.ts"],
       "@affine/native/*": ["./packages/frontend/native/*"],
-      "@affine/storage": ["./packages/backend/storage/index.d.ts"],
+      "@affine/server-native": ["./packages/backend/native/index.d.ts"],
       // Development only
       "@affine/electron/*": ["./packages/frontend/electron/src/*"]
     }

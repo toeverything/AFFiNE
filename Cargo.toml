@@ -3,7 +3,7 @@ resolver = "2"
 members = [
   "./packages/frontend/native",
   "./packages/frontend/native/schema",
-  "./packages/backend/storage",
+  "./packages/backend/native",
 ]
 
 [profile.dev.package.sqlx-macros]

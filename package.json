@@ -21,7 +21,7 @@
     "dev:electron": "yarn workspace @affine/electron dev",
     "build": "yarn nx build @affine/web",
     "build:electron": "yarn nx build @affine/electron",
-    "build:storage": "yarn nx run-many -t build -p @affine/storage",
+    "build:server-native": "yarn nx run-many -t build -p @affine/server-native",
     "start:web-static": "yarn workspace @affine/web static-server",
     "serve:test-static": "yarn exec serve tests/fixtures --cors -p 8081",
     "lint:eslint": "cross-env NODE_OPTIONS=\"--max-old-space-size=8192\" eslint . --ext .js,mjs,.ts,.tsx --cache",

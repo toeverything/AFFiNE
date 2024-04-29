@@ -1,5 +1,5 @@
 [package]
-name = "affine_storage"
+name = "affine_server_native"
 version = "1.0.0"
 edition = "2021"
 

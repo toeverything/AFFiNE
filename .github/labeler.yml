@@ -44,10 +44,10 @@ mod:component:
       - any-glob-to-any-file:
           - 'packages/frontend/component/**/*'
 
-mod:storage:
+mod:server-native:
   - changed-files:
       - any-glob-to-any-file:
-          - 'packages/backend/storage/**/*'
+          - 'packages/backend/native/**/*'
 
 mod:native:
   - changed-files:

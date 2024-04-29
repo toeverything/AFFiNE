@@ -644,12 +644,24 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@affine/server-native@workspace:*, @affine/server-native@workspace:packages/backend/native":
+  version: 0.0.0-use.local
+  resolution: "@affine/server-native@workspace:packages/backend/native"
+  dependencies:
+    "@napi-rs/cli": "npm:3.0.0-alpha.46"
+    lib0: "npm:^0.2.93"
+    nx: "npm:^18.2.4"
+    nx-cloud: "npm:^18.0.0"
+    yjs: "npm:^13.6.14"
+  languageName: unknown
+  linkType: soft
+
 "@affine/server@workspace:packages/backend/server":
   version: 0.0.0-use.local
   resolution: "@affine/server@workspace:packages/backend/server"
   dependencies:
     "@affine-test/kit": "workspace:*"
-    "@affine/storage": "workspace:*"
+    "@affine/server-native": "workspace:*"
     "@apollo/server": "npm:^4.10.2"
     "@aws-sdk/client-s3": "npm:^3.552.0"
     "@google-cloud/opentelemetry-cloud-monitoring-exporter": "npm:^0.17.0"
@@ -749,18 +761,6 @@ __metadata:
     zod: "npm:^3.22.4"
   bin:
     run-test: ./scripts/run-test.ts
-  languageName: unknown
-  linkType: soft
-
-"@affine/storage@workspace:*, @affine/storage@workspace:packages/backend/storage":
-  version: 0.0.0-use.local
-  resolution: "@affine/storage@workspace:packages/backend/storage"
-  dependencies:
-    "@napi-rs/cli": "npm:3.0.0-alpha.46"
-    lib0: "npm:^0.2.93"
-    nx: "npm:^18.2.4"
-    nx-cloud: "npm:^18.0.0"
-    yjs: "npm:^13.6.14"
   languageName: unknown
   linkType: soft
 

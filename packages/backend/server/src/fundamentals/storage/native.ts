@@ -1,19 +1,19 @@
 import { createRequire } from 'node:module';
 
-let storageModule: typeof import('@affine/storage');
+let serverNativeModule: typeof import('@affine/server-native');
 try {
-  storageModule = await import('@affine/storage');
+  serverNativeModule = await import('@affine/server-native');
 } catch {
   const require = createRequire(import.meta.url);
-  storageModule =
+  serverNativeModule =
     process.arch === 'arm64'
-      ? require('../../../storage.arm64.node')
+      ? require('../../../server-native.arm64.node')
       : process.arch === 'arm'
-        ? require('../../../storage.armv7.node')
-        : require('../../../storage.node');
+        ? require('../../../server-native.armv7.node')
+        : require('../../../server-native.node');
 }
 
-export const mergeUpdatesInApplyWay = storageModule.mergeUpdatesInApplyWay;
+export const mergeUpdatesInApplyWay = serverNativeModule.mergeUpdatesInApplyWay;
 
 export const verifyChallengeResponse = async (
   response: any,
@@ -21,10 +21,10 @@ export const verifyChallengeResponse = async (
   resource: string
 ) => {
   if (typeof response !== 'string' || !response || !resource) return false;
-  return storageModule.verifyChallengeResponse(response, bits, resource);
+  return serverNativeModule.verifyChallengeResponse(response, bits, resource);
 };
 
 export const mintChallengeResponse = async (resource: string, bits: number) => {
   if (!resource) return null;
-  return storageModule.mintChallengeResponse(resource, bits);
+  return serverNativeModule.mintChallengeResponse(resource, bits);
 };

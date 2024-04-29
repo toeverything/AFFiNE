@@ -93,7 +93,7 @@ yarn workspace @affine/native build
 ### Build Server Dependencies
 
 ```sh
-yarn workspace @affine/storage build
+yarn workspace @affine/server-native build
 ```
 
 ## Testing

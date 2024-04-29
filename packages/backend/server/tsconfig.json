@@ -23,7 +23,7 @@
       "path": "./tsconfig.node.json"
     },
     {
-      "path": "../storage/tsconfig.json"
+      "path": "../native/tsconfig.json"
     }
   ],
   "ts-node": {
