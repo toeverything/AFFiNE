@@ -87,6 +87,10 @@ export class AuthResolver {
     @Args('email') email: string,
     @Args('password') password: string
   ) {
+    if (!this.config.auth.allowSignup) {
+      throw new ForbiddenException('You are not allowed to sign up.');
+    }
+
     validators.assertValidCredential({ email, password });
     const user = await this.auth.signUp(name, email, password);
     await this.auth.setCookie(ctx.req, ctx.res, user);
