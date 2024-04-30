@@ -1,6 +1,5 @@
 import { useConfirmModal } from '@affine/component';
 import { authAtom } from '@affine/core/atoms';
-import { setOnceSignedInEventAtom } from '@affine/core/atoms/event';
 import { AuthService } from '@affine/core/modules/cloud';
 import { WorkspaceSubPath } from '@affine/core/shared';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
@@ -32,7 +31,6 @@ export const useEnableCloud = () => {
   const t = useAFFiNEI18N();
   const loginStatus = useLiveData(useService(AuthService).session.status$);
   const setAuthAtom = useSetAtom(authAtom);
-  const setOnceSignedInEvent = useSetAtom(setOnceSignedInEventAtom);
   const { openConfirmModal, closeConfirmModal } = useConfirmModal();
   const workspacesService = useService(WorkspacesService);
   const { openPage } = useNavigateHelper();
@@ -47,21 +45,15 @@ export const useEnableCloud = () => {
     [openPage, workspacesService]
   );
 
-  const openSignIn = useCallback(
-    (...args: ConfirmEnableArgs) => {
-      setAuthAtom(prev => ({ ...prev, openModal: true }));
-      setOnceSignedInEvent(() => {
-        enableCloud(...args).catch(console.error);
-      });
-    },
-    [enableCloud, setAuthAtom, setOnceSignedInEvent]
-  );
+  const openSignIn = useCallback(() => {
+    setAuthAtom(prev => ({ ...prev, openModal: true }));
+  }, [setAuthAtom]);
 
   const signInOrEnableCloud = useCallback(
     async (...args: ConfirmEnableArgs) => {
       // not logged in, open login modal
       if (loginStatus === 'unauthenticated') {
-        openSignIn(...args);
+        openSignIn();
       }
 
       if (loginStatus === 'authenticated') {
