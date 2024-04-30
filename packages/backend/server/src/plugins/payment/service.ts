@@ -164,7 +164,7 @@ export class SubscriptionService {
 
     if (currentSubscription) {
       throw new BadRequestException(
-        `You've already subscripted to the ${plan} plan`
+        `You've already subscribed to the ${plan} plan`
       );
     }
 
@@ -181,7 +181,9 @@ export class SubscriptionService {
 
     let discounts: Stripe.Checkout.SessionCreateParams['discounts'] = [];
 
-    if (promotionCode) {
+    if (coupon) {
+      discounts = [{ coupon }];
+    } else if (promotionCode) {
       const code = await this.getAvailablePromotionCode(
         promotionCode,
         customer.stripeCustomerId
@@ -189,8 +191,6 @@ export class SubscriptionService {
       if (code) {
         discounts = [{ promotion_code: code }];
       }
-    } else if (coupon) {
-      discounts = [{ coupon }];
     }
 
     return await this.stripe.checkout.sessions.create(
@@ -241,7 +241,7 @@ export class SubscriptionService {
 
     const subscriptionInDB = user?.subscriptions.find(s => s.plan === plan);
     if (!subscriptionInDB) {
-      throw new BadRequestException(`You didn't subscript to the ${plan} plan`);
+      throw new BadRequestException(`You didn't subscribe to the ${plan} plan`);
     }
 
     if (subscriptionInDB.canceledAt) {
@@ -260,8 +260,7 @@ export class SubscriptionService {
         user,
         await this.stripe.subscriptions.retrieve(
           subscriptionInDB.stripeSubscriptionId
-        ),
-        false
+        )
       );
     } else {
       // let customer contact support if they want to cancel immediately
@@ -295,7 +294,7 @@ export class SubscriptionService {
 
     const subscriptionInDB = user?.subscriptions.find(s => s.plan === plan);
     if (!subscriptionInDB) {
-      throw new BadRequestException(`You didn't subscript to the ${plan} plan`);
+      throw new BadRequestException(`You didn't subscribe to the ${plan} plan`);
     }
 
     if (!subscriptionInDB.canceledAt) {
@@ -317,8 +316,7 @@ export class SubscriptionService {
         user,
         await this.stripe.subscriptions.retrieve(
           subscriptionInDB.stripeSubscriptionId
-        ),
-        false
+        )
       );
     } else {
       const subscription = await this.stripe.subscriptions.update(
@@ -351,12 +349,12 @@ export class SubscriptionService {
     }
     const subscriptionInDB = user?.subscriptions.find(s => s.plan === plan);
     if (!subscriptionInDB) {
-      throw new BadRequestException(`You didn't subscript to the ${plan} plan`);
+      throw new BadRequestException(`You didn't subscribe to the ${plan} plan`);
     }
 
     if (subscriptionInDB.canceledAt) {
       throw new BadRequestException(
-        'Your subscription has already been canceled '
+        'Your subscription has already been canceled'
       );
     }
 
@@ -415,7 +413,6 @@ export class SubscriptionService {
   @OnEvent('customer.subscription.created')
   @OnEvent('customer.subscription.updated')
   async onSubscriptionChanges(subscription: Stripe.Subscription) {
-    // webhook call may not in sequential order, get the latest status
     subscription = await this.stripe.subscriptions.retrieve(subscription.id);
     if (subscription.status === 'active') {
       const user = await this.retrieveUserFromCustomer(
@@ -432,7 +429,6 @@ export class SubscriptionService {
 
   @OnEvent('customer.subscription.deleted')
   async onSubscriptionDeleted(subscription: Stripe.Subscription) {
-    subscription = await this.stripe.subscriptions.retrieve(subscription.id);
     const user = await this.retrieveUserFromCustomer(
       typeof subscription.customer === 'string'
         ? subscription.customer
@@ -553,16 +549,8 @@ export class SubscriptionService {
 
   private async saveSubscription(
     user: User,
-    subscription: Stripe.Subscription,
-    fromWebhook = true
+    subscription: Stripe.Subscription
   ): Promise<UserSubscription> {
-    // webhook events may not in sequential order
-    // always fetch the latest subscription and save
-    // see https://stripe.com/docs/webhooks#behaviors
-    if (fromWebhook) {
-      subscription = await this.stripe.subscriptions.retrieve(subscription.id);
-    }
-
     const price = subscription.items.data[0].price;
     if (!price.lookup_key) {
       throw new Error('Unexpected subscription with no key');
@@ -768,13 +756,12 @@ export class SubscriptionService {
     });
 
     if (plan === SubscriptionPlan.Pro) {
-      const canHaveEADiscount = isEaUser && !subscribed;
+      const canHaveEADiscount =
+        isEaUser && !subscribed && recurring === SubscriptionRecurring.Yearly;
       const price = await this.getPrice(
         plan,
         recurring,
-        canHaveEADiscount && recurring === SubscriptionRecurring.Yearly
-          ? SubscriptionPriceVariant.EA
-          : undefined
+        canHaveEADiscount ? SubscriptionPriceVariant.EA : undefined
       );
       return {
         price,
@@ -788,13 +775,12 @@ export class SubscriptionService {
         EarlyAccessType.AI
       );
 
-      const canHaveEADiscount = isAIEaUser && !subscribed;
+      const canHaveEADiscount =
+        isAIEaUser && !subscribed && recurring === SubscriptionRecurring.Yearly;
       const price = await this.getPrice(
         plan,
         recurring,
-        canHaveEADiscount && recurring === SubscriptionRecurring.Yearly
-          ? SubscriptionPriceVariant.EA
-          : undefined
+        canHaveEADiscount ? SubscriptionPriceVariant.EA : undefined
       );
 
       return {
