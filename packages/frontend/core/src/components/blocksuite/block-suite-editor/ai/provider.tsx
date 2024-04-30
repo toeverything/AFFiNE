@@ -3,6 +3,7 @@ import { authAtom, openSettingModalAtom } from '@affine/core/atoms';
 import { mixpanel } from '@affine/core/utils';
 import { getBaseUrl } from '@affine/graphql';
 import { Trans } from '@affine/i18n';
+import { UnauthorizedError } from '@blocksuite/blocks';
 import { assertExists } from '@blocksuite/global/utils';
 import { AIProvider } from '@blocksuite/presets';
 import { getCurrentStore } from '@toeverything/infra';
@@ -71,11 +72,17 @@ const provideAction = <T extends AIAction>(
 
 export function setupAIProvider() {
   // a single workspace should have only a single chat session
-  // workspace-id:doc-id -> chat session id
+  // user-id:workspace-id:doc-id -> chat session id
   const chatSessions = new Map<string, Promise<string>>();
 
   async function getChatSessionId(workspaceId: string, docId: string) {
-    const storeKey = `${workspaceId}:${docId}`;
+    const userId = (await AIProvider.userInfo)?.id;
+
+    if (!userId) {
+      throw new UnauthorizedError();
+    }
+
+    const storeKey = `${userId}:${workspaceId}:${docId}`;
     if (!chatSessions.has(storeKey)) {
       chatSessions.set(
         storeKey,
@@ -85,9 +92,15 @@ export function setupAIProvider() {
         })
       );
     }
-    const sessionId = await chatSessions.get(storeKey);
-    assertExists(sessionId);
-    return sessionId;
+    try {
+      const sessionId = await chatSessions.get(storeKey);
+      assertExists(sessionId);
+      return sessionId;
+    } catch (err) {
+      // do not cache the error
+      chatSessions.delete(storeKey);
+      throw err;
+    }
   }
 
   //#region actions
