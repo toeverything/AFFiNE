@@ -110,9 +110,30 @@ export class ChatSession implements AsyncDisposable {
 
   finish(params: PromptParams): PromptMessage[] {
     const messages = this.takeMessages();
+    const firstMessage = messages.at(0);
+    // if the message in prompt config contains {{content}},
+    // we should combine it with the user message in the prompt
+    if (
+      messages.length === 1 &&
+      firstMessage?.content &&
+      this.state.prompt.paramKeys.includes('content')
+    ) {
+      const normalizedParams = {
+        ...params,
+        ...firstMessage.params,
+        content: firstMessage.content,
+      };
+      const finished = this.state.prompt.finish(
+        normalizedParams,
+        this.config.sessionId
+      );
+      finished[0].attachments = firstMessage.attachments;
+      return finished;
+    }
+
     return [
       ...this.state.prompt.finish(
-        Object.keys(params).length ? params : messages[0]?.params || {},
+        Object.keys(params).length ? params : firstMessage?.params || {},
         this.config.sessionId
       ),
       ...messages.filter(m => m.content?.trim() || m.attachments?.length),
