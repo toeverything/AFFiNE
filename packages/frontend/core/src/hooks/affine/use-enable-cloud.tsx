@@ -1,4 +1,4 @@
-import { useConfirmModal } from '@affine/component';
+import { notify, useConfirmModal } from '@affine/component';
 import { authAtom } from '@affine/core/atoms';
 import { AuthService } from '@affine/core/modules/cloud';
 import { WorkspaceSubPath } from '@affine/core/shared';
@@ -37,12 +37,19 @@ export const useEnableCloud = () => {
 
   const enableCloud = useCallback(
     async (ws: Workspace | null, options?: ConfirmEnableCloudOptions) => {
-      if (!ws) return;
-      const { id: newId } = await workspacesService.transformLocalToCloud(ws);
-      openPage(newId, options?.openPageId || WorkspaceSubPath.ALL);
-      options?.onSuccess?.();
+      try {
+        if (!ws) return;
+        const { id: newId } = await workspacesService.transformLocalToCloud(ws);
+        openPage(newId, options?.openPageId || WorkspaceSubPath.ALL);
+        options?.onSuccess?.();
+      } catch (e) {
+        console.error(e);
+        notify.error({
+          title: t['com.affine.workspace.enable-cloud.failed'](),
+        });
+      }
     },
-    [openPage, workspacesService]
+    [openPage, t, workspacesService]
   );
 
   const openSignIn = useCallback(() => {
@@ -95,7 +102,9 @@ export const useEnableCloud = () => {
             if (!open) onFinished?.();
           },
         },
-        { autoClose: false }
+        {
+          autoClose: false,
+        }
       );
     },
     [closeConfirmModal, loginStatus, openConfirmModal, signInOrEnableCloud, t]
