@@ -10,6 +10,14 @@ import {
 import type { UserType } from '../../src/core/user';
 import { gql } from './common';
 
+export async function internalSignIn(app: INestApplication, userId: string) {
+  const auth = app.get(AuthService);
+
+  const session = await auth.createUserSession({ id: userId });
+
+  return `${AuthService.sessionCookieName}=${session.sessionId}`;
+}
+
 export function sessionCookie(headers: any): string {
   const cookie = headers['set-cookie']?.find((c: string) =>
     c.startsWith(`${AuthService.sessionCookieName}=`)

@@ -84,7 +84,11 @@ export class PermissionService {
   /**
    * check if a doc binary is accessible by a user
    */
-  async isAccessible(ws: string, id: string, user?: string): Promise<boolean> {
+  async isPublicAccessible(
+    ws: string,
+    id: string,
+    user?: string
+  ): Promise<boolean> {
     if (ws === id) {
       // if workspace is public or have any public page, then allow to access
       const [isPublicWorkspace, publicPages] = await Promise.all([

@@ -20,7 +20,7 @@ import {
   Throttle,
   ThrottlerStorage,
 } from '../../src/fundamentals/throttler';
-import { createTestingApp, sessionCookie } from '../utils';
+import { createTestingApp, internalSignIn } from '../utils';
 
 const test = ava as TestFn<{
   storage: ThrottlerStorage;
@@ -113,11 +113,7 @@ test.beforeEach(async t => {
   const auth = app.get(AuthService);
   const u1 = await auth.signUp('u1', 'u1@affine.pro', 'test');
 
-  const res = await request(app.getHttpServer())
-    .post('/api/auth/sign-in')
-    .send({ email: u1.email, password: 'test' });
-
-  t.context.cookie = sessionCookie(res.headers)!;
+  t.context.cookie = await internalSignIn(app, u1.id);
 });
 
 test.afterEach.always(async t => {
