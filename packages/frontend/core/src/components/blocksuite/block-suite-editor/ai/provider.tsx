@@ -287,10 +287,9 @@ export function setupAIProvider() {
   });
 
   provideAction('makeItReal', options => {
-    return toImage({
+    return textToText({
       ...options,
       promptName: 'Make it real',
-      seed: options.seed,
       content:
         options.content ||
         'Here are the latest wireframes. Could you make a new website based on these wireframes and notes and send back just the html file?',
