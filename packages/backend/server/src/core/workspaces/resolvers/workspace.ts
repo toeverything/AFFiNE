@@ -218,11 +218,7 @@ export class WorkspaceResolver {
         permissions: {
           create: {
             type: Permission.Owner,
-            user: {
-              connect: {
-                id: user.id,
-              },
-            },
+            userId: user.id,
             accepted: true,
           },
         },

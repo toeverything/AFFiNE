@@ -32,6 +32,7 @@ model User {
   sessions             UserSession[]
   aiSessions           AiSession[]
 
+  @@index([email])
   @@map("users")
 }
 
@@ -195,6 +196,7 @@ model UserFeatures {
   feature Features @relation(fields: [featureId], references: [id], onDelete: Cascade)
   user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
   @@map("user_features")
 }
 

@@ -97,6 +97,14 @@ export async function createRandomUser(): Promise<{
     password: '123456',
   };
   const result = await runPrisma(async client => {
+    const featureId = await client.features
+      .findFirst({
+        where: { feature: 'free_plan_v1' },
+        select: { id: true },
+        orderBy: { version: 'desc' },
+      })
+      .then(f => f!.id);
+
     await client.user.create({
       data: {
         ...user,
@@ -106,14 +114,7 @@ export async function createRandomUser(): Promise<{
           create: {
             reason: 'created by test case',
             activated: true,
-            feature: {
-              connect: {
-                feature_version: {
-                  feature: 'free_plan_v1',
-                  version: 1,
-                },
-              },
-            },
+            featureId,
           },
         },
       },

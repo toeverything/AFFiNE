@@ -23,6 +23,7 @@ import {
 } from './types';
 
 export class ChatSession implements AsyncDisposable {
+  private stashMessageCount = 0;
   constructor(
     private readonly messageCache: ChatMessageCache,
     private readonly state: ChatSessionState,
@@ -46,6 +47,11 @@ export class ChatSession implements AsyncDisposable {
     return { sessionId, userId, workspaceId, docId, promptName };
   }
 
+  get stashMessages() {
+    if (!this.stashMessageCount) return [];
+    return this.state.messages.slice(-this.stashMessageCount);
+  }
+
   push(message: ChatMessage) {
     if (
       this.state.prompt.action &&
@@ -55,6 +61,7 @@ export class ChatSession implements AsyncDisposable {
       throw new Error('Action has been taken, no more messages allowed');
     }
     this.state.messages.push(message);
+    this.stashMessageCount += 1;
   }
 
   async getMessageById(messageId: string) {
@@ -141,7 +148,12 @@ export class ChatSession implements AsyncDisposable {
   }
 
   async save() {
-    await this.dispose?.(this.state);
+    await this.dispose?.({
+      ...this.state,
+      // only provide new messages
+      messages: this.stashMessages,
+    });
+    this.stashMessageCount = 0;
   }
 
   async [Symbol.asyncDispose]() {
@@ -181,36 +193,40 @@ export class ChatSessionService {
         if (id) sessionId = id;
       }
 
-      const messages = state.messages.map(m => ({
-        ...m,
-        attachments: m.attachments || undefined,
-        params: m.params || undefined,
-      }));
+      const haveSession = await tx.aiSession
+        .count({
+          where: {
+            id: sessionId,
+            userId: state.userId,
+          },
+        })
+        .then(c => c > 0);
 
-      await tx.aiSession.upsert({
-        where: {
-          id: sessionId,
-          userId: state.userId,
-        },
-        update: {
-          messages: {
-            // skip delete old messages if no new messages
-            deleteMany: messages.length ? {} : undefined,
-            create: messages,
+      if (haveSession) {
+        // message will only exists when setSession call by session.save
+        if (state.messages.length) {
+          await tx.aiSessionMessage.createMany({
+            data: state.messages.map(m => ({
+              ...m,
+              attachments: m.attachments || undefined,
+              params: m.params || undefined,
+              sessionId,
+            })),
+          });
+        }
+      } else {
+        await tx.aiSession.create({
+          data: {
+            id: sessionId,
+            workspaceId: state.workspaceId,
+            docId: state.docId,
+            // connect
+            userId: state.userId,
+            promptName: state.prompt.name,
           },
-        },
-        create: {
-          id: sessionId,
-          workspaceId: state.workspaceId,
-          docId: state.docId,
-          messages: {
-            create: messages,
-          },
-          // connect
-          user: { connect: { id: state.userId } },
-          prompt: { connect: { name: state.prompt.name } },
-        },
-      });
+        });
+      }
+
       return sessionId;
     });
   }
