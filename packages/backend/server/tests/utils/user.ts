@@ -1,5 +1,5 @@
 import type { INestApplication } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+import { hashSync } from '@node-rs/argon2';
 import request, { type Response } from 'supertest';
 
 import {
@@ -7,7 +7,8 @@ import {
   type ClientTokenType,
   type CurrentUser,
 } from '../../src/core/auth';
-import type { UserType } from '../../src/core/user';
+import { sessionUser } from '../../src/core/auth/service';
+import { UserService, type UserType } from '../../src/core/user';
 import { gql } from './common';
 
 export async function internalSignIn(app: INestApplication, userId: string) {
@@ -50,34 +51,18 @@ export async function signUp(
   password: string,
   autoVerifyEmail = true
 ): Promise<UserType & { token: ClientTokenType }> {
-  const res = await request(app.getHttpServer())
-    .post(gql)
-    .set({ 'x-request-id': 'test', 'x-operation-name': 'test' })
-    .send({
-      query: `
-            mutation {
-              signUp(name: "${name}", email: "${email}", password: "${password}") {
-                id, name, email, token { token }
-              }
-            }
-          `,
-    })
-    .expect(200);
-
-  if (autoVerifyEmail) {
-    await setEmailVerified(app, email);
-  }
-
-  return res.body.data.signUp;
-}
-
-async function setEmailVerified(app: INestApplication, email: string) {
-  await app.get(PrismaClient).user.update({
-    where: { email },
-    data: {
-      emailVerifiedAt: new Date(),
-    },
+  const user = await app.get(UserService).createUser({
+    name,
+    email,
+    password: hashSync(password),
+    emailVerifiedAt: autoVerifyEmail ? new Date() : null,
   });
+  const { sessionId } = await app.get(AuthService).createUserSession(user);
+
+  return {
+    ...sessionUser(user),
+    token: { token: sessionId, refresh: '' },
+  };
 }
 
 export async function currentUser(app: INestApplication, token: string) {
