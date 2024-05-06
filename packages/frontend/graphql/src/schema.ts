@@ -353,23 +353,6 @@ export type GetCopilotHistoriesQuery = {
   } | null;
 };
 
-export type GetCopilotQuotaQueryVariables = Exact<{ [key: string]: never }>;
-
-export type GetCopilotQuotaQuery = {
-  __typename?: 'Query';
-  currentUser: {
-    __typename?: 'UserType';
-    copilot: {
-      __typename?: 'Copilot';
-      quota: {
-        __typename?: 'CopilotQuota';
-        limit: number | null;
-        used: number;
-      };
-    };
-  } | null;
-};
-
 export type GetCopilotSessionsQueryVariables = Exact<{
   workspaceId: Scalars['String']['input'];
 }>;
@@ -1047,11 +1030,6 @@ export type Queries =
       name: 'getCopilotHistoriesQuery';
       variables: GetCopilotHistoriesQueryVariables;
       response: GetCopilotHistoriesQuery;
-    }
-  | {
-      name: 'getCopilotQuotaQuery';
-      variables: GetCopilotQuotaQueryVariables;
-      response: GetCopilotQuotaQuery;
     }
   | {
       name: 'getCopilotSessionsQuery';

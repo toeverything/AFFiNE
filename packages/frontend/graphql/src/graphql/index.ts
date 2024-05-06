@@ -238,24 +238,6 @@ query getCopilotHistories($workspaceId: String!, $docId: String, $options: Query
 }`,
 };
 
-export const getCopilotQuotaQuery = {
-  id: 'getCopilotQuotaQuery' as const,
-  operationName: 'getCopilotQuota',
-  definitionName: 'currentUser',
-  containsFile: false,
-  query: `
-query getCopilotQuota {
-  currentUser {
-    copilot {
-      quota {
-        limit
-        used
-      }
-    }
-  }
-}`,
-};
-
 export const getCopilotSessionsQuery = {
   id: 'getCopilotSessionsQuery' as const,
   operationName: 'getCopilotSessions',
