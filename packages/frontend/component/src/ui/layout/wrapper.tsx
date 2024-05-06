@@ -26,6 +26,7 @@ export type FlexWrapperProps = {
   wrap?: boolean;
   flexShrink?: CSSProperties['flexShrink'];
   flexGrow?: CSSProperties['flexGrow'];
+  gap?: CSSProperties['gap'];
 };
 
 // Sometimes we just want to wrap a component with a div to set flex or other styles, but we don't want to create a new component for it.
@@ -88,6 +89,7 @@ export const FlexWrapper = styled(Wrapper, {
       'flexDirection',
       'flexShrink',
       'flexGrow',
+      'gap',
     ].includes(prop as string);
   },
 })<FlexWrapperProps>(({
@@ -97,6 +99,7 @@ export const FlexWrapper = styled(Wrapper, {
   flexDirection,
   flexShrink,
   flexGrow,
+  gap,
 }) => {
   return {
     display: 'flex',
@@ -106,6 +109,7 @@ export const FlexWrapper = styled(Wrapper, {
     flexDirection,
     flexShrink,
     flexGrow,
+    gap,
   };
 });
 
