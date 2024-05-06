@@ -229,7 +229,7 @@ export const AIOnboardingGeneral = ({
               a: (
                 <a
                   className={styles.privacyLink}
-                  href="https://ai.affine.pro"
+                  href="https://affine.pro/terms"
                 />
               ),
             }}
