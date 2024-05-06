@@ -214,6 +214,8 @@ export interface AFFiNEConfig {
    * authentication config
    */
   auth: {
+    allowSignup: boolean;
+
     /**
      * The minimum and maximum length of the password when registering new users
      *

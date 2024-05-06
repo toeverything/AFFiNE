@@ -112,6 +112,7 @@ export const ConfirmModalProvider = ({ children }: PropsWithChildren) => {
         return Promise.resolve(_onConfirm?.())
           .then(() => onSuccess?.())
           .catch(console.error)
+          .finally(() => setLoading(false))
           .finally(() => autoClose && closeConfirmModal());
       };
       setModalProps({ ...otherProps, onConfirm, open: true });

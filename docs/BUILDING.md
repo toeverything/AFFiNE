@@ -2,7 +2,7 @@
 
 > **Warning**:
 >
-> This document has not been updated for a while.
+> This document is not guaranteed to be up-to-date.
 > If you find any outdated information, please feel free to open an issue or submit a PR.
 
 > **Note**
@@ -27,7 +27,7 @@ We suggest develop our product under node.js LTS(Long-term support) version
 
 install [Node LTS version](https://nodejs.org/en/download)
 
-> Up to now, the major node.js version is 18.x
+> Up to now, the major node.js version is 20.x
 
 #### Option 2: Use node version manager
 
@@ -76,7 +76,7 @@ Once Developer Mode is enabled, execute the following command with administrator
 ```sh
 # Enable symbolic links
 git config --global core.symlinks true
-# Clone the repository, also need to be run with administrator privileges
+# Clone the repository
 git clone https://github.com/toeverything/AFFiNE
 ```
 

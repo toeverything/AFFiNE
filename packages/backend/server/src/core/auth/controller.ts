@@ -15,6 +15,7 @@ import {
 import type { Request, Response } from 'express';
 
 import {
+  Config,
   PaymentRequiredException,
   Throttle,
   URLHelper,
@@ -43,7 +44,8 @@ export class AuthController {
     private readonly url: URLHelper,
     private readonly auth: AuthService,
     private readonly user: UserService,
-    private readonly token: TokenService
+    private readonly token: TokenService,
+    private readonly config: Config
   ) {}
 
   @Public()
@@ -74,6 +76,10 @@ export class AuthController {
     } else {
       // send email magic link
       const user = await this.user.findUserByEmail(credential.email);
+      if (!user && !this.config.auth.allowSignup) {
+        throw new BadRequestException('You are not allows to sign up.');
+      }
+
       const result = await this.sendSignInEmail(
         { email: credential.email, signUp: !user },
         redirectUri

@@ -147,6 +147,7 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
       playground: true,
     },
     auth: {
+      allowSignup: true,
       password: {
         minLength: node.prod ? 8 : 1,
         maxLength: 32,

@@ -13,7 +13,6 @@ import type { LoaderFunction } from 'react-router-dom';
 import { redirect, useLoaderData } from 'react-router-dom';
 
 import { authAtom } from '../atoms';
-import { setOnceSignedInEventAtom } from '../atoms/event';
 import { RouteLogic, useNavigateHelper } from '../hooks/use-navigate-helper';
 import { AuthService } from '../modules/cloud';
 
@@ -59,8 +58,6 @@ export const Component = () => {
   const { jumpToSignIn } = useNavigateHelper();
   const { jumpToSubPath } = useNavigateHelper();
 
-  const setOnceSignedInEvent = useSetAtom(setOnceSignedInEventAtom);
-
   const setAuthAtom = useSetAtom(authAtom);
   const { inviteInfo } = useLoaderData() as {
     inviteId: string;
@@ -78,7 +75,6 @@ export const Component = () => {
   useEffect(() => {
     if (loginStatus === 'unauthenticated' && !isRevalidating) {
       // We can not pass function to navigate state, so we need to save it in atom
-      setOnceSignedInEvent(openWorkspace);
       jumpToSignIn(
         `/workspace/${inviteInfo.workspace.id}/all`,
         RouteLogic.REPLACE
@@ -91,7 +87,6 @@ export const Component = () => {
     loginStatus,
     openWorkspace,
     setAuthAtom,
-    setOnceSignedInEvent,
   ]);
 
   if (loginStatus === 'authenticated') {

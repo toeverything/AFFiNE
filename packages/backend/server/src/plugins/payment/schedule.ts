@@ -197,7 +197,7 @@ export class ScheduleManager {
       throw new Error('Unexpected subscription schedule status');
     }
 
-    // if current phase's plan matches target, and no coupon change, just release the schedule
+    // if current phase's plan matches target, just release the schedule
     if (this.currentPhase.items[0].price === price) {
       await this.stripe.subscriptionSchedules.release(this._schedule.id, {
         idempotencyKey,
@@ -221,13 +221,8 @@ export class ScheduleManager {
               items: [
                 {
                   price: price,
-                  quantity: 1,
                 },
               ],
-              coupon:
-                typeof this.currentPhase.coupon === 'string'
-                  ? this.currentPhase.coupon
-                  : this.currentPhase.coupon?.id ?? undefined,
             },
           ],
         },

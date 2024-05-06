@@ -14,6 +14,7 @@ export const inputWrapper = style({
   alignItems: 'center',
   fontSize: cssVar('fontBase'),
   boxSizing: 'border-box',
+  overflow: 'hidden',
   selectors: {
     '&.no-border': {
       border: 'unset',

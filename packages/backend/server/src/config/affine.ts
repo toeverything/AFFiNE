@@ -53,6 +53,9 @@ AFFiNE.port = 3010;
 // AFFiNE.metrics.enabled = true;
 //
 // /* Authentication Settings */
+// /* Whether allow anyone signup */
+// AFFiNE.auth.allowSignup = true;
+//
 // /* User Signup password limitation */
 // AFFiNE.auth.password = {
 //   minLength: 8,

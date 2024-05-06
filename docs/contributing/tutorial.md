@@ -53,7 +53,3 @@ yarn dev
 ### `@affine/electron`
 
 See [building desktop client app](../building-desktop-client-app.md).
-
-## What's next?
-
-- [Behind the code](./behind-the-code.md)

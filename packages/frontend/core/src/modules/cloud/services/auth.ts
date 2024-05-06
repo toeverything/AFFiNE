@@ -24,6 +24,16 @@ export const AccountLoggedIn = createEvent<AuthAccountInfo>('AccountLoggedIn');
 export const AccountLoggedOut =
   createEvent<AuthAccountInfo>('AccountLoggedOut');
 
+function toAIUserInfo(account: AuthAccountInfo | null) {
+  if (!account) return null;
+  return {
+    avatarUrl: account.avatar ?? '',
+    email: account.email ?? '',
+    id: account.id,
+    name: account.label,
+  };
+}
+
 @OnEvent(ApplicationStarted, e => e.onApplicationStart)
 @OnEvent(ApplicationFocused, e => e.onApplicationFocused)
 export class AuthService extends Service {
@@ -36,14 +46,7 @@ export class AuthService extends Service {
     super();
 
     AIProvider.provide('userInfo', () => {
-      const account = this.session.account$.value;
-      if (!account) return null;
-      return {
-        avatarUrl: account.avatar ?? '',
-        email: account.email ?? '',
-        id: account.id,
-        name: account.label,
-      };
+      return toAIUserInfo(this.session.account$.value);
     });
 
     this.session.account$
@@ -62,6 +65,7 @@ export class AuthService extends Service {
           this.eventBus.emit(AccountLoggedIn, account);
         }
         this.eventBus.emit(AccountChanged, account);
+        AIProvider.slots.userInfo.emit(toAIUserInfo(account));
       });
   }
 

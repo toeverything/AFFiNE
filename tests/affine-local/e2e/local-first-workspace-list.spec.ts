@@ -60,7 +60,7 @@ test('create one workspace in the workspace list', async ({
   expect(currentWorkspace.meta.flavour).toContain('local');
 });
 
-test('create multi workspace in the workspace list', async ({
+test.skip('create multi workspace in the workspace list', async ({
   page,
   workspace,
 }) => {

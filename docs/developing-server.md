@@ -1,5 +1,10 @@
 This document explains how to start server (@affine/server) locally with Docker
 
+> **Warning**:
+>
+> This document is not guaranteed to be up-to-date.
+> If you find any outdated information, please feel free to open an issue or submit a PR.
+
 ## Run postgresql in docker
 
 ```

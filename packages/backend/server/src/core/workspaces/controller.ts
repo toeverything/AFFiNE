@@ -43,7 +43,13 @@ export class WorkspacesController {
   ) {
     // if workspace is public or have any public page, then allow to access
     // otherwise, check permission
-    if (!(await this.permission.tryCheckWorkspace(workspaceId, user?.id))) {
+    if (
+      !(await this.permission.isPublicAccessible(
+        workspaceId,
+        workspaceId,
+        user?.id
+      ))
+    ) {
       throw new ForbiddenException('Permission denied');
     }
 
@@ -81,7 +87,7 @@ export class WorkspacesController {
     const docId = new DocID(guid, ws);
     if (
       // if a user has the permission
-      !(await this.permission.isAccessible(
+      !(await this.permission.isPublicAccessible(
         docId.workspace,
         docId.guid,
         user?.id
