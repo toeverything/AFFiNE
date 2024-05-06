@@ -146,7 +146,6 @@ export const AIOnboardingGeneral = ({
           autoPlay={index === 0}
           src={video}
           className={styles.video}
-          loop
           muted
           playsInline
         />
