@@ -222,8 +222,6 @@ type Mutation {
   setBlob(blob: Upload!, workspaceId: String!): String!
   setWorkspaceExperimentalFeature(enable: Boolean!, feature: FeatureType!, workspaceId: String!): Boolean!
   sharePage(pageId: String!, workspaceId: String!): Boolean! @deprecated(reason: "renamed to publishPage")
-  signIn(email: String!, password: String!): UserType!
-  signUp(email: String!, name: String!, password: String!): UserType!
   updateProfile(input: UpdateUserInput!): UserType!
   updateSubscriptionRecurring(idempotencyKey: String!, plan: SubscriptionPlan = Pro, recurring: SubscriptionRecurring!): UserSubscription!
 
