@@ -1,5 +1,11 @@
 # Tutorial
 
+hello
+
+world
+
+123
+
 ## Introduction
 
 This tutorial will walk you through the codebase of AFFiNE. It is intended for new contributors to AFFiNE.
