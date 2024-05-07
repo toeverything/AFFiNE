@@ -11,6 +11,7 @@ import {
   EarlyAccessType,
   FeatureManagementService,
 } from '../../src/core/features';
+import { EventEmitter } from '../../src/fundamentals';
 import { ConfigModule } from '../../src/fundamentals/config';
 import {
   CouponType,
@@ -31,6 +32,7 @@ const test = ava as TestFn<{
   app: INestApplication;
   service: SubscriptionService;
   stripe: Stripe;
+  event: EventEmitter;
   feature: Sinon.SinonStubbedInstance<FeatureManagementService>;
 }>;
 
@@ -58,6 +60,7 @@ test.beforeEach(async t => {
     },
   });
 
+  t.context.event = app.get(EventEmitter);
   t.context.stripe = app.get(Stripe);
   t.context.service = app.get(SubscriptionService);
   t.context.feature = app.get(FeatureManagementService);
@@ -637,10 +640,17 @@ test('should apply user coupon for checking out', async t => {
 // =============== subscriptions ===============
 
 test('should be able to create subscription', async t => {
-  const { service, stripe, db, u1 } = t.context;
+  const { event, service, stripe, db, u1 } = t.context;
 
+  const emitStub = Sinon.stub(event, 'emit').returns(true);
   Sinon.stub(stripe.subscriptions, 'retrieve').resolves(sub as any);
   await service.onSubscriptionChanges(sub);
+  t.true(
+    emitStub.calledOnceWith('user.subscription.activated', {
+      userId: u1.id,
+      plan: SubscriptionPlan.Pro,
+    })
+  );
 
   const subInDB = await db.userSubscription.findFirst({
     where: { userId: u1.id },
@@ -650,7 +660,7 @@ test('should be able to create subscription', async t => {
 });
 
 test('should be able to update subscription', async t => {
-  const { service, stripe, db, u1 } = t.context;
+  const { event, service, stripe, db, u1 } = t.context;
 
   const stub = Sinon.stub(stripe.subscriptions, 'retrieve').resolves(
     sub as any
@@ -663,12 +673,19 @@ test('should be able to update subscription', async t => {
 
   t.is(subInDB?.stripeSubscriptionId, sub.id);
 
+  const emitStub = Sinon.stub(event, 'emit').returns(true);
   stub.resolves({
     ...sub,
     cancel_at_period_end: true,
     canceled_at: 1714118236,
   } as any);
   await service.onSubscriptionChanges(sub);
+  t.true(
+    emitStub.calledOnceWith('user.subscription.activated', {
+      userId: u1.id,
+      plan: SubscriptionPlan.Pro,
+    })
+  );
 
   subInDB = await db.userSubscription.findFirst({
     where: { userId: u1.id },
@@ -679,7 +696,7 @@ test('should be able to update subscription', async t => {
 });
 
 test('should be able to delete subscription', async t => {
-  const { service, stripe, db, u1 } = t.context;
+  const { event, service, stripe, db, u1 } = t.context;
 
   const stub = Sinon.stub(stripe.subscriptions, 'retrieve').resolves(
     sub as any
@@ -692,8 +709,15 @@ test('should be able to delete subscription', async t => {
 
   t.is(subInDB?.stripeSubscriptionId, sub.id);
 
+  const emitStub = Sinon.stub(event, 'emit').returns(true);
   stub.resolves({ ...sub, status: 'canceled' } as any);
   await service.onSubscriptionChanges(sub);
+  t.true(
+    emitStub.calledOnceWith('user.subscription.canceled', {
+      userId: u1.id,
+      plan: SubscriptionPlan.Pro,
+    })
+  );
 
   subInDB = await db.userSubscription.findFirst({
     where: { userId: u1.id },
@@ -703,7 +727,7 @@ test('should be able to delete subscription', async t => {
 });
 
 test('should be able to cancel subscription', async t => {
-  const { service, db, u1, stripe } = t.context;
+  const { event, service, db, u1, stripe } = t.context;
 
   await db.userSubscription.create({
     data: {
@@ -723,10 +747,19 @@ test('should be able to cancel subscription', async t => {
     canceled_at: 1714118236,
   } as any);
 
+  const emitStub = Sinon.stub(event, 'emit').returns(true);
   const subInDB = await service.cancelSubscription(
     '',
     u1.id,
     SubscriptionPlan.Pro
+  );
+  // we will cancel the subscription at the end of the period
+  // so in cancel event, we still emit the activated event
+  t.true(
+    emitStub.calledOnceWith('user.subscription.activated', {
+      userId: u1.id,
+      plan: SubscriptionPlan.Pro,
+    })
   );
 
   t.true(stub.calledOnceWith('sub_1', { cancel_at_period_end: true }));
@@ -735,7 +768,7 @@ test('should be able to cancel subscription', async t => {
 });
 
 test('should be able to resume subscription', async t => {
-  const { service, db, u1, stripe } = t.context;
+  const { event, service, db, u1, stripe } = t.context;
 
   await db.userSubscription.create({
     data: {
@@ -752,10 +785,17 @@ test('should be able to resume subscription', async t => {
 
   const stub = Sinon.stub(stripe.subscriptions, 'update').resolves(sub as any);
 
+  const emitStub = Sinon.stub(event, 'emit').returns(true);
   const subInDB = await service.resumeCanceledSubscription(
     '',
     u1.id,
     SubscriptionPlan.Pro
+  );
+  t.true(
+    emitStub.calledOnceWith('user.subscription.activated', {
+      userId: u1.id,
+      plan: SubscriptionPlan.Pro,
+    })
   );
 
   t.true(stub.calledOnceWith('sub_1', { cancel_at_period_end: false }));

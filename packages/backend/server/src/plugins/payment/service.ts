@@ -204,7 +204,7 @@ export class SubscriptionService {
         tax_id_collection: {
           enabled: true,
         },
-        ...(discounts ? { discounts } : { allow_promotion_codes: true }),
+        ...(discounts.length ? { discounts } : { allow_promotion_codes: true }),
         mode: 'subscription',
         success_url: redirectUrl,
         customer: customer.stripeCustomerId,
