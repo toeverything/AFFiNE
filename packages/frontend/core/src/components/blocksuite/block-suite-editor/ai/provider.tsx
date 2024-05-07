@@ -82,7 +82,7 @@ export function setupAIProvider() {
     return textToText({
       ...options,
       params: {
-        tone: options.tone,
+        tone: options.tone.toLowerCase(),
       },
       content: options.input,
       promptName: 'Change tone to',
