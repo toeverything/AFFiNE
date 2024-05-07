@@ -1,0 +1,901 @@
+import { INestApplication } from '@nestjs/common';
+import { PrismaClient } from '@prisma/client';
+import ava, { TestFn } from 'ava';
+import Sinon from 'sinon';
+import Stripe from 'stripe';
+
+import { AppModule } from '../../src/app.module';
+import { CurrentUser } from '../../src/core/auth';
+import { AuthService } from '../../src/core/auth/service';
+import {
+  EarlyAccessType,
+  FeatureManagementService,
+} from '../../src/core/features';
+import { ConfigModule } from '../../src/fundamentals/config';
+import {
+  CouponType,
+  encodeLookupKey,
+  SubscriptionService,
+} from '../../src/plugins/payment/service';
+import {
+  SubscriptionPlan,
+  SubscriptionPriceVariant,
+  SubscriptionRecurring,
+  SubscriptionStatus,
+} from '../../src/plugins/payment/types';
+import { createTestingApp } from '../utils';
+
+const test = ava as TestFn<{
+  u1: CurrentUser;
+  db: PrismaClient;
+  app: INestApplication;
+  service: SubscriptionService;
+  stripe: Stripe;
+  feature: Sinon.SinonStubbedInstance<FeatureManagementService>;
+}>;
+
+test.beforeEach(async t => {
+  const { app } = await createTestingApp({
+    imports: [
+      ConfigModule.forRoot({
+        plugins: {
+          payment: {
+            stripe: {
+              keys: {
+                APIKey: '1',
+                webhookKey: '1',
+              },
+            },
+          },
+        },
+      }),
+      AppModule,
+    ],
+    tapModule: m => {
+      m.overrideProvider(FeatureManagementService).useValue(
+        Sinon.createStubInstance(FeatureManagementService)
+      );
+    },
+  });
+
+  t.context.stripe = app.get(Stripe);
+  t.context.service = app.get(SubscriptionService);
+  t.context.feature = app.get(FeatureManagementService);
+  t.context.db = app.get(PrismaClient);
+  t.context.app = app;
+
+  t.context.u1 = await app.get(AuthService).signUp('u1', 'u1@affine.pro', '1');
+  await t.context.db.userStripeCustomer.create({
+    data: {
+      userId: t.context.u1.id,
+      stripeCustomerId: 'cus_1',
+    },
+  });
+});
+
+test.afterEach.always(async t => {
+  await t.context.app.close();
+});
+
+const PRO_MONTHLY = `${SubscriptionPlan.Pro}_${SubscriptionRecurring.Monthly}`;
+const PRO_YEARLY = `${SubscriptionPlan.Pro}_${SubscriptionRecurring.Yearly}`;
+const PRO_EA_YEARLY = `${SubscriptionPlan.Pro}_${SubscriptionRecurring.Yearly}_${SubscriptionPriceVariant.EA}`;
+const AI_YEARLY = `${SubscriptionPlan.AI}_${SubscriptionRecurring.Yearly}`;
+const AI_YEARLY_EA = `${SubscriptionPlan.AI}_${SubscriptionRecurring.Yearly}_${SubscriptionPriceVariant.EA}`;
+
+const PRICES = {
+  [PRO_MONTHLY]: {
+    recurring: {
+      interval: 'month',
+    },
+    unit_amount: 799,
+    currency: 'usd',
+    lookup_key: PRO_MONTHLY,
+  },
+  [PRO_YEARLY]: {
+    recurring: {
+      interval: 'year',
+    },
+    unit_amount: 8100,
+    currency: 'usd',
+    lookup_key: PRO_YEARLY,
+  },
+  [PRO_EA_YEARLY]: {
+    recurring: {
+      interval: 'year',
+    },
+    unit_amount: 5000,
+    currency: 'usd',
+    lookup_key: PRO_EA_YEARLY,
+  },
+  [AI_YEARLY]: {
+    recurring: {
+      interval: 'year',
+    },
+    unit_amount: 10680,
+    currency: 'usd',
+    lookup_key: AI_YEARLY,
+  },
+  [AI_YEARLY_EA]: {
+    recurring: {
+      interval: 'year',
+    },
+    unit_amount: 9999,
+    currency: 'usd',
+    lookup_key: AI_YEARLY_EA,
+  },
+};
+
+const sub: Stripe.Subscription = {
+  id: 'sub_1',
+  object: 'subscription',
+  cancel_at_period_end: false,
+  canceled_at: null,
+  current_period_end: 1745654236,
+  current_period_start: 1714118236,
+  customer: 'cus_1',
+  items: {
+    object: 'list',
+    data: [
+      {
+        id: 'si_1',
+        // @ts-expect-error stub
+        price: {
+          id: 'price_1',
+          lookup_key: 'pro_monthly',
+        },
+        subscription: 'sub_1',
+      },
+    ],
+  },
+  status: 'active',
+  trial_end: null,
+  trial_start: null,
+  schedule: null,
+};
+
+// ============== prices ==============
+test('should list normal price for unauthenticated user', async t => {
+  const { service, stripe } = t.context;
+
+  // @ts-expect-error stub
+  Sinon.stub(stripe.subscriptions, 'list').resolves({ data: [] });
+  // @ts-expect-error stub
+  Sinon.stub(stripe.prices, 'list').resolves({ data: Object.values(PRICES) });
+
+  const prices = await service.listPrices();
+
+  t.is(prices.length, 3);
+  t.deepEqual(
+    new Set(prices.map(p => p.lookup_key)),
+    new Set([PRO_MONTHLY, PRO_YEARLY, AI_YEARLY])
+  );
+});
+
+test('should list normal prices for authenticated user', async t => {
+  const { feature, service, u1, stripe } = t.context;
+
+  feature.isEarlyAccessUser.withArgs(u1.email).resolves(false);
+  feature.isEarlyAccessUser
+    .withArgs(u1.email, EarlyAccessType.AI)
+    .resolves(false);
+
+  // @ts-expect-error stub
+  Sinon.stub(stripe.subscriptions, 'list').resolves({ data: [] });
+  // @ts-expect-error stub
+  Sinon.stub(stripe.prices, 'list').resolves({ data: Object.values(PRICES) });
+
+  const prices = await service.listPrices(u1);
+
+  t.is(prices.length, 3);
+  t.deepEqual(
+    new Set(prices.map(p => p.lookup_key)),
+    new Set([PRO_MONTHLY, PRO_YEARLY, AI_YEARLY])
+  );
+});
+
+test('should list early access prices for pro ea user', async t => {
+  const { feature, service, u1, stripe } = t.context;
+
+  feature.isEarlyAccessUser.withArgs(u1.email).resolves(true);
+  feature.isEarlyAccessUser
+    .withArgs(u1.email, EarlyAccessType.AI)
+    .resolves(false);
+
+  // @ts-expect-error stub
+  Sinon.stub(stripe.subscriptions, 'list').resolves({ data: [] });
+  // @ts-expect-error stub
+  Sinon.stub(stripe.prices, 'list').resolves({ data: Object.values(PRICES) });
+
+  const prices = await service.listPrices(u1);
+
+  t.is(prices.length, 3);
+  t.deepEqual(
+    new Set(prices.map(p => p.lookup_key)),
+    new Set([PRO_MONTHLY, PRO_EA_YEARLY, AI_YEARLY])
+  );
+});
+
+test('should list normal prices for pro ea user with old subscriptions', async t => {
+  const { feature, service, u1, stripe } = t.context;
+
+  feature.isEarlyAccessUser.withArgs(u1.email).resolves(true);
+  feature.isEarlyAccessUser
+    .withArgs(u1.email, EarlyAccessType.AI)
+    .resolves(false);
+
+  Sinon.stub(stripe.subscriptions, 'list').resolves({
+    data: [
+      {
+        id: 'sub_1',
+        status: 'canceled',
+        items: {
+          data: [
+            {
+              // @ts-expect-error stub
+              price: {
+                lookup_key: PRO_YEARLY,
+              },
+            },
+          ],
+        },
+      },
+    ],
+  });
+  // @ts-expect-error stub
+  Sinon.stub(stripe.prices, 'list').resolves({ data: Object.values(PRICES) });
+
+  const prices = await service.listPrices(u1);
+
+  t.is(prices.length, 3);
+  t.deepEqual(
+    new Set(prices.map(p => p.lookup_key)),
+    new Set([PRO_MONTHLY, PRO_YEARLY, AI_YEARLY])
+  );
+});
+
+test('should list early access prices for ai ea user', async t => {
+  const { feature, service, u1, stripe } = t.context;
+
+  feature.isEarlyAccessUser.withArgs(u1.email).resolves(false);
+  feature.isEarlyAccessUser
+    .withArgs(u1.email, EarlyAccessType.AI)
+    .resolves(true);
+
+  // @ts-expect-error stub
+  Sinon.stub(stripe.subscriptions, 'list').resolves({ data: [] });
+  // @ts-expect-error stub
+  Sinon.stub(stripe.prices, 'list').resolves({ data: Object.values(PRICES) });
+
+  const prices = await service.listPrices(u1);
+
+  t.is(prices.length, 3);
+  t.deepEqual(
+    new Set(prices.map(p => p.lookup_key)),
+    new Set([PRO_MONTHLY, PRO_YEARLY, AI_YEARLY_EA])
+  );
+});
+
+test('should list early access prices for pro and ai ea user', async t => {
+  const { feature, service, u1, stripe } = t.context;
+
+  feature.isEarlyAccessUser.withArgs(u1.email).resolves(true);
+  feature.isEarlyAccessUser
+    .withArgs(u1.email, EarlyAccessType.AI)
+    .resolves(true);
+
+  // @ts-expect-error stub
+  Sinon.stub(stripe.subscriptions, 'list').resolves({ data: [] });
+  // @ts-expect-error stub
+  Sinon.stub(stripe.prices, 'list').resolves({ data: Object.values(PRICES) });
+
+  const prices = await service.listPrices(u1);
+
+  t.is(prices.length, 3);
+  t.deepEqual(
+    new Set(prices.map(p => p.lookup_key)),
+    new Set([PRO_MONTHLY, PRO_EA_YEARLY, AI_YEARLY_EA])
+  );
+});
+
+test('should list normal prices for ai ea user with old subscriptions', async t => {
+  const { feature, service, u1, stripe } = t.context;
+
+  feature.isEarlyAccessUser.withArgs(u1.email).resolves(false);
+  feature.isEarlyAccessUser
+    .withArgs(u1.email, EarlyAccessType.AI)
+    .resolves(true);
+
+  Sinon.stub(stripe.subscriptions, 'list').resolves({
+    data: [
+      {
+        id: 'sub_1',
+        status: 'canceled',
+        items: {
+          data: [
+            {
+              // @ts-expect-error stub
+              price: {
+                lookup_key: AI_YEARLY,
+              },
+            },
+          ],
+        },
+      },
+    ],
+  });
+  // @ts-expect-error stub
+  Sinon.stub(stripe.prices, 'list').resolves({ data: Object.values(PRICES) });
+
+  const prices = await service.listPrices(u1);
+
+  t.is(prices.length, 3);
+  t.deepEqual(
+    new Set(prices.map(p => p.lookup_key)),
+    new Set([PRO_MONTHLY, PRO_YEARLY, AI_YEARLY])
+  );
+});
+
+// ============= end prices ================
+
+// ============= checkout ==================
+test('should throw if user has subscription already', async t => {
+  const { service, u1, db } = t.context;
+
+  await db.userSubscription.create({
+    data: {
+      userId: u1.id,
+      stripeSubscriptionId: 'sub_1',
+      plan: SubscriptionPlan.Pro,
+      recurring: SubscriptionRecurring.Monthly,
+      status: SubscriptionStatus.Active,
+      start: new Date(),
+      end: new Date(),
+    },
+  });
+
+  await t.throwsAsync(
+    () =>
+      service.createCheckoutSession({
+        user: u1,
+        recurring: SubscriptionRecurring.Monthly,
+        plan: SubscriptionPlan.Pro,
+        redirectUrl: '',
+        idempotencyKey: '',
+      }),
+    { message: "You've already subscribed to the pro plan" }
+  );
+});
+
+test('should get correct pro plan price for checking out', async t => {
+  const { service, u1, stripe, feature } = t.context;
+
+  const customer = {
+    userId: u1.id,
+    email: u1.email,
+    stripeCustomerId: 'cus_1',
+    createdAt: new Date(),
+  };
+
+  const subListStub = Sinon.stub(stripe.subscriptions, 'list');
+  // @ts-expect-error allow
+  Sinon.stub(service, 'getPrice').callsFake((plan, recurring, variant) => {
+    return encodeLookupKey(plan, recurring, variant);
+  });
+  // @ts-expect-error private member
+  const getAvailablePrice = service.getAvailablePrice.bind(service);
+
+  // non-ea user
+  {
+    feature.isEarlyAccessUser.resolves(false);
+    // @ts-expect-error stub
+    subListStub.resolves({ data: [] });
+    const ret = await getAvailablePrice(
+      customer,
+      SubscriptionPlan.Pro,
+      SubscriptionRecurring.Monthly
+    );
+    t.deepEqual(ret, {
+      price: PRO_MONTHLY,
+      coupon: undefined,
+    });
+  }
+
+  // ea user, but monthly
+  {
+    feature.isEarlyAccessUser.resolves(true);
+    // @ts-expect-error stub
+    subListStub.resolves({ data: [] });
+    const ret = await getAvailablePrice(
+      customer,
+      SubscriptionPlan.Pro,
+      SubscriptionRecurring.Monthly
+    );
+    t.deepEqual(ret, {
+      price: PRO_MONTHLY,
+      coupon: undefined,
+    });
+  }
+
+  // ea user, yearly
+  {
+    feature.isEarlyAccessUser.resolves(true);
+    // @ts-expect-error stub
+    subListStub.resolves({ data: [] });
+    const ret = await getAvailablePrice(
+      customer,
+      SubscriptionPlan.Pro,
+      SubscriptionRecurring.Yearly
+    );
+    t.deepEqual(ret, {
+      price: PRO_EA_YEARLY,
+      coupon: CouponType.ProEarlyAccessOneYearFree,
+    });
+  }
+
+  // ea user, yearly recurring, but has old subscription
+  {
+    feature.isEarlyAccessUser.resolves(true);
+    subListStub.resolves({
+      data: [
+        {
+          id: 'sub_1',
+          status: 'canceled',
+          items: {
+            data: [
+              {
+                // @ts-expect-error stub
+                price: {
+                  lookup_key: PRO_YEARLY,
+                },
+              },
+            ],
+          },
+        },
+      ],
+    });
+
+    const ret = await getAvailablePrice(
+      customer,
+      SubscriptionPlan.Pro,
+      SubscriptionRecurring.Yearly
+    );
+    t.deepEqual(ret, {
+      price: PRO_YEARLY,
+      coupon: undefined,
+    });
+  }
+});
+
+test('should get correct ai plan price for checking out', async t => {
+  const { service, u1, stripe, feature } = t.context;
+
+  const customer = {
+    userId: u1.id,
+    email: u1.email,
+    stripeCustomerId: 'cus_1',
+    createdAt: new Date(),
+  };
+
+  const subListStub = Sinon.stub(stripe.subscriptions, 'list');
+  // @ts-expect-error allow
+  Sinon.stub(service, 'getPrice').callsFake((plan, recurring, variant) => {
+    return encodeLookupKey(plan, recurring, variant);
+  });
+  // @ts-expect-error private member
+  const getAvailablePrice = service.getAvailablePrice.bind(service);
+
+  // non-ea user
+  {
+    feature.isEarlyAccessUser.resolves(false);
+    // @ts-expect-error stub
+    subListStub.resolves({ data: [] });
+    const ret = await getAvailablePrice(
+      customer,
+      SubscriptionPlan.AI,
+      SubscriptionRecurring.Yearly
+    );
+    t.deepEqual(ret, {
+      price: AI_YEARLY,
+      coupon: undefined,
+    });
+  }
+
+  // ea user
+  {
+    feature.isEarlyAccessUser.resolves(true);
+    // @ts-expect-error stub
+    subListStub.resolves({ data: [] });
+    const ret = await getAvailablePrice(
+      customer,
+      SubscriptionPlan.AI,
+      SubscriptionRecurring.Yearly
+    );
+    t.deepEqual(ret, {
+      price: AI_YEARLY_EA,
+      coupon: CouponType.AIEarlyAccessOneYearFree,
+    });
+  }
+
+  // ea user, but has old subscription
+  {
+    feature.isEarlyAccessUser.resolves(true);
+    subListStub.resolves({
+      data: [
+        {
+          id: 'sub_1',
+          status: 'canceled',
+          items: {
+            data: [
+              {
+                // @ts-expect-error stub
+                price: {
+                  lookup_key: AI_YEARLY,
+                },
+              },
+            ],
+          },
+        },
+      ],
+    });
+
+    const ret = await getAvailablePrice(
+      customer,
+      SubscriptionPlan.AI,
+      SubscriptionRecurring.Yearly
+    );
+    t.deepEqual(ret, {
+      price: AI_YEARLY,
+      coupon: undefined,
+    });
+  }
+
+  // pro ea user
+  {
+    feature.isEarlyAccessUser.withArgs(u1.email).resolves(true);
+    feature.isEarlyAccessUser
+      .withArgs(u1.email, EarlyAccessType.AI)
+      .resolves(false);
+    // @ts-expect-error stub
+    subListStub.resolves({ data: [] });
+    const ret = await getAvailablePrice(
+      customer,
+      SubscriptionPlan.AI,
+      SubscriptionRecurring.Yearly
+    );
+    t.deepEqual(ret, {
+      price: AI_YEARLY,
+      coupon: CouponType.ProEarlyAccessAIOneYearFree,
+    });
+  }
+
+  // pro ea user, but has old subscription
+  {
+    feature.isEarlyAccessUser.withArgs(u1.email).resolves(true);
+    feature.isEarlyAccessUser
+      .withArgs(u1.email, EarlyAccessType.AI)
+      .resolves(false);
+    subListStub.resolves({
+      data: [
+        {
+          id: 'sub_1',
+          status: 'canceled',
+          items: {
+            data: [
+              {
+                // @ts-expect-error stub
+                price: {
+                  lookup_key: AI_YEARLY,
+                },
+              },
+            ],
+          },
+        },
+      ],
+    });
+
+    const ret = await getAvailablePrice(
+      customer,
+      SubscriptionPlan.AI,
+      SubscriptionRecurring.Yearly
+    );
+    t.deepEqual(ret, {
+      price: AI_YEARLY,
+      coupon: undefined,
+    });
+  }
+});
+
+test('should apply user coupon for checking out', async t => {
+  const { service, u1, stripe } = t.context;
+
+  const checkoutStub = Sinon.stub(stripe.checkout.sessions, 'create');
+  // @ts-expect-error private member
+  Sinon.stub(service, 'getAvailablePrice').resolves({
+    // @ts-expect-error type inference error
+    price: PRO_MONTHLY,
+    coupon: undefined,
+  });
+  // @ts-expect-error private member
+  Sinon.stub(service, 'getAvailablePromotionCode').resolves('promo_1');
+
+  await service.createCheckoutSession({
+    user: u1,
+    recurring: SubscriptionRecurring.Monthly,
+    plan: SubscriptionPlan.Pro,
+    redirectUrl: '',
+    idempotencyKey: '',
+    promotionCode: 'test',
+  });
+
+  t.true(checkoutStub.calledOnce);
+  const arg = checkoutStub.firstCall
+    .args[0] as Stripe.Checkout.SessionCreateParams;
+  t.deepEqual(arg.discounts, [{ promotion_code: 'promo_1' }]);
+});
+
+// =============== subscriptions ===============
+
+test('should be able to create subscription', async t => {
+  const { service, stripe, db, u1 } = t.context;
+
+  Sinon.stub(stripe.subscriptions, 'retrieve').resolves(sub as any);
+  await service.onSubscriptionChanges(sub);
+
+  const subInDB = await db.userSubscription.findFirst({
+    where: { userId: u1.id },
+  });
+
+  t.is(subInDB?.stripeSubscriptionId, sub.id);
+});
+
+test('should be able to update subscription', async t => {
+  const { service, stripe, db, u1 } = t.context;
+
+  const stub = Sinon.stub(stripe.subscriptions, 'retrieve').resolves(
+    sub as any
+  );
+  await service.onSubscriptionChanges(sub);
+
+  let subInDB = await db.userSubscription.findFirst({
+    where: { userId: u1.id },
+  });
+
+  t.is(subInDB?.stripeSubscriptionId, sub.id);
+
+  stub.resolves({
+    ...sub,
+    cancel_at_period_end: true,
+    canceled_at: 1714118236,
+  } as any);
+  await service.onSubscriptionChanges(sub);
+
+  subInDB = await db.userSubscription.findFirst({
+    where: { userId: u1.id },
+  });
+
+  t.is(subInDB?.status, SubscriptionStatus.Active);
+  t.is(subInDB?.canceledAt?.getTime(), 1714118236000);
+});
+
+test('should be able to delete subscription', async t => {
+  const { service, stripe, db, u1 } = t.context;
+
+  const stub = Sinon.stub(stripe.subscriptions, 'retrieve').resolves(
+    sub as any
+  );
+  await service.onSubscriptionChanges(sub);
+
+  let subInDB = await db.userSubscription.findFirst({
+    where: { userId: u1.id },
+  });
+
+  t.is(subInDB?.stripeSubscriptionId, sub.id);
+
+  stub.resolves({ ...sub, status: 'canceled' } as any);
+  await service.onSubscriptionChanges(sub);
+
+  subInDB = await db.userSubscription.findFirst({
+    where: { userId: u1.id },
+  });
+
+  t.is(subInDB, null);
+});
+
+test('should be able to cancel subscription', async t => {
+  const { service, db, u1, stripe } = t.context;
+
+  await db.userSubscription.create({
+    data: {
+      userId: u1.id,
+      stripeSubscriptionId: 'sub_1',
+      plan: SubscriptionPlan.Pro,
+      recurring: SubscriptionRecurring.Yearly,
+      status: SubscriptionStatus.Active,
+      start: new Date(),
+      end: new Date(),
+    },
+  });
+
+  const stub = Sinon.stub(stripe.subscriptions, 'update').resolves({
+    ...sub,
+    cancel_at_period_end: true,
+    canceled_at: 1714118236,
+  } as any);
+
+  const subInDB = await service.cancelSubscription(
+    '',
+    u1.id,
+    SubscriptionPlan.Pro
+  );
+
+  t.true(stub.calledOnceWith('sub_1', { cancel_at_period_end: true }));
+  t.is(subInDB.status, SubscriptionStatus.Active);
+  t.truthy(subInDB.canceledAt);
+});
+
+test('should be able to resume subscription', async t => {
+  const { service, db, u1, stripe } = t.context;
+
+  await db.userSubscription.create({
+    data: {
+      userId: u1.id,
+      stripeSubscriptionId: 'sub_1',
+      plan: SubscriptionPlan.Pro,
+      recurring: SubscriptionRecurring.Yearly,
+      status: SubscriptionStatus.Active,
+      start: new Date(),
+      end: new Date(Date.now() + 100000),
+      canceledAt: new Date(),
+    },
+  });
+
+  const stub = Sinon.stub(stripe.subscriptions, 'update').resolves(sub as any);
+
+  const subInDB = await service.resumeCanceledSubscription(
+    '',
+    u1.id,
+    SubscriptionPlan.Pro
+  );
+
+  t.true(stub.calledOnceWith('sub_1', { cancel_at_period_end: false }));
+  t.is(subInDB.status, SubscriptionStatus.Active);
+  t.falsy(subInDB.canceledAt);
+});
+
+const subscriptionSchedule: Stripe.SubscriptionSchedule = {
+  id: 'sub_sched_1',
+  customer: 'cus_1',
+  subscription: 'sub_1',
+  status: 'active',
+  phases: [
+    {
+      items: [
+        // @ts-expect-error mock
+        {
+          price: PRO_MONTHLY,
+        },
+      ],
+      start_date: 1714118236,
+      end_date: 1745654236,
+    },
+  ],
+};
+
+test('should be able to update recurring', async t => {
+  const { service, db, u1, stripe } = t.context;
+
+  await db.userSubscription.create({
+    data: {
+      userId: u1.id,
+      stripeSubscriptionId: 'sub_1',
+      plan: SubscriptionPlan.Pro,
+      recurring: SubscriptionRecurring.Monthly,
+      status: SubscriptionStatus.Active,
+      start: new Date(),
+      end: new Date(Date.now() + 100000),
+    },
+  });
+
+  // 1. turn a subscription into a subscription schedule
+  // 2. update the schedule
+  //   2.1 update the current phase with  an end date
+  //   2.2 add a new phase with a start date
+
+  // @ts-expect-error private member
+  Sinon.stub(service, 'getPrice').resolves(PRO_YEARLY);
+  Sinon.stub(stripe.subscriptions, 'retrieve').resolves(sub as any);
+  Sinon.stub(stripe.subscriptionSchedules, 'create').resolves(
+    subscriptionSchedule as any
+  );
+  const stub = Sinon.stub(stripe.subscriptionSchedules, 'update');
+
+  await service.updateSubscriptionRecurring(
+    '',
+    u1.id,
+    SubscriptionPlan.Pro,
+    SubscriptionRecurring.Yearly
+  );
+
+  t.true(stub.calledOnce);
+  const arg = stub.firstCall.args;
+  t.is(arg[0], subscriptionSchedule.id);
+  t.deepEqual(arg[1], {
+    phases: [
+      {
+        items: [
+          {
+            price: PRO_MONTHLY,
+          },
+        ],
+        start_date: 1714118236,
+        end_date: 1745654236,
+      },
+      {
+        items: [
+          {
+            price: PRO_YEARLY,
+          },
+        ],
+      },
+    ],
+  });
+});
+
+test('should release the schedule if the new recurring is the same as the current phase', async t => {
+  const { service, db, u1, stripe } = t.context;
+
+  await db.userSubscription.create({
+    data: {
+      userId: u1.id,
+      stripeSubscriptionId: 'sub_1',
+      stripeScheduleId: 'sub_sched_1',
+      plan: SubscriptionPlan.Pro,
+      recurring: SubscriptionRecurring.Yearly,
+      status: SubscriptionStatus.Active,
+      start: new Date(),
+      end: new Date(Date.now() + 100000),
+    },
+  });
+
+  // @ts-expect-error private member
+  Sinon.stub(service, 'getPrice').resolves(PRO_MONTHLY);
+  Sinon.stub(stripe.subscriptions, 'retrieve').resolves({
+    ...sub,
+    schedule: subscriptionSchedule,
+  } as any);
+  Sinon.stub(stripe.subscriptionSchedules, 'retrieve').resolves(
+    subscriptionSchedule as any
+  );
+  const stub = Sinon.stub(stripe.subscriptionSchedules, 'release');
+
+  await service.updateSubscriptionRecurring(
+    '',
+    u1.id,
+    SubscriptionPlan.Pro,
+    SubscriptionRecurring.Monthly
+  );
+
+  t.true(stub.calledOnce);
+  t.is(stub.firstCall.args[0], subscriptionSchedule.id);
+});
+
+test('should operate with latest subscription status', async t => {
+  const { service, stripe } = t.context;
+
+  Sinon.stub(stripe.subscriptions, 'retrieve').resolves(sub as any);
+  // @ts-expect-error private member
+  const stub = Sinon.stub(service, 'saveSubscription');
+
+  // latest state come first
+  await service.onSubscriptionChanges(sub);
+  // old state come later
+  await service.onSubscriptionChanges({
+    ...sub,
+    status: 'canceled',
+  });
+
+  t.is(stub.callCount, 2);
+  t.deepEqual(stub.firstCall.args[1], sub);
+  t.deepEqual(stub.secondCall.args[1], sub);
+});

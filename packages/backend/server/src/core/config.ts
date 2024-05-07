@@ -5,6 +5,7 @@ import { DeploymentType } from '../fundamentals';
 import { Public } from './auth';
 
 export enum ServerFeature {
+  Copilot = 'copilot',
   Payment = 'payment',
   OAuth = 'oauth',
 }
@@ -66,6 +67,9 @@ export class ServerConfigType {
     description: 'credentials requirement',
   })
   credentialsRequirement!: CredentialsRequirementType;
+
+  @Field({ description: 'enable telemetry' })
+  enableTelemetry!: boolean;
 }
 
 export class ServerConfigResolver {
@@ -87,6 +91,7 @@ export class ServerConfigResolver {
       credentialsRequirement: {
         password: AFFiNE.auth.password,
       },
+      enableTelemetry: AFFiNE.telemetry.enabled,
     };
   }
 }

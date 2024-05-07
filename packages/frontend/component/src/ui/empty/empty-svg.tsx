@@ -1,8 +1,16 @@
 import { memo } from 'react';
 
-export const EmptySvg = memo(function EmptySvg() {
+export const EmptySvg = memo(function EmptySvg({
+  style,
+  className,
+}: {
+  style?: React.CSSProperties;
+  className?: string;
+}) {
   return (
     <svg
+      className={className}
+      style={style}
       width="248"
       height="216"
       viewBox="0 0 248 216"

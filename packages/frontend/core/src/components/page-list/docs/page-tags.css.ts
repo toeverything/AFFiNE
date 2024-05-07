@@ -120,6 +120,7 @@ export const tagLabel = style({
   overflow: 'hidden',
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',
+  userSelect: 'none',
 });
 
 export const tagRemove = style({

@@ -5,7 +5,6 @@ import { useCallback, useMemo } from 'react';
 
 import { AfterSignInSendEmail } from './after-sign-in-send-email';
 import { AfterSignUpSendEmail } from './after-sign-up-send-email';
-import { NoAccess } from './no-access';
 import { SendEmail } from './send-email';
 import { SignIn } from './sign-in';
 import { SignInWithPassword } from './sign-in-with-password';
@@ -17,8 +16,7 @@ export type AuthProps = {
     | 'afterSignInSendEmail'
     // throw away
     | 'signInWithPassword'
-    | 'sendEmail'
-    | 'noAccess';
+    | 'sendEmail';
   setAuthState: (state: AuthProps['state']) => void;
   setAuthEmail: (state: AuthProps['email']) => void;
   setEmailType: (state: AuthProps['emailType']) => void;
@@ -44,7 +42,6 @@ const config: {
   afterSignInSendEmail: AfterSignInSendEmail,
   signInWithPassword: SignInWithPassword,
   sendEmail: SendEmail,
-  noAccess: NoAccess,
 };
 
 export const AuthModal: FC<AuthModalBaseProps & AuthProps> = ({

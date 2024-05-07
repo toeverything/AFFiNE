@@ -309,3 +309,39 @@ test('select display properties to hide bodyNotes', async ({ page }) => {
   await page.locator('[data-testid="property-bodyNotes"]').click();
   await expect(cell).toBeVisible();
 });
+
+test('select three pages with shiftKey and delete', async ({ page }) => {
+  await openHomePage(page);
+  await waitForEditorLoad(page);
+  await clickNewPageButton(page);
+  await clickNewPageButton(page);
+  await clickNewPageButton(page);
+  await clickSideBarAllPageButton(page);
+  await waitForAllPagesLoad(page);
+
+  const pageCount = await getPagesCount(page);
+  await page.keyboard.down('Shift');
+  await page.locator('[data-testid="page-list-item"]').nth(0).click();
+
+  await page.locator('[data-testid="page-list-item"]').nth(2).click();
+  await page.keyboard.up('Shift');
+
+  // the floating popover should appear
+  await expect(page.locator('[data-testid="floating-toolbar"]')).toBeVisible();
+  await expect(page.locator('[data-testid="floating-toolbar"]')).toHaveText(
+    '3 doc(s) selected'
+  );
+
+  // click delete button
+  await page.locator('[data-testid="list-toolbar-delete"]').click();
+
+  // the confirm dialog should appear
+  await expect(page.getByText('Delete 3 docs?')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Delete' }).click();
+
+  // check the page count again
+  await page.waitForTimeout(300);
+
+  expect(await getPagesCount(page)).toBe(pageCount - 3);
+});

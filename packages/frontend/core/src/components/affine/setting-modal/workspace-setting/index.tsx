@@ -1,6 +1,5 @@
 import type { WorkspaceMetadata } from '@toeverything/infra';
 
-import { useIsWorkspaceOwner } from '../../../../hooks/affine/use-is-workspace-owner';
 import { ExperimentalFeatures } from './experimental-features';
 import { WorkspaceSettingDetail } from './new-workspace-setting-detail';
 import { WorkspaceSettingProperties } from './properties';
@@ -12,18 +11,11 @@ export const WorkspaceSetting = ({
   workspaceMetadata: WorkspaceMetadata;
   subTab: 'preference' | 'experimental-features' | 'properties';
 }) => {
-  const isOwner = useIsWorkspaceOwner(workspaceMetadata);
-
   switch (subTab) {
     case 'preference':
-      return (
-        <WorkspaceSettingDetail
-          workspaceMetadata={workspaceMetadata}
-          isOwner={isOwner}
-        />
-      );
+      return <WorkspaceSettingDetail workspaceMetadata={workspaceMetadata} />;
     case 'experimental-features':
-      return <ExperimentalFeatures workspaceMetadata={workspaceMetadata} />;
+      return <ExperimentalFeatures />;
     case 'properties':
       return (
         <WorkspaceSettingProperties workspaceMetadata={workspaceMetadata} />

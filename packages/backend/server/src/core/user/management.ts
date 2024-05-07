@@ -1,22 +1,24 @@
+import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import {
-  BadRequestException,
-  ForbiddenException,
-  UseGuards,
-} from '@nestjs/common';
-import { Args, Context, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
+  Args,
+  Context,
+  Int,
+  Mutation,
+  Query,
+  registerEnumType,
+  Resolver,
+} from '@nestjs/graphql';
 
-import { CloudThrottlerGuard, Throttle } from '../../fundamentals';
 import { CurrentUser } from '../auth/current-user';
 import { sessionUser } from '../auth/service';
-import { FeatureManagementService } from '../features';
+import { EarlyAccessType, FeatureManagementService } from '../features';
 import { UserService } from './service';
 import { UserType } from './types';
 
-/**
- * User resolver
- * All op rate limit: 10 req/m
- */
-@UseGuards(CloudThrottlerGuard)
+registerEnumType(EarlyAccessType, {
+  name: 'EarlyAccessType',
+});
+
 @Resolver(() => UserType)
 export class UserManagementResolver {
   constructor(
@@ -24,37 +26,26 @@ export class UserManagementResolver {
     private readonly feature: FeatureManagementService
   ) {}
 
-  @Throttle({
-    default: {
-      limit: 10,
-      ttl: 60,
-    },
-  })
   @Mutation(() => Int)
   async addToEarlyAccess(
     @CurrentUser() currentUser: CurrentUser,
-    @Args('email') email: string
+    @Args('email') email: string,
+    @Args({ name: 'type', type: () => EarlyAccessType }) type: EarlyAccessType
   ): Promise<number> {
     if (!this.feature.isStaff(currentUser.email)) {
       throw new ForbiddenException('You are not allowed to do this');
     }
     const user = await this.users.findUserByEmail(email);
     if (user) {
-      return this.feature.addEarlyAccess(user.id);
+      return this.feature.addEarlyAccess(user.id, type);
     } else {
       const user = await this.users.createAnonymousUser(email, {
         registered: false,
       });
-      return this.feature.addEarlyAccess(user.id);
+      return this.feature.addEarlyAccess(user.id, type);
     }
   }
 
-  @Throttle({
-    default: {
-      limit: 10,
-      ttl: 60,
-    },
-  })
   @Mutation(() => Int)
   async removeEarlyAccess(
     @CurrentUser() currentUser: CurrentUser,
@@ -70,12 +61,6 @@ export class UserManagementResolver {
     return this.feature.removeEarlyAccess(user.id);
   }
 
-  @Throttle({
-    default: {
-      limit: 10,
-      ttl: 60,
-    },
-  })
   @Query(() => [UserType])
   async earlyAccessUsers(
     @Context() ctx: { isAdminQuery: boolean },

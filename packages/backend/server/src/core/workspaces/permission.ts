@@ -26,6 +26,22 @@ export class PermissionService {
     return data?.type as Permission;
   }
 
+  /**
+   * check whether a workspace exists and has any one can access it
+   * @param workspaceId workspace id
+   * @returns
+   */
+  async hasWorkspace(workspaceId: string) {
+    return await this.prisma.workspaceUserPermission
+      .count({
+        where: {
+          workspaceId,
+          accepted: true,
+        },
+      })
+      .then(count => count > 0);
+  }
+
   async getOwnedWorkspaces(userId: string) {
     return this.prisma.workspaceUserPermission
       .findMany({
@@ -65,10 +81,26 @@ export class PermissionService {
     });
   }
 
-  async isAccessible(ws: string, id: string, user?: string): Promise<boolean> {
-    // workspace
+  /**
+   * check if a doc binary is accessible by a user
+   */
+  async isPublicAccessible(
+    ws: string,
+    id: string,
+    user?: string
+  ): Promise<boolean> {
     if (ws === id) {
-      return this.tryCheckWorkspace(ws, user, Permission.Read);
+      // if workspace is public or have any public page, then allow to access
+      const [isPublicWorkspace, publicPages] = await Promise.all([
+        this.tryCheckWorkspace(ws, user, Permission.Read),
+        await this.prisma.workspacePage.count({
+          where: {
+            workspaceId: ws,
+            public: true,
+          },
+        }),
+      ]);
+      return isPublicWorkspace || publicPages > 0;
     }
 
     return this.tryCheckPage(ws, id, user);
@@ -96,6 +128,23 @@ export class PermissionService {
     return count !== 0;
   }
 
+  /**
+   * only check permission if the workspace is a cloud workspace
+   * @param workspaceId workspace id
+   * @param userId user id, check if is a public workspace if not provided
+   * @param permission default is read
+   */
+  async checkCloudWorkspace(
+    workspaceId: string,
+    userId?: string,
+    permission: Permission = Permission.Read
+  ) {
+    const hasWorkspace = await this.hasWorkspace(workspaceId);
+    if (hasWorkspace) {
+      await this.checkWorkspace(workspaceId, userId, permission);
+    }
+  }
+
   async checkWorkspace(
     ws: string,
     user?: string,
@@ -120,21 +169,6 @@ export class PermissionService {
       // workspace is public
       // accessible
       if (count > 0) {
-        return true;
-      }
-
-      const publicPage = await this.prisma.workspacePage.findFirst({
-        select: {
-          pageId: true,
-        },
-        where: {
-          workspaceId: ws,
-          public: true,
-        },
-      });
-
-      // has any public pages
-      if (publicPage) {
         return true;
       }
     }
@@ -263,6 +297,25 @@ export class PermissionService {
   /// End regin: workspace permission
 
   /// Start regin: page permission
+  /**
+   * only check permission if the workspace is a cloud workspace
+   * @param workspaceId workspace id
+   * @param pageId page id aka doc id
+   * @param userId user id, check if is a public page if not provided
+   * @param permission default is read
+   */
+  async checkCloudPagePermission(
+    workspaceId: string,
+    pageId: string,
+    userId?: string,
+    permission = Permission.Read
+  ) {
+    const hasWorkspace = await this.hasWorkspace(workspaceId);
+    if (hasWorkspace) {
+      await this.checkPagePermission(workspaceId, pageId, userId, permission);
+    }
+  }
+
   async checkPagePermission(
     ws: string,
     page: string,

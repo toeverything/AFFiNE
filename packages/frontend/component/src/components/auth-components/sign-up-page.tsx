@@ -1,18 +1,16 @@
 import type { PasswordLimitsFragment } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { useSetAtom } from 'jotai';
 import type { FC } from 'react';
 import { useCallback, useState } from 'react';
 
 import { Button } from '../../ui/button';
-import { pushNotificationAtom } from '../notification-center';
+import { notify } from '../../ui/notification';
 import { AuthPageContainer } from './auth-page-container';
 import { SetPassword } from './set-password';
-import type { User } from './type';
 
 export const SignUpPage: FC<{
   passwordLimits: PasswordLimitsFragment;
-  user: User;
+  user: { email?: string };
   onSetPassword: (password: string) => Promise<void>;
   openButtonText?: string;
   onOpenAffine: () => void;
@@ -25,22 +23,19 @@ export const SignUpPage: FC<{
 }) => {
   const t = useAFFiNEI18N();
   const [hasSetUp, setHasSetUp] = useState(false);
-  const pushNotification = useSetAtom(pushNotificationAtom);
 
   const onSetPassword = useCallback(
     (passWord: string) => {
       propsOnSetPassword(passWord)
         .then(() => setHasSetUp(true))
         .catch(e =>
-          pushNotification({
+          notify.error({
             title: t['com.affine.auth.password.set-failed'](),
             message: String(e),
-            key: Date.now().toString(),
-            type: 'error',
           })
         );
     },
-    [propsOnSetPassword, pushNotification, t]
+    [propsOnSetPassword, t]
   );
   const onLater = useCallback(() => {
     setHasSetUp(true);

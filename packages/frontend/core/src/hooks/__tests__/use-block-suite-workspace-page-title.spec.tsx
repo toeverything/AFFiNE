@@ -3,12 +3,13 @@
  */
 import 'fake-indexeddb/auto';
 
-import { WorkspacePropertiesAdapter } from '@affine/core/modules/workspace';
+import { WorkspacePropertiesAdapter } from '@affine/core/modules/properties';
 import { render } from '@testing-library/react';
 import {
-  ServiceProviderContext,
+  FrameworkRoot,
+  FrameworkScope,
   useService,
-  Workspace,
+  WorkspaceService,
 } from '@toeverything/infra';
 import { createStore, Provider } from 'jotai';
 import { Suspense } from 'react';
@@ -20,8 +21,11 @@ import { useDocCollectionPageTitle } from '../use-block-suite-workspace-page-tit
 const store = createStore();
 
 const Component = () => {
-  const workspace = useService(Workspace);
-  const title = useDocCollectionPageTitle(workspace.docCollection, 'page0');
+  const workspaceService = useService(WorkspaceService);
+  const title = useDocCollectionPageTitle(
+    workspaceService.workspace.docCollection,
+    'page0'
+  );
   return <div>title: {title}</div>;
 };
 
@@ -31,42 +35,54 @@ beforeEach(async () => {
 
 describe('useDocCollectionPageTitle', () => {
   test('basic', async () => {
-    const { workspace, page } = await configureTestingEnvironment();
+    const { framework, workspace, doc } = await configureTestingEnvironment();
     const { findByText, rerender } = render(
-      <ServiceProviderContext.Provider value={page.services}>
-        <Provider store={store}>
-          <Suspense fallback="loading">
-            <Component />
-          </Suspense>
-        </Provider>
-      </ServiceProviderContext.Provider>
+      <FrameworkRoot framework={framework}>
+        <FrameworkScope scope={workspace.scope}>
+          <FrameworkScope scope={doc.scope}>
+            <Provider store={store}>
+              <Suspense fallback="loading">
+                <Component />
+              </Suspense>
+            </Provider>
+          </FrameworkScope>
+        </FrameworkScope>
+      </FrameworkRoot>
     );
     expect(await findByText('title: Untitled')).toBeDefined();
-    workspace.docCollection.setDocMeta(page.id, { title: '1' });
+    workspace.docCollection.setDocMeta(doc.id, { title: '1' });
     rerender(
-      <ServiceProviderContext.Provider value={page.services}>
-        <Provider store={store}>
-          <Suspense fallback="loading">
-            <Component />
-          </Suspense>
-        </Provider>
-      </ServiceProviderContext.Provider>
+      <FrameworkRoot framework={framework}>
+        <FrameworkScope scope={workspace.scope}>
+          <FrameworkScope scope={doc.scope}>
+            <Provider store={store}>
+              <Suspense fallback="loading">
+                <Component />
+              </Suspense>
+            </Provider>
+          </FrameworkScope>
+        </FrameworkScope>
+      </FrameworkRoot>
     );
     expect(await findByText('title: 1')).toBeDefined();
   });
 
   test('journal', async () => {
-    const { workspace, page } = await configureTestingEnvironment();
-    const adapter = workspace.services.get(WorkspacePropertiesAdapter);
-    adapter.setJournalPageDateString(page.id, '2021-01-01');
+    const { framework, workspace, doc } = await configureTestingEnvironment();
+    const adapter = workspace.scope.get(WorkspacePropertiesAdapter);
+    adapter.setJournalPageDateString(doc.id, '2021-01-01');
     const { findByText } = render(
-      <ServiceProviderContext.Provider value={page.services}>
-        <Provider store={store}>
-          <Suspense fallback="loading">
-            <Component />
-          </Suspense>
-        </Provider>
-      </ServiceProviderContext.Provider>
+      <FrameworkRoot framework={framework}>
+        <FrameworkScope scope={workspace.scope}>
+          <FrameworkScope scope={doc.scope}>
+            <Provider store={store}>
+              <Suspense fallback="loading">
+                <Component />
+              </Suspense>
+            </Provider>
+          </FrameworkScope>
+        </FrameworkScope>
+      </FrameworkRoot>
     );
     expect(await findByText('title: Jan 1, 2021')).toBeDefined();
   });

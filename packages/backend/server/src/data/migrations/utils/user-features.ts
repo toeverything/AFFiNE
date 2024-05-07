@@ -46,6 +46,16 @@ export async function upsertLatestFeatureVersion(
 
 export async function migrateNewFeatureTable(prisma: PrismaClient) {
   const waitingList = await prisma.newFeaturesWaitingList.findMany();
+  const latestEarlyAccessFeatureId = await prisma.features
+    .findFirst({
+      where: { feature: FeatureType.EarlyAccess, type: FeatureKind.Feature },
+      select: { id: true },
+      orderBy: { version: 'desc' },
+    })
+    .then(r => r?.id);
+  if (!latestEarlyAccessFeatureId) {
+    throw new Error('Feature EarlyAccess not found');
+  }
   for (const oldUser of waitingList) {
     const user = await prisma.user.findFirst({
       where: {
@@ -85,20 +95,8 @@ export async function migrateNewFeatureTable(prisma: PrismaClient) {
                 data: {
                   reason: 'Early access user',
                   activated: true,
-                  user: {
-                    connect: {
-                      id: user.id,
-                    },
-                  },
-                  feature: {
-                    connect: {
-                      feature_version: {
-                        feature: FeatureType.EarlyAccess,
-                        version: 1,
-                      },
-                      type: FeatureKind.Feature,
-                    },
-                  },
+                  userId: user.id,
+                  featureId: latestEarlyAccessFeatureId,
                 },
               })
               .then(r => r.id);

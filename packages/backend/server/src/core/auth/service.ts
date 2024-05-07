@@ -11,6 +11,8 @@ import { assign, omit } from 'lodash-es';
 
 import { Config, CryptoHelper, MailService } from '../../fundamentals';
 import { FeatureManagementService } from '../features/management';
+import { QuotaService } from '../quota/service';
+import { QuotaType } from '../quota/types';
 import { UserService } from '../user/service';
 import type { CurrentUser } from './current-user';
 
@@ -68,15 +70,28 @@ export class AuthService implements OnApplicationBootstrap {
     private readonly db: PrismaClient,
     private readonly mailer: MailService,
     private readonly feature: FeatureManagementService,
+    private readonly quota: QuotaService,
     private readonly user: UserService,
     private readonly crypto: CryptoHelper
   ) {}
 
   async onApplicationBootstrap() {
     if (this.config.node.dev) {
-      await this.signUp('Dev User', 'dev@affine.pro', 'dev').catch(() => {
+      try {
+        const [email, name, pwd] = ['dev@affine.pro', 'Dev User', 'dev'];
+        let devUser = await this.user.findUserByEmail(email);
+        if (!devUser) {
+          devUser = await this.user.createUser({
+            email,
+            name,
+            password: await this.crypto.encryptPassword(pwd),
+          });
+        }
+        await this.quota.switchUserQuota(devUser.id, QuotaType.ProPlanV1);
+        await this.feature.addCopilot(devUser.id);
+      } catch (e) {
         // ignore
-      });
+      }
     }
   }
 
@@ -131,24 +146,27 @@ export class AuthService implements OnApplicationBootstrap {
     return sessionUser(user);
   }
 
-  async getUser(token: string, seq = 0): Promise<CurrentUser | null> {
+  async getUser(
+    token: string,
+    seq = 0
+  ): Promise<{ user: CurrentUser | null; expiresAt: Date | null }> {
     const session = await this.getSession(token);
 
     // no such session
     if (!session) {
-      return null;
+      return { user: null, expiresAt: null };
     }
 
     const userSession = session.userSessions.at(seq);
 
     // no such user session
     if (!userSession) {
-      return null;
+      return { user: null, expiresAt: null };
     }
 
     // user session expired
     if (userSession.expiresAt && userSession.expiresAt <= new Date()) {
-      return null;
+      return { user: null, expiresAt: null };
     }
 
     const user = await this.db.user.findUnique({
@@ -156,10 +174,10 @@ export class AuthService implements OnApplicationBootstrap {
     });
 
     if (!user) {
-      return null;
+      return { user: null, expiresAt: null };
     }
 
-    return sessionUser(user);
+    return { user: sessionUser(user), expiresAt: userSession.expiresAt };
   }
 
   async getUserList(token: string) {
@@ -253,6 +271,43 @@ export class AuthService implements OnApplicationBootstrap {
 
       return session;
     });
+  }
+
+  async refreshUserSessionIfNeeded(
+    _req: Request,
+    res: Response,
+    sessionId: string,
+    userId: string,
+    expiresAt: Date,
+    ttr = this.config.auth.session.ttr
+  ): Promise<boolean> {
+    if (expiresAt && expiresAt.getTime() - Date.now() > ttr * 1000) {
+      // no need to refresh
+      return false;
+    }
+
+    const newExpiresAt = new Date(
+      Date.now() + this.config.auth.session.ttl * 1000
+    );
+
+    await this.db.userSession.update({
+      where: {
+        sessionId_userId: {
+          sessionId,
+          userId,
+        },
+      },
+      data: {
+        expiresAt: newExpiresAt,
+      },
+    });
+
+    res.cookie(AuthService.sessionCookieName, sessionId, {
+      expires: newExpiresAt,
+      ...this.cookieOptions,
+    });
+
+    return true;
   }
 
   async createUserSession(

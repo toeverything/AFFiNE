@@ -33,7 +33,6 @@ env:
   DEBUG: napi:*
   APP_NAME: affine
   MACOSX_DEPLOYMENT_TARGET: '10.13'
-  MIXPANEL_TOKEN: '389c0615a69b57cca7d3fa0a4824c930'
 
 jobs:
   before-make:
@@ -54,12 +53,12 @@ jobs:
         run: yarn workspace @affine/electron generate-assets
         env:
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+          SENTRY_PROJECT: 'affine'
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
           RELEASE_VERSION: ${{ steps.version.outputs.APP_VERSION }}
-          SKIP_PLUGIN_BUILD: 'true'
           SKIP_NX_CACHE: 'true'
+          MIXPANEL_TOKEN: ${{ secrets.MIXPANEL_TOKEN }}
 
       - name: Upload web artifact
         uses: actions/upload-artifact@v4
@@ -91,9 +90,10 @@ jobs:
       APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
       SKIP_GENERATE_ASSETS: 1
       SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-      SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+      SENTRY_PROJECT: 'affine'
       SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
       SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+      MIXPANEL_TOKEN: ${{ secrets.MIXPANEL_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - name: Setup Version
@@ -128,10 +128,15 @@ jobs:
           p12-file-base64: ${{ secrets.CERTIFICATES_P12 }}
           p12-password: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
 
+      - name: Install fuse on Linux (for patching AppImage)
+        if: ${{ matrix.spec.platform == 'linux' }}
+        run: |
+          sudo add-apt-repository universe
+          sudo apt install libfuse2 -y
+
       - name: make
         run: yarn workspace @affine/electron make --platform=${{ matrix.spec.platform }} --arch=${{ matrix.spec.arch }}
         env:
-          SKIP_PLUGIN_BUILD: 1
           SKIP_WEB_BUILD: 1
           HOIST_NODE_MODULES: 1
 
@@ -174,9 +179,10 @@ jobs:
     env:
       SKIP_GENERATE_ASSETS: 1
       SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-      SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+      SENTRY_PROJECT: 'affine'
       SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
       SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+      MIXPANEL_TOKEN: ${{ secrets.MIXPANEL_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - name: Setup Version
@@ -206,7 +212,6 @@ jobs:
       - name: package
         run: yarn workspace @affine/electron package --platform=${{ matrix.spec.platform }} --arch=${{ matrix.spec.arch }}
         env:
-          SKIP_PLUGIN_BUILD: 1
           SKIP_WEB_BUILD: 1
           HOIST_NODE_MODULES: 1
 
@@ -252,6 +257,10 @@ jobs:
       - name: Setup Node.js
         timeout-minutes: 10
         uses: ./.github/actions/setup-node
+        with:
+          extra-flags: workspaces focus @affine/electron @affine/monorepo
+          hard-link-nm: false
+          nmHoistingLimits: workspaces
       - name: Download and overwrite packaged artifacts
         uses: actions/download-artifact@v4
         with:
@@ -262,6 +271,9 @@ jobs:
 
       - name: Make squirrel.windows installer
         run: yarn workspace @affine/electron make-squirrel --platform=${{ matrix.spec.platform }} --arch=${{ matrix.spec.arch }}
+
+      - name: Make nsis.windows installer
+        run: yarn workspace @affine/electron make-nsis --platform=${{ matrix.spec.platform }} --arch=${{ matrix.spec.arch }}
 
       - name: Zip artifacts for faster upload
         run: Compress-Archive -CompressionLevel Fastest -Path packages/frontend/electron/out/${{ env.BUILD_TYPE }}/make/* -DestinationPath archive.zip
@@ -310,7 +322,7 @@ jobs:
           mkdir -p builds
           mv packages/frontend/electron/out/*/make/zip/win32/x64/AFFiNE*-win32-x64-*.zip ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-windows-x64.zip
           mv packages/frontend/electron/out/*/make/squirrel.windows/x64/*.exe ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-windows-x64.exe
-          mv packages/frontend/electron/out/*/make/squirrel.windows/x64/*.msi ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-windows-x64.msi
+          mv packages/frontend/electron/out/*/make/nsis.windows/x64/*.exe ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-windows-x64.nsis.exe
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4

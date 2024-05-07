@@ -26,7 +26,7 @@ const insertInputText = async (page: Page, text: string) => {
 const keyboardDownAndSelect = async (page: Page, label: string) => {
   await page.keyboard.press('ArrowDown');
   const selectedEl = page.locator(
-    '[cmdk-item][data-selected] [data-testid="cmdk-label"]'
+    '[cmdk-item][data-selected="true"] [data-testid="cmdk-label"]'
   );
   if (
     !(await selectedEl.isVisible()) ||

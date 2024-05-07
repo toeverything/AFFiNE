@@ -2,6 +2,7 @@ import { CloseIcon, DownloadIcon } from '@blocksuite/icons';
 import clsx from 'clsx';
 import { useCallback, useState } from 'react';
 
+import { mixpanel } from '../../../utils';
 import * as styles from './index.css';
 
 // Although it is called an input, it is actually a button.
@@ -20,6 +21,9 @@ export function AppDownloadButton({
 
   // TODO: unify this type of literal value.
   const handleClick = useCallback(() => {
+    mixpanel.track('Button', {
+      resolve: 'GoToDownloadAppPage',
+    });
     const url = `https://affine.pro/download?channel=stable`;
     open(url, '_blank');
   }, []);

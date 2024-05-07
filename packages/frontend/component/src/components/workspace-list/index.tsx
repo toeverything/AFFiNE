@@ -1,13 +1,5 @@
-import type { DragEndEvent } from '@dnd-kit/core';
-import { DndContext, MouseSensor, useSensor, useSensors } from '@dnd-kit/core';
-import {
-  restrictToParentElement,
-  restrictToVerticalAxis,
-} from '@dnd-kit/modifiers';
-import { arrayMove, SortableContext, useSortable } from '@dnd-kit/sortable';
 import type { WorkspaceMetadata } from '@toeverything/infra';
-import type { CSSProperties } from 'react';
-import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import { Suspense } from 'react';
 
 import {
   WorkspaceCard,
@@ -23,8 +15,9 @@ export interface WorkspaceListProps {
   onClick: (workspace: WorkspaceMetadata) => void;
   onSettingClick: (workspace: WorkspaceMetadata) => void;
   onEnableCloudClick?: (meta: WorkspaceMetadata) => void;
-  onDragEnd: (event: DragEndEvent) => void;
-  useIsWorkspaceOwner: (workspaceMetadata: WorkspaceMetadata) => boolean;
+  useIsWorkspaceOwner: (
+    workspaceMetadata: WorkspaceMetadata
+  ) => boolean | undefined;
   useWorkspaceAvatar: (
     workspaceMetadata: WorkspaceMetadata
   ) => string | undefined;
@@ -38,7 +31,6 @@ interface SortableWorkspaceItemProps extends Omit<WorkspaceListProps, 'items'> {
 }
 
 const SortableWorkspaceItem = ({
-  disabled,
   item,
   openingId,
   useIsWorkspaceOwner,
@@ -49,33 +41,11 @@ const SortableWorkspaceItem = ({
   onSettingClick,
   onEnableCloudClick,
 }: SortableWorkspaceItemProps) => {
-  const { setNodeRef, attributes, listeners, transform, transition } =
-    useSortable({
-      id: item.id,
-    });
-  const style: CSSProperties = useMemo(
-    () => ({
-      transform: transform
-        ? `translate3d(${transform.x}px, ${transform.y}px, 0)`
-        : undefined,
-      transition,
-      pointerEvents: disabled ? 'none' : undefined,
-      opacity: disabled ? 0.6 : undefined,
-    }),
-    [disabled, transform, transition]
-  );
   const isOwner = useIsWorkspaceOwner?.(item);
   const avatar = useWorkspaceAvatar?.(item);
   const name = useWorkspaceName?.(item);
   return (
-    <div
-      className={workspaceItemStyle}
-      data-testid="draggable-item"
-      style={style}
-      ref={setNodeRef}
-      {...attributes}
-      {...listeners}
-    >
+    <div className={workspaceItemStyle} data-testid="draggable-item">
       <WorkspaceCard
         currentWorkspaceId={currentWorkspaceId}
         meta={item}
@@ -91,48 +61,12 @@ const SortableWorkspaceItem = ({
   );
 };
 
-const modifiers = [restrictToParentElement, restrictToVerticalAxis];
-
 export const WorkspaceList = (props: WorkspaceListProps) => {
-  const sensors = useSensors(
-    useSensor(MouseSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    })
-  );
   const workspaceList = props.items;
-  const [optimisticList, setOptimisticList] = useState(workspaceList);
 
-  useEffect(() => {
-    setOptimisticList(workspaceList);
-  }, [workspaceList]);
-
-  const onDragEnd = useCallback(
-    (event: DragEndEvent) => {
-      const { active, over } = event;
-      if (active.id !== over?.id) {
-        setOptimisticList(workspaceList => {
-          const oldIndex = workspaceList.findIndex(w => w.id === active.id);
-          const newIndex = workspaceList.findIndex(w => w.id === over?.id);
-          const newList = arrayMove(workspaceList, oldIndex, newIndex);
-          return newList;
-        });
-        props.onDragEnd(event);
-      }
-    },
-    [props]
-  );
-
-  return (
-    <DndContext sensors={sensors} onDragEnd={onDragEnd} modifiers={modifiers}>
-      <SortableContext items={optimisticList}>
-        {optimisticList.map(item => (
-          <Suspense fallback={<WorkspaceCardSkeleton />} key={item.id}>
-            <SortableWorkspaceItem key={item.id} {...props} item={item} />
-          </Suspense>
-        ))}
-      </SortableContext>
-    </DndContext>
-  );
+  return workspaceList.map(item => (
+    <Suspense fallback={<WorkspaceCardSkeleton />} key={item.id}>
+      <SortableWorkspaceItem key={item.id} {...props} item={item} />
+    </Suspense>
+  ));
 };

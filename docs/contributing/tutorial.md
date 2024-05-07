@@ -29,13 +29,6 @@ It includes the global constants, browser and system check.
 
 This package should be imported at the very beginning of the entry point.
 
-### `@affine/workspace-impl`
-
-Current we have two workspace plugin:
-
-- `local` for local workspace, which is the default workspace type.
-- `affine` for cloud workspace, which is the workspace type for AFFiNE Cloud with OctoBase backend.
-
 #### Design principles
 
 - Each workspace plugin has its state and is isolated from other workspace plugins.
@@ -60,13 +53,3 @@ yarn dev
 ### `@affine/electron`
 
 See [building desktop client app](../building-desktop-client-app.md).
-
-### `@affine/storybook`
-
-```shell
-yarn workspace @affine/storybook storybook
-```
-
-## What's next?
-
-- [Behind the code](./behind-the-code.md)

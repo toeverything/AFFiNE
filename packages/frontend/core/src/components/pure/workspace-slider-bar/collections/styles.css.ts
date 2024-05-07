@@ -102,6 +102,9 @@ export const collapsibleContent = style({
   overflow: 'hidden',
   marginTop: '4px',
   selectors: {
+    '&[data-hidden="true"]': {
+      display: 'none',
+    },
     '&[data-state="open"]': {
       animation: `${slideDown} 0.2s ease-in-out`,
     },
@@ -144,6 +147,6 @@ export const emptyCollectionMessage = style({
 });
 export const emptyCollectionNewButton = style({
   padding: '0 8px',
-  height: '30px',
-  fontSize: cssVar('fontSm'),
+  height: '28px',
+  fontSize: cssVar('fontXs'),
 });

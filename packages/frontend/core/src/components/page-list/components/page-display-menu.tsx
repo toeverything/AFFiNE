@@ -7,12 +7,10 @@ import {
 } from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowDownSmallIcon, DoneIcon } from '@blocksuite/icons';
-import { useAtom } from 'jotai';
 import { useCallback, useMemo } from 'react';
 
-import { pageGroupByTypeAtom } from '../group-definitions';
 import type { PageDisplayProperties, PageGroupByType } from '../types';
-import { usePageDisplayProperties } from '../use-page-display-properties';
+import { useAllDocDisplayProperties } from '../use-all-doc-display-properties';
 import * as styles from './page-display-menu.css';
 
 type GroupOption = {
@@ -22,13 +20,21 @@ type GroupOption = {
 
 export const PageDisplayMenu = () => {
   const t = useAFFiNEI18N();
-  const [group, setGroup] = useAtom(pageGroupByTypeAtom);
-  const [properties, setProperties] = usePageDisplayProperties();
+  const [workspaceProperties, setProperties] = useAllDocDisplayProperties();
   const handleSelect = useCallback(
     (value: PageGroupByType) => {
-      setGroup(value);
+      setProperties('groupBy', value);
     },
-    [setGroup]
+    [setProperties]
+  );
+  const handleSetDocDisplayProperties = useCallback(
+    (key: keyof PageDisplayProperties) => {
+      setProperties('displayProperties', {
+        ...workspaceProperties.displayProperties,
+        [key]: !workspaceProperties.displayProperties[key],
+      });
+    },
+    [setProperties, workspaceProperties.displayProperties]
   );
   const propertyOptions: Array<{
     key: keyof PageDisplayProperties;
@@ -38,26 +44,26 @@ export const PageDisplayMenu = () => {
     return [
       {
         key: 'bodyNotes',
-        onClick: () => setProperties('bodyNotes', !properties['bodyNotes']),
+        onClick: () => handleSetDocDisplayProperties('bodyNotes'),
         label: t['com.affine.page.display.display-properties.body-notes'](),
       },
       {
         key: 'tags',
-        onClick: () => setProperties('tags', !properties['tags']),
+        onClick: () => handleSetDocDisplayProperties('tags'),
         label: t['Tags'](),
       },
       {
         key: 'createDate',
-        onClick: () => setProperties('createDate', !properties['createDate']),
+        onClick: () => handleSetDocDisplayProperties('createDate'),
         label: t['Created'](),
       },
       {
         key: 'updatedDate',
-        onClick: () => setProperties('updatedDate', !properties['updatedDate']),
+        onClick: () => handleSetDocDisplayProperties('updatedDate'),
         label: t['Updated'](),
       },
     ];
-  }, [properties, setProperties, t]);
+  }, [handleSetDocDisplayProperties, t]);
 
   const items = useMemo(() => {
     const groupOptions: GroupOption[] = [
@@ -87,8 +93,12 @@ export const PageDisplayMenu = () => {
       <MenuItem
         key={option.value}
         onSelect={() => handleSelect(option.value)}
-        data-active={group === option.value}
-        endFix={group === option.value ? <DoneIcon fontSize={'20px'} /> : null}
+        data-active={workspaceProperties.groupBy === option.value}
+        endFix={
+          workspaceProperties.groupBy === option.value ? (
+            <DoneIcon fontSize={'20px'} />
+          ) : null
+        }
         className={styles.subMenuItem}
         data-testid={`group-by-${option.value}`}
       >
@@ -97,7 +107,7 @@ export const PageDisplayMenu = () => {
     ));
 
     const currentGroupType = groupOptions.find(
-      option => option.value === group
+      option => option.value === workspaceProperties.groupBy
     )?.label;
 
     return (
@@ -131,7 +141,7 @@ export const PageDisplayMenu = () => {
               key={option.label}
               className={styles.propertyButton}
               onClick={option.onClick}
-              data-active={properties[option.key]}
+              data-active={!!workspaceProperties.displayProperties[option.key]}
               data-testid={`property-${option.key}`}
             >
               {option.label}
@@ -140,7 +150,13 @@ export const PageDisplayMenu = () => {
         </div>
       </>
     );
-  }, [group, handleSelect, properties, propertyOptions, t]);
+  }, [
+    handleSelect,
+    propertyOptions,
+    t,
+    workspaceProperties.displayProperties,
+    workspaceProperties.groupBy,
+  ]);
   return (
     <Menu
       items={items}

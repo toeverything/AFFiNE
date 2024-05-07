@@ -23,7 +23,7 @@ function getExportedName(def) {
  * @type {import('@graphql-codegen/plugin-helpers').CodegenPlugin}
  */
 module.exports = {
-  plugin: (_schema, documents, { output }) => {
+  plugin: (schema, documents, { output }) => {
     const nameLocationMap = new Map();
     const locationSourceMap = new Map(
       documents
@@ -133,12 +133,24 @@ module.exports = {
               const { variableDefinitions } = def;
               if (variableDefinitions) {
                 return variableDefinitions.some(variableDefinition => {
-                  if (
-                    variableDefinition?.type?.type?.name?.value === 'Upload'
-                  ) {
-                    return true;
-                  }
-                  return false;
+                  const varType = variableDefinition?.type?.type?.name?.value;
+                  const checkContainFile = type => {
+                    if (schema.getType(type)?.name === 'Upload') return true;
+                    const typeDef = schema.getType(type);
+                    const fields = typeDef.getFields?.();
+                    if (!fields || !fields) return false;
+                    for (let field of Object.values(fields)) {
+                      let type = field.type;
+                      while (type.ofType) {
+                        type = type.ofType;
+                      }
+                      if (type.name === 'Upload') {
+                        return true;
+                      }
+                    }
+                    return false;
+                  };
+                  return varType ? checkContainFile(varType) : false;
                 });
               } else {
                 return false;

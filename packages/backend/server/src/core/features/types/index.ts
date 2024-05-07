@@ -2,7 +2,8 @@ import { z } from 'zod';
 
 import { FeatureType } from './common';
 import { featureCopilot } from './copilot';
-import { featureEarlyAccess } from './early-access';
+import { featureAIEarlyAccess, featureEarlyAccess } from './early-access';
+import { featureUnlimitedCopilot } from './unlimited-copilot';
 import { featureUnlimitedWorkspace } from './unlimited-workspace';
 
 /// ======== common schema ========
@@ -52,6 +53,18 @@ export const Features: Feature[] = [
     version: 1,
     configs: {},
   },
+  {
+    feature: FeatureType.UnlimitedCopilot,
+    type: FeatureKind.Feature,
+    version: 1,
+    configs: {},
+  },
+  {
+    feature: FeatureType.AIEarlyAccess,
+    type: FeatureKind.Feature,
+    version: 1,
+    configs: {},
+  },
 ];
 
 /// ======== schema infer ========
@@ -64,7 +77,9 @@ export const FeatureSchema = commonFeatureSchema
     z.discriminatedUnion('feature', [
       featureCopilot,
       featureEarlyAccess,
+      featureAIEarlyAccess,
       featureUnlimitedWorkspace,
+      featureUnlimitedCopilot,
     ])
   );
 

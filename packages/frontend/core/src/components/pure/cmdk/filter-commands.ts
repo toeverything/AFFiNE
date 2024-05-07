@@ -1,7 +1,7 @@
 import type { CommandCategory } from '@toeverything/infra';
-import { commandScore } from 'cmdk';
 import { groupBy } from 'lodash-es';
 
+import { commandScore } from './command-score';
 import type { CMDKCommand } from './types';
 import { highlightTextFragments } from './use-highlight';
 

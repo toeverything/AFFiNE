@@ -10,7 +10,7 @@ import { menuContent } from './new-page-button.css';
 type NewPageButtonProps = {
   createNewPage: () => void;
   createNewEdgeless: () => void;
-  importFile: () => void;
+  importFile?: () => void;
   size?: 'small' | 'default';
 };
 
@@ -43,13 +43,15 @@ export const CreateNewPagePopup = ({
         onClick={createNewEdgeless}
         data-testid="new-edgeless-button-in-all-page"
       />
-      <BlockCard
-        title={t['com.affine.new_import']()}
-        desc={t['com.affine.import_file']()}
-        right={<ImportIcon width={20} height={20} />}
-        onClick={importFile}
-        data-testid="import-button-in-all-page"
-      />
+      {importFile ? (
+        <BlockCard
+          title={t['com.affine.new_import']()}
+          desc={t['com.affine.import_file']()}
+          right={<ImportIcon width={20} height={20} />}
+          onClick={importFile}
+          data-testid="import-button-in-all-page"
+        />
+      ) : null}
       {/* TODO Import */}
     </div>
   );
@@ -63,22 +65,29 @@ export const NewPageButton = ({
   children,
 }: PropsWithChildren<NewPageButtonProps>) => {
   const [open, setOpen] = useState(false);
+
+  const handleCreateNewPage = useCallback(() => {
+    createNewPage();
+    setOpen(false);
+  }, [createNewPage]);
+
+  const handleCreateNewEdgeless = useCallback(() => {
+    createNewEdgeless();
+    setOpen(false);
+  }, [createNewEdgeless]);
+
+  const handleImportFile = useCallback(() => {
+    importFile?.();
+    setOpen(false);
+  }, [importFile]);
+
   return (
     <Menu
       items={
         <CreateNewPagePopup
-          createNewPage={useCallback(() => {
-            createNewPage();
-            setOpen(false);
-          }, [createNewPage])}
-          createNewEdgeless={useCallback(() => {
-            createNewEdgeless();
-            setOpen(false);
-          }, [createNewEdgeless])}
-          importFile={useCallback(() => {
-            importFile();
-            setOpen(false);
-          }, [importFile])}
+          createNewPage={handleCreateNewPage}
+          createNewEdgeless={handleCreateNewEdgeless}
+          importFile={importFile ? handleImportFile : undefined}
         />
       }
       rootOptions={{

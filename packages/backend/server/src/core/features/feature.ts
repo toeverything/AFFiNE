@@ -54,10 +54,35 @@ export class UnlimitedWorkspaceFeatureConfig extends FeatureConfig {
   }
 }
 
+export class UnlimitedCopilotFeatureConfig extends FeatureConfig {
+  override config!: Feature & { feature: FeatureType.UnlimitedCopilot };
+
+  constructor(data: any) {
+    super(data);
+
+    if (this.config.feature !== FeatureType.UnlimitedCopilot) {
+      throw new Error('Invalid feature config: type is not AIEarlyAccess');
+    }
+  }
+}
+export class AIEarlyAccessFeatureConfig extends FeatureConfig {
+  override config!: Feature & { feature: FeatureType.AIEarlyAccess };
+
+  constructor(data: any) {
+    super(data);
+
+    if (this.config.feature !== FeatureType.AIEarlyAccess) {
+      throw new Error('Invalid feature config: type is not AIEarlyAccess');
+    }
+  }
+}
+
 const FeatureConfigMap = {
   [FeatureType.Copilot]: CopilotFeatureConfig,
   [FeatureType.EarlyAccess]: EarlyAccessFeatureConfig,
+  [FeatureType.AIEarlyAccess]: AIEarlyAccessFeatureConfig,
   [FeatureType.UnlimitedWorkspace]: UnlimitedWorkspaceFeatureConfig,
+  [FeatureType.UnlimitedCopilot]: UnlimitedCopilotFeatureConfig,
 };
 
 export type FeatureConfigType<F extends FeatureType> = InstanceType<

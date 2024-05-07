@@ -1,6 +1,6 @@
 import { CollectionService } from '@affine/core/modules/collection';
 import type { Collection, Filter } from '@affine/env/filter';
-import { useService, Workspace } from '@toeverything/infra';
+import { useService, WorkspaceService } from '@toeverything/infra';
 import { useCallback } from 'react';
 
 import { filterContainerStyle } from '../../../components/filter-container.css';
@@ -17,7 +17,7 @@ export const FilterContainer = ({
   filters: Filter[];
   onChangeFilters: (filters: Filter[]) => void;
 }) => {
-  const currentWorkspace = useService(Workspace);
+  const currentWorkspace = useService(WorkspaceService).workspace;
   const navigateHelper = useNavigateHelper();
   const collectionService = useService(CollectionService);
   const saveToCollection = useCallback(

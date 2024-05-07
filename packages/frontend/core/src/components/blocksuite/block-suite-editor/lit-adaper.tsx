@@ -118,7 +118,7 @@ export const BlocksuiteDocEditor = forwardRef<
           specs={specs}
           hasViewport={false}
         />
-        {docPage ? (
+        {docPage && !page.readonly ? (
           <div
             className={styles.docEditorGap}
             onClick={() => {

@@ -1,4 +1,3 @@
-import type { DeleteCollectionInfo } from '@affine/env/filter';
 import type { DocCollection } from '@blocksuite/store';
 
 export type FavoriteListProps = {
@@ -7,6 +6,5 @@ export type FavoriteListProps = {
 
 export type CollectionsListProps = {
   docCollection: DocCollection;
-  info: DeleteCollectionInfo;
   onCreate?: () => void;
 };

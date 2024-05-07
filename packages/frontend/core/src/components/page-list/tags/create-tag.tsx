@@ -32,9 +32,9 @@ export const CreateOrEditTag = ({
   onOpenChange: (open: boolean) => void;
   tagMeta?: TagMeta;
 }) => {
-  const tagService = useService(TagService);
-  const tagOptions = useLiveData(tagService.tagMetas$);
-  const tag = useLiveData(tagService.tagByTagId$(tagMeta?.id));
+  const tagList = useService(TagService).tagList;
+  const tagOptions = useLiveData(tagList.tagMetas$);
+  const tag = useLiveData(tagList.tagByTagId$(tagMeta?.id));
   const t = useAFFiNEI18N();
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -97,7 +97,7 @@ export const CreateOrEditTag = ({
       return toast(t['com.affine.tags.create-tag.toast.exist']());
     }
     if (!tagMeta) {
-      tagService.createTag(tagName.trim(), tagIcon);
+      tagList.createTag(tagName.trim(), tagIcon);
       toast(t['com.affine.tags.create-tag.toast.success']());
       onClose();
       return;
@@ -108,7 +108,7 @@ export const CreateOrEditTag = ({
     toast(t['com.affine.tags.edit-tag.toast.success']());
     onClose();
     return;
-  }, [onClose, t, tag, tagIcon, tagMeta, tagName, tagOptions, tagService]);
+  }, [onClose, t, tag, tagIcon, tagMeta, tagName, tagOptions, tagList]);
 
   useEffect(() => {
     if (!open) return;

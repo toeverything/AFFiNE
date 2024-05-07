@@ -222,6 +222,15 @@ input[type='number']::-webkit-outer-spin-button {
   height: 0;
 }
 
+editor-host * {
+  scrollbar-width: auto;
+  -ms-overflow-style: -ms-autohiding-scrollbar;
+}
+editor-host *::-webkit-scrollbar {
+  width: auto;
+  height: auto;
+}
+
 .editor-wrapper {
   position: relative;
   padding-right: 0;

@@ -11,6 +11,7 @@ export const splitViewRoot = style({
   },
   display: 'flex',
   flexDirection: 'row',
+  position: 'relative',
   borderRadius,
   gap,
 

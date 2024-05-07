@@ -4,7 +4,7 @@ import '@affine/core/bootstrap/preload';
 import { appConfigProxy } from '@affine/core/hooks/use-app-config-storage';
 import { performanceLogger } from '@affine/core/shared';
 import { apis, events } from '@affine/electron-api';
-import { init, replayIntegration, setTags } from '@sentry/electron/renderer';
+import { init, setTags } from '@sentry/electron/renderer';
 import {
   init as reactInit,
   reactRouterV6BrowserTracingIntegration,
@@ -25,6 +25,12 @@ const performanceMainLogger = performanceLogger.namespace('main');
 function main() {
   performanceMainLogger.info('start');
 
+  // load persistent config for electron
+  // TODO: should be sync, but it's not necessary for now
+  appConfigProxy
+    .getSync()
+    .catch(() => console.error('failed to load app config'));
+
   // skip bootstrap setup for desktop onboarding
   if (window.appInfo?.windowName === 'onboarding') {
     performanceMainLogger.info('skip setup');
@@ -44,7 +50,6 @@ function main() {
               createRoutesFromChildren,
               matchRoutes,
             }),
-            replayIntegration(),
           ],
         },
         reactInit
@@ -60,11 +65,7 @@ function main() {
         apis?.ui.handleNetworkChange(true);
       });
     }
-    // load persistent config for electron
-    // TODO: should be sync, but it's not necessary for now
-    appConfigProxy
-      .getSync()
-      .catch(() => console.error('failed to load app config'));
+
     const handleMaximized = (maximized: boolean | undefined) => {
       document.documentElement.dataset.maximized = String(maximized);
     };

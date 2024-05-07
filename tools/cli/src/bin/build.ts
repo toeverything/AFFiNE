@@ -44,8 +44,8 @@ const getDistribution = () => {
       cwd = path.join(projectRoot, 'packages/frontend/web');
       return 'browser';
     case 'desktop':
-      cwd = path.join(projectRoot, 'packages/frontend/electron');
-      entry = path.join(cwd, 'renderer', 'index.tsx');
+      cwd = path.join(projectRoot, 'packages/frontend/electron/renderer');
+      entry = path.join(cwd, 'index.tsx');
       return DISTRIBUTION;
     default: {
       throw new Error('DISTRIBUTION must be one of browser, desktop');

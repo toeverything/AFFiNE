@@ -8,7 +8,6 @@ import { isDesktop } from '@affine/env/constant';
 import {
   init,
   reactRouterV6BrowserTracingIntegration,
-  replayIntegration,
   setTags,
 } from '@sentry/react';
 import { StrictMode, useEffect } from 'react';
@@ -44,7 +43,6 @@ function main() {
             createRoutesFromChildren,
             matchRoutes,
           }),
-          replayIntegration(),
         ],
       });
       setTags({

@@ -1,11 +1,11 @@
 import { useBlockSuitePageReferences } from '@affine/core/hooks/use-block-suite-page-references';
+import { WorkbenchService } from '@affine/core/modules/workbench';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
 import type { DocCollection, DocMeta } from '@blocksuite/store';
 import * as Collapsible from '@radix-ui/react-collapsible';
-import { PageRecordList, useLiveData, useService } from '@toeverything/infra';
+import { DocsService, useLiveData, useService } from '@toeverything/infra';
 import { useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
 
 import { MenuLinkItem } from '../../../app-sidebar';
 import * as styles from '../favorite/styles.css';
@@ -14,7 +14,7 @@ export interface ReferencePageProps {
   docCollection: DocCollection;
   pageId: string;
   metaMapping: Record<string, DocMeta>;
-  parentIds: Set<string>;
+  parentIds?: Set<string>;
 }
 
 export const ReferencePage = ({
@@ -24,10 +24,11 @@ export const ReferencePage = ({
   parentIds,
 }: ReferencePageProps) => {
   const t = useAFFiNEI18N();
-  const params = useParams();
-  const active = params.pageId === pageId;
+  const workbench = useService(WorkbenchService).workbench;
+  const location = useLiveData(workbench.location$);
+  const active = location.pathname === '/' + pageId;
 
-  const pageRecord = useLiveData(useService(PageRecordList).record$(pageId));
+  const pageRecord = useLiveData(useService(DocsService).list.doc$(pageId));
   const pageMode = useLiveData(pageRecord?.mode$);
   const icon = useMemo(() => {
     return pageMode === 'edgeless' ? <EdgelessIcon /> : <PageIcon />;
@@ -44,7 +45,7 @@ export const ReferencePage = ({
 
   const [collapsed, setCollapsed] = useState(true);
   const collapsible = referencesToShow.length > 0;
-  const nestedItem = parentIds.size > 0;
+  const nestedItem = parentIds && parentIds.size > 0;
 
   const untitled = !metaMapping[pageId]?.title;
   const pageTitle = metaMapping[pageId]?.title || t['Untitled']();
@@ -86,7 +87,7 @@ export const ReferencePage = ({
                   docCollection={docCollection}
                   pageId={ref}
                   metaMapping={metaMapping}
-                  parentIds={new Set([...parentIds, pageId])}
+                  parentIds={new Set([...(parentIds ?? []), pageId])}
                 />
               );
             })}

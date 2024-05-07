@@ -18,7 +18,6 @@ export const runtimeFlagsSchema = z.object({
   enablePreloading: z.boolean(),
   enableNewSettingModal: z.boolean(),
   enableNewSettingUnstableApi: z.boolean(),
-  enableSQLiteProvider: z.boolean(),
   enableCloud: z.boolean(),
   enableCaptcha: z.boolean(),
   enableEnhanceShareMode: z.boolean(),
@@ -27,7 +26,6 @@ export const runtimeFlagsSchema = z.object({
   allowLocalWorkspace: z.boolean(),
   // this is for the electron app
   serverUrlPrefix: z.string(),
-  enableMoveDatabase: z.boolean(),
   appVersion: z.string(),
   editorVersion: z.string(),
   appBuildType: z.union([

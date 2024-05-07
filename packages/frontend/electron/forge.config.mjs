@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { utils } from '@electron-forge/core';
 
 import {
+  appIdMap,
   arch,
   buildType,
   icnsPath,
@@ -96,12 +97,7 @@ export default {
   buildIdentifier: buildType,
   packagerConfig: {
     name: productName,
-    appBundleId: fromBuildIdentifier({
-      internal: 'pro.affine.internal',
-      canary: 'pro.affine.canary',
-      beta: 'pro.affine.beta',
-      stable: 'pro.affine.app',
-    }),
+    appBundleId: fromBuildIdentifier(appIdMap),
     icon: icnsPath,
     osxSign: {
       identity: 'Developer ID Application: TOEVERYTHING PTE. LTD.',

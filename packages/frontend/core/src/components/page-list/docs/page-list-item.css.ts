@@ -21,20 +21,7 @@ export const root = style({
     },
   },
 });
-export const dragOverlay = style({
-  display: 'flex',
-  alignItems: 'center',
-  zIndex: 1001,
-  cursor: 'grabbing',
-  maxWidth: '360px',
-  transition: 'transform 0.2s',
-  willChange: 'transform',
-  selectors: {
-    '&[data-over=true]': {
-      transform: 'scale(0.8)',
-    },
-  },
-});
+
 export const dragPageItemOverlay = style({
   height: '54px',
   borderRadius: '10px',
@@ -146,10 +133,11 @@ export const dateCell = style({
   display: 'flex',
   alignItems: 'center',
   fontSize: cssVar('fontXs'),
-  color: cssVar('textSecondaryColor'),
+  color: cssVar('textPrimaryColor'),
   flexShrink: 0,
   flexWrap: 'nowrap',
   padding: '0 8px',
+  userSelect: 'none',
 });
 export const actionsCellWrapper = style({
   display: 'flex',

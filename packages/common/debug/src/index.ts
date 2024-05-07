@@ -18,7 +18,7 @@ if (typeof window !== 'undefined') {
     console.warn('Debug logs enabled');
   }
   if (process.env.NODE_ENV === 'development') {
-    debug.enable('*');
+    debug.enable('*,-micromark');
     console.warn('Debug logs enabled');
   }
 }

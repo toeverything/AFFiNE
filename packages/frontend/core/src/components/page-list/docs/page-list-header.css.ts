@@ -31,9 +31,9 @@ export const addPageButton = style({
   padding: '6px 10px',
   borderRadius: '8px',
   background: cssVar('backgroundPrimaryColor'),
-  fontSize: cssVar('fontSm'),
-  fontWeight: 600,
-  height: '32px',
+  fontSize: cssVar('fontXs'),
+  fontWeight: 500,
+  height: '28px',
 });
 export const tagSticky = style({
   display: 'flex',
@@ -161,4 +161,17 @@ export const tagSelectorItemText = style({
   overflow: 'hidden',
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',
+});
+
+export const rightButtonGroup = style({
+  display: 'flex',
+  gap: '12px',
+  alignItems: 'center',
+  justifyContent: 'center',
+});
+
+export const buttonText = style({
+  fontSize: cssVar('fontXs'),
+  fontWeight: 500,
+  color: cssVar('textPrimaryColor'),
 });

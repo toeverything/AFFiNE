@@ -6,7 +6,7 @@ import type {
 } from '@blocksuite/presets';
 import type { Doc } from '@blocksuite/store';
 import { Slot } from '@blocksuite/store';
-import type { PageMode } from '@toeverything/infra';
+import type { DocMode } from '@toeverything/infra';
 import clsx from 'clsx';
 import type React from 'react';
 import type { RefObject } from 'react';
@@ -40,7 +40,7 @@ function forwardSlot<T extends Record<string, Slot<any>>>(
 
 interface BlocksuiteEditorContainerProps {
   page: Doc;
-  mode: PageMode;
+  mode: DocMode;
   className?: string;
   style?: React.CSSProperties;
   defaultSelectedBlockId?: string;
@@ -164,6 +164,9 @@ export const BlocksuiteEditorContainer = forwardRef<
           ? docRef.current?.updateComplete
           : edgelessRef.current?.updateComplete;
       },
+      get mode() {
+        return mode;
+      },
     };
 
     const proxy = new Proxy(api, {
@@ -212,7 +215,6 @@ export const BlocksuiteEditorContainer = forwardRef<
             blockElement.scrollIntoView({
               behavior: 'smooth',
               block: 'center',
-              inline: 'center',
             });
           }
           const selectManager = affineEditorContainerProxy.host?.selection;

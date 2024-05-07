@@ -1,30 +1,40 @@
 import { ScrollableContainer } from '@affine/component';
 import { Divider } from '@affine/component/ui/divider';
 import { WorkspaceList } from '@affine/component/workspace-list';
-import { useSession } from '@affine/core/hooks/affine/use-current-user';
 import { useEnableCloud } from '@affine/core/hooks/affine/use-enable-cloud';
 import {
   useWorkspaceAvatar,
+  useWorkspaceInfo,
   useWorkspaceName,
 } from '@affine/core/hooks/use-workspace-info';
+import { AuthService } from '@affine/core/modules/cloud';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloudWorkspaceIcon, LocalWorkspaceIcon } from '@blocksuite/icons';
-import type { DragEndEvent } from '@dnd-kit/core';
 import type { WorkspaceMetadata } from '@toeverything/infra';
-import { useLiveData, useService, WorkspaceManager } from '@toeverything/infra';
+import {
+  GlobalContextService,
+  useLiveData,
+  useService,
+  WorkspacesService,
+} from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 
 import {
   openCreateWorkspaceModalAtom,
   openSettingModalAtom,
 } from '../../../../../atoms';
-import { CurrentWorkspaceService } from '../../../../../modules/workspace/current-workspace';
 import { WorkspaceSubPath } from '../../../../../shared';
-import { useIsWorkspaceOwner } from '../.././../../../hooks/affine/use-is-workspace-owner';
 import { useNavigateHelper } from '../.././../../../hooks/use-navigate-helper';
 import * as styles from './index.css';
+
+function useIsWorkspaceOwner(meta: WorkspaceMetadata) {
+  const info = useWorkspaceInfo(meta);
+
+  return info?.isOwner;
+}
+
 interface WorkspaceModalProps {
   disabled?: boolean;
   workspaces: WorkspaceMetadata[];
@@ -35,7 +45,6 @@ interface WorkspaceModalProps {
   onClickEnableCloud?: (meta: WorkspaceMetadata) => void;
   onNewWorkspace: () => void;
   onAddWorkspace: () => void;
-  onDragEnd: (event: DragEndEvent) => void;
 }
 
 const CloudWorkSpaceList = ({
@@ -44,7 +53,6 @@ const CloudWorkSpaceList = ({
   onClickWorkspace,
   onClickWorkspaceSetting,
   currentWorkspaceId,
-  onDragEnd,
 }: WorkspaceModalProps) => {
   const t = useAFFiNEI18N();
   if (workspaces.length === 0) {
@@ -66,7 +74,6 @@ const CloudWorkSpaceList = ({
         currentWorkspaceId={currentWorkspaceId}
         onClick={onClickWorkspace}
         onSettingClick={onClickWorkspaceSetting}
-        onDragEnd={onDragEnd}
         useIsWorkspaceOwner={useIsWorkspaceOwner}
         useWorkspaceName={useWorkspaceName}
         useWorkspaceAvatar={useWorkspaceAvatar}
@@ -83,7 +90,6 @@ const LocalWorkspaces = ({
   onClickEnableCloud,
   openingId,
   currentWorkspaceId,
-  onDragEnd,
 }: WorkspaceModalProps) => {
   const t = useAFFiNEI18N();
   if (workspaces.length === 0) {
@@ -107,7 +113,6 @@ const LocalWorkspaces = ({
         onClick={onClickWorkspace}
         onSettingClick={onClickWorkspaceSetting}
         onEnableCloudClick={onClickEnableCloud}
-        onDragEnd={onDragEnd}
         useIsWorkspaceOwner={useIsWorkspaceOwner}
         useWorkspaceName={useWorkspaceName}
         useWorkspaceAvatar={useWorkspaceAvatar}
@@ -121,23 +126,21 @@ export const AFFiNEWorkspaceList = ({
 }: {
   onEventEnd?: () => void;
 }) => {
-  const openWsRef = useRef<ReturnType<typeof workspaceManager.open>>();
-  const workspaceManager = useService(WorkspaceManager);
-  const workspaces = useLiveData(workspaceManager.list.workspaceList$);
+  const workspacesService = useService(WorkspacesService);
+  const workspaces = useLiveData(workspacesService.list.workspaces$);
+  const currentWorkspaceId = useLiveData(
+    useService(GlobalContextService).globalContext.workspaceId.$
+  );
 
   const setOpenCreateWorkspaceModal = useSetAtom(openCreateWorkspaceModalAtom);
-  const [openingId, setOpeningId] = useState<string | null>(null);
   const confirmEnableCloud = useEnableCloud();
 
   const { jumpToSubPath } = useNavigateHelper();
 
-  const currentWorkspace = useLiveData(
-    useService(CurrentWorkspaceService).currentWorkspace$
-  );
-
   const setOpenSettingModalAtom = useSetAtom(openSettingModalAtom);
 
-  const { status } = useSession();
+  const session = useService(AuthService).session;
+  const status = useLiveData(session.status$);
 
   const isAuthenticated = status === 'authenticated';
 
@@ -171,34 +174,15 @@ export const AFFiNEWorkspaceList = ({
 
   const onClickEnableCloud = useCallback(
     (meta: WorkspaceMetadata) => {
-      openWsRef.current?.release();
-      openWsRef.current = workspaceManager.open(meta);
-      confirmEnableCloud(openWsRef.current.workspace, {
+      const { workspace, dispose } = workspacesService.open({ metadata: meta });
+      confirmEnableCloud(workspace, {
         onFinished: () => {
-          openWsRef.current?.release();
-          openWsRef.current = undefined;
-          setOpeningId(null);
+          dispose();
         },
       });
-      setOpeningId(meta.id);
     },
-    [confirmEnableCloud, workspaceManager]
+    [confirmEnableCloud, workspacesService]
   );
-
-  useEffect(() => {
-    return () => {
-      openWsRef.current?.release();
-    };
-  }, []);
-
-  const onMoveWorkspace = useCallback((_activeId: string, _overId: string) => {
-    // TODO: order
-    // const oldIndex = workspaces.findIndex(w => w.id === activeId);
-    // const newIndex = workspaces.findIndex(w => w.id === overId);
-    // startTransition(() => {
-    //   setWorkspaces(workspaces => arrayMove(workspaces, oldIndex, newIndex));
-    // });
-  }, []);
 
   const onClickWorkspace = useCallback(
     (workspaceMetadata: WorkspaceMetadata) => {
@@ -206,16 +190,6 @@ export const AFFiNEWorkspaceList = ({
       onEventEnd?.();
     },
     [jumpToSubPath, onEventEnd]
-  );
-
-  const onDragEnd = useCallback(
-    (event: DragEndEvent) => {
-      const { active, over } = event;
-      if (active.id !== over?.id) {
-        onMoveWorkspace(active.id as string, over?.id as string);
-      }
-    },
-    [onMoveWorkspace]
   );
 
   const onNewWorkspace = useCallback(() => {
@@ -241,8 +215,7 @@ export const AFFiNEWorkspaceList = ({
             onClickWorkspaceSetting={onClickWorkspaceSetting}
             onNewWorkspace={onNewWorkspace}
             onAddWorkspace={onAddWorkspace}
-            currentWorkspaceId={currentWorkspace?.id}
-            onDragEnd={onDragEnd}
+            currentWorkspaceId={currentWorkspaceId}
           />
           {localWorkspaces.length > 0 && cloudWorkspaces.length > 0 ? (
             <Divider size="thinner" />
@@ -250,15 +223,13 @@ export const AFFiNEWorkspaceList = ({
         </div>
       ) : null}
       <LocalWorkspaces
-        openingId={openingId}
         workspaces={localWorkspaces}
         onClickWorkspace={onClickWorkspace}
         onClickWorkspaceSetting={onClickWorkspaceSetting}
         onClickEnableCloud={onClickEnableCloud}
         onNewWorkspace={onNewWorkspace}
         onAddWorkspace={onAddWorkspace}
-        currentWorkspaceId={currentWorkspace?.id}
-        onDragEnd={onDragEnd}
+        currentWorkspaceId={currentWorkspaceId}
       />
     </ScrollableContainer>
   );

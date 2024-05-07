@@ -29,11 +29,7 @@ class WorkspaceResolverMock {
         permissions: {
           create: {
             type: Permission.Owner,
-            user: {
-              connect: {
-                id: user.id,
-              },
-            },
+            userId: user.id,
             accepted: true,
           },
         },
@@ -90,7 +86,7 @@ test('should be able to set user feature', async t => {
   const f1 = await feature.getUserFeatures(u1.id);
   t.is(f1.length, 0, 'should be empty');
 
-  await feature.addUserFeature(u1.id, FeatureType.EarlyAccess, 2, 'test');
+  await feature.addUserFeature(u1.id, FeatureType.EarlyAccess, 'test');
 
   const f2 = await feature.getUserFeatures(u1.id);
   t.is(f2.length, 1, 'should have 1 feature');
@@ -163,7 +159,7 @@ test('should be able to set workspace feature', async t => {
   const f1 = await feature.getWorkspaceFeatures(w1.id);
   t.is(f1.length, 0, 'should be empty');
 
-  await feature.addWorkspaceFeature(w1.id, FeatureType.Copilot, 1, 'test');
+  await feature.addWorkspaceFeature(w1.id, FeatureType.Copilot, 'test');
 
   const f2 = await feature.getWorkspaceFeatures(w1.id);
   t.is(f2.length, 1, 'should have 1 feature');
@@ -178,7 +174,7 @@ test('should be able to check workspace feature', async t => {
   const f1 = await management.hasWorkspaceFeature(w1.id, FeatureType.Copilot);
   t.false(f1, 'should not have copilot');
 
-  await management.addWorkspaceFeatures(w1.id, FeatureType.Copilot, 1, 'test');
+  await management.addWorkspaceFeatures(w1.id, FeatureType.Copilot, 'test');
   const f2 = await management.hasWorkspaceFeature(w1.id, FeatureType.Copilot);
   t.true(f2, 'should have copilot');
 
@@ -195,7 +191,7 @@ test('should be able revert workspace feature', async t => {
   const f1 = await management.hasWorkspaceFeature(w1.id, FeatureType.Copilot);
   t.false(f1, 'should not have feature');
 
-  await management.addWorkspaceFeatures(w1.id, FeatureType.Copilot, 1, 'test');
+  await management.addWorkspaceFeatures(w1.id, FeatureType.Copilot, 'test');
   const f2 = await management.hasWorkspaceFeature(w1.id, FeatureType.Copilot);
   t.true(f2, 'should have feature');
 

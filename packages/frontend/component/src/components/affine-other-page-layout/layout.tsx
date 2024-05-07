@@ -1,7 +1,6 @@
 import { Button } from '@affine/component/ui/button';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { Logo1Icon } from '@blocksuite/icons';
-import clsx from 'clsx';
 import { useCallback } from 'react';
 
 import { DesktopNavbar } from './desktop-navbar';
@@ -9,10 +8,8 @@ import * as styles from './index.css';
 import { MobileNavbar } from './mobile-navbar';
 
 export const AffineOtherPageLayout = ({
-  isSmallScreen,
   children,
 }: {
-  isSmallScreen: boolean;
   children: React.ReactNode;
 }) => {
   const t = useAFFiNEI18N();
@@ -23,25 +20,22 @@ export const AffineOtherPageLayout = ({
 
   return (
     <div className={styles.root}>
-      <div
-        className={clsx(styles.topNav, {
-          mobile: isSmallScreen,
-        })}
-      >
-        <a href="/" rel="noreferrer" className={styles.affineLogo}>
-          <Logo1Icon width={24} height={24} />
-        </a>
-        {isSmallScreen ? (
+      {environment.isDesktop ? null : (
+        <div className={styles.topNav}>
+          <a href="/" rel="noreferrer" className={styles.affineLogo}>
+            <Logo1Icon width={24} height={24} />
+          </a>
+
+          <DesktopNavbar />
+          <Button
+            onClick={openDownloadLink}
+            className={styles.hideInSmallScreen}
+          >
+            {t['com.affine.auth.open.affine.download-app']()}
+          </Button>
           <MobileNavbar />
-        ) : (
-          <>
-            <DesktopNavbar />
-            <Button onClick={openDownloadLink}>
-              {t['com.affine.auth.open.affine.download-app']()}
-            </Button>
-          </>
-        )}
-      </div>
+        </div>
+      )}
 
       {children}
     </div>

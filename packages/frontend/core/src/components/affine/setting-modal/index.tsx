@@ -1,4 +1,4 @@
-import { Loading } from '@affine/component';
+import { Loading, Scrollable } from '@affine/component';
 import { WorkspaceDetailSkeleton } from '@affine/component/setting-components';
 import type { ModalProps } from '@affine/component/ui/modal';
 import { Modal } from '@affine/component/ui/modal';
@@ -6,15 +6,26 @@ import {
   openIssueFeedbackModalAtom,
   openStarAFFiNEModalAtom,
 } from '@affine/core/atoms';
+import { AuthService } from '@affine/core/modules/cloud';
 import { Trans } from '@affine/i18n';
 import { ContactWithUsIcon } from '@blocksuite/icons';
-import type { WorkspaceMetadata } from '@toeverything/infra';
+import {
+  useLiveData,
+  useService,
+  type WorkspaceMetadata,
+} from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
 import { debounce } from 'lodash-es';
-import { Suspense, useCallback, useLayoutEffect, useRef } from 'react';
+import {
+  Suspense,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+} from 'react';
 
-import { useCurrentLoginStatus } from '../../../hooks/affine/use-current-login-status';
 import { AccountSetting } from './account-setting';
+import { settingModalScrollContainerAtom } from './atoms';
 import { GeneralSetting } from './general-setting';
 import { SettingSidebar } from './setting-sidebar';
 import * as style from './style.css';
@@ -48,10 +59,13 @@ const SettingModalInner = ({
   onSettingClick,
   ...modalProps
 }: SettingProps) => {
-  const loginStatus = useCurrentLoginStatus();
+  const loginStatus = useLiveData(useService(AuthService).session.status$);
 
   const modalContentRef = useRef<HTMLDivElement>(null);
   const modalContentWrapperRef = useRef<HTMLDivElement>(null);
+  const setSettingModalScrollContainer = useSetAtom(
+    settingModalScrollContainerAtom
+  );
 
   useLayoutEffect(() => {
     if (!modalProps.open) return;
@@ -62,13 +76,24 @@ const SettingModalInner = ({
         if (!modalContentRef.current || !modalContentWrapperRef.current) return;
 
         const wrapperWidth = modalContentWrapperRef.current.offsetWidth;
+        const wrapperHeight = modalContentWrapperRef.current.offsetHeight;
         const contentWidth = modalContentRef.current.offsetWidth;
 
-        modalContentRef.current?.style.setProperty(
+        const wrapper = modalContentWrapperRef.current;
+
+        wrapper?.style.setProperty(
           '--setting-modal-width',
           `${wrapperWidth}px`
         );
-        modalContentRef.current?.style.setProperty(
+        wrapper?.style.setProperty(
+          '--setting-modal-height',
+          `${wrapperHeight}px`
+        );
+        wrapper?.style.setProperty(
+          '--setting-modal-content-width',
+          `${contentWidth}px`
+        );
+        wrapper?.style.setProperty(
           '--setting-modal-gap-x',
           `${(wrapperWidth - contentWidth) / 2}px`
         );
@@ -82,6 +107,13 @@ const SettingModalInner = ({
       window.removeEventListener('resize', onResize);
     };
   }, [modalProps.open]);
+
+  useEffect(() => {
+    setSettingModalScrollContainer(modalContentWrapperRef.current);
+    return () => {
+      setSettingModalScrollContainer(null);
+    };
+  }, [setSettingModalScrollContainer]);
 
   const onTabChange = useCallback(
     (key: ActiveTab, meta: WorkspaceMetadata | null) => {
@@ -107,51 +139,54 @@ const SettingModalInner = ({
         onTabChange={onTabChange}
         selectedWorkspaceId={workspaceMetadata?.id ?? null}
       />
-      <div
-        data-testid="setting-modal-content"
-        className={style.wrapper}
-        ref={modalContentWrapperRef}
-      >
-        <div ref={modalContentRef} className={style.centerContainer}>
-          <div className={style.content}>
-            <Suspense fallback={<WorkspaceDetailSkeleton />}>
-              {activeTab.startsWith('workspace:') && workspaceMetadata ? (
-                <WorkspaceSetting
-                  subTab={activeTab.split(':')[1] as WorkspaceSubTab}
-                  key={workspaceMetadata.id}
-                  workspaceMetadata={workspaceMetadata}
-                />
-              ) : null}
-              {isGeneralSetting(activeTab) ? (
-                <GeneralSetting generalKey={activeTab} />
-              ) : null}
-              {activeTab === 'account' && loginStatus === 'authenticated' ? (
-                <AccountSetting />
-              ) : null}
-            </Suspense>
-          </div>
-          <div className={style.footer}>
-            <ContactWithUsIcon fontSize={16} />
-            <Trans
-              i18nKey={'com.affine.settings.suggestion-2'}
-              components={{
-                1: (
-                  <span
-                    className={style.link}
-                    onClick={handleOpenStarAFFiNEModal}
+      <Scrollable.Root>
+        <Scrollable.Viewport
+          data-testid="setting-modal-content"
+          className={style.wrapper}
+          ref={modalContentWrapperRef}
+        >
+          <div ref={modalContentRef} className={style.centerContainer}>
+            <div className={style.content}>
+              <Suspense fallback={<WorkspaceDetailSkeleton />}>
+                {activeTab.startsWith('workspace:') && workspaceMetadata ? (
+                  <WorkspaceSetting
+                    subTab={activeTab.split(':')[1] as WorkspaceSubTab}
+                    key={workspaceMetadata.id}
+                    workspaceMetadata={workspaceMetadata}
                   />
-                ),
-                2: (
-                  <span
-                    className={style.link}
-                    onClick={handleOpenIssueFeedbackModal}
-                  />
-                ),
-              }}
-            />
+                ) : null}
+                {isGeneralSetting(activeTab) ? (
+                  <GeneralSetting generalKey={activeTab} />
+                ) : null}
+                {activeTab === 'account' && loginStatus === 'authenticated' ? (
+                  <AccountSetting />
+                ) : null}
+              </Suspense>
+            </div>
+            <div className={style.footer}>
+              <ContactWithUsIcon fontSize={16} />
+              <Trans
+                i18nKey={'com.affine.settings.suggestion-2'}
+                components={{
+                  1: (
+                    <span
+                      className={style.link}
+                      onClick={handleOpenStarAFFiNEModal}
+                    />
+                  ),
+                  2: (
+                    <span
+                      className={style.link}
+                      onClick={handleOpenIssueFeedbackModal}
+                    />
+                  ),
+                }}
+              />
+            </div>
           </div>
-        </div>
-      </div>
+          <Scrollable.Scrollbar />
+        </Scrollable.Viewport>
+      </Scrollable.Root>
     </>
   );
 };

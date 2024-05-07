@@ -13,17 +13,17 @@
     "@affine/component": "workspace:*",
     "@affine/core": "workspace:*",
     "@affine/env": "workspace:*",
-    "@sentry/react": "^7.108.0",
+    "@sentry/react": "^7.109.0",
     "core-js": "^3.36.1",
     "intl-segmenter-polyfill-rs": "^0.1.7",
-    "jotai": "^2.7.1",
+    "jotai": "^2.8.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
     "@affine/cli": "workspace:*",
-    "@types/react": "^18.2.60",
-    "@types/react-dom": "^18.2.19",
-    "typescript": "^5.3.3"
+    "@types/react": "^18.2.75",
+    "@types/react-dom": "^18.2.24",
+    "typescript": "^5.4.5"
   }
 }

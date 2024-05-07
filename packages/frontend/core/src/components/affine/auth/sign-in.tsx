@@ -1,28 +1,22 @@
-import {
-  AuthInput,
-  CountDownRender,
-  ModalHeader,
-} from '@affine/component/auth-components';
+import { notify } from '@affine/component';
+import { AuthInput, ModalHeader } from '@affine/component/auth-components';
 import { Button } from '@affine/component/ui/button';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import type { GetUserQuery } from '@affine/graphql';
-import { findGraphQLError, getUserQuery } from '@affine/graphql';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowDownBigIcon } from '@blocksuite/icons';
+import { useLiveData, useService } from '@toeverything/infra';
 import type { FC } from 'react';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 
-import { useCurrentLoginStatus } from '../../../hooks/affine/use-current-login-status';
-import { useMutation } from '../../../hooks/use-mutation';
+import { AuthService } from '../../../modules/cloud';
 import { mixpanel } from '../../../utils';
 import { emailRegex } from '../../../utils/email-regex';
 import type { AuthPanelProps } from './index';
 import { OAuth } from './oauth';
 import * as style from './style.css';
-import { INTERNAL_BETA_URL, useAuth } from './use-auth';
 import { Captcha, useCaptcha } from './use-captcha';
-import { useSubscriptionSearch } from './use-subscription';
 
 function validateEmail(email: string) {
   return emailRegex.test(email);
@@ -35,93 +29,91 @@ export const SignIn: FC<AuthPanelProps> = ({
   onSignedIn,
 }) => {
   const t = useAFFiNEI18N();
-  const loginStatus = useCurrentLoginStatus();
+  const authService = useService(AuthService);
+  const [searchParams] = useSearchParams();
+  const [isMutating, setIsMutating] = useState(false);
   const [verifyToken, challenge] = useCaptcha();
-  const subscriptionData = useSubscriptionSearch();
 
-  const {
-    isMutating: isSigningIn,
-    resendCountDown,
-    allowSendEmail,
-    signIn,
-    signUp,
-  } = useAuth();
-
-  const { trigger: verifyUser, isMutating } = useMutation({
-    mutation: getUserQuery,
-  });
   const [isValidEmail, setIsValidEmail] = useState(true);
 
+  useEffect(() => {
+    const timeout = setInterval(() => {
+      // revalidate session to get the latest status
+      authService.session.revalidate();
+    }, 3000);
+    return () => {
+      clearInterval(timeout);
+    };
+  }, [authService]);
+  const loginStatus = useLiveData(authService.session.status$);
   if (loginStatus === 'authenticated') {
     onSignedIn?.();
   }
 
   const onContinue = useAsyncCallback(async () => {
-    if (!allowSendEmail) {
-      return;
-    }
-
     if (!validateEmail(email)) {
       setIsValidEmail(false);
       return;
     }
 
     setIsValidEmail(true);
-    // 0 for no access for internal beta
-    const user: GetUserQuery['user'] | null | 0 = await verifyUser({ email })
-      .then(({ user }) => user)
-      .catch(err => {
-        if (findGraphQLError(err, e => e.extensions.code === 402)) {
-          setAuthState('noAccess');
-          return 0;
-        } else {
-          throw err;
-        }
-      });
 
-    if (user === 0) {
-      return;
-    }
+    setIsMutating(true);
+
     setAuthEmail(email);
+    try {
+      const { hasPassword, isExist: isUserExist } =
+        await authService.checkUserByEmail(email);
 
-    if (verifyToken) {
-      if (user) {
-        // provider password sign-in if user has by default
-        //  If with payment, onl support email sign in to avoid redirect to affine app
-        if (user.hasPassword && !subscriptionData) {
-          setAuthState('signInWithPassword');
+      if (verifyToken) {
+        if (isUserExist) {
+          // provider password sign-in if user has by default
+          //  If with payment, onl support email sign in to avoid redirect to affine app
+          if (hasPassword) {
+            setAuthState('signInWithPassword');
+          } else {
+            mixpanel.track_forms('SignIn', 'Email', {
+              email,
+            });
+            await authService.sendEmailMagicLink(
+              email,
+              verifyToken,
+              challenge,
+              searchParams.get('redirect_uri')
+            );
+            setAuthState('afterSignInSendEmail');
+          }
         } else {
-          const res = await signIn(email, verifyToken, challenge);
-          if (res?.status === 403 && res?.url === INTERNAL_BETA_URL) {
-            return setAuthState('noAccess');
-          }
-          // TODO, should always get id from user
-          if ('id' in user) {
-            mixpanel.identify(user.id);
-          }
-          setAuthState('afterSignInSendEmail');
+          await authService.sendEmailMagicLink(
+            email,
+            verifyToken,
+            challenge,
+            searchParams.get('redirect_uri')
+          );
+          mixpanel.track_forms('SignUp', 'Email', {
+            email,
+          });
+          setAuthState('afterSignUpSendEmail');
         }
-      } else {
-        const res = await signUp(email, verifyToken, challenge);
-        if (res?.status === 403 && res?.url === INTERNAL_BETA_URL) {
-          return setAuthState('noAccess');
-        } else if (!res || res.status >= 400) {
-          return;
-        }
-        setAuthState('afterSignUpSendEmail');
       }
+    } catch (err) {
+      console.error(err);
+
+      // TODO: better error handling
+      notify.error({
+        title: 'Failed to send email. Please try again.',
+      });
     }
+
+    setIsMutating(false);
   }, [
-    allowSendEmail,
-    subscriptionData,
+    authService,
     challenge,
     email,
+    searchParams,
     setAuthEmail,
     setAuthState,
-    signIn,
-    signUp,
     verifyToken,
-    verifyUser,
   ]);
 
   return (
@@ -131,7 +123,7 @@ export const SignIn: FC<AuthPanelProps> = ({
         subTitle={t['com.affine.brand.affineCloud']()}
       />
 
-      <OAuth />
+      <OAuth redirectUri={searchParams.get('redirect_uri')} />
 
       <div className={style.authModalContent}>
         <AuthInput
@@ -158,24 +150,16 @@ export const SignIn: FC<AuthPanelProps> = ({
             size="extraLarge"
             data-testid="continue-login-button"
             block
-            loading={isMutating || isSigningIn}
-            disabled={!allowSendEmail}
+            loading={isMutating}
             icon={
-              allowSendEmail || isMutating ? (
-                <ArrowDownBigIcon
-                  width={20}
-                  height={20}
-                  style={{
-                    transform: 'rotate(-90deg)',
-                    color: 'var(--affine-blue)',
-                  }}
-                />
-              ) : (
-                <CountDownRender
-                  className={style.resendCountdownInButton}
-                  timeLeft={resendCountDown}
-                />
-              )
+              <ArrowDownBigIcon
+                width={20}
+                height={20}
+                style={{
+                  transform: 'rotate(-90deg)',
+                  color: 'var(--affine-blue)',
+                }}
+              />
             }
             iconPosition="end"
             onClick={onContinue}

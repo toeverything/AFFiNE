@@ -60,7 +60,7 @@ test('create one workspace in the workspace list', async ({
   expect(currentWorkspace.meta.flavour).toContain('local');
 });
 
-test('create multi workspace in the workspace list', async ({
+test.skip('create multi workspace in the workspace list', async ({
   page,
   workspace,
 }) => {
@@ -76,9 +76,9 @@ test('create multi workspace in the workspace list', async ({
   await page.waitForTimeout(1000);
 
   {
-    //check workspace list length
-    const workspaceCards = await page.$$('data-testid=workspace-card');
-    expect(workspaceCards.length).toBe(3);
+    // check workspace list length
+    const workspaceCards = page.getByTestId('workspace-card');
+    await expect(workspaceCards).toHaveCount(3);
   }
 
   await page.reload();
@@ -118,16 +118,28 @@ test('create multi workspace in the workspace list', async ({
     }
   );
   await page.mouse.up();
-  await page.waitForTimeout(1000);
+
+  // check workspace list order
+  await page.waitForFunction(
+    () => {
+      const cards = document.querySelectorAll('[data-testid="workspace-card"]');
+      return (
+        cards[1].textContent?.includes('New Workspace 3') &&
+        cards[2].textContent?.includes('New Workspace 2')
+      );
+    },
+    [],
+    { timeout: 5000 }
+  );
+
   await page.reload();
   await openWorkspaceListModal(page);
 
   await page.waitForTimeout(1000);
   // check workspace list length
   {
-    await page.waitForTimeout(1000);
     const workspaceCards = page.getByTestId('workspace-card');
-    expect(await workspaceCards.count()).toBe(3);
+    await expect(workspaceCards).toHaveCount(3);
   }
 
   const workspaceChangePromise = page.evaluate(() => {

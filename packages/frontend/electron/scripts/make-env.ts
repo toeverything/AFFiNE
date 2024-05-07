@@ -7,6 +7,7 @@ const ReleaseTypeSchema = z.enum(['stable', 'beta', 'canary', 'internal']);
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
+const REPO_ROOT = path.resolve(__dirname, '..', '..', '..', '..');
 const ROOT = path.resolve(__dirname, '..');
 
 const envBuildType = (process.env.BUILD_TYPE || 'canary').trim().toLowerCase();
@@ -45,7 +46,15 @@ const platform =
     ? process.argv[process.argv.indexOf('--platform') + 1]
     : process.platform;
 
+const appIdMap = {
+  internal: 'pro.affine.internal',
+  canary: 'pro.affine.canary',
+  beta: 'pro.affine.beta',
+  stable: 'pro.affine.app',
+};
+
 export {
+  appIdMap,
   arch,
   buildType,
   icnsPath,
@@ -55,6 +64,7 @@ export {
   icoPath,
   platform,
   productName,
+  REPO_ROOT,
   ROOT,
   stableBuild,
 };

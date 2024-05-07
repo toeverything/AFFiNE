@@ -16,12 +16,23 @@ export const text = style({
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',
   maxWidth: 350,
+  selectors: {
+    '&.empty': {
+      color: 'var(--affine-text-secondary-color)',
+    },
+  },
 });
 export const optionList = style({
   display: 'flex',
   flexDirection: 'column',
   gap: 4,
   padding: '0 4px',
+  maxHeight: '220px',
+});
+export const scrollbar = style({
+  vars: {
+    '--scrollbar-width': '4px',
+  },
 });
 export const selectOption = style({
   display: 'flex',

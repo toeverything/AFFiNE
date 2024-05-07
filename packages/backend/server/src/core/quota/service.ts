@@ -3,21 +3,23 @@ import { PrismaClient } from '@prisma/client';
 
 import type { EventPayload } from '../../fundamentals';
 import { OnEvent, PrismaTransaction } from '../../fundamentals';
-import { FeatureKind } from '../features';
+import { SubscriptionPlan } from '../../plugins/payment/types';
+import { FeatureKind, FeatureManagementService } from '../features';
 import { QuotaConfig } from './quota';
 import { QuotaType } from './types';
 
 @Injectable()
 export class QuotaService {
-  constructor(private readonly prisma: PrismaClient) {}
+  constructor(
+    private readonly prisma: PrismaClient,
+    private readonly feature: FeatureManagementService
+  ) {}
 
   // get activated user quota
   async getUserQuota(userId: string) {
     const quota = await this.prisma.userFeatures.findFirst({
       where: {
-        user: {
-          id: userId,
-        },
+        userId,
         feature: {
           type: FeatureKind.Quota,
         },
@@ -44,9 +46,7 @@ export class QuotaService {
   async getUserQuotas(userId: string) {
     const quotas = await this.prisma.userFeatures.findMany({
       where: {
-        user: {
-          id: userId,
-        },
+        userId,
         feature: {
           type: FeatureKind.Quota,
         },
@@ -92,14 +92,17 @@ export class QuotaService {
         return;
       }
 
-      const latestPlanVersion = await tx.features.aggregate({
-        where: {
-          feature: quota,
-        },
-        _max: {
-          version: true,
-        },
-      });
+      const featureId = await tx.features
+        .findFirst({
+          where: { feature: quota, type: FeatureKind.Quota },
+          select: { id: true },
+          orderBy: { version: 'desc' },
+        })
+        .then(f => f?.id);
+
+      if (!featureId) {
+        throw new Error(`Quota ${quota} not found`);
+      }
 
       // we will deactivate all exists quota for this user
       await tx.userFeatures.updateMany({
@@ -117,20 +120,8 @@ export class QuotaService {
 
       await tx.userFeatures.create({
         data: {
-          user: {
-            connect: {
-              id: userId,
-            },
-          },
-          feature: {
-            connect: {
-              feature_version: {
-                feature: quota,
-                version: latestPlanVersion._max.version || 1,
-              },
-              type: FeatureKind.Quota,
-            },
-          },
+          userId,
+          featureId,
           reason: reason ?? 'switch quota',
           activated: true,
           expiredAt,
@@ -159,22 +150,42 @@ export class QuotaService {
   @OnEvent('user.subscription.activated')
   async onSubscriptionUpdated({
     userId,
+    plan,
   }: EventPayload<'user.subscription.activated'>) {
-    await this.switchUserQuota(
-      userId,
-      QuotaType.ProPlanV1,
-      'subscription activated'
-    );
+    switch (plan) {
+      case SubscriptionPlan.AI:
+        await this.feature.addCopilot(userId, 'subscription activated');
+        break;
+      case SubscriptionPlan.Pro:
+        await this.switchUserQuota(
+          userId,
+          QuotaType.ProPlanV1,
+          'subscription activated'
+        );
+        break;
+      default:
+        break;
+    }
   }
 
   @OnEvent('user.subscription.canceled')
-  async onSubscriptionCanceled(
-    userId: EventPayload<'user.subscription.canceled'>
-  ) {
-    await this.switchUserQuota(
-      userId,
-      QuotaType.FreePlanV1,
-      'subscription canceled'
-    );
+  async onSubscriptionCanceled({
+    userId,
+    plan,
+  }: EventPayload<'user.subscription.canceled'>) {
+    switch (plan) {
+      case SubscriptionPlan.AI:
+        await this.feature.removeCopilot(userId);
+        break;
+      case SubscriptionPlan.Pro:
+        await this.switchUserQuota(
+          userId,
+          QuotaType.FreePlanV1,
+          'subscription canceled'
+        );
+        break;
+      default:
+        break;
+    }
   }
 }

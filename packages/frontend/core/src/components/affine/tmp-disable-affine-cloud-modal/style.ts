@@ -32,15 +32,13 @@ export const StyleTips = styled('div')(() => {
   };
 });
 
-export const StyleButton = styled(Button)(() => {
-  return {
-    textAlign: 'center',
-    borderRadius: '8px',
-    backgroundColor: 'var(--affine-primary-color)',
-    span: {
-      margin: '0',
-    },
-  };
+export const StyleButton = styled(Button)({
+  textAlign: 'center',
+  borderRadius: '8px',
+  backgroundColor: 'var(--affine-primary-color)',
+  span: {
+    margin: '0',
+  },
 });
 export const StyleButtonContainer = styled('div')(() => {
   return {

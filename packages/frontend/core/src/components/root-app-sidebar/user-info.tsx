@@ -2,9 +2,11 @@ import {
   Avatar,
   Button,
   Divider,
+  ErrorMessage,
   Menu,
   MenuIcon,
   MenuItem,
+  Skeleton,
 } from '@affine/component';
 import {
   authAtom,
@@ -12,26 +14,32 @@ import {
   openSettingModalAtom,
   openSignOutModalAtom,
 } from '@affine/core/atoms';
-import {
-  useCurrentUser,
-  useSession,
-} from '@affine/core/hooks/affine/use-current-user';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { AccountIcon, SignOutIcon } from '@blocksuite/icons';
+import { useLiveData, useService } from '@toeverything/infra';
+import { assignInlineVars } from '@vanilla-extract/dynamic';
 import { useSetAtom } from 'jotai';
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 
+import {
+  type AuthAccountInfo,
+  AuthService,
+  UserQuotaService,
+} from '../../modules/cloud';
 import * as styles from './index.css';
 import { UnknownUserIcon } from './unknow-user';
 
 export const UserInfo = () => {
-  const { status } = useSession();
-  const isAuthenticated = status === 'authenticated';
-  return isAuthenticated ? <AuthorizedUserInfo /> : <UnauthorizedUserInfo />;
+  const session = useService(AuthService).session;
+  const account = useLiveData(session.account$);
+  return account ? (
+    <AuthorizedUserInfo account={account} />
+  ) : (
+    <UnauthorizedUserInfo />
+  );
 };
 
-const AuthorizedUserInfo = () => {
-  const user = useCurrentUser();
+const AuthorizedUserInfo = ({ account }: { account: AuthAccountInfo }) => {
   return (
     <Menu items={<OperationMenu />}>
       <Button
@@ -39,7 +47,7 @@ const AuthorizedUserInfo = () => {
         type="plain"
         className={styles.userInfoWrapper}
       >
-        <Avatar size={24} name={user.name} url={user.avatarUrl} />
+        <Avatar size={24} name={account.label} url={account.avatar} />
       </Button>
     </Menu>
   );
@@ -113,13 +121,59 @@ const AccountMenu = () => {
   );
 };
 
-const OperationMenu = () => {
-  // TODO: display usage progress bar
-  const StorageUsage = null;
+const CloudUsage = () => {
+  const quota = useService(UserQuotaService).quota;
+  const quotaError = useLiveData(quota.error$);
+
+  useEffect(() => {
+    // revalidate quota to get the latest status
+    quota.revalidate();
+  }, [quota]);
+  const color = useLiveData(quota.color$);
+  const usedFormatted = useLiveData(quota.usedFormatted$);
+  const maxFormatted = useLiveData(quota.maxFormatted$);
+  const percent = useLiveData(quota.percent$);
+
+  if (percent === null) {
+    if (quotaError) {
+      return <ErrorMessage>Failed to load quota</ErrorMessage>;
+    }
+    return (
+      <div>
+        <Skeleton height={15} width={50} />
+        <Skeleton height={10} style={{ marginTop: 4 }} />
+      </div>
+    );
+  }
 
   return (
+    <div
+      className={styles.cloudUsage}
+      style={assignInlineVars({
+        [styles.progressColorVar]: color,
+      })}
+    >
+      <div className={styles.cloudUsageLabel}>
+        <span className={styles.cloudUsageLabelUsed}>{usedFormatted}</span>
+        <span>&nbsp;/&nbsp;</span>
+        <span>{maxFormatted}</span>
+      </div>
+
+      <div className={styles.cloudUsageBar}>
+        <div
+          className={styles.cloudUsageBarInner}
+          style={{ width: `${percent}%` }}
+        />
+      </div>
+    </div>
+  );
+};
+
+const OperationMenu = () => {
+  return (
     <>
-      {StorageUsage}
+      <CloudUsage />
+      <Divider />
       <AccountMenu />
     </>
   );

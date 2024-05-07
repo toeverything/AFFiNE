@@ -1,14 +1,14 @@
 import { toast } from '@affine/component';
 import { IconButton } from '@affine/component/ui/button';
 import { Menu } from '@affine/component/ui/menu';
-import { Workbench } from '@affine/core/modules/workbench';
+import { FavoriteItemsAdapter } from '@affine/core/modules/properties';
+import { WorkbenchService } from '@affine/core/modules/workbench';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { MoreHorizontalIcon } from '@blocksuite/icons';
 import type { DocCollection } from '@blocksuite/store';
 import { useService } from '@toeverything/infra';
 import { useCallback } from 'react';
 
-import { useBlockSuiteMetaHelper } from '../../../../hooks/affine/use-block-suite-meta-helper';
 import { useTrashModalHelper } from '../../../../hooks/affine/use-trash-modal-helper';
 import { usePageHelper } from '../../../blocksuite/block-suite-page-list/utils';
 import { OperationItems } from './operation-item';
@@ -38,8 +38,9 @@ export const OperationMenuButton = ({ ...props }: OperationMenuButtonProps) => {
   const t = useAFFiNEI18N();
   const { createLinkedPage } = usePageHelper(docCollection);
   const { setTrashModal } = useTrashModalHelper(docCollection);
-  const { removeFromFavorite } = useBlockSuiteMetaHelper(docCollection);
-  const workbench = useService(Workbench);
+
+  const favAdapter = useService(FavoriteItemsAdapter);
+  const workbench = useService(WorkbenchService).workbench;
 
   const handleRename = useCallback(() => {
     setRenameModalOpen?.();
@@ -51,9 +52,9 @@ export const OperationMenuButton = ({ ...props }: OperationMenuButtonProps) => {
   }, [createLinkedPage, pageId, t]);
 
   const handleRemoveFromFavourites = useCallback(() => {
-    removeFromFavorite(pageId);
+    favAdapter.remove(pageId, 'doc');
     toast(t['com.affine.toastMessage.removedFavorites']());
-  }, [pageId, removeFromFavorite, t]);
+  }, [favAdapter, pageId, t]);
 
   const handleDelete = useCallback(() => {
     setTrashModal({

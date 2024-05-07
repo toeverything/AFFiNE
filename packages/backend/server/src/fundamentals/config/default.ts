@@ -147,12 +147,14 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
       playground: true,
     },
     auth: {
+      allowSignup: true,
       password: {
         minLength: node.prod ? 8 : 1,
         maxLength: 32,
       },
       session: {
         ttl: 15 * ONE_DAY_IN_SEC,
+        ttr: 7 * ONE_DAY_IN_SEC,
       },
       accessToken: {
         ttl: 7 * ONE_DAY_IN_SEC,
@@ -188,7 +190,7 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
       enabled: false,
     },
     telemetry: {
-      enabled: isSelfhosted && !process.env.DISABLE_SERVER_TELEMETRY,
+      enabled: isSelfhosted,
       token: '389c0615a69b57cca7d3fa0a4824c930',
     },
     plugins: {

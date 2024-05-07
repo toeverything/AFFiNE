@@ -1,8 +1,8 @@
+import { notify } from '@affine/component';
 import {
   pushGlobalLoadingEventAtom,
   resolveGlobalLoadingEventAtom,
 } from '@affine/component/global-loading';
-import { pushNotificationAtom } from '@affine/component/notification-center';
 import { apis } from '@affine/electron-api';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { PageRootService, RootBlockModel } from '@blocksuite/blocks';
@@ -51,7 +51,6 @@ async function exportHandler({ page, type }: ExportHandlerOptions) {
 }
 
 export const useExportPage = (page: Doc) => {
-  const pushNotification = useSetAtom(pushNotificationAtom);
   const pushGlobalLoadingEvent = useSetAtom(pushGlobalLoadingEventAtom);
   const resolveGlobalLoadingEvent = useSetAtom(resolveGlobalLoadingEventAtom);
   const t = useAFFiNEI18N();
@@ -67,29 +66,21 @@ export const useExportPage = (page: Doc) => {
           page,
           type,
         });
-        pushNotification({
+        notify.success({
           title: t['com.affine.export.success.title'](),
           message: t['com.affine.export.success.message'](),
-          type: 'success',
         });
       } catch (err) {
         console.error(err);
-        pushNotification({
+        notify.error({
           title: t['com.affine.export.error.title'](),
           message: t['com.affine.export.error.message'](),
-          type: 'error',
         });
       } finally {
         resolveGlobalLoadingEvent(globalLoadingID);
       }
     },
-    [
-      page,
-      pushGlobalLoadingEvent,
-      pushNotification,
-      resolveGlobalLoadingEvent,
-      t,
-    ]
+    [page, pushGlobalLoadingEvent, resolveGlobalLoadingEvent, t]
   );
 
   return onClickHandler;

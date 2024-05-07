@@ -69,7 +69,7 @@ test('should be able to visit public api if signed in', async t => {
   const { app, auth } = t.context;
 
   // @ts-expect-error mock
-  auth.getUser.resolves({ id: '1' });
+  auth.getUser.resolves({ user: { id: '1' } });
 
   const res = await request(app.getHttpServer())
     .get('/public')
@@ -98,7 +98,7 @@ test('should be able to visit private api if signed in', async t => {
   const { app, auth } = t.context;
 
   // @ts-expect-error mock
-  auth.getUser.resolves({ id: '1' });
+  auth.getUser.resolves({ user: { id: '1' } });
 
   const res = await request(app.getHttpServer())
     .get('/private')
@@ -111,6 +111,9 @@ test('should be able to visit private api if signed in', async t => {
 test('should be able to parse session cookie', async t => {
   const { app, auth } = t.context;
 
+  // @ts-expect-error mock
+  auth.getUser.resolves({ user: { id: '1' } });
+
   await request(app.getHttpServer())
     .get('/public')
     .set('cookie', `${AuthService.sessionCookieName}=1`)
@@ -121,6 +124,9 @@ test('should be able to parse session cookie', async t => {
 
 test('should be able to parse bearer token', async t => {
   const { app, auth } = t.context;
+
+  // @ts-expect-error mock
+  auth.getUser.resolves({ user: { id: '1' } });
 
   await request(app.getHttpServer())
     .get('/public')

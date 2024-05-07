@@ -1,5 +1,3 @@
-import path from 'node:path';
-
 import { ValidationResult } from '@affine/native';
 import { WorkspaceVersion } from '@toeverything/infra/blocksuite';
 import fs from 'fs-extra';
@@ -11,10 +9,9 @@ import {
   migrateToLatest,
   migrateToSubdocAndReplaceDatabase,
 } from '../db/migration';
-import type { WorkspaceSQLiteDB } from '../db/workspace-db-adapter';
 import { logger } from '../logger';
 import { mainRPC } from '../main-rpc';
-import { listWorkspaces, storeWorkspaceMeta } from '../workspace';
+import { storeWorkspaceMeta } from '../workspace';
 import {
   getWorkspaceDBPath,
   getWorkspaceMeta,
@@ -47,12 +44,6 @@ export interface SelectDBFileLocationResult {
   canceled?: boolean;
 }
 
-export interface MoveDBFileResult {
-  filePath?: string;
-  error?: ErrorMessage;
-  canceled?: boolean;
-}
-
 // provide a backdoor to set dialog path for testing in playwright
 export interface FakeDialogResult {
   canceled?: boolean;
@@ -68,7 +59,7 @@ export async function revealDBFile(workspaceId: string) {
   if (!meta) {
     return;
   }
-  await mainRPC.showItemInFolder(meta.secondaryDBPath ?? meta.mainDBPath);
+  await mainRPC.showItemInFolder(meta.mainDBPath);
 }
 
 // result will be used in the next call to showOpenDialog
@@ -120,7 +111,10 @@ export async function saveDBFileAs(
             name: '',
           },
         ],
-        defaultPath: getDefaultDBFileName(db.getWorkspaceName(), workspaceId),
+        defaultPath: getDefaultDBFileName(
+          await db.getWorkspaceName(),
+          workspaceId
+        ),
         message: 'Save Workspace as a SQLite Database file',
       }));
     const filePath = ret.filePath;
@@ -213,11 +207,6 @@ export async function loadDBFile(): Promise<LoadDBFileResult> {
       return { error: 'DB_FILE_PATH_INVALID' };
     }
 
-    if (await dbFileAlreadyLoaded(originalPath)) {
-      logger.warn('loadDBFile: db file already loaded');
-      return { error: 'DB_FILE_ALREADY_LOADED' };
-    }
-
     const { SqliteConnection } = await import('@affine/native');
 
     const validationResult = await SqliteConnection.validate(originalPath);
@@ -293,101 +282,4 @@ export async function loadDBFile(): Promise<LoadDBFileResult> {
       error: 'UNKNOWN_ERROR',
     };
   }
-}
-
-/**
- * This function is called when the user clicks the "Move" button in the "Move Workspace Storage" setting.
- *
- * It will
- * - copy the source db file to a new location
- * - remove the old db external file
- * - update the external db file path in the workspace meta
- * - return the new file path
- */
-export async function moveDBFile(
-  workspaceId: string,
-  dbFileDir?: string
-): Promise<MoveDBFileResult> {
-  let db: WorkspaceSQLiteDB | null = null;
-  try {
-    db = await ensureSQLiteDB(workspaceId);
-    const meta = await getWorkspaceMeta(workspaceId);
-
-    const oldDir = meta.secondaryDBPath
-      ? path.dirname(meta.secondaryDBPath)
-      : null;
-    const defaultDir = oldDir ?? (await mainRPC.getPath('documents'));
-
-    const newName = getDefaultDBFileName(db.getWorkspaceName(), workspaceId);
-
-    const newDirPath =
-      dbFileDir ??
-      (
-        getFakedResult() ??
-        (await mainRPC.showOpenDialog({
-          properties: ['openDirectory'],
-          title: 'Move Workspace Storage',
-          buttonLabel: 'Move',
-          defaultPath: defaultDir,
-          message: 'Move Workspace storage file',
-        }))
-      ).filePaths?.[0];
-
-    // skips if
-    // - user canceled the dialog
-    // - user selected the same dir
-    if (!newDirPath || newDirPath === oldDir) {
-      return {
-        canceled: true,
-      };
-    }
-
-    const newFilePath = path.join(newDirPath, newName);
-
-    if (await fs.pathExists(newFilePath)) {
-      return {
-        error: 'FILE_ALREADY_EXISTS',
-      };
-    }
-
-    logger.info(`[moveDBFile] copy ${meta.mainDBPath} -> ${newFilePath}`);
-
-    await fs.copy(meta.mainDBPath, newFilePath);
-
-    // remove the old db file, but we don't care if it fails
-    if (meta.secondaryDBPath) {
-      await fs
-        .remove(meta.secondaryDBPath)
-        .then(() => {
-          logger.info(`[moveDBFile] removed ${meta.secondaryDBPath}`);
-        })
-        .catch(err => {
-          logger.error(
-            `[moveDBFile] remove ${meta.secondaryDBPath} failed`,
-            err
-          );
-        });
-    }
-
-    // update meta
-    await storeWorkspaceMeta(workspaceId, {
-      secondaryDBPath: newFilePath,
-    });
-
-    return {
-      filePath: newFilePath,
-    };
-  } catch (err) {
-    await db?.destroy();
-    logger.error('[moveDBFile]', err);
-    return {
-      error: 'UNKNOWN_ERROR',
-    };
-  }
-}
-
-async function dbFileAlreadyLoaded(path: string) {
-  const meta = await listWorkspaces();
-  const paths = meta.map(m => m[1].secondaryDBPath);
-  return paths.includes(path);
 }

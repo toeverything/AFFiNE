@@ -1,4 +1,4 @@
-import { pushNotificationAtom } from '@affine/component/notification-center';
+import { notify } from '@affine/component';
 import {
   AffineShapeIcon,
   useEditCollection,
@@ -16,8 +16,7 @@ import {
   PageIcon,
   ViewLayersIcon,
 } from '@blocksuite/icons';
-import { useLiveData, useService, Workspace } from '@toeverything/infra';
-import { useSetAtom } from 'jotai';
+import { useLiveData, useService, WorkspaceService } from '@toeverything/infra';
 import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
@@ -68,37 +67,31 @@ export const Component = function CollectionPage() {
   const collections = useLiveData(collectionService.collections$);
   const navigate = useNavigateHelper();
   const params = useParams();
-  const workspace = useService(Workspace);
+  const workspace = useService(WorkspaceService).workspace;
   const collection = collections.find(v => v.id === params.collectionId);
-  const pushNotification = useSetAtom(pushNotificationAtom);
+
+  const notifyCollectionDeleted = useCallback(() => {
+    navigate.jumpToSubPath(workspace.id, WorkspaceSubPath.ALL);
+    const collection = collectionService.collectionsTrash$.value.find(
+      v => v.collection.id === params.collectionId
+    );
+    let text = 'Collection does not exist';
+    if (collection) {
+      if (collection.userId) {
+        text = `${collection.collection.name} has been deleted by ${collection.userName}`;
+      } else {
+        text = `${collection.collection.name} has been deleted`;
+      }
+    }
+    return notify.error({ title: text });
+  }, [collectionService, navigate, params.collectionId, workspace.id]);
+
   useEffect(() => {
     if (!collection) {
-      navigate.jumpToSubPath(workspace.id, WorkspaceSubPath.ALL);
-      const collection = collectionService.collectionsTrash$.value.find(
-        v => v.collection.id === params.collectionId
-      );
-      let text = 'Collection does not exist';
-      if (collection) {
-        if (collection.userId) {
-          text = `${collection.collection.name} has been deleted by ${collection.userName}`;
-        } else {
-          text = `${collection.collection.name} has been deleted`;
-        }
-      }
-      pushNotification({
-        type: 'error',
-        title: text,
-      });
+      notifyCollectionDeleted();
     }
-  }, [
-    collection,
-    collectionService.collectionsTrash$.value,
-    navigate,
-    params.collectionId,
-    pushNotification,
-    workspace.docCollection,
-    workspace.id,
-  ]);
+  }, [collection, notifyCollectionDeleted]);
+
   if (!collection) {
     return null;
   }
@@ -110,7 +103,7 @@ export const Component = function CollectionPage() {
 };
 
 const Placeholder = ({ collection }: { collection: Collection }) => {
-  const workspace = useService(Workspace);
+  const workspace = useService(WorkspaceService).workspace;
   const collectionService = useService(CollectionService);
   const { node, open } = useEditCollection(useAllPageListConfig());
   const { jumpToCollections } = useNavigateHelper();

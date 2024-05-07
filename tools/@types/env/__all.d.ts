@@ -20,6 +20,9 @@ declare global {
 
 declare module '@blocksuite/store' {
   interface DocMeta {
+    /**
+     * @deprecated
+     */
     favorite?: boolean;
     // If a page remove to trash, and it is a subpage, it will remove from its parent `subpageIds`, 'trashRelate' is use for save it parent
     trashRelate?: string;
@@ -27,7 +30,6 @@ declare module '@blocksuite/store' {
     trashDate?: number;
     updatedDate?: number;
     mode?: 'page' | 'edgeless';
-    jumpOnce?: boolean;
     // todo: support `number` in the future
     isPublic?: boolean;
   }

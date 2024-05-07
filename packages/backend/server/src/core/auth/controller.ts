@@ -14,7 +14,12 @@ import {
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
 
-import { PaymentRequiredException, URLHelper } from '../../fundamentals';
+import {
+  Config,
+  PaymentRequiredException,
+  Throttle,
+  URLHelper,
+} from '../../fundamentals';
 import { UserService } from '../user';
 import { validators } from '../utils/validators';
 import { CurrentUser } from './current-user';
@@ -32,13 +37,15 @@ class MagicLinkCredential {
   token!: string;
 }
 
+@Throttle('strict')
 @Controller('/api/auth')
 export class AuthController {
   constructor(
     private readonly url: URLHelper,
     private readonly auth: AuthService,
     private readonly user: UserService,
-    private readonly token: TokenService
+    private readonly token: TokenService,
+    private readonly config: Config
   ) {}
 
   @Public()
@@ -69,6 +76,10 @@ export class AuthController {
     } else {
       // send email magic link
       const user = await this.user.findUserByEmail(credential.email);
+      if (!user && !this.config.auth.allowSignup) {
+        throw new BadRequestException('You are not allows to sign up.');
+      }
+
       const result = await this.sendSignInEmail(
         { email: credential.email, signUp: !user },
         redirectUri
@@ -159,6 +170,7 @@ export class AuthController {
     res.send({ id: user.id, email: user.email, name: user.name });
   }
 
+  @Throttle('default', { limit: 1200 })
   @Public()
   @Get('/session')
   async currentSessionUser(@CurrentUser() user?: CurrentUser) {
@@ -167,6 +179,7 @@ export class AuthController {
     };
   }
 
+  @Throttle('default', { limit: 1200 })
   @Public()
   @Get('/sessions')
   async currentSessionUsers(@Req() req: Request) {

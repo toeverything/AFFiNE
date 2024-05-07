@@ -2,12 +2,12 @@ import { Button } from '@affine/component/ui/button';
 import { AffineShapeIcon } from '@affine/core/components/page-list'; // TODO: import from page-list temporarily, need to defined common svg icon/images management.
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
-import { useWorkspaceStatus } from '@affine/core/hooks/use-workspace-status';
+import { WorkspaceSubPath } from '@affine/core/shared';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { useService, Workspace, WorkspaceManager } from '@toeverything/infra';
+import { useLiveData, useService, WorkspaceService } from '@toeverything/infra';
 import { useState } from 'react';
 
-import { WorkspaceSubPath } from '../../shared';
+import { mixpanel } from '../../utils';
 import * as styles from './upgrade.css';
 import { ArrowCircleIcon, HeartBreakIcon } from './upgrade-icon';
 
@@ -16,20 +16,22 @@ import { ArrowCircleIcon, HeartBreakIcon } from './upgrade-icon';
  */
 export const WorkspaceUpgrade = function WorkspaceUpgrade() {
   const [error, setError] = useState<string | null>(null);
-  const currentWorkspace = useService(Workspace);
-  const workspaceManager = useService(WorkspaceManager);
-  const upgradeStatus = useWorkspaceStatus(currentWorkspace, s => s.upgrade);
-  const { openPage } = useNavigateHelper();
+  const currentWorkspace = useService(WorkspaceService).workspace;
+  const upgrading = useLiveData(currentWorkspace.upgrade.upgrading$);
   const t = useAFFiNEI18N();
+  const { openPage } = useNavigateHelper();
 
   const onButtonClick = useAsyncCallback(async () => {
-    if (upgradeStatus?.upgrading) {
+    if (upgrading) {
       return;
     }
 
+    mixpanel.track('Button', {
+      resolve: 'UpgradeWorkspace',
+    });
+
     try {
-      const newWorkspace =
-        await currentWorkspace.upgrade.upgrade(workspaceManager);
+      const newWorkspace = await currentWorkspace.upgrade.upgrade();
       if (newWorkspace) {
         openPage(newWorkspace.id, WorkspaceSubPath.ALL);
       } else {
@@ -39,12 +41,7 @@ export const WorkspaceUpgrade = function WorkspaceUpgrade() {
     } catch (error) {
       setError(error instanceof Error ? error.message : '' + error);
     }
-  }, [
-    upgradeStatus?.upgrading,
-    currentWorkspace.upgrade,
-    workspaceManager,
-    openPage,
-  ]);
+  }, [upgrading, currentWorkspace.upgrade, openPage]);
 
   return (
     <div className={styles.layout}>
@@ -62,9 +59,7 @@ export const WorkspaceUpgrade = function WorkspaceUpgrade() {
               <HeartBreakIcon />
             ) : (
               <ArrowCircleIcon
-                className={
-                  upgradeStatus?.upgrading ? styles.loadingIcon : undefined
-                }
+                className={upgrading ? styles.loadingIcon : undefined}
               />
             )
           }
@@ -72,7 +67,7 @@ export const WorkspaceUpgrade = function WorkspaceUpgrade() {
         >
           {error
             ? t['com.affine.upgrade.button-text.error']()
-            : upgradeStatus?.upgrading
+            : upgrading
               ? t['com.affine.upgrade.button-text.upgrading']()
               : t['com.affine.upgrade.button-text.pending']()}
         </Button>

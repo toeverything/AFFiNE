@@ -8,10 +8,10 @@
     "@affine-test/fixtures": "workspace:*",
     "@affine-test/kit": "workspace:*",
     "@affine/electron-api": "workspace:*",
-    "@playwright/test": "^1.41.2",
+    "@playwright/test": "^1.43.0",
     "@types/fs-extra": "^11.0.4",
     "fs-extra": "^11.2.0",
-    "playwright": "^1.41.2"
+    "playwright": "^1.43.0"
   },
   "version": "0.14.0"
 }

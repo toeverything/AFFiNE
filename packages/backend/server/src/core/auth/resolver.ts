@@ -1,11 +1,6 @@
-import {
-  BadRequestException,
-  ForbiddenException,
-  UseGuards,
-} from '@nestjs/common';
+import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import {
   Args,
-  Context,
   Field,
   Mutation,
   ObjectType,
@@ -14,9 +9,8 @@ import {
   ResolveField,
   Resolver,
 } from '@nestjs/graphql';
-import type { Request, Response } from 'express';
 
-import { CloudThrottlerGuard, Config, Throttle } from '../../fundamentals';
+import { Config, SkipThrottle, Throttle } from '../../fundamentals';
 import { UserService } from '../user';
 import { UserType } from '../user/types';
 import { validators } from '../utils/validators';
@@ -37,13 +31,7 @@ export class ClientTokenType {
   sessionToken?: string;
 }
 
-/**
- * Auth resolver
- * Token rate limit: 20 req/m
- * Sign up/in rate limit: 10 req/m
- * Other rate limit: 5 req/m
- */
-@UseGuards(CloudThrottlerGuard)
+@Throttle('strict')
 @Resolver(() => UserType)
 export class AuthResolver {
   constructor(
@@ -53,12 +41,7 @@ export class AuthResolver {
     private readonly token: TokenService
   ) {}
 
-  @Throttle({
-    default: {
-      limit: 10,
-      ttl: 60,
-    },
-  })
+  @SkipThrottle()
   @Public()
   @Query(() => UserType, {
     name: 'currentUser',
@@ -69,12 +52,6 @@ export class AuthResolver {
     return user;
   }
 
-  @Throttle({
-    default: {
-      limit: 20,
-      ttl: 60,
-    },
-  })
   @ResolveField(() => ClientTokenType, {
     name: 'token',
     deprecationReason: 'use [/api/auth/authorize]',
@@ -100,53 +77,6 @@ export class AuthResolver {
     };
   }
 
-  @Public()
-  @Throttle({
-    default: {
-      limit: 10,
-      ttl: 60,
-    },
-  })
-  @Mutation(() => UserType)
-  async signUp(
-    @Context() ctx: { req: Request; res: Response },
-    @Args('name') name: string,
-    @Args('email') email: string,
-    @Args('password') password: string
-  ) {
-    validators.assertValidCredential({ email, password });
-    const user = await this.auth.signUp(name, email, password);
-    await this.auth.setCookie(ctx.req, ctx.res, user);
-    ctx.req.user = user;
-    return user;
-  }
-
-  @Public()
-  @Throttle({
-    default: {
-      limit: 10,
-      ttl: 60,
-    },
-  })
-  @Mutation(() => UserType)
-  async signIn(
-    @Context() ctx: { req: Request; res: Response },
-    @Args('email') email: string,
-    @Args('password') password: string
-  ) {
-    validators.assertValidEmail(email);
-    const user = await this.auth.signIn(email, password);
-    await this.auth.setCookie(ctx.req, ctx.res, user);
-    ctx.req.user = user;
-    return user;
-  }
-
-  @Throttle({
-    default: {
-      limit: 5,
-      ttl: 60,
-    },
-  })
   @Mutation(() => UserType)
   async changePassword(
     @CurrentUser() user: CurrentUser,
@@ -172,12 +102,6 @@ export class AuthResolver {
     return user;
   }
 
-  @Throttle({
-    default: {
-      limit: 5,
-      ttl: 60,
-    },
-  })
   @Mutation(() => UserType)
   async changeEmail(
     @CurrentUser() user: CurrentUser,
@@ -202,12 +126,6 @@ export class AuthResolver {
     return user;
   }
 
-  @Throttle({
-    default: {
-      limit: 5,
-      ttl: 60,
-    },
-  })
   @Mutation(() => Boolean)
   async sendChangePasswordEmail(
     @CurrentUser() user: CurrentUser,
@@ -235,12 +153,6 @@ export class AuthResolver {
     return !res.rejected.length;
   }
 
-  @Throttle({
-    default: {
-      limit: 5,
-      ttl: 60,
-    },
-  })
   @Mutation(() => Boolean)
   async sendSetPasswordEmail(
     @CurrentUser() user: CurrentUser,
@@ -273,12 +185,6 @@ export class AuthResolver {
   // 4. user open confirm email page from new email
   // 5. user click confirm button
   // 6. send notification email
-  @Throttle({
-    default: {
-      limit: 5,
-      ttl: 60,
-    },
-  })
   @Mutation(() => Boolean)
   async sendChangeEmail(
     @CurrentUser() user: CurrentUser,
@@ -299,12 +205,6 @@ export class AuthResolver {
     return !res.rejected.length;
   }
 
-  @Throttle({
-    default: {
-      limit: 5,
-      ttl: 60,
-    },
-  })
   @Mutation(() => Boolean)
   async sendVerifyChangeEmail(
     @CurrentUser() user: CurrentUser,
@@ -347,12 +247,6 @@ export class AuthResolver {
     return !res.rejected.length;
   }
 
-  @Throttle({
-    default: {
-      limit: 5,
-      ttl: 60,
-    },
-  })
   @Mutation(() => Boolean)
   async sendVerifyEmail(
     @CurrentUser() user: CurrentUser,
@@ -367,12 +261,6 @@ export class AuthResolver {
     return !res.rejected.length;
   }
 
-  @Throttle({
-    default: {
-      limit: 5,
-      ttl: 60,
-    },
-  })
   @Mutation(() => Boolean)
   async verifyEmail(
     @CurrentUser() user: CurrentUser,
