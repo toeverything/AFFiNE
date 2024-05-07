@@ -133,7 +133,7 @@ function inferObjectType(event: BlocksuiteActionEvent) {
 function inferSegment(
   event: BlocksuiteActionEvent
 ): AIActionEventProperties['segment'] {
-  if (event.action === 'chat') {
+  if (event.options.where === 'inline-chat-panel') {
     return 'inline chat panel';
   } else if (event.event.startsWith('result:')) {
     return 'AI result panel';
@@ -147,13 +147,13 @@ function inferSegment(
 function inferModule(
   event: BlocksuiteActionEvent
 ): AIActionEventProperties['module'] {
-  if (event.action === 'chat') {
+  if (event.options.where === 'chat-panel') {
     return 'AI chat panel';
   } else if (event.event === 'result:discard') {
     return 'exit confirmation';
   } else if (event.event.startsWith('result:')) {
     return 'AI result panel';
-  } else if (event.options.where === 'chat-panel') {
+  } else if (event.options.where === 'inline-chat-panel') {
     return 'inline chat panel';
   } else {
     return 'AI action panel';
