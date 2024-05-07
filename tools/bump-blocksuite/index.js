@@ -95,6 +95,9 @@ for (const oid of repo
   .revWalk()
   .push(latest.id())
   .setSorting(Sort.Time & Sort.Topological)) {
+  if (oid.startsWith(oldHash)) {
+    break;
+  }
   const commit = repo.findCommit(oid);
   const summary = commit.summary();
   if (summary.startsWith('feat')) {
@@ -105,9 +108,6 @@ for (const oid of repo
     commits.Refactor.push(commit);
   } else {
     commits.Misc.push(commit);
-  }
-  if (oid.startsWith(oldHash)) {
-    break;
   }
 }
 
