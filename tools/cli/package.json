@@ -5,11 +5,11 @@
   "devDependencies": {
     "@affine/env": "workspace:*",
     "@affine/templates": "workspace:*",
-    "@aws-sdk/client-s3": "3.537.0",
+    "@aws-sdk/client-s3": "3.569.0",
     "@blocksuite/presets": "0.14.0-canary-202405070525-ad1cc9f",
     "@clack/core": "^0.3.4",
     "@clack/prompts": "^0.7.0",
-    "@magic-works/i18n-codegen": "^0.5.0",
+    "@magic-works/i18n-codegen": "^0.6.0",
     "@napi-rs/simple-git": "^0.1.16",
     "@perfsee/webpack": "^1.12.2",
     "@pmmmwh/react-refresh-webpack-plugin": "^0.5.11",

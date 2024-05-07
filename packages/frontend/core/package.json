@@ -34,7 +34,7 @@
     "@emotion/server": "^11.11.0",
     "@emotion/styled": "^11.11.5",
     "@juggle/resize-observer": "^3.4.0",
-    "@marsidev/react-turnstile": "^0.5.4",
+    "@marsidev/react-turnstile": "^0.6.0",
     "@radix-ui/react-collapsible": "^1.0.3",
     "@radix-ui/react-dialog": "^1.0.5",
     "@radix-ui/react-popover": "^1.0.7",
@@ -62,9 +62,9 @@
     "image-blob-reduce": "^4.1.0",
     "is-svg": "^5.0.0",
     "jotai": "^2.8.0",
-    "jotai-devtools": "^0.8.0",
+    "jotai-devtools": "^0.9.0",
     "jotai-effect": "^1.0.0",
-    "jotai-scope": "^0.5.1",
+    "jotai-scope": "^0.6.0",
     "lit": "^3.1.2",
     "lodash-es": "^4.17.21",
     "lottie-react": "^2.4.0",
@@ -72,10 +72,10 @@
     "mixpanel-browser": "^2.49.0",
     "nanoid": "^5.0.7",
     "next-themes": "^0.3.0",
-    "react": "18.2.0",
-    "react-dom": "18.2.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
     "react-error-boundary": "^4.0.13",
-    "react-is": "18.2.0",
+    "react-is": "18.3.1",
     "react-router-dom": "^6.22.3",
     "react-transition-state": "^2.1.1",
     "react-virtuoso": "^4.7.8",
@@ -106,6 +106,6 @@
     "fake-indexeddb": "^5.0.2",
     "lodash-es": "^4.17.21",
     "mime-types": "^2.1.35",
-    "vitest": "1.4.0"
+    "vitest": "1.6.0"
   }
 }
