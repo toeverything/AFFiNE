@@ -93,7 +93,7 @@ export class PermissionService {
       // if workspace is public or have any public page, then allow to access
       const [isPublicWorkspace, publicPages] = await Promise.all([
         this.tryCheckWorkspace(ws, user, Permission.Read),
-        await this.prisma.workspacePage.count({
+        this.prisma.workspacePage.count({
           where: {
             workspaceId: ws,
             public: true,
