@@ -159,13 +159,17 @@ export const PlanLayout = ({ cloud, ai, aiTip }: PlanLayoutProps) => {
                   height={24}
                   color={cssVar('iconColor')}
                 />
-                <div className={styles.aiScrollTipText}>Meet AFFiNE AI</div>
+                <div className={styles.aiScrollTipText}>
+                  {t['com.affine.ai-scroll-tip.title']()}
+                </div>
                 <div className={styles.aiScrollTipTag}>
-                  <div className={styles.aiScrollTipTagInner}>NEW</div>
+                  <div className={styles.aiScrollTipTagInner}>
+                    {t['com.affine.ai-scroll-tip.tag']()}
+                  </div>
                 </div>
               </div>
               <Button onClick={scrollAiIntoView} type="primary">
-                View
+                {t['com.affine.ai-scroll-tip.view']()}
               </Button>
             </div>,
             settingModalScrollContainer,
