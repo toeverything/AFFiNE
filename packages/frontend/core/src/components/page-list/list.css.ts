@@ -82,3 +82,13 @@ export const editTagWrapper = style({
     },
   },
 });
+
+export const deleteIcon = style({
+  color: cssVar('iconColor'),
+  selectors: {
+    '&:not(.without-hover):hover': {
+      color: cssVar('errorColor'),
+      background: cssVar('backgroundErrorColor'),
+    },
+  },
+});

@@ -1,23 +1,13 @@
-import { toast } from '@affine/component';
-import { usePageHelper } from '@affine/core/components/blocksuite/block-suite-page-list/utils';
-import type { ListItem } from '@affine/core/components/page-list';
 import {
-  ListTableHeader,
-  PageListItemRenderer,
-  TrashOperationCell,
   useFilteredPageMetas,
-  VirtualizedList,
+  VirtualizedTrashList,
 } from '@affine/core/components/page-list';
-import { usePageHeaderColsDef } from '@affine/core/components/page-list/header-col-def';
 import { Header } from '@affine/core/components/pure/header';
-import { useBlockSuiteMetaHelper } from '@affine/core/hooks/affine/use-block-suite-meta-helper';
 import { useBlockSuiteDocMeta } from '@affine/core/hooks/use-block-suite-page-meta';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
 import { DeleteIcon } from '@blocksuite/icons';
-import type { DocMeta } from '@blocksuite/store';
 import { useService, WorkspaceService } from '@toeverything/infra';
-import { useCallback } from 'react';
 
 import { ViewBodyIsland, ViewHeaderIsland } from '../../modules/workbench';
 import { EmptyPageList } from './page-list-empty';
@@ -47,44 +37,6 @@ export const TrashPage = () => {
     trash: true,
   });
 
-  const { restoreFromTrash, permanentlyDeletePage } =
-    useBlockSuiteMetaHelper(docCollection);
-  const { isPreferredEdgeless } = usePageHelper(docCollection);
-  const t = useAFFiNEI18N();
-  const pageHeaderColsDef = usePageHeaderColsDef();
-
-  const pageOperationsRenderer = useCallback(
-    (item: ListItem) => {
-      const page = item as DocMeta;
-      const onRestorePage = () => {
-        restoreFromTrash(page.id);
-        toast(
-          t['com.affine.toastMessage.restored']({
-            title: page.title || 'Untitled',
-          })
-        );
-      };
-      const onPermanentlyDeletePage = () => {
-        permanentlyDeletePage(page.id);
-        toast(t['com.affine.toastMessage.permanentlyDeleted']());
-      };
-
-      return (
-        <TrashOperationCell
-          onPermanentlyDeletePage={onPermanentlyDeletePage}
-          onRestorePage={onRestorePage}
-        />
-      );
-    },
-
-    [permanentlyDeletePage, restoreFromTrash, t]
-  );
-  const pageItemRenderer = useCallback((item: ListItem) => {
-    return <PageListItemRenderer {...item} />;
-  }, []);
-  const pageHeaderRenderer = useCallback(() => {
-    return <ListTableHeader headerCols={pageHeaderColsDef} />;
-  }, [pageHeaderColsDef]);
   return (
     <>
       <ViewHeaderIsland>
@@ -93,15 +45,7 @@ export const TrashPage = () => {
       <ViewBodyIsland>
         <div className={styles.body}>
           {filteredPageMetas.length > 0 ? (
-            <VirtualizedList
-              items={filteredPageMetas}
-              rowAsLink
-              isPreferredEdgeless={isPreferredEdgeless}
-              docCollection={currentWorkspace.docCollection}
-              operationsRenderer={pageOperationsRenderer}
-              itemRenderer={pageItemRenderer}
-              headerRenderer={pageHeaderRenderer}
-            />
+            <VirtualizedTrashList />
           ) : (
             <EmptyPageList
               type="trash"

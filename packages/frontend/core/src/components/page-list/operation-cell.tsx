@@ -1,5 +1,4 @@
 import {
-  ConfirmModal,
   IconButton,
   Menu,
   MenuIcon,
@@ -227,7 +226,21 @@ export const TrashOperationCell = ({
   onRestorePage,
 }: TrashOperationCellProps) => {
   const t = useAFFiNEI18N();
-  const [open, setOpen] = useState(false);
+  const { openConfirmModal } = useConfirmModal();
+
+  const onConfirmPermanentlyDelete = useCallback(() => {
+    openConfirmModal({
+      title: `${t['com.affine.trashOperation.deletePermanently']()}?`,
+      description: t['com.affine.trashOperation.deleteDescription'](),
+      cancelText: t['Cancel'](),
+      confirmButtonOptions: {
+        type: 'error',
+        children: t['com.affine.trashOperation.delete'](),
+      },
+      onConfirm: onPermanentlyDeletePage,
+    });
+  }, [onPermanentlyDeletePage, openConfirmModal, t]);
+
   return (
     <ColWrapper flex={1}>
       <Tooltip content={t['com.affine.trashOperation.restoreIt']()} side="top">
@@ -248,28 +261,12 @@ export const TrashOperationCell = ({
       >
         <IconButton
           data-testid="delete-page-button"
-          onClick={() => {
-            setOpen(true);
-          }}
+          onClick={onConfirmPermanentlyDelete}
+          className={styles.deleteIcon}
         >
           <DeletePermanentlyIcon />
         </IconButton>
       </Tooltip>
-      <ConfirmModal
-        title={`${t['com.affine.trashOperation.deletePermanently']()}?`}
-        description={t['com.affine.trashOperation.deleteDescription']()}
-        cancelText={t['com.affine.confirmModal.button.cancel']()}
-        confirmButtonOptions={{
-          type: 'error',
-          children: t['com.affine.trashOperation.delete'](),
-        }}
-        open={open}
-        onOpenChange={setOpen}
-        onConfirm={() => {
-          onPermanentlyDeletePage();
-          setOpen(false);
-        }}
-      />
     </ColWrapper>
   );
 };

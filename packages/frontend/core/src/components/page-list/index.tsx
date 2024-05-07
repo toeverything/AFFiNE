@@ -22,3 +22,4 @@ export * from './use-filtered-page-metas';
 export * from './utils';
 export * from './view';
 export * from './virtualized-list';
+export * from './virtualized-trash-list';

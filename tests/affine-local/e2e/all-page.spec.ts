@@ -228,6 +228,65 @@ test('select two pages and delete', async ({ page }) => {
 
   expect(await getPagesCount(page)).toBe(pageCount - 2);
 });
+test('select two pages and permanently delete', async ({ page }) => {
+  await openHomePage(page);
+  await waitForEditorLoad(page);
+  await clickNewPageButton(page);
+  await clickSideBarAllPageButton(page);
+  await waitForAllPagesLoad(page);
+
+  const pageCount = await getPagesCount(page);
+
+  await page.keyboard.down('Shift');
+  await page.locator('[data-testid="page-list-item"]').nth(0).click();
+
+  await page.locator('[data-testid="page-list-item"]').nth(1).click();
+  await page.keyboard.up('Shift');
+
+  // the floating popover should appear
+  await expect(page.locator('[data-testid="floating-toolbar"]')).toBeVisible();
+  await expect(page.locator('[data-testid="floating-toolbar"]')).toHaveText(
+    '2 doc(s) selected'
+  );
+
+  // click delete button
+  await page.locator('[data-testid="list-toolbar-delete"]').click();
+
+  // the confirm dialog should appear
+  await expect(page.getByText('Delete 2 docs?')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Delete' }).click();
+
+  // check the page count again
+  await page.waitForTimeout(300);
+
+  expect(await getPagesCount(page)).toBe(pageCount - 2);
+
+  await page.getByTestId('trash-page').click();
+  await page.waitForTimeout(300);
+  const trashPageCount = await getPagesCount(page);
+
+  expect(trashPageCount).toBe(2);
+
+  await page.keyboard.down('Shift');
+  await page.locator('[data-testid="page-list-item"]').nth(0).click();
+
+  await page.locator('[data-testid="page-list-item"]').nth(1).click();
+  await page.keyboard.up('Shift');
+
+  await expect(page.locator('[data-testid="floating-toolbar"]')).toBeVisible();
+  await expect(page.locator('[data-testid="floating-toolbar"]')).toHaveText(
+    '2 doc(s) selected'
+  );
+
+  await page.locator('[data-testid="list-toolbar-delete"]').click();
+
+  await page.getByRole('button', { name: 'Delete' }).click();
+
+  await page.waitForTimeout(300);
+
+  expect(await getPagesCount(page)).toBe(trashPageCount - 2);
+});
 
 test('select a group of items by clicking "Select All" in group header', async ({
   page,

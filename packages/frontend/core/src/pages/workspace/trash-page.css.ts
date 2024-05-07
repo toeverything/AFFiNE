@@ -6,6 +6,7 @@ export const trashTitle = style({
   gap: 8,
   padding: '0 8px',
   fontWeight: 600,
+  userSelect: 'none',
 });
 export const body = style({
   display: 'flex',
