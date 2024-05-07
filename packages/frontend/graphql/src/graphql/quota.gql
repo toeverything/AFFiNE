@@ -1,12 +1,6 @@
 query quota {
   currentUser {
     id
-    copilot {
-      quota {
-        limit
-        used
-      }
-    }
     quota {
       name
       blobLimit

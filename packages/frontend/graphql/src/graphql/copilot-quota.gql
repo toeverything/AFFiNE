@@ -1,4 +1,4 @@
-query getCopilotQuota {
+query copilotQuota {
   currentUser {
     copilot {
       quota {

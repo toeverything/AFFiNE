@@ -86,9 +86,6 @@ export class Subscription extends Entity {
             return undefined; // no subscription if no user
           }
 
-          // ensure server config is loaded
-          this.serverConfigService.serverConfig.revalidateIfNeeded();
-
           const serverConfig =
             await this.serverConfigService.serverConfig.features$.waitForNonNull(
               signal

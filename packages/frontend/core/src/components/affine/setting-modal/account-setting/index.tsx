@@ -8,7 +8,12 @@ import { Button } from '@affine/component/ui/button';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowRightSmallIcon, CameraIcon } from '@blocksuite/icons';
-import { useEnsureLiveData, useService } from '@toeverything/infra';
+import {
+  useEnsureLiveData,
+  useLiveData,
+  useService,
+  useServices,
+} from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
 import type { FC, MouseEvent } from 'react';
 import { useCallback, useEffect, useState } from 'react';
@@ -18,7 +23,7 @@ import {
   openSettingModalAtom,
   openSignOutModalAtom,
 } from '../../../../atoms';
-import { AuthService } from '../../../../modules/cloud';
+import { AuthService, ServerConfigService } from '../../../../modules/cloud';
 import { mixpanel } from '../../../../utils';
 import { Upload } from '../../../pure/file-upload';
 import { AIUsagePanel } from './ai-usage-panel';
@@ -178,8 +183,15 @@ const StoragePanel = () => {
 };
 
 export const AccountSetting: FC = () => {
+  const { authService, serverConfigService } = useServices({
+    AuthService,
+    ServerConfigService,
+  });
+  const serverFeatures = useLiveData(
+    serverConfigService.serverConfig.features$
+  );
   const t = useAFFiNEI18N();
-  const session = useService(AuthService).session;
+  const session = authService.session;
   useEffect(() => {
     session.revalidate();
   }, [session]);
@@ -235,7 +247,7 @@ export const AccountSetting: FC = () => {
         </Button>
       </SettingRow>
       <StoragePanel />
-      <AIUsagePanel />
+      {serverFeatures?.copilot && <AIUsagePanel />}
       <SettingRow
         name={t[`Sign out`]()}
         desc={t['com.affine.setting.sign.out.message']()}

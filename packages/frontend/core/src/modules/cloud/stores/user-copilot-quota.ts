@@ -1,16 +1,16 @@
-import { quotaQuery } from '@affine/graphql';
+import { copilotQuotaQuery } from '@affine/graphql';
 import { Store } from '@toeverything/infra';
 
 import type { GraphQLService } from '../services/graphql';
 
-export class UserQuotaStore extends Store {
+export class UserCopilotQuotaStore extends Store {
   constructor(private readonly graphqlService: GraphQLService) {
     super();
   }
 
-  async fetchUserQuota(abortSignal?: AbortSignal) {
+  async fetchUserCopilotQuota(abortSignal?: AbortSignal) {
     const data = await this.graphqlService.gql({
-      query: quotaQuery,
+      query: copilotQuotaQuery,
       context: {
         signal: abortSignal,
       },
@@ -20,10 +20,6 @@ export class UserQuotaStore extends Store {
       throw new Error('No logged in');
     }
 
-    return {
-      userId: data.currentUser.id,
-      quota: data.currentUser.quota,
-      used: data.collectAllBlobSizes.size,
-    };
+    return data.currentUser.copilot.quota;
   }
 }

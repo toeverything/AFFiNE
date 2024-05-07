@@ -94,6 +94,24 @@ mutation changePassword($token: String!, $newPassword: String!) {
 }`,
 };
 
+export const copilotQuotaQuery = {
+  id: 'copilotQuotaQuery' as const,
+  operationName: 'copilotQuota',
+  definitionName: 'currentUser',
+  containsFile: false,
+  query: `
+query copilotQuota {
+  currentUser {
+    copilot {
+      quota {
+        limit
+        used
+      }
+    }
+  }
+}`,
+};
+
 export const createCheckoutSessionMutation = {
   id: 'createCheckoutSessionMutation' as const,
   operationName: 'createCheckoutSession',
@@ -232,24 +250,6 @@ query getCopilotHistories($workspaceId: String!, $docId: String, $options: Query
           attachments
           createdAt
         }
-      }
-    }
-  }
-}`,
-};
-
-export const getCopilotQuotaQuery = {
-  id: 'getCopilotQuotaQuery' as const,
-  operationName: 'getCopilotQuota',
-  definitionName: 'currentUser',
-  containsFile: false,
-  query: `
-query getCopilotQuota {
-  currentUser {
-    copilot {
-      quota {
-        limit
-        used
       }
     }
   }
@@ -607,12 +607,6 @@ export const quotaQuery = {
 query quota {
   currentUser {
     id
-    copilot {
-      quota {
-        limit
-        used
-      }
-    }
     quota {
       name
       blobLimit

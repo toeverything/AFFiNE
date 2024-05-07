@@ -4,7 +4,7 @@ import { openSettingModalAtom } from '@affine/core/atoms';
 import {
   ServerConfigService,
   SubscriptionService,
-  UserQuotaService,
+  UserCopilotQuotaService,
 } from '@affine/core/modules/cloud';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useLiveData, useService } from '@toeverything/infra';
@@ -28,14 +28,18 @@ export const AIUsagePanel = () => {
     // revalidate latest subscription status
     subscriptionService.subscription.revalidate();
   }, [subscriptionService]);
-  const quotaService = useService(UserQuotaService);
+  const copilotQuotaService = useService(UserCopilotQuotaService);
   useEffect(() => {
-    quotaService.quota.revalidate();
-  }, [quotaService]);
-  const aiActionLimit = useLiveData(quotaService.quota.aiActionLimit$);
-  const aiActionUsed = useLiveData(quotaService.quota.aiActionUsed$);
-  const loading = aiActionLimit === null || aiActionUsed === null;
-  const loadError = useLiveData(quotaService.quota.error$);
+    copilotQuotaService.copilotQuota.revalidate();
+  }, [copilotQuotaService]);
+  const copilotActionLimit = useLiveData(
+    copilotQuotaService.copilotQuota.copilotActionLimit$
+  );
+  const copilotActionUsed = useLiveData(
+    copilotQuotaService.copilotQuota.copilotActionUsed$
+  );
+  const loading = copilotActionLimit === null || copilotActionUsed === null;
+  const loadError = useLiveData(copilotQuotaService.copilotQuota.error$);
 
   const openBilling = useCallback(() => {
     setOpenSettingModal({
@@ -69,13 +73,13 @@ export const AIUsagePanel = () => {
   }
 
   const percent =
-    aiActionLimit === 'unlimited'
+    copilotActionLimit === 'unlimited'
       ? 0
       : Math.min(
           100,
           Math.max(
             0.5,
-            Number(((aiActionUsed / aiActionLimit) * 100).toFixed(4))
+            Number(((copilotActionUsed / copilotActionLimit) * 100).toFixed(4))
           )
         );
 
@@ -91,7 +95,7 @@ export const AIUsagePanel = () => {
       }
       name={t['com.affine.payment.ai.usage-title']()}
     >
-      {aiActionLimit === 'unlimited' ? (
+      {copilotActionLimit === 'unlimited' ? (
         hasPaymentFeature && aiSubscription?.canceledAt ? (
           <AIResume />
         ) : (
@@ -106,8 +110,8 @@ export const AIUsagePanel = () => {
               <span>{t['com.affine.payment.ai.usage.used-caption']()}</span>
               <span>
                 {t['com.affine.payment.ai.usage.used-detail']({
-                  used: aiActionUsed.toString(),
-                  limit: aiActionLimit.toString(),
+                  used: copilotActionUsed.toString(),
+                  limit: copilotActionLimit.toString(),
                 })}
               </span>
             </div>

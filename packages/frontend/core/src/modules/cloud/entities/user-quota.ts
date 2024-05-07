@@ -31,9 +31,6 @@ export class UserQuota extends Entity {
   /** Maximum storage limit formatted */
   maxFormatted$ = this.max$.map(max => (max ? bytes.format(max) : null));
 
-  aiActionLimit$ = new LiveData<number | 'unlimited' | null>(null);
-  aiActionUsed$ = new LiveData<number | null>(null);
-
   /** Percentage of storage used */
   percent$ = LiveData.computed(get => {
     const max = get(this.max$);
@@ -76,10 +73,9 @@ export class UserQuota extends Entity {
           if (!accountId) {
             return; // no quota if no user
           }
-          const { quota, aiQuota, used } =
-            await this.store.fetchUserQuota(signal);
+          const { quota, used } = await this.store.fetchUserQuota(signal);
 
-          return { quota, aiQuota, used };
+          return { quota, used };
         }).pipe(
           backoffRetry({
             when: isNetworkError,
@@ -90,18 +86,12 @@ export class UserQuota extends Entity {
           }),
           mergeMap(data => {
             if (data) {
-              const { aiQuota, quota, used } = data;
+              const { quota, used } = data;
               this.quota$.next(quota);
               this.used$.next(used);
-              this.aiActionUsed$.next(aiQuota.used);
-              this.aiActionLimit$.next(
-                aiQuota.limit === null ? 'unlimited' : aiQuota.limit
-              ); // fix me: unlimited status
             } else {
               this.quota$.next(null);
               this.used$.next(null);
-              this.aiActionUsed$.next(null);
-              this.aiActionLimit$.next(null);
             }
             return EMPTY;
           }),
@@ -119,8 +109,6 @@ export class UserQuota extends Entity {
   reset() {
     this.quota$.next(null);
     this.used$.next(null);
-    this.aiActionUsed$.next(null);
-    this.aiActionLimit$.next(null);
     this.error$.next(null);
     this.isRevalidating$.next(false);
   }

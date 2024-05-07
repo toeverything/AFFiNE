@@ -213,6 +213,23 @@ export type ChangePasswordMutation = {
   changePassword: { __typename?: 'UserType'; id: string };
 };
 
+export type CopilotQuotaQueryVariables = Exact<{ [key: string]: never }>;
+
+export type CopilotQuotaQuery = {
+  __typename?: 'Query';
+  currentUser: {
+    __typename?: 'UserType';
+    copilot: {
+      __typename?: 'Copilot';
+      quota: {
+        __typename?: 'CopilotQuota';
+        limit: number | null;
+        used: number;
+      };
+    };
+  } | null;
+};
+
 export type CreateCheckoutSessionMutationVariables = Exact<{
   input: CreateCheckoutSessionInput;
 }>;
@@ -349,23 +366,6 @@ export type GetCopilotHistoriesQuery = {
           createdAt: string;
         }>;
       }>;
-    };
-  } | null;
-};
-
-export type GetCopilotQuotaQueryVariables = Exact<{ [key: string]: never }>;
-
-export type GetCopilotQuotaQuery = {
-  __typename?: 'Query';
-  currentUser: {
-    __typename?: 'UserType';
-    copilot: {
-      __typename?: 'Copilot';
-      quota: {
-        __typename?: 'CopilotQuota';
-        limit: number | null;
-        used: number;
-      };
     };
   } | null;
 };
@@ -677,14 +677,6 @@ export type QuotaQuery = {
   currentUser: {
     __typename?: 'UserType';
     id: string;
-    copilot: {
-      __typename?: 'Copilot';
-      quota: {
-        __typename?: 'CopilotQuota';
-        limit: number | null;
-        used: number;
-      };
-    };
     quota: {
       __typename?: 'UserQuota';
       name: string;
@@ -1039,6 +1031,11 @@ export type Queries =
       response: ListBlobsQuery;
     }
   | {
+      name: 'copilotQuotaQuery';
+      variables: CopilotQuotaQueryVariables;
+      response: CopilotQuotaQuery;
+    }
+  | {
       name: 'earlyAccessUsersQuery';
       variables: EarlyAccessUsersQueryVariables;
       response: EarlyAccessUsersQuery;
@@ -1047,11 +1044,6 @@ export type Queries =
       name: 'getCopilotHistoriesQuery';
       variables: GetCopilotHistoriesQueryVariables;
       response: GetCopilotHistoriesQuery;
-    }
-  | {
-      name: 'getCopilotQuotaQuery';
-      variables: GetCopilotQuotaQueryVariables;
-      response: GetCopilotQuotaQuery;
     }
   | {
       name: 'getCopilotSessionsQuery';
