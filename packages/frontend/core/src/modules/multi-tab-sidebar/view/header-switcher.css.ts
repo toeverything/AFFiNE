@@ -5,6 +5,7 @@ export const switchRootWrapper = style({
   height: '52px',
   display: 'flex',
   alignItems: 'center',
+  flexShrink: 0,
 });
 export const switchRoot = style({
   vars: {
