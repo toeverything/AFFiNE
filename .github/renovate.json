@@ -69,6 +69,11 @@
       "matchPackagePatterns": ["*"],
       "rangeStrategy": "replace",
       "excludePackagePatterns": ["^@blocksuite/"]
+    },
+    {
+      "groupName": "rust toolchain",
+      "matchManagers": ["custom.regex"],
+      "matchPackageNames": ["rustc"]
     }
   ],
   "commitMessagePrefix": "chore: ",
@@ -79,5 +84,17 @@
   "lockFileMaintenance": {
     "enabled": true,
     "extends": ["schedule:weekly"]
-  }
+  },
+  "customManagers": [
+    {
+      "customType": "regex",
+      "fileMatch": ["^rust-toolchain\\.toml?$"],
+      "matchStrings": [
+        "channel\\s*=\\s*\"(?<currentValue>\\d+\\.\\d+(\\.\\d+)?)\""
+      ],
+      "depNameTemplate": "rustc",
+      "packageNameTemplate": "rust-lang/rust",
+      "datasourceTemplate": "github-releases"
+    }
+  ]
 }
