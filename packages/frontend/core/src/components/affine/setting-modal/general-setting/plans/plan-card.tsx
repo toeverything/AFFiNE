@@ -235,11 +235,17 @@ const Upgrade = ({ recurring }: { recurring: SubscriptionRecurring }) => {
 
   useEffect(() => {
     if (isOpenedExternalWindow) {
-      // when the external window is opened, revalidate the subscription status every 3 seconds
-      const timer = setInterval(() => {
-        subscriptionService.subscription.revalidate();
-      }, 1000);
-      return () => clearInterval(timer);
+      // when the external window is opened, revalidate the subscription when window get focus
+      window.addEventListener(
+        'focus',
+        subscriptionService.subscription.revalidate
+      );
+      return () => {
+        window.removeEventListener(
+          'focus',
+          subscriptionService.subscription.revalidate
+        );
+      };
     }
     return;
   }, [isOpenedExternalWindow, subscriptionService]);
