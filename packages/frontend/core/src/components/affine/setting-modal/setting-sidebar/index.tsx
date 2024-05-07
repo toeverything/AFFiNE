@@ -247,6 +247,7 @@ const subTabConfigs = [
   title: keyof ReturnType<typeof useAFFiNEI18N>;
 }[];
 
+const avatarImageProps = { style: { borderRadius: 2 } };
 const WorkspaceListItem = ({
   activeSubTab,
   meta,
@@ -313,13 +314,16 @@ const WorkspaceListItem = ({
         data-testid="workspace-list-item"
       >
         <Avatar
-          size={14}
+          size={16}
           url={avatarUrl}
           name={name}
           colorfulFallback
           style={{
             marginRight: '10px',
           }}
+          imageProps={avatarImageProps}
+          fallbackProps={avatarImageProps}
+          hoverWrapperProps={avatarImageProps}
         />
         <span className="setting-name">{name}</span>
         {isCurrent ? (
