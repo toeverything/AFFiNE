@@ -1,4 +1,4 @@
-import { Loading } from '@affine/component';
+import { Loading, Scrollable } from '@affine/component';
 import { WorkspaceDetailSkeleton } from '@affine/component/setting-components';
 import type { ModalProps } from '@affine/component/ui/modal';
 import { Modal } from '@affine/component/ui/modal';
@@ -139,51 +139,54 @@ const SettingModalInner = ({
         onTabChange={onTabChange}
         selectedWorkspaceId={workspaceMetadata?.id ?? null}
       />
-      <div
-        data-testid="setting-modal-content"
-        className={style.wrapper}
-        ref={modalContentWrapperRef}
-      >
-        <div ref={modalContentRef} className={style.centerContainer}>
-          <div className={style.content}>
-            <Suspense fallback={<WorkspaceDetailSkeleton />}>
-              {activeTab.startsWith('workspace:') && workspaceMetadata ? (
-                <WorkspaceSetting
-                  subTab={activeTab.split(':')[1] as WorkspaceSubTab}
-                  key={workspaceMetadata.id}
-                  workspaceMetadata={workspaceMetadata}
-                />
-              ) : null}
-              {isGeneralSetting(activeTab) ? (
-                <GeneralSetting generalKey={activeTab} />
-              ) : null}
-              {activeTab === 'account' && loginStatus === 'authenticated' ? (
-                <AccountSetting />
-              ) : null}
-            </Suspense>
-          </div>
-          <div className={style.footer}>
-            <ContactWithUsIcon fontSize={16} />
-            <Trans
-              i18nKey={'com.affine.settings.suggestion-2'}
-              components={{
-                1: (
-                  <span
-                    className={style.link}
-                    onClick={handleOpenStarAFFiNEModal}
+      <Scrollable.Root>
+        <Scrollable.Viewport
+          data-testid="setting-modal-content"
+          className={style.wrapper}
+          ref={modalContentWrapperRef}
+        >
+          <div ref={modalContentRef} className={style.centerContainer}>
+            <div className={style.content}>
+              <Suspense fallback={<WorkspaceDetailSkeleton />}>
+                {activeTab.startsWith('workspace:') && workspaceMetadata ? (
+                  <WorkspaceSetting
+                    subTab={activeTab.split(':')[1] as WorkspaceSubTab}
+                    key={workspaceMetadata.id}
+                    workspaceMetadata={workspaceMetadata}
                   />
-                ),
-                2: (
-                  <span
-                    className={style.link}
-                    onClick={handleOpenIssueFeedbackModal}
-                  />
-                ),
-              }}
-            />
+                ) : null}
+                {isGeneralSetting(activeTab) ? (
+                  <GeneralSetting generalKey={activeTab} />
+                ) : null}
+                {activeTab === 'account' && loginStatus === 'authenticated' ? (
+                  <AccountSetting />
+                ) : null}
+              </Suspense>
+            </div>
+            <div className={style.footer}>
+              <ContactWithUsIcon fontSize={16} />
+              <Trans
+                i18nKey={'com.affine.settings.suggestion-2'}
+                components={{
+                  1: (
+                    <span
+                      className={style.link}
+                      onClick={handleOpenStarAFFiNEModal}
+                    />
+                  ),
+                  2: (
+                    <span
+                      className={style.link}
+                      onClick={handleOpenIssueFeedbackModal}
+                    />
+                  ),
+                }}
+              />
+            </div>
           </div>
-        </div>
-      </div>
+          <Scrollable.Scrollbar />
+        </Scrollable.Viewport>
+      </Scrollable.Root>
     </>
   );
 };

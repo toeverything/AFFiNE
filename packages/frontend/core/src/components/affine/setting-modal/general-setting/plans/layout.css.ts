@@ -1,5 +1,5 @@
 import { cssVar } from '@toeverything/theme';
-import { keyframes, style } from '@vanilla-extract/css';
+import { globalStyle, keyframes, style } from '@vanilla-extract/css';
 export const plansLayoutRoot = style({
   display: 'flex',
   flexDirection: 'column',
@@ -100,7 +100,6 @@ export const aiScrollTip = style({
   justifyContent: 'space-between',
   padding: '12px 20px 12px 16px',
   boxShadow: cssVar('shadow1'),
-  display: 'flex',
   marginBottom: -100,
 
   animation: `${slideInBottom} 0.3s ease 0.5s forwards`,
@@ -111,6 +110,10 @@ export const aiScrollTip = style({
       opacity: 0,
     },
   },
+});
+// to override `display: contents !important` in `scrollable.tsx`
+globalStyle(`div.${aiScrollTip}`, {
+  display: 'flex !important',
 });
 export const aiScrollTipLabel = style({
   display: 'flex',
