@@ -21,7 +21,7 @@
     "@blocksuite/block-std": "0.14.0-canary-202405070525-ad1cc9f",
     "@blocksuite/blocks": "0.14.0-canary-202405070525-ad1cc9f",
     "@blocksuite/global": "0.14.0-canary-202405070525-ad1cc9f",
-    "@blocksuite/icons": "2.1.46",
+    "@blocksuite/icons": "2.1.50",
     "@blocksuite/inline": "0.14.0-canary-202405070525-ad1cc9f",
     "@blocksuite/presets": "0.14.0-canary-202405070525-ad1cc9f",
     "@blocksuite/store": "0.14.0-canary-202405070525-ad1cc9f",
