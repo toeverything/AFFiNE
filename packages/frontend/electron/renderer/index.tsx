@@ -4,7 +4,7 @@ import '@affine/core/bootstrap/preload';
 import { appConfigProxy } from '@affine/core/hooks/use-app-config-storage';
 import { performanceLogger } from '@affine/core/shared';
 import { apis, events } from '@affine/electron-api';
-import { init, replayIntegration, setTags } from '@sentry/electron/renderer';
+import { init, setTags } from '@sentry/electron/renderer';
 import {
   init as reactInit,
   reactRouterV6BrowserTracingIntegration,
@@ -50,7 +50,6 @@ function main() {
               createRoutesFromChildren,
               matchRoutes,
             }),
-            replayIntegration(),
           ],
         },
         reactInit
