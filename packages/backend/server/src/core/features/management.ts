@@ -138,19 +138,11 @@ export class FeatureManagementService {
   async addWorkspaceFeatures(
     workspaceId: string,
     feature: FeatureType,
-    version?: number,
     reason?: string
   ) {
-    const latestVersions = await this.feature.getFeaturesVersion();
-    // use latest version if not specified
-    const latestVersion = version || latestVersions[feature];
-    if (!Number.isInteger(latestVersion)) {
-      throw new Error(`Version of feature ${feature} not found`);
-    }
     return this.feature.addWorkspaceFeature(
       workspaceId,
       feature,
-      latestVersion,
       reason || 'add feature by api'
     );
   }

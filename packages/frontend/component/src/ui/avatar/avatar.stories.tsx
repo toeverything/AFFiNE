@@ -31,6 +31,13 @@ ColorfulFallback.args = {
   colorfulFallback: true,
   name: 'blocksuite',
 };
+export const ColorfulFallbackWithDifferentSize: StoryFn<AvatarProps> = args => (
+  <>
+    <Avatar {...args} size={20} colorfulFallback name="AFFiNE" />
+    <Avatar {...args} size={40} colorfulFallback name="AFFiNE" />
+    <Avatar {...args} size={60} colorfulFallback name="AFFiNE" />
+  </>
+);
 export const WithHover: StoryFn<AvatarProps> = Template.bind(undefined);
 WithHover.args = {
   size: 50,

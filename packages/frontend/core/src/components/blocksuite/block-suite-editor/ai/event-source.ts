@@ -13,6 +13,7 @@ type AffineTextStream = AsyncIterable<AffineTextEvent>;
 
 type toTextStreamOptions = {
   timeout?: number;
+  signal?: AbortSignal;
 };
 
 // todo: may need to extend the error type
@@ -28,7 +29,7 @@ const safeParseError = (data: string): { status: number } => {
 
 export function toTextStream(
   eventSource: EventSource,
-  { timeout }: toTextStreamOptions = {}
+  { timeout, signal }: toTextStreamOptions = {}
 ): AffineTextStream {
   return {
     [Symbol.asyncIterator]: async function* () {
@@ -73,14 +74,19 @@ export function toTextStream(
       });
 
       try {
-        while (eventSource.readyState !== EventSource.CLOSED) {
+        while (
+          eventSource.readyState !== EventSource.CLOSED &&
+          !signal?.aborted
+        ) {
           if (messageQueue.length === 0) {
             // Wait for the next message or timeout
             await (timeout
               ? Promise.race([
                   messagePromise,
                   delay(timeout).then(() => {
-                    throw new Error('Timeout');
+                    if (!signal?.aborted) {
+                      throw new Error('Timeout');
+                    }
                   }),
                 ])
               : messagePromise);

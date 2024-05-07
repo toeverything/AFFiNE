@@ -1,7 +1,6 @@
 import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import {
   Args,
-  Context,
   Field,
   Mutation,
   ObjectType,
@@ -10,7 +9,6 @@ import {
   ResolveField,
   Resolver,
 } from '@nestjs/graphql';
-import type { Request, Response } from 'express';
 
 import { Config, SkipThrottle, Throttle } from '../../fundamentals';
 import { UserService } from '../user';
@@ -77,39 +75,6 @@ export class AuthResolver {
       token: session.sessionId,
       refresh: '',
     };
-  }
-
-  @Public()
-  @Mutation(() => UserType)
-  async signUp(
-    @Context() ctx: { req: Request; res: Response },
-    @Args('name') name: string,
-    @Args('email') email: string,
-    @Args('password') password: string
-  ) {
-    if (!this.config.auth.allowSignup) {
-      throw new ForbiddenException('You are not allowed to sign up.');
-    }
-
-    validators.assertValidCredential({ email, password });
-    const user = await this.auth.signUp(name, email, password);
-    await this.auth.setCookie(ctx.req, ctx.res, user);
-    ctx.req.user = user;
-    return user;
-  }
-
-  @Public()
-  @Mutation(() => UserType)
-  async signIn(
-    @Context() ctx: { req: Request; res: Response },
-    @Args('email') email: string,
-    @Args('password') password: string
-  ) {
-    validators.assertValidEmail(email);
-    const user = await this.auth.signIn(email, password);
-    await this.auth.setCookie(ctx.req, ctx.res, user);
-    ctx.req.user = user;
-    return user;
   }
 
   @Mutation(() => UserType)

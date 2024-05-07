@@ -24,7 +24,7 @@ import type { TooltipProps } from '../tooltip';
 import { Tooltip } from '../tooltip';
 import { ColorfulFallback } from './colorful-fallback';
 import * as style from './style.css';
-import { sizeVar } from './style.css';
+import { blurVar, sizeVar } from './style.css';
 
 export type AvatarProps = {
   size?: number;
@@ -92,6 +92,7 @@ export const Avatar = forwardRef<HTMLSpanElement, AvatarProps>(
             style={{
               ...assignInlineVars({
                 [sizeVar]: size ? `${size}px` : '20px',
+                [blurVar]: `${size * 0.3}px`,
               }),
               ...propsStyles,
             }}

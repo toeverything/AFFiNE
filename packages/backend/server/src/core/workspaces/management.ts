@@ -81,7 +81,6 @@ export class WorkspaceManagementResolver {
         .addWorkspaceFeatures(
           workspaceId,
           feature,
-          undefined,
           'add by experimental feature api'
         )
         .then(id => id > 0);

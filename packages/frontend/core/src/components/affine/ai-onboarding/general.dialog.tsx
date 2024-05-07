@@ -146,7 +146,6 @@ export const AIOnboardingGeneral = ({
           autoPlay={index === 0}
           src={video}
           className={styles.video}
-          loop
           muted
           playsInline
         />
@@ -229,7 +228,7 @@ export const AIOnboardingGeneral = ({
               a: (
                 <a
                   className={styles.privacyLink}
-                  href="https://affine.pro/terms"
+                  href="https://affine.pro/terms#ai"
                 />
               ),
             }}

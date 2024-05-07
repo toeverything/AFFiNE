@@ -15,7 +15,7 @@ const LocalOnboardingAnimation = () => {
     <div className={styles.thumb}>
       <video
         className={styles.thumbContent}
-        src="/onboarding/ai-onboarding.general.1.mov"
+        src="/onboarding/ai-onboarding.general.1.mp4"
         autoPlay
         loop
         muted

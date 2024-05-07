@@ -137,7 +137,10 @@ export function textToText({
             eventSource.close();
           };
         }
-        for await (const event of toTextStream(eventSource, { timeout })) {
+        for await (const event of toTextStream(eventSource, {
+          timeout,
+          signal,
+        })) {
           if (event.type === 'message') {
             yield event.data;
           }
@@ -180,6 +183,7 @@ export function toImage({
   attachments,
   params,
   seed,
+  signal,
   timeout = TIMEOUT,
 }: ToImageOptions) {
   return {
@@ -194,7 +198,10 @@ export function toImage({
       });
 
       const eventSource = client.imagesStream(messageId, sessionId, seed);
-      for await (const event of toTextStream(eventSource, { timeout })) {
+      for await (const event of toTextStream(eventSource, {
+        timeout,
+        signal,
+      })) {
         if (event.type === 'attachment') {
           yield event.data;
         }

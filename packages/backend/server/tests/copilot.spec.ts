@@ -336,6 +336,32 @@ test('should be able to generate with message id', async t => {
   }
 });
 
+test('should save message correctly', async t => {
+  const { prompt, session } = t.context;
+
+  await prompt.set('prompt', 'model', [
+    { role: 'system', content: 'hello {{word}}' },
+  ]);
+
+  const sessionId = await session.create({
+    docId: 'test',
+    workspaceId: 'test',
+    userId,
+    promptName: 'prompt',
+  });
+  const s = (await session.get(sessionId))!;
+
+  const message = (await session.createMessage({
+    sessionId,
+    content: 'hello',
+  }))!;
+
+  await s.pushByMessageId(message);
+  t.is(s.stashMessages.length, 1, 'should get stash messages');
+  await s.save();
+  t.is(s.stashMessages.length, 0, 'should empty stash messages after save');
+});
+
 // ==================== provider ====================
 
 test('should be able to get provider', async t => {

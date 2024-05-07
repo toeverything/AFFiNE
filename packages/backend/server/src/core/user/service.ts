@@ -35,6 +35,7 @@ export class UserService {
 
   async createUser(data: Prisma.UserCreateInput) {
     return this.prisma.user.create({
+      select: this.defaultUserSelect,
       data: {
         ...this.userCreatingData,
         ...data,
@@ -113,18 +114,32 @@ export class UserService {
       Pick<Prisma.UserCreateInput, 'emailVerifiedAt' | 'registered'>
     >
   ) {
-    return this.prisma.user.upsert({
-      select: this.defaultUserSelect,
-      where: {
-        email,
-      },
-      update: data,
-      create: {
-        email,
+    const user = await this.findUserByEmail(email);
+    if (!user) {
+      return this.createUser({
         ...this.userCreatingData,
+        email,
+        name: email.split('@')[0],
         ...data,
-      },
-    });
+      });
+    } else {
+      if (user.registered) {
+        delete data.registered;
+      }
+      if (user.emailVerifiedAt) {
+        delete data.emailVerifiedAt;
+      }
+
+      if (Object.keys(data).length) {
+        return await this.prisma.user.update({
+          select: this.defaultUserSelect,
+          where: { id: user.id },
+          data,
+        });
+      }
+    }
+
+    return user;
   }
 
   async deleteUser(id: string) {

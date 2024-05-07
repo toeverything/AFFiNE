@@ -19,9 +19,7 @@ export class QuotaService {
   async getUserQuota(userId: string) {
     const quota = await this.prisma.userFeatures.findFirst({
       where: {
-        user: {
-          id: userId,
-        },
+        userId,
         feature: {
           type: FeatureKind.Quota,
         },
@@ -48,9 +46,7 @@ export class QuotaService {
   async getUserQuotas(userId: string) {
     const quotas = await this.prisma.userFeatures.findMany({
       where: {
-        user: {
-          id: userId,
-        },
+        userId,
         feature: {
           type: FeatureKind.Quota,
         },
@@ -96,14 +92,17 @@ export class QuotaService {
         return;
       }
 
-      const latestPlanVersion = await tx.features.aggregate({
-        where: {
-          feature: quota,
-        },
-        _max: {
-          version: true,
-        },
-      });
+      const featureId = await tx.features
+        .findFirst({
+          where: { feature: quota, type: FeatureKind.Quota },
+          select: { id: true },
+          orderBy: { version: 'desc' },
+        })
+        .then(f => f?.id);
+
+      if (!featureId) {
+        throw new Error(`Quota ${quota} not found`);
+      }
 
       // we will deactivate all exists quota for this user
       await tx.userFeatures.updateMany({
@@ -121,20 +120,8 @@ export class QuotaService {
 
       await tx.userFeatures.create({
         data: {
-          user: {
-            connect: {
-              id: userId,
-            },
-          },
-          feature: {
-            connect: {
-              feature_version: {
-                feature: quota,
-                version: latestPlanVersion._max.version || 1,
-              },
-              type: FeatureKind.Quota,
-            },
-          },
+          userId,
+          featureId,
           reason: reason ?? 'switch quota',
           activated: true,
           expiredAt,
