@@ -235,10 +235,6 @@ const subTabConfigs = [
     title: 'com.affine.settings.workspace.preferences',
   },
   {
-    key: 'experimental-features',
-    title: 'com.affine.settings.workspace.experimental-features',
-  },
-  {
     key: 'properties',
     title: 'com.affine.settings.workspace.properties',
   },
@@ -267,9 +263,6 @@ const WorkspaceListItem = ({
   const currentWorkspace = workspaceService.workspace;
   const isCurrent = currentWorkspace.id === meta.id;
   const t = useAFFiNEI18N();
-  const isEarlyAccess = useLiveData(
-    userFeatureService.userFeature.isEarlyAccess$
-  );
 
   useEffect(() => {
     userFeatureService.userFeature.revalidate();
@@ -280,30 +273,23 @@ const WorkspaceListItem = ({
   }, [onClick]);
 
   const subTabs = useMemo(() => {
-    return subTabConfigs
-      .filter(({ key }) => {
-        if (key === 'experimental-features') {
-          return information?.isOwner && isEarlyAccess;
-        }
-        return true;
-      })
-      .map(({ key, title }) => {
-        return (
-          <div
-            data-testid={`workspace-list-item-${key}`}
-            onClick={() => {
-              onClick(key);
-            }}
-            className={clsx(style.sidebarSelectSubItem, {
-              active: activeSubTab === key,
-            })}
-            key={key}
-          >
-            {t[title]()}
-          </div>
-        );
-      });
-  }, [activeSubTab, information?.isOwner, isEarlyAccess, onClick, t]);
+    return subTabConfigs.map(({ key, title }) => {
+      return (
+        <div
+          data-testid={`workspace-list-item-${key}`}
+          onClick={() => {
+            onClick(key);
+          }}
+          className={clsx(style.sidebarSelectSubItem, {
+            active: activeSubTab === key,
+          })}
+          key={key}
+        >
+          {t[title]()}
+        </div>
+      );
+    });
+  }, [activeSubTab, onClick, t]);
 
   return (
     <>

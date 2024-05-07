@@ -2,8 +2,10 @@ import { test } from '@affine-test/kit/playwright';
 import { openHomePage } from '@affine-test/kit/utils/load-page';
 import { waitForEditorLoad } from '@affine-test/kit/utils/page-logic';
 import {
+  confirmExperimentalPrompt,
   openAboutPanel,
   openAppearancePanel,
+  openExperimentalFeaturesPanel,
   openSettingModal,
   openShortcutsPanel,
 } from '@affine-test/kit/utils/setting';
@@ -85,6 +87,18 @@ test('Open about panel', async ({ page }) => {
   await openAboutPanel(page);
   const title = page.getByTestId('about-title');
   await expect(title).toBeVisible();
+});
+
+test('Open experimental features panel', async ({ page }) => {
+  await openHomePage(page);
+  await waitForEditorLoad(page);
+  await openSettingModal(page);
+  await openExperimentalFeaturesPanel(page);
+  const prompt = page.getByTestId('experimental-prompt');
+  await expect(prompt).toBeVisible();
+  await confirmExperimentalPrompt(page);
+  const settings = page.getByTestId('experimental-settings');
+  await expect(settings).toBeVisible();
 });
 
 test('Different workspace should have different name in the setting panel', async ({
