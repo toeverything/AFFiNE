@@ -1,6 +1,6 @@
 import type { WorkspaceMetadata } from '@toeverything/infra';
 
-import { ExperimentalFeatures } from './experimental-features';
+import type { WorkspaceSubTab } from '../types';
 import { WorkspaceSettingDetail } from './new-workspace-setting-detail';
 import { WorkspaceSettingProperties } from './properties';
 
@@ -9,13 +9,11 @@ export const WorkspaceSetting = ({
   subTab,
 }: {
   workspaceMetadata: WorkspaceMetadata;
-  subTab: 'preference' | 'experimental-features' | 'properties';
+  subTab: WorkspaceSubTab;
 }) => {
   switch (subTab) {
     case 'preference':
       return <WorkspaceSettingDetail workspaceMetadata={workspaceMetadata} />;
-    case 'experimental-features':
-      return <ExperimentalFeatures />;
     case 'properties':
       return (
         <WorkspaceSettingProperties workspaceMetadata={workspaceMetadata} />

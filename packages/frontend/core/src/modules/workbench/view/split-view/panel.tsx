@@ -2,8 +2,8 @@ import { MenuIcon, MenuItem } from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   ExpandCloseIcon,
-  MoveToLeftIcon,
-  MoveToRightIcon,
+  MoveLeftIcon,
+  MoveRightIcon,
   SoloViewIcon,
 } from '@blocksuite/icons';
 import { useSortable } from '@dnd-kit/sortable';
@@ -142,7 +142,7 @@ const SplitViewMenu = ({ view }: { view: View }) => {
     viewIndex > 0 && views.length > 1 ? (
       <MenuItem
         onClick={handleMoveLeft}
-        preFix={<MenuIcon icon={<MoveToLeftIcon />} />}
+        preFix={<MenuIcon icon={<MoveLeftIcon />} />}
       >
         {t['com.affine.workbench.split-view-menu.move-left']()}
       </MenuItem>
@@ -162,7 +162,7 @@ const SplitViewMenu = ({ view }: { view: View }) => {
     viewIndex < views.length - 1 ? (
       <MenuItem
         onClick={handleMoveRight}
-        preFix={<MenuIcon icon={<MoveToRightIcon />} />}
+        preFix={<MenuIcon icon={<MoveRightIcon />} />}
       >
         {t['com.affine.workbench.split-view-menu.move-right']()}
       </MenuItem>

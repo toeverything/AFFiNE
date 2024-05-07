@@ -15,7 +15,7 @@
   "peerDependencies": {
     "@blocksuite/blocks": "*",
     "@blocksuite/global": "*",
-    "@blocksuite/icons": "2.1.34",
+    "@blocksuite/icons": "2.1.50",
     "@blocksuite/presets": "*",
     "@blocksuite/store": "*"
   },
@@ -78,7 +78,7 @@
     "@blocksuite/block-std": "0.14.0-canary-202405070525-ad1cc9f",
     "@blocksuite/blocks": "0.14.0-canary-202405070525-ad1cc9f",
     "@blocksuite/global": "0.14.0-canary-202405070525-ad1cc9f",
-    "@blocksuite/icons": "2.1.46",
+    "@blocksuite/icons": "2.1.50",
     "@blocksuite/presets": "0.14.0-canary-202405070525-ad1cc9f",
     "@blocksuite/store": "0.14.0-canary-202405070525-ad1cc9f",
     "@storybook/addon-actions": "^7.6.17",

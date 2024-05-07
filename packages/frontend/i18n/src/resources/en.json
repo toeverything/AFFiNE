@@ -1129,7 +1129,7 @@
   "com.affine.settings.translucent-style-description": "Use transparency effect on the sidebar.",
   "com.affine.settings.workspace": "Workspace",
   "com.affine.settings.workspace.description": "You can view current workspace's information here.",
-  "com.affine.settings.workspace.experimental-features": "Plugins",
+  "com.affine.settings.workspace.experimental-features": "Experimental Features",
   "com.affine.settings.workspace.experimental-features.get-started": "Get Started",
   "com.affine.settings.workspace.experimental-features.header.plugins": "Experimental Features",
   "com.affine.settings.workspace.experimental-features.prompt-disclaimer": "I am aware of the risks, and I am willing to continue to use it.",
