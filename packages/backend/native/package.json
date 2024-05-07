@@ -34,7 +34,7 @@
   "devDependencies": {
     "@napi-rs/cli": "3.0.0-alpha.46",
     "lib0": "^0.2.93",
-    "nx": "^18.2.4",
+    "nx": "^19.0.0",
     "nx-cloud": "^18.0.0",
     "yjs": "^13.6.14"
   }
