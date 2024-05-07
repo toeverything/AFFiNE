@@ -5,13 +5,8 @@ export const wrapper = style({
   height: '100%',
   // margin: '0 auto',
   padding: '40px 15px 20px 15px',
-  overflowX: 'hidden',
-  overflowY: 'auto',
   display: 'flex',
   justifyContent: 'center',
-  '::-webkit-scrollbar': {
-    display: 'none',
-  },
 });
 export const centerContainer = style({
   width: '100%',

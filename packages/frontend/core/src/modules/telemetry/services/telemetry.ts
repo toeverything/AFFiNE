@@ -15,6 +15,12 @@ export class TelemetryService extends Service {
   }
 
   onApplicationStart() {
+    if (process.env.MIXPANEL_TOKEN) {
+      mixpanel.init(process.env.MIXPANEL_TOKEN || '', {
+        track_pageview: true,
+        persistence: 'localStorage',
+      });
+    }
     const account = this.auth.session.account$.value;
     if (account) {
       mixpanel.identify(account.id);
