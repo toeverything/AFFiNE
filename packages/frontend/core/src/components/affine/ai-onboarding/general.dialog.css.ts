@@ -60,7 +60,7 @@ export const title = style({
   color: cssVar('textPrimaryColor'),
 });
 export const description = style({
-  fontSize: cssVar('fontBase'),
+  fontSize: cssVar('fontSm'),
   lineHeight: '24px',
   minHeight: 48,
   fontWeight: 400,
@@ -94,7 +94,7 @@ export const privacyLink = style({
 
 export const footer = style({
   width: '100%',
-  padding: '20px 28px',
+  padding: '20px 28px 20px 24px',
   gap: 12,
   display: 'flex',
   justifyContent: 'space-between',

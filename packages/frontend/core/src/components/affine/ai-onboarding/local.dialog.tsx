@@ -1,4 +1,9 @@
 import { Button, notify } from '@affine/component';
+import {
+  RouteLogic,
+  useNavigateHelper,
+} from '@affine/core/hooks/use-navigate-helper';
+import { AuthService } from '@affine/core/modules/cloud';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { AiIcon } from '@blocksuite/icons';
@@ -27,20 +32,30 @@ const LocalOnboardingAnimation = () => {
 
 const FooterActions = ({ onDismiss }: { onDismiss: () => void }) => {
   const t = useAFFiNEI18N();
+  const authService = useService(AuthService);
+  const loginStatus = useLiveData(authService.session.status$);
+  const loggedIn = loginStatus === 'authenticated';
+  const { jumpToSignIn } = useNavigateHelper();
+
   return (
     <div className={styles.footerActions}>
-      <Button onClick={onDismiss} type="plain" className={styles.actionButton}>
-        <span style={{ color: cssVar('textSecondaryColor') }}>
-          {t['com.affine.ai-onboarding.local.action-dismiss']()}
-        </span>
-      </Button>
       <a href="https://ai.affine.pro" target="_blank" rel="noreferrer">
         <Button className={styles.actionButton} type="plain">
-          <span style={{ color: cssVar('textPrimaryColor') }}>
-            {t['com.affine.ai-onboarding.local.action-learn-more']()}
-          </span>
+          {t['com.affine.ai-onboarding.local.action-learn-more']()}
         </Button>
       </a>
+      {loggedIn ? null : (
+        <Button
+          className={styles.actionButton}
+          type="plain"
+          onClick={() => {
+            onDismiss();
+            jumpToSignIn('/', RouteLogic.REPLACE, {}, { initCloud: 'true' });
+          }}
+        >
+          {t['com.affine.ai-onboarding.local.action-get-started']()}
+        </Button>
+      )}
     </div>
   );
 };

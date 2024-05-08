@@ -215,6 +215,7 @@ export const AIOnboardingGeneral = ({
             activeIndex={index}
             itemRenderer={descriptionRenderer}
             transitionDuration={500}
+            preload={5}
           />
         </main>
 

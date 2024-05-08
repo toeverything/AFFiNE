@@ -1,5 +1,5 @@
 import { cssVar } from '@toeverything/theme';
-import { style } from '@vanilla-extract/css';
+import { globalStyle, style } from '@vanilla-extract/css';
 
 export const card = style({
   borderRadius: 12,
@@ -34,7 +34,15 @@ export const footerActions = style({
   marginTop: 8,
 });
 
+globalStyle(`${footerActions} > *, ${footerActions}`, {
+  color: `${cssVar('textSecondaryColor')} !important`,
+});
+globalStyle(`${footerActions} > *:last-child`, {
+  color: `${cssVar('textPrimaryColor')} !important`,
+});
+
 export const actionButton = style({
   fontSize: cssVar('fontSm'),
   padding: '0 2px',
+  color: 'inherit !important',
 });

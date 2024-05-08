@@ -139,13 +139,22 @@ export function useNavigateHelper() {
     (
       redirectUri?: string,
       logic: RouteLogic = RouteLogic.PUSH,
-      otherOptions?: Omit<NavigateOptions, 'replace'>
+      otherOptions?: Omit<NavigateOptions, 'replace'>,
+      params?: Record<string, string>
     ) => {
+      const searchParams = new URLSearchParams();
+
+      if (redirectUri) {
+        searchParams.set('redirect_uri', encodeURIComponent(redirectUri));
+      }
+
+      if (params) {
+        for (const key in params) searchParams.set(key, params[key]);
+      }
+
       return navigate(
         '/signIn' +
-          (redirectUri
-            ? `?redirect_uri=${encodeURIComponent(redirectUri)}`
-            : ''),
+          (searchParams.toString() ? '?' + searchParams.toString() : ''),
         {
           replace: logic === RouteLogic.REPLACE,
           ...otherOptions,
