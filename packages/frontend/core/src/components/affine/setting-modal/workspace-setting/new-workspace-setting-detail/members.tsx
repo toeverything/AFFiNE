@@ -353,10 +353,10 @@ const MemberItem = ({
       <Avatar
         size={36}
         url={member.avatarUrl}
-        name={(member.emailVerified ? member.name : member.email) as string}
+        name={(member.name ? member.name : member.email) as string}
       />
       <div className={style.memberContainer}>
-        {member.emailVerified ? (
+        {member.name ? (
           <>
             <div className={style.memberName}>{member.name}</div>
             <div className={style.memberEmail}>{member.email}</div>
