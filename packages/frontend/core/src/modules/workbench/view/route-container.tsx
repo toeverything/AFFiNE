@@ -70,11 +70,12 @@ export const RouteContainer = ({ route }: Props) => {
                 onToggle={handleToggleRightSidebar}
               />
             )}
-            {isWindowsDesktop && !rightSidebarOpen && (
-              <div className={styles.windowsAppControlsContainer}>
-                <WindowsAppControls />
-              </div>
-            )}
+            {isWindowsDesktop &&
+              !(rightSidebarOpen && rightSidebarHasViews) && (
+                <div className={styles.windowsAppControlsContainer}>
+                  <WindowsAppControls />
+                </div>
+              )}
           </>
         )}
       </div>
