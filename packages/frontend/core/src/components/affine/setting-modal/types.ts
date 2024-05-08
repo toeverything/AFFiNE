@@ -4,13 +4,10 @@ export const GeneralSettingKeys = [
   'about',
   'plans',
   'billing',
+  'experimental-features',
 ] as const;
 
-export const WorkspaceSubTabs = [
-  'preference',
-  'experimental-features',
-  'properties',
-] as const;
+export const WorkspaceSubTabs = ['preference', 'properties'] as const;
 
 export type GeneralSettingKey = (typeof GeneralSettingKeys)[number];
 

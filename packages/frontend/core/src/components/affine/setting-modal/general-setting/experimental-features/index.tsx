@@ -26,7 +26,7 @@ const ExperimentalFeaturesPrompt = ({
   }, []);
 
   return (
-    <div className={styles.promptRoot}>
+    <div className={styles.promptRoot} data-testid="experimental-prompt">
       <div className={styles.promptTitle}>
         {t[
           'com.affine.settings.workspace.experimental-features.prompt-header'
@@ -49,14 +49,23 @@ const ExperimentalFeaturesPrompt = ({
       <div className={styles.spacer} />
 
       <label className={styles.promptDisclaimer}>
-        <Checkbox checked={checked} onChange={onChange} />
+        <Checkbox
+          checked={checked}
+          onChange={onChange}
+          data-testid="experimental-prompt-disclaimer"
+        />
         {t[
           'com.affine.settings.workspace.experimental-features.prompt-disclaimer'
         ]()}
       </label>
 
       <div className={styles.promptDisclaimerConfirm}>
-        <Button disabled={!checked} onClick={onConfirm} type="primary">
+        <Button
+          disabled={!checked}
+          onClick={onConfirm}
+          type="primary"
+          data-testid="experimental-confirm-button"
+        >
           {t[
             'com.affine.settings.workspace.experimental-features.get-started'
           ]()}
@@ -158,7 +167,10 @@ const ExperimentalFeaturesMain = () => {
           'com.affine.settings.workspace.experimental-features.header.plugins'
         ]()}
       />
-      <div className={styles.settingsContainer}>
+      <div
+        className={styles.settingsContainer}
+        data-testid="experimental-settings"
+      >
         <SplitViewSettingRow />
         <BlocksuiteFeatureFlagSettings />
       </div>
