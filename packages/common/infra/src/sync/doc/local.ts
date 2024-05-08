@@ -254,13 +254,6 @@ export class DocEngineLocalPart {
         });
       }
     },
-    LegacyClientUpdateCommitted: ({ docId, update }) => {
-      this.schedule({
-        type: 'save',
-        docId,
-        update,
-      });
-    },
   };
 
   handleDocUpdate = (update: Uint8Array, origin: any, doc: YDoc) => {

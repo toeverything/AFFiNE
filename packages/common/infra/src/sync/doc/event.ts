@@ -11,11 +11,6 @@ export type DocEvent =
       docId: string;
       update: Uint8Array;
       clientId: string;
-    }
-  | {
-      type: 'LegacyClientUpdateCommitted';
-      docId: string;
-      update: Uint8Array;
     };
 
 export interface DocEventBus {
