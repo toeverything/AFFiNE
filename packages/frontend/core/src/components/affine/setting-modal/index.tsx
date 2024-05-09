@@ -199,8 +199,8 @@ export const SettingModal = ({
 }: SettingProps) => {
   return (
     <Modal
-      width={1080}
-      height={760}
+      width={1280}
+      height={920}
       contentOptions={{
         ['data-testid' as string]: 'setting-modal',
         style: {
