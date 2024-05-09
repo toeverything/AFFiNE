@@ -179,8 +179,8 @@ export const InlineEdit = ({
   } as CSSProperties;
   const inputInheritsStyles = {
     ...inputWrapperInheritsStyles,
-    padding: undefined,
-    margin: undefined,
+    padding: 0,
+    margin: 0,
   };
 
   return (

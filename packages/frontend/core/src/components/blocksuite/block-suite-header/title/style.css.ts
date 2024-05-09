@@ -6,7 +6,6 @@ export const title = style({
   selectors: {
     '&[data-editing="true"]': {
       ['WebkitAppRegion' as string]: 'no-drag',
-      flexGrow: 1,
     },
   },
 });
