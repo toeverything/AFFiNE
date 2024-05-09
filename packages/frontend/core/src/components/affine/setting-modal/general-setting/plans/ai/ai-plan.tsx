@@ -26,8 +26,7 @@ export const AIPlan = () => {
   }, [subscriptionService]);
 
   // yearly subscription should always be available
-  if (!price?.yearlyAmount || subscription === null) {
-    // TODO: loading UI
+  if (!price?.yearlyAmount) {
     return null;
   }
 
