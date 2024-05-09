@@ -22,6 +22,9 @@ const EditorChatPanel = ({ editor }: SidebarTabProps) => {
     editor.host.spec.getService('affine:page').slots.docLinkClicked.on(() => {
       (chatPanelRef.current as ChatPanel).doc = editor.doc;
     });
+    editor.host.spec.getService('affine:page').slots.editorModeSwitch.on(() => {
+      (chatPanelRef.current as ChatPanel).host = editor.host;
+    });
   }, [editor]);
 
   if (!editor) {
@@ -33,7 +36,7 @@ const EditorChatPanel = ({ editor }: SidebarTabProps) => {
   }
 
   if (editor !== chatPanelRef.current?.editor) {
-    (chatPanelRef.current as ChatPanel).editor = editor;
+    (chatPanelRef.current as ChatPanel).host = editor.host;
     (chatPanelRef.current as ChatPanel).doc = editor.doc;
     // (copilotPanelRef.current as CopilotPanel).fitPadding = [20, 20, 20, 20];
   }
