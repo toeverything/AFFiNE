@@ -30,6 +30,7 @@ function RootRouter() {
       environment: runtimeConfig.appBuildType,
       editorVersion: runtimeConfig.editorVersion,
       isSelfHosted: Boolean(runtimeConfig.isSelfHosted),
+      isDesktop: environment.isDesktop,
     });
   }, [location]);
   return (

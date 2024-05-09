@@ -9,8 +9,6 @@ import bytes from 'bytes';
 import { useAtom, useSetAtom } from 'jotai';
 import { useCallback, useEffect, useMemo } from 'react';
 
-import { mixpanel } from '../../../utils';
-
 export const CloudQuotaModal = () => {
   const t = useAFFiNEI18N();
   const currentWorkspace = useService(WorkspaceService).workspace;
@@ -92,14 +90,6 @@ export const CloudQuotaModal = () => {
       disposable?.dispose();
     };
   }, [currentWorkspace.engine.blob, setOpen, workspaceQuota]);
-
-  useEffect(() => {
-    if (userQuota?.name) {
-      mixpanel.people.set({
-        plan: userQuota.name,
-      });
-    }
-  }, [userQuota?.name]);
 
   return (
     <ConfirmModal

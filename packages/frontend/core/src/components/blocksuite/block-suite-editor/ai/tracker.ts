@@ -1,5 +1,4 @@
 import { mixpanel } from '@affine/core/utils';
-import { DebugLogger } from '@affine/debug';
 import type { EditorHost } from '@blocksuite/block-std';
 import type { ElementModel } from '@blocksuite/blocks';
 import { AIProvider } from '@blocksuite/presets';
@@ -58,8 +57,6 @@ type BlocksuiteActionEvent = Parameters<
   Parameters<typeof AIProvider.slots.actions.on>[0]
 >[0];
 
-const logger = new DebugLogger('affine:ai-tracker');
-
 const trackAction = ({
   eventName,
   properties,
@@ -67,7 +64,6 @@ const trackAction = ({
   eventName: AIActionEventName;
   properties: AIActionEventProperties;
 }) => {
-  logger.debug('trackAction', eventName, properties);
   mixpanel.track(eventName, properties);
 };
 

@@ -1,5 +1,8 @@
+import { DebugLogger } from '@affine/debug';
 import type { OverridedMixpanel } from 'mixpanel-browser';
 import mixpanelBrowser from 'mixpanel-browser';
+
+const logger = new DebugLogger('affine:mixpanel');
 
 export const mixpanel = process.env.MIXPANEL_TOKEN
   ? mixpanelBrowser
@@ -10,15 +13,19 @@ export const mixpanel = process.env.MIXPANEL_TOKEN
 
 function createProxyHandler(property?: string | symbol) {
   const handler = {
-    get: (_target, property) => {
+    get: (_target, childProperty) => {
+      const path = property
+        ? String(property) + '.' + String(childProperty)
+        : String(childProperty);
       return new Proxy(
         function () {} as unknown as OverridedMixpanel,
-        createProxyHandler(property)
+        createProxyHandler(path)
       );
     },
     apply: (_target, _thisArg, args) => {
-      console.info(
-        `Mixpanel is not initialized, calling ${property ? String(property) : 'mixpanel'} with args: ${JSON.stringify(args)}`
+      logger.debug(
+        `mixpanel.${property ? String(property) : 'mixpanel'}`,
+        ...args
       );
     },
   } as ProxyHandler<OverridedMixpanel>;
