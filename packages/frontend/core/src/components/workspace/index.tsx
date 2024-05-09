@@ -1,3 +1,9 @@
+import {
+  DocsService,
+  GlobalContextService,
+  useLiveData,
+  useService,
+} from '@toeverything/infra';
 import { clsx } from 'clsx';
 import { useAtomValue } from 'jotai';
 import type { HTMLAttributes, PropsWithChildren, ReactElement } from 'react';
@@ -63,7 +69,21 @@ export const MainContainer = forwardRef<
 MainContainer.displayName = 'MainContainer';
 
 export const ToolContainer = (props: PropsWithChildren): ReactElement => {
-  return <div className={toolStyle}>{props.children}</div>;
+  const docId = useLiveData(
+    useService(GlobalContextService).globalContext.docId.$
+  );
+  const docRecordList = useService(DocsService).list;
+  const doc = useLiveData(docId ? docRecordList.doc$(docId) : undefined);
+  const inTrash = useLiveData(doc?.meta$)?.trash;
+  return (
+    <div
+      className={clsx(toolStyle, {
+        trash: inTrash,
+      })}
+    >
+      {props.children}
+    </div>
+  );
 };
 
 export const WorkspaceFallback = (): ReactElement => {

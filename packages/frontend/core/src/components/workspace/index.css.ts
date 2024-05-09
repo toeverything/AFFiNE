@@ -93,6 +93,11 @@ export const toolStyle = style({
   display: 'flex',
   flexDirection: 'column',
   gap: '12px',
+  selectors: {
+    '&.trash': {
+      bottom: '78px',
+    },
+  },
   '@media': {
     'screen and (max-width: 960px)': {
       right: 'calc((100vw - 640px) * 3 / 19 + 14px)',
