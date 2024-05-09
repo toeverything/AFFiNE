@@ -79,16 +79,24 @@ export class OpenAIProvider
   ): OpenAI.Chat.Completions.ChatCompletionMessageParam[] {
     // filter redundant fields
     return messages.map(({ role, content, attachments }) => {
+      content = content.trim();
       if (Array.isArray(attachments)) {
-        const contents = [
-          { type: 'text', text: content },
-          ...attachments
+        const contents: OpenAI.Chat.Completions.ChatCompletionContentPart[] =
+          [];
+        if (content.length) {
+          contents.push({
+            type: 'text',
+            text: content,
+          });
+        }
+        contents.push(
+          ...(attachments
             .filter(url => SIMPLE_IMAGE_URL_REGEX.test(url))
             .map(url => ({
               type: 'image_url',
               image_url: { url, detail: 'high' },
-            })),
-        ];
+            })) as OpenAI.Chat.Completions.ChatCompletionContentPartImage[])
+        );
         return {
           role,
           content: contents,

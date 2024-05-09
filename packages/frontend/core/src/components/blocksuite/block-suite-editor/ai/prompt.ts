@@ -30,6 +30,7 @@ export const promptKeys = [
   'Create a presentation',
   'Create headings',
   'Make it real',
+  'Make it real with text',
   'Make it longer',
   'Make it shorter',
   'Continue writing',

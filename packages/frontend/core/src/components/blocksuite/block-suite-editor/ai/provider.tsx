@@ -246,12 +246,24 @@ export function setupAIProvider() {
   });
 
   AIProvider.provide('makeItReal', options => {
+    let promptName: PromptKey = 'Make it real';
+    let content = options.content || '';
+
+    // wireframes
+    if (options.attachments?.length) {
+      content = `Here are the latest wireframes. Could you make a new website based on these wireframes and notes and send back just the html file?
+Here are our design notes:\n ${content}.`;
+    } else {
+      // notes
+      promptName = 'Make it real with text';
+      content = `Here are the latest notes: \n ${content}.
+Could you make a new website based on these notes and send back just the html file?`;
+    }
+
     return textToText({
       ...options,
-      promptName: 'Make it real',
-      content:
-        options.content ||
-        'Here are the latest wireframes. Could you make a new website based on these wireframes and notes and send back just the html file?',
+      content,
+      promptName,
     });
   });
 
