@@ -437,9 +437,9 @@ checksum = "658bd65b1cf4c852a3cc96f18a8ce7b5640f6b703f905c7d74532294c2a63984"
 
 [[package]]
 name = "file-format"
-version = "0.24.0"
+version = "0.25.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4ba1b81b3c213cf1c071f8bf3b83531f310df99642e58c48247272eef006cae5"
+checksum = "9ffe3a660c3a1b10e96f304a9413d673b2118d62e4520f7ddf4a4faccfe8b9b9"
 
 [[package]]
 name = "filetime"
