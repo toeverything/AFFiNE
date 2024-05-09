@@ -129,15 +129,35 @@ const GroupTagLabel = ({ tag, count }: { tag: Tag; count: number }) => {
 export const useTagGroupDefinitions = (): ItemGroupDefinition<ListItem>[] => {
   const tagList = useService(TagService).tagList;
   const tags = useLiveData(tagList.tags$);
+  const t = useAFFiNEI18N();
+
+  const untagged = useMemo(
+    () => ({
+      id: 'Untagged',
+      label: (count: number) => (
+        <GroupLabel
+          id="Untagged"
+          label={t['com.affine.page.display.grouping.group-by-tag.untagged']()}
+          count={count}
+        />
+      ),
+      match: (item: ListItem) =>
+        (item as DocMeta).tags ? !(item as DocMeta).tags.length : false,
+    }),
+    [t]
+  );
+
   return useMemo(() => {
-    return tags.map(tag => ({
-      id: tag.id,
-      label: count => {
-        return <GroupTagLabel tag={tag} count={count} />;
-      },
-      match: item => (item as DocMeta).tags?.includes(tag.id),
-    }));
-  }, [tags]);
+    return tags
+      .map(tag => ({
+        id: tag.id,
+        label: (count: number) => {
+          return <GroupTagLabel tag={tag} count={count} />;
+        },
+        match: (item: ListItem) => (item as DocMeta).tags?.includes(tag.id),
+      }))
+      .concat(untagged);
+  }, [tags, untagged]);
 };
 
 export const useFavoriteGroupDefinitions = <

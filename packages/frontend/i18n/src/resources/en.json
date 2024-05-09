@@ -851,6 +851,7 @@
   "com.affine.page.display.grouping": "Grouping",
   "com.affine.page.display.grouping.group-by-favourites": "Favourites",
   "com.affine.page.display.grouping.group-by-tag": "Tag",
+  "com.affine.page.display.grouping.group-by-tag.untagged": "Untagged",
   "com.affine.page.display.grouping.no-grouping": "No Grouping",
   "com.affine.page.display.list-option": "List option",
   "com.affine.page.group-header.clear": "Clear Selection",
