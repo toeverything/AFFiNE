@@ -19,10 +19,12 @@ const EditorChatPanel = ({ editor }: SidebarTabProps) => {
 
   useEffect(() => {
     if (!editor) return;
-    editor.host.spec.getService('affine:page').slots.docLinkClicked.on(() => {
+    const pageService = editor.host.spec.getService('affine:page');
+
+    pageService.slots.docLinkClicked.on(() => {
       (chatPanelRef.current as ChatPanel).doc = editor.doc;
     });
-    editor.host.spec.getService('affine:page').slots.editorModeSwitch.on(() => {
+    pageService.slots.editorModeSwitch.on(() => {
       (chatPanelRef.current as ChatPanel).host = editor.host;
     });
   }, [editor]);
