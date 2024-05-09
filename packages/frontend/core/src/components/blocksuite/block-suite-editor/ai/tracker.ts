@@ -32,6 +32,7 @@ type AIActionEventProperties = {
     | 'paywall'
     | 'policy wall'
     | 'server error'
+    | 'login required'
     | 'insert'
     | 'replace'
     | 'discard'
@@ -184,6 +185,8 @@ function inferControl(
     return 'paywall';
   } else if (event.event === 'aborted:server-error') {
     return 'server error';
+  } else if (event.event === 'aborted:login-required') {
+    return 'login required';
   } else if (event.options.control === 'chat-send') {
     return 'AI chat send button';
   } else if (event.event === 'result:add-note') {
