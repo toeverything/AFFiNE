@@ -19,8 +19,13 @@ const EditorChatPanel = ({ editor }: SidebarTabProps) => {
 
   useEffect(() => {
     if (!editor) return;
-    editor.host.spec.getService('affine:page').slots.docLinkClicked.on(() => {
+    const pageService = editor.host.spec.getService('affine:page');
+
+    pageService.slots.docLinkClicked.on(() => {
       (chatPanelRef.current as ChatPanel).doc = editor.doc;
+    });
+    pageService.slots.editorModeSwitch.on(() => {
+      (chatPanelRef.current as ChatPanel).host = editor.host;
     });
   }, [editor]);
 
@@ -32,11 +37,9 @@ const EditorChatPanel = ({ editor }: SidebarTabProps) => {
     chatPanelRef.current = new ChatPanel();
   }
 
-  if (editor !== chatPanelRef.current?.editor) {
-    (chatPanelRef.current as ChatPanel).editor = editor;
-    (chatPanelRef.current as ChatPanel).doc = editor.doc;
-    // (copilotPanelRef.current as CopilotPanel).fitPadding = [20, 20, 20, 20];
-  }
+  (chatPanelRef.current as ChatPanel).host = editor.host;
+  (chatPanelRef.current as ChatPanel).doc = editor.doc;
+  // (copilotPanelRef.current as CopilotPanel).fitPadding = [20, 20, 20, 20];
 
   return <div className={styles.root} ref={onRefChange} />;
 };
