@@ -123,7 +123,7 @@ jobs:
 
       - name: Signing By Apple Developer ID
         if: ${{ matrix.spec.platform == 'darwin' }}
-        uses: apple-actions/import-codesign-certs@v2
+        uses: apple-actions/import-codesign-certs@v3
         with:
           p12-file-base64: ${{ secrets.CERTIFICATES_P12 }}
           p12-password: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
