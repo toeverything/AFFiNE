@@ -1,6 +1,7 @@
 import { Scrollable } from '@affine/component';
 import { PageDetailSkeleton } from '@affine/component/page-detail-skeleton';
 import { PageAIOnboarding } from '@affine/core/components/affine/ai-onboarding';
+import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
 import type { PageRootService } from '@blocksuite/blocks';
 import {
   BookmarkService,
@@ -90,6 +91,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
   const rightSidebar = useService(RightSidebarService).rightSidebar;
   const docCollection = workspace.docCollection;
   const mode = useLiveData(doc.mode$);
+  const { appSettings } = useAppSettingHelper();
 
   const isActiveView = useIsActiveView();
   // TODO: remove jotai here
@@ -252,7 +254,11 @@ const DetailPageImpl = memo(function DetailPageImpl() {
                   docCollection={docCollection}
                 />
               </Scrollable.Viewport>
-              <Scrollable.Scrollbar />
+              <Scrollable.Scrollbar
+                className={clsx({
+                  [styles.scrollbar]: !appSettings.clientBorder,
+                })}
+              />
             </Scrollable.Root>
           </AffineErrorBoundary>
           {isInTrash ? <TrashPageFooter /> : null}
