@@ -7,10 +7,12 @@ import {
   type AuthAccountInfo,
   type AuthService,
 } from '../../cloud';
+import { AccountLoggedOut } from '../../cloud/services/auth';
 import { UserQuotaChanged } from '../../cloud/services/user-quota';
 
 @OnEvent(ApplicationStarted, e => e.onApplicationStart)
-@OnEvent(AccountChanged, e => e.onAccountChanged)
+@OnEvent(AccountChanged, e => e.updateIdentity)
+@OnEvent(AccountLoggedOut, e => e.onAccountLoggedOut)
 @OnEvent(UserQuotaChanged, e => e.onUserQuotaChanged)
 export class TelemetryService extends Service {
   private prevQuota: NonNullable<QuotaQuery['currentUser']>['quota'] | null =
@@ -28,21 +30,23 @@ export class TelemetryService extends Service {
       });
     }
     const account = this.auth.session.account$.value;
-    this.onAccountChanged(account);
+    this.updateIdentity(account);
   }
 
-  onAccountChanged(account: AuthAccountInfo | null) {
-    if (account === null) {
-      mixpanel.reset();
-    } else {
-      mixpanel.reset();
-      mixpanel.identify(account.id);
-      mixpanel.people.set({
-        $email: account.email,
-        $name: account.label,
-        $avatar: account.avatar,
-      });
+  updateIdentity(account: AuthAccountInfo | null) {
+    if (!account) {
+      return;
     }
+    mixpanel.identify(account.id);
+    mixpanel.people.set({
+      $email: account.email,
+      $name: account.label,
+      $avatar: account.avatar,
+    });
+  }
+
+  onAccountLoggedOut() {
+    mixpanel.reset();
   }
 
   onUserQuotaChanged(quota: NonNullable<QuotaQuery['currentUser']>['quota']) {
