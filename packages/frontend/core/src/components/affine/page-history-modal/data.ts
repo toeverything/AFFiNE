@@ -1,6 +1,9 @@
 import { useDocMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
 import { useDocCollectionPage } from '@affine/core/hooks/use-block-suite-workspace-page';
-import { timestampToLocalDate } from '@affine/core/utils';
+import {
+  type CalendarTranslation,
+  timestampToCalendarDate,
+} from '@affine/core/utils';
 import { DebugLogger } from '@affine/debug';
 import type { ListHistoryQuery } from '@affine/graphql';
 import { listHistoryQuery, recoverDocMutation } from '@affine/graphql';
@@ -174,10 +177,13 @@ export const useSnapshotPage = (
   return page;
 };
 
-export const historyListGroupByDay = (histories: DocHistory[]) => {
+export const historyListGroupByDay = (
+  histories: DocHistory[],
+  translation: CalendarTranslation
+) => {
   const map = new Map<string, DocHistory[]>();
   for (const history of histories) {
-    const day = timestampToLocalDate(history.timestamp);
+    const day = timestampToCalendarDate(history.timestamp, translation);
     const list = map.get(day) ?? [];
     list.push(history);
     map.set(day, list);

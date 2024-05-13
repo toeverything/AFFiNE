@@ -45,6 +45,8 @@ export function useI18N() {
   return i18n;
 }
 
+export { getI18n } from 'react-i18next';
+
 const resources = LOCALES.reduce<Resource>((acc, { tag, res }) => {
   return Object.assign(acc, { [tag]: { translation: res } });
 }, {});

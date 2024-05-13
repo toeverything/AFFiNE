@@ -33,7 +33,11 @@ import {
 import { encodeStateAsUpdate } from 'yjs';
 
 import { pageHistoryModalAtom } from '../../../atoms/page-history';
-import { mixpanel, timestampToLocalTime } from '../../../utils';
+import {
+  type CalendarTranslation,
+  mixpanel,
+  timestampToLocalTime,
+} from '../../../utils';
 import { BlockSuiteEditor } from '../../blocksuite/block-suite-editor';
 import { StyledEditorModeSwitch } from '../../blocksuite/block-suite-mode-switch/style';
 import {
@@ -311,13 +315,18 @@ const PageHistoryList = ({
   onLoadMore: (() => void) | false;
   loadingMore: boolean;
 }) => {
+  const t = useAFFiNEI18N();
   const historyListByDay = useMemo(() => {
-    return historyListGroupByDay(historyList);
-  }, [historyList]);
+    const translation: CalendarTranslation = {
+      yesterday: t['com.affine.yesterday'],
+      today: t['com.affine.today'],
+      tomorrow: t['com.affine.tomorrow'],
+      nextWeek: t['com.affine.nextWeek'],
+    };
+    return historyListGroupByDay(historyList, translation);
+  }, [historyList, t]);
 
   const [collapsedMap, setCollapsedMap] = useState<Record<number, boolean>>({});
-
-  const t = useAFFiNEI18N();
 
   useLayoutEffect(() => {
     if (historyList.length > 0 && !activeVersion) {
