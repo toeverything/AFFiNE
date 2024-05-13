@@ -108,17 +108,22 @@ const SubscriptionSettings = () => {
 
   const openPlans = useCallback(
     (scrollAnchor?: string) => {
-      mixpanel.track('Button', {
-        resolve: 'ChangePlan',
-        currentPlan: proSubscription?.plan,
+      mixpanel.track('PlansViewed', {
+        type: proSubscription?.plan,
+        category: proSubscription?.recurring,
+        // page:
+        segment: 'settings panel',
+        module: 'billing subscription list',
+        control: 'change plan button',
       });
+
       setOpenSettingModalAtom({
         open: true,
         activeTab: 'plans',
         scrollAnchor: scrollAnchor,
       });
     },
-    [proSubscription?.plan, setOpenSettingModalAtom]
+    [proSubscription?.plan, proSubscription?.recurring, setOpenSettingModalAtom]
   );
   const gotoCloudPlansSetting = useCallback(() => openPlans(), [openPlans]);
   const gotoAiPlanSetting = useCallback(

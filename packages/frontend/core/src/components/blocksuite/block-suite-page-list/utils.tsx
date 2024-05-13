@@ -36,30 +36,47 @@ export const usePageHelper = (docCollection: DocCollection) => {
     return createPageAndOpen('edgeless');
   }, [createPageAndOpen]);
 
-  const importFileAndOpen = useAsyncCallback(async () => {
-    const { showImportModal } = await import('@blocksuite/blocks');
-    const onSuccess = (
-      pageIds: string[],
-      options: { isWorkspaceFile: boolean; importedCount: number }
-    ) => {
-      toast(
-        `Successfully imported ${options.importedCount} Page${
-          options.importedCount > 1 ? 's' : ''
-        }.`
-      );
-      if (options.isWorkspaceFile) {
-        jumpToSubPath(docCollection.id, WorkspaceSubPath.ALL);
-        return;
-      }
+  const importFileAndOpen = useMemo(
+    () => async () => {
+      const { showImportModal } = await import('@blocksuite/blocks');
+      const { promise, resolve, reject } =
+        Promise.withResolvers<
+          Parameters<
+            NonNullable<Parameters<typeof showImportModal>[0]['onSuccess']>
+          >[1]
+        >();
+      const onSuccess = (
+        pageIds: string[],
+        options: { isWorkspaceFile: boolean; importedCount: number }
+      ) => {
+        resolve(options);
+        toast(
+          `Successfully imported ${options.importedCount} Page${
+            options.importedCount > 1 ? 's' : ''
+          }.`
+        );
+        if (options.isWorkspaceFile) {
+          jumpToSubPath(docCollection.id, WorkspaceSubPath.ALL);
+          return;
+        }
 
-      if (pageIds.length === 0) {
-        return;
-      }
-      const pageId = pageIds[0];
-      openPage(docCollection.id, pageId);
-    };
-    showImportModal({ collection: docCollection, onSuccess });
-  }, [docCollection, openPage, jumpToSubPath]);
+        if (pageIds.length === 0) {
+          return;
+        }
+        const pageId = pageIds[0];
+        openPage(docCollection.id, pageId);
+      };
+      showImportModal({
+        collection: docCollection,
+        onSuccess,
+        onFail: message => {
+          reject(new Error(message));
+        },
+      });
+      return await promise;
+    },
+    [docCollection, openPage, jumpToSubPath]
+  );
 
   const createLinkedPageAndOpen = useAsyncCallback(
     async (pageId: string) => {

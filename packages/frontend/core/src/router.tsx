@@ -5,17 +5,13 @@ import {
   createBrowserRouter as reactRouterCreateBrowserRouter,
   Outlet,
   redirect,
-  useLocation,
   // eslint-disable-next-line @typescript-eslint/no-restricted-imports
   useNavigate,
 } from 'react-router-dom';
 
-import { mixpanel } from './utils';
-
 export const NavigateContext = createContext<NavigateFunction | null>(null);
 
 function RootRouter() {
-  const location = useLocation();
   const navigate = useNavigate();
   const [ready, setReady] = useState(false);
   useEffect(() => {
@@ -23,16 +19,6 @@ function RootRouter() {
     setReady(true);
   }, []);
 
-  useEffect(() => {
-    mixpanel.track_pageview({
-      page: location.pathname,
-      appVersion: runtimeConfig.appVersion,
-      environment: runtimeConfig.appBuildType,
-      editorVersion: runtimeConfig.editorVersion,
-      isSelfHosted: Boolean(runtimeConfig.isSelfHosted),
-      isDesktop: environment.isDesktop,
-    });
-  }, [location]);
   return (
     ready && (
       <NavigateContext.Provider value={navigate}>

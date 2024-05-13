@@ -11,6 +11,8 @@ import { Export, MoveToTrash } from '@affine/core/components/page-list';
 import { useBlockSuiteMetaHelper } from '@affine/core/hooks/affine/use-block-suite-meta-helper';
 import { useExportPage } from '@affine/core/hooks/affine/use-export-page';
 import { useTrashModalHelper } from '@affine/core/hooks/affine/use-trash-modal-helper';
+import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
+import { mixpanel } from '@affine/core/utils';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
@@ -97,7 +99,33 @@ export const PageHeaderMenuButton = ({
 
   const handleDuplicate = useCallback(() => {
     duplicate(pageId);
+    mixpanel.track('DocCreated', {
+      segment: 'editor header',
+      module: 'header menu',
+      control: 'copy doc',
+      type: 'doc duplicate',
+      category: 'doc',
+    });
   }, [duplicate, pageId]);
+
+  const onImportFile = useAsyncCallback(async () => {
+    const options = await importFile();
+    if (options.isWorkspaceFile) {
+      mixpanel.track('WorkspaceCreated', {
+        segment: 'editor header',
+        module: 'header menu',
+        control: 'import button',
+        type: 'imported workspace',
+      });
+    } else {
+      mixpanel.track('DocCreated', {
+        segment: 'editor header',
+        module: 'header menu',
+        control: 'import button',
+        type: 'imported doc',
+      });
+    }
+  }, [importFile]);
 
   const EditMenu = (
     <>
@@ -179,7 +207,7 @@ export const PageHeaderMenuButton = ({
           </MenuIcon>
         }
         data-testid="editor-option-menu-import"
-        onSelect={importFile}
+        onSelect={onImportFile}
         style={menuItemStyle}
       >
         {t['Import']()}

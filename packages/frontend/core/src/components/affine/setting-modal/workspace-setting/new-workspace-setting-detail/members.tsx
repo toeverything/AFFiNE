@@ -23,6 +23,7 @@ import { useMembers } from '@affine/core/hooks/affine/use-members';
 import { useRevokeMemberPermission } from '@affine/core/hooks/affine/use-revoke-member-permission';
 import { WorkspacePermissionService } from '@affine/core/modules/permissions';
 import { WorkspaceQuotaService } from '@affine/core/modules/quota';
+import { mixpanel } from '@affine/core/utils';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { Permission } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
@@ -143,6 +144,12 @@ export const CloudWorkspaceMembersPanel = () => {
     setSettingModalAtom({
       open: true,
       activeTab: 'plans',
+    });
+    mixpanel.track('PlansViewed', {
+      // page:
+      segment: 'settings panel',
+      module: 'workspace setting',
+      control: 'invite member',
     });
   }, [setSettingModalAtom]);
 

@@ -1,6 +1,7 @@
 import { IconButton } from '@affine/component/ui/button';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { FavoriteItemsAdapter } from '@affine/core/modules/properties';
+import { mixpanel } from '@affine/core/utils';
 import { PlusIcon } from '@blocksuite/icons';
 import type { DocCollection } from '@blocksuite/store';
 import { useService } from '@toeverything/infra';
@@ -24,10 +25,26 @@ export const AddFavouriteButton = ({
         e.stopPropagation();
         e.preventDefault();
         createLinkedPage(pageId);
+        mixpanel.track('DocCreated', {
+          // page:
+          segment: 'all doc',
+          module: 'favorite',
+          control: 'new fav sub doc',
+          type: 'doc',
+          category: 'page',
+        });
       } else {
         const page = createPage();
         page.load();
         favAdapter.set(page.id, 'doc', true);
+        mixpanel.track('DocCreated', {
+          // page:
+          segment: 'all doc',
+          module: 'favorite',
+          control: 'new fav doc',
+          type: 'doc',
+          category: 'page',
+        });
       }
     },
     [pageId, createLinkedPage, createPage, favAdapter]

@@ -225,6 +225,9 @@ const PlanPrompt = () => {
       open: true,
       activeTab: 'plans',
     });
+    mixpanel.track('PlansViewed', {
+      segment: 'doc history',
+    });
   }, [setSettingModalAtom]);
 
   const t = useAFFiNEI18N();
@@ -233,7 +236,7 @@ const PlanPrompt = () => {
     return (
       <div className={styles.planPromptTitle}>
         {
-          isProWorkspace === null
+          isProWorkspace !== null
             ? !isProWorkspace
               ? t[
                   'com.affine.history.confirm-restore-modal.plan-prompt.limited-title'

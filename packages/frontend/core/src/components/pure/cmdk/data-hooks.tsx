@@ -3,6 +3,7 @@ import { useGetDocCollectionPageTitle } from '@affine/core/hooks/use-block-suite
 import { useJournalHelper } from '@affine/core/hooks/use-journal';
 import { CollectionService } from '@affine/core/modules/collection';
 import { WorkspaceSubPath } from '@affine/core/shared';
+import { mixpanel } from '@affine/core/utils';
 import type { Collection } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
@@ -235,6 +236,9 @@ export const usePageCommands = () => {
               page.id,
               blockId
             );
+            mixpanel.track('AppendToJournal', {
+              control: 'cmdk',
+            });
           },
           icon: <TodayIcon />,
         });
@@ -250,6 +254,10 @@ export const usePageCommands = () => {
             const page = pageHelper.createPage();
             page.load();
             pageMetaHelper.setDocTitle(page.id, query);
+            mixpanel.track('DocCreated', {
+              control: 'cmdk',
+              type: 'doc',
+            });
           },
           icon: <PageIcon />,
         });
@@ -265,6 +273,10 @@ export const usePageCommands = () => {
             const page = pageHelper.createEdgeless();
             page.load();
             pageMetaHelper.setDocTitle(page.id, query);
+            mixpanel.track('DocCreated', {
+              control: 'cmdk',
+              type: 'whiteboard',
+            });
           },
           icon: <EdgelessIcon />,
         });

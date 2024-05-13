@@ -40,6 +40,7 @@ import {
 } from '../hooks/affine/use-global-dnd-helper';
 import { useNavigateHelper } from '../hooks/use-navigate-helper';
 import { useRegisterWorkspaceCommands } from '../hooks/use-register-workspace-commands';
+import { WorkbenchService } from '../modules/workbench';
 import {
   AllWorkspaceModals,
   CurrentWorkspaceModals,
@@ -62,7 +63,6 @@ export const QuickSearch = () => {
 
   const onToggleQuickSearch = useCallback(
     (open: boolean) => {
-      mixpanel.track('QuickSearch', { open });
       setOpenQuickSearchModalAtom(open);
     },
     [setOpenQuickSearchModalAtom]
@@ -113,6 +113,14 @@ export const WorkspaceLayoutInner = ({ children }: PropsWithChildren) => {
   const upgrading = useLiveData(currentWorkspace.upgrade.upgrading$);
   const needUpgrade = useLiveData(currentWorkspace.upgrade.needUpgrade$);
 
+  const workbench = useService(WorkbenchService).workbench;
+
+  const basename = useLiveData(workbench.basename$);
+
+  const currentPath = useLiveData(
+    workbench.location$.map(location => basename + location.pathname)
+  );
+
   useRegisterWorkspaceCommands();
 
   useEffect(() => {
@@ -143,6 +151,10 @@ export const WorkspaceLayoutInner = ({ children }: PropsWithChildren) => {
   const [, setOpenQuickSearchModalAtom] = useAtom(openQuickSearchModalAtom);
   const handleOpenQuickSearchModal = useCallback(() => {
     setOpenQuickSearchModalAtom(true);
+    mixpanel.track('QuickSearchOpened', {
+      segment: 'navigation panel',
+      control: 'search button',
+    });
   }, [setOpenQuickSearchModalAtom]);
 
   const setOpenSettingModalAtom = useSetAtom(openSettingModalAtom);
@@ -151,6 +163,12 @@ export const WorkspaceLayoutInner = ({ children }: PropsWithChildren) => {
     setOpenSettingModalAtom({
       activeTab: 'appearance',
       open: true,
+    });
+    mixpanel.track('SettingsViewed', {
+      // page:
+      segment: 'navigation panel',
+      module: 'general list',
+      control: 'settings button',
     });
   }, [setOpenSettingModalAtom]);
 
@@ -171,7 +189,7 @@ export const WorkspaceLayoutInner = ({ children }: PropsWithChildren) => {
     <>
       {/* This DndContext is used for drag page from all-pages list into a folder in sidebar */}
       <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-        <AppContainer resizing={resizing}>
+        <AppContainer data-current-path={currentPath} resizing={resizing}>
           <Suspense fallback={<AppSidebarFallback />}>
             <RootAppSidebar
               isPublicWorkspace={false}

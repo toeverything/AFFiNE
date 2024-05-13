@@ -574,6 +574,7 @@
   "com.affine.cmdk.affine.navigation.goto-trash": "Go to Trash",
   "com.affine.cmdk.affine.navigation.goto-workspace": "Go to Workspace",
   "com.affine.cmdk.affine.navigation.open-settings": "Go to Settings",
+  "com.affine.cmdk.affine.navigation.open-account-settings": "Go to Account Settings",
   "com.affine.cmdk.affine.new-edgeless-page": "New Edgeless",
   "com.affine.cmdk.affine.new-page": "New Doc",
   "com.affine.cmdk.affine.new-workspace": "New Workspace",

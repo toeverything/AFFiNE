@@ -23,10 +23,12 @@ export const AppContainer = ({
   useNoisyBackground,
   useBlurBackground,
   children,
+  ...rest
 }: WorkspaceRootProps) => {
   const noisyBackground = useNoisyBackground && environment.isDesktop;
   return (
     <div
+      {...rest}
       className={clsx(appStyle, {
         'noisy-background': noisyBackground,
         'blur-background': environment.isDesktop && useBlurBackground,

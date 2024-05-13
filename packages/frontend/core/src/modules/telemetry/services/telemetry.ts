@@ -28,6 +28,13 @@ export class TelemetryService extends Service {
         track_pageview: true,
         persistence: 'localStorage',
       });
+      mixpanel.register({
+        appVersion: runtimeConfig.appVersion,
+        environment: runtimeConfig.appBuildType,
+        editorVersion: runtimeConfig.editorVersion,
+        isSelfHosted: Boolean(runtimeConfig.isSelfHosted),
+        isDesktop: environment.isDesktop,
+      });
     }
     const account = this.auth.session.account$.value;
     this.updateIdentity(account);

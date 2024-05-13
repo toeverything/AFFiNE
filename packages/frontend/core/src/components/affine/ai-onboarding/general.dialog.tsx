@@ -2,6 +2,7 @@ import { Button, IconButton, Modal } from '@affine/component';
 import { openSettingModalAtom } from '@affine/core/atoms';
 import { useBlurRoot } from '@affine/core/hooks/use-blur-root';
 import { SubscriptionService } from '@affine/core/modules/cloud';
+import { mixpanel } from '@affine/core/utils';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
@@ -121,6 +122,11 @@ export const AIOnboardingGeneral = ({
       open: true,
       activeTab: 'plans',
       scrollAnchor: 'aiPricingPlan',
+    });
+    mixpanel.track('PlansViewed', {
+      page: 'whiteboard-editor',
+      segment: 'ai onboarding',
+      module: 'general',
     });
     closeAndDismiss();
   }, [closeAndDismiss, setSettingModal]);

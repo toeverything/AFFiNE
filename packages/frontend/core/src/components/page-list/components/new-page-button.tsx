@@ -1,5 +1,6 @@
 import { DropdownButton, Menu } from '@affine/component';
 import { BlockCard } from '@affine/component/card/block-card';
+import { mixpanel } from '@affine/core/utils';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { EdgelessIcon, ImportIcon, PageIcon } from '@blocksuite/icons';
 import type { PropsWithChildren } from 'react';
@@ -69,11 +70,27 @@ export const NewPageButton = ({
   const handleCreateNewPage = useCallback(() => {
     createNewPage();
     setOpen(false);
+    mixpanel.track('DocCreated', {
+      page: 'doc library',
+      segment: 'all doc',
+      module: 'doc list header',
+      control: 'new doc button',
+      type: 'doc',
+      category: 'page',
+    });
   }, [createNewPage]);
 
   const handleCreateNewEdgeless = useCallback(() => {
     createNewEdgeless();
     setOpen(false);
+    mixpanel.track('DocCreated', {
+      page: 'doc library',
+      segment: 'all doc',
+      module: 'doc list header',
+      control: 'new whiteboard button',
+      type: 'doc',
+      category: 'whiteboard',
+    });
   }, [createNewEdgeless]);
 
   const handleImportFile = useCallback(() => {
@@ -104,10 +121,7 @@ export const NewPageButton = ({
     >
       <DropdownButton
         size={size}
-        onClick={useCallback(() => {
-          createNewPage();
-          setOpen(false);
-        }, [createNewPage])}
+        onClick={handleCreateNewPage}
         onClickDropDown={useCallback(() => setOpen(open => !open), [])}
       >
         {children}

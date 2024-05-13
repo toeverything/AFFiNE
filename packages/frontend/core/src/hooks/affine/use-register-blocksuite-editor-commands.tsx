@@ -1,6 +1,7 @@
 import { toast } from '@affine/component';
 import { useDocMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
 import { FavoriteItemsAdapter } from '@affine/core/modules/properties';
+import { mixpanel } from '@affine/core/utils';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
@@ -141,6 +142,11 @@ export function useRegisterBlocksuiteEditorCommands() {
         label: t['com.affine.header.option.duplicate'](),
         run() {
           duplicate(docId);
+          mixpanel.track('DocCreated', {
+            control: 'cmdk',
+            type: 'doc duplicate',
+            category: 'doc',
+          });
         },
       })
     );

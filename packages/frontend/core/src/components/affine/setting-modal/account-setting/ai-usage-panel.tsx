@@ -6,6 +6,7 @@ import {
   SubscriptionService,
   UserCopilotQuotaService,
 } from '@affine/core/modules/cloud';
+import { mixpanel } from '@affine/core/utils';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useLiveData, useService } from '@toeverything/infra';
 import { cssVar } from '@toeverything/theme';
@@ -45,6 +46,12 @@ export const AIUsagePanel = () => {
     setOpenSettingModal({
       open: true,
       activeTab: 'billing',
+    });
+    mixpanel.track('BillingViewed', {
+      segment: 'settings panel',
+      module: 'account usage list',
+      control: 'change plan button',
+      type: 'ai subscription',
     });
   }, [setOpenSettingModal]);
 

@@ -3,6 +3,7 @@ import { openQuotaModalAtom, openSettingModalAtom } from '@affine/core/atoms';
 import { UserQuotaService } from '@affine/core/modules/cloud';
 import { WorkspacePermissionService } from '@affine/core/modules/permissions';
 import { WorkspaceQuotaService } from '@affine/core/modules/quota';
+import { mixpanel } from '@affine/core/utils';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useLiveData, useService, WorkspaceService } from '@toeverything/infra';
 import bytes from 'bytes';
@@ -46,6 +47,11 @@ export const CloudQuotaModal = () => {
     setSettingModalAtom({
       open: true,
       activeTab: 'plans',
+    });
+
+    mixpanel.track('PlansViewed', {
+      segment: 'payment wall',
+      category: 'payment wall storage',
     });
 
     setOpen(false);

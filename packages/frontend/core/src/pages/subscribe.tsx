@@ -8,6 +8,7 @@ import { EMPTY, mergeMap, switchMap } from 'rxjs';
 
 import { RouteLogic, useNavigateHelper } from '../hooks/use-navigate-helper';
 import { AuthService, SubscriptionService } from '../modules/cloud';
+import { mixpanel } from '../utils';
 import { container } from './subscribe.css';
 
 export const Component = () => {
@@ -68,6 +69,16 @@ export const Component = () => {
               });
               setMessage('Redirecting...');
               location.href = checkout;
+              mixpanel.track('PlanChangeSucceeded', {
+                type: plan,
+                category: recurring,
+              });
+              if (plan) {
+                mixpanel.people.set({
+                  [SubscriptionPlan.AI === plan ? 'ai plan' : plan]: plan,
+                  recurring: recurring,
+                });
+              }
             } catch (err) {
               console.error(err);
               setError('Something went wrong. Please try again.');

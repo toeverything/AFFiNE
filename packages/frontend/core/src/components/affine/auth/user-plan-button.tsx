@@ -1,4 +1,5 @@
 import { Tooltip } from '@affine/component/ui/tooltip';
+import { mixpanel } from '@affine/core/utils';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useLiveData, useServices } from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
@@ -39,6 +40,10 @@ export const UserPlanButton = () => {
       setSettingModalAtom({
         open: true,
         activeTab: 'plans',
+      });
+      mixpanel.track('PlansViewed', {
+        segment: 'settings panel',
+        module: 'profile and badge',
       });
     },
     [setSettingModalAtom]

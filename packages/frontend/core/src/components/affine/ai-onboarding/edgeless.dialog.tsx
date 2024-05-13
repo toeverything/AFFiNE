@@ -1,6 +1,7 @@
 import { Button, FlexWrapper, notify } from '@affine/component';
 import { openSettingModalAtom } from '@affine/core/atoms';
 import { SubscriptionService } from '@affine/core/modules/cloud';
+import { mixpanel } from '@affine/core/utils';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { AiIcon } from '@blocksuite/icons';
@@ -69,6 +70,11 @@ export const AIOnboardingEdgeless = ({
   const mode = useLiveData(doc.mode$);
 
   const goToPricingPlans = useCallback(() => {
+    mixpanel.track('PlansViewed', {
+      page: 'whiteboard editor',
+      segment: 'ai onboarding',
+      module: 'whiteboard dialog',
+    });
     setSettingModal({
       open: true,
       activeTab: 'plans',

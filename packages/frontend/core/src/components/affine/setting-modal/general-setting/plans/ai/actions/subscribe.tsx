@@ -1,7 +1,7 @@
 import { Button, type ButtonProps } from '@affine/component';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { SubscriptionService } from '@affine/core/modules/cloud';
-import { popupWindow } from '@affine/core/utils';
+import { mixpanel, popupWindow } from '@affine/core/utils';
 import { SubscriptionPlan, SubscriptionRecurring } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useLiveData, useService } from '@toeverything/infra';
@@ -42,6 +42,10 @@ export const AISubscribe = ({ ...btnProps }: AISubscribeProps) => {
 
   const subscribe = useAsyncCallback(async () => {
     setMutating(true);
+    mixpanel.track('plan upgrade started', {
+      category: SubscriptionRecurring.Yearly,
+      type: SubscriptionPlan.AI,
+    });
     try {
       const session = await subscriptionService.createCheckoutSession({
         recurring: SubscriptionRecurring.Yearly,

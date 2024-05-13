@@ -37,6 +37,10 @@ export class EventBus {
     }
   }
 
+  get root(): EventBus {
+    return this.parent?.root ?? this;
+  }
+
   on<T>(id: string, listener: (event: FrameworkEvent<T>) => void) {
     if (!this.listeners[id]) {
       this.listeners[id] = [];

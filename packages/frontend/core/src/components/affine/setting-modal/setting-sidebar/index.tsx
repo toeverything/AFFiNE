@@ -115,15 +115,22 @@ export const SettingSidebar = ({
   const loginStatus = useLiveData(useService(AuthService).session.status$);
   const generalList = useGeneralSettingList();
   const onAccountSettingClick = useCallback(() => {
-    mixpanel.track('Button', {
-      resolve: 'AccountSetting',
+    mixpanel.track('AccountSettingsViewed', {
+      // page:
+      segment: 'settings panel',
+      module: 'settings menu',
+      control: 'menu item',
     });
     onTabChange('account', null);
   }, [onTabChange]);
   const onWorkspaceSettingClick = useCallback(
     (subTab: WorkspaceSubTab, workspaceMetadata: WorkspaceMetadata) => {
-      mixpanel.track('Button', {
-        resolve: 'WorkspaceSetting',
+      mixpanel.track(`view workspace setting`, {
+        // page:
+        segment: 'settings panel',
+        module: 'settings menu',
+        control: 'menu item',
+        type: subTab,
         workspaceId: workspaceMetadata.id,
       });
       onTabChange(`workspace:${subTab}`, workspaceMetadata);
@@ -148,9 +155,21 @@ export const SettingSidebar = ({
               key={key}
               title={title}
               onClick={() => {
-                mixpanel.track('Button', {
-                  resolve: key,
-                });
+                if (key === 'billing') {
+                  mixpanel.track('BillingViewed', {
+                    // page:
+                    segment: 'settings panel',
+                    module: 'settings menu',
+                    control: 'menu item',
+                  });
+                } else if (key === 'plans') {
+                  mixpanel.track('PlansViewed', {
+                    // page:
+                    segment: 'settings panel',
+                    module: 'settings menu',
+                    control: 'menu item',
+                  });
+                }
                 onTabChange(key, null);
               }}
               data-testid={testId}

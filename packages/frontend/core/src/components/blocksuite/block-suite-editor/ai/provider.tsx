@@ -1,5 +1,6 @@
 import { notify } from '@affine/component';
 import { authAtom, openSettingModalAtom } from '@affine/core/atoms';
+import { mixpanel } from '@affine/core/utils';
 import { getBaseUrl } from '@affine/graphql';
 import { Trans } from '@affine/i18n';
 import { UnauthorizedError } from '@blocksuite/blocks';
@@ -345,6 +346,11 @@ Could you make a new website based on these notes and send back just the html fi
     getCurrentStore().set(openSettingModalAtom, {
       activeTab: 'billing',
       open: true,
+      scrollAnchor: 'aiPricingPlan',
+    });
+    mixpanel.track('PlansViewed', {
+      segment: 'payment wall',
+      category: 'payment wall ai action count',
     });
   });
 

@@ -162,8 +162,11 @@ const StoragePanel = () => {
 
   const setSettingModalAtom = useSetAtom(openSettingModalAtom);
   const onUpgrade = useCallback(() => {
-    mixpanel.track('Button', {
-      resolve: 'UpgradeStorage',
+    mixpanel.track('PlansViewed', {
+      segment: 'settings panel',
+      module: 'account usage list',
+      control: 'cloud storage upgrade button',
+      type: 'cloud subscription',
     });
     setSettingModalAtom({
       open: true,

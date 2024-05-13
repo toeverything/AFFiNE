@@ -1,5 +1,6 @@
 import { toast } from '@affine/component';
 import { getAffineCloudBaseUrl } from '@affine/core/modules/cloud/services/fetch';
+import { mixpanel } from '@affine/core/utils';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useCallback, useMemo } from 'react';
 
@@ -52,10 +53,14 @@ export const useSharingUrl = ({
         .catch(err => {
           console.error(err);
         });
+      mixpanel.track('ShareLinkCopied', {
+        module: urlType === 'share' ? 'public share' : 'private share',
+        type: 'link',
+      });
     } else {
       toast('Network not available');
     }
-  }, [sharingUrl, t]);
+  }, [sharingUrl, t, urlType]);
 
   return {
     sharingUrl,

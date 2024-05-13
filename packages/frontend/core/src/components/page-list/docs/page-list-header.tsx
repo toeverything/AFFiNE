@@ -9,6 +9,7 @@ import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
 import type { Tag } from '@affine/core/modules/tag';
 import { TagService } from '@affine/core/modules/tag';
+import { mixpanel } from '@affine/core/utils';
 import type { Collection } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
@@ -46,6 +47,28 @@ export const PageListHeader = () => {
     return t['com.affine.all-pages.header']();
   }, [t]);
 
+  const onImportFile = useAsyncCallback(async () => {
+    const options = await importFile();
+    if (options.isWorkspaceFile) {
+      mixpanel.track('WorkspaceCreated', {
+        page: 'doc library',
+        segment: 'all doc',
+        module: 'doc list header',
+        control: 'import button',
+        type: 'imported workspace',
+      });
+    } else {
+      mixpanel.track('DocCreated', {
+        page: 'doc library',
+        segment: 'all doc',
+        module: 'doc list header',
+        control: 'import button',
+        type: 'imported doc',
+        // category
+      });
+    }
+  }, [importFile]);
+
   return (
     <div className={styles.docListHeader}>
       <div className={styles.docListHeaderTitle}>{title}</div>
@@ -54,7 +77,7 @@ export const PageListHeader = () => {
         testId="new-page-button-trigger"
         onCreateEdgeless={createEdgeless}
         onCreatePage={createPage}
-        onImportFile={importFile}
+        onImportFile={onImportFile}
       >
         <div className={styles.buttonText}>{t['New Page']()}</div>
       </PageListNewPageButton>

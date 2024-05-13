@@ -6,6 +6,8 @@ import {
 } from '@affine/core/components/page-list';
 import { Header } from '@affine/core/components/pure/header';
 import { WorkspaceModeFilterTab } from '@affine/core/components/pure/workspace-mode-filter-tab';
+import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
+import { mixpanel } from '@affine/core/utils';
 import type { Filter } from '@affine/env/filter';
 import { PlusIcon } from '@blocksuite/icons';
 import { useService, WorkspaceService } from '@toeverything/infra';
@@ -27,6 +29,28 @@ export const AllPageHeader = ({
     workspace.docCollection
   );
 
+  const onImportFile = useAsyncCallback(async () => {
+    const options = await importFile();
+    if (options.isWorkspaceFile) {
+      mixpanel.track('WorkspaceCreated', {
+        page: 'doc library',
+        segment: 'all page',
+        module: 'doc list header',
+        control: 'import button',
+        type: 'imported workspace',
+      });
+    } else {
+      mixpanel.track('DocCreated', {
+        page: 'doc library',
+        segment: 'all page',
+        module: 'doc list header',
+        control: 'import button',
+        type: 'imported doc',
+        // category
+      });
+    }
+  }, [importFile]);
+
   return (
     <Header
       left={
@@ -46,7 +70,7 @@ export const AllPageHeader = ({
             )}
             onCreateEdgeless={createEdgeless}
             onCreatePage={createPage}
-            onImportFile={importFile}
+            onImportFile={onImportFile}
           >
             <PlusIcon />
           </PageListNewPageButton>

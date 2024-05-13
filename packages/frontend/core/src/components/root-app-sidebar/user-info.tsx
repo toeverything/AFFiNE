@@ -14,6 +14,7 @@ import {
   openSettingModalAtom,
   openSignOutModalAtom,
 } from '@affine/core/atoms';
+import { mixpanel } from '@affine/core/utils';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { AccountIcon, SignOutIcon } from '@blocksuite/icons';
 import { useLiveData, useService } from '@toeverything/infra';
@@ -79,6 +80,12 @@ const AccountMenu = () => {
   const setOpenSignOutModalAtom = useSetAtom(openSignOutModalAtom);
 
   const onOpenAccountSetting = useCallback(() => {
+    mixpanel.track('AccountSettingsViewed', {
+      // page:
+      segment: 'navigation panel',
+      module: 'profile and badge',
+      control: 'profile and email',
+    });
     setSettingModalAtom(prev => ({
       ...prev,
       open: true,

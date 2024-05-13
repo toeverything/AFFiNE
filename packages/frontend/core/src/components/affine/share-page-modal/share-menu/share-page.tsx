@@ -11,6 +11,7 @@ import { Button } from '@affine/component/ui/button';
 import { Menu, MenuItem, MenuTrigger } from '@affine/component/ui/menu';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { ShareService } from '@affine/core/modules/share-doc';
+import { mixpanel } from '@affine/core/utils';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { PublicPageMode } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
@@ -101,6 +102,12 @@ export const AffineSharePage = (props: ShareMenuProps) => {
       await shareService.share.enableShare(
         mode === 'edgeless' ? PublicPageMode.Edgeless : PublicPageMode.Page
       );
+      mixpanel.track('ShareCreated', {
+        segment: 'sharing panel',
+        module: 'public share',
+        control: 'share panel',
+        type: mode,
+      });
       notify.success({
         title:
           t[

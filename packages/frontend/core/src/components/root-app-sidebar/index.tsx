@@ -2,6 +2,7 @@ import { AnimatedDeleteIcon } from '@affine/component';
 import { getDNDId } from '@affine/core/hooks/affine/use-global-dnd-helper';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { CollectionService } from '@affine/core/modules/collection';
+import { mixpanel } from '@affine/core/utils';
 import { apis, events } from '@affine/electron-api';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { FolderIcon, SettingsIcon } from '@blocksuite/icons';
@@ -106,11 +107,23 @@ export const RootAppSidebar = ({
     )
   );
 
+  const allPageActive = currentPath === '/all';
+
+  const trashActive = currentPath === '/trash';
+
   const onClickNewPage = useAsyncCallback(async () => {
     const page = createPage();
     page.load();
     openPage(page.id);
-  }, [createPage, openPage]);
+    mixpanel.track('DocCreated', {
+      page: allPageActive ? 'all' : trashActive ? 'trash' : 'other',
+      segment: 'navigation panel',
+      module: 'bottom button',
+      control: 'new doc button',
+      category: 'page',
+      type: 'doc',
+    });
+  }, [allPageActive, createPage, openPage, trashActive]);
 
   const { trashModal, setTrashModal, handleOnConfirm } =
     useTrashModalHelper(docCollection);
@@ -165,10 +178,6 @@ export const RootAppSidebar = ({
         console.error(err);
       });
   }, [docCollection.id, collection, navigateHelper, open]);
-
-  const allPageActive = currentPath === '/all';
-
-  const trashActive = currentPath === '/trash';
 
   return (
     <AppSidebar
