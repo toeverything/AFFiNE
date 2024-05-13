@@ -7,14 +7,11 @@ import { useCallback, useEffect, useMemo } from 'react';
 import { useGeneralShortcuts } from '../../../hooks/affine/use-shortcuts';
 import { NavigatorService } from '../services/navigator';
 import * as styles from './navigation-buttons.css';
-import { useRegisterNavigationCommands } from './use-register-navigation-commands';
 
 export const NavigationButtons = () => {
   const t = useAFFiNEI18N();
 
   const shortcuts = useGeneralShortcuts().shortcuts;
-
-  useRegisterNavigationCommands();
 
   const shortcutsObject = useMemo(() => {
     const goBack = t['com.affine.keyboardShortcuts.goBack']();
