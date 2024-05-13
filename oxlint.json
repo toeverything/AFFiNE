@@ -1,5 +1,11 @@
 {
   "rules": {
+    // allow
+    "import/named": "allow",
+    "no-await-in-loop": "allow",
+    // deny
+    "unicorn/prefer-array-some": "error",
+    "unicorn/no-useless-promise-resolve-reject": "error",
     "import/no-cycle": [
       "error",
       {
