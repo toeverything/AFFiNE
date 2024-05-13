@@ -103,8 +103,8 @@ export const BlocksuiteDocEditor = forwardRef<
   }, []);
 
   return (
-    <div className={styles.docEditorRoot}>
-      <div className={styles.affineDocViewport}>
+    <>
+      <div className={styles.affineDocViewport} style={{ height: '100%' }}>
         {!isJournal ? (
           <adapted.DocTitle doc={page} ref={titleRef} />
         ) : (
@@ -133,7 +133,7 @@ export const BlocksuiteDocEditor = forwardRef<
       {portals.map(p => (
         <Fragment key={p.id}>{p.portal}</Fragment>
       ))}
-    </div>
+    </>
   );
 });
 

@@ -8,7 +8,7 @@ export const docEditorRoot = style({
 export const affineDocViewport = style({
   display: 'flex',
   flexDirection: 'column',
-  paddingBottom: '150px',
+  paddingBottom: '100px',
 });
 
 export const docContainer = style({
