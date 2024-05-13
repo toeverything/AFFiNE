@@ -13,7 +13,7 @@
   ],
   "packageRules": [
     {
-      "matchPackageNames": ["napi", "napi-build", "napi-derive"],
+      "matchDepNames": ["napi", "napi-build", "napi-derive"],
       "rangeStrategy": "replace",
       "groupName": "napi-rs"
     },
@@ -33,11 +33,7 @@
       "groupName": "opentelemetry"
     },
     {
-      "matchPackageNames": [
-        "@prisma/client",
-        "@prisma/instrumentation",
-        "prisma"
-      ],
+      "matchDepNames": ["@prisma/client", "@prisma/instrumentation", "prisma"],
       "rangeStrategy": "replace",
       "groupName": "prisma"
     },
@@ -47,7 +43,7 @@
       "groupName": "electron-forge"
     },
     {
-      "matchPackageNames": ["oxlint"],
+      "matchDepNames": ["oxlint"],
       "rangeStrategy": "replace",
       "groupName": "oxlint"
     },
@@ -73,7 +69,7 @@
     {
       "groupName": "rust toolchain",
       "matchManagers": ["custom.regex"],
-      "matchPackageNames": ["rustc"]
+      "matchDepNames": ["rustc"]
     }
   ],
   "commitMessagePrefix": "chore: ",
