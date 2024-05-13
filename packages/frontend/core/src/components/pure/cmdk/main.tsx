@@ -8,7 +8,14 @@ import type { CommandCategory } from '@toeverything/infra';
 import clsx from 'clsx';
 import { Command } from 'cmdk';
 import { useAtom } from 'jotai';
-import { Suspense, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import {
+  Suspense,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 
 import {
   cmdkQueryAtom,
@@ -164,6 +171,8 @@ export const CMDKContainer = ({
   const isInEditor = pageMeta !== undefined;
   const [opening, setOpening] = useState(open);
   const { syncing, progress } = useDocEngineStatus();
+  const [showLoading, setShowLoading] = useState(false);
+
   const inputRef = useRef<HTMLInputElement>(null);
 
   // fix list height animation on opening
@@ -182,6 +191,25 @@ export const CMDKContainer = ({
     }
     return;
   }, [open]);
+
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout | null = null;
+
+    if (syncing && !showLoading) {
+      timeoutId = setTimeout(() => {
+        setShowLoading(true);
+      }, 500);
+    } else if (!syncing && showLoading) {
+      setShowLoading(false);
+    }
+
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [syncing, showLoading]);
+
   return (
     <Command
       {...rest}
@@ -205,7 +233,7 @@ export const CMDKContainer = ({
           inEditor: isInEditor,
         })}
       >
-        {syncing ? (
+        {showLoading ? (
           <Loading
             size={24}
             progress={progress ? Math.max(progress, 0.2) : undefined}
