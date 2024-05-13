@@ -3,8 +3,8 @@
   "private": true,
   "type": "module",
   "devDependencies": {
-    "@blocksuite/global": "0.14.0-canary-202405100201-e591bb8",
-    "@blocksuite/store": "0.14.0-canary-202405100201-e591bb8",
+    "@blocksuite/global": "0.15.0-canary-202405122323-6456127",
+    "@blocksuite/store": "0.15.0-canary-202405122323-6456127",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "vitest": "1.6.0"
