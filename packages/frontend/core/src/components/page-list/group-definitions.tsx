@@ -4,7 +4,7 @@ import { TagService } from '@affine/core/modules/tag';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { FavoritedIcon, FavoriteIcon } from '@blocksuite/icons';
 import type { DocMeta } from '@blocksuite/store';
-import { useLiveData, useService } from '@toeverything/infra';
+import { LiveData, useLiveData, useService } from '@toeverything/infra';
 import { type ReactNode, useMemo } from 'react';
 
 import * as styles from './group-definitions.css';
@@ -128,7 +128,17 @@ const GroupTagLabel = ({ tag, count }: { tag: Tag; count: number }) => {
 };
 export const useTagGroupDefinitions = (): ItemGroupDefinition<ListItem>[] => {
   const tagList = useService(TagService).tagList;
-  const tags = useLiveData(tagList.tags$);
+  const sortedTagsLiveData$ = useMemo(
+    () =>
+      LiveData.computed(get =>
+        get(tagList.tags$).sort((a, b) =>
+          get(a.value$).localeCompare(get(b.value$))
+        )
+      ),
+    [tagList.tags$]
+  );
+  const tags = useLiveData(sortedTagsLiveData$);
+
   const t = useAFFiNEI18N();
 
   const untagged = useMemo(

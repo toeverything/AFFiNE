@@ -1,4 +1,5 @@
 import { IconButton } from '@affine/component';
+import { PageDisplayMenu } from '@affine/core/components/page-list';
 import { Header } from '@affine/core/components/pure/header';
 import { WorkspaceModeFilterTab } from '@affine/core/components/pure/workspace-mode-filter-tab';
 import { PlusIcon } from '@blocksuite/icons';
@@ -16,16 +17,19 @@ export const CollectionDetailHeader = ({
   return (
     <Header
       right={
-        <IconButton
-          type="default"
-          icon={<PlusIcon fontSize={16} />}
-          onClick={onCreate}
-          className={clsx(
-            styles.headerCreateNewButton,
-            styles.headerCreateNewCollectionIconButton,
-            !showCreateNew && styles.headerCreateNewButtonHidden
-          )}
-        />
+        <>
+          <IconButton
+            type="default"
+            icon={<PlusIcon fontSize={16} />}
+            onClick={onCreate}
+            className={clsx(
+              styles.headerCreateNewButton,
+              styles.headerCreateNewCollectionIconButton,
+              !showCreateNew && styles.headerCreateNewButtonHidden
+            )}
+          />
+          <PageDisplayMenu />
+        </>
       }
       center={<WorkspaceModeFilterTab activeFilter={'collections'} />}
     />
