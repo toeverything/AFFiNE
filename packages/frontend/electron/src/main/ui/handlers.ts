@@ -13,7 +13,6 @@ import { getOnboardingWindow } from '../onboarding';
 import type { NamespaceHandlers } from '../type';
 import { launchStage } from '../windows-manager/stage';
 import { getChallengeResponse } from './challenge';
-import { getGoogleOauthCode } from './google-auth';
 
 export let isOnline = true;
 
@@ -62,9 +61,6 @@ export const uiHandlers = {
   },
   handleNetworkChange: async (_, _isOnline: boolean) => {
     isOnline = _isOnline;
-  },
-  getGoogleOauthCode: async () => {
-    return getGoogleOauthCode();
   },
   getChallengeResponse: async (_, challenge: string) => {
     return getChallengeResponse(challenge);
