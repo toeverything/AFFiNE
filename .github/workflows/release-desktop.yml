@@ -66,103 +66,103 @@ jobs:
           name: web
           path: packages/frontend/electron/resources/web-static
 
-  make-distribution:
-    strategy:
-      matrix:
-        spec:
-          - runner: macos-14
-            platform: darwin
-            arch: x64
-            target: x86_64-apple-darwin
-          - runner: macos-14
-            platform: darwin
-            arch: arm64
-            target: aarch64-apple-darwin
-          - runner: ubuntu-latest
-            platform: linux
-            arch: x64
-            target: x86_64-unknown-linux-gnu
-    runs-on: ${{ matrix.spec.runner }}
-    needs: before-make
-    env:
-      APPLE_ID: ${{ secrets.APPLE_ID }}
-      APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-      SKIP_GENERATE_ASSETS: 1
-      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-      SENTRY_PROJECT: 'affine'
-      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-      SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-      MIXPANEL_TOKEN: ${{ secrets.MIXPANEL_TOKEN }}
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup Version
-        id: version
-        uses: ./.github/actions/setup-version
-      - name: Setup Node.js
-        timeout-minutes: 10
-        uses: ./.github/actions/setup-node
-        with:
-          extra-flags: workspaces focus @affine/electron @affine/monorepo
-          hard-link-nm: false
-          nmHoistingLimits: workspaces
-          enableScripts: false
-      - name: Build AFFiNE native
-        uses: ./.github/actions/build-rust
-        with:
-          target: ${{ matrix.spec.target }}
-          package: '@affine/native'
-          nx_token: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
-      - uses: actions/download-artifact@v4
-        with:
-          name: web
-          path: packages/frontend/electron/resources/web-static
+  # make-distribution:
+  #   strategy:
+  #     matrix:
+  #       spec:
+  #         - runner: macos-14
+  #           platform: darwin
+  #           arch: x64
+  #           target: x86_64-apple-darwin
+  #         - runner: macos-14
+  #           platform: darwin
+  #           arch: arm64
+  #           target: aarch64-apple-darwin
+  #         - runner: ubuntu-latest
+  #           platform: linux
+  #           arch: x64
+  #           target: x86_64-unknown-linux-gnu
+  #   runs-on: ${{ matrix.spec.runner }}
+  #   needs: before-make
+  #   env:
+  #     APPLE_ID: ${{ secrets.APPLE_ID }}
+  #     APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+  #     APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+  #     SKIP_GENERATE_ASSETS: 1
+  #     SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+  #     SENTRY_PROJECT: 'affine'
+  #     SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+  #     SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+  #     MIXPANEL_TOKEN: ${{ secrets.MIXPANEL_TOKEN }}
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: Setup Version
+  #       id: version
+  #       uses: ./.github/actions/setup-version
+  #     - name: Setup Node.js
+  #       timeout-minutes: 10
+  #       uses: ./.github/actions/setup-node
+  #       with:
+  #         extra-flags: workspaces focus @affine/electron @affine/monorepo
+  #         hard-link-nm: false
+  #         nmHoistingLimits: workspaces
+  #         enableScripts: false
+  #     - name: Build AFFiNE native
+  #       uses: ./.github/actions/build-rust
+  #       with:
+  #         target: ${{ matrix.spec.target }}
+  #         package: '@affine/native'
+  #         nx_token: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
+  #     - uses: actions/download-artifact@v4
+  #       with:
+  #         name: web
+  #         path: packages/frontend/electron/resources/web-static
 
-      - name: Build Desktop Layers
-        run: yarn workspace @affine/electron build
+  #     - name: Build Desktop Layers
+  #       run: yarn workspace @affine/electron build
 
-      - name: Signing By Apple Developer ID
-        if: ${{ matrix.spec.platform == 'darwin' }}
-        uses: apple-actions/import-codesign-certs@v3
-        with:
-          p12-file-base64: ${{ secrets.CERTIFICATES_P12 }}
-          p12-password: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
+  #     - name: Signing By Apple Developer ID
+  #       if: ${{ matrix.spec.platform == 'darwin' }}
+  #       uses: apple-actions/import-codesign-certs@v3
+  #       with:
+  #         p12-file-base64: ${{ secrets.CERTIFICATES_P12 }}
+  #         p12-password: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
 
-      - name: Install fuse on Linux (for patching AppImage)
-        if: ${{ matrix.spec.platform == 'linux' }}
-        run: |
-          sudo add-apt-repository universe
-          sudo apt install libfuse2 -y
+  #     - name: Install fuse on Linux (for patching AppImage)
+  #       if: ${{ matrix.spec.platform == 'linux' }}
+  #       run: |
+  #         sudo add-apt-repository universe
+  #         sudo apt install libfuse2 -y
 
-      - name: make
-        run: yarn workspace @affine/electron make --platform=${{ matrix.spec.platform }} --arch=${{ matrix.spec.arch }}
-        env:
-          SKIP_WEB_BUILD: 1
-          HOIST_NODE_MODULES: 1
+  #     - name: make
+  #       run: yarn workspace @affine/electron make --platform=${{ matrix.spec.platform }} --arch=${{ matrix.spec.arch }}
+  #       env:
+  #         SKIP_WEB_BUILD: 1
+  #         HOIST_NODE_MODULES: 1
 
-      - name: signing DMG
-        if: ${{ matrix.spec.platform == 'darwin' }}
-        run: |
-          codesign --force --sign "Developer ID Application: TOEVERYTHING PTE. LTD." packages/frontend/electron/out/${{ env.BUILD_TYPE }}/make/AFFiNE.dmg
+  #     - name: signing DMG
+  #       if: ${{ matrix.spec.platform == 'darwin' }}
+  #       run: |
+  #         codesign --force --sign "Developer ID Application: TOEVERYTHING PTE. LTD." packages/frontend/electron/out/${{ env.BUILD_TYPE }}/make/AFFiNE.dmg
 
-      - name: Save artifacts (mac)
-        if: ${{ matrix.spec.platform == 'darwin' }}
-        run: |
-          mkdir -p builds
-          mv packages/frontend/electron/out/*/make/*.dmg ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-macos-${{ matrix.spec.arch }}.dmg
-          mv packages/frontend/electron/out/*/make/zip/darwin/${{ matrix.spec.arch }}/*.zip ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-macos-${{ matrix.spec.arch }}.zip
-      - name: Save artifacts (linux)
-        if: ${{ matrix.spec.platform == 'linux' }}
-        run: |
-          mkdir -p builds
-          mv packages/frontend/electron/out/*/make/zip/linux/x64/*.zip ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-x64.zip
-          mv packages/frontend/electron/out/*/make/*.AppImage ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-x64.appimage
+  #     - name: Save artifacts (mac)
+  #       if: ${{ matrix.spec.platform == 'darwin' }}
+  #       run: |
+  #         mkdir -p builds
+  #         mv packages/frontend/electron/out/*/make/*.dmg ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-macos-${{ matrix.spec.arch }}.dmg
+  #         mv packages/frontend/electron/out/*/make/zip/darwin/${{ matrix.spec.arch }}/*.zip ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-macos-${{ matrix.spec.arch }}.zip
+  #     - name: Save artifacts (linux)
+  #       if: ${{ matrix.spec.platform == 'linux' }}
+  #       run: |
+  #         mkdir -p builds
+  #         mv packages/frontend/electron/out/*/make/zip/linux/x64/*.zip ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-x64.zip
+  #         mv packages/frontend/electron/out/*/make/*.AppImage ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-x64.appimage
 
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: affine-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}-builds
-          path: builds
+  #     - name: Upload Artifact
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: affine-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}-builds
+  #         path: builds
 
   package-distribution-windows:
     strategy:
@@ -222,84 +222,32 @@ jobs:
           "FILES_TO_BE_SIGNED=$FILES_TO_BE_SIGNED" >> $env:GITHUB_OUTPUT
           echo $FILES_TO_BE_SIGNED
 
-      - name: Zip artifacts for faster upload
-        run: Compress-Archive -CompressionLevel Fastest -Path packages/frontend/electron/out/* -DestinationPath archive.zip
+      - name: bundle installer scripts
+        run: |
+          cd packages/frontend/electron
+          yarn esbuild scripts/make-squirrel.ts --bundle --outfile=scripts/make-squirrel.cjs --platform=node --external:original-fs --format=cjs
+          yarn esbuild scripts/make-nsis.ts --bundle --outfile=scripts/make-nsis.cjs --platform=node --external:original-fs --external:dmg-builder "--external:@babel/*" "--external:toml" --format=cjs
 
       - name: Save packaged artifacts for signing
         uses: actions/upload-artifact@v4
         with:
+          compression-level: 1
           name: packaged-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}
+          # the following will have base path of the repository packages/frontend/electron
           path: |
-            archive.zip
-            !**/*.map
+            packages/frontend/electron/scripts/make-*.cjs
+            packages/frontend/electron/resources/icons/
+            packages/frontend/electron/out/
 
-  sign-packaged-artifacts-windows:
+  sign-and-make-packaged-artifacts-windows:
     needs: package-distribution-windows
     uses: ./.github/workflows/windows-signer.yml
     with:
       files: ${{ needs.package-distribution-windows.outputs.FILES_TO_BE_SIGNED }}
       artifact-name: packaged-win32-x64
 
-  make-windows-installer:
-    needs: sign-packaged-artifacts-windows
-    strategy:
-      matrix:
-        spec:
-          - runner: windows-latest
-            platform: win32
-            arch: x64
-            target: x86_64-pc-windows-msvc
-    runs-on: ${{ matrix.spec.runner }}
-    outputs:
-      FILES_TO_BE_SIGNED: ${{ steps.get_files_to_be_signed.outputs.FILES_TO_BE_SIGNED }}
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup Node.js
-        timeout-minutes: 10
-        uses: ./.github/actions/setup-node
-        with:
-          extra-flags: workspaces focus @affine/electron @affine/monorepo
-          hard-link-nm: false
-          nmHoistingLimits: workspaces
-      - name: Download and overwrite packaged artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: signed-packaged-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}
-          path: .
-      - name: unzip file
-        run: Expand-Archive -Path signed.zip -DestinationPath packages/frontend/electron/out
-
-      - name: Make squirrel.windows installer
-        run: yarn workspace @affine/electron make-squirrel --platform=${{ matrix.spec.platform }} --arch=${{ matrix.spec.arch }}
-
-      - name: Make nsis.windows installer
-        run: yarn workspace @affine/electron make-nsis --platform=${{ matrix.spec.platform }} --arch=${{ matrix.spec.arch }}
-
-      - name: Zip artifacts for faster upload
-        run: Compress-Archive -CompressionLevel Fastest -Path packages/frontend/electron/out/${{ env.BUILD_TYPE }}/make/* -DestinationPath archive.zip
-
-      - name: get all files to be signed
-        id: get_files_to_be_signed
-        run: |
-          Set-Variable -Name FILES_TO_BE_SIGNED -Value ((Get-ChildItem -Path packages/frontend/electron/out/${{ env.BUILD_TYPE }}/make -Recurse -File | Where-Object { $_.Extension -in @(".exe", ".node", ".dll", ".msi") } | ForEach-Object { '"' + $_.FullName.Replace((Get-Location).Path + '\packages\frontend\electron\out\${{ env.BUILD_TYPE }}\make\', '') + '"' }) -join ' ')
-          "FILES_TO_BE_SIGNED=$FILES_TO_BE_SIGNED" >> $env:GITHUB_OUTPUT
-          echo $FILES_TO_BE_SIGNED
-
-      - name: Save installer for signing
-        uses: actions/upload-artifact@v4
-        with:
-          name: installer-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}
-          path: archive.zip
-
-  sign-installer-artifacts-windows:
-    needs: make-windows-installer
-    uses: ./.github/workflows/windows-signer.yml
-    with:
-      files: ${{ needs.make-windows-installer.outputs.FILES_TO_BE_SIGNED }}
-      artifact-name: installer-win32-x64
-
   finalize-installer-windows:
-    needs: [sign-installer-artifacts-windows, before-make]
+    needs: [sign-and-make-packaged-artifacts-windows, before-make]
     strategy:
       matrix:
         spec:
@@ -312,17 +260,15 @@ jobs:
       - name: Download and overwrite installer artifacts
         uses: actions/download-artifact@v4
         with:
-          name: signed-installer-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}
+          name: signed-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}
           path: .
-      - name: unzip file
-        run: Expand-Archive -Path signed.zip -DestinationPath packages/frontend/electron/out/${{ env.BUILD_TYPE }}/make
 
       - name: Save artifacts
         run: |
           mkdir -p builds
-          mv packages/frontend/electron/out/*/make/zip/win32/x64/AFFiNE*-win32-x64-*.zip ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-windows-x64.zip
-          mv packages/frontend/electron/out/*/make/squirrel.windows/x64/*.exe ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-windows-x64.exe
-          mv packages/frontend/electron/out/*/make/nsis.windows/x64/*.exe ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-windows-x64.nsis.exe
+          mv zip/win32/x64/AFFiNE*-win32-x64-*.zip ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-windows-x64.zip
+          mv squirrel.windows/x64/*.exe ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-windows-x64.exe
+          mv nsis.windows/x64/*.exe ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-windows-x64.nsis.exe
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
@@ -330,81 +276,81 @@ jobs:
           name: affine-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}-builds
           path: builds
 
-  release:
-    needs: [before-make, make-distribution, finalize-installer-windows]
-    runs-on: ubuntu-latest
+  # release:
+  #   needs: [before-make, make-distribution, finalize-installer-windows]
+  #   runs-on: ubuntu-latest
 
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
-        with:
-          name: web
-          path: web-static
-      - name: Zip web-static
-        run: zip -r web-static.zip web-static
-      - name: Download Artifacts (macos-x64)
-        uses: actions/download-artifact@v4
-        with:
-          name: affine-darwin-x64-builds
-          path: ./
-      - name: Download Artifacts (macos-arm64)
-        uses: actions/download-artifact@v4
-        with:
-          name: affine-darwin-arm64-builds
-          path: ./
-      - name: Download Artifacts (windows-x64)
-        uses: actions/download-artifact@v4
-        with:
-          name: affine-win32-x64-builds
-          path: ./
-      - name: Download Artifacts (linux-x64)
-        uses: actions/download-artifact@v4
-        with:
-          name: affine-linux-x64-builds
-          path: ./
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 18
-      - name: Generate Release yml
-        run: |
-          node ./packages/frontend/electron/scripts/generate-yml.js
-        env:
-          RELEASE_VERSION: ${{ needs.before-make.outputs.RELEASE_VERSION }}
-      - name: Create Release Draft
-        if: ${{ github.ref_type == 'tag' }}
-        uses: softprops/action-gh-release@v2
-        with:
-          name: ${{ needs.before-make.outputs.RELEASE_VERSION }}
-          body: ''
-          draft: ${{ github.event.inputs.is-draft }}
-          prerelease: ${{ github.event.inputs.is-pre-release }}
-          files: |
-            ./VERSION
-            ./*.zip
-            ./*.dmg
-            ./*.exe
-            ./*.appimage
-            ./*.apk
-            ./*.yml
-      - name: Create Nightly Release Draft
-        if: ${{ github.ref_type == 'branch' }}
-        uses: softprops/action-gh-release@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-        with:
-          # Temporarily, treat release from branch as nightly release, artifact saved to AFFiNE-Releases.
-          # Need to improve internal build and nightly release logic.
-          repository: 'toeverything/AFFiNE-Releases'
-          name: ${{ needs.before-make.outputs.RELEASE_VERSION }}
-          tag_name: ${{ needs.before-make.outputs.RELEASE_VERSION }}
-          body: ''
-          draft: false
-          prerelease: true
-          files: |
-            ./VERSION
-            ./*.zip
-            ./*.dmg
-            ./*.exe
-            ./*.appimage
-            ./*.apk
-            ./*.yml
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: actions/download-artifact@v4
+  #       with:
+  #         name: web
+  #         path: web-static
+  #     - name: Zip web-static
+  #       run: zip -r web-static.zip web-static
+  #     - name: Download Artifacts (macos-x64)
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: affine-darwin-x64-builds
+  #         path: ./
+  #     - name: Download Artifacts (macos-arm64)
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: affine-darwin-arm64-builds
+  #         path: ./
+  #     - name: Download Artifacts (windows-x64)
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: affine-win32-x64-builds
+  #         path: ./
+  #     - name: Download Artifacts (linux-x64)
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: affine-linux-x64-builds
+  #         path: ./
+  #     - uses: actions/setup-node@v4
+  #       with:
+  #         node-version: 18
+  #     - name: Generate Release yml
+  #       run: |
+  #         node ./packages/frontend/electron/scripts/generate-yml.js
+  #       env:
+  #         RELEASE_VERSION: ${{ needs.before-make.outputs.RELEASE_VERSION }}
+  #     - name: Create Release Draft
+  #       if: ${{ github.ref_type == 'tag' }}
+  #       uses: softprops/action-gh-release@v2
+  #       with:
+  #         name: ${{ needs.before-make.outputs.RELEASE_VERSION }}
+  #         body: ''
+  #         draft: ${{ github.event.inputs.is-draft }}
+  #         prerelease: ${{ github.event.inputs.is-pre-release }}
+  #         files: |
+  #           ./VERSION
+  #           ./*.zip
+  #           ./*.dmg
+  #           ./*.exe
+  #           ./*.appimage
+  #           ./*.apk
+  #           ./*.yml
+  #     - name: Create Nightly Release Draft
+  #       if: ${{ github.ref_type == 'branch' }}
+  #       uses: softprops/action-gh-release@v2
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+  #       with:
+  #         # Temporarily, treat release from branch as nightly release, artifact saved to AFFiNE-Releases.
+  #         # Need to improve internal build and nightly release logic.
+  #         repository: 'toeverything/AFFiNE-Releases'
+  #         name: ${{ needs.before-make.outputs.RELEASE_VERSION }}
+  #         tag_name: ${{ needs.before-make.outputs.RELEASE_VERSION }}
+  #         body: ''
+  #         draft: false
+  #         prerelease: true
+  #         files: |
+  #           ./VERSION
+  #           ./*.zip
+  #           ./*.dmg
+  #           ./*.exe
+  #           ./*.appimage
+  #           ./*.apk
+  #           ./*.yml

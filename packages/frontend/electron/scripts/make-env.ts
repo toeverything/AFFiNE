@@ -5,10 +5,13 @@ import { z } from 'zod';
 
 const ReleaseTypeSchema = z.enum(['stable', 'beta', 'canary', 'internal']);
 
-const __dirname = fileURLToPath(new URL('.', import.meta.url));
+const dirname =
+  typeof __dirname !== 'undefined'
+    ? __dirname
+    : fileURLToPath(new URL('.', import.meta.url));
 
-const REPO_ROOT = path.resolve(__dirname, '..', '..', '..', '..');
-const ROOT = path.resolve(__dirname, '..');
+const REPO_ROOT = path.resolve(dirname, '..', '..', '..', '..');
+const ROOT = path.resolve(dirname, '..');
 
 const envBuildType = (process.env.BUILD_TYPE || 'canary').trim().toLowerCase();
 const buildType = ReleaseTypeSchema.parse(envBuildType);
