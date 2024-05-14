@@ -157,7 +157,7 @@ test('should be able calc quota after switch plan', async t => {
   );
   t.is(size1, 0, 'failed to check free plan blob size');
 
-  quota.switchUserQuota(u1.id, QuotaType.ProPlanV1);
+  await quota.switchUserQuota(u1.id, QuotaType.ProPlanV1);
 
   const size2 = await checkBlobSize(
     app,
