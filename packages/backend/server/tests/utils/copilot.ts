@@ -46,7 +46,7 @@ export class MockCopilotTestProvider
     return MockCopilotTestProvider.capabilities;
   }
 
-  override isModelAvailable(model: string): boolean {
+  override async isModelAvailable(model: string): Promise<boolean> {
     return this.availableModels.includes(model);
   }
 

@@ -48,7 +48,7 @@ export function registerCopilotProvider<
     const providerConfig = config.plugins.copilot?.[type];
     if (!provider.assetsConfig(providerConfig as C)) {
       throw new Error(
-        `Invalid configuration for copilot provider ${type}: ${providerConfig}`
+        `Invalid configuration for copilot provider ${type}: ${JSON.stringify(providerConfig)}`
       );
     }
     const instance = new provider(providerConfig as C);
@@ -116,11 +116,11 @@ export class CopilotProviderService {
     return this.cachedProviders.get(provider)!;
   }
 
-  getProviderByCapability<C extends CopilotCapability>(
+  async getProviderByCapability<C extends CopilotCapability>(
     capability: C,
     model?: string,
     prefer?: CopilotProviderType
-  ): CapabilityToCopilotProvider[C] | null {
+  ): Promise<CapabilityToCopilotProvider[C] | null> {
     const providers = PROVIDER_CAPABILITY_MAP.get(capability);
     if (Array.isArray(providers) && providers.length) {
       let selectedProvider: CopilotProviderType | undefined = prefer;
@@ -137,7 +137,7 @@ export class CopilotProviderService {
           const provider = this.getProvider(selectedProvider);
           if (provider.getCapabilities().includes(capability)) {
             if (model) {
-              if (provider.isModelAvailable(model)) {
+              if (await provider.isModelAvailable(model)) {
                 return provider as CapabilityToCopilotProvider[C];
               }
             } else {

@@ -50,7 +50,7 @@ export class FalProvider
     return FalProvider.capabilities;
   }
 
-  isModelAvailable(model: string): boolean {
+  async isModelAvailable(model: string): Promise<boolean> {
     return this.availableModels.includes(model);
   }
 

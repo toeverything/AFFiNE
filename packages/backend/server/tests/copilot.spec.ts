@@ -36,7 +36,7 @@ test.beforeEach(async t => {
         plugins: {
           copilot: {
             openai: {
-              apiKey: '1',
+              apiKey: process.env.COPILOT_OPENAI_API_KEY ?? '1',
             },
             fal: {
               apiKey: '1',
@@ -368,7 +368,9 @@ test('should be able to get provider', async t => {
   const { provider } = t.context;
 
   {
-    const p = provider.getProviderByCapability(CopilotCapability.TextToText);
+    const p = await provider.getProviderByCapability(
+      CopilotCapability.TextToText
+    );
     t.is(
       p?.type.toString(),
       'openai',
@@ -377,7 +379,7 @@ test('should be able to get provider', async t => {
   }
 
   {
-    const p = provider.getProviderByCapability(
+    const p = await provider.getProviderByCapability(
       CopilotCapability.TextToEmbedding
     );
     t.is(
@@ -388,7 +390,9 @@ test('should be able to get provider', async t => {
   }
 
   {
-    const p = provider.getProviderByCapability(CopilotCapability.TextToImage);
+    const p = await provider.getProviderByCapability(
+      CopilotCapability.TextToImage
+    );
     t.is(
       p?.type.toString(),
       'fal',
@@ -397,7 +401,9 @@ test('should be able to get provider', async t => {
   }
 
   {
-    const p = provider.getProviderByCapability(CopilotCapability.ImageToImage);
+    const p = await provider.getProviderByCapability(
+      CopilotCapability.ImageToImage
+    );
     t.is(
       p?.type.toString(),
       'fal',
@@ -406,7 +412,9 @@ test('should be able to get provider', async t => {
   }
 
   {
-    const p = provider.getProviderByCapability(CopilotCapability.ImageToText);
+    const p = await provider.getProviderByCapability(
+      CopilotCapability.ImageToText
+    );
     t.is(
       p?.type.toString(),
       'openai',
@@ -417,7 +425,7 @@ test('should be able to get provider', async t => {
   // text-to-image use fal by default, but this case can use
   // model dall-e-3 to select openai provider
   {
-    const p = provider.getProviderByCapability(
+    const p = await provider.getProviderByCapability(
       CopilotCapability.TextToImage,
       'dall-e-3'
     );
@@ -427,14 +435,38 @@ test('should be able to get provider', async t => {
       'should get provider support text-to-image and model'
     );
   }
+
+  // gpt4o is not defined now, but it already published by openai
+  // we should check from online api if it is available
+  {
+    const p = await provider.getProviderByCapability(
+      CopilotCapability.ImageToText,
+      'gpt-4o'
+    );
+    t.is(
+      p?.type.toString(),
+      'openai',
+      'should get provider support text-to-image and model'
+    );
+  }
+
+  // if a model is not defined and not available in online api
+  // it should return null
+  {
+    const p = await provider.getProviderByCapability(
+      CopilotCapability.ImageToText,
+      'gpt-4-not-exist'
+    );
+    t.falsy(p, 'should not get provider');
+  }
 });
 
 test('should be able to register test provider', async t => {
   const { provider } = t.context;
   registerCopilotProvider(MockCopilotTestProvider);
 
-  const assertProvider = (cap: CopilotCapability) => {
-    const p = provider.getProviderByCapability(cap, 'test');
+  const assertProvider = async (cap: CopilotCapability) => {
+    const p = await provider.getProviderByCapability(cap, 'test');
     t.is(
       p?.type,
       CopilotProviderType.Test,
@@ -442,9 +474,9 @@ test('should be able to register test provider', async t => {
     );
   };
 
-  assertProvider(CopilotCapability.TextToText);
-  assertProvider(CopilotCapability.TextToEmbedding);
-  assertProvider(CopilotCapability.TextToImage);
-  assertProvider(CopilotCapability.ImageToImage);
-  assertProvider(CopilotCapability.ImageToText);
+  await assertProvider(CopilotCapability.TextToText);
+  await assertProvider(CopilotCapability.TextToEmbedding);
+  await assertProvider(CopilotCapability.TextToImage);
+  await assertProvider(CopilotCapability.ImageToImage);
+  await assertProvider(CopilotCapability.ImageToText);
 });

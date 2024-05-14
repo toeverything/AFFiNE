@@ -1,5 +1,6 @@
 import assert from 'node:assert';
 
+import { Logger } from '@nestjs/common';
 import { ClientOptions, OpenAI } from 'openai';
 
 import {
@@ -51,7 +52,9 @@ export class OpenAIProvider
     'dall-e-3',
   ];
 
+  private readonly logger = new Logger(OpenAIProvider.type);
   private readonly instance: OpenAI;
+  private existsModels: string[] | undefined;
 
   constructor(config: ClientOptions) {
     assert(OpenAIProvider.assetsConfig(config));
@@ -70,8 +73,20 @@ export class OpenAIProvider
     return OpenAIProvider.capabilities;
   }
 
-  isModelAvailable(model: string): boolean {
-    return this.availableModels.includes(model);
+  async isModelAvailable(model: string): Promise<boolean> {
+    const knownModels = this.availableModels.includes(model);
+    if (knownModels) return true;
+
+    if (!this.existsModels) {
+      try {
+        this.existsModels = await this.instance.models
+          .list()
+          .then(({ data }) => data.map(m => m.id));
+      } catch (e) {
+        this.logger.error('Failed to fetch online model list', e);
+      }
+    }
+    return !!this.existsModels?.includes(model);
   }
 
   protected chatToGPTMessage(

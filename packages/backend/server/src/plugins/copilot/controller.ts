@@ -133,7 +133,7 @@ export class CopilotController {
     @Query() params: Record<string, string | string[]>
   ): Promise<string> {
     const { model } = await this.checkRequest(user.id, sessionId);
-    const provider = this.provider.getProviderByCapability(
+    const provider = await this.provider.getProviderByCapability(
       CopilotCapability.TextToText,
       model
     );
@@ -179,7 +179,7 @@ export class CopilotController {
   ): Promise<Observable<ChatEvent>> {
     try {
       const { model } = await this.checkRequest(user.id, sessionId);
-      const provider = this.provider.getProviderByCapability(
+      const provider = await this.provider.getProviderByCapability(
         CopilotCapability.TextToText,
         model
       );
@@ -246,7 +246,7 @@ export class CopilotController {
         sessionId,
         messageId
       );
-      const provider = this.provider.getProviderByCapability(
+      const provider = await this.provider.getProviderByCapability(
         hasAttachment
           ? CopilotCapability.ImageToImage
           : CopilotCapability.TextToImage,

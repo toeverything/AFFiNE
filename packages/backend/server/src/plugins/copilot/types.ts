@@ -172,7 +172,7 @@ export type CopilotImageOptions = z.infer<typeof CopilotImageOptionsSchema>;
 export interface CopilotProvider {
   readonly type: CopilotProviderType;
   getCapabilities(): CopilotCapability[];
-  isModelAvailable(model: string): boolean;
+  isModelAvailable(model: string): Promise<boolean>;
 }
 
 export interface CopilotTextToTextProvider extends CopilotProvider {
