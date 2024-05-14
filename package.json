@@ -28,7 +28,7 @@
     "lint:eslint:fix": "yarn lint:eslint --fix",
     "lint:prettier": "prettier --ignore-unknown --cache --check .",
     "lint:prettier:fix": "prettier --ignore-unknown --cache --write .",
-    "lint:ox": "oxlint -c oxlint.json --import-plugin --deny-warnings -D correctness -D nursery -D prefer-array-some -D no-useless-promise-resolve-reject -D perf -A no-undef -A consistent-type-exports -A default -A named -A ban-ts-comment -A export -A no-unresolved -A no-default-export -A no-duplicates -A no-side-effects-in-initialization -A no-named-as-default -A getter-return -A no-barrel-file -A no-await-in-loop",
+    "lint:ox": "oxlint -c oxlint.json --deny-warnings --import-plugin -D correctness -D perf",
     "lint": "yarn lint:eslint && yarn lint:prettier",
     "lint:fix": "yarn lint:eslint:fix && yarn lint:prettier:fix",
     "test": "vitest --run",
