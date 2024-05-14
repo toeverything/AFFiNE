@@ -917,7 +917,7 @@
   "com.affine.payment.benefit-6": "每个工作区的成员数量 ≤ {{capacity}}",
   "com.affine.payment.benefit-7": "{{capacity}} 日的历史版本记录",
   "com.affine.payment.billing-setting.ai-plan": "AFFiNE AI",
-  "com.affine.payment.billing-setting.ai.free-desc": "您当前处于<a>免费计划</a>.",
+  "com.affine.payment.billing-setting.ai.free-desc": "您当前处于<a> Free 计划</a>.",
   "com.affine.payment.billing-setting.ai.purchase": "购买",
   "com.affine.payment.billing-setting.cancel-subscription": "取消订阅",
   "com.affine.payment.billing-setting.cancel-subscription.description": "一旦您取消订阅，您将不再享受该计划的福利。",

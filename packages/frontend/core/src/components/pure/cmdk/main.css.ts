@@ -33,7 +33,7 @@ export const searchInput = style({
 export const pageTitleWrapper = style({
   display: 'flex',
   alignItems: 'center',
-  padding: '18px 24px 0 24px',
+  padding: '18px 16px 0',
   width: '100%',
 });
 export const pageTitle = style({
@@ -113,9 +113,11 @@ globalStyle(`${root} [cmdk-list]`, {
   overflow: 'auto',
   overscrollBehavior: 'contain',
   height: 'min(330px, calc(var(--cmdk-list-height) + 8px))',
-  padding: '0 0 8px 6px',
+  margin: '8px 6px',
   scrollbarGutter: 'stable',
   scrollPaddingBlock: '12px',
+  scrollbarWidth: 'thin',
+  scrollbarColor: `${cssVar('iconColor')} transparent`,
 });
 globalStyle(`${root} [cmdk-list]:not([data-opening])`, {
   transition: 'height .1s ease',
