@@ -55,7 +55,7 @@
     "cross-env": "^7.0.3",
     "electron": "^30.0.0",
     "electron-log": "^5.1.2",
-    "electron-squirrel-startup": "1.0.0",
+    "electron-squirrel-startup": "1.0.1",
     "electron-window-state": "^5.0.3",
     "esbuild": "^0.21.0",
     "fs-extra": "^11.2.0",
