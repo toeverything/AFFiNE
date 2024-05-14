@@ -42,7 +42,7 @@ export class CacheInterceptor implements NestInterceptor {
     if (preventKey) {
       const key = await this.getCacheKey(ctx, preventKey);
       if (key) {
-        this.logger.debug(`cache ${key} staled`);
+        this.logger.verbose(`cache ${key} staled`);
         await this.cache.delete(key);
       }
 
@@ -60,10 +60,10 @@ export class CacheInterceptor implements NestInterceptor {
     const cachedData = await this.cache.get(cacheKey);
 
     if (cachedData) {
-      this.logger.debug(`cache ${cacheKey} hit`);
+      this.logger.verbose(`cache ${cacheKey} hit`);
       return of(cachedData);
     } else {
-      this.logger.debug(`cache ${cacheKey} miss`);
+      this.logger.verbose(`cache ${cacheKey} miss`);
       return next.handle().pipe(
         mergeMap(async result => {
           await this.cache.set(cacheKey, result);

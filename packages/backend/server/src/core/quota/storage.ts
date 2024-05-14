@@ -72,10 +72,12 @@ export class QuotaManagementService {
       const total = usedSize + recvSize;
       // only skip total storage check if workspace has unlimited feature
       if (total > quota && !unlimited) {
-        this.logger.log(`storage size limit exceeded: ${total} > ${quota}`);
+        this.logger.warn(`storage size limit exceeded: ${total} > ${quota}`);
         return true;
       } else if (recvSize > blobLimit) {
-        this.logger.log(`blob size limit exceeded: ${recvSize} > ${blobLimit}`);
+        this.logger.warn(
+          `blob size limit exceeded: ${recvSize} > ${blobLimit}`
+        );
         return true;
       } else {
         return false;

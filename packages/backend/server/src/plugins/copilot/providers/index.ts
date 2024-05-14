@@ -52,7 +52,7 @@ export function registerCopilotProvider<
       );
     }
     const instance = new provider(providerConfig as C);
-    logger.log(
+    logger.debug(
       `Copilot provider ${type} registered, capabilities: ${provider.capabilities.join(', ')}`
     );
 

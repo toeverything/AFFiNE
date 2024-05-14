@@ -42,7 +42,7 @@ export class RedisMutexLocker implements ILocker {
 
   async lock(owner: string, key: string): Promise<Lock> {
     const lockKey = `MutexLock:${key}`;
-    this.logger.debug(`Client ${owner} is trying to lock resource ${key}`);
+    this.logger.verbose(`Client ${owner} is trying to lock resource ${key}`);
 
     const success = await this.redis.sendCommand(
       new Command('EVAL', [lockScript, '1', lockKey, owner])

@@ -102,7 +102,9 @@ export class DocHistoryManager {
           description: 'How many times the snapshot history created',
         })
         .add(1);
-      this.logger.log(`History created for ${id} in workspace ${workspaceId}.`);
+      this.logger.debug(
+        `History created for ${id} in workspace ${workspaceId}.`
+      );
     }
   }
 
