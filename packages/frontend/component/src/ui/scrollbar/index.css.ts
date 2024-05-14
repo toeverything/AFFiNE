@@ -27,7 +27,7 @@ export const scrollableViewport = style({
   height: '100%',
   width: '100%',
 });
-globalStyle(`${scrollableViewport} > div`, {
+globalStyle(`${scrollableViewport} >:first-child`, {
   display: 'contents !important',
 });
 export const scrollableContainer = style({
