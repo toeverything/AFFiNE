@@ -15,7 +15,7 @@ export class UpdatePrompts1715672224087 {
         model: 'gpt-4o',
       },
       data: {
-        name: 'gpt-4-vision-preview',
+        model: 'gpt-4-vision-preview',
       },
     });
   }
