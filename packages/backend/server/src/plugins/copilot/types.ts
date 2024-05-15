@@ -20,6 +20,7 @@ export interface CopilotConfig {
 
 export enum AvailableModels {
   // text to text
+  Gpt4Omni = 'gpt-4o',
   Gpt4VisionPreview = 'gpt-4-vision-preview',
   Gpt4TurboPreview = 'gpt-4-turbo-preview',
   Gpt35Turbo = 'gpt-3.5-turbo',

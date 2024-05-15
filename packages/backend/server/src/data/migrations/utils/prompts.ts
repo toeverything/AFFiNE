@@ -16,7 +16,7 @@ type Prompt = {
 export const prompts: Prompt[] = [
   {
     name: 'debug:chat:gpt4',
-    model: 'gpt-4-turbo-preview',
+    model: 'gpt-4o',
     messages: [
       {
         role: 'system',
@@ -27,7 +27,7 @@ export const prompts: Prompt[] = [
   },
   {
     name: 'chat:gpt4',
-    model: 'gpt-4-vision-preview',
+    model: 'gpt-4o',
     messages: [
       {
         role: 'system',
@@ -39,13 +39,13 @@ export const prompts: Prompt[] = [
   {
     name: 'debug:action:gpt4',
     action: 'text',
-    model: 'gpt-4-turbo-preview',
+    model: 'gpt-4o',
     messages: [],
   },
   {
     name: 'debug:action:vision4',
     action: 'text',
-    model: 'gpt-4-vision-preview',
+    model: 'gpt-4o',
     messages: [],
   },
   {
@@ -69,7 +69,7 @@ export const prompts: Prompt[] = [
   {
     name: 'Summary',
     action: 'Summary',
-    model: 'gpt-4-turbo-preview',
+    model: 'gpt-4o',
     messages: [
       {
         role: 'user',
@@ -81,7 +81,7 @@ export const prompts: Prompt[] = [
   {
     name: 'Summary the webpage',
     action: 'Summary the webpage',
-    model: 'gpt-4-turbo-preview',
+    model: 'gpt-4o',
     messages: [
       {
         role: 'user',
@@ -93,7 +93,7 @@ export const prompts: Prompt[] = [
   {
     name: 'Explain this',
     action: 'Explain this',
-    model: 'gpt-4-turbo-preview',
+    model: 'gpt-4o',
     messages: [
       {
         role: 'user',
@@ -128,7 +128,7 @@ content: {{content}}`,
   {
     name: 'Explain this code',
     action: 'Explain this code',
-    model: 'gpt-4-turbo-preview',
+    model: 'gpt-4o',
     messages: [
       {
         role: 'user',
@@ -140,7 +140,7 @@ content: {{content}}`,
   {
     name: 'Translate to',
     action: 'Translate',
-    model: 'gpt-4-turbo-preview',
+    model: 'gpt-4o',
     messages: [
       {
         role: 'user',
@@ -166,7 +166,7 @@ content: {{content}}`,
   {
     name: 'Write an article about this',
     action: 'Write an article about this',
-    model: 'gpt-4-turbo-preview',
+    model: 'gpt-4o',
     messages: [
       {
         role: 'user',
@@ -191,7 +191,7 @@ content: {{content}}`,
   {
     name: 'Write a twitter about this',
     action: 'Write a twitter about this',
-    model: 'gpt-4-turbo-preview',
+    model: 'gpt-4o',
     messages: [
       {
         role: 'user',
@@ -203,7 +203,7 @@ content: {{content}}`,
   {
     name: 'Write a poem about this',
     action: 'Write a poem about this',
-    model: 'gpt-4-turbo-preview',
+    model: 'gpt-4o',
     messages: [
       {
         role: 'user',
@@ -215,7 +215,7 @@ content: {{content}}`,
   {
     name: 'Write a blog post about this',
     action: 'Write a blog post about this',
-    model: 'gpt-4-turbo-preview',
+    model: 'gpt-4o',
     messages: [
       {
         role: 'user',
@@ -229,7 +229,7 @@ content: {{content}}`,
   {
     name: 'Write outline',
     action: 'Write outline',
-    model: 'gpt-4-turbo-preview',
+    model: 'gpt-4o',
     messages: [
       {
         role: 'user',
@@ -241,7 +241,7 @@ content: {{content}}`,
   {
     name: 'Change tone to',
     action: 'Change tone',
-    model: 'gpt-4-turbo-preview',
+    model: 'gpt-4o',
     messages: [
       {
         role: 'user',
@@ -262,7 +262,7 @@ content: {{content}}`,
   {
     name: 'Brainstorm ideas about this',
     action: 'Brainstorm ideas about this',
-    model: 'gpt-4-turbo-preview',
+    model: 'gpt-4o',
     messages: [
       {
         role: 'user',
@@ -286,7 +286,7 @@ content: {{content}}`,
   {
     name: 'Brainstorm mindmap',
     action: 'Brainstorm mindmap',
-    model: 'gpt-4-turbo-preview',
+    model: 'gpt-4o',
     messages: [
       {
         role: 'user',
@@ -298,7 +298,7 @@ content: {{content}}`,
   {
     name: 'Expand mind map',
     action: 'Expand mind map',
-    model: 'gpt-4-turbo-preview',
+    model: 'gpt-4o',
     messages: [
       {
         role: 'user',
@@ -316,7 +316,7 @@ content: {{content}}`,
   {
     name: 'Improve writing for it',
     action: 'Improve writing for it',
-    model: 'gpt-4-turbo-preview',
+    model: 'gpt-4o',
     messages: [
       {
         role: 'user',
@@ -328,7 +328,7 @@ content: {{content}}`,
   {
     name: 'Improve grammar for it',
     action: 'Improve grammar for it',
-    model: 'gpt-4-turbo-preview',
+    model: 'gpt-4o',
     messages: [
       {
         role: 'user',
@@ -340,7 +340,7 @@ content: {{content}}`,
   {
     name: 'Fix spelling for it',
     action: 'Fix spelling for it',
-    model: 'gpt-4-turbo-preview',
+    model: 'gpt-4o',
     messages: [
       {
         role: 'user',
@@ -352,7 +352,7 @@ content: {{content}}`,
   {
     name: 'Find action items from it',
     action: 'Find action items from it',
-    model: 'gpt-4-turbo-preview',
+    model: 'gpt-4o',
     messages: [
       {
         role: 'user',
@@ -374,7 +374,7 @@ content: {{content}}`,
   {
     name: 'Check code error',
     action: 'Check code error',
-    model: 'gpt-4-turbo-preview',
+    model: 'gpt-4o',
     messages: [
       {
         role: 'user',
@@ -386,7 +386,7 @@ content: {{content}}`,
   {
     name: 'Create a presentation',
     action: 'Create a presentation',
-    model: 'gpt-4-turbo-preview',
+    model: 'gpt-4o',
     messages: [
       {
         role: 'user',
@@ -398,7 +398,7 @@ content: {{content}}`,
   {
     name: 'Create headings',
     action: 'Create headings',
-    model: 'gpt-4-turbo-preview',
+    model: 'gpt-4o',
     messages: [
       {
         role: 'user',
@@ -487,7 +487,7 @@ content: {{content}}`,
   {
     name: 'Make it longer',
     action: 'Make it longer',
-    model: 'gpt-4-turbo-preview',
+    model: 'gpt-4o',
     messages: [
       {
         role: 'user',
@@ -512,7 +512,7 @@ content: {{content}}`,
   {
     name: 'Make it shorter',
     action: 'Make it shorter',
-    model: 'gpt-4-turbo-preview',
+    model: 'gpt-4o',
     messages: [
       {
         role: 'user',
@@ -536,7 +536,7 @@ content: {{content}}`,
   {
     name: 'Continue writing',
     action: 'Continue writing',
-    model: 'gpt-4-turbo-preview',
+    model: 'gpt-4o',
     messages: [
       {
         role: 'user',
