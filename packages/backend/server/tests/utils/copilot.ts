@@ -196,11 +196,12 @@ export async function chatWithText(
   app: INestApplication,
   userToken: string,
   sessionId: string,
-  messageId: string,
+  messageId?: string,
   prefix = ''
 ): Promise<string> {
+  const query = messageId ? `?messageId=${messageId}` : '';
   const res = await request(app.getHttpServer())
-    .get(`/api/copilot/chat/${sessionId}${prefix}?messageId=${messageId}`)
+    .get(`/api/copilot/chat/${sessionId}${prefix}${query}`)
     .auth(userToken, { type: 'bearer' })
     .expect(200);
 
@@ -211,7 +212,7 @@ export async function chatWithTextStream(
   app: INestApplication,
   userToken: string,
   sessionId: string,
-  messageId: string
+  messageId?: string
 ) {
   return chatWithText(app, userToken, sessionId, messageId, '/stream');
 }
@@ -220,7 +221,7 @@ export async function chatWithImages(
   app: INestApplication,
   userToken: string,
   sessionId: string,
-  messageId: string
+  messageId?: string
 ) {
   return chatWithText(app, userToken, sessionId, messageId, '/images');
 }

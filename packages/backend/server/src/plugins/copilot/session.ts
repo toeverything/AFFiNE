@@ -64,6 +64,13 @@ export class ChatSession implements AsyncDisposable {
     this.stashMessageCount += 1;
   }
 
+  revertLatestMessage() {
+    const messages = this.state.messages;
+    messages.splice(
+      messages.findLastIndex(({ role }) => role === AiPromptRole.user) + 1
+    );
+  }
+
   async getMessageById(messageId: string) {
     const message = await this.messageCache.get(messageId);
     if (!message || message.sessionId !== this.state.sessionId) {
@@ -285,6 +292,29 @@ export class ChatSessionService {
           messages: messages.success ? messages.data : [],
         };
       });
+  }
+
+  // revert the latest messages not generate by user
+  // after revert, we can retry the action
+  async revertLatestMessage(sessionId: string) {
+    await this.db.$transaction(async tx => {
+      const ids = await tx.aiSessionMessage
+        .findMany({
+          where: { sessionId },
+          select: { id: true, role: true },
+          orderBy: { createdAt: 'asc' },
+        })
+        .then(roles =>
+          roles
+            .slice(
+              roles.findLastIndex(({ role }) => role === AiPromptRole.user) + 1
+            )
+            .map(({ id }) => id)
+        );
+      if (ids.length) {
+        await tx.aiSessionMessage.deleteMany({ where: { id: { in: ids } } });
+      }
+    });
   }
 
   private calculateTokenSize(

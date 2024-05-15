@@ -228,6 +228,61 @@ test('should be able to chat with api', async t => {
   Sinon.restore();
 });
 
+test('should be able to retry with api', async t => {
+  const { app, storage } = t.context;
+
+  Sinon.stub(storage, 'handleRemoteLink').resolvesArg(2);
+
+  // normal chat
+  {
+    const { id } = await createWorkspace(app, token);
+    const sessionId = await createCopilotSession(
+      app,
+      token,
+      id,
+      randomUUID(),
+      promptName
+    );
+    const messageId = await createCopilotMessage(app, token, sessionId);
+    // chat 2 times
+    await chatWithText(app, token, sessionId, messageId);
+    await chatWithText(app, token, sessionId, messageId);
+
+    const histories = await getHistories(app, token, { workspaceId: id });
+    t.deepEqual(
+      histories.map(h => h.messages.map(m => m.content)),
+      [['generate text to text', 'generate text to text']],
+      'should be able to list history'
+    );
+  }
+
+  // retry chat
+  {
+    const { id } = await createWorkspace(app, token);
+    const sessionId = await createCopilotSession(
+      app,
+      token,
+      id,
+      randomUUID(),
+      promptName
+    );
+    const messageId = await createCopilotMessage(app, token, sessionId);
+    await chatWithText(app, token, sessionId, messageId);
+    // retry without message id
+    await chatWithText(app, token, sessionId);
+
+    // should only have 1 message
+    const histories = await getHistories(app, token, { workspaceId: id });
+    t.deepEqual(
+      histories.map(h => h.messages.map(m => m.content)),
+      [['generate text to text']],
+      'should be able to list history'
+    );
+  }
+
+  Sinon.restore();
+});
+
 test('should reject message from different session', async t => {
   const { app } = t.context;
 

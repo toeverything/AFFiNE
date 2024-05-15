@@ -362,6 +362,59 @@ test('should save message correctly', async t => {
   t.is(s.stashMessages.length, 0, 'should empty stash messages after save');
 });
 
+test('should revert message correctly', async t => {
+  const { prompt, session } = t.context;
+
+  // init session
+  let sessionId: string;
+  {
+    await prompt.set('prompt', 'model', [
+      { role: 'system', content: 'hello {{word}}' },
+    ]);
+
+    sessionId = await session.create({
+      docId: 'test',
+      workspaceId: 'test',
+      userId,
+      promptName: 'prompt',
+    });
+    const s = (await session.get(sessionId))!;
+
+    const message = (await session.createMessage({
+      sessionId,
+      content: 'hello',
+    }))!;
+
+    await s.pushByMessageId(message);
+    await s.save();
+  }
+
+  // check ChatSession behavior
+  {
+    const s = (await session.get(sessionId))!;
+    s.push({ role: 'assistant', content: 'hi', createdAt: new Date() });
+    await s.save();
+    const beforeRevert = s.finish({ word: 'world' });
+    t.is(beforeRevert.length, 3, 'should have three messages before revert');
+
+    s.revertLatestMessage();
+    const afterRevert = s.finish({ word: 'world' });
+    t.is(afterRevert.length, 2, 'should remove assistant message after revert');
+  }
+
+  // check database behavior
+  {
+    let s = (await session.get(sessionId))!;
+    const beforeRevert = s.finish({ word: 'world' });
+    t.is(beforeRevert.length, 3, 'should have three messages before revert');
+
+    await session.revertLatestMessage(sessionId);
+    s = (await session.get(sessionId))!;
+    const afterRevert = s.finish({ word: 'world' });
+    t.is(afterRevert.length, 2, 'should remove assistant message after revert');
+  }
+});
+
 // ==================== provider ====================
 
 test('should be able to get provider', async t => {
