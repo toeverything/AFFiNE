@@ -636,7 +636,7 @@ __metadata:
     ava: "npm:^6.1.2"
     cross-env: "npm:^7.0.3"
     nx: "npm:^19.0.0"
-    nx-cloud: "npm:^18.0.0"
+    nx-cloud: "npm:^19.0.0"
     rxjs: "npm:^7.8.1"
     ts-node: "npm:^10.9.2"
     typescript: "npm:^5.4.5"
@@ -651,7 +651,7 @@ __metadata:
     "@napi-rs/cli": "npm:3.0.0-alpha.55"
     lib0: "npm:^0.2.93"
     nx: "npm:^19.0.0"
-    nx-cloud: "npm:^18.0.0"
+    nx-cloud: "npm:^19.0.0"
     yjs: "npm:^13.6.14"
   languageName: unknown
   linkType: soft
@@ -9056,12 +9056,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@nrwl/nx-cloud@npm:18.0.0":
-  version: 18.0.0
-  resolution: "@nrwl/nx-cloud@npm:18.0.0"
+"@nrwl/nx-cloud@npm:19.0.0":
+  version: 19.0.0
+  resolution: "@nrwl/nx-cloud@npm:19.0.0"
   dependencies:
-    nx-cloud: "npm:18.0.0"
-  checksum: 10/081132b18b471c8db8b68ab25c6ea410bb8bbc12a531e3252b5e56bd3ad86d1ba6e52b0ea662f442e02a6687331a5c1a7062f3e405eac846f63579e262c34403
+    nx-cloud: "npm:19.0.0"
+  checksum: 10/2f519b935492e8718b22385ef31cf86204606118fe688170d977638567a5625e2ed5844b043f149bf0b888a1f2ac04b3b30f1c66686925779e7ae06d91cff81a
   languageName: node
   linkType: hard
 
@@ -16975,17 +16975,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"axios@npm:1.1.3":
-  version: 1.1.3
-  resolution: "axios@npm:1.1.3"
-  dependencies:
-    follow-redirects: "npm:^1.15.0"
-    form-data: "npm:^4.0.0"
-    proxy-from-env: "npm:^1.1.0"
-  checksum: 10/af4524f6a5100021924b5a49f49ccc7ea414c630b80dec8f127c82e1b8b8dfb214efdcb295820a1c2382e39208f03c365082aa9f369a1d8c29e7cfcc76a856e7
-  languageName: node
-  linkType: hard
-
 "axios@npm:^1.6.0, axios@npm:^1.6.1":
   version: 1.6.8
   resolution: "axios@npm:1.6.8"
@@ -22436,7 +22425,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"follow-redirects@npm:^1.0.0, follow-redirects@npm:^1.15.0, follow-redirects@npm:^1.15.6":
+"follow-redirects@npm:^1.0.0, follow-redirects@npm:^1.15.6":
   version: 1.15.6
   resolution: "follow-redirects@npm:1.15.6"
   peerDependenciesMeta:
@@ -29441,23 +29430,23 @@ __metadata:
   languageName: node
   linkType: hard
 
-"nx-cloud@npm:18.0.0, nx-cloud@npm:^18.0.0":
-  version: 18.0.0
-  resolution: "nx-cloud@npm:18.0.0"
+"nx-cloud@npm:19.0.0, nx-cloud@npm:^19.0.0":
+  version: 19.0.0
+  resolution: "nx-cloud@npm:19.0.0"
   dependencies:
-    "@nrwl/nx-cloud": "npm:18.0.0"
-    axios: "npm:1.1.3"
+    "@nrwl/nx-cloud": "npm:19.0.0"
+    axios: "npm:^1.6.0"
     chalk: "npm:^4.1.0"
     dotenv: "npm:~10.0.0"
     fs-extra: "npm:^11.1.0"
     node-machine-id: "npm:^1.1.12"
     open: "npm:~8.4.0"
     strip-json-comments: "npm:^3.1.1"
-    tar: "npm:6.1.11"
+    tar: "npm:6.2.1"
     yargs-parser: "npm:>=21.1.1"
   bin:
     nx-cloud: bin/nx-cloud.js
-  checksum: 10/e023f25d09be7ea69456f74e166b955e2e2c20a5de7946740344ca139f116339ed73f453ca7d1141d7943d3af008cdbef4bc577445afa4549326a7ca42e547ed
+  checksum: 10/335beeb87d11728a72d6f95ae4bd128b50a63ba8f814940c33ee15411521d76554a2bbc73b2ae9869e7bb5f22576fbb47e14b829da22efdd0540935b1813c036
   languageName: node
   linkType: hard
 
@@ -34512,21 +34501,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tar@npm:6.1.11":
-  version: 6.1.11
-  resolution: "tar@npm:6.1.11"
-  dependencies:
-    chownr: "npm:^2.0.0"
-    fs-minipass: "npm:^2.0.0"
-    minipass: "npm:^3.0.0"
-    minizlib: "npm:^2.1.1"
-    mkdirp: "npm:^1.0.3"
-    yallist: "npm:^4.0.0"
-  checksum: 10/0e6789e66475922b8e0d1ee648cb26e0ede9a0635284269ca71b2d8acd507bc59ad5557032f0192f8ff22680b50cb66792b56f0240f484fe0d7d8cef81c1b959
-  languageName: node
-  linkType: hard
-
-"tar@npm:^6.0.5, tar@npm:^6.1.11, tar@npm:^6.1.12, tar@npm:^6.1.2, tar@npm:^6.2.0":
+"tar@npm:6.2.1, tar@npm:^6.0.5, tar@npm:^6.1.11, tar@npm:^6.1.12, tar@npm:^6.1.2, tar@npm:^6.2.0":
   version: 6.2.1
   resolution: "tar@npm:6.2.1"
   dependencies:
