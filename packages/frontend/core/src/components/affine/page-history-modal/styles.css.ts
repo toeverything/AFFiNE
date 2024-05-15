@@ -67,7 +67,7 @@ export const previewContainer = style({
         },
       ])
     ),
-    '&[data-distance="> 20"]': {
+    '&[data-distance="20"],&[data-distance="> 20"]': {
       transform: `scale(0) translateY(calc(${-8 * 20}px + ${previewTopOffset}))`,
       opacity: 0,
       zIndex: -20,
