@@ -39,7 +39,11 @@ const FooterActions = ({ onDismiss }: { onDismiss: () => void }) => {
   return (
     <div className={styles.footerActions}>
       <a href="https://ai.affine.pro" target="_blank" rel="noreferrer">
-        <Button className={styles.actionButton} type="plain">
+        <Button
+          className={styles.actionButton}
+          type="plain"
+          onClick={onDismiss}
+        >
           {t['com.affine.ai-onboarding.local.action-learn-more']()}
         </Button>
       </a>
