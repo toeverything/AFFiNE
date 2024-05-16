@@ -6,6 +6,7 @@ export const cardForeground = createVar();
 export const cardBorderColor = createVar();
 export const actionTextColor = createVar();
 export const iconColor = createVar();
+export const closeIconColor = createVar();
 
 export const card = style({
   borderRadius: 8,
@@ -82,7 +83,7 @@ export const closeButton = style({
   },
 });
 export const closeIcon = style({
-  color: `${cardForeground} !important`,
+  color: `${closeIconColor} !important`,
 });
 
 export const main = style({

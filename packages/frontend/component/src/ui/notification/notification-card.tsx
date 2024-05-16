@@ -11,6 +11,7 @@ import {
   getCardBorderColor,
   getCardColor,
   getCardForegroundColor,
+  getCloseIconColor,
   getIconColor,
 } from './utils';
 
@@ -48,6 +49,7 @@ export const NotificationCard = ({ notification }: NotificationCardProps) => {
         [styles.cardForeground]: getCardForegroundColor(style),
         [styles.actionTextColor]: getActionTextColor(style, theme),
         [styles.iconColor]: getIconColor(style, theme, iconColor),
+        [styles.closeIconColor]: getCloseIconColor(style),
       })}
       data-with-icon={icon ? '' : undefined}
       {...rootAttrs}

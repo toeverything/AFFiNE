@@ -59,7 +59,7 @@ export const getIconColor = (
   theme: NotificationTheme,
   iconColor?: string
 ) => {
-  if (style === 'normal') {
+  if (style !== 'alert') {
     const map: Record<NotificationTheme, string> = {
       error: cssVar('errorColor'),
       info: cssVar('processingColor'),
@@ -70,4 +70,10 @@ export const getIconColor = (
   }
 
   return iconColor || cssVar('pureWhite');
+};
+
+export const getCloseIconColor = (style: NotificationStyle) => {
+  return style === 'alert'
+    ? getCardForegroundColor(style)
+    : cssVar('iconColor');
 };
