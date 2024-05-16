@@ -13,34 +13,9 @@
   ],
   "packageRules": [
     {
-      "matchDepNames": ["napi", "napi-build", "napi-derive"],
-      "rangeStrategy": "replace",
-      "groupName": "napi-rs"
-    },
-    {
       "matchPackagePatterns": ["^eslint", "^@typescript-eslint"],
       "rangeStrategy": "replace",
       "groupName": "linter"
-    },
-    {
-      "matchPackagePatterns": ["^@nestjs"],
-      "rangeStrategy": "replace",
-      "groupName": "nestjs"
-    },
-    {
-      "matchPackagePatterns": ["^@opentelemetry"],
-      "rangeStrategy": "replace",
-      "groupName": "opentelemetry"
-    },
-    {
-      "matchDepNames": ["@prisma/client", "@prisma/instrumentation", "prisma"],
-      "rangeStrategy": "replace",
-      "groupName": "prisma"
-    },
-    {
-      "matchPackagePatterns": ["^@electron-forge"],
-      "rangeStrategy": "replace",
-      "groupName": "electron-forge"
     },
     {
       "matchDepNames": ["oxlint"],
@@ -60,11 +35,6 @@
       "matchPackagePatterns": ["*"],
       "excludePackagePatterns": ["^@blocksuite/", "oxlint"],
       "matchUpdateTypes": ["minor", "patch"]
-    },
-    {
-      "matchPackagePatterns": ["*"],
-      "rangeStrategy": "replace",
-      "excludePackagePatterns": ["^@blocksuite/"]
     },
     {
       "groupName": "rust toolchain",

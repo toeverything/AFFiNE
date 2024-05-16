@@ -145,7 +145,7 @@ describe('testing for client update', () => {
         response403
       ),
       http.get(
-        `https://github.com/toeverything/AFFiNE/releases/download/v0.11.1-canary.2/latest${platformTail}.yml`,
+        `https://github.com/toeverything/AFFiNE/releases/download/v0.11.1-canary.2/canary${platformTail}.yml`,
         async () => {
           const buffer = await fs.readFile(
             nodePath.join(
