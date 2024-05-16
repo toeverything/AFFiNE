@@ -22,7 +22,7 @@
     "jotai-effect": "^1.0.0",
     "lodash-es": "^4.17.21",
     "nanoid": "^5.0.7",
-    "react": "18.3.1",
+    "react": "19.0.0-rc-4c2e457c7c-20240522",
     "tinykeys": "patch:tinykeys@npm%3A2.1.0#~/.yarn/patches/tinykeys-npm-2.1.0-819feeaed0.patch",
     "yjs": "^13.6.14",
     "zod": "^3.22.4"
@@ -34,7 +34,7 @@
     "@blocksuite/presets": "0.15.0-canary-202405231409-6934e1f",
     "@testing-library/react": "^15.0.0",
     "async-call-rpc": "^6.4.0",
-    "react": "^18.2.0",
+    "react": "19.0.0-rc-4c2e457c7c-20240522",
     "rxjs": "^7.8.1",
     "vite": "^5.2.8",
     "vite-plugin-dts": "3.9.1",

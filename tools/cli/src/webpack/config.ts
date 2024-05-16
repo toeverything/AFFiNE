@@ -249,35 +249,46 @@ export const createConfiguration: (
             {
               test: /\.tsx?$/,
               exclude: /node_modules/,
-              loader: 'swc-loader',
-              options: {
-                // https://swc.rs/docs/configuring-swc/
-                jsc: {
-                  preserveAllComments: true,
-                  parser: {
-                    syntax: 'typescript',
-                    dynamicImport: true,
-                    topLevelAwait: false,
-                    tsx: true,
-                    decorators: true,
-                  },
-                  target: 'es2022',
-                  externalHelpers: false,
-                  transform: {
-                    react: {
-                      runtime: 'automatic',
-                      refresh: buildFlags.mode === 'development' && {
-                        refreshReg: '$RefreshReg$',
-                        refreshSig: '$RefreshSig$',
-                        emitFullSignatures: true,
-                      },
-                    },
-                    useDefineForClassFields: false,
+              use: [
+                {
+                  loader: 'babel-loader',
+                  options: {
+                    plugins: ['babel-plugin-react-compiler'],
                   },
                 },
-                sourceMaps: true,
-                inlineSourcesContent: true,
-              },
+                {
+                  loader: 'swc-loader',
+                  options: {
+                    parseMap: true,
+                    // https://swc.rs/docs/configuring-swc/
+                    jsc: {
+                      preserveAllComments: true,
+                      parser: {
+                        syntax: 'typescript',
+                        dynamicImport: true,
+                        topLevelAwait: false,
+                        tsx: true,
+                        decorators: true,
+                      },
+                      target: 'es2022',
+                      externalHelpers: false,
+                      transform: {
+                        react: {
+                          runtime: 'automatic',
+                          refresh: buildFlags.mode === 'development' && {
+                            refreshReg: '$RefreshReg$',
+                            refreshSig: '$RefreshSig$',
+                            emitFullSignatures: true,
+                          },
+                        },
+                        useDefineForClassFields: false,
+                      },
+                    },
+                    sourceMaps: true,
+                    inlineSourcesContent: true,
+                  },
+                },
+              ],
             },
             {
               test: /\.(png|jpg|gif|svg|webp|mp4|zip)$/,
