@@ -71,9 +71,7 @@ if (process.env.SENTRY_DSN) {
     dsn: process.env.SENTRY_DSN,
     ipcMode: IPCMode.Protocol,
     transportOptions: {
-      maxQueueAgeDays: 30,
-      maxQueueCount: 100,
-      beforeSend: () => (isOnline ? 'send' : 'queue'),
+      shouldSend: () => isOnline,
     },
   });
 }

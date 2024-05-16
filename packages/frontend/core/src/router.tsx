@@ -150,7 +150,9 @@ export const viewRoutes = [
 const createBrowserRouter = wrapCreateBrowserRouter(
   reactRouterCreateBrowserRouter
 );
-export const router = createBrowserRouter(topLevelRoutes, {
+export const router = (
+  window.SENTRY_RELEASE ? createBrowserRouter : reactRouterCreateBrowserRouter
+)(topLevelRoutes, {
   future: {
     v7_normalizeFormMethod: true,
   },

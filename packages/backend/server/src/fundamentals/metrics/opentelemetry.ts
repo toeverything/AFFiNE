@@ -23,7 +23,11 @@ import {
   SpanExporter,
   TraceIdRatioBasedSampler,
 } from '@opentelemetry/sdk-trace-node';
-import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
+import {
+  SEMRESATTRS_K8S_NAMESPACE_NAME,
+  SEMRESATTRS_SERVICE_NAME,
+  SEMRESATTRS_SERVICE_VERSION,
+} from '@opentelemetry/semantic-conventions';
 import prismaInstrument from '@prisma/instrumentation';
 
 import { PrismaMetricProducer } from './prisma';
@@ -51,9 +55,9 @@ export abstract class OpentelemetryFactory {
 
   getResource() {
     return new Resource({
-      [SemanticResourceAttributes.K8S_NAMESPACE_NAME]: AFFiNE.AFFINE_ENV,
-      [SemanticResourceAttributes.SERVICE_NAME]: AFFiNE.flavor.type,
-      [SemanticResourceAttributes.SERVICE_VERSION]: AFFiNE.version,
+      [SEMRESATTRS_K8S_NAMESPACE_NAME]: AFFiNE.AFFINE_ENV,
+      [SEMRESATTRS_SERVICE_NAME]: AFFiNE.flavor.type,
+      [SEMRESATTRS_SERVICE_VERSION]: AFFiNE.version,
     });
   }
 

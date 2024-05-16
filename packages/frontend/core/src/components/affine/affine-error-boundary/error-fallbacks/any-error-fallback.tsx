@@ -21,7 +21,9 @@ export const AnyErrorFallback: FC<FallbackProps> = props => {
       title={t['com.affine.error.unexpected-error.title']()}
       resetError={reloadPage}
       buttonText={t['com.affine.error.reload']()}
-      description={error.message ?? error.toString()}
+      description={
+        'message' in (error as Error) ? (error as Error).message : `${error}`
+      }
     />
   );
 };
