@@ -1,7 +1,7 @@
+import { type Tokenizer } from '@affine/server-native';
 import { Injectable, Logger } from '@nestjs/common';
 import { AiPrompt, PrismaClient } from '@prisma/client';
 import Mustache from 'mustache';
-import { Tiktoken } from 'tiktoken';
 
 import {
   getTokenEncoder,
@@ -27,7 +27,7 @@ function extractMustacheParams(template: string) {
 
 export class ChatPrompt {
   private readonly logger = new Logger(ChatPrompt.name);
-  public readonly encoder?: Tiktoken;
+  public readonly encoder: Tokenizer | null;
   private readonly promptTokenSize: number;
   private readonly templateParamKeys: string[] = [];
   private readonly templateParams: PromptParams = {};
@@ -53,8 +53,7 @@ export class ChatPrompt {
   ) {
     this.encoder = getTokenEncoder(model);
     this.promptTokenSize =
-      this.encoder?.encode_ordinary(messages.map(m => m.content).join('') || '')
-        .length || 0;
+      this.encoder?.count(messages.map(m => m.content).join('') || '') || 0;
     this.templateParamKeys = extractMustacheParams(
       messages.map(m => m.content).join('')
     );
@@ -86,7 +85,7 @@ export class ChatPrompt {
   }
 
   encode(message: string) {
-    return this.encoder?.encode_ordinary(message).length || 0;
+    return this.encoder?.count(message) || 0;
   }
 
   private checkParams(params: PromptParams, sessionId?: string) {
@@ -128,10 +127,6 @@ export class ChatPrompt {
       params,
       content: Mustache.render(content, params),
     }));
-  }
-
-  free() {
-    this.encoder?.free();
   }
 }
 

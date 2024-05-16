@@ -2,11 +2,16 @@
 
 pub mod file_type;
 pub mod hashcash;
+pub mod tiktoken;
 
 use std::fmt::{Debug, Display};
 
 use napi::{bindgen_prelude::*, Error, Result, Status};
 use y_octo::Doc;
+
+#[cfg(not(target_arch = "arm"))]
+#[global_allocator]
+static ALLOC: mimalloc::MiMalloc = mimalloc::MiMalloc;
 
 #[macro_use]
 extern crate napi_derive;

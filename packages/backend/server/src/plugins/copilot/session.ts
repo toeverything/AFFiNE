@@ -164,7 +164,6 @@ export class ChatSession implements AsyncDisposable {
   }
 
   async [Symbol.asyncDispose]() {
-    this.state.prompt.free();
     await this.save?.();
   }
 }
@@ -323,7 +322,7 @@ export class ChatSessionService {
   ): number {
     const encoder = getTokenEncoder(model);
     return messages
-      .map(m => encoder?.encode_ordinary(m.content).length || 0)
+      .map(m => encoder?.count(m.content) ?? 0)
       .reduce((total, length) => total + length, 0);
   }
 

@@ -652,6 +652,8 @@ __metadata:
     lib0: "npm:^0.2.93"
     nx: "npm:^19.0.0"
     nx-cloud: "npm:^19.0.0"
+    tiktoken: "npm:^1.0.15"
+    tinybench: "npm:^2.8.0"
     yjs: "npm:^13.6.14"
   languageName: unknown
   linkType: soft
@@ -752,7 +754,6 @@ __metadata:
     socket.io: "npm:^4.7.5"
     stripe: "npm:^15.0.0"
     supertest: "npm:^7.0.0"
-    tiktoken: "npm:^1.0.13"
     ts-node: "npm:^10.9.2"
     typescript: "npm:^5.4.5"
     ws: "npm:^8.16.0"
@@ -34707,10 +34708,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tiktoken@npm:^1.0.13":
-  version: 1.0.14
-  resolution: "tiktoken@npm:1.0.14"
-  checksum: 10/14600edfc5f12753524f91a21ff3b70eaaa450c932efb1ce668d31658e7ab9495910ef3c47256a50705af231d628034a1307b03055ca1f68f4a0b6711868bed2
+"tiktoken@npm:^1.0.15":
+  version: 1.0.15
+  resolution: "tiktoken@npm:1.0.15"
+  checksum: 10/8bca51e6e6c095319ecf2ff39afb1556141c785e7f213d5235c71a5ef2fc96a9ded19c77499d04d3173c5a92cd29f3e49effa95b80497ead5d69b5c0c762a635
   languageName: node
   linkType: hard
 
@@ -34742,10 +34743,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tinybench@npm:^2.5.1":
-  version: 2.7.0
-  resolution: "tinybench@npm:2.7.0"
-  checksum: 10/8baa1d514f7df8c7edf3739639007b4094a91e8a398b87aca64cb31bdae4b6f53ff84975b6e4e4288cf0089148cdfff5183413ec7e0606e108720e203747162b
+"tinybench@npm:^2.5.1, tinybench@npm:^2.8.0":
+  version: 2.8.0
+  resolution: "tinybench@npm:2.8.0"
+  checksum: 10/9731d070bedee6d44f3bb565862c284776e6adfd70d81a051a5c79b77479408509b448ad8d467d538d18bc0ae857b3ead8168d7e98d7f1355f8a0b01aa2f163b
   languageName: node
   linkType: hard
 

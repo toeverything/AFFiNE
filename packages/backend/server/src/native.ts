@@ -7,10 +7,10 @@ try {
   const require = createRequire(import.meta.url);
   serverNativeModule =
     process.arch === 'arm64'
-      ? require('../../../server-native.arm64.node')
+      ? require('../server-native.arm64.node')
       : process.arch === 'arm'
-        ? require('../../../server-native.armv7.node')
-        : require('../../../server-native.node');
+        ? require('../server-native.armv7.node')
+        : require('../server-native.node');
 }
 
 export const mergeUpdatesInApplyWay = serverNativeModule.mergeUpdatesInApplyWay;
@@ -30,3 +30,5 @@ export const mintChallengeResponse = async (resource: string, bits: number) => {
 };
 
 export const getMime = serverNativeModule.getMime;
+export const Tokenizer = serverNativeModule.Tokenizer;
+export const fromModelName = serverNativeModule.fromModelName;

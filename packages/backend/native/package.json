@@ -28,6 +28,7 @@
   },
   "scripts": {
     "test": "node --test ./__tests__/**/*.spec.js",
+    "bench": "node ./benchmark/index.js",
     "build": "napi build --release --strip --no-const-enum",
     "build:debug": "napi build"
   },
@@ -36,6 +37,8 @@
     "lib0": "^0.2.93",
     "nx": "^19.0.0",
     "nx-cloud": "^19.0.0",
+    "tiktoken": "^1.0.15",
+    "tinybench": "^2.8.0",
     "yjs": "^13.6.14"
   }
 }

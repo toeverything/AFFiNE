@@ -10,13 +10,20 @@ crate-type = ["cdylib"]
 chrono = "0.4"
 file-format = { version = "0.25", features = ["reader"] }
 napi = { version = "2", default-features = false, features = [
-  "napi5",
+  "napi6",
   "async",
 ] }
 napi-derive = { version = "2", features = ["type-def"] }
 rand = "0.8"
 sha3 = "0.10"
+tiktoken-rs = "0.5.9"
 y-octo = { git = "https://github.com/y-crdt/y-octo.git", branch = "main" }
+
+[target.'cfg(not(target_os = "linux"))'.dependencies]
+mimalloc = { workspace = true }
+
+[target.'cfg(all(target_os = "linux", not(target_arch = "arm")))'.dependencies]
+mimalloc = { workspace = true, features = ["local_dynamic_tls"] }
 
 [dev-dependencies]
 tokio = "1"

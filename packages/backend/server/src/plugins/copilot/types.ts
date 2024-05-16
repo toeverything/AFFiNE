@@ -1,13 +1,9 @@
+import { type Tokenizer } from '@affine/server-native';
 import { AiPromptRole } from '@prisma/client';
 import type { ClientOptions as OpenAIClientOptions } from 'openai';
-import {
-  encoding_for_model,
-  get_encoding,
-  Tiktoken,
-  TiktokenModel,
-} from 'tiktoken';
 import { z } from 'zod';
 
+import { fromModelName } from '../../native';
 import type { ChatPrompt } from './prompt';
 import type { FalConfig } from './providers/fal';
 
@@ -37,17 +33,17 @@ export enum AvailableModels {
 
 export type AvailableModel = keyof typeof AvailableModels;
 
-export function getTokenEncoder(model?: string | null): Tiktoken | undefined {
-  if (!model) return undefined;
+export function getTokenEncoder(model?: string | null): Tokenizer | null {
+  if (!model) return null;
   const modelStr = AvailableModels[model as AvailableModel];
-  if (!modelStr) return undefined;
+  if (!modelStr) return null;
   if (modelStr.startsWith('gpt')) {
-    return encoding_for_model(modelStr as TiktokenModel);
+    return fromModelName(modelStr);
   } else if (modelStr.startsWith('dall')) {
     // dalle don't need to calc the token
-    return undefined;
+    return null;
   } else {
-    return get_encoding('cl100k_base');
+    return fromModelName('gpt-4-turbo-preview');
   }
 }
 

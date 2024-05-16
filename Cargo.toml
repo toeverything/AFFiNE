@@ -6,6 +6,9 @@ members = [
   "./packages/backend/native",
 ]
 
+[workspace.dependencies]
+mimalloc = "0.1"
+
 [profile.dev.package.sqlx-macros]
 opt-level = 3
 

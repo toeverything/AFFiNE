@@ -18,7 +18,7 @@ registerStorageProvider('fs', (config, bucket) => {
 })
 export class StorageProviderModule {}
 
-export * from './native';
+export * from '../../native';
 export type {
   BlobInputType,
   BlobOutputType,
