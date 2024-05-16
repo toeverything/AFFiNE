@@ -9,7 +9,9 @@ import {
 import { PublicLinkDisableModal } from '@affine/component/disable-public-link';
 import { Button } from '@affine/component/ui/button';
 import { Menu, MenuItem, MenuTrigger } from '@affine/component/ui/menu';
+import { useSharingUrl } from '@affine/core/hooks/affine/use-share-url';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
+import { ServerConfigService } from '@affine/core/modules/cloud';
 import { ShareService } from '@affine/core/modules/share-doc';
 import { mixpanel } from '@affine/core/utils';
 import { WorkspaceFlavour } from '@affine/env/workspace';
@@ -29,11 +31,9 @@ import { cssVar } from '@toeverything/theme';
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 
-import { ServerConfigService } from '../../../../modules/cloud';
 import { CloudSvg } from '../cloud-svg';
 import * as styles from './index.css';
 import type { ShareMenuProps } from './share-menu';
-import { useSharingUrl } from './use-share-url';
 
 export const LocalSharePage = (props: ShareMenuProps) => {
   const t = useAFFiNEI18N();

@@ -42,7 +42,8 @@ type KeyboardShortcutsI18NKeys =
   | 'groupDatabase'
   | 'moveUp'
   | 'moveDown'
-  | 'divider';
+  | 'divider'
+  | 'copy-private-link';
 
 // TODO(550): remove this hook after 'useAFFiNEI18N' support scoped i18n
 const useKeyboardShortcutsI18N = () => {
@@ -81,8 +82,9 @@ export const useWinGeneralKeyboardShortcuts = (): ShortcutMap => {
       // not implement yet
       // [t('appendDailyNote')]: 'Ctrl + Alt + A',
       [t('expandOrCollapseSidebar')]: ['Ctrl', '/'],
-      [t('goBack')]: ['Ctrl + ['],
-      [t('goForward')]: ['Ctrl + ]'],
+      [t('goBack')]: ['Ctrl', '['],
+      [t('goForward')]: ['Ctrl', ']'],
+      [t('copy-private-link')]: ['⌘', '⇧', 'C'],
     }),
     [t]
   );
@@ -97,8 +99,9 @@ export const useMacGeneralKeyboardShortcuts = (): ShortcutMap => {
       // not implement yet
       // [t('appendDailyNote')]: '⌘ + ⌥ + A',
       [t('expandOrCollapseSidebar')]: ['⌘', '/'],
-      [t('goBack')]: ['⌘ + ['],
-      [t('goForward')]: ['⌘ + ]'],
+      [t('goBack')]: ['⌘ ', '['],
+      [t('goForward')]: ['⌘ ', ']'],
+      [t('copy-private-link')]: ['⌘', '⇧', 'C'],
     }),
     [t]
   );

@@ -1,4 +1,5 @@
 import type { BlockElement } from '@blocksuite/block-std';
+import type { Disposable } from '@blocksuite/global/utils';
 import type {
   AffineEditorContainer,
   EdgelessEditor,
@@ -101,6 +102,7 @@ export const BlocksuiteEditorContainer = forwardRef<
   { page, mode, className, style, defaultSelectedBlockId, customRenderers },
   ref
 ) {
+  const [scrolled, setScrolled] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const docRef = useRef<PageEditor>(null);
   const edgelessRef = useRef<EdgelessEditor>(null);
@@ -208,27 +210,61 @@ export const BlocksuiteEditorContainer = forwardRef<
   const blockElement = useBlockElementById(rootRef, defaultSelectedBlockId);
 
   useEffect(() => {
-    if (blockElement) {
-      affineEditorContainerProxy.updateComplete
-        .then(() => {
-          if (mode === 'page') {
-            blockElement.scrollIntoView({
-              behavior: 'smooth',
-              block: 'center',
-            });
-          }
-          const selectManager = affineEditorContainerProxy.host?.selection;
-          if (!blockElement.path.length || !selectManager) {
-            return;
-          }
-          const newSelection = selectManager.create('block', {
-            path: blockElement.path,
-          });
-          selectManager.set([newSelection]);
-        })
-        .catch(console.error);
-    }
-  }, [blockElement, affineEditorContainerProxy, mode]);
+    let disposable: Disposable | undefined = undefined;
+
+    // update the hash when the block is selected
+    const handleUpdateComplete = () => {
+      const selectManager = affineEditorContainerProxy?.host?.selection;
+      if (!selectManager) return;
+
+      disposable = selectManager.slots.changed.on(() => {
+        const selectedBlock = selectManager.find('block');
+        const selectedId = selectedBlock?.blockId;
+
+        const newHash = selectedId ? `#${selectedId}` : '';
+        //TODO: use activeView.history which is in workbench instead of history.replaceState
+        history.replaceState(null, '', `${window.location.pathname}${newHash}`);
+
+        // Dispatch a custom event to notify the hash change
+        const hashChangeEvent = new CustomEvent('hashchange-custom', {
+          detail: { hash: newHash },
+        });
+        window.dispatchEvent(hashChangeEvent);
+      });
+    };
+
+    // scroll to the block element when the block id is provided and the page is first loaded
+    const handleScrollToBlock = (blockElement: BlockElement) => {
+      if (mode === 'page') {
+        blockElement.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+        });
+      }
+      const selectManager = affineEditorContainerProxy.host?.selection;
+      if (!blockElement.path.length || !selectManager) {
+        return;
+      }
+      const newSelection = selectManager.create('block', {
+        path: blockElement.path,
+      });
+      selectManager.set([newSelection]);
+      setScrolled(true);
+    };
+
+    affineEditorContainerProxy.updateComplete
+      .then(() => {
+        if (blockElement && !scrolled) {
+          handleScrollToBlock(blockElement);
+        }
+        handleUpdateComplete();
+      })
+      .catch(console.error);
+
+    return () => {
+      disposable?.dispose();
+    };
+  }, [blockElement, affineEditorContainerProxy, mode, scrolled]);
 
   return (
     <div

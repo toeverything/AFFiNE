@@ -1,6 +1,8 @@
 import { Button } from '@affine/component/ui/button';
 import { Divider } from '@affine/component/ui/divider';
 import { Menu } from '@affine/component/ui/menu';
+import { useRegisterCopyLinkCommands } from '@affine/core/hooks/affine/use-register-copy-link-commands';
+import { useIsActiveView } from '@affine/core/modules/workbench';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { WebIcon } from '@blocksuite/icons';
@@ -65,6 +67,13 @@ const LocalShareMenu = (props: ShareMenuProps) => {
 const CloudShareMenu = (props: ShareMenuProps) => {
   const t = useAFFiNEI18N();
 
+  // only enable copy link commands when the view is active and the workspace is cloud
+  const isActiveView = useIsActiveView();
+  useRegisterCopyLinkCommands({
+    workspaceId: props.workspaceMetadata.id,
+    docId: props.currentPage.id,
+    isActiveView,
+  });
   return (
     <Menu
       items={<ShareMenuContent {...props} />}

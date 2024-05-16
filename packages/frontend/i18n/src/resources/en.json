@@ -1322,5 +1322,6 @@
   "will be moved to Trash": "{{title}} will be moved to Trash",
   "com.affine.ai-onboarding.edgeless.get-started": "Get Started",
   "com.affine.ai-onboarding.edgeless.purchase": "Upgrade to Unlimited Usage",
-  "will delete member": "will delete member"
+  "will delete member": "will delete member",
+  "com.affine.keyboardShortcuts.copy-private-link": "Copy Private Link"
 }

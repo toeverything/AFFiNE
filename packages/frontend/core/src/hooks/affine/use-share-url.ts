@@ -2,7 +2,7 @@ import { toast } from '@affine/component';
 import { getAffineCloudBaseUrl } from '@affine/core/modules/cloud/services/fetch';
 import { mixpanel } from '@affine/core/utils';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 type UrlType = 'share' | 'workspace';
 
@@ -14,8 +14,23 @@ type UseSharingUrl = {
 
 const useGenerateUrl = ({ workspaceId, pageId, urlType }: UseSharingUrl) => {
   // to generate a private url like https://app.affine.app/workspace/123/456
+  // or https://app.affine.app/workspace/123/456#block-123
+
   // to generate a public url like https://app.affine.app/share/123/456
   // or https://app.affine.app/share/123/456?mode=edgeless
+
+  const [hash, setHash] = useState(window.location.hash);
+
+  useEffect(() => {
+    const handleLocationChange = () => {
+      setHash(window.location.hash);
+    };
+    window.addEventListener('hashchange-custom', handleLocationChange);
+
+    return () => {
+      window.removeEventListener('hashchange-custom', handleLocationChange);
+    };
+  }, [setHash]);
 
   const baseUrl = getAffineCloudBaseUrl();
 
@@ -25,12 +40,12 @@ const useGenerateUrl = ({ workspaceId, pageId, urlType }: UseSharingUrl) => {
 
     try {
       return new URL(
-        `${baseUrl}/${urlType}/${workspaceId}/${pageId}`
+        `${baseUrl}/${urlType}/${workspaceId}/${pageId}${urlType === 'workspace' ? `${hash}` : ''}`
       ).toString();
     } catch (e) {
       return null;
     }
-  }, [baseUrl, pageId, urlType, workspaceId]);
+  }, [baseUrl, hash, pageId, urlType, workspaceId]);
 
   return url;
 };

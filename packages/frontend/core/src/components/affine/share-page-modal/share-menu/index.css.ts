@@ -142,3 +142,8 @@ export const journalShareButton = style({
   height: 32,
   padding: '0px 8px',
 });
+export const shortcutStyle = style({
+  fontSize: cssVar('fontXs'),
+  color: cssVar('textSecondaryColor'),
+  fontWeight: 400,
+});

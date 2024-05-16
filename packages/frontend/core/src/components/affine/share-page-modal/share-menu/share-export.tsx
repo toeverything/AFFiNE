@@ -1,15 +1,15 @@
-import { Button } from '@affine/component/ui/button';
+import { MenuIcon, MenuItem } from '@affine/component';
 import { Divider } from '@affine/component/ui/divider';
 import { ExportMenuItems } from '@affine/core/components/page-list';
+import { useExportPage } from '@affine/core/hooks/affine/use-export-page';
+import { useSharingUrl } from '@affine/core/hooks/affine/use-share-url';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { LinkIcon } from '@blocksuite/icons';
+import { CopyIcon } from '@blocksuite/icons';
 import { DocService, useLiveData, useService } from '@toeverything/infra';
 
-import { useExportPage } from '../../../../hooks/affine/use-export-page';
 import * as styles from './index.css';
 import type { ShareMenuProps } from './share-menu';
-import { useSharingUrl } from './use-share-url';
 
 export const ShareExport = ({
   workspaceMetadata: workspace,
@@ -26,6 +26,7 @@ export const ShareExport = ({
   });
   const exportHandler = useExportPage(currentPage);
   const currentMode = useLiveData(doc.mode$);
+  const isMac = environment.isBrowser && environment.isMacOs;
 
   return (
     <>
@@ -52,15 +53,24 @@ export const ShareExport = ({
             {t['com.affine.share-menu.share-privately.description']()}
           </div>
           <div>
-            <Button
+            <MenuItem
               className={styles.shareLinkStyle}
-              onClick={onClickCopyLink}
-              icon={<LinkIcon />}
-              type="plain"
+              onSelect={onClickCopyLink}
+              block
               disabled={!sharingUrl}
+              preFix={
+                <MenuIcon>
+                  <CopyIcon fontSize={16} />
+                </MenuIcon>
+              }
+              endFix={
+                <div className={styles.shortcutStyle}>
+                  {isMac ? '⌘ + ⌥ + C' : 'Ctrl + Shift + C'}
+                </div>
+              }
             >
               {t['com.affine.share-menu.copy-private-link']()}
-            </Button>
+            </MenuItem>
           </div>
         </div>
       ) : null}
