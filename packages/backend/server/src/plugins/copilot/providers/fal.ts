@@ -14,7 +14,7 @@ export type FalConfig = {
 };
 
 export type FalResponse = {
-  detail: Array<{ msg: string }>;
+  detail: Array<{ msg: string }> | string;
   images: Array<{ url: string }>;
 };
 
@@ -32,6 +32,8 @@ export class FalProvider
     'fast-turbo-diffusion',
     // image to image
     'lcm-sd15-i2i',
+    'clarity-upscaler',
+    'imageutils/rembg',
   ];
 
   constructor(private readonly config: FalConfig) {
@@ -87,7 +89,11 @@ export class FalProvider
     }).then(res => res.json())) as FalResponse;
 
     if (!data.images?.length) {
-      const error = data.detail?.[0]?.msg;
+      const error = Array.isArray(data.detail)
+        ? data.detail[0]?.msg
+        : typeof data.detail === 'string'
+          ? data.detail
+          : '';
       throw new Error(
         error ? `Invalid message: ${error}` : 'No images generated'
       );

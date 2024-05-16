@@ -6,6 +6,8 @@ export const promptKeys = [
   'debug:action:vision4',
   'debug:action:dalle3',
   'debug:action:fal-sd15',
+  'debug:action:fal-upscaler',
+  'debug:action:fal-rembg',
   'chat:gpt4',
   'Summary',
   'Summary the webpage',

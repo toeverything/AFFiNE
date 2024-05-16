@@ -9,12 +9,16 @@ import Sinon from 'sinon';
 
 import { AuthService } from '../src/core/auth';
 import { WorkspaceModule } from '../src/core/workspaces';
+import { prompts } from '../src/data/migrations/utils/prompts';
 import { ConfigModule } from '../src/fundamentals/config';
 import { CopilotModule } from '../src/plugins/copilot';
 import { PromptService } from '../src/plugins/copilot/prompt';
 import {
   CopilotProviderService,
+  FalProvider,
+  OpenAIProvider,
   registerCopilotProvider,
+  unregisterCopilotProvider,
 } from '../src/plugins/copilot/providers';
 import { CopilotStorage } from '../src/plugins/copilot/storage';
 import {
@@ -80,11 +84,17 @@ test.beforeEach(async t => {
   const user = await signUp(app, 'test', 'darksky@affine.pro', '123456');
   token = user.token.token;
 
+  unregisterCopilotProvider(OpenAIProvider.type);
+  unregisterCopilotProvider(FalProvider.type);
   registerCopilotProvider(MockCopilotTestProvider);
 
   await prompt.set(promptName, 'test', [
     { role: 'system', content: 'hello {{word}}' },
   ]);
+
+  for (const p of prompts) {
+    await prompt.set(p.name, p.model, p.messages);
+  }
 });
 
 test.afterEach.always(async t => {
@@ -218,12 +228,57 @@ test('should be able to chat with api', async t => {
   t.is(
     ret3,
     textToEventStream(
-      ['https://example.com/image.jpg'],
+      ['https://example.com/test.jpg', 'generate text to text stream'],
       messageId,
       'attachment'
     ),
     'should be able to chat with images'
   );
+
+  Sinon.restore();
+});
+
+test('should be able to chat with special image model', async t => {
+  const { app, storage } = t.context;
+
+  Sinon.stub(storage, 'handleRemoteLink').resolvesArg(2);
+
+  const { id } = await createWorkspace(app, token);
+
+  const testWithModel = async (promptName: string, finalPrompt: string) => {
+    const model = prompts.find(p => p.name === promptName)?.model;
+    const sessionId = await createCopilotSession(
+      app,
+      token,
+      id,
+      randomUUID(),
+      promptName
+    );
+    const messageId = await createCopilotMessage(
+      app,
+      token,
+      sessionId,
+      'some-tag',
+      [`https://example.com/${promptName}.jpg`]
+    );
+    const ret3 = await chatWithImages(app, token, sessionId, messageId);
+    t.is(
+      ret3,
+      textToEventStream(
+        [`https://example.com/${model}.jpg`, finalPrompt],
+        messageId,
+        'attachment'
+      ),
+      'should be able to chat with images'
+    );
+  };
+
+  await testWithModel('debug:action:fal-sd15', 'some-tag');
+  await testWithModel(
+    'debug:action:fal-upscaler',
+    'best quality, 8K resolution, highres, clarity, some-tag'
+  );
+  await testWithModel('debug:action:fal-remove-bg', 'some-tag');
 
   Sinon.restore();
 });

@@ -77,6 +77,17 @@ export function registerCopilotProvider<
   });
 }
 
+export function unregisterCopilotProvider(type: CopilotProviderType) {
+  COPILOT_PROVIDER.delete(type);
+  ASSERT_CONFIG.delete(type);
+  for (const providers of PROVIDER_CAPABILITY_MAP.values()) {
+    const index = providers.indexOf(type);
+    if (index !== -1) {
+      providers.splice(index, 1);
+    }
+  }
+}
+
 /// Asserts that the config is valid for any registered providers
 export function assertProvidersConfigs(config: Config) {
   return (

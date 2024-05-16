@@ -67,6 +67,23 @@ export const prompts: Prompt[] = [
     messages: [],
   },
   {
+    name: 'debug:action:fal-upscaler',
+    action: 'image',
+    model: 'clarity-upscaler',
+    messages: [
+      {
+        role: 'user',
+        content: 'best quality, 8K resolution, highres, clarity, {{content}}',
+      },
+    ],
+  },
+  {
+    name: 'debug:action:fal-remove-bg',
+    action: 'image',
+    model: 'imageutils/rembg',
+    messages: [],
+  },
+  {
     name: 'Summary',
     action: 'Summary',
     model: 'gpt-4o',

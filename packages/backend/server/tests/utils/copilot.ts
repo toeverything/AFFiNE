@@ -29,7 +29,13 @@ export class MockCopilotTestProvider
     CopilotImageToImageProvider,
     CopilotImageToTextProvider
 {
-  override readonly availableModels = ['test'];
+  override readonly availableModels = [
+    'test',
+    'fast-turbo-diffusion',
+    'lcm-sd15-i2i',
+    'clarity-upscaler',
+    'imageutils/rembg',
+  ];
   static override readonly capabilities = [
     CopilotCapability.TextToText,
     CopilotCapability.TextToEmbedding,
@@ -107,7 +113,7 @@ export class MockCopilotTestProvider
   // ====== text to image ======
   override async generateImages(
     messages: PromptMessage[],
-    _model: string = 'test',
+    model: string = 'test',
     _options: {
       signal?: AbortSignal;
       user?: string;
@@ -118,7 +124,8 @@ export class MockCopilotTestProvider
       throw new Error('Prompt is required');
     }
 
-    return ['https://example.com/image.jpg'];
+    // just let test case can easily verify the final prompt
+    return [`https://example.com/${model}.jpg`, prompt];
   }
 
   override async *generateImagesStream(

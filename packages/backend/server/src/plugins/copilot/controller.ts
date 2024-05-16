@@ -127,6 +127,7 @@ export class CopilotController {
       if (err instanceof HttpException) {
         ret.status = err.getStatus();
       }
+      return ret;
     }
     return err;
   }
