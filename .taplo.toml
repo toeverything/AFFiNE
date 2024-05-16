@@ -1,9 +1,7 @@
-exclude = ["node_modules/**/*.toml"]
+include = ["./*.toml", "./packages/**/*.toml"]
 
-[[rule]]
-keys = ["dependencies", "*-dependencies"]
-
-[rule.formatting]
-align_entries = true
-indent_tables = true
-reorder_keys = true
+[formatting]
+align_entries  = true
+column_width   = 180
+reorder_arrays = true
+reorder_keys   = true

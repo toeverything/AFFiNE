@@ -1,10 +1,10 @@
 max_width = 100
 
+hard_tabs  = false
 tab_spaces = 2
-hard_tabs = false
 
 format_strings = true
-wrap_comments = true
+wrap_comments  = true
 
+group_imports       = "StdExternalCrate"
 imports_granularity = "Crate"
-group_imports = "StdExternalCrate"
