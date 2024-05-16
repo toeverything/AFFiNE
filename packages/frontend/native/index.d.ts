@@ -13,6 +13,16 @@ export class SqliteConnection {
   getAllUpdates(): Promise<Array<UpdateRow>>
   insertUpdates(updates: Array<InsertRow>): Promise<void>
   replaceUpdates(docId: string | undefined | null, updates: Array<InsertRow>): Promise<void>
+  getServerClock(key: string): Promise<BlobRow | null>
+  setServerClock(key: string, data: Uint8Array): Promise<void>
+  getServerClockKeys(): Promise<Array<string>>
+  clearServerClock(): Promise<void>
+  delServerClock(key: string): Promise<void>
+  getSyncMetadata(key: string): Promise<BlobRow | null>
+  setSyncMetadata(key: string, data: Uint8Array): Promise<void>
+  getSyncMetadataKeys(): Promise<Array<string>>
+  clearSyncMetadata(): Promise<void>
+  delSyncMetadata(key: string): Promise<void>
   initVersion(): Promise<void>
   setVersion(version: number): Promise<void>
   getMaxVersion(): Promise<number>

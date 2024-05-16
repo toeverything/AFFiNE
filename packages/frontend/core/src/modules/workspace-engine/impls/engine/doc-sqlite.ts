@@ -1,15 +1,13 @@
 import { apis } from '@affine/electron-api';
 import type { ByteKV, ByteKVBehavior, DocStorage } from '@toeverything/infra';
 import { AsyncLock, MemoryDocEventBus } from '@toeverything/infra';
-import type { DBSchema, IDBPDatabase, IDBPObjectStore } from 'idb';
-import { openDB } from 'idb';
 
 export class SqliteDocStorage implements DocStorage {
   constructor(private readonly workspaceId: string) {}
   eventBus = new MemoryDocEventBus();
   readonly doc = new Doc(this.workspaceId);
-  readonly syncMetadata = new KV(`${this.workspaceId}:sync-metadata`);
-  readonly serverClock = new KV(`${this.workspaceId}:server-clock`);
+  readonly syncMetadata = new SyncMetadataKV(this.workspaceId);
+  readonly serverClock = new ServerClockKV(this.workspaceId);
 }
 
 type DocType = DocStorage['doc'];
@@ -72,102 +70,86 @@ class Doc implements DocType {
   }
 }
 
-interface KvDBSchema extends DBSchema {
-  kv: {
-    key: string;
-    value: { key: string; val: Uint8Array };
-  };
-}
-
-class KV implements ByteKV {
-  constructor(private readonly dbName: string) {}
-
-  dbPromise: Promise<IDBPDatabase<KvDBSchema>> | null = null;
-  dbVersion = 1;
-
-  upgradeDB(db: IDBPDatabase<KvDBSchema>) {
-    db.createObjectStore('kv', { keyPath: 'key' });
+class SyncMetadataKV implements ByteKV {
+  constructor(private readonly workspaceId: string) {}
+  transaction<T>(cb: (behavior: ByteKVBehavior) => Promise<T>): Promise<T> {
+    return cb(this);
   }
 
-  getDb() {
-    if (this.dbPromise === null) {
-      this.dbPromise = openDB<KvDBSchema>(this.dbName, this.dbVersion, {
-        upgrade: db => this.upgradeDB(db),
-      });
+  get(key: string): Uint8Array | null | Promise<Uint8Array | null> {
+    if (!apis?.db) {
+      throw new Error('sqlite datasource is not available');
     }
-    return this.dbPromise;
+    return apis.db.getSyncMetadata(this.workspaceId, key);
   }
 
-  async transaction<T>(
-    cb: (transaction: ByteKVBehavior) => Promise<T>
-  ): Promise<T> {
-    const db = await this.getDb();
-    const store = db.transaction('kv', 'readwrite').objectStore('kv');
-
-    const behavior = new KVBehavior(store);
-    return await cb(behavior);
+  set(key: string, data: Uint8Array): void | Promise<void> {
+    if (!apis?.db) {
+      throw new Error('sqlite datasource is not available');
+    }
+    return apis.db.setSyncMetadata(this.workspaceId, key, data);
   }
 
-  async get(key: string): Promise<Uint8Array | null> {
-    const db = await this.getDb();
-    const store = db.transaction('kv', 'readonly').objectStore('kv');
-    return new KVBehavior(store).get(key);
+  keys(): string[] | Promise<string[]> {
+    if (!apis?.db) {
+      throw new Error('sqlite datasource is not available');
+    }
+    return apis.db.getSyncMetadataKeys(this.workspaceId);
   }
-  async set(key: string, value: Uint8Array): Promise<void> {
-    const db = await this.getDb();
-    const store = db.transaction('kv', 'readwrite').objectStore('kv');
-    return new KVBehavior(store).set(key, value);
+
+  del(key: string): void | Promise<void> {
+    if (!apis?.db) {
+      throw new Error('sqlite datasource is not available');
+    }
+    return apis.db.delSyncMetadata(this.workspaceId, key);
   }
-  async keys(): Promise<string[]> {
-    const db = await this.getDb();
-    const store = db.transaction('kv', 'readwrite').objectStore('kv');
-    return new KVBehavior(store).keys();
-  }
-  async clear() {
-    const db = await this.getDb();
-    const store = db.transaction('kv', 'readwrite').objectStore('kv');
-    return new KVBehavior(store).clear();
-  }
-  async del(key: string) {
-    const db = await this.getDb();
-    const store = db.transaction('kv', 'readwrite').objectStore('kv');
-    return new KVBehavior(store).del(key);
+
+  clear(): void | Promise<void> {
+    if (!apis?.db) {
+      throw new Error('sqlite datasource is not available');
+    }
+    return apis.db.clearSyncMetadata(this.workspaceId);
   }
 }
 
-class KVBehavior implements ByteKVBehavior {
-  constructor(
-    private readonly store: IDBPObjectStore<KvDBSchema, ['kv'], 'kv', any>
-  ) {}
-
-  async get(key: string): Promise<Uint8Array | null> {
-    const value = await this.store.get(key);
-    return value?.val ?? null;
-  }
-  async set(key: string, value: Uint8Array): Promise<void> {
-    if (this.store.put === undefined) {
-      throw new Error('Cannot set in a readonly transaction');
-    }
-    await this.store.put({
-      key: key,
-      val: value,
-    });
-  }
-  async keys(): Promise<string[]> {
-    return await this.store.getAllKeys();
+class ServerClockKV implements ByteKV {
+  constructor(private readonly workspaceId: string) {}
+  transaction<T>(cb: (behavior: ByteKVBehavior) => Promise<T>): Promise<T> {
+    return cb(this);
   }
 
-  async del(key: string) {
-    if (this.store.delete === undefined) {
-      throw new Error('Cannot set in a readonly transaction');
+  get(key: string): Uint8Array | null | Promise<Uint8Array | null> {
+    if (!apis?.db) {
+      throw new Error('sqlite datasource is not available');
     }
-    return await this.store.delete(key);
+    return apis.db.getServerClock(this.workspaceId, key);
   }
 
-  async clear() {
-    if (this.store.clear === undefined) {
-      throw new Error('Cannot set in a readonly transaction');
+  set(key: string, data: Uint8Array): void | Promise<void> {
+    if (!apis?.db) {
+      throw new Error('sqlite datasource is not available');
     }
-    return await this.store.clear();
+    return apis.db.setServerClock(this.workspaceId, key, data);
+  }
+
+  keys(): string[] | Promise<string[]> {
+    if (!apis?.db) {
+      throw new Error('sqlite datasource is not available');
+    }
+    return apis.db.getServerClockKeys(this.workspaceId);
+  }
+
+  del(key: string): void | Promise<void> {
+    if (!apis?.db) {
+      throw new Error('sqlite datasource is not available');
+    }
+    return apis.db.delServerClock(this.workspaceId, key);
+  }
+
+  clear(): void | Promise<void> {
+    if (!apis?.db) {
+      throw new Error('sqlite datasource is not available');
+    }
+    return apis.db.clearServerClock(this.workspaceId);
   }
 }

@@ -1,6 +1,7 @@
 import type { InsertRow } from '@affine/native';
 import { SqliteConnection, ValidationResult } from '@affine/native';
 import { WorkspaceVersion } from '@toeverything/infra/blocksuite';
+import type { ByteKVBehavior } from '@toeverything/infra/storage';
 
 import { logger } from '../logger';
 import { applyGuidCompatibilityFix, migrateToLatest } from './migration';
@@ -175,4 +176,82 @@ export class SQLiteAdapter {
       logger.error('replaceUpdates', error);
     }
   }
+
+  serverClock: ByteKVBehavior = {
+    get: async key => {
+      if (!this.db) {
+        logger.warn(`${this.path} is not connected`);
+        return null;
+      }
+      const blob = await this.db.getServerClock(key);
+      return blob?.data ?? null;
+    },
+    set: async (key, data) => {
+      if (!this.db) {
+        logger.warn(`${this.path} is not connected`);
+        return;
+      }
+      await this.db.setServerClock(key, data);
+    },
+    keys: async () => {
+      if (!this.db) {
+        logger.warn(`${this.path} is not connected`);
+        return [];
+      }
+      return await this.db.getServerClockKeys();
+    },
+    del: async key => {
+      if (!this.db) {
+        logger.warn(`${this.path} is not connected`);
+        return;
+      }
+      await this.db.delServerClock(key);
+    },
+    clear: async () => {
+      if (!this.db) {
+        logger.warn(`${this.path} is not connected`);
+        return;
+      }
+      await this.db.clearServerClock();
+    },
+  };
+
+  syncMetadata: ByteKVBehavior = {
+    get: async key => {
+      if (!this.db) {
+        logger.warn(`${this.path} is not connected`);
+        return null;
+      }
+      const blob = await this.db.getSyncMetadata(key);
+      return blob?.data ?? null;
+    },
+    set: async (key, data) => {
+      if (!this.db) {
+        logger.warn(`${this.path} is not connected`);
+        return;
+      }
+      await this.db.setSyncMetadata(key, data);
+    },
+    keys: async () => {
+      if (!this.db) {
+        logger.warn(`${this.path} is not connected`);
+        return [];
+      }
+      return await this.db.getSyncMetadataKeys();
+    },
+    del: async key => {
+      if (!this.db) {
+        logger.warn(`${this.path} is not connected`);
+        return;
+      }
+      await this.db.delSyncMetadata(key);
+    },
+    clear: async () => {
+      if (!this.db) {
+        logger.warn(`${this.path} is not connected`);
+        return;
+      }
+      await this.db.clearSyncMetadata();
+    },
+  };
 }

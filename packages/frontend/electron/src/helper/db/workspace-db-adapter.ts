@@ -31,7 +31,7 @@ export class WorkspaceSQLiteDB {
     this.update$.complete();
   }
 
-  toDBDocId = (docId: string) => {
+  private readonly toDBDocId = (docId: string) => {
     return this.workspaceId === docId ? undefined : docId;
   };
 

@@ -253,6 +253,114 @@ impl SqliteConnection {
   }
 
   #[napi]
+  pub async fn get_server_clock(&self, key: String) -> Option<BlobRow> {
+    sqlx::query_as!(
+      BlobRow,
+      "SELECT key, data, timestamp FROM server_clock WHERE key = ?",
+      key
+    )
+    .fetch_one(&self.pool)
+    .await
+    .ok()
+  }
+
+  #[napi]
+  pub async fn set_server_clock(&self, key: String, data: Uint8Array) -> napi::Result<()> {
+    let data = data.as_ref();
+    sqlx::query!(
+      "INSERT INTO server_clock (key, data) VALUES ($1, $2) ON CONFLICT(key) DO UPDATE SET data = excluded.data",
+      key,
+      data,
+    )
+    .execute(&self.pool)
+    .await
+    .map_err(anyhow::Error::from)?;
+    Ok(())
+  }
+
+  #[napi]
+  pub async fn get_server_clock_keys(&self) -> napi::Result<Vec<String>> {
+    let keys = sqlx::query!("SELECT key FROM server_clock")
+      .fetch_all(&self.pool)
+      .await
+      .map(|rows| rows.into_iter().map(|row| row.key).collect())
+      .map_err(anyhow::Error::from)?;
+    Ok(keys)
+  }
+
+  #[napi]
+  pub async fn clear_server_clock(&self) -> napi::Result<()> {
+    sqlx::query!("DELETE FROM server_clock")
+      .execute(&self.pool)
+      .await
+      .map_err(anyhow::Error::from)?;
+    Ok(())
+  }
+
+  #[napi]
+  pub async fn del_server_clock(&self, key: String) -> napi::Result<()> {
+    sqlx::query!("DELETE FROM server_clock WHERE key = ?", key)
+      .execute(&self.pool)
+      .await
+      .map_err(anyhow::Error::from)?;
+    Ok(())
+  }
+
+  #[napi]
+  pub async fn get_sync_metadata(&self, key: String) -> Option<BlobRow> {
+    sqlx::query_as!(
+      BlobRow,
+      "SELECT key, data, timestamp FROM sync_metadata WHERE key = ?",
+      key
+    )
+    .fetch_one(&self.pool)
+    .await
+    .ok()
+  }
+
+  #[napi]
+  pub async fn set_sync_metadata(&self, key: String, data: Uint8Array) -> napi::Result<()> {
+    let data = data.as_ref();
+    sqlx::query!(
+      "INSERT INTO sync_metadata (key, data) VALUES ($1, $2) ON CONFLICT(key) DO UPDATE SET data = excluded.data",
+      key,
+      data,
+    )
+    .execute(&self.pool)
+    .await
+    .map_err(anyhow::Error::from)?;
+    Ok(())
+  }
+
+  #[napi]
+  pub async fn get_sync_metadata_keys(&self) -> napi::Result<Vec<String>> {
+    let keys = sqlx::query!("SELECT key FROM sync_metadata")
+      .fetch_all(&self.pool)
+      .await
+      .map(|rows| rows.into_iter().map(|row| row.key).collect())
+      .map_err(anyhow::Error::from)?;
+    Ok(keys)
+  }
+
+  #[napi]
+  pub async fn clear_sync_metadata(&self) -> napi::Result<()> {
+    sqlx::query!("DELETE FROM sync_metadata")
+      .execute(&self.pool)
+      .await
+      .map_err(anyhow::Error::from)?;
+    Ok(())
+  }
+
+  #[napi]
+  pub async fn del_sync_metadata(&self, key: String) -> napi::Result<()> {
+    sqlx::query!("DELETE FROM sync_metadata WHERE key = ?", key)
+      .execute(&self.pool)
+      .await
+      .map_err(anyhow::Error::from)?;
+    Ok(())
+  }
+
+  #[napi]
   pub async fn init_version(&self) -> napi::Result<()> {
     // create version_info table
     sqlx::query!(
