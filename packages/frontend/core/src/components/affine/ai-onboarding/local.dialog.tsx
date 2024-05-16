@@ -4,10 +4,9 @@ import {
   useNavigateHelper,
 } from '@affine/core/hooks/use-navigate-helper';
 import { AuthService } from '@affine/core/modules/cloud';
-import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { AiIcon } from '@blocksuite/icons';
-import { useLiveData, useService, WorkspaceService } from '@toeverything/infra';
+import { useLiveData, useService } from '@toeverything/infra';
 import { cssVar } from '@toeverything/theme';
 import { useEffect, useRef } from 'react';
 
@@ -50,7 +49,7 @@ const FooterActions = ({ onDismiss }: { onDismiss: () => void }) => {
           type="plain"
           onClick={() => {
             onDismiss();
-            jumpToSignIn('/', RouteLogic.REPLACE, {}, { initCloud: 'true' });
+            jumpToSignIn('', RouteLogic.REPLACE, {}, { initCloud: 'true' });
           }}
         >
           {t['com.affine.ai-onboarding.local.action-get-started']()}
@@ -64,14 +63,15 @@ export const AIOnboardingLocal = ({
   onDismiss,
 }: BaseAIOnboardingDialogProps) => {
   const t = useAFFiNEI18N();
-  const workspaceService = useService(WorkspaceService);
+  const authService = useService(AuthService);
   const notifyId = useLiveData(localNotifyId$);
   const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
-  const isLocal = workspaceService.workspace.flavour === WorkspaceFlavour.LOCAL;
+  const loginStatus = useLiveData(authService.session.status$);
+  const notSignedIn = loginStatus !== 'authenticated';
 
   useEffect(() => {
-    if (!isLocal) return;
+    if (!notSignedIn) return;
     if (notifyId) return;
     clearTimeout(timeoutRef.current);
     timeoutRef.current = setTimeout(() => {
@@ -105,7 +105,7 @@ export const AIOnboardingLocal = ({
       );
       localNotifyId$.next(id);
     }, 1000);
-  }, [isLocal, notifyId, onDismiss, t]);
+  }, [notSignedIn, notifyId, onDismiss, t]);
 
   return null;
 };

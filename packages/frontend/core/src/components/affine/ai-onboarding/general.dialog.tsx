@@ -1,18 +1,13 @@
 import { Button, IconButton, Modal } from '@affine/component';
 import { openSettingModalAtom } from '@affine/core/atoms';
 import { useBlurRoot } from '@affine/core/hooks/use-blur-root';
-import { SubscriptionService } from '@affine/core/modules/cloud';
+import { AuthService, SubscriptionService } from '@affine/core/modules/cloud';
 import { mixpanel } from '@affine/core/utils';
-import { WorkspaceFlavour } from '@affine/env/workspace';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowLeftSmallIcon } from '@blocksuite/icons';
-import {
-  useLiveData,
-  useServices,
-  WorkspaceService,
-} from '@toeverything/infra';
-import { useSetAtom } from 'jotai';
+import { useLiveData, useServices } from '@toeverything/infra';
+import { useAtom } from 'jotai';
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -90,22 +85,23 @@ function prefetchVideos() {
 export const AIOnboardingGeneral = ({
   onDismiss,
 }: BaseAIOnboardingDialogProps) => {
-  const { workspaceService, subscriptionService } = useServices({
-    WorkspaceService,
+  const { authService, subscriptionService } = useServices({
+    AuthService,
     SubscriptionService,
   });
 
   const videoWrapperRef = useRef<HTMLDivElement | null>(null);
   const prevVideoRef = useRef<HTMLVideoElement | null>(null);
-  const isCloud =
-    workspaceService.workspace.flavour === WorkspaceFlavour.AFFINE_CLOUD;
+  const loginStatus = useLiveData(authService.session.status$);
+  const isLoggedIn = loginStatus === 'authenticated';
   const t = useAFFiNEI18N();
   const open = useLiveData(showAIOnboardingGeneral$);
   const aiSubscription = useLiveData(subscriptionService.subscription.ai$);
   const [index, setIndex] = useState(0);
   const list = useMemo(() => getPlayList(t), [t]);
-  const setSettingModal = useSetAtom(openSettingModalAtom);
-  useBlurRoot(open && isCloud);
+  const [settingModal, setSettingModal] = useAtom(openSettingModalAtom);
+  const readyToOpen = isLoggedIn && !settingModal.open;
+  useBlurRoot(open && readyToOpen);
 
   const isFirst = index === 0;
   const isLast = index === list.length - 1;
@@ -189,7 +185,7 @@ export const AIOnboardingGeneral = ({
     prevVideoRef.current = video;
   }, [index]);
 
-  return isCloud ? (
+  return readyToOpen ? (
     <Modal
       open={open}
       onOpenChange={v => {
