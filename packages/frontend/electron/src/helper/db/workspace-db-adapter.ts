@@ -1,36 +1,43 @@
-import type { InsertRow } from '@affine/native';
+import { AsyncLock } from '@toeverything/infra';
 import { Subject } from 'rxjs';
 import { applyUpdate, Doc as YDoc } from 'yjs';
 
 import { logger } from '../logger';
 import { getWorkspaceMeta } from '../workspace/meta';
-import { BaseSQLiteAdapter } from './base-db-adapter';
+import { SQLiteAdapter } from './db-adapter';
 import { mergeUpdate } from './merge-update';
 
 const TRIM_SIZE = 500;
 
-export class WorkspaceSQLiteDB extends BaseSQLiteAdapter {
-  role = 'primary';
-
+export class WorkspaceSQLiteDB {
+  lock = new AsyncLock();
   update$ = new Subject<void>();
+  adapter = new SQLiteAdapter(this.path);
 
   constructor(
-    public override path: string,
+    public path: string,
     public workspaceId: string
-  ) {
-    super(path);
+  ) {}
+
+  async transaction<T>(cb: () => Promise<T>): Promise<T> {
+    using _lock = await this.lock.acquire();
+    return await cb();
   }
 
-  override async destroy() {
-    await super.destroy();
+  async destroy() {
+    await this.adapter.destroy();
 
     // when db is closed, we can safely remove it from ensure-db list
     this.update$.complete();
   }
 
+  toDBDocId = (docId: string) => {
+    return this.workspaceId === docId ? undefined : docId;
+  };
+
   getWorkspaceName = async () => {
     const ydoc = new YDoc();
-    const updates = await this.getUpdates();
+    const updates = await this.adapter.getUpdates();
     updates.forEach(update => {
       applyUpdate(ydoc, update.data);
     });
@@ -38,44 +45,75 @@ export class WorkspaceSQLiteDB extends BaseSQLiteAdapter {
   };
 
   async init() {
-    const db = await super.connectIfNeeded();
+    const db = await this.adapter.connectIfNeeded();
     await this.tryTrim();
     return db;
   }
 
+  async get(docId: string) {
+    return this.adapter.getUpdates(docId);
+  }
+
   // getUpdates then encode
-  getDocAsUpdates = async (docId?: string) => {
-    const updates = await this.getUpdates(docId);
-    return mergeUpdate(updates.map(row => row.data));
+  getDocAsUpdates = async (docId: string) => {
+    const dbID = this.toDBDocId(docId);
+    const update = await this.tryTrim(dbID);
+    if (update) {
+      return update;
+    } else {
+      const updates = await this.adapter.getUpdates(dbID);
+      return mergeUpdate(updates.map(row => row.data));
+    }
   };
 
-  override async addBlob(key: string, value: Uint8Array) {
+  async addBlob(key: string, value: Uint8Array) {
     this.update$.next();
-    const res = await super.addBlob(key, value);
+    const res = await this.adapter.addBlob(key, value);
     return res;
   }
 
-  override async deleteBlob(key: string) {
-    this.update$.next();
-    await super.deleteBlob(key);
+  async getBlob(key: string) {
+    return this.adapter.getBlob(key);
   }
 
-  override async addUpdateToSQLite(data: InsertRow[]) {
-    this.update$.next();
-    await super.addUpdateToSQLite(data);
+  async getBlobKeys() {
+    return this.adapter.getBlobKeys();
   }
 
-  private readonly tryTrim = async (docId?: string) => {
-    const count = (await this.db?.getUpdatesCount(docId)) ?? 0;
+  async deleteBlob(key: string) {
+    this.update$.next();
+    await this.adapter.deleteBlob(key);
+  }
+
+  async addUpdateToSQLite(update: Uint8Array, subdocId: string) {
+    this.update$.next();
+    await this.adapter.addUpdateToSQLite([
+      {
+        data: update,
+        docId: this.toDBDocId(subdocId),
+      },
+    ]);
+  }
+
+  async deleteUpdate(subdocId: string) {
+    this.update$.next();
+    await this.adapter.deleteUpdates(this.toDBDocId(subdocId));
+  }
+
+  private readonly tryTrim = async (dbID?: string) => {
+    const count = (await this.adapter?.getUpdatesCount(dbID)) ?? 0;
     if (count > TRIM_SIZE) {
-      logger.debug(`trim ${this.workspaceId}:${docId} ${count}`);
-      const update = await this.getDocAsUpdates(docId);
-      if (update) {
-        const insertRows = [{ data: update, docId }];
-        await this.db?.replaceUpdates(docId, insertRows);
-        logger.debug(`trim ${this.workspaceId}:${docId} successfully`);
-      }
+      return await this.transaction(async () => {
+        logger.debug(`trim ${this.workspaceId}:${dbID} ${count}`);
+        const updates = await this.adapter.getUpdates(dbID);
+        const update = mergeUpdate(updates.map(row => row.data));
+        const insertRows = [{ data: update, dbID }];
+        await this.adapter?.replaceUpdates(dbID, insertRows);
+        logger.debug(`trim ${this.workspaceId}:${dbID} successfully`);
+        return update;
+      });
     }
+    return null;
   };
 }
 

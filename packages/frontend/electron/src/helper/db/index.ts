@@ -5,22 +5,21 @@ import { ensureSQLiteDB } from './ensure-db';
 export * from './ensure-db';
 
 export const dbHandlers = {
-  getDocAsUpdates: async (workspaceId: string, subdocId?: string) => {
+  getDocAsUpdates: async (workspaceId: string, subdocId: string) => {
     const workspaceDB = await ensureSQLiteDB(workspaceId);
     return workspaceDB.getDocAsUpdates(subdocId);
   },
   applyDocUpdate: async (
     workspaceId: string,
     update: Uint8Array,
-    subdocId?: string
+    subdocId: string
   ) => {
     const workspaceDB = await ensureSQLiteDB(workspaceId);
-    return workspaceDB.addUpdateToSQLite([
-      {
-        data: update,
-        docId: subdocId,
-      },
-    ]);
+    return workspaceDB.addUpdateToSQLite(update, subdocId);
+  },
+  deleteDoc: async (workspaceId: string, subdocId: string) => {
+    const workspaceDB = await ensureSQLiteDB(workspaceId);
+    return workspaceDB.deleteUpdate(subdocId);
   },
   addBlob: async (workspaceId: string, key: string, data: Uint8Array) => {
     const workspaceDB = await ensureSQLiteDB(workspaceId);

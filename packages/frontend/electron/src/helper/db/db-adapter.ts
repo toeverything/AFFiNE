@@ -2,16 +2,14 @@ import type { InsertRow } from '@affine/native';
 import { SqliteConnection, ValidationResult } from '@affine/native';
 import { WorkspaceVersion } from '@toeverything/infra/blocksuite';
 
-import { applyGuidCompatibilityFix, migrateToLatest } from '../db/migration';
 import { logger } from '../logger';
+import { applyGuidCompatibilityFix, migrateToLatest } from './migration';
 
 /**
  * A base class for SQLite DB adapter that provides basic methods around updates & blobs
  */
-export abstract class BaseSQLiteAdapter {
+export class SQLiteAdapter {
   db: SqliteConnection | null = null;
-  abstract role: string;
-
   constructor(public readonly path: string) {}
 
   async connectIfNeeded() {
@@ -27,7 +25,7 @@ export abstract class BaseSQLiteAdapter {
         await migrateToLatest(this.path, WorkspaceVersion.Surface);
       }
       await applyGuidCompatibilityFix(this.db);
-      logger.info(`[SQLiteAdapter:${this.role}]`, 'connected:', this.path);
+      logger.info(`[SQLiteAdapter]`, 'connected:', this.path);
     }
     return this.db;
   }
@@ -36,7 +34,7 @@ export abstract class BaseSQLiteAdapter {
     const { db } = this;
     this.db = null;
     // log after close will sometimes crash the app when quitting
-    logger.info(`[SQLiteAdapter:${this.role}]`, 'destroyed:', this.path);
+    logger.info(`[SQLiteAdapter]`, 'destroyed:', this.path);
     await db?.close();
   }
 
@@ -128,7 +126,7 @@ export abstract class BaseSQLiteAdapter {
       const start = performance.now();
       await this.db.insertUpdates(updates);
       logger.debug(
-        `[SQLiteAdapter][${this.role}] addUpdateToSQLite`,
+        `[SQLiteAdapter] addUpdateToSQLite`,
         'length:',
         updates.length,
         'docids',
@@ -138,6 +136,43 @@ export abstract class BaseSQLiteAdapter {
       );
     } catch (error) {
       logger.error('addUpdateToSQLite', this.path, error);
+    }
+  }
+
+  async deleteUpdates(docId?: string) {
+    try {
+      if (!this.db) {
+        logger.warn(`${this.path} is not connected`);
+        return;
+      }
+      await this.db.deleteUpdates(docId);
+    } catch (error) {
+      logger.error('deleteUpdates', error);
+    }
+  }
+
+  async getUpdatesCount(docId?: string) {
+    try {
+      if (!this.db) {
+        logger.warn(`${this.path} is not connected`);
+        return 0;
+      }
+      return await this.db.getUpdatesCount(docId);
+    } catch (error) {
+      logger.error('getUpdatesCount', error);
+      return 0;
+    }
+  }
+
+  async replaceUpdates(docId: string | null | undefined, updates: InsertRow[]) {
+    try {
+      if (!this.db) {
+        logger.warn(`${this.path} is not connected`);
+        return;
+      }
+      await this.db.replaceUpdates(docId, updates);
+    } catch (error) {
+      logger.error('replaceUpdates', error);
     }
   }
 }

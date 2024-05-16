@@ -9,7 +9,7 @@
     "experimentalDecorators": true,
     "types": ["node", "affine__env"],
     "outDir": "lib",
-    "moduleResolution": "node",
+    "moduleResolution": "Bundler",
     "resolveJsonModule": true,
     "noImplicitOverride": true,
     "paths": {

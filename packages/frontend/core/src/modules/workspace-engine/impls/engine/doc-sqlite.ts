@@ -37,10 +37,7 @@ class Doc implements DocType {
     if (!apis?.db) {
       throw new Error('sqlite datasource is not available');
     }
-    const update = await apis.db.getDocAsUpdates(
-      this.workspaceId,
-      this.workspaceId === docId ? undefined : docId
-    );
+    const update = await apis.db.getDocAsUpdates(this.workspaceId, docId);
 
     if (update) {
       if (
@@ -60,19 +57,18 @@ class Doc implements DocType {
     if (!apis?.db) {
       throw new Error('sqlite datasource is not available');
     }
-    await apis.db.applyDocUpdate(
-      this.workspaceId,
-      data,
-      this.workspaceId === docId ? undefined : docId
-    );
+    await apis.db.applyDocUpdate(this.workspaceId, data, docId);
   }
 
   clear(): void | Promise<void> {
     return;
   }
 
-  del(): void | Promise<void> {
-    return;
+  async del(docId: string) {
+    if (!apis?.db) {
+      throw new Error('sqlite datasource is not available');
+    }
+    await apis.db.deleteDoc(this.workspaceId, docId);
   }
 }
 

@@ -77,16 +77,16 @@ test('db should be destroyed when app quits', async () => {
   const db0 = await ensureSQLiteDB(workspaceId);
   const db1 = await ensureSQLiteDB(v4());
 
-  expect(db0.db).not.toBeNull();
-  expect(db1.db).not.toBeNull();
+  expect(db0.adapter).not.toBeNull();
+  expect(db1.adapter).not.toBeNull();
 
   existProcess();
 
   // wait the async `db.destroy()` to be called
   await setTimeout(100);
 
-  expect(db0.db).toBeNull();
-  expect(db1.db).toBeNull();
+  expect(db0.adapter.db).toBeNull();
+  expect(db1.adapter.db).toBeNull();
 });
 
 test('db should be removed in db$Map after destroyed', async () => {

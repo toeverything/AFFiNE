@@ -51,6 +51,6 @@ test('on destroy, check if resources have been released', async () => {
   };
   db.update$ = updateSub as any;
   await db.destroy();
-  expect(db.db).toBe(null);
+  expect(db.adapter.db).toBe(null);
   expect(updateSub.complete).toHaveBeenCalled();
 });

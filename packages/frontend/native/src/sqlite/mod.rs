@@ -73,6 +73,7 @@ impl SqliteConnection {
       .await
       .map_err(anyhow::Error::from)?;
     self.migrate_add_doc_id().await?;
+    self.migrate_add_doc_id_index().await?;
     connection.detach();
     Ok(())
   }
@@ -143,6 +144,25 @@ impl SqliteConnection {
       .map_err(anyhow::Error::from)?,
     };
     Ok(updates)
+  }
+
+  #[napi]
+  pub async fn delete_updates(&self, doc_id: Option<String>) -> napi::Result<()> {
+    match doc_id {
+      Some(doc_id) => {
+        sqlx::query!("DELETE FROM updates WHERE doc_id = ?", doc_id)
+          .execute(&self.pool)
+          .await
+          .map_err(anyhow::Error::from)?;
+      }
+      None => {
+        sqlx::query!("DELETE FROM updates WHERE doc_id is NULL")
+          .execute(&self.pool)
+          .await
+          .map_err(anyhow::Error::from)?;
+      }
+    };
+    Ok(())
   }
 
   #[napi]
@@ -358,6 +378,19 @@ impl SqliteConnection {
         } else {
           Err(anyhow::Error::from(err).into()) // Propagate other errors
         }
+      }
+    }
+  }
+
+  pub async fn migrate_add_doc_id_index(&self) -> napi::Result<()> {
+    // ignore errors
+    match sqlx::query("CREATE INDEX IF NOT EXISTS idx_doc_id ON updates(doc_id);")
+      .execute(&self.pool)
+      .await
+    {
+      Ok(_) => Ok(()),
+      Err(err) => {
+        Err(anyhow::Error::from(err).into()) // Propagate other errors
       }
     }
   }
