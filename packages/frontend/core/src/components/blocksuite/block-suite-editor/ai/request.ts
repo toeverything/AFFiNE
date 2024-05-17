@@ -19,6 +19,7 @@ export type TextToTextOptions = {
   timeout?: number;
   stream?: boolean;
   signal?: AbortSignal;
+  retry?: boolean;
 };
 
 export type ToImageOptions = TextToTextOptions & {
@@ -47,6 +48,7 @@ async function createSessionMessage({
   sessionId: providedSessionId,
   attachments,
   params,
+  retry = false,
 }: TextToTextOptions) {
   if (!promptName && !providedSessionId) {
     throw new Error('promptName or sessionId is required');
@@ -83,6 +85,11 @@ async function createSessionMessage({
       })
     );
   }
+  if (retry)
+    return {
+      sessionId,
+    };
+
   const messageId = await client.createMessage(options);
   return {
     messageId,
@@ -101,6 +108,7 @@ export function textToText({
   stream,
   signal,
   timeout = TIMEOUT,
+  retry = false,
 }: TextToTextOptions) {
   if (stream) {
     return {
@@ -113,6 +121,7 @@ export function textToText({
           attachments,
           params,
           sessionId,
+          retry,
         });
         const eventSource = client.chatTextStream({
           sessionId: message.sessionId,
@@ -187,7 +196,7 @@ export function toImage({
         params,
       });
 
-      const eventSource = client.imagesStream(messageId, sessionId, seed);
+      const eventSource = client.imagesStream(sessionId, messageId, seed);
       for await (const event of toTextStream(eventSource, {
         timeout,
         signal,
