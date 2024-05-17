@@ -1,3 +1,5 @@
+import { assertExists } from '@blocksuite/global/utils';
+import { AIProvider } from '@blocksuite/presets';
 import { partition } from 'lodash-es';
 
 import { CopilotClient } from './copilot-client';
@@ -110,23 +112,39 @@ export function textToText({
   timeout = TIMEOUT,
   retry = false,
 }: TextToTextOptions) {
+  let _sessionId: string;
+  let _messageId: string | undefined;
+
   if (stream) {
     return {
       [Symbol.asyncIterator]: async function* () {
-        const message = await createSessionMessage({
-          docId,
-          workspaceId,
-          promptName,
-          content,
-          attachments,
-          params,
-          sessionId,
-          retry,
-        });
+        if (retry) {
+          const retrySessionId =
+            (await sessionId) ?? AIProvider.LAST_ACTION_SESSIONID;
+          assertExists(retrySessionId, 'retry sessionId is required');
+          _sessionId = retrySessionId;
+          _messageId = undefined;
+        } else {
+          const message = await createSessionMessage({
+            docId,
+            workspaceId,
+            promptName,
+            content,
+            attachments,
+            params,
+            sessionId,
+            retry,
+          });
+          _sessionId = message.sessionId;
+          _messageId = message.messageId;
+        }
+
         const eventSource = client.chatTextStream({
-          sessionId: message.sessionId,
-          messageId: message.messageId,
+          sessionId: _sessionId,
+          messageId: _messageId,
         });
+        AIProvider.LAST_ACTION_SESSIONID = _sessionId;
+
         if (signal) {
           if (signal.aborted) {
             eventSource.close();
@@ -153,20 +171,33 @@ export function textToText({
             throw new Error('Timeout');
           })
         : null,
-      createSessionMessage({
-        docId,
-        workspaceId,
-        promptName,
-        content,
-        attachments,
-        params,
-        sessionId,
-      }).then(message => {
+      (async function () {
+        if (retry) {
+          const retrySessionId =
+            (await sessionId) ?? AIProvider.LAST_ACTION_SESSIONID;
+          assertExists(retrySessionId, 'retry sessionId is required');
+          _sessionId = retrySessionId;
+          _messageId = undefined;
+        } else {
+          const message = await createSessionMessage({
+            docId,
+            workspaceId,
+            promptName,
+            content,
+            attachments,
+            params,
+            sessionId,
+          });
+          _sessionId = message.sessionId;
+          _messageId = message.messageId;
+        }
+
+        AIProvider.LAST_ACTION_SESSIONID = _sessionId;
         return client.chatText({
-          sessionId: message.sessionId,
-          messageId: message.messageId,
+          sessionId: _sessionId,
+          messageId: _messageId,
         });
-      }),
+      })(),
     ]);
   }
 }
@@ -182,21 +213,37 @@ export function toImage({
   attachments,
   params,
   seed,
+  sessionId,
   signal,
   timeout = TIMEOUT,
+  retry = false,
 }: ToImageOptions) {
+  let _sessionId: string;
+  let _messageId: string | undefined;
   return {
     [Symbol.asyncIterator]: async function* () {
-      const { messageId, sessionId } = await createSessionMessage({
-        docId,
-        workspaceId,
-        promptName,
-        content,
-        attachments,
-        params,
-      });
+      if (retry) {
+        const retrySessionId =
+          (await sessionId) ?? AIProvider.LAST_ACTION_SESSIONID;
+        assertExists(retrySessionId, 'retry sessionId is required');
+        _sessionId = retrySessionId;
+        _messageId = undefined;
+      } else {
+        const { messageId, sessionId } = await createSessionMessage({
+          docId,
+          workspaceId,
+          promptName,
+          content,
+          attachments,
+          params,
+        });
+        _sessionId = sessionId;
+        _messageId = messageId;
+      }
 
-      const eventSource = client.imagesStream(sessionId, messageId, seed);
+      const eventSource = client.imagesStream(_sessionId, _messageId, seed);
+      AIProvider.LAST_ACTION_SESSIONID = _sessionId;
+
       for await (const event of toTextStream(eventSource, {
         timeout,
         signal,
