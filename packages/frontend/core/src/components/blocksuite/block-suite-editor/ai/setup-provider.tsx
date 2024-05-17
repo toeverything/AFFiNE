@@ -17,7 +17,7 @@ import {
 } from './request';
 import { setupTracker } from './tracker';
 
-export function setupAIProvider() {
+function setupAIProvider() {
   // a single workspace should have only a single chat session
   // user-id:workspace-id:doc-id -> chat session id
   const chatSessions = new Map<string, Promise<string>>();
@@ -371,3 +371,5 @@ Could you make a new website based on these notes and send back just the html fi
 
   setupTracker();
 }
+
+setupAIProvider();

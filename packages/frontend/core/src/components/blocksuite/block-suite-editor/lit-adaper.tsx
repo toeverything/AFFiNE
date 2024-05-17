@@ -23,8 +23,12 @@ import React, {
 
 import { PagePropertiesTable } from '../../affine/page-properties';
 import { BlocksuiteEditorJournalDocTitle } from './journal-doc-title';
-import type { InlineRenderers } from './specs';
-import { docModeSpecs, edgelessModeSpecs, patchSpecs } from './specs';
+import {
+  patchReferenceRenderer,
+  type ReferenceReactRenderer,
+} from './specs/custom/patch-reference-renderer';
+import { EdgelessModeSpecs } from './specs/edgeless';
+import { PageModeSpecs } from './specs/page';
 import * as styles from './styles.css';
 
 const adapted = {
@@ -50,16 +54,16 @@ const adapted = {
   }),
 };
 
-interface BlocksuiteDocEditorProps {
+interface BlocksuiteEditorProps {
   page: Doc;
-  customRenderers?: InlineRenderers;
+  referenceRenderer?: ReferenceReactRenderer;
   // todo: add option to replace docTitle with custom component (e.g., for journal page)
 }
 
 export const BlocksuiteDocEditor = forwardRef<
   PageEditor,
-  BlocksuiteDocEditorProps
->(function BlocksuiteDocEditor({ page, customRenderers }, ref) {
+  BlocksuiteEditorProps
+>(function BlocksuiteDocEditor({ page, referenceRenderer }, ref) {
   const titleRef = useRef<DocTitle>(null);
   const docRef = useRef<PageEditor | null>(null);
   const [docPage, setDocPage] =
@@ -80,11 +84,12 @@ export const BlocksuiteDocEditor = forwardRef<
     [ref]
   );
 
-  const [litToTemplate, portals] = useLitPortalFactory();
+  const [reactToLit, portals] = useLitPortalFactory();
 
   const specs = useMemo(() => {
-    return patchSpecs(docModeSpecs, litToTemplate, customRenderers);
-  }, [customRenderers, litToTemplate]);
+    if (!referenceRenderer) return PageModeSpecs;
+    return patchReferenceRenderer(PageModeSpecs, reactToLit, referenceRenderer);
+  }, [reactToLit, referenceRenderer]);
 
   useEffect(() => {
     // auto focus the title
@@ -139,12 +144,17 @@ export const BlocksuiteDocEditor = forwardRef<
 
 export const BlocksuiteEdgelessEditor = forwardRef<
   EdgelessEditor,
-  BlocksuiteDocEditorProps
->(function BlocksuiteEdgelessEditor({ page, customRenderers }, ref) {
-  const [litToTemplate, portals] = useLitPortalFactory();
+  BlocksuiteEditorProps
+>(function BlocksuiteEdgelessEditor({ page, referenceRenderer }, ref) {
+  const [reactToLit, portals] = useLitPortalFactory();
   const specs = useMemo(() => {
-    return patchSpecs(edgelessModeSpecs, litToTemplate, customRenderers);
-  }, [customRenderers, litToTemplate]);
+    if (!referenceRenderer) return EdgelessModeSpecs;
+    return patchReferenceRenderer(
+      EdgelessModeSpecs,
+      reactToLit,
+      referenceRenderer
+    );
+  }, [reactToLit, referenceRenderer]);
   return (
     <>
       <adapted.EdgelessEditor ref={ref} doc={page} specs={specs} />

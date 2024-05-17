@@ -21,7 +21,7 @@ import {
 } from 'react';
 
 import { BlocksuiteDocEditor, BlocksuiteEdgelessEditor } from './lit-adaper';
-import type { InlineRenderers } from './specs';
+import type { ReferenceReactRenderer } from './specs/custom/patch-reference-renderer';
 import * as styles from './styles.css';
 
 // copy forwardSlot from blocksuite, but it seems we need to dispose the pipe
@@ -45,7 +45,7 @@ interface BlocksuiteEditorContainerProps {
   className?: string;
   style?: React.CSSProperties;
   defaultSelectedBlockId?: string;
-  customRenderers?: InlineRenderers;
+  referenceRenderer?: ReferenceReactRenderer;
 }
 
 // mimic the interface of the webcomponent and expose slots & host
@@ -99,7 +99,7 @@ export const BlocksuiteEditorContainer = forwardRef<
   AffineEditorContainer,
   BlocksuiteEditorContainerProps
 >(function AffineEditorContainer(
-  { page, mode, className, style, defaultSelectedBlockId, customRenderers },
+  { page, mode, className, style, defaultSelectedBlockId, referenceRenderer },
   ref
 ) {
   const [scrolled, setScrolled] = useState(false);
@@ -246,7 +246,7 @@ export const BlocksuiteEditorContainer = forwardRef<
         return;
       }
       const newSelection = selectManager.create('block', {
-        path: blockElement.path,
+        blockId: blockElement.blockId,
       });
       selectManager.set([newSelection]);
       setScrolled(true);
@@ -282,13 +282,13 @@ export const BlocksuiteEditorContainer = forwardRef<
         <BlocksuiteDocEditor
           page={page}
           ref={docRef}
-          customRenderers={customRenderers}
+          referenceRenderer={referenceRenderer}
         />
       ) : (
         <BlocksuiteEdgelessEditor
           page={page}
           ref={edgelessRef}
-          customRenderers={customRenderers}
+          referenceRenderer={referenceRenderer}
         />
       )}
     </div>

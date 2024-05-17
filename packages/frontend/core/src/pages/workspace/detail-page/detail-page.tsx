@@ -4,12 +4,12 @@ import { PageAIOnboarding } from '@affine/core/components/affine/ai-onboarding';
 import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
 import type { PageRootService } from '@blocksuite/blocks';
 import {
-  BookmarkService,
+  BookmarkBlockService,
   customImageProxyMiddleware,
-  EmbedGithubService,
-  EmbedLoomService,
-  EmbedYoutubeService,
-  ImageService,
+  EmbedGithubBlockService,
+  EmbedLoomBlockService,
+  EmbedYoutubeBlockService,
+  ImageBlockService,
 } from '@blocksuite/blocks';
 import { DisposableGroup } from '@blocksuite/global/utils';
 import { type AffineEditorContainer, AIProvider } from '@blocksuite/presets';
@@ -169,13 +169,19 @@ const DetailPageImpl = memo(function DetailPageImpl() {
       editorHost.std.clipboard.use(
         customImageProxyMiddleware(runtimeConfig.imageProxyUrl)
       );
-      ImageService.setImageProxyURL(runtimeConfig.imageProxyUrl);
+      ImageBlockService.setImageProxyURL(runtimeConfig.imageProxyUrl);
 
       // provide link preview endpoint to blocksuite
-      BookmarkService.setLinkPreviewEndpoint(runtimeConfig.linkPreviewUrl);
-      EmbedGithubService.setLinkPreviewEndpoint(runtimeConfig.linkPreviewUrl);
-      EmbedYoutubeService.setLinkPreviewEndpoint(runtimeConfig.linkPreviewUrl);
-      EmbedLoomService.setLinkPreviewEndpoint(runtimeConfig.linkPreviewUrl);
+      BookmarkBlockService.setLinkPreviewEndpoint(runtimeConfig.linkPreviewUrl);
+      EmbedGithubBlockService.setLinkPreviewEndpoint(
+        runtimeConfig.linkPreviewUrl
+      );
+      EmbedYoutubeBlockService.setLinkPreviewEndpoint(
+        runtimeConfig.linkPreviewUrl
+      );
+      EmbedLoomBlockService.setLinkPreviewEndpoint(
+        runtimeConfig.linkPreviewUrl
+      );
 
       // provide page mode and updated date to blocksuite
       const pageService =
