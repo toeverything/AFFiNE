@@ -1,10 +1,8 @@
 import type { InsertRow } from '@affine/native';
-import { SqliteConnection, ValidationResult } from '@affine/native';
-import { WorkspaceVersion } from '@toeverything/infra/blocksuite';
+import { SqliteConnection } from '@affine/native';
 import type { ByteKVBehavior } from '@toeverything/infra/storage';
 
 import { logger } from '../logger';
-import { applyGuidCompatibilityFix, migrateToLatest } from './migration';
 
 /**
  * A base class for SQLite DB adapter that provides basic methods around updates & blobs
@@ -15,17 +13,8 @@ export class SQLiteAdapter {
 
   async connectIfNeeded() {
     if (!this.db) {
-      const validation = await SqliteConnection.validate(this.path);
-      if (validation === ValidationResult.MissingVersionColumn) {
-        await migrateToLatest(this.path, WorkspaceVersion.SubDoc);
-      }
       this.db = new SqliteConnection(this.path);
       await this.db.connect();
-      const maxVersion = await this.db.getMaxVersion();
-      if (maxVersion !== WorkspaceVersion.Surface) {
-        await migrateToLatest(this.path, WorkspaceVersion.Surface);
-      }
-      await applyGuidCompatibilityFix(this.db);
       logger.info(`[SQLiteAdapter]`, 'connected:', this.path);
     }
     return this.db;

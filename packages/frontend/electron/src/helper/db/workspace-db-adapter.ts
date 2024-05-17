@@ -1,4 +1,4 @@
-import { AsyncLock } from '@toeverything/infra';
+import { AsyncLock } from '@toeverything/infra/utils';
 import { Subject } from 'rxjs';
 import { applyUpdate, Doc as YDoc } from 'yjs';
 

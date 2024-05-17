@@ -5,6 +5,7 @@
   "exports": {
     "./blocksuite": "./src/blocksuite/index.ts",
     "./storage": "./src/storage/index.ts",
+    "./utils": "./src/utils/index.ts",
     "./app-config-storage": "./src/app-config-storage.ts",
     ".": "./src/index.ts"
   },
