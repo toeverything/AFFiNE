@@ -1,4 +1,5 @@
 export interface OAuthProviderConfig {
+  issuer?: string;
   clientId: string;
   clientSecret: string;
   args?: Record<string, string>;
@@ -7,6 +8,7 @@ export interface OAuthProviderConfig {
 export enum OAuthProviderName {
   Google = 'google',
   GitHub = 'github',
+  OIDC = 'oidc',  
 }
 
 export interface OAuthConfig {

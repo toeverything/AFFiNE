@@ -131,26 +131,41 @@ AFFiNE.port = 3010;
 // AFFiNE.storage.storages.blob.provider = 'r2';
 // AFFiNE.storage.storages.avatar.provider = 'r2';
 //
-// /* OAuth Plugin */
-// AFFiNE.plugins.use('oauth', {
-//   providers: {
-//     github: {
-//       clientId: '',
-//       clientSecret: '',
-//       // See https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps
-//       args: {
-//         scope: 'user',
-//       },
-//     },
-//     google: {
-//       clientId: '',
-//       clientSecret: '',
-//       args: {
-//         // See https://developers.google.com/identity/protocols/oauth2
-//         scope: 'openid email profile',
-//         promot: 'select_account',
-//         access_type: 'offline',
-//       },
-//     },
-//   },
-// });
+/* OAuth Plugin */
+AFFiNE.plugins.use('oauth', {
+  providers: {
+    github: {
+      issuer: '',
+      clientId: '',
+      clientSecret: '',
+      // See https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps
+      args: {
+        scope: 'user',
+      },
+    },
+    google: {
+      issuer: '',
+      clientId: '',
+      clientSecret: '',
+      args: {
+        // See https://developers.google.com/identity/protocols/oauth2
+        scope: 'openid email profile',
+        promot: 'select_account',
+        access_type: 'offline',
+      },
+    },
+    oidc: {
+      // OpenID Connect
+      issuer: '',
+      clientId: '',
+      clientSecret: '',
+      args: {
+        scope: 'openid email profile',
+        claim_id: 'preferred_username',
+        claim_email: 'email',
+        claim_name: 'name',
+      },
+    },
+  }
+}
+);
