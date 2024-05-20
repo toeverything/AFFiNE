@@ -180,6 +180,10 @@ jobs:
       - name: Generate Prisma client
         run: yarn workspace @affine/server prisma generate
 
+      - name: Setup Version
+        id: version
+        uses: ./.github/actions/setup-version
+
       - name: Build graphql Dockerfile
         uses: docker/build-push-action@v5
         with:
