@@ -170,8 +170,7 @@ export class OIDCProvider extends AutoRegisteredOAuthProvider {
         const userinfo = this.mapUserInfo(user, claimsMap);
         return {
           id: userinfo.id,
-          avatarUrl: "",
-          email: userinfo.email,
+          email: userinfo.email
         };
       } else {
         const errorText = await response.text();
