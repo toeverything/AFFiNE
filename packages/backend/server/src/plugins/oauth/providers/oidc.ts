@@ -74,6 +74,16 @@ export class OIDCProvider extends AutoRegisteredOAuthProvider {
     }
   }
 
+  private mapUserInfo(user: Record<string, any>, claimsMap: Record<string, string>): UserInfo {
+    const mappedUser: Partial<UserInfo> = {};
+    for (const [key, value] of Object.entries(claimsMap)) {
+      if (user[value] !== undefined) {
+        mappedUser[key] = user[value];
+      }
+    }
+    return mappedUser as UserInfo;
+  }
+
   private checkOIDCConfig(): void {
     if (!this.oidcConfig) {
       throw new Error('OIDC configuration has not been loaded yet.');
