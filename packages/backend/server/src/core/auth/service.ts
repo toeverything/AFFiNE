@@ -354,6 +354,15 @@ export class AuthService implements OnApplicationBootstrap {
     }
   }
 
+  async revokeUserSessions(userId: string, sessionId?: string) {
+    return this.db.userSession.deleteMany({
+      where: {
+        userId,
+        sessionId,
+      },
+    });
+  }
+
   async setCookie(_req: Request, res: Response, user: { id: string }) {
     const session = await this.createUserSession(
       user

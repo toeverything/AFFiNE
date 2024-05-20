@@ -98,6 +98,7 @@ export class AuthResolver {
     }
 
     await this.auth.changePassword(user.id, newPassword);
+    await this.auth.revokeUserSessions(user.id);
 
     return user;
   }
@@ -121,6 +122,7 @@ export class AuthResolver {
     email = decodeURIComponent(email);
 
     await this.auth.changeEmail(user.id, email);
+    await this.auth.revokeUserSessions(user.id);
     await this.auth.sendNotificationChangeEmail(email);
 
     return user;

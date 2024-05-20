@@ -12,6 +12,7 @@ import { faker } from '@faker-js/faker';
 import { hash } from '@node-rs/argon2';
 import type { BrowserContext, Cookie, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
+import type { Assertions } from 'ava';
 import { z } from 'zod';
 
 export async function getCurrentMailMessageCount() {
@@ -24,6 +25,19 @@ export async function getLatestMailMessage() {
   const response = await fetch('http://localhost:8025/api/v2/messages');
   const data = await response.json();
   return data.items[0];
+}
+
+export async function getTokenFromLatestMailMessage<A extends Assertions>(
+  test?: A
+) {
+  const tokenRegex = /token=3D([^"&]+)/;
+  const emailContent = await getLatestMailMessage();
+  const tokenMatch = emailContent.Content.Body.match(tokenRegex);
+  const token = tokenMatch
+    ? decodeURIComponent(tokenMatch[1].replace(/=\r\n/, ''))
+    : null;
+  test?.truthy(token);
+  return token;
 }
 
 export async function getLoginCookie(

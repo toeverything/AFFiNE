@@ -1,6 +1,8 @@
+import { randomBytes } from 'node:crypto';
+
 import {
   getCurrentMailMessageCount,
-  getLatestMailMessage,
+  getTokenFromLatestMailMessage,
 } from '@affine-test/kit/utils/cloud';
 import type { INestApplication } from '@nestjs/common';
 import type { TestFn } from 'ava';
@@ -10,8 +12,11 @@ import { AuthService } from '../src/core/auth/service';
 import { MailService } from '../src/fundamentals/mailer';
 import {
   changeEmail,
+  changePassword,
   createTestingApp,
+  currentUser,
   sendChangeEmail,
+  sendSetPasswordEmail,
   sendVerifyChangeEmail,
   signUp,
 } from './utils';
@@ -40,7 +45,6 @@ test('change email', async t => {
   if (mail.hasConfigured()) {
     const u1Email = 'u1@affine.pro';
     const u2Email = 'u2@affine.pro';
-    const tokenRegex = /token=3D([^"&]+)/;
 
     const u1 = await signUp(app, 'u1', u1Email, '1');
 
@@ -54,12 +58,8 @@ test('change email', async t => {
       afterSendChangeMailCount,
       'failed to send change email'
     );
-    const changeEmailContent = await getLatestMailMessage();
 
-    const changeTokenMatch = changeEmailContent.Content.Body.match(tokenRegex);
-    const changeEmailToken = changeTokenMatch
-      ? decodeURIComponent(changeTokenMatch[1].replace(/=\r\n/, ''))
-      : null;
+    const changeEmailToken = await getTokenFromLatestMailMessage();
 
     t.not(
       changeEmailToken,
@@ -82,12 +82,8 @@ test('change email', async t => {
       afterSendVerifyMailCount,
       'failed to send verify email'
     );
-    const verifyEmailContent = await getLatestMailMessage();
 
-    const verifyTokenMatch = verifyEmailContent.Content.Body.match(tokenRegex);
-    const verifyEmailToken = verifyTokenMatch
-      ? decodeURIComponent(verifyTokenMatch[1].replace(/=\r\n/, ''))
-      : null;
+    const verifyEmailToken = await getTokenFromLatestMailMessage();
 
     t.not(
       verifyEmailToken,
@@ -104,6 +100,119 @@ test('change email', async t => {
       afterNotificationMailCount,
       'failed to send notification email'
     );
+  }
+  t.pass();
+});
+
+test('set and change password', async t => {
+  const { mail, app, auth } = t.context;
+  if (mail.hasConfigured()) {
+    const u1Email = 'u1@affine.pro';
+
+    const u1 = await signUp(app, 'u1', u1Email, '1');
+
+    const primitiveMailCount = await getCurrentMailMessageCount();
+
+    await sendSetPasswordEmail(app, u1.token.token, u1Email, 'affine.pro');
+
+    const afterSendSetMailCount = await getCurrentMailMessageCount();
+
+    t.is(
+      primitiveMailCount + 1,
+      afterSendSetMailCount,
+      'failed to send set email'
+    );
+
+    const setPasswordToken = await getTokenFromLatestMailMessage();
+
+    t.not(
+      setPasswordToken,
+      null,
+      'fail to get set password token from email content'
+    );
+
+    const newPassword = randomBytes(16).toString('hex');
+    const userId = await changePassword(
+      app,
+      u1.token.token,
+      setPasswordToken as string,
+      newPassword
+    );
+    t.is(u1.id, userId, 'failed to set password');
+
+    const ret = auth.signIn(u1Email, newPassword);
+    t.notThrowsAsync(ret, 'failed to check password');
+    t.is((await ret).id, u1.id, 'failed to check password');
+  }
+  t.pass();
+});
+test('should revoke token after change user identify', async t => {
+  const { mail, app, auth } = t.context;
+  if (mail.hasConfigured()) {
+    // change email
+    {
+      const u1Email = 'u1@affine.pro';
+      const u2Email = 'u2@affine.pro';
+
+      const u1 = await signUp(app, 'u1', u1Email, '1');
+
+      {
+        const user = await currentUser(app, u1.token.token);
+        t.is(user?.email, u1Email, 'failed to get current user');
+      }
+
+      await sendChangeEmail(app, u1.token.token, u1Email, 'affine.pro');
+
+      const changeEmailToken = await getTokenFromLatestMailMessage();
+      await sendVerifyChangeEmail(
+        app,
+        u1.token.token,
+        changeEmailToken as string,
+        u2Email,
+        'affine.pro'
+      );
+
+      const verifyEmailToken = await getTokenFromLatestMailMessage();
+      await changeEmail(
+        app,
+        u1.token.token,
+        verifyEmailToken as string,
+        u2Email
+      );
+
+      const user = await currentUser(app, u1.token.token);
+      t.is(user, null, 'token should be revoked');
+
+      const newUserSession = await auth.signIn(u2Email, '1');
+      t.is(newUserSession?.email, u2Email, 'failed to sign in with new email');
+    }
+
+    // change password
+    {
+      const u3Email = 'u3@affine.pro';
+
+      const u3 = await signUp(app, 'u1', u3Email, '1');
+
+      {
+        const user = await currentUser(app, u3.token.token);
+        t.is(user?.email, u3Email, 'failed to get current user');
+      }
+
+      await sendSetPasswordEmail(app, u3.token.token, u3Email, 'affine.pro');
+      const token = await getTokenFromLatestMailMessage();
+      const newPassword = randomBytes(16).toString('hex');
+      await changePassword(app, u3.token.token, token as string, newPassword);
+
+      const user = await currentUser(app, u3.token.token);
+      t.is(user, null, 'token should be revoked');
+
+      const newUserSession = await auth.signIn(u3Email, newPassword);
+      t.is(
+        newUserSession?.email,
+        u3Email,
+        'failed to sign in with new password'
+      );
+    }
   }
   t.pass();
 });
