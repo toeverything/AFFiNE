@@ -1,4 +1,4 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { Config, URLHelper } from '../../../fundamentals';
 import { AutoRegisteredOAuthProvider } from '../register';
 import { OAuthProviderName } from '../types';
@@ -15,6 +15,7 @@ interface OIDCConfiguration {
   authorization_endpoint: string;
   token_endpoint: string;
   userinfo_endpoint: string;
+  end_session_endpoint: string;
 }
 
 export interface UserInfo {
@@ -27,55 +28,60 @@ export interface UserInfo {
 export class OIDCProvider extends AutoRegisteredOAuthProvider {
   override provider = OAuthProviderName.OIDC;
   private oidcConfig: OIDCConfiguration | null = null;
+  private readonly logger = new Logger(OIDCProvider.name);
 
   constructor(
     protected readonly AFFiNEConfig: Config,
     private readonly url: URLHelper,
   ) {
     super();
+    this.loadOIDCConfigurationAsync().then(() => {
+      this.logger.log('OIDC configuration loaded.');
+    }).catch(error => {
+      this.logger.error('Failed to load OIDC configuration:', error);
+    });
   }
 
-  private mapUserInfo(user: Record<string, any>, claimsMap: Record<string, string>): UserInfo {
-    const mappedUser: Partial<UserInfo> = {};
-    for (const [key, value] of Object.entries(claimsMap)) {
-      if (user[value] !== undefined) {
-        mappedUser[key] = user[value];
-      }
+  private async loadOIDCConfigurationAsync(): Promise<void> {
+    const issuer = this.config.issuer;
+    if (!issuer) {
+      this.logger.error('Issuer is not defined in the configuration.');
+      return;
     }
-    return mappedUser as UserInfo;
+
+    try {
+      const wellKnownEndpoint = `${issuer}/.well-known/openid-configuration`;
+      const response = await fetch(wellKnownEndpoint, {
+        method: 'GET',
+        headers: {
+          Accept: 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch OIDC configuration: ${response.statusText}`);
+      }
+
+      const fullConfig = await response.json();
+      this.oidcConfig = {
+        authorization_endpoint: fullConfig.authorization_endpoint,
+        token_endpoint: fullConfig.token_endpoint,
+        userinfo_endpoint: fullConfig.userinfo_endpoint,
+        end_session_endpoint: fullConfig.end_session_endpoint,
+      };
+    } catch (error) {
+      this.logger.error(`Failed to fetch OIDC configuration: ${(error as Error).message}`);
+    }
   }
 
-  private async loadOIDCConfiguration(): Promise<void> {
+  private checkOIDCConfig(): void {
     if (!this.oidcConfig) {
-      const issuer = this.config.issuer;
-      if (!issuer) {
-        throw new Error('Issuer is not defined in the configuration.');
-      }
-
-      try {
-        const wellKnownEndpoint = `${issuer}/.well-known/openid-configuration`;
-        const response = await fetch(wellKnownEndpoint, {
-          method: 'GET',
-          headers: {
-            Accept: 'application/json',
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error(`Failed to fetch OIDC configuration: ${response.statusText}`);
-        }
-
-        this.oidcConfig = (await response.json()) as OIDCConfiguration;
-      } catch (error) {
-        throw new Error(`Failed to fetch OIDC configuration: ${(error as Error).message}`);
-      }
+      throw new Error('OIDC configuration has not been loaded yet.');
     }
   }
 
   getAuthUrl(state: string): string {
-    if (!this.oidcConfig) {
-      throw new Error('OIDC configuration has not been loaded.');
-    }
+    this.checkOIDCConfig();
     return `${this.oidcConfig.authorization_endpoint}?${this.url.stringify({
       client_id: this.config.clientId,
       redirect_uri: this.url.link('/oauth/callback'),
@@ -92,10 +98,7 @@ export class OIDCProvider extends AutoRegisteredOAuthProvider {
     expiresAt: Date;
     scope: string;
   }> {
-    await this.loadOIDCConfiguration();
-    if (!this.oidcConfig) {
-      throw new Error('OIDC configuration has not been loaded.');
-    }
+    this.checkOIDCConfig();
     try {
       const response = await fetch(this.oidcConfig.token_endpoint, {
         method: 'POST',
@@ -136,10 +139,7 @@ export class OIDCProvider extends AutoRegisteredOAuthProvider {
   }
 
   async getUser(token: string): Promise<UserInfo> {
-    await this.loadOIDCConfiguration();
-    if (!this.oidcConfig) {
-      throw new Error('OIDC configuration has not been loaded.');
-    }
+    this.checkOIDCConfig();
     try {
       const response = await fetch(this.oidcConfig.userinfo_endpoint, {
         method: 'GET',
