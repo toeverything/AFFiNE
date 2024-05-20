@@ -84,6 +84,68 @@ export const prompts: Prompt[] = [
     messages: [],
   },
   {
+    name: 'debug:action:fal-sdturbo-clay',
+    action: 'image',
+    model: 'fast-turbo-diffusion',
+    messages: [
+      {
+        role: 'user',
+        content: 'claymation, clay, {{content}}',
+        params: {
+          lora: [
+            'https://models.affine.pro/fal/Clay_AFFiNEAI_SDXL1_CLAYMATION.safetensors',
+          ],
+        },
+      },
+    ],
+  },
+  {
+    name: 'debug:action:fal-sdturbo-pixel',
+    action: 'image',
+    model: 'fast-turbo-diffusion',
+    messages: [
+      {
+        role: 'user',
+        content: 'pixel art, very high detail, masterpiece, {{content}}',
+        params: {
+          lora: ['https://models.affine.pro/fal/pixel-art-xl-v1.1.safetensors'],
+        },
+      },
+    ],
+  },
+  {
+    name: 'debug:action:fal-sdturbo-sketch',
+    action: 'image',
+    model: 'fast-turbo-diffusion',
+    messages: [
+      {
+        role: 'user',
+        content: 'sketch for art examination, {{content}}',
+        params: {
+          lora: [
+            'https://models.affine.pro/fal/sketch_for_art_examination.safetensors',
+          ],
+        },
+      },
+    ],
+  },
+  {
+    name: 'debug:action:fal-sdturbo-fantasy',
+    action: 'image',
+    model: 'fast-turbo-diffusion',
+    messages: [
+      {
+        role: 'user',
+        content: 'fansty world, {{content}}',
+        params: {
+          lora: [
+            'https://models.affine.pro/fal/fansty%20world-000020.safetensors',
+          ],
+        },
+      },
+    ],
+  },
+  {
     name: 'Summary',
     action: 'Summary',
     model: 'gpt-4o',

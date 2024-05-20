@@ -18,6 +18,12 @@ export type FalResponse = {
   images: Array<{ url: string }>;
 };
 
+type FalPrompt = {
+  image_url?: string;
+  prompt?: string;
+  lora?: string[];
+};
+
 export class FalProvider
   implements CopilotTextToImageProvider, CopilotImageToImageProvider
 {
@@ -56,21 +62,50 @@ export class FalProvider
     return this.availableModels.includes(model);
   }
 
+  private extractError(resp: FalResponse): string {
+    return Array.isArray(resp.detail)
+      ? resp.detail[0]?.msg
+      : typeof resp.detail === 'string'
+        ? resp.detail
+        : '';
+  }
+
+  private extractPrompt(message?: PromptMessage): FalPrompt {
+    if (!message) throw new Error('Prompt is empty');
+    const { content, attachments, params } = message;
+    // prompt attachments require at least one
+    if (!content && (!Array.isArray(attachments) || !attachments.length)) {
+      throw new Error('Prompt or Attachments is empty');
+    }
+    if (Array.isArray(attachments) && attachments.length > 1) {
+      throw new Error('Only one attachment is allowed');
+    }
+    const lora = (
+      params?.lora
+        ? Array.isArray(params.lora)
+          ? params.lora
+          : [params.lora]
+        : []
+    ).filter(v => typeof v === 'string' && v.length);
+    return {
+      image_url: attachments?.[0],
+      prompt: content || undefined,
+      lora: lora.length ? lora : undefined,
+    };
+  }
+
   // ====== image to image ======
   async generateImages(
     messages: PromptMessage[],
     model: string = this.availableModels[0],
     options: CopilotImageOptions = {}
   ): Promise<Array<string>> {
-    const { content, attachments } = messages.pop() || {};
     if (!this.availableModels.includes(model)) {
       throw new Error(`Invalid model: ${model}`);
     }
 
-    // prompt attachments require at least one
-    if (!content && (!Array.isArray(attachments) || !attachments.length)) {
-      throw new Error('Prompt or Attachments is empty');
-    }
+    // by default, image prompt assumes there is only one message
+    const prompt = this.extractPrompt(messages.pop());
 
     const data = (await fetch(`https://fal.run/fal-ai/${model}`, {
       method: 'POST',
@@ -79,8 +114,7 @@ export class FalProvider
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        image_url: attachments?.[0],
-        prompt: content,
+        ...prompt,
         sync_mode: true,
         seed: options.seed || 42,
         enable_safety_checks: false,
@@ -89,13 +123,9 @@ export class FalProvider
     }).then(res => res.json())) as FalResponse;
 
     if (!data.images?.length) {
-      const error = Array.isArray(data.detail)
-        ? data.detail[0]?.msg
-        : typeof data.detail === 'string'
-          ? data.detail
-          : '';
+      const error = this.extractError(data);
       throw new Error(
-        error ? `Invalid message: ${error}` : 'No images generated'
+        error ? `Failed to generate image: ${error}` : 'No images generated'
       );
     }
     return data.images?.map(image => image.url) || [];
