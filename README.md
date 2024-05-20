@@ -81,7 +81,7 @@ AFFiNE is an open-source, all-in-one workspace and an operating system for all t
 
 - Quip & Notion with their great concept of “everything is a block”
 - Trello with their Kanban
-- Airtable & Miro with their no-code programable datasheets
+- Airtable & Miro with their no-code programmable datasheets
 - Miro & Whimiscal with their edgeless visual whiteboard
 - Remote & Capacities with their object-based tag system
 
