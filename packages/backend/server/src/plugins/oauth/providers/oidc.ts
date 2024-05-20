@@ -1,6 +1,7 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { Config, URLHelper } from '../../../fundamentals';
 import { AutoRegisteredOAuthProvider } from '../register';
+import {OAuthAccount} from './def';
 import { OAuthProviderName } from '../types';
 
 interface OIDCTokenResponse {
@@ -22,6 +23,7 @@ export interface UserInfo {
   id: string;
   email: string;
   name: string;
+  groups?: string[];
 }
 
 @Injectable()
@@ -148,7 +150,7 @@ export class OIDCProvider extends AutoRegisteredOAuthProvider {
     }
   }
 
-  async getUser(token: string): Promise<UserInfo> {
+  async getUser(token: string): Promise<OAuthAccount> {
     this.checkOIDCConfig();
     try {
       const response = await fetch(this.oidcConfig.userinfo_endpoint, {
@@ -165,7 +167,12 @@ export class OIDCProvider extends AutoRegisteredOAuthProvider {
           email: this.config.args?.claim_email || 'email',
           name: this.config.args?.claim_name || 'name',
         };
-        return this.mapUserInfo(user, claimsMap);
+        const userinfo = this.mapUserInfo(user, claimsMap);
+        return {
+          id: userinfo.id,
+          avatarUrl: "",
+          email: userinfo.email,
+        };
       } else {
         const errorText = await response.text();
         throw new Error(`Server responded with non-success code ${response.status} ${errorText}`);
