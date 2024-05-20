@@ -133,11 +133,13 @@ export class CopilotClient {
     signal,
   }: {
     sessionId: string;
-    messageId: string;
+    messageId?: string;
     signal?: AbortSignal;
   }) {
     const url = new URL(`${this.backendUrl}/api/copilot/chat/${sessionId}`);
-    url.searchParams.set('messageId', messageId);
+    if (messageId) {
+      url.searchParams.set('messageId', messageId);
+    }
     const response = await fetch(url.toString(), { signal });
     return response.text();
   }
@@ -148,21 +150,23 @@ export class CopilotClient {
     messageId,
   }: {
     sessionId: string;
-    messageId: string;
+    messageId?: string;
   }) {
     const url = new URL(
       `${this.backendUrl}/api/copilot/chat/${sessionId}/stream`
     );
-    url.searchParams.set('messageId', messageId);
+    if (messageId) url.searchParams.set('messageId', messageId);
     return new EventSource(url.toString());
   }
 
   // Text or image to images
-  imagesStream(messageId: string, sessionId: string, seed?: string) {
+  imagesStream(sessionId: string, messageId?: string, seed?: string) {
     const url = new URL(
       `${this.backendUrl}/api/copilot/chat/${sessionId}/images`
     );
-    url.searchParams.set('messageId', messageId);
+    if (messageId) {
+      url.searchParams.set('messageId', messageId);
+    }
     if (seed) {
       url.searchParams.set('seed', seed);
     }

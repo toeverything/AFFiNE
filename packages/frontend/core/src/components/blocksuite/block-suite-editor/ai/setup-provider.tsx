@@ -219,6 +219,7 @@ function setupAIProvider() {
   });
 
   AIProvider.provide('expandMindmap', options => {
+    assertExists(options.input, 'expandMindmap action requires input');
     return textToText({
       ...options,
       params: {
