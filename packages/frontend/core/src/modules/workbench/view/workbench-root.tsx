@@ -64,11 +64,11 @@ const WorkbenchView = ({ view, index }: { view: View; index: number }) => {
   useEffect(() => {
     if (containerRef.current) {
       const element = containerRef.current;
-      element.addEventListener('mousedown', handleOnFocus, {
+      element.addEventListener('pointerdown', handleOnFocus, {
         capture: true,
       });
       return () => {
-        element.removeEventListener('mousedown', handleOnFocus, {
+        element.removeEventListener('pointerdown', handleOnFocus, {
           capture: true,
         });
       };
