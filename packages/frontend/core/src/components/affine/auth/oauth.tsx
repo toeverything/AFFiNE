@@ -23,6 +23,10 @@ const OAuthProviderMap: Record<
   [OAuthProviderType.GitHub]: {
     icon: <GithubIcon />,
   },
+
+  [OAuthProviderType.OIDC]: {
+    icon: <GoogleDuotoneIcon />,
+  },
 };
 
 export function OAuth({ redirectUri }: { redirectUri?: string | null }) {
