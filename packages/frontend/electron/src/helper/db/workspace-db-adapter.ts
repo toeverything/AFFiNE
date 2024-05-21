@@ -107,7 +107,7 @@ export class WorkspaceSQLiteDB {
         logger.debug(`trim ${this.workspaceId}:${dbID} ${count}`);
         const updates = await this.adapter.getUpdates(dbID);
         const update = mergeUpdate(updates.map(row => row.data));
-        const insertRows = [{ data: update, dbID }];
+        const insertRows = [{ data: update, docId: dbID }];
         await this.adapter?.replaceUpdates(dbID, insertRows);
         logger.debug(`trim ${this.workspaceId}:${dbID} successfully`);
         return update;
