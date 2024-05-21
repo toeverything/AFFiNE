@@ -6,6 +6,7 @@ import { GithubIcon, GoogleDuotoneIcon } from '@blocksuite/icons';
 import { useLiveData, useService } from '@toeverything/infra';
 import type { ReactElement } from 'react';
 import { useState } from 'react';
+
 import { AuthService, ServerConfigService } from '../../../modules/cloud';
 import { mixpanel } from '../../../utils';
 

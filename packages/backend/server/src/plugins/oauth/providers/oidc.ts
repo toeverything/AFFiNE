@@ -1,8 +1,9 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
+
 import { Config, URLHelper } from '../../../fundamentals';
 import { AutoRegisteredOAuthProvider } from '../register';
-import {OAuthAccount} from './def';
-import { OAuthProviderName } from '../types';
+import { OAuthOIDCProviderConfig, OAuthProviderName } from '../types';
+import { OAuthAccount } from './def';
 
 interface OIDCTokenResponse {
   access_token: string;
@@ -32,16 +33,22 @@ export class OIDCProvider extends AutoRegisteredOAuthProvider {
   private oidcConfig: OIDCConfiguration | null = null;
   private readonly logger = new Logger(OIDCProvider.name);
 
+  override get config() {
+    return super.config as OAuthOIDCProviderConfig;
+  }
+
   constructor(
     protected readonly AFFiNEConfig: Config,
-    private readonly url: URLHelper,
+    private readonly url: URLHelper
   ) {
     super();
-    this.loadOIDCConfigurationAsync().then(() => {
-      this.logger.log('OIDC configuration loaded.');
-    }).catch(error => {
-      this.logger.error('Failed to load OIDC configuration:', error);
-    });
+    this.loadOIDCConfigurationAsync()
+      .then(() => {
+        this.logger.log('OIDC configuration loaded.');
+      })
+      .catch(error => {
+        this.logger.error('Failed to load OIDC configuration:', error);
+      });
   }
 
   private async loadOIDCConfigurationAsync(): Promise<void> {
@@ -61,7 +68,9 @@ export class OIDCProvider extends AutoRegisteredOAuthProvider {
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to fetch OIDC configuration: ${response.statusText}`);
+        throw new Error(
+          `Failed to fetch OIDC configuration: ${response.statusText}`
+        );
       }
 
       const fullConfig = await response.json();
@@ -72,33 +81,39 @@ export class OIDCProvider extends AutoRegisteredOAuthProvider {
         end_session_endpoint: fullConfig.end_session_endpoint,
       };
     } catch (error) {
-      this.logger.error(`Failed to fetch OIDC configuration: ${(error as Error).message}`);
+      this.logger.error(
+        `Failed to fetch OIDC configuration: ${(error as Error).message}`
+      );
     }
   }
 
-  private mapUserInfo(user: Record<string, any>, claimsMap: Record<string, string>): UserInfo {
+  private mapUserInfo(
+    user: Record<string, any>,
+    claimsMap: Record<string, string>
+  ): UserInfo {
     const mappedUser: Partial<UserInfo> = {};
     for (const [key, value] of Object.entries(claimsMap)) {
       if (user[value] !== undefined) {
-        mappedUser[key] = user[value];
+        mappedUser[key as keyof UserInfo] = user[value];
       }
     }
     return mappedUser as UserInfo;
   }
 
-  private checkOIDCConfig(): void {
-    if (!this.oidcConfig) {
+  private checkOIDCConfig(
+    oidcConfig: OIDCConfiguration | null
+  ): asserts oidcConfig is OIDCConfiguration {
+    if (!oidcConfig) {
       throw new Error('OIDC configuration has not been loaded yet.');
     }
   }
 
   getAuthUrl(state: string): string {
-    this.checkOIDCConfig();
+    this.checkOIDCConfig(this.oidcConfig);
     return `${this.oidcConfig.authorization_endpoint}?${this.url.stringify({
       client_id: this.config.clientId,
       redirect_uri: this.url.link('/oauth/callback'),
       response_type: 'code',
-      scope: this.config.args.scope,
       ...this.config.args,
       state,
     })}`;
@@ -110,7 +125,7 @@ export class OIDCProvider extends AutoRegisteredOAuthProvider {
     expiresAt: Date;
     scope: string;
   }> {
-    this.checkOIDCConfig();
+    this.checkOIDCConfig(this.oidcConfig);
     try {
       const response = await fetch(this.oidcConfig.token_endpoint, {
         method: 'POST',
@@ -151,7 +166,7 @@ export class OIDCProvider extends AutoRegisteredOAuthProvider {
   }
 
   async getUser(token: string): Promise<OAuthAccount> {
-    this.checkOIDCConfig();
+    this.checkOIDCConfig(this.oidcConfig);
     try {
       const response = await fetch(this.oidcConfig.userinfo_endpoint, {
         method: 'GET',
@@ -170,11 +185,13 @@ export class OIDCProvider extends AutoRegisteredOAuthProvider {
         const userinfo = this.mapUserInfo(user, claimsMap);
         return {
           id: userinfo.id,
-          email: userinfo.email
+          email: userinfo.email,
         };
       } else {
         const errorText = await response.text();
-        throw new Error(`Server responded with non-success code ${response.status} ${errorText}`);
+        throw new Error(
+          `Server responded with non-success code ${response.status} ${errorText}`
+        );
       }
     } catch (e) {
       throw new HttpException(
