@@ -100,7 +100,7 @@
     "@types/react-dnd": "^3.0.2",
     "@types/react-dom": "^18.2.24",
     "@vanilla-extract/css": "^1.14.2",
-    "fake-indexeddb": "^5.0.2",
+    "fake-indexeddb": "^6.0.0",
     "storybook": "^7.6.17",
     "storybook-dark-mode": "^4.0.0",
     "typescript": "^5.4.5",

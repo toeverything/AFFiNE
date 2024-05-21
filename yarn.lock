@@ -269,7 +269,7 @@ __metadata:
     check-password-strength: "npm:^2.0.10"
     clsx: "npm:^2.1.0"
     dayjs: "npm:^1.11.10"
-    fake-indexeddb: "npm:^5.0.2"
+    fake-indexeddb: "npm:^6.0.0"
     foxact: "npm:^0.2.33"
     jotai: "npm:^2.8.0"
     jotai-effect: "npm:^1.0.0"
@@ -368,7 +368,7 @@ __metadata:
     css-spring: "npm:^4.1.0"
     dayjs: "npm:^1.11.10"
     express: "npm:^4.19.2"
-    fake-indexeddb: "npm:^5.0.2"
+    fake-indexeddb: "npm:^6.0.0"
     foxact: "npm:^0.2.33"
     fractional-indexing: "npm:^3.2.0"
     graphql: "npm:^16.8.1"
@@ -595,7 +595,7 @@ __metadata:
     eslint-plugin-unicorn: "npm:^52.0.0"
     eslint-plugin-unused-imports: "npm:^3.1.0"
     eslint-plugin-vue: "npm:^9.24.1"
-    fake-indexeddb: "npm:5.0.2"
+    fake-indexeddb: "npm:6.0.0"
     happy-dom: "npm:^14.7.1"
     husky: "npm:^9.0.11"
     lint-staged: "npm:^15.2.2"
@@ -22416,10 +22416,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"fake-indexeddb@npm:5.0.2, fake-indexeddb@npm:^5.0.2":
-  version: 5.0.2
-  resolution: "fake-indexeddb@npm:5.0.2"
-  checksum: 10/8bbe74fe29c2d8e9bf97928f4c7af87afa63f2458cd4992897f65aa5a8c2828fd48cb6f0510593442eb1ab5465d5cc08a1cd4c478fa234514e22a627adf0e2ac
+"fake-indexeddb@npm:6.0.0, fake-indexeddb@npm:^6.0.0":
+  version: 6.0.0
+  resolution: "fake-indexeddb@npm:6.0.0"
+  checksum: 10/b4098f050ae1f18e23edd5e87da17aee1b6a199e1d3dec0c35346db73416ffac59bd595e2011b9cd70f36fe25eb852d122d2a05c74f75754869f300d84159414
   languageName: node
   linkType: hard
 

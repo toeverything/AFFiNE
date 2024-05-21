@@ -103,7 +103,7 @@
     "@types/uuid": "^9.0.8",
     "@vanilla-extract/css": "^1.14.2",
     "express": "^4.19.2",
-    "fake-indexeddb": "^5.0.2",
+    "fake-indexeddb": "^6.0.0",
     "lodash-es": "^4.17.21",
     "mime-types": "^2.1.35",
     "vitest": "1.6.0"
