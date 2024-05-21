@@ -236,6 +236,7 @@ type Mutation {
 enum OAuthProviderType {
   GitHub
   Google
+  OIDC
 }
 
 type PasswordLimitsType {
