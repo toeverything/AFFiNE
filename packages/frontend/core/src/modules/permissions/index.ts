@@ -5,6 +5,7 @@ import {
   type Framework,
   WorkspaceScope,
   WorkspaceService,
+  WorkspacesService,
 } from '@toeverything/infra';
 
 import { WorkspacePermission } from './entities/permission';
@@ -14,7 +15,11 @@ import { WorkspacePermissionStore } from './stores/permission';
 export function configurePermissionsModule(framework: Framework) {
   framework
     .scope(WorkspaceScope)
-    .service(WorkspacePermissionService)
+    .service(WorkspacePermissionService, [
+      WorkspaceService,
+      WorkspacesService,
+      WorkspacePermissionStore,
+    ])
     .store(WorkspacePermissionStore, [GraphQLService])
     .entity(WorkspacePermission, [WorkspaceService, WorkspacePermissionStore]);
 }
