@@ -4,6 +4,7 @@ import {
   NotAcceptableException,
   OnApplicationBootstrap,
 } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import type { User } from '@prisma/client';
 import { PrismaClient } from '@prisma/client';
 import type { CookieOptions, Request, Response } from 'express';
@@ -454,5 +455,24 @@ export class AuthService implements OnApplicationBootstrap {
       : await this.mailer.sendSignInMail(link.toString(), {
           to: email,
         });
+  }
+
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+  async cleanExpiredSessions() {
+    await this.db.session.deleteMany({
+      where: {
+        expiresAt: {
+          lte: new Date(),
+        },
+      },
+    });
+
+    await this.db.userSession.deleteMany({
+      where: {
+        expiresAt: {
+          lte: new Date(),
+        },
+      },
+    });
   }
 }
