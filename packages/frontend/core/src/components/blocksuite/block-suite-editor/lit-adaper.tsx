@@ -3,6 +3,7 @@ import {
   useLitPortalFactory,
 } from '@affine/component';
 import { useJournalInfoHelper } from '@affine/core/hooks/use-journal';
+import { WorkbenchService } from '@affine/core/modules/workbench';
 import {
   BiDirectionalLinkPanel,
   DocMetaTags,
@@ -11,6 +12,7 @@ import {
   PageEditor,
 } from '@blocksuite/presets';
 import type { Doc } from '@blocksuite/store';
+import { useLiveData, useService } from '@toeverything/infra';
 import React, {
   forwardRef,
   Fragment,
@@ -70,6 +72,10 @@ export const BlocksuiteDocEditor = forwardRef<
     useState<HTMLElementTagNameMap['affine-page-root']>();
   const { isJournal } = useJournalInfoHelper(page.collection, page.id);
 
+  const workbench = useService(WorkbenchService).workbench;
+  const activeView = useLiveData(workbench.activeView$);
+  const hash = useLiveData(activeView.location$).hash;
+
   const onDocRef = useCallback(
     (el: PageEditor) => {
       docRef.current = el;
@@ -98,13 +104,14 @@ export const BlocksuiteDocEditor = forwardRef<
       if (docPage) {
         setDocPage(docPage);
       }
-      if (titleRef.current) {
+      if (titleRef.current && !hash) {
         const richText = titleRef.current.querySelector('rich-text');
         richText?.inlineEditor?.focusEnd();
       } else {
         docPage?.focusFirstParagraph();
       }
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

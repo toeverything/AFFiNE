@@ -717,9 +717,7 @@ test('caption should be visible and different styles were applied if image zoome
   await importImage(page, 'http://localhost:8081/large-image.png');
   await page.locator('affine-page-image').first().hover();
   await page
-    .locator('.embed-editing-state')
-    .locator('icon-button')
-    .nth(1)
+    .locator('.affine-image-toolbar-container .image-toolbar-button.caption')
     .click();
   await page.getByPlaceholder('Write a caption').fill(sampleCaption);
   await page.locator('affine-page-image').first().dblclick();
