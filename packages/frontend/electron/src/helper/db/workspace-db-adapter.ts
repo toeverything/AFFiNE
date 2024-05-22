@@ -7,7 +7,7 @@ import { getWorkspaceMeta } from '../workspace/meta';
 import { SQLiteAdapter } from './db-adapter';
 import { mergeUpdate } from './merge-update';
 
-const TRIM_SIZE = 500;
+const TRIM_SIZE = 1;
 
 export class WorkspaceSQLiteDB {
   lock = new AsyncLock();
@@ -87,12 +87,16 @@ export class WorkspaceSQLiteDB {
 
   async addUpdateToSQLite(update: Uint8Array, subdocId: string) {
     this.update$.next();
-    await this.adapter.addUpdateToSQLite([
-      {
-        data: update,
-        docId: this.toDBDocId(subdocId),
-      },
-    ]);
+    await this.transaction(async () => {
+      const dbID = this.toDBDocId(subdocId);
+      const oldUpdate = await this.adapter.getUpdates(dbID);
+      await this.adapter.replaceUpdates(dbID, [
+        {
+          data: mergeUpdate([...oldUpdate.map(u => u.data), update]),
+          docId: dbID,
+        },
+      ]);
+    });
   }
 
   async deleteUpdate(subdocId: string) {
