@@ -1,4 +1,5 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
+import { z } from 'zod';
 
 import { Config, URLHelper } from '../../../fundamentals';
 import { AutoRegisteredOAuthProvider } from '../register';
@@ -13,19 +14,21 @@ interface OIDCTokenResponse {
   token_type: string;
 }
 
-interface OIDCConfiguration {
-  authorization_endpoint: string;
-  token_endpoint: string;
-  userinfo_endpoint: string;
-  end_session_endpoint: string;
-}
-
 export interface UserInfo {
   id: string;
   email: string;
   name: string;
   groups?: string[];
 }
+
+const OIDCConfigurationSchema = z.object({
+  authorization_endpoint: z.string().url(),
+  token_endpoint: z.string().url(),
+  userinfo_endpoint: z.string().url(),
+  end_session_endpoint: z.string().url(),
+});
+
+type OIDCConfiguration = z.infer<typeof OIDCConfigurationSchema>;
 
 @Injectable()
 export class OIDCProvider extends AutoRegisteredOAuthProvider {
@@ -54,8 +57,7 @@ export class OIDCProvider extends AutoRegisteredOAuthProvider {
   private async loadOIDCConfigurationAsync(): Promise<void> {
     const issuer = this.config.issuer;
     if (!issuer) {
-      this.logger.error('Issuer is not defined in the configuration.');
-      return;
+      throw new Error('OIDC Issuer is not defined in the configuration.');
     }
 
     try {
@@ -74,14 +76,9 @@ export class OIDCProvider extends AutoRegisteredOAuthProvider {
       }
 
       const fullConfig = await response.json();
-      this.oidcConfig = {
-        authorization_endpoint: fullConfig.authorization_endpoint,
-        token_endpoint: fullConfig.token_endpoint,
-        userinfo_endpoint: fullConfig.userinfo_endpoint,
-        end_session_endpoint: fullConfig.end_session_endpoint,
-      };
+      this.oidcConfig = OIDCConfigurationSchema.parse(fullConfig);
     } catch (error) {
-      this.logger.error(
+      throw new Error(
         `Failed to fetch OIDC configuration: ${(error as Error).message}`
       );
     }
@@ -144,7 +141,6 @@ export class OIDCProvider extends AutoRegisteredOAuthProvider {
 
       if (response.ok) {
         const tokenResponse = (await response.json()) as OIDCTokenResponse;
-
         return {
           accessToken: tokenResponse.access_token,
           refreshToken: tokenResponse.refresh_token,
@@ -154,17 +150,16 @@ export class OIDCProvider extends AutoRegisteredOAuthProvider {
       } else {
         const errorResponse = await response.json();
         throw new Error(
-          `Server responded with non-success code ${response.status}, ${JSON.stringify(errorResponse)}`
+          `OIDC Server responded with non-success code ${response.status}, ${JSON.stringify(errorResponse)}`
         );
       }
     } catch (e) {
       throw new HttpException(
-        `Failed to get access_token, err: ${(e as Error).message}`,
+        `OIDC Failed to get access_token, err: ${(e as Error).message}`,
         HttpStatus.BAD_REQUEST
       );
     }
   }
-
   async getUser(token: string): Promise<OAuthAccount> {
     this.checkOIDCConfig(this.oidcConfig);
     try {
@@ -190,14 +185,12 @@ export class OIDCProvider extends AutoRegisteredOAuthProvider {
       } else {
         const errorText = await response.text();
         throw new Error(
-          `Server responded with non-success code ${response.status} ${errorText}`
+          `OIDC Server responded with non-success code ${response.status}: ${errorText}`
         );
       }
     } catch (e) {
-      throw new HttpException(
-        `Failed to get user information, err: ${(e as Error).message}`,
-        HttpStatus.BAD_REQUEST
-      );
+      const errorMessage = `OIDC Failed to get user information, err: ${(e as Error).message}`;
+      throw new HttpException(errorMessage, HttpStatus.BAD_REQUEST);
     }
   }
 }
