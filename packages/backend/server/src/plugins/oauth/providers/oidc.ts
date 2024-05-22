@@ -107,12 +107,25 @@ export class OIDCProvider extends AutoRegisteredOAuthProvider {
 
   getAuthUrl(state: string): string {
     this.checkOIDCConfig(this.oidcConfig);
+    const args = {
+      ...this.config.args,
+      scope: this.config.args?.scope || 'openid profile email',
+      state,
+    };
+    if ('claim_id' in args) {
+      delete args.claim_id;
+    }
+    if ('claim_email' in args) {
+      delete args.claim_email;
+    }
+    if ('claim_name' in args) {
+      delete args.claim_name;
+    }
     return `${this.oidcConfig.authorization_endpoint}?${this.url.stringify({
       client_id: this.config.clientId,
       redirect_uri: this.url.link('/oauth/callback'),
       response_type: 'code',
-      ...this.config.args,
-      state,
+      ...args,
     })}`;
   }
 
