@@ -1,4 +1,5 @@
-import type { BlockElement } from '@blocksuite/block-std';
+import { ViewService } from '@affine/core/modules/workbench/services/view';
+import type { BaseSelection, BlockElement } from '@blocksuite/block-std';
 import type { Disposable } from '@blocksuite/global/utils';
 import type {
   AffineEditorContainer,
@@ -7,7 +8,7 @@ import type {
 } from '@blocksuite/presets';
 import type { Doc } from '@blocksuite/store';
 import { Slot } from '@blocksuite/store';
-import type { DocMode } from '@toeverything/infra';
+import { type DocMode, useServiceOptional } from '@toeverything/infra';
 import clsx from 'clsx';
 import type React from 'react';
 import type { RefObject } from 'react';
@@ -102,10 +103,11 @@ export const BlocksuiteEditorContainer = forwardRef<
   { page, mode, className, style, defaultSelectedBlockId, referenceRenderer },
   ref
 ) {
-  const [scrolled, setScrolled] = useState(false);
+  const scrolledRef = useRef(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const docRef = useRef<PageEditor>(null);
   const edgelessRef = useRef<EdgelessEditor>(null);
+  const renderStartRef = useRef<number>(Date.now());
 
   const slots: BlocksuiteEditorContainerRef['slots'] = useMemo(() => {
     return {
@@ -208,39 +210,18 @@ export const BlocksuiteEditorContainer = forwardRef<
   }, [affineEditorContainerProxy, ref]);
 
   const blockElement = useBlockElementById(rootRef, defaultSelectedBlockId);
+  const currentView = useServiceOptional(ViewService)?.view;
 
   useEffect(() => {
-    let disposable: Disposable | undefined = undefined;
-
-    // update the hash when the block is selected
-    const handleUpdateComplete = () => {
-      const selectManager = affineEditorContainerProxy?.host?.selection;
-      if (!selectManager) return;
-
-      disposable = selectManager.slots.changed.on(() => {
-        const selectedBlock = selectManager.find('block');
-        const selectedId = selectedBlock?.blockId;
-
-        const newHash = selectedId ? `#${selectedId}` : '';
-        //TODO: use activeView.history which is in workbench instead of history.replaceState
-        history.replaceState(null, '', `${window.location.pathname}${newHash}`);
-
-        // Dispatch a custom event to notify the hash change
-        const hashChangeEvent = new CustomEvent('hashchange-custom', {
-          detail: { hash: newHash },
-        });
-        window.dispatchEvent(hashChangeEvent);
-      });
-    };
-
-    // scroll to the block element when the block id is provided and the page is first loaded
+    let canceled = false;
     const handleScrollToBlock = (blockElement: BlockElement) => {
-      if (mode === 'page') {
-        blockElement.scrollIntoView({
-          behavior: 'smooth',
-          block: 'center',
-        });
+      if (!mode || !blockElement) {
+        return;
       }
+      blockElement.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      });
       const selectManager = affineEditorContainerProxy.host?.selection;
       if (!blockElement.path.length || !selectManager) {
         return;
@@ -249,22 +230,65 @@ export const BlocksuiteEditorContainer = forwardRef<
         blockId: blockElement.blockId,
       });
       selectManager.set([newSelection]);
-      setScrolled(true);
     };
-
     affineEditorContainerProxy.updateComplete
       .then(() => {
-        if (blockElement && !scrolled) {
+        if (blockElement && !scrolledRef.current && !canceled) {
           handleScrollToBlock(blockElement);
+          scrolledRef.current = true;
         }
-        handleUpdateComplete();
+      })
+      .catch(console.error);
+    return () => {
+      canceled = true;
+    };
+  }, [blockElement, affineEditorContainerProxy, mode]);
+
+  useEffect(() => {
+    let disposable: Disposable | null = null;
+    let canceled = false;
+    // Function to handle block selection change
+    const handleSelectionChange = (selection: BaseSelection[]) => {
+      const viewLocation = currentView?.location$.value;
+      const currentPath = viewLocation?.pathname;
+      const locationHash = viewLocation?.hash;
+      if (
+        !currentView ||
+        !currentPath ||
+        // do not update the hash during the initial render
+        renderStartRef.current > Date.now() - 1000
+      ) {
+        return;
+      }
+      if (selection[0]?.type !== 'block') {
+        return currentView.history.replace(currentPath);
+      }
+
+      const selectedId = selection[0]?.blockId;
+      if (!selectedId) {
+        return;
+      }
+      const newHash = `#${selectedId}`;
+
+      // Only update the hash if it has changed
+      if (locationHash !== newHash) {
+        currentView.history.replace(currentPath + newHash);
+      }
+    };
+    affineEditorContainerProxy.updateComplete
+      .then(() => {
+        const selectManager = affineEditorContainerProxy.host?.selection;
+        if (!selectManager || canceled) return;
+        // Set up the new disposable listener
+        disposable = selectManager.slots.changed.on(handleSelectionChange);
       })
       .catch(console.error);
 
     return () => {
+      canceled = true;
       disposable?.dispose();
     };
-  }, [blockElement, affineEditorContainerProxy, mode, scrolled]);
+  }, [affineEditorContainerProxy, currentView]);
 
   return (
     <div

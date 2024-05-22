@@ -1,8 +1,10 @@
-import { toast } from '@affine/component';
+import { notify } from '@affine/component';
 import { getAffineCloudBaseUrl } from '@affine/core/modules/cloud/services/fetch';
+import { WorkbenchService } from '@affine/core/modules/workbench';
 import { mixpanel } from '@affine/core/utils';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useLiveData, useService } from '@toeverything/infra';
+import { useCallback, useMemo } from 'react';
 
 type UrlType = 'share' | 'workspace';
 
@@ -19,28 +21,18 @@ const useGenerateUrl = ({ workspaceId, pageId, urlType }: UseSharingUrl) => {
   // to generate a public url like https://app.affine.app/share/123/456
   // or https://app.affine.app/share/123/456?mode=edgeless
 
-  const [hash, setHash] = useState(window.location.hash);
-
-  useEffect(() => {
-    const handleLocationChange = () => {
-      setHash(window.location.hash);
-    };
-    window.addEventListener('hashchange-custom', handleLocationChange);
-
-    return () => {
-      window.removeEventListener('hashchange-custom', handleLocationChange);
-    };
-  }, [setHash]);
+  const workbench = useService(WorkbenchService).workbench;
+  const activeView = useLiveData(workbench.activeView$);
+  const hash = useLiveData(activeView.location$).hash;
 
   const baseUrl = getAffineCloudBaseUrl();
-
   const url = useMemo(() => {
     // baseUrl is null when running in electron and without network
     if (!baseUrl) return null;
 
     try {
       return new URL(
-        `${baseUrl}/${urlType}/${workspaceId}/${pageId}${urlType === 'workspace' ? `${hash}` : ''}`
+        `${baseUrl}/${urlType}/${workspaceId}/${pageId}${urlType === 'workspace' && hash ? `${hash}` : ''}`
       ).toString();
     } catch (e) {
       return null;
@@ -63,7 +55,9 @@ export const useSharingUrl = ({
       navigator.clipboard
         .writeText(sharingUrl)
         .then(() => {
-          toast(t['Copied link to clipboard']());
+          notify.success({
+            title: t['Copied link to clipboard'](),
+          });
         })
         .catch(err => {
           console.error(err);
@@ -73,7 +67,9 @@ export const useSharingUrl = ({
         type: 'link',
       });
     } else {
-      toast('Network not available');
+      notify.error({
+        title: 'Network not available',
+      });
     }
   }, [sharingUrl, t, urlType]);
 
