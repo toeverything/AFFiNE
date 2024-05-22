@@ -364,7 +364,7 @@ jobs:
 
   server-e2e-test:
     name: ${{ matrix.tests.name }}
-    runs-on: ubuntu-latest
+    runs-on: buildjet-4vcpu-ubuntu-2204
     env:
       DISTRIBUTION: browser
       DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
@@ -411,6 +411,7 @@ jobs:
         with:
           playwright-install: true
           hard-link-nm: false
+          buildjet: true
 
       - name: Download server-native.node
         uses: actions/download-artifact@v4

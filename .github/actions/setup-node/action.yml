@@ -31,6 +31,9 @@ inputs:
   full-cache:
     description: 'Full installation cache'
     required: false
+  buildjet:
+    description: 'BuildJet cache'
+    required: false
 
 runs:
   using: 'composite'
@@ -64,7 +67,16 @@ runs:
 
     - name: Cache non-full yarn cache on Linux
       uses: actions/cache@v4
-      if: ${{ inputs.full-cache != 'true' && runner.os == 'Linux' }}
+      if: ${{ inputs.full-cache != 'true' && runner.os == 'Linux' && inputs.buildjet != 'true' }}
+      with:
+        path: |
+          node_modules
+          ${{ steps.yarn-cache.outputs.yarn_global_cache }}
+        key: node_modules-cache-${{ github.job }}-${{ runner.os }}
+
+    - name: Cache non-full yarn cache on Linux
+      uses: buildjet/cache@v4
+      if: ${{ inputs.full-cache != 'true' && runner.os == 'Linux' && inputs.buildjet == 'true' }}
       with:
         path: |
           node_modules
@@ -84,7 +96,16 @@ runs:
 
     - name: Cache full yarn cache on Linux
       uses: actions/cache@v4
-      if: ${{ inputs.full-cache == 'true' && runner.os == 'Linux' }}
+      if: ${{ inputs.full-cache == 'true' && runner.os == 'Linux' && inputs.buildjet != 'true' }}
+      with:
+        path: |
+          node_modules
+          ${{ steps.yarn-cache.outputs.yarn_global_cache }}
+        key: node_modules-cache-full-${{ runner.os }}
+
+    - name: Cache full yarn cache on Linux buildjet
+      uses: buildjet/cache@v4
+      if: ${{ inputs.full-cache == 'true' && runner.os == 'Linux' && inputs.buildjet == 'true' }}
       with:
         path: |
           node_modules
