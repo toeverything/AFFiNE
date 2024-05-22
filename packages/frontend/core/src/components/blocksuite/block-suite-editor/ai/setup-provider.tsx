@@ -17,6 +17,18 @@ import {
 } from './request';
 import { setupTracker } from './tracker';
 
+const filterStyleToPromptNameMap = new Map<string, string>([
+  ['Clay style', 'debug:action:fal-sdturbo-clay'],
+  ['Pixel style', 'debug:action:fal-sdturbo-pixel'],
+  ['Sketch style', 'debug:action:fal-sdturbo-sketch'],
+  ['Fantasy style', 'debug:action:fal-sdturbo-fantasy'],
+]);
+
+const processTypeToPromptNameMap = new Map<string, string>([
+  ['Clearer', 'debug:action:fal-upscaler'],
+  ['Remove background', 'debug:action:fal-remove-bg'],
+]);
+
 function setupAIProvider() {
   // a single workspace should have only a single chat session
   // user-id:workspace-id:doc-id -> chat session id
@@ -284,6 +296,24 @@ Could you make a new website based on these notes and send back just the html fi
     if (options.attachments?.length) {
       promptName = 'debug:action:fal-sd15';
     }
+    return toImage({
+      ...options,
+      promptName,
+    });
+  });
+
+  AIProvider.provide('filterImage', options => {
+    // test to image
+    const promptName = filterStyleToPromptNameMap.get(options.style as string);
+    return toImage({
+      ...options,
+      promptName,
+    });
+  });
+
+  AIProvider.provide('processImage', options => {
+    // test to image
+    const promptName = processTypeToPromptNameMap.get(options.type as string);
     return toImage({
       ...options,
       promptName,
