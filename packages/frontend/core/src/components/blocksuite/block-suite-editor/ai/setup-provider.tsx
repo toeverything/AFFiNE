@@ -22,7 +22,7 @@ const filterStyleToPromptName = new Map(
     'Clay style': 'debug:action:fal-sdturbo-clay',
     'Pixel style': 'debug:action:fal-sdturbo-pixel',
     'Sketch style': 'debug:action:fal-sdturbo-sketch',
-    'Fantasy style': 'debug:action:fal-sdturbo-fantasy',
+    'Anime style': 'debug:action:fal-sdturbo-fantasy',
   })
 );
 
