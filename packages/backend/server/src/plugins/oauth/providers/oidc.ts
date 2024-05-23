@@ -1,10 +1,10 @@
-import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import { z } from 'zod';
 
 import { Config, URLHelper } from '../../../fundamentals';
 import { AutoRegisteredOAuthProvider } from '../register';
-import { OAuthOIDCProviderConfig, OAuthProviderName } from '../types';
-import { OAuthAccount } from './def';
+import { OAuthOIDCProviderConfig, OAuthProviderName, OIDCArgs } from '../types';
+import { OAuthAccount, Tokens } from './def';
 
 interface OIDCTokenResponse {
   access_token: string;
@@ -30,58 +30,85 @@ const OIDCConfigurationSchema = z.object({
 
 type OIDCConfiguration = z.infer<typeof OIDCConfigurationSchema>;
 
-@Injectable()
-export class OIDCProvider extends AutoRegisteredOAuthProvider {
-  override provider = OAuthProviderName.OIDC;
-  private oidcConfig: OIDCConfiguration | null = null;
-  private readonly logger = new Logger(OIDCProvider.name);
+class OIDCClient {
+  private static async fetch<T = any>(
+    url: string,
+    options: RequestInit
+  ): Promise<T> {
+    const response = await fetch(url, options);
 
-  override get config() {
-    return super.config as OAuthOIDCProviderConfig;
+    if (!response.ok) {
+      throw new Error(
+        `Failed to fetch OIDC configuration: ${response.statusText}`,
+        { cause: await response.json() }
+      );
+    }
+    return response.json() as T;
   }
 
-  constructor(
-    protected readonly AFFiNEConfig: Config,
-    private readonly url: URLHelper
-  ) {
-    super();
-    this.loadOIDCConfigurationAsync()
-      .then(() => {
-        this.logger.log('OIDC configuration loaded.');
-      })
-      .catch(error => {
-        this.logger.error('Failed to load OIDC configuration:', error);
-      });
-  }
-
-  private async loadOIDCConfigurationAsync(): Promise<void> {
-    const issuer = this.config.issuer;
+  static async create(config: OAuthOIDCProviderConfig, url: URLHelper) {
+    const { args, clientId, clientSecret, issuer } = config;
     if (!issuer) {
       throw new Error('OIDC Issuer is not defined in the configuration.');
     }
-
-    try {
-      const wellKnownEndpoint = `${issuer}/.well-known/openid-configuration`;
-      const response = await fetch(wellKnownEndpoint, {
+    const oidcConfig = OIDCConfigurationSchema.parse(
+      await OIDCClient.fetch(`${issuer}/.well-known/openid-configuration`, {
         method: 'GET',
+        headers: { Accept: 'application/json' },
+      })
+    );
+    return new OIDCClient(clientId, clientSecret, args, oidcConfig, url);
+  }
+
+  private constructor(
+    private readonly clientId: string,
+    private readonly clientSecret: string,
+    private readonly args: OIDCArgs,
+    private readonly config: OIDCConfiguration,
+    private readonly url: URLHelper
+  ) {}
+
+  authorize(state: string) {
+    const args = Object.assign({}, this.args);
+    if ('claim_id' in args) delete args.claim_id;
+    if ('claim_email' in args) delete args.claim_email;
+    if ('claim_name' in args) delete args.claim_name;
+
+    return `${this.config.authorization_endpoint}?${this.url.stringify({
+      client_id: this.clientId,
+      redirect_uri: this.url.link('/oauth/callback'),
+      response_type: 'code',
+      ...args,
+      scope: this.args?.scope || 'openid profile email',
+      state,
+    })}`;
+  }
+
+  async token(code: string): Promise<Tokens> {
+    const response = await OIDCClient.fetch<OIDCTokenResponse>(
+      this.config.token_endpoint,
+      {
+        method: 'POST',
+        body: this.url.stringify({
+          code,
+          client_id: this.clientId,
+          client_secret: this.clientSecret,
+          redirect_uri: this.url.link('/oauth/callback'),
+          grant_type: 'authorization_code',
+        }),
         headers: {
           Accept: 'application/json',
+          'Content-Type': 'application/x-www-form-urlencoded',
         },
-      });
-
-      if (!response.ok) {
-        throw new Error(
-          `Failed to fetch OIDC configuration: ${response.statusText}`
-        );
       }
+    );
 
-      const fullConfig = await response.json();
-      this.oidcConfig = OIDCConfigurationSchema.parse(fullConfig);
-    } catch (error) {
-      throw new Error(
-        `Failed to fetch OIDC configuration: ${(error as Error).message}`
-      );
-    }
+    return {
+      accessToken: response.access_token,
+      refreshToken: response.refresh_token,
+      expiresAt: new Date(Date.now() + response.expires_in * 1000),
+      scope: response.scope,
+    };
   }
 
   private mapUserInfo(
@@ -97,113 +124,70 @@ export class OIDCProvider extends AutoRegisteredOAuthProvider {
     return mappedUser as UserInfo;
   }
 
-  private checkOIDCConfig(
-    oidcConfig: OIDCConfiguration | null
-  ): asserts oidcConfig is OIDCConfiguration {
-    if (!oidcConfig) {
-      throw new Error('OIDC configuration has not been loaded yet.');
+  async userinfo(token: string) {
+    const user = await OIDCClient.fetch<UserInfo>(
+      this.config.userinfo_endpoint,
+      {
+        method: 'GET',
+        headers: {
+          Accept: 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    const claimsMap = {
+      id: this.args?.claim_id || 'preferred_username',
+      email: this.args?.claim_email || 'email',
+      name: this.args?.claim_name || 'name',
+    };
+    const userinfo = this.mapUserInfo(user, claimsMap);
+    return { id: userinfo.id, email: userinfo.email };
+  }
+}
+
+@Injectable()
+export class OIDCProvider
+  extends AutoRegisteredOAuthProvider
+  implements OnModuleInit
+{
+  override provider = OAuthProviderName.OIDC;
+  private client: OIDCClient | null = null;
+
+  constructor(
+    protected readonly AFFiNEConfig: Config,
+    private readonly url: URLHelper
+  ) {
+    super();
+  }
+
+  override async onModuleInit() {
+    this.client = await OIDCClient.create(
+      this.config as OAuthOIDCProviderConfig,
+      this.url
+    );
+    super.onModuleInit();
+  }
+
+  private checkOIDCClient(
+    client: OIDCClient | null
+  ): asserts client is OIDCClient {
+    if (!client) {
+      throw new Error('OIDC client has not been loaded yet.');
     }
   }
 
   getAuthUrl(state: string): string {
-    this.checkOIDCConfig(this.oidcConfig);
-    const args = {
-      ...this.config.args,
-      scope: this.config.args?.scope || 'openid profile email',
-      state,
-    };
-    if ('claim_id' in args) {
-      delete args.claim_id;
-    }
-    if ('claim_email' in args) {
-      delete args.claim_email;
-    }
-    if ('claim_name' in args) {
-      delete args.claim_name;
-    }
-    return `${this.oidcConfig.authorization_endpoint}?${this.url.stringify({
-      client_id: this.config.clientId,
-      redirect_uri: this.url.link('/oauth/callback'),
-      response_type: 'code',
-      ...args,
-    })}`;
+    this.checkOIDCClient(this.client);
+    return this.client.authorize(state);
   }
 
-  async getToken(code: string): Promise<{
-    accessToken: string;
-    refreshToken: string;
-    expiresAt: Date;
-    scope: string;
-  }> {
-    this.checkOIDCConfig(this.oidcConfig);
-    try {
-      const response = await fetch(this.oidcConfig.token_endpoint, {
-        method: 'POST',
-        body: this.url.stringify({
-          code,
-          client_id: this.config.clientId,
-          client_secret: this.config.clientSecret,
-          redirect_uri: this.url.link('/oauth/callback'),
-          grant_type: 'authorization_code',
-        }),
-        headers: {
-          Accept: 'application/json',
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-      });
-
-      if (response.ok) {
-        const tokenResponse = (await response.json()) as OIDCTokenResponse;
-        return {
-          accessToken: tokenResponse.access_token,
-          refreshToken: tokenResponse.refresh_token,
-          expiresAt: new Date(Date.now() + tokenResponse.expires_in * 1000),
-          scope: tokenResponse.scope,
-        };
-      } else {
-        const errorResponse = await response.json();
-        throw new Error(
-          `OIDC Server responded with non-success code ${response.status}, ${JSON.stringify(errorResponse)}`
-        );
-      }
-    } catch (e) {
-      throw new HttpException(
-        `OIDC Failed to get access_token, err: ${(e as Error).message}`,
-        HttpStatus.BAD_REQUEST
-      );
-    }
+  async getToken(code: string): Promise<Tokens> {
+    this.checkOIDCClient(this.client);
+    return await this.client.token(code);
   }
   async getUser(token: string): Promise<OAuthAccount> {
-    this.checkOIDCConfig(this.oidcConfig);
-    try {
-      const response = await fetch(this.oidcConfig.userinfo_endpoint, {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        const user = await response.json();
-        const claimsMap = {
-          id: this.config.args?.claim_id || 'preferred_username',
-          email: this.config.args?.claim_email || 'email',
-          name: this.config.args?.claim_name || 'name',
-        };
-        const userinfo = this.mapUserInfo(user, claimsMap);
-        return {
-          id: userinfo.id,
-          email: userinfo.email,
-        };
-      } else {
-        const errorText = await response.text();
-        throw new Error(
-          `OIDC Server responded with non-success code ${response.status}: ${errorText}`
-        );
-      }
-    } catch (e) {
-      const errorMessage = `OIDC Failed to get user information, err: ${(e as Error).message}`;
-      throw new HttpException(errorMessage, HttpStatus.BAD_REQUEST);
-    }
+    this.checkOIDCClient(this.client);
+    return await this.client.userinfo(token);
   }
 }
