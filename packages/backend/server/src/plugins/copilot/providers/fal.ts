@@ -2,6 +2,7 @@ import assert from 'node:assert';
 
 import {
   CopilotCapability,
+  CopilotChatOptions,
   CopilotImageOptions,
   CopilotImageToImageProvider,
   CopilotProviderType,
@@ -21,8 +22,12 @@ export type FalImage = {
 
 export type FalResponse = {
   detail: Array<{ msg: string }> | string;
+  // normal sd/sdxl response
   images?: Array<FalImage>;
+  // special i2i model response
   image?: FalImage;
+  // image2text response
+  output: string;
 };
 
 type FalPrompt = {
@@ -38,6 +43,7 @@ export class FalProvider
   static readonly capabilities = [
     CopilotCapability.TextToImage,
     CopilotCapability.ImageToImage,
+    CopilotCapability.ImageToText,
   ];
 
   readonly availableModels = [
@@ -46,7 +52,11 @@ export class FalProvider
     // image to image
     'lcm-sd15-i2i',
     'clarity-upscaler',
+    'face-to-sticker',
     'imageutils/rembg',
+    'fast-sdxl/image-to-image',
+    // image to text
+    'llava-next',
   ];
 
   constructor(private readonly config: FalConfig) {
@@ -96,9 +106,60 @@ export class FalProvider
     ).filter(v => typeof v === 'string' && v.length);
     return {
       image_url: attachments?.[0],
-      prompt: content,
+      prompt: content.trim(),
       lora: lora.length ? lora : undefined,
     };
+  }
+
+  async generateText(
+    messages: PromptMessage[],
+    model: string = 'llava-next',
+    options: CopilotChatOptions = {}
+  ): Promise<string> {
+    if (!this.availableModels.includes(model)) {
+      throw new Error(`Invalid model: ${model}`);
+    }
+
+    // by default, image prompt assumes there is only one message
+    const prompt = this.extractPrompt(messages.pop());
+    const data = (await fetch(`https://fal.run/fal-ai/${model}`, {
+      method: 'POST',
+      headers: {
+        Authorization: `key ${this.config.apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        ...prompt,
+        sync_mode: true,
+        enable_safety_checks: false,
+      }),
+      signal: options.signal,
+    }).then(res => res.json())) as FalResponse;
+
+    if (!data.output) {
+      const error = this.extractError(data);
+      throw new Error(
+        error ? `Failed to generate image: ${error}` : 'No images generated'
+      );
+    }
+    return data.output;
+  }
+
+  async *generateTextStream(
+    messages: PromptMessage[],
+    model: string = 'llava-next',
+    options: CopilotChatOptions = {}
+  ): AsyncIterable<string> {
+    const result = await this.generateText(messages, model, options);
+
+    for await (const content of result) {
+      if (content) {
+        yield content;
+        if (options.signal?.aborted) {
+          break;
+        }
+      }
+    }
   }
 
   // ====== image to image ======
@@ -113,7 +174,6 @@ export class FalProvider
 
     // by default, image prompt assumes there is only one message
     const prompt = this.extractPrompt(messages.pop());
-
     const data = (await fetch(`https://fal.run/fal-ai/${model}`, {
       method: 'POST',
       headers: {
