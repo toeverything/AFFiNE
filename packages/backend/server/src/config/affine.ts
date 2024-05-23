@@ -131,7 +131,7 @@ AFFiNE.port = 3010;
 // AFFiNE.storage.storages.blob.provider = 'r2';
 // AFFiNE.storage.storages.avatar.provider = 'r2';
 //
-// /* OAuth Plugin */
+/* OAuth Plugin */
 // AFFiNE.plugins.use('oauth', {
 //   providers: {
 //     github: {
@@ -150,6 +150,18 @@ AFFiNE.port = 3010;
 //         scope: 'openid email profile',
 //         promot: 'select_account',
 //         access_type: 'offline',
+//       },
+//     },
+//     oidc: {
+//       // OpenID Connect
+//       issuer: '',
+//       clientId: '',
+//       clientSecret: '',
+//       args: {
+//         scope: 'openid email profile',
+//         claim_id: 'preferred_username',
+//         claim_email: 'email',
+//         claim_name: 'name',
 //       },
 //     },
 //   },
