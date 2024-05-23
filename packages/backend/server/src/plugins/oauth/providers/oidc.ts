@@ -81,7 +81,7 @@ class OIDCClient {
   private constructor(
     private readonly clientId: string,
     private readonly clientSecret: string,
-    private readonly args: OIDCArgs,
+    private readonly args: OIDCArgs | undefined,
     private readonly config: OIDCConfiguration,
     private readonly url: URLHelper
   ) {}

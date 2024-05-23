@@ -1,7 +1,7 @@
 export interface OAuthProviderConfig {
   clientId: string;
   clientSecret: string;
-  args: Record<string, string>;
+  args?: Record<string, string>;
 }
 
 export type OIDCArgs = {
@@ -9,13 +9,11 @@ export type OIDCArgs = {
   claim_id?: string;
   claim_email?: string;
   claim_name?: string;
-  promot?: string;
-  access_type?: string;
 };
 
 export interface OAuthOIDCProviderConfig extends OAuthProviderConfig {
   issuer: string;
-  args: OIDCArgs;
+  args?: OIDCArgs;
 }
 
 export enum OAuthProviderName {
