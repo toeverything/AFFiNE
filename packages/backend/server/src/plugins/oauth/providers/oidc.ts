@@ -1,4 +1,9 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+  OnModuleInit,
+} from '@nestjs/common';
 import { z } from 'zod';
 
 import { Config, URLHelper } from '../../../fundamentals';
@@ -41,10 +46,17 @@ class OIDCClient {
     const response = await fetch(url, options);
 
     if (!response.ok) {
-      throw new Error(
-        `Failed to fetch OIDC configuration: ${response.statusText}`,
-        { cause: await response.json() }
-      );
+      if (response.status >= 400 && response.status < 500) {
+        throw new BadRequestException(`Invalid OIDC configuration`, {
+          cause: await response.json(),
+          description: response.statusText,
+        });
+      } else {
+        throw new InternalServerErrorException(`Failed to configure client`, {
+          cause: await response.json(),
+          description: response.statusText,
+        });
+      }
     }
     return verifier.parse(response.json());
   }
