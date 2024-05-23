@@ -7,7 +7,7 @@ import { FeatureManagementService } from '../../core/features';
 import { QuotaService } from '../../core/quota';
 import { PaymentRequiredException } from '../../fundamentals';
 import { ChatMessageCache } from './message';
-import { ChatPrompt, PromptService } from './prompt';
+import { PromptService } from './prompt';
 import {
   AvailableModel,
   ChatHistory,
@@ -129,7 +129,7 @@ export class ChatSession implements AsyncDisposable {
     // we should combine it with the user message in the prompt
     if (
       messages.length === 1 &&
-      firstMessage?.content &&
+      firstMessage &&
       this.state.prompt.paramKeys.includes('content')
     ) {
       const normalizedParams = {
@@ -258,27 +258,13 @@ export class ChatSessionService {
               createdAt: 'asc',
             },
           },
-          prompt: {
-            select: {
-              name: true,
-              action: true,
-              model: true,
-              messages: {
-                select: {
-                  role: true,
-                  content: true,
-                  createdAt: true,
-                },
-                orderBy: {
-                  idx: 'asc',
-                },
-              },
-            },
-          },
+          promptName: true,
         },
       })
       .then(async session => {
         if (!session) return;
+        const prompt = await this.prompt.get(session.promptName);
+        if (!prompt) throw new Error(`Prompt not found: ${session.promptName}`);
 
         const messages = ChatMessageSchema.array().safeParse(session.messages);
 
@@ -287,7 +273,7 @@ export class ChatSessionService {
           userId: session.userId,
           workspaceId: session.workspaceId,
           docId: session.docId,
-          prompt: ChatPrompt.createFromPrompt(session.prompt),
+          prompt,
           messages: messages.success ? messages.data : [],
         };
       });

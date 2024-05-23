@@ -237,7 +237,7 @@ test('can sync svg between different browsers', async ({ page, browser }) => {
   const slashMenu = page.locator(`.slash-menu`);
   const image = page.locator('affine-image');
 
-  page.evaluate(async () => {
+  await page.evaluate(async () => {
     // https://github.com/toeverything/blocksuite/blob/master/packages/blocks/src/_common/utils/filesys.ts#L20
     (window as any).showOpenFilePicker = undefined;
   });
@@ -252,11 +252,10 @@ test('can sync svg between different browsers', async ({ page, browser }) => {
   await expect(slashMenu).toBeVisible();
   await page.keyboard.type('image', { delay: 100 });
   await expect(slashMenu).toBeVisible();
+  const fileChooserPromise = page.waitForEvent('filechooser');
   await page.keyboard.press('Enter', { delay: 50 });
-  await page.setInputFiles(
-    "input[type='file']",
-    resolve(__dirname, 'logo.svg')
-  );
+  const fileChooser = await fileChooserPromise;
+  fileChooser.setFiles(resolve(__dirname, 'logo.svg'));
   await expect(image).toBeVisible();
 
   // the user should see the svg

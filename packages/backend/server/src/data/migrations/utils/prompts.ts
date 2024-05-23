@@ -86,7 +86,7 @@ export const prompts: Prompt[] = [
   {
     name: 'debug:action:fal-sdturbo-clay',
     action: 'image',
-    model: 'fast-turbo-diffusion',
+    model: 'fast-sdxl/image-to-image',
     messages: [
       {
         role: 'user',
@@ -102,7 +102,7 @@ export const prompts: Prompt[] = [
   {
     name: 'debug:action:fal-sdturbo-pixel',
     action: 'image',
-    model: 'fast-turbo-diffusion',
+    model: 'fast-sdxl/image-to-image',
     messages: [
       {
         role: 'user',
@@ -116,7 +116,7 @@ export const prompts: Prompt[] = [
   {
     name: 'debug:action:fal-sdturbo-sketch',
     action: 'image',
-    model: 'fast-turbo-diffusion',
+    model: 'fast-sdxl/image-to-image',
     messages: [
       {
         role: 'user',
@@ -132,7 +132,7 @@ export const prompts: Prompt[] = [
   {
     name: 'debug:action:fal-sdturbo-fantasy',
     action: 'image',
-    model: 'fast-turbo-diffusion',
+    model: 'fast-sdxl/image-to-image',
     messages: [
       {
         role: 'user',
@@ -142,6 +142,24 @@ export const prompts: Prompt[] = [
             'https://models.affine.pro/fal/fansty%20world-000020.safetensors',
           ],
         },
+      },
+    ],
+  },
+  {
+    name: 'debug:action:fal-face-to-sticker',
+    action: 'image',
+    model: 'face-to-sticker',
+    messages: [],
+  },
+  {
+    name: 'debug:action:fal-summary-caption',
+    action: 'image',
+    model: 'llava-next',
+    messages: [
+      {
+        role: 'user',
+        content:
+          'Please understand this image and generate a short caption. {{content}}',
       },
     ],
   },

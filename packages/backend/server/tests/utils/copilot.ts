@@ -31,7 +31,7 @@ export class MockCopilotTestProvider
 {
   override readonly availableModels = [
     'test',
-    'fast-turbo-diffusion',
+    'fast-sdxl/image-to-image',
     'lcm-sd15-i2i',
     'clarity-upscaler',
     'imageutils/rembg',

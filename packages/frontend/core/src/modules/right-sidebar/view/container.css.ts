@@ -36,14 +36,5 @@ export const sidebarContainer = style({
 export const sidebarBodyTarget = style({
   flex: 1,
   width: '100%',
-  minWidth: '320px',
   overflow: 'hidden',
-  selectors: {
-    [`&[data-client-border=true]`]: {
-      paddingLeft: 9,
-    },
-    [`&[data-client-border=false]`]: {
-      borderLeft: `1px solid ${cssVar('borderColor')}`,
-    },
-  },
 });

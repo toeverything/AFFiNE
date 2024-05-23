@@ -25,6 +25,8 @@ function extractMustacheParams(template: string) {
   return Array.from(new Set(params));
 }
 
+const EXCLUDE_MISSING_WARN_PARAMS = ['lora'];
+
 export class ChatPrompt {
   private readonly logger = new Logger(ChatPrompt.name);
   public readonly encoder: Tokenizer | null;
@@ -97,7 +99,7 @@ export class ChatPrompt {
         typeof income !== 'string' ||
         (Array.isArray(options) && !options.includes(income))
       ) {
-        if (sessionId) {
+        if (sessionId && !EXCLUDE_MISSING_WARN_PARAMS.includes(key)) {
           const prefix = income
             ? `Invalid param value: ${key}=${income}`
             : `Missing param value: ${key}`;
