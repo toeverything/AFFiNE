@@ -12,6 +12,8 @@ export const promptKeys = [
   'debug:action:fal-sdturbo-pixel',
   'debug:action:fal-sdturbo-sketch',
   'debug:action:fal-sdturbo-fantasy',
+  'debug:action:fal-face-to-sticker',
+  'debug:action:fal-summary-caption',
   'chat:gpt4',
   'Summary',
   'Summary the webpage',

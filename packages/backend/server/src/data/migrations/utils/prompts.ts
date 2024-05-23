@@ -68,7 +68,7 @@ export const prompts: Prompt[] = [
   },
   {
     name: 'debug:action:fal-upscaler',
-    action: 'image',
+    action: 'Clearer',
     model: 'clarity-upscaler',
     messages: [
       {
@@ -79,13 +79,13 @@ export const prompts: Prompt[] = [
   },
   {
     name: 'debug:action:fal-remove-bg',
-    action: 'image',
+    action: 'Remove background',
     model: 'imageutils/rembg',
     messages: [],
   },
   {
     name: 'debug:action:fal-sdturbo-clay',
-    action: 'image',
+    action: 'AI image filter clay style',
     model: 'fast-sdxl/image-to-image',
     messages: [
       {
@@ -101,7 +101,7 @@ export const prompts: Prompt[] = [
   },
   {
     name: 'debug:action:fal-sdturbo-pixel',
-    action: 'image',
+    action: 'AI image filter pixel style',
     model: 'fast-sdxl/image-to-image',
     messages: [
       {
@@ -115,7 +115,7 @@ export const prompts: Prompt[] = [
   },
   {
     name: 'debug:action:fal-sdturbo-sketch',
-    action: 'image',
+    action: 'AI image filter sketch style',
     model: 'fast-sdxl/image-to-image',
     messages: [
       {
@@ -131,7 +131,7 @@ export const prompts: Prompt[] = [
   },
   {
     name: 'debug:action:fal-sdturbo-fantasy',
-    action: 'image',
+    action: 'AI image filter anime style',
     model: 'fast-sdxl/image-to-image',
     messages: [
       {
@@ -147,13 +147,13 @@ export const prompts: Prompt[] = [
   },
   {
     name: 'debug:action:fal-face-to-sticker',
-    action: 'image',
+    action: 'Convert to sticker',
     model: 'face-to-sticker',
     messages: [],
   },
   {
     name: 'debug:action:fal-summary-caption',
-    action: 'image',
+    action: 'Generate a caption',
     model: 'llava-next',
     messages: [
       {
