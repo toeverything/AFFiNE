@@ -63,8 +63,8 @@ class OIDCClient {
 
   static async create(config: OAuthOIDCProviderConfig, url: URLHelper) {
     const { args, clientId, clientSecret, issuer } = config;
-    if (!issuer) {
-      throw new Error('OIDC Issuer is not defined in the configuration.');
+    if (!url.verify(issuer)) {
+      throw new Error('OIDC Issuer is invalid.');
     }
     const oidcConfig = await OIDCClient.fetch(
       `${issuer}/.well-known/openid-configuration`,
@@ -182,11 +182,11 @@ export class OIDCProvider
   }
 
   override async onModuleInit() {
-    this.client = await OIDCClient.create(
-      this.config as OAuthOIDCProviderConfig,
-      this.url
-    );
-    super.onModuleInit();
+    const config = this.optionalConfig as OAuthOIDCProviderConfig;
+    if (config && config.issuer && config.clientId && config.clientSecret) {
+      this.client = await OIDCClient.create(config, this.url);
+      super.onModuleInit();
+    }
   }
 
   private checkOIDCClient(
