@@ -13,9 +13,16 @@ export type FalConfig = {
   apiKey: string;
 };
 
+export type FalImage = {
+  url: string;
+  seed: number;
+  file_name: string;
+};
+
 export type FalResponse = {
   detail: Array<{ msg: string }> | string;
-  images: Array<{ url: string }>;
+  images?: Array<FalImage>;
+  image?: FalImage;
 };
 
 type FalPrompt = {
@@ -122,12 +129,17 @@ export class FalProvider
       signal: options.signal,
     }).then(res => res.json())) as FalResponse;
 
-    if (!data.images?.length) {
+    if (!data.images?.length && !data.image?.url) {
       const error = this.extractError(data);
       throw new Error(
         error ? `Failed to generate image: ${error}` : 'No images generated'
       );
     }
+
+    if (data.image?.url) {
+      return [data.image.url];
+    }
+
     return data.images?.map(image => image.url) || [];
   }
 
