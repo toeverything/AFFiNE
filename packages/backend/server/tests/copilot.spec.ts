@@ -470,7 +470,7 @@ test('should be able to get provider', async t => {
     );
     t.is(
       p?.type.toString(),
-      'openai',
+      'fal',
       'should get provider support image-to-text'
     );
   }
