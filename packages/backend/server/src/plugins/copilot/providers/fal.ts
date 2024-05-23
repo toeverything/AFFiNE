@@ -89,7 +89,7 @@ export class FalProvider
     ).filter(v => typeof v === 'string' && v.length);
     return {
       image_url: attachments?.[0],
-      prompt: content || undefined,
+      prompt: content,
       lora: lora.length ? lora : undefined,
     };
   }
