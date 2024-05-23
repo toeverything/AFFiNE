@@ -213,7 +213,7 @@ export const emailTemplate = ({
               alt="copyright"
               height="14px"
               style="vertical-align: middle; margin: 0 4px"
-            />2023 Toeverything
+            />2023-${new Date().getUTCFullYear()} Toeverything
           </td>
         </tr>
       </table>
