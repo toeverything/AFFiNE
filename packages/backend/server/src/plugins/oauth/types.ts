@@ -24,11 +24,13 @@ export enum OAuthProviderName {
   OIDC = 'oidc',
 }
 
+type OAuthProviderConfigMapping = {
+  [OAuthProviderName.Google]: OAuthProviderConfig;
+  [OAuthProviderName.GitHub]: OAuthProviderConfig;
+  [OAuthProviderName.OIDC]: OAuthOIDCProviderConfig;
+};
+
 export interface OAuthConfig {
   enabled: boolean;
-  providers: Partial<
-    { [key in OAuthProviderName]: OAuthProviderConfig } & {
-      oidc: OAuthOIDCProviderConfig;
-    }
-  >;
+  providers: Partial<OAuthProviderConfigMapping>;
 }
