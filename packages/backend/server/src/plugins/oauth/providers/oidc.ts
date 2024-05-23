@@ -6,20 +6,22 @@ import { AutoRegisteredOAuthProvider } from '../register';
 import { OAuthOIDCProviderConfig, OAuthProviderName, OIDCArgs } from '../types';
 import { OAuthAccount, Tokens } from './def';
 
-interface OIDCTokenResponse {
-  access_token: string;
-  expires_in: number;
-  refresh_token: string;
-  scope: string;
-  token_type: string;
-}
+const OIDCTokenSchema = z.object({
+  access_token: z.string(),
+  expires_in: z.number(),
+  refresh_token: z.string(),
+  scope: z.string(),
+  token_type: z.string(),
+});
 
-export interface UserInfo {
-  id: string;
-  email: string;
-  name: string;
-  groups?: string[];
-}
+const OIDCUserInfoSchema = z.object({
+  id: z.string(),
+  email: z.string().email(),
+  name: z.string(),
+  groups: z.array(z.string()).optional(),
+});
+
+type OIDCUserInfo = z.infer<typeof OIDCUserInfoSchema>;
 
 const OIDCConfigurationSchema = z.object({
   authorization_endpoint: z.string().url(),
@@ -33,7 +35,8 @@ type OIDCConfiguration = z.infer<typeof OIDCConfigurationSchema>;
 class OIDCClient {
   private static async fetch<T = any>(
     url: string,
-    options: RequestInit
+    options: RequestInit,
+    verifier: z.Schema<T>
   ): Promise<T> {
     const response = await fetch(url, options);
 
@@ -43,7 +46,7 @@ class OIDCClient {
         { cause: await response.json() }
       );
     }
-    return response.json() as T;
+    return verifier.parse(response.json());
   }
 
   static async create(config: OAuthOIDCProviderConfig, url: URLHelper) {
@@ -51,12 +54,15 @@ class OIDCClient {
     if (!issuer) {
       throw new Error('OIDC Issuer is not defined in the configuration.');
     }
-    const oidcConfig = OIDCConfigurationSchema.parse(
-      await OIDCClient.fetch(`${issuer}/.well-known/openid-configuration`, {
+    const oidcConfig = await OIDCClient.fetch(
+      `${issuer}/.well-known/openid-configuration`,
+      {
         method: 'GET',
         headers: { Accept: 'application/json' },
-      })
+      },
+      OIDCConfigurationSchema
     );
+
     return new OIDCClient(clientId, clientSecret, args, oidcConfig, url);
   }
 
@@ -68,7 +74,7 @@ class OIDCClient {
     private readonly url: URLHelper
   ) {}
 
-  authorize(state: string) {
+  authorize(state: string): string {
     const args = Object.assign({}, this.args);
     if ('claim_id' in args) delete args.claim_id;
     if ('claim_email' in args) delete args.claim_email;
@@ -85,7 +91,7 @@ class OIDCClient {
   }
 
   async token(code: string): Promise<Tokens> {
-    const response = await OIDCClient.fetch<OIDCTokenResponse>(
+    const token = await OIDCClient.fetch(
       this.config.token_endpoint,
       {
         method: 'POST',
@@ -100,32 +106,33 @@ class OIDCClient {
           Accept: 'application/json',
           'Content-Type': 'application/x-www-form-urlencoded',
         },
-      }
+      },
+      OIDCTokenSchema
     );
 
     return {
-      accessToken: response.access_token,
-      refreshToken: response.refresh_token,
-      expiresAt: new Date(Date.now() + response.expires_in * 1000),
-      scope: response.scope,
+      accessToken: token.access_token,
+      refreshToken: token.refresh_token,
+      expiresAt: new Date(Date.now() + token.expires_in * 1000),
+      scope: token.scope,
     };
   }
 
   private mapUserInfo(
     user: Record<string, any>,
     claimsMap: Record<string, string>
-  ): UserInfo {
-    const mappedUser: Partial<UserInfo> = {};
+  ): OIDCUserInfo {
+    const mappedUser: Partial<OIDCUserInfo> = {};
     for (const [key, value] of Object.entries(claimsMap)) {
       if (user[value] !== undefined) {
-        mappedUser[key as keyof UserInfo] = user[value];
+        mappedUser[key as keyof OIDCUserInfo] = user[value];
       }
     }
-    return mappedUser as UserInfo;
+    return mappedUser as OIDCUserInfo;
   }
 
   async userinfo(token: string) {
-    const user = await OIDCClient.fetch<UserInfo>(
+    const user = await OIDCClient.fetch(
       this.config.userinfo_endpoint,
       {
         method: 'GET',
@@ -133,7 +140,8 @@ class OIDCClient {
           Accept: 'application/json',
           Authorization: `Bearer ${token}`,
         },
-      }
+      },
+      OIDCUserInfoSchema
     );
 
     const claimsMap = {
