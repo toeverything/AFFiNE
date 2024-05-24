@@ -309,7 +309,9 @@ Could you make a new website based on these notes and send back just the html fi
 
   AIProvider.provide('filterImage', options => {
     // test to image
-    const promptName = filterStyleToPromptName.get(options.style as string);
+    const promptName = filterStyleToPromptName.get(
+      options.style as string
+    ) as PromptKey;
     return toImage({
       ...options,
       promptName,
@@ -318,7 +320,9 @@ Could you make a new website based on these notes and send back just the html fi
 
   AIProvider.provide('processImage', options => {
     // test to image
-    const promptName = processTypeToPromptName.get(options.type as string);
+    const promptName = processTypeToPromptName.get(
+      options.type as string
+    ) as PromptKey;
     return toImage({
       ...options,
       promptName,
