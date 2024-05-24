@@ -191,6 +191,13 @@ spec:
                 name: "{{ .Values.app.oauth.github.secretName }}"
                 key: clientSecret
           {{ end }}
+          {{ if .Values.app.metrics.enabled }}
+          - name: METRICS_CUSTOMER_IO_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: "{{ .Values.app.metrics.secretName }}"
+                key: customerIoSecret
+          {{ end }}
           ports:
             - name: http
               containerPort: {{ .Values.service.port }}

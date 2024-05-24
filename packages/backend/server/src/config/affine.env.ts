@@ -26,6 +26,7 @@ AFFiNE.ENV_MAP = {
   MAILER_SECURE: ['mailer.secure', 'boolean'],
   THROTTLE_TTL: ['rateLimiter.ttl', 'int'],
   THROTTLE_LIMIT: ['rateLimiter.limit', 'int'],
+  METRICS_CUSTOMER_IO_TOKEN: ['metrics.customerIo.token', 'string'],
   COPILOT_OPENAI_API_KEY: 'plugins.copilot.openai.apiKey',
   COPILOT_FAL_API_KEY: 'plugins.copilot.fal.apiKey',
   COPILOT_UNSPLASH_API_KEY: 'plugins.copilot.unsplashKey',

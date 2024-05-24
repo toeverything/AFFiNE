@@ -188,6 +188,9 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
     },
     metrics: {
       enabled: false,
+      customerIo: {
+        token: '',
+      },
     },
     telemetry: {
       enabled: isSelfhosted,
