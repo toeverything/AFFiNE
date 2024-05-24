@@ -58,7 +58,8 @@ class OIDCClient {
         });
       }
     }
-    return verifier.parse(response.json());
+    const data = await response.json();
+    return verifier.parse(data);
   }
 
   static async create(config: OAuthOIDCProviderConfig, url: URLHelper) {
