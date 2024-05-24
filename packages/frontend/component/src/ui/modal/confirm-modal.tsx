@@ -37,8 +37,17 @@ export const ConfirmModal = ({
   }, [onConfirm]);
   return (
     <Modal
-      contentOptions={{ className: styles.confirmModalContainer }}
+      contentOptions={{
+        className: styles.confirmModalContainer,
+        onPointerDownOutside: e => {
+          e.stopPropagation();
+          onCancel?.();
+        },
+      }}
       width={width}
+      closeButtonOptions={{
+        onClick: onCancel,
+      }}
       {...props}
     >
       {children ? (

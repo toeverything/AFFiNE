@@ -10,14 +10,11 @@ import {
   Suspense,
   useCallback,
   useEffect,
-  useMemo,
   useRef,
 } from 'react';
 
-import { AffinePageReference } from '../../affine/reference-link';
 import { BlocksuiteEditorContainer } from './blocksuite-editor-container';
 import { NoPageRootError } from './no-page-error';
-import type { ReferenceReactRenderer } from './specs/custom/patch-reference-renderer';
 
 export type ErrorBoundaryProps = {
   onReset?: () => void;
@@ -88,19 +85,6 @@ const BlockSuiteEditorImpl = forwardRef<AffineEditorContainer, EditorProps>(
       };
     }, []);
 
-    const referenceRenderer: ReferenceReactRenderer = useMemo(() => {
-      return function customReference(reference) {
-        const pageId = reference.delta.attributes?.reference?.pageId;
-        if (!pageId) return <span />;
-        return (
-          <AffinePageReference
-            docCollection={page.collection}
-            pageId={pageId}
-          />
-        );
-      };
-    }, [page.collection]);
-
     return (
       <BlocksuiteEditorContainer
         mode={mode}
@@ -108,7 +92,6 @@ const BlockSuiteEditorImpl = forwardRef<AffineEditorContainer, EditorProps>(
         ref={onRefChange}
         className={className}
         style={style}
-        referenceRenderer={referenceRenderer}
         defaultSelectedBlockId={defaultSelectedBlockId}
       />
     );
