@@ -15,6 +15,7 @@
     "test:coverage": "c8 ava --concurrency 1 --serial",
     "postinstall": "prisma generate",
     "data-migration": "node --loader ts-node/esm/transpile-only.mjs ./src/data/index.ts",
+    "make-action": "node --loader ts-node/esm/transpile-only.mjs ./src/core/bootstrap/bin/index.ts create",
     "predeploy": "yarn prisma migrate deploy && node --import ./scripts/register.js ./dist/data/index.js run"
   },
   "dependencies": {

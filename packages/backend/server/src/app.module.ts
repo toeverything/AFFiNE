@@ -7,6 +7,7 @@ import { get } from 'lodash-es';
 
 import { AppController } from './app.controller';
 import { AuthModule } from './core/auth';
+import { BootstrapModule } from './core/bootstrap';
 import { ADD_ENABLED_FEATURES, ServerConfigModule } from './core/config';
 import { DocModule } from './core/doc';
 import { FeatureModule } from './core/features';
@@ -129,6 +130,7 @@ function buildAppModule() {
     // graphql server only
     .useIf(
       config => config.flavor.graphql,
+      BootstrapModule,
       ServerConfigModule,
       GqlModule,
       StorageModule,
