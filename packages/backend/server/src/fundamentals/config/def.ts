@@ -38,7 +38,7 @@ export type ConfigPaths = LeafPaths<
     | 'origin'
   >,
   '',
-  '.....'
+  '......'
 >;
 
 /**

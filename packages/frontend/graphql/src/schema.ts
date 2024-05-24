@@ -84,6 +84,7 @@ export enum InvoiceStatus {
 export enum OAuthProviderType {
   GitHub = 'GitHub',
   Google = 'Google',
+  OIDC = 'OIDC',
 }
 
 /** User permission in workspace */

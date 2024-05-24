@@ -51,4 +51,17 @@ export class URLHelper {
     // redirect to home if the url is invalid
     return res.redirect(this.home);
   }
+
+  verify(url: string | URL) {
+    try {
+      if (typeof url === 'string') {
+        url = new URL(url);
+      }
+      if (!['http:', 'https:'].includes(url.protocol)) return false;
+      if (!url.hostname) return false;
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
 }
