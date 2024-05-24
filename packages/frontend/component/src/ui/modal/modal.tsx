@@ -89,6 +89,7 @@ export const Modal = forwardRef<HTMLDivElement, ModalProps>(
                   className={styles.closeButton}
                   aria-label="Close"
                   type="plain"
+                  data-testid="modal-close-button"
                   {...closeButtonOptions}
                 >
                   <CloseIcon />

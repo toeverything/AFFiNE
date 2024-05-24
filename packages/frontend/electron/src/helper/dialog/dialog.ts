@@ -92,8 +92,10 @@ export async function saveDBFileAs(
 ): Promise<SaveDBFileResult> {
   try {
     const db = await ensureSQLiteDB(workspaceId);
+    const fakedResult = getFakedResult();
+
     const ret =
-      getFakedResult() ??
+      fakedResult ??
       (await mainRPC.showSaveDialog({
         properties: ['showOverwriteConfirmation'],
         title: 'Save Workspace',
@@ -120,9 +122,11 @@ export async function saveDBFileAs(
 
     await fs.copyFile(db.path, filePath);
     logger.log('saved', filePath);
-    mainRPC.showItemInFolder(filePath).catch(err => {
-      console.error(err);
-    });
+    if (!fakedResult) {
+      mainRPC.showItemInFolder(filePath).catch(err => {
+        console.error(err);
+      });
+    }
     return { filePath };
   } catch (err) {
     logger.error('saveDBFileAs', err);
