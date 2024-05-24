@@ -34,6 +34,7 @@ type AIActionEventProperties = {
     | 'login required'
     | 'insert'
     | 'replace'
+    | 'use as caption'
     | 'discard'
     | 'retry'
     | 'add note'
@@ -195,6 +196,8 @@ function inferControl(
     return 'insert';
   } else if (event.event === 'result:replace') {
     return 'replace';
+  } else if (event.event === 'result:use-as-caption') {
+    return 'use as caption';
   } else if (event.event === 'result:discard') {
     return 'discard';
   } else if (event.event === 'result:retry') {

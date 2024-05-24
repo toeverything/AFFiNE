@@ -17,6 +17,23 @@ import {
 } from './request';
 import { setupTracker } from './tracker';
 
+const filterStyleToPromptName = new Map(
+  Object.entries({
+    'Clay style': 'debug:action:fal-sdturbo-clay',
+    'Pixel style': 'debug:action:fal-sdturbo-pixel',
+    'Sketch style': 'debug:action:fal-sdturbo-sketch',
+    'Anime style': 'debug:action:fal-sdturbo-fantasy',
+  })
+);
+
+const processTypeToPromptName = new Map(
+  Object.entries({
+    Clearer: 'debug:action:fal-upscaler',
+    'Remove background': 'debug:action:fal-remove-bg',
+    'Convert to sticker': 'debug:action:fal-face-to-sticker',
+  })
+);
+
 function setupAIProvider() {
   // a single workspace should have only a single chat session
   // user-id:workspace-id:doc-id -> chat session id
@@ -287,6 +304,36 @@ Could you make a new website based on these notes and send back just the html fi
     return toImage({
       ...options,
       promptName,
+    });
+  });
+
+  AIProvider.provide('filterImage', options => {
+    // test to image
+    const promptName = filterStyleToPromptName.get(
+      options.style as string
+    ) as PromptKey;
+    return toImage({
+      ...options,
+      promptName,
+    });
+  });
+
+  AIProvider.provide('processImage', options => {
+    // test to image
+    const promptName = processTypeToPromptName.get(
+      options.type as string
+    ) as PromptKey;
+    return toImage({
+      ...options,
+      promptName,
+    });
+  });
+
+  AIProvider.provide('generateCaption', options => {
+    return textToText({
+      ...options,
+      content: options.input,
+      promptName: 'debug:action:fal-summary-caption',
     });
   });
 
