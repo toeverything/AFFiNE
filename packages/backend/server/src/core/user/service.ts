@@ -1,10 +1,18 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { Prisma, PrismaClient } from '@prisma/client';
 
+import {
+  Config,
+  EventEmitter,
+  type EventPayload,
+  OnEvent,
+} from '../../fundamentals';
 import { Quota_FreePlanV1_1 } from '../quota/schema';
 
 @Injectable()
 export class UserService {
+  private readonly logger = new Logger(UserService.name);
+
   defaultUserSelect = {
     id: true,
     name: true,
@@ -12,9 +20,14 @@ export class UserService {
     emailVerifiedAt: true,
     avatarUrl: true,
     registered: true,
+    createdAt: true,
   } satisfies Prisma.UserSelect;
 
-  constructor(private readonly prisma: PrismaClient) {}
+  constructor(
+    private readonly config: Config,
+    private readonly prisma: PrismaClient,
+    private readonly emitter: EventEmitter
+  ) {}
 
   get userCreatingData() {
     return {
@@ -139,10 +152,75 @@ export class UserService {
       }
     }
 
+    this.emitter.emit('user.updated', user);
+
+    return user;
+  }
+
+  async updateUser(
+    id: string,
+    data: Prisma.UserUpdateInput,
+    select: Prisma.UserSelect = this.defaultUserSelect
+  ) {
+    const user = await this.prisma.user.update({ where: { id }, data, select });
+
+    this.emitter.emit('user.updated', user);
+
     return user;
   }
 
   async deleteUser(id: string) {
     return this.prisma.user.delete({ where: { id } });
+  }
+
+  @OnEvent('user.updated')
+  async onUserUpdated(user: EventPayload<'user.deleted'>) {
+    const { enabled, customerIo } = this.config.metrics;
+    if (enabled && customerIo?.token) {
+      const payload = {
+        name: user.name,
+        email: user.email,
+        created_at: Number(user.createdAt),
+      };
+      try {
+        await fetch(`https://track.customer.io/api/v1/customers/${user.id}`, {
+          method: 'PUT',
+          headers: {
+            Authorization: `Basic ${customerIo.token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload),
+        });
+      } catch (e) {
+        this.logger.error('Failed to publish user update event:', e);
+      }
+    }
+  }
+
+  @OnEvent('user.deleted')
+  async onUserDeleted(user: EventPayload<'user.deleted'>) {
+    const { enabled, customerIo } = this.config.metrics;
+    if (enabled && customerIo?.token) {
+      try {
+        if (user.emailVerifiedAt) {
+          // suppress email if email is verified
+          await fetch(
+            `https://track.customer.io/api/v1/customers/${user.email}/suppress`,
+            {
+              method: 'POST',
+              headers: {
+                Authorization: `Basic ${customerIo.token}`,
+              },
+            }
+          );
+        }
+        await fetch(`https://track.customer.io/api/v1/customers/${user.id}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Basic ${customerIo.token}` },
+        });
+      } catch (e) {
+        this.logger.error('Failed to publish user delete event:', e);
+      }
+    }
   }
 }

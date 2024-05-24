@@ -76,6 +76,12 @@ type DeleteAccount {
   success: Boolean!
 }
 
+input DeleteSessionInput {
+  docId: String!
+  sessionIds: [String!]!
+  workspaceId: String!
+}
+
 type DocHistoryType {
   id: String!
   timestamp: DateTime!
@@ -183,6 +189,9 @@ type Mutation {
   cancelSubscription(idempotencyKey: String!, plan: SubscriptionPlan = Pro): UserSubscription!
   changeEmail(email: String!, token: String!): UserType!
   changePassword(newPassword: String!, token: String!): UserType!
+
+  """Cleanup sessions"""
+  cleanupCopilotSession(options: DeleteSessionInput!): String!
 
   """Create a subscription checkout link of stripe"""
   createCheckoutSession(input: CreateCheckoutSessionInput!): String!

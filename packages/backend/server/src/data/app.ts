@@ -15,6 +15,7 @@ import { RevertCommand, RunCommand } from './commands/run';
       },
       metrics: {
         enabled: false,
+        customerIo: {},
       },
     }),
     BusinessAppModule,

@@ -117,7 +117,7 @@ export class UserResolver {
       throw new BadRequestException(`User not found`);
     }
 
-    const link = await this.storage.put(
+    const avatarUrl = await this.storage.put(
       `${user.id}-avatar`,
       avatar.createReadStream(),
       {
@@ -125,12 +125,7 @@ export class UserResolver {
       }
     );
 
-    return this.prisma.user.update({
-      where: { id: user.id },
-      data: {
-        avatarUrl: link,
-      },
-    });
+    return this.users.updateUser(user.id, { avatarUrl });
   }
 
   @Mutation(() => UserType, {
@@ -146,12 +141,7 @@ export class UserResolver {
       return user;
     }
 
-    return sessionUser(
-      await this.prisma.user.update({
-        where: { id: user.id },
-        data: input,
-      })
-    );
+    return sessionUser(await this.users.updateUser(user.id, input));
   }
 
   @Mutation(() => RemoveAvatar, {
@@ -162,10 +152,7 @@ export class UserResolver {
     if (!user) {
       throw new BadRequestException(`User not found`);
     }
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: { avatarUrl: null },
-    });
+    await this.users.updateUser(user.id, { avatarUrl: null });
     return { success: true };
   }
 

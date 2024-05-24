@@ -377,7 +377,10 @@ export class AuthService implements OnApplicationBootstrap {
     });
   }
 
-  async changePassword(id: string, newPassword: string): Promise<User> {
+  async changePassword(
+    id: string,
+    newPassword: string
+  ): Promise<Omit<User, 'password'>> {
     const user = await this.user.findUserById(id);
 
     if (!user) {
@@ -386,46 +389,31 @@ export class AuthService implements OnApplicationBootstrap {
 
     const hashedPassword = await this.crypto.encryptPassword(newPassword);
 
-    return this.db.user.update({
-      where: {
-        id: user.id,
-      },
-      data: {
-        password: hashedPassword,
-      },
-    });
+    return this.user.updateUser(user.id, { password: hashedPassword });
   }
 
-  async changeEmail(id: string, newEmail: string): Promise<User> {
+  async changeEmail(
+    id: string,
+    newEmail: string
+  ): Promise<Omit<User, 'password'>> {
     const user = await this.user.findUserById(id);
 
     if (!user) {
       throw new BadRequestException('Invalid email');
     }
 
-    return this.db.user.update({
-      where: {
-        id,
-      },
-      data: {
-        email: newEmail,
-        emailVerifiedAt: new Date(),
-      },
+    return this.user.updateUser(id, {
+      email: newEmail,
+      emailVerifiedAt: new Date(),
     });
   }
 
   async setEmailVerified(id: string) {
-    return await this.db.user.update({
-      where: {
-        id,
-      },
-      data: {
-        emailVerifiedAt: new Date(),
-      },
-      select: {
-        emailVerifiedAt: true,
-      },
-    });
+    return await this.user.updateUser(
+      id,
+      { emailVerifiedAt: new Date() },
+      { emailVerifiedAt: true }
+    );
   }
 
   async sendChangePasswordEmail(email: string, callbackUrl: string) {

@@ -20,9 +20,7 @@ const historyShortcut = async (page: Page, command: 'goBack' | 'goForward') => {
 };
 
 test('new page', async ({ page, workspace }) => {
-  await page.getByTestId('sidebar-new-page-button').click({
-    delay: 100,
-  });
+  await page.getByTestId('sidebar-new-page-button').click();
   await page.waitForSelector('v-line');
   const flavour = (await workspace.current()).meta.flavour;
   expect(flavour).toBe('local');

@@ -137,6 +137,7 @@ jobs:
           COPILOT_OPENAI_API_KEY: ${{ secrets.COPILOT_OPENAI_API_KEY }}
           COPILOT_FAL_API_KEY: ${{ secrets.COPILOT_FAL_API_KEY }}
           COPILOT_UNSPLASH_API_KEY: ${{ secrets.COPILOT_UNSPLASH_API_KEY }}
+          METRICS_CUSTOMER_IO_TOKEN: ${{ secrets.METRICS_CUSTOMER_IO_TOKEN }}
           MAILER_SENDER: ${{ secrets.OAUTH_EMAIL_SENDER }}
           MAILER_USER: ${{ secrets.OAUTH_EMAIL_LOGIN }}
           MAILER_PASSWORD: ${{ secrets.OAUTH_EMAIL_PASSWORD }}

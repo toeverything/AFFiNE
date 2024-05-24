@@ -340,6 +340,9 @@ export interface AFFiNEConfig {
 
   metrics: {
     enabled: boolean;
+    customerIo: {
+      token: string;
+    };
   };
 
   telemetry: {

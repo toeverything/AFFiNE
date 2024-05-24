@@ -22,6 +22,7 @@ export interface DocEvents {
 }
 
 export interface UserEvents {
+  updated: Payload<Omit<User, 'password'>>;
   deleted: Payload<User>;
 }
 
