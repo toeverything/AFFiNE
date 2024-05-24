@@ -19,12 +19,15 @@ const OIDCTokenSchema = z.object({
   token_type: z.string(),
 });
 
-const OIDCUserInfoSchema = z.object({
-  id: z.string(),
-  email: z.string().email(),
-  name: z.string(),
-  groups: z.array(z.string()).optional(),
-});
+const OIDCUserInfoSchema = z
+  .object({
+    sub: z.string(),
+    preferred_username: z.string(),
+    email: z.string().email(),
+    name: z.string(),
+    groups: z.array(z.string()).optional(),
+  })
+  .passthrough();
 
 type OIDCUserInfo = z.infer<typeof OIDCUserInfoSchema>;
 
