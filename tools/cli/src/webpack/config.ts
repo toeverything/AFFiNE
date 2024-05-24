@@ -264,7 +264,6 @@ export const createConfiguration: (
                   target: 'es2022',
                   externalHelpers: false,
                   transform: {
-                    decoratorVersion: '2022-03',
                     react: {
                       runtime: 'automatic',
                       refresh: buildFlags.mode === 'development' && {

@@ -326,7 +326,6 @@ Could you make a new website based on these notes and send back just the html fi
   });
 
   AIProvider.provide('generateCaption', options => {
-    console.log('generate caption: ', options);
     return textToText({
       ...options,
       content: options.input,
