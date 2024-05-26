@@ -1,10 +1,15 @@
-import type { WorkspaceMetadata } from '@toeverything/infra';
-import { Suspense } from 'react';
-
 import {
   WorkspaceCard,
   WorkspaceCardSkeleton,
-} from '../../components/card/workspace-card';
+} from '@affine/component/card/workspace-card';
+import {
+  useWorkspaceAvatar,
+  useWorkspaceInfo,
+  useWorkspaceName,
+} from '@affine/core/hooks/use-workspace-info';
+import type { WorkspaceMetadata } from '@toeverything/infra';
+import { Suspense } from 'react';
+
 import { workspaceItemStyle } from './index.css';
 
 export interface WorkspaceListProps {
@@ -15,35 +20,23 @@ export interface WorkspaceListProps {
   onClick: (workspace: WorkspaceMetadata) => void;
   onSettingClick: (workspace: WorkspaceMetadata) => void;
   onEnableCloudClick?: (meta: WorkspaceMetadata) => void;
-  useIsWorkspaceOwner: (
-    workspaceMetadata: WorkspaceMetadata
-  ) => boolean | undefined;
-  useWorkspaceAvatar: (
-    workspaceMetadata: WorkspaceMetadata
-  ) => string | undefined;
-  useWorkspaceName: (
-    workspaceMetadata: WorkspaceMetadata
-  ) => string | undefined;
 }
 
-interface SortableWorkspaceItemProps extends Omit<WorkspaceListProps, 'items'> {
+interface WorkspaceItemProps extends Omit<WorkspaceListProps, 'items'> {
   item: WorkspaceMetadata;
 }
 
-const SortableWorkspaceItem = ({
+const WorkspaceItem = ({
   item,
   openingId,
-  useIsWorkspaceOwner,
-  useWorkspaceAvatar,
-  useWorkspaceName,
   currentWorkspaceId,
   onClick,
   onSettingClick,
   onEnableCloudClick,
-}: SortableWorkspaceItemProps) => {
-  const isOwner = useIsWorkspaceOwner?.(item);
-  const avatar = useWorkspaceAvatar?.(item);
-  const name = useWorkspaceName?.(item);
+}: WorkspaceItemProps) => {
+  const isOwner = useWorkspaceInfo(item)?.isOwner;
+  const avatar = useWorkspaceAvatar(item);
+  const name = useWorkspaceName(item);
   return (
     <div className={workspaceItemStyle} data-testid="draggable-item">
       <WorkspaceCard
@@ -66,7 +59,7 @@ export const WorkspaceList = (props: WorkspaceListProps) => {
 
   return workspaceList.map(item => (
     <Suspense fallback={<WorkspaceCardSkeleton />} key={item.id}>
-      <SortableWorkspaceItem key={item.id} {...props} item={item} />
+      <WorkspaceItem key={item.id} {...props} item={item} />
     </Suspense>
   ));
 };

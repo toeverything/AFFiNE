@@ -19,8 +19,9 @@ export const IconsSelectorPanel = ({
   onSelectedChange: (icon: PagePropertyIcon) => void;
 }) => {
   const ref = useRef<HTMLDivElement>(null);
+  const scrolledRef = useRef(false);
   useEffect(() => {
-    if (!ref.current) {
+    if (!ref.current || scrolledRef.current) {
       return;
     }
     const iconButton = ref.current.querySelector(
@@ -29,9 +30,9 @@ export const IconsSelectorPanel = ({
     if (!iconButton) {
       return;
     }
+    scrolledRef.current = true;
     iconButton.scrollIntoView({ block: 'center' });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [selected]);
   const t = useAFFiNEI18N();
   return (
     <Scrollable.Root>

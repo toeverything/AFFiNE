@@ -1,12 +1,6 @@
 import { ScrollableContainer } from '@affine/component';
 import { Divider } from '@affine/component/ui/divider';
-import { WorkspaceList } from '@affine/component/workspace-list';
 import { useEnableCloud } from '@affine/core/hooks/affine/use-enable-cloud';
-import {
-  useWorkspaceAvatar,
-  useWorkspaceInfo,
-  useWorkspaceName,
-} from '@affine/core/hooks/use-workspace-info';
 import { AuthService } from '@affine/core/modules/cloud';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
@@ -27,13 +21,8 @@ import {
 } from '../../../../../atoms';
 import { WorkspaceSubPath } from '../../../../../shared';
 import { useNavigateHelper } from '../.././../../../hooks/use-navigate-helper';
+import { WorkspaceList } from './component';
 import * as styles from './index.css';
-
-function useIsWorkspaceOwner(meta: WorkspaceMetadata) {
-  const info = useWorkspaceInfo(meta);
-
-  return info?.isOwner;
-}
 
 interface WorkspaceModalProps {
   disabled?: boolean;
@@ -58,6 +47,7 @@ const CloudWorkSpaceList = ({
   if (workspaces.length === 0) {
     return null;
   }
+
   return (
     <div className={styles.workspaceListWrapper}>
       <div className={styles.workspaceType}>
@@ -74,9 +64,6 @@ const CloudWorkSpaceList = ({
         currentWorkspaceId={currentWorkspaceId}
         onClick={onClickWorkspace}
         onSettingClick={onClickWorkspaceSetting}
-        useIsWorkspaceOwner={useIsWorkspaceOwner}
-        useWorkspaceName={useWorkspaceName}
-        useWorkspaceAvatar={useWorkspaceAvatar}
       />
     </div>
   );
@@ -113,9 +100,6 @@ const LocalWorkspaces = ({
         onClick={onClickWorkspace}
         onSettingClick={onClickWorkspaceSetting}
         onEnableCloudClick={onClickEnableCloud}
-        useIsWorkspaceOwner={useIsWorkspaceOwner}
-        useWorkspaceName={useWorkspaceName}
-        useWorkspaceAvatar={useWorkspaceAvatar}
       />
     </div>
   );

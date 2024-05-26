@@ -89,6 +89,7 @@ const config = {
   },
   plugins: [
     'react',
+    'react-compiler',
     '@typescript-eslint',
     'simple-import-sort',
     'sonarjs',
@@ -228,6 +229,12 @@ const config = {
       files: '*.cjs',
       rules: {
         '@typescript-eslint/no-var-requires': 0,
+      },
+    },
+    {
+      files: '*.tsx',
+      rules: {
+        'react-compiler/react-compiler': 'error',
       },
     },
     ...allPackages.map(pkg => ({

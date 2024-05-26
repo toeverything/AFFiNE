@@ -155,6 +155,7 @@ describe('render filter', () => {
 
   const WrapperCreator = (fn: FilterMatcherDataType) =>
     function Wrapper(): ReactElement {
+      // eslint-disable-next-line react-compiler/react-compiler
       const [value, onChange] = useState(
         filter(fn, ref('Created'), [new Date(2023, 5, 29).getTime()])
       );

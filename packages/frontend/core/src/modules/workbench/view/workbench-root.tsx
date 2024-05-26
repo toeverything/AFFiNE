@@ -18,7 +18,9 @@ export const WorkbenchRoot = () => {
   const workbench = useService(WorkbenchService).workbench;
 
   // for debugging
-  (window as any).workbench = workbench;
+  useEffect(() => {
+    (window as any).workbench = workbench;
+  }, [workbench]);
 
   const views = useLiveData(workbench.views$);
 
