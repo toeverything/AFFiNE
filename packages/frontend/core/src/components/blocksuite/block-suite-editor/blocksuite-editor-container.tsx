@@ -259,7 +259,11 @@ export const BlocksuiteEditorContainer = forwardRef<
         return;
       }
       if (selection[0]?.type !== 'block') {
-        return currentView.history.replace(currentPath);
+        if (locationHash) {
+          // Clear the hash if no block is selected
+          currentView.replace(currentPath);
+        }
+        return;
       }
 
       const selectedId = selection[0]?.blockId;
@@ -270,7 +274,7 @@ export const BlocksuiteEditorContainer = forwardRef<
 
       // Only update the hash if it has changed
       if (locationHash !== newHash) {
-        currentView.history.replace(currentPath + newHash);
+        currentView.replace(currentPath + newHash);
       }
     };
     affineEditorContainerProxy.updateComplete

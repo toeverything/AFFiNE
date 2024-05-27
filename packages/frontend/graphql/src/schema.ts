@@ -59,6 +59,12 @@ export interface CreateCheckoutSessionInput {
   successCallbackLink: InputMaybe<Scalars['String']['input']>;
 }
 
+export interface DeleteSessionInput {
+  docId: Scalars['String']['input'];
+  sessionIds: Array<Scalars['String']['input']>;
+  workspaceId: Scalars['String']['input'];
+}
+
 export enum EarlyAccessType {
   AI = 'AI',
   App = 'App',
