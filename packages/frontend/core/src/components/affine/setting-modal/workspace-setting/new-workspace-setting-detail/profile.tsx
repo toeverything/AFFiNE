@@ -1,9 +1,8 @@
 import { FlexWrapper, Input, notify, Wrapper } from '@affine/component';
-import { Avatar } from '@affine/component/ui/avatar';
 import { Button } from '@affine/component/ui/button';
+import { WorkspaceAvatar } from '@affine/component/workspace-avatar';
 import { Upload } from '@affine/core/components/pure/file-upload';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import { useWorkspaceBlobObjectUrl } from '@affine/core/hooks/use-workspace-blob';
 import { WorkspacePermissionService } from '@affine/core/modules/permissions';
 import { validateAndReduceImage } from '@affine/core/utils/reduce-image';
 import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
@@ -28,18 +27,13 @@ export const ProfilePanel = () => {
   }, [permissionService]);
   const workspaceIsReady = useLiveData(workspace?.engine.rootDocState$)?.ready;
 
-  const [avatarBlob, setAvatarBlob] = useState<string | null>(null);
   const [name, setName] = useState('');
-
-  const avatarUrl = useWorkspaceBlobObjectUrl(workspace?.meta, avatarBlob);
 
   useEffect(() => {
     if (workspace?.docCollection) {
-      setAvatarBlob(workspace.docCollection.meta.avatar ?? null);
       setName(workspace.docCollection.meta.name ?? UNTITLED_WORKSPACE_NAME);
       const dispose = workspace.docCollection.meta.commonFieldsUpdated.on(
         () => {
-          setAvatarBlob(workspace.docCollection.meta.avatar ?? null);
           setName(workspace.docCollection.meta.name ?? UNTITLED_WORKSPACE_NAME);
         }
       );
@@ -47,7 +41,6 @@ export const ProfilePanel = () => {
         dispose.dispose();
       };
     } else {
-      setAvatarBlob(null);
       setName(UNTITLED_WORKSPACE_NAME);
     }
     return;
@@ -139,7 +132,7 @@ export const ProfilePanel = () => {
     [setWorkspaceAvatar]
   );
 
-  const canAdjustAvatar = workspaceIsReady && avatarUrl && isOwner;
+  const canAdjustAvatar = workspaceIsReady && isOwner;
 
   return (
     <div className={style.profileWrapper}>
@@ -149,9 +142,9 @@ export const ProfilePanel = () => {
         data-testid="upload-avatar"
         disabled={!isOwner}
       >
-        <Avatar
+        <WorkspaceAvatar
+          meta={workspace.meta}
           size={56}
-          url={avatarUrl}
           name={name}
           imageProps={avatarImageProps}
           fallbackProps={avatarImageProps}

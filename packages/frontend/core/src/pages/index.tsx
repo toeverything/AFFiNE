@@ -19,8 +19,8 @@ import {
   buildShowcaseWorkspace,
   createFirstAppData,
 } from '../bootstrap/first-app-data';
+import { AppFallback } from '../components/affine/app-container';
 import { UserWithWorkspaceList } from '../components/pure/workspace-slider-bar/user-with-workspace-list';
-import { WorkspaceFallback } from '../components/workspace';
 import { useNavigateHelper } from '../hooks/use-navigate-helper';
 import { AuthService } from '../modules/cloud';
 import { WorkspaceSubPath } from '../shared';
@@ -141,7 +141,7 @@ export const Component = () => {
   }, [jumpToPage, openPage, workspacesService]);
 
   if (navigating || creating) {
-    return <WorkspaceFallback></WorkspaceFallback>;
+    return <AppFallback></AppFallback>;
   }
 
   // TODO: We need a no workspace page

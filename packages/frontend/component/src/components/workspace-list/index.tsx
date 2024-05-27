@@ -18,9 +18,6 @@ export interface WorkspaceListProps {
   useIsWorkspaceOwner: (
     workspaceMetadata: WorkspaceMetadata
   ) => boolean | undefined;
-  useWorkspaceAvatar: (
-    workspaceMetadata: WorkspaceMetadata
-  ) => string | undefined;
   useWorkspaceName: (
     workspaceMetadata: WorkspaceMetadata
   ) => string | undefined;
@@ -34,7 +31,6 @@ const SortableWorkspaceItem = ({
   item,
   openingId,
   useIsWorkspaceOwner,
-  useWorkspaceAvatar,
   useWorkspaceName,
   currentWorkspaceId,
   onClick,
@@ -42,7 +38,6 @@ const SortableWorkspaceItem = ({
   onEnableCloudClick,
 }: SortableWorkspaceItemProps) => {
   const isOwner = useIsWorkspaceOwner?.(item);
-  const avatar = useWorkspaceAvatar?.(item);
   const name = useWorkspaceName?.(item);
   return (
     <div className={workspaceItemStyle} data-testid="draggable-item">
@@ -55,7 +50,6 @@ const SortableWorkspaceItem = ({
         openingId={openingId}
         isOwner={isOwner}
         name={name}
-        avatar={avatar}
       />
     </div>
   );

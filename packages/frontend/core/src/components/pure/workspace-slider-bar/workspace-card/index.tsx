@@ -1,9 +1,9 @@
 import { notify, Tooltip } from '@affine/component';
-import { Avatar, type AvatarProps } from '@affine/component/ui/avatar';
+import { type AvatarProps } from '@affine/component/ui/avatar';
 import { Loading } from '@affine/component/ui/loading';
+import { WorkspaceAvatar } from '@affine/component/workspace-avatar';
 import { openSettingModalAtom } from '@affine/core/atoms';
 import { useDocEngineStatus } from '@affine/core/hooks/affine/use-doc-engine-status';
-import { useWorkspaceBlobObjectUrl } from '@affine/core/hooks/use-workspace-blob';
 import { useWorkspaceInfo } from '@affine/core/hooks/use-workspace-info';
 import { WorkspacePermissionService } from '@affine/core/modules/permissions';
 import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
@@ -284,11 +284,6 @@ export const WorkspaceCard = forwardRef<
 
   const information = useWorkspaceInfo(currentWorkspace.meta);
 
-  const avatarUrl = useWorkspaceBlobObjectUrl(
-    currentWorkspace.meta,
-    information?.avatar
-  );
-
   const name = information?.name ?? UNTITLED_WORKSPACE_NAME;
 
   return (
@@ -301,12 +296,13 @@ export const WorkspaceCard = forwardRef<
       ref={ref}
       {...props}
     >
-      <Avatar
+      <WorkspaceAvatar
+        key={currentWorkspace.id}
+        meta={currentWorkspace.meta}
         imageProps={avatarImageProps}
         fallbackProps={avatarImageProps}
         data-testid="workspace-avatar"
         size={32}
-        url={avatarUrl}
         name={name}
         colorfulFallback
       />

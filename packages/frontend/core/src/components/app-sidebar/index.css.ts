@@ -4,7 +4,6 @@ export const floatingMaxWidth = 768;
 export const navWrapperStyle = style({
   zIndex: 3,
   paddingBottom: '8px',
-  backgroundColor: cssVar('backgroundPrimaryColor'),
   '@media': {
     print: {
       display: 'none',
@@ -14,6 +13,9 @@ export const navWrapperStyle = style({
   selectors: {
     '&[data-has-border=true]': {
       borderRight: `1px solid ${cssVar('borderColor')}`,
+    },
+    '&[data-is-floating="true"]': {
+      backgroundColor: cssVar('backgroundPrimaryColor'),
     },
   },
 });

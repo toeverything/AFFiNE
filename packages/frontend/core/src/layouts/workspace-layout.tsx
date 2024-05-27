@@ -16,7 +16,7 @@ import {
 } from '@toeverything/infra';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import type { PropsWithChildren, ReactNode } from 'react';
-import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
+import { lazy, useCallback, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Map as YMap } from 'yjs';
 
@@ -24,14 +24,11 @@ import { openQuickSearchModalAtom, openSettingModalAtom } from '../atoms';
 import { WorkspaceAIOnboarding } from '../components/affine/ai-onboarding';
 import { AppContainer } from '../components/affine/app-container';
 import { SyncAwareness } from '../components/affine/awareness';
-import {
-  AppSidebarFallback,
-  appSidebarResizingAtom,
-} from '../components/app-sidebar';
+import { appSidebarResizingAtom } from '../components/app-sidebar';
 import { usePageHelper } from '../components/blocksuite/block-suite-page-list/utils';
 import type { DraggableTitleCellData } from '../components/page-list';
 import { RootAppSidebar } from '../components/root-app-sidebar';
-import { MainContainer, WorkspaceFallback } from '../components/workspace';
+import { MainContainer } from '../components/workspace';
 import { WorkspaceUpgrade } from '../components/workspace-upgrade';
 import { useAppSettingHelper } from '../hooks/affine/use-app-setting-helper';
 import {
@@ -93,15 +90,11 @@ export const WorkspaceLayout = function WorkspaceLayout({
   return (
     <SWRConfigProvider>
       {/* load all workspaces is costly, do not block the whole UI */}
-      <Suspense>
-        <AllWorkspaceModals />
-        <CurrentWorkspaceModals />
-      </Suspense>
-      <Suspense fallback={<WorkspaceFallback />}>
-        <WorkspaceLayoutInner>{children}</WorkspaceLayoutInner>
-        {/* should show after workspace loaded */}
-        <WorkspaceAIOnboarding />
-      </Suspense>
+      <AllWorkspaceModals />
+      <CurrentWorkspaceModals />
+      <WorkspaceLayoutInner>{children}</WorkspaceLayoutInner>
+      {/* should show after workspace loaded */}
+      <WorkspaceAIOnboarding />
     </SWRConfigProvider>
   );
 };
@@ -177,11 +170,18 @@ export const WorkspaceLayoutInner = ({ children }: PropsWithChildren) => {
   const resizing = useAtomValue(appSidebarResizingAtom);
 
   const sensors = useSensors(
-    useSensor(MouseSensor, {
-      activationConstraint: {
-        distance: 10,
-      },
-    })
+    useSensor(
+      MouseSensor,
+      useMemo(
+        /* useMemo is necessary to avoid re-render */
+        () => ({
+          activationConstraint: {
+            distance: 10,
+          },
+        }),
+        []
+      )
+    )
   );
 
   const { handleDragEnd } = useGlobalDNDHelper();
@@ -192,27 +192,23 @@ export const WorkspaceLayoutInner = ({ children }: PropsWithChildren) => {
       {/* This DndContext is used for drag page from all-pages list into a folder in sidebar */}
       <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
         <AppContainer data-current-path={currentPath} resizing={resizing}>
-          <Suspense fallback={<AppSidebarFallback />}>
-            <RootAppSidebar
-              isPublicWorkspace={false}
-              onOpenQuickSearchModal={handleOpenQuickSearchModal}
-              onOpenSettingModal={handleOpenSettingModal}
-              currentWorkspace={currentWorkspace}
-              openPage={useCallback(
-                (pageId: string) => {
-                  assertExists(currentWorkspace);
-                  return openPage(currentWorkspace.id, pageId);
-                },
-                [currentWorkspace, openPage]
-              )}
-              createPage={handleCreatePage}
-              paths={pathGenerator}
-            />
-          </Suspense>
+          <RootAppSidebar
+            isPublicWorkspace={false}
+            onOpenQuickSearchModal={handleOpenQuickSearchModal}
+            onOpenSettingModal={handleOpenSettingModal}
+            currentWorkspace={currentWorkspace}
+            openPage={useCallback(
+              (pageId: string) => {
+                assertExists(currentWorkspace);
+                return openPage(currentWorkspace.id, pageId);
+              },
+              [currentWorkspace, openPage]
+            )}
+            createPage={handleCreatePage}
+            paths={pathGenerator}
+          />
           <MainContainer clientBorder={appSettings.clientBorder}>
-            <Suspense>
-              {needUpgrade || upgrading ? <WorkspaceUpgrade /> : children}
-            </Suspense>
+            {needUpgrade || upgrading ? <WorkspaceUpgrade /> : children}
           </MainContainer>
         </AppContainer>
         <GlobalDragOverlay />

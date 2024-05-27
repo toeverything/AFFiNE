@@ -10,7 +10,7 @@ import {
   WorkspacesService,
 } from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
-import { Suspense, useCallback, useEffect } from 'react';
+import { Suspense, useCallback } from 'react';
 
 import {
   authAtom,
@@ -129,11 +129,6 @@ const UserWithWorkspaceListInner = ({
 
   const workspaceManager = useService(WorkspacesService);
   const workspaces = useLiveData(workspaceManager.list.workspaces$);
-
-  // revalidate workspace list when mounted
-  useEffect(() => {
-    workspaceManager.list.revalidate();
-  }, [workspaceManager]);
 
   return (
     <div className={styles.workspaceListWrapper}>

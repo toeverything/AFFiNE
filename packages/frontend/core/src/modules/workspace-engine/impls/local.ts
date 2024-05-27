@@ -9,6 +9,7 @@ import type {
   WorkspaceProfileInfo,
 } from '@toeverything/infra';
 import { globalBlockSuiteSchema, LiveData, Service } from '@toeverything/infra';
+import { isEqual } from 'lodash-es';
 import { nanoid } from 'nanoid';
 import { Observable } from 'rxjs';
 import { applyUpdate, encodeStateAsUpdate } from 'yjs';
@@ -96,12 +97,14 @@ export class LocalWorkspaceFlavourProvider
   }
   workspaces$ = LiveData.from(
     new Observable<WorkspaceMetadata[]>(subscriber => {
+      let last: WorkspaceMetadata[] | null = null;
       const emit = () => {
-        subscriber.next(
-          JSON.parse(
-            localStorage.getItem(LOCAL_WORKSPACE_LOCAL_STORAGE_KEY) ?? '[]'
-          ).map((id: string) => ({ id, flavour: WorkspaceFlavour.LOCAL }))
-        );
+        const value = JSON.parse(
+          localStorage.getItem(LOCAL_WORKSPACE_LOCAL_STORAGE_KEY) ?? '[]'
+        ).map((id: string) => ({ id, flavour: WorkspaceFlavour.LOCAL }));
+        if (isEqual(last, value)) return;
+        subscriber.next(value);
+        last = value;
       };
 
       emit();

@@ -24,6 +24,7 @@ import {
   type WorkspaceProfileInfo,
 } from '@toeverything/infra';
 import { effect, globalBlockSuiteSchema, Service } from '@toeverything/infra';
+import { isEqual } from 'lodash-es';
 import { nanoid } from 'nanoid';
 import { EMPTY, map, mergeMap } from 'rxjs';
 import { applyUpdate, encodeStateAsUpdate } from 'yjs';
@@ -148,11 +149,16 @@ export class CloudWorkspaceFlavourProviderService
           mergeMap(data => {
             if (data) {
               const { accountId, workspaces } = data;
+              const sorted = workspaces.sort((a, b) => {
+                return a.id.localeCompare(b.id);
+              });
               this.globalState.set(
                 CLOUD_WORKSPACES_CACHE_KEY + accountId,
-                workspaces
+                sorted
               );
-              this.workspaces$.next(workspaces);
+              if (!isEqual(this.workspaces$.value, sorted)) {
+                this.workspaces$.next(sorted);
+              }
             } else {
               this.workspaces$.next([]);
             }

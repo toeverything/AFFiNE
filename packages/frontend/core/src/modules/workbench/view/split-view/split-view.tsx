@@ -15,7 +15,7 @@ import {
 import { useService } from '@toeverything/infra';
 import clsx from 'clsx';
 import type { HTMLAttributes, RefObject } from 'react';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 import type { View } from '../../entities/view';
@@ -52,11 +52,18 @@ export const SplitView = ({
   const workbench = useService(WorkbenchService).workbench;
 
   const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 0,
-      },
-    })
+    useSensor(
+      PointerSensor,
+      useMemo(
+        /* avoid re-rendering */
+        () => ({
+          activationConstraint: {
+            distance: 0,
+          },
+        }),
+        []
+      )
+    )
   );
 
   const onResizing = useCallback(

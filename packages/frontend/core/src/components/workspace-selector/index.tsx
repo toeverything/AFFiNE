@@ -1,6 +1,7 @@
 import { Menu } from '@affine/component';
+import { useService, WorkspacesService } from '@toeverything/infra';
 import { useAtom } from 'jotai';
-import { Suspense, useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 
 import { openWorkspaceListModalAtom } from '../../atoms';
 import { mixpanel } from '../../utils';
@@ -21,16 +22,21 @@ export const WorkspaceSelector = () => {
     setOpenUserWorkspaceList(true);
   }, [setOpenUserWorkspaceList]);
 
+  const workspaceManager = useService(WorkspacesService);
+
+  // revalidate workspace list when open workspace list
+  useEffect(() => {
+    if (isUserWorkspaceListOpened) {
+      workspaceManager.list.revalidate();
+    }
+  }, [workspaceManager, isUserWorkspaceListOpened]);
+
   return (
     <Menu
       rootOptions={{
         open: isUserWorkspaceListOpened,
       }}
-      items={
-        <Suspense>
-          <UserWithWorkspaceList onEventEnd={closeUserWorkspaceList} />
-        </Suspense>
-      }
+      items={<UserWithWorkspaceList onEventEnd={closeUserWorkspaceList} />}
       contentOptions={{
         // hide trigger
         sideOffset: -58,

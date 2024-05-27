@@ -1,4 +1,5 @@
 import { DebugLogger } from '@affine/debug';
+import { isEqual } from 'lodash-es';
 import { catchError, EMPTY, exhaustMap, mergeMap } from 'rxjs';
 
 import { Entity } from '../../../framework';
@@ -54,7 +55,10 @@ export class WorkspaceProfile extends Entity<{ metadata: WorkspaceMetadata }> {
       providers.find(p => p.flavour === this.props.metadata.flavour) ?? null;
   }
 
-  private setCache(info: WorkspaceProfileInfo) {
+  private setProfile(info: WorkspaceProfileInfo) {
+    if (isEqual(this.profile$.value, info)) {
+      return;
+    }
     this.cache.setProfileCache(this.props.metadata.id, info);
   }
 
@@ -69,7 +73,7 @@ export class WorkspaceProfile extends Entity<{ metadata: WorkspaceMetadata }> {
       ).pipe(
         mergeMap(info => {
           if (info) {
-            this.setCache({ ...this.profile$.value, ...info });
+            this.setProfile({ ...this.profile$.value, ...info });
           }
           return EMPTY;
         }),
@@ -86,11 +90,11 @@ export class WorkspaceProfile extends Entity<{ metadata: WorkspaceMetadata }> {
   syncWithWorkspace(workspace: Workspace) {
     workspace.name$.subscribe(name => {
       const old = this.profile$.value;
-      this.setCache({ ...old, name: name ?? old?.name });
+      this.setProfile({ ...old, name: name ?? old?.name });
     });
     workspace.avatar$.subscribe(avatar => {
       const old = this.profile$.value;
-      this.setCache({ ...old, avatar: avatar ?? old?.avatar });
+      this.setProfile({ ...old, avatar: avatar ?? old?.avatar });
     });
   }
 }
