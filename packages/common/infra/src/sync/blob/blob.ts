@@ -29,6 +29,9 @@ export interface BlobStatus {
  * all operations priority use local, then use remote.
  */
 export class BlobEngine {
+  readonly name = 'blob-engine';
+  readonly readonly = this.local.readonly;
+
   private abort: AbortController | null = null;
 
   readonly isStorageOverCapacity$ = new LiveData(false);

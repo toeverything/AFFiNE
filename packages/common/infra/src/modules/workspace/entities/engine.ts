@@ -34,7 +34,7 @@ export class WorkspaceEngine extends Entity<{
 
   start() {
     this.doc.start();
-    this.awareness.connect();
+    this.awareness.connect(this.workspaceService.workspace.awareness);
     this.blob.start();
   }
 

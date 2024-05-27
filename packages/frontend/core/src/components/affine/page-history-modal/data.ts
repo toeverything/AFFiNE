@@ -108,11 +108,9 @@ const getOrCreateShellWorkspace = (workspaceId: string) => {
     const blobStorage = new CloudBlobStorage(workspaceId);
     docCollection = new DocCollection({
       id: workspaceId,
-      blobStorages: [
-        () => ({
-          crud: blobStorage,
-        }),
-      ],
+      blobSources: {
+        main: blobStorage,
+      },
       schema: globalBlockSuiteSchema,
     });
     docCollectionMap.set(workspaceId, docCollection);

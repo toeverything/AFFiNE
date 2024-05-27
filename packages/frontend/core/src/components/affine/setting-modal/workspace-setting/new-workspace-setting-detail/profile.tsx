@@ -64,7 +64,7 @@ export const ProfilePanel = () => {
       }
       try {
         const reducedFile = await validateAndReduceImage(file);
-        const blobs = workspace.docCollection.blob;
+        const blobs = workspace.docCollection.blobSync;
         const blobId = await blobs.set(reducedFile);
         workspace.docCollection.meta.setAvatar(blobId);
       } catch (error) {

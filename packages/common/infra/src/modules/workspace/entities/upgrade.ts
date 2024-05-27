@@ -78,11 +78,11 @@ export class WorkspaceUpgrade extends Entity {
               this.workspaceService.workspace.docCollection.schema
             );
             const blobList =
-              await this.workspaceService.workspace.docCollection.blob.list();
+              await this.workspaceService.workspace.docCollection.blobSync.list();
 
             for (const blobKey of blobList) {
               const blob =
-                await this.workspaceService.workspace.docCollection.blob.get(
+                await this.workspaceService.workspace.docCollection.blobSync.get(
                   blobKey
                 );
               if (blob) {

@@ -3,7 +3,6 @@ import { WorkspaceFlavour } from '@affine/env/workspace';
 import { DocCollection } from '@blocksuite/store';
 import type {
   BlobStorage,
-  Workspace,
   WorkspaceEngineProvider,
   WorkspaceFlavourProvider,
   WorkspaceMetadata,
@@ -68,7 +67,7 @@ export class LocalWorkspaceFlavourProvider
       id: id,
       idGenerator: () => nanoid(),
       schema: globalBlockSuiteSchema,
-      blobStorages: [() => ({ crud: blobStorage })],
+      blobSources: { main: blobStorage },
     });
 
     // apply initial state
@@ -153,24 +152,19 @@ export class LocalWorkspaceFlavourProvider
     return this.storageProvider.getBlobStorage(id).get(blob);
   }
 
-  getEngineProvider(workspace: Workspace): WorkspaceEngineProvider {
+  getEngineProvider(workspaceId: string): WorkspaceEngineProvider {
     return {
       getAwarenessConnections() {
-        return [
-          new BroadcastChannelAwarenessConnection(
-            workspace.id,
-            workspace.awareness
-          ),
-        ];
+        return [new BroadcastChannelAwarenessConnection(workspaceId)];
       },
       getDocServer() {
         return null;
       },
       getDocStorage: () => {
-        return this.storageProvider.getDocStorage(workspace.id);
+        return this.storageProvider.getDocStorage(workspaceId);
       },
       getLocalBlobStorage: () => {
-        return this.storageProvider.getBlobStorage(workspace.id);
+        return this.storageProvider.getBlobStorage(workspaceId);
       },
       getRemoteBlobStorages() {
         return [];

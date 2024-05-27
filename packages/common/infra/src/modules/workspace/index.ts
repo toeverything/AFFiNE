@@ -69,7 +69,7 @@ export function configureWorkspaceModule(framework: Framework) {
     .scope(WorkspaceScope)
     .service(WorkspaceService)
     .entity(Workspace, [WorkspaceScope])
-    .service(WorkspaceEngineService, [WorkspaceService])
+    .service(WorkspaceEngineService, [WorkspaceScope])
     .entity(WorkspaceEngine, [WorkspaceService])
     .service(WorkspaceUpgradeService)
     .entity(WorkspaceUpgrade, [

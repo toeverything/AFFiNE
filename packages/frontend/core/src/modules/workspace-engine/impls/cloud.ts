@@ -18,7 +18,6 @@ import {
   onComplete,
   OnEvent,
   onStart,
-  type Workspace,
   type WorkspaceEngineProvider,
   type WorkspaceFlavourProvider,
   type WorkspaceMetadata,
@@ -96,7 +95,9 @@ export class CloudWorkspaceFlavourProviderService
       id: tempId,
       idGenerator: () => nanoid(),
       schema: globalBlockSuiteSchema,
-      blobStorages: [() => ({ crud: blobStorage })],
+      blobSources: {
+        main: blobStorage,
+      },
     });
 
     // apply initial state
@@ -223,35 +224,31 @@ export class CloudWorkspaceFlavourProviderService
     const cloudBlob = new CloudBlobStorage(id);
     return await cloudBlob.get(blob);
   }
-  getEngineProvider(workspace: Workspace): WorkspaceEngineProvider {
+  getEngineProvider(workspaceId: string): WorkspaceEngineProvider {
     return {
       getAwarenessConnections: () => {
         return [
-          new BroadcastChannelAwarenessConnection(
-            workspace.id,
-            workspace.awareness
-          ),
+          new BroadcastChannelAwarenessConnection(workspaceId),
           new CloudAwarenessConnection(
-            workspace.id,
-            workspace.awareness,
+            workspaceId,
             this.webSocketService.newSocket()
           ),
         ];
       },
       getDocServer: () => {
         return new CloudDocEngineServer(
-          workspace.id,
+          workspaceId,
           this.webSocketService.newSocket()
         );
       },
       getDocStorage: () => {
-        return this.storageProvider.getDocStorage(workspace.id);
+        return this.storageProvider.getDocStorage(workspaceId);
       },
       getLocalBlobStorage: () => {
-        return this.storageProvider.getBlobStorage(workspace.id);
+        return this.storageProvider.getBlobStorage(workspaceId);
       },
       getRemoteBlobStorages() {
-        return [new CloudBlobStorage(workspace.id)];
+        return [new CloudBlobStorage(workspaceId)];
       },
     };
   }

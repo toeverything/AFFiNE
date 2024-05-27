@@ -10,7 +10,6 @@ import { type BlobStorage, MemoryDocStorage } from '../../../sync';
 import { MemoryBlobStorage } from '../../../sync/blob/blob';
 import type { GlobalState } from '../../storage';
 import type { WorkspaceProfileInfo } from '../entities/profile';
-import type { Workspace } from '../entities/workspace';
 import { globalBlockSuiteSchema } from '../global-schema';
 import type { WorkspaceMetadata } from '../metadata';
 import type {
@@ -54,13 +53,9 @@ export class TestingWorkspaceLocalProvider
       id: id,
       idGenerator: () => nanoid(),
       schema: globalBlockSuiteSchema,
-      blobStorages: [
-        () => {
-          return {
-            crud: blobStorage,
-          };
-        },
-      ],
+      blobSources: {
+        main: blobStorage,
+      },
     });
 
     // apply initial state
@@ -110,7 +105,7 @@ export class TestingWorkspaceLocalProvider
       blob
     );
   }
-  getEngineProvider(workspace: Workspace): WorkspaceEngineProvider {
+  getEngineProvider(workspaceId: string): WorkspaceEngineProvider {
     return {
       getDocStorage: () => {
         return this.docStorage;
@@ -123,7 +118,7 @@ export class TestingWorkspaceLocalProvider
       },
       getLocalBlobStorage: () => {
         return new MemoryBlobStorage(
-          wrapMemento(this.store, workspace.id + '/blobs/')
+          wrapMemento(this.store, workspaceId + '/blobs/')
         );
       },
       getRemoteBlobStorages() {
