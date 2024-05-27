@@ -42,7 +42,7 @@ export class ChatPrompt {
     return new ChatPrompt(
       options.name,
       options.action || undefined,
-      options.model || undefined,
+      options.model,
       options.messages
     );
   }
@@ -50,7 +50,7 @@ export class ChatPrompt {
   constructor(
     public readonly name: string,
     public readonly action: string | undefined,
-    public readonly model: string | undefined,
+    public readonly model: string,
     private readonly messages: PromptMessage[]
   ) {
     this.encoder = getTokenEncoder(model);

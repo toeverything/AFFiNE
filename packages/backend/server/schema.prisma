@@ -455,7 +455,7 @@ model AiPrompt {
   // an mark identifying which view to use to display the session
   // it is only used in the frontend and does not affect the backend
   action    String?  @db.VarChar
-  model     String?  @db.VarChar
+  model     String   @db.VarChar
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   messages AiPromptMessage[]
