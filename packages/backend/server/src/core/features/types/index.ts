@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { featureAdministrator } from './admin';
 import { FeatureType } from './common';
 import { featureCopilot } from './copilot';
 import { featureAIEarlyAccess, featureEarlyAccess } from './early-access';
@@ -65,6 +66,12 @@ export const Features: Feature[] = [
     version: 1,
     configs: {},
   },
+  {
+    feature: FeatureType.Admin,
+    type: FeatureKind.Feature,
+    version: 1,
+    configs: {},
+  },
 ];
 
 /// ======== schema infer ========
@@ -80,6 +87,7 @@ export const FeatureSchema = commonFeatureSchema
       featureAIEarlyAccess,
       featureUnlimitedWorkspace,
       featureUnlimitedCopilot,
+      featureAdministrator,
     ])
   );
 

@@ -10,6 +10,7 @@ import {
 } from '@nestjs/graphql';
 
 import { CurrentUser } from '../auth';
+import { Admin } from '../common';
 import { FeatureManagementService, FeatureType } from '../features';
 import { PermissionService } from './permission';
 import { WorkspaceType } from './types';
@@ -21,41 +22,29 @@ export class WorkspaceManagementResolver {
     private readonly permission: PermissionService
   ) {}
 
+  @Admin()
   @Mutation(() => Int)
   async addWorkspaceFeature(
-    @CurrentUser() currentUser: CurrentUser,
     @Args('workspaceId') workspaceId: string,
     @Args('feature', { type: () => FeatureType }) feature: FeatureType
   ): Promise<number> {
-    if (!this.feature.isStaff(currentUser.email)) {
-      throw new ForbiddenException('You are not allowed to do this');
-    }
-
     return this.feature.addWorkspaceFeatures(workspaceId, feature);
   }
 
+  @Admin()
   @Mutation(() => Int)
   async removeWorkspaceFeature(
-    @CurrentUser() currentUser: CurrentUser,
     @Args('workspaceId') workspaceId: string,
     @Args('feature', { type: () => FeatureType }) feature: FeatureType
   ): Promise<boolean> {
-    if (!this.feature.isStaff(currentUser.email)) {
-      throw new ForbiddenException('You are not allowed to do this');
-    }
-
     return this.feature.removeWorkspaceFeature(workspaceId, feature);
   }
 
+  @Admin()
   @Query(() => [WorkspaceType])
   async listWorkspaceFeatures(
-    @CurrentUser() user: CurrentUser,
     @Args('feature', { type: () => FeatureType }) feature: FeatureType
   ): Promise<WorkspaceType[]> {
-    if (!this.feature.isStaff(user.email)) {
-      throw new ForbiddenException('You are not allowed to do this');
-    }
-
     return this.feature.listFeatureWorkspaces(feature);
   }
 

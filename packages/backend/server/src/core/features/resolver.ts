@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException } from '@nestjs/common';
+import { BadRequestException } from '@nestjs/common';
 import {
   Args,
   Context,
@@ -6,35 +6,43 @@ import {
   Mutation,
   Query,
   registerEnumType,
+  ResolveField,
   Resolver,
 } from '@nestjs/graphql';
 
 import { CurrentUser } from '../auth/current-user';
 import { sessionUser } from '../auth/service';
-import { EarlyAccessType, FeatureManagementService } from '../features';
-import { UserService } from './service';
-import { UserType } from './types';
+import { Admin } from '../common';
+import { UserService } from '../user/service';
+import { UserType } from '../user/types';
+import { EarlyAccessType, FeatureManagementService } from './management';
+import { FeatureType } from './types';
 
 registerEnumType(EarlyAccessType, {
   name: 'EarlyAccessType',
 });
 
 @Resolver(() => UserType)
-export class UserManagementResolver {
+export class FeatureManagementResolver {
   constructor(
     private readonly users: UserService,
     private readonly feature: FeatureManagementService
   ) {}
 
+  @ResolveField(() => [FeatureType], {
+    name: 'features',
+    description: 'Enabled features of a user',
+  })
+  async userFeatures(@CurrentUser() user: CurrentUser) {
+    return this.feature.getActivatedUserFeatures(user.id);
+  }
+
+  @Admin()
   @Mutation(() => Int)
   async addToEarlyAccess(
-    @CurrentUser() currentUser: CurrentUser,
     @Args('email') email: string,
     @Args({ name: 'type', type: () => EarlyAccessType }) type: EarlyAccessType
   ): Promise<number> {
-    if (!this.feature.isStaff(currentUser.email)) {
-      throw new ForbiddenException('You are not allowed to do this');
-    }
     const user = await this.users.findUserByEmail(email);
     if (user) {
       return this.feature.addEarlyAccess(user.id, type);
@@ -46,14 +54,9 @@ export class UserManagementResolver {
     }
   }
 
+  @Admin()
   @Mutation(() => Int)
-  async removeEarlyAccess(
-    @CurrentUser() currentUser: CurrentUser,
-    @Args('email') email: string
-  ): Promise<number> {
-    if (!this.feature.isStaff(currentUser.email)) {
-      throw new ForbiddenException('You are not allowed to do this');
-    }
+  async removeEarlyAccess(@Args('email') email: string): Promise<number> {
     const user = await this.users.findUserByEmail(email);
     if (!user) {
       throw new BadRequestException(`User ${email} not found`);
@@ -61,18 +64,29 @@ export class UserManagementResolver {
     return this.feature.removeEarlyAccess(user.id);
   }
 
+  @Admin()
   @Query(() => [UserType])
   async earlyAccessUsers(
-    @Context() ctx: { isAdminQuery: boolean },
-    @CurrentUser() user: CurrentUser
+    @Context() ctx: { isAdminQuery: boolean }
   ): Promise<UserType[]> {
-    if (!this.feature.isStaff(user.email)) {
-      throw new ForbiddenException('You are not allowed to do this');
-    }
     // allow query other user's subscription
     ctx.isAdminQuery = true;
     return this.feature.listEarlyAccess().then(users => {
       return users.map(sessionUser);
     });
+  }
+
+  @Admin()
+  @Mutation(() => Boolean)
+  async addAdminister(@Args('email') email: string): Promise<boolean> {
+    const user = await this.users.findUserByEmail(email);
+
+    if (!user) {
+      throw new BadRequestException(`User ${email} not found`);
+    }
+
+    await this.feature.addAdmin(user.id);
+
+    return true;
   }
 }

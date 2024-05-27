@@ -8,9 +8,8 @@ import { FeatureKind, FeatureType } from './types';
 @Injectable()
 export class FeatureService {
   constructor(private readonly prisma: PrismaClient) {}
-  async getFeature<F extends FeatureType>(
-    feature: F
-  ): Promise<FeatureConfigType<F> | undefined> {
+
+  async getFeature<F extends FeatureType>(feature: F) {
     const data = await this.prisma.features.findFirst({
       where: {
         feature,
@@ -21,8 +20,9 @@ export class FeatureService {
         version: 'desc',
       },
     });
+
     if (data) {
-      return getFeature(this.prisma, data.id) as FeatureConfigType<F>;
+      return getFeature(this.prisma, data.id) as Promise<FeatureConfigType<F>>;
     }
     return undefined;
   }

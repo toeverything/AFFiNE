@@ -178,10 +178,8 @@ test('should list normal price for unauthenticated user', async t => {
 test('should list normal prices for authenticated user', async t => {
   const { feature, service, u1, stripe } = t.context;
 
-  feature.isEarlyAccessUser.withArgs(u1.email).resolves(false);
-  feature.isEarlyAccessUser
-    .withArgs(u1.email, EarlyAccessType.AI)
-    .resolves(false);
+  feature.isEarlyAccessUser.withArgs(u1.id).resolves(false);
+  feature.isEarlyAccessUser.withArgs(u1.id, EarlyAccessType.AI).resolves(false);
 
   // @ts-expect-error stub
   Sinon.stub(stripe.subscriptions, 'list').resolves({ data: [] });
@@ -200,10 +198,8 @@ test('should list normal prices for authenticated user', async t => {
 test('should list early access prices for pro ea user', async t => {
   const { feature, service, u1, stripe } = t.context;
 
-  feature.isEarlyAccessUser.withArgs(u1.email).resolves(true);
-  feature.isEarlyAccessUser
-    .withArgs(u1.email, EarlyAccessType.AI)
-    .resolves(false);
+  feature.isEarlyAccessUser.withArgs(u1.id).resolves(true);
+  feature.isEarlyAccessUser.withArgs(u1.id, EarlyAccessType.AI).resolves(false);
 
   // @ts-expect-error stub
   Sinon.stub(stripe.subscriptions, 'list').resolves({ data: [] });
@@ -222,10 +218,8 @@ test('should list early access prices for pro ea user', async t => {
 test('should list normal prices for pro ea user with old subscriptions', async t => {
   const { feature, service, u1, stripe } = t.context;
 
-  feature.isEarlyAccessUser.withArgs(u1.email).resolves(true);
-  feature.isEarlyAccessUser
-    .withArgs(u1.email, EarlyAccessType.AI)
-    .resolves(false);
+  feature.isEarlyAccessUser.withArgs(u1.id).resolves(true);
+  feature.isEarlyAccessUser.withArgs(u1.id, EarlyAccessType.AI).resolves(false);
 
   Sinon.stub(stripe.subscriptions, 'list').resolves({
     data: [
@@ -260,10 +254,8 @@ test('should list normal prices for pro ea user with old subscriptions', async t
 test('should list early access prices for ai ea user', async t => {
   const { feature, service, u1, stripe } = t.context;
 
-  feature.isEarlyAccessUser.withArgs(u1.email).resolves(false);
-  feature.isEarlyAccessUser
-    .withArgs(u1.email, EarlyAccessType.AI)
-    .resolves(true);
+  feature.isEarlyAccessUser.withArgs(u1.id).resolves(false);
+  feature.isEarlyAccessUser.withArgs(u1.id, EarlyAccessType.AI).resolves(true);
 
   // @ts-expect-error stub
   Sinon.stub(stripe.subscriptions, 'list').resolves({ data: [] });
@@ -282,10 +274,8 @@ test('should list early access prices for ai ea user', async t => {
 test('should list early access prices for pro and ai ea user', async t => {
   const { feature, service, u1, stripe } = t.context;
 
-  feature.isEarlyAccessUser.withArgs(u1.email).resolves(true);
-  feature.isEarlyAccessUser
-    .withArgs(u1.email, EarlyAccessType.AI)
-    .resolves(true);
+  feature.isEarlyAccessUser.withArgs(u1.id).resolves(true);
+  feature.isEarlyAccessUser.withArgs(u1.id, EarlyAccessType.AI).resolves(true);
 
   // @ts-expect-error stub
   Sinon.stub(stripe.subscriptions, 'list').resolves({ data: [] });
@@ -304,10 +294,8 @@ test('should list early access prices for pro and ai ea user', async t => {
 test('should list normal prices for ai ea user with old subscriptions', async t => {
   const { feature, service, u1, stripe } = t.context;
 
-  feature.isEarlyAccessUser.withArgs(u1.email).resolves(false);
-  feature.isEarlyAccessUser
-    .withArgs(u1.email, EarlyAccessType.AI)
-    .resolves(true);
+  feature.isEarlyAccessUser.withArgs(u1.id).resolves(false);
+  feature.isEarlyAccessUser.withArgs(u1.id, EarlyAccessType.AI).resolves(true);
 
   Sinon.stub(stripe.subscriptions, 'list').resolves({
     data: [
@@ -555,9 +543,9 @@ test('should get correct ai plan price for checking out', async t => {
 
   // pro ea user
   {
-    feature.isEarlyAccessUser.withArgs(u1.email).resolves(true);
+    feature.isEarlyAccessUser.withArgs(u1.id).resolves(true);
     feature.isEarlyAccessUser
-      .withArgs(u1.email, EarlyAccessType.AI)
+      .withArgs(u1.id, EarlyAccessType.AI)
       .resolves(false);
     // @ts-expect-error stub
     subListStub.resolves({ data: [] });
@@ -574,9 +562,9 @@ test('should get correct ai plan price for checking out', async t => {
 
   // pro ea user, but has old subscription
   {
-    feature.isEarlyAccessUser.withArgs(u1.email).resolves(true);
+    feature.isEarlyAccessUser.withArgs(u1.id).resolves(true);
     feature.isEarlyAccessUser
-      .withArgs(u1.email, EarlyAccessType.AI)
+      .withArgs(u1.id, EarlyAccessType.AI)
       .resolves(false);
     subListStub.resolves({
       data: [

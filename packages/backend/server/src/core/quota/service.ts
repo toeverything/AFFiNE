@@ -4,7 +4,8 @@ import { PrismaClient } from '@prisma/client';
 import type { EventPayload } from '../../fundamentals';
 import { OnEvent, PrismaTransaction } from '../../fundamentals';
 import { SubscriptionPlan } from '../../plugins/payment/types';
-import { FeatureKind, FeatureManagementService } from '../features';
+import { FeatureManagementService } from '../features/management';
+import { FeatureKind } from '../features/types';
 import { QuotaConfig } from './quota';
 import { QuotaType } from './types';
 
