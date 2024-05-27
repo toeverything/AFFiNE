@@ -8,8 +8,8 @@ import ava from 'ava';
 import Sinon from 'sinon';
 
 import { AuthService } from '../src/core/auth';
+import { prompts } from '../src/core/bootstrap/actions/utils/prompts';
 import { WorkspaceModule } from '../src/core/workspaces';
-import { prompts } from '../src/data/migrations/utils/prompts';
 import { ConfigModule } from '../src/fundamentals/config';
 import { CopilotModule } from '../src/plugins/copilot';
 import { PromptService } from '../src/plugins/copilot/prompt';
