@@ -23,12 +23,15 @@ const OIDCTokenSchema = z.object({
   token_type: z.string(),
 });
 
-const OIDCUserInfoSchema = z.object({
-  id: z.string(),
-  email: z.string().email(),
-  name: z.string(),
-  groups: z.array(z.string()).optional(),
-});
+const OIDCUserInfoSchema = z
+  .object({
+    sub: z.string(),
+    preferred_username: z.string(),
+    email: z.string().email(),
+    name: z.string(),
+    groups: z.array(z.string()).optional(),
+  })
+  .passthrough();
 
 type OIDCUserInfo = z.infer<typeof OIDCUserInfoSchema>;
 
@@ -62,7 +65,8 @@ class OIDCClient {
         });
       }
     }
-    return verifier.parse(response.json());
+    const data = await response.json();
+    return verifier.parse(data);
   }
 
   static async create(config: OAuthOIDCProviderConfig, url: URLHelper) {
@@ -135,16 +139,17 @@ class OIDCClient {
   }
 
   private mapUserInfo(
-    user: Record<string, any>,
+    user: OIDCUserInfo,
     claimsMap: Record<string, string>
-  ): OIDCUserInfo {
-    const mappedUser: Partial<OIDCUserInfo> = {};
+  ): OAuthAccount {
+    const mappedUser: Partial<OAuthAccount> = {};
     for (const [key, value] of Object.entries(claimsMap)) {
-      if (user[value] !== undefined) {
-        mappedUser[key as keyof OIDCUserInfo] = user[value];
+      const claimValue = user[value];
+      if (claimValue !== undefined) {
+        mappedUser[key as keyof OAuthAccount] = claimValue as string;
       }
     }
-    return mappedUser as OIDCUserInfo;
+    return mappedUser as OAuthAccount;
   }
 
   async userinfo(token: string) {
