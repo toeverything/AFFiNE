@@ -1,14 +1,13 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { TestingModule } from '@nestjs/testing';
 import test from 'ava';
 
 import { Config, ConfigModule } from '../src/fundamentals/config';
+import { createTestingModule } from './utils';
 
 let config: Config;
 let module: TestingModule;
 test.beforeEach(async () => {
-  module = await Test.createTestingModule({
-    imports: [ConfigModule.forRoot()],
-  }).compile();
+  module = await createTestingModule();
   config = module.get(Config);
 });
 
@@ -17,19 +16,21 @@ test.afterEach.always(async () => {
 });
 
 test('should be able to get config', t => {
-  t.true(typeof config.host === 'string');
+  t.true(typeof config.server.host === 'string');
   t.is(config.NODE_ENV, 'test');
 });
 
 test('should be able to override config', async t => {
-  const module = await Test.createTestingModule({
+  const module = await createTestingModule({
     imports: [
       ConfigModule.forRoot({
-        host: 'testing',
+        server: {
+          host: 'testing',
+        },
       }),
     ],
-  }).compile();
+  });
   const config = module.get(Config);
 
-  t.is(config.host, 'testing');
+  t.is(config.server.host, 'testing');
 });

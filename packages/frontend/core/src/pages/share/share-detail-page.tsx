@@ -138,11 +138,11 @@ export const Component = () => {
       },
       {
         ...defaultCloudProvider,
-        getEngineProvider(workspace) {
+        getEngineProvider(workspaceId) {
           return {
             getDocStorage() {
               return new ReadonlyDocStorage({
-                [workspace.id]: new Uint8Array(workspaceArrayBuffer),
+                [workspaceId]: new Uint8Array(workspaceArrayBuffer),
                 [docId]: new Uint8Array(pageArrayBuffer),
               });
             },
@@ -156,7 +156,7 @@ export const Component = () => {
               return EmptyBlobStorage;
             },
             getRemoteBlobStorages() {
-              return [new CloudBlobStorage(workspace.id)];
+              return [new CloudBlobStorage(workspaceId)];
             },
           };
         },

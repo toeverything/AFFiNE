@@ -3,6 +3,7 @@ import { ipcMain } from 'electron';
 import { clipboardHandlers } from './clipboard';
 import { configStorageHandlers } from './config-storage';
 import { exportHandlers } from './export';
+import { findInPageHandlers } from './find-in-page';
 import { getLogFilePath, logger, revealLogFile } from './logger';
 import { uiHandlers } from './ui/handlers';
 import { updaterHandlers } from './updater';
@@ -24,6 +25,7 @@ export const allHandlers = {
   export: exportHandlers,
   updater: updaterHandlers,
   configStorage: configStorageHandlers,
+  findInPage: findInPageHandlers,
 };
 
 export const registerHandlers = () => {

@@ -19,7 +19,7 @@ import { groupBy } from 'lodash-es';
 
 import { CurrentUser, Public } from '../../core/auth';
 import { UserType } from '../../core/user';
-import { Config } from '../../fundamentals';
+import { Config, URLHelper } from '../../fundamentals';
 import { decodeLookupKey, SubscriptionService } from './service';
 import {
   InvoiceStatus,
@@ -146,8 +146,8 @@ class CreateCheckoutSessionInput {
   @Field(() => String, { nullable: true })
   coupon!: string | null;
 
-  @Field(() => String, { nullable: true })
-  successCallbackLink!: string | null;
+  @Field(() => String)
+  successCallbackLink!: string;
 
   // @FIXME(forehalo): we should put this field in the header instead of as a explicity args
   @Field(() => String)
@@ -158,7 +158,7 @@ class CreateCheckoutSessionInput {
 export class SubscriptionResolver {
   constructor(
     private readonly service: SubscriptionService,
-    private readonly config: Config
+    private readonly url: URLHelper
   ) {}
 
   @Public()
@@ -222,8 +222,7 @@ export class SubscriptionResolver {
       plan: input.plan,
       recurring: input.recurring,
       promotionCode: input.coupon,
-      redirectUrl:
-        input.successCallbackLink ?? `${this.config.baseUrl}/upgrade-success`,
+      redirectUrl: this.url.link(input.successCallbackLink),
       idempotencyKey: input.idempotencyKey,
     });
 

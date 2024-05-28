@@ -65,7 +65,10 @@ export const Component = () => {
                   recurring?.toLowerCase() === 'monthly'
                     ? SubscriptionRecurring.Monthly
                     : SubscriptionRecurring.Yearly,
-                successCallbackLink: null,
+                successCallbackLink:
+                  plan?.toLowerCase() === 'ai'
+                    ? '/ai-upgrade-success'
+                    : '/upgrade-success',
               });
               setMessage('Redirecting...');
               location.href = checkout;

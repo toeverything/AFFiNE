@@ -1,7 +1,14 @@
 import { assertExists } from '@blocksuite/global/utils';
 import { assignInlineVars } from '@vanilla-extract/dynamic';
 import clsx from 'clsx';
-import { forwardRef, useCallback, useEffect, useRef, useState } from 'react';
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
 import { useTransition } from 'react-transition-state';
 
 import * as styles from './resize-panel.css';
@@ -157,7 +164,7 @@ export const ResizePanel = forwardRef<HTMLDivElement, ResizePanelProps>(
     const [{ status }, toggle] = useTransition({
       timeout: animationTimeout,
     });
-    useEffect(() => {
+    useLayoutEffect(() => {
       toggle(open);
     }, [open]);
     return (

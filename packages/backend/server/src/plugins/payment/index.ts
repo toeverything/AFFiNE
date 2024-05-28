@@ -1,3 +1,5 @@
+import './config';
+
 import { ServerFeature } from '../../core/config';
 import { FeatureModule } from '../../core/features';
 import { Plugin } from '../registry';
@@ -26,5 +28,3 @@ import { StripeWebhook } from './webhook';
   if: config => config.flavor.graphql,
 })
 export class PaymentModule {}
-
-export type { PaymentConfig } from './types';

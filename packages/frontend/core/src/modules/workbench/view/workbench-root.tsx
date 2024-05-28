@@ -1,5 +1,5 @@
 import { useLiveData, useService } from '@toeverything/infra';
-import { useCallback, useEffect, useRef } from 'react';
+import { memo, useCallback, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 
 import type { View } from '../entities/view';
@@ -14,7 +14,7 @@ const useAdapter = environment.isDesktop
   ? useBindWorkbenchToDesktopRouter
   : useBindWorkbenchToBrowserRouter;
 
-export const WorkbenchRoot = () => {
+export const WorkbenchRoot = memo(() => {
   const workbench = useService(WorkbenchService).workbench;
 
   // for debugging
@@ -50,7 +50,9 @@ export const WorkbenchRoot = () => {
       onMove={onMove}
     />
   );
-};
+});
+
+WorkbenchRoot.displayName = 'memo(WorkbenchRoot)';
 
 const WorkbenchView = ({ view, index }: { view: View; index: number }) => {
   const workbench = useService(WorkbenchService).workbench;

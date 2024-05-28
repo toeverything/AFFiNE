@@ -1,3 +1,5 @@
+import './config';
+
 import { registerStorageProvider } from '../../fundamentals/storage';
 import { Plugin } from '../registry';
 import { R2StorageProvider } from './providers/r2';
@@ -38,5 +40,3 @@ export class CloudflareR2Module {}
   if: config => config.flavor.graphql,
 })
 export class AwsS3Module {}
-
-export type { R2StorageConfig, S3StorageConfig } from './types';

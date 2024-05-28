@@ -1,3 +1,4 @@
+import { AppFallback } from '@affine/core/components/affine/app-container';
 import { useWorkspace } from '@affine/core/hooks/use-workspace';
 import { ZipTransformer } from '@blocksuite/blocks';
 import type { Workspace } from '@toeverything/infra';
@@ -9,11 +10,10 @@ import {
   WorkspacesService,
 } from '@toeverything/infra';
 import type { ReactElement } from 'react';
-import { Suspense, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
 import { AffineErrorBoundary } from '../../components/affine/affine-error-boundary';
-import { WorkspaceFallback } from '../../components/workspace';
 import { WorkspaceLayout } from '../../layouts/workspace-layout';
 import { RightSidebarContainer } from '../../modules/right-sidebar';
 import { WorkbenchRoot } from '../../modules/workbench';
@@ -121,13 +121,13 @@ export const Component = (): ReactElement => {
     return <PageNotFound noPermission />;
   }
   if (!workspace) {
-    return <WorkspaceFallback key="workspaceLoading" />;
+    return <AppFallback key="workspaceLoading" />;
   }
 
   if (!isRootDocReady) {
     return (
       <FrameworkScope scope={workspace.scope}>
-        <WorkspaceFallback key="workspaceLoading" />
+        <AppFallback key="workspaceLoading" />
         <AllWorkspaceModals />
       </FrameworkScope>
     );
@@ -135,14 +135,12 @@ export const Component = (): ReactElement => {
 
   return (
     <FrameworkScope scope={workspace.scope}>
-      <Suspense fallback={<WorkspaceFallback key="workspaceFallback" />}>
-        <AffineErrorBoundary height="100vh">
-          <WorkspaceLayout>
-            <WorkbenchRoot />
-            <RightSidebarContainer />
-          </WorkspaceLayout>
-        </AffineErrorBoundary>
-      </Suspense>
+      <AffineErrorBoundary height="100vh">
+        <WorkspaceLayout>
+          <WorkbenchRoot />
+          <RightSidebarContainer />
+        </WorkspaceLayout>
+      </AffineErrorBoundary>
     </FrameworkScope>
   );
 };

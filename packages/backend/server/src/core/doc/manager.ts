@@ -133,8 +133,11 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
   private async applyUpdates(guid: string, ...updates: Buffer[]): Promise<Doc> {
     const doc = await this.recoverDoc(...updates);
 
+    const useYocto = await this.config.runtime.fetch(
+      'doc/experimentalMergeWithYOcto'
+    );
     // test jwst codec
-    if (this.config.doc.manager.experimentalMergeWithYOcto) {
+    if (useYocto) {
       metrics.jwst.counter('codec_merge_counter').add(1);
       const yjsResult = Buffer.from(encodeStateAsUpdate(doc));
       let log = false;
@@ -185,11 +188,6 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
     }, this.config.doc.manager.updatePollInterval);
 
     this.logger.log('Automation started');
-    if (this.config.doc.manager.experimentalMergeWithYOcto) {
-      this.logger.warn(
-        'Experimental feature enabled: merge updates with jwst codec is enabled'
-      );
-    }
   }
 
   /**

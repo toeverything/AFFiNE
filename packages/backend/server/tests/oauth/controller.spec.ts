@@ -10,10 +10,11 @@ import { AppModule } from '../../src/app.module';
 import { CurrentUser } from '../../src/core/auth';
 import { AuthService } from '../../src/core/auth/service';
 import { UserService } from '../../src/core/user';
-import { Config, ConfigModule } from '../../src/fundamentals/config';
+import { URLHelper } from '../../src/fundamentals';
+import { ConfigModule } from '../../src/fundamentals/config';
+import { OAuthProviderName } from '../../src/plugins/oauth/config';
 import { GoogleOAuthProvider } from '../../src/plugins/oauth/providers/google';
 import { OAuthService } from '../../src/plugins/oauth/service';
-import { OAuthProviderName } from '../../src/plugins/oauth/types';
 import { createTestingApp, getSession } from '../utils';
 
 const test = ava as TestFn<{
@@ -71,7 +72,7 @@ test("should be able to redirect to oauth provider's login page", async t => {
   t.is(redirect.searchParams.get('client_id'), 'google-client-id');
   t.is(
     redirect.searchParams.get('redirect_uri'),
-    app.get(Config).baseUrl + '/oauth/callback'
+    app.get(URLHelper).link('/oauth/callback')
   );
   t.is(redirect.searchParams.get('response_type'), 'code');
   t.is(redirect.searchParams.get('prompt'), 'select_account');

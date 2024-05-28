@@ -46,6 +46,7 @@ export const Modal = forwardRef<HTMLDivElement, ModalProps>(
       title,
       description,
       withoutCloseButton = false,
+      modal,
 
       portalOptions,
       contentOptions: {
@@ -63,13 +64,13 @@ export const Modal = forwardRef<HTMLDivElement, ModalProps>(
     },
     ref
   ) => (
-    <Dialog.Root {...props}>
+    <Dialog.Root modal={modal} {...props}>
       <Dialog.Portal {...portalOptions}>
         <Dialog.Overlay
           className={clsx(styles.modalOverlay, overlayClassName)}
           {...otherOverlayOptions}
         />
-        <div className={styles.modalContentWrapper}>
+        <div data-modal={modal} className={clsx(styles.modalContentWrapper)}>
           <Dialog.Content
             className={clsx(styles.modalContent, contentClassName)}
             style={{

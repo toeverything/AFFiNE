@@ -1,7 +1,7 @@
 import assert from 'node:assert';
 import { join } from 'node:path';
 
-import type { CookiesSetDetails } from 'electron';
+import { type CookiesSetDetails } from 'electron';
 import { BrowserWindow, nativeTheme } from 'electron';
 import electronWindowState from 'electron-window-state';
 

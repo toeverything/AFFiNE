@@ -1,18 +1,9 @@
 import { type Tokenizer } from '@affine/server-native';
 import { AiPromptRole } from '@prisma/client';
-import type { ClientOptions as OpenAIClientOptions } from 'openai';
 import { z } from 'zod';
 
 import { fromModelName } from '../../native';
 import type { ChatPrompt } from './prompt';
-import type { FalConfig } from './providers/fal';
-
-export interface CopilotConfig {
-  openai: OpenAIClientOptions;
-  fal: FalConfig;
-  unsplashKey: string;
-  test: never;
-}
 
 export enum AvailableModels {
   // text to text

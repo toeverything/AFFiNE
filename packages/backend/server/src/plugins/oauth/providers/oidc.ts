@@ -7,8 +7,12 @@ import {
 import { z } from 'zod';
 
 import { Config, URLHelper } from '../../../fundamentals';
+import {
+  OAuthOIDCProviderConfig,
+  OAuthProviderName,
+  OIDCArgs,
+} from '../config';
 import { AutoRegisteredOAuthProvider } from '../register';
-import { OAuthOIDCProviderConfig, OAuthProviderName, OIDCArgs } from '../types';
 import { OAuthAccount, Tokens } from './def';
 
 const OIDCTokenSchema = z.object({

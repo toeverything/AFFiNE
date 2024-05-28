@@ -13,7 +13,6 @@ export const affineDocViewport = style({
 
 export const docContainer = style({
   display: 'block',
-  flexGrow: 1,
 });
 
 export const docEditorGap = style({
@@ -23,6 +22,7 @@ export const docEditorGap = style({
   paddingTop: 50,
   paddingBottom: 50,
   cursor: 'text',
+  flexGrow: 1,
 });
 
 const titleTagBasic = style({

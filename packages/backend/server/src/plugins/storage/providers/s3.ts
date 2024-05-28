@@ -20,7 +20,7 @@ import {
   StorageProvider,
   toBuffer,
 } from '../../../fundamentals/storage';
-import type { S3StorageConfig } from '../types';
+import type { S3StorageConfig } from '../config';
 
 export class S3StorageProvider implements StorageProvider {
   protected logger: Logger;

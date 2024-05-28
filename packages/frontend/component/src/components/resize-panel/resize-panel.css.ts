@@ -33,9 +33,6 @@ export const root = style({
     '&[data-enable-animation="true"]': {
       transition: `margin-left ${animationTimeout} .05s, margin-right ${animationTimeout} .05s, width ${animationTimeout} .05s`,
     },
-    '&[data-is-floating="false"][data-transparent=true]': {
-      backgroundColor: 'transparent',
-    },
     '&[data-transition-state="exited"]': {
       // avoid focus on hidden panel
       visibility: 'hidden',

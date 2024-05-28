@@ -1,26 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
 import z from 'zod';
 
-function getAuthCredentialValidator() {
-  const email = z.string().email({ message: 'Invalid email address' });
-  let password = z.string();
-
-  password = password
-    .min(AFFiNE.auth.password.minLength, {
-      message: `Password must be ${AFFiNE.auth.password.minLength} or more charactors long`,
-    })
-    .max(AFFiNE.auth.password.maxLength, {
-      message: `Password must be ${AFFiNE.auth.password.maxLength} or fewer charactors long`,
-    });
-
-  return z
-    .object({
-      email,
-      password,
-    })
-    .required();
-}
-
 function assertValid<T>(z: z.ZodType<T>, value: unknown) {
   const result = z.safeParse(value);
 
@@ -35,22 +15,25 @@ function assertValid<T>(z: z.ZodType<T>, value: unknown) {
 }
 
 export function assertValidEmail(email: string) {
-  assertValid(getAuthCredentialValidator().shape.email, email);
+  assertValid(z.string().email({ message: 'Invalid email address' }), email);
 }
 
-export function assertValidPassword(password: string) {
-  assertValid(getAuthCredentialValidator().shape.password, password);
-}
-
-export function assertValidCredential(credential: {
-  email: string;
-  password: string;
-}) {
-  assertValid(getAuthCredentialValidator(), credential);
+export function assertValidPassword(
+  password: string,
+  { min, max }: { min: number; max: number }
+) {
+  assertValid(
+    z
+      .string()
+      .min(min, { message: `Password must be ${min} or more charactors long` })
+      .max(max, {
+        message: `Password must be ${max} or fewer charactors long`,
+      }),
+    password
+  );
 }
 
 export const validators = {
   assertValidEmail,
   assertValidPassword,
-  assertValidCredential,
 };

@@ -15,7 +15,7 @@ import { Readable } from 'node:stream';
 
 import { Logger } from '@nestjs/common';
 
-import { FsStorageConfig } from '../../config/storage';
+import { FsStorageConfig } from '../config';
 import {
   BlobInputType,
   GetObjectMetadata,

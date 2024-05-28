@@ -6,19 +6,25 @@ import type {
   PutObjectMetadata,
   StorageProvider,
 } from '../../../fundamentals';
-import { Config, OnEvent, StorageProviderFactory } from '../../../fundamentals';
+import {
+  Config,
+  OnEvent,
+  StorageProviderFactory,
+  URLHelper,
+} from '../../../fundamentals';
 
 @Injectable()
 export class AvatarStorage {
   public readonly provider: StorageProvider;
-  private readonly storageConfig: Config['storage']['storages']['avatar'];
+  private readonly storageConfig: Config['storages']['avatar'];
 
   constructor(
     private readonly config: Config,
+    private readonly url: URLHelper,
     private readonly storageFactory: StorageProviderFactory
   ) {
-    this.provider = this.storageFactory.create('avatar');
-    this.storageConfig = this.config.storage.storages.avatar;
+    this.storageConfig = this.config.storages.avatar;
+    this.provider = this.storageFactory.create(this.storageConfig);
   }
 
   async put(key: string, blob: BlobInputType, metadata?: PutObjectMetadata) {
@@ -26,7 +32,7 @@ export class AvatarStorage {
     let link = this.storageConfig.publicLinkFactory(key);
 
     if (link.startsWith('/')) {
-      link = this.config.baseUrl + link;
+      link = this.url.link(link);
     }
 
     return link;

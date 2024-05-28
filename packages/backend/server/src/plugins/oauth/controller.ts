@@ -12,10 +12,10 @@ import type { Request, Response } from 'express';
 import { AuthService, Public } from '../../core/auth';
 import { UserService } from '../../core/user';
 import { URLHelper } from '../../fundamentals';
+import { OAuthProviderName } from './config';
 import { OAuthAccount, Tokens } from './providers/def';
 import { OAuthProviderFactory } from './register';
 import { OAuthService } from './service';
-import { OAuthProviderName } from './types';
 
 @Controller('/oauth')
 export class OAuthController {

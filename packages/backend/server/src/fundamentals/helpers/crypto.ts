@@ -32,11 +32,11 @@ export class CryptoHelper {
 
   constructor(config: Config) {
     this.keyPair = {
-      publicKey: Buffer.from(config.secrets.publicKey, 'utf8'),
-      privateKey: Buffer.from(config.secrets.privateKey, 'utf8'),
+      publicKey: Buffer.from(config.crypto.secret.publicKey, 'utf8'),
+      privateKey: Buffer.from(config.crypto.secret.privateKey, 'utf8'),
       sha256: {
-        publicKey: this.sha256(config.secrets.publicKey),
-        privateKey: this.sha256(config.secrets.privateKey),
+        publicKey: this.sha256(config.crypto.secret.publicKey),
+        privateKey: this.sha256(config.crypto.secret.privateKey),
       },
     };
   }

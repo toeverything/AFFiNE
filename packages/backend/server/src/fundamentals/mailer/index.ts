@@ -1,3 +1,5 @@
+import './config';
+
 import { Global, Module } from '@nestjs/common';
 
 import { OptionalModule } from '../nestjs';
@@ -8,7 +10,7 @@ import { MAILER } from './mailer';
 @OptionalModule({
   providers: [MAILER],
   exports: [MAILER],
-  requires: ['mailer.auth.user'],
+  requires: ['mailer.host'],
 })
 class MailerModule {}
 

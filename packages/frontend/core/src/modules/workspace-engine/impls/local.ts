@@ -3,13 +3,13 @@ import { WorkspaceFlavour } from '@affine/env/workspace';
 import { DocCollection } from '@blocksuite/store';
 import type {
   BlobStorage,
-  Workspace,
   WorkspaceEngineProvider,
   WorkspaceFlavourProvider,
   WorkspaceMetadata,
   WorkspaceProfileInfo,
 } from '@toeverything/infra';
 import { globalBlockSuiteSchema, LiveData, Service } from '@toeverything/infra';
+import { isEqual } from 'lodash-es';
 import { nanoid } from 'nanoid';
 import { Observable } from 'rxjs';
 import { applyUpdate, encodeStateAsUpdate } from 'yjs';
@@ -68,7 +68,7 @@ export class LocalWorkspaceFlavourProvider
       id: id,
       idGenerator: () => nanoid(),
       schema: globalBlockSuiteSchema,
-      blobStorages: [() => ({ crud: blobStorage })],
+      blobSources: { main: blobStorage },
     });
 
     // apply initial state
@@ -97,12 +97,14 @@ export class LocalWorkspaceFlavourProvider
   }
   workspaces$ = LiveData.from(
     new Observable<WorkspaceMetadata[]>(subscriber => {
+      let last: WorkspaceMetadata[] | null = null;
       const emit = () => {
-        subscriber.next(
-          JSON.parse(
-            localStorage.getItem(LOCAL_WORKSPACE_LOCAL_STORAGE_KEY) ?? '[]'
-          ).map((id: string) => ({ id, flavour: WorkspaceFlavour.LOCAL }))
-        );
+        const value = JSON.parse(
+          localStorage.getItem(LOCAL_WORKSPACE_LOCAL_STORAGE_KEY) ?? '[]'
+        ).map((id: string) => ({ id, flavour: WorkspaceFlavour.LOCAL }));
+        if (isEqual(last, value)) return;
+        subscriber.next(value);
+        last = value;
       };
 
       emit();
@@ -153,24 +155,19 @@ export class LocalWorkspaceFlavourProvider
     return this.storageProvider.getBlobStorage(id).get(blob);
   }
 
-  getEngineProvider(workspace: Workspace): WorkspaceEngineProvider {
+  getEngineProvider(workspaceId: string): WorkspaceEngineProvider {
     return {
       getAwarenessConnections() {
-        return [
-          new BroadcastChannelAwarenessConnection(
-            workspace.id,
-            workspace.awareness
-          ),
-        ];
+        return [new BroadcastChannelAwarenessConnection(workspaceId)];
       },
       getDocServer() {
         return null;
       },
       getDocStorage: () => {
-        return this.storageProvider.getDocStorage(workspace.id);
+        return this.storageProvider.getDocStorage(workspaceId);
       },
       getLocalBlobStorage: () => {
-        return this.storageProvider.getBlobStorage(workspace.id);
+        return this.storageProvider.getBlobStorage(workspaceId);
       },
       getRemoteBlobStorages() {
         return [];

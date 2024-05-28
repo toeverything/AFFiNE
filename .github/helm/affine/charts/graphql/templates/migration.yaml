@@ -22,6 +22,8 @@ spec:
             value: "{{ .Values.env }}"
           - name: AFFINE_ENV
             value: "{{ .Release.Namespace }}"
+          - name: DEPLOYMENT_TYPE
+            value: "affine"
           - name: DATABASE_PASSWORD
             valueFrom:
               secretKeyRef:

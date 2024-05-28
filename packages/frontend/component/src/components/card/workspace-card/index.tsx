@@ -1,3 +1,4 @@
+import { WorkspaceAvatar } from '@affine/component/workspace-avatar';
 import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { CollaborationIcon, SettingsIcon } from '@blocksuite/icons';
@@ -5,7 +6,7 @@ import type { WorkspaceMetadata } from '@toeverything/infra';
 import clsx from 'clsx';
 import { type MouseEvent, useCallback } from 'react';
 
-import { Avatar, type AvatarProps } from '../../../ui/avatar';
+import { type AvatarProps } from '../../../ui/avatar';
 import { Button } from '../../../ui/button';
 import { Skeleton } from '../../../ui/skeleton';
 import * as styles from './styles.css';
@@ -24,7 +25,6 @@ export interface WorkspaceCardProps {
   isOwner?: boolean;
   openingId?: string | null;
   enableCloudText?: string;
-  avatar?: string;
   name?: string;
 }
 
@@ -57,7 +57,6 @@ export const WorkspaceCard = ({
   isOwner = true,
   enableCloudText = 'Enable Cloud',
   name,
-  avatar,
 }: WorkspaceCardProps) => {
   const isLocal = meta.flavour === WorkspaceFlavour.LOCAL;
   const displayName = name ?? UNTITLED_WORKSPACE_NAME;
@@ -78,11 +77,12 @@ export const WorkspaceCard = ({
         onClick(meta);
       }, [onClick, meta])}
     >
-      <Avatar
+      <WorkspaceAvatar
+        key={meta.id}
+        meta={meta}
         imageProps={avatarImageProps}
         fallbackProps={avatarImageProps}
         size={28}
-        url={avatar}
         name={name}
         colorfulFallback
       />

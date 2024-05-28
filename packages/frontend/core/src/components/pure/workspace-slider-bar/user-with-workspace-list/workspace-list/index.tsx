@@ -3,7 +3,6 @@ import { Divider } from '@affine/component/ui/divider';
 import { WorkspaceList } from '@affine/component/workspace-list';
 import { useEnableCloud } from '@affine/core/hooks/affine/use-enable-cloud';
 import {
-  useWorkspaceAvatar,
   useWorkspaceInfo,
   useWorkspaceName,
 } from '@affine/core/hooks/use-workspace-info';
@@ -76,7 +75,6 @@ const CloudWorkSpaceList = ({
         onSettingClick={onClickWorkspaceSetting}
         useIsWorkspaceOwner={useIsWorkspaceOwner}
         useWorkspaceName={useWorkspaceName}
-        useWorkspaceAvatar={useWorkspaceAvatar}
       />
     </div>
   );
@@ -115,7 +113,6 @@ const LocalWorkspaces = ({
         onEnableCloudClick={onClickEnableCloud}
         useIsWorkspaceOwner={useIsWorkspaceOwner}
         useWorkspaceName={useWorkspaceName}
-        useWorkspaceAvatar={useWorkspaceAvatar}
       />
     </div>
   );
@@ -186,8 +183,18 @@ export const AFFiNEWorkspaceList = ({
 
   const onClickWorkspace = useCallback(
     (workspaceMetadata: WorkspaceMetadata) => {
-      jumpToSubPath(workspaceMetadata.id, WorkspaceSubPath.ALL);
-      onEventEnd?.();
+      if (document.startViewTransition) {
+        document.startViewTransition(() => {
+          jumpToSubPath(workspaceMetadata.id, WorkspaceSubPath.ALL);
+          onEventEnd?.();
+          return new Promise(resolve =>
+            setTimeout(resolve, 150)
+          ); /* start transition after 150ms */
+        });
+      } else {
+        jumpToSubPath(workspaceMetadata.id, WorkspaceSubPath.ALL);
+        onEventEnd?.();
+      }
     },
     [jumpToSubPath, onEventEnd]
   );

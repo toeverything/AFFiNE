@@ -61,7 +61,7 @@ export class AuthService implements OnApplicationBootstrap {
     sameSite: 'lax',
     httpOnly: true,
     path: '/',
-    secure: this.config.https,
+    secure: this.config.server.https,
   };
   static readonly sessionCookieName = 'affine_session';
   static readonly authUserSeqHeaderName = 'x-auth-user';
@@ -89,6 +89,7 @@ export class AuthService implements OnApplicationBootstrap {
           });
         }
         await this.quota.switchUserQuota(devUser.id, QuotaType.ProPlanV1);
+        await this.feature.addAdmin(devUser.id);
         await this.feature.addCopilot(devUser.id);
       } catch (e) {
         // ignore

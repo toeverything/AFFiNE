@@ -29,24 +29,9 @@ export class Workspace extends Entity {
     if (!this._docCollection) {
       this._docCollection = new DocCollection({
         id: this.openOptions.metadata.id,
-        blobStorages: [
-          () => ({
-            crud: {
-              get: key => {
-                return this.engine.blob.get(key);
-              },
-              set: (key, value) => {
-                return this.engine.blob.set(key, value);
-              },
-              list: () => {
-                return this.engine.blob.list();
-              },
-              delete: key => {
-                return this.engine.blob.delete(key);
-              },
-            },
-          }),
-        ],
+        blobSources: {
+          main: this.engine.blob,
+        },
         idGenerator: () => nanoid(),
         schema: globalBlockSuiteSchema,
       });

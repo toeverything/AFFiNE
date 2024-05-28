@@ -13,9 +13,11 @@ test.beforeEach(async t => {
   const module = await Test.createTestingModule({
     imports: [
       ConfigModule.forRoot({
-        host: 'app.affine.local',
-        port: 3010,
-        https: true,
+        server: {
+          host: 'app.affine.local',
+          port: 3010,
+          https: true,
+        },
       }),
     ],
     providers: [URLHelper],

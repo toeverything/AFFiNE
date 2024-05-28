@@ -130,7 +130,7 @@ test('should not be able to sign in if forbidden', async t => {
   await request(app.getHttpServer())
     .post('/api/auth/sign-in')
     .send({ email: u1.email })
-    .expect(HttpStatus.PAYMENT_REQUIRED);
+    .expect(HttpStatus.BAD_REQUEST);
 
   t.true(mailer.sendSignInMail.notCalled);
 

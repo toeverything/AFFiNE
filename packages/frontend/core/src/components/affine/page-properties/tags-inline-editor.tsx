@@ -8,7 +8,7 @@ import { DeleteIcon, MoreHorizontalIcon, TagsIcon } from '@blocksuite/icons';
 import { useLiveData, useService } from '@toeverything/infra';
 import clsx from 'clsx';
 import type { HTMLAttributes, PropsWithChildren } from 'react';
-import { useCallback, useMemo, useReducer, useState } from 'react';
+import { useCallback, useMemo, useReducer, useRef, useState } from 'react';
 
 import { TagItem, TempTagItem } from '../../page-list';
 import { tagColors } from './common';
@@ -23,12 +23,15 @@ interface TagsEditorProps {
 
 interface InlineTagsListProps
   extends Omit<HTMLAttributes<HTMLDivElement>, 'onChange'>,
-    Omit<TagsEditorProps, 'onOptionsChange'> {}
+    Omit<TagsEditorProps, 'onOptionsChange'> {
+  onRemove?: () => void;
+}
 
 const InlineTagsList = ({
   pageId,
   readonly,
   children,
+  onRemove,
 }: PropsWithChildren<InlineTagsListProps>) => {
   const tagList = useService(TagService).tagList;
   const tags = useLiveData(tagList.tags$);
@@ -45,6 +48,7 @@ const InlineTagsList = ({
           ? undefined
           : () => {
               tag.untag(pageId);
+              onRemove?.();
             };
         return (
           <TagItem
@@ -175,6 +179,7 @@ export const TagsEditor = ({ pageId, readonly }: TagsEditorProps) => {
   const [inputValue, setInputValue] = useState('');
   const [open, setOpen] = useState(false);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const handleCloseModal = useCallback(
     (open: boolean) => {
@@ -214,6 +219,10 @@ export const TagsEditor = ({ pageId, readonly }: TagsEditorProps) => {
     [pageId, tagIds, tags]
   );
 
+  const focusInput = useCallback(() => {
+    inputRef.current?.focus();
+  }, []);
+
   const [nextColor, rotateNextColor] = useReducer(
     color => {
       const idx = tagColors.findIndex(c => c[1] === color);
@@ -232,6 +241,15 @@ export const TagsEditor = ({ pageId, readonly }: TagsEditorProps) => {
       newTag.tag(pageId);
     },
     [nextColor, pageId, tagList]
+  );
+
+  const onSelectTag = useCallback(
+    (id: string) => {
+      onAddTag(id);
+      setInputValue('');
+      focusInput();
+    },
+    [focusInput, onAddTag]
   );
 
   const onInputKeyDown = useCallback(
@@ -254,8 +272,13 @@ export const TagsEditor = ({ pageId, readonly }: TagsEditorProps) => {
   return (
     <div data-testid="tags-editor-popup" className={styles.tagsEditorRoot}>
       <div className={styles.tagsEditorSelectedTags}>
-        <InlineTagsList pageId={pageId} readonly={readonly}>
+        <InlineTagsList
+          pageId={pageId}
+          readonly={readonly}
+          onRemove={focusInput}
+        >
           <input
+            ref={inputRef}
             value={inputValue}
             onChange={onInputChange}
             onKeyDown={onInputKeyDown}
@@ -282,7 +305,7 @@ export const TagsEditor = ({ pageId, readonly }: TagsEditorProps) => {
                   data-tag-id={tag.id}
                   data-tag-value={tag.value$}
                   onClick={() => {
-                    onAddTag(tag.id);
+                    onSelectTag(tag.id);
                   }}
                 >
                   <TagItem maxWidth="100%" tag={tag} mode="inline" />

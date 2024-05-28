@@ -6,11 +6,12 @@ export {
   SessionCache,
 } from './cache';
 export {
+  type AFFiNEConfig,
   applyEnvToConfig,
   Config,
   type ConfigPaths,
   DeploymentType,
-  getDefaultAFFiNEStorageConfig,
+  getAFFiNEConfigModifier,
 } from './config';
 export * from './error';
 export { EventEmitter, type EventPayload, OnEvent } from './event';

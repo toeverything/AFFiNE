@@ -11,7 +11,7 @@ import {
 import { Server, Socket } from 'socket.io';
 import { encodeStateAsUpdate, encodeStateVector } from 'yjs';
 
-import { CallTimer, metrics } from '../../../fundamentals';
+import { CallTimer, Config, metrics } from '../../../fundamentals';
 import { Auth, CurrentUser } from '../../auth';
 import { DocManager } from '../../doc';
 import { DocID } from '../../utils/doc';
@@ -98,6 +98,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private connectionCount = 0;
 
   constructor(
+    private readonly config: Config,
     private readonly docManager: DocManager,
     private readonly permissions: PermissionService
   ) {}
@@ -115,10 +116,13 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     metrics.socketio.gauge('realtime_connections').record(this.connectionCount);
   }
 
-  assertVersion(client: Socket, version?: string) {
+  async assertVersion(client: Socket, version?: string) {
+    const shouldCheckClientVersion = await this.config.runtime.fetch(
+      'flags/syncClientVersionCheck'
+    );
     if (
       // @todo(@darkskygit): remove this flag after 0.12 goes stable
-      AFFiNE.featureFlags.syncClientVersionCheck &&
+      shouldCheckClientVersion &&
       version !== AFFiNE.version
     ) {
       client.emit('server-version-rejected', {
@@ -180,7 +184,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody('version') version: string | undefined,
     @ConnectedSocket() client: Socket
   ): Promise<EventResponse<{ clientId: string }>> {
-    this.assertVersion(client, version);
+    await this.assertVersion(client, version);
     await this.assertWorkspaceAccessible(
       workspaceId,
       user.id,
@@ -203,7 +207,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody('version') version: string | undefined,
     @ConnectedSocket() client: Socket
   ): Promise<EventResponse<{ clientId: string }>> {
-    this.assertVersion(client, version);
+    await this.assertVersion(client, version);
     await this.assertWorkspaceAccessible(
       workspaceId,
       user.id,

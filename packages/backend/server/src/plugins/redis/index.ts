@@ -1,5 +1,6 @@
+import './config';
+
 import { Global, Provider, Type } from '@nestjs/common';
-import type { RedisOptions } from 'ioredis';
 import { Redis } from 'ioredis';
 import { ThrottlerStorageRedisService } from 'nestjs-throttler-storage-redis';
 
@@ -64,5 +65,3 @@ const mutexRedisAdapterProvider: Provider = {
   requires: ['plugins.redis.host'],
 })
 export class RedisModule {}
-
-export { RedisOptions };

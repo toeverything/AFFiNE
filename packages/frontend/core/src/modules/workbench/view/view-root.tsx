@@ -1,5 +1,5 @@
 import { FrameworkScope, useLiveData } from '@toeverything/infra';
-import { lazy as reactLazy, useEffect, useMemo } from 'react';
+import { lazy as reactLazy, useLayoutEffect, useMemo } from 'react';
 import {
   createMemoryRouter,
   RouterProvider,
@@ -34,7 +34,7 @@ export const ViewRoot = ({ view }: { view: View }) => {
 
   const location = useLiveData(view.location$);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     viewRouter.navigate(location).catch(err => {
       console.error('navigate error', err);
     });

@@ -18,13 +18,13 @@ import {
   onComplete,
   OnEvent,
   onStart,
-  type Workspace,
   type WorkspaceEngineProvider,
   type WorkspaceFlavourProvider,
   type WorkspaceMetadata,
   type WorkspaceProfileInfo,
 } from '@toeverything/infra';
 import { effect, globalBlockSuiteSchema, Service } from '@toeverything/infra';
+import { isEqual } from 'lodash-es';
 import { nanoid } from 'nanoid';
 import { EMPTY, map, mergeMap } from 'rxjs';
 import { applyUpdate, encodeStateAsUpdate } from 'yjs';
@@ -96,7 +96,9 @@ export class CloudWorkspaceFlavourProviderService
       id: tempId,
       idGenerator: () => nanoid(),
       schema: globalBlockSuiteSchema,
-      blobStorages: [() => ({ crud: blobStorage })],
+      blobSources: {
+        main: blobStorage,
+      },
     });
 
     // apply initial state
@@ -147,11 +149,16 @@ export class CloudWorkspaceFlavourProviderService
           mergeMap(data => {
             if (data) {
               const { accountId, workspaces } = data;
+              const sorted = workspaces.sort((a, b) => {
+                return a.id.localeCompare(b.id);
+              });
               this.globalState.set(
                 CLOUD_WORKSPACES_CACHE_KEY + accountId,
-                workspaces
+                sorted
               );
-              this.workspaces$.next(workspaces);
+              if (!isEqual(this.workspaces$.value, sorted)) {
+                this.workspaces$.next(sorted);
+              }
             } else {
               this.workspaces$.next([]);
             }
@@ -223,35 +230,31 @@ export class CloudWorkspaceFlavourProviderService
     const cloudBlob = new CloudBlobStorage(id);
     return await cloudBlob.get(blob);
   }
-  getEngineProvider(workspace: Workspace): WorkspaceEngineProvider {
+  getEngineProvider(workspaceId: string): WorkspaceEngineProvider {
     return {
       getAwarenessConnections: () => {
         return [
-          new BroadcastChannelAwarenessConnection(
-            workspace.id,
-            workspace.awareness
-          ),
+          new BroadcastChannelAwarenessConnection(workspaceId),
           new CloudAwarenessConnection(
-            workspace.id,
-            workspace.awareness,
+            workspaceId,
             this.webSocketService.newSocket()
           ),
         ];
       },
       getDocServer: () => {
         return new CloudDocEngineServer(
-          workspace.id,
+          workspaceId,
           this.webSocketService.newSocket()
         );
       },
       getDocStorage: () => {
-        return this.storageProvider.getDocStorage(workspace.id);
+        return this.storageProvider.getDocStorage(workspaceId);
       },
       getLocalBlobStorage: () => {
-        return this.storageProvider.getBlobStorage(workspace.id);
+        return this.storageProvider.getBlobStorage(workspaceId);
       },
       getRemoteBlobStorages() {
-        return [new CloudBlobStorage(workspace.id)];
+        return [new CloudBlobStorage(workspaceId)];
       },
     };
   }

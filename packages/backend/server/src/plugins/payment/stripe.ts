@@ -9,8 +9,8 @@ import { Config } from '../../fundamentals';
 export const StripeProvider: FactoryProvider = {
   provide: Stripe,
   useFactory: (config: Config) => {
-    assert(config.plugins.payment);
     const stripeConfig = config.plugins.payment.stripe;
+    assert(stripeConfig, 'Stripe configuration is missing');
 
     return new Stripe(stripeConfig.keys.APIKey, omit(stripeConfig, 'keys'));
   },
