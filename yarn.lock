@@ -222,7 +222,7 @@ __metadata:
     "@blocksuite/block-std": "npm:0.15.0-canary-202405271425-84b069d"
     "@blocksuite/blocks": "npm:0.15.0-canary-202405271425-84b069d"
     "@blocksuite/global": "npm:0.15.0-canary-202405271425-84b069d"
-    "@blocksuite/icons": "npm:2.1.51"
+    "@blocksuite/icons": "npm:2.1.52"
     "@blocksuite/presets": "npm:0.15.0-canary-202405271425-84b069d"
     "@blocksuite/store": "npm:0.15.0-canary-202405271425-84b069d"
     "@dnd-kit/core": "npm:^6.1.0"
@@ -323,7 +323,7 @@ __metadata:
     "@blocksuite/block-std": "npm:0.15.0-canary-202405271425-84b069d"
     "@blocksuite/blocks": "npm:0.15.0-canary-202405271425-84b069d"
     "@blocksuite/global": "npm:0.15.0-canary-202405271425-84b069d"
-    "@blocksuite/icons": "npm:2.1.51"
+    "@blocksuite/icons": "npm:2.1.52"
     "@blocksuite/inline": "npm:0.15.0-canary-202405271425-84b069d"
     "@blocksuite/presets": "npm:0.15.0-canary-202405271425-84b069d"
     "@blocksuite/store": "npm:0.15.0-canary-202405271425-84b069d"
@@ -3408,13 +3408,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@blocksuite/icons@npm:2.1.51":
-  version: 2.1.51
-  resolution: "@blocksuite/icons@npm:2.1.51"
+"@blocksuite/icons@npm:2.1.52":
+  version: 2.1.52
+  resolution: "@blocksuite/icons@npm:2.1.52"
   peerDependencies:
     "@types/react": ^18.0.25
     react: ^18.2.0
-  checksum: 10/6864bbf9a57fce29adb7a3d4809d19c0ab2b76775e8efad3c49464aa10bc2e37e0264868766f8895a2267bd597293a38d2e064232ac44a30e224cc758dd8eccc
+  checksum: 10/de5b94f88a0f6655a97cac2963fbdfc058144af9721e12b9621fa058ee622b81cceb85553228ebf4fbb5fe0bfe6c56d275ef4a65a1da4bafbe67dc8655cb2fba
   languageName: node
   linkType: hard
 
