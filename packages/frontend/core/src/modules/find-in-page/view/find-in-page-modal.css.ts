@@ -1,12 +1,7 @@
 import { cssVar } from '@toeverything/theme';
-import { createVar, style } from '@vanilla-extract/css';
-
-export const panelWidthVar = createVar('panel-width');
+import { style } from '@vanilla-extract/css';
 
 export const container = style({
-  vars: {
-    [panelWidthVar]: '0px',
-  },
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'space-between',
@@ -14,7 +9,9 @@ export const container = style({
   position: 'fixed',
   right: '28px',
   top: '80px',
-  transform: `translateX(calc(${panelWidthVar} * -1))`,
+  borderRadius: '8px',
+  boxShadow: cssVar('shadow3'),
+  border: `0.5px solid ${cssVar('borderColor')}`,
 });
 
 export const leftContent = style({
@@ -23,15 +20,35 @@ export const leftContent = style({
   flex: 1,
 });
 
+export const searchIcon = style({
+  fontSize: '20px',
+  color: cssVar('iconColor'),
+  verticalAlign: 'middle',
+});
+
 export const inputContainer = style({
   display: 'flex',
-  alignSelf: 'stretch',
   alignItems: 'center',
   gap: '8px',
   flex: 1,
   height: '32px',
   position: 'relative',
-  margin: '0 8px',
+  padding: '0 8px',
+  borderRadius: '4px',
+  background: cssVar('white10'),
+  border: `1px solid ${cssVar('borderColor')}`,
+  selectors: {
+    '&.active': {
+      borderColor: cssVar('primaryColor'),
+    },
+  },
+});
+export const inputMain = style({
+  display: 'flex',
+  alignItems: 'center',
+  flex: 1,
+  height: '32px',
+  position: 'relative',
 });
 
 export const input = style({
@@ -41,14 +58,13 @@ export const input = style({
   height: '100%',
   width: '100%',
   color: 'transparent',
-  background: cssVar('white10'),
 });
 
 export const inputHack = style([
   input,
   {
     '::placeholder': {
-      color: cssVar('iconColor'),
+      color: cssVar('textPrimaryColor'),
     },
     pointerEvents: 'none',
   },
@@ -68,9 +84,13 @@ export const arrowButton = style({
   flexShrink: 0,
   border: '1px solid',
   borderColor: cssVar('borderColor'),
+  color: cssVar('iconSecondary'),
   alignItems: 'baseline',
   background: 'transparent',
   selectors: {
+    '&:hover': {
+      color: cssVar('iconColor'),
+    },
     '&.backward': {
       marginLeft: '8px',
       borderRadius: '4px 0 0 4px',
@@ -80,4 +100,13 @@ export const arrowButton = style({
       borderRadius: '0 4px 4px 0',
     },
   },
+});
+export const closeButton = style({
+  padding: '4px',
+  fontSize: '20px',
+  width: '24px',
+  height: '24px',
+  flexShrink: 0,
+  color: cssVar('iconColor'),
+  marginLeft: '8px',
 });

@@ -1,10 +1,12 @@
-import { Button, Modal } from '@affine/component';
-import { rightSidebarWidthAtom } from '@affine/core/atoms';
-import { ArrowDownSmallIcon, ArrowUpSmallIcon } from '@blocksuite/icons';
+import { Button, IconButton, Modal } from '@affine/component';
+import {
+  ArrowDownSmallIcon,
+  ArrowUpSmallIcon,
+  CloseIcon,
+  SearchIcon,
+} from '@blocksuite/icons';
 import { useLiveData, useService } from '@toeverything/infra';
-import { assignInlineVars } from '@vanilla-extract/dynamic';
 import clsx from 'clsx';
-import { useAtomValue } from 'jotai';
 import {
   type KeyboardEventHandler,
   useCallback,
@@ -13,7 +15,6 @@ import {
   useState,
 } from 'react';
 
-import { RightSidebarService } from '../../right-sidebar';
 import { FindInPageService } from '../services/find-in-page';
 import * as styles from './find-in-page-modal.css';
 
@@ -26,12 +27,20 @@ const drawText = (canvas: HTMLCanvasElement, text: string) => {
   const dpr = window.devicePixelRatio || 1;
   canvas.width = canvas.getBoundingClientRect().width * dpr;
   canvas.height = canvas.getBoundingClientRect().height * dpr;
+
+  const rootStyles = getComputedStyle(document.documentElement);
+  const textColor = rootStyles
+    .getPropertyValue('--affine-text-primary-color')
+    .trim();
+
   ctx.scale(dpr, dpr);
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = textColor;
   ctx.font = '15px Inter';
+
   ctx.fillText(text, 0, 22);
   ctx.textAlign = 'left';
-  ctx.textBaseline = 'ideographic';
+  ctx.textBaseline = 'middle';
 };
 
 const CanvasText = ({
@@ -69,11 +78,8 @@ export const FindInPageModal = () => {
   const result = useLiveData(findInPage.result$);
   const isSearching = useLiveData(findInPage.isSearching$);
 
-  const rightSidebarWidth = useAtomValue(rightSidebarWidthAtom);
-  const rightSidebar = useService(RightSidebarService).rightSidebar;
-  const frontView = useLiveData(rightSidebar.front$);
-  const open = useLiveData(rightSidebar.isOpen$) && frontView !== undefined;
   const inputRef = useRef<HTMLInputElement>(null);
+  const [active, setActive] = useState(false);
 
   const handleValueChange = useCallback(
     (v: string) => {
@@ -86,6 +92,14 @@ export const FindInPageModal = () => {
     },
     [findInPage]
   );
+
+  const handleFocus = useCallback(() => {
+    setActive(true);
+  }, []);
+
+  const handleBlur = useCallback(() => {
+    setActive(false);
+  }, []);
 
   useEffect(() => {
     if (visible) {
@@ -148,9 +162,6 @@ export const FindInPageModal = () => {
     },
     [handleBackWard, handleForward]
   );
-  const panelWidth = assignInlineVars({
-    [styles.panelWidthVar]: open ? `${rightSidebarWidth}px` : '0',
-  });
 
   return (
     <Modal
@@ -162,35 +173,43 @@ export const FindInPageModal = () => {
       minHeight={48}
       contentOptions={{
         className: styles.container,
-        style: panelWidth,
       }}
     >
       <div className={styles.leftContent}>
-        <div className={styles.inputContainer}>
-          <input
-            type="text"
-            autoFocus
-            value={value}
-            ref={inputRef}
-            style={{
-              visibility: isSearching ? 'hidden' : 'visible',
-            }}
-            className={styles.input}
-            onKeyDown={handleKeydown}
-            onChange={e => handleValueChange(e.target.value)}
-          />
-          <CanvasText className={styles.inputHack} text={value} />
-        </div>
-        <div className={styles.count}>
-          {value.length > 0 && result && result.matches !== 0 ? (
-            <>
-              <span>{result?.activeMatchOrdinal || 0}</span>
-              <span>/</span>
-              <span>{result?.matches || 0}</span>
-            </>
-          ) : value.length ? (
-            <span>No matches</span>
-          ) : null}
+        <div
+          className={clsx(styles.inputContainer, {
+            active: active,
+          })}
+        >
+          <SearchIcon className={styles.searchIcon} />
+          <div className={styles.inputMain}>
+            <input
+              type="text"
+              autoFocus
+              value={value}
+              ref={inputRef}
+              style={{
+                visibility: isSearching ? 'hidden' : 'visible',
+              }}
+              onBlur={handleBlur}
+              onFocus={handleFocus}
+              className={styles.input}
+              onKeyDown={handleKeydown}
+              onChange={e => handleValueChange(e.target.value)}
+            />
+            <CanvasText className={styles.inputHack} text={value} />
+          </div>
+          <div className={styles.count}>
+            {value.length > 0 && result && result.matches !== 0 ? (
+              <>
+                <span>{result?.activeMatchOrdinal || 0}</span>
+                <span>/</span>
+                <span>{result?.matches || 0}</span>
+              </>
+            ) : value.length ? (
+              <span>No matches</span>
+            ) : null}
+          </div>
         </div>
 
         <Button
@@ -206,9 +225,13 @@ export const FindInPageModal = () => {
           <ArrowDownSmallIcon />
         </Button>
       </div>
-      <Button type="primary" onClick={handleDone}>
-        Done
-      </Button>
+      <IconButton
+        className={styles.closeButton}
+        type="plain"
+        onClick={handleDone}
+      >
+        <CloseIcon />
+      </IconButton>
     </Modal>
   );
 };
