@@ -4,7 +4,7 @@ import {
 } from '@affine/component/setting-components';
 import { Avatar } from '@affine/component/ui/avatar';
 import { Tooltip } from '@affine/component/ui/tooltip';
-import { useWorkspaceBlobObjectUrl } from '@affine/core/hooks/use-workspace-blob';
+import { WorkspaceAvatar } from '@affine/component/workspace-avatar';
 import { useWorkspaceInfo } from '@affine/core/hooks/use-workspace-info';
 import { AuthService } from '@affine/core/modules/cloud';
 import { UserFeatureService } from '@affine/core/modules/cloud/services/user-feature';
@@ -277,7 +277,6 @@ const WorkspaceListItem = ({
     UserFeatureService,
   });
   const information = useWorkspaceInfo(meta);
-  const avatarUrl = useWorkspaceBlobObjectUrl(meta, information?.avatar);
   const name = information?.name ?? UNTITLED_WORKSPACE_NAME;
   const currentWorkspace = workspaceService.workspace;
   const isCurrent = currentWorkspace.id === meta.id;
@@ -318,9 +317,10 @@ const WorkspaceListItem = ({
         onClick={onClickPreference}
         data-testid="workspace-list-item"
       >
-        <Avatar
+        <WorkspaceAvatar
+          key={meta.id}
+          meta={meta}
           size={16}
-          url={avatarUrl}
           name={name}
           colorfulFallback
           style={{

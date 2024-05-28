@@ -1,8 +1,8 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 
 import { Config, URLHelper } from '../../../fundamentals';
+import { OAuthProviderName } from '../config';
 import { AutoRegisteredOAuthProvider } from '../register';
-import { OAuthProviderName } from '../types';
 
 interface AuthTokenResponse {
   access_token: string;

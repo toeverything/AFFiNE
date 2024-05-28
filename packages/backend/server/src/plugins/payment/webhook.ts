@@ -25,7 +25,7 @@ export class StripeWebhook {
     private readonly stripe: Stripe,
     private readonly event: EventEmitter2
   ) {
-    assert(config.plugins.payment);
+    assert(config.plugins.payment.stripe);
     this.webhookKey = config.plugins.payment.stripe.keys.webhookKey;
   }
 

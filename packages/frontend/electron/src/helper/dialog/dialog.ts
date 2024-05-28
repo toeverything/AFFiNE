@@ -1,14 +1,8 @@
 import { ValidationResult } from '@affine/native';
-import { WorkspaceVersion } from '@toeverything/infra/blocksuite';
 import fs from 'fs-extra';
 import { nanoid } from 'nanoid';
 
 import { ensureSQLiteDB } from '../db/ensure-db';
-import {
-  copyToTemp,
-  migrateToLatest,
-  migrateToSubdocAndReplaceDatabase,
-} from '../db/migration';
 import { logger } from '../logger';
 import { mainRPC } from '../main-rpc';
 import { storeWorkspaceMeta } from '../workspace';
@@ -98,8 +92,10 @@ export async function saveDBFileAs(
 ): Promise<SaveDBFileResult> {
   try {
     const db = await ensureSQLiteDB(workspaceId);
+    const fakedResult = getFakedResult();
+
     const ret =
-      getFakedResult() ??
+      fakedResult ??
       (await mainRPC.showSaveDialog({
         properties: ['showOverwriteConfirmation'],
         title: 'Save Workspace',
@@ -126,9 +122,11 @@ export async function saveDBFileAs(
 
     await fs.copyFile(db.path, filePath);
     logger.log('saved', filePath);
-    mainRPC.showItemInFolder(filePath).catch(err => {
-      console.error(err);
-    });
+    if (!fakedResult) {
+      mainRPC.showItemInFolder(filePath).catch(err => {
+        console.error(err);
+      });
+    }
     return { filePath };
   } catch (err) {
     logger.error('saveDBFileAs', err);
@@ -195,7 +193,7 @@ export async function loadDBFile(): Promise<LoadDBFileResult> {
         ],
         message: 'Load Workspace from a AFFiNE file',
       }));
-    let originalPath = ret.filePaths?.[0];
+    const originalPath = ret.filePaths?.[0];
     if (ret.canceled || !originalPath) {
       logger.info('loadDBFile canceled');
       return { canceled: true };
@@ -211,55 +209,8 @@ export async function loadDBFile(): Promise<LoadDBFileResult> {
 
     const validationResult = await SqliteConnection.validate(originalPath);
 
-    if (validationResult === ValidationResult.MissingDocIdColumn) {
-      try {
-        const tmpDBPath = await copyToTemp(originalPath);
-        await migrateToSubdocAndReplaceDatabase(tmpDBPath);
-        originalPath = tmpDBPath;
-      } catch (error) {
-        logger.warn(`loadDBFile, migration failed: ${originalPath}`, error);
-        return { error: 'DB_FILE_MIGRATION_FAILED' };
-      }
-    }
-
-    if (validationResult === ValidationResult.MissingVersionColumn) {
-      try {
-        const tmpDBPath = await copyToTemp(originalPath);
-        await migrateToLatest(tmpDBPath, WorkspaceVersion.SubDoc);
-        originalPath = tmpDBPath;
-      } catch (error) {
-        logger.warn(
-          `loadDBFile, migration version column failed: ${originalPath}`,
-          error
-        );
-        return { error: 'DB_FILE_MIGRATION_FAILED' };
-      }
-    }
-
-    if (
-      validationResult !== ValidationResult.MissingVersionColumn &&
-      validationResult !== ValidationResult.MissingDocIdColumn &&
-      validationResult !== ValidationResult.Valid
-    ) {
+    if (validationResult !== ValidationResult.Valid) {
       return { error: 'DB_FILE_INVALID' }; // invalid db file
-    }
-
-    const db = new SqliteConnection(originalPath);
-    try {
-      await db.connect();
-      if ((await db.getMaxVersion()) === WorkspaceVersion.DatabaseV3) {
-        const tmpDBPath = await copyToTemp(originalPath);
-        await migrateToLatest(tmpDBPath, WorkspaceVersion.SubDoc);
-        originalPath = tmpDBPath;
-      }
-    } catch (error) {
-      logger.warn(
-        `loadDBFile, migration version column failed: ${originalPath}`,
-        error
-      );
-      return { error: 'DB_FILE_MIGRATION_FAILED' };
-    } finally {
-      await db.close();
     }
 
     // copy the db file to a new workspace id

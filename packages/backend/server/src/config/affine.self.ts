@@ -20,35 +20,47 @@ const env = process.env;
 AFFiNE.metrics.enabled = !AFFiNE.node.test;
 
 if (env.R2_OBJECT_STORAGE_ACCOUNT_ID) {
-  AFFiNE.plugins.use('cloudflare-r2', {
+  AFFiNE.use('cloudflare-r2', {
     accountId: env.R2_OBJECT_STORAGE_ACCOUNT_ID,
     credentials: {
       accessKeyId: env.R2_OBJECT_STORAGE_ACCESS_KEY_ID!,
       secretAccessKey: env.R2_OBJECT_STORAGE_SECRET_ACCESS_KEY!,
     },
   });
-  AFFiNE.storage.storages.avatar.provider = 'cloudflare-r2';
-  AFFiNE.storage.storages.avatar.bucket = 'account-avatar';
-  AFFiNE.storage.storages.avatar.publicLinkFactory = key =>
+  AFFiNE.storages.avatar.provider = 'cloudflare-r2';
+  AFFiNE.storages.avatar.bucket = 'account-avatar';
+  AFFiNE.storages.avatar.publicLinkFactory = key =>
     `https://avatar.affineassets.com/${key}`;
 
-  AFFiNE.storage.storages.blob.provider = 'cloudflare-r2';
-  AFFiNE.storage.storages.blob.bucket = `workspace-blobs-${
+  AFFiNE.storages.blob.provider = 'cloudflare-r2';
+  AFFiNE.storages.blob.bucket = `workspace-blobs-${
     AFFiNE.affine.canary ? 'canary' : 'prod'
   }`;
 
-  AFFiNE.storage.storages.copilot.provider = 'cloudflare-r2';
-  AFFiNE.storage.storages.copilot.bucket = `workspace-copilot-${
-    AFFiNE.affine.canary ? 'canary' : 'prod'
-  }`;
+  AFFiNE.use('copilot', {
+    storage: {
+      provider: 'cloudflare-r2',
+      bucket: `workspace-copilot-${AFFiNE.affine.canary ? 'canary' : 'prod'}`,
+    },
+  });
 }
 
-AFFiNE.plugins.use('copilot', {
-  openai: {},
-  fal: {},
+AFFiNE.use('copilot', {
+  openai: {
+    apiKey: '',
+  },
+  fal: {
+    apiKey: '',
+  },
 });
-AFFiNE.plugins.use('redis');
-AFFiNE.plugins.use('payment', {
+AFFiNE.use('redis', {
+  host: env.REDIS_SERVER_HOST,
+  db: 0,
+  port: 6379,
+  username: env.REDIS_SERVER_USER,
+  password: env.REDIS_SERVER_PASSWORD,
+});
+AFFiNE.use('payment', {
   stripe: {
     keys: {
       // fake the key to ensure the server generate full GraphQL Schema even env vars are not set
@@ -57,7 +69,7 @@ AFFiNE.plugins.use('payment', {
     },
   },
 });
-AFFiNE.plugins.use('oauth');
+AFFiNE.use('oauth');
 
 if (AFFiNE.deploy) {
   AFFiNE.mailer = {
@@ -68,5 +80,5 @@ if (AFFiNE.deploy) {
     },
   };
 
-  AFFiNE.plugins.use('gcloud');
+  AFFiNE.use('gcloud');
 }

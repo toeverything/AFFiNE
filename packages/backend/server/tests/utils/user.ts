@@ -106,6 +106,53 @@ export async function sendChangeEmail(
   return res.body.data.sendChangeEmail;
 }
 
+export async function sendSetPasswordEmail(
+  app: INestApplication,
+  userToken: string,
+  email: string,
+  callbackUrl: string
+): Promise<boolean> {
+  const res = await request(app.getHttpServer())
+    .post(gql)
+    .auth(userToken, { type: 'bearer' })
+    .set({ 'x-request-id': 'test', 'x-operation-name': 'test' })
+    .send({
+      query: `
+            mutation {
+              sendSetPasswordEmail(email: "${email}", callbackUrl: "${callbackUrl}")
+            }
+          `,
+    })
+    .expect(200);
+
+  return res.body.data.sendChangeEmail;
+}
+
+export async function changePassword(
+  app: INestApplication,
+  userToken: string,
+  token: string,
+  password: string
+): Promise<string> {
+  const res = await request(app.getHttpServer())
+    .post(gql)
+    .auth(userToken, { type: 'bearer' })
+    .set({ 'x-request-id': 'test', 'x-operation-name': 'test' })
+    .send({
+      query: `
+            mutation changePassword($token: String!, $password: String!) {
+              changePassword(token: $token, newPassword: $password) {
+                id
+              }
+            }
+          `,
+      variables: { token, password },
+    })
+    .expect(200);
+  console.log(JSON.stringify(res.body));
+  return res.body.data.changePassword.id;
+}
+
 export async function sendVerifyChangeEmail(
   app: INestApplication,
   userToken: string,

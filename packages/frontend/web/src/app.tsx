@@ -4,7 +4,7 @@ import '@affine/component/theme/theme.css';
 import { NotificationCenter } from '@affine/component';
 import { AffineContext } from '@affine/component/context';
 import { GlobalLoading } from '@affine/component/global-loading';
-import { WorkspaceFallback } from '@affine/core/components/workspace';
+import { AppFallback } from '@affine/core/components/affine/app-container';
 import { configureCommonModules, configureImpls } from '@affine/core/modules';
 import {
   configureBrowserWorkspaceFlavours,
@@ -97,7 +97,7 @@ export function App() {
               <GlobalLoading />
               <NotificationCenter />
               <RouterProvider
-                fallbackElement={<WorkspaceFallback key="RouterFallback" />}
+                fallbackElement={<AppFallback key="RouterFallback" />}
                 router={router}
                 future={future}
               />

@@ -25,3 +25,7 @@ globalStyle('html[data-theme="dark"]', {
 globalStyle('.docs-story', {
   backgroundColor: 'var(--affine-background-primary-color)',
 });
+
+globalStyle('body.sb-main-fullscreen', {
+  overflowY: 'auto',
+});

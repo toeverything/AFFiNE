@@ -1,3 +1,5 @@
+import './config';
+
 import { ServerFeature } from '../../core/config';
 import { FeatureModule } from '../../core/features';
 import { QuotaModule } from '../../core/quota';
@@ -13,7 +15,11 @@ import {
   OpenAIProvider,
   registerCopilotProvider,
 } from './providers';
-import { CopilotResolver, UserCopilotResolver } from './resolver';
+import {
+  CopilotResolver,
+  PromptsManagementResolver,
+  UserCopilotResolver,
+} from './resolver';
 import { ChatSessionService } from './session';
 import { CopilotStorage } from './storage';
 
@@ -32,6 +38,7 @@ registerCopilotProvider(OpenAIProvider);
     PromptService,
     CopilotProviderService,
     CopilotStorage,
+    PromptsManagementResolver,
   ],
   controllers: [CopilotController],
   contributesTo: ServerFeature.Copilot,
@@ -43,5 +50,3 @@ registerCopilotProvider(OpenAIProvider);
   },
 })
 export class CopilotModule {}
-
-export type { CopilotConfig } from './types';

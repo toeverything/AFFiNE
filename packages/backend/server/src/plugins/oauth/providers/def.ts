@@ -1,4 +1,4 @@
-import { OAuthProviderName } from '../types';
+import { OAuthProviderName } from '../config';
 
 export interface OAuthAccount {
   id: string;

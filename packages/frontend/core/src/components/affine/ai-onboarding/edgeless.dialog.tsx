@@ -2,7 +2,6 @@ import { Button, FlexWrapper, notify } from '@affine/component';
 import { openSettingModalAtom } from '@affine/core/atoms';
 import { SubscriptionService } from '@affine/core/modules/cloud';
 import { mixpanel } from '@affine/core/utils';
-import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { AiIcon } from '@blocksuite/icons';
 import {
@@ -17,6 +16,7 @@ import Lottie from 'lottie-react';
 import { useTheme } from 'next-themes';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 
+import { toggleEdgelessAIOnboarding } from './apis';
 import * as styles from './edgeless.dialog.css';
 import mouseTrackDark from './lottie/edgeless/mouse-track-dark.json';
 import mouseTrackLight from './lottie/edgeless/mouse-track-light.json';
@@ -25,7 +25,6 @@ import {
   localNotifyId$,
   showAIOnboardingGeneral$,
 } from './state';
-import type { BaseAIOnboardingDialogProps } from './type';
 
 const EdgelessOnboardingAnimation = () => {
   const { resolvedTheme } = useTheme();
@@ -46,10 +45,8 @@ const EdgelessOnboardingAnimation = () => {
   );
 };
 
-export const AIOnboardingEdgeless = ({
-  onDismiss,
-}: BaseAIOnboardingDialogProps) => {
-  const { workspaceService, docService, subscriptionService } = useServices({
+export const AIOnboardingEdgeless = () => {
+  const { docService, subscriptionService } = useServices({
     WorkspaceService,
     DocService,
     SubscriptionService,
@@ -61,8 +58,6 @@ export const AIOnboardingEdgeless = ({
   const aiSubscription = useLiveData(subscriptionService.subscription.ai$);
   const settingModalOpen = useAtomValue(openSettingModalAtom);
   const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
-  const isCloud =
-    workspaceService.workspace.flavour === WorkspaceFlavour.AFFINE_CLOUD;
 
   const setSettingModal = useSetAtom(openSettingModalAtom);
 
@@ -87,7 +82,6 @@ export const AIOnboardingEdgeless = ({
     if (generalAIOnboardingOpened) return;
     if (notifyId) return;
     if (mode !== 'edgeless') return;
-    if (!isCloud) return;
     clearTimeout(timeoutRef.current);
     timeoutRef.current = setTimeout(() => {
       // try to close local onboarding
@@ -101,13 +95,13 @@ export const AIOnboardingEdgeless = ({
           iconColor: cssVar('processingColor'),
           thumb: <EdgelessOnboardingAnimation />,
           alignMessage: 'icon',
-          onDismiss,
+          onDismiss: () => toggleEdgelessAIOnboarding(false),
           footer: (
             <FlexWrapper marginTop={8} justifyContent="flex-end" gap="12px">
               <Button
                 onClick={() => {
                   notify.dismiss(id);
-                  onDismiss();
+                  toggleEdgelessAIOnboarding(false);
                 }}
                 type="plain"
                 className={styles.actionButton}
@@ -123,7 +117,7 @@ export const AIOnboardingEdgeless = ({
                   onClick={() => {
                     goToPricingPlans();
                     notify.dismiss(id);
-                    onDismiss();
+                    toggleEdgelessAIOnboarding(false);
                   }}
                 >
                   <span className={styles.purchaseButtonText}>
@@ -142,10 +136,8 @@ export const AIOnboardingEdgeless = ({
     aiSubscription,
     generalAIOnboardingOpened,
     goToPricingPlans,
-    isCloud,
     mode,
     notifyId,
-    onDismiss,
     settingModalOpen,
     t,
   ]);

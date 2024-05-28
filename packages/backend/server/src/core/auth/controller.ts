@@ -14,12 +14,7 @@ import {
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
 
-import {
-  Config,
-  PaymentRequiredException,
-  Throttle,
-  URLHelper,
-} from '../../fundamentals';
+import { Config, Throttle, URLHelper } from '../../fundamentals';
 import { UserService } from '../user';
 import { validators } from '../utils/validators';
 import { CurrentUser } from './current-user';
@@ -60,7 +55,7 @@ export class AuthController {
     validators.assertValidEmail(credential.email);
     const canSignIn = await this.auth.canSignIn(credential.email);
     if (!canSignIn) {
-      throw new PaymentRequiredException(
+      throw new BadRequestException(
         `You don't have early access permission\nVisit https://community.affine.pro/c/insider-general/ for more information`
       );
     }
@@ -76,8 +71,11 @@ export class AuthController {
     } else {
       // send email magic link
       const user = await this.user.findUserByEmail(credential.email);
-      if (!user && !this.config.auth.allowSignup) {
-        throw new BadRequestException('You are not allows to sign up.');
+      if (!user) {
+        const allowSignup = await this.config.runtime.fetch('auth/allowSignup');
+        if (!allowSignup) {
+          throw new BadRequestException('You are not allows to sign up.');
+        }
       }
 
       const result = await this.sendSignInEmail(

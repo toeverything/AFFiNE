@@ -9,6 +9,7 @@ import {
   type FileUpload,
   type StorageProvider,
   StorageProviderFactory,
+  URLHelper,
 } from '../../fundamentals';
 
 @Injectable()
@@ -17,10 +18,13 @@ export class CopilotStorage {
 
   constructor(
     private readonly config: Config,
+    private readonly url: URLHelper,
     private readonly storageFactory: StorageProviderFactory,
     private readonly quota: QuotaManagementService
   ) {
-    this.provider = this.storageFactory.create('copilot');
+    this.provider = this.storageFactory.create(
+      this.config.plugins.copilot.storage
+    );
   }
 
   async put(
@@ -35,7 +39,7 @@ export class CopilotStorage {
       // return image base64url for dev environment
       return `data:image/png;base64,${blob.toString('base64')}`;
     }
-    return `${this.config.baseUrl}/api/copilot/blob/${name}`;
+    return this.url.link(`/api/copilot/blob/${name}`);
   }
 
   async get(userId: string, workspaceId: string, key: string) {

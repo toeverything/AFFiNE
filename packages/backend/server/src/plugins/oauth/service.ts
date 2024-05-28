@@ -3,8 +3,8 @@ import { randomUUID } from 'node:crypto';
 import { Injectable } from '@nestjs/common';
 
 import { SessionCache } from '../../fundamentals';
+import { OAuthProviderName } from './config';
 import { OAuthProviderFactory } from './register';
-import { OAuthProviderName } from './types';
 
 const OAUTH_STATE_KEY = 'OAUTH_STATE';
 

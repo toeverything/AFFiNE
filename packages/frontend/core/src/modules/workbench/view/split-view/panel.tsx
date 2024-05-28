@@ -16,7 +16,14 @@ import type {
   PropsWithChildren,
   RefObject,
 } from 'react';
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  memo,
+  useCallback,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 
 import type { View } from '../../entities/view';
 import { WorkbenchService } from '../../services/workbench';
@@ -57,7 +64,7 @@ export const SplitViewPanel = memo(function SplitViewPanel({
   const isDragging = dndIsDragging || indicatorPressed;
   const isActive = activeView === view;
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (ref.current) {
       setSlots?.(slots => ({ ...slots, [view.id]: ref }));
     }

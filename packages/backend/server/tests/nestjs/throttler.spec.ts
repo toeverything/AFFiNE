@@ -97,9 +97,11 @@ test.beforeEach(async t => {
   const { app } = await createTestingApp({
     imports: [
       ConfigModule.forRoot({
-        rateLimiter: {
-          ttl: 60,
-          limit: 120,
+        throttler: {
+          default: {
+            ttl: 60,
+            limit: 120,
+          },
         },
       }),
       AppModule,

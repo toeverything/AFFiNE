@@ -3,6 +3,7 @@ import { Module } from '@nestjs/common';
 import { FeatureModule } from '../features';
 import { StorageModule } from '../storage';
 import { PermissionService } from '../workspaces/permission';
+import { QuotaManagementResolver } from './resolver';
 import { QuotaService } from './service';
 import { QuotaManagementService } from './storage';
 
@@ -14,7 +15,12 @@ import { QuotaManagementService } from './storage';
  */
 @Module({
   imports: [FeatureModule, StorageModule],
-  providers: [PermissionService, QuotaService, QuotaManagementService],
+  providers: [
+    PermissionService,
+    QuotaService,
+    QuotaManagementResolver,
+    QuotaManagementService,
+  ],
   exports: [QuotaService, QuotaManagementService],
 })
 export class QuotaModule {}

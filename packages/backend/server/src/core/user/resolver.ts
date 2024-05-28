@@ -7,30 +7,23 @@ import {
   ResolveField,
   Resolver,
 } from '@nestjs/graphql';
-import type { User } from '@prisma/client';
 import { PrismaClient } from '@prisma/client';
 import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 import { isNil, omitBy } from 'lodash-es';
 
 import type { FileUpload } from '../../fundamentals';
-import {
-  EventEmitter,
-  PaymentRequiredException,
-  Throttle,
-} from '../../fundamentals';
+import { EventEmitter, Throttle } from '../../fundamentals';
 import { CurrentUser } from '../auth/current-user';
 import { Public } from '../auth/guard';
 import { sessionUser } from '../auth/service';
-import { FeatureManagementService, FeatureType } from '../features';
-import { QuotaService } from '../quota';
 import { AvatarStorage } from '../storage';
+import { validators } from '../utils/validators';
 import { UserService } from './service';
 import {
   DeleteAccount,
   RemoveAvatar,
   UpdateUserInput,
   UserOrLimitedUser,
-  UserQuotaType,
   UserType,
 } from './types';
 
@@ -40,8 +33,6 @@ export class UserResolver {
     private readonly prisma: PrismaClient,
     private readonly storage: AvatarStorage,
     private readonly users: UserService,
-    private readonly feature: FeatureManagementService,
-    private readonly quota: QuotaService,
     private readonly event: EventEmitter
   ) {}
 
@@ -53,14 +44,10 @@ export class UserResolver {
   })
   @Public()
   async user(
-    @CurrentUser() currentUser?: CurrentUser,
-    @Args('email') email?: string
+    @Args('email') email: string,
+    @CurrentUser() currentUser?: CurrentUser
   ): Promise<typeof UserOrLimitedUser | null> {
-    if (!email || !(await this.feature.canEarlyAccess(email))) {
-      throw new PaymentRequiredException(
-        `You don't have early access permission\nVisit https://community.affine.pro/c/insider-general/ for more information`
-      );
-    }
+    validators.assertValidEmail(email);
 
     // TODO: need to limit a user can only get another user witch is in the same workspace
     const user = await this.users.findUserWithHashedPasswordByEmail(email);
@@ -79,13 +66,6 @@ export class UserResolver {
     };
   }
 
-  @ResolveField(() => UserQuotaType, { name: 'quota', nullable: true })
-  async getQuota(@CurrentUser() me: User) {
-    const quota = await this.quota.getUserQuota(me.id);
-
-    return quota.feature;
-  }
-
   @ResolveField(() => Int, {
     name: 'invoiceCount',
     description: 'Get user invoice count',
@@ -94,14 +74,6 @@ export class UserResolver {
     return this.prisma.userInvoice.count({
       where: { userId: user.id },
     });
-  }
-
-  @ResolveField(() => [FeatureType], {
-    name: 'features',
-    description: 'Enabled features of a user',
-  })
-  async userFeatures(@CurrentUser() user: CurrentUser) {
-    return this.feature.getActivatedUserFeatures(user.id);
   }
 
   @Mutation(() => UserType, {
@@ -117,7 +89,7 @@ export class UserResolver {
       throw new BadRequestException(`User not found`);
     }
 
-    const link = await this.storage.put(
+    const avatarUrl = await this.storage.put(
       `${user.id}-avatar`,
       avatar.createReadStream(),
       {
@@ -125,12 +97,7 @@ export class UserResolver {
       }
     );
 
-    return this.prisma.user.update({
-      where: { id: user.id },
-      data: {
-        avatarUrl: link,
-      },
-    });
+    return this.users.updateUser(user.id, { avatarUrl });
   }
 
   @Mutation(() => UserType, {
@@ -146,12 +113,7 @@ export class UserResolver {
       return user;
     }
 
-    return sessionUser(
-      await this.prisma.user.update({
-        where: { id: user.id },
-        data: input,
-      })
-    );
+    return sessionUser(await this.users.updateUser(user.id, input));
   }
 
   @Mutation(() => RemoveAvatar, {
@@ -162,10 +124,7 @@ export class UserResolver {
     if (!user) {
       throw new BadRequestException(`User not found`);
     }
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: { avatarUrl: null },
-    });
+    await this.users.updateUser(user.id, { avatarUrl: null });
     return { success: true };
   }
 

@@ -273,6 +273,7 @@ export const createConfiguration: (
                       },
                     },
                     useDefineForClassFields: false,
+                    decoratorVersion: '2022-03',
                   },
                 },
                 sourceMaps: true,

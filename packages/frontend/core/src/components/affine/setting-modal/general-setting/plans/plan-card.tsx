@@ -263,7 +263,7 @@ const Upgrade = ({ recurring }: { recurring: SubscriptionRecurring }) => {
       idempotencyKey,
       plan: SubscriptionPlan.Pro, // Only support prod plan now.
       coupon: null,
-      successCallbackLink: null,
+      successCallbackLink: '/upgrade-success',
     });
     setMutating(false);
     setIdempotencyKey(nanoid());

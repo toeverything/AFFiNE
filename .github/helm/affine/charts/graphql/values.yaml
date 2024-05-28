@@ -20,12 +20,12 @@ app:
   doc:
     mergeInterval: "3000"
   captcha:
-    enable: false
+    enabled: false
     secretName: captcha
     turnstile:
       secret: ''
   copilot:
-    enable: false
+    enabled: false
     secretName: copilot
     openai:
       key: ''
@@ -54,6 +54,11 @@ app:
     user: ''
     password: ''
     sender: 'noreply@toeverything.info'
+  metrics:
+    enabled: false
+    secretName: 'metrics'
+    customerIo:
+      token: ''
   payment:
     stripe:
       secretName: 'stripe'

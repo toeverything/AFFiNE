@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { omit } from 'lodash-es';
 
-import { Config, ConfigPaths } from '../config';
+import type { AFFiNEConfig, ConfigPaths } from '../config';
 
 export interface OptionalModuleMetadata extends ModuleMetadata {
   /**
@@ -18,7 +18,7 @@ export interface OptionalModuleMetadata extends ModuleMetadata {
   /**
    * Only install module if the predication returns true.
    */
-  if?: (config: Config) => boolean;
+  if?: (config: AFFiNEConfig) => boolean;
 
   /**
    * Defines which feature will be enabled if the module installed.

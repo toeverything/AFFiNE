@@ -15,7 +15,7 @@ import {
 import { UserType } from '../src/core/user/types';
 import { WorkspaceResolver } from '../src/core/workspaces/resolvers';
 import { Permission } from '../src/core/workspaces/types';
-import { ConfigModule } from '../src/fundamentals/config';
+import { Config, ConfigModule } from '../src/fundamentals/config';
 import { createTestingApp } from './utils';
 
 @Injectable()
@@ -51,10 +51,9 @@ test.beforeEach(async t => {
   const { app } = await createTestingApp({
     imports: [
       ConfigModule.forRoot({
-        host: 'example.org',
-        https: true,
-        featureFlags: {
-          earlyAccessPreview: true,
+        server: {
+          host: 'example.org',
+          https: true,
         },
       }),
       FeatureModule,
@@ -67,6 +66,8 @@ test.beforeEach(async t => {
     },
   });
 
+  const config = app.get(Config);
+  await config.runtime.set('flags/earlyAccessControl', true);
   t.context.app = app;
   t.context.auth = app.get(AuthService);
   t.context.feature = app.get(FeatureService);

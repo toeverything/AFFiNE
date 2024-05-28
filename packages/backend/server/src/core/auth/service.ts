@@ -4,6 +4,7 @@ import {
   NotAcceptableException,
   OnApplicationBootstrap,
 } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import type { User } from '@prisma/client';
 import { PrismaClient } from '@prisma/client';
 import type { CookieOptions, Request, Response } from 'express';
@@ -60,7 +61,7 @@ export class AuthService implements OnApplicationBootstrap {
     sameSite: 'lax',
     httpOnly: true,
     path: '/',
-    secure: this.config.https,
+    secure: this.config.server.https,
   };
   static readonly sessionCookieName = 'affine_session';
   static readonly authUserSeqHeaderName = 'x-auth-user';
@@ -88,6 +89,7 @@ export class AuthService implements OnApplicationBootstrap {
           });
         }
         await this.quota.switchUserQuota(devUser.id, QuotaType.ProPlanV1);
+        await this.feature.addAdmin(devUser.id);
         await this.feature.addCopilot(devUser.id);
       } catch (e) {
         // ignore
@@ -354,6 +356,15 @@ export class AuthService implements OnApplicationBootstrap {
     }
   }
 
+  async revokeUserSessions(userId: string, sessionId?: string) {
+    return this.db.userSession.deleteMany({
+      where: {
+        userId,
+        sessionId,
+      },
+    });
+  }
+
   async setCookie(_req: Request, res: Response, user: { id: string }) {
     const session = await this.createUserSession(
       user
@@ -367,7 +378,10 @@ export class AuthService implements OnApplicationBootstrap {
     });
   }
 
-  async changePassword(id: string, newPassword: string): Promise<User> {
+  async changePassword(
+    id: string,
+    newPassword: string
+  ): Promise<Omit<User, 'password'>> {
     const user = await this.user.findUserById(id);
 
     if (!user) {
@@ -376,46 +390,31 @@ export class AuthService implements OnApplicationBootstrap {
 
     const hashedPassword = await this.crypto.encryptPassword(newPassword);
 
-    return this.db.user.update({
-      where: {
-        id: user.id,
-      },
-      data: {
-        password: hashedPassword,
-      },
-    });
+    return this.user.updateUser(user.id, { password: hashedPassword });
   }
 
-  async changeEmail(id: string, newEmail: string): Promise<User> {
+  async changeEmail(
+    id: string,
+    newEmail: string
+  ): Promise<Omit<User, 'password'>> {
     const user = await this.user.findUserById(id);
 
     if (!user) {
       throw new BadRequestException('Invalid email');
     }
 
-    return this.db.user.update({
-      where: {
-        id,
-      },
-      data: {
-        email: newEmail,
-        emailVerifiedAt: new Date(),
-      },
+    return this.user.updateUser(id, {
+      email: newEmail,
+      emailVerifiedAt: new Date(),
     });
   }
 
   async setEmailVerified(id: string) {
-    return await this.db.user.update({
-      where: {
-        id,
-      },
-      data: {
-        emailVerifiedAt: new Date(),
-      },
-      select: {
-        emailVerifiedAt: true,
-      },
-    });
+    return await this.user.updateUser(
+      id,
+      { emailVerifiedAt: new Date() },
+      { emailVerifiedAt: true }
+    );
   }
 
   async sendChangePasswordEmail(email: string, callbackUrl: string) {
@@ -445,5 +444,24 @@ export class AuthService implements OnApplicationBootstrap {
       : await this.mailer.sendSignInMail(link.toString(), {
           to: email,
         });
+  }
+
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+  async cleanExpiredSessions() {
+    await this.db.session.deleteMany({
+      where: {
+        expiresAt: {
+          lte: new Date(),
+        },
+      },
+    });
+
+    await this.db.userSession.deleteMany({
+      where: {
+        expiresAt: {
+          lte: new Date(),
+        },
+      },
+    });
   }
 }

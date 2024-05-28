@@ -4,24 +4,16 @@ import {
   useService,
   WorkspacesService,
 } from '@toeverything/infra';
-import { useEffect, useState } from 'react';
-
-import { useWorkspaceBlobObjectUrl } from './use-workspace-blob';
+import { useEffect } from 'react';
 
 export function useWorkspaceInfo(meta: WorkspaceMetadata) {
   const workspacesService = useService(WorkspacesService);
 
-  const [profile, setProfile] = useState(() =>
-    workspacesService.getProfile(meta)
-  );
+  const profile = workspacesService.getProfile(meta);
 
   useEffect(() => {
-    const profile = workspacesService.getProfile(meta);
-
     profile.revalidate();
-
-    setProfile(profile);
-  }, [meta, workspacesService]);
+  }, [meta, profile]);
 
   return useLiveData(profile.profile$);
 }
@@ -30,11 +22,4 @@ export function useWorkspaceName(meta: WorkspaceMetadata) {
   const information = useWorkspaceInfo(meta);
 
   return information?.name;
-}
-
-export function useWorkspaceAvatar(meta: WorkspaceMetadata) {
-  const information = useWorkspaceInfo(meta);
-  const avatar = useWorkspaceBlobObjectUrl(meta, information?.avatar);
-
-  return avatar;
 }

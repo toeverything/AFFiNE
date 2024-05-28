@@ -52,7 +52,7 @@ export const AISubscribe = ({ ...btnProps }: AISubscribeProps) => {
         idempotencyKey,
         plan: SubscriptionPlan.AI,
         coupon: null,
-        successCallbackLink: null,
+        successCallbackLink: '/ai-upgrade-success',
       });
       popupWindow(session);
       setOpenedExternalWindow(true);

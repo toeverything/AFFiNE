@@ -25,6 +25,8 @@ function extractMustacheParams(template: string) {
   return Array.from(new Set(params));
 }
 
+const EXCLUDE_MISSING_WARN_PARAMS = ['lora'];
+
 export class ChatPrompt {
   private readonly logger = new Logger(ChatPrompt.name);
   public readonly encoder: Tokenizer | null;
@@ -40,7 +42,7 @@ export class ChatPrompt {
     return new ChatPrompt(
       options.name,
       options.action || undefined,
-      options.model || undefined,
+      options.model,
       options.messages
     );
   }
@@ -48,7 +50,7 @@ export class ChatPrompt {
   constructor(
     public readonly name: string,
     public readonly action: string | undefined,
-    public readonly model: string | undefined,
+    public readonly model: string,
     private readonly messages: PromptMessage[]
   ) {
     this.encoder = getTokenEncoder(model);
@@ -97,7 +99,7 @@ export class ChatPrompt {
         typeof income !== 'string' ||
         (Array.isArray(options) && !options.includes(income))
       ) {
-        if (sessionId) {
+        if (sessionId && !EXCLUDE_MISSING_WARN_PARAMS.includes(key)) {
           const prefix = income
             ? `Invalid param value: ${key}=${income}`
             : `Missing param value: ${key}`;
@@ -140,10 +142,30 @@ export class PromptService {
    * list prompt names
    * @returns prompt names
    */
-  async list() {
+  async listNames() {
     return this.db.aiPrompt
       .findMany({ select: { name: true } })
       .then(prompts => Array.from(new Set(prompts.map(p => p.name))));
+  }
+
+  async list() {
+    return this.db.aiPrompt.findMany({
+      select: {
+        name: true,
+        action: true,
+        model: true,
+        messages: {
+          select: {
+            role: true,
+            content: true,
+            params: true,
+          },
+          orderBy: {
+            idx: 'asc',
+          },
+        },
+      },
+    });
   }
 
   /**

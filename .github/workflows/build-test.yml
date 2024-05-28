@@ -351,7 +351,7 @@ jobs:
         env:
           CARGO_TARGET_DIR: '${{ github.workspace }}/target'
           DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
-          COPILOT_OPENAI_API_KEY: ${{ secrets.COPILOT_OPENAI_API_KEY }}
+          COPILOT_OPENAI_API_KEY: 'use_fake_openai_api_key'
 
       - name: Upload server test coverage results
         uses: codecov/codecov-action@v4

@@ -1,13 +1,15 @@
+import type { Awareness } from 'y-protocols/awareness.js';
+
 export interface AwarenessConnection {
-  connect(): void;
+  connect(awareness: Awareness): void;
   disconnect(): void;
 }
 
 export class AwarenessEngine {
   constructor(public readonly connections: AwarenessConnection[]) {}
 
-  connect() {
-    this.connections.forEach(connection => connection.connect());
+  connect(awareness: Awareness) {
+    this.connections.forEach(connection => connection.connect(awareness));
   }
 
   disconnect() {

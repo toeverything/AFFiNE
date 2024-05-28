@@ -15,23 +15,25 @@ const logger = new DebugLogger('affine:awareness:socketio');
 type AwarenessChanges = Record<'added' | 'updated' | 'removed', number[]>;
 
 export class CloudAwarenessConnection implements AwarenessConnection {
+  awareness: Awareness | null = null;
+
   constructor(
     private readonly workspaceId: string,
-    private readonly awareness: Awareness,
     private readonly socket: Socket
   ) {}
 
-  connect(): void {
+  connect(awareness: Awareness): void {
     this.socket.on('server-awareness-broadcast', this.awarenessBroadcast);
     this.socket.on(
       'new-client-awareness-init',
       this.newClientAwarenessInitHandler
     );
+    this.awareness = awareness;
     this.awareness.on('update', this.awarenessUpdate);
 
     window.addEventListener('beforeunload', this.windowBeforeUnloadHandler);
 
-    this.socket.on('connect', () => this.handleConnect());
+    this.socket.on('connect', this.handleConnect);
     this.socket.on('server-version-rejected', this.handleReject);
 
     if (this.socket.connected) {
@@ -42,12 +44,16 @@ export class CloudAwarenessConnection implements AwarenessConnection {
   }
 
   disconnect(): void {
-    removeAwarenessStates(
-      this.awareness,
-      [this.awareness.clientID],
-      'disconnect'
-    );
-    this.awareness.off('update', this.awarenessUpdate);
+    if (this.awareness) {
+      removeAwarenessStates(
+        this.awareness,
+        [this.awareness.clientID],
+        'disconnect'
+      );
+      this.awareness.off('update', this.awarenessUpdate);
+    }
+    this.awareness = null;
+
     this.socket.emit('client-leave-awareness', this.workspaceId);
     this.socket.off('server-awareness-broadcast', this.awarenessBroadcast);
     this.socket.off(
@@ -66,6 +72,9 @@ export class CloudAwarenessConnection implements AwarenessConnection {
     workspaceId: string;
     awarenessUpdate: string;
   }) => {
+    if (!this.awareness) {
+      return;
+    }
     if (wsId !== this.workspaceId) {
       return;
     }
@@ -77,6 +86,10 @@ export class CloudAwarenessConnection implements AwarenessConnection {
   };
 
   awarenessUpdate = (changes: AwarenessChanges, origin: unknown) => {
+    if (!this.awareness) {
+      return;
+    }
+
     if (origin === 'remote') {
       return;
     }
@@ -97,6 +110,10 @@ export class CloudAwarenessConnection implements AwarenessConnection {
   };
 
   newClientAwarenessInitHandler = () => {
+    if (!this.awareness) {
+      return;
+    }
+
     const awarenessUpdate = encodeAwarenessUpdate(this.awareness, [
       this.awareness.clientID,
     ]);
@@ -111,6 +128,10 @@ export class CloudAwarenessConnection implements AwarenessConnection {
   };
 
   windowBeforeUnloadHandler = () => {
+    if (!this.awareness) {
+      return;
+    }
+
     removeAwarenessStates(
       this.awareness,
       [this.awareness.clientID],

@@ -8,7 +8,7 @@ import { ArrowRightSmallIcon } from '@blocksuite/icons';
 import {
   GlobalContextService,
   useLiveData,
-  useService,
+  useServices,
   WorkspaceService,
   WorkspacesService,
 } from '@toeverything/infra';
@@ -24,25 +24,34 @@ import { WorkspaceSubPath } from '../../../../../../shared';
 import { WorkspaceDeleteModal } from './delete';
 
 export const DeleteLeaveWorkspace = () => {
+  const {
+    workspaceService,
+    globalContextService,
+    workspacePermissionService,
+    workspacesService,
+  } = useServices({
+    WorkspaceService,
+    GlobalContextService,
+    WorkspacePermissionService,
+    WorkspacesService,
+  });
   const t = useAFFiNEI18N();
-  const workspace = useService(WorkspaceService).workspace;
+  const workspace = workspaceService.workspace;
   const { jumpToSubPath, jumpToIndex } = useNavigateHelper();
   // fixme: cloud regression
   const [showDelete, setShowDelete] = useState(false);
   const [showLeave, setShowLeave] = useState(false);
   const setSettingModal = useSetAtom(openSettingModalAtom);
 
-  const workspacesService = useService(WorkspacesService);
   const workspaceList = useLiveData(workspacesService.list.workspaces$);
   const currentWorkspaceId = useLiveData(
-    useService(GlobalContextService).globalContext.workspaceId.$
+    globalContextService.globalContext.workspaceId.$
   );
 
-  const permissionService = useService(WorkspacePermissionService);
-  const isOwner = useLiveData(permissionService.permission.isOwner$);
+  const isOwner = useLiveData(workspacePermissionService.permission.isOwner$);
   useEffect(() => {
-    permissionService.permission.revalidate();
-  }, [permissionService]);
+    workspacePermissionService.permission.revalidate();
+  }, [workspacePermissionService]);
 
   const onLeaveOrDelete = useCallback(() => {
     if (isOwner !== null) {
@@ -73,18 +82,24 @@ export const DeleteLeaveWorkspace = () => {
       }
     }
 
-    await workspacesService.deleteWorkspace(workspace.meta);
+    if (isOwner) {
+      await workspacesService.deleteWorkspace(workspace.meta);
+    } else {
+      await workspacePermissionService.leaveWorkspace();
+    }
     notify.success({ title: t['Successfully deleted']() });
   }, [
     setSettingModal,
     currentWorkspaceId,
     workspace.id,
     workspace.meta,
-    workspacesService,
+    isOwner,
     t,
     workspaceList,
     jumpToSubPath,
     jumpToIndex,
+    workspacesService,
+    workspacePermissionService,
   ]);
 
   return (

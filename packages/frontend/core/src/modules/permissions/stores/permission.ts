@@ -1,5 +1,5 @@
 import type { GraphQLService } from '@affine/core/modules/cloud';
-import { getIsOwnerQuery } from '@affine/graphql';
+import { getIsOwnerQuery, leaveWorkspaceMutation } from '@affine/graphql';
 import { Store } from '@toeverything/infra';
 
 export class WorkspacePermissionStore extends Store {
@@ -17,5 +17,18 @@ export class WorkspacePermissionStore extends Store {
     });
 
     return isOwner.isOwner;
+  }
+
+  /**
+   * @param workspaceName for send email
+   */
+  async leaveWorkspace(workspaceId: string, workspaceName: string) {
+    await this.graphqlService.gql({
+      query: leaveWorkspaceMutation,
+      variables: {
+        workspaceId,
+        workspaceName,
+      },
+    });
   }
 }

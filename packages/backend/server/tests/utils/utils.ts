@@ -100,8 +100,7 @@ export async function createTestingModule(
 
   const prisma = m.get(PrismaClient);
   if (prisma instanceof PrismaClient) {
-    await flushDB(prisma);
-    await initFeatureConfigs(prisma);
+    await initTestingDB(prisma);
   }
 
   return m;

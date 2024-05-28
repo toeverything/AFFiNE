@@ -22,13 +22,15 @@ export class CloudBlobStorage implements BlobStorage {
       ? key
       : `/api/workspaces/${this.workspaceId}/blobs/${key}`;
 
-    return fetch(getBaseUrl() + suffix).then(async res => {
-      if (!res.ok) {
-        // status not in the range 200-299
-        return null;
+    return fetch(getBaseUrl() + suffix, { cache: 'default' }).then(
+      async res => {
+        if (!res.ok) {
+          // status not in the range 200-299
+          return null;
+        }
+        return bufferToBlob(await res.arrayBuffer());
       }
-      return bufferToBlob(await res.arrayBuffer());
-    });
+    );
   }
 
   async set(key: string, value: Blob) {

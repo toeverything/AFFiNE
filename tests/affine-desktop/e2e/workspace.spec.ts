@@ -2,7 +2,11 @@ import path from 'node:path';
 
 import type { apis } from '@affine/electron-api';
 import { test } from '@affine-test/kit/electron';
-import { clickSideBarCurrentWorkspaceBanner } from '@affine-test/kit/utils/sidebar';
+import { getBlockSuiteEditorTitle } from '@affine-test/kit/utils/page-logic';
+import {
+  clickNewPageButton,
+  clickSideBarCurrentWorkspaceBanner,
+} from '@affine-test/kit/utils/sidebar';
 import { expect } from '@playwright/test';
 import fs from 'fs-extra';
 
@@ -24,38 +28,11 @@ test('check workspace has a DB file', async ({ appInfo, workspace }) => {
   expect(await fs.exists(dbPath)).toBe(true);
 });
 
-test.skip('move workspace db file', async ({ page, appInfo, workspace }) => {
-  const w = await workspace.current();
-  await page.getByTestId('slider-bar-workspace-setting-button').click();
-  await expect(page.getByTestId('setting-modal')).toBeVisible();
-
-  // goto workspace setting
-  await page.getByTestId('workspace-list-item').click();
-
-  const tmpPath = path.join(appInfo.sessionData, w.meta.id + '-tmp-dir');
-
-  // move db file to tmp folder
-  await page.evaluate(tmpPath => {
-    window.apis?.dialog.setFakeDialogResult({
-      filePath: tmpPath,
-    });
-  }, tmpPath);
-
-  await page.getByTestId('move-folder').click();
-  // check if db file exists
-  await page.waitForSelector('text="Move folder success"');
-  expect(await fs.exists(tmpPath)).toBe(true);
-  // check if db file exists under tmpPath (a file ends with .affine)
-  const files = await fs.readdir(tmpPath);
-  expect(files.some(f => f.endsWith('.affine'))).toBe(true);
-});
-
-//TODO:fix test
-test.fixme('export then add', async ({ page, appInfo, workspace }) => {
+test('export then add', async ({ page, appInfo, workspace }) => {
+  await clickNewPageButton(page);
   const w = await workspace.current();
 
-  await page.focus('.affine-doc-page-block-title');
-  await page.fill('.affine-doc-page-block-title', 'test1');
+  await getBlockSuiteEditorTitle(page).fill('test1');
 
   await page.getByTestId('slider-bar-workspace-setting-button').click();
   await expect(page.getByTestId('setting-modal')).toBeVisible();
@@ -78,7 +55,7 @@ test.fixme('export then add', async ({ page, appInfo, workspace }) => {
 
   // export db file to tmp folder
   await page.evaluate(tmpPath => {
-    window.apis?.dialog.setFakeDialogResult({
+    return window.apis?.dialog.setFakeDialogResult({
       filePath: tmpPath,
     });
   }, tmpPath);
@@ -94,10 +71,9 @@ test.fixme('export then add', async ({ page, appInfo, workspace }) => {
   // we are reusing the same db file so that we don't need to maintain one
   // in the codebase
   await clickSideBarCurrentWorkspaceBanner(page);
-  await page.getByTestId('add-or-new-workspace').click();
 
   await page.evaluate(tmpPath => {
-    window.apis?.dialog.setFakeDialogResult({
+    return window.apis?.dialog.setFakeDialogResult({
       filePath: tmpPath,
     });
   }, tmpPath);

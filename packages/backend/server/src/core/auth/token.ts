@@ -87,8 +87,8 @@ export class TokenService {
   }
 
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
-  cleanExpiredTokens() {
-    return this.db.verificationToken.deleteMany({
+  async cleanExpiredTokens() {
+    await this.db.verificationToken.deleteMany({
       where: {
         expiresAt: {
           lte: new Date(),

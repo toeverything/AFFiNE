@@ -9,7 +9,7 @@ import { useAtomValue } from 'jotai';
 import type { HTMLAttributes, PropsWithChildren, ReactElement } from 'react';
 import { forwardRef } from 'react';
 
-import { AppSidebarFallback, appSidebarOpenAtom } from '../app-sidebar';
+import { appSidebarOpenAtom } from '../app-sidebar';
 import { appStyle, mainContainerStyle, toolStyle } from './index.css';
 
 export type WorkspaceRootProps = PropsWithChildren<{
@@ -85,14 +85,5 @@ export const ToolContainer = (props: PropsWithChildren): ReactElement => {
     >
       {props.children}
     </div>
-  );
-};
-
-export const WorkspaceFallback = (): ReactElement => {
-  return (
-    <AppContainer>
-      <AppSidebarFallback />
-      <MainContainer />
-    </AppContainer>
   );
 };

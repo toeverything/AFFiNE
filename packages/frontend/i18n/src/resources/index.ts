@@ -66,7 +66,7 @@ export const LOCALES = [
     originalName: '简体中文',
     flagEmoji: '🇨🇳',
     base: false,
-    completeRate: 1,
+    completeRate: 0.99,
     res: zh_Hans,
   },
   {

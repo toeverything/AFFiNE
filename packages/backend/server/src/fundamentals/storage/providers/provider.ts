@@ -1,6 +1,6 @@
 import type { Readable } from 'node:stream';
 
-import { StorageProviderType } from '../../config';
+import { StorageProviderType } from '../config';
 
 export interface GetObjectMetadata {
   /**

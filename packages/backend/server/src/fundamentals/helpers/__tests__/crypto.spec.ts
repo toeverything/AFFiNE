@@ -42,9 +42,11 @@ test.beforeEach(async t => {
   const module = await Test.createTestingModule({
     imports: [
       ConfigModule.forRoot({
-        secrets: {
-          publicKey,
-          privateKey,
+        crypto: {
+          secret: {
+            publicKey,
+            privateKey,
+          },
         },
       }),
     ],

@@ -26,19 +26,29 @@ test('should create a page with a local first avatar and remove it', async ({
   await page.getByTestId('current-workspace-label').click();
   await page
     .getByTestId('upload-avatar')
-    .setInputFiles(resolve(rootDir, 'tests', 'fixtures', 'smile.png'));
+    .setInputFiles(resolve(rootDir, 'tests', 'fixtures', 'blue.png'));
   await page.mouse.click(0, 0);
   await page.getByTestId('workspace-name').click();
   await page.getByTestId('workspace-card').nth(0).click();
   await page.waitForTimeout(1000);
   await page.getByTestId('workspace-name').click();
   await page.getByTestId('workspace-card').nth(1).click();
-  const blobUrl = await page
+  const avatarCanvas = await page
     .getByTestId('workspace-avatar')
-    .locator('img')
-    .getAttribute('src');
-  // out user uploaded avatar
-  expect(blobUrl).toContain('blob:');
+    .locator('canvas')
+    .first()
+    .elementHandle();
+  const avatarPixelData = await page.evaluate(
+    ({ avatarCanvas }) => {
+      return Array.from(
+        (avatarCanvas as HTMLCanvasElement)
+          .getContext('2d')!
+          .getImageData(1, 1, 1, 1).data // get pixel data of the avatar
+      );
+    },
+    { avatarCanvas }
+  );
+  expect(avatarPixelData).toEqual([0, 0, 255, 255]); // blue color
 
   // Click remove button to remove workspace avatar
   await page.getByTestId('settings-modal-trigger').click();
@@ -51,7 +61,7 @@ test('should create a page with a local first avatar and remove it', async ({
   await page.getByTestId('workspace-card').nth(1).click();
   const removedAvatarImage = await page
     .getByTestId('workspace-avatar')
-    .locator('img')
+    .locator('canvas')
     .count();
   expect(removedAvatarImage).toBe(0);
 

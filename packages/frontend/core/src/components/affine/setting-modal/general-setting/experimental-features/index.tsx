@@ -125,6 +125,9 @@ const SplitViewSettingRow = () => {
 const blocksuiteFeatureFlags: Partial<Record<keyof BlockSuiteFlags, string>> = {
   enable_synced_doc_block: 'Enable Synced Doc Block',
   enable_expand_database_block: 'Enable Expand Database Block',
+  enable_database_statistics: 'Enable Database Block Statistics',
+  enable_block_query: 'Enable Todo Block Query',
+  enable_new_image_actions: 'Enable New Image Actions',
 };
 
 const BlocksuiteFeatureFlagSettings = () => {

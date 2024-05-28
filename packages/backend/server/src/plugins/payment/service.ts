@@ -14,7 +14,7 @@ import Stripe from 'stripe';
 
 import { CurrentUser } from '../../core/auth';
 import { EarlyAccessType, FeatureManagementService } from '../../core/features';
-import { EventEmitter } from '../../fundamentals';
+import { Config, EventEmitter } from '../../fundamentals';
 import { ScheduleManager } from './schedule';
 import {
   InvoiceStatus,
@@ -66,6 +66,7 @@ export class SubscriptionService {
   private readonly logger = new Logger(SubscriptionService.name);
 
   constructor(
+    private readonly config: Config,
     private readonly stripe: Stripe,
     private readonly db: PrismaClient,
     private readonly scheduleManager: ScheduleManager,
@@ -78,10 +79,10 @@ export class SubscriptionService {
     let canHaveAIEarlyAccessDiscount = false;
     if (user) {
       canHaveEarlyAccessDiscount = await this.features.isEarlyAccessUser(
-        user.email
+        user.id
       );
       canHaveAIEarlyAccessDiscount = await this.features.isEarlyAccessUser(
-        user.email,
+        user.id,
         EarlyAccessType.AI
       );
 
@@ -154,6 +155,14 @@ export class SubscriptionService {
     redirectUrl: string;
     idempotencyKey: string;
   }) {
+    if (
+      this.config.deploy &&
+      this.config.affine.canary &&
+      !this.features.isStaff(user.email)
+    ) {
+      throw new BadRequestException('You are not allowed to do this.');
+    }
+
     const currentSubscription = await this.db.userSubscription.findFirst({
       where: {
         userId: user.id,
@@ -631,7 +640,7 @@ export class SubscriptionService {
   private async getOrCreateCustomer(
     idempotencyKey: string,
     user: CurrentUser
-  ): Promise<UserStripeCustomer & { email: string }> {
+  ): Promise<UserStripeCustomer> {
     let customer = await this.db.userStripeCustomer.findUnique({
       where: {
         userId: user.id,
@@ -662,10 +671,7 @@ export class SubscriptionService {
       });
     }
 
-    return {
-      ...customer,
-      email: user.email,
-    };
+    return customer;
   }
 
   private async retrieveUserFromCustomer(customerId: string) {
@@ -737,11 +743,11 @@ export class SubscriptionService {
    * Get available for different plans with special early-access price and coupon
    */
   private async getAvailablePrice(
-    customer: UserStripeCustomer & { email: string },
+    customer: UserStripeCustomer,
     plan: SubscriptionPlan,
     recurring: SubscriptionRecurring
   ): Promise<{ price: string; coupon?: string }> {
-    const isEaUser = await this.features.isEarlyAccessUser(customer.email);
+    const isEaUser = await this.features.isEarlyAccessUser(customer.userId);
     const oldSubscriptions = await this.stripe.subscriptions.list({
       customer: customer.stripeCustomerId,
       status: 'all',
@@ -771,7 +777,7 @@ export class SubscriptionService {
       };
     } else {
       const isAIEaUser = await this.features.isEarlyAccessUser(
-        customer.email,
+        customer.userId,
         EarlyAccessType.AI
       );
 

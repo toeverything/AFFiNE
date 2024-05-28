@@ -15,34 +15,32 @@ export class BroadcastChannelAwarenessConnection
   implements AwarenessConnection
 {
   channel: BroadcastChannel | null = null;
+  awareness: Awareness | null = null;
 
-  constructor(
-    private readonly workspaceId: string,
-    private readonly awareness: Awareness
-  ) {}
+  constructor(private readonly workspaceId: string) {}
 
-  connect(): void {
+  connect(awareness: Awareness): void {
+    this.awareness = awareness;
     this.channel = new BroadcastChannel('awareness:' + this.workspaceId);
     this.channel.postMessage({
       type: 'connect',
     } satisfies ChannelMessage);
-    this.awareness.on('update', (changes: AwarenessChanges, origin: unknown) =>
-      this.handleAwarenessUpdate(changes, origin)
-    );
-    this.channel.addEventListener(
-      'message',
-      (event: MessageEvent<ChannelMessage>) => {
-        this.handleChannelMessage(event);
-      }
-    );
+    this.awareness.on('update', this.handleAwarenessUpdate);
+    this.channel.addEventListener('message', this.handleChannelMessage);
   }
 
   disconnect(): void {
     this.channel?.close();
     this.channel = null;
+    this.awareness?.off('update', this.handleAwarenessUpdate);
+    this.awareness = null;
   }
 
-  handleAwarenessUpdate(changes: AwarenessChanges, origin: unknown) {
+  handleAwarenessUpdate = (changes: AwarenessChanges, origin: unknown) => {
+    if (this.awareness === null) {
+      return;
+    }
+
     if (origin === 'remote') {
       return;
     }
@@ -56,9 +54,13 @@ export class BroadcastChannelAwarenessConnection
       type: 'update',
       update: update,
     } satisfies ChannelMessage);
-  }
+  };
 
-  handleChannelMessage(event: MessageEvent<ChannelMessage>) {
+  handleChannelMessage = (event: MessageEvent<ChannelMessage>) => {
+    if (this.awareness === null) {
+      return;
+    }
+
     if (event.data.type === 'update') {
       const update = event.data.update;
       applyAwarenessUpdate(this.awareness, update, 'remote');
@@ -71,5 +73,5 @@ export class BroadcastChannelAwarenessConnection
         ]),
       } satisfies ChannelMessage);
     }
-  }
+  };
 }

@@ -1,15 +1,13 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { TestingModule } from '@nestjs/testing';
 import test from 'ava';
 
-import { Cache, CacheModule } from '../src/fundamentals/cache';
-import { ConfigModule } from '../src/fundamentals/config';
+import { Cache } from '../src/fundamentals/cache';
+import { createTestingModule } from './utils';
 
 let cache: Cache;
 let module: TestingModule;
 test.beforeEach(async () => {
-  module = await Test.createTestingModule({
-    imports: [ConfigModule.forRoot(), CacheModule],
-  }).compile();
+  module = await createTestingModule();
   const prefix = Math.random().toString(36).slice(2, 7);
   cache = new Proxy(module.get(Cache), {
     get(target, prop) {

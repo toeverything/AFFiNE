@@ -2,16 +2,17 @@ import assert from 'node:assert';
 
 import { Injectable, Logger } from '@nestjs/common';
 
-import { Config } from '../../../fundamentals';
+import { AFFiNEConfig, Config } from '../../../fundamentals';
+import { CopilotStartupConfigurations } from '../config';
 import {
   CapabilityToCopilotProvider,
   CopilotCapability,
-  CopilotConfig,
   CopilotProvider,
   CopilotProviderType,
 } from '../types';
 
-type CopilotProviderConfig = CopilotConfig[keyof CopilotConfig];
+type CopilotProviderConfig =
+  CopilotStartupConfigurations[keyof CopilotStartupConfigurations];
 
 interface CopilotProviderDefinition<C extends CopilotProviderConfig> {
   // constructor signature
@@ -37,7 +38,10 @@ const PROVIDER_CAPABILITY_MAP = new Map<
 >();
 
 // config assertions for providers
-const ASSERT_CONFIG = new Map<CopilotProviderType, (config: Config) => void>();
+const ASSERT_CONFIG = new Map<
+  CopilotProviderType,
+  (config: AFFiNEConfig) => void
+>();
 
 export function registerCopilotProvider<
   C extends CopilotProviderConfig = CopilotProviderConfig,
@@ -69,7 +73,7 @@ export function registerCopilotProvider<
     PROVIDER_CAPABILITY_MAP.set(capability, providers);
   }
   // register the provider config assertion
-  ASSERT_CONFIG.set(type, (config: Config) => {
+  ASSERT_CONFIG.set(type, (config: AFFiNEConfig) => {
     assert(config.plugins.copilot);
     const providerConfig = config.plugins.copilot[type];
     if (!providerConfig) return false;
@@ -89,7 +93,7 @@ export function unregisterCopilotProvider(type: CopilotProviderType) {
 }
 
 /// Asserts that the config is valid for any registered providers
-export function assertProvidersConfigs(config: Config) {
+export function assertProvidersConfigs(config: AFFiNEConfig) {
   return (
     Array.from(ASSERT_CONFIG.values()).findIndex(assertConfig =>
       assertConfig(config)

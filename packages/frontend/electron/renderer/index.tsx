@@ -4,10 +4,10 @@ import '@affine/core/bootstrap/preload';
 import { appConfigProxy } from '@affine/core/hooks/use-app-config-storage';
 import { performanceLogger } from '@affine/core/shared';
 import { apis, events } from '@affine/electron-api';
-import { init, setTags } from '@sentry/electron/renderer';
 import {
-  init as reactInit,
+  init,
   reactRouterV6BrowserTracingIntegration,
+  setTags,
 } from '@sentry/react';
 import { debounce } from 'lodash-es';
 import { StrictMode, useEffect } from 'react';
@@ -38,22 +38,19 @@ function main() {
     performanceMainLogger.info('setup start');
     if (window.SENTRY_RELEASE || environment.isDebug) {
       // https://docs.sentry.io/platforms/javascript/guides/electron/
-      init(
-        {
-          dsn: process.env.SENTRY_DSN,
-          environment: process.env.BUILD_TYPE ?? 'development',
-          integrations: [
-            reactRouterV6BrowserTracingIntegration({
-              useEffect,
-              useLocation,
-              useNavigationType,
-              createRoutesFromChildren,
-              matchRoutes,
-            }),
-          ],
-        },
-        reactInit
-      );
+      init({
+        dsn: process.env.SENTRY_DSN,
+        environment: process.env.BUILD_TYPE ?? 'development',
+        integrations: [
+          reactRouterV6BrowserTracingIntegration({
+            useEffect,
+            useLocation,
+            useNavigationType,
+            createRoutesFromChildren,
+            matchRoutes,
+          }),
+        ],
+      });
       setTags({
         appVersion: runtimeConfig.appVersion,
         editorVersion: runtimeConfig.editorVersion,
