@@ -3,6 +3,7 @@ import { configureInfraModules, type Framework } from '@toeverything/infra';
 
 import { configureCloudModule } from './cloud';
 import { configureCollectionModule } from './collection';
+import { configureFindInPageModule } from './find-in-page';
 import { configureNavigationModule } from './navigation';
 import { configurePermissionsModule } from './permissions';
 import { configureWorkspacePropertiesModule } from './properties';
@@ -26,6 +27,7 @@ export function configureCommonModules(framework: Framework) {
   configurePermissionsModule(framework);
   configureShareDocsModule(framework);
   configureTelemetryModule(framework);
+  configureFindInPageModule(framework);
 }
 
 export function configureImpls(framework: Framework) {

@@ -47,6 +47,20 @@ export const affine = {
   },
 };
 
+export const cmdFind = {
+  findInPage: (text: string, options?: Electron.FindInPageOptions) =>
+    ipcRenderer.invoke('findInPage:findInPage', text, options),
+  stopFindInPage: (
+    action: 'clearSelection' | 'keepSelection' | 'activateSelection'
+  ) => ipcRenderer.invoke('findInPage:stopFindInPage', action),
+  onFindInPageResult: (callBack: (data: any) => void) =>
+    ipcRenderer.on('found-in-page-result', (_event, data) => callBack(data)),
+  offFindInPageResult: (callBack: (data: any) => void) =>
+    ipcRenderer.removeListener('found-in-page-result', (_event, data) =>
+      callBack(data)
+    ),
+};
+
 export function getElectronAPIs() {
   const mainAPIs = getMainAPIs();
   const helperAPIs = getHelperAPIs();

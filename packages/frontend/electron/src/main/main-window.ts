@@ -169,6 +169,16 @@ async function createWindow(additionalArguments: string[]) {
     uiSubjects.onFullScreen$.next(false);
   });
 
+  browserWindow.webContents.on('found-in-page', (_event, result) => {
+    const { requestId, activeMatchOrdinal, matches, finalUpdate } = result;
+    browserWindow.webContents.send('found-in-page-result', {
+      requestId,
+      activeMatchOrdinal,
+      matches,
+      finalUpdate,
+    });
+  });
+
   /**
    * URL for main window.
    */

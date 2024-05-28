@@ -1,6 +1,7 @@
 import { ResizePanel } from '@affine/component/resize-panel';
+import { rightSidebarWidthAtom } from '@affine/core/atoms';
 import { appSettingAtom, useLiveData, useService } from '@toeverything/infra';
-import { useAtomValue } from 'jotai';
+import { useAtom, useAtomValue } from 'jotai';
 import { useCallback, useEffect, useState } from 'react';
 
 import { RightSidebarService } from '../services/right-sidebar';
@@ -12,7 +13,8 @@ const MAX_SIDEBAR_WIDTH = 800;
 
 export const RightSidebarContainer = () => {
   const { clientBorder } = useAtomValue(appSettingAtom);
-  const [width, setWidth] = useState(300);
+
+  const [width, setWidth] = useAtom(rightSidebarWidthAtom);
   const [resizing, setResizing] = useState(false);
   const rightSidebar = useService(RightSidebarService).rightSidebar;
 

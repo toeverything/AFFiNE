@@ -135,7 +135,6 @@ const DetailPageImpl = memo(function DetailPageImpl() {
   }, [doc, globalContext, isActiveView, mode]);
 
   const isInTrash = useLiveData(doc.meta$.map(meta => meta.trash));
-
   useRegisterBlocksuiteEditorCommands();
   const title = useLiveData(doc.title$);
   usePageDocumentTitle(title);

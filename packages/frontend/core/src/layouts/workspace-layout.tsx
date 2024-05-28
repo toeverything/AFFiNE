@@ -35,6 +35,7 @@ import {
   resolveDragEndIntent,
   useGlobalDNDHelper,
 } from '../hooks/affine/use-global-dnd-helper';
+import { useRegisterFindInPageCommands } from '../hooks/affine/use-register-find-in-page-commands';
 import { useNavigateHelper } from '../hooks/use-navigate-helper';
 import { useRegisterWorkspaceCommands } from '../hooks/use-register-workspace-commands';
 import { useRegisterNavigationCommands } from '../modules/navigation/view/use-register-navigation-commands';
@@ -117,6 +118,7 @@ export const WorkspaceLayoutInner = ({ children }: PropsWithChildren) => {
 
   useRegisterWorkspaceCommands();
   useRegisterNavigationCommands();
+  useRegisterFindInPageCommands();
 
   useEffect(() => {
     // hotfix for blockVersions

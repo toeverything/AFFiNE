@@ -93,6 +93,11 @@ const AiLoginRequiredModal = lazy(() =>
     default: module.AiLoginRequiredModal,
   }))
 );
+const FindInPageModal = lazy(() =>
+  import('../modules/find-in-page/view/find-in-page-modal').then(module => ({
+    default: module.FindInPageModal,
+  }))
+);
 
 export const Setting = () => {
   const [{ open, workspaceMetadata, activeTab }, setOpenSettingModalAtom] =
@@ -213,6 +218,7 @@ export function CurrentWorkspaceModals() {
         <CloudQuotaModal />
       )}
       <AiLoginRequiredModal />
+      {environment.isDesktop && <FindInPageModal />}
     </>
   );
 }

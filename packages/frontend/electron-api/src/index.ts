@@ -9,6 +9,7 @@ import type {
 import type {
   affine as exposedAffineGlobal,
   appInfo as exposedAppInfo,
+  cmdFind as exposedCmdFind,
 } from '@affine/electron/preload/electron-api';
 
 type MainHandlers = typeof mainHandlers;
@@ -38,6 +39,9 @@ export const apis = (globalThis as any).apis as ClientHandler | null;
 export const events = (globalThis as any).events as ClientEvents | null;
 export const affine = (globalThis as any).affine as
   | typeof exposedAffineGlobal
+  | null;
+export const cmdFind = (globalThis as any).cmdFind as
+  | typeof exposedCmdFind
   | null;
 
 export type { UpdateMeta } from '@affine/electron/main/updater/event';
