@@ -9,14 +9,17 @@ import {
   Mutation,
   ObjectType,
   Parent,
+  Query,
   registerEnumType,
   ResolveField,
   Resolver,
 } from '@nestjs/graphql';
+import { AiPromptRole } from '@prisma/client';
 import { GraphQLJSON, SafeIntResolver } from 'graphql-scalars';
 import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 
 import { CurrentUser } from '../../core/auth';
+import { Admin } from '../../core/common';
 import { UserType } from '../../core/user';
 import { PermissionService } from '../../core/workspaces/permission';
 import {
@@ -25,6 +28,7 @@ import {
   Throttle,
   TooManyRequestsException,
 } from '../../fundamentals';
+import { PromptService } from './prompt';
 import { ChatSessionService } from './session';
 import { CopilotStorage } from './storage';
 import {
@@ -150,6 +154,40 @@ class CopilotQuotaType {
 
   @Field(() => SafeIntResolver)
   used!: number;
+}
+
+registerEnumType(AiPromptRole, {
+  name: 'CopilotPromptMessageRole',
+});
+
+@InputType('CopilotPromptMessageInput')
+@ObjectType()
+class CopilotPromptMessageType {
+  @Field(() => AiPromptRole)
+  role!: AiPromptRole;
+
+  @Field(() => String)
+  content!: string;
+
+  @Field(() => GraphQLJSON, { nullable: true })
+  params!: Record<string, string> | null;
+}
+
+registerEnumType(AvailableModels, { name: 'CopilotModels' });
+
+@ObjectType()
+class CopilotPromptType {
+  @Field(() => String)
+  name!: string;
+
+  @Field(() => AvailableModels)
+  model!: AvailableModels;
+
+  @Field(() => String, { nullable: true })
+  action!: string | null;
+
+  @Field(() => [CopilotPromptMessageType])
+  messages!: CopilotPromptMessageType[];
 }
 
 // ================== Resolver ==================
@@ -368,5 +406,56 @@ export class UserCopilotResolver {
       await this.permissions.checkCloudWorkspace(workspaceId, user.id);
     }
     return { workspaceId };
+  }
+}
+
+@InputType()
+class CreateCopilotPromptInput {
+  @Field(() => String)
+  name!: string;
+
+  @Field(() => AvailableModels)
+  model!: AvailableModels;
+
+  @Field(() => String, { nullable: true })
+  action!: string | null;
+
+  @Field(() => [CopilotPromptMessageType])
+  messages!: CopilotPromptMessageType[];
+}
+
+@Admin()
+@Resolver(() => String)
+export class PromptsManagementResolver {
+  constructor(private readonly promptService: PromptService) {}
+
+  @Query(() => [CopilotPromptType], {
+    description: 'List all copilot prompts',
+  })
+  async listCopilotPrompts() {
+    return this.promptService.list();
+  }
+
+  @Mutation(() => CopilotPromptType, {
+    description: 'Create a copilot prompt',
+  })
+  async createCopilotPrompt(
+    @Args({ type: () => CreateCopilotPromptInput, name: 'input' })
+    input: CreateCopilotPromptInput
+  ) {
+    await this.promptService.set(input.name, input.model, input.messages);
+    return this.promptService.get(input.name);
+  }
+
+  @Mutation(() => CopilotPromptType, {
+    description: 'Update a copilot prompt',
+  })
+  async updateCopilotPrompt(
+    @Args('name') name: string,
+    @Args('messages', { type: () => [CopilotPromptMessageType] })
+    messages: CopilotPromptMessageType[]
+  ) {
+    await this.promptService.update(name, messages);
+    return this.promptService.get(name);
   }
 }

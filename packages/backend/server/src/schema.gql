@@ -34,6 +34,44 @@ type CopilotHistories {
   tokens: Int!
 }
 
+enum CopilotModels {
+  DallE3
+  Gpt4Omni
+  Gpt4TurboPreview
+  Gpt4VisionPreview
+  Gpt35Turbo
+  TextEmbedding3Large
+  TextEmbedding3Small
+  TextEmbeddingAda002
+  TextModerationLatest
+  TextModerationStable
+}
+
+input CopilotPromptMessageInput {
+  content: String!
+  params: JSON
+  role: CopilotPromptMessageRole!
+}
+
+enum CopilotPromptMessageRole {
+  assistant
+  system
+  user
+}
+
+type CopilotPromptMessageType {
+  content: String!
+  params: JSON
+  role: CopilotPromptMessageRole!
+}
+
+type CopilotPromptType {
+  action: String
+  messages: [CopilotPromptMessageType!]!
+  model: CopilotModels!
+  name: String!
+}
+
 type CopilotQuota {
   limit: SafeInt
   used: SafeInt!
@@ -61,6 +99,13 @@ input CreateCheckoutSessionInput {
   plan: SubscriptionPlan = Pro
   recurring: SubscriptionRecurring = Yearly
   successCallbackLink: String!
+}
+
+input CreateCopilotPromptInput {
+  action: String
+  messages: [CopilotPromptMessageInput!]!
+  model: CopilotModels!
+  name: String!
 }
 
 type CredentialsRequirementType {
@@ -206,6 +251,9 @@ type Mutation {
   """Create a chat message"""
   createCopilotMessage(options: CreateChatMessageInput!): String!
 
+  """Create a copilot prompt"""
+  createCopilotPrompt(input: CreateCopilotPromptInput!): CopilotPromptType!
+
   """Create a chat session"""
   createCopilotSession(options: CreateChatSessionInput!): String!
 
@@ -238,6 +286,9 @@ type Mutation {
   setBlob(blob: Upload!, workspaceId: String!): String!
   setWorkspaceExperimentalFeature(enable: Boolean!, feature: FeatureType!, workspaceId: String!): Boolean!
   sharePage(pageId: String!, workspaceId: String!): Boolean! @deprecated(reason: "renamed to publishPage")
+
+  """Update a copilot prompt"""
+  updateCopilotPrompt(messages: [CopilotPromptMessageInput!]!, name: String!): CopilotPromptType!
   updateProfile(input: UpdateUserInput!): UserType!
 
   """update server runtime configurable setting"""
@@ -296,6 +347,9 @@ type Query {
 
   """List blobs of workspace"""
   listBlobs(workspaceId: String!): [String!]! @deprecated(reason: "use `workspace.blobs` instead")
+
+  """List all copilot prompts"""
+  listCopilotPrompts: [CopilotPromptType!]!
   listWorkspaceFeatures(feature: FeatureType!): [WorkspaceType!]!
   prices: [SubscriptionPrice!]!
 

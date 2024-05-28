@@ -142,10 +142,30 @@ export class PromptService {
    * list prompt names
    * @returns prompt names
    */
-  async list() {
+  async listNames() {
     return this.db.aiPrompt
       .findMany({ select: { name: true } })
       .then(prompts => Array.from(new Set(prompts.map(p => p.name))));
+  }
+
+  async list() {
+    return this.db.aiPrompt.findMany({
+      select: {
+        name: true,
+        action: true,
+        model: true,
+        messages: {
+          select: {
+            role: true,
+            content: true,
+            params: true,
+          },
+          orderBy: {
+            idx: 'asc',
+          },
+        },
+      },
+    });
   }
 
   /**

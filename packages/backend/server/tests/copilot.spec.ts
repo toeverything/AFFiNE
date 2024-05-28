@@ -77,13 +77,13 @@ test.beforeEach(async t => {
 test('should be able to manage prompt', async t => {
   const { prompt } = t.context;
 
-  t.is((await prompt.list()).length, 0, 'should have no prompt');
+  t.is((await prompt.listNames()).length, 0, 'should have no prompt');
 
   await prompt.set('test', 'test', [
     { role: 'system', content: 'hello' },
     { role: 'user', content: 'hello' },
   ]);
-  t.is((await prompt.list()).length, 1, 'should have one prompt');
+  t.is((await prompt.listNames()).length, 1, 'should have one prompt');
   t.is(
     (await prompt.get('test'))!.finish({}).length,
     2,
@@ -98,7 +98,7 @@ test('should be able to manage prompt', async t => {
   );
 
   await prompt.delete('test');
-  t.is((await prompt.list()).length, 0, 'should have no prompt');
+  t.is((await prompt.listNames()).length, 0, 'should have no prompt');
   t.is(await prompt.get('test'), null, 'should not have the prompt');
 });
 
