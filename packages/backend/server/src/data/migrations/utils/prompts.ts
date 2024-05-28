@@ -159,7 +159,7 @@ export const prompts: Prompt[] = [
       {
         role: 'user',
         content:
-          'Please understand this image and generate a short caption. {{content}}',
+          'Please understand this image and generate a short caption. Limit it to 20 words. {{content}}',
       },
     ],
   },
