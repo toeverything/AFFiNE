@@ -470,6 +470,23 @@ type UserInvoice {
 
 union UserOrLimitedUser = LimitedUserType | UserType
 
+type UserQuota {
+  blobLimit: SafeInt!
+  historyPeriod: SafeInt!
+  humanReadable: UserQuotaHumanReadable!
+  memberLimit: Int!
+  name: String!
+  storageQuota: SafeInt!
+}
+
+type UserQuotaHumanReadable {
+  blobLimit: String!
+  historyPeriod: String!
+  memberLimit: String!
+  name: String!
+  storageQuota: String!
+}
+
 type UserSubscription {
   canceledAt: DateTime
   createdAt: DateTime!
@@ -517,6 +534,7 @@ type UserType {
 
   """User name"""
   name: String!
+  quota: UserQuota
   subscription(plan: SubscriptionPlan = Pro): UserSubscription @deprecated(reason: "use `UserType.subscriptions`")
   subscriptions: [UserSubscription!]!
   token: tokenType! @deprecated(reason: "use [/api/auth/authorize]")

@@ -56,7 +56,7 @@ class UserQuotaType {
 }
 
 @Resolver(() => UserType)
-export class FeatureManagementResolver {
+export class QuotaManagementResolver {
   constructor(private readonly quota: QuotaService) {}
 
   @ResolveField(() => UserQuotaType, { name: 'quota', nullable: true })
