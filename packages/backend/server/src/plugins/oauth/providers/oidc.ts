@@ -135,16 +135,17 @@ class OIDCClient {
   }
 
   private mapUserInfo(
-    user: Record<string, any>,
+    user: OIDCUserInfo,
     claimsMap: Record<string, string>
-  ): OIDCUserInfo {
-    const mappedUser: Partial<OIDCUserInfo> = {};
+  ): OAuthAccount {
+    const mappedUser: Partial<OAuthAccount> = {};
     for (const [key, value] of Object.entries(claimsMap)) {
-      if (user[value] !== undefined) {
-        mappedUser[key as keyof OIDCUserInfo] = user[value];
+      const claimValue = user[value];
+      if (claimValue !== undefined) {
+        mappedUser[key as keyof OAuthAccount] = claimValue as string;
       }
     }
-    return mappedUser as OIDCUserInfo;
+    return mappedUser as OAuthAccount;
   }
 
   async userinfo(token: string) {
