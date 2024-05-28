@@ -1,5 +1,5 @@
 import { cssVar } from '@toeverything/theme';
-import { createVar, style } from '@vanilla-extract/css';
+import { createVar, globalStyle, style } from '@vanilla-extract/css';
 export const widthVar = createVar('widthVar');
 export const heightVar = createVar('heightVar');
 export const minHeightVar = createVar('minHeightVar');
@@ -17,6 +17,7 @@ export const modalContentWrapper = style({
   justifyContent: 'center',
   zIndex: cssVar('zIndexModal'),
 });
+
 export const modalContent = style({
   vars: {
     [widthVar]: '',
@@ -81,4 +82,12 @@ export const confirmModalContent = style({
 export const confirmModalContainer = style({
   display: 'flex',
   flexDirection: 'column',
+});
+
+globalStyle(`[data-modal="false"]${modalContentWrapper}`, {
+  pointerEvents: 'none',
+});
+
+globalStyle(`[data-modal="false"] ${modalContent}`, {
+  pointerEvents: 'auto',
 });

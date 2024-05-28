@@ -1,7 +1,7 @@
 import assert from 'node:assert';
 import { join } from 'node:path';
 
-import type { CookiesSetDetails } from 'electron';
+import { type CookiesSetDetails } from 'electron';
 import { BrowserWindow, nativeTheme } from 'electron';
 import electronWindowState from 'electron-window-state';
 
@@ -167,16 +167,6 @@ async function createWindow(additionalArguments: string[]) {
 
   browserWindow.on('leave-full-screen', () => {
     uiSubjects.onFullScreen$.next(false);
-  });
-
-  browserWindow.webContents.on('found-in-page', (_event, result) => {
-    const { requestId, activeMatchOrdinal, matches, finalUpdate } = result;
-    browserWindow.webContents.send('found-in-page-result', {
-      requestId,
-      activeMatchOrdinal,
-      matches,
-      finalUpdate,
-    });
   });
 
   /**

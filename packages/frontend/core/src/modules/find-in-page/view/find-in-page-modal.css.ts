@@ -20,15 +20,39 @@ export const container = style({
 export const leftContent = style({
   display: 'flex',
   alignItems: 'center',
+  flex: 1,
+});
+
+export const inputContainer = style({
+  display: 'flex',
+  alignSelf: 'stretch',
+  alignItems: 'center',
+  gap: '8px',
+  flex: 1,
+  height: '32px',
+  position: 'relative',
+  margin: '0 8px',
 });
 
 export const input = style({
-  padding: '0 10px',
-  height: '32px',
-  gap: '8px',
-  color: cssVar('iconColor'),
+  position: 'absolute',
+  padding: '0',
+  inset: 0,
+  height: '100%',
+  width: '100%',
+  color: 'transparent',
   background: cssVar('white10'),
 });
+
+export const inputHack = style([
+  input,
+  {
+    '::placeholder': {
+      color: cssVar('iconColor'),
+    },
+    pointerEvents: 'none',
+  },
+]);
 
 export const count = style({
   color: cssVar('textSecondaryColor'),
@@ -41,6 +65,7 @@ export const arrowButton = style({
   fontSize: '24px',
   width: '32px',
   height: '32px',
+  flexShrink: 0,
   border: '1px solid',
   borderColor: cssVar('borderColor'),
   alignItems: 'baseline',

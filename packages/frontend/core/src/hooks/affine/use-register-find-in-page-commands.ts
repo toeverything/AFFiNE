@@ -5,7 +5,11 @@ import { useCallback, useEffect } from 'react';
 export function useRegisterFindInPageCommands() {
   const findInPage = useService(FindInPageService).findInPage;
   const toggleVisible = useCallback(() => {
-    findInPage.toggleVisible();
+    // get the selected text in page
+    const selection = window.getSelection();
+    const selectedText = selection?.toString();
+
+    findInPage.toggleVisible(selectedText);
   }, [findInPage]);
 
   useEffect(() => {

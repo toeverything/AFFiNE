@@ -45,13 +45,21 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
     autoFocus,
     ...otherProps
   }: InputProps,
-  ref: ForwardedRef<HTMLInputElement>
+  upstreamRef: ForwardedRef<HTMLInputElement>
 ) {
-  const handleAutoFocus = useCallback((ref: HTMLInputElement | null) => {
-    if (ref) {
-      window.setTimeout(() => ref.focus(), 0);
-    }
-  }, []);
+  const handleAutoFocus = useCallback(
+    (ref: HTMLInputElement | null) => {
+      if (ref) {
+        window.setTimeout(() => ref.focus(), 0);
+        if (typeof upstreamRef === 'function') {
+          upstreamRef(ref);
+        } else if (upstreamRef) {
+          upstreamRef.current = ref;
+        }
+      }
+    },
+    [upstreamRef]
+  );
 
   return (
     <div
@@ -78,7 +86,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
           large: size === 'large',
           'extra-large': size === 'extraLarge',
         })}
-        ref={autoFocus ? handleAutoFocus : ref}
+        ref={autoFocus ? handleAutoFocus : upstreamRef}
         disabled={disabled}
         style={inputStyle}
         onChange={useCallback(

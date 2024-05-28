@@ -1,24 +1,68 @@
-import { Button, Input, Modal } from '@affine/component';
+import { Button, Modal } from '@affine/component';
 import { rightSidebarWidthAtom } from '@affine/core/atoms';
-import {
-  ArrowDownSmallIcon,
-  ArrowUpSmallIcon,
-  SearchIcon,
-} from '@blocksuite/icons';
+import { ArrowDownSmallIcon, ArrowUpSmallIcon } from '@blocksuite/icons';
 import { useLiveData, useService } from '@toeverything/infra';
 import { assignInlineVars } from '@vanilla-extract/dynamic';
 import clsx from 'clsx';
-import { useDebouncedValue } from 'foxact/use-debounced-value';
 import { useAtomValue } from 'jotai';
-import { useCallback, useDeferredValue, useEffect, useState } from 'react';
+import {
+  type KeyboardEventHandler,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 
 import { RightSidebarService } from '../../right-sidebar';
 import { FindInPageService } from '../services/find-in-page';
 import * as styles from './find-in-page-modal.css';
+
+const drawText = (canvas: HTMLCanvasElement, text: string) => {
+  const ctx = canvas.getContext('2d');
+  if (!ctx) {
+    return;
+  }
+
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = canvas.getBoundingClientRect().width * dpr;
+  canvas.height = canvas.getBoundingClientRect().height * dpr;
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.font = '15px Inter';
+  ctx.fillText(text, 0, 22);
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'ideographic';
+};
+
+const CanvasText = ({
+  text,
+  className,
+}: {
+  text: string;
+  className: string;
+}) => {
+  const ref = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = ref.current;
+    if (!canvas) {
+      return;
+    }
+    drawText(canvas, text);
+    const resizeObserver = new ResizeObserver(() => {
+      drawText(canvas, text);
+    });
+    resizeObserver.observe(canvas);
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [text]);
+
+  return <canvas className={className} ref={ref} />;
+};
+
 export const FindInPageModal = () => {
   const [value, setValue] = useState('');
-  const debouncedValue = useDebouncedValue(value, 300);
-  const deferredValue = useDeferredValue(debouncedValue);
 
   const findInPage = useService(FindInPageService).findInPage;
   const visible = useLiveData(findInPage.visible$);
@@ -29,10 +73,48 @@ export const FindInPageModal = () => {
   const rightSidebar = useService(RightSidebarService).rightSidebar;
   const frontView = useLiveData(rightSidebar.front$);
   const open = useLiveData(rightSidebar.isOpen$) && frontView !== undefined;
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  const handleSearch = useCallback(() => {
-    findInPage.findInPage(deferredValue);
-  }, [deferredValue, findInPage]);
+  const handleValueChange = useCallback(
+    (v: string) => {
+      setValue(v);
+      findInPage.findInPage(v);
+      if (v.length === 0) {
+        findInPage.clear();
+      }
+      inputRef.current?.focus();
+    },
+    [findInPage]
+  );
+
+  useEffect(() => {
+    if (visible) {
+      setValue(findInPage.searchText$.value || '');
+      const onEsc = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') {
+          findInPage.onChangeVisible(false);
+        }
+      };
+      window.addEventListener('keydown', onEsc);
+      return () => {
+        window.removeEventListener('keydown', onEsc);
+      };
+    }
+    return () => {};
+  }, [findInPage, findInPage.searchText$.value, visible]);
+
+  useEffect(() => {
+    const unsub = findInPage.isSearching$.subscribe(() => {
+      inputRef.current?.focus();
+      setTimeout(() => {
+        inputRef.current?.focus();
+      });
+    });
+
+    return () => {
+      unsub.unsubscribe();
+    };
+  }, [findInPage.isSearching$]);
 
   const handleBackWard = useCallback(() => {
     findInPage.backward();
@@ -45,7 +127,7 @@ export const FindInPageModal = () => {
   const onChangeVisible = useCallback(
     (visible: boolean) => {
       if (!visible) {
-        findInPage.stopFindInPage('clearSelection');
+        findInPage.clear();
       }
       findInPage.onChangeVisible(visible);
     },
@@ -55,53 +137,27 @@ export const FindInPageModal = () => {
     onChangeVisible(false);
   }, [onChangeVisible]);
 
-  useEffect(() => {
-    // add keyboard event listener for arrow up and down
-    const keyArrowDown = (event: KeyboardEvent) => {
-      if (event.key === 'ArrowDown') {
+  const handleKeydown: KeyboardEventHandler = useCallback(
+    e => {
+      if (e.key === 'Enter' || e.key === 'ArrowDown') {
         handleForward();
       }
-    };
-    const keyArrowUp = (event: KeyboardEvent) => {
-      if (event.key === 'ArrowUp') {
+      if (e.key === 'ArrowUp') {
         handleBackWard();
       }
-    };
-    document.addEventListener('keydown', keyArrowDown);
-    document.addEventListener('keydown', keyArrowUp);
-    return () => {
-      document.removeEventListener('keydown', keyArrowDown);
-      document.removeEventListener('keydown', keyArrowUp);
-    };
-  }, [findInPage, handleBackWard, handleForward]);
-
+    },
+    [handleBackWard, handleForward]
+  );
   const panelWidth = assignInlineVars({
     [styles.panelWidthVar]: open ? `${rightSidebarWidth}px` : '0',
   });
 
-  useEffect(() => {
-    // auto search when value change
-    if (deferredValue) {
-      handleSearch();
-    }
-  }, [deferredValue, handleSearch]);
-
-  useEffect(() => {
-    // clear highlight when value is empty
-    if (value.length === 0) {
-      findInPage.stopFindInPage('keepSelection');
-    }
-  }, [value, findInPage]);
-
   return (
     <Modal
       open={visible}
-      onOpenChange={onChangeVisible}
-      overlayOptions={{
-        hidden: true,
-      }}
+      modal={false}
       withoutCloseButton
-      width={398}
+      width={400}
       height={48}
       minHeight={48}
       contentOptions={{
@@ -110,33 +166,32 @@ export const FindInPageModal = () => {
       }}
     >
       <div className={styles.leftContent}>
-        <Input
-          onChange={setValue}
-          value={isSearching ? '' : value}
-          onEnter={handleSearch}
-          autoFocus
-          preFix={<SearchIcon fontSize={20} />}
-          endFix={
-            <div className={styles.count}>
-              {value.length > 0 && result && result.matches !== 0 ? (
-                <>
-                  <span>{result?.activeMatchOrdinal || 0}</span>
-                  <span>/</span>
-                  <span>{result?.matches || 0}</span>
-                </>
-              ) : (
-                <span>No matches</span>
-              )}
-            </div>
-          }
-          style={{
-            width: 239,
-          }}
-          className={styles.input}
-          inputStyle={{
-            padding: '0',
-          }}
-        />
+        <div className={styles.inputContainer}>
+          <input
+            type="text"
+            autoFocus
+            value={value}
+            ref={inputRef}
+            style={{
+              visibility: isSearching ? 'hidden' : 'visible',
+            }}
+            className={styles.input}
+            onKeyDown={handleKeydown}
+            onChange={e => handleValueChange(e.target.value)}
+          />
+          <CanvasText className={styles.inputHack} text={value} />
+        </div>
+        <div className={styles.count}>
+          {value.length > 0 && result && result.matches !== 0 ? (
+            <>
+              <span>{result?.activeMatchOrdinal || 0}</span>
+              <span>/</span>
+              <span>{result?.matches || 0}</span>
+            </>
+          ) : value.length ? (
+            <span>No matches</span>
+          ) : null}
+        </div>
 
         <Button
           className={clsx(styles.arrowButton, 'backward')}
