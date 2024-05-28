@@ -11,11 +11,11 @@ import { useAtom } from 'jotai';
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { toggleGeneralAIOnboarding } from './apis';
 import * as baseStyles from './base-style.css';
 import * as styles from './general.dialog.css';
 import { Slider } from './slider';
 import { showAIOnboardingGeneral$ } from './state';
-import type { BaseAIOnboardingDialogProps } from './type';
 
 type PlayListItem = { video: string; title: ReactNode; desc: ReactNode };
 type Translate = ReturnType<typeof useAFFiNEI18N>;
@@ -82,9 +82,7 @@ function prefetchVideos() {
   prefetched = true;
 }
 
-export const AIOnboardingGeneral = ({
-  onDismiss,
-}: BaseAIOnboardingDialogProps) => {
+export const AIOnboardingGeneral = () => {
   const { authService, subscriptionService } = useServices({
     AuthService,
     SubscriptionService,
@@ -111,8 +109,8 @@ export const AIOnboardingGeneral = ({
   }, []);
   const closeAndDismiss = useCallback(() => {
     showAIOnboardingGeneral$.next(false);
-    onDismiss();
-  }, [onDismiss]);
+    toggleGeneralAIOnboarding(false);
+  }, []);
   const goToPricingPlans = useCallback(() => {
     setSettingModal({
       open: true,
@@ -190,7 +188,7 @@ export const AIOnboardingGeneral = ({
       open={open}
       onOpenChange={v => {
         showAIOnboardingGeneral$.next(v);
-        if (!v && isLast) onDismiss();
+        if (!v && isLast) toggleGeneralAIOnboarding(false);
       }}
       contentOptions={{ className: styles.dialog }}
       overlayOptions={{ className: baseStyles.dialogOverlay }}

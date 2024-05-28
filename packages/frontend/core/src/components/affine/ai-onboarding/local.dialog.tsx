@@ -10,9 +10,9 @@ import { useLiveData, useService } from '@toeverything/infra';
 import { cssVar } from '@toeverything/theme';
 import { useEffect, useRef } from 'react';
 
+import { toggleLocalAIOnboarding } from './apis';
 import * as styles from './local.dialog.css';
 import { edgelessNotifyId$, localNotifyId$ } from './state';
-import type { BaseAIOnboardingDialogProps } from './type';
 
 const LocalOnboardingAnimation = () => {
   return (
@@ -63,9 +63,7 @@ const FooterActions = ({ onDismiss }: { onDismiss: () => void }) => {
   );
 };
 
-export const AIOnboardingLocal = ({
-  onDismiss,
-}: BaseAIOnboardingDialogProps) => {
+export const AIOnboardingLocal = () => {
   const t = useAFFiNEI18N();
   const authService = useService(AuthService);
   const notifyId = useLiveData(localNotifyId$);
@@ -94,11 +92,11 @@ export const AIOnboardingLocal = ({
           iconColor: cssVar('brandColor'),
           thumb: <LocalOnboardingAnimation />,
           alignMessage: 'icon',
-          onDismiss,
+          onDismiss: () => toggleLocalAIOnboarding(false),
           footer: (
             <FooterActions
               onDismiss={() => {
-                onDismiss();
+                toggleLocalAIOnboarding(false);
                 notify.dismiss(id);
               }}
             />
@@ -109,7 +107,7 @@ export const AIOnboardingLocal = ({
       );
       localNotifyId$.next(id);
     }, 1000);
-  }, [notSignedIn, notifyId, onDismiss, t]);
+  }, [notSignedIn, notifyId, t]);
 
   return null;
 };
