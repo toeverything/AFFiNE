@@ -1,3 +1,5 @@
+import '../../src/plugins/payment';
+
 import { INestApplication } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import ava, { TestFn } from 'ava';

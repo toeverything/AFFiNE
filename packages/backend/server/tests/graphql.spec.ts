@@ -4,13 +4,13 @@ import {
   INestApplication,
 } from '@nestjs/common';
 import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
-import { Test } from '@nestjs/testing';
 import testFn, { TestFn } from 'ava';
 import request from 'supertest';
 
-import { ConfigModule } from '../src/fundamentals/config';
-import { GqlModule } from '../src/fundamentals/graphql';
+import { Public } from '../src/core/auth';
+import { createTestingApp } from './utils';
 
+@Public()
 @Resolver(() => String)
 class TestResolver {
   greating = 'hello world';
@@ -47,16 +47,15 @@ function gql(app: INestApplication, query: string) {
 }
 
 test.beforeEach(async ctx => {
-  const module = await Test.createTestingModule({
-    imports: [ConfigModule.forRoot(), GqlModule],
+  const { app } = await createTestingApp({
     providers: [TestResolver],
-  }).compile();
+  });
 
-  ctx.context.app = await module
-    .createNestApplication({
-      logger: false,
-    })
-    .init();
+  ctx.context.app = app;
+});
+
+test.afterEach.always(async ctx => {
+  await ctx.context.app.close();
 });
 
 test('should be able to execute query', async t => {

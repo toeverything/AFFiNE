@@ -1,3 +1,5 @@
+import './config';
+
 import { ExecutionContext, Global, Injectable, Module } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import {
@@ -14,6 +16,7 @@ import type { Request } from 'express';
 
 import { Config } from '../config';
 import { getRequestResponseFromContext } from '../utils/request';
+import type { ThrottlerType } from './config';
 import { THROTTLER_PROTECTED, Throttlers } from './decorators';
 
 @Injectable()
@@ -21,25 +24,14 @@ export class ThrottlerStorage extends ThrottlerStorageService {}
 
 @Injectable()
 class CustomOptionsFactory implements ThrottlerOptionsFactory {
-  constructor(
-    private readonly config: Config,
-    private readonly storage: ThrottlerStorage
-  ) {}
+  constructor(private readonly storage: ThrottlerStorage) {}
 
   createThrottlerOptions() {
     const options: ThrottlerModuleOptions = {
-      throttlers: [
-        {
-          name: 'default',
-          ttl: this.config.rateLimiter.ttl * 1000,
-          limit: this.config.rateLimiter.limit,
-        },
-        {
-          name: 'strict',
-          ttl: this.config.rateLimiter.ttl * 1000,
-          limit: 20,
-        },
-      ],
+      throttlers: Object.entries(AFFiNE.throttler).map(([name, config]) => ({
+        name,
+        ...config,
+      })),
       storage: this.storage,
     };
 
@@ -165,7 +157,7 @@ export class CloudThrottlerGuard extends ThrottlerGuard {
     return super.canActivate(context);
   }
 
-  getSpecifiedThrottler(context: ExecutionContext) {
+  getSpecifiedThrottler(context: ExecutionContext): ThrottlerType | undefined {
     const throttler = this.reflector.getAllAndOverride<Throttlers | undefined>(
       THROTTLER_PROTECTED,
       [context.getHandler(), context.getClass()]

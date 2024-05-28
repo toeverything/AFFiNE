@@ -22,15 +22,16 @@ model User {
   /// for example, the value will be false if user never registered and invited into a workspace by others.
   registered      Boolean   @default(true)
 
-  features             UserFeatures[]
-  customer             UserStripeCustomer?
-  subscriptions        UserSubscription[]
-  invoices             UserInvoice[]
-  workspacePermissions WorkspaceUserPermission[]
-  pagePermissions      WorkspacePageUserPermission[]
-  connectedAccounts    ConnectedAccount[]
-  sessions             UserSession[]
-  aiSessions           AiSession[]
+  features              UserFeatures[]
+  customer              UserStripeCustomer?
+  subscriptions         UserSubscription[]
+  invoices              UserInvoice[]
+  workspacePermissions  WorkspaceUserPermission[]
+  pagePermissions       WorkspacePageUserPermission[]
+  connectedAccounts     ConnectedAccount[]
+  sessions              UserSession[]
+  aiSessions            AiSession[]
+  updatedRuntimeConfigs RuntimeConfig[]
 
   @@index([email])
   @@map("users")
@@ -504,4 +505,29 @@ model DataMigration {
   finishedAt DateTime? @map("finished_at") @db.Timestamptz(6)
 
   @@map("_data_migrations")
+}
+
+enum RuntimeConfigType {
+  String
+  Number
+  Boolean
+  Object
+  Array
+}
+
+model RuntimeConfig {
+  id            String            @id @db.VarChar
+  type          RuntimeConfigType
+  module        String            @db.VarChar
+  key           String            @db.VarChar
+  value         Json              @db.Json
+  description   String            @db.Text
+  updatedAt     DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt     DateTime?         @map("deleted_at") @db.Timestamptz(6)
+  lastUpdatedBy String?           @map("last_updated_by") @db.VarChar(36)
+
+  lastUpdatedByUser User? @relation(fields: [lastUpdatedBy], references: [id])
+
+  @@unique([module, key])
+  @@map("app_runtime_settings")
 }

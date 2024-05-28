@@ -56,7 +56,7 @@ export interface CreateCheckoutSessionInput {
   idempotencyKey: Scalars['String']['input'];
   plan: InputMaybe<SubscriptionPlan>;
   recurring: InputMaybe<SubscriptionRecurring>;
-  successCallbackLink: InputMaybe<Scalars['String']['input']>;
+  successCallbackLink: Scalars['String']['input'];
 }
 
 export interface DeleteSessionInput {
@@ -112,6 +112,14 @@ export interface QueryChatHistoriesInput {
   limit: InputMaybe<Scalars['Int']['input']>;
   sessionId: InputMaybe<Scalars['String']['input']>;
   skip: InputMaybe<Scalars['Int']['input']>;
+}
+
+export enum RuntimeConfigType {
+  Array = 'Array',
+  Boolean = 'Boolean',
+  Number = 'Number',
+  Object = 'Object',
+  String = 'String',
 }
 
 export enum ServerDeploymentType {

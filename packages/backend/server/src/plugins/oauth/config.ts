@@ -1,3 +1,5 @@
+import { defineStartupConfig, ModuleConfig } from '../../fundamentals/config';
+
 export interface OAuthProviderConfig {
   clientId: string;
   clientSecret: string;
@@ -29,6 +31,15 @@ type OAuthProviderConfigMapping = {
 };
 
 export interface OAuthConfig {
-  enabled: boolean;
   providers: Partial<OAuthProviderConfigMapping>;
 }
+
+declare module '../config' {
+  interface PluginsConfig {
+    oauth: ModuleConfig<OAuthConfig>;
+  }
+}
+
+defineStartupConfig('plugins.oauth', {
+  providers: {},
+});

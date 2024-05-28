@@ -1,3 +1,5 @@
+import './config';
+
 import { ServerFeature } from '../../core/config';
 import { FeatureModule } from '../../core/features';
 import { QuotaModule } from '../../core/quota';
@@ -43,5 +45,3 @@ registerCopilotProvider(OpenAIProvider);
   },
 })
 export class CopilotModule {}
-
-export type { CopilotConfig } from './types';

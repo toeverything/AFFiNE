@@ -1,3 +1,5 @@
+import './config';
+
 import { AuthModule } from '../../core/auth';
 import { ServerFeature } from '../../core/config';
 import { UserModule } from '../../core/user';
@@ -22,4 +24,3 @@ import { OAuthService } from './service';
   if: config => !!config.plugins.oauth,
 })
 export class OAuthModule {}
-export type { OAuthConfig } from './types';

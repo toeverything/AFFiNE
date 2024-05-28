@@ -1,16 +1,6 @@
 import type { User } from '@prisma/client';
-import type { Stripe } from 'stripe';
 
 import type { Payload } from '../../fundamentals/event/def';
-
-export interface PaymentConfig {
-  stripe: {
-    keys: {
-      APIKey: string;
-      webhookKey: string;
-    };
-  } & Stripe.StripeConfig;
-}
 
 export enum SubscriptionRecurring {
   Monthly = 'monthly',

@@ -1,3 +1,5 @@
+import './config';
+
 import { Global } from '@nestjs/common';
 
 import { Plugin } from '../registry';

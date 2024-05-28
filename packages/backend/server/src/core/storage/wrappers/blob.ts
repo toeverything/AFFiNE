@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common';
 import {
   type BlobInputType,
   Cache,
+  Config,
   EventEmitter,
   type EventPayload,
   type ListObjectsMetadata,
@@ -16,11 +17,12 @@ export class WorkspaceBlobStorage {
   public readonly provider: StorageProvider;
 
   constructor(
+    private readonly config: Config,
     private readonly event: EventEmitter,
     private readonly storageFactory: StorageProviderFactory,
     private readonly cache: Cache
   ) {
-    this.provider = this.storageFactory.create('blob');
+    this.provider = this.storageFactory.create(this.config.storages.blob);
   }
 
   async put(workspaceId: string, key: string, blob: BlobInputType) {

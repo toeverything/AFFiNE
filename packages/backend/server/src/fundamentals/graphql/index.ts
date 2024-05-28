@@ -1,3 +1,5 @@
+import './config';
+
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -25,7 +27,7 @@ export type GraphqlContext = {
       useFactory: (config: Config) => {
         return {
           ...config.graphql,
-          path: `${config.path}/graphql`,
+          path: `${config.server.path}/graphql`,
           csrfPrevention: {
             requestHeaders: ['content-type'],
           },

@@ -60,7 +60,7 @@ input CreateCheckoutSessionInput {
   idempotencyKey: String!
   plan: SubscriptionPlan = Pro
   recurring: SubscriptionRecurring = Yearly
-  successCallbackLink: String
+  successCallbackLink: String!
 }
 
 type CredentialsRequirementType {
@@ -175,6 +175,11 @@ The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://
 """
 scalar JSON @specifiedBy(url: "http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf")
 
+"""
+The `JSONObject` scalar type represents JSON objects as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
+"""
+scalar JSONObject @specifiedBy(url: "http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf")
+
 type LimitedUserType {
   """User email"""
   email: String!
@@ -234,6 +239,12 @@ type Mutation {
   setWorkspaceExperimentalFeature(enable: Boolean!, feature: FeatureType!, workspaceId: String!): Boolean!
   sharePage(pageId: String!, workspaceId: String!): Boolean! @deprecated(reason: "renamed to publishPage")
   updateProfile(input: UpdateUserInput!): UserType!
+
+  """update server runtime configurable setting"""
+  updateRuntimeConfig(id: String!, value: JSON!): ServerRuntimeConfigType!
+
+  """update multiple server runtime configurable settings"""
+  updateRuntimeConfigs(updates: JSONObject!): [ServerRuntimeConfigType!]!
   updateSubscriptionRecurring(idempotencyKey: String!, plan: SubscriptionPlan = Pro, recurring: SubscriptionRecurring!): UserSubscription!
 
   """Update workspace"""
@@ -291,6 +302,9 @@ type Query {
   """server config"""
   serverConfig: ServerConfigType!
 
+  """get all server runtime configurable settings"""
+  serverRuntimeConfig: [ServerRuntimeConfigType!]!
+
   """Get user by email"""
   user(email: String!): UserOrLimitedUser
 
@@ -323,6 +337,14 @@ type RemoveAvatar {
   success: Boolean!
 }
 
+enum RuntimeConfigType {
+  Array
+  Boolean
+  Number
+  Object
+  String
+}
+
 """
 The `SafeInt` scalar type represents non-fractional signed whole numeric values that are considered safe as defined by the ECMAScript specification.
 """
@@ -340,6 +362,9 @@ type ServerConfigType {
 
   """enabled server features"""
   features: [ServerFeature!]!
+
+  """server flags"""
+  flags: ServerFlagsType!
 
   """server flavor"""
   flavor: String! @deprecated(reason: "use `features`")
@@ -364,6 +389,21 @@ enum ServerFeature {
   Copilot
   OAuth
   Payment
+}
+
+type ServerFlagsType {
+  earlyAccessControl: Boolean!
+  syncClientVersionCheck: Boolean!
+}
+
+type ServerRuntimeConfigType {
+  description: String!
+  id: String!
+  key: String!
+  module: String!
+  type: RuntimeConfigType!
+  updatedAt: DateTime!
+  value: JSON!
 }
 
 enum SubscriptionPlan {

@@ -1,6 +1,8 @@
 import { applyDecorators, SetMetadata } from '@nestjs/common';
 import { SkipThrottle, Throttle as RawThrottle } from '@nestjs/throttler';
 
+import { ThrottlerType } from './config';
+
 export type Throttlers = 'default' | 'strict' | 'authenticated';
 export const THROTTLER_PROTECTED = 'affine_throttler:protected';
 
@@ -25,7 +27,7 @@ export const THROTTLER_PROTECTED = 'affine_throttler:protected';
  *
  */
 export function Throttle(
-  type: Throttlers = 'default',
+  type: ThrottlerType | 'authenticated' = 'default',
   override: { limit?: number; ttl?: number } = {}
 ): MethodDecorator & ClassDecorator {
   return applyDecorators(

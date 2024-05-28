@@ -1,13 +1,27 @@
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 
+import { defineStartupConfig, ModuleConfig } from '../config';
+
 export interface FsStorageConfig {
   path: string;
 }
 
 export interface StorageProvidersConfig {
-  fs: FsStorageConfig;
+  fs?: FsStorageConfig;
 }
+
+declare module '../config' {
+  interface AppConfig {
+    storageProviders: ModuleConfig<StorageProvidersConfig>;
+  }
+}
+
+defineStartupConfig('storageProviders', {
+  fs: {
+    path: join(homedir(), '.affine/storage'),
+  },
+});
 
 export type StorageProviderType = keyof StorageProvidersConfig;
 

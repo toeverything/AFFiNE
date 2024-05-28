@@ -26,22 +26,14 @@
 // AFFiNE.serverName = 'Your Cool AFFiNE Selfhosted Cloud';
 //
 // /* Whether the server is deployed behind a HTTPS proxied environment */
-AFFiNE.https = false;
+AFFiNE.server.https = false;
 // /* Domain of your server that your server will be available at */
-AFFiNE.host = 'localhost';
+AFFiNE.server.host = 'localhost';
 // /* The local port of your server that will listen on */
-AFFiNE.port = 3010;
+AFFiNE.server.port = 3010;
 // /* The sub path of your server */
-// /* For example, if you set `AFFiNE.path = '/affine'`, then the server will be available at `${domain}/affine` */
-// AFFiNE.path = '/affine';
-//
-//
-// ###############################################################
-// ##                       Database settings                   ##
-// ###############################################################
-//
-// /* The URL of the database where most of AFFiNE server data will be stored in */
-// AFFiNE.db.url = 'postgres://user:passsword@localhost:5432/affine';
+// /* For example, if you set `AFFiNE.server.path = '/affine'`, then the server will be available at `${domain}/affine` */
+// AFFiNE.server.path = '/affine';
 //
 //
 // ###############################################################
@@ -52,19 +44,12 @@ AFFiNE.port = 3010;
 // /* The metrics will be available at `http://localhost:9464/metrics` with [Prometheus] format exported */
 // AFFiNE.metrics.enabled = true;
 //
-// /* Authentication Settings */
-// /* Whether allow anyone signup */
-// AFFiNE.auth.allowSignup = true;
 //
-// /* User Signup password limitation */
-// AFFiNE.auth.password = {
-//   minLength: 8,
-//   maxLength: 32,
-// };
-//
-// /* How long the login session would last by default */
 // AFFiNE.auth.session = {
+//   /* How long the login session would last by default */
 //   ttl: 15 * 24 * 60 * 60, // 15 days
+//   /* How long we should refresh the token before it getting expired */
+//   ttr: 7 * 24 * 60 * 60, // 7 days
 // };
 //
 // /* GraphQL configurations that control the behavior of the Apollo Server behind */
@@ -85,9 +70,6 @@ AFFiNE.port = 3010;
 // /* How long the buffer time of creating a new history snapshot when doc get updated */
 // AFFiNE.doc.history.interval = 1000 * 60 * 10; // 10 minutes
 //
-// /* Use `y-octo` to merge updates at the same time when merging using Yjs */
-// AFFiNE.doc.manager.experimentalMergeWithYOcto = true;
-//
 // /* How often the manager will start a new turn of merging pending updates into doc snapshot */
 // AFFiNE.doc.manager.updatePollInterval = 1000 * 3;
 //
@@ -99,20 +81,20 @@ AFFiNE.port = 3010;
 // /* Redis Plugin */
 // /* Provide caching and session storing backed by Redis. */
 // /* Useful when you deploy AFFiNE server in a cluster. */
-// AFFiNE.plugins.use('redis', {
+// AFFiNE.use('redis', {
 //   /* override options */
 // });
 //
 //
 // /* Payment Plugin */
-// AFFiNE.plugins.use('payment', {
+// AFFiNE.use('payment', {
 //   stripe: { keys: {}, apiVersion: '2023-10-16' },
 // });
 //
 //
 // /* Cloudflare R2 Plugin */
 // /* Enable if you choose to store workspace blobs or user avatars in Cloudflare R2 Storage Service */
-// AFFiNE.plugins.use('cloudflare-r2', {
+// AFFiNE.use('cloudflare-r2', {
 //   accountId: '',
 //   credentials: {
 //     accessKeyId: '',
@@ -122,17 +104,17 @@ AFFiNE.port = 3010;
 //
 // /* AWS S3 Plugin */
 // /* Enable if you choose to store workspace blobs or user avatars in AWS S3 Storage Service */
-// AFFiNE.plugins.use('aws-s3', {
+// AFFiNE.use('aws-s3', {
 //  credentials: {
 //    accessKeyId: '',
 //    secretAccessKey: '',
 // })
 // /* Update the provider of storages */
-// AFFiNE.storage.storages.blob.provider = 'r2';
-// AFFiNE.storage.storages.avatar.provider = 'r2';
+// AFFiNE.storages.blob.provider = 'cloudflare-r2';
+// AFFiNE.storages.avatar.provider = 'cloudflare-r2';
 //
-/* OAuth Plugin */
-// AFFiNE.plugins.use('oauth', {
+// /* OAuth Plugin */
+// AFFiNE.use('oauth', {
 //   providers: {
 //     github: {
 //       clientId: '',
@@ -166,3 +148,18 @@ AFFiNE.port = 3010;
 //     },
 //   },
 // });
+//
+// /* Copilot Plugin */
+// AFFiNE.use('copilot', {
+//   openai: {
+//     apiKey: 'your-key',
+//   },
+//   fal: {
+//     apiKey: 'your-key',
+//   },
+//   unsplashKey: 'your-key',
+//   storage: {
+//     provider: 'cloudflare-r2',
+//     bucket: 'copilot',
+//   }
+// })

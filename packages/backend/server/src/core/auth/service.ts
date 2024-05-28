@@ -61,7 +61,7 @@ export class AuthService implements OnApplicationBootstrap {
     sameSite: 'lax',
     httpOnly: true,
     path: '/',
-    secure: this.config.https,
+    secure: this.config.server.https,
   };
   static readonly sessionCookieName = 'affine_session';
   static readonly authUserSeqHeaderName = 'x-auth-user';

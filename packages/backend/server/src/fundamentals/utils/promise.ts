@@ -1,4 +1,4 @@
-import { defer, retry } from 'rxjs';
+import { defer as rxjsDefer, retry } from 'rxjs';
 
 export class RetryablePromise<T> extends Promise<T> {
   constructor(
@@ -10,7 +10,7 @@ export class RetryablePromise<T> extends Promise<T> {
     retryIntervalInMs: number = 300
   ) {
     super((resolve, reject) => {
-      defer(() => new Promise<T>(executor))
+      rxjsDefer(() => new Promise<T>(executor))
         .pipe(
           retry({
             count: retryTimes,
@@ -41,4 +41,10 @@ export function retryable<Ret = unknown>(
     retryTimes,
     retryIntervalInMs
   );
+}
+
+export function defer(dispose: () => Promise<void>) {
+  return {
+    [Symbol.asyncDispose]: dispose,
+  };
 }

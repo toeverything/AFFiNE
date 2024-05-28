@@ -10,7 +10,7 @@ import { DocManager, DocModule } from '../src/core/doc';
 import { QuotaModule } from '../src/core/quota';
 import { StorageModule } from '../src/core/storage';
 import { Config } from '../src/fundamentals/config';
-import { createTestingModule, initTestingDB } from './utils';
+import { createTestingModule } from './utils';
 
 const createModule = () => {
   return createTestingModule({
@@ -28,7 +28,6 @@ test.beforeEach(async () => {
   });
   m = await createModule();
   await m.init();
-  await initTestingDB(m.get(PrismaClient));
 });
 
 test.afterEach.always(async () => {
