@@ -4,13 +4,13 @@ import {
   Context,
   Int,
   Mutation,
+  Parent,
   Query,
   registerEnumType,
   ResolveField,
   Resolver,
 } from '@nestjs/graphql';
 
-import { CurrentUser } from '../auth/current-user';
 import { sessionUser } from '../auth/service';
 import { Admin } from '../common';
 import { UserService } from '../user/service';
@@ -33,7 +33,7 @@ export class FeatureManagementResolver {
     name: 'features',
     description: 'Enabled features of a user',
   })
-  async userFeatures(@CurrentUser() user: CurrentUser) {
+  async userFeatures(@Parent() user: UserType) {
     return this.feature.getActivatedUserFeatures(user.id);
   }
 

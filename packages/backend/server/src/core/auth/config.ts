@@ -39,6 +39,12 @@ export interface AuthRuntimeConfigurations {
    * Whether allow anonymous users to sign up
    */
   allowSignup: boolean;
+
+  /**
+   * Whether require email verification before access restricted resources
+   */
+  requireEmailVerification: boolean;
+
   /**
    * The minimum and maximum length of the password when registering new users
    */
@@ -68,6 +74,10 @@ defineStartupConfig('auth', {
 defineRuntimeConfig('auth', {
   allowSignup: {
     desc: 'Whether allow new registrations',
+    default: true,
+  },
+  requireEmailVerification: {
+    desc: 'Whether require email verification before accessing restricted resources',
     default: true,
   },
   'password.min': {

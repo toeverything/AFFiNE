@@ -170,7 +170,8 @@ export class UserService {
   }
 
   async deleteUser(id: string) {
-    return this.prisma.user.delete({ where: { id } });
+    const user = await this.prisma.user.delete({ where: { id } });
+    this.emitter.emit('user.deleted', user);
   }
 
   @OnEvent('user.updated')
