@@ -112,6 +112,17 @@ query copilotQuota {
 }`,
 };
 
+export const cleanupCopilotSessionMutation = {
+  id: 'cleanupCopilotSessionMutation' as const,
+  operationName: 'cleanupCopilotSession',
+  definitionName: 'cleanupCopilotSession',
+  containsFile: false,
+  query: `
+mutation cleanupCopilotSession($input: DeleteSessionInput!) {
+  cleanupCopilotSession(options: $input)
+}`,
+};
+
 export const createCheckoutSessionMutation = {
   id: 'createCheckoutSessionMutation' as const,
   operationName: 'createCheckoutSession',

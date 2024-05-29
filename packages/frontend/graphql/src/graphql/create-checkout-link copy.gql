@@ -1,0 +1,3 @@
+mutation cleanupCopilotSession($input: DeleteSessionInput!) {
+  cleanupCopilotSession(options: $input)
+}

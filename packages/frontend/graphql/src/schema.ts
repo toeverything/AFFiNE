@@ -30,10 +30,37 @@ export interface Scalars {
   DateTime: { input: string; output: string };
   /** The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf). */
   JSON: { input: Record<string, string>; output: Record<string, string> };
+  /** The `JSONObject` scalar type represents JSON objects as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf). */
+  JSONObject: { input: any; output: any };
   /** The `SafeInt` scalar type represents non-fractional signed whole numeric values that are considered safe as defined by the ECMAScript specification. */
   SafeInt: { input: number; output: number };
   /** The `Upload` scalar type represents a file upload. */
   Upload: { input: File; output: File };
+}
+
+export enum CopilotModels {
+  DallE3 = 'DallE3',
+  Gpt4Omni = 'Gpt4Omni',
+  Gpt4TurboPreview = 'Gpt4TurboPreview',
+  Gpt4VisionPreview = 'Gpt4VisionPreview',
+  Gpt35Turbo = 'Gpt35Turbo',
+  TextEmbedding3Large = 'TextEmbedding3Large',
+  TextEmbedding3Small = 'TextEmbedding3Small',
+  TextEmbeddingAda002 = 'TextEmbeddingAda002',
+  TextModerationLatest = 'TextModerationLatest',
+  TextModerationStable = 'TextModerationStable',
+}
+
+export interface CopilotPromptMessageInput {
+  content: Scalars['String']['input'];
+  params: InputMaybe<Scalars['JSON']['input']>;
+  role: CopilotPromptMessageRole;
+}
+
+export enum CopilotPromptMessageRole {
+  assistant = 'assistant',
+  system = 'system',
+  user = 'user',
 }
 
 export interface CreateChatMessageInput {
@@ -59,6 +86,13 @@ export interface CreateCheckoutSessionInput {
   successCallbackLink: Scalars['String']['input'];
 }
 
+export interface CreateCopilotPromptInput {
+  action: InputMaybe<Scalars['String']['input']>;
+  messages: Array<CopilotPromptMessageInput>;
+  model: CopilotModels;
+  name: Scalars['String']['input'];
+}
+
 export interface DeleteSessionInput {
   docId: Scalars['String']['input'];
   sessionIds: Array<Scalars['String']['input']>;
@@ -73,6 +107,7 @@ export enum EarlyAccessType {
 /** The type of workspace feature */
 export enum FeatureType {
   AIEarlyAccess = 'AIEarlyAccess',
+  Admin = 'Admin',
   Copilot = 'Copilot',
   EarlyAccess = 'EarlyAccess',
   UnlimitedCopilot = 'UnlimitedCopilot',
@@ -243,6 +278,15 @@ export type CopilotQuotaQuery = {
       };
     };
   } | null;
+};
+
+export type CleanupCopilotSessionMutationVariables = Exact<{
+  input: DeleteSessionInput;
+}>;
+
+export type CleanupCopilotSessionMutation = {
+  __typename?: 'Mutation';
+  cleanupCopilotSession: string;
 };
 
 export type CreateCheckoutSessionMutationVariables = Exact<{
@@ -1216,6 +1260,11 @@ export type Mutations =
       name: 'changePasswordMutation';
       variables: ChangePasswordMutationVariables;
       response: ChangePasswordMutation;
+    }
+  | {
+      name: 'cleanupCopilotSessionMutation';
+      variables: CleanupCopilotSessionMutationVariables;
+      response: CleanupCopilotSessionMutation;
     }
   | {
       name: 'createCheckoutSessionMutation';
