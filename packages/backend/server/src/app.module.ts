@@ -1,6 +1,11 @@
 import { join } from 'node:path';
 
-import { Logger, Module } from '@nestjs/common';
+import {
+  DynamicModule,
+  ForwardReference,
+  Logger,
+  Module,
+} from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { get } from 'lodash-es';
@@ -49,45 +54,67 @@ export const FunctionalityModules = [
   HelpersModule,
 ];
 
+function filterOptionalModule(
+  config: AFFiNEConfig,
+  module: AFFiNEModule | Promise<DynamicModule> | ForwardReference<any>
+) {
+  // can't deal with promise or forward reference
+  if (module instanceof Promise || 'forwardRef' in module) {
+    return module;
+  }
+
+  const requirements = getOptionalModuleMetadata(module, 'requires');
+  // if condition not set or condition met, include the module
+  if (requirements?.length) {
+    const nonMetRequirements = requirements.filter(c => {
+      const value = get(config, c);
+      return (
+        value === undefined ||
+        value === null ||
+        (typeof value === 'string' && value.trim().length === 0)
+      );
+    });
+
+    if (nonMetRequirements.length) {
+      const name = 'module' in module ? module.module.name : module.name;
+      new Logger(name).warn(
+        `${name} is not enabled because of the required configuration is not satisfied.`,
+        'Unsatisfied configuration:',
+        ...nonMetRequirements.map(config => `  AFFiNE.${config}`)
+      );
+      return null;
+    }
+  }
+
+  const predicator = getOptionalModuleMetadata(module, 'if');
+  if (predicator && !predicator(config)) {
+    return null;
+  }
+
+  const contribution = getOptionalModuleMetadata(module, 'contributesTo');
+  if (contribution) {
+    ADD_ENABLED_FEATURES(contribution);
+  }
+
+  const subModules = getOptionalModuleMetadata(module, 'imports');
+  const filteredSubModules = subModules
+    ?.map(subModule => filterOptionalModule(config, subModule))
+    .filter(Boolean);
+  Reflect.defineMetadata('imports', filteredSubModules, module);
+
+  return module;
+}
+
 export class AppModuleBuilder {
   private readonly modules: AFFiNEModule[] = [];
   constructor(private readonly config: AFFiNEConfig) {}
 
   use(...modules: AFFiNEModule[]): this {
     modules.forEach(m => {
-      const requirements = getOptionalModuleMetadata(m, 'requires');
-      // if condition not set or condition met, include the module
-      if (requirements?.length) {
-        const nonMetRequirements = requirements.filter(c => {
-          const value = get(this.config, c);
-          return (
-            value === undefined ||
-            value === null ||
-            (typeof value === 'string' && value.trim().length === 0)
-          );
-        });
-
-        if (nonMetRequirements.length) {
-          const name = 'module' in m ? m.module.name : m.name;
-          new Logger(name).warn(
-            `${name} is not enabled because of the required configuration is not satisfied.`,
-            'Unsatisfied configuration:',
-            ...nonMetRequirements.map(config => `  AFFiNE.${config}`)
-          );
-          return;
-        }
+      const result = filterOptionalModule(this.config, m);
+      if (result) {
+        this.modules.push(m);
       }
-
-      const predicator = getOptionalModuleMetadata(m, 'if');
-      if (predicator && !predicator(this.config)) {
-        return;
-      }
-
-      const contribution = getOptionalModuleMetadata(m, 'contributesTo');
-      if (contribution) {
-        ADD_ENABLED_FEATURES(contribution);
-      }
-      this.modules.push(m);
     });
 
     return this;
