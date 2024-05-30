@@ -1,6 +1,7 @@
 import {
   createReactComponentFromLit,
   type ElementOrFactory,
+  notify,
   toast,
   type ToastOptions,
   type useConfirmModal,
@@ -12,7 +13,7 @@ import type {
   RootService,
 } from '@blocksuite/blocks';
 import { LitElement, type TemplateResult } from 'lit';
-import React from 'react';
+import React, { createElement, type ReactNode } from 'react';
 
 export type ReferenceReactRenderer = (
   reference: AffineReference
@@ -42,6 +43,36 @@ const TemplateWrapper = createReactComponentFromLit({
   react: React,
 });
 
+const toReactNode = (template?: TemplateResult | string): ReactNode => {
+  if (!template) return null;
+  return typeof template === 'string'
+    ? template
+    : createElement(TemplateWrapper, { template });
+};
+
+function patchSpecService<Spec extends BlockSpec>(
+  spec: Spec,
+  onMounted: (
+    service: Spec extends BlockSpec<any, infer BlockService>
+      ? BlockService
+      : never
+  ) => (() => void) | void
+) {
+  const oldSetup = spec.setup;
+  spec.setup = (slots, disposableGroup) => {
+    oldSetup?.(slots, disposableGroup);
+    disposableGroup.add(
+      slots.mounted.on(({ service }) => {
+        const disposable = onMounted(service as any);
+        if (disposable) {
+          disposableGroup.add(disposable);
+        }
+      })
+    );
+  };
+  return spec;
+}
+
 /**
  * Patch the block specs with custom renderers.
  */
@@ -61,15 +92,15 @@ export function patchReferenceRenderer(
         spec.schema.model.flavour
       )
     ) {
-      // todo: remove these type assertions
-      spec.service = class extends (
-        (spec.service as typeof ParagraphBlockService)
-      ) {
-        override mounted() {
-          super.mounted();
-          this.referenceNodeConfig.setCustomContent(litRenderer);
+      spec = patchSpecService(
+        spec as BlockSpec<string, ParagraphBlockService>,
+        service => {
+          service.referenceNodeConfig.setCustomContent(litRenderer);
+          return () => {
+            service.referenceNodeConfig.setCustomContent(null);
+          };
         }
-      };
+      );
     }
 
     return spec;
@@ -82,14 +113,14 @@ export function patchNotificationService(
 ) {
   const rootSpec = specs.find(
     spec => spec.schema.model.flavour === 'affine:page'
-  );
+  ) as BlockSpec<string, RootService>;
 
   if (!rootSpec) {
     return specs;
   }
 
-  rootSpec.service = class extends (rootSpec.service as typeof RootService) {
-    override notificationService = {
+  patchSpecService(rootSpec, service => {
+    service.notificationService = {
       confirm: async ({
         title,
         message,
@@ -106,12 +137,7 @@ export function patchNotificationService(
         return new Promise<boolean>(resolve => {
           openConfirmModal({
             title,
-            description:
-              typeof message === 'string' ? (
-                message
-              ) : (
-                <TemplateWrapper template={message} />
-              ),
+            description: toReactNode(message),
             confirmButtonOptions: {
               children: confirmText,
               type: 'primary',
@@ -133,8 +159,34 @@ export function patchNotificationService(
       toast: (message: string, options: ToastOptions) => {
         return toast(message, options);
       },
-      notify: async () => {},
+      notify: notification => {
+        const accentToNotify = {
+          error: notify.error,
+          success: notify.success,
+          warning: notify.warning,
+          info: notify,
+        };
+
+        const fn = accentToNotify[notification.accent || 'info'];
+        if (!fn) {
+          throw new Error('Invalid notification accent');
+        }
+
+        const toastId = fn(
+          {
+            title: toReactNode(notification.title),
+            message: toReactNode(notification.message),
+          },
+          {
+            duration: notification.duration || 0,
+          }
+        );
+
+        notification.abort?.addEventListener('abort', () => {
+          notify.dismiss(toastId);
+        });
+      },
     };
-  };
+  });
   return specs;
 }
