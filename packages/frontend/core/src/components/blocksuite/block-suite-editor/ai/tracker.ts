@@ -1,9 +1,10 @@
 import { mixpanel } from '@affine/core/utils';
 import type { EditorHost } from '@blocksuite/block-std';
-import type { ElementModel } from '@blocksuite/blocks';
 import { AIProvider } from '@blocksuite/presets';
 import type { BlockModel } from '@blocksuite/store';
 import { lowerCase, omit } from 'lodash-es';
+
+type ElementModel = BlockSuite.SurfaceElementModelType;
 
 type AIActionEventName =
   | 'AI action invoked'
