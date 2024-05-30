@@ -160,7 +160,8 @@
     ],
     "ignore": [
       "**/__tests__/**",
-      "**/dist/**"
+      "**/dist/**",
+      "*.gen.*"
     ],
     "env": {
       "TS_NODE_TRANSPILE_ONLY": true,

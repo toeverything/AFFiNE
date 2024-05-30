@@ -1,10 +1,16 @@
 import { GraphQLError as BaseGraphQLError } from 'graphql';
 import { identity } from 'lodash-es';
 
+import type { ErrorDataUnion, ErrorNames } from './schema';
+
 interface KnownGraphQLErrorExtensions {
-  code: number;
-  status: string;
-  originalError?: unknown;
+  status: number;
+  code: string;
+  type: string;
+  name: ErrorNames;
+  message: string;
+  args?: any;
+
   stacktrace?: string;
 }
 
@@ -24,3 +30,14 @@ export function findGraphQLError(
     return undefined;
   }
 }
+
+type ToPascalCase<S extends string> = S extends `${infer A}_${infer B}`
+  ? `${Capitalize<Lowercase<A>>}${ToPascalCase<B>}`
+  : Capitalize<Lowercase<S>>;
+
+export type ErrorData = {
+  [K in ErrorNames]: Extract<
+    ErrorDataUnion,
+    { __typename?: `${ToPascalCase<K>}DataType` }
+  >;
+};

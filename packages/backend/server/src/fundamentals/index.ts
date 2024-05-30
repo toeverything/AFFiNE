@@ -21,8 +21,11 @@ export { MailService } from './mailer';
 export { CallCounter, CallTimer, metrics } from './metrics';
 export { type ILocker, Lock, Locker, MutexService } from './mutex';
 export {
+  GatewayErrorWrapper,
   getOptionalModuleMetadata,
   GlobalExceptionFilter,
+  mapAnyError,
+  mapSseError,
   OptionalModule,
 } from './nestjs';
 export type { PrismaTransaction } from './prisma';

@@ -11,7 +11,12 @@ import {
 import { Server, Socket } from 'socket.io';
 import { encodeStateAsUpdate, encodeStateVector } from 'yjs';
 
-import { CallTimer, Config, metrics } from '../../../fundamentals';
+import {
+  CallTimer,
+  Config,
+  GatewayErrorWrapper,
+  metrics,
+} from '../../../fundamentals';
 import { Auth, CurrentUser } from '../../auth';
 import { DocManager } from '../../doc';
 import { DocID } from '../../utils/doc';
@@ -22,47 +27,12 @@ import {
   DocNotFoundError,
   EventError,
   EventErrorCode,
-  InternalError,
   NotInWorkspaceError,
 } from './error';
 
-export const GatewayErrorWrapper = (): MethodDecorator => {
-  // @ts-expect-error allow
-  return (
-    _target,
-    _key,
-    desc: TypedPropertyDescriptor<(...args: any[]) => any>
-  ) => {
-    const originalMethod = desc.value;
-    if (!originalMethod) {
-      return desc;
-    }
-
-    desc.value = async function (...args: any[]) {
-      try {
-        return await originalMethod.apply(this, args);
-      } catch (e) {
-        if (e instanceof EventError) {
-          return {
-            error: e,
-          };
-        } else {
-          metrics.socketio.counter('unhandled_errors').add(1);
-          new Logger('EventsGateway').error(e, (e as Error).stack);
-          return {
-            error: new InternalError(e as Error),
-          };
-        }
-      }
-    };
-
-    return desc;
-  };
-};
-
 const SubscribeMessage = (event: string) =>
   applyDecorators(
-    GatewayErrorWrapper(),
+    GatewayErrorWrapper(event),
     CallTimer('socketio', 'event_duration', { event }),
     RawSubscribeMessage(event)
   );
