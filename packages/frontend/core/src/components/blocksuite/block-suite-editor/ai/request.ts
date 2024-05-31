@@ -255,3 +255,15 @@ export function toImage({
     },
   };
 }
+
+export function cleanupSessions({
+  workspaceId,
+  docId,
+  sessionIds,
+}: {
+  workspaceId: string;
+  docId: string;
+  sessionIds: string[];
+}) {
+  return client.cleanupSessions({ workspaceId, docId, sessionIds });
+}

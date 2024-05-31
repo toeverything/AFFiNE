@@ -11,6 +11,7 @@ import { getCurrentStore } from '@toeverything/infra';
 import { toggleGeneralAIOnboarding } from '../../../affine/ai-onboarding/apis';
 import type { PromptKey } from './prompt';
 import {
+  cleanupSessions,
   createChatSession,
   listHistories,
   textToText,
@@ -365,6 +366,13 @@ Could you make a new website based on these notes and send back just the html fi
     ): Promise<BlockSuitePresets.AIHistory[]> => {
       // @ts-expect-error - 'action' is missing in server impl
       return (await listHistories(workspaceId, docId)) ?? [];
+    },
+    cleanup: async (
+      workspaceId: string,
+      docId: string,
+      sessionIds: string[]
+    ) => {
+      return cleanupSessions({ workspaceId, docId, sessionIds });
     },
   });
 
