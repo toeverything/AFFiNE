@@ -61,6 +61,7 @@ export const MainContainer = forwardRef<
       data-transparent={false}
       data-client-border={clientBorder}
       data-side-bar-open={appSideBarOpen}
+      data-testid="main-container"
       ref={ref}
     >
       {children}

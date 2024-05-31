@@ -100,6 +100,7 @@ export const FavouriteDocSidebarNavItem = ({
       <MenuLinkItem
         {...listeners}
         data-testid={`favourite-page-${pageId}`}
+        data-favourite-page-item
         icon={icon}
         data-draggable={true}
         data-dragging={isDragging}

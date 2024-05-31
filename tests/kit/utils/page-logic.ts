@@ -45,11 +45,7 @@ export const createLinkedPage = async (page: Page, pageName?: string) => {
   await page.keyboard.type('@', { delay: 50 });
   const linkedPagePopover = page.locator('.linked-doc-popover');
   await expect(linkedPagePopover).toBeVisible();
-  if (pageName) {
-    await type(page, pageName);
-  } else {
-    pageName = 'Untitled';
-  }
+  await type(page, pageName || 'Untitled');
 
   await page.keyboard.press('ArrowUp');
   await page.keyboard.press('ArrowUp');

@@ -18,11 +18,11 @@ export const WorkbenchLink = forwardRef<
     (typeof to === 'string' ? to : `${to.pathname}${to.search}${to.hash}`);
   const handleClick = useCallback(
     (event: React.MouseEvent<HTMLAnchorElement>) => {
+      event.preventDefault();
+      event.stopPropagation();
       if (onClick?.(event)) {
         return;
       }
-      event.preventDefault();
-      event.stopPropagation();
 
       if (event.ctrlKey || event.metaKey) {
         if (appSettings.enableMultiView && environment.isDesktop) {

@@ -42,7 +42,7 @@ export const PeekViewManagerModal = () => {
 
   return (
     <PeekViewModalContainer
-      open={show}
+      open={show && !!preview}
       target={
         activePeekView?.target instanceof HTMLElement
           ? activePeekView.target

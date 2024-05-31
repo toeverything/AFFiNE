@@ -26,6 +26,7 @@ const HoverAnimateController = ({
     <StyledSwitchItem
       hide={hide}
       active={active}
+      data-active={active}
       trash={trash}
       onMouseEnter={() => {
         setStartAnimate(true);
