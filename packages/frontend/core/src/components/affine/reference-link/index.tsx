@@ -1,10 +1,12 @@
 import { useDocMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
 import { useJournalHelper } from '@affine/core/hooks/use-journal';
+import { PeekViewService } from '@affine/core/modules/peek-view';
 import { WorkbenchLink } from '@affine/core/modules/workbench';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { LinkedPageIcon, TodayIcon } from '@blocksuite/icons';
 import type { DocCollection } from '@blocksuite/store';
-import type { PropsWithChildren } from 'react';
+import { useService } from '@toeverything/infra';
+import { type PropsWithChildren, useCallback, useRef } from 'react';
 
 import * as styles from './styles.css';
 
@@ -64,8 +66,30 @@ export function AffinePageReference({
     t,
   });
 
+  const ref = useRef<HTMLAnchorElement>(null);
+
+  const peekView = useService(PeekViewService).peekView;
+
+  const onClick = useCallback(
+    (e: React.MouseEvent) => {
+      if (e.shiftKey && ref.current) {
+        e.preventDefault();
+        e.stopPropagation();
+        peekView.open(ref.current);
+        return true; // means this click is handled
+      }
+      return false;
+    },
+    [peekView]
+  );
+
   return (
-    <WorkbenchLink to={`/${pageId}`} className={styles.pageReferenceLink}>
+    <WorkbenchLink
+      ref={ref}
+      to={`/${pageId}`}
+      onClick={onClick}
+      className={styles.pageReferenceLink}
+    >
       {Wrapper ? <Wrapper>{el}</Wrapper> : el}
     </WorkbenchLink>
   );

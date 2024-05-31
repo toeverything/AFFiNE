@@ -3,7 +3,10 @@ import {
   parseDNDId,
 } from '@affine/core/hooks/affine/use-global-dnd-helper';
 import { useBlockSuitePageReferences } from '@affine/core/hooks/use-block-suite-page-references';
-import { WorkbenchService } from '@affine/core/modules/workbench';
+import {
+  WorkbenchLink,
+  WorkbenchService,
+} from '@affine/core/modules/workbench';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
 import { type AnimateLayoutChanges, useSortable } from '@dnd-kit/sortable';
@@ -102,7 +105,8 @@ export const FavouriteDocSidebarNavItem = ({
         data-dragging={isDragging}
         className={draggableMenuItemStyles.draggableMenuItem}
         active={linkActive}
-        to={`/workspace/${workspace.id}/${pageId}`}
+        to={`/${pageId}`}
+        linkComponent={WorkbenchLink}
         collapsed={collapsible ? collapsed : undefined}
         onCollapsedChange={setCollapsed}
         postfix={

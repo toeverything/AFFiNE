@@ -2,17 +2,14 @@ import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-h
 import { popupWindow } from '@affine/core/utils';
 import { useLiveData, useService } from '@toeverything/infra';
 import type { To } from 'history';
-import { useCallback } from 'react';
+import { forwardRef, useCallback } from 'react';
 
 import { WorkbenchService } from '../services/workbench';
 
-export const WorkbenchLink = ({
-  to,
-  onClick,
-  ...other
-}: React.PropsWithChildren<
-  { to: To } & React.HTMLProps<HTMLAnchorElement>
->) => {
+export const WorkbenchLink = forwardRef<
+  HTMLAnchorElement,
+  React.PropsWithChildren<{ to: To } & React.HTMLProps<HTMLAnchorElement>>
+>(function WorkbenchLink({ to, onClick, ...other }, ref) {
   const workbench = useService(WorkbenchService).workbench;
   const { appSettings } = useAppSettingHelper();
   const basename = useLiveData(workbench.basename$);
@@ -21,11 +18,11 @@ export const WorkbenchLink = ({
     (typeof to === 'string' ? to : `${to.pathname}${to.search}${to.hash}`);
   const handleClick = useCallback(
     (event: React.MouseEvent<HTMLAnchorElement>) => {
-      event.preventDefault();
-      event.stopPropagation();
       if (onClick?.(event)) {
         return;
       }
+      event.preventDefault();
+      event.stopPropagation();
 
       if (event.ctrlKey || event.metaKey) {
         if (appSettings.enableMultiView && environment.isDesktop) {
@@ -42,5 +39,5 @@ export const WorkbenchLink = ({
 
   // eslint suspicious runtime error
   // eslint-disable-next-line react/no-danger-with-children
-  return <a {...other} href={link} onClick={handleClick} />;
-};
+  return <a {...other} ref={ref} href={link} onClick={handleClick} />;
+});

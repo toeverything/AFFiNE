@@ -6,6 +6,9 @@ import {
   type ToastOptions,
   type useConfirmModal,
 } from '@affine/component';
+import type { PeekViewService } from '@affine/core/modules/peek-view';
+import type { ActivePeekView } from '@affine/core/modules/peek-view/entities/peek-view';
+import { DebugLogger } from '@affine/debug';
 import type { BlockSpec } from '@blocksuite/block-std';
 import type {
   AffineReference,
@@ -14,6 +17,8 @@ import type {
 } from '@blocksuite/blocks';
 import { LitElement, type TemplateResult } from 'lit';
 import React, { createElement, type ReactNode } from 'react';
+
+const logger = new DebugLogger('affine::spec-patchers');
 
 export type ReferenceReactRenderer = (
   reference: AffineReference
@@ -188,5 +193,29 @@ export function patchNotificationService(
       },
     };
   });
+  return specs;
+}
+
+export function patchPeekViewService(
+  specs: BlockSpec[],
+  service: PeekViewService
+) {
+  const rootSpec = specs.find(
+    spec => spec.schema.model.flavour === 'affine:page'
+  ) as BlockSpec<string, RootService>;
+
+  if (!rootSpec) {
+    return specs;
+  }
+
+  patchSpecService(rootSpec, pageService => {
+    pageService.peekViewService = {
+      peek: (target: ActivePeekView['target']) => {
+        logger.debug('center peek', target);
+        service.peekView.open(target);
+      },
+    };
+  });
+
   return specs;
 }

@@ -2,7 +2,6 @@ import { cssVar } from '@toeverything/theme';
 import { style } from '@vanilla-extract/css';
 export const linkItemRoot = style({
   color: 'inherit',
-  display: 'contents',
 });
 export const root = style({
   display: 'inline-flex',

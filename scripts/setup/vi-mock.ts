@@ -11,6 +11,20 @@ vi.mock('@blocksuite/presets', () => ({
   DocTitle: vi.fn(),
   EdgelessEditor: vi.fn(),
   PageEditor: vi.fn(),
+  AIProvider: {
+    slots: new Proxy(
+      {},
+      {
+        get: () => ({
+          on: vi.fn(),
+        }),
+      }
+    ),
+    provide: vi.fn(),
+  },
+  AIEdgelessRootBlockSpec: {},
+  AIParagraphBlockSpec: {},
+  AIPageRootBlockSpec: {},
 }));
 
 if (typeof window !== 'undefined' && HTMLCanvasElement) {

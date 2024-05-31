@@ -231,7 +231,7 @@ export const CollectionSidebarNavItem = ({
         <span>{collection.name}</span>
       </SidebarMenuLinkItem>
       <Collapsible.Content className={styles.collapsibleContent}>
-        <div style={{ marginLeft: 20, marginTop: -4 }}>
+        <div className={styles.docsListContainer}>
           {pagesToRender.map(page => {
             return (
               <Doc

@@ -337,7 +337,7 @@ export class LiveData<T = unknown>
   distinctUntilChanged(comparator?: (previous: T, current: T) => boolean) {
     return LiveData.from(
       this.pipe(distinctUntilChanged(comparator)),
-      null as any
+      null as T
     );
   }
 

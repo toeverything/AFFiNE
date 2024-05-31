@@ -1323,5 +1323,9 @@
   "com.affine.ai-onboarding.edgeless.get-started": "Get Started",
   "com.affine.ai-onboarding.edgeless.purchase": "Upgrade to Unlimited Usage",
   "will delete member": "will delete member",
-  "com.affine.keyboardShortcuts.copy-private-link": "Copy Private Link"
+  "com.affine.keyboardShortcuts.copy-private-link": "Copy Private Link",
+  "com.affine.peek-view-controls.close": "Close",
+  "com.affine.peek-view-controls.open-doc": "Open this doc",
+  "com.affine.peek-view-controls.open-doc-in-new-tab": "Open in new tab",
+  "com.affine.peek-view-controls.open-doc-in-split-view": "Open in split view"
 }

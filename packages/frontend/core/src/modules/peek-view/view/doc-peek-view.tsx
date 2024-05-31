@@ -1,0 +1,170 @@
+import { Scrollable } from '@affine/component';
+import { PageDetailSkeleton } from '@affine/component/page-detail-skeleton';
+import { AffineErrorBoundary } from '@affine/core/components/affine/affine-error-boundary';
+import { BlockSuiteEditor } from '@affine/core/components/blocksuite/block-suite-editor';
+import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
+import { PageNotFound } from '@affine/core/pages/404';
+import { Bound, type EdgelessRootService } from '@blocksuite/blocks';
+import { DisposableGroup } from '@blocksuite/global/utils';
+import { type AffineEditorContainer, AIProvider } from '@blocksuite/presets';
+import type { DocMode } from '@toeverything/infra';
+import { DocsService, FrameworkScope, useService } from '@toeverything/infra';
+import { forwardRef, useEffect, useState } from 'react';
+
+import { WorkbenchService } from '../../workbench';
+import { PeekViewService } from '../services/peek-view';
+import * as styles from './doc-peek-view.css';
+import { useDoc } from './utils';
+
+const DocPreview = forwardRef<
+  AffineEditorContainer,
+  { docId: string; blockId?: string; mode?: DocMode }
+>(function DocPreview({ docId, blockId, mode }, ref) {
+  const { doc, workspace, loading } = useDoc(docId);
+  const { jumpToTag } = useNavigateHelper();
+  const workbench = useService(WorkbenchService).workbench;
+  const peekView = useService(PeekViewService).peekView;
+  const [editor, setEditor] = useState<AffineEditorContainer | null>(null);
+
+  const onRef = (editor: AffineEditorContainer) => {
+    if (typeof ref === 'function') {
+      ref(editor);
+    } else if (ref) {
+      ref.current = editor;
+    }
+    setEditor(editor);
+  };
+
+  const docs = useService(DocsService);
+  const [resolvedMode, setResolvedMode] = useState<DocMode | undefined>(mode);
+
+  useEffect(() => {
+    if (!mode || !resolvedMode) {
+      setResolvedMode(docs.list.doc$(docId).value?.mode$.value || 'page');
+    }
+  }, [docId, docs.list, resolvedMode, mode]);
+
+  useEffect(() => {
+    const disposable = AIProvider.slots.requestContinueInChat.on(() => {
+      if (doc) {
+        workbench.openPage(doc.id);
+        peekView.close();
+        // chat panel open is already handled in <DetailPageImpl />
+      }
+    });
+
+    return () => {
+      disposable.dispose();
+    };
+  }, [doc, peekView, workbench, workspace.id]);
+
+  useEffect(() => {
+    const disposableGroup = new DisposableGroup();
+    if (editor) {
+      editor.updateComplete
+        .then(() => {
+          const rootService = editor.host.std.spec.getService('affine:page');
+          // doc change event inside peek view should be handled by peek view
+          disposableGroup.add(
+            rootService.slots.docLinkClicked.on(({ docId, blockId }) => {
+              peekView.open({ docId, blockId });
+            })
+          );
+          // todo: no tag peek view yet
+          disposableGroup.add(
+            rootService.slots.tagClicked.on(({ tagId }) => {
+              jumpToTag(workspace.id, tagId);
+              peekView.close();
+            })
+          );
+        })
+        .catch(console.error);
+    }
+    return () => {
+      disposableGroup.dispose();
+    };
+  }, [editor, jumpToTag, peekView, workspace.id]);
+
+  // if sync engine has been synced and the page is null, show 404 page.
+  if (!doc || !resolvedMode) {
+    return loading || !resolvedMode ? (
+      <PageDetailSkeleton key="current-page-is-null" />
+    ) : (
+      <PageNotFound noPermission />
+    );
+  }
+
+  return (
+    <AffineErrorBoundary>
+      <Scrollable.Root>
+        <Scrollable.Viewport className="affine-page-viewport">
+          <FrameworkScope scope={doc.scope}>
+            <BlockSuiteEditor
+              ref={onRef}
+              className={styles.editor}
+              mode={resolvedMode}
+              defaultSelectedBlockId={blockId}
+              page={doc.blockSuiteDoc}
+            />
+          </FrameworkScope>
+        </Scrollable.Viewport>
+        <Scrollable.Scrollbar />
+      </Scrollable.Root>
+    </AffineErrorBoundary>
+  );
+});
+
+export const DocPeekView = ({
+  docId,
+  blockId,
+  mode,
+}: {
+  docId: string;
+  blockId?: string;
+  mode?: DocMode;
+}) => {
+  return <DocPreview mode={mode} docId={docId} blockId={blockId} />;
+};
+
+export const SurfaceRefPeekView = ({
+  docId,
+  xywh,
+}: {
+  docId: string;
+  xywh: `[${number},${number},${number},${number}]`;
+}) => {
+  const [editorRef, setEditorRef] = useState<AffineEditorContainer | null>(
+    null
+  );
+
+  useEffect(() => {
+    let mounted = true;
+    if (editorRef) {
+      editorRef.host.updateComplete
+        .then(() => {
+          if (mounted) {
+            const viewport = {
+              xywh: xywh,
+              padding: [60, 20, 20, 20] as [number, number, number, number],
+            };
+            const rootService =
+              editorRef.host.std.spec.getService<EdgelessRootService>(
+                'affine:page'
+              );
+            rootService.viewport.setViewportByBound(
+              Bound.deserialize(viewport.xywh),
+              viewport.padding
+            );
+          }
+        })
+        .catch(e => {
+          console.error(e);
+        });
+    }
+    return () => {
+      mounted = false;
+    };
+  }, [editorRef, xywh]);
+
+  return <DocPreview ref={setEditorRef} docId={docId} mode={'edgeless'} />;
+};

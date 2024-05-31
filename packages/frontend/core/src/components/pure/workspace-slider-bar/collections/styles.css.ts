@@ -150,3 +150,9 @@ export const emptyCollectionNewButton = style({
   height: '28px',
   fontSize: cssVar('fontXs'),
 });
+export const docsListContainer = style({
+  marginLeft: 20,
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 4,
+});

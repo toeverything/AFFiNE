@@ -19,7 +19,7 @@ export interface MenuItemProps extends React.HTMLAttributes<HTMLDivElement> {
 
 export interface MenuLinkItemProps extends MenuItemProps {
   to: To;
-  linkComponent?: React.ComponentType<{ to: To; className: string }>;
+  linkComponent?: React.ComponentType<{ to: To; className?: string }>;
 }
 
 const stopPropagation: React.MouseEventHandler = e => {

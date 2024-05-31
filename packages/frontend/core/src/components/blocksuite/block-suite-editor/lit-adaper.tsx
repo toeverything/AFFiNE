@@ -4,6 +4,7 @@ import {
   useLitPortalFactory,
 } from '@affine/component';
 import { useJournalInfoHelper } from '@affine/core/hooks/use-journal';
+import { PeekViewService } from '@affine/core/modules/peek-view';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import type { BlockSpec } from '@blocksuite/block-std';
 import {
@@ -30,6 +31,7 @@ import { AffinePageReference } from '../../affine/reference-link';
 import { BlocksuiteEditorJournalDocTitle } from './journal-doc-title';
 import {
   patchNotificationService,
+  patchPeekViewService,
   patchReferenceRenderer,
   type ReferenceReactRenderer,
 } from './specs/custom/spec-patchers';
@@ -66,6 +68,7 @@ interface BlocksuiteEditorProps {
 
 const usePatchSpecs = (page: Doc, specs: BlockSpec[]) => {
   const [reactToLit, portals] = useLitPortalFactory();
+  const peekViewService = useService(PeekViewService);
   const referenceRenderer: ReferenceReactRenderer = useMemo(() => {
     return function customReference(reference) {
       const pageId = reference.delta.attributes?.reference?.pageId;
@@ -83,8 +86,9 @@ const usePatchSpecs = (page: Doc, specs: BlockSpec[]) => {
       patchReferenceRenderer(patched, reactToLit, referenceRenderer),
       confirmModal
     );
+    patched = patchPeekViewService(patched, peekViewService);
     return patched;
-  }, [confirmModal, reactToLit, referenceRenderer, specs]);
+  }, [confirmModal, peekViewService, reactToLit, referenceRenderer, specs]);
 
   return [
     patchedSpecs,

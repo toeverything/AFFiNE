@@ -5,6 +5,7 @@ import { configureCloudModule } from './cloud';
 import { configureCollectionModule } from './collection';
 import { configureFindInPageModule } from './find-in-page';
 import { configureNavigationModule } from './navigation';
+import { configurePeekViewModule } from './peek-view';
 import { configurePermissionsModule } from './permissions';
 import { configureWorkspacePropertiesModule } from './properties';
 import { configureRightSidebarModule } from './right-sidebar';
@@ -28,6 +29,7 @@ export function configureCommonModules(framework: Framework) {
   configureShareDocsModule(framework);
   configureTelemetryModule(framework);
   configureFindInPageModule(framework);
+  configurePeekViewModule(framework);
 }
 
 export function configureImpls(framework: Framework) {

@@ -18,6 +18,7 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   DeleteIcon,
   DeletePermanentlyIcon,
+  DualLinkIcon,
   DuplicateIcon,
   EditIcon,
   FavoritedIcon,
@@ -25,7 +26,6 @@ import {
   FilterIcon,
   FilterMinusIcon,
   MoreVerticalIcon,
-  OpenInNewIcon,
   PlusIcon,
   ResetIcon,
   SplitViewIcon,
@@ -170,7 +170,7 @@ export const PageOperationCell = ({
             style={{ marginBottom: 4 }}
             preFix={
               <MenuIcon>
-                <OpenInNewIcon />
+                <DualLinkIcon />
               </MenuIcon>
             }
           >

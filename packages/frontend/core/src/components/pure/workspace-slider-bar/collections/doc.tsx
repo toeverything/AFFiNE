@@ -1,19 +1,21 @@
 import { useBlockSuitePageReferences } from '@affine/core/hooks/use-block-suite-page-references';
-import { WorkbenchService } from '@affine/core/modules/workbench';
+import {
+  WorkbenchLink,
+  WorkbenchService,
+} from '@affine/core/modules/workbench';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
 import type { DocCollection, DocMeta } from '@blocksuite/store';
 import { useDraggable } from '@dnd-kit/core';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import { DocsService, useLiveData, useService } from '@toeverything/infra';
-import React, { useCallback, useMemo } from 'react';
+import React, { useMemo } from 'react';
 
 import {
   type DNDIdentifier,
   getDNDId,
 } from '../../../../hooks/affine/use-global-dnd-helper';
-import { useNavigateHelper } from '../../../../hooks/use-navigate-helper';
-import { MenuItem as CollectionItem } from '../../../app-sidebar';
+import { MenuLinkItem } from '../../../app-sidebar';
 import { DragMenuItemOverlay } from '../components/drag-menu-item-overlay';
 import { PostfixItem } from '../components/postfix-item';
 import { ReferencePage } from '../components/reference-page';
@@ -50,11 +52,6 @@ export const Doc = ({
     return docMode === 'edgeless' ? <EdgelessIcon /> : <PageIcon />;
   }, [docMode]);
 
-  const { jumpToPage } = useNavigateHelper();
-  const clickDoc = useCallback(() => {
-    jumpToPage(docCollection.id, doc.id);
-  }, [jumpToPage, doc.id, docCollection.id]);
-
   const references = useBlockSuitePageReferences(docCollection, docId);
   const referencesToRender = references.filter(
     id => allPageMeta[id] && !allPageMeta[id]?.trash
@@ -78,11 +75,12 @@ export const Doc = ({
       data-draggable={true}
       data-dragging={isDragging}
     >
-      <CollectionItem
+      <MenuLinkItem
         data-testid="collection-page"
         data-type="collection-list-item"
         icon={icon}
-        onClick={clickDoc}
+        to={`/${docId}`}
+        linkComponent={WorkbenchLink}
         className={styles.title}
         active={active}
         collapsed={referencesToRender.length > 0 ? collapsed : undefined}
@@ -101,7 +99,7 @@ export const Doc = ({
         {...listeners}
       >
         {doc.title || t['Untitled']()}
-      </CollectionItem>
+      </MenuLinkItem>
       <Collapsible.Content className={styles.collapsibleContent}>
         {referencesToRender.map(id => {
           return (

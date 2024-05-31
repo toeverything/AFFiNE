@@ -1,5 +1,8 @@
 import { useBlockSuitePageReferences } from '@affine/core/hooks/use-block-suite-page-references';
-import { WorkbenchService } from '@affine/core/modules/workbench';
+import {
+  WorkbenchLink,
+  WorkbenchService,
+} from '@affine/core/modules/workbench';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
 import type { DocCollection, DocMeta } from '@blocksuite/store';
@@ -60,10 +63,11 @@ export const ReferencePage = ({
         data-type="reference-page"
         data-testid={`reference-page-${pageId}`}
         active={active}
-        to={`/workspace/${docCollection.id}/${pageId}`}
+        to={`/${pageId}`}
         icon={icon}
         collapsed={collapsible ? collapsed : undefined}
         onCollapsedChange={setCollapsed}
+        linkComponent={WorkbenchLink}
         postfix={
           <PostfixItem
             docCollection={docCollection}

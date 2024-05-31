@@ -24,6 +24,7 @@ import { PaymentDisableModal } from '../components/affine/payment-disable';
 import { useAsyncCallback } from '../hooks/affine-async-hooks';
 import { useNavigateHelper } from '../hooks/use-navigate-helper';
 import { AuthService } from '../modules/cloud/services/auth';
+import { PeekViewManagerModal } from '../modules/peek-view';
 import { WorkspaceSubPath } from '../shared';
 
 const SettingModal = lazy(() =>
@@ -218,6 +219,7 @@ export function CurrentWorkspaceModals() {
         <CloudQuotaModal />
       )}
       <AiLoginRequiredModal />
+      <PeekViewManagerModal />
       {environment.isDesktop && <FindInPageModal />}
     </>
   );

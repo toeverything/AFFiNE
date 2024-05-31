@@ -84,7 +84,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
 
   const doc = useService(DocService).doc;
   const docRecordList = useService(DocsService).list;
-  const { openPage, jumpToTag } = useNavigateHelper();
+  const { openPage, jumpToPageBlock, jumpToTag } = useNavigateHelper();
   const [editor, setEditor] = useState<AffineEditorContainer | null>(null);
   const workspace = useService(WorkspaceService).workspace;
   const globalContext = useService(GlobalContextService).globalContext;
@@ -199,10 +199,11 @@ const DetailPageImpl = memo(function DetailPageImpl() {
       };
 
       doc.setMode(mode);
-      // fixme: it seems pageLinkClicked is not triggered sometimes?
       disposable.add(
-        pageService.slots.docLinkClicked.on(({ docId }) => {
-          return openPage(docCollection.id, docId);
+        pageService.slots.docLinkClicked.on(({ docId, blockId }) => {
+          return blockId
+            ? jumpToPageBlock(docCollection.id, docId, blockId)
+            : openPage(docCollection.id, docId);
         })
       );
       disposable.add(
@@ -226,8 +227,9 @@ const DetailPageImpl = memo(function DetailPageImpl() {
       doc,
       mode,
       docRecordList,
-      openPage,
+      jumpToPageBlock,
       docCollection.id,
+      openPage,
       jumpToTag,
       workspace.id,
     ]
