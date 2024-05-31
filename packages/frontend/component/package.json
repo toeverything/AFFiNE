@@ -75,12 +75,12 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
-    "@blocksuite/block-std": "0.15.0-canary-202405310218-5d27a81",
-    "@blocksuite/blocks": "0.15.0-canary-202405310218-5d27a81",
-    "@blocksuite/global": "0.15.0-canary-202405310218-5d27a81",
+    "@blocksuite/block-std": "0.15.0-canary-202405310802-eab4a2a",
+    "@blocksuite/blocks": "0.15.0-canary-202405310802-eab4a2a",
+    "@blocksuite/global": "0.15.0-canary-202405310802-eab4a2a",
     "@blocksuite/icons": "2.1.52",
-    "@blocksuite/presets": "0.15.0-canary-202405310218-5d27a81",
-    "@blocksuite/store": "0.15.0-canary-202405310218-5d27a81",
+    "@blocksuite/presets": "0.15.0-canary-202405310802-eab4a2a",
+    "@blocksuite/store": "0.15.0-canary-202405310802-eab4a2a",
     "@storybook/addon-actions": "^7.6.17",
     "@storybook/addon-essentials": "^7.6.17",
     "@storybook/addon-interactions": "^7.6.17",
