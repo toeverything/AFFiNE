@@ -124,13 +124,18 @@ export class PeekViewEntity extends Entity {
     .map(show => show && this._active$.value !== null)
     .distinctUntilChanged();
 
+  // return true if the peek view will be handled
   open = (target: ActivePeekView['target']) => {
+    if (!runtimeConfig.enablePeekView) {
+      return false;
+    }
     const resolvedInfo = resolvePeekInfoFromPeekTarget(target);
     if (!resolvedInfo) {
-      return;
+      return false;
     }
     this._active$.next({ target, info: resolvedInfo });
     this._show$.next(true);
+    return true;
   };
 
   close = () => {

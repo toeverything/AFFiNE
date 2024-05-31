@@ -86,7 +86,7 @@ const usePatchSpecs = (page: Doc, specs: BlockSpec[]) => {
       patchReferenceRenderer(patched, reactToLit, referenceRenderer),
       confirmModal
     );
-    if (!page.readonly) {
+    if (!page.readonly && runtimeConfig.enablePeekView) {
       patched = patchPeekViewService(patched, peekViewService);
     }
     return patched;

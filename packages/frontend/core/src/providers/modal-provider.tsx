@@ -219,7 +219,7 @@ export function CurrentWorkspaceModals() {
         <CloudQuotaModal />
       )}
       <AiLoginRequiredModal />
-      <PeekViewManagerModal />
+      {runtimeConfig.enablePeekView && <PeekViewManagerModal />}
       {environment.isDesktop && <FindInPageModal />}
     </>
   );

@@ -24,6 +24,7 @@ export const runtimeFlagsSchema = z.object({
   enablePayment: z.boolean(),
   enablePageHistory: z.boolean(),
   enableExperimentalFeature: z.boolean(),
+  enablePeekView: z.boolean(),
   allowLocalWorkspace: z.boolean(),
   // this is for the electron app
   serverUrlPrefix: z.string(),
