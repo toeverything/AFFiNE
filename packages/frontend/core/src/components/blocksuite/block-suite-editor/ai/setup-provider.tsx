@@ -8,6 +8,7 @@ import { assertExists } from '@blocksuite/global/utils';
 import { AIProvider } from '@blocksuite/presets';
 import { getCurrentStore } from '@toeverything/infra';
 
+import { toggleGeneralAIOnboarding } from '../../../affine/ai-onboarding/apis';
 import type { PromptKey } from './prompt';
 import {
   createChatSession,
@@ -389,6 +390,8 @@ Could you make a new website based on these notes and send back just the html fi
       });
     },
   });
+
+  AIProvider.provide('onboarding', toggleGeneralAIOnboarding);
 
   AIProvider.slots.requestUpgradePlan.on(() => {
     getCurrentStore().set(openSettingModalAtom, {
