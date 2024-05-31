@@ -98,8 +98,12 @@ export const VirtualizedCollectionList = ({
   }, []);
 
   const handleDelete = useCallback(() => {
-    return collectionService.deleteCollection(info, ...selectedCollectionIds);
-  }, [collectionService, info, selectedCollectionIds]);
+    if (selectedCollectionIds.length === 0) {
+      return;
+    }
+    collectionService.deleteCollection(info, ...selectedCollectionIds);
+    hideFloatingToolbar();
+  }, [collectionService, hideFloatingToolbar, info, selectedCollectionIds]);
 
   return (
     <>
@@ -123,7 +127,7 @@ export const VirtualizedCollectionList = ({
         headerRenderer={collectionHeaderRenderer}
       />
       <ListFloatingToolbar
-        open={showFloatingToolbar && selectedCollectionIds.length > 0}
+        open={showFloatingToolbar}
         content={
           <Trans
             i18nKey="com.affine.collection.toolbar.selected"

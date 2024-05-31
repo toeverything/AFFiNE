@@ -69,6 +69,9 @@ export const VirtualizedTagList = ({
   }, []);
 
   const handleDelete = useCallback(() => {
+    if (selectedTagIds.length === 0) {
+      return;
+    }
     onTagDelete(selectedTagIds);
     hideFloatingToolbar();
     return;
@@ -97,7 +100,7 @@ export const VirtualizedTagList = ({
         headerRenderer={tagHeaderRenderer}
       />
       <ListFloatingToolbar
-        open={showFloatingToolbar && selectedTagIds.length > 0}
+        open={showFloatingToolbar}
         content={
           <Trans
             i18nKey="com.affine.tag.toolbar.selected"

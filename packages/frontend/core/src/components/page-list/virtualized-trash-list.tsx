@@ -67,6 +67,9 @@ export const VirtualizedTrashList = () => {
   }, [filteredSelectedPageIds, hideFloatingToolbar, restoreFromTrash, t]);
 
   const onConfirmPermanentlyDelete = useCallback(() => {
+    if (filteredSelectedPageIds.length === 0) {
+      return;
+    }
     openConfirmModal({
       title: `${t['com.affine.trashOperation.deletePermanently']()}?`,
       description: t['com.affine.trashOperation.deleteDescription'](),
@@ -77,7 +80,7 @@ export const VirtualizedTrashList = () => {
       },
       onConfirm: handleMultiDelete,
     });
-  }, [handleMultiDelete, openConfirmModal, t]);
+  }, [filteredSelectedPageIds.length, handleMultiDelete, openConfirmModal, t]);
 
   const pageOperationsRenderer = useCallback(
     (item: ListItem) => {
@@ -129,7 +132,7 @@ export const VirtualizedTrashList = () => {
         onSelectedIdsChange={setSelectedPageIds}
       />
       <ListFloatingToolbar
-        open={showFloatingToolbar && filteredSelectedPageIds.length > 0}
+        open={showFloatingToolbar}
         onDelete={onConfirmPermanentlyDelete}
         onClose={hideFloatingToolbar}
         onRestore={handleMultiRestore}

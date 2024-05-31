@@ -132,6 +132,9 @@ export const VirtualizedPageList = ({
   const { setTrashModal } = useTrashModalHelper(currentWorkspace.docCollection);
 
   const handleMultiDelete = useCallback(() => {
+    if (filteredSelectedPageIds.length === 0) {
+      return;
+    }
     const pageNameMapping = Object.fromEntries(
       pageMetas.map(meta => [meta.id, meta.title])
     );
@@ -171,7 +174,7 @@ export const VirtualizedPageList = ({
         headerRenderer={pageHeaderRenderer}
       />
       <ListFloatingToolbar
-        open={showFloatingToolbar && filteredSelectedPageIds.length > 0}
+        open={showFloatingToolbar}
         onDelete={handleMultiDelete}
         onClose={hideFloatingToolbar}
         content={
