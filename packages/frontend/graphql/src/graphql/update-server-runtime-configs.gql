@@ -1,0 +1,6 @@
+mutation updateServerRuntimeConfigs($updates: JSONObject!) {
+  updateRuntimeConfigs(updates: $updates) {
+    key
+    value
+  }
+}

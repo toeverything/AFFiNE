@@ -1,0 +1,11 @@
+query getServerRuntimeConfig {
+  serverRuntimeConfig {
+    id
+    module
+    key
+    description
+    value
+    type
+    updatedAt
+  }
+}

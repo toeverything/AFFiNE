@@ -385,6 +385,25 @@ query oauthProviders {
 }`,
 };
 
+export const getServerRuntimeConfigQuery = {
+  id: 'getServerRuntimeConfigQuery' as const,
+  operationName: 'getServerRuntimeConfig',
+  definitionName: 'serverRuntimeConfig',
+  containsFile: false,
+  query: `
+query getServerRuntimeConfig {
+  serverRuntimeConfig {
+    id
+    module
+    key
+    description
+    value
+    type
+    updatedAt
+  }
+}`,
+};
+
 export const getUserFeaturesQuery = {
   id: 'getUserFeaturesQuery' as const,
   operationName: 'getUserFeatures',
@@ -814,6 +833,20 @@ query subscription {
       nextBillAt
       canceledAt
     }
+  }
+}`,
+};
+
+export const updateServerRuntimeConfigsMutation = {
+  id: 'updateServerRuntimeConfigsMutation' as const,
+  operationName: 'updateServerRuntimeConfigs',
+  definitionName: 'updateRuntimeConfigs',
+  containsFile: false,
+  query: `
+mutation updateServerRuntimeConfigs($updates: JSONObject!) {
+  updateRuntimeConfigs(updates: $updates) {
+    key
+    value
   }
 }`,
 };

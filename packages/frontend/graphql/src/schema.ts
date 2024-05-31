@@ -533,6 +533,24 @@ export type OauthProvidersQuery = {
   };
 };
 
+export type GetServerRuntimeConfigQueryVariables = Exact<{
+  [key: string]: never;
+}>;
+
+export type GetServerRuntimeConfigQuery = {
+  __typename?: 'Query';
+  serverRuntimeConfig: Array<{
+    __typename?: 'ServerRuntimeConfigType';
+    id: string;
+    module: string;
+    key: string;
+    description: string;
+    value: Record<string, string>;
+    type: RuntimeConfigType;
+    updatedAt: string;
+  }>;
+};
+
 export type GetUserFeaturesQueryVariables = Exact<{ [key: string]: never }>;
 
 export type GetUserFeaturesQuery = {
@@ -916,6 +934,19 @@ export type SubscriptionQuery = {
   } | null;
 };
 
+export type UpdateServerRuntimeConfigsMutationVariables = Exact<{
+  updates: Scalars['JSONObject']['input'];
+}>;
+
+export type UpdateServerRuntimeConfigsMutation = {
+  __typename?: 'Mutation';
+  updateRuntimeConfigs: Array<{
+    __typename?: 'ServerRuntimeConfigType';
+    key: string;
+    value: Record<string, string>;
+  }>;
+};
+
 export type UpdateSubscriptionMutationVariables = Exact<{
   idempotencyKey: Scalars['String']['input'];
   plan?: InputMaybe<SubscriptionPlan>;
@@ -1138,6 +1169,11 @@ export type Queries =
       name: 'oauthProvidersQuery';
       variables: OauthProvidersQueryVariables;
       response: OauthProvidersQuery;
+    }
+  | {
+      name: 'getServerRuntimeConfigQuery';
+      variables: GetServerRuntimeConfigQueryVariables;
+      response: GetServerRuntimeConfigQuery;
     }
   | {
       name: 'getUserFeaturesQuery';
@@ -1370,6 +1406,11 @@ export type Mutations =
       name: 'setWorkspacePublicByIdMutation';
       variables: SetWorkspacePublicByIdMutationVariables;
       response: SetWorkspacePublicByIdMutation;
+    }
+  | {
+      name: 'updateServerRuntimeConfigsMutation';
+      variables: UpdateServerRuntimeConfigsMutationVariables;
+      response: UpdateServerRuntimeConfigsMutation;
     }
   | {
       name: 'updateSubscriptionMutation';
