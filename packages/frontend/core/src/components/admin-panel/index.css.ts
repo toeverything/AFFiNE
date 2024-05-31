@@ -104,7 +104,7 @@ export const navText = style({
 });
 
 export const settingItem = style({
-  maxWidth: '800px',
+  maxWidth: '960px',
   minHeight: '100px',
   display: 'flex',
   gap: 8,
@@ -134,7 +134,17 @@ export const settingItemTitle = style({
   fontWeight: 'bold',
   wordBreak: 'break-all',
   wordWrap: 'break-word',
-  marginBottom: 8,
+  marginBottom: 6,
+});
+
+export const settingItemId = style({
+  fontSize: cssVar('fontXs'),
+  color: cssVar('textSecondaryColor'),
+  borderRadius: 4,
+  borderColor: cssVar('borderColor'),
+  backgroundColor: cssVar('backgroundSecondaryColor'),
+  padding: '2px 4px',
+  wordBreak: 'keep-all',
 });
 
 export const settingItemDescription = style({
@@ -154,4 +164,16 @@ export const changedValues = style({
   overflow: 'hidden',
   color: cssVar('textPrimaryColor'),
   fontSize: cssVar('fontSm'),
+});
+
+export const expiredValue = style({
+  color: cssVar('textHighlightForegroundRed'),
+  background: cssVar('textHighlightRed'),
+  textDecoration: 'line-through',
+  marginRight: 2,
+});
+
+export const newValue = style({
+  color: cssVar('textHighlightForegroundGreen'),
+  background: cssVar('textHighlightGreen'),
 });

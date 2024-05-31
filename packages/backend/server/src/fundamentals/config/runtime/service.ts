@@ -18,7 +18,13 @@ function validateConfigType<K extends keyof FlattenedAppRuntimeConfig>(
   key: K,
   value: any
 ) {
-  const want = defaultRuntimeConfig[key].type;
+  const config = defaultRuntimeConfig[key];
+
+  if (!config) {
+    throw new BadRequestException(`Unknown runtime config key '${key}'`);
+  }
+
+  const want = config.type;
   const get = runtimeConfigType(value);
   if (get !== want) {
     throw new BadRequestException(

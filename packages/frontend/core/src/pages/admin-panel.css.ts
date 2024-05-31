@@ -44,7 +44,7 @@ export const moduleContainer = style({
   display: 'flex',
   flexDirection: 'column',
   padding: '16px',
-  maxWidth: '800px',
+  maxWidth: '960px',
   margin: 'auto',
   gap: 16,
 });

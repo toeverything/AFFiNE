@@ -107,9 +107,7 @@ export const AdminPanel = () => {
                       >
                         <div className={styles.module}>{moduleName}</div>
                         {configs?.map(config => {
-                          const { id, key, type, description, updatedAt } =
-                            config;
-                          const title = `${key} (${id})`;
+                          const { id, type, description, updatedAt } = config;
                           const isValueEqual = isEqual(
                             config.value,
                             configValues[id]
@@ -121,8 +119,7 @@ export const AdminPanel = () => {
                           return (
                             <RuntimeSettingRow
                               key={id}
-                              id={key}
-                              title={title}
+                              id={id}
                               description={description}
                               lastUpdatedTime={updatedAt}
                               operation={renderInput(

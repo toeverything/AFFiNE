@@ -4,11 +4,9 @@ import { ArrowRightBigIcon, Logo1Icon } from '@blocksuite/icons';
 import { useCallback } from 'react';
 
 import * as styles from './index.css';
-import { formatValue } from './utils';
 
 export type ModifiedValues = {
   id: string;
-  key: string;
   expiredValue: any;
   newValue: any;
 };
@@ -46,20 +44,27 @@ export const AdminPanelHeader = ({
                 type: 'primary',
               },
               onConfirm: onConfirm,
-              children: (
-                <div className={styles.changedValues}>
-                  {modifiedValues.length > 0
-                    ? modifiedValues.map(
-                        ({ id, key, expiredValue, newValue }) => (
-                          <div key={id}>
-                            {key}: {formatValue(expiredValue)} =&gt;{' '}
-                            {formatValue(newValue)}
-                          </div>
-                        )
-                      )
-                    : 'There is no change.'}
-                </div>
-              ),
+              children:
+                modifiedValues.length > 0 ? (
+                  <pre className={styles.changedValues}>
+                    <p>{'{'}</p>
+                    {modifiedValues.map(({ id, expiredValue, newValue }) => (
+                      <p key={id}>
+                        {'  '} {id}:{' '}
+                        <span className={styles.expiredValue}>
+                          {JSON.stringify(expiredValue)}
+                        </span>
+                        <span className={styles.newValue}>
+                          {JSON.stringify(newValue)}
+                        </span>
+                        ,
+                      </p>
+                    ))}
+                    <p>{'}'}</p>
+                  </pre>
+                ) : (
+                  'There is no change.'
+                ),
             });
           }}
         >
