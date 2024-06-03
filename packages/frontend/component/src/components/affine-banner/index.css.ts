@@ -39,7 +39,8 @@ export const tipsContainer = style({
   justifyContent: 'space-between',
   alignItems: 'center',
   padding: '12px 16px',
-  position: 'sticky',
+  position: 'absolute',
+  zIndex: 1,
   gap: '16px',
   containerType: 'inline-size',
   '@media': {

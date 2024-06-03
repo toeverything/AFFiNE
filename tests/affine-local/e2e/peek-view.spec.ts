@@ -121,6 +121,9 @@ test('can open peek view for embedded frames', async ({ page }) => {
   // enter F to create a frame
   await page.keyboard.press('f');
 
+  // close affine-banner
+  await page.locator('[data-testid=local-demo-tips-close-button]').click();
+
   // insert the frame to page
   await page
     .locator('edgeless-change-frame-button:has-text("Insert into Page")')
