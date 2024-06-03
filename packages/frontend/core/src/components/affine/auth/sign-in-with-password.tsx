@@ -91,6 +91,7 @@ export const SignInWithPassword: FC<AuthPanelProps> = ({
           value={email}
         />
         <AuthInput
+          autoFocus
           data-testid="password-input"
           label={t['com.affine.auth.password']()}
           value={password}
