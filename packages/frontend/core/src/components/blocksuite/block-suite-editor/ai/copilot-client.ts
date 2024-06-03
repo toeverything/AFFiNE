@@ -1,5 +1,6 @@
 import { showAILoginRequiredAtom } from '@affine/core/components/affine/auth/ai-login-required';
 import {
+  cleanupCopilotSessionMutation,
   createCopilotMessageMutation,
   createCopilotSessionMutation,
   fetcher as defaultFetcher,
@@ -125,6 +126,20 @@ export class CopilotClient {
     });
 
     return res.currentUser?.copilot?.histories;
+  }
+
+  async cleanupSessions(input: {
+    workspaceId: string;
+    docId: string;
+    sessionIds: string[];
+  }) {
+    const res = await fetcher({
+      query: cleanupCopilotSessionMutation,
+      variables: {
+        input,
+      },
+    });
+    return res.cleanupCopilotSession;
   }
 
   async chatText({
