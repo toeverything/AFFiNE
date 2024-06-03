@@ -108,6 +108,12 @@ input CreateCopilotPromptInput {
   name: String!
 }
 
+input CreateUserInput {
+  email: String!
+  name: String
+  password: String
+}
+
 type CredentialsRequirementType {
   password: PasswordLimitsType!
 }
@@ -233,6 +239,11 @@ type LimitedUserType {
   hasPassword: Boolean
 }
 
+input ListUserInput {
+  first: Int = 20
+  skip: Int = 0
+}
+
 type Mutation {
   acceptInviteById(inviteId: String!, sendAcceptMail: Boolean, workspaceId: String!): Boolean!
   addAdminister(email: String!): Boolean!
@@ -260,10 +271,16 @@ type Mutation {
   """Create a stripe customer portal to manage payment methods"""
   createCustomerPortal: String!
 
+  """Create a new user"""
+  createUser(input: CreateUserInput!): UserType!
+
   """Create a new workspace"""
   createWorkspace(init: Upload): WorkspaceType!
   deleteAccount: DeleteAccount!
   deleteBlob(hash: String!, workspaceId: String!): Boolean!
+
+  """Delete a user account"""
+  deleteUser(id: String!): DeleteAccount!
   deleteWorkspace(id: String!): Boolean!
   invite(email: String!, permission: Permission!, sendInviteMail: Boolean, workspaceId: String!): String!
   leaveWorkspace(sendLeaveMail: Boolean, workspaceId: String!, workspaceName: String!): Boolean!
@@ -361,6 +378,12 @@ type Query {
 
   """Get user by email"""
   user(email: String!): UserOrLimitedUser
+
+  """Get user by id"""
+  userById(id: String!): UserType!
+
+  """List registered users"""
+  users(filter: ListUserInput!): [UserType!]!
 
   """Get workspace by id"""
   workspace(id: String!): WorkspaceType!

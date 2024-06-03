@@ -13,8 +13,12 @@ import { PrismaClient } from '@prisma/client';
 import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 import { isNil, omitBy } from 'lodash-es';
 
-import type { Config, CryptoHelper, FileUpload } from '../../fundamentals';
-import { Throttle } from '../../fundamentals';
+import {
+  Config,
+  CryptoHelper,
+  type FileUpload,
+  Throttle,
+} from '../../fundamentals';
 import { CurrentUser } from '../auth/current-user';
 import { Public } from '../auth/guard';
 import { sessionUser } from '../auth/service';
@@ -158,9 +162,6 @@ class CreateUserInput {
 
   @Field(() => String, { nullable: true })
   password!: string | null;
-
-  @Field(() => Boolean, { nullable: true, defaultValue: true })
-  requireEmailVerification!: boolean;
 }
 
 @Admin()
