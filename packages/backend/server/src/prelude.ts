@@ -39,6 +39,7 @@ async function load() {
   // 2. generate AFFiNE default config and assign to `globalThis.AFFiNE`
   globalThis.AFFiNE = getAFFiNEConfigModifier();
   globalThis.AFFiNE.use = enablePlugin;
+  globalThis.AFFiNE.plugins.use = enablePlugin;
 
   // TODO(@forehalo):
   //   Modules may contribute to ENV_MAP, figure out a good way to involve them instead of hardcoding in `./config/affine.env`
