@@ -1,5 +1,9 @@
 import { ViewService } from '@affine/core/modules/workbench/services/view';
-import type { BaseSelection, BlockElement } from '@blocksuite/block-std';
+import type {
+  BaseSelection,
+  BlockElement,
+  TextSelection,
+} from '@blocksuite/block-std';
 import type { Disposable } from '@blocksuite/global/utils';
 import type {
   AffineEditorContainer,
@@ -102,6 +106,7 @@ export const BlocksuiteEditorContainer = forwardRef<
   ref
 ) {
   const scrolledRef = useRef(false);
+  const hashChangedRef = useRef(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const docRef = useRef<PageEditor>(null);
   const edgelessRef = useRef<EdgelessEditor>(null);
@@ -231,7 +236,12 @@ export const BlocksuiteEditorContainer = forwardRef<
     };
     affineEditorContainerProxy.updateComplete
       .then(() => {
-        if (blockElement && !scrolledRef.current && !canceled) {
+        if (
+          blockElement &&
+          !scrolledRef.current &&
+          !canceled &&
+          !hashChangedRef.current
+        ) {
           handleScrollToBlock(blockElement);
           scrolledRef.current = true;
         }
@@ -258,12 +268,22 @@ export const BlocksuiteEditorContainer = forwardRef<
       ) {
         return;
       }
-      if (selection[0]?.type !== 'block') {
+      if (mode === 'edgeless') {
         if (locationHash) {
-          // Clear the hash if no block is selected
           currentView.replace(currentPath);
         }
         return;
+      }
+
+      if (selection[0]?.type === 'text') {
+        const textSelection = selection[0] as TextSelection;
+        if (textSelection.from.length === 0) {
+          // Clear the hash if no block is selected
+          if (locationHash) {
+            currentView.replace(currentPath);
+          }
+          return;
+        }
       }
 
       const selectedId = selection[0]?.blockId;
@@ -274,9 +294,11 @@ export const BlocksuiteEditorContainer = forwardRef<
 
       // Only update the hash if it has changed
       if (locationHash !== newHash) {
+        hashChangedRef.current = true;
         currentView.replace(currentPath + newHash);
       }
     };
+
     affineEditorContainerProxy.updateComplete
       .then(() => {
         const selectManager = affineEditorContainerProxy.host?.selection;
@@ -290,7 +312,7 @@ export const BlocksuiteEditorContainer = forwardRef<
       canceled = true;
       disposable?.dispose();
     };
-  }, [affineEditorContainerProxy, currentView]);
+  }, [affineEditorContainerProxy, currentView, mode]);
 
   return (
     <div
