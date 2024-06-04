@@ -167,6 +167,25 @@ mutation createCustomerPortal {
 }`,
 };
 
+export const createUserMutation = {
+  id: 'createUserMutation' as const,
+  operationName: 'createUser',
+  definitionName: 'createUser',
+  containsFile: false,
+  query: `
+mutation createUser($input: CreateUserInput!) {
+  createUser(input: $input) {
+    id
+    name
+    email
+    avatarUrl
+    emailVerified
+    hasPassword
+    createdAt
+  }
+}`,
+};
+
 export const createWorkspaceMutation = {
   id: 'createWorkspaceMutation' as const,
   operationName: 'createWorkspace',
@@ -190,6 +209,19 @@ export const deleteAccountMutation = {
   query: `
 mutation deleteAccount {
   deleteAccount {
+    success
+  }
+}`,
+};
+
+export const deleteUserMutation = {
+  id: 'deleteUserMutation' as const,
+  operationName: 'deleteUser',
+  definitionName: 'deleteUser',
+  containsFile: false,
+  query: `
+mutation deleteUser($id: String!) {
+  deleteUser(id: $id) {
     success
   }
 }`,
@@ -404,6 +436,25 @@ query getServerRuntimeConfig {
 }`,
 };
 
+export const getUserByIdQuery = {
+  id: 'getUserByIdQuery' as const,
+  operationName: 'getUserById',
+  definitionName: 'userById',
+  containsFile: false,
+  query: `
+query getUserById($id: String!) {
+  userById(id: $id) {
+    id
+    name
+    email
+    avatarUrl
+    emailVerified
+    hasPassword
+    createdAt
+  }
+}`,
+};
+
 export const getUserFeaturesQuery = {
   id: 'getUserFeaturesQuery' as const,
   operationName: 'getUserFeatures',
@@ -414,6 +465,25 @@ query getUserFeatures {
   currentUser {
     id
     features
+  }
+}`,
+};
+
+export const getUserListQuery = {
+  id: 'getUserListQuery' as const,
+  operationName: 'getUserList',
+  definitionName: 'users',
+  containsFile: false,
+  query: `
+query getUserList($filter: ListUserInput!) {
+  users(filter: $filter) {
+    id
+    name
+    email
+    avatarUrl
+    emailVerified
+    hasPassword
+    createdAt
   }
 }`,
 };

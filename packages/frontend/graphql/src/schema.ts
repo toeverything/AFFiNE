@@ -336,6 +336,24 @@ export type CreateCustomerPortalMutation = {
   createCustomerPortal: string;
 };
 
+export type CreateUserMutationVariables = Exact<{
+  input: CreateUserInput;
+}>;
+
+export type CreateUserMutation = {
+  __typename?: 'Mutation';
+  createUser: {
+    __typename?: 'UserType';
+    id: string;
+    name: string;
+    email: string;
+    avatarUrl: string | null;
+    emailVerified: boolean;
+    hasPassword: boolean | null;
+    createdAt: string | null;
+  };
+};
+
 export type CreateWorkspaceMutationVariables = Exact<{ [key: string]: never }>;
 
 export type CreateWorkspaceMutation = {
@@ -353,6 +371,15 @@ export type DeleteAccountMutationVariables = Exact<{ [key: string]: never }>;
 export type DeleteAccountMutation = {
   __typename?: 'Mutation';
   deleteAccount: { __typename?: 'DeleteAccount'; success: boolean };
+};
+
+export type DeleteUserMutationVariables = Exact<{
+  id: Scalars['String']['input'];
+}>;
+
+export type DeleteUserMutation = {
+  __typename?: 'Mutation';
+  deleteUser: { __typename?: 'DeleteAccount'; success: boolean };
 };
 
 export type DeleteWorkspaceMutationVariables = Exact<{
@@ -562,6 +589,24 @@ export type GetServerRuntimeConfigQuery = {
   }>;
 };
 
+export type GetUserByIdQueryVariables = Exact<{
+  id: Scalars['String']['input'];
+}>;
+
+export type GetUserByIdQuery = {
+  __typename?: 'Query';
+  userById: {
+    __typename?: 'UserType';
+    id: string;
+    name: string;
+    email: string;
+    avatarUrl: string | null;
+    emailVerified: boolean;
+    hasPassword: boolean | null;
+    createdAt: string | null;
+  };
+};
+
 export type GetUserFeaturesQueryVariables = Exact<{ [key: string]: never }>;
 
 export type GetUserFeaturesQuery = {
@@ -571,6 +616,24 @@ export type GetUserFeaturesQuery = {
     id: string;
     features: Array<FeatureType>;
   } | null;
+};
+
+export type GetUserListQueryVariables = Exact<{
+  filter: ListUserInput;
+}>;
+
+export type GetUserListQuery = {
+  __typename?: 'Query';
+  users: Array<{
+    __typename?: 'UserType';
+    id: string;
+    name: string;
+    email: string;
+    avatarUrl: string | null;
+    emailVerified: boolean;
+    hasPassword: boolean | null;
+    createdAt: string | null;
+  }>;
 };
 
 export type GetUserQueryVariables = Exact<{
@@ -1187,9 +1250,19 @@ export type Queries =
       response: GetServerRuntimeConfigQuery;
     }
   | {
+      name: 'getUserByIdQuery';
+      variables: GetUserByIdQueryVariables;
+      response: GetUserByIdQuery;
+    }
+  | {
       name: 'getUserFeaturesQuery';
       variables: GetUserFeaturesQueryVariables;
       response: GetUserFeaturesQuery;
+    }
+  | {
+      name: 'getUserListQuery';
+      variables: GetUserListQueryVariables;
+      response: GetUserListQuery;
     }
   | {
       name: 'getUserQuery';
@@ -1334,6 +1407,11 @@ export type Mutations =
       response: CreateCustomerPortalMutation;
     }
   | {
+      name: 'createUserMutation';
+      variables: CreateUserMutationVariables;
+      response: CreateUserMutation;
+    }
+  | {
       name: 'createWorkspaceMutation';
       variables: CreateWorkspaceMutationVariables;
       response: CreateWorkspaceMutation;
@@ -1342,6 +1420,11 @@ export type Mutations =
       name: 'deleteAccountMutation';
       variables: DeleteAccountMutationVariables;
       response: DeleteAccountMutation;
+    }
+  | {
+      name: 'deleteUserMutation';
+      variables: DeleteUserMutationVariables;
+      response: DeleteUserMutation;
     }
   | {
       name: 'deleteWorkspaceMutation';

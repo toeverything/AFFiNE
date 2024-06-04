@@ -13,8 +13,10 @@ import {
   renderInput,
   RuntimeSettingRow,
   useGetServerRuntimeConfig,
+  UserManagementCollapsibleItem,
+  UsersListPanel,
+  useUpdateServerRuntimeConfigs,
 } from '../components/admin-panel';
-import { useUpdateServerRuntimeConfigs } from '../components/admin-panel/use-update-server-runtime-config';
 import { useNavigateHelper } from '../hooks/use-navigate-helper';
 import { useQuery } from '../hooks/use-query';
 import * as styles from './admin-panel.css';
@@ -77,6 +79,10 @@ export const AdminPanel = () => {
     <div className={styles.root}>
       <div className={styles.container}>
         <div className={styles.sideBar}>
+          <UserManagementCollapsibleItem
+            currentModule={currentModule}
+            changeModule={setCurrentModule}
+          />
           {moduleList.map(module => (
             <CollapsibleItem
               key={module.moduleName}
@@ -95,6 +101,7 @@ export const AdminPanel = () => {
           <Scrollable.Root>
             <Scrollable.Viewport>
               <div className={styles.scrollArea}>
+                {currentModule === 'userManagement' && <UsersListPanel />}
                 {configGroup
                   .filter(group => group.moduleName === currentModule)
                   .map(group => {

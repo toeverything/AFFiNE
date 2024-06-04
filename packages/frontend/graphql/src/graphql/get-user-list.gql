@@ -1,0 +1,11 @@
+query getUserList($filter: ListUserInput!) {
+  users(filter: $filter) {
+    id
+    name
+    email
+    avatarUrl
+    emailVerified
+    hasPassword
+    createdAt
+  }
+}
