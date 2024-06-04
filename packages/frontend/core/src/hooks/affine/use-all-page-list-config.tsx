@@ -15,11 +15,11 @@ import { usePageHelper } from '../../components/blocksuite/block-suite-page-list
 export const useAllPageListConfig = () => {
   const currentWorkspace = useService(WorkspaceService).workspace;
   const shareDocService = useService(ShareDocsService);
-  const shareDocs = useLiveData(shareDocService.shareDocs.list$);
+  const shareDocs = useLiveData(shareDocService.shareDocs?.list$);
 
   useEffect(() => {
     // TODO: loading & error UI
-    shareDocService.shareDocs.revalidate();
+    shareDocService.shareDocs?.revalidate();
   }, [shareDocService]);
 
   const workspace = currentWorkspace.docCollection;

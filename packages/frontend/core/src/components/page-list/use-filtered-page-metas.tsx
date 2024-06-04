@@ -17,7 +17,7 @@ export const useFilteredPageMetas = (
   } = {}
 ) => {
   const shareDocsService = useService(ShareDocsService);
-  const shareDocs = useLiveData(shareDocsService.shareDocs.list$);
+  const shareDocs = useLiveData(shareDocsService.shareDocs?.list$);
 
   const getPublicMode = useCallback(
     (id: string) => {
@@ -33,7 +33,7 @@ export const useFilteredPageMetas = (
 
   useEffect(() => {
     // TODO: loading & error UI
-    shareDocsService.shareDocs.revalidate();
+    shareDocsService.shareDocs?.revalidate();
   }, [shareDocsService]);
 
   const favAdapter = useService(FavoriteItemsAdapter);

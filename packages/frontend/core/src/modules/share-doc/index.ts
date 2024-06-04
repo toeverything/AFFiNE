@@ -21,7 +21,7 @@ import { ShareDocsStore } from './stores/share-docs';
 export function configureShareDocsModule(framework: Framework) {
   framework
     .scope(WorkspaceScope)
-    .service(ShareDocsService)
+    .service(ShareDocsService, [WorkspaceService])
     .store(ShareDocsStore, [GraphQLService])
     .entity(ShareDocsList, [
       WorkspaceService,

@@ -36,12 +36,12 @@ export class ShareDocsList extends Entity {
 
   revalidate = effect(
     switchMap(() =>
-      fromPromise(signal =>
-        this.store.getWorkspacesShareDocs(
+      fromPromise(signal => {
+        return this.store.getWorkspacesShareDocs(
           this.workspaceService.workspace.id,
           signal
-        )
-      ).pipe(
+        );
+      }).pipe(
         backoffRetry({
           when: isNetworkError,
           count: Infinity,

@@ -93,6 +93,12 @@ export interface CreateCopilotPromptInput {
   name: Scalars['String']['input'];
 }
 
+export interface CreateUserInput {
+  email: Scalars['String']['input'];
+  name: InputMaybe<Scalars['String']['input']>;
+  password: InputMaybe<Scalars['String']['input']>;
+}
+
 export interface DeleteSessionInput {
   docId: Scalars['String']['input'];
   sessionIds: Array<Scalars['String']['input']>;
@@ -120,6 +126,11 @@ export enum InvoiceStatus {
   Paid = 'Paid',
   Uncollectible = 'Uncollectible',
   Void = 'Void',
+}
+
+export interface ListUserInput {
+  first: InputMaybe<Scalars['Int']['input']>;
+  skip: InputMaybe<Scalars['Int']['input']>;
 }
 
 export enum OAuthProviderType {
