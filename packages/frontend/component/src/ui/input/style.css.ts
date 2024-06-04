@@ -69,5 +69,8 @@ export const input = style({
     '&:disabled': {
       color: cssVar('textDisableColor'),
     },
+    '&:-webkit-autofill': {
+      WebkitBoxShadow: `0 0 0 1000px ${cssVar('white')} inset`,
+    },
   },
 });
