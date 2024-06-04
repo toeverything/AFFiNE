@@ -658,6 +658,7 @@ __metadata:
     "@affine/server-native": "workspace:*"
     "@apollo/server": "npm:^4.10.2"
     "@aws-sdk/client-s3": "npm:^3.552.0"
+    "@fal-ai/serverless-client": "npm:^0.10.2"
     "@google-cloud/opentelemetry-cloud-monitoring-exporter": "npm:^0.18.0"
     "@google-cloud/opentelemetry-cloud-trace-exporter": "npm:^2.2.0"
     "@google-cloud/opentelemetry-resource-util": "npm:^2.2.0"
@@ -5427,15 +5428,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@fal-ai/serverless-client@npm:^0.10.0":
-  version: 0.10.0
-  resolution: "@fal-ai/serverless-client@npm:0.10.0"
+"@fal-ai/serverless-client@npm:^0.10.0, @fal-ai/serverless-client@npm:^0.10.2":
+  version: 0.10.2
+  resolution: "@fal-ai/serverless-client@npm:0.10.2"
   dependencies:
     "@msgpack/msgpack": "npm:^3.0.0-beta2"
     eventsource-parser: "npm:^1.1.2"
     robot3: "npm:^0.4.1"
     uuid-random: "npm:^1.3.2"
-  checksum: 10/46bf17fa08523ad6847c063535458b2f132e2baa0e40c70f09b881112d8aa3fa8d3be085e4f915cfe5106f8ad6abe31e7a8236e05acf7a884f17a78ae24a705b
+  checksum: 10/d96951b606179ed06d5d14cc31db7c1e55372bfbef34c1bc894c76e338d5e3dde3686848d866e273e033b0190aa730f48fcbcac72449f7047c50319f552d2423
   languageName: node
   linkType: hard
 

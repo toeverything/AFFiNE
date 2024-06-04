@@ -1,6 +1,13 @@
 import assert from 'node:assert';
 
 import {
+  config as falConfig,
+  stream as falStream,
+} from '@fal-ai/serverless-client';
+import { Logger } from '@nestjs/common';
+import { z } from 'zod';
+
+import {
   CopilotCapability,
   CopilotChatOptions,
   CopilotImageOptions,
@@ -14,21 +21,35 @@ export type FalConfig = {
   apiKey: string;
 };
 
-export type FalImage = {
-  url: string;
-  seed: number;
-  file_name: string;
-};
+const FalImageSchema = z
+  .object({
+    url: z.string(),
+    seed: z.number().optional(),
+    content_type: z.string(),
+    file_name: z.string(),
+    file_size: z.number(),
+    width: z.number(),
+    height: z.number(),
+  })
+  .optional();
 
-export type FalResponse = {
-  detail: Array<{ msg: string }> | string;
-  // normal sd/sdxl response
-  images?: Array<FalImage>;
-  // special i2i model response
-  image?: FalImage;
-  // image2text response
-  output: string;
-};
+type FalImage = z.infer<typeof FalImageSchema>;
+
+const FalResponseSchema = z.object({
+  detail: z
+    .union([z.array(z.object({ msg: z.string() })), z.string()])
+    .optional(),
+  images: z.array(FalImageSchema).optional(),
+  image: FalImageSchema.optional(),
+  output: z.string().optional(),
+});
+
+type FalResponse = z.infer<typeof FalResponseSchema>;
+
+const FalStreamOutputSchema = z.object({
+  type: z.literal('output'),
+  output: FalResponseSchema,
+});
 
 type FalPrompt = {
   image_url?: string;
@@ -55,12 +76,19 @@ export class FalProvider
     'face-to-sticker',
     'imageutils/rembg',
     'fast-sdxl/image-to-image',
+    'workflows/darkskygit/animie',
+    'workflows/darkskygit/clay',
+    'workflows/darkskygit/pixel-art',
+    'workflows/darkskygit/sketch',
     // image to text
     'llava-next',
   ];
 
+  private readonly logger = new Logger(FalProvider.name);
+
   constructor(private readonly config: FalConfig) {
     assert(FalProvider.assetsConfig(config));
+    falConfig({ credentials: this.config.apiKey });
   }
 
   static assetsConfig(config: FalConfig) {
@@ -162,6 +190,37 @@ export class FalProvider
     }
   }
 
+  private async buildResponse(
+    messages: PromptMessage[],
+    model: string = this.availableModels[0],
+    options: CopilotImageOptions = {}
+  ) {
+    // by default, image prompt assumes there is only one message
+    const prompt = this.extractPrompt(messages.pop());
+    if (model.startsWith('workflows/')) {
+      const stream = await falStream(model, { input: prompt });
+
+      const result = FalStreamOutputSchema.parse(await stream.done());
+      return result.output;
+    } else {
+      const response = await fetch(`https://fal.run/fal-ai/${model}`, {
+        method: 'POST',
+        headers: {
+          Authorization: `key ${this.config.apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...prompt,
+          sync_mode: true,
+          seed: options.seed || 42,
+          enable_safety_checks: false,
+        }),
+        signal: options.signal,
+      });
+      return FalResponseSchema.parse(await response.json());
+    }
+  }
+
   // ====== image to image ======
   async generateImages(
     messages: PromptMessage[],
@@ -172,35 +231,32 @@ export class FalProvider
       throw new Error(`Invalid model: ${model}`);
     }
 
-    // by default, image prompt assumes there is only one message
-    const prompt = this.extractPrompt(messages.pop());
-    const data = (await fetch(`https://fal.run/fal-ai/${model}`, {
-      method: 'POST',
-      headers: {
-        Authorization: `key ${this.config.apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        ...prompt,
-        sync_mode: true,
-        seed: options.seed || 42,
-        enable_safety_checks: false,
-      }),
-      signal: options.signal,
-    }).then(res => res.json())) as FalResponse;
+    try {
+      const data = await this.buildResponse(messages, model, options);
 
-    if (!data.images?.length && !data.image?.url) {
-      const error = this.extractError(data);
-      throw new Error(
-        error ? `Failed to generate image: ${error}` : 'No images generated'
+      if (!data.images?.length && !data.image?.url) {
+        const error = this.extractError(data);
+        const finalError = error
+          ? `Failed to generate image: ${error}`
+          : 'No images generated';
+        this.logger.error(finalError);
+        throw new Error(finalError);
+      }
+
+      if (data.image?.url) {
+        return [data.image.url];
+      }
+
+      return (
+        data.images
+          ?.filter((image): image is NonNullable<FalImage> => !!image)
+          .map(image => image.url) || []
       );
+    } catch (e: any) {
+      const error = `Failed to generate image: ${e.message}`;
+      this.logger.error(error, e.stack);
+      throw new Error(error);
     }
-
-    if (data.image?.url) {
-      return [data.image.url];
-    }
-
-    return data.images?.map(image => image.url) || [];
   }
 
   async *generateImagesStream(

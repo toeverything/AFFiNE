@@ -86,64 +86,26 @@ export const prompts: Prompt[] = [
   {
     name: 'debug:action:fal-sdturbo-clay',
     action: 'AI image filter clay style',
-    model: 'fast-sdxl/image-to-image',
-    messages: [
-      {
-        role: 'user',
-        content: 'claymation, clay, {{content}}',
-        params: {
-          lora: [
-            'https://models.affine.pro/fal/Clay_AFFiNEAI_SDXL1_CLAYMATION.safetensors',
-          ],
-        },
-      },
-    ],
+    model: 'workflows/darkskygit/clay',
+    messages: [],
   },
   {
     name: 'debug:action:fal-sdturbo-pixel',
     action: 'AI image filter pixel style',
-    model: 'fast-sdxl/image-to-image',
-    messages: [
-      {
-        role: 'user',
-        content: 'pixel art, very high detail, masterpiece, {{content}}',
-        params: {
-          lora: ['https://models.affine.pro/fal/pixel-art-xl-v1.1.safetensors'],
-        },
-      },
-    ],
+    model: 'workflows/darkskygit/pixel-art',
+    messages: [],
   },
   {
     name: 'debug:action:fal-sdturbo-sketch',
     action: 'AI image filter sketch style',
-    model: 'fast-sdxl/image-to-image',
-    messages: [
-      {
-        role: 'user',
-        content: 'sketch for art examination, {{content}}',
-        params: {
-          lora: [
-            'https://models.affine.pro/fal/sketch_for_art_examination.safetensors',
-          ],
-        },
-      },
-    ],
+    model: 'workflows/darkskygit/sketch',
+    messages: [],
   },
   {
     name: 'debug:action:fal-sdturbo-fantasy',
     action: 'AI image filter anime style',
-    model: 'fast-sdxl/image-to-image',
-    messages: [
-      {
-        role: 'user',
-        content: 'fansty world, {{content}}',
-        params: {
-          lora: [
-            'https://models.affine.pro/fal/fansty%20world-000020.safetensors',
-          ],
-        },
-      },
-    ],
+    model: 'workflows/darkskygit/animie',
+    messages: [],
   },
   {
     name: 'debug:action:fal-face-to-sticker',
