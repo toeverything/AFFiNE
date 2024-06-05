@@ -1,8 +1,9 @@
-import { Tooltip } from '@affine/component';
+import { IconButton, notify, Tooltip } from '@affine/component';
 import type { PaginationProps } from '@affine/component/member-components';
 import { Pagination } from '@affine/component/member-components';
 import { Avatar } from '@affine/component/ui/avatar';
 import { AffineErrorBoundary } from '@affine/core/components/affine/affine-error-boundary';
+import { DeletePermanentlyIcon, EditIcon } from '@blocksuite/icons';
 import type { ReactElement } from 'react';
 import {
   Suspense,
@@ -12,11 +13,13 @@ import {
   useState,
 } from 'react';
 
-import { useGetUserList } from '../hooks';
+import { useGetUserList, useGetUserListCount } from '../hooks';
+import { CreateUserButton } from './create-user-button';
 import * as styles from './index.css';
-const COUNT_PER_PAGE = 8;
+import { SearchUser } from './search-user';
+const COUNT_PER_PAGE = 10;
 
-export const UsersPanel = () => {
+export const UsersPanel = ({ userCount }: { userCount: number }) => {
   const [userSkip, setUserSkip] = useState(0);
 
   const onPageChange = useCallback<PaginationProps['onPageChange']>(offset => {
@@ -25,7 +28,7 @@ export const UsersPanel = () => {
 
   const listContainerRef = useRef<HTMLDivElement | null>(null);
   const [userListHeight, setUserListHeight] = useState<number | null>(null);
-  const userCount = 20;
+
   useLayoutEffect(() => {
     if (
       userCount > COUNT_PER_PAGE &&
@@ -35,12 +38,17 @@ export const UsersPanel = () => {
       const rect = listContainerRef.current.getBoundingClientRect();
       setUserListHeight(rect.height);
     }
-  }, [listContainerRef, userListHeight]);
+  }, [listContainerRef, userCount, userListHeight]);
 
   return (
-    <div style={{ maxWidth: '960px', padding: '16px', justifySelf: 'center' }}>
-      <h1>User List</h1>
-
+    <div className={styles.container}>
+      <div className={styles.header}>
+        <div className={styles.title}>User List</div>
+        <div className={styles.headerRightGroup}>
+          <SearchUser />
+          <CreateUserButton />
+        </div>
+      </div>
       <div
         ref={listContainerRef}
         style={userListHeight ? { height: userListHeight } : {}}
@@ -70,25 +78,34 @@ const UserList = ({ skip }: { skip: number }) => {
 const UserTable = ({ users }: { users: any[] }) => {
   return (
     <table className={styles.table}>
+      <colgroup>
+        <col style={{ width: '10%' }} />
+        <col style={{ width: '20%' }} />
+        <col style={{ width: '30%' }} />
+        <col style={{ width: '10%' }} />
+        <col style={{ width: '10%' }} />
+        <col style={{ width: '10%' }} />
+        <col style={{ width: '80px' }} />
+      </colgroup>
       <thead>
         <tr>
-          <th>ID</th>
-          <th>Name</th>
-          <th>Email</th>
-          <th>Email Verified</th>
-          <th>Has Password</th>
-          <th>Avatar</th>
-          <th>Actions</th>
+          <ThWithToolTip content="ID" className={styles.shortHeader} />
+          <ThWithToolTip content="Name" />
+          <ThWithToolTip content="Email" />
+          <ThWithToolTip content="Email Verified" />
+          <ThWithToolTip content="Has Password" />
+          <ThWithToolTip content="Avatar" />
+          <ThWithToolTip content="Actions" />
         </tr>
       </thead>
       <tbody>
         {users.map(user => (
           <tr key={user.id}>
-            <TableTd>{user.id}</TableTd>
-            <TableTd>{user.name}</TableTd>
-            <TableTd>{user.email}</TableTd>
-            <TableTd>{user.emailVerified ? 'True' : 'False'}</TableTd>
-            <TableTd>{user.hasPassword ? 'True' : 'False'}</TableTd>
+            <TdWithToolTip content={user.id} />
+            <TdWithToolTip content={user.name} />
+            <TdWithToolTip content={user.email} />
+            <TdWithToolTip content={user.emailVerified ? 'True' : 'False'} />
+            <TdWithToolTip content={user.hasPassword ? 'True' : 'False'} />
             <td>
               <Avatar
                 size={36}
@@ -97,7 +114,18 @@ const UserTable = ({ users }: { users: any[] }) => {
               />
             </td>
             <td>
-              <button>Remove</button>
+              <div className={styles.actions}>
+                <IconButton>
+                  <EditIcon />
+                </IconButton>
+                <IconButton
+                  type="default"
+                  className={styles.deleteIcon}
+                  withoutHoverStyle
+                >
+                  <DeletePermanentlyIcon />
+                </IconButton>
+              </div>
             </td>
           </tr>
         ))}
@@ -106,19 +134,54 @@ const UserTable = ({ users }: { users: any[] }) => {
   );
 };
 
-const TableTd = ({ children }: { children: React.ReactNode }) => {
+const ThWithToolTip = ({
+  content,
+  className,
+}: {
+  content: string;
+  className?: string;
+}) => {
   return (
-    <Tooltip content={children}>
-      <td>{children}</td>
+    <Tooltip content={content}>
+      <th className={className}>{content}</th>
+    </Tooltip>
+  );
+};
+
+const TdWithToolTip = ({ content }: { content: string }) => {
+  const handleClick = useCallback(() => {
+    // copy to clipboard
+    navigator.clipboard.writeText(content).then(
+      () => {
+        notify.success({
+          title: 'Successfully copied',
+          message: `Copied content: ${content}`,
+        });
+      },
+      err => {
+        notify.error({
+          title: 'Copy failed, please try again.',
+          message: err,
+        });
+        console.error('copy failed', err);
+      }
+    );
+  }, [content]);
+  return (
+    <Tooltip content={content}>
+      <td className={styles.tdContent} onClick={handleClick}>
+        {content}
+      </td>
     </Tooltip>
   );
 };
 
 export const UsersListPanel = (): ReactElement | null => {
+  const userCount = useGetUserListCount();
   return (
     <AffineErrorBoundary>
       <Suspense>
-        <UsersPanel />
+        <UsersPanel userCount={userCount} />
       </Suspense>
     </AffineErrorBoundary>
   );

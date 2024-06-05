@@ -4,7 +4,6 @@ import { style } from '@vanilla-extract/css';
 export const header = style({
   width: '100%',
   display: 'flex',
-  justifyContent: 'space-between',
   alignItems: 'center',
   padding: '12px 16px',
   borderBottom: `1px solid ${cssVar('borderColor')}`,
@@ -20,6 +19,7 @@ export const logo = style({
 });
 
 export const title = style({
+  margin: '0 auto',
   fontSize: cssVar('fontH3'),
   fontWeight: 'bold',
   display: 'flex',
@@ -35,6 +35,10 @@ export const outLine = style({
   display: 'flex',
   flexDirection: 'column',
   flexWrap: 'wrap',
+});
+
+export const navGap = style({
+  margin: '8px',
 });
 
 export const outLineHeader = style({

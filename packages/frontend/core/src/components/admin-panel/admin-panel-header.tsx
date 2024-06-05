@@ -14,14 +14,27 @@ export type ModifiedValues = {
 export const AdminPanelHeader = ({
   modifiedValues,
   onConfirm,
+  currentModule,
 }: {
   modifiedValues: ModifiedValues[];
   onConfirm: () => void;
+  currentModule: string;
 }) => {
   const { openConfirmModal } = useConfirmModal();
   const { jumpToIndex } = useNavigateHelper();
 
   const handleJumpToIndex = useCallback(() => jumpToIndex(), [jumpToIndex]);
+
+  if (currentModule === 'userManagement') {
+    return (
+      <div className={styles.header}>
+        <Logo1Icon className={styles.logo} onClick={handleJumpToIndex} />
+        <div className={styles.title}>
+          <span>User Management</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.header}>

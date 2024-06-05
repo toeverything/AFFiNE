@@ -74,16 +74,12 @@ export const CollapsibleItem = ({
 };
 
 export const UserManagementCollapsibleItem = ({
-  initialOpen = false,
   currentModule,
   changeModule,
 }: {
-  initialOpen?: boolean;
   currentModule?: string;
   changeModule?: (module: string) => void;
 }) => {
-  const [open, setOpen] = useState(initialOpen);
-
   const handleClick = useCallback(
     (
       module: string,
@@ -96,18 +92,12 @@ export const UserManagementCollapsibleItem = ({
   );
 
   return (
-    <Collapsible.Root
-      className={styles.outLine}
-      open={open}
-      onOpenChange={setOpen}
-    >
+    <div className={styles.outLine}>
       <div
         className={styles.outLineHeader}
         data-active={currentModule === 'userManagement'}
       >
-        <Collapsible.Trigger className={styles.arrowIcon} data-open={open}>
-          <ArrowDownSmallIcon />
-        </Collapsible.Trigger>
+        <div className={styles.navGap}></div>
         <a
           className={styles.navText}
           href={`#userManagement`}
@@ -116,25 +106,6 @@ export const UserManagementCollapsibleItem = ({
           user Management
         </a>
       </div>
-
-      <div className={styles.collapsibleContainer}>
-        <Collapsible.Content
-          className={styles.outLineContent}
-          onClick={() => handleClick('userList')}
-        >
-          <a className={styles.navText} href={`#userList`}>
-            userList
-          </a>
-        </Collapsible.Content>
-        <Collapsible.Content
-          className={styles.outLineContent}
-          onClick={() => handleClick('adjustRole')}
-        >
-          <a className={styles.navText} href={`#adjustRole`}>
-            adjustRole
-          </a>
-        </Collapsible.Content>
-      </div>
-    </Collapsible.Root>
+    </div>
   );
 };

@@ -97,6 +97,7 @@ export const AdminPanel = () => {
           <AdminPanelHeader
             modifiedValues={modifiedValues}
             onConfirm={handleSave}
+            currentModule={currentModule}
           />
           <Scrollable.Root>
             <Scrollable.Viewport>
