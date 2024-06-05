@@ -314,7 +314,7 @@ export class CopilotResolver {
     return session;
   }
 
-  @Mutation(() => String, {
+  @Mutation(() => [String], {
     description: 'Cleanup sessions',
   })
   async cleanupCopilotSession(
@@ -336,11 +336,10 @@ export class CopilotResolver {
       return new TooManyRequestsException('Server is busy');
     }
 
-    const ret = await this.chatSession.cleanup({
+    return await this.chatSession.cleanup({
       ...options,
       userId: user.id,
     });
-    return ret;
   }
 
   @Mutation(() => String, {

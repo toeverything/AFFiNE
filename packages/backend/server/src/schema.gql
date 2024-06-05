@@ -254,7 +254,7 @@ type Mutation {
   changePassword(newPassword: String!, token: String!): UserType!
 
   """Cleanup sessions"""
-  cleanupCopilotSession(options: DeleteSessionInput!): String!
+  cleanupCopilotSession(options: DeleteSessionInput!): [String!]!
 
   """Create a subscription checkout link of stripe"""
   createCheckoutSession(input: CreateCheckoutSessionInput!): String!

@@ -514,24 +514,24 @@ export class ChatSessionService {
 
       // only mark action session as deleted
       // chat session always can be reuse
-      {
-        const actionIds = (
-          await Promise.all(
-            sessions.map(({ id, promptName }) =>
-              this.prompt
-                .get(promptName)
-                .then(prompt => ({ id, action: !!prompt?.action }))
-            )
+      const actionIds = (
+        await Promise.all(
+          sessions.map(({ id, promptName }) =>
+            this.prompt
+              .get(promptName)
+              .then(prompt => ({ id, action: !!prompt?.action }))
           )
         )
-          .filter(({ action }) => action)
-          .map(({ id }) => id);
+      )
+        .filter(({ action }) => action)
+        .map(({ id }) => id);
 
-        await tx.aiSession.updateMany({
-          where: { id: { in: actionIds } },
-          data: { deletedAt: new Date() },
-        });
-      }
+      await tx.aiSession.updateMany({
+        where: { id: { in: actionIds } },
+        data: { deletedAt: new Date() },
+      });
+
+      return [...sessionIds, ...actionIds];
     });
   }
 
