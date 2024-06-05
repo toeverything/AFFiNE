@@ -91,3 +91,9 @@ globalStyle(`[data-modal="false"]${modalContentWrapper}`, {
 globalStyle(`[data-modal="false"] ${modalContent}`, {
   pointerEvents: 'auto',
 });
+
+export const promptModalContent = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '12px',
+});

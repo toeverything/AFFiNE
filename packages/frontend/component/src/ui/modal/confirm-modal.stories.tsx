@@ -5,6 +5,7 @@ import {
   ConfirmModal,
   type ConfirmModalProps,
   useConfirmModal,
+  usePromptModal,
 } from './confirm-modal';
 
 export default {
@@ -56,4 +57,21 @@ export const AutoClose = () => {
   };
 
   return <Button onClick={onConfirm}>Show confirm</Button>;
+};
+
+export const Prompt = () => {
+  const openPrompt = usePromptModal();
+
+  const showPrompt = async () => {
+    const value = await openPrompt({
+      placeholder: 'Enter your name',
+      title: 'Give me a string',
+      message: 'What is your name?',
+    });
+    if (value) {
+      alert('your name is ' + value);
+    }
+  };
+
+  return <Button onClick={showPrompt}>Show prompt</Button>;
 };

@@ -5,6 +5,7 @@ import {
   toast,
   type ToastOptions,
   type useConfirmModal,
+  type usePromptModal,
 } from '@affine/component';
 import type { PeekViewService } from '@affine/core/modules/peek-view';
 import type { ActivePeekView } from '@affine/core/modules/peek-view/entities/peek-view';
@@ -114,7 +115,13 @@ export function patchReferenceRenderer(
 
 export function patchNotificationService(
   specs: BlockSpec[],
-  { closeConfirmModal, openConfirmModal }: ReturnType<typeof useConfirmModal>
+  {
+    closeConfirmModal,
+    openConfirmModal,
+    prompt,
+  }: ReturnType<typeof useConfirmModal> & {
+    prompt: ReturnType<typeof usePromptModal>;
+  }
 ) {
   const rootSpec = specs.find(
     spec => spec.schema.model.flavour === 'affine:page'
@@ -126,22 +133,10 @@ export function patchNotificationService(
 
   patchSpecService(rootSpec, service => {
     service.notificationService = {
-      confirm: async ({
-        title,
-        message,
-        confirmText,
-        cancelText,
-        abort,
-      }: {
-        title: string;
-        message: string | TemplateResult;
-        confirmText: string;
-        cancelText: string;
-        abort?: AbortSignal;
-      }) => {
+      confirm: async ({ title, message, confirmText, cancelText, abort }) => {
         return new Promise<boolean>(resolve => {
           openConfirmModal({
-            title,
+            title: toReactNode(title),
             description: toReactNode(message),
             confirmButtonOptions: {
               children: confirmText,
@@ -159,6 +154,23 @@ export function patchNotificationService(
             resolve(false);
             closeConfirmModal();
           });
+        });
+      },
+      prompt: async ({
+        title,
+        message,
+        confirmText,
+        placeholder,
+        cancelText,
+        abort,
+      }) => {
+        return prompt({
+          message: toReactNode(message),
+          title: toReactNode(title),
+          confirmText,
+          cancelText,
+          placeholder,
+          abort,
         });
       },
       toast: (message: string, options: ToastOptions) => {
@@ -181,6 +193,12 @@ export function patchNotificationService(
           {
             title: toReactNode(notification.title),
             message: toReactNode(notification.message),
+            action: notification.action?.onClick
+              ? {
+                  label: toReactNode(notification.action?.label),
+                  onClick: notification.action.onClick,
+                }
+              : undefined,
           },
           {
             duration: notification.duration || 0,
