@@ -1,5 +1,6 @@
 import { cssVar } from '@toeverything/theme';
-import { style } from '@vanilla-extract/css';
+import { style, type StyleRule } from '@vanilla-extract/css';
+
 export const docEditorRoot = style({
   display: 'block',
   background: cssVar('backgroundPrimaryColor'),
@@ -9,6 +10,14 @@ export const affineDocViewport = style({
   display: 'flex',
   flexDirection: 'column',
   paddingBottom: '100px',
+  selectors: ['generating', 'finished', 'error'].reduce<
+    NonNullable<StyleRule['selectors']>
+  >((rules, state) => {
+    rules[`&:has(affine-ai-panel-widget[data-state='${state}'])`] = {
+      paddingBottom: '980px',
+    };
+    return rules;
+  }, {}),
 });
 
 export const docContainer = style({
