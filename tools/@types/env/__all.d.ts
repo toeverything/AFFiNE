@@ -24,8 +24,6 @@ declare module '@blocksuite/store' {
      * @deprecated
      */
     favorite?: boolean;
-    // If a page remove to trash, and it is a subpage, it will remove from its parent `subpageIds`, 'trashRelate' is use for save it parent
-    trashRelate?: string;
     trash?: boolean;
     trashDate?: number;
     updatedDate?: number;

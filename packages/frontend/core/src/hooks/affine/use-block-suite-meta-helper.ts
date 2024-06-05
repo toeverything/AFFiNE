@@ -8,12 +8,10 @@ import { applyUpdate, encodeStateAsUpdate } from 'yjs';
 
 import type { DocCollection } from '../../shared';
 import { useNavigateHelper } from '../use-navigate-helper';
-import { useReferenceLinkHelper } from './use-reference-link-helper';
 
 export function useBlockSuiteMetaHelper(docCollection: DocCollection) {
   const { setDocMeta, getDocMeta, setDocReadonly, setDocTitle } =
     useDocMetaHelper(docCollection);
-  const { addReferenceLink } = useReferenceLinkHelper(docCollection);
   const { createDoc } = useDocCollectionHelper(docCollection);
   const { openPage } = useNavigateHelper();
   const collectionService = useService(CollectionService);
@@ -26,7 +24,6 @@ export function useBlockSuiteMetaHelper(docCollection: DocCollection) {
       setDocMeta(pageId, {
         trash: true,
         trashDate: Date.now(),
-        trashRelate: undefined,
       });
       setDocReadonly(pageId, true);
       collectionService.deletePagesFromCollections([pageId]);
@@ -36,20 +33,13 @@ export function useBlockSuiteMetaHelper(docCollection: DocCollection) {
 
   const restoreFromTrash = useCallback(
     (pageId: string) => {
-      const { trashRelate } = getDocMeta(pageId) ?? {};
-
-      if (trashRelate) {
-        addReferenceLink(trashRelate, pageId);
-      }
-
       setDocMeta(pageId, {
         trash: false,
         trashDate: undefined,
-        trashRelate: undefined,
       });
       setDocReadonly(pageId, false);
     },
-    [addReferenceLink, getDocMeta, setDocMeta, setDocReadonly]
+    [setDocMeta, setDocReadonly]
   );
 
   const permanentlyDeletePage = useCallback(
