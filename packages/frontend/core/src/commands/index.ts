@@ -4,3 +4,4 @@ export * from './affine-layout';
 export * from './affine-navigation';
 export * from './affine-settings';
 export * from './affine-updates';
+export * from './registry';

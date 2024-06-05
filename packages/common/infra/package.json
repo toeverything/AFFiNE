@@ -23,7 +23,6 @@
     "lodash-es": "^4.17.21",
     "nanoid": "^5.0.7",
     "react": "18.3.1",
-    "tinykeys": "patch:tinykeys@npm%3A2.1.0#~/.yarn/patches/tinykeys-npm-2.1.0-819feeaed0.patch",
     "yjs": "^13.6.14",
     "zod": "^3.22.4"
   },

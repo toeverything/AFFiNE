@@ -1,5 +1,6 @@
+import { registerAffineCommand } from '@affine/core/commands';
 import { FindInPageService } from '@affine/core/modules/find-in-page/services/find-in-page';
-import { registerAffineCommand, useService } from '@toeverything/infra';
+import { useService } from '@toeverything/infra';
 import { useCallback, useEffect } from 'react';
 
 export function useRegisterFindInPageCommands() {

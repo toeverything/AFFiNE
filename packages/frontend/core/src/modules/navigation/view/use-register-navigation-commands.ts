@@ -1,8 +1,8 @@
 import {
   PreconditionStrategy,
   registerAffineCommand,
-  useService,
-} from '@toeverything/infra';
+} from '@affine/core/commands';
+import { useService } from '@toeverything/infra';
 import { useEffect } from 'react';
 
 import { NavigatorService } from '../services/navigator';

@@ -2,12 +2,12 @@ import { WorkspaceSubPath } from '@affine/core/shared';
 import type { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowRightBigIcon } from '@blocksuite/icons';
 import type { DocCollection } from '@blocksuite/store';
-import { registerAffineCommand } from '@toeverything/infra';
 import type { createStore } from 'jotai';
 
 import { openSettingModalAtom, openWorkspaceListModalAtom } from '../atoms';
 import type { useNavigateHelper } from '../hooks/use-navigate-helper';
 import { mixpanel } from '../utils/mixpanel';
+import { registerAffineCommand } from './registry';
 
 export function registerAffineNavigationCommands({
   t,

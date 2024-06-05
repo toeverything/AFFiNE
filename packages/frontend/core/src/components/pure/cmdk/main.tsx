@@ -1,10 +1,10 @@
 import { Loading } from '@affine/component/ui/loading';
+import type { CommandCategory } from '@affine/core/commands';
 import { formatDate } from '@affine/core/components/page-list';
 import { useDocEngineStatus } from '@affine/core/hooks/affine/use-doc-engine-status';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { DocMeta } from '@blocksuite/store';
-import type { CommandCategory } from '@toeverything/infra';
 import clsx from 'clsx';
 import { Command } from 'cmdk';
 import { useDebouncedValue } from 'foxact/use-debounced-value';

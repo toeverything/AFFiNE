@@ -1,4 +1,5 @@
-import type { CommandCategory, DocMode } from '@toeverything/infra';
+import type { CommandCategory } from '@affine/core/commands';
+import type { DocMode } from '@toeverything/infra';
 
 export interface CommandContext {
   docMode: DocMode | undefined;

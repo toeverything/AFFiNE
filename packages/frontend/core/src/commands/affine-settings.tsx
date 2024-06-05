@@ -1,17 +1,14 @@
 import type { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { SettingsIcon } from '@blocksuite/icons';
 import type { AffineEditorContainer } from '@blocksuite/presets';
-import {
-  appSettingAtom,
-  PreconditionStrategy,
-  registerAffineCommand,
-} from '@toeverything/infra';
+import { appSettingAtom } from '@toeverything/infra';
 import type { createStore } from 'jotai';
 import type { useTheme } from 'next-themes';
 
 import { openQuickSearchModalAtom } from '../atoms';
 import type { useLanguageHelper } from '../hooks/affine/use-language-helper';
 import { mixpanel } from '../utils';
+import { PreconditionStrategy, registerAffineCommand } from './registry';
 
 export function registerAffineSettingsCommands({
   t,

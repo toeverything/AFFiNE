@@ -1,3 +1,9 @@
+import {
+  type AffineCommand,
+  AffineCommandRegistry,
+  type CommandCategory,
+  PreconditionStrategy,
+} from '@affine/core/commands';
 import { useDocMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
 import { useGetDocCollectionPageTitle } from '@affine/core/hooks/use-block-suite-workspace-page-title';
 import { useJournalHelper } from '@affine/core/hooks/use-journal';
@@ -12,17 +18,10 @@ import {
   TodayIcon,
   ViewLayersIcon,
 } from '@blocksuite/icons';
-import type {
-  AffineCommand,
-  CommandCategory,
-  DocRecord,
-  Workspace,
-} from '@toeverything/infra';
+import type { DocRecord, Workspace } from '@toeverything/infra';
 import {
-  AffineCommandRegistry,
   DocsService,
   GlobalContextService,
-  PreconditionStrategy,
   useLiveData,
   useService,
   WorkspaceService,

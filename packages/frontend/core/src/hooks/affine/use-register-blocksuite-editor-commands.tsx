@@ -1,4 +1,8 @@
 import { toast } from '@affine/component';
+import {
+  PreconditionStrategy,
+  registerAffineCommand,
+} from '@affine/core/commands';
 import { useDocMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
 import { FavoriteItemsAdapter } from '@affine/core/modules/properties';
 import { mixpanel } from '@affine/core/utils';
@@ -8,8 +12,6 @@ import { assertExists } from '@blocksuite/global/utils';
 import { EdgelessIcon, HistoryIcon, PageIcon } from '@blocksuite/icons';
 import {
   DocService,
-  PreconditionStrategy,
-  registerAffineCommand,
   useLiveData,
   useService,
   WorkspaceService,

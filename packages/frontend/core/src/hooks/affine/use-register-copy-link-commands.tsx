@@ -1,5 +1,5 @@
+import { registerAffineCommand } from '@affine/core/commands';
 import { useSharingUrl } from '@affine/core/hooks/affine/use-share-url';
-import { registerAffineCommand } from '@toeverything/infra';
 import { useEffect } from 'react';
 
 export function useRegisterCopyLinkCommands({

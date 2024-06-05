@@ -1,10 +1,10 @@
 import type { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ImportIcon, PlusIcon } from '@blocksuite/icons';
-import { registerAffineCommand } from '@toeverything/infra';
 import type { createStore } from 'jotai';
 
 import { openCreateWorkspaceModalAtom } from '../atoms';
 import type { usePageHelper } from '../components/blocksuite/block-suite-page-list/utils';
+import { registerAffineCommand } from './registry';
 
 export function registerAffineCreationCommands({
   store,

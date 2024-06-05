@@ -2,8 +2,9 @@ import { updateReadyAtom } from '@affine/core/hooks/use-app-updater';
 import { apis } from '@affine/electron-api';
 import type { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ResetIcon } from '@blocksuite/icons';
-import { registerAffineCommand } from '@toeverything/infra';
 import type { createStore } from 'jotai';
+
+import { registerAffineCommand } from './registry';
 
 export function registerAffineUpdatesCommands({
   t,
