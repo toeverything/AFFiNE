@@ -16,7 +16,6 @@ import type { HTMLAttributes, ReactElement } from 'react';
 import { forwardRef, memo, useCallback, useEffect } from 'react';
 
 import { useAppSettingHelper } from '../../hooks/affine/use-app-setting-helper';
-import { useTrashModalHelper } from '../../hooks/affine/use-trash-modal-helper';
 import { useNavigateHelper } from '../../hooks/use-navigate-helper';
 import { WorkbenchService } from '../../modules/workbench';
 import {
@@ -31,11 +30,7 @@ import {
   SidebarContainer,
   SidebarScrollableContainer,
 } from '../app-sidebar';
-import {
-  createEmptyCollection,
-  MoveToTrash,
-  useEditCollectionName,
-} from '../page-list';
+import { createEmptyCollection, useEditCollectionName } from '../page-list';
 import { CollectionsList } from '../pure/workspace-slider-bar/collections';
 import { AddCollectionButton } from '../pure/workspace-slider-bar/collections/add-collection-button';
 import FavoriteList from '../pure/workspace-slider-bar/favorite/favorite-list';
@@ -126,20 +121,6 @@ export const RootAppSidebar = memo(
       });
     }, [allPageActive, createPage, openPage, trashActive]);
 
-    const { trashModal, setTrashModal, handleOnConfirm } =
-      useTrashModalHelper(docCollection);
-    const deletePageTitles = trashModal.pageTitles;
-    const trashConfirmOpen = trashModal.open;
-    const onTrashConfirmOpenChange = useCallback(
-      (open: boolean) => {
-        setTrashModal({
-          ...trashModal,
-          open,
-        });
-      },
-      [trashModal, setTrashModal]
-    );
-
     const navigateHelper = useNavigateHelper();
     // Listen to the "New Page" action from the menu
     useEffect(() => {
@@ -185,12 +166,6 @@ export const RootAppSidebar = memo(
         clientBorder={appSettings.clientBorder}
         translucentUI={appSettings.enableBlurBackground}
       >
-        <MoveToTrash.ConfirmModal
-          open={trashConfirmOpen}
-          onConfirm={handleOnConfirm}
-          onOpenChange={onTrashConfirmOpenChange}
-          titles={deletePageTitles}
-        />
         <SidebarContainer>
           <div className={workspaceAndUserWrapper}>
             <div className={workspaceWrapper}>

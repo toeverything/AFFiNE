@@ -21,6 +21,8 @@ import {
   openSignOutModalAtom,
 } from '../atoms';
 import { PaymentDisableModal } from '../components/affine/payment-disable';
+import { MoveToTrash } from '../components/page-list';
+import { useTrashModalHelper } from '../hooks/affine/use-trash-modal-helper';
 import { useAsyncCallback } from '../hooks/affine-async-hooks';
 import { useNavigateHelper } from '../hooks/use-navigate-helper';
 import { AuthService } from '../modules/cloud/services/auth';
@@ -198,6 +200,21 @@ export function CurrentWorkspaceModals() {
     openDisableCloudAlertModalAtom
   );
 
+  const { trashModal, setTrashModal, handleOnConfirm } = useTrashModalHelper(
+    currentWorkspace.docCollection
+  );
+  const deletePageTitles = trashModal.pageTitles;
+  const trashConfirmOpen = trashModal.open;
+  const onTrashConfirmOpenChange = useCallback(
+    (open: boolean) => {
+      setTrashModal({
+        ...trashModal,
+        open,
+      });
+    },
+    [trashModal, setTrashModal]
+  );
+
   return (
     <>
       <Suspense>
@@ -221,6 +238,12 @@ export function CurrentWorkspaceModals() {
       <AiLoginRequiredModal />
       {runtimeConfig.enablePeekView && <PeekViewManagerModal />}
       {environment.isDesktop && <FindInPageModal />}
+      <MoveToTrash.ConfirmModal
+        open={trashConfirmOpen}
+        onConfirm={handleOnConfirm}
+        onOpenChange={onTrashConfirmOpenChange}
+        titles={deletePageTitles}
+      />
     </>
   );
 }
