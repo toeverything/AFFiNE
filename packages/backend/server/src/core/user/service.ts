@@ -181,7 +181,7 @@ export class UserService {
       const payload = {
         name: user.name,
         email: user.email,
-        created_at: Number(user.createdAt),
+        created_at: Number(user.createdAt) / 1000,
       };
       try {
         await fetch(`https://track.customer.io/api/v1/customers/${user.id}`, {
