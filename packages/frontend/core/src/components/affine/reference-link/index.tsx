@@ -1,6 +1,9 @@
 import { useDocMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
 import { useJournalHelper } from '@affine/core/hooks/use-journal';
-import { PeekViewService } from '@affine/core/modules/peek-view';
+import {
+  PeekViewService,
+  useInsidePeekView,
+} from '@affine/core/modules/peek-view';
 import { WorkbenchLink } from '@affine/core/modules/workbench';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { LinkedPageIcon, TodayIcon } from '@blocksuite/icons';
@@ -69,6 +72,7 @@ export function AffinePageReference({
   const ref = useRef<HTMLAnchorElement>(null);
 
   const peekView = useService(PeekViewService).peekView;
+  const isInPeekView = useInsidePeekView();
 
   const onClick = useCallback(
     (e: React.MouseEvent) => {
@@ -76,11 +80,14 @@ export function AffinePageReference({
         e.preventDefault();
         e.stopPropagation();
         peekView.open(ref.current);
-        return true; // means this click is handled
+        return false; // means this click is handled
       }
-      return false;
+      if (isInPeekView) {
+        peekView.close();
+      }
+      return;
     },
-    [peekView]
+    [isInPeekView, peekView]
   );
 
   return (

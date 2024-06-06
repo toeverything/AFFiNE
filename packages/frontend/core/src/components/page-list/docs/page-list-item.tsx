@@ -287,7 +287,7 @@ function PageListItemWrapper({
   const handleClick = useCallback(
     (e: React.MouseEvent) => {
       if (!selectionState.selectable) {
-        return false;
+        return;
       }
       stopPropagation(e);
       const currentIndex = pageIds.indexOf(pageId);
@@ -297,15 +297,15 @@ function PageListItemWrapper({
           setSelectionActive(true);
           setAnchorIndex(currentIndex);
           onClick?.();
-          return true;
+          return false;
         }
         handleShiftClick(currentIndex);
-        return true;
+        return false;
       } else {
         setAnchorIndex(undefined);
         setRangeIds([]);
         onClick?.();
-        return false;
+        return;
       }
     },
     [

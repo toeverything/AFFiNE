@@ -2,13 +2,18 @@ import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-h
 import { popupWindow } from '@affine/core/utils';
 import { useLiveData, useService } from '@toeverything/infra';
 import type { To } from 'history';
-import { forwardRef, useCallback } from 'react';
+import { forwardRef, type MouseEvent, useCallback } from 'react';
 
 import { WorkbenchService } from '../services/workbench';
 
 export const WorkbenchLink = forwardRef<
   HTMLAnchorElement,
-  React.PropsWithChildren<{ to: To } & React.HTMLProps<HTMLAnchorElement>>
+  React.PropsWithChildren<
+    {
+      to: To;
+      onClick?: (e: MouseEvent) => boolean | void; // return false to stop propagation
+    } & React.HTMLProps<HTMLAnchorElement>
+  >
 >(function WorkbenchLink({ to, onClick, ...other }, ref) {
   const workbench = useService(WorkbenchService).workbench;
   const { appSettings } = useAppSettingHelper();
@@ -20,7 +25,7 @@ export const WorkbenchLink = forwardRef<
     (event: React.MouseEvent<HTMLAnchorElement>) => {
       event.preventDefault();
       event.stopPropagation();
-      if (onClick?.(event)) {
+      if (onClick?.(event) === false) {
         return;
       }
 
