@@ -208,9 +208,36 @@ export const BlocksuiteEdgelessEditor = forwardRef<
   BlocksuiteEditorProps
 >(function BlocksuiteEdgelessEditor({ page }, ref) {
   const [specs, portals] = usePatchSpecs(page, EdgelessModeSpecs);
+  const editorRef = useRef<EdgelessEditor | null>(null);
+
+  const onDocRef = useCallback(
+    (el: EdgelessEditor) => {
+      editorRef.current = el;
+      if (ref) {
+        if (typeof ref === 'function') {
+          ref(el);
+        } else {
+          ref.current = el;
+        }
+      }
+    },
+    [ref]
+  );
+
+  useEffect(() => {
+    if (editorRef.current) {
+      editorRef.current.updateComplete
+        .then(() => {
+          // make sure editor can get keyboard events on showing up
+          editorRef.current?.querySelector('affine-edgeless-root')?.click();
+        })
+        .catch(console.error);
+    }
+  }, []);
+
   return (
     <>
-      <adapted.EdgelessEditor ref={ref} doc={page} specs={specs} />
+      <adapted.EdgelessEditor ref={onDocRef} doc={page} specs={specs} />
       {portals}
     </>
   );

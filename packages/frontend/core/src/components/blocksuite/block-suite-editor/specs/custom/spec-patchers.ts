@@ -7,7 +7,10 @@ import {
   type useConfirmModal,
   type usePromptModal,
 } from '@affine/component';
-import type { QuickSearchService } from '@affine/core/modules/cmdk';
+import type {
+  QuickSearchService,
+  SearchCallbackResult,
+} from '@affine/core/modules/cmdk';
 import type { PeekViewService } from '@affine/core/modules/peek-view';
 import type { ActivePeekView } from '@affine/core/modules/peek-view/entities/peek-view';
 import { DebugLogger } from '@affine/debug';
@@ -254,13 +257,34 @@ export function patchQuickSearchService(
   patchSpecService(rootSpec, pageService => {
     pageService.quickSearchService = {
       async searchDoc(options) {
-        const result = await service.quickSearch.search(options.userInput);
-        if (result) {
-          if ('docId' in result) {
-            return result;
+        let searchResult: SearchCallbackResult | null = null;
+        if (options.skipSelection) {
+          const query = options.userInput;
+          if (!query) {
+            logger.error('No user input provided');
+          } else {
+            const searchedDoc = service.quickSearch
+              .getSearchedDocs(query)
+              .at(0);
+            if (searchedDoc) {
+              searchResult = {
+                docId: searchedDoc.doc.id,
+                blockId: searchedDoc.blockId,
+                action: 'insert',
+                query,
+              };
+            }
+          }
+        } else {
+          searchResult = await service.quickSearch.search(options.userInput);
+        }
+
+        if (searchResult) {
+          if ('docId' in searchResult) {
+            return searchResult;
           } else {
             return {
-              userInput: result.query,
+              userInput: searchResult.query,
               action: 'insert',
             };
           }

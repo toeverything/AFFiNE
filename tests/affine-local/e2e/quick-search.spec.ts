@@ -1,4 +1,5 @@
 import { test } from '@affine-test/kit/playwright';
+import { clickEdgelessModeButton } from '@affine-test/kit/utils/editor';
 import { withCtrlOrMeta } from '@affine-test/kit/utils/keyboard';
 import { openHomePage } from '@affine-test/kit/utils/load-page';
 import {
@@ -467,7 +468,7 @@ test('disable quick search when the link-popup is visitable', async ({
   await openQuickSearchByShortcut(page);
   const quickSearch = page.locator('[data-testid=cmdk-quick-search]');
   await expect(quickSearch).toBeVisible();
-  await withCtrlOrMeta(page, () => page.keyboard.press('k', { delay: 50 }));
+  await withCtrlOrMeta(page, () => page.keyboard.press('k'));
 
   await getBlockSuiteEditorTitle(page).click();
   await getBlockSuiteEditorTitle(page).fill(specialTitle);
@@ -475,9 +476,47 @@ test('disable quick search when the link-popup is visitable', async ({
   await page.keyboard.insertText('1234567890');
   await page.getByText('1234567890').dblclick();
 
-  await withCtrlOrMeta(page, () => page.keyboard.press('k', { delay: 50 }));
+  await withCtrlOrMeta(page, () => page.keyboard.press('k'));
   const linkPopup = page.locator('.affine-link-popover');
   await expect(linkPopup).toBeVisible();
   const currentQuickSearch = page.locator('[data-testid=cmdk-quick-search]');
   await expect(currentQuickSearch).not.toBeVisible();
+});
+
+test('can use @ to open quick search to search for doc and insert into canvas', async ({
+  page,
+}) => {
+  await openHomePage(page);
+  await waitForEditorLoad(page);
+
+  const url = page.url();
+
+  await clickNewPageButton(page);
+  await clickEdgelessModeButton(page);
+  await page.locator('affine-edgeless-root').press('@');
+
+  const quickSearch = page.locator('[data-testid=cmdk-quick-search]');
+  await expect(quickSearch).toBeVisible();
+
+  // search by using url
+  await insertInputText(page, url);
+
+  // expect the default page to be selected
+  await expect(page.locator('[cmdk-group-items] [cmdk-item]')).toHaveCount(1);
+
+  // press enter to insert the page to canvas
+  await page.keyboard.press('Enter');
+  await expect(page.locator('affine-embed-synced-doc-block')).toBeVisible();
+
+  await page.locator('affine-embed-synced-doc-block').click();
+  // change to linked card
+  await page.locator('edgeless-tool-icon-button.card').click();
+
+  await expect(
+    page.locator('.affine-embed-linked-doc-content-title')
+  ).toContainText('Write, Draw, Plan all at Once');
+
+  // double clock to show peek view
+  await page.locator('affine-embed-linked-doc-block').dblclick();
+  await expect(page.getByTestId('peek-view-modal')).toBeVisible();
 });
