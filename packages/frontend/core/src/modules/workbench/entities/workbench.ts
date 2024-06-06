@@ -37,6 +37,7 @@ export class Workbench extends Entity {
   );
 
   active(index: number) {
+    index = Math.max(0, Math.min(index, this.views$.value.length - 1));
     this.activeViewIndex$.next(index);
   }
 
@@ -122,9 +123,14 @@ export class Workbench extends Entity {
   }
 
   moveView(from: number, to: number) {
+    from = Math.max(0, Math.min(from, this.views$.value.length - 1));
+    to = Math.max(0, Math.min(to, this.views$.value.length - 1));
+    if (from === to) return;
     const views = [...this.views$.value];
-    const [removed] = views.splice(from, 1);
-    views.splice(to, 0, removed);
+    const fromView = views[from];
+    const toView = views[to];
+    views[to] = fromView;
+    views[from] = toView;
     this.views$.next(views);
     this.active(to);
   }
