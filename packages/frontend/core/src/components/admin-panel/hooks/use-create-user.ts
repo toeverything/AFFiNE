@@ -6,6 +6,7 @@ import {
 import {
   type CreateUserInput,
   createUserMutation,
+  getUserCountQuery,
   getUserListQuery,
 } from '@affine/graphql';
 
@@ -30,6 +31,7 @@ export const useCreateUser = () => {
           },
         });
         await revalidate(getUserListQuery);
+        await revalidate(getUserCountQuery);
       },
       [revalidate, trigger]
     ),

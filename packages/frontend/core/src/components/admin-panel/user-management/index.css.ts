@@ -27,28 +27,26 @@ export const title = style({
 });
 
 export const table = style({
-  borderCollapse: 'collapse',
+  borderCollapse: 'separate',
   width: '100%',
   borderSpacing: 0,
   tableLayout: 'fixed',
+  boxShadow: cssVar('shadow1'),
+  borderRadius: '8px 8px 0 0',
 });
 
 export const shortHeader = style({
   maxWidth: '50px',
 });
 
-globalStyle(`${table} th, ${table} td`, {
-  padding: '8px',
-  border: `0.5px solid ${cssVar('borderColor')}`,
-});
-
 globalStyle(`${table} th`, {
-  backgroundColor: cssVar('primaryColor'),
-  color: cssVar('pureWhite'),
+  backgroundColor: cssVar('black10'),
   fontWeight: 500,
   textAlign: 'left',
   overflow: 'hidden',
   textOverflow: 'ellipsis',
+  padding: '8px',
+  border: `0.5px solid ${cssVar('black10')}`,
 });
 
 globalStyle(`${table} td`, {
@@ -56,17 +54,15 @@ globalStyle(`${table} td`, {
   whiteSpace: 'nowrap',
   overflow: 'hidden',
   textOverflow: 'ellipsis',
+  padding: '8px',
+  border: `0.5px solid ${cssVar('borderColor')}`,
 });
 
 globalStyle(`${table} th:first-child`, {
   borderTopLeftRadius: '8px',
-  borderTop: 'none',
-  borderLeft: 'none',
 });
 globalStyle(`${table} th:last-child`, {
   borderTopRightRadius: '8px',
-  borderTop: 'none',
-  borderRight: 'none',
 });
 
 globalStyle(`${table} tr:nth-child(even) td`, {
@@ -99,15 +95,22 @@ export const modalTitle = style({
   fontWeight: 500,
 });
 
-export const modalDescription = style({
-  marginBottom: '16px',
-  fontSize: cssVar('fontXs'),
-  color: cssVar('textSecondaryColor'),
+export const warning = style({
+  fontWeight: '600',
+  marginLeft: '4px',
 });
 
 export const modalFooter = style({
   display: 'flex',
   justifyContent: 'flex-end',
   gap: '16px',
-  marginTop: '16px',
+});
+
+export const inputContent = style({
+  display: 'flex',
+  flexDirection: 'column',
+  justifyContent: 'center',
+  margin: '24px 0',
+  paddingBottom: '16px',
+  fontSize: cssVar('fontBase'),
 });

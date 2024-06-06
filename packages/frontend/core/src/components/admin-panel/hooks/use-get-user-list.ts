@@ -14,18 +14,3 @@ export const useGetUserList = (skip: number, first?: number) => {
 
   return data.users || [];
 };
-
-export const useGetUserListCount = () => {
-  const { data } = useQuery({
-    query: getUserListQuery,
-    variables: {
-      filter: {
-        skip: 0,
-      },
-    },
-  });
-
-  console.log('count', data.users.length);
-
-  return data.users.length || 0;
-};

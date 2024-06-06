@@ -3,7 +3,7 @@ import type { PaginationProps } from '@affine/component/member-components';
 import { Pagination } from '@affine/component/member-components';
 import { Avatar } from '@affine/component/ui/avatar';
 import { AffineErrorBoundary } from '@affine/core/components/affine/affine-error-boundary';
-import { DeletePermanentlyIcon, EditIcon } from '@blocksuite/icons';
+import { EditIcon } from '@blocksuite/icons';
 import type { ReactElement } from 'react';
 import {
   Suspense,
@@ -14,7 +14,9 @@ import {
 } from 'react';
 
 import { useGetUserList, useGetUserListCount } from '../hooks';
-import { CreateUserButton } from './create-user-button';
+import type { User } from '../types';
+import { CreateUser } from './create-user';
+import { DeleteUser } from './delete-user';
 import * as styles from './index.css';
 import { SearchUser } from './search-user';
 const COUNT_PER_PAGE = 10;
@@ -43,10 +45,10 @@ export const UsersPanel = ({ userCount }: { userCount: number }) => {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <div className={styles.title}>User List</div>
+        <div className={styles.title}>User List ({userCount})</div>
         <div className={styles.headerRightGroup}>
           <SearchUser />
-          <CreateUserButton />
+          <CreateUser />
         </div>
       </div>
       <div
@@ -75,7 +77,7 @@ const UserList = ({ skip }: { skip: number }) => {
   return <UserTable users={users} />;
 };
 
-const UserTable = ({ users }: { users: any[] }) => {
+const UserTable = ({ users }: { users: User[] }) => {
   return (
     <table className={styles.table}>
       <colgroup>
@@ -118,13 +120,7 @@ const UserTable = ({ users }: { users: any[] }) => {
                 <IconButton>
                   <EditIcon />
                 </IconButton>
-                <IconButton
-                  type="default"
-                  className={styles.deleteIcon}
-                  withoutHoverStyle
-                >
-                  <DeletePermanentlyIcon />
-                </IconButton>
+                <DeleteUser user={user} />
               </div>
             </td>
           </tr>

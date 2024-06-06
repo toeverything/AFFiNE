@@ -8,7 +8,7 @@ import { useCallback, useState } from 'react';
 import { useCreateUser } from '../hooks';
 import * as styles from './index.css';
 
-export const CreateUserButton = () => {
+export const CreateUser = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -45,6 +45,7 @@ export const CreateUserButton = () => {
     setName('');
     setEmail('');
     setPassword('');
+    setIsValidEmail(true);
   }, []);
   const onOpenChange = useCallback(
     (value: boolean) => {
@@ -98,48 +99,56 @@ export const CreateUserButton = () => {
     setOpen(true);
   }, []);
 
+  const onClose = useCallback(() => {
+    setOpen(false);
+    handleClear();
+  }, [handleClear]);
+
   return (
     <>
       <Button type="primary" onClick={handleClick}>
-        Create User
+        Create
       </Button>
       <Modal
         width={400}
         open={open}
         onOpenChange={onOpenChange}
-        closeButtonOptions={{
-          onClick: handleClear,
-        }}
+        title="Create User"
+        description="Input user information to create a new user."
       >
-        <div className={styles.modalTitle}>Create User</div>
-        <div className={styles.modalDescription}>
-          Input user information to create a new user.
+        <div className={styles.inputContent}>
+          <AuthInput
+            label="Name (optional)"
+            placeholder="Name"
+            value={name}
+            onChange={handleChangeName}
+          />
+          <AuthInput
+            autoFocus
+            label="Email"
+            placeholder="Email"
+            value={email}
+            onChange={handleChangeEmail}
+            onBlur={handleCheckValidEmail}
+            error={!isValidEmail}
+            errorHint={isValidEmail ? '' : 'Email is invalid or already exist'}
+          />
+          <AuthInput
+            label="Password (optional)"
+            placeholder="Password"
+            value={password}
+            onChange={handleChangePassword}
+            type="password"
+          />
         </div>
-        <AuthInput
-          label="Name"
-          placeholder="Name"
-          value={name}
-          onChange={handleChangeName}
-        />
-        <AuthInput
-          label="Email"
-          placeholder="Email"
-          value={email}
-          onChange={handleChangeEmail}
-          onBlur={handleCheckValidEmail}
-          error={!isValidEmail}
-          errorHint={isValidEmail ? '' : 'Email is invalid or already exist'}
-        />
-        <AuthInput
-          label="Password"
-          placeholder="Password"
-          value={password}
-          onChange={handleChangePassword}
-          type="password"
-        />
+
         <div className={styles.modalFooter}>
-          <Button onClick={handleClear}>Cancel</Button>
-          <Button type="primary" onClick={onConfirm} disabled={!isValidEmail}>
+          <Button onClick={onClose}>Cancel</Button>
+          <Button
+            type="primary"
+            onClick={onConfirm}
+            disabled={!isValidEmail || email.length === 0}
+          >
             Create
           </Button>
         </div>
