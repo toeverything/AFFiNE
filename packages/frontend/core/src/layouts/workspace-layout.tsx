@@ -14,13 +14,13 @@ import {
   useService,
   WorkspaceService,
 } from '@toeverything/infra';
-import { useAtom, useAtomValue, useSetAtom } from 'jotai';
+import { useAtomValue, useSetAtom } from 'jotai';
 import type { PropsWithChildren, ReactNode } from 'react';
 import { lazy, useCallback, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Map as YMap } from 'yjs';
 
-import { openQuickSearchModalAtom, openSettingModalAtom } from '../atoms';
+import { openSettingModalAtom } from '../atoms';
 import { WorkspaceAIOnboarding } from '../components/affine/ai-onboarding';
 import { AppContainer } from '../components/affine/app-container';
 import { SyncAwareness } from '../components/affine/awareness';
@@ -38,6 +38,7 @@ import {
 import { useRegisterFindInPageCommands } from '../hooks/affine/use-register-find-in-page-commands';
 import { useNavigateHelper } from '../hooks/use-navigate-helper';
 import { useRegisterWorkspaceCommands } from '../hooks/use-register-workspace-commands';
+import { QuickSearchService } from '../modules/cmdk';
 import { useRegisterNavigationCommands } from '../modules/navigation/view/use-register-navigation-commands';
 import { WorkbenchService } from '../modules/workbench';
 import {
@@ -50,21 +51,25 @@ import { mixpanel } from '../utils';
 import * as styles from './styles.css';
 
 const CMDKQuickSearchModal = lazy(() =>
-  import('../components/pure/cmdk').then(module => ({
+  import('../modules/cmdk/views').then(module => ({
     default: module.CMDKQuickSearchModal,
   }))
 );
 
 export const QuickSearch = () => {
-  const [openQuickSearchModal, setOpenQuickSearchModalAtom] = useAtom(
-    openQuickSearchModalAtom
-  );
+  const quickSearch = useService(QuickSearchService).quickSearch;
+  const open = useLiveData(quickSearch.show$);
 
   const onToggleQuickSearch = useCallback(
     (open: boolean) => {
-      setOpenQuickSearchModalAtom(open);
+      if (open) {
+        // should never be here
+        quickSearch.show();
+      } else {
+        quickSearch.hide();
+      }
     },
-    [setOpenQuickSearchModalAtom]
+    [quickSearch]
   );
 
   const docRecordList = useService(DocsService).list;
@@ -78,7 +83,7 @@ export const QuickSearch = () => {
 
   return (
     <CMDKQuickSearchModal
-      open={openQuickSearchModal}
+      open={open}
       onOpenChange={onToggleQuickSearch}
       pageMeta={pageMeta}
     />
@@ -145,14 +150,14 @@ export const WorkspaceLayoutInner = ({ children }: PropsWithChildren) => {
     return pageHelper.createPage();
   }, [pageHelper]);
 
-  const [, setOpenQuickSearchModalAtom] = useAtom(openQuickSearchModalAtom);
+  const quickSearch = useService(QuickSearchService).quickSearch;
   const handleOpenQuickSearchModal = useCallback(() => {
-    setOpenQuickSearchModalAtom(true);
+    quickSearch.show();
     mixpanel.track('QuickSearchOpened', {
       segment: 'navigation panel',
       control: 'search button',
     });
-  }, [setOpenQuickSearchModalAtom]);
+  }, [quickSearch]);
 
   const setOpenSettingModalAtom = useSetAtom(openSettingModalAtom);
 

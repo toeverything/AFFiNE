@@ -5,6 +5,7 @@ import {
   usePromptModal,
 } from '@affine/component';
 import { useJournalInfoHelper } from '@affine/core/hooks/use-journal';
+import { QuickSearchService } from '@affine/core/modules/cmdk';
 import { PeekViewService } from '@affine/core/modules/peek-view';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import type { BlockSpec } from '@blocksuite/block-std';
@@ -33,6 +34,7 @@ import { BlocksuiteEditorJournalDocTitle } from './journal-doc-title';
 import {
   patchNotificationService,
   patchPeekViewService,
+  patchQuickSearchService,
   patchReferenceRenderer,
   type ReferenceReactRenderer,
 } from './specs/custom/spec-patchers';
@@ -70,6 +72,7 @@ interface BlocksuiteEditorProps {
 const usePatchSpecs = (page: Doc, specs: BlockSpec[]) => {
   const [reactToLit, portals] = useLitPortalFactory();
   const peekViewService = useService(PeekViewService);
+  const quickSearchService = useService(QuickSearchService);
   const referenceRenderer: ReferenceReactRenderer = useMemo(() => {
     return function customReference(reference) {
       const pageId = reference.delta.attributes?.reference?.pageId;
@@ -91,12 +94,16 @@ const usePatchSpecs = (page: Doc, specs: BlockSpec[]) => {
     if (!page.readonly && runtimeConfig.enablePeekView) {
       patched = patchPeekViewService(patched, peekViewService);
     }
+    if (!page.readonly) {
+      patched = patchQuickSearchService(patched, quickSearchService);
+    }
     return patched;
   }, [
     confirmModal,
     openPromptModal,
     page.readonly,
     peekViewService,
+    quickSearchService,
     reactToLit,
     referenceRenderer,
     specs,

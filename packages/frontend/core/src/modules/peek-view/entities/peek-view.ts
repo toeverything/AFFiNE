@@ -29,6 +29,8 @@ export type ActivePeekView = {
 
 import type { BlockModel } from '@blocksuite/store';
 
+import { resolveLinkToDoc } from '../../navigation';
+
 const EMBED_DOC_FLAVOURS = [
   'affine:embed-linked-doc',
   'affine:embed-synced-doc',
@@ -44,25 +46,6 @@ const isSurfaceRefModel = (
   blockModel: BlockModel
 ): blockModel is SurfaceRefBlockModel => {
   return blockModel.flavour === 'affine:surface-ref';
-};
-
-const resolveLinkToDoc = (href: string) => {
-  // http://xxx/workspace/48__RTCSwASvWZxyAk3Jw/-Uge-K6SYcAbcNYfQ5U-j#xxxx
-  // to { workspaceId: '48__RTCSwASvWZxyAk3Jw', docId: '-Uge-K6SYcAbcNYfQ5U-j', blockId: 'xxxx' }
-
-  const [_, workspaceId, docId, blockId] =
-    href.match(/\/workspace\/([^/]+)\/([^#]+)(?:#(.+))?/) || [];
-
-  /**
-   * @see /packages/frontend/core/src/router.tsx
-   */
-  const excludedPaths = ['all', 'collection', 'tag', 'trash'];
-
-  if (!docId || excludedPaths.includes(docId)) {
-    return null;
-  }
-
-  return { workspaceId, docId, blockId };
 };
 
 function resolvePeekInfoFromPeekTarget(

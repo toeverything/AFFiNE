@@ -1,10 +1,13 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import type { AffineEditorContainer } from '@blocksuite/presets';
 import { useService, WorkspaceService } from '@toeverything/infra';
 import { useStore } from 'jotai';
 import { useTheme } from 'next-themes';
 import { useEffect } from 'react';
 
 import {
+  PreconditionStrategy,
+  registerAffineCommand,
   registerAffineCreationCommands,
   registerAffineHelpCommands,
   registerAffineLayoutCommands,
@@ -13,9 +16,45 @@ import {
   registerAffineUpdatesCommands,
 } from '../commands';
 import { usePageHelper } from '../components/blocksuite/block-suite-page-list/utils';
+import { QuickSearchService } from '../modules/cmdk';
 import { useLanguageHelper } from './affine/use-language-helper';
 import { useActiveBlocksuiteEditor } from './use-block-suite-editor';
 import { useNavigateHelper } from './use-navigate-helper';
+
+function hasLinkPopover(editor: AffineEditorContainer | null) {
+  const textSelection = editor?.host?.std.selection.find('text');
+  if (textSelection && textSelection.from.length > 0) {
+    const linkPopup = document.querySelector('link-popup');
+    if (linkPopup) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function registerCMDKCommand(
+  qsService: QuickSearchService,
+  editor: AffineEditorContainer | null
+) {
+  return registerAffineCommand({
+    id: 'affine:show-quick-search',
+    preconditionStrategy: PreconditionStrategy.Never,
+    category: 'affine:general',
+    keyBinding: {
+      binding: '$mod+K',
+    },
+    label: '',
+    icon: '',
+    run() {
+      // Due to a conflict with the shortcut for creating a link after selecting text in blocksuite,
+      // opening the quick search modal is disabled when link-popup is visitable.
+      if (hasLinkPopover(editor)) {
+        return;
+      }
+      qsService.quickSearch.toggle();
+    },
+  });
+}
 
 export function useRegisterWorkspaceCommands() {
   const store = useStore();
@@ -26,6 +65,15 @@ export function useRegisterWorkspaceCommands() {
   const pageHelper = usePageHelper(currentWorkspace.docCollection);
   const navigationHelper = useNavigateHelper();
   const [editor] = useActiveBlocksuiteEditor();
+  const quickSearch = useService(QuickSearchService);
+
+  useEffect(() => {
+    const unsub = registerCMDKCommand(quickSearch, editor);
+
+    return () => {
+      unsub();
+    };
+  }, [editor, quickSearch]);
 
   // register AffineUpdatesCommands
   useEffect(() => {

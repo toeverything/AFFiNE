@@ -3,18 +3,27 @@ import type { CommandCategory } from '@affine/core/commands';
 import { formatDate } from '@affine/core/components/page-list';
 import { useDocEngineStatus } from '@affine/core/hooks/affine/use-doc-engine-status';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
+import { QuickSearchService } from '@affine/core/modules/cmdk';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { DocMeta } from '@blocksuite/store';
+import { useLiveData, useService } from '@toeverything/infra';
 import clsx from 'clsx';
 import { Command } from 'cmdk';
 import { useDebouncedValue } from 'foxact/use-debounced-value';
 import { useAtom } from 'jotai';
-import { Suspense, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import {
+  type ReactNode,
+  Suspense,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 
 import {
-  cmdkQueryAtom,
   cmdkValueAtom,
   useCMDKCommandGroups,
+  useSearchCallbackCommandGroups,
 } from './data-hooks';
 import { HighlightLabel } from './highlight';
 import * as styles from './main.css';
@@ -59,18 +68,18 @@ const QuickSearchGroup = ({
 }) => {
   const t = useAFFiNEI18N();
   const i18nKey = categoryToI18nKey[category];
-  const [query, setQuery] = useAtom(cmdkQueryAtom);
+  const quickSearch = useService(QuickSearchService).quickSearch;
+  const query = useLiveData(quickSearch.query$);
 
   const onCommendSelect = useAsyncCallback(
     async (command: CMDKCommand) => {
       try {
         await command.run();
       } finally {
-        setQuery('');
         onOpenChange?.(false);
       }
     },
-    [setQuery, onOpenChange]
+    [onOpenChange]
   );
 
   return (
@@ -149,20 +158,19 @@ export const CMDKContainer = ({
   onQueryChange,
   query,
   children,
-  pageMeta,
+  inputLabel,
   open,
   ...rest
 }: React.PropsWithChildren<{
   open: boolean;
   className?: string;
   query: string;
-  pageMeta?: Partial<DocMeta>;
+  inputLabel?: ReactNode;
   groups: ReturnType<typeof useCMDKCommandGroups>;
   onQueryChange: (query: string) => void;
 }>) => {
   const t = useAFFiNEI18N();
   const [value, setValue] = useAtom(cmdkValueAtom);
-  const isInEditor = pageMeta !== undefined;
   const [opening, setOpening] = useState(open);
   const { syncing, progress } = useDocEngineStatus();
   const showLoading = useDebouncedValue(syncing, 500);
@@ -197,16 +205,14 @@ export const CMDKContainer = ({
       loop
     >
       {/* todo: add page context here */}
-      {isInEditor ? (
+      {inputLabel ? (
         <div className={styles.pageTitleWrapper}>
-          <span className={styles.pageTitle}>
-            {pageMeta.title ? pageMeta.title : t['Untitled']()}
-          </span>
+          <span className={styles.pageTitle}>{inputLabel}</span>
         </div>
       ) : null}
       <div
         className={clsx(className, styles.searchInputContainer, {
-          inEditor: isInEditor,
+          [styles.hasInputLabel]: inputLabel,
         })}
       >
         {showLoading ? (
@@ -239,20 +245,41 @@ const CMDKQuickSearchModalInner = ({
   open,
   ...props
 }: CMDKModalProps & { pageMeta?: Partial<DocMeta> }) => {
-  const [query, setQuery] = useAtom(cmdkQueryAtom);
-  useLayoutEffect(() => {
-    if (open) {
-      setQuery('');
-    }
-  }, [open, setQuery]);
+  const quickSearch = useService(QuickSearchService).quickSearch;
+  const query = useLiveData(quickSearch.query$);
   const groups = useCMDKCommandGroups();
+  const t = useAFFiNEI18N();
   return (
     <CMDKContainer
       className={styles.root}
       query={query}
       groups={groups}
-      onQueryChange={setQuery}
-      pageMeta={pageMeta}
+      onQueryChange={quickSearch.setQuery}
+      inputLabel={
+        pageMeta ? (pageMeta.title ? pageMeta.title : t['Untitled']()) : null
+      }
+      open={open}
+    >
+      <QuickSearchCommands groups={groups} onOpenChange={props.onOpenChange} />
+    </CMDKContainer>
+  );
+};
+
+const CMDKQuickSearchCallbackModalInner = ({
+  open,
+  ...props
+}: CMDKModalProps & { pageMeta?: Partial<DocMeta> }) => {
+  const quickSearch = useService(QuickSearchService).quickSearch;
+  const query = useLiveData(quickSearch.query$);
+  const groups = useSearchCallbackCommandGroups();
+  const t = useAFFiNEI18N();
+  return (
+    <CMDKContainer
+      className={styles.root}
+      query={query}
+      groups={groups}
+      onQueryChange={quickSearch.setQuery}
+      inputLabel={t['com.affine.cmdk.insert-links']()}
       open={open}
     >
       <QuickSearchCommands groups={groups} onOpenChange={props.onOpenChange} />
@@ -265,10 +292,17 @@ export const CMDKQuickSearchModal = ({
   open,
   ...props
 }: CMDKModalProps & { pageMeta?: Partial<DocMeta> }) => {
+  const quickSearch = useService(QuickSearchService).quickSearch;
+  const mode = useLiveData(quickSearch.mode$);
+  const InnerComp =
+    mode === 'commands'
+      ? CMDKQuickSearchModalInner
+      : CMDKQuickSearchCallbackModalInner;
+
   return (
     <CMDKModal open={open} {...props}>
       <Suspense fallback={<Command.Loading />}>
-        <CMDKQuickSearchModalInner
+        <InnerComp
           pageMeta={pageMeta}
           open={open}
           onOpenChange={props.onOpenChange}

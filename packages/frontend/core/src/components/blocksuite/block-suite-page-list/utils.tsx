@@ -22,19 +22,22 @@ export const usePageHelper = (docCollection: DocCollection) => {
   );
 
   const createPageAndOpen = useCallback(
-    (mode?: 'page' | 'edgeless') => {
+    (mode?: 'page' | 'edgeless', open?: boolean) => {
       const page = createDoc();
       initEmptyPage(page);
       docRecordList.doc$(page.id).value?.setMode(mode || 'page');
-      openPage(docCollection.id, page.id);
+      if (open !== false) openPage(docCollection.id, page.id);
       return page;
     },
     [docCollection.id, createDoc, openPage, docRecordList]
   );
 
-  const createEdgelessAndOpen = useCallback(() => {
-    return createPageAndOpen('edgeless');
-  }, [createPageAndOpen]);
+  const createEdgelessAndOpen = useCallback(
+    (open?: boolean) => {
+      return createPageAndOpen('edgeless', open);
+    },
+    [createPageAndOpen]
+  );
 
   const importFileAndOpen = useMemo(
     () => async () => {

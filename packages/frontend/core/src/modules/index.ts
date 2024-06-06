@@ -2,6 +2,7 @@ import { configureQuotaModule } from '@affine/core/modules/quota';
 import { configureInfraModules, type Framework } from '@toeverything/infra';
 
 import { configureCloudModule } from './cloud';
+import { configureQuickSearchModule } from './cmdk';
 import { configureCollectionModule } from './collection';
 import { configureFindInPageModule } from './find-in-page';
 import { configureNavigationModule } from './navigation';
@@ -30,6 +31,7 @@ export function configureCommonModules(framework: Framework) {
   configureTelemetryModule(framework);
   configureFindInPageModule(framework);
   configurePeekViewModule(framework);
+  configureQuickSearchModule(framework);
 }
 
 export function configureImpls(framework: Framework) {

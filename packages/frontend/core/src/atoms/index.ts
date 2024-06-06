@@ -1,5 +1,4 @@
 import { atom } from 'jotai';
-import { atomWithStorage } from 'jotai/utils';
 
 import type { AuthProps } from '../components/affine/auth';
 import type { CreateWorkspaceMode } from '../components/affine/create-workspace-modal';
@@ -7,7 +6,6 @@ import type { SettingProps } from '../components/affine/setting-modal';
 // modal atoms
 export const openWorkspacesModalAtom = atom(false);
 export const openCreateWorkspaceModalAtom = atom<CreateWorkspaceMode>(false);
-export const openQuickSearchModalAtom = atom(false);
 export const openSignOutModalAtom = atom(false);
 export const openPaymentDisableAtom = atom(false);
 export const openQuotaModalAtom = atom(false);
@@ -45,11 +43,6 @@ export const authAtom = atom<AuthAtom>({
 });
 
 export const openDisableCloudAlertModalAtom = atom(false);
-
-export const recentPageIdsBaseAtom = atomWithStorage<string[]>(
-  'recentPageSettings',
-  []
-);
 
 export type AllPageFilterOption = 'docs' | 'collections' | 'tags';
 export const allPageFilterSelectAtom = atom<AllPageFilterOption>('docs');

@@ -2,6 +2,7 @@ import { Scrollable } from '@affine/component';
 import { PageDetailSkeleton } from '@affine/component/page-detail-skeleton';
 import { PageAIOnboarding } from '@affine/core/components/affine/ai-onboarding';
 import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
+import { RecentPagesService } from '@affine/core/modules/cmdk';
 import type { PageRootService } from '@blocksuite/blocks';
 import {
   BookmarkBlockService,
@@ -28,13 +29,11 @@ import {
   WorkspaceService,
 } from '@toeverything/infra';
 import clsx from 'clsx';
-import { useSetAtom } from 'jotai';
 import type { ReactElement } from 'react';
 import { memo, useCallback, useEffect, useLayoutEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import type { Map as YMap } from 'yjs';
 
-import { recentPageIdsBaseAtom } from '../../../atoms';
 import { AffineErrorBoundary } from '../../../components/affine/affine-error-boundary';
 import { GlobalPageHistoryModal } from '../../../components/affine/page-history-modal';
 import { ImagePreviewModal } from '../../../components/image-preview';
@@ -369,19 +368,16 @@ export const Component = () => {
   performanceRenderLogger.info('DetailPage');
 
   const params = useParams();
-  const setRecentPageIds = useSetAtom(recentPageIdsBaseAtom);
+  const recentPages = useService(RecentPagesService);
 
   useEffect(() => {
     if (params.pageId) {
       const pageId = params.pageId;
       localStorage.setItem('last_page_id', pageId);
 
-      setRecentPageIds(ids => {
-        // pick 3 recent page ids
-        return [...new Set([pageId, ...ids]).values()].slice(0, 3);
-      });
+      recentPages.addRecentDoc(pageId);
     }
-  }, [params, setRecentPageIds]);
+  }, [params, recentPages]);
 
   const pageId = params.pageId;
 

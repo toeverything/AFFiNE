@@ -7,6 +7,7 @@ import {
   type useConfirmModal,
   type usePromptModal,
 } from '@affine/component';
+import type { QuickSearchService } from '@affine/core/modules/cmdk';
 import type { PeekViewService } from '@affine/core/modules/peek-view';
 import type { ActivePeekView } from '@affine/core/modules/peek-view/entities/peek-view';
 import { DebugLogger } from '@affine/debug';
@@ -231,6 +232,40 @@ export function patchPeekViewService(
       peek: (target: ActivePeekView['target']) => {
         logger.debug('center peek', target);
         service.peekView.open(target);
+      },
+    };
+  });
+
+  return specs;
+}
+
+export function patchQuickSearchService(
+  specs: BlockSpec[],
+  service: QuickSearchService
+) {
+  const rootSpec = specs.find(
+    spec => spec.schema.model.flavour === 'affine:page'
+  ) as BlockSpec<string, RootService>;
+
+  if (!rootSpec) {
+    return specs;
+  }
+
+  patchSpecService(rootSpec, pageService => {
+    pageService.quickSearchService = {
+      async searchDoc(options) {
+        const result = await service.quickSearch.search(options.userInput);
+        if (result) {
+          if ('docId' in result) {
+            return result;
+          } else {
+            return {
+              userInput: result.query,
+              action: 'insert',
+            };
+          }
+        }
+        return null;
       },
     };
   });

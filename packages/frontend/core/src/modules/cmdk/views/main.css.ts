@@ -15,13 +15,16 @@ export const searchInputContainer = style({
   gap: 12,
   borderBottom: `1px solid ${cssVar('borderColor')}`,
   flexShrink: 0,
-  selectors: {
-    '&.inEditor': {
-      paddingTop: '12px',
-      paddingBottom: '18px',
-    },
-  },
 });
+
+export const hasInputLabel = style([
+  searchInputContainer,
+  {
+    paddingTop: '12px',
+    paddingBottom: '18px',
+  },
+]);
+
 export const searchInput = style({
   color: cssVar('textPrimaryColor'),
   fontSize: cssVar('fontH5'),
@@ -109,7 +112,7 @@ globalStyle(`${root} [cmdk-group][hidden]`, {
 });
 globalStyle(`${root} [cmdk-list]`, {
   maxHeight: 400,
-  minHeight: 120,
+  minHeight: 80,
   overflow: 'auto',
   overscrollBehavior: 'contain',
   height: 'min(330px, calc(var(--cmdk-list-height) + 8px))',

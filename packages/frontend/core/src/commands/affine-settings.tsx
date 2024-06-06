@@ -5,17 +5,14 @@ import { appSettingAtom } from '@toeverything/infra';
 import type { createStore } from 'jotai';
 import type { useTheme } from 'next-themes';
 
-import { openQuickSearchModalAtom } from '../atoms';
 import type { useLanguageHelper } from '../hooks/affine/use-language-helper';
-import { mixpanel } from '../utils';
-import { PreconditionStrategy, registerAffineCommand } from './registry';
+import { registerAffineCommand } from './registry';
 
 export function registerAffineSettingsCommands({
   t,
   store,
   theme,
   languageHelper,
-  editor,
 }: {
   t: ReturnType<typeof useAFFiNEI18N>;
   store: ReturnType<typeof createStore>;
@@ -25,36 +22,6 @@ export function registerAffineSettingsCommands({
 }) {
   const unsubs: Array<() => void> = [];
   const { onLanguageChange, languagesList, currentLanguage } = languageHelper;
-  unsubs.push(
-    registerAffineCommand({
-      id: 'affine:show-quick-search',
-      preconditionStrategy: PreconditionStrategy.Never,
-      category: 'affine:general',
-      keyBinding: {
-        binding: '$mod+K',
-      },
-      label: '',
-      icon: <SettingsIcon />,
-      run() {
-        mixpanel.track('QuickSearchOpened', {
-          control: 'shortcut',
-        });
-        const quickSearchModalState = store.get(openQuickSearchModalAtom);
-
-        if (!editor) {
-          return store.set(openQuickSearchModalAtom, !quickSearchModalState);
-        }
-        // Due to a conflict with the shortcut for creating a link after selecting text in blocksuite,
-        // opening the quick search modal is disabled when link-popup is visitable.
-        const textSelection = editor.host?.std.selection.find('text');
-        if (textSelection && textSelection.from.length > 0) {
-          const linkPopup = document.querySelector('link-popup');
-          if (linkPopup) return;
-        }
-        return store.set(openQuickSearchModalAtom, !quickSearchModalState);
-      },
-    })
-  );
 
   // color modes
   unsubs.push(
