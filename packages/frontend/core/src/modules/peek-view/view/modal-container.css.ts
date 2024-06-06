@@ -97,6 +97,7 @@ export const modalContentContainer = style({
   alignItems: 'flex-start',
   width: '90%',
   height: '90%',
+  maxWidth: 1248,
 });
 
 export const modalContent = style({

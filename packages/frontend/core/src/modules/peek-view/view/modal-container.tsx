@@ -72,7 +72,7 @@ export const PeekViewModalContainer = ({
   onAnimateEnd?: () => void;
 }>) => {
   const [{ status }, toggle] = useTransition({
-    timeout: animationTimeout * 2,
+    timeout: animationTimeout * 1.5,
     onStateChange(event) {
       if (event.current.status === 'exited' && onAnimateEnd) {
         onAnimateEnd();
