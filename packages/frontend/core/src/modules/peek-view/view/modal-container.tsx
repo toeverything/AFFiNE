@@ -63,9 +63,11 @@ export const PeekViewModalContainer = ({
   target,
   controls,
   children,
+  hideOnEntering,
   onAnimateEnd,
 }: PropsWithChildren<{
   open: boolean;
+  hideOnEntering?: boolean;
   target?: HTMLElement;
   onOpenChange: (open: boolean) => void;
   controls: React.ReactNode;
@@ -113,7 +115,7 @@ export const PeekViewModalContainer = ({
                 className={styles.modalContent}
                 data-state={status}
               >
-                {children}
+                {hideOnEntering && status === 'entering' ? null : children}
               </Dialog.Content>
               <div data-state={status} className={styles.modalControls}>
                 {controls}
