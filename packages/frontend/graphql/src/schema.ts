@@ -297,7 +297,7 @@ export type CleanupCopilotSessionMutationVariables = Exact<{
 
 export type CleanupCopilotSessionMutation = {
   __typename?: 'Mutation';
-  cleanupCopilotSession: string;
+  cleanupCopilotSession: Array<string>;
 };
 
 export type CreateCheckoutSessionMutationVariables = Exact<{
