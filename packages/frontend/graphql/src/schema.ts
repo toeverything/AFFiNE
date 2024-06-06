@@ -607,6 +607,10 @@ export type GetUserByIdQuery = {
   };
 };
 
+export type GetUserCountQueryVariables = Exact<{ [key: string]: never }>;
+
+export type GetUserCountQuery = { __typename?: 'Query'; userCount: number };
+
 export type GetUserFeaturesQueryVariables = Exact<{ [key: string]: never }>;
 
 export type GetUserFeaturesQuery = {
@@ -1253,6 +1257,11 @@ export type Queries =
       name: 'getUserByIdQuery';
       variables: GetUserByIdQueryVariables;
       response: GetUserByIdQuery;
+    }
+  | {
+      name: 'getUserCountQuery';
+      variables: GetUserCountQueryVariables;
+      response: GetUserCountQuery;
     }
   | {
       name: 'getUserFeaturesQuery';

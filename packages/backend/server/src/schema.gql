@@ -382,6 +382,9 @@ type Query {
   """Get user by id"""
   userById(id: String!): UserType!
 
+  """Get total user count"""
+  userCount: Int!
+
   """List registered users"""
   users(filter: ListUserInput!): [UserType!]!
 

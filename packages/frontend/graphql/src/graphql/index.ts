@@ -455,6 +455,17 @@ query getUserById($id: String!) {
 }`,
 };
 
+export const getUserCountQuery = {
+  id: 'getUserCountQuery' as const,
+  operationName: 'getUserCount',
+  definitionName: 'userCount',
+  containsFile: false,
+  query: `
+query getUserCount {
+  userCount
+}`,
+};
+
 export const getUserFeaturesQuery = {
   id: 'getUserFeaturesQuery' as const,
   operationName: 'getUserFeatures',

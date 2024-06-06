@@ -208,6 +208,14 @@ export class UserManagementResolver {
     return sessionUser(user);
   }
 
+  @Query(() => Int, {
+    name: 'userCount',
+    description: 'Get total user count',
+  })
+  async getUserCount() {
+    return await this.db.user.count();
+  }
+
   @Mutation(() => UserType, {
     description: 'Create a new user',
   })
