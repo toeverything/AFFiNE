@@ -506,12 +506,7 @@ test('can use @ to open quick search to search for doc and insert into canvas', 
 
   // press enter to insert the page to canvas
   await page.keyboard.press('Enter');
-  await expect(page.locator('affine-embed-synced-doc-block')).toBeVisible();
-
-  await page.locator('affine-embed-synced-doc-block').click();
-  // change to linked card
-  await page.locator('edgeless-tool-icon-button.card').click();
-
+  await expect(page.locator('affine-embed-linked-doc-block')).toBeVisible();
   await expect(
     page.locator('.affine-embed-linked-doc-content-title')
   ).toContainText('Write, Draw, Plan all at Once');

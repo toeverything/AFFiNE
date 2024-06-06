@@ -128,6 +128,7 @@ const blocksuiteFeatureFlags: Partial<Record<keyof BlockSuiteFlags, string>> = {
   enable_database_statistics: 'Enable Database Block Statistics',
   enable_block_query: 'Enable Todo Block Query',
   enable_new_image_actions: 'Enable New Image Actions',
+  enable_edgeless_text: 'Enable New Edgeless Text',
 };
 
 const BlocksuiteFeatureFlagSettings = () => {

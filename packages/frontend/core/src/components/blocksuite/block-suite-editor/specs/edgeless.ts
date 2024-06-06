@@ -2,6 +2,7 @@ import type { BlockSpec } from '@blocksuite/block-std';
 import {
   EdgelessSurfaceBlockSpec,
   EdgelessSurfaceRefBlockSpec,
+  EdgelessTextBlockSpec,
   FrameBlockSpec,
 } from '@blocksuite/blocks';
 
@@ -13,6 +14,7 @@ export const EdgelessModeSpecs: BlockSpec[] = [
   EdgelessSurfaceBlockSpec,
   EdgelessSurfaceRefBlockSpec,
   FrameBlockSpec,
+  EdgelessTextBlockSpec,
   // special
   CustomEdgelessRootBlockSpec,
 ];
