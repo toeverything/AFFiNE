@@ -14,11 +14,12 @@ import type {
 import type { PeekViewService } from '@affine/core/modules/peek-view';
 import type { ActivePeekView } from '@affine/core/modules/peek-view/entities/peek-view';
 import { DebugLogger } from '@affine/debug';
-import type { BlockSpec } from '@blocksuite/block-std';
-import type {
-  AffineReference,
-  ParagraphBlockService,
-  RootService,
+import type { BlockSpec, WidgetElement } from '@blocksuite/block-std';
+import {
+  type AffineReference,
+  AffineSlashMenuWidget,
+  type ParagraphBlockService,
+  type RootService,
 } from '@blocksuite/blocks';
 import { LitElement, type TemplateResult } from 'lit';
 import React, { createElement, type ReactNode } from 'react';
@@ -66,7 +67,8 @@ function patchSpecService<Spec extends BlockSpec>(
     service: Spec extends BlockSpec<any, infer BlockService>
       ? BlockService
       : never
-  ) => (() => void) | void
+  ) => (() => void) | void,
+  onWidgetConnected?: (component: WidgetElement) => void
 ) {
   const oldSetup = spec.setup;
   spec.setup = (slots, disposableGroup) => {
@@ -79,6 +81,13 @@ function patchSpecService<Spec extends BlockSpec>(
         }
       })
     );
+
+    onWidgetConnected &&
+      disposableGroup.add(
+        slots.widgetConnected.on(({ component }) => {
+          onWidgetConnected(component);
+        })
+      );
   };
   return spec;
 }
@@ -271,45 +280,93 @@ export function patchQuickSearchService(
     return specs;
   }
 
-  patchSpecService(rootSpec, pageService => {
-    pageService.quickSearchService = {
-      async searchDoc(options) {
-        let searchResult: SearchCallbackResult | null = null;
-        if (options.skipSelection) {
-          const query = options.userInput;
-          if (!query) {
-            logger.error('No user input provided');
+  patchSpecService(
+    rootSpec,
+    pageService => {
+      pageService.quickSearchService = {
+        async searchDoc(options) {
+          let searchResult: SearchCallbackResult | null = null;
+          if (options.skipSelection) {
+            const query = options.userInput;
+            if (!query) {
+              logger.error('No user input provided');
+            } else {
+              const searchedDoc = service.quickSearch
+                .getSearchedDocs(query)
+                .at(0);
+              if (searchedDoc) {
+                searchResult = {
+                  docId: searchedDoc.doc.id,
+                  blockId: searchedDoc.blockId,
+                  action: 'insert',
+                  query,
+                };
+              }
+            }
           } else {
-            const searchedDoc = service.quickSearch
-              .getSearchedDocs(query)
-              .at(0);
-            if (searchedDoc) {
-              searchResult = {
-                docId: searchedDoc.doc.id,
-                blockId: searchedDoc.blockId,
+            searchResult = await service.quickSearch.search(options.userInput);
+          }
+
+          if (searchResult) {
+            if ('docId' in searchResult) {
+              return searchResult;
+            } else {
+              return {
+                userInput: searchResult.query,
                 action: 'insert',
-                query,
               };
             }
           }
-        } else {
-          searchResult = await service.quickSearch.search(options.userInput);
-        }
+          return null;
+        },
+      };
+    },
+    (component: WidgetElement) => {
+      if (component instanceof AffineSlashMenuWidget) {
+        component.config.items.forEach(item => {
+          if (
+            'action' in item &&
+            (item.name === 'Linked Doc' || item.name === 'Link')
+          ) {
+            const oldAction = item.action;
+            item.action = async ({ model, rootElement }) => {
+              const { host, service, std } = rootElement;
+              const { quickSearchService } = service;
 
-        if (searchResult) {
-          if ('docId' in searchResult) {
-            return searchResult;
-          } else {
-            return {
-              userInput: searchResult.query,
-              action: 'insert',
+              if (!quickSearchService) return oldAction({ model, rootElement });
+
+              const result = await quickSearchService.searchDoc({});
+              if (result === null) return;
+
+              if ('docId' in result) {
+                const linkedDoc = std.collection.getDoc(result.docId);
+                if (!linkedDoc) return;
+
+                host.doc.addSiblingBlocks(model, [
+                  {
+                    flavour: 'affine:embed-linked-doc',
+                    pageId: linkedDoc.id,
+                  },
+                ]);
+              } else if ('userInput' in result) {
+                const embedOptions = service.getEmbedBlockOptions(
+                  result.userInput
+                );
+                if (!embedOptions) return;
+
+                host.doc.addSiblingBlocks(model, [
+                  {
+                    flavour: embedOptions.flavour,
+                    url: result.userInput,
+                  },
+                ]);
+              }
             };
           }
-        }
-        return null;
-      },
-    };
-  });
+        });
+      }
+    }
+  );
 
   return specs;
 }
