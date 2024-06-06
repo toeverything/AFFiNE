@@ -65,17 +65,6 @@ function drawImageFit(
   const ratio = Math.max(hRatio, vRatio);
   const centerShift_x = (size - img.width * ratio) / 2;
   const centerShift_y = (size - img.height * ratio) / 2;
-  console.log(ctx.canvas);
-  ctx.canvas.dataset['drawed'] = 'true';
-  console.log(
-    'drawImageFit',
-    img.width,
-    img.height,
-    size,
-    ratio,
-    centerShift_x,
-    centerShift_y
-  );
   ctx.drawImage(
     img,
     0,
