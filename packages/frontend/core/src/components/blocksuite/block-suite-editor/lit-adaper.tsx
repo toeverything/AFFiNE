@@ -2,7 +2,6 @@ import {
   createReactComponentFromLit,
   useConfirmModal,
   useLitPortalFactory,
-  usePromptModal,
 } from '@affine/component';
 import { useJournalInfoHelper } from '@affine/core/hooks/use-journal';
 import { QuickSearchService } from '@affine/core/modules/cmdk';
@@ -84,12 +83,11 @@ const usePatchSpecs = (page: Doc, specs: BlockSpec[]) => {
   }, [page.collection]);
 
   const confirmModal = useConfirmModal();
-  const openPromptModal = usePromptModal();
   const patchedSpecs = useMemo(() => {
     let patched = patchReferenceRenderer(specs, reactToLit, referenceRenderer);
     patched = patchNotificationService(
       patchReferenceRenderer(patched, reactToLit, referenceRenderer),
-      { ...confirmModal, prompt: openPromptModal }
+      confirmModal
     );
     if (!page.readonly && runtimeConfig.enablePeekView) {
       patched = patchPeekViewService(patched, peekViewService);
@@ -100,7 +98,6 @@ const usePatchSpecs = (page: Doc, specs: BlockSpec[]) => {
     return patched;
   }, [
     confirmModal,
-    openPromptModal,
     page.readonly,
     peekViewService,
     quickSearchService,

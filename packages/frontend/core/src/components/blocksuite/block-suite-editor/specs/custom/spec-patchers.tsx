@@ -1,11 +1,11 @@
 import {
   createReactComponentFromLit,
   type ElementOrFactory,
+  Input,
   notify,
   toast,
   type ToastOptions,
   type useConfirmModal,
-  type usePromptModal,
 } from '@affine/component';
 import type {
   QuickSearchService,
@@ -119,13 +119,7 @@ export function patchReferenceRenderer(
 
 export function patchNotificationService(
   specs: BlockSpec[],
-  {
-    closeConfirmModal,
-    openConfirmModal,
-    prompt,
-  }: ReturnType<typeof useConfirmModal> & {
-    prompt: ReturnType<typeof usePromptModal>;
-  }
+  { closeConfirmModal, openConfirmModal }: ReturnType<typeof useConfirmModal>
 ) {
   const rootSpec = specs.find(
     spec => spec.schema.model.flavour === 'affine:page'
@@ -168,13 +162,36 @@ export function patchNotificationService(
         cancelText,
         abort,
       }) => {
-        return prompt({
-          message: toReactNode(message),
-          title: toReactNode(title),
-          confirmText,
-          cancelText,
-          placeholder,
-          abort,
+        return new Promise<string | null>(resolve => {
+          let value = '';
+          const description = (
+            <div>
+              <span style={{ marginBottom: 12 }}>{toReactNode(message)}</span>
+              <Input placeholder={placeholder} onChange={e => (value = e)} />
+            </div>
+          );
+          openConfirmModal({
+            title: toReactNode(title),
+            description: description,
+            confirmButtonOptions: {
+              children: confirmText ?? 'Confirm',
+              type: 'primary',
+            },
+            cancelButtonOptions: {
+              children: cancelText ?? 'Cancel',
+            },
+
+            onConfirm: () => {
+              resolve(value);
+            },
+            onCancel: () => {
+              resolve(null);
+            },
+          });
+          abort?.addEventListener('abort', () => {
+            resolve(null);
+            closeConfirmModal();
+          });
         });
       },
       toast: (message: string, options: ToastOptions) => {

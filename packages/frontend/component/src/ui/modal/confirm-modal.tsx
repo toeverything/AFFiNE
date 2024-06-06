@@ -1,12 +1,10 @@
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { DialogTrigger } from '@radix-ui/react-dialog';
 import clsx from 'clsx';
-import type { PropsWithChildren, ReactNode } from 'react';
+import type { PropsWithChildren } from 'react';
 import { createContext, useCallback, useContext, useState } from 'react';
 
 import type { ButtonProps } from '../button';
 import { Button } from '../button';
-import Input from '../input';
 import type { ModalProps } from './modal';
 import { Modal } from './modal';
 import * as styles from './styles.css';
@@ -161,54 +159,4 @@ export const useConfirmModal = () => {
     openConfirmModal: context.openConfirmModal,
     closeConfirmModal: context.closeConfirmModal,
   };
-};
-
-export const usePromptModal = () => {
-  const { closeConfirmModal, openConfirmModal } = useConfirmModal();
-  const t = useAFFiNEI18N();
-  return useCallback(
-    (props: {
-      confirmText?: string;
-      cancelText?: string;
-      placeholder?: string;
-      message: ReactNode;
-      title: ReactNode;
-      abort?: AbortSignal;
-    }) => {
-      return new Promise<string | null>(resolve => {
-        let value = '';
-        const message = (
-          <div className={styles.promptModalContent}>
-            {props.message}
-            <Input
-              placeholder={props.placeholder}
-              onChange={e => (value = e)}
-            />
-          </div>
-        );
-        openConfirmModal({
-          ...props,
-          confirmButtonOptions: {
-            children: props.confirmText ?? t['Confirm'](),
-            type: 'primary',
-          },
-          cancelButtonOptions: {
-            children: props.cancelText ?? t['Cancel'](),
-          },
-          description: message,
-          onConfirm: () => {
-            resolve(value);
-          },
-          onCancel: () => {
-            resolve(null);
-          },
-        });
-        props.abort?.addEventListener('abort', () => {
-          resolve(null);
-          closeConfirmModal();
-        });
-      });
-    },
-    [closeConfirmModal, openConfirmModal, t]
-  );
 };
