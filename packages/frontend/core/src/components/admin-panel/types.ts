@@ -1,3 +1,5 @@
+import type { FeatureType } from '@affine/graphql';
+
 export type User = {
   __typename?: 'UserType' | undefined;
   id: string;
@@ -7,4 +9,5 @@ export type User = {
   emailVerified: boolean;
   hasPassword: boolean | null;
   createdAt: string | null;
+  features: FeatureType[];
 };

@@ -604,6 +604,7 @@ export type GetUserByIdQuery = {
     emailVerified: boolean;
     hasPassword: boolean | null;
     createdAt: string | null;
+    features: Array<FeatureType>;
   };
 };
 
@@ -637,6 +638,7 @@ export type GetUserListQuery = {
     emailVerified: boolean;
     hasPassword: boolean | null;
     createdAt: string | null;
+    features: Array<FeatureType>;
   }>;
 };
 

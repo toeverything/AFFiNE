@@ -451,6 +451,7 @@ query getUserById($id: String!) {
     emailVerified
     hasPassword
     createdAt
+    features
   }
 }`,
 };
@@ -495,6 +496,7 @@ query getUserList($filter: ListUserInput!) {
     emailVerified
     hasPassword
     createdAt
+    features
   }
 }`,
 };
