@@ -1,7 +1,6 @@
 import type { BlockSpec } from '@blocksuite/block-std';
 import {
   BookmarkBlockSpec,
-  CodeBlockSpec,
   DatabaseBlockSpec,
   DataViewBlockSpec,
   DividerBlockSpec,
@@ -12,11 +11,14 @@ import {
   EmbedLoomBlockSpec,
   EmbedSyncedDocBlockSpec,
   EmbedYoutubeBlockSpec,
-  ImageBlockSpec,
   ListBlockSpec,
   NoteBlockSpec,
 } from '@blocksuite/blocks';
-import { AIParagraphBlockSpec } from '@blocksuite/presets';
+import {
+  AICodeBlockSpec,
+  AIImageBlockSpec,
+  AIParagraphBlockSpec,
+} from '@blocksuite/presets';
 
 import { CustomAttachmentBlockSpec } from './custom/attachment-block';
 
@@ -26,8 +28,6 @@ export const CommonBlockSpecs: BlockSpec[] = [
   DatabaseBlockSpec,
   DataViewBlockSpec,
   DividerBlockSpec,
-  CodeBlockSpec,
-  ImageBlockSpec,
   BookmarkBlockSpec,
   EmbedFigmaBlockSpec,
   EmbedGithubBlockSpec,
@@ -38,5 +38,7 @@ export const CommonBlockSpecs: BlockSpec[] = [
   EmbedLinkedDocBlockSpec,
   // special
   CustomAttachmentBlockSpec,
+  AICodeBlockSpec,
+  AIImageBlockSpec,
   AIParagraphBlockSpec,
 ];
