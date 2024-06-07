@@ -74,12 +74,22 @@ export const getCommandScore = (command: CMDKCommand, search: string) => {
   if (search.trim() === '') {
     return 1;
   }
+
+  const label = command.label;
+
   const title =
-    (typeof command?.label === 'string'
-      ? command.label
-      : command?.label.title) || '';
+    label && typeof label === 'object' && 'title' in label
+      ? label.title
+      : typeof label === 'string'
+        ? label
+        : '';
+
   const subTitle =
-    (typeof command?.label === 'string' ? '' : command?.label.subTitle) || '';
+    label && typeof label === 'object' && 'title' in label
+      ? label.subTitle ?? ''
+      : typeof label === 'string'
+        ? label
+        : '';
 
   const catWeight = getCategoryWeight(command.category);
 

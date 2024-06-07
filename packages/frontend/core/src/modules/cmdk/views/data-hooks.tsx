@@ -16,9 +16,11 @@ import { CollectionService } from '@affine/core/modules/collection';
 import { WorkspaceSubPath } from '@affine/core/shared';
 import { mixpanel } from '@affine/core/utils';
 import type { Collection } from '@affine/env/filter';
+import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   EdgelessIcon,
+  LinkIcon,
   PageIcon,
   TodayIcon,
   ViewLayersIcon,
@@ -36,6 +38,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { usePageHelper } from '../../../components/blocksuite/block-suite-page-list/utils';
 import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
 import { filterSortAndGroupCommands } from './filter-commands';
+import * as hlStyles from './highlight.css';
 import type { CMDKCommand, CommandContext } from './types';
 
 export const cmdkValueAtom = atom('');
@@ -254,9 +257,17 @@ export const usePageCommands = () => {
 
       results.push({
         id: 'affine:pages:create-page',
-        label: t['com.affine.cmdk.affine.create-new-page-as']({
-          keyWord: query,
-        }),
+        label: (
+          <Trans
+            i18nKey="com.affine.cmdk.affine.create-new-page-as"
+            values={{
+              keyWord: query,
+            }}
+            components={{
+              1: <span className={hlStyles.highlightKeyword} />,
+            }}
+          />
+        ),
         alwaysShow: true,
         category: 'affine:creation',
         run: async () => {
@@ -273,9 +284,17 @@ export const usePageCommands = () => {
 
       results.push({
         id: 'affine:pages:create-edgeless',
-        label: t['com.affine.cmdk.affine.create-new-edgeless-as']({
-          keyWord: query,
-        }),
+        label: (
+          <Trans
+            i18nKey="com.affine.cmdk.affine.create-new-edgeless-as"
+            values={{
+              keyWord: query,
+            }}
+            components={{
+              1: <span className={hlStyles.highlightKeyword} />,
+            }}
+          />
+        ),
         alwaysShow: true,
         category: 'affine:creation',
         run: async () => {
@@ -309,7 +328,6 @@ export const useSearchCallbackCommands = () => {
   const pageHelper = usePageHelper(workspace.docCollection);
   const pageMetaHelper = useDocMetaHelper(workspace.docCollection);
   const query = useLiveData(quickSearch.query$);
-  const t = useAFFiNEI18N();
 
   const onSelectPage = useCallback(
     (searchResult: SearchCallbackResult) => {
@@ -332,35 +350,52 @@ export const useSearchCallbackCommands = () => {
       results.every(command => command.originalValue !== query) &&
       query.trim()
     ) {
-      results.push({
-        id: 'affine:pages:create-page',
-        label: t['com.affine.cmdk.affine.create-new-doc-and-insert']({
-          keyWord: query,
-        }),
-        alwaysShow: true,
-        category: 'affine:creation',
-        run: async () => {
-          const page = pageHelper.createPage('page', false);
-          page.load();
-          pageMetaHelper.setDocTitle(page.id, query);
-          mixpanel.track('DocCreated', {
-            control: 'cmdk',
-            type: 'doc',
-          });
-          onSelectPage({ docId: page.id });
-        },
-        icon: <PageIcon />,
-      });
+      if (query.startsWith('http://') || query.startsWith('https://')) {
+        results.push({
+          id: 'affine:pages:create-page',
+          label: <Trans i18nKey="com.affine.cmdk.affine.insert-link" />,
+          alwaysShow: true,
+          category: 'affine:creation',
+          run: async () => {
+            onSelectPage({
+              query,
+              action: 'insert',
+            });
+          },
+          icon: <LinkIcon />,
+        });
+      } else {
+        results.push({
+          id: 'affine:pages:create-page',
+          label: (
+            <Trans
+              i18nKey="com.affine.cmdk.affine.create-new-doc-and-insert"
+              values={{
+                keyWord: query,
+              }}
+              components={{
+                1: <span className={hlStyles.highlightKeyword} />,
+              }}
+            />
+          ),
+          alwaysShow: true,
+          category: 'affine:creation',
+          run: async () => {
+            const page = pageHelper.createPage('page', false);
+            page.load();
+            pageMetaHelper.setDocTitle(page.id, query);
+            mixpanel.track('DocCreated', {
+              control: 'cmdk',
+              type: 'doc',
+            });
+            onSelectPage({ docId: page.id });
+          },
+          icon: <PageIcon />,
+        });
+      }
     }
     return results;
-  }, [
-    searchedDocsCommands,
-    query,
-    t,
-    pageHelper,
-    pageMetaHelper,
-    onSelectPage,
-  ]);
+  }, [searchedDocsCommands, query, pageHelper, pageMetaHelper, onSelectPage]);
 };
 
 export const collectionToCommand = (

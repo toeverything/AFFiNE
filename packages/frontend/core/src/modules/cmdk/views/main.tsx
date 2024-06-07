@@ -174,6 +174,8 @@ export const CMDKContainer = ({
   const [opening, setOpening] = useState(open);
   const { syncing, progress } = useDocEngineStatus();
   const showLoading = useDebouncedValue(syncing, 500);
+  const quickSearch = useService(QuickSearchService).quickSearch;
+  const mode = useLiveData(quickSearch.mode$);
 
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -235,7 +237,7 @@ export const CMDKContainer = ({
       <Command.List data-opening={opening ? true : undefined}>
         {children}
       </Command.List>
-      <NotFoundGroup />
+      {mode === 'commands' ? <NotFoundGroup /> : null}
     </Command>
   );
 };

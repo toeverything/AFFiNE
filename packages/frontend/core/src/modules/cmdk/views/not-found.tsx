@@ -9,10 +9,8 @@ import * as styles from './not-found.css';
 export const NotFoundGroup = () => {
   const quickSearch = useService(QuickSearchService).quickSearch;
   const query = useLiveData(quickSearch.query$);
-  const mode = useLiveData(quickSearch.mode$);
   // hack: we know that the filtered count is 3 when there is no result (create page & edgeless & append to journal, for mode === 'cmdk')
-  const renderNoResult =
-    useCommandState(state => state.filtered.count === 3) && mode === 'commands';
+  const renderNoResult = useCommandState(state => state.filtered.count === 3);
 
   const t = useAFFiNEI18N();
 

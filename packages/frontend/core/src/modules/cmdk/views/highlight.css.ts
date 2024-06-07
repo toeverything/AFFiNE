@@ -10,16 +10,22 @@ export const highlightText = style({
   textOverflow: 'ellipsis',
 });
 export const highlightKeyword = style({
+  display: 'inline-block',
+  verticalAlign: 'bottom',
   color: cssVar('primaryColor'),
   whiteSpace: 'pre',
-  overflow: 'visible',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
   flexShrink: 0,
+  maxWidth: '360px',
 });
 export const labelTitle = style({
   fontSize: cssVar('fontBase'),
   lineHeight: '24px',
   fontWeight: 400,
   textAlign: 'justify',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
 });
 export const labelContent = style({
   fontSize: cssVar('fontXs'),

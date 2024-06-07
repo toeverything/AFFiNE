@@ -1,5 +1,6 @@
 import type { CommandCategory } from '@affine/core/commands';
 import type { DocMode } from '@toeverything/infra';
+import type { ReactNode } from 'react';
 
 export interface CommandContext {
   docMode: DocMode | undefined;
@@ -11,6 +12,7 @@ export interface CommandContext {
 export interface CMDKCommand {
   id: string;
   label:
+    | ReactNode
     | string
     | {
         title: string;

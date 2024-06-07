@@ -25,7 +25,10 @@ export const notFoundTitle = style({
   color: cssVar('textSecondaryColor'),
   fontWeight: '600',
   lineHeight: '20px',
-  textAlign: 'justify',
+  whiteSpace: 'nowrap',
+  wordBreak: 'break-word',
+  textOverflow: 'ellipsis',
+  overflow: 'hidden',
   padding: '8px',
 });
 export const notFoundText = style({

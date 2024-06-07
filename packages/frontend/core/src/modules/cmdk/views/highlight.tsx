@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, type ReactNode } from 'react';
 
 import * as styles from './highlight.css';
 import { useHighlight } from './use-highlight';
@@ -14,7 +14,7 @@ type HighlightProps = {
 };
 
 type HighlightLabelProps = {
-  label: SearchResultLabel;
+  label: SearchResultLabel | ReactNode;
   highlight: string;
 };
 
@@ -44,16 +44,20 @@ export const HighlightLabel = memo(function HighlightLabel({
   label,
   highlight,
 }: HighlightLabelProps) {
-  return (
-    <div>
-      <div className={styles.labelTitle}>
-        <Highlight text={label.title} highlight={highlight} />
-      </div>
-      {label.subTitle ? (
-        <div className={styles.labelContent}>
-          <Highlight text={label.subTitle} highlight={highlight} />
+  if (label && typeof label === 'object' && 'title' in label) {
+    return (
+      <div>
+        <div className={styles.labelTitle}>
+          <Highlight text={label.title} highlight={highlight} />
         </div>
-      ) : null}
-    </div>
-  );
+        {label.subTitle ? (
+          <div className={styles.labelContent}>
+            <Highlight text={label.subTitle} highlight={highlight} />
+          </div>
+        ) : null}
+      </div>
+    );
+  }
+
+  return <div className={styles.labelTitle}>{label}</div>;
 });
