@@ -20,6 +20,7 @@ import {
 import { gql } from './common';
 import { handleGraphQLError } from './utils';
 
+// @ts-expect-error no error
 export class MockCopilotTestProvider
   extends OpenAIProvider
   implements
@@ -29,6 +30,7 @@ export class MockCopilotTestProvider
     CopilotImageToImageProvider,
     CopilotImageToTextProvider
 {
+  static override readonly type = CopilotProviderType.Test;
   override readonly availableModels = [
     'test',
     'fast-sdxl/image-to-image',
@@ -44,12 +46,20 @@ export class MockCopilotTestProvider
     CopilotCapability.ImageToText,
   ];
 
-  override get type(): CopilotProviderType {
-    return CopilotProviderType.Test;
+  constructor() {
+    super({ apiKey: '1' });
   }
 
   override getCapabilities(): CopilotCapability[] {
     return MockCopilotTestProvider.capabilities;
+  }
+
+  static override assetsConfig(_config: any) {
+    return true;
+  }
+
+  override get type(): CopilotProviderType {
+    return CopilotProviderType.Test;
   }
 
   override async isModelAvailable(model: string): Promise<boolean> {

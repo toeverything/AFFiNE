@@ -166,6 +166,34 @@ export class CopilotProviderService {
     }
     return null;
   }
+
+  async getProviderByModel<C extends CopilotCapability>(
+    model: string,
+    prefer?: CopilotProviderType
+  ): Promise<CapabilityToCopilotProvider[C] | null> {
+    const providers = Array.from(COPILOT_PROVIDER.keys());
+    if (providers.length) {
+      let selectedProvider: CopilotProviderType | undefined = prefer;
+      let currentIndex = -1;
+
+      if (!selectedProvider) {
+        currentIndex = 0;
+        selectedProvider = providers[currentIndex];
+      }
+
+      while (selectedProvider) {
+        const provider = this.getProvider(selectedProvider);
+
+        if (await provider.isModelAvailable(model)) {
+          return provider as CapabilityToCopilotProvider[C];
+        }
+
+        currentIndex += 1;
+        selectedProvider = providers[currentIndex];
+      }
+    }
+    return null;
+  }
 }
 
 export { FalProvider } from './fal';

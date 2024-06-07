@@ -1,5 +1,3 @@
-import assert from 'node:assert';
-
 import { Logger } from '@nestjs/common';
 import { ClientOptions, OpenAI } from 'openai';
 
@@ -58,12 +56,11 @@ export class OpenAIProvider
   private existsModels: string[] | undefined;
 
   constructor(config: ClientOptions) {
-    assert(OpenAIProvider.assetsConfig(config));
     this.instance = new OpenAI(config);
   }
 
   static assetsConfig(config: ClientOptions) {
-    return !!config.apiKey;
+    return !!config?.apiKey;
   }
 
   get type(): CopilotProviderType {

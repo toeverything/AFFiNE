@@ -34,11 +34,7 @@ import { Config } from '../../fundamentals';
 import { CopilotProviderService } from './providers';
 import { ChatSession, ChatSessionService } from './session';
 import { CopilotStorage } from './storage';
-import {
-  CopilotCapability,
-  CopilotImageToTextProvider,
-  CopilotTextToTextProvider,
-} from './types';
+import { CopilotCapability, CopilotTextProvider } from './types';
 
 export interface ChatEvent {
   type: 'attachment' | 'message' | 'error';
@@ -88,7 +84,7 @@ export class CopilotController {
     userId: string,
     sessionId: string,
     messageId?: string
-  ): Promise<CopilotTextToTextProvider | CopilotImageToTextProvider> {
+  ): Promise<CopilotTextProvider> {
     const { hasAttachment, model } = await this.checkRequest(
       userId,
       sessionId,

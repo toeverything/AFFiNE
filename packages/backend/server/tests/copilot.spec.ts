@@ -6,18 +6,22 @@ import ava from 'ava';
 
 import { AuthService } from '../src/core/auth';
 import { QuotaModule } from '../src/core/quota';
+import { prompts } from '../src/data/migrations/utils/prompts';
 import { ConfigModule } from '../src/fundamentals/config';
 import { CopilotModule } from '../src/plugins/copilot';
 import { PromptService } from '../src/plugins/copilot/prompt';
 import {
   CopilotProviderService,
+  OpenAIProvider,
   registerCopilotProvider,
+  unregisterCopilotProvider,
 } from '../src/plugins/copilot/providers';
 import { ChatSessionService } from '../src/plugins/copilot/session';
 import {
   CopilotCapability,
   CopilotProviderType,
 } from '../src/plugins/copilot/types';
+import { CopilotWorkflowService } from '../src/plugins/copilot/workflow';
 import { createTestingModule } from './utils';
 import { MockCopilotTestProvider } from './utils/copilot';
 
@@ -27,6 +31,7 @@ const test = ava as TestFn<{
   prompt: PromptService;
   provider: CopilotProviderService;
   session: ChatSessionService;
+  workflow: CopilotWorkflowService;
 }>;
 
 test.beforeEach(async t => {
@@ -53,12 +58,14 @@ test.beforeEach(async t => {
   const prompt = module.get(PromptService);
   const provider = module.get(CopilotProviderService);
   const session = module.get(ChatSessionService);
+  const workflow = module.get(CopilotWorkflowService);
 
   t.context.module = module;
   t.context.auth = auth;
   t.context.prompt = prompt;
   t.context.provider = provider;
   t.context.session = session;
+  t.context.workflow = workflow;
 });
 
 test.afterEach.always(async t => {
@@ -532,4 +539,28 @@ test('should be able to register test provider', async t => {
   await assertProvider(CopilotCapability.TextToImage);
   await assertProvider(CopilotCapability.ImageToImage);
   await assertProvider(CopilotCapability.ImageToText);
+});
+
+// this test used to preview the final result of the workflow
+// for the functional test of the API itself, refer to the follow tests
+test.skip('should be able to preview workflow', async t => {
+  const { prompt, workflow } = t.context;
+  registerCopilotProvider(OpenAIProvider);
+
+  for (const p of prompts) {
+    await prompt.set(p.name, p.model, p.messages);
+  }
+
+  let result = '';
+  for await (const ret of workflow.runGraph(
+    'Create a presentation',
+    'apple company'
+  )) {
+    result += ret;
+    console.log('stream result:', ret);
+  }
+  console.log('final stream result:', result);
+
+  unregisterCopilotProvider(OpenAIProvider.type);
+  t.pass();
 });

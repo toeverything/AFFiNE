@@ -230,3 +230,14 @@ export type CapabilityToCopilotProvider = {
   [CopilotCapability.ImageToText]: CopilotImageToTextProvider;
   [CopilotCapability.ImageToImage]: CopilotImageToImageProvider;
 };
+
+export type CopilotTextProvider =
+  | CopilotTextToTextProvider
+  | CopilotImageToTextProvider;
+export type CopilotImageProvider =
+  | CopilotTextToImageProvider
+  | CopilotImageToImageProvider;
+export type CopilotAllProvider =
+  | CopilotTextProvider
+  | CopilotImageProvider
+  | CopilotTextToEmbeddingProvider;
