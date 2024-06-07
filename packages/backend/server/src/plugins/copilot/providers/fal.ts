@@ -26,8 +26,8 @@ const FalImageSchema = z
     url: z.string(),
     seed: z.number().optional(),
     content_type: z.string(),
-    file_name: z.string(),
-    file_size: z.number(),
+    file_name: z.string().optional(),
+    file_size: z.number().optional(),
     width: z.number(),
     height: z.number(),
   })
@@ -200,8 +200,10 @@ export class FalProvider
     if (model.startsWith('workflows/')) {
       const stream = await falStream(model, { input: prompt });
 
-      const result = FalStreamOutputSchema.parse(await stream.done());
-      return result.output;
+      const result = FalStreamOutputSchema.safeParse(await stream.done());
+      if (result.success) return result.data.output;
+      const errors = JSON.stringify(result.error.errors);
+      throw new Error(`Unexpected fal response: ${errors}`);
     } else {
       const response = await fetch(`https://fal.run/fal-ai/${model}`, {
         method: 'POST',
@@ -217,7 +219,10 @@ export class FalProvider
         }),
         signal: options.signal,
       });
-      return FalResponseSchema.parse(await response.json());
+      const result = FalResponseSchema.safeParse(await response.json());
+      if (result.success) return result.data;
+      const errors = JSON.stringify(result.error.errors);
+      throw new Error(`Unexpected fal response: ${errors}`);
     }
   }
 
