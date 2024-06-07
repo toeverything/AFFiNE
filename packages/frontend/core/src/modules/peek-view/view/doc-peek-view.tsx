@@ -140,7 +140,7 @@ export const SurfaceRefPeekView = ({
   useEffect(() => {
     let mounted = true;
     if (editorRef) {
-      editorRef.host.updateComplete
+      editorRef.host?.updateComplete
         .then(() => {
           if (mounted) {
             const viewport = {

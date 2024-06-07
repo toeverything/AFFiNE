@@ -6,11 +6,9 @@ export const transformOrigin = createVar();
 
 const contentShow = keyframes({
   from: {
-    opacity: 0,
     transform: 'scale(0.10)',
   },
   to: {
-    opacity: 1,
     transform: 'scale(1)',
   },
 });
@@ -45,7 +43,7 @@ const fadeOut = keyframes({
 
 const slideRight = keyframes({
   from: {
-    transform: 'translateX(-200%)',
+    transform: 'translateX(-100%)',
     opacity: 0,
   },
   to: {
@@ -60,7 +58,7 @@ const slideLeft = keyframes({
     opacity: 1,
   },
   to: {
-    transform: 'translateX(-200%)',
+    transform: 'translateX(-100%)',
     opacity: 0,
   },
 });
@@ -70,14 +68,14 @@ export const modalOverlay = style({
   inset: 0,
   zIndex: cssVar('zIndexModal'),
   backgroundColor: cssVar('black30'),
-  willChange: 'opacity',
+  opacity: 0,
   selectors: {
     '&[data-state=entered], &[data-state=entering]': {
       animation: `${fadeIn} ${animationTimeout} ease-in-out`,
       animationFillMode: 'forwards',
     },
     '&[data-state=exited], &[data-state=exiting]': {
-      animation: `${fadeOut} ${animationTimeout} ${animationTimeout} ease-in-out`,
+      animation: `${fadeOut} ${animationTimeout} ease-in-out`,
       animationFillMode: 'backwards',
     },
   },
@@ -124,7 +122,6 @@ export const modalContent = style({
       animationName: contentHide,
       animationDuration: animationTimeout,
       animationTimingFunction: 'cubic-bezier(0.42, 0, 0.58, 1)',
-      animationDelay: animationTimeout,
     },
   },
 });
@@ -143,7 +140,6 @@ export const modalControls = style({
       animationDuration: animationTimeout,
       animationFillMode: 'forwards',
       animationTimingFunction: 'ease-in-out',
-      animationDelay: `calc(${animationTimeout} / 2)`,
     },
     '&[data-state=exited], &[data-state=exiting]': {
       animationName: slideLeft,

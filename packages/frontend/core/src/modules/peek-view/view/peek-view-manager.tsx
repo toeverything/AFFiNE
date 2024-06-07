@@ -50,7 +50,9 @@ export const PeekViewManagerModal = () => {
       }
       controls={controls}
       // there is a bug for edgeless mode when showing the peek view during start up animation
-      hideOnEntering={activePeekView?.info.mode === 'edgeless'}
+      hideOnEntering={
+        !activePeekView?.info.mode || activePeekView?.info.mode === 'edgeless'
+      }
       onOpenChange={open => {
         if (!open) {
           peekViewEntity.close();

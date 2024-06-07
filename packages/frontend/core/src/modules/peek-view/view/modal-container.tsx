@@ -74,7 +74,7 @@ export const PeekViewModalContainer = ({
   onAnimateEnd?: () => void;
 }>) => {
   const [{ status }, toggle] = useTransition({
-    timeout: animationTimeout * 1.5,
+    timeout: animationTimeout,
     onStateChange(event) {
       if (event.current.status === 'exited' && onAnimateEnd) {
         onAnimateEnd();
@@ -85,8 +85,13 @@ export const PeekViewModalContainer = ({
   useEffect(() => {
     toggle(open);
     const bondingBox = target ? getElementScreenPositionCenter(target) : null;
+    const offsetLeft =
+      (window.innerWidth - Math.min(window.innerWidth * 0.9, 1200)) / 2;
+    const modalHeight = window.innerHeight * 0.05;
     setTransformOrigin(
-      bondingBox ? `${bondingBox.x}px ${bondingBox.y}px` : null
+      bondingBox
+        ? `${bondingBox.x - offsetLeft}px ${bondingBox.y - modalHeight}px`
+        : null
     );
   }, [open, target]);
   return (
