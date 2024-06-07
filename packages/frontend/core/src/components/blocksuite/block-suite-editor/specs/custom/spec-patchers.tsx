@@ -18,10 +18,16 @@ import type { BlockSpec, WidgetElement } from '@blocksuite/block-std';
 import {
   type AffineReference,
   AffineSlashMenuWidget,
+  EmbedBlockElement,
+  type EmbedLinkedDocBlockService,
+  type EmbedLinkedDocModel,
   type ParagraphBlockService,
+  ReferenceNodeConfig,
   type RootService,
 } from '@blocksuite/blocks';
-import { LitElement, type TemplateResult } from 'lit';
+import { html, LitElement, type TemplateResult } from 'lit';
+import { customElement } from 'lit/decorators.js';
+import { literal } from 'lit/static-html.js';
 import React, { createElement, type ReactNode } from 'react';
 
 const logger = new DebugLogger('affine::spec-patchers');
@@ -376,4 +382,47 @@ export function patchQuickSearchService(
   );
 
   return specs;
+}
+
+@customElement('affine-linked-doc-ref-block')
+export class LinkedDocBlockComponent extends EmbedBlockElement<
+  EmbedLinkedDocModel,
+  EmbedLinkedDocBlockService
+> {
+  referenceNodeConfig = new ReferenceNodeConfig();
+  override render() {
+    this.referenceNodeConfig.setDoc(this.model.doc);
+    return html`<affine-reference
+      .delta=${{
+        insert: '',
+        attributes: {
+          reference: {
+            type: 'LinkedPage',
+            pageId: this.model.pageId,
+          },
+        },
+      } as const}
+      .config=${this.referenceNodeConfig}
+    ></affine-reference>`;
+  }
+}
+
+export function patchForSharedPage(specs: BlockSpec[]) {
+  return specs.map(spec => {
+    const linkedDocNames = [
+      'affine:embed-linked-doc',
+      'affine:embed-synced-doc',
+    ];
+
+    if (linkedDocNames.includes(spec.schema.model.flavour)) {
+      spec = {
+        ...spec,
+        view: {
+          component: literal`affine-linked-doc-ref-block`,
+          widgets: {},
+        },
+      };
+    }
+    return spec;
+  });
 }

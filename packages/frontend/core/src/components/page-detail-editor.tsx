@@ -114,6 +114,7 @@ const PageDetailEditorMain = memo(function PageDetailEditorMain({
       }
       mode={mode}
       page={page}
+      shared={isPublic}
       defaultSelectedBlockId={blockId}
       onLoadEditor={onLoadEditor}
     />

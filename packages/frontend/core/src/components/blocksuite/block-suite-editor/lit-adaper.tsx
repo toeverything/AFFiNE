@@ -7,7 +7,6 @@ import { useJournalInfoHelper } from '@affine/core/hooks/use-journal';
 import { QuickSearchService } from '@affine/core/modules/cmdk';
 import { PeekViewService } from '@affine/core/modules/peek-view';
 import { WorkbenchService } from '@affine/core/modules/workbench';
-import type { BlockSpec } from '@blocksuite/block-std';
 import {
   BiDirectionalLinkPanel,
   DocMetaTags,
@@ -16,7 +15,7 @@ import {
   PageEditor,
 } from '@blocksuite/presets';
 import type { Doc } from '@blocksuite/store';
-import { useLiveData, useService } from '@toeverything/infra';
+import { type DocMode, useLiveData, useService } from '@toeverything/infra';
 import React, {
   forwardRef,
   Fragment,
@@ -31,6 +30,7 @@ import { PagePropertiesTable } from '../../affine/page-properties';
 import { AffinePageReference } from '../../affine/reference-link';
 import { BlocksuiteEditorJournalDocTitle } from './journal-doc-title';
 import {
+  patchForSharedPage,
   patchNotificationService,
   patchPeekViewService,
   patchQuickSearchService,
@@ -66,9 +66,10 @@ const adapted = {
 
 interface BlocksuiteEditorProps {
   page: Doc;
+  shared?: boolean;
 }
 
-const usePatchSpecs = (page: Doc, specs: BlockSpec[]) => {
+const usePatchSpecs = (page: Doc, shared: boolean, mode: DocMode) => {
   const [reactToLit, portals] = useLitPortalFactory();
   const peekViewService = useService(PeekViewService);
   const quickSearchService = useService(QuickSearchService);
@@ -81,6 +82,8 @@ const usePatchSpecs = (page: Doc, specs: BlockSpec[]) => {
       );
     };
   }, [page.collection]);
+
+  const specs = mode === 'page' ? PageModeSpecs : EdgelessModeSpecs;
 
   const confirmModal = useConfirmModal();
   const patchedSpecs = useMemo(() => {
@@ -95,6 +98,9 @@ const usePatchSpecs = (page: Doc, specs: BlockSpec[]) => {
     if (!page.readonly) {
       patched = patchQuickSearchService(patched, quickSearchService);
     }
+    if (shared) {
+      patched = patchForSharedPage(patched);
+    }
     return patched;
   }, [
     confirmModal,
@@ -103,6 +109,7 @@ const usePatchSpecs = (page: Doc, specs: BlockSpec[]) => {
     quickSearchService,
     reactToLit,
     referenceRenderer,
+    shared,
     specs,
   ]);
 
@@ -124,7 +131,7 @@ const usePatchSpecs = (page: Doc, specs: BlockSpec[]) => {
 export const BlocksuiteDocEditor = forwardRef<
   PageEditor,
   BlocksuiteEditorProps
->(function BlocksuiteDocEditor({ page }, ref) {
+>(function BlocksuiteDocEditor({ page, shared }, ref) {
   const titleRef = useRef<DocTitle>(null);
   const docRef = useRef<PageEditor | null>(null);
   const [docPage, setDocPage] =
@@ -166,7 +173,7 @@ export const BlocksuiteDocEditor = forwardRef<
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const [specs, portals] = usePatchSpecs(page, PageModeSpecs);
+  const [specs, portals] = usePatchSpecs(page, !!shared, 'page');
 
   return (
     <>
@@ -203,8 +210,8 @@ export const BlocksuiteDocEditor = forwardRef<
 export const BlocksuiteEdgelessEditor = forwardRef<
   EdgelessEditor,
   BlocksuiteEditorProps
->(function BlocksuiteEdgelessEditor({ page }, ref) {
-  const [specs, portals] = usePatchSpecs(page, EdgelessModeSpecs);
+>(function BlocksuiteEdgelessEditor({ page, shared }, ref) {
+  const [specs, portals] = usePatchSpecs(page, !!shared, 'edgeless');
   const editorRef = useRef<EdgelessEditor | null>(null);
 
   const onDocRef = useCallback(

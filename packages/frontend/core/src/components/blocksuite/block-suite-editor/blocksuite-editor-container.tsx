@@ -46,6 +46,7 @@ function forwardSlot<T extends Record<string, Slot<any>>>(
 interface BlocksuiteEditorContainerProps {
   page: Doc;
   mode: DocMode;
+  shared?: boolean;
   className?: string;
   style?: React.CSSProperties;
   defaultSelectedBlockId?: string;
@@ -102,7 +103,7 @@ export const BlocksuiteEditorContainer = forwardRef<
   AffineEditorContainer,
   BlocksuiteEditorContainerProps
 >(function AffineEditorContainer(
-  { page, mode, className, style, defaultSelectedBlockId },
+  { page, mode, className, style, defaultSelectedBlockId, shared },
   ref
 ) {
   const scrolledRef = useRef(false);
@@ -327,9 +328,13 @@ export const BlocksuiteEditorContainer = forwardRef<
       ref={rootRef}
     >
       {mode === 'page' ? (
-        <BlocksuiteDocEditor page={page} ref={docRef} />
+        <BlocksuiteDocEditor shared={shared} page={page} ref={docRef} />
       ) : (
-        <BlocksuiteEdgelessEditor page={page} ref={edgelessRef} />
+        <BlocksuiteEdgelessEditor
+          shared={shared}
+          page={page}
+          ref={edgelessRef}
+        />
       )}
     </div>
   );

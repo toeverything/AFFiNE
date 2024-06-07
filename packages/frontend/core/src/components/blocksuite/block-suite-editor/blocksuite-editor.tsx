@@ -23,6 +23,7 @@ export type ErrorBoundaryProps = {
 export type EditorProps = {
   page: Doc;
   mode: 'page' | 'edgeless';
+  shared?: boolean;
   defaultSelectedBlockId?: string;
   // on Editor instance instantiated
   onLoadEditor?: (editor: AffineEditorContainer) => () => void;
@@ -54,7 +55,15 @@ function usePageRoot(page: Doc) {
 
 const BlockSuiteEditorImpl = forwardRef<AffineEditorContainer, EditorProps>(
   function BlockSuiteEditorImpl(
-    { mode, page, className, defaultSelectedBlockId, onLoadEditor, style },
+    {
+      mode,
+      page,
+      className,
+      defaultSelectedBlockId,
+      onLoadEditor,
+      shared,
+      style,
+    },
     ref
   ) {
     usePageRoot(page);
@@ -89,6 +98,7 @@ const BlockSuiteEditorImpl = forwardRef<AffineEditorContainer, EditorProps>(
       <BlocksuiteEditorContainer
         mode={mode}
         page={page}
+        shared={shared}
         ref={onRefChange}
         className={className}
         style={style}
