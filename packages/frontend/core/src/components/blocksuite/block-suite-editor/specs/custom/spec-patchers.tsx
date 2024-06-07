@@ -169,14 +169,19 @@ export function patchNotificationService(
         confirmText,
         placeholder,
         cancelText,
+        autofill,
         abort,
       }) => {
         return new Promise<string | null>(resolve => {
-          let value = '';
+          let value = autofill || '';
           const description = (
             <div>
               <span style={{ marginBottom: 12 }}>{toReactNode(message)}</span>
-              <Input placeholder={placeholder} onChange={e => (value = e)} />
+              <Input
+                placeholder={placeholder}
+                defaultValue={value}
+                onChange={e => (value = e)}
+              />
             </div>
           );
           openConfirmModal({
@@ -189,7 +194,6 @@ export function patchNotificationService(
             cancelButtonOptions: {
               children: cancelText ?? 'Cancel',
             },
-
             onConfirm: () => {
               resolve(value);
             },
@@ -229,9 +233,12 @@ export function patchNotificationService(
                   onClick: notification.action.onClick,
                 }
               : undefined,
+            onDismiss: notification.onClose,
           },
           {
             duration: notification.duration || 0,
+            onDismiss: notification.onClose,
+            onAutoClose: notification.onClose,
           }
         );
 
