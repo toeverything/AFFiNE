@@ -32,6 +32,7 @@ import {
   chatWithImages,
   chatWithText,
   chatWithTextStream,
+  chatWithWorkflow,
   createCopilotMessage,
   createCopilotSession,
   getHistories,
@@ -236,6 +237,31 @@ test('should be able to chat with api', async t => {
   );
 
   Sinon.restore();
+});
+
+test('should be able to chat with api by workflow', async t => {
+  const { app } = t.context;
+
+  const { id } = await createWorkspace(app, token);
+  const sessionId = await createCopilotSession(
+    app,
+    token,
+    id,
+    randomUUID(),
+    'workflow:presentation'
+  );
+  const messageId = await createCopilotMessage(
+    app,
+    token,
+    sessionId,
+    'apple company'
+  );
+  const ret = await chatWithWorkflow(app, token, sessionId, messageId);
+  t.is(
+    ret,
+    textToEventStream('generate text to text stream', messageId),
+    'should be able to chat with workflow'
+  );
 });
 
 test('should be able to chat with special image model', async t => {

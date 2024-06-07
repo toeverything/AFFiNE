@@ -35,6 +35,7 @@ import { CopilotProviderService } from './providers';
 import { ChatSession, ChatSessionService } from './session';
 import { CopilotStorage } from './storage';
 import { CopilotCapability, CopilotTextProvider } from './types';
+import { CopilotWorkflowService } from './workflow';
 
 export interface ChatEvent {
   type: 'attachment' | 'message' | 'error';
@@ -55,6 +56,7 @@ export class CopilotController {
     private readonly config: Config,
     private readonly chatSession: ChatSessionService,
     private readonly provider: CopilotProviderService,
+    private readonly workflow: CopilotWorkflowService,
     private readonly storage: CopilotStorage
   ) {}
 
@@ -226,6 +228,71 @@ export class CopilotController {
 
       return from(
         provider.generateTextStream(session.finish(params), session.model, {
+          signal: this.getSignal(req),
+          user: user.id,
+        })
+      ).pipe(
+        connect(shared$ =>
+          merge(
+            // actual chat event stream
+            shared$.pipe(
+              map(data => ({ type: 'message' as const, id: messageId, data }))
+            ),
+            // save the generated text to the session
+            shared$.pipe(
+              toArray(),
+              concatMap(values => {
+                session.push({
+                  role: 'assistant',
+                  content: values.join(''),
+                  createdAt: new Date(),
+                });
+                return from(session.save());
+              }),
+              switchMap(() => EMPTY)
+            )
+          )
+        ),
+        catchError(err =>
+          of({
+            type: 'error' as const,
+            data: this.handleError(err),
+          })
+        )
+      );
+    } catch (err) {
+      return of({
+        type: 'error' as const,
+        data: this.handleError(err),
+      });
+    }
+  }
+
+  @Sse('/chat/:sessionId/workflow')
+  async chatWorkflow(
+    @CurrentUser() user: CurrentUser,
+    @Req() req: Request,
+    @Param('sessionId') sessionId: string,
+    @Query() params: Record<string, string>
+  ): Promise<Observable<ChatEvent>> {
+    try {
+      const messageId = Array.isArray(params.messageId)
+        ? params.messageId[0]
+        : params.messageId;
+
+      const session = await this.appendSessionMessage(sessionId, messageId);
+      delete params.messageId;
+      const latestMessage = session.stashMessages.findLast(
+        m => m.role === 'user'
+      );
+      if (latestMessage) {
+        params = Object.assign({}, params, latestMessage.params, {
+          content: latestMessage.content,
+        });
+      }
+
+      return from(
+        this.workflow.runGraph(params, session.model, {
           signal: this.getSignal(req),
           user: user.id,
         })

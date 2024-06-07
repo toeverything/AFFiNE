@@ -2,6 +2,7 @@ import { Logger } from '@nestjs/common';
 
 import { PromptService } from '../prompt';
 import { CopilotProviderService } from '../providers';
+import { CopilotChatOptions } from '../types';
 import { WorkflowNode } from './node';
 import {
   WorkflowGraph,
@@ -26,9 +27,12 @@ export class CopilotWorkflow {
     this.rootNode = startNode;
   }
 
-  async *runGraph(initContent: string): AsyncIterable<string | undefined> {
+  async *runGraph(
+    params: Record<string, string>,
+    options?: CopilotChatOptions
+  ): AsyncIterable<string> {
     let currentNode: WorkflowNode | undefined = this.rootNode;
-    const lastParams: WorkflowNodeState = { content: initContent };
+    const lastParams: WorkflowNodeState = { ...params };
 
     while (currentNode) {
       let result = '';
@@ -36,7 +40,7 @@ export class CopilotWorkflow {
 
       await currentNode.initNode(this.prompt, this.provider);
 
-      for await (const ret of currentNode.next(lastParams)) {
+      for await (const ret of currentNode.next(lastParams, options)) {
         if (ret.type === WorkflowResultType.EndRun) {
           nextNode = ret.nextNode;
           break;
@@ -49,8 +53,8 @@ export class CopilotWorkflow {
             );
           }
         } else if (ret.type === WorkflowResultType.Content) {
-          // pass through content as a stream response
           if (ret.passthrough) {
+            // pass through content as a stream response
             yield ret.content;
           } else {
             result += ret.content;

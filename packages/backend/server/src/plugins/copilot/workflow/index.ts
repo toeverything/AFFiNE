@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { PromptService } from '../prompt';
 import { CopilotProviderService } from '../providers';
+import { CopilotChatOptions } from '../types';
 import { WorkflowGraphs } from './graph';
 import { WorkflowNode } from './node';
 import { WorkflowGraph, WorkflowGraphList } from './types';
@@ -57,9 +58,10 @@ export class CopilotWorkflowService {
   }
 
   async *runGraph(
+    params: Record<string, string>,
     graphName: string,
-    initContent: string
-  ): AsyncIterable<string | undefined> {
+    options?: CopilotChatOptions
+  ): AsyncIterable<string> {
     const workflowGraph = await this.getWorkflow(graphName);
     const workflow = new CopilotWorkflow(
       this.prompt,
@@ -67,7 +69,7 @@ export class CopilotWorkflowService {
       workflowGraph
     );
 
-    for await (const result of workflow.runGraph(initContent)) {
+    for await (const result of workflow.runGraph(params, options)) {
       yield result;
     }
   }

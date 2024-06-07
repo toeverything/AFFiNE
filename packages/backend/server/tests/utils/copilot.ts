@@ -33,6 +33,7 @@ export class MockCopilotTestProvider
   static override readonly type = CopilotProviderType.Test;
   override readonly availableModels = [
     'test',
+    'gpt-4o',
     'fast-sdxl/image-to-image',
     'lcm-sd15-i2i',
     'clarity-upscaler',
@@ -232,6 +233,15 @@ export async function chatWithTextStream(
   messageId?: string
 ) {
   return chatWithText(app, userToken, sessionId, messageId, '/stream');
+}
+
+export async function chatWithWorkflow(
+  app: INestApplication,
+  userToken: string,
+  sessionId: string,
+  messageId?: string
+) {
+  return chatWithText(app, userToken, sessionId, messageId, '/workflow');
 }
 
 export async function chatWithImages(

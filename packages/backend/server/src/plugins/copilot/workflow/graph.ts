@@ -2,14 +2,14 @@ import { type WorkflowGraphList, WorkflowNodeType } from './types';
 
 export const WorkflowGraphs: WorkflowGraphList = [
   {
-    name: 'Create a presentation',
+    name: 'presentation',
     graph: [
       {
         id: 'start',
         name: 'Start: check language',
         nodeType: WorkflowNodeType.Basic,
         type: 'text',
-        promptName: 'Create a presentation:step1',
+        promptName: 'workflow:presentation:step1',
         paramKey: 'language',
         edges: ['step2'],
       },
@@ -18,7 +18,7 @@ export const WorkflowGraphs: WorkflowGraphList = [
         name: 'Step 2: generate presentation',
         nodeType: WorkflowNodeType.Basic,
         type: 'text',
-        promptName: 'Create a presentation:step2',
+        promptName: 'workflow:presentation:step2',
         edges: [],
         // edges: ['step3'],
       },
@@ -27,7 +27,7 @@ export const WorkflowGraphs: WorkflowGraphList = [
       //     name: 'Step 3: check format',
       //     nodeType: WorkflowNodeType.Basic,
       //     type: 'text',
-      //     promptName: 'Create a presentation:step3',
+      //     promptName: 'workflow:presentation:step3',
       //     paramKey: 'needFormat',
       //     edges: ['step4'],
       //   },
@@ -49,7 +49,7 @@ export const WorkflowGraphs: WorkflowGraphList = [
       //   name: 'Step 5: format presentation',
       //   nodeType: WorkflowNodeType.Basic,
       //   type: 'text',
-      //   promptName: 'Create a presentation:step5',
+      //   promptName: 'workflow:presentation:step5',
       //   edges: ['step6'],
       // },
       // {
@@ -57,7 +57,7 @@ export const WorkflowGraphs: WorkflowGraphList = [
       //   name: 'Step 6: finish',
       //   nodeType: WorkflowNodeType.Basic,
       //   type: 'text',
-      //   promptName: 'Create a presentation:step6',
+      //   promptName: 'workflow:presentation:step6',
       //   edges: [],
       // },
     ],

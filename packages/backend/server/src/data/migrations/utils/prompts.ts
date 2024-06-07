@@ -455,8 +455,15 @@ content: {{content}}`,
     ],
   },
   {
-    name: 'Create a presentation:step1',
-    action: 'Create a presentation:step1',
+    name: 'workflow:presentation',
+    action: 'workflow:presentation',
+    // used only in workflow, point to workflow graph name
+    model: 'presentation',
+    messages: [],
+  },
+  {
+    name: 'workflow:presentation:step1',
+    action: 'workflow:presentation:step1',
     model: 'gpt-4o',
     messages: [
       {
@@ -471,8 +478,8 @@ content: {{content}}`,
     ],
   },
   {
-    name: 'Create a presentation:step2',
-    action: 'Create a presentation:step2',
+    name: 'workflow:presentation:step2',
+    action: 'workflow:presentation:step2',
     model: 'gpt-4o',
     messages: [
       {
@@ -491,8 +498,8 @@ content: {{content}}`,
     ],
   },
   {
-    name: 'Create a presentation:step3',
-    action: 'Create a presentation:step3',
+    name: 'workflow:presentation:step3',
+    action: 'workflow:presentation:step3',
     model: 'gpt-4o',
     messages: [
       {
@@ -507,8 +514,8 @@ content: {{content}}`,
     ],
   },
   {
-    name: 'Create a presentation:step4',
-    action: 'Create a presentation:step4',
+    name: 'workflow:presentation:step4',
+    action: 'workflow:presentation:step4',
     model: 'gpt-4o',
     messages: [
       {

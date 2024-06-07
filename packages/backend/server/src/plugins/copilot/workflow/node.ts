@@ -78,6 +78,44 @@ export class WorkflowNode {
     return this.edges[0]?.id;
   }
 
+  private getStreamProvider() {
+    if (this.data.nodeType === WorkflowNodeType.Basic && this.provider) {
+      if (
+        this.data.type === 'text' &&
+        'generateText' in this.provider &&
+        !this.data.paramKey
+      ) {
+        return this.provider.generateTextStream.bind(this.provider);
+      } else if (
+        this.data.type === 'image' &&
+        'generateImages' in this.provider &&
+        !this.data.paramKey
+      ) {
+        return this.provider.generateImagesStream.bind(this.provider);
+      }
+    }
+    throw new Error(`Stream Provider not found for node ${this.name}`);
+  }
+
+  private getProvider() {
+    if (this.data.nodeType === WorkflowNodeType.Basic && this.provider) {
+      if (
+        this.data.type === 'text' &&
+        'generateText' in this.provider &&
+        this.data.paramKey
+      ) {
+        return this.provider.generateText.bind(this.provider);
+      } else if (
+        this.data.type === 'image' &&
+        'generateImages' in this.provider &&
+        this.data.paramKey
+      ) {
+        return this.provider.generateImages.bind(this.provider);
+      }
+    }
+    throw new Error(`Provider not found for node ${this.name}`);
+  }
+
   async *next(
     params: WorkflowNodeState,
     options?: CopilotChatOptions
@@ -100,63 +138,34 @@ export class WorkflowNode {
         }
       }
     } else {
-      // pass through content as a stream response if no next node
-      const passthrough = !nextNode;
-      if (this.data.type === 'text' && 'generateText' in this.provider) {
-        if (this.data.paramKey) {
-          // update params with custom key
+      const finalMessage = this.prompt.finish(params);
+      if (this.data.paramKey) {
+        const provider = this.getProvider();
+        // update params with custom key
+        yield {
+          type: WorkflowResultType.Params,
+          params: {
+            [this.data.paramKey]: await provider(
+              finalMessage,
+              this.prompt.model,
+              options
+            ),
+          },
+        };
+      } else {
+        const provider = this.getStreamProvider();
+        for await (const content of provider(
+          finalMessage,
+          this.prompt.model,
+          options
+        )) {
           yield {
-            type: WorkflowResultType.Params,
-            params: {
-              [this.data.paramKey]: await this.provider.generateText(
-                this.prompt.finish(params),
-                this.prompt.model,
-                options
-              ),
-            },
+            type: WorkflowResultType.Content,
+            nodeId: this.id,
+            content,
+            // pass through content as a stream response if no next node
+            passthrough: !nextNode,
           };
-        } else {
-          for await (const content of this.provider.generateTextStream(
-            this.prompt.finish(params),
-            this.prompt.model,
-            options
-          )) {
-            yield {
-              type: WorkflowResultType.Content,
-              nodeId: this.id,
-              content,
-              passthrough,
-            };
-          }
-        }
-      } else if (
-        this.data.type === 'image' &&
-        'generateImages' in this.provider
-      ) {
-        if (this.data.paramKey) {
-          yield {
-            type: WorkflowResultType.Params,
-            params: {
-              [this.data.paramKey]: await this.provider.generateImages(
-                this.prompt.finish(params),
-                this.prompt.model,
-                options
-              ),
-            },
-          };
-        } else {
-          for await (const content of this.provider.generateImagesStream(
-            this.prompt.finish(params),
-            this.prompt.model,
-            options
-          )) {
-            yield {
-              type: WorkflowResultType.Content,
-              nodeId: this.id,
-              content,
-              passthrough,
-            };
-          }
         }
       }
     }

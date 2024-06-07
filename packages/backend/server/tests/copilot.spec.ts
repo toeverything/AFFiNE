@@ -553,8 +553,8 @@ test.skip('should be able to preview workflow', async t => {
 
   let result = '';
   for await (const ret of workflow.runGraph(
-    'Create a presentation',
-    'apple company'
+    { content: 'apple company' },
+    'workflow:presentation'
   )) {
     result += ret;
     console.log('stream result:', ret);
