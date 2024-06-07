@@ -21,6 +21,7 @@ import {
   openSignOutModalAtom,
 } from '../atoms';
 import { PaymentDisableModal } from '../components/affine/payment-disable';
+import { SettingModal } from '../components/affine/setting-modal';
 import { MoveToTrash } from '../components/page-list';
 import { useTrashModalHelper } from '../hooks/affine/use-trash-modal-helper';
 import { useAsyncCallback } from '../hooks/affine-async-hooks';
@@ -28,12 +29,6 @@ import { useNavigateHelper } from '../hooks/use-navigate-helper';
 import { AuthService } from '../modules/cloud/services/auth';
 import { PeekViewManagerModal } from '../modules/peek-view';
 import { WorkspaceSubPath } from '../shared';
-
-const SettingModal = lazy(() =>
-  import('../components/affine/setting-modal').then(module => ({
-    default: module.SettingModal,
-  }))
-);
 
 const Auth = lazy(() =>
   import('../components/affine/auth').then(module => ({
