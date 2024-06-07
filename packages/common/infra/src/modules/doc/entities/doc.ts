@@ -19,10 +19,18 @@ export class Doc extends Entity {
   readonly title$ = this.record.title$;
 
   setMode(mode: DocMode) {
-    this.record.setMode(mode);
+    return this.record.setMode(mode);
+  }
+
+  getMode() {
+    return this.record.getMode();
   }
 
   toggleMode() {
-    this.record.toggleMode();
+    return this.record.toggleMode();
+  }
+
+  observeMode() {
+    return this.record.observeMode();
   }
 }

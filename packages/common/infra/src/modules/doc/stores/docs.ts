@@ -76,7 +76,11 @@ export class DocsStore extends Store {
   }
 
   setDocModeSetting(id: string, mode: DocMode) {
-    this.localState.set(`page:${id}:mode`, mode);
+    return this.localState.set(`page:${id}:mode`, mode);
+  }
+
+  getDocModeSetting(id: string) {
+    return this.localState.get<DocMode>(`page:${id}:mode`);
   }
 
   watchDocModeSetting(id: string) {

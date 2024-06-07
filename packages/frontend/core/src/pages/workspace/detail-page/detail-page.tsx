@@ -210,11 +210,6 @@ const DetailPageImpl = memo(function DetailPageImpl() {
           jumpToTag(workspace.id, tagId);
         })
       );
-      disposable.add(
-        pageService.slots.editorModeSwitch.on(mode => {
-          doc.setMode(mode);
-        })
-      );
 
       setEditor(editor);
 
