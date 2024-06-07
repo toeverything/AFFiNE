@@ -587,6 +587,7 @@
   "com.affine.cmdk.affine.translucent-ui-on-the-sidebar.to": "更改侧边栏半透明界面为",
   "com.affine.cmdk.affine.whats-new": "新内容",
   "com.affine.cmdk.placeholder": "输入命令或搜索任何内容...",
+  "com.affine.cmdk.docs.placeholder": "搜索文档或粘贴链接...",
   "com.affine.collection-bar.action.tooltip.delete": "删除",
   "com.affine.collection-bar.action.tooltip.edit": "编辑",
   "com.affine.collection-bar.action.tooltip.pin": "固定到侧边栏",

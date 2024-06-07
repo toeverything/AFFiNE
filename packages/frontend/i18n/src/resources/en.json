@@ -587,6 +587,7 @@
   "com.affine.cmdk.affine.translucent-ui-on-the-sidebar.to": "Change Translucent UI On The Sidebar to",
   "com.affine.cmdk.affine.whats-new": "What's New",
   "com.affine.cmdk.placeholder": "Type a command or search anything...",
+  "com.affine.cmdk.docs.placeholder": "Search docs or paste link...",
   "com.affine.cmdk.no-results": "No results found",
   "com.affine.cmdk.no-results-for": "No results found for",
   "com.affine.cmdk.insert-links": "Insert links",

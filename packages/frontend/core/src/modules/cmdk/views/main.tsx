@@ -225,7 +225,11 @@ export const CMDKContainer = ({
           />
         ) : null}
         <Command.Input
-          placeholder={t['com.affine.cmdk.placeholder']()}
+          placeholder={t[
+            mode === 'commands'
+              ? 'com.affine.cmdk.placeholder'
+              : 'com.affine.cmdk.docs.placeholder'
+          ]()}
           ref={inputRef}
           {...rest}
           value={query}
