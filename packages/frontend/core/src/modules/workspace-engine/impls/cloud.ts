@@ -39,6 +39,7 @@ import type { WorkspaceEngineStorageProvider } from '../providers/engine';
 import { BroadcastChannelAwarenessConnection } from './engine/awareness-broadcast-channel';
 import { CloudAwarenessConnection } from './engine/awareness-cloud';
 import { CloudBlobStorage } from './engine/blob-cloud';
+import { StaticBlobStorage } from './engine/blob-static';
 import { CloudDocEngineServer } from './engine/doc-cloud';
 import { CloudStaticDocStorage } from './engine/doc-cloud-static';
 
@@ -254,7 +255,7 @@ export class CloudWorkspaceFlavourProviderService
         return this.storageProvider.getBlobStorage(workspaceId);
       },
       getRemoteBlobStorages() {
-        return [new CloudBlobStorage(workspaceId)];
+        return [new CloudBlobStorage(workspaceId), new StaticBlobStorage()];
       },
     };
   }

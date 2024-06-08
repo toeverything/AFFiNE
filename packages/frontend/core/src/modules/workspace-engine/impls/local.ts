@@ -16,6 +16,7 @@ import { applyUpdate, encodeStateAsUpdate } from 'yjs';
 
 import type { WorkspaceEngineStorageProvider } from '../providers/engine';
 import { BroadcastChannelAwarenessConnection } from './engine/awareness-broadcast-channel';
+import { StaticBlobStorage } from './engine/blob-static';
 
 export const LOCAL_WORKSPACE_LOCAL_STORAGE_KEY = 'affine-local-workspace';
 const LOCAL_WORKSPACE_CHANGED_BROADCAST_CHANNEL_KEY =
@@ -170,7 +171,7 @@ export class LocalWorkspaceFlavourProvider
         return this.storageProvider.getBlobStorage(workspaceId);
       },
       getRemoteBlobStorages() {
-        return [];
+        return [new StaticBlobStorage()];
       },
     };
   }

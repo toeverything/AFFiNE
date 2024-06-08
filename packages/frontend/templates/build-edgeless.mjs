@@ -97,7 +97,7 @@ const parseSnapshot = async () => {
       Object.entries(unarchivedFiles).forEach(([name, fileObj]) => {
         if (name.includes('MACOSX') || name.includes('__MACOSX')) return;
 
-        if (name.startsWith('assets/') && !fileObj.dir) {
+        if (name.includes('assets/') && !fileObj.dir) {
           assetsFiles.push(fileObj);
           return;
         }
@@ -116,11 +116,11 @@ const parseSnapshot = async () => {
           const extname = path.extname(file.name);
 
           assetsExtentionMap[
-            file.name.replace('assets/', '').replace(extname, '')
+            file.name.replace(/.*assets\//, '').replace(extname, '')
           ] = extname;
 
           await fs.writeFile(
-            join(ASSETS_PATH, file.name.replace('assets/', '')),
+            join(ASSETS_PATH, file.name.replace(/.*assets\//, '')),
             buffer
           );
         })
