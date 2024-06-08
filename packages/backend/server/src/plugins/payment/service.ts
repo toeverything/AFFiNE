@@ -14,7 +14,7 @@ import Stripe from 'stripe';
 
 import { CurrentUser } from '../../core/auth';
 import { EarlyAccessType, FeatureManagementService } from '../../core/features';
-import { Config, EventEmitter } from '../../fundamentals';
+import { Config, EventEmitter, OnEvent } from '../../fundamentals';
 import { ScheduleManager } from './schedule';
 import {
   InvoiceStatus,
@@ -24,7 +24,7 @@ import {
   SubscriptionStatus,
 } from './types';
 
-const OnEvent = (
+const OnStripeEvent = (
   event: Stripe.Event.Type,
   opts?: Parameters<typeof RawOnEvent>[1]
 ) => RawOnEvent(event, opts);
@@ -419,8 +419,8 @@ export class SubscriptionService {
     }
   }
 
-  @OnEvent('customer.subscription.created')
-  @OnEvent('customer.subscription.updated')
+  @OnStripeEvent('customer.subscription.created')
+  @OnStripeEvent('customer.subscription.updated')
   async onSubscriptionChanges(subscription: Stripe.Subscription) {
     subscription = await this.stripe.subscriptions.retrieve(subscription.id);
     if (subscription.status === 'active') {
@@ -436,7 +436,7 @@ export class SubscriptionService {
     }
   }
 
-  @OnEvent('customer.subscription.deleted')
+  @OnStripeEvent('customer.subscription.deleted')
   async onSubscriptionDeleted(subscription: Stripe.Subscription) {
     const user = await this.retrieveUserFromCustomer(
       typeof subscription.customer === 'string'
@@ -457,7 +457,7 @@ export class SubscriptionService {
     });
   }
 
-  @OnEvent('invoice.paid')
+  @OnStripeEvent('invoice.paid')
   async onInvoicePaid(stripeInvoice: Stripe.Invoice) {
     stripeInvoice = await this.stripe.invoices.retrieve(stripeInvoice.id);
     await this.saveInvoice(stripeInvoice);
@@ -469,9 +469,9 @@ export class SubscriptionService {
     }
   }
 
-  @OnEvent('invoice.created')
-  @OnEvent('invoice.finalization_failed')
-  @OnEvent('invoice.payment_failed')
+  @OnStripeEvent('invoice.created')
+  @OnStripeEvent('invoice.finalization_failed')
+  @OnStripeEvent('invoice.payment_failed')
   async saveInvoice(stripeInvoice: Stripe.Invoice) {
     stripeInvoice = await this.stripe.invoices.retrieve(stripeInvoice.id);
     if (!stripeInvoice.customer) {
@@ -672,6 +672,26 @@ export class SubscriptionService {
     }
 
     return customer;
+  }
+
+  @OnEvent('user.updated')
+  async onUserUpdated(user: User) {
+    const customer = await this.db.userStripeCustomer.findUnique({
+      where: {
+        userId: user.id,
+      },
+    });
+
+    if (customer) {
+      const stripeCustomer = await this.stripe.customers.retrieve(
+        customer.stripeCustomerId
+      );
+      if (!stripeCustomer.deleted && stripeCustomer.email !== user.email) {
+        await this.stripe.customers.update(customer.stripeCustomerId, {
+          email: user.email,
+        });
+      }
+    }
   }
 
   private async retrieveUserFromCustomer(customerId: string) {
