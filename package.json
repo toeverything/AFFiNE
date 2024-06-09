@@ -62,7 +62,7 @@
     "@nx/vite": "19.1.0",
     "@playwright/test": "^1.44.0",
     "@taplo/cli": "^0.7.0",
-    "@testing-library/react": "^15.0.0",
+    "@testing-library/react": "^16.0.0",
     "@toeverything/infra": "workspace:*",
     "@types/affine__env": "workspace:*",
     "@types/eslint": "^8.56.7",

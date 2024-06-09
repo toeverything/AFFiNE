@@ -94,7 +94,7 @@
     "@storybook/react-vite": "^7.6.17",
     "@storybook/test-runner": "^0.18.0",
     "@storybook/testing-library": "^0.2.2",
-    "@testing-library/react": "^15.0.0",
+    "@testing-library/react": "^16.0.0",
     "@types/bytes": "^3.1.4",
     "@types/react": "^18.2.75",
     "@types/react-dnd": "^3.0.2",
