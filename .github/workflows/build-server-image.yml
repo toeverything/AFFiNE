@@ -192,4 +192,4 @@ jobs:
           platforms: linux/amd64,linux/arm64,linux/arm/v7
           provenance: true
           file: .github/deployment/node/Dockerfile
-          tags: rafaeluriarte/affine:${{env.RELEASE_FLAVOR}}-${{ env.GIT_SHORT_HASH }}
+          tags: rafaeluriarte/affine-graphql:${{env.RELEASE_FLAVOR}}-${{ env.GIT_SHORT_HASH }}

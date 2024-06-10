@@ -87,8 +87,8 @@ jobs:
         with:
           registry: ghcr.io
           logout: false
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
@@ -102,7 +102,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           provenance: true
           file: .github/deployment/front/Dockerfile
-          tags: ghcr.io/toeverything/affine-front:${{env.RELEASE_FLAVOR}}-${{ env.GIT_SHORT_HASH }},ghcr.io/toeverything/affine-front:${{env.RELEASE_FLAVOR}}
+          tags: rafaeluriarte/affine-front:${{env.RELEASE_FLAVOR}}-${{ env.GIT_SHORT_HASH }}
 
   # deploy:
   #   name: Deploy to cluster
