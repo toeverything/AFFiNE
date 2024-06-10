@@ -104,54 +104,54 @@ jobs:
           file: .github/deployment/front/Dockerfile
           tags: ghcr.io/toeverything/affine-front:${{env.RELEASE_FLAVOR}}-${{ env.GIT_SHORT_HASH }},ghcr.io/toeverything/affine-front:${{env.RELEASE_FLAVOR}}
 
-  deploy:
-    name: Deploy to cluster
-    if: ${{ github.event_name == 'workflow_dispatch' }}
-    environment: ${{ github.event.inputs.flavor }}
-    needs:
-      - build-frontend-image
-      - build-server-image
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup Version
-        id: version
-        uses: ./.github/actions/setup-version
-      - name: Deploy to ${{ github.event.inputs.flavor }}
-        uses: ./.github/actions/deploy
-        with:
-          build-type: ${{ github.event.inputs.flavor }}
-          gcp-project-number: ${{ secrets.GCP_PROJECT_NUMBER }}
-          gcp-project-id: ${{ secrets.GCP_PROJECT_ID }}
-          service-account: ${{ secrets.GCP_HELM_DEPLOY_SERVICE_ACCOUNT }}
-          cluster-name: ${{ secrets.GCP_CLUSTER_NAME }}
-          cluster-location: ${{ secrets.GCP_CLUSTER_LOCATION }}
-        env:
-          APP_VERSION: ${{ steps.version.outputs.APP_VERSION }}
-          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
-          CANARY_DEPLOY_HOST: ${{ secrets.CANARY_DEPLOY_HOST }}
-          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
-          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          CAPTCHA_TURNSTILE_SECRET: ${{ secrets.CAPTCHA_TURNSTILE_SECRET }}
-          COPILOT_OPENAI_API_KEY: ${{ secrets.COPILOT_OPENAI_API_KEY }}
-          COPILOT_FAL_API_KEY: ${{ secrets.COPILOT_FAL_API_KEY }}
-          COPILOT_UNSPLASH_API_KEY: ${{ secrets.COPILOT_UNSPLASH_API_KEY }}
-          MAILER_SENDER: ${{ secrets.OAUTH_EMAIL_SENDER }}
-          MAILER_USER: ${{ secrets.OAUTH_EMAIL_LOGIN }}
-          MAILER_PASSWORD: ${{ secrets.OAUTH_EMAIL_PASSWORD }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          AFFINE_GOOGLE_CLIENT_ID: ${{ secrets.AFFINE_GOOGLE_CLIENT_ID }}
-          AFFINE_GOOGLE_CLIENT_SECRET: ${{ secrets.AFFINE_GOOGLE_CLIENT_SECRET }}
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          DATABASE_USERNAME: ${{ secrets.DATABASE_USERNAME }}
-          DATABASE_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
-          DATABASE_NAME: ${{ secrets.DATABASE_NAME }}
-          GCLOUD_CONNECTION_NAME: ${{ secrets.GCLOUD_CONNECTION_NAME }}
-          GCLOUD_CLOUD_SQL_INTERNAL_ENDPOINT: ${{ secrets.GCLOUD_CLOUD_SQL_INTERNAL_ENDPOINT }}
-          REDIS_HOST: ${{ secrets.REDIS_HOST }}
-          REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
-          CLOUD_SQL_IAM_ACCOUNT: ${{ secrets.CLOUD_SQL_IAM_ACCOUNT }}
-          STRIPE_API_KEY: ${{ secrets.STRIPE_API_KEY }}
-          STRIPE_WEBHOOK_KEY: ${{ secrets.STRIPE_WEBHOOK_KEY }}
-          STATIC_IP_NAME: ${{ secrets.STATIC_IP_NAME }}
+  # deploy:
+  #   name: Deploy to cluster
+  #   if: ${{ github.event_name == 'workflow_dispatch' }}
+  #   environment: ${{ github.event.inputs.flavor }}
+  #   needs:
+  #     - build-frontend-image
+  #     - build-server-image
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: Setup Version
+  #       id: version
+  #       uses: ./.github/actions/setup-version
+  #     - name: Deploy to ${{ github.event.inputs.flavor }}
+  #       uses: ./.github/actions/deploy
+  #       with:
+  #         build-type: ${{ github.event.inputs.flavor }}
+  #         gcp-project-number: ${{ secrets.GCP_PROJECT_NUMBER }}
+  #         gcp-project-id: ${{ secrets.GCP_PROJECT_ID }}
+  #         service-account: ${{ secrets.GCP_HELM_DEPLOY_SERVICE_ACCOUNT }}
+  #         cluster-name: ${{ secrets.GCP_CLUSTER_NAME }}
+  #         cluster-location: ${{ secrets.GCP_CLUSTER_LOCATION }}
+  #       env:
+  #         APP_VERSION: ${{ steps.version.outputs.APP_VERSION }}
+  #         DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+  #         CANARY_DEPLOY_HOST: ${{ secrets.CANARY_DEPLOY_HOST }}
+  #         R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+  #         R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+  #         R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+  #         CAPTCHA_TURNSTILE_SECRET: ${{ secrets.CAPTCHA_TURNSTILE_SECRET }}
+  #         COPILOT_OPENAI_API_KEY: ${{ secrets.COPILOT_OPENAI_API_KEY }}
+  #         COPILOT_FAL_API_KEY: ${{ secrets.COPILOT_FAL_API_KEY }}
+  #         COPILOT_UNSPLASH_API_KEY: ${{ secrets.COPILOT_UNSPLASH_API_KEY }}
+  #         MAILER_SENDER: ${{ secrets.OAUTH_EMAIL_SENDER }}
+  #         MAILER_USER: ${{ secrets.OAUTH_EMAIL_LOGIN }}
+  #         MAILER_PASSWORD: ${{ secrets.OAUTH_EMAIL_PASSWORD }}
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #         AFFINE_GOOGLE_CLIENT_ID: ${{ secrets.AFFINE_GOOGLE_CLIENT_ID }}
+  #         AFFINE_GOOGLE_CLIENT_SECRET: ${{ secrets.AFFINE_GOOGLE_CLIENT_SECRET }}
+  #         DATABASE_URL: ${{ secrets.DATABASE_URL }}
+  #         DATABASE_USERNAME: ${{ secrets.DATABASE_USERNAME }}
+  #         DATABASE_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
+  #         DATABASE_NAME: ${{ secrets.DATABASE_NAME }}
+  #         GCLOUD_CONNECTION_NAME: ${{ secrets.GCLOUD_CONNECTION_NAME }}
+  #         GCLOUD_CLOUD_SQL_INTERNAL_ENDPOINT: ${{ secrets.GCLOUD_CLOUD_SQL_INTERNAL_ENDPOINT }}
+  #         REDIS_HOST: ${{ secrets.REDIS_HOST }}
+  #         REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
+  #         CLOUD_SQL_IAM_ACCOUNT: ${{ secrets.CLOUD_SQL_IAM_ACCOUNT }}
+  #         STRIPE_API_KEY: ${{ secrets.STRIPE_API_KEY }}
+  #         STRIPE_WEBHOOK_KEY: ${{ secrets.STRIPE_WEBHOOK_KEY }}
+  #         STATIC_IP_NAME: ${{ secrets.STATIC_IP_NAME }}
