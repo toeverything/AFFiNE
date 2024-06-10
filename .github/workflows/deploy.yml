@@ -82,6 +82,16 @@ jobs:
           else
             echo "RELEASE_FLAVOR=${{ inputs.flavor }}" >> "$GITHUB_ENV"
           fi
+      - name: Validate Dockerhub credentials
+        run: |
+          if [[ -z "${{ secrets.DOCKERHUB_USERNAME }}" ]]; then
+            echo "DOCKERHUB_USERNAME is not set"
+            exit 1
+          fi
+          if [[ -z "${{ secrets.DOCKERHUB_PASSWORD }}" ]]; then
+            echo "DOCKERHUB_PASSWORD is not set"
+            exit 1
+          fi
       - name: Login to Dockerhub Container Registry
         uses: docker/login-action@v3
         with:
