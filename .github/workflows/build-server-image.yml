@@ -105,6 +105,8 @@ jobs:
   build-docker:
     name: Build Docker
     runs-on: ubuntu-latest
+    env:
+      IMAGE_TAG: "${{env.RELEASE_FLAVOR}}-${{ needs.set-environment.outputs.IMAGE_TAG }}"
     needs:
       - build-server
       - build-web-selfhost
@@ -150,12 +152,13 @@ jobs:
         with:
           registry: ghcr.io
           logout: false
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+
       # setup node without cache configuration
       # Prisma cache is not compatible with docker build cache
       - name: Setup Node.js
@@ -189,4 +192,4 @@ jobs:
           platforms: linux/amd64,linux/arm64,linux/arm/v7
           provenance: true
           file: .github/deployment/node/Dockerfile
-          tags: ghcr.io/toeverything/affine-graphql:${{env.RELEASE_FLAVOR}}-${{ env.GIT_SHORT_HASH }},ghcr.io/toeverything/affine-graphql:${{env.RELEASE_FLAVOR}}
+          tags: rafaeluriarte/${{ env.IMAGE_TAG }}
