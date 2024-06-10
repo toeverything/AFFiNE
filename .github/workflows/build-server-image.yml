@@ -106,7 +106,7 @@ jobs:
     name: Build Docker
     runs-on: ubuntu-latest
     env:
-      IMAGE_TAG: "${{env.RELEASE_FLAVOR}}-${{ needs.set-environment.outputs.IMAGE_TAG }}"
+      IMAGE_TAG: ${{ needs.set-environment.outputs.IMAGE_TAG }}
     needs:
       - build-server
       - build-web-selfhost
@@ -192,4 +192,4 @@ jobs:
           platforms: linux/amd64,linux/arm64,linux/arm/v7
           provenance: true
           file: .github/deployment/node/Dockerfile
-          tags: rafaeluriarte/${{ env.IMAGE_TAG }}
+          tags: rafaeluriarte/affine:${{env.RELEASE_FLAVOR}}-${{ env.GIT_SHORT_HASH }}
