@@ -1,16 +1,18 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotAcceptableException,
-  OnApplicationBootstrap,
-} from '@nestjs/common';
+import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import type { User } from '@prisma/client';
 import { PrismaClient } from '@prisma/client';
 import type { CookieOptions, Request, Response } from 'express';
 import { assign, omit } from 'lodash-es';
 
-import { Config, CryptoHelper, MailService } from '../../fundamentals';
+import {
+  Config,
+  CryptoHelper,
+  EmailAlreadyUsed,
+  MailService,
+  WrongSignInCredentials,
+  WrongSignInMethod,
+} from '../../fundamentals';
 import { FeatureManagementService } from '../features/management';
 import { QuotaService } from '../quota/service';
 import { QuotaType } from '../quota/types';
@@ -109,7 +111,7 @@ export class AuthService implements OnApplicationBootstrap {
     const user = await this.user.findUserByEmail(email);
 
     if (user) {
-      throw new BadRequestException('Email was taken');
+      throw new EmailAlreadyUsed();
     }
 
     const hashedPassword = await this.crypto.encryptPassword(password);
@@ -127,13 +129,11 @@ export class AuthService implements OnApplicationBootstrap {
     const user = await this.user.findUserWithHashedPasswordByEmail(email);
 
     if (!user) {
-      throw new NotAcceptableException('Invalid sign in credentials');
+      throw new WrongSignInCredentials();
     }
 
     if (!user.password) {
-      throw new NotAcceptableException(
-        'User Password is not set. Should login through email link.'
-      );
+      throw new WrongSignInMethod();
     }
 
     const passwordMatches = await this.crypto.verifyPassword(
@@ -142,7 +142,7 @@ export class AuthService implements OnApplicationBootstrap {
     );
 
     if (!passwordMatches) {
-      throw new NotAcceptableException('Invalid sign in credentials');
+      throw new WrongSignInCredentials();
     }
 
     return sessionUser(user);
@@ -382,27 +382,14 @@ export class AuthService implements OnApplicationBootstrap {
     id: string,
     newPassword: string
   ): Promise<Omit<User, 'password'>> {
-    const user = await this.user.findUserById(id);
-
-    if (!user) {
-      throw new BadRequestException('Invalid email');
-    }
-
     const hashedPassword = await this.crypto.encryptPassword(newPassword);
-
-    return this.user.updateUser(user.id, { password: hashedPassword });
+    return this.user.updateUser(id, { password: hashedPassword });
   }
 
   async changeEmail(
     id: string,
     newEmail: string
   ): Promise<Omit<User, 'password'>> {
-    const user = await this.user.findUserById(id);
-
-    if (!user) {
-      throw new BadRequestException('Invalid email');
-    }
-
     return this.user.updateUser(id, {
       email: newEmail,
       emailVerifiedAt: new Date(),

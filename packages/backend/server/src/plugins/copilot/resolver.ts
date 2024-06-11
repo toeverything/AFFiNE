@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 
-import { BadRequestException, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import {
   Args,
   Field,
@@ -23,6 +23,7 @@ import { Admin } from '../../core/common';
 import { UserType } from '../../core/user';
 import { PermissionService } from '../../core/workspaces/permission';
 import {
+  CopilotFailedToCreateMessage,
   FileUpload,
   MutexService,
   Throttle,
@@ -201,8 +202,6 @@ export class CopilotType {
 @Throttle()
 @Resolver(() => CopilotType)
 export class CopilotResolver {
-  private readonly logger = new Logger(CopilotResolver.name);
-
   constructor(
     private readonly permissions: PermissionService,
     private readonly mutex: MutexService,
@@ -385,8 +384,7 @@ export class CopilotResolver {
     try {
       return await this.chatSession.createMessage(options);
     } catch (e: any) {
-      this.logger.error(`Failed to create chat message: ${e.message}`);
-      throw new Error('Failed to create chat message');
+      throw new CopilotFailedToCreateMessage(e.message);
     }
   }
 }

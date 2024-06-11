@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   forwardRef,
   Inject,
   Injectable,
@@ -10,6 +9,7 @@ import { PrismaClient } from '@prisma/client';
 import { difference, keyBy } from 'lodash-es';
 
 import { Cache } from '../../cache';
+import { InvalidRuntimeConfigType, RuntimeConfigNotFound } from '../../error';
 import { defer } from '../../utils/promise';
 import { defaultRuntimeConfig, runtimeConfigType } from '../register';
 import { AppRuntimeConfigModules, FlattenedAppRuntimeConfig } from '../types';
@@ -21,15 +21,17 @@ function validateConfigType<K extends keyof FlattenedAppRuntimeConfig>(
   const config = defaultRuntimeConfig[key];
 
   if (!config) {
-    throw new BadRequestException(`Unknown runtime config key '${key}'`);
+    throw new RuntimeConfigNotFound({ key });
   }
 
   const want = config.type;
   const get = runtimeConfigType(value);
   if (get !== want) {
-    throw new BadRequestException(
-      `Invalid runtime config type for '${key}',  want '${want}', but get '${get}'`
-    );
+    throw new InvalidRuntimeConfigType({
+      key,
+      want,
+      get,
+    });
   }
 }
 
@@ -68,7 +70,7 @@ export class Runtime implements OnApplicationBootstrap {
     const dbValue = await this.loadDb<K>(k);
 
     if (dbValue === undefined) {
-      throw new Error(`Runtime config ${k} not found`);
+      throw new RuntimeConfigNotFound({ key: k });
     }
 
     await this.setCache(k, dbValue);

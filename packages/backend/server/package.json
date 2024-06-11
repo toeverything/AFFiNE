@@ -131,6 +131,11 @@
       "ts-node/esm/transpile-only.mjs",
       "--es-module-specifier-resolution=node"
     ],
+    "watchMode": {
+      "ignoreChanges": [
+        "**/*.gen.*"
+      ]
+    },
     "files": [
       "tests/**/*.spec.ts",
       "tests/**/*.e2e.ts"

@@ -47,10 +47,6 @@ export class DocHistoryResolver {
   ): Promise<DocHistoryType[]> {
     const docId = new DocID(guid, workspace.id);
 
-    if (docId.isWorkspace) {
-      throw new Error('Invalid guid for listing doc histories.');
-    }
-
     return this.historyManager
       .list(workspace.id, docId.guid, timestamp, take)
       .then(rows =>
@@ -72,10 +68,6 @@ export class DocHistoryResolver {
     @Args({ name: 'timestamp', type: () => GraphQLISODateTime }) timestamp: Date
   ): Promise<Date> {
     const docId = new DocID(guid, workspaceId);
-
-    if (docId.isWorkspace) {
-      throw new Error('Invalid guid for recovering doc from history.');
-    }
 
     await this.permission.checkPagePermission(
       docId.workspace,

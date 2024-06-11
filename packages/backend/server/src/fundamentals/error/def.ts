@@ -93,7 +93,10 @@ export class UserFriendlyError extends Error {
       return;
     }
 
-    new Logger(context).error('Internal server error', this);
+    new Logger(context).error(
+      'Internal server error',
+      this.cause ? (this.cause as any).stack ?? this.cause : this.stack
+    );
   }
 }
 
@@ -234,6 +237,11 @@ export const USER_FRIENDLY_ERRORS = {
     type: 'bad_request',
     args: { name: 'string' },
     message: ({ name }) => `Missing query parameter \`${name}\`.`,
+  },
+  oauth_account_already_connected: {
+    type: 'bad_request',
+    message:
+      'The third-party account has already been connected to another user.',
   },
   invalid_email: {
     type: 'invalid_input',

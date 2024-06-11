@@ -1,4 +1,3 @@
-import { BadRequestException } from '@nestjs/common';
 import {
   Args,
   Context,
@@ -11,6 +10,7 @@ import {
   Resolver,
 } from '@nestjs/graphql';
 
+import { UserNotFound } from '../../fundamentals';
 import { sessionUser } from '../auth/service';
 import { Admin } from '../common';
 import { UserService } from '../user/service';
@@ -59,7 +59,7 @@ export class FeatureManagementResolver {
   async removeEarlyAccess(@Args('email') email: string): Promise<number> {
     const user = await this.users.findUserByEmail(email);
     if (!user) {
-      throw new BadRequestException(`User ${email} not found`);
+      throw new UserNotFound();
     }
     return this.feature.removeEarlyAccess(user.id);
   }
@@ -82,7 +82,7 @@ export class FeatureManagementResolver {
     const user = await this.users.findUserByEmail(email);
 
     if (!user) {
-      throw new BadRequestException(`User ${email} not found`);
+      throw new UserNotFound();
     }
 
     await this.feature.addAdmin(user.id);

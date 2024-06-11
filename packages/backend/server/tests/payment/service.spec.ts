@@ -356,7 +356,7 @@ test('should throw if user has subscription already', async t => {
         redirectUrl: '',
         idempotencyKey: '',
       }),
-    { message: "You've already subscribed to the pro plan" }
+    { message: 'You have already subscribed to the pro plan.' }
   );
 });
 

@@ -1,11 +1,7 @@
 import {
-  BadRequestException,
   Controller,
   Get,
-  HttpException,
-  InternalServerErrorException,
   Logger,
-  NotFoundException,
   Param,
   Query,
   Req,
@@ -23,14 +19,21 @@ import {
   merge,
   mergeMap,
   Observable,
-  of,
   switchMap,
   toArray,
 } from 'rxjs';
 
 import { Public } from '../../core/auth';
 import { CurrentUser } from '../../core/auth/current-user';
-import { Config } from '../../fundamentals';
+import {
+  BlobNotFound,
+  Config,
+  CopilotFailedToGenerateText,
+  CopilotSessionNotFound,
+  mapSseError,
+  NoCopilotProviderAvailable,
+  UnsplashIsNotConfigured,
+} from '../../fundamentals';
 import { CopilotProviderService } from './providers';
 import { ChatSession, ChatSessionService } from './session';
 import { CopilotStorage } from './storage';
@@ -40,7 +43,7 @@ import { CopilotWorkflowService } from './workflow';
 export interface ChatEvent {
   type: 'attachment' | 'message' | 'error';
   id?: string;
-  data: string;
+  data: string | object;
 }
 
 type CheckResult = {
@@ -68,7 +71,7 @@ export class CopilotController {
     await this.chatSession.checkQuota(userId);
     const session = await this.chatSession.get(sessionId);
     if (!session || session.config.userId !== userId) {
-      throw new BadRequestException('Session not found');
+      throw new CopilotSessionNotFound();
     }
 
     const ret: CheckResult = { model: session.model };
@@ -104,7 +107,7 @@ export class CopilotController {
       );
     }
     if (!provider) {
-      throw new InternalServerErrorException('No provider available');
+      throw new NoCopilotProviderAvailable();
     }
 
     return provider;
@@ -116,7 +119,7 @@ export class CopilotController {
   ): Promise<ChatSession> {
     const session = await this.chatSession.get(sessionId);
     if (!session) {
-      throw new BadRequestException('Session not found');
+      throw new CopilotSessionNotFound();
     }
 
     if (messageId) {
@@ -146,20 +149,6 @@ export class CopilotController {
       return undefined;
     }
     return num;
-  }
-
-  private handleError(err: any) {
-    if (err instanceof Error) {
-      const ret = {
-        message: err.message,
-        status: (err as any).status,
-      };
-      if (err instanceof HttpException) {
-        ret.status = err.getStatus();
-      }
-      return ret;
-    }
-    return err;
   }
 
   @Get('/chat/:sessionId')
@@ -200,9 +189,7 @@ export class CopilotController {
 
       return content;
     } catch (e: any) {
-      throw new InternalServerErrorException(
-        e.message || "Couldn't generate text"
-      );
+      throw new CopilotFailedToGenerateText(e.message);
     }
   }
 
@@ -253,18 +240,10 @@ export class CopilotController {
             )
           )
         ),
-        catchError(err =>
-          of({
-            type: 'error' as const,
-            data: this.handleError(err),
-          })
-        )
+        catchError(mapSseError)
       );
     } catch (err) {
-      return of({
-        type: 'error' as const,
-        data: this.handleError(err),
-      });
+      return mapSseError(err);
     }
   }
 
@@ -318,18 +297,10 @@ export class CopilotController {
             )
           )
         ),
-        catchError(err =>
-          of({
-            type: 'error' as const,
-            data: this.handleError(err),
-          })
-        )
+        catchError(mapSseError)
       );
     } catch (err) {
-      return of({
-        type: 'error' as const,
-        data: this.handleError(err),
-      });
+      return mapSseError(err);
     }
   }
 
@@ -356,7 +327,7 @@ export class CopilotController {
         model
       );
       if (!provider) {
-        throw new InternalServerErrorException('No provider available');
+        throw new NoCopilotProviderAvailable();
       }
 
       const session = await this.appendSessionMessage(sessionId, messageId);
@@ -402,18 +373,10 @@ export class CopilotController {
             )
           )
         ),
-        catchError(err =>
-          of({
-            type: 'error' as const,
-            data: this.handleError(err),
-          })
-        )
+        catchError(mapSseError)
       );
     } catch (err) {
-      return of({
-        type: 'error' as const,
-        data: this.handleError(err),
-      });
+      return mapSseError(err);
     }
   }
 
@@ -425,7 +388,7 @@ export class CopilotController {
   ) {
     const { unsplashKey } = this.config.plugins.copilot || {};
     if (!unsplashKey) {
-      throw new InternalServerErrorException('Unsplash key is not configured');
+      throw new UnsplashIsNotConfigured();
     }
 
     const query = new URLSearchParams(params);
@@ -458,9 +421,10 @@ export class CopilotController {
     const { body, metadata } = await this.storage.get(userId, workspaceId, key);
 
     if (!body) {
-      throw new NotFoundException(
-        `Blob not found in ${userId}'s workspace ${workspaceId}: ${key}`
-      );
+      throw new BlobNotFound({
+        workspaceId,
+        blobId: key,
+      });
     }
 
     // metadata should always exists if body is not null

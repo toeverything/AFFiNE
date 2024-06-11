@@ -14,21 +14,18 @@ import { encodeStateAsUpdate, encodeStateVector } from 'yjs';
 import {
   CallTimer,
   Config,
+  DocNotFound,
   GatewayErrorWrapper,
   metrics,
+  NotInWorkspace,
+  VersionRejected,
+  WorkspaceAccessDenied,
 } from '../../../fundamentals';
 import { Auth, CurrentUser } from '../../auth';
 import { DocManager } from '../../doc';
 import { DocID } from '../../utils/doc';
 import { PermissionService } from '../../workspaces/permission';
 import { Permission } from '../../workspaces/types';
-import {
-  AccessDeniedError,
-  DocNotFoundError,
-  EventError,
-  EventErrorCode,
-  NotInWorkspaceError,
-} from './error';
 
 const SubscribeMessage = (event: string) =>
   applyDecorators(
@@ -37,17 +34,13 @@ const SubscribeMessage = (event: string) =>
     RawSubscribeMessage(event)
   );
 
-type EventResponse<Data = any> =
-  | {
-      error: EventError;
+type EventResponse<Data = any> = Data extends never
+  ? {
+      data?: never;
     }
-  | (Data extends never
-      ? {
-          data?: never;
-        }
-      : {
-          data: Data;
-        });
+  : {
+      data: Data;
+    };
 
 function Sync(workspaceId: string): `${string}:sync` {
   return `${workspaceId}:sync`;
@@ -103,10 +96,10 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
         } is outdated, please update to ${AFFiNE.version}`,
       });
 
-      throw new EventError(
-        EventErrorCode.VERSION_REJECTED,
-        `Client version ${version} is outdated, please update to ${AFFiNE.version}`
-      );
+      throw new VersionRejected({
+        version: version || 'unknown',
+        serverVersion: AFFiNE.version,
+      });
     }
   }
 
@@ -126,7 +119,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   assertInWorkspace(client: Socket, room: `${string}:${'sync' | 'awareness'}`) {
     if (!client.rooms.has(room)) {
-      throw new NotInWorkspaceError(room);
+      throw new NotInWorkspace({ workspaceId: room.split(':')[0] });
     }
   }
 
@@ -142,7 +135,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
         permission
       ))
     ) {
-      throw new AccessDeniedError(workspaceId);
+      throw new WorkspaceAccessDenied({ workspaceId });
     }
   }
 
@@ -288,9 +281,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const res = await this.docManager.get(docId.workspace, docId.guid);
 
     if (!res) {
-      return {
-        error: new DocNotFoundError(workspaceId, docId.guid),
-      };
+      throw new DocNotFound({ workspaceId, docId: docId.guid });
     }
 
     const missing = Buffer.from(

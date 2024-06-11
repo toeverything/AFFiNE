@@ -63,7 +63,7 @@ export type GraphqlContext = {
             ) {
               // @ts-expect-error allow assign
               formattedError.extensions = error.originalError.json();
-              formattedError.extensions.stack = error.originalError.stack;
+              formattedError.extensions.stacktrace = error.originalError.stack;
               return formattedError;
             } else {
               // @ts-expect-error allow assign

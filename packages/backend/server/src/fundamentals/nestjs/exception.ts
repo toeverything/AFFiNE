@@ -1,18 +1,25 @@
 import { ArgumentsHost, Catch, Logger } from '@nestjs/common';
 import { BaseExceptionFilter } from '@nestjs/core';
 import { GqlContextType } from '@nestjs/graphql';
+import { ThrottlerException } from '@nestjs/throttler';
 import { Response } from 'express';
 import { of } from 'rxjs';
 
-import { InternalServerError, UserFriendlyError } from '../error';
+import {
+  InternalServerError,
+  TooManyRequest,
+  UserFriendlyError,
+} from '../error';
 import { metrics } from '../metrics';
 
 export function mapAnyError(error: any): UserFriendlyError {
   if (error instanceof UserFriendlyError) {
     return error;
+  } else if (error instanceof ThrottlerException) {
+    return new TooManyRequest();
   } else {
     const e = new InternalServerError();
-    e.cause;
+    e.cause = error;
     return e;
   }
 }

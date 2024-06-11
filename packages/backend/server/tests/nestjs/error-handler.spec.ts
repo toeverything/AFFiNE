@@ -5,6 +5,7 @@ import {
   HttpStatus,
   INestApplication,
   Logger,
+  LoggerService,
 } from '@nestjs/common';
 import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 import {
@@ -12,14 +13,13 @@ import {
   WebSocketGateway,
 } from '@nestjs/websockets';
 import testFn, { TestFn } from 'ava';
-import * as Sinon from 'sinon';
+import Sinon from 'sinon';
 import request from 'supertest';
 
 import { Public } from '../../src/core/auth';
 import {
   AccessDenied,
   GatewayErrorWrapper,
-  GlobalExceptionFilter,
   UserFriendlyError,
 } from '../../src/fundamentals';
 import { createTestingApp } from '../utils';
@@ -95,7 +95,7 @@ class TestGateway {
 
 const test = testFn as TestFn<{
   app: INestApplication;
-  logger: Sinon.SinonStubbedInstance<Logger>;
+  logger: Sinon.SinonStubbedInstance<LoggerService>;
 }>;
 
 function gql(app: INestApplication, query: string) {
@@ -105,19 +105,15 @@ function gql(app: INestApplication, query: string) {
     .expect(200);
 }
 
-test.beforeEach(async ctx => {
+test.beforeEach(async ({ context }) => {
   const { app } = await createTestingApp({
     providers: [TestResolver, TestGateway],
     controllers: [TestController],
-    tapApp: app => {
-      const filter = new GlobalExceptionFilter(app.getHttpAdapter());
-      ctx.context.logger = Sinon.createStubInstance(Logger);
-      filter.logger = ctx.context.logger;
-      app.useGlobalFilters(filter);
-    },
   });
 
-  ctx.context.app = app;
+  context.logger = Sinon.stub(new Logger().localInstance);
+
+  context.app = app;
 });
 
 test.afterEach.always(async ctx => {
@@ -134,7 +130,7 @@ test('should be able to handle known user error in graphql query', async t => {
   const err = res.body.errors[0];
   t.is(err.message, 'You do not have permission to access this resource.');
   t.is(err.extensions.status, HttpStatus.FORBIDDEN);
-  t.is(err.extensions.code, 'ACCESS_DENIED');
+  t.is(err.extensions.name, 'ACCESS_DENIED');
   t.true(t.context.logger.error.notCalled);
 });
 
@@ -143,8 +139,8 @@ test('should be able to handle unknown internal error in graphql query', async t
   const err = res.body.errors[0];
   t.is(err.message, 'An internal error occurred.');
   t.is(err.extensions.status, HttpStatus.INTERNAL_SERVER_ERROR);
-  t.is(err.extensions.code, 'INTERNAL_SERVER_ERROR');
-  t.true(t.context.logger.error.calledOnceWith('Unhandled Server Error'));
+  t.is(err.extensions.name, 'INTERNAL_SERVER_ERROR');
+  t.true(t.context.logger.error.calledOnceWith('Internal server error'));
 });
 
 test('should be able to respond request', async t => {
@@ -159,7 +155,7 @@ test('should be able to handle known user error in http request', async t => {
     .get('/throw-known-error')
     .expect(HttpStatus.FORBIDDEN);
   t.is(res.body.message, 'You do not have permission to access this resource.');
-  t.is(res.body.code, 'ACCESS_DENIED');
+  t.is(res.body.name, 'ACCESS_DENIED');
   t.true(t.context.logger.error.notCalled);
 });
 
@@ -168,8 +164,8 @@ test('should be able to handle unknown internal error in http request', async t 
     .get('/throw-unknown-error')
     .expect(HttpStatus.INTERNAL_SERVER_ERROR);
   t.is(res.body.message, 'An internal error occurred.');
-  t.is(res.body.code, 'INTERNAL_SERVER_ERROR');
-  t.true(t.context.logger.error.calledOnceWith('Unhandled Server Error'));
+  t.is(res.body.name, 'INTERNAL_SERVER_ERROR');
+  t.true(t.context.logger.error.calledOnceWith('Internal server error'));
 });
 
 // Hard to test through websocket, will call event handler directly
@@ -188,6 +184,7 @@ test('should be able to handle known user error in websocket event', async t => 
   };
   t.is(error.message, 'You do not have permission to access this resource.');
   t.is(error.name, 'ACCESS_DENIED');
+  t.true(t.context.logger.error.notCalled);
 });
 
 test('should be able to handle unknown internal error in websocket event', async t => {
@@ -198,4 +195,5 @@ test('should be able to handle unknown internal error in websocket event', async
   };
   t.is(error.message, 'An internal error occurred.');
   t.is(error.name, 'INTERNAL_SERVER_ERROR');
+  t.true(t.context.logger.error.calledOnceWith('Internal server error'));
 });

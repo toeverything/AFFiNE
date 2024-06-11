@@ -1,4 +1,9 @@
 import { DebugLogger } from '@affine/debug';
+import {
+  ErrorNames,
+  UserFriendlyError,
+  type UserFriendlyErrorResponse,
+} from '@affine/graphql';
 import type { DocServer } from '@toeverything/infra';
 import { throwIfAborted } from '@toeverything/infra';
 import type { Socket } from 'socket.io-client';
@@ -8,6 +13,8 @@ import { base64ToUint8Array, uint8ArrayToBase64 } from '../../utils/base64';
 (window as any)._TEST_SIMULATE_SYNC_LAG = Promise.resolve();
 
 const logger = new DebugLogger('affine-cloud-doc-engine-server');
+
+type WebsocketResponse<T> = { error: UserFriendlyErrorResponse } | { data: T };
 
 export class CloudDocEngineServer implements DocServer {
   interruptCb: ((reason: string) => void) | null = null;
@@ -31,21 +38,24 @@ export class CloudDocEngineServer implements DocServer {
 
     const stateVector = state ? await uint8ArrayToBase64(state) : undefined;
 
-    const response:
-      | { error: any }
-      | { data: { missing: string; state: string; timestamp: number } } =
-      await this.socket.timeout(this.SEND_TIMEOUT).emitWithAck('doc-load-v2', {
+    const response: WebsocketResponse<{
+      missing: string;
+      state: string;
+      timestamp: number;
+    }> = await this.socket
+      .timeout(this.SEND_TIMEOUT)
+      .emitWithAck('doc-load-v2', {
         workspaceId: this.workspaceId,
         guid: docId,
         stateVector,
       });
 
     if ('error' in response) {
-      // TODO: result `EventError` with server
-      if (response.error.code === 'DOC_NOT_FOUND') {
+      const error = new UserFriendlyError(response.error);
+      if (error.name === ErrorNames.DOC_NOT_FOUND) {
         return null;
       } else {
-        throw new Error(response.error.message);
+        throw error;
       }
     } else {
       return {
@@ -60,11 +70,7 @@ export class CloudDocEngineServer implements DocServer {
   async pushDoc(docId: string, data: Uint8Array) {
     const payload = await uint8ArrayToBase64(data);
 
-    const response: {
-      // TODO: reuse `EventError` with server
-      error?: any;
-      data: { timestamp: number };
-    } = await this.socket
+    const response: WebsocketResponse<{ timestamp: number }> = await this.socket
       .timeout(this.SEND_TIMEOUT)
       .emitWithAck('client-update-v2', {
         workspaceId: this.workspaceId,
@@ -72,38 +78,34 @@ export class CloudDocEngineServer implements DocServer {
         updates: [payload],
       });
 
-    // TODO: raise error with different code to users
-    if (response.error) {
+    if ('error' in response) {
       logger.error('client-update-v2 error', {
         workspaceId: this.workspaceId,
         guid: docId,
         response,
       });
 
-      throw new Error(response.error);
+      throw new UserFriendlyError(response.error);
     }
 
     return { serverClock: response.data.timestamp };
   }
   async loadServerClock(after: number): Promise<Map<string, number>> {
-    const response: {
-      // TODO: reuse `EventError` with server
-      error?: any;
-      data: Record<string, number>;
-    } = await this.socket
-      .timeout(this.SEND_TIMEOUT)
-      .emitWithAck('client-pre-sync', {
-        workspaceId: this.workspaceId,
-        timestamp: after,
-      });
+    const response: WebsocketResponse<Record<string, number>> =
+      await this.socket
+        .timeout(this.SEND_TIMEOUT)
+        .emitWithAck('client-pre-sync', {
+          workspaceId: this.workspaceId,
+          timestamp: after,
+        });
 
-    if (response.error) {
+    if ('error' in response) {
       logger.error('client-pre-sync error', {
         workspaceId: this.workspaceId,
         response,
       });
 
-      throw new Error(response.error);
+      throw new UserFriendlyError(response.error);
     }
 
     return new Map(Object.entries(response.data));
