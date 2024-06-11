@@ -43,7 +43,7 @@ const fadeOut = keyframes({
 
 const slideRight = keyframes({
   from: {
-    transform: 'translateX(-100%)',
+    transform: 'translateX(-200%)',
     opacity: 0,
   },
   to: {
@@ -58,7 +58,7 @@ const slideLeft = keyframes({
     opacity: 1,
   },
   to: {
-    transform: 'translateX(-100%)',
+    transform: 'translateX(-200%)',
     opacity: 0,
   },
 });
@@ -96,18 +96,6 @@ export const modalContentContainer = style({
   width: '90%',
   height: '90%',
   maxWidth: 1248,
-});
-
-export const modalContent = style({
-  flex: 1,
-  height: '100%',
-  backgroundColor: cssVar('backgroundOverlayPanelColor'),
-  boxShadow: '0px 0px 0px 2.23px rgba(0, 0, 0, 0.08)',
-  borderRadius: '8px',
-  minHeight: 300,
-  // :focus-visible will set outline
-  outline: 'none',
-  position: 'relative',
   willChange: 'transform, opacity',
   transformOrigin: transformOrigin,
   selectors: {
@@ -126,13 +114,24 @@ export const modalContent = style({
   },
 });
 
+export const modalContent = style({
+  flex: 1,
+  height: '100%',
+  backgroundColor: cssVar('backgroundOverlayPanelColor'),
+  boxShadow: '0px 0px 0px 2.23px rgba(0, 0, 0, 0.08)',
+  borderRadius: '8px',
+  minHeight: 300,
+  // :focus-visible will set outline
+  outline: 'none',
+  position: 'relative',
+});
+
 export const modalControls = style({
   flexShrink: 0,
   zIndex: -1,
   minWidth: '48px',
   padding: '8px 0 0 16px',
   opacity: 0,
-  transformOrigin: transformOrigin,
   pointerEvents: 'auto',
   selectors: {
     '&[data-state=entered], &[data-state=entering]': {

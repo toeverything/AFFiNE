@@ -114,11 +114,10 @@ export const PeekViewModalContainer = ({
               [styles.animationTimeout]: `${animationTimeout}ms`,
             })}
           >
-            <div className={styles.modalContentContainer}>
+            <div className={styles.modalContentContainer} data-state={status}>
               <Dialog.Content
                 {...contentOptions}
                 className={styles.modalContent}
-                data-state={status}
               >
                 {hideOnEntering && status === 'entering' ? null : children}
               </Dialog.Content>
