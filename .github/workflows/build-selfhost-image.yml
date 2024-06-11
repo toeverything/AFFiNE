@@ -6,7 +6,7 @@ on:
       flavor:
         description: 'Select distribution to build'
         type: choice
-        default: canary
+        default: stable
         options:
           - canary
           - beta
