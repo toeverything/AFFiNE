@@ -84,7 +84,7 @@
     "socket.io-client": "^4.7.5",
     "swr": "2.2.5",
     "tinykeys": "patch:tinykeys@npm%3A2.1.0#~/.yarn/patches/tinykeys-npm-2.1.0-819feeaed0.patch",
-    "uuid": "^9.0.1",
+    "uuid": "^10.0.0",
     "valtio": "^1.13.2",
     "y-protocols": "^1.0.6",
     "yjs": "^13.6.14",

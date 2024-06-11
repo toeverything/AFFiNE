@@ -294,7 +294,7 @@ __metadata:
     storybook-dark-mode: "npm:^4.0.0"
     swr: "npm:^2.2.5"
     typescript: "npm:^5.4.5"
-    uuid: "npm:^9.0.1"
+    uuid: "npm:^10.0.0"
     vite: "npm:^5.2.8"
     vitest: "npm:1.6.0"
     yjs: "npm:^13.6.14"
@@ -401,7 +401,7 @@ __metadata:
     socket.io-client: "npm:^4.7.5"
     swr: "npm:2.2.5"
     tinykeys: "patch:tinykeys@npm%3A2.1.0#~/.yarn/patches/tinykeys-npm-2.1.0-819feeaed0.patch"
-    uuid: "npm:^9.0.1"
+    uuid: "npm:^10.0.0"
     valtio: "npm:^1.13.2"
     vitest: "npm:1.6.0"
     y-protocols: "npm:^1.0.6"
@@ -494,7 +494,7 @@ __metadata:
     tree-kill: "npm:^1.2.2"
     ts-node: "npm:^10.9.2"
     undici: "npm:^6.12.0"
-    uuid: "npm:^9.0.1"
+    uuid: "npm:^10.0.0"
     vitest: "npm:1.6.0"
     which: "npm:^4.0.0"
     yjs: "npm:^13.6.14"
@@ -632,7 +632,7 @@ __metadata:
     rxjs: "npm:^7.8.1"
     ts-node: "npm:^10.9.2"
     typescript: "npm:^5.4.5"
-    uuid: "npm:^9.0.1"
+    uuid: "npm:^10.0.0"
   languageName: unknown
   linkType: soft
 
@@ -36546,6 +36546,15 @@ __metadata:
   bin:
     uuid: dist/bin/uuid
   checksum: 10/9d0b6adb72b736e36f2b1b53da0d559125ba3e39d913b6072f6f033e0c87835b414f0836b45bcfaf2bdf698f92297fea1c3cc19b0b258bc182c9c43cc0fab9f2
+  languageName: node
+  linkType: hard
+
+"uuid@npm:^10.0.0":
+  version: 10.0.0
+  resolution: "uuid@npm:10.0.0"
+  bin:
+    uuid: dist/bin/uuid
+  checksum: 10/35aa60614811a201ff90f8ca5e9ecb7076a75c3821e17f0f5ff72d44e36c2d35fcbc2ceee9c4ac7317f4cc41895da30e74f3885e30313bee48fda6338f250538
   languageName: node
   linkType: hard
 
