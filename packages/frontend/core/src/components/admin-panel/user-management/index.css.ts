@@ -41,6 +41,7 @@ export const shortHeader = style({
 
 globalStyle(`${table} th`, {
   backgroundColor: cssVar('black10'),
+  fontSize: cssVar('fontBase'),
   fontWeight: 500,
   textAlign: 'left',
   overflow: 'hidden',
@@ -71,6 +72,18 @@ globalStyle(`${table} tr:nth-child(even) td`, {
 
 export const tdContent = style({
   cursor: 'pointer',
+  fontSize: cssVar('fontSm'),
+  selectors: {
+    '&.left': {
+      textAlign: 'left',
+    },
+    '&.right': {
+      textAlign: 'right',
+    },
+    '&.center': {
+      textAlign: 'center',
+    },
+  },
 });
 
 export const actions = style({
@@ -113,4 +126,14 @@ export const inputContent = style({
   margin: '24px 0',
   paddingBottom: '16px',
   fontSize: cssVar('fontBase'),
+});
+
+export const userInfoModal = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '16px',
+  width: '500px',
+  height: '80%',
+  maxHeight: '600px',
+  paddingRight: '0',
 });

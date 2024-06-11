@@ -1,9 +1,9 @@
-import { IconButton, notify, Tooltip } from '@affine/component';
+import { notify, Tooltip } from '@affine/component';
 import type { PaginationProps } from '@affine/component/member-components';
 import { Pagination } from '@affine/component/member-components';
 import { Avatar } from '@affine/component/ui/avatar';
 import { AffineErrorBoundary } from '@affine/core/components/affine/affine-error-boundary';
-import { EditIcon } from '@blocksuite/icons';
+import clsx from 'clsx';
 import type { ReactElement } from 'react';
 import {
   Suspense,
@@ -19,6 +19,7 @@ import { CreateUser } from './create-user';
 import { DeleteUser } from './delete-user';
 import * as styles from './index.css';
 import { SearchUser } from './search-user';
+import { UpdateUser } from './update-user';
 const COUNT_PER_PAGE = 10;
 
 export const UsersPanel = ({ userCount }: { userCount: number }) => {
@@ -83,9 +84,10 @@ const UserTable = ({ users }: { users: User[] }) => {
       <colgroup>
         <col style={{ width: '10%' }} />
         <col style={{ width: '20%' }} />
-        <col style={{ width: '30%' }} />
+        <col style={{ width: '20%' }} />
+        <col style={{ width: '20%' }} />
         <col style={{ width: '10%' }} />
-        <col style={{ width: '10%' }} />
+        <col style={{ width: '11%' }} />
         <col style={{ width: '10%' }} />
         <col style={{ width: '80px' }} />
       </colgroup>
@@ -94,6 +96,7 @@ const UserTable = ({ users }: { users: User[] }) => {
           <ThWithToolTip content="ID" className={styles.shortHeader} />
           <ThWithToolTip content="Name" />
           <ThWithToolTip content="Email" />
+          <ThWithToolTip content="Features" />
           <ThWithToolTip content="Email Verified" />
           <ThWithToolTip content="Has Password" />
           <ThWithToolTip content="Avatar" />
@@ -106,9 +109,23 @@ const UserTable = ({ users }: { users: User[] }) => {
             <TdWithToolTip content={user.id} />
             <TdWithToolTip content={user.name} />
             <TdWithToolTip content={user.email} />
-            <TdWithToolTip content={user.emailVerified ? 'True' : 'False'} />
-            <TdWithToolTip content={user.hasPassword ? 'True' : 'False'} />
-            <td>
+            <TdWithToolTip
+              content={
+                user.features.length === 0 ? 'null' : user.features.join(', ')
+              }
+              position="center"
+            />
+            <Tooltip content={user.emailVerified.toString()}>
+              <td className={clsx(styles.tdContent, 'center')}>
+                {user.emailVerified ? '✅' : '❌'}
+              </td>
+            </Tooltip>
+            <Tooltip content={user.hasPassword?.toString() || 'null'}>
+              <td className={clsx(styles.tdContent, 'center')}>
+                {user.hasPassword ? '✅' : '❌'}
+              </td>
+            </Tooltip>
+            <td className={clsx(styles.tdContent, 'center')}>
               <Avatar
                 size={36}
                 url={user.avatarUrl}
@@ -117,9 +134,7 @@ const UserTable = ({ users }: { users: User[] }) => {
             </td>
             <td>
               <div className={styles.actions}>
-                <IconButton>
-                  <EditIcon />
-                </IconButton>
+                <UpdateUser user={user} />
                 <DeleteUser user={user} />
               </div>
             </td>
@@ -144,7 +159,13 @@ const ThWithToolTip = ({
   );
 };
 
-const TdWithToolTip = ({ content }: { content: string }) => {
+const TdWithToolTip = ({
+  content,
+  position,
+}: {
+  content: string;
+  position?: 'left' | 'right' | 'center';
+}) => {
   const handleClick = useCallback(() => {
     // copy to clipboard
     navigator.clipboard.writeText(content).then(
@@ -165,7 +186,7 @@ const TdWithToolTip = ({ content }: { content: string }) => {
   }, [content]);
   return (
     <Tooltip content={content}>
-      <td className={styles.tdContent} onClick={handleClick}>
+      <td className={clsx(styles.tdContent, position)} onClick={handleClick}>
         {content}
       </td>
     </Tooltip>
