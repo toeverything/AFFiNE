@@ -21,7 +21,7 @@ export const AffineErrorBoundary: FC<AffineErrorBoundaryProps> = props => {
     [props.height]
   );
 
-  const onError = useCallback((error: unknown, componentStack: string) => {
+  const onError = useCallback((error: unknown, componentStack?: string) => {
     console.error('Uncaught error:', error, componentStack);
   }, []);
 

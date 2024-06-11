@@ -118,17 +118,13 @@ export const ListInnerWrapper = memo(
       onSelectionActiveChange?.(!!selectionState.selectionActive);
     }, [onSelectionActiveChange, selectionState.selectionActive]);
 
-    useImperativeHandle(
-      handleRef,
-      () => {
-        return {
-          toggleSelectable: () => {
-            setListSelectionState(false);
-          },
-        };
-      },
-      [setListSelectionState]
-    );
+    useImperativeHandle(handleRef, () => {
+      return {
+        toggleSelectable: () => {
+          setListSelectionState(false);
+        },
+      };
+    }, [setListSelectionState]);
     return children;
   }
 );
