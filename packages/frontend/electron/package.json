@@ -60,7 +60,7 @@
     "fs-extra": "^11.2.0",
     "glob": "^10.3.12",
     "jotai": "^2.8.0",
-    "jotai-devtools": "^0.9.0",
+    "jotai-devtools": "^0.10.0",
     "lodash-es": "^4.17.21",
     "nanoid": "^5.0.7",
     "react": "^18.2.0",
