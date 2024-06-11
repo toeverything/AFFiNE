@@ -21,5 +21,6 @@ jobs:
   build-image:
     name: Build Image
     uses: ./.github/workflows/build-server-image.yml
+    secrets: inherit
     with:
       flavor: ${{ github.event.inputs.flavor }}
