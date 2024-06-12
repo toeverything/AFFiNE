@@ -1,6 +1,6 @@
 services:
   affine:
-    image: rafaeluriarte/affine-graphql:stable-0972a67
+    image: rafaeluriarte/affine-graphql:stable-6715a86
     container_name: affine_selfhosted
     command:
       ['sh', '-c', 'node ./scripts/self-host-predeploy && node ./dist/index.js']
