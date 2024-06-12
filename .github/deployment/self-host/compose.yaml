@@ -1,6 +1,6 @@
 services:
   affine:
-    image: rafaeluriarte/affine-graphql:stable-6715a86
+    image: rafaeluriarte/affine-graphql:stable-8cafb11
     container_name: affine_selfhosted
     command:
       ['sh', '-c', 'node ./scripts/self-host-predeploy && node ./dist/index.js']
@@ -29,7 +29,8 @@ services:
       - DATABASE_URL=postgres://affine:affine@postgres:5432/affine
       - NODE_ENV=production
       - AFFINE_ADMIN_EMAIL=admin@gmail.com
-      - AFFINE_ADMIN_PASSWORD=admin
+      - AFFINE_ADMIN_PASSWORD=
+      - AFFINE_PATH=/affine
       # Telemetry allows us to collect data on how you use the affine. This data will helps us improve the app and provide better features.
       # Uncomment next line if you wish to quit telemetry.
       # - TELEMETRY_ENABLE=false

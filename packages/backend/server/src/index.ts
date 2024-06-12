@@ -11,8 +11,6 @@ await app.listen(AFFiNE.port, listeningHost);
 
 const logger = new Logger('App');
 
-console.log('\n okkkkkkkkkkkkkkkkkk \n')
-
 logger.log(`AFFiNE Server is running in [${AFFiNE.type}] mode`);
 logger.log(`Listening on http://${listeningHost}:${AFFiNE.port}`);
 logger.log(`And the public server should be recognized as ${AFFiNE.baseUrl}`);

@@ -1,5 +1,3 @@
-alert('okoko')
-
 import '@affine/component/theme/global.css';
 import '@affine/component/theme/theme.css';
 
