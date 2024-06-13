@@ -9,7 +9,13 @@ import { DisposableGroup } from '@blocksuite/global/utils';
 import { type AffineEditorContainer, AIProvider } from '@blocksuite/presets';
 import type { DocMode } from '@toeverything/infra';
 import { DocsService, FrameworkScope, useService } from '@toeverything/infra';
-import { forwardRef, useEffect, useState } from 'react';
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useState,
+} from 'react';
 
 import { WorkbenchService } from '../../workbench';
 import { PeekViewService } from '../services/peek-view';
@@ -113,6 +119,7 @@ const DocPreview = forwardRef<
     </AffineErrorBoundary>
   );
 });
+DocPreview.displayName = 'DocPreview';
 
 export const DocPeekView = ({
   docId,
@@ -126,15 +133,41 @@ export const DocPeekView = ({
   return <DocPreview mode={mode} docId={docId} blockId={blockId} />;
 };
 
-export const SurfaceRefPeekView = ({
-  docId,
-  xywh,
-}: {
-  docId: string;
-  xywh: `[${number},${number},${number},${number}]`;
-}) => {
+export type SurfaceRefPeekViewRef = {
+  fitViewportToTarget: () => void;
+};
+
+export const SurfaceRefPeekView = forwardRef<
+  SurfaceRefPeekViewRef,
+  { docId: string; xywh: `[${number},${number},${number},${number}]` }
+>(function SurfaceRefPeekView({ docId, xywh }, ref) {
   const [editorRef, setEditorRef] = useState<AffineEditorContainer | null>(
     null
+  );
+  const fitViewportToTarget = useCallback(() => {
+    if (!editorRef) {
+      return;
+    }
+
+    const viewport = {
+      xywh: xywh,
+      padding: [60, 20, 20, 20] as [number, number, number, number],
+    };
+    const rootService =
+      editorRef.host.std.spec.getService<EdgelessRootService>('affine:page');
+    rootService.viewport.onResize();
+    rootService.viewport.setViewportByBound(
+      Bound.deserialize(viewport.xywh),
+      viewport.padding
+    );
+  }, [editorRef, xywh]);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      fitViewportToTarget,
+    }),
+    [fitViewportToTarget]
   );
 
   useEffect(() => {
@@ -143,18 +176,7 @@ export const SurfaceRefPeekView = ({
       editorRef.host?.updateComplete
         .then(() => {
           if (mounted) {
-            const viewport = {
-              xywh: xywh,
-              padding: [60, 20, 20, 20] as [number, number, number, number],
-            };
-            const rootService =
-              editorRef.host.std.spec.getService<EdgelessRootService>(
-                'affine:page'
-              );
-            rootService.viewport.setViewportByBound(
-              Bound.deserialize(viewport.xywh),
-              viewport.padding
-            );
+            fitViewportToTarget();
           }
         })
         .catch(e => {
@@ -164,7 +186,8 @@ export const SurfaceRefPeekView = ({
     return () => {
       mounted = false;
     };
-  }, [editorRef, xywh]);
+  }, [editorRef, fitViewportToTarget]);
 
   return <DocPreview ref={setEditorRef} docId={docId} mode={'edgeless'} />;
-};
+});
+SurfaceRefPeekView.displayName = 'SurfaceRefPeekView';

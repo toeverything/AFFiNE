@@ -75,11 +75,6 @@ export const PeekViewModalContainer = ({
 }>) => {
   const [{ status }, toggle] = useTransition({
     timeout: animationTimeout,
-    onStateChange(event) {
-      if (event.current.status === 'exited' && onAnimateEnd) {
-        onAnimateEnd();
-      }
-    },
   });
   const [transformOrigin, setTransformOrigin] = useState<string | null>(null);
   useEffect(() => {
@@ -105,6 +100,9 @@ export const PeekViewModalContainer = ({
               [styles.transformOrigin]: transformOrigin,
               [styles.animationTimeout]: `${animationTimeout}ms`,
             })}
+            onAnimationEnd={() => {
+              onAnimateEnd?.();
+            }}
           />
           <div
             data-peek-view-wrapper

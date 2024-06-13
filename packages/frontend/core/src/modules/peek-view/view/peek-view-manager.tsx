@@ -1,15 +1,26 @@
+import { BlockElement } from '@blocksuite/block-std';
 import { useLiveData, useService } from '@toeverything/infra';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 
 import type { ActivePeekView } from '../entities/peek-view';
 import { PeekViewService } from '../services/peek-view';
 import { DocPeekViewControls } from './doc-peek-controls';
+import type { SurfaceRefPeekViewRef } from './doc-peek-view';
 import { DocPeekView, SurfaceRefPeekView } from './doc-peek-view';
 import { PeekViewModalContainer } from './modal-container';
 
-function renderPeekView({ info }: ActivePeekView) {
+function renderPeekView(
+  { info }: ActivePeekView,
+  refCallback: (editor: SurfaceRefPeekViewRef) => void
+) {
   if (info.mode === 'edgeless' && info.xywh) {
-    return <SurfaceRefPeekView docId={info.docId} xywh={info.xywh} />;
+    return (
+      <SurfaceRefPeekView
+        ref={refCallback}
+        docId={info.docId}
+        xywh={info.xywh}
+      />
+    );
   }
 
   return (
@@ -31,14 +42,31 @@ export const PeekViewManagerModal = () => {
   const peekViewEntity = useService(PeekViewService).peekView;
   const activePeekView = useLiveData(peekViewEntity.active$);
   const show = useLiveData(peekViewEntity.show$);
+  const peekViewRef = useRef<SurfaceRefPeekViewRef | null>(null);
 
   const preview = useMemo(() => {
-    return activePeekView ? renderPeekView(activePeekView) : null;
+    return activePeekView
+      ? renderPeekView(activePeekView, editor => {
+          peekViewRef.current = editor;
+        })
+      : null;
   }, [activePeekView]);
 
   const controls = useMemo(() => {
     return activePeekView ? renderControls(activePeekView) : null;
   }, [activePeekView]);
+
+  useEffect(() => {
+    const subscription = peekViewEntity.show$.subscribe(() => {
+      if (activePeekView?.target instanceof BlockElement) {
+        activePeekView.target.requestUpdate();
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [activePeekView, peekViewEntity]);
 
   return (
     <PeekViewModalContainer
@@ -49,14 +77,13 @@ export const PeekViewManagerModal = () => {
           : undefined
       }
       controls={controls}
-      // there is a bug for edgeless mode when showing the peek view during start up animation
-      hideOnEntering={
-        !activePeekView?.info.mode || activePeekView?.info.mode === 'edgeless'
-      }
       onOpenChange={open => {
         if (!open) {
           peekViewEntity.close();
         }
+      }}
+      onAnimateEnd={() => {
+        peekViewRef.current?.fitViewportToTarget();
       }}
     >
       {preview}
