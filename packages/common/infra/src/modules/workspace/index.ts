@@ -1,5 +1,6 @@
 export type { WorkspaceProfileInfo } from './entities/profile';
 export { Workspace } from './entities/workspace';
+export { WorkspaceEngineBeforeStart } from './events';
 export { globalBlockSuiteSchema } from './global-schema';
 export type { WorkspaceMetadata } from './metadata';
 export type { WorkspaceOpenOptions } from './open-options';
