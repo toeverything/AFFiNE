@@ -19,7 +19,7 @@ import {
   NoteDisplayMode,
   ResetIcon,
 } from '@blocksuite/blocks';
-import { assertExists } from '@blocksuite/global/utils.js';
+import { assertExists } from '@blocksuite/global/utils';
 import type { TemplateResult } from 'lit';
 
 import { AIPenIcon, ChatWithAIIcon } from '../_common/icons.js';

@@ -1,5 +1,5 @@
-import type {
-  ConnectorElementModel,
+import {
+  type ConnectorElementModel,
   type EdgelessRootService,
   SurfaceBlockComponent,
 } from '@blocksuite/blocks';

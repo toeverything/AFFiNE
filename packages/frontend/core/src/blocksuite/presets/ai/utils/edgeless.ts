@@ -1,11 +1,11 @@
 import type { BlockElement, EditorHost } from '@blocksuite/block-std';
-import type {
+import {
   AFFINE_EDGELESS_COPILOT_WIDGET,
-  EdgelessCopilotWidget,
-  EdgelessRootService,
+  type EdgelessCopilotWidget,
+  type EdgelessRootService,
   matchFlavours,
   MindmapElementModel,
-  ShapeElementModel,
+  type ShapeElementModel,
 } from '@blocksuite/blocks';
 
 export function mindMapToMarkdown(mindmap: MindmapElementModel) {

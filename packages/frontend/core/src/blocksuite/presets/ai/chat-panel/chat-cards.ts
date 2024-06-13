@@ -1,9 +1,9 @@
 import type { BaseSelection, EditorHost } from '@blocksuite/block-std';
 import { WithDisposable } from '@blocksuite/block-std';
-import type {
-  CopilotSelectionController,
-  ImageBlockModel,
-  NoteBlockModel,
+import {
+  type CopilotSelectionController,
+  type ImageBlockModel,
+  type NoteBlockModel,
   NoteDisplayMode,
 } from '@blocksuite/blocks';
 import { debounce } from '@blocksuite/global/utils';

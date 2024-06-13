@@ -1,7 +1,7 @@
 import type { EditorHost } from '@blocksuite/block-std';
 import { WithDisposable } from '@blocksuite/block-std';
 import { type AIError, openFileOrFiles } from '@blocksuite/blocks';
-import { assertExists } from '@blocksuite/global/utils.js';
+import { assertExists } from '@blocksuite/global/utils';
 import { css, html, LitElement, nothing } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
