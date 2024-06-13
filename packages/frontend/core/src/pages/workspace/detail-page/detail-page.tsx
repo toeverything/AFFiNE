@@ -1,5 +1,6 @@
 import { Scrollable } from '@affine/component';
 import { PageDetailSkeleton } from '@affine/component/page-detail-skeleton';
+import { AIProvider } from '@affine/core/blocksuite/presets/ai';
 import { PageAIOnboarding } from '@affine/core/components/affine/ai-onboarding';
 import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
 import { RecentPagesService } from '@affine/core/modules/cmdk';
@@ -13,7 +14,7 @@ import {
   ImageBlockService,
 } from '@blocksuite/blocks';
 import { DisposableGroup } from '@blocksuite/global/utils';
-import { type AffineEditorContainer, AIProvider } from '@blocksuite/presets';
+import { type AffineEditorContainer } from '@blocksuite/presets';
 import type { Doc as BlockSuiteDoc } from '@blocksuite/store';
 import type { Doc } from '@toeverything/infra';
 import {

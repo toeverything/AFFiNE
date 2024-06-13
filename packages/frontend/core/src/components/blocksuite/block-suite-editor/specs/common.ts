@@ -1,3 +1,8 @@
+import {
+  AICodeBlockSpec,
+  AIImageBlockSpec,
+  AIParagraphBlockSpec,
+} from '@affine/core/blocksuite/presets/ai';
 import type { BlockSpec } from '@blocksuite/block-std';
 import {
   BookmarkBlockSpec,
@@ -14,11 +19,6 @@ import {
   ListBlockSpec,
   NoteBlockSpec,
 } from '@blocksuite/blocks';
-import {
-  AICodeBlockSpec,
-  AIImageBlockSpec,
-  AIParagraphBlockSpec,
-} from '@blocksuite/presets';
 
 import { CustomAttachmentBlockSpec } from './custom/attachment-block';
 

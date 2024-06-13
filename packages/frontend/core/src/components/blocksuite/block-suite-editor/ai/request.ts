@@ -1,5 +1,5 @@
+import { AIProvider } from '@affine/core/blocksuite/presets/ai';
 import { assertExists } from '@blocksuite/global/utils';
-import { AIProvider } from '@blocksuite/presets';
 import { partition } from 'lodash-es';
 
 import { CopilotClient } from './copilot-client';

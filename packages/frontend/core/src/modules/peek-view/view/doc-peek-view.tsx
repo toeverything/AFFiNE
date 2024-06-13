@@ -1,12 +1,13 @@
 import { Scrollable } from '@affine/component';
 import { PageDetailSkeleton } from '@affine/component/page-detail-skeleton';
+import { AIProvider } from '@affine/core/blocksuite/presets/ai';
 import { AffineErrorBoundary } from '@affine/core/components/affine/affine-error-boundary';
 import { BlockSuiteEditor } from '@affine/core/components/blocksuite/block-suite-editor';
 import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
 import { PageNotFound } from '@affine/core/pages/404';
 import { Bound, type EdgelessRootService } from '@blocksuite/blocks';
 import { DisposableGroup } from '@blocksuite/global/utils';
-import { type AffineEditorContainer, AIProvider } from '@blocksuite/presets';
+import type { AffineEditorContainer } from '@blocksuite/presets';
 import type { DocMode } from '@toeverything/infra';
 import { DocsService, FrameworkScope, useService } from '@toeverything/infra';
 import {
