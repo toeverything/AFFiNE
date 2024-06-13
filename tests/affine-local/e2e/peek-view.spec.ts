@@ -27,11 +27,11 @@ test('can open peek view via link popover', async ({ page }) => {
   ).toBeVisible();
 
   // click more button
-  await page
-    .locator('.affine-reference-popover-container')
-    .locator('icon-button')
-    .last()
-    .click();
+  // await page
+  //   .locator('.affine-reference-popover-container')
+  //   .locator('icon-button')
+  //   .last()
+  //   .click();
   await page.locator('icon-button:has-text("center peek")').click();
 
   // verify peek view is opened

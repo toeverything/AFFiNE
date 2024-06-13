@@ -33,12 +33,21 @@ export class DocRecord extends Entity<{ id: string }> {
   ).map(mode => (mode === 'edgeless' ? 'edgeless' : 'page'));
 
   setMode(mode: DocMode) {
-    this.docsStore.setDocModeSetting(this.id, mode);
+    return this.docsStore.setDocModeSetting(this.id, mode);
+  }
+
+  getMode() {
+    return this.docsStore.getDocModeSetting(this.id);
   }
 
   toggleMode() {
-    this.setMode(this.mode$.value === 'edgeless' ? 'page' : 'edgeless');
-    return this.mode$.value;
+    const mode = this.getMode() === 'edgeless' ? 'page' : 'edgeless';
+    this.setMode(mode);
+    return this.getMode();
+  }
+
+  observeMode() {
+    return this.docsStore.watchDocModeSetting(this.id);
   }
 
   title$ = this.meta$.map(meta => meta.title ?? '');

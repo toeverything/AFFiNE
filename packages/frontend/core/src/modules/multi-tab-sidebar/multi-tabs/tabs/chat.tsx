@@ -21,12 +21,17 @@ const EditorChatPanel = ({ editor }: SidebarTabProps) => {
     if (!editor) return;
     const pageService = editor.host.spec.getService('affine:page');
 
-    pageService.slots.docLinkClicked.on(() => {
-      (chatPanelRef.current as ChatPanel).doc = editor.doc;
-    });
-    pageService.slots.editorModeSwitch.on(() => {
-      (chatPanelRef.current as ChatPanel).host = editor.host;
-    });
+    const disposable = [
+      pageService.slots.docLinkClicked.on(() => {
+        (chatPanelRef.current as ChatPanel).doc = editor.doc;
+      }),
+      pageService.docModeService.onModeChange(() => {
+        if (!editor.host) return;
+        (chatPanelRef.current as ChatPanel).host = editor.host;
+      }),
+    ];
+
+    return () => disposable.forEach(d => d.dispose());
   }, [editor]);
 
   if (!editor) {

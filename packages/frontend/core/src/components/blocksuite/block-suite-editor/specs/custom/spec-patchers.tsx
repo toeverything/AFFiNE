@@ -25,6 +25,7 @@ import {
   ReferenceNodeConfig,
   type RootService,
 } from '@blocksuite/blocks';
+import type { DocMode, DocService, DocsService } from '@toeverything/infra';
 import { html, LitElement, type TemplateResult } from 'lit';
 import { customElement } from 'lit/decorators.js';
 import { literal } from 'lit/static-html.js';
@@ -274,6 +275,57 @@ export function patchPeekViewService(
       peek: (target: ActivePeekView['target']) => {
         logger.debug('center peek', target);
         service.peekView.open(target);
+      },
+    };
+  });
+
+  return specs;
+}
+
+export function patchDocModeService(
+  specs: BlockSpec[],
+  docService: DocService,
+  docsService: DocsService
+) {
+  const rootSpec = specs.find(
+    spec => spec.schema.model.flavour === 'affine:page'
+  ) as BlockSpec<string, RootService>;
+
+  if (!rootSpec) {
+    return specs;
+  }
+
+  patchSpecService(rootSpec, pageService => {
+    const DEFAULT_MODE = 'page';
+    pageService.docModeService = {
+      setMode: (mode: DocMode, id?: string) => {
+        if (id) {
+          docsService.list.setMode(id, mode);
+        } else {
+          docService.doc.setMode(mode);
+        }
+      },
+      getMode: (id?: string) => {
+        const mode = id
+          ? docsService.list.getMode(id)
+          : docService.doc.getMode();
+        return mode || DEFAULT_MODE;
+      },
+      toggleMode: (id?: string) => {
+        const mode = id
+          ? docsService.list.toggleMode(id)
+          : docService.doc.toggleMode();
+        return mode || DEFAULT_MODE;
+      },
+      onModeChange: (handler: (mode: DocMode) => void, id?: string) => {
+        // eslint-disable-next-line rxjs/finnish
+        const mode$ = id
+          ? docsService.list.observeMode(id)
+          : docService.doc.observeMode();
+        const sub = mode$.subscribe(m => handler(m || DEFAULT_MODE));
+        return {
+          dispose: sub.unsubscribe,
+        };
       },
     };
   });
