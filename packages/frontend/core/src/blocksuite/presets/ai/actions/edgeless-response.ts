@@ -317,6 +317,14 @@ export const responses: {
       });
     });
 
+    edgelessService.telemetryService?.track('CanvasElementAdded', {
+      control: 'ai',
+      page: 'whiteboard editor',
+      module: 'toolbar',
+      segment: 'toolbar',
+      type: 'mindmap',
+    });
+
     queueMicrotask(() => {
       if (newGenerated && selectionRect) {
         mindmap.moveTo([
