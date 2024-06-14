@@ -10,7 +10,6 @@ import {
   AIEdgelessRootBlockSpec,
   AIPageRootBlockSpec,
 } from '@blocksuite/presets';
-import type { BlockModel } from '@blocksuite/store';
 
 function customLoadFonts(service: RootService): void {
   if (runtimeConfig.isSelfHosted) {
@@ -25,55 +24,26 @@ function customLoadFonts(service: RootService): void {
   }
 }
 
-class CustomPageRootService extends PageRootService {
-  override loadFonts(): void {
-    customLoadFonts(this);
-  }
-}
+function withAffineRootService(Service: typeof RootService) {
+  return class extends Service {
+    override loadFonts(): void {
+      customLoadFonts(this);
+    }
 
-class CustomEdgelessRootService extends EdgelessRootService {
-  override loadFonts(): void {
-    customLoadFonts(this);
-  }
-
-  override addElement<T = Record<string, unknown>>(type: string, props: T) {
-    const res = super.addElement(type, props);
-    mixpanel.track('WhiteboardObjectCreated', {
-      page: 'whiteboard editor',
-      module: 'whiteboard',
-      segment: 'canvas',
-      // control:
-      type: 'whiteboard object',
-      category: type,
-    });
-    return res;
-  }
-
-  override addBlock(
-    flavour: string,
-    props: Record<string, unknown>,
-    parent?: string | BlockModel,
-    parentIndex?: number
-  ) {
-    const res = super.addBlock(flavour, props, parent, parentIndex);
-    mixpanel.track('WhiteboardObjectCreated', {
-      page: 'whiteboard editor',
-      module: 'whiteboard',
-      segment: 'canvas',
-      // control:
-      type: 'whiteboard object',
-      category: flavour.split(':')[1], // affine:paragraph -> paragraph
-    });
-    return res;
-  }
+    telemetryService = {
+      track: (event: string, data: Record<string, unknown>) => {
+        mixpanel.track(event, data);
+      },
+    };
+  };
 }
 
 export const CustomPageRootBlockSpec: BlockSpec = {
   ...AIPageRootBlockSpec,
-  service: CustomPageRootService,
+  service: withAffineRootService(PageRootService),
 };
 
 export const CustomEdgelessRootBlockSpec: BlockSpec = {
   ...AIEdgelessRootBlockSpec,
-  service: CustomEdgelessRootService,
+  service: withAffineRootService(EdgelessRootService),
 };
