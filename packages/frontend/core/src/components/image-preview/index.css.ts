@@ -107,32 +107,44 @@ export const imagePreviewModalCaptionStyle = style({
   },
 });
 export const imagePreviewActionBarStyle = style({
-  display: 'flex',
-  justifyContent: 'center',
-  alignItems: 'center',
-  backgroundColor: cssVar('white'),
-  borderRadius: '8px',
-  boxShadow: '2px 2px 4px rgba(0, 0, 0, 0.3)',
+  height: '36px',
   maxWidth: 'max-content',
-  minHeight: '44px',
-  maxHeight: '44px',
+  padding: '0 6px',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  gap: '8px',
+  borderRadius: '4px',
+  border: `0.5px solid ${cssVar('borderColor')}`,
+  backgroundColor: cssVar('white'),
+  boxShadow: '0px 6px 16px 0px rgba(0, 0, 0, 0.14)',
+  boxSizing: 'content-box',
+  color: cssVar('iconColor'),
+  userSelect: 'none',
 });
-export const groupStyle = style({
-  padding: '10px 0',
-  boxSizing: 'border-box',
+export const cursorStyle = style({
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  height: '24px',
+  minWidth: '34px',
+  padding: '1px 2px',
+  fontSize: '14px',
+});
+export const dividerStyle = style({
+  width: '0.5px',
+  height: '100%',
+  background: cssVar('borderColor'),
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  borderLeft: '1px solid #E3E2E4',
-});
-export const buttonStyle = style({
-  margin: '10px 6px',
 });
 export const scaleIndicatorButtonStyle = style({
-  minHeight: '100%',
-  maxWidth: 'max-content',
-  fontSize: '12px',
-  padding: '5px 5px',
+  height: '24px',
+  padding: '1px 2px',
+  minWidth: '50px',
+  fontSize: '14px',
+  color: `${cssVar('iconColor')} !important`,
   ':hover': {
     backgroundColor: cssVar('hoverColor'),
   },

@@ -13,7 +13,7 @@ import {
   PlusIcon,
   ViewBarIcon,
 } from '@blocksuite/icons';
-import type { DocCollection } from '@blocksuite/store';
+import type { BlockModel, DocCollection } from '@blocksuite/store';
 import clsx from 'clsx';
 import { useErrorBoundary } from 'foxact/use-error-boundary';
 import { useAtom } from 'jotai';
@@ -26,9 +26,9 @@ import useSWR from 'swr';
 
 import { useZoomControls } from './hooks/use-zoom';
 import {
-  buttonStyle,
   captionStyle,
-  groupStyle,
+  cursorStyle,
+  dividerStyle,
   imageBottomContainerStyle,
   imagePreviewActionBarStyle,
   imagePreviewBackgroundStyle,
@@ -41,7 +41,15 @@ import {
   scaleIndicatorButtonStyle,
   unloaded,
 } from './index.css';
-import { hasAnimationPlayedAtom, previewBlockIdAtom } from './index.jotai';
+import {
+  hasAnimationPlayedAtom,
+  previewBlockIdAtom,
+  previewblocksAtom,
+} from './index.jotai';
+
+const filterImageBlock = (block: BlockModel): block is ImageBlockModel => {
+  return block.flavour === 'affine:image';
+};
 
 export type ImagePreviewModalProps = {
   docCollection: DocCollection;
@@ -54,7 +62,9 @@ const ImagePreviewModalImpl = (
     onClose: () => void;
   }
 ): ReactElement | null => {
+  const [blocks, setBlocks] = useAtom(previewblocksAtom);
   const [blockId, setBlockId] = useAtom(previewBlockIdAtom);
+  const [cursor, setCursor] = useState(0);
   const zoomRef = useRef<HTMLDivElement | null>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
   const {
@@ -88,98 +98,72 @@ const ImagePreviewModalImpl = (
     return;
   }, [isOpen, props, setIsOpen]);
 
-  const nextImageHandler = useCallback(
-    (blockId: string | null) => {
-      assertExists(blockId);
-      const workspace = props.docCollection;
+  const goto = useCallback(
+    (index: number) => {
       if (!hasPlayedAnimation) {
         setHasPlayedAnimation(true);
       }
-      const page = workspace.getDoc(props.pageId);
-      assertExists(page);
-      const block = page.getBlockById(blockId);
-      assertExists(block);
-      const nextBlock = page
-        .getNexts(block)
-        .find(
-          (block): block is ImageBlockModel => block.flavour === 'affine:image'
-        );
-      if (nextBlock) {
-        setBlockId(nextBlock.id);
-      }
-    },
-    [props.pageId, props.docCollection, setBlockId, hasPlayedAnimation]
-  );
 
-  const previousImageHandler = useCallback(
-    (blockId: string | null) => {
-      assertExists(blockId);
       const workspace = props.docCollection;
       const page = workspace.getDoc(props.pageId);
       assertExists(page);
-      const block = page.getBlockById(blockId);
-      assertExists(block);
-      const prevBlock = page
-        .getPrevs(block)
-        .findLast(
-          (block): block is ImageBlockModel => block.flavour === 'affine:image'
-        );
-      if (prevBlock) {
-        setBlockId(prevBlock.id);
-      }
+
+      const block = blocks[index];
+
+      if (!block) return;
+
+      setCursor(index);
+      setBlockId(block.id);
+
       resetZoom();
     },
-    [props.pageId, props.docCollection, setBlockId, resetZoom]
+    [
+      props.pageId,
+      props.docCollection,
+      blocks,
+      setBlockId,
+      hasPlayedAnimation,
+      resetZoom,
+    ]
   );
 
   const deleteHandler = useCallback(
-    (blockId: string) => {
+    (index: number) => {
       const { pageId, docCollection: workspace, onClose } = props;
 
       const page = workspace.getDoc(pageId);
       assertExists(page);
-      const block = page.getBlockById(blockId);
-      assertExists(block);
-      if (
-        page
-          .getPrevs(block)
-          .some(
-            (block): block is ImageBlockModel =>
-              block.flavour === 'affine:image'
-          )
-      ) {
-        const prevBlock = page
-          .getPrevs(block)
-          .findLast(
-            (block): block is ImageBlockModel =>
-              block.flavour === 'affine:image'
-          );
-        if (prevBlock) {
-          setBlockId(prevBlock.id);
-        }
-      } else if (
-        page
-          .getNexts(block)
-          .some(
-            (block): block is ImageBlockModel =>
-              block.flavour === 'affine:image'
-          )
-      ) {
-        const nextBlock = page
-          .getNexts(block)
-          .find(
-            (block): block is ImageBlockModel =>
-              block.flavour === 'affine:image'
-          );
-        if (nextBlock) {
-          setBlockId(nextBlock.id);
-        }
-      } else {
-        onClose();
-      }
+
+      let block = blocks[index];
+
+      if (!block) return;
+
+      blocks.splice(index, 1);
+      setBlocks([...blocks]);
+
       page.deleteBlock(block);
+
+      // next
+      block = blocks[index];
+
+      // prev
+      if (!block) {
+        index -= 1;
+        block = blocks[index];
+
+        if (!block) {
+          onClose();
+          return;
+        }
+
+        setCursor(index);
+      }
+
+      setBlockId(block.id);
+
+      resetZoom();
     },
-    [props, setBlockId]
+    [props, blocks, setBlockId, setBlocks, setCursor, resetZoom]
   );
 
   const downloadHandler = useCallback(
@@ -188,7 +172,7 @@ const ImagePreviewModalImpl = (
       const page = workspace.getDoc(props.pageId);
       assertExists(page);
       if (typeof blockId === 'string') {
-        const block = page.getBlockById(blockId) as ImageBlockModel;
+        const block = page.getBlockById<ImageBlockModel>(blockId);
         assertExists(block);
         const store = block.page.blobSync;
         const url = store?.get(block.sourceId as string);
@@ -238,27 +222,39 @@ const ImagePreviewModalImpl = (
     },
     [props.pageId, props.docCollection]
   );
+
   const [caption, setCaption] = useState(() => {
     const page = props.docCollection.getDoc(props.pageId);
     assertExists(page);
-    const block = page.getBlockById(props.blockId) as ImageBlockModel;
+    const block = page.getBlockById<ImageBlockModel>(props.blockId);
     assertExists(block);
     return block?.caption;
   });
+
   useEffect(() => {
     const page = props.docCollection.getDoc(props.pageId);
     assertExists(page);
-    const block = page.getBlockById(props.blockId) as ImageBlockModel;
+
+    const block = page.getBlockById<ImageBlockModel>(props.blockId);
     assertExists(block);
+
+    const prevs = page.getPrevs(block).filter(filterImageBlock);
+    const nexts = page.getNexts(block).filter(filterImageBlock);
+
+    const blocks = [...prevs, block, ...nexts];
+    setBlocks(blocks);
+    setCursor(blocks.length ? prevs.length : 0);
+
     setCaption(block?.caption);
-  }, [props.blockId, props.pageId, props.docCollection]);
+  }, [props.blockId, props.pageId, props.docCollection, setBlocks]);
+
   const { data, error } = useSWR(
     ['workspace', 'image', props.pageId, props.blockId],
     {
       fetcher: ([_, __, pageId, blockId]) => {
         const page = props.docCollection.getDoc(pageId);
         assertExists(page);
-        const block = page.getBlockById(blockId) as ImageBlockModel;
+        const block = page.getBlockById<ImageBlockModel>(blockId);
         assertExists(block);
         return props.docCollection.blobSync.get(block?.sourceId as string);
       },
@@ -335,39 +331,33 @@ const ImagePreviewModalImpl = (
           </p>
         ) : null}
         <div className={imagePreviewActionBarStyle}>
-          <div>
-            <Tooltip content={'Previous'}>
-              <IconButton
-                data-testid="previous-image-button"
-                icon={<ArrowLeftSmallIcon />}
-                type="plain"
-                className={buttonStyle}
-                onClick={() => {
-                  assertExists(blockId);
-                  previousImageHandler(blockId);
-                }}
-              />
-            </Tooltip>
-            <Tooltip content={'Next'}>
-              <IconButton
-                data-testid="next-image-button"
-                icon={<ArrowRightSmallIcon />}
-                className={buttonStyle}
-                type="plain"
-                onClick={() => {
-                  assertExists(blockId);
-                  nextImageHandler(blockId);
-                }}
-              />
-            </Tooltip>
+          <Tooltip content={'Previous'}>
+            <IconButton
+              data-testid="previous-image-button"
+              icon={<ArrowLeftSmallIcon />}
+              type="plain"
+              disabled={cursor < 1}
+              onClick={() => goto(cursor - 1)}
+            />
+          </Tooltip>
+          <div className={cursorStyle}>
+            {`${blocks.length ? cursor + 1 : 0}/${blocks.length}`}
           </div>
-          <div className={groupStyle}></div>
-          <Tooltip content={'Fit to Screen'}>
+          <Tooltip content={'Next'}>
+            <IconButton
+              data-testid="next-image-button"
+              icon={<ArrowRightSmallIcon />}
+              type="plain"
+              disabled={cursor + 1 === blocks.length}
+              onClick={() => goto(cursor + 1)}
+            />
+          </Tooltip>
+          <div className={dividerStyle}></div>
+          <Tooltip content={'Fit to screen'}>
             <IconButton
               data-testid="fit-to-screen-button"
               icon={<ViewBarIcon />}
               type="plain"
-              className={buttonStyle}
               onClick={() => resetZoom()}
             />
           </Tooltip>
@@ -375,16 +365,14 @@ const ImagePreviewModalImpl = (
             <IconButton
               data-testid="zoom-out-button"
               icon={<MinusIcon />}
-              className={buttonStyle}
               type="plain"
               onClick={zoomOut}
             />
           </Tooltip>
-          <Tooltip content={'Reset Scale'}>
+          <Tooltip content={'Reset scale'}>
             <Button
               data-testid="reset-scale-button"
               type="plain"
-              size={'large'}
               className={scaleIndicatorButtonStyle}
               onClick={resetScale}
             >
@@ -395,18 +383,16 @@ const ImagePreviewModalImpl = (
             <IconButton
               data-testid="zoom-in-button"
               icon={<PlusIcon />}
-              className={buttonStyle}
               type="plain"
               onClick={() => zoomIn()}
             />
           </Tooltip>
-          <div className={groupStyle}></div>
+          <div className={dividerStyle}></div>
           <Tooltip content={'Download'}>
             <IconButton
               data-testid="download-button"
               icon={<DownloadIcon />}
               type="plain"
-              className={buttonStyle}
               onClick={() => {
                 assertExists(blockId);
                 downloadHandler(blockId).catch(err => {
@@ -420,7 +406,6 @@ const ImagePreviewModalImpl = (
               data-testid="copy-to-clipboard-button"
               icon={<CopyIcon />}
               type="plain"
-              className={buttonStyle}
               onClick={() => {
                 if (!imageRef.current) {
                   return;
@@ -455,14 +440,14 @@ const ImagePreviewModalImpl = (
               }}
             />
           </Tooltip>
-          <div className={groupStyle}></div>
+          <div className={dividerStyle}></div>
           <Tooltip content={'Delete'}>
             <IconButton
               data-testid="delete-button"
               icon={<DeleteIcon />}
               type="plain"
-              className={buttonStyle}
-              onClick={() => blockId && deleteHandler(blockId)}
+              disabled={blocks.length === 0}
+              onClick={() => deleteHandler(cursor)}
             />
           </Tooltip>
         </div>
