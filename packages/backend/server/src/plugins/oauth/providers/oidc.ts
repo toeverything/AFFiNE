@@ -1,9 +1,4 @@
-import {
-  BadRequestException,
-  Injectable,
-  InternalServerErrorException,
-  OnModuleInit,
-} from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { z } from 'zod';
 
 import { Config, URLHelper } from '../../../fundamentals';
@@ -44,6 +39,8 @@ const OIDCConfigurationSchema = z.object({
 
 type OIDCConfiguration = z.infer<typeof OIDCConfigurationSchema>;
 
+const logger = new Logger('OIDCClient');
+
 class OIDCClient {
   private static async fetch<T = any>(
     url: string,
@@ -53,17 +50,8 @@ class OIDCClient {
     const response = await fetch(url, options);
 
     if (!response.ok) {
-      if (response.status >= 400 && response.status < 500) {
-        throw new BadRequestException(`Invalid OIDC configuration`, {
-          cause: await response.json(),
-          description: response.statusText,
-        });
-      } else {
-        throw new InternalServerErrorException(`Failed to configure client`, {
-          cause: await response.json(),
-          description: response.statusText,
-        });
-      }
+      logger.error('Failed to fetch OIDC configuration', await response.json());
+      throw new Error(`Failed to configure client`);
     }
     const data = await response.json();
     return verifier.parse(data);

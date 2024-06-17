@@ -1,4 +1,3 @@
-import { BadRequestException } from '@nestjs/common';
 import {
   Args,
   Field,
@@ -18,6 +17,7 @@ import {
   CryptoHelper,
   type FileUpload,
   Throttle,
+  UserNotFound,
 } from '../../fundamentals';
 import { CurrentUser } from '../auth/current-user';
 import { Public } from '../auth/guard';
@@ -92,7 +92,7 @@ export class UserResolver {
     avatar: FileUpload
   ) {
     if (!user) {
-      throw new BadRequestException(`User not found`);
+      throw new UserNotFound();
     }
 
     const avatarUrl = await this.storage.put(
@@ -128,7 +128,7 @@ export class UserResolver {
   })
   async removeAvatar(@CurrentUser() user: CurrentUser) {
     if (!user) {
-      throw new BadRequestException(`User not found`);
+      throw new UserNotFound();
     }
     await this.users.updateUser(user.id, { avatarUrl: null });
     return { success: true };

@@ -3,10 +3,13 @@ import type {
   ExecutionContext,
   OnModuleInit,
 } from '@nestjs/common';
-import { Injectable, UnauthorizedException, UseGuards } from '@nestjs/common';
+import { Injectable, UseGuards } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 
-import { getRequestResponseFromContext } from '../../fundamentals';
+import {
+  ActionForbidden,
+  getRequestResponseFromContext,
+} from '../../fundamentals';
 import { FeatureManagementService } from '../features';
 
 @Injectable()
@@ -27,7 +30,7 @@ export class AdminGuard implements CanActivate, OnModuleInit {
     }
 
     if (!allow) {
-      throw new UnauthorizedException('Your operation is not allowed.');
+      throw new ActionForbidden();
     }
 
     return true;

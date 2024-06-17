@@ -27,6 +27,7 @@ import {
   ConfigModule,
   mergeConfigOverride,
 } from './fundamentals/config';
+import { ErrorModule } from './fundamentals/error';
 import { EventModule } from './fundamentals/event';
 import { GqlModule } from './fundamentals/graphql';
 import { HelpersModule } from './fundamentals/helpers';
@@ -52,6 +53,7 @@ export const FunctionalityModules = [
   MailModule,
   StorageProviderModule,
   HelpersModule,
+  ErrorModule,
 ];
 
 function filterOptionalModule(

@@ -9,7 +9,6 @@ import {
   acceptInviteById,
   createTestingApp,
   createWorkspace,
-  currentUser,
   getWorkspacePublicPages,
   inviteUser,
   publishPage,
@@ -41,19 +40,6 @@ test('should register a user', async t => {
   t.is(typeof user.id, 'string', 'user.id is not a string');
   t.is(user.name, 'u1', 'user.name is not valid');
   t.is(user.email, 'u1@affine.pro', 'user.email is not valid');
-});
-
-test.skip('should be throttled at call signUp', async t => {
-  const { app } = t.context;
-  let token = '';
-  for (let i = 0; i < 10; i++) {
-    token = (await signUp(app, `u${i}`, `u${i}@affine.pro`, `${i}`)).token
-      .token;
-    // throttles are applied to each endpoint separately
-    await currentUser(app, token);
-  }
-  await t.throwsAsync(() => signUp(app, 'u11', 'u11@affine.pro', '11'));
-  await t.throwsAsync(() => currentUser(app, token));
 });
 
 test('should create a workspace', async t => {
@@ -128,14 +114,22 @@ test('should share a page', async t => {
   t.is(resp4.statusCode, 404, 'should not get shared doc without token');
 
   const msg1 = await publishPage(app, u2.token.token, 'not_exists_ws', 'page2');
-  t.is(msg1, 'Permission denied', 'unauthorized user can share page');
+  t.is(
+    msg1,
+    'You do not have permission to access workspace not_exists_ws.',
+    'unauthorized user can share page'
+  );
   const msg2 = await revokePublicPage(
     app,
     u2.token.token,
     'not_exists_ws',
     'page2'
   );
-  t.is(msg2, 'Permission denied', 'unauthorized user can share page');
+  t.is(
+    msg2,
+    'You do not have permission to access workspace not_exists_ws.',
+    'unauthorized user can share page'
+  );
 
   await acceptInviteById(
     app,

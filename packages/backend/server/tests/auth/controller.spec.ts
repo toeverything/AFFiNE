@@ -119,7 +119,7 @@ test('should not be able to sign in if email is invalid', async t => {
     .send({ email: '' })
     .expect(400);
 
-  t.is(res.body.message, 'Invalid email address');
+  t.is(res.body.message, 'An invalid email provided.');
 });
 
 test('should not be able to sign in if forbidden', async t => {
@@ -130,7 +130,7 @@ test('should not be able to sign in if forbidden', async t => {
   await request(app.getHttpServer())
     .post('/api/auth/sign-in')
     .send({ email: u1.email })
-    .expect(HttpStatus.BAD_REQUEST);
+    .expect(HttpStatus.FORBIDDEN);
 
   t.true(mailer.sendSignInMail.notCalled);
 

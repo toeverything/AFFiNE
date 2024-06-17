@@ -1,4 +1,3 @@
-import { BadGatewayException, ForbiddenException } from '@nestjs/common';
 import {
   Args,
   Context,
@@ -19,7 +18,12 @@ import { groupBy } from 'lodash-es';
 
 import { CurrentUser, Public } from '../../core/auth';
 import { UserType } from '../../core/user';
-import { Config, URLHelper } from '../../fundamentals';
+import {
+  AccessDenied,
+  Config,
+  FailedToCheckout,
+  URLHelper,
+} from '../../fundamentals';
 import { decodeLookupKey, SubscriptionService } from './service';
 import {
   InvoiceStatus,
@@ -227,7 +231,7 @@ export class SubscriptionResolver {
     });
 
     if (!session.url) {
-      throw new BadGatewayException('Failed to create checkout session.');
+      throw new FailedToCheckout();
     }
 
     return session.url;
@@ -322,9 +326,7 @@ export class UserSubscriptionResolver {
   ) {
     // allow admin to query other user's subscription
     if (!ctx.isAdminQuery && me.id !== user.id) {
-      throw new ForbiddenException(
-        'You are not allowed to access this subscription.'
-      );
+      throw new AccessDenied();
     }
 
     // @FIXME(@forehalo): should not mock any api for selfhosted server
@@ -363,9 +365,7 @@ export class UserSubscriptionResolver {
     @Parent() user: User
   ): Promise<UserSubscription[]> {
     if (me.id !== user.id) {
-      throw new ForbiddenException(
-        'You are not allowed to access this subscription.'
-      );
+      throw new AccessDenied();
     }
 
     return this.db.userSubscription.findMany({
@@ -385,9 +385,7 @@ export class UserSubscriptionResolver {
     @Args('skip', { type: () => Int, nullable: true }) skip?: number
   ) {
     if (me.id !== user.id) {
-      throw new ForbiddenException(
-        'You are not allowed to access this invoices'
-      );
+      throw new AccessDenied();
     }
 
     return this.db.userInvoice.findMany({

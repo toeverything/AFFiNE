@@ -20,6 +20,10 @@ export class OAuthService {
     private readonly cache: SessionCache
   ) {}
 
+  isValidState(stateStr: string) {
+    return stateStr.length === 36;
+  }
+
   async saveOAuthState(state: OAuthState) {
     const token = randomUUID();
     await this.cache.set(`${OAUTH_STATE_KEY}:${token}`, state, {

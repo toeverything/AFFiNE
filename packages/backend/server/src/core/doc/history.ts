@@ -5,7 +5,14 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaClient } from '@prisma/client';
 
 import type { EventPayload } from '../../fundamentals';
-import { Config, metrics, OnEvent } from '../../fundamentals';
+import {
+  Config,
+  DocHistoryNotFound,
+  DocNotFound,
+  metrics,
+  OnEvent,
+  WorkspaceNotFound,
+} from '../../fundamentals';
 import { QuotaService } from '../quota';
 import { Permission } from '../workspaces/types';
 import { isEmptyBuffer } from './manager';
@@ -191,7 +198,11 @@ export class DocHistoryManager {
     });
 
     if (!history) {
-      throw new Error('Given history not found');
+      throw new DocHistoryNotFound({
+        workspaceId,
+        docId: id,
+        timestamp: timestamp.getTime(),
+      });
     }
 
     const oldSnapshot = await this.db.snapshot.findUnique({
@@ -204,8 +215,7 @@ export class DocHistoryManager {
     });
 
     if (!oldSnapshot) {
-      // unreachable actually
-      throw new Error('Given Doc not found');
+      throw new DocNotFound({ workspaceId, docId: id });
     }
 
     // save old snapshot as one history record
@@ -236,8 +246,7 @@ export class DocHistoryManager {
     });
 
     if (!permission) {
-      // unreachable actually
-      throw new Error('Workspace owner not found');
+      throw new WorkspaceNotFound({ workspaceId });
     }
 
     const quota = await this.quota.getUserQuota(permission.userId);

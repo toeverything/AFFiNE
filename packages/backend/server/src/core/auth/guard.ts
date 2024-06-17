@@ -3,15 +3,13 @@ import type {
   ExecutionContext,
   OnModuleInit,
 } from '@nestjs/common';
-import {
-  Injectable,
-  SetMetadata,
-  UnauthorizedException,
-  UseGuards,
-} from '@nestjs/common';
+import { Injectable, SetMetadata, UseGuards } from '@nestjs/common';
 import { ModuleRef, Reflector } from '@nestjs/core';
 
-import { getRequestResponseFromContext } from '../../fundamentals';
+import {
+  AuthenticationRequired,
+  getRequestResponseFromContext,
+} from '../../fundamentals';
 import { AuthService, parseAuthUserSeqNum } from './service';
 
 function extractTokenFromHeader(authorization: string) {
@@ -84,7 +82,7 @@ export class AuthGuard implements CanActivate, OnModuleInit {
     }
 
     if (!req.user) {
-      throw new UnauthorizedException('You are not signed in.');
+      throw new AuthenticationRequired();
     }
 
     return true;

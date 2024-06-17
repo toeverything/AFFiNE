@@ -5,7 +5,14 @@ import { AiPromptRole, PrismaClient } from '@prisma/client';
 
 import { FeatureManagementService } from '../../core/features';
 import { QuotaService } from '../../core/quota';
-import { PaymentRequiredException } from '../../fundamentals';
+import {
+  CopilotActionTaken,
+  CopilotMessageNotFound,
+  CopilotPromptNotFound,
+  CopilotQuotaExceeded,
+  CopilotSessionDeleted,
+  CopilotSessionNotFound,
+} from '../../fundamentals';
 import { ChatMessageCache } from './message';
 import { PromptService } from './prompt';
 import {
@@ -58,7 +65,7 @@ export class ChatSession implements AsyncDisposable {
       this.state.messages.length > 0 &&
       message.role === 'user'
     ) {
-      throw new Error('Action has been taken, no more messages allowed');
+      throw new CopilotActionTaken();
     }
     this.state.messages.push(message);
     this.stashMessageCount += 1;
@@ -74,7 +81,7 @@ export class ChatSession implements AsyncDisposable {
   async getMessageById(messageId: string) {
     const message = await this.messageCache.get(messageId);
     if (!message || message.sessionId !== this.state.sessionId) {
-      throw new Error(`Message not found: ${messageId}`);
+      throw new CopilotMessageNotFound();
     }
     return message;
   }
@@ -82,7 +89,7 @@ export class ChatSession implements AsyncDisposable {
   async pushByMessageId(messageId: string) {
     const message = await this.messageCache.get(messageId);
     if (!message || message.sessionId !== this.state.sessionId) {
-      throw new Error(`Message not found: ${messageId}`);
+      throw new CopilotMessageNotFound();
     }
 
     this.push({
@@ -196,7 +203,7 @@ export class ChatSessionService {
             },
             select: { id: true, deletedAt: true },
           })) || {};
-        if (deletedAt) throw new Error(`Session is deleted: ${id}`);
+        if (deletedAt) throw new CopilotSessionDeleted();
         if (id) sessionId = id;
       }
 
@@ -274,7 +281,8 @@ export class ChatSessionService {
       .then(async session => {
         if (!session) return;
         const prompt = await this.prompt.get(session.promptName);
-        if (!prompt) throw new Error(`Prompt not found: ${session.promptName}`);
+        if (!prompt)
+          throw new CopilotPromptNotFound({ name: session.promptName });
 
         const messages = ChatMessageSchema.array().safeParse(session.messages);
 
@@ -300,7 +308,7 @@ export class ChatSessionService {
         })
         .then(session => session?.id);
       if (!id) {
-        throw new Error(`Session not found: ${sessionId}`);
+        throw new CopilotSessionNotFound();
       }
       const ids = await tx.aiSessionMessage
         .findMany({
@@ -412,7 +420,7 @@ export class ChatSessionService {
                 if (ret.success) {
                   const prompt = await this.prompt.get(promptName);
                   if (!prompt) {
-                    throw new Error(`Prompt not found: ${promptName}`);
+                    throw new CopilotPromptNotFound({ name: promptName });
                   }
 
                   // render system prompt
@@ -471,9 +479,7 @@ export class ChatSessionService {
   async checkQuota(userId: string) {
     const { limit, used } = await this.getQuota(userId);
     if (limit && Number.isFinite(limit) && used >= limit) {
-      throw new PaymentRequiredException(
-        `You have reached the limit of actions in this workspace, please upgrade your plan.`
-      );
+      throw new CopilotQuotaExceeded();
     }
   }
 
@@ -482,7 +488,7 @@ export class ChatSessionService {
     const prompt = await this.prompt.get(options.promptName);
     if (!prompt) {
       this.logger.error(`Prompt not found: ${options.promptName}`);
-      throw new Error('Prompt not found');
+      throw new CopilotPromptNotFound({ name: options.promptName });
     }
     return await this.setSession({
       ...options,

@@ -11,73 +11,36 @@ import {
 import { Server, Socket } from 'socket.io';
 import { encodeStateAsUpdate, encodeStateVector } from 'yjs';
 
-import { CallTimer, Config, metrics } from '../../../fundamentals';
+import {
+  CallTimer,
+  Config,
+  DocNotFound,
+  GatewayErrorWrapper,
+  metrics,
+  NotInWorkspace,
+  VersionRejected,
+  WorkspaceAccessDenied,
+} from '../../../fundamentals';
 import { Auth, CurrentUser } from '../../auth';
 import { DocManager } from '../../doc';
 import { DocID } from '../../utils/doc';
 import { PermissionService } from '../../workspaces/permission';
 import { Permission } from '../../workspaces/types';
-import {
-  AccessDeniedError,
-  DocNotFoundError,
-  EventError,
-  EventErrorCode,
-  InternalError,
-  NotInWorkspaceError,
-} from './error';
-
-export const GatewayErrorWrapper = (): MethodDecorator => {
-  // @ts-expect-error allow
-  return (
-    _target,
-    _key,
-    desc: TypedPropertyDescriptor<(...args: any[]) => any>
-  ) => {
-    const originalMethod = desc.value;
-    if (!originalMethod) {
-      return desc;
-    }
-
-    desc.value = async function (...args: any[]) {
-      try {
-        return await originalMethod.apply(this, args);
-      } catch (e) {
-        if (e instanceof EventError) {
-          return {
-            error: e,
-          };
-        } else {
-          metrics.socketio.counter('unhandled_errors').add(1);
-          new Logger('EventsGateway').error(e, (e as Error).stack);
-          return {
-            error: new InternalError(e as Error),
-          };
-        }
-      }
-    };
-
-    return desc;
-  };
-};
 
 const SubscribeMessage = (event: string) =>
   applyDecorators(
-    GatewayErrorWrapper(),
+    GatewayErrorWrapper(event),
     CallTimer('socketio', 'event_duration', { event }),
     RawSubscribeMessage(event)
   );
 
-type EventResponse<Data = any> =
-  | {
-      error: EventError;
+type EventResponse<Data = any> = Data extends never
+  ? {
+      data?: never;
     }
-  | (Data extends never
-      ? {
-          data?: never;
-        }
-      : {
-          data: Data;
-        });
+  : {
+      data: Data;
+    };
 
 function Sync(workspaceId: string): `${string}:sync` {
   return `${workspaceId}:sync`;
@@ -133,10 +96,10 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
         } is outdated, please update to ${AFFiNE.version}`,
       });
 
-      throw new EventError(
-        EventErrorCode.VERSION_REJECTED,
-        `Client version ${version} is outdated, please update to ${AFFiNE.version}`
-      );
+      throw new VersionRejected({
+        version: version || 'unknown',
+        serverVersion: AFFiNE.version,
+      });
     }
   }
 
@@ -156,7 +119,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   assertInWorkspace(client: Socket, room: `${string}:${'sync' | 'awareness'}`) {
     if (!client.rooms.has(room)) {
-      throw new NotInWorkspaceError(room);
+      throw new NotInWorkspace({ workspaceId: room.split(':')[0] });
     }
   }
 
@@ -172,7 +135,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
         permission
       ))
     ) {
-      throw new AccessDeniedError(workspaceId);
+      throw new WorkspaceAccessDenied({ workspaceId });
     }
   }
 
@@ -318,9 +281,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const res = await this.docManager.get(docId.workspace, docId.guid);
 
     if (!res) {
-      return {
-        error: new DocNotFoundError(workspaceId, docId.guid),
-      };
+      throw new DocNotFound({ workspaceId, docId: docId.guid });
     }
 
     const missing = Buffer.from(

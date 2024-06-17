@@ -1,7 +1,8 @@
-import { ForbiddenException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import { PrismaClient } from '@prisma/client';
 
+import { DocAccessDenied, WorkspaceAccessDenied } from '../../fundamentals';
 import { Permission } from './types';
 
 export enum PublicPageMode {
@@ -151,7 +152,7 @@ export class PermissionService {
     permission: Permission = Permission.Read
   ) {
     if (!(await this.tryCheckWorkspace(ws, user, permission))) {
-      throw new ForbiddenException('Permission denied');
+      throw new WorkspaceAccessDenied({ workspaceId: ws });
     }
   }
 
@@ -323,7 +324,7 @@ export class PermissionService {
     permission = Permission.Read
   ) {
     if (!(await this.tryCheckPage(ws, page, user, permission))) {
-      throw new ForbiddenException('Permission denied');
+      throw new DocAccessDenied({ workspaceId: ws, docId: page });
     }
   }
 

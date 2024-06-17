@@ -1,10 +1,11 @@
 import { createHash } from 'node:crypto';
 
-import { Injectable, PayloadTooLargeException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
 import { QuotaManagementService } from '../../core/quota';
 import {
   type BlobInputType,
+  BlobQuotaExceeded,
   Config,
   type FileUpload,
   type StorageProvider,
@@ -54,9 +55,7 @@ export class CopilotStorage {
     const checkExceeded = await this.quota.getQuotaCalculator(userId);
 
     if (checkExceeded(0)) {
-      throw new PayloadTooLargeException(
-        'Storage or blob size limit exceeded.'
-      );
+      throw new BlobQuotaExceeded();
     }
     const buffer = await new Promise<Buffer>((resolve, reject) => {
       const stream = blob.createReadStream();
@@ -67,9 +66,7 @@ export class CopilotStorage {
         // check size after receive each chunk to avoid unnecessary memory usage
         const bufferSize = chunks.reduce((acc, cur) => acc + cur.length, 0);
         if (checkExceeded(bufferSize)) {
-          reject(
-            new PayloadTooLargeException('Storage or blob size limit exceeded.')
-          );
+          reject(new BlobQuotaExceeded());
         }
       });
       stream.on('error', reject);
@@ -77,7 +74,7 @@ export class CopilotStorage {
         const buffer = Buffer.concat(chunks);
 
         if (checkExceeded(buffer.length)) {
-          reject(new PayloadTooLargeException('Storage limit exceeded.'));
+          reject(new BlobQuotaExceeded());
         } else {
           resolve(buffer);
         }

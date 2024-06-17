@@ -86,9 +86,11 @@ test('should not be able to visit private api if not signed in', async t => {
     .get('/private')
     .expect(HttpStatus.UNAUTHORIZED)
     .expect({
-      statusCode: 401,
-      message: 'You are not signed in.',
-      error: 'Unauthorized',
+      status: 401,
+      code: 'Unauthorized',
+      type: 'AUTHENTICATION_REQUIRED',
+      name: 'AUTHENTICATION_REQUIRED',
+      message: 'You must sign in first to access this resource.',
     });
 
   t.assert(true);

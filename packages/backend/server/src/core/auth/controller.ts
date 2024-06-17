@@ -1,7 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
 import {
-  BadRequestException,
   Body,
   Controller,
   Get,
@@ -14,7 +13,16 @@ import {
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
 
-import { Config, Throttle, URLHelper } from '../../fundamentals';
+import {
+  Config,
+  EarlyAccessRequired,
+  EmailTokenNotFound,
+  InternalServerError,
+  InvalidEmailToken,
+  SignUpForbidden,
+  Throttle,
+  URLHelper,
+} from '../../fundamentals';
 import { UserService } from '../user';
 import { validators } from '../utils/validators';
 import { CurrentUser } from './current-user';
@@ -55,9 +63,7 @@ export class AuthController {
     validators.assertValidEmail(credential.email);
     const canSignIn = await this.auth.canSignIn(credential.email);
     if (!canSignIn) {
-      throw new BadRequestException(
-        `You don't have early access permission\nVisit https://community.affine.pro/c/insider-general/ for more information`
-      );
+      throw new EarlyAccessRequired();
     }
 
     if (credential.password) {
@@ -74,7 +80,7 @@ export class AuthController {
       if (!user) {
         const allowSignup = await this.config.runtime.fetch('auth/allowSignup');
         if (!allowSignup) {
-          throw new BadRequestException('You are not allows to sign up.');
+          throw new SignUpForbidden();
         }
       }
 
@@ -84,7 +90,7 @@ export class AuthController {
       );
 
       if (result.rejected.length) {
-        throw new Error('Failed to send sign-in email.');
+        throw new InternalServerError('Failed to send sign-in email.');
       }
 
       res.status(HttpStatus.OK).send({
@@ -145,7 +151,7 @@ export class AuthController {
     @Body() { email, token }: MagicLinkCredential
   ) {
     if (!token || !email) {
-      throw new BadRequestException('Missing sign-in mail token');
+      throw new EmailTokenNotFound();
     }
 
     validators.assertValidEmail(email);
@@ -155,7 +161,7 @@ export class AuthController {
     });
 
     if (!valid) {
-      throw new BadRequestException('Invalid sign-in mail token');
+      throw new InvalidEmailToken();
     }
 
     const user = await this.user.fulfillUser(email, {

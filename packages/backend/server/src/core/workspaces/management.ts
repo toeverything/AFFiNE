@@ -1,4 +1,3 @@
-import { ForbiddenException } from '@nestjs/common';
 import {
   Args,
   Int,
@@ -9,6 +8,7 @@ import {
   Resolver,
 } from '@nestjs/graphql';
 
+import { ActionForbidden } from '../../fundamentals';
 import { CurrentUser } from '../auth';
 import { Admin } from '../common';
 import { FeatureManagementService, FeatureType } from '../features';
@@ -56,13 +56,13 @@ export class WorkspaceManagementResolver {
     @Args('enable') enable: boolean
   ): Promise<boolean> {
     if (!(await this.feature.canEarlyAccess(user.email))) {
-      throw new ForbiddenException('You are not allowed to do this');
+      throw new ActionForbidden();
     }
 
     const owner = await this.permission.getWorkspaceOwner(workspaceId);
     const availableFeatures = await this.availableFeatures(user);
     if (owner.user.id !== user.id || !availableFeatures.includes(feature)) {
-      throw new ForbiddenException('You are not allowed to do this');
+      throw new ActionForbidden();
     }
 
     if (enable) {

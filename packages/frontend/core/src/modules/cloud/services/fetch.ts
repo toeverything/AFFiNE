@@ -1,4 +1,5 @@
 import { DebugLogger } from '@affine/debug';
+import { UserFriendlyError } from '@affine/graphql';
 import { fromPromise, Service } from '@toeverything/infra';
 
 import { BackendError, NetworkError } from '../error';
@@ -75,9 +76,7 @@ export class FetchService extends Service {
           // ignore
         }
       }
-      throw new BackendError(
-        new Error(`${res.status} ${res.statusText}`, reason)
-      );
+      throw new BackendError(UserFriendlyError.fromAnyError(reason));
     }
     return res;
   };

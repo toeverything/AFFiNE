@@ -1,17 +1,18 @@
-import {
-  BadRequestException,
-  Controller,
-  Get,
-  Query,
-  Req,
-  Res,
-} from '@nestjs/common';
+import { Controller, Get, Query, Req, Res } from '@nestjs/common';
 import { ConnectedAccount, PrismaClient } from '@prisma/client';
 import type { Request, Response } from 'express';
 
 import { AuthService, Public } from '../../core/auth';
 import { UserService } from '../../core/user';
-import { URLHelper } from '../../fundamentals';
+import {
+  InvalidOauthCallbackState,
+  MissingOauthQueryParameter,
+  OauthAccountAlreadyConnected,
+  OauthStateExpired,
+  UnknownOauthProvider,
+  URLHelper,
+  WrongSignInMethod,
+} from '../../fundamentals';
 import { OAuthProviderName } from './config';
 import { OAuthAccount, Tokens } from './providers/def';
 import { OAuthProviderFactory } from './register';
@@ -35,12 +36,15 @@ export class OAuthController {
     @Query('provider') unknownProviderName: string,
     @Query('redirect_uri') redirectUri?: string
   ) {
+    if (!unknownProviderName) {
+      throw new MissingOauthQueryParameter({ name: 'provider' });
+    }
     // @ts-expect-error safe
     const providerName = OAuthProviderName[unknownProviderName];
     const provider = this.providerFactory.get(providerName);
 
     if (!provider) {
-      throw new BadRequestException('Invalid OAuth provider');
+      throw new UnknownOauthProvider({ name: unknownProviderName });
     }
 
     const state = await this.oauth.saveOAuthState({
@@ -60,29 +64,31 @@ export class OAuthController {
     @Query('state') stateStr?: string
   ) {
     if (!code) {
-      throw new BadRequestException('Missing query parameter `code`');
+      throw new MissingOauthQueryParameter({ name: 'code' });
     }
 
     if (!stateStr) {
-      throw new BadRequestException('Invalid callback state parameter');
+      throw new MissingOauthQueryParameter({ name: 'state' });
+    }
+
+    if (typeof stateStr !== 'string' || !this.oauth.isValidState(stateStr)) {
+      throw new InvalidOauthCallbackState();
     }
 
     const state = await this.oauth.getOAuthState(stateStr);
 
     if (!state) {
-      throw new BadRequestException('OAuth state expired, please try again.');
+      throw new OauthStateExpired();
     }
 
     if (!state.provider) {
-      throw new BadRequestException(
-        'Missing callback state parameter `provider`'
-      );
+      throw new MissingOauthQueryParameter({ name: 'provider' });
     }
 
     const provider = this.providerFactory.get(state.provider);
 
     if (!provider) {
-      throw new BadRequestException('Invalid provider');
+      throw new UnknownOauthProvider({ name: state.provider ?? 'unknown' });
     }
 
     const tokens = await provider.getToken(code);
@@ -154,15 +160,9 @@ export class OAuthController {
       // we can't directly connect the external account with given email in sign in scenario for safety concern.
       // let user manually connect in account sessions instead.
       if (user.registered) {
-        throw new BadRequestException(
-          'The account with provided email is not register in the same way.'
-        );
+        throw new WrongSignInMethod();
       }
 
-      await this.user.fulfillUser(externalAccount.email, {
-        emailVerifiedAt: new Date(),
-        registered: true,
-      });
       await this.db.connectedAccount.create({
         data: {
           userId: user.id,
@@ -228,9 +228,7 @@ export class OAuthController {
 
     if (connectedUser) {
       if (connectedUser.id !== user.id) {
-        throw new BadRequestException(
-          'The third-party account has already been connected to another user.'
-        );
+        throw new OauthAccountAlreadyConnected();
       }
     } else {
       await this.db.connectedAccount.create({

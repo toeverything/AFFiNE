@@ -195,9 +195,9 @@ export const gqlFetcherFactory = (
         const result = (await res.json()) as ExecutionResult;
         if (res.status >= 400 || result.errors) {
           if (result.errors && result.errors.length > 0) {
-            throw result.errors.map(
-              error => new GraphQLError(error.message, error)
-            );
+            // throw the first error is enough
+            const firstError = result.errors[0];
+            throw new GraphQLError(firstError.message, firstError);
           } else {
             throw new GraphQLError('Empty GraphQL error body');
           }

@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent as RawOnEvent } from '@nestjs/event-emitter';
 import type {
   Prisma,
@@ -14,7 +14,20 @@ import Stripe from 'stripe';
 
 import { CurrentUser } from '../../core/auth';
 import { EarlyAccessType, FeatureManagementService } from '../../core/features';
-import { Config, EventEmitter, OnEvent } from '../../fundamentals';
+import {
+  ActionForbidden,
+  Config,
+  CustomerPortalCreateFailed,
+  EventEmitter,
+  OnEvent,
+  SameSubscriptionRecurring,
+  SubscriptionAlreadyExists,
+  SubscriptionExpired,
+  SubscriptionHasBeenCanceled,
+  SubscriptionNotExists,
+  SubscriptionPlanNotFound,
+  UserNotFound,
+} from '../../fundamentals';
 import { ScheduleManager } from './schedule';
 import {
   InvoiceStatus,
@@ -160,7 +173,7 @@ export class SubscriptionService {
       this.config.affine.canary &&
       !this.features.isStaff(user.email)
     ) {
-      throw new BadRequestException('You are not allowed to do this.');
+      throw new ActionForbidden();
     }
 
     const currentSubscription = await this.db.userSubscription.findFirst({
@@ -172,9 +185,7 @@ export class SubscriptionService {
     });
 
     if (currentSubscription) {
-      throw new BadRequestException(
-        `You've already subscribed to the ${plan} plan`
-      );
+      throw new SubscriptionAlreadyExists({ plan });
     }
 
     const customer = await this.getOrCreateCustomer(
@@ -245,18 +256,16 @@ export class SubscriptionService {
     });
 
     if (!user) {
-      throw new BadRequestException('Unknown user');
+      throw new UserNotFound();
     }
 
     const subscriptionInDB = user?.subscriptions.find(s => s.plan === plan);
     if (!subscriptionInDB) {
-      throw new BadRequestException(`You didn't subscribe to the ${plan} plan`);
+      throw new SubscriptionNotExists({ plan });
     }
 
     if (subscriptionInDB.canceledAt) {
-      throw new BadRequestException(
-        'Your subscription has already been canceled'
-      );
+      throw new SubscriptionHasBeenCanceled();
     }
 
     // should release the schedule first
@@ -298,22 +307,20 @@ export class SubscriptionService {
     });
 
     if (!user) {
-      throw new BadRequestException('Unknown user');
+      throw new UserNotFound();
     }
 
     const subscriptionInDB = user?.subscriptions.find(s => s.plan === plan);
     if (!subscriptionInDB) {
-      throw new BadRequestException(`You didn't subscribe to the ${plan} plan`);
+      throw new SubscriptionNotExists({ plan });
     }
 
     if (!subscriptionInDB.canceledAt) {
-      throw new BadRequestException('Your subscription has not been canceled');
+      throw new SubscriptionHasBeenCanceled();
     }
 
     if (subscriptionInDB.end < new Date()) {
-      throw new BadRequestException(
-        'Your subscription is expired, please checkout again.'
-      );
+      throw new SubscriptionExpired();
     }
 
     if (subscriptionInDB.stripeScheduleId) {
@@ -354,23 +361,19 @@ export class SubscriptionService {
     });
 
     if (!user) {
-      throw new BadRequestException('Unknown user');
+      throw new UserNotFound();
     }
     const subscriptionInDB = user?.subscriptions.find(s => s.plan === plan);
     if (!subscriptionInDB) {
-      throw new BadRequestException(`You didn't subscribe to the ${plan} plan`);
+      throw new SubscriptionNotExists({ plan });
     }
 
     if (subscriptionInDB.canceledAt) {
-      throw new BadRequestException(
-        'Your subscription has already been canceled'
-      );
+      throw new SubscriptionHasBeenCanceled();
     }
 
     if (subscriptionInDB.recurring === recurring) {
-      throw new BadRequestException(
-        `You are already in ${recurring} recurring`
-      );
+      throw new SameSubscriptionRecurring({ recurring });
     }
 
     const price = await this.getPrice(
@@ -404,7 +407,7 @@ export class SubscriptionService {
     });
 
     if (!user) {
-      throw new BadRequestException('Unknown user');
+      throw new UserNotFound();
     }
 
     try {
@@ -415,7 +418,7 @@ export class SubscriptionService {
       return portal.url;
     } catch (e) {
       this.logger.error('Failed to create customer portal.', e);
-      throw new BadRequestException('Failed to create customer portal');
+      throw new CustomerPortalCreateFailed();
     }
   }
 
@@ -751,9 +754,10 @@ export class SubscriptionService {
     });
 
     if (!prices.data.length) {
-      throw new BadRequestException(
-        `Unknown subscription plan ${plan} with ${recurring} recurring`
-      );
+      throw new SubscriptionPlanNotFound({
+        plan,
+        recurring,
+      });
     }
 
     return prices.data[0].id;

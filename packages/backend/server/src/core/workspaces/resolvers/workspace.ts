@@ -1,10 +1,4 @@
-import {
-  ForbiddenException,
-  InternalServerErrorException,
-  Logger,
-  NotFoundException,
-  PayloadTooLargeException,
-} from '@nestjs/common';
+import { Logger } from '@nestjs/common';
 import {
   Args,
   Int,
@@ -21,11 +15,18 @@ import { applyUpdate, Doc } from 'yjs';
 
 import type { FileUpload } from '../../../fundamentals';
 import {
+  CantChangeWorkspaceOwner,
   EventEmitter,
+  InternalServerError,
   MailService,
+  MemberQuotaExceeded,
   MutexService,
   Throttle,
-  TooManyRequestsException,
+  TooManyRequest,
+  UserNotFound,
+  WorkspaceAccessDenied,
+  WorkspaceNotFound,
+  WorkspaceOwnerNotFound,
 } from '../../../fundamentals';
 import { CurrentUser, Public } from '../../auth';
 import { QuotaManagementService, QuotaQueryType } from '../../quota';
@@ -77,7 +78,7 @@ export class WorkspaceResolver {
     const permission = await this.permissions.get(workspace.id, user.id);
 
     if (!permission) {
-      throw new ForbiddenException();
+      throw new WorkspaceAccessDenied({ workspaceId: workspace.id });
     }
 
     return permission;
@@ -196,7 +197,7 @@ export class WorkspaceResolver {
     const workspace = await this.prisma.workspace.findUnique({ where: { id } });
 
     if (!workspace) {
-      throw new NotFoundException("Workspace doesn't exist");
+      throw new WorkspaceNotFound({ workspaceId: id });
     }
 
     return workspace;
@@ -307,7 +308,7 @@ export class WorkspaceResolver {
     );
 
     if (permission === Permission.Owner) {
-      throw new ForbiddenException('Cannot change owner');
+      throw new CantChangeWorkspaceOwner();
     }
 
     try {
@@ -315,7 +316,7 @@ export class WorkspaceResolver {
       const lockFlag = `invite:${workspaceId}`;
       await using lock = await this.mutex.lock(lockFlag);
       if (!lock) {
-        return new TooManyRequestsException('Server is busy');
+        return new TooManyRequest();
       }
 
       // member limit check
@@ -326,7 +327,7 @@ export class WorkspaceResolver {
         this.quota.getWorkspaceUsage(workspaceId),
       ]);
       if (memberCount >= quota.memberLimit) {
-        return new PayloadTooLargeException('Workspace member limit reached.');
+        return new MemberQuotaExceeded();
       }
 
       let target = await this.users.findUserByEmail(email);
@@ -381,7 +382,7 @@ export class WorkspaceResolver {
               `failed to send ${workspaceId} invite email to ${email}, but successfully revoked permission: ${e}`
             );
           }
-          return new InternalServerErrorException(
+          throw new InternalServerError(
             'Failed to send invite email. Please try again.'
           );
         }
@@ -389,7 +390,7 @@ export class WorkspaceResolver {
       return inviteId;
     } catch (e) {
       this.logger.error('failed to invite user', e);
-      return new TooManyRequestsException('Server is busy');
+      return new TooManyRequest();
     }
   }
 
@@ -481,9 +482,7 @@ export class WorkspaceResolver {
     } = await this.getInviteInfo(inviteId);
 
     if (!inviter || !invitee) {
-      throw new ForbiddenException(
-        `can not find inviter/invitee by inviteId: ${inviteId}`
-      );
+      throw new UserNotFound();
     }
 
     if (sendAcceptMail) {
@@ -508,9 +507,7 @@ export class WorkspaceResolver {
     const owner = await this.permissions.getWorkspaceOwner(workspaceId);
 
     if (!owner.user) {
-      throw new ForbiddenException(
-        `can not find owner by workspaceId: ${workspaceId}`
-      );
+      throw new WorkspaceOwnerNotFound({ workspaceId: workspaceId });
     }
 
     if (sendLeaveMail) {

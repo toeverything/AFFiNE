@@ -1,19 +1,13 @@
 import assert from 'node:assert';
 
 import type { RawBodyRequest } from '@nestjs/common';
-import {
-  Controller,
-  Logger,
-  NotAcceptableException,
-  Post,
-  Req,
-} from '@nestjs/common';
+import { Controller, Logger, Post, Req } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import type { Request } from 'express';
 import Stripe from 'stripe';
 
 import { Public } from '../../core/auth';
-import { Config } from '../../fundamentals';
+import { Config, InternalServerError } from '../../fundamentals';
 
 @Controller('/api/stripe')
 export class StripeWebhook {
@@ -55,9 +49,8 @@ export class StripeWebhook {
           this.logger.error('Failed to handle Stripe Webhook event.', e);
         });
       });
-    } catch (err) {
-      this.logger.error('Stripe Webhook error', err);
-      throw new NotAcceptableException();
+    } catch (err: any) {
+      throw new InternalServerError(err.message);
     }
   }
 }
