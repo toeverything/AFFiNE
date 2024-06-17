@@ -1,4 +1,4 @@
-import { LinkedPageIcon } from '@blocksuite/icons';
+import { LinkedPageIcon } from '@blocksuite/icons/rc';
 import type { PropsWithChildren } from 'react';
 
 import { pageLink, pageLinkIcon, pageLinkLabel } from '../articles/blocks.css';

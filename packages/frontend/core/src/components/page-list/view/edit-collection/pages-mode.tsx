@@ -2,7 +2,7 @@ import { Menu } from '@affine/component';
 import { FavoriteItemsAdapter } from '@affine/core/modules/properties';
 import type { Collection } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { FilterIcon } from '@blocksuite/icons';
+import { FilterIcon } from '@blocksuite/icons/rc';
 import type { DocMeta } from '@blocksuite/store';
 import { useLiveData, useService } from '@toeverything/infra';
 import clsx from 'clsx';

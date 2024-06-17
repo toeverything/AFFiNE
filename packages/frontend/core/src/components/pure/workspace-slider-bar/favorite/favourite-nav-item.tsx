@@ -8,7 +8,7 @@ import {
   WorkbenchService,
 } from '@affine/core/modules/workbench';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
+import { EdgelessIcon, PageIcon } from '@blocksuite/icons/rc';
 import { type AnimateLayoutChanges, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import * as Collapsible from '@radix-ui/react-collapsible';

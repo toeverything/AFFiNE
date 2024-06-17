@@ -6,7 +6,7 @@ import {
   DualLinkIcon,
   ExpandFullIcon,
   SplitViewIcon,
-} from '@blocksuite/icons';
+} from '@blocksuite/icons/rc';
 import { type DocMode, useService } from '@toeverything/infra';
 import { clsx } from 'clsx';
 import {

@@ -14,7 +14,7 @@ import {
   MoreHorizontalIcon,
   PageIcon,
   TodayIcon,
-} from '@blocksuite/icons';
+} from '@blocksuite/icons/rc';
 import type { DocRecord } from '@toeverything/infra';
 import {
   DocService,

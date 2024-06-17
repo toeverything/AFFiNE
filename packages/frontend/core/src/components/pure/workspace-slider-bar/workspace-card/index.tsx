@@ -15,7 +15,7 @@ import {
   LocalWorkspaceIcon,
   NoNetworkIcon,
   UnsyncIcon,
-} from '@blocksuite/icons';
+} from '@blocksuite/icons/rc';
 import { useLiveData, useService, WorkspaceService } from '@toeverything/infra';
 import { cssVar } from '@toeverything/theme';
 import { useSetAtom } from 'jotai';

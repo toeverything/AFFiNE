@@ -1,7 +1,7 @@
 import {
   InformationFillDuotoneIcon,
   SingleSelectSelectSolidIcon,
-} from '@blocksuite/icons';
+} from '@blocksuite/icons/rc';
 import { assignInlineVars } from '@vanilla-extract/dynamic';
 import { type CSSProperties, type FC, useMemo } from 'react';
 import { type ExternalToast, toast, Toaster } from 'sonner';

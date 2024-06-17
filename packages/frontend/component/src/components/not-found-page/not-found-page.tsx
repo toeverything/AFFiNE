@@ -1,5 +1,5 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { SignOutIcon } from '@blocksuite/icons';
+import { SignOutIcon } from '@blocksuite/icons/rc';
 
 import { Avatar } from '../../ui/avatar';
 import { Button, IconButton } from '../../ui/button';

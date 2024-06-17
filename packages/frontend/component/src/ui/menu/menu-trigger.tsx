@@ -1,4 +1,4 @@
-import { ArrowDownSmallIcon } from '@blocksuite/icons';
+import { ArrowDownSmallIcon } from '@blocksuite/icons/rc';
 import { assignInlineVars } from '@vanilla-extract/dynamic';
 import clsx from 'clsx';
 import type {

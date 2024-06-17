@@ -1,5 +1,5 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { ArrowLeftSmallIcon } from '@blocksuite/icons';
+import { ArrowLeftSmallIcon } from '@blocksuite/icons/rc';
 import type { FC } from 'react';
 
 import type { ButtonProps } from '../../ui/button';

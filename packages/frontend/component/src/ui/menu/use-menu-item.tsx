@@ -1,4 +1,4 @@
-import { DoneIcon } from '@blocksuite/icons';
+import { DoneIcon } from '@blocksuite/icons/rc';
 import clsx from 'clsx';
 import { useMemo } from 'react';
 

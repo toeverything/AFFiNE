@@ -1,4 +1,4 @@
-import { CloseIcon, DownloadIcon } from '@blocksuite/icons';
+import { CloseIcon, DownloadIcon } from '@blocksuite/icons/rc';
 import clsx from 'clsx';
 import { useCallback, useState } from 'react';
 

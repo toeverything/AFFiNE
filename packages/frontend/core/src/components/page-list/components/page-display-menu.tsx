@@ -6,7 +6,7 @@ import {
   MenuSub,
 } from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { ArrowDownSmallIcon, DoneIcon } from '@blocksuite/icons';
+import { ArrowDownSmallIcon, DoneIcon } from '@blocksuite/icons/rc';
 import { useCallback, useMemo } from 'react';
 
 import type { PageDisplayProperties, PageGroupByType } from '../types';

@@ -8,7 +8,7 @@ import {
   TodayIcon,
   ToggleCollapseIcon,
   ViewLayersIcon,
-} from '@blocksuite/icons';
+} from '@blocksuite/icons/rc';
 import type { DocCollection, DocMeta } from '@blocksuite/store';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import { DocsService, useLiveData, useService } from '@toeverything/infra';

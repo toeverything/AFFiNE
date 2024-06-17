@@ -4,7 +4,11 @@ import { useWorkspaceInfo } from '@affine/core/hooks/use-workspace-info';
 import type { PageInfoCustomPropertyMeta } from '@affine/core/modules/properties/services/schema';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { DeleteIcon, FilterIcon, MoreHorizontalIcon } from '@blocksuite/icons';
+import {
+  DeleteIcon,
+  FilterIcon,
+  MoreHorizontalIcon,
+} from '@blocksuite/icons/rc';
 import { FrameworkScope, type WorkspaceMetadata } from '@toeverything/infra';
 import type { MouseEvent } from 'react';
 import {

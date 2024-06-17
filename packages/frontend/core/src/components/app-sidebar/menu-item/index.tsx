@@ -1,4 +1,4 @@
-import { ArrowDownSmallIcon } from '@blocksuite/icons';
+import { ArrowDownSmallIcon } from '@blocksuite/icons/rc';
 import clsx from 'clsx';
 import React from 'react';
 import type { To } from 'react-router-dom';

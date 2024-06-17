@@ -2,7 +2,7 @@
 // it's better to manage all equity at server side
 import { SubscriptionPlan, SubscriptionRecurring } from '@affine/graphql';
 import type { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { AfFiNeIcon } from '@blocksuite/icons';
+import { AfFiNeIcon } from '@blocksuite/icons/rc';
 import type { ReactNode } from 'react';
 
 import { planTitleTitleCaption } from './style.css';

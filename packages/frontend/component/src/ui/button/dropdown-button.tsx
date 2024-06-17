@@ -1,4 +1,4 @@
-import { ArrowDownSmallIcon } from '@blocksuite/icons';
+import { ArrowDownSmallIcon } from '@blocksuite/icons/rc';
 import type { ButtonHTMLAttributes, MouseEventHandler } from 'react';
 import { forwardRef } from 'react';
 

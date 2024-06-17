@@ -1,5 +1,5 @@
 import type { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { ImportIcon, PlusIcon } from '@blocksuite/icons';
+import { ImportIcon, PlusIcon } from '@blocksuite/icons/rc';
 import type { createStore } from 'jotai';
 
 import { openCreateWorkspaceModalAtom } from '../atoms';

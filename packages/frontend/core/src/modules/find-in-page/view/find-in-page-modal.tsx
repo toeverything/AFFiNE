@@ -4,7 +4,7 @@ import {
   ArrowUpSmallIcon,
   CloseIcon,
   SearchIcon,
-} from '@blocksuite/icons';
+} from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
 import clsx from 'clsx';
 import {

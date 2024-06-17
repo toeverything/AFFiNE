@@ -1,7 +1,7 @@
 import { WorkspaceAvatar } from '@affine/component/workspace-avatar';
 import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import { CollaborationIcon, SettingsIcon } from '@blocksuite/icons';
+import { CollaborationIcon, SettingsIcon } from '@blocksuite/icons/rc';
 import type { WorkspaceMetadata } from '@toeverything/infra';
 import clsx from 'clsx';
 import { type MouseEvent, useCallback } from 'react';

@@ -1,4 +1,4 @@
-import { Logo1Icon } from '@blocksuite/icons';
+import { Logo1Icon } from '@blocksuite/icons/rc';
 import type { FC } from 'react';
 
 import { modalHeaderWrapper } from './share.css';

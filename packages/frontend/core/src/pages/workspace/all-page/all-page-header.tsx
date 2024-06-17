@@ -9,7 +9,7 @@ import { WorkspaceModeFilterTab } from '@affine/core/components/pure/workspace-m
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { mixpanel } from '@affine/core/utils';
 import type { Filter } from '@affine/env/filter';
-import { PlusIcon } from '@blocksuite/icons';
+import { PlusIcon } from '@blocksuite/icons/rc';
 import { useService, WorkspaceService } from '@toeverything/infra';
 import clsx from 'clsx';
 

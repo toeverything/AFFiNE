@@ -2,7 +2,7 @@ import { Button } from '@affine/component/ui/button';
 import { ConfirmModal } from '@affine/component/ui/modal';
 import { Tooltip } from '@affine/component/ui/tooltip';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { DeleteIcon, ResetIcon } from '@blocksuite/icons';
+import { DeleteIcon, ResetIcon } from '@blocksuite/icons/rc';
 import { DocService, useService, WorkspaceService } from '@toeverything/infra';
 import { useCallback, useState } from 'react';
 

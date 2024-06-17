@@ -6,7 +6,7 @@ import {
 } from '@affine/core/modules/peek-view';
 import { WorkbenchLink } from '@affine/core/modules/workbench';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { LinkedPageIcon, TodayIcon } from '@blocksuite/icons';
+import { LinkedPageIcon, TodayIcon } from '@blocksuite/icons/rc';
 import type { DocCollection } from '@blocksuite/store';
 import { useService } from '@toeverything/infra';
 import { type PropsWithChildren, useCallback, useRef } from 'react';

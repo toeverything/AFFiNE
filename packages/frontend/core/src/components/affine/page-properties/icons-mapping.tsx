@@ -1,5 +1,5 @@
 import { PagePropertyType } from '@affine/core/modules/properties/services/schema';
-import * as icons from '@blocksuite/icons';
+import * as icons from '@blocksuite/icons/rc';
 import type { SVGProps } from 'react';
 
 type IconType = (props: SVGProps<SVGSVGElement>) => JSX.Element;

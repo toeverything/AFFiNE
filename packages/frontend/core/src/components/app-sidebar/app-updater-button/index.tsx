@@ -2,7 +2,7 @@ import { Tooltip } from '@affine/component';
 import { popupWindow } from '@affine/core/utils';
 import { Unreachable } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { CloseIcon, NewIcon, ResetIcon } from '@blocksuite/icons';
+import { CloseIcon, NewIcon, ResetIcon } from '@blocksuite/icons/rc';
 import clsx from 'clsx';
 import { useCallback, useMemo } from 'react';
 

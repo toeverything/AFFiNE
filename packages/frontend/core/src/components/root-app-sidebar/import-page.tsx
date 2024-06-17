@@ -1,7 +1,7 @@
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { mixpanel } from '@affine/core/utils';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { ImportIcon } from '@blocksuite/icons';
+import { ImportIcon } from '@blocksuite/icons/rc';
 
 import type { DocCollection } from '../../shared';
 import { MenuItem } from '../app-sidebar';

@@ -1,6 +1,6 @@
 import { Button, IconButton } from '@affine/component/ui/button';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { CloseIcon } from '@blocksuite/icons';
+import { CloseIcon } from '@blocksuite/icons/rc';
 import { useCallback } from 'react';
 
 import * as styles from './index.css';

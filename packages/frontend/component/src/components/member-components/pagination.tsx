@@ -1,4 +1,4 @@
-import { ArrowLeftSmallIcon, ArrowRightSmallIcon } from '@blocksuite/icons';
+import { ArrowLeftSmallIcon, ArrowRightSmallIcon } from '@blocksuite/icons/rc';
 import clsx from 'clsx';
 import { useCallback, useMemo } from 'react';
 import ReactPaginate from 'react-paginate';

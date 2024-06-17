@@ -1,4 +1,4 @@
-import { CameraIcon } from '@blocksuite/icons';
+import { CameraIcon } from '@blocksuite/icons/rc';
 import type { Meta, StoryFn } from '@storybook/react';
 
 import type { AvatarProps } from './avatar';

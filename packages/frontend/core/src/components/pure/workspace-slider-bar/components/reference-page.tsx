@@ -4,7 +4,7 @@ import {
   WorkbenchService,
 } from '@affine/core/modules/workbench';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
+import { EdgelessIcon, PageIcon } from '@blocksuite/icons/rc';
 import type { DocCollection, DocMeta } from '@blocksuite/store';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import { DocsService, useLiveData, useService } from '@toeverything/infra';

@@ -5,7 +5,7 @@ import { useExportPage } from '@affine/core/hooks/affine/use-export-page';
 import { useSharingUrl } from '@affine/core/hooks/affine/use-share-url';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { CopyIcon } from '@blocksuite/icons';
+import { CopyIcon } from '@blocksuite/icons/rc';
 import { DocService, useLiveData, useService } from '@toeverything/infra';
 
 import * as styles from './index.css';

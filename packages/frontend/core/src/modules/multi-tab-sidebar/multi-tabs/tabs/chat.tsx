@@ -1,5 +1,5 @@
 import { assertExists } from '@blocksuite/global/utils';
-import { AiIcon } from '@blocksuite/icons';
+import { AiIcon } from '@blocksuite/icons/rc';
 import { ChatPanel } from '@blocksuite/presets/ai';
 import { useCallback, useEffect, useRef } from 'react';
 

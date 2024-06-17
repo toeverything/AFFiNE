@@ -5,7 +5,7 @@ import {
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import type { DocCollection } from '@affine/core/shared';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { TodayIcon, TomorrowIcon, YesterdayIcon } from '@blocksuite/icons';
+import { TodayIcon, TomorrowIcon, YesterdayIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
 
 import { MenuItem } from '../app-sidebar';

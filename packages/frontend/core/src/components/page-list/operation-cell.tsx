@@ -29,7 +29,7 @@ import {
   PlusIcon,
   ResetIcon,
   SplitViewIcon,
-} from '@blocksuite/icons';
+} from '@blocksuite/icons/rc';
 import type { DocMeta } from '@blocksuite/store';
 import { useLiveData, useService, WorkspaceService } from '@toeverything/infra';
 import { useCallback, useState } from 'react';

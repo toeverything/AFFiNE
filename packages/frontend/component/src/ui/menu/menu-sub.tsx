@@ -1,4 +1,4 @@
-import { ArrowRightSmallIcon } from '@blocksuite/icons';
+import { ArrowRightSmallIcon } from '@blocksuite/icons/rc';
 import type {
   DropdownMenuSubProps,
   MenuPortalProps,

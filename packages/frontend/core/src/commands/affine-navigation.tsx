@@ -1,6 +1,6 @@
 import { WorkspaceSubPath } from '@affine/core/shared';
 import type { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { ArrowRightBigIcon } from '@blocksuite/icons';
+import { ArrowRightBigIcon } from '@blocksuite/icons/rc';
 import type { DocCollection } from '@blocksuite/store';
 import type { createStore } from 'jotai';
 

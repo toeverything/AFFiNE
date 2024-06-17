@@ -10,7 +10,7 @@ import {
   FavoriteIcon,
   TagsIcon,
   UpdatedIcon,
-} from '@blocksuite/icons';
+} from '@blocksuite/icons/rc';
 import type { ReactElement } from 'react';
 
 import { tBoolean, tDate, tTag } from './logical/custom-type';

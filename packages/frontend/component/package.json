@@ -78,7 +78,7 @@
     "@blocksuite/block-std": "0.15.0-canary-202406180357-838ef08",
     "@blocksuite/blocks": "0.15.0-canary-202406180357-838ef08",
     "@blocksuite/global": "0.15.0-canary-202406180357-838ef08",
-    "@blocksuite/icons": "2.1.55",
+    "@blocksuite/icons": "2.1.58",
     "@blocksuite/presets": "0.15.0-canary-202406180357-838ef08",
     "@blocksuite/store": "0.15.0-canary-202406180357-838ef08",
     "@storybook/addon-actions": "^7.6.17",

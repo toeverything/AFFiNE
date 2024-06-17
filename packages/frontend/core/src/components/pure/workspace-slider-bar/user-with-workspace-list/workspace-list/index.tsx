@@ -9,7 +9,7 @@ import {
 import { AuthService } from '@affine/core/modules/cloud';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { CloudWorkspaceIcon, LocalWorkspaceIcon } from '@blocksuite/icons';
+import { CloudWorkspaceIcon, LocalWorkspaceIcon } from '@blocksuite/icons/rc';
 import type { WorkspaceMetadata } from '@toeverything/infra';
 import {
   GlobalContextService,

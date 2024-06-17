@@ -2,7 +2,7 @@ import { IconButton } from '@affine/component';
 import { PageDisplayMenu } from '@affine/core/components/page-list';
 import { Header } from '@affine/core/components/pure/header';
 import { WorkspaceModeFilterTab } from '@affine/core/components/pure/workspace-mode-filter-tab';
-import { PlusIcon } from '@blocksuite/icons';
+import { PlusIcon } from '@blocksuite/icons/rc';
 import clsx from 'clsx';
 
 import * as styles from './collection.css';

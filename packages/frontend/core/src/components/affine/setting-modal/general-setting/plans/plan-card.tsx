@@ -7,7 +7,7 @@ import type { SubscriptionRecurring } from '@affine/graphql';
 import { SubscriptionPlan, SubscriptionStatus } from '@affine/graphql';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { DoneIcon } from '@blocksuite/icons';
+import { DoneIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useAtom, useSetAtom } from 'jotai';
 import { nanoid } from 'nanoid';

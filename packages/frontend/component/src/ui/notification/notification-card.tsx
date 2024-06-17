@@ -1,4 +1,4 @@
-import { CloseIcon, InformationFillDuotoneIcon } from '@blocksuite/icons';
+import { CloseIcon, InformationFillDuotoneIcon } from '@blocksuite/icons/rc';
 import { assignInlineVars } from '@vanilla-extract/dynamic';
 import clsx from 'clsx';
 import { type HTMLAttributes, useCallback } from 'react';

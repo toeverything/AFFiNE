@@ -6,7 +6,7 @@ import {
 } from '@affine/component/setting-components';
 import { useAppUpdater } from '@affine/core/hooks/use-app-updater';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { ArrowRightSmallIcon, OpenInNewIcon } from '@blocksuite/icons';
+import { ArrowRightSmallIcon, OpenInNewIcon } from '@blocksuite/icons/rc';
 import { useCallback } from 'react';
 
 import { useAppSettingHelper } from '../../../../../hooks/affine/use-app-setting-helper';

@@ -1,6 +1,6 @@
 import { QuickSearchService } from '@affine/core/modules/cmdk';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { SearchIcon } from '@blocksuite/icons';
+import { SearchIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useCommandState } from 'cmdk';
 

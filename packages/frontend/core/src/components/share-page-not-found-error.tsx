@@ -1,5 +1,5 @@
 import { Empty } from '@affine/component';
-import { Logo1Icon } from '@blocksuite/icons';
+import { Logo1Icon } from '@blocksuite/icons/rc';
 
 export const SharePageNotFoundError = () => {
   return (

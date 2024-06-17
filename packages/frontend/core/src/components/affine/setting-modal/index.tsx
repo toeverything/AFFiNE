@@ -8,7 +8,7 @@ import {
 } from '@affine/core/atoms';
 import { AuthService } from '@affine/core/modules/cloud';
 import { Trans } from '@affine/i18n';
-import { ContactWithUsIcon } from '@blocksuite/icons';
+import { ContactWithUsIcon } from '@blocksuite/icons/rc';
 import {
   useLiveData,
   useService,

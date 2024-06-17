@@ -1,5 +1,5 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { FavoriteIcon } from '@blocksuite/icons';
+import { FavoriteIcon } from '@blocksuite/icons/rc';
 
 import * as styles from './styles.css';
 export const EmptyItem = () => {

@@ -7,7 +7,7 @@ import { useWorkspace } from '@affine/core/hooks/use-workspace';
 import { useWorkspaceInfo } from '@affine/core/hooks/use-workspace-info';
 import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { ArrowRightSmallIcon } from '@blocksuite/icons';
+import { ArrowRightSmallIcon } from '@blocksuite/icons/rc';
 import { FrameworkScope } from '@toeverything/infra';
 import { useCallback } from 'react';
 

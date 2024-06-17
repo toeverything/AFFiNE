@@ -8,7 +8,7 @@ import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { SubscriptionService } from '@affine/core/modules/cloud';
 import { SubscriptionPlan } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { SingleSelectSelectSolidIcon } from '@blocksuite/icons';
+import { SingleSelectSelectSolidIcon } from '@blocksuite/icons/rc';
 import { useService } from '@toeverything/infra';
 import { cssVar } from '@toeverything/theme';
 import { nanoid } from 'nanoid';

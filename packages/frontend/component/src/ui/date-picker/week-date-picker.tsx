@@ -1,4 +1,4 @@
-import { ArrowLeftSmallIcon, ArrowRightSmallIcon } from '@blocksuite/icons';
+import { ArrowLeftSmallIcon, ArrowRightSmallIcon } from '@blocksuite/icons/rc';
 import clsx from 'clsx';
 import dayjs from 'dayjs';
 import type { ForwardedRef, HTMLAttributes } from 'react';

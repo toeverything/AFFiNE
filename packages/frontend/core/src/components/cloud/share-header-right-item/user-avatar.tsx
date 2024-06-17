@@ -7,7 +7,7 @@ import {
 } from '@affine/component/ui/menu';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { SignOutIcon } from '@blocksuite/icons';
+import { SignOutIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useEffect, useMemo } from 'react';
 

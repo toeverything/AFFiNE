@@ -1,5 +1,5 @@
 import type { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { SidebarIcon } from '@blocksuite/icons';
+import { SidebarIcon } from '@blocksuite/icons/rc';
 import type { createStore } from 'jotai';
 
 import { appSidebarOpenAtom } from '../components/app-sidebar';

@@ -27,7 +27,7 @@ import { mixpanel } from '@affine/core/utils';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { Permission } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { MoreVerticalIcon } from '@blocksuite/icons';
+import { MoreVerticalIcon } from '@blocksuite/icons/rc';
 import {
   useEnsureLiveData,
   useLiveData,
