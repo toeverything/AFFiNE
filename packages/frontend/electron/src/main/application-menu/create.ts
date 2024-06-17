@@ -148,7 +148,9 @@ export function createApplicationMenu() {
           click: async () => {
             // eslint-disable-next-line @typescript-eslint/no-var-requires
             const { shell } = require('electron');
-            await shell.openExternal('https://docs.affine.pro/docs/hello-bonjour-aloha-你好');
+            await shell.openExternal(
+              'https://docs.affine.pro/docs/hello-bonjour-aloha-你好'
+            );
           },
         },
       ],
