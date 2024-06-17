@@ -1,16 +1,18 @@
 import './config';
 
+import { STATUS_CODES } from 'node:http';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import type { ApolloDriverConfig } from '@nestjs/apollo';
 import { ApolloDriver } from '@nestjs/apollo';
-import { Global, HttpException, HttpStatus, Module } from '@nestjs/common';
+import { Global, HttpStatus, Module } from '@nestjs/common';
 import { GraphQLModule } from '@nestjs/graphql';
 import { Request, Response } from 'express';
 import { GraphQLError } from 'graphql';
 
 import { Config } from '../config';
+import { UserFriendlyError } from '../error';
 import { GQLLoggerPlugin } from './logger-plugin';
 
 export type GraphqlContext = {
@@ -57,25 +59,20 @@ export type GraphqlContext = {
 
             if (
               error instanceof GraphQLError &&
-              error.originalError instanceof HttpException
+              error.originalError instanceof UserFriendlyError
             ) {
-              const statusCode = error.originalError.getStatus();
-              const statusName = HttpStatus[statusCode];
-
-              // originally be 'INTERNAL_SERVER_ERROR'
-              formattedError.extensions['code'] = statusCode;
-              formattedError.extensions['status'] = statusName;
-              delete formattedError.extensions['originalError'];
-
+              // @ts-expect-error allow assign
+              formattedError.extensions = error.originalError.json();
+              formattedError.extensions.stacktrace = error.originalError.stack;
               return formattedError;
             } else {
               // @ts-expect-error allow assign
               formattedError.message = 'Internal Server Error';
 
-              formattedError.extensions['code'] =
-                HttpStatus.INTERNAL_SERVER_ERROR;
               formattedError.extensions['status'] =
-                HttpStatus[HttpStatus.INTERNAL_SERVER_ERROR];
+                HttpStatus.INTERNAL_SERVER_ERROR;
+              formattedError.extensions['code'] =
+                STATUS_CODES[HttpStatus.INTERNAL_SERVER_ERROR];
             }
 
             return formattedError;

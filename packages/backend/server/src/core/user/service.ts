@@ -1,8 +1,9 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { Prisma, PrismaClient } from '@prisma/client';
 
 import {
   Config,
+  EmailAlreadyUsed,
   EventEmitter,
   type EventPayload,
   OnEvent,
@@ -63,7 +64,7 @@ export class UserService {
     const user = await this.findUserByEmail(email);
 
     if (user) {
-      throw new BadRequestException('Email already exists');
+      throw new EmailAlreadyUsed();
     }
 
     return this.createUser({

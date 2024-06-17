@@ -10,6 +10,7 @@ import type { Response } from 'supertest';
 import { AppModule, FunctionalityModules } from '../../src/app.module';
 import { AuthGuard, AuthModule } from '../../src/core/auth';
 import { UserFeaturesInit1698652531198 } from '../../src/data/migrations/1698652531198-user-features-init';
+import { GlobalExceptionFilter } from '../../src/fundamentals';
 import { GqlModule } from '../../src/fundamentals/graphql';
 
 async function flushDB(client: PrismaClient) {
@@ -116,6 +117,7 @@ export async function createTestingApp(moduleDef: TestingModuleMeatdata = {}) {
     logger: ['warn'],
   });
 
+  app.useGlobalFilters(new GlobalExceptionFilter(app.getHttpAdapter()));
   app.use(
     graphqlUploadExpress({
       maxFileSize: 10 * 1024 * 1024,

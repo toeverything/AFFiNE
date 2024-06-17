@@ -28,7 +28,9 @@ declare global {
   // eslint-disable-next-line no-var
   var currentWorkspace: Workspace | undefined;
   // eslint-disable-next-line no-var
-  var exportWorkspaceSnapshot: () => Promise<void>;
+  var exportWorkspaceSnapshot: (docs?: string[]) => Promise<void>;
+  // eslint-disable-next-line no-var
+  var importWorkspaceSnapshot: () => Promise<void>;
   interface WindowEventMap {
     'affine:workspace:change': CustomEvent<{ id: string }>;
   }
@@ -80,6 +82,29 @@ export const Component = (): ReactElement => {
         a.download = `${workspace.docCollection.meta.name}.zip`;
         a.click();
         URL.revokeObjectURL(url);
+      };
+      window.importWorkspaceSnapshot = async () => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.zip';
+        input.onchange = async () => {
+          if (input.files && input.files.length > 0) {
+            const file = input.files[0];
+            const blob = new Blob([file], { type: 'application/zip' });
+            const newDocs = await ZipTransformer.importDocs(
+              workspace.docCollection,
+              blob
+            );
+            console.log(
+              'imported docs',
+              newDocs.map(doc => ({
+                id: doc.id,
+                title: doc.meta?.title,
+              }))
+            );
+          }
+        };
+        input.click();
       };
       localStorage.setItem('last_workspace_id', workspace.id);
       globalContext.workspaceId.set(workspace.id);

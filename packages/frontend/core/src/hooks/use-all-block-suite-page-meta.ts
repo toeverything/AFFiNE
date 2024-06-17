@@ -9,12 +9,12 @@ export function useAllBlockSuiteDocMeta(
   docCollection: DocCollection
 ): DocMeta[] {
   if (!weakMap.has(docCollection)) {
-    const baseAtom = atom<DocMeta[]>(docCollection.meta.docMetas);
+    const baseAtom = atom<DocMeta[]>([...docCollection.meta.docMetas]);
     weakMap.set(docCollection, baseAtom);
     baseAtom.onMount = set => {
-      set(docCollection.meta.docMetas);
+      set([...docCollection.meta.docMetas]);
       const dispose = docCollection.meta.docMetaUpdated.on(() => {
-        set(docCollection.meta.docMetas);
+        set([...docCollection.meta.docMetas]);
       });
       return () => {
         dispose.dispose();

@@ -1,4 +1,4 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
 import { Config, URLHelper } from '../../../fundamentals';
 import { OAuthProviderName } from '../config';
@@ -39,74 +39,60 @@ export class GithubOAuthProvider extends AutoRegisteredOAuthProvider {
   }
 
   async getToken(code: string) {
-    try {
-      const response = await fetch(
-        'https://github.com/login/oauth/access_token',
-        {
-          method: 'POST',
-          body: this.url.stringify({
-            code,
-            client_id: this.config.clientId,
-            client_secret: this.config.clientSecret,
-            redirect_uri: this.url.link('/oauth/callback'),
-          }),
-          headers: {
-            Accept: 'application/json',
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
-        }
-      );
-
-      if (response.ok) {
-        const ghToken = (await response.json()) as AuthTokenResponse;
-
-        return {
-          accessToken: ghToken.access_token,
-          scope: ghToken.scope,
-        };
-      } else {
-        throw new Error(
-          `Server responded with non-success code ${
-            response.status
-          }, ${JSON.stringify(await response.json())}`
-        );
+    const response = await fetch(
+      'https://github.com/login/oauth/access_token',
+      {
+        method: 'POST',
+        body: this.url.stringify({
+          code,
+          client_id: this.config.clientId,
+          client_secret: this.config.clientSecret,
+          redirect_uri: this.url.link('/oauth/callback'),
+        }),
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
       }
-    } catch (e) {
-      throw new HttpException(
-        `Failed to get access_token, err: ${(e as Error).message}`,
-        HttpStatus.BAD_REQUEST
+    );
+
+    if (response.ok) {
+      const ghToken = (await response.json()) as AuthTokenResponse;
+
+      return {
+        accessToken: ghToken.access_token,
+        scope: ghToken.scope,
+      };
+    } else {
+      throw new Error(
+        `Server responded with non-success code ${
+          response.status
+        }, ${JSON.stringify(await response.json())}`
       );
     }
   }
 
   async getUser(token: string) {
-    try {
-      const response = await fetch('https://api.github.com/user', {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+    const response = await fetch('https://api.github.com/user', {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
 
-      if (response.ok) {
-        const user = (await response.json()) as UserInfo;
+    if (response.ok) {
+      const user = (await response.json()) as UserInfo;
 
-        return {
-          id: user.login,
-          avatarUrl: user.avatar_url,
-          email: user.email,
-        };
-      } else {
-        throw new Error(
-          `Server responded with non-success code ${
-            response.status
-          } ${await response.text()}`
-        );
-      }
-    } catch (e) {
-      throw new HttpException(
-        `Failed to get user information, err: ${(e as Error).stack}`,
-        HttpStatus.BAD_REQUEST
+      return {
+        id: user.login,
+        avatarUrl: user.avatar_url,
+        email: user.email,
+      };
+    } else {
+      throw new Error(
+        `Server responded with non-success code ${
+          response.status
+        } ${await response.text()}`
       );
     }
   }

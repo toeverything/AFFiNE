@@ -1,6 +1,8 @@
+import type { ImageBlockModel } from '@blocksuite/blocks';
 import { atom } from 'jotai';
 
 export const previewBlockIdAtom = atom<string | null>(null);
+export const previewblocksAtom = atom<ImageBlockModel[]>([]);
 export const hasAnimationPlayedAtom = atom<boolean | null>(true);
 
 previewBlockIdAtom.onMount = set => {

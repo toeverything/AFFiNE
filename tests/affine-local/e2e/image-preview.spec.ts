@@ -582,6 +582,9 @@ test('tooltips for all buttons should be visible when hovering', async ({
     await title.click();
     await page.keyboard.press('Enter');
     await importImage(page, 'http://localhost:8081/large-image.png');
+    await page.locator('affine-page-image').first().click();
+    await page.keyboard.press('Enter');
+    await importImage(page, 'http://localhost:8081/large-image.png');
     await page.locator('affine-page-image').first().dblclick();
     await page.waitForTimeout(500);
     blobId = (await page
@@ -593,13 +596,8 @@ test('tooltips for all buttons should be visible when hovering', async ({
   }
   const locator = page.getByTestId('image-preview-modal');
   await page.waitForTimeout(500);
-  await locator.getByTestId('previous-image-button').hover();
+  await locator.getByTestId('previous-image-button').isDisabled();
   await page.waitForTimeout(1000);
-  {
-    const element = page.getByRole('tooltip');
-    const previousImageTooltip = await element.getByText('Previous').count();
-    expect(previousImageTooltip).toBe(1);
-  }
 
   await locator.getByTestId('next-image-button').hover();
   await page.waitForTimeout(1000);
@@ -607,6 +605,18 @@ test('tooltips for all buttons should be visible when hovering', async ({
     const element = page.getByRole('tooltip');
     const nextImageTooltip = await element.getByText('Next').count();
     expect(nextImageTooltip).toBe(1);
+  }
+
+  await locator.getByTestId('next-image-button').click();
+  await locator.getByTestId('next-image-button').isDisabled();
+  await page.waitForTimeout(1000);
+
+  await locator.getByTestId('previous-image-button').hover();
+  await page.waitForTimeout(1000);
+  {
+    const element = page.getByRole('tooltip');
+    const previousImageTooltip = await element.getByText('Previous').count();
+    expect(previousImageTooltip).toBe(1);
   }
 
   await locator.getByTestId('fit-to-screen-button').hover();

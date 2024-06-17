@@ -50,5 +50,10 @@ export default defineConfig({
       reporter: ['lcov'],
       reportsDirectory: resolve(rootDir, '.coverage/store'),
     },
+    server: {
+      deps: {
+        inline: ['@blocksuite/blocks'],
+      },
+    },
   },
 });

@@ -1,10 +1,10 @@
 import {
   deleteBlobMutation,
   fetcher,
-  findGraphQLError,
   getBaseUrl,
   listBlobsQuery,
   setBlobMutation,
+  UserFriendlyError,
 } from '@affine/graphql';
 import type { BlobStorage } from '@toeverything/infra';
 import { BlobStorageOverCapacity } from '@toeverything/infra';
@@ -44,13 +44,9 @@ export class CloudBlobStorage implements BlobStorage {
     })
       .then(res => res.setBlob)
       .catch(err => {
-        const uploadError = findGraphQLError(
-          err,
-          e => e.extensions.code === 413
-        );
-
-        if (uploadError) {
-          throw new BlobStorageOverCapacity(uploadError);
+        const error = UserFriendlyError.fromAnyError(err);
+        if (error.status === 413) {
+          throw new BlobStorageOverCapacity(error);
         }
 
         throw err;

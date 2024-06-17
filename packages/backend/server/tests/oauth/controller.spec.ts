@@ -86,12 +86,15 @@ test('should throw if provider is invalid', async t => {
     .get('/oauth/login?provider=Invalid')
     .expect(HttpStatus.BAD_REQUEST)
     .expect({
-      statusCode: 400,
-      message: 'Invalid OAuth provider',
-      error: 'Bad Request',
+      status: 400,
+      code: 'Bad Request',
+      type: 'INVALID_INPUT',
+      name: 'UNKNOWN_OAUTH_PROVIDER',
+      message: 'Unknown authentication provider Invalid.',
+      data: { name: 'Invalid' },
     });
 
-  t.assert(true);
+  t.pass();
 });
 
 test('should be able to save oauth state', async t => {
@@ -124,12 +127,15 @@ test('should throw if code is missing in callback uri', async t => {
     .get('/oauth/callback')
     .expect(HttpStatus.BAD_REQUEST)
     .expect({
-      statusCode: 400,
-      message: 'Missing query parameter `code`',
-      error: 'Bad Request',
+      status: 400,
+      code: 'Bad Request',
+      type: 'BAD_REQUEST',
+      name: 'MISSING_OAUTH_QUERY_PARAMETER',
+      message: 'Missing query parameter `code`.',
+      data: { name: 'code' },
     });
 
-  t.assert(true);
+  t.pass();
 });
 
 test('should throw if state is missing in callback uri', async t => {
@@ -139,27 +145,50 @@ test('should throw if state is missing in callback uri', async t => {
     .get('/oauth/callback?code=1')
     .expect(HttpStatus.BAD_REQUEST)
     .expect({
-      statusCode: 400,
-      message: 'Invalid callback state parameter',
-      error: 'Bad Request',
+      status: 400,
+      code: 'Bad Request',
+      type: 'BAD_REQUEST',
+      name: 'MISSING_OAUTH_QUERY_PARAMETER',
+      message: 'Missing query parameter `state`.',
+      data: { name: 'state' },
     });
 
-  t.assert(true);
+  t.pass();
 });
 
 test('should throw if state is expired', async t => {
+  const { app, oauth } = t.context;
+  Sinon.stub(oauth, 'isValidState').resolves(true);
+
+  await request(app.getHttpServer())
+    .get('/oauth/callback?code=1&state=1')
+    .expect(HttpStatus.BAD_REQUEST)
+    .expect({
+      status: 400,
+      code: 'Bad Request',
+      type: 'BAD_REQUEST',
+      name: 'OAUTH_STATE_EXPIRED',
+      message: 'OAuth state expired, please try again.',
+    });
+
+  t.pass();
+});
+
+test('should throw if state is invalid', async t => {
   const { app } = t.context;
 
   await request(app.getHttpServer())
     .get('/oauth/callback?code=1&state=1')
     .expect(HttpStatus.BAD_REQUEST)
     .expect({
-      statusCode: 400,
-      message: 'OAuth state expired, please try again.',
-      error: 'Bad Request',
+      status: 400,
+      code: 'Bad Request',
+      type: 'BAD_REQUEST',
+      name: 'INVALID_OAUTH_CALLBACK_STATE',
+      message: 'Invalid callback state parameter.',
     });
 
-  t.assert(true);
+  t.pass();
 });
 
 test('should throw if provider is missing in state', async t => {
@@ -167,17 +196,21 @@ test('should throw if provider is missing in state', async t => {
 
   // @ts-expect-error mock
   Sinon.stub(oauth, 'getOAuthState').resolves({});
+  Sinon.stub(oauth, 'isValidState').resolves(true);
 
   await request(app.getHttpServer())
     .get(`/oauth/callback?code=1&state=1`)
     .expect(HttpStatus.BAD_REQUEST)
     .expect({
-      statusCode: 400,
-      message: 'Missing callback state parameter `provider`',
-      error: 'Bad Request',
+      status: 400,
+      code: 'Bad Request',
+      type: 'BAD_REQUEST',
+      name: 'MISSING_OAUTH_QUERY_PARAMETER',
+      message: 'Missing query parameter `provider`.',
+      data: { name: 'provider' },
     });
 
-  t.assert(true);
+  t.pass();
 });
 
 test('should throw if provider is invalid in callback uri', async t => {
@@ -185,23 +218,28 @@ test('should throw if provider is invalid in callback uri', async t => {
 
   // @ts-expect-error mock
   Sinon.stub(oauth, 'getOAuthState').resolves({ provider: 'Invalid' });
+  Sinon.stub(oauth, 'isValidState').resolves(true);
 
   await request(app.getHttpServer())
     .get(`/oauth/callback?code=1&state=1`)
     .expect(HttpStatus.BAD_REQUEST)
     .expect({
-      statusCode: 400,
-      message: 'Invalid provider',
-      error: 'Bad Request',
+      status: 400,
+      code: 'Bad Request',
+      type: 'INVALID_INPUT',
+      name: 'UNKNOWN_OAUTH_PROVIDER',
+      message: 'Unknown authentication provider Invalid.',
+      data: { name: 'Invalid' },
     });
 
-  t.assert(true);
+  t.pass();
 });
 
 function mockOAuthProvider(app: INestApplication, email: string) {
   const provider = app.get(GoogleOAuthProvider);
   const oauth = app.get(OAuthService);
 
+  Sinon.stub(oauth, 'isValidState').resolves(true);
   Sinon.stub(oauth, 'getOAuthState').resolves({
     provider: OAuthProviderName.Google,
     redirectUri: '/',
@@ -259,7 +297,7 @@ test('should throw if account register in another way', async t => {
   t.is(link.pathname, '/signIn');
   t.is(
     link.searchParams.get('error'),
-    'The account with provided email is not register in the same way.'
+    'You are trying to sign in by a different method than you signed up with.'
   );
 });
 

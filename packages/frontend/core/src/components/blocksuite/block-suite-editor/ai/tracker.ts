@@ -29,6 +29,7 @@ type AIActionEventProperties = {
     | 'stop button'
     | 'format toolbar'
     | 'AI chat send button'
+    | 'Block action bar'
     | 'paywall'
     | 'policy wall'
     | 'server error'
@@ -187,6 +188,8 @@ function inferControl(
     return 'login required';
   } else if (event.options.control === 'chat-send') {
     return 'AI chat send button';
+  } else if (event.options.control === 'block-action-bar') {
+    return 'Block action bar';
   } else if (event.event === 'result:add-note') {
     return 'add note';
   } else if (event.event === 'result:add-page') {

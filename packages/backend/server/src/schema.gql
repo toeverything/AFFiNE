@@ -2,6 +2,11 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+type BlobNotFoundDataType {
+  blobId: String!
+  workspaceId: String!
+}
+
 type ChatMessage {
   attachments: [String!]
   content: String!
@@ -63,6 +68,10 @@ type CopilotPromptMessageType {
   content: String!
   params: JSON
   role: CopilotPromptMessageRole!
+}
+
+type CopilotPromptNotFoundDataType {
+  name: String!
 }
 
 type CopilotPromptType {
@@ -133,15 +142,96 @@ input DeleteSessionInput {
   workspaceId: String!
 }
 
+type DocAccessDeniedDataType {
+  docId: String!
+  workspaceId: String!
+}
+
+type DocHistoryNotFoundDataType {
+  docId: String!
+  timestamp: Int!
+  workspaceId: String!
+}
+
 type DocHistoryType {
   id: String!
   timestamp: DateTime!
   workspaceId: String!
 }
 
+type DocNotFoundDataType {
+  docId: String!
+  workspaceId: String!
+}
+
 enum EarlyAccessType {
   AI
   App
+}
+
+union ErrorDataUnion = BlobNotFoundDataType | CopilotPromptNotFoundDataType | DocAccessDeniedDataType | DocHistoryNotFoundDataType | DocNotFoundDataType | InvalidHistoryTimestampDataType | InvalidPasswordLengthDataType | InvalidRuntimeConfigTypeDataType | MissingOauthQueryParameterDataType | NotInWorkspaceDataType | RuntimeConfigNotFoundDataType | SameSubscriptionRecurringDataType | SubscriptionAlreadyExistsDataType | SubscriptionNotExistsDataType | SubscriptionPlanNotFoundDataType | UnknownOauthProviderDataType | VersionRejectedDataType | WorkspaceAccessDeniedDataType | WorkspaceNotFoundDataType | WorkspaceOwnerNotFoundDataType
+
+enum ErrorNames {
+  ACCESS_DENIED
+  ACTION_FORBIDDEN
+  AUTHENTICATION_REQUIRED
+  BLOB_NOT_FOUND
+  BLOB_QUOTA_EXCEEDED
+  CANT_CHANGE_WORKSPACE_OWNER
+  COPILOT_ACTION_TAKEN
+  COPILOT_FAILED_TO_CREATE_MESSAGE
+  COPILOT_FAILED_TO_GENERATE_TEXT
+  COPILOT_MESSAGE_NOT_FOUND
+  COPILOT_PROMPT_NOT_FOUND
+  COPILOT_QUOTA_EXCEEDED
+  COPILOT_SESSION_DELETED
+  COPILOT_SESSION_NOT_FOUND
+  CUSTOMER_PORTAL_CREATE_FAILED
+  DOC_ACCESS_DENIED
+  DOC_HISTORY_NOT_FOUND
+  DOC_NOT_FOUND
+  EARLY_ACCESS_REQUIRED
+  EMAIL_ALREADY_USED
+  EMAIL_TOKEN_NOT_FOUND
+  EMAIL_VERIFICATION_REQUIRED
+  EXPECT_TO_PUBLISH_PAGE
+  EXPECT_TO_REVOKE_PUBLIC_PAGE
+  FAILED_TO_CHECKOUT
+  INTERNAL_SERVER_ERROR
+  INVALID_EMAIL
+  INVALID_EMAIL_TOKEN
+  INVALID_HISTORY_TIMESTAMP
+  INVALID_OAUTH_CALLBACK_STATE
+  INVALID_PASSWORD_LENGTH
+  INVALID_RUNTIME_CONFIG_TYPE
+  MAILER_SERVICE_IS_NOT_CONFIGURED
+  MEMBER_QUOTA_EXCEEDED
+  MISSING_OAUTH_QUERY_PARAMETER
+  NOT_IN_WORKSPACE
+  NO_COPILOT_PROVIDER_AVAILABLE
+  OAUTH_ACCOUNT_ALREADY_CONNECTED
+  OAUTH_STATE_EXPIRED
+  PAGE_IS_NOT_PUBLIC
+  RUNTIME_CONFIG_NOT_FOUND
+  SAME_EMAIL_PROVIDED
+  SAME_SUBSCRIPTION_RECURRING
+  SIGN_UP_FORBIDDEN
+  SUBSCRIPTION_ALREADY_EXISTS
+  SUBSCRIPTION_EXPIRED
+  SUBSCRIPTION_HAS_BEEN_CANCELED
+  SUBSCRIPTION_NOT_EXISTS
+  SUBSCRIPTION_PLAN_NOT_FOUND
+  TOO_MANY_REQUEST
+  UNKNOWN_OAUTH_PROVIDER
+  UNSPLASH_IS_NOT_CONFIGURED
+  USER_AVATAR_NOT_FOUND
+  USER_NOT_FOUND
+  VERSION_REJECTED
+  WORKSPACE_ACCESS_DENIED
+  WORKSPACE_NOT_FOUND
+  WORKSPACE_OWNER_NOT_FOUND
+  WRONG_SIGN_IN_CREDENTIALS
+  WRONG_SIGN_IN_METHOD
 }
 
 """The type of workspace feature"""
@@ -161,6 +251,21 @@ type HumanReadableQuotaType {
   memberLimit: String!
   name: String!
   storageQuota: String!
+}
+
+type InvalidHistoryTimestampDataType {
+  timestamp: String!
+}
+
+type InvalidPasswordLengthDataType {
+  max: Int!
+  min: Int!
+}
+
+type InvalidRuntimeConfigTypeDataType {
+  get: String!
+  key: String!
+  want: String!
 }
 
 type InvitationType {
@@ -244,6 +349,10 @@ input ListUserInput {
   skip: Int = 0
 }
 
+type MissingOauthQueryParameterDataType {
+  name: String!
+}
+
 type Mutation {
   acceptInviteById(inviteId: String!, sendAcceptMail: Boolean, workspaceId: String!): Boolean!
   addAdminister(email: String!): Boolean!
@@ -323,6 +432,10 @@ type Mutation {
   verifyEmail(token: String!): Boolean!
 }
 
+type NotInWorkspaceDataType {
+  workspaceId: String!
+}
+
 enum OAuthProviderType {
   GitHub
   Google
@@ -355,6 +468,7 @@ type Query {
   """Get current user"""
   currentUser: UserType
   earlyAccessUsers: [UserType!]!
+  error(name: ErrorNames!): ErrorDataUnion!
 
   """send workspace invitation"""
   getInviteInfo(inviteId: String!): InvitationType!
@@ -414,6 +528,10 @@ type RemoveAvatar {
   success: Boolean!
 }
 
+type RuntimeConfigNotFoundDataType {
+  key: String!
+}
+
 enum RuntimeConfigType {
   Array
   Boolean
@@ -426,6 +544,10 @@ enum RuntimeConfigType {
 The `SafeInt` scalar type represents non-fractional signed whole numeric values that are considered safe as defined by the ECMAScript specification.
 """
 scalar SafeInt @specifiedBy(url: "https://www.ecma-international.org/ecma-262/#sec-number.issafeinteger")
+
+type SameSubscriptionRecurringDataType {
+  recurring: String!
+}
 
 type ServerConfigType {
   """server base url"""
@@ -483,6 +605,14 @@ type ServerRuntimeConfigType {
   value: JSON!
 }
 
+type SubscriptionAlreadyExistsDataType {
+  plan: String!
+}
+
+type SubscriptionNotExistsDataType {
+  plan: String!
+}
+
 enum SubscriptionPlan {
   AI
   Enterprise
@@ -490,6 +620,11 @@ enum SubscriptionPlan {
   Pro
   SelfHosted
   Team
+}
+
+type SubscriptionPlanNotFoundDataType {
+  plan: String!
+  recurring: String!
 }
 
 type SubscriptionPrice {
@@ -514,6 +649,10 @@ enum SubscriptionStatus {
   Paused
   Trialing
   Unpaid
+}
+
+type UnknownOauthProviderDataType {
+  name: String!
 }
 
 input UpdateUserInput {
@@ -617,8 +756,25 @@ type UserType {
   token: tokenType! @deprecated(reason: "use [/api/auth/authorize]")
 }
 
+type VersionRejectedDataType {
+  serverVersion: String!
+  version: String!
+}
+
+type WorkspaceAccessDeniedDataType {
+  workspaceId: String!
+}
+
 type WorkspaceBlobSizes {
   size: SafeInt!
+}
+
+type WorkspaceNotFoundDataType {
+  workspaceId: String!
+}
+
+type WorkspaceOwnerNotFoundDataType {
+  workspaceId: String!
 }
 
 type WorkspacePage {

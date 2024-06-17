@@ -1,6 +1,7 @@
 import { Inject, Injectable, Optional } from '@nestjs/common';
 
 import { Config } from '../config';
+import { MailerServiceIsNotConfigured } from '../error';
 import { URLHelper } from '../helpers';
 import type { MailerService, Options } from './mailer';
 import { MAILER_SERVICE } from './mailer';
@@ -15,7 +16,7 @@ export class MailService {
 
   async sendMail(options: Options) {
     if (!this.mailer) {
-      throw new Error('Mailer service is not configured.');
+      throw new MailerServiceIsNotConfigured();
     }
 
     return this.mailer.sendMail({

@@ -11,6 +11,7 @@ import {
   type GraphQLQuery,
   type QueryOptions,
   type RequestOptions,
+  UserFriendlyError,
 } from '@affine/graphql';
 import {
   GeneralNetworkError,
@@ -33,27 +34,16 @@ function codeToError(code: number) {
   }
 }
 
-type ErrorType =
-  | GraphQLError[]
-  | GraphQLError
-  | { status: number }
-  | Error
-  | string;
+export function resolveError(err: any) {
+  const standardError =
+    err instanceof GraphQLError
+      ? new UserFriendlyError(err.extensions)
+      : UserFriendlyError.fromAnyError(err);
 
-export function resolveError(src: ErrorType) {
-  if (typeof src === 'string') {
-    return new GeneralNetworkError(src);
-  } else if (src instanceof GraphQLError || Array.isArray(src)) {
-    // only resolve the first error
-    const error = Array.isArray(src) ? src.at(0) : src;
-    const code = error?.extensions?.code;
-    return codeToError(code ?? 500);
-  } else {
-    return codeToError(src instanceof Error ? 500 : src.status);
-  }
+  return codeToError(standardError.status);
 }
 
-export function handleError(src: ErrorType) {
+export function handleError(src: any) {
   const err = resolveError(src);
   if (err instanceof UnauthorizedError) {
     getCurrentStore().set(showAILoginRequiredAtom, true);
@@ -66,8 +56,7 @@ const fetcher = async <Query extends GraphQLQuery>(
 ) => {
   try {
     return await defaultFetcher<Query>(options);
-  } catch (_err) {
-    const err = _err as GraphQLError | GraphQLError[] | Error | string;
+  } catch (err) {
     throw handleError(err);
   }
 };

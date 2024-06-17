@@ -20,6 +20,7 @@ schema.register(AffineSchemas);
 beforeEach(async () => {
   vi.useFakeTimers({ toFake: ['requestIdleCallback'] });
   docCollection = new DocCollection({ id: 'test', schema });
+  docCollection.meta.initialize();
   const initPage = async (page: Doc) => {
     page.load();
     expect(page).not.toBeNull();

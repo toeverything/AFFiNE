@@ -1,4 +1,3 @@
-import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import {
   Args,
   Field,
@@ -10,7 +9,18 @@ import {
   Resolver,
 } from '@nestjs/graphql';
 
-import { Config, SkipThrottle, Throttle, URLHelper } from '../../fundamentals';
+import {
+  ActionForbidden,
+  Config,
+  EmailAlreadyUsed,
+  EmailTokenNotFound,
+  EmailVerificationRequired,
+  InvalidEmailToken,
+  SameEmailProvided,
+  SkipThrottle,
+  Throttle,
+  URLHelper,
+} from '../../fundamentals';
 import { UserService } from '../user';
 import { UserType } from '../user/types';
 import { validators } from '../utils/validators';
@@ -62,7 +72,7 @@ export class AuthResolver {
     @Parent() user: UserType
   ): Promise<ClientTokenType> {
     if (user.id !== currentUser.id) {
-      throw new ForbiddenException('Invalid user');
+      throw new ActionForbidden();
     }
 
     const session = await this.auth.createUserSession(
@@ -102,7 +112,7 @@ export class AuthResolver {
     );
 
     if (!valid) {
-      throw new ForbiddenException('Invalid token');
+      throw new InvalidEmailToken();
     }
 
     await this.auth.changePassword(user.id, newPassword);
@@ -124,7 +134,7 @@ export class AuthResolver {
     });
 
     if (!valid) {
-      throw new ForbiddenException('Invalid token');
+      throw new InvalidEmailToken();
     }
 
     email = decodeURIComponent(email);
@@ -144,7 +154,7 @@ export class AuthResolver {
     @Args('email', { nullable: true }) _email?: string
   ) {
     if (!user.emailVerified) {
-      throw new ForbiddenException('Please verify your email first.');
+      throw new EmailVerificationRequired();
     }
 
     const token = await this.token.createToken(
@@ -166,7 +176,7 @@ export class AuthResolver {
     @Args('email', { nullable: true }) _email?: string
   ) {
     if (!user.emailVerified) {
-      throw new ForbiddenException('Please verify your email first.');
+      throw new EmailVerificationRequired();
     }
 
     const token = await this.token.createToken(
@@ -195,7 +205,7 @@ export class AuthResolver {
     @Args('email', { nullable: true }) _email?: string
   ) {
     if (!user.emailVerified) {
-      throw new ForbiddenException('Please verify your email first.');
+      throw new EmailVerificationRequired();
     }
 
     const token = await this.token.createToken(TokenType.ChangeEmail, user.id);
@@ -213,24 +223,26 @@ export class AuthResolver {
     @Args('email') email: string,
     @Args('callbackUrl') callbackUrl: string
   ) {
+    if (!token) {
+      throw new EmailTokenNotFound();
+    }
+
     validators.assertValidEmail(email);
     const valid = await this.token.verifyToken(TokenType.ChangeEmail, token, {
       credential: user.id,
     });
 
     if (!valid) {
-      throw new ForbiddenException('Invalid token');
+      throw new InvalidEmailToken();
     }
 
     const hasRegistered = await this.user.findUserByEmail(email);
 
     if (hasRegistered) {
       if (hasRegistered.id !== user.id) {
-        throw new BadRequestException(`The email provided has been taken.`);
+        throw new EmailAlreadyUsed();
       } else {
-        throw new BadRequestException(
-          `The email provided is the same as the current email.`
-        );
+        throw new SameEmailProvided();
       }
     }
 
@@ -264,7 +276,7 @@ export class AuthResolver {
     @Args('token') token: string
   ) {
     if (!token) {
-      throw new BadRequestException('Invalid token');
+      throw new EmailTokenNotFound();
     }
 
     const valid = await this.token.verifyToken(TokenType.VerifyEmail, token, {
@@ -272,7 +284,7 @@ export class AuthResolver {
     });
 
     if (!valid) {
-      throw new ForbiddenException('Invalid token');
+      throw new InvalidEmailToken();
     }
 
     const { emailVerifiedAt } = await this.auth.setEmailVerified(user.id);

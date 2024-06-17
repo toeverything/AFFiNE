@@ -3,7 +3,7 @@ import { map } from 'rxjs';
 import { Entity } from '../../../framework';
 import { LiveData } from '../../../livedata';
 import type { DocsStore } from '../stores/docs';
-import { DocRecord } from './record';
+import { type DocMode, DocRecord } from './record';
 
 export class DocRecordList extends Entity {
   constructor(private readonly store: DocsStore) {
@@ -36,5 +36,23 @@ export class DocRecordList extends Entity {
 
   public doc$(id: string) {
     return this.docs$.map(record => record.find(record => record.id === id));
+  }
+
+  public setMode(id: string, mode: DocMode) {
+    return this.store.setDocModeSetting(id, mode);
+  }
+
+  public getMode(id: string) {
+    return this.store.getDocModeSetting(id);
+  }
+
+  public toggleMode(id: string) {
+    const mode = this.getMode(id) === 'edgeless' ? 'page' : 'edgeless';
+    this.setMode(id, mode);
+    return this.getMode(id);
+  }
+
+  public observeMode(id: string) {
+    return this.store.watchDocModeSetting(id);
   }
 }

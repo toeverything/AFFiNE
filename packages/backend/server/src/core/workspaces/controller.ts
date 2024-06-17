@@ -1,16 +1,16 @@
-import {
-  Controller,
-  ForbiddenException,
-  Get,
-  Logger,
-  NotFoundException,
-  Param,
-  Res,
-} from '@nestjs/common';
+import { Controller, Get, Logger, Param, Res } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import type { Response } from 'express';
 
-import { CallTimer } from '../../fundamentals';
+import {
+  AccessDenied,
+  ActionForbidden,
+  BlobNotFound,
+  CallTimer,
+  DocHistoryNotFound,
+  DocNotFound,
+  InvalidHistoryTimestamp,
+} from '../../fundamentals';
 import { CurrentUser, Public } from '../auth';
 import { DocHistoryManager, DocManager } from '../doc';
 import { WorkspaceBlobStorage } from '../storage';
@@ -50,15 +50,16 @@ export class WorkspacesController {
         user?.id
       ))
     ) {
-      throw new ForbiddenException('Permission denied');
+      throw new ActionForbidden();
     }
 
     const { body, metadata } = await this.storage.get(workspaceId, name);
 
     if (!body) {
-      throw new NotFoundException(
-        `Blob not found in workspace ${workspaceId}: ${name}`
-      );
+      throw new BlobNotFound({
+        workspaceId,
+        blobId: name,
+      });
     }
 
     // metadata should always exists if body is not null
@@ -93,7 +94,7 @@ export class WorkspacesController {
         user?.id
       ))
     ) {
-      throw new ForbiddenException('Permission denied');
+      throw new AccessDenied();
     }
 
     const binResponse = await this.docManager.getBinary(
@@ -102,7 +103,10 @@ export class WorkspacesController {
     );
 
     if (!binResponse) {
-      throw new NotFoundException('Doc not found');
+      throw new DocNotFound({
+        workspaceId: docId.workspace,
+        docId: docId.guid,
+      });
     }
 
     if (!docId.isWorkspace) {
@@ -139,7 +143,7 @@ export class WorkspacesController {
     try {
       ts = new Date(timestamp);
     } catch (e) {
-      throw new Error('Invalid timestamp');
+      throw new InvalidHistoryTimestamp({ timestamp });
     }
 
     await this.permission.checkPagePermission(
@@ -160,7 +164,11 @@ export class WorkspacesController {
       res.setHeader('cache-control', 'private, max-age=2592000, immutable');
       res.send(history.blob);
     } else {
-      throw new NotFoundException('Doc history not found');
+      throw new DocHistoryNotFound({
+        workspaceId: docId.workspace,
+        docId: guid,
+        timestamp: ts.getTime(),
+      });
     }
   }
 }

@@ -186,8 +186,6 @@ const DetailPageImpl = memo(function DetailPageImpl() {
         editorHost.std.spec.getService<PageRootService>('affine:page');
       const disposable = new DisposableGroup();
 
-      pageService.getEditorMode = (pageId: string) =>
-        docRecordList.doc$(pageId).value?.mode$.value ?? 'page';
       pageService.getDocUpdatedAt = (pageId: string) => {
         const linkedPage = docRecordList.doc$(pageId).value;
         if (!linkedPage) return new Date();
@@ -208,11 +206,6 @@ const DetailPageImpl = memo(function DetailPageImpl() {
       disposable.add(
         pageService.slots.tagClicked.on(({ tagId }) => {
           jumpToTag(workspace.id, tagId);
-        })
-      );
-      disposable.add(
-        pageService.slots.editorModeSwitch.on(mode => {
-          doc.setMode(mode);
         })
       );
 

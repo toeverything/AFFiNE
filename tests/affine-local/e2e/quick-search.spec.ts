@@ -511,7 +511,11 @@ test('can use @ to open quick search to search for doc and insert into canvas', 
     page.locator('.affine-embed-linked-doc-content-title')
   ).toContainText('Write, Draw, Plan all at Once');
 
+  // focus on the note block
+  await page.waitForTimeout(500);
+  await page.locator('affine-embed-linked-doc-block').click({ force: true });
+  await page.waitForTimeout(500);
   // double clock to show peek view
-  await page.locator('affine-embed-linked-doc-block').dblclick();
+  await page.locator('affine-embed-linked-doc-block').dblclick({ force: true });
   await expect(page.getByTestId('peek-view-modal')).toBeVisible();
 });

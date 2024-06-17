@@ -4,10 +4,10 @@ import {
   GraphQLRequestListener,
 } from '@apollo/server';
 import { Plugin } from '@nestjs/apollo';
-import { HttpException, Logger } from '@nestjs/common';
 import { Response } from 'express';
 
 import { metrics } from '../metrics/metrics';
+import { mapAnyError } from '../nestjs';
 
 export interface RequestContext {
   req: Express.Request & {
@@ -17,8 +17,6 @@ export interface RequestContext {
 
 @Plugin()
 export class GQLLoggerPlugin implements ApolloServerPlugin {
-  protected logger = new Logger(GQLLoggerPlugin.name);
-
   requestDidStart(
     ctx: GraphQLRequestContext<RequestContext>
   ): Promise<GraphQLRequestListener<GraphQLRequestContext<RequestContext>>> {
@@ -39,30 +37,15 @@ export class GQLLoggerPlugin implements ApolloServerPlugin {
         return Promise.resolve();
       },
       didEncounterErrors: ctx => {
-        metrics.gql.counter('query_error_counter').add(1, { operation });
+        ctx.errors.forEach(gqlErr => {
+          const error = mapAnyError(
+            gqlErr.originalError ? gqlErr.originalError : gqlErr
+          );
+          error.log('GraphQL');
 
-        ctx.errors.forEach(err => {
-          // only log non-user errors
-          let msg: string | undefined;
-
-          if (!err.originalError) {
-            msg = err.toString();
-          } else {
-            const originalError = err.originalError;
-
-            // do not log client errors, and put more information in the error extensions.
-            if (!(originalError instanceof HttpException)) {
-              if (originalError.cause && originalError.cause instanceof Error) {
-                msg = originalError.cause.stack ?? originalError.cause.message;
-              } else {
-                msg = originalError.stack ?? originalError.message;
-              }
-            }
-          }
-
-          if (msg) {
-            this.logger.error('GraphQL Unhandled Error', msg);
-          }
+          metrics.gql
+            .counter('query_error_counter')
+            .add(1, { operation, code: error.status });
         });
 
         return Promise.resolve();
