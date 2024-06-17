@@ -12,6 +12,7 @@ export async function buildShowcaseWorkspace(
   workspaceName: string
 ) {
   const meta = await workspacesService.create(flavour, async docCollection => {
+    docCollection.meta.initialize();
     docCollection.meta.setName(workspaceName);
     const blob = await (await fetch(onboardingUrl)).blob();
 
@@ -58,6 +59,7 @@ export async function createFirstAppData(workspacesService: WorkspacesService) {
     const workspaceMetadata = await workspacesService.create(
       WorkspaceFlavour.LOCAL,
       async workspace => {
+        workspace.meta.initialize();
         workspace.meta.setName(DEFAULT_WORKSPACE_NAME);
         const page = workspace.createDoc();
         defaultPageId = page.id;

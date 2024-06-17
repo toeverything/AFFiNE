@@ -247,6 +247,7 @@ export const CreateWorkspaceModal = ({
         const { id } = await workspacesService.create(
           workspaceFlavour,
           async workspace => {
+            workspace.meta.initialize();
             workspace.meta.setName(name);
             const page = workspace.createDoc();
             defaultDocId = page.id;

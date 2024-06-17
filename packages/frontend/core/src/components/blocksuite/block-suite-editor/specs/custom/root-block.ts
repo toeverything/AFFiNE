@@ -1,6 +1,6 @@
 import { mixpanel } from '@affine/core/utils';
 import type { BlockSpec } from '@blocksuite/block-std';
-import type { RootService } from '@blocksuite/blocks';
+import type { RootService, TelemetryEventMap } from '@blocksuite/blocks';
 import {
   AffineCanvasTextFonts,
   EdgelessRootService,
@@ -30,9 +30,12 @@ function withAffineRootService(Service: typeof RootService) {
       customLoadFonts(this);
     }
 
-    telemetryService = {
-      track: (event: string, data: Record<string, unknown>) => {
-        mixpanel.track(event, data);
+    override telemetryService = {
+      track: <T extends keyof TelemetryEventMap>(
+        eventName: T,
+        props: TelemetryEventMap[T]
+      ) => {
+        mixpanel.track(eventName, props);
       },
     };
   };

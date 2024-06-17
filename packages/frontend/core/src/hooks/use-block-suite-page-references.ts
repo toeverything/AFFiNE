@@ -7,7 +7,7 @@ import { useDocCollectionPage } from './use-block-suite-workspace-page';
 const weakMap = new WeakMap<Doc, Atom<string[]>>();
 function getPageReferences(page: Doc): string[] {
   return Object.values(
-    page.collection.indexer.backlink.linkIndexMap[page.id] ?? {}
+    page.collection.indexer.backlink?.linkIndexMap[page.id] ?? {}
   ).flatMap(linkNodes => linkNodes.map(linkNode => linkNode.pageId));
 }
 
@@ -23,13 +23,13 @@ const getPageReferencesAtom = (page: Doc | null) => {
         page.slots.ready.on(() => {
           set(getPageReferences(page));
         }),
-        page.collection.indexer.backlink.slots.indexUpdated.on(() => {
+        page.collection.indexer.backlink?.slots.indexUpdated.on(() => {
           set(getPageReferences(page));
         }),
       ];
       set(getPageReferences(page));
       return () => {
-        disposables.forEach(disposable => disposable.dispose());
+        disposables.forEach(disposable => disposable?.dispose());
       };
     };
     weakMap.set(page, baseAtom);

@@ -6,10 +6,12 @@ import { useDocCollectionPage } from './use-block-suite-workspace-page';
 
 const weakMap = new WeakMap<Doc, Atom<string[]>>();
 function getPageBacklinks(page: Doc): string[] {
-  return page.collection.indexer.backlink
-    .getBacklink(page.id)
-    .map(linkNode => linkNode.pageId)
-    .filter(id => id !== page.id);
+  return (
+    page.collection.indexer.backlink
+      ?.getBacklink(page.id)
+      .map(linkNode => linkNode.pageId)
+      .filter(id => id !== page.id) ?? []
+  );
 }
 
 const getPageBacklinksAtom = (page: Doc | null) => {
@@ -24,13 +26,13 @@ const getPageBacklinksAtom = (page: Doc | null) => {
         page.slots.ready.on(() => {
           set(getPageBacklinks(page));
         }),
-        page.collection.indexer.backlink.slots.indexUpdated.on(() => {
+        page.collection.indexer.backlink?.slots.indexUpdated.on(() => {
           set(getPageBacklinks(page));
         }),
       ];
       set(getPageBacklinks(page));
       return () => {
-        disposables.forEach(disposable => disposable.dispose());
+        disposables.forEach(disposable => disposable?.dispose());
       };
     };
     weakMap.set(page, baseAtom);

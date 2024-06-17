@@ -23,6 +23,7 @@ export async function configureTestingEnvironment() {
     metadata: await workspaceManager.create(
       WorkspaceFlavour.LOCAL,
       async ws => {
+        ws.meta.initialize();
         const initDoc = async (page: BlockSuiteDoc) => {
           page.load();
           const pageBlockId = page.addBlock('affine:page', {
