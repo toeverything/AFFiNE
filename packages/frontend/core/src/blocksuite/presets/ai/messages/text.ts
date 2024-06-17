@@ -98,11 +98,11 @@ export class AIAnswerText extends WithDisposable(LitElement) {
         > .affine-block-children-container {
           > :first-child,
           > :first-child * {
-            margin-top: 0;
+            margin-top: 0 !important;
           }
           > :last-child,
           > :last-child * {
-            margin-bottom: 0;
+            margin-top: 0 !important;
           }
         }
       }

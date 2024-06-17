@@ -485,7 +485,10 @@ export function noteBlockOrTextShowWhen(
   const selected = getCopilotSelectedElems(host);
 
   return selected.some(
-    el => el instanceof NoteBlockModel || el instanceof TextElementModel
+    el =>
+      el instanceof NoteBlockModel ||
+      el instanceof TextElementModel ||
+      el instanceof EdgelessTextBlockModel
   );
 }
 
