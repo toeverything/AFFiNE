@@ -115,6 +115,7 @@ export class AIProvider {
       console.warn(`AI action ${id} is already provided`);
     }
 
+    // @ts-expect-error todo: maybe fix this
     this.actions[id] = (
       ...args: Parameters<BlockSuitePresets.AIActions[T]>
     ) => {
