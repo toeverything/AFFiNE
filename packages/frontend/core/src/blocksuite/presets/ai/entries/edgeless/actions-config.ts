@@ -410,24 +410,26 @@ const generateGroup: AIItemGroupConfig = {
             };
           }
 
-          const { notes, frames, shapes, images } =
+          const { notes, frames, shapes, images, edgelessTexts } =
             BlocksUtils.splitElements(selectedElements);
           const f = frames.length;
           const i = images.length;
           const n = notes.length;
           const s = shapes.length;
+          const e = edgelessTexts.length;
 
-          if (f + i + n + s === 0) {
+          if (f + i + n + s + e === 0) {
             return;
           }
-
           let content = (ctx.get()['content'] as string) || '';
 
           // single note, text
           if (
             i === 0 &&
-            n + s === 1 &&
-            (n === 1 || (s === 1 && shapes[0] instanceof TextElementModel))
+            n + s + e === 1 &&
+            (n === 1 ||
+              e === 1 ||
+              (s === 1 && shapes[0] instanceof TextElementModel))
           ) {
             return {
               content,

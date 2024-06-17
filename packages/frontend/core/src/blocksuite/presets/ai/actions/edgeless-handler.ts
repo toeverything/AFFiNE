@@ -7,6 +7,7 @@ import type {
 } from '@blocksuite/blocks';
 import {
   BlocksUtils,
+  EdgelessTextBlockModel,
   ImageBlockModel,
   NoteBlockModel,
   ShapeElementModel,
@@ -98,6 +99,22 @@ function actionToRenderer<T extends keyof BlockSuitePresets.AIActions>(
   return createTextRenderer(host, { maxHeight: 320 });
 }
 
+async function getContentFromHubBlockModel(
+  host: EditorHost,
+  models: EdgelessTextBlockModel[] | NoteBlockModel[]
+) {
+  return (
+    await Promise.all(
+      models.map(model => {
+        const slice = Slice.fromModels(host.doc, model.children);
+        return getContentFromSlice(host, slice);
+      })
+    )
+  )
+    .map(content => content.trim())
+    .filter(content => content.length);
+}
+
 export async function getContentFromSelected(
   host: EditorHost,
   selected: BlockSuite.EdgelessModelType[]
@@ -118,11 +135,12 @@ export async function getContentFromSelected(
     return el.caption?.length !== 0;
   }
 
-  const { notes, texts, shapes, images } = selected.reduce<{
+  const { notes, texts, shapes, images, edgelessTexts } = selected.reduce<{
     notes: NoteBlockModel[];
     texts: TextElementModel[];
     shapes: RemoveUndefinedKey<ShapeElementModel, 'text'>[];
     images: RemoveUndefinedKey<ImageBlockModel, 'caption'>[];
+    edgelessTexts: EdgelessTextBlockModel[];
   }>(
     (pre, cur) => {
       if (cur instanceof NoteBlockModel) {
@@ -133,26 +151,23 @@ export async function getContentFromSelected(
         pre.shapes.push(cur);
       } else if (cur instanceof ImageBlockModel && isImageWithCaption(cur)) {
         pre.images.push(cur);
+      } else if (cur instanceof EdgelessTextBlockModel) {
+        pre.edgelessTexts.push(cur);
       }
 
       return pre;
     },
-    { notes: [], texts: [], shapes: [], images: [] }
+    { notes: [], texts: [], shapes: [], images: [], edgelessTexts: [] }
   );
 
-  const noteContent = (
-    await Promise.all(
-      notes.map(note => {
-        const slice = Slice.fromModels(host.doc, note.children);
-        return getContentFromSlice(host, slice);
-      })
-    )
-  )
-    .map(content => content.trim())
-    .filter(content => content.length);
+  const noteContent = await getContentFromHubBlockModel(host, notes);
+  const edgelessTextContent = await getContentFromHubBlockModel(
+    host,
+    edgelessTexts
+  );
 
   return `${noteContent.join('\n')}
-
+  ${edgelessTextContent.join('\n')}
 ${texts.map(text => text.text.toString()).join('\n')}
 ${shapes.map(shape => shape.text.toString()).join('\n')}
 ${images.map(image => image.caption.toString()).join('\n')}
@@ -441,9 +456,10 @@ export function actionToHandler<T extends keyof BlockSuitePresets.AIActions>(
           notes,
           shapes,
           images,
+          edgelessTexts,
           frames: _,
         } = BlocksUtils.splitElements(selectedElements);
-        const blocks = [...notes, ...shapes, ...images];
+        const blocks = [...notes, ...shapes, ...images, ...edgelessTexts];
         if (blocks.length === 0) return true;
         const content = await getContentFromSelected(host, blocks);
         ctx.set({
