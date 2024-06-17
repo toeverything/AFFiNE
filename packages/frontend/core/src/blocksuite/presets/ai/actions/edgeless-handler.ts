@@ -126,13 +126,13 @@ export async function getContentFromSelected(
   function isShapeWithText(
     el: ShapeElementModel
   ): el is RemoveUndefinedKey<ShapeElementModel, 'text'> {
-    return el.text?.length !== 0;
+    return el.text !== undefined && el.text.length !== 0;
   }
 
   function isImageWithCaption(
     el: ImageBlockModel
   ): el is RemoveUndefinedKey<ImageBlockModel, 'caption'> {
-    return el.caption?.length !== 0;
+    return el.caption !== undefined && el.caption.length !== 0;
   }
 
   const { notes, texts, shapes, images, edgelessTexts } = selected.reduce<{
