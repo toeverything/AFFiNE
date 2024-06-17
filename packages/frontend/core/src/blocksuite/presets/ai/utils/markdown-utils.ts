@@ -178,6 +178,7 @@ export async function markDownToDoc(host: EditorHost, answer: string) {
   const schema = host.std.doc.collection.schema;
   // Should not create a new doc in the original collection
   const collection = new DocCollection({ schema });
+  collection.meta.initialize();
   const job = new Job({
     collection,
     middlewares: [defaultImageProxyMiddleware],

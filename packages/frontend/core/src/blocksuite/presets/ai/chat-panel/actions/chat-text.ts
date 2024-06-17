@@ -23,7 +23,7 @@ export class ChatText extends WithDisposable(ShadowlessElement) {
 
   protected override render() {
     const { attachments, text, host } = this;
-    return html`${attachments
+    return html`${attachments && attachments.length > 0
       ? renderImages(attachments)
       : nothing}${createTextRenderer(host, { customHeading: true })(
       text,
