@@ -1,5 +1,5 @@
 import { assertExists } from '@blocksuite/global/utils';
-import { AIProvider } from '@blocksuite/presets';
+import { AIProvider } from '@blocksuite/presets/ai';
 import { partition } from 'lodash-es';
 
 import { CopilotClient } from './copilot-client';

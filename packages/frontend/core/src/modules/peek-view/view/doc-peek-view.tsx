@@ -6,7 +6,8 @@ import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
 import { PageNotFound } from '@affine/core/pages/404';
 import { Bound, type EdgelessRootService } from '@blocksuite/blocks';
 import { DisposableGroup } from '@blocksuite/global/utils';
-import { type AffineEditorContainer, AIProvider } from '@blocksuite/presets';
+import { type AffineEditorContainer } from '@blocksuite/presets';
+import { AIProvider } from '@blocksuite/presets/ai';
 import type { DocMode } from '@toeverything/infra';
 import { DocsService, FrameworkScope, useService } from '@toeverything/infra';
 import {

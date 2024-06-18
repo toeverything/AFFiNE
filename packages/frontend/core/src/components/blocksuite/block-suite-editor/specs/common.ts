@@ -18,7 +18,7 @@ import {
   AICodeBlockSpec,
   AIImageBlockSpec,
   AIParagraphBlockSpec,
-} from '@blocksuite/presets';
+} from '@blocksuite/presets/ai';
 
 import { CustomAttachmentBlockSpec } from './custom/attachment-block';
 

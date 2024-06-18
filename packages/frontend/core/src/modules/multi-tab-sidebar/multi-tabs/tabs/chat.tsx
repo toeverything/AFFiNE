@@ -1,6 +1,6 @@
 import { assertExists } from '@blocksuite/global/utils';
 import { AiIcon } from '@blocksuite/icons';
-import { ChatPanel } from '@blocksuite/presets';
+import { ChatPanel } from '@blocksuite/presets/ai';
 import { useCallback, useEffect, useRef } from 'react';
 
 import type { SidebarTab, SidebarTabProps } from '../sidebar-tab';

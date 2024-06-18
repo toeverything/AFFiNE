@@ -11,6 +11,9 @@ vi.mock('@blocksuite/presets', () => ({
   DocTitle: vi.fn(),
   EdgelessEditor: vi.fn(),
   PageEditor: vi.fn(),
+}));
+
+vi.mock('@blocksuite/presets/ai', () => ({
   AIProvider: {
     slots: new Proxy(
       {},

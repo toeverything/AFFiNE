@@ -13,7 +13,8 @@ import {
   ImageBlockService,
 } from '@blocksuite/blocks';
 import { DisposableGroup } from '@blocksuite/global/utils';
-import { type AffineEditorContainer, AIProvider } from '@blocksuite/presets';
+import { type AffineEditorContainer } from '@blocksuite/presets';
+import { AIProvider } from '@blocksuite/presets/ai';
 import type { Doc as BlockSuiteDoc } from '@blocksuite/store';
 import type { Doc } from '@toeverything/infra';
 import {

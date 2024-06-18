@@ -1,6 +1,6 @@
 import { apis } from '@affine/electron-api';
 import type { OAuthProviderType } from '@affine/graphql';
-import { AIProvider } from '@blocksuite/presets';
+import { AIProvider } from '@blocksuite/presets/ai';
 import {
   ApplicationFocused,
   ApplicationStarted,

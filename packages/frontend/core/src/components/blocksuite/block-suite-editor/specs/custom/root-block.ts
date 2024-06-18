@@ -9,7 +9,7 @@ import {
 import {
   AIEdgelessRootBlockSpec,
   AIPageRootBlockSpec,
-} from '@blocksuite/presets';
+} from '@blocksuite/presets/ai';
 
 function customLoadFonts(service: RootService): void {
   if (runtimeConfig.isSelfHosted) {

@@ -5,7 +5,7 @@ import { getBaseUrl } from '@affine/graphql';
 import { Trans } from '@affine/i18n';
 import { UnauthorizedError } from '@blocksuite/blocks';
 import { assertExists } from '@blocksuite/global/utils';
-import { AIProvider } from '@blocksuite/presets';
+import { AIProvider } from '@blocksuite/presets/ai';
 import { getCurrentStore } from '@toeverything/infra';
 
 import type { PromptKey } from './prompt';
