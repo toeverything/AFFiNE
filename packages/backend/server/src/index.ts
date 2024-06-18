@@ -16,7 +16,7 @@ const logger = new Logger('App');
 
 logger.log(`AFFiNE Server is running in [${AFFiNE.type}] mode`);
 if (AFFiNE.node.dev) {
-  logger.log('Startup Configration:');
+  logger.log('Startup Configuration:');
   logger.log(omit(globalThis.AFFiNE, 'ENV_MAP'));
 }
 logger.log(`Listening on http://${listeningHost}:${AFFiNE.server.port}`);

@@ -1,0 +1,11 @@
+# for the admin panel only, do not use it in the app
+query getCurrentUserFeatures {
+  currentUser {
+    id
+    name
+    email
+    emailVerified
+    avatarUrl
+    features
+  }
+}

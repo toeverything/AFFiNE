@@ -35,7 +35,7 @@ export function createWebpackConfig(cwd: string, flags: BuildFlags) {
   const config = createConfiguration(cwd, flags, runtimeConfig);
   return merge(config, {
     entry: {
-      app: flags.entry ?? resolve(cwd, 'src/index.tsx'),
+      [flags.distribution]: flags.entry ?? resolve(cwd, 'src/index.tsx'),
     },
     plugins: [
       new HTMLPlugin({
@@ -43,7 +43,7 @@ export function createWebpackConfig(cwd: string, flags: BuildFlags) {
         inject: 'body',
         scriptLoading: 'module',
         minify: false,
-        chunks: ['app'],
+        chunks: 'all',
         filename: 'index.html',
         templateParameters: {
           GIT_SHORT_SHA: gitShortHash(),

@@ -1,0 +1,13 @@
+{
+  "extends": "../../../tsconfig.json",
+  "include": ["./src"],
+  "compilerOptions": {
+    "outDir": "./dist",
+    "allowJs": true,
+    "composite": true,
+    "verbatimModuleSyntax": false,
+    "jsx": "react-jsx"
+  },
+  "references": [{ "path": "../core" }, { "path": "../graphql" }],
+  "exclude": ["dist"]
+}

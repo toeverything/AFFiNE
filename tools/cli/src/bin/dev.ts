@@ -6,8 +6,8 @@ import { config } from 'dotenv';
 import webpack from 'webpack';
 import WebpackDevServer from 'webpack-dev-server';
 
+import { getCwdFromDistribution, projectRoot } from '../config/cwd.cjs';
 import type { BuildFlags } from '../config/index.js';
-import { projectRoot } from '../config/index.js';
 import { watchI18N } from '../util/i18n.js';
 import { createWebpackConfig } from '../webpack/webpack.config.js';
 
@@ -45,6 +45,9 @@ const buildFlags = process.argv.includes('--static')
               },
               {
                 value: 'desktop',
+              },
+              {
+                value: 'admin',
               },
             ],
             initialValue: 'browser',
@@ -103,13 +106,12 @@ flags.channel = buildFlags.channel;
 flags.coverage = buildFlags.coverage;
 flags.entry = undefined;
 
-const cwd =
-  flags.distribution === 'browser'
-    ? join(projectRoot, 'packages', 'frontend', 'web')
-    : join(projectRoot, 'packages', 'frontend', 'electron');
+const cwd = getCwdFromDistribution(flags.distribution);
+
+process.env.DISTRIBUTION = flags.distribution;
 
 if (flags.distribution === 'desktop') {
-  flags.entry = join(cwd, 'renderer', 'index.tsx');
+  flags.entry = join(cwd, 'index.tsx');
 }
 
 if (buildFlags.debugBlockSuite) {

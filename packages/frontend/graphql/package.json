@@ -9,6 +9,7 @@
   "exports": {
     ".": "./src/index.ts"
   },
+  "sideEffects": "false",
   "devDependencies": {
     "@graphql-codegen/add": "^5.0.2",
     "@graphql-codegen/cli": "5.0.2",

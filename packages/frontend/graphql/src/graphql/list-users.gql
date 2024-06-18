@@ -1,0 +1,20 @@
+query listUsers($filter: ListUserInput!) {
+  users(filter: $filter) {
+    id
+    name
+    email
+    features
+    hasPassword
+    emailVerified
+    avatarUrl
+    quota {
+      humanReadable {
+        blobLimit
+        historyPeriod
+        memberLimit
+        name
+        storageQuota
+      }
+    }
+  }
+}

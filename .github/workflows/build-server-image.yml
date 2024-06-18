@@ -6,6 +6,11 @@ on:
       flavor:
         type: string
         required: true
+  workflow_dispatch:
+    inputs:
+      flavor:
+        type: string
+        required: false
 
 env:
   NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
@@ -66,6 +71,32 @@ jobs:
           path: ./packages/frontend/web/dist
           if-no-files-found: error
 
+  build-admin-selfhost:
+    name: Build @affine/admin selfhost
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.flavor }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Version
+        id: version
+        uses: ./.github/actions/setup-version
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+      - name: Build Core
+        run: yarn nx build @affine/admin --skip-nx-cache
+        env:
+          BUILD_TYPE: ${{ github.event.inputs.flavor }}
+          SHOULD_REPORT_TRACE: false
+          PUBLIC_PATH: '/admin/'
+          SELF_HOSTED: true
+          MIXPANEL_TOKEN: ${{ secrets.MIXPANEL_TOKEN }}
+      - name: Upload admin artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: selfhost-admin
+          path: ./packages/frontend/admin/dist
+          if-no-files-found: error
+
   build-server-native:
     name: Build Server native - ${{ matrix.targets.name }}
     runs-on: ubuntu-latest
@@ -108,6 +139,7 @@ jobs:
     needs:
       - build-server
       - build-web-selfhost
+      - build-admin-selfhost
       - build-server-native
     steps:
       - uses: actions/checkout@v4
@@ -170,6 +202,12 @@ jobs:
         with:
           name: selfhost-web
           path: ./packages/frontend/web/dist
+
+      - name: Download selfhost admin artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: selfhost-admin
+          path: ./packages/frontend/admin/dist
 
       - name: Install Node.js dependencies
         run: |

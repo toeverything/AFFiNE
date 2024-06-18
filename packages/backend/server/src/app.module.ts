@@ -177,6 +177,14 @@ function buildAppModule() {
       config => config.isSelfhosted,
       ServeStaticModule.forRoot({
         rootPath: join('/app', 'static'),
+        exclude: ['/admin*'],
+      })
+    )
+    .useIf(
+      config => config.isSelfhosted,
+      ServeStaticModule.forRoot({
+        rootPath: join('/app', 'static', 'admin'),
+        serveRoot: '/admin',
       })
     );
 

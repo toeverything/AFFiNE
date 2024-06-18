@@ -3,7 +3,7 @@ import { resolve } from 'node:path';
 
 import { build } from 'vite';
 
-import { projectRoot } from '../config/index.js';
+import { projectRoot } from '../config/cwd.cjs';
 
 const infraFilePath = resolve(
   projectRoot,

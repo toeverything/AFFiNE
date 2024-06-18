@@ -15,7 +15,8 @@
     "test:coverage": "c8 ava --concurrency 1 --serial",
     "postinstall": "prisma generate",
     "data-migration": "node --loader ts-node/esm/transpile-only.mjs ./src/data/index.ts",
-    "predeploy": "yarn prisma migrate deploy && node --import ./scripts/register.js ./dist/data/index.js run"
+    "predeploy": "yarn prisma migrate deploy && node --import ./scripts/register.js ./dist/data/index.js run",
+    "predeploy:ts": "yarn prisma migrate deploy && node --loader ts-node/esm/transpile-only.mjs ./src/data/index.ts run"
   },
   "dependencies": {
     "@apollo/server": "^4.10.2",

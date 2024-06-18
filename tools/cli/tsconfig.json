@@ -2,6 +2,7 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "composite": true,
+    "allowJs": true,
     "module": "ESNext",
     "moduleResolution": "Node",
     "outDir": "lib"

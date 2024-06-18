@@ -2,7 +2,7 @@ import { resolve } from 'node:path';
 
 import { runCli } from '@magic-works/i18n-codegen';
 
-import { projectRoot } from '../config/index.js';
+import { projectRoot } from '../config/cwd.cjs';
 
 const configPath = resolve(projectRoot, '.i18n-codegen.json');
 

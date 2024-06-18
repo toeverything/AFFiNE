@@ -283,6 +283,24 @@ query getCopilotSessions($workspaceId: String!) {
 }`,
 };
 
+export const getCurrentUserFeaturesQuery = {
+  id: 'getCurrentUserFeaturesQuery' as const,
+  operationName: 'getCurrentUserFeatures',
+  definitionName: 'currentUser',
+  containsFile: false,
+  query: `
+query getCurrentUserFeatures {
+  currentUser {
+    id
+    name
+    email
+    emailVerified
+    avatarUrl
+    features
+  }
+}`,
+};
+
 export const getCurrentUserQuery = {
   id: 'getCurrentUserQuery' as const,
   operationName: 'getCurrentUser',
@@ -594,6 +612,34 @@ mutation leaveWorkspace($workspaceId: String!, $workspaceName: String!, $sendLea
     workspaceName: $workspaceName
     sendLeaveMail: $sendLeaveMail
   )
+}`,
+};
+
+export const listUsersQuery = {
+  id: 'listUsersQuery' as const,
+  operationName: 'listUsers',
+  definitionName: 'users',
+  containsFile: false,
+  query: `
+query listUsers($filter: ListUserInput!) {
+  users(filter: $filter) {
+    id
+    name
+    email
+    features
+    hasPassword
+    emailVerified
+    avatarUrl
+    quota {
+      humanReadable {
+        blobLimit
+        historyPeriod
+        memberLimit
+        name
+        storageQuota
+      }
+    }
+  }
 }`,
 };
 

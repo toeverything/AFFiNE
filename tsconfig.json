@@ -49,6 +49,10 @@
     "paths": {
       "@affine/core/*": ["./packages/frontend/core/src/*"],
       "@affine/core": ["./packages/frontend/core/src/index.ts"],
+      "@affine/admin/*": ["./packages/frontend/admin/src/*"],
+      "@affine/admin/components/ui/*": [
+        "./packages/frontend/admin/src/components/ui/*"
+      ],
       "@affine/cli/*": ["./tools/cli/src/*"],
       "@affine/server/*": ["./packages/backend/server/src/*"],
       "@affine/component": ["./packages/frontend/component/src/index"],
@@ -83,6 +87,9 @@
       "path": "./packages/backend/server/tests"
     },
     // Frontend
+    {
+      "path": "./packages/frontend/admin"
+    },
     {
       "path": "./packages/frontend/component"
     },

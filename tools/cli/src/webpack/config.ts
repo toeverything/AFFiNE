@@ -1,5 +1,5 @@
 import { createRequire } from 'node:module';
-import { join, resolve } from 'node:path';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import type { RuntimeConfig } from '@affine/env/global';
@@ -14,8 +14,8 @@ import TerserPlugin from 'terser-webpack-plugin';
 import webpack from 'webpack';
 import type { Configuration as DevServerConfiguration } from 'webpack-dev-server';
 
+import { projectRoot } from '../config/cwd.cjs';
 import type { BuildFlags } from '../config/index.js';
-import { projectRoot } from '../config/index.js';
 import { productionCacheGroups } from './cache-group.js';
 import { WebpackS3Plugin } from './s3-plugin.js';
 
@@ -312,11 +312,7 @@ export const createConfiguration: (
                   loader: 'postcss-loader',
                   options: {
                     postcssOptions: {
-                      config: resolve(
-                        rootPath,
-                        'webpack',
-                        'postcss.config.cjs'
-                      ),
+                      config: join(rootPath, 'webpack', 'postcss.config.cjs'),
                     },
                   },
                 },
@@ -355,15 +351,23 @@ export const createConfiguration: (
         ),
         runtimeConfig: JSON.stringify(runtimeConfig),
       }),
-      new CopyPlugin({
-        patterns: [
-          {
-            // copy the shared public assets into dist
-            from: join(workspaceRoot, 'packages', 'frontend', 'core', 'public'),
-            to: join(cwd, 'dist'),
-          },
-        ],
-      }),
+      buildFlags.distribution === 'admin'
+        ? null
+        : new CopyPlugin({
+            patterns: [
+              {
+                // copy the shared public assets into dist
+                from: join(
+                  workspaceRoot,
+                  'packages',
+                  'frontend',
+                  'core',
+                  'public'
+                ),
+                to: join(cwd, 'dist'),
+              },
+            ],
+          }),
       buildFlags.mode === 'production' && process.env.R2_SECRET_ACCESS_KEY
         ? new WebpackS3Plugin()
         : null,

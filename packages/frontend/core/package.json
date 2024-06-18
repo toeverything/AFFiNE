@@ -7,8 +7,12 @@
     "./app": "./src/app.tsx",
     "./router": "./src/router.tsx",
     "./bootstrap/register-plugins": "./src/bootstrap/register-plugins.ts",
+    "./hooks/*": "./src/hooks/*",
     "./*": "./src/*"
   },
+  "sideEffects": [
+    "./src/**/*.css"
+  ],
   "dependencies": {
     "@affine-test/fixtures": "workspace:*",
     "@affine/component": "workspace:*",

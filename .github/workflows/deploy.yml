@@ -61,11 +61,46 @@ jobs:
           path: ./packages/frontend/web/dist
           if-no-files-found: error
 
+  build-admin:
+    name: Build @affine/admin
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.flavor }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Version
+        id: version
+        uses: ./.github/actions/setup-version
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+      - name: Build Core
+        run: yarn nx build @affine/admin --skip-nx-cache
+        env:
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          BUILD_TYPE: ${{ github.event.inputs.flavor }}
+          SHOULD_REPORT_TRACE: true
+          TRACE_REPORT_ENDPOINT: ${{ secrets.TRACE_REPORT_ENDPOINT }}
+          CAPTCHA_SITE_KEY: ${{ secrets.CAPTCHA_SITE_KEY }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: 'affine-admin'
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          PERFSEE_TOKEN: ${{ secrets.PERFSEE_TOKEN }}
+          MIXPANEL_TOKEN: ${{ secrets.MIXPANEL_TOKEN }}
+      - name: Upload admin artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: admin
+          path: ./packages/frontend/admin/dist
+          if-no-files-found: error
+
   build-frontend-image:
     name: Build Frontend Image
     runs-on: ubuntu-latest
     needs:
       - build-web
+      - build-admin
     steps:
       - uses: actions/checkout@v4
       - name: Download web artifact
@@ -73,6 +108,11 @@ jobs:
         with:
           name: web
           path: ./packages/frontend/web/dist
+      - name: Download admin artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: admin
+          path: ./packages/frontend/admin/dist
       - name: Setup env
         run: |
           echo "GIT_SHORT_HASH=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"

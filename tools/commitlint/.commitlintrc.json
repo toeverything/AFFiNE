@@ -5,6 +5,7 @@
       2,
       "always",
       [
+        "admin",
         "electron",
         "server",
         "core",

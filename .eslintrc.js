@@ -157,11 +157,6 @@ const config = {
             message: "Import from '@blocksuite/global/utils'",
             importNames: ['assertExists', 'assertEquals'],
           },
-          {
-            group: ['react-router-dom'],
-            message: 'Use `useNavigateHelper` instead',
-            importNames: ['useNavigate'],
-          },
         ],
       },
     ],
