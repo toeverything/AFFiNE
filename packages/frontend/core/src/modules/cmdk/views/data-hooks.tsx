@@ -384,11 +384,7 @@ export const useSearchCallbackCommands = () => {
             const page = pageHelper.createPage('page', false);
             page.load();
             pageMetaHelper.setDocTitle(page.id, query);
-            mixpanel.track('DocCreated', {
-              control: 'cmdk',
-              type: 'doc',
-            });
-            onSelectPage({ docId: page.id });
+            onSelectPage({ docId: page.id, isNewDoc: true });
           },
           icon: <PageIcon />,
         });

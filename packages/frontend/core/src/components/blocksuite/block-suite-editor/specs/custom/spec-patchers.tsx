@@ -13,6 +13,7 @@ import type {
 } from '@affine/core/modules/cmdk';
 import type { PeekViewService } from '@affine/core/modules/peek-view';
 import type { ActivePeekView } from '@affine/core/modules/peek-view/entities/peek-view';
+import { mixpanel } from '@affine/core/utils';
 import { DebugLogger } from '@affine/debug';
 import type { BlockSpec, WidgetElement } from '@blocksuite/block-std';
 import {
@@ -413,6 +414,25 @@ export function patchQuickSearchService(
                     pageId: linkedDoc.id,
                   },
                 ]);
+                if (result.isNewDoc) {
+                  mixpanel.track('DocCreated', {
+                    control: 'linked doc',
+                    module: 'slash commands',
+                    type: 'linked doc',
+                    category: 'doc',
+                  });
+                  mixpanel.track('LinkedDocCreated', {
+                    control: 'new doc',
+                    module: 'slash commands',
+                    type: 'doc',
+                  });
+                } else {
+                  mixpanel.track('LinkedDocCreated', {
+                    control: 'linked doc',
+                    module: 'slash commands',
+                    type: 'doc',
+                  });
+                }
               } else if ('userInput' in result) {
                 const embedOptions = service.getEmbedBlockOptions(
                   result.userInput

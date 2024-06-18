@@ -13,6 +13,7 @@ export type SearchCallbackResult =
   | {
       docId: string;
       blockId?: string;
+      isNewDoc?: boolean;
     }
   | {
       query: string;
