@@ -1,5 +1,5 @@
 import type { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { SettingsIcon } from '@blocksuite/icons';
+import { SettingsIcon } from '@blocksuite/icons/rc';
 import type { AffineEditorContainer } from '@blocksuite/presets';
 import { appSettingAtom } from '@toeverything/infra';
 import type { createStore } from 'jotai';

@@ -1,7 +1,7 @@
 import { Button, FlexWrapper, Menu } from '@affine/component';
 import type { Collection, Filter, PropertiesMeta } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { FilterIcon } from '@blocksuite/icons';
+import { FilterIcon } from '@blocksuite/icons/rc';
 
 import { CreateFilterMenu } from '../filter/vars';
 import * as styles from './collection-list.css';

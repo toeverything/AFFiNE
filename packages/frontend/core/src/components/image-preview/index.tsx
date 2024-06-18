@@ -12,7 +12,7 @@ import {
   MinusIcon,
   PlusIcon,
   ViewBarIcon,
-} from '@blocksuite/icons';
+} from '@blocksuite/icons/rc';
 import type { BlockModel, DocCollection } from '@blocksuite/store';
 import clsx from 'clsx';
 import { useErrorBoundary } from 'foxact/use-error-boundary';

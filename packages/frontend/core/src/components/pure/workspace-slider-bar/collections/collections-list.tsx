@@ -25,7 +25,7 @@ import {
   MoreHorizontalIcon,
   PlusIcon,
   ViewLayersIcon,
-} from '@blocksuite/icons';
+} from '@blocksuite/icons/rc';
 import type { DocCollection } from '@blocksuite/store';
 import { type AnimateLayoutChanges, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';

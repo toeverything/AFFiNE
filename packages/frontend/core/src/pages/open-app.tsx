@@ -3,7 +3,7 @@ import type { GetCurrentUserQuery } from '@affine/graphql';
 import { fetcher, getCurrentUserQuery } from '@affine/graphql';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { Logo1Icon } from '@blocksuite/icons';
+import { Logo1Icon } from '@blocksuite/icons/rc';
 import { useCallback, useMemo } from 'react';
 import type { LoaderFunction } from 'react-router-dom';
 import { useLoaderData, useSearchParams } from 'react-router-dom';

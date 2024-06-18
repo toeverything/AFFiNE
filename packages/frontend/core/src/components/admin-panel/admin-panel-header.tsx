@@ -1,6 +1,6 @@
 import { Button, useConfirmModal } from '@affine/component';
 import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
-import { ArrowRightBigIcon, Logo1Icon } from '@blocksuite/icons';
+import { ArrowRightBigIcon, Logo1Icon } from '@blocksuite/icons/rc';
 import { useCallback } from 'react';
 
 import * as styles from './index.css';

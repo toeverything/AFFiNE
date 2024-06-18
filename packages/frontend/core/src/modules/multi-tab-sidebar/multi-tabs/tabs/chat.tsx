@@ -1,6 +1,6 @@
 import { ChatPanel } from '@affine/core/blocksuite/presets/ai';
 import { assertExists } from '@blocksuite/global/utils';
-import { AiIcon } from '@blocksuite/icons';
+import { AiIcon } from '@blocksuite/icons/rc';
 import { useCallback, useEffect, useRef } from 'react';
 
 import type { SidebarTab, SidebarTabProps } from '../sidebar-tab';

@@ -1,5 +1,5 @@
 import { apis } from '@affine/electron-api';
-import { ArrowRightSmallIcon } from '@blocksuite/icons';
+import { ArrowRightSmallIcon } from '@blocksuite/icons/rc';
 import clsx from 'clsx';
 import { useEffect, useMemo, useState } from 'react';
 import type { Location } from 'react-router-dom';

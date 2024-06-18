@@ -2,7 +2,7 @@ import { FavoriteItemsAdapter } from '@affine/core/modules/properties';
 import type { Tag } from '@affine/core/modules/tag';
 import { TagService } from '@affine/core/modules/tag';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { FavoritedIcon, FavoriteIcon } from '@blocksuite/icons';
+import { FavoritedIcon, FavoriteIcon } from '@blocksuite/icons/rc';
 import type { DocMeta } from '@blocksuite/store';
 import { LiveData, useLiveData, useService } from '@toeverything/infra';
 import { type ReactNode, useMemo } from 'react';

@@ -1,6 +1,6 @@
-// The icons here have been specially adjusted, they’re different from the ones in the @blocksuite/icons.
+// The icons here have been specially adjusted, they’re different from the ones in the @blocksuite/icons/rc.
 
-export { TwitterIcon } from '@blocksuite/icons';
+export { TwitterIcon } from '@blocksuite/icons/rc';
 export const LogoIcon = () => {
   return (
     <svg

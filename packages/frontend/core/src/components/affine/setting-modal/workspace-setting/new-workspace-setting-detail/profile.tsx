@@ -7,7 +7,7 @@ import { WorkspacePermissionService } from '@affine/core/modules/permissions';
 import { validateAndReduceImage } from '@affine/core/utils/reduce-image';
 import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { CameraIcon } from '@blocksuite/icons';
+import { CameraIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService, WorkspaceService } from '@toeverything/infra';
 import type { KeyboardEvent, MouseEvent } from 'react';
 import { useCallback, useEffect, useState } from 'react';

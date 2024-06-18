@@ -5,7 +5,7 @@ import {
   ExperimentIcon,
   InformationIcon,
   KeyboardIcon,
-} from '@blocksuite/icons';
+} from '@blocksuite/icons/rc';
 import { useLiveData, useServices } from '@toeverything/infra';
 import type { ReactElement, SVGProps } from 'react';
 import { useEffect } from 'react';

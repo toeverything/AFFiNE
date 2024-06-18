@@ -3,7 +3,7 @@
 // https://github.com/emilkowalski/sonner/blob/5cb703edc108a23fd74979235c2f3c4005edd2a7/src/index.tsx
 
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { CloseIcon, InformationFillDuotoneIcon } from '@blocksuite/icons';
+import { CloseIcon, InformationFillDuotoneIcon } from '@blocksuite/icons/rc';
 import * as Toast from '@radix-ui/react-toast';
 import clsx from 'clsx';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';

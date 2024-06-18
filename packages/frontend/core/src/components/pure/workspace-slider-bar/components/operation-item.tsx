@@ -9,7 +9,7 @@ import {
   FilterMinusIcon,
   LinkedPageIcon,
   SplitViewIcon,
-} from '@blocksuite/icons';
+} from '@blocksuite/icons/rc';
 import type { ReactElement } from 'react';
 import { useMemo } from 'react';
 

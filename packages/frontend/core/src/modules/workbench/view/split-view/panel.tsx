@@ -5,7 +5,7 @@ import {
   MoveToLeftDuotoneIcon,
   MoveToRightDuotoneIcon,
   SoloViewIcon,
-} from '@blocksuite/icons';
+} from '@blocksuite/icons/rc';
 import { useSortable } from '@dnd-kit/sortable';
 import { useLiveData, useService } from '@toeverything/infra';
 import { assignInlineVars } from '@vanilla-extract/dynamic';

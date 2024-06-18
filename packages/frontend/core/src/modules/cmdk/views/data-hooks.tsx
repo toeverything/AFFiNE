@@ -24,7 +24,7 @@ import {
   PageIcon,
   TodayIcon,
   ViewLayersIcon,
-} from '@blocksuite/icons';
+} from '@blocksuite/icons/rc';
 import type { DocRecord, Workspace } from '@toeverything/infra';
 import {
   GlobalContextService,

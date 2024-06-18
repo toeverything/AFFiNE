@@ -5,7 +5,7 @@ import { AuthService } from '@affine/core/modules/cloud';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { noop } from '@blocksuite/global/utils';
-import { Logo1Icon } from '@blocksuite/icons';
+import { Logo1Icon } from '@blocksuite/icons/rc';
 import type { AffineEditorContainer } from '@blocksuite/presets';
 import type { Doc as BlockSuiteDoc } from '@blocksuite/store';
 import type { Doc, DocMode, Workspace } from '@toeverything/infra';

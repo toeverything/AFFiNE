@@ -4,7 +4,7 @@ import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
 import { WorkspaceLegacyProperties } from '@affine/core/modules/properties';
 import { DeleteTagConfirmModal, TagService } from '@affine/core/modules/tag';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { DeleteIcon, MoreHorizontalIcon, TagsIcon } from '@blocksuite/icons';
+import { DeleteIcon, MoreHorizontalIcon, TagsIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
 import clsx from 'clsx';
 import type { HTMLAttributes, PropsWithChildren } from 'react';

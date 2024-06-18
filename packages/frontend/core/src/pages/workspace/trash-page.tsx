@@ -6,7 +6,7 @@ import { Header } from '@affine/core/components/pure/header';
 import { useBlockSuiteDocMeta } from '@affine/core/hooks/use-block-suite-page-meta';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
-import { DeleteIcon } from '@blocksuite/icons';
+import { DeleteIcon } from '@blocksuite/icons/rc';
 import { useService, WorkspaceService } from '@toeverything/infra';
 
 import { ViewBodyIsland, ViewHeaderIsland } from '../../modules/workbench';

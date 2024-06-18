@@ -1,7 +1,7 @@
 import { Tooltip } from '@affine/component/ui/tooltip';
 import { popupWindow } from '@affine/core/utils';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { CloseIcon, NewIcon } from '@blocksuite/icons';
+import { CloseIcon, NewIcon } from '@blocksuite/icons/rc';
 import {
   DocsService,
   GlobalContextService,

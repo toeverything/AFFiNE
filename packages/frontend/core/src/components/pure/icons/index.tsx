@@ -4,7 +4,7 @@ import {
   LocalDataIcon as DefaultLocalDataIcon,
   LocalWorkspaceIcon as DefaultLocalWorkspaceIcon,
   PublishIcon as DefaultPublishIcon,
-} from '@blocksuite/icons';
+} from '@blocksuite/icons/rc';
 
 // Here are some icons with special color or size
 

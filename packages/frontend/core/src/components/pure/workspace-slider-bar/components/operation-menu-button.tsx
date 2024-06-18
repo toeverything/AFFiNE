@@ -4,7 +4,7 @@ import { Menu } from '@affine/component/ui/menu';
 import { FavoriteItemsAdapter } from '@affine/core/modules/properties';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { MoreHorizontalIcon } from '@blocksuite/icons';
+import { MoreHorizontalIcon } from '@blocksuite/icons/rc';
 import type { DocCollection } from '@blocksuite/store';
 import { useService } from '@toeverything/infra';
 import { useCallback } from 'react';

@@ -3,7 +3,7 @@ import { openSettingModalAtom } from '@affine/core/atoms';
 import { SubscriptionService } from '@affine/core/modules/cloud';
 import { mixpanel } from '@affine/core/utils';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { AiIcon } from '@blocksuite/icons';
+import { AiIcon } from '@blocksuite/icons/rc';
 import {
   DocService,
   useLiveData,

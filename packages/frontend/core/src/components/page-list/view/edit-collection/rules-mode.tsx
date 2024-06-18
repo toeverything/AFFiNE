@@ -9,7 +9,7 @@ import {
   PageIcon,
   PlusIcon,
   ToggleCollapseIcon,
-} from '@blocksuite/icons';
+} from '@blocksuite/icons/rc';
 import type { DocMeta } from '@blocksuite/store';
 import { useLiveData, useService } from '@toeverything/infra';
 import clsx from 'clsx';

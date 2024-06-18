@@ -2,7 +2,7 @@ import { Button } from '@affine/component/ui/button';
 import { useActiveBlocksuiteEditor } from '@affine/core/hooks/use-block-suite-editor';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { EdgelessRootService } from '@blocksuite/blocks';
-import { PresentationIcon } from '@blocksuite/icons';
+import { PresentationIcon } from '@blocksuite/icons/rc';
 import { useCallback, useEffect, useState } from 'react';
 
 import * as styles from './styles.css';

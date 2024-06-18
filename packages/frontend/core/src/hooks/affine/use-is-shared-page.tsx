@@ -7,7 +7,7 @@ import {
   revokePublicPageMutation,
 } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { SingleSelectSelectSolidIcon } from '@blocksuite/icons';
+import { SingleSelectSelectSolidIcon } from '@blocksuite/icons/rc';
 import type { DocMode, Workspace } from '@toeverything/infra';
 import { cssVar } from '@toeverything/theme';
 import { useCallback, useMemo } from 'react';

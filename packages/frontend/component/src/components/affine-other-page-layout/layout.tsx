@@ -1,6 +1,6 @@
 import { Button } from '@affine/component/ui/button';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { Logo1Icon } from '@blocksuite/icons';
+import { Logo1Icon } from '@blocksuite/icons/rc';
 import { useCallback } from 'react';
 
 import { DesktopNavbar } from './desktop-navbar';

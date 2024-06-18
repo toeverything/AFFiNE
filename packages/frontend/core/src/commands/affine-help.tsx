@@ -1,5 +1,5 @@
 import type { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { ContactWithUsIcon, NewIcon } from '@blocksuite/icons';
+import { ContactWithUsIcon, NewIcon } from '@blocksuite/icons/rc';
 import type { createStore } from 'jotai';
 
 import { openSettingModalAtom } from '../atoms';

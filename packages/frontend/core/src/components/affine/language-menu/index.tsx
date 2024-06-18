@@ -1,5 +1,5 @@
 import { Menu, MenuItem, MenuTrigger } from '@affine/component/ui/menu';
-import { DoneIcon } from '@blocksuite/icons';
+import { DoneIcon } from '@blocksuite/icons/rc';
 import type { ReactElement } from 'react';
 import { memo } from 'react';
 

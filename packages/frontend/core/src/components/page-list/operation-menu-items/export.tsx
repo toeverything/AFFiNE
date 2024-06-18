@@ -6,7 +6,7 @@ import {
   ExportToMarkdownIcon,
   ExportToPdfIcon,
   ExportToPngIcon,
-} from '@blocksuite/icons';
+} from '@blocksuite/icons/rc';
 import type { ReactNode } from 'react';
 import { useMemo } from 'react';
 

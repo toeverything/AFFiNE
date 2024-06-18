@@ -6,7 +6,7 @@ import {
   ArrowDownBigIcon,
   ArrowRightBigIcon,
   ArrowUpSmallIcon,
-} from '@blocksuite/icons';
+} from '@blocksuite/icons/rc';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import * as ScrollArea from '@radix-ui/react-scroll-area';
 import { cssVar } from '@toeverything/theme';

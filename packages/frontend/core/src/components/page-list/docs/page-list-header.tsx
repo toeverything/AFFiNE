@@ -16,7 +16,7 @@ import {
   ArrowDownSmallIcon,
   SearchIcon,
   ViewLayersIcon,
-} from '@blocksuite/icons';
+} from '@blocksuite/icons/rc';
 import type { Doc as BlockSuiteDoc } from '@blocksuite/store';
 import { useLiveData, useService, WorkspaceService } from '@toeverything/infra';
 import clsx from 'clsx';

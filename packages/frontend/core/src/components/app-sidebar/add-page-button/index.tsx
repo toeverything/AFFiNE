@@ -1,5 +1,5 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { PlusIcon } from '@blocksuite/icons';
+import { PlusIcon } from '@blocksuite/icons/rc';
 import clsx from 'clsx';
 import type React from 'react';
 

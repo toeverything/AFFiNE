@@ -30,7 +30,7 @@ import {
   TagsIcon,
   ToggleExpandIcon,
   ViewIcon,
-} from '@blocksuite/icons';
+} from '@blocksuite/icons/rc';
 import type { Doc } from '@blocksuite/store';
 import type { DragEndEvent, DraggableAttributes } from '@dnd-kit/core';
 import {

@@ -1,5 +1,9 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { CheckBoxCheckLinearIcon, PenIcon, TextIcon } from '@blocksuite/icons';
+import {
+  CheckBoxCheckLinearIcon,
+  PenIcon,
+  TextIcon,
+} from '@blocksuite/icons/rc';
 import { useMemo } from 'react';
 
 import * as styles from './ai-plan.css';

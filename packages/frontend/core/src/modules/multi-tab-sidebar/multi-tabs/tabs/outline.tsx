@@ -1,5 +1,5 @@
 import { assertExists } from '@blocksuite/global/utils';
-import { TocIcon } from '@blocksuite/icons';
+import { TocIcon } from '@blocksuite/icons/rc';
 import { OutlinePanel } from '@blocksuite/presets';
 import { useCallback, useRef } from 'react';
 

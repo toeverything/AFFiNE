@@ -1,4 +1,4 @@
-import { SingleSelectSelectSolidIcon } from '@blocksuite/icons';
+import { SingleSelectSelectSolidIcon } from '@blocksuite/icons/rc';
 import type { StoryFn } from '@storybook/react';
 import { cssVar } from '@toeverything/theme';
 import { type HTMLAttributes, useState } from 'react';

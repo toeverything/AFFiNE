@@ -5,7 +5,7 @@ import {
 } from '@affine/core/hooks/use-navigate-helper';
 import { AuthService } from '@affine/core/modules/cloud';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { AiIcon } from '@blocksuite/icons';
+import { AiIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
 import { cssVar } from '@toeverything/theme';
 import { useEffect, useRef } from 'react';

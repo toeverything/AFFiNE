@@ -1,6 +1,6 @@
 import type { IconButtonProps } from '@affine/component/ui/button';
 import { IconButton } from '@affine/component/ui/button';
-import { MoreHorizontalIcon } from '@blocksuite/icons';
+import { MoreHorizontalIcon } from '@blocksuite/icons/rc';
 import { forwardRef } from 'react';
 
 import { headerMenuTrigger } from './styles.css';

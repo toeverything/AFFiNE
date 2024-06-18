@@ -5,7 +5,7 @@ import { useRegisterCopyLinkCommands } from '@affine/core/hooks/affine/use-regis
 import { useIsActiveView } from '@affine/core/modules/workbench';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { WebIcon } from '@blocksuite/icons';
+import { WebIcon } from '@blocksuite/icons/rc';
 import type { Doc } from '@blocksuite/store';
 import type { WorkspaceMetadata } from '@toeverything/infra';
 import clsx from 'clsx';

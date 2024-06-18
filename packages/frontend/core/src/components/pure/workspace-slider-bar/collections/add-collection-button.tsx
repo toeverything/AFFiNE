@@ -1,5 +1,5 @@
 import { IconButton } from '@affine/component/ui/button';
-import { PlusIcon } from '@blocksuite/icons';
+import { PlusIcon } from '@blocksuite/icons/rc';
 import type { ReactElement } from 'react';
 
 export const AddCollectionButton = ({

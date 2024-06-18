@@ -4,7 +4,7 @@ import {
   ArrowUpSmallIcon,
   CloseIcon,
   SearchIcon,
-} from '@blocksuite/icons';
+} from '@blocksuite/icons/rc';
 import * as Dialog from '@radix-ui/react-dialog';
 import { useLiveData, useService } from '@toeverything/infra';
 import { assignInlineVars } from '@vanilla-extract/dynamic';

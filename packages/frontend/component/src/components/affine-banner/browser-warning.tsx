@@ -1,4 +1,4 @@
-import { CloseIcon } from '@blocksuite/icons';
+import { CloseIcon } from '@blocksuite/icons/rc';
 import type { ReactNode } from 'react';
 
 import {

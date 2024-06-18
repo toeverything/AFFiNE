@@ -7,7 +7,7 @@ import { Avatar } from '@affine/component/ui/avatar';
 import { Button } from '@affine/component/ui/button';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { ArrowRightSmallIcon, CameraIcon } from '@blocksuite/icons';
+import { ArrowRightSmallIcon, CameraIcon } from '@blocksuite/icons/rc';
 import {
   useEnsureLiveData,
   useLiveData,

@@ -1,5 +1,5 @@
 import { assertExists } from '@blocksuite/global/utils';
-import { FrameIcon } from '@blocksuite/icons';
+import { FrameIcon } from '@blocksuite/icons/rc';
 import { FramePanel } from '@blocksuite/presets';
 import { useCallback, useRef } from 'react';
 

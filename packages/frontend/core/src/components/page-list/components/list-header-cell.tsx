@@ -1,4 +1,4 @@
-import { SortDownIcon, SortUpIcon } from '@blocksuite/icons';
+import { SortDownIcon, SortUpIcon } from '@blocksuite/icons/rc';
 import { useCallback } from 'react';
 
 import type { ColWrapperProps, ListItem } from '../types';

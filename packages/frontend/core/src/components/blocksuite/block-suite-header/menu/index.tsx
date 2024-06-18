@@ -24,7 +24,7 @@ import {
   HistoryIcon,
   ImportIcon,
   PageIcon,
-} from '@blocksuite/icons';
+} from '@blocksuite/icons/rc';
 import {
   DocService,
   useLiveData,

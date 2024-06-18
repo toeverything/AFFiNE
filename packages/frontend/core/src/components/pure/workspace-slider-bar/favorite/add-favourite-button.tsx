@@ -2,7 +2,7 @@ import { IconButton } from '@affine/component/ui/button';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { FavoriteItemsAdapter } from '@affine/core/modules/properties';
 import { mixpanel } from '@affine/core/utils';
-import { PlusIcon } from '@blocksuite/icons';
+import { PlusIcon } from '@blocksuite/icons/rc';
 import type { DocCollection } from '@blocksuite/store';
 import { useService } from '@toeverything/infra';
 

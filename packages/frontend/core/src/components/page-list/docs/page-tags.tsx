@@ -1,6 +1,6 @@
 import { Menu } from '@affine/component';
 import type { Tag } from '@affine/core/modules/tag';
-import { CloseIcon, MoreHorizontalIcon } from '@blocksuite/icons';
+import { CloseIcon, MoreHorizontalIcon } from '@blocksuite/icons/rc';
 import { LiveData, useLiveData } from '@toeverything/infra';
 import { assignInlineVars } from '@vanilla-extract/dynamic';
 import clsx from 'clsx';

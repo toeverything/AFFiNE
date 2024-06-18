@@ -1,6 +1,6 @@
 import { MenuItem } from '@affine/component/ui/menu';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { ImportIcon, PlusIcon } from '@blocksuite/icons';
+import { ImportIcon, PlusIcon } from '@blocksuite/icons/rc';
 
 import * as styles from './index.css';
 

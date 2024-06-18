@@ -20,7 +20,7 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   ArrowRightSmallIcon,
   SingleSelectSelectSolidIcon,
-} from '@blocksuite/icons';
+} from '@blocksuite/icons/rc';
 import {
   type DocMode,
   DocService,

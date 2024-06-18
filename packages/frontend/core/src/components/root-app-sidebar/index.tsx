@@ -5,7 +5,7 @@ import { CollectionService } from '@affine/core/modules/collection';
 import { mixpanel } from '@affine/core/utils';
 import { apis, events } from '@affine/electron-api';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { FolderIcon, SettingsIcon } from '@blocksuite/icons';
+import { FolderIcon, SettingsIcon } from '@blocksuite/icons/rc';
 import type { Doc } from '@blocksuite/store';
 import { useDroppable } from '@dnd-kit/core';
 import type { Workspace } from '@toeverything/infra';
