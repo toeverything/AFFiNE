@@ -1,10 +1,6 @@
+/* eslint-disable */
 // AUTO GENERATED FILE
-import {
-  createUnionType,
-  Field,
-  ObjectType,
-  registerEnumType,
-} from '@nestjs/graphql';
+import { createUnionType, Field, ObjectType, registerEnumType } from '@nestjs/graphql';
 
 import { UserFriendlyError } from './def';
 
@@ -51,14 +47,11 @@ export class WrongSignInCredentials extends UserFriendlyError {
 }
 @ObjectType()
 class UnknownOauthProviderDataType {
-  @Field() name!: string;
+  @Field() name!: string
 }
 
 export class UnknownOauthProvider extends UserFriendlyError {
-  constructor(
-    args: UnknownOauthProviderDataType,
-    message?: string | ((args: UnknownOauthProviderDataType) => string)
-  ) {
+  constructor(args: UnknownOauthProviderDataType, message?: string | ((args: UnknownOauthProviderDataType) => string)) {
     super('invalid_input', 'unknown_oauth_provider', message, args);
   }
 }
@@ -76,14 +69,11 @@ export class InvalidOauthCallbackState extends UserFriendlyError {
 }
 @ObjectType()
 class MissingOauthQueryParameterDataType {
-  @Field() name!: string;
+  @Field() name!: string
 }
 
 export class MissingOauthQueryParameter extends UserFriendlyError {
-  constructor(
-    args: MissingOauthQueryParameterDataType,
-    message?: string | ((args: MissingOauthQueryParameterDataType) => string)
-  ) {
+  constructor(args: MissingOauthQueryParameterDataType, message?: string | ((args: MissingOauthQueryParameterDataType) => string)) {
     super('bad_request', 'missing_oauth_query_parameter', message, args);
   }
 }
@@ -101,15 +91,12 @@ export class InvalidEmail extends UserFriendlyError {
 }
 @ObjectType()
 class InvalidPasswordLengthDataType {
-  @Field() min!: number;
-  @Field() max!: number;
+  @Field() min!: number
+  @Field() max!: number
 }
 
 export class InvalidPasswordLength extends UserFriendlyError {
-  constructor(
-    args: InvalidPasswordLengthDataType,
-    message?: string | ((args: InvalidPasswordLengthDataType) => string)
-  ) {
+  constructor(args: InvalidPasswordLengthDataType, message?: string | ((args: InvalidPasswordLengthDataType) => string)) {
     super('invalid_input', 'invalid_password_length', message, args);
   }
 }
@@ -169,53 +156,41 @@ export class EmailVerificationRequired extends UserFriendlyError {
 }
 @ObjectType()
 class WorkspaceNotFoundDataType {
-  @Field() workspaceId!: string;
+  @Field() workspaceId!: string
 }
 
 export class WorkspaceNotFound extends UserFriendlyError {
-  constructor(
-    args: WorkspaceNotFoundDataType,
-    message?: string | ((args: WorkspaceNotFoundDataType) => string)
-  ) {
+  constructor(args: WorkspaceNotFoundDataType, message?: string | ((args: WorkspaceNotFoundDataType) => string)) {
     super('resource_not_found', 'workspace_not_found', message, args);
   }
 }
 @ObjectType()
 class NotInWorkspaceDataType {
-  @Field() workspaceId!: string;
+  @Field() workspaceId!: string
 }
 
 export class NotInWorkspace extends UserFriendlyError {
-  constructor(
-    args: NotInWorkspaceDataType,
-    message?: string | ((args: NotInWorkspaceDataType) => string)
-  ) {
+  constructor(args: NotInWorkspaceDataType, message?: string | ((args: NotInWorkspaceDataType) => string)) {
     super('action_forbidden', 'not_in_workspace', message, args);
   }
 }
 @ObjectType()
 class WorkspaceAccessDeniedDataType {
-  @Field() workspaceId!: string;
+  @Field() workspaceId!: string
 }
 
 export class WorkspaceAccessDenied extends UserFriendlyError {
-  constructor(
-    args: WorkspaceAccessDeniedDataType,
-    message?: string | ((args: WorkspaceAccessDeniedDataType) => string)
-  ) {
+  constructor(args: WorkspaceAccessDeniedDataType, message?: string | ((args: WorkspaceAccessDeniedDataType) => string)) {
     super('no_permission', 'workspace_access_denied', message, args);
   }
 }
 @ObjectType()
 class WorkspaceOwnerNotFoundDataType {
-  @Field() workspaceId!: string;
+  @Field() workspaceId!: string
 }
 
 export class WorkspaceOwnerNotFound extends UserFriendlyError {
-  constructor(
-    args: WorkspaceOwnerNotFoundDataType,
-    message?: string | ((args: WorkspaceOwnerNotFoundDataType) => string)
-  ) {
+  constructor(args: WorkspaceOwnerNotFoundDataType, message?: string | ((args: WorkspaceOwnerNotFoundDataType) => string)) {
     super('internal_server_error', 'workspace_owner_not_found', message, args);
   }
 }
@@ -227,85 +202,67 @@ export class CantChangeWorkspaceOwner extends UserFriendlyError {
 }
 @ObjectType()
 class DocNotFoundDataType {
-  @Field() workspaceId!: string;
-  @Field() docId!: string;
+  @Field() workspaceId!: string
+  @Field() docId!: string
 }
 
 export class DocNotFound extends UserFriendlyError {
-  constructor(
-    args: DocNotFoundDataType,
-    message?: string | ((args: DocNotFoundDataType) => string)
-  ) {
+  constructor(args: DocNotFoundDataType, message?: string | ((args: DocNotFoundDataType) => string)) {
     super('resource_not_found', 'doc_not_found', message, args);
   }
 }
 @ObjectType()
 class DocAccessDeniedDataType {
-  @Field() workspaceId!: string;
-  @Field() docId!: string;
+  @Field() workspaceId!: string
+  @Field() docId!: string
 }
 
 export class DocAccessDenied extends UserFriendlyError {
-  constructor(
-    args: DocAccessDeniedDataType,
-    message?: string | ((args: DocAccessDeniedDataType) => string)
-  ) {
+  constructor(args: DocAccessDeniedDataType, message?: string | ((args: DocAccessDeniedDataType) => string)) {
     super('no_permission', 'doc_access_denied', message, args);
   }
 }
 @ObjectType()
 class VersionRejectedDataType {
-  @Field() version!: string;
-  @Field() serverVersion!: string;
+  @Field() version!: string
+  @Field() serverVersion!: string
 }
 
 export class VersionRejected extends UserFriendlyError {
-  constructor(
-    args: VersionRejectedDataType,
-    message?: string | ((args: VersionRejectedDataType) => string)
-  ) {
+  constructor(args: VersionRejectedDataType, message?: string | ((args: VersionRejectedDataType) => string)) {
     super('action_forbidden', 'version_rejected', message, args);
   }
 }
 @ObjectType()
 class InvalidHistoryTimestampDataType {
-  @Field() timestamp!: string;
+  @Field() timestamp!: string
 }
 
 export class InvalidHistoryTimestamp extends UserFriendlyError {
-  constructor(
-    args: InvalidHistoryTimestampDataType,
-    message?: string | ((args: InvalidHistoryTimestampDataType) => string)
-  ) {
+  constructor(args: InvalidHistoryTimestampDataType, message?: string | ((args: InvalidHistoryTimestampDataType) => string)) {
     super('invalid_input', 'invalid_history_timestamp', message, args);
   }
 }
 @ObjectType()
 class DocHistoryNotFoundDataType {
-  @Field() workspaceId!: string;
-  @Field() docId!: string;
-  @Field() timestamp!: number;
+  @Field() workspaceId!: string
+  @Field() docId!: string
+  @Field() timestamp!: number
 }
 
 export class DocHistoryNotFound extends UserFriendlyError {
-  constructor(
-    args: DocHistoryNotFoundDataType,
-    message?: string | ((args: DocHistoryNotFoundDataType) => string)
-  ) {
+  constructor(args: DocHistoryNotFoundDataType, message?: string | ((args: DocHistoryNotFoundDataType) => string)) {
     super('resource_not_found', 'doc_history_not_found', message, args);
   }
 }
 @ObjectType()
 class BlobNotFoundDataType {
-  @Field() workspaceId!: string;
-  @Field() blobId!: string;
+  @Field() workspaceId!: string
+  @Field() blobId!: string
 }
 
 export class BlobNotFound extends UserFriendlyError {
-  constructor(
-    args: BlobNotFoundDataType,
-    message?: string | ((args: BlobNotFoundDataType) => string)
-  ) {
+  constructor(args: BlobNotFoundDataType, message?: string | ((args: BlobNotFoundDataType) => string)) {
     super('resource_not_found', 'blob_not_found', message, args);
   }
 }
@@ -335,32 +292,21 @@ export class FailedToCheckout extends UserFriendlyError {
 }
 @ObjectType()
 class SubscriptionAlreadyExistsDataType {
-  @Field() plan!: string;
+  @Field() plan!: string
 }
 
 export class SubscriptionAlreadyExists extends UserFriendlyError {
-  constructor(
-    args: SubscriptionAlreadyExistsDataType,
-    message?: string | ((args: SubscriptionAlreadyExistsDataType) => string)
-  ) {
-    super(
-      'resource_already_exists',
-      'subscription_already_exists',
-      message,
-      args
-    );
+  constructor(args: SubscriptionAlreadyExistsDataType, message?: string | ((args: SubscriptionAlreadyExistsDataType) => string)) {
+    super('resource_already_exists', 'subscription_already_exists', message, args);
   }
 }
 @ObjectType()
 class SubscriptionNotExistsDataType {
-  @Field() plan!: string;
+  @Field() plan!: string
 }
 
 export class SubscriptionNotExists extends UserFriendlyError {
-  constructor(
-    args: SubscriptionNotExistsDataType,
-    message?: string | ((args: SubscriptionNotExistsDataType) => string)
-  ) {
+  constructor(args: SubscriptionNotExistsDataType, message?: string | ((args: SubscriptionNotExistsDataType) => string)) {
     super('resource_not_found', 'subscription_not_exists', message, args);
   }
 }
@@ -378,14 +324,11 @@ export class SubscriptionExpired extends UserFriendlyError {
 }
 @ObjectType()
 class SameSubscriptionRecurringDataType {
-  @Field() recurring!: string;
+  @Field() recurring!: string
 }
 
 export class SameSubscriptionRecurring extends UserFriendlyError {
-  constructor(
-    args: SameSubscriptionRecurringDataType,
-    message?: string | ((args: SameSubscriptionRecurringDataType) => string)
-  ) {
+  constructor(args: SameSubscriptionRecurringDataType, message?: string | ((args: SameSubscriptionRecurringDataType) => string)) {
     super('bad_request', 'same_subscription_recurring', message, args);
   }
 }
@@ -397,15 +340,12 @@ export class CustomerPortalCreateFailed extends UserFriendlyError {
 }
 @ObjectType()
 class SubscriptionPlanNotFoundDataType {
-  @Field() plan!: string;
-  @Field() recurring!: string;
+  @Field() plan!: string
+  @Field() recurring!: string
 }
 
 export class SubscriptionPlanNotFound extends UserFriendlyError {
-  constructor(
-    args: SubscriptionPlanNotFoundDataType,
-    message?: string | ((args: SubscriptionPlanNotFoundDataType) => string)
-  ) {
+  constructor(args: SubscriptionPlanNotFoundDataType, message?: string | ((args: SubscriptionPlanNotFoundDataType) => string)) {
     super('resource_not_found', 'subscription_plan_not_found', message, args);
   }
 }
@@ -459,14 +399,11 @@ export class CopilotMessageNotFound extends UserFriendlyError {
 }
 @ObjectType()
 class CopilotPromptNotFoundDataType {
-  @Field() name!: string;
+  @Field() name!: string
 }
 
 export class CopilotPromptNotFound extends UserFriendlyError {
-  constructor(
-    args: CopilotPromptNotFoundDataType,
-    message?: string | ((args: CopilotPromptNotFoundDataType) => string)
-  ) {
+  constructor(args: CopilotPromptNotFoundDataType, message?: string | ((args: CopilotPromptNotFoundDataType) => string)) {
     super('resource_not_found', 'copilot_prompt_not_found', message, args);
   }
 }
@@ -490,29 +427,23 @@ export class CopilotQuotaExceeded extends UserFriendlyError {
 }
 @ObjectType()
 class RuntimeConfigNotFoundDataType {
-  @Field() key!: string;
+  @Field() key!: string
 }
 
 export class RuntimeConfigNotFound extends UserFriendlyError {
-  constructor(
-    args: RuntimeConfigNotFoundDataType,
-    message?: string | ((args: RuntimeConfigNotFoundDataType) => string)
-  ) {
+  constructor(args: RuntimeConfigNotFoundDataType, message?: string | ((args: RuntimeConfigNotFoundDataType) => string)) {
     super('resource_not_found', 'runtime_config_not_found', message, args);
   }
 }
 @ObjectType()
 class InvalidRuntimeConfigTypeDataType {
-  @Field() key!: string;
-  @Field() want!: string;
-  @Field() get!: string;
+  @Field() key!: string
+  @Field() want!: string
+  @Field() get!: string
 }
 
 export class InvalidRuntimeConfigType extends UserFriendlyError {
-  constructor(
-    args: InvalidRuntimeConfigTypeDataType,
-    message?: string | ((args: InvalidRuntimeConfigTypeDataType) => string)
-  ) {
+  constructor(args: InvalidRuntimeConfigTypeDataType, message?: string | ((args: InvalidRuntimeConfigTypeDataType) => string)) {
     super('invalid_input', 'invalid_runtime_config_type', message, args);
   }
 }
@@ -582,35 +513,14 @@ export enum ErrorNames {
   COPILOT_QUOTA_EXCEEDED,
   RUNTIME_CONFIG_NOT_FOUND,
   INVALID_RUNTIME_CONFIG_TYPE,
-  MAILER_SERVICE_IS_NOT_CONFIGURED,
+  MAILER_SERVICE_IS_NOT_CONFIGURED
 }
 registerEnumType(ErrorNames, {
-  name: 'ErrorNames',
-});
+  name: 'ErrorNames'
+})
 
 export const ErrorDataUnionType = createUnionType({
   name: 'ErrorDataUnion',
   types: () =>
-    [
-      UnknownOauthProviderDataType,
-      MissingOauthQueryParameterDataType,
-      InvalidPasswordLengthDataType,
-      WorkspaceNotFoundDataType,
-      NotInWorkspaceDataType,
-      WorkspaceAccessDeniedDataType,
-      WorkspaceOwnerNotFoundDataType,
-      DocNotFoundDataType,
-      DocAccessDeniedDataType,
-      VersionRejectedDataType,
-      InvalidHistoryTimestampDataType,
-      DocHistoryNotFoundDataType,
-      BlobNotFoundDataType,
-      SubscriptionAlreadyExistsDataType,
-      SubscriptionNotExistsDataType,
-      SameSubscriptionRecurringDataType,
-      SubscriptionPlanNotFoundDataType,
-      CopilotPromptNotFoundDataType,
-      RuntimeConfigNotFoundDataType,
-      InvalidRuntimeConfigTypeDataType,
-    ] as const,
+    [UnknownOauthProviderDataType, MissingOauthQueryParameterDataType, InvalidPasswordLengthDataType, WorkspaceNotFoundDataType, NotInWorkspaceDataType, WorkspaceAccessDeniedDataType, WorkspaceOwnerNotFoundDataType, DocNotFoundDataType, DocAccessDeniedDataType, VersionRejectedDataType, InvalidHistoryTimestampDataType, DocHistoryNotFoundDataType, BlobNotFoundDataType, SubscriptionAlreadyExistsDataType, SubscriptionNotExistsDataType, SameSubscriptionRecurringDataType, SubscriptionPlanNotFoundDataType, CopilotPromptNotFoundDataType, RuntimeConfigNotFoundDataType, InvalidRuntimeConfigTypeDataType] as const,
 });
