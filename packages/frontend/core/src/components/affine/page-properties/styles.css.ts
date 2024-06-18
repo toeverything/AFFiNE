@@ -89,8 +89,8 @@ export const backlinksList = style({
 
 export const tableHeaderTimestamp = style({
   display: 'flex',
-  flexDirection: 'row',
-  alignItems: 'center',
+  flexDirection: 'column',
+  alignItems: 'start',
   gap: '8px',
   cursor: 'default',
   padding: '0 6px',

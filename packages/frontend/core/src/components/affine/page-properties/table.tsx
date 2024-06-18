@@ -14,7 +14,11 @@ import type {
   PageInfoCustomPropertyMeta,
   PagePropertyType,
 } from '@affine/core/modules/properties/services/schema';
-import { timestampToLocalDate } from '@affine/core/utils';
+import {
+  timestampToHumanTime,
+  timestampToLocalDate,
+  timestampToLocalDateTime,
+} from '@affine/core/utils';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
 import {
@@ -41,6 +45,12 @@ import {
 } from '@dnd-kit/modifiers';
 import { SortableContext, useSortable } from '@dnd-kit/sortable';
 import * as Collapsible from '@radix-ui/react-collapsible';
+import {
+  DocService,
+  useLiveData,
+  useServices,
+  WorkspaceService,
+} from '@toeverything/infra';
 import clsx from 'clsx';
 import { use } from 'foxact/use';
 import { atom, useAtomValue, useSetAtom } from 'jotai';
@@ -596,20 +606,19 @@ export const PagePropertiesTableHeader = ({
     manager.pageId
   );
 
-  const timestampElement = useMemo(() => {
-    const localizedUpdateTime = manager.updatedDate
-      ? timestampToLocalDate(manager.updatedDate)
-      : null;
+  const { docService, workspaceService } = useServices({
+    DocService,
+    WorkspaceService,
+  });
 
+  const { syncing, retrying, serverClock } = useLiveData(
+    workspaceService.workspace.engine.doc.docState$(docService.doc.id)
+  );
+
+  const timestampElement = useMemo(() => {
     const localizedCreateTime = manager.createDate
       ? timestampToLocalDate(manager.createDate)
       : null;
-
-    const updateTimeElement = (
-      <div className={styles.tableHeaderTimestamp}>
-        {t['Updated']()} {localizedUpdateTime}
-      </div>
-    );
 
     const createTimeElement = (
       <div className={styles.tableHeaderTimestamp}>
@@ -617,14 +626,49 @@ export const PagePropertiesTableHeader = ({
       </div>
     );
 
-    return localizedUpdateTime ? (
+    return serverClock ? (
+      <Tooltip
+        side="right"
+        content={
+          <>
+            <div className={styles.tableHeaderTimestamp}>
+              {t['Updated']()} {timestampToLocalDateTime(serverClock)}
+            </div>
+            {manager.createDate && (
+              <div className={styles.tableHeaderTimestamp}>
+                {t['Created']()} {timestampToLocalDateTime(manager.createDate)}
+              </div>
+            )}
+          </>
+        }
+      >
+        <div className={styles.tableHeaderTimestamp}>
+          {!syncing && !retrying ? (
+            <>
+              {t['Updated']()} {timestampToHumanTime(serverClock)}
+            </>
+          ) : (
+            <>{t['com.affine.syncing']()}</>
+          )}
+        </div>
+      </Tooltip>
+    ) : manager.updatedDate ? (
       <Tooltip side="right" content={createTimeElement}>
-        {updateTimeElement}
+        <div className={styles.tableHeaderTimestamp}>
+          {t['Updated']()} {timestampToLocalDate(manager.updatedDate)}
+        </div>
       </Tooltip>
     ) : (
       createTimeElement
     );
-  }, [manager.createDate, manager.updatedDate, t]);
+  }, [
+    manager.createDate,
+    manager.updatedDate,
+    retrying,
+    serverClock,
+    syncing,
+    t,
+  ]);
 
   const handleCollapse = useCallback(() => {
     onOpenChange(!open);

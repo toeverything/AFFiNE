@@ -1303,6 +1303,8 @@
   "com.affine.workspaceType.offline": "Available Offline",
   "com.affine.write_with_a_blank_page": "Write with a blank page",
   "com.affine.yesterday": "Yesterday",
+  "com.affine.just-now": "Just now",
+  "com.affine.syncing": "Syncing",
   "core": "core",
   "dark": "Dark",
   "emptyAllPages": "Click on the <1>$t(New Doc)</1> button to create your first doc.",

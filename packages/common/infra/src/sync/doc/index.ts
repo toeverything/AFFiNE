@@ -53,12 +53,25 @@ export class DocEngine {
     const localState$ = this.localPart.docState$(docId);
     const remoteState$ = this.remotePart?.docState$(docId);
     return LiveData.computed(get => {
-      const local = get(localState$);
-      const remote = remoteState$ ? get(remoteState$) : null;
+      const localState = get(localState$);
+      const remoteState = remoteState$ ? get(remoteState$) : null;
+      if (remoteState) {
+        return {
+          syncing: remoteState.syncing,
+          saving: localState.syncing,
+          retrying: remoteState.retrying,
+          ready: localState.ready,
+          errorMessage: remoteState.errorMessage,
+          serverClock: remoteState.serverClock,
+        };
+      }
       return {
-        ready: local.ready,
-        saving: local.syncing,
-        syncing: local.syncing || remote?.syncing,
+        syncing: localState.syncing,
+        saving: localState.syncing,
+        ready: localState.ready,
+        retrying: false,
+        errorMessage: null,
+        serverClock: null,
       };
     });
   }

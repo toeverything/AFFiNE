@@ -14,7 +14,7 @@ export function useDocEngineStatus() {
     () => ({
       ...engineState,
       progress,
-      syncing: engineState.syncing > 0,
+      syncing: engineState.syncing > 0 || engineState.retrying,
     }),
     [engineState, progress]
   );

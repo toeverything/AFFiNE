@@ -60,6 +60,9 @@ export interface RemoteEngineState {
 
 export interface RemoteDocState {
   syncing: boolean;
+  retrying: boolean;
+  serverClock: number | null;
+  errorMessage: string | null;
 }
 
 export class DocEngineRemotePart {
@@ -87,20 +90,22 @@ export class DocEngineRemotePart {
     new Observable(subscribe => {
       const next = () => {
         if (!this.status.syncing) {
+          // if syncing = false, jobMap is empty
           subscribe.next({
             total: this.status.docs.size,
             syncing: this.status.docs.size,
             retrying: this.status.retrying,
             errorMessage: this.status.errorMessage,
           });
+        } else {
+          const syncing = this.status.jobMap.size;
+          subscribe.next({
+            total: this.status.docs.size,
+            syncing: syncing,
+            retrying: this.status.retrying,
+            errorMessage: this.status.errorMessage,
+          });
         }
-        const syncing = this.status.jobMap.size;
-        subscribe.next({
-          total: this.status.docs.size,
-          syncing: syncing,
-          retrying: this.status.retrying,
-          errorMessage: this.status.errorMessage,
-        });
       };
       next();
       return this.statusUpdatedSubject$.subscribe(() => {
@@ -123,6 +128,9 @@ export class DocEngineRemotePart {
             syncing:
               !this.status.connectedDocs.has(docId) ||
               this.status.jobMap.has(docId),
+            serverClock: this.status.serverClocks.get(docId),
+            retrying: this.status.retrying,
+            errorMessage: this.status.errorMessage,
           });
         };
         next();
@@ -130,7 +138,7 @@ export class DocEngineRemotePart {
           if (updatedId === true || updatedId === docId) next();
         });
       }),
-      { syncing: false }
+      { syncing: false, retrying: false, errorMessage: null, serverClock: null }
     );
   }
 
@@ -326,6 +334,7 @@ export class DocEngineRemotePart {
   readonly actions = {
     updateServerClock: (docId: string, serverClock: number) => {
       this.status.serverClocks.setIfBigger(docId, serverClock);
+      this.statusUpdatedSubject$.next(docId);
     },
     addDoc: (docId: string) => {
       if (!this.status.docs.has(docId)) {
@@ -359,7 +368,6 @@ export class DocEngineRemotePart {
     // eslint-disable-next-line no-constant-condition
     while (true) {
       try {
-        this.status.retrying = false;
         await this.retryLoop(signal);
       } catch (err) {
         if (signal?.aborted) {
@@ -447,6 +455,10 @@ export class DocEngineRemotePart {
           });
         }),
       ]);
+
+      // reset retrying flag after connected with server
+      this.status.retrying = false;
+      this.statusUpdatedSubject$.next(true);
 
       throwIfAborted(signal);
       disposes.push(

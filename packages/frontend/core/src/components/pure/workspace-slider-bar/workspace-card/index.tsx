@@ -145,20 +145,22 @@ const useSyncEngineSyncProgress = () => {
     if (!isOnline) {
       return 'Disconnected, please check your network connection';
     }
-    if (syncing) {
-      return (
-        `Syncing with AFFiNE Cloud` +
-        (progress ? ` (${Math.floor(progress * 100)}%)` : '')
-      );
-    } else if (retrying && errorMessage) {
+    if (isOverCapacity) {
+      return 'Sync failed due to insufficient cloud storage space.';
+    }
+    if (retrying && errorMessage) {
       return `${errorMessage}, reconnecting.`;
     }
     if (retrying) {
       return 'Sync disconnected due to unexpected issues, reconnecting.';
     }
-    if (isOverCapacity) {
-      return 'Sync failed due to insufficient cloud storage space.';
+    if (syncing) {
+      return (
+        `Syncing with AFFiNE Cloud` +
+        (progress ? ` (${Math.floor(progress * 100)}%)` : '')
+      );
     }
+
     return 'Synced with AFFiNE Cloud';
   }, [
     currentWorkspace.flavour,
@@ -196,7 +198,8 @@ const useSyncEngineSyncProgress = () => {
       ),
     active:
       currentWorkspace.flavour === WorkspaceFlavour.AFFINE_CLOUD &&
-      ((syncing && progress !== undefined) || isOverCapacity || !isOnline),
+      ((syncing && progress !== undefined) || retrying) && // active if syncing or retrying
+      !isOverCapacity, // not active if isOffline or OverCapacity
   };
 };
 const usePauseAnimation = (timeToResume = 5000) => {

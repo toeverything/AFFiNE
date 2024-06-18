@@ -345,7 +345,7 @@ export class LiveData<T = unknown>
     duration: number,
     { trailing = true, leading = true }: ThrottleConfig = {}
   ) {
-    return LiveData.from(
+    return LiveData.from<T>(
       this.pipe(throttleTime(duration, undefined, { trailing, leading })),
       null as any
     );
