@@ -152,6 +152,7 @@ export const createConfiguration: (
             },
       alias: {
         yjs: require.resolve('yjs'),
+        lit: join(workspaceRoot, 'node_modules', 'lit'),
         '@blocksuite/block-std': blocksuiteBaseDir
           ? join(blocksuiteBaseDir, 'packages', 'framework', 'block-std', 'src')
           : join(
