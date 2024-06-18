@@ -15,7 +15,13 @@ import {
   PageEditor,
 } from '@blocksuite/presets';
 import type { Doc } from '@blocksuite/store';
-import { type DocMode, useLiveData, useService } from '@toeverything/infra';
+import {
+  type DocMode,
+  DocService,
+  DocsService,
+  useLiveData,
+  useService,
+} from '@toeverything/infra';
 import React, {
   forwardRef,
   Fragment,
@@ -30,6 +36,7 @@ import { PagePropertiesTable } from '../../affine/page-properties';
 import { AffinePageReference } from '../../affine/reference-link';
 import { BlocksuiteEditorJournalDocTitle } from './journal-doc-title';
 import {
+  patchDocModeService,
   patchForSharedPage,
   patchNotificationService,
   patchPeekViewService,
@@ -73,6 +80,8 @@ const usePatchSpecs = (page: Doc, shared: boolean, mode: DocMode) => {
   const [reactToLit, portals] = useLitPortalFactory();
   const peekViewService = useService(PeekViewService);
   const quickSearchService = useService(QuickSearchService);
+  const docService = useService(DocService);
+  const docsService = useService(DocsService);
   const referenceRenderer: ReferenceReactRenderer = useMemo(() => {
     return function customReference(reference) {
       const pageId = reference.delta.attributes?.reference?.pageId;
@@ -101,9 +110,12 @@ const usePatchSpecs = (page: Doc, shared: boolean, mode: DocMode) => {
     if (shared) {
       patched = patchForSharedPage(patched);
     }
+    patched = patchDocModeService(patched, docService, docsService);
     return patched;
   }, [
     confirmModal,
+    docService,
+    docsService,
     page.readonly,
     peekViewService,
     quickSearchService,
