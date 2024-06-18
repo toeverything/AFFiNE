@@ -55,11 +55,11 @@ declare module '../../fundamentals/config' {
 defineStartupConfig('doc', {
   manager: {
     enableUpdateAutoMerging: true,
-    updatePollInterval: 1000,
-    maxUpdatesPullCount: 100,
+    updatePollInterval: 3000,
+    maxUpdatesPullCount: 500,
   },
   history: {
-    interval: 1000,
+    interval: 1000 * 60 * 10 /* 10 mins */,
   },
 });
 
