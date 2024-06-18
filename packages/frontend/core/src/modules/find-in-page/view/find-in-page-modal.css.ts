@@ -1,17 +1,73 @@
 import { cssVar } from '@toeverything/theme';
-import { style } from '@vanilla-extract/css';
+import { createVar, keyframes, style } from '@vanilla-extract/css';
 
-export const container = style({
+export const animationTimeout = createVar();
+
+const contentShow = keyframes({
+  from: {
+    opacity: 0,
+    transform: 'translateY(-2%) scale(0.96)',
+  },
+  to: {
+    opacity: 1,
+    transform: 'translateY(0) scale(1)',
+  },
+});
+const contentHide = keyframes({
+  to: {
+    opacity: 0,
+    transform: 'translateY(-2%) scale(0.96)',
+  },
+  from: {
+    opacity: 1,
+    transform: 'translateY(0) scale(1)',
+  },
+});
+
+export const modalOverlay = style({
+  position: 'fixed',
+  inset: 0,
+  backgroundColor: 'transparent',
+  zIndex: cssVar('zIndexModal'),
+});
+
+export const modalContentWrapper = style({
+  position: 'fixed',
+  inset: 0,
+  display: 'flex',
+  alignItems: 'flex-start',
+  justifyContent: 'flex-end',
+  zIndex: cssVar('zIndexModal'),
+  right: '28px',
+  top: '80px',
+});
+
+export const modalContent = style({
+  width: 400,
+  height: 48,
+  backgroundColor: cssVar('backgroundOverlayPanelColor'),
+  borderRadius: '8px',
+  boxShadow: cssVar('shadow3'),
+  minHeight: 48,
+  // :focus-visible will set outline
+  outline: 'none',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'space-between',
-  padding: '8px 12px 8px 8px',
-  position: 'fixed',
-  right: '28px',
-  top: '80px',
-  borderRadius: '8px',
-  boxShadow: cssVar('shadow3'),
   border: `0.5px solid ${cssVar('borderColor')}`,
+  padding: '8px 12px 8px 8px',
+  zIndex: cssVar('zIndexModal'),
+  willChange: 'transform, opacity',
+  selectors: {
+    '&[data-state=entered], &[data-state=entering]': {
+      animation: `${contentShow} ${animationTimeout} cubic-bezier(0.42, 0, 0.58, 1)`,
+      animationFillMode: 'forwards',
+    },
+    '&[data-state=exited], &[data-state=exiting]': {
+      animation: `${contentHide} ${animationTimeout} cubic-bezier(0.42, 0, 0.58, 1)`,
+      animationFillMode: 'forwards',
+    },
+  },
 });
 
 export const leftContent = style({

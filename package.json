@@ -102,6 +102,7 @@
     "string-width": "^7.1.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.4.5",
+    "unplugin-swc": "^1.4.5",
     "vite": "^5.2.8",
     "vite-plugin-istanbul": "^6.0.0",
     "vite-plugin-static-copy": "^1.0.2",

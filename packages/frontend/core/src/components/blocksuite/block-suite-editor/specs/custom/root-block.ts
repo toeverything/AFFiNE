@@ -1,3 +1,7 @@
+import {
+  AIEdgelessRootBlockSpec,
+  AIPageRootBlockSpec,
+} from '@affine/core/blocksuite/presets/ai';
 import { mixpanel } from '@affine/core/utils';
 import type { BlockSpec } from '@blocksuite/block-std';
 import type { RootService, TelemetryEventMap } from '@blocksuite/blocks';
@@ -6,10 +10,6 @@ import {
   EdgelessRootService,
   PageRootService,
 } from '@blocksuite/blocks';
-import {
-  AIEdgelessRootBlockSpec,
-  AIPageRootBlockSpec,
-} from '@blocksuite/presets/ai';
 
 function customLoadFonts(service: RootService): void {
   if (runtimeConfig.isSelfHosted) {
