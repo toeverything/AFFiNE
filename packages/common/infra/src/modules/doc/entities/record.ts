@@ -13,7 +13,6 @@ export type DocMode = 'edgeless' | 'page';
  */
 export class DocRecord extends Entity<{ id: string }> {
   id: string = this.props.id;
-  meta: Partial<DocMeta> | null = null;
   constructor(private readonly docsStore: DocsStore) {
     super();
   }

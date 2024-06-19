@@ -7,7 +7,7 @@ import {
   RIGHT_SIDEBAR_TABS_ACTIVE_KEY,
 } from '@affine/core/components/pure/ai-island';
 import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
-import { RecentPagesService } from '@affine/core/modules/cmdk';
+import { RecentDocsService } from '@affine/core/modules/quicksearch';
 import type { PageRootService } from '@blocksuite/blocks';
 import {
   BookmarkBlockService,
@@ -365,7 +365,7 @@ export const Component = () => {
   performanceRenderLogger.info('DetailPage');
 
   const params = useParams();
-  const recentPages = useService(RecentPagesService);
+  const recentPages = useService(RecentDocsService);
 
   useEffect(() => {
     if (params.pageId) {

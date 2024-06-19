@@ -69,7 +69,7 @@ export const OperationMenuButton = ({ ...props }: OperationMenuButtonProps) => {
   }, [pageId, removeFromAllowList]);
 
   const handleOpenInSplitView = useCallback(() => {
-    workbench.openPage(pageId, { at: 'tail' });
+    workbench.openDoc(pageId, { at: 'tail' });
   }, [pageId, workbench]);
 
   return (

@@ -5,21 +5,21 @@ import { useTransition } from 'react-transition-state';
 
 import * as styles from './modal.css';
 
-// a CMDK modal that can be used to display a CMDK command
+// a QuickSearch modal that can be used to display a QuickSearch command
 // it has a smooth animation and can be closed by clicking outside of the modal
 
-export interface CMDKModalProps {
+export interface QuickSearchModalProps {
   open: boolean;
   onOpenChange?: (open: boolean) => void;
 }
 
 const animationTimeout = 120;
 
-export const CMDKModal = ({
+export const QuickSearchModal = ({
   onOpenChange,
   open,
   children,
-}: React.PropsWithChildren<CMDKModalProps>) => {
+}: React.PropsWithChildren<QuickSearchModalProps>) => {
   const [{ status }, toggle] = useTransition({
     timeout: animationTimeout,
   });

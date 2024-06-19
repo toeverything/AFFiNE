@@ -71,8 +71,13 @@ export class Workbench extends Entity {
     }
   }
 
-  openPage(pageId: string, options?: WorkbenchOpenOptions) {
-    this.open(`/${pageId}`, options);
+  openDoc(
+    id: string | { docId: string; blockId?: string },
+    options?: WorkbenchOpenOptions
+  ) {
+    const docId = typeof id === 'string' ? id : id.docId;
+    const blockId = typeof id === 'string' ? undefined : id.blockId;
+    this.open(blockId ? `/${docId}#${blockId}` : `/${docId}`, options);
   }
 
   openCollections(options?: WorkbenchOpenOptions) {

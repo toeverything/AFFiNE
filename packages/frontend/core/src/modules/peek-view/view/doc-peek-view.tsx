@@ -75,7 +75,7 @@ const DocPreview = forwardRef<
   useEffect(() => {
     const disposable = AIProvider.slots.requestContinueInChat.on(() => {
       if (doc) {
-        workbench.openPage(doc.id);
+        workbench.openDoc(doc.id);
         peekView.close();
         // chat panel open is already handled in <DetailPageImpl />
       }

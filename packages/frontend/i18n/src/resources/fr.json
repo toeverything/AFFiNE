@@ -550,7 +550,7 @@
   "com.affine.cmdk.affine.color-scheme.to": "Changer le thème de couleur pour",
   "com.affine.cmdk.affine.contact-us": "Nous contacter",
   "com.affine.cmdk.affine.create-new-edgeless-as": "Créer une nouvelle page sans bord sous :",
-  "com.affine.cmdk.affine.create-new-page-as": "Nouveau document \"<1>{{keyWord}}</1>\" ",
+  "com.affine.cmdk.affine.create-new-page-as": "Nouveau document \"{{keyWord}}\" ",
   "com.affine.cmdk.affine.display-language.to": "Changer la langue d'affichage pour",
   "com.affine.cmdk.affine.editor.add-to-favourites": "Ajouter aux Favoris",
   "com.affine.cmdk.affine.editor.edgeless.presentation-start": "Commencer la Présentation",

@@ -560,7 +560,7 @@
   "com.affine.cmdk.affine.color-mode.to": "更改颜色模式为",
   "com.affine.cmdk.affine.color-scheme.to": "更改颜色方案为",
   "com.affine.cmdk.affine.contact-us": "联系我们",
-  "com.affine.cmdk.affine.create-new-doc-and-insert": "创建并插入文档 \"<1>{{keyWord}}</1>\" ",
+  "com.affine.cmdk.affine.create-new-doc-and-insert": "创建并插入文档 \"{{keyWord}}\" ",
   "com.affine.cmdk.affine.create-new-edgeless-as": "新建 “{{keyWord}}” 为标题的无界页面",
   "com.affine.cmdk.affine.create-new-page-as": "新建 “{{keyWord}}” 为标题的文档",
   "com.affine.cmdk.affine.display-language.to": "更改显示语言为",
