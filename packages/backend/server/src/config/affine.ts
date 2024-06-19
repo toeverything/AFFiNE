@@ -34,6 +34,9 @@ AFFiNE.server.port = 3010;
 // /* The sub path of your server */
 // /* For example, if you set `AFFiNE.server.path = '/affine'`, then the server will be available at `${domain}/affine` */
 // AFFiNE.server.path = '/affine';
+// /* The external URL of your server, will be consist of protocol + host + port by default */
+// /* Useful when you want to customize the link to server resources for example the doc share link or email link */
+// AFFiNE.server.externalUrl = 'http://affine.local:8080'
 //
 //
 // ###############################################################

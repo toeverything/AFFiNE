@@ -1,5 +1,6 @@
 // Convenient way to map environment variables to config values.
 AFFiNE.ENV_MAP = {
+  AFFINE_SERVER_EXTERNAL_URL: ['server.externalUrl'],
   AFFINE_SERVER_PORT: ['server.port', 'int'],
   AFFINE_SERVER_HOST: 'server.host',
   AFFINE_SERVER_SUB_PATH: 'server.path',

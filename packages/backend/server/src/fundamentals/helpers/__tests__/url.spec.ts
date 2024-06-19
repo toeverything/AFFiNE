@@ -1,8 +1,6 @@
-import { Test } from '@nestjs/testing';
 import ava, { TestFn } from 'ava';
 import Sinon from 'sinon';
 
-import { ConfigModule } from '../../config';
 import { URLHelper } from '../url';
 
 const test = ava as TestFn<{
@@ -10,24 +8,60 @@ const test = ava as TestFn<{
 }>;
 
 test.beforeEach(async t => {
-  const module = await Test.createTestingModule({
-    imports: [
-      ConfigModule.forRoot({
-        server: {
-          host: 'app.affine.local',
-          port: 3010,
-          https: true,
-        },
-      }),
-    ],
-    providers: [URLHelper],
-  }).compile();
-
-  t.context.url = module.get(URLHelper);
+  t.context.url = new URLHelper({
+    server: {
+      externalUrl: '',
+      host: 'app.affine.local',
+      port: 3010,
+      https: true,
+      path: '',
+    },
+  } as any);
 });
 
-test('can get home page', t => {
-  t.is(t.context.url.home, 'https://app.affine.local');
+test('can factor base url correctly without specified external url', t => {
+  t.is(t.context.url.baseUrl, 'https://app.affine.local');
+});
+
+test('can factor base url correctly with specified external url', t => {
+  const url = new URLHelper({
+    server: {
+      externalUrl: 'https://external.domain.com',
+      host: 'app.affine.local',
+      port: 3010,
+      https: true,
+      path: '/ignored',
+    },
+  } as any);
+
+  t.is(url.baseUrl, 'https://external.domain.com');
+});
+
+test('can factor base url correctly with specified external url and path', t => {
+  const url = new URLHelper({
+    server: {
+      externalUrl: 'https://external.domain.com/anything',
+      host: 'app.affine.local',
+      port: 3010,
+      https: true,
+      path: '/ignored',
+    },
+  } as any);
+
+  t.is(url.baseUrl, 'https://external.domain.com/anything');
+});
+
+test('can factor base url correctly with specified external url with port', t => {
+  const url = new URLHelper({
+    server: {
+      externalUrl: 'https://external.domain.com:123',
+      host: 'app.affine.local',
+      port: 3010,
+      https: true,
+    },
+  } as any);
+
+  t.is(url.baseUrl, 'https://external.domain.com:123');
 });
 
 test('can stringify query', t => {

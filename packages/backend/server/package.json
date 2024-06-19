@@ -138,6 +138,7 @@
       ]
     },
     "files": [
+      "**/__tests__/**/*.spec.ts",
       "tests/**/*.spec.ts",
       "tests/**/*.e2e.ts"
     ],
@@ -170,6 +171,7 @@
       "*.gen.*"
     ],
     "env": {
+      "AFFINE_SERVER_EXTERNAL_URL": "http://localhost:8080",
       "TS_NODE_TRANSPILE_ONLY": true,
       "TS_NODE_PROJECT": "./tsconfig.json",
       "DEBUG": "affine:*",
@@ -187,7 +189,8 @@
     "exclude": [
       "scripts",
       "node_modules",
-      "**/*.spec.ts"
+      "**/*.spec.ts",
+      "**/*.e2e.ts"
     ]
   },
   "stableVersion": "0.5.3",

@@ -1,10 +1,8 @@
 import { createPrivateKey, createPublicKey } from 'node:crypto';
 
-import { Test } from '@nestjs/testing';
 import ava, { TestFn } from 'ava';
 import Sinon from 'sinon';
 
-import { ConfigModule } from '../../config';
 import { CryptoHelper } from '../crypto';
 
 const test = ava as TestFn<{
@@ -39,21 +37,14 @@ const publicKey = createPublicKey({
   .toString('utf8');
 
 test.beforeEach(async t => {
-  const module = await Test.createTestingModule({
-    imports: [
-      ConfigModule.forRoot({
-        crypto: {
-          secret: {
-            publicKey,
-            privateKey,
-          },
-        },
-      }),
-    ],
-    providers: [CryptoHelper],
-  }).compile();
-
-  t.context.crypto = module.get(CryptoHelper);
+  t.context.crypto = new CryptoHelper({
+    crypto: {
+      secret: {
+        publicKey,
+        privateKey,
+      },
+    },
+  } as any);
 });
 
 test('should be able to sign and verify', t => {
