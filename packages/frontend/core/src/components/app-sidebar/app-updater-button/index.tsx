@@ -187,7 +187,6 @@ export function AppUpdaterButton({
         );
       }
     } else if (changelogUnread) {
-      popupWindow(runtimeConfig.changelogUrl);
       onOpenChangelog();
     } else {
       throw new Unreachable();
