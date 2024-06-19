@@ -5,13 +5,13 @@ import { useEffect, useMemo, useRef } from 'react';
 import type { ActivePeekView } from '../entities/peek-view';
 import { PeekViewService } from '../services/peek-view';
 import { DocPeekViewControls } from './doc-peek-controls';
-import type { SurfaceRefPeekViewRef } from './doc-peek-view';
+import type { DocPreviewRef, SurfaceRefPeekViewRef } from './doc-peek-view';
 import { DocPeekView, SurfaceRefPeekView } from './doc-peek-view';
 import { PeekViewModalContainer } from './modal-container';
 
 function renderPeekView(
   { info }: ActivePeekView,
-  refCallback: (editor: SurfaceRefPeekViewRef) => void
+  refCallback: (editor: SurfaceRefPeekViewRef | DocPreviewRef | null) => void
 ) {
   if (info.mode === 'edgeless' && info.xywh) {
     return (
@@ -24,7 +24,12 @@ function renderPeekView(
   }
 
   return (
-    <DocPeekView mode={info.mode} docId={info.docId} blockId={info.blockId} />
+    <DocPeekView
+      ref={refCallback}
+      mode={info.mode}
+      docId={info.docId}
+      blockId={info.blockId}
+    />
   );
 }
 
@@ -42,7 +47,9 @@ export const PeekViewManagerModal = () => {
   const peekViewEntity = useService(PeekViewService).peekView;
   const activePeekView = useLiveData(peekViewEntity.active$);
   const show = useLiveData(peekViewEntity.show$);
-  const peekViewRef = useRef<SurfaceRefPeekViewRef | null>(null);
+  const peekViewRef = useRef<SurfaceRefPeekViewRef | DocPreviewRef | null>(
+    null
+  );
 
   const preview = useMemo(() => {
     return activePeekView

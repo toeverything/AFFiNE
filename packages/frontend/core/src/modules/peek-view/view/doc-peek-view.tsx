@@ -23,8 +23,13 @@ import { PeekViewService } from '../services/peek-view';
 import * as styles from './doc-peek-view.css';
 import { useDoc } from './utils';
 
+export type DocPreviewRef = {
+  getEditor: () => AffineEditorContainer | null;
+  fitViewportToTarget: () => void;
+};
+
 const DocPreview = forwardRef<
-  AffineEditorContainer,
+  DocPreviewRef,
   { docId: string; blockId?: string; mode?: DocMode }
 >(function DocPreview({ docId, blockId, mode }, ref) {
   const { doc, workspace, loading } = useDoc(docId);
@@ -34,16 +39,32 @@ const DocPreview = forwardRef<
   const [editor, setEditor] = useState<AffineEditorContainer | null>(null);
 
   const onRef = (editor: AffineEditorContainer) => {
-    if (typeof ref === 'function') {
-      ref(editor);
-    } else if (ref) {
-      ref.current = editor;
-    }
     setEditor(editor);
   };
 
   const docs = useService(DocsService);
   const [resolvedMode, setResolvedMode] = useState<DocMode | undefined>(mode);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      getEditor: () => editor,
+      fitViewportToTarget: () => {
+        if (editor && resolvedMode === 'edgeless') {
+          const rootService =
+            editor.host.std.spec.getService<EdgelessRootService>('affine:page');
+          rootService.viewport.onResize();
+          const data = rootService.getFitToScreenData();
+          rootService.viewport.setViewport(
+            data.zoom,
+            [data.centerX, data.centerY],
+            false
+          );
+        }
+      },
+    }),
+    [editor, resolvedMode]
+  );
 
   useEffect(() => {
     if (!mode || !resolvedMode) {
@@ -122,17 +143,16 @@ const DocPreview = forwardRef<
 });
 DocPreview.displayName = 'DocPreview';
 
-export const DocPeekView = ({
-  docId,
-  blockId,
-  mode,
-}: {
-  docId: string;
-  blockId?: string;
-  mode?: DocMode;
-}) => {
-  return <DocPreview mode={mode} docId={docId} blockId={blockId} />;
-};
+export const DocPeekView = forwardRef<
+  DocPreviewRef,
+  {
+    docId: string;
+    blockId?: string;
+    mode?: DocMode;
+  }
+>(function DocPeekView({ docId, blockId, mode }, ref) {
+  return <DocPreview ref={ref} mode={mode} docId={docId} blockId={blockId} />;
+});
 
 export type SurfaceRefPeekViewRef = {
   fitViewportToTarget: () => void;
@@ -145,6 +165,9 @@ export const SurfaceRefPeekView = forwardRef<
   const [editorRef, setEditorRef] = useState<AffineEditorContainer | null>(
     null
   );
+  const onRef = (editor: AffineEditorContainer | null) => {
+    setEditorRef(editor);
+  };
   const fitViewportToTarget = useCallback(() => {
     if (!editorRef) {
       return;
@@ -189,6 +212,14 @@ export const SurfaceRefPeekView = forwardRef<
     };
   }, [editorRef, fitViewportToTarget]);
 
-  return <DocPreview ref={setEditorRef} docId={docId} mode={'edgeless'} />;
+  return (
+    <DocPreview
+      ref={ref => {
+        onRef(ref?.getEditor() ?? null);
+      }}
+      docId={docId}
+      mode={'edgeless'}
+    />
+  );
 });
 SurfaceRefPeekView.displayName = 'SurfaceRefPeekView';
