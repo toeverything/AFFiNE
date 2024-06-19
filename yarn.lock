@@ -611,12 +611,14 @@ __metadata:
   dependencies:
     "@magic-works/i18n-codegen": "npm:^0.6.0"
     "@types/prettier": "npm:^3.0.0"
+    dayjs: "npm:^1.11.11"
     i18next: "npm:^23.11.1"
     prettier: "npm:^3.2.5"
     react-i18next: "npm:^14.1.0"
     ts-node: "npm:^10.9.2"
     typescript: "npm:^5.4.5"
     undici: "npm:^6.12.0"
+    vitest: "npm:1.6.0"
   languageName: unknown
   linkType: soft
 
@@ -20240,7 +20242,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"dayjs@npm:^1.11.10":
+"dayjs@npm:^1.11.10, dayjs@npm:^1.11.11":
   version: 1.11.11
   resolution: "dayjs@npm:1.11.11"
   checksum: 10/f03948b172fbeed229837965988d1d5bac99c72a31c28731a457303259439f2f36289186489ae140adbeb10f591a926908c8de5d81eb449a2edbf5cbd6e9e30c

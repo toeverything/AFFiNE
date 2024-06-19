@@ -11,6 +11,10 @@ import {
 import { LOCALES } from './resources';
 import type en_US from './resources/en.json';
 
+export * from './i18n';
+export * from './i18n-generated';
+export * from './utils';
+
 declare module 'i18next' {
   // Refs: https://www.i18next.com/overview/typescript#argument-of-type-defaulttfuncreturn-is-not-assignable-to-parameter-of-type-xyz
   interface CustomTypeOptions {
@@ -88,9 +92,11 @@ export const createI18n = (): I18nextProviderProps['i18n'] => {
       console.error('i18n init failed');
     });
 
-  i18n.on('languageChanged', lng => {
-    localStorage.setItem(STORAGE_KEY, lng);
-  });
+  if (globalThis.localStorage) {
+    i18n.on('languageChanged', lng => {
+      localStorage.setItem(STORAGE_KEY, lng);
+    });
+  }
   return i18n;
 };
 export function setUpLanguage(i: i18n) {

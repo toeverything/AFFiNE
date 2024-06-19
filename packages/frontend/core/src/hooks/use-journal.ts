@@ -1,9 +1,9 @@
+import { i18nTime } from '@affine/i18n';
 import { initEmptyPage } from '@toeverything/infra';
 import dayjs from 'dayjs';
 import { useCallback, useMemo } from 'react';
 
 import type { DocCollection } from '../shared';
-import { timestampToLocalDate } from '../utils';
 import { useCurrentWorkspacePropertiesAdapter } from './use-affine-adapter';
 import { useDocCollectionHelper } from './use-block-suite-workspace-helper';
 import { useNavigateHelper } from './use-navigate-helper';
@@ -109,7 +109,7 @@ export const useJournalHelper = (docCollection: DocCollection) => {
     (pageId: string) => {
       const journalDateString = getJournalDateString(pageId);
       if (!journalDateString) return null;
-      return timestampToLocalDate(journalDateString);
+      return i18nTime(journalDateString, { absolute: { accuracy: 'day' } });
     },
     [getJournalDateString]
   );

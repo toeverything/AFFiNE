@@ -14,11 +14,7 @@ import type {
   PageInfoCustomPropertyMeta,
   PagePropertyType,
 } from '@affine/core/modules/properties/services/schema';
-import {
-  timestampToHumanTime,
-  timestampToLocalDate,
-  timestampToLocalDateTime,
-} from '@affine/core/utils';
+import { i18nTime } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
 import {
@@ -617,7 +613,7 @@ export const PagePropertiesTableHeader = ({
 
   const timestampElement = useMemo(() => {
     const localizedCreateTime = manager.createDate
-      ? timestampToLocalDate(manager.createDate)
+      ? i18nTime(manager.createDate)
       : null;
 
     const createTimeElement = (
@@ -632,11 +628,11 @@ export const PagePropertiesTableHeader = ({
         content={
           <>
             <div className={styles.tableHeaderTimestamp}>
-              {t['Updated']()} {timestampToLocalDateTime(serverClock)}
+              {t['Updated']()} {i18nTime(serverClock)}
             </div>
             {manager.createDate && (
               <div className={styles.tableHeaderTimestamp}>
-                {t['Created']()} {timestampToLocalDateTime(manager.createDate)}
+                {t['Created']()} {i18nTime(manager.createDate)}
               </div>
             )}
           </>
@@ -645,7 +641,16 @@ export const PagePropertiesTableHeader = ({
         <div className={styles.tableHeaderTimestamp}>
           {!syncing && !retrying ? (
             <>
-              {t['Updated']()} {timestampToHumanTime(serverClock)}
+              {t['Updated']()}{' '}
+              {i18nTime(serverClock, {
+                relative: {
+                  max: [1, 'day'],
+                  accuracy: 'minute',
+                },
+                absolute: {
+                  accuracy: 'day',
+                },
+              })}
             </>
           ) : (
             <>{t['com.affine.syncing']()}</>
@@ -655,7 +660,7 @@ export const PagePropertiesTableHeader = ({
     ) : manager.updatedDate ? (
       <Tooltip side="right" content={createTimeElement}>
         <div className={styles.tableHeaderTimestamp}>
-          {t['Updated']()} {timestampToLocalDate(manager.updatedDate)}
+          {t['Updated']()} {i18nTime(manager.updatedDate)}
         </div>
       </Tooltip>
     ) : (

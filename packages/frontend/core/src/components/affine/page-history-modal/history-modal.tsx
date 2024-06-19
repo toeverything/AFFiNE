@@ -6,7 +6,7 @@ import { openSettingModalAtom } from '@affine/core/atoms';
 import { useDocCollectionPageTitle } from '@affine/core/hooks/use-block-suite-workspace-page-title';
 import { WorkspacePermissionService } from '@affine/core/modules/permissions';
 import { WorkspaceQuotaService } from '@affine/core/modules/quota';
-import { Trans } from '@affine/i18n';
+import { i18nTime, Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloseIcon, ToggleCollapseIcon } from '@blocksuite/icons/rc';
 import type { Doc as BlockSuiteDoc, DocCollection } from '@blocksuite/store';
@@ -33,11 +33,7 @@ import {
 import { encodeStateAsUpdate } from 'yjs';
 
 import { pageHistoryModalAtom } from '../../../atoms/page-history';
-import {
-  type CalendarTranslation,
-  mixpanel,
-  timestampToLocalTime,
-} from '../../../utils';
+import { mixpanel } from '../../../utils';
 import { BlockSuiteEditor } from '../../blocksuite/block-suite-editor';
 import { StyledEditorModeSwitch } from '../../blocksuite/block-suite-mode-switch/style';
 import {
@@ -144,7 +140,11 @@ const HistoryEditorPreview = ({
           </StyledEditorModeSwitch>
           <div className={styles.previewHeaderTitle}>{title}</div>
           <div className={styles.previewHeaderTimestamp}>
-            {ts ? timestampToLocalTime(ts) : null}
+            {ts
+              ? i18nTime(ts, {
+                  absolute: { accuracy: 'minute', noDate: true },
+                })
+              : null}
           </div>
         </div>
 
@@ -317,14 +317,8 @@ const PageHistoryList = ({
 }) => {
   const t = useAFFiNEI18N();
   const historyListByDay = useMemo(() => {
-    const translation: CalendarTranslation = {
-      yesterday: t['com.affine.yesterday'],
-      today: t['com.affine.today'],
-      tomorrow: t['com.affine.tomorrow'],
-      nextWeek: t['com.affine.nextWeek'],
-    };
-    return historyListGroupByDay(historyList, translation);
-  }, [historyList, t]);
+    return historyListGroupByDay(historyList);
+  }, [historyList]);
 
   const [collapsedMap, setCollapsedMap] = useState<Record<number, boolean>>({});
 
@@ -382,7 +376,9 @@ const PageHistoryList = ({
                           data-active={activeVersion === history.timestamp}
                         >
                           <button>
-                            {timestampToLocalTime(history.timestamp)}
+                            {i18nTime(history.timestamp, {
+                              absolute: { noDate: true, accuracy: 'minute' },
+                            })}
                           </button>
                         </div>
                         {idx > list.length - 1 ? (

@@ -4,7 +4,7 @@ import type {
   PageInfoCustomPropertyMeta,
   PagePropertyType,
 } from '@affine/core/modules/properties/services/schema';
-import { timestampToLocalDate } from '@affine/core/utils';
+import { i18nTime } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { DocService, useService } from '@toeverything/infra';
 import { noop } from 'lodash-es';
@@ -22,7 +22,7 @@ interface PropertyRowValueProps {
 
 export const DateValue = ({ property }: PropertyRowValueProps) => {
   const displayValue = property.value
-    ? timestampToLocalDate(property.value)
+    ? i18nTime(property.value, { absolute: { accuracy: 'day' } })
     : undefined;
   const manager = useContext(managerContext);
 

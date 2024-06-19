@@ -7,13 +7,6 @@
     ".": "./src/index.ts",
     "./hooks": "./src/i18n-generated"
   },
-  "publishConfig": {
-    "main": "dist/src/index.js",
-    "types": "dist/src/index.d.ts",
-    "exports": {
-      ".": "./dist/src/index.js"
-    }
-  },
   "scripts": {
     "build": "node build.mjs",
     "dev": "node dev.mjs",
@@ -28,6 +21,7 @@
   },
   "dependencies": {
     "@magic-works/i18n-codegen": "^0.6.0",
+    "dayjs": "^1.11.11",
     "i18next": "^23.11.1",
     "react-i18next": "^14.1.0",
     "undici": "^6.12.0"
@@ -36,7 +30,8 @@
     "@types/prettier": "^3.0.0",
     "prettier": "^3.2.5",
     "ts-node": "^10.9.2",
-    "typescript": "^5.4.5"
+    "typescript": "^5.4.5",
+    "vitest": "1.6.0"
   },
   "version": "0.14.0"
 }

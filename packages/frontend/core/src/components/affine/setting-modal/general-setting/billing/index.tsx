@@ -18,7 +18,7 @@ import {
   SubscriptionRecurring,
   SubscriptionStatus,
 } from '@affine/graphql';
-import { Trans } from '@affine/i18n';
+import { i18nTime, Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowRightSmallIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
@@ -29,11 +29,7 @@ import { openSettingModalAtom } from '../../../../../atoms';
 import { useMutation } from '../../../../../hooks/use-mutation';
 import { useQuery } from '../../../../../hooks/use-query';
 import { SubscriptionService } from '../../../../../modules/cloud';
-import {
-  mixpanel,
-  popupWindow,
-  timestampToLocalDate,
-} from '../../../../../utils';
+import { mixpanel, popupWindow } from '../../../../../utils';
 import { SWRErrorBoundary } from '../../../../pure/swr-error-bundary';
 import { CancelAction, ResumeAction } from '../plans/actions';
 import { AICancel, AIResume, AISubscribe } from '../plans/ai/actions';
@@ -282,11 +278,13 @@ const AIPlanCard = ({ onClick }: { onClick: () => void }) => {
       />
     ) : subscription?.nextBillAt ? (
       t['com.affine.payment.ai.billing-tip.next-bill-at']({
-        due: timestampToLocalDate(subscription.nextBillAt),
+        due: i18nTime(subscription.nextBillAt, {
+          absolute: { accuracy: 'day' },
+        }),
       })
     ) : subscription?.canceledAt && subscription.end ? (
       t['com.affine.payment.ai.billing-tip.end-at']({
-        end: timestampToLocalDate(subscription.end),
+        end: i18nTime(subscription.end, { absolute: { accuracy: 'day' } }),
       })
     ) : null;
 

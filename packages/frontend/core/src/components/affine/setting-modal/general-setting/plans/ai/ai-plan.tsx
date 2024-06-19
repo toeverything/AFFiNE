@@ -1,6 +1,6 @@
 import { Button } from '@affine/component';
 import { AuthService, SubscriptionService } from '@affine/core/modules/cloud';
-import { timestampToLocalDate } from '@affine/core/utils';
+import { i18nTime } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useEffect } from 'react';
@@ -32,11 +32,15 @@ export const AIPlan = () => {
 
   const billingTip = subscription?.nextBillAt
     ? t['com.affine.payment.ai.billing-tip.next-bill-at']({
-        due: timestampToLocalDate(subscription.nextBillAt),
+        due: i18nTime(subscription.nextBillAt, {
+          absolute: { accuracy: 'day' },
+        }),
       })
     : subscription?.canceledAt && subscription.end
       ? t['com.affine.payment.ai.billing-tip.end-at']({
-          end: timestampToLocalDate(subscription.end),
+          end: i18nTime(subscription.end, {
+            absolute: { accuracy: 'day' },
+          }),
         })
       : null;
 

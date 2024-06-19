@@ -1,9 +1,9 @@
 import { Loading } from '@affine/component/ui/loading';
 import type { CommandCategory } from '@affine/core/commands';
-import { formatDate } from '@affine/core/components/page-list';
 import { useDocEngineStatus } from '@affine/core/hooks/affine/use-doc-engine-status';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { QuickSearchService } from '@affine/core/modules/cmdk';
+import { i18nTime } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { DocMeta } from '@blocksuite/store';
 import { useLiveData, useService } from '@toeverything/infra';
@@ -111,7 +111,7 @@ const QuickSearchGroup = ({
             </div>
             {command.timestamp ? (
               <div className={styles.timestamp}>
-                {formatDate(new Date(command.timestamp))}
+                {i18nTime(command.timestamp, { relative: true })}
               </div>
             ) : null}
             {command.keyBinding ? (

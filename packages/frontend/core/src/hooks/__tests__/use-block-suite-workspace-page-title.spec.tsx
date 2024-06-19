@@ -4,6 +4,7 @@
 import 'fake-indexeddb/auto';
 
 import { WorkspacePropertiesAdapter } from '@affine/core/modules/properties';
+import { createI18n } from '@affine/i18n';
 import { render } from '@testing-library/react';
 import {
   FrameworkRoot,
@@ -35,6 +36,7 @@ beforeEach(async () => {
 
 describe('useDocCollectionPageTitle', () => {
   test('basic', async () => {
+    createI18n();
     const { framework, workspace, doc } = await configureTestingEnvironment();
     const { findByText, rerender } = render(
       <FrameworkRoot framework={framework}>

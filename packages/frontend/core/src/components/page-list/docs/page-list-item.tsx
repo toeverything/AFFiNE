@@ -1,6 +1,7 @@
-import { Checkbox } from '@affine/component';
+import { Checkbox, Tooltip } from '@affine/component';
 import { getDNDId } from '@affine/core/hooks/affine/use-global-dnd-helper';
 import { TagService } from '@affine/core/modules/tag';
+import { i18nTime } from '@affine/i18n';
 import { useDraggable } from '@dnd-kit/core';
 import { useLiveData, useService } from '@toeverything/infra';
 import type { PropsWithChildren } from 'react';
@@ -15,7 +16,7 @@ import {
 } from '../scoped-atoms';
 import type { DraggableTitleCellData, PageListItemProps } from '../types';
 import { useAllDocDisplayProperties } from '../use-all-doc-display-properties';
-import { ColWrapper, formatDate, stopPropagation } from '../utils';
+import { ColWrapper, stopPropagation } from '../utils';
 import * as styles from './page-list-item.css';
 import { PageTags } from './page-tags';
 
@@ -97,13 +98,17 @@ const PageCreateDateCell = ({
   createDate,
 }: Pick<PageListItemProps, 'createDate'>) => {
   return (
-    <div
-      data-testid="page-list-item-date"
-      data-date-raw={createDate}
-      className={styles.dateCell}
-    >
-      {formatDate(createDate)}
-    </div>
+    <Tooltip content={i18nTime(createDate)}>
+      <div
+        data-testid="page-list-item-date"
+        data-date-raw={createDate}
+        className={styles.dateCell}
+      >
+        {i18nTime(createDate, {
+          relative: true,
+        })}
+      </div>
+    </Tooltip>
   );
 };
 
@@ -111,13 +116,19 @@ const PageUpdatedDateCell = ({
   updatedDate,
 }: Pick<PageListItemProps, 'updatedDate'>) => {
   return (
-    <div
-      data-testid="page-list-item-date"
-      data-date-raw={updatedDate}
-      className={styles.dateCell}
-    >
-      {updatedDate ? formatDate(updatedDate) : '-'}
-    </div>
+    <Tooltip content={updatedDate ? i18nTime(updatedDate) : undefined}>
+      <div
+        data-testid="page-list-item-date"
+        data-date-raw={updatedDate}
+        className={styles.dateCell}
+      >
+        {updatedDate
+          ? i18nTime(updatedDate, {
+              relative: true,
+            })
+          : '-'}
+      </div>
+    </Tooltip>
   );
 };
 
