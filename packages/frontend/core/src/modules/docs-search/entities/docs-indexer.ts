@@ -1,4 +1,6 @@
 import { DebugLogger } from '@affine/debug';
+import type { AffineTextAttributes } from '@blocksuite/blocks';
+import type { DeltaInsert } from '@blocksuite/inline';
 import type { Job, WorkspaceService } from '@toeverything/infra';
 import {
   Document,
@@ -8,10 +10,14 @@ import {
   JobRunner,
 } from '@toeverything/infra';
 import { difference } from 'lodash-es';
-import type { Array as YArray, Map as YMap } from 'yjs';
+import { Array as YArray, Map as YMap, type Text as YText } from 'yjs';
 import { applyUpdate, Doc as YDoc } from 'yjs';
 
-import { blockIndexSchema, docIndexSchema } from '../schema';
+import {
+  type BlockIndexSchema,
+  blockIndexSchema,
+  docIndexSchema,
+} from '../schema';
 
 const logger = new DebugLogger('crawler');
 
@@ -194,13 +200,150 @@ export class DocsIndexer extends Entity {
           );
         }
 
-        if (flavour === 'affine:paragraph') {
+        if (
+          flavour === 'affine:paragraph' ||
+          flavour === 'affine:list' ||
+          flavour === 'affine:code'
+        ) {
+          const text = block.get('prop:text') as YText;
+          if (!text) {
+            continue;
+          }
+
+          const deltas: DeltaInsert<AffineTextAttributes>[] = text.toDelta();
+          const ref = deltas
+            .map(delta => {
+              if (
+                delta.attributes &&
+                delta.attributes.reference &&
+                delta.attributes.reference.pageId
+              ) {
+                return delta.attributes.reference.pageId;
+              }
+              return null;
+            })
+            .filter((link): link is string => !!link);
+
           blockDocuments.push(
-            Document.from(`${docId}:${blockId}`, {
+            Document.from<BlockIndexSchema>(`${docId}:${blockId}`, {
               docId,
               flavour,
               blockId,
-              content: block.get('prop:text')?.toString(),
+              content: text.toString(),
+              ref,
+            })
+          );
+        }
+
+        if (
+          flavour === 'affine:embed-linked-doc' ||
+          flavour === 'affine:embed-synced-doc'
+        ) {
+          const pageId = block.get('prop:pageId');
+          if (typeof pageId === 'string') {
+            blockDocuments.push(
+              Document.from<BlockIndexSchema>(`${docId}:${blockId}`, {
+                docId,
+                flavour,
+                blockId,
+                ref: pageId,
+              })
+            );
+          }
+        }
+
+        if (flavour === 'affine:attachment' || flavour === 'affine:image') {
+          const blobId = block.get('prop:sourceId');
+          if (typeof blobId === 'string') {
+            blockDocuments.push(
+              Document.from<BlockIndexSchema>(`${docId}:${blockId}`, {
+                docId,
+                flavour,
+                blockId,
+                blob: [blobId],
+              })
+            );
+          }
+        }
+
+        if (flavour === 'affine:surface') {
+          const texts = [];
+
+          const elementsObj = block.get('prop:elements');
+          if (
+            !(
+              elementsObj instanceof YMap &&
+              elementsObj.get('type') === '$blocksuite:internal:native$'
+            )
+          ) {
+            continue;
+          }
+          const elements = elementsObj.get('value') as YMap<any>;
+          if (!(elements instanceof YMap)) {
+            continue;
+          }
+
+          for (const element of elements.values()) {
+            if (!(element instanceof YMap)) {
+              continue;
+            }
+            const text = element.get('text') as YText;
+            if (!text) {
+              continue;
+            }
+
+            texts.push(text.toString());
+          }
+
+          blockDocuments.push(
+            Document.from<BlockIndexSchema>(`${docId}:${blockId}`, {
+              docId,
+              flavour,
+              blockId,
+              content: texts,
+            })
+          );
+        }
+
+        if (flavour === 'affine:database') {
+          const texts = [];
+          const columnsObj = block.get('prop:columns');
+          if (!(columnsObj instanceof YArray)) {
+            continue;
+          }
+          for (const column of columnsObj) {
+            if (!(column instanceof YMap)) {
+              continue;
+            }
+            if (typeof column.get('name') === 'string') {
+              texts.push(column.get('name'));
+            }
+
+            const data = column.get('data');
+            if (!(data instanceof YMap)) {
+              continue;
+            }
+            const options = data.get('options');
+            if (!(options instanceof YArray)) {
+              continue;
+            }
+            for (const option of options) {
+              if (!(option instanceof YMap)) {
+                continue;
+              }
+              const value = option.get('value');
+              if (typeof value === 'string') {
+                texts.push(value);
+              }
+            }
+          }
+
+          blockDocuments.push(
+            Document.from<BlockIndexSchema>(`${docId}:${blockId}`, {
+              docId,
+              flavour,
+              blockId,
+              content: texts,
             })
           );
         }
