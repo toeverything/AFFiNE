@@ -1,4 +1,4 @@
-import { Button, IconButton } from '@affine/component';
+import { Button, IconButton, observeResize } from '@affine/component';
 import {
   ArrowDownSmallIcon,
   ArrowUpSmallIcon,
@@ -63,13 +63,7 @@ const CanvasText = ({
       return;
     }
     drawText(canvas, text);
-    const resizeObserver = new ResizeObserver(() => {
-      drawText(canvas, text);
-    });
-    resizeObserver.observe(canvas);
-    return () => {
-      resizeObserver.disconnect();
-    };
+    return observeResize(canvas, () => drawText(canvas, text));
   }, [text]);
 
   return <canvas className={className} ref={ref} />;

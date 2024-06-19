@@ -13,6 +13,7 @@ import {
   useState,
 } from 'react';
 
+import { observeResize } from '../../utils';
 import { IconButton } from '../button';
 import * as styles from './week-date-picker.css';
 
@@ -116,8 +117,7 @@ export const WeekDatePicker = memo(function WeekDatePicker({
     const el = weekRef.current;
     if (!el) return;
 
-    const resizeObserver = new ResizeObserver(entries => {
-      const rect = entries[0].contentRect;
+    return observeResize(el, ({ contentRect: rect }) => {
       const width = rect.width;
       if (!width) return;
 
@@ -127,11 +127,6 @@ export const WeekDatePicker = memo(function WeekDatePicker({
       setViewPortSize(Math.max(1, Math.min(viewPortCount, 7)));
       setDense(width < 300);
     });
-    resizeObserver.observe(el);
-
-    return () => {
-      resizeObserver.disconnect();
-    };
   }, []);
 
   // when value changes, reset cursor
