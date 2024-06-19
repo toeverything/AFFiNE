@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { Logger, Module, OnModuleInit } from '@nestjs/common';
 import { Args, Query, Resolver } from '@nestjs/graphql';
 
-import { Config } from '../config';
+import { Config } from '../config/provider';
 import { generateUserFriendlyErrors } from './def';
 import { ActionForbidden, ErrorDataUnionType, ErrorNames } from './errors.gen';
 
