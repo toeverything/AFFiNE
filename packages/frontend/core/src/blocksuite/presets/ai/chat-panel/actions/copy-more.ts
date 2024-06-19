@@ -161,7 +161,9 @@ export class ChatCopyMore extends WithDisposable(LitElement) {
         this._morePopper = createButtonPopper(
           this._moreButton,
           this._moreMenu,
-          ({ display }) => (this._showMoreMenu = display === 'show')
+          ({ display }) => (this._showMoreMenu = display === 'show'),
+          0,
+          -100
         );
       }
     }
