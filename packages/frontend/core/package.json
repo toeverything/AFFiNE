@@ -10,12 +10,6 @@
     "./hooks/*": "./src/hooks/*",
     "./*": "./src/*"
   },
-  "sideEffects": [
-    "./src/**/*.css",
-    "./src/blocksuite/**/*.ts",
-    "./src/components/blocksuite/**/*.ts",
-    "./src/components/blocksuite/**/*.tsx"
-  ],
   "dependencies": {
     "@affine-test/fixtures": "workspace:*",
     "@affine/component": "workspace:*",
