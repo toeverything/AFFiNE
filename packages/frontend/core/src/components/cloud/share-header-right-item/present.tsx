@@ -45,13 +45,9 @@ export const PresentButton = () => {
     const edgelessPage = editorHost?.querySelector('affine-edgeless-root');
     if (!edgelessPage) return;
 
-    edgelessPage.slots.edgelessToolUpdated.on(() => {
+    return edgelessPage.slots.edgelessToolUpdated.on(() => {
       setIsPresent(edgelessPage.edgelessTool.type === 'frameNavigator');
-    });
-
-    return () => {
-      edgelessPage.slots.edgelessToolUpdated.dispose();
-    };
+    }).dispose;
   }, [editor?.host, isPresent]);
 
   return (

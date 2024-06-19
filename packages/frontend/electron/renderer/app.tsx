@@ -35,6 +35,7 @@ const desktopWhiteList = [
   '/open-app/url',
   '/upgrade-success',
   '/ai-upgrade-success',
+  '/share',
 ];
 if (
   !environment.isDesktop &&
