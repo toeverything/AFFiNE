@@ -526,17 +526,6 @@ export function imageOnlyShowWhen(_: unknown, __: unknown, host: EditorHost) {
   return selected.length === 1 && selected[0] instanceof ImageBlockModel;
 }
 
-export function experimentalImageActionsShowWhen(
-  _: unknown,
-  __: unknown,
-  host: EditorHost
-) {
-  return (
-    !!host.doc.awarenessStore.getFlag('enable_new_image_actions') &&
-    imageOnlyShowWhen(_, __, host)
-  );
-}
-
 export function mindmapRootShowWhen(_: unknown, __: unknown, host: EditorHost) {
   const selected = getCopilotSelectedElems(host);
 

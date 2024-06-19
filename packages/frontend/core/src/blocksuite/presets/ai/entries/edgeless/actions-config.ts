@@ -31,7 +31,6 @@ import {
 } from '../../_common/icons.js';
 import {
   actionToHandler,
-  experimentalImageActionsShowWhen,
   imageOnlyShowWhen,
   mindmapChildShowWhen,
   mindmapRootShowWhen,
@@ -469,7 +468,7 @@ const generateGroup: AIItemGroupConfig = {
     {
       name: 'AI image filter',
       icon: ImproveWritingIcon,
-      showWhen: experimentalImageActionsShowWhen,
+      showWhen: imageOnlyShowWhen,
       subItem: imageFilterSubItem,
       subItemOffset: [12, -4],
       beta: true,
@@ -477,7 +476,7 @@ const generateGroup: AIItemGroupConfig = {
     {
       name: 'Image processing',
       icon: AIImageIcon,
-      showWhen: experimentalImageActionsShowWhen,
+      showWhen: imageOnlyShowWhen,
       subItem: imageProcessingSubItem,
       subItemOffset: [12, -6],
       beta: true,
@@ -485,7 +484,7 @@ const generateGroup: AIItemGroupConfig = {
     {
       name: 'Generate a caption',
       icon: AIPenIcon,
-      showWhen: experimentalImageActionsShowWhen,
+      showWhen: imageOnlyShowWhen,
       beta: true,
       handler: actionToHandler(
         'generateCaption',

@@ -453,8 +453,7 @@ export function buildAIImageItemGroups(): AIItemGroupConfig[] {
         {
           name: 'AI image filter',
           icon: ImproveWritingIcon,
-          showWhen: (_, __, host) =>
-            !!host.doc.awarenessStore.getFlag('enable_new_image_actions'),
+          showWhen: () => true,
           subItem: createImageFilterSubItem(blockActionTrackerOptions),
           subItemOffset: [12, -4],
           beta: true,
@@ -462,8 +461,7 @@ export function buildAIImageItemGroups(): AIItemGroupConfig[] {
         {
           name: 'Image processing',
           icon: AIImageIcon,
-          showWhen: (_, __, host) =>
-            !!host.doc.awarenessStore.getFlag('enable_new_image_actions'),
+          showWhen: () => true,
           subItem: createImageProcessingSubItem(blockActionTrackerOptions),
           subItemOffset: [12, -6],
           beta: true,
@@ -471,8 +469,7 @@ export function buildAIImageItemGroups(): AIItemGroupConfig[] {
         {
           name: 'Generate a caption',
           icon: AIPenIcon,
-          showWhen: (_, __, host) =>
-            !!host.doc.awarenessStore.getFlag('enable_new_image_actions'),
+          showWhen: () => true,
           beta: true,
           handler: actionToHandler(
             'generateCaption',
