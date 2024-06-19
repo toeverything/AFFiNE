@@ -1,4 +1,4 @@
-import { globalStyle, style } from '@vanilla-extract/css';
+import { style } from '@vanilla-extract/css';
 export const editor = style({
   flex: 1,
   selectors: {
@@ -22,9 +22,3 @@ export const editor = style({
     },
   },
 });
-globalStyle(
-  `${editor} .affine-page-viewport:not(.affine-embed-synced-doc-editor)`,
-  {
-    paddingBottom: '100px',
-  }
-);
