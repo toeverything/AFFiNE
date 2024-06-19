@@ -214,6 +214,7 @@ export class AISlidesRenderer extends WithDisposable(LitElement) {
 
     const schema = new Schema().register(AffineSchemas);
     const collection = new DocCollection({ schema, id: 'SLIDES_PREVIEW' });
+    collection.meta.initialize();
     collection.start();
     const doc = collection.createDoc();
 
