@@ -9,7 +9,7 @@ import {
 import { assertExists } from '@blocksuite/global/utils';
 import { Slice } from '@blocksuite/store';
 
-import { getMarkdownFromSlice } from './markdown-utils.js';
+import { getMarkdownFromSlice } from './markdown-utils';
 
 export const getRootService = (host: EditorHost) => {
   return host.std.spec.getService('affine:page');

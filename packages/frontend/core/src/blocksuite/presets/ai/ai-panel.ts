@@ -23,20 +23,20 @@ import {
   InsertTopIcon,
   ReplaceIcon,
   RetryIcon,
-} from './_common/icons.js';
-import { INSERT_ABOVE_ACTIONS } from './actions/consts.js';
-import { createTextRenderer } from './messages/text.js';
-import { AIProvider } from './provider.js';
-import { reportResponse } from './utils/action-reporter.js';
-import { findNoteBlockModel, getService } from './utils/edgeless.js';
+} from './_common/icons';
+import { INSERT_ABOVE_ACTIONS } from './actions/consts';
+import { createTextRenderer } from './messages/text';
+import { AIProvider } from './provider';
+import { reportResponse } from './utils/action-reporter';
+import { findNoteBlockModel, getService } from './utils/edgeless';
 import {
   copyTextAnswer,
   insertAbove,
   insertBelow,
   replace,
-} from './utils/editor-actions.js';
-import { insertFromMarkdown } from './utils/markdown-utils.js';
-import { getSelections } from './utils/selection-utils.js';
+} from './utils/editor-actions';
+import { insertFromMarkdown } from './utils/markdown-utils';
+import { getSelections } from './utils/selection-utils';
 
 function getSelection(host: EditorHost) {
   const textSelection = host.selection.find('text');

@@ -19,16 +19,16 @@ import {
 import { assertInstanceOf } from '@blocksuite/global/utils';
 import { literal, unsafeStatic } from 'lit/static-html.js';
 
-import { buildAIPanelConfig } from './ai-panel.js';
-import { setupCodeToolbarEntry } from './entries/code-toolbar/setup-code-toolbar.js';
+import { buildAIPanelConfig } from './ai-panel';
+import { setupCodeToolbarEntry } from './entries/code-toolbar/setup-code-toolbar';
 import {
   setupEdgelessCopilot,
   setupEdgelessElementToolbarEntry,
-} from './entries/edgeless/index.js';
-import { setupFormatBarEntry } from './entries/format-bar/setup-format-bar.js';
-import { setupImageToolbarEntry } from './entries/image-toolbar/setup-image-toolbar.js';
-import { setupSlashMenuEntry } from './entries/slash-menu/setup-slash-menu.js';
-import { setupSpaceEntry } from './entries/space/setup-space.js';
+} from './entries/edgeless/index';
+import { setupFormatBarEntry } from './entries/format-bar/setup-format-bar';
+import { setupImageToolbarEntry } from './entries/image-toolbar/setup-image-toolbar';
+import { setupSlashMenuEntry } from './entries/slash-menu/setup-slash-menu';
+import { setupSpaceEntry } from './entries/space/setup-space';
 
 export const AIPageRootBlockSpec: BlockSpec = {
   ...PageRootBlockSpec,

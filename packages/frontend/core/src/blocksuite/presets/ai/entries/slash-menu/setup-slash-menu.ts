@@ -15,9 +15,9 @@ import {
 import { assertExists } from '@blocksuite/global/utils';
 import { html } from 'lit';
 
-import { AIItemGroups } from '../../_common/config.js';
-import { handleInlineAskAIAction } from '../../actions/doc-handler.js';
-import { AIProvider } from '../../provider.js';
+import { AIItemGroups } from '../../_common/config';
+import { handleInlineAskAIAction } from '../../actions/doc-handler';
+import { AIProvider } from '../../provider';
 
 export function setupSlashMenuEntry(slashMenu: AffineSlashMenuWidget) {
   const AIItems = AIItemGroups.map(group => group.items).flat();

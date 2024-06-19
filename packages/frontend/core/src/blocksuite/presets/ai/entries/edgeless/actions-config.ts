@@ -28,7 +28,7 @@ import {
   SelectionIcon,
   ShorterIcon,
   ToneIcon,
-} from '../../_common/icons.js';
+} from '../../_common/icons';
 import {
   actionToHandler,
   imageOnlyShowWhen,
@@ -36,22 +36,22 @@ import {
   mindmapRootShowWhen,
   noteBlockOrTextShowWhen,
   noteWithCodeBlockShowWen,
-} from '../../actions/edgeless-handler.js';
+} from '../../actions/edgeless-handler';
 import {
   imageFilterStyles,
   imageProcessingTypes,
   textTones,
   translateLangs,
-} from '../../actions/types.js';
-import { getAIPanel } from '../../ai-panel.js';
-import { AIProvider } from '../../provider.js';
-import { mindMapToMarkdown } from '../../utils/edgeless.js';
-import { canvasToBlob, randomSeed } from '../../utils/image.js';
+} from '../../actions/types';
+import { getAIPanel } from '../../ai-panel';
+import { AIProvider } from '../../provider';
+import { mindMapToMarkdown } from '../../utils/edgeless';
+import { canvasToBlob, randomSeed } from '../../utils/image';
 import {
   getCopilotSelectedElems,
   getEdgelessRootFromEditor,
   imageCustomInput,
-} from '../../utils/selection-utils.js';
+} from '../../utils/selection-utils';
 
 const translateSubItem = translateLangs.map(lang => {
   return {

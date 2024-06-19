@@ -1,7 +1,7 @@
 import type { AffineAIPanelWidget } from '@blocksuite/blocks';
 
-import { handleInlineAskAIAction } from '../../actions/doc-handler.js';
-import { AIProvider } from '../../provider.js';
+import { handleInlineAskAIAction } from '../../actions/doc-handler';
+import { AIProvider } from '../../provider';
 
 export function setupSpaceEntry(panel: AffineAIPanelWidget) {
   panel.handleEvent('keyDown', ctx => {

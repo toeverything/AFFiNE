@@ -1,4 +1,4 @@
-import './ask-ai-panel.js';
+import './ask-ai-panel';
 
 import { type EditorHost, WithDisposable } from '@blocksuite/block-std';
 import {
@@ -14,7 +14,7 @@ import { customElement, property, query } from 'lit/decorators.js';
 import { ref } from 'lit/directives/ref.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
-import { getRootService } from '../../utils/selection-utils.js';
+import { getRootService } from '../../utils/selection-utils';
 
 type buttonSize = 'small' | 'middle' | 'large';
 type toggleType = 'hover' | 'click';

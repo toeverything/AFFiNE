@@ -11,8 +11,8 @@ import { css, html, LitElement, nothing } from 'lit';
 import { customElement, property, query } from 'lit/decorators.js';
 import { createRef, type Ref, ref } from 'lit/directives/ref.js';
 
-import { getAIPanel } from '../ai-panel.js';
-import { PPTBuilder } from '../slides/index.js';
+import { getAIPanel } from '../ai-panel';
+import { PPTBuilder } from '../slides/index';
 
 export const createSlidesRenderer: (
   host: EditorHost,

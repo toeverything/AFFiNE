@@ -10,11 +10,11 @@ import { css, html, LitElement, nothing, type PropertyValues } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 
-import { CopyIcon, MoreIcon, RetryIcon } from '../../_common/icons.js';
-import { AIProvider } from '../../provider.js';
-import { copyText } from '../../utils/editor-actions.js';
-import type { ChatContextValue, ChatMessage } from '../chat-context.js';
-import { PageEditorActions } from './actions-handle.js';
+import { CopyIcon, MoreIcon, RetryIcon } from '../../_common/icons';
+import { AIProvider } from '../../provider';
+import { copyText } from '../../utils/editor-actions';
+import type { ChatContextValue, ChatMessage } from '../chat-context';
+import { PageEditorActions } from './actions-handle';
 
 noop(Tooltip);
 

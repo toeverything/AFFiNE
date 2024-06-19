@@ -22,26 +22,26 @@ import {
 import { assertExists } from '@blocksuite/global/utils';
 import type { TemplateResult } from 'lit';
 
-import { AIPenIcon, ChatWithAIIcon } from '../_common/icons.js';
-import { insertFromMarkdown } from '../_common/markdown-utils.js';
-import { getSurfaceElementFromEditor } from '../_common/selection-utils.js';
-import { getAIPanel } from '../ai-panel.js';
-import { AIProvider } from '../provider.js';
-import { reportResponse } from '../utils/action-reporter.js';
+import { AIPenIcon, ChatWithAIIcon } from '../_common/icons';
+import { insertFromMarkdown } from '../_common/markdown-utils';
+import { getSurfaceElementFromEditor } from '../_common/selection-utils';
+import { getAIPanel } from '../ai-panel';
+import { AIProvider } from '../provider';
+import { reportResponse } from '../utils/action-reporter';
 import {
   getEdgelessCopilotWidget,
   getService,
   isMindMapRoot,
-} from '../utils/edgeless.js';
-import { preprocessHtml } from '../utils/html.js';
-import { fetchImageToFile } from '../utils/image.js';
+} from '../utils/edgeless';
+import { preprocessHtml } from '../utils/html';
+import { fetchImageToFile } from '../utils/image';
 import {
   getCopilotSelectedElems,
   getEdgelessRootFromEditor,
   getEdgelessService,
-} from '../utils/selection-utils.js';
-import { EXCLUDING_INSERT_ACTIONS, generatingStages } from './consts.js';
-import type { CtxRecord } from './types.js';
+} from '../utils/selection-utils';
+import { EXCLUDING_INSERT_ACTIONS, generatingStages } from './consts';
+import type { CtxRecord } from './types';
 
 type FinishConfig = Exclude<
   AffineAIPanelWidget['config'],

@@ -1,2 +1,2 @@
-export * from './format-bar/setup-format-bar.js';
-export * from './space/setup-space.js';
+export * from './format-bar/setup-format-bar';
+export * from './space/setup-space';

@@ -13,16 +13,16 @@ import {
   buildFinishConfig,
   buildGeneratingConfig,
   getAIPanel,
-} from '../ai-panel.js';
-import { createTextRenderer } from '../messages/text.js';
-import { AIProvider } from '../provider.js';
-import { reportResponse } from '../utils/action-reporter.js';
+} from '../ai-panel';
+import { createTextRenderer } from '../messages/text';
+import { AIProvider } from '../provider';
+import { reportResponse } from '../utils/action-reporter';
 import {
   getSelectedImagesAsBlobs,
   getSelectedTextContent,
   getSelections,
   selectAboveBlocks,
-} from '../utils/selection-utils.js';
+} from '../utils/selection-utils';
 
 export function bindTextStream(
   stream: BlockSuitePresets.TextStream,

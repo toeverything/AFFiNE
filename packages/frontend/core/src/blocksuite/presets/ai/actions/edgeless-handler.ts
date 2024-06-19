@@ -17,41 +17,38 @@ import { assertExists } from '@blocksuite/global/utils';
 import { Slice } from '@blocksuite/store';
 import type { TemplateResult } from 'lit';
 
-import { getAIPanel } from '../ai-panel.js';
+import { getAIPanel } from '../ai-panel';
 import {
   createMindmapExecuteRenderer,
   createMindmapRenderer,
-} from '../messages/mindmap.js';
-import { createSlidesRenderer } from '../messages/slides-renderer.js';
-import { createTextRenderer } from '../messages/text.js';
-import {
-  createIframeRenderer,
-  createImageRenderer,
-} from '../messages/wrapper.js';
-import { AIProvider } from '../provider.js';
-import { reportResponse } from '../utils/action-reporter.js';
+} from '../messages/mindmap';
+import { createSlidesRenderer } from '../messages/slides-renderer';
+import { createTextRenderer } from '../messages/text';
+import { createIframeRenderer, createImageRenderer } from '../messages/wrapper';
+import { AIProvider } from '../provider';
+import { reportResponse } from '../utils/action-reporter';
 import {
   getEdgelessCopilotWidget,
   isMindmapChild,
   isMindMapRoot,
-} from '../utils/edgeless.js';
-import { copyTextAnswer } from '../utils/editor-actions.js';
-import { getContentFromSlice } from '../utils/markdown-utils.js';
+} from '../utils/edgeless';
+import { copyTextAnswer } from '../utils/editor-actions';
+import { getContentFromSlice } from '../utils/markdown-utils';
 import {
   getCopilotSelectedElems,
   getSelectedNoteAnchor,
   getSelections,
-} from '../utils/selection-utils.js';
-import { EXCLUDING_COPY_ACTIONS, IMAGE_ACTIONS } from './consts.js';
-import { bindTextStream } from './doc-handler.js';
+} from '../utils/selection-utils';
+import { EXCLUDING_COPY_ACTIONS, IMAGE_ACTIONS } from './consts';
+import { bindTextStream } from './doc-handler';
 import {
   actionToErrorResponse,
   actionToGenerating,
   actionToResponse,
   getElementToolbar,
   responses,
-} from './edgeless-response.js';
-import type { CtxRecord } from './types.js';
+} from './edgeless-response';
+import type { CtxRecord } from './types';
 
 type AnswerRenderer = NonNullable<
   AffineAIPanelWidget['config']

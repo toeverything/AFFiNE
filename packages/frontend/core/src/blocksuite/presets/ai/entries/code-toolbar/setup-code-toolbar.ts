@@ -1,4 +1,4 @@
-import '../../_common/components/ask-ai-button.js';
+import '../../_common/components/ask-ai-button';
 
 import type {
   AffineCodeToolbarWidget,
@@ -12,9 +12,9 @@ const buttonOptions: AskAIButtonOptions = {
   panelWidth: 240,
 };
 
-import type { AskAIButtonOptions } from '../../_common/components/ask-ai-button.js';
-import { buildAICodeItemGroups } from '../../_common/config.js';
-import { AIStarIcon } from '../../_common/icons.js';
+import type { AskAIButtonOptions } from '../../_common/components/ask-ai-button';
+import { buildAICodeItemGroups } from '../../_common/config';
+import { AIStarIcon } from '../../_common/icons';
 
 export function setupCodeToolbarEntry(codeToolbar: AffineCodeToolbarWidget) {
   const onAskAIClick = () => {

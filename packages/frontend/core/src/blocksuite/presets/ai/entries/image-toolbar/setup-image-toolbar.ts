@@ -1,4 +1,4 @@
-import '../../_common/components/ask-ai-button.js';
+import '../../_common/components/ask-ai-button';
 
 import type {
   AffineImageToolbarWidget,
@@ -6,8 +6,8 @@ import type {
 } from '@blocksuite/blocks';
 import { html } from 'lit';
 
-import type { AskAIButtonOptions } from '../../_common/components/ask-ai-button.js';
-import { buildAIImageItemGroups } from '../../_common/config.js';
+import type { AskAIButtonOptions } from '../../_common/components/ask-ai-button';
+import { buildAIImageItemGroups } from '../../_common/config';
 
 const AIImageItemGroups = buildAIImageItemGroups();
 const buttonOptions: AskAIButtonOptions = {

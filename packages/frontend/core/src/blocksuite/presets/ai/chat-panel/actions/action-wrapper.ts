@@ -21,11 +21,11 @@ import {
   AIPresentationIcon,
   ArrowDownIcon,
   ArrowUpIcon,
-} from '../../_common/icons.js';
-import { createTextRenderer } from '../../messages/text.js';
-import type { ChatAction } from '../chat-context.js';
-import { renderImages } from '../components/images.js';
-import { HISTORY_IMAGE_ACTIONS } from '../const.js';
+} from '../../_common/icons';
+import { createTextRenderer } from '../../messages/text';
+import type { ChatAction } from '../chat-context';
+import { renderImages } from '../components/images';
+import { HISTORY_IMAGE_ACTIONS } from '../const';
 
 const icons: Record<string, TemplateResult<1>> = {
   'Fix spelling for it': AIDoneIcon,

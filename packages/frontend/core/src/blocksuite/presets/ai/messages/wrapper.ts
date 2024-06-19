@@ -3,8 +3,8 @@ import type { AffineAIPanelWidgetConfig } from '@blocksuite/blocks';
 import { css, html, LitElement, nothing } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 
-import { getAIPanel } from '../ai-panel.js';
-import { preprocessHtml } from '../utils/html.js';
+import { getAIPanel } from '../ai-panel';
+import { preprocessHtml } from '../utils/html';
 
 type AIAnswerWrapperOptions = {
   height: number;

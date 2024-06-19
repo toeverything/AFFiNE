@@ -1,16 +1,16 @@
-import '../messages/slides-renderer.js';
-import './ai-loading.js';
-import '../messages/text.js';
-import './actions/text.js';
-import './actions/action-wrapper.js';
-import './actions/make-real.js';
-import './actions/slides.js';
-import './actions/mindmap.js';
-import './actions/chat-text.js';
-import './actions/copy-more.js';
-import './actions/image-to-text.js';
-import './actions/image.js';
-import './chat-cards.js';
+import '../messages/slides-renderer';
+import './ai-loading';
+import '../messages/text';
+import './actions/text';
+import './actions/action-wrapper';
+import './actions/make-real';
+import './actions/slides';
+import './actions/mindmap';
+import './actions/chat-text';
+import './actions/copy-more';
+import './actions/image-to-text';
+import './actions/image';
+import './chat-cards';
 
 import type {
   BaseSelection,
@@ -30,27 +30,19 @@ import { customElement, property, query, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
-import {
-  AffineAvatarIcon,
-  AffineIcon,
-  DownArrowIcon,
-} from '../_common/icons.js';
+import { AffineAvatarIcon, AffineIcon, DownArrowIcon } from '../_common/icons';
 import {
   GeneralErrorRenderer,
   PaymentRequiredErrorRenderer,
-} from '../messages/error.js';
-import { AIProvider } from '../provider.js';
-import { insertBelow } from '../utils/editor-actions.js';
+} from '../messages/error';
+import { AIProvider } from '../provider';
+import { insertBelow } from '../utils/editor-actions';
 import {
   EdgelessEditorActions,
   PageEditorActions,
-} from './actions/actions-handle.js';
-import type {
-  ChatContextValue,
-  ChatItem,
-  ChatMessage,
-} from './chat-context.js';
-import { HISTORY_IMAGE_ACTIONS } from './const.js';
+} from './actions/actions-handle';
+import type { ChatContextValue, ChatItem, ChatMessage } from './chat-context';
+import { HISTORY_IMAGE_ACTIONS } from './const';
 
 @customElement('chat-panel-messages')
 export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {

@@ -1,2 +1,2 @@
-export * from './text.js';
-export * from './wrapper.js';
+export * from './text';
+export * from './wrapper';

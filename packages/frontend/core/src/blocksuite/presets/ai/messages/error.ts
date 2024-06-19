@@ -2,8 +2,8 @@ import { type EditorHost, WithDisposable } from '@blocksuite/block-std';
 import { html, LitElement, nothing, type TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 
-import { ErrorTipIcon } from '../_common/icons.js';
-import { AIProvider } from '../provider.js';
+import { ErrorTipIcon } from '../_common/icons';
+import { AIProvider } from '../provider';
 
 @customElement('ai-error-wrapper')
 class AIErrorWrapper extends WithDisposable(LitElement) {

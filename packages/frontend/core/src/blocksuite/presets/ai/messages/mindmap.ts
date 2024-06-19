@@ -7,7 +7,7 @@ import { markdownToMindmap, MiniMindmapPreview } from '@blocksuite/blocks';
 import { noop } from '@blocksuite/global/utils';
 import { html, nothing } from 'lit';
 
-import { getAIPanel } from '../ai-panel.js';
+import { getAIPanel } from '../ai-panel';
 
 noop(MiniMindmapPreview);
 

@@ -12,11 +12,11 @@ import {
   ChatSendIcon,
   CloseIcon,
   ImageIcon,
-} from '../_common/icons.js';
-import { AIProvider } from '../provider.js';
-import { reportResponse } from '../utils/action-reporter.js';
-import { readBlobAsURL } from '../utils/image.js';
-import type { ChatContextValue, ChatMessage } from './chat-context.js';
+} from '../_common/icons';
+import { AIProvider } from '../provider';
+import { reportResponse } from '../utils/action-reporter';
+import { readBlobAsURL } from '../utils/image';
+import type { ChatContextValue, ChatMessage } from './chat-context';
 
 const MaximumImageCount = 8;
 

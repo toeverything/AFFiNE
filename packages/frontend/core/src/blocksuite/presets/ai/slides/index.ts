@@ -2,14 +2,14 @@ import type { EditorHost } from '@blocksuite/block-std';
 import type { EdgelessRootService } from '@blocksuite/blocks';
 import type { BlockSnapshot } from '@blocksuite/store';
 
-import { markdownToSnapshot } from '../_common/markdown-utils.js';
-import { getSurfaceElementFromEditor } from '../_common/selection-utils.js';
+import { markdownToSnapshot } from '../_common/markdown-utils';
+import { getSurfaceElementFromEditor } from '../_common/selection-utils';
 import {
   basicTheme,
   type PPTDoc,
   type PPTSection,
   type TemplateImage,
-} from './template.js';
+} from './template';
 
 export const PPTBuilder = (host: EditorHost) => {
   const service = host.spec.getService<EdgelessRootService>('affine:page');

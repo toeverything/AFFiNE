@@ -15,14 +15,10 @@ import {
   NoteDisplayMode,
 } from '@blocksuite/blocks';
 
-import {
-  CreateIcon,
-  InsertBelowIcon,
-  ReplaceIcon,
-} from '../../_common/icons.js';
-import { reportResponse } from '../../utils/action-reporter.js';
-import { insertBelow, replace } from '../../utils/editor-actions.js';
-import { insertFromMarkdown } from '../../utils/markdown-utils.js';
+import { CreateIcon, InsertBelowIcon, ReplaceIcon } from '../../_common/icons';
+import { reportResponse } from '../../utils/action-reporter';
+import { insertBelow, replace } from '../../utils/editor-actions';
+import { insertFromMarkdown } from '../../utils/markdown-utils';
 
 const { matchFlavours } = BlocksUtils;
 

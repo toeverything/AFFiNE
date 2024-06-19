@@ -1,12 +1,12 @@
-import './action-wrapper.js';
+import './action-wrapper';
 
 import type { EditorHost } from '@blocksuite/block-std';
 import { ShadowlessElement, WithDisposable } from '@blocksuite/block-std';
 import { html, nothing } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 
-import { createTextRenderer } from '../../messages/text.js';
-import { renderImages } from '../components/images.js';
+import { createTextRenderer } from '../../messages/text';
+import { renderImages } from '../components/images';
 @customElement('chat-text')
 export class ChatText extends WithDisposable(ShadowlessElement) {
   @property({ attribute: false })

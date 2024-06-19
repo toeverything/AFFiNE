@@ -17,15 +17,15 @@ import {
   CurrentSelectionIcon,
   DocIcon,
   SmallImageIcon,
-} from '../_common/icons.js';
+} from '../_common/icons';
 import {
   getEdgelessRootFromEditor,
   getSelectedImagesAsBlobs,
   getSelectedTextContent,
   getTextContentFromBlockModels,
   selectedToCanvas,
-} from '../utils/selection-utils.js';
-import type { ChatContextValue } from './chat-context.js';
+} from '../utils/selection-utils';
+import type { ChatContextValue } from './chat-context';
 
 const cardsStyles = css`
   .card-wrapper {

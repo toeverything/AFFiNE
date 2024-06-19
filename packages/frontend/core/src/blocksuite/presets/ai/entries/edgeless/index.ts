@@ -8,7 +8,7 @@ import { EdgelessCopilotToolbarEntry } from '@blocksuite/blocks';
 import { noop } from '@blocksuite/global/utils';
 import { html } from 'lit';
 
-import { edgelessActionGroups } from './actions-config.js';
+import { edgelessActionGroups } from './actions-config';
 
 noop(EdgelessCopilotToolbarEntry);
 

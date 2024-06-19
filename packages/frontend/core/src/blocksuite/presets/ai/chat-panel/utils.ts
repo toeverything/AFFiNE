@@ -2,9 +2,9 @@ import type { EditorHost } from '@blocksuite/block-std';
 import type { EdgelessRootService } from '@blocksuite/blocks';
 import type { BlockSnapshot } from '@blocksuite/store';
 
-import { markdownToSnapshot } from '../_common/markdown-utils.js';
-import { getSurfaceElementFromEditor } from '../_common/selection-utils.js';
-import { basicTheme } from '../slides/template.js';
+import { markdownToSnapshot } from '../_common/markdown-utils';
+import { getSurfaceElementFromEditor } from '../_common/selection-utils';
+import { basicTheme } from '../slides/template';
 
 type PPTSection = {
   title: string;

@@ -1,5 +1,5 @@
-import './action-wrapper.js';
-import '../../messages/slides-renderer.js';
+import './action-wrapper';
+import '../../messages/slides-renderer';
 
 import type { EditorHost } from '@blocksuite/block-std';
 import { ShadowlessElement, WithDisposable } from '@blocksuite/block-std';
@@ -7,7 +7,7 @@ import { html, nothing } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
-import type { ChatAction } from '../chat-context.js';
+import type { ChatAction } from '../chat-context';
 
 @customElement('action-slides')
 export class ActionSlides extends WithDisposable(ShadowlessElement) {

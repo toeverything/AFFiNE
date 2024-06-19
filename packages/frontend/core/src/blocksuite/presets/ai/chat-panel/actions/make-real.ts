@@ -1,4 +1,4 @@
-import './action-wrapper.js';
+import './action-wrapper';
 
 import type { EditorHost } from '@blocksuite/block-std';
 import { ShadowlessElement, WithDisposable } from '@blocksuite/block-std';
@@ -6,8 +6,8 @@ import { html } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
-import { createIframeRenderer } from '../../messages/wrapper.js';
-import type { ChatAction } from '../chat-context.js';
+import { createIframeRenderer } from '../../messages/wrapper';
+import type { ChatAction } from '../chat-context';
 
 @customElement('action-make-real')
 export class ActionMakeReal extends WithDisposable(ShadowlessElement) {

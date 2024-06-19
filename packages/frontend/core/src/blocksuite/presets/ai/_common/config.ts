@@ -9,21 +9,21 @@ import {
 } from '@blocksuite/blocks';
 import type { TemplateResult } from 'lit';
 
-import { actionToHandler } from '../actions/doc-handler.js';
-import { actionToHandler as edgelessActionToHandler } from '../actions/edgeless-handler.js';
+import { actionToHandler } from '../actions/doc-handler';
+import { actionToHandler as edgelessActionToHandler } from '../actions/edgeless-handler';
 import {
   imageFilterStyles,
   imageProcessingTypes,
   textTones,
   translateLangs,
-} from '../actions/types.js';
-import { getAIPanel } from '../ai-panel.js';
-import { AIProvider } from '../provider.js';
+} from '../actions/types';
+import { getAIPanel } from '../ai-panel';
+import { AIProvider } from '../provider';
 import {
   getSelectedImagesAsBlobs,
   getSelectedTextContent,
   getSelections,
-} from '../utils/selection-utils.js';
+} from '../utils/selection-utils';
 import {
   AIDoneIcon,
   AIImageIcon,
@@ -45,7 +45,7 @@ import {
   SelectionIcon,
   ShorterIcon,
   ToneIcon,
-} from './icons.js';
+} from './icons';
 
 export const translateSubItem: AISubItemConfig[] = translateLangs.map(lang => {
   return {

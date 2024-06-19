@@ -1,5 +1,5 @@
-import './chat-panel-input.js';
-import './chat-panel-messages.js';
+import './chat-panel-input';
+import './chat-panel-messages';
 
 import type { EditorHost } from '@blocksuite/block-std';
 import { ShadowlessElement, WithDisposable } from '@blocksuite/block-std';
@@ -9,14 +9,14 @@ import { css, html, type PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { createRef, type Ref, ref } from 'lit/directives/ref.js';
 
-import { AIHelpIcon, SmallHintIcon } from '../_common/icons.js';
-import { AIProvider } from '../provider.js';
+import { AIHelpIcon, SmallHintIcon } from '../_common/icons';
+import { AIProvider } from '../provider';
 import {
   getSelectedImagesAsBlobs,
   getSelectedTextContent,
-} from '../utils/selection-utils.js';
-import type { ChatAction, ChatContextValue, ChatItem } from './chat-context.js';
-import type { ChatPanelMessages } from './chat-panel-messages.js';
+} from '../utils/selection-utils';
+import type { ChatAction, ChatContextValue, ChatItem } from './chat-context';
+import type { ChatPanelMessages } from './chat-panel-messages';
 
 @customElement('chat-panel')
 export class ChatPanel extends WithDisposable(ShadowlessElement) {

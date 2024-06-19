@@ -1,7 +1,7 @@
 import { Bound } from '@blocksuite/blocks';
 import { nanoid } from '@blocksuite/store';
 
-import { AIProvider } from '../provider.js';
+import { AIProvider } from '../provider';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const replaceText = (text: Record<string, string>, template: any) => {

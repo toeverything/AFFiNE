@@ -1,4 +1,4 @@
-import './action-wrapper.js';
+import './action-wrapper';
 
 import type { EditorHost } from '@blocksuite/block-std';
 import { ShadowlessElement, WithDisposable } from '@blocksuite/block-std';
@@ -8,7 +8,7 @@ import { html } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
-import type { ChatAction } from '../chat-context.js';
+import type { ChatAction } from '../chat-context';
 
 noop(MiniMindmapPreview);
 

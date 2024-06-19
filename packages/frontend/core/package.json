@@ -11,7 +11,10 @@
     "./*": "./src/*"
   },
   "sideEffects": [
-    "./src/**/*.css"
+    "./src/**/*.css",
+    "./src/blocksuite/**/*.ts",
+    "./src/components/blocksuite/**/*.ts",
+    "./src/components/blocksuite/**/*.tsx"
   ],
   "dependencies": {
     "@affine-test/fixtures": "workspace:*",
