@@ -74,7 +74,7 @@ export class DataStruct {
   invertedIndex = new Map<string, InvertedIndex>();
 
   constructor(
-    private readonly databaseName: string,
+    readonly databaseName: string,
     schema: Schema
   ) {
     for (const [key, type] of Object.entries(schema)) {

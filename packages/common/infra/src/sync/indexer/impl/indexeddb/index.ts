@@ -1,3 +1,7 @@
+import type { Observable } from 'rxjs';
+import { from, merge, of, Subject, throttleTime } from 'rxjs';
+
+import { exhaustMapWithTrailing } from '../../../../utils/exhaustmap-with-trailing';
 import {
   type AggregateOptions,
   type AggregateResult,
@@ -14,11 +18,17 @@ import { DataStruct, type DataStructRWTransaction } from './data-struct';
 
 export class IndexedDBIndex<S extends Schema> implements Index<S> {
   data: DataStruct = new DataStruct(this.databaseName, this.schema);
+  broadcast$ = new Subject();
 
   constructor(
     private readonly schema: S,
     private readonly databaseName: string = 'indexer'
-  ) {}
+  ) {
+    const channel = new BroadcastChannel(this.databaseName + ':indexer');
+    channel.onmessage = () => {
+      this.broadcast$.next(1);
+    };
+  }
 
   async get(id: string): Promise<Document<S> | null> {
     return (await this.getAll([id]))[0] ?? null;
@@ -46,6 +56,23 @@ export class IndexedDBIndex<S extends Schema> implements Index<S> {
     return this.data.search(trx, query, options);
   }
 
+  search$(
+    query: Query<any>,
+    options: SearchOptions<any> = {}
+  ): Observable<SearchResult<any, SearchOptions<any>>> {
+    return merge(of(1), this.broadcast$).pipe(
+      throttleTime(500, undefined, { leading: false, trailing: true }),
+      exhaustMapWithTrailing(() => {
+        return from(
+          (async () => {
+            const trx = await this.data.readonly();
+            return this.data.search(trx, query, options);
+          })()
+        );
+      })
+    );
+  }
+
   async aggregate(
     query: Query<any>,
     field: string,
@@ -53,6 +80,24 @@ export class IndexedDBIndex<S extends Schema> implements Index<S> {
   ): Promise<AggregateResult<any, AggregateOptions<any>>> {
     const trx = await this.data.readonly();
     return this.data.aggregate(trx, query, field, options);
+  }
+
+  aggregate$(
+    query: Query<any>,
+    field: string,
+    options: AggregateOptions<any> = {}
+  ): Observable<AggregateResult<S, AggregateOptions<any>>> {
+    return merge(of(1), this.broadcast$).pipe(
+      throttleTime(500, undefined, { leading: false, trailing: true }),
+      exhaustMapWithTrailing(() => {
+        return from(
+          (async () => {
+            const trx = await this.data.readonly();
+            return this.data.aggregate(trx, query, field, options);
+          })()
+        );
+      })
+    );
   }
 
   async clear(): Promise<void> {
@@ -64,6 +109,7 @@ export class IndexedDBIndex<S extends Schema> implements Index<S> {
 export class IndexedDBIndexWriter<S extends Schema> implements IndexWriter<S> {
   inserts: Document[] = [];
   deletes: string[] = [];
+  channel = new BroadcastChannel(this.data.databaseName + ':indexer');
 
   constructor(
     private readonly data: DataStruct,
@@ -91,7 +137,8 @@ export class IndexedDBIndexWriter<S extends Schema> implements IndexWriter<S> {
   }
 
   async commit(): Promise<void> {
-    return this.data.batchWrite(this.trx, this.deletes, this.inserts);
+    await this.data.batchWrite(this.trx, this.deletes, this.inserts);
+    this.channel.postMessage(1);
   }
 
   rollback(): void {}

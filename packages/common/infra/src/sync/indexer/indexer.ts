@@ -1,8 +1,11 @@
 import type { Document } from './document';
 import type { Schema } from './schema';
-import type { Searcher } from './searcher';
+import type { Searcher, Subscriber } from './searcher';
 
-export interface Index<S extends Schema> extends IndexReader<S>, Searcher<S> {
+export interface Index<S extends Schema>
+  extends IndexReader<S>,
+    Searcher<S>,
+    Subscriber<S> {
   write(): Promise<IndexWriter<S>>;
 
   clear(): Promise<void>;

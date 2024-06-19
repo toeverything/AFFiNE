@@ -139,7 +139,7 @@ export class DataStruct {
   search(
     query: Query<any>,
     options: SearchOptions<any> = {}
-  ): Promise<SearchResult<any, any>> {
+  ): SearchResult<any, any> {
     const pagination = {
       skip: options.pagination?.skip ?? 0,
       limit: options.pagination?.limit ?? 100,
@@ -151,7 +151,7 @@ export class DataStruct {
       .toArray()
       .slice(pagination.skip, pagination.skip + pagination.limit);
 
-    return Promise.resolve({
+    return {
       pagination: {
         count: match.size(),
         hasMore: match.size() > pagination.limit + pagination.skip,
@@ -159,14 +159,14 @@ export class DataStruct {
         skip: pagination.skip,
       },
       nodes: nids.map(nid => this.resultNode(match, nid, options)),
-    });
+    };
   }
 
   aggregate(
     query: Query<any>,
     field: string,
     options: AggregateOptions<any> = {}
-  ): Promise<AggregateResult<any, any>> {
+  ): AggregateResult<any, any> {
     const pagination = {
       skip: options.pagination?.skip ?? 0,
       limit: options.pagination?.limit ?? 100,
@@ -189,7 +189,7 @@ export class DataStruct {
       }
     }
 
-    return Promise.resolve({
+    return {
       buckets: buckets
         .slice(pagination.skip, pagination.skip + pagination.limit)
         .map(bucket => {
@@ -231,7 +231,7 @@ export class DataStruct {
         limit: pagination.limit,
         skip: pagination.skip,
       },
-    });
+    };
   }
 
   has(id: string): boolean {

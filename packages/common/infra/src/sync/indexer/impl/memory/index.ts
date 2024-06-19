@@ -1,3 +1,5 @@
+import { map, merge, type Observable, of, Subject, throttleTime } from 'rxjs';
+
 import type {
   AggregateOptions,
   AggregateResult,
@@ -14,11 +16,12 @@ import { DataStruct } from './data-struct';
 
 export class MemoryIndex<S extends Schema> implements Index<S> {
   private readonly data: DataStruct = new DataStruct(this.schema);
+  broadcast$ = new Subject<number>();
 
   constructor(private readonly schema: Schema) {}
 
   write(): Promise<IndexWriter<S>> {
-    return Promise.resolve(new MemoryIndexWriter(this.data));
+    return Promise.resolve(new MemoryIndexWriter(this.data, this.broadcast$));
   }
 
   async get(id: string): Promise<Document<S> | null> {
@@ -33,19 +36,40 @@ export class MemoryIndex<S extends Schema> implements Index<S> {
     return Promise.resolve(this.data.has(id));
   }
 
-  search(
+  async search(
     query: Query<any>,
     options: SearchOptions<any> = {}
   ): Promise<SearchResult<any, any>> {
     return this.data.search(query, options);
   }
 
-  aggregate(
+  search$(
+    query: Query<any>,
+    options: SearchOptions<any> = {}
+  ): Observable<SearchResult<any, any>> {
+    return merge(of(1), this.broadcast$).pipe(
+      throttleTime(500, undefined, { leading: false, trailing: true }),
+      map(() => this.data.search(query, options))
+    );
+  }
+
+  async aggregate(
     query: Query<any>,
     field: string,
     options: AggregateOptions<any> = {}
   ): Promise<AggregateResult<any, any>> {
     return this.data.aggregate(query, field, options);
+  }
+
+  aggregate$(
+    query: Query<any>,
+    field: string,
+    options: AggregateOptions<any> = {}
+  ): Observable<AggregateResult<S, AggregateOptions<any>>> {
+    return merge(of(1), this.broadcast$).pipe(
+      throttleTime(500, undefined, { leading: false, trailing: true }),
+      map(() => this.data.aggregate(query, field, options))
+    );
   }
 
   clear(): Promise<void> {
@@ -58,7 +82,10 @@ export class MemoryIndexWriter<S extends Schema> implements IndexWriter<S> {
   inserts: Document[] = [];
   deletes: string[] = [];
 
-  constructor(private readonly data: DataStruct) {}
+  constructor(
+    private readonly data: DataStruct,
+    private readonly broadcast$: Subject<number>
+  ) {}
 
   async get(id: string): Promise<Document<S> | null> {
     return (await this.getAll([id]))[0] ?? null;
@@ -78,13 +105,13 @@ export class MemoryIndexWriter<S extends Schema> implements IndexWriter<S> {
     this.delete(document.id);
     this.insert(document);
   }
-  search(
+  async search(
     query: Query<any>,
     options: SearchOptions<any> = {}
   ): Promise<SearchResult<any, any>> {
     return this.data.search(query, options);
   }
-  aggregate(
+  async aggregate(
     query: Query<any>,
     field: string,
     options: AggregateOptions<any> = {}
@@ -98,6 +125,7 @@ export class MemoryIndexWriter<S extends Schema> implements IndexWriter<S> {
     for (const inst of this.inserts) {
       this.data.insert(inst);
     }
+    this.broadcast$.next(1);
     return Promise.resolve();
   }
   rollback(): void {}

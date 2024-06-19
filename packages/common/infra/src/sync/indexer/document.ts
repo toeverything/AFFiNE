@@ -28,7 +28,9 @@ export class Document<S extends Schema = any> {
 
   static from<S extends Schema>(
     id: string,
-    map: Record<keyof S, string | string[]> | Map<keyof S, string | string[]>
+    map:
+      | Partial<Record<keyof S, string | string[]>>
+      | Map<keyof S, string | string[]>
   ): Document<S> {
     const doc = new Document(id);
 

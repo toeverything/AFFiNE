@@ -1,3 +1,5 @@
+import type { Observable } from 'rxjs';
+
 import type { Query } from './query';
 import type { Schema } from './schema';
 
@@ -15,6 +17,18 @@ export interface Searcher<S extends Schema = any> {
     field: keyof S,
     options?: O
   ): Promise<AggregateResult<S, O>>;
+}
+
+export interface Subscriber<S extends Schema = any> {
+  search$<const O extends SearchOptions<S>>(
+    query: Query<S>,
+    options?: O
+  ): Observable<SearchResult<S, O>>;
+  aggregate$<const O extends AggregateOptions<S>>(
+    query: Query<S>,
+    field: keyof S,
+    options?: O
+  ): Observable<AggregateResult<S, O>>;
 }
 
 type ResultPagination = {

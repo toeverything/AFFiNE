@@ -3,7 +3,8 @@
  */
 import 'fake-indexeddb/auto';
 
-import { beforeEach, describe, expect, test } from 'vitest';
+import { map } from 'rxjs';
+import { beforeEach, describe, expect, test, vitest } from 'vitest';
 
 import { defineSchema, Document, type Index } from '..';
 import { IndexedDBIndex } from '../impl/indexeddb';
@@ -21,7 +22,7 @@ describe.each([
   { name: 'memory', backend: MemoryIndex },
   { name: 'idb', backend: IndexedDBIndex },
 ])('index tests($name)', ({ backend }) => {
-  async function initData(
+  async function writeData(
     data: Record<
       string,
       Partial<Record<keyof typeof schema, string | string[]>>
@@ -50,7 +51,7 @@ describe.each([
   });
 
   test('basic', async () => {
-    await initData({
+    await writeData({
       '1': {
         title: 'hello world',
       },
@@ -79,7 +80,7 @@ describe.each([
   });
 
   test('basic integer', async () => {
-    await initData({
+    await writeData({
       '1': {
         title: 'hello world',
         size: '100',
@@ -109,7 +110,7 @@ describe.each([
   });
 
   test('fuzz', async () => {
-    await initData({
+    await writeData({
       '1': {
         title: 'hello world',
       },
@@ -137,7 +138,7 @@ describe.each([
   });
 
   test('highlight', async () => {
-    await initData({
+    await writeData({
       '1': {
         title: 'hello world',
         size: '100',
@@ -181,7 +182,7 @@ describe.each([
   });
 
   test('fields', async () => {
-    await initData({
+    await writeData({
       '1': {
         title: 'hello world',
         tag: ['car', 'bike'],
@@ -206,7 +207,7 @@ describe.each([
   });
 
   test('pagination', async () => {
-    await initData(
+    await writeData(
       Array.from({ length: 100 }).reduce((acc: any, _, i) => {
         acc['apple' + i] = {
           tag: ['apple'],
@@ -275,7 +276,7 @@ describe.each([
   });
 
   test('aggr', async () => {
-    await initData({
+    await writeData({
       '1': {
         title: 'hello world',
         tag: ['car', 'bike'],
@@ -315,7 +316,7 @@ describe.each([
   });
 
   test('hits', async () => {
-    await initData(
+    await writeData(
       Array.from({ length: 100 }).reduce((acc: any, _, i) => {
         acc['apple' + i] = {
           title: 'apple',
@@ -411,5 +412,103 @@ describe.each([
         skip: 0,
       },
     });
+  });
+
+  test('subscribe', async () => {
+    await writeData({
+      '1': {
+        title: 'hello world',
+      },
+    });
+
+    let value = null as any;
+    index
+      .search$({
+        type: 'match',
+        field: 'title',
+        match: 'hello world',
+      })
+      .pipe(map(v => (value = v)))
+      .subscribe();
+
+    await vitest.waitFor(
+      () => {
+        expect(value).toEqual({
+          nodes: [
+            {
+              id: '1',
+              score: expect.anything(),
+            },
+          ],
+          pagination: {
+            count: 1,
+            hasMore: false,
+            limit: expect.anything(),
+            skip: 0,
+          },
+        });
+      },
+      {
+        timeout: 5000,
+      }
+    );
+
+    await writeData({
+      '2': {
+        title: 'hello world',
+      },
+    });
+
+    await vitest.waitFor(
+      () => {
+        expect(value).toEqual({
+          nodes: [
+            {
+              id: '1',
+              score: expect.anything(),
+            },
+            {
+              id: '2',
+              score: expect.anything(),
+            },
+          ],
+          pagination: {
+            count: 2,
+            hasMore: false,
+            limit: expect.anything(),
+            skip: 0,
+          },
+        });
+      },
+      {
+        timeout: 5000,
+      }
+    );
+
+    const writer = await index.write();
+    writer.delete('1');
+    await writer.commit();
+
+    await vitest.waitFor(
+      () => {
+        expect(value).toEqual({
+          nodes: [
+            {
+              id: '2',
+              score: expect.anything(),
+            },
+          ],
+          pagination: {
+            count: 1,
+            hasMore: false,
+            limit: expect.anything(),
+            skip: 0,
+          },
+        });
+      },
+      {
+        timeout: 5000,
+      }
+    );
   });
 });
