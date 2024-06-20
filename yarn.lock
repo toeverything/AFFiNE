@@ -422,7 +422,7 @@ __metadata:
     "@types/image-blob-reduce": "npm:^4.1.4"
     "@types/lodash-es": "npm:^4.17.12"
     "@types/mixpanel-browser": "npm:^2.49.0"
-    "@types/uuid": "npm:^9.0.8"
+    "@types/uuid": "npm:^10.0.0"
     "@vanilla-extract/css": "npm:^1.14.2"
     "@vanilla-extract/dynamic": "npm:^2.1.0"
     animejs: "npm:^3.2.2"
@@ -532,7 +532,7 @@ __metadata:
     "@sentry/esbuild-plugin": "npm:^2.16.1"
     "@sentry/react": "npm:^8.0.0"
     "@toeverything/infra": "workspace:*"
-    "@types/uuid": "npm:^9.0.8"
+    "@types/uuid": "npm:^10.0.0"
     "@vitejs/plugin-react-swc": "npm:^3.6.0"
     async-call-rpc: "npm:^6.4.2"
     builder-util-runtime: "npm:^9.2.5-alpha.2"
@@ -693,7 +693,7 @@ __metadata:
   dependencies:
     "@napi-rs/cli": "npm:3.0.0-alpha.55"
     "@types/node": "npm:^20.12.7"
-    "@types/uuid": "npm:^9.0.8"
+    "@types/uuid": "npm:^10.0.0"
     ava: "npm:^6.1.2"
     cross-env: "npm:^7.0.3"
     nx: "npm:^19.0.0"
@@ -15830,7 +15830,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/uuid@npm:^9.0.1, @types/uuid@npm:^9.0.8":
+"@types/uuid@npm:^10.0.0":
+  version: 10.0.0
+  resolution: "@types/uuid@npm:10.0.0"
+  checksum: 10/e3958f8b0fe551c86c14431f5940c3470127293280830684154b91dc7eb3514aeb79fe3216968833cf79d4d1c67f580f054b5be2cd562bebf4f728913e73e944
+  languageName: node
+  linkType: hard
+
+"@types/uuid@npm:^9.0.1":
   version: 9.0.8
   resolution: "@types/uuid@npm:9.0.8"
   checksum: 10/b8c60b7ba8250356b5088302583d1704a4e1a13558d143c549c408bf8920535602ffc12394ede77f8a8083511b023704bc66d1345792714002bfa261b17c5275
