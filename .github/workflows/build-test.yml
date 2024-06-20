@@ -165,7 +165,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: test-results-e2e-migration
-          path: ./tests/affine-migration/test-results
+          path: ./test-results
           if-no-files-found: ignore
 
   unit-test:
@@ -449,7 +449,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: test-results-e2e-server
-          path: ./tests/affine-cloud/test-results
+          path: ./test-results
           if-no-files-found: ignore
 
   desktop-test:
