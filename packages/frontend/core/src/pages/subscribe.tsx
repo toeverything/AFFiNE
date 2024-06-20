@@ -53,6 +53,10 @@ export const Component = () => {
               : !!subscriptionService.subscription.pro$.value;
           if (!subscribed) {
             setMessage('Creating checkout...');
+            mixpanel.track('PlanUpgradeStarted', {
+              type: plan,
+              category: recurring,
+            });
             try {
               const checkout = await subscriptionService.createCheckoutSession({
                 idempotencyKey,

@@ -224,7 +224,16 @@ const SubscriptionSettings = () => {
               >
                 <SettingRow
                   style={{ cursor: 'pointer' }}
-                  onClick={() => setOpenCancelModal(true)}
+                  onClick={() => {
+                    mixpanel.track('PlanChangeStarted', {
+                      segment: 'settings panel',
+                      module: 'billing subscription list',
+                      control: 'plan cancel action',
+                      type: proSubscription.plan,
+                      category: proSubscription.recurring,
+                    });
+                    setOpenCancelModal(true);
+                  }}
                   className="dangerous-setting"
                   name={t[
                     'com.affine.payment.billing-setting.cancel-subscription'
@@ -369,10 +378,21 @@ const PaymentMethodUpdater = () => {
 const ResumeSubscription = () => {
   const t = useI18n();
   const [open, setOpen] = useState(false);
+  const subscription = useService(SubscriptionService).subscription;
+  const handleClick = useCallback(() => {
+    setOpen(true);
+    mixpanel.track('PlanChangeStarted', {
+      segment: 'settings panel',
+      module: 'pricing plan list',
+      control: 'plan resume action',
+      type: subscription.pro$.value?.plan,
+      category: subscription.pro$.value?.recurring,
+    });
+  }, [subscription.pro$.value?.plan, subscription.pro$.value?.recurring]);
 
   return (
     <ResumeAction open={open} onOpenChange={setOpen}>
-      <Button className={styles.button} onClick={() => setOpen(true)}>
+      <Button className={styles.button} onClick={handleClick}>
         {t['com.affine.payment.billing-setting.resume-subscription']()}
       </Button>
     </ResumeAction>

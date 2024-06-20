@@ -1,4 +1,5 @@
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
+import { mixpanel } from '@affine/core/utils';
 import { useService } from '@toeverything/infra';
 import { nanoid } from 'nanoid';
 import type { PropsWithChildren } from 'react';
@@ -33,6 +34,13 @@ export const CancelAction = ({
       // refresh idempotency key
       setIdempotencyKey(nanoid());
       onOpenChange(false);
+      mixpanel.track('ChangePlanSucceeded', {
+        segment: 'settings panel',
+        module: 'pricing plan list',
+        control: 'plan cancel action',
+        type: subscription.pro$.value?.plan,
+        category: subscription.pro$.value?.recurring,
+      });
     } finally {
       setIsMutating(false);
     }
@@ -78,6 +86,13 @@ export const ResumeAction = ({
       // refresh idempotency key
       setIdempotencyKey(nanoid());
       onOpenChange(false);
+      mixpanel.track('ChangePlanSucceeded', {
+        segment: 'settings panel',
+        module: 'pricing plan list',
+        control: 'plan resume action',
+        type: subscription.pro$.value?.plan,
+        category: subscription.pro$.value?.recurring,
+      });
     } finally {
       setIsMutating(false);
     }

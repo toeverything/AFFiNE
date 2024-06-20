@@ -42,7 +42,7 @@ export const AISubscribe = ({ ...btnProps }: AISubscribeProps) => {
 
   const subscribe = useAsyncCallback(async () => {
     setMutating(true);
-    mixpanel.track('plan upgrade started', {
+    mixpanel.track('PlanUpgradeStarted', {
       category: SubscriptionRecurring.Yearly,
       type: SubscriptionPlan.AI,
     });
