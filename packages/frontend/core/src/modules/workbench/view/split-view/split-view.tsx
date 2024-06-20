@@ -1,4 +1,3 @@
-import { HubIsland } from '@affine/core/components/affine/hub-island';
 import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
 import type { DragEndEvent } from '@dnd-kit/core';
 import {
@@ -116,7 +115,6 @@ export const SplitView = ({
       data-client-border={appSettings.clientBorder}
       {...attrs}
     >
-      <HubIsland />
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}

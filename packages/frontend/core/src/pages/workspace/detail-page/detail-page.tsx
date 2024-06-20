@@ -2,6 +2,10 @@ import { Scrollable } from '@affine/component';
 import { PageDetailSkeleton } from '@affine/component/page-detail-skeleton';
 import { AIProvider } from '@affine/core/blocksuite/presets/ai';
 import { PageAIOnboarding } from '@affine/core/components/affine/ai-onboarding';
+import {
+  AIIsland,
+  RIGHT_SIDEBAR_TABS_ACTIVE_KEY,
+} from '@affine/core/components/pure/ai-island';
 import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
 import { RecentPagesService } from '@affine/core/modules/cmdk';
 import type { PageRootService } from '@blocksuite/blocks';
@@ -64,8 +68,6 @@ import { performanceRenderLogger } from '../../../shared';
 import { PageNotFound } from '../../404';
 import * as styles from './detail-page.css';
 import { DetailPageHeader } from './detail-page-header';
-
-const RIGHT_SIDEBAR_TABS_ACTIVE_KEY = 'app:settings:rightsidebar:tabs:active';
 
 const DetailPageImpl = memo(function DetailPageImpl() {
   const globalState = useService(GlobalStateService).globalState;
@@ -237,6 +239,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
       </ViewHeaderIsland>
       <ViewBodyIsland>
         <div className={styles.mainContainer}>
+          <AIIsland />
           {/* Add a key to force rerender when page changed, to avoid error boundary persisting. */}
           <AffineErrorBoundary key={doc.id}>
             <TopTip pageId={doc.id} workspace={workspace} />
