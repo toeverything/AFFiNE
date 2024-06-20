@@ -4,7 +4,7 @@ import {
   useNavigateHelper,
 } from '@affine/core/hooks/use-navigate-helper';
 import { AuthService } from '@affine/core/modules/cloud';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { AiIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
 import { cssVar } from '@toeverything/theme';
@@ -30,7 +30,7 @@ const LocalOnboardingAnimation = () => {
 };
 
 const FooterActions = ({ onDismiss }: { onDismiss: () => void }) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const authService = useService(AuthService);
   const loginStatus = useLiveData(authService.session.status$);
   const loggedIn = loginStatus === 'authenticated';
@@ -64,7 +64,7 @@ const FooterActions = ({ onDismiss }: { onDismiss: () => void }) => {
 };
 
 export const AIOnboardingLocal = () => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const authService = useService(AuthService);
   const notifyId = useLiveData(localNotifyId$);
   const timeoutRef = useRef<ReturnType<typeof setTimeout>>();

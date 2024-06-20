@@ -13,7 +13,7 @@ import {
   sendSetPasswordEmailMutation,
   sendVerifyEmailMutation,
 } from '@affine/graphql';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useCallback, useState } from 'react';
 
@@ -22,7 +22,7 @@ import { ServerConfigService } from '../../../modules/cloud';
 import type { AuthPanelProps } from './index';
 
 const useEmailTitle = (emailType: AuthPanelProps['emailType']) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
 
   switch (emailType) {
     case 'setPassword':
@@ -37,7 +37,7 @@ const useEmailTitle = (emailType: AuthPanelProps['emailType']) => {
 };
 
 const useNotificationHint = (emailType: AuthPanelProps['emailType']) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
 
   switch (emailType) {
     case 'setPassword':
@@ -50,7 +50,7 @@ const useNotificationHint = (emailType: AuthPanelProps['emailType']) => {
   }
 };
 const useButtonContent = (emailType: AuthPanelProps['emailType']) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
 
   switch (emailType) {
     case 'setPassword':
@@ -138,7 +138,7 @@ export const SendEmail = ({
   email,
   emailType,
 }: AuthPanelProps) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const serverConfig = useService(ServerConfigService).serverConfig;
 
   const passwordLimits = useLiveData(

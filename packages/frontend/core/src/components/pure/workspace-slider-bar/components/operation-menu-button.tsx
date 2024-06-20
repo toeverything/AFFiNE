@@ -3,7 +3,7 @@ import { IconButton } from '@affine/component/ui/button';
 import { Menu } from '@affine/component/ui/menu';
 import { FavoriteItemsAdapter } from '@affine/core/modules/properties';
 import { WorkbenchService } from '@affine/core/modules/workbench';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { MoreHorizontalIcon } from '@blocksuite/icons/rc';
 import type { DocCollection } from '@blocksuite/store';
 import { useService } from '@toeverything/infra';
@@ -35,7 +35,7 @@ export const OperationMenuButton = ({ ...props }: OperationMenuButtonProps) => {
     inFavorites,
     isReferencePage,
   } = props;
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const { createLinkedPage } = usePageHelper(docCollection);
   const { setTrashModal } = useTrashModalHelper(docCollection);
 

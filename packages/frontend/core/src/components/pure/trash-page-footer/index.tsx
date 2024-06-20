@@ -1,7 +1,7 @@
 import { Button } from '@affine/component/ui/button';
 import { ConfirmModal } from '@affine/component/ui/modal';
 import { Tooltip } from '@affine/component/ui/tooltip';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { DeleteIcon, ResetIcon } from '@blocksuite/icons/rc';
 import { DocService, useService, WorkspaceService } from '@toeverything/infra';
 import { useCallback, useState } from 'react';
@@ -17,7 +17,7 @@ export const TrashPageFooter = () => {
   const workspace = useService(WorkspaceService).workspace;
   const docCollection = workspace.docCollection;
   const doc = useService(DocService).doc;
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const { appSettings } = useAppSettingHelper();
   const { jumpToSubPath } = useNavigateHelper();
   const { restoreFromTrash } = useBlockSuiteMetaHelper(docCollection);

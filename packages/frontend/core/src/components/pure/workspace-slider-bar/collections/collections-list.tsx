@@ -20,7 +20,7 @@ import {
 import { CollectionService } from '@affine/core/modules/collection';
 import { FavoriteItemsAdapter } from '@affine/core/modules/properties';
 import type { Collection } from '@affine/env/filter';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import {
   MoreHorizontalIcon,
   PlusIcon,
@@ -67,7 +67,7 @@ export const CollectionSidebarNavItem = ({
   const favAdapter = useService(FavoriteItemsAdapter);
   const { createPage } = usePageHelper(docCollection);
   const { openConfirmModal } = useConfirmModal();
-  const t = useAFFiNEI18N();
+  const t = useI18n();
 
   const favourites = useLiveData(favAdapter.favorites$);
 
@@ -255,7 +255,7 @@ export const CollectionsList = ({
   onCreate,
 }: CollectionsListProps) => {
   const collections = useLiveData(useService(CollectionService).collections$);
-  const t = useAFFiNEI18N();
+  const t = useI18n();
 
   if (collections.length === 0) {
     return (

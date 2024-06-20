@@ -1,8 +1,7 @@
 import { toast, useConfirmModal } from '@affine/component';
 import { useBlockSuiteMetaHelper } from '@affine/core/hooks/affine/use-block-suite-meta-helper';
 import { useBlockSuiteDocMeta } from '@affine/core/hooks/use-block-suite-page-meta';
-import { Trans } from '@affine/i18n';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { Trans, useI18n } from '@affine/i18n';
 import type { DocMeta } from '@blocksuite/store';
 import { useService, WorkspaceService } from '@toeverything/infra';
 import { useCallback, useMemo, useRef, useState } from 'react';
@@ -34,7 +33,7 @@ export const VirtualizedTrashList = () => {
   const [selectedPageIds, setSelectedPageIds] = useState<string[]>([]);
 
   const { openConfirmModal } = useConfirmModal();
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const pageHeaderColsDef = usePageHeaderColsDef();
 
   const filteredSelectedPageIds = useMemo(() => {

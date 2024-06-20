@@ -5,7 +5,7 @@ import { useDeleteCollectionInfo } from '@affine/core/hooks/affine/use-delete-co
 import { FavoriteItemsAdapter } from '@affine/core/modules/properties';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import type { Collection } from '@affine/env/filter';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import {
   DeleteIcon,
   EditIcon,
@@ -45,7 +45,7 @@ export const CollectionOperations = ({
   const workbench = useService(WorkbenchService).workbench;
   const { open: openEditCollectionModal, node: editModal } =
     useEditCollection(config);
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const { open: openEditCollectionNameModal, node: editNameModal } =
     useEditCollectionName({
       title: t['com.affine.editCollection.renameCollection'](),

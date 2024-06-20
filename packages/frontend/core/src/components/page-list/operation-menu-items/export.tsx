@@ -1,5 +1,5 @@
 import { MenuIcon, MenuItem, MenuSub } from '@affine/component';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import {
   ExportIcon,
   ExportToHtmlIcon,
@@ -51,7 +51,7 @@ export const ExportMenuItems = ({
   className = transitionStyle,
   pageMode = 'page',
 }: ExportProps) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const itemMap = useMemo(
     () => [
       {
@@ -107,7 +107,7 @@ export const ExportMenuItems = ({
 };
 
 export const Export = ({ exportHandler, className, pageMode }: ExportProps) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const items = (
     <ExportMenuItems
       exportHandler={exportHandler}

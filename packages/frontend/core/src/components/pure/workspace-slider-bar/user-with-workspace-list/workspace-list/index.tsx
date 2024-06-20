@@ -8,7 +8,7 @@ import {
 } from '@affine/core/hooks/use-workspace-info';
 import { AuthService } from '@affine/core/modules/cloud';
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { CloudWorkspaceIcon, LocalWorkspaceIcon } from '@blocksuite/icons/rc';
 import type { WorkspaceMetadata } from '@toeverything/infra';
 import {
@@ -53,7 +53,7 @@ const CloudWorkSpaceList = ({
   onClickWorkspaceSetting,
   currentWorkspaceId,
 }: WorkspaceModalProps) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   if (workspaces.length === 0) {
     return null;
   }
@@ -89,7 +89,7 @@ const LocalWorkspaces = ({
   openingId,
   currentWorkspaceId,
 }: WorkspaceModalProps) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   if (workspaces.length === 0) {
     return null;
   }

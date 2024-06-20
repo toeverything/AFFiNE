@@ -2,7 +2,7 @@ import {
   SettingHeader,
   SettingWrapper,
 } from '@affine/component/setting-components';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 
 import type { ShortcutsInfo } from '../../../../../hooks/affine/use-shortcuts';
 import {
@@ -41,7 +41,7 @@ const ShortcutsPanel = ({
 };
 
 export const Shortcuts = () => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
 
   const markdownShortcutsInfo = useMarkdownShortcuts();
   const pageShortcutsInfo = usePageShortcuts();

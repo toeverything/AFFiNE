@@ -3,7 +3,7 @@ import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { SubscriptionService } from '@affine/core/modules/cloud';
 import { mixpanel, popupWindow } from '@affine/core/utils';
 import { SubscriptionPlan, SubscriptionRecurring } from '@affine/graphql';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { useLiveData, useService } from '@toeverything/infra';
 import { nanoid } from 'nanoid';
 import { useEffect, useState } from 'react';
@@ -21,7 +21,7 @@ export const AISubscribe = ({ ...btnProps }: AISubscribeProps) => {
     subscriptionService.prices.revalidate();
   }, [subscriptionService]);
 
-  const t = useAFFiNEI18N();
+  const t = useI18n();
 
   useEffect(() => {
     if (isOpenedExternalWindow) {

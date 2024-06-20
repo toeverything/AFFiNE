@@ -1,4 +1,4 @@
-import type { useAFFiNEI18N } from '@affine/i18n/hooks';
+import type { useI18n } from '@affine/i18n';
 import { SettingsIcon } from '@blocksuite/icons/rc';
 import type { AffineEditorContainer } from '@blocksuite/presets';
 import { appSettingAtom } from '@toeverything/infra';
@@ -14,7 +14,7 @@ export function registerAffineSettingsCommands({
   theme,
   languageHelper,
 }: {
-  t: ReturnType<typeof useAFFiNEI18N>;
+  t: ReturnType<typeof useI18n>;
   store: ReturnType<typeof createStore>;
   theme: ReturnType<typeof useTheme>;
   languageHelper: ReturnType<typeof useLanguageHelper>;

@@ -1,5 +1,5 @@
 import { MenuIcon, MenuItem } from '@affine/component';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import {
   ExpandCloseIcon,
   MoveToLeftDuotoneIcon,
@@ -115,7 +115,7 @@ export const SplitViewPanel = memo(function SplitViewPanel({
 });
 
 const SplitViewMenu = ({ view }: { view: View }) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const workbench = useService(WorkbenchService).workbench;
   const views = useLiveData(workbench.views$);
 

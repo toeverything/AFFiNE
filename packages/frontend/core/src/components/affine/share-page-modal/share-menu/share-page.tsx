@@ -16,7 +16,7 @@ import { ShareService } from '@affine/core/modules/share-doc';
 import { mixpanel } from '@affine/core/utils';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { PublicPageMode } from '@affine/graphql';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import {
   ArrowRightSmallIcon,
   SingleSelectSelectSolidIcon,
@@ -36,7 +36,7 @@ import * as styles from './index.css';
 import type { ShareMenuProps } from './share-menu';
 
 export const LocalSharePage = (props: ShareMenuProps) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
 
   return (
     <div className={styles.localSharePage}>
@@ -95,7 +95,7 @@ export const AffineSharePage = (props: ShareMenuProps) => {
     urlType: 'share',
   });
 
-  const t = useAFFiNEI18N();
+  const t = useI18n();
 
   const onClickCreateLink = useAsyncCallback(async () => {
     try {

@@ -1,6 +1,6 @@
 import { AuthPageContainer } from '@affine/component/auth-components';
 import type { GetInviteInfoQuery } from '@affine/graphql';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 
 import { Avatar } from '../../ui/avatar';
 import { Button } from '../../ui/button';
@@ -13,7 +13,7 @@ export const AcceptInvitePage = ({
   onOpenWorkspace: () => void;
   inviteInfo: GetInviteInfoQuery['getInviteInfo'];
 }) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   return (
     <AuthPageContainer
       title={t['Successfully joined!']()}

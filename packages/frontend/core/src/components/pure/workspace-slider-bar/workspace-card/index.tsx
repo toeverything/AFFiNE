@@ -8,7 +8,7 @@ import { useWorkspaceInfo } from '@affine/core/hooks/use-workspace-info';
 import { WorkspacePermissionService } from '@affine/core/modules/permissions';
 import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import {
   CloudWorkspaceIcon,
   InformationFillDuotoneIcon,
@@ -78,7 +78,7 @@ const OfflineStatus = () => {
 };
 
 const useSyncEngineSyncProgress = () => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const isOnline = useSystemOnline();
   const { syncing, progress, retrying, errorMessage } = useDocEngineStatus();
   const [isOverCapacity, setIsOverCapacity] = useState(false);

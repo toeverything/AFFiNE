@@ -1,7 +1,7 @@
 import { Checkbox } from '@affine/component';
 import { getDNDId } from '@affine/core/hooks/affine/use-global-dnd-helper';
 import { WorkbenchLink } from '@affine/core/modules/workbench';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { useDraggable } from '@dnd-kit/core';
 import type { PropsWithChildren } from 'react';
 import { useCallback, useMemo } from 'react';
@@ -15,7 +15,7 @@ const TagListTitleCell = ({
   title,
   pageCount,
 }: Pick<TagListItemProps, 'title' | 'pageCount'>) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   return (
     <div data-testid="tag-list-item-title" className={styles.titleCell}>
       <div

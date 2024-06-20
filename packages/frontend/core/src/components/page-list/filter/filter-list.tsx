@@ -1,6 +1,6 @@
 import { Button, IconButton, Menu } from '@affine/component';
 import type { Filter, PropertiesMeta } from '@affine/env/filter';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { CloseIcon, PlusIcon } from '@blocksuite/icons/rc';
 
 import { Condition } from './condition';
@@ -16,7 +16,7 @@ export const FilterList = ({
   onChange: (value: Filter[]) => void;
   propertiesMeta: PropertiesMeta;
 }) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   return (
     <div
       style={{

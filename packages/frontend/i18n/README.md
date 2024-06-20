@@ -6,8 +6,7 @@
 - Replace literal text with translation keys
 
 ```tsx
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { LOCALES, useI18N } from '@affine/i18n';
+import { useI18n, LOCALES } from '@affine/i18n';
 // src/resources/en.json
 // {
 //     'Text': 'some text',
@@ -15,15 +14,14 @@ import { LOCALES, useI18N } from '@affine/i18n';
 // };
 
 const App = () => {
-  const t = useAFFiNEI18N();
-  const i18n = useI18N();
+  const i18n = useI18n();
   const changeLanguage = (language: string) => {
     i18n.changeLanguage(language);
   };
 
   return (
     <div>
-      <div>{t['Workspace Settings']()}</div>
+      <div>{i18n['Workspace Settings']()}</div>
       <>
         {LOCALES.map(option => {
           return (

@@ -2,7 +2,7 @@
 // License on the MIT
 // https://github.com/emilkowalski/sonner/blob/5cb703edc108a23fd74979235c2f3c4005edd2a7/src/index.tsx
 
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { CloseIcon, InformationFillDuotoneIcon } from '@blocksuite/icons/rc';
 import * as Toast from '@radix-ui/react-toast';
 import clsx from 'clsx';
@@ -72,7 +72,7 @@ const typeColorMap = {
 };
 
 function NotificationCard(props: NotificationCardProps): ReactNode {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const removeNotification = useSetAtom(removeNotificationAtom);
   const { notification, notifications, setHeights, heights, index } = props;
 

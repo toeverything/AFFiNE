@@ -3,7 +3,7 @@ import { SettingRow } from '@affine/component/setting-components';
 import { Button } from '@affine/component/ui/button';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { useAppUpdater } from '@affine/core/hooks/use-app-updater';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import clsx from 'clsx';
 import { useCallback, useMemo, useState } from 'react';
 
@@ -17,7 +17,7 @@ enum CheckUpdateStatus {
 }
 
 const useUpdateStatusLabels = (checkUpdateStatus: CheckUpdateStatus) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const { updateAvailable, downloadProgress, updateReady, checkingForUpdates } =
     useAppUpdater();
 
@@ -91,7 +91,7 @@ const useUpdateStatusLabels = (checkUpdateStatus: CheckUpdateStatus) => {
 };
 
 export const UpdateCheckSection = () => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const {
     checkForUpdates,
     downloadUpdate,

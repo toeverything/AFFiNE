@@ -6,8 +6,7 @@ import { openSettingModalAtom } from '@affine/core/atoms';
 import { useDocCollectionPageTitle } from '@affine/core/hooks/use-block-suite-workspace-page-title';
 import { WorkspacePermissionService } from '@affine/core/modules/permissions';
 import { WorkspaceQuotaService } from '@affine/core/modules/quota';
-import { i18nTime, Trans } from '@affine/i18n';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { i18nTime, Trans, useI18n } from '@affine/i18n';
 import { CloseIcon, ToggleCollapseIcon } from '@blocksuite/icons/rc';
 import type { Doc as BlockSuiteDoc, DocCollection } from '@blocksuite/store';
 import * as Collapsible from '@radix-ui/react-collapsible';
@@ -234,7 +233,7 @@ const PlanPrompt = () => {
     });
   }, [setSettingModalAtom]);
 
-  const t = useAFFiNEI18N();
+  const t = useI18n();
 
   const planTitle = useMemo(() => {
     return (
@@ -315,7 +314,7 @@ const PageHistoryList = ({
   onLoadMore: (() => void) | false;
   loadingMore: boolean;
 }) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const historyListByDay = useMemo(() => {
     return historyListGroupByDay(historyList);
   }, [historyList]);
@@ -410,7 +409,7 @@ const PageHistoryList = ({
 };
 
 const EmptyHistoryPrompt = () => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
 
   return (
     <div
@@ -447,7 +446,7 @@ const PageHistoryManager = ({
 
   const snapshotPage = useSnapshotPage(docCollection, pageDocId, activeVersion);
 
-  const t = useAFFiNEI18N();
+  const t = useI18n();
 
   const { onRestore, isMutating } = useRestorePage(docCollection, pageId);
 

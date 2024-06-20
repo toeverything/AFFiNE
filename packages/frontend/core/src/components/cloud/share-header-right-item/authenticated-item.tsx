@@ -1,6 +1,6 @@
 import { Button } from '@affine/component/ui/button';
 import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import {
   useLiveData,
   useService,
@@ -20,7 +20,7 @@ export const AuthenticatedItem = ({
   const workspacesService = useService(WorkspacesService);
   const workspaces = useLiveData(workspacesService.list.workspaces$);
   const isMember = workspaces?.some(workspace => workspace.id === workspaceId);
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const { jumpToPage } = useNavigateHelper();
 
   const handleEdit = useCallback(() => {

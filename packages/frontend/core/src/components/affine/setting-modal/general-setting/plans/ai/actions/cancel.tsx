@@ -2,14 +2,14 @@ import { Button, type ButtonProps, useConfirmModal } from '@affine/component';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { SubscriptionService } from '@affine/core/modules/cloud';
 import { SubscriptionPlan } from '@affine/graphql';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { useService } from '@toeverything/infra';
 import { nanoid } from 'nanoid';
 import { useState } from 'react';
 
 export interface AICancelProps extends ButtonProps {}
 export const AICancel = ({ ...btnProps }: AICancelProps) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const [isMutating, setMutating] = useState(false);
   const [idempotencyKey, setIdempotencyKey] = useState(nanoid());
   const subscription = useService(SubscriptionService).subscription;

@@ -1,6 +1,6 @@
 import { Tooltip } from '@affine/component/ui/tooltip';
 import { popupWindow } from '@affine/core/utils';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { CloseIcon, NewIcon } from '@blocksuite/icons/rc';
 import {
   DocsService,
@@ -41,7 +41,7 @@ export const HelpIsland = () => {
   const mode = useLiveData(doc?.mode$);
   const setOpenSettingModalAtom = useSetAtom(openSettingModalAtom);
   const [spread, setShowSpread] = useState(false);
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const openSettingModal = useCallback(
     (tab: SettingProps['activeTab']) => {
       setShowSpread(false);

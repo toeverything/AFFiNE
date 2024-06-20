@@ -1,7 +1,6 @@
 import { Button, Menu } from '@affine/component';
 import { FavoriteItemsAdapter } from '@affine/core/modules/properties';
-import { Trans } from '@affine/i18n';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { Trans, useI18n } from '@affine/i18n';
 import { FilterIcon } from '@blocksuite/icons/rc';
 import type { DocMeta } from '@blocksuite/store';
 import { useLiveData, useService } from '@toeverything/infra';
@@ -29,7 +28,7 @@ export const SelectPage = ({
   onConfirm: (pageIds: string[]) => void;
   onCancel: () => void;
 }) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const [value, onChange] = useState(init);
   const confirm = useCallback(() => {
     onConfirm(value);
@@ -169,7 +168,7 @@ export const SelectPage = ({
   );
 };
 export const EmptyList = ({ search }: { search?: string }) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   return (
     <div
       style={{

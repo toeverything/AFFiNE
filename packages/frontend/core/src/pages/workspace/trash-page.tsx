@@ -4,7 +4,7 @@ import {
 } from '@affine/core/components/page-list';
 import { Header } from '@affine/core/components/pure/header';
 import { useBlockSuiteDocMeta } from '@affine/core/hooks/use-block-suite-page-meta';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { assertExists } from '@blocksuite/global/utils';
 import { DeleteIcon } from '@blocksuite/icons/rc';
 import { useService, WorkspaceService } from '@toeverything/infra';
@@ -14,7 +14,7 @@ import { EmptyPageList } from './page-list-empty';
 import * as styles from './trash-page.css';
 
 const TrashHeader = () => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   return (
     <Header
       left={

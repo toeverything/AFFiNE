@@ -4,8 +4,7 @@ import type {
   PageInfoCustomPropertyMeta,
   PagePropertyType,
 } from '@affine/core/modules/properties/services/schema';
-import { i18nTime } from '@affine/i18n';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { i18nTime, useI18n } from '@affine/i18n';
 import { DocService, useService } from '@toeverything/infra';
 import { noop } from 'lodash-es';
 import type { ChangeEventHandler } from 'react';
@@ -40,7 +39,7 @@ export const DateValue = ({ property }: PropertyRowValueProps) => {
     [manager, property.id]
   );
 
-  const t = useAFFiNEI18N();
+  const t = useI18n();
 
   return (
     <Menu items={<DatePicker value={property.value} onChange={handleChange} />}>
@@ -102,7 +101,7 @@ export const TextValue = ({ property }: PropertyRowValueProps) => {
     },
     []
   );
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   useEffect(() => {
     setValue(property.value);
   }, [property.value]);
@@ -148,7 +147,7 @@ export const NumberValue = ({ property }: PropertyRowValueProps) => {
     },
     []
   );
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   useEffect(() => {
     setValue(property.value);
   }, [property.value]);
@@ -169,7 +168,7 @@ export const NumberValue = ({ property }: PropertyRowValueProps) => {
 export const TagsValue = () => {
   const doc = useService(DocService).doc;
 
-  const t = useAFFiNEI18N();
+  const t = useI18n();
 
   return (
     <TagsInlineEditor

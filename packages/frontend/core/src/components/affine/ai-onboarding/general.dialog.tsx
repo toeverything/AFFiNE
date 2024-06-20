@@ -3,8 +3,7 @@ import { openSettingModalAtom } from '@affine/core/atoms';
 import { useBlurRoot } from '@affine/core/hooks/use-blur-root';
 import { AuthService, SubscriptionService } from '@affine/core/modules/cloud';
 import { mixpanel } from '@affine/core/utils';
-import { Trans } from '@affine/i18n';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { Trans, useI18n } from '@affine/i18n';
 import { ArrowLeftSmallIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useServices } from '@toeverything/infra';
 import { useAtom } from 'jotai';
@@ -18,7 +17,7 @@ import { Slider } from './slider';
 import { showAIOnboardingGeneral$ } from './state';
 
 type PlayListItem = { video: string; title: ReactNode; desc: ReactNode };
-type Translate = ReturnType<typeof useAFFiNEI18N>;
+type Translate = ReturnType<typeof useI18n>;
 
 const getPlayList = (t: Translate): Array<PlayListItem> => [
   {
@@ -92,7 +91,7 @@ export const AIOnboardingGeneral = () => {
   const prevVideoRef = useRef<HTMLVideoElement | null>(null);
   const loginStatus = useLiveData(authService.session.status$);
   const isLoggedIn = loginStatus === 'authenticated';
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const open = useLiveData(showAIOnboardingGeneral$);
   const aiSubscription = useLiveData(subscriptionService.subscription.ai$);
   const [index, setIndex] = useState(0);

@@ -7,8 +7,7 @@ import {
 } from '@affine/component/auth-components';
 import { Button } from '@affine/component/ui/button';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import { Trans } from '@affine/i18n';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { Trans, useI18n } from '@affine/i18n';
 import { useLiveData, useService } from '@toeverything/infra';
 import type { FC } from 'react';
 import { useCallback, useEffect, useState } from 'react';
@@ -36,7 +35,7 @@ export const AfterSignUpSendEmail: FC<AuthPanelProps> = ({
   }, []);
 
   const [isSending, setIsSending] = useState(false);
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const authService = useService(AuthService);
   const loginStatus = useLiveData(authService.session.status$);
   useEffect(() => {

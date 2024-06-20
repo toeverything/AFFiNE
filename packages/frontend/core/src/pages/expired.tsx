@@ -1,12 +1,12 @@
 import { AuthPageContainer } from '@affine/component/auth-components';
 import { Button } from '@affine/component/ui/button';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { useCallback } from 'react';
 
 import { RouteLogic, useNavigateHelper } from '../hooks/use-navigate-helper';
 
 export const Component = () => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const { jumpToIndex } = useNavigateHelper();
   const onOpenAffine = useCallback(() => {
     jumpToIndex(RouteLogic.REPLACE);

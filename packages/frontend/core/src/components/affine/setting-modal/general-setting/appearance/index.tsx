@@ -4,7 +4,7 @@ import {
   SettingRow,
   SettingWrapper,
 } from '@affine/component/setting-components';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import type { AppSetting } from '@toeverything/infra';
 import { fontStyleOptions, windowFrameStyleOptions } from '@toeverything/infra';
 import { useTheme } from 'next-themes';
@@ -16,7 +16,7 @@ import { DateFormatSetting } from './date-format-setting';
 import { settingWrapper } from './style.css';
 
 export const ThemeSettings = () => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const { setTheme, theme } = useTheme();
 
   return (
@@ -45,7 +45,7 @@ export const ThemeSettings = () => {
 };
 
 const FontFamilySettings = () => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const { appSettings, updateSettings } = useAppSettingHelper();
   return (
     <RadioButtonGroup
@@ -92,7 +92,7 @@ const FontFamilySettings = () => {
 };
 
 export const AppearanceSettings = () => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
 
   const { appSettings, updateSettings } = useAppSettingHelper();
 

@@ -2,7 +2,7 @@ import { Button, Checkbox, Loading, Switch } from '@affine/component';
 import { SettingHeader } from '@affine/component/setting-components';
 import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { useAtom } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
 import { Suspense, useCallback, useState } from 'react';
@@ -15,7 +15,7 @@ const ExperimentalFeaturesPrompt = ({
 }: {
   onConfirm: () => void;
 }) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const [checked, setChecked] = useState(false);
 
   const onChange: (
@@ -160,7 +160,7 @@ const BlocksuiteFeatureFlagSettings = () => {
 };
 
 const ExperimentalFeaturesMain = () => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
 
   return (
     <>

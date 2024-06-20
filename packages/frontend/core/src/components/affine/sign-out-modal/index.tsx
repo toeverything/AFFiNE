@@ -1,6 +1,6 @@
 import type { ConfirmModalProps } from '@affine/component/ui/modal';
 import { ConfirmModal } from '@affine/component/ui/modal';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { useMemo } from 'react';
 
 type SignOutConfirmModalI18NKeys =
@@ -11,7 +11,7 @@ type SignOutConfirmModalI18NKeys =
 
 export const SignOutModal = ({ ...props }: ConfirmModalProps) => {
   const { title, description, cancelText, confirmButtonOptions = {} } = props;
-  const t = useAFFiNEI18N();
+  const t = useI18n();
 
   const defaultTexts = useMemo(() => {
     const getDefaultText = (key: SignOutConfirmModalI18NKeys) => {

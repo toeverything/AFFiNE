@@ -1,5 +1,5 @@
 import { IconButton, Tooltip } from '@affine/component';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { ArrowLeftSmallIcon, ArrowRightSmallIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useCallback, useEffect, useMemo } from 'react';
@@ -9,7 +9,7 @@ import { NavigatorService } from '../services/navigator';
 import * as styles from './navigation-buttons.css';
 
 export const NavigationButtons = () => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
 
   const shortcuts = useGeneralShortcuts().shortcuts;
 

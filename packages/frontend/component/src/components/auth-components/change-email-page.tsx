@@ -1,4 +1,4 @@
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { useCallback, useState } from 'react';
 
 import { Button } from '../../ui/button';
@@ -13,7 +13,7 @@ export const ChangeEmailPage = ({
   onChangeEmail: (email: string) => Promise<boolean>;
   onOpenAffine: () => void;
 }) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const [hasSetUp, setHasSetUp] = useState(false);
   const [email, setEmail] = useState('');
   const [isValidEmail, setIsValidEmail] = useState(true);

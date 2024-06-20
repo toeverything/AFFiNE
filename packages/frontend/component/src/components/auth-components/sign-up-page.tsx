@@ -1,5 +1,5 @@
 import type { PasswordLimitsFragment } from '@affine/graphql';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import type { FC } from 'react';
 import { useCallback, useState } from 'react';
 
@@ -21,7 +21,7 @@ export const SignUpPage: FC<{
   onOpenAffine,
   openButtonText,
 }) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const [hasSetUp, setHasSetUp] = useState(false);
 
   const onSetPassword = useCallback(

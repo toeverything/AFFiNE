@@ -1,7 +1,7 @@
 import { Menu } from '@affine/component';
 import { FavoriteItemsAdapter } from '@affine/core/modules/properties';
 import type { Collection } from '@affine/env/filter';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { FilterIcon } from '@blocksuite/icons/rc';
 import type { DocMeta } from '@blocksuite/store';
 import { useLiveData, useService } from '@toeverything/infra';
@@ -35,7 +35,7 @@ export const PagesMode = ({
   switchMode: ReactNode;
   allPageListConfig: AllPageListConfig;
 }) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const favAdapter = useService(FavoriteItemsAdapter);
   const favorites = useLiveData(favAdapter.favorites$);
   const {

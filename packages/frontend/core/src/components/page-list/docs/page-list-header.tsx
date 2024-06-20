@@ -11,7 +11,7 @@ import type { Tag } from '@affine/core/modules/tag';
 import { TagService } from '@affine/core/modules/tag';
 import { mixpanel } from '@affine/core/utils';
 import type { Collection } from '@affine/env/filter';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import {
   ArrowDownSmallIcon,
   SearchIcon,
@@ -37,7 +37,7 @@ import * as styles from './page-list-header.css';
 import { PageListNewPageButton } from './page-list-new-page-button';
 
 export const PageListHeader = () => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const workspace = useService(WorkspaceService).workspace;
   const { importFile, createEdgeless, createPage } = usePageHelper(
     workspace.docCollection
@@ -93,7 +93,7 @@ export const CollectionPageListHeader = ({
   collection: Collection;
   workspaceId: string;
 }) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const { jumpToCollections } = useNavigateHelper();
 
   const handleJumpToCollections = useCallback(() => {
@@ -186,7 +186,7 @@ export const TagPageListHeader = ({
   const tagColor = useLiveData(tag.color$);
   const tagTitle = useLiveData(tag.value$);
 
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const { jumpToTags, jumpToCollection } = useNavigateHelper();
   const collectionService = useService(CollectionService);
   const [openMenu, setOpenMenu] = useState(false);
@@ -269,7 +269,7 @@ interface SwitchTagProps {
 }
 
 export const SwitchTag = ({ onClick }: SwitchTagProps) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const [inputValue, setInputValue] = useState('');
   const tagList = useService(TagService).tagList;
   const filteredTags = useLiveData(

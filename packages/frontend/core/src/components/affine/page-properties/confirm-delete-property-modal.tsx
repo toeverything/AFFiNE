@@ -1,8 +1,7 @@
 import { ConfirmModal } from '@affine/component';
 import { WorkspacePropertiesAdapter } from '@affine/core/modules/properties';
 import type { PageInfoCustomPropertyMeta } from '@affine/core/modules/properties/services/schema';
-import { Trans } from '@affine/i18n';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { Trans, useI18n } from '@affine/i18n';
 import { useService } from '@toeverything/infra';
 import { useMemo } from 'react';
 
@@ -19,7 +18,7 @@ export const ConfirmDeletePropertyModal = ({
   onConfirm: () => void;
   onCancel: () => void;
 }) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const adapter = useService(WorkspacePropertiesAdapter);
   const count = useMemo(() => {
     const manager = new PagePropertiesMetaManager(adapter);

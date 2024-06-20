@@ -7,7 +7,7 @@ import { useDocMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
 import { FavoriteItemsAdapter } from '@affine/core/modules/properties';
 import { mixpanel } from '@affine/core/utils';
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { assertExists } from '@blocksuite/global/utils';
 import { EdgelessIcon, HistoryIcon, PageIcon } from '@blocksuite/icons/rc';
 import {
@@ -28,7 +28,7 @@ export function useRegisterBlocksuiteEditorCommands() {
   const doc = useService(DocService).doc;
   const docId = doc.id;
   const mode = useLiveData(doc.mode$);
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const workspace = useService(WorkspaceService).workspace;
   const docCollection = workspace.docCollection;
   const { getDocMeta } = useDocMetaHelper(docCollection);

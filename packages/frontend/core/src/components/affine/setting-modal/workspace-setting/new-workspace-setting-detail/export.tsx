@@ -4,7 +4,7 @@ import { Button } from '@affine/component/ui/button';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { useSystemOnline } from '@affine/core/hooks/use-system-online';
 import { apis } from '@affine/electron-api';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import type { Workspace, WorkspaceMetadata } from '@toeverything/infra';
 import { useState } from 'react';
 
@@ -18,7 +18,7 @@ export const ExportPanel = ({
   workspace,
 }: ExportPanelProps) => {
   const workspaceId = workspaceMetadata.id;
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const [saving, setSaving] = useState(false);
   const isOnline = useSystemOnline();
 

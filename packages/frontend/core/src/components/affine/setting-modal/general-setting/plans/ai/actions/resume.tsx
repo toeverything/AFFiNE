@@ -7,7 +7,7 @@ import {
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { SubscriptionService } from '@affine/core/modules/cloud';
 import { SubscriptionPlan } from '@affine/graphql';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { SingleSelectSelectSolidIcon } from '@blocksuite/icons/rc';
 import { useService } from '@toeverything/infra';
 import { cssVar } from '@toeverything/theme';
@@ -17,7 +17,7 @@ import { useState } from 'react';
 export interface AIResumeProps extends ButtonProps {}
 
 export const AIResume = ({ ...btnProps }: AIResumeProps) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const [idempotencyKey, setIdempotencyKey] = useState(nanoid());
   const subscription = useService(SubscriptionService).subscription;
 

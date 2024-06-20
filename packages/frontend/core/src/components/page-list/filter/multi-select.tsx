@@ -1,5 +1,5 @@
 import { Menu, MenuItem, Scrollable, Tooltip } from '@affine/component';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import clsx from 'clsx';
 import type { MouseEvent } from 'react';
 import { useMemo } from 'react';
@@ -18,7 +18,7 @@ export const MultiSelect = ({
     value: string;
   }[];
 }) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const optionMap = useMemo(
     () => Object.fromEntries(options.map(v => [v.value, v])),
     [options]

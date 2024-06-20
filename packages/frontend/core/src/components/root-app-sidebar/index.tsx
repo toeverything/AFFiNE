@@ -4,7 +4,7 @@ import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { CollectionService } from '@affine/core/modules/collection';
 import { mixpanel } from '@affine/core/utils';
 import { apis, events } from '@affine/electron-api';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { FolderIcon, SettingsIcon } from '@blocksuite/icons/rc';
 import type { Doc } from '@blocksuite/store';
 import { useDroppable } from '@dnd-kit/core';
@@ -96,7 +96,7 @@ export const RootAppSidebar = memo(
     const currentWorkspaceId = currentWorkspace.id;
     const { appSettings } = useAppSettingHelper();
     const docCollection = currentWorkspace.docCollection;
-    const t = useAFFiNEI18N();
+    const t = useI18n();
     const currentPath = useLiveData(
       useService(WorkbenchService).workbench.location$.map(
         location => location.pathname

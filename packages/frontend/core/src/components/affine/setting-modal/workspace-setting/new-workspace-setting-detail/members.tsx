@@ -26,7 +26,7 @@ import { WorkspaceQuotaService } from '@affine/core/modules/quota';
 import { mixpanel } from '@affine/core/utils';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { Permission } from '@affine/graphql';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { MoreVerticalIcon } from '@blocksuite/icons/rc';
 import {
   useEnsureLiveData,
@@ -58,7 +58,7 @@ import * as style from './style.css';
 const COUNT_PER_PAGE = 8;
 type OnRevoke = (memberId: string) => void;
 const MembersPanelLocal = () => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   return (
     <Tooltip content={t['com.affine.settings.member-tooltip']()}>
       <div className={style.fakeWrapper}>
@@ -105,7 +105,7 @@ export const CloudWorkspaceMembersPanel = () => {
     ? checkMemberCountLimit(memberCount, workspaceQuota.memberLimit)
     : null;
 
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const { invite, isMutating } = useInviteMember(workspace.id);
   const revokeMemberPermission = useRevokeMemberPermission(workspace.id);
 
@@ -258,7 +258,7 @@ export const CloudWorkspaceMembersPanel = () => {
   );
 };
 export const MembersPanelFallback = () => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
 
   return (
     <>
@@ -282,7 +282,7 @@ const MemberListFallback = ({ memberCount }: { memberCount: number }) => {
     }
     return 'auto';
   }, [memberCount]);
-  const t = useAFFiNEI18N();
+  const t = useI18n();
 
   return (
     <div
@@ -338,7 +338,7 @@ const MemberItem = ({
   currentAccount: AuthAccountInfo;
   onRevoke: OnRevoke;
 }) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
 
   const handleRevoke = useCallback(() => {
     onRevoke(member.id);

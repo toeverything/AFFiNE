@@ -3,7 +3,7 @@ import { IconButton, Input, Menu, Scrollable } from '@affine/component';
 import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
 import { WorkspaceLegacyProperties } from '@affine/core/modules/properties';
 import { DeleteTagConfirmModal, TagService } from '@affine/core/modules/tag';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { DeleteIcon, MoreHorizontalIcon, TagsIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
 import clsx from 'clsx';
@@ -73,7 +73,7 @@ export const EditTagMenu = ({
   tagId: string;
   onTagDelete: (tagIds: string[]) => void;
 }>) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const legacyProperties = useService(WorkspaceLegacyProperties);
   const tagList = useService(TagService).tagList;
   const tag = useLiveData(tagList.tagByTagId$(tagId));
@@ -172,7 +172,7 @@ export const EditTagMenu = ({
 };
 
 export const TagsEditor = ({ pageId, readonly }: TagsEditorProps) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const tagList = useService(TagService).tagList;
   const tags = useLiveData(tagList.tags$);
   const tagIds = useLiveData(tagList.tagIdsByPageId$(pageId));

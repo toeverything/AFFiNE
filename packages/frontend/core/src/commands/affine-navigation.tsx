@@ -1,5 +1,5 @@
 import { WorkspaceSubPath } from '@affine/core/shared';
-import type { useAFFiNEI18N } from '@affine/i18n/hooks';
+import type { useI18n } from '@affine/i18n';
 import { ArrowRightBigIcon } from '@blocksuite/icons/rc';
 import type { DocCollection } from '@blocksuite/store';
 import type { createStore } from 'jotai';
@@ -15,7 +15,7 @@ export function registerAffineNavigationCommands({
   docCollection,
   navigationHelper,
 }: {
-  t: ReturnType<typeof useAFFiNEI18N>;
+  t: ReturnType<typeof useI18n>;
   store: ReturnType<typeof createStore>;
   navigationHelper: ReturnType<typeof useNavigateHelper>;
   docCollection: DocCollection;

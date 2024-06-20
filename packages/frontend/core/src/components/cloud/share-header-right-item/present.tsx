@@ -1,6 +1,6 @@
 import { Button } from '@affine/component/ui/button';
 import { useActiveBlocksuiteEditor } from '@affine/core/hooks/use-block-suite-editor';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import type { EdgelessRootService } from '@blocksuite/blocks';
 import { PresentationIcon } from '@blocksuite/icons/rc';
 import { useCallback, useEffect, useState } from 'react';
@@ -8,7 +8,7 @@ import { useCallback, useEffect, useState } from 'react';
 import * as styles from './styles.css';
 
 export const PresentButton = () => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const [isPresent, setIsPresent] = useState(false);
   const [editor] = useActiveBlocksuiteEditor();
 

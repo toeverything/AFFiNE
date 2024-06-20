@@ -3,7 +3,7 @@ import { SettingRow } from '@affine/component/setting-components';
 import { ConfirmModal } from '@affine/component/ui/modal';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { WorkspacePermissionService } from '@affine/core/modules/permissions';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { ArrowRightSmallIcon } from '@blocksuite/icons/rc';
 import {
   GlobalContextService,
@@ -35,7 +35,7 @@ export const DeleteLeaveWorkspace = () => {
     WorkspacePermissionService,
     WorkspacesService,
   });
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const workspace = workspaceService.workspace;
   const { jumpToSubPath, jumpToIndex } = useNavigateHelper();
   // fixme: cloud regression

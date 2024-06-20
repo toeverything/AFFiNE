@@ -1,6 +1,6 @@
 import { updateReadyAtom } from '@affine/core/hooks/use-app-updater';
 import { apis } from '@affine/electron-api';
-import type { useAFFiNEI18N } from '@affine/i18n/hooks';
+import type { useI18n } from '@affine/i18n';
 import { ResetIcon } from '@blocksuite/icons/rc';
 import type { createStore } from 'jotai';
 
@@ -10,7 +10,7 @@ export function registerAffineUpdatesCommands({
   t,
   store,
 }: {
-  t: ReturnType<typeof useAFFiNEI18N>;
+  t: ReturnType<typeof useI18n>;
   store: ReturnType<typeof createStore>;
 }) {
   const unsubs: Array<() => void> = [];

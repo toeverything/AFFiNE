@@ -1,6 +1,5 @@
 import { Empty } from '@affine/component';
-import { Trans } from '@affine/i18n';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { Trans, useI18n } from '@affine/i18n';
 import type { DocCollection } from '@blocksuite/store';
 import type { ReactNode } from 'react';
 import { useCallback } from 'react';
@@ -18,7 +17,7 @@ export const EmptyPageList = ({
   heading?: ReactNode;
 }) => {
   const { createPage } = usePageHelper(docCollection);
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const onCreatePage = useCallback(() => {
     createPage?.();
   }, [createPage]);
@@ -69,7 +68,7 @@ export const EmptyPageList = ({
 };
 
 export const EmptyCollectionList = ({ heading }: { heading: ReactNode }) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   return (
     <div className={styles.pageListEmptyStyle}>
       {heading && <div>{heading}</div>}
@@ -79,7 +78,7 @@ export const EmptyCollectionList = ({ heading }: { heading: ReactNode }) => {
 };
 
 export const EmptyTagList = ({ heading }: { heading: ReactNode }) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   return (
     <div className={styles.pageListEmptyStyle}>
       {heading && <div>{heading}</div>}

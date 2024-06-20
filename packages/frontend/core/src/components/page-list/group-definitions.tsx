@@ -1,7 +1,7 @@
 import { FavoriteItemsAdapter } from '@affine/core/modules/properties';
 import type { Tag } from '@affine/core/modules/tag';
 import { TagService } from '@affine/core/modules/tag';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { FavoritedIcon, FavoriteIcon } from '@blocksuite/icons/rc';
 import type { DocMeta } from '@blocksuite/store';
 import { LiveData, useLiveData, useService } from '@toeverything/infra';
@@ -39,7 +39,7 @@ const GroupLabel = ({
 export const useDateGroupDefinitions = <T extends ListItem>(
   key: DateKey
 ): ItemGroupDefinition<T>[] => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   return useMemo(
     () => [
       {
@@ -139,7 +139,7 @@ export const useTagGroupDefinitions = (): ItemGroupDefinition<ListItem>[] => {
   );
   const tags = useLiveData(sortedTagsLiveData$);
 
-  const t = useAFFiNEI18N();
+  const t = useI18n();
 
   const untagged = useMemo(
     () => ({
@@ -173,7 +173,7 @@ export const useTagGroupDefinitions = (): ItemGroupDefinition<ListItem>[] => {
 export const useFavoriteGroupDefinitions = <
   T extends ListItem,
 >(): ItemGroupDefinition<T>[] => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const favAdapter = useService(FavoriteItemsAdapter);
   const favourites = useLiveData(favAdapter.favorites$);
   return useMemo(

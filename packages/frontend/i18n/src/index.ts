@@ -1,18 +1,12 @@
 import type { i18n, Resource } from 'i18next';
 import i18next from 'i18next';
 import type { I18nextProviderProps } from 'react-i18next';
-import {
-  I18nextProvider,
-  initReactI18next,
-  Trans,
-  useTranslation as useRootTranslation,
-} from 'react-i18next';
+import { I18nextProvider, initReactI18next, Trans } from 'react-i18next';
 
 import { LOCALES } from './resources';
 import type en_US from './resources/en.json';
 
 export * from './i18n';
-export * from './i18n-generated';
 export * from './utils';
 
 declare module 'i18next' {
@@ -44,12 +38,6 @@ declare module 'react-i18next' {
 const STORAGE_KEY = 'i18n_lng';
 
 export { I18nextProvider, LOCALES, Trans };
-export function useI18N() {
-  const { i18n } = useRootTranslation();
-  return i18n;
-}
-
-export { getI18n } from 'react-i18next';
 
 const resources = LOCALES.reduce<Resource>((acc, { tag, res }) => {
   return Object.assign(acc, { [tag]: { translation: res } });
@@ -99,6 +87,7 @@ export const createI18n = (): I18nextProviderProps['i18n'] => {
   }
   return i18n;
 };
+
 export function setUpLanguage(i: i18n) {
   let language;
   const localStorageLanguage = localStorage.getItem(STORAGE_KEY);
@@ -109,5 +98,3 @@ export function setUpLanguage(i: i18n) {
   }
   return i.changeLanguage(language);
 }
-
-// const I18nProvider = I18nextProvider;

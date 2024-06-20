@@ -1,7 +1,7 @@
 import { Tooltip } from '@affine/component';
 import { popupWindow } from '@affine/core/utils';
 import { Unreachable } from '@affine/env/constant';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { CloseIcon, NewIcon, ResetIcon } from '@blocksuite/icons/rc';
 import clsx from 'clsx';
 import { useCallback, useMemo } from 'react';
@@ -40,7 +40,7 @@ interface ButtonContentProps {
 }
 
 function DownloadUpdate({ updateAvailable }: ButtonContentProps) {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   return (
     <div className={styles.installLabel}>
       <span className={styles.ellipsisTextOverflow}>
@@ -52,7 +52,7 @@ function DownloadUpdate({ updateAvailable }: ButtonContentProps) {
 }
 
 function UpdateReady({ updateAvailable, appQuitting }: ButtonContentProps) {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   return (
     <div className={styles.updateAvailableWrapper}>
       <div className={styles.installLabelNormal}>
@@ -76,7 +76,7 @@ function DownloadingUpdate({
   updateAvailable,
   downloadProgress,
 }: ButtonContentProps) {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   return (
     <div className={clsx([styles.updateAvailableWrapper])}>
       <div className={clsx([styles.installLabelNormal])}>
@@ -97,7 +97,7 @@ function DownloadingUpdate({
 }
 
 function OpenDownloadPage({ updateAvailable }: ButtonContentProps) {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   return (
     <>
       <div className={styles.installLabelNormal}>
@@ -117,7 +117,7 @@ function OpenDownloadPage({ updateAvailable }: ButtonContentProps) {
 }
 
 function WhatsNew({ onDismissChangelog }: ButtonContentProps) {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const onClickClose: React.MouseEventHandler = useCallback(
     e => {
       onDismissChangelog();

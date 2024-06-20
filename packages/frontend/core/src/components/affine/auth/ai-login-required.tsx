@@ -1,13 +1,13 @@
 import { useConfirmModal } from '@affine/component';
 import { authAtom } from '@affine/core/atoms';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { atom, useAtom, useSetAtom } from 'jotai';
 import { useCallback, useEffect } from 'react';
 
 export const showAILoginRequiredAtom = atom(false);
 
 export const AiLoginRequiredModal = () => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const [open, setOpen] = useAtom(showAILoginRequiredAtom);
   const setAuth = useSetAtom(authAtom);
   const { openConfirmModal, closeConfirmModal } = useConfirmModal();

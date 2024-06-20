@@ -1,8 +1,7 @@
 import { Button } from '@affine/component/ui/button';
 import type { GetCurrentUserQuery } from '@affine/graphql';
 import { fetcher, getCurrentUserQuery } from '@affine/graphql';
-import { Trans } from '@affine/i18n';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { Trans, useI18n } from '@affine/i18n';
 import { Logo1Icon } from '@blocksuite/icons/rc';
 import { useCallback, useMemo } from 'react';
 import type { LoaderFunction } from 'react-router-dom';
@@ -59,7 +58,7 @@ interface LoaderData {
 }
 
 const OpenAppImpl = ({ urlToOpen, channel }: OpenAppProps) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const openDownloadLink = useCallback(() => {
     const url = `https://affine.pro/download?channel=${channel}`;
     open(url, '_blank');

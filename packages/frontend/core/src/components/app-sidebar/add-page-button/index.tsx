@@ -1,4 +1,4 @@
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { PlusIcon } from '@blocksuite/icons/rc';
 import clsx from 'clsx';
 import type React from 'react';
@@ -17,7 +17,7 @@ export function AddPageButton({
   className,
   style,
 }: AddPageButtonProps) {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
 
   return (
     <button

@@ -61,7 +61,6 @@
         "./packages/frontend/component/src/components/*"
       ],
       "@affine/i18n": ["./packages/frontend/i18n/src"],
-      "@affine/i18n/hooks": ["./packages/frontend/i18n/src/i18n-generated"],
       "@affine/debug": ["./packages/common/debug"],
       "@affine/env": ["./packages/common/env/src"],
       "@affine/env/*": ["./packages/common/env/src/*"],

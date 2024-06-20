@@ -1,10 +1,10 @@
 import type { ConfirmModalProps, MenuItemProps } from '@affine/component';
 import { ConfirmModal, MenuIcon, MenuItem } from '@affine/component';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { DeleteIcon } from '@blocksuite/icons/rc';
 
 export const MoveToTrash = (props: MenuItemProps) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
 
   return (
     <MenuItem
@@ -27,7 +27,7 @@ const MoveToTrashConfirm = ({
 }: {
   titles: string[];
 } & ConfirmModalProps) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const multiple = titles.length > 1;
   const title = multiple
     ? t['com.affine.moveToTrash.confirmModal.title.multiple']({

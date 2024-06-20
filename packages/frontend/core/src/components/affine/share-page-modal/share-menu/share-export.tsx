@@ -4,7 +4,7 @@ import { ExportMenuItems } from '@affine/core/components/page-list';
 import { useExportPage } from '@affine/core/hooks/affine/use-export-page';
 import { useSharingUrl } from '@affine/core/hooks/affine/use-share-url';
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { CopyIcon } from '@blocksuite/icons/rc';
 import { DocService, useLiveData, useService } from '@toeverything/infra';
 
@@ -15,7 +15,7 @@ export const ShareExport = ({
   workspaceMetadata: workspace,
   currentPage,
 }: ShareMenuProps) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const doc = useService(DocService).doc;
   const workspaceId = workspace.id;
   const pageId = currentPage.id;

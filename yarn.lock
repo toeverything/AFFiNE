@@ -614,6 +614,7 @@ __metadata:
     dayjs: "npm:^1.11.11"
     i18next: "npm:^23.11.1"
     prettier: "npm:^3.2.5"
+    react: "npm:^18.2.0"
     react-i18next: "npm:^14.1.0"
     ts-node: "npm:^10.9.2"
     typescript: "npm:^5.4.5"

@@ -1,4 +1,4 @@
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { SignOutIcon } from '@blocksuite/icons/rc';
 
 import { Avatar } from '../../ui/avatar';
@@ -25,7 +25,7 @@ export const NoPermissionOrNotFound = ({
   onSignOut,
   signInComponent,
 }: NotFoundPageProps) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
 
   return (
     <AffineOtherPageLayout>
@@ -69,7 +69,7 @@ export const NotFoundPage = ({
   onBack,
   onSignOut,
 }: NotFoundPageProps) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
 
   return (
     <AffineOtherPageLayout>

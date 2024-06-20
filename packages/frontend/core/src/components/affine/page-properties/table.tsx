@@ -14,8 +14,7 @@ import type {
   PageInfoCustomPropertyMeta,
   PagePropertyType,
 } from '@affine/core/modules/properties/services/schema';
-import { i18nTime } from '@affine/i18n';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { i18nTime, useI18n } from '@affine/i18n';
 import { assertExists } from '@blocksuite/global/utils';
 import {
   ArrowDownSmallIcon,
@@ -254,7 +253,7 @@ const VisibilityModeSelector = ({
   property: PageInfoCustomProperty;
 }) => {
   const manager = useContext(managerContext);
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const meta = manager.getCustomPropertyMeta(property.id);
   const visibility = property.visibility || 'visible';
 
@@ -317,7 +316,7 @@ export const PagePropertiesSettingsPopup = ({
   children,
 }: PagePropertiesSettingsPopupProps) => {
   const manager = useContext(managerContext);
-  const t = useAFFiNEI18N();
+  const t = useI18n();
 
   const menuItems = useMemo(() => {
     const options: MenuItemOption[] = [];
@@ -457,7 +456,7 @@ export const PagePropertyRowNameMenu = ({
     onFinishEditing,
     property.id,
   ]);
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const handleNameBlur = useCallback(
     (v: string) => {
       manager.updateCustomPropertyMeta(meta.id, {
@@ -596,7 +595,7 @@ export const PagePropertiesTableHeader = ({
 }: PagePropertiesTableHeaderProps) => {
   const manager = useContext(managerContext);
 
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const backlinks = useBlockSuitePageBacklinks(
     manager.workspace.docCollection,
     manager.pageId
@@ -788,7 +787,7 @@ const PagePropertyRow = ({ property }: PagePropertyRowProps) => {
 };
 
 const PageTagsRow = () => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   return (
     <div
       className={styles.tagsPropertyRow}
@@ -882,7 +881,7 @@ export const PagePropertiesCreatePropertyMenuItems = ({
   onCreated,
   metaManager,
 }: PagePropertiesCreatePropertyMenuItemsProps) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const onAddProperty = useCallback(
     (
       e: React.MouseEvent,
@@ -943,7 +942,7 @@ const PagePropertiesAddPropertyMenuItems = ({
 }: PagePropertiesAddPropertyMenuItemsProps) => {
   const manager = useContext(managerContext);
 
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const metaList = manager.metaManager.getOrderedPropertiesSchema();
   const nonRequiredMetaList = metaList.filter(meta => !meta.required);
   const isChecked = useCallback(
@@ -1004,7 +1003,7 @@ const PagePropertiesAddPropertyMenuItems = ({
 };
 
 export const PagePropertiesAddProperty = () => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const [adding, setAdding] = useState(true);
   const manager = useContext(managerContext);
   const toggleAdding: MouseEventHandler = useCallback(e => {

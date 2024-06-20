@@ -2,7 +2,7 @@ import { Loading } from '@affine/component';
 import { Divider } from '@affine/component/ui/divider';
 import { MenuItem } from '@affine/component/ui/menu';
 import { AuthService } from '@affine/core/modules/cloud';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { Logo1Icon } from '@blocksuite/icons/rc';
 import {
   useLiveData,
@@ -28,7 +28,7 @@ export const SignInItem = () => {
 
   const setOpen = useSetAtom(authAtom);
 
-  const t = useAFFiNEI18N();
+  const t = useI18n();
 
   const onClickSignIn = useCallback(() => {
     mixpanel.track('Button', {

@@ -1,6 +1,6 @@
 import { IconButton, Tooltip } from '@affine/component';
 import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import {
   CloseIcon,
   DualLinkIcon,
@@ -76,7 +76,7 @@ export const DocPeekViewControls = ({
   const peekView = useService(PeekViewService).peekView;
   const workbench = useService(WorkbenchService).workbench;
   const { jumpToPageBlock } = useNavigateHelper();
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const { doc, workspace } = useDoc(docId);
   const controls = useMemo(() => {
     return [

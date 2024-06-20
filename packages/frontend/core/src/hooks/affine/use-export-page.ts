@@ -5,7 +5,7 @@ import {
 } from '@affine/component/global-loading';
 import { mixpanel } from '@affine/core/utils';
 import { apis } from '@affine/electron-api';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import type { PageRootService, RootBlockModel } from '@blocksuite/blocks';
 import { HtmlTransformer, MarkdownTransformer } from '@blocksuite/blocks';
 import type { Doc } from '@blocksuite/store';
@@ -59,7 +59,7 @@ async function exportHandler({ page, type }: ExportHandlerOptions) {
 export const useExportPage = (page: Doc) => {
   const pushGlobalLoadingEvent = useSetAtom(pushGlobalLoadingEventAtom);
   const resolveGlobalLoadingEvent = useSetAtom(resolveGlobalLoadingEventAtom);
-  const t = useAFFiNEI18N();
+  const t = useI18n();
 
   const onClickHandler = useCallback(
     async (type: ExportType) => {

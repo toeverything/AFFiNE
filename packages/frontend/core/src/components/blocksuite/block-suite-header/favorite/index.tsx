@@ -1,7 +1,7 @@
 import { FavoriteTag } from '@affine/core/components/page-list';
 import { FavoriteItemsAdapter } from '@affine/core/modules/properties';
 import { toast } from '@affine/core/utils';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { assertExists } from '@blocksuite/global/utils';
 import { useLiveData, useService, WorkspaceService } from '@toeverything/infra';
 import { useCallback } from 'react';
@@ -11,7 +11,7 @@ export interface FavoriteButtonProps {
 }
 
 export const useFavorite = (pageId: string) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const workspace = useService(WorkspaceService).workspace;
   const docCollection = workspace.docCollection;
   const currentPage = docCollection.getDoc(pageId);

@@ -18,8 +18,7 @@ import {
   SubscriptionRecurring,
   SubscriptionStatus,
 } from '@affine/graphql';
-import { i18nTime, Trans } from '@affine/i18n';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { i18nTime, Trans, useI18n } from '@affine/i18n';
 import { ArrowRightSmallIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
@@ -54,7 +53,7 @@ const getMessageKey = (
 };
 
 export const BillingSettings = () => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
 
   return (
     <>
@@ -85,7 +84,7 @@ export const BillingSettings = () => {
 };
 
 const SubscriptionSettings = () => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const subscriptionService = useService(SubscriptionService);
   useEffect(() => {
     subscriptionService.subscription.revalidate();
@@ -248,7 +247,7 @@ const SubscriptionSettings = () => {
 };
 
 const AIPlanCard = ({ onClick }: { onClick: () => void }) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const subscriptionService = useService(SubscriptionService);
   useEffect(() => {
     subscriptionService.subscription.revalidate();
@@ -325,7 +324,7 @@ const PlanAction = ({
   plan: string;
   gotoPlansSetting: () => void;
 }) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
 
   return (
     <Button
@@ -345,7 +344,7 @@ const PaymentMethodUpdater = () => {
   const { isMutating, trigger } = useMutation({
     mutation: createCustomerPortalMutation,
   });
-  const t = useAFFiNEI18N();
+  const t = useI18n();
 
   const update = useAsyncCallback(async () => {
     await trigger(null, {
@@ -368,7 +367,7 @@ const PaymentMethodUpdater = () => {
 };
 
 const ResumeSubscription = () => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const [open, setOpen] = useState(false);
 
   return (
@@ -392,7 +391,7 @@ const CancelSubscription = ({ loading }: { loading?: boolean }) => {
 };
 
 const BillingHistory = () => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const { data: invoicesCountQueryResult } = useQuery({
     query: getInvoicesCountQuery,
   });
@@ -437,7 +436,7 @@ const InvoiceLine = ({
 }: {
   invoice: NonNullable<InvoicesQuery['currentUser']>['invoices'][0];
 }) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
 
   const open = useCallback(() => {
     if (invoice.link) {
@@ -471,7 +470,7 @@ const InvoiceLine = ({
 };
 
 const SubscriptionSettingSkeleton = () => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   return (
     <SettingWrapper
       title={t['com.affine.payment.billing-setting.information']()}
@@ -485,7 +484,7 @@ const SubscriptionSettingSkeleton = () => {
 };
 
 const BillingHistorySkeleton = () => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   return (
     <SettingWrapper title={t['com.affine.payment.billing-setting.history']()}>
       <div className={styles.billingHistorySkeleton}>

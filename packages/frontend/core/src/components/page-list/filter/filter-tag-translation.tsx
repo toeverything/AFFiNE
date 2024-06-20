@@ -1,5 +1,5 @@
 import { Tooltip } from '@affine/component';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 
 import { ellipsisTextStyle } from './index.css';
 type FilterTagProps = {
@@ -7,7 +7,7 @@ type FilterTagProps = {
 };
 
 const useFilterTag = ({ name }: FilterTagProps) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   switch (name) {
     case 'Created':
       return t['Created']();

@@ -1,7 +1,6 @@
 import { Button } from '@affine/component';
 import { AuthService, SubscriptionService } from '@affine/core/modules/cloud';
-import { i18nTime } from '@affine/i18n';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { i18nTime, useI18n } from '@affine/i18n';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useEffect } from 'react';
 
@@ -11,7 +10,7 @@ import * as styles from './ai-plan.css';
 import { AIBenefits } from './benefits';
 
 export const AIPlan = () => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
 
   const authService = useService(AuthService);
   const subscriptionService = useService(SubscriptionService);

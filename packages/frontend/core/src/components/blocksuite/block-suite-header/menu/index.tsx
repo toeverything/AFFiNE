@@ -14,7 +14,7 @@ import { useTrashModalHelper } from '@affine/core/hooks/affine/use-trash-modal-h
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { mixpanel } from '@affine/core/utils';
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import {
   DuplicateIcon,
   EdgelessIcon,
@@ -49,7 +49,7 @@ export const PageHeaderMenuButton = ({
   pageId,
   isJournal,
 }: PageMenuProps) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
 
   const workspace = useService(WorkspaceService).workspace;
   const docCollection = workspace.docCollection;

@@ -1,10 +1,10 @@
 import { OverlayModal } from '@affine/component';
 import { openIssueFeedbackModalAtom } from '@affine/core/atoms';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { useAtom } from 'jotai';
 
 export const IssueFeedbackModal = () => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const [open, setOpen] = useAtom(openIssueFeedbackModalAtom);
 
   return (

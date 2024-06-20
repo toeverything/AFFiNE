@@ -1,5 +1,5 @@
 import { ConfirmModal } from '@affine/component/ui/modal';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { useAtom } from 'jotai';
 import { useCallback } from 'react';
 
@@ -8,7 +8,7 @@ import * as styles from './style.css';
 
 export const PaymentDisableModal = () => {
   const [open, setOpen] = useAtom(openPaymentDisableAtom);
-  const t = useAFFiNEI18N();
+  const t = useI18n();
 
   const onClickCancel = useCallback(() => {
     setOpen(false);

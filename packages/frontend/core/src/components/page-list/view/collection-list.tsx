@@ -1,6 +1,6 @@
 import { Button, FlexWrapper, Menu } from '@affine/component';
 import type { Collection, Filter, PropertiesMeta } from '@affine/env/filter';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { FilterIcon } from '@blocksuite/icons/rc';
 
 import { CreateFilterMenu } from '../filter/vars';
@@ -15,7 +15,7 @@ export const CollectionPageListOperationsMenu = ({
   collection: Collection;
   allPageListConfig: AllPageListConfig;
 }) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   return (
     <FlexWrapper alignItems="center">
       <CollectionOperations collection={collection} config={allPageListConfig}>
@@ -41,7 +41,7 @@ export const AllPageListOperationsMenu = ({
   filterList: Filter[];
   onChangeFilterList: (filterList: Filter[]) => void;
 }) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
 
   return (
     <FlexWrapper alignItems="center">

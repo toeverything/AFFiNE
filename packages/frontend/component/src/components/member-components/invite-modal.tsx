@@ -1,5 +1,5 @@
 import { Permission } from '@affine/graphql';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { useCallback, useEffect, useState } from 'react';
 
 import { ConfirmModal } from '../../ui/modal';
@@ -19,7 +19,7 @@ export const InviteModal = ({
   onConfirm,
   isMutating,
 }: InviteModalProps) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const [inviteEmail, setInviteEmail] = useState('');
   const [permission] = useState(Permission.Write);
   const [isValidEmail, setIsValidEmail] = useState(true);

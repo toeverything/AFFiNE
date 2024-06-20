@@ -1,6 +1,5 @@
 import { ConfirmModal, toast } from '@affine/component';
-import { Trans } from '@affine/i18n';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { Trans, useI18n } from '@affine/i18n';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useCallback, useMemo } from 'react';
 
@@ -15,7 +14,7 @@ export const DeleteTagConfirmModal = ({
   onOpenChange: (open: boolean) => void;
   selectedTagIds: string[];
 }) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const tagService = useService(TagService);
   const tags = useLiveData(tagService.tagList.tags$);
   const selectedTags = useMemo(() => {

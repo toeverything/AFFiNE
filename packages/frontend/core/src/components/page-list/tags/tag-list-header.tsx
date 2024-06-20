@@ -1,10 +1,10 @@
 import { Button } from '@affine/component';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 
 import * as styles from './tag-list-header.css';
 
 export const TagListHeader = ({ onOpen }: { onOpen: () => void }) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   return (
     <div className={styles.tagListHeader}>
       <div className={styles.tagListHeaderTitle}>{t['Tags']()}</div>

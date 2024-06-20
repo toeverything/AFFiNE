@@ -1,4 +1,4 @@
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import {
   CheckBoxCheckLinearIcon,
   PenIcon,
@@ -8,7 +8,7 @@ import { useMemo } from 'react';
 
 import * as styles from './ai-plan.css';
 
-const benefitsGetter = (t: ReturnType<typeof useAFFiNEI18N>) => [
+const benefitsGetter = (t: ReturnType<typeof useI18n>) => [
   {
     name: t['com.affine.payment.ai.benefit.g1'](),
     icon: <TextIcon />,
@@ -39,7 +39,7 @@ const benefitsGetter = (t: ReturnType<typeof useAFFiNEI18N>) => [
 ];
 
 export const AIBenefits = () => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const benefits = useMemo(() => benefitsGetter(t), [t]);
   // TODO: responsive
   return (

@@ -1,6 +1,6 @@
 import type { IconButtonProps } from '@affine/component';
 import { IconButton, Tooltip } from '@affine/component';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { FavoritedIcon, FavoriteIcon } from '@blocksuite/icons/rc';
 import Lottie from 'lottie-react';
 import { forwardRef, useCallback, useState } from 'react';
@@ -14,7 +14,7 @@ export const FavoriteTag = forwardRef<
   } & Omit<IconButtonProps, 'children'>
 >(({ active, onClick, ...props }, ref) => {
   const [playAnimation, setPlayAnimation] = useState(false);
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const handleClick = useCallback(
     (e: React.MouseEvent<HTMLButtonElement>) => {
       e.stopPropagation();

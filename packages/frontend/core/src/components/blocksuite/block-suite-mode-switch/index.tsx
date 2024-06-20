@@ -1,6 +1,6 @@
 import { Tooltip } from '@affine/component/ui/tooltip';
 import { useBlockSuiteDocMeta } from '@affine/core/hooks/use-block-suite-page-meta';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import {
   type DocMode,
   DocService,
@@ -24,7 +24,7 @@ export type EditorModeSwitchProps = {
   publicMode?: DocMode;
 };
 const TooltipContent = () => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   return (
     <>
       {t['Switch']()}
@@ -41,7 +41,7 @@ export const EditorModeSwitch = ({
   isPublic,
   publicMode,
 }: EditorModeSwitchProps) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const pageMeta = useBlockSuiteDocMeta(docCollection).find(
     meta => meta.id === pageId
   );

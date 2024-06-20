@@ -1,4 +1,4 @@
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { useCallback, useMemo, useState } from 'react';
 
 import { RecoverableError } from '../../../../unexpected-application-state/errors';
@@ -9,7 +9,7 @@ export const RecoverableErrorFallback = createErrorFallback(
   RecoverableError,
   props => {
     const { error, resetError } = props;
-    const t = useAFFiNEI18N();
+    const t = useI18n();
     const [count, rerender] = useState(0);
 
     const canRetry = error.canRetry();

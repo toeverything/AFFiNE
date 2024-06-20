@@ -1,5 +1,5 @@
 import { Button } from '@affine/component';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import type { ReactElement } from 'react';
 
 import * as styles from './collection-list-header.css';
@@ -11,7 +11,7 @@ export const CollectionListHeader = ({
   node: ReactElement | null;
   onCreate: () => void;
 }) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
 
   return (
     <>

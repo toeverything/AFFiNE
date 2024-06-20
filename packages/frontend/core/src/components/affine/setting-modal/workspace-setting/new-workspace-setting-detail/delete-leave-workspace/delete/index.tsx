@@ -4,8 +4,7 @@ import { ConfirmModal } from '@affine/component/ui/modal';
 import { useWorkspaceInfo } from '@affine/core/hooks/use-workspace-info';
 import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import { Trans } from '@affine/i18n';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { Trans, useI18n } from '@affine/i18n';
 import type { WorkspaceMetadata } from '@toeverything/infra';
 import { useCallback, useState } from 'react';
 
@@ -25,7 +24,7 @@ export const WorkspaceDeleteModal = ({
   const info = useWorkspaceInfo(workspaceMetadata);
   const workspaceName = info?.name ?? UNTITLED_WORKSPACE_NAME;
   const allowDelete = deleteStr === workspaceName;
-  const t = useAFFiNEI18N();
+  const t = useI18n();
 
   const handleOnEnter = useCallback(() => {
     if (allowDelete) {

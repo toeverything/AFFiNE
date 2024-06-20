@@ -1,7 +1,7 @@
 import { toast } from '@affine/component';
 import { RenameModal } from '@affine/component/rename-modal';
 import { useDocMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import type { DocCollection } from '@blocksuite/store';
 import { useCallback, useState } from 'react';
 
@@ -21,7 +21,7 @@ type PostfixItemProps = {
 
 export const PostfixItem = ({ ...props }: PostfixItemProps) => {
   const { docCollection, pageId, pageTitle } = props;
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const [open, setOpen] = useState(false);
   const { setDocTitle } = useDocMetaHelper(docCollection);
 

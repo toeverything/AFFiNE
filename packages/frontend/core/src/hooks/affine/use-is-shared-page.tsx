@@ -6,7 +6,7 @@ import {
   publishPageMutation,
   revokePublicPageMutation,
 } from '@affine/graphql';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { type I18nKeys, useI18n } from '@affine/i18n';
 import { SingleSelectSelectSolidIcon } from '@blocksuite/icons/rc';
 import type { DocMode, Workspace } from '@toeverything/infra';
 import { cssVar } from '@toeverything/theme';
@@ -14,12 +14,6 @@ import { useCallback, useMemo } from 'react';
 
 import { useMutation } from '../use-mutation';
 import { useQuery } from '../use-query';
-
-type NoParametersKeys<T> = {
-  [K in keyof T]: T[K] extends () => any ? K : never;
-}[keyof T];
-
-type i18nKey = NoParametersKeys<ReturnType<typeof useAFFiNEI18N>>;
 
 type NotificationKey =
   | 'enableSuccessTitle'
@@ -34,7 +28,7 @@ type NotificationKey =
   | 'disableErrorTitle'
   | 'disableErrorMessage';
 
-const notificationToI18nKey: Record<NotificationKey, i18nKey> = {
+const notificationToI18nKey = {
   enableSuccessTitle:
     'com.affine.share-menu.create-public-link.notification.success.title',
   enableSuccessMessage:
@@ -57,7 +51,7 @@ const notificationToI18nKey: Record<NotificationKey, i18nKey> = {
     'com.affine.share-menu.disable-publish-link.notification.fail.title',
   disableErrorMessage:
     'com.affine.share-menu.disable-publish-link.notification.fail.message',
-};
+} satisfies Record<NotificationKey, I18nKeys>;
 
 export function useIsSharedPage(
   workspaceId: string,
@@ -69,7 +63,7 @@ export function useIsSharedPage(
   currentShareMode: DocMode;
   enableShare: (mode: DocMode) => void;
 } {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const { data, mutate } = useQuery({
     query: getWorkspacePublicPagesQuery,
     variables: {

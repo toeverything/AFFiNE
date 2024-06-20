@@ -3,7 +3,7 @@ import { useActiveBlocksuiteEditor } from '@affine/core/hooks/use-block-suite-ed
 import { usePageDocumentTitle } from '@affine/core/hooks/use-global-state';
 import { AuthService } from '@affine/core/modules/cloud';
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { noop } from '@blocksuite/global/utils';
 import { Logo1Icon } from '@blocksuite/icons/rc';
 import type { AffineEditorContainer } from '@blocksuite/presets';
@@ -117,7 +117,7 @@ export const Component = () => {
   } = useLoaderData() as LoaderData;
   const workspacesService = useService(WorkspacesService);
 
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const [page, setPage] = useState<Doc | null>(null);
   const [_, setActiveBlocksuiteEditor] = useActiveBlocksuiteEditor();

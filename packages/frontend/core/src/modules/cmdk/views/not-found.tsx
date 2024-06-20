@@ -1,5 +1,5 @@
 import { QuickSearchService } from '@affine/core/modules/cmdk';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { SearchIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useCommandState } from 'cmdk';
@@ -12,7 +12,7 @@ export const NotFoundGroup = () => {
   // hack: we know that the filtered count is 3 when there is no result (create page & edgeless & append to journal, for mode === 'cmdk')
   const renderNoResult = useCommandState(state => state.filtered.count === 3);
 
-  const t = useAFFiNEI18N();
+  const t = useI18n();
 
   if (!renderNoResult) {
     return null;

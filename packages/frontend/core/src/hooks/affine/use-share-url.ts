@@ -2,7 +2,7 @@ import { notify } from '@affine/component';
 import { getAffineCloudBaseUrl } from '@affine/core/modules/cloud/services/fetch';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import { mixpanel } from '@affine/core/utils';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useCallback, useMemo } from 'react';
 
@@ -47,7 +47,7 @@ export const useSharingUrl = ({
   pageId,
   urlType,
 }: UseSharingUrl) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const sharingUrl = useGenerateUrl({ workspaceId, pageId, urlType });
 
   const onClickCopyLink = useCallback(() => {

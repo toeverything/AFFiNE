@@ -7,7 +7,7 @@ import {
 import { Button } from '@affine/component/ui/button';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { AuthService } from '@affine/core/modules/cloud';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { useService } from '@toeverything/infra';
 import type { FC } from 'react';
 import { useCallback, useState } from 'react';
@@ -22,7 +22,7 @@ export const SignInWithPassword: FC<AuthPanelProps> = ({
   email,
   onSignedIn,
 }) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const authService = useService(AuthService);
 
   const [password, setPassword] = useState('');

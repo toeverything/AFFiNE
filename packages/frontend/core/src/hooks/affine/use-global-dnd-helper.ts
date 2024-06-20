@@ -2,7 +2,7 @@ import { toast } from '@affine/component';
 import { useDocMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
 import { CollectionService } from '@affine/core/modules/collection';
 import { FavoriteItemsAdapter } from '@affine/core/modules/properties';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import type {
   Active,
   DragEndEvent,
@@ -152,7 +152,7 @@ export function resolveDragEndIntent(
 export type GlobalDragEndIntent = ReturnType<typeof resolveDragEndIntent>;
 
 export const useGlobalDNDHelper = () => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const currentWorkspace = useService(WorkspaceService).workspace;
   const favAdapter = useService(FavoriteItemsAdapter);
   const workspace = currentWorkspace.docCollection;

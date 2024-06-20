@@ -5,7 +5,7 @@ import {
   RadioButtonGroup,
 } from '@affine/component';
 import type { Collection } from '@affine/env/filter';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import type { DocCollection, DocMeta } from '@blocksuite/store';
 import type { DialogContentProps } from '@radix-ui/react-dialog';
 import type { ReactNode } from 'react';
@@ -46,7 +46,7 @@ export const EditCollectionModal = ({
   mode,
   allPageListConfig,
 }: EditCollectionModalProps) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const onConfirmOnCollection = useCallback(
     (view: Collection) => {
       onConfirm(view);
@@ -100,7 +100,7 @@ export const EditCollection = ({
   mode: initMode,
   allPageListConfig,
 }: EditCollectionProps) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const [value, onChange] = useState<Collection>(init);
   const [mode, setMode] = useState<'page' | 'rule'>(
     initMode ?? (init.filterList.length === 0 ? 'page' : 'rule')

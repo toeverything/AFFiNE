@@ -1,5 +1,5 @@
 import { IconButton, Tooltip } from '@affine/component';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { SidebarIcon } from '@blocksuite/icons/rc';
 import clsx from 'clsx';
 import { useAtom } from 'jotai';
@@ -15,7 +15,7 @@ export const SidebarSwitch = ({
   className?: string;
 }) => {
   const [open, setOpen] = useAtom(appSidebarOpenAtom);
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const tooltipContent = open
     ? t['com.affine.sidebarSwitch.collapse']()
     : t['com.affine.sidebarSwitch.expand']();

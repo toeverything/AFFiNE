@@ -1,5 +1,5 @@
 import { Menu, Scrollable } from '@affine/component';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { chunk } from 'lodash-es';
 import { useEffect, useRef } from 'react';
 
@@ -32,7 +32,7 @@ export const IconsSelectorPanel = ({
     iconButton.scrollIntoView({ block: 'center' });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   return (
     <Scrollable.Root>
       <div role="heading" className={styles.menuHeader}>

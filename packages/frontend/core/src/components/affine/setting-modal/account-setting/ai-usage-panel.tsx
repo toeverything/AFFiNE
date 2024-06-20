@@ -7,7 +7,7 @@ import {
   UserCopilotQuotaService,
 } from '@affine/core/modules/cloud';
 import { mixpanel } from '@affine/core/utils';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { useLiveData, useService } from '@toeverything/infra';
 import { cssVar } from '@toeverything/theme';
 import { useSetAtom } from 'jotai';
@@ -17,7 +17,7 @@ import { AIResume, AISubscribe } from '../general-setting/plans/ai/actions';
 import * as styles from './storage-progress.css';
 
 export const AIUsagePanel = () => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const setOpenSettingModal = useSetAtom(openSettingModalAtom);
   const serverConfigService = useService(ServerConfigService);
   const hasPaymentFeature = useLiveData(

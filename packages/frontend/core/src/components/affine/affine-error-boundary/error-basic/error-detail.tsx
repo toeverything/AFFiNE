@@ -1,7 +1,6 @@
 import { Button } from '@affine/component/ui/button';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import { Trans } from '@affine/i18n';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { Trans, useI18n } from '@affine/i18n';
 import { useTheme } from 'next-themes';
 import type { FC, PropsWithChildren, ReactNode } from 'react';
 import { useState } from 'react';
@@ -58,7 +57,7 @@ export const ErrorDetail: FC<ErrorDetailProps> = props => {
   } = props;
   const descriptions = Array.isArray(description) ? description : [description];
   const [isBtnLoading, setBtnLoading] = useState(false);
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const { resolvedTheme } = useTheme();
 
   const onBtnClick = useAsyncCallback(async () => {

@@ -7,7 +7,7 @@ import {
   Scrollable,
 } from '@affine/component';
 import type { PageInfoCustomPropertyMeta } from '@affine/core/modules/properties/services/schema';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import type { KeyboardEventHandler, MouseEventHandler } from 'react';
 import { cloneElement, isValidElement, useCallback } from 'react';
 
@@ -102,7 +102,7 @@ export const EditPropertyNameMenuItem = ({
     [onBlur]
   );
 
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   return (
     <div className={styles.propertyRowNamePopupRow}>
       <IconsSelectorButton
@@ -126,7 +126,7 @@ export const PropertyTypeMenuItem = ({
   property: PageInfoCustomPropertyMeta;
 }) => {
   const Icon = nameToIcon(getDefaultIconName(property.type), property.type);
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   return (
     <div className={styles.propertyRowTypeItem}>
       {t['com.affine.page-properties.create-property.menu.header']()}

@@ -6,7 +6,7 @@ import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { WorkspacePermissionService } from '@affine/core/modules/permissions';
 import { validateAndReduceImage } from '@affine/core/utils/reduce-image';
 import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { CameraIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService, WorkspaceService } from '@toeverything/infra';
 import type { KeyboardEvent, MouseEvent } from 'react';
@@ -17,7 +17,7 @@ import * as style from './style.css';
 const avatarImageProps = { style: { borderRadius: 8 } };
 
 export const ProfilePanel = () => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
 
   const workspace = useService(WorkspaceService).workspace;
   const permissionService = useService(WorkspacePermissionService);

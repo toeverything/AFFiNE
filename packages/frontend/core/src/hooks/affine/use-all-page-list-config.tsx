@@ -5,7 +5,7 @@ import { useBlockSuiteDocMeta } from '@affine/core/hooks/use-block-suite-page-me
 import { FavoriteItemsAdapter } from '@affine/core/modules/properties';
 import { ShareDocsService } from '@affine/core/modules/share-doc';
 import { PublicPageMode } from '@affine/graphql';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import type { DocMeta } from '@blocksuite/store';
 import { useLiveData, useService, WorkspaceService } from '@toeverything/infra';
 import { useCallback, useEffect, useMemo } from 'react';
@@ -30,7 +30,7 @@ export const useAllPageListConfig = () => {
     [pageMetas]
   );
   const favAdapter = useService(FavoriteItemsAdapter);
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const favoriteItems = useLiveData(favAdapter.favorites$);
 
   const isActive = useCallback(

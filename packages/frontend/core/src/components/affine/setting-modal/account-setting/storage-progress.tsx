@@ -1,5 +1,5 @@
 import { Button, ErrorMessage, Skeleton, Tooltip } from '@affine/component';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { useLiveData, useService } from '@toeverything/infra';
 import { cssVar } from '@toeverything/theme';
 import { useEffect, useMemo } from 'react';
@@ -22,7 +22,7 @@ enum ButtonType {
 }
 
 export const StorageProgress = ({ onUpgrade }: StorageProgressProgress) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const quota = useService(UserQuotaService).quota;
 
   useEffect(() => {

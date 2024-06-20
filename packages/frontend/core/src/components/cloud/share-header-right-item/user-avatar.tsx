@@ -6,7 +6,7 @@ import {
   MenuSeparator,
 } from '@affine/component/ui/menu';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { SignOutIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useEffect, useMemo } from 'react';
@@ -54,7 +54,7 @@ const UserInfo = () => {
 export const PublishPageUserAvatar = () => {
   const authService = useService(AuthService);
   const user = useLiveData(authService.session.account$);
-  const t = useAFFiNEI18N();
+  const t = useI18n();
 
   const handleSignOut = useAsyncCallback(async () => {
     await authService.signOut();

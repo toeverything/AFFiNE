@@ -1,6 +1,6 @@
 import { Button, Input, Menu, toast } from '@affine/component';
 import { TagService } from '@affine/core/modules/tag';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { useLiveData, useService } from '@toeverything/infra';
 import clsx from 'clsx';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -35,7 +35,7 @@ export const CreateOrEditTag = ({
   const tagList = useService(TagService).tagList;
   const tagOptions = useLiveData(tagList.tagMetas$);
   const tag = useLiveData(tagList.tagByTagId$(tagMeta?.id));
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const [menuOpen, setMenuOpen] = useState(false);
 
   const [tagName, setTagName] = useState(tagMeta?.title || '');

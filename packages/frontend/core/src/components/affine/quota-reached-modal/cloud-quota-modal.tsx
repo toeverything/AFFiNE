@@ -4,14 +4,14 @@ import { UserQuotaService } from '@affine/core/modules/cloud';
 import { WorkspacePermissionService } from '@affine/core/modules/permissions';
 import { WorkspaceQuotaService } from '@affine/core/modules/quota';
 import { mixpanel } from '@affine/core/utils';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { useLiveData, useService, WorkspaceService } from '@toeverything/infra';
 import bytes from 'bytes';
 import { useAtom, useSetAtom } from 'jotai';
 import { useCallback, useEffect, useMemo } from 'react';
 
 export const CloudQuotaModal = () => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const currentWorkspace = useService(WorkspaceService).workspace;
   const [open, setOpen] = useAtom(openQuotaModalAtom);
   const workspaceQuotaService = useService(WorkspaceQuotaService);

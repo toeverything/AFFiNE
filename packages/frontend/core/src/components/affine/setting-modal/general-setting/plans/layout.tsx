@@ -1,7 +1,7 @@
 import { Button, Divider, IconButton } from '@affine/component';
 import { SettingHeader } from '@affine/component/setting-components';
 import { openSettingModalAtom } from '@affine/core/atoms';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import {
   ArrowDownBigIcon,
   ArrowRightBigIcon,
@@ -27,7 +27,7 @@ import { settingModalScrollContainerAtom } from '../../atoms';
 import * as styles from './layout.css';
 
 export const SeeAllLink = () => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
 
   return (
     <a
@@ -82,7 +82,7 @@ export interface PlanLayoutProps {
 }
 
 export const PlanLayout = ({ cloud, ai, aiTip }: PlanLayoutProps) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const [{ scrollAnchor }, setOpenSettingModal] = useAtom(openSettingModalAtom);
   const aiPricingPlanRef = useRef<HTMLDivElement>(null);
   const aiScrollTipRef = useRef<HTMLDivElement>(null);

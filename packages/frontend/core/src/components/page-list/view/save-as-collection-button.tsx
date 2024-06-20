@@ -1,6 +1,6 @@
 import { Button } from '@affine/component';
 import type { Collection } from '@affine/env/filter';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { SaveIcon } from '@blocksuite/icons/rc';
 import { nanoid } from 'nanoid';
 import { useCallback } from 'react';
@@ -16,7 +16,7 @@ interface SaveAsCollectionButtonProps {
 export const SaveAsCollectionButton = ({
   onConfirm,
 }: SaveAsCollectionButtonProps) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const { open, node } = useEditCollectionName({
     title: t['com.affine.editCollection.saveCollection'](),
     showTips: true,

@@ -1,6 +1,6 @@
 import type { PopoverProps } from '@affine/component';
 import { DatePicker, Popover } from '@affine/component';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import dayjs from 'dayjs';
 import { useCallback, useState } from 'react';
 
@@ -17,7 +17,7 @@ export const DateSelect = ({
   value: number;
   onChange: (value: number) => void;
 }) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const [open, setOpen] = useState(false);
 
   const onDateChange = useCallback(

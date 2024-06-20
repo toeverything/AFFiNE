@@ -9,7 +9,7 @@ import { useWorkspaceInfo } from '@affine/core/hooks/use-workspace-info';
 import { AuthService } from '@affine/core/modules/cloud';
 import { UserFeatureService } from '@affine/core/modules/cloud/services/user-feature';
 import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { Logo1Icon } from '@blocksuite/icons/rc';
 import type { WorkspaceMetadata } from '@toeverything/infra';
 import {
@@ -73,7 +73,7 @@ export const UserInfo = ({ onAccountSettingClick, active }: UserInfoProps) => {
 };
 
 export const SignInButton = () => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const [, setAuthModal] = useAtom(authAtom);
 
   return (
@@ -111,7 +111,7 @@ export const SettingSidebar = ({
   ) => void;
   selectedWorkspaceId: string | null;
 }) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const loginStatus = useLiveData(useService(AuthService).session.status$);
   const generalList = useGeneralSettingList();
   const onAccountSettingClick = useCallback(() => {
@@ -259,7 +259,7 @@ const subTabConfigs = [
   },
 ] satisfies {
   key: WorkspaceSubTab;
-  title: keyof ReturnType<typeof useAFFiNEI18N>;
+  title: keyof ReturnType<typeof useI18n>;
 }[];
 
 const avatarImageProps = { style: { borderRadius: 2 } };
@@ -280,7 +280,7 @@ const WorkspaceListItem = ({
   const name = information?.name ?? UNTITLED_WORKSPACE_NAME;
   const currentWorkspace = workspaceService.workspace;
   const isCurrent = currentWorkspace.id === meta.id;
-  const t = useAFFiNEI18N();
+  const t = useI18n();
 
   useEffect(() => {
     userFeatureService.userFeature.revalidate();

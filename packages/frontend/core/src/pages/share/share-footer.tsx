@@ -1,10 +1,10 @@
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { ArrowRightBigIcon } from '@blocksuite/icons/rc';
 
 import * as styles from './share-footer.css';
 
 export const ShareFooter = () => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   return (
     <div className={styles.footerContainer}>
       <div className={styles.footer}>

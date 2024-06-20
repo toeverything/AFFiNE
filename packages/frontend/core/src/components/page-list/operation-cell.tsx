@@ -14,7 +14,7 @@ import { FavoriteItemsAdapter } from '@affine/core/modules/properties';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import { mixpanel } from '@affine/core/utils';
 import type { Collection, DeleteCollectionInfo } from '@affine/env/filter';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import {
   DeleteIcon,
   DeletePermanentlyIcon,
@@ -57,7 +57,7 @@ export const PageOperationCell = ({
   page,
   onRemoveFromAllowList,
 }: PageOperationCellProps) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const currentWorkspace = useService(WorkspaceService).workspace;
   const { appSettings } = useAppSettingHelper();
   const { setTrashModal } = useTrashModalHelper(currentWorkspace.docCollection);
@@ -233,7 +233,7 @@ export const TrashOperationCell = ({
   onPermanentlyDeletePage,
   onRestorePage,
 }: TrashOperationCellProps) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const { openConfirmModal } = useConfirmModal();
 
   const onConfirmPermanentlyDelete = useCallback(() => {
@@ -292,7 +292,7 @@ export const CollectionOperationCell = ({
   service,
   info,
 }: CollectionOperationCellProps) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
 
   const favAdapter = useService(FavoriteItemsAdapter);
   const { createPage } = usePageHelper(config.docCollection);
@@ -454,7 +454,7 @@ export const TagOperationCell = ({
   tag,
   onTagDelete,
 }: TagOperationCellProps) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const [open, setOpen] = useState(false);
 
   const handleDelete = useCallback(() => {

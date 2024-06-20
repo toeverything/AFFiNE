@@ -4,8 +4,7 @@
   "type": "module",
   "main": "src/index.ts",
   "exports": {
-    ".": "./src/index.ts",
-    "./hooks": "./src/i18n-generated"
+    ".": "./src/index.ts"
   },
   "scripts": {
     "build": "node build.mjs",
@@ -23,6 +22,7 @@
     "@magic-works/i18n-codegen": "^0.6.0",
     "dayjs": "^1.11.11",
     "i18next": "^23.11.1",
+    "react": "^18.2.0",
     "react-i18next": "^14.1.0",
     "undici": "^6.12.0"
   },

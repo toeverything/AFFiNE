@@ -5,8 +5,7 @@ import { AuthService, SubscriptionService } from '@affine/core/modules/cloud';
 import { popupWindow } from '@affine/core/utils';
 import type { SubscriptionRecurring } from '@affine/graphql';
 import { SubscriptionPlan, SubscriptionStatus } from '@affine/graphql';
-import { Trans } from '@affine/i18n';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { Trans, useI18n } from '@affine/i18n';
 import { DoneIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useAtom, useSetAtom } from 'jotai';
@@ -86,7 +85,7 @@ export const PlanCard = (props: PlanCardProps) => {
 };
 
 const ActionButton = ({ detail, recurring }: PlanCardProps) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const loggedIn =
     useLiveData(useService(AuthService).session.status$) === 'authenticated';
   const subscriptionService = useService(SubscriptionService);
@@ -157,7 +156,7 @@ const ActionButton = ({ detail, recurring }: PlanCardProps) => {
 };
 
 const CurrentPlan = () => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   return (
     <Button className={styles.planAction}>
       {t['com.affine.payment.current-plan']()}
@@ -166,7 +165,7 @@ const CurrentPlan = () => {
 };
 
 const Downgrade = ({ disabled }: { disabled?: boolean }) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const [open, setOpen] = useState(false);
 
   const tooltipContent = disabled
@@ -192,7 +191,7 @@ const Downgrade = ({ disabled }: { disabled?: boolean }) => {
 };
 
 const BookDemo = ({ plan }: { plan: SubscriptionPlan }) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const url = useMemo(() => {
     switch (plan) {
       case SubscriptionPlan.Team:
@@ -227,7 +226,7 @@ const BookDemo = ({ plan }: { plan: SubscriptionPlan }) => {
 const Upgrade = ({ recurring }: { recurring: SubscriptionRecurring }) => {
   const [isMutating, setMutating] = useState(false);
   const [isOpenedExternalWindow, setOpenedExternalWindow] = useState(false);
-  const t = useAFFiNEI18N();
+  const t = useI18n();
 
   const subscriptionService = useService(SubscriptionService);
 
@@ -296,7 +295,7 @@ const ChangeRecurring = ({
   disabled?: boolean;
   due: string;
 }) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const [open, setOpen] = useState(false);
   const [isMutating, setIsMutating] = useState(false);
   // allow replay request on network error until component unmount or success
@@ -369,7 +368,7 @@ const SignUpAction = ({ children }: PropsWithChildren) => {
 };
 
 const ResumeButton = () => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const [open, setOpen] = useState(false);
   const [hovered, setHovered] = useState(false);
 

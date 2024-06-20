@@ -4,8 +4,7 @@ import { useBlockSuiteDocMeta } from '@affine/core/hooks/use-block-suite-page-me
 import { CollectionService } from '@affine/core/modules/collection';
 import type { Tag } from '@affine/core/modules/tag';
 import type { Collection, Filter } from '@affine/env/filter';
-import { Trans } from '@affine/i18n';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { Trans, useI18n } from '@affine/i18n';
 import type { DocMeta } from '@blocksuite/store';
 import { useService, WorkspaceService } from '@toeverything/infra';
 import { useCallback, useMemo, useRef, useState } from 'react';
@@ -28,7 +27,7 @@ import {
 } from './page-list-header';
 
 const usePageOperationsRenderer = () => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const collectionService = useService(CollectionService);
   const removeFromAllowList = useCallback(
     (id: string) => {

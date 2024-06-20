@@ -3,7 +3,7 @@ import {
   WorkbenchLink,
   WorkbenchService,
 } from '@affine/core/modules/workbench';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons/rc';
 import type { DocCollection, DocMeta } from '@blocksuite/store';
 import { useDraggable } from '@dnd-kit/core';
@@ -40,7 +40,7 @@ export const Doc = ({
   const workbench = useService(WorkbenchService).workbench;
   const location = useLiveData(workbench.location$);
 
-  const t = useAFFiNEI18N();
+  const t = useI18n();
 
   const docId = doc.id;
   const active = location.pathname === '/' + docId;

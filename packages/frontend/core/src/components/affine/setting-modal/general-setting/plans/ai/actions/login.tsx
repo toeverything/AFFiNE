@@ -1,11 +1,11 @@
 import { Button, type ButtonProps } from '@affine/component';
 import { authAtom } from '@affine/core/atoms';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { useSetAtom } from 'jotai';
 import { useCallback } from 'react';
 
 export const AILogin = (btnProps: ButtonProps) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const setOpen = useSetAtom(authAtom);
 
   const onClickSignIn = useCallback(() => {

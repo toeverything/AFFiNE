@@ -15,7 +15,7 @@ import {
   sendVerifyChangeEmailMutation,
   verifyEmailMutation,
 } from '@affine/graphql';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { useLiveData, useService } from '@toeverything/infra';
 import type { ReactElement } from 'react';
 import { useCallback, useEffect } from 'react';
@@ -43,7 +43,7 @@ const authTypeSchema = z.enum([
 export const AuthPage = (): ReactElement | null => {
   const authService = useService(AuthService);
   const account = useLiveData(authService.session.account$);
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const serverConfig = useService(ServerConfigService).serverConfig;
   const passwordLimits = useLiveData(
     serverConfig.credentialsRequirement$.map(r => r?.password)

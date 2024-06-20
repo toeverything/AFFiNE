@@ -6,7 +6,7 @@ import {
 import { useWorkspace } from '@affine/core/hooks/use-workspace';
 import { useWorkspaceInfo } from '@affine/core/hooks/use-workspace-info';
 import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { ArrowRightSmallIcon } from '@blocksuite/icons/rc';
 import { FrameworkScope } from '@toeverything/infra';
 import { useCallback } from 'react';
@@ -22,7 +22,7 @@ import type { WorkspaceSettingDetailProps } from './types';
 export const WorkspaceSettingDetail = ({
   workspaceMetadata,
 }: WorkspaceSettingDetailProps) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
 
   // useWorkspace hook is a vary heavy operation here, but we need syncing name and avatar changes here,
   // we don't have a better way to do this now

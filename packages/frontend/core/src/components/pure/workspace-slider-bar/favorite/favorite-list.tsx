@@ -7,7 +7,7 @@ import { useBlockSuiteDocMeta } from '@affine/core/hooks/use-block-suite-page-me
 import { CollectionService } from '@affine/core/modules/collection';
 import { FavoriteItemsAdapter } from '@affine/core/modules/properties';
 import type { WorkspaceFavoriteItem } from '@affine/core/modules/properties/services/schema';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import type { DocMeta } from '@blocksuite/store';
 import { useDndContext, useDroppable } from '@dnd-kit/core';
 import {
@@ -97,7 +97,7 @@ const FavoriteListInner = ({ docCollection: workspace }: FavoriteListProps) => {
     [collections, docMetaMapping, workspace]
   );
 
-  const t = useAFFiNEI18N();
+  const t = useI18n();
 
   return (
     <div

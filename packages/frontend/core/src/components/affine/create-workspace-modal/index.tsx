@@ -6,7 +6,7 @@ import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { DebugLogger } from '@affine/debug';
 import { apis } from '@affine/electron-api';
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import {
   initEmptyPage,
   useLiveData,
@@ -55,7 +55,7 @@ const NameWorkspaceContent = ({
   onConfirmName,
   ...props
 }: NameWorkspaceContentProps) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const [workspaceName, setWorkspaceName] = useState('');
   const [enable, setEnable] = useState(shouldEnableCloud);
   const session = useService(AuthService).session;
@@ -182,7 +182,7 @@ export const CreateWorkspaceModal = ({
   onCreate,
 }: ModalProps) => {
   const [step, setStep] = useState<CreateWorkspaceStep>();
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const workspacesService = useService(WorkspacesService);
   const [loading, setLoading] = useState(false);
 

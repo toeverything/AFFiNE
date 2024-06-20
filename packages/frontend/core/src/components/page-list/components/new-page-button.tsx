@@ -1,7 +1,7 @@
 import { DropdownButton, Menu } from '@affine/component';
 import { BlockCard } from '@affine/component/card/block-card';
 import { mixpanel } from '@affine/core/utils';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { EdgelessIcon, ImportIcon, PageIcon } from '@blocksuite/icons/rc';
 import type { PropsWithChildren } from 'react';
 import { useCallback, useState } from 'react';
@@ -20,7 +20,7 @@ export const CreateNewPagePopup = ({
   createNewEdgeless,
   importFile,
 }: NewPageButtonProps) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   return (
     <div
       style={{

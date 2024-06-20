@@ -2,7 +2,7 @@ import { Button, FlexWrapper, notify } from '@affine/component';
 import { openSettingModalAtom } from '@affine/core/atoms';
 import { SubscriptionService } from '@affine/core/modules/cloud';
 import { mixpanel } from '@affine/core/utils';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { AiIcon } from '@blocksuite/icons/rc';
 import {
   DocService,
@@ -52,7 +52,7 @@ export const AIOnboardingEdgeless = () => {
     SubscriptionService,
   });
 
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const notifyId = useLiveData(edgelessNotifyId$);
   const generalAIOnboardingOpened = useLiveData(showAIOnboardingGeneral$);
   const aiSubscription = useLiveData(subscriptionService.subscription.ai$);

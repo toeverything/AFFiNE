@@ -5,7 +5,7 @@ import {
   MenuSeparator,
   MenuSub,
 } from '@affine/component';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { ArrowDownSmallIcon, DoneIcon } from '@blocksuite/icons/rc';
 import { useCallback, useMemo } from 'react';
 
@@ -19,7 +19,7 @@ type GroupOption = {
 };
 
 export const PageDisplayMenu = () => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const [workspaceProperties, setProperties] = useAllDocDisplayProperties();
   const handleSelect = useCallback(
     (value: PageGroupByType) => {

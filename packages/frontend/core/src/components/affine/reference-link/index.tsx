@@ -5,7 +5,7 @@ import {
   useInsidePeekView,
 } from '@affine/core/modules/peek-view';
 import { WorkbenchLink } from '@affine/core/modules/workbench';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import {
   LinkedEdgelessIcon,
   LinkedPageIcon,
@@ -29,7 +29,7 @@ export interface PageReferenceRendererOptions {
   docCollection: DocCollection;
   pageMetaHelper: ReturnType<typeof useDocMetaHelper>;
   journalHelper: ReturnType<typeof useJournalHelper>;
-  t: ReturnType<typeof useAFFiNEI18N>;
+  t: ReturnType<typeof useI18n>;
 }
 // use a function to be rendered in the lit renderer
 export function pageReferenceRenderer({
@@ -77,7 +77,7 @@ export function AffinePageReference({
 }) {
   const pageMetaHelper = useDocMetaHelper(docCollection);
   const journalHelper = useJournalHelper(docCollection);
-  const t = useAFFiNEI18N();
+  const t = useI18n();
 
   const docsService = useService(DocsService);
   const mode$ = LiveData.from(docsService.list.observeMode(pageId), null);

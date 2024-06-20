@@ -1,8 +1,7 @@
 import { Empty } from '@affine/component';
 import type { ModalProps } from '@affine/component/ui/modal';
 import { Modal } from '@affine/component/ui/modal';
-import { Trans } from '@affine/i18n';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { Trans, useI18n } from '@affine/i18n';
 import { useCallback } from 'react';
 
 import {
@@ -13,7 +12,7 @@ import {
 } from './style';
 
 export const TmpDisableAffineCloudModal = (props: ModalProps) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const onClose = useCallback(() => {
     props.onOpenChange?.(false);
   }, [props]);

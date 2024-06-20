@@ -1,10 +1,10 @@
 import { describe, expect, test } from 'vitest';
 
-import { createI18n, getI18n } from '../../';
+import { createI18n, I18n } from '../../';
 import { i18nTime } from '../time';
 
 // Intl api is not available in github action, skip the test
-describe.skip('humanTime', () => {
+describe('humanTime', () => {
   test('absolute', async () => {
     createI18n();
     expect(i18nTime('2024-10-10 13:30:28')).toBe('Oct 10, 2024, 1:30:28 PM');
@@ -350,7 +350,7 @@ describe.skip('humanTime', () => {
 
   test('chinese', () => {
     createI18n();
-    getI18n().changeLanguage('zh-Hans');
+    I18n.changeLanguage('zh-Hans');
     expect(i18nTime('2024-10-10 13:30:28.005')).toBe('2024年10月10日 13:30:28');
     expect(
       i18nTime('2024-10-10 13:30:28.005', {

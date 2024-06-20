@@ -3,7 +3,7 @@ import { Button } from '@affine/component/ui/button';
 import { useEnableCloud } from '@affine/core/hooks/affine/use-enable-cloud';
 import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import {
   useLiveData,
   useService,
@@ -21,7 +21,7 @@ export interface PublishPanelProps {
 }
 
 export const EnableCloudPanel = () => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const confirmEnableCloud = useEnableCloud();
 
   const workspace = useService(WorkspaceService).workspace;

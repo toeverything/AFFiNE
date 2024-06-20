@@ -1,4 +1,4 @@
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import type { AffineEditorContainer } from '@blocksuite/presets';
 import { useService, WorkspaceService } from '@toeverything/infra';
 import { useStore } from 'jotai';
@@ -58,7 +58,7 @@ function registerCMDKCommand(
 
 export function useRegisterWorkspaceCommands() {
   const store = useStore();
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const theme = useTheme();
   const currentWorkspace = useService(WorkspaceService).workspace;
   const languageHelper = useLanguageHelper();

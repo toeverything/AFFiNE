@@ -1,5 +1,5 @@
 import { Button, IconButton } from '@affine/component/ui/button';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { CloseIcon } from '@blocksuite/icons/rc';
 import { useCallback } from 'react';
 
@@ -18,7 +18,7 @@ export const LocalDemoTips = ({
   onLogin,
   onEnableCloud,
 }: LocalDemoTipsProps) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const buttonLabel = isLoggedIn
     ? t['Enable AFFiNE Cloud']()
     : t['Sign in and Enable']();

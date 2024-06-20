@@ -1,7 +1,7 @@
 import { Button } from '@affine/component';
 import { useJournalRouteHelper } from '@affine/core/hooks/use-journal';
 import type { DocCollection } from '@affine/core/shared';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { useCallback } from 'react';
 
 export interface JournalTodayButtonProps {
@@ -11,7 +11,7 @@ export interface JournalTodayButtonProps {
 export const JournalTodayButton = ({
   docCollection,
 }: JournalTodayButtonProps) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const journalHelper = useJournalRouteHelper(docCollection);
 
   const onToday = useCallback(() => {

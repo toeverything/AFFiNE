@@ -1,9 +1,9 @@
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import { LOCALES, useI18N } from '@affine/i18n';
+import { LOCALES, useI18n } from '@affine/i18n';
 import { useEffect, useMemo } from 'react';
 
 export function useLanguageHelper() {
-  const i18n = useI18N();
+  const i18n = useI18n();
   const currentLanguage = useMemo(
     () => LOCALES.find(item => item.tag === i18n.language),
     [i18n.language]

@@ -1,4 +1,4 @@
-import type { useAFFiNEI18N } from '@affine/i18n/hooks';
+import type { useI18n } from '@affine/i18n';
 import { ImportIcon, PlusIcon } from '@blocksuite/icons/rc';
 import type { createStore } from 'jotai';
 
@@ -11,7 +11,7 @@ export function registerAffineCreationCommands({
   pageHelper,
   t,
 }: {
-  t: ReturnType<typeof useAFFiNEI18N>;
+  t: ReturnType<typeof useI18n>;
   store: ReturnType<typeof createStore>;
   pageHelper: ReturnType<typeof usePageHelper>;
 }) {

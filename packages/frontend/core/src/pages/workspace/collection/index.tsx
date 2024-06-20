@@ -8,8 +8,7 @@ import { useAllPageListConfig } from '@affine/core/hooks/affine/use-all-page-lis
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { CollectionService } from '@affine/core/modules/collection';
 import type { Collection } from '@affine/env/filter';
-import { Trans } from '@affine/i18n';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { Trans, useI18n } from '@affine/i18n';
 import {
   CloseIcon,
   FilterIcon,
@@ -123,7 +122,7 @@ const Placeholder = ({ collection }: { collection: Collection }) => {
     setShowTips(false);
     localStorage.setItem('hide-empty-collection-help-info', 'true');
   }, []);
-  const t = useAFFiNEI18N();
+  const t = useI18n();
 
   const handleJumpToCollections = useCallback(() => {
     jumpToCollections(workspace.id);

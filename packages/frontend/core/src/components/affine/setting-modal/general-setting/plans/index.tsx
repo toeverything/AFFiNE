@@ -1,7 +1,6 @@
 import { Switch } from '@affine/component';
 import { SubscriptionPlan, SubscriptionRecurring } from '@affine/graphql';
-import { Trans } from '@affine/i18n';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { Trans, useI18n } from '@affine/i18n';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { FallbackProps } from 'react-error-boundary';
@@ -20,7 +19,7 @@ const getRecurringLabel = ({
   t,
 }: {
   recurring: SubscriptionRecurring;
-  t: ReturnType<typeof useAFFiNEI18N>;
+  t: ReturnType<typeof useI18n>;
 }) => {
   return recurring === SubscriptionRecurring.Monthly
     ? t['com.affine.payment.recurring-monthly']()
@@ -28,7 +27,7 @@ const getRecurringLabel = ({
 };
 
 const Settings = () => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
 
   const loggedIn =
     useLiveData(useService(AuthService).session.status$) === 'authenticated';
@@ -214,7 +213,7 @@ export const AFFiNEPricingPlans = () => {
 };
 
 const PlansErrorBoundary = ({ resetErrorBoundary }: FallbackProps) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
 
   const scroll = (
     <div className={styles.errorTip}>

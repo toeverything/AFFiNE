@@ -1,5 +1,5 @@
 import { Button } from '@affine/component/ui/button';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { Logo1Icon } from '@blocksuite/icons/rc';
 import { useCallback } from 'react';
 
@@ -12,7 +12,7 @@ export const AffineOtherPageLayout = ({
 }: {
   children: React.ReactNode;
 }) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
 
   const openDownloadLink = useCallback(() => {
     open(runtimeConfig.downloadUrl, '_blank');

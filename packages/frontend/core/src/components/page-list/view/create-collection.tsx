@@ -1,5 +1,5 @@
 import { Button, Input, Modal } from '@affine/component';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import type { KeyboardEvent } from 'react';
 import { useCallback, useMemo, useState } from 'react';
 
@@ -23,7 +23,7 @@ export const CreateCollectionModal = ({
   onOpenChange,
   title,
 }: CreateCollectionModalProps) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const onConfirmTitle = useCallback(
     (title: string) => {
       onConfirm(title);
@@ -65,7 +65,7 @@ export const CreateCollection = ({
   onCancel,
   onConfirm,
 }: CreateCollectionProps) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const [value, onChange] = useState(init);
   const isNameEmpty = useMemo(() => value.trim().length === 0, [value]);
   const save = useCallback(() => {

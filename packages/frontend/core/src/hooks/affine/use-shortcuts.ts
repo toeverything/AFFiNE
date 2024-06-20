@@ -1,4 +1,4 @@
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { useCallback, useMemo } from 'react';
 
 type KeyboardShortcutsI18NKeys =
@@ -45,9 +45,9 @@ type KeyboardShortcutsI18NKeys =
   | 'divider'
   | 'copy-private-link';
 
-// TODO(550): remove this hook after 'useAFFiNEI18N' support scoped i18n
+// TODO(550): remove this hook after 'useI18n' support scoped i18n
 const useKeyboardShortcutsI18N = () => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   return useCallback(
     (key: KeyboardShortcutsI18NKeys) =>
       t[`com.affine.keyboardShortcuts.${key}`](),
@@ -55,9 +55,9 @@ const useKeyboardShortcutsI18N = () => {
   );
 };
 
-// TODO(550): remove this hook after 'useAFFiNEI18N' support scoped i18n
+// TODO(550): remove this hook after 'useI18n' support scoped i18n
 const useHeadingKeyboardShortcutsI18N = () => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   return useCallback(
     (number: string) => t['com.affine.keyboardShortcuts.heading']({ number }),
     [t]
@@ -280,7 +280,7 @@ export const useWinMarkdownShortcuts = (): ShortcutMap => {
 };
 
 export const useMarkdownShortcuts = (): ShortcutsInfo => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
 
   const macMarkdownShortcuts = useMacMarkdownShortcuts();
   const winMarkdownShortcuts = useWinMarkdownShortcuts();
@@ -292,7 +292,7 @@ export const useMarkdownShortcuts = (): ShortcutsInfo => {
 };
 
 export const usePageShortcuts = (): ShortcutsInfo => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
 
   const macPageShortcuts = useMacPageKeyboardShortcuts();
   const winPageShortcuts = useWinPageKeyboardShortcuts();
@@ -304,7 +304,7 @@ export const usePageShortcuts = (): ShortcutsInfo => {
 };
 
 export const useEdgelessShortcuts = (): ShortcutsInfo => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
 
   const macEdgelessShortcuts = useMacEdgelessKeyboardShortcuts();
   const winEdgelessShortcuts = useWinEdgelessKeyboardShortcuts();
@@ -316,7 +316,7 @@ export const useEdgelessShortcuts = (): ShortcutsInfo => {
 };
 
 export const useGeneralShortcuts = (): ShortcutsInfo => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
 
   const macGeneralShortcuts = useMacGeneralKeyboardShortcuts();
   const winGeneralShortcuts = useWinGeneralKeyboardShortcuts();

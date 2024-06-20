@@ -5,7 +5,7 @@ import {
   SettingWrapper,
 } from '@affine/component/setting-components';
 import { useAppUpdater } from '@affine/core/hooks/use-app-updater';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { ArrowRightSmallIcon, OpenInNewIcon } from '@blocksuite/icons/rc';
 import { useCallback } from 'react';
 
@@ -17,7 +17,7 @@ import * as styles from './style.css';
 import { UpdateCheckSection } from './update-check-section';
 
 export const AboutAffine = () => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const { appSettings, updateSettings } = useAppSettingHelper();
   const { toggleAutoCheck, toggleAutoDownload } = useAppUpdater();
   const channel = runtimeConfig.appBuildType;

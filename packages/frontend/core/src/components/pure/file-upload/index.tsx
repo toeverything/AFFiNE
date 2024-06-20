@@ -1,5 +1,5 @@
 import { Button } from '@affine/component/ui/button';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import type { ChangeEvent, PropsWithChildren } from 'react';
 import { useRef } from 'react';
 
@@ -17,7 +17,7 @@ export const Upload = ({
   disabled,
   ...props
 }: PropsWithChildren<UploadProps>) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const input_ref = useRef<HTMLInputElement>(null);
   const _chooseFile = () => {
     if (input_ref.current) {

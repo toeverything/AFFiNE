@@ -1,5 +1,5 @@
 import { PageNotFoundError } from '@affine/env/constant';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { useCallback } from 'react';
 
 import {
@@ -10,7 +10,7 @@ import { ErrorDetail, ErrorStatus } from '../error-basic/error-detail';
 import { createErrorFallback } from '../error-basic/fallback-creator';
 
 export const PageNotFoundDetail = createErrorFallback(PageNotFoundError, () => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const { jumpToIndex } = useNavigateHelper();
 
   const onBtnClick = useCallback(

@@ -1,5 +1,5 @@
 import type { PasswordLimitsFragment } from '@affine/graphql';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import type { FC } from 'react';
 import { useCallback, useRef, useState } from 'react';
 
@@ -13,7 +13,7 @@ export const SetPassword: FC<{
   onLater?: () => void;
   onSetPassword: (password: string) => void;
 }> = ({ passwordLimits, onLater, onSetPassword, showLater = false }) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
 
   const [passwordPass, setPasswordPass] = useState(false);
   const passwordRef = useRef('');

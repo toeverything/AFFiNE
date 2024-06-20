@@ -1,8 +1,7 @@
 import { Tooltip } from '@affine/component';
 import { FavoriteItemsAdapter } from '@affine/core/modules/properties';
 import type { Collection } from '@affine/env/filter';
-import { Trans } from '@affine/i18n';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { Trans, useI18n } from '@affine/i18n';
 import {
   CloseIcon,
   EdgelessIcon,
@@ -40,7 +39,7 @@ export const RulesMode = ({
   switchMode: ReactNode;
   allPageListConfig: AllPageListConfig;
 }) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const [showPreview, setShowPreview] = useState(true);
   const allowListPages: DocMeta[] = [];
   const rulesPages: DocMeta[] = [];
@@ -355,7 +354,7 @@ const RulesEmpty = ({
   noRules: boolean;
   fullHeight: boolean;
 }) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   return (
     <div
       style={{

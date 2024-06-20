@@ -5,7 +5,7 @@ import type {
   PropertiesMeta,
   VariableMap,
 } from '@affine/env/filter';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import dayjs from 'dayjs';
 import type { ReactNode } from 'react';
 
@@ -81,7 +81,7 @@ export const VariableSelect = ({
   onSelect: (value: Filter) => void;
   propertiesMeta: PropertiesMeta;
 }) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   return (
     <div data-testid="variable-select">
       <div className={styles.variableSelectTitleStyle}>

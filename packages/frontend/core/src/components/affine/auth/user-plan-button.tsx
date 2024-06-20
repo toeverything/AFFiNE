@@ -1,6 +1,6 @@
 import { Tooltip } from '@affine/component/ui/tooltip';
 import { mixpanel } from '@affine/core/utils';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { useLiveData, useServices } from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
 import { useCallback, useEffect } from 'react';
@@ -49,7 +49,7 @@ export const UserPlanButton = () => {
     [setSettingModalAtom]
   );
 
-  const t = useAFFiNEI18N();
+  const t = useI18n();
 
   if (!hasPayment) {
     // no payment feature

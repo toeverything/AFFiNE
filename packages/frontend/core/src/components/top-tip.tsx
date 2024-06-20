@@ -1,7 +1,6 @@
 import { BrowserWarning, LocalDemoTips } from '@affine/component/affine-banner';
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import { Trans } from '@affine/i18n';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { Trans, useI18n } from '@affine/i18n';
 import { useLiveData, useService, type Workspace } from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
 import { useCallback, useState } from 'react';
@@ -30,7 +29,7 @@ const shouldShowWarning = (() => {
 })();
 
 const OSWarningMessage = () => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const notChrome = environment.isBrowser && !environment.isChrome;
   const notGoodVersion =
     environment.isBrowser &&
