@@ -274,7 +274,7 @@ export class DocEngineLocalPart {
       try {
         applyUpdate(doc, update, DOC_ENGINE_ORIGIN);
       } catch (err) {
-        logger;
+        logger.error('failed to apply update yjs doc', err);
       }
     }
   }
