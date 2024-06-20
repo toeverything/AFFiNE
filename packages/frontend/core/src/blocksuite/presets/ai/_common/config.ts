@@ -36,6 +36,7 @@ import {
   AISearchIcon,
   AIStarIconWithAnimation,
   ChatWithAIIcon,
+  CommentIcon,
   ExplainIcon,
   ImproveWritingIcon,
   LanguageIcon,
@@ -395,6 +396,15 @@ const GenerateWithAIGroup: AIItemGroupConfig = {
 const OthersAIGroup: AIItemGroupConfig = {
   name: 'Others',
   items: [
+    {
+      name: 'Continue with AI',
+      icon: CommentIcon,
+      handler: host => {
+        const panel = getAIPanel(host);
+        AIProvider.slots.requestContinueWithAIInChat.emit({ host });
+        panel.hide();
+      },
+    },
     {
       name: 'Open AI Chat',
       icon: ChatWithAIIcon,

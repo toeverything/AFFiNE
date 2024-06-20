@@ -81,6 +81,10 @@ export class AIProvider {
     // use case: when user selects "continue in chat" in an ask ai result panel
     // do we need to pass the context to the chat panel?
     requestContinueInChat: new Slot<{ host: EditorHost; show: boolean }>(),
+    requestContinueWithAIInChat: new Slot<{
+      host: EditorHost;
+      mode?: 'page' | 'edgeless';
+    }>(),
     requestLogin: new Slot<{ host: EditorHost }>(),
     requestUpgradePlan: new Slot<{ host: EditorHost }>(),
     // when an action is requested to run in edgeless mode (show a toast in affine)
@@ -94,6 +98,10 @@ export class AIProvider {
     // downstream can emit this slot to notify ai presets that user info has been updated
     userInfo: new Slot<AIUserInfo | null>(),
     // add more if needed
+    toggleChatCards: new Slot<{
+      visible: boolean;
+      ok?: boolean;
+    }>(),
   };
 
   // track the history of triggered actions (in memory only)

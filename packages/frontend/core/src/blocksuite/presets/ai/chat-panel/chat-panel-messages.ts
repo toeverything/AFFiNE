@@ -27,6 +27,7 @@ import {
 } from '@blocksuite/blocks';
 import { css, html, nothing, type PropertyValues } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
+import { cache } from 'lit/directives/cache.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
@@ -144,7 +145,8 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
     }
   `;
 
-  private _selectionValue: BaseSelection[] = [];
+  @state()
+  accessor _selectionValue: BaseSelection[] = [];
 
   @state()
   accessor showDownIndicator = false;
@@ -167,14 +169,16 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
   @query('.chat-panel-messages')
   accessor messagesContainer!: HTMLDivElement;
 
-  protected override updated(_changedProperties: PropertyValues) {
-    if (_changedProperties.has('host')) {
+  @state()
+  accessor showChatCards = true;
+
+  protected override updated(changedProperties: PropertyValues) {
+    if (changedProperties.has('host')) {
       const { disposables } = this;
 
       disposables.add(
         this.host.selection.slots.changed.on(() => {
           this._selectionValue = this.host.selection.value;
-          this.requestUpdate();
         })
       );
       const { docModeService } = this.host.spec.getService('affine:page');
@@ -226,12 +230,16 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
                     : 'What can I help you with?'}
                 </div>
               </div>
-              <chat-cards
-                .chatContextValue=${this.chatContextValue}
-                .updateContext=${this.updateContext}
-                .host=${this.host}
-                .selectionValue=${this._selectionValue}
-              ></chat-cards> `
+              ${cache(
+                this.showChatCards
+                  ? html`
+                      <chat-cards
+                        .updateContext=${this.updateContext}
+                        .host=${this.host}
+                      ></chat-cards>
+                    `
+                  : nothing
+              )}`
           : repeat(filteredItems, (item, index) => {
               const isLast = index === filteredItems.length - 1;
               return html`<div class="message">
@@ -263,6 +271,12 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
         ) {
           this.updateContext({ status: 'idle', error: null });
         }
+      })
+    );
+
+    this.disposables.add(
+      AIProvider.slots.toggleChatCards.on(({ visible }) => {
+        this.showChatCards = visible;
       })
     );
   }

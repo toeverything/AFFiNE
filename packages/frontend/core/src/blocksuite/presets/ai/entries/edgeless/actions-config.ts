@@ -19,6 +19,7 @@ import {
   AIPresentationIconWithAnimation,
   AISearchIcon,
   ChatWithAIIcon,
+  CommentIcon,
   ExplainIcon,
   ImproveWritingIcon,
   LanguageIcon,
@@ -98,6 +99,19 @@ export const imageProcessingSubItem = imageProcessingTypes.map(type => {
 const othersGroup: AIItemGroupConfig = {
   name: 'others',
   items: [
+    {
+      name: 'Continue with AI',
+      icon: CommentIcon,
+      showWhen: () => true,
+      handler: host => {
+        const panel = getAIPanel(host);
+        AIProvider.slots.requestContinueWithAIInChat.emit({
+          host,
+          mode: 'edgeless',
+        });
+        panel.hide();
+      },
+    },
     {
       name: 'Open AI Chat',
       icon: ChatWithAIIcon,

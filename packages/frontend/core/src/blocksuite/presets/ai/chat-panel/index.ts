@@ -190,12 +190,20 @@ export class ChatPanel extends WithDisposable(ShadowlessElement) {
 
     AIProvider.slots.actions.on(({ action, event }) => {
       const { status } = this.chatContextValue;
+
       if (
         action !== 'chat' &&
         event === 'finished' &&
         (status === 'idle' || status === 'success')
       ) {
         this._resetItems();
+      }
+
+      if (action === 'chat' && event === 'finished') {
+        AIProvider.slots.toggleChatCards.emit({
+          visible: true,
+          ok: status === 'success',
+        });
       }
     });
 

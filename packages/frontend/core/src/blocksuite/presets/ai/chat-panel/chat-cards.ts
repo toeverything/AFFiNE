@@ -1,12 +1,10 @@
-import type { BaseSelection, EditorHost } from '@blocksuite/block-std';
+import type { EditorHost } from '@blocksuite/block-std';
 import { WithDisposable } from '@blocksuite/block-std';
 import {
-  type CopilotSelectionController,
   type ImageBlockModel,
   type NoteBlockModel,
   NoteDisplayMode,
 } from '@blocksuite/blocks';
-import { debounce } from '@blocksuite/global/utils';
 import type { BlockModel } from '@blocksuite/store';
 import { css, html, LitElement, nothing, type PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
@@ -18,8 +16,8 @@ import {
   DocIcon,
   SmallImageIcon,
 } from '../_common/icons';
+import { AIProvider } from '../provider';
 import {
-  getEdgelessRootFromEditor,
   getSelectedImagesAsBlobs,
   getSelectedTextContent,
   getTextContentFromBlockModels,
@@ -54,15 +52,68 @@ const cardsStyles = css`
   }
 `;
 
-const ChatCardsConfig = [
-  {
-    name: 'current-selection',
-    render: (text?: string, _?: File, __?: string) => {
-      if (!text) return nothing;
+enum CardType {
+  Text,
+  Image,
+  Block,
+  Doc,
+}
 
-      const lines = text.split('\n');
+type CardBase = {
+  id: number;
+};
 
-      return html`<div class="card-wrapper">
+type CardText = CardBase & {
+  type: CardType.Text;
+  text: string;
+  markdown: string;
+};
+
+type CardImage = CardBase & {
+  type: CardType.Image;
+  image: File;
+  caption?: string;
+};
+
+type CardBlock = CardBase & {
+  type: CardType.Block | CardType.Doc;
+  text?: string;
+  markdown?: string;
+  images?: File[];
+};
+
+type Card = CardText | CardImage | CardBlock;
+
+const MAX_CARDS = 3;
+
+@customElement('chat-cards')
+export class ChatCards extends WithDisposable(LitElement) {
+  static override styles = css`
+    :host {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    ${cardsStyles}
+  `;
+
+  @property({ attribute: false })
+  accessor host!: EditorHost;
+
+  @property({ attribute: false })
+  accessor updateContext!: (context: Partial<ChatContextValue>) => void;
+
+  @state()
+  accessor cards: Card[] = [];
+
+  private _selectedCardId: number = 0;
+
+  static renderText({ text }: CardText) {
+    const lines = text.split('\n');
+
+    return html`
+      <div class="card-wrapper">
         <div class="card-title">
           ${CurrentSelectionIcon}
           <div>Start with current selection</div>
@@ -71,8 +122,8 @@ const ChatCardsConfig = [
           ${repeat(
             lines.slice(0, 2),
             line => line,
-            line => {
-              return html`<div
+            line => html`
+              <div
                 style=${styleMap({
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
@@ -80,34 +131,17 @@ const ChatCardsConfig = [
                 })}
               >
                 ${line}
-              </div>`;
-            }
+              </div>
+            `
           )}
         </div>
-      </div> `;
-    },
-    handler: (
-      updateContext: (context: Partial<ChatContextValue>) => void,
-      text: string,
-      markdown: string,
-      images?: File[]
-    ) => {
-      const value: Partial<ChatContextValue> = {
-        quote: text,
-        markdown: markdown,
-      };
-      if (images) {
-        value.images = images;
-      }
-      updateContext(value);
-    },
-  },
-  {
-    name: 'image',
-    render: (_?: string, image?: File, caption?: string) => {
-      if (!image) return nothing;
+      </div>
+    `;
+  }
 
-      return html`<div
+  static renderImage({ caption, image }: CardImage) {
+    return html`
+      <div
         class="card-wrapper"
         style=${styleMap({
           display: 'flex',
@@ -134,142 +168,154 @@ const ChatCardsConfig = [
           })}
           src="${URL.createObjectURL(image)}"
         />
-      </div>`;
-    },
-    handler: (
-      updateContext: (context: Partial<ChatContextValue>) => void,
-      _: string,
-      __: string,
-      images?: File[]
-    ) => {
-      const value: Partial<ChatContextValue> = {};
-      if (images) {
-        value.images = images;
-      }
-      updateContext(value);
-    },
-  },
-  {
-    name: 'doc',
-    render: () => {
-      return html`
-        <div class="card-wrapper">
-          <div class="card-title">
-            ${DocIcon}
-            <div>Start with this doc</div>
-          </div>
-          <div class="second-text">you've chosen within the doc</div>
+      </div>
+    `;
+  }
+
+  static renderDoc(_: CardBlock) {
+    return html`
+      <div class="card-wrapper">
+        <div class="card-title">
+          ${DocIcon}
+          <div>Start with this doc</div>
         </div>
-      `;
-    },
-    handler: (
-      updateContext: (context: Partial<ChatContextValue>) => void,
-      text: string,
-      markdown: string,
-      images?: File[]
-    ) => {
-      const value: Partial<ChatContextValue> = {
-        quote: text,
-        markdown: markdown,
-      };
-      if (images) {
-        value.images = images;
+        <div class="second-text">you've chosen within the doc</div>
+      </div>
+    `;
+  }
+
+  private _renderCard(card: Card) {
+    if (card.type === CardType.Text) {
+      return ChatCards.renderText(card);
+    }
+
+    if (card.type === CardType.Image) {
+      return ChatCards.renderImage(card);
+    }
+
+    if (card.type === CardType.Doc) {
+      return ChatCards.renderDoc(card);
+    }
+
+    return nothing;
+  }
+
+  private _updateCards(card: Card) {
+    this.cards.unshift(card);
+
+    if (this.cards.length > MAX_CARDS) {
+      this.cards.pop();
+    }
+
+    this.requestUpdate();
+  }
+
+  private async _handleDocSelection(card: CardBlock) {
+    const { text, markdown, images } = await this._extractAll();
+
+    card.text = text;
+    card.markdown = markdown;
+    card.images = images;
+  }
+
+  private async _handleClick(card: Card) {
+    AIProvider.slots.toggleChatCards.emit({ visible: false });
+
+    this._selectedCardId = card.id;
+
+    switch (card.type) {
+      case CardType.Text: {
+        this.updateContext({
+          quote: card.text,
+          markdown: card.markdown,
+        });
+        break;
       }
-      updateContext(value);
-    },
-  },
-];
-
-@customElement('chat-cards')
-export class ChatCards extends WithDisposable(LitElement) {
-  static override styles = css`
-    ${cardsStyles}
-    .cards-container {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
+      case CardType.Image: {
+        this.updateContext({
+          images: [card.image],
+        });
+        break;
+      }
+      case CardType.Doc: {
+        await this._handleDocSelection(card);
+        this.updateContext({
+          quote: card.text,
+          markdown: card.markdown,
+          images: card.images,
+        });
+        break;
+      }
     }
-  `;
-
-  @property({ attribute: false })
-  accessor host!: EditorHost;
-
-  @property({ attribute: false })
-  accessor chatContextValue!: ChatContextValue;
-
-  @property({ attribute: false })
-  accessor updateContext!: (context: Partial<ChatContextValue>) => void;
-
-  @property({ attribute: false })
-  accessor selectionValue: BaseSelection[] = [];
-
-  @state()
-  accessor text: string = '';
-
-  @state()
-  accessor markdown: string = '';
-
-  @state()
-  accessor images: File[] = [];
-
-  @state()
-  accessor caption: string = '';
-
-  private _onEdgelessCopilotAreaUpdated() {
-    if (!this.host.closest('edgeless-editor')) return;
-    const edgeless = getEdgelessRootFromEditor(this.host);
-
-    const copilotSelectionTool = edgeless.tools.controllers
-      .copilot as CopilotSelectionController;
-
-    this._disposables.add(
-      copilotSelectionTool.draggingAreaUpdated.on(
-        debounce(() => {
-          selectedToCanvas(this.host)
-            .then(canvas => {
-              canvas?.toBlob(blob => {
-                if (!blob) return;
-                const file = new File([blob], 'selected.png');
-                this.images = [file];
-              });
-            })
-            .catch(console.error);
-        }, 300)
-      )
-    );
   }
 
-  private async _updateState() {
-    if (
-      this.selectionValue.some(
-        selection => selection.is('text') || selection.is('image')
-      )
-    )
+  private async _extract() {
+    const text = await getSelectedTextContent(this.host, 'plain-text');
+    const images = await getSelectedImagesAsBlobs(this.host);
+    const hasText = text.length > 0;
+    const hasImages = images.length > 0;
+
+    if (hasText && !hasImages) {
+      const markdown = await getSelectedTextContent(this.host, 'markdown');
+
+      this._updateCards({
+        id: Date.now(),
+        type: CardType.Text,
+        text,
+        markdown,
+      });
+
       return;
-    this.text = await getSelectedTextContent(this.host, 'plain-text');
-    this.markdown = await getSelectedTextContent(this.host, 'markdown');
-    this.images = await getSelectedImagesAsBlobs(this.host);
-    const [_, data] = this.host.command
-      .chain()
-      .tryAll(chain => [
-        chain.getTextSelection(),
-        chain.getBlockSelections(),
-        chain.getImageSelections(),
-      ])
-      .getSelectedBlocks({
-        types: ['image'],
-      })
-      .run();
-    if (data.currentBlockSelections?.[0]) {
-      this.caption =
-        (
-          this.host.doc.getBlock(data.currentBlockSelections[0].blockId)
-            ?.model as ImageBlockModel
-        ).caption ?? '';
+    }
+
+    if (!hasText && hasImages && images.length === 1) {
+      const [_, data] = this.host.command
+        .chain()
+        .tryAll(chain => [chain.getImageSelections()])
+        .getSelectedBlocks({
+          types: ['image'],
+        })
+        .run();
+      let caption = '';
+
+      if (data.currentImageSelections?.[0]) {
+        caption =
+          (
+            this.host.doc.getBlock(data.currentImageSelections[0].blockId)
+              ?.model as ImageBlockModel
+          ).caption ?? '';
+      }
+
+      this._updateCards({
+        id: Date.now(),
+        type: CardType.Image,
+        image: images[0],
+        caption,
+      });
+
+      return;
     }
   }
 
-  private async _handleDocSelection() {
+  private async _extractOnEdgeless() {
+    if (!this.host.closest('edgeless-editor')) return;
+
+    const canvas = await selectedToCanvas(this.host);
+    if (!canvas) return;
+
+    const blob: Blob | null = await new Promise(resolve =>
+      canvas.toBlob(resolve)
+    );
+    if (!blob) return;
+
+    this._updateCards({
+      id: Date.now(),
+      type: CardType.Image,
+      image: new File([blob], 'selected.png'),
+    });
+  }
+
+  private async _extractAll() {
     const notes = this.host.doc
       .getBlocksByFlavour('affine:note')
       .filter(
@@ -305,50 +351,68 @@ export class ChatCards extends WithDisposable(LitElement) {
       }) ?? []
     );
     const images = blobs.filter((blob): blob is File => !!blob);
-    this.text = text;
-    this.markdown = markdown;
-    this.images = images;
+
+    return {
+      text,
+      markdown,
+      images,
+    };
   }
 
-  protected override async updated(_changedProperties: PropertyValues) {
-    if (_changedProperties.has('selectionValue')) {
-      await this._updateState();
-    }
+  protected override async updated(changedProperties: PropertyValues) {
+    if (changedProperties.has('host')) {
+      const { text, images } = await this._extractAll();
+      const hasText = text.length > 0;
+      const hasImages = images.length > 0;
 
-    if (_changedProperties.has('host')) {
-      this._onEdgelessCopilotAreaUpdated();
+      // Currently only supports checking on first load
+      if (
+        (hasText || hasImages) &&
+        !this.cards.some(card => card.type === CardType.Doc)
+      ) {
+        this._updateCards({
+          id: Date.now(),
+          type: CardType.Doc,
+        });
+      }
     }
+  }
+
+  override async connectedCallback() {
+    super.connectedCallback();
+
+    this._disposables.add(
+      AIProvider.slots.requestContinueWithAIInChat.on(async ({ mode }) => {
+        if (mode === 'edgeless') {
+          await this._extractOnEdgeless();
+        } else {
+          await this._extract();
+        }
+      })
+    );
+
+    this._disposables.add(
+      AIProvider.slots.toggleChatCards.on(({ visible, ok }) => {
+        if (visible && ok && this._selectedCardId > 0) {
+          this.cards = this.cards.filter(
+            card => card.id !== this._selectedCardId
+          );
+          this._selectedCardId = 0;
+        }
+      })
+    );
   }
 
   protected override render() {
-    return html`<div class="cards-container">
-      ${repeat(
-        ChatCardsConfig,
-        card => card.name,
-        card => {
-          if (
-            card.render(this.text, this.images[0], this.caption) !== nothing
-          ) {
-            return html`<div
-              @click=${async () => {
-                if (card.name === 'doc') {
-                  await this._handleDocSelection();
-                }
-                card.handler(
-                  this.updateContext,
-                  this.text,
-                  this.markdown,
-                  this.images
-                );
-              }}
-            >
-              ${card.render(this.text, this.images[0], this.caption)}
-            </div> `;
-          }
-          return nothing;
-        }
-      )}
-    </div>`;
+    return repeat(
+      this.cards,
+      card => card.id,
+      card => html`
+        <div @click=${() => this._handleClick(card)}>
+          ${this._renderCard(card)}
+        </div>
+      `
+    );
   }
 }
 
