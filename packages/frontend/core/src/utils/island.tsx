@@ -1,5 +1,11 @@
 import { LiveData, useLiveData } from '@toeverything/infra';
-import { useEffect, useRef } from 'react';
+import {
+  forwardRef,
+  type Ref,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+} from 'react';
 import { createPortal } from 'react-dom';
 
 export const createIsland = () => {
@@ -7,8 +13,13 @@ export const createIsland = () => {
   let mounted = false;
   let provided = false;
   return {
-    Target: ({ ...other }: React.HTMLProps<HTMLDivElement>) => {
+    Target: forwardRef(function IslandTarget(
+      { ...other }: React.HTMLProps<HTMLDivElement>,
+      ref: Ref<HTMLDivElement>
+    ) {
       const target = useRef<HTMLDivElement | null>(null);
+
+      useImperativeHandle(ref, () => target.current as HTMLDivElement, []);
       useEffect(() => {
         if (mounted === true) {
           throw new Error('Island should not be mounted more than once');
@@ -21,7 +32,7 @@ export const createIsland = () => {
         };
       }, []);
       return <div {...other} ref={target}></div>;
-    },
+    }),
     Provider: ({ children }: React.PropsWithChildren) => {
       const target = useLiveData(targetLiveData$);
       useEffect(() => {

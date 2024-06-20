@@ -4,14 +4,18 @@ import {
   MenuIcon,
   MenuItem,
   MenuSeparator,
+  MenuSub,
 } from '@affine/component/ui/menu';
 import { openHistoryTipsModalAtom } from '@affine/core/atoms';
 import { PageHistoryModal } from '@affine/core/components/affine/page-history-modal';
+import { ShareMenuContent } from '@affine/core/components/affine/share-page-modal/share-menu';
 import { Export, MoveToTrash } from '@affine/core/components/page-list';
 import { useBlockSuiteMetaHelper } from '@affine/core/hooks/affine/use-block-suite-meta-helper';
+import { useEnableCloud } from '@affine/core/hooks/affine/use-enable-cloud';
 import { useExportPage } from '@affine/core/hooks/affine/use-export-page';
 import { useTrashModalHelper } from '@affine/core/hooks/affine/use-trash-modal-helper';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
+import { useDetailPageHeaderResponsive } from '@affine/core/pages/workspace/detail-page/use-header-responsive';
 import { mixpanel } from '@affine/core/utils';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useI18n } from '@affine/i18n';
@@ -24,7 +28,9 @@ import {
   HistoryIcon,
   ImportIcon,
   PageIcon,
+  ShareIcon,
 } from '@blocksuite/icons/rc';
+import type { Doc } from '@blocksuite/store';
 import {
   DocService,
   useLiveData,
@@ -40,16 +46,19 @@ import { useFavorite } from '../favorite';
 
 type PageMenuProps = {
   rename?: () => void;
-  pageId: string;
+  page: Doc;
   isJournal?: boolean;
 };
 // fixme: refactor this file
 export const PageHeaderMenuButton = ({
   rename,
-  pageId,
+  page,
   isJournal,
 }: PageMenuProps) => {
+  const pageId = page?.id;
   const t = useI18n();
+  const { hideShare } = useDetailPageHeaderResponsive();
+  const confirmEnableCloud = useEnableCloud();
 
   const workspace = useService(WorkspaceService).workspace;
   const docCollection = workspace.docCollection;
@@ -127,8 +136,46 @@ export const PageHeaderMenuButton = ({
     }
   }, [importFile]);
 
+  const showResponsiveMenu = hideShare;
+  const ResponsiveMenuItems = (
+    <>
+      {hideShare ? (
+        <MenuSub
+          subContentOptions={{
+            sideOffset: 12,
+            alignOffset: -8,
+          }}
+          items={
+            <div style={{ padding: 4 }}>
+              <ShareMenuContent
+                workspaceMetadata={workspace.meta}
+                currentPage={page}
+                onEnableAffineCloud={() =>
+                  confirmEnableCloud(workspace, {
+                    openPageId: page.id,
+                  })
+                }
+              />
+            </div>
+          }
+          triggerOptions={{
+            preFix: (
+              <MenuIcon>
+                <ShareIcon />
+              </MenuIcon>
+            ),
+          }}
+        >
+          {t['com.affine.share-menu.shareButton']()}
+        </MenuSub>
+      ) : null}
+      <MenuSeparator />
+    </>
+  );
+
   const EditMenu = (
     <>
+      {showResponsiveMenu ? ResponsiveMenuItems : null}
       {!isJournal && (
         <MenuItem
           preFix={

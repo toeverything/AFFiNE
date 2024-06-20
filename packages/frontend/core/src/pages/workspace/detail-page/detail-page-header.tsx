@@ -1,12 +1,14 @@
-import type { InlineEditHandle } from '@affine/component';
+import { Divider, type InlineEditHandle } from '@affine/component';
 import { FavoriteButton } from '@affine/core/components/blocksuite/block-suite-header/favorite';
 import { JournalWeekDatePicker } from '@affine/core/components/blocksuite/block-suite-header/journal/date-picker';
 import { JournalTodayButton } from '@affine/core/components/blocksuite/block-suite-header/journal/today-button';
 import { PageHeaderMenuButton } from '@affine/core/components/blocksuite/block-suite-header/menu';
+import { DetailPageHeaderPresentButton } from '@affine/core/components/blocksuite/block-suite-header/present/detail-header-present-button';
 import { EditorModeSwitch } from '@affine/core/components/blocksuite/block-suite-mode-switch';
+import { useRegisterCopyLinkCommands } from '@affine/core/hooks/affine/use-register-copy-link-commands';
 import { useJournalInfoHelper } from '@affine/core/hooks/use-journal';
 import type { Doc } from '@blocksuite/store';
-import type { Workspace } from '@toeverything/infra';
+import { type Workspace } from '@toeverything/infra';
 import { useAtomValue } from 'jotai';
 import { useCallback, useRef } from 'react';
 
@@ -15,6 +17,7 @@ import { appSidebarFloatingAtom } from '../../../components/app-sidebar';
 import { BlocksuiteHeaderTitle } from '../../../components/blocksuite/block-suite-header/title/index';
 import { HeaderDivider } from '../../../components/pure/header';
 import * as styles from './detail-page-header.css';
+import { useDetailPageHeaderResponsive } from './use-header-responsive';
 
 function Header({
   children,
@@ -43,6 +46,7 @@ interface PageHeaderProps {
   workspace: Workspace;
 }
 export function JournalPageHeader({ page, workspace }: PageHeaderProps) {
+  const { hideShare, hideToday } = useDetailPageHeaderResponsive();
   return (
     <Header className={styles.header}>
       <EditorModeSwitch
@@ -55,11 +59,13 @@ export function JournalPageHeader({ page, workspace }: PageHeaderProps) {
           page={page}
         />
       </div>
-      <JournalTodayButton docCollection={workspace.docCollection} />
+      {hideToday ? null : (
+        <JournalTodayButton docCollection={workspace.docCollection} />
+      )}
       <HeaderDivider />
-      <PageHeaderMenuButton isJournal pageId={page?.id} />
-      {page ? (
-        <SharePageButton isJournal workspace={workspace} page={page} />
+      <PageHeaderMenuButton isJournal page={page} />
+      {page && !hideShare ? (
+        <SharePageButton workspace={workspace} page={page} />
       ) : null}
     </Header>
   );
@@ -67,6 +73,8 @@ export function JournalPageHeader({ page, workspace }: PageHeaderProps) {
 
 export function NormalPageHeader({ page, workspace }: PageHeaderProps) {
   const titleInputHandleRef = useRef<InlineEditHandle>(null);
+  const { hideCollect, hideShare, hidePresent, showDivider } =
+    useDetailPageHeaderResponsive();
 
   const onRename = useCallback(() => {
     setTimeout(() => titleInputHandleRef.current?.triggerEdit());
@@ -82,18 +90,32 @@ export function NormalPageHeader({ page, workspace }: PageHeaderProps) {
         pageId={page?.id}
         docCollection={workspace.docCollection}
       />
-      <PageHeaderMenuButton rename={onRename} pageId={page?.id} />
-      <FavoriteButton pageId={page?.id} />
+      {hideCollect ? null : <FavoriteButton pageId={page?.id} />}
+      <PageHeaderMenuButton rename={onRename} page={page} />
       <div className={styles.spacer} />
-      {page ? <SharePageButton workspace={workspace} page={page} /> : null}
+
+      {!hidePresent ? <DetailPageHeaderPresentButton /> : null}
+
+      {page && !hideShare ? (
+        <SharePageButton workspace={workspace} page={page} />
+      ) : null}
+
+      {showDivider ? (
+        <Divider orientation="vertical" style={{ height: 20, marginLeft: 4 }} />
+      ) : null}
     </Header>
   );
 }
 
 export function DetailPageHeader(props: PageHeaderProps) {
-  const { page } = props;
+  const { page, workspace } = props;
   const { isJournal } = useJournalInfoHelper(page.collection, page.id);
   const isInTrash = page.meta?.trash;
+
+  useRegisterCopyLinkCommands({
+    workspaceMeta: workspace.meta,
+    docId: page.id,
+  });
 
   return isJournal && !isInTrash ? (
     <JournalPageHeader {...props} />

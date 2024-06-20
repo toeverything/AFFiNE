@@ -138,7 +138,7 @@ globalStyle(`${shareLinkStyle} > span`, {
 globalStyle(`${shareLinkStyle} > div > svg`, {
   color: cssVar('linkColor'),
 });
-export const journalShareButton = style({
+export const shareButton = style({
   height: 32,
   padding: '0px 8px',
 });

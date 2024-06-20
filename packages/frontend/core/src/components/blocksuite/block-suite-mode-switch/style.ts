@@ -11,7 +11,7 @@ export const StyledEditorModeSwitch = styled('div')<{
     background: showAlone
       ? 'transparent'
       : 'var(--affine-background-secondary-color)',
-    borderRadius: '12px',
+    borderRadius: '8px',
     ...displayFlex('space-between', 'center'),
     padding: '4px 4px',
     position: 'relative',
@@ -23,7 +23,7 @@ export const StyledEditorModeSwitch = styled('div')<{
       height: '24px',
       background: 'var(--affine-background-primary-color)',
       boxShadow: 'var(--affine-shadow-1)',
-      borderRadius: '8px',
+      borderRadius: '4px',
       zIndex: 1,
       position: 'absolute',
       transform: `translateX(${switchLeft ? '0' : '32px'})`,

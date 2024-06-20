@@ -58,6 +58,7 @@ export const rightSidebarButton = style({
 export const viewHeaderContainer = style({
   display: 'flex',
   height: '100%',
+  width: 0,
   flexGrow: 1,
   minWidth: 12,
 });

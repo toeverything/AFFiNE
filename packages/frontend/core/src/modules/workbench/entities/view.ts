@@ -45,6 +45,8 @@ export class View extends Entity {
   );
 
   size$ = new LiveData(100);
+  /** Width of header content in px (excludes sidebar-toggle/windows button/...) */
+  headerContentWidth$ = new LiveData(1920);
 
   header = createIsland();
   body = createIsland();

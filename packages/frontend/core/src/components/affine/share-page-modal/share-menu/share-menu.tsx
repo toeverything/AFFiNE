@@ -1,27 +1,24 @@
 import { Button } from '@affine/component/ui/button';
 import { Divider } from '@affine/component/ui/divider';
 import { Menu } from '@affine/component/ui/menu';
-import { useRegisterCopyLinkCommands } from '@affine/core/hooks/affine/use-register-copy-link-commands';
-import { useIsActiveView } from '@affine/core/modules/workbench';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useI18n } from '@affine/i18n';
 import { WebIcon } from '@blocksuite/icons/rc';
 import type { Doc } from '@blocksuite/store';
 import type { WorkspaceMetadata } from '@toeverything/infra';
-import clsx from 'clsx';
+import { forwardRef, type PropsWithChildren, type Ref } from 'react';
 
 import * as styles from './index.css';
 import { ShareExport } from './share-export';
 import { SharePage } from './share-page';
 
-export interface ShareMenuProps {
+export interface ShareMenuProps extends PropsWithChildren {
   workspaceMetadata: WorkspaceMetadata;
   currentPage: Doc;
-  isJournal?: boolean;
   onEnableAffineCloud: () => void;
 }
 
-const ShareMenuContent = (props: ShareMenuProps) => {
+export const ShareMenuContent = (props: ShareMenuProps) => {
   const t = useI18n();
   return (
     <div className={styles.containerStyle}>
@@ -40,8 +37,20 @@ const ShareMenuContent = (props: ShareMenuProps) => {
   );
 };
 
-const LocalShareMenu = (props: ShareMenuProps) => {
+const DefaultShareButton = forwardRef(function DefaultShareButton(
+  _,
+  ref: Ref<HTMLButtonElement>
+) {
   const t = useI18n();
+
+  return (
+    <Button ref={ref} className={styles.shareButton} type="primary">
+      {t['com.affine.share-menu.shareButton']()}
+    </Button>
+  );
+});
+
+const LocalShareMenu = (props: ShareMenuProps) => {
   return (
     <Menu
       items={<ShareMenuContent {...props} />}
@@ -53,27 +62,14 @@ const LocalShareMenu = (props: ShareMenuProps) => {
         modal: false,
       }}
     >
-      <Button
-        className={clsx({ [styles.journalShareButton]: props.isJournal })}
-        data-testid="local-share-menu-button"
-        type="primary"
-      >
-        {t['com.affine.share-menu.shareButton']()}
-      </Button>
+      <div data-testid="local-share-menu-button">
+        {props.children || <DefaultShareButton />}
+      </div>
     </Menu>
   );
 };
 
 const CloudShareMenu = (props: ShareMenuProps) => {
-  const t = useI18n();
-
-  // only enable copy link commands when the view is active and the workspace is cloud
-  const isActiveView = useIsActiveView();
-  useRegisterCopyLinkCommands({
-    workspaceId: props.workspaceMetadata.id,
-    docId: props.currentPage.id,
-    isActiveView,
-  });
   return (
     <Menu
       items={<ShareMenuContent {...props} />}
@@ -85,13 +81,9 @@ const CloudShareMenu = (props: ShareMenuProps) => {
         modal: false,
       }}
     >
-      <Button
-        className={clsx({ [styles.journalShareButton]: props.isJournal })}
-        data-testid="cloud-share-menu-button"
-        type="primary"
-      >
-        {t['com.affine.share-menu.shareButton']()}
-      </Button>
+      <div data-testid="cloud-share-menu-button">
+        {props.children || <DefaultShareButton />}
+      </div>
     </Menu>
   );
 };

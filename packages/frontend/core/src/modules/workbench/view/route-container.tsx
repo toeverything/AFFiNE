@@ -1,9 +1,9 @@
-import { IconButton } from '@affine/component';
+import { IconButton, observeResize } from '@affine/component';
 import { WindowsAppControls } from '@affine/core/components/pure/header/windows-app-controls';
 import { RightSidebarIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useAtomValue } from 'jotai';
-import { Suspense, useCallback } from 'react';
+import { Suspense, useCallback, useEffect, useRef } from 'react';
 
 import { AffineErrorBoundary } from '../../../components/affine/affine-error-boundary';
 import { appSidebarOpenAtom } from '../../../components/app-sidebar/index.jotai';
@@ -41,6 +41,7 @@ const ToggleButton = ({
 };
 
 export const RouteContainer = ({ route }: Props) => {
+  const viewHeaderContainerRef = useRef<HTMLDivElement | null>(null);
   const view = useService(ViewService).view;
   const viewPosition = useViewPosition();
   const leftSidebarOpen = useAtomValue(appSidebarOpenAtom);
@@ -51,6 +52,14 @@ export const RouteContainer = ({ route }: Props) => {
     rightSidebar.toggle();
   }, [rightSidebar]);
   const isWindowsDesktop = environment.isDesktop && environment.isWindows;
+
+  useEffect(() => {
+    const container = viewHeaderContainerRef.current;
+    if (!container) return;
+    return observeResize(container, entry => {
+      view.headerContentWidth$.next(entry.contentRect.width);
+    });
+  }, [view.headerContentWidth$]);
   return (
     <div className={styles.root}>
       <div className={styles.header}>
@@ -60,7 +69,10 @@ export const RouteContainer = ({ route }: Props) => {
             className={styles.leftSidebarButton}
           />
         )}
-        <view.header.Target className={styles.viewHeaderContainer} />
+        <view.header.Target
+          ref={viewHeaderContainerRef}
+          className={styles.viewHeaderContainer}
+        />
         {viewPosition.isLast && (
           <>
             {rightSidebarHasViews && (

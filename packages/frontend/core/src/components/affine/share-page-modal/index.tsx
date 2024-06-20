@@ -7,19 +7,13 @@ import { ShareMenu } from './share-menu';
 type SharePageModalProps = {
   workspace: Workspace;
   page: Doc;
-  isJournal?: boolean;
 };
 
-export const SharePageButton = ({
-  workspace,
-  page,
-  isJournal,
-}: SharePageModalProps) => {
+export const SharePageButton = ({ workspace, page }: SharePageModalProps) => {
   const confirmEnableCloud = useEnableCloud();
 
   return (
     <ShareMenu
-      isJournal={isJournal}
       workspaceMetadata={workspace.meta}
       currentPage={page}
       onEnableAffineCloud={() =>
