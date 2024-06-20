@@ -76,25 +76,26 @@ export function setupSlashMenuEntry(slashMenu: AffineSlashMenuWidget) {
     };
   };
 
+  const menu = slashMenu.config.items.slice();
+  menu.unshift({
+    name: 'Ask AI',
+    icon: AIStarIcon,
+    showWhen: showWhenWrapper(),
+    action: ({ rootElement }) => {
+      const view = rootElement.host.view;
+      const affineAIPanelWidget = view.getWidget(
+        AFFINE_AI_PANEL_WIDGET,
+        rootElement.model.id
+      ) as AffineAIPanelWidget;
+      assertExists(affineAIPanelWidget);
+      assertExists(AIProvider.actions.chat);
+      assertExists(affineAIPanelWidget.host);
+      handleInlineAskAIAction(affineAIPanelWidget.host);
+    },
+  });
+
   const AIMenuItems: AffineSlashMenuItem[] = [
     { groupName: 'AFFiNE AI' },
-    {
-      name: 'Ask AI',
-      icon: AIStarIcon,
-      showWhen: showWhenWrapper(),
-      action: ({ rootElement }) => {
-        const view = rootElement.host.view;
-        const affineAIPanelWidget = view.getWidget(
-          AFFINE_AI_PANEL_WIDGET,
-          rootElement.model.id
-        ) as AffineAIPanelWidget;
-        assertExists(affineAIPanelWidget);
-        assertExists(AIProvider.actions.chat);
-        assertExists(affineAIPanelWidget.host);
-        handleInlineAskAIAction(affineAIPanelWidget.host);
-      },
-    },
-
     ...AIItems.filter(({ name }) =>
       ['Fix spelling', 'Fix grammar'].includes(name)
     ).map(item => ({
@@ -128,8 +129,11 @@ export function setupSlashMenuEntry(slashMenu: AffineSlashMenuWidget) {
     },
   ];
 
-  const menu = slashMenu.config.items.slice();
-  menu.unshift(...AIMenuItems);
+  const basicGroupEnd = menu.findIndex(
+    item => 'groupName' in item && item.groupName === 'List'
+  );
+  // insert ai item after basic group
+  menu.splice(basicGroupEnd, 0, ...AIMenuItems);
 
   slashMenu.config = {
     ...AffineSlashMenuWidget.DEFAULT_CONFIG,
