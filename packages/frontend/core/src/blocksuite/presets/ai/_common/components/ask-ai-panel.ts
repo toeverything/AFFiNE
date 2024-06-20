@@ -2,6 +2,7 @@ import { type EditorHost, WithDisposable } from '@blocksuite/block-std';
 import {
   type AIItemGroupConfig,
   EdgelessRootService,
+  scrollbarStyle,
 } from '@blocksuite/blocks';
 import { css, html, LitElement } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
@@ -18,27 +19,19 @@ export class AskAIPanel extends WithDisposable(LitElement) {
 
     .ask-ai-panel {
       box-sizing: border-box;
-      padding: 8px;
+      padding: 8px 4px 8px 8px;
       max-height: 374px;
       overflow-y: auto;
       background: var(--affine-background-overlay-panel-color);
       box-shadow: var(--affine-shadow-2);
       border-radius: 8px;
       z-index: var(--affine-z-index-popover);
+      scrollbar-gutter: stable;
     }
 
-    .ask-ai-panel::-webkit-scrollbar {
-      width: 5px;
-      max-height: 100px;
-    }
-    .ask-ai-panel::-webkit-scrollbar-thumb {
-      border-radius: 20px;
-    }
+    ${scrollbarStyle('.ask-ai-panel')}
     .ask-ai-panel:hover::-webkit-scrollbar-thumb {
       background-color: var(--affine-black-30);
-    }
-    .ask-ai-panel::-webkit-scrollbar-corner {
-      display: none;
     }
   `;
 
