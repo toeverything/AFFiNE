@@ -3,6 +3,7 @@ import { configureInfraModules, type Framework } from '@toeverything/infra';
 
 import { configureCloudModule } from './cloud';
 import { configureCollectionModule } from './collection';
+import { configureDocLinksModule } from './doc-link';
 import { configureDocsSearchModule } from './docs-search';
 import { configureFindInPageModule } from './find-in-page';
 import { configureNavigationModule } from './navigation';
@@ -34,6 +35,7 @@ export function configureCommonModules(framework: Framework) {
   configurePeekViewModule(framework);
   configureQuickSearchModule(framework);
   configureDocsSearchModule(framework);
+  configureDocLinksModule(framework);
 }
 
 export function configureImpls(framework: Framework) {

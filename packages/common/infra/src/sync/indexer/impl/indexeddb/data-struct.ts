@@ -184,6 +184,12 @@ export class DataStruct {
       return await this.matchAll(trx);
     } else if (query.type === 'boost') {
       return (await this.queryRaw(trx, query.query)).boost(query.boost);
+    } else if (query.type === 'exists') {
+      const iidx = this.invertedIndex.get(query.field as string);
+      if (!iidx) {
+        throw new Error(`Field '${query.field as string}' not found`);
+      }
+      return await iidx.all(trx);
     }
     throw new Error(`Query type '${query.type}' not supported`);
   }

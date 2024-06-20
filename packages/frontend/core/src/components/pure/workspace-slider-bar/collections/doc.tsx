@@ -1,15 +1,24 @@
-import { useBlockSuitePageReferences } from '@affine/core/hooks/use-block-suite-page-references';
+import { DocsSearchService } from '@affine/core/modules/docs-search';
 import {
   WorkbenchLink,
   WorkbenchService,
 } from '@affine/core/modules/workbench';
 import { useI18n } from '@affine/i18n';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons/rc';
-import type { DocCollection, DocMeta } from '@blocksuite/store';
+import type { DocMeta } from '@blocksuite/store';
 import { useDraggable } from '@dnd-kit/core';
 import * as Collapsible from '@radix-ui/react-collapsible';
-import { DocsService, useLiveData, useService } from '@toeverything/infra';
-import React, { useMemo } from 'react';
+import {
+  DocsService,
+  effect,
+  fromPromise,
+  onStart,
+  useLiveData,
+  useService,
+  useServices,
+} from '@toeverything/infra';
+import React, { useEffect, useMemo, useState } from 'react';
+import { EMPTY, mergeMap } from 'rxjs';
 
 import {
   type DNDIdentifier,
@@ -22,42 +31,75 @@ import { ReferencePage } from '../components/reference-page';
 import * as styles from './styles.css';
 
 export const Doc = ({
-  doc,
+  docId,
   parentId,
-  docCollection,
-  allPageMeta,
   inAllowList,
   removeFromAllowList,
 }: {
   parentId: DNDIdentifier;
-  doc: DocMeta;
+  docId: string;
   inAllowList: boolean;
   removeFromAllowList: (id: string) => void;
-  docCollection: DocCollection;
   allPageMeta: Record<string, DocMeta>;
 }) => {
-  const [collapsed, setCollapsed] = React.useState(true);
-  const workbench = useService(WorkbenchService).workbench;
-  const location = useLiveData(workbench.location$);
-
+  const { docsSearchService, workbenchService, docsService } = useServices({
+    DocsSearchService,
+    WorkbenchService,
+    DocsService,
+  });
   const t = useI18n();
-
-  const docId = doc.id;
+  const location = useLiveData(workbenchService.workbench.location$);
   const active = location.pathname === '/' + docId;
+
+  const [collapsed, setCollapsed] = React.useState(true);
   const docRecord = useLiveData(useService(DocsService).list.doc$(docId));
   const docMode = useLiveData(docRecord?.mode$);
-  const dragItemId = getDNDId('collection-list', 'doc', docId, parentId);
-
+  const docTitle = useLiveData(docRecord?.title$);
   const icon = useMemo(() => {
     return docMode === 'edgeless' ? <EdgelessIcon /> : <PageIcon />;
   }, [docMode]);
-
-  const references = useBlockSuitePageReferences(docCollection, docId);
-  const referencesToRender = references.filter(
-    id => allPageMeta[id] && !allPageMeta[id]?.trash
+  const [references, setReferences] = useState<{
+    refs: string[];
+    loading: boolean;
+  }>({ loading: true, refs: [] });
+  const trashDocs = useLiveData(docsService.list.trashDocs$);
+  const filteredReferences = useMemo(
+    () => references.refs.filter(ref => !trashDocs.some(doc => doc.id === ref)),
+    [references.refs, trashDocs]
   );
 
-  const docTitle = doc.title || t['Untitled']();
+  const dragItemId = getDNDId('collection-list', 'doc', docId, parentId);
+
+  useEffect(() => {
+    if (collapsed) {
+      return;
+    }
+    const loadReferences = effect(
+      mergeMap(() => {
+        return fromPromise(async () => {
+          const refs = await docsSearchService.searchRefsFrom(docId);
+          console.log(refs);
+          return refs;
+        }).pipe(
+          mergeMap(refs => {
+            setReferences({ refs: refs.map(r => r.docId), loading: false });
+            return EMPTY;
+          }),
+          onStart(() => {
+            setReferences(prev => ({ ...prev, loading: true }));
+          })
+        );
+      })
+    );
+
+    loadReferences();
+
+    return () => {
+      loadReferences.unsubscribe();
+    };
+  }, [collapsed, docsSearchService, docId]);
+
+  const title = docTitle || t['Untitled']();
   const docTitleElement = useMemo(() => {
     return <DragMenuItemOverlay icon={icon} title={docTitle} />;
   }, [icon, docTitle]);
@@ -83,13 +125,12 @@ export const Doc = ({
         linkComponent={WorkbenchLink}
         className={styles.title}
         active={active}
-        collapsed={referencesToRender.length > 0 ? collapsed : undefined}
+        collapsed={collapsed}
         onCollapsedChange={setCollapsed}
         postfix={
           <PostfixItem
-            docCollection={docCollection}
             pageId={docId}
-            pageTitle={docTitle}
+            pageTitle={title}
             removeFromAllowList={removeFromAllowList}
             inAllowList={inAllowList}
           />
@@ -98,20 +139,24 @@ export const Doc = ({
         {...attributes}
         {...listeners}
       >
-        {doc.title || t['Untitled']()}
+        {title || t['Untitled']()}
       </MenuLinkItem>
       <Collapsible.Content className={styles.collapsibleContent}>
-        {referencesToRender.map(id => {
-          return (
-            <ReferencePage
-              key={id}
-              docCollection={docCollection}
-              pageId={id}
-              metaMapping={allPageMeta}
-              parentIds={new Set([docId])}
-            />
-          );
-        })}
+        {filteredReferences.length > 0 ? (
+          filteredReferences.map(id => {
+            return (
+              <ReferencePage
+                key={id}
+                pageId={id}
+                parentIds={new Set([docId])}
+              />
+            );
+          })
+        ) : references.loading ? null : (
+          <div className={styles.noReferences}>
+            {t['com.affine.rootAppSidebar.docs.no-subdoc']()}
+          </div>
+        )}
       </Collapsible.Content>
     </Collapsible.Root>
   );

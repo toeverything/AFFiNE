@@ -1,12 +1,18 @@
-import type { Schema } from '@toeverything/infra';
+import { defineSchema } from '@toeverything/infra';
 
-export const docIndexSchema = {
+export const docIndexSchema = defineSchema({
   title: 'FullText',
-} satisfies Schema;
+});
 
-export const blockIndexSchema = {
+export type DocIndexSchema = typeof docIndexSchema;
+
+export const blockIndexSchema = defineSchema({
   docId: 'String',
   blockId: 'String',
   content: 'FullText',
   flavour: 'String',
-} satisfies Schema;
+  ref: 'String',
+  blob: 'String',
+});
+
+export type BlockIndexSchema = typeof blockIndexSchema;

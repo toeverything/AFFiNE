@@ -1,5 +1,5 @@
 import { cssVar } from '@toeverything/theme';
-import { globalStyle, keyframes, style } from '@vanilla-extract/css';
+import { globalStyle, style } from '@vanilla-extract/css';
 export const wrapper = style({
   display: 'flex',
   flexDirection: 'column',
@@ -82,34 +82,12 @@ export const menuDividerStyle = style({
   height: '1px',
   background: cssVar('borderColor'),
 });
-const slideDown = keyframes({
-  '0%': {
-    height: '0px',
-  },
-  '100%': {
-    height: 'var(--radix-collapsible-content-height)',
-  },
-});
-const slideUp = keyframes({
-  '0%': {
-    height: 'var(--radix-collapsible-content-height)',
-  },
-  '100%': {
-    height: '0px',
-  },
-});
 export const collapsibleContent = style({
   overflow: 'hidden',
   marginTop: '4px',
   selectors: {
     '&[data-hidden="true"]': {
       display: 'none',
-    },
-    '&[data-state="open"]': {
-      animation: `${slideDown} 0.2s ease-in-out`,
-    },
-    '&[data-state="closed"]': {
-      animation: `${slideUp} 0.2s ease-in-out`,
     },
   },
 });
@@ -155,4 +133,11 @@ export const docsListContainer = style({
   display: 'flex',
   flexDirection: 'column',
   gap: 4,
+});
+export const noReferences = style({
+  fontSize: cssVar('fontSm'),
+  textAlign: 'left',
+  paddingLeft: '32px',
+  color: cssVar('black30'),
+  userSelect: 'none',
 });

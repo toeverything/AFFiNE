@@ -18,6 +18,11 @@ export type BooleanQuery<S extends Schema> = {
   queries: Query<S>[];
 };
 
+export type ExistsQuery<S extends Schema> = {
+  type: 'exists';
+  field: keyof S;
+};
+
 export type AllQuery = {
   type: 'all';
 };
@@ -26,4 +31,5 @@ export type Query<S extends Schema> =
   | BooleanQuery<S>
   | MatchQuery<S>
   | AllQuery
+  | ExistsQuery<S>
   | BoostQuery;

@@ -50,4 +50,6 @@ export class DocRecord extends Entity<{ id: string }> {
   }
 
   title$ = this.meta$.map(meta => meta.title ?? '');
+
+  trash$ = this.meta$.map(meta => meta.trash ?? false);
 }

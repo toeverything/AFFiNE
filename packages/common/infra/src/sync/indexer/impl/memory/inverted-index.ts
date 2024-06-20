@@ -7,6 +7,8 @@ export interface InvertedIndex {
 
   match(term: string): Match;
 
+  all(): Match;
+
   insert(id: number, term: string): void;
 
   clear(): void;
@@ -22,6 +24,20 @@ export class StringInvertedIndex implements InvertedIndex {
 
     for (const id of this.index.get(term) ?? []) {
       match.addScore(id, 1);
+    }
+
+    return match;
+  }
+
+  all(): Match {
+    const match = new Match();
+
+    for (const [_term, ids] of this.index) {
+      for (const id of ids) {
+        if (match.getScore(id) === 0) {
+          match.addScore(id, 1);
+        }
+      }
     }
 
     return match;
@@ -55,6 +71,21 @@ export class IntegerInvertedIndex implements InvertedIndex {
   }
 
   // eslint-disable-next-line sonarjs/no-identical-functions
+  all(): Match {
+    const match = new Match();
+
+    for (const [_term, ids] of this.index) {
+      for (const id of ids) {
+        if (match.getScore(id) === 0) {
+          match.addScore(id, 1);
+        }
+      }
+    }
+
+    return match;
+  }
+
+  // eslint-disable-next-line sonarjs/no-identical-functions
   insert(id: number, term: string): void {
     const ids = this.index.get(term) ?? [];
     ids.push(id);
@@ -77,6 +108,21 @@ export class BooleanInvertedIndex implements InvertedIndex {
 
     for (const id of this.index.get(term === 'true') ?? []) {
       match.addScore(id, 1);
+    }
+
+    return match;
+  }
+
+  // eslint-disable-next-line sonarjs/no-identical-functions
+  all(): Match {
+    const match = new Match();
+
+    for (const [_term, ids] of this.index) {
+      for (const id of ids) {
+        if (match.getScore(id) === 0) {
+          match.addScore(id, 1);
+        }
+      }
     }
 
     return match;
@@ -144,6 +190,19 @@ export class FullTextInvertedIndex implements InvertedIndex {
 
         return [result];
       });
+    }
+
+    return match;
+  }
+
+  // eslint-disable-next-line sonarjs/no-identical-functions
+  all(): Match {
+    const match = new Match();
+
+    for (const { id } of this.records) {
+      if (match.getScore(id) === 0) {
+        match.addScore(id, 1);
+      }
     }
 
     return match;

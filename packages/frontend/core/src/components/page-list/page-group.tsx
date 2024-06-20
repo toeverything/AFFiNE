@@ -183,7 +183,10 @@ export const ItemGroup = <T extends ListItem>({
           ) : null}
         </div>
       ) : null}
-      <Collapsible.Content className={styles.collapsibleContent}>
+      <Collapsible.Content
+        className={styles.collapsibleContent}
+        data-state={!collapsed ? 'open' : 'closed'}
+      >
         <div className={styles.collapsibleContentInner}>
           {items.map(item => (
             <PageListItemRenderer key={item.id} {...item} />

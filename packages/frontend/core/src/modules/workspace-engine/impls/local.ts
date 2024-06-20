@@ -142,6 +142,8 @@ export class LocalWorkspaceFlavourProvider
     const bs = new DocCollection({
       id,
       schema: globalBlockSuiteSchema,
+      disableBacklinkIndex: true,
+      disableSearchIndex: true,
     });
 
     if (localData) applyUpdate(bs.doc, localData);

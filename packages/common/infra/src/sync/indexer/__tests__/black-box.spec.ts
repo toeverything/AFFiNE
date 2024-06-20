@@ -414,6 +414,46 @@ describe.each([
     });
   });
 
+  test('exists', async () => {
+    await writeData({
+      '1': {
+        title: 'hello world',
+        tag: '111',
+      },
+      '2': {
+        tag: '222',
+      },
+      '3': {
+        title: 'hello world',
+        tag: '333',
+      },
+    });
+
+    const result = await index.search({
+      type: 'exists',
+      field: 'title',
+    });
+
+    expect(result).toEqual({
+      nodes: expect.arrayContaining([
+        {
+          id: '1',
+          score: expect.anything(),
+        },
+        {
+          id: '3',
+          score: expect.anything(),
+        },
+      ]),
+      pagination: {
+        count: 2,
+        hasMore: false,
+        limit: expect.anything(),
+        skip: 0,
+      },
+    });
+  });
+
   test('subscribe', async () => {
     await writeData({
       '1': {

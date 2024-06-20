@@ -11,6 +11,8 @@ export interface InvertedIndex {
 
   match(trx: DataStructROTransaction, term: string): Promise<Match>;
 
+  all(trx: DataStructROTransaction): Promise<Match>;
+
   insert(
     trx: DataStructRWTransaction,
     id: number,
@@ -29,6 +31,29 @@ export class StringInvertedIndex implements InvertedIndex {
     const match = new Match();
     for (const obj of objs) {
       match.addScore(obj.nid, 1);
+    }
+    return match;
+  }
+
+  async all(trx: DataStructROTransaction): Promise<Match> {
+    const objs = await trx
+      .objectStore('invertedIndex')
+      .index('key')
+      .getAll(
+        IDBKeyRange.bound(
+          InvertedIndexKey.forPrefix(this.fieldKey).buffer(),
+          InvertedIndexKey.forPrefix(this.fieldKey).add1().buffer()
+        )
+      );
+
+    const set = new Set<number>();
+    for (const obj of objs) {
+      set.add(obj.nid);
+    }
+
+    const match = new Match();
+    for (const nid of set) {
+      match.addScore(nid, 1);
     }
     return match;
   }
@@ -58,6 +83,30 @@ export class IntegerInvertedIndex implements InvertedIndex {
     return match;
   }
 
+  // eslint-disable-next-line sonarjs/no-identical-functions
+  async all(trx: DataStructROTransaction): Promise<Match> {
+    const objs = await trx
+      .objectStore('invertedIndex')
+      .index('key')
+      .getAll(
+        IDBKeyRange.bound(
+          InvertedIndexKey.forPrefix(this.fieldKey).buffer(),
+          InvertedIndexKey.forPrefix(this.fieldKey).add1().buffer()
+        )
+      );
+
+    const set = new Set<number>();
+    for (const obj of objs) {
+      set.add(obj.nid);
+    }
+
+    const match = new Match();
+    for (const nid of set) {
+      match.addScore(nid, 1);
+    }
+    return match;
+  }
+
   async insert(trx: DataStructRWTransaction, id: number, terms: string[]) {
     for (const term of terms) {
       await trx.objectStore('invertedIndex').add({
@@ -70,6 +119,30 @@ export class IntegerInvertedIndex implements InvertedIndex {
 
 export class BooleanInvertedIndex implements InvertedIndex {
   constructor(readonly fieldKey: string) {}
+
+  // eslint-disable-next-line sonarjs/no-identical-functions
+  async all(trx: DataStructROTransaction): Promise<Match> {
+    const objs = await trx
+      .objectStore('invertedIndex')
+      .index('key')
+      .getAll(
+        IDBKeyRange.bound(
+          InvertedIndexKey.forPrefix(this.fieldKey).buffer(),
+          InvertedIndexKey.forPrefix(this.fieldKey).add1().buffer()
+        )
+      );
+
+    const set = new Set<number>();
+    for (const obj of objs) {
+      set.add(obj.nid);
+    }
+
+    const match = new Match();
+    for (const nid of set) {
+      match.addScore(nid, 1);
+    }
+    return match;
+  }
 
   async match(trx: DataStructROTransaction, term: string): Promise<Match> {
     const objs = await trx
@@ -118,6 +191,14 @@ export class FullTextInvertedIndex implements InvertedIndex {
         .getAll(
           IDBKeyRange.bound(key.buffer(), key.add1().buffer(), false, true)
         );
+      const submatched: {
+        nid: number;
+        score: number;
+        position: {
+          index: number;
+          ranges: [number, number][];
+        };
+      }[] = [];
       for (const obj of objs) {
         const key = InvertedIndexKey.fromBuffer(obj.key);
         const originTokenTerm = key.asString();
@@ -139,17 +220,42 @@ export class FullTextInvertedIndex implements InvertedIndex {
         const score =
           bm25(termFreq, 1, totalCount, fieldLength, avgFieldLength) *
           (matchLength / originTokenTerm.length);
-        const match = matched.get(obj.nid) || {
-          score: [] as number[],
+        const match = {
+          score,
           positions: new Map(),
         };
-        match.score.push(score);
         const ranges = match.positions.get(position.i) || [];
         ranges.push(
           ...position.rs.map(([start, _end]) => [start, start + matchLength])
         );
         match.positions.set(position.i, ranges);
-        matched.set(obj.nid, match);
+        submatched.push({
+          nid: obj.nid,
+          score,
+          position: {
+            index: position.i,
+            ranges: position.rs.map(([start, _end]) => [
+              start,
+              start + matchLength,
+            ]),
+          },
+        });
+      }
+
+      // normalize score
+      const maxScore = submatched.reduce((acc, s) => Math.max(acc, s.score), 0);
+      const minScore = submatched.reduce((acc, s) => Math.min(acc, s.score), 1);
+      for (const { nid, score, position } of submatched) {
+        const normalizedScore = (score - minScore) / (maxScore - minScore);
+        const match = matched.get(nid) || {
+          score: [] as number[],
+          positions: new Map(),
+        };
+        match.score.push(normalizedScore);
+        const ranges = match.positions.get(position.index) || [];
+        ranges.push(...position.ranges);
+        match.positions.set(position.index, ranges);
+        matched.set(nid, match);
       }
     }
     const match = new Match();
@@ -162,6 +268,30 @@ export class FullTextInvertedIndex implements InvertedIndex {
       for (const [index, ranges] of positions) {
         match.addHighlighter(nid, this.fieldKey, index, ranges);
       }
+    }
+    return match;
+  }
+
+  // eslint-disable-next-line sonarjs/no-identical-functions
+  async all(trx: DataStructROTransaction): Promise<Match> {
+    const objs = await trx
+      .objectStore('invertedIndex')
+      .index('key')
+      .getAll(
+        IDBKeyRange.bound(
+          InvertedIndexKey.forPrefix(this.fieldKey).buffer(),
+          InvertedIndexKey.forPrefix(this.fieldKey).add1().buffer()
+        )
+      );
+
+    const set = new Set<number>();
+    for (const obj of objs) {
+      set.add(obj.nid);
+    }
+
+    const match = new Match();
+    for (const nid of set) {
+      match.addScore(nid, 1);
     }
     return match;
   }
@@ -220,7 +350,8 @@ export class FullTextInvertedIndex implements InvertedIndex {
 export class InvertedIndexKey {
   constructor(
     readonly field: ArrayBuffer,
-    readonly value: ArrayBuffer
+    readonly value: ArrayBuffer,
+    readonly gap: ArrayBuffer = new Uint8Array([58])
   ) {}
 
   asString() {
@@ -232,14 +363,29 @@ export class InvertedIndexKey {
   }
 
   add1() {
-    const bytes = new Uint8Array(this.value.slice(0));
-    let carry = 1;
-    for (let i = bytes.length - 1; i >= 0 && carry > 0; i--) {
-      const sum = bytes[i] + carry;
-      bytes[i] = sum % 256;
-      carry = sum >> 8;
+    if (this.value.byteLength > 0) {
+      const bytes = new Uint8Array(this.value.slice(0));
+      let carry = 1;
+      for (let i = bytes.length - 1; i >= 0 && carry > 0; i--) {
+        const sum = bytes[i] + carry;
+        bytes[i] = sum % 256;
+        carry = sum >> 8;
+      }
+      return new InvertedIndexKey(this.field, bytes);
+    } else {
+      return new InvertedIndexKey(
+        this.field,
+        new ArrayBuffer(0),
+        new Uint8Array([59])
+      );
     }
-    return new InvertedIndexKey(this.field, bytes);
+  }
+
+  static forPrefix(field: string) {
+    return new InvertedIndexKey(
+      new TextEncoder().encode(field),
+      new ArrayBuffer(0)
+    );
   }
 
   static forString(field: string, value: string) {
@@ -266,8 +412,8 @@ export class InvertedIndexKey {
       this.field.byteLength + (this.value?.byteLength ?? 0) + 1
     );
     tmp.set(new Uint8Array(this.field), 0);
-    tmp.set([58], this.field.byteLength);
-    if (this.value) {
+    tmp.set(new Uint8Array(this.gap), this.field.byteLength);
+    if (this.value.byteLength > 0) {
       tmp.set(new Uint8Array(this.value), this.field.byteLength + 1);
     }
     return tmp.buffer;

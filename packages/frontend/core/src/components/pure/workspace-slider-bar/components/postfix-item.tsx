@@ -2,7 +2,7 @@ import { toast } from '@affine/component';
 import { RenameModal } from '@affine/component/rename-modal';
 import { useDocMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
 import { useI18n } from '@affine/i18n';
-import type { DocCollection } from '@blocksuite/store';
+import { useServices, WorkspaceService } from '@toeverything/infra';
 import { useCallback, useState } from 'react';
 
 import { AddFavouriteButton } from '../favorite/add-favourite-button';
@@ -10,7 +10,6 @@ import * as styles from '../favorite/styles.css';
 import { OperationMenuButton } from './operation-menu-button';
 
 type PostfixItemProps = {
-  docCollection: DocCollection;
   pageId: string;
   pageTitle: string;
   inFavorites?: boolean;
@@ -20,10 +19,15 @@ type PostfixItemProps = {
 };
 
 export const PostfixItem = ({ ...props }: PostfixItemProps) => {
-  const { docCollection, pageId, pageTitle } = props;
+  const { pageId, pageTitle } = props;
   const t = useI18n();
   const [open, setOpen] = useState(false);
-  const { setDocTitle } = useDocMetaHelper(docCollection);
+  const { workspaceService } = useServices({
+    WorkspaceService,
+  });
+  const { setDocTitle } = useDocMetaHelper(
+    workspaceService.workspace.docCollection
+  );
 
   const handleRename = useCallback(
     (newName: string) => {

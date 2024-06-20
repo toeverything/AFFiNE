@@ -3,21 +3,21 @@ import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { FavoriteItemsAdapter } from '@affine/core/modules/properties';
 import { mixpanel } from '@affine/core/utils';
 import { PlusIcon } from '@blocksuite/icons/rc';
-import type { DocCollection } from '@blocksuite/store';
-import { useService } from '@toeverything/infra';
+import { useService, useServices, WorkspaceService } from '@toeverything/infra';
 
 import { usePageHelper } from '../../../blocksuite/block-suite-page-list/utils';
 
 type AddFavouriteButtonProps = {
-  docCollection: DocCollection;
   pageId?: string;
 };
 
-export const AddFavouriteButton = ({
-  docCollection,
-  pageId,
-}: AddFavouriteButtonProps) => {
-  const { createPage, createLinkedPage } = usePageHelper(docCollection);
+export const AddFavouriteButton = ({ pageId }: AddFavouriteButtonProps) => {
+  const { workspaceService } = useServices({
+    WorkspaceService,
+  });
+  const { createPage, createLinkedPage } = usePageHelper(
+    workspaceService.workspace.docCollection
+  );
   const favAdapter = useService(FavoriteItemsAdapter);
   const handleAddFavorite = useAsyncCallback(
     async e => {

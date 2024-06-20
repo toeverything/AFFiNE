@@ -128,6 +128,12 @@ export class DataStruct {
       return this.matchAll();
     } else if (query.type === 'boost') {
       return this.queryRaw(query.query).boost(query.boost);
+    } else if (query.type === 'exists') {
+      const iidx = this.invertedIndex.get(query.field as string);
+      if (!iidx) {
+        throw new Error(`Field '${query.field as string}' not found`);
+      }
+      return iidx.all();
     }
     throw new Error(`Query type '${query.type}' not supported`);
   }

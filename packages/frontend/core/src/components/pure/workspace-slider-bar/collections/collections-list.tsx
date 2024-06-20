@@ -239,9 +239,8 @@ export const CollectionSidebarNavItem = ({
                 inAllowList={allowList.has(page.id)}
                 removeFromAllowList={removeFromAllowList}
                 allPageMeta={allPagesMeta}
-                doc={page}
+                docId={page.id}
                 key={page.id}
-                docCollection={docCollection}
               />
             );
           })}
