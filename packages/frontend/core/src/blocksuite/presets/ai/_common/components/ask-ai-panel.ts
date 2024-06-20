@@ -13,7 +13,7 @@ import { getRootService } from '../../utils/selection-utils';
 export class AskAIPanel extends WithDisposable(LitElement) {
   static override styles = css`
     :host {
-      position: absolute;
+      position: relative;
     }
 
     .ask-ai-panel {

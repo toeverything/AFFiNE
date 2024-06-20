@@ -104,8 +104,8 @@ export class AskAIButton extends WithDisposable(LitElement) {
         ></ask-ai-panel>`,
         computePosition: {
           referenceElement: this,
-          placement: 'top-start',
-          middleware: [flip(), offset(-40)],
+          placement: 'bottom-start',
+          middleware: [flip(), offset({ mainAxis: 8, crossAxis: -6 })],
           autoUpdate: true,
         },
       };
@@ -160,7 +160,7 @@ export class AskAIButton extends WithDisposable(LitElement) {
       computePosition: {
         referenceElement: this._askAIButton,
         placement: 'bottom-start',
-        middleware: [flip(), offset(4)],
+        middleware: [flip(), offset({ mainAxis: 8, crossAxis: -6 })],
         autoUpdate: true,
       },
       abortController: this._abortController,
