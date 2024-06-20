@@ -109,9 +109,6 @@ export class PeekViewEntity extends Entity {
 
   // return true if the peek view will be handled
   open = (target: ActivePeekView['target']) => {
-    if (!runtimeConfig.enablePeekView) {
-      return false;
-    }
     const resolvedInfo = resolvePeekInfoFromPeekTarget(target);
     if (!resolvedInfo) {
       return false;

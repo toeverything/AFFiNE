@@ -23,7 +23,6 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       enablePayment: true,
       enablePageHistory: true,
       enableExperimentalFeature: false,
-      enablePeekView: false,
       allowLocalWorkspace: buildFlags.distribution === 'desktop' ? true : false,
       serverUrlPrefix: 'https://app.affine.pro',
       appVersion: packageJson.version,
@@ -64,7 +63,6 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       enablePayment: true,
       enablePageHistory: true,
       enableExperimentalFeature: true,
-      enablePeekView: true,
       allowLocalWorkspace: buildFlags.distribution === 'desktop' ? true : false,
       serverUrlPrefix: 'https://affine.fail',
       appVersion: packageJson.version,
@@ -119,11 +117,6 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       : buildFlags.mode === 'development'
         ? true
         : currentBuildPreset.enablePageHistory,
-    enablePeekView: process.env.ENABLE_PEEK_VIEW
-      ? process.env.ENABLE_PEEK_VIEW === 'true'
-      : buildFlags.mode === 'development'
-        ? true
-        : currentBuildPreset.enablePeekView,
     allowLocalWorkspace: process.env.ALLOW_LOCAL_WORKSPACE
       ? process.env.ALLOW_LOCAL_WORKSPACE === 'true'
       : buildFlags.mode === 'development'

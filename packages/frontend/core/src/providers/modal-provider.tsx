@@ -231,7 +231,7 @@ export function CurrentWorkspaceModals() {
         <CloudQuotaModal />
       )}
       <AiLoginRequiredModal />
-      {runtimeConfig.enablePeekView && <PeekViewManagerModal />}
+      <PeekViewManagerModal />
       {environment.isDesktop && <FindInPageModal />}
       <MoveToTrash.ConfirmModal
         open={trashConfirmOpen}
