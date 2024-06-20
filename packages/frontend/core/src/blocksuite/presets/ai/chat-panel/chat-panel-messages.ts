@@ -44,6 +44,7 @@ import {
 } from './actions/actions-handle';
 import type { ChatContextValue, ChatItem, ChatMessage } from './chat-context';
 import { HISTORY_IMAGE_ACTIONS } from './const';
+import { AIPreloadConfig } from './preload-config';
 
 @customElement('chat-panel-messages')
 export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
@@ -186,6 +187,51 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
     }
   }
 
+  private _renderAIOnboarding() {
+    return this.isLoading ||
+      !this.host.doc.awarenessStore.getFlag('enable_ai_onboarding')
+      ? nothing
+      : html`<div
+          style=${styleMap({
+            display: 'flex',
+            gap: '8px',
+            flexDirection: 'column',
+            alignItems: 'center',
+            marginTop: '16px',
+            width: '100%',
+          })}
+        >
+          ${repeat(
+            AIPreloadConfig,
+            config => config.text,
+            config => {
+              return html`<div
+                @click=${() => config.handler()}
+                style=${styleMap({
+                  display: 'flex',
+                  height: '28px',
+                  gap: '8px',
+                  width: '85%',
+                  alignItems: 'center',
+                  justifyContent: 'start',
+                })}
+              >
+                ${config.icon}
+                <div
+                  style=${styleMap({
+                    fontSize: '12px',
+                    fontWeight: '400',
+                    color: 'var(--affine-text-primary-color)',
+                  })}
+                >
+                  ${config.text}
+                </div>
+              </div>`;
+            }
+          )}
+        </div>`;
+  }
+
   protected override render() {
     const { items } = this.chatContextValue;
     const { isLoading } = this;
@@ -229,6 +275,7 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
                     ? 'AFFiNE AI is loading history...'
                     : 'What can I help you with?'}
                 </div>
+                ${this._renderAIOnboarding()}
               </div>
               ${cache(
                 this.showChatCards
