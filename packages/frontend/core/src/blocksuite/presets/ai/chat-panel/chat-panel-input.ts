@@ -106,12 +106,7 @@ export class ChatPanelInput extends WithDisposable(LitElement) {
         margin-left: auto;
       }
 
-      .chat-history-clear {
-        background-color: var(--affine-white);
-      }
-
       .image-upload {
-        background-color: var(--affine-white);
         display: flex;
         justify-content: center;
         align-items: center;

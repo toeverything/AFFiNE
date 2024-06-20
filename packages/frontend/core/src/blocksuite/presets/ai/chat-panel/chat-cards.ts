@@ -6,7 +6,14 @@ import {
   NoteDisplayMode,
 } from '@blocksuite/blocks';
 import type { BlockModel } from '@blocksuite/store';
-import { css, html, LitElement, nothing, type PropertyValues } from 'lit';
+import {
+  css,
+  html,
+  LitElement,
+  nothing,
+  type PropertyValues,
+  type TemplateResult,
+} from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { styleMap } from 'lit/directives/style-map.js';
@@ -107,6 +114,7 @@ export class ChatCards extends WithDisposable(LitElement) {
   @state()
   accessor cards: Card[] = [];
 
+  private _currentDocId: string | null = null;
   private _selectedCardId: number = 0;
 
   static renderText({ text }: CardText) {
@@ -153,6 +161,7 @@ export class ChatCards extends WithDisposable(LitElement) {
           style=${styleMap({
             display: 'flex',
             flexDirection: 'column',
+            maxWidth: 'calc(100% - 72px)',
           })}
         >
           <div class="card-title">
@@ -172,14 +181,66 @@ export class ChatCards extends WithDisposable(LitElement) {
     `;
   }
 
-  static renderDoc(_: CardBlock) {
+  static renderDoc({ text, images }: CardBlock) {
+    let textTpl = html`you've chosen within the doc`;
+    let imageTpl: TemplateResult<1> | typeof nothing = nothing;
+    let hasImage = false;
+
+    if (text?.length) {
+      const lines = text.split('\n');
+      textTpl = html`${repeat(
+        lines.slice(0, 2),
+        line => line,
+        line => html`
+          <div
+            style=${styleMap({
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            })}
+          >
+            ${line}
+          </div>
+        `
+      )}`;
+    }
+
+    if (images?.length) {
+      hasImage = true;
+      imageTpl = html`
+        <img
+          style=${styleMap({
+            maxWidth: '72px',
+            maxHeight: '46px',
+          })}
+          src="${URL.createObjectURL(images[0])}"
+        />
+      `;
+    }
+
     return html`
-      <div class="card-wrapper">
-        <div class="card-title">
-          ${DocIcon}
-          <div>Start with this doc</div>
+      <div
+        class="card-wrapper"
+        style=${styleMap({
+          display: 'flex',
+          gap: '8px',
+          justifyContent: 'space-between',
+        })}
+      >
+        <div
+          style=${styleMap({
+            display: 'flex',
+            flexDirection: 'column',
+            maxWidth: hasImage ? 'calc(100% - 72px)' : '100%',
+          })}
+        >
+          <div class="card-title">
+            ${DocIcon}
+            <div>Start with this doc</div>
+          </div>
+          <div class="second-text">${textTpl}</div>
         </div>
-        <div class="second-text">you've chosen within the doc</div>
+        ${imageTpl}
       </div>
     `;
   }
@@ -218,7 +279,7 @@ export class ChatCards extends WithDisposable(LitElement) {
     card.images = images;
   }
 
-  private async _handleClick(card: Card) {
+  private async _selectCard(card: Card) {
     AIProvider.slots.toggleChatCards.emit({ visible: false });
 
     this._selectedCardId = card.id;
@@ -361,19 +422,27 @@ export class ChatCards extends WithDisposable(LitElement) {
 
   protected override async updated(changedProperties: PropertyValues) {
     if (changedProperties.has('host')) {
+      if (this._currentDocId === this.host.doc.id) return;
+      this._currentDocId = this.host.doc.id;
+      this.cards = [];
+
       const { text, images } = await this._extractAll();
       const hasText = text.length > 0;
       const hasImages = images.length > 0;
 
       // Currently only supports checking on first load
-      if (
-        (hasText || hasImages) &&
-        !this.cards.some(card => card.type === CardType.Doc)
-      ) {
-        this._updateCards({
+      if (hasText || hasImages) {
+        const card: CardBlock = {
           id: Date.now(),
           type: CardType.Doc,
-        });
+        };
+        if (hasText) {
+          card.text = text;
+        }
+        if (hasImages) {
+          card.images = images;
+        }
+        this._updateCards(card);
       }
     }
   }
@@ -387,6 +456,13 @@ export class ChatCards extends WithDisposable(LitElement) {
           await this._extractOnEdgeless();
         } else {
           await this._extract();
+        }
+
+        if (this.cards.length > 0) {
+          const card = this.cards[0];
+          if (card.type === CardType.Doc) return;
+
+          await this._selectCard(card);
         }
       })
     );
@@ -408,7 +484,7 @@ export class ChatCards extends WithDisposable(LitElement) {
       this.cards,
       card => card.id,
       card => html`
-        <div @click=${() => this._handleClick(card)}>
+        <div @click=${() => this._selectCard(card)}>
           ${this._renderCard(card)}
         </div>
       `
