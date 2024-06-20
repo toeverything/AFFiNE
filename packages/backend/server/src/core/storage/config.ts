@@ -7,7 +7,10 @@ export type StorageConfig<Ext = unknown> = {
 } & Ext;
 
 export interface StorageStartupConfigurations {
-  avatar: StorageConfig<{ publicLinkFactory: (key: string) => string }>;
+  avatar: StorageConfig<{
+    publicLinkFactory: (key: string) => string;
+    keyInPublicLink: (link: string) => string;
+  }>;
   blob: StorageConfig;
 }
 
@@ -22,6 +25,7 @@ defineStartupConfig('storages', {
     provider: 'fs',
     bucket: 'avatars',
     publicLinkFactory: key => `/api/avatars/${key}`,
+    keyInPublicLink: link => link.split('/').pop() as string,
   },
   blob: {
     provider: 'fs',

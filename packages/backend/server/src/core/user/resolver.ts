@@ -91,17 +91,25 @@ export class UserResolver {
     @Args({ name: 'avatar', type: () => GraphQLUpload })
     avatar: FileUpload
   ) {
+    if (!avatar.mimetype.startsWith('image/')) {
+      throw new Error('Invalid file type');
+    }
+
     if (!user) {
       throw new UserNotFound();
     }
 
     const avatarUrl = await this.storage.put(
-      `${user.id}-avatar`,
+      `${user.id}-avatar-${Date.now()}`,
       avatar.createReadStream(),
       {
         contentType: avatar.mimetype,
       }
     );
+
+    if (user.avatarUrl) {
+      await this.storage.delete(user.avatarUrl);
+    }
 
     return this.users.updateUser(user.id, { avatarUrl });
   }

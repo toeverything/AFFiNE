@@ -42,8 +42,8 @@ export class AvatarStorage {
     return this.provider.get(key);
   }
 
-  delete(key: string) {
-    return this.provider.delete(key);
+  delete(link: string) {
+    return this.provider.delete(this.storageConfig.keyInPublicLink(link));
   }
 
   @OnEvent('user.deleted')

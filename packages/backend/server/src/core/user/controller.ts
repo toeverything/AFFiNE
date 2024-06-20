@@ -2,8 +2,10 @@ import { Controller, Get, Param, Res } from '@nestjs/common';
 import type { Response } from 'express';
 
 import { ActionForbidden, UserAvatarNotFound } from '../../fundamentals';
+import { Public } from '../auth/guard';
 import { AvatarStorage } from '../storage';
 
+@Public()
 @Controller('/api/avatars')
 export class UserAvatarController {
   constructor(private readonly storage: AvatarStorage) {}
