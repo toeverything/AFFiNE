@@ -47,7 +47,7 @@
     "@sentry/esbuild-plugin": "^2.16.1",
     "@sentry/react": "^8.0.0",
     "@toeverything/infra": "workspace:*",
-    "@types/uuid": "^9.0.8",
+    "@types/uuid": "^10.0.0",
     "@vitejs/plugin-react-swc": "^3.6.0",
     "builder-util-runtime": "^9.2.5-alpha.2",
     "core-js": "^3.36.1",
