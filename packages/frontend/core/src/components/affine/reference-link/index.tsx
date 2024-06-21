@@ -101,7 +101,7 @@ export function AffinePageReference({
       if (e.shiftKey && ref.current) {
         e.preventDefault();
         e.stopPropagation();
-        peekView.open(ref.current);
+        peekView.open(ref.current).catch(console.error);
         return false; // means this click is handled
       }
       if (isInPeekView) {

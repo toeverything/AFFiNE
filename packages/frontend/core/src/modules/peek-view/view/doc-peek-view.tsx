@@ -10,28 +10,52 @@ import { DisposableGroup } from '@blocksuite/global/utils';
 import type { AffineEditorContainer } from '@blocksuite/presets';
 import type { DocMode } from '@toeverything/infra';
 import { DocsService, FrameworkScope, useService } from '@toeverything/infra';
-import {
-  forwardRef,
-  useCallback,
-  useEffect,
-  useImperativeHandle,
-  useState,
-} from 'react';
+import { useEffect, useState } from 'react';
 
 import { WorkbenchService } from '../../workbench';
 import { PeekViewService } from '../services/peek-view';
 import * as styles from './doc-peek-view.css';
 import { useDoc } from './utils';
 
-export type DocPreviewRef = {
-  getEditor: () => AffineEditorContainer | null;
-  fitViewportToTarget: () => void;
-};
+function fitViewport(
+  editor: AffineEditorContainer,
+  xywh?: `[${number},${number},${number},${number}]`
+) {
+  const rootService =
+    editor.host.std.spec.getService<EdgelessRootService>('affine:page');
+  rootService.viewport.onResize();
 
-const DocPreview = forwardRef<
-  DocPreviewRef,
-  { docId: string; blockId?: string; mode?: DocMode }
->(function DocPreview({ docId, blockId, mode }, ref) {
+  if (xywh) {
+    const viewport = {
+      xywh: xywh,
+      padding: [60, 20, 20, 20] as [number, number, number, number],
+    };
+    rootService.viewport.setViewportByBound(
+      Bound.deserialize(viewport.xywh),
+      viewport.padding,
+      false
+    );
+  } else {
+    const data = rootService.getFitToScreenData();
+    rootService.viewport.setViewport(
+      data.zoom,
+      [data.centerX, data.centerY],
+      false
+    );
+  }
+}
+
+export function DocPeekPreview({
+  docId,
+  blockId,
+  mode,
+  xywh,
+}: {
+  docId: string;
+  blockId?: string;
+  mode?: DocMode;
+  xywh?: `[${number},${number},${number},${number}]`;
+}) {
   const { doc, workspace, loading } = useDoc(docId);
   const { jumpToTag } = useNavigateHelper();
   const workbench = useService(WorkbenchService).workbench;
@@ -45,26 +69,22 @@ const DocPreview = forwardRef<
   const docs = useService(DocsService);
   const [resolvedMode, setResolvedMode] = useState<DocMode | undefined>(mode);
 
-  useImperativeHandle(
-    ref,
-    () => ({
-      getEditor: () => editor,
-      fitViewportToTarget: () => {
-        if (editor && resolvedMode === 'edgeless') {
-          const rootService =
-            editor.host.std.spec.getService<EdgelessRootService>('affine:page');
-          rootService.viewport.onResize();
-          const data = rootService.getFitToScreenData();
-          rootService.viewport.setViewport(
-            data.zoom,
-            [data.centerX, data.centerY],
-            false
-          );
-        }
-      },
-    }),
-    [editor, resolvedMode]
-  );
+  useEffect(() => {
+    if (editor && resolvedMode === 'edgeless') {
+      editor.host
+        .closest('[data-testid="peek-view-modal-animation-container"]')
+        ?.addEventListener(
+          'animationend',
+          () => {
+            fitViewport(editor, xywh);
+          },
+          {
+            once: true,
+          }
+        );
+    }
+    return;
+  }, [editor, resolvedMode, xywh]);
 
   useEffect(() => {
     if (!mode || !resolvedMode) {
@@ -95,7 +115,7 @@ const DocPreview = forwardRef<
           // doc change event inside peek view should be handled by peek view
           disposableGroup.add(
             rootService.slots.docLinkClicked.on(({ docId, blockId }) => {
-              peekView.open({ docId, blockId });
+              peekView.open({ docId, blockId }).catch(console.error);
             })
           );
           // todo: no tag peek view yet
@@ -140,86 +160,4 @@ const DocPreview = forwardRef<
       </Scrollable.Root>
     </AffineErrorBoundary>
   );
-});
-DocPreview.displayName = 'DocPreview';
-
-export const DocPeekView = forwardRef<
-  DocPreviewRef,
-  {
-    docId: string;
-    blockId?: string;
-    mode?: DocMode;
-  }
->(function DocPeekView({ docId, blockId, mode }, ref) {
-  return <DocPreview ref={ref} mode={mode} docId={docId} blockId={blockId} />;
-});
-
-export type SurfaceRefPeekViewRef = {
-  fitViewportToTarget: () => void;
-};
-
-export const SurfaceRefPeekView = forwardRef<
-  SurfaceRefPeekViewRef,
-  { docId: string; xywh: `[${number},${number},${number},${number}]` }
->(function SurfaceRefPeekView({ docId, xywh }, ref) {
-  const [editorRef, setEditorRef] = useState<AffineEditorContainer | null>(
-    null
-  );
-  const onRef = (editor: AffineEditorContainer | null) => {
-    setEditorRef(editor);
-  };
-  const fitViewportToTarget = useCallback(() => {
-    if (!editorRef) {
-      return;
-    }
-
-    const viewport = {
-      xywh: xywh,
-      padding: [60, 20, 20, 20] as [number, number, number, number],
-    };
-    const rootService =
-      editorRef.host.std.spec.getService<EdgelessRootService>('affine:page');
-    rootService.viewport.onResize();
-    rootService.viewport.setViewportByBound(
-      Bound.deserialize(viewport.xywh),
-      viewport.padding
-    );
-  }, [editorRef, xywh]);
-
-  useImperativeHandle(
-    ref,
-    () => ({
-      fitViewportToTarget,
-    }),
-    [fitViewportToTarget]
-  );
-
-  useEffect(() => {
-    let mounted = true;
-    if (editorRef) {
-      editorRef.host?.updateComplete
-        .then(() => {
-          if (mounted) {
-            fitViewportToTarget();
-          }
-        })
-        .catch(e => {
-          console.error(e);
-        });
-    }
-    return () => {
-      mounted = false;
-    };
-  }, [editorRef, fitViewportToTarget]);
-
-  return (
-    <DocPreview
-      ref={ref => {
-        onRef(ref?.getEditor() ?? null);
-      }}
-      docId={docId}
-      mode={'edgeless'}
-    />
-  );
-});
-SurfaceRefPeekView.displayName = 'SurfaceRefPeekView';
+}

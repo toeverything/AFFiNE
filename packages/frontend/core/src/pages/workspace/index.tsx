@@ -37,7 +37,7 @@ declare global {
 }
 
 export const Component = (): ReactElement => {
-  performanceRenderLogger.info('WorkspaceLayout');
+  performanceRenderLogger.debug('WorkspaceLayout');
 
   const params = useParams();
 

@@ -1,10 +1,10 @@
 import {
-  createReactComponentFromLit,
   type ElementOrFactory,
   Input,
   notify,
   toast,
   type ToastOptions,
+  toReactNode,
   type useConfirmModal,
 } from '@affine/component';
 import type {
@@ -27,47 +27,15 @@ import {
   type RootService,
 } from '@blocksuite/blocks';
 import type { DocMode, DocService, DocsService } from '@toeverything/infra';
-import { html, LitElement, type TemplateResult } from 'lit';
+import { html, type TemplateResult } from 'lit';
 import { customElement } from 'lit/decorators.js';
 import { literal } from 'lit/static-html.js';
-import React, { createElement, type ReactNode } from 'react';
-
-const logger = new DebugLogger('affine::spec-patchers');
 
 export type ReferenceReactRenderer = (
   reference: AffineReference
 ) => React.ReactElement;
 
-export class LitTemplateWrapper extends LitElement {
-  static override get properties() {
-    return {
-      template: { type: Object },
-    };
-  }
-  template: TemplateResult | null = null;
-  // do not enable shadow root
-  override createRenderRoot() {
-    return this;
-  }
-
-  override render() {
-    return this.template;
-  }
-}
-
-window.customElements.define('affine-lit-template-wrapper', LitTemplateWrapper);
-
-const TemplateWrapper = createReactComponentFromLit({
-  elementClass: LitTemplateWrapper,
-  react: React,
-});
-
-const toReactNode = (template?: TemplateResult | string): ReactNode => {
-  if (!template) return null;
-  return typeof template === 'string'
-    ? template
-    : createElement(TemplateWrapper, { template });
-};
+const logger = new DebugLogger('affine::spec-patchers');
 
 function patchSpecService<Spec extends BlockSpec>(
   spec: Spec,
@@ -274,10 +242,9 @@ export function patchPeekViewService(
 
   patchSpecService(rootSpec, pageService => {
     pageService.peekViewService = {
-      peek: (target: ActivePeekView['target']) => {
-        logger.debug('center peek', target);
-        service.peekView.open(target);
-        return Promise.resolve();
+      peek: (target: ActivePeekView['target'], template?: TemplateResult) => {
+        logger.debug('center peek', target, template);
+        return service.peekView.open(target, template);
       },
     };
   });

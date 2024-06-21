@@ -6,7 +6,12 @@ import {
   type SurfaceRefBlockComponent,
   type SurfaceRefBlockModel,
 } from '@blocksuite/blocks';
+import type { BlockModel } from '@blocksuite/store';
 import { type DocMode, Entity, LiveData } from '@toeverything/infra';
+import type { TemplateResult } from 'lit';
+import { firstValueFrom, map, race } from 'rxjs';
+
+import { resolveLinkToDoc } from '../../navigation';
 
 export type PeekViewTarget =
   | HTMLElement
@@ -24,12 +29,9 @@ export type DocPeekViewInfo = {
 
 export type ActivePeekView = {
   target: PeekViewTarget;
-  info: DocPeekViewInfo;
+  info?: DocPeekViewInfo;
+  template?: TemplateResult;
 };
-
-import type { BlockModel } from '@blocksuite/store';
-
-import { resolveLinkToDoc } from '../../navigation';
 
 const EMBED_DOC_FLAVOURS = [
   'affine:embed-linked-doc',
@@ -50,8 +52,8 @@ const isSurfaceRefModel = (
 
 function resolvePeekInfoFromPeekTarget(
   peekTarget?: PeekViewTarget
-): DocPeekViewInfo | null {
-  if (!peekTarget) return null;
+): DocPeekViewInfo | undefined {
+  if (!peekTarget) return;
   if (peekTarget instanceof AffineReference) {
     if (peekTarget.refMeta) {
       return {
@@ -91,14 +93,10 @@ function resolvePeekInfoFromPeekTarget(
       blockId: peekTarget.blockId,
     };
   }
-  return null;
+  return;
 }
 
 export class PeekViewEntity extends Entity {
-  constructor() {
-    super();
-  }
-
   private readonly _active$ = new LiveData<ActivePeekView | null>(null);
   private readonly _show$ = new LiveData<boolean>(false);
 
@@ -108,14 +106,17 @@ export class PeekViewEntity extends Entity {
     .distinctUntilChanged();
 
   // return true if the peek view will be handled
-  open = (target: ActivePeekView['target']) => {
+  open = async (
+    target: ActivePeekView['target'],
+    template?: TemplateResult
+  ) => {
     const resolvedInfo = resolvePeekInfoFromPeekTarget(target);
-    if (!resolvedInfo) {
-      return false;
+    if (!resolvedInfo && !template) {
+      return;
     }
-    this._active$.next({ target, info: resolvedInfo });
+    this._active$.next({ target, info: resolvedInfo, template });
     this._show$.next(true);
-    return true;
+    return firstValueFrom(race(this._active$, this.show$).pipe(map(() => {})));
   };
 
   close = () => {

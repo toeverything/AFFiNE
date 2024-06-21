@@ -1,32 +1,30 @@
+import { toReactNode } from '@affine/component';
 import { BlockElement } from '@blocksuite/block-std';
 import { useLiveData, useService } from '@toeverything/infra';
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo } from 'react';
 
 import type { ActivePeekView } from '../entities/peek-view';
 import { PeekViewService } from '../services/peek-view';
-import { DocPeekViewControls } from './doc-peek-controls';
-import type { DocPreviewRef, SurfaceRefPeekViewRef } from './doc-peek-view';
-import { DocPeekView, SurfaceRefPeekView } from './doc-peek-view';
+import { DocPeekPreview } from './doc-peek-view';
 import { PeekViewModalContainer } from './modal-container';
+import {
+  DefaultPeekViewControls,
+  DocPeekViewControls,
+} from './peek-view-controls';
 
-function renderPeekView(
-  { info }: ActivePeekView,
-  refCallback: (editor: SurfaceRefPeekViewRef | DocPreviewRef | null) => void
-) {
-  if (info.mode === 'edgeless' && info.xywh) {
-    return (
-      <SurfaceRefPeekView
-        ref={refCallback}
-        docId={info.docId}
-        xywh={info.xywh}
-      />
-    );
+function renderPeekView({ info, template }: ActivePeekView) {
+  if (template) {
+    return toReactNode(template);
+  }
+
+  if (!info) {
+    return null;
   }
 
   return (
-    <DocPeekView
-      ref={refCallback}
+    <DocPeekPreview
       mode={info.mode}
+      xywh={info.xywh}
       docId={info.docId}
       blockId={info.blockId}
     />
@@ -34,29 +32,26 @@ function renderPeekView(
 }
 
 const renderControls = ({ info }: ActivePeekView) => {
-  return (
-    <DocPeekViewControls
-      mode={info.mode}
-      docId={info.docId}
-      blockId={info.docId}
-    />
-  );
+  if (info && 'docId' in info) {
+    return (
+      <DocPeekViewControls
+        mode={info.mode}
+        docId={info.docId}
+        blockId={info.docId}
+      />
+    );
+  }
+
+  return <DefaultPeekViewControls />;
 };
 
 export const PeekViewManagerModal = () => {
   const peekViewEntity = useService(PeekViewService).peekView;
   const activePeekView = useLiveData(peekViewEntity.active$);
   const show = useLiveData(peekViewEntity.show$);
-  const peekViewRef = useRef<SurfaceRefPeekViewRef | DocPreviewRef | null>(
-    null
-  );
 
   const preview = useMemo(() => {
-    return activePeekView
-      ? renderPeekView(activePeekView, editor => {
-          peekViewRef.current = editor;
-        })
-      : null;
+    return activePeekView ? renderPeekView(activePeekView) : null;
   }, [activePeekView]);
 
   const controls = useMemo(() => {
@@ -88,9 +83,6 @@ export const PeekViewManagerModal = () => {
         if (!open) {
           peekViewEntity.close();
         }
-      }}
-      onAnimateEnd={() => {
-        peekViewRef.current?.fitViewportToTarget();
       }}
     >
       {preview}

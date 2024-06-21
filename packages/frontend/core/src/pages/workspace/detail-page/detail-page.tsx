@@ -362,7 +362,7 @@ export const DetailPage = ({ pageId }: { pageId: string }): ReactElement => {
 };
 
 export const Component = () => {
-  performanceRenderLogger.info('DetailPage');
+  performanceRenderLogger.debug('DetailPage');
 
   const params = useParams();
   const recentPages = useService(RecentPagesService);

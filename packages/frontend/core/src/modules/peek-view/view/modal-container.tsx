@@ -112,7 +112,11 @@ export const PeekViewModalContainer = ({
               [styles.animationTimeout]: `${animationTimeout}ms`,
             })}
           >
-            <div className={styles.modalContentContainer} data-state={status}>
+            <div
+              className={styles.modalContentContainer}
+              data-testid="peek-view-modal-animation-container"
+              data-state={status}
+            >
               <Dialog.Content
                 {...contentOptions}
                 className={styles.modalContent}

@@ -19,7 +19,7 @@ import {
 
 import { WorkbenchService } from '../../workbench';
 import { PeekViewService } from '../services/peek-view';
-import * as styles from './doc-peek-controls.css';
+import * as styles from './peek-view-controls.css';
 import { useDoc } from './utils';
 
 type ControlButtonProps = {
@@ -64,6 +64,31 @@ type DocPeekViewControlsProps = HTMLAttributes<HTMLDivElement> & {
   docId: string;
   blockId?: string;
   mode?: DocMode;
+};
+
+export const DefaultPeekViewControls = ({
+  className,
+  ...rest
+}: HTMLAttributes<HTMLDivElement>) => {
+  const peekView = useService(PeekViewService).peekView;
+  const t = useI18n();
+  const controls = useMemo(() => {
+    return [
+      {
+        icon: <CloseIcon />,
+        nameKey: 'close',
+        name: t['com.affine.peek-view-controls.close'](),
+        onClick: peekView.close,
+      },
+    ].filter((opt): opt is ControlButtonProps => Boolean(opt));
+  }, [peekView, t]);
+  return (
+    <div {...rest} className={clsx(styles.root, className)}>
+      {controls.map(option => (
+        <ControlButton key={option.nameKey} {...option} />
+      ))}
+    </div>
+  );
 };
 
 export const DocPeekViewControls = ({

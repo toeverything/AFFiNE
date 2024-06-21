@@ -93,7 +93,7 @@ window.addEventListener('focus', () => {
 frameworkProvider.get(LifecycleService).applicationStart();
 
 export function App() {
-  performanceRenderLogger.info('App');
+  performanceRenderLogger.debug('App');
 
   if (!languageLoadingPromise) {
     languageLoadingPromise = loadLanguage().catch(console.error);
