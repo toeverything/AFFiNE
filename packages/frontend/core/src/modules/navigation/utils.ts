@@ -1,6 +1,6 @@
 function maybeAffineOrigin(origin: string) {
   return (
-    origin.startsWith('file://.') ||
+    origin.startsWith('file://') ||
     origin.startsWith('affine://') ||
     origin.endsWith('affine.pro') || // stable/beta
     origin.endsWith('affine.fail') || // canary
