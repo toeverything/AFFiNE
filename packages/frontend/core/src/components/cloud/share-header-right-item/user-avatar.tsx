@@ -24,7 +24,7 @@ const UserInfo = () => {
   const plan = useLiveData(subscription.pro$)?.plan;
 
   if (!user) {
-    // TODO: loading UI
+    // TODO(@eyhn): loading UI
     return null;
   }
   return (

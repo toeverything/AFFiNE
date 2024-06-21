@@ -1,5 +1,5 @@
 // manually synced with packages/backend/server/src/data/migrations/utils/prompts.ts
-// todo: automate this
+// TODO(@Peng): automate this
 export const promptKeys = [
   'debug:chat:gpt4',
   'debug:action:gpt4',

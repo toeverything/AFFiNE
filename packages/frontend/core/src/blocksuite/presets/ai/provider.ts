@@ -32,7 +32,7 @@ export type ActionEventType =
  * To use it, downstream (affine) has to provide AI actions implementation,
  * user info etc
  *
- * todo: breakdown into different parts?
+ * TODO: breakdown into different parts?
  */
 export class AIProvider {
   static get slots() {
@@ -124,7 +124,7 @@ export class AIProvider {
       console.warn(`AI action ${id} is already provided`);
     }
 
-    // @ts-expect-error todo: maybe fix this
+    // @ts-expect-error TODO: maybe fix this
     this.actions[id] = (
       ...args: Parameters<BlockSuitePresets.AIActions[T]>
     ) => {

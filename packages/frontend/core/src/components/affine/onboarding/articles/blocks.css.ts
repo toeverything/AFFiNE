@@ -21,7 +21,7 @@ globalStyle(`${block} p`, {
   lineHeight: '23px',
 });
 globalStyle(`${block} b`, {
-  // TODO: 500's effect not matching the design, use 600 for now
+  // TODO(@catsjuice): 500's effect not matching the design, use 600 for now
   fontWeight: '600',
 });
 globalStyle(`${block} ol`, {

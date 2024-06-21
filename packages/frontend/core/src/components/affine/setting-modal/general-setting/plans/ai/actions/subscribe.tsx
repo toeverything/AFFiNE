@@ -63,7 +63,7 @@ export const AISubscribe = ({ ...btnProps }: AISubscribeProps) => {
   }, [idempotencyKey, subscriptionService]);
 
   if (!price || !price.yearlyAmount) {
-    // TODO: loading UI
+    // TODO(@catsjuice): loading UI
     return null;
   }
 

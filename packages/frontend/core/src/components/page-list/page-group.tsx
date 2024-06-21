@@ -194,7 +194,7 @@ export const ItemGroup = <T extends ListItem>({
   );
 };
 
-// todo: optimize how to render page meta list item
+// TODO(@Peng): optimize how to render page meta list item
 const requiredPropNames = [
   'docCollection',
   'rowAsLink',

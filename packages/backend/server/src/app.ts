@@ -27,7 +27,7 @@ export async function createApp() {
 
   app.use(
     graphqlUploadExpress({
-      // TODO: dynamic limit by quota
+      // TODO(@darksky): dynamic limit by quota maybe?
       maxFileSize: 100 * 1024 * 1024,
       maxFiles: 5,
     })

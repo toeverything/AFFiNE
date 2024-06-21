@@ -223,7 +223,7 @@ function actionToStream<T extends keyof BlockSuitePresets.AIActions>(
             Object.assign(options, data);
           }
 
-          // @ts-expect-error todo: maybe fix this
+          // @ts-expect-error TODO(@Peng): maybe fix this
           stream = action(options);
           if (!stream) return;
           yield* stream;
@@ -253,7 +253,7 @@ function actionToStream<T extends keyof BlockSuitePresets.AIActions>(
           workspaceId: host.doc.collection.id,
         } as Parameters<typeof action>[0];
 
-        // @ts-expect-error todo: maybe fix this
+        // @ts-expect-error TODO(@Peng): maybe fix this
         stream = action(options);
         if (!stream) return;
         yield* stream;

@@ -349,7 +349,6 @@ const PlanAction = ({
 };
 
 const PaymentMethodUpdater = () => {
-  // TODO: open stripe customer portal
   const { isMutating, trigger } = useMutation({
     mutation: createCustomerPortalMutation,
   });
@@ -475,7 +474,6 @@ const InvoiceLine = ({
     <SettingRow
       key={invoice.id}
       name={new Date(invoice.createdAt).toLocaleDateString()}
-      // TODO: currency to format: usd => $, cny => ¥
       desc={`${
         invoice.status === InvoiceStatus.Paid
           ? t['com.affine.payment.billing-setting.paid']()

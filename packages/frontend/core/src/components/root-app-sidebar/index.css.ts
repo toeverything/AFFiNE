@@ -22,7 +22,7 @@ export const userInfoWrapper = style({
   padding: '4px 0',
 });
 
-// TODO:
+// TODO(@catsjuice):
 globalStyle(`button.${userInfoWrapper} > span`, {
   lineHeight: 0,
 });

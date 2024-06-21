@@ -132,7 +132,7 @@ export const menuTrigger = style({
       color: cssVar('textDisableColor'),
       pointerEvents: 'none',
     },
-    // TODO: wait for design
+    // TODO(@catsjuice): wait for design
     '&.error': {
       // borderColor: 'var(--affine-error-color)',
     },

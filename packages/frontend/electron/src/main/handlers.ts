@@ -29,7 +29,7 @@ export const allHandlers = {
 };
 
 export const registerHandlers = () => {
-  // TODO: listen to namespace instead of individual event types
+  // TODO(@Peng): listen to namespace instead of individual event types
   ipcMain.setMaxListeners(100);
   for (const [namespace, namespaceHandlers] of Object.entries(allHandlers)) {
     for (const [key, handler] of Object.entries(namespaceHandlers)) {

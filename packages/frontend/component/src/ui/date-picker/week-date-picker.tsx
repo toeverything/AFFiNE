@@ -29,7 +29,7 @@ export interface WeekDatePickerProps
   handleRef?: ForwardedRef<WeekDatePickerHandle>;
 }
 
-// TODO: i18n
+// TODO(catsjuice): i18n
 const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 // const weekDays = ['日', '一', '二', '三', '四', '五', '六'];
 const format = 'YYYY-MM-DD';

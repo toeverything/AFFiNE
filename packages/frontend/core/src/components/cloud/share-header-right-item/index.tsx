@@ -18,7 +18,7 @@ const ShareHeaderRightItem = ({ ...props }: ShareHeaderRightItemProps) => {
   const { publishMode } = props;
   const [isMember, setIsMember] = useState(false);
 
-  // TODO: Add TOC
+  // TODO(@JimmFly): Add TOC
   return (
     <div className={styles.rightItemContainer}>
       {loginStatus === 'authenticated' ? (

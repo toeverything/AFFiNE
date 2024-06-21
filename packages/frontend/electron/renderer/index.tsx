@@ -26,7 +26,7 @@ function main() {
   performanceMainLogger.info('start');
 
   // load persistent config for electron
-  // TODO: should be sync, but it's not necessary for now
+  // TODO(@Peng): should be sync, but it's not necessary for now
   appConfigProxy
     .getSync()
     .catch(() => console.error('failed to load app config'));

@@ -111,7 +111,7 @@ async function createWindow(additionalArguments: string[]) {
   });
 
   browserWindow.on('close', e => {
-    // TODO: gracefully close the app, for example, ask user to save unsaved changes
+    // TODO(@Peng): gracefully close the app, for example, ask user to save unsaved changes
     e.preventDefault();
     if (!isMacOS()) {
       closeAllWindows();

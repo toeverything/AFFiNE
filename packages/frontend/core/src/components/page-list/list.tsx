@@ -43,7 +43,7 @@ export const List = forwardRef<ItemListHandle, ListProps<ListItem>>(
 );
 
 // when pressing ESC or double clicking outside of the page list, close the selection mode
-// todo: use jotai-effect instead but it seems it does not work with jotai-scope?
+// TODO(@Peng): use jotai-effect instead but it seems it does not work with jotai-scope?
 const useItemSelectionStateEffect = () => {
   const [selectionState, setSelectionActive] = useAtom(selectionStateAtom);
   useEffect(() => {

@@ -258,7 +258,7 @@ export const SignOutConfirmModal = () => {
       await authService.signOut();
     } catch (err) {
       console.error(err);
-      // TODO: i18n
+      // TODO(@eyhn): i18n
       notify.error({
         title: 'Failed to sign out',
       });

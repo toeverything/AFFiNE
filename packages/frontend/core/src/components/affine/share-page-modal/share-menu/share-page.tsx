@@ -211,7 +211,7 @@ export const AffineSharePage = (props: ShareMenuProps) => {
   );
 
   if (isLoading) {
-    // TODO: loading and error UI
+    // TODO(@eyhn): loading and error UI
     return (
       <>
         <Skeleton height={100} />
@@ -341,7 +341,7 @@ export const SharePage = (props: ShareMenuProps) => {
     props.workspaceMetadata.flavour === WorkspaceFlavour.AFFINE_CLOUD
   ) {
     return (
-      // TODO: refactor this part
+      // TODO(@eyhn): refactor this part
       <ErrorBoundary fallback={null}>
         <Suspense>
           <AffineSharePage {...props} />

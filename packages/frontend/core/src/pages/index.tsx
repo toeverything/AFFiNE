@@ -144,7 +144,7 @@ export const Component = () => {
     return <AppFallback></AppFallback>;
   }
 
-  // TODO: We need a no workspace page
+  // TODO(@eyhn): We need a no workspace page
   return (
     <>
       <div

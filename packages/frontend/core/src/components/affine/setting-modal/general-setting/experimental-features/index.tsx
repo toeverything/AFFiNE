@@ -181,7 +181,7 @@ const ExperimentalFeaturesMain = () => {
   );
 };
 
-// todo: save to workspace meta instead?
+// TODO(@Peng): save to workspace meta instead?
 const experimentalFeaturesDisclaimerAtom = atomWithStorage(
   'affine:experimental-features-disclaimer',
   false

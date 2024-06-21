@@ -152,7 +152,7 @@ export const pageItemLabel = style({
   textAlign: 'left',
   selectors: {
     '[aria-selected="true"] &': {
-      // TODO: wait for design
+      // TODO(@catsjuice): wait for design
       color: cssVar('primaryColor'),
     },
   },

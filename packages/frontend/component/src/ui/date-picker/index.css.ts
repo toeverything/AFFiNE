@@ -48,7 +48,7 @@ export const inputStyle = style({
 });
 export const popperStyle = style({
   boxShadow: cssVar('shadow2'),
-  // TODO: for menu offset, need to be optimized
+  // TODO(@catsjuice): for menu offset, need to be optimized
   marginTop: '16px',
   background: cssVar('backgroundOverlayPanelColor'),
   borderRadius: '12px',

@@ -18,7 +18,7 @@ export const useAllPageListConfig = () => {
   const shareDocs = useLiveData(shareDocService.shareDocs?.list$);
 
   useEffect(() => {
-    // TODO: loading & error UI
+    // TODO(@eyhn): loading & error UI
     shareDocService.shareDocs?.revalidate();
   }, [shareDocService]);
 

@@ -113,15 +113,4 @@ export const FlexWrapper = styled(Wrapper, {
   };
 });
 
-// TODO: Complete me
-export const GridWrapper = styled(Wrapper, {
-  shouldForwardProp: prop => {
-    return ![''].includes(prop as string);
-  },
-})<WrapperProps>(() => {
-  return {
-    display: 'grid',
-  };
-});
-
 export default Wrapper;

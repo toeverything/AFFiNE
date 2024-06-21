@@ -105,7 +105,7 @@ export const PlanLayout = ({ cloud, ai, aiTip }: PlanLayoutProps) => {
     }
   }, [aiTip, settingModalScrollContainer]);
 
-  // TODO: Need a better solution to handle this situation
+  // TODO(@catsjuice): Need a better solution to handle this situation
   useLayoutEffect(() => {
     if (!scrollAnchor) return;
     setTimeout(() => {
@@ -135,7 +135,7 @@ export const PlanLayout = ({ cloud, ai, aiTip }: PlanLayoutProps) => {
 
   return (
     <div className={styles.plansLayoutRoot}>
-      {/* TODO: SettingHeader component shouldn't have margin itself  */}
+      {/* TODO(@catsjuice): SettingHeader component shouldn't have margin itself  */}
       <SettingHeader
         style={{ marginBottom: '0px' }}
         title={t['com.affine.payment.title']()}

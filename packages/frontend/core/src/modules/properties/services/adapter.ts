@@ -67,7 +67,7 @@ export class WorkspacePropertiesAdapter extends Service {
       return;
     }
     this.ensuredRoot = true;
-    // todo: deal with schema change issue
+    // TODO(@Peng): deal with schema change issue
     // fixme: may not to be called every time
     defaultsDeep(this.proxy, {
       schema: {

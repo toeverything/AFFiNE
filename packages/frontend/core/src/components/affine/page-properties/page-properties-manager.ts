@@ -35,7 +35,7 @@ export const newPropertyTypes: PagePropertyType[] = [
   PagePropertyType.Number,
   PagePropertyType.Checkbox,
   PagePropertyType.Date,
-  // todo: add more
+  // TODO(@Peng): add more
 ];
 
 export class PagePropertiesMetaManager {

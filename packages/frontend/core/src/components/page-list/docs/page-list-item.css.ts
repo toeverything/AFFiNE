@@ -66,7 +66,7 @@ globalStyle(`[data-draggable=true][data-dragging=true] ${dndCell}:before`, {
   opacity: 1,
 });
 
-// todo: remove global style
+// TODO(@JimmFly): remove global style
 globalStyle(`${root} > :first-child`, {
   paddingLeft: '16px',
 });

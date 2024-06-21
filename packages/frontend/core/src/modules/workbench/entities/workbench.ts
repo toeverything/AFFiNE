@@ -155,7 +155,7 @@ export class Workbench extends Entity {
     const newNextSize = Number(
       (nextView.size$.value - percentOfTotal).toFixed(4)
     );
-    // TODO: better strategy to limit size
+    // TODO(@catsjuice): better strategy to limit size
     if (newSize / totalViewSize < 0.2 || newNextSize / totalViewSize < 0.2)
       return;
     view.setSize(newSize);

@@ -127,7 +127,7 @@ export const useAppUpdater = () => {
     if (updateReady) {
       setAppQuitting(true);
       apis?.updater.quitAndInstall().catch(err => {
-        // TODO: add error toast here
+        // TODO(@Peng): add error toast here
         console.error(err);
       });
     }

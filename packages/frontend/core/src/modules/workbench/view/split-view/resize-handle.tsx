@@ -15,7 +15,7 @@ export const ResizeHandle = ({
   onResizeStart,
   onResizeEnd,
 }: ResizeHandleProps) => {
-  // TODO: touch support
+  // TODO(@catsjuice): touch support
   const onMouseDown = useCallback(
     (e: React.MouseEvent) => {
       e.preventDefault();

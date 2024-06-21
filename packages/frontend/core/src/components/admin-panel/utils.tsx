@@ -19,7 +19,7 @@ export const renderInput = (
           <Input type="number" value={value} onChange={onChange} />
         </div>
       );
-    //TODO: add more types
+    // TODO(@JimmFly): add more types
     default:
       return null;
   }

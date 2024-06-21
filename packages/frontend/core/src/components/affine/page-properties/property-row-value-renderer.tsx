@@ -188,7 +188,7 @@ export const propertyValueRenderers: Record<
   checkbox: CheckboxValue,
   text: TextValue,
   number: NumberValue,
-  // todo: fix following
+  // TODO(@Peng): fix following
   tags: TagsValue,
   progress: TextValue,
 };

@@ -142,7 +142,7 @@ export const ConfirmModalProvider = ({ children }: PropsWithChildren) => {
       value={{ openConfirmModal, closeConfirmModal, modalProps }}
     >
       {children}
-      {/* TODO: multi-instance support(unnecessary for now) */}
+      {/* TODO(@catsjuice): multi-instance support(unnecessary for now) */}
       <ConfirmModal {...modalProps} onOpenChange={onOpenChange} />
     </ConfirmModalContext.Provider>
   );

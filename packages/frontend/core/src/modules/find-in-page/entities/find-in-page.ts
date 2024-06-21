@@ -71,7 +71,7 @@ export class FindInPage extends Entity {
 
   constructor() {
     super();
-    // todo: hide on navigation
+    // TODO(@Peng): hide on navigation
   }
 
   findInPage(searchText: string) {

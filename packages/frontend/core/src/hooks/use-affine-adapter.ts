@@ -12,7 +12,7 @@ const useReactiveAdapter = (adapter: WorkspacePropertiesAdapter) => {
   // hack: delay proxy creation to avoid unnecessary re-render + render in another component issue
   const [proxy, setProxy] = useDebouncedState(adapter, 0);
   useEffect(() => {
-    // todo: track which properties are used and then filter by property path change
+    // TODO(@Peng): track which properties are used and then filter by property path change
     // using Y.YEvent.path
     function observe() {
       setProxy(getProxy(adapter));

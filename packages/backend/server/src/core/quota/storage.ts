@@ -41,7 +41,6 @@ export class QuotaManagementService {
     };
   }
 
-  // TODO: lazy calc, need to be optimized with cache
   async getUserUsage(userId: string) {
     const workspaces = await this.permissions.getOwnedWorkspaces(userId);
 

@@ -35,6 +35,6 @@ export const loader: LoaderFunction = async ({ request }) => {
 };
 
 export const Component = () => {
-  // TODO: loading ui
+  // TODO(@eyhn): loading ui
   return null;
 };

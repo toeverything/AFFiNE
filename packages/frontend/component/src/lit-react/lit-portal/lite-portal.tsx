@@ -14,7 +14,7 @@ const listeners: Set<PortalListener> = new Set();
 
 export function createLitPortalAnchor(callback: (event: PortalEvent) => void) {
   const id = nanoid();
-  // todo: clean up listeners?
+  // todo(@Peng): clean up listeners?
   listeners.add(event => {
     if (event.target.portalId !== id) {
       return;

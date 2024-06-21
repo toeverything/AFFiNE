@@ -320,7 +320,7 @@ export const usePageCommands = () => {
   ]);
 };
 
-// todo: refactor to reduce duplication with usePageCommands
+// TODO(@Peng): refactor to reduce duplication with usePageCommands
 export const useSearchCallbackCommands = () => {
   const quickSearch = useService(QuickSearchService).quickSearch;
   const workspace = useService(WorkspaceService).workspace;
@@ -415,7 +415,7 @@ export const collectionToCommand = (
 };
 
 export const useCollectionsCommands = () => {
-  // todo: considering collections for searching pages
+  // TODO(@eyhn): considering collections for searching pages
   const collectionService = useService(CollectionService);
   const collections = useLiveData(collectionService.collections$);
   const quickSearch = useService(QuickSearchService).quickSearch;

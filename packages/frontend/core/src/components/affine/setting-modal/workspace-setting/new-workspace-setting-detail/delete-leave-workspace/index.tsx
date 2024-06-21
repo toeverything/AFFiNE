@@ -70,7 +70,7 @@ export const DeleteLeaveWorkspace = () => {
       const backWorkspace = workspaceList.find(
         ws => ws.id !== currentWorkspaceId
       );
-      // TODO: if there is no workspace, jump to a new page(wait for design)
+      // TODO(@eyhn): if there is no workspace, jump to a new page(wait for design)
       if (backWorkspace) {
         jumpToSubPath(
           backWorkspace?.id || '',

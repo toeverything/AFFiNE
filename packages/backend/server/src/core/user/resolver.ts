@@ -55,7 +55,7 @@ export class UserResolver {
   ): Promise<typeof UserOrLimitedUser | null> {
     validators.assertValidEmail(email);
 
-    // TODO: need to limit a user can only get another user witch is in the same workspace
+    // TODO(@forehalo): need to limit a user can only get another user witch is in the same workspace
     const user = await this.users.findUserWithHashedPasswordByEmail(email);
 
     // return empty response when user not exists

@@ -109,7 +109,7 @@ export const CollectionListItem = (props: CollectionListItemProps) => {
     props.title,
   ]);
 
-  // TODO: use getDropItemId
+  // TODO(@JimmFly): use getDropItemId
   const { setNodeRef, attributes, listeners, isDragging } = useDraggable({
     id: getDNDId('collection-list', 'collection', props.collectionId),
     data: {

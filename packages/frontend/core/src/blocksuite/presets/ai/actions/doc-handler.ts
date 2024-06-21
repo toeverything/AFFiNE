@@ -108,7 +108,7 @@ export function actionToStream<T extends keyof BlockSuitePresets.AIActions>(
           docId: host.doc.id,
           workspaceId: host.doc.collection.id,
         } as Parameters<typeof action>[0];
-        // @ts-expect-error todo: maybe fix this
+        // @ts-expect-error TODO(@Peng): maybe fix this
         stream = action(options);
         if (!stream) return;
         yield* stream;

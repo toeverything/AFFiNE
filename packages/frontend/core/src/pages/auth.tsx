@@ -100,7 +100,7 @@ export const AuthPage = (): ReactElement | null => {
   }, [jumpToIndex]);
 
   if (!passwordLimits || !account) {
-    // TODO: loading UI
+    // TODO(@eyhn): loading UI
     return null;
   }
 
@@ -184,7 +184,7 @@ export const loader: LoaderFunction = async args => {
         email: email,
       },
     }).catch(console.error);
-    // TODO: Add error handling
+    // TODO(@eyhn): Add error handling
     if (!res?.changeEmail) {
       return redirect('/expired');
     }
@@ -224,6 +224,6 @@ export const Component = () => {
     return <AuthPage />;
   }
 
-  // TODO: loading UI
+  // TODO(@eyhn): loading UI
   return null;
 };

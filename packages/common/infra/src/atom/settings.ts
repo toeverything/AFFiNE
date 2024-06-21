@@ -90,7 +90,7 @@ export function setupEditorFlags(docCollection: DocCollection) {
       });
 
       // override this flag in app settings
-      // TODO: need a better way to manage block suite flags
+      // TODO(@eyhn): need a better way to manage block suite flags
       docCollection.awarenessStore.setFlag('enable_synced_doc_block', true);
     } catch (err) {
       logger.error('syncEditorFlags', err);

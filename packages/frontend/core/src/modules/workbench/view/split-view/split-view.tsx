@@ -35,7 +35,7 @@ export interface SplitViewProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 type SlotsMap = Record<View['id'], RefObject<HTMLDivElement | null>>;
-// TODO: vertical orientation support
+// TODO(@catsjuice): vertical orientation support
 export const SplitView = ({
   orientation = 'horizontal',
   className,

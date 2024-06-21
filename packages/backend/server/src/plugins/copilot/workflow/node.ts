@@ -74,7 +74,7 @@ export class WorkflowNode {
   private async evaluateCondition(
     _condition?: string
   ): Promise<string | undefined> {
-    // todo: evaluate condition to impl decision block
+    // TODO(@darksky): evaluate condition to impl decision block
     return this.edges[0]?.id;
   }
 

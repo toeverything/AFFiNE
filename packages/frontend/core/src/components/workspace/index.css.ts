@@ -22,7 +22,7 @@ export const appStyle = style({
       opacity: `var(--affine-noise-opacity, 0)`,
       backgroundRepeat: 'repeat',
       backgroundSize: '50px',
-      // todo: figure out how to use vanilla-extract webpack plugin to inject img url
+      // TODO(@Peng): figure out how to use vanilla-extract webpack plugin to inject img url
       backgroundImage: `var(--noise-background)`,
     },
   },
@@ -57,8 +57,8 @@ export const mainContainerStyle = style({
       borderRadius: 6,
       margin: '8px',
       overflow: 'hidden',
-      // todo: is this performance intensive?
-      // TODO: not match with design's shadow, theme missing
+      // TODO(@Peng): is this performance intensive?
+      // TODO(@catsjuice): not match with design's shadow, theme missing
       filter: 'drop-shadow(0px 0px 4px rgba(66,65,73,.14))',
       '@media': {
         print: {

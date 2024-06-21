@@ -98,7 +98,7 @@ export const SignIn: FC<AuthPanelProps> = ({
     } catch (err) {
       console.error(err);
 
-      // TODO: better error handling
+      // TODO(@eyhn): better error handling
       notify.error({
         title: 'Failed to send email. Please try again.',
       });

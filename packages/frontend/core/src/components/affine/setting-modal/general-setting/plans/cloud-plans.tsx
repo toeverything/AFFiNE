@@ -1,5 +1,3 @@
-// TODO: we don't handle i18n for now
-// it's better to manage all equity at server side
 import { SubscriptionPlan, SubscriptionRecurring } from '@affine/graphql';
 import type { useI18n } from '@affine/i18n';
 import { AfFiNeIcon } from '@blocksuite/icons/rc';

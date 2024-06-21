@@ -16,7 +16,7 @@ type toTextStreamOptions = {
   signal?: AbortSignal;
 };
 
-// todo: may need to extend the error type
+// todo(@Peng): may need to extend the error type
 const safeParseError = (data: string): { status: number } => {
   try {
     return JSON.parse(data);

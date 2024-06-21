@@ -197,7 +197,7 @@ export const CloudWorkspaceMembersPanel = () => {
   }, [handleUpgradeConfirm, hasPaymentFeature, t, workspaceQuota]);
 
   if (workspaceQuota === null) {
-    // TODO: loading ui
+    // TODO(@eyhn): loading ui
     return null;
   }
 

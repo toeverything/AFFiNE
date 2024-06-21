@@ -29,7 +29,7 @@ export const descriptionStyle = style({
 });
 export const buttonStyle = style({
   marginTop: '18px',
-  // todo: new color scheme should be used
+  // todo(@JimmFly): new color scheme should be used
 });
 export const actionsStyle = style({
   display: 'flex',

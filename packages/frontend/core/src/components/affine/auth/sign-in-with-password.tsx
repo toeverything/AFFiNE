@@ -62,7 +62,7 @@ export const SignInWithPassword: FC<AuthPanelProps> = ({
       notify.error({
         title: 'Failed to send email, please try again.',
       });
-      // TODO: handle error better
+      // TODO(@eyhn): handle error better
     }
     setSendingEmail(false);
   }, [sendingEmail, verifyToken, authService, email, challenge, setAuthState]);

@@ -31,7 +31,7 @@ export const Component = () => {
       switchMap(() => {
         return fromPromise(async signal => {
           retryKey;
-          // TODO: i18n
+          // TODO(@eyhn): i18n
           setMessage('Checking account status...');
           setError('');
           await authService.session.waitForRevalidation(signal);

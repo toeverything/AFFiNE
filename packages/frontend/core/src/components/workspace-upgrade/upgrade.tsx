@@ -1,5 +1,5 @@
 import { Button } from '@affine/component/ui/button';
-import { AffineShapeIcon } from '@affine/core/components/page-list'; // TODO: import from page-list temporarily, need to defined common svg icon/images management.
+import { AffineShapeIcon } from '@affine/core/components/page-list'; // TODO(@eyhn): import from page-list temporarily, need to defined common svg icon/images management.
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
 import { WorkspaceSubPath } from '@affine/core/shared';
@@ -12,7 +12,7 @@ import * as styles from './upgrade.css';
 import { ArrowCircleIcon, HeartBreakIcon } from './upgrade-icon';
 
 /**
- * TODO: Help info is not implemented yet.
+ * TODO(@eyhn): Help info is not implemented yet.
  */
 export const WorkspaceUpgrade = function WorkspaceUpgrade() {
   const [error, setError] = useState<string | null>(null);

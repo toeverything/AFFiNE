@@ -44,7 +44,6 @@ export class MailService {
       };
     }
   ) {
-    // TODO: use callback url when need support desktop app
     const buttonUrl = this.url.link(`/invite/${inviteId}`);
     const workspaceAvatar = invitationInfo.workspace.avatar;
 

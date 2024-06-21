@@ -25,7 +25,7 @@ const OAuthProviderMap: Record<
   },
 
   [OAuthProviderType.OIDC]: {
-    // TODO: Add OIDC icon
+    // TODO(@catsjuice): Add OIDC icon
     icon: <GoogleDuotoneIcon />,
   },
 };

@@ -147,7 +147,7 @@ export default {
         return;
       }
 
-      // TODO: right now we do not need the following
+      // TODO(@Peng): right now we do not need the following
       // it is for octobase-node, but we dont use it for now.
       if (platform === 'darwin' && arch === 'arm64') {
         // In GitHub Actions runner, MacOS is always x64

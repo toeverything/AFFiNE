@@ -1,6 +1,6 @@
 import { article, articleWrapper, text, title } from '../curve-paper/paper.css';
 import type { ArticleId, ArticleOption, EdgelessSwitchState } from '../types';
-// TODO: lazy load
+// TODO(@catsjuice): lazy load
 import { article0 } from './article-0';
 import { article1 } from './article-1';
 import { article2 } from './article-2';

@@ -18,7 +18,7 @@ function defaultNavigate(to: To, option?: { replace?: boolean }) {
   }, 100);
 }
 
-// todo: add a name -> path helper in the results
+// TODO(@eyhn): add a name -> path helper in the results
 export function useNavigateHelper() {
   const navigate = useContext(NavigateContext) ?? defaultNavigate;
 

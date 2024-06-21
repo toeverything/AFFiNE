@@ -79,7 +79,7 @@ async function createOnboardingWindow(additionalArguments: string[]) {
     // forcing zoom factor to 1 to avoid onboarding display issues
     browserWindow.webContents.setZoomFactor(1);
     fullscreenAndCenter(browserWindow);
-    // TODO: add a timeout to avoid flickering, window is ready, but dom is not ready
+    // TODO(@catsjuice): add a timeout to avoid flickering, window is ready, but dom is not ready
     setTimeout(() => {
       browserWindow.show();
     }, 300);

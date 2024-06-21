@@ -101,7 +101,7 @@ const NameWorkspaceContent = ({
     },
     [handleCreateWorkspace, workspaceName]
   );
-  // TODO: Support uploading avatars.
+
   // Currently, when we create a new workspace and upload an avatar at the same time,
   // an error occurs after the creation is successful: get blob 404 not found
   return (
@@ -186,7 +186,7 @@ export const CreateWorkspaceModal = ({
   const workspacesService = useService(WorkspacesService);
   const [loading, setLoading] = useState(false);
 
-  // todo: maybe refactor using xstate?
+  // TODO(@Peng): maybe refactor using xstate?
   useLayoutEffect(() => {
     let canceled = false;
     // if mode changed, reset step

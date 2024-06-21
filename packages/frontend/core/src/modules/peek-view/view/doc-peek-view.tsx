@@ -118,7 +118,7 @@ export function DocPeekPreview({
               peekView.open({ docId, blockId }).catch(console.error);
             })
           );
-          // todo: no tag peek view yet
+          // TODO(@Peng): no tag peek view yet
           disposableGroup.add(
             rootService.slots.tagClicked.on(({ tagId }) => {
               jumpToTag(workspace.id, tagId);

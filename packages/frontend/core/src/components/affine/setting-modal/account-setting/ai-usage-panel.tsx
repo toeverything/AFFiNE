@@ -63,7 +63,7 @@ export const AIUsagePanel = () => {
           desc={''}
           spreadCol={false}
         >
-          {/* TODO: i18n */}
+          {/* TODO(@catsjuice): i18n */}
           <ErrorMessage>Load error</ErrorMessage>
         </SettingRow>
       );

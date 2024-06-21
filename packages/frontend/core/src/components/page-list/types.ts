@@ -19,7 +19,7 @@ export type TagMeta = {
   createDate?: Date | number;
   updatedDate?: Date | number;
 };
-// TODO: consider reducing the number of props here
+// TODO(@JimmFly): consider reducing the number of props here
 // using type instead of interface to make it Record compatible
 export type PageListItemProps = {
   pageId: string;
@@ -73,10 +73,10 @@ export type TagListItemProps = {
 
 export interface ItemListHeaderProps {}
 
-// todo: a temporary solution. may need to be refactored later
-export type ItemGroupByType = 'createDate' | 'updatedDate'; // todo: can add more later
+// TODO(@JimmFly): a temporary solution. may need to be refactored later
+export type ItemGroupByType = 'createDate' | 'updatedDate'; // TODO(@JimmFly): can add more later
 
-// todo: a temporary solution. may need to be refactored later
+// TODO(@JimmFly): a temporary solution. may need to be refactored later
 export interface SortBy {
   key: 'createDate' | 'updatedDate';
   order: 'asc' | 'desc';

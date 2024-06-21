@@ -18,7 +18,7 @@ export interface SliderProps<T> extends HTMLAttributes<HTMLDivElement> {
 }
 
 /**
- * TODO: extract to @affine/ui
+ * TODO(@catsjuice): extract to @affine/ui
  * @returns
  */
 export const Slider = <T,>({

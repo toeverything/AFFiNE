@@ -63,10 +63,9 @@ export const StorageProgress = ({ onUpgrade }: StorageProgressProgress) => {
 
   if (loading) {
     if (loadError) {
-      // TODO: i18n
+      // TODO(@catsjuice): i18n
       return <ErrorMessage>Load error</ErrorMessage>;
     }
-    // TODO: loading UI
     return <Skeleton height={42} />;
   }
 

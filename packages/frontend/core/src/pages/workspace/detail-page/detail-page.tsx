@@ -96,7 +96,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
   const { appSettings } = useAppSettingHelper();
 
   const isActiveView = useIsActiveView();
-  // TODO: remove jotai here
+  // TODO(@eyhn): remove jotai here
   const [_, setActiveBlockSuiteEditor] = useActiveBlocksuiteEditor();
 
   useEffect(() => {

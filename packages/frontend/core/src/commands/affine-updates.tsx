@@ -24,7 +24,7 @@ export function registerAffineUpdatesCommands({
       preconditionStrategy: () => !!store.get(updateReadyAtom),
       run() {
         apis?.updater.quitAndInstall().catch(err => {
-          // TODO: add error toast here
+          // TODO(@JimmFly): add error toast here
           console.error(err);
         });
       },

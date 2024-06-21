@@ -94,7 +94,7 @@ const snapshotFetcher = async (
 
 // attach the Page shown in the modal to a temporary workspace
 // so that we do not need to worry about providers etc
-// todo: fix references to the page (the referenced page will shown as deleted)
+// TODO(@Peng): fix references to the page (the referenced page will shown as deleted)
 // if we simply clone the current workspace, it maybe time consuming right?
 const docCollectionMap = new Map<string, DocCollection>();
 

@@ -47,7 +47,7 @@ export class CopilotWorkflowService {
     return workflow;
   }
 
-  // todo: get workflow from database
+  // TODO(@darksky): get workflow from database
   private async getWorkflow(graphName: string): Promise<WorkflowGraph> {
     const graph = WorkflowGraphs.find(g => g.name === graphName);
     if (!graph) {

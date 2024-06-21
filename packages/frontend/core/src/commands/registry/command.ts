@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-// TODO: need better way for composing different precondition strategies
+// TODO(@Peng): need better way for composing different precondition strategies
 export enum PreconditionStrategy {
   Always,
   InPaperOrEdgeless,
@@ -52,11 +52,11 @@ export interface AffineCommandOptions {
         title: string;
         subTitle?: string;
       });
-  icon: ReactNode; // todo: need a mapping from string -> React element/SVG
+  icon: ReactNode; // TODO(@JimmFly): need a mapping from string -> React element/SVG
   category?: CommandCategory;
   // we use https://github.com/jamiebuilds/tinykeys so that we can use the same keybinding definition
   // for both mac and windows
-  // todo: render keybinding in command palette
+  // TODO(@Peng): render keybinding in command palette
   keyBinding?: KeybindingOptions | string;
   run: () => void | Promise<void>;
 }

@@ -4,7 +4,7 @@ import { useSWRConfig } from 'swr';
 export function useMutateCloud() {
   const { mutate } = useSWRConfig();
   return useCallback(async () => {
-    // todo: should not mutate all graphql cache
+    // TODO(@eyhn): should not mutate all graphql cache
     return mutate(key => {
       if (Array.isArray(key)) {
         return key[0] === 'cloud';

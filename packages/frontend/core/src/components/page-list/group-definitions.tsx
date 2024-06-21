@@ -35,7 +35,7 @@ const GroupLabel = ({
   </div>
 );
 
-// todo: optimize date matchers
+// TODO(@JimmFly): optimize date matchers
 export const useDateGroupDefinitions = <T extends ListItem>(
   key: DateKey
 ): ItemGroupDefinition<T>[] => {
@@ -223,7 +223,7 @@ export const usePageItemGroupDefinitions = () => {
       none: undefined,
 
       // add more here later
-      // todo: some page group definitions maybe dynamic
+      // todo(@JimmFly): some page group definitions maybe dynamic
     };
     return itemGroupDefinitions[workspaceProperties.groupBy];
   }, [

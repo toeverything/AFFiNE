@@ -135,7 +135,7 @@ const useSyncEngineSyncProgress = () => {
   }, [currentWorkspace, isOwner, jumpToPricePlan, t]);
 
   const content = useMemo(() => {
-    // TODO: add i18n
+    // TODO(@eyhn): add i18n
     if (currentWorkspace.flavour === WorkspaceFlavour.LOCAL) {
       if (!environment.isDesktop) {
         return 'This is a local demo workspace.';

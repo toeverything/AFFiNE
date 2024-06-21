@@ -11,7 +11,7 @@ export interface AffineErrorBoundaryProps extends PropsWithChildren {
 }
 
 /**
- * TODO: Unify with SWRErrorBoundary
+ * TODO(@eyhn): Unify with SWRErrorBoundary
  */
 export const AffineErrorBoundary: FC<AffineErrorBoundaryProps> = props => {
   const fallbackRender: FallbackRender = useCallback(

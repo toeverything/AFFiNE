@@ -111,7 +111,7 @@ export function useQueryInfinite<Query extends GraphQLQuery>(
 
   const loadingMore = size > 0 && data && !data[size - 1];
 
-  // todo: find a generic way to know whether or not there are more items to load
+  // TODO(@Peng): find a generic way to know whether or not there are more items to load
   const loadMore = useCallback(() => {
     if (loadingMore) {
       return;

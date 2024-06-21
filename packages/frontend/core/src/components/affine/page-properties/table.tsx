@@ -682,7 +682,7 @@ export const PagePropertiesTableHeader = ({
 
   return (
     <div className={clsx(styles.tableHeader, className)} style={style}>
-      {/* todo: add click handler to backlinks */}
+      {/* TODO(@Peng): add click handler to backlinks */}
       <div className={styles.tableHeaderInfoRow}>
         {backlinks.length > 0 ? (
           <PageBacklinksPopup backlinks={backlinks}>

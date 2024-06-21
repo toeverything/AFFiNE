@@ -1,7 +1,7 @@
 import type React from 'react';
 
 /**
- * TODO: Define a place to manage all icons and svg images.
+ * TODO(@eyhn): move to icons package
  */
 export const ArrowCircleIcon = (props: React.SVGProps<SVGSVGElement>) => {
   return (

@@ -65,7 +65,6 @@ export const InviteModal = ({
       }}
       onConfirm={handleConfirm}
     >
-      {/*TODO: check email & add placeholder*/}
       <AuthInput
         disabled={isMutating}
         placeholder="email@example.com"

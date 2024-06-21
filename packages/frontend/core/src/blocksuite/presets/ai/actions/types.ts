@@ -215,7 +215,7 @@ declare global {
       ): AIActionTextResponse<T>;
     }
 
-    // todo: should be refactored to get rid of implement details (like messages, action, role, etc.)
+    // TODO(@Peng): should be refactored to get rid of implement details (like messages, action, role, etc.)
     interface AIHistory {
       sessionId: string;
       tokens: number;

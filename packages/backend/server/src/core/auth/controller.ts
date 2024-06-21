@@ -202,7 +202,7 @@ export class AuthController {
   @Public()
   @Get('/challenge')
   async challenge() {
-    // TODO: impl in following PR
+    // TODO(@darksky): impl in following PR
     return {
       challenge: randomUUID(),
       resource: randomUUID(),

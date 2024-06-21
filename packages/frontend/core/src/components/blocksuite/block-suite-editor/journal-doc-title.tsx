@@ -9,7 +9,7 @@ export const BlocksuiteEditorJournalDocTitle = ({ page }: { page: Doc }) => {
     useJournalInfoHelper(page.collection, page.id);
   const t = useI18n();
 
-  // TODO: i18n
+  // TODO(catsjuice): i18n
   const day = journalDate?.format('dddd') ?? null;
 
   return (

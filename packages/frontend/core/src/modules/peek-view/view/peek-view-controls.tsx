@@ -116,7 +116,7 @@ export const DocPeekViewControls = ({
         name: t['com.affine.peek-view-controls.open-doc'](),
         nameKey: 'open',
         onClick: () => {
-          // todo: for frame blocks, we should mimic "view in edgeless" button behavior
+          // TODO(@Peng): for frame blocks, we should mimic "view in edgeless" button behavior
           blockId
             ? jumpToPageBlock(workspace.id, docId, blockId)
             : workbench.openPage(docId);

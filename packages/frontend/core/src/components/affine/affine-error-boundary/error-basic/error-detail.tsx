@@ -30,21 +30,21 @@ const imageMap = new Map([
   [
     ErrorStatus.NotFound,
     {
-      light: imageUrlFor404, // TODO: Ask designer for dark/light mode image.
+      light: imageUrlFor404, // TODO(@catsjuice): Ask designer for dark/light mode image.
       dark: imageUrlFor404,
     },
   ],
   [
     ErrorStatus.Unexpected,
     {
-      light: imageUrlForLight500, // TODO: Split assets lib and use image hook to handle light and dark.
+      light: imageUrlForLight500, // TODO(@catsjuice): Split assets lib and use image hook to handle light and dark.
       dark: imageUrlForDark500,
     },
   ],
 ]);
 
 /**
- * TODO: Unify with NotFoundPage.
+ * TODO(@eyhn): Unify with NotFoundPage.
  */
 export const ErrorDetail: FC<ErrorDetailProps> = props => {
   const {

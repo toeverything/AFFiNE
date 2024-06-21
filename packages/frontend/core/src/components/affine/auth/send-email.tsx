@@ -114,7 +114,7 @@ const useSendEmail = (emailType: AuthPanelProps['emailType']) => {
             callbackUrl = 'verify-email';
             break;
         }
-        // TODO: add error handler
+        // TODO(@eyhn): add error handler
         return trigger({
           email,
           callbackUrl: `/auth/${callbackUrl}?isClient=${
@@ -152,7 +152,7 @@ export const SendEmail = ({
   const { loading, sendEmail } = useSendEmail(emailType);
 
   const onSendEmail = useAsyncCallback(async () => {
-    // TODO: add error handler
+    // TODO(@eyhn): add error handler
     await sendEmail(email);
 
     notify.success({ title: hint });
@@ -164,7 +164,7 @@ export const SendEmail = ({
   }, [setAuthState]);
 
   if (!passwordLimits) {
-    // TODO: loading & error UI
+    // TODO(@eyhn): loading & error UI
     return null;
   }
 

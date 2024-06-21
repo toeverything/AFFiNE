@@ -69,7 +69,7 @@ export function useRegisterBlocksuiteEditorCommands() {
     const preconditionStrategy = () =>
       PreconditionStrategy.InPaperOrEdgeless && !trash;
 
-    // TODO: add back when edgeless presentation is ready
+    // TODO(@Peng): add back when edgeless presentation is ready
 
     // this is pretty hack and easy to break. need a better way to communicate with blocksuite editor
     // unsubs.push(
@@ -134,7 +134,7 @@ export function useRegisterBlocksuiteEditorCommands() {
       })
     );
 
-    // todo: should not show duplicate for journal
+    // TODO(@Peng): should not show duplicate for journal
     unsubs.push(
       registerAffineCommand({
         id: `editor:${mode}-duplicate`,

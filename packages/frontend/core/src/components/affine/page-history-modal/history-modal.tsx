@@ -247,7 +247,7 @@ const PlanPrompt = () => {
               : t[
                   'com.affine.history.confirm-restore-modal.plan-prompt.title'
                 ]()
-            : '' /* TODO: loading UI */
+            : '' /* TODO(@catsjuice): loading UI */
         }
 
         <IconButton

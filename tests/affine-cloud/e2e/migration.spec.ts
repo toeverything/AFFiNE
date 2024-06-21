@@ -49,7 +49,7 @@ test.afterEach(async () => {
   await deleteUser(user.email);
 });
 
-// TODO: @joooye34 mock migration from server data after page level upgrade implemented.
+// TODO(@eyhn) mock migration from server data after page level upgrade implemented.
 test.skip('migration', async ({ page, browser }) => {
   let workspaceId: string;
   {

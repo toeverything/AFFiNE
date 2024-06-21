@@ -2,7 +2,7 @@ import type { Doc } from '@blocksuite/store';
 import type { Map as YMap } from 'yjs';
 
 /**
- * TODO: Define error to unexpected state together in the future.
+ * TODO(@eyhn): Define error to unexpected state together in the future.
  */
 export class NoPageRootError extends Error {
   constructor(public page: Doc) {

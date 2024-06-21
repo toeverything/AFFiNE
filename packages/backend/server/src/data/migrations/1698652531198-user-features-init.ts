@@ -20,6 +20,6 @@ export class UserFeaturesInit1698652531198 {
 
   // revert the migration
   static async down(_db: PrismaClient) {
-    // TODO: revert the migration
+    // noop
   }
 }

@@ -68,7 +68,7 @@ class Storage<T extends object> {
       }
     } else {
       const fullConfig = this.get();
-      // TODO: handle key not found, set default value
+      // TODO(@catsjuice): handle key not found, set default value
       // if (!(key in fullConfig)) {}
       return fullConfig[key];
     }

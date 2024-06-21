@@ -38,7 +38,7 @@ export type UserInfoProps = {
 export const UserInfo = ({ onAccountSettingClick, active }: UserInfoProps) => {
   const account = useLiveData(useService(AuthService).session.account$);
   if (!account) {
-    // TODO: loading ui
+    // TODO(@eyhn): loading ui
     return;
   }
   return (

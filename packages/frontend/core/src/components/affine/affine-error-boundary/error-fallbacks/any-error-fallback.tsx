@@ -6,7 +6,7 @@ import { ErrorDetail } from '../error-basic/error-detail';
 import type { FallbackProps } from '../error-basic/fallback-creator';
 
 /**
- * TODO: Support reload and retry two reset actions in page error and area error.
+ * TODO(@eyhn): Support reload and retry two reset actions in page error and area error.
  */
 export const AnyErrorFallback: FC<FallbackProps> = props => {
   const { error } = props;

@@ -200,7 +200,7 @@ export const CMDKContainer = ({
       onValueChange={setValue}
       loop
     >
-      {/* todo: add page context here */}
+      {/* TODO(@Peng): add page context here */}
       {inputLabel ? (
         <div className={styles.pageTitleWrapper}>
           <span className={styles.pageTitle}>{inputLabel}</span>

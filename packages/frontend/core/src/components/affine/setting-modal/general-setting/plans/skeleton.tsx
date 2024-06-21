@@ -18,7 +18,7 @@ const RoundedSkeleton = ({
 );
 
 const TabsSkeleton = () => (
-  // TODO: height should be `32px` by design
+  // TODO(@catsjuice): height should be `32px` by design
   // but the RadioGroup component is not matching with the design currently
   // set to `24px` for now to avoid blinking
   <Skeleton variant="rounded" width="256px" height="24px" />

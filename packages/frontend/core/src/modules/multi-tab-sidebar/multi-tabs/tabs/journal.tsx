@@ -110,7 +110,7 @@ const EditorJournalPanel = () => {
 
   const customDayRenderer = useCallback(
     (cell: DateCell) => {
-      // TODO: add a dot to indicate journal
+      // TODO(@catsjuice): add a dot to indicate journal
       // has performance issue for now, better to calculate it in advance
       // const hasJournal = !!getJournalsByDate(cell.date.format('YYYY-MM-DD'))?.length;
       const hasJournal = false;

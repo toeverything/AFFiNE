@@ -44,7 +44,7 @@ export const UserAvatar = () => {
         await session.uploadAvatar(file);
         notify.success({ title: 'Update user avatar success' });
       } catch (e) {
-        // TODO: i18n
+        // TODO(@catsjuice): i18n
         notify.error({
           title: 'Update user avatar failed',
           message: String(e),

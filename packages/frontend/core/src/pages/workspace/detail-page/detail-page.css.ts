@@ -22,7 +22,7 @@ export const affineDocViewport = style({
   flexDirection: 'column',
   userSelect: 'none',
   containerName: 'viewport',
-  // todo: find out what this does in bs
+  // TODO(@JimmFly): find out what this does in bs
   containerType: 'inline-size',
   background: cssVar('backgroundPrimaryColor'),
   '@media': {

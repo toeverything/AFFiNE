@@ -33,7 +33,7 @@ async function importImage(page: Page, url: string) {
     },
     [url]
   );
-  // TODO: wait for image to be loaded more reliably
+  // TODO(@catsjuice): wait for image to be loaded more reliably
   await page.waitForTimeout(1000);
 }
 

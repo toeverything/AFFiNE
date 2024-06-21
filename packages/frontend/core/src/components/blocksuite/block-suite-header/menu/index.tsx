@@ -223,7 +223,7 @@ export const PageHeaderMenuButton = ({
           ? t['com.affine.favoritePageOperation.remove']()
           : t['com.affine.favoritePageOperation.add']()}
       </MenuItem>
-      {/* {TODO: add tag function support} */}
+      {/* {TODO(@Peng): add tag function support} */}
       {/* <MenuItem
         icon={<TagsIcon />}
         data-testid="editor-option-menu-add-tag"

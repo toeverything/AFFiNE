@@ -53,7 +53,6 @@ export function checkWorkspaceCompatibility(
     return MigrationPoint.BlockVersion;
   }
 
-  // TODO: Catch compatibility error from blocksuite to show upgrade page.
   // Temporarily follow the check logic of blocksuite.
   if ((docCollection.meta.docs?.length ?? 0) <= 1) {
     try {
