@@ -277,6 +277,7 @@ export function patchPeekViewService(
       peek: (target: ActivePeekView['target']) => {
         logger.debug('center peek', target);
         service.peekView.open(target);
+        return Promise.resolve();
       },
     };
   });
