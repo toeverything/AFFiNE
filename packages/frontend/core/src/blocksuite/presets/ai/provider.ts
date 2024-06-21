@@ -80,6 +80,7 @@ export class AIProvider {
   private readonly slots = {
     // use case: when user selects "continue in chat" in an ask ai result panel
     // do we need to pass the context to the chat panel?
+    requestOpenWithChat: new Slot(),
     requestContinueInChat: new Slot<{ host: EditorHost; show: boolean }>(),
     requestContinueWithAIInChat: new Slot<{
       host: EditorHost;

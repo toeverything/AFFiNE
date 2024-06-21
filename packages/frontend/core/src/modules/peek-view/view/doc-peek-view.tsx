@@ -73,7 +73,7 @@ const DocPreview = forwardRef<
   }, [docId, docs.list, resolvedMode, mode]);
 
   useEffect(() => {
-    const disposable = AIProvider.slots.requestContinueInChat.on(() => {
+    const disposable = AIProvider.slots.requestOpenWithChat.on(() => {
       if (doc) {
         workbench.openPage(doc.id);
         peekView.close();

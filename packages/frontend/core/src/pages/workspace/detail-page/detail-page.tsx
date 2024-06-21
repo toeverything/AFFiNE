@@ -106,7 +106,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
   }, [editor, isActiveView, setActiveBlockSuiteEditor]);
 
   useEffect(() => {
-    AIProvider.slots.requestContinueInChat.on(() => {
+    AIProvider.slots.requestOpenWithChat.on(() => {
       rightSidebar.open();
       if (activeTabName !== 'chat') {
         setActiveTabName('chat');

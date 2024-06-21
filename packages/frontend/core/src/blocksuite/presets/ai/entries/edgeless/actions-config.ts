@@ -105,6 +105,7 @@ const othersGroup: AIItemGroupConfig = {
       showWhen: () => true,
       handler: host => {
         const panel = getAIPanel(host);
+        AIProvider.slots.requestOpenWithChat.emit();
         AIProvider.slots.requestContinueWithAIInChat.emit({
           host,
           mode: 'edgeless',
@@ -118,6 +119,7 @@ const othersGroup: AIItemGroupConfig = {
       showWhen: () => true,
       handler: host => {
         const panel = getAIPanel(host);
+        AIProvider.slots.requestOpenWithChat.emit();
         AIProvider.slots.requestContinueInChat.emit({
           host: host,
           show: true,
