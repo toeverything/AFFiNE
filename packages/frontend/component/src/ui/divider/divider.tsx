@@ -25,6 +25,7 @@ export const Divider = forwardRef<HTMLDivElement, DividerProps>(
   ) => {
     return (
       <div
+        data-divider
         ref={ref}
         className={clsx(
           styles.divider,

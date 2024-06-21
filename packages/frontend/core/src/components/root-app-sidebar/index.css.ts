@@ -32,21 +32,46 @@ export const operationMenu = style({
   flexDirection: 'column',
   gap: 4,
 });
+// TODO: refactor menu, use `gap` to replace `margin`
+globalStyle(`.${operationMenu} > div:not([data-divider])`, {
+  marginBottom: '0 !important',
+  marginTop: '0 !important',
+});
 
-export const cloudUsage = style({
+export const usageBlock = style({
   display: 'flex',
   flexDirection: 'column',
   gap: 4,
+  borderRadius: 4,
+});
+export const aiUsageBlock = style({
+  padding: 12,
+  cursor: 'pointer',
+  ':hover': {
+    background: cssVar('hoverColor'),
+  },
+  selectors: {
+    '&[data-pro]': {
+      padding: '12px 12px 2px 12px',
+    },
+  },
+});
+export const cloudUsageBlock = style({
   padding: '4px 12px',
 });
-export const cloudUsageLabel = style({
-  fontWeight: 500,
+
+export const usageLabel = style({
+  fontWeight: 400,
   lineHeight: '20px',
   fontSize: cssVar('fontXs'),
   color: cssVar('textSecondaryColor'),
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
 });
-export const cloudUsageLabelUsed = style({
-  color: progressColorVar,
+export const usageLabelTitle = style({
+  color: cssVar('textPrimaryColor'),
+  marginRight: '0.5em',
 });
 
 export const cloudUsageBar = style({
@@ -54,7 +79,7 @@ export const cloudUsageBar = style({
   borderRadius: 5,
   overflow: 'hidden',
   position: 'relative',
-  minWidth: 160,
+  minWidth: 260,
 
   '::before': {
     position: 'absolute',
@@ -68,4 +93,14 @@ export const cloudUsageBarInner = style({
   height: '100%',
   borderRadius: 'inherit',
   backgroundColor: progressColorVar,
+});
+export const freeTag = style({
+  height: 20,
+  padding: '0px 4px',
+  borderRadius: 4,
+  fontWeight: 500,
+  fontSize: cssVar('fontXs'),
+  lineHeight: '20px',
+  color: cssVar('pureWhite'),
+  background: cssVar('primaryColor'),
 });

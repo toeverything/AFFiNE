@@ -1,5 +1,6 @@
 import { Tooltip } from '@affine/component/ui/tooltip';
 import { mixpanel } from '@affine/core/utils';
+import { SubscriptionPlan } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
 import { useLiveData, useServices } from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
@@ -61,15 +62,12 @@ export const UserPlanButton = () => {
     return;
   }
 
-  if (!plan) {
-    // no plan, do nothing
-    return;
-  }
+  const planLabel = plan ?? SubscriptionPlan.Free;
 
   return (
     <Tooltip content={t['com.affine.payment.tag-tooltips']()} side="top">
       <div className={styles.userPlanButton} onClick={handleClick}>
-        {plan}
+        {planLabel}
       </div>
     </Tooltip>
   );

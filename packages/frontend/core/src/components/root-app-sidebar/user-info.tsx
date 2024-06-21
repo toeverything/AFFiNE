@@ -6,6 +6,7 @@ import {
   Menu,
   MenuIcon,
   MenuItem,
+  type MenuProps,
   Skeleton,
 } from '@affine/component';
 import {
@@ -18,15 +19,21 @@ import { mixpanel } from '@affine/core/utils';
 import { useI18n } from '@affine/i18n';
 import { AccountIcon, SignOutIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
+import { cssVar } from '@toeverything/theme';
 import { assignInlineVars } from '@vanilla-extract/dynamic';
+import clsx from 'clsx';
 import { useSetAtom } from 'jotai';
 import { useCallback, useEffect } from 'react';
 
 import {
   type AuthAccountInfo,
   AuthService,
+  ServerConfigService,
+  SubscriptionService,
+  UserCopilotQuotaService,
   UserQuotaService,
 } from '../../modules/cloud';
+import { UserPlanButton } from '../affine/auth/user-plan-button';
 import * as styles from './index.css';
 import { UnknownUserIcon } from './unknow-user';
 
@@ -40,9 +47,12 @@ export const UserInfo = () => {
   );
 };
 
+const menuContentOptions: MenuProps['contentOptions'] = {
+  className: styles.operationMenu,
+};
 const AuthorizedUserInfo = ({ account }: { account: AuthAccountInfo }) => {
   return (
-    <Menu items={<OperationMenu />}>
+    <Menu items={<OperationMenu />} contentOptions={menuContentOptions}>
       <Button
         data-testid="sidebar-user-avatar"
         type="plain"
@@ -112,7 +122,6 @@ const AccountMenu = () => {
       >
         {t['com.affine.workspace.cloud.account.settings']()}
       </MenuItem>
-      <Divider />
       <MenuItem
         preFix={
           <MenuIcon>
@@ -129,6 +138,7 @@ const AccountMenu = () => {
 };
 
 const CloudUsage = () => {
+  const t = useI18n();
   const quota = useService(UserQuotaService).quota;
   const quotaError = useLiveData(quota.error$);
 
@@ -155,15 +165,126 @@ const CloudUsage = () => {
 
   return (
     <div
-      className={styles.cloudUsage}
+      className={clsx(styles.usageBlock, styles.cloudUsageBlock)}
       style={assignInlineVars({
         [styles.progressColorVar]: color,
       })}
     >
-      <div className={styles.cloudUsageLabel}>
-        <span className={styles.cloudUsageLabelUsed}>{usedFormatted}</span>
-        <span>&nbsp;/&nbsp;</span>
-        <span>{maxFormatted}</span>
+      <div className={styles.usageLabel}>
+        <div>
+          <span className={styles.usageLabelTitle}>
+            {t['com.affine.user-info.usage.cloud']()}
+          </span>
+          <span>{usedFormatted}</span>
+          <span>&nbsp;/&nbsp;</span>
+          <span>{maxFormatted}</span>
+        </div>
+        <UserPlanButton />
+      </div>
+
+      <div className={styles.cloudUsageBar}>
+        <div
+          className={styles.cloudUsageBarInner}
+          style={{ width: `${percent}%` }}
+        />
+      </div>
+    </div>
+  );
+};
+
+const AIUsage = () => {
+  const t = useI18n();
+  const copilotQuotaService = useService(UserCopilotQuotaService);
+  const subscriptionService = useService(SubscriptionService);
+
+  useEffect(() => {
+    // revalidate latest subscription status
+    subscriptionService.subscription.revalidate();
+  }, [subscriptionService]);
+  useEffect(() => {
+    copilotQuotaService.copilotQuota.revalidate();
+  }, [copilotQuotaService]);
+
+  const copilotActionLimit = useLiveData(
+    copilotQuotaService.copilotQuota.copilotActionLimit$
+  );
+  const copilotActionUsed = useLiveData(
+    copilotQuotaService.copilotQuota.copilotActionUsed$
+  );
+  const loading = copilotActionLimit === null || copilotActionUsed === null;
+  const loadError = useLiveData(copilotQuotaService.copilotQuota.error$);
+
+  const setSettingModalAtom = useSetAtom(openSettingModalAtom);
+
+  const goToAIPlanPage = useCallback(() => {
+    setSettingModalAtom({
+      open: true,
+      activeTab: 'plans',
+      scrollAnchor: 'aiPricingPlan',
+    });
+  }, [setSettingModalAtom]);
+
+  const goToAccountSetting = useCallback(() => {
+    setSettingModalAtom({
+      open: true,
+      activeTab: 'account',
+    });
+  }, [setSettingModalAtom]);
+
+  if (loading) {
+    if (loadError) console.error(loadError);
+    return null;
+  }
+
+  // unlimited
+  if (copilotActionLimit === 'unlimited') {
+    return (
+      <div
+        onClick={goToAccountSetting}
+        data-pro
+        className={clsx(styles.usageBlock, styles.aiUsageBlock)}
+      >
+        <div className={styles.usageLabel}>
+          <div className={styles.usageLabelTitle}>
+            {t['com.affine.user-info.usage.ai']()}
+          </div>
+        </div>
+        <div className={styles.usageLabel}>
+          {t['com.affine.payment.ai.usage-description-purchased']()}
+        </div>
+      </div>
+    );
+  }
+
+  const percent = Math.min(
+    100,
+    Math.max(
+      0.5,
+      Number(((copilotActionUsed / copilotActionLimit) * 100).toFixed(4))
+    )
+  );
+
+  const color = percent > 80 ? cssVar('errorColor') : cssVar('processingColor');
+
+  return (
+    <div
+      onClick={goToAIPlanPage}
+      className={clsx(styles.usageBlock, styles.aiUsageBlock)}
+      style={assignInlineVars({
+        [styles.progressColorVar]: color,
+      })}
+    >
+      <div className={styles.usageLabel}>
+        <div>
+          <span className={styles.usageLabelTitle}>
+            {t['com.affine.user-info.usage.ai']()}
+          </span>
+          <span>{copilotActionUsed}</span>
+          <span>&nbsp;/&nbsp;</span>
+          <span>{copilotActionLimit}</span>
+        </div>
+
+        <div className={styles.freeTag}>Free</div>
       </div>
 
       <div className={styles.cloudUsageBar}>
@@ -177,8 +298,14 @@ const CloudUsage = () => {
 };
 
 const OperationMenu = () => {
+  const serverConfigService = useService(ServerConfigService);
+  const serverFeatures = useLiveData(
+    serverConfigService.serverConfig.features$
+  );
+
   return (
     <>
+      {serverFeatures?.copilot ? <AIUsage /> : null}
       <CloudUsage />
       <Divider />
       <AccountMenu />

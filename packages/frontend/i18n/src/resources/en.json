@@ -1340,5 +1340,7 @@
   "unnamed": "unnamed",
   "upgradeBrowser": "Please upgrade to the latest version of Chrome for the best experience.",
   "will be moved to Trash": "{{title}} will be moved to Trash",
-  "will delete member": "will delete member"
+  "will delete member": "will delete member",
+  "com.affine.user-info.usage.ai": "AI Usage",
+  "com.affine.user-info.usage.cloud": "Cloud Storage"
 }
