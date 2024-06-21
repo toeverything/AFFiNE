@@ -189,6 +189,7 @@ export function patchNotificationService(
                 placeholder={placeholder}
                 defaultValue={value}
                 onChange={e => (value = e)}
+                ref={input => input?.select()}
               />
             </div>
           );
