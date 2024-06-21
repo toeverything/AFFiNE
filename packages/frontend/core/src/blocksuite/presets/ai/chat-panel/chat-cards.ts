@@ -2,6 +2,7 @@ import type { EditorHost } from '@blocksuite/block-std';
 import { WithDisposable } from '@blocksuite/block-std';
 import {
   type ImageBlockModel,
+  isInsidePageEditor,
   type NoteBlockModel,
   NoteDisplayMode,
 } from '@blocksuite/blocks';
@@ -463,6 +464,18 @@ export class ChatCards extends WithDisposable(LitElement) {
           if (card.type === CardType.Doc) return;
 
           await this._selectCard(card);
+        }
+      })
+    );
+
+    this._disposables.add(
+      AIProvider.slots.requestContinueInChat.on(async ({ host, show }) => {
+        if (show) {
+          if (isInsidePageEditor(host)) {
+            await this._extract();
+          } else {
+            await this._extractOnEdgeless();
+          }
         }
       })
     );

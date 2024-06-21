@@ -212,19 +212,6 @@ export class ChatPanel extends WithDisposable(ShadowlessElement) {
         this._resetItems();
       }
     });
-
-    AIProvider.slots.requestContinueInChat.on(async ({ show }) => {
-      if (show) {
-        const text = await getSelectedTextContent(this.host, 'plain-text');
-        const markdown = await getSelectedTextContent(this.host, 'markdown');
-        const images = await getSelectedImagesAsBlobs(this.host);
-        this.updateContext({
-          quote: text,
-          markdown: markdown,
-          images: images,
-        });
-      }
-    });
   }
 
   updateContext = (context: Partial<ChatContextValue>) => {
