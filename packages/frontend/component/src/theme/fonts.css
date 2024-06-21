@@ -153,3 +153,38 @@
   font-display: swap;
   src: url(../fonts/space-mono/SpaceMono-BoldItalic.ttf);
 }
+
+/*
+  * IBM Plex Mono
+  */
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(../fonts/ibm-plex-mono/IBMPlexMono-Regular.ttf);
+}
+
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url(../fonts/ibm-plex-mono/IBMPlexMono-Italic.ttf);
+}
+
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url(../fonts/ibm-plex-mono/IBMPlexMono-Bold.ttf);
+}
+
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: italic;
+  font-weight: 700;
+  font-display: swap;
+  src: url(../fonts/ibm-plex-mono/IBMPlexMono-BoldItalic.ttf);
+}
