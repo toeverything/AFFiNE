@@ -87,27 +87,16 @@ export const mainContainerStyle = style({
 });
 export const toolStyle = style({
   position: 'absolute',
-  right: '30px',
-  bottom: '30px',
+  right: 16,
+  bottom: 16,
   zIndex: 1,
   display: 'flex',
   flexDirection: 'column',
+  alignItems: 'center',
   gap: '12px',
   selectors: {
     '&.trash': {
       bottom: '78px',
-    },
-  },
-  '@media': {
-    'screen and (max-width: 960px)': {
-      right: 'calc((100vw - 640px) * 3 / 19 + 14px)',
-    },
-    'screen and (max-width: 640px)': {
-      right: '5px',
-      bottom: '5px',
-    },
-    print: {
-      display: 'none',
     },
   },
 });

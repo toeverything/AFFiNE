@@ -2,10 +2,7 @@ import { Scrollable } from '@affine/component';
 import { PageDetailSkeleton } from '@affine/component/page-detail-skeleton';
 import { AIProvider } from '@affine/core/blocksuite/presets/ai';
 import { PageAIOnboarding } from '@affine/core/components/affine/ai-onboarding';
-import {
-  AIIsland,
-  RIGHT_SIDEBAR_TABS_ACTIVE_KEY,
-} from '@affine/core/components/pure/ai-island';
+import { AIIsland } from '@affine/core/components/pure/ai-island';
 import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
 import { RecentPagesService } from '@affine/core/modules/cmdk';
 import type { PageRootService } from '@blocksuite/blocks';
@@ -27,8 +24,6 @@ import {
   FrameworkScope,
   globalBlockSuiteSchema,
   GlobalContextService,
-  GlobalStateService,
-  LiveData,
   useLiveData,
   useService,
   WorkspaceService,
@@ -49,7 +44,6 @@ import { useRegisterBlocksuiteEditorCommands } from '../../../hooks/affine/use-r
 import { useActiveBlocksuiteEditor } from '../../../hooks/use-block-suite-editor';
 import { usePageDocumentTitle } from '../../../hooks/use-global-state';
 import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
-import type { SidebarTabName } from '../../../modules/multi-tab-sidebar';
 import {
   MultiTabSidebarBody,
   MultiTabSidebarHeaderSwitcher,
@@ -70,19 +64,8 @@ import * as styles from './detail-page.css';
 import { DetailPageHeader } from './detail-page-header';
 
 const DetailPageImpl = memo(function DetailPageImpl() {
-  const globalState = useService(GlobalStateService).globalState;
-  const activeTabName = useLiveData(
-    LiveData.from(
-      globalState.watch<SidebarTabName>(RIGHT_SIDEBAR_TABS_ACTIVE_KEY),
-      'journal'
-    )
-  );
-  const setActiveTabName = useCallback(
-    (name: string) => {
-      globalState.set(RIGHT_SIDEBAR_TABS_ACTIVE_KEY, name);
-    },
-    [globalState]
-  );
+  const rightSidebar = useService(RightSidebarService).rightSidebar;
+  const activeTabName = useLiveData(rightSidebar.activeTabName$);
 
   const doc = useService(DocService).doc;
   const docRecordList = useService(DocsService).list;
@@ -90,7 +73,6 @@ const DetailPageImpl = memo(function DetailPageImpl() {
   const [editor, setEditor] = useState<AffineEditorContainer | null>(null);
   const workspace = useService(WorkspaceService).workspace;
   const globalContext = useService(GlobalContextService).globalContext;
-  const rightSidebar = useService(RightSidebarService).rightSidebar;
   const docCollection = workspace.docCollection;
   const mode = useLiveData(doc.mode$);
   const { appSettings } = useAppSettingHelper();
@@ -98,6 +80,12 @@ const DetailPageImpl = memo(function DetailPageImpl() {
   const isActiveView = useIsActiveView();
   // TODO(@eyhn): remove jotai here
   const [_, setActiveBlockSuiteEditor] = useActiveBlocksuiteEditor();
+
+  const setActiveTabName = useCallback(
+    (...args: Parameters<typeof rightSidebar.setActiveTabName>) =>
+      rightSidebar.setActiveTabName(...args),
+    [rightSidebar]
+  );
 
   useEffect(() => {
     if (isActiveView) {

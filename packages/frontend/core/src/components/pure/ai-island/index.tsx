@@ -1,65 +1,66 @@
-import type { SidebarTabName } from '@affine/core/modules/multi-tab-sidebar';
 import { RightSidebarService } from '@affine/core/modules/right-sidebar';
-import {
-  DocsService,
-  GlobalContextService,
-  GlobalStateService,
-  LiveData,
-  useLiveData,
-  useService,
-} from '@toeverything/infra';
-import { useCallback } from 'react';
+import { useLiveData, useService } from '@toeverything/infra';
+import { useEffect, useState } from 'react';
 
 import { ToolContainer } from '../../workspace';
 import { AIIcon } from './icons';
-import { StyledIsland, StyledTriggerWrapper } from './style';
+import {
+  aiIslandAnimationBg,
+  aiIslandBtn,
+  aiIslandWrapper,
+  borderAngle1,
+  borderAngle2,
+  borderAngle3,
+} from './styles.css';
 
-export const RIGHT_SIDEBAR_TABS_ACTIVE_KEY =
-  'app:settings:rightsidebar:tabs:active';
+if (typeof window !== 'undefined' && window.CSS) {
+  const getName = (nameWithVar: string) => nameWithVar.slice(4, -1);
+  const registerAngle = (varName: string, initialValue: number) => {
+    window.CSS.registerProperty({
+      name: getName(varName),
+      syntax: '<angle>',
+      inherits: false,
+      initialValue: `${initialValue}deg`,
+    });
+  };
+  registerAngle(borderAngle1, 0);
+  registerAngle(borderAngle2, 90);
+  registerAngle(borderAngle3, 180);
+}
 
 export const AIIsland = () => {
-  const docId = useLiveData(
-    useService(GlobalContextService).globalContext.docId.$
-  );
-  const docRecordList = useService(DocsService).list;
-  const doc = useLiveData(docId ? docRecordList.doc$(docId) : undefined);
-  const mode = useLiveData(doc?.mode$);
+  // to make sure ai island is hidden first and animate in
+  const [hide, setHide] = useState(true);
 
-  const globalState = useService(GlobalStateService).globalState;
-  const activeTabName = useLiveData(
-    LiveData.from(
-      globalState.watch<SidebarTabName>(RIGHT_SIDEBAR_TABS_ACTIVE_KEY),
-      'journal'
-    )
-  );
-  const setActiveTabName = useCallback(
-    (name: string) => {
-      globalState.set(RIGHT_SIDEBAR_TABS_ACTIVE_KEY, name);
-    },
-    [globalState]
-  );
   const rightSidebar = useService(RightSidebarService).rightSidebar;
+  const activeTabName = useLiveData(rightSidebar.activeTabName$);
   const rightSidebarOpen = useLiveData(rightSidebar.isOpen$);
+  const aiChatHasEverOpened = useLiveData(rightSidebar.aiChatHasEverOpened$);
+
+  useEffect(() => {
+    setHide(rightSidebarOpen && activeTabName === 'chat');
+  }, [activeTabName, rightSidebarOpen]);
 
   return (
     <ToolContainer>
-      <StyledIsland
-        spread={true}
-        data-testid="ai-island"
-        onClick={() => {
-          if (rightSidebarOpen) return;
-          rightSidebar.isOpen$;
-          rightSidebar.open();
-          if (activeTabName !== 'chat') {
-            setActiveTabName('chat');
-          }
-        }}
-        inEdgelessPage={!!docId && mode === 'edgeless'}
+      <div
+        className={aiIslandWrapper}
+        data-hide={hide}
+        data-animation={!aiChatHasEverOpened}
       >
-        <StyledTriggerWrapper data-testid="faq-icon">
+        <div className={aiIslandAnimationBg} />
+        <button
+          className={aiIslandBtn}
+          data-testid="ai-island"
+          onClick={() => {
+            if (hide) return;
+            rightSidebar.open();
+            rightSidebar.setActiveTabName('chat');
+          }}
+        >
           <AIIcon />
-        </StyledTriggerWrapper>
-      </StyledIsland>
+        </button>
+      </div>
     </ToolContainer>
   );
 };
