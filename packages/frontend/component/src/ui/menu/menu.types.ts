@@ -1,4 +1,4 @@
-import type { MenuItemProps as MenuItemPropsPrimitive } from '@radix-ui/react-dropdown-menu';
+import type { DropdownMenuItemProps as MenuItemPropsPrimitive } from '@radix-ui/react-dropdown-menu';
 
 export interface MenuItemProps
   extends Omit<MenuItemPropsPrimitive, 'asChild' | 'textValue'> {

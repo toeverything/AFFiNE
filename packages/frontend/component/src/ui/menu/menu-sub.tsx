@@ -1,8 +1,8 @@
 import { ArrowRightSmallIcon } from '@blocksuite/icons/rc';
 import type {
+  DropdownMenuPortalProps,
+  DropdownMenuSubContentProps,
   DropdownMenuSubProps,
-  MenuPortalProps,
-  MenuSubContentProps,
 } from '@radix-ui/react-dropdown-menu';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import clsx from 'clsx';
@@ -17,9 +17,9 @@ export interface MenuSubProps {
   children: ReactNode;
   items: ReactNode;
   triggerOptions?: Omit<MenuItemProps, 'onSelect' | 'children'>;
-  portalOptions?: Omit<MenuPortalProps, 'children'>;
+  portalOptions?: Omit<DropdownMenuPortalProps, 'children'>;
   subOptions?: Omit<DropdownMenuSubProps, 'children'>;
-  subContentOptions?: Omit<MenuSubContentProps, 'children'>;
+  subContentOptions?: Omit<DropdownMenuSubContentProps, 'children'>;
 }
 
 export const MenuSub = ({

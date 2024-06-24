@@ -48,7 +48,7 @@ export class ORMClient {
 
 export function createORMClientType<Schema extends DBSchemaBuilder>(
   db: Schema
-) {
+): ORMClientWithTablesClass<Schema> {
   Object.entries(db).forEach(([tableName, schema]) => {
     validators.validateTableSchema(tableName, schema);
   });
@@ -71,3 +71,13 @@ export function createORMClientType<Schema extends DBSchemaBuilder>(
     ): void;
   };
 }
+
+export type ORMClientWithTablesClass<Schema extends DBSchemaBuilder> = {
+  new (adapter: DBAdapter): TableMap<Schema> & ORMClient;
+
+  defineHook<TableName extends keyof Schema>(
+    tableName: TableName,
+    desc: string,
+    hook: Hook<CreateEntityInput<Schema[TableName]>>
+  ): void;
+};

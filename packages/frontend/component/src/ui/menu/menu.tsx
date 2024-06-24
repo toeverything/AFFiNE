@@ -1,7 +1,7 @@
 import type {
+  DropdownMenuContentProps,
+  DropdownMenuPortalProps,
   DropdownMenuProps,
-  MenuContentProps,
-  MenuPortalProps,
 } from '@radix-ui/react-dropdown-menu';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import clsx from 'clsx';
@@ -13,9 +13,9 @@ import * as styles from './styles.css';
 export interface MenuProps {
   children: ReactNode;
   items: ReactNode;
-  portalOptions?: Omit<MenuPortalProps, 'children'>;
+  portalOptions?: Omit<DropdownMenuPortalProps, 'children'>;
   rootOptions?: Omit<DropdownMenuProps, 'children'>;
-  contentOptions?: Omit<MenuContentProps, 'children'>;
+  contentOptions?: Omit<DropdownMenuContentProps, 'children'>;
 }
 
 export const Menu = ({
