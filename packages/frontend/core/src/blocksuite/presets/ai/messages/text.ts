@@ -102,7 +102,7 @@ export class AIAnswerText extends WithDisposable(LitElement) {
           }
           > :last-child,
           > :last-child * {
-            margin-top: 0 !important;
+            margin-bottom: 0 !important;
           }
         }
       }
