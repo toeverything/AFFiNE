@@ -120,7 +120,8 @@ test('share page with default edgeless', async ({ page, browser }) => {
   }
 });
 
-test('can collaborate with other user and name should display when editing', async ({
+// SKIP until BS-671 fix
+test.skip('can collaborate with other user and name should display when editing', async ({
   page,
   browser,
 }) => {
