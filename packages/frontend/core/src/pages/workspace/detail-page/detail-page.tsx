@@ -287,7 +287,13 @@ const DetailPageImpl = memo(function DetailPageImpl() {
         }
       />
 
-      <ImagePreviewModal pageId={doc.id} docCollection={docCollection} />
+      {editor?.host ? (
+        <ImagePreviewModal
+          pageId={doc.id}
+          docCollection={docCollection}
+          host={editor.host}
+        />
+      ) : null}
       <GlobalPageHistoryModal />
       <PageAIOnboarding />
     </>

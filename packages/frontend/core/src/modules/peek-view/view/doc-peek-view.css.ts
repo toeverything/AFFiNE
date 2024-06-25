@@ -1,3 +1,4 @@
+import { cssVar } from '@toeverything/theme';
 import { style } from '@vanilla-extract/css';
 
 export const editor = style({
@@ -6,4 +7,13 @@ export const editor = style({
     '--affine-editor-side-padding': '160px',
   },
   minHeight: '100%',
+});
+
+export const affineDocViewport = style({
+  display: 'flex',
+  flexDirection: 'column',
+  userSelect: 'none',
+  containerName: 'viewport',
+  containerType: 'inline-size',
+  background: cssVar('backgroundPrimaryColor'),
 });

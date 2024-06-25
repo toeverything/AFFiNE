@@ -1,47 +1,17 @@
-import { baseTheme, cssVar } from '@toeverything/theme';
-import { keyframes, style } from '@vanilla-extract/css';
-const fadeInAnimation = keyframes({
-  from: {
-    opacity: 0,
-  },
-  to: {
-    opacity: 1,
-  },
-});
-const fadeOutAnimation = keyframes({
-  from: {
-    opacity: 1,
-  },
-  to: {
-    opacity: 0,
-  },
-});
-export const imagePreviewBackgroundStyle = style({
-  position: 'fixed',
-  top: 0,
-  left: 0,
-  width: '100%',
-  height: '100%',
-  zIndex: baseTheme.zIndexModal,
-  background: 'rgba(0, 0, 0, 0.75)',
-});
+import { cssVar } from '@toeverything/theme';
+import { style } from '@vanilla-extract/css';
+
 export const imagePreviewModalStyle = style({
   height: '100%',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
 });
-export const loaded = style({
-  opacity: 0,
-  animationName: fadeInAnimation,
-  animationDuration: '0.25s',
-  animationFillMode: 'forwards',
-});
-export const unloaded = style({
-  opacity: 1,
-  animationName: fadeOutAnimation,
-  animationDuration: '0.25s',
-  animationFillMode: 'forwards',
+export const imagePreviewTrap = style({
+  position: 'absolute',
+  inset: 0,
+  width: '100%',
+  height: '100%',
 });
 export const imagePreviewModalCloseButtonStyle = style({
   position: 'absolute',
@@ -96,6 +66,7 @@ export const imagePreviewModalCenterStyle = style({
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
+  userSelect: 'none',
 });
 export const imagePreviewModalCaptionStyle = style({
   color: cssVar('white'),
@@ -155,7 +126,7 @@ export const imageBottomContainerStyle = style({
   alignItems: 'center',
   position: 'fixed',
   bottom: '28px',
-  zIndex: baseTheme.zIndexModal + 1,
+  zIndex: 2,
 });
 export const captionStyle = style({
   maxWidth: '686px',

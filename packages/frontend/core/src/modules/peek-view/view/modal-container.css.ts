@@ -3,8 +3,9 @@ import { createVar, keyframes, style } from '@vanilla-extract/css';
 
 export const animationTimeout = createVar();
 export const transformOrigin = createVar();
+export const animationType = createVar();
 
-const contentShow = keyframes({
+const zoomIn = keyframes({
   from: {
     transform: 'scale(0.10)',
   },
@@ -12,7 +13,7 @@ const contentShow = keyframes({
     transform: 'scale(1)',
   },
 });
-const contentHide = keyframes({
+const zoomOut = keyframes({
   to: {
     opacity: 0,
     transform: 'scale(0.10)',
@@ -93,32 +94,57 @@ export const modalContentWrapper = style({
 export const modalContentContainer = style({
   display: 'flex',
   alignItems: 'flex-start',
-  width: '90%',
-  height: '90%',
-  maxWidth: 1248,
+  width: '100%',
+  height: '100%',
   willChange: 'transform, opacity',
   transformOrigin: transformOrigin,
   selectors: {
     '&[data-state=entered], &[data-state=entering]': {
       animationFillMode: 'forwards',
-      animationName: contentShow,
       animationDuration: animationTimeout,
       animationTimingFunction: 'cubic-bezier(0.42, 0, 0.58, 1)',
     },
     '&[data-state=exited], &[data-state=exiting]': {
       animationFillMode: 'forwards',
-      animationName: contentHide,
       animationDuration: animationTimeout,
       animationTimingFunction: 'cubic-bezier(0.42, 0, 0.58, 1)',
     },
   },
 });
 
+export const modalContentContainerWithZoom = style({
+  selectors: {
+    '&[data-state=entered], &[data-state=entering]': {
+      animationName: zoomIn,
+    },
+    '&[data-state=exited], &[data-state=exiting]': {
+      animationName: zoomOut,
+    },
+  },
+});
+
+export const modalContentContainerWithFade = style({
+  selectors: {
+    '&[data-state=entered], &[data-state=entering]': {
+      animationName: fadeIn,
+    },
+    '&[data-state=exited], &[data-state=exiting]': {
+      animationName: fadeOut,
+    },
+  },
+});
+
+export const containerPadding = style({
+  width: '90%',
+  height: '90%',
+  maxWidth: 1248,
+});
+
 export const modalContent = style({
   flex: 1,
   height: '100%',
   backgroundColor: cssVar('backgroundOverlayPanelColor'),
-  boxShadow: '0px 0px 0px 2.23px rgba(0, 0, 0, 0.08)',
+  backdropFilter: 'drop-shadow(0px 0px 2px rgba(0, 0, 0, 0.08))',
   borderRadius: '8px',
   minHeight: 300,
   // :focus-visible will set outline

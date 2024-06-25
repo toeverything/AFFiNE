@@ -1,6 +1,6 @@
 import * as Dialog from '@radix-ui/react-dialog';
-import { cssVar } from '@toeverything/theme';
 import { assignInlineVars } from '@vanilla-extract/dynamic';
+import clsx from 'clsx';
 import {
   createContext,
   type PropsWithChildren,
@@ -24,7 +24,7 @@ const contentOptions: Dialog.DialogContentProps = {
   },
   style: {
     padding: 0,
-    backgroundColor: cssVar('backgroundPrimaryColor'),
+    backgroundColor: 'transparent',
     overflow: 'hidden',
   },
 };
@@ -64,14 +64,22 @@ export const PeekViewModalContainer = ({
   controls,
   children,
   hideOnEntering,
+  onAnimationStart,
   onAnimateEnd,
+  animation = 'zoom',
+  padding = true,
+  testId,
 }: PropsWithChildren<{
   open: boolean;
   hideOnEntering?: boolean;
   target?: HTMLElement;
   onOpenChange: (open: boolean) => void;
-  controls: React.ReactNode;
+  controls?: React.ReactNode;
+  onAnimationStart?: () => void;
   onAnimateEnd?: () => void;
+  padding?: boolean;
+  animation?: 'fade' | 'zoom';
+  testId?: string;
 }>) => {
   const [{ status }, toggle] = useTransition({
     timeout: animationTimeout,
@@ -100,11 +108,11 @@ export const PeekViewModalContainer = ({
               [styles.transformOrigin]: transformOrigin,
               [styles.animationTimeout]: `${animationTimeout}ms`,
             })}
-            onAnimationEnd={() => {
-              onAnimateEnd?.();
-            }}
+            onAnimationStart={onAnimationStart}
+            onAnimationEnd={onAnimateEnd}
           />
           <div
+            data-testid={testId}
             data-peek-view-wrapper
             className={styles.modalContentWrapper}
             style={assignInlineVars({
@@ -113,7 +121,13 @@ export const PeekViewModalContainer = ({
             })}
           >
             <div
-              className={styles.modalContentContainer}
+              className={clsx(
+                styles.modalContentContainer,
+                padding && styles.containerPadding,
+                animation === 'fade'
+                  ? styles.modalContentContainerWithFade
+                  : styles.modalContentContainerWithZoom
+              )}
               data-testid="peek-view-modal-animation-container"
               data-state={status}
             >
@@ -123,9 +137,11 @@ export const PeekViewModalContainer = ({
               >
                 {hideOnEntering && status === 'entering' ? null : children}
               </Dialog.Content>
-              <div data-state={status} className={styles.modalControls}>
-                {controls}
-              </div>
+              {controls ? (
+                <div data-state={status} className={styles.modalControls}>
+                  {controls}
+                </div>
+              ) : null}
             </div>
           </div>
         </Dialog.Portal>

@@ -399,12 +399,9 @@ test('image able to copy to clipboard', async ({ page }) => {
   const locator = page.getByTestId('image-preview-modal');
   await expect(locator).toBeVisible();
   await locator.getByTestId('copy-to-clipboard-button').click();
-  await new Promise<void>(resolve => {
-    page.on('console', message => {
-      expect(message.text()).toBe('Image copied to clipboard');
-      resolve();
-    });
-  });
+  await expect(
+    page.locator('[data-testid=affine-toast]:has-text("Copied to clipboard.")')
+  ).toBeVisible();
 });
 
 test('image able to download', async ({ page }) => {
