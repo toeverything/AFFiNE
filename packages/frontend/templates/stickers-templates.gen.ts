@@ -394,7 +394,7 @@ const templates = {
         name: "Boom",
         cover: stickerCover036,
         content: stickerContent036,
-        hash: "uyw/4AyDe7tWB4FSzFDP2PF9tEPYYPQi3O24R+g+d20=",
+        hash: "mpTlbN8fJWJUMlHcCCrQuzKTK844+F9YuebgR0kgJa8=",
       }),
      buildStickerTemplate({
         name: "Cool",
@@ -442,7 +442,7 @@ const templates = {
         name: "Star",
         cover: stickerCover044,
         content: stickerContent044,
-        hash: "oDoFPfrctM+0XAZLrs7btV7MqMpyvhqUzCmiONhOzX8=",
+        hash: "Au+JbxT7XZvvDueaVg37tJ4kyH9vLxiC7tLgcbrZV48=",
       }),],
 }
 
