@@ -7,7 +7,7 @@ import type { SidebarTab, SidebarTabProps } from '../sidebar-tab';
 import * as styles from './chat.css';
 
 // A wrapper for CopilotPanel
-const EditorChatPanel = ({ editor }: SidebarTabProps) => {
+const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
   const chatPanelRef = useRef<ChatPanel | null>(null);
 
   const onRefChange = useCallback((container: HTMLDivElement | null) => {
@@ -16,6 +16,16 @@ const EditorChatPanel = ({ editor }: SidebarTabProps) => {
       container.append(chatPanelRef.current);
     }
   }, []);
+
+  useEffect(() => {
+    if (onLoad && chatPanelRef.current) {
+      (chatPanelRef.current as ChatPanel).updateComplete
+        .then(() => {
+          onLoad(chatPanelRef.current as HTMLElement);
+        })
+        .catch(console.error);
+    }
+  }, [onLoad]);
 
   useEffect(() => {
     if (!editor) return;

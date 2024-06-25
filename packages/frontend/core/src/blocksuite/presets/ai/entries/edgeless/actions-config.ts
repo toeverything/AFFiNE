@@ -105,10 +105,10 @@ const othersGroup: AIItemGroupConfig = {
       showWhen: () => true,
       handler: host => {
         const panel = getAIPanel(host);
-        AIProvider.slots.requestOpenWithChat.emit();
-        AIProvider.slots.requestContinueWithAIInChat.emit({
+        AIProvider.slots.requestOpenWithChat.emit({
           host,
           mode: 'edgeless',
+          autoSelect: true,
         });
         panel.hide();
       },
@@ -119,11 +119,7 @@ const othersGroup: AIItemGroupConfig = {
       showWhen: () => true,
       handler: host => {
         const panel = getAIPanel(host);
-        AIProvider.slots.requestOpenWithChat.emit();
-        AIProvider.slots.requestContinueInChat.emit({
-          host: host,
-          show: true,
-        });
+        AIProvider.slots.requestOpenWithChat.emit({ host, mode: 'edgeless' });
         panel.hide();
       },
     },

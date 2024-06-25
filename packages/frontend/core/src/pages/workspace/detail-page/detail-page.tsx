@@ -76,6 +76,9 @@ const DetailPageImpl = memo(function DetailPageImpl() {
   const docCollection = workspace.docCollection;
   const mode = useLiveData(doc.mode$);
   const { appSettings } = useAppSettingHelper();
+  const [tabOnLoad, setTabOnLoad] = useState<
+    ((component: HTMLElement) => void) | null
+  >(null);
 
   const isActiveView = useIsActiveView();
   // TODO(@eyhn): remove jotai here
@@ -94,13 +97,34 @@ const DetailPageImpl = memo(function DetailPageImpl() {
   }, [editor, isActiveView, setActiveBlockSuiteEditor]);
 
   useEffect(() => {
-    AIProvider.slots.requestOpenWithChat.on(() => {
-      rightSidebar.open();
-      if (activeTabName !== 'chat') {
+    AIProvider.slots.requestOpenWithChat.on(params => {
+      const opened = rightSidebar.isOpen$.value;
+      const actived = activeTabName === 'chat';
+
+      if (!opened) {
+        rightSidebar.open();
+      }
+
+      if (!actived) {
         setActiveTabName('chat');
       }
+
+      // Save chat parameters:
+      // * The right sidebar is not open
+      // * Chat panel is not activated
+      if (!opened || !actived) {
+        const callback = async (chatPanel: HTMLElement) => {
+          const chatCards = await AIProvider.requestChatCardsElement(chatPanel);
+          if (!chatCards) return;
+          if (chatCards.temporaryParams) return;
+          chatCards.temporaryParams = params;
+        };
+        setTabOnLoad(() => callback);
+      } else {
+        setTabOnLoad(null);
+      }
     });
-  }, [activeTabName, rightSidebar, setActiveTabName]);
+  }, [activeTabName, rightSidebar, setActiveTabName, setTabOnLoad]);
 
   useEffect(() => {
     if (isActiveView) {
@@ -274,6 +298,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
               sidebarTabs.find(ext => ext.name === activeTabName) ??
               sidebarTabs[0]
             }
+            onLoad={tabOnLoad}
           >
             {/* Show switcher in body for windows desktop */}
             {isWindowsDesktop && (

@@ -401,8 +401,7 @@ const OthersAIGroup: AIItemGroupConfig = {
       icon: CommentIcon,
       handler: host => {
         const panel = getAIPanel(host);
-        AIProvider.slots.requestOpenWithChat.emit();
-        AIProvider.slots.requestContinueWithAIInChat.emit({ host });
+        AIProvider.slots.requestOpenWithChat.emit({ host, autoSelect: true });
         panel.hide();
       },
     },
@@ -411,11 +410,7 @@ const OthersAIGroup: AIItemGroupConfig = {
       icon: ChatWithAIIcon,
       handler: host => {
         const panel = getAIPanel(host);
-        AIProvider.slots.requestOpenWithChat.emit();
-        AIProvider.slots.requestContinueInChat.emit({
-          host: host,
-          show: true,
-        });
+        AIProvider.slots.requestOpenWithChat.emit({ host });
         panel.hide();
       },
     },

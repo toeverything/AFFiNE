@@ -2,7 +2,6 @@ import type { EditorHost } from '@blocksuite/block-std';
 import { WithDisposable } from '@blocksuite/block-std';
 import {
   type ImageBlockModel,
-  isInsidePageEditor,
   type NoteBlockModel,
   NoteDisplayMode,
 } from '@blocksuite/blocks';
@@ -24,7 +23,7 @@ import {
   DocIcon,
   SmallImageIcon,
 } from '../_common/icons';
-import { AIProvider } from '../provider';
+import { type AIChatParams, AIProvider } from '../provider';
 import {
   getSelectedImagesAsBlobs,
   getSelectedTextContent,
@@ -111,6 +110,9 @@ export class ChatCards extends WithDisposable(LitElement) {
 
   @property({ attribute: false })
   accessor updateContext!: (context: Partial<ChatContextValue>) => void;
+
+  @property({ attribute: false })
+  accessor temporaryParams: AIChatParams | null = null;
 
   @state()
   accessor cards: Card[] = [];
@@ -421,7 +423,36 @@ export class ChatCards extends WithDisposable(LitElement) {
     };
   }
 
-  protected override async updated(changedProperties: PropertyValues) {
+  private readonly _appendCardWithParams = async ({
+    // host: _,
+    mode,
+    autoSelect,
+  }: AIChatParams) => {
+    if (mode === 'edgeless') {
+      await this._extractOnEdgeless();
+    } else {
+      await this._extract();
+    }
+
+    if (!autoSelect) {
+      return;
+    }
+
+    if (this.cards.length > 0) {
+      const card = this.cards[0];
+      if (card.type === CardType.Doc) return;
+
+      await this._selectCard(card);
+    }
+  };
+
+  protected override async willUpdate(changedProperties: PropertyValues) {
+    if (changedProperties.has('temporaryParams') && this.temporaryParams) {
+      const params = this.temporaryParams;
+      await this._appendCardWithParams(params);
+      this.temporaryParams = null;
+    }
+
     if (changedProperties.has('host')) {
       if (this._currentDocId === this.host.doc.id) return;
       this._currentDocId = this.host.doc.id;
@@ -443,40 +474,19 @@ export class ChatCards extends WithDisposable(LitElement) {
         if (hasImages) {
           card.images = images;
         }
-        this._updateCards(card);
+
+        this.cards.push(card);
+        this.requestUpdate();
       }
     }
   }
 
-  override async connectedCallback() {
+  override connectedCallback() {
     super.connectedCallback();
 
     this._disposables.add(
-      AIProvider.slots.requestContinueWithAIInChat.on(async ({ mode }) => {
-        if (mode === 'edgeless') {
-          await this._extractOnEdgeless();
-        } else {
-          await this._extract();
-        }
-
-        if (this.cards.length > 0) {
-          const card = this.cards[0];
-          if (card.type === CardType.Doc) return;
-
-          await this._selectCard(card);
-        }
-      })
-    );
-
-    this._disposables.add(
-      AIProvider.slots.requestContinueInChat.on(async ({ host, show }) => {
-        if (show) {
-          if (isInsidePageEditor(host)) {
-            await this._extract();
-          } else {
-            await this._extractOnEdgeless();
-          }
-        }
+      AIProvider.slots.requestOpenWithChat.on(async params => {
+        await this._appendCardWithParams(params);
       })
     );
 

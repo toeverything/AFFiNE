@@ -2,12 +2,25 @@ import type { EditorHost } from '@blocksuite/block-std';
 import { PaymentRequiredError, UnauthorizedError } from '@blocksuite/blocks';
 import { Slot } from '@blocksuite/store';
 
+import type { ChatCards } from './chat-panel/chat-cards';
+
 export interface AIUserInfo {
   id: string;
   email: string;
   name: string;
   avatarUrl: string | null;
 }
+
+export interface AIChatParams {
+  host: EditorHost;
+  mode?: 'page' | 'edgeless';
+  // Auto select and append selection to input via `Continue with AI` action.
+  autoSelect?: boolean;
+}
+
+type RequestChatCardsElement = (
+  chatPanel: HTMLElement
+) => Promise<ChatCards | null>;
 
 export type ActionEventType =
   | 'started'
@@ -63,6 +76,10 @@ export class AIProvider {
     return AIProvider.instance.toggleGeneralAIOnboarding;
   }
 
+  static get requestChatCardsElement() {
+    return AIProvider.instance.requestChatCardsElement;
+  }
+
   private static readonly instance = new AIProvider();
 
   static LAST_ACTION_SESSIONID = '';
@@ -77,15 +94,18 @@ export class AIProvider {
 
   private toggleGeneralAIOnboarding: ((value: boolean) => void) | null = null;
 
+  private readonly requestChatCardsElement: RequestChatCardsElement = (
+    chatPanel: HTMLElement
+  ) => {
+    return new Promise(resolve => {
+      resolve(chatPanel.querySelector<ChatCards>('chat-cards'));
+    });
+  };
+
   private readonly slots = {
     // use case: when user selects "continue in chat" in an ask ai result panel
     // do we need to pass the context to the chat panel?
-    requestOpenWithChat: new Slot(),
-    requestContinueInChat: new Slot<{ host: EditorHost; show: boolean }>(),
-    requestContinueWithAIInChat: new Slot<{
-      host: EditorHost;
-      mode?: 'page' | 'edgeless';
-    }>(),
+    requestOpenWithChat: new Slot<AIChatParams>(),
     requestLogin: new Slot<{ host: EditorHost }>(),
     requestUpgradePlan: new Slot<{ host: EditorHost }>(),
     // when an action is requested to run in edgeless mode (show a toast in affine)
