@@ -1,19 +1,17 @@
 import { Logger, OnModuleInit } from '@nestjs/common';
 
-import { WorkflowExecutor, type WorkflowExecutorType } from './types';
+import { NodeExecutor, type NodeExecutorType } from './types';
 
-const WORKFLOW_EXECUTOR: Map<string, WorkflowExecutor> = new Map();
+const WORKFLOW_EXECUTOR: Map<string, NodeExecutor> = new Map();
 
-function registerWorkflowExecutor(e: WorkflowExecutor) {
+function registerWorkflowExecutor(e: NodeExecutor) {
   const existing = WORKFLOW_EXECUTOR.get(e.type);
   if (existing && existing === e) return false;
   WORKFLOW_EXECUTOR.set(e.type, e);
   return true;
 }
 
-export function getWorkflowExecutor(
-  type: WorkflowExecutorType
-): WorkflowExecutor {
+export function getWorkflowExecutor(type: NodeExecutorType): NodeExecutor {
   const executor = WORKFLOW_EXECUTOR.get(type);
   if (!executor) {
     throw new Error(`Executor ${type} not defined`);
@@ -23,7 +21,7 @@ export function getWorkflowExecutor(
 }
 
 export abstract class AutoRegisteredWorkflowExecutor
-  extends WorkflowExecutor
+  extends NodeExecutor
   implements OnModuleInit
 {
   onModuleInit() {

@@ -2,13 +2,13 @@ import { Injectable } from '@nestjs/common';
 
 import { ChatPrompt, PromptService } from '../../prompt';
 import { CopilotProviderService } from '../../providers';
-import { CopilotChatOptions, CopilotTextProvider } from '../../types';
+import { CopilotChatOptions, CopilotImageProvider } from '../../types';
 import { WorkflowNodeData, WorkflowNodeType } from '../types';
 import { NodeExecuteResult, NodeExecuteState, NodeExecutorType } from './types';
 import { AutoRegisteredWorkflowExecutor } from './utils';
 
 @Injectable()
-export class CopilotChatTextExecutor extends AutoRegisteredWorkflowExecutor {
+export class CopilotChatImageExecutor extends AutoRegisteredWorkflowExecutor {
   constructor(
     private readonly promptService: PromptService,
     private readonly providerService: CopilotProviderService
@@ -22,7 +22,7 @@ export class CopilotChatTextExecutor extends AutoRegisteredWorkflowExecutor {
     [
       WorkflowNodeData & { nodeType: WorkflowNodeType.Basic },
       ChatPrompt,
-      CopilotTextProvider,
+      CopilotImageProvider,
     ]
   > {
     if (data.nodeType !== WorkflowNodeType.Basic) {
@@ -45,7 +45,7 @@ export class CopilotChatTextExecutor extends AutoRegisteredWorkflowExecutor {
     const provider = await this.providerService.getProviderByModel(
       prompt.model
     );
-    if (provider && 'generateText' in provider) {
+    if (provider && 'generateImages' in provider) {
       return [data, prompt, provider];
     }
 
@@ -55,7 +55,7 @@ export class CopilotChatTextExecutor extends AutoRegisteredWorkflowExecutor {
   }
 
   override get type() {
-    return NodeExecutorType.ChatText;
+    return NodeExecutorType.ChatImage;
   }
 
   override async *next(
@@ -71,7 +71,7 @@ export class CopilotChatTextExecutor extends AutoRegisteredWorkflowExecutor {
       yield {
         type: NodeExecuteState.Params,
         params: {
-          [paramKey]: await provider.generateText(
+          [paramKey]: await provider.generateImages(
             finalMessage,
             prompt.model,
             options
@@ -79,7 +79,7 @@ export class CopilotChatTextExecutor extends AutoRegisteredWorkflowExecutor {
         },
       };
     } else {
-      for await (const content of provider.generateTextStream(
+      for await (const content of provider.generateImagesStream(
         finalMessage,
         prompt.model,
         options

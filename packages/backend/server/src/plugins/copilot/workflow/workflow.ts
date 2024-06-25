@@ -1,16 +1,25 @@
 import { Logger } from '@nestjs/common';
 
 import { CopilotChatOptions } from '../types';
+import { NodeExecuteState } from './executor';
 import { WorkflowNode } from './node';
-import {
-  type WorkflowGraphInstances,
-  type WorkflowNodeState,
-  WorkflowNodeType,
-  WorkflowResultType,
-} from './types';
+import type { WorkflowGraphInstances, WorkflowNodeState } from './types';
+import { WorkflowNodeType } from './types';
 
-export class CopilotWorkflow {
-  private readonly logger = new Logger(CopilotWorkflow.name);
+export enum GraphExecutorState {
+  EnterNode = 'EnterNode',
+  EmitContent = 'EmitContent',
+  ExitNode = 'ExitNode',
+}
+
+export type GraphExecutorStatus = { status: GraphExecutorState } & (
+  | { status: GraphExecutorState.EnterNode; node: WorkflowNode }
+  | { status: GraphExecutorState.EmitContent; content: string }
+  | { status: GraphExecutorState.ExitNode; node: WorkflowNode }
+);
+
+export class WorkflowGraphExecutor {
+  private readonly logger = new Logger(WorkflowGraphExecutor.name);
   private readonly rootNode: WorkflowNode;
 
   constructor(workflow: WorkflowGraphInstances) {
@@ -24,7 +33,7 @@ export class CopilotWorkflow {
   async *runGraph(
     params: Record<string, string>,
     options?: CopilotChatOptions
-  ): AsyncIterable<string> {
+  ): AsyncIterable<GraphExecutorStatus> {
     let currentNode: WorkflowNode | undefined = this.rootNode;
     const lastParams: WorkflowNodeState = { ...params };
 
@@ -33,10 +42,13 @@ export class CopilotWorkflow {
       let nextNode: WorkflowNode | undefined;
 
       for await (const ret of currentNode.next(lastParams, options)) {
-        if (ret.type === WorkflowResultType.EndRun) {
+        if (ret.type === NodeExecuteState.StartRun) {
+          yield { status: GraphExecutorState.EnterNode, node: currentNode };
+        } else if (ret.type === NodeExecuteState.EndRun) {
+          yield { status: GraphExecutorState.ExitNode, node: currentNode };
           nextNode = ret.nextNode;
           break;
-        } else if (ret.type === WorkflowResultType.Params) {
+        } else if (ret.type === NodeExecuteState.Params) {
           Object.assign(lastParams, ret.params);
           if (currentNode.config.nodeType === WorkflowNodeType.Basic) {
             const { type, promptName } = currentNode.config;
@@ -44,10 +56,13 @@ export class CopilotWorkflow {
               `[${currentNode.name}][${type}][${promptName}]: update params - '${JSON.stringify(ret.params)}'`
             );
           }
-        } else if (ret.type === WorkflowResultType.Content) {
+        } else if (ret.type === NodeExecuteState.Content) {
           if (!currentNode.hasEdges) {
             // pass through content as a stream response if node is end node
-            yield ret.content;
+            yield {
+              status: GraphExecutorState.EmitContent,
+              content: ret.content,
+            };
           } else {
             result += ret.content;
           }

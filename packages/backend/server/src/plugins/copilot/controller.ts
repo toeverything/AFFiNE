@@ -38,10 +38,10 @@ import { CopilotProviderService } from './providers';
 import { ChatSession, ChatSessionService } from './session';
 import { CopilotStorage } from './storage';
 import { CopilotCapability, CopilotTextProvider } from './types';
-import { CopilotWorkflowService } from './workflow';
+import { CopilotWorkflowService, GraphExecutorState } from './workflow';
 
 export interface ChatEvent {
-  type: 'attachment' | 'message' | 'error';
+  type: 'event' | 'attachment' | 'message' | 'error';
   id?: string;
   data: string | object;
 }
@@ -134,6 +134,15 @@ export class CopilotController {
     return session;
   }
 
+  private prepareParams(params: Record<string, string | string[]>) {
+    const messageId = Array.isArray(params.messageId)
+      ? params.messageId[0]
+      : params.messageId;
+    const jsonMode = String(params.jsonMode).toLowerCase() === 'true';
+    delete params.messageId;
+    return { messageId, jsonMode, params };
+  }
+
   private getSignal(req: Request) {
     const controller = new AbortController();
     req.on('close', () => controller.abort());
@@ -158,9 +167,7 @@ export class CopilotController {
     @Param('sessionId') sessionId: string,
     @Query() params: Record<string, string | string[]>
   ): Promise<string> {
-    const messageId = Array.isArray(params.messageId)
-      ? params.messageId[0]
-      : params.messageId;
+    const { messageId, jsonMode } = this.prepareParams(params);
     const provider = await this.chooseTextProvider(
       user.id,
       sessionId,
@@ -170,14 +177,10 @@ export class CopilotController {
     const session = await this.appendSessionMessage(sessionId, messageId);
 
     try {
-      delete params.messageId;
       const content = await provider.generateText(
         session.finish(params),
         session.model,
-        {
-          signal: this.getSignal(req),
-          user: user.id,
-        }
+        { jsonMode, signal: this.getSignal(req), user: user.id }
       );
 
       session.push({
@@ -201,9 +204,7 @@ export class CopilotController {
     @Query() params: Record<string, string>
   ): Promise<Observable<ChatEvent>> {
     try {
-      const messageId = Array.isArray(params.messageId)
-        ? params.messageId[0]
-        : params.messageId;
+      const { messageId, jsonMode } = this.prepareParams(params);
       const provider = await this.chooseTextProvider(
         user.id,
         sessionId,
@@ -211,10 +212,10 @@ export class CopilotController {
       );
 
       const session = await this.appendSessionMessage(sessionId, messageId);
-      delete params.messageId;
 
       return from(
         provider.generateTextStream(session.finish(params), session.model, {
+          jsonMode,
           signal: this.getSignal(req),
           user: user.id,
         })
@@ -255,12 +256,8 @@ export class CopilotController {
     @Query() params: Record<string, string>
   ): Promise<Observable<ChatEvent>> {
     try {
-      const messageId = Array.isArray(params.messageId)
-        ? params.messageId[0]
-        : params.messageId;
-
+      const { messageId, jsonMode } = this.prepareParams(params);
       const session = await this.appendSessionMessage(sessionId, messageId);
-      delete params.messageId;
       const latestMessage = session.stashMessages.findLast(
         m => m.role === 'user'
       );
@@ -272,6 +269,7 @@ export class CopilotController {
 
       return from(
         this.workflow.runGraph(params, session.model, {
+          jsonMode,
           signal: this.getSignal(req),
           user: user.id,
         })
@@ -280,7 +278,23 @@ export class CopilotController {
           merge(
             // actual chat event stream
             shared$.pipe(
-              map(data => ({ type: 'message' as const, id: messageId, data }))
+              map(data =>
+                data.status === GraphExecutorState.EmitContent
+                  ? {
+                      type: 'message' as const,
+                      id: messageId,
+                      data: data.content,
+                    }
+                  : {
+                      type: 'event' as const,
+                      id: messageId,
+                      data: {
+                        status: data.status,
+                        id: data.node.id,
+                        type: data.node.config.nodeType,
+                      } as any,
+                    }
+              )
             ),
             // save the generated text to the session
             shared$.pipe(
@@ -312,9 +326,7 @@ export class CopilotController {
     @Query() params: Record<string, string>
   ): Promise<Observable<ChatEvent>> {
     try {
-      const messageId = Array.isArray(params.messageId)
-        ? params.messageId[0]
-        : params.messageId;
+      const { messageId } = this.prepareParams(params);
       const { model, hasAttachment } = await this.checkRequest(
         user.id,
         sessionId,
@@ -331,7 +343,6 @@ export class CopilotController {
       }
 
       const session = await this.appendSessionMessage(sessionId, messageId);
-      delete params.messageId;
 
       const handleRemoteLink = this.storage.handleRemoteLink.bind(
         this.storage,

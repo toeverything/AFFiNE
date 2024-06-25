@@ -9,6 +9,8 @@ import {
 } from '../../src/plugins/copilot/providers/openai';
 import {
   CopilotCapability,
+  CopilotChatOptions,
+  CopilotEmbeddingOptions,
   CopilotImageToImageProvider,
   CopilotImageToTextProvider,
   CopilotProviderType,
@@ -17,6 +19,12 @@ import {
   CopilotTextToTextProvider,
   PromptMessage,
 } from '../../src/plugins/copilot/types';
+import { NodeExecutorType } from '../../src/plugins/copilot/workflow/executor';
+import {
+  WorkflowGraph,
+  WorkflowNodeType,
+  WorkflowParams,
+} from '../../src/plugins/copilot/workflow/types';
 import { gql } from './common';
 import { handleGraphQLError } from './utils';
 
@@ -72,28 +80,18 @@ export class MockCopilotTestProvider
   override async generateText(
     messages: PromptMessage[],
     model: string = 'test',
-    _options: {
-      temperature?: number;
-      maxTokens?: number;
-      signal?: AbortSignal;
-      user?: string;
-    } = {}
+    options: CopilotChatOptions = {}
   ): Promise<string> {
-    this.checkParams({ messages, model });
+    this.checkParams({ messages, model, options });
     return 'generate text to text';
   }
 
   override async *generateTextStream(
     messages: PromptMessage[],
     model: string = 'gpt-3.5-turbo',
-    options: {
-      temperature?: number;
-      maxTokens?: number;
-      signal?: AbortSignal;
-      user?: string;
-    } = {}
+    options: CopilotChatOptions = {}
   ): AsyncIterable<string> {
-    this.checkParams({ messages, model });
+    this.checkParams({ messages, model, options });
 
     const result = 'generate text to text stream';
     for await (const message of result) {
@@ -109,14 +107,10 @@ export class MockCopilotTestProvider
   override async generateEmbedding(
     messages: string | string[],
     model: string,
-    options: {
-      dimensions: number;
-      signal?: AbortSignal;
-      user?: string;
-    } = { dimensions: DEFAULT_DIMENSIONS }
+    options: CopilotEmbeddingOptions = { dimensions: DEFAULT_DIMENSIONS }
   ): Promise<number[][]> {
     messages = Array.isArray(messages) ? messages : [messages];
-    this.checkParams({ embeddings: messages, model });
+    this.checkParams({ embeddings: messages, model, options });
 
     return [Array.from(randomBytes(options.dimensions)).map(v => v % 128)];
   }
@@ -130,7 +124,7 @@ export class MockCopilotTestProvider
       user?: string;
     } = {}
   ): Promise<Array<string>> {
-    const { content: prompt } = messages.pop() || {};
+    const { content: prompt } = messages[0] || {};
     if (!prompt) {
       throw new Error('Prompt is required');
     }
@@ -253,6 +247,32 @@ export async function chatWithImages(
   return chatWithText(app, userToken, sessionId, messageId, '/images');
 }
 
+export function sse2array(eventSource: string) {
+  const blocks = eventSource.replace(/^\n(.*?)\n$/, '$1').split(/\n\n+/);
+  return blocks.map(block =>
+    block.split('\n').reduce(
+      (prev, curr) => {
+        const [key, ...values] = curr.split(': ');
+        return Object.assign(prev, { [key]: values.join(': ') });
+      },
+      {} as Record<string, string>
+    )
+  );
+}
+
+export function array2sse(blocks: Record<string, string>[]) {
+  return blocks
+    .map(
+      e =>
+        '\n' +
+        Object.entries(e)
+          .filter(([k]) => !!k)
+          .map(([k, v]) => `${k}: ${v}`)
+          .join('\n')
+    )
+    .join('\n');
+}
+
 export function textToEventStream(
   content: string | string[],
   id: string,
@@ -331,3 +351,103 @@ export async function getHistories(
 
   return res.body.data.currentUser?.copilot?.histories || [];
 }
+
+type Prompt = { name: string; model: string; messages: PromptMessage[] };
+type WorkflowTestCase = {
+  graph: WorkflowGraph;
+  prompts: Prompt[];
+  callCount: number[];
+  input: string[];
+  params: WorkflowParams[];
+  result: (string | undefined)[];
+};
+
+export const WorkflowTestCases: WorkflowTestCase[] = [
+  {
+    prompts: [
+      {
+        name: 'test1',
+        model: 'test',
+        messages: [{ role: 'user', content: '{{content}}' }],
+      },
+    ],
+    graph: {
+      name: 'test chat text node',
+      graph: [
+        {
+          id: 'start',
+          name: 'test chat text node',
+          nodeType: WorkflowNodeType.Basic,
+          type: NodeExecutorType.ChatText,
+          promptName: 'test1',
+          edges: [],
+        },
+      ],
+    },
+    callCount: [1],
+    input: ['test'],
+    params: [],
+    result: ['generate text to text stream'],
+  },
+  {
+    prompts: [],
+    graph: {
+      name: 'test check json node',
+      graph: [
+        {
+          id: 'start',
+          name: 'basic node',
+          nodeType: WorkflowNodeType.Basic,
+          type: NodeExecutorType.CheckJson,
+          edges: [],
+        },
+      ],
+    },
+    callCount: [1, 1],
+    input: ['{"test": "true"}', '{"test": '],
+    params: [],
+    result: ['true', 'false'],
+  },
+  {
+    prompts: [],
+    graph: {
+      name: 'test check html node',
+      graph: [
+        {
+          id: 'start',
+          name: 'basic node',
+          nodeType: WorkflowNodeType.Basic,
+          type: NodeExecutorType.CheckHtml,
+          edges: [],
+        },
+      ],
+    },
+    callCount: [1, 1, 1, 1],
+    params: [{}, { strict: 'true' }, {}, {}],
+    input: [
+      '<html><span /></html>',
+      '<html><span /></html>',
+      '<img src="http://123.com/1.jpg" />',
+      '{"test": "true"}',
+    ],
+    result: ['true', 'false', 'true', 'false'],
+  },
+  {
+    prompts: [],
+    graph: {
+      name: 'test nope node',
+      graph: [
+        {
+          id: 'start',
+          name: 'nope node',
+          nodeType: WorkflowNodeType.Nope,
+          edges: [],
+        },
+      ],
+    },
+    callCount: [1],
+    input: ['test'],
+    params: [],
+    result: ['test'],
+  },
+];

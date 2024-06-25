@@ -137,6 +137,7 @@ const CopilotProviderOptionsSchema = z.object({
 });
 
 const CopilotChatOptionsSchema = CopilotProviderOptionsSchema.extend({
+  jsonMode: z.boolean().optional(),
   temperature: z.number().optional(),
   maxTokens: z.number().optional(),
 }).optional();

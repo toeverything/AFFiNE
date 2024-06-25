@@ -1,5 +1,7 @@
-import type { WorkflowExecutorType } from './executor';
+import type { NodeExecutorType } from './executor';
 import type { WorkflowNode } from './node';
+
+// ===================== node =====================
 
 export enum WorkflowNodeType {
   Basic = 'basic',
@@ -7,11 +9,11 @@ export enum WorkflowNodeType {
   Nope = 'nope',
 }
 
-export type NodeData = { id: string; name: string } & (
+export type WorkflowNodeData = { id: string; name: string } & (
   | {
       nodeType: WorkflowNodeType.Basic;
-      promptName: string;
-      type: WorkflowExecutorType;
+      type: NodeExecutorType;
+      promptName?: string;
       // update the prompt params by output with the custom key
       paramKey?: string;
     }
@@ -25,35 +27,22 @@ export type NodeData = { id: string; name: string } & (
   | { nodeType: WorkflowNodeType.Nope }
 );
 
-export type WorkflowNodeState = Record<string, string>;
+export type WorkflowGraphInstances = Map<string, WorkflowNode>;
 
-export type WorkflowGraphData = Array<NodeData & { edges: string[] }>;
+// ===================== graph =====================
+
+export type WorkflowGraphDefinition = Array<
+  WorkflowNodeData & { edges: string[] }
+>;
 export type WorkflowGraph = {
   name: string;
   // true if the graph has been modified
   modified?: boolean;
-  graph: WorkflowGraphData;
+  graph: WorkflowGraphDefinition;
 };
 export type WorkflowGraphs = Array<WorkflowGraph>;
 
-export enum WorkflowResultType {
-  StartRun,
-  EndRun,
-  Params,
-  Content,
-}
+// ===================== executor =====================
 
-export type WorkflowResult =
-  | { type: WorkflowResultType.StartRun; nodeId: string }
-  | { type: WorkflowResultType.EndRun; nextNode?: WorkflowNode }
-  | {
-      type: WorkflowResultType.Params;
-      params: Record<string, string | string[]>;
-    }
-  | {
-      type: WorkflowResultType.Content;
-      nodeId: string;
-      content: string;
-    };
-
-export type WorkflowGraphInstances = Map<string, WorkflowNode>;
+export type WorkflowParams = Record<string, string | string[]>;
+export type WorkflowNodeState = Record<string, string>;

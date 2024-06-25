@@ -120,19 +120,37 @@ export class OpenAIProvider
     });
   }
 
+  private extractOptionFromMessages(
+    messages: PromptMessage[],
+    options: CopilotChatOptions
+  ) {
+    const params: Record<string, string | string[]> = {};
+    for (const message of messages) {
+      if (message.params) {
+        Object.assign(params, message.params);
+      }
+    }
+    if (params.jsonMode && options) {
+      options.jsonMode = String(params.jsonMode).toLowerCase() === 'true';
+    }
+  }
+
   protected checkParams({
     messages,
     embeddings,
     model,
+    options = {},
   }: {
     messages?: PromptMessage[];
     embeddings?: string[];
     model: string;
+    options: CopilotChatOptions;
   }) {
     if (!this.availableModels.includes(model)) {
       throw new Error(`Invalid model: ${model}`);
     }
     if (Array.isArray(messages) && messages.length > 0) {
+      this.extractOptionFromMessages(messages, options);
       if (
         messages.some(
           m =>
@@ -158,6 +176,14 @@ export class OpenAIProvider
       ) {
         throw new Error('Invalid message role');
       }
+      // json mode need 'json' keyword in content
+      // ref: https://platform.openai.com/docs/api-reference/chat/create#chat-create-response_format
+      if (
+        options.jsonMode &&
+        !messages.some(m => m.content.toLowerCase().includes('json'))
+      ) {
+        throw new Error('Prompt not support json mode');
+      }
     } else if (
       Array.isArray(embeddings) &&
       embeddings.some(e => typeof e !== 'string' || !e || !e.trim())
@@ -173,13 +199,16 @@ export class OpenAIProvider
     model: string = 'gpt-3.5-turbo',
     options: CopilotChatOptions = {}
   ): Promise<string> {
-    this.checkParams({ messages, model });
+    this.checkParams({ messages, model, options });
     const result = await this.instance.chat.completions.create(
       {
         messages: this.chatToGPTMessage(messages),
         model: model,
         temperature: options.temperature || 0,
         max_tokens: options.maxTokens || 4096,
+        response_format: {
+          type: options.jsonMode ? 'json_object' : 'text',
+        },
         user: options.user,
       },
       { signal: options.signal }
@@ -196,7 +225,7 @@ export class OpenAIProvider
     model: string = 'gpt-3.5-turbo',
     options: CopilotChatOptions = {}
   ): AsyncIterable<string> {
-    this.checkParams({ messages, model });
+    this.checkParams({ messages, model, options });
     const result = await this.instance.chat.completions.create(
       {
         stream: true,
@@ -204,6 +233,9 @@ export class OpenAIProvider
         model: model,
         temperature: options.temperature || 0,
         max_tokens: options.maxTokens || 4096,
+        response_format: {
+          type: options.jsonMode ? 'json_object' : 'text',
+        },
         user: options.user,
       },
       {
@@ -231,7 +263,7 @@ export class OpenAIProvider
     options: CopilotEmbeddingOptions = { dimensions: DEFAULT_DIMENSIONS }
   ): Promise<number[][]> {
     messages = Array.isArray(messages) ? messages : [messages];
-    this.checkParams({ embeddings: messages, model });
+    this.checkParams({ embeddings: messages, model, options });
 
     const result = await this.instance.embeddings.create({
       model: model,

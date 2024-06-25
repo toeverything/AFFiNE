@@ -1,15 +1,32 @@
 import { CopilotChatOptions } from '../../types';
-import { NodeData, WorkflowResult } from '../types';
+import type { WorkflowNode } from '../node';
+import { WorkflowNodeData, WorkflowParams } from '../types';
 
-export enum WorkflowExecutorType {
+export enum NodeExecutorType {
   ChatText = 'ChatText',
+  ChatImage = 'ChatImage',
+  CheckJson = 'CheckJson',
+  CheckHtml = 'CheckHtml',
 }
 
-export abstract class WorkflowExecutor {
-  abstract get type(): WorkflowExecutorType;
+export enum NodeExecuteState {
+  StartRun,
+  EndRun,
+  Params,
+  Content,
+}
+
+export type NodeExecuteResult =
+  | { type: NodeExecuteState.StartRun; nodeId: string }
+  | { type: NodeExecuteState.EndRun; nextNode?: WorkflowNode }
+  | { type: NodeExecuteState.Params; params: WorkflowParams }
+  | { type: NodeExecuteState.Content; nodeId: string; content: string };
+
+export abstract class NodeExecutor {
+  abstract get type(): NodeExecutorType;
   abstract next(
-    data: NodeData,
-    params: Record<string, string | string[]>,
+    data: WorkflowNodeData,
+    params: WorkflowParams,
     options?: CopilotChatOptions
-  ): AsyncIterable<WorkflowResult>;
+  ): AsyncIterable<NodeExecuteResult>;
 }

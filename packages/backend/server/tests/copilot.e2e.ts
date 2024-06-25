@@ -29,6 +29,7 @@ import {
   signUp,
 } from './utils';
 import {
+  array2sse,
   chatWithImages,
   chatWithText,
   chatWithTextStream,
@@ -37,6 +38,7 @@ import {
   createCopilotSession,
   getHistories,
   MockCopilotTestProvider,
+  sse2array,
   textToEventStream,
 } from './utils/copilot';
 
@@ -227,9 +229,9 @@ test('should be able to chat with api', async t => {
 
   const ret3 = await chatWithImages(app, token, sessionId, messageId);
   t.is(
-    ret3,
+    array2sse(sse2array(ret3).filter(e => e.event !== 'event')),
     textToEventStream(
-      ['https://example.com/test.jpg', 'generate text to text stream'],
+      ['https://example.com/test.jpg', 'hello '],
       messageId,
       'attachment'
     ),
@@ -258,7 +260,7 @@ test('should be able to chat with api by workflow', async t => {
   );
   const ret = await chatWithWorkflow(app, token, sessionId, messageId);
   t.is(
-    ret,
+    array2sse(sse2array(ret).filter(e => e.event !== 'event')),
     textToEventStream(['generate text to text stream'], messageId),
     'should be able to chat with workflow'
   );

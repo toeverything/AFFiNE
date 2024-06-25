@@ -788,11 +788,13 @@ __metadata:
     dotenv: "npm:^16.4.5"
     dotenv-cli: "npm:^7.4.1"
     express: "npm:^4.19.2"
+    fast-xml-parser: "npm:^4.4.0"
     get-stream: "npm:^9.0.1"
     graphql: "npm:^16.8.1"
     graphql-scalars: "npm:^1.23.0"
     graphql-type-json: "npm:^0.3.2"
     graphql-upload: "npm:^16.0.2"
+    html-validate: "npm:^8.20.1"
     ioredis: "npm:^5.3.2"
     keyv: "npm:^4.5.4"
     lodash-es: "npm:^4.17.21"
@@ -2537,7 +2539,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@babel/code-frame@npm:^7.0.0, @babel/code-frame@npm:^7.10.4, @babel/code-frame@npm:^7.12.13, @babel/code-frame@npm:^7.24.7":
+"@babel/code-frame@npm:^7.0.0, @babel/code-frame@npm:^7.10.0, @babel/code-frame@npm:^7.10.4, @babel/code-frame@npm:^7.12.13, @babel/code-frame@npm:^7.16.0, @babel/code-frame@npm:^7.24.7":
   version: 7.24.7
   resolution: "@babel/code-frame@npm:7.24.7"
   dependencies:
@@ -7076,6 +7078,15 @@ __metadata:
   peerDependencies:
     react-hook-form: ^7.0.0
   checksum: 10/6dd1b7ad21ed2b171470740884e0b83982c79a0d4ceddabe60b616e53eeed2b5569cdba5e91ad844e379aeda5ffa835b0c2d2525d702fcd8b263c2194895f9b7
+  languageName: node
+  linkType: hard
+
+"@html-validate/stylish@npm:^4.1.0":
+  version: 4.2.0
+  resolution: "@html-validate/stylish@npm:4.2.0"
+  dependencies:
+    kleur: "npm:^4.0.0"
+  checksum: 10/563af4be8bdeeabbe5975d97128fbc56e153ddf70ed863c22d39c1b05b690efd74483bbcb1be6c4eb87f97f5c1d2b71b3025994546c5e0548f1f1ca620efc63f
   languageName: node
   linkType: hard
 
@@ -13492,6 +13503,18 @@ __metadata:
   version: 2.0.0
   resolution: "@sideway/pinpoint@npm:2.0.0"
   checksum: 10/1ed21800128b2b23280ba4c9db26c8ff6142b97a8683f17639fd7f2128aa09046461574800b30fb407afc5b663c2331795ccf3b654d4b38fa096e41a5c786bf8
+  languageName: node
+  linkType: hard
+
+"@sidvind/better-ajv-errors@npm:2.1.3":
+  version: 2.1.3
+  resolution: "@sidvind/better-ajv-errors@npm:2.1.3"
+  dependencies:
+    "@babel/code-frame": "npm:^7.16.0"
+    chalk: "npm:^4.1.0"
+  peerDependencies:
+    ajv: 4.11.8 - 8
+  checksum: 10/ca349eae7695eec9de50ed97f59f279c8a852d8f1efdc131c3fe41467c6f8665dda1dfbc505d9d47b8dd33981ad21b5639b0531539f2a23b3b5515f18d9c92fe
   languageName: node
   linkType: hard
 
@@ -21339,7 +21362,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"deepmerge@npm:^4.2.2":
+"deepmerge@npm:4.3.1, deepmerge@npm:^4.2.2":
   version: 4.3.1
   resolution: "deepmerge@npm:4.3.1"
   checksum: 10/058d9e1b0ff1a154468bf3837aea436abcfea1ba1d165ddaaf48ca93765fdd01a30d33c36173da8fbbed951dd0a267602bc782fe288b0fc4b7e1e7091afc4529
@@ -23797,7 +23820,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"fast-xml-parser@npm:^4.1.3":
+"fast-xml-parser@npm:^4.1.3, fast-xml-parser@npm:^4.4.0":
   version: 4.4.0
   resolution: "fast-xml-parser@npm:4.4.0"
   dependencies:
@@ -25698,6 +25721,41 @@ __metadata:
   languageName: node
   linkType: hard
 
+"html-validate@npm:^8.20.1":
+  version: 8.20.1
+  resolution: "html-validate@npm:8.20.1"
+  dependencies:
+    "@babel/code-frame": "npm:^7.10.0"
+    "@html-validate/stylish": "npm:^4.1.0"
+    "@sidvind/better-ajv-errors": "npm:2.1.3"
+    ajv: "npm:^8.0.0"
+    deepmerge: "npm:4.3.1"
+    glob: "npm:^10.0.0"
+    ignore: "npm:5.3.1"
+    kleur: "npm:^4.1.0"
+    minimist: "npm:^1.2.0"
+    prompts: "npm:^2.0.0"
+    semver: "npm:^7.0.0"
+  peerDependencies:
+    jest: ^27.1 || ^28.1.3 || ^29.0.3
+    jest-diff: ^27.1 || ^28.1.3 || ^29.0.3
+    jest-snapshot: ^27.1 || ^28.1.3 || ^29.0.3
+    vitest: ^0.34 || ^1
+  peerDependenciesMeta:
+    jest:
+      optional: true
+    jest-diff:
+      optional: true
+    jest-snapshot:
+      optional: true
+    vitest:
+      optional: true
+  bin:
+    html-validate: bin/html-validate.js
+  checksum: 10/87390d047e902babc0c5ccd79b6163ee9085a39d3756dd5c2cb7af23f470a765547530a2533d5008106ab23d7479a9f86db73cd4c133e98d959d02d7d0db4689
+  languageName: node
+  linkType: hard
+
 "html-void-elements@npm:^3.0.0":
   version: 3.0.0
   resolution: "html-void-elements@npm:3.0.0"
@@ -26070,7 +26128,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ignore@npm:^5.0.4, ignore@npm:^5.2.0, ignore@npm:^5.2.4, ignore@npm:^5.3.1":
+"ignore@npm:5.3.1, ignore@npm:^5.0.4, ignore@npm:^5.2.0, ignore@npm:^5.2.4, ignore@npm:^5.3.1":
   version: 5.3.1
   resolution: "ignore@npm:5.3.1"
   checksum: 10/0a884c2fbc8c316f0b9f92beaf84464253b73230a4d4d286697be45fca081199191ca33e1c2e82d9e5f851f5e9a48a78e25a35c951e7eb41e59f150db3530065
@@ -28177,7 +28235,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"kleur@npm:^4.0.3":
+"kleur@npm:^4.0.0, kleur@npm:^4.0.3, kleur@npm:^4.1.0":
   version: 4.1.5
   resolution: "kleur@npm:4.1.5"
   checksum: 10/44d84cc4eedd4311099402ef6d4acd9b2d16e08e499d6ef3bb92389bd4692d7ef09e35248c26e27f98acac532122acb12a1bfee645994ae3af4f0a37996da7df
@@ -33312,7 +33370,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"prompts@npm:^2.0.1, prompts@npm:^2.4.0, prompts@npm:^2.4.1, prompts@npm:^2.4.2, prompts@npm:~2.4.2":
+"prompts@npm:^2.0.0, prompts@npm:^2.0.1, prompts@npm:^2.4.0, prompts@npm:^2.4.1, prompts@npm:^2.4.2, prompts@npm:~2.4.2":
   version: 2.4.2
   resolution: "prompts@npm:2.4.2"
   dependencies:
@@ -35119,7 +35177,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"semver@npm:^7.1.1, semver@npm:^7.1.3, semver@npm:^7.2.1, semver@npm:^7.3.2, semver@npm:^7.3.5, semver@npm:^7.3.6, semver@npm:^7.3.7, semver@npm:^7.3.8, semver@npm:^7.5.2, semver@npm:^7.5.3, semver@npm:^7.5.4, semver@npm:^7.6.0":
+"semver@npm:^7.0.0, semver@npm:^7.1.1, semver@npm:^7.1.3, semver@npm:^7.2.1, semver@npm:^7.3.2, semver@npm:^7.3.5, semver@npm:^7.3.6, semver@npm:^7.3.7, semver@npm:^7.3.8, semver@npm:^7.5.2, semver@npm:^7.5.3, semver@npm:^7.5.4, semver@npm:^7.6.0":
   version: 7.6.2
   resolution: "semver@npm:7.6.2"
   bin:
