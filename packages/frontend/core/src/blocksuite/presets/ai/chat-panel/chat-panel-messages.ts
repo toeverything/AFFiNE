@@ -27,7 +27,6 @@ import {
 } from '@blocksuite/blocks';
 import { css, html, nothing, type PropertyValues } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
-import { cache } from 'lit/directives/cache.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
@@ -277,16 +276,11 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
                 </div>
                 ${this._renderAIOnboarding()}
               </div>
-              ${cache(
-                this.showChatCards
-                  ? html`
-                      <chat-cards
-                        .updateContext=${this.updateContext}
-                        .host=${this.host}
-                      ></chat-cards>
-                    `
-                  : nothing
-              )}`
+              <chat-cards
+                .updateContext=${this.updateContext}
+                .host=${this.host}
+                ?data-show=${this.showChatCards}
+              ></chat-cards>`
           : repeat(filteredItems, (item, index) => {
               const isLast = index === filteredItems.length - 1;
               return html`<div class="message">

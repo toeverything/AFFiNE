@@ -2,6 +2,7 @@ import type { EditorHost } from '@blocksuite/block-std';
 import { WithDisposable } from '@blocksuite/block-std';
 import {
   type ImageBlockModel,
+  isInsideEdgelessEditor,
   type NoteBlockModel,
   NoteDisplayMode,
 } from '@blocksuite/blocks';
@@ -97,9 +98,13 @@ const MAX_CARDS = 3;
 export class ChatCards extends WithDisposable(LitElement) {
   static override styles = css`
     :host {
-      display: flex;
+      display: none;
       flex-direction: column;
       gap: 12px;
+    }
+
+    :host([data-show]) {
+      display: flex;
     }
 
     ${cardsStyles}
@@ -361,10 +366,10 @@ export class ChatCards extends WithDisposable(LitElement) {
     }
   }
 
-  private async _extractOnEdgeless() {
-    if (!this.host.closest('edgeless-editor')) return;
+  private async _extractOnEdgeless(host: EditorHost) {
+    if (!isInsideEdgelessEditor(host)) return;
 
-    const canvas = await selectedToCanvas(this.host);
+    const canvas = await selectedToCanvas(host);
     if (!canvas) return;
 
     const blob: Blob | null = await new Promise(resolve =>
@@ -423,13 +428,13 @@ export class ChatCards extends WithDisposable(LitElement) {
     };
   }
 
-  private readonly _appendCardWithParams = async ({
-    // host: _,
+  private async _appendCardWithParams({
+    host,
     mode,
     autoSelect,
-  }: AIChatParams) => {
+  }: AIChatParams) {
     if (mode === 'edgeless') {
-      await this._extractOnEdgeless();
+      await this._extractOnEdgeless(host);
     } else {
       await this._extract();
     }
@@ -444,7 +449,7 @@ export class ChatCards extends WithDisposable(LitElement) {
 
       await this._selectCard(card);
     }
-  };
+  }
 
   protected override async willUpdate(changedProperties: PropertyValues) {
     if (changedProperties.has('temporaryParams') && this.temporaryParams) {
