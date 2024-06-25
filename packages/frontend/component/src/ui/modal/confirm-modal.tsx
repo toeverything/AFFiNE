@@ -35,6 +35,7 @@ export const ConfirmModal = ({
       console.error(err);
     });
   }, [onConfirm]);
+
   return (
     <Modal
       contentOptions={{
@@ -64,7 +65,10 @@ export const ConfirmModal = ({
             {cancelText}
           </Button>
         </DialogTrigger>
-        <Button onClick={onConfirmClick} {...confirmButtonOptions}></Button>
+        <Button 
+          onClick={onConfirmClick} 
+          autoFocus {...confirmButtonOptions}
+        ></Button>
       </div>
     </Modal>
   );
@@ -142,7 +146,7 @@ export const ConfirmModalProvider = ({ children }: PropsWithChildren) => {
       value={{ openConfirmModal, closeConfirmModal, modalProps }}
     >
       {children}
-      {/* TODO(@catsjuice): multi-instance support(unnecessary for now) */}
+      {/* TODO: multi-instance support(unnecessary for now) */}
       <ConfirmModal {...modalProps} onOpenChange={onOpenChange} />
     </ConfirmModalContext.Provider>
   );
@@ -160,3 +164,4 @@ export const useConfirmModal = () => {
     closeConfirmModal: context.closeConfirmModal,
   };
 };
+
