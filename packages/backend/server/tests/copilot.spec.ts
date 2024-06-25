@@ -3,6 +3,7 @@
 import { TestingModule } from '@nestjs/testing';
 import type { TestFn } from 'ava';
 import ava from 'ava';
+import Sinon from 'sinon';
 
 import { AuthService } from '../src/core/auth';
 import { QuotaModule } from '../src/core/quota';
@@ -21,7 +22,20 @@ import {
   CopilotCapability,
   CopilotProviderType,
 } from '../src/plugins/copilot/types';
-import { CopilotWorkflowService } from '../src/plugins/copilot/workflow';
+import {
+  CopilotChatTextExecutor,
+  CopilotWorkflowService,
+  WorkflowNodeType,
+} from '../src/plugins/copilot/workflow';
+import {
+  getWorkflowExecutor,
+  WorkflowExecutorType,
+} from '../src/plugins/copilot/workflow/executor';
+import { WorkflowGraphList } from '../src/plugins/copilot/workflow/graph';
+import {
+  NodeData,
+  WorkflowResultType,
+} from '../src/plugins/copilot/workflow/types';
 import { createTestingModule } from './utils';
 import { MockCopilotTestProvider } from './utils/copilot';
 
@@ -32,6 +46,7 @@ const test = ava as TestFn<{
   provider: CopilotProviderService;
   session: ChatSessionService;
   workflow: CopilotWorkflowService;
+  textWorkflowExecutor: CopilotChatTextExecutor;
 }>;
 
 test.beforeEach(async t => {
@@ -59,6 +74,7 @@ test.beforeEach(async t => {
   const provider = module.get(CopilotProviderService);
   const session = module.get(ChatSessionService);
   const workflow = module.get(CopilotWorkflowService);
+  const textWorkflowExecutor = module.get(CopilotChatTextExecutor);
 
   t.context.module = module;
   t.context.auth = auth;
@@ -66,6 +82,7 @@ test.beforeEach(async t => {
   t.context.provider = provider;
   t.context.session = session;
   t.context.workflow = workflow;
+  t.context.textWorkflowExecutor = textWorkflowExecutor;
 });
 
 test.afterEach.always(async t => {
@@ -541,10 +558,14 @@ test('should be able to register test provider', async t => {
   await assertProvider(CopilotCapability.ImageToText);
 });
 
+// ==================== workflow ====================
+
 // this test used to preview the final result of the workflow
 // for the functional test of the API itself, refer to the follow tests
 test.skip('should be able to preview workflow', async t => {
-  const { prompt, workflow } = t.context;
+  const { prompt, workflow, textWorkflowExecutor } = t.context;
+
+  textWorkflowExecutor.register();
   registerCopilotProvider(OpenAIProvider);
 
   for (const p of prompts) {
@@ -554,13 +575,174 @@ test.skip('should be able to preview workflow', async t => {
   let result = '';
   for await (const ret of workflow.runGraph(
     { content: 'apple company' },
-    'workflow:presentation'
+    'presentation'
   )) {
     result += ret;
     console.log('stream result:', ret);
   }
   console.log('final stream result:', result);
+  t.truthy(result, 'should return result');
 
   unregisterCopilotProvider(OpenAIProvider.type);
-  t.pass();
+});
+
+test('should be able to run workflow', async t => {
+  const { prompt, workflow, textWorkflowExecutor } = t.context;
+
+  textWorkflowExecutor.register();
+  unregisterCopilotProvider(OpenAIProvider.type);
+  registerCopilotProvider(MockCopilotTestProvider);
+
+  const executor = Sinon.spy(textWorkflowExecutor, 'next');
+
+  for (const p of prompts) {
+    await prompt.set(p.name, p.model, p.messages);
+  }
+
+  const graphName = 'presentation';
+  const graph = WorkflowGraphList.find(g => g.name === graphName);
+  t.truthy(graph, `graph ${graphName} not defined`);
+
+  // todo: use Array.fromAsync
+  let result = '';
+  for await (const ret of workflow.runGraph(
+    { content: 'apple company' },
+    graphName
+  )) {
+    result += ret;
+  }
+  t.assert(result, 'generate text to text stream');
+
+  // presentation workflow has condition node, it will always false
+  // so the latest 2 nodes will not be executed
+  const callCount = graph!.graph.length - 3;
+  t.is(
+    executor.callCount,
+    callCount,
+    `should call executor ${callCount} times`
+  );
+
+  for (const [idx, node] of graph!.graph
+    .filter(g => g.nodeType === WorkflowNodeType.Basic)
+    .entries()) {
+    const params = executor.getCall(idx);
+
+    if (idx < callCount) {
+      t.is(params.args[0].id, node.id, 'graph id should correct');
+
+      t.is(
+        params.args[1].content,
+        'generate text to text stream',
+        'graph params should correct'
+      );
+      t.is(
+        params.args[1].language,
+        'generate text to text',
+        'graph params should correct'
+      );
+    }
+  }
+
+  unregisterCopilotProvider(MockCopilotTestProvider.type);
+  registerCopilotProvider(OpenAIProvider);
+});
+
+// ==================== workflow executor ====================
+
+const wrapAsyncIter = async <T>(iter: AsyncIterable<T>) => {
+  const result: T[] = [];
+  for await (const r of iter) {
+    result.push(r);
+  }
+  return result;
+};
+
+test('should be able to run executor', async t => {
+  const { textWorkflowExecutor } = t.context;
+
+  textWorkflowExecutor.register();
+  const executor = getWorkflowExecutor(textWorkflowExecutor.type);
+  t.is(executor.type, textWorkflowExecutor.type, 'should get executor');
+
+  await t.throwsAsync(
+    wrapAsyncIter(
+      executor.next(
+        { id: 'nope', name: 'nope', nodeType: WorkflowNodeType.Nope },
+        {}
+      )
+    ),
+    { instanceOf: Error },
+    'should throw error if run non basic node'
+  );
+});
+
+test('should be able to run text executor', async t => {
+  const { textWorkflowExecutor, provider, prompt } = t.context;
+
+  textWorkflowExecutor.register();
+  const executor = getWorkflowExecutor(textWorkflowExecutor.type);
+  unregisterCopilotProvider(OpenAIProvider.type);
+  registerCopilotProvider(MockCopilotTestProvider);
+  await prompt.set('test', 'test', [
+    { role: 'system', content: 'hello {{word}}' },
+  ]);
+  // mock provider
+  const testProvider =
+    (await provider.getProviderByModel<CopilotCapability.TextToText>('test'))!;
+  const text = Sinon.spy(testProvider, 'generateText');
+  const textStream = Sinon.spy(testProvider, 'generateTextStream');
+
+  const nodeData: NodeData = {
+    id: 'basic',
+    name: 'basic',
+    nodeType: WorkflowNodeType.Basic,
+    promptName: 'test',
+    type: WorkflowExecutorType.ChatText,
+  };
+
+  // text
+  {
+    const ret = await wrapAsyncIter(
+      executor.next({ ...nodeData, paramKey: 'key' }, { word: 'world' })
+    );
+
+    t.deepEqual(ret, [
+      {
+        type: WorkflowResultType.Params,
+        params: { key: 'generate text to text' },
+      },
+    ]);
+    t.deepEqual(
+      text.lastCall.args[0][0].content,
+      'hello world',
+      'should render the prompt with params'
+    );
+  }
+
+  // text stream with attachment
+  {
+    const ret = await wrapAsyncIter(
+      executor.next(nodeData, {
+        attachments: ['https://affine.pro/example.jpg'],
+      })
+    );
+
+    t.deepEqual(
+      ret,
+      Array.from('generate text to text stream').map(t => ({
+        content: t,
+        nodeId: 'basic',
+        type: WorkflowResultType.Content,
+      }))
+    );
+    t.deepEqual(
+      textStream.lastCall.args[0][0].params?.attachments,
+      ['https://affine.pro/example.jpg'],
+      'should pass attachments to provider'
+    );
+  }
+
+  Sinon.restore();
+  unregisterCopilotProvider(MockCopilotTestProvider.type);
+  registerCopilotProvider(OpenAIProvider);
 });

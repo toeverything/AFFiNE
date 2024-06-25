@@ -1,12 +1,10 @@
 import { Logger } from '@nestjs/common';
 
-import { PromptService } from '../prompt';
-import { CopilotProviderService } from '../providers';
 import { CopilotChatOptions } from '../types';
 import { WorkflowNode } from './node';
 import {
-  WorkflowGraph,
-  WorkflowNodeState,
+  type WorkflowGraphInstances,
+  type WorkflowNodeState,
   WorkflowNodeType,
   WorkflowResultType,
 } from './types';
@@ -15,11 +13,7 @@ export class CopilotWorkflow {
   private readonly logger = new Logger(CopilotWorkflow.name);
   private readonly rootNode: WorkflowNode;
 
-  constructor(
-    private readonly prompt: PromptService,
-    private readonly provider: CopilotProviderService,
-    workflow: WorkflowGraph
-  ) {
+  constructor(workflow: WorkflowGraphInstances) {
     const startNode = workflow.get('start');
     if (!startNode) {
       throw new Error(`No start node found in graph`);
@@ -38,8 +32,6 @@ export class CopilotWorkflow {
       let result = '';
       let nextNode: WorkflowNode | undefined;
 
-      await currentNode.initNode(this.prompt, this.provider);
-
       for await (const ret of currentNode.next(lastParams, options)) {
         if (ret.type === WorkflowResultType.EndRun) {
           nextNode = ret.nextNode;
@@ -53,8 +45,8 @@ export class CopilotWorkflow {
             );
           }
         } else if (ret.type === WorkflowResultType.Content) {
-          if (ret.passthrough) {
-            // pass through content as a stream response
+          if (!currentNode.hasEdges) {
+            // pass through content as a stream response if node is end node
             yield ret.content;
           } else {
             result += ret.content;
@@ -70,7 +62,9 @@ export class CopilotWorkflow {
       }
 
       currentNode = nextNode;
-      if (result) lastParams.content = result;
+      if (result && lastParams.content !== result) {
+        lastParams.content = result;
+      }
     }
   }
 }

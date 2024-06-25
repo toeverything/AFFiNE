@@ -1,31 +1,26 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { PromptService } from '../prompt';
-import { CopilotProviderService } from '../providers';
 import { CopilotChatOptions } from '../types';
-import { WorkflowGraphs } from './graph';
+import { WorkflowGraphList } from './graph';
 import { WorkflowNode } from './node';
-import { WorkflowGraph, WorkflowGraphList } from './types';
+import type { WorkflowGraph, WorkflowGraphInstances } from './types';
 import { CopilotWorkflow } from './workflow';
 
 @Injectable()
 export class CopilotWorkflowService {
   private readonly logger = new Logger(CopilotWorkflowService.name);
-  constructor(
-    private readonly prompt: PromptService,
-    private readonly provider: CopilotProviderService
-  ) {}
+  constructor() {}
 
-  private initWorkflow({ name, graph }: WorkflowGraphList[number]) {
-    const workflow = new Map();
-    for (const nodeData of graph) {
+  private initWorkflow(graph: WorkflowGraph) {
+    const workflow = new Map<string, WorkflowNode>();
+    for (const nodeData of graph.graph) {
       const { edges: _, ...data } = nodeData;
-      const node = new WorkflowNode(data);
+      const node = new WorkflowNode(graph, data);
       workflow.set(node.id, node);
     }
 
     // add edges
-    for (const nodeData of graph) {
+    for (const nodeData of graph.graph) {
       const node = workflow.get(nodeData.id);
       if (!node) {
         this.logger.error(
@@ -47,9 +42,11 @@ export class CopilotWorkflowService {
     return workflow;
   }
 
-  // TODO(@darksky): get workflow from database
-  private async getWorkflow(graphName: string): Promise<WorkflowGraph> {
-    const graph = WorkflowGraphs.find(g => g.name === graphName);
+  // TODO(@darkskygit): get workflow from database
+  private async getWorkflow(
+    graphName: string
+  ): Promise<WorkflowGraphInstances> {
+    const graph = WorkflowGraphList.find(g => g.name === graphName);
     if (!graph) {
       throw new Error(`Graph ${graphName} not found`);
     }
@@ -63,14 +60,13 @@ export class CopilotWorkflowService {
     options?: CopilotChatOptions
   ): AsyncIterable<string> {
     const workflowGraph = await this.getWorkflow(graphName);
-    const workflow = new CopilotWorkflow(
-      this.prompt,
-      this.provider,
-      workflowGraph
-    );
+    const workflow = new CopilotWorkflow(workflowGraph);
 
     for await (const result of workflow.runGraph(params, options)) {
       yield result;
     }
   }
 }
+
+export { CopilotChatTextExecutor, CopilotWorkflowExecutors } from './executor';
+export { WorkflowNodeType } from './types';

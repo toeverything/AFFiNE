@@ -1,21 +1,73 @@
-import { ChatPrompt, PromptService } from '../prompt';
-import { CopilotProviderService } from '../providers';
-import { CopilotAllProvider, CopilotChatOptions } from '../types';
-import {
+import path, { dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+import { Logger } from '@nestjs/common';
+import Piscina from 'piscina';
+
+import { CopilotChatOptions } from '../types';
+import { getWorkflowExecutor, WorkflowExecutor } from './executor';
+import type {
   NodeData,
+  WorkflowGraph,
   WorkflowNodeState,
-  WorkflowNodeType,
   WorkflowResult,
-  WorkflowResultType,
 } from './types';
+import { WorkflowNodeType, WorkflowResultType } from './types';
 
 export class WorkflowNode {
+  private readonly logger = new Logger(WorkflowNode.name);
   private readonly edges: WorkflowNode[] = [];
   private readonly parents: WorkflowNode[] = [];
-  private prompt: ChatPrompt | null = null;
-  private provider: CopilotAllProvider | null = null;
+  private readonly executor: WorkflowExecutor | null = null;
+  private readonly condition:
+    | ((params: WorkflowNodeState) => Promise<any>)
+    | null = null;
 
-  constructor(private readonly data: NodeData) {}
+  constructor(
+    graph: WorkflowGraph,
+    private readonly data: NodeData
+  ) {
+    if (data.nodeType === WorkflowNodeType.Basic) {
+      this.executor = getWorkflowExecutor(data.type);
+    } else if (data.nodeType === WorkflowNodeType.Decision) {
+      // prepare decision condition, reused in each run
+      const iife = `(${data.condition})(nodeIds, params)`;
+      // only eval the condition in worker if graph has been modified
+      if (graph.modified) {
+        const worker = new Piscina({
+          filename: path.resolve(
+            dirname(fileURLToPath(import.meta.url)),
+            'worker.mjs'
+          ),
+          minThreads: 2,
+          // empty envs from parent process
+          env: {},
+          argv: [],
+          execArgv: [],
+        });
+        this.condition = (params: WorkflowNodeState) =>
+          worker.run({
+            iife,
+            nodeIds: this.edges.map(node => node.id),
+            params,
+          });
+      } else {
+        const func =
+          typeof data.condition === 'function'
+            ? data.condition
+            : new Function(
+                'nodeIds',
+                'params',
+                `(${data.condition})(nodeIds, params)`
+              );
+        this.condition = (params: WorkflowNodeState) =>
+          func(
+            this.edges.map(node => node.id),
+            params
+          );
+      }
+    }
+  }
 
   get id(): string {
     return this.data.id;
@@ -33,6 +85,11 @@ export class WorkflowNode {
     return this.parents;
   }
 
+  // if is the end of the workflow, pass through the content to stream response
+  get hasEdges(): boolean {
+    return !!this.edges.length;
+  }
+
   private set parent(node: WorkflowNode) {
     if (!this.parents.includes(node)) {
       this.parents.push(node);
@@ -44,7 +101,10 @@ export class WorkflowNode {
       if (this.edges.length > 0) {
         throw new Error(`Basic block can only have one edge`);
       }
-    } else if (!this.data.condition) {
+    } else if (
+      this.data.nodeType === WorkflowNodeType.Decision &&
+      !this.data.condition
+    ) {
       throw new Error(`Decision block must have a condition`);
     }
     node.parent = this;
@@ -52,84 +112,34 @@ export class WorkflowNode {
     return this.edges.length;
   }
 
-  async initNode(prompt: PromptService, provider: CopilotProviderService) {
-    if (this.prompt && this.provider) return;
-
-    if (this.data.nodeType === WorkflowNodeType.Basic) {
-      this.prompt = await prompt.get(this.data.promptName);
-      if (!this.prompt) {
-        throw new Error(
-          `Prompt ${this.data.promptName} not found when running workflow node ${this.name}`
-        );
-      }
-      this.provider = await provider.getProviderByModel(this.prompt.model);
-      if (!this.provider) {
-        throw new Error(
-          `Provider not found for model ${this.prompt.model} when running workflow node ${this.name}`
-        );
-      }
-    }
-  }
-
   private async evaluateCondition(
-    _condition?: string
+    params: WorkflowNodeState
   ): Promise<string | undefined> {
-    // TODO(@darksky): evaluate condition to impl decision block
-    return this.edges[0]?.id;
-  }
-
-  private getStreamProvider() {
-    if (this.data.nodeType === WorkflowNodeType.Basic && this.provider) {
-      if (
-        this.data.type === 'text' &&
-        'generateText' in this.provider &&
-        !this.data.paramKey
-      ) {
-        return this.provider.generateTextStream.bind(this.provider);
-      } else if (
-        this.data.type === 'image' &&
-        'generateImages' in this.provider &&
-        !this.data.paramKey
-      ) {
-        return this.provider.generateImagesStream.bind(this.provider);
-      }
+    // early return if no edges
+    if (this.edges.length === 0) return undefined;
+    try {
+      const result = await this.condition?.(params);
+      if (typeof result === 'string') return result;
+      // choose default edge if condition falsy
+      return this.edges[0].id;
+    } catch (e) {
+      this.logger.error(
+        `Failed to evaluate condition for node ${this.name}: ${e}`
+      );
+      throw e;
     }
-    throw new Error(`Stream Provider not found for node ${this.name}`);
-  }
-
-  private getProvider() {
-    if (this.data.nodeType === WorkflowNodeType.Basic && this.provider) {
-      if (
-        this.data.type === 'text' &&
-        'generateText' in this.provider &&
-        this.data.paramKey
-      ) {
-        return this.provider.generateText.bind(this.provider);
-      } else if (
-        this.data.type === 'image' &&
-        'generateImages' in this.provider &&
-        this.data.paramKey
-      ) {
-        return this.provider.generateImages.bind(this.provider);
-      }
-    }
-    throw new Error(`Provider not found for node ${this.name}`);
   }
 
   async *next(
     params: WorkflowNodeState,
     options?: CopilotChatOptions
   ): AsyncIterable<WorkflowResult> {
-    if (!this.prompt || !this.provider) {
-      throw new Error(`Node ${this.name} not initialized`);
-    }
-
     yield { type: WorkflowResultType.StartRun, nodeId: this.id };
 
     // choose next node in graph
     let nextNode: WorkflowNode | undefined = this.edges[0];
     if (this.data.nodeType === WorkflowNodeType.Decision) {
-      const nextNodeId = await this.evaluateCondition(this.data.condition);
+      const nextNodeId = await this.evaluateCondition(params);
       // return empty to choose default edge
       if (nextNodeId) {
         nextNode = this.edges.find(node => node.id === nextNodeId);
@@ -137,37 +147,18 @@ export class WorkflowNode {
           throw new Error(`No edge found for condition ${this.data.condition}`);
         }
       }
-    } else {
-      const finalMessage = this.prompt.finish(params);
-      if (this.data.paramKey) {
-        const provider = this.getProvider();
-        // update params with custom key
-        yield {
-          type: WorkflowResultType.Params,
-          params: {
-            [this.data.paramKey]: await provider(
-              finalMessage,
-              this.prompt.model,
-              options
-            ),
-          },
-        };
-      } else {
-        const provider = this.getStreamProvider();
-        for await (const content of provider(
-          finalMessage,
-          this.prompt.model,
-          options
-        )) {
-          yield {
-            type: WorkflowResultType.Content,
-            nodeId: this.id,
-            content,
-            // pass through content as a stream response if no next node
-            passthrough: !nextNode,
-          };
-        }
+    } else if (this.data.nodeType === WorkflowNodeType.Basic) {
+      if (!this.executor) {
+        throw new Error(`Node ${this.name} not initialized`);
       }
+
+      yield* this.executor.next(this.data, params, options);
+    } else {
+      yield {
+        type: WorkflowResultType.Content,
+        nodeId: this.id,
+        content: params.content,
+      };
     }
 
     yield { type: WorkflowResultType.EndRun, nextNode };

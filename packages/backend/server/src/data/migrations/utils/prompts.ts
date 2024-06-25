@@ -514,8 +514,8 @@ content: {{content}}`,
     ],
   },
   {
-    name: 'workflow:presentation:step4',
-    action: 'workflow:presentation:step4',
+    name: 'workflow:presentation:step5',
+    action: 'workflow:presentation:step5',
     model: 'gpt-4o',
     messages: [
       {
