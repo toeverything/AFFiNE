@@ -5,6 +5,7 @@ import type {
 } from '@blocksuite/block-std';
 import {
   defaultImageProxyMiddleware,
+  embedSyncedDocMiddleware,
   MarkdownAdapter,
   MixTextAdapter,
   pasteMiddleware,
@@ -76,7 +77,7 @@ export async function getContentFromSlice(
 ) {
   const job = new Job({
     collection: host.std.doc.collection,
-    middlewares: [titleMiddleware],
+    middlewares: [titleMiddleware, embedSyncedDocMiddleware('content')],
   });
   const snapshot = await job.sliceToSnapshot(slice);
   processTextInSnapshot(snapshot, host);
