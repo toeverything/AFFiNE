@@ -44,7 +44,7 @@ export function pageReferenceRenderer({
   let title =
     referencedPage?.title ?? t['com.affine.editor.reference-not-found']();
   let icon =
-    docMode === 'page' ? (
+    docMode === 'page' || docMode === null ? (
       <LinkedPageIcon className={styles.pageReferenceIcon} />
     ) : (
       <LinkedEdgelessIcon className={styles.pageReferenceIcon} />
