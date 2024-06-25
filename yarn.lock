@@ -226,7 +226,7 @@ __metadata:
     "@affine/env": "workspace:*"
     "@affine/templates": "workspace:*"
     "@aws-sdk/client-s3": "npm:3.592.0"
-    "@blocksuite/presets": "npm:0.15.0-canary-202406211230-ebc0dfb"
+    "@blocksuite/presets": "npm:0.15.0-canary-202406241511-430be2a"
     "@clack/core": "npm:^0.3.4"
     "@clack/prompts": "npm:^0.7.0"
     "@magic-works/i18n-codegen": "npm:^0.6.0"
@@ -282,12 +282,12 @@ __metadata:
     "@affine/electron-api": "workspace:*"
     "@affine/graphql": "workspace:*"
     "@affine/i18n": "workspace:*"
-    "@blocksuite/block-std": "npm:0.15.0-canary-202406211230-ebc0dfb"
-    "@blocksuite/blocks": "npm:0.15.0-canary-202406211230-ebc0dfb"
-    "@blocksuite/global": "npm:0.15.0-canary-202406211230-ebc0dfb"
+    "@blocksuite/block-std": "npm:0.15.0-canary-202406241511-430be2a"
+    "@blocksuite/blocks": "npm:0.15.0-canary-202406241511-430be2a"
+    "@blocksuite/global": "npm:0.15.0-canary-202406241511-430be2a"
     "@blocksuite/icons": "npm:2.1.58"
-    "@blocksuite/presets": "npm:0.15.0-canary-202406211230-ebc0dfb"
-    "@blocksuite/store": "npm:0.15.0-canary-202406211230-ebc0dfb"
+    "@blocksuite/presets": "npm:0.15.0-canary-202406241511-430be2a"
+    "@blocksuite/store": "npm:0.15.0-canary-202406241511-430be2a"
     "@dnd-kit/core": "npm:^6.1.0"
     "@dnd-kit/modifiers": "npm:^7.0.0"
     "@dnd-kit/sortable": "npm:^8.0.0"
@@ -383,13 +383,13 @@ __metadata:
     "@affine/graphql": "workspace:*"
     "@affine/i18n": "workspace:*"
     "@affine/templates": "workspace:*"
-    "@blocksuite/block-std": "npm:0.15.0-canary-202406211230-ebc0dfb"
-    "@blocksuite/blocks": "npm:0.15.0-canary-202406211230-ebc0dfb"
-    "@blocksuite/global": "npm:0.15.0-canary-202406211230-ebc0dfb"
+    "@blocksuite/block-std": "npm:0.15.0-canary-202406241511-430be2a"
+    "@blocksuite/blocks": "npm:0.15.0-canary-202406241511-430be2a"
+    "@blocksuite/global": "npm:0.15.0-canary-202406241511-430be2a"
     "@blocksuite/icons": "npm:2.1.58"
-    "@blocksuite/inline": "npm:0.15.0-canary-202406211230-ebc0dfb"
-    "@blocksuite/presets": "npm:0.15.0-canary-202406211230-ebc0dfb"
-    "@blocksuite/store": "npm:0.15.0-canary-202406211230-ebc0dfb"
+    "@blocksuite/inline": "npm:0.15.0-canary-202406241511-430be2a"
+    "@blocksuite/presets": "npm:0.15.0-canary-202406241511-430be2a"
+    "@blocksuite/store": "npm:0.15.0-canary-202406241511-430be2a"
     "@dnd-kit/core": "npm:^6.1.0"
     "@dnd-kit/modifiers": "npm:^7.0.0"
     "@dnd-kit/sortable": "npm:^8.0.0"
@@ -514,10 +514,10 @@ __metadata:
     "@affine/env": "workspace:*"
     "@affine/i18n": "workspace:*"
     "@affine/native": "workspace:*"
-    "@blocksuite/block-std": "npm:0.15.0-canary-202406211230-ebc0dfb"
-    "@blocksuite/blocks": "npm:0.15.0-canary-202406211230-ebc0dfb"
-    "@blocksuite/presets": "npm:0.15.0-canary-202406211230-ebc0dfb"
-    "@blocksuite/store": "npm:0.15.0-canary-202406211230-ebc0dfb"
+    "@blocksuite/block-std": "npm:0.15.0-canary-202406241511-430be2a"
+    "@blocksuite/blocks": "npm:0.15.0-canary-202406241511-430be2a"
+    "@blocksuite/presets": "npm:0.15.0-canary-202406241511-430be2a"
+    "@blocksuite/store": "npm:0.15.0-canary-202406241511-430be2a"
     "@electron-forge/cli": "npm:^7.3.0"
     "@electron-forge/core": "npm:^7.3.0"
     "@electron-forge/core-utils": "npm:^7.3.0"
@@ -573,8 +573,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@affine/env@workspace:packages/common/env"
   dependencies:
-    "@blocksuite/global": "npm:0.15.0-canary-202406211230-ebc0dfb"
-    "@blocksuite/store": "npm:0.15.0-canary-202406211230-ebc0dfb"
+    "@blocksuite/global": "npm:0.15.0-canary-202406241511-430be2a"
+    "@blocksuite/store": "npm:0.15.0-canary-202406241511-430be2a"
     lit: "npm:^3.1.2"
     react: "npm:18.3.1"
     react-dom: "npm:18.3.1"
@@ -4101,30 +4101,30 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@blocksuite/block-std@npm:0.15.0-canary-202406211230-ebc0dfb":
-  version: 0.15.0-canary-202406211230-ebc0dfb
-  resolution: "@blocksuite/block-std@npm:0.15.0-canary-202406211230-ebc0dfb"
+"@blocksuite/block-std@npm:0.15.0-canary-202406241511-430be2a":
+  version: 0.15.0-canary-202406241511-430be2a
+  resolution: "@blocksuite/block-std@npm:0.15.0-canary-202406241511-430be2a"
   dependencies:
-    "@blocksuite/global": "npm:0.15.0-canary-202406211230-ebc0dfb"
+    "@blocksuite/global": "npm:0.15.0-canary-202406241511-430be2a"
     lit: "npm:^3.1.3"
     lz-string: "npm:^1.5.0"
     w3c-keyname: "npm:^2.2.8"
     zod: "npm:^3.23.8"
   peerDependencies:
-    "@blocksuite/inline": 0.15.0-canary-202406211230-ebc0dfb
-    "@blocksuite/store": 0.15.0-canary-202406211230-ebc0dfb
-  checksum: 10/87a4fe25a7616dd44f85c5a94f644f6abdabf63c1dfae2377eac134aa4f3fc32adf4ad0378455317622e351290e75fba12310abef46dfa17ef20e1400ef88744
+    "@blocksuite/inline": 0.15.0-canary-202406241511-430be2a
+    "@blocksuite/store": 0.15.0-canary-202406241511-430be2a
+  checksum: 10/208236623f1610bc8bc29de44be1a38c2a8a8247b4ec142feaa8ff6940c43fbe9a71a3ddd295a97f4eb65b850fc7df8f1e3714c7741a717d94524319f56823f1
   languageName: node
   linkType: hard
 
-"@blocksuite/blocks@npm:0.15.0-canary-202406211230-ebc0dfb":
-  version: 0.15.0-canary-202406211230-ebc0dfb
-  resolution: "@blocksuite/blocks@npm:0.15.0-canary-202406211230-ebc0dfb"
+"@blocksuite/blocks@npm:0.15.0-canary-202406241511-430be2a":
+  version: 0.15.0-canary-202406241511-430be2a
+  resolution: "@blocksuite/blocks@npm:0.15.0-canary-202406241511-430be2a"
   dependencies:
-    "@blocksuite/block-std": "npm:0.15.0-canary-202406211230-ebc0dfb"
-    "@blocksuite/global": "npm:0.15.0-canary-202406211230-ebc0dfb"
-    "@blocksuite/inline": "npm:0.15.0-canary-202406211230-ebc0dfb"
-    "@blocksuite/store": "npm:0.15.0-canary-202406211230-ebc0dfb"
+    "@blocksuite/block-std": "npm:0.15.0-canary-202406241511-430be2a"
+    "@blocksuite/global": "npm:0.15.0-canary-202406241511-430be2a"
+    "@blocksuite/inline": "npm:0.15.0-canary-202406241511-430be2a"
+    "@blocksuite/store": "npm:0.15.0-canary-202406241511-430be2a"
     "@dotlottie/player-component": "npm:^2.7.12"
     "@floating-ui/dom": "npm:^1.6.5"
     "@lit/context": "npm:^1.1.1"
@@ -4161,17 +4161,17 @@ __metadata:
     sortablejs: "npm:^1.15.2"
     unified: "npm:^11.0.4"
     zod: "npm:^3.23.8"
-  checksum: 10/898e03563afc8521d00e240a264ba34167f0deeb61996d3aacae841842ba8010a05c4cf15055abcccc36db00e35dd7df1f4441e83af7e2b36a1f156f955d9b88
+  checksum: 10/e6106dfd17dc29b89743c4922d4918e640a7a759f5e6438fdd957e70bc16591c6db8d1dbd9589897d873a77dcf1b1e68f20ad143ad5c1401714e27fd71aadebf
   languageName: node
   linkType: hard
 
-"@blocksuite/global@npm:0.15.0-canary-202406211230-ebc0dfb":
-  version: 0.15.0-canary-202406211230-ebc0dfb
-  resolution: "@blocksuite/global@npm:0.15.0-canary-202406211230-ebc0dfb"
+"@blocksuite/global@npm:0.15.0-canary-202406241511-430be2a":
+  version: 0.15.0-canary-202406241511-430be2a
+  resolution: "@blocksuite/global@npm:0.15.0-canary-202406241511-430be2a"
   dependencies:
     lib0: "npm:^0.2.94"
     zod: "npm:^3.23.8"
-  checksum: 10/ac3cade8b72e28af7f8ebcfd0ffd470418bb6d322aa6f7a140145a9e9dfd7d88e7da5b74622736ff50ed2c82b60fd7cffac2f575aaa3f3bcf4ba95a19ec4c05b
+  checksum: 10/169b7ce2af13c420016d25e78042a559d834b8bbd0da81a5efac3b931049dd0b509357e20686e5b4fbf7c1c85f6aa417156623b33407d4f6b9cb88e94ddd2f10
   languageName: node
   linkType: hard
 
@@ -4191,45 +4191,45 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@blocksuite/inline@npm:0.15.0-canary-202406211230-ebc0dfb":
-  version: 0.15.0-canary-202406211230-ebc0dfb
-  resolution: "@blocksuite/inline@npm:0.15.0-canary-202406211230-ebc0dfb"
+"@blocksuite/inline@npm:0.15.0-canary-202406241511-430be2a":
+  version: 0.15.0-canary-202406241511-430be2a
+  resolution: "@blocksuite/inline@npm:0.15.0-canary-202406241511-430be2a"
   dependencies:
-    "@blocksuite/global": "npm:0.15.0-canary-202406211230-ebc0dfb"
+    "@blocksuite/global": "npm:0.15.0-canary-202406241511-430be2a"
     zod: "npm:^3.23.8"
   peerDependencies:
     lit: ^3.1.1
     yjs: ^13.6.15
-  checksum: 10/02accb4fe6e7adb5330d344988cc4a0492e6ec60fa01f6159718e11fe31e5652264c3c40e5be05a6b552497987804173a0fece5db010e3e21ca57e29fda7a675
+  checksum: 10/5c26c5fa44ccee505e642d59d0dd4e03ceb32ac83e91fcbe640f6a31a9c601be343d68b28ab30ab576f39f50f77f7987a50ac89deb7ed773bd2eb38c2e8ef082
   languageName: node
   linkType: hard
 
-"@blocksuite/presets@npm:0.15.0-canary-202406211230-ebc0dfb":
-  version: 0.15.0-canary-202406211230-ebc0dfb
-  resolution: "@blocksuite/presets@npm:0.15.0-canary-202406211230-ebc0dfb"
+"@blocksuite/presets@npm:0.15.0-canary-202406241511-430be2a":
+  version: 0.15.0-canary-202406241511-430be2a
+  resolution: "@blocksuite/presets@npm:0.15.0-canary-202406241511-430be2a"
   dependencies:
-    "@blocksuite/block-std": "npm:0.15.0-canary-202406211230-ebc0dfb"
-    "@blocksuite/blocks": "npm:0.15.0-canary-202406211230-ebc0dfb"
-    "@blocksuite/global": "npm:0.15.0-canary-202406211230-ebc0dfb"
-    "@blocksuite/inline": "npm:0.15.0-canary-202406211230-ebc0dfb"
-    "@blocksuite/store": "npm:0.15.0-canary-202406211230-ebc0dfb"
+    "@blocksuite/block-std": "npm:0.15.0-canary-202406241511-430be2a"
+    "@blocksuite/blocks": "npm:0.15.0-canary-202406241511-430be2a"
+    "@blocksuite/global": "npm:0.15.0-canary-202406241511-430be2a"
+    "@blocksuite/inline": "npm:0.15.0-canary-202406241511-430be2a"
+    "@blocksuite/store": "npm:0.15.0-canary-202406241511-430be2a"
     "@dotlottie/player-component": "npm:^2.7.12"
     "@fal-ai/serverless-client": "npm:^0.10.0"
     "@floating-ui/dom": "npm:^1.6.5"
     "@toeverything/theme": "npm:^0.7.32"
     lit: "npm:^3.1.3"
     openai: "npm:^4.47.2"
-  checksum: 10/5be64b15665485247bfe93001e7635f0d3354b48fee960e8d021a56ddef56c2cd7032353f687218e7b0fd29d901e4af2ca8cc96d4132af173eccaca440cc197d
+  checksum: 10/1432f9a88864617b36098c75df33186042f772afaaf828eb4b1363077eee77ad6038949dc95c67ae65a3da21751d7ab2544018a5cac5a112936ac4d9475c7690
   languageName: node
   linkType: hard
 
-"@blocksuite/store@npm:0.15.0-canary-202406211230-ebc0dfb":
-  version: 0.15.0-canary-202406211230-ebc0dfb
-  resolution: "@blocksuite/store@npm:0.15.0-canary-202406211230-ebc0dfb"
+"@blocksuite/store@npm:0.15.0-canary-202406241511-430be2a":
+  version: 0.15.0-canary-202406241511-430be2a
+  resolution: "@blocksuite/store@npm:0.15.0-canary-202406241511-430be2a"
   dependencies:
-    "@blocksuite/global": "npm:0.15.0-canary-202406211230-ebc0dfb"
-    "@blocksuite/inline": "npm:0.15.0-canary-202406211230-ebc0dfb"
-    "@blocksuite/sync": "npm:0.15.0-canary-202406211230-ebc0dfb"
+    "@blocksuite/global": "npm:0.15.0-canary-202406241511-430be2a"
+    "@blocksuite/inline": "npm:0.15.0-canary-202406241511-430be2a"
+    "@blocksuite/sync": "npm:0.15.0-canary-202406241511-430be2a"
     "@types/flexsearch": "npm:^0.7.6"
     flexsearch: "npm:0.7.43"
     lib0: "npm:^0.2.94"
@@ -4240,21 +4240,21 @@ __metadata:
     zod: "npm:^3.23.8"
   peerDependencies:
     yjs: ^13.6.15
-  checksum: 10/c0b056e60df8dd229f03e78f9bdc289ca47c8b98db2faf897cd1e702199b5e44bf238cb73d0de2c1b54361c34940dd49e827c3ef83a0caede0c8d8e941598a0d
+  checksum: 10/d8aa633ff16982f82dc8fb23686669d8c51f9df7cb535b4d521847875896dabbfd9630190cf39cdc989fb66936a4b8f8c46fef7e3ae8c67853139675f214d248
   languageName: node
   linkType: hard
 
-"@blocksuite/sync@npm:0.15.0-canary-202406211230-ebc0dfb":
-  version: 0.15.0-canary-202406211230-ebc0dfb
-  resolution: "@blocksuite/sync@npm:0.15.0-canary-202406211230-ebc0dfb"
+"@blocksuite/sync@npm:0.15.0-canary-202406241511-430be2a":
+  version: 0.15.0-canary-202406241511-430be2a
+  resolution: "@blocksuite/sync@npm:0.15.0-canary-202406241511-430be2a"
   dependencies:
-    "@blocksuite/global": "npm:0.15.0-canary-202406211230-ebc0dfb"
+    "@blocksuite/global": "npm:0.15.0-canary-202406241511-430be2a"
     idb: "npm:^8.0.0"
     idb-keyval: "npm:^6.2.1"
     y-protocols: "npm:^1.0.6"
   peerDependencies:
     yjs: ^13.6.15
-  checksum: 10/d03c2a3903d00e047d652f64b9ccb9eb47bc3247fe01dada96726489beafcb59f357274cb7a3949d5534e09e7902620e6cfd4bae35cb1c80a6fca65614316667
+  checksum: 10/1149654b2c07987c19bd3bbc115fac967e25bce2994fae9a2b3ad085be2a5582b4ef8782b04c69d63f26266379a1b93ccf2c37737ef01ef1116016493c204c57
   languageName: node
   linkType: hard
 
@@ -15624,11 +15624,11 @@ __metadata:
     "@affine/debug": "workspace:*"
     "@affine/env": "workspace:*"
     "@affine/templates": "workspace:*"
-    "@blocksuite/block-std": "npm:0.15.0-canary-202406211230-ebc0dfb"
-    "@blocksuite/blocks": "npm:0.15.0-canary-202406211230-ebc0dfb"
-    "@blocksuite/global": "npm:0.15.0-canary-202406211230-ebc0dfb"
-    "@blocksuite/presets": "npm:0.15.0-canary-202406211230-ebc0dfb"
-    "@blocksuite/store": "npm:0.15.0-canary-202406211230-ebc0dfb"
+    "@blocksuite/block-std": "npm:0.15.0-canary-202406241511-430be2a"
+    "@blocksuite/blocks": "npm:0.15.0-canary-202406241511-430be2a"
+    "@blocksuite/global": "npm:0.15.0-canary-202406241511-430be2a"
+    "@blocksuite/presets": "npm:0.15.0-canary-202406241511-430be2a"
+    "@blocksuite/store": "npm:0.15.0-canary-202406241511-430be2a"
     "@datastructures-js/binary-search-tree": "npm:^5.3.2"
     "@testing-library/react": "npm:^16.0.0"
     async-call-rpc: "npm:^6.4.0"
