@@ -91,12 +91,12 @@ export const RouteContainer = ({ route }: Props) => {
           </>
         )}
       </div>
-      <view.body.Target className={styles.viewBodyContainer} />
       <AffineErrorBoundary>
         <Suspense>
           <route.Component />
         </Suspense>
       </AffineErrorBoundary>
+      <view.body.Target className={styles.viewBodyContainer} />
     </div>
   );
 };
