@@ -173,9 +173,6 @@ export const rulesTitleHighlight = style({
   fontStyle: 'italic',
   fontWeight: 800,
 });
-export const tabButton = style({
-  height: 28,
-});
 export const icon = style({
   color: cssVar('iconColor'),
 });

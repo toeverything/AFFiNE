@@ -6,6 +6,7 @@ import type {
   DialogProps,
 } from '@radix-ui/react-dialog';
 import * as Dialog from '@radix-ui/react-dialog';
+import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
 import { assignInlineVars } from '@vanilla-extract/dynamic';
 import clsx from 'clsx';
 import type { CSSProperties } from 'react';
@@ -101,7 +102,13 @@ export const Modal = forwardRef<HTMLDivElement, ModalProps>(
               <Dialog.Title className={styles.modalHeader}>
                 {title}
               </Dialog.Title>
-            ) : null}
+            ) : (
+              // Refer: https://www.radix-ui.com/primitives/docs/components/dialog#title
+              // If you want to hide the title, wrap it inside our Visually Hidden utility like this <VisuallyHidden asChild>.
+              <VisuallyHidden.Root asChild>
+                <Dialog.Title></Dialog.Title>
+              </VisuallyHidden.Root>
+            )}
             {description ? (
               <Dialog.Description className={styles.modalDescription}>
                 {description}

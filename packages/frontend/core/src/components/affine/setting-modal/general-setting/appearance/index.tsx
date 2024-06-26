@@ -1,4 +1,5 @@
-import { RadioButton, RadioButtonGroup, Switch } from '@affine/component';
+import type { RadioItem } from '@affine/component';
+import { RadioGroup, Switch } from '@affine/component';
 import {
   SettingHeader,
   SettingRow,
@@ -8,7 +9,7 @@ import { useI18n } from '@affine/i18n';
 import type { AppSetting } from '@toeverything/infra';
 import { fontStyleOptions, windowFrameStyleOptions } from '@toeverything/infra';
 import { useTheme } from 'next-themes';
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 
 import { useAppSettingHelper } from '../../../../../hooks/affine/use-app-setting-helper';
 import { LanguageMenu } from '../../../language-menu';
@@ -19,75 +20,79 @@ export const ThemeSettings = () => {
   const t = useI18n();
   const { setTheme, theme } = useTheme();
 
+  const radioItems = useMemo<RadioItem[]>(
+    () => [
+      {
+        value: 'system',
+        label: t['com.affine.themeSettings.system'](),
+        testId: 'system-theme-trigger',
+      },
+      {
+        value: 'light',
+        label: t['com.affine.themeSettings.light'](),
+        testId: 'light-theme-trigger',
+      },
+      {
+        value: 'dark',
+        label: t['com.affine.themeSettings.dark'](),
+        testId: 'dark-theme-trigger',
+      },
+    ],
+    [t]
+  );
+
   return (
-    <RadioButtonGroup
+    <RadioGroup
+      items={radioItems}
+      value={theme}
       width={250}
       className={settingWrapper}
-      value={theme}
-      onValueChange={useCallback(
+      onChange={useCallback(
         (value: string) => {
           setTheme(value);
         },
         [setTheme]
       )}
-    >
-      <RadioButton value="system" data-testid="system-theme-trigger">
-        {t['com.affine.themeSettings.system']()}
-      </RadioButton>
-      <RadioButton value="light" data-testid="light-theme-trigger">
-        {t['com.affine.themeSettings.light']()}
-      </RadioButton>
-      <RadioButton value="dark" data-testid="dark-theme-trigger">
-        {t['com.affine.themeSettings.dark']()}
-      </RadioButton>
-    </RadioButtonGroup>
+    />
   );
 };
 
 const FontFamilySettings = () => {
   const t = useI18n();
   const { appSettings, updateSettings } = useAppSettingHelper();
+
+  const radioItems = useMemo(() => {
+    return fontStyleOptions.map(({ key, value }) => {
+      const label =
+        key === 'Mono'
+          ? t[`com.affine.appearanceSettings.fontStyle.mono`]()
+          : key === 'Sans'
+            ? t['com.affine.appearanceSettings.fontStyle.sans']()
+            : key === 'Serif'
+              ? t['com.affine.appearanceSettings.fontStyle.serif']()
+              : '';
+      return {
+        value: key,
+        label,
+        testId: 'system-font-style-trigger',
+        style: { fontFamily: value },
+      } satisfies RadioItem;
+    });
+  }, [t]);
+
   return (
-    <RadioButtonGroup
+    <RadioGroup
+      items={radioItems}
+      value={appSettings.fontStyle}
       width={250}
       className={settingWrapper}
-      value={appSettings.fontStyle}
-      onValueChange={useCallback(
-        (key: AppSetting['fontStyle']) => {
-          updateSettings('fontStyle', key);
+      onChange={useCallback(
+        (value: AppSetting['fontStyle']) => {
+          updateSettings('fontStyle', value);
         },
         [updateSettings]
       )}
-    >
-      {fontStyleOptions.map(({ key, value }) => {
-        let font = '';
-        switch (key) {
-          case 'Sans':
-            font = t['com.affine.appearanceSettings.fontStyle.sans']();
-            break;
-          case 'Serif':
-            font = t['com.affine.appearanceSettings.fontStyle.serif']();
-            break;
-          case 'Mono':
-            font = t[`com.affine.appearanceSettings.fontStyle.mono`]();
-            break;
-          default:
-            break;
-        }
-        return (
-          <RadioButton
-            key={key}
-            value={key}
-            data-testid="system-font-style-trigger"
-            style={{
-              fontFamily: value,
-            }}
-          >
-            {font}
-          </RadioButton>
-        );
-      })}
-    </RadioButtonGroup>
+    />
   );
 };
 
@@ -152,22 +157,19 @@ export const AppearanceSettings = () => {
             name={t['com.affine.appearanceSettings.windowFrame.title']()}
             desc={t['com.affine.appearanceSettings.windowFrame.description']()}
           >
-            <RadioButtonGroup
+            <RadioGroup
+              items={windowFrameStyleOptions.map(option => ({
+                value: option,
+                label:
+                  t[`com.affine.appearanceSettings.windowFrame.${option}`](),
+              }))}
+              value={appSettings.windowFrameStyle}
               className={settingWrapper}
               width={250}
-              defaultValue={appSettings.windowFrameStyle}
-              onValueChange={(value: AppSetting['windowFrameStyle']) => {
+              onChange={(value: AppSetting['windowFrameStyle']) => {
                 updateSettings('windowFrameStyle', value);
               }}
-            >
-              {windowFrameStyleOptions.map(option => {
-                return (
-                  <RadioButton value={option} key={option}>
-                    {t[`com.affine.appearanceSettings.windowFrame.${option}`]()}
-                  </RadioButton>
-                );
-              })}
-            </RadioButtonGroup>
+            />
           </SettingRow>
         ) : null}
       </SettingWrapper>
