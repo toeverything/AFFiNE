@@ -150,6 +150,11 @@ export const modalContent = style({
   // :focus-visible will set outline
   outline: 'none',
   position: 'relative',
+  selectors: {
+    '&[data-no-interaction=true]': {
+      pointerEvents: 'none',
+    },
+  },
 });
 
 export const modalControls = style({

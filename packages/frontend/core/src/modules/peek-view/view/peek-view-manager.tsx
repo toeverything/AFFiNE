@@ -5,34 +5,41 @@ import { useEffect, useMemo } from 'react';
 
 import type { ActivePeekView } from '../entities/peek-view';
 import { PeekViewService } from '../services/peek-view';
-import { DocPeekPreview } from './doc-peek-view';
-import { PeekViewModalContainer } from './modal-container';
+import { DocPeekPreview } from './doc-preview';
+import { ImagePreviewPeekView } from './image-preview';
+import {
+  PeekViewModalContainer,
+  type PeekViewModalContainerProps,
+} from './modal-container';
 import {
   DefaultPeekViewControls,
   DocPeekViewControls,
 } from './peek-view-controls';
 
-function renderPeekView({ info, template }: ActivePeekView) {
-  if (template) {
-    return toReactNode(template);
+function renderPeekView({ info }: ActivePeekView) {
+  if (info.type === 'template') {
+    return toReactNode(info.template);
+  }
+  if (info.type === 'doc') {
+    return (
+      <DocPeekPreview
+        mode={info.mode}
+        xywh={info.xywh}
+        docId={info.docId}
+        blockId={info.blockId}
+      />
+    );
   }
 
-  if (!info) {
-    return null;
+  if (info.type === 'image') {
+    return <ImagePreviewPeekView docId={info.docId} blockId={info.blockId} />;
   }
 
-  return (
-    <DocPeekPreview
-      mode={info.mode}
-      xywh={info.xywh}
-      docId={info.docId}
-      blockId={info.blockId}
-    />
-  );
+  return null; // unreachable
 }
 
 const renderControls = ({ info }: ActivePeekView) => {
-  if (info && 'docId' in info) {
+  if (info.type === 'doc') {
     return (
       <DocPeekViewControls
         mode={info.mode}
@@ -42,7 +49,32 @@ const renderControls = ({ info }: ActivePeekView) => {
     );
   }
 
+  if (info.type === 'image') {
+    return null; // image controls are rendered in the image preview
+  }
+
   return <DefaultPeekViewControls />;
+};
+
+const getRendererProps = (
+  activePeekView?: ActivePeekView
+): Partial<PeekViewModalContainerProps> | undefined => {
+  if (!activePeekView) {
+    return;
+  }
+
+  const preview = renderPeekView(activePeekView);
+  const controls = renderControls(activePeekView);
+  return {
+    children: preview,
+    controls,
+    target:
+      activePeekView?.target instanceof HTMLElement
+        ? activePeekView.target
+        : undefined,
+    padding: activePeekView.info.type === 'doc',
+    animation: activePeekView.info.type === 'image' ? 'fade' : 'zoom',
+  };
 };
 
 export const PeekViewManagerModal = () => {
@@ -50,12 +82,11 @@ export const PeekViewManagerModal = () => {
   const activePeekView = useLiveData(peekViewEntity.active$);
   const show = useLiveData(peekViewEntity.show$);
 
-  const preview = useMemo(() => {
-    return activePeekView ? renderPeekView(activePeekView) : null;
-  }, [activePeekView]);
-
-  const controls = useMemo(() => {
-    return activePeekView ? renderControls(activePeekView) : null;
+  const renderProps = useMemo(() => {
+    if (!activePeekView) {
+      return;
+    }
+    return getRendererProps(activePeekView);
   }, [activePeekView]);
 
   useEffect(() => {
@@ -72,20 +103,15 @@ export const PeekViewManagerModal = () => {
 
   return (
     <PeekViewModalContainer
-      open={show && !!preview}
-      target={
-        activePeekView?.target instanceof HTMLElement
-          ? activePeekView.target
-          : undefined
-      }
-      controls={controls}
+      {...renderProps}
+      open={show && !!renderProps}
       onOpenChange={open => {
         if (!open) {
           peekViewEntity.close();
         }
       }}
     >
-      {preview}
+      {renderProps?.children}
     </PeekViewModalContainer>
   );
 };

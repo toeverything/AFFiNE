@@ -36,7 +36,6 @@ import type { Map as YMap } from 'yjs';
 
 import { AffineErrorBoundary } from '../../../components/affine/affine-error-boundary';
 import { GlobalPageHistoryModal } from '../../../components/affine/page-history-modal';
-import { ImagePreviewModal } from '../../../components/image-preview';
 import { PageDetailEditor } from '../../../components/page-detail-editor';
 import { TrashPageFooter } from '../../../components/pure/trash-page-footer';
 import { TopTip } from '../../../components/top-tip';
@@ -311,14 +310,6 @@ const DetailPageImpl = memo(function DetailPageImpl() {
           </MultiTabSidebarBody>
         }
       />
-
-      {editor?.host ? (
-        <ImagePreviewModal
-          pageId={doc.id}
-          docCollection={docCollection}
-          host={editor.host}
-        />
-      ) : null}
       <GlobalPageHistoryModal />
       <PageAIOnboarding />
     </>

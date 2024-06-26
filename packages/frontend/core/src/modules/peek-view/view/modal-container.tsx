@@ -3,6 +3,7 @@ import { assignInlineVars } from '@vanilla-extract/dynamic';
 import clsx from 'clsx';
 import {
   createContext,
+  forwardRef,
   type PropsWithChildren,
   useContext,
   useEffect,
@@ -57,30 +58,38 @@ function getElementScreenPositionCenter(target: HTMLElement) {
   };
 }
 
-export const PeekViewModalContainer = ({
-  onOpenChange,
-  open,
-  target,
-  controls,
-  children,
-  hideOnEntering,
-  onAnimationStart,
-  onAnimateEnd,
-  animation = 'zoom',
-  padding = true,
-  testId,
-}: PropsWithChildren<{
-  open: boolean;
-  hideOnEntering?: boolean;
-  target?: HTMLElement;
+export type PeekViewModalContainerProps = PropsWithChildren<{
   onOpenChange: (open: boolean) => void;
+  open: boolean;
+  target?: HTMLElement;
   controls?: React.ReactNode;
+  hideOnEntering?: boolean;
   onAnimationStart?: () => void;
   onAnimateEnd?: () => void;
   padding?: boolean;
   animation?: 'fade' | 'zoom';
   testId?: string;
-}>) => {
+}>;
+
+export const PeekViewModalContainer = forwardRef<
+  HTMLDivElement,
+  PeekViewModalContainerProps
+>(function PeekViewModalContainer(
+  {
+    onOpenChange,
+    open,
+    target,
+    controls,
+    children,
+    hideOnEntering,
+    onAnimationStart,
+    onAnimateEnd,
+    animation = 'zoom',
+    padding = true,
+    testId,
+  },
+  ref
+) {
   const [{ status }, toggle] = useTransition({
     timeout: animationTimeout,
   });
@@ -112,6 +121,7 @@ export const PeekViewModalContainer = ({
             onAnimationEnd={onAnimateEnd}
           />
           <div
+            ref={ref}
             data-testid={testId}
             data-peek-view-wrapper
             className={styles.modalContentWrapper}
@@ -133,6 +143,7 @@ export const PeekViewModalContainer = ({
             >
               <Dialog.Content
                 {...contentOptions}
+                data-no-interaction={status !== 'entered'}
                 className={styles.modalContent}
               >
                 {hideOnEntering && status === 'entering' ? null : children}
@@ -148,4 +159,4 @@ export const PeekViewModalContainer = ({
       </Dialog.Root>
     </PeekViewContext.Provider>
   );
-};
+});

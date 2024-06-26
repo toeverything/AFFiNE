@@ -38,11 +38,7 @@ async function importImage(page: Page, url: string) {
 }
 
 async function closeImagePreviewModal(page: Page) {
-  await page
-    .getByTestId('image-preview-modal')
-    .getByTestId('image-preview-close-button')
-    .first()
-    .click();
+  await page.getByTestId('image-preview-close-button').first().click();
   await page.waitForTimeout(500);
 }
 

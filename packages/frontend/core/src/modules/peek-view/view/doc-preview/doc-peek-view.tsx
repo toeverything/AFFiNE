@@ -3,7 +3,6 @@ import { PageDetailSkeleton } from '@affine/component/page-detail-skeleton';
 import { AIProvider } from '@affine/core/blocksuite/presets/ai';
 import { AffineErrorBoundary } from '@affine/core/components/affine/affine-error-boundary';
 import { BlockSuiteEditor } from '@affine/core/components/blocksuite/block-suite-editor';
-import { ImagePreviewModal } from '@affine/core/components/image-preview';
 import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
 import { PageNotFound } from '@affine/core/pages/404';
 import { Bound, type EdgelessRootService } from '@blocksuite/blocks';
@@ -14,10 +13,10 @@ import { DocsService, FrameworkScope, useService } from '@toeverything/infra';
 import clsx from 'clsx';
 import { useEffect, useState } from 'react';
 
-import { WorkbenchService } from '../../workbench';
-import { PeekViewService } from '../services/peek-view';
+import { WorkbenchService } from '../../../workbench';
+import { PeekViewService } from '../../services/peek-view';
+import { useDoc } from '../utils';
 import * as styles from './doc-peek-view.css';
-import { useDoc } from './utils';
 
 function fitViewport(
   editor: AffineEditorContainer,
@@ -160,13 +159,6 @@ export function DocPeekPreview({
               defaultSelectedBlockId={blockId}
               page={doc.blockSuiteDoc}
             />
-            {editor?.host ? (
-              <ImagePreviewModal
-                pageId={doc.id}
-                docCollection={doc.blockSuiteDoc.collection}
-                host={editor.host}
-              />
-            ) : null}
           </FrameworkScope>
         </Scrollable.Viewport>
         <Scrollable.Scrollbar />

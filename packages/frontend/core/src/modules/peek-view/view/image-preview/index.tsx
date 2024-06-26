@@ -2,7 +2,6 @@ import { toast } from '@affine/component';
 import { Button, IconButton } from '@affine/component/ui/button';
 import { Tooltip } from '@affine/component/ui/tooltip';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import { PeekViewModalContainer } from '@affine/core/modules/peek-view/view/modal-container';
 import type { ImageBlockModel } from '@blocksuite/blocks';
 import { assertExists } from '@blocksuite/global/utils';
 import {
@@ -16,7 +15,8 @@ import {
   PlusIcon,
   ViewBarIcon,
 } from '@blocksuite/icons/rc';
-import type { BlockModel, DocCollection } from '@blocksuite/store';
+import type { BlockModel } from '@blocksuite/store';
+import { useService } from '@toeverything/infra';
 import clsx from 'clsx';
 import { useErrorBoundary } from 'foxact/use-error-boundary';
 import type { PropsWithChildren, ReactElement } from 'react';
@@ -24,7 +24,6 @@ import {
   Suspense,
   useCallback,
   useEffect,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -33,6 +32,8 @@ import type { FallbackProps } from 'react-error-boundary';
 import { ErrorBoundary } from 'react-error-boundary';
 import useSWR from 'swr';
 
+import { PeekViewService } from '../../services/peek-view';
+import { useDoc } from '../utils';
 import { useZoomControls } from './hooks/use-zoom';
 import * as styles from './index.css';
 
@@ -120,9 +121,8 @@ async function saveBufferToFile(url: string, filename: string) {
 }
 
 export type ImagePreviewModalProps = {
-  docCollection: DocCollection;
-  pageId: string;
-  host: HTMLElement;
+  docId: string;
+  blockId: string;
 };
 
 const ButtonWithTooltip = ({
@@ -149,24 +149,25 @@ const ButtonWithTooltip = ({
   }
 };
 
-const ImagePreviewModalImpl = (
-  props: ImagePreviewModalProps & {
-    blockId: string;
-    onBlockIdChange: (blockId: string | null) => void;
-    onClose: () => void;
-    animating: boolean;
-  }
-): ReactElement | null => {
-  const page = useMemo(() => {
-    return props.docCollection.getDoc(props.pageId);
-  }, [props.docCollection, props.pageId]);
+const ImagePreviewModalImpl = ({
+  docId,
+  blockId,
+  onBlockIdChange,
+  onClose,
+}: ImagePreviewModalProps & {
+  onBlockIdChange: (blockId: string) => void;
+  onClose: () => void;
+}): ReactElement | null => {
+  const { doc, workspace } = useDoc(docId);
+  const blocksuiteDoc = doc?.blockSuiteDoc;
+  const docCollection = workspace.docCollection;
   const blockModel = useMemo(() => {
-    const block = page?.getBlock(props.blockId);
+    const block = blocksuiteDoc?.getBlock(blockId);
     if (!block) {
       return null;
     }
     return block.model as ImageBlockModel;
-  }, [page, props.blockId]);
+  }, [blockId, blocksuiteDoc]);
   const caption = useMemo(() => {
     return blockModel?.caption ?? '';
   }, [blockModel?.caption]);
@@ -188,8 +189,7 @@ const ImagePreviewModalImpl = (
 
   const goto = useCallback(
     (index: number) => {
-      const workspace = props.docCollection;
-      const page = workspace.getDoc(props.pageId);
+      const page = docCollection.getDoc(docId);
       assertExists(page);
 
       const block = blocks[index];
@@ -197,18 +197,17 @@ const ImagePreviewModalImpl = (
       if (!block) return;
 
       setCursor(index);
-      props.onBlockIdChange(block.id);
+      onBlockIdChange(block.id);
       resetZoom();
     },
-    [props, blocks, resetZoom]
+    [docCollection, docId, blocks, onBlockIdChange, resetZoom]
   );
 
   const deleteHandler = useCallback(
     (index: number) => {
-      const { pageId, docCollection: workspace, onClose } = props;
-
-      const page = workspace.getDoc(pageId);
-      assertExists(page);
+      if (!blocksuiteDoc) {
+        return;
+      }
 
       let block = blocks[index];
 
@@ -216,7 +215,7 @@ const ImagePreviewModalImpl = (
       const newBlocks = blocks.toSpliced(index, 1);
       setBlocks(newBlocks);
 
-      page.deleteBlock(block);
+      blocksuiteDoc.deleteBlock(block);
 
       // next
       block = newBlocks[index];
@@ -234,11 +233,11 @@ const ImagePreviewModalImpl = (
         setCursor(index);
       }
 
-      props.onBlockIdChange(block.id);
+      onBlockIdChange(block.id);
 
       resetZoom();
     },
-    [props, blocks, setBlocks, setCursor, resetZoom]
+    [blocksuiteDoc, blocks, onBlockIdChange, resetZoom, onClose]
   );
 
   const downloadHandler = useAsyncCallback(async () => {
@@ -256,66 +255,58 @@ const ImagePreviewModalImpl = (
   }, []);
 
   useEffect(() => {
-    const page = props.docCollection.getDoc(props.pageId);
-    assertExists(page);
-
-    const block = page.getBlock(props.blockId);
-    if (!block) {
+    if (!blockModel || !blocksuiteDoc) {
       return;
     }
-    const blockModel = block.model as ImageBlockModel;
 
-    const prevs = page.getPrevs(blockModel).filter(filterImageBlock);
-    const nexts = page.getNexts(blockModel).filter(filterImageBlock);
+    const prevs = blocksuiteDoc.getPrevs(blockModel).filter(filterImageBlock);
+    const nexts = blocksuiteDoc.getNexts(blockModel).filter(filterImageBlock);
 
     const blocks = [...prevs, blockModel, ...nexts];
     setBlocks(blocks);
     setCursor(blocks.length ? prevs.length : 0);
-  }, [props.blockId, props.pageId, props.docCollection, setBlocks]);
+  }, [setBlocks, blockModel, blocksuiteDoc]);
 
-  const { data, error } = useSWR(
-    ['workspace', 'image', props.pageId, props.blockId],
-    {
-      fetcher: ([_, __, pageId, blockId]) => {
-        const page = props.docCollection.getDoc(pageId);
-        assertExists(page);
+  const { data, error } = useSWR(['workspace', 'image', docId, blockId], {
+    fetcher: ([_, __, pageId, blockId]) => {
+      const page = docCollection.getDoc(pageId);
+      assertExists(page);
 
-        const block = page.getBlock(blockId);
-        if (!block) {
-          return null;
-        }
-        const blockModel = block.model as ImageBlockModel;
-        return props.docCollection.blobSync.get(blockModel.sourceId as string);
-      },
-      suspense: true,
-    }
-  );
+      const block = page.getBlock(blockId);
+      if (!block) {
+        return null;
+      }
+      const blockModel = block.model as ImageBlockModel;
+      return docCollection.blobSync.get(blockModel.sourceId as string);
+    },
+    suspense: true,
+  });
 
   useEffect(() => {
     const handleKeyUp = (event: KeyboardEvent) => {
-      if (!page || !blockModel) {
+      if (!blocksuiteDoc || !blockModel) {
         return;
       }
 
       if (event.key === 'ArrowLeft') {
-        const prevBlock = page
+        const prevBlock = blocksuiteDoc
           .getPrevs(blockModel)
           .findLast(
             (block): block is ImageBlockModel =>
               block.flavour === 'affine:image'
           );
         if (prevBlock) {
-          props.onBlockIdChange(prevBlock.id);
+          onBlockIdChange(prevBlock.id);
         }
       } else if (event.key === 'ArrowRight') {
-        const nextBlock = page
+        const nextBlock = blocksuiteDoc
           .getNexts(blockModel)
           .find(
             (block): block is ImageBlockModel =>
               block.flavour === 'affine:image'
           );
         if (nextBlock) {
-          props.onBlockIdChange(nextBlock.id);
+          onBlockIdChange(nextBlock.id);
         }
       } else {
         return;
@@ -328,7 +319,7 @@ const ImagePreviewModalImpl = (
     return () => {
       document.removeEventListener('keyup', handleKeyUp);
     };
-  }, [blockModel, page, props]);
+  }, [blockModel, blocksuiteDoc, onBlockIdChange]);
 
   useErrorBoundary(error);
 
@@ -351,8 +342,11 @@ const ImagePreviewModalImpl = (
     return null;
   }
   return (
-    <div className={styles.imagePreviewModalStyle}>
-      <div className={styles.imagePreviewTrap} onClick={props.onClose} />
+    <div
+      data-testid="image-preview-modal"
+      className={styles.imagePreviewModalStyle}
+    >
+      <div className={styles.imagePreviewTrap} onClick={onClose} />
       <div className={styles.imagePreviewModalContainerStyle}>
         <div
           className={clsx('zoom-area', { 'zoomed-bigger': isZoomedBigger })}
@@ -360,7 +354,7 @@ const ImagePreviewModalImpl = (
         >
           <div className={styles.imagePreviewModalCenterStyle}>
             <img
-              data-blob-id={props.blockId}
+              data-blob-id={blockId}
               data-testid="image-content"
               src={url}
               alt={caption}
@@ -397,7 +391,7 @@ const ImagePreviewModalImpl = (
             data-testid="previous-image-button"
             tooltip="Previous"
             icon={<ArrowLeftSmallIcon />}
-            disabled={props.animating || cursor < 1}
+            disabled={cursor < 1}
             onClick={() => goto(cursor - 1)}
           />
           <div className={styles.cursorStyle}>
@@ -407,7 +401,7 @@ const ImagePreviewModalImpl = (
             data-testid="next-image-button"
             tooltip="Next"
             icon={<ArrowRightSmallIcon />}
-            disabled={props.animating || cursor + 1 === blocks.length}
+            disabled={cursor + 1 === blocks.length}
             onClick={() => goto(cursor + 1)}
           />
           <div className={styles.dividerStyle}></div>
@@ -415,21 +409,18 @@ const ImagePreviewModalImpl = (
             data-testid="fit-to-screen-button"
             tooltip="Fit to screen"
             icon={<ViewBarIcon />}
-            disabled={props.animating}
             onClick={() => resetZoom()}
           />
           <ButtonWithTooltip
             data-testid="zoom-out-button"
             tooltip="Zoom out"
             icon={<MinusIcon />}
-            disabled={props.animating}
             onClick={zoomOut}
           />
           <ButtonWithTooltip
             data-testid="reset-scale-button"
             tooltip="Reset scale"
             onClick={resetScale}
-            disabled={props.animating}
           >
             {`${(currentScale * 100).toFixed(0)}%`}
           </ButtonWithTooltip>
@@ -438,7 +429,6 @@ const ImagePreviewModalImpl = (
             data-testid="zoom-in-button"
             tooltip="Zoom in"
             icon={<PlusIcon />}
-            disabled={props.animating}
             onClick={zoomIn}
           />
           <div className={styles.dividerStyle}></div>
@@ -446,14 +436,12 @@ const ImagePreviewModalImpl = (
             data-testid="download-button"
             tooltip="Download"
             icon={<DownloadIcon />}
-            disabled={props.animating}
             onClick={downloadHandler}
           />
           <ButtonWithTooltip
             data-testid="copy-to-clipboard-button"
             tooltip="Copy to clipboard"
             icon={<CopyIcon />}
-            disabled={props.animating}
             onClick={copyHandler}
           />
           <div className={styles.dividerStyle}></div>
@@ -461,7 +449,7 @@ const ImagePreviewModalImpl = (
             data-testid="delete-button"
             tooltip="Delete"
             icon={<DeleteIcon />}
-            disabled={props.animating || blocks.length === 0}
+            disabled={blocks.length === 0}
             onClick={() => deleteHandler(cursor)}
           />
         </div>
@@ -483,67 +471,38 @@ export const ImagePreviewErrorBoundary = (
   );
 };
 
-export const ImagePreviewModal = (
+export const ImagePreviewPeekView = (
   props: ImagePreviewModalProps
 ): ReactElement | null => {
-  const [show, setShow] = useState(false);
-  const [blockId, setBlockId] = useState<string | null>(null);
-  const isOpen = show && !!blockId;
+  const [blockId, setBlockId] = useState<string | null>(props.blockId);
+  const peekView = useService(PeekViewService).peekView;
+  const onClose = peekView.close;
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
 
-  // todo: refactor this to use peek view service
-  useLayoutEffect(() => {
-    const handleDblClick = (event: MouseEvent) => {
-      const target = event.target as HTMLElement | null;
-      if (target?.tagName === 'IMG') {
-        const imageBlock = target.closest('affine-image');
-        if (imageBlock) {
-          const blockId = imageBlock.dataset.blockId;
-          if (!blockId) return;
-          setBlockId(blockId);
-          setShow(true);
-        }
-      }
-    };
-    props.host.addEventListener('dblclick', handleDblClick);
-    return () => {
-      props.host.removeEventListener('dblclick', handleDblClick);
-    };
-  }, [props.host]);
-
-  const [animating, setAnimating] = useState(false);
+  useEffect(() => {
+    setBlockId(props.blockId);
+  }, [props.blockId]);
 
   return (
-    <PeekViewModalContainer
-      padding={false}
-      onOpenChange={setShow}
-      open={isOpen}
-      animation="fade"
-      onAnimationStart={() => setAnimating(true)}
-      onAnimateEnd={() => setAnimating(false)}
-      testId="image-preview-modal"
-    >
-      <ImagePreviewErrorBoundary>
-        <Suspense>
-          {blockId ? (
-            <ImagePreviewModalImpl
-              {...props}
-              animating={animating}
-              blockId={blockId}
-              onBlockIdChange={setBlockId}
-              onClose={() => setShow(false)}
-            />
-          ) : null}
-          <button
-            data-testid="image-preview-close-button"
-            onClick={() => {
-              setShow(false);
-            }}
-            className={styles.imagePreviewModalCloseButtonStyle}
-          >
-            <CloseIcon />
-          </button>
-        </Suspense>
-      </ImagePreviewErrorBoundary>
-    </PeekViewModalContainer>
+    <ImagePreviewErrorBoundary>
+      <Suspense>
+        {blockId ? (
+          <ImagePreviewModalImpl
+            {...props}
+            onClose={onClose}
+            blockId={blockId}
+            onBlockIdChange={setBlockId}
+          />
+        ) : null}
+        <button
+          ref={buttonRef}
+          data-testid="image-preview-close-button"
+          onClick={onClose}
+          className={styles.imagePreviewModalCloseButtonStyle}
+        >
+          <CloseIcon />
+        </button>
+      </Suspense>
+    </ImagePreviewErrorBoundary>
   );
 };
