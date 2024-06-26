@@ -818,7 +818,7 @@ __metadata:
     ses: "npm:^1.4.1"
     sinon: "npm:^18.0.0"
     socket.io: "npm:^4.7.5"
-    stripe: "npm:^15.0.0"
+    stripe: "npm:^16.0.0"
     supertest: "npm:^7.0.0"
     ts-node: "npm:^10.9.2"
     typescript: "npm:^5.4.5"
@@ -36524,13 +36524,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"stripe@npm:^15.0.0":
-  version: 15.12.0
-  resolution: "stripe@npm:15.12.0"
+"stripe@npm:^16.0.0":
+  version: 16.0.0
+  resolution: "stripe@npm:16.0.0"
   dependencies:
     "@types/node": "npm:>=8.1.0"
     qs: "npm:^6.11.0"
-  checksum: 10/21287ebcaad81c6ddd54c3d45fe135a66ad69b7c3f107f94d520dbcbd6160c3812bfdcd8c0588cf52d031d4708257099ac7b032a70fd750e1b386ebeeb5471a7
+  checksum: 10/d77cc19d473ac2727bd5fb591d8d60db4ada6a75fa5463fc5c0b62ddf1b6832538697661ba7bb1bc6da538c5c22e8bf18577da9ee45d0b4aba770b56895f4fc3
   languageName: node
   linkType: hard
 
