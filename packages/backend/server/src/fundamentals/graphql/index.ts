@@ -62,7 +62,7 @@ export type GraphqlContext = {
               error.originalError instanceof UserFriendlyError
             ) {
               // @ts-expect-error allow assign
-              formattedError.extensions = error.originalError.json();
+              formattedError.extensions = error.originalError.toJSON();
               formattedError.extensions.stacktrace = error.originalError.stack;
               return formattedError;
             } else {

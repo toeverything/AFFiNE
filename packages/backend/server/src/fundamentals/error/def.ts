@@ -76,7 +76,7 @@ export class UserFriendlyError extends Error {
     this.data = args;
   }
 
-  json() {
+  toJSON() {
     return {
       status: this.status,
       code: STATUS_CODES[this.status] ?? 'BAD REQUEST',

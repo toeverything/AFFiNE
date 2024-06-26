@@ -38,10 +38,29 @@ export class GlobalExceptionFilter extends BaseExceptionFilter {
       error.log('HTTP');
       metrics.controllers.counter('error').add(1, { status: error.status });
       const res = host.switchToHttp().getResponse<Response>();
-      res.status(error.status).send(error.json());
+      res.status(error.status).send(error.toJSON());
       return;
     }
   }
+}
+
+/**
+ * Only exists for websocket error body backward compatibility
+ *
+ * relay on `code` field instead of `name`
+ *
+ * @TODO(@forehalo): remove
+ */
+function toWebsocketError(error: UserFriendlyError) {
+  // should be `error.toJSON()` after backward compatibility removed
+  return {
+    status: error.status,
+    code: error.name.toUpperCase(),
+    type: error.type.toUpperCase(),
+    name: error.name.toUpperCase(),
+    message: error.message,
+    data: error.data,
+  };
 }
 
 export const GatewayErrorWrapper = (event: string): MethodDecorator => {
@@ -67,7 +86,7 @@ export const GatewayErrorWrapper = (event: string): MethodDecorator => {
           .add(1, { event, status: mappedError.status });
 
         return {
-          error: mappedError.json(),
+          error: toWebsocketError(mappedError),
         };
       }
     };
@@ -82,6 +101,6 @@ export function mapSseError(originalError: any) {
   metrics.sse.counter('error').add(1, { status: error.status });
   return of({
     type: 'error' as const,
-    data: error.json(),
+    data: error.toJSON(),
   });
 }
