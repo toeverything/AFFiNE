@@ -156,3 +156,10 @@ export const docsListContainer = style({
   flexDirection: 'column',
   gap: 4,
 });
+export const emptyCollection = style({
+  fontSize: cssVar('fontSm'),
+  textAlign: 'left',
+  paddingLeft: '32px',
+  color: cssVar('black30'),
+  userSelect: 'none',
+});

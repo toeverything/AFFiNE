@@ -50,5 +50,14 @@ export class DocRecord extends Entity<{ id: string }> {
     return this.docsStore.watchDocModeSetting(this.id);
   }
 
+  moveToTrash() {
+    return this.setMeta({ trash: true });
+  }
+
+  restoreFromTrash() {
+    return this.setMeta({ trash: false });
+  }
+
   title$ = this.meta$.map(meta => meta.title ?? '');
+  trash$ = this.meta$.map(meta => meta.trash ?? false);
 }

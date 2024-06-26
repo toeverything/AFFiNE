@@ -12,17 +12,14 @@ import { CollectionOperationCell } from '../operation-cell';
 import { CollectionListItemRenderer } from '../page-group';
 import { ListTableHeader } from '../page-header';
 import type { CollectionMeta, ItemListHandle, ListItem } from '../types';
-import type { AllPageListConfig } from '../view';
 import { VirtualizedList } from '../virtualized-list';
 import { CollectionListHeader } from './collection-list-header';
 
 const useCollectionOperationsRenderer = ({
   info,
   service,
-  config,
 }: {
   info: DeleteCollectionInfo;
-  config: AllPageListConfig;
   service: CollectionService;
 }) => {
   const collectionOperationsRenderer = useCallback(
@@ -32,11 +29,10 @@ const useCollectionOperationsRenderer = ({
           info={info}
           collection={collection}
           service={service}
-          config={config}
         />
       );
     },
-    [config, info, service]
+    [info, service]
   );
 
   return collectionOperationsRenderer;
@@ -48,11 +44,9 @@ export const VirtualizedCollectionList = ({
   setHideHeaderCreateNewCollection,
   node,
   handleCreateCollection,
-  config,
 }: {
   collections: Collection[];
   collectionMetas: CollectionMeta[];
-  config: AllPageListConfig;
   node: ReactElement | null;
   handleCreateCollection: () => void;
   setHideHeaderCreateNewCollection: (hide: boolean) => void;
@@ -69,7 +63,6 @@ export const VirtualizedCollectionList = ({
   const collectionOperations = useCollectionOperationsRenderer({
     info,
     service: collectionService,
-    config,
   });
 
   const filteredSelectedCollectionIds = useMemo(() => {

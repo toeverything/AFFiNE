@@ -3,12 +3,10 @@ import {
   PreconditionStrategy,
   registerAffineCommand,
 } from '@affine/core/commands';
-import { useDocMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
 import { FavoriteItemsAdapter } from '@affine/core/modules/properties';
 import { mixpanel } from '@affine/core/utils';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useI18n } from '@affine/i18n';
-import { assertExists } from '@blocksuite/global/utils';
 import { EdgelessIcon, HistoryIcon, PageIcon } from '@blocksuite/icons/rc';
 import {
   DocService,
@@ -31,15 +29,10 @@ export function useRegisterBlocksuiteEditorCommands() {
   const t = useI18n();
   const workspace = useService(WorkspaceService).workspace;
   const docCollection = workspace.docCollection;
-  const { getDocMeta } = useDocMetaHelper(docCollection);
-  const currentPage = docCollection.getDoc(docId);
-  assertExists(currentPage);
-  const pageMeta = getDocMeta(docId);
-  assertExists(pageMeta);
 
   const favAdapter = useService(FavoriteItemsAdapter);
   const favorite = useLiveData(favAdapter.isFavorite$(docId, 'doc'));
-  const trash = pageMeta.trash ?? false;
+  const trash = useLiveData(doc.trash$);
 
   const setPageHistoryModalState = useSetAtom(pageHistoryModalAtom);
 
@@ -52,15 +45,18 @@ export function useRegisterBlocksuiteEditorCommands() {
 
   const { restoreFromTrash, duplicate } =
     useBlockSuiteMetaHelper(docCollection);
-  const exportHandler = useExportPage(currentPage);
+  const exportHandler = useExportPage(doc.blockSuiteDoc);
   const { setTrashModal } = useTrashModalHelper(docCollection);
-  const onClickDelete = useCallback(() => {
-    setTrashModal({
-      open: true,
-      pageIds: [docId],
-      pageTitles: [pageMeta.title],
-    });
-  }, [docId, pageMeta.title, setTrashModal]);
+  const onClickDelete = useCallback(
+    (title: string) => {
+      setTrashModal({
+        open: true,
+        pageIds: [docId],
+        pageTitles: [title],
+      });
+    },
+    [docId, setTrashModal]
+  );
 
   const isCloudWorkspace = workspace.flavour === WorkspaceFlavour.AFFINE_CLOUD;
 
@@ -213,7 +209,7 @@ export function useRegisterBlocksuiteEditorCommands() {
         icon: mode === 'page' ? <PageIcon /> : <EdgelessIcon />,
         label: t['com.affine.moveToTrash.title'](),
         run() {
-          onClickDelete();
+          onClickDelete(doc.title$.value);
         },
       })
     );
@@ -227,7 +223,7 @@ export function useRegisterBlocksuiteEditorCommands() {
         icon: mode === 'page' ? <PageIcon /> : <EdgelessIcon />,
         label: t['com.affine.cmdk.affine.editor.restore-from-trash'](),
         run() {
-          restoreFromTrash(docId);
+          doc.restoreFromTrash();
         },
       })
     );

@@ -2,13 +2,10 @@ import type { Collection } from '@affine/env/filter';
 import { useCallback, useState } from 'react';
 
 import { CreateCollectionModal } from './create-collection';
-import type {
-  AllPageListConfig,
-  EditCollectionMode,
-} from './edit-collection/edit-collection';
+import type { EditCollectionMode } from './edit-collection/edit-collection';
 import { EditCollectionModal } from './edit-collection/edit-collection';
 
-export const useEditCollection = (config: AllPageListConfig) => {
+export const useEditCollection = () => {
   const [data, setData] = useState<{
     collection: Collection;
     mode?: 'page' | 'rule';
@@ -19,7 +16,6 @@ export const useEditCollection = (config: AllPageListConfig) => {
   return {
     node: data ? (
       <EditCollectionModal
-        allPageListConfig={config}
         init={data.collection}
         open={!!data}
         mode={data.mode}

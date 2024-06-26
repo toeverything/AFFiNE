@@ -5,7 +5,6 @@ import {
   useEditCollectionName,
   VirtualizedCollectionList,
 } from '@affine/core/components/page-list';
-import { useAllPageListConfig } from '@affine/core/hooks/affine/use-all-page-list-config';
 import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
 import { useI18n } from '@affine/i18n';
 import { useLiveData, useService, WorkspaceService } from '@toeverything/infra';
@@ -25,7 +24,6 @@ export const AllCollection = () => {
 
   const collectionService = useService(CollectionService);
   const collections = useLiveData(collectionService.collections$);
-  const config = useAllPageListConfig();
 
   const collectionMetas = useMemo(() => {
     const collectionsList: CollectionMeta[] = collections.map(collection => {
@@ -71,7 +69,6 @@ export const AllCollection = () => {
               collectionMetas={collectionMetas}
               setHideHeaderCreateNewCollection={setHideHeaderCreateNew}
               node={node}
-              config={config}
               handleCreateCollection={handleCreateCollection}
             />
           ) : (

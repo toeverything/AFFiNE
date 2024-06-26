@@ -21,7 +21,6 @@ import { useCallback, useMemo } from 'react';
 
 import { CollectionService } from '../../../modules/collection';
 import * as styles from './collection-operations.css';
-import type { AllPageListConfig } from './index';
 import {
   useEditCollection,
   useEditCollectionName,
@@ -29,13 +28,11 @@ import {
 
 export const CollectionOperations = ({
   collection,
-  config,
   openRenameModal,
   onAddDocToCollection,
   children,
 }: PropsWithChildren<{
   collection: Collection;
-  config: AllPageListConfig;
   openRenameModal?: () => void;
   onAddDocToCollection?: () => void;
 }>) => {
@@ -44,7 +41,7 @@ export const CollectionOperations = ({
   const service = useService(CollectionService);
   const workbench = useService(WorkbenchService).workbench;
   const { open: openEditCollectionModal, node: editModal } =
-    useEditCollection(config);
+    useEditCollection();
   const t = useI18n();
   const { open: openEditCollectionNameModal, node: editNameModal } =
     useEditCollectionName({

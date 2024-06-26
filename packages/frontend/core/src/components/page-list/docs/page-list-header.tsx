@@ -28,7 +28,6 @@ import { CollectionService } from '../../../modules/collection';
 import { usePageHelper } from '../../blocksuite/block-suite-page-list/utils';
 import { createTagFilter } from '../filter/utils';
 import { createEmptyCollection } from '../use-collection-manager';
-import type { AllPageListConfig } from '../view/edit-collection/edit-collection';
 import {
   useEditCollection,
   useEditCollectionName,
@@ -87,9 +86,7 @@ export const PageListHeader = () => {
 export const CollectionPageListHeader = ({
   collection,
   workspaceId,
-  config,
 }: {
-  config: AllPageListConfig;
   collection: Collection;
   workspaceId: string;
 }) => {
@@ -101,7 +98,7 @@ export const CollectionPageListHeader = ({
   }, [jumpToCollections, workspaceId]);
 
   const collectionService = useService(CollectionService);
-  const { node, open } = useEditCollection(config);
+  const { node, open } = useEditCollection();
 
   const handleEdit = useAsyncCallback(async () => {
     const ret = await open({ ...collection }, 'page');

@@ -4,7 +4,6 @@ import {
   useEditCollection,
   VirtualizedPageList,
 } from '@affine/core/components/page-list';
-import { useAllPageListConfig } from '@affine/core/hooks/affine/use-all-page-list-config';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { CollectionService } from '@affine/core/modules/collection';
 import type { Collection } from '@affine/env/filter';
@@ -30,8 +29,7 @@ export const CollectionDetail = ({
 }: {
   collection: Collection;
 }) => {
-  const config = useAllPageListConfig();
-  const { node, open } = useEditCollection(useAllPageListConfig());
+  const { node, open } = useEditCollection();
   const collectionService = useService(CollectionService);
   const [hideHeaderCreateNew, setHideHeaderCreateNew] = useState(true);
 
@@ -51,7 +49,6 @@ export const CollectionDetail = ({
       <ViewBodyIsland>
         <VirtualizedPageList
           collection={collection}
-          config={config}
           setHideHeaderCreateNewPage={setHideHeaderCreateNew}
         />
       </ViewBodyIsland>
@@ -104,7 +101,7 @@ export const Component = function CollectionPage() {
 const Placeholder = ({ collection }: { collection: Collection }) => {
   const workspace = useService(WorkspaceService).workspace;
   const collectionService = useService(CollectionService);
-  const { node, open } = useEditCollection(useAllPageListConfig());
+  const { node, open } = useEditCollection();
   const { jumpToCollections } = useNavigateHelper();
   const openPageEdit = useAsyncCallback(async () => {
     const ret = await open({ ...collection }, 'page');

@@ -43,7 +43,6 @@ import { DisablePublicSharing, MoveToTrash } from './operation-menu-items';
 import { CreateOrEditTag } from './tags/create-tag';
 import type { TagMeta } from './types';
 import { ColWrapper, stopPropagationWithoutPrevent } from './utils';
-import type { AllPageListConfig } from './view';
 import { useEditCollection, useEditCollectionName } from './view';
 
 export interface PageOperationCellProps {
@@ -282,27 +281,26 @@ export const TrashOperationCell = ({
 export interface CollectionOperationCellProps {
   collection: Collection;
   info: DeleteCollectionInfo;
-  config: AllPageListConfig;
   service: CollectionService;
 }
 
 export const CollectionOperationCell = ({
   collection,
-  config,
   service,
   info,
 }: CollectionOperationCellProps) => {
   const t = useI18n();
 
   const favAdapter = useService(FavoriteItemsAdapter);
-  const { createPage } = usePageHelper(config.docCollection);
+  const docCollection = useService(WorkspaceService).workspace.docCollection;
+  const { createPage } = usePageHelper(docCollection);
   const { openConfirmModal } = useConfirmModal();
   const favourite = useLiveData(
     favAdapter.isFavorite$(collection.id, 'collection')
   );
 
   const { open: openEditCollectionModal, node: editModal } =
-    useEditCollection(config);
+    useEditCollection();
 
   const { open: openEditCollectionNameModal, node: editNameModal } =
     useEditCollectionName({

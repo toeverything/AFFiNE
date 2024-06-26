@@ -12,6 +12,9 @@ import { useCallback, useEffect, useMemo } from 'react';
 
 import { usePageHelper } from '../../components/blocksuite/block-suite-page-list/utils';
 
+/**
+ * @deprecated very poor performance
+ */
 export const useAllPageListConfig = () => {
   const currentWorkspace = useService(WorkspaceService).workspace;
   const shareDocService = useService(ShareDocsService);

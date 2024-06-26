@@ -18,7 +18,6 @@ import { PageListItemRenderer } from '../page-group';
 import { ListTableHeader } from '../page-header';
 import type { ItemListHandle, ListItem } from '../types';
 import { useFilteredPageMetas } from '../use-filtered-page-metas';
-import type { AllPageListConfig } from '../view/edit-collection/edit-collection';
 import { VirtualizedList } from '../virtualized-list';
 import {
   CollectionPageListHeader,
@@ -55,14 +54,12 @@ export const VirtualizedPageList = ({
   tag,
   collection,
   filters,
-  config,
   listItem,
   setHideHeaderCreateNewPage,
 }: {
   tag?: Tag;
   collection?: Collection;
   filters?: Filter[];
-  config?: AllPageListConfig;
   listItem?: DocMeta[];
   setHideHeaderCreateNewPage?: (hide: boolean) => void;
 }) => {
@@ -116,17 +113,16 @@ export const VirtualizedPageList = ({
     if (tag) {
       return <TagPageListHeader workspaceId={currentWorkspace.id} tag={tag} />;
     }
-    if (collection && config) {
+    if (collection) {
       return (
         <CollectionPageListHeader
           workspaceId={currentWorkspace.id}
           collection={collection}
-          config={config}
         />
       );
     }
     return <PageListHeader />;
-  }, [collection, config, currentWorkspace.id, tag]);
+  }, [collection, currentWorkspace.id, tag]);
 
   const { setTrashModal } = useTrashModalHelper(currentWorkspace.docCollection);
 

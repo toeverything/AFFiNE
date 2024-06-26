@@ -17,6 +17,7 @@ export class Doc extends Entity {
   readonly meta$ = this.record.meta$;
   readonly mode$ = this.record.mode$;
   readonly title$ = this.record.title$;
+  readonly trash$ = this.record.trash$;
 
   setMode(mode: DocMode) {
     return this.record.setMode(mode);
@@ -32,5 +33,13 @@ export class Doc extends Entity {
 
   observeMode() {
     return this.record.observeMode();
+  }
+
+  moveToTrash() {
+    return this.record.moveToTrash();
+  }
+
+  restoreFromTrash() {
+    return this.record.restoreFromTrash();
   }
 }

@@ -4,6 +4,7 @@ import {
   RadioButton,
   RadioButtonGroup,
 } from '@affine/component';
+import { useAllPageListConfig } from '@affine/core/hooks/affine/use-all-page-list-config';
 import type { Collection } from '@affine/env/filter';
 import { useI18n } from '@affine/i18n';
 import type { DocCollection, DocMeta } from '@blocksuite/store';
@@ -24,7 +25,6 @@ export interface EditCollectionModalProps {
   mode?: EditCollectionMode;
   onOpenChange: (open: boolean) => void;
   onConfirm: (view: Collection) => void;
-  allPageListConfig: AllPageListConfig;
 }
 
 const contentOptions: DialogContentProps = {
@@ -44,7 +44,6 @@ export const EditCollectionModal = ({
   onOpenChange,
   title,
   mode,
-  allPageListConfig,
 }: EditCollectionModalProps) => {
   const t = useI18n();
   const onConfirmOnCollection = useCallback(
@@ -67,7 +66,7 @@ export const EditCollectionModal = ({
       height="80%"
       contentOptions={contentOptions}
     >
-      {init ? (
+      {open && init ? (
         <EditCollection
           title={title}
           onConfirmText={t['com.affine.editCollection.save']()}
@@ -75,7 +74,6 @@ export const EditCollectionModal = ({
           mode={mode}
           onCancel={onCancel}
           onConfirm={onConfirmOnCollection}
-          allPageListConfig={allPageListConfig}
         />
       ) : null}
     </Modal>
@@ -89,7 +87,6 @@ export interface EditCollectionProps {
   mode?: EditCollectionMode;
   onCancel: () => void;
   onConfirm: (collection: Collection) => void;
-  allPageListConfig: AllPageListConfig;
 }
 
 export const EditCollection = ({
@@ -98,9 +95,9 @@ export const EditCollection = ({
   onCancel,
   onConfirmText,
   mode: initMode,
-  allPageListConfig,
 }: EditCollectionProps) => {
   const t = useI18n();
+  const config = useAllPageListConfig();
   const [value, onChange] = useState<Collection>(init);
   const [mode, setMode] = useState<'page' | 'rule'>(
     initMode ?? (init.filterList.length === 0 ? 'page' : 'rule')
@@ -182,11 +179,11 @@ export const EditCollection = ({
           updateCollection={onChange}
           switchMode={switchMode}
           buttons={buttons}
-          allPageListConfig={allPageListConfig}
+          allPageListConfig={config}
         ></PagesMode>
       ) : (
         <RulesMode
-          allPageListConfig={allPageListConfig}
+          allPageListConfig={config}
           collection={value}
           switchMode={switchMode}
           reset={reset}
