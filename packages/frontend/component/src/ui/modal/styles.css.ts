@@ -53,7 +53,9 @@ export const modalHeader = style({
   marginBottom: '12px',
 });
 export const modalDescription = style({
-  // marginBottom: '20px',
+  wordBreak: 'break-word',
+  whiteSpace: 'pre-wrap',
+  overflowWrap: 'break-word',
 });
 export const modalFooter = style({
   display: 'flex',
