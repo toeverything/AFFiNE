@@ -4,7 +4,7 @@ import { style } from '@vanilla-extract/css';
 export const root = style({
   display: 'flex',
   height: '100%',
-  overflow: 'hidden',
+  overflow: 'clip',
   width: '100%',
   position: 'relative',
   flexDirection: 'column',
