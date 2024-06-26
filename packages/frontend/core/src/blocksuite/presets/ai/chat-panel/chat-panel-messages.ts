@@ -213,6 +213,7 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
                   width: '85%',
                   alignItems: 'center',
                   justifyContent: 'start',
+                  cursor: 'pointer',
                 })}
               >
                 ${config.icon}

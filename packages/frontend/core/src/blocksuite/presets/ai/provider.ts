@@ -106,6 +106,10 @@ export class AIProvider {
     // use case: when user selects "continue in chat" in an ask ai result panel
     // do we need to pass the context to the chat panel?
     requestOpenWithChat: new Slot<AIChatParams>(),
+    requestInsertTemplate: new Slot<{
+      template: string;
+      mode: 'page' | 'edgeless';
+    }>(),
     requestLogin: new Slot<{ host: EditorHost }>(),
     requestUpgradePlan: new Slot<{ host: EditorHost }>(),
     // when an action is requested to run in edgeless mode (show a toast in affine)

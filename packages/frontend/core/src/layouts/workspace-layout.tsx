@@ -1,3 +1,4 @@
+import { ZipTransformer } from '@blocksuite/blocks';
 import { assertExists } from '@blocksuite/global/utils';
 import {
   DndContext,
@@ -21,6 +22,7 @@ import { createPortal } from 'react-dom';
 import { Map as YMap } from 'yjs';
 
 import { openSettingModalAtom } from '../atoms';
+import { AIProvider } from '../blocksuite/presets/ai';
 import { WorkspaceAIOnboarding } from '../components/affine/ai-onboarding';
 import { AppContainer } from '../components/affine/app-container';
 import { SyncAwareness } from '../components/affine/awareness';
@@ -107,6 +109,7 @@ export const WorkspaceLayout = function WorkspaceLayout({
 
 export const WorkspaceLayoutInner = ({ children }: PropsWithChildren) => {
   const currentWorkspace = useService(WorkspaceService).workspace;
+  const docsList = useService(DocsService).list;
   const { openPage } = useNavigateHelper();
   const pageHelper = usePageHelper(currentWorkspace.docCollection);
 
@@ -120,6 +123,28 @@ export const WorkspaceLayoutInner = ({ children }: PropsWithChildren) => {
   const currentPath = useLiveData(
     workbench.location$.map(location => basename + location.pathname)
   );
+
+  useEffect(() => {
+    const disposable = AIProvider.slots.requestInsertTemplate.on(
+      ({ template, mode }) => {
+        (async () => {
+          const templateZip = await fetch(template);
+          const templateBlob = await templateZip.blob();
+          const [doc] = await ZipTransformer.importDocs(
+            currentWorkspace.docCollection,
+            templateBlob
+          );
+          doc.resetHistory();
+
+          docsList.setMode(doc.id, mode);
+          workbench.openPage(doc.id);
+        })().catch(err => {
+          console.error(err);
+        });
+      }
+    );
+    return () => disposable.dispose();
+  }, [currentWorkspace.docCollection, docsList, workbench]);
 
   useRegisterWorkspaceCommands();
   useRegisterNavigationCommands();

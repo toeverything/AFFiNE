@@ -95,14 +95,13 @@ const DetailPageImpl = memo(function DetailPageImpl() {
   }, [editor, isActiveView, setActiveBlockSuiteEditor]);
 
   useEffect(() => {
-    AIProvider.slots.requestOpenWithChat.on(params => {
+    const disposable = AIProvider.slots.requestOpenWithChat.on(params => {
       const opened = rightSidebar.isOpen$.value;
       const actived = activeTabName === 'chat';
 
       if (!opened) {
         rightSidebar.open();
       }
-
       if (!actived) {
         setActiveTabName('chat');
       }
@@ -122,7 +121,8 @@ const DetailPageImpl = memo(function DetailPageImpl() {
         setTabOnLoad(null);
       }
     });
-  }, [activeTabName, rightSidebar, setActiveTabName, setTabOnLoad]);
+    return disposable.dispose();
+  }, [activeTabName, rightSidebar, setActiveTabName]);
 
   useEffect(() => {
     if (isActiveView) {
