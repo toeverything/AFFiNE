@@ -140,10 +140,13 @@ export const containerPadding = style({
   maxWidth: 1248,
 });
 
+export const contentBackground = style({
+  background: cssVar('backgroundPrimaryColor'),
+});
+
 export const modalContent = style({
   flex: 1,
   height: '100%',
-  backgroundColor: cssVar('backgroundOverlayPanelColor'),
   backdropFilter: 'drop-shadow(0px 0px 2px rgba(0, 0, 0, 0.08))',
   borderRadius: '8px',
   minHeight: 300,

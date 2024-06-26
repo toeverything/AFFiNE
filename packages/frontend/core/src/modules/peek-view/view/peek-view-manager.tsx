@@ -72,6 +72,8 @@ const getRendererProps = (
       activePeekView?.target instanceof HTMLElement
         ? activePeekView.target
         : undefined,
+    hideOnEntering: activePeekView.info.type === 'doc',
+    contentBackground: activePeekView.info.type === 'doc',
     padding: activePeekView.info.type === 'doc',
     animation: activePeekView.info.type === 'image' ? 'fade' : 'zoom',
   };

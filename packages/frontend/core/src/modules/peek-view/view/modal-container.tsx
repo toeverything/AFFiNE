@@ -25,7 +25,6 @@ const contentOptions: Dialog.DialogContentProps = {
   },
   style: {
     padding: 0,
-    backgroundColor: 'transparent',
     overflow: 'hidden',
   },
 };
@@ -66,7 +65,14 @@ export type PeekViewModalContainerProps = PropsWithChildren<{
   hideOnEntering?: boolean;
   onAnimationStart?: () => void;
   onAnimateEnd?: () => void;
+  /**
+   * Add default padding to the content and controls
+   */
   padding?: boolean;
+  /**
+   * Whether to show content background overlay
+   */
+  contentBackground?: boolean;
   animation?: 'fade' | 'zoom';
   testId?: string;
 }>;
@@ -86,6 +92,7 @@ export const PeekViewModalContainer = forwardRef<
     onAnimateEnd,
     animation = 'zoom',
     padding = true,
+    contentBackground = false,
     testId,
   },
   ref
@@ -144,7 +151,10 @@ export const PeekViewModalContainer = forwardRef<
               <Dialog.Content
                 {...contentOptions}
                 data-no-interaction={status !== 'entered'}
-                className={styles.modalContent}
+                className={clsx(
+                  styles.modalContent,
+                  contentBackground && styles.contentBackground
+                )}
               >
                 {hideOnEntering && status === 'entering' ? null : children}
               </Dialog.Content>
