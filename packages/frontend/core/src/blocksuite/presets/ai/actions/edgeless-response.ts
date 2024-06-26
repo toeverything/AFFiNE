@@ -12,6 +12,9 @@ import type {
 import {
   DeleteIcon,
   EDGELESS_ELEMENT_TOOLBAR_WIDGET,
+  EDGELESS_TEXT_BLOCK_MIN_HEIGHT,
+  EDGELESS_TEXT_BLOCK_MIN_WIDTH,
+  EdgelessTextBlockModel,
   EmbedHtmlBlockSpec,
   fitContent,
   ImageBlockModel,
@@ -153,37 +156,93 @@ type MindMapNode = {
   children: MindMapNode[];
 };
 
-const defaultHandler = (host: EditorHost) => {
-  const doc = host.doc;
-  const panel = getAIPanel(host);
-  const edgelessCopilot = getEdgelessCopilotWidget(host);
-  const bounds = edgelessCopilot.determineInsertionBounds(800, 95);
+function insertBelow(
+  host: EditorHost,
+  markdown: string,
+  parentId: string,
+  index = 0
+) {
+  insertFromMarkdown(host, markdown, parentId, index)
+    .then(() => {
+      const service = getService(host);
 
+      service.selection.set({
+        elements: [parentId],
+        editing: false,
+      });
+    })
+    .catch(err => {
+      console.error(err);
+    });
+}
+
+function createBlockAndInsert(
+  host: EditorHost,
+  markdown: string,
+  type: 'edgelessText' | 'note'
+) {
+  const doc = host.doc;
+  const edgelessCopilot = getEdgelessCopilotWidget(host);
   doc.transact(() => {
     assertExists(doc.root);
-    const noteBlockId = doc.addBlock(
-      'affine:note',
-      {
-        xywh: bounds.serialize(),
-        displayMode: NoteDisplayMode.EdgelessOnly,
-      },
-      doc.root.id
+    let blockId = '';
+    const bounds = edgelessCopilot.determineInsertionBounds(
+      EDGELESS_TEXT_BLOCK_MIN_WIDTH,
+      EDGELESS_TEXT_BLOCK_MIN_HEIGHT
     );
+    const surfaceBlock = doc.getBlocksByFlavour('affine:surface')[0];
+    if (type === 'edgelessText') {
+      blockId = doc.addBlock(
+        'affine:edgeless-text',
+        {
+          xywh: bounds.serialize(),
+        },
+        surfaceBlock.id
+      );
+    } else {
+      const bounds = edgelessCopilot.determineInsertionBounds(800, 95);
+      blockId = doc.addBlock(
+        'affine:note',
+        {
+          xywh: bounds.serialize(),
+          displayMode: NoteDisplayMode.EdgelessOnly,
+        },
+        doc.root.id
+      );
+    }
 
-    assertExists(panel.answer);
-    insertFromMarkdown(host, panel.answer, noteBlockId)
-      .then(() => {
-        const service = getService(host);
-
-        service.selection.set({
-          elements: [noteBlockId],
-          editing: false,
-        });
-      })
-      .catch(err => {
-        console.error(err);
-      });
+    insertBelow(host, markdown, blockId);
   });
+}
+
+/**
+ * defaultHandler is the default handler for inserting AI response into the edgeless document.
+ * Three situations are handled by this handler:
+ * 1. When selection is a single EdgelessText block, insert the response to the last of the block.
+ * 2. When selections are multiple EdgelessText blocks, insert the response to a new EdgelessBlock.
+ * 3. Otherwise, insert the response to a new Note block.
+ * @param host EditorHost
+ */
+const defaultHandler = (host: EditorHost) => {
+  const panel = getAIPanel(host);
+  const selectedElements = getCopilotSelectedElems(host);
+
+  assertExists(panel.answer);
+  if (
+    selectedElements.length === 1 &&
+    selectedElements[0] instanceof EdgelessTextBlockModel
+  ) {
+    const edgelessTextBlockId = selectedElements[0].id;
+    const index = selectedElements[0].children.length;
+    insertBelow(host, panel.answer, edgelessTextBlockId, index);
+  } else if (
+    selectedElements.length > 1 &&
+    selectedElements.every(el => el instanceof EdgelessTextBlockModel)
+  ) {
+    createBlockAndInsert(host, panel.answer, 'edgelessText');
+  } else {
+    createBlockAndInsert(host, panel.answer, 'note');
+  }
 };
 
 const imageHandler = (host: EditorHost) => {
