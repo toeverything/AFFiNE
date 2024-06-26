@@ -23,5 +23,6 @@ export function initEmptyPage(page: Doc, title?: string) {
       {},
       noteBlockId
     );
+    page.history.clear();
   });
 }
