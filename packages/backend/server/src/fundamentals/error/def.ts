@@ -447,6 +447,16 @@ export const USER_FRIENDLY_ERRORS = {
     args: { name: 'string' },
     message: ({ name }) => `Copilot prompt ${name} not found.`,
   },
+  copilot_prompt_invalid: {
+    type: 'invalid_input',
+    message: `Copilot prompt is invalid.`,
+  },
+  copilot_provider_side_error: {
+    type: 'internal_server_error',
+    args: { provider: 'string', kind: 'string', message: 'string' },
+    message: ({ provider, kind, message }) =>
+      `Provider ${provider} failed with ${kind} error: ${message || 'unknown'}.`,
+  },
 
   // Quota & Limit errors
   blob_quota_exceeded: {

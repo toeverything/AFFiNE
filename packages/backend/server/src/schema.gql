@@ -81,6 +81,12 @@ type CopilotPromptType {
   name: String!
 }
 
+type CopilotProviderSideErrorDataType {
+  kind: String!
+  message: String!
+  provider: String!
+}
+
 type CopilotQuota {
   limit: SafeInt
   used: SafeInt!
@@ -169,7 +175,7 @@ enum EarlyAccessType {
   App
 }
 
-union ErrorDataUnion = BlobNotFoundDataType | CopilotPromptNotFoundDataType | DocAccessDeniedDataType | DocHistoryNotFoundDataType | DocNotFoundDataType | InvalidHistoryTimestampDataType | InvalidPasswordLengthDataType | InvalidRuntimeConfigTypeDataType | MissingOauthQueryParameterDataType | NotInWorkspaceDataType | RuntimeConfigNotFoundDataType | SameSubscriptionRecurringDataType | SubscriptionAlreadyExistsDataType | SubscriptionNotExistsDataType | SubscriptionPlanNotFoundDataType | UnknownOauthProviderDataType | VersionRejectedDataType | WorkspaceAccessDeniedDataType | WorkspaceNotFoundDataType | WorkspaceOwnerNotFoundDataType
+union ErrorDataUnion = BlobNotFoundDataType | CopilotPromptNotFoundDataType | CopilotProviderSideErrorDataType | DocAccessDeniedDataType | DocHistoryNotFoundDataType | DocNotFoundDataType | InvalidHistoryTimestampDataType | InvalidPasswordLengthDataType | InvalidRuntimeConfigTypeDataType | MissingOauthQueryParameterDataType | NotInWorkspaceDataType | RuntimeConfigNotFoundDataType | SameSubscriptionRecurringDataType | SubscriptionAlreadyExistsDataType | SubscriptionNotExistsDataType | SubscriptionPlanNotFoundDataType | UnknownOauthProviderDataType | VersionRejectedDataType | WorkspaceAccessDeniedDataType | WorkspaceNotFoundDataType | WorkspaceOwnerNotFoundDataType
 
 enum ErrorNames {
   ACCESS_DENIED
@@ -182,7 +188,9 @@ enum ErrorNames {
   COPILOT_FAILED_TO_CREATE_MESSAGE
   COPILOT_FAILED_TO_GENERATE_TEXT
   COPILOT_MESSAGE_NOT_FOUND
+  COPILOT_PROMPT_INVALID
   COPILOT_PROMPT_NOT_FOUND
+  COPILOT_PROVIDER_SIDE_ERROR
   COPILOT_QUOTA_EXCEEDED
   COPILOT_SESSION_DELETED
   COPILOT_SESSION_NOT_FOUND

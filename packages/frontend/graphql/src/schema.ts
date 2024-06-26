@@ -126,6 +126,13 @@ export interface CopilotPromptType {
   name: Scalars['String']['output'];
 }
 
+export interface CopilotProviderSideErrorDataType {
+  __typename?: 'CopilotProviderSideErrorDataType';
+  kind: Scalars['String']['output'];
+  message: Scalars['String']['output'];
+  provider: Scalars['String']['output'];
+}
+
 export interface CopilotQuota {
   __typename?: 'CopilotQuota';
   limit: Maybe<Scalars['SafeInt']['output']>;
@@ -218,6 +225,7 @@ export enum EarlyAccessType {
 export type ErrorDataUnion =
   | BlobNotFoundDataType
   | CopilotPromptNotFoundDataType
+  | CopilotProviderSideErrorDataType
   | DocAccessDeniedDataType
   | DocHistoryNotFoundDataType
   | DocNotFoundDataType
@@ -248,7 +256,9 @@ export enum ErrorNames {
   COPILOT_FAILED_TO_CREATE_MESSAGE = 'COPILOT_FAILED_TO_CREATE_MESSAGE',
   COPILOT_FAILED_TO_GENERATE_TEXT = 'COPILOT_FAILED_TO_GENERATE_TEXT',
   COPILOT_MESSAGE_NOT_FOUND = 'COPILOT_MESSAGE_NOT_FOUND',
+  COPILOT_PROMPT_INVALID = 'COPILOT_PROMPT_INVALID',
   COPILOT_PROMPT_NOT_FOUND = 'COPILOT_PROMPT_NOT_FOUND',
+  COPILOT_PROVIDER_SIDE_ERROR = 'COPILOT_PROVIDER_SIDE_ERROR',
   COPILOT_QUOTA_EXCEEDED = 'COPILOT_QUOTA_EXCEEDED',
   COPILOT_SESSION_DELETED = 'COPILOT_SESSION_DELETED',
   COPILOT_SESSION_NOT_FOUND = 'COPILOT_SESSION_NOT_FOUND',

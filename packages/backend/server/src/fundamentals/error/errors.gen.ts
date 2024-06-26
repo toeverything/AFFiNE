@@ -408,6 +408,24 @@ export class CopilotPromptNotFound extends UserFriendlyError {
   }
 }
 
+export class CopilotPromptInvalid extends UserFriendlyError {
+  constructor(message?: string) {
+    super('invalid_input', 'copilot_prompt_invalid', message);
+  }
+}
+@ObjectType()
+class CopilotProviderSideErrorDataType {
+  @Field() provider!: string
+  @Field() kind!: string
+  @Field() message!: string
+}
+
+export class CopilotProviderSideError extends UserFriendlyError {
+  constructor(args: CopilotProviderSideErrorDataType, message?: string | ((args: CopilotProviderSideErrorDataType) => string)) {
+    super('internal_server_error', 'copilot_provider_side_error', message, args);
+  }
+}
+
 export class BlobQuotaExceeded extends UserFriendlyError {
   constructor(message?: string) {
     super('quota_exceeded', 'blob_quota_exceeded', message);
@@ -508,6 +526,8 @@ export enum ErrorNames {
   COPILOT_ACTION_TAKEN,
   COPILOT_MESSAGE_NOT_FOUND,
   COPILOT_PROMPT_NOT_FOUND,
+  COPILOT_PROMPT_INVALID,
+  COPILOT_PROVIDER_SIDE_ERROR,
   BLOB_QUOTA_EXCEEDED,
   MEMBER_QUOTA_EXCEEDED,
   COPILOT_QUOTA_EXCEEDED,
@@ -522,5 +542,5 @@ registerEnumType(ErrorNames, {
 export const ErrorDataUnionType = createUnionType({
   name: 'ErrorDataUnion',
   types: () =>
-    [UnknownOauthProviderDataType, MissingOauthQueryParameterDataType, InvalidPasswordLengthDataType, WorkspaceNotFoundDataType, NotInWorkspaceDataType, WorkspaceAccessDeniedDataType, WorkspaceOwnerNotFoundDataType, DocNotFoundDataType, DocAccessDeniedDataType, VersionRejectedDataType, InvalidHistoryTimestampDataType, DocHistoryNotFoundDataType, BlobNotFoundDataType, SubscriptionAlreadyExistsDataType, SubscriptionNotExistsDataType, SameSubscriptionRecurringDataType, SubscriptionPlanNotFoundDataType, CopilotPromptNotFoundDataType, RuntimeConfigNotFoundDataType, InvalidRuntimeConfigTypeDataType] as const,
+    [UnknownOauthProviderDataType, MissingOauthQueryParameterDataType, InvalidPasswordLengthDataType, WorkspaceNotFoundDataType, NotInWorkspaceDataType, WorkspaceAccessDeniedDataType, WorkspaceOwnerNotFoundDataType, DocNotFoundDataType, DocAccessDeniedDataType, VersionRejectedDataType, InvalidHistoryTimestampDataType, DocHistoryNotFoundDataType, BlobNotFoundDataType, SubscriptionAlreadyExistsDataType, SubscriptionNotExistsDataType, SameSubscriptionRecurringDataType, SubscriptionPlanNotFoundDataType, CopilotPromptNotFoundDataType, CopilotProviderSideErrorDataType, RuntimeConfigNotFoundDataType, InvalidRuntimeConfigTypeDataType] as const,
 });

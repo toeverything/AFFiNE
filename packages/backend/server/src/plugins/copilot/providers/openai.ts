@@ -1,6 +1,11 @@
 import { Logger } from '@nestjs/common';
-import { ClientOptions, OpenAI } from 'openai';
+import { APIError, ClientOptions, OpenAI } from 'openai';
 
+import {
+  CopilotPromptInvalid,
+  CopilotProviderSideError,
+  UserFriendlyError,
+} from '../../../fundamentals';
 import {
   ChatMessageRole,
   CopilotCapability,
@@ -80,8 +85,8 @@ export class OpenAIProvider
         this.existsModels = await this.instance.models
           .list()
           .then(({ data }) => data.map(m => m.id));
-      } catch (e) {
-        this.logger.error('Failed to fetch online model list', e);
+      } catch (e: any) {
+        this.logger.error('Failed to fetch online model list', e.stack);
       }
     }
     return !!this.existsModels?.includes(model);
@@ -147,7 +152,7 @@ export class OpenAIProvider
     options: CopilotChatOptions;
   }) {
     if (!this.availableModels.includes(model)) {
-      throw new Error(`Invalid model: ${model}`);
+      throw new CopilotPromptInvalid(`Invalid model: ${model}`);
     }
     if (Array.isArray(messages) && messages.length > 0) {
       this.extractOptionFromMessages(messages, options);
@@ -164,7 +169,7 @@ export class OpenAIProvider
               (!Array.isArray(m.attachments) || !m.attachments.length))
         )
       ) {
-        throw new Error('Empty message content');
+        throw new CopilotPromptInvalid('Empty message content');
       }
       if (
         messages.some(
@@ -174,7 +179,7 @@ export class OpenAIProvider
             !ChatMessageRole.includes(m.role)
         )
       ) {
-        throw new Error('Invalid message role');
+        throw new CopilotPromptInvalid('Invalid message role');
       }
       // json mode need 'json' keyword in content
       // ref: https://platform.openai.com/docs/api-reference/chat/create#chat-create-response_format
@@ -182,42 +187,62 @@ export class OpenAIProvider
         options.jsonMode &&
         !messages.some(m => m.content.toLowerCase().includes('json'))
       ) {
-        throw new Error('Prompt not support json mode');
+        throw new CopilotPromptInvalid('Prompt not support json mode');
       }
     } else if (
       Array.isArray(embeddings) &&
       embeddings.some(e => typeof e !== 'string' || !e || !e.trim())
     ) {
-      throw new Error('Invalid embedding');
+      throw new CopilotPromptInvalid('Invalid embedding');
+    }
+  }
+
+  private handleError(e: any) {
+    if (e instanceof UserFriendlyError) {
+      return e;
+    } else if (e instanceof APIError) {
+      return new CopilotProviderSideError({
+        provider: this.type,
+        kind: e.type || 'unknown',
+        message: e.message,
+      });
+    } else {
+      return new CopilotProviderSideError({
+        provider: this.type,
+        kind: 'unexpected_response',
+        message: e?.message || 'Unexpected openai response',
+      });
     }
   }
 
   // ====== text to text ======
-
   async generateText(
     messages: PromptMessage[],
     model: string = 'gpt-3.5-turbo',
     options: CopilotChatOptions = {}
   ): Promise<string> {
     this.checkParams({ messages, model, options });
-    const result = await this.instance.chat.completions.create(
-      {
-        messages: this.chatToGPTMessage(messages),
-        model: model,
-        temperature: options.temperature || 0,
-        max_tokens: options.maxTokens || 4096,
-        response_format: {
-          type: options.jsonMode ? 'json_object' : 'text',
+
+    try {
+      const result = await this.instance.chat.completions.create(
+        {
+          messages: this.chatToGPTMessage(messages),
+          model: model,
+          temperature: options.temperature || 0,
+          max_tokens: options.maxTokens || 4096,
+          response_format: {
+            type: options.jsonMode ? 'json_object' : 'text',
+          },
+          user: options.user,
         },
-        user: options.user,
-      },
-      { signal: options.signal }
-    );
-    const { content } = result.choices[0].message;
-    if (!content) {
-      throw new Error('Failed to generate text');
+        { signal: options.signal }
+      );
+      const { content } = result.choices[0].message;
+      if (!content) throw new Error('Failed to generate text');
+      return content.trim();
+    } catch (e: any) {
+      throw this.handleError(e);
     }
-    return content;
   }
 
   async *generateTextStream(
@@ -226,32 +251,36 @@ export class OpenAIProvider
     options: CopilotChatOptions = {}
   ): AsyncIterable<string> {
     this.checkParams({ messages, model, options });
-    const result = await this.instance.chat.completions.create(
-      {
-        stream: true,
-        messages: this.chatToGPTMessage(messages),
-        model: model,
-        temperature: options.temperature || 0,
-        max_tokens: options.maxTokens || 4096,
-        response_format: {
-          type: options.jsonMode ? 'json_object' : 'text',
+    try {
+      const result = await this.instance.chat.completions.create(
+        {
+          stream: true,
+          messages: this.chatToGPTMessage(messages),
+          model: model,
+          temperature: options.temperature || 0,
+          max_tokens: options.maxTokens || 4096,
+          response_format: {
+            type: options.jsonMode ? 'json_object' : 'text',
+          },
+          user: options.user,
         },
-        user: options.user,
-      },
-      {
-        signal: options.signal,
-      }
-    );
+        {
+          signal: options.signal,
+        }
+      );
 
-    for await (const message of result) {
-      const content = message.choices[0].delta.content;
-      if (content) {
-        yield content;
-        if (options.signal?.aborted) {
-          result.controller.abort();
-          break;
+      for await (const message of result) {
+        const content = message.choices[0].delta.content;
+        if (content) {
+          yield content;
+          if (options.signal?.aborted) {
+            result.controller.abort();
+            break;
+          }
         }
       }
+    } catch (e: any) {
+      throw this.handleError(e);
     }
   }
 
@@ -265,13 +294,17 @@ export class OpenAIProvider
     messages = Array.isArray(messages) ? messages : [messages];
     this.checkParams({ embeddings: messages, model, options });
 
-    const result = await this.instance.embeddings.create({
-      model: model,
-      input: messages,
-      dimensions: options.dimensions || DEFAULT_DIMENSIONS,
-      user: options.user,
-    });
-    return result.data.map(e => e.embedding);
+    try {
+      const result = await this.instance.embeddings.create({
+        model: model,
+        input: messages,
+        dimensions: options.dimensions || DEFAULT_DIMENSIONS,
+        user: options.user,
+      });
+      return result.data.map(e => e.embedding);
+    } catch (e: any) {
+      throw this.handleError(e);
+    }
   }
 
   // ====== text to image ======
@@ -281,20 +314,25 @@ export class OpenAIProvider
     options: CopilotImageOptions = {}
   ): Promise<Array<string>> {
     const { content: prompt } = messages.pop() || {};
-    if (!prompt) {
-      throw new Error('Prompt is required');
-    }
-    const result = await this.instance.images.generate(
-      {
-        prompt,
-        model,
-        response_format: 'url',
-        user: options.user,
-      },
-      { signal: options.signal }
-    );
+    if (!prompt) throw new CopilotPromptInvalid('Prompt is required');
 
-    return result.data.map(image => image.url).filter((v): v is string => !!v);
+    try {
+      const result = await this.instance.images.generate(
+        {
+          prompt,
+          model,
+          response_format: 'url',
+          user: options.user,
+        },
+        { signal: options.signal }
+      );
+
+      return result.data
+        .map(image => image.url)
+        .filter((v): v is string => !!v);
+    } catch (e: any) {
+      throw this.handleError(e);
+    }
   }
 
   async *generateImagesStream(
