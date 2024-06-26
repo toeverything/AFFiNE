@@ -72,19 +72,21 @@ export function DocPeekPreview({
   const [resolvedMode, setResolvedMode] = useState<DocMode | undefined>(mode);
 
   useEffect(() => {
-    if (editor && resolvedMode === 'edgeless') {
-      editor.host
-        .closest('[data-testid="peek-view-modal-animation-container"]')
-        ?.addEventListener(
-          'animationend',
-          () => {
-            fitViewport(editor, xywh);
-          },
-          {
-            once: true,
-          }
-        );
-    }
+    requestAnimationFrame(() => {
+      if (editor && editor.host && resolvedMode === 'edgeless') {
+        editor.host
+          .closest('[data-testid="peek-view-modal-animation-container"]')
+          ?.addEventListener(
+            'animationend',
+            () => {
+              fitViewport(editor, xywh);
+            },
+            {
+              once: true,
+            }
+          );
+      }
+    });
     return;
   }, [editor, resolvedMode, xywh]);
 
