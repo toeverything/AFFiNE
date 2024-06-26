@@ -8,6 +8,7 @@ import type {
 import {
   BlocksUtils,
   EdgelessTextBlockModel,
+  EmbedSyncedDocModel,
   ImageBlockModel,
   NoteBlockModel,
   ShapeElementModel,
@@ -96,6 +97,14 @@ function actionToRenderer<T extends keyof BlockSuitePresets.AIActions>(
   return createTextRenderer(host, { maxHeight: 320 });
 }
 
+async function getContentFromEmbedSyncedDocModel(
+  host: EditorHost,
+  models: EmbedSyncedDocModel[]
+) {
+  const slice = Slice.fromModels(host.doc, models);
+  return (await getContentFromSlice(host, slice)).trim();
+}
+
 async function getContentFromHubBlockModel(
   host: EditorHost,
   models: EdgelessTextBlockModel[] | NoteBlockModel[]
@@ -132,39 +141,55 @@ export async function getContentFromSelected(
     return el.caption !== undefined && el.caption.length !== 0;
   }
 
-  const { notes, texts, shapes, images, edgelessTexts } = selected.reduce<{
-    notes: NoteBlockModel[];
-    texts: TextElementModel[];
-    shapes: RemoveUndefinedKey<ShapeElementModel, 'text'>[];
-    images: RemoveUndefinedKey<ImageBlockModel, 'caption'>[];
-    edgelessTexts: EdgelessTextBlockModel[];
-  }>(
-    (pre, cur) => {
-      if (cur instanceof NoteBlockModel) {
-        pre.notes.push(cur);
-      } else if (cur instanceof TextElementModel) {
-        pre.texts.push(cur);
-      } else if (cur instanceof ShapeElementModel && isShapeWithText(cur)) {
-        pre.shapes.push(cur);
-      } else if (cur instanceof ImageBlockModel && isImageWithCaption(cur)) {
-        pre.images.push(cur);
-      } else if (cur instanceof EdgelessTextBlockModel) {
-        pre.edgelessTexts.push(cur);
-      }
+  const { notes, texts, shapes, images, edgelessTexts, embedSyncedDocs } =
+    selected.reduce<{
+      notes: NoteBlockModel[];
+      texts: TextElementModel[];
+      shapes: RemoveUndefinedKey<ShapeElementModel, 'text'>[];
+      images: RemoveUndefinedKey<ImageBlockModel, 'caption'>[];
+      edgelessTexts: EdgelessTextBlockModel[];
+      embedSyncedDocs: EmbedSyncedDocModel[];
+    }>(
+      (pre, cur) => {
+        if (cur instanceof NoteBlockModel) {
+          pre.notes.push(cur);
+        } else if (cur instanceof TextElementModel) {
+          pre.texts.push(cur);
+        } else if (cur instanceof ShapeElementModel && isShapeWithText(cur)) {
+          pre.shapes.push(cur);
+        } else if (cur instanceof ImageBlockModel && isImageWithCaption(cur)) {
+          pre.images.push(cur);
+        } else if (cur instanceof EdgelessTextBlockModel) {
+          pre.edgelessTexts.push(cur);
+        } else if (cur instanceof EmbedSyncedDocModel) {
+          pre.embedSyncedDocs.push(cur);
+        }
 
-      return pre;
-    },
-    { notes: [], texts: [], shapes: [], images: [], edgelessTexts: [] }
-  );
+        return pre;
+      },
+      {
+        notes: [],
+        texts: [],
+        shapes: [],
+        images: [],
+        edgelessTexts: [],
+        embedSyncedDocs: [],
+      }
+    );
 
   const noteContent = await getContentFromHubBlockModel(host, notes);
   const edgelessTextContent = await getContentFromHubBlockModel(
     host,
     edgelessTexts
   );
+  const syncedDocsContent = await getContentFromEmbedSyncedDocModel(
+    host,
+    embedSyncedDocs
+  );
 
   return `${noteContent.join('\n')}
-  ${edgelessTextContent.join('\n')}
+${edgelessTextContent.join('\n')}
+${syncedDocsContent}
 ${texts.map(text => text.text.toString()).join('\n')}
 ${shapes.map(shape => shape.text.toString()).join('\n')}
 ${images.map(image => image.caption.toString()).join('\n')}
@@ -449,14 +474,15 @@ export function actionToHandler<T extends keyof BlockSuitePresets.AIActions>(
     if (isCreateImageAction || isMakeItRealAction) {
       togglePanel = async () => {
         if (isEmpty) return true;
-        const {
-          notes,
-          shapes,
-          images,
-          edgelessTexts,
-          frames: _,
-        } = BlocksUtils.splitElements(selectedElements);
-        const blocks = [...notes, ...shapes, ...images, ...edgelessTexts];
+        const { notes, shapes, images, edgelessTexts, embedSyncedDocs } =
+          BlocksUtils.splitElements(selectedElements);
+        const blocks = [
+          ...notes,
+          ...shapes,
+          ...images,
+          ...edgelessTexts,
+          ...embedSyncedDocs,
+        ];
         if (blocks.length === 0) return true;
         const content = await getContentFromSelected(host, blocks);
         ctx.set({
