@@ -7,6 +7,7 @@ import {
 import { WorkbenchLink } from '@affine/core/modules/workbench';
 import { useI18n } from '@affine/i18n';
 import {
+  DeleteIcon,
   LinkedEdgelessIcon,
   LinkedPageIcon,
   TodayIcon,
@@ -43,12 +44,15 @@ export function pageReferenceRenderer({
   const referencedPage = pageMetaHelper.getDocMeta(pageId);
   let title =
     referencedPage?.title ?? t['com.affine.editor.reference-not-found']();
-  let icon =
-    docMode === 'page' || docMode === null ? (
-      <LinkedPageIcon className={styles.pageReferenceIcon} />
-    ) : (
-      <LinkedEdgelessIcon className={styles.pageReferenceIcon} />
-    );
+
+  let icon = !referencedPage ? (
+    <DeleteIcon className={styles.pageReferenceIcon} />
+  ) : docMode === 'page' || docMode === null ? (
+    <LinkedPageIcon className={styles.pageReferenceIcon} />
+  ) : (
+    <LinkedEdgelessIcon className={styles.pageReferenceIcon} />
+  );
+
   const isJournal = isPageJournal(pageId);
   const localizedJournalDate = getLocalizedJournalDateString(pageId);
   if (isJournal && localizedJournalDate) {
