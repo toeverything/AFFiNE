@@ -18,10 +18,6 @@ export interface AIChatParams {
   autoSelect?: boolean;
 }
 
-type RequestChatCardsElement = (
-  chatPanel: HTMLElement
-) => Promise<ChatCards | null>;
-
 export type ActionEventType =
   | 'started'
   | 'finished'
@@ -76,8 +72,17 @@ export class AIProvider {
     return AIProvider.instance.toggleGeneralAIOnboarding;
   }
 
-  static get requestChatCardsElement() {
-    return AIProvider.instance.requestChatCardsElement;
+  static genRequestChatCardsFn(params: AIChatParams) {
+    return async (chatPanel: HTMLElement) => {
+      const chatCards: ChatCards | null = await new Promise(resolve =>
+        requestAnimationFrame(() =>
+          resolve(chatPanel.querySelector('chat-cards'))
+        )
+      );
+      if (!chatCards) return;
+      if (chatCards.temporaryParams) return;
+      chatCards.temporaryParams = params;
+    };
   }
 
   private static readonly instance = new AIProvider();
@@ -93,14 +98,6 @@ export class AIProvider {
   private histories: BlockSuitePresets.AIHistoryService | null = null;
 
   private toggleGeneralAIOnboarding: ((value: boolean) => void) | null = null;
-
-  private readonly requestChatCardsElement: RequestChatCardsElement = (
-    chatPanel: HTMLElement
-  ) => {
-    return new Promise(resolve => {
-      resolve(chatPanel.querySelector<ChatCards>('chat-cards'));
-    });
-  };
 
   private readonly slots = {
     // use case: when user selects "continue in chat" in an ask ai result panel

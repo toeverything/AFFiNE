@@ -47,6 +47,7 @@ import {
   MultiTabSidebarBody,
   MultiTabSidebarHeaderSwitcher,
   sidebarTabs,
+  type TabOnLoadFn,
 } from '../../../modules/multi-tab-sidebar';
 import {
   RightSidebarService,
@@ -74,9 +75,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
   const docCollection = workspace.docCollection;
   const mode = useLiveData(doc.mode$);
   const { appSettings } = useAppSettingHelper();
-  const [tabOnLoad, setTabOnLoad] = useState<
-    ((component: HTMLElement) => void) | null
-  >(null);
+  const [tabOnLoad, setTabOnLoad] = useState<TabOnLoadFn | null>(null);
 
   const isActiveView = useIsActiveView();
   // TODO(@eyhn): remove jotai here
@@ -110,12 +109,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
       // * The right sidebar is not open
       // * Chat panel is not activated
       if (!opened || !actived) {
-        const callback = async (chatPanel: HTMLElement) => {
-          const chatCards = await AIProvider.requestChatCardsElement(chatPanel);
-          if (!chatCards) return;
-          if (chatCards.temporaryParams) return;
-          chatCards.temporaryParams = params;
-        };
+        const callback = AIProvider.genRequestChatCardsFn(params);
         setTabOnLoad(() => callback);
       } else {
         setTabOnLoad(null);
