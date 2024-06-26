@@ -75,13 +75,6 @@ const PageDetailEditorMain = memo(function PageDetailEditorMain({
       // debug current detail editor
       globalThis.currentEditor = editor;
       const disposableGroup = new DisposableGroup();
-      disposableGroup.add(
-        page.slots.blockUpdated.once(() => {
-          page.collection.setDocMeta(page.id, {
-            updatedDate: Date.now(),
-          });
-        })
-      );
       localStorage.setItem('last_page_id', page.id);
 
       if (onLoad) {

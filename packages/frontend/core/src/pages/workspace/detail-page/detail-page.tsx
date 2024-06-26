@@ -67,7 +67,6 @@ const DetailPageImpl = memo(function DetailPageImpl() {
   const activeTabName = useLiveData(rightSidebar.activeTabName$);
 
   const doc = useService(DocService).doc;
-  const docRecordList = useService(DocsService).list;
   const { openPage, jumpToPageBlock, jumpToTag } = useNavigateHelper();
   const [editor, setEditor] = useState<AffineEditorContainer | null>(null);
   const workspace = useService(WorkspaceService).workspace;
@@ -200,15 +199,6 @@ const DetailPageImpl = memo(function DetailPageImpl() {
         editorHost.std.spec.getService<PageRootService>('affine:page');
       const disposable = new DisposableGroup();
 
-      pageService.getDocUpdatedAt = (pageId: string) => {
-        const linkedPage = docRecordList.doc$(pageId).value;
-        if (!linkedPage) return new Date();
-
-        const updatedDate = linkedPage.meta$.value.updatedDate;
-        const createDate = linkedPage.meta$.value.createDate;
-        return new Date(updatedDate || createDate || Date.now());
-      };
-
       doc.setMode(mode);
       disposable.add(
         pageService.slots.docLinkClicked.on(({ docId, blockId }) => {
@@ -232,7 +222,6 @@ const DetailPageImpl = memo(function DetailPageImpl() {
     [
       doc,
       mode,
-      docRecordList,
       jumpToPageBlock,
       docCollection.id,
       openPage,

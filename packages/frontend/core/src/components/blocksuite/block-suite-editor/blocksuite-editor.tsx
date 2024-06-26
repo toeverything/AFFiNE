@@ -89,6 +89,17 @@ const BlockSuiteEditorImpl = forwardRef<AffineEditorContainer, EditorProps>(
     );
 
     useEffect(() => {
+      const disposable = page.slots.blockUpdated.once(() => {
+        page.collection.setDocMeta(page.id, {
+          updatedDate: Date.now(),
+        });
+      });
+      return () => {
+        disposable.dispose();
+      };
+    }, [page]);
+
+    useEffect(() => {
       return () => {
         editorDisposeRef.current();
       };
