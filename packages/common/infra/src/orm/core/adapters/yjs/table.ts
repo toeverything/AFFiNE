@@ -57,6 +57,7 @@ export class YjsTableAdapter implements TableAdapter {
       }
 
       this.keyBy(record, key);
+      record.set(this.deleteFlagKey, false);
     }, this.origin);
 
     this.markCacheStaled();
@@ -148,7 +149,7 @@ export class YjsTableAdapter implements TableAdapter {
   }
 
   private isDeleted(record: YMap<any>) {
-    return record.has(this.deleteFlagKey);
+    return record.get(this.deleteFlagKey) === true;
   }
 
   private record(key: Key) {

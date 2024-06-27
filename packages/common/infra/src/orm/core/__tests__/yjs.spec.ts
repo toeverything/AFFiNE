@@ -118,6 +118,31 @@ describe('ORM entity CRUD', () => {
     expect(tag2).toBe(null);
   });
 
+  test('should be able to recover entity', t => {
+    const { client } = t;
+
+    client.tags.create({
+      id: '1',
+      name: 'test',
+      color: 'red',
+    });
+
+    client.tags.delete('1');
+
+    client.tags.create({
+      id: '1',
+      name: 'test',
+      color: 'red',
+    });
+
+    const tag = client.tags.get('1');
+    expect(tag).toEqual({
+      id: '1',
+      name: 'test',
+      color: 'red',
+    });
+  });
+
   test('should be able to list keys', t => {
     const { client } = t;
 
