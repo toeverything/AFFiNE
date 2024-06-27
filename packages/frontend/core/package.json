@@ -47,7 +47,7 @@
     "@react-hookz/web": "^24.0.4",
     "@sentry/integrations": "^7.109.0",
     "@sentry/react": "^8.0.0",
-    "@toeverything/theme": "^0.7.29",
+    "@toeverything/theme": "^0.7.35",
     "@vanilla-extract/dynamic": "^2.1.0",
     "animejs": "^3.2.2",
     "async-call-rpc": "^6.4.2",
