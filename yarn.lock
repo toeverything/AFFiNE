@@ -307,6 +307,7 @@ __metadata:
     "@radix-ui/react-toast": "npm:^1.1.5"
     "@radix-ui/react-toolbar": "npm:^1.0.4"
     "@radix-ui/react-tooltip": "npm:^1.0.7"
+    "@radix-ui/react-visually-hidden": "npm:^1.1.0"
     "@storybook/addon-actions": "npm:^7.6.17"
     "@storybook/addon-essentials": "npm:^7.6.17"
     "@storybook/addon-interactions": "npm:^7.6.17"
@@ -12840,7 +12841,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@radix-ui/react-visually-hidden@npm:1.1.0":
+"@radix-ui/react-visually-hidden@npm:1.1.0, @radix-ui/react-visually-hidden@npm:^1.1.0":
   version: 1.1.0
   resolution: "@radix-ui/react-visually-hidden@npm:1.1.0"
   dependencies:

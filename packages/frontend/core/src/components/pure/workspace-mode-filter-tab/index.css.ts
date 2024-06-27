@@ -4,5 +4,4 @@ export const filterTab = style({
   fontSize: cssVar('fontXs'),
   fontWeight: 600,
   textTransform: 'capitalize',
-  minWidth: '91px',
 });

@@ -1,9 +1,4 @@
-import {
-  Button,
-  Modal,
-  RadioButton,
-  RadioButtonGroup,
-} from '@affine/component';
+import { Button, Modal, RadioGroup } from '@affine/component';
 import { useAllPageListConfig } from '@affine/core/hooks/affine/use-all-page-list-config';
 import type { Collection } from '@affine/env/filter';
 import { useI18n } from '@affine/i18n';
@@ -137,29 +132,24 @@ export const EditCollection = ({
   );
   const switchMode = useMemo(
     () => (
-      <RadioButtonGroup
-        width={158}
-        style={{ height: 32 }}
+      <RadioGroup
+        key="mode-switcher"
+        style={{ minWidth: 158 }}
         value={mode}
-        onValueChange={(mode: 'page' | 'rule') => {
-          setMode(mode);
-        }}
-      >
-        <RadioButton
-          spanStyle={styles.tabButton}
-          value="page"
-          data-testid="edit-collection-pages-button"
-        >
-          {t['com.affine.editCollection.pages']()}
-        </RadioButton>
-        <RadioButton
-          spanStyle={styles.tabButton}
-          value="rule"
-          data-testid="edit-collection-rules-button"
-        >
-          {t['com.affine.editCollection.rules']()}
-        </RadioButton>
-      </RadioButtonGroup>
+        onChange={setMode}
+        items={[
+          {
+            value: 'page',
+            label: t['com.affine.editCollection.pages'](),
+            testId: 'edit-collection-pages-button',
+          },
+          {
+            value: 'rule',
+            label: t['com.affine.editCollection.rules'](),
+            testId: 'edit-collection-rules-button',
+          },
+        ]}
+      />
     ),
     [mode, t]
   );
