@@ -415,6 +415,7 @@ __metadata:
     "@sentry/integrations": "npm:^7.109.0"
     "@sentry/react": "npm:^8.0.0"
     "@sentry/webpack-plugin": "npm:^2.16.1"
+    "@sgtpooki/file-type": "npm:^1.0.1"
     "@swc/core": "npm:^1.4.13"
     "@testing-library/react": "npm:^16.0.0"
     "@toeverything/theme": "npm:^0.7.35"
@@ -13465,7 +13466,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@sgtpooki/file-type@npm:1.0.1":
+"@sgtpooki/file-type@npm:1.0.1, @sgtpooki/file-type@npm:^1.0.1":
   version: 1.0.1
   resolution: "@sgtpooki/file-type@npm:1.0.1"
   dependencies:

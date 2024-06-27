@@ -16,6 +16,7 @@ import {
   ViewBarIcon,
 } from '@blocksuite/icons/rc';
 import type { BlockModel } from '@blocksuite/store';
+import { fileTypeFromBuffer } from '@sgtpooki/file-type';
 import { useService } from '@toeverything/infra';
 import clsx from 'clsx';
 import { useErrorBoundary } from 'foxact/use-error-boundary';
@@ -41,35 +42,6 @@ const filterImageBlock = (block: BlockModel): block is ImageBlockModel => {
   return block.flavour === 'affine:image';
 };
 
-function resolveMimeType(buffer: Uint8Array): string {
-  if (
-    buffer[0] === 0x47 &&
-    buffer[1] === 0x49 &&
-    buffer[2] === 0x46 &&
-    buffer[3] === 0x38
-  ) {
-    return 'image/gif';
-  } else if (
-    buffer[0] === 0x89 &&
-    buffer[1] === 0x50 &&
-    buffer[2] === 0x4e &&
-    buffer[3] === 0x47
-  ) {
-    return 'image/png';
-  } else if (
-    buffer[0] === 0xff &&
-    buffer[1] === 0xd8 &&
-    buffer[2] === 0xff &&
-    buffer[3] === 0xe0
-  ) {
-    return 'image/jpeg';
-  } else {
-    // unknown, fallback to png
-    console.error('unknown image type');
-    return 'image/png';
-  }
-}
-
 async function imageUrlToBlob(url: string): Promise<Blob | undefined> {
   const buffer = await fetch(url).then(response => {
     return response.arrayBuffer();
@@ -80,8 +52,11 @@ async function imageUrlToBlob(url: string): Promise<Blob | undefined> {
     return;
   }
   try {
-    const type = resolveMimeType(new Uint8Array(buffer));
-    const blob = new Blob([buffer], { type });
+    const type = await fileTypeFromBuffer(buffer);
+    if (!type) {
+      return;
+    }
+    const blob = new Blob([buffer], { type: type.mime });
     return blob;
   } catch (error) {
     console.error('Error converting image to blob', error);
