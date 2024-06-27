@@ -1,8 +1,8 @@
 import { cssVar } from '@toeverything/theme';
 import { style } from '@vanilla-extract/css';
 export const root = style({
-  height: '100vh',
-  width: '100vw',
+  height: '100%',
+  width: '100%',
   display: 'flex',
   flexDirection: 'column',
   fontSize: cssVar('fontBase'),
