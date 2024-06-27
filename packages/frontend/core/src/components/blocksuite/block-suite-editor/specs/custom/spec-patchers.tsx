@@ -19,15 +19,12 @@ import type { BlockSpec, WidgetElement } from '@blocksuite/block-std';
 import {
   type AffineReference,
   AffineSlashMenuWidget,
-  EmbedBlockElement,
-  type EmbedLinkedDocBlockService,
-  type EmbedLinkedDocModel,
+  EmbedLinkedDocBlockComponent,
   type ParagraphBlockService,
-  ReferenceNodeConfig,
   type RootService,
 } from '@blocksuite/blocks';
 import type { DocMode, DocService, DocsService } from '@toeverything/infra';
-import { html, type TemplateResult } from 'lit';
+import { type TemplateResult } from 'lit';
 import { customElement } from 'lit/decorators.js';
 import { literal } from 'lit/static-html.js';
 
@@ -426,25 +423,10 @@ export function patchQuickSearchService(
 }
 
 @customElement('affine-linked-doc-ref-block')
-export class LinkedDocBlockComponent extends EmbedBlockElement<
-  EmbedLinkedDocModel,
-  EmbedLinkedDocBlockService
-> {
-  referenceNodeConfig = new ReferenceNodeConfig();
-  override render() {
-    this.referenceNodeConfig.setDoc(this.model.doc);
-    return html`<affine-reference
-      .delta=${{
-        insert: '',
-        attributes: {
-          reference: {
-            type: 'LinkedPage',
-            pageId: this.model.pageId,
-          },
-        },
-      } as const}
-      .config=${this.referenceNodeConfig}
-    ></affine-reference>`;
+// @ts-expect-error ignore private warning for overriding _load
+export class LinkedDocBlockComponent extends EmbedLinkedDocBlockComponent {
+  override _load() {
+    this.isBannerEmpty = true;
   }
 }
 
