@@ -36,7 +36,7 @@ import stickerContent${id} from './stickers/${category}/Content/${sticker}';`,
         name: ${JSON.stringify(name)},
         cover: stickerCover${id},
         content: stickerContent${id},
-        hash: ${JSON.stringify(hash)},
+        hash: ${JSON.stringify(hash).replace(/\+/g, '-').replace(/\//g, '_')},
       }`,
     };
   }
