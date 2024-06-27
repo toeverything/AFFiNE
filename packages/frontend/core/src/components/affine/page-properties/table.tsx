@@ -48,6 +48,7 @@ import {
 } from '@toeverything/infra';
 import clsx from 'clsx';
 import { use } from 'foxact/use';
+import { useDebouncedValue } from 'foxact/use-debounced-value';
 import { atom, useAtomValue, useSetAtom } from 'jotai';
 import type React from 'react';
 import type {
@@ -674,6 +675,8 @@ export const PagePropertiesTableHeader = ({
     t,
   ]);
 
+  const dTimestampElement = useDebouncedValue(timestampElement, 500);
+
   const handleCollapse = useCallback(() => {
     onOpenChange(!open);
   }, [onOpenChange, open]);
@@ -691,7 +694,7 @@ export const PagePropertiesTableHeader = ({
             </div>
           </PageBacklinksPopup>
         ) : null}
-        {timestampElement}
+        {dTimestampElement}
       </div>
       <Divider />
       <div className={styles.tableHeaderSecondaryRow}>
