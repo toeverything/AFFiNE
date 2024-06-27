@@ -10,6 +10,7 @@ import type {
   SurfaceBlockModel,
 } from '@blocksuite/blocks';
 import {
+  Bound,
   DeleteIcon,
   EDGELESS_ELEMENT_TOOLBAR_WIDGET,
   EDGELESS_TEXT_BLOCK_MIN_HEIGHT,
@@ -245,6 +246,11 @@ const defaultHandler = (host: EditorHost) => {
   }
 };
 
+/**
+ * Image handler for inserting generated image into the edgeless document.
+ * Should make the inserting image size same with the input image if there is an input image.
+ * @param host
+ */
 const imageHandler = (host: EditorHost) => {
   const aiPanel = getAIPanel(host);
   // `DataURL` or `URL`
@@ -253,6 +259,13 @@ const imageHandler = (host: EditorHost) => {
 
   const edgelessCopilot = getEdgelessCopilotWidget(host);
   const bounds = edgelessCopilot.determineInsertionBounds();
+  const selectedElements = getCopilotSelectedElems(host);
+  const selectedImageBlockModel = selectedElements.find(
+    model => model instanceof ImageBlockModel
+  );
+  const selectedBound = selectedImageBlockModel
+    ? Bound.deserialize(selectedImageBlockModel.xywh)
+    : null;
 
   edgelessCopilot.hideCopilotPanel();
   aiPanel.hide();
@@ -269,7 +282,25 @@ const imageHandler = (host: EditorHost) => {
       const [x, y] = edgelessRoot.service.viewport.toViewCoord(minX, minY);
 
       host.doc.transact(() => {
-        edgelessRoot.addImages([img], [x, y], true).catch(console.error);
+        edgelessRoot
+          .addImages([img], [x, y], true)
+          .then(blockIds => {
+            const imageBlockId = blockIds[0];
+            const imageBlock = host.doc.getBlock(imageBlockId);
+            if (!imageBlock || !selectedBound) return;
+
+            // Update the image width and height to the same with the selected image
+            const imageModel = imageBlock.model as ImageBlockModel;
+            const imageBound = Bound.deserialize(imageModel.xywh);
+            const newBound = new Bound(
+              imageBound.x,
+              imageBound.y,
+              selectedBound.w,
+              selectedBound.h
+            );
+            host.doc.updateBlock(imageModel, { xywh: newBound.serialize() });
+          })
+          .catch(console.error);
       });
     })
     .catch(console.error);
