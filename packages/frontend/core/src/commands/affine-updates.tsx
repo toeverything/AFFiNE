@@ -1,3 +1,4 @@
+import { notify } from '@affine/component';
 import { updateReadyAtom } from '@affine/core/hooks/use-app-updater';
 import { apis } from '@affine/electron-api';
 import type { useI18n } from '@affine/i18n';
@@ -24,7 +25,10 @@ export function registerAffineUpdatesCommands({
       preconditionStrategy: () => !!store.get(updateReadyAtom),
       run() {
         apis?.updater.quitAndInstall().catch(err => {
-          // TODO(@JimmFly): add error toast here
+          notify.error({
+            title: 'Failed to restart to upgrade',
+            message: 'Please restart the app manually to upgrade.',
+          });
           console.error(err);
         });
       },

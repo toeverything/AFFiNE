@@ -98,7 +98,6 @@ export const TagListItem = (props: TagListItemProps) => {
     );
   }, [props.color, props.onSelectedChange, props.selectable, props.selected]);
 
-  // TODO(@JimmFly): use getDropItemId
   const { setNodeRef, attributes, listeners, isDragging } = useDraggable({
     id: getDNDId('tag-list', 'tag', props.tagId),
     data: {

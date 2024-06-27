@@ -167,7 +167,6 @@ export const PageListItem = (props: PageListItemProps) => {
     props.title,
   ]);
 
-  // TODO(@JimmFly): use getDropItemId
   const { setNodeRef, attributes, listeners, isDragging } = useDraggable({
     id: getDNDId('doc-list', 'doc', props.pageId),
     data: {

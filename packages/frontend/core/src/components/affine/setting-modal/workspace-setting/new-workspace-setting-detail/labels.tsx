@@ -81,10 +81,6 @@ export const LabelsPanel = () => {
       condition: workspace.flavour === 'affine-cloud',
       label: 'syncCloud',
     },
-    //TODO(@JimmFly): add these labels
-    // { status==="synced", label: 'availableOffline' }
-    // { workspace.flavour === 'affine-Docker', label: 'syncDocker' }
-    // { workspace.flavour === 'self-hosted', label: 'selfHosted' }
   ];
 
   return (

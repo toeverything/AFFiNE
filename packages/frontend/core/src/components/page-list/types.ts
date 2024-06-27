@@ -74,9 +74,7 @@ export type TagListItemProps = {
 export interface ItemListHeaderProps {}
 
 // TODO(@JimmFly): a temporary solution. may need to be refactored later
-export type ItemGroupByType = 'createDate' | 'updatedDate'; // TODO(@JimmFly): can add more later
-
-// TODO(@JimmFly): a temporary solution. may need to be refactored later
+export type ItemGroupByType = 'createDate' | 'updatedDate';
 export interface SortBy {
   key: 'createDate' | 'updatedDate';
   order: 'asc' | 'desc';
