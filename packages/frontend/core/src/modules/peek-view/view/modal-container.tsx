@@ -1,5 +1,4 @@
 import * as Dialog from '@radix-ui/react-dialog';
-import { assignInlineVars } from '@vanilla-extract/dynamic';
 import clsx from 'clsx';
 import {
   createContext,
@@ -9,7 +8,7 @@ import {
   useEffect,
   useState,
 } from 'react';
-import useTransition from 'react-transition-state';
+import { flushSync } from 'react-dom';
 
 import * as styles from './modal-container.css';
 
@@ -42,6 +41,15 @@ export const useInsidePeekView = () => {
   return !!context;
 };
 
+/**
+ * Convert var(--xxx) to --xxx
+ * @param fullName
+ * @returns
+ */
+function toCssVarName(fullName: string) {
+  return fullName.slice(4, -1);
+}
+
 function getElementScreenPositionCenter(target: HTMLElement) {
   const rect = target.getBoundingClientRect();
 
@@ -63,7 +71,6 @@ export type PeekViewModalContainerProps = PropsWithChildren<{
   open: boolean;
   target?: HTMLElement;
   controls?: React.ReactNode;
-  hideOnEntering?: boolean;
   onAnimationStart?: () => void;
   onAnimateEnd?: () => void;
   padding?: boolean;
@@ -81,7 +88,6 @@ export const PeekViewModalContainer = forwardRef<
     target,
     controls,
     children,
-    hideOnEntering,
     onAnimationStart,
     onAnimateEnd,
     animation = 'zoom',
@@ -90,33 +96,40 @@ export const PeekViewModalContainer = forwardRef<
   },
   ref
 ) {
-  const [{ status }, toggle] = useTransition({
-    timeout: animationTimeout,
-  });
-  const [transformOrigin, setTransformOrigin] = useState<string | null>(null);
+  const [vtOpen, setVtOpen] = useState(open);
   useEffect(() => {
-    toggle(open);
+    document.startViewTransition(() => {
+      flushSync(() => {
+        setVtOpen(open);
+      });
+    });
+  }, [open]);
+
+  useEffect(() => {
     const bondingBox = target ? getElementScreenPositionCenter(target) : null;
     const offsetLeft =
       (window.innerWidth - Math.min(window.innerWidth * 0.9, 1200)) / 2;
     const modalHeight = window.innerHeight * 0.05;
-    setTransformOrigin(
-      bondingBox
-        ? `${bondingBox.x - offsetLeft}px ${bondingBox.y - modalHeight}px`
-        : null
+    const transformOrigin = bondingBox
+      ? `${bondingBox.x - offsetLeft}px ${bondingBox.y - modalHeight}px`
+      : null;
+
+    document.documentElement.style.setProperty(
+      toCssVarName(styles.transformOrigin),
+      transformOrigin
+    );
+
+    document.documentElement.style.setProperty(
+      toCssVarName(styles.animationTimeout),
+      animationTimeout + 'ms'
     );
   }, [open, target]);
   return (
     <PeekViewContext.Provider value={emptyContext}>
-      <Dialog.Root modal open={status !== 'exited'} onOpenChange={onOpenChange}>
+      <Dialog.Root modal open={vtOpen} onOpenChange={onOpenChange}>
         <Dialog.Portal>
           <Dialog.Overlay
             className={styles.modalOverlay}
-            data-state={status}
-            style={assignInlineVars({
-              [styles.transformOrigin]: transformOrigin,
-              [styles.animationTimeout]: `${animationTimeout}ms`,
-            })}
             onAnimationStart={onAnimationStart}
             onAnimationEnd={onAnimateEnd}
           />
@@ -125,10 +138,6 @@ export const PeekViewModalContainer = forwardRef<
             data-testid={testId}
             data-peek-view-wrapper
             className={styles.modalContentWrapper}
-            style={assignInlineVars({
-              [styles.transformOrigin]: transformOrigin,
-              [styles.animationTimeout]: `${animationTimeout}ms`,
-            })}
           >
             <div
               className={clsx(
@@ -139,19 +148,15 @@ export const PeekViewModalContainer = forwardRef<
                   : styles.modalContentContainerWithZoom
               )}
               data-testid="peek-view-modal-animation-container"
-              data-state={status}
             >
               <Dialog.Content
                 {...contentOptions}
-                data-no-interaction={status !== 'entered'}
                 className={styles.modalContent}
               >
-                {hideOnEntering && status === 'entering' ? null : children}
+                {children}
               </Dialog.Content>
               {controls ? (
-                <div data-state={status} className={styles.modalControls}>
-                  {controls}
-                </div>
+                <div className={styles.modalControls}>{controls}</div>
               ) : null}
             </div>
           </div>

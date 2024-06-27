@@ -5,6 +5,7 @@ import { AffineErrorBoundary } from '@affine/core/components/affine/affine-error
 import { BlockSuiteEditor } from '@affine/core/components/blocksuite/block-suite-editor';
 import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
 import { PageNotFound } from '@affine/core/pages/404';
+import { DebugLogger } from '@affine/debug';
 import { Bound, type EdgelessRootService } from '@blocksuite/blocks';
 import { DisposableGroup } from '@blocksuite/global/utils';
 import type { AffineEditorContainer } from '@blocksuite/presets';
@@ -18,31 +19,37 @@ import { PeekViewService } from '../../services/peek-view';
 import { useDoc } from '../utils';
 import * as styles from './doc-peek-view.css';
 
+const logger = new DebugLogger('doc-peek-view');
+
 function fitViewport(
   editor: AffineEditorContainer,
   xywh?: `[${number},${number},${number},${number}]`
 ) {
-  const rootService =
-    editor.host.std.spec.getService<EdgelessRootService>('affine:page');
-  rootService.viewport.onResize();
+  try {
+    const rootService =
+      editor.host.std.spec.getService<EdgelessRootService>('affine:page');
+    rootService.viewport.onResize();
 
-  if (xywh) {
-    const viewport = {
-      xywh: xywh,
-      padding: [60, 20, 20, 20] as [number, number, number, number],
-    };
-    rootService.viewport.setViewportByBound(
-      Bound.deserialize(viewport.xywh),
-      viewport.padding,
-      false
-    );
-  } else {
-    const data = rootService.getFitToScreenData();
-    rootService.viewport.setViewport(
-      data.zoom,
-      [data.centerX, data.centerY],
-      false
-    );
+    if (xywh) {
+      const viewport = {
+        xywh: xywh,
+        padding: [60, 20, 20, 20] as [number, number, number, number],
+      };
+      rootService.viewport.setViewportByBound(
+        Bound.deserialize(viewport.xywh),
+        viewport.padding,
+        false
+      );
+    } else {
+      const data = rootService.getFitToScreenData();
+      rootService.viewport.setViewport(
+        data.zoom,
+        [data.centerX, data.centerY],
+        false
+      );
+    }
+  } catch (e) {
+    logger.warn('failed to fitViewPort', e);
   }
 }
 
@@ -71,21 +78,13 @@ export function DocPeekPreview({
   const [resolvedMode, setResolvedMode] = useState<DocMode | undefined>(mode);
 
   useEffect(() => {
-    requestAnimationFrame(() => {
-      if (editor && editor.host && resolvedMode === 'edgeless') {
-        editor.host
-          .closest('[data-testid="peek-view-modal-animation-container"]')
-          ?.addEventListener(
-            'animationend',
-            () => {
-              fitViewport(editor, xywh);
-            },
-            {
-              once: true,
-            }
-          );
-      }
-    });
+    editor?.updateComplete
+      .then(() => {
+        if (resolvedMode === 'edgeless') {
+          fitViewport(editor, xywh);
+        }
+      })
+      .catch(console.error);
     return;
   }, [editor, resolvedMode, xywh]);
 

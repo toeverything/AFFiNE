@@ -1,5 +1,11 @@
 import { cssVar } from '@toeverything/theme';
-import { createVar, keyframes, style } from '@vanilla-extract/css';
+import {
+  createVar,
+  generateIdentifier,
+  globalStyle,
+  keyframes,
+  style,
+} from '@vanilla-extract/css';
 
 export const animationTimeout = createVar();
 export const transformOrigin = createVar();
@@ -42,26 +48,50 @@ const fadeOut = keyframes({
   },
 });
 
-const slideRight = keyframes({
-  from: {
-    transform: 'translateX(-200%)',
-    opacity: 0,
-  },
-  to: {
-    transform: 'translateX(0)',
-    opacity: 1,
-  },
+// every item must have its own unique view-transition-name
+const vtContentZoom = generateIdentifier('content-zoom');
+const vtContentFade = generateIdentifier('content-fade');
+const vtOverlayFade = generateIdentifier('content-fade');
+
+globalStyle(`::view-transition-group(${vtOverlayFade})`, {
+  animationDuration: animationTimeout,
 });
 
-const slideLeft = keyframes({
-  from: {
-    transform: 'translateX(0)',
-    opacity: 1,
-  },
-  to: {
-    transform: 'translateX(-200%)',
-    opacity: 0,
-  },
+globalStyle(`::view-transition-new(${vtOverlayFade})`, {
+  animationName: fadeIn,
+});
+
+globalStyle(`::view-transition-old(${vtOverlayFade})`, {
+  animationName: fadeOut,
+});
+
+globalStyle(
+  `::view-transition-group(${vtContentZoom}),
+   ::view-transition-group(${vtContentFade})`,
+  {
+    animationDuration: animationTimeout,
+    animationFillMode: 'forwards',
+    animationTimingFunction: 'cubic-bezier(0.42, 0, 0.58, 1)',
+  }
+);
+
+globalStyle(`::view-transition-new(${vtContentZoom})`, {
+  animationName: zoomIn,
+  // origin has to be set in ::view-transition-new/old
+  transformOrigin: transformOrigin,
+});
+
+globalStyle(`::view-transition-old(${vtContentZoom})`, {
+  animationName: zoomOut,
+  transformOrigin: transformOrigin,
+});
+
+globalStyle(`::view-transition-new(${vtContentFade})`, {
+  animationName: fadeIn,
+});
+
+globalStyle(`::view-transition-old(${vtContentFade})`, {
+  animationName: fadeOut,
 });
 
 export const modalOverlay = style({
@@ -69,17 +99,7 @@ export const modalOverlay = style({
   inset: 0,
   zIndex: cssVar('zIndexModal'),
   backgroundColor: cssVar('black30'),
-  opacity: 0,
-  selectors: {
-    '&[data-state=entered], &[data-state=entering]': {
-      animation: `${fadeIn} ${animationTimeout} ease-in-out`,
-      animationFillMode: 'forwards',
-    },
-    '&[data-state=exited], &[data-state=exiting]': {
-      animation: `${fadeOut} ${animationTimeout} ease-in-out`,
-      animationFillMode: 'backwards',
-    },
-  },
+  viewTransitionName: vtOverlayFade,
 });
 
 export const modalContentWrapper = style({
@@ -96,42 +116,14 @@ export const modalContentContainer = style({
   alignItems: 'flex-start',
   width: '100%',
   height: '100%',
-  willChange: 'transform, opacity',
-  transformOrigin: transformOrigin,
-  selectors: {
-    '&[data-state=entered], &[data-state=entering]': {
-      animationFillMode: 'forwards',
-      animationDuration: animationTimeout,
-      animationTimingFunction: 'cubic-bezier(0.42, 0, 0.58, 1)',
-    },
-    '&[data-state=exited], &[data-state=exiting]': {
-      animationFillMode: 'forwards',
-      animationDuration: animationTimeout,
-      animationTimingFunction: 'cubic-bezier(0.42, 0, 0.58, 1)',
-    },
-  },
 });
 
 export const modalContentContainerWithZoom = style({
-  selectors: {
-    '&[data-state=entered], &[data-state=entering]': {
-      animationName: zoomIn,
-    },
-    '&[data-state=exited], &[data-state=exiting]': {
-      animationName: zoomOut,
-    },
-  },
+  viewTransitionName: vtContentZoom,
 });
 
 export const modalContentContainerWithFade = style({
-  selectors: {
-    '&[data-state=entered], &[data-state=entering]': {
-      animationName: fadeIn,
-    },
-    '&[data-state=exited], &[data-state=exiting]': {
-      animationName: fadeOut,
-    },
-  },
+  viewTransitionName: vtContentFade,
 });
 
 export const containerPadding = style({
@@ -162,20 +154,5 @@ export const modalControls = style({
   zIndex: -1,
   minWidth: '48px',
   padding: '8px 0 0 16px',
-  opacity: 0,
   pointerEvents: 'auto',
-  selectors: {
-    '&[data-state=entered], &[data-state=entering]': {
-      animationName: slideRight,
-      animationDuration: animationTimeout,
-      animationFillMode: 'forwards',
-      animationTimingFunction: 'ease-in-out',
-    },
-    '&[data-state=exited], &[data-state=exiting]': {
-      animationName: slideLeft,
-      animationDuration: animationTimeout,
-      animationFillMode: 'forwards',
-      animationTimingFunction: 'ease-in-out',
-    },
-  },
 });
