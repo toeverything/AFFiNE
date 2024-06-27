@@ -17,7 +17,7 @@ import {
 } from '@toeverything/infra';
 import { useAtomValue, useSetAtom } from 'jotai';
 import type { PropsWithChildren, ReactNode } from 'react';
-import { lazy, useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Map as YMap } from 'yjs';
 
@@ -41,6 +41,7 @@ import { useRegisterFindInPageCommands } from '../hooks/affine/use-register-find
 import { useNavigateHelper } from '../hooks/use-navigate-helper';
 import { useRegisterWorkspaceCommands } from '../hooks/use-register-workspace-commands';
 import { QuickSearchService } from '../modules/cmdk';
+import { CMDKQuickSearchModal } from '../modules/cmdk/views';
 import { useRegisterNavigationCommands } from '../modules/navigation/view/use-register-navigation-commands';
 import { WorkbenchService } from '../modules/workbench';
 import {
@@ -51,12 +52,6 @@ import { SWRConfigProvider } from '../providers/swr-config-provider';
 import { pathGenerator } from '../shared';
 import { mixpanel } from '../utils';
 import * as styles from './styles.css';
-
-const CMDKQuickSearchModal = lazy(() =>
-  import('../modules/cmdk/views').then(module => ({
-    default: module.CMDKQuickSearchModal,
-  }))
-);
 
 export const QuickSearch = () => {
   const quickSearch = useService(QuickSearchService).quickSearch;
@@ -239,6 +234,7 @@ export const WorkspaceLayoutInner = ({ children }: PropsWithChildren) => {
             createPage={handleCreatePage}
             paths={pathGenerator}
           />
+
           <MainContainer clientBorder={appSettings.clientBorder}>
             {needUpgrade || upgrading ? <WorkspaceUpgrade /> : children}
           </MainContainer>

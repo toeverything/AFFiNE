@@ -1,5 +1,5 @@
 import { useLiveData, useService, WorkspaceService } from '@toeverything/infra';
-import { Suspense, useEffect } from 'react';
+import { useEffect } from 'react';
 
 import { AuthService } from '../../../modules/cloud';
 
@@ -44,9 +44,5 @@ const SyncAwarenessInner = () => {
 
 // TODO(@eyhn): we could do something more interesting here, e.g., show where the current user is
 export const SyncAwareness = () => {
-  return (
-    <Suspense>
-      <SyncAwarenessInner />
-    </Suspense>
-  );
+  return <SyncAwarenessInner />;
 };
