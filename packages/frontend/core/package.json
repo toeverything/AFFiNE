@@ -2,7 +2,7 @@
   "name": "@affine/core",
   "type": "module",
   "private": true,
-  "version": "0.14.0",
+  "version": "0.15.0",
   "exports": {
     "./app": "./src/app.tsx",
     "./router": "./src/router.tsx",
