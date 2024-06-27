@@ -37,6 +37,7 @@ export const ResizePanel = ({
 }: ResizePanelProps) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const cornerHandleRef = useRef<HTMLDivElement | null>(null);
+  const displayRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!containerRef.current || !cornerHandleRef.current) return;
@@ -48,6 +49,7 @@ export const ResizePanel = ({
     let startSize: [number, number] = [0, 0];
 
     const onDragStart = (e: MouseEvent) => {
+      containerEl.dataset.resizing = 'true';
       startPos = [e.clientX, e.clientY];
       startSize = [containerEl.offsetWidth, containerEl.offsetHeight];
       document.addEventListener('mousemove', onDrag);
@@ -62,6 +64,7 @@ export const ResizePanel = ({
     };
 
     const onDragEnd = () => {
+      containerEl.dataset.resizing = 'false';
       document.removeEventListener('mousemove', onDrag);
       document.removeEventListener('mouseup', onDragEnd);
     };
@@ -83,6 +86,10 @@ export const ResizePanel = ({
           minHeight ?? 0
         );
         containerEl.style.height = `${height}px`;
+      }
+
+      if (displayRef.current) {
+        displayRef.current.textContent = `${containerEl.offsetWidth}px * ${containerEl.offsetHeight}px`;
       }
     };
 
@@ -112,7 +119,9 @@ export const ResizePanel = ({
       {...attrs}
     >
       {children}
-      <div ref={cornerHandleRef} className={styles.cornerHandle}></div>
+      <div ref={cornerHandleRef} className={styles.cornerHandle}>
+        <div ref={displayRef} className={styles.display}></div>
+      </div>
     </div>
   );
 };

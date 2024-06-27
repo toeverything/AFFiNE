@@ -354,7 +354,7 @@ __metadata:
     rxjs: "npm:^7.8.1"
     sonner: "npm:^1.4.41"
     storybook: "npm:^7.6.17"
-    storybook-dark-mode: "npm:^4.0.0"
+    storybook-dark-mode: "npm:4.0.1"
     swr: "npm:^2.2.5"
     typescript: "npm:^5.4.5"
     uuid: "npm:^10.0.0"
@@ -36220,9 +36220,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"storybook-dark-mode@npm:^4.0.0":
-  version: 4.0.2
-  resolution: "storybook-dark-mode@npm:4.0.2"
+"storybook-dark-mode@npm:4.0.1":
+  version: 4.0.1
+  resolution: "storybook-dark-mode@npm:4.0.1"
   dependencies:
     "@storybook/components": "npm:^8.0.0"
     "@storybook/core-events": "npm:^8.0.0"
@@ -36232,7 +36232,7 @@ __metadata:
     "@storybook/theming": "npm:^8.0.0"
     fast-deep-equal: "npm:^3.1.3"
     memoizerific: "npm:^1.11.3"
-  checksum: 10/c9ef7bc6734df7486ff763c9da3c69505269eaf5fd7b5b489553f023b363ea892862241e6d701ad647ca5d1e64fd9a2646b8985c7ea8ac97a3bca87891db6fe5
+  checksum: 10/3225e5bdaba0ea76b65d642202d9712d7de234e3b5673fb46e444892ab114be207dd287778e2002b662ec35bb8153d2624ff280ce51c5299fb13c711431dad40
   languageName: node
   linkType: hard
 
