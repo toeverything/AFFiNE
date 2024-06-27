@@ -1,8 +1,9 @@
-import { IconButton } from '@affine/component';
-import { assignInlineVars } from '@vanilla-extract/dynamic';
+import type { RadioItem } from '@affine/component';
+import { RadioGroup } from '@affine/component';
+import { cssVar } from '@toeverything/theme';
+import { useMemo } from 'react';
 
 import type { SidebarTab, SidebarTabName } from '../multi-tabs/sidebar-tab';
-import * as styles from './header-switcher.css';
 
 export interface MultiTabSidebarHeaderSwitcherProps {
   tabs: SidebarTab[];
@@ -17,30 +18,26 @@ export const MultiTabSidebarHeaderSwitcher = ({
   activeTabName,
   setActiveTabName,
 }: MultiTabSidebarHeaderSwitcherProps) => {
-  const activeExtension = tabs.find(ext => ext.name === activeTabName);
-
-  const vars = assignInlineVars({
-    [styles.activeIdx]: String(
-      tabs.findIndex(ext => ext.name === activeExtension?.name) ?? 0
-    ),
-  });
+  const tabItems = useMemo(() => {
+    return tabs.map(extension => {
+      return {
+        value: extension.name,
+        label: extension.icon,
+        style: { padding: 0, fontSize: 20, width: 24 },
+      } satisfies RadioItem;
+    });
+  }, [tabs]);
 
   return (
-    <div className={styles.switchRootWrapper}>
-      <div className={styles.switchRoot} style={vars}>
-        {tabs.map(extension => {
-          return (
-            <IconButton
-              onClick={() => setActiveTabName(extension.name)}
-              key={extension.name}
-              data-active={activeExtension === extension}
-              className={styles.button}
-            >
-              {extension.icon}
-            </IconButton>
-          );
-        })}
-      </div>
-    </div>
+    <RadioGroup
+      borderRadius={8}
+      itemHeight={24}
+      padding={4}
+      gap={8}
+      items={tabItems}
+      value={activeTabName}
+      onChange={setActiveTabName}
+      activeItemStyle={{ color: cssVar('primaryColor') }}
+    />
   );
 };
