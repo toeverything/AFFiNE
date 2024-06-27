@@ -85,7 +85,6 @@ export enum CopilotModels {
   DallE3 = 'DallE3',
   Gpt4Omni = 'Gpt4Omni',
   Gpt4TurboPreview = 'Gpt4TurboPreview',
-  Gpt4VisionPreview = 'Gpt4VisionPreview',
   Gpt35Turbo = 'Gpt35Turbo',
   TextEmbedding3Large = 'TextEmbedding3Large',
   TextEmbedding3Small = 'TextEmbedding3Small',

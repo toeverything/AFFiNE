@@ -175,7 +175,7 @@ content: {{content}}`,
   {
     name: 'Explain this image',
     action: 'Explain this image',
-    model: 'gpt-4-vision-preview',
+    model: 'gpt-4o',
     messages: [
       {
         role: 'user',
@@ -536,7 +536,7 @@ content: {{content}}`,
   {
     name: 'Make it real',
     action: 'Make it real',
-    model: 'gpt-4-vision-preview',
+    model: 'gpt-4o',
     messages: [
       {
         role: 'user',
@@ -575,7 +575,7 @@ content: {{content}}`,
   {
     name: 'Make it real with text',
     action: 'Make it real with text',
-    model: 'gpt-4-vision-preview',
+    model: 'gpt-4o',
     messages: [
       {
         role: 'user',
