@@ -1,10 +1,4 @@
-import { ViewService } from '@affine/core/modules/workbench/services/view';
-import type {
-  BaseSelection,
-  BlockElement,
-  TextSelection,
-} from '@blocksuite/block-std';
-import type { Disposable } from '@blocksuite/global/utils';
+import type { BlockElement } from '@blocksuite/block-std';
 import type {
   AffineEditorContainer,
   EdgelessEditor,
@@ -12,7 +6,7 @@ import type {
 } from '@blocksuite/presets';
 import type { Doc } from '@blocksuite/store';
 import { Slot } from '@blocksuite/store';
-import { type DocMode, useServiceOptional } from '@toeverything/infra';
+import { type DocMode } from '@toeverything/infra';
 import clsx from 'clsx';
 import type React from 'react';
 import type { RefObject } from 'react';
@@ -111,7 +105,6 @@ export const BlocksuiteEditorContainer = forwardRef<
   const rootRef = useRef<HTMLDivElement>(null);
   const docRef = useRef<PageEditor>(null);
   const edgelessRef = useRef<EdgelessEditor>(null);
-  const renderStartRef = useRef<number>(Date.now());
 
   const slots: BlocksuiteEditorContainerRef['slots'] = useMemo(() => {
     return {
@@ -214,7 +207,6 @@ export const BlocksuiteEditorContainer = forwardRef<
   }, [affineEditorContainerProxy, ref]);
 
   const blockElement = useBlockElementById(rootRef, defaultSelectedBlockId);
-  const currentView = useServiceOptional(ViewService)?.view;
 
   useEffect(() => {
     let canceled = false;
@@ -252,68 +244,6 @@ export const BlocksuiteEditorContainer = forwardRef<
       canceled = true;
     };
   }, [blockElement, affineEditorContainerProxy, mode]);
-
-  useEffect(() => {
-    let disposable: Disposable | null = null;
-    let canceled = false;
-    // Function to handle block selection change
-    const handleSelectionChange = (selection: BaseSelection[]) => {
-      const viewLocation = currentView?.location$.value;
-      const currentPath = viewLocation?.pathname;
-      const locationHash = viewLocation?.hash;
-      if (
-        !currentView ||
-        !currentPath ||
-        // do not update the hash during the initial render
-        renderStartRef.current > Date.now() - 1000
-      ) {
-        return;
-      }
-      if (mode === 'edgeless') {
-        if (locationHash) {
-          currentView.replace(currentPath);
-        }
-        return;
-      }
-
-      if (selection[0]?.type === 'text') {
-        const textSelection = selection[0] as TextSelection;
-        if (textSelection.from.length === 0) {
-          // Clear the hash if no block is selected
-          if (locationHash) {
-            currentView.replace(currentPath);
-          }
-          return;
-        }
-      }
-
-      const selectedId = selection[0]?.blockId;
-      if (!selectedId) {
-        return;
-      }
-      const newHash = `#${selectedId}`;
-
-      // Only update the hash if it has changed
-      if (locationHash !== newHash) {
-        hashChangedRef.current = true;
-        currentView.replace(currentPath + newHash);
-      }
-    };
-
-    affineEditorContainerProxy.updateComplete
-      .then(() => {
-        const selectManager = affineEditorContainerProxy.host?.selection;
-        if (!selectManager || canceled) return;
-        // Set up the new disposable listener
-        disposable = selectManager.slots.changed.on(handleSelectionChange);
-      })
-      .catch(console.error);
-
-    return () => {
-      canceled = true;
-      disposable?.dispose();
-    };
-  }, [affineEditorContainerProxy, currentView, mode]);
 
   return (
     <div
