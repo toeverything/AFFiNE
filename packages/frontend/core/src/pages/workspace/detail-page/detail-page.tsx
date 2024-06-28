@@ -115,7 +115,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
         setTabOnLoad(null);
       }
     });
-    return disposable.dispose();
+    return () => disposable.dispose();
   }, [activeTabName, rightSidebar, setActiveTabName]);
 
   useEffect(() => {
