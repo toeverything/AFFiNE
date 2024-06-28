@@ -107,7 +107,6 @@ export function fromPromise<T>(
       .catch(error => {
         subscriber.error(error);
       });
-
     return () => abortController.abort('Aborted');
   });
 }

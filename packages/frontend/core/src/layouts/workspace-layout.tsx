@@ -1,3 +1,9 @@
+import { toast } from '@affine/component';
+import {
+  pushGlobalLoadingEventAtom,
+  resolveGlobalLoadingEventAtom,
+} from '@affine/component/global-loading';
+import { useI18n } from '@affine/i18n';
 import { ZipTransformer } from '@blocksuite/blocks';
 import { assertExists } from '@blocksuite/global/utils';
 import {
@@ -9,8 +15,13 @@ import {
   useSensors,
 } from '@dnd-kit/core';
 import {
+  type DocMode,
   DocsService,
+  effect,
+  fromPromise,
   GlobalContextService,
+  onStart,
+  throwIfAborted,
   useLiveData,
   useService,
   WorkspaceService,
@@ -19,6 +30,14 @@ import { useAtomValue, useSetAtom } from 'jotai';
 import type { PropsWithChildren, ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
+import {
+  catchError,
+  EMPTY,
+  finalize,
+  mergeMap,
+  switchMap,
+  timeout,
+} from 'rxjs';
 import { Map as YMap } from 'yjs';
 
 import { openSettingModalAtom } from '../atoms';
@@ -103,6 +122,9 @@ export const WorkspaceLayout = function WorkspaceLayout({
 };
 
 export const WorkspaceLayoutInner = ({ children }: PropsWithChildren) => {
+  const t = useI18n();
+  const pushGlobalLoadingEvent = useSetAtom(pushGlobalLoadingEventAtom);
+  const resolveGlobalLoadingEvent = useSetAtom(resolveGlobalLoadingEventAtom);
   const currentWorkspace = useService(WorkspaceService).workspace;
   const docsList = useService(DocsService).list;
   const { openPage } = useNavigateHelper();
@@ -120,26 +142,60 @@ export const WorkspaceLayoutInner = ({ children }: PropsWithChildren) => {
   );
 
   useEffect(() => {
-    const disposable = AIProvider.slots.requestInsertTemplate.on(
-      ({ template, mode }) => {
-        (async () => {
-          const templateZip = await fetch(template);
+    const insertTemplate = effect(
+      switchMap(({ template, mode }: { template: string; mode: string }) => {
+        return fromPromise(async abort => {
+          const templateZip = await fetch(template, { signal: abort });
           const templateBlob = await templateZip.blob();
+          throwIfAborted(abort);
           const [doc] = await ZipTransformer.importDocs(
             currentWorkspace.docCollection,
             templateBlob
           );
           doc.resetHistory();
 
-          docsList.setMode(doc.id, mode);
-          workbench.openPage(doc.id);
-        })().catch(err => {
-          console.error(err);
-        });
+          return { doc, mode };
+        }).pipe(
+          timeout(10000 /* 10s */),
+          mergeMap(({ mode, doc }) => {
+            docsList.setMode(doc.id, mode as DocMode);
+            workbench.openPage(doc.id);
+            return EMPTY;
+          }),
+          onStart(() => {
+            pushGlobalLoadingEvent({
+              key: 'insert-template',
+            });
+          }),
+          catchError(err => {
+            console.error(err);
+            toast(t['com.affine.ai.template-insert.failed']());
+            return EMPTY;
+          }),
+          finalize(() => {
+            resolveGlobalLoadingEvent('insert-template');
+          })
+        );
+      })
+    );
+
+    const disposable = AIProvider.slots.requestInsertTemplate.on(
+      ({ template, mode }) => {
+        insertTemplate({ template, mode });
       }
     );
-    return () => disposable.dispose();
-  }, [currentWorkspace.docCollection, docsList, workbench]);
+    return () => {
+      disposable.dispose();
+      insertTemplate.unsubscribe();
+    };
+  }, [
+    currentWorkspace.docCollection,
+    docsList,
+    pushGlobalLoadingEvent,
+    resolveGlobalLoadingEvent,
+    t,
+    workbench,
+  ]);
 
   useRegisterWorkspaceCommands();
   useRegisterNavigationCommands();
