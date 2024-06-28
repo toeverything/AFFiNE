@@ -119,6 +119,9 @@ export class ChatCards extends WithDisposable(LitElement) {
   @property({ attribute: false })
   accessor temporaryParams: AIChatParams | null = null;
 
+  @property({ attribute: false })
+  accessor isEmpty!: boolean;
+
   @state()
   accessor cards: Card[] = [];
 
@@ -508,6 +511,9 @@ export class ChatCards extends WithDisposable(LitElement) {
   }
 
   protected override render() {
+    console.log(this.isEmpty);
+    if (!this.isEmpty) return nothing;
+    console.log(this.cards);
     return repeat(
       this.cards,
       card => card.id,

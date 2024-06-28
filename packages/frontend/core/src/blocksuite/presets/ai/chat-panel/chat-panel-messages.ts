@@ -265,23 +265,18 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
       >
         ${items.length === 0
           ? html`<div class="chat-panel-messages-placeholder">
-                ${AffineIcon(
-                  isLoading
-                    ? 'var(--affine-icon-secondary)'
-                    : 'var(--affine-primary-color)'
-                )}
-                <div>
-                  ${this.isLoading
-                    ? 'AFFiNE AI is loading history...'
-                    : 'What can I help you with?'}
-                </div>
-                ${this._renderAIOnboarding()}
+              ${AffineIcon(
+                isLoading
+                  ? 'var(--affine-icon-secondary)'
+                  : 'var(--affine-primary-color)'
+              )}
+              <div>
+                ${this.isLoading
+                  ? 'AFFiNE AI is loading history...'
+                  : 'What can I help you with?'}
               </div>
-              <chat-cards
-                .updateContext=${this.updateContext}
-                .host=${this.host}
-                ?data-show=${this.showChatCards}
-              ></chat-cards>`
+              ${this._renderAIOnboarding()}
+            </div> `
           : repeat(filteredItems, (item, index) => {
               const isLast = index === filteredItems.length - 1;
               return html`<div class="message">
@@ -289,6 +284,12 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
                 <div class="item-wrapper">${this.renderItem(item, isLast)}</div>
               </div>`;
             })}
+        <chat-cards
+          .updateContext=${this.updateContext}
+          .host=${this.host}
+          .isEmpty=${items.length === 0}
+          ?data-show=${this.showChatCards}
+        ></chat-cards>
       </div>
       ${this.showDownIndicator
         ? html`<div class="down-indicator" @click=${() => this.scrollToDown()}>
