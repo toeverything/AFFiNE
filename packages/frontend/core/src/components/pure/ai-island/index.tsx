@@ -13,7 +13,11 @@ import {
   borderAngle3,
 } from './styles.css';
 
-if (typeof window !== 'undefined' && window.CSS) {
+if (
+  typeof window !== 'undefined' &&
+  window.CSS &&
+  window.CSS.registerProperty
+) {
   const getName = (nameWithVar: string) => nameWithVar.slice(4, -1);
   const registerAngle = (varName: string, initialValue: number) => {
     window.CSS.registerProperty({

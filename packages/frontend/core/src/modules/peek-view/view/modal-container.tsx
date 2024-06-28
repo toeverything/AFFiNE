@@ -103,11 +103,15 @@ export const PeekViewModalContainer = forwardRef<
 ) {
   const [vtOpen, setVtOpen] = useState(open);
   useEffect(() => {
-    document.startViewTransition(() => {
-      flushSync(() => {
-        setVtOpen(open);
+    if (document.startViewTransition) {
+      document.startViewTransition(() => {
+        flushSync(() => {
+          setVtOpen(open);
+        });
       });
-    });
+    } else {
+      setVtOpen(open);
+    }
   }, [open]);
 
   useEffect(() => {
