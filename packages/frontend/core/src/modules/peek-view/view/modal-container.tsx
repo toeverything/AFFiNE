@@ -22,6 +22,11 @@ const contentOptions: Dialog.DialogContentProps = {
       e.preventDefault();
     }
   },
+  onEscapeKeyDown: e => {
+    // prevent closing the modal when pressing escape key by default
+    // this is because radix-ui register the escape key event on the document using capture, which is not possible to prevent in blocksuite
+    e.preventDefault();
+  },
   style: {
     padding: 0,
     backgroundColor: 'transparent',
@@ -104,6 +109,18 @@ export const PeekViewModalContainer = forwardRef<
       });
     });
   }, [open]);
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onOpenChange(false);
+      }
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [onOpenChange]);
 
   useEffect(() => {
     const bondingBox = target ? getElementScreenPositionCenter(target) : null;
