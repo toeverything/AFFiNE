@@ -139,6 +139,9 @@ export class AIAnswerText extends WithDisposable(LitElement) {
       editor-host * {
         box-sizing: border-box;
       }
+      editor-host {
+        isolation: isolate;
+      }
     }
 
     ${textBlockStyles}

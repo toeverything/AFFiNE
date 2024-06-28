@@ -8,6 +8,7 @@ export const header = style({
   alignItems: 'center',
   flexShrink: 0,
   padding: '0 16px',
+  zIndex: 1,
   gap: '12px',
   background: cssVar('backgroundPrimaryColor'),
   selectors: {
