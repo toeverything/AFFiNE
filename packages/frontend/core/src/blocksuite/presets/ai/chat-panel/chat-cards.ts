@@ -511,9 +511,8 @@ export class ChatCards extends WithDisposable(LitElement) {
   }
 
   protected override render() {
-    console.log(this.isEmpty);
     if (!this.isEmpty) return nothing;
-    console.log(this.cards);
+
     return repeat(
       this.cards,
       card => card.id,
