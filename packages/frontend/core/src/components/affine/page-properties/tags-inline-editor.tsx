@@ -267,7 +267,7 @@ export const TagsEditor = ({ pageId, readonly }: TagsEditorProps) => {
         tags.find(tag => tag.id === lastTagId)?.untag(pageId);
       }
     },
-    [match, inputValue, onAddTag, onCreateTag, pageId, tagIds, tags]
+    [inputValue, tagIds, exactMatch, onAddTag, onCreateTag, tags, pageId]
   );
 
   return (
