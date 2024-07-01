@@ -126,7 +126,6 @@ const blocksuiteFeatureFlags: Partial<Record<keyof BlockSuiteFlags, string>> = {
   enable_expand_database_block: 'Enable Expand Database Block',
   enable_database_statistics: 'Enable Database Block Statistics',
   enable_block_query: 'Enable Todo Block Query',
-  enable_edgeless_text: 'Enable New Edgeless Text',
   enable_ai_onboarding: 'Enable AI Onboarding',
 };
 
