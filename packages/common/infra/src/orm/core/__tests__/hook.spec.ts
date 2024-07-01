@@ -1,19 +1,13 @@
 import { nanoid } from 'nanoid';
-import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  test as t,
-  type TestAPI,
-} from 'vitest';
+import { beforeEach, describe, expect, test as t, type TestAPI } from 'vitest';
 
 import {
-  createORMClientType,
+  createORMClient,
   type DBSchemaBuilder,
   type Entity,
   f,
   MemoryORMAdapter,
+  type ORMClient,
 } from '../';
 
 const TEST_SCHEMA = {
@@ -29,30 +23,23 @@ const TEST_SCHEMA = {
   },
 } satisfies DBSchemaBuilder;
 
-const Client = createORMClientType(TEST_SCHEMA);
-
-// define the hooks
-Client.defineHook('tags', 'migrate field `color` to field `colors`', {
-  deserialize(data) {
-    if (!data.colors && data.color) {
-      data.colors = [data.color];
-    }
-
-    return data;
-  },
-});
-
 type Context = {
-  client: InstanceType<typeof Client>;
+  client: ORMClient<typeof TEST_SCHEMA>;
 };
 
 beforeEach<Context>(async t => {
-  t.client = new Client(new MemoryORMAdapter());
-  await t.client.connect();
-});
+  t.client = createORMClient(TEST_SCHEMA, MemoryORMAdapter);
 
-afterEach<Context>(async t => {
-  await t.client.disconnect();
+  // define the hooks
+  t.client.defineHook('tags', 'migrate field `color` to field `colors`', {
+    deserialize(data) {
+      if (!data.colors && data.color) {
+        data.colors = [data.color];
+      }
+
+      return data;
+    },
+  });
 });
 
 const test = t as TestAPI<Context>;

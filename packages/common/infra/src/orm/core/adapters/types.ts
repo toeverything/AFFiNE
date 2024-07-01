@@ -1,4 +1,4 @@
-import type { DBSchemaBuilder, TableSchemaBuilder } from '../schema';
+import type { TableSchemaBuilder } from '../schema';
 
 export interface Key {
   toString(): string;
@@ -21,8 +21,5 @@ export interface TableAdapter<K extends Key = any, T = unknown> {
 }
 
 export interface DBAdapter {
-  connect(db: DBSchemaBuilder): Promise<void>;
-  disconnect(db: DBSchemaBuilder): Promise<void>;
-
   table(tableName: string): TableAdapter;
 }

@@ -1,18 +1,12 @@
 import { nanoid } from 'nanoid';
-import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  test as t,
-  type TestAPI,
-} from 'vitest';
+import { beforeEach, describe, expect, test as t, type TestAPI } from 'vitest';
 
 import {
-  createORMClientType,
+  createORMClient,
   type DBSchemaBuilder,
   f,
   MemoryORMAdapter,
+  type ORMClient,
   Table,
 } from '../';
 
@@ -24,18 +18,12 @@ const TEST_SCHEMA = {
   },
 } satisfies DBSchemaBuilder;
 
-const Client = createORMClientType(TEST_SCHEMA);
 type Context = {
-  client: InstanceType<typeof Client>;
+  client: ORMClient<typeof TEST_SCHEMA>;
 };
 
 beforeEach<Context>(async t => {
-  t.client = new Client(new MemoryORMAdapter());
-  await t.client.connect();
-});
-
-afterEach<Context>(async t => {
-  await t.client.disconnect();
+  t.client = createORMClient(TEST_SCHEMA, MemoryORMAdapter);
 });
 
 const test = t as TestAPI<Context>;

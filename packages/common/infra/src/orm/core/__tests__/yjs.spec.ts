@@ -1,20 +1,14 @@
 import { nanoid } from 'nanoid';
-import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  test as t,
-  type TestAPI,
-} from 'vitest';
+import { beforeEach, describe, expect, test as t, type TestAPI } from 'vitest';
 import { Doc } from 'yjs';
 
 import {
-  createORMClientType,
+  createORMClient,
   type DBSchemaBuilder,
   type DocProvider,
   type Entity,
   f,
+  type ORMClient,
   Table,
   YjsDBAdapter,
 } from '../';
@@ -33,18 +27,12 @@ const docProvider: DocProvider = {
   },
 };
 
-const Client = createORMClientType(TEST_SCHEMA);
 type Context = {
-  client: InstanceType<typeof Client>;
+  client: ORMClient<typeof TEST_SCHEMA>;
 };
 
 beforeEach<Context>(async t => {
-  t.client = new Client(new YjsDBAdapter(docProvider));
-  await t.client.connect();
-});
-
-afterEach<Context>(async t => {
-  await t.client.disconnect();
+  t.client = createORMClient(TEST_SCHEMA, YjsDBAdapter, docProvider);
 });
 
 const test = t as TestAPI<Context>;
@@ -223,15 +211,13 @@ describe('ORM entity CRUD', () => {
   });
 
   test('can not use reserved keyword as field name', () => {
-    const Client = createORMClientType({
+    const schema = {
       tags: {
         $$KEY: f.string().primaryKey().default(nanoid),
       },
-    });
+    };
 
-    expect(() =>
-      new Client(new YjsDBAdapter(docProvider)).connect()
-    ).rejects.toThrow(
+    expect(() => createORMClient(schema, YjsDBAdapter, docProvider)).toThrow(
       "[Table(tags)]: Field '$$KEY' is reserved keyword and can't be used"
     );
   });

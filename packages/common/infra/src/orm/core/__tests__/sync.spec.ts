@@ -14,9 +14,10 @@ import { DocEngine } from '../../../sync';
 import { MiniSyncServer } from '../../../sync/doc/__tests__/utils';
 import { MemoryStorage } from '../../../sync/doc/storage';
 import {
-  createORMClientType,
+  createORMClient,
   type DBSchemaBuilder,
   f,
+  type ORMClient,
   YjsDBAdapter,
 } from '../';
 
@@ -29,27 +30,14 @@ const TEST_SCHEMA = {
   },
 } satisfies DBSchemaBuilder;
 
-const Client = createORMClientType(TEST_SCHEMA);
-
-// define the hooks
-Client.defineHook('tags', 'migrate field `color` to field `colors`', {
-  deserialize(data) {
-    if (!data.colors && data.color) {
-      data.colors = [data.color];
-    }
-
-    return data;
-  },
-});
-
 type Context = {
   server: MiniSyncServer;
   user1: {
-    client: InstanceType<typeof Client>;
+    client: ORMClient<typeof TEST_SCHEMA>;
     engine: DocEngine;
   };
   user2: {
-    client: InstanceType<typeof Client>;
+    client: ORMClient<typeof TEST_SCHEMA>;
     engine: DocEngine;
   };
 };
@@ -60,16 +48,25 @@ function createEngine(server: MiniSyncServer) {
 
 async function createClient(server: MiniSyncServer, clientId: number) {
   const engine = createEngine(server);
-  const client = new Client(
-    new YjsDBAdapter({
-      getDoc(guid: string) {
-        const doc = new Doc({ guid });
-        doc.clientID = clientId;
-        engine.addDoc(doc);
-        return doc;
-      },
-    })
-  );
+  const client = createORMClient(TEST_SCHEMA, YjsDBAdapter, {
+    getDoc(guid: string) {
+      const doc = new Doc({ guid });
+      doc.clientID = clientId;
+      engine.addDoc(doc);
+      return doc;
+    },
+  });
+
+  // define the hooks
+  client.defineHook('tags', 'migrate field `color` to field `colors`', {
+    deserialize(data) {
+      if (!data.colors && data.color) {
+        data.colors = [data.color];
+      }
+
+      return data;
+    },
+  });
 
   return {
     engine,
@@ -85,14 +82,10 @@ beforeEach<Context>(async t => {
   t.user2 = await createClient(t.server, 2);
 
   t.user1.engine.start();
-  await t.user1.client.connect();
   t.user2.engine.start();
-  await t.user2.client.connect();
 });
 
 afterEach<Context>(async t => {
-  t.user1.client.disconnect();
-  t.user2.client.disconnect();
   t.user1.engine.stop();
   t.user2.engine.stop();
 });

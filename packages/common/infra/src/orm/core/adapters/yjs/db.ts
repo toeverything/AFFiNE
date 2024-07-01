@@ -11,25 +11,16 @@ export interface DocProvider {
 
 export class YjsDBAdapter implements DBAdapter {
   tables: Map<string, TableAdapter> = new Map();
-  constructor(private readonly provider: DocProvider) {}
-
-  connect(db: DBSchemaBuilder): Promise<void> {
+  constructor(
+    db: DBSchemaBuilder,
+    private readonly provider: DocProvider
+  ) {
     for (const [tableName, table] of Object.entries(db)) {
       validators.validateYjsTableSchema(tableName, table);
       const doc = this.provider.getDoc(tableName);
 
       this.tables.set(tableName, new YjsTableAdapter(tableName, doc));
     }
-
-    return Promise.resolve();
-  }
-
-  disconnect(_db: DBSchemaBuilder): Promise<void> {
-    this.tables.forEach(table => {
-      table.dispose();
-    });
-    this.tables.clear();
-    return Promise.resolve();
   }
 
   table(tableName: string) {

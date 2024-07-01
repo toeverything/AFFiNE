@@ -1,12 +1,21 @@
 import { nanoid } from 'nanoid';
 import { describe, expect, test } from 'vitest';
 
-import { createORMClientType, f, MemoryORMAdapter } from '../';
+import {
+  createORMClient,
+  type DBSchemaBuilder,
+  f,
+  MemoryORMAdapter,
+} from '../';
+
+function createClient<Schema extends DBSchemaBuilder>(schema: Schema) {
+  return createORMClient(schema, MemoryORMAdapter);
+}
 
 describe('Schema validations', () => {
   test('primary key must be set', () => {
     expect(() =>
-      createORMClientType({
+      createClient({
         tags: {
           id: f.string(),
           name: f.string(),
@@ -19,7 +28,7 @@ describe('Schema validations', () => {
 
   test('primary key must be unique', () => {
     expect(() =>
-      createORMClientType({
+      createClient({
         tags: {
           id: f.string().primaryKey(),
           name: f.string().primaryKey(),
@@ -32,7 +41,7 @@ describe('Schema validations', () => {
 
   test('primary key should not be optional without default value', () => {
     expect(() =>
-      createORMClientType({
+      createClient({
         tags: {
           id: f.string().primaryKey().optional(),
           name: f.string(),
@@ -45,7 +54,7 @@ describe('Schema validations', () => {
 
   test('primary key can be optional with default value', async () => {
     expect(() =>
-      createORMClientType({
+      createClient({
         tags: {
           id: f.string().primaryKey().optional().default(nanoid),
           name: f.string(),
@@ -56,20 +65,18 @@ describe('Schema validations', () => {
 });
 
 describe('Entity validations', () => {
-  const Client = createORMClientType({
-    tags: {
-      id: f.string().primaryKey().default(nanoid),
-      name: f.string(),
-      color: f.string(),
-    },
-  });
-
-  function createClient() {
-    return new Client(new MemoryORMAdapter());
+  function createTagsClient() {
+    return createClient({
+      tags: {
+        id: f.string().primaryKey().default(nanoid),
+        name: f.string(),
+        color: f.string(),
+      },
+    });
   }
 
   test('should not update primary key', () => {
-    const client = createClient();
+    const client = createTagsClient();
 
     const tag = client.tags.create({
       name: 'tag',
@@ -83,7 +90,7 @@ describe('Entity validations', () => {
   });
 
   test('should throw when trying to create entity with missing required field', () => {
-    const client = createClient();
+    const client = createTagsClient();
 
     // @ts-expect-error test
     expect(() => client.tags.create({ name: 'test' })).toThrow(
@@ -92,7 +99,7 @@ describe('Entity validations', () => {
   });
 
   test('should throw when trying to create entity with extra field', () => {
-    const client = createClient();
+    const client = createTagsClient();
 
     expect(() =>
       // @ts-expect-error test
@@ -101,33 +108,27 @@ describe('Entity validations', () => {
   });
 
   test('should throw when trying to create entity with unexpected field type', () => {
-    const client = createClient();
+    const client = createTagsClient();
 
-    expect(() =>
-      // @ts-expect-error test
-      client.tags.create({ name: 'test', color: 123 })
-    ).toThrow(
+    // @ts-expect-error test
+    expect(() => client.tags.create({ name: 'test', color: 123 })).toThrow(
       "[Table(tags)]: Field 'color' type mismatch. Expected type 'string' but got 'number'."
     );
 
-    expect(() =>
-      // @ts-expect-error test
-      client.tags.create({ name: 'test', color: [123] })
-    ).toThrow(
+    // @ts-expect-error test
+    expect(() => client.tags.create({ name: 'test', color: [123] })).toThrow(
       "[Table(tags)]: Field 'color' type mismatch. Expected type 'string' but got 'json'"
     );
   });
 
   test('should be able to assign `null` to json field', () => {
     expect(() => {
-      const Client = createORMClientType({
+      const client = createClient({
         tags: {
           id: f.string().primaryKey().default(nanoid),
           info: f.json(),
         },
       });
-
-      const client = new Client(new MemoryORMAdapter());
 
       const tag = client.tags.create({ info: null });
 
