@@ -168,12 +168,6 @@ export class AskAIButton extends WithDisposable(LitElement) {
     });
   };
 
-  override firstUpdated() {
-    this.disposables.add(() => {
-      this._edgeless?.tool.setEdgelessTool({ type: 'default' });
-    });
-  }
-
   override disconnectedCallback() {
     super.disconnectedCallback();
     this._clearAbortController();
