@@ -16,6 +16,7 @@ export interface ConfirmModalProps extends ModalProps {
   cancelText?: string;
   cancelButtonOptions?: ButtonProps;
   reverseFooter?: boolean;
+  onKeyDown?: (e: React.KeyboardEvent) => void;
 }
 
 export const ConfirmModal = ({
@@ -35,6 +36,7 @@ export const ConfirmModal = ({
       console.error(err);
     });
   }, [onConfirm]);
+
   return (
     <Modal
       contentOptions={{
@@ -42,6 +44,12 @@ export const ConfirmModal = ({
         onPointerDownOutside: e => {
           e.stopPropagation();
           onCancel?.();
+        },
+        onKeyDown: e => {
+          console.log(e.key);
+          if (e.key === 'Enter') {
+            onConfirmClick();
+          }
         },
       }}
       width={width}
