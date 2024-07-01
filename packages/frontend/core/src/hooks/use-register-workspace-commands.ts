@@ -23,9 +23,9 @@ import { useNavigateHelper } from './use-navigate-helper';
 
 function hasLinkPopover(editor: AffineEditorContainer | null) {
   const textSelection = editor?.host?.std.selection.find('text');
-  if (textSelection && textSelection.from.length > 0) {
-    const linkPopup = document.querySelector('link-popup');
-    if (linkPopup) {
+  if (editor && textSelection && textSelection.from.length > 0) {
+    const formatBar = editor.host.querySelector('affine-format-bar-widget');
+    if (formatBar) {
       return true;
     }
   }
@@ -42,6 +42,7 @@ function registerCMDKCommand(
     category: 'affine:general',
     keyBinding: {
       binding: '$mod+K',
+      capture: true,
     },
     label: '',
     icon: '',

@@ -1,11 +1,49 @@
 import { DebugLogger } from '@affine/debug';
 // @ts-expect-error upstream type is wrong
-import { tinykeys } from 'tinykeys';
+import { createKeybindingsHandler } from 'tinykeys';
 
 import type { AffineCommand, AffineCommandOptions } from './command';
 import { createAffineCommand } from './command';
 
 const commandLogger = new DebugLogger('command:registry');
+
+interface KeyBindingMap {
+  [keybinding: string]: (event: KeyboardEvent) => void;
+}
+
+export interface KeyBindingOptions {
+  /**
+   * Key presses will listen to this event (default: "keydown").
+   */
+  event?: 'keydown' | 'keyup';
+
+  /**
+   * Whether to capture the event during the capture phase (default: false).
+   */
+  capture?: boolean;
+
+  /**
+   * Keybinding sequences will wait this long between key presses before
+   * cancelling (default: 1000).
+   *
+   * **Note:** Setting this value too low (i.e. `300`) will be too fast for many
+   * of your users.
+   */
+  timeout?: number;
+}
+
+const bindKeys = (
+  target: Window | HTMLElement,
+  keyBindingMap: KeyBindingMap,
+  options: KeyBindingOptions = {}
+) => {
+  const event = options.event ?? 'keydown';
+  const onKeyEvent = createKeybindingsHandler(keyBindingMap, options);
+  target.addEventListener(event, onKeyEvent, options.capture);
+  return () => {
+    target.removeEventListener(event, onKeyEvent, options.capture);
+  };
+};
 
 export const AffineCommandRegistry = new (class {
   readonly commands: Map<string, AffineCommand> = new Map();
@@ -25,17 +63,21 @@ export const AffineCommandRegistry = new (class {
       !command.keyBinding.skipRegister &&
       typeof window !== 'undefined'
     ) {
-      const { binding: keybinding } = command.keyBinding;
-      unsubKb = tinykeys(window, {
-        [keybinding]: async (e: Event) => {
-          e.preventDefault();
-          try {
-            await command.run();
-          } catch (e) {
-            console.error(`Failed to invoke keybinding [${keybinding}]`, e);
-          }
+      const { binding: keybinding, capture } = command.keyBinding;
+      unsubKb = bindKeys(
+        window,
+        {
+          [keybinding]: (e: Event) => {
+            e.preventDefault();
+            command.run()?.catch(e => {
+              console.error(`Failed to run command [${command.id}]`, e);
+            });
+          },
         },
-      });
+        {
+          capture,
+        }
+      );
     }
 
     commandLogger.debug(`Registered command ${command.id}`);
