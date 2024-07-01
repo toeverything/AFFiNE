@@ -92,6 +92,7 @@ export function setupEditorFlags(docCollection: DocCollection) {
       // override this flag in app settings
       // TODO(@eyhn): need a better way to manage block suite flags
       docCollection.awarenessStore.setFlag('enable_synced_doc_block', true);
+      docCollection.awarenessStore.setFlag('enable_edgeless_text', true);
     } catch (err) {
       logger.error('syncEditorFlags', err);
     }
