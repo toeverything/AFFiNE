@@ -432,7 +432,7 @@ export function buildAIImageItemGroups(): AIItemGroupConfig[] {
       items: [
         {
           name: 'Explain this image',
-          icon: ExplainIcon,
+          icon: AIImageIcon,
           showWhen: () => true,
           handler: actionToHandler(
             'explainImage',
@@ -458,19 +458,19 @@ export function buildAIImageItemGroups(): AIItemGroupConfig[] {
           ),
         },
         {
-          name: 'AI image filter',
-          icon: ImproveWritingIcon,
-          showWhen: () => true,
-          subItem: createImageFilterSubItem(blockActionTrackerOptions),
-          subItemOffset: [12, -4],
-          beta: true,
-        },
-        {
           name: 'Image processing',
           icon: AIImageIcon,
           showWhen: () => true,
           subItem: createImageProcessingSubItem(blockActionTrackerOptions),
           subItemOffset: [12, -6],
+          beta: true,
+        },
+        {
+          name: 'AI image filter',
+          icon: ImproveWritingIcon,
+          showWhen: () => true,
+          subItem: createImageFilterSubItem(blockActionTrackerOptions),
+          subItemOffset: [12, -4],
           beta: true,
         },
         {

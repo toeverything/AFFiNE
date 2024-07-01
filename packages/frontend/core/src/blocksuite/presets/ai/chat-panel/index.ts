@@ -33,12 +33,15 @@ export class ChatPanel extends WithDisposable(ShadowlessElement) {
     }
 
     .chat-panel-title {
+      background: var(--affine-background-primary-color);
+      position: relative;
       padding: 8px 0px;
       width: 100%;
       height: 36px;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      z-index: 1;
 
       div:first-child {
         font-size: 14px;
