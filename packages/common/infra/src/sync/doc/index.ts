@@ -23,6 +23,7 @@ export {
 } from './storage';
 
 export class DocEngine {
+  readonly clientId: string;
   localPart: DocEngineLocalPart;
   remotePart: DocEngineRemotePart | null;
 
@@ -80,11 +81,11 @@ export class DocEngine {
     storage: DocStorage,
     private readonly server?: DocServer | null
   ) {
-    const clientId = nanoid();
+    this.clientId = nanoid();
     this.storage = new DocStorageInner(storage);
-    this.localPart = new DocEngineLocalPart(clientId, this.storage);
+    this.localPart = new DocEngineLocalPart(this.clientId, this.storage);
     this.remotePart = this.server
-      ? new DocEngineRemotePart(clientId, this.storage, this.server)
+      ? new DocEngineRemotePart(this.clientId, this.storage, this.server)
       : null;
   }
 
