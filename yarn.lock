@@ -15659,7 +15659,11 @@ __metadata:
     "@datastructures-js/binary-search-tree": "npm:^5.3.2"
     "@testing-library/react": "npm:^16.0.0"
     async-call-rpc: "npm:^6.4.0"
+    fake-indexeddb: "npm:^6.0.0"
     foxact: "npm:^0.2.33"
+    fuse.js: "npm:^7.0.0"
+    graphemer: "npm:^1.4.0"
+    idb: "npm:^8.0.0"
     jotai: "npm:^2.8.0"
     jotai-effect: "npm:^1.0.0"
     lodash-es: "npm:^4.17.21"
@@ -24564,6 +24568,13 @@ __metadata:
   dependencies:
     "@nolyfill/shared": "npm:1.0.28"
   checksum: 10/f1a29b05a3a553e1d5d513fd5cc5c0e305b58fba389703e50f3f3fffe3f3abc361c4fa6b688ca1199fe77e2dba5942aa8e6d121eef612c6f0ccb7de3d2291785
+  languageName: node
+  linkType: hard
+
+"fuse.js@npm:^7.0.0":
+  version: 7.0.0
+  resolution: "fuse.js@npm:7.0.0"
+  checksum: 10/d75d35f2d61afa85b8248f9cbfc7d4df29ae47ea574a15ad5c3c2a41930c5ed78668346295508b59ec4929fcb1a5cd6d9a8c649b5a3bc8b18e515f4e4cb9809d
   languageName: node
   linkType: hard
 
