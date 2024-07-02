@@ -438,6 +438,7 @@ __metadata:
     fake-indexeddb: "npm:^6.0.0"
     foxact: "npm:^0.2.33"
     fractional-indexing: "npm:^3.2.0"
+    fuse.js: "npm:^7.0.0"
     graphql: "npm:^16.8.1"
     history: "npm:^5.3.0"
     idb: "npm:^8.0.0"

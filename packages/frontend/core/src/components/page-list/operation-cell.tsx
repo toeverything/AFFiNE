@@ -81,7 +81,7 @@ export const PageOperationCell = ({
   }, [page.id, page.title, setTrashModal]);
 
   const onOpenInSplitView = useCallback(() => {
-    workbench.openPage(page.id, { at: 'tail' });
+    workbench.openDoc(page.id, { at: 'tail' });
   }, [page.id, workbench]);
 
   const onToggleFavoritePage = useCallback(() => {

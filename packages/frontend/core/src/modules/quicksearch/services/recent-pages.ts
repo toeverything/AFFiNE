@@ -10,7 +10,7 @@ const RECENT_PAGES_KEY = 'recent-pages';
 
 const EMPTY_ARRAY: string[] = [];
 
-export class RecentPagesService extends Service {
+export class RecentDocsService extends Service {
   constructor(
     private readonly localState: WorkspaceLocalState,
     private readonly docsService: DocsService

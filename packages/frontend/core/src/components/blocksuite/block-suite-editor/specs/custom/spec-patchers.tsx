@@ -7,12 +7,17 @@ import {
   toReactNode,
   type useConfirmModal,
 } from '@affine/component';
-import type {
-  QuickSearchService,
-  SearchCallbackResult,
-} from '@affine/core/modules/cmdk';
+import { DocsSearchService } from '@affine/core/modules/docs-search';
+import { resolveLinkToDoc } from '@affine/core/modules/navigation';
 import type { PeekViewService } from '@affine/core/modules/peek-view';
 import type { ActivePeekView } from '@affine/core/modules/peek-view/entities/peek-view';
+import {
+  CreationQuickSearchSession,
+  DocsQuickSearchSession,
+  type QuickSearchItem,
+  QuickSearchService,
+  RecentDocsQuickSearchSession,
+} from '@affine/core/modules/quicksearch';
 import { mixpanel } from '@affine/core/utils';
 import { DebugLogger } from '@affine/debug';
 import type { BlockSpec, WidgetElement } from '@blocksuite/block-std';
@@ -23,7 +28,13 @@ import {
   type ParagraphBlockService,
   type RootService,
 } from '@blocksuite/blocks';
-import type { DocMode, DocService, DocsService } from '@toeverything/infra';
+import { LinkIcon } from '@blocksuite/icons/rc';
+import type {
+  DocMode,
+  DocService,
+  DocsService,
+  FrameworkProvider,
+} from '@toeverything/infra';
 import { type TemplateResult } from 'lit';
 import { customElement } from 'lit/decorators.js';
 import { literal } from 'lit/static-html.js';
@@ -302,7 +313,7 @@ export function patchDocModeService(
 
 export function patchQuickSearchService(
   specs: BlockSpec[],
-  service: QuickSearchService
+  framework: FrameworkProvider
 ) {
   const rootSpec = specs.find(
     spec => spec.schema.model.flavour === 'affine:page'
@@ -317,39 +328,93 @@ export function patchQuickSearchService(
     pageService => {
       pageService.quickSearchService = {
         async searchDoc(options) {
-          let searchResult: SearchCallbackResult | null = null;
+          let searchResult:
+            | { docId: string; isNewDoc?: boolean }
+            | { userInput: string }
+            | null = null;
           if (options.skipSelection) {
             const query = options.userInput;
             if (!query) {
               logger.error('No user input provided');
             } else {
-              const searchedDoc = service.quickSearch
-                .getSearchedDocs(query)
-                .at(0);
+              const searchedDoc = (
+                await framework.get(DocsSearchService).search(query)
+              ).at(0);
               if (searchedDoc) {
                 searchResult = {
-                  docId: searchedDoc.doc.id,
-                  blockId: searchedDoc.blockId,
-                  action: 'insert',
-                  query,
+                  docId: searchedDoc.docId,
                 };
               }
             }
           } else {
-            searchResult = await service.quickSearch.search(options.userInput);
+            searchResult = await new Promise(resolve =>
+              framework.get(QuickSearchService).quickSearch.show(
+                [
+                  framework.get(RecentDocsQuickSearchSession),
+                  framework.get(DocsQuickSearchSession),
+                  framework.get(CreationQuickSearchSession),
+                  (query: string) => {
+                    if (
+                      (query.startsWith('http://') ||
+                        query.startsWith('https://')) &&
+                      resolveLinkToDoc(query) === null
+                    ) {
+                      return [
+                        {
+                          id: 'link',
+                          source: 'link',
+                          icon: LinkIcon,
+                          label: {
+                            key: 'com.affine.cmdk.affine.insert-link',
+                          },
+                          payload: { url: query },
+                        } as QuickSearchItem<'link', { url: string }>,
+                      ];
+                    }
+                    return [];
+                  },
+                ],
+                result => {
+                  if (result === null) {
+                    resolve(null);
+                    return;
+                  }
+                  if (
+                    result.source === 'docs' ||
+                    result.source === 'recent-doc'
+                  ) {
+                    resolve({
+                      docId: result.payload.docId,
+                    });
+                  } else if (result.source === 'link') {
+                    resolve({
+                      userInput: result.payload.url,
+                    });
+                  } else if (
+                    result.source === 'creation' &&
+                    result.id === 'creation:create-page'
+                  ) {
+                    throw new Error('Not implemented');
+                    // resolve({
+                    //   docId: 'new-doc',
+                    //   isNewDoc: true,
+                    // });
+                  }
+                },
+                {
+                  defaultQuery: options.userInput,
+                  label: {
+                    key: 'com.affine.cmdk.insert-links',
+                  },
+                  placeholder: {
+                    key: 'com.affine.cmdk.docs.placeholder',
+                  },
+                }
+              )
+            );
           }
 
-          if (searchResult) {
-            if ('docId' in searchResult) {
-              return searchResult;
-            } else {
-              return {
-                userInput: searchResult.query,
-                action: 'insert',
-              };
-            }
-          }
-          return null;
+          return searchResult;
         },
       };
     },

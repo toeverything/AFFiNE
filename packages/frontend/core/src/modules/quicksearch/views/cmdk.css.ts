@@ -1,61 +1,8 @@
 import { cssVar } from '@toeverything/theme';
 import { globalStyle, style } from '@vanilla-extract/css';
+
 export const root = style({});
-export const commandsContainer = style({
-  height: 'calc(100% - 65px)',
-  padding: '8px 6px 18px 6px',
-});
-export const searchInputContainer = style({
-  height: 66,
-  padding: '18px 16px',
-  marginBottom: '8px',
-  width: '100%',
-  display: 'flex',
-  alignItems: 'center',
-  gap: 12,
-  borderBottom: `1px solid ${cssVar('borderColor')}`,
-  flexShrink: 0,
-});
 
-export const hasInputLabel = style([
-  searchInputContainer,
-  {
-    paddingTop: '12px',
-    paddingBottom: '18px',
-  },
-]);
-
-export const searchInput = style({
-  color: cssVar('textPrimaryColor'),
-  fontSize: cssVar('fontH5'),
-  width: '100%',
-  '::placeholder': {
-    color: cssVar('textSecondaryColor'),
-  },
-});
-export const pageTitleWrapper = style({
-  display: 'flex',
-  alignItems: 'center',
-  padding: '18px 16px 0',
-  width: '100%',
-});
-export const pageTitle = style({
-  padding: '2px 6px',
-  borderRadius: 4,
-  fontSize: cssVar('fontXs'),
-  lineHeight: '20px',
-  color: cssVar('textSecondaryColor'),
-  overflow: 'hidden',
-  textOverflow: 'ellipsis',
-  whiteSpace: 'nowrap',
-  maxWidth: '100%',
-  backgroundColor: cssVar('backgroundSecondaryColor'),
-});
-export const panelContainer = style({
-  height: '100%',
-  display: 'flex',
-  flexDirection: 'column',
-});
 export const itemIcon = style({
   fontSize: 20,
   marginRight: 16,
@@ -64,6 +11,7 @@ export const itemIcon = style({
   alignItems: 'center',
   color: cssVar('iconSecondary'),
 });
+
 export const itemLabel = style({
   fontSize: 14,
   lineHeight: '1.5',
@@ -73,30 +21,7 @@ export const itemLabel = style({
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',
 });
-export const timestamp = style({
-  display: 'flex',
-  fontSize: cssVar('fontXs'),
-  color: cssVar('textSecondaryColor'),
-  minWidth: 120,
-  flexDirection: 'row-reverse',
-});
-export const keybinding = style({
-  display: 'flex',
-  fontSize: cssVar('fontXs'),
-  columnGap: 2,
-});
-export const keybindingFragment = style({
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  padding: '0 4px',
-  borderRadius: 4,
-  color: cssVar('textSecondaryColor'),
-  backgroundColor: cssVar('backgroundTertiaryColor'),
-  minWidth: 24,
-  height: 20,
-  textTransform: 'uppercase',
-});
+
 globalStyle(`${root} [cmdk-root]`, {
   height: '100%',
 });
@@ -170,10 +95,100 @@ globalStyle(
     color: cssVar('errorColor'),
   }
 );
-export const resultGroupHeader = style({
-  padding: '8px',
-  color: cssVar('textSecondaryColor'),
+
+export const panelContainer = style({
+  height: '100%',
+  display: 'flex',
+  flexDirection: 'column',
+});
+
+export const pageTitleWrapper = style({
+  display: 'flex',
+  alignItems: 'center',
+  padding: '18px 16px 0',
+  width: '100%',
+});
+
+export const pageTitle = style({
+  padding: '2px 6px',
+  borderRadius: 4,
   fontSize: cssVar('fontXs'),
-  fontWeight: 600,
-  lineHeight: '1.67',
+  lineHeight: '20px',
+  color: cssVar('textSecondaryColor'),
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
+  maxWidth: '100%',
+  backgroundColor: cssVar('backgroundSecondaryColor'),
+});
+
+export const searchInputContainer = style({
+  height: 66,
+  padding: '18px 16px',
+  marginBottom: '8px',
+  width: '100%',
+  display: 'flex',
+  alignItems: 'center',
+  gap: 12,
+  borderBottom: `1px solid ${cssVar('borderColor')}`,
+  flexShrink: 0,
+});
+
+export const hasInputLabel = style([
+  searchInputContainer,
+  {
+    paddingTop: '12px',
+    paddingBottom: '18px',
+  },
+]);
+
+export const searchInput = style({
+  color: cssVar('textPrimaryColor'),
+  fontSize: cssVar('fontH5'),
+  width: '100%',
+  '::placeholder': {
+    color: cssVar('textSecondaryColor'),
+  },
+});
+
+export const timestamp = style({
+  display: 'flex',
+  fontSize: cssVar('fontXs'),
+  color: cssVar('textSecondaryColor'),
+  minWidth: 120,
+  flexDirection: 'row-reverse',
+});
+
+export const keybinding = style({
+  display: 'flex',
+  fontSize: cssVar('fontXs'),
+  columnGap: 2,
+});
+
+export const keybindingFragment = style({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: '0 4px',
+  borderRadius: 4,
+  color: cssVar('textSecondaryColor'),
+  backgroundColor: cssVar('backgroundTertiaryColor'),
+  minWidth: 24,
+  height: 20,
+  textTransform: 'uppercase',
+});
+
+export const itemTitle = style({
+  fontSize: cssVar('fontBase'),
+  lineHeight: '24px',
+  fontWeight: 400,
+  textAlign: 'justify',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+});
+export const itemSubtitle = style({
+  fontSize: cssVar('fontXs'),
+  lineHeight: '20px',
+  fontWeight: 400,
+  textAlign: 'justify',
 });

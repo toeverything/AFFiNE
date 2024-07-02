@@ -4,7 +4,7 @@ import { AIProvider } from '@affine/core/blocksuite/presets/ai';
 import { PageAIOnboarding } from '@affine/core/components/affine/ai-onboarding';
 import { AIIsland } from '@affine/core/components/pure/ai-island';
 import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
-import { RecentPagesService } from '@affine/core/modules/cmdk';
+import { RecentDocsService } from '@affine/core/modules/quicksearch';
 import type { PageRootService } from '@blocksuite/blocks';
 import {
   BookmarkBlockService,
@@ -358,7 +358,7 @@ export const Component = () => {
   performanceRenderLogger.debug('DetailPage');
 
   const params = useParams();
-  const recentPages = useService(RecentPagesService);
+  const recentPages = useService(RecentDocsService);
 
   useEffect(() => {
     if (params.pageId) {

@@ -16,7 +16,7 @@ import {
   registerAffineUpdatesCommands,
 } from '../commands';
 import { usePageHelper } from '../components/blocksuite/block-suite-page-list/utils';
-import { QuickSearchService } from '../modules/cmdk';
+import { CMDKQuickSearchService } from '../modules/quicksearch/services/cmdk';
 import { useLanguageHelper } from './affine/use-language-helper';
 import { useActiveBlocksuiteEditor } from './use-block-suite-editor';
 import { useNavigateHelper } from './use-navigate-helper';
@@ -33,7 +33,7 @@ function hasLinkPopover(editor: AffineEditorContainer | null) {
 }
 
 function registerCMDKCommand(
-  qsService: QuickSearchService,
+  service: CMDKQuickSearchService,
   editor: AffineEditorContainer | null
 ) {
   return registerAffineCommand({
@@ -52,7 +52,7 @@ function registerCMDKCommand(
       if (hasLinkPopover(editor)) {
         return;
       }
-      qsService.quickSearch.toggle();
+      service.toggle();
     },
   });
 }
@@ -66,15 +66,15 @@ export function useRegisterWorkspaceCommands() {
   const pageHelper = usePageHelper(currentWorkspace.docCollection);
   const navigationHelper = useNavigateHelper();
   const [editor] = useActiveBlocksuiteEditor();
-  const quickSearch = useService(QuickSearchService);
+  const cmdkQuickSearchService = useService(CMDKQuickSearchService);
 
   useEffect(() => {
-    const unsub = registerCMDKCommand(quickSearch, editor);
+    const unsub = registerCMDKCommand(cmdkQuickSearchService, editor);
 
     return () => {
       unsub();
     };
-  }, [editor, quickSearch]);
+  }, [cmdkQuickSearchService, editor]);
 
   // register AffineUpdatesCommands
   useEffect(() => {

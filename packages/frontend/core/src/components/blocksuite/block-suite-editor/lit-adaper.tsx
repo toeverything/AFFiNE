@@ -4,7 +4,6 @@ import {
   useLitPortalFactory,
 } from '@affine/component';
 import { useJournalInfoHelper } from '@affine/core/hooks/use-journal';
-import { QuickSearchService } from '@affine/core/modules/cmdk';
 import { PeekViewService } from '@affine/core/modules/peek-view';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import {
@@ -19,6 +18,7 @@ import {
   type DocMode,
   DocService,
   DocsService,
+  useFramework,
   useLiveData,
   useService,
 } from '@toeverything/infra';
@@ -79,9 +79,9 @@ interface BlocksuiteEditorProps {
 const usePatchSpecs = (page: Doc, shared: boolean, mode: DocMode) => {
   const [reactToLit, portals] = useLitPortalFactory();
   const peekViewService = useService(PeekViewService);
-  const quickSearchService = useService(QuickSearchService);
   const docService = useService(DocService);
   const docsService = useService(DocsService);
+  const framework = useFramework();
   const referenceRenderer: ReferenceReactRenderer = useMemo(() => {
     return function customReference(reference) {
       const pageId = reference.delta.attributes?.reference?.pageId;
@@ -105,7 +105,7 @@ const usePatchSpecs = (page: Doc, shared: boolean, mode: DocMode) => {
       patched = patchPeekViewService(patched, peekViewService);
     }
     if (!page.readonly) {
-      patched = patchQuickSearchService(patched, quickSearchService);
+      patched = patchQuickSearchService(patched, framework);
     }
     if (shared) {
       patched = patchForSharedPage(patched);
@@ -116,9 +116,9 @@ const usePatchSpecs = (page: Doc, shared: boolean, mode: DocMode) => {
     confirmModal,
     docService,
     docsService,
+    framework,
     page.readonly,
     peekViewService,
-    quickSearchService,
     reactToLit,
     referenceRenderer,
     shared,

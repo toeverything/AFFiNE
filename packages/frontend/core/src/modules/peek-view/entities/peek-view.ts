@@ -161,7 +161,7 @@ export class PeekViewEntity extends Entity {
     // if there is an active peek view and it is a doc peek view, we will navigate it first
     if (active?.info.type === 'doc' && this.show$.value) {
       // TODO(@pengx17): scroll to the viewing position?
-      this.workbenchService.workbench.openPage(active.info.docId);
+      this.workbenchService.workbench.openDoc(active.info.docId);
     }
 
     this._active$.next({ target, info: resolvedInfo });

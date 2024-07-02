@@ -19,7 +19,6 @@ import {
   DocsService,
   effect,
   fromPromise,
-  GlobalContextService,
   onStart,
   throwIfAborted,
   useLiveData,
@@ -59,9 +58,9 @@ import {
 import { useRegisterFindInPageCommands } from '../hooks/affine/use-register-find-in-page-commands';
 import { useNavigateHelper } from '../hooks/use-navigate-helper';
 import { useRegisterWorkspaceCommands } from '../hooks/use-register-workspace-commands';
-import { QuickSearchService } from '../modules/cmdk';
-import { CMDKQuickSearchModal } from '../modules/cmdk/views';
 import { useRegisterNavigationCommands } from '../modules/navigation/view/use-register-navigation-commands';
+import { QuickSearchContainer } from '../modules/quicksearch';
+import { CMDKQuickSearchService } from '../modules/quicksearch/services/cmdk';
 import { WorkbenchService } from '../modules/workbench';
 import {
   AllWorkspaceModals,
@@ -71,40 +70,6 @@ import { SWRConfigProvider } from '../providers/swr-config-provider';
 import { pathGenerator } from '../shared';
 import { mixpanel } from '../utils';
 import * as styles from './styles.css';
-
-export const QuickSearch = () => {
-  const quickSearch = useService(QuickSearchService).quickSearch;
-  const open = useLiveData(quickSearch.show$);
-
-  const onToggleQuickSearch = useCallback(
-    (open: boolean) => {
-      if (open) {
-        // should never be here
-        quickSearch.show();
-      } else {
-        quickSearch.hide();
-      }
-    },
-    [quickSearch]
-  );
-
-  const docRecordList = useService(DocsService).list;
-  const currentDocId = useLiveData(
-    useService(GlobalContextService).globalContext.docId.$
-  );
-  const currentPage = useLiveData(
-    currentDocId ? docRecordList.doc$(currentDocId) : null
-  );
-  const pageMeta = useLiveData(currentPage?.meta$);
-
-  return (
-    <CMDKQuickSearchModal
-      open={open}
-      onOpenChange={onToggleQuickSearch}
-      pageMeta={pageMeta}
-    />
-  );
-};
 
 export const WorkspaceLayout = function WorkspaceLayout({
   children,
@@ -159,7 +124,7 @@ export const WorkspaceLayoutInner = ({ children }: PropsWithChildren) => {
           timeout(10000 /* 10s */),
           mergeMap(({ mode, doc }) => {
             docsList.setMode(doc.id, mode as DocMode);
-            workbench.openPage(doc.id);
+            workbench.openDoc(doc.id);
             return EMPTY;
           }),
           onStart(() => {
@@ -226,14 +191,14 @@ export const WorkspaceLayoutInner = ({ children }: PropsWithChildren) => {
     return pageHelper.createPage();
   }, [pageHelper]);
 
-  const quickSearch = useService(QuickSearchService).quickSearch;
+  const cmdkQuickSearchService = useService(CMDKQuickSearchService);
   const handleOpenQuickSearchModal = useCallback(() => {
-    quickSearch.show();
+    cmdkQuickSearchService.toggle();
     mixpanel.track('QuickSearchOpened', {
       segment: 'navigation panel',
       control: 'search button',
     });
-  }, [quickSearch]);
+  }, [cmdkQuickSearchService]);
 
   const setOpenSettingModalAtom = useSetAtom(openSettingModalAtom);
 
@@ -297,7 +262,7 @@ export const WorkspaceLayoutInner = ({ children }: PropsWithChildren) => {
         </AppContainer>
         <GlobalDragOverlay />
       </DndContext>
-      <QuickSearch />
+      <QuickSearchContainer />
       <SyncAwareness />
     </>
   );

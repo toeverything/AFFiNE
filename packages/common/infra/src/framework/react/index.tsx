@@ -9,6 +9,12 @@ export const FrameworkStackContext = React.createContext<FrameworkProvider[]>([
   Framework.EMPTY.provider(),
 ]);
 
+export function useFramework(): FrameworkProvider {
+  const stack = useContext(FrameworkStackContext);
+
+  return stack[stack.length - 1]; // never null, because the default value
+}
+
 export function useService<T extends Service>(
   identifier: GeneralIdentifier<T>
 ): T {

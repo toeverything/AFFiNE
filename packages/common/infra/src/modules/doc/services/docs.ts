@@ -1,6 +1,10 @@
+import { Unreachable } from '@affine/env/constant';
+
 import { Service } from '../../../framework';
+import { initEmptyPage } from '../../../initialization';
 import { ObjectPool } from '../../../utils';
 import type { Doc } from '../entities/doc';
+import type { DocMode } from '../entities/record';
 import { DocRecordList } from '../entities/record-list';
 import { DocScope } from '../scopes/doc';
 import type { DocsStore } from '../stores/docs';
@@ -45,5 +49,23 @@ export class DocsService extends Service {
     const { obj, release } = this.pool.put(docId, doc);
 
     return { doc: obj, release };
+  }
+
+  createDoc(
+    options: {
+      mode?: DocMode;
+      title?: string;
+    } = {}
+  ) {
+    const doc = this.store.createBlockSuiteDoc();
+    initEmptyPage(doc, options.title);
+    const docRecord = this.list.doc$(doc.id).value;
+    if (!docRecord) {
+      throw new Unreachable();
+    }
+    if (options.mode) {
+      docRecord.setMode(options.mode);
+    }
+    return docRecord;
   }
 }

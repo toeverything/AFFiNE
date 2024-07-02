@@ -2,13 +2,14 @@ import { configureQuotaModule } from '@affine/core/modules/quota';
 import { configureInfraModules, type Framework } from '@toeverything/infra';
 
 import { configureCloudModule } from './cloud';
-import { configureQuickSearchModule } from './cmdk';
 import { configureCollectionModule } from './collection';
+import { configureDocsSearchModule } from './docs-search';
 import { configureFindInPageModule } from './find-in-page';
 import { configureNavigationModule } from './navigation';
 import { configurePeekViewModule } from './peek-view';
 import { configurePermissionsModule } from './permissions';
 import { configureWorkspacePropertiesModule } from './properties';
+import { configureQuickSearchModule } from './quicksearch';
 import { configureRightSidebarModule } from './right-sidebar';
 import { configureShareDocsModule } from './share-doc';
 import { configureStorageImpls } from './storage';
@@ -32,6 +33,7 @@ export function configureCommonModules(framework: Framework) {
   configureFindInPageModule(framework);
   configurePeekViewModule(framework);
   configureQuickSearchModule(framework);
+  configureDocsSearchModule(framework);
 }
 
 export function configureImpls(framework: Framework) {

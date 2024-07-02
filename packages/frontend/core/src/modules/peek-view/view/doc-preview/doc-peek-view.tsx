@@ -97,7 +97,7 @@ export function DocPeekPreview({
   useEffect(() => {
     const disposable = AIProvider.slots.requestOpenWithChat.on(() => {
       if (doc) {
-        workbench.openPage(doc.id);
+        workbench.openDoc(doc.id);
         peekView.close();
         // chat panel open is already handled in <DetailPageImpl />
       }

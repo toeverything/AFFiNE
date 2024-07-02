@@ -18,6 +18,10 @@ export class DocsStore extends Store {
     return this.workspaceService.workspace.docCollection.getDoc(id);
   }
 
+  createBlockSuiteDoc() {
+    return this.workspaceService.workspace.docCollection.createDoc();
+  }
+
   watchDocIds() {
     return new Observable<string[]>(subscriber => {
       const emit = () => {

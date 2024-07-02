@@ -383,18 +383,6 @@ test('can use cmdk to delete page and restore it', async ({ page }) => {
   await expect(restoreButton).not.toBeVisible();
 });
 
-test('show not found item', async ({ page }) => {
-  await openHomePage(page);
-  await waitForEditorLoad(page);
-  await clickNewPageButton(page);
-  await openQuickSearchByShortcut(page);
-  // input title and create new page
-  await insertInputText(page, 'test123456');
-  const notFoundItem = page.getByTestId('cmdk-search-not-found');
-  await expect(notFoundItem).toBeVisible();
-  await expect(notFoundItem).toHaveText('Search for "test123456"');
-});
-
 test('can use cmdk to search page content and scroll to it, then the block will be selected', async ({
   page,
 }) => {
@@ -502,7 +490,7 @@ test('can use @ to open quick search to search for doc and insert into canvas', 
   await insertInputText(page, url);
 
   // expect the default page to be selected
-  await expect(page.locator('[cmdk-group-items] [cmdk-item]')).toHaveCount(1);
+  await expect(page.locator('[cmdk-group-items] [cmdk-item]')).toHaveCount(3);
 
   // press enter to insert the page to canvas
   await page.keyboard.press('Enter');
