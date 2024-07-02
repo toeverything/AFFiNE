@@ -2,11 +2,13 @@ import type { MenuProps } from '@affine/component';
 import { IconButton, Input, Menu, Scrollable } from '@affine/component';
 import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
 import { WorkspaceLegacyProperties } from '@affine/core/modules/properties';
+import type { Tag } from '@affine/core/modules/tag';
 import { DeleteTagConfirmModal, TagService } from '@affine/core/modules/tag';
 import { useI18n } from '@affine/i18n';
 import { DeleteIcon, MoreHorizontalIcon, TagsIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
 import clsx from 'clsx';
+import { clamp } from 'lodash-es';
 import type { HTMLAttributes, PropsWithChildren } from 'react';
 import { useCallback, useMemo, useReducer, useRef, useState } from 'react';
 
@@ -19,6 +21,7 @@ import * as styles from './tags-inline-editor.css';
 interface TagsEditorProps {
   pageId: string;
   readonly?: boolean;
+  focusedIndex?: number;
 }
 
 interface InlineTagsListProps
@@ -31,6 +34,7 @@ const InlineTagsList = ({
   pageId,
   readonly,
   children,
+  focusedIndex,
   onRemove,
 }: PropsWithChildren<InlineTagsListProps>) => {
   const tagList = useService(TagService).tagList;
@@ -54,6 +58,7 @@ const InlineTagsList = ({
           <TagItem
             key={tagId}
             idx={idx}
+            focused={focusedIndex === idx}
             onRemoved={onRemoved}
             mode="inline"
             tag={tag}
@@ -171,15 +176,50 @@ export const EditTagMenu = ({
   return <Menu {...menuProps}>{children}</Menu>;
 };
 
+type TagOption = Tag | { readonly create: true; readonly value: string };
+const isCreateNewTag = (
+  tagOption: TagOption
+): tagOption is { readonly create: true; readonly value: string } => {
+  return 'create' in tagOption;
+};
+
 export const TagsEditor = ({ pageId, readonly }: TagsEditorProps) => {
   const t = useI18n();
   const tagList = useService(TagService).tagList;
   const tags = useLiveData(tagList.tags$);
   const tagIds = useLiveData(tagList.tagIdsByPageId$(pageId));
   const [inputValue, setInputValue] = useState('');
+  const filteredTags = useLiveData(
+    inputValue ? tagList.filterTagsByName$(inputValue) : tagList.tags$
+  );
   const [open, setOpen] = useState(false);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const exactMatch = filteredTags.find(tag => tag.value$.value === inputValue);
+  const showCreateTag = !exactMatch && inputValue.trim();
+
+  // tag option candidates to show in the tag dropdown
+  const tagOptions: TagOption[] = useMemo(() => {
+    if (showCreateTag) {
+      return [{ create: true, value: inputValue } as const, ...filteredTags];
+    } else {
+      return filteredTags;
+    }
+  }, [filteredTags, inputValue, showCreateTag]);
+
+  const [focusedIndex, setFocusedIndex] = useState<number>(-1);
+  const [focusedInlineIndex, setFocusedInlineIndex] = useState<number>(
+    tagIds.length
+  );
+
+  // -1: no focus
+  const safeFocusedIndex = clamp(focusedIndex, -1, tagOptions.length - 1);
+  // inline tags focus index can go beyond the length of tagIds
+  // using -1 and tagIds.length to make keyboard navigation easier
+  const safeInlineFocusedIndex = clamp(focusedInlineIndex, -1, tagIds.length);
+
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const handleCloseModal = useCallback(
     (open: boolean) => {
@@ -197,13 +237,6 @@ export const TagsEditor = ({ pageId, readonly }: TagsEditorProps) => {
     [setOpen, setSelectedTagIds]
   );
 
-  const match = useLiveData(tagList.tagByTagValue$(inputValue));
-  const exactMatch = useLiveData(tagList.excactTagByValue$(inputValue));
-
-  const filteredTags = useLiveData(
-    inputValue ? tagList.filterTagsByName$(inputValue) : tagList.tags$
-  );
-
   const onInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       setInputValue(e.target.value);
@@ -211,13 +244,19 @@ export const TagsEditor = ({ pageId, readonly }: TagsEditorProps) => {
     []
   );
 
-  const onAddTag = useCallback(
+  const onToggleTag = useCallback(
     (id: string) => {
+      const tagEntity = tagList.tags$.value.find(o => o.id === id);
+      if (!tagEntity) {
+        return;
+      }
       if (!tagIds.includes(id)) {
-        tags.find(o => o.id === id)?.tag(pageId);
+        tagEntity.tag(pageId);
+      } else {
+        tagEntity.untag(pageId);
       }
     },
-    [pageId, tagIds, tags]
+    [pageId, tagIds, tagList.tags$.value]
   );
 
   const focusInput = useCallback(() => {
@@ -234,40 +273,76 @@ export const TagsEditor = ({ pageId, readonly }: TagsEditorProps) => {
 
   const onCreateTag = useCallback(
     (name: string) => {
-      if (!name.trim()) {
-        return;
-      }
       rotateNextColor();
       const newTag = tagList.createTag(name.trim(), nextColor);
-      newTag.tag(pageId);
+      return newTag.id;
     },
-    [nextColor, pageId, tagList]
+    [nextColor, tagList]
   );
 
-  const onSelectTag = useCallback(
-    (id: string) => {
-      onAddTag(id);
+  const onSelectTagOption = useCallback(
+    (tagOption: TagOption) => {
+      const id = isCreateNewTag(tagOption)
+        ? onCreateTag(tagOption.value)
+        : tagOption.id;
+      onToggleTag(id);
       setInputValue('');
       focusInput();
+      setFocusedIndex(-1);
+      setFocusedInlineIndex(tagIds.length + 1);
     },
-    [focusInput, onAddTag]
+    [onCreateTag, onToggleTag, focusInput, tagIds.length]
   );
 
   const onInputKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
       if (e.key === 'Enter') {
-        if (exactMatch) {
-          onAddTag(exactMatch.id);
-        } else {
-          onCreateTag(inputValue);
+        if (safeFocusedIndex >= 0) {
+          onSelectTagOption(tagOptions[safeFocusedIndex]);
         }
-        setInputValue('');
       } else if (e.key === 'Backspace' && inputValue === '' && tagIds.length) {
-        const lastTagId = tagIds[tagIds.length - 1];
-        tags.find(tag => tag.id === lastTagId)?.untag(pageId);
+        const tagToRemove =
+          safeInlineFocusedIndex < 0 || safeInlineFocusedIndex >= tagIds.length
+            ? tagIds.length - 1
+            : safeInlineFocusedIndex;
+        tags.find(item => item.id === tagIds.at(tagToRemove))?.untag(pageId);
+      } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        const newFocusedIndex = clamp(
+          safeFocusedIndex + (e.key === 'ArrowUp' ? -1 : 1),
+          0,
+          tagOptions.length - 1
+        );
+        scrollContainerRef.current
+          ?.querySelector(
+            `.${styles.tagSelectorItem}:nth-child(${newFocusedIndex + 1})`
+          )
+          ?.scrollIntoView({ block: 'nearest' });
+        setFocusedIndex(newFocusedIndex);
+        // reset inline focus
+        setFocusedInlineIndex(tagIds.length + 1);
+      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        const newItemToFocus =
+          e.key === 'ArrowLeft'
+            ? safeInlineFocusedIndex - 1
+            : safeInlineFocusedIndex + 1;
+
+        e.preventDefault();
+        setFocusedInlineIndex(newItemToFocus);
+        // reset tag list focus
+        setFocusedIndex(-1);
       }
     },
-    [inputValue, tagIds, exactMatch, onAddTag, onCreateTag, tags, pageId]
+    [
+      inputValue,
+      tagIds,
+      safeFocusedIndex,
+      onSelectTagOption,
+      tagOptions,
+      safeInlineFocusedIndex,
+      tags,
+      pageId,
+    ]
   );
 
   return (
@@ -276,6 +351,7 @@ export const TagsEditor = ({ pageId, readonly }: TagsEditorProps) => {
         <InlineTagsList
           pageId={pageId}
           readonly={readonly}
+          focusedIndex={safeInlineFocusedIndex}
           onRemove={focusInput}
         >
           <input
@@ -295,45 +371,46 @@ export const TagsEditor = ({ pageId, readonly }: TagsEditorProps) => {
         </div>
         <Scrollable.Root>
           <Scrollable.Viewport
+            ref={scrollContainerRef}
             className={styles.tagSelectorTagsScrollContainer}
           >
-            {filteredTags.map(tag => {
-              return (
-                <div
-                  key={tag.id}
-                  className={styles.tagSelectorItem}
-                  data-testid="tag-selector-item"
-                  data-tag-id={tag.id}
-                  data-tag-value={tag.value$}
-                  onClick={() => {
-                    onSelectTag(tag.id);
-                  }}
-                >
-                  <TagItem maxWidth="100%" tag={tag} mode="inline" />
-                  <div className={styles.spacer} />
-                  <EditTagMenu tagId={tag.id} onTagDelete={onTagDelete}>
-                    <IconButton
-                      className={styles.tagEditIcon}
-                      type="plain"
-                      icon={<MoreHorizontalIcon />}
-                    />
-                  </EditTagMenu>
-                </div>
-              );
+            {tagOptions.map((tag, idx) => {
+              const commonProps = {
+                focused: safeFocusedIndex === idx,
+                onClick: () => onSelectTagOption(tag),
+                onMouseEnter: () => setFocusedIndex(idx),
+                ['data-testid']: 'tag-selector-item',
+                ['data-focused']: safeFocusedIndex === idx,
+                className: styles.tagSelectorItem,
+              };
+              if (isCreateNewTag(tag)) {
+                return (
+                  <div key={tag.value + '.' + idx} {...commonProps}>
+                    {t['Create']()}{' '}
+                    <TempTagItem value={inputValue} color={nextColor} />
+                  </div>
+                );
+              } else {
+                return (
+                  <div
+                    key={tag.id}
+                    {...commonProps}
+                    data-tag-id={tag.id}
+                    data-tag-value={tag.value$.value}
+                  >
+                    <TagItem maxWidth="100%" tag={tag} mode="inline" />
+                    <div className={styles.spacer} />
+                    <EditTagMenu tagId={tag.id} onTagDelete={onTagDelete}>
+                      <IconButton
+                        className={styles.tagEditIcon}
+                        type="plain"
+                        icon={<MoreHorizontalIcon />}
+                      />
+                    </EditTagMenu>
+                  </div>
+                );
+              }
             })}
-            {match || !inputValue ? null : (
-              <div
-                data-testid="tag-selector-item"
-                className={styles.tagSelectorItem}
-                onClick={() => {
-                  setInputValue('');
-                  onCreateTag(inputValue);
-                }}
-              >
-                {t['Create']()}{' '}
-                <TempTagItem value={inputValue} color={nextColor} />
-              </div>
-            )}
           </Scrollable.Viewport>
           <Scrollable.Scrollbar style={{ transform: 'translateX(6px)' }} />
         </Scrollable.Root>

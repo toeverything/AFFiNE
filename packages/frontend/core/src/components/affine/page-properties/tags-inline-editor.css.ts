@@ -90,8 +90,10 @@ export const tagSelectorItem = style({
   gap: 8,
   cursor: 'pointer',
   borderRadius: '4px',
-  ':hover': {
-    backgroundColor: cssVar('hoverColor'),
+  selectors: {
+    '&[data-focused=true]': {
+      backgroundColor: cssVar('hoverColor'),
+    },
   },
 });
 
