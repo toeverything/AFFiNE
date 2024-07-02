@@ -1,4 +1,7 @@
-import { registerAffineCommand } from '@affine/core/commands';
+import {
+  PreconditionStrategy,
+  registerAffineCommand,
+} from '@affine/core/commands';
 import { FindInPageService } from '@affine/core/modules/find-in-page/services/find-in-page';
 import { useService } from '@toeverything/infra';
 import { useCallback, useEffect } from 'react';
@@ -20,6 +23,7 @@ export function useRegisterFindInPageCommands() {
     const unsubs: Array<() => void> = [];
     unsubs.push(
       registerAffineCommand({
+        preconditionStrategy: PreconditionStrategy.Never,
         id: `editor:find-in-page`,
         keyBinding: {
           binding: '$mod+f',
