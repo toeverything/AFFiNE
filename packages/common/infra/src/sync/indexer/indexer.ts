@@ -20,6 +20,9 @@ export interface IndexWriter<S extends Schema>
 
   delete(id: string): void;
 
+  // TODO(@eyhn)
+  // deleteByQuery(query: Query<S>): void;
+
   commit(): Promise<void>;
 
   rollback(): void;

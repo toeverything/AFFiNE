@@ -2,6 +2,7 @@
   "name": "@toeverything/infra",
   "type": "module",
   "private": true,
+  "sideEffects": false,
   "exports": {
     "./blocksuite": "./src/blocksuite/index.ts",
     "./storage": "./src/storage/index.ts",
