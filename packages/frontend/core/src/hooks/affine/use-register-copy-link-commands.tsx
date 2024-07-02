@@ -1,4 +1,7 @@
-import { registerAffineCommand } from '@affine/core/commands';
+import {
+  PreconditionStrategy,
+  registerAffineCommand,
+} from '@affine/core/commands';
 import { useSharingUrl } from '@affine/core/hooks/affine/use-share-url';
 import { useIsActiveView } from '@affine/core/modules/workbench';
 import { WorkspaceFlavour } from '@affine/env/workspace';
@@ -28,7 +31,7 @@ export function useRegisterCopyLinkCommands({
       registerAffineCommand({
         id: `affine:share-private-link:${docId}`,
         category: 'affine:general',
-        preconditionStrategy: () => isActiveView,
+        preconditionStrategy: PreconditionStrategy.Never,
         keyBinding: {
           binding: '$mod+Shift+c',
         },

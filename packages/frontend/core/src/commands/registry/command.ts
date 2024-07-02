@@ -39,6 +39,7 @@ export interface KeybindingOptions {
 export interface AffineCommandOptions {
   id: string;
   // a set of predefined precondition strategies, but also allow user to customize their own
+  // note: this only controls the visibility of the command, not the availability (e.g., shortcut keybinding still works)
   preconditionStrategy?: PreconditionStrategy | (() => boolean);
   // main text on the left..
   // make text a function so that we can do i18n and interpolation when we need to
@@ -57,7 +58,6 @@ export interface AffineCommandOptions {
   category?: CommandCategory;
   // we use https://github.com/jamiebuilds/tinykeys so that we can use the same keybinding definition
   // for both mac and windows
-  // TODO(@Peng): render keybinding in command palette
   keyBinding?: KeybindingOptions | string;
   run: () => void | Promise<void>;
 }

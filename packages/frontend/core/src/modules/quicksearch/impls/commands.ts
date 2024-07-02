@@ -160,17 +160,17 @@ export class CommandsQuickSearchSession
 
     return result.map<QuickSearchItem<'commands', AffineCommand>>(
       ({ item, matches, score = 1 }) => {
-        const nomalizedRange = ([start, end]: [number, number]) =>
+        const normalizedRange = ([start, end]: [number, number]) =>
           [
             start,
             end + 1 /* in fuse, the `end` is different from the `substring` */,
           ] as [number, number];
         const titleMatches = matches
           ?.filter(match => match.key === 'label.title')
-          .flatMap(match => match.indices.map(nomalizedRange));
+          .flatMap(match => match.indices.map(normalizedRange));
         const subTitleMatches = matches
           ?.filter(match => match.key === 'label.subTitle')
-          .flatMap(match => match.indices.map(nomalizedRange));
+          .flatMap(match => match.indices.map(normalizedRange));
 
         return {
           id: 'command:' + item.id,
