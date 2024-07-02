@@ -45,6 +45,24 @@ test('allow create tag', async ({ page }) => {
   await expectTagsVisible(page, ['Test2']);
 });
 
+test('allow using keyboard to navigate tags', async ({ page }) => {
+  await openTagsEditor(page);
+  await searchAndCreateTag(page, 'Test1');
+  await searchAndCreateTag(page, 'Test2');
+
+  await page.keyboard.press('ArrowLeft');
+  await page.keyboard.press('Backspace');
+  await closeTagsEditor(page);
+  await expectTagsVisible(page, ['Test1']);
+
+  await openTagsEditor(page);
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('Enter');
+  await closeTagsEditor(page);
+  await expectTagsVisible(page, ['Test1', 'Test2']);
+});
+
 test('allow create tag on journals page', async ({ page }) => {
   await openJournalsPage(page);
   await waitForEditorLoad(page);
