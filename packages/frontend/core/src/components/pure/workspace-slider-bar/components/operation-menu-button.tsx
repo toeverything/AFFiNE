@@ -5,8 +5,7 @@ import { FavoriteItemsAdapter } from '@affine/core/modules/properties';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import { useI18n } from '@affine/i18n';
 import { MoreHorizontalIcon } from '@blocksuite/icons/rc';
-import type { DocCollection } from '@blocksuite/store';
-import { useService } from '@toeverything/infra';
+import { useService, useServices, WorkspaceService } from '@toeverything/infra';
 import { useCallback } from 'react';
 
 import { useTrashModalHelper } from '../../../../hooks/affine/use-trash-modal-helper';
@@ -15,7 +14,6 @@ import { OperationItems } from './operation-item';
 
 export type OperationMenuButtonProps = {
   pageId: string;
-  docCollection: DocCollection;
   pageTitle: string;
   setRenameModalOpen: () => void;
   inFavorites?: boolean;
@@ -26,7 +24,6 @@ export type OperationMenuButtonProps = {
 
 export const OperationMenuButton = ({ ...props }: OperationMenuButtonProps) => {
   const {
-    docCollection,
     pageId,
     pageTitle,
     setRenameModalOpen,
@@ -36,8 +33,15 @@ export const OperationMenuButton = ({ ...props }: OperationMenuButtonProps) => {
     isReferencePage,
   } = props;
   const t = useI18n();
-  const { createLinkedPage } = usePageHelper(docCollection);
-  const { setTrashModal } = useTrashModalHelper(docCollection);
+  const { workspaceService } = useServices({
+    WorkspaceService,
+  });
+  const { createLinkedPage } = usePageHelper(
+    workspaceService.workspace.docCollection
+  );
+  const { setTrashModal } = useTrashModalHelper(
+    workspaceService.workspace.docCollection
+  );
 
   const favAdapter = useService(FavoriteItemsAdapter);
   const workbench = useService(WorkbenchService).workbench;

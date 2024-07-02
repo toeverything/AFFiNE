@@ -91,6 +91,7 @@ export class DocsIndexer extends Entity {
     // jobs should have the same docId, so we just pick the first one
     const docId = jobs[0].payload.docId;
 
+    const startTime = performance.now();
     logger.debug('Start crawling job for docId:', docId);
 
     if (docId) {
@@ -100,6 +101,11 @@ export class DocsIndexer extends Entity {
         await this.crawlingDocData(docId);
       }
     }
+
+    const duration = performance.now() - startTime;
+    logger.debug(
+      'Finish crawling job for docId:' + docId + ' in ' + duration + 'ms '
+    );
   }
 
   startCrawling() {

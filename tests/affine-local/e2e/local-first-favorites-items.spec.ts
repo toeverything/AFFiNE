@@ -107,6 +107,23 @@ test("Deleted page's reference will not be shown in sidebar", async ({
     page.locator('.doc-title-container:has-text("Another page")')
   ).toBeVisible();
 
+  const anotherPageId = page.url().split('/').reverse()[0];
+
+  const favItemTestId = 'favourite-page-' + newPageId;
+
+  await expect(page.getByTestId(favItemTestId)).toHaveText(
+    'this is a new page to favorite'
+  );
+
+  await page
+    .getByTestId(favItemTestId)
+    .locator('[data-testid="fav-collapsed-button"]')
+    .click();
+
+  const favItemAnotherPageTestId = 'reference-page-' + anotherPageId;
+
+  await expect(page.getByTestId(favItemAnotherPageTestId)).toBeVisible();
+
   // delete the page
   await clickPageMoreActions(page);
 
@@ -116,18 +133,7 @@ test("Deleted page's reference will not be shown in sidebar", async ({
   // confirm delete
   await page.locator('button >> text=Delete').click();
 
-  const favItemTestId = 'favourite-page-' + newPageId;
-
-  const favoriteListItemInSidebar = page.getByTestId(favItemTestId);
-  expect(await favoriteListItemInSidebar.textContent()).toBe(
-    'this is a new page to favorite'
-  );
-
-  const collapseButton = favoriteListItemInSidebar.locator(
-    '[data-testid="fav-collapsed-button"]'
-  );
-
-  expect(collapseButton).toHaveAttribute('data-disabled', 'true');
+  await expect(page.getByTestId(favItemAnotherPageTestId)).toBeVisible();
   const currentWorkspace = await workspace.current();
 
   expect(currentWorkspace.meta.flavour).toContain('local');

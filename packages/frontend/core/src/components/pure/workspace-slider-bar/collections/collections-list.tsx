@@ -231,10 +231,6 @@ export const CollectionSidebarNavItemContent = ({
     () => new Set(collection.allowList),
     [collection.allowList]
   );
-  const allPagesMeta = useMemo(
-    () => Object.fromEntries(pages.map(v => [v.id, v])),
-    [pages]
-  );
   const removeFromAllowList = useCallback(
     (id: string) => {
       collectionService.deletePageFromCollection(collection.id, id);
@@ -259,18 +255,16 @@ export const CollectionSidebarNavItemContent = ({
         filtered.map(page => {
           return (
             <Doc
+              docId={page.id}
               parentId={dndId}
               inAllowList={allowList.has(page.id)}
               removeFromAllowList={removeFromAllowList}
-              allPageMeta={allPagesMeta}
-              doc={page}
               key={page.id}
-              docCollection={docCollection}
             />
           );
         })
       ) : (
-        <div className={styles.emptyCollection}>
+        <div className={styles.noReferences}>
           {t['com.affine.collection.emptyCollection']()}
         </div>
       )}

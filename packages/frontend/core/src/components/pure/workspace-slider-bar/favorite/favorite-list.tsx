@@ -3,18 +3,21 @@ import {
   getDNDId,
   resolveDragEndIntent,
 } from '@affine/core/hooks/affine/use-global-dnd-helper';
-import { useBlockSuiteDocMeta } from '@affine/core/hooks/use-block-suite-page-meta';
 import { CollectionService } from '@affine/core/modules/collection';
 import { FavoriteItemsAdapter } from '@affine/core/modules/properties';
 import type { WorkspaceFavoriteItem } from '@affine/core/modules/properties/services/schema';
 import { useI18n } from '@affine/i18n';
-import type { DocMeta } from '@blocksuite/store';
 import { useDndContext, useDroppable } from '@dnd-kit/core';
 import {
   SortableContext,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { useLiveData, useService } from '@toeverything/infra';
+import {
+  DocsService,
+  useLiveData,
+  useService,
+  useServices,
+} from '@toeverything/infra';
 import { Fragment, useCallback, useMemo } from 'react';
 
 import { CollectionSidebarNavItem } from '../collections';
@@ -25,28 +28,24 @@ import { FavouriteDocSidebarNavItem } from './favourite-nav-item';
 import * as styles from './styles.css';
 
 const FavoriteListInner = ({ docCollection: workspace }: FavoriteListProps) => {
-  const metas = useBlockSuiteDocMeta(workspace);
-  const favAdapter = useService(FavoriteItemsAdapter);
-  const collections = useLiveData(useService(CollectionService).collections$);
+  const { favoriteItemsAdapter, docsService, collectionService } = useServices({
+    FavoriteItemsAdapter,
+    DocsService,
+    CollectionService,
+  });
+  const collections = useLiveData(collectionService.collections$);
+  const docs = useLiveData(docsService.list.docs$);
+  const trashDocs = useLiveData(docsService.list.trashDocs$);
   const dropItemId = getDNDId('sidebar-pin', 'container', workspace.id);
 
-  const docMetaMapping = useMemo(
-    () =>
-      metas.reduce(
-        (acc, meta) => {
-          acc[meta.id] = meta;
-          return acc;
-        },
-        {} as Record<string, DocMeta>
-      ),
-    [metas]
-  );
-
   const favourites = useLiveData(
-    favAdapter.orderedFavorites$.map(favs => {
+    favoriteItemsAdapter.orderedFavorites$.map(favs => {
       return favs.filter(fav => {
         if (fav.type === 'doc') {
-          return !!docMetaMapping[fav.id] && !docMetaMapping[fav.id].trash;
+          return (
+            docs.some(doc => doc.id === fav.id) &&
+            !trashDocs.some(doc => doc.id === fav.id)
+          );
         }
         return true;
       });
@@ -82,19 +81,17 @@ const FavoriteListInner = ({ docCollection: workspace }: FavoriteListProps) => {
             />
           );
         }
-      } else if (item.type === 'doc' && !docMetaMapping[item.id].trash) {
+      } else if (item.type === 'doc') {
         return (
           <FavouriteDocSidebarNavItem
-            metaMapping={docMetaMapping}
             pageId={item.id}
             // memo?
-            docCollection={workspace}
           />
         );
       }
       return null;
     },
-    [collections, docMetaMapping, workspace]
+    [collections, workspace]
   );
 
   const t = useI18n();
@@ -107,7 +104,7 @@ const FavoriteListInner = ({ docCollection: workspace }: FavoriteListProps) => {
       data-over={shouldRenderDragOver}
     >
       <CategoryDivider label={t['com.affine.rootAppSidebar.favorites']()}>
-        <AddFavouriteButton docCollection={workspace} />
+        <AddFavouriteButton />
       </CategoryDivider>
       {favourites.map(item => {
         return <Fragment key={item.id}>{renderFavItem(item)}</Fragment>;

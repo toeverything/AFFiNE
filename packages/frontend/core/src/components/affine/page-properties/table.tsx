@@ -8,7 +8,7 @@ import {
   Tooltip,
 } from '@affine/component';
 import { useCurrentWorkspacePropertiesAdapter } from '@affine/core/hooks/use-affine-adapter';
-import { useBlockSuitePageBacklinks } from '@affine/core/hooks/use-block-suite-page-backlinks';
+import { DocLinksService } from '@affine/core/modules/doc-link';
 import type {
   PageInfoCustomProperty,
   PageInfoCustomPropertyMeta,
@@ -380,7 +380,7 @@ export const PagePropertiesSettingsPopup = ({
 };
 
 type PageBacklinksPopupProps = PropsWithChildren<{
-  backlinks: string[];
+  backlinks: { docId: string; blockId: string; title: string }[];
 }>;
 
 export const PageBacklinksPopup = ({
@@ -398,11 +398,11 @@ export const PageBacklinksPopup = ({
       }}
       items={
         <div className={styles.backlinksList}>
-          {backlinks.map(pageId => (
+          {backlinks.map(link => (
             <AffinePageReference
-              key={pageId}
+              key={link.docId + ':' + link.blockId}
               wrapper={MenuItem}
-              pageId={pageId}
+              pageId={link.docId}
               docCollection={manager.workspace.docCollection}
             />
           ))}
@@ -597,10 +597,11 @@ export const PagePropertiesTableHeader = ({
   const manager = useContext(managerContext);
 
   const t = useI18n();
-  const backlinks = useBlockSuitePageBacklinks(
-    manager.workspace.docCollection,
-    manager.pageId
-  );
+  const { docLinksServices } = useServices({
+    DocLinksServices: DocLinksService,
+  });
+  const docBacklinks = docLinksServices.backlinks;
+  const backlinks = useLiveData(docBacklinks.backlinks$);
 
   const { docService, workspaceService } = useServices({
     DocService,

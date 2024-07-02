@@ -1,11 +1,21 @@
 import { cssVar } from '@toeverything/theme';
-import { globalStyle, keyframes, style } from '@vanilla-extract/css';
+import { globalStyle, style } from '@vanilla-extract/css';
 export const label = style({
   selectors: {
     '&[data-untitled="true"]': {
       opacity: 0.6,
     },
   },
+});
+export const labelContainer = style({
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+});
+export const labelTooltipContainer = style({
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
 });
 export const favItemWrapper = style({
   display: 'flex',
@@ -22,34 +32,12 @@ export const favItemWrapper = style({
     },
   },
 });
-const slideDown = keyframes({
-  '0%': {
-    height: '0px',
-  },
-  '100%': {
-    height: 'var(--radix-collapsible-content-height)',
-  },
-});
-const slideUp = keyframes({
-  '0%': {
-    height: 'var(--radix-collapsible-content-height)',
-  },
-  '100%': {
-    height: '0px',
-  },
-});
 export const collapsibleContent = style({
   overflow: 'hidden',
   marginTop: '4px',
   selectors: {
     '&[data-hidden="true"]': {
       display: 'none',
-    },
-    '&[data-state="open"]': {
-      animation: `${slideDown} 0.2s ease-out`,
-    },
-    '&[data-state="closed"]': {
-      animation: `${slideUp} 0.2s ease-out`,
     },
   },
 });
@@ -129,5 +117,13 @@ export const emptyFavouritesMessage = style({
   fontSize: cssVar('fontSm'),
   textAlign: 'center',
   color: cssVar('black30'),
+  userSelect: 'none',
+});
+export const noReferences = style({
+  fontSize: cssVar('fontSm'),
+  textAlign: 'left',
+  paddingLeft: '32px',
+  color: cssVar('black30'),
+  lineHeight: '30px',
   userSelect: 'none',
 });

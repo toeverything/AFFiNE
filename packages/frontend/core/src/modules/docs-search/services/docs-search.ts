@@ -45,7 +45,7 @@ export class DocsSearchService extends Service {
               },
               {
                 type: 'boost',
-                boost: 100,
+                boost: 1.5,
                 query: {
                   type: 'match',
                   field: 'flavour',
@@ -220,6 +220,195 @@ export class DocsSearchService extends Service {
             }
 
             return result;
+          });
+        })
+      );
+  }
+
+  async searchRefsFrom(docId: string): Promise<
+    {
+      docId: string;
+      title: string;
+    }[]
+  > {
+    const { nodes } = await this.indexer.blockIndex.search(
+      {
+        type: 'boolean',
+        occur: 'must',
+        queries: [
+          {
+            type: 'match',
+            field: 'docId',
+            match: docId,
+          },
+          {
+            type: 'exists',
+            field: 'ref',
+          },
+        ],
+      },
+      {
+        fields: ['ref'],
+        pagination: {
+          limit: 100,
+        },
+      }
+    );
+
+    const docIds = new Set(
+      nodes.flatMap(node => {
+        const refs = node.fields.ref;
+        return typeof refs === 'string' ? [refs] : refs;
+      })
+    );
+
+    const docData = await this.indexer.docIndex.getAll(Array.from(docIds));
+
+    return docData.map(doc => {
+      const title = doc.get('title');
+      return {
+        docId: doc.id,
+        title: title ? (typeof title === 'string' ? title : title[0]) : '',
+      };
+    });
+  }
+
+  watchRefsFrom(docId: string) {
+    return this.indexer.blockIndex
+      .search$(
+        {
+          type: 'boolean',
+          occur: 'must',
+          queries: [
+            {
+              type: 'match',
+              field: 'docId',
+              match: docId,
+            },
+            {
+              type: 'exists',
+              field: 'ref',
+            },
+          ],
+        },
+        {
+          fields: ['ref'],
+          pagination: {
+            limit: 100,
+          },
+        }
+      )
+      .pipe(
+        switchMap(({ nodes }) => {
+          return fromPromise(async () => {
+            const docIds = new Set(
+              nodes.flatMap(node => {
+                const refs = node.fields.ref;
+                return typeof refs === 'string' ? [refs] : refs;
+              })
+            );
+
+            const docData = await this.indexer.docIndex.getAll(
+              Array.from(docIds)
+            );
+
+            return docData.map(doc => {
+              const title = doc.get('title');
+              return {
+                docId: doc.id,
+                title: title
+                  ? typeof title === 'string'
+                    ? title
+                    : title[0]
+                  : '',
+              };
+            });
+          });
+        })
+      );
+  }
+
+  async searchRefsTo(docId: string): Promise<
+    {
+      docId: string;
+      blockId: string;
+      title: string;
+    }[]
+  > {
+    const { buckets } = await this.indexer.blockIndex.aggregate(
+      {
+        type: 'match',
+        field: 'ref',
+        match: docId,
+      },
+      'docId',
+      {
+        hits: {
+          fields: ['docId', 'blockId'],
+          pagination: {
+            limit: 1,
+          },
+        },
+        pagination: {
+          limit: 100,
+        },
+      }
+    );
+
+    const docData = await this.indexer.docIndex.getAll(
+      buckets.map(bucket => bucket.key)
+    );
+
+    return buckets.map(bucket => {
+      const title =
+        docData.find(doc => doc.id === bucket.key)?.get('title') ?? '';
+      const blockId = bucket.hits.nodes[0]?.fields.blockId ?? '';
+      return {
+        docId: bucket.key,
+        blockId: typeof blockId === 'string' ? blockId : blockId[0],
+        title: typeof title === 'string' ? title : title[0],
+      };
+    });
+  }
+
+  watchRefsTo(docId: string) {
+    return this.indexer.blockIndex
+      .aggregate$(
+        {
+          type: 'match',
+          field: 'ref',
+          match: docId,
+        },
+        'docId',
+        {
+          hits: {
+            fields: ['docId', 'blockId'],
+            pagination: {
+              limit: 1,
+            },
+          },
+          pagination: {
+            limit: 100,
+          },
+        }
+      )
+      .pipe(
+        switchMap(({ buckets }) => {
+          return fromPromise(async () => {
+            const docData = await this.indexer.docIndex.getAll(
+              buckets.map(bucket => bucket.key)
+            );
+
+            return buckets.map(bucket => {
+              const title =
+                docData.find(doc => doc.id === bucket.key)?.get('title') ?? '';
+              const blockId = bucket.hits.nodes[0]?.fields.blockId ?? '';
+              return {
+                docId: bucket.key,
+                blockId: typeof blockId === 'string' ? blockId : blockId[0],
+                title: typeof title === 'string' ? title : title[0],
+              };
+            });
           });
         })
       );

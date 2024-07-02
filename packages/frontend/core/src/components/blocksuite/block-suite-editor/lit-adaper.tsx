@@ -7,7 +7,6 @@ import { useJournalInfoHelper } from '@affine/core/hooks/use-journal';
 import { PeekViewService } from '@affine/core/modules/peek-view';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import {
-  BiDirectionalLinkPanel,
   DocMetaTags,
   DocTitle,
   EdgelessEditor,
@@ -34,6 +33,7 @@ import React, {
 
 import { PagePropertiesTable } from '../../affine/page-properties';
 import { AffinePageReference } from '../../affine/reference-link';
+import { BiDirectionalLinkPanel } from './bi-directional-link-panel';
 import { BlocksuiteEditorJournalDocTitle } from './journal-doc-title';
 import {
   patchDocModeService,
@@ -64,10 +64,6 @@ const adapted = {
   EdgelessEditor: createReactComponentFromLit({
     react: React,
     elementClass: EdgelessEditor,
-  }),
-  BiDirectionalLinkPanel: createReactComponentFromLit({
-    react: React,
-    elementClass: BiDirectionalLinkPanel,
   }),
 };
 
@@ -211,9 +207,7 @@ export const BlocksuiteDocEditor = forwardRef<
             }}
           ></div>
         ) : null}
-        {docPage && !page.readonly ? (
-          <adapted.BiDirectionalLinkPanel doc={page} pageRoot={docPage} />
-        ) : null}
+        {!page.readonly ? <BiDirectionalLinkPanel /> : null}
       </div>
       {portals}
     </>

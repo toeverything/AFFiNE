@@ -29,6 +29,23 @@ export class DocRecordList extends Entity {
     []
   );
 
+  public readonly trashDocs$ = LiveData.from<DocRecord[]>(
+    this.store.watchTrashDocIds().pipe(
+      map(ids =>
+        ids.map(id => {
+          const exists = this.pool.get(id);
+          if (exists) {
+            return exists;
+          }
+          const record = this.framework.createEntity(DocRecord, { id });
+          this.pool.set(id, record);
+          return record;
+        })
+      )
+    ),
+    []
+  );
+
   public readonly isReady$ = LiveData.from(
     this.store.watchDocListReady(),
     false

@@ -233,7 +233,6 @@ export class IndexedDBJobQueue<J> implements JobQueue<J> {
         fromPromise(async () => {
           const trx = this.database.transaction(['jobs'], 'readonly');
           const remaining = await trx.objectStore('jobs').count();
-          console.log(remaining);
           return { remaining };
         })
       )
