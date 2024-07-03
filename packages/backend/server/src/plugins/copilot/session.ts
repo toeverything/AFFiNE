@@ -254,6 +254,7 @@ export class ChatSessionService {
             // connect
             userId: state.userId,
             promptName: state.prompt.name,
+            parentSessionId: state.parentSessionId,
           },
         });
       }
@@ -384,17 +385,36 @@ export class ChatSessionService {
     return await this.db.aiSession
       .findMany({
         where: {
-          userId,
-          workspaceId: workspaceId,
-          docId: workspaceId === docId ? undefined : docId,
-          prompt: {
-            action: options?.action ? { not: null } : null,
-          },
-          id: options?.sessionId ? { equals: options.sessionId } : undefined,
-          deletedAt: null,
+          OR: [
+            {
+              userId,
+              workspaceId: workspaceId,
+              docId: workspaceId === docId ? undefined : docId,
+              id: options?.sessionId
+                ? { equals: options.sessionId }
+                : undefined,
+              deletedAt: null,
+            },
+            ...(options?.action
+              ? []
+              : [
+                  {
+                    userId: { not: userId },
+                    workspaceId: workspaceId,
+                    docId: workspaceId === docId ? undefined : docId,
+                    id: options?.sessionId
+                      ? { equals: options.sessionId }
+                      : undefined,
+                    // should only find forked session
+                    parentSessionId: { not: null },
+                    deletedAt: null,
+                  },
+                ]),
+          ],
         },
         select: {
           id: true,
+          userId: true,
           promptName: true,
           tokenCost: true,
           createdAt: true,
@@ -419,15 +439,30 @@ export class ChatSessionService {
       .then(sessions =>
         Promise.all(
           sessions.map(
-            async ({ id, promptName, tokenCost, messages, createdAt }) => {
+            async ({
+              id,
+              userId: uid,
+              promptName,
+              tokenCost,
+              messages,
+              createdAt,
+            }) => {
               try {
+                const prompt = await this.prompt.get(promptName);
+                if (!prompt) {
+                  throw new CopilotPromptNotFound({ name: promptName });
+                }
+                if (
+                  // filter out the user's session that not match the action option
+                  (uid === userId && !!options?.action !== !!prompt.action) ||
+                  // filter out the non chat session from other user
+                  (uid !== userId && !!prompt.action)
+                ) {
+                  return undefined;
+                }
+
                 const ret = ChatMessageSchema.array().safeParse(messages);
                 if (ret.success) {
-                  const prompt = await this.prompt.get(promptName);
-                  if (!prompt) {
-                    throw new CopilotPromptNotFound({ name: promptName });
-                  }
-
                   // render system prompt
                   const preload = withPrompt
                     ? prompt

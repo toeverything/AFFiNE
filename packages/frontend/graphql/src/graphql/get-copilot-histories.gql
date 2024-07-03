@@ -11,6 +11,7 @@ query getCopilotHistories(
         action
         createdAt
         messages {
+          id
           role
           content
           attachments

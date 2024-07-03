@@ -1405,6 +1405,7 @@ export type GetCopilotHistoriesQuery = {
         createdAt: string;
         messages: Array<{
           __typename?: 'ChatMessage';
+          id: string | null;
           role: string;
           content: string;
           attachments: Array<string> | null;

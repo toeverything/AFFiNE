@@ -36,6 +36,7 @@ import {
   chatWithWorkflow,
   createCopilotMessage,
   createCopilotSession,
+  forkCopilotSession,
   getHistories,
   MockCopilotTestProvider,
   sse2array,
@@ -160,6 +161,123 @@ test('should create session correctly', async t => {
     await assertCreateSession(
       id,
       'should able to create session after user have permission'
+    );
+  }
+});
+
+test('should fork session correctly', async t => {
+  const { app } = t.context;
+
+  const assertForkSession = async (
+    token: string,
+    workspaceId: string,
+    sessionId: string,
+    lastMessageId: string,
+    error: string,
+    asserter = async (x: any) => {
+      const forkedSessionId = await x;
+      t.truthy(forkedSessionId, error);
+      return forkedSessionId;
+    }
+  ) =>
+    await asserter(
+      forkCopilotSession(
+        app,
+        token,
+        workspaceId,
+        randomUUID(),
+        sessionId,
+        lastMessageId
+      )
+    );
+
+  // prepare session
+  const { id } = await createWorkspace(app, token);
+  const sessionId = await createCopilotSession(
+    app,
+    token,
+    id,
+    randomUUID(),
+    promptName
+  );
+
+  let forkedSessionId: string;
+  // should be able to fork session
+  {
+    for (let i = 0; i < 3; i++) {
+      const messageId = await createCopilotMessage(app, token, sessionId);
+      await chatWithText(app, token, sessionId, messageId);
+    }
+    const histories = await getHistories(app, token, { workspaceId: id });
+    const latestMessageId = histories[0].messages.findLast(
+      m => m.role === 'assistant'
+    )?.id;
+    t.truthy(latestMessageId, 'should find last message id');
+
+    // should be able to fork session
+    forkedSessionId = await assertForkSession(
+      token,
+      id,
+      sessionId,
+      latestMessageId!,
+      'should be able to fork session with cloud workspace that user can access'
+    );
+  }
+
+  {
+    const {
+      token: { token: newToken },
+    } = await signUp(app, 'test', 'test@affine.pro', '123456');
+    await assertForkSession(
+      newToken,
+      id,
+      sessionId,
+      randomUUID(),
+      '',
+      async x => {
+        await t.throwsAsync(
+          x,
+          { instanceOf: Error },
+          'should not able to fork session with cloud workspace that user cannot access'
+        );
+      }
+    );
+
+    const inviteId = await inviteUser(
+      app,
+      token,
+      id,
+      'test@affine.pro',
+      'Admin'
+    );
+    await acceptInviteById(app, id, inviteId, false);
+    await assertForkSession(
+      newToken,
+      id,
+      sessionId,
+      randomUUID(),
+      '',
+      async x => {
+        await t.throwsAsync(
+          x,
+          { instanceOf: Error },
+          'should not able to fork a root session from other user'
+        );
+      }
+    );
+
+    const histories = await getHistories(app, token, { workspaceId: id });
+    const latestMessageId = histories
+      .find(h => h.sessionId === forkedSessionId)
+      ?.messages.findLast(m => m.role === 'assistant')?.id;
+    t.truthy(latestMessageId, 'should find latest message id');
+
+    await assertForkSession(
+      newToken,
+      id,
+      forkedSessionId,
+      latestMessageId!,
+      'should able to fork a forked session created by other user'
     );
   }
 });

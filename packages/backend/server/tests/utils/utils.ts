@@ -145,7 +145,14 @@ export function handleGraphQLError(resp: Response) {
   if (errors) {
     const cause = errors[0];
     const stacktrace = cause.extensions?.stacktrace;
-    throw new Error(stacktrace ? stacktrace.join('\n') : cause.message, cause);
+    throw new Error(
+      stacktrace
+        ? Array.isArray(stacktrace)
+          ? stacktrace.join('\n')
+          : String(stacktrace)
+        : cause.message,
+      cause
+    );
   }
 }
 

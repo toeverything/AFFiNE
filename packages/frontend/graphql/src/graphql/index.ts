@@ -267,6 +267,7 @@ query getCopilotHistories($workspaceId: String!, $docId: String, $options: Query
         action
         createdAt
         messages {
+          id
           role
           content
           attachments

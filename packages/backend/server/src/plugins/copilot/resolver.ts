@@ -273,12 +273,7 @@ export class CopilotResolver {
     @Parent() copilot: CopilotType,
     @CurrentUser() user: CurrentUser,
     @Args('docId', { nullable: true }) docId?: string,
-    @Args({
-      name: 'options',
-      type: () => QueryChatHistoriesInput,
-      nullable: true,
-    })
-    options?: QueryChatHistoriesInput
+    @Args('options', { nullable: true }) options?: QueryChatHistoriesInput
   ) {
     const workspaceId = copilot.workspaceId;
     if (!workspaceId) {
