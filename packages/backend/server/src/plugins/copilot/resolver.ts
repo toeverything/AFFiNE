@@ -27,7 +27,7 @@ import {
   FileUpload,
   MutexService,
   Throttle,
-  TooManyRequestsException,
+  TooManyRequest,
 } from '../../fundamentals';
 import { PromptService } from './prompt';
 import { ChatSessionService } from './session';
@@ -58,6 +58,24 @@ class CreateChatSessionInput {
     description: 'The prompt name to use for the session',
   })
   promptName!: string;
+}
+
+@InputType()
+class ForkChatSessionInput {
+  @Field(() => String)
+  workspaceId!: string;
+
+  @Field(() => String)
+  docId!: string;
+
+  @Field(() => String)
+  sessionId!: string;
+
+  @Field(() => String, {
+    description:
+      'Identify a message in the array and keep it with all previous messages into a forked session.',
+  })
+  latestMessageId!: string;
 }
 
 @InputType()
@@ -109,6 +127,10 @@ class QueryChatHistoriesInput implements Partial<ListHistoriesOptions> {
 
 @ObjectType('ChatMessage')
 class ChatMessageType implements Partial<ChatMessage> {
+  // id will be null if message is a prompt message
+  @Field(() => ID, { nullable: true })
+  id!: string;
+
   @Field(() => String)
   role!: 'system' | 'assistant' | 'user';
 
@@ -301,12 +323,40 @@ export class CopilotResolver {
     const lockFlag = `${COPILOT_LOCKER}:session:${user.id}:${options.workspaceId}`;
     await using lock = await this.mutex.lock(lockFlag);
     if (!lock) {
-      return new TooManyRequestsException('Server is busy');
+      return new TooManyRequest('Server is busy');
     }
 
     await this.chatSession.checkQuota(user.id);
 
     const session = await this.chatSession.create({
+      ...options,
+      userId: user.id,
+    });
+    return session;
+  }
+
+  @Mutation(() => String, {
+    description: 'Create a chat session',
+  })
+  async forkCopilotSession(
+    @CurrentUser() user: CurrentUser,
+    @Args({ name: 'options', type: () => ForkChatSessionInput })
+    options: ForkChatSessionInput
+  ) {
+    await this.permissions.checkCloudPagePermission(
+      options.workspaceId,
+      options.docId,
+      user.id
+    );
+    const lockFlag = `${COPILOT_LOCKER}:session:${user.id}:${options.workspaceId}`;
+    await using lock = await this.mutex.lock(lockFlag);
+    if (!lock) {
+      return new TooManyRequest('Server is busy');
+    }
+
+    await this.chatSession.checkQuota(user.id);
+
+    const session = await this.chatSession.fork({
       ...options,
       userId: user.id,
     });
@@ -332,7 +382,7 @@ export class CopilotResolver {
     const lockFlag = `${COPILOT_LOCKER}:session:${user.id}:${options.workspaceId}`;
     await using lock = await this.mutex.lock(lockFlag);
     if (!lock) {
-      return new TooManyRequestsException('Server is busy');
+      return new TooManyRequest('Server is busy');
     }
 
     return await this.chatSession.cleanup({
@@ -352,7 +402,7 @@ export class CopilotResolver {
     const lockFlag = `${COPILOT_LOCKER}:message:${user?.id}:${options.sessionId}`;
     await using lock = await this.mutex.lock(lockFlag);
     if (!lock) {
-      return new TooManyRequestsException('Server is busy');
+      return new TooManyRequest('Server is busy');
     }
     const session = await this.chatSession.get(options.sessionId);
     if (!session || session.config.userId !== user.id) {

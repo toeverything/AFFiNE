@@ -49,6 +49,7 @@ export interface ChatMessage {
   attachments: Maybe<Array<Scalars['String']['output']>>;
   content: Scalars['String']['output'];
   createdAt: Scalars['DateTime']['output'];
+  id: Maybe<Scalars['ID']['output']>;
   params: Maybe<Scalars['JSON']['output']>;
   role: Scalars['String']['output'];
 }
@@ -79,6 +80,11 @@ export interface CopilotHistories {
   sessionId: Scalars['String']['output'];
   /** The number of tokens used in the session */
   tokens: Scalars['Int']['output'];
+}
+
+export interface CopilotMessageNotFoundDataType {
+  __typename?: 'CopilotMessageNotFoundDataType';
+  messageId: Scalars['String']['output'];
 }
 
 export enum CopilotModels {
@@ -224,6 +230,7 @@ export enum EarlyAccessType {
 
 export type ErrorDataUnion =
   | BlobNotFoundDataType
+  | CopilotMessageNotFoundDataType
   | CopilotPromptNotFoundDataType
   | CopilotProviderSideErrorDataType
   | DocAccessDeniedDataType
@@ -318,6 +325,14 @@ export enum FeatureType {
   EarlyAccess = 'EarlyAccess',
   UnlimitedCopilot = 'UnlimitedCopilot',
   UnlimitedWorkspace = 'UnlimitedWorkspace',
+}
+
+export interface ForkChatSessionInput {
+  docId: Scalars['String']['input'];
+  /** Identify a message in the array and keep it with all previous messages into a forked session. */
+  latestMessageId: Scalars['String']['input'];
+  sessionId: Scalars['String']['input'];
+  workspaceId: Scalars['String']['input'];
 }
 
 export interface HumanReadableQuotaType {
@@ -449,6 +464,8 @@ export interface Mutation {
   /** Delete a user account */
   deleteUser: DeleteAccount;
   deleteWorkspace: Scalars['Boolean']['output'];
+  /** Create a chat session */
+  forkCopilotSession: Scalars['String']['output'];
   invite: Scalars['String']['output'];
   leaveWorkspace: Scalars['Boolean']['output'];
   publishPage: WorkspacePage;
@@ -560,6 +577,10 @@ export interface MutationDeleteUserArgs {
 
 export interface MutationDeleteWorkspaceArgs {
   id: Scalars['String']['input'];
+}
+
+export interface MutationForkCopilotSessionArgs {
+  options: ForkChatSessionInput;
 }
 
 export interface MutationInviteArgs {
@@ -1338,6 +1359,15 @@ export type RemoveEarlyAccessMutationVariables = Exact<{
 export type RemoveEarlyAccessMutation = {
   __typename?: 'Mutation';
   removeEarlyAccess: number;
+};
+
+export type ForkCopilotSessionMutationVariables = Exact<{
+  options: ForkChatSessionInput;
+}>;
+
+export type ForkCopilotSessionMutation = {
+  __typename?: 'Mutation';
+  forkCopilotSession: string;
 };
 
 export type CredentialsRequirementFragment = {
@@ -2353,6 +2383,11 @@ export type Mutations =
       name: 'removeEarlyAccessMutation';
       variables: RemoveEarlyAccessMutationVariables;
       response: RemoveEarlyAccessMutation;
+    }
+  | {
+      name: 'forkCopilotSessionMutation';
+      variables: ForkCopilotSessionMutationVariables;
+      response: ForkCopilotSessionMutation;
     }
   | {
       name: 'leaveWorkspaceMutation';

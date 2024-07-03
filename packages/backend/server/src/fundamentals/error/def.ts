@@ -440,7 +440,8 @@ export const USER_FRIENDLY_ERRORS = {
   },
   copilot_message_not_found: {
     type: 'resource_not_found',
-    message: `Copilot message not found.`,
+    args: { messageId: 'string' },
+    message: ({ messageId }) => `Copilot message ${messageId} not found.`,
   },
   copilot_prompt_not_found: {
     type: 'resource_not_found',

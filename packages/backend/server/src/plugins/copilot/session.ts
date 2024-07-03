@@ -20,6 +20,7 @@ import {
   ChatHistory,
   ChatMessage,
   ChatMessageSchema,
+  ChatSessionForkOptions,
   ChatSessionOptions,
   ChatSessionState,
   getTokenEncoder,
@@ -81,7 +82,7 @@ export class ChatSession implements AsyncDisposable {
   async getMessageById(messageId: string) {
     const message = await this.messageCache.get(messageId);
     if (!message || message.sessionId !== this.state.sessionId) {
-      throw new CopilotMessageNotFound();
+      throw new CopilotMessageNotFound({ messageId });
     }
     return message;
   }
@@ -89,7 +90,7 @@ export class ChatSession implements AsyncDisposable {
   async pushByMessageId(messageId: string) {
     const message = await this.messageCache.get(messageId);
     if (!message || message.sessionId !== this.state.sessionId) {
-      throw new CopilotMessageNotFound();
+      throw new CopilotMessageNotFound({ messageId });
     }
 
     this.push({
@@ -200,6 +201,7 @@ export class ChatSessionService {
               workspaceId: state.workspaceId,
               docId: state.docId,
               prompt: { action: { equals: null } },
+              parentSessionId: state.parentSessionId,
             },
             select: { id: true, deletedAt: true },
           })) || {};
@@ -271,8 +273,9 @@ export class ChatSessionService {
           userId: true,
           workspaceId: true,
           docId: true,
+          parentSessionId: true,
           messages: {
-            select: { role: true, content: true, createdAt: true },
+            select: { id: true, role: true, content: true, createdAt: true },
             orderBy: { createdAt: 'asc' },
           },
           promptName: true,
@@ -291,6 +294,7 @@ export class ChatSessionService {
           userId: session.userId,
           workspaceId: session.workspaceId,
           docId: session.docId,
+          parentSessionId: session.parentSessionId,
           prompt,
           messages: messages.success ? messages.data : [],
         };
@@ -396,6 +400,7 @@ export class ChatSessionService {
           createdAt: true,
           messages: {
             select: {
+              id: true,
               role: true,
               content: true,
               attachments: true,
@@ -430,7 +435,8 @@ export class ChatSessionService {
                         .filter(({ role }) => role !== 'system')
                     : [];
 
-                  // `createdAt` is required for history sorting in frontend, let's fake the creating time of prompt messages
+                  // `createdAt` is required for history sorting in frontend
+                  // let's fake the creating time of prompt messages
                   (preload as ChatMessage[]).forEach((msg, i) => {
                     msg.createdAt = new Date(
                       createdAt.getTime() - preload.length - i - 1
@@ -495,7 +501,37 @@ export class ChatSessionService {
       sessionId,
       prompt,
       messages: [],
+      // when client create chat session, we always find root session
+      parentSessionId: null,
     });
+  }
+
+  async fork(options: ChatSessionForkOptions): Promise<string> {
+    const state = await this.getSession(options.sessionId);
+    if (!state) {
+      throw new CopilotSessionNotFound();
+    }
+    const lastMessageIdx = state.messages.findLastIndex(
+      ({ id, role }) =>
+        role === AiPromptRole.assistant && id === options.latestMessageId
+    );
+    if (lastMessageIdx < 0) {
+      throw new CopilotMessageNotFound({ messageId: options.latestMessageId });
+    }
+    const messages = state.messages
+      .slice(0, lastMessageIdx + 1)
+      .map(m => ({ ...m, id: undefined }));
+
+    const forkedState = {
+      ...state,
+      sessionId: randomUUID(),
+      messages: [],
+      parentSessionId: options.sessionId,
+    };
+    // create session
+    await this.setSession(forkedState);
+    // save message
+    return await this.setSession({ ...forkedState, messages });
   }
 
   async cleanup(

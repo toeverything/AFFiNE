@@ -64,6 +64,7 @@ export type PromptMessage = z.infer<typeof PromptMessageSchema>;
 export type PromptParams = NonNullable<PromptMessage['params']>;
 
 export const ChatMessageSchema = PromptMessageSchema.extend({
+  id: z.string().optional(),
   createdAt: z.date(),
 }).strict();
 
@@ -98,10 +99,17 @@ export interface ChatSessionOptions {
   promptName: string;
 }
 
+export interface ChatSessionForkOptions
+  extends Omit<ChatSessionOptions, 'promptName'> {
+  sessionId: string;
+  latestMessageId: string;
+}
+
 export interface ChatSessionState
   extends Omit<ChatSessionOptions, 'promptName'> {
   // connect ids
   sessionId: string;
+  parentSessionId: string | null;
   // states
   prompt: ChatPrompt;
   messages: ChatMessage[];

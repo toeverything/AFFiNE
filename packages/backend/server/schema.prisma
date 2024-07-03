@@ -481,15 +481,17 @@ model AiSessionMessage {
 }
 
 model AiSession {
-  id          String    @id @default(uuid()) @db.VarChar(36)
-  userId      String    @map("user_id") @db.VarChar(36)
-  workspaceId String    @map("workspace_id") @db.VarChar(36)
-  docId       String    @map("doc_id") @db.VarChar(36)
-  promptName  String    @map("prompt_name") @db.VarChar(32)
-  messageCost Int       @default(0)
-  tokenCost   Int       @default(0)
-  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(6)
+  id              String    @id @default(uuid()) @db.VarChar(36)
+  userId          String    @map("user_id") @db.VarChar(36)
+  workspaceId     String    @map("workspace_id") @db.VarChar(36)
+  docId           String    @map("doc_id") @db.VarChar(36)
+  promptName      String    @map("prompt_name") @db.VarChar(32)
+  // the session id of the parent session if this session is a forked session
+  parentSessionId String?   @map("parent_session_id") @db.VarChar(36)
+  messageCost     Int       @default(0)
+  tokenCost       Int       @default(0)
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  deletedAt       DateTime? @map("deleted_at") @db.Timestamptz(6)
 
   user     User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   prompt   AiPrompt           @relation(fields: [promptName], references: [name], onDelete: Cascade)

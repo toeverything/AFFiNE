@@ -11,6 +11,7 @@ type ChatMessage {
   attachments: [String!]
   content: String!
   createdAt: DateTime!
+  id: ID
   params: JSON
   role: String!
 }
@@ -37,6 +38,10 @@ type CopilotHistories {
 
   """The number of tokens used in the session"""
   tokens: Int!
+}
+
+type CopilotMessageNotFoundDataType {
+  messageId: String!
 }
 
 enum CopilotModels {
@@ -175,7 +180,7 @@ enum EarlyAccessType {
   App
 }
 
-union ErrorDataUnion = BlobNotFoundDataType | CopilotPromptNotFoundDataType | CopilotProviderSideErrorDataType | DocAccessDeniedDataType | DocHistoryNotFoundDataType | DocNotFoundDataType | InvalidHistoryTimestampDataType | InvalidPasswordLengthDataType | InvalidRuntimeConfigTypeDataType | MissingOauthQueryParameterDataType | NotInWorkspaceDataType | RuntimeConfigNotFoundDataType | SameSubscriptionRecurringDataType | SubscriptionAlreadyExistsDataType | SubscriptionNotExistsDataType | SubscriptionPlanNotFoundDataType | UnknownOauthProviderDataType | VersionRejectedDataType | WorkspaceAccessDeniedDataType | WorkspaceNotFoundDataType | WorkspaceOwnerNotFoundDataType
+union ErrorDataUnion = BlobNotFoundDataType | CopilotMessageNotFoundDataType | CopilotPromptNotFoundDataType | CopilotProviderSideErrorDataType | DocAccessDeniedDataType | DocHistoryNotFoundDataType | DocNotFoundDataType | InvalidHistoryTimestampDataType | InvalidPasswordLengthDataType | InvalidRuntimeConfigTypeDataType | MissingOauthQueryParameterDataType | NotInWorkspaceDataType | RuntimeConfigNotFoundDataType | SameSubscriptionRecurringDataType | SubscriptionAlreadyExistsDataType | SubscriptionNotExistsDataType | SubscriptionPlanNotFoundDataType | UnknownOauthProviderDataType | VersionRejectedDataType | WorkspaceAccessDeniedDataType | WorkspaceNotFoundDataType | WorkspaceOwnerNotFoundDataType
 
 enum ErrorNames {
   ACCESS_DENIED
@@ -250,6 +255,17 @@ enum FeatureType {
   EarlyAccess
   UnlimitedCopilot
   UnlimitedWorkspace
+}
+
+input ForkChatSessionInput {
+  docId: String!
+
+  """
+  Identify a message in the array and keep it with all previous messages into a forked session.
+  """
+  latestMessageId: String!
+  sessionId: String!
+  workspaceId: String!
 }
 
 type HumanReadableQuotaType {
@@ -399,6 +415,9 @@ type Mutation {
   """Delete a user account"""
   deleteUser(id: String!): DeleteAccount!
   deleteWorkspace(id: String!): Boolean!
+
+  """Create a chat session"""
+  forkCopilotSession(options: ForkChatSessionInput!): String!
   invite(email: String!, permission: Permission!, sendInviteMail: Boolean, workspaceId: String!): String!
   leaveWorkspace(sendLeaveMail: Boolean, workspaceId: String!, workspaceName: String!): Boolean!
   publishPage(mode: PublicPageMode = Page, pageId: String!, workspaceId: String!): WorkspacePage!
