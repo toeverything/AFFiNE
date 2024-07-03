@@ -11,6 +11,7 @@ import type {
   QuickSearchService,
   SearchCallbackResult,
 } from '@affine/core/modules/cmdk';
+import { resolveLinkToDoc } from '@affine/core/modules/navigation';
 import type { PeekViewService } from '@affine/core/modules/peek-view';
 import type { ActivePeekView } from '@affine/core/modules/peek-view/entities/peek-view';
 import { mixpanel } from '@affine/core/utils';
@@ -323,16 +324,32 @@ export function patchQuickSearchService(
             if (!query) {
               logger.error('No user input provided');
             } else {
-              const searchedDoc = service.quickSearch
-                .getSearchedDocs(query)
-                .at(0);
-              if (searchedDoc) {
+              const resolvedDoc = resolveLinkToDoc(query);
+              if (resolvedDoc) {
                 searchResult = {
-                  docId: searchedDoc.doc.id,
-                  blockId: searchedDoc.blockId,
-                  action: 'insert',
-                  query,
+                  docId: resolvedDoc.docId,
+                  blockId: resolvedDoc.blockId,
                 };
+              } else if (
+                query.startsWith('http://') ||
+                query.startsWith('https://')
+              ) {
+                searchResult = {
+                  query,
+                  action: 'insert',
+                };
+              } else {
+                const searchedDoc = service.quickSearch
+                  .getSearchedDocs(query)
+                  .at(0);
+                if (searchedDoc) {
+                  searchResult = {
+                    docId: searchedDoc.doc.id,
+                    blockId: searchedDoc.blockId,
+                    action: 'insert',
+                    query,
+                  };
+                }
               }
             }
           } else {
