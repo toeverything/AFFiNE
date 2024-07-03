@@ -18,7 +18,11 @@ const contentOptions: Dialog.DialogContentProps = {
   ['data-testid' as string]: 'peek-view-modal',
   onPointerDownOutside: e => {
     const el = e.target as HTMLElement;
-    if (el.closest('[data-peek-view-wrapper]')) {
+    if (
+      el.closest('[data-peek-view-wrapper]') ||
+      // workaround for slash menu click outside issue
+      el.closest('affine-slash-menu')
+    ) {
       e.preventDefault();
     }
   },
@@ -82,6 +86,8 @@ export type PeekViewModalContainerProps = PropsWithChildren<{
   animation?: 'fade' | 'zoom';
   testId?: string;
 }>;
+
+const PeekViewModalOverlay = 'div';
 
 export const PeekViewModalContainer = forwardRef<
   HTMLDivElement,
@@ -149,7 +155,7 @@ export const PeekViewModalContainer = forwardRef<
     <PeekViewContext.Provider value={emptyContext}>
       <Dialog.Root modal open={vtOpen} onOpenChange={onOpenChange}>
         <Dialog.Portal>
-          <Dialog.Overlay
+          <PeekViewModalOverlay
             className={styles.modalOverlay}
             onAnimationStart={onAnimationStart}
             onAnimationEnd={onAnimateEnd}

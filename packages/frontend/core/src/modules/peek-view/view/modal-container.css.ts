@@ -100,6 +100,7 @@ export const modalOverlay = style({
   zIndex: cssVar('zIndexModal'),
   backgroundColor: cssVar('black30'),
   viewTransitionName: vtOverlayFade,
+  pointerEvents: 'auto',
 });
 
 export const modalContentWrapper = style({
