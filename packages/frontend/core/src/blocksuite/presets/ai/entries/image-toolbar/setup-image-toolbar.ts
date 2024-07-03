@@ -44,7 +44,7 @@ export function setupImageToolbarEntry(imageToolbar: AffineImageToolbarWidget) {
             }}
           ></ask-ai-button>`;
         },
-        showWhen: () => true,
+        showWhen: imageBlockComponent => !imageBlockComponent.doc.readonly,
       },
     ],
     0

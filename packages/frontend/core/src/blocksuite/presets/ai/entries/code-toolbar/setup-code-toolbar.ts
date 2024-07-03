@@ -33,7 +33,7 @@ export function setupCodeToolbarEntry(codeToolbar: AffineCodeToolbarWidget) {
         name: 'Ask AI',
         tooltip: 'Ask AI',
         icon: AIStarIcon,
-        showWhen: () => true,
+        showWhen: CodeBlockComponent => !CodeBlockComponent.doc.readonly,
         render(codeBlock: CodeBlockComponent, onClick?: () => void) {
           return html`<ask-ai-button
             class="code-toolbar-button ask-ai"
