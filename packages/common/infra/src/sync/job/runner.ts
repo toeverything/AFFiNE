@@ -29,7 +29,7 @@ export class JobRunner<J> {
   }
 
   stop() {
-    this.abort?.abort(MANUALLY_STOP);
+    this.abort?.abort();
     this.abort = null;
   }
 

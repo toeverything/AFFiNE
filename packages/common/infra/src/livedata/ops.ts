@@ -18,7 +18,6 @@ import {
   timer,
 } from 'rxjs';
 
-import { MANUALLY_STOP } from '../utils';
 import type { LiveData } from './livedata';
 
 /**
@@ -108,8 +107,7 @@ export function fromPromise<T>(
       .catch(error => {
         subscriber.error(error);
       });
-
-    return () => abortController.abort(MANUALLY_STOP);
+    return () => abortController.abort('Aborted');
   });
 }
 

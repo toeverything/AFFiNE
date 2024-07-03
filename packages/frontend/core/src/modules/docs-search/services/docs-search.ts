@@ -419,8 +419,4 @@ export class DocsSearchService extends Service {
     const title = doc?.get('title');
     return typeof title === 'string' ? title : title?.[0];
   }
-
-  override dispose(): void {
-    this.indexer.dispose();
-  }
 }
