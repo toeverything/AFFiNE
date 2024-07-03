@@ -507,3 +507,73 @@ test('can use @ to open quick search to search for doc and insert into canvas', 
   await page.locator('affine-embed-linked-doc-block').dblclick({ force: true });
   await expect(page.getByTestId('peek-view-modal')).toBeVisible();
 });
+
+test('can paste a doc link to create link reference', async ({ page }) => {
+  await openHomePage(page);
+  await waitForEditorLoad(page);
+  const url = page.url();
+  await clickNewPageButton(page);
+
+  // goto main content
+  await page.keyboard.press('Enter');
+
+  // paste the url
+  await page.evaluate(
+    async ([url]) => {
+      const clipData = {
+        'text/plain': url,
+      };
+      const e = new ClipboardEvent('paste', {
+        clipboardData: new DataTransfer(),
+      });
+      Object.defineProperty(e, 'target', {
+        writable: false,
+        value: document,
+      });
+      Object.entries(clipData).forEach(([key, value]) => {
+        e.clipboardData?.setData(key, value);
+      });
+      document.dispatchEvent(e);
+    },
+    [url]
+  );
+
+  // check the link reference
+  await page.waitForTimeout(500);
+  await expect(
+    page.locator('affine-reference:has-text("Write, Draw, Plan all at Once.")')
+  ).toBeVisible();
+
+  // can ctrl-z to revert to normal link
+  await page.keyboard.press('ControlOrMeta+z');
+
+  // check the normal link
+  await page.waitForTimeout(500);
+  await expect(page.locator(`affine-link:has-text("${url}")`)).toBeVisible();
+});
+
+test('can use slash menu to insert a newly created doc card', async ({
+  page,
+}) => {
+  await openHomePage(page);
+  await clickNewPageButton(page);
+
+  // goto main content
+  await page.keyboard.press('Enter');
+
+  // open slash menu
+  await page.keyboard.type('/linkedoc', {
+    delay: 50,
+  });
+  await page.keyboard.press('Enter');
+  await expect(page.getByTestId('cmdk-quick-search')).toBeVisible();
+
+  const testTitle = 'test title';
+  await page.locator('[cmdk-input]').fill(testTitle);
+  await page.keyboard.press('Enter');
+
+  await expect(page.locator('affine-embed-linked-doc-block')).toBeVisible();
+  await expect(
+    page.locator('.affine-embed-linked-doc-content-title')
+  ).toContainText(testTitle);
+});

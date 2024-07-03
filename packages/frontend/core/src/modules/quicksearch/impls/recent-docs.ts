@@ -1,8 +1,7 @@
-import { EdgelessIcon, PageIcon, TodayIcon } from '@blocksuite/icons/rc';
 import { Entity, LiveData } from '@toeverything/infra';
 
-import type { WorkspacePropertiesAdapter } from '../../properties';
 import type { QuickSearchSession } from '../providers/quick-search-provider';
+import type { DocDisplayMetaService } from '../services/doc-display-meta';
 import type { RecentDocsService } from '../services/recent-pages';
 import type { QuickSearchGroup } from '../types/group';
 import type { QuickSearchItem } from '../types/item';
@@ -21,7 +20,7 @@ export class RecentDocsQuickSearchSession
 {
   constructor(
     private readonly recentDocsService: RecentDocsService,
-    private readonly propertiesAdapter: WorkspacePropertiesAdapter
+    private readonly docDisplayMetaService: DocDisplayMetaService
   ) {
     super();
   }
@@ -40,20 +39,15 @@ export class RecentDocsQuickSearchSession
 
       return docRecords.map<QuickSearchItem<'recent-doc', { docId: string }>>(
         docRecord => {
-          const icon = this.propertiesAdapter.getJournalPageDateString(
-            docRecord.id
-          ) /* is journal */
-            ? TodayIcon
-            : docRecord.mode$.value === 'edgeless'
-              ? EdgelessIcon
-              : PageIcon;
+          const { title, icon } =
+            this.docDisplayMetaService.getDocDisplayMeta(docRecord);
 
           return {
             id: 'recent-doc:' + docRecord.id,
             source: 'recent-doc',
             group: group,
             label: {
-              title: docRecord.meta$.value.title || { key: 'Untitled' },
+              title: title,
             },
             score: 0,
             icon,

@@ -17,6 +17,7 @@ import { CreationQuickSearchSession } from './impls/creation';
 import { DocsQuickSearchSession } from './impls/docs';
 import { RecentDocsQuickSearchSession } from './impls/recent-docs';
 import { CMDKQuickSearchService } from './services/cmdk';
+import { DocDisplayMetaService } from './services/doc-display-meta';
 import { QuickSearchService } from './services/quick-search';
 import { RecentDocsService } from './services/recent-pages';
 
@@ -40,17 +41,18 @@ export function configureQuickSearchModule(framework: Framework) {
       DocsService,
     ])
     .service(RecentDocsService, [WorkspaceLocalState, DocsService])
+    .service(DocDisplayMetaService, [WorkspacePropertiesAdapter])
     .entity(QuickSearch)
     .entity(CommandsQuickSearchSession, [GlobalContextService])
     .entity(DocsQuickSearchSession, [
       DocsSearchService,
       DocsService,
-      WorkspacePropertiesAdapter,
+      DocDisplayMetaService,
     ])
     .entity(CreationQuickSearchSession)
     .entity(CollectionsQuickSearchSession, [CollectionService])
     .entity(RecentDocsQuickSearchSession, [
       RecentDocsService,
-      WorkspacePropertiesAdapter,
+      DocDisplayMetaService,
     ]);
 }

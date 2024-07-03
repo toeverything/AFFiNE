@@ -1,5 +1,4 @@
-import { EdgelessIcon, PageIcon, TodayIcon } from '@blocksuite/icons/rc';
-import type { DocsService } from '@toeverything/infra';
+import type { DocRecord, DocsService } from '@toeverything/infra';
 import {
   effect,
   Entity,
@@ -12,8 +11,8 @@ import { EMPTY, map, mergeMap, of, switchMap } from 'rxjs';
 
 import type { DocsSearchService } from '../../docs-search';
 import { resolveLinkToDoc } from '../../navigation';
-import type { WorkspacePropertiesAdapter } from '../../properties';
 import type { QuickSearchSession } from '../providers/quick-search-provider';
+import type { DocDisplayMetaService } from '../services/doc-display-meta';
 import type { QuickSearchItem } from '../types/item';
 
 interface DocsPayload {
@@ -30,7 +29,7 @@ export class DocsQuickSearchSession
   constructor(
     private readonly docsSearchService: DocsSearchService,
     private readonly docsService: DocsService,
-    private readonly propertiesAdapter: WorkspacePropertiesAdapter
+    private readonly docDisplayMetaService: DocDisplayMetaService
   ) {
     super();
   }
@@ -56,62 +55,40 @@ export class DocsQuickSearchSession
       if (!query) {
         out = of([] as QuickSearchItem<'docs', DocsPayload>[]);
       } else {
-        const maybeLink = resolveLinkToDoc(query);
-        const docRecord = maybeLink
-          ? this.docsService.list.doc$(maybeLink.docId).value
-          : null;
-
-        if (docRecord) {
-          const docMode = docRecord?.mode$.value;
-          const icon = this.propertiesAdapter.getJournalPageDateString(
-            docRecord.id
-          ) /* is journal */
-            ? TodayIcon
-            : docMode === 'edgeless'
-              ? EdgelessIcon
-              : PageIcon;
-
-          out = of([
-            {
-              id: 'doc:' + docRecord.id,
-              source: 'docs',
-              group: {
-                id: 'docs',
-                label: {
-                  key: 'com.affine.quicksearch.group.searchfor',
-                  options: { query: truncate(query) },
+        out = this.docsSearchService.search$(query).pipe(
+          map(docs => {
+            const resolvedDoc = resolveLinkToDoc(query);
+            if (
+              resolvedDoc &&
+              !docs.some(doc => doc.docId === resolvedDoc.docId)
+            ) {
+              return [
+                {
+                  docId: resolvedDoc.docId,
+                  score: 100,
+                  blockId: resolvedDoc.blockId,
+                  blockContent: '',
                 },
-                score: 5,
-              },
-              label: {
-                title: docRecord.title$.value || { key: 'Untitled' },
-              },
-              score: 100,
-              icon,
-              timestamp: docRecord.meta$.value.updatedDate,
-              payload: {
-                docId: docRecord.id,
-              },
-            },
-          ] as QuickSearchItem<'docs', DocsPayload>[]);
-        } else {
-          out = this.docsSearchService.search$(query).pipe(
-            map(docs =>
-              docs.map(doc => {
+                ...docs,
+              ];
+            } else {
+              return docs;
+            }
+          }),
+          map(docs =>
+            docs
+              .map(doc => {
                 const docRecord = this.docsService.list.doc$(doc.docId).value;
-                const docMode = docRecord?.mode$.value;
-                const updatedTime = docRecord?.meta$.value.updatedDate;
-
-                const icon = this.propertiesAdapter.getJournalPageDateString(
-                  doc.docId
-                ) /* is journal */
-                  ? TodayIcon
-                  : docMode === 'edgeless'
-                    ? EdgelessIcon
-                    : PageIcon;
-
+                return [doc, docRecord] as const;
+              })
+              .filter(
+                (props): props is [(typeof props)[0], DocRecord] => !!props[1]
+              )
+              .map(([doc, docRecord]) => {
+                const { title, icon, updatedDate } =
+                  this.docDisplayMetaService.getDocDisplayMeta(docRecord);
                 return {
-                  id: 'doc:' + doc.docId,
+                  id: 'doc:' + docRecord.id,
                   source: 'docs',
                   group: {
                     id: 'docs',
@@ -122,18 +99,17 @@ export class DocsQuickSearchSession
                     score: 5,
                   },
                   label: {
-                    title: doc.title || { key: 'Untitled' },
+                    title: title,
                     subTitle: doc.blockContent,
                   },
                   score: doc.score,
                   icon,
-                  timestamp: updatedTime,
+                  timestamp: updatedDate,
                   payload: doc,
                 } as QuickSearchItem<'docs', DocsPayload>;
               })
-            )
-          );
-        }
+          )
+        );
       }
       return out.pipe(
         mergeMap((items: QuickSearchItem<'docs', DocsPayload>[]) => {

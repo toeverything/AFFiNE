@@ -29,11 +29,11 @@ import {
   type RootService,
 } from '@blocksuite/blocks';
 import { LinkIcon } from '@blocksuite/icons/rc';
-import type {
-  DocMode,
-  DocService,
+import {
+  type DocMode,
+  type DocService,
   DocsService,
-  FrameworkProvider,
+  type FrameworkProvider,
 } from '@toeverything/infra';
 import { type TemplateResult } from 'lit';
 import { customElement } from 'lit/decorators.js';
@@ -337,13 +337,27 @@ export function patchQuickSearchService(
             if (!query) {
               logger.error('No user input provided');
             } else {
-              const searchedDoc = (
-                await framework.get(DocsSearchService).search(query)
-              ).at(0);
-              if (searchedDoc) {
+              const resolvedDoc = resolveLinkToDoc(query);
+              if (resolvedDoc) {
                 searchResult = {
-                  docId: searchedDoc.docId,
+                  docId: resolvedDoc.docId,
                 };
+              } else if (
+                query.startsWith('http://') ||
+                query.startsWith('https://')
+              ) {
+                searchResult = {
+                  userInput: query,
+                };
+              } else {
+                const searchedDoc = (
+                  await framework.get(DocsSearchService).search(query)
+                ).at(0);
+                if (searchedDoc) {
+                  searchResult = {
+                    docId: searchedDoc.docId,
+                  };
+                }
               }
             }
           } else {
@@ -394,11 +408,15 @@ export function patchQuickSearchService(
                     result.source === 'creation' &&
                     result.id === 'creation:create-page'
                   ) {
-                    throw new Error('Not implemented');
-                    // resolve({
-                    //   docId: 'new-doc',
-                    //   isNewDoc: true,
-                    // });
+                    const docsService = framework.get(DocsService);
+                    const newDoc = docsService.createDoc({
+                      mode: 'page',
+                      title: result.payload.title,
+                    });
+                    resolve({
+                      docId: newDoc.id,
+                      isNewDoc: true,
+                    });
                   }
                 },
                 {
