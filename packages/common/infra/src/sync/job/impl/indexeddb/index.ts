@@ -155,6 +155,9 @@ export class IndexedDBJobQueue<J> implements JobQueue<J> {
         .objectStore('jobs')
         .delete(typeof id === 'string' ? parseInt(id) : id);
     }
+
+    trx.commit();
+    this.broadcast.postMessage('job-completed');
   }
 
   async return(jobs: Job[], retry: boolean = false): Promise<void> {
@@ -174,6 +177,10 @@ export class IndexedDBJobQueue<J> implements JobQueue<J> {
           .delete(typeof id === 'string' ? parseInt(id) : id);
       }
     }
+
+    trx.commit();
+
+    this.broadcast.postMessage('job-completed');
   }
 
   async clear(): Promise<void> {

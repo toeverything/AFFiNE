@@ -112,10 +112,12 @@ export const createConfiguration: (
           ? 'js/[name]-[contenthash:8].js'
           : 'js/[name].js',
       // In some cases webpack will emit files starts with "_" which is reserved in web extension.
-      chunkFilename:
-        buildFlags.mode === 'production'
-          ? 'js/chunk.[name]-[contenthash:8].js'
-          : 'js/chunk.[name].js',
+      chunkFilename: pathData =>
+        pathData.chunk?.name === 'worker'
+          ? 'js/worker.[contenthash:8].js'
+          : buildFlags.mode === 'production'
+            ? 'js/chunk.[name]-[contenthash:8].js'
+            : 'js/chunk.[name].js',
       assetModuleFilename:
         buildFlags.mode === 'production'
           ? 'assets/[name]-[contenthash:8][ext][query]'
@@ -127,6 +129,7 @@ export const createConfiguration: (
       clean: buildFlags.mode === 'production',
       globalObject: 'globalThis',
       publicPath: getPublicPath(buildFlags),
+      workerPublicPath: '/',
     },
     target: ['web', 'es2022'],
 
