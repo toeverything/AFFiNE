@@ -73,6 +73,10 @@ export function i18nTime(
 ) {
   const i18n = options.i18n ?? I18n;
   time = dayjs(time);
+  if (!time.isValid()) {
+    return ''; // invalid time, return empty string
+  }
+
   const now = dayjs(options.now);
 
   const defaultRelativeOption = {
