@@ -302,7 +302,6 @@ export const imageCustomInput = (imageQuality?: number) => {
 
     let blob = await host.doc.blobSync.get(imageBlock.sourceId);
     if (!blob) return;
-    console.debug('Image blob size:', blob.size);
 
     if (imageQuality !== undefined) {
       // image quality should be between 0 and 1
@@ -310,7 +309,6 @@ export const imageCustomInput = (imageQuality?: number) => {
       blob = await compressImage(blob, quality);
     }
     if (!blob) return;
-    console.debug('Image blob size:', blob.size);
 
     return {
       attachments: [blob],
