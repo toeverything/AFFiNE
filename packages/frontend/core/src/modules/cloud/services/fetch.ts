@@ -41,8 +41,8 @@ export class FetchService extends Service {
       throw externalSignal.reason;
     }
     const abortController = new AbortController();
-    externalSignal?.addEventListener('abort', () => {
-      abortController.abort();
+    externalSignal?.addEventListener('abort', reason => {
+      abortController.abort(reason);
     });
 
     const timeout = init?.timeout ?? 15000;
