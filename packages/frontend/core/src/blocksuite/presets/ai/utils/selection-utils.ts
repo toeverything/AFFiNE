@@ -15,6 +15,7 @@ import {
 } from '@blocksuite/store';
 
 import { getEdgelessCopilotWidget, getService } from './edgeless';
+import { compressImage } from './image';
 import { getContentFromSlice } from './markdown-utils';
 
 export const getRootService = (host: EditorHost) => {
@@ -283,18 +284,36 @@ export function getCopilotSelectedElems(
   return service.selection.selectedElements;
 }
 
-export const imageCustomInput = async (host: EditorHost) => {
-  const selectedElements = getCopilotSelectedElems(host);
-  if (selectedElements.length !== 1) return;
+/**
+ * Get single image input with custom quality
+ * When imageQuality provided, the image will be compressed with the given quality
+ * When imageQuality is not provided, the image will be uploaded as it is
+ * @param imageQuality quality of the image
+ * @returns
+ */
+export const imageCustomInput = (imageQuality?: number) => {
+  return async (host: EditorHost) => {
+    const selectedElements = getCopilotSelectedElems(host);
+    if (selectedElements.length !== 1) return;
 
-  const imageBlock = selectedElements[0];
-  if (!(imageBlock instanceof ImageBlockModel)) return;
-  if (!imageBlock.sourceId) return;
+    const imageBlock = selectedElements[0];
+    if (!(imageBlock instanceof ImageBlockModel)) return;
+    if (!imageBlock.sourceId) return;
 
-  const blob = await host.doc.blobSync.get(imageBlock.sourceId);
-  if (!blob) return;
+    let blob = await host.doc.blobSync.get(imageBlock.sourceId);
+    if (!blob) return;
+    console.debug('Image blob size:', blob.size);
 
-  return {
-    attachments: [blob],
+    if (imageQuality !== undefined) {
+      // image quality should be between 0 and 1
+      const quality = Math.min(1, Math.max(0, imageQuality));
+      blob = await compressImage(blob, quality);
+    }
+    if (!blob) return;
+    console.debug('Image blob size:', blob.size);
+
+    return {
+      attachments: [blob],
+    };
   };
 };

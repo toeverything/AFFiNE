@@ -77,7 +77,7 @@ export const imageFilterSubItem = imageFilterStyles.map(style => {
       {
         style,
       },
-      imageCustomInput
+      imageCustomInput(0.6)
     ),
   };
 });
@@ -91,7 +91,7 @@ export const imageProcessingSubItem = imageProcessingTypes.map(type => {
       {
         type,
       },
-      imageCustomInput
+      imageCustomInput(0.6)
     ),
   };
 });
@@ -228,7 +228,7 @@ const reviewGroup: AIItemGroupConfig = {
         'explainImage',
         AIStarIconWithAnimation,
         undefined,
-        imageCustomInput
+        imageCustomInput()
       ),
     },
     {
@@ -502,7 +502,7 @@ const generateGroup: AIItemGroupConfig = {
         'generateCaption',
         AIStarIconWithAnimation,
         undefined,
-        imageCustomInput
+        imageCustomInput(0.8)
       ),
     },
     {

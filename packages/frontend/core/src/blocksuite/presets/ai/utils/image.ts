@@ -102,3 +102,26 @@ export function canvasToBlob(
 export function randomSeed(min = 0, max = Date.now()) {
   return Math.round(Math.random() * (max - min)) + min;
 }
+
+export function compressImage(blob: Blob, quality = 1): Promise<Blob | null> {
+  return new Promise(resolve => {
+    const reader = new FileReader();
+    reader.addEventListener('load', _ => {
+      const img = new Image();
+      img.onload = () => {
+        const c = document.createElement('canvas');
+        c.width = img.width;
+        c.height = img.height;
+        const ctx = c.getContext('2d');
+        assertExists(ctx);
+        ctx.drawImage(img, 0, 0);
+        const type = blob.type || 'image/jpeg';
+        c.toBlob(resolve, type, quality);
+      };
+      img.onerror = () => resolve(null);
+      img.src = reader.result as string;
+    });
+    reader.addEventListener('error', () => resolve(null));
+    reader.readAsDataURL(blob);
+  });
+}
