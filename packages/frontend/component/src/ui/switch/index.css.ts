@@ -17,8 +17,6 @@ export const switchStyle = style({
   background: cssVar('toggleDisableBackgroundColor'),
   borderRadius: '37px',
   transition: '200ms all',
-  border: `1px solid ${cssVar('black10')}`,
-  boxShadow: cssVar('toggleCircleShadow'),
   selectors: {
     '&:before': {
       transition: 'all .2s cubic-bezier(0.27, 0.2, 0.25, 1.51)',
@@ -28,9 +26,8 @@ export const switchStyle = style({
       height: '20px',
       borderRadius: '50%',
       top: '50%',
-      border: `1px solid ${cssVar('black10')}`,
       background: cssVar('toggleCircleBackgroundColor'),
-      transform: 'translate(1px, -50%)',
+      transform: 'translate(3px, -50%)',
     },
   },
 });
@@ -39,7 +36,7 @@ export const switchCheckedStyle = style({
   selectors: {
     '&:before': {
       borderColor: cssVar('pureBlack10'),
-      transform: 'translate(21px,-50%)',
+      transform: 'translate(23px,-50%)',
     },
   },
 });
