@@ -24,6 +24,7 @@ import type { BlockSpec, WidgetElement } from '@blocksuite/block-std';
 import {
   type AffineReference,
   AffineSlashMenuWidget,
+  EdgelessRootBlockComponent,
   EmbedLinkedDocBlockComponent,
   type ParagraphBlockService,
   type RootService,
@@ -463,23 +464,28 @@ export function patchQuickSearchService(
                     pageId: linkedDoc.id,
                   },
                 ]);
+                const isEdgeless =
+                  rootElement instanceof EdgelessRootBlockComponent;
                 if (result.isNewDoc) {
                   mixpanel.track('DocCreated', {
                     control: 'linked doc',
                     module: 'slash commands',
                     type: 'linked doc',
                     category: 'doc',
+                    page: isEdgeless ? 'whiteboard editor' : 'page editor',
                   });
                   mixpanel.track('LinkedDocCreated', {
                     control: 'new doc',
                     module: 'slash commands',
                     type: 'doc',
+                    page: isEdgeless ? 'whiteboard editor' : 'page editor',
                   });
                 } else {
                   mixpanel.track('LinkedDocCreated', {
                     control: 'linked doc',
                     module: 'slash commands',
                     type: 'doc',
+                    page: isEdgeless ? 'whiteboard editor' : 'page editor',
                   });
                 }
               } else if ('userInput' in result) {

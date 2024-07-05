@@ -2,6 +2,7 @@ import { AnimatedDeleteIcon } from '@affine/component';
 import { getDNDId } from '@affine/core/hooks/affine/use-global-dnd-helper';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { CollectionService } from '@affine/core/modules/collection';
+import { TelemetryWorkspaceContextService } from '@affine/core/modules/telemetry/services/telemetry';
 import { mixpanel } from '@affine/core/utils';
 import { apis, events } from '@affine/electron-api';
 import { useI18n } from '@affine/i18n';
@@ -103,6 +104,8 @@ export const RootAppSidebar = memo(
       )
     );
 
+    const telemetry = useService(TelemetryWorkspaceContextService);
+
     const allPageActive = currentPath === '/all';
 
     const trashActive = currentPath === '/trash';
@@ -112,14 +115,14 @@ export const RootAppSidebar = memo(
       page.load();
       openPage(page.id);
       mixpanel.track('DocCreated', {
-        page: allPageActive ? 'all' : trashActive ? 'trash' : 'other',
+        page: telemetry.getPageContext(),
         segment: 'navigation panel',
         module: 'bottom button',
         control: 'new doc button',
         category: 'page',
         type: 'doc',
       });
-    }, [allPageActive, createPage, openPage, trashActive]);
+    }, [createPage, openPage, telemetry]);
 
     const navigateHelper = useNavigateHelper();
     // Listen to the "New Page" action from the menu

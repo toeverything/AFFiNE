@@ -102,6 +102,7 @@ export const PageOperationCell = ({
       control: 'copy doc',
       type: 'doc duplicate',
       category: 'doc',
+      page: 'doc library',
     });
   }, [duplicate, page.id]);
 
