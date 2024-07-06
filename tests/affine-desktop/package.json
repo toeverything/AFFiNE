@@ -2,16 +2,16 @@
   "name": "@affine-test/affine-desktop",
   "private": true,
   "scripts": {
-    "e2e": "DEBUG=pw:browser yarn playwright test"
+    "e2e": "DEBUG=\"pw:*\" yarn playwright test"
   },
   "devDependencies": {
     "@affine-test/fixtures": "workspace:*",
     "@affine-test/kit": "workspace:*",
     "@affine/electron-api": "workspace:*",
-    "@playwright/test": "^1.44.0",
+    "@playwright/test": "=1.44.1",
     "@types/fs-extra": "^11.0.4",
     "fs-extra": "^11.2.0",
-    "playwright": "^1.44.0"
+    "playwright": "=1.44.1"
   },
   "version": "0.15.0"
 }
