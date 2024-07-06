@@ -993,14 +993,15 @@ dependencies = [
 
 [[package]]
 name = "napi"
-version = "3.0.0-alpha.2"
+version = "3.0.0-alpha.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "99d38fbf4cbfd7d2785d153f4dcce374d515d3dabd688504dd9093f8135829d0"
+checksum = "05ced4f57658f822b2567154a5c0b721736c86d4d463205a150ade25123fc0d3"
 dependencies = [
  "anyhow",
  "bitflags 2.5.0",
  "chrono",
  "ctor",
+ "napi-build",
  "napi-sys",
  "once_cell",
  "serde",
@@ -1015,9 +1016,9 @@ checksum = "e1c0f5d67ee408a4685b61f5ab7e58605c8ae3f2b4189f0127d804ff13d5560a"
 
 [[package]]
 name = "napi-derive"
-version = "3.0.0-alpha.1"
+version = "3.0.0-alpha.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c230c813bfd4d6c7aafead3c075b37f0cf7fecb38be8f4cf5cfcee0b2c273ad0"
+checksum = "823fb2987af2446a2b4055604a920f2c1f1a028743c72adc8872d92da7e30d2b"
 dependencies = [
  "cfg-if",
  "convert_case",
@@ -1029,9 +1030,9 @@ dependencies = [
 
 [[package]]
 name = "napi-derive-backend"
-version = "2.0.0-alpha.1"
+version = "2.0.0-alpha.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4370cc24c2e58d0f3393527b282eb00f1158b304248f549e1ec81bd2927db5fe"
+checksum = "abd42151b3c26b5cdde9cf9a8fc5f7240de0919f234e14c6f54e3571d56e4dab"
 dependencies = [
  "convert_case",
  "once_cell",
@@ -1555,9 +1556,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.117"
+version = "1.0.120"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "455182ea6142b14f93f4bc5320a2b31c1f266b66a4a5c858b013302a5d8cbfc3"
+checksum = "4e0d21c9a8cae1235ad58a00c11cb40d4b1e5c784f1ef2c537876ed6ffd8b7c5"
 dependencies = [
  "itoa",
  "ryu",
@@ -2178,9 +2179,9 @@ checksum = "daf8dba3b7eb870caf1ddeed7bc9d2a049f3cfdfae7cb521b087cc33ae4c49da"
 
 [[package]]
 name = "uuid"
-version = "1.9.0"
+version = "1.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3ea73390fe27785838dcbf75b91b1d84799e28f1ce71e6f372a5dc2200c80de5"
+checksum = "5de17fd2f7da591098415cff336e12965a28061ddace43b59cb3c430179c9439"
 dependencies = [
  "getrandom",
  "rand",

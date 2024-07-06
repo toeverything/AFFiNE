@@ -5,7 +5,7 @@
   "devDependencies": {
     "@affine/env": "workspace:*",
     "@affine/templates": "workspace:*",
-    "@aws-sdk/client-s3": "3.592.0",
+    "@aws-sdk/client-s3": "3.609.0",
     "@blocksuite/presets": "0.16.0-canary-202407040721-5bf36c3",
     "@clack/core": "^0.3.4",
     "@clack/prompts": "^0.7.0",

@@ -33,7 +33,7 @@
     "build:debug": "napi build"
   },
   "devDependencies": {
-    "@napi-rs/cli": "3.0.0-alpha.55",
+    "@napi-rs/cli": "3.0.0-alpha.56",
     "lib0": "^0.2.93",
     "nx": "^19.0.0",
     "nx-cloud": "^19.0.0",
