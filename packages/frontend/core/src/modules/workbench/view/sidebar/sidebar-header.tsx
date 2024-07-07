@@ -1,5 +1,4 @@
 import { IconButton } from '@affine/component';
-import { WindowsAppControls } from '@affine/core/components/pure/header/windows-app-controls';
 import { RightSidebarIcon } from '@blocksuite/icons/rc';
 
 import * as styles from './sidebar-header.css';
@@ -41,20 +40,7 @@ const ToggleButton = ({ onToggle }: { onToggle?: () => void }) => {
   );
 };
 
-const Windows = ({ floating, onToggle, children }: HeaderProps) => {
-  return (
-    <Container className={styles.header} floating={floating}>
-      {children}
-      <div className={styles.spacer} />
-      <ToggleButton onToggle={onToggle} />
-      <div className={styles.windowsAppControlsContainer}>
-        <WindowsAppControls />
-      </div>
-    </Container>
-  );
-};
-
-const NonWindows = ({ floating, children, onToggle }: HeaderProps) => {
+export const Header = ({ floating, children, onToggle }: HeaderProps) => {
   return (
     <Container className={styles.header} floating={floating}>
       {children}
@@ -63,6 +49,3 @@ const NonWindows = ({ floating, children, onToggle }: HeaderProps) => {
     </Container>
   );
 };
-
-export const Header =
-  environment.isDesktop && environment.isWindows ? Windows : NonWindows;

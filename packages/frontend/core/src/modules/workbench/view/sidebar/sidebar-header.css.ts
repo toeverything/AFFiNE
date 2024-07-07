@@ -36,9 +36,3 @@ export const standaloneExtensionSwitcherWrapper = style({
   height: '52px',
   position: 'relative',
 });
-
-export const windowsAppControlsContainer = style({
-  display: 'flex',
-  height: '100%',
-  marginRight: '-16px',
-});

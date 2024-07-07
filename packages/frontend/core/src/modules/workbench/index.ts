@@ -8,10 +8,12 @@ export { WorkbenchRoot } from './view/workbench-root';
 
 import { type Framework, WorkspaceScope } from '@toeverything/infra';
 
+import { WorkspacePropertiesAdapter } from '../properties';
 import { SidebarTab } from './entities/sidebar-tab';
 import { View } from './entities/view';
 import { Workbench } from './entities/workbench';
 import { ViewScope } from './scopes/view';
+import { DesktopTabViewsService } from './services/desktop-tab-views';
 import { ViewService } from './services/view';
 import { WorkbenchService } from './services/workbench';
 
@@ -24,4 +26,13 @@ export function configureWorkbenchModule(services: Framework) {
     .scope(ViewScope)
     .service(ViewService, [ViewScope])
     .entity(SidebarTab);
+}
+
+export function configureDesktopTabViewsModule(services: Framework) {
+  services
+    .scope(WorkspaceScope)
+    .service(DesktopTabViewsService, [
+      WorkbenchService,
+      WorkspacePropertiesAdapter,
+    ]);
 }

@@ -23,7 +23,6 @@ import type { LoaderFunction } from 'react-router-dom';
 import { redirect, useParams, useSearchParams } from 'react-router-dom';
 import { z } from 'zod';
 
-import { WindowsAppControls } from '../components/pure/header/windows-app-controls';
 import { useMutation } from '../hooks/use-mutation';
 import { RouteLogic, useNavigateHelper } from '../hooks/use-navigate-helper';
 import { AuthService, ServerConfigService } from '../modules/cloud';

@@ -1,3 +1,5 @@
+import { observeResize } from '@affine/component';
+import { apis, appInfo } from '@affine/electron-api';
 import {
   DocsService,
   GlobalContextService,
@@ -7,7 +9,7 @@ import {
 import { clsx } from 'clsx';
 import { useAtomValue } from 'jotai';
 import type { HTMLAttributes, PropsWithChildren, ReactElement } from 'react';
-import { forwardRef } from 'react';
+import { forwardRef, useEffect, useRef } from 'react';
 
 import { appSidebarOpenAtom } from '../app-sidebar';
 import { appStyle, mainContainerStyle, toolStyle } from './index.css';
@@ -53,6 +55,31 @@ export const MainContainer = forwardRef<
   ref
 ): ReactElement {
   const appSideBarOpen = useAtomValue(appSidebarOpenAtom);
+  const tabsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (tabsRef.current) {
+      return observeResize(tabsRef.current, () => {
+        if (appInfo?.tabViewKey && apis?.ui.isActiveTab(appInfo?.tabViewKey)) {
+          const rect = tabsRef.current?.getBoundingClientRect();
+          if (!rect) {
+            return;
+          }
+          const toInt = (value: number) => Math.round(value);
+          apis?.ui
+            .updateTabsBoundingRect({
+              height: toInt(rect.height),
+              width: toInt(rect.width),
+              x: toInt(rect.x),
+              y: toInt(rect.y),
+            })
+            .catch(console.error);
+        }
+      });
+    }
+    return;
+  });
+
   return (
     <div
       {...props}

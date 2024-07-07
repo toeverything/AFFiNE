@@ -1,4 +1,9 @@
 import type { MainEventRegister } from '../type';
+import {
+  onOpenInSplitView,
+  onSeparateView,
+  onTabViewsMetaChanged,
+} from '../windows-manager';
 import { uiSubjects } from './subject';
 
 /**
@@ -17,4 +22,7 @@ export const uiEvents = {
       sub.unsubscribe();
     };
   },
+  onTabViewsMetaChanged,
+  onSeparateView,
+  onOpenInSplitView,
 } satisfies Record<string, MainEventRegister>;

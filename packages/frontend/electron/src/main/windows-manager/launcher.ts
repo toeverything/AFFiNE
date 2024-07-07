@@ -1,9 +1,6 @@
 import { logger } from '../logger';
-import { initAndShowMainWindow } from '../main-window';
-import {
-  getOnboardingWindow,
-  getOrCreateOnboardingWindow,
-} from '../onboarding';
+import { initAndShowMainWindow } from './main-window';
+import { getOnboardingWindow, getOrCreateOnboardingWindow } from './onboarding';
 import { launchStage } from './stage';
 
 /**

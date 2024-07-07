@@ -13,7 +13,14 @@ export class View extends Entity<{
   scope = this.framework.createScope(ViewScope, {
     view: this as View,
   });
-  id = this.props.id;
+
+  get id() {
+    return this.props.id;
+  }
+
+  set id(id: string) {
+    this.props.id = id;
+  }
 
   sidebarTabs$ = new LiveData<SidebarTab[]>([]);
 

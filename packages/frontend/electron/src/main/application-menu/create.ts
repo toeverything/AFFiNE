@@ -1,9 +1,15 @@
 import { app, Menu } from 'electron';
 
 import { isMacOS } from '../../shared/utils';
-import { revealLogFile } from '../logger';
-import { initAndShowMainWindow, showMainWindow } from '../main-window';
+import { logger, revealLogFile } from '../logger';
 import { checkForUpdates } from '../updater';
+import {
+  addTab,
+  closeTab,
+  initAndShowMainWindow,
+  showDevTools,
+  showMainWindow,
+} from '../windows-manager';
 import { applicationMenuSubjects } from './subject';
 
 // Unique id for menuitems
@@ -96,27 +102,23 @@ export function createApplicationMenu() {
         { role: 'zoomOut' },
         { type: 'separator' },
         { role: 'togglefullscreen' },
-      ],
-    },
-    // { role: 'windowMenu' }
-    {
-      label: 'Window',
-      submenu: [
-        { role: 'minimize' },
-        { role: 'zoom' },
-        ...(isMac
-          ? [
-              { type: 'separator' },
-              { role: 'front' },
-              { type: 'separator' },
-              {
-                role: 'window',
-                click: async () => {
-                  await initAndShowMainWindow();
-                },
-              },
-            ]
-          : [{ role: 'close' }]),
+        { type: 'separator' },
+        {
+          label: 'New tab',
+          accelerator: isMac ? 'Cmd+T' : 'Ctrl+T',
+          click() {
+            logger.info('New tab with shortcut');
+            addTab().catch(console.error);
+          },
+        },
+        {
+          label: 'Close tab',
+          accelerator: isMac ? 'Cmd+W' : 'Ctrl+W',
+          click() {
+            logger.info('Close tab with shortcut');
+            closeTab().catch(console.error);
+          },
+        },
       ],
     },
     {
@@ -134,6 +136,13 @@ export function createApplicationMenu() {
           label: 'Open log file',
           click: async () => {
             await revealLogFile();
+          },
+        },
+        {
+          label: 'Open dev tools',
+          accelerator: isMac ? 'Cmd+Shift+I' : 'Ctrl+Shift+I',
+          click: () => {
+            showDevTools();
           },
         },
         {

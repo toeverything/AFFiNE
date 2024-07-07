@@ -10,7 +10,7 @@ import {
   getMainWindow,
   handleOpenUrlInHiddenWindow,
   setCookie,
-} from './main-window';
+} from './windows-manager';
 
 let protocol = buildType === 'stable' ? 'affine' : `affine-${buildType}`;
 if (isDev) {

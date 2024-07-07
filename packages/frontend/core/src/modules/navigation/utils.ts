@@ -48,7 +48,8 @@ export const resolveRouteLinkMeta = (href: string) => {
 /**
  * @see /packages/frontend/core/src/router.tsx
  */
-const routeModulePaths = ['all', 'collection', 'tag', 'trash'] as const;
+export const routeModulePaths = ['all', 'collection', 'tag', 'trash'] as const;
+export type RouteModulePath = (typeof routeModulePaths)[number];
 
 const isRouteModulePath = (
   path: string

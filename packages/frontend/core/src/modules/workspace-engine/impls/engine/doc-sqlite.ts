@@ -1,10 +1,12 @@
 import { apis } from '@affine/electron-api';
 import type { ByteKV, ByteKVBehavior, DocStorage } from '@toeverything/infra';
-import { AsyncLock, MemoryDocEventBus } from '@toeverything/infra';
+import { AsyncLock } from '@toeverything/infra';
+
+import { BroadcastChannelDocEventBus } from './doc-broadcast-channel';
 
 export class SqliteDocStorage implements DocStorage {
   constructor(private readonly workspaceId: string) {}
-  eventBus = new MemoryDocEventBus();
+  eventBus = new BroadcastChannelDocEventBus(this.workspaceId);
   readonly doc = new Doc(this.workspaceId);
   readonly syncMetadata = new SyncMetadataKV(this.workspaceId);
   readonly serverClock = new ServerClockKV(this.workspaceId);

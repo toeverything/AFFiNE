@@ -4,14 +4,23 @@ import { getLinkPreview } from 'link-preview-js';
 import { isMacOS } from '../../shared/utils';
 import { persistentConfig } from '../config-storage/persist';
 import { logger } from '../logger';
+import type { NamespaceHandlers } from '../type';
 import {
+  addTab,
+  closeTab,
   getMainWindow,
+  getOnboardingWindow,
+  getTabViewsMeta,
   handleWebContentsResize,
   initAndShowMainWindow,
-} from '../main-window';
-import { getOnboardingWindow } from '../onboarding';
-import type { NamespaceHandlers } from '../type';
-import { launchStage } from '../windows-manager/stage';
+  isActiveTab,
+  launchStage,
+  showDevTools,
+  showTab,
+  showTabContextMenu,
+  updateTabsBoundingRect,
+  updateWorkbenchMeta,
+} from '../windows-manager';
 import { getChallengeResponse } from './challenge';
 
 export let isOnline = true;
@@ -140,5 +149,41 @@ export const uiHandlers = {
   },
   openExternal(_, url: string) {
     return shell.openExternal(url);
+  },
+
+  // tab handlers
+  isActiveTab: async (_, tabKey: string) => {
+    return isActiveTab(tabKey);
+  },
+
+  addTab: async (_, ...args: Parameters<typeof addTab>) => {
+    await addTab(...args);
+  },
+  showTab: async (_, ...args: Parameters<typeof showTab>) => {
+    await showTab(...args);
+  },
+  closeTab: async (_, ...args: Parameters<typeof closeTab>) => {
+    await closeTab(...args);
+  },
+  getTabViewsMeta: async () => {
+    return getTabViewsMeta();
+  },
+  updateWorkbenchMeta: async (
+    _,
+    ...args: Parameters<typeof updateWorkbenchMeta>
+  ) => {
+    return updateWorkbenchMeta(...args);
+  },
+  updateTabsBoundingRect: async (
+    _,
+    rect: { x: number; y: number; width: number; height: number }
+  ) => {
+    return updateTabsBoundingRect(rect);
+  },
+  showDevTools: async (_, ...args: Parameters<typeof showDevTools>) => {
+    return showDevTools(...args);
+  },
+  showTabContextMenu: async (_, tabKey: string, viewIndex: number) => {
+    return showTabContextMenu(tabKey, viewIndex);
   },
 } satisfies NamespaceHandlers;

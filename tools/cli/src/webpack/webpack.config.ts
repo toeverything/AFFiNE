@@ -33,23 +33,30 @@ export function createWebpackConfig(cwd: string, flags: BuildFlags) {
   const runtimeConfig = getRuntimeConfig(flags);
   console.log('runtime config', runtimeConfig);
   const config = createConfiguration(cwd, flags, runtimeConfig);
+  const entry =
+    typeof flags.entry === 'string' || !flags.entry
+      ? {
+          app: flags.entry ?? resolve(cwd, 'src/index.tsx'),
+        }
+      : flags.entry;
+
+  const createHTMLPlugin = (entryName = 'app') => {
+    return new HTMLPlugin({
+      template: join(rootPath, 'webpack', 'template.html'),
+      inject: 'body',
+      scriptLoading: 'module',
+      minify: false,
+      chunks: [entryName],
+      filename: `${entryName === 'app' ? 'index' : entryName}.html`, // main entry should take name index.html
+      templateParameters: {
+        GIT_SHORT_SHA: gitShortHash(),
+        DESCRIPTION,
+      },
+    });
+  };
+
   return merge(config, {
-    entry: {
-      [flags.distribution]: flags.entry ?? resolve(cwd, 'src/index.tsx'),
-    },
-    plugins: [
-      new HTMLPlugin({
-        template: join(rootPath, 'webpack', 'template.html'),
-        inject: 'body',
-        scriptLoading: 'module',
-        minify: false,
-        chunks: 'all',
-        filename: 'index.html',
-        templateParameters: {
-          GIT_SHORT_SHA: gitShortHash(),
-          DESCRIPTION,
-        },
-      }),
-    ],
+    entry: entry,
+    plugins: Object.keys(entry).map(createHTMLPlugin),
   });
 }
