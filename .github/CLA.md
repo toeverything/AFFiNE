@@ -25,7 +25,7 @@ You accept and agree to the following terms and conditions for your past, presen
 - Each of Your Contributions is Your original work and that you are legally entitled to grant the above license.
 - Each of Your Contributions does not to the best of your knowledge violate any third party's copyrights, trademarks, patents, or other intellectual property rights;
 - Your Contribution submissions include complete details of any third-party license or other restriction (including, but not limited to, related patents and trademarks) of which you are personally aware and which are associated with any part of Your Contributions.
-- If You are an individual and if your employer(s) has rights to intellectual property that you create that includes your Contributions, you represent that you have received permission to make Contributions on behalf of that employer, that your employer has waived such rights for your Contributions to AFFiNE, or that your employer has executed a separate Corporate CLA with AFFiNE.
+- If You are an individual and if your employer(s) has rights to intellectual property that you create that includes your Contributions, you represent that you have received permission to make Contributions on behalf of that employer and that your employer has waived such rights for your Contributions to AFFiNE, or that your employer has executed a separate Corporate CLA with AFFiNE.
 
 7. You provide Your Contributions on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied, including, without limitation, any warranties or conditions of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A PARTICULAR PURPOSE.
 
