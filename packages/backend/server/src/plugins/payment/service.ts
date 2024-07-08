@@ -121,8 +121,14 @@ export class SubscriptionService {
       });
     }
 
+    const lifetimePriceEnabled = await this.config.runtime.fetch(
+      'plugins.payment/showLifetimePrice'
+    );
+
     const list = await this.stripe.prices.list({
       active: true,
+      // only list recurring prices if lifetime price is not enabled
+      ...(lifetimePriceEnabled ? {} : { type: 'recurring' }),
     });
 
     return list.data.filter(price => {
@@ -807,6 +813,16 @@ export class SubscriptionService {
     recurring: SubscriptionRecurring,
     variant?: SubscriptionPriceVariant
   ): Promise<string> {
+    if (recurring === SubscriptionRecurring.Lifetime) {
+      const lifetimePriceEnabled = await this.config.runtime.fetch(
+        'plugins.payment/showLifetimePrice'
+      );
+
+      if (!lifetimePriceEnabled) {
+        throw new ActionForbidden();
+      }
+    }
+
     const prices = await this.stripe.prices.list({
       lookup_keys: [encodeLookupKey(plan, recurring, variant)],
     });

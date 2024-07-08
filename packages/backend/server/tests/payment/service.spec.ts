@@ -14,7 +14,7 @@ import {
   FeatureManagementService,
 } from '../../src/core/features';
 import { EventEmitter } from '../../src/fundamentals';
-import { ConfigModule } from '../../src/fundamentals/config';
+import { Config, ConfigModule } from '../../src/fundamentals/config';
 import {
   CouponType,
   encodeLookupKey,
@@ -968,6 +968,45 @@ const invoice: Stripe.Invoice = {
     ],
   },
 };
+
+test('should not be able to checkout for lifetime recurring if not enabled', async t => {
+  const { service, stripe, u1 } = t.context;
+
+  Sinon.stub(stripe.subscriptions, 'list').resolves({ data: [] } as any);
+  await t.throwsAsync(
+    () =>
+      service.createCheckoutSession({
+        user: u1,
+        plan: SubscriptionPlan.Pro,
+        recurring: SubscriptionRecurring.Lifetime,
+        redirectUrl: '',
+        idempotencyKey: '',
+      }),
+    { message: 'You are not allowed to perform this action.' }
+  );
+});
+
+test('should be able to checkout for lifetime recurring', async t => {
+  const { service, stripe, u1, app } = t.context;
+  const config = app.get(Config);
+  await config.runtime.set('plugins.payment/showLifetimePrice', true);
+
+  Sinon.stub(stripe.subscriptions, 'list').resolves({ data: [] } as any);
+  Sinon.stub(stripe.prices, 'list').resolves({
+    data: [PRICES[PRO_LIFETIME]],
+  } as any);
+  const sessionStub = Sinon.stub(stripe.checkout.sessions, 'create');
+
+  await service.createCheckoutSession({
+    user: u1,
+    plan: SubscriptionPlan.Pro,
+    recurring: SubscriptionRecurring.Lifetime,
+    redirectUrl: '',
+    idempotencyKey: '',
+  });
+
+  t.true(sessionStub.calledOnce);
+});
 
 test('should be able to subscribe to lifetime recurring', async t => {
   // lifetime payment isn't a subscription, so we need to trigger the creation by invoice payment event
