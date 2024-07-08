@@ -100,6 +100,23 @@ export enum CopilotModels {
   TextModerationStable = 'TextModerationStable',
 }
 
+export interface CopilotPromptConfigInput {
+  frequencyPenalty: InputMaybe<Scalars['Int']['input']>;
+  jsonMode: InputMaybe<Scalars['Boolean']['input']>;
+  presencePenalty: InputMaybe<Scalars['Int']['input']>;
+  temperature: InputMaybe<Scalars['Int']['input']>;
+  topP: InputMaybe<Scalars['Int']['input']>;
+}
+
+export interface CopilotPromptConfigType {
+  __typename?: 'CopilotPromptConfigType';
+  frequencyPenalty: Maybe<Scalars['Int']['output']>;
+  jsonMode: Maybe<Scalars['Boolean']['output']>;
+  presencePenalty: Maybe<Scalars['Int']['output']>;
+  temperature: Maybe<Scalars['Int']['output']>;
+  topP: Maybe<Scalars['Int']['output']>;
+}
+
 export interface CopilotPromptMessageInput {
   content: Scalars['String']['input'];
   params: InputMaybe<Scalars['JSON']['input']>;
@@ -127,6 +144,7 @@ export interface CopilotPromptNotFoundDataType {
 export interface CopilotPromptType {
   __typename?: 'CopilotPromptType';
   action: Maybe<Scalars['String']['output']>;
+  config: Maybe<CopilotPromptConfigType>;
   messages: Array<CopilotPromptMessageType>;
   model: CopilotModels;
   name: Scalars['String']['output'];
@@ -170,6 +188,7 @@ export interface CreateCheckoutSessionInput {
 
 export interface CreateCopilotPromptInput {
   action: InputMaybe<Scalars['String']['input']>;
+  config: InputMaybe<CopilotPromptConfigInput>;
   messages: Array<CopilotPromptMessageInput>;
   model: CopilotModels;
   name: Scalars['String']['input'];
