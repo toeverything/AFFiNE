@@ -63,6 +63,20 @@ export type PromptMessage = z.infer<typeof PromptMessageSchema>;
 
 export type PromptParams = NonNullable<PromptMessage['params']>;
 
+export const PromptConfigStrictSchema = z.object({
+  jsonMode: z.boolean().nullable().optional(),
+  frequencyPenalty: z.number().nullable().optional(),
+  presencePenalty: z.number().nullable().optional(),
+  temperature: z.number().nullable().optional(),
+  topP: z.number().nullable().optional(),
+  maxTokens: z.number().nullable().optional(),
+});
+
+export const PromptConfigSchema =
+  PromptConfigStrictSchema.nullable().optional();
+
+export type PromptConfig = z.infer<typeof PromptConfigSchema>;
+
 export const ChatMessageSchema = PromptMessageSchema.extend({
   id: z.string().optional(),
   createdAt: z.date(),
@@ -144,11 +158,9 @@ const CopilotProviderOptionsSchema = z.object({
   user: z.string().optional(),
 });
 
-const CopilotChatOptionsSchema = CopilotProviderOptionsSchema.extend({
-  jsonMode: z.boolean().optional(),
-  temperature: z.number().optional(),
-  maxTokens: z.number().optional(),
-}).optional();
+const CopilotChatOptionsSchema = CopilotProviderOptionsSchema.merge(
+  PromptConfigStrictSchema
+).optional();
 
 export type CopilotChatOptions = z.infer<typeof CopilotChatOptionsSchema>;
 

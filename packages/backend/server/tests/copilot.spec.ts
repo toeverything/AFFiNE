@@ -676,7 +676,7 @@ test.skip('should be able to preview workflow', async t => {
   registerCopilotProvider(OpenAIProvider);
 
   for (const p of prompts) {
-    await prompt.set(p.name, p.model, p.messages);
+    await prompt.set(p.name, p.model, p.messages, p.config);
   }
 
   let result = '';
@@ -726,7 +726,7 @@ test('should be able to run pre defined workflow', async t => {
     const { graph, prompts, callCount, input, params, result } = testCase;
     console.log('running workflow test:', graph.name);
     for (const p of prompts) {
-      await prompt.set(p.name, p.model, p.messages);
+      await prompt.set(p.name, p.model, p.messages, p.config);
     }
 
     for (const [idx, i] of input.entries()) {
@@ -773,7 +773,7 @@ test('should be able to run workflow', async t => {
   const executor = Sinon.spy(executors.text, 'next');
 
   for (const p of prompts) {
-    await prompt.set(p.name, p.model, p.messages);
+    await prompt.set(p.name, p.model, p.messages, p.config);
   }
 
   const graphName = 'presentation';

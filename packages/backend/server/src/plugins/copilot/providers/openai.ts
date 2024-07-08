@@ -125,21 +125,6 @@ export class OpenAIProvider
     });
   }
 
-  private extractOptionFromMessages(
-    messages: PromptMessage[],
-    options: CopilotChatOptions
-  ) {
-    const params: Record<string, string | string[]> = {};
-    for (const message of messages) {
-      if (message.params) {
-        Object.assign(params, message.params);
-      }
-    }
-    if (params.jsonMode && options) {
-      options.jsonMode = String(params.jsonMode).toLowerCase() === 'true';
-    }
-  }
-
   protected checkParams({
     messages,
     embeddings,
@@ -155,7 +140,6 @@ export class OpenAIProvider
       throw new CopilotPromptInvalid(`Invalid model: ${model}`);
     }
     if (Array.isArray(messages) && messages.length > 0) {
-      this.extractOptionFromMessages(messages, options);
       if (
         messages.some(
           m =>
@@ -257,7 +241,9 @@ export class OpenAIProvider
           stream: true,
           messages: this.chatToGPTMessage(messages),
           model: model,
-          temperature: options.temperature || 0,
+          frequency_penalty: options.frequencyPenalty || 0,
+          presence_penalty: options.presencePenalty || 0,
+          temperature: options.temperature || 0.5,
           max_tokens: options.maxTokens || 4096,
           response_format: {
             type: options.jsonMode ? 'json_object' : 'text',

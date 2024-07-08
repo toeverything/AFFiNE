@@ -57,6 +57,22 @@ enum CopilotModels {
   TextModerationStable
 }
 
+input CopilotPromptConfigInput {
+  frequencyPenalty: Int
+  jsonMode: Boolean
+  presencePenalty: Int
+  temperature: Int
+  topP: Int
+}
+
+type CopilotPromptConfigType {
+  frequencyPenalty: Int
+  jsonMode: Boolean
+  presencePenalty: Int
+  temperature: Int
+  topP: Int
+}
+
 input CopilotPromptMessageInput {
   content: String!
   params: JSON
@@ -81,6 +97,7 @@ type CopilotPromptNotFoundDataType {
 
 type CopilotPromptType {
   action: String
+  config: CopilotPromptConfigType
   messages: [CopilotPromptMessageType!]!
   model: CopilotModels!
   name: String!
@@ -123,6 +140,7 @@ input CreateCheckoutSessionInput {
 
 input CreateCopilotPromptInput {
   action: String
+  config: CopilotPromptConfigInput
   messages: [CopilotPromptMessageInput!]!
   model: CopilotModels!
   name: String!

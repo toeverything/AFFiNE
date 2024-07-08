@@ -17,6 +17,7 @@ import {
   CopilotTextToEmbeddingProvider,
   CopilotTextToImageProvider,
   CopilotTextToTextProvider,
+  PromptConfig,
   PromptMessage,
 } from '../../src/plugins/copilot/types';
 import { NodeExecutorType } from '../../src/plugins/copilot/workflow/executor';
@@ -383,7 +384,12 @@ export async function getHistories(
   return res.body.data.currentUser?.copilot?.histories || [];
 }
 
-type Prompt = { name: string; model: string; messages: PromptMessage[] };
+type Prompt = {
+  name: string;
+  model: string;
+  messages: PromptMessage[];
+  config?: PromptConfig;
+};
 type WorkflowTestCase = {
   graph: WorkflowGraph;
   prompts: Prompt[];

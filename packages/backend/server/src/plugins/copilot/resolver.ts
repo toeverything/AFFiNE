@@ -183,6 +183,25 @@ registerEnumType(AiPromptRole, {
   name: 'CopilotPromptMessageRole',
 });
 
+@InputType('CopilotPromptConfigInput')
+@ObjectType()
+class CopilotPromptConfigType {
+  @Field(() => Boolean, { nullable: true })
+  jsonMode!: boolean | null;
+
+  @Field(() => Number, { nullable: true })
+  frequencyPenalty!: number | null;
+
+  @Field(() => Number, { nullable: true })
+  presencePenalty!: number | null;
+
+  @Field(() => Number, { nullable: true })
+  temperature!: number | null;
+
+  @Field(() => Number, { nullable: true })
+  topP!: number | null;
+}
+
 @InputType('CopilotPromptMessageInput')
 @ObjectType()
 class CopilotPromptMessageType {
@@ -208,6 +227,9 @@ class CopilotPromptType {
 
   @Field(() => String, { nullable: true })
   action!: string | null;
+
+  @Field(() => CopilotPromptConfigType, { nullable: true })
+  config!: CopilotPromptConfigType | null;
 
   @Field(() => [CopilotPromptMessageType])
   messages!: CopilotPromptMessageType[];
@@ -462,6 +484,9 @@ class CreateCopilotPromptInput {
   @Field(() => String, { nullable: true })
   action!: string | null;
 
+  @Field(() => CopilotPromptConfigType, { nullable: true })
+  config!: CopilotPromptConfigType | null;
+
   @Field(() => [CopilotPromptMessageType])
   messages!: CopilotPromptMessageType[];
 }
@@ -485,7 +510,12 @@ export class PromptsManagementResolver {
     @Args({ type: () => CreateCopilotPromptInput, name: 'input' })
     input: CreateCopilotPromptInput
   ) {
-    await this.promptService.set(input.name, input.model, input.messages);
+    await this.promptService.set(
+      input.name,
+      input.model,
+      input.messages,
+      input.config
+    );
     return this.promptService.get(input.name);
   }
 

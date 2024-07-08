@@ -457,6 +457,7 @@ model AiPrompt {
   // it is only used in the frontend and does not affect the backend
   action    String?  @db.VarChar
   model     String   @db.VarChar
+  config    Json?    @db.Json
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   messages AiPromptMessage[]

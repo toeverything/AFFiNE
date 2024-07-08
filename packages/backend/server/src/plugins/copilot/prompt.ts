@@ -5,6 +5,8 @@ import Mustache from 'mustache';
 
 import {
   getTokenEncoder,
+  PromptConfig,
+  PromptConfigSchema,
   PromptMessage,
   PromptMessageSchema,
   PromptParams,
@@ -35,14 +37,16 @@ export class ChatPrompt {
   private readonly templateParams: PromptParams = {};
 
   static createFromPrompt(
-    options: Omit<AiPrompt, 'id' | 'createdAt'> & {
+    options: Omit<AiPrompt, 'id' | 'createdAt' | 'config'> & {
       messages: PromptMessage[];
+      config: PromptConfig | undefined;
     }
   ) {
     return new ChatPrompt(
       options.name,
       options.action || undefined,
       options.model,
+      options.config,
       options.messages
     );
   }
@@ -51,6 +55,7 @@ export class ChatPrompt {
     public readonly name: string,
     public readonly action: string | undefined,
     public readonly model: string,
+    public readonly config: PromptConfig | undefined,
     private readonly messages: PromptMessage[]
   ) {
     this.encoder = getTokenEncoder(model);
@@ -185,6 +190,7 @@ export class PromptService {
         name: true,
         action: true,
         model: true,
+        config: true,
         messages: {
           select: {
             role: true,
@@ -199,9 +205,11 @@ export class PromptService {
     });
 
     const messages = PromptMessageSchema.array().safeParse(prompt?.messages);
-    if (prompt && messages.success) {
+    const config = PromptConfigSchema.safeParse(prompt?.config);
+    if (prompt && messages.success && config.success) {
       const chatPrompt = ChatPrompt.createFromPrompt({
         ...prompt,
+        config: config.data,
         messages: messages.data,
       });
       this.cache.set(name, chatPrompt);
@@ -210,12 +218,18 @@ export class PromptService {
     return null;
   }
 
-  async set(name: string, model: string, messages: PromptMessage[]) {
+  async set(
+    name: string,
+    model: string,
+    messages: PromptMessage[],
+    config?: PromptConfig
+  ) {
     return await this.db.aiPrompt
       .create({
         data: {
           name,
           model,
+          config: config || undefined,
           messages: {
             create: messages.map((m, idx) => ({
               idx,
@@ -229,10 +243,11 @@ export class PromptService {
       .then(ret => ret.id);
   }
 
-  async update(name: string, messages: PromptMessage[]) {
+  async update(name: string, messages: PromptMessage[], config?: PromptConfig) {
     const { id } = await this.db.aiPrompt.update({
       where: { name },
       data: {
+        config: config || undefined,
         messages: {
           // cleanup old messages
           deleteMany: {},

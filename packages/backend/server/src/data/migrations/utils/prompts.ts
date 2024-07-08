@@ -6,10 +6,19 @@ type PromptMessage = {
   params?: Record<string, string | string[]>;
 };
 
+type PromptConfig = {
+  jsonMode?: boolean;
+  frequencyPenalty?: number;
+  presencePenalty?: number;
+  temperature?: number;
+  maxTokens?: number;
+};
+
 type Prompt = {
   name: string;
   action?: string;
   model: string;
+  config?: PromptConfig;
   messages: PromptMessage[];
 };
 
@@ -465,6 +474,7 @@ content: {{content}}`,
     name: 'workflow:presentation:step1',
     action: 'workflow:presentation:step1',
     model: 'gpt-4o',
+    config: { temperature: 0.7 },
     messages: [
       {
         role: 'system',
@@ -685,6 +695,7 @@ export async function refreshPrompts(db: PrismaClient) {
       create: {
         name: prompt.name,
         action: prompt.action,
+        config: prompt.config,
         model: prompt.model,
         messages: {
           create: prompt.messages.map((message, idx) => ({
