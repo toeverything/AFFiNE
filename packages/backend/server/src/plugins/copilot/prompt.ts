@@ -159,6 +159,7 @@ export class PromptService {
         name: true,
         action: true,
         model: true,
+        config: true,
         messages: {
           select: {
             role: true,
@@ -222,7 +223,7 @@ export class PromptService {
     name: string,
     model: string,
     messages: PromptMessage[],
-    config?: PromptConfig
+    config?: PromptConfig | null
   ) {
     return await this.db.aiPrompt
       .create({

@@ -792,9 +792,7 @@ test('should be able to run workflow', async t => {
   }
   t.assert(result, 'generate text to text stream');
 
-  // presentation workflow has condition node, it will always false
-  // so the latest 2 nodes will not be executed
-  const callCount = graph!.graph.length - 2;
+  const callCount = graph!.graph.length;
   t.is(
     executor.callCount,
     callCount,
@@ -810,7 +808,7 @@ test('should be able to run workflow', async t => {
 
     t.is(
       params.args[1].content,
-      'generate text to text stream',
+      'apple company',
       'graph params should correct'
     );
     t.is(

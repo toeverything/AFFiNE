@@ -11,6 +11,7 @@ type PromptConfig = {
   frequencyPenalty?: number;
   presencePenalty?: number;
   temperature?: number;
+  topP?: number;
   maxTokens?: number;
 };
 
@@ -491,34 +492,20 @@ content: {{content}}`,
     name: 'workflow:presentation:step2',
     action: 'workflow:presentation:step2',
     model: 'gpt-4o',
+    config: {
+      frequencyPenalty: 0.5,
+      presencePenalty: 0.5,
+      temperature: 0.2,
+      topP: 0.75,
+    },
     messages: [
       {
         role: 'system',
-        content: `You are a PPT creator. You need to analyze and expand the input content based on the input, not more than 30 words per page for title and 500 words per page for content and give the keywords to call the images via unsplash to match each paragraph. Output according to the indented formatting template given below, without redundancy, at least 8 pages of PPT, of which the first page is the cover page, consisting of title, description and optional image, the title should not exceed 4 words.\nThe following are PPT templates, you can choose any template to apply, page name, column name, title, keywords, content should be removed by text replacement, do not retain, no responses should contain markdown formatting. Keywords need to be generic enough for broad, mass categorization. The output ignores template titles like template1 and template2. The first template is allowed to be used only once and as a cover, please strictly follow the template's ND-JSON field, format and my requirements, or penalties will be applied:\n{"page":1,"type":"name","content":"page name"}\n{"page":1,"type":"title","content":"title"}\n{"page":1,"type":"content","content":"keywords"}\n{"page":1,"type":"content","content":"description"}\n{"page":2,"type":"name","content":"page name"}\n{"page":2,"type":"title","content":"section name"}\n{"page":2,"type":"content","content":"keywords"}\n{"page":2,"type":"content","content":"description"}\n{"page":2,"type":"title","content":"section name"}\n{"page":2,"type":"content","content":"keywords"}\n{"page":2,"type":"content","content":"description"}\n{"page":3,"type":"name","content":"page name"}\n{"page":3,"type":"title","content":"section name"}\n{"page":3,"type":"content","content":"keywords"}\n{"page":3,"type":"content","content":"description"}\n{"page":3,"type":"title","content":"section name"}\n{"page":3,"type":"content","content":"keywords"}\n{"page":3,"type":"content","content":"description"}\n{"page":3,"type":"title","content":"section name"}\n{"page":3,"type":"content","content":"keywords"}\n{"page":3,"type":"content","content":"description"}`,
+        content: `You are the creator of the mind map. You need to analyze and expand on the input and output it according to the indentation formatting template given below without redundancy.\nBelow is an example of indentation for a mind map, the title and content needs to be removed by text replacement and not retained. Please strictly adhere to the hierarchical indentation of the template and my requirements, bold, headings and other formatting (e.g. #, **) are not allowed, a maximum of five levels of indentation is allowed, and the last node of each node should make a judgment on whether to make a detailed statement or not based on the topic:\nexmaple:\n- {topic}\n  - {Level 1}\n    - {Level 2}\n      - {Level 3}\n        - {Level 4}\n  - {Level 1}\n    - {Level 2}\n      - {Level 3}\n  - {Level 1}\n    - {Level 2}\n      - {Level 3}`,
       },
       {
         role: 'assistant',
         content: 'Output Language: {{language}}. Except keywords.',
-      },
-      {
-        role: 'user',
-        content: '{{content}}',
-      },
-    ],
-  },
-  {
-    name: 'workflow:presentation:step4',
-    action: 'workflow:presentation:step4',
-    model: 'gpt-4o',
-    messages: [
-      {
-        role: 'system',
-        content:
-          "You are a ND-JSON text format checking model with very strict formatting requirements, and you need to optimize the input so that it fully conforms to the template's indentation format and output.\nPage names, section names, titles, keywords, and content should be removed via text replacement and not retained. The first template is only allowed to be used once and as a cover, please strictly adhere to the template's hierarchical indentation and my requirement that bold, headings, and other formatting (e.g., #, **, ```) are not allowed or penalties will be applied, no responses should contain markdown formatting.",
-      },
-      {
-        role: 'assistant',
-        content: `You are a PPT creator. You need to analyze and expand the input content based on the input, not more than 30 words per page for title and 500 words per page for content and give the keywords to call the images via unsplash to match each paragraph. Output according to the indented formatting template given below, without redundancy, at least 8 pages of PPT, of which the first page is the cover page, consisting of title, description and optional image, the title should not exceed 4 words.\nThe following are PPT templates, you can choose any template to apply, page name, column name, title, keywords, content should be removed by text replacement, do not retain, no responses should contain markdown formatting. Keywords need to be generic enough for broad, mass categorization. The output ignores template titles like template1 and template2. The first template is allowed to be used only once and as a cover, please strictly follow the template's ND-JSON field, format and my requirements, or penalties will be applied:\n{"page":1,"type":"name","content":"page name"}\n{"page":1,"type":"title","content":"title"}\n{"page":1,"type":"content","content":"keywords"}\n{"page":1,"type":"content","content":"description"}\n{"page":2,"type":"name","content":"page name"}\n{"page":2,"type":"title","content":"section name"}\n{"page":2,"type":"content","content":"keywords"}\n{"page":2,"type":"content","content":"description"}\n{"page":2,"type":"title","content":"section name"}\n{"page":2,"type":"content","content":"keywords"}\n{"page":2,"type":"content","content":"description"}\n{"page":3,"type":"name","content":"page name"}\n{"page":3,"type":"title","content":"section name"}\n{"page":3,"type":"content","content":"keywords"}\n{"page":3,"type":"content","content":"description"}\n{"page":3,"type":"title","content":"section name"}\n{"page":3,"type":"content","content":"keywords"}\n{"page":3,"type":"content","content":"description"}\n{"page":3,"type":"title","content":"section name"}\n{"page":3,"type":"content","content":"keywords"}\n{"page":3,"type":"content","content":"description"}`,
       },
       {
         role: 'user',
