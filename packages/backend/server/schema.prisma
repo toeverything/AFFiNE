@@ -377,14 +377,14 @@ model UserSubscription {
   plan                 String    @db.VarChar(20)
   // yearly/monthly
   recurring            String    @db.VarChar(20)
-  // subscription.id
-  stripeSubscriptionId String    @unique @map("stripe_subscription_id")
+  // subscription.id, null for linefetime payment
+  stripeSubscriptionId String?   @unique @map("stripe_subscription_id")
   // subscription.status, active/past_due/canceled/unpaid...
   status               String    @db.VarChar(20)
   // subscription.current_period_start
   start                DateTime  @map("start") @db.Timestamptz(6)
-  // subscription.current_period_end
-  end                  DateTime  @map("end") @db.Timestamptz(6)
+  // subscription.current_period_end, null for lifetime payment
+  end                  DateTime? @map("end") @db.Timestamptz(6)
   // subscription.billing_cycle_anchor
   nextBillAt           DateTime? @map("next_bill_at") @db.Timestamptz(6)
   // subscription.canceled_at

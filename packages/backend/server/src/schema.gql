@@ -189,6 +189,7 @@ enum ErrorNames {
   BLOB_NOT_FOUND
   BLOB_QUOTA_EXCEEDED
   CANT_CHANGE_WORKSPACE_OWNER
+  CANT_UPDATE_LIFETIME_SUBSCRIPTION
   COPILOT_ACTION_TAKEN
   COPILOT_FAILED_TO_CREATE_MESSAGE
   COPILOT_FAILED_TO_GENERATE_TEXT
@@ -657,12 +658,14 @@ type SubscriptionPlanNotFoundDataType {
 type SubscriptionPrice {
   amount: Int
   currency: String!
+  lifetimeAmount: Int
   plan: SubscriptionPlan!
   type: String!
   yearlyAmount: Int
 }
 
 enum SubscriptionRecurring {
+  Lifetime
   Monthly
   Yearly
 }
@@ -733,8 +736,8 @@ type UserQuotaHumanReadable {
 type UserSubscription {
   canceledAt: DateTime
   createdAt: DateTime!
-  end: DateTime!
-  id: String!
+  end: DateTime
+  id: String
   nextBillAt: DateTime
 
   """

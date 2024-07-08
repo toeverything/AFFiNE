@@ -45,9 +45,16 @@ export class StripeWebhook {
       setImmediate(() => {
         // handle duplicated events?
         // see https://stripe.com/docs/webhooks#handle-duplicate-events
-        this.event.emitAsync(event.type, event.data.object).catch(e => {
-          this.logger.error('Failed to handle Stripe Webhook event.', e);
-        });
+        this.event
+          .emitAsync(
+            event.type,
+            event.data.object,
+            // here to let event listeners know what exactly the event is if a handler can handle multiple events
+            event.type
+          )
+          .catch(e => {
+            this.logger.error('Failed to handle Stripe Webhook event.', e);
+          });
       });
     } catch (err: any) {
       throw new InternalServerError(err.message);

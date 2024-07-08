@@ -941,6 +941,7 @@
   "com.affine.payment.billing-setting.current-plan.description": "You are currently on the <1>{{planName}} plan</1>.",
   "com.affine.payment.billing-setting.current-plan.description.monthly": "You are currently on the monthly <1>{{planName}} plan</1>.",
   "com.affine.payment.billing-setting.current-plan.description.yearly": "You are currently on the yearly <1>{{planName}} plan</1>.",
+  "com.affine.payment.billing-setting.current-plan.description.lifetime": "You are currently on the believer <1>{{planName}} plan</1>.",
   "com.affine.payment.billing-setting.expiration-date": "Expiration Date",
   "com.affine.payment.billing-setting.expiration-date.description": "Your subscription is valid until {{expirationDate}}",
   "com.affine.payment.billing-setting.history": "Billing history",

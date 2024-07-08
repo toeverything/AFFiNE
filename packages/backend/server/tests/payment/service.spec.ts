@@ -84,6 +84,7 @@ test.afterEach.always(async t => {
 
 const PRO_MONTHLY = `${SubscriptionPlan.Pro}_${SubscriptionRecurring.Monthly}`;
 const PRO_YEARLY = `${SubscriptionPlan.Pro}_${SubscriptionRecurring.Yearly}`;
+const PRO_LIFETIME = `${SubscriptionPlan.Pro}_${SubscriptionRecurring.Lifetime}`;
 const PRO_EA_YEARLY = `${SubscriptionPlan.Pro}_${SubscriptionRecurring.Yearly}_${SubscriptionPriceVariant.EA}`;
 const AI_YEARLY = `${SubscriptionPlan.AI}_${SubscriptionRecurring.Yearly}`;
 const AI_YEARLY_EA = `${SubscriptionPlan.AI}_${SubscriptionRecurring.Yearly}_${SubscriptionPriceVariant.EA}`;
@@ -104,6 +105,11 @@ const PRICES = {
     unit_amount: 8100,
     currency: 'usd',
     lookup_key: PRO_YEARLY,
+  },
+  [PRO_LIFETIME]: {
+    unit_amount: 49900,
+    currency: 'usd',
+    lookup_key: PRO_LIFETIME,
   },
   [PRO_EA_YEARLY]: {
     recurring: {
@@ -170,10 +176,9 @@ test('should list normal price for unauthenticated user', async t => {
 
   const prices = await service.listPrices();
 
-  t.is(prices.length, 3);
   t.deepEqual(
     new Set(prices.map(p => p.lookup_key)),
-    new Set([PRO_MONTHLY, PRO_YEARLY, AI_YEARLY])
+    new Set([PRO_MONTHLY, PRO_YEARLY, PRO_LIFETIME, AI_YEARLY])
   );
 });
 
@@ -190,10 +195,9 @@ test('should list normal prices for authenticated user', async t => {
 
   const prices = await service.listPrices(u1);
 
-  t.is(prices.length, 3);
   t.deepEqual(
     new Set(prices.map(p => p.lookup_key)),
-    new Set([PRO_MONTHLY, PRO_YEARLY, AI_YEARLY])
+    new Set([PRO_MONTHLY, PRO_YEARLY, PRO_LIFETIME, AI_YEARLY])
   );
 });
 
@@ -210,10 +214,9 @@ test('should list early access prices for pro ea user', async t => {
 
   const prices = await service.listPrices(u1);
 
-  t.is(prices.length, 3);
   t.deepEqual(
     new Set(prices.map(p => p.lookup_key)),
-    new Set([PRO_MONTHLY, PRO_EA_YEARLY, AI_YEARLY])
+    new Set([PRO_MONTHLY, PRO_LIFETIME, PRO_EA_YEARLY, AI_YEARLY])
   );
 });
 
@@ -246,10 +249,9 @@ test('should list normal prices for pro ea user with old subscriptions', async t
 
   const prices = await service.listPrices(u1);
 
-  t.is(prices.length, 3);
   t.deepEqual(
     new Set(prices.map(p => p.lookup_key)),
-    new Set([PRO_MONTHLY, PRO_YEARLY, AI_YEARLY])
+    new Set([PRO_MONTHLY, PRO_YEARLY, PRO_LIFETIME, AI_YEARLY])
   );
 });
 
@@ -266,10 +268,9 @@ test('should list early access prices for ai ea user', async t => {
 
   const prices = await service.listPrices(u1);
 
-  t.is(prices.length, 3);
   t.deepEqual(
     new Set(prices.map(p => p.lookup_key)),
-    new Set([PRO_MONTHLY, PRO_YEARLY, AI_YEARLY_EA])
+    new Set([PRO_MONTHLY, PRO_YEARLY, PRO_LIFETIME, AI_YEARLY_EA])
   );
 });
 
@@ -286,10 +287,9 @@ test('should list early access prices for pro and ai ea user', async t => {
 
   const prices = await service.listPrices(u1);
 
-  t.is(prices.length, 3);
   t.deepEqual(
     new Set(prices.map(p => p.lookup_key)),
-    new Set([PRO_MONTHLY, PRO_EA_YEARLY, AI_YEARLY_EA])
+    new Set([PRO_MONTHLY, PRO_LIFETIME, PRO_EA_YEARLY, AI_YEARLY_EA])
   );
 });
 
@@ -322,10 +322,9 @@ test('should list normal prices for ai ea user with old subscriptions', async t 
 
   const prices = await service.listPrices(u1);
 
-  t.is(prices.length, 3);
   t.deepEqual(
     new Set(prices.map(p => p.lookup_key)),
-    new Set([PRO_MONTHLY, PRO_YEARLY, AI_YEARLY])
+    new Set([PRO_MONTHLY, PRO_YEARLY, PRO_LIFETIME, AI_YEARLY])
   );
 });
 
@@ -455,6 +454,22 @@ test('should get correct pro plan price for checking out', async t => {
     );
     t.deepEqual(ret, {
       price: PRO_YEARLY,
+      coupon: undefined,
+    });
+  }
+
+  // any user, lifetime recurring
+  {
+    feature.isEarlyAccessUser.resolves(false);
+    // @ts-expect-error stub
+    subListStub.resolves({ data: [] });
+    const ret = await getAvailablePrice(
+      customer,
+      SubscriptionPlan.Pro,
+      SubscriptionRecurring.Lifetime
+    );
+    t.deepEqual(ret, {
+      price: PRO_LIFETIME,
       coupon: undefined,
     });
   }
@@ -639,6 +654,7 @@ test('should be able to create subscription', async t => {
     emitStub.calledOnceWith('user.subscription.activated', {
       userId: u1.id,
       plan: SubscriptionPlan.Pro,
+      recurring: SubscriptionRecurring.Monthly,
     })
   );
 
@@ -674,6 +690,7 @@ test('should be able to update subscription', async t => {
     emitStub.calledOnceWith('user.subscription.activated', {
       userId: u1.id,
       plan: SubscriptionPlan.Pro,
+      recurring: SubscriptionRecurring.Monthly,
     })
   );
 
@@ -706,6 +723,7 @@ test('should be able to delete subscription', async t => {
     emitStub.calledOnceWith('user.subscription.canceled', {
       userId: u1.id,
       plan: SubscriptionPlan.Pro,
+      recurring: SubscriptionRecurring.Monthly,
     })
   );
 
@@ -749,6 +767,7 @@ test('should be able to cancel subscription', async t => {
     emitStub.calledOnceWith('user.subscription.activated', {
       userId: u1.id,
       plan: SubscriptionPlan.Pro,
+      recurring: SubscriptionRecurring.Monthly,
     })
   );
 
@@ -785,6 +804,7 @@ test('should be able to resume subscription', async t => {
     emitStub.calledOnceWith('user.subscription.activated', {
       userId: u1.id,
       plan: SubscriptionPlan.Pro,
+      recurring: SubscriptionRecurring.Monthly,
     })
   );
 
@@ -928,4 +948,121 @@ test('should operate with latest subscription status', async t => {
   t.is(stub.callCount, 2);
   t.deepEqual(stub.firstCall.args[1], sub);
   t.deepEqual(stub.secondCall.args[1], sub);
+});
+
+// ============== Lifetime Subscription ===============
+const invoice: Stripe.Invoice = {
+  id: 'in_xxx',
+  object: 'invoice',
+  amount_paid: 49900,
+  total: 49900,
+  customer: 'cus_1',
+  currency: 'usd',
+  status: 'paid',
+  lines: {
+    data: [
+      {
+        // @ts-expect-error stub
+        price: PRICES[PRO_LIFETIME],
+      },
+    ],
+  },
+};
+
+test('should be able to subscribe to lifetime recurring', async t => {
+  // lifetime payment isn't a subscription, so we need to trigger the creation by invoice payment event
+  const { service, stripe, db, u1, event } = t.context;
+
+  const emitStub = Sinon.stub(event, 'emit');
+  Sinon.stub(stripe.invoices, 'retrieve').resolves(invoice as any);
+  await service.saveInvoice(invoice, 'invoice.payment_succeeded');
+
+  const subInDB = await db.userSubscription.findFirst({
+    where: { userId: u1.id },
+  });
+
+  t.true(
+    emitStub.calledOnceWith('user.subscription.activated', {
+      userId: u1.id,
+      plan: SubscriptionPlan.Pro,
+      recurring: SubscriptionRecurring.Lifetime,
+    })
+  );
+  t.is(subInDB?.plan, SubscriptionPlan.Pro);
+  t.is(subInDB?.recurring, SubscriptionRecurring.Lifetime);
+  t.is(subInDB?.status, SubscriptionStatus.Active);
+  t.is(subInDB?.stripeSubscriptionId, null);
+});
+
+test('should be able to subscribe to lifetime recurring with old subscription', async t => {
+  const { service, stripe, db, u1, event } = t.context;
+
+  await db.userSubscription.create({
+    data: {
+      userId: u1.id,
+      stripeSubscriptionId: 'sub_1',
+      plan: SubscriptionPlan.Pro,
+      recurring: SubscriptionRecurring.Monthly,
+      status: SubscriptionStatus.Active,
+      start: new Date(),
+      end: new Date(),
+    },
+  });
+
+  const emitStub = Sinon.stub(event, 'emit');
+  Sinon.stub(stripe.invoices, 'retrieve').resolves(invoice as any);
+  Sinon.stub(stripe.subscriptions, 'cancel').resolves(sub as any);
+  await service.saveInvoice(invoice, 'invoice.payment_succeeded');
+
+  const subInDB = await db.userSubscription.findFirst({
+    where: { userId: u1.id },
+  });
+
+  t.true(
+    emitStub.calledOnceWith('user.subscription.activated', {
+      userId: u1.id,
+      plan: SubscriptionPlan.Pro,
+      recurring: SubscriptionRecurring.Lifetime,
+    })
+  );
+  t.is(subInDB?.plan, SubscriptionPlan.Pro);
+  t.is(subInDB?.recurring, SubscriptionRecurring.Lifetime);
+  t.is(subInDB?.status, SubscriptionStatus.Active);
+  t.is(subInDB?.stripeSubscriptionId, null);
+});
+
+test('should not be able to update lifetime recurring', async t => {
+  const { service, db, u1 } = t.context;
+
+  await db.userSubscription.create({
+    data: {
+      userId: u1.id,
+      plan: SubscriptionPlan.Pro,
+      recurring: SubscriptionRecurring.Lifetime,
+      status: SubscriptionStatus.Active,
+      start: new Date(),
+      end: new Date(),
+    },
+  });
+
+  await t.throwsAsync(
+    () => service.cancelSubscription('', u1.id, SubscriptionPlan.Pro),
+    { message: 'Lifetime subscription cannot be canceled.' }
+  );
+
+  await t.throwsAsync(
+    () =>
+      service.updateSubscriptionRecurring(
+        '',
+        u1.id,
+        SubscriptionPlan.Pro,
+        SubscriptionRecurring.Monthly
+      ),
+    { message: 'Can not update lifetime subscription.' }
+  );
+
+  await t.throwsAsync(
+    () => service.resumeCanceledSubscription('', u1.id, SubscriptionPlan.Pro),
+    { message: 'Lifetime subscription cannot be resumed.' }
+  );
 });

@@ -38,6 +38,7 @@ enum DescriptionI18NKey {
   Basic = 'com.affine.payment.billing-setting.current-plan.description',
   Monthly = 'com.affine.payment.billing-setting.current-plan.description.monthly',
   Yearly = 'com.affine.payment.billing-setting.current-plan.description.yearly',
+  Lifetime = 'com.affine.payment.billing-setting.current-plan.description.lifetime',
 }
 
 const INVOICE_PAGE_SIZE = 12;
@@ -204,7 +205,7 @@ const SubscriptionSettings = () => {
                 })}
               />
             )}
-            {proSubscription.canceledAt ? (
+            {proSubscription.end && proSubscription.canceledAt ? (
               <SettingRow
                 name={t['com.affine.payment.billing-setting.expiration-date']()}
                 desc={t[

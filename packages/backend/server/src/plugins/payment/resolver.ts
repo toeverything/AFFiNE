@@ -53,12 +53,15 @@ class SubscriptionPrice {
 
   @Field(() => Int, { nullable: true })
   yearlyAmount?: number | null;
+
+  @Field(() => Int, { nullable: true })
+  lifetimeAmount?: number | null;
 }
 
 @ObjectType('UserSubscription')
 export class UserSubscriptionType implements Partial<UserSubscription> {
-  @Field({ name: 'id' })
-  stripeSubscriptionId!: string;
+  @Field(() => String, { name: 'id', nullable: true })
+  stripeSubscriptionId!: string | null;
 
   @Field(() => SubscriptionPlan, {
     description:
@@ -75,8 +78,8 @@ export class UserSubscriptionType implements Partial<UserSubscription> {
   @Field(() => Date)
   start!: Date;
 
-  @Field(() => Date)
-  end!: Date;
+  @Field(() => Date, { nullable: true })
+  end!: Date | null;
 
   @Field(() => Date, { nullable: true })
   trialStart?: Date | null;
@@ -187,11 +190,19 @@ export class SubscriptionResolver {
 
       const monthlyPrice = prices.find(p => p.recurring?.interval === 'month');
       const yearlyPrice = prices.find(p => p.recurring?.interval === 'year');
+      const lifetimePrice = prices.find(
+        p =>
+          // asserted before
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+          decodeLookupKey(p.lookup_key!)[1] === SubscriptionRecurring.Lifetime
+      );
       const currency = monthlyPrice?.currency ?? yearlyPrice?.currency ?? 'usd';
+
       return {
         currency,
         amount: monthlyPrice?.unit_amount,
         yearlyAmount: yearlyPrice?.unit_amount,
+        lifetimeAmount: lifetimePrice?.unit_amount,
       };
     }
 

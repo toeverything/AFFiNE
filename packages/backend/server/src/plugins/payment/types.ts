@@ -5,6 +5,7 @@ import type { Payload } from '../../fundamentals/event/def';
 export enum SubscriptionRecurring {
   Monthly = 'monthly',
   Yearly = 'yearly',
+  Lifetime = 'lifetime',
 }
 
 export enum SubscriptionPlan {
@@ -46,10 +47,12 @@ declare module '../../fundamentals/event/def' {
       activated: Payload<{
         userId: User['id'];
         plan: SubscriptionPlan;
+        recurring: SubscriptionRecurring;
       }>;
       canceled: Payload<{
         userId: User['id'];
         plan: SubscriptionPlan;
+        recurring: SubscriptionRecurring;
       }>;
     };
   }
