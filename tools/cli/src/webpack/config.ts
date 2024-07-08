@@ -1,4 +1,3 @@
-import { createRequire } from 'node:module';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -23,8 +22,6 @@ const IN_CI = !!process.env.CI;
 
 export const rootPath = join(fileURLToPath(import.meta.url), '..', '..');
 export const workspaceRoot = join(rootPath, '..', '..', '..');
-
-const require = createRequire(rootPath);
 
 const OptimizeOptionOptions: (
   buildFlags: BuildFlags
@@ -154,7 +151,7 @@ export const createConfiguration: (
               events: false,
             },
       alias: {
-        yjs: require.resolve('yjs'),
+        yjs: join(workspaceRoot, 'node_modules', 'yjs'),
         lit: join(workspaceRoot, 'node_modules', 'lit'),
         '@blocksuite/block-std': blocksuiteBaseDir
           ? join(blocksuiteBaseDir, 'packages', 'framework', 'block-std', 'src')

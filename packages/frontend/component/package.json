@@ -106,8 +106,7 @@
     "storybook-dark-mode": "4.0.2",
     "typescript": "^5.4.5",
     "vite": "^5.2.8",
-    "vitest": "1.6.0",
-    "yjs": "^13.6.14"
+    "vitest": "1.6.0"
   },
   "version": "0.15.0"
 }

@@ -361,7 +361,6 @@ __metadata:
     uuid: "npm:^10.0.0"
     vite: "npm:^5.2.8"
     vitest: "npm:1.6.0"
-    yjs: "npm:^13.6.14"
     zod: "npm:^3.22.4"
   peerDependencies:
     "@blocksuite/blocks": "*"
@@ -473,7 +472,7 @@ __metadata:
     valtio: "npm:^1.13.2"
     vitest: "npm:1.6.0"
     y-protocols: "npm:^1.0.6"
-    yjs: "npm:^13.6.14"
+    yjs: "patch:yjs@npm%3A13.6.18#~/.yarn/patches/yjs-npm-13.6.18-ad0d5f7c43.patch"
     zod: "npm:^3.22.4"
   languageName: unknown
   linkType: soft
@@ -565,7 +564,7 @@ __metadata:
     uuid: "npm:^10.0.0"
     vitest: "npm:1.6.0"
     which: "npm:^4.0.0"
-    yjs: "npm:^13.6.14"
+    yjs: "patch:yjs@npm%3A13.6.18#~/.yarn/patches/yjs-npm-13.6.18-ad0d5f7c43.patch"
     zod: "npm:^3.22.4"
   peerDependencies:
     ts-node: "*"
@@ -718,7 +717,7 @@ __metadata:
     nx-cloud: "npm:^19.0.0"
     tiktoken: "npm:^1.0.15"
     tinybench: "npm:^2.8.0"
-    yjs: "npm:^13.6.14"
+    yjs: "patch:yjs@npm%3A13.6.18#~/.yarn/patches/yjs-npm-13.6.18-ad0d5f7c43.patch"
   languageName: unknown
   linkType: soft
 
@@ -826,7 +825,7 @@ __metadata:
     ts-node: "npm:^10.9.2"
     typescript: "npm:^5.4.5"
     ws: "npm:^8.16.0"
-    yjs: "npm:^13.6.14"
+    yjs: "patch:yjs@npm%3A13.6.18#~/.yarn/patches/yjs-npm-13.6.18-ad0d5f7c43.patch"
     zod: "npm:^3.22.4"
   bin:
     run-test: ./scripts/run-test.ts
@@ -14753,7 +14752,7 @@ __metadata:
     vite: "npm:^5.2.8"
     vite-plugin-dts: "npm:3.9.1"
     vitest: "npm:1.6.0"
-    yjs: "npm:^13.6.14"
+    yjs: "patch:yjs@npm%3A13.6.18#~/.yarn/patches/yjs-npm-13.6.18-ad0d5f7c43.patch"
     zod: "npm:^3.22.4"
   peerDependencies:
     "@affine/templates": "*"
@@ -38799,12 +38798,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"yjs@npm:^13.6.14":
+"yjs@npm:13.6.18":
   version: 13.6.18
   resolution: "yjs@npm:13.6.18"
   dependencies:
     lib0: "npm:^0.2.86"
   checksum: 10/e69463abfa0459d29491a4a8dea72cf3123783ba987a9dcb4e06f1e3e4a6ba143c611b44775f922381744bd29ab203abbed019ce4cd7b9615f67109ccb6529d0
+  languageName: node
+  linkType: hard
+
+"yjs@patch:yjs@npm%3A13.6.18#~/.yarn/patches/yjs-npm-13.6.18-ad0d5f7c43.patch":
+  version: 13.6.18
+  resolution: "yjs@patch:yjs@npm%3A13.6.18#~/.yarn/patches/yjs-npm-13.6.18-ad0d5f7c43.patch::version=13.6.18&hash=b51814"
+  dependencies:
+    lib0: "npm:^0.2.86"
+  checksum: 10/dda928b955501f6f7343d886c4ffdfff49bf728453510bc2c8125eadd3e6098f01c04dd009596521cedc6efc858b409670ce8e7868573bd5c8971b9065f030cd
   languageName: node
   linkType: hard
 
