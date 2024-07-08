@@ -2,7 +2,7 @@ import { cssVar } from '@toeverything/theme';
 import { style } from '@vanilla-extract/css';
 export const userAccountContainer = style({
   display: 'flex',
-  padding: '4px 0px 4px 12px',
+  padding: '4px 4px 4px 12px',
   gap: '8px',
   alignItems: 'center',
   justifyContent: 'space-between',

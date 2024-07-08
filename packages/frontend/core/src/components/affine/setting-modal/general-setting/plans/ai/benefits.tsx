@@ -41,7 +41,6 @@ const benefitsGetter = (t: ReturnType<typeof useI18n>) => [
 export const AIBenefits = () => {
   const t = useI18n();
   const benefits = useMemo(() => benefitsGetter(t), [t]);
-  // TODO(@catsjuice): responsive
   return (
     <div className={styles.benefits}>
       {benefits.map(({ name, icon, items }) => {

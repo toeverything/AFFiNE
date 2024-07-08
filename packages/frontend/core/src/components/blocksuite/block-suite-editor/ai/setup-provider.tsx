@@ -405,7 +405,6 @@ Could you make a new website based on these notes and send back just the html fi
     getCurrentStore().set(openSettingModalAtom, {
       activeTab: 'billing',
       open: true,
-      scrollAnchor: 'aiPricingPlan',
     });
     mixpanel.track('PlansViewed', {
       segment: 'payment wall',

@@ -24,7 +24,10 @@ import { useLiveData, useService } from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
 import { Suspense, useCallback, useEffect, useState } from 'react';
 
-import { openSettingModalAtom } from '../../../../../atoms';
+import {
+  openSettingModalAtom,
+  type PlansScrollAnchor,
+} from '../../../../../atoms';
 import { useMutation } from '../../../../../hooks/use-mutation';
 import { useQuery } from '../../../../../hooks/use-query';
 import { SubscriptionService } from '../../../../../modules/cloud';
@@ -32,6 +35,8 @@ import { mixpanel, popupWindow } from '../../../../../utils';
 import { SWRErrorBoundary } from '../../../../pure/swr-error-bundary';
 import { CancelAction, ResumeAction } from '../plans/actions';
 import { AICancel, AIResume, AISubscribe } from '../plans/ai/actions';
+import { BelieverCard } from '../plans/lifetime/believer-card';
+import { BelieverBenefits } from '../plans/lifetime/benefits';
 import * as styles from './style.css';
 
 enum DescriptionI18NKey {
@@ -94,6 +99,7 @@ const SubscriptionSettings = () => {
 
   const proSubscription = useLiveData(subscriptionService.subscription.pro$);
   const proPrice = useLiveData(subscriptionService.prices.proPrice$);
+  const isBeliever = useLiveData(subscriptionService.subscription.isBeliever$);
 
   const [openCancelModal, setOpenCancelModal] = useState(false);
   const setOpenSettingModalAtom = useSetAtom(openSettingModalAtom);
@@ -103,7 +109,7 @@ const SubscriptionSettings = () => {
     proSubscription?.recurring ?? SubscriptionRecurring.Monthly;
 
   const openPlans = useCallback(
-    (scrollAnchor?: string) => {
+    (scrollAnchor?: PlansScrollAnchor) => {
       mixpanel.track('PlansViewed', {
         type: proSubscription?.plan,
         category: proSubscription?.recurring,
@@ -121,7 +127,10 @@ const SubscriptionSettings = () => {
     },
     [proSubscription?.plan, proSubscription?.recurring, setOpenSettingModalAtom]
   );
-  const gotoCloudPlansSetting = useCallback(() => openPlans(), [openPlans]);
+  const gotoCloudPlansSetting = useCallback(
+    () => openPlans('cloudPricingPlan'),
+    [openPlans]
+  );
   const gotoAiPlanSetting = useCallback(
     () => openPlans('aiPricingPlan'),
     [openPlans]
@@ -137,50 +146,54 @@ const SubscriptionSettings = () => {
 
   return (
     <div className={styles.subscription}>
+      <AIPlanCard onClick={gotoAiPlanSetting} />
       {/* loaded  */}
       {proSubscription !== null ? (
-        <div className={styles.planCard}>
-          <div className={styles.currentPlan}>
-            <SettingRow
-              spreadCol={false}
-              name={t['com.affine.payment.billing-setting.current-plan']()}
-              desc={
-                <Trans
-                  i18nKey={getMessageKey(currentPlan, currentRecurring)}
-                  values={{
-                    planName: currentPlan,
-                  }}
-                  components={{
-                    1: (
-                      <span
-                        onClick={gotoCloudPlansSetting}
-                        className={styles.currentPlanName}
-                      />
-                    ),
-                  }}
-                />
-              }
-            />
-            <PlanAction
-              plan={currentPlan}
-              gotoPlansSetting={gotoCloudPlansSetting}
-            />
+        isBeliever ? (
+          <BelieverIdentifier onOpenPlans={gotoCloudPlansSetting} />
+        ) : (
+          <div className={styles.planCard}>
+            <div className={styles.currentPlan}>
+              <SettingRow
+                spreadCol={false}
+                name={t['com.affine.payment.billing-setting.current-plan']()}
+                desc={
+                  <Trans
+                    i18nKey={getMessageKey(currentPlan, currentRecurring)}
+                    values={{
+                      planName: currentPlan,
+                    }}
+                    components={{
+                      1: (
+                        <span
+                          onClick={gotoCloudPlansSetting}
+                          className={styles.currentPlanName}
+                        />
+                      ),
+                    }}
+                  />
+                }
+              />
+              <PlanAction
+                plan={currentPlan}
+                gotoPlansSetting={gotoCloudPlansSetting}
+              />
+            </div>
+            <p className={styles.planPrice}>
+              ${amount}
+              <span className={styles.billingFrequency}>
+                /
+                {currentRecurring === SubscriptionRecurring.Monthly
+                  ? t['com.affine.payment.billing-setting.month']()
+                  : t['com.affine.payment.billing-setting.year']()}
+              </span>
+            </p>
           </div>
-          <p className={styles.planPrice}>
-            ${amount}
-            <span className={styles.billingFrequency}>
-              /
-              {currentRecurring === SubscriptionRecurring.Monthly
-                ? t['com.affine.payment.billing-setting.month']()
-                : t['com.affine.payment.billing-setting.year']()}
-            </span>
-          </p>
-        </div>
+        )
       ) : (
         <SubscriptionSettingSkeleton />
       )}
 
-      <AIPlanCard onClick={gotoAiPlanSetting} />
       {proSubscription !== null ? (
         proSubscription?.status === SubscriptionStatus.Active && (
           <>
@@ -256,6 +269,45 @@ const SubscriptionSettings = () => {
   );
 };
 
+const BelieverIdentifier = ({ onOpenPlans }: { onOpenPlans?: () => void }) => {
+  const t = useI18n();
+  const subscriptionService = useService(SubscriptionService);
+  const readableLifetimePrice = useLiveData(
+    subscriptionService.prices.readableLifetimePrice$
+  );
+
+  if (!readableLifetimePrice) return null;
+
+  return (
+    <BelieverCard type={2} style={{ borderRadius: 8, padding: 12 }}>
+      <header className={styles.believerHeader}>
+        <div>
+          <div className={styles.believerTitle}>
+            {t['com.affine.payment.billing-setting.believer.title']()}
+          </div>
+          <div className={styles.believerSubtitle}>
+            <Trans
+              i18nKey={
+                'com.affine.payment.billing-setting.believer.description'
+              }
+              components={{
+                a: <a href="#" onClick={onOpenPlans} />,
+              }}
+            />
+          </div>
+        </div>
+        <div className={styles.believerPriceWrapper}>
+          <div className={styles.believerPrice}>{readableLifetimePrice}</div>
+          <div className={styles.believerPriceCaption}>
+            {t['com.affine.payment.billing-setting.believer.price-caption']()}
+          </div>
+        </div>
+      </header>
+      <BelieverBenefits />
+    </BelieverCard>
+  );
+};
+
 const AIPlanCard = ({ onClick }: { onClick: () => void }) => {
   const t = useI18n();
   const subscriptionService = useService(SubscriptionService);
@@ -298,7 +350,7 @@ const AIPlanCard = ({ onClick }: { onClick: () => void }) => {
     ) : null;
 
   return (
-    <div className={styles.planCard} style={{ marginTop: 24 }}>
+    <div className={styles.planCard} style={{ marginBottom: 24 }}>
       <div className={styles.currentPlan}>
         <SettingRow
           spreadCol={false}
@@ -468,7 +520,9 @@ const InvoiceLine = ({
     invoice.plan === SubscriptionPlan.AI
       ? 'AFFiNE AI'
       : invoice.plan === SubscriptionPlan.Pro
-        ? 'AFFiNE Cloud'
+        ? invoice.recurring === SubscriptionRecurring.Lifetime
+          ? 'AFFiNE Cloud Believer'
+          : 'AFFiNE Cloud'
         : null;
 
   return (

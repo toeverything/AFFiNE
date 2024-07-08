@@ -144,17 +144,16 @@ export const avatarWrapper = style({
   verticalAlign: 'middle',
   userSelect: 'none',
   position: 'relative',
+  overflow: 'hidden',
 });
 export const avatarImage = style({
   width: '100%',
   height: '100%',
   objectFit: 'cover',
-  borderRadius: '50%',
 });
 export const avatarFallback = style({
   width: '100%',
   height: '100%',
-  borderRadius: '50%',
   overflow: 'hidden',
   display: 'flex',
   alignItems: 'center',
@@ -167,7 +166,6 @@ export const avatarFallback = style({
 export const hoverWrapper = style({
   width: '100%',
   height: '100%',
-  borderRadius: '50%',
   position: 'absolute',
   display: 'flex',
   justifyContent: 'center',

@@ -171,6 +171,7 @@ const StoragePanel = () => {
     setSettingModalAtom({
       open: true,
       activeTab: 'plans',
+      scrollAnchor: 'cloudPricingPlan',
     });
   }, [setSettingModalAtom]);
 

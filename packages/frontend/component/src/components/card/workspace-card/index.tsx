@@ -6,7 +6,6 @@ import type { WorkspaceMetadata } from '@toeverything/infra';
 import clsx from 'clsx';
 import { type MouseEvent, useCallback } from 'react';
 
-import { type AvatarProps } from '../../../ui/avatar';
 import { Button } from '../../../ui/button';
 import { Skeleton } from '../../../ui/skeleton';
 import * as styles from './styles.css';
@@ -44,9 +43,6 @@ export const WorkspaceCardSkeleton = () => {
   );
 };
 
-const avatarImageProps = {
-  style: { borderRadius: 3, overflow: 'hidden' },
-} satisfies AvatarProps['imageProps'];
 export const WorkspaceCard = ({
   onClick,
   onSettingClick,
@@ -80,8 +76,7 @@ export const WorkspaceCard = ({
       <WorkspaceAvatar
         key={meta.id}
         meta={meta}
-        imageProps={avatarImageProps}
-        fallbackProps={avatarImageProps}
+        rounded={3}
         size={28}
         name={name}
         colorfulFallback

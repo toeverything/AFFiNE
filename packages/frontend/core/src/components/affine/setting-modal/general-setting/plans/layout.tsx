@@ -1,19 +1,16 @@
 import { Button, Divider, IconButton } from '@affine/component';
 import { SettingHeader } from '@affine/component/setting-components';
-import { openSettingModalAtom } from '@affine/core/atoms';
-import { useI18n } from '@affine/i18n';
 import {
-  ArrowDownBigIcon,
-  ArrowRightBigIcon,
-  ArrowUpSmallIcon,
-} from '@blocksuite/icons/rc';
+  openSettingModalAtom,
+  type PlansScrollAnchor,
+} from '@affine/core/atoms';
+import { useI18n } from '@affine/i18n';
+import { ArrowRightBigIcon, ArrowUpSmallIcon } from '@blocksuite/icons/rc';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import * as ScrollArea from '@radix-ui/react-scroll-area';
-import { cssVar } from '@toeverything/theme';
 import { useAtom, useAtomValue } from 'jotai';
 import {
   type HtmlHTMLAttributes,
-  type PropsWithChildren,
   type ReactNode,
   useCallback,
   useEffect,
@@ -21,7 +18,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { createPortal } from 'react-dom';
+import { createPortal, flushSync } from 'react-dom';
 
 import { settingModalScrollContainerAtom } from '../../atoms';
 import * as styles from './layout.css';
@@ -47,7 +44,7 @@ interface PricingCollapsibleProps
   title?: ReactNode;
   caption?: ReactNode;
 }
-const PricingCollapsible = ({
+export const PricingCollapsible = ({
   title,
   caption,
   children,
@@ -78,97 +75,96 @@ const PricingCollapsible = ({
 export interface PlanLayoutProps {
   cloud?: ReactNode;
   ai?: ReactNode;
-  aiTip?: boolean;
+  cloudTip?: boolean;
 }
 
-export const PlanLayout = ({ cloud, ai, aiTip }: PlanLayoutProps) => {
+export const PlanLayout = ({ cloud, ai, cloudTip }: PlanLayoutProps) => {
   const t = useI18n();
-  const [{ scrollAnchor }, setOpenSettingModal] = useAtom(openSettingModalAtom);
-  const aiPricingPlanRef = useRef<HTMLDivElement>(null);
-  const aiScrollTipRef = useRef<HTMLDivElement>(null);
+  const [modal, setOpenSettingModal] = useAtom(openSettingModalAtom);
+  const scrollAnchor = modal.activeTab === 'plans' ? modal.scrollAnchor : null;
+  const plansRootRef = useRef<HTMLDivElement>(null);
+  const cloudScrollTipRef = useRef<HTMLDivElement>(null);
   const settingModalScrollContainer = useAtomValue(
     settingModalScrollContainerAtom
   );
 
-  const updateAiTipState = useCallback(() => {
-    if (!aiTip) return;
-    const aiContainer = aiPricingPlanRef.current;
-    if (!settingModalScrollContainer || !aiContainer) return;
+  const updateCloudTipState = useCallback(() => {
+    if (!cloudTip) return;
+    const cloudContainer =
+      plansRootRef.current?.querySelector('#cloudPricingPlan');
+    if (!settingModalScrollContainer || !cloudContainer) return;
 
     const minVisibleHeight = 30;
 
     const containerRect = settingModalScrollContainer.getBoundingClientRect();
-    const aiTop = aiContainer.getBoundingClientRect().top - containerRect.top;
-    const aiIntoView = aiTop < containerRect.height - minVisibleHeight;
-    if (aiIntoView) {
-      settingModalScrollContainer.dataset.aiVisible = '';
+    const cloudTop =
+      cloudContainer.getBoundingClientRect().top - containerRect.top;
+    const cloudIntoView = cloudTop < containerRect.height - minVisibleHeight;
+    if (cloudIntoView) {
+      settingModalScrollContainer.dataset.cloudVisible = '';
     }
-  }, [aiTip, settingModalScrollContainer]);
+  }, [cloudTip, settingModalScrollContainer]);
 
   // TODO(@catsjuice): Need a better solution to handle this situation
   useLayoutEffect(() => {
     if (!scrollAnchor) return;
-    setTimeout(() => {
-      if (scrollAnchor === 'aiPricingPlan' && aiPricingPlanRef.current) {
-        aiPricingPlanRef.current.scrollIntoView();
+    flushSync(() => {
+      const target = plansRootRef.current?.querySelector(`#${scrollAnchor}`);
+      if (target) {
+        target.scrollIntoView();
         setOpenSettingModal(prev => ({ ...prev, scrollAnchor: undefined }));
       }
     });
   }, [scrollAnchor, setOpenSettingModal]);
 
   useEffect(() => {
-    if (!settingModalScrollContainer || !aiScrollTipRef.current) return;
+    if (!settingModalScrollContainer || !cloudScrollTipRef.current) return;
 
-    settingModalScrollContainer.addEventListener('scroll', updateAiTipState);
-    updateAiTipState();
+    settingModalScrollContainer.addEventListener('scroll', updateCloudTipState);
+    updateCloudTipState();
     return () => {
       settingModalScrollContainer.removeEventListener(
         'scroll',
-        updateAiTipState
+        updateCloudTipState
       );
     };
-  }, [settingModalScrollContainer, updateAiTipState]);
+  }, [settingModalScrollContainer, updateCloudTipState]);
 
-  const scrollAiIntoView = useCallback(() => {
-    aiPricingPlanRef.current?.scrollIntoView({ behavior: 'smooth' });
+  const scrollToAnchor = useCallback((anchor: PlansScrollAnchor) => {
+    const target = plansRootRef.current?.querySelector(`#${anchor}`);
+    target && target.scrollIntoView({ behavior: 'smooth' });
   }, []);
 
   return (
-    <div className={styles.plansLayoutRoot}>
+    <div className={styles.plansLayoutRoot} ref={plansRootRef}>
       {/* TODO(@catsjuice): SettingHeader component shouldn't have margin itself  */}
       <SettingHeader
         style={{ marginBottom: '0px' }}
         title={t['com.affine.payment.title']()}
       />
-      {cloud}
       {ai ? (
         <>
+          <div id="aiPricingPlan">{ai}</div>
           <Divider className={styles.aiDivider} />
-          <div ref={aiPricingPlanRef} id="aiPricingPlan">
-            {ai}
-          </div>
         </>
       ) : null}
+      <div id="cloudPricingPlan">{cloud}</div>
 
-      {aiTip && settingModalScrollContainer
+      {cloudTip && settingModalScrollContainer
         ? createPortal(
-            <div className={styles.aiScrollTip} ref={aiScrollTipRef}>
-              <div className={styles.aiScrollTipLabel}>
-                <ArrowDownBigIcon
-                  width={24}
-                  height={24}
-                  color={cssVar('iconColor')}
-                />
-                <div className={styles.aiScrollTipText}>
-                  {t['com.affine.ai-scroll-tip.title']()}
+            <div className={styles.aiScrollTip} ref={cloudScrollTipRef}>
+              <div>
+                <div className={styles.cloudScrollTipTitle}>
+                  {t['com.affine.cloud-scroll-tip.title']()}
                 </div>
-                <div className={styles.aiScrollTipTag}>
-                  <div className={styles.aiScrollTipTagInner}>
-                    {t['com.affine.ai-scroll-tip.tag']()}
-                  </div>
+                <div className={styles.cloudScrollTipCaption}>
+                  {t['com.affine.cloud-scroll-tip.caption']()}
                 </div>
               </div>
-              <Button onClick={scrollAiIntoView} type="primary">
+              <Button
+                onClick={() => scrollToAnchor('cloudPricingPlan')}
+                type="primary"
+              >
                 {t['com.affine.ai-scroll-tip.view']()}
               </Button>
             </div>,
@@ -186,6 +182,7 @@ export interface PlanCardProps {
   select?: ReactNode;
   toggle?: ReactNode;
   scroll?: ReactNode;
+  lifetime?: ReactNode;
   scrollRef?: React.RefObject<HTMLDivElement>;
 }
 export const CloudPlanLayout = ({
@@ -194,6 +191,7 @@ export const CloudPlanLayout = ({
   select,
   toggle,
   scroll,
+  lifetime,
   scrollRef,
 }: PlanCardProps) => {
   return (
@@ -214,22 +212,7 @@ export const CloudPlanLayout = ({
           <ScrollArea.Thumb className={styles.scrollThumb}></ScrollArea.Thumb>
         </ScrollArea.Scrollbar>
       </ScrollArea.Root>
-    </PricingCollapsible>
-  );
-};
-
-export interface AIPlanLayoutProps {
-  title?: ReactNode;
-  caption?: ReactNode;
-}
-export const AIPlanLayout = ({
-  title = 'AFFiNE AI',
-  caption,
-  children,
-}: PropsWithChildren<AIPlanLayoutProps>) => {
-  return (
-    <PricingCollapsible title={title} caption={caption}>
-      {children}
+      {lifetime ? <div id="lifetimePricingPlan">{lifetime}</div> : null}
     </PricingCollapsible>
   );
 };

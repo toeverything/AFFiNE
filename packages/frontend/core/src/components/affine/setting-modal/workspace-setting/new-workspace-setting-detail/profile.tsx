@@ -14,8 +14,6 @@ import { useCallback, useEffect, useState } from 'react';
 
 import * as style from './style.css';
 
-const avatarImageProps = { style: { borderRadius: 8 } };
-
 export const ProfilePanel = () => {
   const t = useI18n();
 
@@ -146,9 +144,7 @@ export const ProfilePanel = () => {
           meta={workspace.meta}
           size={56}
           name={name}
-          imageProps={avatarImageProps}
-          fallbackProps={avatarImageProps}
-          hoverWrapperProps={avatarImageProps}
+          rounded={8}
           colorfulFallback
           hoverIcon={isOwner ? <CameraIcon /> : undefined}
           onRemove={canAdjustAvatar ? handleRemoveUserAvatar : undefined}

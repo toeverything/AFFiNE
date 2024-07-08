@@ -8,9 +8,10 @@ import { SubscriptionPlan, SubscriptionStatus } from '@affine/graphql';
 import { Trans, useI18n } from '@affine/i18n';
 import { DoneIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
+import clsx from 'clsx';
 import { useAtom, useSetAtom } from 'jotai';
 import { nanoid } from 'nanoid';
-import type { PropsWithChildren } from 'react';
+import type { HTMLAttributes, PropsWithChildren } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { openPaymentDisableAtom } from '../../../../../atoms';
@@ -89,6 +90,7 @@ const ActionButton = ({ detail, recurring }: PlanCardProps) => {
   const loggedIn =
     useLiveData(useService(AuthService).session.status$) === 'authenticated';
   const subscriptionService = useService(SubscriptionService);
+  const isBeliever = useLiveData(subscriptionService.subscription.isBeliever$);
   const primarySubscription = useLiveData(
     subscriptionService.subscription.pro$
   );
@@ -101,6 +103,7 @@ const ActionButton = ({ detail, recurring }: PlanCardProps) => {
   //    if free                                 => 'Sign up free'
   //    else                                    => 'Buy Pro'
   //  else
+  //    if isBeliever                           => 'Included in Lifetime'
   //    if isCurrent
   //      if canceled                           => 'Resume'
   //      else                                  => 'Current Plan'
@@ -122,6 +125,15 @@ const ActionButton = ({ detail, recurring }: PlanCardProps) => {
           ? t['com.affine.payment.sign-up-free']()
           : t['com.affine.payment.buy-pro']()}
       </SignUpAction>
+    );
+  }
+
+  // lifetime
+  if (isBeliever) {
+    return (
+      <Button className={styles.planAction} disabled>
+        {t['com.affine.payment.cloud.lifetime.included']()}
+      </Button>
     );
   }
 
@@ -229,13 +241,20 @@ const BookDemo = ({ plan }: { plan: SubscriptionPlan }) => {
       }}
     >
       <Button className={styles.planAction} type="primary">
-        {t['com.affine.payment.book-a-demo']()}
+        {t['com.affine.payment.tell-us-use-case']()}
       </Button>
     </a>
   );
 };
 
-const Upgrade = ({ recurring }: { recurring: SubscriptionRecurring }) => {
+export const Upgrade = ({
+  className,
+  recurring,
+  children,
+  ...attrs
+}: HTMLAttributes<HTMLButtonElement> & {
+  recurring: SubscriptionRecurring;
+}) => {
   const [isMutating, setMutating] = useState(false);
   const [isOpenedExternalWindow, setOpenedExternalWindow] = useState(false);
   const t = useI18n();
@@ -291,13 +310,14 @@ const Upgrade = ({ recurring }: { recurring: SubscriptionRecurring }) => {
 
   return (
     <Button
-      className={styles.planAction}
+      className={clsx(styles.planAction, className)}
       type="primary"
       onClick={upgrade}
       disabled={isMutating}
       loading={isMutating}
+      {...attrs}
     >
-      {t['com.affine.payment.upgrade']()}
+      {children ?? t['com.affine.payment.upgrade']()}
     </Button>
   );
 };

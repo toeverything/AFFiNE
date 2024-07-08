@@ -25,6 +25,7 @@ import {
   useState,
 } from 'react';
 
+import { withUnit } from '../../utils/with-unit';
 import { IconButton } from '../button';
 import type { TooltipProps } from '../tooltip';
 import { Tooltip } from '../tooltip';
@@ -44,6 +45,11 @@ export type AvatarProps = {
   onRemove?: (e: MouseEvent<HTMLButtonElement>) => void;
   avatarTooltipOptions?: Omit<TooltipProps, 'children'>;
   removeTooltipOptions?: Omit<TooltipProps, 'children'>;
+  /**
+   * Same as `CSS.borderRadius`, number in px or string with unit
+   * @default '50%'
+   */
+  rounded?: number | string;
 
   fallbackProps?: AvatarFallbackProps;
   imageProps?: Omit<
@@ -92,6 +98,7 @@ export const Avatar = forwardRef<HTMLSpanElement, AvatarProps>(
       fallbackProps: { className: fallbackClassName, ...fallbackProps } = {},
       imageProps,
       avatarProps,
+      rounded = '50%',
       onRemove,
       hoverWrapperProps: {
         className: hoverWrapperClassName,
@@ -144,6 +151,7 @@ export const Avatar = forwardRef<HTMLSpanElement, AvatarProps>(
               ...assignInlineVars({
                 [sizeVar]: size ? `${size}px` : '20px',
                 [blurVar]: `${size * 0.3}px`,
+                borderRadius: withUnit(rounded, 'px'),
               }),
               ...propsStyles,
             }}

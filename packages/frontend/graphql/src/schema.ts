@@ -1765,6 +1765,7 @@ export type PricesQuery = {
     currency: string;
     amount: number | null;
     yearlyAmount: number | null;
+    lifetimeAmount: number | null;
   }>;
 };
 

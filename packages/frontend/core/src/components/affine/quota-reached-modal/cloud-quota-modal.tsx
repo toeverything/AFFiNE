@@ -47,6 +47,7 @@ export const CloudQuotaModal = () => {
     setSettingModalAtom({
       open: true,
       activeTab: 'plans',
+      scrollAnchor: 'cloudPricingPlan',
     });
 
     mixpanel.track('PlansViewed', {

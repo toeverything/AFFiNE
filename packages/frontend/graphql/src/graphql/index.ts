@@ -668,6 +668,7 @@ query prices {
     currency
     amount
     yearlyAmount
+    lifetimeAmount
   }
 }`,
 };
