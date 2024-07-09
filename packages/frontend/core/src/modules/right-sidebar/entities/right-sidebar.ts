@@ -1,5 +1,6 @@
 import type { GlobalState } from '@toeverything/infra';
 import { Entity, LiveData } from '@toeverything/infra';
+import { combineLatest } from 'rxjs';
 
 import type { SidebarTabName } from '../../multi-tab-sidebar';
 import { RightSidebarView } from './right-sidebar-view';
@@ -14,11 +15,13 @@ export class RightSidebar extends Entity {
   constructor(private readonly globalState: GlobalState) {
     super();
 
-    const sub = this.activeTabName$.subscribe(name => {
-      if (name === 'chat') {
-        this.globalState.set(RIGHT_SIDEBAR_AI_HAS_EVER_OPENED_KEY, true);
+    const sub = combineLatest([this.activeTabName$, this.isOpen$]).subscribe(
+      ([name, open]) => {
+        if (name === 'chat' && open) {
+          this.globalState.set(RIGHT_SIDEBAR_AI_HAS_EVER_OPENED_KEY, true);
+        }
       }
-    });
+    );
     this._disposables.push(() => sub.unsubscribe());
   }
 

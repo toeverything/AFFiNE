@@ -8,29 +8,8 @@ import {
   aiIslandAnimationBg,
   aiIslandBtn,
   aiIslandWrapper,
-  borderAngle1,
-  borderAngle2,
-  borderAngle3,
+  gradient,
 } from './styles.css';
-
-if (
-  typeof window !== 'undefined' &&
-  window.CSS &&
-  window.CSS.registerProperty
-) {
-  const getName = (nameWithVar: string) => nameWithVar.slice(4, -1);
-  const registerAngle = (varName: string, initialValue: number) => {
-    window.CSS.registerProperty({
-      name: getName(varName),
-      syntax: '<angle>',
-      inherits: false,
-      initialValue: `${initialValue}deg`,
-    });
-  };
-  registerAngle(borderAngle1, 0);
-  registerAngle(borderAngle2, 90);
-  registerAngle(borderAngle3, 180);
-}
 
 export const AIIsland = () => {
   // to make sure ai island is hidden first and animate in
@@ -52,7 +31,13 @@ export const AIIsland = () => {
         data-hide={hide}
         data-animation={!aiChatHasEverOpened}
       >
-        <div className={aiIslandAnimationBg} />
+        {aiChatHasEverOpened ? null : (
+          <div className={aiIslandAnimationBg}>
+            <div className={gradient} />
+            <div className={gradient} />
+            <div className={gradient} />
+          </div>
+        )}
         <button
           className={aiIslandBtn}
           data-testid="ai-island"
