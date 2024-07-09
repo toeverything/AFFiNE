@@ -6,11 +6,13 @@ on:
       flavor:
         description: 'Select distribution to build'
         type: choice
-        default: canary
+        default: hml
         options:
           - canary
           - beta
           - stable
+          - hml
+          - prd
 
 permissions:
   contents: 'write'
@@ -21,5 +23,6 @@ jobs:
   build-image:
     name: Build Image
     uses: ./.github/workflows/build-server-image.yml
+    secrets: inherit
     with:
       flavor: ${{ github.event.inputs.flavor }}

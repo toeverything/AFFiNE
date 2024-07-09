@@ -6,11 +6,6 @@ on:
       flavor:
         type: string
         required: true
-  workflow_dispatch:
-    inputs:
-      flavor:
-        type: string
-        required: false
 
 env:
   NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
@@ -71,32 +66,6 @@ jobs:
           path: ./packages/frontend/web/dist
           if-no-files-found: error
 
-  build-admin-selfhost:
-    name: Build @affine/admin selfhost
-    runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.flavor }}
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup Version
-        id: version
-        uses: ./.github/actions/setup-version
-      - name: Setup Node.js
-        uses: ./.github/actions/setup-node
-      - name: Build Core
-        run: yarn nx build @affine/admin --skip-nx-cache
-        env:
-          BUILD_TYPE: ${{ github.event.inputs.flavor }}
-          SHOULD_REPORT_TRACE: false
-          PUBLIC_PATH: '/admin/'
-          SELF_HOSTED: true
-          MIXPANEL_TOKEN: ${{ secrets.MIXPANEL_TOKEN }}
-      - name: Upload admin artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: selfhost-admin
-          path: ./packages/frontend/admin/dist
-          if-no-files-found: error
-
   build-server-native:
     name: Build Server native - ${{ matrix.targets.name }}
     runs-on: ubuntu-latest
@@ -136,10 +105,11 @@ jobs:
   build-docker:
     name: Build Docker
     runs-on: ubuntu-latest
+    env:
+      IMAGE_TAG: ${{ needs.set-environment.outputs.IMAGE_TAG }}
     needs:
       - build-server
       - build-web-selfhost
-      - build-admin-selfhost
       - build-server-native
     steps:
       - uses: actions/checkout@v4
@@ -176,18 +146,20 @@ jobs:
           else
             echo "RELEASE_FLAVOR=${{ inputs.flavor }}" >> "$GITHUB_ENV"
           fi
-
-      - name: Login to GitHub Container Registry
+      
+      - name: Login to Dockerhub Container Registry
         uses: docker/login-action@v3
         with:
-          registry: ghcr.io
           logout: false
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+
       # setup node without cache configuration
       # Prisma cache is not compatible with docker build cache
       - name: Setup Node.js
@@ -203,12 +175,6 @@ jobs:
           name: selfhost-web
           path: ./packages/frontend/web/dist
 
-      - name: Download selfhost admin artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: selfhost-admin
-          path: ./packages/frontend/admin/dist
-
       - name: Install Node.js dependencies
         run: |
           yarn config set --json supportedArchitectures.cpu '["x64", "arm64", "arm"]'
@@ -218,12 +184,8 @@ jobs:
       - name: Generate Prisma client
         run: yarn workspace @affine/server prisma generate
 
-      - name: Setup Version
-        id: version
-        uses: ./.github/actions/setup-version
-
       - name: Build graphql Dockerfile
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v5
         with:
           context: .
           push: true
@@ -231,4 +193,4 @@ jobs:
           platforms: linux/amd64,linux/arm64,linux/arm/v7
           provenance: true
           file: .github/deployment/node/Dockerfile
-          tags: ghcr.io/toeverything/affine-graphql:${{env.RELEASE_FLAVOR}}-${{ env.GIT_SHORT_HASH }},ghcr.io/toeverything/affine-graphql:${{env.RELEASE_FLAVOR}}
+          tags: rafaeluriarte/affine-graphql:${{env.RELEASE_FLAVOR}}-${{ env.GIT_SHORT_HASH }}
