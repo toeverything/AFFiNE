@@ -6,7 +6,10 @@ import {
   MenuSeparator,
   MenuSub,
 } from '@affine/component/ui/menu';
-import { openHistoryTipsModalAtom } from '@affine/core/atoms';
+import {
+  openHistoryTipsModalAtom,
+  openInfoModalAtom,
+} from '@affine/core/atoms';
 import { PageHistoryModal } from '@affine/core/components/affine/page-history-modal';
 import { ShareMenuContent } from '@affine/core/components/affine/share-page-modal/share-menu';
 import { Export, MoveToTrash } from '@affine/core/components/page-list';
@@ -27,6 +30,7 @@ import {
   FavoriteIcon,
   HistoryIcon,
   ImportIcon,
+  InformationIcon,
   PageIcon,
   ShareIcon,
 } from '@blocksuite/icons/rc';
@@ -82,6 +86,11 @@ export const PageHeaderMenuButton = ({
     }
     return setOpenHistoryTipsModal(true);
   }, [setOpenHistoryTipsModal, workspace.flavour]);
+
+  const setOpenInfoModal = useSetAtom(openInfoModalAtom);
+  const openInfoModal = () => {
+    setOpenInfoModal(true);
+  };
 
   const handleOpenTrashModal = useCallback(() => {
     setTrashModal({
@@ -236,6 +245,35 @@ export const PageHeaderMenuButton = ({
         {t['com.affine.header.option.add-tag']()}
       </MenuItem> */}
       <MenuSeparator />
+      {runtimeConfig.enableInfoModal ? (
+        <MenuItem
+          preFix={
+            <MenuIcon>
+              <InformationIcon />
+            </MenuIcon>
+          }
+          data-testid="editor-option-menu-info"
+          onSelect={openInfoModal}
+          style={menuItemStyle}
+        >
+          {t['com.affine.page-properties.page-info.view']()}
+        </MenuItem>
+      ) : null}
+      {runtimeConfig.enablePageHistory ? (
+        <MenuItem
+          preFix={
+            <MenuIcon>
+              <HistoryIcon />
+            </MenuIcon>
+          }
+          data-testid="editor-option-menu-history"
+          onSelect={openHistoryModal}
+          style={menuItemStyle}
+        >
+          {t['com.affine.history.view-history-version']()}
+        </MenuItem>
+      ) : null}
+      <MenuSeparator />
       {!isJournal && (
         <MenuItem
           preFix={
@@ -263,21 +301,6 @@ export const PageHeaderMenuButton = ({
         {t['Import']()}
       </MenuItem>
       <Export exportHandler={exportHandler} pageMode={currentMode} />
-
-      {runtimeConfig.enablePageHistory ? (
-        <MenuItem
-          preFix={
-            <MenuIcon>
-              <HistoryIcon />
-            </MenuIcon>
-          }
-          data-testid="editor-option-menu-history"
-          onSelect={openHistoryModal}
-          style={menuItemStyle}
-        >
-          {t['com.affine.history.view-history-version']()}
-        </MenuItem>
-      ) : null}
 
       <MenuSeparator />
       <MoveToTrash

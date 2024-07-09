@@ -846,6 +846,7 @@
   "com.affine.page-properties.create-property.menu.header": "Type",
   "com.affine.page-properties.icons": "Icons",
   "com.affine.page-properties.page-info": "Info",
+  "com.affine.page-properties.page-info.view": "View Info",
   "com.affine.page-properties.property-value-placeholder": "Empty",
   "com.affine.page-properties.property.always-hide": "Always hide",
   "com.affine.page-properties.property.always-show": "Always show",

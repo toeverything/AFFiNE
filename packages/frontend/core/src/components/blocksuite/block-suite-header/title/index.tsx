@@ -5,6 +5,7 @@ import {
   useDocMetaHelper,
 } from '@affine/core/hooks/use-block-suite-page-meta';
 import type { DocCollection } from '@affine/core/shared';
+import clsx from 'clsx';
 import type { HTMLAttributes } from 'react';
 import { useCallback } from 'react';
 
@@ -16,6 +17,7 @@ export interface BlockSuiteHeaderTitleProps {
   /** if set, title cannot be edited */
   isPublic?: boolean;
   inputHandleRef?: InlineEditProps['handleRef'];
+  className?: string;
 }
 
 const inputAttrs = {
@@ -39,7 +41,7 @@ export const BlocksuiteHeaderTitle = (props: BlockSuiteHeaderTitleProps) => {
 
   return (
     <InlineEdit
-      className={styles.title}
+      className={clsx(styles.title, props.className)}
       autoSelect
       value={title}
       onChange={onChange}

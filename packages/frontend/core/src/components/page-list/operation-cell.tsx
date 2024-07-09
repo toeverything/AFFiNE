@@ -25,6 +25,7 @@ import {
   FavoriteIcon,
   FilterIcon,
   FilterMinusIcon,
+  InformationIcon,
   MoreVerticalIcon,
   PlusIcon,
   ResetIcon,
@@ -36,6 +37,7 @@ import { useCallback, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import type { CollectionService } from '../../modules/collection';
+import { InfoModal } from '../affine/page-properties';
 import { usePageHelper } from '../blocksuite/block-suite-page-list/utils';
 import { FavoriteTag } from './components/favorite-tag';
 import * as styles from './list.css';
@@ -65,6 +67,12 @@ export const PageOperationCell = ({
   const favourite = useLiveData(favAdapter.isFavorite$(page.id, 'doc'));
   const workbench = useService(WorkbenchService).workbench;
   const { duplicate } = useBlockSuiteMetaHelper(currentWorkspace.docCollection);
+  const blocksuiteDoc = currentWorkspace.docCollection.getDoc(page.id);
+
+  const [openInfoModal, setOpenInfoModal] = useState(false);
+  const onOpenInfoModal = () => {
+    setOpenInfoModal(true);
+  };
 
   const onDisablePublicSharing = useCallback(() => {
     toast('Successfully disabled', {
@@ -144,6 +152,18 @@ export const PageOperationCell = ({
           ? t['com.affine.favoritePageOperation.remove']()
           : t['com.affine.favoritePageOperation.add']()}
       </MenuItem>
+      {runtimeConfig.enableInfoModal ? (
+        <MenuItem
+          onClick={onOpenInfoModal}
+          preFix={
+            <MenuIcon>
+              <InformationIcon />
+            </MenuIcon>
+          }
+        >
+          {t['com.affine.page-properties.page-info.view']()}
+        </MenuItem>
+      ) : null}
 
       {environment.isDesktop && appSettings.enableMultiView ? (
         <MenuItem
@@ -215,6 +235,14 @@ export const PageOperationCell = ({
           </IconButton>
         </Menu>
       </ColWrapper>
+      {blocksuiteDoc ? (
+        <InfoModal
+          open={openInfoModal}
+          onOpenChange={setOpenInfoModal}
+          page={blocksuiteDoc}
+          workspace={currentWorkspace}
+        />
+      ) : null}
       <DisablePublicSharing.DisablePublicSharingModal
         onConfirm={onDisablePublicSharing}
         open={openDisableShared}

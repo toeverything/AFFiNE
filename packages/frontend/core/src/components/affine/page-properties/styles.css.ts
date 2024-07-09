@@ -129,6 +129,16 @@ export const addPropertyButton = style({
     color: cssVar('textPrimaryColor'),
     backgroundColor: cssVar('hoverColor'),
   },
+  gap: 2,
+  fontWeight: 400,
+});
+
+globalStyle(`${addPropertyButton} svg`, {
+  fontSize: 16,
+  color: cssVar('iconSecondary'),
+});
+globalStyle(`${addPropertyButton}:hover svg`, {
+  color: cssVar('iconColor'),
 });
 
 export const collapsedIcon = style({
@@ -262,7 +272,7 @@ export const propertyRowIconContainer = style({
   justifyContent: 'center',
   borderRadius: '2px',
   fontSize: 16,
-  color: 'inherit',
+  color: cssVar('iconSecondary'),
 });
 
 export const propertyRowNameContainer = style({

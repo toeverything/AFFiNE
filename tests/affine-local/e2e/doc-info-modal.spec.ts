@@ -1,0 +1,139 @@
+import { test } from '@affine-test/kit/playwright';
+import { openHomePage } from '@affine-test/kit/utils/load-page';
+import {
+  clickNewPageButton,
+  clickPageMoreActions,
+  getBlockSuiteEditorTitle,
+  getPageByTitle,
+  getPageOperationButton,
+  waitForEmptyEditor,
+} from '@affine-test/kit/utils/page-logic';
+import {
+  addCustomProperty,
+  closeTagsEditor,
+  ensurePagePropertiesVisible,
+  expectTagsVisible,
+  filterTags,
+  removeSelectedTag,
+} from '@affine-test/kit/utils/properties';
+import { expect, type Page } from '@playwright/test';
+
+const searchAndCreateTag = async (page: Page, name: string) => {
+  await filterTags(page, name);
+  await page
+    .locator(
+      '[data-testid="tags-editor-popup"] [data-testid="tag-selector-item"]:has-text("Create ")'
+    )
+    .click();
+};
+
+test.beforeEach(async ({ page }) => {
+  await openHomePage(page);
+  await clickNewPageButton(page);
+  await waitForEmptyEditor(page);
+  await ensurePagePropertiesVisible(page);
+  await getBlockSuiteEditorTitle(page).click();
+  await getBlockSuiteEditorTitle(page).fill('this is a new page');
+});
+
+test('New a page and open it ,then open info modal in the title bar', async ({
+  page,
+}) => {
+  await page.getByTestId('header-info-button').click();
+
+  const infoModal = page.getByTestId('info-modal');
+  await expect(infoModal).toBeVisible();
+  const tagRow = page.getByTestId('info-modal-tags-row');
+  await expect(tagRow).toBeVisible();
+  const title = page.getByTestId('info-modal-title');
+  await expect(title).toHaveText('this is a new page');
+});
+
+test('New a page and open it ,then open info modal in the title bar more action button', async ({
+  page,
+}) => {
+  await clickPageMoreActions(page);
+  await page.getByTestId('editor-option-menu-info').click();
+
+  const infoModal = page.getByTestId('info-modal');
+  await expect(infoModal).toBeVisible();
+  const tagRow = page.getByTestId('info-modal-tags-row');
+  await expect(tagRow).toBeVisible();
+  const title = page.getByTestId('info-modal-title');
+  await expect(title).toHaveText('this is a new page');
+});
+
+test('New a page, then open info modal from all doc', async ({ page }) => {
+  const newPageId = page.url().split('/').reverse()[0];
+
+  await page.getByTestId('all-pages').click();
+  const cell = getPageByTitle(page, 'this is a new page');
+  expect(cell).not.toBeUndefined();
+  await getPageOperationButton(page, newPageId).click();
+  await page.getByRole('menuitem', { name: 'View Info' }).click();
+
+  const infoModal = page.getByTestId('info-modal');
+  await expect(infoModal).toBeVisible();
+  const tagRow = page.getByTestId('info-modal-tags-row');
+  await expect(tagRow).toBeVisible();
+  const title = page.getByTestId('info-modal-title');
+  await expect(title).toHaveText('this is a new page');
+});
+
+test('New a page and add to favourites, then open info modal from sidebar', async ({
+  page,
+}) => {
+  const newPageId = page.url().split('/').reverse()[0];
+
+  await clickPageMoreActions(page);
+  await page.getByTestId('editor-option-menu-favorite').click();
+
+  await page.getByTestId('all-pages').click();
+  const favoriteListItemInSidebar = page.getByTestId(
+    'favourite-page-' + newPageId
+  );
+  expect(await favoriteListItemInSidebar.textContent()).toBe(
+    'this is a new page'
+  );
+  await favoriteListItemInSidebar.hover();
+  await favoriteListItemInSidebar
+    .getByTestId('left-sidebar-page-operation-button')
+    .click();
+  const infoBtn = page.getByText('View Info');
+  await infoBtn.click();
+
+  const infoModal = page.getByTestId('info-modal');
+  await expect(infoModal).toBeVisible();
+  const tagRow = page.getByTestId('info-modal-tags-row');
+  await expect(tagRow).toBeVisible();
+  const title = page.getByTestId('info-modal-title');
+  await expect(title).toHaveText('this is a new page');
+});
+
+test('allow create tag', async ({ page }) => {
+  await page.getByTestId('header-info-button').click();
+
+  const infoModal = page.getByTestId('info-modal');
+  await expect(infoModal).toBeVisible();
+  await page.getByTestId('info-modal-tags-value').click();
+  await searchAndCreateTag(page, 'Test1');
+  await searchAndCreateTag(page, 'Test2');
+  await closeTagsEditor(page);
+  await expectTagsVisible(page, ['Test1', 'Test2']);
+
+  await page.getByTestId('info-modal-tags-value').click();
+  await removeSelectedTag(page, 'Test1');
+  await closeTagsEditor(page);
+  await expectTagsVisible(page, ['Test2']);
+});
+
+test('add custom property', async ({ page }) => {
+  await page.getByTestId('header-info-button').click();
+
+  const infoModal = page.getByTestId('info-modal');
+  await expect(infoModal).toBeVisible();
+  await addCustomProperty(page, 'Text');
+  await addCustomProperty(page, 'Number');
+  await addCustomProperty(page, 'Date');
+  await addCustomProperty(page, 'Checkbox');
+});
