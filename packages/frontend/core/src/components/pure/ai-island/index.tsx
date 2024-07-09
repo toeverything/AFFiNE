@@ -33,9 +33,9 @@ export const AIIsland = () => {
       >
         {aiChatHasEverOpened ? null : (
           <div className={aiIslandAnimationBg}>
-            <div className={gradient} data-index={1} />
-            <div className={gradient} data-index={2} />
-            <div className={gradient} data-index={3} />
+            <div className={gradient} />
+            <div className={gradient} />
+            <div className={gradient} />
           </div>
         )}
         <button

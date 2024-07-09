@@ -96,7 +96,7 @@ export const gradient = style({
   pointerEvents: 'none',
   willChange: 'transform',
   selectors: {
-    [`&[data-index="1"]`]: {
+    [`&:nth-of-type(1)`]: {
       animationDuration: '3s',
       backgroundImage: `conic-gradient(from ${borderAngle1} at 50% 50%, 
         transparent, ${brightBlue} 10%, 
@@ -104,7 +104,7 @@ export const gradient = style({
         transparent
       )`,
     },
-    [`&[data-index="2"]`]: {
+    [`&:nth-of-type(2)`]: {
       animationDuration: '8s',
       backgroundImage: `conic-gradient(from ${borderAngle2} at 50% 50%,
         transparent, ${brightGreen} 10%,
@@ -112,7 +112,7 @@ export const gradient = style({
         transparent
       )`,
     },
-    [`&[data-index="3"]`]: {
+    [`&:nth-of-type(3)`]: {
       animationDuration: '13s',
       backgroundImage: `conic-gradient(from ${borderAngle3} at 50% 50%,
         transparent, ${brightRed} 10%,
