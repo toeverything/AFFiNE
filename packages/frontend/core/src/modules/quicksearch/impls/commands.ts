@@ -151,7 +151,8 @@ export class CommandsQuickSearchSession
       keys: [{ name: 'label.title', weight: 2 }, 'label.subTitle'],
       includeMatches: true,
       includeScore: true,
-      threshold: 0.4,
+      ignoreLocation: true,
+      threshold: 0.0,
     });
 
     const result = query

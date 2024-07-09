@@ -36,6 +36,8 @@ export class CollectionsQuickSearchSession
         keys: ['name'],
         includeMatches: true,
         includeScore: true,
+        ignoreLocation: true,
+        threshold: 0.0,
       });
 
       const result = fuse.search(query);
