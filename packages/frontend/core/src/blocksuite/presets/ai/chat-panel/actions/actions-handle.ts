@@ -4,6 +4,7 @@ import type {
   TextSelection,
 } from '@blocksuite/block-std';
 import type {
+  EdgelessRootBlockComponent,
   EdgelessRootService,
   ImageSelection,
   SerializedXYWH,
@@ -12,26 +13,55 @@ import {
   BlocksUtils,
   Bound,
   getElementsBound,
+  isInsideEdgelessEditor,
   NoteDisplayMode,
 } from '@blocksuite/blocks';
+import type { TemplateResult } from 'lit';
 
-import { CreateIcon, InsertBelowIcon, ReplaceIcon } from '../../_common/icons';
+import {
+  BlockIcon,
+  CreateIcon,
+  InsertBelowIcon,
+  ReplaceIcon,
+} from '../../_common/icons';
+import { AIProvider } from '../../provider';
 import { reportResponse } from '../../utils/action-reporter';
 import { insertBelow, replace } from '../../utils/editor-actions';
 import { insertFromMarkdown } from '../../utils/markdown-utils';
+import type { ChatBlockMessage } from '../chat-context';
 
 const { matchFlavours } = BlocksUtils;
 
-const CommonActions = [
+type Selections = {
+  text?: TextSelection;
+  blocks?: BlockSelection[];
+  images?: ImageSelection[];
+};
+
+type ChatAction = {
+  icon: TemplateResult<1>;
+  title: string;
+  showWhen?: () => boolean;
+  handler: (
+    host: EditorHost,
+    content: string,
+    currentSelections: Selections,
+    chatSessionId?: string,
+    messageId?: string
+  ) => Promise<void>;
+};
+
+const CommonActions: ChatAction[] = [
   {
     icon: ReplaceIcon,
     title: 'Replace selection',
     handler: async (
       host: EditorHost,
       content: string,
-      currentTextSelection?: TextSelection,
-      currentBlockSelections?: BlockSelection[]
+      currentSelections: Selections
     ) => {
+      const currentTextSelection = currentSelections.text;
+      const currentBlockSelections = currentSelections.blocks;
       const [_, data] = host.command
         .chain()
         .getSelectedBlocks({
@@ -71,10 +101,11 @@ const CommonActions = [
     handler: async (
       host: EditorHost,
       content: string,
-      currentTextSelection?: TextSelection,
-      currentBlockSelections?: BlockSelection[],
-      currentImageSelections?: ImageSelection[]
+      currentSelections: Selections
     ) => {
+      const currentTextSelection = currentSelections.text;
+      const currentBlockSelections = currentSelections.blocks;
+      const currentImageSelections = currentSelections.images;
       const [_, data] = host.command
         .chain()
         .getSelectedBlocks({
@@ -93,6 +124,94 @@ const CommonActions = [
     },
   },
 ];
+
+// Add AI chat block and focus on it
+function addAIChatBlock(
+  host: EditorHost,
+  messages: ChatBlockMessage[],
+  sessionId: string
+) {
+  if (!isInsideEdgelessEditor(host) || !host.doc.root?.id) return;
+
+  const edgelessRootService = host.std.spec.getService(
+    'affine:page'
+  ) as EdgelessRootService;
+  // Add AI chat block to the center of the viewport
+  let { x, y } = edgelessRootService.viewport.center;
+  const width = 300; // AI_CHAT_BLOCK_WIDTH = 300
+  const height = 320; // AI_CHAT_BLOCK_HEIGHT = 320
+  x = x - width / 2;
+  y = y - height / 2;
+  const bound = new Bound(x, y, width, height);
+  const edgelessRootBlock = host.view.getBlock(
+    host.doc.root?.id
+  ) as EdgelessRootBlockComponent;
+  const aiChatBlockId = edgelessRootService.addBlock(
+    'affine:ai-chat',
+    {
+      xywh: bound.serialize(),
+      messages: JSON.stringify(messages),
+      sessionId,
+    },
+    edgelessRootBlock.surfaceBlockModel
+  );
+
+  // Focus on the AI chat block
+  edgelessRootService.selection.set({
+    elements: [aiChatBlockId],
+    editing: false,
+  });
+}
+
+const SAVE_CHAT_TO_BLOCK_ACTION: ChatAction = {
+  icon: BlockIcon,
+  title: 'Save chat to block',
+  handler: async (
+    host: EditorHost,
+    _,
+    __,
+    chatSessionId?: string,
+    messageId?: string
+  ) => {
+    // The chat session id and the latest message id are required to fork the chat session
+    if (!chatSessionId || !messageId) {
+      return;
+    }
+
+    const rootService = host.spec.getService('affine:page');
+    const { docModeService } = rootService;
+    const curMode = docModeService.getMode();
+    if (curMode !== 'edgeless') {
+      const { notificationService } = rootService;
+      // set mode to edgeless
+      docModeService.setMode('edgeless');
+      // notify user to switch to edgeless mode
+      if (notificationService) {
+        notificationService.notify({
+          title: 'Save chat to a block',
+          message:
+            'This feature is not available in the page editor. Switch to edgeless mode.',
+          onClose: function (): void {},
+        });
+      }
+    }
+
+    // Fork copilot chat session
+    const newSessionId = await AIProvider.forkChat?.({
+      workspaceId: host.doc.collection.id,
+      docId: host.doc.id,
+      sessionId: chatSessionId,
+      latestMessageId: messageId,
+    });
+
+    if (!newSessionId) {
+      return;
+    }
+
+    // After switching to edgeless mode, the user can save the chat to a block
+    addAIChatBlock(host, [], newSessionId);
+  },
+};
 
 export const PageEditorActions = [
   ...CommonActions,
@@ -124,6 +243,7 @@ export const PageEditorActions = [
       })();
     },
   },
+  SAVE_CHAT_TO_BLOCK_ACTION,
 ];
 
 export const EdgelessEditorActions = [
@@ -159,4 +279,5 @@ export const EdgelessEditorActions = [
       });
     },
   },
+  SAVE_CHAT_TO_BLOCK_ACTION,
 ];

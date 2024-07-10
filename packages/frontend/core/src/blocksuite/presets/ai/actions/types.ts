@@ -229,6 +229,7 @@ declare global {
       action: string;
       createdAt: string;
       messages: {
+        id: string; // message id
         content: string;
         createdAt: string;
         role: 'user' | 'assistant';

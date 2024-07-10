@@ -446,7 +446,7 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
   }
 
   renderEditorActions(item: ChatMessage, isLast: boolean) {
-    const { status } = this.chatContextValue;
+    const { status, chatSessionId } = this.chatContextValue;
 
     if (item.role !== 'assistant') return nothing;
 
@@ -459,7 +459,7 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
       return nothing;
 
     const { host } = this;
-    const { content } = item;
+    const { content, id: messageId } = item;
     const actions = isInsidePageEditor(host)
       ? PageEditorActions
       : EdgelessEditorActions;
@@ -545,12 +545,18 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
                         return;
                       }
 
+                      const currentSelections = {
+                        text: this._currentTextSelection,
+                        blocks: this._currentBlockSelections,
+                        images: this._currentImageSelections,
+                      };
+
                       await action.handler(
                         host,
                         content,
-                        this._currentTextSelection,
-                        this._currentBlockSelections,
-                        this._currentImageSelections
+                        currentSelections,
+                        chatSessionId ?? undefined,
+                        messageId ?? undefined
                       );
                     }}
                   >

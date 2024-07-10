@@ -118,6 +118,7 @@ export class ChatPanel extends WithDisposable(ShadowlessElement) {
       console.debug('histories', histories);
       if (histories?.[0]) {
         this._chatSessionId = histories[0].sessionId;
+        this.chatContextValue.chatSessionId = histories[0].sessionId;
         items.push(...histories[0].messages);
       }
 
@@ -153,6 +154,7 @@ export class ChatPanel extends WithDisposable(ShadowlessElement) {
     status: 'idle',
     error: null,
     markdown: '',
+    chatSessionId: null,
   };
 
   private readonly _cleanupHistories = async () => {

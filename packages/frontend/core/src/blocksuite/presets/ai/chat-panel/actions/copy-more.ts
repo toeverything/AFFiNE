@@ -92,6 +92,9 @@ export class ChatCopyMore extends WithDisposable(LitElement) {
   accessor content!: string;
 
   @property({ attribute: false })
+  accessor messageId!: string;
+
+  @property({ attribute: false })
   accessor isLast!: boolean;
 
   @property({ attribute: false })
@@ -170,7 +173,9 @@ export class ChatCopyMore extends WithDisposable(LitElement) {
   }
 
   override render() {
-    const { host, content, isLast } = this;
+    console.debug('chat context value: ', this.chatContextValue);
+    const { host, content, isLast, messageId } = this;
+    const { chatSessionId } = this.chatContextValue;
     return html`<style>
         .more-menu {
           padding: ${this._showMoreMenu ? '8px' : '0px'};
@@ -202,13 +207,18 @@ export class ChatCopyMore extends WithDisposable(LitElement) {
               PageEditorActions,
               action => action.title,
               action => {
+                const currentSelections = {
+                  text: this.curTextSelection,
+                  blocks: this.curBlockSelections,
+                };
                 return html`<div
                   @click=${() =>
                     action.handler(
                       host,
                       content,
-                      this.curTextSelection,
-                      this.curBlockSelections
+                      currentSelections,
+                      chatSessionId ?? undefined,
+                      messageId ?? undefined
                     )}
                 >
                   ${action.icon}
