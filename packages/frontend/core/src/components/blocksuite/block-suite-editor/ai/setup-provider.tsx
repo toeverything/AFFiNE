@@ -13,6 +13,7 @@ import type { PromptKey } from './prompt';
 import {
   cleanupSessions,
   createChatSession,
+  forkCopilotSession,
   listHistories,
   textToText,
   toImage,
@@ -400,6 +401,10 @@ Could you make a new website based on these notes and send back just the html fi
   });
 
   AIProvider.provide('onboarding', toggleGeneralAIOnboarding);
+
+  AIProvider.provide('forkChat', options => {
+    return forkCopilotSession(options);
+  });
 
   AIProvider.slots.requestUpgradePlan.on(() => {
     getCurrentStore().set(openSettingModalAtom, {

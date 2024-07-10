@@ -4,6 +4,7 @@ import {
   createCopilotMessageMutation,
   createCopilotSessionMutation,
   fetcher as defaultFetcher,
+  forkCopilotSessionMutation,
   getBaseUrl,
   getCopilotHistoriesQuery,
   getCopilotSessionsQuery,
@@ -76,6 +77,16 @@ export class CopilotClient {
     return res.createCopilotSession;
   }
 
+  async forkSession(options: OptionsField<typeof forkCopilotSessionMutation>) {
+    const res = await fetcher({
+      query: forkCopilotSessionMutation,
+      variables: {
+        options,
+      },
+    });
+    return res.forkCopilotSession;
+  }
+
   async createMessage(
     options: OptionsField<typeof createCopilotMessageMutation>
   ) {
@@ -114,6 +125,7 @@ export class CopilotClient {
       },
     });
 
+    console.debug('res', res.currentUser?.copilot?.histories);
     return res.currentUser?.copilot?.histories;
   }
 

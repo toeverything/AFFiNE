@@ -74,6 +74,13 @@ declare global {
       where: TrackerWhere;
     }
 
+    interface AIForkChatSessionOptions {
+      docId: string;
+      workspaceId: string;
+      sessionId: string;
+      latestMessageId: string;
+    }
+
     interface AIImageActionOptions extends AITextActionOptions {
       content?: string;
       seed?: string;

@@ -115,6 +115,7 @@ export class ChatPanel extends WithDisposable(ShadowlessElement) {
 
       const items: ChatItem[] = actions ? [...actions] : [];
 
+      console.debug('histories', histories);
       if (histories?.[0]) {
         this._chatSessionId = histories[0].sessionId;
         items.push(...histories[0].messages);
