@@ -8,6 +8,7 @@ import { Trans } from '@affine/i18n';
 import { UnauthorizedError } from '@blocksuite/blocks';
 import { assertExists } from '@blocksuite/global/utils';
 import { getCurrentStore } from '@toeverything/infra';
+import { z } from 'zod';
 
 import type { PromptKey } from './prompt';
 import {
@@ -233,7 +234,8 @@ function setupAIProvider() {
     return textToText({
       ...options,
       content: options.input,
-      promptName: 'Brainstorm mindmap',
+      promptName: 'workflow:brainstorm',
+      workflow: true,
     });
   });
 
@@ -289,10 +291,48 @@ Could you make a new website based on these notes and send back just the html fi
   });
 
   AIProvider.provide('createSlides', options => {
+    const SlideSchema = z.object({
+      page: z.number(),
+      type: z.enum(['name', 'title', 'content']),
+      content: z.string(),
+    });
+    type Slide = z.infer<typeof SlideSchema>;
+    const parseJson = (json: string) => {
+      try {
+        return SlideSchema.parse(JSON.parse(json));
+      } catch {
+        return null;
+      }
+    };
+    // TODO(@darkskygit): move this to backend's workflow after workflow support custom code action
+    const postfix = (text: string): string => {
+      const slides = text
+        .split('\n')
+        .map(parseJson)
+        .filter((v): v is Slide => !!v);
+      return slides
+        .map(slide => {
+          if (slide.type === 'name') {
+            return `- ${slide.content}`;
+          } else if (slide.type === 'title') {
+            return `  - ${slide.content}`;
+          } else if (slide.content.includes('\n')) {
+            return slide.content
+              .split('\n')
+              .map(c => `    - ${c}`)
+              .join('\n');
+          } else {
+            return `    - ${slide.content}`;
+          }
+        })
+        .join('\n');
+    };
     return textToText({
       ...options,
       content: options.input,
-      promptName: 'Create a presentation',
+      promptName: 'workflow:presentation',
+      workflow: true,
+      postfix,
     });
   });
 

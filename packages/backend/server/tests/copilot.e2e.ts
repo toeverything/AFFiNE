@@ -379,7 +379,7 @@ test('should be able to chat with api by workflow', async t => {
   const ret = await chatWithWorkflow(app, token, sessionId, messageId);
   t.is(
     array2sse(sse2array(ret).filter(e => e.event !== 'event')),
-    textToEventStream('generate text to text stream', messageId),
+    textToEventStream(['generate text to text stream'], messageId),
     'should be able to chat with workflow'
   );
 });
