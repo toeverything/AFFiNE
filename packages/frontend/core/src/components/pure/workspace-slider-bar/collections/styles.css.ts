@@ -3,7 +3,7 @@ import { globalStyle, style } from '@vanilla-extract/css';
 export const wrapper = style({
   display: 'flex',
   flexDirection: 'column',
-  gap: '4px',
+  gap: 2,
   userSelect: 'none',
   // marginLeft:8,
 });
@@ -22,37 +22,6 @@ export const view = style({
 export const viewTitle = style({
   display: 'flex',
   alignItems: 'center',
-});
-export const title = style({
-  whiteSpace: 'nowrap',
-  overflow: 'hidden',
-  textOverflow: 'ellipsis',
-});
-globalStyle(`[data-draggable=true] ${title}:before`, {
-  content: '""',
-  position: 'absolute',
-  top: '50%',
-  transform: 'translateY(-50%)',
-  left: 0,
-  width: 4,
-  height: 4,
-  transition: 'height 0.2s, opacity 0.2s',
-  backgroundColor: cssVar('placeholderColor'),
-  borderRadius: '2px',
-  opacity: 0,
-  willChange: 'height, opacity',
-});
-globalStyle(`[data-draggable=true] ${title}:hover:before`, {
-  height: 12,
-  opacity: 1,
-});
-globalStyle(`[data-draggable=true][data-dragging=true] ${title}`, {
-  opacity: 0.5,
-});
-globalStyle(`[data-draggable=true][data-dragging=true] ${title}:before`, {
-  height: 32,
-  width: 2,
-  opacity: 1,
 });
 export const more = style({
   display: 'flex',
@@ -90,23 +59,6 @@ export const collapsibleContent = style({
       display: 'none',
     },
   },
-});
-export const label = style({
-  selectors: {
-    '&[data-untitled="true"]': {
-      opacity: 0.6,
-    },
-  },
-});
-export const labelContainer = style({
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-});
-export const labelTooltipContainer = style({
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
 });
 export const emptyCollectionWrapper = style({
   padding: '9px 0',
@@ -146,10 +98,9 @@ export const emptyCollectionNewButton = style({
   fontSize: cssVar('fontXs'),
 });
 export const docsListContainer = style({
-  marginLeft: 20,
   display: 'flex',
   flexDirection: 'column',
-  gap: 4,
+  gap: 2,
 });
 export const noReferences = style({
   fontSize: cssVar('fontSm'),

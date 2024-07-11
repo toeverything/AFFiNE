@@ -29,7 +29,6 @@ import {
 import type { DocCollection } from '@blocksuite/store';
 import { type AnimateLayoutChanges, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import * as Collapsible from '@radix-ui/react-collapsible';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useCallback, useMemo, useState } from 'react';
 
@@ -37,11 +36,11 @@ import { useAllPageListConfig } from '../../../../hooks/affine/use-all-page-list
 import { useBlockSuiteDocMeta } from '../../../../hooks/use-block-suite-page-meta';
 import { WorkbenchService } from '../../../../modules/workbench';
 import { WorkbenchLink } from '../../../../modules/workbench/view/workbench-link';
-import { MenuLinkItem as SidebarMenuLinkItem } from '../../../app-sidebar';
 import { DragMenuItemOverlay } from '../components/drag-menu-item-overlay';
 import * as draggableMenuItemStyles from '../components/draggable-menu-item.css';
+import { SidebarDocItem } from '../doc-tree/doc';
+import { SidebarDocTreeNode } from '../doc-tree/node';
 import type { CollectionsListProps } from '../index';
-import { Doc } from './doc';
 import * as styles from './styles.css';
 
 const animateLayoutChanges: AnimateLayoutChanges = ({
@@ -60,7 +59,6 @@ export const CollectionSidebarNavItem = ({
   dndId: DNDIdentifier;
   className?: string;
 }) => {
-  const [collapsed, setCollapsed] = useState(true);
   const [open, setOpen] = useState(false);
   const collectionService = useService(CollectionService);
   const { createPage } = usePageHelper(docCollection);
@@ -139,79 +137,78 @@ export const CollectionSidebarNavItem = ({
     });
   }, [createAndAddDocument, openConfirmModal, t]);
 
-  return (
-    <Collapsible.Root
-      open={!collapsed}
-      className={className}
-      style={style}
-      ref={setNodeRef}
-      {...attributes}
+  const postfix = (
+    <div
+      onClick={stopPropagation}
+      onMouseDown={e => {
+        // prevent drag
+        e.stopPropagation();
+      }}
+      style={{ display: 'flex', alignItems: 'center' }}
     >
-      <SidebarMenuLinkItem
-        {...listeners}
-        data-draggable={true}
-        data-dragging={isDragging}
-        className={draggableMenuItemStyles.draggableMenuItem}
-        data-testid="collection-item"
-        data-collection-id={collection.id}
-        data-type="collection-list-item"
-        onCollapsedChange={setCollapsed}
-        active={isOver || currentPath === path}
-        icon={<AnimatedCollectionsIcon closed={isOver} />}
-        to={path}
-        linkComponent={WorkbenchLink}
-        postfix={
-          <div
-            onClick={stopPropagation}
-            onMouseDown={e => {
-              // prevent drag
-              e.stopPropagation();
-            }}
-            style={{ display: 'flex', alignItems: 'center' }}
-          >
-            <IconButton onClick={onConfirmAddDocToCollection} size="small">
-              <PlusIcon />
-            </IconButton>
-            <CollectionOperations
-              collection={collection}
-              openRenameModal={handleOpen}
-              onAddDocToCollection={onConfirmAddDocToCollection}
-            >
-              <IconButton
-                data-testid="collection-options"
-                type="plain"
-                size="small"
-                style={{ marginLeft: 4 }}
-              >
-                <MoreHorizontalIcon />
-              </IconButton>
-            </CollectionOperations>
-            <RenameModal
-              open={open}
-              onOpenChange={setOpen}
-              onRename={onRename}
-              currentName={collection.name}
-            />
-          </div>
-        }
-        collapsed={collapsed}
+      <IconButton onClick={onConfirmAddDocToCollection} size="small">
+        <PlusIcon />
+      </IconButton>
+      <CollectionOperations
+        collection={collection}
+        openRenameModal={handleOpen}
+        onAddDocToCollection={onConfirmAddDocToCollection}
       >
-        <span>{collection.name}</span>
-      </SidebarMenuLinkItem>
-      <Collapsible.Content className={styles.collapsibleContent}>
-        {!collapsed && (
-          <CollectionSidebarNavItemContent
-            collection={collection}
-            docCollection={docCollection}
-            dndId={dndId}
-          />
-        )}
-      </Collapsible.Content>
-    </Collapsible.Root>
+        <IconButton
+          data-testid="collection-options"
+          type="plain"
+          size="small"
+          style={{ marginLeft: 4 }}
+        >
+          <MoreHorizontalIcon />
+        </IconButton>
+      </CollectionOperations>
+      <RenameModal
+        open={open}
+        onOpenChange={setOpen}
+        onRename={onRename}
+        currentName={collection.name}
+      />
+    </div>
+  );
+
+  return (
+    <SidebarDocTreeNode
+      ref={setNodeRef}
+      node={{ type: 'collection', data: collection }}
+      to={path}
+      linkComponent={WorkbenchLink}
+      subTree={
+        <CollectionSidebarNavItemContent
+          collection={collection}
+          docCollection={docCollection}
+          dndId={dndId}
+        />
+      }
+      rootProps={{
+        className,
+        style,
+        ...attributes,
+      }}
+      menuItemProps={{
+        ...listeners,
+        'data-draggable': true,
+        'data-dragging': isDragging,
+        'data-testid': 'collection-item',
+        'data-collection-id': collection.id,
+        'data-type': 'collection-list-item',
+        className: draggableMenuItemStyles.draggableMenuItem,
+        active: isOver || currentPath === path,
+        icon: <AnimatedCollectionsIcon closed={isOver} />,
+        postfix,
+      }}
+    >
+      <span>{collection.name}</span>
+    </SidebarDocTreeNode>
   );
 };
 
-export const CollectionSidebarNavItemContent = ({
+const CollectionSidebarNavItemContent = ({
   collection,
   docCollection,
   dndId,
@@ -254,12 +251,20 @@ export const CollectionSidebarNavItemContent = ({
       {filtered.length > 0 ? (
         filtered.map(page => {
           return (
-            <Doc
-              docId={page.id}
-              parentId={dndId}
-              inAllowList={allowList.has(page.id)}
-              removeFromAllowList={removeFromAllowList}
+            <SidebarDocItem
               key={page.id}
+              docId={page.id}
+              postfixConfig={{
+                inAllowList: allowList.has(page.id),
+                removeFromAllowList: removeFromAllowList,
+              }}
+              dragConfig={{
+                parentId: dndId,
+                where: 'collection-list',
+              }}
+              menuItemProps={{
+                'data-testid': 'collection-page',
+              }}
             />
           );
         })
