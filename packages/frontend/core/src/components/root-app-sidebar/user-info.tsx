@@ -11,7 +11,6 @@ import {
 } from '@affine/component';
 import {
   authAtom,
-  openDisableCloudAlertModalAtom,
   openSettingModalAtom,
   openSignOutModalAtom,
 } from '@affine/core/atoms';
@@ -65,13 +64,11 @@ const AuthorizedUserInfo = ({ account }: { account: AuthAccountInfo }) => {
 };
 
 const UnauthorizedUserInfo = () => {
-  const setDisableCloudOpen = useSetAtom(openDisableCloudAlertModalAtom);
   const setOpen = useSetAtom(authAtom);
 
   const openSignInModal = useCallback(() => {
-    if (!runtimeConfig.enableCloud) setDisableCloudOpen(true);
-    else setOpen(state => ({ ...state, openModal: true }));
-  }, [setDisableCloudOpen, setOpen]);
+    setOpen(state => ({ ...state, openModal: true }));
+  }, [setOpen]);
 
   return (
     <Button

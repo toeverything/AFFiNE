@@ -333,15 +333,7 @@ export const createConfiguration: (
           }),
       new VanillaExtractPlugin(),
       new webpack.DefinePlugin({
-        'process.env': JSON.stringify({}),
-        'process.env.COVERAGE': JSON.stringify(!!buildFlags.coverage),
         'process.env.NODE_ENV': JSON.stringify(buildFlags.mode),
-        'process.env.SHOULD_REPORT_TRACE': JSON.stringify(
-          Boolean(process.env.SHOULD_REPORT_TRACE === 'true')
-        ),
-        'process.env.TRACE_REPORT_ENDPOINT': JSON.stringify(
-          process.env.TRACE_REPORT_ENDPOINT
-        ),
         'process.env.CAPTCHA_SITE_KEY': JSON.stringify(
           process.env.CAPTCHA_SITE_KEY
         ),
@@ -350,6 +342,7 @@ export const createConfiguration: (
         'process.env.MIXPANEL_TOKEN': JSON.stringify(
           process.env.MIXPANEL_TOKEN
         ),
+        'process.env.DEBUG_JOTAI': JSON.stringify(process.env.DEBUG_JOTAI),
         runtimeConfig: JSON.stringify(runtimeConfig),
       }),
       buildFlags.distribution === 'admin'

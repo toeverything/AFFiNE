@@ -192,17 +192,15 @@ export const RootAppSidebar = memo(
           <AppSidebarJournalButton
             docCollection={currentWorkspace.docCollection}
           />
-          {runtimeConfig.enableNewSettingModal ? (
-            <MenuItem
-              data-testid="slider-bar-workspace-setting-button"
-              icon={<SettingsIcon />}
-              onClick={onOpenSettingModal}
-            >
-              <span data-testid="settings-modal-trigger">
-                {t['com.affine.settingSidebar.title']()}
-              </span>
-            </MenuItem>
-          ) : null}
+          <MenuItem
+            data-testid="slider-bar-workspace-setting-button"
+            icon={<SettingsIcon />}
+            onClick={onOpenSettingModal}
+          >
+            <span data-testid="settings-modal-trigger">
+              {t['com.affine.settingSidebar.title']()}
+            </span>
+          </MenuItem>
         </SidebarContainer>
         <SidebarScrollableContainer>
           <FavoriteList docCollection={docCollection} />

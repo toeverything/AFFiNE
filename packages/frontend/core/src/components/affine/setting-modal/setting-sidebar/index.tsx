@@ -196,11 +196,8 @@ export const SettingSidebar = ({
       </div>
 
       <div className={style.sidebarFooter}>
-        {runtimeConfig.enableCloud && loginStatus === 'unauthenticated' ? (
-          <SignInButton />
-        ) : null}
-
-        {runtimeConfig.enableCloud && loginStatus === 'authenticated' ? (
+        {loginStatus === 'unauthenticated' ? <SignInButton /> : null}
+        {loginStatus === 'authenticated' ? (
           <Suspense>
             <UserInfo
               onAccountSettingClick={onAccountSettingClick}

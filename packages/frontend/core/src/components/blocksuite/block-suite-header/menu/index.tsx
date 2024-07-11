@@ -245,7 +245,7 @@ export const PageHeaderMenuButton = ({
         {t['com.affine.header.option.add-tag']()}
       </MenuItem> */}
       <MenuSeparator />
-      {runtimeConfig.enableInfoModal ? (
+      {runtimeConfig.enableInfoModal && (
         <MenuItem
           preFix={
             <MenuIcon>
@@ -258,21 +258,19 @@ export const PageHeaderMenuButton = ({
         >
           {t['com.affine.page-properties.page-info.view']()}
         </MenuItem>
-      ) : null}
-      {runtimeConfig.enablePageHistory ? (
-        <MenuItem
-          preFix={
-            <MenuIcon>
-              <HistoryIcon />
-            </MenuIcon>
-          }
-          data-testid="editor-option-menu-history"
-          onSelect={openHistoryModal}
-          style={menuItemStyle}
-        >
-          {t['com.affine.history.view-history-version']()}
-        </MenuItem>
-      ) : null}
+      )}
+      <MenuItem
+        preFix={
+          <MenuIcon>
+            <HistoryIcon />
+          </MenuIcon>
+        }
+        data-testid="editor-option-menu-history"
+        onSelect={openHistoryModal}
+        style={menuItemStyle}
+      >
+        {t['com.affine.history.view-history-version']()}
+      </MenuItem>
       <MenuSeparator />
       {!isJournal && (
         <MenuItem
@@ -301,7 +299,6 @@ export const PageHeaderMenuButton = ({
         {t['Import']()}
       </MenuItem>
       <Export exportHandler={exportHandler} pageMode={currentMode} />
-
       <MenuSeparator />
       <MoveToTrash
         data-testid="editor-option-menu-delete"

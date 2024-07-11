@@ -9,12 +9,11 @@ import { Trans, useI18n } from '@affine/i18n';
 import { DoneIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
 import clsx from 'clsx';
-import { useAtom, useSetAtom } from 'jotai';
+import { useSetAtom } from 'jotai';
 import { nanoid } from 'nanoid';
 import type { HTMLAttributes, PropsWithChildren } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { openPaymentDisableAtom } from '../../../../../atoms';
 import { authAtom } from '../../../../../atoms/index';
 import { mixpanel } from '../../../../../utils';
 import { CancelAction, ResumeAction } from './actions';
@@ -280,13 +279,7 @@ export const Upgrade = ({
     return;
   }, [isOpenedExternalWindow, subscriptionService]);
 
-  const [, openPaymentDisableModal] = useAtom(openPaymentDisableAtom);
   const upgrade = useAsyncCallback(async () => {
-    if (!runtimeConfig.enablePayment) {
-      openPaymentDisableModal(true);
-      return;
-    }
-
     setMutating(true);
     mixpanel.track('PlanUpgradeStarted', {
       segment: 'settings panel',
@@ -306,7 +299,7 @@ export const Upgrade = ({
     setIdempotencyKey(nanoid());
     popupWindow(link);
     setOpenedExternalWindow(true);
-  }, [openPaymentDisableModal, subscriptionService, recurring, idempotencyKey]);
+  }, [subscriptionService, recurring, idempotencyKey]);
 
   return (
     <Button

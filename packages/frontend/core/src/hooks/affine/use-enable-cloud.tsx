@@ -73,7 +73,6 @@ export const useEnableCloud = () => {
   const confirmEnableCloud = useCallback(
     (ws: Workspace, options?: ConfirmEnableCloudOptions) => {
       const { onSuccess, onFinished } = options ?? {};
-      if (!runtimeConfig.enableCloud) return;
 
       const closeOnSuccess = () => {
         closeConfirmModal();

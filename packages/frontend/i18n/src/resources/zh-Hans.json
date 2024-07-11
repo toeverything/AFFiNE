@@ -1011,8 +1011,6 @@
   "com.affine.payment.cloud.team.title": "联系销售",
   "com.affine.payment.contact-sales": "联系销售",
   "com.affine.payment.current-plan": "当前计划",
-  "com.affine.payment.disable-payment.description": "这是 AFFiNE 的特别测试(Canary)版本。此版本不支持账户升级。如果您想体验完整服务，请从我们的官网下载稳定版本。",
-  "com.affine.payment.disable-payment.title": "账户升级不可用",
   "com.affine.payment.discount-amount": "{{amount}}% 折扣",
   "com.affine.payment.downgrade": "降级",
   "com.affine.payment.downgraded-tooltip": "您已成功降级。当前计费周期结束后，您的账户将自动切换到免费计划。",

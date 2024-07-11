@@ -253,7 +253,7 @@ export function useRegisterBlocksuiteEditorCommands() {
       })
     );
 
-    if (runtimeConfig.enablePageHistory && isCloudWorkspace) {
+    if (isCloudWorkspace) {
       unsubs.push(
         registerAffineCommand({
           id: `editor:${mode}-page-history`,
