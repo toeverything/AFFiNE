@@ -446,7 +446,7 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
   }
 
   renderEditorActions(item: ChatMessage, isLast: boolean) {
-    const { status, chatSessionId } = this.chatContextValue;
+    const { status } = this.chatContextValue;
 
     if (item.role !== 'assistant') return nothing;
 
@@ -555,7 +555,7 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
                         host,
                         content,
                         currentSelections,
-                        chatSessionId ?? undefined,
+                        this.chatContextValue,
                         messageId ?? undefined
                       );
                     }}

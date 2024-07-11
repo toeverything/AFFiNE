@@ -428,16 +428,23 @@ export class ChatPanelInput extends WithDisposable(LitElement) {
 
     const content = (markdown ? `${markdown}\n` : '') + text;
 
+    // TODO: Should update message id especially for the assistant message
     this.updateContext({
       items: [
         ...this.chatContextValue.items,
         {
+          id: '',
           role: 'user',
           content: content,
           createdAt: new Date().toISOString(),
           attachments,
         },
-        { role: 'assistant', content: '', createdAt: new Date().toISOString() },
+        {
+          id: '',
+          role: 'assistant',
+          content: '',
+          createdAt: new Date().toISOString(),
+        },
       ],
     });
 

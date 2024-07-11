@@ -173,9 +173,7 @@ export class ChatCopyMore extends WithDisposable(LitElement) {
   }
 
   override render() {
-    console.debug('chat context value: ', this.chatContextValue);
     const { host, content, isLast, messageId } = this;
-    const { chatSessionId } = this.chatContextValue;
     return html`<style>
         .more-menu {
           padding: ${this._showMoreMenu ? '8px' : '0px'};
@@ -217,7 +215,7 @@ export class ChatCopyMore extends WithDisposable(LitElement) {
                       host,
                       content,
                       currentSelections,
-                      chatSessionId ?? undefined,
+                      this.chatContextValue,
                       messageId ?? undefined
                     )}
                 >

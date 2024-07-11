@@ -28,7 +28,11 @@ import { AIProvider } from '../../provider';
 import { reportResponse } from '../../utils/action-reporter';
 import { insertBelow, replace } from '../../utils/editor-actions';
 import { insertFromMarkdown } from '../../utils/markdown-utils';
-import type { ChatBlockMessage } from '../chat-context';
+import type {
+  ChatBlockMessage,
+  ChatContextValue,
+  ChatMessage,
+} from '../chat-context';
 
 const { matchFlavours } = BlocksUtils;
 
@@ -46,7 +50,7 @@ type ChatAction = {
     host: EditorHost,
     content: string,
     currentSelections: Selections,
-    chatSessionId?: string,
+    chatContext: ChatContextValue,
     messageId?: string
   ) => Promise<void>;
 };
@@ -125,6 +129,16 @@ const CommonActions: ChatAction[] = [
   },
 ];
 
+function getHistoryMessages(
+  chatMessages: ChatMessage[],
+  latestMessageId: string
+) {
+  const latestIndex = chatMessages.findIndex(
+    item => item.id === latestMessageId
+  );
+  return latestIndex === -1 ? [] : chatMessages.slice(0, latestIndex + 1);
+}
+
 // Add AI chat block and focus on it
 function addAIChatBlock(
   host: EditorHost,
@@ -132,6 +146,7 @@ function addAIChatBlock(
   sessionId: string
 ) {
   if (!isInsideEdgelessEditor(host) || !host.doc.root?.id) return;
+  console.debug('add ai chat block');
 
   const edgelessRootService = host.std.spec.getService(
     'affine:page'
@@ -170,11 +185,11 @@ const SAVE_CHAT_TO_BLOCK_ACTION: ChatAction = {
     host: EditorHost,
     _,
     __,
-    chatSessionId?: string,
+    chatContext: ChatContextValue,
     messageId?: string
   ) => {
     // The chat session id and the latest message id are required to fork the chat session
-    if (!chatSessionId || !messageId) {
+    if (!messageId) {
       return;
     }
 
@@ -196,11 +211,16 @@ const SAVE_CHAT_TO_BLOCK_ACTION: ChatAction = {
       }
     }
 
-    // Fork copilot chat session
+    // TODO: Fork copilot chat session
+    const parentSessionId = chatContext.chatSessionId;
+    if (!parentSessionId) {
+      return;
+    }
+
     const newSessionId = await AIProvider.forkChat?.({
       workspaceId: host.doc.collection.id,
       docId: host.doc.id,
-      sessionId: chatSessionId,
+      sessionId: parentSessionId,
       latestMessageId: messageId,
     });
 
@@ -208,8 +228,32 @@ const SAVE_CHAT_TO_BLOCK_ACTION: ChatAction = {
       return;
     }
 
+    // Get messages before the latest message
+    const historyItems = chatContext.items.filter(
+      item => 'role' in item
+    ) as ChatMessage[];
+    const items = getHistoryMessages(historyItems, messageId);
+    if (items.length < 2 || items.length % 2 !== 0) {
+      return;
+    }
+    const userInfo = await AIProvider.userInfo;
+    const messages = items.map(item => {
+      return {
+        id: item.id,
+        role: item.role,
+        content: item.content,
+        createdAt: item.createdAt,
+        attachments: [],
+        userId: userInfo?.id,
+        userName: userInfo?.name,
+        avatarUrl: userInfo?.avatarUrl ?? undefined,
+      };
+    });
+
+    console.debug('messages: ', messages);
+
     // After switching to edgeless mode, the user can save the chat to a block
-    addAIChatBlock(host, [], newSessionId);
+    addAIChatBlock(host, messages, '');
   },
 };
 

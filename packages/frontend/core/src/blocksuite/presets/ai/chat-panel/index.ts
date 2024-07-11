@@ -3,7 +3,7 @@ import './chat-panel-messages';
 
 import type { EditorHost } from '@blocksuite/block-std';
 import { ShadowlessElement, WithDisposable } from '@blocksuite/block-std';
-import { debounce } from '@blocksuite/global/utils';
+import { assertExists, debounce } from '@blocksuite/global/utils';
 import type { Doc } from '@blocksuite/store';
 import { css, html, type PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
@@ -115,11 +115,13 @@ export class ChatPanel extends WithDisposable(ShadowlessElement) {
 
       const items: ChatItem[] = actions ? [...actions] : [];
 
-      console.debug('histories', histories);
-      if (histories?.[0]) {
-        this._chatSessionId = histories[0].sessionId;
-        this.chatContextValue.chatSessionId = histories[0].sessionId;
-        items.push(...histories[0].messages);
+      // TODO: should update to get the right sessionId after backend update
+      if (histories?.at(-1)) {
+        const history = histories.at(-1);
+        assertExists(history);
+        this._chatSessionId = history.sessionId;
+        this.chatContextValue.chatSessionId = history.sessionId;
+        items.push(...history.messages);
       }
 
       this.chatContextValue = {

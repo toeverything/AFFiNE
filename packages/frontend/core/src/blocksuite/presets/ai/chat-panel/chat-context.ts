@@ -38,5 +38,5 @@ export type ChatContextValue = {
 export type ChatBlockMessage = ChatMessage & {
   userId?: string;
   userName?: string;
-  userAvatarUrl?: string;
+  avatarUrl?: string;
 };

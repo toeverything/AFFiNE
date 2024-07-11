@@ -125,7 +125,6 @@ export class CopilotClient {
       },
     });
 
-    console.debug('res', res.currentUser?.copilot?.histories);
     return res.currentUser?.copilot?.histories;
   }
 
