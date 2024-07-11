@@ -99,7 +99,7 @@ export class TelemetryWorkspaceContextService extends Service {
           : linkMeta?.moduleName;
       switch (moduleName) {
         case 'page':
-          return 'page editor';
+          return 'doc editor';
         case 'edgeless':
           return 'whiteboard editor';
         case 'trash':

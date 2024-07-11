@@ -119,7 +119,7 @@ export const PageHeaderMenuButton = ({
     duplicate(pageId);
     mixpanel.track('DocCreated', {
       segment: 'editor header',
-      page: doc.mode$.value === 'page' ? 'page editor' : 'edgeless editor',
+      page: doc.mode$.value === 'page' ? 'doc editor' : 'edgeless editor',
       module: 'header menu',
       control: 'copy doc',
       type: 'doc duplicate',
@@ -132,7 +132,7 @@ export const PageHeaderMenuButton = ({
     if (options.isWorkspaceFile) {
       mixpanel.track('WorkspaceCreated', {
         segment: 'editor header',
-        page: doc.mode$.value === 'page' ? 'page editor' : 'edgeless editor',
+        page: doc.mode$.value === 'page' ? 'doc editor' : 'edgeless editor',
         module: 'header menu',
         control: 'import button',
         type: 'imported workspace',
@@ -140,7 +140,7 @@ export const PageHeaderMenuButton = ({
     } else {
       mixpanel.track('DocCreated', {
         segment: 'editor header',
-        page: doc.mode$.value === 'page' ? 'page editor' : 'edgeless editor',
+        page: doc.mode$.value === 'page' ? 'doc editor' : 'edgeless editor',
         module: 'header menu',
         control: 'import button',
         type: 'imported doc',
