@@ -149,7 +149,6 @@ function addAIChatBlock(
   sessionId: string
 ) {
   if (!isInsideEdgelessEditor(host) || !host.doc.root?.id) return;
-  console.debug('add ai chat block');
 
   const edgelessRootService = host.std.spec.getService(
     'affine:page'
@@ -196,7 +195,6 @@ const SAVE_CHAT_TO_BLOCK_ACTION: ChatAction = {
     messageId?: string
   ) => {
     // The chat session id and the latest message id are required to fork the chat session
-    console.debug('save chat to block: ', messageId, chatContext.chatSessionId);
     const parentSessionId = chatContext.chatSessionId;
     if (!messageId || !parentSessionId) {
       return;
@@ -265,8 +263,6 @@ const SAVE_CHAT_TO_BLOCK_ACTION: ChatAction = {
         avatarUrl: userInfo?.avatarUrl ?? undefined,
       };
     });
-
-    console.debug('messages: ', messages);
 
     // After switching to edgeless mode, the user can save the chat to a block
     const blockId = addAIChatBlock(host, messages, '');
