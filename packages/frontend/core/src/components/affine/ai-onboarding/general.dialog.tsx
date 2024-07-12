@@ -184,10 +184,11 @@ export const AIOnboardingGeneral = () => {
 
   return readyToOpen ? (
     <Modal
+      persistent
       open={open}
       onOpenChange={v => {
         showAIOnboardingGeneral$.next(v);
-        if (!v && isLast) toggleGeneralAIOnboarding(false);
+        if (!v) toggleGeneralAIOnboarding(false);
       }}
       contentOptions={{ className: styles.dialog }}
       overlayOptions={{ className: baseStyles.dialogOverlay }}

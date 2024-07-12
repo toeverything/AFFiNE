@@ -1,6 +1,7 @@
 import { IconButton } from '@affine/component/ui/button';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { FavoriteItemsAdapter } from '@affine/core/modules/properties';
+import { TelemetryWorkspaceContextService } from '@affine/core/modules/telemetry/services/telemetry';
 import { mixpanel } from '@affine/core/utils';
 import { PlusIcon } from '@blocksuite/icons/rc';
 import { useService, useServices, WorkspaceService } from '@toeverything/infra';
@@ -19,8 +20,11 @@ export const AddFavouriteButton = ({ pageId }: AddFavouriteButtonProps) => {
     workspaceService.workspace.docCollection
   );
   const favAdapter = useService(FavoriteItemsAdapter);
+  const telemetry = useService(TelemetryWorkspaceContextService);
   const handleAddFavorite = useAsyncCallback(
     async e => {
+      const page = telemetry.getPageContext();
+
       if (pageId) {
         e.stopPropagation();
         e.preventDefault();
@@ -32,6 +36,7 @@ export const AddFavouriteButton = ({ pageId }: AddFavouriteButtonProps) => {
           control: 'new fav sub doc',
           type: 'doc',
           category: 'page',
+          page: page,
         });
       } else {
         const page = createPage();
@@ -44,10 +49,11 @@ export const AddFavouriteButton = ({ pageId }: AddFavouriteButtonProps) => {
           control: 'new fav doc',
           type: 'doc',
           category: 'page',
+          page: page,
         });
       }
     },
-    [pageId, createLinkedPage, createPage, favAdapter]
+    [telemetry, pageId, createLinkedPage, createPage, favAdapter]
   );
 
   return (

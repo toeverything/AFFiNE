@@ -144,6 +144,7 @@ export const CloudWorkspaceMembersPanel = () => {
     setSettingModalAtom({
       open: true,
       activeTab: 'plans',
+      scrollAnchor: 'cloudPricingPlan',
     });
     mixpanel.track('PlansViewed', {
       // page:

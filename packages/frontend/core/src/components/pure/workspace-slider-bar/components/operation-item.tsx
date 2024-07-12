@@ -7,6 +7,7 @@ import {
   EditIcon,
   FavoriteIcon,
   FilterMinusIcon,
+  InformationIcon,
   LinkedPageIcon,
   SplitViewIcon,
 } from '@blocksuite/icons/rc';
@@ -24,6 +25,7 @@ type OperationItemsProps = {
   onRemoveFromFavourites?: () => void;
   onDelete: () => void;
   onOpenInSplitView: () => void;
+  onOpenInfoModal: () => void;
 };
 
 export const OperationItems = ({
@@ -36,6 +38,7 @@ export const OperationItems = ({
   onRemoveFromFavourites,
   onDelete,
   onOpenInSplitView,
+  onOpenInfoModal,
 }: OperationItemsProps) => {
   const { appSettings } = useAppSettingHelper();
   const t = useI18n();
@@ -63,6 +66,19 @@ export const OperationItems = ({
         name: t['Rename'](),
         click: onRename,
       },
+      ...(runtimeConfig.enableInfoModal
+        ? [
+            {
+              icon: (
+                <MenuIcon>
+                  <InformationIcon />
+                </MenuIcon>
+              ),
+              name: t['com.affine.page-properties.page-info.view'](),
+              click: onOpenInfoModal,
+            },
+          ]
+        : []),
       {
         icon: (
           <MenuIcon>
@@ -123,7 +139,7 @@ export const OperationItems = ({
             <DeleteIcon />
           </MenuIcon>
         ),
-        name: t['com.affine.trashOperation.delete'](),
+        name: t['com.affine.moveToTrash.title'](),
         click: onDelete,
         type: 'danger',
       },
@@ -139,6 +155,7 @@ export const OperationItems = ({
       onRemoveFromAllowList,
       appSettings.enableMultiView,
       onOpenInSplitView,
+      onOpenInfoModal,
       onDelete,
     ]
   );

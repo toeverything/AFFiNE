@@ -49,10 +49,10 @@ export class ChatSession implements AsyncDisposable {
       userId,
       workspaceId,
       docId,
-      prompt: { name: promptName },
+      prompt: { name: promptName, config: promptConfig },
     } = this.state;
 
-    return { sessionId, userId, workspaceId, docId, promptName };
+    return { sessionId, userId, workspaceId, docId, promptName, promptConfig };
   }
 
   get stashMessages() {

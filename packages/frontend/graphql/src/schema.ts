@@ -100,6 +100,23 @@ export enum CopilotModels {
   TextModerationStable = 'TextModerationStable',
 }
 
+export interface CopilotPromptConfigInput {
+  frequencyPenalty: InputMaybe<Scalars['Int']['input']>;
+  jsonMode: InputMaybe<Scalars['Boolean']['input']>;
+  presencePenalty: InputMaybe<Scalars['Int']['input']>;
+  temperature: InputMaybe<Scalars['Int']['input']>;
+  topP: InputMaybe<Scalars['Int']['input']>;
+}
+
+export interface CopilotPromptConfigType {
+  __typename?: 'CopilotPromptConfigType';
+  frequencyPenalty: Maybe<Scalars['Int']['output']>;
+  jsonMode: Maybe<Scalars['Boolean']['output']>;
+  presencePenalty: Maybe<Scalars['Int']['output']>;
+  temperature: Maybe<Scalars['Int']['output']>;
+  topP: Maybe<Scalars['Int']['output']>;
+}
+
 export interface CopilotPromptMessageInput {
   content: Scalars['String']['input'];
   params: InputMaybe<Scalars['JSON']['input']>;
@@ -127,6 +144,7 @@ export interface CopilotPromptNotFoundDataType {
 export interface CopilotPromptType {
   __typename?: 'CopilotPromptType';
   action: Maybe<Scalars['String']['output']>;
+  config: Maybe<CopilotPromptConfigType>;
   messages: Array<CopilotPromptMessageType>;
   model: CopilotModels;
   name: Scalars['String']['output'];
@@ -170,6 +188,7 @@ export interface CreateCheckoutSessionInput {
 
 export interface CreateCopilotPromptInput {
   action: InputMaybe<Scalars['String']['input']>;
+  config: InputMaybe<CopilotPromptConfigInput>;
   messages: Array<CopilotPromptMessageInput>;
   model: CopilotModels;
   name: Scalars['String']['input'];
@@ -259,6 +278,7 @@ export enum ErrorNames {
   BLOB_NOT_FOUND = 'BLOB_NOT_FOUND',
   BLOB_QUOTA_EXCEEDED = 'BLOB_QUOTA_EXCEEDED',
   CANT_CHANGE_WORKSPACE_OWNER = 'CANT_CHANGE_WORKSPACE_OWNER',
+  CANT_UPDATE_LIFETIME_SUBSCRIPTION = 'CANT_UPDATE_LIFETIME_SUBSCRIPTION',
   COPILOT_ACTION_TAKEN = 'COPILOT_ACTION_TAKEN',
   COPILOT_FAILED_TO_CREATE_MESSAGE = 'COPILOT_FAILED_TO_CREATE_MESSAGE',
   COPILOT_FAILED_TO_GENERATE_TEXT = 'COPILOT_FAILED_TO_GENERATE_TEXT',
@@ -950,12 +970,14 @@ export interface SubscriptionPrice {
   __typename?: 'SubscriptionPrice';
   amount: Maybe<Scalars['Int']['output']>;
   currency: Scalars['String']['output'];
+  lifetimeAmount: Maybe<Scalars['Int']['output']>;
   plan: SubscriptionPlan;
   type: Scalars['String']['output'];
   yearlyAmount: Maybe<Scalars['Int']['output']>;
 }
 
 export enum SubscriptionRecurring {
+  Lifetime = 'Lifetime',
   Monthly = 'Monthly',
   Yearly = 'Yearly',
 }
@@ -1027,8 +1049,8 @@ export interface UserSubscription {
   __typename?: 'UserSubscription';
   canceledAt: Maybe<Scalars['DateTime']['output']>;
   createdAt: Scalars['DateTime']['output'];
-  end: Scalars['DateTime']['output'];
-  id: Scalars['String']['output'];
+  end: Maybe<Scalars['DateTime']['output']>;
+  id: Maybe<Scalars['String']['output']>;
   nextBillAt: Maybe<Scalars['DateTime']['output']>;
   /**
    * The 'Free' plan just exists to be a placeholder and for the type convenience of frontend.
@@ -1213,7 +1235,7 @@ export type CancelSubscriptionMutation = {
   __typename?: 'Mutation';
   cancelSubscription: {
     __typename?: 'UserSubscription';
-    id: string;
+    id: string | null;
     status: SubscriptionStatus;
     nextBillAt: string | null;
     canceledAt: string | null;
@@ -1347,7 +1369,7 @@ export type EarlyAccessUsersQuery = {
       recurring: SubscriptionRecurring;
       status: SubscriptionStatus;
       start: string;
-      end: string;
+      end: string | null;
     } | null;
   }>;
 };
@@ -1762,6 +1784,7 @@ export type PricesQuery = {
     currency: string;
     amount: number | null;
     yearlyAmount: number | null;
+    lifetimeAmount: number | null;
   }>;
 };
 
@@ -1834,11 +1857,11 @@ export type ResumeSubscriptionMutation = {
   __typename?: 'Mutation';
   resumeSubscription: {
     __typename?: 'UserSubscription';
-    id: string;
+    id: string | null;
     status: SubscriptionStatus;
     nextBillAt: string | null;
     start: string;
-    end: string;
+    end: string | null;
   };
 };
 
@@ -1955,12 +1978,12 @@ export type SubscriptionQuery = {
     id: string;
     subscriptions: Array<{
       __typename?: 'UserSubscription';
-      id: string;
+      id: string | null;
       status: SubscriptionStatus;
       plan: SubscriptionPlan;
       recurring: SubscriptionRecurring;
       start: string;
-      end: string;
+      end: string | null;
       nextBillAt: string | null;
       canceledAt: string | null;
     }>;
@@ -1990,7 +2013,7 @@ export type UpdateSubscriptionMutation = {
   __typename?: 'Mutation';
   updateSubscriptionRecurring: {
     __typename?: 'UserSubscription';
-    id: string;
+    id: string | null;
     plan: SubscriptionPlan;
     recurring: SubscriptionRecurring;
     nextBillAt: string | null;

@@ -1,6 +1,6 @@
 import { NodeExecutorType } from './executor';
-import type { WorkflowGraphs } from './types';
-import { WorkflowNodeState, WorkflowNodeType } from './types';
+import type { WorkflowGraphs, WorkflowNodeState } from './types';
+import { WorkflowNodeType } from './types';
 
 export const WorkflowGraphList: WorkflowGraphs = [
   {
@@ -58,6 +58,28 @@ export const WorkflowGraphList: WorkflowGraphs = [
         id: 'step5',
         name: 'Step 5: finish',
         nodeType: WorkflowNodeType.Nope,
+        edges: [],
+      },
+    ],
+  },
+  {
+    name: 'brainstorm',
+    graph: [
+      {
+        id: 'start',
+        name: 'Start: check language',
+        nodeType: WorkflowNodeType.Basic,
+        type: NodeExecutorType.ChatText,
+        promptName: 'workflow:brainstorm:step1',
+        paramKey: 'language',
+        edges: ['step2'],
+      },
+      {
+        id: 'step2',
+        name: 'Step 2: generate brainstorm mind map',
+        nodeType: WorkflowNodeType.Basic,
+        type: NodeExecutorType.ChatText,
+        promptName: 'workflow:brainstorm:step2',
         edges: [],
       },
     ],

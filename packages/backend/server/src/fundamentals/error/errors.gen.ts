@@ -350,6 +350,12 @@ export class SubscriptionPlanNotFound extends UserFriendlyError {
   }
 }
 
+export class CantUpdateLifetimeSubscription extends UserFriendlyError {
+  constructor(message?: string) {
+    super('action_forbidden', 'cant_update_lifetime_subscription', message);
+  }
+}
+
 export class CopilotSessionNotFound extends UserFriendlyError {
   constructor(message?: string) {
     super('resource_not_found', 'copilot_session_not_found', message);
@@ -521,6 +527,7 @@ export enum ErrorNames {
   SAME_SUBSCRIPTION_RECURRING,
   CUSTOMER_PORTAL_CREATE_FAILED,
   SUBSCRIPTION_PLAN_NOT_FOUND,
+  CANT_UPDATE_LIFETIME_SUBSCRIPTION,
   COPILOT_SESSION_NOT_FOUND,
   COPILOT_SESSION_DELETED,
   NO_COPILOT_PROVIDER_AVAILABLE,

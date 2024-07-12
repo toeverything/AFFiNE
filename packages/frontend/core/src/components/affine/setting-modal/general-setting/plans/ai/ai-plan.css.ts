@@ -11,26 +11,25 @@ export const titleBlock = style({
   display: 'flex',
   flexDirection: 'column',
   gap: 8,
-  marginBottom: 24,
+  marginBottom: 12,
 });
 export const titleCaption1 = style({
   fontWeight: 500,
-  fontSize: cssVar('fontSm'),
-  lineHeight: '14px',
+  fontSize: cssVar('fontXs'),
+  lineHeight: '20px',
   color: cssVar('brandColor'),
 });
 export const titleCaption2 = style({
   fontWeight: 500,
   fontSize: cssVar('fontSm'),
-  lineHeight: '20px',
+  lineHeight: '22px',
   color: cssVar('textPrimaryColor'),
-  letterSpacing: '-2%',
 });
 export const title = style({
+  color: cssVar('textPrimaryColor'),
   fontWeight: 600,
-  fontSize: '30px',
+  fontSize: '28px',
   lineHeight: '36px',
-  letterSpacing: '-2%',
 });
 
 // action button
@@ -89,22 +88,24 @@ export const benefitTitle = style({
   fontSize: cssVar('fontSm'),
   lineHeight: '20px',
   color: cssVar('textPrimaryColor'),
-  letterSpacing: '-2%',
   display: 'flex',
   alignItems: 'center',
-  gap: 8,
+  gap: 4,
 });
 globalStyle(`.${benefitTitle} > svg`, {
   color: cssVar('brandColor'),
+  width: 20,
+  height: 20,
 });
 export const benefitList = style({
   display: 'flex',
   flexDirection: 'column',
-  gap: 8,
+  gap: 4,
 });
 export const benefitItem = style({
   fontWeight: 400,
   fontSize: cssVar('fontXs'),
+  color: cssVar('textSecondaryColor'),
   lineHeight: '24px',
   paddingLeft: 22,
   position: 'relative',

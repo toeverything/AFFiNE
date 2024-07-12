@@ -138,9 +138,8 @@ export class CopilotController {
     const messageId = Array.isArray(params.messageId)
       ? params.messageId[0]
       : params.messageId;
-    const jsonMode = String(params.jsonMode).toLowerCase() === 'true';
     delete params.messageId;
-    return { messageId, jsonMode, params };
+    return { messageId, params };
   }
 
   private getSignal(req: Request) {
@@ -167,7 +166,7 @@ export class CopilotController {
     @Param('sessionId') sessionId: string,
     @Query() params: Record<string, string | string[]>
   ): Promise<string> {
-    const { messageId, jsonMode } = this.prepareParams(params);
+    const { messageId } = this.prepareParams(params);
     const provider = await this.chooseTextProvider(
       user.id,
       sessionId,
@@ -180,7 +179,11 @@ export class CopilotController {
       const content = await provider.generateText(
         session.finish(params),
         session.model,
-        { jsonMode, signal: this.getSignal(req), user: user.id }
+        {
+          ...session.config.promptConfig,
+          signal: this.getSignal(req),
+          user: user.id,
+        }
       );
 
       session.push({
@@ -204,7 +207,7 @@ export class CopilotController {
     @Query() params: Record<string, string>
   ): Promise<Observable<ChatEvent>> {
     try {
-      const { messageId, jsonMode } = this.prepareParams(params);
+      const { messageId } = this.prepareParams(params);
       const provider = await this.chooseTextProvider(
         user.id,
         sessionId,
@@ -215,7 +218,7 @@ export class CopilotController {
 
       return from(
         provider.generateTextStream(session.finish(params), session.model, {
-          jsonMode,
+          ...session.config.promptConfig,
           signal: this.getSignal(req),
           user: user.id,
         })
@@ -256,7 +259,7 @@ export class CopilotController {
     @Query() params: Record<string, string>
   ): Promise<Observable<ChatEvent>> {
     try {
-      const { messageId, jsonMode } = this.prepareParams(params);
+      const { messageId } = this.prepareParams(params);
       const session = await this.appendSessionMessage(sessionId, messageId);
       const latestMessage = session.stashMessages.findLast(
         m => m.role === 'user'
@@ -269,7 +272,7 @@ export class CopilotController {
 
       return from(
         this.workflow.runGraph(params, session.model, {
-          jsonMode,
+          ...session.config.promptConfig,
           signal: this.getSignal(req),
           user: user.id,
         })

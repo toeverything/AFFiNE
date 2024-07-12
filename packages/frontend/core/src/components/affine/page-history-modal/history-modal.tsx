@@ -227,6 +227,7 @@ const PlanPrompt = () => {
     setSettingModalAtom({
       open: true,
       activeTab: 'plans',
+      scrollAnchor: 'cloudPricingPlan',
     });
     mixpanel.track('PlansViewed', {
       segment: 'doc history',

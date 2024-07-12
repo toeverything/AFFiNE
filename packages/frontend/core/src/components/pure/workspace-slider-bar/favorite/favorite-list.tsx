@@ -84,7 +84,7 @@ const FavoriteListInner = ({ docCollection: workspace }: FavoriteListProps) => {
       } else if (item.type === 'doc') {
         return (
           <FavouriteDocSidebarNavItem
-            pageId={item.id}
+            docId={item.id}
             // memo?
           />
         );

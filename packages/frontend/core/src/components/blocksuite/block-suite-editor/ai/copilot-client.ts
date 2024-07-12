@@ -149,15 +149,18 @@ export class CopilotClient {
   }
 
   // Text or image to text
-  chatTextStream({
-    sessionId,
-    messageId,
-  }: {
-    sessionId: string;
-    messageId?: string;
-  }) {
+  chatTextStream(
+    {
+      sessionId,
+      messageId,
+    }: {
+      sessionId: string;
+      messageId?: string;
+    },
+    endpoint = 'stream'
+  ) {
     const url = new URL(
-      `${this.backendUrl}/api/copilot/chat/${sessionId}/stream`
+      `${this.backendUrl}/api/copilot/chat/${sessionId}/${endpoint}`
     );
     if (messageId) url.searchParams.set('messageId', messageId);
     return new EventSource(url.toString());

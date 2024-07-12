@@ -12,11 +12,7 @@ import {
 import { useSetAtom } from 'jotai';
 import { Suspense, useCallback } from 'react';
 
-import {
-  authAtom,
-  openCreateWorkspaceModalAtom,
-  openDisableCloudAlertModalAtom,
-} from '../../../../atoms';
+import { authAtom, openCreateWorkspaceModalAtom } from '../../../../atoms';
 import { mixpanel } from '../../../../utils';
 import { AddWorkspace } from './add-workspace';
 import * as styles from './index.css';
@@ -24,8 +20,6 @@ import { UserAccountItem } from './user-account';
 import { AFFiNEWorkspaceList } from './workspace-list';
 
 export const SignInItem = () => {
-  const setDisableCloudOpen = useSetAtom(openDisableCloudAlertModalAtom);
-
   const setOpen = useSetAtom(authAtom);
 
   const t = useI18n();
@@ -34,15 +28,11 @@ export const SignInItem = () => {
     mixpanel.track('Button', {
       resolve: 'SignIn',
     });
-    if (!runtimeConfig.enableCloud) {
-      setDisableCloudOpen(true);
-    } else {
-      setOpen(state => ({
-        ...state,
-        openModal: true,
-      }));
-    }
-  }, [setOpen, setDisableCloudOpen]);
+    setOpen(state => ({
+      ...state,
+      openModal: true,
+    }));
+  }, [setOpen]);
 
   return (
     <MenuItem
@@ -88,20 +78,15 @@ const UserWithWorkspaceListInner = ({
   const isAuthenticated = session.status === 'authenticated';
 
   const setOpenCreateWorkspaceModal = useSetAtom(openCreateWorkspaceModalAtom);
-  const setDisableCloudOpen = useSetAtom(openDisableCloudAlertModalAtom);
 
   const setOpenSignIn = useSetAtom(authAtom);
 
   const openSignInModal = useCallback(() => {
-    if (!runtimeConfig.enableCloud) {
-      setDisableCloudOpen(true);
-    } else {
-      setOpenSignIn(state => ({
-        ...state,
-        openModal: true,
-      }));
-    }
-  }, [setDisableCloudOpen, setOpenSignIn]);
+    setOpenSignIn(state => ({
+      ...state,
+      openModal: true,
+    }));
+  }, [setOpenSignIn]);
 
   const onNewWorkspace = useCallback(() => {
     if (!isAuthenticated && !runtimeConfig.allowLocalWorkspace) {

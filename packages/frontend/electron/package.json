@@ -29,10 +29,10 @@
     "@affine/env": "workspace:*",
     "@affine/i18n": "workspace:*",
     "@affine/native": "workspace:*",
-    "@blocksuite/block-std": "0.15.0-canary-202407011031-17e7b65",
-    "@blocksuite/blocks": "0.15.0-canary-202407011031-17e7b65",
-    "@blocksuite/presets": "0.15.0-canary-202407011031-17e7b65",
-    "@blocksuite/store": "0.15.0-canary-202407011031-17e7b65",
+    "@blocksuite/block-std": "0.16.0-canary-202407050348-4620c21",
+    "@blocksuite/blocks": "0.16.0-canary-202407050348-4620c21",
+    "@blocksuite/presets": "0.16.0-canary-202407050348-4620c21",
+    "@blocksuite/store": "0.16.0-canary-202407050348-4620c21",
     "@electron-forge/cli": "^7.3.0",
     "@electron-forge/core": "^7.3.0",
     "@electron-forge/core-utils": "^7.3.0",
@@ -52,11 +52,11 @@
     "builder-util-runtime": "^9.2.5-alpha.2",
     "core-js": "^3.36.1",
     "cross-env": "^7.0.3",
-    "electron": "^30.1.1",
+    "electron": "~30.1.0",
     "electron-log": "^5.1.2",
     "electron-squirrel-startup": "1.0.1",
     "electron-window-state": "^5.0.3",
-    "esbuild": "^0.21.0",
+    "esbuild": "^0.23.0",
     "fs-extra": "^11.2.0",
     "glob": "^10.3.12",
     "jotai": "^2.8.0",
@@ -80,7 +80,7 @@
     "async-call-rpc": "^6.4.2",
     "electron-updater": "^6.2.1",
     "link-preview-js": "^3.0.5",
-    "yjs": "^13.6.14"
+    "yjs": "patch:yjs@npm%3A13.6.18#~/.yarn/patches/yjs-npm-13.6.18-ad0d5f7c43.patch"
   },
   "build": {
     "protocols": [

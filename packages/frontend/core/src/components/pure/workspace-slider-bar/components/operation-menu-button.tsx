@@ -1,12 +1,13 @@
 import { toast } from '@affine/component';
 import { IconButton } from '@affine/component/ui/button';
 import { Menu } from '@affine/component/ui/menu';
+import { InfoModal } from '@affine/core/components/affine/page-properties';
 import { FavoriteItemsAdapter } from '@affine/core/modules/properties';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import { useI18n } from '@affine/i18n';
 import { MoreHorizontalIcon } from '@blocksuite/icons/rc';
 import { useService, useServices, WorkspaceService } from '@toeverything/infra';
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 
 import { useTrashModalHelper } from '../../../../hooks/affine/use-trash-modal-helper';
 import { usePageHelper } from '../../../blocksuite/block-suite-page-list/utils';
@@ -33,9 +34,12 @@ export const OperationMenuButton = ({ ...props }: OperationMenuButtonProps) => {
     isReferencePage,
   } = props;
   const t = useI18n();
+  const [openInfoModal, setOpenInfoModal] = useState(false);
+
   const { workspaceService } = useServices({
     WorkspaceService,
   });
+  const page = workspaceService.workspace.docCollection.getDoc(pageId);
   const { createLinkedPage } = usePageHelper(
     workspaceService.workspace.docCollection
   );
@@ -76,30 +80,45 @@ export const OperationMenuButton = ({ ...props }: OperationMenuButtonProps) => {
     workbench.openDoc(pageId, { at: 'tail' });
   }, [pageId, workbench]);
 
+  const handleOpenInfoModal = useCallback(() => {
+    setOpenInfoModal(true);
+  }, [setOpenInfoModal]);
+
   return (
-    <Menu
-      items={
-        <OperationItems
-          onAddLinkedPage={handleAddLinkedPage}
-          onDelete={handleDelete}
-          onRemoveFromAllowList={handleRemoveFromAllowList}
-          onRemoveFromFavourites={handleRemoveFromFavourites}
-          onRename={handleRename}
-          onOpenInSplitView={handleOpenInSplitView}
-          inAllowList={inAllowList}
-          inFavorites={inFavorites}
-          isReferencePage={isReferencePage}
-        />
-      }
-    >
-      <IconButton
-        size="small"
-        type="plain"
-        data-testid="left-sidebar-page-operation-button"
-        style={{ marginLeft: 4 }}
+    <>
+      <Menu
+        items={
+          <OperationItems
+            onAddLinkedPage={handleAddLinkedPage}
+            onDelete={handleDelete}
+            onRemoveFromAllowList={handleRemoveFromAllowList}
+            onRemoveFromFavourites={handleRemoveFromFavourites}
+            onRename={handleRename}
+            onOpenInSplitView={handleOpenInSplitView}
+            onOpenInfoModal={handleOpenInfoModal}
+            inAllowList={inAllowList}
+            inFavorites={inFavorites}
+            isReferencePage={isReferencePage}
+          />
+        }
       >
-        <MoreHorizontalIcon />
-      </IconButton>
-    </Menu>
+        <IconButton
+          size="small"
+          type="plain"
+          data-testid="left-sidebar-page-operation-button"
+          style={{ marginLeft: 4 }}
+        >
+          <MoreHorizontalIcon />
+        </IconButton>
+      </Menu>
+      {page ? (
+        <InfoModal
+          open={openInfoModal}
+          onOpenChange={setOpenInfoModal}
+          page={page}
+          workspace={workspaceService.workspace}
+        />
+      ) : null}
+    </>
   );
 };

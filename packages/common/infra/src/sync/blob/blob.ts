@@ -4,6 +4,7 @@ import { difference } from 'lodash-es';
 
 import { LiveData } from '../../livedata';
 import type { Memento } from '../../storage';
+import { MANUALLY_STOP } from '../../utils';
 import { BlobStorageOverCapacity } from './error';
 
 const logger = new DebugLogger('affine:blob-engine');
@@ -70,7 +71,7 @@ export class BlobEngine {
   }
 
   stop() {
-    this.abort?.abort();
+    this.abort?.abort(MANUALLY_STOP);
     this.abort = null;
   }
 

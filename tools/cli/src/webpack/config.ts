@@ -1,4 +1,3 @@
-import { createRequire } from 'node:module';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -23,8 +22,6 @@ const IN_CI = !!process.env.CI;
 
 export const rootPath = join(fileURLToPath(import.meta.url), '..', '..');
 export const workspaceRoot = join(rootPath, '..', '..', '..');
-
-const require = createRequire(rootPath);
 
 const OptimizeOptionOptions: (
   buildFlags: BuildFlags
@@ -112,10 +109,12 @@ export const createConfiguration: (
           ? 'js/[name]-[contenthash:8].js'
           : 'js/[name].js',
       // In some cases webpack will emit files starts with "_" which is reserved in web extension.
-      chunkFilename:
-        buildFlags.mode === 'production'
-          ? 'js/chunk.[name]-[contenthash:8].js'
-          : 'js/chunk.[name].js',
+      chunkFilename: pathData =>
+        pathData.chunk?.name === 'worker'
+          ? 'js/worker.[contenthash:8].js'
+          : buildFlags.mode === 'production'
+            ? 'js/chunk.[name]-[contenthash:8].js'
+            : 'js/chunk.[name].js',
       assetModuleFilename:
         buildFlags.mode === 'production'
           ? 'assets/[name]-[contenthash:8][ext][query]'
@@ -127,6 +126,7 @@ export const createConfiguration: (
       clean: buildFlags.mode === 'production',
       globalObject: 'globalThis',
       publicPath: getPublicPath(buildFlags),
+      workerPublicPath: '/',
     },
     target: ['web', 'es2022'],
 
@@ -151,7 +151,7 @@ export const createConfiguration: (
               events: false,
             },
       alias: {
-        yjs: require.resolve('yjs'),
+        yjs: join(workspaceRoot, 'node_modules', 'yjs'),
         lit: join(workspaceRoot, 'node_modules', 'lit'),
         '@blocksuite/block-std': blocksuiteBaseDir
           ? join(blocksuiteBaseDir, 'packages', 'framework', 'block-std', 'src')
@@ -333,15 +333,7 @@ export const createConfiguration: (
           }),
       new VanillaExtractPlugin(),
       new webpack.DefinePlugin({
-        'process.env': JSON.stringify({}),
-        'process.env.COVERAGE': JSON.stringify(!!buildFlags.coverage),
         'process.env.NODE_ENV': JSON.stringify(buildFlags.mode),
-        'process.env.SHOULD_REPORT_TRACE': JSON.stringify(
-          Boolean(process.env.SHOULD_REPORT_TRACE === 'true')
-        ),
-        'process.env.TRACE_REPORT_ENDPOINT': JSON.stringify(
-          process.env.TRACE_REPORT_ENDPOINT
-        ),
         'process.env.CAPTCHA_SITE_KEY': JSON.stringify(
           process.env.CAPTCHA_SITE_KEY
         ),
@@ -350,6 +342,7 @@ export const createConfiguration: (
         'process.env.MIXPANEL_TOKEN': JSON.stringify(
           process.env.MIXPANEL_TOKEN
         ),
+        'process.env.DEBUG_JOTAI': JSON.stringify(process.env.DEBUG_JOTAI),
         runtimeConfig: JSON.stringify(runtimeConfig),
       }),
       buildFlags.distribution === 'admin'

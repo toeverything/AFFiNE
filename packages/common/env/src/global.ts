@@ -6,25 +6,6 @@ import { isDesktop, isServer } from './constant.js';
 import { UaHelper } from './ua-helper.js';
 
 export const runtimeFlagsSchema = z.object({
-  enableTestProperties: z.boolean(),
-  enableBroadcastChannelProvider: z.boolean(),
-  enableDebugPage: z.boolean(),
-  githubUrl: z.string(),
-  changelogUrl: z.string(),
-  downloadUrl: z.string(),
-  // see: tools/workers
-  imageProxyUrl: z.string(),
-  linkPreviewUrl: z.string(),
-  enablePreloading: z.boolean(),
-  enableNewSettingModal: z.boolean(),
-  enableNewSettingUnstableApi: z.boolean(),
-  enableCloud: z.boolean(),
-  enableCaptcha: z.boolean(),
-  enableEnhanceShareMode: z.boolean(),
-  enablePayment: z.boolean(),
-  enablePageHistory: z.boolean(),
-  enableExperimentalFeature: z.boolean(),
-  allowLocalWorkspace: z.boolean(),
   // this is for the electron app
   serverUrlPrefix: z.string(),
   appVersion: z.string(),
@@ -36,6 +17,19 @@ export const runtimeFlagsSchema = z.object({
     z.literal('canary'),
   ]),
   isSelfHosted: z.boolean().optional(),
+  githubUrl: z.string(),
+  changelogUrl: z.string(),
+  downloadUrl: z.string(),
+  // see: tools/workers
+  imageProxyUrl: z.string(),
+  linkPreviewUrl: z.string(),
+  allowLocalWorkspace: z.boolean(),
+  enablePreloading: z.boolean(),
+  enableNewSettingUnstableApi: z.boolean(),
+  enableCaptcha: z.boolean(),
+  enableEnhanceShareMode: z.boolean(),
+  enableExperimentalFeature: z.boolean(),
+  enableInfoModal: z.boolean(),
 });
 
 export type RuntimeConfig = z.infer<typeof runtimeFlagsSchema>;

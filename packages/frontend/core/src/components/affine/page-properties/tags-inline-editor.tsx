@@ -30,7 +30,7 @@ interface InlineTagsListProps
   onRemove?: () => void;
 }
 
-const InlineTagsList = ({
+export const InlineTagsList = ({
   pageId,
   readonly,
   children,

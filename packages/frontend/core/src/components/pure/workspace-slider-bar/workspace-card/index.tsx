@@ -1,5 +1,4 @@
 import { notify, Tooltip } from '@affine/component';
-import { type AvatarProps } from '@affine/component/ui/avatar';
 import { Loading } from '@affine/component/ui/loading';
 import { WorkspaceAvatar } from '@affine/component/workspace-avatar';
 import { openSettingModalAtom } from '@affine/core/atoms';
@@ -96,6 +95,7 @@ const useSyncEngineSyncProgress = () => {
     setSettingModalAtom({
       open: true,
       activeTab: 'plans',
+      scrollAnchor: 'cloudPricingPlan',
     });
   }, [setSettingModalAtom]);
 
@@ -276,9 +276,6 @@ const WorkspaceInfo = ({ name }: { name: string }) => {
   );
 };
 
-const avatarImageProps = {
-  style: { borderRadius: 3 },
-} satisfies AvatarProps['imageProps'];
 export const WorkspaceCard = forwardRef<
   HTMLDivElement,
   HTMLAttributes<HTMLDivElement>
@@ -302,8 +299,7 @@ export const WorkspaceCard = forwardRef<
       <WorkspaceAvatar
         key={currentWorkspace.id}
         meta={currentWorkspace.meta}
-        imageProps={avatarImageProps}
-        fallbackProps={avatarImageProps}
+        rounded={3}
         data-testid="workspace-avatar"
         size={32}
         name={name}

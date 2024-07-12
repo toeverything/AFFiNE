@@ -8,7 +8,7 @@ function maybeAffineOrigin(origin: string) {
   );
 }
 
-export const resolveLinkToDoc = (href: string) => {
+export const resolveRouteLinkMeta = (href: string) => {
   try {
     const url = new URL(href, location.origin);
 
@@ -18,23 +18,49 @@ export const resolveLinkToDoc = (href: string) => {
       return null;
     }
 
-    // http://xxx/workspace/48__RTCSwASvWZxyAk3Jw/-Uge-K6SYcAbcNYfQ5U-j#xxxx
+    // http://xxx/workspace/all/yyy
     // to { workspaceId: '48__RTCSwASvWZxyAk3Jw', docId: '-Uge-K6SYcAbcNYfQ5U-j', blockId: 'xxxx' }
 
-    const [_, workspaceId, docId, blockId] =
+    const [_, workspaceId, moduleName, subModuleName] =
       url.toString().match(/\/workspace\/([^/]+)\/([^#]+)(?:#(.+))?/) || [];
 
-    /**
-     * @see /packages/frontend/core/src/router.tsx
-     */
-    const excludedPaths = ['all', 'collection', 'tag', 'trash'];
-
-    if (!docId || excludedPaths.includes(docId)) {
-      return null;
+    if (isRouteModulePath(moduleName)) {
+      return {
+        workspaceId,
+        moduleName,
+        subModuleName,
+      };
+    } else if (moduleName) {
+      // for now we assume all other cases are doc links
+      return {
+        workspaceId,
+        moduleName: 'doc' as const,
+        docId: moduleName,
+        blockId: subModuleName,
+      };
     }
-
-    return { workspaceId, docId, blockId };
+    return;
   } catch {
     return null;
   }
+};
+
+/**
+ * @see /packages/frontend/core/src/router.tsx
+ */
+const routeModulePaths = ['all', 'collection', 'tag', 'trash'] as const;
+
+const isRouteModulePath = (
+  path: string
+): path is (typeof routeModulePaths)[number] =>
+  routeModulePaths.includes(path as any);
+
+export const resolveLinkToDoc = (href: string) => {
+  const meta = resolveRouteLinkMeta(href);
+  if (!meta || meta.moduleName !== 'doc') return null;
+  return {
+    workspaceId: meta.workspaceId,
+    docId: meta.docId,
+    blockId: meta.blockId,
+  };
 };

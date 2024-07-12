@@ -1,10 +1,11 @@
 import { Scrollable } from '@affine/component';
 import { PageDetailSkeleton } from '@affine/component/page-detail-skeleton';
+import type { ChatPanel } from '@affine/core/blocksuite/presets/ai';
 import { AIProvider } from '@affine/core/blocksuite/presets/ai';
 import { PageAIOnboarding } from '@affine/core/components/affine/ai-onboarding';
-import { AIIsland } from '@affine/core/components/pure/ai-island';
 import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
 import { RecentDocsService } from '@affine/core/modules/quicksearch';
+import { ViewService } from '@affine/core/modules/workbench/services/view';
 import type { PageRootService } from '@blocksuite/blocks';
 import {
   BookmarkBlockService,
@@ -15,6 +16,7 @@ import {
   ImageBlockService,
 } from '@blocksuite/blocks';
 import { DisposableGroup } from '@blocksuite/global/utils';
+import { AiIcon, FrameIcon, TocIcon, TodayIcon } from '@blocksuite/icons/rc';
 import { type AffineEditorContainer } from '@blocksuite/presets';
 import type { Doc as BlockSuiteDoc } from '@blocksuite/store';
 import type { Doc } from '@toeverything/infra';
@@ -30,7 +32,14 @@ import {
 } from '@toeverything/infra';
 import clsx from 'clsx';
 import type { ReactElement } from 'react';
-import { memo, useCallback, useEffect, useLayoutEffect, useState } from 'react';
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
 import { useParams } from 'react-router-dom';
 import type { Map as YMap } from 'yjs';
 
@@ -44,28 +53,25 @@ import { useActiveBlocksuiteEditor } from '../../../hooks/use-block-suite-editor
 import { usePageDocumentTitle } from '../../../hooks/use-global-state';
 import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
 import {
-  MultiTabSidebarBody,
-  MultiTabSidebarHeaderSwitcher,
-  sidebarTabs,
-  type TabOnLoadFn,
-} from '../../../modules/multi-tab-sidebar';
-import {
-  RightSidebarService,
-  RightSidebarViewIsland,
-} from '../../../modules/right-sidebar';
-import {
   useIsActiveView,
-  ViewBodyIsland,
-  ViewHeaderIsland,
+  ViewBody,
+  ViewHeader,
+  ViewSidebarTab,
+  WorkbenchService,
 } from '../../../modules/workbench';
 import { performanceRenderLogger } from '../../../shared';
 import { PageNotFound } from '../../404';
 import * as styles from './detail-page.css';
 import { DetailPageHeader } from './detail-page-header';
+import { EditorChatPanel } from './tabs/chat';
+import { EditorFramePanel } from './tabs/frame';
+import { EditorJournalPanel } from './tabs/journal';
+import { EditorOutline } from './tabs/outline';
 
 const DetailPageImpl = memo(function DetailPageImpl() {
-  const rightSidebar = useService(RightSidebarService).rightSidebar;
-  const activeTabName = useLiveData(rightSidebar.activeTabName$);
+  const workbench = useService(WorkbenchService).workbench;
+  const view = useService(ViewService).view;
+  const activeSidebarTab = useLiveData(view.activeSidebarTab$);
 
   const doc = useService(DocService).doc;
   const { openPage, jumpToPageBlock, jumpToTag } = useNavigateHelper();
@@ -75,17 +81,11 @@ const DetailPageImpl = memo(function DetailPageImpl() {
   const docCollection = workspace.docCollection;
   const mode = useLiveData(doc.mode$);
   const { appSettings } = useAppSettingHelper();
-  const [tabOnLoad, setTabOnLoad] = useState<TabOnLoadFn | null>(null);
+  const chatPanelRef = useRef<ChatPanel | null>(null);
 
   const isActiveView = useIsActiveView();
   // TODO(@eyhn): remove jotai here
   const [_, setActiveBlockSuiteEditor] = useActiveBlocksuiteEditor();
-
-  const setActiveTabName = useCallback(
-    (...args: Parameters<typeof rightSidebar.setActiveTabName>) =>
-      rightSidebar.setActiveTabName(...args),
-    [rightSidebar]
-  );
 
   useEffect(() => {
     if (isActiveView) {
@@ -95,28 +95,17 @@ const DetailPageImpl = memo(function DetailPageImpl() {
 
   useEffect(() => {
     const disposable = AIProvider.slots.requestOpenWithChat.on(params => {
-      const opened = rightSidebar.isOpen$.value;
-      const actived = activeTabName === 'chat';
+      console.log(params);
+      workbench.openSidebar();
+      view.activeSidebarTab('chat');
 
-      if (!opened) {
-        rightSidebar.open();
-      }
-      if (!actived) {
-        setActiveTabName('chat');
-      }
-
-      // Save chat parameters:
-      // * The right sidebar is not open
-      // * Chat panel is not activated
-      if (!opened || !actived) {
-        const callback = AIProvider.genRequestChatCardsFn(params);
-        setTabOnLoad(() => callback);
-      } else {
-        setTabOnLoad(null);
+      if (chatPanelRef.current) {
+        const chatCards = chatPanelRef.current.querySelector('chat-cards');
+        if (chatCards) chatCards.temporaryParams = params;
       }
     });
     return () => disposable.dispose();
-  }, [activeTabName, rightSidebar, setActiveTabName]);
+  }, [activeSidebarTab, view, workbench]);
 
   useEffect(() => {
     if (isActiveView) {
@@ -224,16 +213,13 @@ const DetailPageImpl = memo(function DetailPageImpl() {
     ]
   );
 
-  const isWindowsDesktop = environment.isDesktop && environment.isWindows;
-
   return (
     <>
-      <ViewHeaderIsland>
+      <ViewHeader>
         <DetailPageHeader page={doc.blockSuiteDoc} workspace={workspace} />
-      </ViewHeaderIsland>
-      <ViewBodyIsland>
+      </ViewHeader>
+      <ViewBody>
         <div className={styles.mainContainer}>
-          <AIIsland />
           {/* Add a key to force rerender when page changed, to avoid error boundary persisting. */}
           <AffineErrorBoundary key={doc.id}>
             <TopTip pageId={doc.id} workspace={workspace} />
@@ -260,39 +246,24 @@ const DetailPageImpl = memo(function DetailPageImpl() {
           </AffineErrorBoundary>
           {isInTrash ? <TrashPageFooter /> : null}
         </div>
-      </ViewBodyIsland>
+      </ViewBody>
 
-      <RightSidebarViewIsland
-        active={isActiveView}
-        header={
-          !isWindowsDesktop ? (
-            <MultiTabSidebarHeaderSwitcher
-              activeTabName={activeTabName ?? sidebarTabs[0]?.name}
-              setActiveTabName={setActiveTabName}
-              tabs={sidebarTabs}
-            />
-          ) : null
-        }
-        body={
-          <MultiTabSidebarBody
-            editor={editor}
-            tab={
-              sidebarTabs.find(ext => ext.name === activeTabName) ??
-              sidebarTabs[0]
-            }
-            onLoad={tabOnLoad}
-          >
-            {/* Show switcher in body for windows desktop */}
-            {isWindowsDesktop && (
-              <MultiTabSidebarHeaderSwitcher
-                activeTabName={activeTabName ?? sidebarTabs[0]?.name}
-                setActiveTabName={setActiveTabName}
-                tabs={sidebarTabs}
-              />
-            )}
-          </MultiTabSidebarBody>
-        }
-      />
+      <ViewSidebarTab tabId="chat" icon={<AiIcon />} unmountOnInactive={false}>
+        <EditorChatPanel editor={editor} ref={chatPanelRef} />
+      </ViewSidebarTab>
+
+      <ViewSidebarTab tabId="journal" icon={<TodayIcon />}>
+        <EditorJournalPanel />
+      </ViewSidebarTab>
+
+      <ViewSidebarTab tabId="outline" icon={<TocIcon />}>
+        <EditorOutline editor={editor} />
+      </ViewSidebarTab>
+
+      <ViewSidebarTab tabId="frame" icon={<FrameIcon />}>
+        <EditorFramePanel editor={editor} />
+      </ViewSidebarTab>
+
       <GlobalPageHistoryModal />
       <PageAIOnboarding />
     </>

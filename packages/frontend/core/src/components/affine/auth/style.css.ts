@@ -97,4 +97,11 @@ export const userPlanButton = style({
   borderRadius: 4,
   justifyContent: 'center',
   alignItems: 'center',
+
+  selectors: {
+    '&[data-is-believer="true"]': {
+      // TODO(@CatsJuice): this color is new `Figma token` value without dark mode support.
+      backgroundColor: '#374151',
+    },
+  },
 });

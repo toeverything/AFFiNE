@@ -396,4 +396,9 @@ describe('humanTime', () => {
       })
     ).toBe('本月');
   });
+
+  test('invalid time', () => {
+    createI18n();
+    expect(i18nTime('foobar')).toBe('');
+  });
 });

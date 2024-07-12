@@ -9,7 +9,7 @@ import type { Filter } from '@affine/env/filter';
 import { useService, WorkspaceService } from '@toeverything/infra';
 import { useState } from 'react';
 
-import { ViewBodyIsland, ViewHeaderIsland } from '../../../modules/workbench';
+import { ViewBody, ViewHeader } from '../../../modules/workbench';
 import { EmptyPageList } from '../page-list-empty';
 import * as styles from './all-page.css';
 import { FilterContainer } from './all-page-filter';
@@ -27,14 +27,14 @@ export const AllPage = () => {
 
   return (
     <>
-      <ViewHeaderIsland>
+      <ViewHeader>
         <AllPageHeader
           showCreateNew={!hideHeaderCreateNew}
           filters={filters}
           onChangeFilters={setFilters}
         />
-      </ViewHeaderIsland>
-      <ViewBodyIsland>
+      </ViewHeader>
+      <ViewBody>
         <div className={styles.body}>
           <FilterContainer filters={filters} onChangeFilters={setFilters} />
           {filteredPageMetas.length > 0 ? (
@@ -50,7 +50,7 @@ export const AllPage = () => {
             />
           )}
         </div>
-      </ViewBodyIsland>
+      </ViewBody>
     </>
   );
 };

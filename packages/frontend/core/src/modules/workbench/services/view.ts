@@ -1,7 +1,11 @@
 import { Service } from '@toeverything/infra';
 
-import { View } from '../entities/view';
+import type { ViewScope } from '../scopes/view';
 
 export class ViewService extends Service {
-  view = this.framework.createEntity(View);
+  view = this.scope.props.view;
+
+  constructor(private readonly scope: ViewScope) {
+    super();
+  }
 }

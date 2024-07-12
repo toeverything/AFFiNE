@@ -15,7 +15,6 @@ import { useParams } from 'react-router-dom';
 
 import { AffineErrorBoundary } from '../../components/affine/affine-error-boundary';
 import { WorkspaceLayout } from '../../layouts/workspace-layout';
-import { RightSidebarContainer } from '../../modules/right-sidebar';
 import { WorkbenchRoot } from '../../modules/workbench';
 import { AllWorkspaceModals } from '../../providers/modal-provider';
 import { performanceRenderLogger } from '../../shared';
@@ -163,7 +162,6 @@ export const Component = (): ReactElement => {
       <AffineErrorBoundary height="100vh">
         <WorkspaceLayout>
           <WorkbenchRoot />
-          <RightSidebarContainer />
         </WorkspaceLayout>
       </AffineErrorBoundary>
     </FrameworkScope>

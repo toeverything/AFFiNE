@@ -1,9 +1,11 @@
 import { toast } from '@affine/component';
+import { openInfoModalAtom } from '@affine/core/atoms';
 import {
   PreconditionStrategy,
   registerAffineCommand,
 } from '@affine/core/commands';
 import { FavoriteItemsAdapter } from '@affine/core/modules/properties';
+import { TelemetryWorkspaceContextService } from '@affine/core/modules/telemetry/services/telemetry';
 import { mixpanel } from '@affine/core/utils';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useI18n } from '@affine/i18n';
@@ -35,6 +37,7 @@ export function useRegisterBlocksuiteEditorCommands() {
   const trash = useLiveData(doc.trash$);
 
   const setPageHistoryModalState = useSetAtom(pageHistoryModalAtom);
+  const setInfoModalState = useSetAtom(openInfoModalAtom);
 
   const openHistoryModal = useCallback(() => {
     setPageHistoryModalState(() => ({
@@ -43,8 +46,11 @@ export function useRegisterBlocksuiteEditorCommands() {
     }));
   }, [docId, setPageHistoryModalState]);
 
-  const { restoreFromTrash, duplicate } =
-    useBlockSuiteMetaHelper(docCollection);
+  const openInfoModal = useCallback(() => {
+    setInfoModalState(true);
+  }, [setInfoModalState]);
+
+  const { duplicate } = useBlockSuiteMetaHelper(docCollection);
   const exportHandler = useExportPage(doc.blockSuiteDoc);
   const { setTrashModal } = useTrashModalHelper(docCollection);
   const onClickDelete = useCallback(
@@ -57,6 +63,8 @@ export function useRegisterBlocksuiteEditorCommands() {
     },
     [docId, setTrashModal]
   );
+
+  const telemetry = useService(TelemetryWorkspaceContextService);
 
   const isCloudWorkspace = workspace.flavour === WorkspaceFlavour.AFFINE_CLOUD;
 
@@ -85,6 +93,22 @@ export function useRegisterBlocksuiteEditorCommands() {
     //     },
     //   })
     // );
+
+    unsubs.push(
+      registerAffineCommand({
+        id: `editor:${mode}-view-info`,
+        preconditionStrategy: () =>
+          PreconditionStrategy.InPaperOrEdgeless &&
+          !trash &&
+          runtimeConfig.enableInfoModal,
+        category: `editor:${mode}`,
+        icon: mode === 'page' ? <PageIcon /> : <EdgelessIcon />,
+        label: t['com.affine.page-properties.page-info.view'](),
+        run() {
+          openInfoModal();
+        },
+      })
+    );
 
     unsubs.push(
       registerAffineCommand({
@@ -144,6 +168,7 @@ export function useRegisterBlocksuiteEditorCommands() {
             control: 'cmdk',
             type: 'doc duplicate',
             category: 'doc',
+            page: telemetry.getPageContext(),
           });
         },
       })
@@ -228,7 +253,7 @@ export function useRegisterBlocksuiteEditorCommands() {
       })
     );
 
-    if (runtimeConfig.enablePageHistory && isCloudWorkspace) {
+    if (isCloudWorkspace) {
       unsubs.push(
         registerAffineCommand({
           id: `editor:${mode}-page-history`,
@@ -266,7 +291,6 @@ export function useRegisterBlocksuiteEditorCommands() {
     mode,
     onClickDelete,
     exportHandler,
-    restoreFromTrash,
     t,
     trash,
     isCloudWorkspace,
@@ -275,5 +299,7 @@ export function useRegisterBlocksuiteEditorCommands() {
     favAdapter,
     docId,
     doc,
+    telemetry,
+    openInfoModal,
   ]);
 }

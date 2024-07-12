@@ -2,11 +2,8 @@ import { Unreachable } from '@affine/env/constant';
 import { Entity, LiveData } from '@toeverything/infra';
 import type { To } from 'history';
 import { nanoid } from 'nanoid';
-import { combineLatest, map, switchMap } from 'rxjs';
 
-import { ViewScope } from '../scopes/view';
-import { ViewService } from '../services/view';
-import type { View } from './view';
+import { View } from './view';
 
 export type WorkbenchPosition = 'beside' | 'active' | 'head' | 'tail' | number;
 
@@ -17,24 +14,20 @@ interface WorkbenchOpenOptions {
 
 export class Workbench extends Entity {
   readonly views$ = new LiveData([
-    this.framework.createScope(ViewScope, { id: nanoid() }).get(ViewService)
-      .view,
+    this.framework.createEntity(View, { id: nanoid() }),
   ]);
 
   activeViewIndex$ = new LiveData(0);
-  activeView$ = LiveData.from(
-    combineLatest([this.views$, this.activeViewIndex$]).pipe(
-      map(([views, index]) => views[index])
-    ),
-    this.views$.value[this.activeViewIndex$.value]
-  );
-
+  activeView$ = LiveData.computed(get => {
+    const activeIndex = get(this.activeViewIndex$);
+    const views = get(this.views$);
+    return views[activeIndex];
+  });
   basename$ = new LiveData('/');
-
-  location$ = LiveData.from(
-    this.activeView$.pipe(switchMap(view => view.location$)),
-    this.views$.value[this.activeViewIndex$.value].history.location
-  );
+  location$ = LiveData.computed(get => {
+    return get(get(this.activeView$).location$);
+  });
+  sidebarOpen$ = new LiveData(false);
 
   active(index: number) {
     index = Math.max(0, Math.min(index, this.views$.value.length - 1));
@@ -42,13 +35,28 @@ export class Workbench extends Entity {
   }
 
   createView(at: WorkbenchPosition = 'beside', defaultLocation: To) {
-    const view = this.framework
-      .createScope(ViewScope, { id: nanoid(), defaultLocation })
-      .get(ViewService).view;
+    const view = this.framework.createEntity(View, {
+      id: nanoid(),
+      defaultLocation,
+    });
     const newViews = [...this.views$.value];
     newViews.splice(this.indexAt(at), 0, view);
     this.views$.next(newViews);
-    return newViews.indexOf(view);
+    const index = newViews.indexOf(view);
+    this.active(index);
+    return index;
+  }
+
+  openSidebar() {
+    this.sidebarOpen$.next(true);
+  }
+
+  closeSidebar() {
+    this.sidebarOpen$.next(false);
+  }
+
+  toggleSidebar() {
+    this.sidebarOpen$.next(!this.sidebarOpen$.value);
   }
 
   open(

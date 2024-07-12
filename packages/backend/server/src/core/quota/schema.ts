@@ -155,6 +155,25 @@ export const Quotas: Quota[] = [
       copilotActionLimit: 10,
     },
   },
+  {
+    feature: QuotaType.LifetimeProPlanV1,
+    type: FeatureKind.Quota,
+    version: 1,
+    configs: {
+      // quota name
+      name: 'Lifetime Pro',
+      // single blob limit 100MB
+      blobLimit: 100 * OneMB,
+      // total blob limit 1TB
+      storageQuota: 1024 * OneGB,
+      // history period of validity 30 days
+      historyPeriod: 30 * OneDay,
+      // member limit 10
+      memberLimit: 10,
+      // copilot action limit 10
+      copilotActionLimit: 10,
+    },
+  },
 ];
 
 export function getLatestQuota(type: QuotaType) {
@@ -165,6 +184,7 @@ export function getLatestQuota(type: QuotaType) {
 
 export const FreePlan = getLatestQuota(QuotaType.FreePlanV1);
 export const ProPlan = getLatestQuota(QuotaType.ProPlanV1);
+export const LifetimeProPlan = getLatestQuota(QuotaType.LifetimeProPlanV1);
 
 export const Quota_FreePlanV1_1 = {
   feature: Quotas[5].feature,

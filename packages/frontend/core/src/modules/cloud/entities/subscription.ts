@@ -1,4 +1,4 @@
-import type { SubscriptionQuery, SubscriptionRecurring } from '@affine/graphql';
+import { type SubscriptionQuery, SubscriptionRecurring } from '@affine/graphql';
 import { SubscriptionPlan } from '@affine/graphql';
 import {
   backoffRetry,
@@ -37,6 +37,9 @@ export class Subscription extends Entity {
     subscriptions
       ? subscriptions.find(sub => sub.plan === SubscriptionPlan.AI)
       : null
+  );
+  isBeliever$ = this.pro$.map(
+    sub => sub?.recurring === SubscriptionRecurring.Lifetime
   );
 
   constructor(

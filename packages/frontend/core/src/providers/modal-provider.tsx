@@ -16,7 +16,6 @@ import type { SettingAtom } from '../atoms';
 import {
   authAtom,
   openCreateWorkspaceModalAtom,
-  openDisableCloudAlertModalAtom,
   openSettingModalAtom,
   openSignOutModalAtom,
 } from '../atoms';
@@ -25,7 +24,6 @@ import { AiLoginRequiredModal } from '../components/affine/auth/ai-login-require
 import { CreateWorkspaceModal } from '../components/affine/create-workspace-modal';
 import { HistoryTipsModal } from '../components/affine/history-tips-modal';
 import { IssueFeedbackModal } from '../components/affine/issue-feedback-modal';
-import { PaymentDisableModal } from '../components/affine/payment-disable';
 import {
   CloudQuotaModal,
   LocalQuotaModal,
@@ -33,7 +31,6 @@ import {
 import { SettingModal } from '../components/affine/setting-modal';
 import { SignOutModal } from '../components/affine/sign-out-modal';
 import { StarAFFiNEModal } from '../components/affine/star-affine-modal';
-import { TmpDisableAffineCloudModal } from '../components/affine/tmp-disable-affine-cloud-modal';
 import { MoveToTrash } from '../components/page-list';
 import { useTrashModalHelper } from '../hooks/affine/use-trash-modal-helper';
 import { useAsyncCallback } from '../hooks/affine-async-hooks';
@@ -137,9 +134,6 @@ export const AuthModal = (): ReactElement => {
 
 export function CurrentWorkspaceModals() {
   const currentWorkspace = useService(WorkspaceService).workspace;
-  const [openDisableCloudAlertModal, setOpenDisableCloudAlertModal] = useAtom(
-    openDisableCloudAlertModalAtom
-  );
 
   const { trashModal, setTrashModal, handleOnConfirm } = useTrashModalHelper(
     currentWorkspace.docCollection
@@ -158,10 +152,6 @@ export function CurrentWorkspaceModals() {
 
   return (
     <>
-      <TmpDisableAffineCloudModal
-        open={openDisableCloudAlertModal}
-        onOpenChange={setOpenDisableCloudAlertModal}
-      />
       <StarAFFiNEModal />
       <IssueFeedbackModal />
       {currentWorkspace ? <Setting /> : null}
@@ -256,7 +246,6 @@ export const AllWorkspaceModals = (): ReactElement => {
       />
       <AuthModal />
       <SignOutConfirmModal />
-      <PaymentDisableModal />
     </>
   );
 };

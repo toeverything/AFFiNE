@@ -155,6 +155,9 @@ export class IndexedDBJobQueue<J> implements JobQueue<J> {
         .objectStore('jobs')
         .delete(typeof id === 'string' ? parseInt(id) : id);
     }
+
+    trx.commit();
+    this.broadcast.postMessage('job-completed');
   }
 
   async return(jobs: Job[], retry: boolean = false): Promise<void> {
@@ -174,6 +177,10 @@ export class IndexedDBJobQueue<J> implements JobQueue<J> {
           .delete(typeof id === 'string' ? parseInt(id) : id);
       }
     }
+
+    trx.commit();
+
+    this.broadcast.postMessage('job-completed');
   }
 
   async clear(): Promise<void> {
@@ -231,6 +238,7 @@ export class IndexedDBJobQueue<J> implements JobQueue<J> {
       throttleTime(300, undefined, { leading: true, trailing: true }),
       exhaustMapWithTrailing(() =>
         fromPromise(async () => {
+          await this.ensureInitialized();
           const trx = this.database.transaction(['jobs'], 'readonly');
           const remaining = await trx.objectStore('jobs').count();
           return { remaining };

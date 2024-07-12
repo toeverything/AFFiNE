@@ -10,7 +10,7 @@ export const scrollArea = style({
   paddingLeft: 'var(--setting-modal-gap-x)',
   width: 'var(--setting-modal-width)',
   overflowX: 'auto',
-  scrollSnapType: 'x mandatory',
+  // scrollSnapType: 'x mandatory',
   paddingBottom: '21px',
   /** Avoid box-shadow clipping */
   paddingTop: '21px',
@@ -73,7 +73,7 @@ export const affineCloudHeader = style({
 export const aiDivider = style({
   opacity: 0,
   selectors: {
-    '[data-ai-visible] &': {
+    '[data-cloud-visible] &': {
       opacity: 1,
     },
   },
@@ -105,7 +105,7 @@ export const aiScrollTip = style({
   animation: `${slideInBottom} 0.3s ease 0.5s forwards`,
 
   selectors: {
-    '[data-ai-visible] &': {
+    '[data-cloud-visible] &': {
       transform: 'translateY(100px)',
       opacity: 0,
     },
@@ -115,38 +115,15 @@ export const aiScrollTip = style({
 globalStyle(`div.${aiScrollTip}`, {
   display: 'flex !important',
 });
-export const aiScrollTipLabel = style({
-  display: 'flex',
-  alignItems: 'center',
-});
-export const aiScrollTipText = style({
-  padding: '0px 10px 0px 8px',
+export const cloudScrollTipTitle = style({
   fontSize: cssVar('fontSm'),
   fontWeight: 600,
   lineHeight: '22px',
   color: cssVar('textPrimaryColor'),
 });
-export const aiScrollTipTag = style({
-  background: 'linear-gradient(180deg, #41B0FF 0%, #0873BE 100%)',
-  borderRadius: 3,
-  fontWeight: 600,
-  fontSize: 10,
-  lineHeight: '12px',
-  letterSpacing: '-1%',
-  color: cssVar('pureWhite'),
-  boxShadow:
-    '0px 0px 1px 0px #45474926, 1px 2px 2px 0px #45474921, 2px 4px 3px 0px #45474914,  4px 6px 3px 0px #45474905,  6px 10px 3px 0px #45474900',
-  padding: 1,
-});
-
-export const aiScrollTipTagInner = style({
-  borderRadius: 2,
-  padding: '2px 3px',
-  fontWeight: 'inherit',
-  fontSize: 'inherit',
-  lineHeight: 'inherit',
-  content: 'var(--content, "")',
-  letterSpacing: 'inherit',
-  background:
-    'linear-gradient(180deg, #56B9FF 0%, #23A4FF 37.88%, #1E96EB 75%)',
+export const cloudScrollTipCaption = style({
+  fontSize: cssVar('fontXs'),
+  fontWeight: 400,
+  lineHeight: '20px',
+  color: cssVar('textSecondaryColor'),
 });

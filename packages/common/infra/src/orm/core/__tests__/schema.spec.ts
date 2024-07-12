@@ -1,21 +1,12 @@
 import { nanoid } from 'nanoid';
 import { describe, expect, test } from 'vitest';
 
-import {
-  createORMClient,
-  type DBSchemaBuilder,
-  f,
-  MemoryORMAdapter,
-} from '../';
-
-function createClient<Schema extends DBSchemaBuilder>(schema: Schema) {
-  return createORMClient(schema, MemoryORMAdapter);
-}
+import { createORMClient, f, MemoryORMAdapter } from '../';
 
 describe('Schema validations', () => {
   test('primary key must be set', () => {
     expect(() =>
-      createClient({
+      createORMClient({
         tags: {
           id: f.string(),
           name: f.string(),
@@ -28,7 +19,7 @@ describe('Schema validations', () => {
 
   test('primary key must be unique', () => {
     expect(() =>
-      createClient({
+      createORMClient({
         tags: {
           id: f.string().primaryKey(),
           name: f.string().primaryKey(),
@@ -41,7 +32,7 @@ describe('Schema validations', () => {
 
   test('primary key should not be optional without default value', () => {
     expect(() =>
-      createClient({
+      createORMClient({
         tags: {
           id: f.string().primaryKey().optional(),
           name: f.string(),
@@ -54,7 +45,7 @@ describe('Schema validations', () => {
 
   test('primary key can be optional with default value', async () => {
     expect(() =>
-      createClient({
+      createORMClient({
         tags: {
           id: f.string().primaryKey().optional().default(nanoid),
           name: f.string(),
@@ -65,14 +56,16 @@ describe('Schema validations', () => {
 });
 
 describe('Entity validations', () => {
+  const Client = createORMClient({
+    tags: {
+      id: f.string().primaryKey().default(nanoid),
+      name: f.string(),
+      color: f.string(),
+    },
+  });
+
   function createTagsClient() {
-    return createClient({
-      tags: {
-        id: f.string().primaryKey().default(nanoid),
-        name: f.string(),
-        color: f.string(),
-      },
-    });
+    return new Client(new MemoryORMAdapter());
   }
 
   test('should not update primary key', () => {
@@ -123,12 +116,14 @@ describe('Entity validations', () => {
 
   test('should be able to assign `null` to json field', () => {
     expect(() => {
-      const client = createClient({
+      const Client = createORMClient({
         tags: {
           id: f.string().primaryKey().default(nanoid),
           info: f.json(),
         },
       });
+
+      const client = new Client(new MemoryORMAdapter());
 
       const tag = client.tags.create({ info: null });
 

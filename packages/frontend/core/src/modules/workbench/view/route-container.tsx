@@ -1,17 +1,18 @@
-import { IconButton, observeResize } from '@affine/component';
+import { IconButton } from '@affine/component';
 import { WindowsAppControls } from '@affine/core/components/pure/header/windows-app-controls';
 import { RightSidebarIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useAtomValue } from 'jotai';
-import { Suspense, useCallback, useEffect, useRef } from 'react';
+import { Suspense, useCallback } from 'react';
 
 import { AffineErrorBoundary } from '../../../components/affine/affine-error-boundary';
 import { appSidebarOpenAtom } from '../../../components/app-sidebar/index.jotai';
 import { SidebarSwitch } from '../../../components/app-sidebar/sidebar-header/sidebar-switch';
-import { RightSidebarService } from '../../right-sidebar';
 import { ViewService } from '../services/view';
+import { WorkbenchService } from '../services/workbench';
 import * as styles from './route-container.css';
 import { useViewPosition } from './use-view-position';
+import { ViewBodyTarget, ViewHeaderTarget } from './view-islands';
 
 export interface Props {
   route: {
@@ -41,25 +42,16 @@ const ToggleButton = ({
 };
 
 export const RouteContainer = ({ route }: Props) => {
-  const viewHeaderContainerRef = useRef<HTMLDivElement | null>(null);
-  const view = useService(ViewService).view;
   const viewPosition = useViewPosition();
   const leftSidebarOpen = useAtomValue(appSidebarOpenAtom);
-  const rightSidebar = useService(RightSidebarService).rightSidebar;
-  const rightSidebarOpen = useLiveData(rightSidebar.isOpen$);
-  const rightSidebarHasViews = useLiveData(rightSidebar.hasViews$);
-  const handleToggleRightSidebar = useCallback(() => {
-    rightSidebar.toggle();
-  }, [rightSidebar]);
+  const workbench = useService(WorkbenchService).workbench;
+  const view = useService(ViewService).view;
+  const sidebarOpen = useLiveData(workbench.sidebarOpen$);
+  const handleToggleSidebar = useCallback(() => {
+    workbench.toggleSidebar();
+  }, [workbench]);
   const isWindowsDesktop = environment.isDesktop && environment.isWindows;
 
-  useEffect(() => {
-    const container = viewHeaderContainerRef.current;
-    if (!container) return;
-    return observeResize(container, entry => {
-      view.headerContentWidth$.next(entry.contentRect.width);
-    });
-  }, [view.headerContentWidth$]);
   return (
     <div className={styles.root}>
       <div className={styles.header}>
@@ -69,34 +61,32 @@ export const RouteContainer = ({ route }: Props) => {
             className={styles.leftSidebarButton}
           />
         )}
-        <view.header.Target
-          ref={viewHeaderContainerRef}
+        <ViewHeaderTarget
+          viewId={view.id}
           className={styles.viewHeaderContainer}
         />
         {viewPosition.isLast && (
           <>
-            {rightSidebarHasViews && (
-              <ToggleButton
-                show={!rightSidebarOpen}
-                className={styles.rightSidebarButton}
-                onToggle={handleToggleRightSidebar}
-              />
+            <ToggleButton
+              show={!sidebarOpen}
+              className={styles.rightSidebarButton}
+              onToggle={handleToggleSidebar}
+            />
+            {isWindowsDesktop && !sidebarOpen && (
+              <div className={styles.windowsAppControlsContainer}>
+                <WindowsAppControls />
+              </div>
             )}
-            {isWindowsDesktop &&
-              !(rightSidebarOpen && rightSidebarHasViews) && (
-                <div className={styles.windowsAppControlsContainer}>
-                  <WindowsAppControls />
-                </div>
-              )}
           </>
         )}
       </div>
+
       <AffineErrorBoundary>
         <Suspense>
           <route.Component />
         </Suspense>
       </AffineErrorBoundary>
-      <view.body.Target className={styles.viewBodyContainer} />
+      <ViewBodyTarget viewId={view.id} className={styles.viewBodyContainer} />
     </div>
   );
 };

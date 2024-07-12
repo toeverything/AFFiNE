@@ -152,6 +152,7 @@ export const planTitleTitle = style({
   fontWeight: 600,
   fontSize: cssVar('fontBase'),
   lineHeight: '20px',
+  height: 20,
 });
 export const planTitleTitleCaption = style({
   fontWeight: 500,
@@ -176,6 +177,7 @@ export const planPriceDesc = style({
 });
 export const planAction = style({
   width: '100%',
+  fontWeight: 500,
 });
 export const planBenefits = style({
   fontSize: cssVar('fontXs'),

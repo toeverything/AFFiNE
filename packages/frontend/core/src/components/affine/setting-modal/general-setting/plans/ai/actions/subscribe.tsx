@@ -1,4 +1,4 @@
-import { Button, type ButtonProps } from '@affine/component';
+import { Button, type ButtonProps, Skeleton } from '@affine/component';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { SubscriptionService } from '@affine/core/modules/cloud';
 import { mixpanel, popupWindow } from '@affine/core/utils';
@@ -8,9 +8,14 @@ import { useLiveData, useService } from '@toeverything/infra';
 import { nanoid } from 'nanoid';
 import { useEffect, useState } from 'react';
 
-export interface AISubscribeProps extends ButtonProps {}
+export interface AISubscribeProps extends ButtonProps {
+  displayedFrequency?: 'yearly' | 'monthly';
+}
 
-export const AISubscribe = ({ ...btnProps }: AISubscribeProps) => {
+export const AISubscribe = ({
+  displayedFrequency = 'yearly',
+  ...btnProps
+}: AISubscribeProps) => {
   const [idempotencyKey, setIdempotencyKey] = useState(nanoid());
   const [isMutating, setMutating] = useState(false);
   const [isOpenedExternalWindow, setOpenedExternalWindow] = useState(false);
@@ -63,12 +68,28 @@ export const AISubscribe = ({ ...btnProps }: AISubscribeProps) => {
   }, [idempotencyKey, subscriptionService]);
 
   if (!price || !price.yearlyAmount) {
-    // TODO(@catsjuice): loading UI
-    return null;
+    return (
+      <Skeleton
+        className={btnProps.className}
+        width={160}
+        height={36}
+        style={{
+          borderRadius: 18,
+          ...btnProps.style,
+        }}
+      />
+    );
   }
 
-  const priceReadable = `$${(price.yearlyAmount / 100).toFixed(2)}`;
-  const priceFrequency = t['com.affine.payment.billing-setting.year']();
+  const priceReadable = `$${(
+    price.yearlyAmount /
+    100 /
+    (displayedFrequency === 'yearly' ? 1 : 12)
+  ).toFixed(2)}`;
+  const priceFrequency =
+    displayedFrequency === 'yearly'
+      ? t['com.affine.payment.billing-setting.year']()
+      : t['com.affine.payment.billing-setting.month']();
 
   return (
     <Button
@@ -78,6 +99,18 @@ export const AISubscribe = ({ ...btnProps }: AISubscribeProps) => {
       {...btnProps}
     >
       {btnProps.children ?? `${priceReadable} / ${priceFrequency}`}
+      {displayedFrequency === 'monthly' ? (
+        <span
+          style={{
+            fontSize: 10,
+            opacity: 0.75,
+            letterSpacing: -0.2,
+            paddingLeft: 4,
+          }}
+        >
+          {t['com.affine.payment.ai.subscribe.billed-annually']()}
+        </span>
+      ) : null}
     </Button>
   );
 };

@@ -18,3 +18,9 @@ export const journalWeekPicker = style({
   alignItems: 'center',
   justifyContent: 'center',
 });
+
+export const iconButtonContainer = style({
+  display: 'flex',
+  alignItems: 'center',
+  gap: 10,
+});

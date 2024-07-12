@@ -1,9 +1,24 @@
-import { omit } from 'lodash-es';
-import type { Doc, Map as YMap, Transaction, YMapEvent } from 'yjs';
+import { pick } from 'lodash-es';
+import {
+  type AbstractType,
+  type Doc,
+  Map as YMap,
+  type Transaction,
+} from 'yjs';
 
 import { validators } from '../../validators';
 import { HookAdapter } from '../mixins';
-import type { Key, TableAdapter, TableOptions } from '../types';
+import type {
+  DeleteQuery,
+  FindQuery,
+  InsertQuery,
+  ObserveQuery,
+  Select,
+  TableAdapter,
+  TableAdapterOptions,
+  UpdateQuery,
+  WhereCondition,
+} from '../types';
 
 /**
  * Yjs Adapter for AFFiNE ORM
@@ -22,33 +37,29 @@ import type { Key, TableAdapter, TableOptions } from '../types';
 @HookAdapter()
 export class YjsTableAdapter implements TableAdapter {
   private readonly deleteFlagKey = '$$DELETED';
-  private readonly keyFlagKey = '$$KEY';
-  private readonly hiddenFields = [this.deleteFlagKey, this.keyFlagKey];
+  private keyField: string = 'key';
+  private fields: string[] = [];
 
   private readonly origin = 'YjsTableAdapter';
-
-  keysCache: Set<Key> | null = null;
-  cacheStaled = true;
 
   constructor(
     private readonly tableName: string,
     private readonly doc: Doc
   ) {}
 
-  setup(_opts: TableOptions): void {
-    this.doc.on('update', (_, origin) => {
-      if (origin !== this.origin) {
-        this.markCacheStaled();
-      }
-    });
+  setup(opts: TableAdapterOptions): void {
+    this.keyField = opts.keyField;
+    this.fields = Object.keys(opts.schema);
   }
 
   dispose() {
     this.doc.destroy();
   }
 
-  create(key: Key, data: any) {
+  insert(query: InsertQuery) {
+    const { data, select } = query;
     validators.validateYjsEntityData(this.tableName, data);
+    const key = data[this.keyField];
     const record = this.doc.getMap(key.toString());
 
     this.doc.transact(() => {
@@ -56,139 +67,174 @@ export class YjsTableAdapter implements TableAdapter {
         record.set(key, data[key]);
       }
 
-      this.keyBy(record, key);
-      record.set(this.deleteFlagKey, false);
+      record.delete(this.deleteFlagKey);
     }, this.origin);
 
-    this.markCacheStaled();
-    return this.value(record);
+    return this.value(record, select);
   }
 
-  update(key: Key, data: any) {
+  update(query: UpdateQuery) {
+    const { data, select, where } = query;
     validators.validateYjsEntityData(this.tableName, data);
-    const record = this.record(key);
 
-    if (this.isDeleted(record)) {
-      return;
-    }
-
+    const results: any[] = [];
     this.doc.transact(() => {
-      for (const key in data) {
-        record.set(key, data[key]);
-      }
-    }, this.origin);
-
-    return this.value(record);
-  }
-
-  get(key: Key) {
-    const record = this.record(key);
-    return this.value(record);
-  }
-
-  subscribe(key: Key, callback: (data: any) => void) {
-    const record: YMap<any> = this.record(key);
-    // init callback
-    callback(this.value(record));
-
-    const ob = (event: YMapEvent<any>) => {
-      callback(this.value(event.target));
-    };
-    record.observe(ob);
-
-    return () => {
-      record.unobserve(ob);
-    };
-  }
-
-  keys() {
-    const keysCache = this.buildKeysCache();
-    return Array.from(keysCache);
-  }
-
-  subscribeKeys(callback: (keys: Key[]) => void) {
-    const keysCache = this.buildKeysCache();
-    // init callback
-    callback(Array.from(keysCache));
-
-    const ob = (tx: Transaction) => {
-      const keysCache = this.buildKeysCache();
-
-      for (const [type] of tx.changed) {
-        const data = type as unknown as YMap<any>;
-        const key = this.keyof(data);
-        if (this.isDeleted(data)) {
-          keysCache.delete(key);
-        } else {
-          keysCache.add(key);
+      for (const record of this.iterate(where)) {
+        results.push(this.value(record, select));
+        for (const key in data) {
+          this.setField(record, key, data[key]);
         }
       }
+    }, this.origin);
 
-      callback(Array.from(keysCache));
+    return results;
+  }
+
+  find(query: FindQuery) {
+    const { where, select } = query;
+    const records: any[] = [];
+    for (const record of this.iterate(where)) {
+      records.push(this.value(record, select));
+    }
+
+    return records;
+  }
+
+  observe(query: ObserveQuery) {
+    const { where, select, callback } = query;
+
+    let listeningOnAll = false;
+    const obKeys = new Set<any>();
+    const results = [];
+
+    if (!where) {
+      listeningOnAll = true;
+    } else if ('byKey' in where) {
+      obKeys.add(where.byKey.toString());
+    }
+
+    for (const record of this.iterate(where)) {
+      if (!listeningOnAll) {
+        obKeys.add(this.keyof(record));
+      }
+      results.push(this.value(record, select));
+    }
+
+    callback(results);
+
+    const ob = (tx: Transaction) => {
+      for (const [ty] of tx.changed) {
+        const record = ty as unknown as AbstractType<any>;
+        if (
+          listeningOnAll ||
+          obKeys.has(this.keyof(record)) ||
+          (where && this.match(record, where))
+        ) {
+          callback(this.find({ where, select }));
+          return;
+        }
+      }
     };
 
     this.doc.on('afterTransaction', ob);
-
     return () => {
       this.doc.off('afterTransaction', ob);
     };
   }
 
-  delete(key: Key) {
-    const record = this.record(key);
+  delete(query: DeleteQuery) {
+    const { where } = query;
 
     this.doc.transact(() => {
-      for (const key of record.keys()) {
-        if (!this.hiddenFields.includes(key)) {
-          record.delete(key);
+      for (const record of this.iterate(where)) {
+        this.deleteTy(record);
+      }
+    }, this.origin);
+  }
+
+  toObject(ty: AbstractType<any>): Record<string, any> {
+    return YMap.prototype.toJSON.call(ty);
+  }
+
+  private recordByKey(key: string): AbstractType<any> | null {
+    // detect if the record is there otherwise yjs will create an empty Map.
+    if (this.doc.share.has(key)) {
+      return this.doc.getMap(key);
+    }
+
+    return null;
+  }
+
+  private *iterate(where: WhereCondition = []) {
+    // fast pass for key lookup without iterating the whole table
+    if ('byKey' in where) {
+      const record = this.recordByKey(where.byKey.toString());
+      if (record) {
+        yield record;
+      }
+    } else if (Array.isArray(where)) {
+      for (const map of this.doc.share.values()) {
+        if (this.match(map, where)) {
+          yield map;
         }
       }
-      record.set(this.deleteFlagKey, true);
-    }, this.origin);
-    this.markCacheStaled();
+    }
   }
 
-  private isDeleted(record: YMap<any>) {
-    return record.get(this.deleteFlagKey) === true;
-  }
-
-  private record(key: Key) {
-    return this.doc.getMap(key.toString());
-  }
-
-  private value(record: YMap<any>) {
-    if (this.isDeleted(record) || !record.size) {
+  private value(record: AbstractType<any>, select: Select = '*') {
+    if (this.isDeleted(record) || this.isEmpty(record)) {
       return null;
     }
 
-    return omit(record.toJSON(), this.hiddenFields);
-  }
-
-  private buildKeysCache() {
-    if (!this.keysCache || this.cacheStaled) {
-      this.keysCache = new Set();
-
-      for (const key of this.doc.share.keys()) {
-        const record = this.doc.getMap(key);
-        if (!this.isDeleted(record)) {
-          this.keysCache.add(this.keyof(record));
-        }
-      }
-      this.cacheStaled = false;
+    let selectedFields: string[];
+    if (select === 'key') {
+      return this.keyof(record);
+    } else if (select === '*') {
+      selectedFields = this.fields;
+    } else {
+      selectedFields = select;
     }
 
-    return this.keysCache;
+    return pick(this.toObject(record), selectedFields);
   }
 
-  private markCacheStaled() {
-    this.cacheStaled = true;
+  private match(record: AbstractType<any>, where: WhereCondition) {
+    return (
+      !this.isDeleted(record) &&
+      (Array.isArray(where)
+        ? where.every(c => this.field(record, c.field) === c.value)
+        : where.byKey === this.keyof(record))
+    );
   }
 
-  private keyof(record: YMap<any>) {
-    return record.get(this.keyFlagKey);
+  private isDeleted(record: AbstractType<any>) {
+    return (
+      this.field(record, this.deleteFlagKey) === true || this.isEmpty(record)
+    );
   }
 
-  private keyBy(record: YMap<any>, key: Key) {
-    record.set(this.keyFlagKey, key);
+  private keyof(record: AbstractType<any>) {
+    return this.field(record, this.keyField);
+  }
+
+  private field(ty: AbstractType<any>, field: string) {
+    return YMap.prototype.get.call(ty, field);
+  }
+
+  private setField(ty: AbstractType<any>, field: string, value: any) {
+    YMap.prototype.set.call(ty, field, value);
+  }
+
+  private isEmpty(ty: AbstractType<any>) {
+    return ty._map.size === 0;
+  }
+
+  private deleteTy(ty: AbstractType<any>) {
+    this.fields.forEach(field => {
+      if (field !== this.keyField) {
+        YMap.prototype.delete.call(ty, field);
+      }
+    });
+    YMap.prototype.set.call(ty, this.deleteFlagKey, true);
   }
 }

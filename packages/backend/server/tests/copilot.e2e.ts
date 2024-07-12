@@ -97,7 +97,7 @@ test.beforeEach(async t => {
   ]);
 
   for (const p of prompts) {
-    await prompt.set(p.name, p.model, p.messages);
+    await prompt.set(p.name, p.model, p.messages, p.config);
   }
 });
 

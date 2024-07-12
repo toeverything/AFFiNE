@@ -27,6 +27,7 @@ export const UserPlanButton = () => {
       subscription !== null ? subscription?.plan : null
     )
   );
+  const isBeliever = useLiveData(subscriptionService.subscription.isBeliever$);
   const isLoading = plan === null;
 
   useEffect(() => {
@@ -41,6 +42,7 @@ export const UserPlanButton = () => {
       setSettingModalAtom({
         open: true,
         activeTab: 'plans',
+        scrollAnchor: 'cloudPricingPlan',
       });
       mixpanel.track('PlansViewed', {
         segment: 'settings panel',
@@ -62,11 +64,15 @@ export const UserPlanButton = () => {
     return;
   }
 
-  const planLabel = plan ?? SubscriptionPlan.Free;
+  const planLabel = isBeliever ? 'Believer' : plan ?? SubscriptionPlan.Free;
 
   return (
     <Tooltip content={t['com.affine.payment.tag-tooltips']()} side="top">
-      <div className={styles.userPlanButton} onClick={handleClick}>
+      <div
+        data-is-believer={isBeliever ? 'true' : undefined}
+        className={styles.userPlanButton}
+        onClick={handleClick}
+      >
         {planLabel}
       </div>
     </Tooltip>

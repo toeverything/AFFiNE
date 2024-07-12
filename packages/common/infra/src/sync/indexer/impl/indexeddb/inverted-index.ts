@@ -299,9 +299,9 @@ export class FullTextInvertedIndex implements InvertedIndex {
   async insert(trx: DataStructRWTransaction, id: number, terms: string[]) {
     for (let i = 0; i < terms.length; i++) {
       const tokenMap = new Map<string, Token[]>();
-      const term = terms[i];
+      const originString = terms[i];
 
-      const tokens = new GeneralTokenizer().tokenize(term);
+      const tokens = new GeneralTokenizer().tokenize(originString);
 
       for (const token of tokens) {
         const tokens = tokenMap.get(token.term) || [];
@@ -314,7 +314,7 @@ export class FullTextInvertedIndex implements InvertedIndex {
           key: InvertedIndexKey.forString(this.fieldKey, term).buffer(),
           nid: id,
           pos: {
-            l: term.length,
+            l: originString.length,
             i: i,
             rs: tokens.map(token => [token.start, token.end]),
           },

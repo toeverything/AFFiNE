@@ -76,12 +76,12 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
-    "@blocksuite/block-std": "0.15.0-canary-202407011031-17e7b65",
-    "@blocksuite/blocks": "0.15.0-canary-202407011031-17e7b65",
-    "@blocksuite/global": "0.15.0-canary-202407011031-17e7b65",
+    "@blocksuite/block-std": "0.16.0-canary-202407050348-4620c21",
+    "@blocksuite/blocks": "0.16.0-canary-202407050348-4620c21",
+    "@blocksuite/global": "0.16.0-canary-202407050348-4620c21",
     "@blocksuite/icons": "2.1.58",
-    "@blocksuite/presets": "0.15.0-canary-202407011031-17e7b65",
-    "@blocksuite/store": "0.15.0-canary-202407011031-17e7b65",
+    "@blocksuite/presets": "0.16.0-canary-202407050348-4620c21",
+    "@blocksuite/store": "0.16.0-canary-202407050348-4620c21",
     "@storybook/addon-actions": "^7.6.17",
     "@storybook/addon-essentials": "^7.6.17",
     "@storybook/addon-interactions": "^7.6.17",
@@ -93,7 +93,7 @@
     "@storybook/jest": "^0.2.3",
     "@storybook/react": "^7.6.17",
     "@storybook/react-vite": "^7.6.17",
-    "@storybook/test-runner": "^0.18.0",
+    "@storybook/test-runner": "^0.19.0",
     "@storybook/testing-library": "^0.2.2",
     "@testing-library/react": "^16.0.0",
     "@types/bytes": "^3.1.4",
@@ -103,11 +103,10 @@
     "@vanilla-extract/css": "^1.14.2",
     "fake-indexeddb": "^6.0.0",
     "storybook": "^7.6.17",
-    "storybook-dark-mode": "4.0.1",
+    "storybook-dark-mode": "4.0.2",
     "typescript": "^5.4.5",
     "vite": "^5.2.8",
-    "vitest": "1.6.0",
-    "yjs": "^13.6.14"
+    "vitest": "1.6.0"
   },
   "version": "0.15.0"
 }

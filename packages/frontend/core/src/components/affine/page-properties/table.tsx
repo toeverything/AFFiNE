@@ -105,7 +105,7 @@ interface SortablePropertiesProps {
   children: (properties: PageInfoCustomProperty[]) => React.ReactNode;
 }
 
-const SortableProperties = ({ children }: SortablePropertiesProps) => {
+export const SortableProperties = ({ children }: SortablePropertiesProps) => {
   const manager = useContext(managerContext);
   const properties = useMemo(() => manager.sorter.getOrderedItems(), [manager]);
   const editingItem = useAtomValue(editingPropertyAtom);
@@ -735,9 +735,13 @@ export const PagePropertiesTableHeader = ({
 interface PagePropertyRowProps {
   property: PageInfoCustomProperty;
   style?: React.CSSProperties;
+  rowNameClassName?: string;
 }
 
-const PagePropertyRow = ({ property }: PagePropertyRowProps) => {
+export const PagePropertyRow = ({
+  property,
+  rowNameClassName,
+}: PagePropertyRowProps) => {
   const manager = useContext(managerContext);
   const meta = manager.getCustomPropertyMeta(property.id);
 
@@ -772,7 +776,10 @@ const PagePropertyRow = ({ property }: PagePropertyRowProps) => {
               {...attributes}
               {...listeners}
               data-testid="page-property-row-name"
-              className={styles.sortablePropertyRowNameCell}
+              className={clsx(
+                styles.sortablePropertyRowNameCell,
+                rowNameClassName
+              )}
               onClick={handleEditMeta}
             >
               <div className={styles.propertyRowNameContainer}>
@@ -790,7 +797,11 @@ const PagePropertyRow = ({ property }: PagePropertyRowProps) => {
   );
 };
 
-const PageTagsRow = () => {
+export const PageTagsRow = ({
+  rowNameClassName,
+}: {
+  rowNameClassName?: string;
+}) => {
   const t = useI18n();
   return (
     <div
@@ -799,7 +810,7 @@ const PageTagsRow = () => {
       data-property="tags"
     >
       <div
-        className={styles.propertyRowNameCell}
+        className={clsx(styles.propertyRowNameCell, rowNameClassName)}
         data-testid="page-property-row-name"
       >
         <div className={styles.propertyRowNameContainer}>
@@ -1074,7 +1085,7 @@ const PagePropertiesTableInner = () => {
   );
 };
 
-const usePagePropertiesManager = (page: Doc) => {
+export const usePagePropertiesManager = (page: Doc) => {
   // the workspace properties adapter adapter is reactive,
   // which means it's reference will change when any of the properties change
   // also it will trigger a re-render of the component

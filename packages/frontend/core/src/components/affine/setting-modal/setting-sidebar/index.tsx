@@ -51,6 +51,7 @@ export const UserInfo = ({ onAccountSettingClick, active }: UserInfoProps) => {
     >
       <Avatar
         size={28}
+        rounded={2}
         name={account.label}
         url={account.avatar}
         className="avatar"
@@ -195,11 +196,8 @@ export const SettingSidebar = ({
       </div>
 
       <div className={style.sidebarFooter}>
-        {runtimeConfig.enableCloud && loginStatus === 'unauthenticated' ? (
-          <SignInButton />
-        ) : null}
-
-        {runtimeConfig.enableCloud && loginStatus === 'authenticated' ? (
+        {loginStatus === 'unauthenticated' ? <SignInButton /> : null}
+        {loginStatus === 'authenticated' ? (
           <Suspense>
             <UserInfo
               onAccountSettingClick={onAccountSettingClick}
@@ -262,7 +260,6 @@ const subTabConfigs = [
   title: keyof ReturnType<typeof useI18n>;
 }[];
 
-const avatarImageProps = { style: { borderRadius: 2 } };
 const WorkspaceListItem = ({
   activeSubTab,
   meta,
@@ -326,9 +323,7 @@ const WorkspaceListItem = ({
           style={{
             marginRight: '10px',
           }}
-          imageProps={avatarImageProps}
-          fallbackProps={avatarImageProps}
-          hoverWrapperProps={avatarImageProps}
+          rounded={2}
         />
         <span className="setting-name">{name}</span>
         {isCurrent ? (

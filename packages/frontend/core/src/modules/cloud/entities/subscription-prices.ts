@@ -28,6 +28,12 @@ export class SubscriptionPrices extends Entity {
     prices ? prices.find(price => price.plan === 'AI') : null
   );
 
+  readableLifetimePrice$ = this.proPrice$.map(price =>
+    price?.lifetimeAmount
+      ? `$${(price.lifetimeAmount / 100).toFixed(2).replace(/\.0+$/, '')}`
+      : ''
+  );
+
   constructor(
     private readonly serverConfigService: ServerConfigService,
     private readonly store: SubscriptionStore

@@ -5,8 +5,8 @@
   "devDependencies": {
     "@affine/env": "workspace:*",
     "@affine/templates": "workspace:*",
-    "@aws-sdk/client-s3": "3.592.0",
-    "@blocksuite/presets": "0.15.0-canary-202407011031-17e7b65",
+    "@aws-sdk/client-s3": "3.609.0",
+    "@blocksuite/presets": "0.16.0-canary-202407050348-4620c21",
     "@clack/core": "^0.3.4",
     "@clack/prompts": "^0.7.0",
     "@magic-works/i18n-codegen": "^0.6.0",

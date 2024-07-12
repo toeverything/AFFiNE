@@ -408,6 +408,10 @@ export const USER_FRIENDLY_ERRORS = {
     args: { plan: 'string', recurring: 'string' },
     message: 'You are trying to access a unknown subscription plan.',
   },
+  cant_update_lifetime_subscription: {
+    type: 'action_forbidden',
+    message: 'You cannot update a lifetime subscription.',
+  },
 
   // Copilot errors
   copilot_session_not_found: {
@@ -456,7 +460,7 @@ export const USER_FRIENDLY_ERRORS = {
     type: 'internal_server_error',
     args: { provider: 'string', kind: 'string', message: 'string' },
     message: ({ provider, kind, message }) =>
-      `Provider ${provider} failed with ${kind} error: ${message || 'unknown'}.`,
+      `Provider ${provider} failed with ${kind} error: ${message || 'unknown'}`,
   },
 
   // Quota & Limit errors

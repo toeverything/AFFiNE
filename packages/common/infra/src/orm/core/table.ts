@@ -1,13 +1,14 @@
 import { isUndefined, omitBy } from 'lodash-es';
 import { Observable, shareReplay } from 'rxjs';
 
-import type { DBAdapter, Key, TableAdapter, TableOptions } from './adapters';
+import type { DBAdapter, TableAdapter } from './adapters';
 import type {
   DBSchemaBuilder,
   FieldSchemaBuilder,
   TableSchema,
   TableSchemaBuilder,
 } from './schema';
+import type { Key, TableOptions } from './types';
 import { validators } from './validators';
 
 type Pretty<T> = T extends any
@@ -74,10 +75,16 @@ export type UpdateEntityInput<T extends TableSchemaBuilder> = Pretty<{
     : never;
 }>;
 
+export type FindEntityInput<T extends TableSchemaBuilder> = Pretty<{
+  [key in keyof T]?: T[key] extends FieldSchemaBuilder<infer Type>
+    ? Type
+    : never;
+}>;
+
 export class Table<T extends TableSchemaBuilder> {
   readonly schema: TableSchema;
   readonly keyField: string = '';
-  private readonly adapter: TableAdapter<PrimaryKeyFieldType<T>, Entity<T>>;
+  private readonly adapter: TableAdapter;
 
   private readonly subscribedKeys: Map<Key, Observable<any>> = new Map();
 
@@ -87,7 +94,6 @@ export class Table<T extends TableSchemaBuilder> {
     private readonly opts: TableOptions
   ) {
     this.adapter = db.table(name) as any;
-    this.adapter.setup(opts);
     this.schema = Object.entries(this.opts.schema).reduce(
       (acc, [fieldName, fieldBuilder]) => {
         acc[fieldName] = fieldBuilder.schema;
@@ -99,6 +105,7 @@ export class Table<T extends TableSchemaBuilder> {
       },
       {} as TableSchema
     );
+    this.adapter.setup({ ...opts, keyField: this.keyField });
   }
 
   create(input: CreateEntityInput<T>): Entity<T> {
@@ -123,16 +130,35 @@ export class Table<T extends TableSchemaBuilder> {
 
     validators.validateCreateEntityData(this, data);
 
-    return this.adapter.create(data[this.keyField], data);
+    return this.adapter.insert({
+      data: data,
+    });
   }
 
-  update(key: PrimaryKeyFieldType<T>, input: UpdateEntityInput<T>): Entity<T> {
+  update(
+    key: PrimaryKeyFieldType<T>,
+    input: UpdateEntityInput<T>
+  ): Entity<T> | null {
     validators.validateUpdateEntityData(this, input);
-    return this.adapter.update(key, omitBy(input, isUndefined) as any);
+
+    const [record] = this.adapter.update({
+      where: {
+        byKey: key,
+      },
+      data: input,
+    });
+
+    return record || null;
   }
 
-  get(key: PrimaryKeyFieldType<T>): Entity<T> {
-    return this.adapter.get(key);
+  get(key: PrimaryKeyFieldType<T>): Entity<T> | null {
+    const [record] = this.adapter.find({
+      where: {
+        byKey: key,
+      },
+    });
+
+    return record || null;
   }
 
   get$(key: PrimaryKeyFieldType<T>): Observable<Entity<T>> {
@@ -140,8 +166,13 @@ export class Table<T extends TableSchemaBuilder> {
 
     if (!ob$) {
       ob$ = new Observable<Entity<T>>(subscriber => {
-        const unsubscribe = this.adapter.subscribe(key, data => {
-          subscriber.next(data);
+        const unsubscribe = this.adapter.observe({
+          where: {
+            byKey: key,
+          },
+          callback: ([data]) => {
+            subscriber.next(data || null);
+          },
         });
 
         return () => {
@@ -161,8 +192,35 @@ export class Table<T extends TableSchemaBuilder> {
     return ob$;
   }
 
+  find(where: FindEntityInput<T>): Entity<T>[] {
+    return this.adapter.find({
+      where: Object.entries(where).map(([field, value]) => ({
+        field,
+        value,
+      })),
+    });
+  }
+
+  find$(where: FindEntityInput<T>): Observable<Entity<T>[]> {
+    return new Observable<Entity<T>[]>(subscriber => {
+      const unsubscribe = this.adapter.observe({
+        where: Object.entries(where).map(([field, value]) => ({
+          field,
+          value,
+        })),
+        callback: data => {
+          subscriber.next(data);
+        },
+      });
+
+      return unsubscribe;
+    });
+  }
+
   keys(): PrimaryKeyFieldType<T>[] {
-    return this.adapter.keys();
+    return this.adapter.find({
+      select: 'key',
+    });
   }
 
   keys$(): Observable<PrimaryKeyFieldType<T>[]> {
@@ -170,8 +228,11 @@ export class Table<T extends TableSchemaBuilder> {
 
     if (!ob$) {
       ob$ = new Observable<PrimaryKeyFieldType<T>[]>(subscriber => {
-        const unsubscribe = this.adapter.subscribeKeys(keys => {
-          subscriber.next(keys);
+        const unsubscribe = this.adapter.observe({
+          select: 'key',
+          callback: (keys: PrimaryKeyFieldType<T>[]) => {
+            subscriber.next(keys);
+          },
         });
 
         return () => {
@@ -192,7 +253,11 @@ export class Table<T extends TableSchemaBuilder> {
   }
 
   delete(key: PrimaryKeyFieldType<T>) {
-    return this.adapter.delete(key);
+    this.adapter.delete({
+      where: {
+        byKey: key,
+      },
+    });
   }
 }
 
