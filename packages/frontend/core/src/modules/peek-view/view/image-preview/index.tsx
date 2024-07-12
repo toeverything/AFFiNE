@@ -16,9 +16,9 @@ import {
   ViewBarIcon,
 } from '@blocksuite/icons/rc';
 import type { BlockModel } from '@blocksuite/store';
-import { fileTypeFromBuffer } from '@sgtpooki/file-type';
 import { useService } from '@toeverything/infra';
 import clsx from 'clsx';
+import { fileTypeFromBuffer } from 'file-type';
 import { useErrorBoundary } from 'foxact/use-error-boundary';
 import type { PropsWithChildren, ReactElement } from 'react';
 import {

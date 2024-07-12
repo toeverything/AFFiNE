@@ -435,6 +435,7 @@ __metadata:
     dayjs: "npm:^1.11.10"
     express: "npm:^4.19.2"
     fake-indexeddb: "npm:^6.0.0"
+    file-type: "npm:^19.1.0"
     foxact: "npm:^0.2.33"
     fractional-indexing: "npm:^3.2.0"
     fuse.js: "npm:^7.0.0"
@@ -23047,6 +23048,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"file-type@npm:^19.1.0":
+  version: 19.1.0
+  resolution: "file-type@npm:19.1.0"
+  dependencies:
+    strtok3: "npm:^7.1.0"
+    token-types: "npm:^6.0.0"
+    uint8array-extras: "npm:^1.3.0"
+  checksum: 10/eccbab06c4f0acb6943af716ac0d814d48ef31bdf8cfdf7ecee1049899c239a490c7371bbf31c32dc12df9357d8f42bd50abf18e59440a6d5baa6889a9d50ece
+  languageName: node
+  linkType: hard
+
 "file-uri-to-path@npm:1.0.0":
   version: 1.0.0
   resolution: "file-uri-to-path@npm:1.0.0"
@@ -31491,10 +31503,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"peek-readable@npm:^5.0.0":
-  version: 5.0.0
-  resolution: "peek-readable@npm:5.0.0"
-  checksum: 10/d342f02dd0c8a6b4bd0e7519a93d545b2b19375200e79a7431f0f1ec3f91e22b2217fa3a15cde95f6ab388ce6fce8aae75794d84b9b39c5836eb7c5f55e7ee9e
+"peek-readable@npm:^5.0.0, peek-readable@npm:^5.1.1":
+  version: 5.1.1
+  resolution: "peek-readable@npm:5.1.1"
+  checksum: 10/b2e88d84cdf13e52ec3d047174a1a661626cc1b44f5b5daf90b00cd5c878372ab05fb6312fd41aa5829e121d6fbe90a71396994d837d9feca9164b48533b113b
   languageName: node
   linkType: hard
 
@@ -35567,6 +35579,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"strtok3@npm:^7.1.0":
+  version: 7.1.0
+  resolution: "strtok3@npm:7.1.0"
+  dependencies:
+    "@tokenizer/token": "npm:^0.3.0"
+    peek-readable: "npm:^5.1.1"
+  checksum: 10/38fb5ce82e38584140c94e10508db5ab5dbc56f98130db708b81032d9a9cba1dab48f4e403807a4a6c5b89ec2073e23ea3da67a19a343a24e4eea1bc4c134727
+  languageName: node
+  linkType: hard
+
 "style-loader@npm:^4.0.0":
   version: 4.0.0
   resolution: "style-loader@npm:4.0.0"
@@ -36307,6 +36329,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"token-types@npm:^6.0.0":
+  version: 6.0.0
+  resolution: "token-types@npm:6.0.0"
+  dependencies:
+    "@tokenizer/token": "npm:^0.3.0"
+    ieee754: "npm:^1.2.1"
+  checksum: 10/b541b605d602e8e6495745badb35f90ee8f997e43dc29bc51aee7e9a0bc3c6bc7372a305bd45f3e80d75223c2b6a5c7e65cb5159d8c4e49fa25cdbaae531fad4
+  languageName: node
+  linkType: hard
+
 "toml@npm:^3.0.0":
   version: 3.0.0
   resolution: "toml@npm:3.0.0"
@@ -36824,6 +36856,13 @@ __metadata:
   dependencies:
     "@lukeed/csprng": "npm:^1.0.0"
   checksum: 10/18f6da43d8e1b8643077e8123f877b4506759d9accc15337140a1bf7c99f299a66e88b27ab4c640e66e6a10f19e3a85afa45fdf830dd4bab7570d07a3d51e073
+  languageName: node
+  linkType: hard
+
+"uint8array-extras@npm:^1.3.0":
+  version: 1.3.0
+  resolution: "uint8array-extras@npm:1.3.0"
+  checksum: 10/056bd90ffa36918bd18619d0d09523da10b34aca30a219aea2155f0e54fbb4a2a7e34147e77faeba70847d9ac4877ca481b482415c2d1552e99cd952890cf527
   languageName: node
   linkType: hard
 

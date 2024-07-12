@@ -57,6 +57,7 @@
     "cmdk": "^1.0.0",
     "css-spring": "^4.1.0",
     "dayjs": "^1.11.10",
+    "file-type": "^19.1.0",
     "foxact": "^0.2.33",
     "fractional-indexing": "^3.2.0",
     "fuse.js": "^7.0.0",
