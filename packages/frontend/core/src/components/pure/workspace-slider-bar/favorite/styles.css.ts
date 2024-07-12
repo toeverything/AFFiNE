@@ -22,15 +22,6 @@ export const favItemWrapper = style({
   flexDirection: 'column',
   flexShrink: 0,
   userSelect: 'none',
-  selectors: {
-    '&[data-nested="true"]': {
-      marginLeft: '20px',
-      width: 'calc(100% - 20px)',
-    },
-    '&:not(:first-of-type)': {
-      marginTop: '4px',
-    },
-  },
 });
 export const collapsibleContent = style({
   overflow: 'hidden',
@@ -71,10 +62,13 @@ globalStyle(`${dragPageItemOverlay} span`, {
 });
 export const favoriteList = style({
   overflow: 'hidden',
+  borderRadius: '4px',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 2,
   selectors: {
     '&[data-over="true"]': {
       background: cssVar('hoverColorFilled'),
-      borderRadius: '4px',
     },
   },
 });

@@ -460,7 +460,7 @@ export const USER_FRIENDLY_ERRORS = {
     type: 'internal_server_error',
     args: { provider: 'string', kind: 'string', message: 'string' },
     message: ({ provider, kind, message }) =>
-      `Provider ${provider} failed with ${kind} error: ${message || 'unknown'}.`,
+      `Provider ${provider} failed with ${kind} error: ${message || 'unknown'}`,
   },
 
   // Quota & Limit errors

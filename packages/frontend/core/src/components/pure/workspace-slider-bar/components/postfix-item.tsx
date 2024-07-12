@@ -9,7 +9,7 @@ import { AddFavouriteButton } from '../favorite/add-favourite-button';
 import * as styles from '../favorite/styles.css';
 import { OperationMenuButton } from './operation-menu-button';
 
-type PostfixItemProps = {
+export type PostfixItemProps = {
   pageId: string;
   pageTitle: string;
   inFavorites?: boolean;

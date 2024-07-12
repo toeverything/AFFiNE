@@ -1031,8 +1031,6 @@
   "com.affine.payment.lifetime.benefit-4": "Dedicated Discord support with AFFiNE makers",
   "com.affine.payment.contact-sales": "Contact Sales",
   "com.affine.payment.current-plan": "Current Plan",
-  "com.affine.payment.disable-payment.description": "This is a special testing(Canary) version of AFFiNE. Account upgrades are not supported in this version. If you want to experience the full service, please download the stable version from our website.",
-  "com.affine.payment.disable-payment.title": "Account Upgrade Unavailable",
   "com.affine.payment.discount-amount": "{{amount}}% off",
   "com.affine.payment.downgrade": "Downgrade",
   "com.affine.payment.downgraded-tooltip": "You have successfully downgraded. After the current billing period ends, your account will automatically switch to the Free plan.",

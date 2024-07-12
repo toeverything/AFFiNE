@@ -11,10 +11,9 @@ import {
   WorkspaceService,
 } from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
-import { useCallback, useState } from 'react';
+import { useCallback } from 'react';
 
 import { openSettingModalAtom } from '../../../../../atoms';
-import { TmpDisableAffineCloudModal } from '../../../tmp-disable-affine-cloud-modal';
 
 export interface PublishPanelProps {
   workspace: Workspace | null;
@@ -30,8 +29,6 @@ export const EnableCloudPanel = () => {
 
   const setSettingModal = useSetAtom(openSettingModalAtom);
 
-  const [open, setOpen] = useState(false);
-
   const confirmEnableCloudAndClose = useCallback(() => {
     if (!workspace) return;
     confirmEnableCloud(workspace, {
@@ -46,30 +43,25 @@ export const EnableCloudPanel = () => {
   }
 
   return (
-    <>
-      <SettingRow
-        name={t['Workspace saved locally']({
-          name: name ?? UNTITLED_WORKSPACE_NAME,
-        })}
-        desc={t['Enable cloud hint']()}
-        spreadCol={false}
-        style={{
-          padding: '10px',
-          background: 'var(--affine-background-secondary-color)',
-        }}
+    <SettingRow
+      name={t['Workspace saved locally']({
+        name: name ?? UNTITLED_WORKSPACE_NAME,
+      })}
+      desc={t['Enable cloud hint']()}
+      spreadCol={false}
+      style={{
+        padding: '10px',
+        background: 'var(--affine-background-secondary-color)',
+      }}
+    >
+      <Button
+        data-testid="publish-enable-affine-cloud-button"
+        type="primary"
+        onClick={confirmEnableCloudAndClose}
+        style={{ marginTop: '12px' }}
       >
-        <Button
-          data-testid="publish-enable-affine-cloud-button"
-          type="primary"
-          onClick={confirmEnableCloudAndClose}
-          style={{ marginTop: '12px' }}
-        >
-          {t['Enable AFFiNE Cloud']()}
-        </Button>
-      </SettingRow>
-      {runtimeConfig.enableCloud ? null : (
-        <TmpDisableAffineCloudModal open={open} onOpenChange={setOpen} />
-      )}
-    </>
+        {t['Enable AFFiNE Cloud']()}
+      </Button>
+    </SettingRow>
   );
 };

@@ -472,20 +472,20 @@ export function patchQuickSearchService(
                     module: 'slash commands',
                     type: 'linked doc',
                     category: 'doc',
-                    page: isEdgeless ? 'whiteboard editor' : 'page editor',
+                    page: isEdgeless ? 'whiteboard editor' : 'doc editor',
                   });
                   mixpanel.track('LinkedDocCreated', {
                     control: 'new doc',
                     module: 'slash commands',
                     type: 'doc',
-                    page: isEdgeless ? 'whiteboard editor' : 'page editor',
+                    page: isEdgeless ? 'whiteboard editor' : 'doc editor',
                   });
                 } else {
                   mixpanel.track('LinkedDocCreated', {
                     control: 'linked doc',
                     module: 'slash commands',
                     type: 'doc',
-                    page: isEdgeless ? 'whiteboard editor' : 'page editor',
+                    page: isEdgeless ? 'whiteboard editor' : 'doc editor',
                   });
                 }
               } else if ('userInput' in result) {

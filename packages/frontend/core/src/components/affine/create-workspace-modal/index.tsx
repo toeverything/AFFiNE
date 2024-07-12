@@ -1,7 +1,7 @@
 import { Avatar, Input, Switch, toast } from '@affine/component';
 import type { ConfirmModalProps } from '@affine/component/ui/modal';
 import { ConfirmModal, Modal } from '@affine/component/ui/modal';
-import { authAtom, openDisableCloudAlertModalAtom } from '@affine/core/atoms';
+import { authAtom } from '@affine/core/atoms';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { DebugLogger } from '@affine/debug';
 import { apis } from '@affine/electron-api';
@@ -61,20 +61,14 @@ const NameWorkspaceContent = ({
   const session = useService(AuthService).session;
   const loginStatus = useLiveData(session.status$);
 
-  const setDisableCloudOpen = useSetAtom(openDisableCloudAlertModalAtom);
-
   const setOpenSignIn = useSetAtom(authAtom);
 
   const openSignInModal = useCallback(() => {
-    if (!runtimeConfig.enableCloud) {
-      setDisableCloudOpen(true);
-    } else {
-      setOpenSignIn(state => ({
-        ...state,
-        openModal: true,
-      }));
-    }
-  }, [setDisableCloudOpen, setOpenSignIn]);
+    setOpenSignIn(state => ({
+      ...state,
+      openModal: true,
+    }));
+  }, [setOpenSignIn]);
 
   const onSwitchChange = useCallback(
     (checked: boolean) => {

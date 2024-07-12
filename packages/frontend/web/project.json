@@ -51,12 +51,6 @@
           "env": "CAPTCHA_SITE_KEY"
         },
         {
-          "env": "SHOULD_REPORT_TRACE"
-        },
-        {
-          "env": "TRACE_REPORT_ENDPOINT"
-        },
-        {
           "env": "R2_ACCOUNT_ID"
         },
         {

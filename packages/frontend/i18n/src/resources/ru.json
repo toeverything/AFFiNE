@@ -1005,8 +1005,6 @@
   "com.affine.payment.cloud.team.title": "Связаться с отделом продаж",
   "com.affine.payment.contact-sales": "Связаться с отделом продаж",
   "com.affine.payment.current-plan": "Текущий план",
-  "com.affine.payment.disable-payment.description": "Это специальная тестовая (Canary) версия AFFiNE. Обновления аккаунта не поддерживаются в этой версии. Если вы хотите воспользоваться всеми возможностями сервиса, пожалуйста, загрузите стабильную версию с нашего сайта.",
-  "com.affine.payment.disable-payment.title": "Обновление аккаунта недоступно",
   "com.affine.payment.discount-amount": "{{amount}}% скидка",
   "com.affine.payment.downgrade": "Понизить",
   "com.affine.payment.downgraded-tooltip": "Вы успешно понизили тариф. После окончания текущего периода оплаты ваш аккаунт автоматически перейдет на Free план.",

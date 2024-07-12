@@ -28,20 +28,20 @@ export const promptKeys = [
   'Write outline',
   'Change tone to',
   'Brainstorm ideas about this',
-  'Brainstorm mindmap',
   'Expand mind map',
   'Improve writing for it',
   'Improve grammar for it',
   'Fix spelling for it',
   'Find action items from it',
   'Check code error',
-  'Create a presentation',
   'Create headings',
   'Make it real',
   'Make it real with text',
   'Make it longer',
   'Make it shorter',
   'Continue writing',
+  'workflow:presentation',
+  'workflow:brainstorm',
 ] as const;
 
 export type PromptKey = (typeof promptKeys)[number];

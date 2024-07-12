@@ -23,6 +23,8 @@ export type TextToTextOptions = {
   stream?: boolean;
   signal?: AbortSignal;
   retry?: boolean;
+  workflow?: boolean;
+  postfix?: (text: string) => string;
 };
 
 export type ToImageOptions = TextToTextOptions & {
@@ -116,6 +118,8 @@ export function textToText({
   signal,
   timeout = TIMEOUT,
   retry = false,
+  workflow = false,
+  postfix,
 }: TextToTextOptions) {
   let _sessionId: string;
   let _messageId: string | undefined;
@@ -144,10 +148,13 @@ export function textToText({
           _messageId = message.messageId;
         }
 
-        const eventSource = client.chatTextStream({
-          sessionId: _sessionId,
-          messageId: _messageId,
-        });
+        const eventSource = client.chatTextStream(
+          {
+            sessionId: _sessionId,
+            messageId: _messageId,
+          },
+          workflow ? 'workflow' : undefined
+        );
         AIProvider.LAST_ACTION_SESSIONID = _sessionId;
         AIProvider.LAST_MESSAGE_ID = _messageId ?? '';
 
@@ -160,12 +167,25 @@ export function textToText({
             eventSource.close();
           };
         }
-        for await (const event of toTextStream(eventSource, {
-          timeout,
-          signal,
-        })) {
-          if (event.type === 'message') {
-            yield event.data;
+        if (postfix) {
+          const messages: string[] = [];
+          for await (const event of toTextStream(eventSource, {
+            timeout,
+            signal,
+          })) {
+            if (event.type === 'message') {
+              messages.push(event.data);
+            }
+          }
+          yield postfix(messages.join(''));
+        } else {
+          for await (const event of toTextStream(eventSource, {
+            timeout,
+            signal,
+          })) {
+            if (event.type === 'message') {
+              yield event.data;
+            }
           }
         }
       },

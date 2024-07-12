@@ -1,32 +1,16 @@
-import { Loading, Tooltip } from '@affine/component';
 import {
   getDNDId,
   parseDNDId,
 } from '@affine/core/hooks/affine/use-global-dnd-helper';
-import { DocsSearchService } from '@affine/core/modules/docs-search';
-import {
-  WorkbenchLink,
-  WorkbenchService,
-} from '@affine/core/modules/workbench';
 import { useI18n } from '@affine/i18n';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons/rc';
 import { type AnimateLayoutChanges, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import * as Collapsible from '@radix-ui/react-collapsible';
-import {
-  DocsService,
-  LiveData,
-  useLiveData,
-  useServices,
-} from '@toeverything/infra';
-import { useEffect, useMemo, useState } from 'react';
+import { DocsService, useLiveData, useService } from '@toeverything/infra';
+import { useMemo } from 'react';
 
-import { MenuLinkItem } from '../../../app-sidebar';
 import { DragMenuItemOverlay } from '../components/drag-menu-item-overlay';
-import * as draggableMenuItemStyles from '../components/draggable-menu-item.css';
-import { PostfixItem } from '../components/postfix-item';
-import type { ReferencePageProps } from '../components/reference-page';
-import { ReferencePage } from '../components/reference-page';
+import { SidebarDocItem } from '../doc-tree/doc';
 import * as styles from './styles.css';
 
 const animateLayoutChanges: AnimateLayoutChanges = ({
@@ -34,44 +18,12 @@ const animateLayoutChanges: AnimateLayoutChanges = ({
   wasDragging,
 }) => (isSorting || wasDragging ? false : true);
 
-export const FavouriteDocSidebarNavItem = ({
-  pageId,
-}: ReferencePageProps & {
-  sortable?: boolean;
-}) => {
+export const FavouriteDocSidebarNavItem = ({ docId }: { docId: string }) => {
   const t = useI18n();
-  const { docsSearchService, workbenchService, docsService } = useServices({
-    DocsSearchService,
-    WorkbenchService,
-    DocsService,
-  });
-  const workbench = workbenchService.workbench;
-  const location = useLiveData(workbench.location$);
-  const linkActive = location.pathname === '/' + pageId;
-  const docRecord = useLiveData(docsService.list.doc$(pageId));
+  const docsService = useService(DocsService);
+  const docRecord = useLiveData(docsService.list.doc$(docId));
   const docMode = useLiveData(docRecord?.mode$);
   const docTitle = useLiveData(docRecord?.title$);
-  const references = useLiveData(
-    useMemo(
-      () => LiveData.from(docsSearchService.watchRefsFrom(pageId), null),
-      [docsSearchService, pageId]
-    )
-  );
-  const indexerLoading = useLiveData(
-    docsSearchService.indexer.status$.map(
-      v => v.remaining === undefined || v.remaining > 0
-    )
-  );
-  const [referencesLoading, setReferencesLoading] = useState(true);
-  useEffect(() => {
-    setReferencesLoading(
-      prev =>
-        prev &&
-        indexerLoading /* after loading becomes false, it never becomes true */
-    );
-  }, [indexerLoading]);
-  const [collapsed, setCollapsed] = useState(true);
-  const untitled = !docTitle;
   const pageTitle = docTitle || t['Untitled']();
 
   const icon = useMemo(() => {
@@ -82,7 +34,7 @@ export const FavouriteDocSidebarNavItem = ({
     return <DragMenuItemOverlay icon={icon} title={pageTitle} />;
   }, [icon, pageTitle]);
 
-  const dragItemId = getDNDId('sidebar-pin', 'doc', pageId);
+  const dragItemId = getDNDId('sidebar-pin', 'doc', docId);
 
   const {
     setNodeRef,
@@ -107,68 +59,23 @@ export const FavouriteDocSidebarNavItem = ({
   };
 
   return (
-    <Collapsible.Root
+    <div
       className={styles.favItemWrapper}
-      open={!collapsed}
       style={style}
       ref={setNodeRef}
+      data-draggable={true}
+      data-dragging={isDragging}
+      data-testid={`favourite-page-${docId}`}
+      data-favourite-page-item
       {...attributes}
+      {...listeners}
     >
-      <MenuLinkItem
-        {...listeners}
-        data-testid={`favourite-page-${pageId}`}
-        data-favourite-page-item
-        icon={icon}
-        data-draggable={true}
-        data-dragging={isDragging}
-        className={draggableMenuItemStyles.draggableMenuItem}
-        active={linkActive}
-        to={`/${pageId}`}
-        linkComponent={WorkbenchLink}
-        collapsed={collapsed}
-        onCollapsedChange={setCollapsed}
-        postfix={
-          <PostfixItem
-            pageId={pageId}
-            pageTitle={pageTitle}
-            inFavorites={true}
-          />
-        }
-      >
-        <div className={styles.labelContainer}>
-          <span className={styles.label} data-untitled={untitled}>
-            {pageTitle}
-          </span>
-          {!collapsed && referencesLoading && (
-            <Tooltip
-              content={t['com.affine.rootAppSidebar.docs.references-loading']()}
-            >
-              <div className={styles.labelTooltipContainer}>
-                <Loading />
-              </div>
-            </Tooltip>
-          )}
-        </div>
-      </MenuLinkItem>
-      <Collapsible.Content className={styles.collapsibleContent}>
-        {references ? (
-          references.length > 0 ? (
-            references.map(({ docId }) => {
-              return (
-                <ReferencePage
-                  key={docId}
-                  pageId={docId}
-                  parentIds={new Set([pageId])}
-                />
-              );
-            })
-          ) : (
-            <div className={styles.noReferences}>
-              {t['com.affine.rootAppSidebar.docs.no-subdoc']()}
-            </div>
-          )
-        ) : null}
-      </Collapsible.Content>
-    </Collapsible.Root>
+      <SidebarDocItem
+        docId={docId}
+        postfixConfig={{
+          inFavorites: true,
+        }}
+      />
+    </div>
   );
 };

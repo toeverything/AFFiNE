@@ -119,7 +119,7 @@ export const PageHeaderMenuButton = ({
     duplicate(pageId);
     mixpanel.track('DocCreated', {
       segment: 'editor header',
-      page: doc.mode$.value === 'page' ? 'page editor' : 'edgeless editor',
+      page: doc.mode$.value === 'page' ? 'doc editor' : 'edgeless editor',
       module: 'header menu',
       control: 'copy doc',
       type: 'doc duplicate',
@@ -132,7 +132,7 @@ export const PageHeaderMenuButton = ({
     if (options.isWorkspaceFile) {
       mixpanel.track('WorkspaceCreated', {
         segment: 'editor header',
-        page: doc.mode$.value === 'page' ? 'page editor' : 'edgeless editor',
+        page: doc.mode$.value === 'page' ? 'doc editor' : 'edgeless editor',
         module: 'header menu',
         control: 'import button',
         type: 'imported workspace',
@@ -140,7 +140,7 @@ export const PageHeaderMenuButton = ({
     } else {
       mixpanel.track('DocCreated', {
         segment: 'editor header',
-        page: doc.mode$.value === 'page' ? 'page editor' : 'edgeless editor',
+        page: doc.mode$.value === 'page' ? 'doc editor' : 'edgeless editor',
         module: 'header menu',
         control: 'import button',
         type: 'imported doc',
@@ -245,7 +245,7 @@ export const PageHeaderMenuButton = ({
         {t['com.affine.header.option.add-tag']()}
       </MenuItem> */}
       <MenuSeparator />
-      {runtimeConfig.enableInfoModal ? (
+      {runtimeConfig.enableInfoModal && (
         <MenuItem
           preFix={
             <MenuIcon>
@@ -258,21 +258,19 @@ export const PageHeaderMenuButton = ({
         >
           {t['com.affine.page-properties.page-info.view']()}
         </MenuItem>
-      ) : null}
-      {runtimeConfig.enablePageHistory ? (
-        <MenuItem
-          preFix={
-            <MenuIcon>
-              <HistoryIcon />
-            </MenuIcon>
-          }
-          data-testid="editor-option-menu-history"
-          onSelect={openHistoryModal}
-          style={menuItemStyle}
-        >
-          {t['com.affine.history.view-history-version']()}
-        </MenuItem>
-      ) : null}
+      )}
+      <MenuItem
+        preFix={
+          <MenuIcon>
+            <HistoryIcon />
+          </MenuIcon>
+        }
+        data-testid="editor-option-menu-history"
+        onSelect={openHistoryModal}
+        style={menuItemStyle}
+      >
+        {t['com.affine.history.view-history-version']()}
+      </MenuItem>
       <MenuSeparator />
       {!isJournal && (
         <MenuItem
@@ -301,7 +299,6 @@ export const PageHeaderMenuButton = ({
         {t['Import']()}
       </MenuItem>
       <Export exportHandler={exportHandler} pageMode={currentMode} />
-
       <MenuSeparator />
       <MoveToTrash
         data-testid="editor-option-menu-delete"

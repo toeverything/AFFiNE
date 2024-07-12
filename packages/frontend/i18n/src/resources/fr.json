@@ -986,8 +986,6 @@
   "com.affine.payment.cloud.team.title": "Contacter le service commercial\n\n\n\n\n\n",
   "com.affine.payment.contact-sales": "Contacter le service commercial\n\n\n\n\n\n",
   "com.affine.payment.current-plan": "Abonnement actuel",
-  "com.affine.payment.disable-payment.description": "Il s'agit d'une version prévue pour le test (Canary) d'AFFiNE. Les comptes payants ne sont pas pris en charge dans cette version. Si vous souhaitez bénéficier de tous les services, veuillez télécharger la version stable sur notre site web.",
-  "com.affine.payment.disable-payment.title": "Compte payant non disponible",
   "com.affine.payment.discount-amount": "{{amount}}% de réduction\n",
   "com.affine.payment.downgrade": "Rétrograder",
   "com.affine.payment.downgraded-tooltip": "Vous avez rétrogradé avec succès. Une fois la période de facturation actuelle terminée, votre compte basculera automatiquement vers l'abonnement gratuit.",
