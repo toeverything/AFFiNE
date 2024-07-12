@@ -4,10 +4,7 @@ import {
 } from '@affine/core/components/page-list';
 import { useBlockSuiteDocMeta } from '@affine/core/hooks/use-block-suite-page-meta';
 import { TagService } from '@affine/core/modules/tag';
-import {
-  ViewBodyIsland,
-  ViewHeaderIsland,
-} from '@affine/core/modules/workbench';
+import { ViewBody, ViewHeader } from '@affine/core/modules/workbench';
 import { useLiveData, useService, WorkspaceService } from '@toeverything/infra';
 import { useMemo } from 'react';
 import { useParams } from 'react-router-dom';
@@ -37,10 +34,10 @@ export const TagDetail = ({ tagId }: { tagId?: string }) => {
 
   return (
     <>
-      <ViewHeaderIsland>
+      <ViewHeader>
         <TagDetailHeader />
-      </ViewHeaderIsland>
-      <ViewBodyIsland>
+      </ViewHeader>
+      <ViewBody>
         <div className={styles.body}>
           {filteredPageMetas.length > 0 ? (
             <VirtualizedPageList
@@ -60,7 +57,7 @@ export const TagDetail = ({ tagId }: { tagId?: string }) => {
             />
           )}
         </div>
-      </ViewBodyIsland>
+      </ViewBody>
     </>
   );
 };

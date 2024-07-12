@@ -39,6 +39,7 @@ export interface ResizePanelProps
   resizeHandleVerticalPadding?: number;
   enableAnimation?: boolean;
   width: number;
+  unmountOnExit?: boolean;
   onOpen: (open: boolean) => void;
   onResizing: (resizing: boolean) => void;
   onWidthChange: (width: number) => void;
@@ -149,6 +150,7 @@ export const ResizePanel = forwardRef<HTMLDivElement, ResizePanelProps>(
       floating,
       enableAnimation: _enableAnimation = true,
       open,
+      unmountOnExit,
       onOpen,
       onResizing,
       onWidthChange,
@@ -182,7 +184,7 @@ export const ResizePanel = forwardRef<HTMLDivElement, ResizePanelProps>(
         data-handle-position={resizeHandlePos}
         data-enable-animation={enableAnimation && !resizing}
       >
-        {status !== 'exited' && children}
+        {!(status === 'exited' && unmountOnExit !== false) && children}
         <ResizeHandle
           resizeHandlePos={resizeHandlePos}
           resizeHandleOffset={resizeHandleOffset}

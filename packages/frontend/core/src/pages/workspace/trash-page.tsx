@@ -9,7 +9,7 @@ import { assertExists } from '@blocksuite/global/utils';
 import { DeleteIcon } from '@blocksuite/icons/rc';
 import { useService, WorkspaceService } from '@toeverything/infra';
 
-import { ViewBodyIsland, ViewHeaderIsland } from '../../modules/workbench';
+import { ViewBody, ViewHeader } from '../../modules/workbench';
 import { EmptyPageList } from './page-list-empty';
 import * as styles from './trash-page.css';
 
@@ -39,10 +39,10 @@ export const TrashPage = () => {
 
   return (
     <>
-      <ViewHeaderIsland>
+      <ViewHeader>
         <TrashHeader />
-      </ViewHeaderIsland>
-      <ViewBodyIsland>
+      </ViewHeader>
+      <ViewBody>
         <div className={styles.body}>
           {filteredPageMetas.length > 0 ? (
             <VirtualizedTrashList />
@@ -53,7 +53,7 @@ export const TrashPage = () => {
             />
           )}
         </div>
-      </ViewBodyIsland>
+      </ViewBody>
     </>
   );
 };

@@ -2,8 +2,6 @@ import type { EditorHost } from '@blocksuite/block-std';
 import { PaymentRequiredError, UnauthorizedError } from '@blocksuite/blocks';
 import { Slot } from '@blocksuite/store';
 
-import type { ChatCards } from './chat-panel/chat-cards';
-
 export interface AIUserInfo {
   id: string;
   email: string;
@@ -70,19 +68,6 @@ export class AIProvider {
 
   static get toggleGeneralAIOnboarding() {
     return AIProvider.instance.toggleGeneralAIOnboarding;
-  }
-
-  static genRequestChatCardsFn(params: AIChatParams) {
-    return async (chatPanel: HTMLElement) => {
-      const chatCards: ChatCards | null = await new Promise(resolve =>
-        requestAnimationFrame(() =>
-          resolve(chatPanel.querySelector('chat-cards'))
-        )
-      );
-      if (!chatCards) return;
-      if (chatCards.temporaryParams) return;
-      chatCards.temporaryParams = params;
-    };
   }
 
   private static readonly instance = new AIProvider();

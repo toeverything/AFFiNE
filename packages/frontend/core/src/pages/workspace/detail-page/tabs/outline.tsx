@@ -1,13 +1,16 @@
 import { assertExists } from '@blocksuite/global/utils';
-import { TocIcon } from '@blocksuite/icons/rc';
+import type { AffineEditorContainer } from '@blocksuite/presets';
 import { OutlinePanel } from '@blocksuite/presets';
 import { useCallback, useRef } from 'react';
 
-import type { SidebarTab, SidebarTabProps } from '../sidebar-tab';
 import * as styles from './outline.css';
 
 // A wrapper for TOCNotesPanel
-const EditorOutline = ({ editor }: SidebarTabProps) => {
+export const EditorOutline = ({
+  editor,
+}: {
+  editor: AffineEditorContainer | null;
+}) => {
   const outlinePanelRef = useRef<OutlinePanel | null>(null);
 
   const onRefChange = useCallback((container: HTMLDivElement | null) => {
@@ -31,10 +34,4 @@ const EditorOutline = ({ editor }: SidebarTabProps) => {
   }
 
   return <div className={styles.root} ref={onRefChange} />;
-};
-
-export const outlineTab: SidebarTab = {
-  name: 'outline',
-  icon: <TocIcon />,
-  Component: EditorOutline,
 };

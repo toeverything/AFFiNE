@@ -1,14 +1,14 @@
 export { Workbench } from './entities/workbench';
-export { ViewScope as View } from './scopes/view';
+export { ViewScope } from './scopes/view';
 export { WorkbenchService } from './services/workbench';
 export { useIsActiveView } from './view/use-is-active-view';
-export { ViewBodyIsland } from './view/view-body-island';
-export { ViewHeaderIsland } from './view/view-header-island';
+export { ViewBody, ViewHeader, ViewSidebarTab } from './view/view-islands';
 export { WorkbenchLink } from './view/workbench-link';
 export { WorkbenchRoot } from './view/workbench-root';
 
 import { type Framework, WorkspaceScope } from '@toeverything/infra';
 
+import { SidebarTab } from './entities/sidebar-tab';
 import { View } from './entities/view';
 import { Workbench } from './entities/workbench';
 import { ViewScope } from './scopes/view';
@@ -20,7 +20,8 @@ export function configureWorkbenchModule(services: Framework) {
     .scope(WorkspaceScope)
     .service(WorkbenchService)
     .entity(Workbench)
+    .entity(View)
     .scope(ViewScope)
-    .entity(View, [ViewScope])
-    .service(ViewService);
+    .service(ViewService, [ViewScope])
+    .entity(SidebarTab);
 }

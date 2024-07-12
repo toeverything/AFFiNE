@@ -1,5 +1,10 @@
-import { RightSidebarService } from '@affine/core/modules/right-sidebar';
-import { useLiveData, useService } from '@toeverything/infra';
+import { WorkbenchService } from '@affine/core/modules/workbench';
+import {
+  GlobalStateService,
+  LiveData,
+  useLiveData,
+  useService,
+} from '@toeverything/infra';
 import { useEffect, useState } from 'react';
 
 import { ToolContainer } from '../../workspace';
@@ -11,18 +16,37 @@ import {
   gradient,
 } from './styles.css';
 
+const RIGHT_SIDEBAR_AI_HAS_EVER_OPENED_KEY =
+  'app:settings:rightsidebar:ai:has-ever-opened';
+
 export const AIIsland = () => {
   // to make sure ai island is hidden first and animate in
   const [hide, setHide] = useState(true);
 
-  const rightSidebar = useService(RightSidebarService).rightSidebar;
-  const activeTabName = useLiveData(rightSidebar.activeTabName$);
-  const rightSidebarOpen = useLiveData(rightSidebar.isOpen$);
-  const aiChatHasEverOpened = useLiveData(rightSidebar.aiChatHasEverOpened$);
+  const workbench = useService(WorkbenchService).workbench;
+  const activeView = useLiveData(workbench.activeView$);
+  const haveChatTab = useLiveData(
+    activeView.sidebarTabs$.map(tabs => tabs.some(t => t.id === 'chat'))
+  );
+  const activeTab = useLiveData(activeView.activeSidebarTab$);
+  const sidebarOpen = useLiveData(workbench.sidebarOpen$);
+  const globalState = useService(GlobalStateService).globalState;
+  const aiChatHasEverOpened = useLiveData(
+    LiveData.from(
+      globalState.watch<boolean>(RIGHT_SIDEBAR_AI_HAS_EVER_OPENED_KEY),
+      false
+    )
+  );
 
   useEffect(() => {
-    setHide(rightSidebarOpen && activeTabName === 'chat');
-  }, [activeTabName, rightSidebarOpen]);
+    if (sidebarOpen && activeTab?.id === 'chat') {
+      globalState.set(RIGHT_SIDEBAR_AI_HAS_EVER_OPENED_KEY, true);
+    }
+  }, [activeTab, globalState, sidebarOpen]);
+
+  useEffect(() => {
+    setHide((sidebarOpen && activeTab?.id === 'chat') || !haveChatTab);
+  }, [activeTab, haveChatTab, sidebarOpen]);
 
   return (
     <ToolContainer>
@@ -43,8 +67,8 @@ export const AIIsland = () => {
           data-testid="ai-island"
           onClick={() => {
             if (hide) return;
-            rightSidebar.open();
-            rightSidebar.setActiveTabName('chat');
+            workbench.openSidebar();
+            activeView.activeSidebarTab('chat');
           }}
         >
           <AIIcon />

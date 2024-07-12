@@ -1,7 +1,7 @@
 import { Scope } from '@toeverything/infra';
-import type { To } from 'history';
+
+import type { View } from '../entities/view';
 
 export class ViewScope extends Scope<{
-  id: string;
-  defaultLocation?: To | undefined;
+  view: View;
 }> {}

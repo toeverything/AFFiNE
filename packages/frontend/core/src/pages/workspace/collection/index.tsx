@@ -19,7 +19,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
 import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
-import { ViewBodyIsland, ViewHeaderIsland } from '../../../modules/workbench';
+import { ViewBody, ViewHeader } from '../../../modules/workbench';
 import { WorkspaceSubPath } from '../../../shared';
 import * as styles from './collection.css';
 import { CollectionDetailHeader } from './header';
@@ -40,18 +40,18 @@ export const CollectionDetail = ({
 
   return (
     <>
-      <ViewHeaderIsland>
+      <ViewHeader>
         <CollectionDetailHeader
           showCreateNew={!hideHeaderCreateNew}
           onCreate={handleEditCollection}
         />
-      </ViewHeaderIsland>
-      <ViewBodyIsland>
+      </ViewHeader>
+      <ViewBody>
         <VirtualizedPageList
           collection={collection}
           setHideHeaderCreateNewPage={setHideHeaderCreateNew}
         />
-      </ViewBodyIsland>
+      </ViewBody>
       {node}
     </>
   );
@@ -127,7 +127,7 @@ const Placeholder = ({ collection }: { collection: Collection }) => {
 
   return (
     <>
-      <ViewHeaderIsland>
+      <ViewHeader>
         <div
           style={{
             display: 'flex',
@@ -166,8 +166,8 @@ const Placeholder = ({ collection }: { collection: Collection }) => {
           </div>
           <div style={{ flex: 1 }} />
         </div>
-      </ViewHeaderIsland>
-      <ViewBodyIsland>
+      </ViewHeader>
+      <ViewBody>
         <div
           style={{
             display: 'flex',
@@ -302,7 +302,7 @@ const Placeholder = ({ collection }: { collection: Collection }) => {
             </div>
           ) : null}
         </div>
-      </ViewBodyIsland>
+      </ViewBody>
       {node}
     </>
   );

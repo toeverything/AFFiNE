@@ -12,7 +12,7 @@ import { nanoid } from 'nanoid';
 import { useCallback, useMemo, useState } from 'react';
 
 import { CollectionService } from '../../../modules/collection';
-import { ViewBodyIsland, ViewHeaderIsland } from '../../../modules/workbench';
+import { ViewBody, ViewHeader } from '../../../modules/workbench';
 import { EmptyCollectionList } from '../page-list-empty';
 import { AllCollectionHeader } from './header';
 import * as styles from './index.css';
@@ -55,13 +55,13 @@ export const AllCollection = () => {
 
   return (
     <>
-      <ViewHeaderIsland>
+      <ViewHeader>
         <AllCollectionHeader
           showCreateNew={!hideHeaderCreateNew}
           onCreateCollection={handleCreateCollection}
         />
-      </ViewHeaderIsland>
-      <ViewBodyIsland>
+      </ViewHeader>
+      <ViewBody>
         <div className={styles.body}>
           {collectionMetas.length > 0 ? (
             <VirtualizedCollectionList
@@ -82,7 +82,7 @@ export const AllCollection = () => {
             />
           )}
         </div>
-      </ViewBodyIsland>
+      </ViewBody>
     </>
   );
 };

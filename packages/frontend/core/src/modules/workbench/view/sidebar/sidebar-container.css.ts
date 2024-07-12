@@ -17,24 +17,26 @@ export const sidebarContainerInner = style({
   },
 });
 
-export const sidebarContainer = style({
-  display: 'flex',
-  flexShrink: 0,
-  height: '100%',
-  right: 0,
-  selectors: {
-    [`&[data-client-border=true]`]: {
-      paddingLeft: 8,
-      borderRadius: 6,
-    },
-    [`&[data-client-border=false]`]: {
-      borderLeft: `1px solid ${cssVar('borderColor')}`,
-    },
-  },
-});
-
 export const sidebarBodyTarget = style({
+  display: 'flex',
+  flexDirection: 'column',
   flex: 1,
   width: '100%',
+  height: '100%',
   overflow: 'hidden',
+  alignItems: 'center',
+  borderTop: `1px solid ${cssVar('borderColor')}`,
+});
+
+export const sidebarBodyNoSelection = style({
+  display: 'flex',
+  flexDirection: 'column',
+  flex: 1,
+  width: '100%',
+  height: '100%',
+  overflow: 'hidden',
+  justifyContent: 'center',
+  userSelect: 'none',
+  color: cssVar('--affine-text-secondary-color'),
+  alignItems: 'center',
 });

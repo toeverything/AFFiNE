@@ -1,14 +1,13 @@
 import { IconButton } from '@affine/component';
+import { WindowsAppControls } from '@affine/core/components/pure/header/windows-app-controls';
 import { RightSidebarIcon } from '@blocksuite/icons/rc';
 
-import { WindowsAppControls } from '../../../components/pure/header/windows-app-controls';
-import type { RightSidebarView } from '../entities/right-sidebar-view';
-import * as styles from './header.css';
+import * as styles from './sidebar-header.css';
 
 export type HeaderProps = {
   floating: boolean;
   onToggle?: () => void;
-  view: RightSidebarView;
+  children?: React.ReactNode;
 };
 
 function Container({
@@ -42,10 +41,10 @@ const ToggleButton = ({ onToggle }: { onToggle?: () => void }) => {
   );
 };
 
-const Windows = ({ floating, onToggle, view }: HeaderProps) => {
+const Windows = ({ floating, onToggle, children }: HeaderProps) => {
   return (
     <Container className={styles.header} floating={floating}>
-      <view.header.Target></view.header.Target>
+      {children}
       <div className={styles.spacer} />
       <ToggleButton onToggle={onToggle} />
       <div className={styles.windowsAppControlsContainer}>
@@ -55,10 +54,10 @@ const Windows = ({ floating, onToggle, view }: HeaderProps) => {
   );
 };
 
-const NonWindows = ({ floating, view, onToggle }: HeaderProps) => {
+const NonWindows = ({ floating, children, onToggle }: HeaderProps) => {
   return (
     <Container className={styles.header} floating={floating}>
-      <view.header.Target></view.header.Target>
+      {children}
       <div className={styles.spacer} />
       <ToggleButton onToggle={onToggle} />
     </Container>

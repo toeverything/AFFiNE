@@ -52,16 +52,18 @@ type PageMenuProps = {
   rename?: () => void;
   page: Doc;
   isJournal?: boolean;
+  containerWidth: number;
 };
 // fixme: refactor this file
 export const PageHeaderMenuButton = ({
   rename,
   page,
   isJournal,
+  containerWidth,
 }: PageMenuProps) => {
   const pageId = page?.id;
   const t = useI18n();
-  const { hideShare } = useDetailPageHeaderResponsive();
+  const { hideShare } = useDetailPageHeaderResponsive(containerWidth);
   const confirmEnableCloud = useEnableCloud();
 
   const workspace = useService(WorkspaceService).workspace;
