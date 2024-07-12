@@ -16,6 +16,7 @@ import {
   isInsideEdgelessEditor,
   NoteDisplayMode,
 } from '@blocksuite/blocks';
+import { assertExists } from '@blocksuite/global/utils';
 import type { TemplateResult } from 'lit';
 
 import {
@@ -45,7 +46,7 @@ type Selections = {
 type ChatAction = {
   icon: TemplateResult<1>;
   title: string;
-  showWhen?: () => boolean;
+  showWhen: (host: EditorHost) => boolean;
   handler: (
     host: EditorHost,
     content: string,
@@ -59,6 +60,7 @@ const CommonActions: ChatAction[] = [
   {
     icon: ReplaceIcon,
     title: 'Replace selection',
+    showWhen: () => true,
     handler: async (
       host: EditorHost,
       content: string,
@@ -102,6 +104,7 @@ const CommonActions: ChatAction[] = [
   {
     icon: InsertBelowIcon,
     title: 'Insert below',
+    showWhen: () => true,
     handler: async (
       host: EditorHost,
       content: string,
@@ -176,11 +179,15 @@ function addAIChatBlock(
     elements: [aiChatBlockId],
     editing: false,
   });
+
+  return aiChatBlockId;
 }
 
 const SAVE_CHAT_TO_BLOCK_ACTION: ChatAction = {
   icon: BlockIcon,
   title: 'Save chat to block',
+  showWhen: (host: EditorHost) =>
+    !!host.doc.awarenessStore.getFlag('enable_ai_chat_block'),
   handler: async (
     host: EditorHost,
     _,
@@ -189,32 +196,27 @@ const SAVE_CHAT_TO_BLOCK_ACTION: ChatAction = {
     messageId?: string
   ) => {
     // The chat session id and the latest message id are required to fork the chat session
-    if (!messageId) {
+    console.debug('save chat to block: ', messageId, chatContext.chatSessionId);
+    const parentSessionId = chatContext.chatSessionId;
+    if (!messageId || !parentSessionId) {
       return;
     }
 
     const rootService = host.spec.getService('affine:page');
-    const { docModeService } = rootService;
+    const { docModeService, notificationService } = rootService;
+    assertExists(notificationService);
     const curMode = docModeService.getMode();
     if (curMode !== 'edgeless') {
-      const { notificationService } = rootService;
       // set mode to edgeless
       docModeService.setMode('edgeless');
       // notify user to switch to edgeless mode
-      if (notificationService) {
-        notificationService.notify({
-          title: 'Save chat to a block',
-          message:
-            'This feature is not available in the page editor. Switch to edgeless mode.',
-          onClose: function (): void {},
-        });
-      }
-    }
-
-    // TODO: Fork copilot chat session
-    const parentSessionId = chatContext.chatSessionId;
-    if (!parentSessionId) {
-      return;
+      notificationService.notify({
+        title: 'Save chat to a block',
+        accent: 'info',
+        message:
+          'This feature is not available in the page editor. Switch to edgeless mode.',
+        onClose: function (): void {},
+      });
     }
 
     const newSessionId = await AIProvider.forkChat?.({
@@ -225,6 +227,12 @@ const SAVE_CHAT_TO_BLOCK_ACTION: ChatAction = {
     });
 
     if (!newSessionId) {
+      notificationService.notify({
+        title: 'Save chat to a block',
+        accent: 'error',
+        message: 'Fork chat failed.',
+        onClose: function (): void {},
+      });
       return;
     }
 
@@ -234,8 +242,16 @@ const SAVE_CHAT_TO_BLOCK_ACTION: ChatAction = {
     ) as ChatMessage[];
     const items = getHistoryMessages(historyItems, messageId);
     if (items.length < 2 || items.length % 2 !== 0) {
+      notificationService.notify({
+        title: 'Save chat to a block',
+        accent: 'error',
+        message: 'Chat messages should be more than 2.',
+        onClose: function (): void {},
+      });
       return;
     }
+
+    // Convert chat messages to AI chat block messages
     const userInfo = await AIProvider.userInfo;
     const messages = items.map(item => {
       return {
@@ -253,7 +269,15 @@ const SAVE_CHAT_TO_BLOCK_ACTION: ChatAction = {
     console.debug('messages: ', messages);
 
     // After switching to edgeless mode, the user can save the chat to a block
-    addAIChatBlock(host, messages, '');
+    const blockId = addAIChatBlock(host, messages, '');
+    if (blockId) {
+      notificationService.notify({
+        title: 'Save chat to a block',
+        accent: 'success',
+        message: 'Save chat to a block successfully.',
+        onClose: function (): void {},
+      });
+    }
   },
 };
 
@@ -262,6 +286,7 @@ export const PageEditorActions = [
   {
     icon: CreateIcon,
     title: 'Create as a doc',
+    showWhen: () => true,
     handler: (host: EditorHost, content: string) => {
       reportResponse('result:add-page');
       const newDoc = host.doc.collection.createDoc();
@@ -295,6 +320,7 @@ export const EdgelessEditorActions = [
   {
     icon: CreateIcon,
     title: 'Add to edgeless as note',
+    showWhen: () => true,
     handler: async (host: EditorHost, content: string) => {
       reportResponse('result:add-note');
       const { doc } = host;

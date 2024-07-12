@@ -202,7 +202,7 @@ export class ChatCopyMore extends WithDisposable(LitElement) {
       <div class="more-menu">
         ${this._showMoreMenu
           ? repeat(
-              PageEditorActions,
+              PageEditorActions.filter(action => action.showWhen(host)),
               action => action.title,
               action => {
                 const currentSelections = {

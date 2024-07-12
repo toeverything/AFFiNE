@@ -93,6 +93,8 @@ export class AIProvider {
 
   static LAST_ACTION_SESSIONID = '';
 
+  static LAST_MESSAGE_ID = '';
+
   static MAX_LOCAL_HISTORY = 10;
 
   private readonly actions: Partial<BlockSuitePresets.AIActions> = {};

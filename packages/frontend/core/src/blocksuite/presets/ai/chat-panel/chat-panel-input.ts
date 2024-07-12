@@ -468,11 +468,20 @@ export class ChatPanelInput extends WithDisposable(LitElement) {
         for await (const text of stream) {
           const items = [...this.chatContextValue.items];
           const last = items[items.length - 1] as ChatMessage;
+          if (!last.id) {
+            last.id = AIProvider.LAST_MESSAGE_ID;
+          }
           last.content += text;
           this.updateContext({ items, status: 'transmitting' });
         }
 
         this.updateContext({ status: 'success' });
+
+        if (!this.chatContextValue.chatSessionId) {
+          this.updateContext({
+            chatSessionId: AIProvider.LAST_ACTION_SESSIONID,
+          });
+        }
       }
     } catch (error) {
       this.updateContext({ status: 'error', error: error as AIError });

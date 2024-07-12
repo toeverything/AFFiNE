@@ -505,6 +505,7 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
         .host=${host}
         .content=${content}
         .isLast=${isLast}
+        .messageId=${messageId}
         .curTextSelection=${this._currentTextSelection}
         .curBlockSelections=${this._currentBlockSelections}
         .chatContextValue=${this.chatContextValue}
@@ -513,19 +514,21 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
       ${isLast
         ? html`<div class="actions-container">
             ${repeat(
-              actions.filter(action => {
-                if (!content) return false;
+              actions
+                .filter(action => action.showWhen(host))
+                .filter(action => {
+                  if (!content) return false;
 
-                if (
-                  action.title === 'Replace selection' &&
-                  (!this._currentTextSelection ||
-                    this._currentTextSelection.from.length === 0) &&
-                  this._currentBlockSelections?.length === 0
-                ) {
-                  return false;
-                }
-                return true;
-              }),
+                  if (
+                    action.title === 'Replace selection' &&
+                    (!this._currentTextSelection ||
+                      this._currentTextSelection.from.length === 0) &&
+                    this._currentBlockSelections?.length === 0
+                  ) {
+                    return false;
+                  }
+                  return true;
+                }),
               action => action.title,
               action => {
                 return html`<div class="action">

@@ -149,6 +149,7 @@ export function textToText({
           messageId: _messageId,
         });
         AIProvider.LAST_ACTION_SESSIONID = _sessionId;
+        AIProvider.LAST_MESSAGE_ID = _messageId ?? '';
 
         if (signal) {
           if (signal.aborted) {
@@ -198,6 +199,7 @@ export function textToText({
         }
 
         AIProvider.LAST_ACTION_SESSIONID = _sessionId;
+        AIProvider.LAST_MESSAGE_ID = _messageId ?? '';
         return client.chatText({
           sessionId: _sessionId,
           messageId: _messageId,
