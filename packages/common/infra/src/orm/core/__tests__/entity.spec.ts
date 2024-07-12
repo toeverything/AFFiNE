@@ -6,7 +6,6 @@ import {
   type DBSchemaBuilder,
   f,
   MemoryORMAdapter,
-  type ORMClient,
   Table,
 } from '../';
 
@@ -18,12 +17,14 @@ const TEST_SCHEMA = {
   },
 } satisfies DBSchemaBuilder;
 
+const ORMClient = createORMClient(TEST_SCHEMA);
+
 type Context = {
-  client: ORMClient<typeof TEST_SCHEMA>;
+  client: InstanceType<typeof ORMClient>;
 };
 
 beforeEach<Context>(async t => {
-  t.client = createORMClient(TEST_SCHEMA, MemoryORMAdapter);
+  t.client = new ORMClient(new MemoryORMAdapter());
 });
 
 const test = t as TestAPI<Context>;
@@ -94,7 +95,7 @@ describe('ORM entity CRUD', () => {
     });
 
     // old tag should not be updated
-    expect(tag.name).not.toBe(tag2.name);
+    expect(tag.name).not.toBe(tag2!.name);
   });
 
   test('should be able to delete entity', async t => {

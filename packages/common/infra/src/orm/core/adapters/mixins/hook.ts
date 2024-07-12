@@ -1,6 +1,5 @@
-import type { Key, TableAdapter, TableOptions } from '../types';
-
-declare module '../types' {
+import type { TableAdapter, TableAdapterOptions } from '../types';
+declare module '../../types' {
   interface TableOptions {
     hooks?: Hook<unknown>[];
   }
@@ -15,11 +14,16 @@ export interface TableAdapterWithHook<T = unknown> extends Hook<T> {}
 export function HookAdapter(): ClassDecorator {
   // @ts-expect-error allow
   return (Class: { new (...args: any[]): TableAdapter }) => {
-    return class TableAdapterImpl
+    return class TableAdapterExtensions
       extends Class
       implements TableAdapterWithHook
     {
       hooks: Hook<unknown>[] = [];
+
+      override setup(opts: TableAdapterOptions): void {
+        super.setup(opts);
+        this.hooks = opts.hooks ?? [];
+      }
 
       deserialize(data: unknown) {
         if (!this.hooks.length) {
@@ -32,28 +36,8 @@ export function HookAdapter(): ClassDecorator {
         );
       }
 
-      override setup(opts: TableOptions) {
-        this.hooks = opts.hooks || [];
-        super.setup(opts);
-      }
-
-      override create(key: Key, data: any) {
-        return this.deserialize(super.create(key, data));
-      }
-
-      override get(key: Key) {
-        return this.deserialize(super.get(key));
-      }
-
-      override update(key: Key, data: any) {
-        return this.deserialize(super.update(key, data));
-      }
-
-      override subscribe(
-        key: Key,
-        callback: (data: unknown) => void
-      ): () => void {
-        return super.subscribe(key, data => callback(this.deserialize(data)));
+      override toObject(data: any): Record<string, any> {
+        return this.deserialize(super.toObject(data));
       }
     };
   };
