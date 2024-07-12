@@ -28,10 +28,10 @@ export type FalConfig = {
 const FalImageSchema = z
   .object({
     url: z.string(),
-    seed: z.number().optional(),
+    seed: z.number().nullable().optional(),
     content_type: z.string(),
-    file_name: z.string().optional(),
-    file_size: z.number().optional(),
+    file_name: z.string().nullable().optional(),
+    file_size: z.number().nullable().optional(),
     width: z.number(),
     height: z.number(),
   })
@@ -46,9 +46,9 @@ const FalResponseSchema = z.object({
       z.string(),
     ])
     .optional(),
-  images: z.array(FalImageSchema).optional(),
-  image: FalImageSchema.optional(),
-  output: z.string().optional(),
+  images: z.array(FalImageSchema).nullable().optional(),
+  image: FalImageSchema.nullable().optional(),
+  output: z.string().nullable().optional(),
 });
 
 type FalResponse = z.infer<typeof FalResponseSchema>;
