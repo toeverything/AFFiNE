@@ -7,7 +7,6 @@ import {
   type Entity,
   f,
   MemoryORMAdapter,
-  type ORMClient,
 } from '../';
 
 const TEST_SCHEMA = {
@@ -23,23 +22,25 @@ const TEST_SCHEMA = {
   },
 } satisfies DBSchemaBuilder;
 
+const ORMClient = createORMClient(TEST_SCHEMA);
+
+// define the hooks
+ORMClient.defineHook('tags', 'migrate field `color` to field `colors`', {
+  deserialize(data) {
+    if (!data.colors && data.color) {
+      data.colors = [data.color];
+    }
+
+    return data;
+  },
+});
+
 type Context = {
-  client: ORMClient<typeof TEST_SCHEMA>;
+  client: InstanceType<typeof ORMClient>;
 };
 
 beforeEach<Context>(async t => {
-  t.client = createORMClient(TEST_SCHEMA, MemoryORMAdapter);
-
-  // define the hooks
-  t.client.defineHook('tags', 'migrate field `color` to field `colors`', {
-    deserialize(data) {
-      if (!data.colors && data.color) {
-        data.colors = [data.color];
-      }
-
-      return data;
-    },
-  });
+  t.client = new ORMClient(new MemoryORMAdapter());
 });
 
 const test = t as TestAPI<Context>;
@@ -65,7 +66,7 @@ describe('ORM hook mixin', () => {
     });
 
     const tag2 = client.tags.get(tag.id);
-    expect(tag2.colors).toStrictEqual(['red']);
+    expect(tag2!.colors).toStrictEqual(['red']);
   });
 
   test('update entity', t => {
@@ -77,7 +78,7 @@ describe('ORM hook mixin', () => {
     });
 
     const tag2 = client.tags.update(tag.id, { color: 'blue' });
-    expect(tag2.colors).toStrictEqual(['blue']);
+    expect(tag2!.colors).toStrictEqual(['blue']);
   });
 
   test('subscribe entity', t => {

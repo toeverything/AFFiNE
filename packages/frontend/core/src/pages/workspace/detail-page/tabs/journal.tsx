@@ -29,7 +29,6 @@ import dayjs from 'dayjs';
 import type { HTMLAttributes, PropsWithChildren, ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import type { SidebarTab } from '../sidebar-tab';
 import * as styles from './journal.css';
 
 /**
@@ -85,7 +84,7 @@ interface JournalBlockProps {
   date: dayjs.Dayjs;
 }
 
-const EditorJournalPanel = () => {
+export const EditorJournalPanel = () => {
   const t = useI18n();
   const doc = useService(DocService).doc;
   const workspace = useService(WorkspaceService).workspace;
@@ -380,10 +379,4 @@ const JournalConflictBlock = ({ date }: JournalBlockProps) => {
       ) : null}
     </ConflictList>
   );
-};
-
-export const journalTab: SidebarTab = {
-  name: 'journal',
-  icon: <TodayIcon />,
-  Component: EditorJournalPanel,
 };

@@ -8,16 +8,24 @@ import {
   type DocProvider,
   type Entity,
   f,
-  type ORMClient,
   Table,
   YjsDBAdapter,
 } from '../';
+
+function incremental() {
+  let i = 0;
+  return () => i++;
+}
 
 const TEST_SCHEMA = {
   tags: {
     id: f.string().primaryKey().default(nanoid),
     name: f.string(),
     color: f.string(),
+  },
+  users: {
+    id: f.number().primaryKey().default(incremental()),
+    name: f.string(),
   },
 } satisfies DBSchemaBuilder;
 
@@ -27,12 +35,13 @@ const docProvider: DocProvider = {
   },
 };
 
+const Client = createORMClient(TEST_SCHEMA);
 type Context = {
-  client: ORMClient<typeof TEST_SCHEMA>;
+  client: InstanceType<typeof Client>;
 };
 
 beforeEach<Context>(async t => {
-  t.client = createORMClient(TEST_SCHEMA, YjsDBAdapter, docProvider);
+  t.client = new Client(new YjsDBAdapter(TEST_SCHEMA, docProvider));
 });
 
 const test = t as TestAPI<Context>;
@@ -55,6 +64,13 @@ describe('ORM entity CRUD', () => {
     expect(tag.id).toBeDefined();
     expect(tag.name).toBe('test');
     expect(tag.color).toBe('red');
+
+    const user = client.users.create({
+      name: 'user1',
+    });
+
+    expect(typeof user.id).toBe('number');
+    expect(user.name).toBe('user1');
   });
 
   test('should be able to read entity', t => {
@@ -67,6 +83,12 @@ describe('ORM entity CRUD', () => {
 
     const tag2 = client.tags.get(tag.id);
     expect(tag2).toEqual(tag);
+
+    const user = client.users.create({
+      name: 'user1',
+    });
+    const user2 = client.users.get(user.id);
+    expect(user2).toEqual(user);
   });
 
   test('should be able to update entity', t => {
@@ -89,7 +111,7 @@ describe('ORM entity CRUD', () => {
     });
 
     // old tag should not be updated
-    expect(tag.name).not.toBe(tag2.name);
+    expect(tag.name).not.toBe(tag2!.name);
   });
 
   test('should be able to delete entity', t => {
@@ -149,6 +171,7 @@ describe('ORM entity CRUD', () => {
     const { client } = t;
 
     let tag: Entity<(typeof TEST_SCHEMA)['tags']> | null = null;
+
     const subscription1 = client.tags.get$('test').subscribe(data => {
       tag = data;
     });
@@ -210,15 +233,73 @@ describe('ORM entity CRUD', () => {
     subscription.unsubscribe();
   });
 
-  test('can not use reserved keyword as field name', () => {
-    const schema = {
-      tags: {
-        $$KEY: f.string().primaryKey().default(nanoid),
-      },
-    };
+  test('should be able to subscribe to filtered entity changes', t => {
+    const { client } = t;
 
-    expect(() => createORMClient(schema, YjsDBAdapter, docProvider)).toThrow(
-      "[Table(tags)]: Field '$$KEY' is reserved keyword and can't be used"
+    let entities: any[] = [];
+    const subscription = client.tags.find$({ name: 'test' }).subscribe(data => {
+      entities = data;
+    });
+
+    const tag1 = client.tags.create({
+      id: '1',
+      name: 'test',
+      color: 'red',
+    });
+
+    expect(entities).toStrictEqual([tag1]);
+
+    const tag2 = client.tags.create({
+      id: '2',
+      name: 'test',
+      color: 'blue',
+    });
+
+    expect(entities).toStrictEqual([tag1, tag2]);
+
+    subscription.unsubscribe();
+  });
+
+  test('should be able to subscription to any entity changes', t => {
+    const { client } = t;
+
+    let entities: any[] = [];
+    const subscription = client.tags.find$({}).subscribe(data => {
+      entities = data;
+    });
+
+    const tag1 = client.tags.create({
+      id: '1',
+      name: 'tag1',
+      color: 'red',
+    });
+
+    expect(entities).toStrictEqual([tag1]);
+
+    const tag2 = client.tags.create({
+      id: '2',
+      name: 'tag2',
+      color: 'blue',
+    });
+
+    expect(entities).toStrictEqual([tag1, tag2]);
+
+    subscription.unsubscribe();
+  });
+
+  test('can not use reserved keyword as field name', () => {
+    expect(
+      () =>
+        new YjsDBAdapter(
+          {
+            tags: {
+              $$DELETED: f.string().primaryKey().default(nanoid),
+            },
+          },
+          docProvider
+        )
+    ).toThrow(
+      "[Table(tags)]: Field '$$DELETED' is reserved keyword and can't be used"
     );
   });
 });

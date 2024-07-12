@@ -2,8 +2,6 @@ import type { EditorHost } from '@blocksuite/block-std';
 import { PaymentRequiredError, UnauthorizedError } from '@blocksuite/blocks';
 import { Slot } from '@blocksuite/store';
 
-import type { ChatCards } from './chat-panel/chat-cards';
-
 export interface AIUserInfo {
   id: string;
   email: string;

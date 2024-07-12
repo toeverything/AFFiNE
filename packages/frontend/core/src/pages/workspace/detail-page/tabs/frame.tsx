@@ -1,13 +1,16 @@
 import { assertExists } from '@blocksuite/global/utils';
-import { FrameIcon } from '@blocksuite/icons/rc';
+import type { AffineEditorContainer } from '@blocksuite/presets';
 import { FramePanel } from '@blocksuite/presets';
 import { useCallback, useRef } from 'react';
 
-import type { SidebarTab, SidebarTabProps } from '../sidebar-tab';
 import * as styles from './frame.css';
 
 // A wrapper for FramePanel
-const EditorFramePanel = ({ editor }: SidebarTabProps) => {
+export const EditorFramePanel = ({
+  editor,
+}: {
+  editor: AffineEditorContainer | null;
+}) => {
   const framePanelRef = useRef<FramePanel | null>(null);
 
   const onRefChange = useCallback((container: HTMLDivElement | null) => {
@@ -31,10 +34,4 @@ const EditorFramePanel = ({ editor }: SidebarTabProps) => {
   }
 
   return <div className={styles.root} ref={onRefChange} />;
-};
-
-export const framePanelTab: SidebarTab = {
-  name: 'frame',
-  icon: <FrameIcon />,
-  Component: EditorFramePanel,
 };

@@ -13,13 +13,7 @@ import { Doc } from 'yjs';
 import { DocEngine } from '../../../sync';
 import { MiniSyncServer } from '../../../sync/doc/__tests__/utils';
 import { MemoryStorage } from '../../../sync/doc/storage';
-import {
-  createORMClient,
-  type DBSchemaBuilder,
-  f,
-  type ORMClient,
-  YjsDBAdapter,
-} from '../';
+import { createORMClient, type DBSchemaBuilder, f, YjsDBAdapter } from '../';
 
 const TEST_SCHEMA = {
   tags: {
@@ -30,14 +24,16 @@ const TEST_SCHEMA = {
   },
 } satisfies DBSchemaBuilder;
 
+const ORMClient = createORMClient(TEST_SCHEMA);
+
 type Context = {
   server: MiniSyncServer;
   user1: {
-    client: ORMClient<typeof TEST_SCHEMA>;
+    client: InstanceType<typeof ORMClient>;
     engine: DocEngine;
   };
   user2: {
-    client: ORMClient<typeof TEST_SCHEMA>;
+    client: InstanceType<typeof ORMClient>;
     engine: DocEngine;
   };
 };
@@ -48,17 +44,10 @@ function createEngine(server: MiniSyncServer) {
 
 async function createClient(server: MiniSyncServer, clientId: number) {
   const engine = createEngine(server);
-  const client = createORMClient(TEST_SCHEMA, YjsDBAdapter, {
-    getDoc(guid: string) {
-      const doc = new Doc({ guid });
-      doc.clientID = clientId;
-      engine.addDoc(doc);
-      return doc;
-    },
-  });
+  const Client = createORMClient(TEST_SCHEMA);
 
   // define the hooks
-  client.defineHook('tags', 'migrate field `color` to field `colors`', {
+  Client.defineHook('tags', 'migrate field `color` to field `colors`', {
     deserialize(data) {
       if (!data.colors && data.color) {
         data.colors = [data.color];
@@ -67,6 +56,17 @@ async function createClient(server: MiniSyncServer, clientId: number) {
       return data;
     },
   });
+
+  const client = new Client(
+    new YjsDBAdapter(TEST_SCHEMA, {
+      getDoc(guid: string) {
+        const doc = new Doc({ guid });
+        doc.clientID = clientId;
+        engine.addDoc(doc);
+        return doc;
+      },
+    })
+  );
 
   return {
     engine,

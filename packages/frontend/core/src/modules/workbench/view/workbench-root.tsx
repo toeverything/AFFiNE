@@ -1,12 +1,22 @@
-import { useLiveData, useService } from '@toeverything/infra';
-import { memo, useCallback, useEffect, useRef } from 'react';
+import { ResizePanel } from '@affine/component/resize-panel';
+import { rightSidebarWidthAtom } from '@affine/core/atoms';
+import {
+  appSettingAtom,
+  FrameworkScope,
+  useLiveData,
+  useService,
+} from '@toeverything/infra';
+import { useAtom, useAtomValue } from 'jotai';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 
 import type { View } from '../entities/view';
 import { WorkbenchService } from '../services/workbench';
 import { useBindWorkbenchToBrowserRouter } from './browser-adapter';
 import { useBindWorkbenchToDesktopRouter } from './desktop-adapter';
+import { SidebarContainer } from './sidebar/sidebar-container';
 import { SplitView } from './split-view/split-view';
+import { ViewIslandRegistryProvider } from './view-islands';
 import { ViewRoot } from './view-root';
 import * as styles from './workbench-root.css';
 
@@ -43,12 +53,15 @@ export const WorkbenchRoot = memo(() => {
   }, [basename, workbench.basename$]);
 
   return (
-    <SplitView
-      className={styles.workbenchRootContainer}
-      views={views}
-      renderer={panelRenderer}
-      onMove={onMove}
-    />
+    <ViewIslandRegistryProvider>
+      <SplitView
+        className={styles.workbenchRootContainer}
+        views={views}
+        renderer={panelRenderer}
+        onMove={onMove}
+      />
+      <WorkbenchSidebar />
+    </ViewIslandRegistryProvider>
   );
 });
 
@@ -82,5 +95,69 @@ const WorkbenchView = ({ view, index }: { view: View; index: number }) => {
     <div className={styles.workbenchViewContainer} ref={containerRef}>
       <ViewRoot key={view.id} view={view} />
     </div>
+  );
+};
+
+const MIN_SIDEBAR_WIDTH = 320;
+const MAX_SIDEBAR_WIDTH = 800;
+
+const WorkbenchSidebar = () => {
+  const { clientBorder } = useAtomValue(appSettingAtom);
+
+  const [width, setWidth] = useAtom(rightSidebarWidthAtom);
+  const [resizing, setResizing] = useState(false);
+
+  const workbench = useService(WorkbenchService).workbench;
+
+  const views = useLiveData(workbench.views$);
+  const activeView = useLiveData(workbench.activeView$);
+  const sidebarOpen = useLiveData(workbench.sidebarOpen$);
+  const [floating, setFloating] = useState(false);
+
+  const handleOpenChange = useCallback(
+    (open: boolean) => {
+      if (open) {
+        workbench.openSidebar();
+      } else {
+        workbench.closeSidebar();
+      }
+    },
+    [workbench]
+  );
+
+  useEffect(() => {
+    const onResize = () => setFloating(!!(window.innerWidth < 768));
+    onResize();
+    window.addEventListener('resize', onResize);
+    return () => {
+      window.removeEventListener('resize', onResize);
+    };
+  }, []);
+
+  return (
+    <ResizePanel
+      floating={floating}
+      resizeHandlePos="left"
+      resizeHandleOffset={clientBorder ? 3.5 : 0}
+      width={width}
+      resizing={resizing}
+      onResizing={setResizing}
+      className={styles.workbenchSidebar}
+      data-client-border={clientBorder && sidebarOpen}
+      open={sidebarOpen}
+      onOpen={handleOpenChange}
+      onWidthChange={setWidth}
+      minWidth={MIN_SIDEBAR_WIDTH}
+      maxWidth={MAX_SIDEBAR_WIDTH}
+      unmountOnExit={false}
+    >
+      {views.map(view => (
+        <FrameworkScope key={view.id} scope={view.scope}>
+          <SidebarContainer
+            style={{ display: activeView !== view ? 'none' : undefined }}
+          />
+        </FrameworkScope>
+      ))}
+    </ResizePanel>
   );
 };

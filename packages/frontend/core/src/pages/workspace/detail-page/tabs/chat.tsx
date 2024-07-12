@@ -1,13 +1,20 @@
 import { ChatPanel } from '@affine/core/blocksuite/presets/ai';
 import { assertExists } from '@blocksuite/global/utils';
-import { AiIcon } from '@blocksuite/icons/rc';
-import { useCallback, useEffect, useRef } from 'react';
+import type { AffineEditorContainer } from '@blocksuite/presets';
+import { forwardRef, useCallback, useEffect, useRef } from 'react';
 
-import type { SidebarTab, SidebarTabProps } from '../sidebar-tab';
 import * as styles from './chat.css';
 
+export interface SidebarTabProps {
+  editor: AffineEditorContainer | null;
+  onLoad?: ((component: HTMLElement) => void) | null;
+}
+
 // A wrapper for CopilotPanel
-const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
+export const EditorChatPanel = forwardRef(function EditorChatPanel(
+  { editor, onLoad }: SidebarTabProps,
+  ref: React.ForwardedRef<ChatPanel>
+) {
   const chatPanelRef = useRef<ChatPanel | null>(null);
 
   const onRefChange = useCallback((container: HTMLDivElement | null) => {
@@ -21,11 +28,17 @@ const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
     if (onLoad && chatPanelRef.current) {
       (chatPanelRef.current as ChatPanel).updateComplete
         .then(() => {
-          onLoad(chatPanelRef.current as HTMLElement);
+          if (ref) {
+            if (typeof ref === 'function') {
+              ref(chatPanelRef.current);
+            } else {
+              ref.current = chatPanelRef.current;
+            }
+          }
         })
         .catch(console.error);
     }
-  }, [onLoad]);
+  }, [onLoad, ref]);
 
   useEffect(() => {
     if (!editor) return;
@@ -57,10 +70,4 @@ const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
   // (copilotPanelRef.current as CopilotPanel).fitPadding = [20, 20, 20, 20];
 
   return <div className={styles.root} ref={onRefChange} />;
-};
-
-export const chatTab: SidebarTab = {
-  name: 'chat',
-  icon: <AiIcon />,
-  Component: EditorChatPanel,
-};
+});

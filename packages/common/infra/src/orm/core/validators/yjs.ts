@@ -1,6 +1,6 @@
 import type { TableSchemaValidator } from './types';
 
-const PRESERVED_FIELDS = ['$$KEY', '$$DELETED'];
+const PRESERVED_FIELDS = ['$$DELETED'];
 
 interface DataValidator {
   validate(tableName: string, data: any): void;
