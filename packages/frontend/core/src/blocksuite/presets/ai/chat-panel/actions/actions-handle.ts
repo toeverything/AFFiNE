@@ -286,9 +286,7 @@ const SAVE_CHAT_TO_BLOCK_ACTION: ChatAction = {
     }
 
     notificationService?.notify({
-      title: 'Save chat to a block',
-      accent: 'success',
-      message: 'Save chat to a block successfully.',
+      title: 'Successfully saved chat to a block',
       onClose: function (): void {},
     });
   },
