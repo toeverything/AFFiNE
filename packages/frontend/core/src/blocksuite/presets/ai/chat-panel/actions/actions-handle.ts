@@ -4,19 +4,19 @@ import type {
   TextSelection,
 } from '@blocksuite/block-std';
 import type {
-  EdgelessRootBlockComponent,
+  DocMode,
   EdgelessRootService,
   ImageSelection,
+  PageRootService,
   SerializedXYWH,
 } from '@blocksuite/blocks';
 import {
   BlocksUtils,
   Bound,
   getElementsBound,
-  isInsideEdgelessEditor,
   NoteDisplayMode,
 } from '@blocksuite/blocks';
-import { assertExists } from '@blocksuite/global/utils';
+import type { Doc } from '@blocksuite/store';
 import type { TemplateResult } from 'lit';
 
 import {
@@ -55,6 +55,94 @@ type ChatAction = {
     messageId?: string
   ) => Promise<void>;
 };
+
+async function constructChatBlockMessages(
+  chatMessages: ChatMessage[],
+  latestMessageId: string
+) {
+  const latestIndex = chatMessages.findIndex(
+    item => item.id === latestMessageId
+  );
+  const historyMessages =
+    latestIndex === -1 ? [] : chatMessages.slice(0, latestIndex + 1);
+  if (historyMessages.length < 2 || historyMessages.length % 2 !== 0) {
+    return [];
+  }
+
+  // Convert chat messages to AI chat block messages
+  const userInfo = await AIProvider.userInfo;
+  const messages = historyMessages.map(message => {
+    return {
+      id: message.id,
+      role: message.role,
+      content: message.content,
+      createdAt: message.createdAt,
+      attachments: [],
+      userId: userInfo?.id,
+      userName: userInfo?.name,
+      avatarUrl: userInfo?.avatarUrl ?? undefined,
+    };
+  });
+  return messages;
+}
+
+function getViewportCenter(
+  mode: DocMode,
+  rootService: PageRootService | EdgelessRootService
+) {
+  const center = { x: 0, y: 0 };
+  if (mode === 'page') {
+    const viewport = rootService.editPropsStore.getStorage('viewport');
+    if (viewport) {
+      if ('xywh' in viewport) {
+        const bound = Bound.deserialize(viewport.xywh);
+        center.x = bound.x + bound.w / 2;
+        center.y = bound.y + bound.h / 2;
+      } else {
+        center.x = viewport.centerX;
+        center.y = viewport.centerY;
+      }
+    }
+  } else {
+    // Else we should get latest viewport center from the edgeless root service
+    const edgelessService = rootService as EdgelessRootService;
+    center.x = edgelessService.viewport.centerX;
+    center.y = edgelessService.viewport.centerY;
+  }
+
+  return center;
+}
+
+// Add AI chat block and focus on it
+function addAIChatBlock(
+  doc: Doc,
+  messages: ChatBlockMessage[],
+  sessionId: string,
+  viewportCenter: { x: number; y: number }
+) {
+  if (!messages.length || !sessionId) {
+    return;
+  }
+
+  // Add AI chat block to the center of the viewport
+  const width = 300; // AI_CHAT_BLOCK_WIDTH = 300
+  const height = 320; // AI_CHAT_BLOCK_HEIGHT = 320
+  const x = viewportCenter.x - width / 2;
+  const y = viewportCenter.y - height / 2;
+  const bound = new Bound(x, y, width, height);
+  const surfaceBlockModel = doc.getBlocksByFlavour('affine:surface')[0].model;
+  const aiChatBlockId = doc.addBlock(
+    'affine:ai-chat',
+    {
+      xywh: bound.serialize(),
+      messages: JSON.stringify(messages),
+      sessionId,
+    },
+    surfaceBlockModel
+  );
+
+  return aiChatBlockId;
+}
 
 const CommonActions: ChatAction[] = [
   {
@@ -132,56 +220,6 @@ const CommonActions: ChatAction[] = [
   },
 ];
 
-function getHistoryMessages(
-  chatMessages: ChatMessage[],
-  latestMessageId: string
-) {
-  const latestIndex = chatMessages.findIndex(
-    item => item.id === latestMessageId
-  );
-  return latestIndex === -1 ? [] : chatMessages.slice(0, latestIndex + 1);
-}
-
-// Add AI chat block and focus on it
-function addAIChatBlock(
-  host: EditorHost,
-  messages: ChatBlockMessage[],
-  sessionId: string
-) {
-  if (!isInsideEdgelessEditor(host) || !host.doc.root?.id) return;
-
-  const edgelessRootService = host.std.spec.getService(
-    'affine:page'
-  ) as EdgelessRootService;
-  // Add AI chat block to the center of the viewport
-  let { x, y } = edgelessRootService.viewport.center;
-  const width = 300; // AI_CHAT_BLOCK_WIDTH = 300
-  const height = 320; // AI_CHAT_BLOCK_HEIGHT = 320
-  x = x - width / 2;
-  y = y - height / 2;
-  const bound = new Bound(x, y, width, height);
-  const edgelessRootBlock = host.view.getBlock(
-    host.doc.root?.id
-  ) as EdgelessRootBlockComponent;
-  const aiChatBlockId = edgelessRootService.addBlock(
-    'affine:ai-chat',
-    {
-      xywh: bound.serialize(),
-      messages: JSON.stringify(messages),
-      sessionId,
-    },
-    edgelessRootBlock.surfaceBlockModel
-  );
-
-  // Focus on the AI chat block
-  edgelessRootService.selection.set({
-    elements: [aiChatBlockId],
-    editing: false,
-  });
-
-  return aiChatBlockId;
-}
-
 const SAVE_CHAT_TO_BLOCK_ACTION: ChatAction = {
   icon: BlockIcon,
   title: 'Save chat to block',
@@ -201,14 +239,16 @@ const SAVE_CHAT_TO_BLOCK_ACTION: ChatAction = {
     }
 
     const rootService = host.spec.getService('affine:page');
+    if (!rootService) return;
     const { docModeService, notificationService } = rootService;
-    assertExists(notificationService);
     const curMode = docModeService.getMode();
+    const viewportCenter = getViewportCenter(curMode, rootService);
+    // If current mode is not edgeless, switch to edgeless mode first
     if (curMode !== 'edgeless') {
-      // set mode to edgeless
+      // Set mode to edgeless
       docModeService.setMode('edgeless');
-      // notify user to switch to edgeless mode
-      notificationService.notify({
+      // Notify user to switch to edgeless mode
+      notificationService?.notify({
         title: 'Save chat to a block',
         accent: 'info',
         message:
@@ -225,12 +265,6 @@ const SAVE_CHAT_TO_BLOCK_ACTION: ChatAction = {
     });
 
     if (!newSessionId) {
-      notificationService.notify({
-        title: 'Save chat to a block',
-        accent: 'error',
-        message: 'Fork chat failed.',
-        onClose: function (): void {},
-      });
       return;
     }
 
@@ -238,42 +272,25 @@ const SAVE_CHAT_TO_BLOCK_ACTION: ChatAction = {
     const historyItems = chatContext.items.filter(
       item => 'role' in item
     ) as ChatMessage[];
-    const items = getHistoryMessages(historyItems, messageId);
-    if (items.length < 2 || items.length % 2 !== 0) {
-      notificationService.notify({
-        title: 'Save chat to a block',
-        accent: 'error',
-        message: 'Chat messages should be more than 2.',
-        onClose: function (): void {},
-      });
+    const messages = await constructChatBlockMessages(historyItems, messageId);
+
+    // After switching to edgeless mode, the user can save the chat to a block
+    const blockId = addAIChatBlock(
+      host.doc,
+      messages,
+      newSessionId,
+      viewportCenter
+    );
+    if (!blockId) {
       return;
     }
 
-    // Convert chat messages to AI chat block messages
-    const userInfo = await AIProvider.userInfo;
-    const messages = items.map(item => {
-      return {
-        id: item.id,
-        role: item.role,
-        content: item.content,
-        createdAt: item.createdAt,
-        attachments: [],
-        userId: userInfo?.id,
-        userName: userInfo?.name,
-        avatarUrl: userInfo?.avatarUrl ?? undefined,
-      };
+    notificationService?.notify({
+      title: 'Save chat to a block',
+      accent: 'success',
+      message: 'Save chat to a block successfully.',
+      onClose: function (): void {},
     });
-
-    // After switching to edgeless mode, the user can save the chat to a block
-    const blockId = addAIChatBlock(host, messages, '');
-    if (blockId) {
-      notificationService.notify({
-        title: 'Save chat to a block',
-        accent: 'success',
-        message: 'Save chat to a block successfully.',
-        onClose: function (): void {},
-      });
-    }
   },
 };
 
