@@ -8,7 +8,7 @@ import { registerAffineCommand } from '@affine/core/commands';
 import { AppFallback } from '@affine/core/components/affine/app-container';
 import { configureCommonModules } from '@affine/core/modules';
 import { configureElectronStateStorageImpls } from '@affine/core/modules/storage';
-import { configureDesktopTabViewsModule } from '@affine/core/modules/workbench';
+import { configureDesktopWorkbenchModule } from '@affine/core/modules/workbench';
 import {
   configureBrowserWorkspaceFlavours,
   configureSqliteWorkspaceEngineStorageProvider,
@@ -88,7 +88,7 @@ configureCommonModules(framework);
 configureElectronStateStorageImpls(framework);
 configureBrowserWorkspaceFlavours(framework);
 configureSqliteWorkspaceEngineStorageProvider(framework);
-configureDesktopTabViewsModule(framework);
+configureDesktopWorkbenchModule(framework);
 const frameworkProvider = framework.provider();
 
 // setup application lifecycle events, and emit application start event

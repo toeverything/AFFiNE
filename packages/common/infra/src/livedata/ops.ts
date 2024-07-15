@@ -19,7 +19,7 @@ import {
 } from 'rxjs';
 
 import { MANUALLY_STOP } from '../utils';
-import type { LiveData } from './livedata';
+import { LiveData } from './livedata';
 
 /**
  * An operator that maps the value to the `LiveData`.
@@ -112,6 +112,38 @@ export function fromPromise<T>(
     return () => abortController.abort(MANUALLY_STOP);
   });
 }
+
+/**
+ * Patch a LiveData with a setter function.
+ * This is useful when you want to control side effects when setting a new value.
+ *
+ * TODO(@pengx17): is this a good idea? The setter will not work when LiveData is derived into a new LiveData.
+ *
+ * @param l$
+ * @param onSetValue
+ * @returns
+ */
+const patchLiveDataWithSetter = <T>(
+  l$: LiveData<T>,
+  onSetValue: (v: T) => void
+) => {
+  const oldSetValue = l$.setValue;
+  l$.setValue = v => {
+    oldSetValue.call(l$, v);
+    onSetValue(v);
+  };
+  return l$;
+};
+
+// utility function to create a LiveData from an Observable with a setter side effect
+export const toLiveDataWithSetter = <T>(
+  o$: Observable<T>,
+  defaultValue: T,
+  onSetValue: (v: T) => void
+) => {
+  const l$ = LiveData.from(o$, defaultValue);
+  return patchLiveDataWithSetter(l$, onSetValue);
+};
 
 /**
  * An operator that retries the source observable when an error occurs.

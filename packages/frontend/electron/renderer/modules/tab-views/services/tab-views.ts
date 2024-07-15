@@ -92,12 +92,14 @@ export class DesktopTabViewsService extends Service {
   /**
    * @param location
    */
-  toTabViewMeta(location: {
-    id: string;
-    hash: string;
-    pathname: string;
-    search: string;
-  }): WorkbenchViewMeta | undefined {
+  toTabViewMeta(
+    id: string,
+    location: {
+      hash: string;
+      pathname: string;
+      search: string;
+    }
+  ): WorkbenchViewMeta | undefined {
     const url = this.toFullUrl(location);
     const linkMeta = resolveRouteLinkMeta(url);
 
@@ -126,7 +128,7 @@ export class DesktopTabViewsService extends Service {
     })();
 
     return {
-      id: location.id,
+      id: id,
       url,
       title: title,
       moduleName: isJournal ? 'journal' : linkMeta.moduleName,

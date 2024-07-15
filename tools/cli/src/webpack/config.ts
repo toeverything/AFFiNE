@@ -366,6 +366,9 @@ export const createConfiguration: (
         ? new WebpackS3Plugin()
         : null,
     ]),
+    stats: {
+      errorDetails: true,
+    },
 
     optimization: OptimizeOptionOptions(buildFlags),
 

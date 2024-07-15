@@ -1,4 +1,5 @@
 import { IconButton } from '@affine/component';
+import type { TabViewsMetaSchema, WorkbenchMeta } from '@affine/electron-api';
 import { apis, events } from '@affine/electron-api';
 import {
   CloseIcon,
@@ -10,15 +11,19 @@ import {
   TodayIcon,
   ViewLayersIcon,
 } from '@blocksuite/icons/rc';
-import type { TabViewsMetaSchema } from '@toeverything/infra';
 import { partition } from 'lodash-es';
-import { Fragment, type ReactNode, useEffect, useState } from 'react';
+import {
+  Fragment,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useState,
+} from 'react';
 
 import * as styles from './shell.css';
 import { WindowsAppControls } from './windows-app-controls';
 
-type ModuleName =
-  TabViewsMetaSchema['workbenches'][0]['views'][0]['moduleName'];
+type ModuleName = NonNullable<WorkbenchMeta['views'][0]['moduleName']>;
 
 const moduleNameToIcon = {
   all: <FolderIcon />,
@@ -67,7 +72,7 @@ const WorkbenchTab = ({
         return (
           <Fragment key={view.id}>
             <button
-              key={view.url}
+              key={view.id}
               className={styles.splitViewLabel}
               data-active={activeViewIndex === viewIdx && tabActive}
               onContextMenu={() => {
@@ -83,7 +88,7 @@ const WorkbenchTab = ({
               }}
             >
               <div className={styles.labelIcon}>
-                {moduleNameToIcon[view.moduleName]}
+                {moduleNameToIcon[view.moduleName ?? 'doc']}
               </div>
               {workbench.pinned ? null : (
                 <div className={styles.splitViewLabelText}>{view.title}</div>
@@ -126,6 +131,16 @@ export function ShellRoot() {
     workbench => workbench.pinned
   );
 
+  const onAddTab = useCallback(() => {
+    if (activeView && activeWorkbench) {
+      apis?.ui.addTab({
+        activeViewIndex: 0,
+        basename: activeWorkbench.basename,
+        views: [activeView],
+      });
+    }
+  }, [activeView, activeWorkbench]);
+
   return (
     <div className={styles.root}>
       <div className={styles.tabs}>
@@ -155,14 +170,7 @@ export function ShellRoot() {
           );
         })}
         <div className={styles.divider} />
-        <IconButton
-          onClick={() => {
-            activeView &&
-              apis?.ui.addTab({
-                views: [activeView],
-              });
-          }}
-        >
+        <IconButton onClick={onAddTab}>
           <PlusIcon />
         </IconButton>
       </div>

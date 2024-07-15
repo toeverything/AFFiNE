@@ -10,7 +10,6 @@ import {
   closeTab,
   getMainWindow,
   getOnboardingWindow,
-  getTabViewsMeta,
   handleWebContentsResize,
   initAndShowMainWindow,
   isActiveTab,
@@ -19,7 +18,6 @@ import {
   showTab,
   showTabContextMenu,
   updateTabsBoundingRect,
-  updateWorkbenchMeta,
 } from '../windows-manager';
 import { getChallengeResponse } from './challenge';
 
@@ -164,15 +162,6 @@ export const uiHandlers = {
   },
   closeTab: async (_, ...args: Parameters<typeof closeTab>) => {
     await closeTab(...args);
-  },
-  getTabViewsMeta: async () => {
-    return getTabViewsMeta();
-  },
-  updateWorkbenchMeta: async (
-    _,
-    ...args: Parameters<typeof updateWorkbenchMeta>
-  ) => {
-    return updateWorkbenchMeta(...args);
   },
   updateTabsBoundingRect: async (
     _,

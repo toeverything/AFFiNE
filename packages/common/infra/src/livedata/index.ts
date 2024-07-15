@@ -8,5 +8,6 @@ export {
   mapInto,
   onComplete,
   onStart,
+  toLiveDataWithSetter,
 } from './ops';
 export { useEnsureLiveData, useLiveData } from './react';

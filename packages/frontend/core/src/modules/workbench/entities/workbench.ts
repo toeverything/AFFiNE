@@ -1,8 +1,11 @@
+import type { WorkbenchViewMeta } from '@affine/electron-api';
 import { Unreachable } from '@affine/env/constant';
 import { Entity, LiveData } from '@toeverything/infra';
-import type { To } from 'history';
+import type { Path, To } from 'history';
 import { nanoid } from 'nanoid';
+import { map } from 'rxjs';
 
+import type { WorkbenchStateProvider } from '../services/workbench-view-state';
 import { View } from './view';
 
 export type WorkbenchPosition = 'beside' | 'active' | 'head' | 'tail' | number;
@@ -12,18 +15,77 @@ interface WorkbenchOpenOptions {
   replaceHistory?: boolean;
 }
 
-export class Workbench extends Entity {
-  readonly views$ = new LiveData([
-    this.framework.createEntity(View, { id: nanoid() }),
-  ]);
+function comparePath(a?: Partial<Path>, b?: Partial<Path>) {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  return (
+    a.pathname === b.pathname && a.search === b.search && a.hash === b.hash
+  );
+}
 
-  activeViewIndex$ = new LiveData(0);
+export class Workbench extends Entity {
+  constructor(private readonly state: WorkbenchStateProvider) {
+    super();
+  }
+
+  pushViewsUpdate() {
+    const views = this.views$.value;
+    const oldViewMetas = this.state.views$.value;
+    this.state.views$.next(
+      views.map(view => {
+        const matched = oldViewMetas.find(v => v.id === view.id);
+        return {
+          ...matched,
+          id: view.id,
+          path: view.location$.value,
+        };
+      })
+    );
+  }
+
+  readonly views$: LiveData<View[]> = LiveData.from(
+    this.state.views$.pipe(
+      map(viewMetas => {
+        // reuse views when possible
+        const oldViews = this.views$.value;
+        const views = viewMetas.map(viewMeta => {
+          // is old view
+          let view = oldViews?.find(v => v.id === viewMeta.id);
+          // check if view location changed
+          if (view) {
+            if (
+              viewMeta.path &&
+              view.location$.value &&
+              !comparePath(view.location$.value, viewMeta.path)
+            ) {
+              // side effect in map???
+              view.history.replace(viewMeta.path);
+            }
+          } else {
+            view = this.framework.createEntity(View, {
+              id: viewMeta.id,
+              defaultLocation: viewMeta.path,
+            });
+          }
+          return view;
+        });
+        return views;
+      })
+    ),
+    []
+  );
+  readonly activeViewIndex$ = this.state.activeViewIndex$;
+  readonly basename$ = this.state.basename$;
+
+  DEFAULT_VIEW = this.framework.createEntity(View, {
+    id: nanoid(),
+  });
+
   activeView$ = LiveData.computed(get => {
     const activeIndex = get(this.activeViewIndex$);
     const views = get(this.views$);
-    return views[activeIndex];
+    return views.at(activeIndex) ?? this.DEFAULT_VIEW;
   });
-  basename$ = new LiveData('/');
   location$ = LiveData.computed(get => {
     return get(get(this.activeView$).location$);
   });
@@ -34,15 +96,26 @@ export class Workbench extends Entity {
     this.activeViewIndex$.next(index);
   }
 
-  createView(at: WorkbenchPosition = 'beside', defaultLocation: To) {
-    const view = this.framework.createEntity(View, {
-      id: nanoid(),
-      defaultLocation,
-    });
-    const newViews = [...this.views$.value];
-    newViews.splice(this.indexAt(at), 0, view);
-    this.views$.next(newViews);
-    const index = newViews.indexOf(view);
+  createView(
+    at: WorkbenchPosition = 'beside',
+    defaultLocation: To,
+    id = nanoid()
+  ) {
+    const newMeta: WorkbenchViewMeta = {
+      id,
+      path:
+        typeof defaultLocation === 'string'
+          ? { pathname: defaultLocation }
+          : {
+              pathname: defaultLocation.pathname ?? '/all',
+              search: defaultLocation.search,
+              hash: defaultLocation.hash,
+            },
+    };
+    const newViews = [...this.state.views$.value];
+    newViews.splice(this.indexAt(at), 0, newMeta);
+    this.state.views$.next(newViews);
+    const index = newViews.indexOf(newMeta);
     this.active(index);
     return index;
   }
@@ -120,31 +193,33 @@ export class Workbench extends Entity {
     if (this.views$.value.length === 1) return;
     const index = this.views$.value.indexOf(view);
     if (index === -1) return;
-    const newViews = [...this.views$.value];
+    const newViews = [...this.state.views$.value];
     newViews.splice(index, 1);
     const activeViewIndex = this.activeViewIndex$.value;
     if (activeViewIndex !== 0 && activeViewIndex >= index) {
       this.active(activeViewIndex - 1);
     }
-    this.views$.next(newViews);
+    this.state.views$.next(newViews);
   }
 
   closeOthers(view: View) {
     view.size$.next(100);
-    this.views$.next([view]);
+    this.state.views$.next(
+      this.state.views$.value.filter(v => v.id === view.id)
+    );
     this.active(0);
   }
 
   moveView(from: number, to: number) {
-    from = Math.max(0, Math.min(from, this.views$.value.length - 1));
-    to = Math.max(0, Math.min(to, this.views$.value.length - 1));
+    from = Math.max(0, Math.min(from, this.state.views$.value.length - 1));
+    to = Math.max(0, Math.min(to, this.state.views$.value.length - 1));
     if (from === to) return;
-    const views = [...this.views$.value];
+    const views = [...this.state.views$.value];
     const fromView = views[from];
     const toView = views[to];
     views[to] = fromView;
     views[from] = toView;
-    this.views$.next(views);
+    this.state.views$.next(views);
     this.active(to);
   }
 

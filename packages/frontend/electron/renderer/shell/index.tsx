@@ -3,10 +3,19 @@ import '@affine/component/theme/theme.css';
 
 import { appConfigProxy } from '@affine/core/hooks/use-app-config-storage';
 import { performanceLogger } from '@affine/core/shared';
+import {
+  configureGlobalStorageModule,
+  Framework,
+  FrameworkRoot,
+} from '@toeverything/infra';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import { ShellRoot } from './shell';
+
+const framework = new Framework();
+configureGlobalStorageModule(framework);
+const frameworkProvider = framework.provider();
 
 const logger = performanceLogger.namespace('shell');
 
@@ -24,7 +33,9 @@ function mountApp() {
   logger.info('render app');
   createRoot(root).render(
     <StrictMode>
-      <ShellRoot />
+      <FrameworkRoot framework={frameworkProvider}>
+        <ShellRoot />
+      </FrameworkRoot>
     </StrictMode>
   );
 }

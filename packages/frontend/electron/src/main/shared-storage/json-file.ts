@@ -117,7 +117,7 @@ export class PersistentJSONFileStorage implements Memento {
         try {
           await fs.promises.writeFile(
             this.filepath,
-            JSON.stringify(this.data),
+            JSON.stringify(this.data, null, 2),
             'utf-8'
           );
         } catch (err) {

@@ -23,7 +23,6 @@ import {
   throwIfAborted,
   useLiveData,
   useService,
-  useServiceOptional,
   WorkspaceService,
 } from '@toeverything/infra';
 import { useAtomValue, useSetAtom } from 'jotai';
@@ -64,7 +63,6 @@ import { useRegisterNavigationCommands } from '../modules/navigation/view/use-re
 import { QuickSearchContainer } from '../modules/quicksearch';
 import { CMDKQuickSearchService } from '../modules/quicksearch/services/cmdk';
 import { WorkbenchService } from '../modules/workbench';
-import { DesktopTabViewsService } from '../modules/workbench/services/desktop-tab-views';
 import {
   AllWorkspaceModals,
   CurrentWorkspaceModals,
@@ -103,9 +101,6 @@ export const WorkspaceLayoutInner = ({ children }: PropsWithChildren) => {
   const needUpgrade = useLiveData(currentWorkspace.upgrade.needUpgrade$);
 
   const workbench = useService(WorkbenchService).workbench;
-
-  /// must call this to initialize the service & bind the events
-  useServiceOptional(DesktopTabViewsService);
 
   const basename = useLiveData(workbench.basename$);
 

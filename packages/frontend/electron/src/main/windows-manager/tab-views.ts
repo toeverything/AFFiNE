@@ -1,7 +1,6 @@
 import { join } from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 
-import type { TabViewsMetaSchema } from '@toeverything/infra/app-config-storage';
 import {
   app,
   type CookiesSetDetails,
@@ -23,19 +22,18 @@ import {
 
 import { isMacOS } from '../../shared/utils';
 import { isDev } from '../config';
-import { persistentConfig } from '../config-storage/persist';
 import { mainWindowOrigin, shellViewUrl } from '../constants';
 import { ensureHelperProcess } from '../helper-process';
 import { logger } from '../logger';
+import { globalStateStorage } from '../shared-storage/storage';
 import { parseCookie } from '../utils';
 import { getMainWindow, MainWindowManager } from './main-window';
-
-const defaultTabViewsMeta = {
-  workbenches: [],
-  activeWorkbenchKey: undefined,
-} satisfies TabViewsMetaSchema;
-
-type WorkbenchMeta = TabViewsMetaSchema['workbenches'][0];
+import {
+  TabViewsMetaKey,
+  type TabViewsMetaSchema,
+  tabViewsMetaSchema,
+  type WorkbenchMeta,
+} from './tab-views-meta-schema';
 
 async function getAdditionalArguments() {
   const { getExposedMeta } = await import('../exposed');
@@ -49,6 +47,30 @@ async function getAdditionalArguments() {
   ];
 }
 
+const TabViewsMetaState = {
+  $: globalStateStorage
+    .watch<TabViewsMetaSchema>(TabViewsMetaKey)
+    .pipe(map(v => tabViewsMetaSchema.parse(v ?? {}))),
+
+  set value(value: TabViewsMetaSchema) {
+    globalStateStorage.set(TabViewsMetaKey, value);
+  },
+
+  get value() {
+    return tabViewsMetaSchema.parse(
+      globalStateStorage.get(TabViewsMetaKey) ?? {}
+    );
+  },
+
+  // shallow merge
+  patch(patch: Partial<TabViewsMetaSchema>) {
+    this.value = {
+      ...this.value,
+      ...patch,
+    };
+  },
+};
+
 export class WebContentViewsManager {
   static readonly instance = new WebContentViewsManager(
     MainWindowManager.instance
@@ -58,9 +80,7 @@ export class WebContentViewsManager {
     this.setup();
   }
 
-  readonly tabViewsMeta$ = new BehaviorSubject(
-    persistentConfig.get('tabViewsMeta') ?? defaultTabViewsMeta
-  );
+  readonly tabViewsMeta$ = TabViewsMetaState.$;
   readonly tabsBoundingRect$ = new BehaviorSubject<Rectangle | null>(null);
 
   // all web views
@@ -100,19 +120,15 @@ export class WebContentViewsManager {
   );
 
   get tabViewsMeta() {
-    return this.tabViewsMeta$.value;
+    return TabViewsMetaState.value;
   }
 
   private set tabViewsMeta(meta: TabViewsMetaSchema) {
-    persistentConfig.patch('tabViewsMeta', meta);
-    this.tabViewsMeta$.next(meta);
+    TabViewsMetaState.value = meta;
   }
 
   readonly patchTabViewsMeta = (patch: Partial<TabViewsMetaSchema>) => {
-    this.tabViewsMeta = {
-      ...this.tabViewsMeta,
-      ...patch,
-    };
+    TabViewsMetaState.patch(patch);
   };
 
   get tabsBoundingRect() {
@@ -128,7 +144,7 @@ export class WebContentViewsManager {
   }
 
   get activeWorkbenchKey() {
-    return this.tabViewsMeta$.value.activeWorkbenchKey;
+    return this.tabViewsMeta.activeWorkbenchKey;
   }
 
   get activeWorkbenchView() {
@@ -247,7 +263,7 @@ export class WebContentViewsManager {
       view = await this.createAndAddView('app', key, show);
       const workbench = this.tabViewsMeta.workbenches.find(w => w.key === key);
       if (workbench) {
-        const url = workbench.views[0].url;
+        const url = mainWindowOrigin + workbench.basename;
         // todo(@pengx17): handle multiple workbench views
         logger.info(`loading tab ${key} at ${url}`);
         await view.webContents.loadURL(url);
@@ -318,7 +334,7 @@ export class WebContentViewsManager {
       ...tabMeta,
       views: [tabMeta.views[viewIndex]],
     };
-    updateWorkbenchMeta(tabKey, {
+    this.updateWorkbenchMeta(tabKey, {
       views: tabMeta.views.toSpliced(viewIndex, 1),
     });
     addTab(newTabMeta).catch(logger.error);
@@ -333,7 +349,7 @@ export class WebContentViewsManager {
       tabKey,
     });
     const viewMeta = tabMeta.views[0];
-    updateWorkbenchMeta(tabKey, {
+    this.updateWorkbenchMeta(tabKey, {
       ...tabMeta,
       views: [
         viewMeta,
@@ -380,12 +396,11 @@ export class WebContentViewsManager {
           if (this.tabViewsMeta.workbenches.length === 0) {
             // create a default view (e.g., on first launch)
             await this.addTab({
+              basename: '/',
+              activeViewIndex: 0,
               views: [
                 {
                   id: nanoid(),
-                  title: '',
-                  url: mainWindowOrigin,
-                  moduleName: 'all',
                 },
               ],
             });
@@ -663,15 +678,9 @@ export const showDevTools = (key?: string) => {
   }
 };
 
-export const updateWorkbenchMeta =
-  WebContentViewsManager.instance.updateWorkbenchMeta;
-
 export const updateTabsBoundingRect = (rect: Rectangle) => {
   WebContentViewsManager.instance.tabsBoundingRect = rect;
 };
-
-export const getTabViewsMeta = () =>
-  WebContentViewsManager.instance.tabViewsMeta$.value;
 
 export const showTabContextMenu = async (tabKey: string, viewIndex: number) => {
   const workbenches = WebContentViewsManager.instance.tabViewsMeta.workbenches;

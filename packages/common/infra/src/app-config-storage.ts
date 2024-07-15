@@ -3,40 +3,9 @@ import { z } from 'zod';
 export const appConfigSchema = z.object({
   /** whether to show onboarding first */
   onBoarding: z.boolean().optional().default(true),
-  /** persisted app tabs view meta */
-  tabViewsMeta: z
-    .object({
-      activeWorkbenchKey: z.string().optional(),
-      workbenches: z
-        .array(
-          z.object({
-            key: z.string(),
-            activeViewIndex: z.number().optional(),
-            pinned: z.boolean().optional(),
-            views: z.array(
-              z.object({
-                id: z.string(),
-                url: z.string(),
-                title: z.string(),
-                moduleName: z.enum([
-                  'trash',
-                  'all',
-                  'collection',
-                  'tag',
-                  'doc',
-                  'journal',
-                ]),
-              })
-            ),
-          })
-        )
-        .default([]),
-    })
-    .optional(),
 });
 
 export type AppConfigSchema = z.infer<typeof appConfigSchema>;
-export type TabViewsMetaSchema = NonNullable<AppConfigSchema['tabViewsMeta']>;
 export const defaultAppConfig = appConfigSchema.parse({});
 
 const _storage: Record<number, any> = {};
