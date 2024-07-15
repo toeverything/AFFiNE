@@ -162,8 +162,10 @@ export class ChatCopyMore extends WithDisposable(LitElement) {
           this._moreButton,
           this._moreMenu,
           ({ display }) => (this._showMoreMenu = display === 'show'),
-          0,
-          -100
+          {
+            mainAxis: 0,
+            crossAxis: -100,
+          }
         );
       }
     }

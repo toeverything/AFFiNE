@@ -22,17 +22,18 @@ test('can open peek view via link popover', async ({ page }) => {
   await createLinkedPage(page, 'Test Page');
 
   await page.locator('affine-reference').hover();
+
   await expect(
     page.locator('.affine-reference-popover-container')
   ).toBeVisible();
 
   // click more button
-  // await page
-  //   .locator('.affine-reference-popover-container')
-  //   .locator('icon-button')
-  //   .last()
-  //   .click();
-  await page.locator('icon-button:has-text("center peek")').click();
+  await page
+    .locator('editor-menu-button editor-icon-button[aria-label="Open doc"]')
+    .click();
+  await page
+    .locator('editor-menu-action:has-text("Open in center peek")')
+    .click();
 
   // verify peek view is opened
   await expect(page.getByTestId('peek-view-modal')).toBeVisible();
@@ -68,8 +69,10 @@ test('can open peek view via db+click link card', async ({ page }) => {
   ).toBeVisible();
 
   await page
-    .locator('.affine-reference-popover-container')
-    .locator('.affine-reference-popover-view-selector-button.embed.card-view')
+    .locator('editor-menu-button editor-icon-button[aria-label="Switch view"]')
+    .click();
+  await page
+    .locator('editor-menu-button editor-menu-action[aria-label="Card view"]')
     .click();
 
   await expect(

@@ -4,7 +4,6 @@ import fs from 'node:fs';
 import path, { resolve } from 'node:path';
 import process from 'node:process';
 
-import type { DocCollection } from '@blocksuite/store';
 import type { BrowserContext } from '@playwright/test';
 import { test as baseTest } from '@playwright/test';
 
@@ -30,7 +29,6 @@ export const enableCoverage = !!process.env.CI || !!process.env.COVERAGE;
 
 type CurrentDocCollection = {
   meta: { id: string; flavour: string };
-  docCollection: DocCollection;
 };
 
 export const skipOnboarding = async (context: BrowserContext) => {
@@ -63,7 +61,10 @@ export const test = baseTest.extend<{
               setTimeout(() => reject(new Error('timeout')), 5000);
             });
           }
-          return (globalThis as any).currentWorkspace;
+          const currentWorkspace = (globalThis as any).currentWorkspace;
+          return {
+            meta: currentWorkspace.meta,
+          };
         });
       },
     });
