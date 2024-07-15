@@ -1,12 +1,17 @@
 import { Button } from '@affine/component/ui/button';
 import { Divider } from '@affine/component/ui/divider';
 import { Menu } from '@affine/component/ui/menu';
+import { ShareService } from '@affine/core/modules/share-doc';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useI18n } from '@affine/i18n';
 import { WebIcon } from '@blocksuite/icons/rc';
 import type { Doc } from '@blocksuite/store';
-import type { WorkspaceMetadata } from '@toeverything/infra';
-import { forwardRef, type PropsWithChildren, type Ref } from 'react';
+import {
+  useLiveData,
+  useService,
+  type WorkspaceMetadata,
+} from '@toeverything/infra';
+import { forwardRef, type PropsWithChildren, type Ref, useEffect } from 'react';
 
 import * as styles from './index.css';
 import { ShareExport } from './share-export';
@@ -42,10 +47,18 @@ const DefaultShareButton = forwardRef(function DefaultShareButton(
   ref: Ref<HTMLButtonElement>
 ) {
   const t = useI18n();
+  const shareService = useService(ShareService);
+  const shared = useLiveData(shareService.share.isShared$);
+
+  useEffect(() => {
+    shareService.share.revalidate();
+  }, [shareService]);
 
   return (
     <Button ref={ref} className={styles.shareButton} type="primary">
-      {t['com.affine.share-menu.shareButton']()}
+      {shared
+        ? t['com.affine.share-menu.sharedButton']()
+        : t['com.affine.share-menu.shareButton']()}
     </Button>
   );
 });
