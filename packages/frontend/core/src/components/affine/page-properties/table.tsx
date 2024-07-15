@@ -1085,7 +1085,7 @@ const PagePropertiesTableInner = () => {
   );
 };
 
-export const usePagePropertiesManager = (page: Doc) => {
+export const usePagePropertiesManager = (page: { id: string }) => {
   // the workspace properties adapter adapter is reactive,
   // which means it's reference will change when any of the properties change
   // also it will trigger a re-render of the component

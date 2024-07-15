@@ -449,6 +449,10 @@ export class LiveData<T = unknown>
     ) as any;
   }
 
+  static flat<T>(v: T): Flat<LiveData<T>> {
+    return new LiveData(v).flat();
+  }
+
   waitFor(predicate: (v: T) => unknown, signal?: AbortSignal): Promise<T> {
     return new Promise((resolve, reject) => {
       const subscription = this.subscribe(v => {

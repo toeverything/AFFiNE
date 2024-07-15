@@ -388,7 +388,7 @@ __metadata:
     "@blocksuite/block-std": "npm:0.16.0-canary-202407190406-c44f7e8"
     "@blocksuite/blocks": "npm:0.16.0-canary-202407190406-c44f7e8"
     "@blocksuite/global": "npm:0.16.0-canary-202407190406-c44f7e8"
-    "@blocksuite/icons": "npm:2.1.59"
+    "@blocksuite/icons": "npm:2.1.60"
     "@blocksuite/inline": "npm:0.16.0-canary-202407190406-c44f7e8"
     "@blocksuite/presets": "npm:0.16.0-canary-202407190406-c44f7e8"
     "@blocksuite/store": "npm:0.16.0-canary-202407190406-c44f7e8"
@@ -440,6 +440,7 @@ __metadata:
     file-type: "npm:^19.1.0"
     foxact: "npm:^0.2.33"
     fractional-indexing: "npm:^3.2.0"
+    fractional-indexing-jittered: "npm:^0.9.1"
     fuse.js: "npm:^7.0.0"
     graphql: "npm:^16.8.1"
     history: "npm:^5.3.0"
@@ -3538,6 +3539,22 @@ __metadata:
     react:
       optional: true
   checksum: 10/78b6164df5f3f20e33f5531ac543b1a681766835015491b5ed5d2d862dc8a8237144ee5edc1b5719b2005585b87efbf1d801beaa2f5cf38b305442c0fe74df1b
+  languageName: node
+  linkType: hard
+
+"@blocksuite/icons@npm:2.1.60":
+  version: 2.1.60
+  resolution: "@blocksuite/icons@npm:2.1.60"
+  peerDependencies:
+    "@types/react": ^18.0.25
+    lit: ^2.6.1
+    react: ^18.2.0
+  peerDependenciesMeta:
+    lit:
+      optional: true
+    react:
+      optional: true
+  checksum: 10/72302c4fd28252ede791cc97aa9c4977ee1e60f17b46043b1837b7ca7c72bdefb68b91bb847bcabb80ce489b0902fc6605ffe345ed321fdbf80f5a73c19ef33f
   languageName: node
   linkType: hard
 
@@ -14197,12 +14214,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@storybook/csf@npm:^0.1.11, @storybook/csf@npm:^0.1.2, @storybook/csf@npm:^0.1.7":
+"@storybook/csf@npm:^0.1.11":
   version: 0.1.11
   resolution: "@storybook/csf@npm:0.1.11"
   dependencies:
     type-fest: "npm:^2.19.0"
   checksum: 10/f6eeefe3b92ab206676587da9e22a775da026c055999681580d2ca23c98185736f965adc79039a0ae97ea625f0fbc7915cd4559e5db24229a4805784d0b78584
+  languageName: node
+  linkType: hard
+
+"@storybook/csf@npm:^0.1.2, @storybook/csf@npm:^0.1.7":
+  version: 0.1.8
+  resolution: "@storybook/csf@npm:0.1.8"
+  dependencies:
+    type-fest: "npm:^2.19.0"
+  checksum: 10/0cc01216a8888012bd1b33743cfeab83f16d028ba40ff02d39215a827e899451a39aef6b3a30342cdc4f87567d45f93074cfe05bdb8a34561c636ac7d8a13cfd
   languageName: node
   linkType: hard
 
@@ -23562,6 +23588,13 @@ __metadata:
   version: 4.3.7
   resolution: "fraction.js@npm:4.3.7"
   checksum: 10/bb5ebcdeeffcdc37b68ead3bdfc244e68de188e0c64e9702197333c72963b95cc798883ad16adc21588088b942bca5b6a6ff4aeb1362d19f6f3b629035dc15f5
+  languageName: node
+  linkType: hard
+
+"fractional-indexing-jittered@npm:^0.9.1":
+  version: 0.9.1
+  resolution: "fractional-indexing-jittered@npm:0.9.1"
+  checksum: 10/2908f1109ba52e7dfc96cf212c1fb95aebfe3a0dabd4e1b7663fe8d855f74d4554e3ebf600f47af28acdbc307bb149eaf78b975208a44a0a85a5c993471b32a4
   languageName: node
   linkType: hard
 

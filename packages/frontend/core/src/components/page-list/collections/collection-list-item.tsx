@@ -1,17 +1,12 @@
-import { Checkbox } from '@affine/component';
-import { getDNDId } from '@affine/core/hooks/affine/use-global-dnd-helper';
+import { Checkbox, useDraggable } from '@affine/component';
 import { WorkbenchLink } from '@affine/core/modules/workbench';
+import type { AffineDNDData } from '@affine/core/types/dnd';
 import { useI18n } from '@affine/i18n';
-import { useDraggable } from '@dnd-kit/core';
-import type { PropsWithChildren } from 'react';
-import { useCallback, useMemo } from 'react';
+import type { ForwardedRef, PropsWithChildren } from 'react';
+import { forwardRef, useCallback, useMemo } from 'react';
 
 import { selectionStateAtom, useAtom } from '../scoped-atoms';
-import type {
-  CollectionListItemProps,
-  DraggableTitleCellData,
-  PageListItemProps,
-} from '../types';
+import type { CollectionListItemProps, PageListItemProps } from '../types';
 import { ColWrapper, stopPropagation } from '../utils';
 import * as styles from './collection-list-item.css';
 
@@ -109,56 +104,64 @@ export const CollectionListItem = (props: CollectionListItemProps) => {
     props.title,
   ]);
 
-  const { setNodeRef, attributes, listeners, isDragging } = useDraggable({
-    id: getDNDId('collection-list', 'collection', props.collectionId),
-    data: {
-      preview: collectionTitleElement,
-    } satisfies DraggableTitleCellData,
-    disabled: !props.draggable,
-  });
+  const { dragRef, dragging, CustomDragPreview } = useDraggable<AffineDNDData>(
+    () => ({
+      data: {
+        entity: {
+          type: 'collection',
+          id: props.collectionId,
+        },
+        from: {
+          at: 'all-collections:list',
+        },
+      },
+      canDrag: props.draggable,
+    }),
+    [props.collectionId, props.draggable]
+  );
 
   return (
-    <CollectionListItemWrapper
-      onClick={props.onClick}
-      to={props.to}
-      collectionId={props.collectionId}
-      draggable={props.draggable}
-      isDragging={isDragging}
-    >
-      <ColWrapper flex={9}>
-        <ColWrapper
-          className={styles.dndCell}
-          flex={8}
-          ref={setNodeRef}
-          {...attributes}
-          {...listeners}
-        >
-          <div className={styles.titleIconsWrapper}>
-            <CollectionSelectionCell
-              onSelectedChange={props.onSelectedChange}
-              selectable={props.selectable}
-              selected={props.selected}
-            />
-            <ListIconCell icon={props.icon} />
-          </div>
-          <ListTitleCell title={props.title} />
+    <>
+      <CollectionListItemWrapper
+        onClick={props.onClick}
+        to={props.to}
+        collectionId={props.collectionId}
+        draggable={props.draggable}
+        isDragging={dragging}
+        ref={dragRef}
+      >
+        <ColWrapper flex={9}>
+          <ColWrapper className={styles.dndCell} flex={8}>
+            <div className={styles.titleIconsWrapper}>
+              <CollectionSelectionCell
+                onSelectedChange={props.onSelectedChange}
+                selectable={props.selectable}
+                selected={props.selected}
+              />
+              <ListIconCell icon={props.icon} />
+            </div>
+            <ListTitleCell title={props.title} />
+          </ColWrapper>
+          <ColWrapper
+            flex={4}
+            alignment="end"
+            style={{ overflow: 'visible' }}
+          ></ColWrapper>
         </ColWrapper>
-        <ColWrapper
-          flex={4}
-          alignment="end"
-          style={{ overflow: 'visible' }}
-        ></ColWrapper>
-      </ColWrapper>
-      {props.operations ? (
-        <ColWrapper
-          className={styles.actionsCellWrapper}
-          flex={3}
-          alignment="end"
-        >
-          <CollectionListOperationsCell operations={props.operations} />
-        </ColWrapper>
-      ) : null}
-    </CollectionListItemWrapper>
+        {props.operations ? (
+          <ColWrapper
+            className={styles.actionsCellWrapper}
+            flex={3}
+            alignment="end"
+          >
+            <CollectionListOperationsCell operations={props.operations} />
+          </ColWrapper>
+        ) : null}
+      </CollectionListItemWrapper>
+      <CustomDragPreview position="pointer-outside">
+        {collectionTitleElement}
+      </CustomDragPreview>
+    </>
   );
 };
 
@@ -171,58 +174,69 @@ type collectionListWrapperProps = PropsWithChildren<
   }
 >;
 
-function CollectionListItemWrapper({
-  to,
-  isDragging,
-  collectionId,
-  onClick,
-  children,
-  draggable,
-}: collectionListWrapperProps) {
-  const [selectionState, setSelectionActive] = useAtom(selectionStateAtom);
-  const handleClick = useCallback(
-    (e: React.MouseEvent) => {
-      if (!selectionState.selectable) {
-        return;
-      }
-      if (e.shiftKey) {
-        stopPropagation(e);
-        setSelectionActive(true);
-        onClick?.();
-        return;
-      }
-      if (selectionState.selectionActive) {
-        return onClick?.();
-      }
-    },
-    [
+const CollectionListItemWrapper = forwardRef(
+  (
+    {
+      to,
+      isDragging,
+      collectionId,
       onClick,
-      selectionState.selectable,
-      selectionState.selectionActive,
-      setSelectionActive,
-    ]
-  );
-
-  const commonProps = useMemo(
-    () => ({
-      'data-testid': 'collection-list-item',
-      'data-collection-id': collectionId,
-      'data-draggable': draggable,
-      className: styles.root,
-      'data-clickable': !!onClick || !!to,
-      'data-dragging': isDragging,
-      onClick: handleClick,
-    }),
-    [collectionId, draggable, isDragging, onClick, to, handleClick]
-  );
-
-  if (to) {
-    return (
-      <WorkbenchLink {...commonProps} to={to}>
-        {children}
-      </WorkbenchLink>
+      children,
+      draggable,
+    }: collectionListWrapperProps,
+    ref: ForwardedRef<HTMLAnchorElement & HTMLDivElement>
+  ) => {
+    const [selectionState, setSelectionActive] = useAtom(selectionStateAtom);
+    const handleClick = useCallback(
+      (e: React.MouseEvent) => {
+        if (!selectionState.selectable) {
+          return;
+        }
+        if (e.shiftKey) {
+          stopPropagation(e);
+          setSelectionActive(true);
+          onClick?.();
+          return;
+        }
+        if (selectionState.selectionActive) {
+          return onClick?.();
+        }
+      },
+      [
+        onClick,
+        selectionState.selectable,
+        selectionState.selectionActive,
+        setSelectionActive,
+      ]
     );
-  } else {
-    return <div {...commonProps}>{children}</div>;
+
+    const commonProps = useMemo(
+      () => ({
+        'data-testid': 'collection-list-item',
+        'data-collection-id': collectionId,
+        'data-draggable': draggable,
+        className: styles.root,
+        'data-clickable': !!onClick || !!to,
+        'data-dragging': isDragging,
+        onClick: handleClick,
+      }),
+      [collectionId, draggable, isDragging, onClick, to, handleClick]
+    );
+
+    if (to) {
+      return (
+        <WorkbenchLink {...commonProps} to={to} ref={ref}>
+          {children}
+        </WorkbenchLink>
+      );
+    } else {
+      return (
+        <div {...commonProps} ref={ref}>
+          {children}
+        </div>
+      );
+    }
   }
-}
+);
+
+CollectionListItemWrapper.displayName = 'CollectionListItemWrapper';

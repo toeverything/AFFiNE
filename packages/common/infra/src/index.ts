@@ -4,6 +4,7 @@ export * from './blocksuite';
 export * from './framework';
 export * from './initialization';
 export * from './livedata';
+export * from './modules/db';
 export * from './modules/doc';
 export * from './modules/global-context';
 export * from './modules/lifecycle';
@@ -14,6 +15,7 @@ export * from './sync';
 export * from './utils';
 
 import type { Framework } from './framework';
+import { configureDBModule } from './modules/db';
 import { configureDocModule } from './modules/doc';
 import { configureGlobalContextModule } from './modules/global-context';
 import { configureLifecycleModule } from './modules/lifecycle';
@@ -29,6 +31,7 @@ import {
 export function configureInfraModules(framework: Framework) {
   configureWorkspaceModule(framework);
   configureDocModule(framework);
+  configureDBModule(framework);
   configureGlobalStorageModule(framework);
   configureGlobalContextModule(framework);
   configureLifecycleModule(framework);

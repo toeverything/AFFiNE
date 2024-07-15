@@ -1,5 +1,3 @@
-/** @jsx jsx */
-
 import type { Edge } from '@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge';
 import type { Instruction } from '@atlaskit/pragmatic-drag-and-drop-hitbox/tree-item';
 import { cssVar } from '@toeverything/theme';

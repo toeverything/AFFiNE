@@ -239,8 +239,7 @@ export const PageOperationCell = ({
         <InfoModal
           open={openInfoModal}
           onOpenChange={setOpenInfoModal}
-          page={blocksuiteDoc}
-          workspace={currentWorkspace}
+          docId={blocksuiteDoc.id}
         />
       ) : null}
       <DisablePublicSharing.DisablePublicSharingModal

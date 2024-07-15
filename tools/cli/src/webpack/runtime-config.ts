@@ -21,6 +21,7 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
         enableExperimentalFeature: true,
         allowLocalWorkspace:
           buildFlags.distribution === 'desktop' ? true : false,
+        enableOrganize: false,
 
         // TODO(@forehalo): enable in next release and canary
         enableInfoModal: false,
@@ -54,6 +55,7 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
         serverUrlPrefix: 'https://affine.fail',
         changelogUrl: 'https://github.com/toeverything/AFFiNE/releases',
         enableInfoModal: true,
+        enableOrganize: true,
       };
     },
   };

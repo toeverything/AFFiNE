@@ -7,9 +7,14 @@ import { useBlockSuiteDocMeta } from '@affine/core/hooks/use-block-suite-page-me
 import { useI18n } from '@affine/i18n';
 import { assertExists } from '@blocksuite/global/utils';
 import { DeleteIcon } from '@blocksuite/icons/rc';
-import { useService, WorkspaceService } from '@toeverything/infra';
+import {
+  GlobalContextService,
+  useService,
+  WorkspaceService,
+} from '@toeverything/infra';
+import { useEffect } from 'react';
 
-import { ViewBody, ViewHeader } from '../../modules/workbench';
+import { useIsActiveView, ViewBody, ViewHeader } from '../../modules/workbench';
 import { EmptyPageList } from './page-list-empty';
 import * as styles from './trash-page.css';
 
@@ -28,6 +33,7 @@ const TrashHeader = () => {
 };
 
 export const TrashPage = () => {
+  const globalContextService = useService(GlobalContextService);
   const currentWorkspace = useService(WorkspaceService).workspace;
   const docCollection = currentWorkspace.docCollection;
   assertExists(docCollection);
@@ -36,6 +42,19 @@ export const TrashPage = () => {
   const filteredPageMetas = useFilteredPageMetas(pageMetas, {
     trash: true,
   });
+
+  const isActiveView = useIsActiveView();
+
+  useEffect(() => {
+    if (isActiveView) {
+      globalContextService.globalContext.isTrash.set(true);
+
+      return () => {
+        globalContextService.globalContext.isTrash.set(false);
+      };
+    }
+    return;
+  }, [globalContextService.globalContext.isTrash, isActiveView]);
 
   return (
     <>

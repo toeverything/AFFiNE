@@ -77,6 +77,10 @@ export class DocEngine {
     });
   }
 
+  markAsReady(docId: string) {
+    this.localPart.actions.markAsReady(docId);
+  }
+
   constructor(
     storage: DocStorage,
     private readonly server?: DocServer | null

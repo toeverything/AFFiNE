@@ -18,6 +18,7 @@ export type InputProps = {
   onChange?: (value: string) => void;
   onBlur?: FocusEventHandler<HTMLInputElement>;
   onKeyDown?: KeyboardEventHandler<HTMLInputElement>;
+  autoSelect?: boolean;
   noBorder?: boolean;
   status?: 'error' | 'success' | 'warning' | 'default';
   size?: 'default' | 'large' | 'extraLarge';
@@ -43,14 +44,22 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
     onEnter,
     onKeyDown,
     autoFocus,
+    autoSelect,
     ...otherProps
   }: InputProps,
   upstreamRef: ForwardedRef<HTMLInputElement>
 ) {
-  const handleAutoFocus = useCallback(
+  const handleRef = useCallback(
     (ref: HTMLInputElement | null) => {
       if (ref) {
-        window.setTimeout(() => ref.focus(), 0);
+        if (autoFocus || autoSelect) {
+          window.setTimeout(() => {
+            ref.focus();
+            if (autoSelect) {
+              ref.select();
+            }
+          }, 0);
+        }
         if (typeof upstreamRef === 'function') {
           upstreamRef(ref);
         } else if (upstreamRef) {
@@ -58,7 +67,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
         }
       }
     },
-    [upstreamRef]
+    [autoFocus, autoSelect, upstreamRef]
   );
 
   return (
@@ -86,7 +95,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
           large: size === 'large',
           'extra-large': size === 'extraLarge',
         })}
-        ref={autoFocus ? handleAutoFocus : upstreamRef}
+        ref={handleRef}
         disabled={disabled}
         style={inputStyle}
         onChange={useCallback(

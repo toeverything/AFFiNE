@@ -14,12 +14,22 @@ import {
   PageIcon,
   ViewLayersIcon,
 } from '@blocksuite/icons/rc';
-import { useLiveData, useService, WorkspaceService } from '@toeverything/infra';
+import {
+  GlobalContextService,
+  useLiveData,
+  useService,
+  useServices,
+  WorkspaceService,
+} from '@toeverything/infra';
 import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
 import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
-import { ViewBody, ViewHeader } from '../../../modules/workbench';
+import {
+  useIsActiveView,
+  ViewBody,
+  ViewHeader,
+} from '../../../modules/workbench';
 import { WorkspaceSubPath } from '../../../shared';
 import * as styles from './collection.css';
 import { CollectionDetailHeader } from './header';
@@ -58,13 +68,18 @@ export const CollectionDetail = ({
 };
 
 export const Component = function CollectionPage() {
-  const collectionService = useService(CollectionService);
+  const { collectionService, globalContextService } = useServices({
+    CollectionService,
+    GlobalContextService,
+  });
+  const globalContext = globalContextService.globalContext;
 
   const collections = useLiveData(collectionService.collections$);
   const navigate = useNavigateHelper();
   const params = useParams();
   const workspace = useService(WorkspaceService).workspace;
   const collection = collections.find(v => v.id === params.collectionId);
+  const isActiveView = useIsActiveView();
 
   const notifyCollectionDeleted = useCallback(() => {
     navigate.jumpToSubPath(workspace.id, WorkspaceSubPath.ALL);
@@ -81,6 +96,19 @@ export const Component = function CollectionPage() {
     }
     return notify.error({ title: text });
   }, [collectionService, navigate, params.collectionId, workspace.id]);
+
+  useEffect(() => {
+    if (isActiveView && collection) {
+      globalContext.collectionId.set(collection.id);
+      globalContext.isCollection.set(true);
+
+      return () => {
+        globalContext.collectionId.set(null);
+        globalContext.isCollection.set(false);
+      };
+    }
+    return;
+  }, [collection, globalContext, isActiveView]);
 
   useEffect(() => {
     if (!collection) {

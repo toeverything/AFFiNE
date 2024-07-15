@@ -174,7 +174,10 @@ NestedDropTarget.args = {
 };
 
 export const DynamicDragPreview = () => {
-  type DataType = DNDData<Record<string, never>, { type: 'big' | 'small' }>;
+  type DataType = DNDData<
+    Record<string, never>,
+    { type: 'big' | 'small' | 'tips' }
+  >;
   const { dragRef, dragging, draggingPosition, dropTarget, CustomDragPreview } =
     useDraggable<DataType>(() => ({}), []);
   const { dropTargetRef: bigDropTargetRef } = useDropTarget<DataType>(
@@ -186,6 +189,16 @@ export const DynamicDragPreview = () => {
   const { dropTargetRef: smallDropTargetRef } = useDropTarget<DataType>(
     () => ({
       data: { type: 'small' },
+    }),
+    []
+  );
+  const {
+    dropTargetRef: tipsDropTargetRef,
+    draggedOver: tipsDraggedOver,
+    draggedOverPosition: tipsDraggedOverPosition,
+  } = useDropTarget<DataType>(
+    () => ({
+      data: { type: 'tips' },
     }),
     []
   );
@@ -239,6 +252,30 @@ export const DynamicDragPreview = () => {
         }}
       >
         Small
+      </div>
+      <div
+        ref={tipsDropTargetRef}
+        style={{
+          position: 'relative',
+          width: '100%',
+          border: '1px solid green',
+          height: '100px',
+          fontSize: '50px',
+        }}
+      >
+        Tips
+        {tipsDraggedOver && (
+          <div
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              transform: `translate(${tipsDraggedOverPosition.relativeX}px, ${tipsDraggedOverPosition.relativeY}px)`,
+            }}
+          >
+            tips
+          </div>
+        )}
       </div>
       <CustomDragPreview position="pointer-outside">
         <div

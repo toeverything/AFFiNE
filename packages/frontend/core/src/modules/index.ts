@@ -7,6 +7,7 @@ import { configureDocLinksModule } from './doc-link';
 import { configureDocsSearchModule } from './docs-search';
 import { configureFindInPageModule } from './find-in-page';
 import { configureNavigationModule } from './navigation';
+import { configureOrganizeModule } from './organize';
 import { configurePeekViewModule } from './peek-view';
 import { configurePermissionsModule } from './permissions';
 import { configureWorkspacePropertiesModule } from './properties';
@@ -33,4 +34,5 @@ export function configureCommonModules(framework: Framework) {
   configureQuickSearchModule(framework);
   configureDocsSearchModule(framework);
   configureDocLinksModule(framework);
+  configureOrganizeModule(framework);
 }

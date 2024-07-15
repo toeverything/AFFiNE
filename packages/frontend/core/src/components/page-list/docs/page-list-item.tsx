@@ -1,11 +1,10 @@
-import { Checkbox, Tooltip } from '@affine/component';
-import { getDNDId } from '@affine/core/hooks/affine/use-global-dnd-helper';
+import { Checkbox, Tooltip, useDraggable } from '@affine/component';
 import { TagService } from '@affine/core/modules/tag';
+import type { AffineDNDData } from '@affine/core/types/dnd';
 import { i18nTime } from '@affine/i18n';
-import { useDraggable } from '@dnd-kit/core';
 import { useLiveData, useService } from '@toeverything/infra';
-import type { PropsWithChildren } from 'react';
-import { useCallback, useEffect, useMemo } from 'react';
+import type { ForwardedRef, PropsWithChildren } from 'react';
+import { forwardRef, useCallback, useEffect, useMemo } from 'react';
 
 import { WorkbenchLink } from '../../../modules/workbench/view/workbench-link';
 import {
@@ -14,7 +13,7 @@ import {
   selectionStateAtom,
   useAtom,
 } from '../scoped-atoms';
-import type { DraggableTitleCellData, PageListItemProps } from '../types';
+import type { PageListItemProps } from '../types';
 import { useAllDocDisplayProperties } from '../use-all-doc-display-properties';
 import { ColWrapper, stopPropagation } from '../utils';
 import * as styles from './page-list-item.css';
@@ -167,76 +166,84 @@ export const PageListItem = (props: PageListItemProps) => {
     props.title,
   ]);
 
-  const { setNodeRef, attributes, listeners, isDragging } = useDraggable({
-    id: getDNDId('doc-list', 'doc', props.pageId),
-    data: {
-      preview: pageTitleElement,
-    } satisfies DraggableTitleCellData,
-    disabled: !props.draggable,
-  });
+  const { dragRef, CustomDragPreview, dragging } = useDraggable<AffineDNDData>(
+    () => ({
+      canDrag: props.draggable,
+      data: {
+        entity: {
+          type: 'doc',
+          id: props.pageId,
+        },
+        from: {
+          at: 'all-docs:list',
+        },
+      },
+    }),
+    [props.draggable, props.pageId]
+  );
 
   return (
-    <PageListItemWrapper
-      onClick={props.onClick}
-      to={props.to}
-      pageId={props.pageId}
-      draggable={props.draggable}
-      isDragging={isDragging}
-      pageIds={props.pageIds || []}
-    >
-      <ColWrapper flex={9}>
-        <ColWrapper
-          className={styles.dndCell}
-          flex={8}
-          ref={setNodeRef}
-          {...attributes}
-          {...listeners}
-        >
-          <div className={styles.titleIconsWrapper}>
-            <PageSelectionCell
-              onSelectedChange={props.onSelectedChange}
-              selectable={props.selectable}
-              selected={props.selected}
-            />
-            <ListIconCell icon={props.icon} />
-          </div>
-          <ListTitleCell title={props.title} preview={props.preview} />
+    <>
+      <PageListItemWrapper
+        onClick={props.onClick}
+        to={props.to}
+        pageId={props.pageId}
+        draggable={props.draggable}
+        isDragging={dragging}
+        ref={dragRef}
+        pageIds={props.pageIds || []}
+      >
+        <ColWrapper flex={9}>
+          <ColWrapper className={styles.dndCell} flex={8}>
+            <div className={styles.titleIconsWrapper}>
+              <PageSelectionCell
+                onSelectedChange={props.onSelectedChange}
+                selectable={props.selectable}
+                selected={props.selected}
+              />
+              <ListIconCell icon={props.icon} />
+            </div>
+            <ListTitleCell title={props.title} preview={props.preview} />
+          </ColWrapper>
+          <ColWrapper
+            flex={4}
+            alignment="end"
+            style={{ overflow: 'visible' }}
+            hidden={!displayProperties.displayProperties.tags}
+          >
+            <PageTagsCell pageId={props.pageId} />
+          </ColWrapper>
         </ColWrapper>
         <ColWrapper
-          flex={4}
-          alignment="end"
-          style={{ overflow: 'visible' }}
-          hidden={!displayProperties.displayProperties.tags}
-        >
-          <PageTagsCell pageId={props.pageId} />
-        </ColWrapper>
-      </ColWrapper>
-      <ColWrapper
-        flex={1}
-        alignment="end"
-        hideInSmallContainer
-        hidden={!displayProperties.displayProperties.createDate}
-      >
-        <PageCreateDateCell createDate={props.createDate} />
-      </ColWrapper>
-      <ColWrapper
-        flex={1}
-        alignment="end"
-        hideInSmallContainer
-        hidden={!displayProperties.displayProperties.updatedDate}
-      >
-        <PageUpdatedDateCell updatedDate={props.updatedDate} />
-      </ColWrapper>
-      {props.operations ? (
-        <ColWrapper
-          className={styles.actionsCellWrapper}
           flex={1}
           alignment="end"
+          hideInSmallContainer
+          hidden={!displayProperties.displayProperties.createDate}
         >
-          <PageListOperationsCell operations={props.operations} />
+          <PageCreateDateCell createDate={props.createDate} />
         </ColWrapper>
-      ) : null}
-    </PageListItemWrapper>
+        <ColWrapper
+          flex={1}
+          alignment="end"
+          hideInSmallContainer
+          hidden={!displayProperties.displayProperties.updatedDate}
+        >
+          <PageUpdatedDateCell updatedDate={props.updatedDate} />
+        </ColWrapper>
+        {props.operations ? (
+          <ColWrapper
+            className={styles.actionsCellWrapper}
+            flex={1}
+            alignment="end"
+          >
+            <PageListOperationsCell operations={props.operations} />
+          </ColWrapper>
+        ) : null}
+      </PageListItemWrapper>
+      <CustomDragPreview position="pointer-outside">
+        {pageTitleElement}
+      </CustomDragPreview>
+    </>
   );
 };
 
@@ -247,132 +254,142 @@ type PageListWrapperProps = PropsWithChildren<
   }
 >;
 
-function PageListItemWrapper({
-  to,
-  isDragging,
-  pageId,
-  pageIds,
-  onClick,
-  children,
-  draggable,
-}: PageListWrapperProps) {
-  const [selectionState, setSelectionActive] = useAtom(selectionStateAtom);
-  const [anchorIndex, setAnchorIndex] = useAtom(anchorIndexAtom);
-  const [rangeIds, setRangeIds] = useAtom(rangeIdsAtom);
-
-  const handleShiftClick = useCallback(
-    (currentIndex: number) => {
-      if (anchorIndex === undefined) {
-        setAnchorIndex(currentIndex);
-        onClick?.();
-        return;
-      }
-
-      const lowerIndex = Math.min(anchorIndex, currentIndex);
-      const upperIndex = Math.max(anchorIndex, currentIndex);
-      const newRangeIds = pageIds.slice(lowerIndex, upperIndex + 1);
-
-      const currentSelected = selectionState.selectedIds || [];
-
-      // Set operations
-      const setRange = new Set(rangeIds);
-      const newSelected = new Set(
-        currentSelected.filter(id => !setRange.has(id)).concat(newRangeIds)
-      );
-
-      selectionState.onSelectedIdsChange?.([...newSelected]);
-      setRangeIds(newRangeIds);
-    },
-    [
-      anchorIndex,
-      onClick,
-      pageIds,
-      selectionState,
-      setAnchorIndex,
-      rangeIds,
-      setRangeIds,
-    ]
-  );
-
-  const handleClick = useCallback(
-    (e: React.MouseEvent) => {
-      if (!selectionState.selectable) {
-        return;
-      }
-      stopPropagation(e);
-      const currentIndex = pageIds.indexOf(pageId);
-
-      if (e.shiftKey) {
-        if (!selectionState.selectionActive) {
-          setSelectionActive(true);
-          setAnchorIndex(currentIndex);
-          onClick?.();
-          return false;
-        }
-        handleShiftClick(currentIndex);
-        return false;
-      } else {
-        setAnchorIndex(undefined);
-        setRangeIds([]);
-        onClick?.();
-        return;
-      }
-    },
-    [
-      handleShiftClick,
-      onClick,
+const PageListItemWrapper = forwardRef(
+  (
+    {
+      to,
+      isDragging,
       pageId,
       pageIds,
-      selectionState.selectable,
+      onClick,
+      children,
+      draggable,
+    }: PageListWrapperProps,
+    ref: ForwardedRef<HTMLAnchorElement & HTMLDivElement>
+  ) => {
+    const [selectionState, setSelectionActive] = useAtom(selectionStateAtom);
+    const [anchorIndex, setAnchorIndex] = useAtom(anchorIndexAtom);
+    const [rangeIds, setRangeIds] = useAtom(rangeIdsAtom);
+
+    const handleShiftClick = useCallback(
+      (currentIndex: number) => {
+        if (anchorIndex === undefined) {
+          setAnchorIndex(currentIndex);
+          onClick?.();
+          return;
+        }
+
+        const lowerIndex = Math.min(anchorIndex, currentIndex);
+        const upperIndex = Math.max(anchorIndex, currentIndex);
+        const newRangeIds = pageIds.slice(lowerIndex, upperIndex + 1);
+
+        const currentSelected = selectionState.selectedIds || [];
+
+        // Set operations
+        const setRange = new Set(rangeIds);
+        const newSelected = new Set(
+          currentSelected.filter(id => !setRange.has(id)).concat(newRangeIds)
+        );
+
+        selectionState.onSelectedIdsChange?.([...newSelected]);
+        setRangeIds(newRangeIds);
+      },
+      [
+        anchorIndex,
+        onClick,
+        pageIds,
+        selectionState,
+        setAnchorIndex,
+        rangeIds,
+        setRangeIds,
+      ]
+    );
+
+    const handleClick = useCallback(
+      (e: React.MouseEvent) => {
+        if (!selectionState.selectable) {
+          return;
+        }
+        stopPropagation(e);
+        const currentIndex = pageIds.indexOf(pageId);
+
+        if (e.shiftKey) {
+          if (!selectionState.selectionActive) {
+            setSelectionActive(true);
+            setAnchorIndex(currentIndex);
+            onClick?.();
+            return false;
+          }
+          handleShiftClick(currentIndex);
+          return false;
+        } else {
+          setAnchorIndex(undefined);
+          setRangeIds([]);
+          onClick?.();
+          return;
+        }
+      },
+      [
+        handleShiftClick,
+        onClick,
+        pageId,
+        pageIds,
+        selectionState.selectable,
+        selectionState.selectionActive,
+        setAnchorIndex,
+        setRangeIds,
+        setSelectionActive,
+      ]
+    );
+
+    const commonProps = useMemo(
+      () => ({
+        'data-testid': 'page-list-item',
+        'data-page-id': pageId,
+        'data-draggable': draggable,
+        className: styles.root,
+        'data-clickable': !!onClick || !!to,
+        'data-dragging': isDragging,
+        onClick: onClick ? handleClick : undefined,
+      }),
+      [pageId, draggable, onClick, to, isDragging, handleClick]
+    );
+
+    useEffect(() => {
+      if (selectionState.selectionActive) {
+        // listen for shift key up
+        const handleKeyUp = (e: KeyboardEvent) => {
+          if (e.key === 'Shift') {
+            setAnchorIndex(undefined);
+            setRangeIds([]);
+          }
+        };
+        window.addEventListener('keyup', handleKeyUp);
+        return () => {
+          window.removeEventListener('keyup', handleKeyUp);
+        };
+      }
+      return;
+    }, [
       selectionState.selectionActive,
       setAnchorIndex,
       setRangeIds,
       setSelectionActive,
-    ]
-  );
+    ]);
 
-  const commonProps = useMemo(
-    () => ({
-      'data-testid': 'page-list-item',
-      'data-page-id': pageId,
-      'data-draggable': draggable,
-      className: styles.root,
-      'data-clickable': !!onClick || !!to,
-      'data-dragging': isDragging,
-      onClick: onClick ? handleClick : undefined,
-    }),
-    [pageId, draggable, onClick, to, isDragging, handleClick]
-  );
-
-  useEffect(() => {
-    if (selectionState.selectionActive) {
-      // listen for shift key up
-      const handleKeyUp = (e: KeyboardEvent) => {
-        if (e.key === 'Shift') {
-          setAnchorIndex(undefined);
-          setRangeIds([]);
-        }
-      };
-      window.addEventListener('keyup', handleKeyUp);
-      return () => {
-        window.removeEventListener('keyup', handleKeyUp);
-      };
+    if (to) {
+      return (
+        <WorkbenchLink ref={ref} {...commonProps} to={to}>
+          {children}
+        </WorkbenchLink>
+      );
+    } else {
+      return (
+        <div ref={ref} {...commonProps}>
+          {children}
+        </div>
+      );
     }
-    return;
-  }, [
-    selectionState.selectionActive,
-    setAnchorIndex,
-    setRangeIds,
-    setSelectionActive,
-  ]);
-
-  if (to) {
-    return (
-      <WorkbenchLink {...commonProps} to={to}>
-        {children}
-      </WorkbenchLink>
-    );
-  } else {
-    return <div {...commonProps}>{children}</div>;
   }
-}
+);
+PageListItemWrapper.displayName = 'PageListItemWrapper';

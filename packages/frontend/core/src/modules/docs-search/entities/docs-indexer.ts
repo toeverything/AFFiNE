@@ -68,6 +68,10 @@ export class DocsIndexer extends Entity {
 
   setupListener() {
     this.workspaceEngine.doc.storage.eventBus.on(event => {
+      if (event.docId.startsWith('db$')) {
+        // skip db doc
+        return;
+      }
       if (event.clientId === this.workspaceEngine.doc.clientId) {
         const docId = normalizeDocId(event.docId);
 
