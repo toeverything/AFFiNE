@@ -14618,12 +14618,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@storybook/csf@npm:^0.1.2, @storybook/csf@npm:^0.1.7":
-  version: 0.1.8
-  resolution: "@storybook/csf@npm:0.1.8"
+"@storybook/csf@npm:^0.1.11, @storybook/csf@npm:^0.1.2, @storybook/csf@npm:^0.1.7":
+  version: 0.1.11
+  resolution: "@storybook/csf@npm:0.1.11"
   dependencies:
     type-fest: "npm:^2.19.0"
-  checksum: 10/0cc01216a8888012bd1b33743cfeab83f16d028ba40ff02d39215a827e899451a39aef6b3a30342cdc4f87567d45f93074cfe05bdb8a34561c636ac7d8a13cfd
+  checksum: 10/f6eeefe3b92ab206676587da9e22a775da026c055999681580d2ca23c98185736f965adc79039a0ae97ea625f0fbc7915cd4559e5db24229a4805784d0b78584
   languageName: node
   linkType: hard
 
@@ -14935,8 +14935,8 @@ __metadata:
   linkType: hard
 
 "@storybook/test-runner@npm:^0.19.0":
-  version: 0.19.0
-  resolution: "@storybook/test-runner@npm:0.19.0"
+  version: 0.19.1
+  resolution: "@storybook/test-runner@npm:0.19.1"
   dependencies:
     "@babel/core": "npm:^7.22.5"
     "@babel/generator": "npm:^7.22.5"
@@ -14944,7 +14944,7 @@ __metadata:
     "@babel/types": "npm:^7.22.5"
     "@jest/types": "npm:^29.6.3"
     "@storybook/core-common": "npm:^8.0.0"
-    "@storybook/csf": "npm:^0.1.2"
+    "@storybook/csf": "npm:^0.1.11"
     "@storybook/csf-tools": "npm:^8.0.0"
     "@storybook/preview-api": "npm:^8.0.0"
     "@swc/core": "npm:^1.5.22"
@@ -14962,7 +14962,7 @@ __metadata:
     playwright: "npm:^1.14.0"
   bin:
     test-storybook: dist/test-storybook.js
-  checksum: 10/7a2c84f82301d1af20c0469bb82736ebda7fe728f89f8f12b394b4006b2846079bcaff5879395b962bfe729f472149e965a3d51e5faf12ae577b29b069f8c408
+  checksum: 10/cb0a68e6fc9472b4cf82c969fb58a74404f7865ab2ecbffe42f78f3ec3da0c21797c62a19e1a77a02d3c0559a6a03bae2e28104f10dd239b5ded7bcbaa232b98
   languageName: node
   linkType: hard
 
