@@ -12,7 +12,6 @@ import { configurePermissionsModule } from './permissions';
 import { configureWorkspacePropertiesModule } from './properties';
 import { configureQuickSearchModule } from './quicksearch';
 import { configureShareDocsModule } from './share-doc';
-import { configureStorageImpls } from './storage';
 import { configureTagModule } from './tag';
 import { configureTelemetryModule } from './telemetry';
 import { configureWorkbenchModule } from './workbench';
@@ -34,8 +33,4 @@ export function configureCommonModules(framework: Framework) {
   configureQuickSearchModule(framework);
   configureDocsSearchModule(framework);
   configureDocLinksModule(framework);
-}
-
-export function configureImpls(framework: Framework) {
-  configureStorageImpls(framework);
 }

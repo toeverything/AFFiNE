@@ -20,6 +20,12 @@ export interface Memento {
 export class MemoryMemento implements Memento {
   private readonly data = new Map<string, LiveData<any>>();
 
+  setAll(init: Record<string, any>) {
+    for (const [key, value] of Object.entries(init)) {
+      this.set(key, value);
+    }
+  }
+
   private getLiveData(key: string): LiveData<any> {
     let data$ = this.data.get(key);
     if (!data$) {
@@ -39,7 +45,9 @@ export class MemoryMemento implements Memento {
     this.getLiveData(key).next(value);
   }
   keys(): string[] {
-    return Array.from(this.data.keys());
+    return Array.from(this.data)
+      .filter(([_, v$]) => v$.value !== undefined)
+      .map(([k]) => k);
   }
   clear(): void {
     this.data.clear();

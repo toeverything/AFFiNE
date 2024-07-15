@@ -5,6 +5,7 @@ import { configStorageHandlers } from './config-storage';
 import { exportHandlers } from './export';
 import { findInPageHandlers } from './find-in-page';
 import { getLogFilePath, logger, revealLogFile } from './logger';
+import { sharedStorageHandlers } from './shared-storage';
 import { uiHandlers } from './ui/handlers';
 import { updaterHandlers } from './updater';
 
@@ -26,6 +27,7 @@ export const allHandlers = {
   updater: updaterHandlers,
   configStorage: configStorageHandlers,
   findInPage: findInPageHandlers,
+  sharedStorage: sharedStorageHandlers,
 };
 
 export const registerHandlers = () => {
@@ -34,7 +36,10 @@ export const registerHandlers = () => {
   for (const [namespace, namespaceHandlers] of Object.entries(allHandlers)) {
     for (const [key, handler] of Object.entries(namespaceHandlers)) {
       const chan = `${namespace}:${key}`;
-      ipcMain.handle(chan, async (e, ...args) => {
+      const wrapper = async (
+        e: Electron.IpcMainInvokeEvent,
+        ...args: any[]
+      ) => {
         const start = performance.now();
         try {
           const result = await handler(e, ...args);
@@ -52,6 +57,18 @@ export const registerHandlers = () => {
         } catch (error) {
           logger.error('[ipc]', chan, error);
         }
+      };
+      // for ipcRenderer.invoke
+      ipcMain.handle(chan, wrapper);
+      // for ipcRenderer.sendSync
+      ipcMain.on(chan, (e, ...args) => {
+        wrapper(e, ...args)
+          .then(ret => {
+            e.returnValue = ret;
+          })
+          .catch(() => {
+            // never throw
+          });
       });
     }
   }

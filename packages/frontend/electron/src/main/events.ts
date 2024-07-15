@@ -2,6 +2,7 @@ import { app, BrowserWindow } from 'electron';
 
 import { applicationMenuEvents } from './application-menu';
 import { logger } from './logger';
+import { sharedStorageEvents } from './shared-storage';
 import { uiEvents } from './ui/events';
 import { updaterEvents } from './updater/event';
 
@@ -9,6 +10,7 @@ export const allEvents = {
   applicationMenu: applicationMenuEvents,
   updater: updaterEvents,
   ui: uiEvents,
+  sharedStorage: sharedStorageEvents,
 };
 
 function getActiveWindows() {
