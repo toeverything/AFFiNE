@@ -1,6 +1,6 @@
 import { notify } from '@affine/component';
+import { GraphQLError } from '@affine/graphql';
 import { assertExists } from '@blocksuite/global/utils';
-import { GraphQLError } from 'graphql';
 import type { PropsWithChildren, ReactNode } from 'react';
 import { useCallback } from 'react';
 import type { SWRConfiguration } from 'swr';
