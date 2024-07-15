@@ -175,7 +175,7 @@ export const RadioGroup = memo(function RadioGroup({
             <span className={styles.radioButtonContent}>
               {customRender
                 ? customRender(item, index)
-                : item.label ?? item.value}
+                : (item.label ?? item.value)}
             </span>
           </RadixRadioGroup.Item>
         );

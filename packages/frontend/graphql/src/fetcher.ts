@@ -153,7 +153,7 @@ function formatRequestBody<Q extends GraphQLQuery>({
   const body: RequestBody = {
     query: query.query,
     variables:
-      keepNilVariables ?? true ? variables : filterEmptyValue(variables),
+      (keepNilVariables ?? true) ? variables : filterEmptyValue(variables),
   };
 
   if (query.operationName) {

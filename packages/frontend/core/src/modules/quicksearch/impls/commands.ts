@@ -185,12 +185,12 @@ export class CommandsQuickSearchSession
                 titleMatches ?? []
               ) ?? item.label.title,
             subTitle: item.label.subTitle
-              ? highlighter(
+              ? (highlighter(
                   item.label.subTitle,
                   '<b>',
                   '</b>',
                   subTitleMatches ?? []
-                ) ?? item.label.subTitle
+                ) ?? item.label.subTitle)
               : undefined,
           },
           group: categories[item.category],

@@ -24,7 +24,7 @@ export class View extends Entity<{
     const activeTabId = get(this._activeSidebarTabId$);
     const tabs = get(this.sidebarTabs$);
     return tabs.length > 0
-      ? tabs.find(tab => tab.id === activeTabId) ?? tabs[0]
+      ? (tabs.find(tab => tab.id === activeTabId) ?? tabs[0])
       : null;
   });
 

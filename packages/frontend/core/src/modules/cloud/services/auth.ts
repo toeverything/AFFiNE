@@ -90,7 +90,7 @@ export class AuthService extends Service {
     searchParams.set('token', verifyToken);
     const redirect = environment.isDesktop
       ? this.buildRedirectUri('/open-app/signin-redirect')
-      : redirectUri ?? location.href;
+      : (redirectUri ?? location.href);
     searchParams.set('redirect_uri', redirect.toString());
 
     const res = await this.fetchService.fetch(
