@@ -19,7 +19,7 @@ export class WorkspaceLocalStateImpl implements WorkspaceLocalState {
     return this.wrapped.keys();
   }
 
-  get<T>(key: string): T | null {
+  get<T>(key: string): T | undefined {
     return this.wrapped.get<T>(key);
   }
 
@@ -27,7 +27,7 @@ export class WorkspaceLocalStateImpl implements WorkspaceLocalState {
     return this.wrapped.watch<T>(key);
   }
 
-  set<T>(key: string, value: T | null): void {
+  set<T>(key: string, value: T): void {
     return this.wrapped.set<T>(key, value);
   }
 
@@ -53,7 +53,7 @@ export class WorkspaceLocalCacheImpl implements WorkspaceLocalCache {
     return this.wrapped.keys();
   }
 
-  get<T>(key: string): T | null {
+  get<T>(key: string): T | undefined {
     return this.wrapped.get<T>(key);
   }
 
@@ -61,7 +61,7 @@ export class WorkspaceLocalCacheImpl implements WorkspaceLocalCache {
     return this.wrapped.watch<T>(key);
   }
 
-  set<T>(key: string, value: T | null): void {
+  set<T>(key: string, value: T): void {
     return this.wrapped.set<T>(key, value);
   }
 

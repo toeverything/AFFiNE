@@ -6,7 +6,7 @@ describe('memento', () => {
   test('memory', () => {
     const memento = new MemoryMemento();
 
-    expect(memento.get('foo')).toBeNull();
+    expect(memento.get('foo')).toBeUndefined();
     memento.set('foo', 'bar');
     expect(memento.get('foo')).toEqual('bar');
 
