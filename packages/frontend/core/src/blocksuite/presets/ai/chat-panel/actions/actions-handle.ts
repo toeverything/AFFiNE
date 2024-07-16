@@ -46,14 +46,15 @@ type Selections = {
 type ChatAction = {
   icon: TemplateResult<1>;
   title: string;
+  toast: string;
   showWhen: (host: EditorHost) => boolean;
   handler: (
     host: EditorHost,
     content: string,
     currentSelections: Selections,
-    chatContext: ChatContextValue,
+    chatContext?: ChatContextValue,
     messageId?: string
-  ) => Promise<void>;
+  ) => Promise<boolean>;
 };
 
 async function constructChatBlockMessages(
@@ -227,23 +228,25 @@ const CommonActions: ChatAction[] = [
 const SAVE_CHAT_TO_BLOCK_ACTION: ChatAction = {
   icon: BlockIcon,
   title: 'Save chat to block',
+  toast: 'Successfully saved chat to a block',
   showWhen: (host: EditorHost) =>
     !!host.doc.awarenessStore.getFlag('enable_ai_chat_block'),
   handler: async (
     host: EditorHost,
     _,
     __,
-    chatContext: ChatContextValue,
+    chatContext?: ChatContextValue,
     messageId?: string
   ) => {
     // The chat session id and the latest message id are required to fork the chat session
-    const parentSessionId = chatContext.chatSessionId;
+    const parentSessionId = chatContext?.chatSessionId;
     if (!messageId || !parentSessionId) {
-      return;
+      return false;
     }
 
     const rootService = host.spec.getService('affine:page');
-    if (!rootService) return;
+    if (!rootService) return false;
+
     const { docModeService, notificationService } = rootService;
     const curMode = docModeService.getMode();
     const viewportCenter = getViewportCenter(curMode, rootService);
@@ -270,11 +273,11 @@ const SAVE_CHAT_TO_BLOCK_ACTION: ChatAction = {
       });
 
       if (!newSessionId) {
-        return;
+        return false;
       }
 
       // Get messages before the latest message
-      const historyItems = chatContext.items.filter(
+      const historyItems = chatContext?.items.filter(
         item => 'role' in item
       ) as ChatMessage[];
       const messages = await constructChatBlockMessages(
@@ -290,13 +293,10 @@ const SAVE_CHAT_TO_BLOCK_ACTION: ChatAction = {
         viewportCenter
       );
       if (!blockId) {
-        return;
+        return false;
       }
 
-      notificationService?.notify({
-        title: 'Successfully saved chat to a block',
-        onClose: function (): void {},
-      });
+      return true;
     } catch (err) {
       console.error(err);
       notificationService?.notify({
@@ -304,6 +304,7 @@ const SAVE_CHAT_TO_BLOCK_ACTION: ChatAction = {
         accent: 'error',
         onClose: function (): void {},
       });
+      return false;
     }
   },
 };
