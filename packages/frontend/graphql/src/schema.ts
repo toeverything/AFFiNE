@@ -1438,6 +1438,31 @@ export type GetCopilotHistoriesQuery = {
   } | null;
 };
 
+export type GetCopilotHistoryIdsQueryVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+  docId: InputMaybe<Scalars['String']['input']>;
+  options: InputMaybe<QueryChatHistoriesInput>;
+}>;
+
+export type GetCopilotHistoryIdsQuery = {
+  __typename?: 'Query';
+  currentUser: {
+    __typename?: 'UserType';
+    copilot: {
+      __typename?: 'Copilot';
+      histories: Array<{
+        __typename?: 'CopilotHistories';
+        sessionId: string;
+        messages: Array<{
+          __typename?: 'ChatMessage';
+          id: string | null;
+          role: string;
+        }>;
+      }>;
+    };
+  } | null;
+};
+
 export type GetCopilotSessionsQueryVariables = Exact<{
   workspaceId: Scalars['String']['input'];
 }>;
@@ -2190,6 +2215,11 @@ export type Queries =
       name: 'getCopilotHistoriesQuery';
       variables: GetCopilotHistoriesQueryVariables;
       response: GetCopilotHistoriesQuery;
+    }
+  | {
+      name: 'getCopilotHistoryIdsQuery';
+      variables: GetCopilotHistoryIdsQueryVariables;
+      response: GetCopilotHistoryIdsQuery;
     }
   | {
       name: 'getCopilotSessionsQuery';

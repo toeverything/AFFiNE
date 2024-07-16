@@ -94,6 +94,7 @@ export class ChatSession implements AsyncDisposable {
     }
 
     this.push({
+      id: messageId,
       role: 'user',
       content: message.content || '',
       attachments: message.attachments,
