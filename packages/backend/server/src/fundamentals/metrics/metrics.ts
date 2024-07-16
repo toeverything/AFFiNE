@@ -35,7 +35,8 @@ export type KnownMetricScopes =
   | 'auth'
   | 'controllers'
   | 'doc'
-  | 'sse';
+  | 'sse'
+  | 'mail';
 
 const metricCreators: MetricCreators = {
   counter(meter: Meter, name: string, opts?: MetricOptions) {

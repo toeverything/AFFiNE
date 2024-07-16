@@ -3,6 +3,7 @@ import { Inject, Injectable, Optional } from '@nestjs/common';
 import { Config } from '../config';
 import { MailerServiceIsNotConfigured } from '../error';
 import { URLHelper } from '../helpers';
+import { metrics } from '../metrics';
 import type { MailerService, Options } from './mailer';
 import { MAILER_SERVICE } from './mailer';
 import { emailTemplate } from './template';
@@ -19,10 +20,20 @@ export class MailService {
       throw new MailerServiceIsNotConfigured();
     }
 
-    return this.mailer.sendMail({
-      from: this.config.mailer?.from,
-      ...options,
-    });
+    metrics.mail.counter('total').add(1);
+    try {
+      const result = await this.mailer.sendMail({
+        from: this.config.mailer?.from,
+        ...options,
+      });
+
+      metrics.mail.counter('sent').add(1);
+
+      return result;
+    } catch (e) {
+      metrics.mail.counter('error').add(1);
+      throw e;
+    }
   }
 
   hasConfigured() {
