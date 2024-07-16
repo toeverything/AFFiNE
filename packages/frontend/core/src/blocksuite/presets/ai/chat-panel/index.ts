@@ -28,7 +28,8 @@ export class ChatPanel extends WithDisposable(ShadowlessElement) {
     .chat-panel-container {
       display: flex;
       flex-direction: column;
-      padding: 0 12px;
+      padding: 0 16px;
+      padding-top: 8px;
       height: 100%;
     }
 

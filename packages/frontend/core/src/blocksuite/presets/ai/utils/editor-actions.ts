@@ -140,9 +140,5 @@ export const copyText = async (host: EditorHost, text: string) => {
     .flatMap(model => model.children);
   const slice = Slice.fromModels(previewDoc, models);
   await host.std.clipboard.copySlice(slice);
-  const { notificationService } = host.std.spec.getService('affine:page');
-  if (notificationService) {
-    notificationService.toast('Copied to clipboard');
-  }
   return true;
 };

@@ -26,6 +26,7 @@ const CommonActions = [
   {
     icon: ReplaceIcon,
     title: 'Replace selection',
+    toast: 'Successfully replaced',
     handler: async (
       host: EditorHost,
       content: string,
@@ -39,7 +40,7 @@ const CommonActions = [
           currentBlockSelections,
         })
         .run();
-      if (!data.selectedBlocks) return;
+      if (!data.selectedBlocks) return false;
 
       reportResponse('result:replace');
 
@@ -52,7 +53,7 @@ const CommonActions = [
             currentTextSelection.from.length,
             content
           );
-          return;
+          return true;
         }
       }
 
@@ -63,11 +64,13 @@ const CommonActions = [
         data.selectedBlocks.map(block => block.model),
         currentTextSelection
       );
+      return true;
     },
   },
   {
     icon: InsertBelowIcon,
     title: 'Insert below',
+    toast: 'Successfully inserted',
     handler: async (
       host: EditorHost,
       content: string,
@@ -83,13 +86,14 @@ const CommonActions = [
           currentImageSelections,
         })
         .run();
-      if (!data.selectedBlocks) return;
+      if (!data.selectedBlocks) return false;
       reportResponse('result:insert');
       await insertBelow(
         host,
         content,
         data.selectedBlocks[data.selectedBlocks?.length - 1]
       );
+      return true;
     },
   },
 ];
@@ -99,6 +103,7 @@ export const PageEditorActions = [
   {
     icon: CreateIcon,
     title: 'Create as a doc',
+    toast: 'New doc created',
     handler: (host: EditorHost, content: string) => {
       reportResponse('result:add-page');
       const newDoc = host.doc.collection.createDoc();
@@ -122,6 +127,8 @@ export const PageEditorActions = [
         complete = true;
         insertFromMarkdown(newHost, content, noteId, 0).catch(console.error);
       })();
+
+      return true;
     },
   },
 ];
@@ -131,6 +138,7 @@ export const EdgelessEditorActions = [
   {
     icon: CreateIcon,
     title: 'Add to edgeless as note',
+    toast: 'New note created',
     handler: async (host: EditorHost, content: string) => {
       reportResponse('result:add-note');
       const { doc } = host;
@@ -157,6 +165,8 @@ export const EdgelessEditorActions = [
         elements: [id],
         editing: false,
       });
+
+      return true;
     },
   },
 ];
