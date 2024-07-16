@@ -132,7 +132,7 @@ function addAIChatBlock(
   const bound = new Bound(x, y, width, height);
   const surfaceBlockModel = doc.getBlocksByFlavour('affine:surface')[0].model;
   const aiChatBlockId = doc.addBlock(
-    'affine:ai-chat',
+    'affine:embed-ai-chat',
     {
       xywh: bound.serialize(),
       messages: JSON.stringify(messages),
@@ -261,38 +261,50 @@ const SAVE_CHAT_TO_BLOCK_ACTION: ChatAction = {
       });
     }
 
-    const newSessionId = await AIProvider.forkChat?.({
-      workspaceId: host.doc.collection.id,
-      docId: host.doc.id,
-      sessionId: parentSessionId,
-      latestMessageId: messageId,
-    });
+    try {
+      const newSessionId = await AIProvider.forkChat?.({
+        workspaceId: host.doc.collection.id,
+        docId: host.doc.id,
+        sessionId: parentSessionId,
+        latestMessageId: messageId,
+      });
 
-    if (!newSessionId) {
-      return;
+      if (!newSessionId) {
+        return;
+      }
+
+      // Get messages before the latest message
+      const historyItems = chatContext.items.filter(
+        item => 'role' in item
+      ) as ChatMessage[];
+      const messages = await constructChatBlockMessages(
+        historyItems,
+        messageId
+      );
+
+      // After switching to edgeless mode, the user can save the chat to a block
+      const blockId = addAIChatBlock(
+        host.doc,
+        messages,
+        newSessionId,
+        viewportCenter
+      );
+      if (!blockId) {
+        return;
+      }
+
+      notificationService?.notify({
+        title: 'Successfully saved chat to a block',
+        onClose: function (): void {},
+      });
+    } catch (err) {
+      console.error(err);
+      notificationService?.notify({
+        title: 'Failed to save chat to a block',
+        accent: 'error',
+        onClose: function (): void {},
+      });
     }
-
-    // Get messages before the latest message
-    const historyItems = chatContext.items.filter(
-      item => 'role' in item
-    ) as ChatMessage[];
-    const messages = await constructChatBlockMessages(historyItems, messageId);
-
-    // After switching to edgeless mode, the user can save the chat to a block
-    const blockId = addAIChatBlock(
-      host.doc,
-      messages,
-      newSessionId,
-      viewportCenter
-    );
-    if (!blockId) {
-      return;
-    }
-
-    notificationService?.notify({
-      title: 'Successfully saved chat to a block',
-      onClose: function (): void {},
-    });
   },
 };
 
