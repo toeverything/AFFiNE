@@ -44,6 +44,11 @@ export interface BlobNotFoundDataType {
   workspaceId: Scalars['String']['output'];
 }
 
+export enum ChatHistoryOrder {
+  asc = 'asc',
+  desc = 'desc',
+}
+
 export interface ChatMessage {
   __typename?: 'ChatMessage';
   attachments: Maybe<Array<Scalars['String']['output']>>;
@@ -847,8 +852,11 @@ export interface QueryWorkspaceArgs {
 
 export interface QueryChatHistoriesInput {
   action: InputMaybe<Scalars['Boolean']['input']>;
+  fork: InputMaybe<Scalars['Boolean']['input']>;
   limit: InputMaybe<Scalars['Int']['input']>;
+  messageOrder: InputMaybe<Array<ChatHistoryOrder>>;
   sessionId: InputMaybe<Scalars['String']['input']>;
+  sessionOrder: InputMaybe<Array<ChatHistoryOrder>>;
   skip: InputMaybe<Scalars['Int']['input']>;
 }
 
