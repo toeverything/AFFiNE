@@ -58,7 +58,7 @@
     "electron-window-state": "^5.0.3",
     "esbuild": "^0.23.0",
     "fs-extra": "^11.2.0",
-    "glob": "^10.3.12",
+    "glob": "^11.0.0",
     "jotai": "^2.8.0",
     "jotai-devtools": "^0.10.0",
     "lodash-es": "^4.17.21",
