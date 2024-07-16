@@ -26,7 +26,12 @@ export class UserFriendlyError implements UserFriendlyErrorResponse {
       return new UserFriendlyError(response.extensions);
     }
 
-    if (typeof response === 'object' && response.type && response.name) {
+    if (
+      response &&
+      typeof response === 'object' &&
+      response.type &&
+      response.name
+    ) {
       return new UserFriendlyError(response);
     }
 

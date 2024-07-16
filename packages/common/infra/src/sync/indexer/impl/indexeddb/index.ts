@@ -1,7 +1,7 @@
 import type { Observable } from 'rxjs';
 import { from, merge, of, Subject, throttleTime } from 'rxjs';
 
-import { exhaustMapWithTrailing } from '../../../../utils/exhaustmap-with-trailing';
+import { exhaustMapWithTrailing } from '../../../../utils/';
 import {
   type AggregateOptions,
   type AggregateResult,

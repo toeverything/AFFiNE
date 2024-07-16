@@ -15,14 +15,14 @@ export class LocalStorageMemento implements Memento {
     return keys;
   }
 
-  get<T>(key: string): T | null {
+  get<T>(key: string): T | undefined {
     const json = localStorage.getItem(this.prefix + key);
-    return json ? JSON.parse(json) : null;
+    return json ? JSON.parse(json) : undefined;
   }
-  watch<T>(key: string): Observable<T | null> {
-    return new Observable<T | null>(subscriber => {
+  watch<T>(key: string): Observable<T | undefined> {
+    return new Observable<T | undefined>(subscriber => {
       const json = localStorage.getItem(this.prefix + key);
-      const first = json ? JSON.parse(json) : null;
+      const first = json ? JSON.parse(json) : undefined;
       subscriber.next(first);
 
       const channel = new BroadcastChannel(this.prefix + key);
@@ -34,7 +34,7 @@ export class LocalStorageMemento implements Memento {
       };
     });
   }
-  set<T>(key: string, value: T | null): void {
+  set<T>(key: string, value: T): void {
     localStorage.setItem(this.prefix + key, JSON.stringify(value));
     const channel = new BroadcastChannel(this.prefix + key);
     channel.postMessage(value);

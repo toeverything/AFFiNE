@@ -357,6 +357,7 @@ Could you make a new website based on these notes and send back just the html fi
     ) as PromptKey;
     return toImage({
       ...options,
+      timeout: 120000,
       promptName,
     });
   });
@@ -368,6 +369,7 @@ Could you make a new website based on these notes and send back just the html fi
     ) as PromptKey;
     return toImage({
       ...options,
+      timeout: 120000,
       promptName,
     });
   });

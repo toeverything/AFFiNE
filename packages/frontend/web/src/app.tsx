@@ -5,7 +5,8 @@ import { NotificationCenter } from '@affine/component';
 import { AffineContext } from '@affine/component/context';
 import { GlobalLoading } from '@affine/component/global-loading';
 import { AppFallback } from '@affine/core/components/affine/app-container';
-import { configureCommonModules, configureImpls } from '@affine/core/modules';
+import { configureCommonModules } from '@affine/core/modules';
+import { configureLocalStorageStateStorageImpls } from '@affine/core/modules/storage';
 import {
   configureBrowserWorkspaceFlavours,
   configureIndexedDBWorkspaceEngineStorageProvider,
@@ -69,7 +70,7 @@ let languageLoadingPromise: Promise<void> | null = null;
 
 const framework = new Framework();
 configureCommonModules(framework);
-configureImpls(framework);
+configureLocalStorageStateStorageImpls(framework);
 configureBrowserWorkspaceFlavours(framework);
 configureIndexedDBWorkspaceEngineStorageProvider(framework);
 const frameworkProvider = framework.provider();

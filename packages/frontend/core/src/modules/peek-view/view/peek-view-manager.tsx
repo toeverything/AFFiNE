@@ -73,7 +73,7 @@ const getRendererProps = (
         ? activePeekView.target
         : undefined,
     padding: activePeekView.info.type === 'doc',
-    animation: activePeekView.info.type === 'image' ? 'fade' : 'zoom',
+    dialogFrame: activePeekView.info.type !== 'image',
   };
 };
 
@@ -104,7 +104,8 @@ export const PeekViewManagerModal = () => {
   return (
     <PeekViewModalContainer
       {...renderProps}
-      open={show && !!renderProps}
+      open={!!show?.value && !!renderProps}
+      animation={show?.animation || 'none'}
       onOpenChange={open => {
         if (!open) {
           peekViewEntity.close();

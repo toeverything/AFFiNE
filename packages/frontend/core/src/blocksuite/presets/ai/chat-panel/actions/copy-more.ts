@@ -113,6 +113,16 @@ export class ChatCopyMore extends WithDisposable(LitElement) {
     this._morePopper?.toggle();
   }
 
+  private readonly _notifySuccess = (title: string) => {
+    const rootService = this.host.spec.getService('affine:page');
+    const { notificationService } = rootService;
+    notificationService?.notify({
+      title: title,
+      accent: 'success',
+      onClose: function (): void {},
+    });
+  };
+
   private async _retry() {
     const { doc } = this.host;
     try {
@@ -165,8 +175,10 @@ export class ChatCopyMore extends WithDisposable(LitElement) {
           this._moreButton,
           this._moreMenu,
           ({ display }) => (this._showMoreMenu = display === 'show'),
-          0,
-          -100
+          {
+            mainAxis: 0,
+            crossAxis: -100,
+          }
         );
       }
     }
@@ -181,7 +193,14 @@ export class ChatCopyMore extends WithDisposable(LitElement) {
       </style>
       <div class="copy-more">
         ${content
-          ? html`<div @click=${() => copyText(host, content)}>
+          ? html`<div
+              @click=${async () => {
+                const success = await copyText(host, content);
+                if (success) {
+                  this._notifySuccess('Copied to clipboard');
+                }
+              }}
+            >
               ${CopyIcon}
               <affine-tooltip>Copy</affine-tooltip>
             </div>`
@@ -210,14 +229,19 @@ export class ChatCopyMore extends WithDisposable(LitElement) {
                   blocks: this.curBlockSelections,
                 };
                 return html`<div
-                  @click=${() =>
-                    action.handler(
+                  @click=${async () => {
+                    const success = await action.handler(
                       host,
                       content,
                       currentSelections,
                       this.chatContextValue,
                       messageId ?? undefined
-                    )}
+                    );
+
+                    if (success) {
+                      this._notifySuccess(action.toast);
+                    }
+                  }}
                 >
                   ${action.icon}
                   <div>${action.title}</div>

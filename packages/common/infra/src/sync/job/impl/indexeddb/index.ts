@@ -4,7 +4,7 @@ import { merge, Observable, of, throttleTime } from 'rxjs';
 
 import { fromPromise } from '../../../../livedata';
 import { throwIfAborted } from '../../../../utils';
-import { exhaustMapWithTrailing } from '../../../../utils/exhaustmap-with-trailing';
+import { exhaustMapWithTrailing } from '../../../../utils/';
 import type { Job, JobParams, JobQueue } from '../../';
 
 interface IndexDB extends DBSchema {

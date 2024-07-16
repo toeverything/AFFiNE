@@ -16,9 +16,9 @@ import {
   ViewBarIcon,
 } from '@blocksuite/icons/rc';
 import type { BlockModel } from '@blocksuite/store';
-import { fileTypeFromBuffer } from '@sgtpooki/file-type';
 import { useService } from '@toeverything/infra';
 import clsx from 'clsx';
+import { fileTypeFromBuffer } from 'file-type';
 import { useErrorBoundary } from 'foxact/use-error-boundary';
 import type { PropsWithChildren, ReactElement } from 'react';
 import {
@@ -451,7 +451,7 @@ export const ImagePreviewPeekView = (
 ): ReactElement | null => {
   const [blockId, setBlockId] = useState<string | null>(props.blockId);
   const peekView = useService(PeekViewService).peekView;
-  const onClose = peekView.close;
+  const onClose = useCallback(() => peekView.close(), [peekView]);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {

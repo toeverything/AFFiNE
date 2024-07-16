@@ -84,7 +84,7 @@ export function effect(...args: any[]) {
       logger.error(`effect ${effectLocation} ${message}`, value);
       super(
         `effect ${effectLocation} ${message}` +
-          ` ${value ? (value instanceof Error ? value.stack ?? value.message : value + '') : ''}`
+          ` ${value ? (value instanceof Error ? (value.stack ?? value.message) : value + '') : ''}`
       );
     }
   }

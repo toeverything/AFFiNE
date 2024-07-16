@@ -554,13 +554,22 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
                         images: this._currentImageSelections,
                       };
 
-                      await action.handler(
+                      const success = await action.handler(
                         host,
                         content,
                         currentSelections,
                         this.chatContextValue,
                         messageId ?? undefined
                       );
+                      const rootService = host.spec.getService('affine:page');
+                      const { notificationService } = rootService;
+                      if (success) {
+                        notificationService?.notify({
+                          title: action.toast,
+                          accent: 'success',
+                          onClose: function (): void {},
+                        });
+                      }
                     }}
                   >
                     ${action.title}

@@ -84,8 +84,8 @@ export function AffinePageReference({
   const t = useI18n();
 
   const docsService = useService(DocsService);
-  const mode$ = LiveData.from(docsService.list.observeMode(pageId), null);
-  const docMode = useLiveData(mode$);
+  const mode$ = LiveData.from(docsService.list.observeMode(pageId), undefined);
+  const docMode = useLiveData(mode$) ?? null;
   const el = pageReferenceRenderer({
     docMode,
     pageId,

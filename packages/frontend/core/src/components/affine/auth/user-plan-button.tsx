@@ -64,7 +64,7 @@ export const UserPlanButton = () => {
     return;
   }
 
-  const planLabel = isBeliever ? 'Believer' : plan ?? SubscriptionPlan.Free;
+  const planLabel = isBeliever ? 'Believer' : (plan ?? SubscriptionPlan.Free);
 
   return (
     <Tooltip content={t['com.affine.payment.tag-tooltips']()} side="top">
