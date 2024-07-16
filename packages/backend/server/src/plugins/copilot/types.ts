@@ -131,8 +131,11 @@ export interface ChatSessionState
 
 export type ListHistoriesOptions = {
   action: boolean | undefined;
+  fork: boolean | undefined;
   limit: number | undefined;
   skip: number | undefined;
+  sessionOrder: 'asc' | 'desc' | undefined;
+  messageOrder: 'asc' | 'desc' | undefined;
   sessionId: string | undefined;
 };
 
