@@ -40,7 +40,7 @@ export const SidebarHeaderSwitcher = () => {
       padding={4}
       gap={8}
       items={tabItems}
-      value={activeTab}
+      value={activeTab?.id}
       onChange={handleActiveTabChange}
       activeItemStyle={{ color: cssVar('primaryColor') }}
     />
