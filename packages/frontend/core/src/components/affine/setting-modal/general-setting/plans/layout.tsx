@@ -212,7 +212,11 @@ export const CloudPlanLayout = ({
           <ScrollArea.Thumb className={styles.scrollThumb}></ScrollArea.Thumb>
         </ScrollArea.Scrollbar>
       </ScrollArea.Root>
-      {lifetime ? <div id="lifetimePricingPlan">{lifetime}</div> : null}
+      {lifetime ? (
+        <div style={{ paddingTop: 12 }} id="lifetimePricingPlan">
+          {lifetime}
+        </div>
+      ) : null}
     </PricingCollapsible>
   );
 };

@@ -31,11 +31,6 @@ export const BelieverBenefits = ({
           })}
         </span>
       </li>
-
-      <li className={li}>
-        <DoneIcon />
-        <span>{t['com.affine.payment.lifetime.benefit-4']()}</span>
-      </li>
     </ul>
   );
 };
