@@ -129,10 +129,10 @@ class QueryChatHistoriesInput implements Partial<ListHistoriesOptions> {
   @Field(() => Number, { nullable: true })
   skip: number | undefined;
 
-  @Field(() => [ChatHistoryOrder], { nullable: true })
+  @Field(() => ChatHistoryOrder, { nullable: true })
   messageOrder: 'asc' | 'desc' | undefined;
 
-  @Field(() => [ChatHistoryOrder], { nullable: true })
+  @Field(() => ChatHistoryOrder, { nullable: true })
   sessionOrder: 'asc' | 'desc' | undefined;
 
   @Field(() => String, { nullable: true })

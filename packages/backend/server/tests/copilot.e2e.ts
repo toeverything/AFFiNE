@@ -564,15 +564,29 @@ test('should be able to list history', async t => {
     promptName
   );
 
-  const messageId = await createCopilotMessage(app, token, sessionId);
+  const messageId = await createCopilotMessage(app, token, sessionId, 'hello');
   await chatWithText(app, token, sessionId, messageId);
 
-  const histories = await getHistories(app, token, { workspaceId });
-  t.deepEqual(
-    histories.map(h => h.messages.map(m => m.content)),
-    [['generate text to text']],
-    'should be able to list history'
-  );
+  {
+    const histories = await getHistories(app, token, { workspaceId });
+    t.deepEqual(
+      histories.map(h => h.messages.map(m => m.content)),
+      [['hello', 'generate text to text']],
+      'should be able to list history'
+    );
+  }
+
+  {
+    const histories = await getHistories(app, token, {
+      workspaceId,
+      options: { messageOrder: 'desc' },
+    });
+    t.deepEqual(
+      histories.map(h => h.messages.map(m => m.content)),
+      [['generate text to text', 'hello']],
+      'should be able to list history'
+    );
+  }
 });
 
 test('should reject request that user have not permission', async t => {
