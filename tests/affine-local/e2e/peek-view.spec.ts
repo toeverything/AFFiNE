@@ -119,7 +119,7 @@ test('can open peek view for embedded frames', async ({ page }) => {
 
   // select the note
   await page
-    .locator('affine-note:has-text("Test Frame")')
+    .locator('affine-edgeless-note:has-text("Test Frame")')
     .click({ force: true });
   // enter F to create a frame
   await page.keyboard.press('f');
@@ -148,7 +148,7 @@ test('can open peek view for embedded frames', async ({ page }) => {
 
   // check if page is in edgeless mode
   await expect(
-    page.locator('edgeless-editor').locator('edgeless-block-portal-frame')
+    page.locator('edgeless-editor').locator('affine-frame')
   ).toBeInViewport();
 
   // close peek view
@@ -161,7 +161,7 @@ test('can open peek view for embedded frames', async ({ page }) => {
 
   // check if page is in edgeless mode
   await expect(
-    page.locator('edgeless-editor').locator('edgeless-block-portal-frame')
+    page.locator('edgeless-editor').locator('affine-frame')
   ).toBeInViewport();
 
   // close peek view
@@ -171,7 +171,7 @@ test('can open peek view for embedded frames', async ({ page }) => {
   await page.locator('affine-surface-ref .affine-surface-ref').dblclick();
   // check if page is in edgeless mode
   await expect(
-    page.locator('edgeless-editor').locator('edgeless-block-portal-frame')
+    page.locator('edgeless-editor').locator('affine-frame')
   ).toBeInViewport();
 
   // can close modal when navigate

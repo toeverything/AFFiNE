@@ -16,8 +16,12 @@ test('should be able to undo on empty page', async ({ page }) => {
   await page.keyboard.press('ControlOrMeta+Z');
 
   // test editor still work
-  await page.locator('affine-note').click({ force: true });
-  await page.locator('affine-note').click({ force: true });
-  await page.locator('affine-note').pressSequentially('test text');
-  await expect(page.locator('affine-note')).toContainText('test text');
+  await page.locator('.affine-note-block-container').click({ force: true });
+  await page.locator('.affine-note-block-container').click({ force: true });
+  await page
+    .locator('.affine-note-block-container')
+    .pressSequentially('test text');
+  await expect(page.locator('.affine-note-block-container')).toContainText(
+    'test text'
+  );
 });
