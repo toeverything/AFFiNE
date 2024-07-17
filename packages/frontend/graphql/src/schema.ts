@@ -854,9 +854,9 @@ export interface QueryChatHistoriesInput {
   action: InputMaybe<Scalars['Boolean']['input']>;
   fork: InputMaybe<Scalars['Boolean']['input']>;
   limit: InputMaybe<Scalars['Int']['input']>;
-  messageOrder: InputMaybe<Array<ChatHistoryOrder>>;
+  messageOrder: InputMaybe<ChatHistoryOrder>;
   sessionId: InputMaybe<Scalars['String']['input']>;
-  sessionOrder: InputMaybe<Array<ChatHistoryOrder>>;
+  sessionOrder: InputMaybe<ChatHistoryOrder>;
   skip: InputMaybe<Scalars['Int']['input']>;
 }
 
