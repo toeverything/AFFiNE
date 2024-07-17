@@ -6,7 +6,9 @@ import { omit } from 'lodash-es';
 
 import { createApp } from './app';
 import { URLHelper } from './fundamentals';
+import { registerInstrumentations } from './fundamentals/metrics';
 
+registerInstrumentations();
 const app = await createApp();
 const listeningHost = AFFiNE.deploy ? '0.0.0.0' : 'localhost';
 await app.listen(AFFiNE.server.port, listeningHost);
