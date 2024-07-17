@@ -2,7 +2,6 @@ import { cssVar } from '@toeverything/theme';
 import { globalStyle, style } from '@vanilla-extract/css';
 export const floatingMaxWidth = 768;
 export const navWrapperStyle = style({
-  zIndex: 3,
   paddingBottom: '8px',
   '@media': {
     print: {
