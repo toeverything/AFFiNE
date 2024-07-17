@@ -561,9 +561,9 @@ input QueryChatHistoriesInput {
   action: Boolean
   fork: Boolean
   limit: Int
-  messageOrder: [ChatHistoryOrder!]
+  messageOrder: ChatHistoryOrder
   sessionId: String
-  sessionOrder: [ChatHistoryOrder!]
+  sessionOrder: ChatHistoryOrder
   skip: Int
 }
 
