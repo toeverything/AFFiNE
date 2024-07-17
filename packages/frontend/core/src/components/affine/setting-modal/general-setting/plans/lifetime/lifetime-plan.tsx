@@ -49,7 +49,7 @@ export const LifetimePlan = () => {
         <Trans
           i18nKey="com.affine.payment.lifetime.caption-2"
           components={{
-            a: <a className={styles.usePolicyLink} href="#" />,
+            a: <a className={styles.userPolicyLink} href="#" />,
           }}
         />
       </div>

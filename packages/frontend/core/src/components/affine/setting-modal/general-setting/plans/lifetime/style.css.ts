@@ -36,7 +36,10 @@ export const caption2 = style({
   marginBottom: 16,
   maxWidth: 324,
 });
-export const usePolicyLink = style({
-  color: cssVar('textPrimaryColor'),
-  textDecoration: 'underline',
+export const userPolicyLink = style({
+  // link not ready
+  // color: cssVar('textPrimaryColor'),
+  // textDecoration: 'underline',
+  color: 'inherit',
+  cursor: 'text',
 });

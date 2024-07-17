@@ -8,15 +8,16 @@
     "run-test": "./scripts/run-test.ts"
   },
   "scripts": {
+    "run:script": "node --import ./scripts/register.js",
     "build": "tsc",
-    "start": "node --loader ts-node/esm/transpile-only.mjs ./src/index.ts",
+    "start": "yarn run:script ./src/index.ts",
     "dev": "nodemon ./src/index.ts",
     "test": "ava --concurrency 1 --serial",
     "test:coverage": "c8 ava --concurrency 1 --serial",
     "postinstall": "prisma generate",
-    "data-migration": "node --loader ts-node/esm/transpile-only.mjs ./src/data/index.ts",
-    "predeploy": "yarn prisma migrate deploy && node --import ./scripts/register.js ./dist/data/index.js run",
-    "predeploy:ts": "yarn prisma migrate deploy && node --loader ts-node/esm/transpile-only.mjs ./src/data/index.ts run"
+    "data-migration": "yarn run:script ./src/data/index.ts",
+    "predeploy": "yarn prisma migrate deploy && yarn run:script ./dist/data/index.js run",
+    "db:upgrade": "yarn prisma migrate deploy && yarn data-migration run"
   },
   "dependencies": {
     "@apollo/server": "^4.10.2",
@@ -42,8 +43,8 @@
     "@node-rs/jsonwebtoken": "^0.5.2",
     "@opentelemetry/api": "^1.9.0",
     "@opentelemetry/core": "^1.25.0",
-    "@opentelemetry/exporter-prometheus": "^0.52.0",
-    "@opentelemetry/exporter-zipkin": "^1.25.0",
+    "@opentelemetry/exporter-metrics-otlp-proto": "^0.52.0",
+    "@opentelemetry/exporter-trace-otlp-proto": "^0.52.0",
     "@opentelemetry/host-metrics": "^0.35.2",
     "@opentelemetry/instrumentation": "^0.52.0",
     "@opentelemetry/instrumentation-graphql": "^0.42.0",
@@ -165,9 +166,8 @@
     "exec": "node",
     "script": "./src/index.ts",
     "nodeArgs": [
-      "--loader",
-      "ts-node/esm.mjs",
-      "--es-module-specifier-resolution=node"
+      "--import",
+      "./scripts/register.js"
     ],
     "ignore": [
       "**/__tests__/**",
