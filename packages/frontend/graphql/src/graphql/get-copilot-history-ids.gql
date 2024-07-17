@@ -10,6 +10,7 @@ query getCopilotHistoryIds(
         messages {
           id
           role
+          createdAt
         }
       }
     }

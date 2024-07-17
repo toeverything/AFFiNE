@@ -293,6 +293,7 @@ query getCopilotHistoryIds($workspaceId: String!, $docId: String, $options: Quer
         messages {
           id
           role
+          createdAt
         }
       }
     }

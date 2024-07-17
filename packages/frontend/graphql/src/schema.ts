@@ -1465,6 +1465,7 @@ export type GetCopilotHistoryIdsQuery = {
           __typename?: 'ChatMessage';
           id: string | null;
           role: string;
+          createdAt: string;
         }>;
       }>;
     };
