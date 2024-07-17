@@ -119,7 +119,7 @@ test('can open peek view for embedded frames', async ({ page }) => {
 
   // select the note
   await page
-    .locator('affine-note:has-text("Test Frame")')
+    .locator('affine-edgeless-note:has-text("Test Frame")')
     .click({ force: true });
   // enter F to create a frame
   await page.keyboard.press('f');
