@@ -133,7 +133,7 @@ function addAIChatBlock(
   const bound = new Bound(x, y, width, height);
   const surfaceBlockModel = doc.getBlocksByFlavour('affine:surface')[0].model;
   const aiChatBlockId = doc.addBlock(
-    'affine:embed-ai-chat' as never,
+    'affine:embed-ai-chat' as keyof BlockSuite.BlockModels,
     {
       xywh: bound.serialize(),
       messages: JSON.stringify(messages),
