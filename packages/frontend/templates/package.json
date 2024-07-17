@@ -14,7 +14,7 @@
     "./build-edgeless": "./build-edgeless.mjs"
   },
   "devDependencies": {
-    "glob": "^10.3.12",
+    "glob": "^11.0.0",
     "jszip": "^3.10.1"
   }
 }

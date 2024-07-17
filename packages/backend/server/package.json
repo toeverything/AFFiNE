@@ -21,8 +21,8 @@
   "dependencies": {
     "@apollo/server": "^4.10.2",
     "@aws-sdk/client-s3": "^3.552.0",
-    "@fal-ai/serverless-client": "^0.12.0",
-    "@google-cloud/opentelemetry-cloud-monitoring-exporter": "^0.18.0",
+    "@fal-ai/serverless-client": "^0.13.0",
+    "@google-cloud/opentelemetry-cloud-monitoring-exporter": "^0.19.0",
     "@google-cloud/opentelemetry-cloud-trace-exporter": "^2.2.0",
     "@google-cloud/opentelemetry-resource-util": "^2.2.0",
     "@keyv/redis": "^2.8.4",
