@@ -186,13 +186,17 @@ export const ViewSidebarTab = ({
 };
 
 export const ViewSidebarTabIconTarget = forwardRef(
-  function ViewSidebarTabIconTarget({
-    viewId,
-    tabId,
-    ...otherProps
-  }: React.HTMLProps<HTMLDivElement> & { tabId: string; viewId: string }) {
+  function ViewSidebarTabIconTarget(
+    {
+      viewId,
+      tabId,
+      ...otherProps
+    }: React.HTMLProps<HTMLDivElement> & { tabId: string; viewId: string },
+    ref: Ref<HTMLDivElement>
+  ) {
     return (
       <ViewIslandTarget
+        ref={ref}
         id={`${viewId}:sidebar:${tabId}:icon`}
         {...otherProps}
       />
@@ -201,16 +205,20 @@ export const ViewSidebarTabIconTarget = forwardRef(
 );
 
 export const ViewSidebarTabBodyTarget = forwardRef(
-  function ViewSidebarTabBodyTarget({
-    viewId,
-    tabId,
-    ...otherProps
-  }: React.HTMLProps<HTMLDivElement> & {
-    tabId: string;
-    viewId: string;
-  }) {
+  function ViewSidebarTabBodyTarget(
+    {
+      viewId,
+      tabId,
+      ...otherProps
+    }: React.HTMLProps<HTMLDivElement> & {
+      tabId: string;
+      viewId: string;
+    },
+    ref: Ref<HTMLDivElement>
+  ) {
     return (
       <ViewIslandTarget
+        ref={ref}
         id={`${viewId}:sidebar:${tabId}:body`}
         {...otherProps}
       />
