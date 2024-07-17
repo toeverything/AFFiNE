@@ -74,19 +74,6 @@ export class AIProvider {
     return AIProvider.instance.forkChat;
   }
 
-  static genRequestChatCardsFn(params: AIChatParams) {
-    return async (chatPanel: HTMLElement) => {
-      const chatCards: ChatCards | null = await new Promise(resolve =>
-        requestAnimationFrame(() =>
-          resolve(chatPanel.querySelector('chat-cards'))
-        )
-      );
-      if (!chatCards) return;
-      if (chatCards.temporaryParams) return;
-      chatCards.temporaryParams = params;
-    };
-  }
-
   private static readonly instance = new AIProvider();
 
   static LAST_ACTION_SESSIONID = '';
