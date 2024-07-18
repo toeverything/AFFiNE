@@ -77,9 +77,9 @@ export const getPublicPath = (buildFlags: BuildFlags) => {
   }
 
   if (BUILD_TYPE === 'canary') {
-    return `https://dev.affineassets.com/`;
+    return `https://dev.affineassets.com/${BUILD_TYPE}/`;
   } else if (BUILD_TYPE === 'beta' || BUILD_TYPE === 'stable') {
-    return `https://prod.affineassets.com/`;
+    return `https://prod.affineassets.com/${BUILD_TYPE}/`;
   }
   return publicPath;
 };
@@ -106,19 +106,19 @@ export const createConfiguration: (
       },
       filename:
         buildFlags.mode === 'production'
-          ? 'js/[name]-[contenthash:8].js'
+          ? 'js/[name].[contenthash:8].js'
           : 'js/[name].js',
       // In some cases webpack will emit files starts with "_" which is reserved in web extension.
       chunkFilename: pathData =>
         pathData.chunk?.name === 'worker'
           ? 'js/worker.[contenthash:8].js'
           : buildFlags.mode === 'production'
-            ? 'js/chunk.[name]-[contenthash:8].js'
+            ? 'js/chunk.[name].[contenthash:8].js'
             : 'js/chunk.[name].js',
       assetModuleFilename:
         buildFlags.mode === 'production'
-          ? 'assets/[name]-[contenthash:8][ext][query]'
-          : '[name]-[contenthash:8][ext]',
+          ? 'assets/[name].[contenthash:8][ext][query]'
+          : '[name].[contenthash:8][ext]',
       devtoolModuleFilenameTemplate: 'webpack://[namespace]/[resource-path]',
       hotUpdateChunkFilename: 'hot/[id].[fullhash].js',
       hotUpdateMainFilename: 'hot/[runtime].[fullhash].json',
