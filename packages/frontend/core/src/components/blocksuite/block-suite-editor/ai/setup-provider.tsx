@@ -3,7 +3,11 @@ import { authAtom, openSettingModalAtom } from '@affine/core/atoms';
 import { AIProvider } from '@affine/core/blocksuite/presets/ai';
 import { toggleGeneralAIOnboarding } from '@affine/core/components/affine/ai-onboarding/apis';
 import { mixpanel } from '@affine/core/utils';
-import { getBaseUrl } from '@affine/graphql';
+import {
+  getBaseUrl,
+  type getCopilotHistoriesQuery,
+  type RequestOptions,
+} from '@affine/graphql';
 import { Trans } from '@affine/i18n';
 import { UnauthorizedError } from '@blocksuite/blocks';
 import { assertExists } from '@blocksuite/global/utils';
@@ -405,10 +409,13 @@ Could you make a new website based on these notes and send back just the html fi
     },
     chats: async (
       workspaceId: string,
-      docId?: string
+      docId?: string,
+      options?: RequestOptions<
+        typeof getCopilotHistoriesQuery
+      >['variables']['options']
     ): Promise<BlockSuitePresets.AIHistory[]> => {
       // @ts-expect-error - 'action' is missing in server impl
-      return (await listHistories(workspaceId, docId)) ?? [];
+      return (await listHistories(workspaceId, docId, options)) ?? [];
     },
     cleanup: async (
       workspaceId: string,
@@ -416,6 +423,16 @@ Could you make a new website based on these notes and send back just the html fi
       sessionIds: string[]
     ) => {
       await cleanupSessions({ workspaceId, docId, sessionIds });
+    },
+    ids: async (
+      workspaceId: string,
+      docId?: string,
+      options?: RequestOptions<
+        typeof getCopilotHistoriesQuery
+      >['variables']['options']
+    ): Promise<BlockSuitePresets.AIHistoryIds[]> => {
+      // @ts-expect-error - 'role' is missing type in server impl
+      return await listHistories(workspaceId, docId, options);
     },
   });
 

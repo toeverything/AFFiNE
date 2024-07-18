@@ -479,6 +479,18 @@ export class ChatPanelInput extends WithDisposable(LitElement) {
             chatSessionId: AIProvider.LAST_ACTION_SESSIONID,
           });
         }
+
+        const { items } = this.chatContextValue;
+        const last = items[items.length - 1] as ChatMessage;
+        if (!last.id) {
+          const historyIds = await AIProvider.histories?.ids(
+            doc.collection.id,
+            doc.id,
+            { sessionId: this.chatContextValue.chatSessionId }
+          );
+          if (!historyIds || !historyIds[0]) return;
+          last.id = historyIds[0].messages.at(-1)?.id ?? '';
+        }
       }
     } catch (error) {
       this.updateContext({ status: 'error', error: error as AIError });

@@ -131,7 +131,7 @@ function addAIChatBlock(
   const x = viewportCenter.x - width / 2;
   const y = viewportCenter.y - height / 2;
   const bound = new Bound(x, y, width, height);
-  const surfaceBlockModel = doc.getBlocksByFlavour('affine:surface')[0].model;
+  const surfaceBlock = doc.getBlocksByFlavour('affine:surface')[0];
   const aiChatBlockId = doc.addBlock(
     'affine:embed-ai-chat' as keyof BlockSuite.BlockModels,
     {
@@ -139,7 +139,7 @@ function addAIChatBlock(
       messages: JSON.stringify(messages),
       sessionId,
     },
-    surfaceBlockModel.id
+    surfaceBlock.id
   );
 
   return aiChatBlockId;

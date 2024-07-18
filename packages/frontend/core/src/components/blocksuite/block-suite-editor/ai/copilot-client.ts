@@ -7,6 +7,7 @@ import {
   forkCopilotSessionMutation,
   getBaseUrl,
   getCopilotHistoriesQuery,
+  getCopilotHistoryIdsQuery,
   getCopilotSessionsQuery,
   GraphQLError,
   type GraphQLQuery,
@@ -118,6 +119,25 @@ export class CopilotClient {
   ) {
     const res = await fetcher({
       query: getCopilotHistoriesQuery,
+      variables: {
+        workspaceId,
+        docId,
+        options,
+      },
+    });
+
+    return res.currentUser?.copilot?.histories;
+  }
+
+  async getHistoryIds(
+    workspaceId: string,
+    docId?: string,
+    options?: RequestOptions<
+      typeof getCopilotHistoriesQuery
+    >['variables']['options']
+  ) {
+    const res = await fetcher({
+      query: getCopilotHistoryIdsQuery,
       variables: {
         workspaceId,
         docId,

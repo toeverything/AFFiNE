@@ -229,6 +229,8 @@ export function textToText({
 
 export const listHistories = client.getHistories;
 
+export const listHistoryIds = client.getHistoryIds;
+
 // Only one image is currently being processed
 export function toImage({
   docId,

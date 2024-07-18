@@ -1,3 +1,4 @@
+import type { getCopilotHistoriesQuery, RequestOptions } from '@affine/graphql';
 import type { EditorHost } from '@blocksuite/block-std';
 import type { BlockModel } from '@blocksuite/store';
 
@@ -232,9 +233,18 @@ declare global {
         id: string; // message id
         content: string;
         createdAt: string;
-        role: 'user' | 'assistant';
+        role: MessageRole;
       }[];
     }
+
+    type MessageRole = 'user' | 'assistant';
+
+    type AIHistoryIds = Pick<AIHistory, 'sessionId' | 'messages'> & {
+      messages: Pick<
+        AIHistory['messages'][number],
+        'id' | 'createdAt' | 'role'
+      >[];
+    };
 
     interface AIHistoryService {
       // non chat histories
@@ -244,13 +254,23 @@ declare global {
       ) => Promise<AIHistory[] | undefined>;
       chats: (
         workspaceId: string,
-        docId?: string
+        docId?: string,
+        options?: RequestOptions<
+          typeof getCopilotHistoriesQuery
+        >['variables']['options']
       ) => Promise<AIHistory[] | undefined>;
       cleanup: (
         workspaceId: string,
         docId: string,
         sessionIds: string[]
       ) => Promise<void>;
+      ids: (
+        workspaceId: string,
+        docId?: string,
+        options?: RequestOptions<
+          typeof getCopilotHistoriesQuery
+        >['variables']['options']
+      ) => Promise<AIHistoryIds[] | undefined>;
     }
 
     interface AIPhotoEngineService {

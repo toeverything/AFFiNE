@@ -3,7 +3,7 @@ import './chat-panel-messages';
 
 import type { EditorHost } from '@blocksuite/block-std';
 import { ShadowlessElement, WithDisposable } from '@blocksuite/block-std';
-import { assertExists, debounce } from '@blocksuite/global/utils';
+import { debounce } from '@blocksuite/global/utils';
 import type { Doc } from '@blocksuite/store';
 import { css, html, type PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
@@ -108,7 +108,7 @@ export class ChatPanel extends WithDisposable(ShadowlessElement) {
       const { doc } = this;
 
       const [histories, actions] = await Promise.all([
-        AIProvider.histories?.chats(doc.collection.id, doc.id),
+        AIProvider.histories?.chats(doc.collection.id, doc.id, { fork: false }),
         AIProvider.histories?.actions(doc.collection.id, doc.id),
       ]);
 
@@ -116,10 +116,9 @@ export class ChatPanel extends WithDisposable(ShadowlessElement) {
 
       const items: ChatItem[] = actions ? [...actions] : [];
 
-      // TODO: should update to get the right sessionId after backend update
       if (histories?.at(-1)) {
         const history = histories.at(-1);
-        assertExists(history);
+        if (!history) return;
         this._chatSessionId = history.sessionId;
         this.chatContextValue.chatSessionId = history.sessionId;
         items.push(...history.messages);
