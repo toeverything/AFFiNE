@@ -97,8 +97,8 @@ export const Component = (): ReactElement => {
             console.log(
               'imported docs',
               newDocs.map(doc => ({
-                id: doc.id,
-                title: doc.meta?.title,
+                id: doc?.id,
+                title: doc?.meta?.title,
               }))
             );
           }
