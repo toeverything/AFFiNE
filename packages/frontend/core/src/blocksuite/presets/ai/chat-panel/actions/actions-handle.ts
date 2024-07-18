@@ -125,13 +125,19 @@ function addAIChatBlock(
     return;
   }
 
+  const surfaceBlock = doc
+    .getBlocks()
+    .find(block => block.flavour === 'affine:surface');
+  if (!surfaceBlock) {
+    return;
+  }
+
   // Add AI chat block to the center of the viewport
   const width = 300; // AI_CHAT_BLOCK_WIDTH = 300
   const height = 320; // AI_CHAT_BLOCK_HEIGHT = 320
   const x = viewportCenter.x - width / 2;
   const y = viewportCenter.y - height / 2;
   const bound = new Bound(x, y, width, height);
-  const surfaceBlock = doc.getBlocksByFlavour('affine:surface')[0];
   const aiChatBlockId = doc.addBlock(
     'affine:embed-ai-chat' as keyof BlockSuite.BlockModels,
     {
