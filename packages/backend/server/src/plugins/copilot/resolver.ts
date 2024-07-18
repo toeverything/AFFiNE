@@ -108,16 +108,32 @@ class CreateChatMessageInput implements Omit<SubmittedMessage, 'content'> {
   params!: Record<string, string> | undefined;
 }
 
+enum ChatHistoryOrder {
+  asc = 'asc',
+  desc = 'desc',
+}
+
+registerEnumType(ChatHistoryOrder, { name: 'ChatHistoryOrder' });
+
 @InputType()
 class QueryChatHistoriesInput implements Partial<ListHistoriesOptions> {
   @Field(() => Boolean, { nullable: true })
   action: boolean | undefined;
+
+  @Field(() => Boolean, { nullable: true })
+  fork: boolean | undefined;
 
   @Field(() => Number, { nullable: true })
   limit: number | undefined;
 
   @Field(() => Number, { nullable: true })
   skip: number | undefined;
+
+  @Field(() => ChatHistoryOrder, { nullable: true })
+  messageOrder: 'asc' | 'desc' | undefined;
+
+  @Field(() => ChatHistoryOrder, { nullable: true })
+  sessionOrder: 'asc' | 'desc' | undefined;
 
   @Field(() => String, { nullable: true })
   sessionId: string | undefined;

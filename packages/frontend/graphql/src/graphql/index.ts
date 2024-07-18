@@ -279,6 +279,28 @@ query getCopilotHistories($workspaceId: String!, $docId: String, $options: Query
 }`,
 };
 
+export const getCopilotHistoryIdsQuery = {
+  id: 'getCopilotHistoryIdsQuery' as const,
+  operationName: 'getCopilotHistoryIds',
+  definitionName: 'currentUser',
+  containsFile: false,
+  query: `
+query getCopilotHistoryIds($workspaceId: String!, $docId: String, $options: QueryChatHistoriesInput) {
+  currentUser {
+    copilot(workspaceId: $workspaceId) {
+      histories(docId: $docId, options: $options) {
+        sessionId
+        messages {
+          id
+          role
+          createdAt
+        }
+      }
+    }
+  }
+}`,
+};
+
 export const getCopilotSessionsQuery = {
   id: 'getCopilotSessionsQuery' as const,
   operationName: 'getCopilotSessions',

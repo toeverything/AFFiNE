@@ -382,6 +382,21 @@ export class ChatSessionService {
     options?: ListHistoriesOptions,
     withPrompt = false
   ): Promise<ChatHistory[]> {
+    const extraCondition = [];
+
+    if (!options?.action && options?.fork) {
+      // only query forked session if fork == true and action == false
+      extraCondition.push({
+        userId: { not: userId },
+        workspaceId: workspaceId,
+        docId: workspaceId === docId ? undefined : docId,
+        id: options?.sessionId ? { equals: options.sessionId } : undefined,
+        // should only find forked session
+        parentSessionId: { not: null },
+        deletedAt: null,
+      });
+    }
+
     return await this.db.aiSession
       .findMany({
         where: {
@@ -395,21 +410,7 @@ export class ChatSessionService {
                 : undefined,
               deletedAt: null,
             },
-            ...(options?.action
-              ? []
-              : [
-                  {
-                    userId: { not: userId },
-                    workspaceId: workspaceId,
-                    docId: workspaceId === docId ? undefined : docId,
-                    id: options?.sessionId
-                      ? { equals: options.sessionId }
-                      : undefined,
-                    // should only find forked session
-                    parentSessionId: { not: null },
-                    deletedAt: null,
-                  },
-                ]),
+            ...extraCondition,
           ],
         },
         select: {
@@ -428,13 +429,17 @@ export class ChatSessionService {
               createdAt: true,
             },
             orderBy: {
-              createdAt: 'asc',
+              // message order is asc by default
+              createdAt: options?.messageOrder === 'desc' ? 'desc' : 'asc',
             },
           },
         },
         take: options?.limit,
         skip: options?.skip,
-        orderBy: { createdAt: 'desc' },
+        orderBy: {
+          // session order is desc by default
+          createdAt: options?.sessionOrder === 'asc' ? 'asc' : 'desc',
+        },
       })
       .then(sessions =>
         Promise.all(
