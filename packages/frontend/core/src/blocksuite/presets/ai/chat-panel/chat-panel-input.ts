@@ -468,9 +468,6 @@ export class ChatPanelInput extends WithDisposable(LitElement) {
         for await (const text of stream) {
           const items = [...this.chatContextValue.items];
           const last = items[items.length - 1] as ChatMessage;
-          if (!last.id) {
-            last.id = AIProvider.LAST_MESSAGE_ID;
-          }
           last.content += text;
           this.updateContext({ items, status: 'transmitting' });
         }
