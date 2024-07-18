@@ -97,9 +97,7 @@ const usePatchSpecs = (page: Doc, shared: boolean, mode: DocMode) => {
       patchReferenceRenderer(patched, reactToLit, referenceRenderer),
       confirmModal
     );
-    if (!page.readonly) {
-      patched = patchPeekViewService(patched, peekViewService);
-    }
+    patched = patchPeekViewService(patched, peekViewService);
     if (!page.readonly) {
       patched = patchQuickSearchService(patched, framework);
     }

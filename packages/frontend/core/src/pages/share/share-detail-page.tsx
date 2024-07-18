@@ -33,6 +33,7 @@ import { AppContainer } from '../../components/affine/app-container';
 import { PageDetailEditor } from '../../components/page-detail-editor';
 import { SharePageNotFoundError } from '../../components/share-page-not-found-error';
 import { MainContainer } from '../../components/workspace';
+import { PeekViewManagerModal } from '../../modules/peek-view';
 import { CloudBlobStorage } from '../../modules/workspace-engine/impls/engine/blob-cloud';
 import * as styles from './share-detail-page.css';
 import { ShareFooter } from './share-footer';
@@ -253,6 +254,7 @@ export const Component = () => {
               </div>
             </div>
           </MainContainer>
+          <PeekViewManagerModal />
         </AppContainer>
       </FrameworkScope>
     </FrameworkScope>

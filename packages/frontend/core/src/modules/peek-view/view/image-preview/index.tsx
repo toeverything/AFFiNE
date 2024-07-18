@@ -419,14 +419,18 @@ const ImagePreviewModalImpl = ({
             icon={<CopyIcon />}
             onClick={copyHandler}
           />
-          <div className={styles.dividerStyle}></div>
-          <ButtonWithTooltip
-            data-testid="delete-button"
-            tooltip="Delete"
-            icon={<DeleteIcon />}
-            disabled={blocks.length === 0}
-            onClick={() => deleteHandler(cursor)}
-          />
+          {blockModel && !blockModel.doc.readonly && (
+            <>
+              <div className={styles.dividerStyle}></div>
+              <ButtonWithTooltip
+                data-testid="delete-button"
+                tooltip="Delete"
+                icon={<DeleteIcon />}
+                disabled={blocks.length === 0}
+                onClick={() => deleteHandler(cursor)}
+              />
+            </>
+          )}
         </div>
       </div>
     </div>
