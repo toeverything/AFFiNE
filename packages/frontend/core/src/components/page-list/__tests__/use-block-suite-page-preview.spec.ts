@@ -47,7 +47,7 @@ describe('useBlockSuitePagePreview', () => {
     const hook = renderHook(() => useAtomValue(useBlockSuitePagePreview(page)));
     expect(hook.result.current).toBe('Hello, world!');
     page.transact(() => {
-      page.getBlockById(id)!.text!.insert('Test', 0);
+      page.getBlock(id)!.model.text!.insert('Test', 0);
     });
     await new Promise(resolve => setTimeout(resolve, 100));
     hook.rerender();
