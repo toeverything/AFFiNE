@@ -65,14 +65,13 @@ export const dataValidators = {
           continue;
         }
 
-        if (
-          val === null &&
-          (!field.optional ||
-            field.optional) /* say 'null' can be stored as 'json' */
-        ) {
-          throw new Error(
-            `[Table(${table.name})]: Field '${key}' is required but set as null.`
-          );
+        if (val === null) {
+          if (!field.optional) {
+            throw new Error(
+              `[Table(${table.name})]: Field '${key}' is required but not set.`
+            );
+          }
+          continue;
         }
 
         const typeGet = inputType(val);
@@ -97,10 +96,13 @@ export const dataValidators = {
 
         const val = data[key];
 
-        if ((val === undefined || val === null) && !field.optional) {
-          throw new Error(
-            `[Table(${table.name})]: Field '${key}' is required but not set.`
-          );
+        if (val === undefined || val === null) {
+          if (!field.optional) {
+            throw new Error(
+              `[Table(${table.name})]: Field '${key}' is required but not set.`
+            );
+          }
+          continue;
         }
 
         const typeGet = inputType(val);

@@ -44,6 +44,38 @@ export function createChatSession({
   });
 }
 
+async function resizeImage(blob: Blob | File): Promise<Blob | null> {
+  let src = '';
+  try {
+    src = URL.createObjectURL(blob);
+    const img = new Image();
+    img.src = src;
+    await new Promise(resolve => {
+      img.onload = resolve;
+    });
+
+    const canvas = document.createElement('canvas');
+    // keep aspect ratio
+    const scale = Math.min(1024 / img.width, 1024 / img.height);
+    canvas.width = Math.floor(img.width * scale);
+    canvas.height = Math.floor(img.height * scale);
+
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      return new Promise(resolve =>
+        canvas.toBlob(blob => resolve(blob), 'image/jpeg', 0.8)
+      );
+    }
+  } catch (e) {
+    console.error(e);
+  } finally {
+    if (src) URL.revokeObjectURL(src);
+  }
+  return null;
+}
+
 async function createSessionMessage({
   docId,
   workspaceId,
@@ -77,17 +109,17 @@ async function createSessionMessage({
       attachment => typeof attachment === 'string'
     ) as [string[], (Blob | File)[]];
     options.attachments = stringAttachments;
-    options.blobs = await Promise.all(
-      blobs.map(async blob => {
-        if (blob instanceof File) {
-          return blob;
-        } else {
-          return new File([blob], sessionId, {
-            type: blob.type,
+    options.blobs = (
+      await Promise.all(
+        blobs.map(resizeImage).map(async blob => {
+          const file = await blob;
+          if (!file) return null;
+          return new File([file], sessionId, {
+            type: file.type,
           });
-        }
-      })
-    );
+        })
+      )
+    ).filter(Boolean) as File[];
   }
   if (retry)
     return {
