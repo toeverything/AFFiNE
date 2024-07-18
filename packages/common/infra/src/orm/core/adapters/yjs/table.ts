@@ -104,35 +104,46 @@ export class YjsTableAdapter implements TableAdapter {
     const { where, select, callback } = query;
 
     let listeningOnAll = false;
-    const obKeys = new Set<any>();
-    const results = [];
+    const results = new Map<string, any>();
 
     if (!where) {
       listeningOnAll = true;
-    } else if ('byKey' in where) {
-      obKeys.add(where.byKey.toString());
     }
 
     for (const record of this.iterate(where)) {
-      if (!listeningOnAll) {
-        obKeys.add(this.keyof(record));
-      }
-      results.push(this.value(record, select));
+      results.set(this.keyof(record), this.value(record, select));
     }
 
-    callback(results);
+    callback(Array.from(results.values()));
 
     const ob = (tx: Transaction) => {
+      let hasChanged = false;
       for (const [ty] of tx.changed) {
-        const record = ty as unknown as AbstractType<any>;
-        if (
-          listeningOnAll ||
-          obKeys.has(this.keyof(record)) ||
-          (where && this.match(record, where))
-        ) {
-          callback(this.find({ where, select }));
-          return;
+        const record = ty;
+        const key = this.keyof(record);
+        const isMatch =
+          (listeningOnAll || (where && this.match(record, where))) &&
+          !this.isDeleted(record);
+        const prevMatch = results.get(key);
+        const isPrevMatched = results.has(key);
+
+        if (isMatch && isPrevMatched) {
+          const newValue = this.value(record, select);
+          if (prevMatch !== newValue) {
+            results.set(key, newValue);
+            hasChanged = true;
+          }
+        } else if (isMatch && !isPrevMatched) {
+          results.set(this.keyof(record), this.value(record, select));
+          hasChanged = true;
+        } else if (!isMatch && isPrevMatched) {
+          results.delete(key);
+          hasChanged = true;
         }
+      }
+
+      if (hasChanged) {
+        callback(Array.from(results.values()));
       }
     };
 
@@ -165,9 +176,16 @@ export class YjsTableAdapter implements TableAdapter {
     return null;
   }
 
-  private *iterate(where: WhereCondition = []) {
+  private *iterate(where?: WhereCondition) {
+    if (!where) {
+      for (const map of this.doc.share.values()) {
+        if (!this.isDeleted(map)) {
+          yield map;
+        }
+      }
+    }
     // fast pass for key lookup without iterating the whole table
-    if ('byKey' in where) {
+    else if ('byKey' in where) {
       const record = this.recordByKey(where.byKey.toString());
       if (record) {
         yield record;
@@ -202,7 +220,9 @@ export class YjsTableAdapter implements TableAdapter {
     return (
       !this.isDeleted(record) &&
       (Array.isArray(where)
-        ? where.every(c => this.field(record, c.field) === c.value)
+        ? where.length === 0
+          ? false
+          : where.every(c => this.field(record, c.field) === c.value)
         : where.byKey === this.keyof(record))
     );
   }

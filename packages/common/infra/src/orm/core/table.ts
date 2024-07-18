@@ -30,7 +30,9 @@ type OptionalFields<T extends TableSchemaBuilder> = {
     ? Optional extends true
       ? K
       : never
-    : never]?: T[K] extends FieldSchemaBuilder<infer Type> ? Type : never;
+    : never]?: T[K] extends FieldSchemaBuilder<infer Type>
+    ? Type | null
+    : never;
 };
 
 type PrimaryKeyField<T extends TableSchemaBuilder> = {
@@ -68,17 +70,13 @@ export type Entity<T extends TableSchemaBuilder> = Pretty<
 >;
 
 export type UpdateEntityInput<T extends TableSchemaBuilder> = Pretty<{
-  [key in NonPrimaryKeyFields<T>]?: T[key] extends FieldSchemaBuilder<
-    infer Type
-  >
-    ? Type
+  [key in NonPrimaryKeyFields<T>]?: key extends keyof Entity<T>
+    ? Entity<T>[key]
     : never;
 }>;
 
 export type FindEntityInput<T extends TableSchemaBuilder> = Pretty<{
-  [key in keyof T]?: T[key] extends FieldSchemaBuilder<infer Type>
-    ? Type
-    : never;
+  [key in keyof T]?: key extends keyof Entity<T> ? Entity<T>[key] : never;
 }>;
 
 export class Table<T extends TableSchemaBuilder> {
@@ -192,22 +190,30 @@ export class Table<T extends TableSchemaBuilder> {
     return ob$;
   }
 
-  find(where: FindEntityInput<T>): Entity<T>[] {
+  find(where?: FindEntityInput<T>): Entity<T>[] {
     return this.adapter.find({
-      where: Object.entries(where).map(([field, value]) => ({
-        field,
-        value,
-      })),
+      where: !where
+        ? undefined
+        : Object.entries(where)
+            .map(([field, value]) => ({
+              field,
+              value,
+            }))
+            .filter(({ value }) => value !== undefined),
     });
   }
 
-  find$(where: FindEntityInput<T>): Observable<Entity<T>[]> {
+  find$(where?: FindEntityInput<T>): Observable<Entity<T>[]> {
     return new Observable<Entity<T>[]>(subscriber => {
       const unsubscribe = this.adapter.observe({
-        where: Object.entries(where).map(([field, value]) => ({
-          field,
-          value,
-        })),
+        where: !where
+          ? undefined
+          : Object.entries(where)
+              .map(([field, value]) => ({
+                field,
+                value,
+              }))
+              .filter(({ value }) => value !== undefined),
         callback: data => {
           subscriber.next(data);
         },
