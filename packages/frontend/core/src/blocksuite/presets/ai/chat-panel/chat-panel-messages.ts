@@ -59,6 +59,10 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
     return this._selectionValue.filter(v => v.type === 'image');
   }
 
+  private get _rootService() {
+    return this.host.spec.getService('affine:page');
+  }
+
   static override styles = css`
     chat-panel-messages {
       position: relative;
@@ -561,10 +565,8 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
                         this.chatContextValue,
                         messageId ?? undefined
                       );
-                      const rootService = host.spec.getService('affine:page');
-                      const { notificationService } = rootService;
                       if (success) {
-                        notificationService?.notify({
+                        this._rootService.notificationService?.notify({
                           title: action.toast,
                           accent: 'success',
                           onClose: function (): void {},
