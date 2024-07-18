@@ -72,7 +72,7 @@ const getRendererProps = (
       activePeekView?.target instanceof HTMLElement
         ? activePeekView.target
         : undefined,
-    padding: activePeekView.info.type === 'doc',
+    padding: activePeekView.info.type !== 'image',
     dialogFrame: activePeekView.info.type !== 'image',
   };
 };
