@@ -1,5 +1,6 @@
 import { Button } from '@affine/component/ui/button';
 import { Tooltip } from '@affine/component/ui/tooltip';
+import { generateSubscriptionCallbackLink } from '@affine/core/hooks/affine/use-subscription-notify';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { AuthService, SubscriptionService } from '@affine/core/modules/cloud';
 import { popupWindow } from '@affine/core/utils';
@@ -259,6 +260,7 @@ export const Upgrade = ({
   const t = useI18n();
 
   const subscriptionService = useService(SubscriptionService);
+  const authService = useService(AuthService);
 
   const [idempotencyKey, setIdempotencyKey] = useState(nanoid());
 
@@ -293,13 +295,22 @@ export const Upgrade = ({
       idempotencyKey,
       plan: SubscriptionPlan.Pro, // Only support prod plan now.
       coupon: null,
-      successCallbackLink: '/upgrade-success',
+      successCallbackLink: generateSubscriptionCallbackLink(
+        authService.session.account$.value,
+        SubscriptionPlan.Pro,
+        recurring
+      ),
     });
     setMutating(false);
     setIdempotencyKey(nanoid());
     popupWindow(link);
     setOpenedExternalWindow(true);
-  }, [subscriptionService, recurring, idempotencyKey]);
+  }, [
+    recurring,
+    authService.session.account$.value,
+    subscriptionService,
+    idempotencyKey,
+  ]);
 
   return (
     <Button

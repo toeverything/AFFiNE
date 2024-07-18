@@ -7,6 +7,7 @@ import {
 } from '@affine/component/setting-components';
 import { Button, IconButton } from '@affine/component/ui/button';
 import { Loading } from '@affine/component/ui/loading';
+import { getUpgradeQuestionnaireLink } from '@affine/core/hooks/affine/use-subscription-notify';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import type { InvoicesQuery } from '@affine/graphql';
 import {
@@ -30,7 +31,7 @@ import {
 } from '../../../../../atoms';
 import { useMutation } from '../../../../../hooks/use-mutation';
 import { useQuery } from '../../../../../hooks/use-query';
-import { SubscriptionService } from '../../../../../modules/cloud';
+import { AuthService, SubscriptionService } from '../../../../../modules/cloud';
 import { mixpanel, popupWindow } from '../../../../../utils';
 import { SWRErrorBoundary } from '../../../../pure/swr-error-bundary';
 import { CancelAction, ResumeAction } from '../plans/actions';
@@ -194,6 +195,8 @@ const SubscriptionSettings = () => {
         <SubscriptionSettingSkeleton />
       )}
 
+      <TypeFormLink />
+
       {proSubscription !== null ? (
         proSubscription?.status === SubscriptionStatus.Active && (
           <>
@@ -266,6 +269,45 @@ const SubscriptionSettings = () => {
         <SubscriptionSettingSkeleton />
       )}
     </div>
+  );
+};
+
+const TypeFormLink = () => {
+  const t = useI18n();
+  const subscriptionService = useService(SubscriptionService);
+  const authService = useService(AuthService);
+
+  const pro = useLiveData(subscriptionService.subscription.pro$);
+  const ai = useLiveData(subscriptionService.subscription.ai$);
+  const account = useLiveData(authService.session.account$);
+
+  if (!account) return null;
+  if (!pro && !ai) return null;
+
+  const plan = [];
+  if (pro) plan.push(SubscriptionPlan.Pro);
+  if (ai) plan.push(SubscriptionPlan.AI);
+
+  const link = getUpgradeQuestionnaireLink({
+    name: account.info?.name,
+    id: account.id,
+    email: account.email,
+    recurring: pro?.recurring ?? ai?.recurring ?? SubscriptionRecurring.Yearly,
+    plan,
+  });
+
+  return (
+    <SettingRow
+      className={styles.paymentMethod}
+      name={t['com.affine.payment.billing-type-form.title']()}
+      desc={t['com.affine.payment.billing-type-form.description']()}
+    >
+      <a target="_blank" href={link} rel="noreferrer">
+        <Button style={{ padding: '4px 12px' }}>
+          {t['com.affine.payment.billing-type-form.go']()}
+        </Button>
+      </a>
+    </SettingRow>
   );
 };
 
