@@ -27,7 +27,7 @@ import {
   WorkflowParams,
 } from '../../src/plugins/copilot/workflow/types';
 import { gql } from './common';
-import { handleGraphQLError } from './utils';
+import { handleGraphQLError, sleep } from './utils';
 
 // @ts-expect-error no error
 export class MockCopilotTestProvider
@@ -84,6 +84,8 @@ export class MockCopilotTestProvider
     options: CopilotChatOptions = {}
   ): Promise<string> {
     this.checkParams({ messages, model, options });
+    // make some time gap for history test case
+    await sleep(100);
     return 'generate text to text';
   }
 
@@ -94,6 +96,8 @@ export class MockCopilotTestProvider
   ): AsyncIterable<string> {
     this.checkParams({ messages, model, options });
 
+    // make some time gap for history test case
+    await sleep(100);
     const result = 'generate text to text stream';
     for await (const message of result) {
       yield message;
@@ -113,6 +117,8 @@ export class MockCopilotTestProvider
     messages = Array.isArray(messages) ? messages : [messages];
     this.checkParams({ embeddings: messages, model, options });
 
+    // make some time gap for history test case
+    await sleep(100);
     return [Array.from(randomBytes(options.dimensions)).map(v => v % 128)];
   }
 
@@ -130,6 +136,8 @@ export class MockCopilotTestProvider
       throw new Error('Prompt is required');
     }
 
+    // make some time gap for history test case
+    await sleep(100);
     // just let test case can easily verify the final prompt
     return [`https://example.com/${model}.jpg`, prompt];
   }
@@ -338,10 +346,13 @@ export async function getHistories(
     workspaceId: string;
     docId?: string;
     options?: {
-      sessionId?: string;
       action?: boolean;
+      fork?: boolean;
       limit?: number;
       skip?: number;
+      sessionOrder?: 'asc' | 'desc';
+      messageOrder?: 'asc' | 'desc';
+      sessionId?: string;
     };
   }
 ): Promise<History[]> {

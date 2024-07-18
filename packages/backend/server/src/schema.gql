@@ -7,6 +7,11 @@ type BlobNotFoundDataType {
   workspaceId: String!
 }
 
+enum ChatHistoryOrder {
+  asc
+  desc
+}
+
 type ChatMessage {
   attachments: [String!]
   content: String!
@@ -554,8 +559,11 @@ type Query {
 
 input QueryChatHistoriesInput {
   action: Boolean
+  fork: Boolean
   limit: Int
+  messageOrder: ChatHistoryOrder
   sessionId: String
+  sessionOrder: ChatHistoryOrder
   skip: Int
 }
 

@@ -44,6 +44,11 @@ export interface BlobNotFoundDataType {
   workspaceId: Scalars['String']['output'];
 }
 
+export enum ChatHistoryOrder {
+  asc = 'asc',
+  desc = 'desc',
+}
+
 export interface ChatMessage {
   __typename?: 'ChatMessage';
   attachments: Maybe<Array<Scalars['String']['output']>>;
@@ -847,8 +852,11 @@ export interface QueryWorkspaceArgs {
 
 export interface QueryChatHistoriesInput {
   action: InputMaybe<Scalars['Boolean']['input']>;
+  fork: InputMaybe<Scalars['Boolean']['input']>;
   limit: InputMaybe<Scalars['Int']['input']>;
+  messageOrder: InputMaybe<ChatHistoryOrder>;
   sessionId: InputMaybe<Scalars['String']['input']>;
+  sessionOrder: InputMaybe<ChatHistoryOrder>;
   skip: InputMaybe<Scalars['Int']['input']>;
 }
 
@@ -1431,6 +1439,32 @@ export type GetCopilotHistoriesQuery = {
           role: string;
           content: string;
           attachments: Array<string> | null;
+          createdAt: string;
+        }>;
+      }>;
+    };
+  } | null;
+};
+
+export type GetCopilotHistoryIdsQueryVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+  docId: InputMaybe<Scalars['String']['input']>;
+  options: InputMaybe<QueryChatHistoriesInput>;
+}>;
+
+export type GetCopilotHistoryIdsQuery = {
+  __typename?: 'Query';
+  currentUser: {
+    __typename?: 'UserType';
+    copilot: {
+      __typename?: 'Copilot';
+      histories: Array<{
+        __typename?: 'CopilotHistories';
+        sessionId: string;
+        messages: Array<{
+          __typename?: 'ChatMessage';
+          id: string | null;
+          role: string;
           createdAt: string;
         }>;
       }>;
@@ -2190,6 +2224,11 @@ export type Queries =
       name: 'getCopilotHistoriesQuery';
       variables: GetCopilotHistoriesQueryVariables;
       response: GetCopilotHistoriesQuery;
+    }
+  | {
+      name: 'getCopilotHistoryIdsQuery';
+      variables: GetCopilotHistoryIdsQueryVariables;
+      response: GetCopilotHistoryIdsQuery;
     }
   | {
       name: 'getCopilotSessionsQuery';
