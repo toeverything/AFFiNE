@@ -2,40 +2,15 @@
 import fs from 'node:fs';
 
 import { test } from '@affine-test/kit/playwright';
+import { importImage } from '@affine-test/kit/utils/image';
 import { openHomePage } from '@affine-test/kit/utils/load-page';
 import {
   clickNewPageButton,
-  focusInlineEditor,
   getBlockSuiteEditorTitle,
   waitForEditorLoad,
 } from '@affine-test/kit/utils/page-logic';
 import type { Page } from '@playwright/test';
 import { expect } from '@playwright/test';
-
-async function importImage(page: Page, url: string) {
-  await focusInlineEditor(page);
-  await page.evaluate(
-    ([url]) => {
-      const clipData = {
-        'text/html': `<img alt={'Sample image'} src=${url} />`,
-      };
-      const e = new ClipboardEvent('paste', {
-        clipboardData: new DataTransfer(),
-      });
-      Object.defineProperty(e, 'target', {
-        writable: false,
-        value: document,
-      });
-      Object.entries(clipData).forEach(([key, value]) => {
-        e.clipboardData?.setData(key, value);
-      });
-      document.dispatchEvent(e);
-    },
-    [url]
-  );
-  // TODO(@catsjuice): wait for image to be loaded more reliably
-  await page.waitForTimeout(1000);
-}
 
 async function closeImagePreviewModal(page: Page) {
   await page.getByTestId('image-preview-close-button').first().click();

@@ -514,7 +514,7 @@ export function patchQuickSearchService(
 @customElement('affine-linked-doc-ref-block')
 // @ts-expect-error ignore private warning for overriding _load
 export class LinkedDocBlockComponent extends EmbedLinkedDocBlockComponent {
-  override _load() {
+  override async _load() {
     this.isBannerEmpty = true;
   }
 }

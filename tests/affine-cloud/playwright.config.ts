@@ -10,7 +10,7 @@ const config: PlaywrightTestConfig = {
   timeout: 120_000,
   outputDir: testResultDir,
   use: {
-    baseURL: 'http://localhost:8081/',
+    baseURL: 'http://localhost:8080/',
     browserName:
       (process.env.BROWSER as PlaywrightWorkerOptions['browserName']) ??
       'chromium',
@@ -26,6 +26,16 @@ const config: PlaywrightTestConfig = {
   retries: 1,
   reporter: process.env.CI ? 'github' : 'list',
   webServer: [
+    {
+      command: 'yarn run serve:test-static',
+      port: 8081,
+      timeout: 120 * 1000,
+      reuseExistingServer: !process.env.CI,
+      env: {
+        COVERAGE: process.env.COVERAGE || 'false',
+        ENABLE_DEBUG_PAGE: '1',
+      },
+    },
     // Intentionally not building the web, reminds you to run it by yourself.
     {
       command: 'yarn -T run start:web-static',
