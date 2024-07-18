@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { EMPTY, mergeMap, switchMap } from 'rxjs';
 
+import { generateSubscriptionCallbackLink } from '../hooks/affine/use-subscription-notify';
 import { RouteLogic, useNavigateHelper } from '../hooks/use-navigate-helper';
 import { AuthService, SubscriptionService } from '../modules/cloud';
 import { mixpanel } from '../utils';
@@ -58,21 +59,27 @@ export const Component = () => {
               category: recurring,
             });
             try {
+              const account = authService.session.account$.value;
+              // should never reach
+              if (!account) throw new Error('No account');
+              const targetPlan =
+                plan?.toLowerCase() === 'ai'
+                  ? SubscriptionPlan.AI
+                  : SubscriptionPlan.Pro;
+              const targetRecurring =
+                recurring?.toLowerCase() === 'monthly'
+                  ? SubscriptionRecurring.Monthly
+                  : SubscriptionRecurring.Yearly;
               const checkout = await subscriptionService.createCheckoutSession({
                 idempotencyKey,
-                plan:
-                  plan?.toLowerCase() === 'ai'
-                    ? SubscriptionPlan.AI
-                    : SubscriptionPlan.Pro,
+                plan: targetPlan,
                 coupon: null,
-                recurring:
-                  recurring?.toLowerCase() === 'monthly'
-                    ? SubscriptionRecurring.Monthly
-                    : SubscriptionRecurring.Yearly,
-                successCallbackLink:
-                  plan?.toLowerCase() === 'ai'
-                    ? '/ai-upgrade-success'
-                    : '/upgrade-success',
+                recurring: targetRecurring,
+                successCallbackLink: generateSubscriptionCallbackLink(
+                  account,
+                  targetPlan,
+                  targetRecurring
+                ),
               });
               setMessage('Redirecting...');
               location.href = checkout;

@@ -1,6 +1,8 @@
 import { Button, type ButtonProps, useConfirmModal } from '@affine/component';
+import { useDowngradeNotify } from '@affine/core/components/affine/subscription-landing/notify';
+import { getDowngradeQuestionnaireLink } from '@affine/core/hooks/affine/use-subscription-notify';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import { SubscriptionService } from '@affine/core/modules/cloud';
+import { AuthService, SubscriptionService } from '@affine/core/modules/cloud';
 import { mixpanel } from '@affine/core/utils';
 import { SubscriptionPlan } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
@@ -14,8 +16,10 @@ export const AICancel = ({ ...btnProps }: AICancelProps) => {
   const [isMutating, setMutating] = useState(false);
   const [idempotencyKey, setIdempotencyKey] = useState(nanoid());
   const subscription = useService(SubscriptionService).subscription;
+  const authService = useService(AuthService);
 
   const { openConfirmModal } = useConfirmModal();
+  const downgradeNotify = useDowngradeNotify();
 
   const cancel = useAsyncCallback(async () => {
     mixpanel.track('PlanChangeStarted', {
@@ -51,12 +55,32 @@ export const AICancel = ({ ...btnProps }: AICancelProps) => {
             segment: 'settings panel',
             control: 'plan cancel action',
           });
+          const account = authService.session.account$.value;
+          const prevRecurring = subscription.ai$.value?.recurring;
+          if (account && prevRecurring) {
+            downgradeNotify(
+              getDowngradeQuestionnaireLink({
+                email: account.email,
+                name: account.info?.name,
+                id: account.id,
+                plan: SubscriptionPlan.AI,
+                recurring: prevRecurring,
+              })
+            );
+          }
         } finally {
           setMutating(false);
         }
       },
     });
-  }, [openConfirmModal, t, subscription, idempotencyKey]);
+  }, [
+    subscription,
+    openConfirmModal,
+    t,
+    idempotencyKey,
+    authService.session.account$.value,
+    downgradeNotify,
+  ]);
 
   return (
     <Button onClick={cancel} loading={isMutating} type="primary" {...btnProps}>

@@ -9,6 +9,9 @@ import { useCallback, useState } from 'react';
 
 import { FilterList } from '../../filter';
 import { VariableSelect } from '../../filter/vars';
+import { usePageHeaderColsDef } from '../../header-col-def';
+import { PageListItemRenderer } from '../../page-group';
+import { ListTableHeader } from '../../page-header';
 import type { ListItem } from '../../types';
 import { VirtualizedList } from '../../virtualized-list';
 import { AffineShapeIcon } from '../affine-shape';
@@ -38,6 +41,7 @@ export const SelectPage = ({
   }, []);
   const favAdapter = useService(FavoriteItemsAdapter);
   const favourites = useLiveData(favAdapter.favorites$);
+  const pageHeaderColsDef = usePageHeaderColsDef();
   const {
     clickFilter,
     createFilter,
@@ -62,6 +66,14 @@ export const SelectPage = ({
     },
     [allPageListConfig]
   );
+
+  const pageHeaderRenderer = useCallback(() => {
+    return <ListTableHeader headerCols={pageHeaderColsDef} />;
+  }, [pageHeaderColsDef]);
+
+  const pageItemRenderer = useCallback((item: ListItem) => {
+    return <PageListItemRenderer {...item} />;
+  }, []);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -125,6 +137,8 @@ export const SelectPage = ({
             selectedIds={value}
             isPreferredEdgeless={allPageListConfig.isEdgeless}
             operationsRenderer={operationsRenderer}
+            itemRenderer={pageItemRenderer}
+            headerRenderer={pageHeaderRenderer}
           />
         ) : (
           <EmptyList search={searchText} />

@@ -1,6 +1,7 @@
 import { Button, type ButtonProps, Skeleton } from '@affine/component';
+import { generateSubscriptionCallbackLink } from '@affine/core/hooks/affine/use-subscription-notify';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import { SubscriptionService } from '@affine/core/modules/cloud';
+import { AuthService, SubscriptionService } from '@affine/core/modules/cloud';
 import { mixpanel, popupWindow } from '@affine/core/utils';
 import { SubscriptionPlan, SubscriptionRecurring } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
@@ -19,6 +20,7 @@ export const AISubscribe = ({
   const [idempotencyKey, setIdempotencyKey] = useState(nanoid());
   const [isMutating, setMutating] = useState(false);
   const [isOpenedExternalWindow, setOpenedExternalWindow] = useState(false);
+  const authService = useService(AuthService);
 
   const subscriptionService = useService(SubscriptionService);
   const price = useLiveData(subscriptionService.prices.aiPrice$);
@@ -57,7 +59,11 @@ export const AISubscribe = ({
         idempotencyKey,
         plan: SubscriptionPlan.AI,
         coupon: null,
-        successCallbackLink: '/ai-upgrade-success',
+        successCallbackLink: generateSubscriptionCallbackLink(
+          authService.session.account$.value,
+          SubscriptionPlan.AI,
+          SubscriptionRecurring.Yearly
+        ),
       });
       popupWindow(session);
       setOpenedExternalWindow(true);
@@ -65,7 +71,7 @@ export const AISubscribe = ({
     } finally {
       setMutating(false);
     }
-  }, [idempotencyKey, subscriptionService]);
+  }, [authService, idempotencyKey, subscriptionService]);
 
   if (!price || !price.yearlyAmount) {
     return (
