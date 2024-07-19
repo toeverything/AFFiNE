@@ -50,7 +50,6 @@ export class MetricsModule implements OnModuleInit, OnModuleDestroy {
   }
 }
 
-export { registerInstrumentations } from './instrumentations';
 export * from './metrics';
 export * from './utils';
 export { OpentelemetryFactory };
