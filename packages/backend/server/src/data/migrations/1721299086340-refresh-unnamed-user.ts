@@ -1,14 +1,13 @@
-import type { User } from '@prisma/client';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, User } from '@prisma/client';
 
-export class UnamedAccount1703756315970 {
+export class RefreshUnnamedUser1721299086340 {
   // do the migration
   static async up(db: PrismaClient) {
     await db.$transaction(async tx => {
-      // only find users with empty names
+      // only find users with unnamed names
       const users = await db.$queryRaw<
         User[]
-      >`SELECT * FROM users WHERE name ~ E'^[\\s\\u2000-\\u200F]*$';`;
+      >`SELECT * FROM users WHERE name = 'Unnamed';`;
 
       await Promise.all(
         users.map(({ id, email }) =>
