@@ -149,7 +149,6 @@ export async function changePassword(
       variables: { token, password },
     })
     .expect(200);
-  console.log(JSON.stringify(res.body));
   return res.body.data.changePassword.id;
 }
 
