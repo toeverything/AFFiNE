@@ -5,6 +5,7 @@ const service = register({
   experimentalSpecifierResolution: 'node',
   transpileOnly: true,
   logError: true,
+  skipProject: true,
 });
 
 /**
