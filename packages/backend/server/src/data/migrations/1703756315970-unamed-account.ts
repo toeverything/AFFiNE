@@ -9,6 +9,9 @@ export class UnamedAccount1703756315970 {
       const users = await db.$queryRaw<
         User[]
       >`SELECT * FROM users WHERE name ~ E'^[\\s\\u2000-\\u200F]*$';`;
+      console.log(
+        `renaming ${users.map(({ email }) => email).join('|')} users`
+      );
 
       await Promise.all(
         users.map(({ id, email }) =>
