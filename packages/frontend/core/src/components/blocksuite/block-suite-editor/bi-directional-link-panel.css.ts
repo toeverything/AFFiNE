@@ -9,6 +9,11 @@ export const container = style({
   paddingLeft: cssVar('--affine-editor-side-padding', '24'),
   paddingRight: cssVar('--affine-editor-side-padding', '24'),
   fontSize: cssVar('--affine-font-base'),
+  '@container': {
+    [`viewport (width <= 640px)`]: {
+      padding: '0 24px',
+    },
+  },
 });
 
 export const dividerContainer = style({
