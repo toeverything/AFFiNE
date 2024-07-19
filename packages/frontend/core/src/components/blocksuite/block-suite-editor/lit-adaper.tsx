@@ -14,7 +14,6 @@ import {
 } from '@blocksuite/presets';
 import type { Doc } from '@blocksuite/store';
 import {
-  type DocMode,
   DocService,
   DocsService,
   useFramework,
@@ -35,6 +34,7 @@ import { PagePropertiesTable } from '../../affine/page-properties';
 import { AffinePageReference } from '../../affine/reference-link';
 import { BiDirectionalLinkPanel } from './bi-directional-link-panel';
 import { BlocksuiteEditorJournalDocTitle } from './journal-doc-title';
+import { createBlockSpecs } from './specs';
 import {
   patchDocModeService,
   patchForSharedPage,
@@ -44,8 +44,6 @@ import {
   patchReferenceRenderer,
   type ReferenceReactRenderer,
 } from './specs/custom/spec-patchers';
-import { EdgelessModeSpecs } from './specs/edgeless';
-import { PageModeSpecs } from './specs/page';
 import * as styles from './styles.css';
 
 const adapted = {
@@ -72,7 +70,7 @@ interface BlocksuiteEditorProps {
   shared?: boolean;
 }
 
-const usePatchSpecs = (page: Doc, shared: boolean, mode: DocMode) => {
+const usePatchSpecs = (page: Doc, shared: boolean) => {
   const [reactToLit, portals] = useLitPortalFactory();
   const peekViewService = useService(PeekViewService);
   const docService = useService(DocService);
@@ -88,7 +86,7 @@ const usePatchSpecs = (page: Doc, shared: boolean, mode: DocMode) => {
     };
   }, [page.collection]);
 
-  const specs = mode === 'page' ? PageModeSpecs : EdgelessModeSpecs;
+  const specs = createBlockSpecs(framework);
 
   const confirmModal = useConfirmModal();
   const patchedSpecs = useMemo(() => {
@@ -181,7 +179,7 @@ export const BlocksuiteDocEditor = forwardRef<
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const [specs, portals] = usePatchSpecs(page, !!shared, 'page');
+  const [specs, portals] = usePatchSpecs(page, !!shared);
 
   return (
     <>
@@ -217,7 +215,7 @@ export const BlocksuiteEdgelessEditor = forwardRef<
   EdgelessEditor,
   BlocksuiteEditorProps
 >(function BlocksuiteEdgelessEditor({ page, shared }, ref) {
-  const [specs, portals] = usePatchSpecs(page, !!shared, 'edgeless');
+  const [specs, portals] = usePatchSpecs(page, !!shared);
   const editorRef = useRef<EdgelessEditor | null>(null);
 
   const onDocRef = useCallback(

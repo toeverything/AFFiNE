@@ -6,17 +6,22 @@ import {
   EdgelessTextBlockSpec,
   FrameBlockSpec,
 } from '@blocksuite/blocks';
+import type { FrameworkProvider } from '@toeverything/infra';
 
 import { CommonBlockSpecs } from './common';
-import { CustomEdgelessRootBlockSpec } from './custom/root-block';
+import { createEdgelessRootBlockSpec } from './custom/root-block';
 
-export const EdgelessModeSpecs: BlockSpec[] = [
-  ...CommonBlockSpecs,
-  EdgelessSurfaceBlockSpec,
-  EdgelessSurfaceRefBlockSpec,
-  FrameBlockSpec,
-  EdgelessTextBlockSpec,
-  EdgelessNoteBlockSpec,
-  // special
-  CustomEdgelessRootBlockSpec,
-];
+export function createEdgelessModeSpecs(
+  framework: FrameworkProvider
+): BlockSpec[] {
+  return [
+    ...CommonBlockSpecs,
+    EdgelessSurfaceBlockSpec,
+    EdgelessSurfaceRefBlockSpec,
+    FrameBlockSpec,
+    EdgelessTextBlockSpec,
+    EdgelessNoteBlockSpec,
+    // special
+    createEdgelessRootBlockSpec(framework),
+  ];
+}
