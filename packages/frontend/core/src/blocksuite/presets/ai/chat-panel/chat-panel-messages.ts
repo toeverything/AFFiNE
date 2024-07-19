@@ -210,7 +210,7 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
                   display: 'flex',
                   height: '28px',
                   gap: '8px',
-                  width: '85%',
+                  width: '88%',
                   alignItems: 'center',
                   justifyContent: 'start',
                   cursor: 'pointer',
