@@ -2,9 +2,9 @@ import './chat-block-input.js';
 import './date-time.js';
 
 import type { EditorHost } from '@blocksuite/block-std';
-import type { ChatMessage } from '@blocksuite/presets';
+import { type ChatMessage, ChatMessagesSchema } from '@blocksuite/presets';
 import { baseTheme } from '@toeverything/theme';
-import { css, html, LitElement, unsafeCSS } from 'lit';
+import { css, html, LitElement, nothing, unsafeCSS } from 'lit';
 import { customElement, property, query } from 'lit/decorators.js';
 
 @customElement('ai-chat-block-peek-view')
@@ -69,6 +69,28 @@ export class AIChatBlockPeekView extends LitElement {
     }
   `;
 
+  private _historyMessages: ChatMessage[] = [];
+
+  private readonly _deserializeChatMessages = () => {
+    try {
+      const result = ChatMessagesSchema.safeParse(
+        JSON.parse(this.historyMessagesString)
+      );
+      if (result.success) {
+        return result.data;
+      } else {
+        return [];
+      }
+    } catch {
+      return [];
+    }
+  };
+
+  override connectedCallback() {
+    super.connectedCallback();
+    this._historyMessages = this._deserializeChatMessages();
+  }
+
   override firstUpdated() {
     // first time render, scroll ai-chat-messages-container to bottom
     requestAnimationFrame(() => {
@@ -80,18 +102,22 @@ export class AIChatBlockPeekView extends LitElement {
   }
 
   override render() {
-    const { host, historyMessages } = this;
+    const { host, _historyMessages } = this;
+    if (!_historyMessages.length) {
+      return nothing;
+    }
+
+    const latestMessageCreatedAt =
+      _historyMessages[_historyMessages.length - 1].createdAt;
     const textRendererOptions = {
       customHeading: true,
     };
-    const latestMessageCreatedAt =
-      historyMessages[historyMessages.length - 1].createdAt;
 
     return html`<div class="ai-chat-block-peek-view-container">
       <div class="ai-chat-messages-container">
         <ai-chat-messages
           .host=${host}
-          .messages=${historyMessages}
+          .messages=${_historyMessages}
           .textRendererOptions=${textRendererOptions}
         ></ai-chat-messages>
         <date-time .date=${latestMessageCreatedAt}></date-time>
@@ -108,7 +134,7 @@ export class AIChatBlockPeekView extends LitElement {
   accessor _chatMessagesContainer!: HTMLDivElement;
 
   @property({ attribute: false })
-  accessor historyMessages: ChatMessage[] = [];
+  accessor historyMessagesString!: string;
 
   @property({ attribute: false })
   accessor host!: EditorHost;
@@ -119,3 +145,13 @@ declare global {
     'ai-chat-block-peek-view': AIChatBlockPeekView;
   }
 }
+
+export const AIChatBlockPeekViewTemplate = (
+  historyMessagesString: string,
+  host: EditorHost
+) => {
+  return html`<ai-chat-block-peek-view
+    .historyMessagesString=${historyMessagesString}
+    .host=${host}
+  ></ai-chat-block-peek-view>`;
+};
