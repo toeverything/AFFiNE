@@ -2,7 +2,7 @@ import { cssVar } from '@toeverything/theme';
 import { style } from '@vanilla-extract/css';
 
 export const highlightText = style({
-  whiteSpace: 'pre',
+  whiteSpace: 'nowrap',
   overflow: 'hidden',
   textOverflow: 'ellipsis',
 });
