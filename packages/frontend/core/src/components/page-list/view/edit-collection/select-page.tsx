@@ -5,7 +5,7 @@ import { FilterIcon } from '@blocksuite/icons/rc';
 import type { DocMeta } from '@blocksuite/store';
 import { useLiveData, useService } from '@toeverything/infra';
 import clsx from 'clsx';
-import { useCallback, useState } from 'react';
+import { type ReactNode, useCallback, useState } from 'react';
 
 import { FilterList } from '../../filter';
 import { VariableSelect } from '../../filter/vars';
@@ -25,20 +25,35 @@ export const SelectPage = ({
   init,
   onConfirm,
   onCancel,
+  onChange: propsOnChange,
+  confirmText,
+  header,
+  buttons,
 }: {
   allPageListConfig: AllPageListConfig;
   init: string[];
-  onConfirm: (pageIds: string[]) => void;
-  onCancel: () => void;
+  onConfirm?: (pageIds: string[]) => void;
+  onCancel?: () => void;
+  onChange?: (values: string[]) => void;
+  confirmText?: ReactNode;
+  header?: ReactNode;
+  buttons?: ReactNode;
 }) => {
   const t = useI18n();
-  const [value, onChange] = useState(init);
+  const [value, setValue] = useState(init);
+  const onChange = useCallback(
+    (value: string[]) => {
+      propsOnChange?.(value);
+      setValue(value);
+    },
+    [propsOnChange]
+  );
   const confirm = useCallback(() => {
-    onConfirm(value);
+    onConfirm?.(value);
   }, [value, onConfirm]);
   const clearSelected = useCallback(() => {
     onChange([]);
-  }, []);
+  }, [onChange]);
   const favAdapter = useService(FavoriteItemsAdapter);
   const favourites = useLiveData(favAdapter.favorites$);
   const pageHeaderColsDef = usePageHeaderColsDef();
@@ -85,9 +100,11 @@ export const SelectPage = ({
       ></input>
       <div className={styles.pagesTab}>
         <div className={styles.pagesTabContent}>
-          <div style={{ fontSize: 12, lineHeight: '20px', fontWeight: 600 }}>
-            {t['com.affine.selectPage.title']()}
-          </div>
+          {header ?? (
+            <div style={{ fontSize: 12, lineHeight: '20px', fontWeight: 600 }}>
+              {t['com.affine.selectPage.title']()}
+            </div>
+          )}
           {!showFilter && filters.length === 0 ? (
             <Menu
               items={
@@ -164,18 +181,22 @@ export const SelectPage = ({
           </div>
         </div>
         <div>
-          <Button size="large" onClick={onCancel}>
-            {t['com.affine.editCollection.button.cancel']()}
-          </Button>
-          <Button
-            className={styles.confirmButton}
-            size="large"
-            data-testid="save-collection"
-            type="primary"
-            onClick={confirm}
-          >
-            {t['Confirm']()}
-          </Button>
+          {buttons ?? (
+            <>
+              <Button size="large" onClick={onCancel}>
+                {t['com.affine.editCollection.button.cancel']()}
+              </Button>
+              <Button
+                className={styles.confirmButton}
+                size="large"
+                data-testid="save-collection"
+                type="primary"
+                onClick={confirm}
+              >
+                {confirmText ?? t['Confirm']()}
+              </Button>
+            </>
+          )}
         </div>
       </div>
     </div>
