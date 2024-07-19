@@ -34,7 +34,7 @@ export class WebpackS3Plugin implements WebpackPluginInstance {
         const putObjectCommandOptions: PutObjectCommandInput = {
           Body: assetSource,
           Bucket: R2_BUCKET,
-          Key: asset,
+          Key: join(process.env.BUILD_TYPE || 'canary', asset),
         };
         const contentType = lookup(asset);
         if (contentType) {
