@@ -755,6 +755,7 @@ __metadata:
     "@node-rs/jsonwebtoken": "npm:^0.5.2"
     "@opentelemetry/api": "npm:^1.9.0"
     "@opentelemetry/core": "npm:^1.25.0"
+    "@opentelemetry/exporter-metrics-otlp-proto": "npm:^0.52.1"
     "@opentelemetry/exporter-prometheus": "npm:^0.52.0"
     "@opentelemetry/exporter-zipkin": "npm:^1.25.0"
     "@opentelemetry/host-metrics": "npm:^0.35.2"
@@ -812,6 +813,7 @@ __metadata:
     nodemon: "npm:^3.1.0"
     on-headers: "npm:^1.0.2"
     openai: "npm:^4.33.0"
+    oxc-resolver: "npm:^1.10.2"
     parse-duration: "npm:^1.1.0"
     piscina: "npm:^4.5.1"
     pretty-time: "npm:^1.1.0"
@@ -825,7 +827,6 @@ __metadata:
     socket.io: "npm:^4.7.5"
     stripe: "npm:^16.0.0"
     supertest: "npm:^7.0.0"
-    ts-node: "npm:^10.9.2"
     typescript: "npm:^5.4.5"
     ws: "npm:^8.16.0"
     yjs: "patch:yjs@npm%3A13.6.18#~/.yarn/patches/yjs-npm-13.6.18-ad0d5f7c43.patch"
@@ -8268,7 +8269,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@napi-rs/wasm-runtime@npm:^0.2.0, @napi-rs/wasm-runtime@npm:^0.2.3":
+"@napi-rs/wasm-runtime@npm:^0.2.0, @napi-rs/wasm-runtime@npm:^0.2.3, @napi-rs/wasm-runtime@npm:^0.2.4":
   version: 0.2.4
   resolution: "@napi-rs/wasm-runtime@npm:0.2.4"
   dependencies:
@@ -9738,6 +9739,37 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@opentelemetry/exporter-metrics-otlp-http@npm:0.52.1":
+  version: 0.52.1
+  resolution: "@opentelemetry/exporter-metrics-otlp-http@npm:0.52.1"
+  dependencies:
+    "@opentelemetry/core": "npm:1.25.1"
+    "@opentelemetry/otlp-exporter-base": "npm:0.52.1"
+    "@opentelemetry/otlp-transformer": "npm:0.52.1"
+    "@opentelemetry/resources": "npm:1.25.1"
+    "@opentelemetry/sdk-metrics": "npm:1.25.1"
+  peerDependencies:
+    "@opentelemetry/api": ^1.3.0
+  checksum: 10/b2836279dbeb84be8b5b97a02e658b79c3d104b663b033df0bcf9e98d9d4697649c9855ddfa1493f8b89ed83f6a43e41d6c2e71278c64944f2628394dc471c10
+  languageName: node
+  linkType: hard
+
+"@opentelemetry/exporter-metrics-otlp-proto@npm:^0.52.1":
+  version: 0.52.1
+  resolution: "@opentelemetry/exporter-metrics-otlp-proto@npm:0.52.1"
+  dependencies:
+    "@opentelemetry/core": "npm:1.25.1"
+    "@opentelemetry/exporter-metrics-otlp-http": "npm:0.52.1"
+    "@opentelemetry/otlp-exporter-base": "npm:0.52.1"
+    "@opentelemetry/otlp-transformer": "npm:0.52.1"
+    "@opentelemetry/resources": "npm:1.25.1"
+    "@opentelemetry/sdk-metrics": "npm:1.25.1"
+  peerDependencies:
+    "@opentelemetry/api": ^1.3.0
+  checksum: 10/bbce23bf31a9b91ac2836b0b697dd2f853281a3e46bae58b86a0a2b747f995777a9aef77bdbb3885f06ff155d7fd6a8af3364d1348dee3427ce8f87d1ed15675
+  languageName: node
+  linkType: hard
+
 "@opentelemetry/exporter-prometheus@npm:^0.52.0":
   version: 0.52.1
   resolution: "@opentelemetry/exporter-prometheus@npm:0.52.1"
@@ -10067,6 +10099,85 @@ __metadata:
   version: 1.25.1
   resolution: "@opentelemetry/semantic-conventions@npm:1.25.1"
   checksum: 10/d84745a9e21a451560a293b4e6f996ee7c67bb983a7ec05408c23d207c6fc8b73a0af9c1ebea26e3acb4f0e3405ea7eb0d6bdf9adad9f954d60829bbb48ea307
+  languageName: node
+  linkType: hard
+
+"@oxc-resolver/binding-darwin-arm64@npm:1.10.2":
+  version: 1.10.2
+  resolution: "@oxc-resolver/binding-darwin-arm64@npm:1.10.2"
+  conditions: os=darwin & cpu=arm64
+  languageName: node
+  linkType: hard
+
+"@oxc-resolver/binding-darwin-x64@npm:1.10.2":
+  version: 1.10.2
+  resolution: "@oxc-resolver/binding-darwin-x64@npm:1.10.2"
+  conditions: os=darwin & cpu=x64
+  languageName: node
+  linkType: hard
+
+"@oxc-resolver/binding-freebsd-x64@npm:1.10.2":
+  version: 1.10.2
+  resolution: "@oxc-resolver/binding-freebsd-x64@npm:1.10.2"
+  conditions: os=freebsd & cpu=x64
+  languageName: node
+  linkType: hard
+
+"@oxc-resolver/binding-linux-arm-gnueabihf@npm:1.10.2":
+  version: 1.10.2
+  resolution: "@oxc-resolver/binding-linux-arm-gnueabihf@npm:1.10.2"
+  conditions: os=linux & cpu=arm
+  languageName: node
+  linkType: hard
+
+"@oxc-resolver/binding-linux-arm64-gnu@npm:1.10.2":
+  version: 1.10.2
+  resolution: "@oxc-resolver/binding-linux-arm64-gnu@npm:1.10.2"
+  conditions: os=linux & cpu=arm64 & libc=glibc
+  languageName: node
+  linkType: hard
+
+"@oxc-resolver/binding-linux-arm64-musl@npm:1.10.2":
+  version: 1.10.2
+  resolution: "@oxc-resolver/binding-linux-arm64-musl@npm:1.10.2"
+  conditions: os=linux & cpu=arm64 & libc=musl
+  languageName: node
+  linkType: hard
+
+"@oxc-resolver/binding-linux-x64-gnu@npm:1.10.2":
+  version: 1.10.2
+  resolution: "@oxc-resolver/binding-linux-x64-gnu@npm:1.10.2"
+  conditions: os=linux & cpu=x64 & libc=glibc
+  languageName: node
+  linkType: hard
+
+"@oxc-resolver/binding-linux-x64-musl@npm:1.10.2":
+  version: 1.10.2
+  resolution: "@oxc-resolver/binding-linux-x64-musl@npm:1.10.2"
+  conditions: os=linux & cpu=x64 & libc=musl
+  languageName: node
+  linkType: hard
+
+"@oxc-resolver/binding-wasm32-wasi@npm:1.10.2":
+  version: 1.10.2
+  resolution: "@oxc-resolver/binding-wasm32-wasi@npm:1.10.2"
+  dependencies:
+    "@napi-rs/wasm-runtime": "npm:^0.2.4"
+  conditions: cpu=wasm32
+  languageName: node
+  linkType: hard
+
+"@oxc-resolver/binding-win32-arm64-msvc@npm:1.10.2":
+  version: 1.10.2
+  resolution: "@oxc-resolver/binding-win32-arm64-msvc@npm:1.10.2"
+  conditions: os=win32 & cpu=arm64
+  languageName: node
+  linkType: hard
+
+"@oxc-resolver/binding-win32-x64-msvc@npm:1.10.2":
+  version: 1.10.2
+  resolution: "@oxc-resolver/binding-win32-x64-msvc@npm:1.10.2"
+  conditions: os=win32 & cpu=x64
   languageName: node
   linkType: hard
 
@@ -31119,6 +31230,48 @@ __metadata:
   version: 1.4.2
   resolution: "outvariant@npm:1.4.2"
   checksum: 10/f16ba035fb65d1cbe7d2e06693dd42183c46bc8456713d9ddb5182d067defa7d78217edab0a2d3e173d3bacd627b2bd692195c7087c225b82548fbf52c677b38
+  languageName: node
+  linkType: hard
+
+"oxc-resolver@npm:^1.10.2":
+  version: 1.10.2
+  resolution: "oxc-resolver@npm:1.10.2"
+  dependencies:
+    "@oxc-resolver/binding-darwin-arm64": "npm:1.10.2"
+    "@oxc-resolver/binding-darwin-x64": "npm:1.10.2"
+    "@oxc-resolver/binding-freebsd-x64": "npm:1.10.2"
+    "@oxc-resolver/binding-linux-arm-gnueabihf": "npm:1.10.2"
+    "@oxc-resolver/binding-linux-arm64-gnu": "npm:1.10.2"
+    "@oxc-resolver/binding-linux-arm64-musl": "npm:1.10.2"
+    "@oxc-resolver/binding-linux-x64-gnu": "npm:1.10.2"
+    "@oxc-resolver/binding-linux-x64-musl": "npm:1.10.2"
+    "@oxc-resolver/binding-wasm32-wasi": "npm:1.10.2"
+    "@oxc-resolver/binding-win32-arm64-msvc": "npm:1.10.2"
+    "@oxc-resolver/binding-win32-x64-msvc": "npm:1.10.2"
+  dependenciesMeta:
+    "@oxc-resolver/binding-darwin-arm64":
+      optional: true
+    "@oxc-resolver/binding-darwin-x64":
+      optional: true
+    "@oxc-resolver/binding-freebsd-x64":
+      optional: true
+    "@oxc-resolver/binding-linux-arm-gnueabihf":
+      optional: true
+    "@oxc-resolver/binding-linux-arm64-gnu":
+      optional: true
+    "@oxc-resolver/binding-linux-arm64-musl":
+      optional: true
+    "@oxc-resolver/binding-linux-x64-gnu":
+      optional: true
+    "@oxc-resolver/binding-linux-x64-musl":
+      optional: true
+    "@oxc-resolver/binding-wasm32-wasi":
+      optional: true
+    "@oxc-resolver/binding-win32-arm64-msvc":
+      optional: true
+    "@oxc-resolver/binding-win32-x64-msvc":
+      optional: true
+  checksum: 10/4cbe39261d957c52f71480bc0cb26e4539b15d19f2b2427b441a1bbddd0e71bd1680437a67befb2ef389584d3213609bdd8e9fa4b90307ae8b18e474f1dd73e9
   languageName: node
   linkType: hard
 
