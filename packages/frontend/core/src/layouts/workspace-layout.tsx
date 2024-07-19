@@ -120,14 +120,18 @@ export const WorkspaceLayoutInner = ({ children }: PropsWithChildren) => {
             currentWorkspace.docCollection,
             templateBlob
           );
-          doc.resetHistory();
+          if (doc) {
+            doc.resetHistory();
+          }
 
           return { doc, mode };
         }).pipe(
           timeout(10000 /* 10s */),
           mergeMap(({ mode, doc }) => {
-            docsList.setMode(doc.id, mode as DocMode);
-            workbench.openDoc(doc.id);
+            if (doc) {
+              docsList.setMode(doc.id, mode as DocMode);
+              workbench.openDoc(doc.id);
+            }
             return EMPTY;
           }),
           onStart(() => {
