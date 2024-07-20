@@ -10,7 +10,7 @@ import { Modal } from './modal';
 import * as styles from './styles.css';
 
 export interface ConfirmModalProps extends ModalProps {
-  confirmButtonOptions?: ButtonProps;
+  confirmButtonOptions?: ButtonProps & { autoFocus?: boolean }; // Add autoFocus here
   onConfirm?: (() => void) | (() => Promise<void>);
   onCancel?: () => void;
   cancelText?: string;
@@ -35,6 +35,7 @@ export const ConfirmModal = ({
       console.error(err);
     });
   }, [onConfirm]);
+
   return (
     <Modal
       contentOptions={{
@@ -64,7 +65,7 @@ export const ConfirmModal = ({
             {cancelText}
           </Button>
         </DialogTrigger>
-        <Button onClick={onConfirmClick} {...confirmButtonOptions}></Button>
+        <Button onClick={onConfirmClick} autoFocus={confirmButtonOptions?.autoFocus} {...confirmButtonOptions}></Button>
       </div>
     </Modal>
   );
@@ -142,7 +143,7 @@ export const ConfirmModalProvider = ({ children }: PropsWithChildren) => {
       value={{ openConfirmModal, closeConfirmModal, modalProps }}
     >
       {children}
-      {/* TODO(@catsjuice): multi-instance support(unnecessary for now) */}
+      {/* TODO: multi-instance support (unnecessary for now) */}
       <ConfirmModal {...modalProps} onOpenChange={onOpenChange} />
     </ConfirmModalContext.Provider>
   );
