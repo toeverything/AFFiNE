@@ -41,6 +41,7 @@ function renderPeekView({ info }: ActivePeekView) {
     const template = AIChatBlockPeekViewTemplate(
       info.model.sessionId,
       info.model.messages,
+      info.model.xywh,
       info.host
     );
     return toReactNode(template);

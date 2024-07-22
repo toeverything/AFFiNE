@@ -30,10 +30,7 @@ import { AIProvider } from '../../provider';
 import { reportResponse } from '../../utils/action-reporter';
 import { insertBelow, replace } from '../../utils/editor-actions';
 import { insertFromMarkdown } from '../../utils/markdown-utils';
-import type {
-  ChatBlockMessage,
-  ChatContextValue,
-} from '../chat-context';
+import type { ChatBlockMessage, ChatContextValue } from '../chat-context';
 
 const { matchFlavours } = BlocksUtils;
 
@@ -74,6 +71,9 @@ async function constructChatBlockMessages(doc: Doc, forkSessionId: string) {
   if (!histories) {
     return [];
   }
+
+  console.debug('fork session id', forkSessionId);
+  console.debug('histories', histories[0].messages);
 
   const messages = histories[0].messages.map(message => {
     return {

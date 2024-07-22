@@ -140,6 +140,21 @@ export class ChatBlockInput extends LitElement {
   @property({ attribute: false })
   accessor updateChatMessages!: (chatMessage: ChatMessage) => void;
 
+  @property({ attribute: false })
+  accessor updateCurrentSessionId!: (sessionId: string) => void;
+
+  @property({ attribute: false })
+  accessor updateChatBlock!: () => void;
+
+  @property({ attribute: false })
+  accessor createChatBlock!: () => void;
+
+  @property({ attribute: false })
+  accessor currentChatBlockId: string | null = null;
+
+  @property({ attribute: false })
+  accessor currentSessionId: string | null = null;
+
   @query('textarea')
   accessor textarea!: HTMLTextAreaElement;
 
@@ -149,8 +164,6 @@ export class ChatBlockInput extends LitElement {
   @state()
   accessor _focused = false;
 
-  private _chatSessionId: string | null = null;
-
   private readonly _send = async () => {
     const text = this.textarea.value;
     if (!text) {
@@ -159,18 +172,25 @@ export class ChatBlockInput extends LitElement {
     const { doc } = this.host;
     this.textarea.value = '';
 
+    const userInfo = await AIProvider.userInfo;
     this.updateChatMessages({
       id: '',
       content: text,
       role: 'user',
       createdAt: new Date().toISOString(),
       attachments: [],
+      userId: userInfo?.id,
+      userName: userInfo?.name,
+      avatarUrl: userInfo?.avatarUrl ?? undefined,
     });
 
+    let content = '';
+    const chatBlockExists = !!this.currentChatBlockId;
     try {
       const abortController = new AbortController();
       // fork session
-      if (!this._chatSessionId) {
+      let chatSessionId = this.currentSessionId;
+      if (!chatSessionId) {
         console.debug(
           'parentSessionId: ',
           this.parentSessionId,
@@ -184,10 +204,12 @@ export class ChatBlockInput extends LitElement {
           latestMessageId: this.latestMessageId,
         });
         if (!forkSessionId) return;
-        this._chatSessionId = forkSessionId;
+        this.updateCurrentSessionId(forkSessionId);
+        chatSessionId = forkSessionId;
       }
+
       const stream = AIProvider.actions.chat?.({
-        sessionId: this.parentSessionId, // FIXME: should be this._chatSessionId
+        sessionId: chatSessionId, // FIXME: should be this._chatSessionId
         input: text,
         docId: doc.id,
         attachments: [],
@@ -200,21 +222,27 @@ export class ChatBlockInput extends LitElement {
       });
 
       if (stream) {
-        let content = '';
         for await (const text of stream) {
           content += text;
+          this.updateChatMessages({
+            id: '',
+            content: content,
+            role: 'assistant',
+            createdAt: new Date().toISOString(),
+            attachments: [],
+          });
         }
-
-        this.updateChatMessages({
-          id: '',
-          content: content,
-          role: 'assistant',
-          createdAt: new Date().toISOString(),
-          attachments: [],
-        });
       }
     } catch (error) {
       console.error(error);
+    } finally {
+      if (content) {
+        if (!chatBlockExists) {
+          this.createChatBlock();
+        }
+        // Update new chat block messages if there are contents returned from AI
+        this.updateChatBlock();
+      }
     }
   };
 }
