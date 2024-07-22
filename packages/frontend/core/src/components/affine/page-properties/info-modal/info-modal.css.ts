@@ -1,46 +1,13 @@
 import { cssVar } from '@toeverything/theme';
-import { createVar, keyframes, style } from '@vanilla-extract/css';
+import { style } from '@vanilla-extract/css';
 
-export const animationTimeout = createVar();
-
-const contentShow = keyframes({
-  from: {
-    opacity: 0,
-  },
-  to: {
-    opacity: 1,
-  },
+export const container = style({
+  maxWidth: 480,
+  minWidth: 360,
+  padding: '20px 0',
+  alignSelf: 'start',
+  marginTop: '120px',
 });
-const contentHide = keyframes({
-  to: {
-    opacity: 0,
-  },
-  from: {
-    opacity: 1,
-  },
-});
-
-export const overlay = style({
-  selectors: {
-    '&.entered, &.entering': {
-      animation: `${contentShow} ${animationTimeout} forwards`,
-    },
-    '&.exited, &.exiting': {
-      animation: `${contentHide} ${animationTimeout} forwards`,
-    },
-  },
-});
-
-export const container = style([
-  overlay,
-  {
-    maxWidth: 480,
-    minWidth: 360,
-    padding: '20px 0',
-    alignSelf: 'start',
-    marginTop: '120px',
-  },
-]);
 
 export const titleContainer = style({
   display: 'flex',

@@ -11,18 +11,22 @@ export const useEditCollection = () => {
     mode?: 'page' | 'rule';
     onConfirm: (collection: Collection) => void;
   }>();
-  const close = useCallback(() => setData(undefined), []);
+  const close = useCallback((open: boolean) => {
+    if (!open) {
+      setData(undefined);
+    }
+  }, []);
 
   return {
-    node: data ? (
+    node: (
       <EditCollectionModal
-        init={data.collection}
+        init={data?.collection}
         open={!!data}
-        mode={data.mode}
+        mode={data?.mode}
         onOpenChange={close}
-        onConfirm={data.onConfirm}
+        onConfirm={data?.onConfirm ?? (() => {})}
       />
-    ) : null,
+    ),
     open: (
       collection: Collection,
       mode?: EditCollectionMode
@@ -50,19 +54,23 @@ export const useEditCollectionName = ({
     name: string;
     onConfirm: (name: string) => void;
   }>();
-  const close = useCallback(() => setData(undefined), []);
+  const close = useCallback((open: boolean) => {
+    if (!open) {
+      setData(undefined);
+    }
+  }, []);
 
   return {
-    node: data ? (
+    node: (
       <CreateCollectionModal
         showTips={showTips}
         title={title}
-        init={data.name}
+        init={data?.name ?? ''}
         open={!!data}
         onOpenChange={close}
-        onConfirm={data.onConfirm}
+        onConfirm={data?.onConfirm ?? (() => {})}
       />
-    ) : null,
+    ),
     open: (name: string): Promise<string> =>
       new Promise<string>(res => {
         setData({

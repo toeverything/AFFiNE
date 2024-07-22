@@ -1,13 +1,61 @@
 import { cssVar } from '@toeverything/theme';
-import { createVar, globalStyle, style } from '@vanilla-extract/css';
+import { createVar, globalStyle, keyframes, style } from '@vanilla-extract/css';
 export const widthVar = createVar('widthVar');
 export const heightVar = createVar('heightVar');
 export const minHeightVar = createVar('minHeightVar');
+export const animationTimeout = createVar();
+
+const overlayShow = keyframes({
+  from: {
+    opacity: 0,
+  },
+  to: {
+    opacity: 1,
+  },
+});
+const overlayHide = keyframes({
+  to: {
+    opacity: 0,
+  },
+  from: {
+    opacity: 1,
+  },
+});
+
+const contentShow = keyframes({
+  from: {
+    opacity: 0,
+    transform: 'translateY(-2%) scale(0.96)',
+  },
+  to: {
+    opacity: 1,
+    transform: 'translateY(0) scale(1)',
+  },
+});
+const contentHide = keyframes({
+  to: {
+    opacity: 0,
+    transform: 'translateY(-2%) scale(0.96)',
+  },
+  from: {
+    opacity: 1,
+    transform: 'translateY(0) scale(1)',
+  },
+});
+
 export const modalOverlay = style({
   position: 'fixed',
   inset: 0,
   backgroundColor: cssVar('backgroundModalColor'),
   zIndex: cssVar('zIndexModal'),
+  selectors: {
+    '&[data-state=entered], &[data-state=entering]': {
+      animation: `${overlayShow} ${animationTimeout} forwards`,
+    },
+    '&[data-state=exited], &[data-state=exiting]': {
+      animation: `${overlayHide} ${animationTimeout} forwards`,
+    },
+  },
 });
 export const modalContentWrapper = style({
   position: 'fixed',
@@ -39,6 +87,16 @@ export const modalContent = style({
   maxHeight: 'calc(100vh - 32px)',
   // :focus-visible will set outline
   outline: 'none',
+  selectors: {
+    '&[data-state=entered], &[data-state=entering]': {
+      animation: `${contentShow} ${animationTimeout} cubic-bezier(0.42, 0, 0.58, 1)`,
+      animationFillMode: 'forwards',
+    },
+    '&[data-state=exited], &[data-state=exiting]': {
+      animation: `${contentHide} ${animationTimeout} cubic-bezier(0.42, 0, 0.58, 1)`,
+      animationFillMode: 'forwards',
+    },
+  },
 });
 export const closeButton = style({
   position: 'absolute',

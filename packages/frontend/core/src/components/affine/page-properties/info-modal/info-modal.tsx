@@ -12,17 +12,7 @@ import {
   useService,
   type Workspace,
 } from '@toeverything/infra';
-import { assignInlineVars } from '@vanilla-extract/dynamic';
-import clsx from 'clsx';
-import {
-  Suspense,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useRef,
-} from 'react';
-import { useTransition } from 'react-transition-state';
+import { Suspense, useCallback, useContext, useMemo, useRef } from 'react';
 
 import { BlocksuiteHeaderTitle } from '../../../blocksuite/block-suite-header/title';
 import { managerContext } from '../common';
@@ -37,8 +27,6 @@ import * as styles from './info-modal.css';
 import { TagsRow } from './tags-row';
 import { TimeRow } from './time-row';
 
-const animationTimeout = 120;
-
 export const InfoModal = ({
   open,
   onOpenChange,
@@ -51,14 +39,6 @@ export const InfoModal = ({
   workspace: Workspace;
 }) => {
   const titleInputHandleRef = useRef<InlineEditHandle>(null);
-
-  const [{ status }, toggle] = useTransition({
-    timeout: animationTimeout,
-  });
-
-  useEffect(() => {
-    toggle(open);
-  }, [open, toggle]);
 
   const manager = usePagePropertiesManager(page);
 
@@ -80,20 +60,10 @@ export const InfoModal = ({
 
   return (
     <Modal
-      overlayOptions={{
-        className: clsx(styles.overlay, status),
-        style: assignInlineVars({
-          [styles.animationTimeout]: `${animationTimeout}ms`,
-        }),
-      }}
       contentOptions={{
-        className: clsx(styles.container, status),
-        'aria-describedby': undefined,
-        style: assignInlineVars({
-          [styles.animationTimeout]: `${animationTimeout}ms`,
-        }),
+        className: styles.container,
       }}
-      open={status !== 'exited'}
+      open={open}
       onOpenChange={onOpenChange}
       withoutCloseButton
     >

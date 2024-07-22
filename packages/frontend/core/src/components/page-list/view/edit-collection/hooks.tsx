@@ -12,9 +12,14 @@ export const useSelectPage = ({
     init: string[];
     onConfirm: (ids: string[]) => void;
   }>();
-  const close = useCallback(() => {
-    onChange(undefined);
+  const close = useCallback((open: boolean) => {
+    if (!open) {
+      onChange(undefined);
+    }
   }, []);
+  const handleCancel = useCallback(() => {
+    close(false);
+  }, [close]);
   return {
     node: (
       <Modal
@@ -38,7 +43,7 @@ export const useSelectPage = ({
             allPageListConfig={allPageListConfig}
             init={value.init}
             onConfirm={value.onConfirm}
-            onCancel={close}
+            onCancel={handleCancel}
           />
         ) : null}
       </Modal>
@@ -48,7 +53,7 @@ export const useSelectPage = ({
         onChange({
           init,
           onConfirm: list => {
-            close();
+            close(false);
             res(list);
           },
         });

@@ -23,9 +23,6 @@ export interface EditCollectionModalProps {
 }
 
 const contentOptions: DialogContentProps = {
-  onPointerDownOutside: e => {
-    e.preventDefault();
-  },
   style: {
     padding: 0,
     maxWidth: 944,
@@ -60,6 +57,7 @@ export const EditCollectionModal = ({
       width="calc(100% - 64px)"
       height="80%"
       contentOptions={contentOptions}
+      persistent
     >
       {open && init ? (
         <EditCollection

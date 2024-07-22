@@ -1,10 +1,12 @@
 import { notify } from '@affine/component';
 import { AuthInput, ModalHeader } from '@affine/component/auth-components';
 import { Button } from '@affine/component/ui/button';
+import { authAtom } from '@affine/core/atoms';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { Trans, useI18n } from '@affine/i18n';
 import { ArrowDownBigIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
+import { useAtomValue } from 'jotai';
 import type { FC } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
@@ -34,6 +36,7 @@ export const SignIn: FC<AuthPanelProps> = ({
   const [verifyToken, challenge] = useCaptcha();
 
   const [isValidEmail, setIsValidEmail] = useState(true);
+  const { openModal } = useAtomValue(authAtom);
 
   useEffect(() => {
     const timeout = setInterval(() => {
@@ -45,7 +48,7 @@ export const SignIn: FC<AuthPanelProps> = ({
     };
   }, [authService]);
   const loginStatus = useLiveData(authService.session.status$);
-  if (loginStatus === 'authenticated') {
+  if (loginStatus === 'authenticated' && openModal) {
     onSignedIn?.();
   }
 
