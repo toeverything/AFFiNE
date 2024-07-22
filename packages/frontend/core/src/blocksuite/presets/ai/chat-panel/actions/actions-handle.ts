@@ -33,7 +33,6 @@ import { insertFromMarkdown } from '../../utils/markdown-utils';
 import type {
   ChatBlockMessage,
   ChatContextValue,
-  ChatMessage,
 } from '../chat-context';
 
 const { matchFlavours } = BlocksUtils;
@@ -58,21 +57,7 @@ type ChatAction = {
   ) => Promise<boolean>;
 };
 
-async function constructChatBlockMessages(
-  chatMessages: ChatMessage[],
-  doc: Doc,
-  forkSessionId: string,
-  latestMessageId: string
-) {
-  const latestIndex = chatMessages.findIndex(
-    item => item.id === latestMessageId
-  );
-  const historyMessages =
-    latestIndex === -1 ? [] : chatMessages.slice(0, latestIndex + 1);
-  if (historyMessages.length < 2 || historyMessages.length % 2 !== 0) {
-    return [];
-  }
-
+async function constructChatBlockMessages(doc: Doc, forkSessionId: string) {
   // Convert chat messages to AI chat block messages
   const userInfo = await AIProvider.userInfo;
 
@@ -82,7 +67,7 @@ async function constructChatBlockMessages(
     doc.id,
     {
       sessionId: forkSessionId,
-      messageOrder: ChatHistoryOrder.desc,
+      messageOrder: ChatHistoryOrder.asc,
     }
   );
 
@@ -301,15 +286,7 @@ const SAVE_CHAT_TO_BLOCK_ACTION: ChatAction = {
       }
 
       // Get messages before the latest message
-      const historyItems = chatContext?.items.filter(
-        item => 'role' in item
-      ) as ChatMessage[];
-      const messages = await constructChatBlockMessages(
-        historyItems,
-        host.doc,
-        newSessionId,
-        messageId
-      );
+      const messages = await constructChatBlockMessages(host.doc, newSessionId);
 
       // After switching to edgeless mode, the user can save the chat to a block
       const blockId = addAIChatBlock(
