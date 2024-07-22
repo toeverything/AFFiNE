@@ -174,6 +174,23 @@ export const Quotas: Quota[] = [
       copilotActionLimit: 10,
     },
   },
+  {
+    feature: QuotaType.UnlimitedPlanV1,
+    type: FeatureKind.Quota,
+    version: 1,
+    configs: {
+      // quota name
+      name: 'Unlimited',
+      // single blob limit 10MB
+      blobLimit: 100 * OneMB,
+      // total blob limit 10GB
+      storageQuota: 1000 * OneGB,
+      // history period of validity 7 days
+      historyPeriod: 7 * OneDay,
+      // member limit 3
+      memberLimit: 10,
+    },
+  },
 ];
 
 export function getLatestQuota(type: QuotaType) {
