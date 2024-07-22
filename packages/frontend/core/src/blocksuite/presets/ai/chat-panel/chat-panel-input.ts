@@ -460,6 +460,7 @@ export class ChatPanelInput extends WithDisposable(LitElement) {
         signal: abortController.signal,
         where: 'chat-panel',
         control: 'chat-send',
+        isRootSession: true,
       });
 
       if (stream) {
@@ -476,7 +477,7 @@ export class ChatPanelInput extends WithDisposable(LitElement) {
 
         if (!this.chatContextValue.chatSessionId) {
           this.updateContext({
-            chatSessionId: AIProvider.LAST_ACTION_SESSIONID,
+            chatSessionId: AIProvider.ROOT_SESSION_ID,
           });
         }
 

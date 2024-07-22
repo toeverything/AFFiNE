@@ -5,7 +5,7 @@ import type { EditorHost } from '@blocksuite/block-std';
 import { type ChatMessage, ChatMessagesSchema } from '@blocksuite/presets';
 import { baseTheme } from '@toeverything/theme';
 import { css, html, LitElement, nothing, unsafeCSS } from 'lit';
-import { customElement, property, query } from 'lit/decorators.js';
+import { customElement, property, query, state } from 'lit/decorators.js';
 
 @customElement('ai-chat-block-peek-view')
 export class AIChatBlockPeekView extends LitElement {
@@ -70,6 +70,7 @@ export class AIChatBlockPeekView extends LitElement {
   `;
 
   private _historyMessages: ChatMessage[] = [];
+  private readonly _sessionId: string | null = null;
 
   private readonly _deserializeChatMessages = () => {
     try {
@@ -84,6 +85,11 @@ export class AIChatBlockPeekView extends LitElement {
     } catch {
       return [];
     }
+  };
+
+  private readonly _updateChatMessages = (chatMessage: ChatMessage) => {
+    console.debug('update chat messages', chatMessage);
+    this._chatMessages = [...this._chatMessages, chatMessage];
   };
 
   override connectedCallback() {
@@ -107,8 +113,9 @@ export class AIChatBlockPeekView extends LitElement {
       return nothing;
     }
 
-    const latestMessageCreatedAt =
-      _historyMessages[_historyMessages.length - 1].createdAt;
+    const latestHistoryMessage = _historyMessages[_historyMessages.length - 1];
+    const latestMessageCreatedAt = latestHistoryMessage.createdAt;
+    const latestHistoryMessageId = latestHistoryMessage.id;
     const textRendererOptions = {
       customHeading: true,
     };
@@ -121,9 +128,20 @@ export class AIChatBlockPeekView extends LitElement {
           .textRendererOptions=${textRendererOptions}
         ></ai-chat-messages>
         <date-time .date=${latestMessageCreatedAt}></date-time>
-        <div class="new-chat-messages-container"></div>
+        <div class="new-chat-messages-container">
+          <ai-chat-messages
+            .host=${host}
+            .messages=${this._chatMessages}
+            .textRendererOptions=${textRendererOptions}
+          ></ai-chat-messages>
+        </div>
       </div>
-      <chat-block-input></chat-block-input>
+      <chat-block-input
+        .updateChatMessages=${this._updateChatMessages}
+        .parentSessionId=${this.parentSessionId}
+        .latestMessageId=${latestHistoryMessageId}
+        .host=${host}
+      ></chat-block-input>
       <div class="peek-view-footer">
         <div>AI outputs can be misleading or wrong</div>
       </div>
@@ -138,6 +156,12 @@ export class AIChatBlockPeekView extends LitElement {
 
   @property({ attribute: false })
   accessor host!: EditorHost;
+
+  @property({ attribute: false })
+  accessor parentSessionId!: string;
+
+  @state()
+  accessor _chatMessages: ChatMessage[] = [];
 }
 
 declare global {
@@ -147,11 +171,13 @@ declare global {
 }
 
 export const AIChatBlockPeekViewTemplate = (
+  parentSessionId: string,
   historyMessagesString: string,
   host: EditorHost
 ) => {
   return html`<ai-chat-block-peek-view
     .historyMessagesString=${historyMessagesString}
+    .parentSessionId=${parentSessionId}
     .host=${host}
   ></ai-chat-block-peek-view>`;
 };

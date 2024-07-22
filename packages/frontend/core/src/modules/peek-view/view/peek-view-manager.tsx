@@ -39,6 +39,7 @@ function renderPeekView({ info }: ActivePeekView) {
 
   if (info.type === 'ai-chat-block') {
     const template = AIChatBlockPeekViewTemplate(
+      info.model.sessionId,
       info.model.messages,
       info.host
     );

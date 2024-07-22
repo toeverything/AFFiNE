@@ -1,5 +1,12 @@
+import {
+  ChatClearIcon,
+  ChatSendIcon,
+} from '@affine/core/blocksuite/presets/ai/_common/icons';
+import { AIProvider } from '@affine/core/blocksuite/presets/ai/provider';
+import type { EditorHost } from '@blocksuite/block-std';
+import { type ChatMessage } from '@blocksuite/presets';
 import { css, html, LitElement } from 'lit';
-import { customElement } from 'lit/decorators.js';
+import { customElement, property, query, state } from 'lit/decorators.js';
 
 @customElement('chat-block-input')
 export class ChatBlockInput extends LitElement {
@@ -9,8 +16,10 @@ export class ChatBlockInput extends LitElement {
     }
 
     .ai-chat-input {
+      display: flex;
       width: 100%;
       min-height: 100px;
+      max-height: 206px;
       padding: 8px 12px;
       box-sizing: border-box;
       border: 1px solid var(--affine-border-color);
@@ -50,13 +59,164 @@ export class ChatBlockInput extends LitElement {
         outline: none;
       }
     }
+
+    .chat-panel-input-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+
+      div {
+        width: 24px;
+        height: 24px;
+        cursor: pointer;
+      }
+
+      div:nth-child(2) {
+        margin-left: auto;
+      }
+    }
   `;
 
   override render() {
-    return html` <div class="ai-chat-input">
-      <textarea rows="1" placeholder="What are your thoughts?"></textarea>
-    </div>`;
+    return html`<style>
+        .chat-panel-send svg rect {
+          fill: ${this._isInputEmpty
+            ? 'var(--affine-text-disable-color)'
+            : 'var(--affine-primary-color)'};
+        }
+
+        .chat-panel-input {
+          border-color: ${this._focused
+            ? 'var(--affine-primary-color)'
+            : 'var(--affine-border-color)'};
+          box-shadow: ${this._focused ? 'var(--affine-active-shadow)' : 'none'};
+        }
+      </style>
+      <div class="ai-chat-input">
+        <textarea
+          rows="1"
+          placeholder="What are your thoughts?"
+          @keydown=${async (evt: KeyboardEvent) => {
+            if (evt.key === 'Enter' && !evt.shiftKey && !evt.isComposing) {
+              evt.preventDefault();
+              await this._send();
+            }
+          }}
+          @input=${() => {
+            const { textarea } = this;
+            this._isInputEmpty = !textarea.value.trim();
+            textarea.style.height = 'auto';
+            textarea.style.height = textarea.scrollHeight + 'px';
+            if (this.scrollHeight >= 202) {
+              textarea.style.height = '168px';
+              textarea.style.overflowY = 'scroll';
+            }
+          }}
+          @focus=${() => {
+            this._focused = true;
+          }}
+          @blur=${() => {
+            this._focused = false;
+          }}
+        ></textarea>
+        <div class="chat-panel-input-actions">
+          <div class="chat-history-clear">${ChatClearIcon}</div>
+          <div class="chat-panel-send" @click="${this._send}">
+            ${ChatSendIcon}
+          </div>
+        </div>
+      </div>`;
   }
+
+  @property({ attribute: false })
+  accessor parentSessionId!: string;
+
+  @property({ attribute: false })
+  accessor latestMessageId!: string;
+
+  @property({ attribute: false })
+  accessor host!: EditorHost;
+
+  @property({ attribute: false })
+  accessor updateChatMessages!: (chatMessage: ChatMessage) => void;
+
+  @query('textarea')
+  accessor textarea!: HTMLTextAreaElement;
+
+  @state()
+  accessor _isInputEmpty = true;
+
+  @state()
+  accessor _focused = false;
+
+  private _chatSessionId: string | null = null;
+
+  private readonly _send = async () => {
+    const text = this.textarea.value;
+    if (!text) {
+      return;
+    }
+    const { doc } = this.host;
+    this.textarea.value = '';
+
+    this.updateChatMessages({
+      id: '',
+      content: text,
+      role: 'user',
+      createdAt: new Date().toISOString(),
+      attachments: [],
+    });
+
+    try {
+      const abortController = new AbortController();
+      // fork session
+      if (!this._chatSessionId) {
+        console.debug(
+          'parentSessionId: ',
+          this.parentSessionId,
+          'latestMessageId: ',
+          this.latestMessageId
+        );
+        const forkSessionId = await AIProvider.forkChat?.({
+          workspaceId: doc.collection.id,
+          docId: doc.id,
+          sessionId: this.parentSessionId,
+          latestMessageId: this.latestMessageId,
+        });
+        if (!forkSessionId) return;
+        this._chatSessionId = forkSessionId;
+      }
+      const stream = AIProvider.actions.chat?.({
+        sessionId: this.parentSessionId, // FIXME: should be this._chatSessionId
+        input: text,
+        docId: doc.id,
+        attachments: [],
+        workspaceId: doc.collection.id,
+        host: this.host,
+        stream: true,
+        signal: abortController.signal,
+        where: 'chat-panel',
+        control: 'chat-send',
+      });
+
+      if (stream) {
+        let content = '';
+        for await (const text of stream) {
+          content += text;
+        }
+
+        this.updateChatMessages({
+          id: '',
+          content: content,
+          role: 'assistant',
+          createdAt: new Date().toISOString(),
+          attachments: [],
+        });
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
 }
 
 declare global {

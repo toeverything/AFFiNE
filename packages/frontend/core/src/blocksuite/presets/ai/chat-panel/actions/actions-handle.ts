@@ -1,3 +1,4 @@
+import { ChatHistoryOrder } from '@affine/graphql';
 import type {
   BlockSelection,
   EditorHost,
@@ -59,6 +60,8 @@ type ChatAction = {
 
 async function constructChatBlockMessages(
   chatMessages: ChatMessage[],
+  doc: Doc,
+  forkSessionId: string,
   latestMessageId: string
 ) {
   const latestIndex = chatMessages.findIndex(
@@ -72,7 +75,22 @@ async function constructChatBlockMessages(
 
   // Convert chat messages to AI chat block messages
   const userInfo = await AIProvider.userInfo;
-  const messages = historyMessages.map(message => {
+
+  // Get fork session messages
+  const histories = await AIProvider.histories?.chats(
+    doc.collection.id,
+    doc.id,
+    {
+      sessionId: forkSessionId,
+      messageOrder: ChatHistoryOrder.desc,
+    }
+  );
+
+  if (!histories) {
+    return [];
+  }
+
+  const messages = histories[0].messages.map(message => {
     return {
       id: message.id,
       role: message.role,
@@ -288,6 +306,8 @@ const SAVE_CHAT_TO_BLOCK_ACTION: ChatAction = {
       ) as ChatMessage[];
       const messages = await constructChatBlockMessages(
         historyItems,
+        host.doc,
+        newSessionId,
         messageId
       );
 
