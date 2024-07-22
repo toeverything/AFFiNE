@@ -3,6 +3,7 @@ import './polyfill/intl-segmenter';
 import './polyfill/promise-with-resolvers';
 import './polyfill/request-idle-callback';
 import '@affine/core/bootstrap/preload';
+import '@affine/core/bootstrap/global-catch';
 
 import { performanceLogger } from '@affine/core/shared';
 import { isDesktop } from '@affine/env/constant';

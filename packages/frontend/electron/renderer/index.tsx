@@ -1,5 +1,6 @@
 import './polyfill/dispose';
 import '@affine/core/bootstrap/preload';
+import '@affine/core/bootstrap/global-catch';
 
 import { appConfigProxy } from '@affine/core/hooks/use-app-config-storage';
 import { performanceLogger } from '@affine/core/shared';

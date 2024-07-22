@@ -1,4 +1,5 @@
-import { ErrorBoundary, type FallbackRender } from '@sentry/react';
+import type { FallbackRender, Scope } from '@sentry/react';
+import { ErrorBoundary } from '@sentry/react';
 import type { FC, PropsWithChildren } from 'react';
 import { useCallback } from 'react';
 
@@ -25,8 +26,21 @@ export const AffineErrorBoundary: FC<AffineErrorBoundaryProps> = props => {
     console.error('Uncaught error:', error, componentStack);
   }, []);
 
+  const beforeCapture = useCallback(
+    (scope: Scope, _error: unknown, componentStack: string | undefined) => {
+      if (componentStack?.includes('blocksuite')) {
+        scope.setTag('category', 'blocksuite');
+      }
+    },
+    []
+  );
+
   return (
-    <ErrorBoundary fallback={fallbackRender} onError={onError}>
+    <ErrorBoundary
+      fallback={fallbackRender}
+      onError={onError}
+      beforeCapture={beforeCapture}
+    >
       {props.children}
     </ErrorBoundary>
   );
