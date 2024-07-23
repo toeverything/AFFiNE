@@ -7,7 +7,7 @@ import { createTestingModule } from './utils';
 let config: Config;
 let module: TestingModule;
 test.beforeEach(async () => {
-  module = await createTestingModule();
+  module = await createTestingModule({}, false);
   config = module.get(Config);
 });
 
@@ -33,4 +33,6 @@ test('should be able to override config', async t => {
   const config = module.get(Config);
 
   t.is(config.server.host, 'testing');
+
+  await module.close();
 });

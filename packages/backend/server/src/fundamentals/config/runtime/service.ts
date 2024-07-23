@@ -3,7 +3,7 @@ import {
   Inject,
   Injectable,
   Logger,
-  OnApplicationBootstrap,
+  OnModuleInit,
 } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { difference, keyBy } from 'lodash-es';
@@ -45,7 +45,7 @@ function validateConfigType<K extends keyof FlattenedAppRuntimeConfig>(
  * })
  */
 @Injectable()
-export class Runtime implements OnApplicationBootstrap {
+export class Runtime implements OnModuleInit {
   private readonly logger = new Logger('App:RuntimeConfig');
 
   constructor(
@@ -54,7 +54,7 @@ export class Runtime implements OnApplicationBootstrap {
     @Inject(forwardRef(() => Cache)) private readonly cache: Cache
   ) {}
 
-  async onApplicationBootstrap() {
+  async onModuleInit() {
     await this.upgradeDB();
   }
 

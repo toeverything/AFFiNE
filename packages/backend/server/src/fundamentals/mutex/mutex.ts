@@ -1,10 +1,10 @@
 import { randomUUID } from 'node:crypto';
 
 import { Inject, Injectable, Logger, Scope } from '@nestjs/common';
-import { ModuleRef } from '@nestjs/core';
-import { CONTEXT } from '@nestjs/graphql';
+import { ModuleRef, REQUEST } from '@nestjs/core';
+import type { Request } from 'express';
 
-import type { GraphqlContext } from '../graphql';
+import { GraphqlContext } from '../graphql';
 import { retryable } from '../utils/promise';
 import { Locker } from './local-lock';
 
@@ -17,7 +17,7 @@ export class MutexService {
   private readonly locker: Locker;
 
   constructor(
-    @Inject(CONTEXT) private readonly context: GraphqlContext,
+    @Inject(REQUEST) private readonly request: Request | GraphqlContext,
     private readonly ref: ModuleRef
   ) {
     // nestjs will always find and injecting the locker from local module
@@ -31,11 +31,12 @@ export class MutexService {
   }
 
   protected getId() {
-    let id = this.context.req.headers['x-transaction-id'] as string;
+    const req = 'req' in this.request ? this.request.req : this.request;
+    let id = req.headers['x-transaction-id'] as string;
 
     if (!id) {
       id = randomUUID();
-      this.context.req.headers['x-transaction-id'] = id;
+      req.headers['x-transaction-id'] = id;
     }
 
     return id;

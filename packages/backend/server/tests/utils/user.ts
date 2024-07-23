@@ -1,5 +1,4 @@
 import type { INestApplication } from '@nestjs/common';
-import { hashSync } from '@node-rs/argon2';
 import request, { type Response } from 'supertest';
 
 import {
@@ -54,7 +53,7 @@ export async function signUp(
   const user = await app.get(UserService).createUser({
     name,
     email,
-    password: hashSync(password),
+    password,
     emailVerifiedAt: autoVerifyEmail ? new Date() : null,
   });
   const { sessionId } = await app.get(AuthService).createUserSession(user);

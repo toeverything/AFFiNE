@@ -3,12 +3,16 @@ import { Prisma, PrismaClient } from '@prisma/client';
 
 import {
   Config,
+  CryptoHelper,
   EmailAlreadyUsed,
   EventEmitter,
   type EventPayload,
   OnEvent,
+  WrongSignInCredentials,
+  WrongSignInMethod,
 } from '../../fundamentals';
 import { Quota_FreePlanV1_1 } from '../quota/schema';
+import { validators } from '../utils/validators';
 
 @Injectable()
 export class UserService {
@@ -26,6 +30,7 @@ export class UserService {
 
   constructor(
     private readonly config: Config,
+    private readonly crypto: CryptoHelper,
     private readonly prisma: PrismaClient,
     private readonly emitter: EventEmitter
   ) {}
@@ -35,7 +40,7 @@ export class UserService {
       name: 'Unnamed',
       features: {
         create: {
-          reason: 'created by invite sign up',
+          reason: 'sign up',
           activated: true,
           feature: {
             connect: {
@@ -47,30 +52,39 @@ export class UserService {
     };
   }
 
-  async createUser(data: Prisma.UserCreateInput) {
+  async createUser(
+    data: Omit<Prisma.UserCreateInput, 'name'> & { name?: string }
+  ) {
+    validators.assertValidEmail(data.email);
+    const user = await this.findUserByEmail(data.email);
+
+    if (user) {
+      throw new EmailAlreadyUsed();
+    }
+
+    if (data.password) {
+      const config = await this.config.runtime.fetchAll({
+        'auth/password.max': true,
+        'auth/password.min': true,
+      });
+      validators.assertValidPassword(data.password, {
+        max: config['auth/password.max'],
+        min: config['auth/password.min'],
+      });
+
+      data.password = await this.crypto.encryptPassword(data.password);
+    }
+
+    if (!data.name) {
+      data.name = data.email.split('@')[0];
+    }
+
     return this.prisma.user.create({
       select: this.defaultUserSelect,
       data: {
         ...this.userCreatingData,
         ...data,
       },
-    });
-  }
-
-  async createAnonymousUser(
-    email: string,
-    data?: Partial<Prisma.UserCreateInput>
-  ) {
-    const user = await this.findUserByEmail(email);
-
-    if (user) {
-      throw new EmailAlreadyUsed();
-    }
-
-    return this.createUser({
-      email,
-      name: email.split('@')[0],
-      ...data,
     });
   }
 
@@ -86,6 +100,7 @@ export class UserService {
   }
 
   async findUserByEmail(email: string) {
+    validators.assertValidEmail(email);
     return this.prisma.user.findFirst({
       where: {
         email: {
@@ -101,6 +116,7 @@ export class UserService {
    * supposed to be used only for `Credential SignIn`
    */
   async findUserWithHashedPasswordByEmail(email: string) {
+    validators.assertValidEmail(email);
     return this.prisma.user.findFirst({
       where: {
         email: {
@@ -111,15 +127,27 @@ export class UserService {
     });
   }
 
-  async findOrCreateUser(
-    email: string,
-    data?: Partial<Prisma.UserCreateInput>
-  ) {
-    const user = await this.findUserByEmail(email);
-    if (user) {
-      return user;
+  async signIn(email: string, password: string) {
+    const user = await this.findUserWithHashedPasswordByEmail(email);
+
+    if (!user) {
+      throw new WrongSignInCredentials();
     }
-    return this.createAnonymousUser(email, data);
+
+    if (!user.password) {
+      throw new WrongSignInMethod();
+    }
+
+    const passwordMatches = await this.crypto.verifyPassword(
+      password,
+      user.password
+    );
+
+    if (!passwordMatches) {
+      throw new WrongSignInCredentials();
+    }
+
+    return user;
   }
 
   async fulfillUser(
@@ -160,9 +188,23 @@ export class UserService {
 
   async updateUser(
     id: string,
-    data: Prisma.UserUpdateInput,
+    data: Omit<Prisma.UserUpdateInput, 'password'> & {
+      password?: string | null;
+    },
     select: Prisma.UserSelect = this.defaultUserSelect
   ) {
+    if (data.password) {
+      const config = await this.config.runtime.fetchAll({
+        'auth/password.max': true,
+        'auth/password.min': true,
+      });
+      validators.assertValidPassword(data.password, {
+        max: config['auth/password.max'],
+        min: config['auth/password.min'],
+      });
+
+      data.password = await this.crypto.encryptPassword(data.password);
+    }
     const user = await this.prisma.user.update({ where: { id }, data, select });
 
     this.emitter.emit('user.updated', user);

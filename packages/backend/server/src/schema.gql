@@ -249,6 +249,7 @@ enum ErrorNames {
   OAUTH_ACCOUNT_ALREADY_CONNECTED
   OAUTH_STATE_EXPIRED
   PAGE_IS_NOT_PUBLIC
+  PASSWORD_REQUIRED
   RUNTIME_CONFIG_NOT_FOUND
   SAME_EMAIL_PROVIDED
   SAME_SUBSCRIPTION_RECURRING
@@ -621,6 +622,9 @@ type ServerConfigType {
 
   """server flavor"""
   flavor: String! @deprecated(reason: "use `features`")
+
+  """whether server has been initialized"""
+  initialized: Boolean!
 
   """server identical name could be shown as badge on user interface"""
   name: String!

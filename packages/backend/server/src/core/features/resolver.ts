@@ -47,7 +47,8 @@ export class FeatureManagementResolver {
     if (user) {
       return this.feature.addEarlyAccess(user.id, type);
     } else {
-      const user = await this.users.createAnonymousUser(email, {
+      const user = await this.users.createUser({
+        email,
         registered: false,
       });
       return this.feature.addEarlyAccess(user.id, type);

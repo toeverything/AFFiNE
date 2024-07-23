@@ -11,7 +11,7 @@ import supertest from 'supertest';
 import { AppModule, FunctionalityModules } from '../../src/app.module';
 import { AuthGuard, AuthModule } from '../../src/core/auth';
 import { UserFeaturesInit1698652531198 } from '../../src/data/migrations/1698652531198-user-features-init';
-import { GlobalExceptionFilter } from '../../src/fundamentals';
+import { Config, GlobalExceptionFilter } from '../../src/fundamentals';
 import { GqlModule } from '../../src/fundamentals/graphql';
 
 async function flushDB(client: PrismaClient) {
@@ -67,7 +67,8 @@ class MockResolver {
 }
 
 export async function createTestingModule(
-  moduleDef: TestingModuleMeatdata = {}
+  moduleDef: TestingModuleMeatdata = {},
+  init = true
 ) {
   // setting up
   let imports = moduleDef.imports ?? [];
@@ -105,11 +106,19 @@ export async function createTestingModule(
     await initTestingDB(prisma);
   }
 
+  if (init) {
+    await m.init();
+
+    const config = m.get(Config);
+    // by pass password min length validation
+    await config.runtime.set('auth/password.min', 1);
+  }
+
   return m;
 }
 
 export async function createTestingApp(moduleDef: TestingModuleMeatdata = {}) {
-  const m = await createTestingModule(moduleDef);
+  const m = await createTestingModule(moduleDef, false);
 
   const app = m.createNestApplication({
     cors: true,
@@ -133,6 +142,10 @@ export async function createTestingApp(moduleDef: TestingModuleMeatdata = {}) {
   }
 
   await app.init();
+
+  const config = app.get(Config);
+  // by pass password min length validation
+  await config.runtime.set('auth/password.min', 1);
 
   return {
     module: m,

@@ -9,7 +9,7 @@ import {
   ResolveField,
   Resolver,
 } from '@nestjs/graphql';
-import { RuntimeConfig, RuntimeConfigType } from '@prisma/client';
+import { PrismaClient, RuntimeConfig, RuntimeConfigType } from '@prisma/client';
 import { GraphQLJSON, GraphQLJSONObject } from 'graphql-scalars';
 
 import { Config, DeploymentType, URLHelper } from '../../fundamentals';
@@ -115,7 +115,8 @@ export class ServerFlagsType implements ServerFlags {
 export class ServerConfigResolver {
   constructor(
     private readonly config: Config,
-    private readonly url: URLHelper
+    private readonly url: URLHelper,
+    private readonly db: PrismaClient
   ) {}
 
   @Public()
@@ -164,6 +165,13 @@ export class ServerConfigResolver {
       flags[record.key as keyof ServerFlagsType] = record.value as any;
       return flags;
     }, {} as ServerFlagsType);
+  }
+
+  @ResolveField(() => Boolean, {
+    description: 'whether server has been initialized',
+  })
+  async initialized() {
+    return (await this.db.user.count()) > 0;
   }
 }
 

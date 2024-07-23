@@ -13,9 +13,12 @@ import { Config } from '../src/fundamentals/config';
 import { createTestingModule } from './utils';
 
 const createModule = () => {
-  return createTestingModule({
-    imports: [QuotaModule, StorageModule, DocModule],
-  });
+  return createTestingModule(
+    {
+      imports: [QuotaModule, StorageModule, DocModule],
+    },
+    false
+  );
 };
 
 let m: TestingModule;

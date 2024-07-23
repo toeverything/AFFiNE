@@ -254,6 +254,10 @@ export const USER_FRIENDLY_ERRORS = {
     message: ({ min, max }) =>
       `Password must be between ${min} and ${max} characters`,
   },
+  password_required: {
+    type: 'invalid_input',
+    message: 'Password is required.',
+  },
   wrong_sign_in_method: {
     type: 'invalid_input',
     message:

@@ -12,13 +12,7 @@ import { PrismaClient } from '@prisma/client';
 import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 import { isNil, omitBy } from 'lodash-es';
 
-import {
-  Config,
-  CryptoHelper,
-  type FileUpload,
-  Throttle,
-  UserNotFound,
-} from '../../fundamentals';
+import { type FileUpload, Throttle, UserNotFound } from '../../fundamentals';
 import { CurrentUser } from '../auth/current-user';
 import { Public } from '../auth/guard';
 import { sessionUser } from '../auth/service';
@@ -177,9 +171,7 @@ class CreateUserInput {
 export class UserManagementResolver {
   constructor(
     private readonly db: PrismaClient,
-    private readonly user: UserService,
-    private readonly crypto: CryptoHelper,
-    private readonly config: Config
+    private readonly user: UserService
   ) {}
 
   @Query(() => [UserType], {
@@ -222,22 +214,9 @@ export class UserManagementResolver {
   async createUser(
     @Args({ name: 'input', type: () => CreateUserInput }) input: CreateUserInput
   ) {
-    validators.assertValidEmail(input.email);
-    if (input.password) {
-      const config = await this.config.runtime.fetchAll({
-        'auth/password.max': true,
-        'auth/password.min': true,
-      });
-      validators.assertValidPassword(input.password, {
-        max: config['auth/password.max'],
-        min: config['auth/password.min'],
-      });
-    }
-
-    const { id } = await this.user.createAnonymousUser(input.email, {
-      password: input.password
-        ? await this.crypto.encryptPassword(input.password)
-        : undefined,
+    const { id } = await this.user.createUser({
+      email: input.email,
+      password: input.password,
       registered: true,
     });
 

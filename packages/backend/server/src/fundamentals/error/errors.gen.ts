@@ -101,6 +101,12 @@ export class InvalidPasswordLength extends UserFriendlyError {
   }
 }
 
+export class PasswordRequired extends UserFriendlyError {
+  constructor(message?: string) {
+    super('invalid_input', 'password_required', message);
+  }
+}
+
 export class WrongSignInMethod extends UserFriendlyError {
   constructor(message?: string) {
     super('invalid_input', 'wrong_sign_in_method', message);
@@ -496,6 +502,7 @@ export enum ErrorNames {
   OAUTH_ACCOUNT_ALREADY_CONNECTED,
   INVALID_EMAIL,
   INVALID_PASSWORD_LENGTH,
+  PASSWORD_REQUIRED,
   WRONG_SIGN_IN_METHOD,
   EARLY_ACCESS_REQUIRED,
   SIGN_UP_FORBIDDEN,

@@ -7,6 +7,7 @@ import {
 } from '@nestjs/graphql';
 import type { User } from '@prisma/client';
 
+import type { Payload } from '../../fundamentals/event/def';
 import { CurrentUser } from '../auth/current-user';
 
 @ObjectType()
@@ -80,4 +81,12 @@ export class RemoveAvatar {
 export class UpdateUserInput implements Partial<User> {
   @Field({ description: 'User name', nullable: true })
   name?: string;
+}
+
+declare module '../../fundamentals/event/def' {
+  interface UserEvents {
+    admin: {
+      created: Payload<{ id: string }>;
+    };
+  }
 }

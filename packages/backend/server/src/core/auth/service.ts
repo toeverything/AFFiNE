@@ -5,14 +5,7 @@ import { PrismaClient } from '@prisma/client';
 import type { CookieOptions, Request, Response } from 'express';
 import { assign, omit } from 'lodash-es';
 
-import {
-  Config,
-  CryptoHelper,
-  EmailAlreadyUsed,
-  MailService,
-  WrongSignInCredentials,
-  WrongSignInMethod,
-} from '../../fundamentals';
+import { Config, EmailAlreadyUsed, MailService } from '../../fundamentals';
 import { FeatureManagementService } from '../features/management';
 import { QuotaService } from '../quota/service';
 import { QuotaType } from '../quota/types';
@@ -74,20 +67,19 @@ export class AuthService implements OnApplicationBootstrap {
     private readonly mailer: MailService,
     private readonly feature: FeatureManagementService,
     private readonly quota: QuotaService,
-    private readonly user: UserService,
-    private readonly crypto: CryptoHelper
+    private readonly user: UserService
   ) {}
 
   async onApplicationBootstrap() {
     if (this.config.node.dev) {
       try {
-        const [email, name, pwd] = ['dev@affine.pro', 'Dev User', 'dev'];
+        const [email, name, password] = ['dev@affine.pro', 'Dev User', 'dev'];
         let devUser = await this.user.findUserByEmail(email);
         if (!devUser) {
           devUser = await this.user.createUser({
             email,
             name,
-            password: await this.crypto.encryptPassword(pwd),
+            password,
           });
         }
         await this.quota.switchUserQuota(devUser.id, QuotaType.ProPlanV1);
@@ -114,36 +106,17 @@ export class AuthService implements OnApplicationBootstrap {
       throw new EmailAlreadyUsed();
     }
 
-    const hashedPassword = await this.crypto.encryptPassword(password);
-
     return this.user
       .createUser({
         name,
         email,
-        password: hashedPassword,
+        password,
       })
       .then(sessionUser);
   }
 
   async signIn(email: string, password: string) {
-    const user = await this.user.findUserWithHashedPasswordByEmail(email);
-
-    if (!user) {
-      throw new WrongSignInCredentials();
-    }
-
-    if (!user.password) {
-      throw new WrongSignInMethod();
-    }
-
-    const passwordMatches = await this.crypto.verifyPassword(
-      password,
-      user.password
-    );
-
-    if (!passwordMatches) {
-      throw new WrongSignInCredentials();
-    }
+    const user = await this.user.signIn(email, password);
 
     return sessionUser(user);
   }
@@ -382,8 +355,7 @@ export class AuthService implements OnApplicationBootstrap {
     id: string,
     newPassword: string
   ): Promise<Omit<User, 'password'>> {
-    const hashedPassword = await this.crypto.encryptPassword(newPassword);
-    return this.user.updateUser(id, { password: hashedPassword });
+    return this.user.updateUser(id, { password: newPassword });
   }
 
   async changeEmail(

@@ -16,6 +16,7 @@ import { ADD_ENABLED_FEATURES, ServerConfigModule } from './core/config';
 import { DocModule } from './core/doc';
 import { FeatureModule } from './core/features';
 import { QuotaModule } from './core/quota';
+import { CustomSetupModule } from './core/setup';
 import { StorageModule } from './core/storage';
 import { SyncModule } from './core/sync';
 import { UserModule } from './core/user';
@@ -175,13 +176,11 @@ function buildAppModule() {
     // self hosted server only
     .useIf(
       config => config.isSelfhosted,
+      CustomSetupModule,
       ServeStaticModule.forRoot({
         rootPath: join('/app', 'static'),
         exclude: ['/admin*'],
-      })
-    )
-    .useIf(
-      config => config.isSelfhosted,
+      }),
       ServeStaticModule.forRoot({
         rootPath: join('/app', 'static', 'admin'),
         serveRoot: '/admin',
