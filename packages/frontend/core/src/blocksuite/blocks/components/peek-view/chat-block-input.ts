@@ -209,8 +209,7 @@ export class ChatBlockInput extends LitElement {
       }
 
       const stream = AIProvider.actions.chat?.({
-        sessionId: chatSessionId, // FIXME: should be this._chatSessionId
-        input: text,
+        sessionId: chatSessionId,
         docId: doc.id,
         attachments: [],
         workspaceId: doc.collection.id,
@@ -224,14 +223,15 @@ export class ChatBlockInput extends LitElement {
       if (stream) {
         for await (const text of stream) {
           content += text;
-          this.updateChatMessages({
-            id: '',
-            content: content,
-            role: 'assistant',
-            createdAt: new Date().toISOString(),
-            attachments: [],
-          });
         }
+
+        this.updateChatMessages({
+          id: '',
+          content: content,
+          role: 'assistant',
+          createdAt: new Date().toISOString(),
+          attachments: [],
+        });
       }
     } catch (error) {
       console.error(error);

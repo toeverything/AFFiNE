@@ -112,6 +112,8 @@ export class ChatPanel extends WithDisposable(ShadowlessElement) {
         AIProvider.histories?.actions(doc.collection.id, doc.id),
       ]);
 
+      console.debug('histories', histories);
+
       if (counter !== this._resettingCounter) return;
 
       const items: ChatItem[] = actions ? [...actions] : [];

@@ -73,7 +73,7 @@ async function constructChatBlockMessages(doc: Doc, forkSessionId: string) {
   }
 
   console.debug('fork session id', forkSessionId);
-  console.debug('histories', histories[0].messages);
+  console.debug('fork histories', histories[0].messages);
 
   const messages = histories[0].messages.map(message => {
     return {
@@ -249,6 +249,7 @@ const SAVE_CHAT_TO_BLOCK_ACTION: ChatAction = {
   ) => {
     // The chat session id and the latest message id are required to fork the chat session
     const parentSessionId = chatContext?.chatSessionId;
+    console.debug('save chat to block: ', messageId, parentSessionId);
     if (!messageId || !parentSessionId) {
       return false;
     }
@@ -281,6 +282,7 @@ const SAVE_CHAT_TO_BLOCK_ACTION: ChatAction = {
         latestMessageId: messageId,
       });
 
+      console.debug('new session id', newSessionId);
       if (!newSessionId) {
         return false;
       }
@@ -295,6 +297,7 @@ const SAVE_CHAT_TO_BLOCK_ACTION: ChatAction = {
         newSessionId,
         viewportCenter
       );
+      console.debug('block id', blockId, messages);
       if (!blockId) {
         return false;
       }
