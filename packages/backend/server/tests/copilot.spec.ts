@@ -290,17 +290,46 @@ test('should be able to fork chat session', async t => {
   const s1 = (await session.get(sessionId))!;
   // @ts-expect-error
   const latestMessageId = s1.finish({}).find(m => m.role === 'assistant')!.id;
-  const forkedSessionId = await session.fork({
+  const forkedSessionId1 = await session.fork({
     userId,
     sessionId,
     latestMessageId,
     ...commonParams,
   });
-  t.not(sessionId, forkedSessionId, 'should fork a new session');
+  t.not(sessionId, forkedSessionId1, 'should fork a new session');
+  const forkedSessionId2 = await session.fork({
+    userId,
+    sessionId,
+    latestMessageId,
+    ...commonParams,
+  });
+  t.not(
+    forkedSessionId1,
+    forkedSessionId2,
+    'should fork new session with same params'
+  );
 
   // check forked session messages
   {
-    const s2 = (await session.get(forkedSessionId))!;
+    const s2 = (await session.get(forkedSessionId1))!;
+
+    const finalMessages = s2
+      .finish(params) // @ts-expect-error
+      .map(({ id: _, createdAt: __, ...m }) => m);
+    t.deepEqual(
+      finalMessages,
+      [
+        { role: 'system', content: 'hello world', params },
+        { role: 'user', content: 'hello' },
+        { role: 'assistant', content: 'world' },
+      ],
+      'should generate the final message'
+    );
+  }
+
+  // check second times forked session messages
+  {
+    const s2 = (await session.get(forkedSessionId2))!;
 
     const finalMessages = s2
       .finish(params) // @ts-expect-error

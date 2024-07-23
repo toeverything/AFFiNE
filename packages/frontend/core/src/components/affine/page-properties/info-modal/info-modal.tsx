@@ -39,7 +39,9 @@ export const InfoModal = ({
   workspace: Workspace;
 }) => {
   const titleInputHandleRef = useRef<InlineEditHandle>(null);
+
   const manager = usePagePropertiesManager(page);
+
   const handleClose = useCallback(() => {
     onOpenChange(false);
   }, [onOpenChange]);
@@ -60,7 +62,6 @@ export const InfoModal = ({
     <Modal
       contentOptions={{
         className: styles.container,
-        'aria-describedby': undefined,
       }}
       open={open}
       onOpenChange={onOpenChange}

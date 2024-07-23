@@ -37,3 +37,9 @@ export const scrollBar = style({
   width: 6,
   transform: 'translateX(-4px)',
 });
+
+export const hiddenInput = style({
+  width: '0',
+  height: '0',
+  position: 'absolute',
+});
