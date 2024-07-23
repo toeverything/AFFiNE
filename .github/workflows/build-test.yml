@@ -443,6 +443,8 @@ jobs:
           ${{ matrix.tests.script }}
         env:
           DEV_SERVER_URL: http://localhost:8080
+          COPILOT_OPENAI_API_KEY: 1
+          COPILOT_FAL_API_KEY: 1
 
       - name: Upload test results
         if: ${{ failure() }}
