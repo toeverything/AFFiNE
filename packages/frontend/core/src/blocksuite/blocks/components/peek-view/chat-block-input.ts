@@ -144,10 +144,10 @@ export class ChatBlockInput extends LitElement {
   accessor updateCurrentSessionId!: (sessionId: string) => void;
 
   @property({ attribute: false })
-  accessor updateChatBlock!: () => void;
+  accessor updateChatBlock!: () => Promise<void>;
 
   @property({ attribute: false })
-  accessor createChatBlock!: () => void;
+  accessor createChatBlock!: () => Promise<void>;
 
   @property({ attribute: false })
   accessor currentChatBlockId: string | null = null;
@@ -188,7 +188,7 @@ export class ChatBlockInput extends LitElement {
     const chatBlockExists = !!this.currentChatBlockId;
     try {
       const abortController = new AbortController();
-      // fork session
+      // If has not forked a chat session, fork a new one
       let chatSessionId = this.currentSessionId;
       if (!chatSessionId) {
         console.debug(
@@ -209,6 +209,7 @@ export class ChatBlockInput extends LitElement {
       }
 
       const stream = AIProvider.actions.chat?.({
+        input: text,
         sessionId: chatSessionId,
         docId: doc.id,
         attachments: [],
@@ -238,10 +239,10 @@ export class ChatBlockInput extends LitElement {
     } finally {
       if (content) {
         if (!chatBlockExists) {
-          this.createChatBlock();
+          await this.createChatBlock();
         }
         // Update new chat block messages if there are contents returned from AI
-        this.updateChatBlock();
+        await this.updateChatBlock();
       }
     }
   };

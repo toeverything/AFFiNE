@@ -54,7 +54,10 @@ type ChatAction = {
   ) => Promise<boolean>;
 };
 
-async function constructChatBlockMessages(doc: Doc, forkSessionId: string) {
+export async function constructChatBlockMessages(
+  doc: Doc,
+  forkSessionId: string
+) {
   // Convert chat messages to AI chat block messages
   const userInfo = await AIProvider.userInfo;
 
@@ -68,7 +71,7 @@ async function constructChatBlockMessages(doc: Doc, forkSessionId: string) {
     }
   );
 
-  if (!histories) {
+  if (!histories || !histories.length) {
     return [];
   }
 
@@ -76,15 +79,22 @@ async function constructChatBlockMessages(doc: Doc, forkSessionId: string) {
   console.debug('fork histories', histories[0].messages);
 
   const messages = histories[0].messages.map(message => {
+    const { role, id, content, createdAt } = message;
+    const isUser = role === 'user';
+    const userInfoProps = isUser
+      ? {
+          userId: userInfo?.id,
+          userName: userInfo?.name,
+          avatarUrl: userInfo?.avatarUrl ?? undefined,
+        }
+      : {};
     return {
-      id: message.id,
-      role: message.role,
-      content: message.content,
-      createdAt: message.createdAt,
+      id,
+      role,
+      content,
+      createdAt,
       attachments: [],
-      userId: userInfo?.id,
-      userName: userInfo?.name,
-      avatarUrl: userInfo?.avatarUrl ?? undefined,
+      ...userInfoProps,
     };
   });
   return messages;

@@ -477,7 +477,7 @@ export class ChatPanelInput extends WithDisposable(LitElement) {
 
         if (!this.chatContextValue.chatSessionId) {
           this.updateContext({
-            chatSessionId: AIProvider.ROOT_SESSION_ID,
+            chatSessionId: AIProvider.LAST_ROOT_SESSION_ID,
           });
         }
 

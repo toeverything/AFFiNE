@@ -190,8 +190,8 @@ export function textToText({
           workflow ? 'workflow' : undefined
         );
         AIProvider.LAST_ACTION_SESSIONID = _sessionId;
-        if (isRootSession && !AIProvider.ROOT_SESSION_ID) {
-          AIProvider.ROOT_SESSION_ID = _sessionId;
+        if (isRootSession) {
+          AIProvider.LAST_LAST_ROOT_SESSION_ID = _sessionId;
         }
 
         if (signal) {
@@ -255,8 +255,8 @@ export function textToText({
         }
 
         AIProvider.LAST_ACTION_SESSIONID = _sessionId;
-        if (isRootSession && !AIProvider.ROOT_SESSION_ID) {
-          AIProvider.ROOT_SESSION_ID = _sessionId;
+        if (isRootSession && !AIProvider.LAST_ROOT_SESSION_ID) {
+          AIProvider.LAST_ROOT_SESSION_ID = _sessionId;
         }
 
         return client.chatText({

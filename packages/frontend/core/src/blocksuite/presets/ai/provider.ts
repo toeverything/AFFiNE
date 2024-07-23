@@ -78,7 +78,7 @@ export class AIProvider {
 
   static LAST_ACTION_SESSIONID = '';
 
-  static ROOT_SESSION_ID = '';
+  static LAST_ROOT_SESSION_ID = '';
 
   static MAX_LOCAL_HISTORY = 10;
 

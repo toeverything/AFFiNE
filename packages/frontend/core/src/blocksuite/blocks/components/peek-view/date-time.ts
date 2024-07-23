@@ -33,9 +33,20 @@ export class DateTime extends LitElement {
   `;
 
   override render() {
+    const date = i18nTime(this.date, {
+      relative: {
+        max: [1, 'day'],
+        accuracy: 'minute',
+        weekday: true,
+      },
+      absolute: {
+        accuracy: 'day',
+      },
+    });
+
     return html`<div class="date-time-container">
       <div class="line"></div>
-      <div class="date-time">${i18nTime(this.date)}</div>
+      <div class="date-time">${date}</div>
       <div class="line"></div>
     </div>`;
   }
