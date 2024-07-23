@@ -130,6 +130,9 @@ export class WorkspacePropertiesAdapter extends Service {
     return this.proxy.schema;
   }
 
+  /**
+   * @deprecated
+   */
   get favorites() {
     return this.proxy.favorites;
   }
@@ -154,8 +157,18 @@ export class WorkspacePropertiesAdapter extends Service {
     const pageProperties = this.pageProperties?.[id];
     pageProperties!.system[PageSystemPropertyId.Journal].value = date;
   }
+
+  /**
+   * After the user completes the migration, call this function to clear the favorite data
+   */
+  cleanupFavorites() {
+    this.proxy.favorites = {};
+  }
 }
 
+/**
+ * @deprecated use FavoriteService
+ */
 export class FavoriteItemsAdapter extends Service {
   constructor(private readonly adapter: WorkspacePropertiesAdapter) {
     super();
@@ -284,5 +297,9 @@ export class FavoriteItemsAdapter extends Service {
     if (existing) {
       existing.value = false;
     }
+  }
+
+  clearAll() {
+    this.adapter.cleanupFavorites();
   }
 }

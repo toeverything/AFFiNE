@@ -1,6 +1,7 @@
 import { MenuIcon, MenuItem, MenuSeparator } from '@affine/component';
 import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
+import { FavoriteService } from '@affine/core/modules/favorite';
 import { FavoriteItemsAdapter } from '@affine/core/modules/properties';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import { useI18n } from '@affine/i18n';
@@ -26,19 +27,28 @@ export const useExplorerDocNodeOperations = (
 ): NodeOperation[] => {
   const t = useI18n();
   const { appSettings } = useAppSettingHelper();
-  const { workbenchService, docsService, favoriteItemsAdapter } = useServices({
+  const {
+    workbenchService,
+    docsService,
+    favoriteItemsAdapter,
+    favoriteService,
+  } = useServices({
     DocsService,
     WorkbenchService,
     FavoriteItemsAdapter,
+    FavoriteService,
   });
 
   const docRecord = useLiveData(docsService.list.doc$(docId));
 
   const favorite = useLiveData(
-    useMemo(
-      () => favoriteItemsAdapter.isFavorite$(docId, 'doc'),
-      [docId, favoriteItemsAdapter]
-    )
+    useMemo(() => {
+      if (runtimeConfig.enableNewFavorite) {
+        return favoriteService.favoriteList.favorite$('doc', docId);
+      } else {
+        return favoriteItemsAdapter.isFavorite$(docId, 'doc');
+      }
+    }, [docId, favoriteItemsAdapter, favoriteService])
   );
 
   const handleMoveToTrash = useCallback(() => {
@@ -60,8 +70,12 @@ export const useExplorerDocNodeOperations = (
   }, [docId, options, docsService, workbenchService.workbench]);
 
   const handleToggleFavoriteDoc = useCallback(() => {
-    favoriteItemsAdapter.toggle(docId, 'doc');
-  }, [favoriteItemsAdapter, docId]);
+    if (runtimeConfig.enableNewFavorite) {
+      favoriteService.favoriteList.toggle('doc', docId);
+    } else {
+      favoriteItemsAdapter.toggle(docId, 'doc');
+    }
+  }, [favoriteService.favoriteList, docId, favoriteItemsAdapter]);
 
   return useMemo(
     () => [

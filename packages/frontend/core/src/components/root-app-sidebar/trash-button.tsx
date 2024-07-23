@@ -42,9 +42,9 @@ export const TrashButton = () => {
                   title: docRecord.title$.value || t['Untitled'](),
                 }
               ),
+              confirmText: t.Delete(),
               confirmButtonOptions: {
                 type: 'error',
-                children: t.Delete(),
               },
               onConfirm() {
                 docRecord.moveToTrash();

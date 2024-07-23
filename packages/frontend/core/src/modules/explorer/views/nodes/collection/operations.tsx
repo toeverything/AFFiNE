@@ -74,9 +74,9 @@ export const useExplorerCollectionNodeOperations = (
       title: t['com.affine.collection.add-doc.confirm.title'](),
       description: t['com.affine.collection.add-doc.confirm.description'](),
       cancelText: t['Cancel'](),
+      confirmText: t['Confirm'](),
       confirmButtonOptions: {
         type: 'primary',
-        children: t['Confirm'](),
       },
       onConfirm: createAndAddDocument,
     });

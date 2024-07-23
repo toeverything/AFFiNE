@@ -478,10 +478,10 @@ const PageHistoryManager = ({
         ['data-testid' as string]: 'confirm-restore-history-modal',
         style: { padding: '20px 26px' },
       },
+      confirmText: t['com.affine.history.confirm-restore-modal.restore'](),
       confirmButtonOptions: {
         type: 'primary',
         ['data-testid' as string]: 'confirm-restore-history-button',
-        children: t['com.affine.history.confirm-restore-modal.restore'](),
       },
       onConfirm: handleRestore,
     });

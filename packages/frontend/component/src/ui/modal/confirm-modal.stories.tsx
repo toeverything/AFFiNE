@@ -22,9 +22,7 @@ export const UsingHook = () => {
   const showConfirm = () => {
     openConfirmModal({
       cancelText: 'Cancel',
-      confirmButtonOptions: {
-        children: 'Confirm',
-      },
+      confirmText: 'Confirm',
       title: 'Confirm Modal',
       children: 'Are you sure you want to confirm?',
       onConfirm,
@@ -43,9 +41,7 @@ export const AutoClose = () => {
   const onConfirm = () => {
     openConfirmModal({
       cancelText: 'Cancel',
-      confirmButtonOptions: {
-        children: 'Confirm',
-      },
+      confirmText: 'Confirm',
       title: 'Confirm Modal',
       children: 'Are you sure you want to confirm?',
       onConfirm: () => console.log('Confirmed'),

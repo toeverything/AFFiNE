@@ -13,7 +13,8 @@ export interface ConfirmModalProps extends ModalProps {
   confirmButtonOptions?: ButtonProps;
   onConfirm?: (() => void) | (() => Promise<void>);
   onCancel?: () => void;
-  cancelText?: string;
+  confirmText?: React.ReactNode;
+  cancelText?: React.ReactNode;
   cancelButtonOptions?: ButtonProps;
   reverseFooter?: boolean;
 }
@@ -22,6 +23,7 @@ export const ConfirmModal = ({
   children,
   confirmButtonOptions,
   // FIXME: we need i18n
+  confirmText,
   cancelText = 'Cancel',
   cancelButtonOptions,
   reverseFooter,
@@ -64,7 +66,9 @@ export const ConfirmModal = ({
             {cancelText}
           </Button>
         </DialogTrigger>
-        <Button onClick={onConfirmClick} {...confirmButtonOptions}></Button>
+        <Button onClick={onConfirmClick} {...confirmButtonOptions}>
+          {confirmText}
+        </Button>
       </div>
     </Modal>
   );

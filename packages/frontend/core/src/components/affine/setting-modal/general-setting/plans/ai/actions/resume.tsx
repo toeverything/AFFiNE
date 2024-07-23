@@ -38,9 +38,9 @@ export const AIResume = ({ ...btnProps }: AIResumeProps) => {
       title: t['com.affine.payment.ai.action.resume.confirm.title'](),
       description:
         t['com.affine.payment.ai.action.resume.confirm.description'](),
+      confirmText:
+        t['com.affine.payment.ai.action.resume.confirm.confirm-text'](),
       confirmButtonOptions: {
-        children:
-          t['com.affine.payment.ai.action.resume.confirm.confirm-text'](),
         type: 'primary',
       },
       cancelText:

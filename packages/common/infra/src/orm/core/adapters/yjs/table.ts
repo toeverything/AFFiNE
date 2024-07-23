@@ -67,7 +67,7 @@ export class YjsTableAdapter implements TableAdapter {
         record.set(key, data[key]);
       }
 
-      record.delete(this.deleteFlagKey);
+      record.set(this.deleteFlagKey, false);
     }, this.origin);
 
     return this.value(record, select);

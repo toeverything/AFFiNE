@@ -33,9 +33,9 @@ export const AICancel = ({ ...btnProps }: AICancelProps) => {
       description:
         t['com.affine.payment.ai.action.cancel.confirm.description'](),
       reverseFooter: true,
+      confirmText:
+        t['com.affine.payment.ai.action.cancel.confirm.confirm-text'](),
       confirmButtonOptions: {
-        children:
-          t['com.affine.payment.ai.action.cancel.confirm.confirm-text'](),
         type: 'default',
       },
       cancelText:

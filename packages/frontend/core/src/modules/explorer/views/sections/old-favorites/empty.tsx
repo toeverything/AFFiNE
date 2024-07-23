@@ -25,7 +25,7 @@ export const RootEmpty = ({
     useDropTarget<AffineDNDData>(
       () => ({
         data: {
-          at: 'explorer:organize:root',
+          at: 'explorer:old-favorite:root',
         },
         onDrop: onDrop,
         canDrop: canDrop,

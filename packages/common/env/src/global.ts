@@ -31,6 +31,10 @@ export const runtimeFlagsSchema = z.object({
   enableExperimentalFeature: z.boolean(),
   enableInfoModal: z.boolean(),
   enableOrganize: z.boolean(),
+  // show the new favorite, which exclusive to each user
+  enableNewFavorite: z.boolean(),
+  // show the old favorite
+  enableOldFavorite: z.boolean(),
 });
 
 export type RuntimeConfig = z.infer<typeof runtimeFlagsSchema>;

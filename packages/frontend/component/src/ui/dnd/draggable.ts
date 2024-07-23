@@ -86,7 +86,6 @@ export const useDraggable = <D extends DNDData = DNDData>(
   const options = useMemo(getOptions, deps);
 
   useEffect(() => {
-    console.log(options.data, dragRef.current);
     if (!dragRef.current) {
       return;
     }

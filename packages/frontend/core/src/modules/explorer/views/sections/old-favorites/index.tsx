@@ -8,11 +8,7 @@ import {
   type ExplorerTreeNodeDropEffect,
   ExplorerTreeRoot,
 } from '@affine/core/modules/explorer/views/tree';
-import type { FavoriteSupportType } from '@affine/core/modules/favorite';
-import {
-  FavoriteService,
-  isFavoriteSupportType,
-} from '@affine/core/modules/favorite';
+import { FavoriteItemsAdapter } from '@affine/core/modules/properties';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import type { AffineDNDData } from '@affine/core/types/dnd';
 import { useI18n } from '@affine/i18n';
@@ -22,13 +18,15 @@ import { useCallback, useMemo } from 'react';
 
 import { ExplorerCollectionNode } from '../../nodes/collection';
 import { ExplorerDocNode } from '../../nodes/doc';
-import { ExplorerTagNode } from '../../nodes/tag';
 import { RootEmpty } from './empty';
 import * as styles from './styles.css';
 
-export const ExplorerFavorites = () => {
-  const { favoriteService, docsService, workbenchService } = useServices({
-    FavoriteService,
+/**
+ * @deprecated remove this after 0.17 released
+ */
+export const ExplorerOldFavorites = () => {
+  const { favoriteItemsAdapter, docsService, workbenchService } = useServices({
+    FavoriteItemsAdapter,
     DocsService,
     WorkbenchService,
   });
@@ -37,7 +35,7 @@ export const ExplorerFavorites = () => {
   const trashDocs = useLiveData(docsService.list.trashDocs$);
 
   const favorites = useLiveData(
-    favoriteService.favoriteList.sortedList$.map(favs => {
+    favoriteItemsAdapter.orderedFavorites$.map(favs => {
       return favs.filter(fav => {
         if (fav.type === 'doc') {
           return (
@@ -55,23 +53,23 @@ export const ExplorerFavorites = () => {
   const handleDrop = useCallback(
     (data: DropTargetDropEvent<AffineDNDData>) => {
       if (
-        data.source.data.entity?.type &&
-        isFavoriteSupportType(data.source.data.entity.type)
+        data.source.data.entity?.type === 'doc' ||
+        data.source.data.entity?.type === 'collection'
       ) {
-        favoriteService.favoriteList.add(
-          'doc',
+        favoriteItemsAdapter.set(
           data.source.data.entity.id,
-          favoriteService.favoriteList.indexAt('before')
+          data.source.data.entity.type,
+          true
         );
       }
     },
-    [favoriteService]
+    [favoriteItemsAdapter]
   );
 
   const handleDropEffect = useCallback<ExplorerTreeNodeDropEffect>(data => {
     if (
-      data.source.data.entity?.type &&
-      isFavoriteSupportType(data.source.data.entity.type)
+      data.source.data.entity?.type === 'doc' ||
+      data.source.data.entity?.type === 'collection'
     ) {
       return 'link';
     }
@@ -80,26 +78,23 @@ export const ExplorerFavorites = () => {
 
   const handleCanDrop = useMemo<DropTargetOptions<AffineDNDData>['canDrop']>(
     () => data => {
-      return data.source.data.entity?.type
-        ? isFavoriteSupportType(data.source.data.entity.type)
-        : false;
+      return (
+        data.source.data.entity?.type === 'doc' ||
+        data.source.data.entity?.type === 'collection'
+      );
     },
     []
   );
 
   const handleCreateNewFavoriteDoc = useCallback(() => {
     const newDoc = docsService.createDoc();
-    favoriteService.favoriteList.add(
-      'doc',
-      newDoc.id,
-      favoriteService.favoriteList.indexAt('before')
-    );
+    favoriteItemsAdapter.set(newDoc.id, 'doc', true);
     workbenchService.workbench.openDoc(newDoc.id);
-  }, [docsService, favoriteService, workbenchService]);
+  }, [docsService, favoriteItemsAdapter, workbenchService]);
 
   const handleOnChildrenDrop = useCallback(
     (
-      favorite: { id: string; type: FavoriteSupportType },
+      favorite: { id: string; type: 'doc' | 'collection' },
       data: DropTargetDropEvent<AffineDNDData>
     ) => {
       if (
@@ -107,41 +102,42 @@ export const ExplorerFavorites = () => {
         data.treeInstruction?.type === 'reorder-below'
       ) {
         if (
-          data.source.data.from?.at === 'explorer:favorite:list' &&
-          data.source.data.entity?.type &&
-          isFavoriteSupportType(data.source.data.entity.type)
+          data.source.data.from?.at === 'explorer:old-favorite:list' &&
+          (data.source.data.entity?.type === 'doc' ||
+            data.source.data.entity?.type === 'collection')
         ) {
           // is reordering
-          favoriteService.favoriteList.reorder(
-            data.source.data.entity.type,
-            data.source.data.entity.id,
-            favoriteService.favoriteList.indexAt(
-              data.treeInstruction?.type === 'reorder-above'
-                ? 'before'
-                : 'after',
-              favorite
-            )
+          favoriteItemsAdapter.sorter.moveTo(
+            FavoriteItemsAdapter.getFavItemKey(
+              data.source.data.entity.id,
+              data.source.data.entity.type
+            ),
+            FavoriteItemsAdapter.getFavItemKey(favorite.id, favorite.type),
+            data.treeInstruction?.type === 'reorder-above' ? 'before' : 'after'
           );
         } else if (
-          data.source.data.entity?.type &&
-          isFavoriteSupportType(data.source.data.entity.type)
+          data.source.data.entity?.type === 'doc' ||
+          data.source.data.entity?.type === 'collection'
         ) {
-          favoriteService.favoriteList.add(
-            data.source.data.entity.type,
+          favoriteItemsAdapter.set(
             data.source.data.entity.id,
-            favoriteService.favoriteList.indexAt(
-              data.treeInstruction?.type === 'reorder-above'
-                ? 'before'
-                : 'after',
-              favorite
-            )
+            data.source.data.entity?.type,
+            true
           );
-        } else {
-          return; // not supported
+          favoriteItemsAdapter.sorter.moveTo(
+            FavoriteItemsAdapter.getFavItemKey(
+              data.source.data.entity.id,
+              data.source.data.entity.type
+            ),
+            FavoriteItemsAdapter.getFavItemKey(favorite.id, favorite.type),
+            data.treeInstruction?.type === 'reorder-above' ? 'before' : 'after'
+          );
         }
+      } else {
+        return; // not supported
       }
     },
-    [favoriteService]
+    [favoriteItemsAdapter]
   );
 
   const handleChildrenDropEffect = useCallback<ExplorerTreeNodeDropEffect>(
@@ -151,14 +147,14 @@ export const ExplorerFavorites = () => {
         data.treeInstruction?.type === 'reorder-below'
       ) {
         if (
-          data.source.data.from?.at === 'explorer:favorite:list' &&
-          data.source.data.entity?.type &&
-          isFavoriteSupportType(data.source.data.entity.type)
+          data.source.data.from?.at === 'explorer:old-favorite:list' &&
+          (data.source.data.entity?.type === 'doc' ||
+            data.source.data.entity?.type === 'collection')
         ) {
           return 'move';
         } else if (
-          data.source.data.entity?.type &&
-          isFavoriteSupportType(data.source.data.entity.type)
+          data.source.data.entity?.type === 'doc' ||
+          data.source.data.entity?.type === 'collection'
         ) {
           return 'link';
         }
@@ -172,9 +168,8 @@ export const ExplorerFavorites = () => {
     DropTargetOptions<AffineDNDData>['canDrop']
   >(
     () => args =>
-      args.source.data.entity?.type
-        ? isFavoriteSupportType(args.source.data.entity.type)
-        : false,
+      args.source.data.entity?.type === 'doc' ||
+      args.source.data.entity?.type === 'collection',
     []
   );
 
@@ -182,7 +177,11 @@ export const ExplorerFavorites = () => {
     <div className={styles.container}>
       <CategoryDivider
         className={styles.draggedOverHighlight}
-        label={t['com.affine.rootAppSidebar.favorites']()}
+        label={
+          runtimeConfig.enableNewFavorite
+            ? `${t['com.affine.rootAppSidebar.favorites']()} (OLD)`
+            : t['com.affine.rootAppSidebar.favorites']()
+        }
       >
         <IconButton
           data-testid="explorer-bar-add-favorite-button"
@@ -216,7 +215,7 @@ export const ExplorerFavorites = () => {
 };
 
 const childLocation = {
-  at: 'explorer:favorite:list' as const,
+  at: 'explorer:old-favorite:list' as const,
 };
 const ExplorerFavoriteNode = ({
   favorite,
@@ -226,13 +225,13 @@ const ExplorerFavoriteNode = ({
 }: {
   favorite: {
     id: string;
-    type: FavoriteSupportType;
+    type: 'collection' | 'doc';
   };
   canDrop?: DropTargetOptions<AffineDNDData>['canDrop'];
   onDrop: (
     favorite: {
       id: string;
-      type: FavoriteSupportType;
+      type: 'collection' | 'doc';
     },
     data: DropTargetDropEvent<AffineDNDData>
   ) => void;
@@ -248,15 +247,6 @@ const ExplorerFavoriteNode = ({
     <ExplorerDocNode
       key={favorite.id}
       docId={favorite.id}
-      location={childLocation}
-      onDrop={handleOnChildrenDrop}
-      dropEffect={dropEffect}
-      canDrop={canDrop}
-    />
-  ) : favorite.type === 'tag' ? (
-    <ExplorerTagNode
-      key={favorite.id}
-      tagId={favorite.id}
       location={childLocation}
       onDrop={handleOnChildrenDrop}
       dropEffect={dropEffect}

@@ -1,1 +1,1 @@
-export { AFFiNE_DB_SCHEMA } from './schema';
+export { AFFiNE_WORKSPACE_DB_SCHEMA } from './schema';
