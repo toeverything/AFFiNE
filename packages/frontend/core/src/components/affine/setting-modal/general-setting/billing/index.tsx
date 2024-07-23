@@ -221,7 +221,8 @@ const SubscriptionSettings = () => {
                 })}
               />
             )}
-            {proSubscription.end && proSubscription.canceledAt ? (
+            {isBeliever ? null : proSubscription.end &&
+              proSubscription.canceledAt ? (
               <SettingRow
                 name={t['com.affine.payment.billing-setting.expiration-date']()}
                 desc={t[
