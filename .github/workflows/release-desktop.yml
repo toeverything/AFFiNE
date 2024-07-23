@@ -56,6 +56,7 @@ jobs:
           SENTRY_PROJECT: 'affine'
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          SENTRY_RELEASE: ${{ steps.version.outputs.APP_VERSION }}
           RELEASE_VERSION: ${{ steps.version.outputs.APP_VERSION }}
           SKIP_NX_CACHE: 'true'
           MIXPANEL_TOKEN: ${{ secrets.MIXPANEL_TOKEN }}
