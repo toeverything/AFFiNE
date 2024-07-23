@@ -4,13 +4,12 @@ import {
   AffineAIPanelWidget,
   type AffineAIPanelWidgetConfig,
   type AIItemConfig,
-  Bound,
   ImageBlockModel,
   isInsideEdgelessEditor,
   matchFlavours,
   NoteDisplayMode,
 } from '@blocksuite/blocks';
-import { assertExists } from '@blocksuite/global/utils';
+import { assertExists, Bound } from '@blocksuite/global/utils';
 import type { TemplateResult } from 'lit';
 
 import {

@@ -20,7 +20,7 @@ export function setupImageToolbarEntry(imageToolbar: AffineImageToolbarWidget) {
   const onAskAIClick = () => {
     const { host } = imageToolbar;
     const { selection } = host;
-    const imageBlock = imageToolbar.blockElement;
+    const imageBlock = imageToolbar.block;
     selection.setGroup('note', [
       selection.create('image', { blockId: imageBlock.blockId }),
     ]);

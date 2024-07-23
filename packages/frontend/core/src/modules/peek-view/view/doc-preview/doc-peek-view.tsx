@@ -6,8 +6,8 @@ import { BlockSuiteEditor } from '@affine/core/components/blocksuite/block-suite
 import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
 import { PageNotFound } from '@affine/core/pages/404';
 import { DebugLogger } from '@affine/debug';
-import { Bound, type EdgelessRootService } from '@blocksuite/blocks';
-import { DisposableGroup } from '@blocksuite/global/utils';
+import { type EdgelessRootService } from '@blocksuite/blocks';
+import { Bound, DisposableGroup } from '@blocksuite/global/utils';
 import type { AffineEditorContainer } from '@blocksuite/presets';
 import type { DocMode } from '@toeverything/infra';
 import { DocsService, FrameworkScope, useService } from '@toeverything/infra';

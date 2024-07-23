@@ -1,4 +1,4 @@
-import type { BlockElement } from '@blocksuite/block-std';
+import type { BlockComponent } from '@blocksuite/block-std';
 import {
   AffineReference,
   type EmbedLinkedDocModel,
@@ -17,7 +17,7 @@ import type { WorkbenchService } from '../../workbench';
 
 export type PeekViewTarget =
   | HTMLElement
-  | BlockElement
+  | BlockComponent
   | AffineReference
   | HTMLAnchorElement
   | { docId: string; blockId?: string };

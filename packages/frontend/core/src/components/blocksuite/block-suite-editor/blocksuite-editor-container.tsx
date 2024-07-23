@@ -1,4 +1,4 @@
-import type { BlockElement } from '@blocksuite/block-std';
+import type { BlockComponent } from '@blocksuite/block-std';
 import type {
   AffineEditorContainer,
   EdgelessEditor,
@@ -56,7 +56,7 @@ type BlocksuiteEditorContainerRef = Pick<
 function findBlockElementById(container: HTMLElement, blockId: string) {
   const element = container.querySelector(
     `[data-block-id="${blockId}"]`
-  ) as BlockElement | null;
+  ) as BlockComponent | null;
   return element;
 }
 
@@ -67,7 +67,7 @@ const useBlockElementById = (
   blockId: string | undefined,
   timeout = 1000
 ) => {
-  const [blockElement, setBlockElement] = useState<BlockElement | null>(null);
+  const [blockElement, setBlockElement] = useState<BlockComponent | null>(null);
   useEffect(() => {
     if (!blockId) {
       return;
@@ -210,7 +210,7 @@ export const BlocksuiteEditorContainer = forwardRef<
 
   useEffect(() => {
     let canceled = false;
-    const handleScrollToBlock = (blockElement: BlockElement) => {
+    const handleScrollToBlock = (blockElement: BlockComponent) => {
       if (!mode || !blockElement) {
         return;
       }

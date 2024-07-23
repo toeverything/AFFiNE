@@ -3,17 +3,14 @@ import type {
   EditorHost,
   TextSelection,
 } from '@blocksuite/block-std';
-import type {
-  EdgelessRootService,
-  ImageSelection,
-  SerializedXYWH,
-} from '@blocksuite/blocks';
+import type { EdgelessRootService, ImageSelection } from '@blocksuite/blocks';
 import {
   BlocksUtils,
-  Bound,
   getElementsBound,
   NoteDisplayMode,
 } from '@blocksuite/blocks';
+import type { SerializedXYWH } from '@blocksuite/global/utils';
+import { Bound } from '@blocksuite/global/utils';
 
 import { CreateIcon, InsertBelowIcon, ReplaceIcon } from '../../_common/icons';
 import { reportResponse } from '../../utils/action-reporter';

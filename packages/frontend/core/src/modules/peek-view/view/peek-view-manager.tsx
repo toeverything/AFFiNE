@@ -1,5 +1,5 @@
 import { toReactNode } from '@affine/component';
-import { BlockElement } from '@blocksuite/block-std';
+import { BlockComponent } from '@blocksuite/block-std';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useEffect, useMemo } from 'react';
 
@@ -91,7 +91,7 @@ export const PeekViewManagerModal = () => {
 
   useEffect(() => {
     const subscription = peekViewEntity.show$.subscribe(() => {
-      if (activePeekView?.target instanceof BlockElement) {
+      if (activePeekView?.target instanceof BlockComponent) {
         activePeekView.target.requestUpdate();
       }
     });

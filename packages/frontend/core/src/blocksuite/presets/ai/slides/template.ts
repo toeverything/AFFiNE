@@ -1,4 +1,4 @@
-import { Bound } from '@blocksuite/blocks';
+import { Bound } from '@blocksuite/global/utils';
 import { nanoid } from '@blocksuite/store';
 
 import { AIProvider } from '../provider';

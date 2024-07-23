@@ -10,7 +10,6 @@ import type {
   SurfaceBlockModel,
 } from '@blocksuite/blocks';
 import {
-  Bound,
   DeleteIcon,
   EDGELESS_ELEMENT_TOOLBAR_WIDGET,
   EDGELESS_TEXT_BLOCK_MIN_HEIGHT,
@@ -23,7 +22,7 @@ import {
   NoteDisplayMode,
   ResetIcon,
 } from '@blocksuite/blocks';
-import { assertExists } from '@blocksuite/global/utils';
+import { assertExists, Bound } from '@blocksuite/global/utils';
 import type { TemplateResult } from 'lit';
 
 import { AIPenIcon, ChatWithAIIcon } from '../_common/icons';
