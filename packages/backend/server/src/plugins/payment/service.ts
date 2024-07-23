@@ -573,7 +573,9 @@ export class SubscriptionService {
           stripeSubscriptionId: null,
           status: SubscriptionStatus.Active,
           recurring: SubscriptionRecurring.Lifetime,
+          start: new Date(),
           end: null,
+          nextBillAt: null,
         },
       });
 
@@ -590,8 +592,8 @@ export class SubscriptionService {
           stripeSubscriptionId: null,
           plan: invoice.plan,
           recurring: invoice.recurring,
-          end: null,
           start: new Date(),
+          end: null,
           status: SubscriptionStatus.Active,
           nextBillAt: null,
         },
