@@ -130,8 +130,8 @@ export function patchNotificationService(
           openConfirmModal({
             title: toReactNode(title),
             description: toReactNode(message),
+            confirmText,
             confirmButtonOptions: {
-              children: confirmText,
               type: 'primary',
             },
             cancelText,
@@ -173,13 +173,11 @@ export function patchNotificationService(
           openConfirmModal({
             title: toReactNode(title),
             description: description,
+            confirmText: confirmText ?? 'Confirm',
             confirmButtonOptions: {
-              children: confirmText ?? 'Confirm',
               type: 'primary',
             },
-            cancelButtonOptions: {
-              children: cancelText ?? 'Cancel',
-            },
+            cancelText: cancelText ?? 'Cancel',
             onConfirm: () => {
               resolve(value);
             },

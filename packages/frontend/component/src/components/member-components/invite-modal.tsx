@@ -57,11 +57,11 @@ export const InviteModal = ({
           padding: '20px 26px',
         },
       }}
+      confirmText={t['Invite']()}
       confirmButtonOptions={{
         loading: isMutating,
         type: 'primary',
         ['data-testid' as string]: 'confirm-enable-affine-cloud-button',
-        children: t['Invite'](),
       }}
       onConfirm={handleConfirm}
     >

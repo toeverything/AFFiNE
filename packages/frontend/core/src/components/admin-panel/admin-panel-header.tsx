@@ -39,8 +39,8 @@ export const AdminPanelHeader = ({
               title: 'Save Runtime Configurations ?',
               description:
                 'Are you sure you want to save the following changes?',
+              confirmText: 'Save',
               confirmButtonOptions: {
-                children: 'Save',
                 type: 'primary',
               },
               onConfirm: onConfirm,

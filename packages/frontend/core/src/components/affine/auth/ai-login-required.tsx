@@ -25,8 +25,8 @@ export const AiLoginRequiredModal = () => {
           setOpen(false);
           openSignIn();
         },
+        confirmText: t['com.affine.ai.login-required.dialog-confirm'](),
         confirmButtonOptions: {
-          children: t['com.affine.ai.login-required.dialog-confirm'](),
           type: 'primary',
         },
         cancelText: t['com.affine.ai.login-required.dialog-cancel'](),

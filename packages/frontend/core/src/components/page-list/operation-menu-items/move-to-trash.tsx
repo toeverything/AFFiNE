@@ -46,10 +46,10 @@ const MoveToTrashConfirm = ({
       title={title}
       description={description}
       cancelText={t['com.affine.confirmModal.button.cancel']()}
+      confirmText={t.Delete()}
       confirmButtonOptions={{
         ['data-testid' as string]: 'confirm-delete-page',
         type: 'error',
-        children: t.Delete(),
       }}
       {...confirmModalProps}
     />

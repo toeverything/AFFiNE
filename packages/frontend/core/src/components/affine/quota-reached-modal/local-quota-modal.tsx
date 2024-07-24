@@ -35,9 +35,9 @@ export const LocalQuotaModal = () => {
         hidden: true,
       }}
       onConfirm={onConfirm}
+      confirmText={t['Got it']()}
       confirmButtonOptions={{
         type: 'primary',
-        children: t['Got it'](),
       }}
     />
   );

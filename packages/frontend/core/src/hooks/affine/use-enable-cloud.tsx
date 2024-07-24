@@ -84,13 +84,13 @@ export const useEnableCloud = () => {
           title: t['Enable AFFiNE Cloud'](),
           description: t['Enable AFFiNE Cloud Description'](),
           cancelText: t['com.affine.enableAffineCloudModal.button.cancel'](),
+          confirmText:
+            loginStatus === 'authenticated'
+              ? t['Enable']()
+              : t['Sign in and Enable'](),
           confirmButtonOptions: {
             type: 'primary',
             ['data-testid' as string]: 'confirm-enable-affine-cloud-button',
-            children:
-              loginStatus === 'authenticated'
-                ? t['Enable']()
-                : t['Sign in and Enable'](),
           },
           onConfirm: async () =>
             await signInOrEnableCloud(ws, {

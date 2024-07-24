@@ -38,14 +38,13 @@ export const MemberLimitModal = ({
           : 'com.affine.payment.member-limit.pro.description'
       ]({ planName: plan, quota: quota })}
       cancelButtonOptions={{ style: { display: isFreePlan ? '' : 'none' } }}
+      confirmText={t[
+        isFreePlan
+          ? 'com.affine.payment.member-limit.free.confirm'
+          : 'com.affine.payment.member-limit.pro.confirm'
+      ]()}
       confirmButtonOptions={{
         type: 'primary',
-        children:
-          t[
-            isFreePlan
-              ? 'com.affine.payment.member-limit.free.confirm'
-              : 'com.affine.payment.member-limit.pro.confirm'
-          ](),
       }}
       onConfirm={handleConfirm}
     ></ConfirmModal>

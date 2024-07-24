@@ -44,13 +44,13 @@ export const ConfirmDeletePropertyModal = ({
           removed from count doc(s). This action cannot be undone.
         </Trans>
       }
+      confirmText={t['Confirm']()}
       onConfirm={onConfirm}
       cancelButtonOptions={{
         onClick: onCancel,
       }}
       confirmButtonOptions={{
         type: 'error',
-        children: t['Confirm'](),
       }}
     />
   );

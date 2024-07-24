@@ -10,7 +10,7 @@ type SignOutConfirmModalI18NKeys =
   | 'confirm';
 
 export const SignOutModal = ({ ...props }: ConfirmModalProps) => {
-  const { title, description, cancelText, confirmButtonOptions = {} } = props;
+  const { title, description, cancelText, confirmText } = props;
   const t = useI18n();
 
   const defaultTexts = useMemo(() => {
@@ -30,10 +30,10 @@ export const SignOutModal = ({ ...props }: ConfirmModalProps) => {
       title={title ?? defaultTexts.title}
       description={description ?? defaultTexts.description}
       cancelText={cancelText ?? defaultTexts.cancelText}
+      confirmText={confirmText ?? defaultTexts.children}
       confirmButtonOptions={{
         type: 'error',
         ['data-testid' as string]: 'confirm-sign-out-button',
-        children: confirmButtonOptions.children ?? defaultTexts.children,
       }}
       contentOptions={{
         ['data-testid' as string]: 'confirm-sign-out-modal',

@@ -269,9 +269,9 @@ export const TrashOperationCell = ({
       title: `${t['com.affine.trashOperation.deletePermanently']()}?`,
       description: t['com.affine.trashOperation.deleteDescription'](),
       cancelText: t['Cancel'](),
+      confirmText: t['com.affine.trashOperation.delete'](),
       confirmButtonOptions: {
         type: 'error',
-        children: t['com.affine.trashOperation.delete'](),
       },
       onConfirm: onPermanentlyDeletePage,
     });
@@ -384,9 +384,9 @@ export const CollectionOperationCell = ({
       title: t['com.affine.collection.add-doc.confirm.title'](),
       description: t['com.affine.collection.add-doc.confirm.description'](),
       cancelText: t['Cancel'](),
+      confirmText: t['Confirm'](),
       confirmButtonOptions: {
         type: 'primary',
-        children: t['Confirm'](),
       },
       onConfirm: createAndAddDocument,
     });

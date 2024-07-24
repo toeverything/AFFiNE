@@ -46,9 +46,9 @@ export const ConfirmLoadingModal = ({
     <ConfirmModal
       title={title}
       cancelText={cancelText}
+      confirmText={confirmText}
       confirmButtonOptions={{
         type: 'primary',
-        children: confirmText,
         loading,
       }}
       open={open}

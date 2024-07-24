@@ -54,9 +54,9 @@ export const DeleteTagConfirmModal = ({
           })
         )
       }
+      confirmText={t['Delete']()}
       confirmButtonOptions={{
         type: 'warning',
-        children: t['Delete'](),
       }}
       onConfirm={handleDelete}
     />

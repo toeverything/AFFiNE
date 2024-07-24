@@ -134,9 +134,9 @@ export const DeleteLeaveWorkspace = () => {
           onOpenChange={setShowLeave}
           title={`${t['com.affine.deleteLeaveWorkspace.leave']()}?`}
           description={t['com.affine.deleteLeaveWorkspace.leaveDescription']()}
+          confirmText={t['Leave']()}
           confirmButtonOptions={{
             type: 'warning',
-            children: t['Leave'](),
           }}
         />
       )}

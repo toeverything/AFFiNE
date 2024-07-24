@@ -104,11 +104,11 @@ const NameWorkspaceContent = ({
       title={t['com.affine.nameWorkspace.title']()}
       description={t['com.affine.nameWorkspace.description']()}
       cancelText={t['com.affine.nameWorkspace.button.cancel']()}
+      confirmText={t['com.affine.nameWorkspace.button.create']()}
       confirmButtonOptions={{
         type: 'primary',
         disabled: !workspaceName || loading,
         ['data-testid' as string]: 'create-workspace-create-button',
-        children: t['com.affine.nameWorkspace.button.create'](),
       }}
       closeButtonOptions={{
         ['data-testid' as string]: 'create-workspace-close-button',

@@ -11,10 +11,10 @@ export const PublicLinkDisableModal = (props: ConfirmModalProps) => {
       title={t['com.affine.publicLinkDisableModal.title']()}
       description={t['com.affine.publicLinkDisableModal.description']()}
       cancelText={t['com.affine.publicLinkDisableModal.button.cancel']()}
+      confirmText={t['com.affine.publicLinkDisableModal.button.disable']()}
       confirmButtonOptions={{
         type: 'error',
         ['data-testid' as string]: 'confirm-enable-affine-cloud-button',
-        children: t['com.affine.publicLinkDisableModal.button.disable'](),
       }}
       {...props}
     />

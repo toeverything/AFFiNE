@@ -79,9 +79,9 @@ export const TrashPageFooter = () => {
         title={t['com.affine.trashOperation.delete.title']()}
         cancelText={t['com.affine.confirmModal.button.cancel']()}
         description={t['com.affine.trashOperation.delete.description']()}
+        confirmText={t['com.affine.trashOperation.delete']()}
         confirmButtonOptions={{
           type: 'error',
-          children: t['com.affine.trashOperation.delete'](),
         }}
         open={open}
         onConfirm={onConfirmDelete}
