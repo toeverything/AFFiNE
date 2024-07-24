@@ -59,6 +59,10 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
     return this._selectionValue.filter(v => v.type === 'image');
   }
 
+  private get _rootService() {
+    return this.host.spec.getService('affine:page');
+  }
+
   static override styles = css`
     chat-panel-messages {
       position: relative;
@@ -459,7 +463,7 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
       return nothing;
 
     const { host } = this;
-    const { content } = item;
+    const { content, id: messageId } = item;
     const actions = isInsidePageEditor(host)
       ? PageEditorActions
       : EdgelessEditorActions;
@@ -505,6 +509,7 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
         .host=${host}
         .content=${content}
         .isLast=${isLast}
+        .messageId=${messageId}
         .curTextSelection=${this._currentTextSelection}
         .curBlockSelections=${this._currentBlockSelections}
         .chatContextValue=${this.chatContextValue}
@@ -513,19 +518,21 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
       ${isLast
         ? html`<div class="actions-container">
             ${repeat(
-              actions.filter(action => {
-                if (!content) return false;
+              actions
+                .filter(action => action.showWhen(host))
+                .filter(action => {
+                  if (!content) return false;
 
-                if (
-                  action.title === 'Replace selection' &&
-                  (!this._currentTextSelection ||
-                    this._currentTextSelection.from.length === 0) &&
-                  this._currentBlockSelections?.length === 0
-                ) {
-                  return false;
-                }
-                return true;
-              }),
+                  if (
+                    action.title === 'Replace selection' &&
+                    (!this._currentTextSelection ||
+                      this._currentTextSelection.from.length === 0) &&
+                    this._currentBlockSelections?.length === 0
+                  ) {
+                    return false;
+                  }
+                  return true;
+                }),
               action => action.title,
               action => {
                 return html`<div class="action">
@@ -545,17 +552,21 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
                         return;
                       }
 
+                      const currentSelections = {
+                        text: this._currentTextSelection,
+                        blocks: this._currentBlockSelections,
+                        images: this._currentImageSelections,
+                      };
+
                       const success = await action.handler(
                         host,
                         content,
-                        this._currentTextSelection,
-                        this._currentBlockSelections,
-                        this._currentImageSelections
+                        currentSelections,
+                        this.chatContextValue,
+                        messageId ?? undefined
                       );
-                      const rootService = host.spec.getService('affine:page');
-                      const { notificationService } = rootService;
                       if (success) {
-                        notificationService?.notify({
+                        this._rootService.notificationService?.notify({
                           title: action.toast,
                           accent: 'success',
                           onClose: function (): void {},

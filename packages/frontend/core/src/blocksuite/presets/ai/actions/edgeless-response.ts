@@ -15,7 +15,6 @@ import {
   EDGELESS_TEXT_BLOCK_MIN_HEIGHT,
   EDGELESS_TEXT_BLOCK_MIN_WIDTH,
   EdgelessTextBlockModel,
-  EmbedHtmlBlockSpec,
   fitContent,
   ImageBlockModel,
   InsertBelowIcon,
@@ -463,7 +462,7 @@ export const responses: {
 
     host.doc.transact(() => {
       edgelessRoot.doc.addBlock(
-        EmbedHtmlBlockSpec.schema.model.flavour as 'affine:embed-html',
+        'affine:embed-html',
         {
           html,
           design: 'ai:makeItReal', // as tag

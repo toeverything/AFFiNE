@@ -19,6 +19,7 @@ import {
   ListBlockSpec,
   NoteBlockSpec,
 } from '@blocksuite/blocks';
+import { AIChatBlockSpec, EdgelessAIChatBlockSpec } from '@blocksuite/presets';
 
 import { CustomAttachmentBlockSpec } from './custom/attachment-block';
 
@@ -41,4 +42,6 @@ export const CommonBlockSpecs: BlockSpec[] = [
   AICodeBlockSpec,
   AIImageBlockSpec,
   AIParagraphBlockSpec,
+  AIChatBlockSpec,
+  EdgelessAIChatBlockSpec,
 ];

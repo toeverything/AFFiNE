@@ -108,7 +108,7 @@ export class ChatPanel extends WithDisposable(ShadowlessElement) {
       const { doc } = this;
 
       const [histories, actions] = await Promise.all([
-        AIProvider.histories?.chats(doc.collection.id, doc.id),
+        AIProvider.histories?.chats(doc.collection.id, doc.id, { fork: false }),
         AIProvider.histories?.actions(doc.collection.id, doc.id),
       ]);
 
@@ -116,9 +116,12 @@ export class ChatPanel extends WithDisposable(ShadowlessElement) {
 
       const items: ChatItem[] = actions ? [...actions] : [];
 
-      if (histories?.[0]) {
-        this._chatSessionId = histories[0].sessionId;
-        items.push(...histories[0].messages);
+      if (histories?.at(-1)) {
+        const history = histories.at(-1);
+        if (!history) return;
+        this._chatSessionId = history.sessionId;
+        this.chatContextValue.chatSessionId = history.sessionId;
+        items.push(...history.messages);
       }
 
       this.chatContextValue = {
@@ -153,6 +156,7 @@ export class ChatPanel extends WithDisposable(ShadowlessElement) {
     status: 'idle',
     error: null,
     markdown: '',
+    chatSessionId: null,
   };
 
   private readonly _cleanupHistories = async () => {

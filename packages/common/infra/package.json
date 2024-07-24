@@ -16,6 +16,7 @@
     "@affine/templates": "workspace:*",
     "@blocksuite/blocks": "0.16.0-canary-202407230727-128fc57",
     "@blocksuite/global": "0.16.0-canary-202407230727-128fc57",
+    "@blocksuite/presets": "0.16.0-canary-202407230727-128fc57",
     "@blocksuite/store": "0.16.0-canary-202407230727-128fc57",
     "@datastructures-js/binary-search-tree": "^5.3.2",
     "foxact": "^0.2.33",

@@ -1,6 +1,7 @@
 import type { AIError } from '@blocksuite/blocks';
 
 export type ChatMessage = {
+  id: string;
   content: string;
   role: 'user' | 'assistant';
   attachments?: string[];
@@ -31,4 +32,11 @@ export type ChatContextValue = {
   markdown: string;
   images: File[];
   abortController: AbortController | null;
+  chatSessionId: string | null;
+};
+
+export type ChatBlockMessage = ChatMessage & {
+  userId?: string;
+  userName?: string;
+  avatarUrl?: string;
 };

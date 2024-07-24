@@ -70,6 +70,10 @@ export class AIProvider {
     return AIProvider.instance.toggleGeneralAIOnboarding;
   }
 
+  static get forkChat() {
+    return AIProvider.instance.forkChat;
+  }
+
   private static readonly instance = new AIProvider();
 
   static LAST_ACTION_SESSIONID = '';
@@ -83,6 +87,12 @@ export class AIProvider {
   private histories: BlockSuitePresets.AIHistoryService | null = null;
 
   private toggleGeneralAIOnboarding: ((value: boolean) => void) | null = null;
+
+  private forkChat:
+    | ((
+        options: BlockSuitePresets.AIForkChatSessionOptions
+      ) => string | Promise<string>)
+    | null = null;
 
   private readonly slots = {
     // use case: when user selects "continue in chat" in an ask ai result panel
@@ -236,6 +246,13 @@ export class AIProvider {
     engine: BlockSuitePresets.AIPhotoEngineService
   ): void;
 
+  static provide(
+    id: 'forkChat',
+    fn: (
+      options: BlockSuitePresets.AIForkChatSessionOptions
+    ) => string | Promise<string>
+  ): void;
+
   static provide(id: 'onboarding', fn: (value: boolean) => void): void;
 
   // actions:
@@ -259,6 +276,10 @@ export class AIProvider {
       AIProvider.instance.toggleGeneralAIOnboarding = action as (
         value: boolean
       ) => void;
+    } else if (id === 'forkChat') {
+      AIProvider.instance.forkChat = action as (
+        options: BlockSuitePresets.AIForkChatSessionOptions
+      ) => string | Promise<string>;
     } else {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       AIProvider.instance.provideAction(id as any, action as any);

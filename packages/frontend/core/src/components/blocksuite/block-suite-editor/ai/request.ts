@@ -1,4 +1,5 @@
 import { AIProvider } from '@affine/core/blocksuite/presets/ai';
+import type { ForkChatSessionInput } from '@affine/graphql';
 import { assertExists } from '@blocksuite/global/utils';
 import { partition } from 'lodash-es';
 
@@ -42,6 +43,10 @@ export function createChatSession({
     docId,
     promptName: 'chat:gpt4',
   });
+}
+
+export function forkCopilotSession(forkChatSessionInput: ForkChatSessionInput) {
+  return client.forkSession(forkChatSessionInput);
 }
 
 async function resizeImage(blob: Blob | File): Promise<Blob | null> {
@@ -255,6 +260,8 @@ export function textToText({
 }
 
 export const listHistories = client.getHistories;
+
+export const listHistoryIds = client.getHistoryIds;
 
 // Only one image is currently being processed
 export function toImage({

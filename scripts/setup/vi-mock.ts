@@ -11,6 +11,17 @@ vi.mock('@blocksuite/presets', () => ({
   DocTitle: vi.fn(),
   EdgelessEditor: vi.fn(),
   PageEditor: vi.fn(),
+  AIChatBlockSchema: {
+    version: 1,
+    model: {
+      version: 1,
+      flavour: 'affine:embed-ai-chat',
+      role: 'content',
+      children: [],
+    },
+  },
+  AIChatBlockSpec: {},
+  EdgelessAIChatBlockSpec: {},
 }));
 
 vi.mock('@blocksuite/presets/ai', () => ({
