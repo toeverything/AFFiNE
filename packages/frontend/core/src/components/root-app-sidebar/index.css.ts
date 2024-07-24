@@ -47,9 +47,6 @@ export const usageBlock = style({
 export const aiUsageBlock = style({
   padding: 12,
   cursor: 'pointer',
-  ':hover': {
-    background: cssVar('hoverColor'),
-  },
   selectors: {
     '&[data-pro]': {
       padding: '12px 12px 2px 12px',
