@@ -1,5 +1,5 @@
 import { toReactNode } from '@affine/component';
-import { AIChatBlockPeekViewTemplate } from '@affine/core/blocksuite/blocks/components/peek-view/chat-block-peek-view';
+import { AIChatBlockPeekViewTemplate } from '@affine/core/blocksuite/presets/ai/peek-view/chat-block-peek-view';
 import { BlockElement } from '@blocksuite/block-std';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useEffect, useMemo } from 'react';

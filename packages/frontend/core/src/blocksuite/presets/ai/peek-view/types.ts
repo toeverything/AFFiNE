@@ -1,7 +1,12 @@
 import type { AIError } from '@blocksuite/blocks';
 import { type ChatMessage } from '@blocksuite/presets';
 
-export type ChatStatus = 'success' | 'error' | 'idle' | 'transmitting';
+export type ChatStatus =
+  | 'success'
+  | 'error'
+  | 'idle'
+  | 'transmitting'
+  | 'loading';
 
 export type ChatContext = {
   messages: ChatMessage[];

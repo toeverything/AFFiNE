@@ -191,7 +191,7 @@ export function textToText({
         );
         AIProvider.LAST_ACTION_SESSIONID = _sessionId;
         if (isRootSession) {
-          AIProvider.LAST_LAST_ROOT_SESSION_ID = _sessionId;
+          AIProvider.LAST_ROOT_SESSION_ID = _sessionId;
         }
 
         if (signal) {

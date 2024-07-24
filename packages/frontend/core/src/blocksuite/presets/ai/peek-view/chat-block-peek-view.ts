@@ -1,12 +1,13 @@
 import './chat-block-input.js';
 import './date-time.js';
 
-import { constructChatBlockMessages } from '@affine/core/blocksuite/presets/ai/chat-panel/actions/actions-handle.js';
 import { Bound, type EditorHost } from '@blocksuite/block-std';
 import {
   CanvasElementType,
   ConnectorMode,
   type EdgelessRootService,
+  PaymentRequiredError,
+  UnauthorizedError,
 } from '@blocksuite/blocks';
 import {
   type AIChatBlockModel,
@@ -16,7 +17,16 @@ import {
 import { baseTheme } from '@toeverything/theme';
 import { css, html, LitElement, nothing, unsafeCSS } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
+import { repeat } from 'lit/directives/repeat.js';
+import { styleMap } from 'lit/directives/style-map.js';
 
+import { SmallHintIcon } from '../_common/icons.js';
+import { constructChatBlockMessages } from '../chat-panel/actions/actions-handle.js';
+import {
+  GeneralErrorRenderer,
+  PaymentRequiredErrorRenderer,
+} from '../messages/error.js';
+import { AIProvider } from '../provider.js';
 import type { ChatContext } from './types.js';
 
 @customElement('ai-chat-block-peek-view')
@@ -63,6 +73,9 @@ export class AIChatBlockPeekView extends LitElement {
       width: 100%;
       box-sizing: border-box;
       min-height: 450px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
     }
 
     .ai-chat-messages-container::-webkit-scrollbar {
@@ -120,10 +133,6 @@ export class AIChatBlockPeekView extends LitElement {
     } catch {
       return [];
     }
-  };
-
-  updateCurrentChatMessages = (chatMessage: ChatMessage) => {
-    this.currentChatMessages = [...this.currentChatMessages, chatMessage];
   };
 
   /**
@@ -201,16 +210,12 @@ export class AIChatBlockPeekView extends LitElement {
 
     // Connect the parent chat block to the AI chat block
     const edgelessService = this._rootService as EdgelessRootService;
-    const connectorId = edgelessService.addElement(
-      CanvasElementType.CONNECTOR,
-      {
-        mode: ConnectorMode.Curve,
-        controllers: [],
-        source: { id: this.parentChatBlockId },
-        target: { id: aiChatBlockId },
-      }
-    );
-    console.debug('created connector', connectorId);
+    edgelessService.addElement(CanvasElementType.CONNECTOR, {
+      mode: ConnectorMode.Curve,
+      controllers: [],
+      source: { id: this.parentChatBlockId },
+      target: { id: aiChatBlockId },
+    });
   };
 
   /**
@@ -244,6 +249,58 @@ export class AIChatBlockPeekView extends LitElement {
     this.chatContext = { ...this.chatContext, ...context };
   };
 
+  renderError() {
+    const { error } = this.chatContext;
+
+    if (error instanceof PaymentRequiredError) {
+      return PaymentRequiredErrorRenderer(this.host);
+    } else if (error instanceof UnauthorizedError) {
+      return GeneralErrorRenderer(
+        html`You need to login to AFFiNE Cloud to continue using AFFiNE AI.`,
+        html`<div
+          style=${styleMap({
+            padding: '4px 12px',
+            borderRadius: '8px',
+            border: '1px solid var(--affine-border-color)',
+            cursor: 'pointer',
+            backgroundColor: 'var(--affine-hover-color)',
+          })}
+          @click=${() =>
+            AIProvider.slots.requestLogin.emit({ host: this.host })}
+        >
+          Login
+        </div>`
+      );
+    } else {
+      return GeneralErrorRenderer();
+    }
+  }
+
+  CurrentMessages = (currentMessages: ChatMessage[]) => {
+    if (!currentMessages.length) {
+      return nothing;
+    }
+
+    return html`${repeat(
+      currentMessages,
+      message => message.createdAt + message.content,
+      (message, idx) => {
+        const isLastReply =
+          idx === currentMessages.length - 1 && message.role === 'assistant';
+        const { status } = this.chatContext;
+        const messageState =
+          isLastReply && status === 'transmitting' ? 'generating' : 'finished';
+        const shouldRenderError = isLastReply && status === 'error';
+        return html`<ai-chat-message
+            .host=${this.host}
+            .message=${message}
+            .state=${messageState}
+          ></ai-chat-message>
+          ${shouldRenderError ? this.renderError() : nothing}`;
+      }
+    )}`;
+  };
+
   override connectedCallback() {
     super.connectedCallback();
     this._historyMessages = this._deserializeHistoryChatMessages();
@@ -260,6 +317,7 @@ export class AIChatBlockPeekView extends LitElement {
   }
 
   override render() {
+    console.debug('chat block peek view render');
     const { host, _historyMessages } = this;
     if (!_historyMessages.length) {
       return nothing;
@@ -268,13 +326,8 @@ export class AIChatBlockPeekView extends LitElement {
     const latestHistoryMessage = _historyMessages[_historyMessages.length - 1];
     const latestMessageCreatedAt = latestHistoryMessage.createdAt;
     const latestHistoryMessageId = latestHistoryMessage.id;
-    const textRendererOptions = {
-      customHeading: true,
-    };
-
     const {
       parentSessionId,
-      updateCurrentChatMessages,
       updateChatBlockMessages,
       createAIChatBlock,
       chatContext,
@@ -283,35 +336,28 @@ export class AIChatBlockPeekView extends LitElement {
 
     const { messages: currentChatMessages } = chatContext;
 
-    console.debug('chat block: ', _historyMessages);
-
     return html`<div class="ai-chat-block-peek-view-container">
       <div class="ai-chat-messages-container">
         <ai-chat-messages
           .host=${host}
           .messages=${_historyMessages}
-          .textRendererOptions=${textRendererOptions}
         ></ai-chat-messages>
         <date-time .date=${latestMessageCreatedAt}></date-time>
         <div class="new-chat-messages-container">
-          <ai-chat-messages
-            .host=${host}
-            .messages=${currentChatMessages}
-            .textRendererOptions=${textRendererOptions}
-          ></ai-chat-messages>
+          ${this.CurrentMessages(currentChatMessages)}
         </div>
       </div>
       <chat-block-input
         .host=${host}
         .parentSessionId=${parentSessionId}
         .latestMessageId=${latestHistoryMessageId}
-        .updateChatMessages=${updateCurrentChatMessages}
         .updateChatBlock=${updateChatBlockMessages}
         .createChatBlock=${createAIChatBlock}
-        .chatContent=${chatContext}
+        .chatContext=${chatContext}
         .updateContext=${updateContext}
       ></chat-block-input>
       <div class="peek-view-footer">
+        ${SmallHintIcon}
         <div>AI outputs can be misleading or wrong</div>
       </div>
     </div> `;
