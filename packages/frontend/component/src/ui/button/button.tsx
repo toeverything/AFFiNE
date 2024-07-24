@@ -71,7 +71,7 @@ const ButtonIcon: FC<IconButtonProps> = props => {
     <div
       {...otherProps}
       className={clsx(buttonIcon, {
-        'color-white': type !== 'default' && type !== 'plain',
+        'color-white': type && type !== 'default' && type !== 'plain',
         large: size === 'large',
         extraLarge: size === 'extraLarge',
         end: iconPosition === 'end' && !onlyIcon,
