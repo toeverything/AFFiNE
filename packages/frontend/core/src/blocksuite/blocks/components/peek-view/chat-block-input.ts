@@ -4,9 +4,11 @@ import {
 } from '@affine/core/blocksuite/presets/ai/_common/icons';
 import { AIProvider } from '@affine/core/blocksuite/presets/ai/provider';
 import type { EditorHost } from '@blocksuite/block-std';
-import { type ChatMessage } from '@blocksuite/presets';
+import type { AIError } from '@blocksuite/blocks';
 import { css, html, LitElement } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
+
+import type { ChatContext } from './types';
 
 @customElement('chat-block-input')
 export class ChatBlockInput extends LitElement {
@@ -138,22 +140,16 @@ export class ChatBlockInput extends LitElement {
   accessor host!: EditorHost;
 
   @property({ attribute: false })
-  accessor updateChatMessages!: (chatMessage: ChatMessage) => void;
-
-  @property({ attribute: false })
-  accessor updateCurrentSessionId!: (sessionId: string) => void;
-
-  @property({ attribute: false })
   accessor updateChatBlock!: () => Promise<void>;
 
   @property({ attribute: false })
   accessor createChatBlock!: () => Promise<void>;
 
   @property({ attribute: false })
-  accessor currentChatBlockId: string | null = null;
+  accessor updateContext!: (context: Partial<ChatContext>) => void;
 
   @property({ attribute: false })
-  accessor currentSessionId: string | null = null;
+  accessor chatContent!: ChatContext;
 
   @query('textarea')
   accessor textarea!: HTMLTextAreaElement;
@@ -173,23 +169,29 @@ export class ChatBlockInput extends LitElement {
     this.textarea.value = '';
 
     const userInfo = await AIProvider.userInfo;
-    this.updateChatMessages({
-      id: '',
-      content: text,
-      role: 'user',
-      createdAt: new Date().toISOString(),
-      attachments: [],
-      userId: userInfo?.id,
-      userName: userInfo?.name,
-      avatarUrl: userInfo?.avatarUrl ?? undefined,
+    const messages = this.chatContent.messages;
+    this.updateContext({
+      messages: [
+        ...messages,
+        {
+          id: '',
+          content: text,
+          role: 'user',
+          createdAt: new Date().toISOString(),
+          attachments: [],
+          userId: userInfo?.id,
+          userName: userInfo?.name,
+          avatarUrl: userInfo?.avatarUrl ?? undefined,
+        },
+      ],
     });
 
+    const { currentChatBlockId, currentSessionId } = this.chatContent;
     let content = '';
-    const chatBlockExists = !!this.currentChatBlockId;
+    const chatBlockExists = !!currentChatBlockId;
     try {
-      const abortController = new AbortController();
       // If has not forked a chat session, fork a new one
-      let chatSessionId = this.currentSessionId;
+      let chatSessionId = currentSessionId;
       if (!chatSessionId) {
         console.debug(
           'parentSessionId: ',
@@ -204,10 +206,13 @@ export class ChatBlockInput extends LitElement {
           latestMessageId: this.latestMessageId,
         });
         if (!forkSessionId) return;
-        this.updateCurrentSessionId(forkSessionId);
+        this.updateContext({
+          currentSessionId: forkSessionId,
+        });
         chatSessionId = forkSessionId;
       }
 
+      const abortController = new AbortController();
       const stream = AIProvider.actions.chat?.({
         input: text,
         sessionId: chatSessionId,
@@ -222,20 +227,34 @@ export class ChatBlockInput extends LitElement {
       });
 
       if (stream) {
+        this.updateContext({
+          abortController,
+        });
+
         for await (const text of stream) {
+          // const messages = [...this.chatContent.messages];
+          // const last = messages[messages.length - 1] as ChatMessage;
+          // last.content += text;
+          // this.updateContext({ messages, status: 'transmitting' });
           content += text;
         }
 
-        this.updateChatMessages({
-          id: '',
-          content: content,
-          role: 'assistant',
-          createdAt: new Date().toISOString(),
-          attachments: [],
+        this.updateContext({
+          messages: [
+            ...this.chatContent.messages,
+            {
+              id: '',
+              content,
+              role: 'assistant',
+              createdAt: new Date().toISOString(),
+            },
+          ],
+          status: 'success',
         });
       }
     } catch (error) {
       console.error(error);
+      this.updateContext({ status: 'error', error: error as AIError });
     } finally {
       if (content) {
         if (!chatBlockExists) {
@@ -244,6 +263,9 @@ export class ChatBlockInput extends LitElement {
         // Update new chat block messages if there are contents returned from AI
         await this.updateChatBlock();
       }
+      this.updateContext({
+        abortController: null,
+      });
     }
   };
 }

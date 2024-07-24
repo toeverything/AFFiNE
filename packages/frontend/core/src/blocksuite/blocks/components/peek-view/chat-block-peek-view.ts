@@ -17,6 +17,8 @@ import { baseTheme } from '@toeverything/theme';
 import { css, html, LitElement, nothing, unsafeCSS } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
 
+import type { ChatContext } from './types.js';
+
 @customElement('ai-chat-block-peek-view')
 export class AIChatBlockPeekView extends LitElement {
   static override styles = css`
@@ -124,10 +126,6 @@ export class AIChatBlockPeekView extends LitElement {
     this.currentChatMessages = [...this.currentChatMessages, chatMessage];
   };
 
-  updateCurrentSessionId = (sessionId: string) => {
-    this.currentSessionId = sessionId;
-  };
-
   /**
    * Create a new AI chat block based on the current session and history messages
    */
@@ -139,12 +137,15 @@ export class AIChatBlockPeekView extends LitElement {
     }
 
     // If there is already a chat block, do not create a new one
-    if (this.currentChatBlockId) {
+    if (this.chatContext.currentChatBlockId) {
       return;
     }
 
     // If there is no session id or chat messages, do not create a new chat block
-    if (!this.currentSessionId || !this.currentChatMessages.length) {
+    if (
+      !this.chatContext.currentSessionId ||
+      !this.chatContext.messages.length
+    ) {
       return;
     }
 
@@ -166,7 +167,7 @@ export class AIChatBlockPeekView extends LitElement {
     } = parentXYWH;
 
     // Add AI chat block to the center of the viewport
-    const gap = 80;
+    const gap = parentWidth;
     const x = parentX + parentWidth + gap;
     const y = parentY;
     const bound = new Bound(x, y, parentWidth, parentHeight);
@@ -174,7 +175,7 @@ export class AIChatBlockPeekView extends LitElement {
     // Get fork session messages
     const messages = await constructChatBlockMessages(
       doc,
-      this.currentSessionId
+      this.chatContext.currentSessionId
     );
     if (!messages.length) {
       return;
@@ -185,7 +186,7 @@ export class AIChatBlockPeekView extends LitElement {
       {
         xywh: bound.serialize(),
         messages: JSON.stringify(messages),
-        sessionId: this.currentSessionId,
+        sessionId: this.chatContext.currentSessionId,
       },
       surfaceBlock.id
     );
@@ -195,7 +196,8 @@ export class AIChatBlockPeekView extends LitElement {
       return;
     }
 
-    this.currentChatBlockId = aiChatBlockId;
+    // TODO: Update chat context with the new chat block id
+    this.updateContext({ currentChatBlockId: aiChatBlockId });
 
     // Connect the parent chat block to the AI chat block
     const edgelessService = this._rootService as EdgelessRootService;
@@ -215,17 +217,20 @@ export class AIChatBlockPeekView extends LitElement {
    * Update the current chat messages with the new message
    */
   updateChatBlockMessages = async () => {
-    if (!this.currentChatBlockId || !this.currentSessionId) {
+    if (
+      !this.chatContext.currentChatBlockId ||
+      !this.chatContext.currentSessionId
+    ) {
       return;
     }
 
     const { doc } = this.host;
-    const chatBlock = doc.getBlock(this.currentChatBlockId);
+    const chatBlock = doc.getBlock(this.chatContext.currentChatBlockId);
 
     // Get fork session messages
     const messages = await constructChatBlockMessages(
       doc,
-      this.currentSessionId
+      this.chatContext.currentSessionId
     );
     if (!messages.length) {
       return;
@@ -233,6 +238,10 @@ export class AIChatBlockPeekView extends LitElement {
     doc.updateBlock(chatBlock.model, {
       messages: JSON.stringify(messages),
     });
+  };
+
+  updateContext = (context: Partial<ChatContext>) => {
+    this.chatContext = { ...this.chatContext, ...context };
   };
 
   override connectedCallback() {
@@ -264,15 +273,15 @@ export class AIChatBlockPeekView extends LitElement {
     };
 
     const {
-      currentChatMessages,
       parentSessionId,
       updateCurrentChatMessages,
       updateChatBlockMessages,
-      updateCurrentSessionId,
       createAIChatBlock,
-      currentChatBlockId,
-      currentSessionId,
+      chatContext,
+      updateContext,
     } = this;
+
+    const { messages: currentChatMessages } = chatContext;
 
     console.debug('chat block: ', _historyMessages);
 
@@ -298,10 +307,9 @@ export class AIChatBlockPeekView extends LitElement {
         .latestMessageId=${latestHistoryMessageId}
         .updateChatMessages=${updateCurrentChatMessages}
         .updateChatBlock=${updateChatBlockMessages}
-        .updateCurrentSessionId=${updateCurrentSessionId}
         .createChatBlock=${createAIChatBlock}
-        .currentChatBlockId=${currentChatBlockId}
-        .currentSessionId=${currentSessionId}
+        .chatContent=${chatContext}
+        .updateContext=${updateContext}
       ></chat-block-input>
       <div class="peek-view-footer">
         <div>AI outputs can be misleading or wrong</div>
@@ -322,10 +330,16 @@ export class AIChatBlockPeekView extends LitElement {
   accessor currentChatMessages: ChatMessage[] = [];
 
   @state()
-  accessor currentChatBlockId: string | null = null;
-
-  @state()
-  accessor currentSessionId: string | null = null;
+  accessor chatContext: ChatContext = {
+    status: 'idle',
+    error: null,
+    markdown: '',
+    images: [],
+    abortController: null,
+    messages: [],
+    currentSessionId: null,
+    currentChatBlockId: null,
+  };
 }
 
 declare global {
