@@ -3,14 +3,17 @@ import {
   PageSurfaceBlockSpec,
   PageSurfaceRefBlockSpec,
 } from '@blocksuite/blocks';
+import { type FrameworkProvider } from '@toeverything/infra';
 
 import { CommonBlockSpecs } from './common';
-import { CustomPageRootBlockSpec } from './custom/root-block';
+import { createPageRootBlockSpec } from './custom/root-block';
 
-export const PageModeSpecs: BlockSpec[] = [
-  ...CommonBlockSpecs,
-  PageSurfaceBlockSpec,
-  PageSurfaceRefBlockSpec,
-  // special
-  CustomPageRootBlockSpec,
-];
+export function createPageModeSpecs(framework: FrameworkProvider): BlockSpec[] {
+  return [
+    ...CommonBlockSpecs,
+    PageSurfaceBlockSpec,
+    PageSurfaceRefBlockSpec,
+    // special
+    createPageRootBlockSpec(framework),
+  ];
+}
