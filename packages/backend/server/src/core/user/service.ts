@@ -14,6 +14,8 @@ import {
 import { Quota_FreePlanV1_1 } from '../quota/schema';
 import { validators } from '../utils/validators';
 
+type CreateUserInput = Omit<Prisma.UserCreateInput, 'name'> & { name?: string };
+
 @Injectable()
 export class UserService {
   private readonly logger = new Logger(UserService.name);
@@ -52,9 +54,7 @@ export class UserService {
     };
   }
 
-  async createUser(
-    data: Omit<Prisma.UserCreateInput, 'name'> & { name?: string }
-  ) {
+  async createUser(data: CreateUserInput) {
     validators.assertValidEmail(data.email);
     const user = await this.findUserByEmail(data.email);
 
@@ -71,7 +71,13 @@ export class UserService {
         max: config['auth/password.max'],
         min: config['auth/password.min'],
       });
+    }
 
+    return this.createUser_without_verification(data);
+  }
+
+  async createUser_without_verification(data: CreateUserInput) {
+    if (data.password) {
       data.password = await this.crypto.encryptPassword(data.password);
     }
 

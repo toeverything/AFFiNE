@@ -76,7 +76,7 @@ export class AuthService implements OnApplicationBootstrap {
         const [email, name, password] = ['dev@affine.pro', 'Dev User', 'dev'];
         let devUser = await this.user.findUserByEmail(email);
         if (!devUser) {
-          devUser = await this.user.createUser({
+          devUser = await this.user.createUser_without_verification({
             email,
             name,
             password,
