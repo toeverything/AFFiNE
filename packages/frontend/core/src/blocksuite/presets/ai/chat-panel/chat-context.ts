@@ -34,9 +34,3 @@ export type ChatContextValue = {
   abortController: AbortController | null;
   chatSessionId: string | null;
 };
-
-export type ChatBlockMessage = ChatMessage & {
-  userId?: string;
-  userName?: string;
-  avatarUrl?: string;
-};

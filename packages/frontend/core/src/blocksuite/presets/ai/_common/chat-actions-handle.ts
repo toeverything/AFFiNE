@@ -17,20 +17,15 @@ import {
   getElementsBound,
   NoteDisplayMode,
 } from '@blocksuite/blocks';
+import { type ChatMessage } from '@blocksuite/presets';
 import type { Doc } from '@blocksuite/store';
 import type { TemplateResult } from 'lit';
 
-import {
-  BlockIcon,
-  CreateIcon,
-  InsertBelowIcon,
-  ReplaceIcon,
-} from '../../_common/icons';
-import { AIProvider } from '../../provider';
-import { reportResponse } from '../../utils/action-reporter';
-import { insertBelow, replace } from '../../utils/editor-actions';
-import { insertFromMarkdown } from '../../utils/markdown-utils';
-import type { ChatBlockMessage, ChatContextValue } from '../chat-context';
+import { AIProvider } from '../provider';
+import { reportResponse } from '../utils/action-reporter';
+import { insertBelow, replace } from '../utils/editor-actions';
+import { insertFromMarkdown } from '../utils/markdown-utils';
+import { BlockIcon, CreateIcon, InsertBelowIcon, ReplaceIcon } from './icons';
 
 const { matchFlavours } = BlocksUtils;
 
@@ -40,7 +35,7 @@ type Selections = {
   images?: ImageSelection[];
 };
 
-type ChatAction = {
+export type ChatAction = {
   icon: TemplateResult<1>;
   title: string;
   toast: string;
@@ -49,7 +44,7 @@ type ChatAction = {
     host: EditorHost,
     content: string,
     currentSelections: Selections,
-    chatContext?: ChatContextValue,
+    chatSessionId?: string,
     messageId?: string
   ) => Promise<boolean>;
 };
@@ -130,7 +125,7 @@ function getViewportCenter(
 // Add AI chat block and focus on it
 function addAIChatBlock(
   doc: Doc,
-  messages: ChatBlockMessage[],
+  messages: ChatMessage[],
   sessionId: string,
   viewportCenter: { x: number; y: number }
 ) {
@@ -254,11 +249,11 @@ const SAVE_CHAT_TO_BLOCK_ACTION: ChatAction = {
     host: EditorHost,
     _,
     __,
-    chatContext?: ChatContextValue,
+    chatSessionId?: string,
     messageId?: string
   ) => {
     // The chat session id and the latest message id are required to fork the chat session
-    const parentSessionId = chatContext?.chatSessionId;
+    const parentSessionId = chatSessionId;
     console.debug('save chat to block: ', messageId, parentSessionId);
     if (!messageId || !parentSessionId) {
       return false;

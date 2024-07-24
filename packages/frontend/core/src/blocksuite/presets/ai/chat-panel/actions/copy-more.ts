@@ -10,11 +10,11 @@ import { css, html, LitElement, nothing, type PropertyValues } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 
+import { PageEditorActions } from '../../_common/chat-actions-handle';
 import { CopyIcon, MoreIcon, RetryIcon } from '../../_common/icons';
 import { AIProvider } from '../../provider';
 import { copyText } from '../../utils/editor-actions';
 import type { ChatContextValue, ChatMessage } from '../chat-context';
-import { PageEditorActions } from './actions-handle';
 
 noop(Tooltip);
 
@@ -234,7 +234,7 @@ export class ChatCopyMore extends WithDisposable(LitElement) {
                       host,
                       content,
                       currentSelections,
-                      this.chatContextValue,
+                      this.chatContextValue.chatSessionId ?? undefined,
                       messageId ?? undefined
                     );
 

@@ -11,6 +11,7 @@ import './actions/copy-more';
 import './actions/image-to-text';
 import './actions/image';
 import './chat-cards';
+import '../_common/components/chat-action-list';
 
 import type {
   BaseSelection,
@@ -19,7 +20,6 @@ import type {
   TextSelection,
 } from '@blocksuite/block-std';
 import { ShadowlessElement, WithDisposable } from '@blocksuite/block-std';
-import type { ImageSelection } from '@blocksuite/blocks';
 import {
   isInsidePageEditor,
   PaymentRequiredError,
@@ -30,17 +30,16 @@ import { customElement, property, query, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
+import {
+  EdgelessEditorActions,
+  PageEditorActions,
+} from '../_common/chat-actions-handle';
 import { AffineAvatarIcon, AffineIcon, DownArrowIcon } from '../_common/icons';
 import {
   GeneralErrorRenderer,
   PaymentRequiredErrorRenderer,
 } from '../messages/error';
 import { AIProvider } from '../provider';
-import { insertBelow } from '../utils/editor-actions';
-import {
-  EdgelessEditorActions,
-  PageEditorActions,
-} from './actions/actions-handle';
 import type { ChatContextValue, ChatItem, ChatMessage } from './chat-context';
 import { HISTORY_IMAGE_ACTIONS } from './const';
 import { AIPreloadConfig } from './preload-config';
@@ -53,14 +52,6 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
 
   private get _currentBlockSelections(): BlockSelection[] | undefined {
     return this._selectionValue.filter(v => v.type === 'block');
-  }
-
-  private get _currentImageSelections(): ImageSelection[] | undefined {
-    return this._selectionValue.filter(v => v.type === 'image');
-  }
-
-  private get _rootService() {
-    return this.host.spec.getService('affine:page');
   }
 
   static override styles = css`
@@ -469,42 +460,6 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
       : EdgelessEditorActions;
 
     return html`
-      <style>
-        .actions-container {
-          display: flex;
-          flex-direction: column;
-          align-items: flex-end;
-          gap: 8px;
-          margin-top: 8px;
-        }
-
-        .actions-container > div {
-          display: flex;
-          gap: 8px;
-        }
-
-        .action {
-          width: fit-content;
-          height: 32px;
-          padding: 12px;
-          border-radius: 8px;
-          border: 1px solid var(--affine-border-color);
-          background-color: var(--affine-white-10);
-          display: flex;
-          flex-direction: row;
-          align-items: center;
-          gap: 4px;
-          font-size: 15px;
-          font-weight: 500;
-          color: var(--affine-text-primary-color);
-          cursor: pointer;
-          user-select: none;
-        }
-
-        .action svg {
-          color: var(--affine-icon-color);
-        }
-      </style>
       <chat-copy-more
         .host=${host}
         .content=${content}
@@ -515,71 +470,14 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
         .chatContextValue=${this.chatContextValue}
         .updateContext=${this.updateContext}
       ></chat-copy-more>
-      ${isLast
-        ? html`<div class="actions-container">
-            ${repeat(
-              actions
-                .filter(action => action.showWhen(host))
-                .filter(action => {
-                  if (!content) return false;
-
-                  if (
-                    action.title === 'Replace selection' &&
-                    (!this._currentTextSelection ||
-                      this._currentTextSelection.from.length === 0) &&
-                    this._currentBlockSelections?.length === 0
-                  ) {
-                    return false;
-                  }
-                  return true;
-                }),
-              action => action.title,
-              action => {
-                return html`<div class="action">
-                  ${action.icon}
-                  <div
-                    @click=${async () => {
-                      if (
-                        action.title === 'Insert below' &&
-                        this._selectionValue.length === 1 &&
-                        this._selectionValue[0].type === 'database'
-                      ) {
-                        const element = this.host.view.getBlock(
-                          this._selectionValue[0].blockId
-                        );
-                        if (!element) return;
-                        await insertBelow(host, content, element);
-                        return;
-                      }
-
-                      const currentSelections = {
-                        text: this._currentTextSelection,
-                        blocks: this._currentBlockSelections,
-                        images: this._currentImageSelections,
-                      };
-
-                      const success = await action.handler(
-                        host,
-                        content,
-                        currentSelections,
-                        this.chatContextValue,
-                        messageId ?? undefined
-                      );
-                      if (success) {
-                        this._rootService.notificationService?.notify({
-                          title: action.toast,
-                          accent: 'success',
-                          onClose: function (): void {},
-                        });
-                      }
-                    }}
-                  >
-                    ${action.title}
-                  </div>
-                </div>`;
-              }
-            )}
-          </div>`
+      ${isLast && !!content
+        ? html`<chat-action-list
+            .actions=${actions}
+            .host=${host}
+            .content=${content}
+            .chatSessionId=${this.chatContextValue.chatSessionId ?? undefined}
+            .messageId=${messageId ?? undefined}
+          ></chat-action-list>`
         : nothing}
     `;
   }

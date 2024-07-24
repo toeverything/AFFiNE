@@ -1,11 +1,13 @@
 import './chat-block-input.js';
 import './date-time.js';
+import '../_common/components/chat-action-list.js';
 
 import { Bound, type EditorHost } from '@blocksuite/block-std';
 import {
   CanvasElementType,
   ConnectorMode,
   type EdgelessRootService,
+  isInsidePageEditor,
   PaymentRequiredError,
   UnauthorizedError,
 } from '@blocksuite/blocks';
@@ -20,8 +22,12 @@ import { customElement, property, query, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
+import {
+  constructChatBlockMessages,
+  EdgelessEditorActions,
+  PageEditorActions,
+} from '../_common/chat-actions-handle.js';
 import { SmallHintIcon } from '../_common/icons.js';
-import { constructChatBlockMessages } from '../chat-panel/actions/actions-handle.js';
 import {
   GeneralErrorRenderer,
   PaymentRequiredErrorRenderer,
@@ -281,6 +287,11 @@ export class AIChatBlockPeekView extends LitElement {
       return nothing;
     }
 
+    const { host } = this;
+    const actions = isInsidePageEditor(host)
+      ? PageEditorActions
+      : EdgelessEditorActions;
+
     return html`${repeat(
       currentMessages,
       message => message.createdAt + message.content,
@@ -291,12 +302,27 @@ export class AIChatBlockPeekView extends LitElement {
         const messageState =
           isLastReply && status === 'transmitting' ? 'generating' : 'finished';
         const shouldRenderError = isLastReply && status === 'error';
+        const shouldRenderActions =
+          isLastReply &&
+          !!message.content &&
+          status !== 'transmitting' &&
+          status !== 'loading';
         return html`<ai-chat-message
-            .host=${this.host}
+            .host=${host}
             .message=${message}
             .state=${messageState}
           ></ai-chat-message>
-          ${shouldRenderError ? this.renderError() : nothing}`;
+          ${shouldRenderError ? this.renderError() : nothing}
+          ${shouldRenderActions
+            ? html`<chat-action-list
+                .host=${host}
+                .actions=${actions}
+                .content=${message.content}
+                .chatSessionId=${this.chatContext.currentSessionId ?? undefined}
+                .messageId=${message.id ?? undefined}
+                .layoutDirection=${'horizontal'}
+              ></chat-action-list>`
+            : nothing} `;
       }
     )}`;
   };
