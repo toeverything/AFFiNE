@@ -10,5 +10,5 @@ export const appSidebarFloatingAtom = atom(isMobile);
 export const appSidebarResizingAtom = atom(false);
 export const appSidebarWidthAtom = atomWithStorage(
   'app-sidebar-width',
-  256 /* px */
+  248 /* px */
 );

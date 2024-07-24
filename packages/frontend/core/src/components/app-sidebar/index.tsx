@@ -36,7 +36,7 @@ export type History = {
 };
 
 const MAX_WIDTH = 480;
-const MIN_WIDTH = 256;
+const MIN_WIDTH = 248;
 
 export function AppSidebar({
   children,
