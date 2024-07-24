@@ -5,7 +5,7 @@
   "private": true,
   "browser": "src/index.tsx",
   "scripts": {
-    "build": "yarn workspace @affine/cli build",
+    "build": "cross-env DISTRIBUTION=browser yarn workspace @affine/cli build",
     "dev": "yarn workspace @affine/cli dev",
     "static-server": "yarn workspace @affine/cli dev --static"
   },
@@ -24,6 +24,7 @@
     "@affine/cli": "workspace:*",
     "@types/react": "^18.2.75",
     "@types/react-dom": "^18.2.24",
+    "cross-env": "^7.0.3",
     "typescript": "^5.4.5"
   }
 }
