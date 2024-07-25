@@ -29,13 +29,13 @@ export function mindMapToMarkdown(mindmap: MindmapElementModel) {
   return markdownStr;
 }
 
-export function isMindMapRoot(ele: BlockSuite.EdgelessModelType) {
+export function isMindMapRoot(ele: BlockSuite.EdgelessModel) {
   const group = ele?.group;
 
   return group instanceof MindmapElementModel && group.tree.element === ele;
 }
 
-export function isMindmapChild(ele: BlockSuite.EdgelessModelType) {
+export function isMindmapChild(ele: BlockSuite.EdgelessModel) {
   return ele?.group instanceof MindmapElementModel && !isMindMapRoot(ele);
 }
 

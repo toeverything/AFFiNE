@@ -24,7 +24,7 @@ import { useNavigateHelper } from './use-navigate-helper';
 function hasLinkPopover(editor: AffineEditorContainer | null) {
   const textSelection = editor?.host?.std.selection.find('text');
   if (editor && textSelection && textSelection.from.length > 0) {
-    const formatBar = editor.host.querySelector('affine-format-bar-widget');
+    const formatBar = editor.host?.querySelector('affine-format-bar-widget');
     if (formatBar) {
       return true;
     }

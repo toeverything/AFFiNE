@@ -42,7 +42,8 @@ export const EditorChatPanel = forwardRef(function EditorChatPanel(
 
   useEffect(() => {
     if (!editor) return;
-    const pageService = editor.host.spec.getService('affine:page');
+    const pageService = editor.host?.spec.getService('affine:page');
+    if (!pageService) return;
 
     const disposable = [
       pageService.slots.docLinkClicked.on(() => {
@@ -65,7 +66,9 @@ export const EditorChatPanel = forwardRef(function EditorChatPanel(
     chatPanelRef.current = new ChatPanel();
   }
 
-  (chatPanelRef.current as ChatPanel).host = editor.host;
+  if (editor.host) {
+    (chatPanelRef.current as ChatPanel).host = editor.host;
+  }
   (chatPanelRef.current as ChatPanel).doc = editor.doc;
   // (copilotPanelRef.current as CopilotPanel).fitPadding = [20, 20, 20, 20];
 

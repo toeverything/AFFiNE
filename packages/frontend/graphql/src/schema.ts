@@ -320,6 +320,7 @@ export enum ErrorNames {
   OAUTH_ACCOUNT_ALREADY_CONNECTED = 'OAUTH_ACCOUNT_ALREADY_CONNECTED',
   OAUTH_STATE_EXPIRED = 'OAUTH_STATE_EXPIRED',
   PAGE_IS_NOT_PUBLIC = 'PAGE_IS_NOT_PUBLIC',
+  PASSWORD_REQUIRED = 'PASSWORD_REQUIRED',
   RUNTIME_CONFIG_NOT_FOUND = 'RUNTIME_CONFIG_NOT_FOUND',
   SAME_EMAIL_PROVIDED = 'SAME_EMAIL_PROVIDED',
   SAME_SUBSCRIPTION_RECURRING = 'SAME_SUBSCRIPTION_RECURRING',
@@ -912,6 +913,8 @@ export interface ServerConfigType {
    * @deprecated use `features`
    */
   flavor: Scalars['String']['output'];
+  /** whether server has been initialized */
+  initialized: Scalars['Boolean']['output'];
   /** server identical name could be shown as badge on user interface */
   name: Scalars['String']['output'];
   oauthProviders: Array<OAuthProviderType>;

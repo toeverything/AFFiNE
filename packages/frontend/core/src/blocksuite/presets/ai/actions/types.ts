@@ -70,7 +70,7 @@ declare global {
 
       // internal context
       host: EditorHost;
-      models?: (BlockModel | BlockSuite.SurfaceElementModelType)[];
+      models?: (BlockModel | BlockSuite.SurfaceElementModel)[];
       control: TrackerControl;
       where: TrackerWhere;
     }

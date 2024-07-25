@@ -271,7 +271,7 @@ export const getSelectedNoteAnchor = (host: EditorHost, id: string) => {
 
 export function getCopilotSelectedElems(
   host: EditorHost
-): BlockSuite.EdgelessModelType[] {
+): BlockSuite.EdgelessModel[] {
   const service = getService(host);
   const copilotWidget = getEdgelessCopilotWidget(host);
 

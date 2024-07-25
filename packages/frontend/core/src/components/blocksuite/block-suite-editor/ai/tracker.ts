@@ -4,7 +4,7 @@ import type { EditorHost } from '@blocksuite/block-std';
 import type { BlockModel } from '@blocksuite/store';
 import { lowerCase, omit } from 'lodash-es';
 
-type ElementModel = BlockSuite.SurfaceElementModelType;
+type ElementModel = BlockSuite.SurfaceElementModel;
 
 type AIActionEventName =
   | 'AI action invoked'

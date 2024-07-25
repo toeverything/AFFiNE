@@ -20,7 +20,7 @@ import {
 } from '@affine/core/modules/quicksearch';
 import { mixpanel } from '@affine/core/utils';
 import { DebugLogger } from '@affine/debug';
-import type { BlockSpec, WidgetElement } from '@blocksuite/block-std';
+import type { BlockSpec, WidgetComponent } from '@blocksuite/block-std';
 import {
   type AffineReference,
   AffineSlashMenuWidget,
@@ -53,7 +53,7 @@ function patchSpecService<Spec extends BlockSpec>(
       ? BlockService
       : never
   ) => (() => void) | void,
-  onWidgetConnected?: (component: WidgetElement) => void
+  onWidgetConnected?: (component: WidgetComponent) => void
 ) {
   const oldSetup = spec.setup;
   spec.setup = (slots, disposableGroup) => {
@@ -435,7 +435,7 @@ export function patchQuickSearchService(
         },
       };
     },
-    (component: WidgetElement) => {
+    (component: WidgetComponent) => {
       if (component instanceof AffineSlashMenuWidget) {
         component.config.items.forEach(item => {
           if (
@@ -443,11 +443,12 @@ export function patchQuickSearchService(
             (item.name === 'Linked Doc' || item.name === 'Link')
           ) {
             const oldAction = item.action;
-            item.action = async ({ model, rootElement }) => {
-              const { host, service, std } = rootElement;
+            item.action = async ({ model, rootComponent }) => {
+              const { host, service, std } = rootComponent;
               const { quickSearchService } = service;
 
-              if (!quickSearchService) return oldAction({ model, rootElement });
+              if (!quickSearchService)
+                return oldAction({ model, rootComponent });
 
               const result = await quickSearchService.searchDoc({});
               if (result === null) return;
@@ -463,7 +464,7 @@ export function patchQuickSearchService(
                   },
                 ]);
                 const isEdgeless =
-                  rootElement instanceof EdgelessRootBlockComponent;
+                  rootComponent instanceof EdgelessRootBlockComponent;
                 if (result.isNewDoc) {
                   mixpanel.track('DocCreated', {
                     control: 'linked doc',

@@ -160,7 +160,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
       const editorHost = editor.host;
 
       // provide image proxy endpoint to blocksuite
-      editorHost.std.clipboard.use(
+      editorHost?.std.clipboard.use(
         customImageProxyMiddleware(runtimeConfig.imageProxyUrl)
       );
       ImageBlockService.setImageProxyURL(runtimeConfig.imageProxyUrl);
@@ -179,22 +179,24 @@ const DetailPageImpl = memo(function DetailPageImpl() {
 
       // provide page mode and updated date to blocksuite
       const pageService =
-        editorHost.std.spec.getService<PageRootService>('affine:page');
+        editorHost?.std.spec.getService<PageRootService>('affine:page');
       const disposable = new DisposableGroup();
 
       doc.setMode(mode);
-      disposable.add(
-        pageService.slots.docLinkClicked.on(({ docId, blockId }) => {
-          return blockId
-            ? jumpToPageBlock(docCollection.id, docId, blockId)
-            : openPage(docCollection.id, docId);
-        })
-      );
-      disposable.add(
-        pageService.slots.tagClicked.on(({ tagId }) => {
-          jumpToTag(workspace.id, tagId);
-        })
-      );
+      if (pageService) {
+        disposable.add(
+          pageService.slots.docLinkClicked.on(({ docId, blockId }) => {
+            return blockId
+              ? jumpToPageBlock(docCollection.id, docId, blockId)
+              : openPage(docCollection.id, docId);
+          })
+        );
+        disposable.add(
+          pageService.slots.tagClicked.on(({ tagId }) => {
+            jumpToTag(workspace.id, tagId);
+          })
+        );
+      }
 
       setEditor(editor);
 

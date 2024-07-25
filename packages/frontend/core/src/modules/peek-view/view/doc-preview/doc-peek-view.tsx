@@ -26,6 +26,10 @@ function fitViewport(
   xywh?: `[${number},${number},${number},${number}]`
 ) {
   try {
+    if (!editor.host) {
+      throw new Error('editor host is not ready');
+    }
+
     const rootService =
       editor.host.std.spec.getService<EdgelessRootService>('affine:page');
     rootService.viewport.onResize();
@@ -113,6 +117,10 @@ export function DocPeekPreview({
     if (editor) {
       editor.updateComplete
         .then(() => {
+          if (!editor.host) {
+            return;
+          }
+
           const rootService = editor.host.std.spec.getService('affine:page');
           // doc change event inside peek view should be handled by peek view
           disposableGroup.add(
