@@ -1,8 +1,10 @@
 import { LitElement, type TemplateResult } from 'lit';
+import { customElement } from 'lit/decorators.js';
 import React, { createElement, type ReactNode } from 'react';
 
 import { createComponent } from './create-component';
 
+@customElement('affine-lit-template-wrapper')
 export class LitTemplateWrapper extends LitElement {
   static override get properties() {
     return {
@@ -19,8 +21,6 @@ export class LitTemplateWrapper extends LitElement {
     return this.template;
   }
 }
-
-window.customElements.define('affine-lit-template-wrapper', LitTemplateWrapper);
 
 const TemplateWrapper = createComponent({
   elementClass: LitTemplateWrapper,
