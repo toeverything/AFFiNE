@@ -181,8 +181,6 @@ const DetailPageImpl = memo(function DetailPageImpl() {
       const pageService =
         editorHost?.std.spec.getService<PageRootService>('affine:page');
       const disposable = new DisposableGroup();
-
-      doc.setMode(mode);
       if (pageService) {
         disposable.add(
           pageService.slots.docLinkClicked.on(({ docId, blockId }) => {
@@ -204,15 +202,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
         disposable.dispose();
       };
     },
-    [
-      doc,
-      mode,
-      jumpToPageBlock,
-      docCollection.id,
-      openPage,
-      jumpToTag,
-      workspace.id,
-    ]
+    [jumpToPageBlock, docCollection.id, openPage, jumpToTag, workspace.id]
   );
 
   return (

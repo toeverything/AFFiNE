@@ -1,4 +1,9 @@
 import { test } from '@affine-test/kit/playwright';
+import {
+  ensureInEdgelessMode,
+  ensureInPageMode,
+  getPageMode,
+} from '@affine-test/kit/utils/editor';
 import { openHomePage } from '@affine-test/kit/utils/load-page';
 import {
   clickNewPageButton,
@@ -53,6 +58,40 @@ test('Switch to edgeless by switch edgeless item', async ({ page }) => {
     const count = await getCount();
     expect(count).toBe(1);
   }
+});
+
+test('Quick Switch Doc Mode, Doc Mode should stable', async ({ page }) => {
+  await openHomePage(page);
+  await waitForEditorLoad(page);
+  await ensureInEdgelessMode(page);
+  await page.keyboard.down('Alt');
+  await page.keyboard.down('S');
+  await page.keyboard.up('S');
+  await page.keyboard.up('Alt');
+
+  await page.keyboard.down('Alt');
+  await page.keyboard.down('S');
+  await page.keyboard.up('S');
+  await page.keyboard.up('Alt');
+
+  await page.keyboard.down('Alt');
+  await page.keyboard.down('S');
+  await page.keyboard.up('S');
+  await page.keyboard.up('Alt');
+
+  await page.keyboard.down('Alt');
+  await page.keyboard.down('S');
+  await page.keyboard.up('S');
+  await page.keyboard.up('Alt');
+
+  await page.keyboard.down('Alt');
+  await page.keyboard.down('S');
+  await page.keyboard.up('S');
+  await page.keyboard.up('Alt');
+
+  await ensureInPageMode(page);
+  await page.waitForTimeout(1000);
+  expect(await getPageMode(page)).toBe('page');
 });
 
 test('Convert to edgeless by editor header items', async ({ page }) => {
