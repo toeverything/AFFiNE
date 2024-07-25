@@ -255,6 +255,9 @@ jobs:
       FILES_TO_BE_SIGNED: ${{ steps.get_files_to_be_signed.outputs.FILES_TO_BE_SIGNED }}
     steps:
       - uses: actions/checkout@v4
+      - name: Setup Version
+        id: version
+        uses: ./.github/actions/setup-version
       - name: Setup Node.js
         timeout-minutes: 10
         uses: ./.github/actions/setup-node
