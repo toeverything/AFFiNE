@@ -1,4 +1,5 @@
 @import './fonts.css';
+@import '@toeverything/theme/style.css';
 
 * {
   -webkit-overflow-scrolling: touch;
