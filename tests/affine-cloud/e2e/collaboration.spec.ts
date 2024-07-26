@@ -118,7 +118,7 @@ test('can sync collections between different browser', async ({
     page
   );
   await enableCloudWorkspace(page);
-  await page.getByTestId('slider-bar-add-collection-button').click();
+  await page.getByTestId('explorer-bar-add-collection-button').click();
   const title = page.getByTestId('input-collection-title');
   await title.isVisible();
   await title.fill('test collection');
@@ -130,7 +130,7 @@ test('can sync collections between different browser', async ({
     const page2 = await context.newPage();
     await loginUser(page2, user.email);
     await page2.goto(page.url());
-    const collections = page2.getByTestId('collections');
+    const collections = page2.getByTestId('explorer-collections');
     await expect(collections.getByText('test collection')).toBeVisible();
   }
 });

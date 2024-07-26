@@ -5,12 +5,11 @@ import {
   Scrollable,
 } from '@affine/component';
 import { DocsSearchService } from '@affine/core/modules/docs-search';
-import type { Doc } from '@blocksuite/store';
 import {
   LiveData,
   useLiveData,
-  useService,
-  type Workspace,
+  useServices,
+  WorkspaceService,
 } from '@toeverything/infra';
 import { Suspense, useCallback, useContext, useMemo, useRef } from 'react';
 
@@ -30,27 +29,26 @@ import { TimeRow } from './time-row';
 export const InfoModal = ({
   open,
   onOpenChange,
-  page,
-  workspace,
+  docId,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  page: Doc;
-  workspace: Workspace;
+  docId: string;
 }) => {
+  const { docsSearchService, workspaceService } = useServices({
+    DocsSearchService,
+    WorkspaceService,
+  });
   const titleInputHandleRef = useRef<InlineEditHandle>(null);
-
-  const manager = usePagePropertiesManager(page);
-
+  const manager = usePagePropertiesManager(docId);
   const handleClose = useCallback(() => {
     onOpenChange(false);
   }, [onOpenChange]);
 
-  const docsSearchService = useService(DocsSearchService);
   const references = useLiveData(
     useMemo(
-      () => LiveData.from(docsSearchService.watchRefsFrom(page.id), null),
-      [docsSearchService, page.id]
+      () => LiveData.from(docsSearchService.watchRefsFrom(docId), null),
+      [docId, docsSearchService]
     )
   );
 
@@ -76,14 +74,14 @@ export const InfoModal = ({
             <BlocksuiteHeaderTitle
               className={styles.titleStyle}
               inputHandleRef={titleInputHandleRef}
-              pageId={page.id}
-              docCollection={workspace.docCollection}
+              pageId={docId}
+              docCollection={workspaceService.workspace.docCollection}
             />
           </div>
           <managerContext.Provider value={manager}>
             <Suspense>
               <InfoTable
-                docId={page.id}
+                docId={docId}
                 onClose={handleClose}
                 references={references}
                 readonly={manager.readonly}

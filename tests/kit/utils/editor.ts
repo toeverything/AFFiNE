@@ -12,7 +12,7 @@ export async function clickEdgelessModeButton(page: Page) {
 }
 
 export async function clickPageModeButton(page: Page) {
-  page.getByTestId('switch-page-mode-button').click({
+  await page.getByTestId('switch-page-mode-button').click({
     delay: 50,
   });
   await expect(

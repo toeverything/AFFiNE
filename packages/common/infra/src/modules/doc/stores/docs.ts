@@ -112,4 +112,16 @@ export class DocsStore extends Store {
   watchDocModeSetting(id: string) {
     return this.localState.watch<DocMode>(`page:${id}:mode`);
   }
+
+  waitForDocLoadReady(id: string) {
+    return this.workspaceService.workspace.engine.doc.waitForReady(id);
+  }
+
+  setPriorityLoad(id: string, priority: number) {
+    return this.workspaceService.workspace.engine.doc.setPriority(id, priority);
+  }
+
+  markDocSyncStateAsReady(id: string) {
+    this.workspaceService.workspace.engine.doc.markAsReady(id);
+  }
 }

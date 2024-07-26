@@ -95,7 +95,6 @@ const DetailPageImpl = memo(function DetailPageImpl() {
 
   useEffect(() => {
     const disposable = AIProvider.slots.requestOpenWithChat.on(params => {
-      console.log(params);
       workbench.openSidebar();
       view.activeSidebarTab('chat');
 
@@ -110,9 +109,11 @@ const DetailPageImpl = memo(function DetailPageImpl() {
   useEffect(() => {
     if (isActiveView) {
       globalContext.docId.set(doc.id);
+      globalContext.isDoc.set(true);
 
       return () => {
         globalContext.docId.set(null);
+        globalContext.isDoc.set(false);
       };
     }
     return;

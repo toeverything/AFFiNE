@@ -159,7 +159,7 @@ export class Table<T extends TableSchemaBuilder> {
     return record || null;
   }
 
-  get$(key: PrimaryKeyFieldType<T>): Observable<Entity<T>> {
+  get$(key: PrimaryKeyFieldType<T>): Observable<Entity<T> | null> {
     let ob$ = this.subscribedKeys.get(key);
 
     if (!ob$) {

@@ -1,0 +1,166 @@
+import { cssVar } from '@toeverything/theme';
+import { createVar, keyframes, style } from '@vanilla-extract/css';
+export const levelIndent = createVar();
+export const linkItemRoot = style({
+  color: 'inherit',
+});
+export const itemRoot = style({
+  display: 'inline-flex',
+  alignItems: 'center',
+  borderRadius: '4px',
+  textAlign: 'left',
+  color: 'inherit',
+  width: '100%',
+  minHeight: '30px',
+  userSelect: 'none',
+  cursor: 'pointer',
+  padding: '0 4px',
+  fontSize: cssVar('fontSm'),
+  position: 'relative',
+  marginTop: '0px',
+  selectors: {
+    '&:hover': {
+      background: cssVar('hoverColor'),
+    },
+    '&[data-active="true"]': {
+      background: cssVar('hoverColor'),
+    },
+    '&[data-disabled="true"]': {
+      cursor: 'default',
+      color: cssVar('textSecondaryColor'),
+      pointerEvents: 'none',
+    },
+    '&[data-dragging="true"]': {
+      opacity: 0.5,
+    },
+  },
+});
+export const itemContent = style({
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
+  display: 'flex',
+  alignItems: 'center',
+  flex: 1,
+});
+export const postfix = style({
+  display: 'flex',
+  alignItems: 'center',
+  right: '4px',
+  position: 'absolute',
+  opacity: 0,
+  pointerEvents: 'none',
+  selectors: {
+    [`${itemRoot}:hover &`]: {
+      justifySelf: 'flex-end',
+      position: 'initial',
+      opacity: 1,
+      pointerEvents: 'all',
+    },
+  },
+});
+export const icon = style({
+  color: cssVar('iconColor'),
+  fontSize: '20px',
+});
+export const collapsedIconContainer = style({
+  width: '16px',
+  height: '16px',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  borderRadius: '2px',
+  transition: 'transform 0.2s',
+  color: 'inherit',
+  selectors: {
+    '&[data-collapsed="true"]': {
+      transform: 'rotate(-90deg)',
+    },
+    '&[data-disabled="true"]': {
+      opacity: 0.3,
+      pointerEvents: 'none',
+    },
+    '&:hover': {
+      background: cssVar('hoverColor'),
+    },
+  },
+});
+export const iconsContainer = style({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'flex-start',
+  width: '44px',
+  flexShrink: 0,
+});
+export const collapsedIcon = style({
+  transition: 'transform 0.2s ease-in-out',
+  selectors: {
+    '&[data-collapsed="true"]': {
+      transform: 'rotate(-90deg)',
+    },
+  },
+});
+
+export const collapseContentPlaceholder = style({
+  display: 'none',
+  selectors: {
+    '&:only-child': {
+      display: 'initial',
+    },
+  },
+});
+
+const draggedOverAnimation = keyframes({
+  '0%': {
+    opacity: 1,
+  },
+  '60%': {
+    opacity: 1,
+  },
+  '70%': {
+    opacity: 0,
+  },
+  '80%': {
+    opacity: 1,
+  },
+  '90%': {
+    opacity: 0,
+  },
+  '100%': {
+    opacity: 1,
+  },
+});
+
+export const contentContainer = style({
+  paddingLeft: levelIndent,
+  position: 'relative',
+});
+
+export const draggingContainer = style({
+  background: cssVar('--affine-background-primary-color'),
+  boxShadow: cssVar('--affine-toolbar-shadow'),
+  width: '200px',
+  borderRadius: '6px',
+});
+
+export const draggedOverEffect = style({
+  position: 'relative',
+  selectors: {
+    '&[data-tree-instruction="make-child"][data-self-dragged-over="false"]:after':
+      {
+        display: 'block',
+        content: '""',
+        position: 'absolute',
+        zIndex: 1,
+        background: cssVar('--affine-hover-color'),
+        left: levelIndent,
+        top: 0,
+        width: `calc(100% - ${levelIndent})`,
+        height: '100%',
+      },
+    '&[data-tree-instruction="make-child"][data-self-dragged-over="false"][data-open="false"]:after':
+      {
+        animation: `${draggedOverAnimation} 1s infinite linear`,
+      },
+  },
+});

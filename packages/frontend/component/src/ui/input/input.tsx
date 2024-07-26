@@ -9,7 +9,7 @@ import type {
   KeyboardEventHandler,
   ReactNode,
 } from 'react';
-import { forwardRef, useCallback } from 'react';
+import { forwardRef, useCallback, useLayoutEffect, useRef } from 'react';
 
 import { input, inputWrapper } from './style.css';
 
@@ -18,6 +18,7 @@ export type InputProps = {
   onChange?: (value: string) => void;
   onBlur?: FocusEventHandler<HTMLInputElement>;
   onKeyDown?: KeyboardEventHandler<HTMLInputElement>;
+  autoSelect?: boolean;
   noBorder?: boolean;
   status?: 'error' | 'success' | 'warning' | 'default';
   size?: 'default' | 'large' | 'extraLarge';
@@ -43,23 +44,20 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
     onEnter,
     onKeyDown,
     autoFocus,
+    autoSelect,
     ...otherProps
   }: InputProps,
   upstreamRef: ForwardedRef<HTMLInputElement>
 ) {
-  const handleAutoFocus = useCallback(
-    (ref: HTMLInputElement | null) => {
-      if (ref) {
-        window.setTimeout(() => ref.focus(), 0);
-        if (typeof upstreamRef === 'function') {
-          upstreamRef(ref);
-        } else if (upstreamRef) {
-          upstreamRef.current = ref;
-        }
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  useLayoutEffect(() => {
+    if (inputRef.current && (autoFocus || autoSelect)) {
+      inputRef.current?.focus();
+      if (autoSelect) {
+        inputRef.current?.select();
       }
-    },
-    [upstreamRef]
-  );
+    }
+  }, [autoFocus, autoSelect, upstreamRef]);
 
   return (
     <div
@@ -86,7 +84,16 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
           large: size === 'large',
           'extra-large': size === 'extraLarge',
         })}
-        ref={autoFocus ? handleAutoFocus : upstreamRef}
+        ref={ref => {
+          inputRef.current = ref;
+          if (upstreamRef) {
+            if (typeof upstreamRef === 'function') {
+              upstreamRef(ref);
+            } else {
+              upstreamRef.current = ref;
+            }
+          }
+        }}
         disabled={disabled}
         style={inputStyle}
         onChange={useCallback(

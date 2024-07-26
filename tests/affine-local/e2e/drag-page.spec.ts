@@ -15,32 +15,25 @@ const dragToFavourites = async (
   page: Page,
   dragItem: Locator,
   id: string,
-  type: 'page' | 'collection' = 'page'
+  type: 'doc' | 'collection' | 'tag' | 'folder' = 'doc'
 ) => {
-  const favourites = page.getByTestId('favourites');
+  const favourites = page.getByTestId('explorer-favorite-category-divider');
   await dragTo(page, dragItem, favourites);
-  if (type === 'collection') {
-    const collection = page
-      .getByTestId(`favourites`)
-      .locator(`[data-collection-id="${id}"]`);
-    await expect(collection).toBeVisible();
-    return collection;
-  } else {
-    const favouritePage = page.getByTestId(`favourite-page-${id}`);
-    await expect(favouritePage).toBeVisible();
-    return favouritePage;
-  }
+  const item = page
+    .getByTestId(`explorer-favorites`)
+    .locator(`[data-testid="explorer-${type}-${id}"]`);
+  await expect(item).toBeVisible();
+  return item;
 };
 
 const createCollection = async (page: Page, name: string) => {
-  await page.getByTestId('slider-bar-add-collection-button').click();
+  await page.getByTestId('explorer-bar-add-collection-button').click();
   const input = page.getByTestId('input-collection-title');
   await expect(input).toBeVisible();
   await input.fill(name);
   await page.getByTestId('save-collection').click();
-  const collection = page.locator(
-    `[data-testid=collection-item]:has-text("${name}")`
-  );
+  const newCollectionId = page.url().split('/').reverse()[0];
+  const collection = page.getByTestId(`explorer-collection-${newCollectionId}`);
   await expect(collection).toBeVisible();
   return collection;
 };
@@ -55,8 +48,7 @@ const dragToCollection = async (page: Page, dragItem: Locator) => {
   await clickSideBarAllPageButton(page);
   await dragTo(page, dragItem, collection);
   await page.waitForTimeout(500);
-  await collection.getByTestId('fav-collapsed-button').click();
-  const collectionPage = page.getByTestId('collection-page');
+  const collectionPage = collection.locator('[data-testid^="explorer-doc-"]');
   await expect(collectionPage).toBeVisible();
   return collectionPage;
 };
@@ -99,7 +91,7 @@ test('drag a page from "All pages" list to favourites, then drag to trash', asyn
 
   const favouritePage = await dragToFavourites(
     page,
-    page.locator(`[role="button"]:has-text("${title}")`),
+    page.locator(`[data-testid="page-list-item"]:has-text("${title}")`),
     pageId
   );
 
@@ -117,7 +109,7 @@ test('drag a page from "All pages" list to collections, then drag to trash', asy
 
   const collectionPage = await dragToCollection(
     page,
-    page.locator(`[role="button"]:has-text("${title}")`)
+    page.locator(`[data-testid="page-list-item"]:has-text("${title}")`)
   );
 
   await dragToTrash(page, title, collectionPage);
@@ -133,7 +125,7 @@ test('drag a page from "All pages" list to trash', async ({ page }) => {
   await dragToTrash(
     page,
     title,
-    page.locator(`[role="button"]:has-text("${title}")`)
+    page.locator(`[data-testid="page-list-item"]:has-text("${title}")`)
   );
 });
 
@@ -148,7 +140,7 @@ test('drag a page from favourites to collection', async ({ page }) => {
   // drag to favourites
   const favouritePage = await dragToFavourites(
     page,
-    page.locator(`[role="button"]:has-text("${title}")`),
+    page.locator(`[data-testid="page-list-item"]:has-text("${title}")`),
     pageId
   );
 
@@ -160,9 +152,7 @@ test('drag a collection to favourites', async ({ page }) => {
   await clickSideBarAllPageButton(page);
   await page.waitForTimeout(500);
   const collection = await createCollection(page, 'test collection');
-  const collectionId = (await collection.getAttribute(
-    'data-collection-id'
-  )) as string;
+  const collectionId = page.url().split('/').reverse()[0];
   await dragToFavourites(page, collection, collectionId, 'collection');
 });
 
@@ -177,46 +167,44 @@ test('items in favourites can be reordered by dragging', async ({ page }) => {
 
   {
     const collection = await createCollection(page, 'test collection');
-    const collectionId = (await collection.getAttribute(
-      'data-collection-id'
-    )) as string;
+    const collectionId = page.url().split('/').reverse()[0];
     await dragToFavourites(page, collection, collectionId, 'collection');
   }
 
   // assert the order of the items in favourites
   await expect(
-    page.getByTestId('favourites').locator('[data-draggable]')
+    page.getByTestId('explorer-favorites').locator('[draggable]')
   ).toHaveCount(3);
 
   await expect(
-    page.getByTestId('favourites').locator('[data-draggable]').first()
+    page.getByTestId('explorer-favorites').locator('[draggable]').first()
   ).toHaveText(title0);
 
   await expect(
-    page.getByTestId('favourites').locator('[data-draggable]').last()
+    page.getByTestId('explorer-favorites').locator('[draggable]').last()
   ).toHaveText('test collection');
 
   // drag the first item to the last
   const firstItem = page
-    .getByTestId('favourites')
-    .locator('[data-draggable]')
+    .getByTestId('explorer-favorites')
+    .locator('[draggable]')
     .first();
   const lastItem = page
-    .getByTestId('favourites')
-    .locator('[data-draggable]')
+    .getByTestId('explorer-favorites')
+    .locator('[draggable]')
     .last();
-  await dragTo(page, firstItem, lastItem);
+  await dragTo(page, firstItem, lastItem, 'bottom');
 
   // now check the order again
   await expect(
-    page.getByTestId('favourites').locator('[data-draggable]')
+    page.getByTestId('explorer-favorites').locator('[draggable]')
   ).toHaveCount(3);
 
   await expect(
-    page.getByTestId('favourites').locator('[data-draggable]').first()
+    page.getByTestId('explorer-favorites').locator('[draggable]').first()
   ).toHaveText(title1);
 
   await expect(
-    page.getByTestId('favourites').locator('[data-draggable]').last()
+    page.getByTestId('explorer-favorites').locator('[draggable]').last()
   ).toHaveText(title0);
 });

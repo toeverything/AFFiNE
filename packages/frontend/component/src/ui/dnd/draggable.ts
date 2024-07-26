@@ -43,10 +43,16 @@ export interface DraggableOptions<D extends DNDData = DNDData> {
   }>;
   canDrag?: DraggableGet<boolean>;
   disableDragPreview?: boolean;
+  dragPreviewPosition?: DraggableDragPreviewPosition;
 }
 
+export type DraggableDragPreviewPosition =
+  | 'pointer-outside'
+  | 'pointer-center'
+  | 'native';
+
 export type DraggableCustomDragPreviewProps = React.PropsWithChildren<{
-  position?: 'pointer-outside' | 'pointer-center' | 'native';
+  position?: DraggableDragPreviewPosition;
 }>;
 
 export const useDraggable = <D extends DNDData = DNDData>(
@@ -172,9 +178,11 @@ export const useDraggable = <D extends DNDData = DNDData>(
           disableNativeDragPreview({ nativeSetDragImage });
           return;
         }
+
+        let previewPosition: DraggableDragPreviewPosition =
+          options.dragPreviewPosition ?? 'native';
+
         if (enableCustomDragPreview.current) {
-          let previewPosition: DraggableCustomDragPreviewProps['position'] =
-            'native';
           setCustomNativeDragPreview({
             getOffset: (...args) => {
               if (previewPosition === 'pointer-center') {
@@ -199,12 +207,34 @@ export const useDraggable = <D extends DNDData = DNDData>(
                       children,
                       position,
                     }: DraggableCustomDragPreviewProps) => {
-                      previewPosition = position;
+                      previewPosition = position || previewPosition;
                       return ReactDOM.createPortal(children, container);
                     }
                 );
               });
               return () => setCustomDragPreviewPortal(() => () => null);
+            },
+            nativeSetDragImage,
+          });
+        } else if (previewPosition !== 'native') {
+          setCustomNativeDragPreview({
+            getOffset: (...args) => {
+              if (previewPosition === 'pointer-center') {
+                return centerUnderPointer(...args);
+              } else if (previewPosition === 'pointer-outside') {
+                return pointerOutsideOfPreview({
+                  x: '8px',
+                  y: '4px',
+                })(...args);
+              } else {
+                return preserveOffsetOnSource({
+                  element: source.element,
+                  input: location.current.input,
+                })(...args);
+              }
+            },
+            render({ container }) {
+              container.append(source.element.cloneNode(true));
             },
             nativeSetDragImage,
           });

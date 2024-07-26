@@ -8,9 +8,18 @@ export class GlobalContext extends Entity {
 
   workspaceId = this.define<string>('workspaceId');
 
+  isDoc = this.define<boolean>('isDoc');
   docId = this.define<string>('docId');
 
+  isCollection = this.define<boolean>('isCollection');
+  collectionId = this.define<string>('collectionId');
+
+  isTrash = this.define<boolean>('isTrash');
+
   docMode = this.define<DocMode>('docMode');
+
+  isTag = this.define<boolean>('isTag');
+  tagId = this.define<string>('tagId');
 
   define<T>(key: string) {
     this.memento.set(key, null);

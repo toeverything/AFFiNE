@@ -1,9 +1,13 @@
 import { Entity } from '../../../framework';
 import type { DocScope } from '../scopes/doc';
+import type { DocsStore } from '../stores/docs';
 import type { DocMode } from './record';
 
 export class Doc extends Entity {
-  constructor(public readonly scope: DocScope) {
+  constructor(
+    public readonly scope: DocScope,
+    private readonly store: DocsStore
+  ) {
     super();
   }
 
@@ -41,5 +45,13 @@ export class Doc extends Entity {
 
   restoreFromTrash() {
     return this.record.restoreFromTrash();
+  }
+
+  waitForSyncReady() {
+    return this.store.waitForDocLoadReady(this.id);
+  }
+
+  setPriorityLoad(priority: number) {
+    return this.store.setPriorityLoad(this.id, priority);
   }
 }

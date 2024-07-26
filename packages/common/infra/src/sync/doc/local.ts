@@ -163,6 +163,10 @@ export class DocEngineLocalPart {
       this.status.docs.set(doc.guid, doc);
       this.statusUpdatedSubject$.next(doc.guid);
     },
+    markAsReady: (docId: string) => {
+      this.status.readyDocs.add(docId);
+      this.statusUpdatedSubject$.next(docId);
+    },
   };
 
   readonly jobs = {

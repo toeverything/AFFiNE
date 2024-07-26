@@ -64,24 +64,24 @@ const createAndPinCollection = async (
 test('Show collections items in sidebar', async ({ page }) => {
   await removeOnboardingPages(page);
   await createAndPinCollection(page);
-  const collections = page.getByTestId('collections');
-  const items = collections.getByTestId('collection-item');
+  const collections = page.getByTestId('explorer-collections');
+  const items = collections.locator('[data-testid^="explorer-collection-"]');
   expect(await items.count()).toBe(1);
   const first = items.first();
   expect(await first.textContent()).toBe('test collection');
-  await first.getByTestId('fav-collapsed-button').click();
-  const collectionPage = collections.getByTestId('collection-page').nth(0);
+  await first.getByTestId('explorer-collapsed-button').click();
+  const collectionPage = first.locator('[data-testid^="explorer-doc-"]').nth(0);
   expect(await collectionPage.textContent()).toBe('test page');
   await collectionPage.hover();
   await collectionPage
-    .getByTestId('left-sidebar-page-operation-button')
+    .getByTestId('explorer-tree-node-operation-button')
     .click();
   const deletePage = page.getByText('Move to Trash');
   await deletePage.click();
-  await page.getByTestId('confirm-delete-page').click();
-  expect(await collections.getByTestId('collection-page').count()).toBe(0);
+  await page.getByTestId('confirm-modal-confirm').click();
+  expect(await first.locator('[data-testid^="explorer-doc-"]').count()).toBe(0);
   await first.hover();
-  await first.getByTestId('collection-options').click();
+  await first.getByTestId('explorer-tree-node-operation-button').click();
   const deleteCollection = page.getByText('Delete');
   await deleteCollection.click();
   await page.waitForTimeout(50);
@@ -104,12 +104,12 @@ test('Show collections items in sidebar', async ({ page }) => {
 test('edit collection', async ({ page }) => {
   await removeOnboardingPages(page);
   await createAndPinCollection(page);
-  const collections = page.getByTestId('collections');
-  const items = collections.getByTestId('collection-item');
+  const collections = page.getByTestId('explorer-collections');
+  const items = collections.locator('[data-testid^="explorer-collection-"]');
   expect(await items.count()).toBe(1);
   const first = items.first();
   await first.hover();
-  await first.getByTestId('collection-options').click();
+  await first.getByTestId('explorer-tree-node-operation-button').click();
   const editCollection = page.getByText('Rename');
   await editCollection.click();
   await page.getByTestId('rename-modal-input').fill('123');
@@ -121,15 +121,13 @@ test('edit collection', async ({ page }) => {
 test('edit collection and change filter date', async ({ page }) => {
   await removeOnboardingPages(page);
   await createAndPinCollection(page);
-  const collections = page.getByTestId('collections');
-  const items = collections.getByTestId('collection-item');
+  const collections = page.getByTestId('explorer-collections');
+  const items = collections.locator('[data-testid^="explorer-collection-"]');
   expect(await items.count()).toBe(1);
   const first = items.first();
   await first.hover();
-  await first.getByTestId('collection-options').click();
-  const editCollection = page
-    .getByTestId('collection-option')
-    .getByText('Rename');
+  await first.getByTestId('explorer-tree-node-operation-button').click();
+  const editCollection = page.getByText('Rename');
   await editCollection.click();
   await page.getByTestId('rename-modal-input').fill('123');
   await page.keyboard.press('Enter');
@@ -146,17 +144,17 @@ test('add collection from sidebar', async ({ page }) => {
   const cell = page.getByTestId('page-list-item-title').getByText('test page');
   await expect(cell).toBeVisible();
   const nullCollection = page.getByTestId(
-    'slider-bar-collection-null-description'
+    'slider-bar-collection-empty-message'
   );
   await expect(nullCollection).toBeVisible();
-  await page.getByTestId('slider-bar-add-collection-button').click();
+  await page.getByTestId('explorer-bar-add-collection-button').click();
   const title = page.getByTestId('input-collection-title');
   await expect(title).toBeVisible();
   await title.fill('test collection');
   await page.getByTestId('save-collection').click();
   await page.waitForTimeout(100);
-  const collections = page.getByTestId('collections');
-  const items = collections.getByTestId('collection-item');
+  const collections = page.getByTestId('explorer-collections');
+  const items = collections.locator('[data-testid^="explorer-collection-"]');
   expect(await items.count()).toBe(1);
   await expect(nullCollection).not.toBeVisible();
 });

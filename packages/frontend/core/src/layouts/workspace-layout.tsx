@@ -7,14 +7,6 @@ import { useI18n } from '@affine/i18n';
 import { ZipTransformer } from '@blocksuite/blocks';
 import { assertExists } from '@blocksuite/global/utils';
 import {
-  DndContext,
-  DragOverlay,
-  MouseSensor,
-  useDndContext,
-  useSensor,
-  useSensors,
-} from '@dnd-kit/core';
-import {
   type DocMode,
   DocsService,
   effect,
@@ -26,9 +18,8 @@ import {
   WorkspaceService,
 } from '@toeverything/infra';
 import { useAtomValue, useSetAtom } from 'jotai';
-import type { PropsWithChildren, ReactNode } from 'react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { createPortal } from 'react-dom';
+import type { PropsWithChildren } from 'react';
+import { useCallback, useEffect } from 'react';
 import {
   catchError,
   EMPTY,
@@ -46,16 +37,11 @@ import { AppContainer } from '../components/affine/app-container';
 import { SyncAwareness } from '../components/affine/awareness';
 import { appSidebarResizingAtom } from '../components/app-sidebar';
 import { usePageHelper } from '../components/blocksuite/block-suite-page-list/utils';
-import type { DraggableTitleCellData } from '../components/page-list';
 import { AIIsland } from '../components/pure/ai-island';
 import { RootAppSidebar } from '../components/root-app-sidebar';
 import { MainContainer } from '../components/workspace';
 import { WorkspaceUpgrade } from '../components/workspace-upgrade';
 import { useAppSettingHelper } from '../hooks/affine/use-app-setting-helper';
-import {
-  resolveDragEndIntent,
-  useGlobalDNDHelper,
-} from '../hooks/affine/use-global-dnd-helper';
 import { useRegisterFindInPageCommands } from '../hooks/affine/use-register-find-in-page-commands';
 import { useSubscriptionNotifyReader } from '../hooks/affine/use-subscription-notify';
 import { useNavigateHelper } from '../hooks/use-navigate-helper';
@@ -71,7 +57,6 @@ import {
 import { SWRConfigProvider } from '../providers/swr-config-provider';
 import { pathGenerator } from '../shared';
 import { mixpanel } from '../utils';
-import * as styles from './styles.css';
 
 export const WorkspaceLayout = function WorkspaceLayout({
   children,
@@ -215,6 +200,7 @@ export const WorkspaceLayoutInner = ({ children }: PropsWithChildren) => {
       activeTab: 'appearance',
       open: true,
     });
+
     mixpanel.track('SettingsViewed', {
       // page:
       segment: 'navigation panel',
@@ -225,99 +211,33 @@ export const WorkspaceLayoutInner = ({ children }: PropsWithChildren) => {
 
   const resizing = useAtomValue(appSidebarResizingAtom);
 
-  const sensors = useSensors(
-    useSensor(
-      MouseSensor,
-      useMemo(
-        /* useMemo is necessary to avoid re-render */
-        () => ({
-          activationConstraint: {
-            distance: 10,
-          },
-        }),
-        []
-      )
-    )
-  );
-
-  const { handleDragEnd } = useGlobalDNDHelper();
   const { appSettings } = useAppSettingHelper();
 
   return (
     <>
-      {/* This DndContext is used for drag page from all-pages list into a folder in sidebar */}
-      <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-        <AppContainer data-current-path={currentPath} resizing={resizing}>
-          <RootAppSidebar
-            isPublicWorkspace={false}
-            onOpenQuickSearchModal={handleOpenQuickSearchModal}
-            onOpenSettingModal={handleOpenSettingModal}
-            currentWorkspace={currentWorkspace}
-            openPage={useCallback(
-              (pageId: string) => {
-                assertExists(currentWorkspace);
-                return openPage(currentWorkspace.id, pageId);
-              },
-              [currentWorkspace, openPage]
-            )}
-            createPage={handleCreatePage}
-            paths={pathGenerator}
-          />
+      <AppContainer data-current-path={currentPath} resizing={resizing}>
+        <RootAppSidebar
+          isPublicWorkspace={false}
+          onOpenQuickSearchModal={handleOpenQuickSearchModal}
+          onOpenSettingModal={handleOpenSettingModal}
+          currentWorkspace={currentWorkspace}
+          openPage={useCallback(
+            (pageId: string) => {
+              assertExists(currentWorkspace);
+              return openPage(currentWorkspace.id, pageId);
+            },
+            [currentWorkspace, openPage]
+          )}
+          createPage={handleCreatePage}
+          paths={pathGenerator}
+        />
 
-          <MainContainer clientBorder={appSettings.clientBorder}>
-            {needUpgrade || upgrading ? <WorkspaceUpgrade /> : children}
-          </MainContainer>
-        </AppContainer>
-        <GlobalDragOverlay />
-      </DndContext>
+        <MainContainer clientBorder={appSettings.clientBorder}>
+          {needUpgrade || upgrading ? <WorkspaceUpgrade /> : children}
+        </MainContainer>
+      </AppContainer>
       <QuickSearchContainer />
       <SyncAwareness />
     </>
   );
 };
-
-function GlobalDragOverlay() {
-  const { active, over } = useDndContext();
-  const [preview, setPreview] = useState<ReactNode>();
-
-  useEffect(() => {
-    if (active) {
-      const data = active.data.current as DraggableTitleCellData;
-      setPreview(data.preview);
-    }
-    // do not update content since it may disappear because of virtual rendering
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [active?.id]);
-
-  const intent = resolveDragEndIntent(active, over);
-
-  const overDropZone =
-    intent === 'pin:add' ||
-    intent === 'collection:add' ||
-    intent === 'trash:move-to';
-
-  const accent =
-    intent === 'pin:remove'
-      ? 'warning'
-      : intent === 'trash:move-to'
-        ? 'error'
-        : 'normal';
-
-  const sorting = intent === 'pin:reorder';
-
-  return createPortal(
-    <DragOverlay adjustScale={false} dropAnimation={null}>
-      {preview ? (
-        <div
-          data-over-drop={overDropZone}
-          data-sorting={sorting}
-          data-accent={accent}
-          className={styles.dragOverlay}
-        >
-          {preview}
-        </div>
-      ) : null}
-    </DragOverlay>,
-    document.body
-  );
-}

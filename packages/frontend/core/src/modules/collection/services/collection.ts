@@ -50,6 +50,12 @@ export class CollectionService extends Service {
     []
   );
 
+  collection$(id: string) {
+    return this.collections$.map(collections => {
+      return collections.find(v => v.id === id);
+    });
+  }
+
   readonly collectionsTrash$ = LiveData.from(
     new Observable<DeletedCollection[]>(subscriber => {
       subscriber.next(this.collectionsTrashYArray?.toArray() ?? []);

@@ -62,11 +62,19 @@ export const ConfirmModal = ({
         })}
       >
         <DialogTrigger asChild>
-          <Button onClick={onCancel} {...cancelButtonOptions}>
+          <Button
+            onClick={onCancel}
+            data-testid="confirm-modal-cancel"
+            {...cancelButtonOptions}
+          >
             {cancelText}
           </Button>
         </DialogTrigger>
-        <Button onClick={onConfirmClick} {...confirmButtonOptions}>
+        <Button
+          onClick={onConfirmClick}
+          data-testid="confirm-modal-confirm"
+          {...confirmButtonOptions}
+        >
           {confirmText}
         </Button>
       </div>

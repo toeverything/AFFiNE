@@ -48,6 +48,7 @@ export const RenameModal = ({
       items={
         <Input
           autoFocus
+          autoSelect
           value={value}
           onChange={setValue}
           onEnter={handleRename}

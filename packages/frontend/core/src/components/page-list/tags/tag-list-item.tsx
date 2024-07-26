@@ -1,13 +1,12 @@
-import { Checkbox } from '@affine/component';
-import { getDNDId } from '@affine/core/hooks/affine/use-global-dnd-helper';
+import { Checkbox, useDraggable } from '@affine/component';
 import { WorkbenchLink } from '@affine/core/modules/workbench';
+import type { AffineDNDData } from '@affine/core/types/dnd';
 import { useI18n } from '@affine/i18n';
-import { useDraggable } from '@dnd-kit/core';
-import type { PropsWithChildren } from 'react';
-import { useCallback, useMemo } from 'react';
+import type { ForwardedRef, PropsWithChildren } from 'react';
+import { forwardRef, useCallback, useMemo } from 'react';
 
 import { selectionStateAtom, useAtom } from '../scoped-atoms';
-import type { DraggableTitleCellData, TagListItemProps } from '../types';
+import type { TagListItemProps } from '../types';
 import { ColWrapper, stopPropagation } from '../utils';
 import * as styles from './tag-list-item.css';
 
@@ -83,45 +82,62 @@ const TagListOperationsCell = ({
 };
 
 export const TagListItem = (props: TagListItemProps) => {
-  const tagTitleElement = useMemo(() => {
-    return (
-      <div className={styles.dragPageItemOverlay}>
-        <div className={styles.titleIconsWrapper}>
-          <TagSelectionCell
-            onSelectedChange={props.onSelectedChange}
-            selectable={props.selectable}
-            selected={props.selected}
-          />
-          <ListIconCell color={props.color} />
-        </div>
-      </div>
-    );
-  }, [props.color, props.onSelectedChange, props.selectable, props.selected]);
-
-  const { setNodeRef, attributes, listeners, isDragging } = useDraggable({
-    id: getDNDId('tag-list', 'tag', props.tagId),
-    data: {
-      preview: tagTitleElement,
-    } satisfies DraggableTitleCellData,
-    disabled: !props.draggable,
-  });
+  const { dragRef, CustomDragPreview, dragging } = useDraggable<AffineDNDData>(
+    () => ({
+      canDrag: props.draggable,
+      data: {
+        entity: {
+          type: 'tag',
+          id: props.tagId,
+        },
+        from: {
+          at: 'all-tags:list',
+        },
+      },
+    }),
+    [props.draggable, props.tagId]
+  );
 
   return (
-    <TagListItemWrapper
-      onClick={props.onClick}
-      to={props.to}
-      tagId={props.tagId}
-      draggable={props.draggable}
-      isDragging={isDragging}
-    >
-      <ColWrapper flex={9}>
-        <ColWrapper
-          className={styles.dndCell}
-          flex={8}
-          ref={setNodeRef}
-          {...attributes}
-          {...listeners}
-        >
+    <>
+      <TagListItemWrapper
+        onClick={props.onClick}
+        to={props.to}
+        tagId={props.tagId}
+        draggable={props.draggable}
+        isDragging={dragging}
+        ref={dragRef}
+      >
+        <ColWrapper flex={9}>
+          <ColWrapper className={styles.dndCell} flex={8}>
+            <div className={styles.titleIconsWrapper}>
+              <TagSelectionCell
+                onSelectedChange={props.onSelectedChange}
+                selectable={props.selectable}
+                selected={props.selected}
+              />
+              <ListIconCell color={props.color} />
+            </div>
+            <TagListTitleCell title={props.title} pageCount={props.pageCount} />
+          </ColWrapper>
+          <ColWrapper
+            flex={4}
+            alignment="end"
+            style={{ overflow: 'visible' }}
+          ></ColWrapper>
+        </ColWrapper>
+        {props.operations ? (
+          <ColWrapper
+            className={styles.actionsCellWrapper}
+            flex={2}
+            alignment="end"
+          >
+            <TagListOperationsCell operations={props.operations} />
+          </ColWrapper>
+        ) : null}
+      </TagListItemWrapper>
+      <CustomDragPreview position="pointer-outside">
+        <div className={styles.dragPageItemOverlay}>
           <div className={styles.titleIconsWrapper}>
             <TagSelectionCell
               onSelectedChange={props.onSelectedChange}
@@ -131,23 +147,9 @@ export const TagListItem = (props: TagListItemProps) => {
             <ListIconCell color={props.color} />
           </div>
           <TagListTitleCell title={props.title} pageCount={props.pageCount} />
-        </ColWrapper>
-        <ColWrapper
-          flex={4}
-          alignment="end"
-          style={{ overflow: 'visible' }}
-        ></ColWrapper>
-      </ColWrapper>
-      {props.operations ? (
-        <ColWrapper
-          className={styles.actionsCellWrapper}
-          flex={2}
-          alignment="end"
-        >
-          <TagListOperationsCell operations={props.operations} />
-        </ColWrapper>
-      ) : null}
-    </TagListItemWrapper>
+        </div>
+      </CustomDragPreview>
+    </>
   );
 };
 
@@ -157,58 +159,68 @@ type TagListWrapperProps = PropsWithChildren<
   }
 >;
 
-function TagListItemWrapper({
-  to,
-  isDragging,
-  tagId,
-  onClick,
-  children,
-  draggable,
-}: TagListWrapperProps) {
-  const [selectionState, setSelectionActive] = useAtom(selectionStateAtom);
-  const handleClick = useCallback(
-    (e: React.MouseEvent) => {
-      if (!selectionState.selectable) {
-        return;
-      }
-      if (e.shiftKey) {
-        stopPropagation(e);
-        setSelectionActive(true);
-        onClick?.();
-        return;
-      }
-      if (selectionState.selectionActive) {
-        return onClick?.();
-      }
-    },
-    [
+const TagListItemWrapper = forwardRef(
+  (
+    {
+      to,
+      isDragging,
+      tagId,
       onClick,
-      selectionState.selectable,
-      selectionState.selectionActive,
-      setSelectionActive,
-    ]
-  );
-
-  const commonProps = useMemo(
-    () => ({
-      'data-testid': 'tag-list-item',
-      'data-tag-id': tagId,
-      'data-draggable': draggable,
-      className: styles.root,
-      'data-clickable': !!onClick || !!to,
-      'data-dragging': isDragging,
-      onClick: handleClick,
-    }),
-    [tagId, draggable, isDragging, onClick, to, handleClick]
-  );
-
-  if (to) {
-    return (
-      <WorkbenchLink {...commonProps} to={to}>
-        {children}
-      </WorkbenchLink>
+      children,
+      draggable,
+    }: TagListWrapperProps,
+    ref: ForwardedRef<HTMLAnchorElement & HTMLDivElement>
+  ) => {
+    const [selectionState, setSelectionActive] = useAtom(selectionStateAtom);
+    const handleClick = useCallback(
+      (e: React.MouseEvent) => {
+        if (!selectionState.selectable) {
+          return;
+        }
+        if (e.shiftKey) {
+          stopPropagation(e);
+          setSelectionActive(true);
+          onClick?.();
+          return;
+        }
+        if (selectionState.selectionActive) {
+          return onClick?.();
+        }
+      },
+      [
+        onClick,
+        selectionState.selectable,
+        selectionState.selectionActive,
+        setSelectionActive,
+      ]
     );
-  } else {
-    return <div {...commonProps}>{children}</div>;
+
+    const commonProps = useMemo(
+      () => ({
+        'data-testid': 'tag-list-item',
+        'data-tag-id': tagId,
+        'data-draggable': draggable,
+        className: styles.root,
+        'data-clickable': !!onClick || !!to,
+        'data-dragging': isDragging,
+        onClick: handleClick,
+      }),
+      [tagId, draggable, isDragging, onClick, to, handleClick]
+    );
+
+    if (to) {
+      return (
+        <WorkbenchLink {...commonProps} to={to} ref={ref}>
+          {children}
+        </WorkbenchLink>
+      );
+    } else {
+      return (
+        <div {...commonProps} ref={ref}>
+          {children}
+        </div>
+      );
+    }
   }
-}
+);
+TagListItemWrapper.displayName = 'TagListItemWrapper';

@@ -26,7 +26,6 @@ import {
   ToggleExpandIcon,
   ViewIcon,
 } from '@blocksuite/icons/rc';
-import type { Doc } from '@blocksuite/store';
 import type { DragEndEvent, DraggableAttributes } from '@dnd-kit/core';
 import {
   DndContext,
@@ -1085,21 +1084,21 @@ const PagePropertiesTableInner = () => {
   );
 };
 
-export const usePagePropertiesManager = (page: Doc) => {
+export const usePagePropertiesManager = (docId: string) => {
   // the workspace properties adapter adapter is reactive,
   // which means it's reference will change when any of the properties change
   // also it will trigger a re-render of the component
   const adapter = useCurrentWorkspacePropertiesAdapter();
   const manager = useMemo(() => {
-    return new PagePropertiesManager(adapter, page.id);
-  }, [adapter, page.id]);
+    return new PagePropertiesManager(adapter, docId);
+  }, [adapter, docId]);
   return manager;
 };
 
 // this is the main component that renders the page properties table at the top of the page below
 // the page title
-export const PagePropertiesTable = ({ page }: { page: Doc }) => {
-  const manager = usePagePropertiesManager(page);
+export const PagePropertiesTable = ({ docId }: { docId: string }) => {
+  const manager = usePagePropertiesManager(docId);
 
   // if the given page is not in the current workspace, then we don't render anything
   // eg. when it is in history modal

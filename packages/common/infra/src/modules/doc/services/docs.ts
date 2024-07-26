@@ -1,4 +1,5 @@
 import { Unreachable } from '@affine/env/constant';
+import type { RootBlockModel } from '@blocksuite/blocks';
 
 import { Service } from '../../../framework';
 import { initEmptyPage } from '../../../initialization';
@@ -59,6 +60,7 @@ export class DocsService extends Service {
   ) {
     const doc = this.store.createBlockSuiteDoc();
     initEmptyPage(doc, options.title);
+    this.store.markDocSyncStateAsReady(doc.id);
     const docRecord = this.list.doc$(doc.id).value;
     if (!docRecord) {
       throw new Unreachable();
@@ -67,5 +69,46 @@ export class DocsService extends Service {
       docRecord.setMode(options.mode);
     }
     return docRecord;
+  }
+
+  async addLinkedDoc(targetDocId: string, linkedDocId: string) {
+    const { doc, release } = this.open(targetDocId);
+    doc.setPriorityLoad(10);
+    await doc.waitForSyncReady();
+    const text = doc.blockSuiteDoc.Text.fromDelta([
+      {
+        insert: ' ',
+        attributes: {
+          reference: {
+            type: 'LinkedPage',
+            pageId: linkedDocId,
+          },
+        },
+      },
+    ]);
+    const [frame] = doc.blockSuiteDoc.getBlocksByFlavour('affine:note');
+    frame &&
+      doc.blockSuiteDoc.addBlock(
+        'affine:paragraph' as never, // TODO(eyhn): fix type
+        { text },
+        frame.id
+      );
+    release();
+  }
+
+  async changeDocTitle(docId: string, newTitle: string) {
+    const { doc, release } = this.open(docId);
+    doc.setPriorityLoad(10);
+    await doc.waitForSyncReady();
+    const pageBlock = doc.blockSuiteDoc.getBlocksByFlavour('affine:page').at(0)
+      ?.model as RootBlockModel | undefined;
+    if (pageBlock) {
+      doc.blockSuiteDoc.transact(() => {
+        pageBlock.title.delete(0, pageBlock.title.length);
+        pageBlock.title.insert(newTitle, 0);
+      });
+      doc.record.setMeta({ title: newTitle });
+    }
+    release();
   }
 }

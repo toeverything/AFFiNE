@@ -100,7 +100,7 @@ export const horizontal = style({
   right: 0,
   '::before': {
     // Horizontal indicators have the terminal on the left
-    left: `calc(-${terminalSize})`,
+    left: `calc(-1 * ${terminalSize})`,
   },
 });
 

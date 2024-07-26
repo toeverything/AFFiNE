@@ -71,16 +71,36 @@ export const getPageByTitle = (page: Page, title: string) => {
   return page.getByTestId('page-list-item').getByText(title);
 };
 
-export const dragTo = async (page: Page, locator: Locator, target: Locator) => {
+export const dragTo = async (
+  page: Page,
+  locator: Locator,
+  target: Locator,
+  location: 'top-left' | 'top' | 'bottom' | 'center' = 'center'
+) => {
   await locator.hover();
   await page.mouse.down();
-  await page.waitForTimeout(1000);
+  await page.mouse.move(1, 1);
+
   const targetElement = await target.boundingBox();
   if (!targetElement) {
     throw new Error('target element not found');
   }
-  await page.mouse.move(targetElement.x, targetElement.y);
-  await target.hover();
+  const position =
+    location === 'center'
+      ? {
+          x: targetElement.width / 2,
+          y: targetElement.height / 2,
+        }
+      : location === 'top-left'
+        ? { x: 1, y: 1 }
+        : location === 'top'
+          ? { x: targetElement.width / 2, y: 1 }
+          : location === 'bottom'
+            ? { x: targetElement.width / 2, y: targetElement.height - 1 }
+            : { x: 1, y: 1 };
+  await target.hover({
+    position: position,
+  });
   await page.mouse.up();
 };
 

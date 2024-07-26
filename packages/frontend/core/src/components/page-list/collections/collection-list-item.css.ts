@@ -23,7 +23,7 @@ export const root = style({
 });
 
 export const dragPageItemOverlay = style({
-  height: '54px',
+  height: '45px',
   borderRadius: '10px',
   display: 'flex',
   alignItems: 'center',

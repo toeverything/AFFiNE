@@ -89,15 +89,15 @@ test('New a page and add to favourites, then open info modal from sidebar', asyn
   await page.getByTestId('editor-option-menu-favorite').click();
 
   await page.getByTestId('all-pages').click();
-  const favoriteListItemInSidebar = page.getByTestId(
-    'favourite-page-' + newPageId
+  const favoriteListItemInSidebar = page.locator(
+    `[data-testid="explorer-favorites"] [data-testid="explorer-doc-${newPageId}"]`
   );
   expect(await favoriteListItemInSidebar.textContent()).toBe(
     'this is a new page'
   );
   await favoriteListItemInSidebar.hover();
   await favoriteListItemInSidebar
-    .getByTestId('left-sidebar-page-operation-button')
+    .getByTestId('explorer-tree-node-operation-button')
     .click();
   const infoBtn = page.getByText('View Info');
   await infoBtn.click();

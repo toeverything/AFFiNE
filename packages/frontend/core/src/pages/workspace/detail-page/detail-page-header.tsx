@@ -176,8 +176,7 @@ export function DetailPageHeader(props: PageHeaderProps) {
       <InfoModal
         open={openInfoModal}
         onOpenChange={setOpenInfoModal}
-        page={page}
-        workspace={workspace}
+        docId={page.id}
       />
     </>
   );
