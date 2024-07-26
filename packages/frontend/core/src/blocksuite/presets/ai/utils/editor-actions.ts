@@ -59,9 +59,11 @@ export const insert = async (
   );
   const insertIndex = below ? index + 1 : index;
 
+  const { doc } = host;
   const models = await insertFromMarkdown(
     host,
     content,
+    doc,
     blockParent.model.id,
     insertIndex
   );
@@ -110,9 +112,11 @@ export const replace = async (
       host.doc.deleteBlock(model);
     });
 
+    const { doc } = host;
     const models = await insertFromMarkdown(
       host,
       content,
+      doc,
       firstBlockParent.model.id,
       firstIndex
     );

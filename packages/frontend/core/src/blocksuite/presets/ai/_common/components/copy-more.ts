@@ -4,17 +4,15 @@ import type {
   TextSelection,
 } from '@blocksuite/block-std';
 import { WithDisposable } from '@blocksuite/block-std';
-import { type AIError, createButtonPopper, Tooltip } from '@blocksuite/blocks';
+import { createButtonPopper, Tooltip } from '@blocksuite/blocks';
 import { noop } from '@blocksuite/global/utils';
 import { css, html, LitElement, nothing, type PropertyValues } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 
+import { type ChatAction } from '../../_common/chat-actions-handle';
 import { CopyIcon, MoreIcon, RetryIcon } from '../../_common/icons';
-import { AIProvider } from '../../provider';
 import { copyText } from '../../utils/editor-actions';
-import type { ChatContextValue, ChatMessage } from '../chat-context';
-import { PageEditorActions } from './actions-handle';
 
 noop(Tooltip);
 
@@ -25,10 +23,10 @@ export class ChatCopyMore extends WithDisposable(LitElement) {
       display: flex;
       gap: 8px;
       height: 36px;
+      box-sizing: border-box;
       justify-content: flex-end;
       align-items: center;
-      margin-top: 8px;
-      margin-bottom: 12px;
+      padding: 8px 0;
 
       div {
         cursor: pointer;
@@ -74,6 +72,22 @@ export class ChatCopyMore extends WithDisposable(LitElement) {
     }
   `;
 
+  private get _rootService() {
+    return this.host.spec.getService('affine:page');
+  }
+
+  private get _selectionValue() {
+    return this.host.selection.value;
+  }
+
+  private get _currentTextSelection(): TextSelection | undefined {
+    return this._selectionValue.find(v => v.type === 'text') as TextSelection;
+  }
+
+  private get _currentBlockSelections(): BlockSelection[] | undefined {
+    return this._selectionValue.filter(v => v.type === 'block');
+  }
+
   @state()
   private accessor _showMoreMenu = false;
 
@@ -89,81 +103,38 @@ export class ChatCopyMore extends WithDisposable(LitElement) {
   accessor host!: EditorHost;
 
   @property({ attribute: false })
+  accessor actions: ChatAction[] = [];
+
+  @property({ attribute: false })
   accessor content!: string;
 
   @property({ attribute: false })
-  accessor messageId!: string;
+  accessor chatSessionId: string | undefined = undefined;
+
+  @property({ attribute: false })
+  accessor messageId: string | undefined = undefined;
 
   @property({ attribute: false })
   accessor isLast!: boolean;
 
   @property({ attribute: false })
-  accessor curTextSelection: TextSelection | undefined = undefined;
+  accessor withMargin = false;
 
   @property({ attribute: false })
-  accessor curBlockSelections: BlockSelection[] | undefined = undefined;
-
-  @property({ attribute: false })
-  accessor chatContextValue!: ChatContextValue;
-
-  @property({ attribute: false })
-  accessor updateContext!: (context: Partial<ChatContextValue>) => void;
+  accessor retry = () => {};
 
   private _toggle() {
     this._morePopper?.toggle();
   }
 
   private readonly _notifySuccess = (title: string) => {
-    const rootService = this.host.spec.getService('affine:page');
-    const { notificationService } = rootService;
+    const { notificationService } = this._rootService;
     notificationService?.notify({
       title: title,
       accent: 'success',
       onClose: function (): void {},
     });
   };
-
-  private async _retry() {
-    const { doc } = this.host;
-    try {
-      const abortController = new AbortController();
-
-      const items = [...this.chatContextValue.items];
-      const last = items[items.length - 1];
-      if ('content' in last) {
-        last.content = '';
-        last.createdAt = new Date().toISOString();
-      }
-      this.updateContext({ items, status: 'loading', error: null });
-
-      const stream = AIProvider.actions.chat?.({
-        retry: true,
-        docId: doc.id,
-        workspaceId: doc.collection.id,
-        host: this.host,
-        stream: true,
-        signal: abortController.signal,
-        where: 'chat-panel',
-        control: 'chat-send',
-      });
-
-      if (stream) {
-        this.updateContext({ abortController });
-        for await (const text of stream) {
-          const items = [...this.chatContextValue.items];
-          const last = items[items.length - 1] as ChatMessage;
-          last.content += text;
-          this.updateContext({ items, status: 'transmitting' });
-        }
-
-        this.updateContext({ status: 'success' });
-      }
-    } catch (error) {
-      this.updateContext({ status: 'error', error: error as AIError });
-    } finally {
-      this.updateContext({ abortController: null });
-    }
-  }
 
   protected override updated(changed: PropertyValues): void {
     if (changed.has('isLast')) {
@@ -185,8 +156,12 @@ export class ChatCopyMore extends WithDisposable(LitElement) {
   }
 
   override render() {
-    const { host, content, isLast, messageId } = this;
+    const { host, content, isLast, messageId, chatSessionId, actions } = this;
     return html`<style>
+        .copy-more {
+          margin-top: ${this.withMargin ? '8px' : '0px'};
+          margin-bottom: ${this.withMargin ? '12px' : '0px'};
+        }
         .more-menu {
           padding: ${this._showMoreMenu ? '8px' : '0px'};
         }
@@ -206,7 +181,7 @@ export class ChatCopyMore extends WithDisposable(LitElement) {
             </div>`
           : nothing}
         ${isLast
-          ? html`<div @click=${() => this._retry()}>
+          ? html`<div @click=${() => this.retry()}>
               ${RetryIcon}
               <affine-tooltip>Retry</affine-tooltip>
             </div>`
@@ -221,12 +196,12 @@ export class ChatCopyMore extends WithDisposable(LitElement) {
       <div class="more-menu">
         ${this._showMoreMenu
           ? repeat(
-              PageEditorActions.filter(action => action.showWhen(host)),
+              actions.filter(action => action.showWhen(host)),
               action => action.title,
               action => {
                 const currentSelections = {
-                  text: this.curTextSelection,
-                  blocks: this.curBlockSelections,
+                  text: this._currentTextSelection,
+                  blocks: this._currentBlockSelections,
                 };
                 return html`<div
                   @click=${async () => {
@@ -234,8 +209,8 @@ export class ChatCopyMore extends WithDisposable(LitElement) {
                       host,
                       content,
                       currentSelections,
-                      this.chatContextValue,
-                      messageId ?? undefined
+                      chatSessionId,
+                      messageId
                     );
 
                     if (success) {

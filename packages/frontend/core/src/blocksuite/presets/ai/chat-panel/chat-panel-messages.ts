@@ -7,20 +7,16 @@ import './actions/make-real';
 import './actions/slides';
 import './actions/mindmap';
 import './actions/chat-text';
-import './actions/copy-more';
 import './actions/image-to-text';
 import './actions/image';
 import './chat-cards';
+import '../_common/components/chat-action-list';
+import '../_common/components/copy-more';
 
-import type {
-  BaseSelection,
-  BlockSelection,
-  EditorHost,
-  TextSelection,
-} from '@blocksuite/block-std';
+import type { BaseSelection, EditorHost } from '@blocksuite/block-std';
 import { ShadowlessElement, WithDisposable } from '@blocksuite/block-std';
-import type { ImageSelection } from '@blocksuite/blocks';
 import {
+  type AIError,
   isInsidePageEditor,
   PaymentRequiredError,
   UnauthorizedError,
@@ -30,39 +26,19 @@ import { customElement, property, query, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
-import { AffineAvatarIcon, AffineIcon, DownArrowIcon } from '../_common/icons';
-import {
-  GeneralErrorRenderer,
-  PaymentRequiredErrorRenderer,
-} from '../messages/error';
-import { AIProvider } from '../provider';
-import { insertBelow } from '../utils/editor-actions';
 import {
   EdgelessEditorActions,
   PageEditorActions,
-} from './actions/actions-handle';
+} from '../_common/chat-actions-handle';
+import { AffineAvatarIcon, AffineIcon, DownArrowIcon } from '../_common/icons';
+import { AIChatErrorRenderer } from '../messages/error';
+import { AIProvider } from '../provider';
 import type { ChatContextValue, ChatItem, ChatMessage } from './chat-context';
 import { HISTORY_IMAGE_ACTIONS } from './const';
 import { AIPreloadConfig } from './preload-config';
 
 @customElement('chat-panel-messages')
 export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
-  private get _currentTextSelection(): TextSelection | undefined {
-    return this._selectionValue.find(v => v.type === 'text') as TextSelection;
-  }
-
-  private get _currentBlockSelections(): BlockSelection[] | undefined {
-    return this._selectionValue.filter(v => v.type === 'block');
-  }
-
-  private get _currentImageSelections(): ImageSelection[] | undefined {
-    return this._selectionValue.filter(v => v.type === 'image');
-  }
-
-  private get _rootService() {
-    return this.host.spec.getService('affine:page');
-  }
-
   static override styles = css`
     chat-panel-messages {
       position: relative;
@@ -328,35 +304,9 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
     );
   }
 
-  renderError() {
-    const { error } = this.chatContextValue;
-
-    if (error instanceof PaymentRequiredError) {
-      return PaymentRequiredErrorRenderer(this.host);
-    } else if (error instanceof UnauthorizedError) {
-      return GeneralErrorRenderer(
-        html`You need to login to AFFiNE Cloud to continue using AFFiNE AI.`,
-        html`<div
-          style=${styleMap({
-            padding: '4px 12px',
-            borderRadius: '8px',
-            border: '1px solid var(--affine-border-color)',
-            cursor: 'pointer',
-            backgroundColor: 'var(--affine-hover-color)',
-          })}
-          @click=${() =>
-            AIProvider.slots.requestLogin.emit({ host: this.host })}
-        >
-          Login
-        </div>`
-      );
-    } else {
-      return GeneralErrorRenderer();
-    }
-  }
-
   renderItem(item: ChatItem, isLast: boolean) {
     const { status, error } = this.chatContextValue;
+    const { host } = this;
 
     if (isLast && status === 'loading') {
       return this.renderLoading();
@@ -368,7 +318,7 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
       (error instanceof PaymentRequiredError ||
         error instanceof UnauthorizedError)
     ) {
-      return this.renderError();
+      return AIChatErrorRenderer(host, error);
     }
 
     if ('role' in item) {
@@ -377,48 +327,49 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
           ? 'finished'
           : 'generating'
         : 'finished';
+      const shouldRenderError = isLast && status === 'error' && !!error;
       return html`<chat-text
-          .host=${this.host}
+          .host=${host}
           .attachments=${item.attachments}
           .text=${item.content}
           .state=${state}
         ></chat-text>
-        ${isLast && status === 'error' ? this.renderError() : nothing}
+        ${shouldRenderError ? AIChatErrorRenderer(host, error) : nothing}
         ${this.renderEditorActions(item, isLast)}`;
     } else {
       switch (item.action) {
         case 'Create a presentation':
           return html`<action-slides
-            .host=${this.host}
+            .host=${host}
             .item=${item}
           ></action-slides>`;
         case 'Make it real':
           return html`<action-make-real
-            .host=${this.host}
+            .host=${host}
             .item=${item}
           ></action-make-real>`;
         case 'Brainstorm mindmap':
           return html`<action-mindmap
-            .host=${this.host}
+            .host=${host}
             .item=${item}
           ></action-mindmap>`;
         case 'Explain this image':
         case 'Generate a caption':
           return html`<action-image-to-text
-            .host=${this.host}
+            .host=${host}
             .item=${item}
           ></action-image-to-text>`;
         default:
           if (HISTORY_IMAGE_ACTIONS.includes(item.action)) {
             return html`<action-image
-              .host=${this.host}
+              .host=${host}
               .item=${item}
             ></action-image>`;
           }
 
           return html`<action-text
             .item=${item}
-            .host=${this.host}
+            .host=${host}
             .isCode=${item.action === 'Explain this code' ||
             item.action === 'Check code error'}
           ></action-text>`;
@@ -449,8 +400,54 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
     this.messagesContainer.scrollTo(0, this.messagesContainer.scrollHeight);
   }
 
+  retry = async () => {
+    const { doc } = this.host;
+    try {
+      const { chatSessionId } = this.chatContextValue;
+      if (!chatSessionId) return;
+
+      const abortController = new AbortController();
+      const items = [...this.chatContextValue.items];
+      const last = items[items.length - 1];
+      if ('content' in last) {
+        last.content = '';
+        last.createdAt = new Date().toISOString();
+      }
+      this.updateContext({ items, status: 'loading', error: null });
+
+      const stream = AIProvider.actions.chat?.({
+        sessionId: chatSessionId,
+        retry: true,
+        docId: doc.id,
+        workspaceId: doc.collection.id,
+        host: this.host,
+        stream: true,
+        signal: abortController.signal,
+        where: 'chat-panel',
+        control: 'chat-send',
+        isRootSession: true,
+      });
+
+      if (stream) {
+        this.updateContext({ abortController });
+        for await (const text of stream) {
+          const items = [...this.chatContextValue.items];
+          const last = items[items.length - 1] as ChatMessage;
+          last.content += text;
+          this.updateContext({ items, status: 'transmitting' });
+        }
+
+        this.updateContext({ status: 'success' });
+      }
+    } catch (error) {
+      this.updateContext({ status: 'error', error: error as AIError });
+    } finally {
+      this.updateContext({ abortController: null });
+    }
+  };
+
   renderEditorActions(item: ChatMessage, isLast: boolean) {
-    const { status } = this.chatContextValue;
+    const { status, chatSessionId } = this.chatContextValue;
 
     if (item.role !== 'assistant') return nothing;
 
@@ -469,117 +466,25 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
       : EdgelessEditorActions;
 
     return html`
-      <style>
-        .actions-container {
-          display: flex;
-          flex-direction: column;
-          align-items: flex-end;
-          gap: 8px;
-          margin-top: 8px;
-        }
-
-        .actions-container > div {
-          display: flex;
-          gap: 8px;
-        }
-
-        .action {
-          width: fit-content;
-          height: 32px;
-          padding: 12px;
-          border-radius: 8px;
-          border: 1px solid var(--affine-border-color);
-          background-color: var(--affine-white-10);
-          display: flex;
-          flex-direction: row;
-          align-items: center;
-          gap: 4px;
-          font-size: 15px;
-          font-weight: 500;
-          color: var(--affine-text-primary-color);
-          cursor: pointer;
-          user-select: none;
-        }
-
-        .action svg {
-          color: var(--affine-icon-color);
-        }
-      </style>
       <chat-copy-more
         .host=${host}
+        .actions=${actions}
         .content=${content}
         .isLast=${isLast}
+        .chatSessionId=${chatSessionId ?? undefined}
         .messageId=${messageId}
-        .curTextSelection=${this._currentTextSelection}
-        .curBlockSelections=${this._currentBlockSelections}
-        .chatContextValue=${this.chatContextValue}
-        .updateContext=${this.updateContext}
+        .withMargin=${true}
+        .retry=${() => this.retry()}
       ></chat-copy-more>
-      ${isLast
-        ? html`<div class="actions-container">
-            ${repeat(
-              actions
-                .filter(action => action.showWhen(host))
-                .filter(action => {
-                  if (!content) return false;
-
-                  if (
-                    action.title === 'Replace selection' &&
-                    (!this._currentTextSelection ||
-                      this._currentTextSelection.from.length === 0) &&
-                    this._currentBlockSelections?.length === 0
-                  ) {
-                    return false;
-                  }
-                  return true;
-                }),
-              action => action.title,
-              action => {
-                return html`<div class="action">
-                  ${action.icon}
-                  <div
-                    @click=${async () => {
-                      if (
-                        action.title === 'Insert below' &&
-                        this._selectionValue.length === 1 &&
-                        this._selectionValue[0].type === 'database'
-                      ) {
-                        const element = this.host.view.getBlock(
-                          this._selectionValue[0].blockId
-                        );
-                        if (!element) return;
-                        await insertBelow(host, content, element);
-                        return;
-                      }
-
-                      const currentSelections = {
-                        text: this._currentTextSelection,
-                        blocks: this._currentBlockSelections,
-                        images: this._currentImageSelections,
-                      };
-
-                      const success = await action.handler(
-                        host,
-                        content,
-                        currentSelections,
-                        this.chatContextValue,
-                        messageId ?? undefined
-                      );
-                      if (success) {
-                        this._rootService.notificationService?.notify({
-                          title: action.toast,
-                          accent: 'success',
-                          onClose: function (): void {},
-                        });
-                      }
-                    }}
-                  >
-                    ${action.title}
-                  </div>
-                </div>`;
-              }
-            )}
-          </div>`
+      ${isLast && !!content
+        ? html`<chat-action-list
+            .actions=${actions}
+            .host=${host}
+            .content=${content}
+            .chatSessionId=${chatSessionId ?? undefined}
+            .messageId=${messageId ?? undefined}
+            .withMargin=${true}
+          ></chat-action-list>`
         : nothing}
     `;
   }

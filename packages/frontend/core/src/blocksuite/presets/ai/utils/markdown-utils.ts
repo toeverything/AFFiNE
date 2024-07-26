@@ -148,6 +148,7 @@ export const markdownToSnapshot = async (
 export async function insertFromMarkdown(
   host: EditorHost,
   markdown: string,
+  doc: Doc,
   parent?: string,
   index?: number
 ) {
@@ -160,7 +161,7 @@ export async function insertFromMarkdown(
     const blockSnapshot = snapshots[i];
     const model = await job.snapshotToBlock(
       blockSnapshot,
-      host.std.doc,
+      doc,
       parent,
       (index ?? 0) + i
     );

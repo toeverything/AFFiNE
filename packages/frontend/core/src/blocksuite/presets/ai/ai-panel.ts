@@ -119,7 +119,7 @@ function createNewNote(host: EditorHost): AIItemConfig {
         );
 
         assertExists(panel.answer);
-        insertFromMarkdown(host, panel.answer, noteBlockId)
+        insertFromMarkdown(host, panel.answer, doc, noteBlockId)
           .then(() => {
             service.selection.set({
               elements: [noteBlockId],

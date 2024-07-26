@@ -15,6 +15,7 @@ import {
   TextElementModel,
 } from '@blocksuite/blocks';
 import { assertExists } from '@blocksuite/global/utils';
+import { AIChatBlockModel } from '@blocksuite/presets';
 import { Slice } from '@blocksuite/store';
 import type { TemplateResult } from 'lit';
 
@@ -552,4 +553,19 @@ export function mindmapRootShowWhen(_: unknown, __: unknown, host: EditorHost) {
   const selected = getCopilotSelectedElems(host);
 
   return selected.length === 1 && isMindMapRoot(selected[0]);
+}
+
+// TODO(@chen): remove this function after the new AI chat block related function is fully implemented
+export function notAllAIChatBlockShowWhen(
+  _: unknown,
+  __: unknown,
+  host: EditorHost
+) {
+  const selected = getCopilotSelectedElems(host);
+  if (selected.length === 0) return true;
+
+  const allAIChatBlocks = selected.every(
+    model => model instanceof AIChatBlockModel
+  );
+  return !allAIChatBlocks;
 }

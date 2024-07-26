@@ -77,7 +77,8 @@ function setupAIProvider() {
 
   //#region actions
   AIProvider.provide('chat', options => {
-    const sessionId = getChatSessionId(options.workspaceId, options.docId);
+    const sessionId =
+      options.sessionId ?? getChatSessionId(options.workspaceId, options.docId);
     return textToText({
       ...options,
       content: options.input,

@@ -24,6 +24,7 @@ export type TextToTextOptions = {
   signal?: AbortSignal;
   retry?: boolean;
   workflow?: boolean;
+  isRootSession?: boolean;
   postfix?: (text: string) => string;
 };
 
@@ -151,6 +152,7 @@ export function textToText({
   timeout = TIMEOUT,
   retry = false,
   workflow = false,
+  isRootSession = false,
   postfix,
 }: TextToTextOptions) {
   let _sessionId: string;
@@ -188,6 +190,9 @@ export function textToText({
           workflow ? 'workflow' : undefined
         );
         AIProvider.LAST_ACTION_SESSIONID = _sessionId;
+        if (isRootSession) {
+          AIProvider.LAST_ROOT_SESSION_ID = _sessionId;
+        }
 
         if (signal) {
           if (signal.aborted) {
@@ -250,6 +255,10 @@ export function textToText({
         }
 
         AIProvider.LAST_ACTION_SESSIONID = _sessionId;
+        if (isRootSession) {
+          AIProvider.LAST_ROOT_SESSION_ID = _sessionId;
+        }
+
         return client.chatText({
           sessionId: _sessionId,
           messageId: _messageId,

@@ -1,6 +1,12 @@
 import { type EditorHost, WithDisposable } from '@blocksuite/block-std';
+import {
+  type AIError,
+  PaymentRequiredError,
+  UnauthorizedError,
+} from '@blocksuite/blocks';
 import { html, LitElement, nothing, type TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
+import { styleMap } from 'lit/directives/style-map.js';
 
 import { ErrorTipIcon } from '../_common/icons';
 import { AIProvider } from '../provider';
@@ -110,5 +116,29 @@ export const GeneralErrorRenderer = (
 declare global {
   interface HTMLElementTagNameMap {
     'ai-error-wrapper': AIErrorWrapper;
+  }
+}
+
+export function AIChatErrorRenderer(host: EditorHost, error: AIError) {
+  if (error instanceof PaymentRequiredError) {
+    return PaymentRequiredErrorRenderer(host);
+  } else if (error instanceof UnauthorizedError) {
+    return GeneralErrorRenderer(
+      html`You need to login to AFFiNE Cloud to continue using AFFiNE AI.`,
+      html`<div
+        style=${styleMap({
+          padding: '4px 12px',
+          borderRadius: '8px',
+          border: '1px solid var(--affine-border-color)',
+          cursor: 'pointer',
+          backgroundColor: 'var(--affine-hover-color)',
+        })}
+        @click=${() => AIProvider.slots.requestLogin.emit({ host })}
+      >
+        Login
+      </div>`
+    );
+  } else {
+    return GeneralErrorRenderer();
   }
 }

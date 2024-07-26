@@ -35,6 +35,7 @@ import {
   imageOnlyShowWhen,
   mindmapChildShowWhen,
   mindmapRootShowWhen,
+  notAllAIChatBlockShowWhen,
   noteBlockOrTextShowWhen,
   noteWithCodeBlockShowWen,
 } from '../../actions/edgeless-handler';
@@ -271,7 +272,7 @@ const generateGroup: AIItemGroupConfig = {
     {
       name: 'Generate an image',
       icon: AIImageIcon,
-      showWhen: () => true,
+      showWhen: notAllAIChatBlockShowWhen,
       handler: actionToHandler(
         'createImage',
         AIImageIconWithAnimation,
@@ -403,7 +404,7 @@ const generateGroup: AIItemGroupConfig = {
       name: 'Make it real',
       icon: MakeItRealIcon,
       beta: true,
-      showWhen: () => true,
+      showWhen: notAllAIChatBlockShowWhen,
       handler: actionToHandler(
         'makeItReal',
         MakeItRealIconWithAnimation,

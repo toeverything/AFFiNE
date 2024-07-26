@@ -50,7 +50,11 @@ declare global {
       | 'chat-send'
       | 'block-action-bar';
 
-    type TrackerWhere = 'chat-panel' | 'inline-chat-panel' | 'ai-panel';
+    type TrackerWhere =
+      | 'chat-panel'
+      | 'inline-chat-panel'
+      | 'ai-panel'
+      | 'ai-chat-block';
 
     interface TrackerOptions {
       control: TrackerControl;
@@ -102,6 +106,11 @@ declare global {
     type AIActionTextResponse<T extends AITextActionOptions> =
       T['stream'] extends true ? TextStream : Promise<string>;
 
+    interface ChatOptions extends AITextActionOptions {
+      sessionId?: string;
+      isRootSession?: boolean;
+    }
+
     interface TranslateOptions extends AITextActionOptions {
       lang: (typeof translateLangs)[number];
     }
@@ -120,7 +129,7 @@ declare global {
 
     interface AIActions {
       // chat is a bit special because it's has a internally maintained session
-      chat<T extends AITextActionOptions>(options: T): AIActionTextResponse<T>;
+      chat<T extends ChatOptions>(options: T): AIActionTextResponse<T>;
 
       summary<T extends AITextActionOptions>(
         options: T
@@ -234,6 +243,7 @@ declare global {
         content: string;
         createdAt: string;
         role: MessageRole;
+        attachments?: string[];
       }[];
     }
 

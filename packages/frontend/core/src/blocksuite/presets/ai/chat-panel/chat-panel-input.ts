@@ -428,7 +428,6 @@ export class ChatPanelInput extends WithDisposable(LitElement) {
 
     const content = (markdown ? `${markdown}\n` : '') + text;
 
-    // TODO: Should update message id especially for the assistant message
     this.updateContext({
       items: [
         ...this.chatContextValue.items,
@@ -460,6 +459,7 @@ export class ChatPanelInput extends WithDisposable(LitElement) {
         signal: abortController.signal,
         where: 'chat-panel',
         control: 'chat-send',
+        isRootSession: true,
       });
 
       if (stream) {
@@ -476,7 +476,7 @@ export class ChatPanelInput extends WithDisposable(LitElement) {
 
         if (!this.chatContextValue.chatSessionId) {
           this.updateContext({
-            chatSessionId: AIProvider.LAST_ACTION_SESSIONID,
+            chatSessionId: AIProvider.LAST_ROOT_SESSION_ID,
           });
         }
 
