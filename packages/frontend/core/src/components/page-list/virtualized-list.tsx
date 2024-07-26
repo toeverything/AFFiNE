@@ -80,7 +80,7 @@ export const VirtualizedList = forwardRef<
   );
 });
 
-const headingAtom = selectAtom(listPropsAtom, props => props.heading);
+const headingAtom = selectAtom(listPropsAtom, props => props?.heading);
 
 const PageListHeading = () => {
   const heading = useAtomValue(headingAtom);

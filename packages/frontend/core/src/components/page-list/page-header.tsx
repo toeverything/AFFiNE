@@ -39,7 +39,9 @@ const ListHeaderCheckbox = () => {
   const onChange: NonNullable<CheckboxProps['onChange']> = useCallback(
     (e, checked) => {
       stopPropagation(e);
-      handlers.onSelectedIdsChange?.(checked ? items.map(i => i.id) : []);
+      handlers.onSelectedIdsChange?.(
+        checked ? (items ?? []).map(i => i.id) : []
+      );
     },
     [handlers, items]
   );
@@ -58,11 +60,11 @@ const ListHeaderCheckbox = () => {
         <MultiSelectIcon />
       ) : (
         <Checkbox
-          checked={selectionState.selectedIds?.length === items.length}
+          checked={selectionState.selectedIds?.length === items?.length}
           indeterminate={
             selectionState.selectedIds &&
             selectionState.selectedIds.length > 0 &&
-            selectionState.selectedIds.length < items.length
+            selectionState.selectedIds.length < (items?.length ?? 0)
           }
           onChange={onChange}
         />
@@ -81,7 +83,7 @@ export const ListHeaderTitleCell = () => {
   );
 };
 
-const hideHeaderAtom = selectAtom(listPropsAtom, props => props.hideHeader);
+const hideHeaderAtom = selectAtom(listPropsAtom, props => props?.hideHeader);
 
 // the table header for page list
 export const ListTableHeader = ({

@@ -14,7 +14,6 @@ import { shallowEqual } from './utils';
 
 // for ease of use in the component tree
 // note: must use selectAtom to access this atom for efficiency
-// @ts-expect-error the error is expected but we will assume the default value is always there by using useHydrateAtoms
 export const listPropsAtom = atom<
   ListProps<ListItem> & Partial<VirtualizedListProps<ListItem>>
 >();
@@ -31,7 +30,7 @@ export const selectionStateAtom = atom(
     const baseAtom = selectAtom(
       listPropsAtom,
       props => {
-        const { selectable, selectedIds, onSelectedIdsChange } = props;
+        const { selectable, selectedIds, onSelectedIdsChange } = props ?? {};
         return {
           selectable,
           selectedIds,
@@ -63,7 +62,7 @@ export const groupCollapseStateAtom = atom<Record<string, boolean>>({});
 export const listHandlersAtom = selectAtom(
   listPropsAtom,
   props => {
-    const { onSelectedIdsChange } = props;
+    const { onSelectedIdsChange } = props ?? {};
     return {
       onSelectedIdsChange,
     };
@@ -73,13 +72,13 @@ export const listHandlersAtom = selectAtom(
 
 export const itemsAtom = selectAtom(
   listPropsAtom,
-  props => props.items,
+  props => props?.items,
   shallowEqual
 );
 
 export const showOperationsAtom = selectAtom(
   listPropsAtom,
-  props => !!props.operationsRenderer
+  props => !!props?.operationsRenderer
 );
 
 type SortingContext<KeyType extends string | number | symbol> = {
@@ -167,7 +166,7 @@ export const sorterAtom = atom(
       }
       const compareFn = (a: MetaRecord<ListItem>, b: MetaRecord<ListItem>) =>
         sorterState.sortingFn(sortCtx, a, b);
-      items = [...items].sort(compareFn);
+      items = items ? [...items].sort(compareFn) : [];
     }
     return {
       items,
@@ -190,10 +189,10 @@ export const sorterAtom = atom(
 );
 
 export const groupsAtom = atom(get => {
-  const groupBy = get(selectAtom(listPropsAtom, props => props.groupBy));
+  const groupBy = get(selectAtom(listPropsAtom, props => props?.groupBy));
   const sorter = get(sorterAtom);
 
-  return itemsToItemGroups<ListItem>(sorter.items, groupBy);
+  return itemsToItemGroups<ListItem>(sorter.items ?? [], groupBy);
 });
 
 export const {
