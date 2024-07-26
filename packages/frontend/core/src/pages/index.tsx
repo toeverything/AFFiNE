@@ -159,6 +159,7 @@ export const Component = () => {
             open: true,
           }}
           items={<UserWithWorkspaceList />}
+          noPortal
           contentOptions={{
             style: {
               width: 300,

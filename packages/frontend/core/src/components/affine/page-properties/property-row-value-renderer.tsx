@@ -8,7 +8,7 @@ import { i18nTime, useI18n } from '@affine/i18n';
 import { DocService, useService } from '@toeverything/infra';
 import { noop } from 'lodash-es';
 import type { ChangeEventHandler } from 'react';
-import { useCallback, useContext, useEffect, useState } from 'react';
+import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 
 import { managerContext } from './common';
 import * as styles from './styles.css';
@@ -87,14 +87,24 @@ export const TextValue = ({ property }: PropertyRowValueProps) => {
   const handleClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
   }, []);
+  const ref = useRef<HTMLTextAreaElement>(null);
   const handleBlur = useCallback(
-    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    (e: FocusEvent) => {
       manager.updateCustomProperty(property.id, {
-        value: e.target.value.trim(),
+        value: (e.currentTarget as HTMLTextAreaElement).value.trim(),
       });
     },
     [manager, property.id]
   );
+  // use native blur event to get event after unmount
+  // don't use useLayoutEffect here, cause the cleanup function will be called before unmount
+  useEffect(() => {
+    ref.current?.addEventListener('blur', handleBlur);
+    return () => {
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      ref.current?.removeEventListener('blur', handleBlur);
+    };
+  }, [handleBlur]);
   const handleOnChange: ChangeEventHandler<HTMLTextAreaElement> = useCallback(
     e => {
       setValue(e.target.value);
@@ -109,11 +119,11 @@ export const TextValue = ({ property }: PropertyRowValueProps) => {
   return (
     <div onClick={handleClick} className={styles.propertyRowValueTextCell}>
       <textarea
+        ref={ref}
         className={styles.propertyRowValueTextarea}
         value={value || ''}
         onChange={handleOnChange}
         onClick={handleClick}
-        onBlur={handleBlur}
         data-empty={!value}
         placeholder={t[
           'com.affine.page-properties.property-value-placeholder'

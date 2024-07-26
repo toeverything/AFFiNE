@@ -27,7 +27,8 @@
       "matchPackagePatterns": ["^@blocksuite"],
       "excludePackageNames": ["@blocksuite/icons"],
       "rangeStrategy": "replace",
-      "followTag": "canary"
+      "followTag": "canary",
+      "enabled": false
     },
     {
       "groupName": "all non-major dependencies",

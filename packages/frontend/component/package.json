@@ -105,7 +105,7 @@
     "@vanilla-extract/css": "^1.14.2",
     "fake-indexeddb": "^6.0.0",
     "storybook": "^7.6.17",
-    "storybook-dark-mode": "4.0.2",
+    "storybook-dark-mode": "4.0.1",
     "typescript": "^5.4.5",
     "vite": "^5.2.8",
     "vitest": "1.6.0"

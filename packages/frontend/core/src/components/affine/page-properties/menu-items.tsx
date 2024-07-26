@@ -96,8 +96,8 @@ export const EditPropertyNameMenuItem = ({
     [onBlur]
   );
   const handleBlur = useCallback(
-    (e: React.FocusEvent<HTMLInputElement>) => {
-      onBlur(e.target.value);
+    (e: FocusEvent & { currentTarget: HTMLInputElement }) => {
+      onBlur(e.currentTarget.value);
     },
     [onBlur]
   );

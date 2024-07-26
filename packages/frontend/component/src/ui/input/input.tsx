@@ -2,21 +2,26 @@ import clsx from 'clsx';
 import type {
   ChangeEvent,
   CSSProperties,
-  FocusEventHandler,
   ForwardedRef,
   InputHTMLAttributes,
   KeyboardEvent,
   KeyboardEventHandler,
   ReactNode,
 } from 'react';
-import { forwardRef, useCallback, useLayoutEffect, useRef } from 'react';
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+} from 'react';
 
 import { input, inputWrapper } from './style.css';
 
 export type InputProps = {
   disabled?: boolean;
   onChange?: (value: string) => void;
-  onBlur?: FocusEventHandler<HTMLInputElement>;
+  onBlur?: (ev: FocusEvent & { currentTarget: HTMLInputElement }) => void;
   onKeyDown?: KeyboardEventHandler<HTMLInputElement>;
   autoSelect?: boolean;
   noBorder?: boolean;
@@ -27,7 +32,7 @@ export type InputProps = {
   type?: HTMLInputElement['type'];
   inputStyle?: CSSProperties;
   onEnter?: () => void;
-} & Omit<InputHTMLAttributes<HTMLInputElement>, 'onChange' | 'size'>;
+} & Omit<InputHTMLAttributes<HTMLInputElement>, 'onChange' | 'size' | 'onBlur'>;
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
   {
@@ -43,6 +48,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
     endFix,
     onEnter,
     onKeyDown,
+    onBlur,
     autoFocus,
     autoSelect,
     ...otherProps
@@ -58,6 +64,17 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
       }
     }
   }, [autoFocus, autoSelect, upstreamRef]);
+
+  // use native blur event to get event after unmount
+  // don't use useLayoutEffect here, because the cleanup function will be called before unmount
+  useEffect(() => {
+    if (!onBlur) return;
+    inputRef.current?.addEventListener('blur', onBlur as any);
+    return () => {
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      inputRef.current?.removeEventListener('blur', onBlur as any);
+    };
+  }, [onBlur]);
 
   return (
     <div

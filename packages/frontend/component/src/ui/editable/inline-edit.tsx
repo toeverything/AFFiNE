@@ -214,12 +214,12 @@ export const InlineEdit = ({
           className={styles.inlineEditInput}
           value={editingValue}
           placeholder={placeholder}
-          onBlur={onBlur}
           onEnter={onEnter}
           onKeyDown={onKeyDown}
           onChange={inputHandler}
           style={inputWrapperInheritsStyles}
           inputStyle={inputInheritsStyles}
+          onBlur={onBlur}
           {...inputAttrs}
         />
       }

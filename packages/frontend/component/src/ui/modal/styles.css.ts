@@ -1,9 +1,14 @@
 import { cssVar } from '@toeverything/theme';
-import { createVar, globalStyle, keyframes, style } from '@vanilla-extract/css';
+import {
+  createVar,
+  generateIdentifier,
+  globalStyle,
+  keyframes,
+  style,
+} from '@vanilla-extract/css';
 export const widthVar = createVar('widthVar');
 export const heightVar = createVar('heightVar');
 export const minHeightVar = createVar('minHeightVar');
-export const animationTimeout = createVar();
 
 const overlayShow = keyframes({
   from: {
@@ -13,15 +18,6 @@ const overlayShow = keyframes({
     opacity: 1,
   },
 });
-const overlayHide = keyframes({
-  to: {
-    opacity: 0,
-  },
-  from: {
-    opacity: 1,
-  },
-});
-
 const contentShow = keyframes({
   from: {
     opacity: 0,
@@ -32,7 +28,7 @@ const contentShow = keyframes({
     transform: 'translateY(0) scale(1)',
   },
 });
-const contentHide = keyframes({
+export const contentHide = keyframes({
   to: {
     opacity: 0,
     transform: 'translateY(-2%) scale(0.96)',
@@ -48,15 +44,9 @@ export const modalOverlay = style({
   inset: 0,
   backgroundColor: cssVar('backgroundModalColor'),
   zIndex: cssVar('zIndexModal'),
-  selectors: {
-    '&[data-state=entered], &[data-state=entering]': {
-      animation: `${overlayShow} ${animationTimeout} forwards`,
-    },
-    '&[data-state=exited], &[data-state=exiting]': {
-      animation: `${overlayHide} ${animationTimeout} forwards`,
-    },
-  },
+  animation: `${overlayShow} 150ms forwards`,
 });
+const modalContentViewTransitionName = generateIdentifier('modal-content');
 export const modalContentWrapper = style({
   position: 'fixed',
   inset: 0,
@@ -64,6 +54,13 @@ export const modalContentWrapper = style({
   alignItems: 'center',
   justifyContent: 'center',
   zIndex: cssVar('zIndexModal'),
+  animation: `${contentShow} 150ms cubic-bezier(0.42, 0, 0.58, 1)`,
+  animationFillMode: 'forwards',
+  viewTransitionName: modalContentViewTransitionName,
+});
+globalStyle(`::view-transition-old(${modalContentViewTransitionName})`, {
+  animation: `${contentHide} 150ms cubic-bezier(0.42, 0, 0.58, 1)`,
+  animationFillMode: 'forwards',
 });
 
 export const modalContent = style({
@@ -87,16 +84,6 @@ export const modalContent = style({
   maxHeight: 'calc(100vh - 32px)',
   // :focus-visible will set outline
   outline: 'none',
-  selectors: {
-    '&[data-state=entered], &[data-state=entering]': {
-      animation: `${contentShow} ${animationTimeout} cubic-bezier(0.42, 0, 0.58, 1)`,
-      animationFillMode: 'forwards',
-    },
-    '&[data-state=exited], &[data-state=exiting]': {
-      animation: `${contentHide} ${animationTimeout} cubic-bezier(0.42, 0, 0.58, 1)`,
-      animationFillMode: 'forwards',
-    },
-  },
 });
 export const closeButton = style({
   position: 'absolute',
