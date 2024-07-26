@@ -7,10 +7,9 @@ import Sinon from 'sinon';
 
 import { AuthService } from '../src/core/auth';
 import { QuotaModule } from '../src/core/quota';
-import { prompts } from '../src/data/migrations/utils/prompts';
 import { ConfigModule } from '../src/fundamentals/config';
 import { CopilotModule } from '../src/plugins/copilot';
-import { PromptService } from '../src/plugins/copilot/prompt';
+import { prompts, PromptService } from '../src/plugins/copilot/prompt';
 import {
   CopilotProviderService,
   OpenAIProvider,
@@ -115,13 +114,18 @@ test.beforeEach(async t => {
 test('should be able to manage prompt', async t => {
   const { prompt } = t.context;
 
-  t.is((await prompt.listNames()).length, 0, 'should have no prompt');
+  const internalPromptCount = (await prompt.listNames()).length;
+  t.is(internalPromptCount, prompts.length, 'should list names');
 
   await prompt.set('test', 'test', [
     { role: 'system', content: 'hello' },
     { role: 'user', content: 'hello' },
   ]);
-  t.is((await prompt.listNames()).length, 1, 'should have one prompt');
+  t.is(
+    (await prompt.listNames()).length,
+    internalPromptCount + 1,
+    'should have one prompt'
+  );
   t.is(
     (await prompt.get('test'))!.finish({}).length,
     2,
@@ -136,7 +140,11 @@ test('should be able to manage prompt', async t => {
   );
 
   await prompt.delete('test');
-  t.is((await prompt.listNames()).length, 0, 'should have no prompt');
+  t.is(
+    (await prompt.listNames()).length,
+    internalPromptCount,
+    'should be delete prompt'
+  );
   t.is(await prompt.get('test'), null, 'should not have the prompt');
 });
 
@@ -795,17 +803,13 @@ test('should be able to run pre defined workflow', async t => {
 });
 
 test('should be able to run workflow', async t => {
-  const { prompt, workflow, executors } = t.context;
+  const { workflow, executors } = t.context;
 
   executors.text.register();
   unregisterCopilotProvider(OpenAIProvider.type);
   registerCopilotProvider(MockCopilotTestProvider);
 
   const executor = Sinon.spy(executors.text, 'next');
-
-  for (const p of prompts) {
-    await prompt.set(p.name, p.model, p.messages, p.config);
-  }
 
   const graphName = 'presentation';
   const graph = WorkflowGraphList.find(g => g.name === graphName);

@@ -9,10 +9,9 @@ import Sinon from 'sinon';
 
 import { AuthService } from '../src/core/auth';
 import { WorkspaceModule } from '../src/core/workspaces';
-import { prompts } from '../src/data/migrations/utils/prompts';
 import { ConfigModule } from '../src/fundamentals/config';
 import { CopilotModule } from '../src/plugins/copilot';
-import { PromptService } from '../src/plugins/copilot/prompt';
+import { prompts, PromptService } from '../src/plugins/copilot/prompt';
 import {
   CopilotProviderService,
   FalProvider,
@@ -95,10 +94,6 @@ test.beforeEach(async t => {
   await prompt.set(promptName, 'test', [
     { role: 'system', content: 'hello {{word}}' },
   ]);
-
-  for (const p of prompts) {
-    await prompt.set(p.name, p.model, p.messages, p.config);
-  }
 });
 
 test.afterEach.always(async t => {
