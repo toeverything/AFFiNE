@@ -276,6 +276,7 @@ export function toImage({
   signal,
   timeout = TIMEOUT,
   retry = false,
+  workflow = false,
 }: ToImageOptions) {
   let _sessionId: string;
   let _messageId: string | undefined;
@@ -300,7 +301,12 @@ export function toImage({
         _messageId = messageId;
       }
 
-      const eventSource = client.imagesStream(_sessionId, _messageId, seed);
+      const eventSource = client.imagesStream(
+        _sessionId,
+        _messageId,
+        seed,
+        workflow ? 'workflow' : undefined
+      );
       AIProvider.LAST_ACTION_SESSIONID = _sessionId;
 
       for await (const event of toTextStream(eventSource, {

@@ -27,8 +27,6 @@ function extractMustacheParams(template: string) {
   return Array.from(new Set(params));
 }
 
-const EXCLUDE_MISSING_WARN_PARAMS = ['lora'];
-
 export class ChatPrompt {
   private readonly logger = new Logger(ChatPrompt.name);
   public readonly encoder: Tokenizer | null;
@@ -104,12 +102,12 @@ export class ChatPrompt {
         typeof income !== 'string' ||
         (Array.isArray(options) && !options.includes(income))
       ) {
-        if (sessionId && !EXCLUDE_MISSING_WARN_PARAMS.includes(key)) {
+        if (sessionId) {
           const prefix = income
             ? `Invalid param value: ${key}=${income}`
             : `Missing param value: ${key}`;
           this.logger.warn(
-            `${prefix} in session ${sessionId}, use default options: ${options[0]}`
+            `${prefix} in session ${sessionId}, use default options: ${Array.isArray(options) ? options[0] : options}`
           );
         }
         if (Array.isArray(options)) {
@@ -129,11 +127,28 @@ export class ChatPrompt {
    */
   finish(params: PromptParams, sessionId?: string): PromptMessage[] {
     this.checkParams(params, sessionId);
-    return this.messages.map(({ content, params: _, ...rest }) => ({
-      ...rest,
-      params,
-      content: Mustache.render(content, params),
-    }));
+
+    const { attachments: attach, ...restParams } = params;
+    const paramsAttach = Array.isArray(attach) ? attach : [];
+
+    return this.messages.map(
+      ({ attachments: attach, content, params: _, ...rest }) => {
+        const result: PromptMessage = {
+          ...rest,
+          params,
+          content: Mustache.render(content, restParams),
+        };
+
+        const attachments = [
+          ...(Array.isArray(attach) ? attach : []),
+          ...paramsAttach,
+        ];
+        if (attachments.length && rest.role === 'user') {
+          result.attachments = attachments;
+        }
+        return result;
+      }
+    );
   }
 }
 

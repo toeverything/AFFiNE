@@ -8,10 +8,6 @@ export const promptKeys = [
   'debug:action:fal-sd15',
   'debug:action:fal-upscaler',
   'debug:action:fal-remove-bg',
-  'debug:action:fal-sdturbo-clay',
-  'debug:action:fal-sdturbo-pixel',
-  'debug:action:fal-sdturbo-sketch',
-  'debug:action:fal-sdturbo-fantasy',
   'debug:action:fal-face-to-sticker',
   'debug:action:fal-summary-caption',
   'chat:gpt4',
@@ -42,6 +38,10 @@ export const promptKeys = [
   'Continue writing',
   'workflow:presentation',
   'workflow:brainstorm',
+  'workflow:image-sketch',
+  'workflow:image-clay',
+  'workflow:image-anime',
+  'workflow:image-pixel',
 ] as const;
 
 export type PromptKey = (typeof promptKeys)[number];

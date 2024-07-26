@@ -50,7 +50,7 @@ const PureMessageSchema = z.object({
   content: z.string(),
   attachments: z.array(z.string()).optional().nullable(),
   params: z
-    .record(z.union([z.string(), z.array(z.string())]))
+    .record(z.union([z.string(), z.array(z.string()), z.record(z.any())]))
     .optional()
     .nullable(),
 });
@@ -64,12 +64,21 @@ export type PromptMessage = z.infer<typeof PromptMessageSchema>;
 export type PromptParams = NonNullable<PromptMessage['params']>;
 
 export const PromptConfigStrictSchema = z.object({
+  // openai
   jsonMode: z.boolean().nullable().optional(),
   frequencyPenalty: z.number().nullable().optional(),
   presencePenalty: z.number().nullable().optional(),
   temperature: z.number().nullable().optional(),
   topP: z.number().nullable().optional(),
   maxTokens: z.number().nullable().optional(),
+  // fal
+  modelName: z.string().nullable().optional(),
+  loras: z
+    .array(
+      z.object({ path: z.string(), scale: z.number().nullable().optional() })
+    )
+    .nullable()
+    .optional(),
 });
 
 export const PromptConfigSchema =
@@ -175,9 +184,13 @@ export type CopilotEmbeddingOptions = z.infer<
   typeof CopilotEmbeddingOptionsSchema
 >;
 
-const CopilotImageOptionsSchema = CopilotProviderOptionsSchema.extend({
-  seed: z.number().optional(),
-}).optional();
+const CopilotImageOptionsSchema = CopilotProviderOptionsSchema.merge(
+  PromptConfigStrictSchema
+)
+  .extend({
+    seed: z.number().optional(),
+  })
+  .optional();
 
 export type CopilotImageOptions = z.infer<typeof CopilotImageOptionsSchema>;
 

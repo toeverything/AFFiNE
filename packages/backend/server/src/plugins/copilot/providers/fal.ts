@@ -59,9 +59,15 @@ const FalStreamOutputSchema = z.object({
 });
 
 type FalPrompt = {
+  model_name?: string;
   image_url?: string;
   prompt?: string;
-  lora?: string[];
+  loras?: { path: string; scale?: number }[];
+  controlnets?: {
+    image_url: string;
+    start_percentage?: number;
+    end_percentage?: number;
+  }[];
 };
 
 export class FalProvider
@@ -83,10 +89,8 @@ export class FalProvider
     'face-to-sticker',
     'imageutils/rembg',
     'fast-sdxl/image-to-image',
-    'workflows/darkskygit/animie',
-    'workflows/darkskygit/clay',
-    'workflows/darkskygit/pixel-art',
-    'workflows/darkskygit/sketch',
+    'workflowutils/teed',
+    'lora/image-to-image',
     // image to text
     'llava-next',
   ];
@@ -112,7 +116,15 @@ export class FalProvider
     return this.availableModels.includes(model);
   }
 
-  private extractPrompt(message?: PromptMessage): FalPrompt {
+  private extractArray<T>(value: T | T[] | undefined): T[] {
+    if (Array.isArray(value)) return value;
+    return value ? [value] : [];
+  }
+
+  private extractPrompt(
+    message?: PromptMessage,
+    options: CopilotImageOptions = {}
+  ): FalPrompt {
     if (!message) throw new CopilotPromptInvalid('Prompt is empty');
     const { content, attachments, params } = message;
     // prompt attachments require at least one
@@ -122,17 +134,23 @@ export class FalProvider
     if (Array.isArray(attachments) && attachments.length > 1) {
       throw new CopilotPromptInvalid('Only one attachment is allowed');
     }
-    const lora = (
-      params?.lora
-        ? Array.isArray(params.lora)
-          ? params.lora
-          : [params.lora]
-        : []
-    ).filter(v => typeof v === 'string' && v.length);
+    const lora = [
+      ...this.extractArray(params?.lora),
+      ...this.extractArray(options.loras),
+    ].filter(
+      (v): v is { path: string; scale?: number } =>
+        !!v && typeof v === 'object' && typeof v.path === 'string'
+    );
+    const controlnets = this.extractArray(params?.controlnets).filter(
+      (v): v is { image_url: string } =>
+        !!v && typeof v === 'object' && typeof v.image_url === 'string'
+    );
     return {
+      model_name: options.modelName || undefined,
       image_url: attachments?.[0],
       prompt: content.trim(),
-      lora: lora.length ? lora : undefined,
+      loras: lora.length ? lora : undefined,
+      controlnets: controlnets.length ? controlnets : undefined,
     };
   }
 
@@ -246,7 +264,7 @@ export class FalProvider
     options: CopilotImageOptions = {}
   ) {
     // by default, image prompt assumes there is only one message
-    const prompt = this.extractPrompt(messages.pop());
+    const prompt = this.extractPrompt(messages.pop(), options);
     if (model.startsWith('workflows/')) {
       const stream = await falStream(model, { input: prompt });
       return this.parseSchema(FalStreamOutputSchema, await stream.done())

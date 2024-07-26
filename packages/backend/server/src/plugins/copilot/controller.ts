@@ -288,6 +288,7 @@ export class CopilotController {
       if (latestMessage) {
         params = Object.assign({}, params, latestMessage.params, {
           content: latestMessage.content,
+          attachments: latestMessage.attachments,
         });
       }
 
@@ -302,14 +303,22 @@ export class CopilotController {
           merge(
             // actual chat event stream
             shared$.pipe(
-              map(data =>
-                data.status === GraphExecutorState.EmitContent
-                  ? {
+              map(data => {
+                switch (data.status) {
+                  case GraphExecutorState.EmitContent:
+                    return {
                       type: 'message' as const,
                       id: messageId,
                       data: data.content,
-                    }
-                  : {
+                    };
+                  case GraphExecutorState.EmitAttachment:
+                    return {
+                      type: 'attachment' as const,
+                      id: messageId,
+                      data: data.attachment,
+                    };
+                  default:
+                    return {
                       type: 'event' as const,
                       id: messageId,
                       data: {
@@ -317,8 +326,9 @@ export class CopilotController {
                         id: data.node.id,
                         type: data.node.config.nodeType,
                       } as any,
-                    }
-              )
+                    };
+                }
+              })
             ),
             // save the generated text to the session
             shared$.pipe(
@@ -378,6 +388,7 @@ export class CopilotController {
 
       const source$ = from(
         provider.generateImagesStream(session.finish(params), session.model, {
+          ...session.config.promptConfig,
           seed: this.parseNumber(params.seed),
           signal: this.getSignal(req),
           user: user.id,

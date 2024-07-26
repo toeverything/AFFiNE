@@ -25,7 +25,9 @@ export class CopilotCheckJsonExecutor extends AutoRegisteredWorkflowExecutor {
     return NodeExecutorType.CheckJson;
   }
 
-  private checkJson(content?: string | string[]): boolean {
+  private checkJson(
+    content?: string | string[] | Record<string, any>
+  ): boolean {
     try {
       if (content && typeof content === 'string') {
         JSON.parse(content);

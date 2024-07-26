@@ -9,12 +9,14 @@ import { WorkflowNodeType } from './types';
 export enum GraphExecutorState {
   EnterNode = 'EnterNode',
   EmitContent = 'EmitContent',
+  EmitAttachment = 'EmitAttachment',
   ExitNode = 'ExitNode',
 }
 
 export type GraphExecutorStatus = { status: GraphExecutorState } & (
   | { status: GraphExecutorState.EnterNode; node: WorkflowNode }
   | { status: GraphExecutorState.EmitContent; content: string }
+  | { status: GraphExecutorState.EmitAttachment; attachment: string }
   | { status: GraphExecutorState.ExitNode; node: WorkflowNode }
 );
 
@@ -66,6 +68,15 @@ export class WorkflowGraphExecutor {
           } else {
             result += ret.content;
           }
+        } else if (
+          ret.type === NodeExecuteState.Attachment &&
+          !currentNode.hasEdges
+        ) {
+          // pass through content as a stream response if node is end node
+          yield {
+            status: GraphExecutorState.EmitAttachment,
+            attachment: ret.attachment,
+          };
         }
       }
 

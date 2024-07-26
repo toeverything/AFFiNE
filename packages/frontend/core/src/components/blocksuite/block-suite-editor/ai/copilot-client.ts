@@ -198,9 +198,14 @@ export class CopilotClient {
   }
 
   // Text or image to images
-  imagesStream(sessionId: string, messageId?: string, seed?: string) {
+  imagesStream(
+    sessionId: string,
+    messageId?: string,
+    seed?: string,
+    endpoint = 'images'
+  ) {
     const url = new URL(
-      `${this.backendUrl}/api/copilot/chat/${sessionId}/images`
+      `${this.backendUrl}/api/copilot/chat/${sessionId}/${endpoint}`
     );
     if (messageId) {
       url.searchParams.set('messageId', messageId);

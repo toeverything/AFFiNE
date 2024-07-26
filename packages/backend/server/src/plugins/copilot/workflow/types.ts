@@ -16,6 +16,7 @@ export type WorkflowNodeData = { id: string; name: string } & (
       promptName?: string;
       // update the prompt params by output with the custom key
       paramKey?: string;
+      paramToucher?: (params: WorkflowParams) => WorkflowParams;
     }
   | {
       nodeType: WorkflowNodeType.Decision;
@@ -44,5 +45,8 @@ export type WorkflowGraphs = Array<WorkflowGraph>;
 
 // ===================== executor =====================
 
-export type WorkflowParams = Record<string, string | string[]>;
+export type WorkflowParams = Record<
+  string,
+  string | string[] | Record<string, any>
+>;
 export type WorkflowNodeState = Record<string, string>;

@@ -42,6 +42,7 @@ export class OpenAIProvider
   readonly availableModels = [
     // text to text
     'gpt-4o',
+    'gpt-4o-mini',
     'gpt-4-vision-preview',
     'gpt-4-turbo-preview',
     'gpt-3.5-turbo',
