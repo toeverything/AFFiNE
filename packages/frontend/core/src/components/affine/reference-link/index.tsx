@@ -64,7 +64,7 @@ export function pageReferenceRenderer({
     <>
       {icon}
       <span className="affine-reference-title">
-        {title ? title : 'Untitled'}
+        {title ? title : t['Untitled']()}
       </span>
     </>
   );

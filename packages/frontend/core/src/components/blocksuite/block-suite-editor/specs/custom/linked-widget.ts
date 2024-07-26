@@ -1,5 +1,6 @@
 import { WorkspacePropertiesAdapter } from '@affine/core/modules/properties';
 import { mixpanel } from '@affine/core/utils';
+import { I18n, i18nTime } from '@affine/i18n';
 import type { EditorHost } from '@blocksuite/block-std';
 import type { AffineInlineEditor } from '@blocksuite/blocks';
 import { LinkedWidgetUtils } from '@blocksuite/blocks';
@@ -36,11 +37,24 @@ export function createLinkedWidgetConfig(framework: FrameworkProvider) {
           }
           return !meta.trash;
         })
+        .map(meta => {
+          if (isJournal(meta)) {
+            const date = adapter.getJournalPageDateString(meta.id);
+            if (date) {
+              const title = i18nTime(date, { absolute: { accuracy: 'day' } });
+              return { ...meta, title };
+            }
+          }
+          if (!meta.title) {
+            const title = I18n['Untitled']();
+            return { ...meta, title };
+          }
+          return meta;
+        })
         .filter(({ title }) => isFuzzyMatch(title, query));
 
       // TODO need i18n if BlockSuite supported
       const MAX_DOCS = 6;
-      const DEFAULT_DOC_NAME = 'Untitled';
       const docsService = framework.get(DocsService);
       const isEdgeless = (d: DocMeta) =>
         docsService.list.getMode(d.id) === 'edgeless';
@@ -49,7 +63,7 @@ export function createLinkedWidgetConfig(framework: FrameworkProvider) {
           name: 'Link to Doc',
           items: docMetas.map(doc => ({
             key: doc.id,
-            name: doc.title || DEFAULT_DOC_NAME,
+            name: doc.title,
             icon: isJournal(doc)
               ? TodayIcon
               : isEdgeless(doc)
