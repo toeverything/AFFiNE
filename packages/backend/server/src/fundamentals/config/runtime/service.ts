@@ -9,7 +9,10 @@ import { PrismaClient } from '@prisma/client';
 import { difference, keyBy } from 'lodash-es';
 
 import { Cache } from '../../cache';
-import { InvalidRuntimeConfigType, RuntimeConfigNotFound } from '../../error';
+import {
+  InvalidRuntimeConfigType,
+  RuntimeConfigNotFound,
+} from '../../error/errors.gen';
 import { defer } from '../../utils/promise';
 import { defaultRuntimeConfig, runtimeConfigType } from '../register';
 import { AppRuntimeConfigModules, FlattenedAppRuntimeConfig } from '../types';
