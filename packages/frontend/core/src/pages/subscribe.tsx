@@ -28,6 +28,20 @@ export const Component = () => {
   const recurring = searchParams.get('recurring') as string | null;
 
   useEffect(() => {
+    const allowedPlan = ['ai', 'pro'];
+    const allowedRecurring = ['monthly', 'yearly', 'lifetime'];
+    const receivedPlan = plan?.toLowerCase() ?? '';
+    const receivedRecurring = recurring?.toLowerCase() ?? '';
+
+    const invalids = [];
+    if (!allowedPlan.includes(receivedPlan)) invalids.push('plan');
+    if (!allowedRecurring.includes(receivedRecurring))
+      invalids.push('recurring');
+    if (invalids.length) {
+      setError(`Invalid ${invalids.join(', ')}`);
+      return;
+    }
+
     const call = effect(
       switchMap(() => {
         return fromPromise(async signal => {
@@ -49,9 +63,11 @@ export const Component = () => {
           setMessage('Checking subscription status...');
           await subscriptionService.subscription.waitForRevalidation(signal);
           const subscribed =
-            plan?.toLowerCase() === 'ai'
+            receivedPlan === 'ai'
               ? !!subscriptionService.subscription.ai$.value
-              : !!subscriptionService.subscription.pro$.value;
+              : receivedRecurring === 'lifetime'
+                ? !!subscriptionService.subscription.isBeliever$.value
+                : !!subscriptionService.subscription.pro$.value;
           if (!subscribed) {
             setMessage('Creating checkout...');
             mixpanel.track('PlanUpgradeStarted', {
@@ -63,13 +79,15 @@ export const Component = () => {
               // should never reach
               if (!account) throw new Error('No account');
               const targetPlan =
-                plan?.toLowerCase() === 'ai'
+                receivedPlan === 'ai'
                   ? SubscriptionPlan.AI
                   : SubscriptionPlan.Pro;
               const targetRecurring =
-                recurring?.toLowerCase() === 'monthly'
+                receivedRecurring === 'monthly'
                   ? SubscriptionRecurring.Monthly
-                  : SubscriptionRecurring.Yearly;
+                  : receivedRecurring === 'yearly'
+                    ? SubscriptionRecurring.Yearly
+                    : SubscriptionRecurring.Lifetime;
               const checkout = await subscriptionService.createCheckoutSession({
                 idempotencyKey,
                 plan: targetPlan,
