@@ -423,6 +423,7 @@ const ImagePreviewModalImpl = ({
             <>
               <div className={styles.dividerStyle}></div>
               <ButtonWithTooltip
+                className="danger"
                 data-testid="delete-button"
                 tooltip="Delete"
                 icon={<DeleteIcon />}

@@ -164,6 +164,10 @@ export const button = style({
     '&.processing.disabled:not(.without-hover):hover': {
       background: cssVar('processingColor'),
     },
+    '&.danger:hover': {
+      color: cssVar('errorColor'),
+      background: cssVar('backgroundErrorColor'),
+    },
   },
 });
 globalStyle(`${button} > span`, {
@@ -358,6 +362,10 @@ export const iconButton = style({
     },
     '&.processing.disabled:not(.without-hover):hover': {
       background: cssVar('processingColor'),
+    },
+    '&.danger:hover': {
+      color: cssVar('errorColor'),
+      background: cssVar('backgroundErrorColor'),
     },
   },
 });
