@@ -1,5 +1,6 @@
 import { Modal } from '@affine/component';
-import { useCallback, useState } from 'react';
+import { useMount } from '@toeverything/infra';
+import { useCallback, useEffect, useState } from 'react';
 
 import type { AllPageListConfig } from './edit-collection';
 import { SelectPage } from './select-page';
@@ -20,8 +21,11 @@ export const useSelectPage = ({
   const handleCancel = useCallback(() => {
     close(false);
   }, [close]);
-  return {
-    node: (
+
+  const { mount } = useMount('select-page-modal');
+
+  useEffect(() => {
+    return mount(
       <Modal
         open={!!value}
         onOpenChange={close}
@@ -47,16 +51,22 @@ export const useSelectPage = ({
           />
         ) : null}
       </Modal>
+    );
+  }, [allPageListConfig, close, handleCancel, mount, value]);
+
+  return {
+    open: useCallback(
+      (init: string[]): Promise<string[]> =>
+        new Promise<string[]>(res => {
+          onChange({
+            init,
+            onConfirm: list => {
+              close(false);
+              res(list);
+            },
+          });
+        }),
+      [close]
     ),
-    open: (init: string[]): Promise<string[]> =>
-      new Promise<string[]>(res => {
-        onChange({
-          init,
-          onConfirm: list => {
-            close(false);
-            res(list);
-          },
-        });
-      }),
   };
 };

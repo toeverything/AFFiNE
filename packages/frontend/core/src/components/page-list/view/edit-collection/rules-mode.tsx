@@ -72,7 +72,7 @@ export const RulesMode = ({
       allowListPages.push(meta);
     }
   });
-  const { node: selectPageNode, open } = useSelectPage({ allPageListConfig });
+  const { open } = useSelectPage({ allPageListConfig });
   const openSelectPage = useCallback(() => {
     open(collection.allowList).then(
       ids => {
@@ -343,7 +343,6 @@ export const RulesMode = ({
         </div>
         <div style={{ display: 'flex', alignItems: 'center' }}>{buttons}</div>
       </div>
-      {selectPageNode}
     </>
   );
 };
