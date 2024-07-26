@@ -6,10 +6,17 @@ import {
   toast,
 } from '@affine/component';
 import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
+import { FavoriteService } from '@affine/core/modules/favorite';
 import { TagService } from '@affine/core/modules/tag';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import { useI18n } from '@affine/i18n';
-import { DeleteIcon, PlusIcon, SplitViewIcon } from '@blocksuite/icons/rc';
+import {
+  DeleteIcon,
+  FavoritedIcon,
+  FavoriteIcon,
+  PlusIcon,
+  SplitViewIcon,
+} from '@blocksuite/icons/rc';
 import { DocsService, useLiveData, useServices } from '@toeverything/infra';
 import { useCallback, useMemo } from 'react';
 
@@ -25,12 +32,17 @@ export const useExplorerTagNodeOperations = (
 ): NodeOperation[] => {
   const t = useI18n();
   const { appSettings } = useAppSettingHelper();
-  const { docsService, workbenchService, tagService } = useServices({
-    WorkbenchService,
-    TagService,
-    DocsService,
-  });
+  const { docsService, workbenchService, tagService, favoriteService } =
+    useServices({
+      WorkbenchService,
+      TagService,
+      DocsService,
+      FavoriteService,
+    });
 
+  const favorite = useLiveData(
+    favoriteService.favoriteList.favorite$('tag', tagId)
+  );
   const tagRecord = useLiveData(tagService.tagList.tagByTagId$(tagId));
 
   const handleNewDoc = useCallback(() => {
@@ -52,6 +64,10 @@ export const useExplorerTagNodeOperations = (
       at: 'beside',
     });
   }, [tagId, workbenchService]);
+
+  const handleToggleFavoriteTag = useCallback(() => {
+    favoriteService.favoriteList.toggle('tag', tagId);
+  }, [favoriteService, tagId]);
 
   return useMemo(
     () => [
@@ -83,6 +99,33 @@ export const useExplorerTagNodeOperations = (
             },
           ]
         : []),
+      ...(runtimeConfig.enableNewFavorite
+        ? [
+            {
+              index: 199,
+              view: (
+                <MenuItem
+                  preFix={
+                    <MenuIcon>
+                      {favorite ? (
+                        <FavoritedIcon
+                          style={{ color: 'var(--affine-primary-color)' }}
+                        />
+                      ) : (
+                        <FavoriteIcon />
+                      )}
+                    </MenuIcon>
+                  }
+                  onClick={handleToggleFavoriteTag}
+                >
+                  {favorite
+                    ? t['com.affine.favoritePageOperation.remove']()
+                    : t['com.affine.favoritePageOperation.add']()}
+                </MenuItem>
+              ),
+            },
+          ]
+        : []),
       {
         index: 9999,
         view: <MenuSeparator key="menu-separator" />,
@@ -106,9 +149,11 @@ export const useExplorerTagNodeOperations = (
     ],
     [
       appSettings.enableMultiView,
+      favorite,
       handleMoveToTrash,
       handleNewDoc,
       handleOpenInSplitView,
+      handleToggleFavoriteTag,
       t,
     ]
   );

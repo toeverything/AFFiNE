@@ -11,7 +11,7 @@ import {
   useEditCollection,
 } from '@affine/core/components/page-list';
 import { CollectionService } from '@affine/core/modules/collection';
-import { FavoriteItemsAdapter } from '@affine/core/modules/properties';
+import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/properties';
 import { ShareDocsService } from '@affine/core/modules/share-doc';
 import type { AffineDNDData } from '@affine/core/types/dnd';
 import type { Collection } from '@affine/env/filter';
@@ -225,12 +225,12 @@ const ExplorerCollectionNodeChildren = ({
   const t = useI18n();
   const {
     docsService,
-    favoriteItemsAdapter,
+    compatibleFavoriteItemsAdapter,
     shareDocsService,
     collectionService,
   } = useServices({
     DocsService,
-    FavoriteItemsAdapter,
+    CompatibleFavoriteItemsAdapter,
     ShareDocsService,
     CollectionService,
   });
@@ -251,7 +251,7 @@ const ExplorerCollectionNodeChildren = ({
       [docsService]
     )
   );
-  const favourites = useLiveData(favoriteItemsAdapter.favorites$);
+  const favourites = useLiveData(compatibleFavoriteItemsAdapter.favorites$);
   const allowList = useMemo(
     () => new Set(collection.allowList),
     [collection.allowList]

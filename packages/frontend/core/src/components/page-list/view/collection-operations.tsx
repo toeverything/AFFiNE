@@ -2,7 +2,7 @@ import type { MenuItemProps } from '@affine/component';
 import { Menu, MenuIcon, MenuItem } from '@affine/component';
 import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
 import { useDeleteCollectionInfo } from '@affine/core/hooks/affine/use-delete-collection-info';
-import { FavoriteItemsAdapter } from '@affine/core/modules/properties';
+import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/properties';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import type { Collection } from '@affine/env/filter';
 import { useI18n } from '@affine/i18n';
@@ -79,7 +79,7 @@ export const CollectionOperations = ({
     workbench.openCollection(collection.id, { at: 'tail' });
   }, [collection.id, workbench]);
 
-  const favAdapter = useService(FavoriteItemsAdapter);
+  const favAdapter = useService(CompatibleFavoriteItemsAdapter);
 
   const onToggleFavoritePage = useCallback(() => {
     favAdapter.toggle(collection.id, 'collection');

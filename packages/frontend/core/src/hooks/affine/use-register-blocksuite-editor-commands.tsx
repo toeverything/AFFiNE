@@ -4,7 +4,7 @@ import {
   PreconditionStrategy,
   registerAffineCommand,
 } from '@affine/core/commands';
-import { FavoriteItemsAdapter } from '@affine/core/modules/properties';
+import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/properties';
 import { TelemetryWorkspaceContextService } from '@affine/core/modules/telemetry/services/telemetry';
 import { mixpanel } from '@affine/core/utils';
 import { WorkspaceFlavour } from '@affine/env/workspace';
@@ -32,7 +32,7 @@ export function useRegisterBlocksuiteEditorCommands() {
   const workspace = useService(WorkspaceService).workspace;
   const docCollection = workspace.docCollection;
 
-  const favAdapter = useService(FavoriteItemsAdapter);
+  const favAdapter = useService(CompatibleFavoriteItemsAdapter);
   const favorite = useLiveData(favAdapter.isFavorite$(docId, 'doc'));
   const trash = useLiveData(doc.trash$);
 

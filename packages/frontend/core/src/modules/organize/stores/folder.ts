@@ -1,8 +1,8 @@
-import type { DBService } from '@toeverything/infra';
+import type { WorkspaceDBService } from '@toeverything/infra';
 import { Store } from '@toeverything/infra';
 
 export class FolderStore extends Store {
-  constructor(private readonly dbService: DBService) {
+  constructor(private readonly dbService: WorkspaceDBService) {
     super();
   }
 

@@ -5,6 +5,7 @@ import { configureCloudModule } from './cloud';
 import { configureCollectionModule } from './collection';
 import { configureDocLinksModule } from './doc-link';
 import { configureDocsSearchModule } from './docs-search';
+import { configureFavoriteModule } from './favorite';
 import { configureFindInPageModule } from './find-in-page';
 import { configureNavigationModule } from './navigation';
 import { configureOrganizeModule } from './organize';
@@ -35,4 +36,5 @@ export function configureCommonModules(framework: Framework) {
   configureDocsSearchModule(framework);
   configureDocLinksModule(framework);
   configureOrganizeModule(framework);
+  configureFavoriteModule(framework);
 }

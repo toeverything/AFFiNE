@@ -7,6 +7,7 @@ import { LiveData, Service } from '@toeverything/infra';
 import { defaultsDeep } from 'lodash-es';
 import { Observable } from 'rxjs';
 
+import type { FavoriteService } from '../../favorite';
 import {
   PagePropertyType,
   PageSystemPropertyId,
@@ -130,6 +131,9 @@ export class WorkspacePropertiesAdapter extends Service {
     return this.proxy.schema;
   }
 
+  /**
+   * @deprecated
+   */
   get favorites() {
     return this.proxy.favorites;
   }
@@ -154,8 +158,18 @@ export class WorkspacePropertiesAdapter extends Service {
     const pageProperties = this.pageProperties?.[id];
     pageProperties!.system[PageSystemPropertyId.Journal].value = date;
   }
+
+  /**
+   * After the user completes the migration, call this function to clear the favorite data
+   */
+  cleanupFavorites() {
+    this.proxy.favorites = {};
+  }
 }
 
+/**
+ * @deprecated use CompatibleFavoriteItemsAdapter
+ */
 export class FavoriteItemsAdapter extends Service {
   constructor(private readonly adapter: WorkspacePropertiesAdapter) {
     super();
@@ -283,6 +297,72 @@ export class FavoriteItemsAdapter extends Service {
     const existing = this.getFavoriteItem(id, type);
     if (existing) {
       existing.value = false;
+    }
+  }
+
+  clearAll() {
+    this.adapter.cleanupFavorites();
+  }
+}
+
+/**
+ * A service written for compatibility,with the same API as FavoriteItemsAdapter.
+ * When `runtimeConfig.enableNewFavorite` is false, it operates FavoriteItemsAdapter,
+ * and when it is true, it operates FavoriteService.
+ */
+export class CompatibleFavoriteItemsAdapter extends Service {
+  constructor(
+    private readonly favoriteItemsAdapter: FavoriteItemsAdapter,
+    private readonly favoriteService: FavoriteService
+  ) {
+    super();
+  }
+
+  toggle(id: string, type: WorkspaceFavoriteItem['type']) {
+    if (runtimeConfig.enableNewFavorite) {
+      this.favoriteService.favoriteList.toggle(type, id);
+    } else {
+      this.favoriteItemsAdapter.toggle(id, type);
+    }
+  }
+
+  isFavorite$(id: string, type: WorkspaceFavoriteItem['type']) {
+    if (runtimeConfig.enableNewFavorite) {
+      return this.favoriteService.favoriteList.isFavorite$(type, id);
+    } else {
+      return this.favoriteItemsAdapter.isFavorite$(id, type);
+    }
+  }
+
+  isFavorite(id: string, type: WorkspaceFavoriteItem['type']) {
+    if (runtimeConfig.enableNewFavorite) {
+      return this.favoriteService.favoriteList.isFavorite$(type, id).value;
+    } else {
+      return this.favoriteItemsAdapter.isFavorite(id, type);
+    }
+  }
+
+  get favorites$() {
+    if (runtimeConfig.enableNewFavorite) {
+      return this.favoriteService.favoriteList.list$.map<
+        {
+          id: string;
+          order: string;
+          type: 'doc' | 'collection';
+          value: boolean;
+        }[]
+      >(v =>
+        v
+          .filter(i => i.type === 'doc' || i.type === 'collection') // only support doc and collection
+          .map(i => ({
+            id: i.id,
+            order: '',
+            type: i.type as 'doc' | 'collection',
+            value: true,
+          }))
+      );
+    } else {
+      return this.favoriteItemsAdapter.favorites$;
     }
   }
 }

@@ -1,5 +1,5 @@
 import { Tooltip } from '@affine/component';
-import { FavoriteItemsAdapter } from '@affine/core/modules/properties';
+import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/properties';
 import type { Collection } from '@affine/env/filter';
 import { Trans, useI18n } from '@affine/i18n';
 import {
@@ -42,7 +42,7 @@ export const RulesMode = ({
   const [showPreview, setShowPreview] = useState(true);
   const allowListPages: DocMeta[] = [];
   const rulesPages: DocMeta[] = [];
-  const favAdapter = useService(FavoriteItemsAdapter);
+  const favAdapter = useService(CompatibleFavoriteItemsAdapter);
   const favorites = useLiveData(favAdapter.favorites$);
   allPageListConfig.allPages.forEach(meta => {
     if (meta.trash) {

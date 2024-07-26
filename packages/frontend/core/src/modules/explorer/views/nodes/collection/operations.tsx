@@ -8,7 +8,7 @@ import {
 import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
 import { useDeleteCollectionInfo } from '@affine/core/hooks/affine/use-delete-collection-info';
 import { CollectionService } from '@affine/core/modules/collection';
-import { FavoriteItemsAdapter } from '@affine/core/modules/properties';
+import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/properties';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import { useI18n } from '@affine/i18n';
 import {
@@ -35,19 +35,20 @@ export const useExplorerCollectionNodeOperations = (
     workbenchService,
     docsService,
     collectionService,
-    favoriteItemsAdapter,
+    compatibleFavoriteItemsAdapter,
   } = useServices({
     DocsService,
     WorkbenchService,
     CollectionService,
-    FavoriteItemsAdapter,
+    CompatibleFavoriteItemsAdapter,
   });
   const deleteInfo = useDeleteCollectionInfo();
 
   const favorite = useLiveData(
     useMemo(
-      () => favoriteItemsAdapter.isFavorite$(collectionId, 'collection'),
-      [collectionId, favoriteItemsAdapter]
+      () =>
+        compatibleFavoriteItemsAdapter.isFavorite$(collectionId, 'collection'),
+      [collectionId, compatibleFavoriteItemsAdapter]
     )
   );
   const { openConfirmModal } = useConfirmModal();
@@ -66,8 +67,8 @@ export const useExplorerCollectionNodeOperations = (
   ]);
 
   const handleToggleFavoritePage = useCallback(() => {
-    favoriteItemsAdapter.toggle(collectionId, 'collection');
-  }, [favoriteItemsAdapter, collectionId]);
+    compatibleFavoriteItemsAdapter.toggle(collectionId, 'collection');
+  }, [compatibleFavoriteItemsAdapter, collectionId]);
 
   const handleAddDocToCollection = useCallback(() => {
     openConfirmModal({

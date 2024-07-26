@@ -10,7 +10,8 @@ import {
 import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
 import { useBlockSuiteMetaHelper } from '@affine/core/hooks/affine/use-block-suite-meta-helper';
 import { useTrashModalHelper } from '@affine/core/hooks/affine/use-trash-modal-helper';
-import { FavoriteItemsAdapter } from '@affine/core/modules/properties';
+import { FavoriteService } from '@affine/core/modules/favorite';
+import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/properties';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import { mixpanel } from '@affine/core/utils';
 import type { Collection, DeleteCollectionInfo } from '@affine/env/filter';
@@ -32,7 +33,12 @@ import {
   SplitViewIcon,
 } from '@blocksuite/icons/rc';
 import type { DocMeta } from '@blocksuite/store';
-import { useLiveData, useService, WorkspaceService } from '@toeverything/infra';
+import {
+  useLiveData,
+  useService,
+  useServices,
+  WorkspaceService,
+} from '@toeverything/infra';
 import { useCallback, useState } from 'react';
 import { Link } from 'react-router-dom';
 
@@ -63,7 +69,7 @@ export const PageOperationCell = ({
   const { appSettings } = useAppSettingHelper();
   const { setTrashModal } = useTrashModalHelper(currentWorkspace.docCollection);
   const [openDisableShared, setOpenDisableShared] = useState(false);
-  const favAdapter = useService(FavoriteItemsAdapter);
+  const favAdapter = useService(CompatibleFavoriteItemsAdapter);
   const favourite = useLiveData(favAdapter.isFavorite$(page.id, 'doc'));
   const workbench = useService(WorkbenchService).workbench;
   const { duplicate } = useBlockSuiteMetaHelper(currentWorkspace.docCollection);
@@ -215,14 +221,16 @@ export const PageOperationCell = ({
   );
   return (
     <>
-      <ColWrapper
-        hideInSmallContainer
-        data-testid="page-list-item-favorite"
-        data-favorite={favourite ? true : undefined}
-        className={styles.favoriteCell}
-      >
-        <FavoriteTag onClick={onToggleFavoritePage} active={favourite} />
-      </ColWrapper>
+      {runtimeConfig.enableNewFavorite && (
+        <ColWrapper
+          hideInSmallContainer
+          data-testid="page-list-item-favorite"
+          data-favorite={favourite ? true : undefined}
+          className={styles.favoriteCell}
+        >
+          <FavoriteTag onClick={onToggleFavoritePage} active={favourite} />
+        </ColWrapper>
+      )}
       <ColWrapper alignment="start">
         <Menu
           items={OperationMenu}
@@ -319,7 +327,7 @@ export const CollectionOperationCell = ({
 }: CollectionOperationCellProps) => {
   const t = useI18n();
 
-  const favAdapter = useService(FavoriteItemsAdapter);
+  const favAdapter = useService(CompatibleFavoriteItemsAdapter);
   const docCollection = useService(WorkspaceService).workspace.docCollection;
   const { createPage } = usePageHelper(docCollection);
   const { openConfirmModal } = useConfirmModal();
@@ -482,12 +490,31 @@ export const TagOperationCell = ({
 }: TagOperationCellProps) => {
   const t = useI18n();
   const [open, setOpen] = useState(false);
+  const { favoriteService } = useServices({
+    FavoriteService,
+  });
+  const favourite = useLiveData(
+    favoriteService.favoriteList.isFavorite$('tag', tag.id)
+  );
 
   const handleDelete = useCallback(() => {
     onTagDelete([tag.id]);
   }, [onTagDelete, tag.id]);
+
+  const onToggleFavoriteCollection = useCallback(() => {
+    favoriteService.favoriteList.toggle('tag', tag.id);
+  }, [favoriteService, tag.id]);
   return (
     <>
+      <ColWrapper
+        hideInSmallContainer
+        data-testid="page-list-item-favorite"
+        data-favorite={favourite ? true : undefined}
+        className={styles.favoriteCell}
+      >
+        <FavoriteTag onClick={onToggleFavoriteCollection} active={favourite} />
+      </ColWrapper>
+
       <div className={styles.editTagWrapper} data-show={open}>
         <div style={{ width: '100%' }}>
           <CreateOrEditTag open={open} onOpenChange={setOpen} tagMeta={tag} />

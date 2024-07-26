@@ -178,11 +178,11 @@ test('items in favourites can be reordered by dragging', async ({ page }) => {
 
   await expect(
     page.getByTestId('explorer-favorites').locator('[draggable]').first()
-  ).toHaveText(title0);
+  ).toHaveText('test collection');
 
   await expect(
     page.getByTestId('explorer-favorites').locator('[draggable]').last()
-  ).toHaveText('test collection');
+  ).toHaveText(title0);
 
   // drag the first item to the last
   const firstItem = page
@@ -206,5 +206,5 @@ test('items in favourites can be reordered by dragging', async ({ page }) => {
 
   await expect(
     page.getByTestId('explorer-favorites').locator('[draggable]').last()
-  ).toHaveText(title0);
+  ).toHaveText('test collection');
 });

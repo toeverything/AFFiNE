@@ -1,4 +1,8 @@
-import { DBService, type Framework, WorkspaceScope } from '@toeverything/infra';
+import {
+  type Framework,
+  WorkspaceDBService,
+  WorkspaceScope,
+} from '@toeverything/infra';
 
 import { FolderNode } from './entities/folder-node';
 import { FolderTree } from './entities/folder-tree';
@@ -14,5 +18,5 @@ export function configureOrganizeModule(framework: Framework) {
     .service(OrganizeService)
     .entity(FolderTree, [FolderStore])
     .entity(FolderNode, [FolderStore])
-    .store(FolderStore, [DBService]);
+    .store(FolderStore, [WorkspaceDBService]);
 }

@@ -15,7 +15,7 @@ export * from './sync';
 export * from './utils';
 
 import type { Framework } from './framework';
-import { configureDBModule } from './modules/db';
+import { configureWorkspaceDBModule } from './modules/db';
 import { configureDocModule } from './modules/doc';
 import { configureGlobalContextModule } from './modules/global-context';
 import { configureLifecycleModule } from './modules/lifecycle';
@@ -31,7 +31,7 @@ import {
 export function configureInfraModules(framework: Framework) {
   configureWorkspaceModule(framework);
   configureDocModule(framework);
-  configureDBModule(framework);
+  configureWorkspaceDBModule(framework);
   configureGlobalStorageModule(framework);
   configureGlobalContextModule(framework);
   configureLifecycleModule(framework);

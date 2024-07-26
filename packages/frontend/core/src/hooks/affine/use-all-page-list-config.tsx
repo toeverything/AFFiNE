@@ -2,7 +2,7 @@ import { toast } from '@affine/component';
 import type { AllPageListConfig } from '@affine/core/components/page-list';
 import { FavoriteTag } from '@affine/core/components/page-list';
 import { useBlockSuiteDocMeta } from '@affine/core/hooks/use-block-suite-page-meta';
-import { FavoriteItemsAdapter } from '@affine/core/modules/properties';
+import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/properties';
 import { ShareDocsService } from '@affine/core/modules/share-doc';
 import { PublicPageMode } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
@@ -32,7 +32,7 @@ export const useAllPageListConfig = () => {
     () => Object.fromEntries(pageMetas.map(page => [page.id, page])),
     [pageMetas]
   );
-  const favAdapter = useService(FavoriteItemsAdapter);
+  const favAdapter = useService(CompatibleFavoriteItemsAdapter);
   const t = useI18n();
   const favoriteItems = useLiveData(favAdapter.favorites$);
 

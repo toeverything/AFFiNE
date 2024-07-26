@@ -1,5 +1,5 @@
 import { FavoriteTag } from '@affine/core/components/page-list';
-import { FavoriteItemsAdapter } from '@affine/core/modules/properties';
+import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/properties';
 import { toast } from '@affine/core/utils';
 import { useI18n } from '@affine/i18n';
 import { useLiveData, useService } from '@toeverything/infra';
@@ -11,7 +11,7 @@ export interface FavoriteButtonProps {
 
 export const useFavorite = (pageId: string) => {
   const t = useI18n();
-  const favAdapter = useService(FavoriteItemsAdapter);
+  const favAdapter = useService(CompatibleFavoriteItemsAdapter);
 
   const favorite = useLiveData(favAdapter.isFavorite$(pageId, 'doc'));
 

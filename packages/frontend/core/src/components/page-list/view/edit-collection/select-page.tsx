@@ -1,6 +1,6 @@
 import { Menu, toast } from '@affine/component';
 import { useBlockSuiteDocMeta } from '@affine/core/hooks/use-block-suite-page-meta';
-import { FavoriteItemsAdapter } from '@affine/core/modules/properties';
+import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/properties';
 import { ShareDocsService } from '@affine/core/modules/share-doc';
 import { PublicPageMode } from '@affine/graphql';
 import { Trans, useI18n } from '@affine/i18n';
@@ -60,20 +60,20 @@ export const SelectPage = ({
   }, [onChange]);
   const {
     workspaceService,
-    favoriteItemsAdapter,
+    compatibleFavoriteItemsAdapter,
     shareDocsService,
     docsService,
   } = useServices({
     DocsService,
     ShareDocsService,
     WorkspaceService,
-    FavoriteItemsAdapter,
+    CompatibleFavoriteItemsAdapter,
   });
   const shareDocs = useLiveData(shareDocsService.shareDocs?.list$);
   const workspace = workspaceService.workspace;
   const docCollection = workspace.docCollection;
   const pageMetas = useBlockSuiteDocMeta(docCollection);
-  const favourites = useLiveData(favoriteItemsAdapter.favorites$);
+  const favourites = useLiveData(compatibleFavoriteItemsAdapter.favorites$);
 
   useEffect(() => {
     shareDocsService.shareDocs?.revalidate();
@@ -108,14 +108,14 @@ export const SelectPage = ({
   const onToggleFavoritePage = useCallback(
     (page: DocMeta) => {
       const status = isFavorite(page);
-      favoriteItemsAdapter.toggle(page.id, 'doc');
+      compatibleFavoriteItemsAdapter.toggle(page.id, 'doc');
       toast(
         status
           ? t['com.affine.toastMessage.removedFavorites']()
           : t['com.affine.toastMessage.addedFavorites']()
       );
     },
-    [favoriteItemsAdapter, isFavorite, t]
+    [compatibleFavoriteItemsAdapter, isFavorite, t]
   );
 
   const pageHeaderColsDef = usePageHeaderColsDef();

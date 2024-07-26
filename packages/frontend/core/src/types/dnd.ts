@@ -36,7 +36,13 @@ export interface AffineDNDData extends DNDData {
           collectionId: string;
         }
       | {
-          at: 'explorer:favorite:items';
+          at: 'explorer:favorite:list';
+        }
+      | {
+          at: 'explorer:old-favorite:list';
+        }
+      | {
+          at: 'explorer:migration-data:list';
         }
       | {
           at: 'all-docs:list';
@@ -63,6 +69,12 @@ export interface AffineDNDData extends DNDData {
       }
     | {
         at: 'explorer:organize:folder';
+      }
+    | {
+        at: 'explorer:favorite:root';
+      }
+    | {
+        at: 'explorer:old-favorite:root';
       }
     | {
         at: 'explorer:doc';

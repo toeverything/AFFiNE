@@ -1,4 +1,5 @@
 export {
+  CompatibleFavoriteItemsAdapter,
   FavoriteItemsAdapter,
   WorkspacePropertiesAdapter,
 } from './services/adapter';
@@ -10,7 +11,9 @@ import {
   WorkspaceService,
 } from '@toeverything/infra';
 
+import { FavoriteService } from '../favorite';
 import {
+  CompatibleFavoriteItemsAdapter,
   FavoriteItemsAdapter,
   WorkspacePropertiesAdapter,
 } from './services/adapter';
@@ -21,5 +24,9 @@ export function configureWorkspacePropertiesModule(framework: Framework) {
     .scope(WorkspaceScope)
     .service(WorkspaceLegacyProperties, [WorkspaceService])
     .service(WorkspacePropertiesAdapter, [WorkspaceService])
-    .service(FavoriteItemsAdapter, [WorkspacePropertiesAdapter]);
+    .service(FavoriteItemsAdapter, [WorkspacePropertiesAdapter])
+    .service(CompatibleFavoriteItemsAdapter, [
+      FavoriteItemsAdapter,
+      FavoriteService,
+    ]);
 }

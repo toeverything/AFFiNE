@@ -1,4 +1,4 @@
-import { FavoriteItemsAdapter } from '@affine/core/modules/properties';
+import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/properties';
 import { ShareDocsService } from '@affine/core/modules/share-doc';
 import type { Collection, Filter } from '@affine/env/filter';
 import { PublicPageMode } from '@affine/graphql';
@@ -36,7 +36,7 @@ export const useFilteredPageMetas = (
     shareDocsService.shareDocs?.revalidate();
   }, [shareDocsService]);
 
-  const favAdapter = useService(FavoriteItemsAdapter);
+  const favAdapter = useService(CompatibleFavoriteItemsAdapter);
   const favoriteItems = useLiveData(favAdapter.favorites$);
 
   const filteredPageMetas = useMemo(

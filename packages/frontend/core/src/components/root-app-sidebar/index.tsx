@@ -2,6 +2,8 @@ import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import {
   ExplorerCollections,
   ExplorerFavorites,
+  ExplorerMigrationFavorites,
+  ExplorerOldFavorites,
   ExplorerOrganize,
 } from '@affine/core/modules/explorer';
 import { ExplorerTags } from '@affine/core/modules/explorer/views/sections/tags';
@@ -161,8 +163,10 @@ export const RootAppSidebar = memo(
           </MenuItem>
         </SidebarContainer>
         <SidebarScrollableContainer>
+          {runtimeConfig.enableNewFavorite && <ExplorerFavorites />}
           {runtimeConfig.enableOrganize && <ExplorerOrganize />}
-          <ExplorerFavorites />
+          {runtimeConfig.enableNewFavorite && <ExplorerMigrationFavorites />}
+          {runtimeConfig.enableOldFavorite && <ExplorerOldFavorites />}
           <ExplorerCollections />
           <ExplorerTags />
           <CategoryDivider label={t['com.affine.rootAppSidebar.others']()} />

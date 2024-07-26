@@ -7,7 +7,7 @@ import {
 } from '@affine/component';
 import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import { FavoriteItemsAdapter } from '@affine/core/modules/properties';
+import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/properties';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import { useI18n } from '@affine/i18n';
 import {
@@ -32,20 +32,20 @@ export const useExplorerDocNodeOperations = (
 ): NodeOperation[] => {
   const t = useI18n();
   const { appSettings } = useAppSettingHelper();
-  const { workbenchService, docsService, favoriteItemsAdapter } = useServices({
-    DocsService,
-    WorkbenchService,
-    FavoriteItemsAdapter,
-  });
+  const { workbenchService, docsService, compatibleFavoriteItemsAdapter } =
+    useServices({
+      DocsService,
+      WorkbenchService,
+      CompatibleFavoriteItemsAdapter,
+    });
   const { openConfirmModal } = useConfirmModal();
 
   const docRecord = useLiveData(docsService.list.doc$(docId));
 
   const favorite = useLiveData(
-    useMemo(
-      () => favoriteItemsAdapter.isFavorite$(docId, 'doc'),
-      [docId, favoriteItemsAdapter]
-    )
+    useMemo(() => {
+      return compatibleFavoriteItemsAdapter.isFavorite$(docId, 'doc');
+    }, [docId, compatibleFavoriteItemsAdapter])
   );
 
   const handleMoveToTrash = useCallback(() => {
@@ -84,8 +84,8 @@ export const useExplorerDocNodeOperations = (
   }, [docId, options, docsService, workbenchService.workbench]);
 
   const handleToggleFavoriteDoc = useCallback(() => {
-    favoriteItemsAdapter.toggle(docId, 'doc');
-  }, [favoriteItemsAdapter, docId]);
+    compatibleFavoriteItemsAdapter.toggle(docId, 'doc');
+  }, [docId, compatibleFavoriteItemsAdapter]);
 
   return useMemo(
     () => [
