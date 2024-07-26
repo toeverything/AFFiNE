@@ -233,7 +233,7 @@
   "Publishing": "Publishing to web requires AFFiNE Cloud service.",
   "Publishing Description": "After publishing to the web, everyone can view the content of this workspace through the link.",
   "Quick Search": "Quick Search",
-  "Quick search": "Quick search",
+  "Quick search": "Search",
   "Quick search placeholder": "Quick Search...",
   "Quick search placeholder2": "Search in {{workspace}}",
   "RFP": "Docs can be freely added/removed from pivots, remaining accessible from \"All Docs\".",

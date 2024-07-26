@@ -1,30 +1,16 @@
-import { cssVar } from '@toeverything/theme';
+import { cssVarV2 } from '@toeverything/theme/v2';
 import { style } from '@vanilla-extract/css';
+
 export const root = style({
-  display: 'inline-flex',
-  background: cssVar('white30'),
-  alignItems: 'center',
-  borderRadius: '8px',
-  border: `1px solid ${cssVar('black10')}`,
-  fontSize: cssVar('fontSm'),
-  width: '100%',
-  position: 'relative',
-  height: '52px',
-  userSelect: 'none',
-  cursor: 'pointer',
-  padding: '0 24px',
-  transition: 'background 0.2s ease',
-  selectors: {
-    '&:active': {
-      background: cssVar('white50'),
-    },
-  },
+  width: 32,
+  height: 32,
+  borderRadius: 8,
+  boxShadow: '0px 1px 2px 0px rgba(0, 0, 0, 0.15)',
+  border: `1px solid ${cssVarV2('layer/border')}`,
+  background: cssVarV2('button/siderbarPrimary/background'),
 });
 export const icon = style({
-  marginRight: '18px',
-  color: cssVar('iconColor'),
-  fontSize: '24px',
-});
-export const spacer = style({
-  flex: 1,
+  color: cssVarV2('icon/primary'),
+  fontSize: 20,
+  display: 'block',
 });

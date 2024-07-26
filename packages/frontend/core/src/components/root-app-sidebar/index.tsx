@@ -37,7 +37,12 @@ import { AddCollectionButton } from '../pure/workspace-slider-bar/collections/ad
 import FavoriteList from '../pure/workspace-slider-bar/favorite/favorite-list';
 import { WorkspaceSelector } from '../workspace-selector';
 import ImportPage from './import-page';
-import { workspaceAndUserWrapper, workspaceWrapper } from './index.css';
+import {
+  quickSearch,
+  quickSearchAndNewPage,
+  workspaceAndUserWrapper,
+  workspaceWrapper,
+} from './index.css';
 import { AppSidebarJournalButton } from './journal-button';
 import { UpdaterButton } from './updater-button';
 import { UserInfo } from './user-info';
@@ -176,10 +181,14 @@ export const RootAppSidebar = memo(
             </div>
             <UserInfo />
           </div>
-          <QuickSearchInput
-            data-testid="slider-bar-quick-search-button"
-            onClick={onOpenQuickSearchModal}
-          />
+          <div className={quickSearchAndNewPage}>
+            <QuickSearchInput
+              className={quickSearch}
+              data-testid="slider-bar-quick-search-button"
+              onClick={onOpenQuickSearchModal}
+            />
+            <AddPageButton onClick={onClickNewPage} />
+          </div>
           <RouteMenuLinkItem
             icon={<FolderIcon />}
             active={allPageActive}
@@ -230,8 +239,6 @@ export const RootAppSidebar = memo(
         </SidebarScrollableContainer>
         <SidebarContainer>
           {environment.isDesktop ? <UpdaterButton /> : <AppDownloadButton />}
-          <div style={{ height: '4px' }} />
-          <AddPageButton onClick={onClickNewPage} />
         </SidebarContainer>
       </AppSidebar>
     );

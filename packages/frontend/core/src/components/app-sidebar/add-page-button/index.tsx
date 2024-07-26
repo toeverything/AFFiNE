@@ -1,9 +1,9 @@
+import { Button, Tooltip } from '@affine/component';
 import { useI18n } from '@affine/i18n';
 import { PlusIcon } from '@blocksuite/icons/rc';
 import clsx from 'clsx';
 import type React from 'react';
 
-import { Spotlight } from '../spolight';
 import * as styles from './index.css';
 
 interface AddPageButtonProps {
@@ -20,14 +20,15 @@ export function AddPageButton({
   const t = useI18n();
 
   return (
-    <button
-      data-testid="sidebar-new-page-button"
-      style={style}
-      className={clsx([styles.root, className])}
-      onClick={onClick}
-    >
-      <PlusIcon className={styles.icon} /> {t['New Page']()}
-      <Spotlight />
-    </button>
+    <Tooltip content={t['New Page']()} side="bottom">
+      <Button
+        data-testid="sidebar-new-page-button"
+        style={style}
+        className={clsx([styles.root, className])}
+        onClick={onClick}
+      >
+        <PlusIcon className={styles.icon} />
+      </Button>
+    </Tooltip>
   );
 }

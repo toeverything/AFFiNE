@@ -9,6 +9,15 @@ export const workspaceAndUserWrapper = style({
   justifyContent: 'space-between',
   gap: 8,
 });
+export const quickSearchAndNewPage = style({
+  display: 'flex',
+  alignItems: 'center',
+  gap: 8,
+});
+export const quickSearch = style({
+  width: 0,
+  flex: 1,
+});
 
 export const workspaceWrapper = style({
   width: 0,

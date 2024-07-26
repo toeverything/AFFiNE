@@ -1,11 +1,12 @@
 import { cssVar } from '@toeverything/theme';
+import { cssVarV2 } from '@toeverything/theme/v2';
 import { style } from '@vanilla-extract/css';
 export const root = style({
   display: 'inline-flex',
-  background: cssVar('white10'),
+  background: cssVarV2('button/siderbarPrimary/background'),
   alignItems: 'center',
   borderRadius: '8px',
-  border: `1px solid ${cssVar('black10')}`,
+  border: `1px solid ${cssVarV2('layer/border')}`,
   fontSize: cssVar('fontSm'),
   width: '100%',
   height: '36px',
@@ -14,16 +15,17 @@ export const root = style({
   padding: '0 12px',
   margin: '20px 0',
   position: 'relative',
+  whiteSpace: 'nowrap',
 });
 export const icon = style({
   marginRight: '8px',
-  color: cssVar('iconColor'),
+  color: cssVarV2('icon/primary'),
   fontSize: '20px',
 });
 export const spacer = style({
   flex: 1,
 });
 export const shortcutHint = style({
-  color: cssVar('black30'),
+  color: cssVarV2('text/tertiary'),
   fontSize: cssVar('fontBase'),
 });
