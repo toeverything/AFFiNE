@@ -150,7 +150,9 @@ const createBasicCover = async (
 };
 
 function getRandomElement<T>(arr: T[]): T {
-  return arr[Math.floor(Math.random() * arr.length)];
+  return JSON.parse(
+    JSON.stringify(arr[Math.floor(Math.random() * arr.length)])
+  );
 }
 
 const basic1section = async (
