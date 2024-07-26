@@ -2,16 +2,19 @@ import { Button, type ButtonProps, useConfirmModal } from '@affine/component';
 import { useDowngradeNotify } from '@affine/core/components/affine/subscription-landing/notify';
 import { getDowngradeQuestionnaireLink } from '@affine/core/hooks/affine/use-subscription-notify';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
+import type { MixpanelEvents } from '@affine/core/mixpanel';
 import { AuthService, SubscriptionService } from '@affine/core/modules/cloud';
-import { mixpanel } from '@affine/core/utils';
+import { mixpanel, mixpanelTrack } from '@affine/core/utils';
 import { SubscriptionPlan } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
 import { useService } from '@toeverything/infra';
 import { nanoid } from 'nanoid';
 import { useState } from 'react';
 
-export interface AICancelProps extends ButtonProps {}
-export const AICancel = ({ ...btnProps }: AICancelProps) => {
+export interface AICancelProps extends ButtonProps {
+  module: MixpanelEvents['PlanChangeStarted']['module'];
+}
+export const AICancel = ({ module, ...btnProps }: AICancelProps) => {
   const t = useI18n();
   const [isMutating, setMutating] = useState(false);
   const [idempotencyKey, setIdempotencyKey] = useState(nanoid());
@@ -22,12 +25,16 @@ export const AICancel = ({ ...btnProps }: AICancelProps) => {
   const downgradeNotify = useDowngradeNotify();
 
   const cancel = useAsyncCallback(async () => {
-    mixpanel.track('PlanChangeStarted', {
-      segment: 'settings panel',
-      control: 'plan cancel action',
-      type: subscription.ai$.value?.plan,
-      category: subscription.ai$.value?.recurring,
-    });
+    const aiSubscription = subscription.ai$.value;
+    if (aiSubscription) {
+      mixpanelTrack('PlanChangeStarted', {
+        module,
+        segment: 'settings panel',
+        control: 'cancel',
+        type: SubscriptionPlan.AI,
+        category: aiSubscription.recurring,
+      });
+    }
     openConfirmModal({
       title: t['com.affine.payment.ai.action.cancel.confirm.title'](),
       description:
@@ -51,9 +58,10 @@ export const AICancel = ({ ...btnProps }: AICancelProps) => {
             SubscriptionPlan.AI
           );
           setIdempotencyKey(nanoid());
-          mixpanel.track('ChangePlanSucceeded', {
+          mixpanel.track('PlanChangeSucceeded', {
             segment: 'settings panel',
             control: 'plan cancel action',
+            type: subscription.ai$.value?.plan,
           });
           const account = authService.session.account$.value;
           const prevRecurring = subscription.ai$.value?.recurring;
@@ -74,6 +82,7 @@ export const AICancel = ({ ...btnProps }: AICancelProps) => {
       },
     });
   }, [
+    module,
     subscription,
     openConfirmModal,
     t,

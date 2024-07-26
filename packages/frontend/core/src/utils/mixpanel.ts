@@ -2,6 +2,8 @@ import { DebugLogger } from '@affine/debug';
 import type { OverridedMixpanel } from 'mixpanel-browser';
 import mixpanelBrowser from 'mixpanel-browser';
 
+import type { MixpanelEvents } from '../mixpanel';
+
 const logger = new DebugLogger('affine:mixpanel');
 
 export const mixpanel = process.env.MIXPANEL_TOKEN
@@ -30,4 +32,11 @@ function createProxyHandler(property?: string | symbol) {
     },
   } as ProxyHandler<OverridedMixpanel>;
   return handler;
+}
+
+export function mixpanelTrack<T extends keyof MixpanelEvents>(
+  event: T,
+  properties?: MixpanelEvents[T]
+) {
+  return mixpanel.track(event, properties);
 }

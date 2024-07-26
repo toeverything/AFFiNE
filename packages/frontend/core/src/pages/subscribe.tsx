@@ -83,10 +83,6 @@ export const Component = () => {
               });
               setMessage('Redirecting...');
               location.href = checkout;
-              mixpanel.track('PlanChangeSucceeded', {
-                type: plan,
-                category: recurring,
-              });
               if (plan) {
                 mixpanel.people.set({
                   [SubscriptionPlan.AI === plan ? 'ai plan' : plan]: plan,

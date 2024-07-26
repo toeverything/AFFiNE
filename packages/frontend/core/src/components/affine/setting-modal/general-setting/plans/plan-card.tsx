@@ -3,7 +3,7 @@ import { Tooltip } from '@affine/component/ui/tooltip';
 import { generateSubscriptionCallbackLink } from '@affine/core/hooks/affine/use-subscription-notify';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { AuthService, SubscriptionService } from '@affine/core/modules/cloud';
-import { popupWindow } from '@affine/core/utils';
+import { mixpanelTrack, popupWindow } from '@affine/core/utils';
 import type { SubscriptionRecurring } from '@affine/graphql';
 import { SubscriptionPlan, SubscriptionStatus } from '@affine/graphql';
 import { Trans, useI18n } from '@affine/i18n';
@@ -179,7 +179,6 @@ const CurrentPlan = () => {
 const Downgrade = ({ disabled }: { disabled?: boolean }) => {
   const t = useI18n();
   const [open, setOpen] = useState(false);
-  const subscription = useService(SubscriptionService).subscription;
 
   const tooltipContent = disabled
     ? t['com.affine.payment.downgraded-tooltip']()
@@ -187,17 +186,10 @@ const Downgrade = ({ disabled }: { disabled?: boolean }) => {
 
   const handleClick = useCallback(() => {
     setOpen(true);
-    mixpanel.track('PlanChangeStarted', {
-      segment: 'settings panel',
-      module: 'pricing plan list',
-      control: 'billing cancel action',
-      type: subscription.pro$.value?.plan,
-      category: subscription.pro$.value?.recurring,
-    });
-  }, [subscription.pro$.value?.plan, subscription.pro$.value?.recurring]);
+  }, []);
 
   return (
-    <CancelAction open={open} onOpenChange={setOpen}>
+    <CancelAction module="pricing plan list" open={open} onOpenChange={setOpen}>
       <Tooltip content={tooltipContent} rootOptions={{ delayDuration: 0 }}>
         <div className={styles.planAction}>
           <Button
@@ -345,11 +337,11 @@ const ChangeRecurring = ({
   const subscription = useService(SubscriptionService).subscription;
 
   const onStartChange = useCallback(() => {
-    mixpanel.track('PlanChangeStarted', {
+    mixpanelTrack('PlanChangeStarted', {
       segment: 'settings panel',
       module: 'pricing plan list',
-      control: 'plan resume action',
-      type: 'cloud pro subscription',
+      control: 'paying',
+      type: SubscriptionPlan.Pro,
       category: to,
     });
     setOpen(true);
@@ -428,14 +420,17 @@ const ResumeButton = () => {
 
   const handleClick = useCallback(() => {
     setOpen(true);
-    mixpanel.track('PlanChangeStarted', {
-      segment: 'settings panel',
-      module: 'pricing plan list',
-      control: 'pricing plan action',
-      type: 'cloud pro subscription',
-      category: subscription.pro$.value?.recurring,
-    });
-  }, [subscription.pro$.value?.recurring]);
+    const pro = subscription.pro$.value;
+    if (pro) {
+      mixpanelTrack('PlanChangeStarted', {
+        segment: 'settings panel',
+        module: 'pricing plan list',
+        control: 'paying',
+        type: SubscriptionPlan.Pro,
+        category: pro.recurring,
+      });
+    }
+  }, [subscription.pro$.value]);
 
   return (
     <ResumeAction open={open} onOpenChange={setOpen}>

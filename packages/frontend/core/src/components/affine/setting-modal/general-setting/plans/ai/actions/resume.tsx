@@ -5,8 +5,9 @@ import {
   useConfirmModal,
 } from '@affine/component';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
+import type { MixpanelEvents } from '@affine/core/mixpanel';
 import { SubscriptionService } from '@affine/core/modules/cloud';
-import { mixpanel } from '@affine/core/utils';
+import { mixpanelTrack } from '@affine/core/utils';
 import { SubscriptionPlan } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
 import { SingleSelectSelectSolidIcon } from '@blocksuite/icons/rc';
@@ -15,9 +16,11 @@ import { cssVar } from '@toeverything/theme';
 import { nanoid } from 'nanoid';
 import { useState } from 'react';
 
-export interface AIResumeProps extends ButtonProps {}
+export interface AIResumeProps extends ButtonProps {
+  module: MixpanelEvents['PlanChangeStarted']['module'];
+}
 
-export const AIResume = ({ ...btnProps }: AIResumeProps) => {
+export const AIResume = ({ module, ...btnProps }: AIResumeProps) => {
   const t = useI18n();
   const [idempotencyKey, setIdempotencyKey] = useState(nanoid());
   const subscription = useService(SubscriptionService).subscription;
@@ -27,12 +30,16 @@ export const AIResume = ({ ...btnProps }: AIResumeProps) => {
   const { openConfirmModal } = useConfirmModal();
 
   const resume = useAsyncCallback(async () => {
-    mixpanel.track('PlanChangeStarted', {
-      segment: 'settings panel',
-      control: 'plan resume action',
-      type: subscription.ai$.value?.plan,
-      category: subscription.ai$.value?.recurring,
-    });
+    const aiSubscription = subscription.ai$.value;
+    if (aiSubscription) {
+      mixpanelTrack('PlanChangeStarted', {
+        module,
+        segment: 'settings panel',
+        control: 'paying',
+        type: aiSubscription.plan,
+        category: aiSubscription.recurring,
+      });
+    }
 
     openConfirmModal({
       title: t['com.affine.payment.ai.action.resume.confirm.title'](),
@@ -51,10 +58,13 @@ export const AIResume = ({ ...btnProps }: AIResumeProps) => {
           idempotencyKey,
           SubscriptionPlan.AI
         );
-        mixpanel.track('ChangePlanSucceeded', {
-          segment: 'settings panel',
-          control: 'plan resume action',
-        });
+        if (aiSubscription) {
+          mixpanelTrack('PlanChangeSucceeded', {
+            category: aiSubscription.recurring,
+            control: 'paying',
+            type: aiSubscription.plan,
+          });
+        }
         notify({
           icon: <SingleSelectSelectSolidIcon />,
           iconColor: cssVar('processingColor'),
@@ -66,7 +76,7 @@ export const AIResume = ({ ...btnProps }: AIResumeProps) => {
         setIdempotencyKey(nanoid());
       },
     });
-  }, [openConfirmModal, t, subscription, idempotencyKey]);
+  }, [subscription, openConfirmModal, t, module, idempotencyKey]);
 
   return (
     <Button loading={isMutating} onClick={resume} type="primary" {...btnProps}>

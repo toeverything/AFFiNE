@@ -104,7 +104,7 @@ export const AIUsagePanel = () => {
     >
       {copilotActionLimit === 'unlimited' ? (
         hasPaymentFeature && aiSubscription?.canceledAt ? (
-          <AIResume />
+          <AIResume module="billing subscription list" />
         ) : (
           <Button onClick={openBilling}>
             {t['com.affine.payment.ai.usage.change-button-label']()}
