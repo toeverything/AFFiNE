@@ -5,19 +5,6 @@ export const ellipsis = style({
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',
 });
-export const pagesBottomLeft = style({
-  display: 'flex',
-  gap: 8,
-  alignItems: 'center',
-});
-export const pagesBottom = style({
-  display: 'flex',
-  justifyContent: 'space-between',
-  padding: '20px 24px',
-  borderTop: `1px solid ${cssVar('borderColor')}`,
-  flexWrap: 'wrap',
-  gap: '12px',
-});
 export const pagesTabContent = style({
   display: 'flex',
   justifyContent: 'space-between',
@@ -26,10 +13,10 @@ export const pagesTabContent = style({
   padding: '16px 16px 8px 16px',
 });
 export const pagesTab = style({
-  flex: 1,
   display: 'flex',
   flexDirection: 'column',
   width: '100%',
+  height: '100%',
   overflow: 'hidden',
 });
 export const pagesList = style({
@@ -64,15 +51,6 @@ export const rulesContainerRight = style({
   borderLeft: `1px solid ${cssVar('borderColor')}`,
   overflowX: 'hidden',
   overflowY: 'auto',
-});
-export const includeAddButton = style({
-  display: 'flex',
-  alignItems: 'center',
-  gap: 6,
-  padding: '4px 8px',
-  fontSize: 14,
-  lineHeight: '22px',
-  width: 'max-content',
 });
 export const includeItemTitle = style({
   overflow: 'hidden',
@@ -162,11 +140,6 @@ export const previewCountTips = style({
   fontSize: 12,
   lineHeight: '20px',
   color: cssVar('textSecondaryColor'),
-});
-export const selectedCountTips = style({
-  fontSize: 12,
-  lineHeight: '20px',
-  color: cssVar('textPrimaryColor'),
 });
 export const rulesTitleHighlight = style({
   color: cssVar('primaryColor'),

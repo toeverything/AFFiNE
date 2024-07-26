@@ -121,7 +121,6 @@ export const EditCollection = ({
           {t['com.affine.editCollection.button.cancel']()}
         </Button>
         <Button
-          className={styles.confirmButton}
           size="large"
           data-testid="save-collection"
           type="primary"
@@ -169,7 +168,6 @@ export const EditCollection = ({
     >
       {mode === 'page' ? (
         <SelectPage
-          allPageListConfig={config}
           init={value.allowList}
           onChange={onIdsChange}
           header={switchMode}
