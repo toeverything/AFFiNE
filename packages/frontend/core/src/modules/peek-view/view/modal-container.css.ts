@@ -42,6 +42,12 @@ export const modalContentContainer = style({
     },
   },
 });
+export const modalContentClip = style({
+  width: '100%',
+  height: '100%',
+  borderRadius: 'inherit',
+  overflow: 'hidden',
+});
 
 export const dialog = style({
   backgroundColor: cssVar('backgroundOverlayPanelColor'),

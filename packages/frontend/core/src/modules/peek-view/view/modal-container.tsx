@@ -129,7 +129,6 @@ export const PeekViewModalContainer = forwardRef<
         const toRect = to.getBoundingClientRect();
 
         targets.style.position = 'fixed';
-        targets.style.overflow = 'hidden';
         targets.style.opacity = '1';
         lockSizeEl.style.width = zoomIn
           ? `${toRect.width}px`
@@ -179,7 +178,6 @@ export const PeekViewModalContainer = forwardRef<
                 top: '',
                 width: '',
                 height: '',
-                overflow: '',
               });
               Object.assign(lockSizeEl.style, {
                 width: '100%',
@@ -200,6 +198,18 @@ export const PeekViewModalContainer = forwardRef<
     },
     [target]
   );
+  /**
+   * ### Animation timeline:
+   * ```plain
+   *                                      150ms
+   *                                   ⎮ - - - - ⎮
+   * dialog:     +--------400ms--------+
+   * controls:               +-------230ms-------+
+   *             ⎮ - - - - - ⎮
+   *            controls delay =
+   *             400 - 230 + 150
+   * ```
+   */
   const animateZoomIn = useCallback(() => {
     setAnimeState('animating');
     setVtOpen(true);
@@ -214,10 +224,13 @@ export const PeekViewModalContainer = forwardRef<
           opacity: [0, 1],
           duration: 100,
         },
-      })
-        .then(() => animateControls(true))
-        .catch(console.error);
+      }).catch(console.error);
     }, 0);
+    setTimeout(
+      () => animateControls(true),
+      // controls delay: to make sure the time interval for animations of dialog and controls is 150ms.
+      400 - 230 + 150
+    );
   }, [animateControls, zoomAnimate]);
   const animateZoomOut = useCallback(() => {
     setAnimeState('animating');
@@ -308,20 +321,27 @@ export const PeekViewModalContainer = forwardRef<
               ref={contentClipRef}
               className={styles.modalContentContainer}
             >
-              <Dialog.Content
-                {...contentOptions}
-                className={clsx({
-                  [styles.modalContent]: true,
-                  [styles.dialog]: dialogFrame,
-                })}
-              >
-                <Dialog.Title style={{ display: 'none' }} />
-                <div style={{ height: '100%' }} ref={contentRef}>
-                  {children}
-                </div>
-              </Dialog.Content>
+              <div className={styles.modalContentClip}>
+                <Dialog.Content
+                  {...contentOptions}
+                  className={clsx({
+                    [styles.modalContent]: true,
+                    [styles.dialog]: dialogFrame,
+                  })}
+                >
+                  <Dialog.Title style={{ display: 'none' }} />
+                  <div style={{ height: '100%' }} ref={contentRef}>
+                    {children}
+                  </div>
+                </Dialog.Content>
+              </div>
               {controls ? (
-                <div ref={controlsRef} className={styles.modalControls}>
+                <div
+                  // initially hide the controls to prevent flickering for zoom animation
+                  style={{ opacity: animation === 'zoom' ? 0 : undefined }}
+                  ref={controlsRef}
+                  className={styles.modalControls}
+                >
                   {controls}
                 </div>
               ) : null}
