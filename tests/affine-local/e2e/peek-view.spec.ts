@@ -140,7 +140,12 @@ test('can open peek view for embedded frames', async ({ page }) => {
 
   await page
     .locator('.surface-ref-toolbar-container')
-    .locator('icon-button:has-text("center peek")')
+    .locator('editor-icon-button[aria-label="Open doc"]')
+    .click();
+
+  await page
+    .locator('.surface-ref-toolbar-container')
+    .locator('editor-menu-action:has-text("center peek")')
     .click();
 
   // verify peek view is opened

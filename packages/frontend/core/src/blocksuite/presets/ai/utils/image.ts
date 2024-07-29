@@ -8,7 +8,7 @@ export async function fetchImageToFile(
 ): Promise<File | void> {
   try {
     const res = await fetchImage(url, undefined, imageProxy);
-    if (res.ok) {
+    if (res && res.ok) {
       let blob = await res.blob();
       if (!blob.type || !blob.type.startsWith('image/')) {
         blob = await convertToPng(blob).then(tmp => tmp || blob);
