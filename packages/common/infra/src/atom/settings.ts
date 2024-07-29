@@ -33,6 +33,7 @@ export type AppSetting = {
   autoDownloadUpdate: boolean;
   enableMultiView: boolean;
   enableTelemetry: boolean;
+  enableOutlineViewer: boolean;
   editorFlags: Partial<Omit<BlockSuiteFlags, 'readonly'>>;
 };
 export const windowFrameStyleOptions: AppSetting['windowFrameStyle'][] = [
@@ -74,6 +75,7 @@ const appSettingBaseAtom = atomWithStorage<AppSetting>('affine-settings', {
   autoDownloadUpdate: true,
   enableTelemetry: true,
   enableMultiView: false,
+  enableOutlineViewer: false,
   editorFlags: {},
 });
 

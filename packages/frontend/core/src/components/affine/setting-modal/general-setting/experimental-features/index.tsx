@@ -80,11 +80,13 @@ const ExperimentalFeaturesItem = ({
   isMutating,
   checked,
   onChange,
+  testId,
 }: {
   title: React.ReactNode;
   isMutating?: boolean;
   checked: boolean;
   onChange: (checked: boolean) => void;
+  testId?: string;
 }) => {
   return (
     <div className={styles.switchRow}>
@@ -93,6 +95,7 @@ const ExperimentalFeaturesItem = ({
         checked={checked}
         onChange={onChange}
         className={isMutating ? styles.switchDisabled : ''}
+        data-testid={testId}
       />
     </div>
   );
@@ -117,6 +120,26 @@ const SplitViewSettingRow = () => {
       title="Split View"
       checked={appSettings.enableMultiView}
       onChange={onToggle}
+    />
+  );
+};
+
+const OutlineViewerSettingRow = () => {
+  const { appSettings, updateSettings } = useAppSettingHelper();
+
+  const onToggle = useCallback(
+    (checked: boolean) => {
+      updateSettings('enableOutlineViewer', checked);
+    },
+    [updateSettings]
+  );
+
+  return (
+    <ExperimentalFeaturesItem
+      title="Outline Viewer"
+      checked={appSettings.enableOutlineViewer}
+      onChange={onToggle}
+      testId="outline-viewer-switch"
     />
   );
 };
@@ -177,6 +200,7 @@ const ExperimentalFeaturesMain = () => {
       >
         <SplitViewSettingRow />
         <BlocksuiteFeatureFlagSettings />
+        <OutlineViewerSettingRow />
       </div>
     </>
   );

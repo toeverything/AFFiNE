@@ -63,10 +63,11 @@ import { performanceRenderLogger } from '../../../shared';
 import { PageNotFound } from '../../404';
 import * as styles from './detail-page.css';
 import { DetailPageHeader } from './detail-page-header';
+import { EditorOutlineViewer } from './outline-viewer';
 import { EditorChatPanel } from './tabs/chat';
 import { EditorFramePanel } from './tabs/frame';
 import { EditorJournalPanel } from './tabs/journal';
-import { EditorOutline } from './tabs/outline';
+import { EditorOutlinePanel } from './tabs/outline';
 
 const DetailPageImpl = memo(function DetailPageImpl() {
   const workbench = useService(WorkbenchService).workbench;
@@ -206,6 +207,11 @@ const DetailPageImpl = memo(function DetailPageImpl() {
     [jumpToPageBlock, docCollection.id, openPage, jumpToTag, workspace.id]
   );
 
+  const openOutlinePanel = useCallback(() => {
+    workbench.openSidebar();
+    view.activeSidebarTab('outline');
+  }, [workbench, view]);
+
   return (
     <>
       <ViewHeader>
@@ -239,6 +245,12 @@ const DetailPageImpl = memo(function DetailPageImpl() {
           </AffineErrorBoundary>
           {isInTrash ? <TrashPageFooter /> : null}
         </div>
+        {appSettings.enableOutlineViewer && (
+          <EditorOutlineViewer
+            editor={editor}
+            toggleOutlinePanel={openOutlinePanel}
+          />
+        )}
       </ViewBody>
 
       <ViewSidebarTab tabId="chat" icon={<AiIcon />} unmountOnInactive={false}>
@@ -250,7 +262,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
       </ViewSidebarTab>
 
       <ViewSidebarTab tabId="outline" icon={<TocIcon />}>
-        <EditorOutline editor={editor} />
+        <EditorOutlinePanel editor={editor} />
       </ViewSidebarTab>
 
       <ViewSidebarTab tabId="frame" icon={<FrameIcon />}>
