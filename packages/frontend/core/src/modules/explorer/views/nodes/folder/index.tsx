@@ -1,4 +1,5 @@
 import {
+  AnimatedCollectionsIcon,
   AnimatedFolderIcon,
   type DropTargetDropEvent,
   type DropTargetOptions,
@@ -6,7 +7,13 @@ import {
   MenuIcon,
   MenuItem,
   MenuSeparator,
+  MenuSub,
 } from '@affine/component';
+import {
+  useSelectCollection,
+  useSelectDoc,
+  useSelectTag,
+} from '@affine/core/components/page-list/selector';
 import {
   type FolderNode,
   OrganizeService,
@@ -18,10 +25,14 @@ import { useI18n } from '@affine/i18n';
 import {
   DeleteIcon,
   FolderIcon,
+  PageIcon,
   PlusIcon,
+  PlusThickIcon,
   RemoveFolderIcon,
+  TagsIcon,
 } from '@blocksuite/icons/rc';
 import { DocsService, useLiveData, useServices } from '@toeverything/infra';
+import { difference } from 'lodash-es';
 import { useCallback, useMemo, useState } from 'react';
 
 import { ExplorerTreeNode, type ExplorerTreeNodeDropEffect } from '../../tree';
@@ -153,6 +164,9 @@ export const ExplorerFolderNodeFolder = ({
     DocsService,
     WorkbenchService,
   });
+  const openDocsSelector = useSelectDoc();
+  const openTagsSelector = useSelectTag();
+  const openCollectionsSelector = useSelectCollection();
   const name = useLiveData(node.name$);
   const [collapsed, setCollapsed] = useState(true);
   const [newFolderId, setNewFolderId] = useState<string | null>(null);
@@ -479,6 +493,47 @@ export const ExplorerFolderNodeFolder = ({
     setNewFolderId(newFolderId);
   }, [node, t]);
 
+  const handleAddToFolder = useCallback(
+    (type: 'doc' | 'collection' | 'tag') => {
+      const initialIds = children
+        .filter(node => node.type$.value === type)
+        .map(node => node.data$.value)
+        .filter(Boolean) as string[];
+      const selector =
+        type === 'doc'
+          ? openDocsSelector
+          : type === 'collection'
+            ? openCollectionsSelector
+            : openTagsSelector;
+      selector(initialIds)
+        .then(selectedIds => {
+          const newItemIds = difference(selectedIds, initialIds);
+          const removedItemIds = difference(initialIds, selectedIds);
+          const removedItems = children.filter(
+            node =>
+              !!node.data$.value && removedItemIds.includes(node.data$.value)
+          );
+
+          newItemIds.forEach(id =>
+            node.createLink(type, id, node.indexAt('after'))
+          );
+          removedItems.forEach(node => node.delete());
+          const updated = newItemIds.length + removedItems.length;
+          updated && setCollapsed(false);
+        })
+        .catch(err => {
+          console.error(`Unexpected error while selecting ${type}`, err);
+        });
+    },
+    [
+      children,
+      node,
+      openCollectionsSelector,
+      openDocsSelector,
+      openTagsSelector,
+    ]
+  );
+
   const folderOperations = useMemo(() => {
     return [
       {
@@ -506,6 +561,63 @@ export const ExplorerFolderNodeFolder = ({
         ),
       },
       {
+        index: 101,
+        view: (
+          <MenuItem
+            preFix={
+              <MenuIcon>
+                <PageIcon />
+              </MenuIcon>
+            }
+            onClick={() => handleAddToFolder('doc')}
+          >
+            {t['com.affine.rootAppSidebar.organize.folder.add-docs']()}
+          </MenuItem>
+        ),
+      },
+      {
+        index: 102,
+        view: (
+          <MenuSub
+            triggerOptions={{
+              preFix: (
+                <MenuIcon>
+                  <PlusThickIcon />
+                </MenuIcon>
+              ),
+            }}
+            items={
+              <>
+                <MenuItem
+                  onClick={() => handleAddToFolder('tag')}
+                  preFix={
+                    <MenuIcon>
+                      <TagsIcon />
+                    </MenuIcon>
+                  }
+                >
+                  {t['com.affine.rootAppSidebar.organize.folder.add-tags']()}
+                </MenuItem>
+                <MenuItem
+                  onClick={() => handleAddToFolder('collection')}
+                  preFix={
+                    <MenuIcon>
+                      <AnimatedCollectionsIcon closed={false} />
+                    </MenuIcon>
+                  }
+                >
+                  {t[
+                    'com.affine.rootAppSidebar.organize.folder.add-collections'
+                  ]()}
+                </MenuItem>
+              </>
+            }
+          >
+            {t['com.affine.rootAppSidebar.organize.folder.add-others']()}
+          </MenuSub>
+        ),
+      },
+      {
         index: 9999,
         view: <MenuSeparator key="menu-separator" />,
       },
@@ -526,7 +638,7 @@ export const ExplorerFolderNodeFolder = ({
         ),
       },
     ];
-  }, [handleCreateSubfolder, handleDelete, handleNewDoc, t]);
+  }, [handleAddToFolder, handleCreateSubfolder, handleDelete, handleNewDoc, t]);
 
   const finalOperations = useMemo(() => {
     if (additionalOperations) {
