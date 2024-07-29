@@ -37,12 +37,21 @@ export const ExplorerTags = ({
     setCollapsed(false);
   }, [t, tagService]);
 
+  const handleCollapsedChange = useCallback((collapsed: boolean) => {
+    if (collapsed) {
+      setCreatedTag(null); // reset created tag to clear the renaming state
+      setCollapsed(true);
+    } else {
+      setCollapsed(false);
+    }
+  }, []);
+
   return (
     <Collapsible.Root className={styles.container} open={!collapsed}>
       <CategoryDivider
         className={styles.draggedOverHighlight}
         label={t['com.affine.rootAppSidebar.tags']()}
-        setCollapsed={setCollapsed}
+        setCollapsed={handleCollapsedChange}
         collapsed={collapsed}
       >
         <IconButton

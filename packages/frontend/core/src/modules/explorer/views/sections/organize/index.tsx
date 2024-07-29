@@ -95,12 +95,21 @@ export const ExplorerOrganize = ({
     DropTargetOptions<AffineDNDData>['canDrop']
   >(() => args => args.source.data.entity?.type === 'folder', []);
 
+  const handleCollapsedChange = useCallback((collapsed: boolean) => {
+    if (collapsed) {
+      setNewFolderId(null); // reset new folder id to clear the renaming state
+      setCollapsed(true);
+    } else {
+      setCollapsed(false);
+    }
+  }, []);
+
   return (
     <Collapsible.Root className={styles.container} open={!collapsed}>
       <CategoryDivider
         className={styles.draggedOverHighlight}
         label={t['com.affine.rootAppSidebar.organize']()}
-        setCollapsed={setCollapsed}
+        setCollapsed={handleCollapsedChange}
         collapsed={collapsed}
       >
         <IconButton

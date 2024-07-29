@@ -24,10 +24,8 @@ import { assignInlineVars } from '@vanilla-extract/dynamic';
 import clsx from 'clsx';
 import type { To } from 'history';
 import {
-  type Dispatch,
   Fragment,
   type RefAttributes,
-  type SetStateAction,
   useCallback,
   useContext,
   useEffect,
@@ -86,7 +84,7 @@ export const ExplorerTreeNode = ({
   reorderable?: boolean;
   defaultRenaming?: boolean;
   collapsed: boolean;
-  setCollapsed: Dispatch<SetStateAction<boolean>>;
+  setCollapsed: (collapsed: boolean) => void;
   renameable?: boolean;
   onRename?: (newName: string) => void;
   disabled?: boolean;
@@ -285,9 +283,9 @@ export const ExplorerTreeNode = ({
     if (!clickForCollapse) {
       onClick?.();
     } else {
-      setCollapsed(prev => !prev);
+      setCollapsed(!collapsed);
     }
-  }, [clickForCollapse, onClick, setCollapsed]);
+  }, [clickForCollapse, collapsed, onClick, setCollapsed]);
 
   const content = (
     <div

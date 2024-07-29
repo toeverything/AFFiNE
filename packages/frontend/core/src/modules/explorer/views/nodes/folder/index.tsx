@@ -679,6 +679,15 @@ export const ExplorerFolderNodeFolder = ({
     [handleDeleteChildren, t]
   );
 
+  const handleCollapsedChange = useCallback((collapsed: boolean) => {
+    if (collapsed) {
+      setNewFolderId(null); // reset new folder id to clear the renaming state
+      setCollapsed(true);
+    } else {
+      setCollapsed(false);
+    }
+  }, []);
+
   return (
     <ExplorerTreeNode
       icon={({ draggedOver, className, treeInstruction }) => (
@@ -694,7 +703,7 @@ export const ExplorerFolderNodeFolder = ({
       renameable
       reorderable={reorderable}
       collapsed={collapsed}
-      setCollapsed={setCollapsed}
+      setCollapsed={handleCollapsedChange}
       onRename={handleRename}
       operations={finalOperations}
       canDrop={handleCanDrop}
