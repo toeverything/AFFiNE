@@ -71,7 +71,7 @@ test('can chat after login at chat side panel', async ({ page }) => {
   await makeChat(page, 'hello');
   const history = await collectChat(page);
   expect(history[0]).toEqual({ name: 'You', content: 'hello' });
-  expect(history[1].name).toBe('AFFINE AI');
+  expect(history[1].name).toBe('AFFiNE AI');
 });
 
 test.describe('chat panel', () => {
@@ -96,6 +96,6 @@ test.describe('chat panel', () => {
     await makeChat(page, 'hello');
     const history = await collectChat(page);
     expect(history[0]).toEqual({ name: 'You', content: 'hello' });
-    expect(history[1].name).toBe('AFFINE AI');
+    expect(history[1].name).toBe('AFFiNE AI');
   });
 });
