@@ -39,7 +39,6 @@ export const itemContent = style({
   overflow: 'hidden',
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',
-  display: 'flex',
   alignItems: 'center',
   flex: 1,
 });
