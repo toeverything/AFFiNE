@@ -314,13 +314,10 @@ export const createComponent = <
 
     React.useLayoutEffect(() => {
       const container = containerRef.current;
-      if (!container) {
+      if (!container || container.contains(element)) {
         return;
       }
       container.append(element);
-      return () => {
-        element.remove();
-      };
     }, [element]);
 
     return React.createElement(tagName, {
