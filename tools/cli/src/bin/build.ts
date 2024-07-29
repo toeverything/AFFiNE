@@ -29,14 +29,14 @@ const getChannel = () => {
   }
 };
 
-let entry: string | undefined;
+let entry: BuildFlags['entry'];
 
 const { DISTRIBUTION } = process.env;
 
 const cwd = getCwdFromDistribution(DISTRIBUTION);
 
 if (DISTRIBUTION === 'desktop') {
-  entry = './index.tsx';
+  entry = { app: './index.tsx', shell: './shell/index.tsx' };
 }
 
 const flags = {

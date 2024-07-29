@@ -19,7 +19,7 @@ export const tableHeader = style({
   transform: 'translateY(-0.5px)', // fix sticky look through issue
 });
 globalStyle(`[data-has-scroll-top=true] ${tableHeader}`, {
-  boxShadow: `0 1px ${cssVar('borderColor')}`,
+  boxShadow: `0 0.5px ${cssVar('borderColor')}`,
 });
 export const headerTitleSelectionIconWrapper = style({
   display: 'flex',

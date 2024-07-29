@@ -3,6 +3,7 @@ import { Entity, LiveData } from '@toeverything/infra';
 import type { To } from 'history';
 import { nanoid } from 'nanoid';
 
+import type { WorkbenchDefaultState } from '../services/workbench-view-state';
 import { View } from './view';
 
 export type WorkbenchPosition = 'beside' | 'active' | 'head' | 'tail' | number;
@@ -13,17 +14,27 @@ interface WorkbenchOpenOptions {
 }
 
 export class Workbench extends Entity {
-  readonly views$ = new LiveData([
-    this.framework.createEntity(View, { id: nanoid() }),
-  ]);
+  constructor(private readonly defaultState: WorkbenchDefaultState) {
+    super();
+  }
 
-  activeViewIndex$ = new LiveData(0);
+  readonly activeViewIndex$ = new LiveData(this.defaultState.activeViewIndex);
+  readonly basename$ = new LiveData(this.defaultState.basename);
+
+  readonly views$: LiveData<View[]> = new LiveData(
+    this.defaultState.views.map(meta => {
+      return this.framework.createEntity(View, {
+        id: meta.id,
+        defaultLocation: meta.path,
+      });
+    })
+  );
+
   activeView$ = LiveData.computed(get => {
     const activeIndex = get(this.activeViewIndex$);
     const views = get(this.views$);
-    return views[activeIndex];
+    return views[activeIndex]; // todo: this could be null
   });
-  basename$ = new LiveData('/');
   location$ = LiveData.computed(get => {
     return get(get(this.activeView$).location$);
   });
@@ -32,6 +43,10 @@ export class Workbench extends Entity {
   active(index: number) {
     index = Math.max(0, Math.min(index, this.views$.value.length - 1));
     this.activeViewIndex$.next(index);
+  }
+
+  updateBasename(basename: string) {
+    this.basename$.next(basename);
   }
 
   createView(at: WorkbenchPosition = 'beside', defaultLocation: To) {

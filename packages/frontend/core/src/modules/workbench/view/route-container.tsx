@@ -1,5 +1,4 @@
 import { IconButton } from '@affine/component';
-import { WindowsAppControls } from '@affine/core/components/pure/header/windows-app-controls';
 import { RightSidebarIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useAtomValue } from 'jotai';
@@ -50,12 +49,11 @@ export const RouteContainer = ({ route }: Props) => {
   const handleToggleSidebar = useCallback(() => {
     workbench.toggleSidebar();
   }, [workbench]);
-  const isWindowsDesktop = environment.isDesktop && environment.isWindows;
 
   return (
     <div className={styles.root}>
       <div className={styles.header}>
-        {viewPosition.isFirst && (
+        {viewPosition.isFirst && !environment.isDesktop && (
           <SidebarSwitch
             show={!leftSidebarOpen}
             className={styles.leftSidebarButton}
@@ -65,19 +63,12 @@ export const RouteContainer = ({ route }: Props) => {
           viewId={view.id}
           className={styles.viewHeaderContainer}
         />
-        {viewPosition.isLast && (
-          <>
-            <ToggleButton
-              show={!sidebarOpen}
-              className={styles.rightSidebarButton}
-              onToggle={handleToggleSidebar}
-            />
-            {isWindowsDesktop && !sidebarOpen && (
-              <div className={styles.windowsAppControlsContainer}>
-                <WindowsAppControls />
-              </div>
-            )}
-          </>
+        {viewPosition.isLast && !environment.isDesktop && (
+          <ToggleButton
+            show={!sidebarOpen}
+            className={styles.rightSidebarButton}
+            onToggle={handleToggleSidebar}
+          />
         )}
       </div>
 

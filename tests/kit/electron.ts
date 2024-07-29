@@ -1,17 +1,12 @@
 import crypto from 'node:crypto';
 import { join, resolve } from 'node:path';
 
-import type { Page } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
 import fs from 'fs-extra';
 import type { ElectronApplication } from 'playwright';
 import { _electron as electron } from 'playwright';
 
-import {
-  enableCoverage,
-  istanbulTempDir,
-  test as base,
-  testResultDir,
-} from './playwright';
+import { test as base, testResultDir } from './playwright';
 import { removeWithRetry } from './utils/utils';
 
 const projectRoot = join(__dirname, '..', '..');
@@ -23,8 +18,30 @@ function generateUUID() {
 
 type RoutePath = 'setting';
 
+const getPageId = async (page: Page) => {
+  return page.evaluate(() => {
+    return (window.appInfo as any)?.viewId as string;
+  });
+};
+
+const isActivePage = async (page: Page) => {
+  return page.evaluate(async () => {
+    return await (window as any).apis?.ui.isActiveTab();
+  });
+};
+
+const getActivePage = async (pages: Page[]) => {
+  for (const page of pages) {
+    if (await isActivePage(page)) {
+      return page;
+    }
+  }
+  return null;
+};
+
 export const test = base.extend<{
   electronApp: ElectronApplication;
+  shell: Page;
   appInfo: {
     appPath: string;
     appData: string;
@@ -34,88 +51,89 @@ export const test = base.extend<{
     goto: (path: RoutePath) => Promise<void>;
   };
 }>({
+  shell: async ({ electronApp }, use) => {
+    await expect.poll(() => electronApp.windows().length > 1).toBeTruthy();
+
+    for (const page of electronApp.windows()) {
+      const viewId = await getPageId(page);
+      if (viewId === 'shell') {
+        await use(page);
+        break;
+      }
+    }
+  },
   page: async ({ electronApp }, use) => {
-    const page = await electronApp.firstWindow();
+    await expect
+      .poll(() => {
+        return electronApp.windows().length > 1;
+      })
+      .toBeTruthy();
+
+    const page = await getActivePage(electronApp.windows());
+
+    if (!page) {
+      throw new Error('No active page found');
+    }
+
+    // wait for blocksuite to be loaded
+    await page.waitForSelector('v-line');
+
     await page.evaluate(() => {
       window.localStorage.setItem('dismissAiOnboarding', 'true');
       window.localStorage.setItem('dismissAiOnboardingEdgeless', 'true');
       window.localStorage.setItem('dismissAiOnboardingLocal', 'true');
     });
-    // wait for blocksuite to be loaded
-    await page.waitForSelector('v-line');
-    if (enableCoverage) {
-      await fs.promises.mkdir(istanbulTempDir, { recursive: true });
-      await page.exposeFunction(
-        'collectIstanbulCoverage',
-        (coverageJSON?: string) => {
-          if (coverageJSON)
-            fs.writeFileSync(
-              join(
-                istanbulTempDir,
-                `playwright_coverage_${generateUUID()}.json`
-              ),
-              coverageJSON
-            );
-        }
-      );
-    }
+
+    await page.reload();
+
     await use(page as Page);
-    if (enableCoverage) {
-      await page.evaluate(() =>
-        // @ts-expect-error
-        window.collectIstanbulCoverage(JSON.stringify(window.__coverage__))
-      );
-    }
-    await page.close();
   },
   // eslint-disable-next-line no-empty-pattern
   electronApp: async ({}, use) => {
-    // a random id to avoid conflicts between tests
-    const id = generateUUID();
-    const ext = process.platform === 'win32' ? '.cmd' : '';
-    const dist = resolve(electronRoot, 'dist');
-    const clonedDist = resolve(electronRoot, 'e2e-dist-' + id);
-    await fs.copy(dist, clonedDist);
-    const packageJson = await fs.readJSON(
-      resolve(electronRoot, 'package.json')
-    );
-    // overwrite the app name
-    packageJson.name = 'affine-test-' + id;
-    // overwrite the path to the main script
-    packageJson.main = './main.js';
-    // write to the cloned dist
-    await fs.writeJSON(resolve(clonedDist, 'package.json'), packageJson);
-
-    const env: Record<string, string> = {};
-    for (const [key, value] of Object.entries(process.env)) {
-      if (value) {
-        env[key] = value;
-      }
-    }
-
-    if (process.env.DEV_SERVER_URL) {
-      env.DEV_SERVER_URL = process.env.DEV_SERVER_URL;
-    }
-
-    env.SKIP_ONBOARDING = '1';
-
-    const electronApp = await electron.launch({
-      args: [clonedDist],
-      env,
-      executablePath: resolve(
-        projectRoot,
-        'node_modules',
-        '.bin',
-        `electron${ext}`
-      ),
-      cwd: clonedDist,
-      recordVideo: {
-        dir: testResultDir,
-      },
-      colorScheme: 'light',
-    });
-    await use(electronApp);
     try {
+      // a random id to avoid conflicts between tests
+      const id = generateUUID();
+      const dist = resolve(electronRoot, 'dist');
+      const clonedDist = resolve(electronRoot, 'e2e-dist-' + id);
+      await fs.copy(dist, clonedDist);
+      const packageJson = await fs.readJSON(
+        resolve(electronRoot, 'package.json')
+      );
+      // overwrite the app name
+      packageJson.name = 'affine-test-' + id;
+      // overwrite the path to the main script
+      packageJson.main = './main.js';
+      // write to the cloned dist
+      await fs.writeJSON(resolve(clonedDist, 'package.json'), packageJson);
+
+      const env: Record<string, string> = {};
+      for (const [key, value] of Object.entries(process.env)) {
+        if (value) {
+          env[key] = value;
+        }
+      }
+
+      env.SKIP_ONBOARDING = '1';
+
+      const electronApp = await electron.launch({
+        args: [clonedDist],
+        env,
+        cwd: clonedDist,
+        recordVideo: {
+          dir: testResultDir,
+        },
+        colorScheme: 'light',
+      });
+
+      await use(electronApp);
+      console.log('Cleaning up...');
+      const pages = electronApp.windows();
+      for (let i = 0; i < pages.length; i++) {
+        const page = pages[i];
+        await page.close();
+        console.log(`Closed page ${i + 1}/${pages.length}`);
+      }
+      await electronApp.close();
       await removeWithRetry(clonedDist);
     } catch (error) {
       console.log(error);
@@ -131,4 +149,9 @@ export const test = base.extend<{
     });
     await use(appInfo);
   },
+});
+
+// eslint-disable-next-line no-empty-pattern
+test.afterEach(({}, testInfo) => {
+  console.log('cleaning up for ' + testInfo);
 });

@@ -3,7 +3,7 @@ import '@affine/core/bootstrap/preload';
 
 import { appConfigProxy } from '@affine/core/hooks/use-app-config-storage';
 import { performanceLogger } from '@affine/core/shared';
-import { apis, events } from '@affine/electron-api';
+import { apis, appInfo, events } from '@affine/electron-api';
 import {
   init,
   reactRouterV6BrowserTracingIntegration,
@@ -73,6 +73,23 @@ function main() {
     apis?.ui.isFullScreen().then(handleFullscreen).catch(console.error);
     events?.ui.onMaximized(handleMaximized);
     events?.ui.onFullScreen(handleFullscreen);
+
+    const tabId = appInfo?.viewId;
+    const handleActiveTabChange = (active: boolean) => {
+      document.documentElement.dataset.active = String(active);
+    };
+
+    if (tabId) {
+      apis?.ui
+        .isActiveTab()
+        .then(active => {
+          handleActiveTabChange(active);
+          events?.ui.onActiveTabChanged(id => {
+            handleActiveTabChange(id === tabId);
+          });
+        })
+        .catch(console.error);
+    }
 
     const handleResize = debounce(() => {
       apis?.ui.handleWindowResize().catch(console.error);

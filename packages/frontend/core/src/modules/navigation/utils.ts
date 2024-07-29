@@ -18,11 +18,13 @@ export const resolveRouteLinkMeta = (href: string) => {
       return null;
     }
 
-    // http://xxx/workspace/all/yyy
-    // to { workspaceId: '48__RTCSwASvWZxyAk3Jw', docId: '-Uge-K6SYcAbcNYfQ5U-j', blockId: 'xxxx' }
+    const hash = url.hash;
+    const pathname = url.pathname;
 
+    // http://---/workspace/{workspaceid}/xxx/yyy
+    // http://---/workspace/{workspaceid}/xxx
     const [_, workspaceId, moduleName, subModuleName] =
-      url.toString().match(/\/workspace\/([^/]+)\/([^#]+)(?:#(.+))?/) || [];
+      pathname.match(/\/workspace\/([^/]+)\/([^/]+)(?:\/([^/]+))?/) || [];
 
     if (isRouteModulePath(moduleName)) {
       return {
@@ -36,7 +38,7 @@ export const resolveRouteLinkMeta = (href: string) => {
         workspaceId,
         moduleName: 'doc' as const,
         docId: moduleName,
-        blockId: subModuleName,
+        blockId: hash.slice(1),
       };
     }
     return;
@@ -48,7 +50,8 @@ export const resolveRouteLinkMeta = (href: string) => {
 /**
  * @see /packages/frontend/core/src/router.tsx
  */
-const routeModulePaths = ['all', 'collection', 'tag', 'trash'] as const;
+export const routeModulePaths = ['all', 'collection', 'tag', 'trash'] as const;
+export type RouteModulePath = (typeof routeModulePaths)[number];
 
 const isRouteModulePath = (
   path: string

@@ -7,7 +7,6 @@ import {
   useCallback,
   useEffect,
   useImperativeHandle,
-  useRef,
 } from 'react';
 
 import { usePageHeaderColsDef } from './header-col-def';
@@ -156,8 +155,7 @@ export const ListScrollContainer = forwardRef<
   HTMLDivElement,
   PropsWithChildren<ListScrollContainerProps>
 >(({ className, children, style }, ref) => {
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const hasScrollTop = useHasScrollTop(containerRef);
+  const [setContainer, hasScrollTop] = useHasScrollTop();
 
   const setNodeRef = useCallback(
     (r: HTMLDivElement) => {
@@ -168,9 +166,9 @@ export const ListScrollContainer = forwardRef<
           ref.current = r;
         }
       }
-      containerRef.current = r;
+      return setContainer(r);
     },
-    [ref]
+    [ref, setContainer]
   );
 
   return (

@@ -11,11 +11,6 @@ export const header = style({
   zIndex: 1,
   gap: '12px',
   background: cssVar('backgroundPrimaryColor'),
-  selectors: {
-    '&[data-sidebar-floating="false"]': {
-      ['WebkitAppRegion' as string]: 'drag',
-    },
-  },
   '@media': {
     print: {
       display: 'none',
@@ -35,10 +30,4 @@ export const standaloneExtensionSwitcherWrapper = style({
   flexShrink: 0,
   height: '52px',
   position: 'relative',
-});
-
-export const windowsAppControlsContainer = style({
-  display: 'flex',
-  height: '100%',
-  marginRight: '-16px',
 });

@@ -111,7 +111,10 @@ const cwd = getCwdFromDistribution(flags.distribution);
 process.env.DISTRIBUTION = flags.distribution;
 
 if (flags.distribution === 'desktop') {
-  flags.entry = join(cwd, 'index.tsx');
+  flags.entry = {
+    app: join(cwd, 'index.tsx'),
+    shell: join(cwd, 'shell/index.tsx'),
+  };
 }
 
 if (buildFlags.debugBlockSuite) {

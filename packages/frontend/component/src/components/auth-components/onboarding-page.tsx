@@ -100,11 +100,9 @@ export const ScrollableLayout = ({
 export const OnboardingPage = ({
   user,
   onOpenAffine,
-  windowControl,
 }: {
   user: User;
   onOpenAffine: () => void;
-  windowControl?: React.ReactNode;
 }) => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -150,19 +148,16 @@ export const OnboardingPage = ({
     return (
       <ScrollableLayout
         headerItems={
-          <>
-            {isWindowsDesktop ? windowControl : null}
-            <Button
-              className={clsx(styles.button, {
-                [styles.disableButton]: questionIdx === 0,
-                [styles.windowsAppButton]: isWindowsDesktop,
-              })}
-              size="extraLarge"
-              onClick={() => setQuestionIdx(questions.length)}
-            >
-              Skip
-            </Button>
-          </>
+          <Button
+            className={clsx(styles.button, {
+              [styles.disableButton]: questionIdx === 0,
+              [styles.windowsAppButton]: isWindowsDesktop,
+            })}
+            size="extraLarge"
+            onClick={() => setQuestionIdx(questions.length)}
+          >
+            Skip
+          </Button>
         }
         isMacosDesktop={isMacosDesktop}
         isWindowsDesktop={isWindowsDesktop}
@@ -265,7 +260,6 @@ export const OnboardingPage = ({
   }
   return (
     <ScrollableLayout
-      headerItems={isWindowsDesktop ? windowControl : null}
       isMacosDesktop={isMacosDesktop}
       isWindowsDesktop={isWindowsDesktop}
     >

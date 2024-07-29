@@ -1,4 +1,4 @@
-import { Scrollable } from '@affine/component';
+import { Scrollable, useHasScrollTop } from '@affine/component';
 import { PageDetailSkeleton } from '@affine/component/page-detail-skeleton';
 import type { ChatPanel } from '@affine/core/blocksuite/presets/ai';
 import { AIProvider } from '@affine/core/blocksuite/presets/ai';
@@ -212,18 +212,26 @@ const DetailPageImpl = memo(function DetailPageImpl() {
     view.activeSidebarTab('outline');
   }, [workbench, view]);
 
+  const [refCallback, hasScrollTop] = useHasScrollTop();
+  const dynamicTopBorder = environment.isDesktop;
+
   return (
     <>
       <ViewHeader>
         <DetailPageHeader page={doc.blockSuiteDoc} workspace={workspace} />
       </ViewHeader>
       <ViewBody>
-        <div className={styles.mainContainer}>
+        <div
+          className={styles.mainContainer}
+          data-dynamic-top-border={dynamicTopBorder}
+          data-has-scroll-top={hasScrollTop}
+        >
           {/* Add a key to force rerender when page changed, to avoid error boundary persisting. */}
           <AffineErrorBoundary key={doc.id}>
             <TopTip pageId={doc.id} workspace={workspace} />
             <Scrollable.Root>
               <Scrollable.Viewport
+                ref={refCallback}
                 className={clsx(
                   'affine-page-viewport',
                   styles.affineDocViewport,

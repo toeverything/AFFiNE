@@ -1,11 +1,12 @@
 import { z } from 'zod';
 
-const _appConfigSchema = z.object({
+export const appConfigSchema = z.object({
   /** whether to show onboarding first */
   onBoarding: z.boolean().optional().default(true),
 });
-export type AppConfigSchema = z.infer<typeof _appConfigSchema>;
-export const defaultAppConfig = _appConfigSchema.parse({});
+
+export type AppConfigSchema = z.infer<typeof appConfigSchema>;
+export const defaultAppConfig = appConfigSchema.parse({});
 
 const _storage: Record<number, any> = {};
 let _inMemoryId = 0;
@@ -48,7 +49,7 @@ class Storage<T extends object> {
   }
 
   get(): T;
-  get(key: keyof T): T[keyof T];
+  get<K extends keyof T>(key: K): T[K];
   /**
    * get config, if key is provided, return the value of the key
    * @param key

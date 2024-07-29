@@ -3,10 +3,10 @@ import { join } from 'node:path';
 import type { Display } from 'electron';
 import { BrowserWindow, screen } from 'electron';
 
-import { isMacOS } from '../shared/utils';
-import { mainWindowOrigin } from './constants';
+import { isMacOS } from '../../shared/utils';
+import { onboardingViewUrl } from '../constants';
 // import { getExposedMeta } from './exposed';
-import { logger } from './logger';
+import { logger } from '../logger';
 
 const getScreenSize = (display: Display) => {
   const { width, height } = isMacOS() ? display.bounds : display.workArea;
@@ -15,7 +15,7 @@ const getScreenSize = (display: Display) => {
 
 // todo: not all window need all of the exposed meta
 const getWindowAdditionalArguments = async () => {
-  const { getExposedMeta } = await import('./exposed');
+  const { getExposedMeta } = await import('../exposed');
   const mainExposedMeta = getExposedMeta();
   return [
     `--main-exposed-meta=` + JSON.stringify(mainExposedMeta),
@@ -90,9 +90,7 @@ async function createOnboardingWindow(additionalArguments: string[]) {
     fullscreenAndCenter(browserWindow);
   });
 
-  await browserWindow.loadURL(
-    `${mainWindowOrigin}${mainWindowOrigin.endsWith('/') ? '' : '/'}onboarding`
-  );
+  await browserWindow.loadURL(onboardingViewUrl);
 
   return browserWindow;
 }

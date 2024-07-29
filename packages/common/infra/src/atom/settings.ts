@@ -105,6 +105,7 @@ export function setupEditorFlags(docCollection: DocCollection) {
 
 type SetStateAction<Value> = Value | ((prev: Value) => Value);
 
+// todo(@pengx17): use global state instead
 const appSettingEffect = atomEffect(get => {
   const settings = get(appSettingBaseAtom);
   // some values in settings should be synced into electron side

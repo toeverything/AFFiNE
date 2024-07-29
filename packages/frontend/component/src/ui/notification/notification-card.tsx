@@ -80,7 +80,10 @@ export const NotificationCard = ({ notification }: NotificationCardProps) => {
             data-float={!!thumb}
             className={clsx(styles.headAlignWrapper, styles.closeButton)}
           >
-            <IconButton onClick={onDismiss}>
+            <IconButton
+              data-testid="notification-close-button"
+              onClick={onDismiss}
+            >
               <CloseIcon className={styles.closeIcon} width={16} height={16} />
             </IconButton>
           </div>

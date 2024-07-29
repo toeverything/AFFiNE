@@ -8,4 +8,4 @@ export { Framework } from './framework';
 export { createIdentifier } from './identifier';
 export type { ResolveOptions } from './provider';
 export { FrameworkProvider } from './provider';
-export type { GeneralIdentifier } from './types';
+export type { GeneralIdentifier, Identifier } from './types';

@@ -25,7 +25,7 @@ export const workbenchSidebar = style({
       borderRadius: 6,
     },
     [`&[data-client-border=false]`]: {
-      borderLeft: `1px solid ${cssVar('borderColor')}`,
+      borderLeft: `0.5px solid ${cssVar('borderColor')}`,
     },
   },
 });

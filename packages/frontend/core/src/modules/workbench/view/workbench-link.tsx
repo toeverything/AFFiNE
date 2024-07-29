@@ -1,8 +1,10 @@
 import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
+import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { popupWindow } from '@affine/core/utils';
+import { apis } from '@affine/electron-api';
 import { useLiveData, useService } from '@toeverything/infra';
-import type { To } from 'history';
-import { forwardRef, type MouseEvent, useCallback } from 'react';
+import { parsePath, type To } from 'history';
+import { forwardRef, type MouseEvent } from 'react';
 
 import { WorkbenchService } from '../services/workbench';
 
@@ -21,8 +23,8 @@ export const WorkbenchLink = forwardRef<
   const link =
     basename +
     (typeof to === 'string' ? to : `${to.pathname}${to.search}${to.hash}`);
-  const handleClick = useCallback(
-    (event: React.MouseEvent<HTMLAnchorElement>) => {
+  const handleClick = useAsyncCallback(
+    async (event: React.MouseEvent<HTMLAnchorElement>) => {
       event.preventDefault();
       event.stopPropagation();
       if (onClick?.(event) === false) {
@@ -30,8 +32,16 @@ export const WorkbenchLink = forwardRef<
       }
 
       if (event.ctrlKey || event.metaKey) {
-        if (appSettings.enableMultiView && environment.isDesktop) {
-          workbench.open(to, { at: 'beside' });
+        if (environment.isDesktop) {
+          if (event.altKey && appSettings.enableMultiView) {
+            workbench.open(to, { at: 'tail' });
+          } else {
+            const path = typeof to === 'string' ? parsePath(to) : to;
+            await apis?.ui.addTab({
+              basename,
+              view: { path },
+            });
+          }
         } else if (!environment.isDesktop) {
           popupWindow(link);
         }
@@ -39,7 +49,7 @@ export const WorkbenchLink = forwardRef<
         workbench.open(to);
       }
     },
-    [appSettings.enableMultiView, link, onClick, to, workbench]
+    [appSettings.enableMultiView, basename, link, onClick, to, workbench]
   );
 
   // eslint suspicious runtime error

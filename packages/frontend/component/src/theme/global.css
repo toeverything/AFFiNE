@@ -288,6 +288,20 @@ textarea
   -webkit-app-region: no-drag;
 }
 
+html[data-active='false'] {
+  opacity: 0;
+  transition: opacity 0.2s 0.1s;
+}
+
+html[data-active='true']:has([data-blur-background='true']) {
+  opacity: 1;
+  transition: opacity 0.2s;
+}
+
+html[data-active='false'] * {
+  -webkit-app-region: no-drag !important;
+}
+
 html,
 body {
   height: 100%;

@@ -6,7 +6,16 @@ export const mainContainer = style({
   flexDirection: 'column',
   flex: 1,
   overflow: 'hidden',
-  borderTop: `1px solid ${cssVar('borderColor')}`,
+  borderTop: `0.5px solid transparent`,
+  transition: 'border-color 0.2s',
+  selectors: {
+    '&[data-dynamic-top-border="false"]': {
+      borderColor: cssVar('borderColor'),
+    },
+    '&[data-has-scroll-top="true"]': {
+      borderColor: cssVar('borderColor'),
+    },
+  },
 });
 
 export const editorContainer = style({
