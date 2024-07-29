@@ -3,6 +3,7 @@ import {
   type DropTargetOptions,
   toast,
 } from '@affine/component';
+import type { Tag } from '@affine/core/modules/tag';
 import { TagService } from '@affine/core/modules/tag';
 import type { AffineDNDData } from '@affine/core/types/dnd';
 import { useI18n } from '@affine/i18n';
@@ -46,7 +47,6 @@ export const ExplorerTagNode = ({
   const tagRecord = useLiveData(tagService.tagList.tagByTagId$(tagId));
   const tagColor = useLiveData(tagRecord?.color$);
   const tagName = useLiveData(tagRecord?.value$);
-  const tagDocIds = useLiveData(tagRecord?.pageIds$);
 
   const Icon = useCallback(
     ({ className }: { className?: string }) => {
@@ -181,16 +181,27 @@ export const ExplorerTagNode = ({
       dropEffect={handleDropEffectOnTag}
       data-testid={`explorer-tag-${tagId}`}
     >
-      {tagDocIds?.map(docId => (
-        <ExplorerDocNode
-          key={docId}
-          docId={docId}
-          reorderable={false}
-          location={{
-            at: 'explorer:tags:docs',
-          }}
-        />
-      ))}
+      <ExplorerTagNodeDocs tag={tagRecord} />
     </ExplorerTreeNode>
   );
+};
+
+/**
+ * the `tag.pageIds$` has a performance issue,
+ * so we split the tag node children into a separate component,
+ * so it won't be rendered when the tag node is collapsed.
+ */
+export const ExplorerTagNodeDocs = ({ tag }: { tag: Tag }) => {
+  const tagDocIds = useLiveData(tag.pageIds$);
+
+  return tagDocIds.map(docId => (
+    <ExplorerDocNode
+      key={docId}
+      docId={docId}
+      reorderable={false}
+      location={{
+        at: 'explorer:tags:docs',
+      }}
+    />
+  ));
 };

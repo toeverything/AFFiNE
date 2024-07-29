@@ -12,8 +12,18 @@ export class TagList extends Entity {
     super();
   }
 
+  private readonly pool = new Map<string, Tag>();
+
   readonly tags$ = LiveData.from(this.store.watchTagIds(), []).map(ids => {
-    return ids.map(id => this.framework.createEntity(Tag, { id }));
+    return ids.map(id => {
+      const exists = this.pool.get(id);
+      if (exists) {
+        return exists;
+      }
+      const record = this.framework.createEntity(Tag, { id });
+      this.pool.set(id, record);
+      return record;
+    });
   });
 
   createTag(value: string, color: string) {
