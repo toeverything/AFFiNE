@@ -1,7 +1,6 @@
 import { test } from '@affine-test/kit/electron';
 import {
   clickNewPageButton,
-  createLinkedPage,
   getBlockSuiteEditorTitle,
 } from '@affine-test/kit/utils/page-logic';
 import {
@@ -142,43 +141,4 @@ test('delete workspace', async ({ page }) => {
   await expect(page.getByTestId('workspace-name')).toContainText(
     'Demo Workspace'
   );
-});
-
-// temporary way to enable split view
-async function enableSplitView(page: Page) {
-  await page.evaluate(() => {
-    const settingKey = 'affine-settings';
-    window.localStorage.setItem(
-      settingKey,
-      JSON.stringify({
-        clientBorder: false,
-        fullWidthLayout: false,
-        windowFrameStyle: 'frameless',
-        fontStyle: 'Serif',
-        dateFormat: 'MM/dd/YYYY',
-        startWeekOnMonday: false,
-        enableBlurBackground: true,
-        enableNoisyBackground: true,
-        autoCheckUpdate: true,
-        autoDownloadUpdate: true,
-        enableMultiView: true,
-        editorFlags: {},
-      })
-    );
-  });
-  await page.reload();
-}
-
-test('open split view', async ({ page }) => {
-  await enableSplitView(page);
-  await clickNewPageButton(page);
-  await page.waitForTimeout(500);
-  await page.keyboard.press('Enter');
-  await createLinkedPage(page, 'hi from another page');
-  await page
-    .locator('.affine-reference-title:has-text("hi from another page")')
-    .click({
-      modifiers: ['ControlOrMeta', 'Alt'],
-    });
-  await expect(page.locator('.doc-title-container')).toHaveCount(2);
 });

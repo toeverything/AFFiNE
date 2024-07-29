@@ -1,3 +1,5 @@
+// TODO(@pengx17): remove
+
 import type { affine } from '@affine/electron-api';
 // Credit: https://github.com/spaceagetv/electron-playwright-helpers/blob/main/src/ipc_helpers.ts
 import type { Page } from '@playwright/test';

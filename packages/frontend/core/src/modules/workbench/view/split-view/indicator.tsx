@@ -47,6 +47,7 @@ export const SplitViewMenuIndicator = memo(
         <div
           ref={ref}
           data-active={active}
+          data-testid="split-view-indicator"
           className={clsx(className, styles.indicator)}
           onClick={onClick}
           onMouseDown={onMouseDown}

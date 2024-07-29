@@ -710,7 +710,7 @@ export class WebContentViewsManager {
       view.webContents.on('did-finish-load', () => {
         unsub = helperProcessManager.connectRenderer(view.webContents);
       });
-      view.webContents.on('did-start-loading', () => {
+      view.webContents.on('will-navigate', () => {
         // means the view is reloaded
         this.appTabsUIReady$.next(
           new Set([...this.appTabsUIReady$.value].filter(key => key !== viewId))

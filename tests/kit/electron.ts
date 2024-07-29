@@ -47,6 +47,9 @@ export const test = base.extend<{
     appData: string;
     sessionData: string;
   };
+  views: {
+    getActive: () => Promise<Page>;
+  };
   router: {
     goto: (path: RoutePath) => Promise<void>;
   };
@@ -87,6 +90,15 @@ export const test = base.extend<{
     await page.reload();
 
     await use(page as Page);
+  },
+  views: async ({ electronApp, page }, use) => {
+    void page; // makes sure page is a dependency
+    await use({
+      getActive: async () => {
+        const view = await getActivePage(electronApp.windows());
+        return view || page;
+      },
+    });
   },
   // eslint-disable-next-line no-empty-pattern
   electronApp: async ({}, use) => {
@@ -149,9 +161,4 @@ export const test = base.extend<{
     });
     await use(appInfo);
   },
-});
-
-// eslint-disable-next-line no-empty-pattern
-test.afterEach(({}, testInfo) => {
-  console.log('cleaning up for ' + testInfo);
 });

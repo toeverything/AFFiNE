@@ -84,6 +84,7 @@ const WorkbenchTab = ({
   return (
     <div
       key={workbench.id}
+      data-testid="workbench-tab"
       data-active={tabActive}
       data-pinned={workbench.pinned}
       className={styles.tab}
@@ -93,6 +94,7 @@ const WorkbenchTab = ({
           <Fragment key={view.id}>
             <button
               key={view.id}
+              data-testid="split-view-label"
               className={styles.splitViewLabel}
               data-active={activeViewIndex === viewIdx && tabActive}
               onContextMenu={() => {
@@ -125,7 +127,11 @@ const WorkbenchTab = ({
       })}
       {!workbench.pinned && tabsLength > 1 ? (
         <div className={styles.tabCloseButtonWrapper}>
-          <button className={styles.tabCloseButton} onClick={onCloseTab}>
+          <button
+            data-testid="close-tab-button"
+            className={styles.tabCloseButton}
+            onClick={onCloseTab}
+          >
             <CloseIcon />
           </button>
         </div>
@@ -214,7 +220,7 @@ export const AppTabsHeader = ({
             />
           );
         })}
-        <IconButton onClick={onAddTab}>
+        <IconButton onClick={onAddTab} data-testid="add-tab-view-button">
           <PlusIcon />
         </IconButton>
       </div>
