@@ -19,8 +19,9 @@ import { WorkbenchService } from '@affine/core/modules/workbench';
 import type { AffineDNDData } from '@affine/core/types/dnd';
 import { useI18n } from '@affine/i18n';
 import { PlusIcon } from '@blocksuite/icons/rc';
+import * as Collapsible from '@radix-ui/react-collapsible';
 import { DocsService, useLiveData, useServices } from '@toeverything/infra';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import { ExplorerCollectionNode } from '../../nodes/collection';
 import { ExplorerDocNode } from '../../nodes/doc';
@@ -29,12 +30,17 @@ import { ExplorerTagNode } from '../../nodes/tag';
 import { RootEmpty } from './empty';
 import * as styles from './styles.css';
 
-export const ExplorerFavorites = () => {
+export const ExplorerFavorites = ({
+  defaultCollapsed = false,
+}: {
+  defaultCollapsed?: boolean;
+}) => {
   const { favoriteService, docsService, workbenchService } = useServices({
     FavoriteService,
     DocsService,
     WorkbenchService,
   });
+  const [collapsed, setCollapsed] = useState(defaultCollapsed);
 
   const favorites = useLiveData(favoriteService.favoriteList.sortedList$);
 
@@ -51,6 +57,7 @@ export const ExplorerFavorites = () => {
           data.source.data.entity.id,
           favoriteService.favoriteList.indexAt('before')
         );
+        setCollapsed(false);
       }
     },
     [favoriteService]
@@ -83,6 +90,7 @@ export const ExplorerFavorites = () => {
       favoriteService.favoriteList.indexAt('before')
     );
     workbenchService.workbench.openDoc(newDoc.id);
+    setCollapsed(false);
   }, [docsService, favoriteService, workbenchService]);
 
   const handleOnChildrenDrop = useCallback(
@@ -179,12 +187,18 @@ export const ExplorerFavorites = () => {
     );
 
   return (
-    <div className={styles.container} data-testid="explorer-favorites">
+    <Collapsible.Root
+      className={styles.container}
+      data-testid="explorer-favorites"
+      open={!collapsed}
+    >
       <CategoryDivider
         className={styles.draggedOverHighlight}
         label={t['com.affine.rootAppSidebar.favorites']()}
         ref={dropTargetRef}
         data-testid="explorer-favorite-category-divider"
+        setCollapsed={setCollapsed}
+        collapsed={collapsed}
       >
         <IconButton
           data-testid="explorer-bar-add-favorite-button"
@@ -206,26 +220,28 @@ export const ExplorerFavorites = () => {
           />
         )}
       </CategoryDivider>
-      <ExplorerTreeRoot
-        placeholder={
-          <RootEmpty
-            onDrop={handleDrop}
-            canDrop={handleCanDrop}
-            dropEffect={handleDropEffect}
-          />
-        }
-      >
-        {favorites.map(favorite => (
-          <ExplorerFavoriteNode
-            key={favorite.id}
-            favorite={favorite}
-            onDrop={handleOnChildrenDrop}
-            dropEffect={handleChildrenDropEffect}
-            canDrop={handleChildrenCanDrop}
-          />
-        ))}
-      </ExplorerTreeRoot>
-    </div>
+      <Collapsible.Content>
+        <ExplorerTreeRoot
+          placeholder={
+            <RootEmpty
+              onDrop={handleDrop}
+              canDrop={handleCanDrop}
+              dropEffect={handleDropEffect}
+            />
+          }
+        >
+          {favorites.map(favorite => (
+            <ExplorerFavoriteNode
+              key={favorite.id}
+              favorite={favorite}
+              onDrop={handleOnChildrenDrop}
+              dropEffect={handleChildrenDropEffect}
+              canDrop={handleChildrenCanDrop}
+            />
+          ))}
+        </ExplorerTreeRoot>
+      </Collapsible.Content>
+    </Collapsible.Root>
   );
 };
 

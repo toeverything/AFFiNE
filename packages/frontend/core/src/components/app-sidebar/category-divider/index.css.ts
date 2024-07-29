@@ -20,5 +20,18 @@ export const root = style({
 });
 export const label = style({
   color: cssVar('black30'),
-  flex: '1',
+  flexGrow: '0',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'start',
+  cursor: 'pointer',
+});
+
+export const collapseButton = style({
+  selectors: {
+    [`${label} > &`]: {
+      color: cssVar('black30'),
+      transform: 'translateY(1px)',
+    },
+  },
 });

@@ -2,7 +2,7 @@ import { cssVar } from '@toeverything/theme';
 import { style } from '@vanilla-extract/css';
 
 export const container = style({
-  marginTop: '16px',
+  marginTop: '8px',
   position: 'relative',
   selectors: {
     '&:after': {

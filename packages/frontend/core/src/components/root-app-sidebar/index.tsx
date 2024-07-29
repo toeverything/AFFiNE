@@ -166,9 +166,11 @@ export const RootAppSidebar = memo(
           {runtimeConfig.enableNewFavorite && <ExplorerFavorites />}
           {runtimeConfig.enableOrganize && <ExplorerOrganize />}
           {runtimeConfig.enableNewFavorite && <ExplorerMigrationFavorites />}
-          {runtimeConfig.enableOldFavorite && <ExplorerOldFavorites />}
-          <ExplorerCollections />
-          <ExplorerTags />
+          {runtimeConfig.enableOldFavorite && (
+            <ExplorerOldFavorites defaultCollapsed />
+          )}
+          <ExplorerCollections defaultCollapsed />
+          <ExplorerTags defaultCollapsed />
           <CategoryDivider label={t['com.affine.rootAppSidebar.others']()} />
           {/* fixme: remove the following spacer */}
           <div style={{ height: '4px' }} />

@@ -65,6 +65,7 @@ test('Show collections items in sidebar', async ({ page }) => {
   await removeOnboardingPages(page);
   await createAndPinCollection(page);
   const collections = page.getByTestId('explorer-collections');
+  await collections.getByTestId('category-divider-collapse-button').click();
   const items = collections.locator('[data-testid^="explorer-collection-"]');
   expect(await items.count()).toBe(1);
   const first = items.first();
@@ -105,6 +106,7 @@ test('edit collection', async ({ page }) => {
   await removeOnboardingPages(page);
   await createAndPinCollection(page);
   const collections = page.getByTestId('explorer-collections');
+  await collections.getByTestId('category-divider-collapse-button').click();
   const items = collections.locator('[data-testid^="explorer-collection-"]');
   expect(await items.count()).toBe(1);
   const first = items.first();
@@ -122,6 +124,7 @@ test('edit collection and change filter date', async ({ page }) => {
   await removeOnboardingPages(page);
   await createAndPinCollection(page);
   const collections = page.getByTestId('explorer-collections');
+  await collections.getByTestId('category-divider-collapse-button').click();
   const items = collections.locator('[data-testid^="explorer-collection-"]');
   expect(await items.count()).toBe(1);
   const first = items.first();
@@ -143,6 +146,10 @@ test('add collection from sidebar', async ({ page }) => {
   await page.getByTestId('all-pages').click();
   const cell = page.getByTestId('page-list-item-title').getByText('test page');
   await expect(cell).toBeVisible();
+  await page
+    .getByTestId('explorer-collections')
+    .getByTestId('category-divider-collapse-button')
+    .click();
   const nullCollection = page.getByTestId(
     'slider-bar-collection-empty-message'
   );

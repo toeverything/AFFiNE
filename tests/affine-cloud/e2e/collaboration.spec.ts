@@ -131,6 +131,7 @@ test('can sync collections between different browser', async ({
     await loginUser(page2, user.email);
     await page2.goto(page.url());
     const collections = page2.getByTestId('explorer-collections');
+    await collections.getByTestId('category-divider-collapse-button').click();
     await expect(collections.getByText('test collection')).toBeVisible();
   }
 });

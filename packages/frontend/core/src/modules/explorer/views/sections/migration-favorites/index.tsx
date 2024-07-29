@@ -4,14 +4,21 @@ import { ExplorerTreeRoot } from '@affine/core/modules/explorer/views/tree';
 import { FavoriteItemsAdapter } from '@affine/core/modules/properties';
 import { Trans, useI18n } from '@affine/i18n';
 import { BroomIcon, HelpIcon } from '@blocksuite/icons/rc';
+import * as Collapsible from '@radix-ui/react-collapsible';
 import { DocsService, useLiveData, useServices } from '@toeverything/infra';
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 
 import { ExplorerCollectionNode } from '../../nodes/collection';
 import { ExplorerDocNode } from '../../nodes/doc';
 import * as styles from './styles.css';
 
-export const ExplorerMigrationFavorites = () => {
+export const ExplorerMigrationFavorites = ({
+  defaultCollapsed = false,
+}: {
+  defaultCollapsed?: boolean;
+}) => {
+  const [collapsed, setCollapsed] = useState(defaultCollapsed);
+
   const t = useI18n();
 
   const { favoriteItemsAdapter, docsService } = useServices({
@@ -89,8 +96,12 @@ export const ExplorerMigrationFavorites = () => {
   }
 
   return (
-    <div className={styles.container}>
-      <CategoryDivider label={t['com.affine.rootAppSidebar.migration-data']()}>
+    <Collapsible.Root className={styles.container} open={!collapsed}>
+      <CategoryDivider
+        label={t['com.affine.rootAppSidebar.migration-data']()}
+        setCollapsed={setCollapsed}
+        collapsed={collapsed}
+      >
         <IconButton
           data-testid="explorer-bar-favorite-migration-clear-button"
           onClick={handleClickClear}
@@ -106,15 +117,17 @@ export const ExplorerMigrationFavorites = () => {
           <HelpIcon />
         </IconButton>
       </CategoryDivider>
-      <ExplorerTreeRoot>
-        {favorites.map((favorite, i) => (
-          <ExplorerMigrationFavoriteNode
-            key={favorite.id + ':' + i}
-            favorite={favorite}
-          />
-        ))}
-      </ExplorerTreeRoot>
-    </div>
+      <Collapsible.Content>
+        <ExplorerTreeRoot>
+          {favorites.map((favorite, i) => (
+            <ExplorerMigrationFavoriteNode
+              key={favorite.id + ':' + i}
+              favorite={favorite}
+            />
+          ))}
+        </ExplorerTreeRoot>
+      </Collapsible.Content>
+    </Collapsible.Root>
   );
 };
 
