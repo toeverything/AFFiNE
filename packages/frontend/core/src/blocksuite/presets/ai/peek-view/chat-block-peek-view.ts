@@ -204,6 +204,15 @@ export class AIChatBlockPeekView extends LitElement {
       source: { id: this.parentChatBlockId },
       target: { id: aiChatBlockId },
     });
+
+    edgelessService.telemetryService?.track('CanvasElementAdded', {
+      control: 'conversation',
+      page: 'whiteboard editor',
+      module: 'canvas',
+      segment: 'whiteboard',
+      type: 'chat block',
+      category: 'branch',
+    });
   };
 
   /**

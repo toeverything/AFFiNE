@@ -337,6 +337,15 @@ const SAVE_CHAT_TO_BLOCK_ACTION: ChatAction = {
       if (!blockId) {
         return false;
       }
+
+      rootService.telemetryService?.track('CanvasElementAdded', {
+        control: 'manually save',
+        page: 'whiteboard editor',
+        module: 'ai chat panel',
+        segment: 'right sidebar',
+        type: 'chat block',
+        category: 'root',
+      });
       return true;
     } catch (err) {
       console.error(err);
