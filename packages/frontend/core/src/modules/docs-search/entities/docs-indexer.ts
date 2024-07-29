@@ -34,10 +34,8 @@ export class DocsIndexer extends Entity {
       'jq:' + this.workspaceService.workspace.id
     );
 
-  private readonly runner = new JobRunner(
-    this.jobQueue,
-    (jobs, signal) => this.execJob(jobs, signal),
-    () => new Promise<void>(resolve => requestIdleCallback(() => resolve()))
+  private readonly runner = new JobRunner(this.jobQueue, (jobs, signal) =>
+    this.execJob(jobs, signal)
   );
 
   private readonly indexStorage = new IndexedDBIndexStorage(
