@@ -379,6 +379,7 @@ export class ChatPanelInput extends WithDisposable(LitElement) {
             @click=${async () => {
               await this.cleanupHistories();
             }}
+            data-testid="chat-panel-clear"
           >
             ${ChatClearIcon}
           </div>

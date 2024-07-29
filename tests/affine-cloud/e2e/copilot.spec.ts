@@ -36,6 +36,11 @@ const makeChat = async (page: Page, content: string) => {
   await page.keyboard.press('Enter');
 };
 
+const clearChat = async (page: Page) => {
+  await page.getByTestId('chat-panel-clear').click();
+  await page.getByTestId('confirm-modal-confirm').click();
+};
+
 const collectChat = async (page: Page) => {
   const chatPanel = await page.waitForSelector('.chat-panel-messages');
   return Promise.all(
@@ -87,7 +92,7 @@ test.describe('chat panel', () => {
     await loginUser(page, user.email);
   });
 
-  test('start chat', async ({ page }) => {
+  test('basic chat', async ({ page }) => {
     await page.reload();
     await clickSideBarAllPageButton(page);
     await page.waitForTimeout(200);
@@ -97,5 +102,7 @@ test.describe('chat panel', () => {
     const history = await collectChat(page);
     expect(history[0]).toEqual({ name: 'You', content: 'hello' });
     expect(history[1].name).toBe('AFFiNE AI');
+    await clearChat(page);
+    expect((await collectChat(page)).length).toBe(0);
   });
 });
