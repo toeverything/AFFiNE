@@ -1,16 +1,25 @@
 import { cssVar } from '@toeverything/theme';
-import { globalStyle, style } from '@vanilla-extract/css';
+import { createVar, globalStyle, style } from '@vanilla-extract/css';
+
+export const affineIconGradientStart = createVar();
+export const affineIconGradientStop = createVar();
 
 const colorSchemes = {
   light: {
     dot: '#E0E0E0',
-    affine: '#fff',
+    affine: {
+      start: '#fff',
+      stop: '#fff',
+    },
     icon: 'rgba(0,0,0,0.1)',
   },
   dark: {
-    dot: '#333',
-    affine: cssVar('backgroundPrimaryColor'),
-    icon: 'rgba(255,255,255,0.1)',
+    dot: 'rgba(255,255,255,0.1)',
+    affine: {
+      start: '#8C8C8C',
+      stop: '#262626',
+    },
+    icon: 'transparent',
   },
 };
 
@@ -22,6 +31,7 @@ export const card = style({
   padding: '20px 24px',
   border: `1px solid ${cssVar('borderColor')}`,
   overflow: 'hidden',
+  background: cssVar('white'),
 });
 
 export const content = style({
@@ -35,7 +45,6 @@ export const bg = style({
   },
   width: '100%',
   height: '100%',
-  maxHeight: 320,
   position: 'absolute',
   top: 0,
   left: 0,
@@ -52,10 +61,10 @@ export const bg = style({
     },
 
     [`${card}[data-type="1"] &::after`]: {
-      background: `linear-gradient(231deg, transparent 0%, ${cssVar('backgroundOverlayPanelColor')} 80%)`,
+      background: `linear-gradient(231deg, transparent 0%, ${cssVar('white')} 80%)`,
     },
     [`${card}[data-type="2"] &::after`]: {
-      background: `linear-gradient(290deg, transparent 0%, ${cssVar('backgroundOverlayPanelColor')} 30%)`,
+      background: `linear-gradient(290deg, transparent 0%, ${cssVar('white')} 40%)`,
     },
   },
 
@@ -71,12 +80,18 @@ export const bg = style({
   },
 });
 globalStyle(`.${bg} > svg.affine-svg`, {
-  color: colorSchemes.light.affine,
+  vars: {
+    [affineIconGradientStart]: colorSchemes.light.affine.start,
+    [affineIconGradientStop]: colorSchemes.light.affine.stop,
+  },
   position: 'absolute',
   zIndex: 0,
 });
-globalStyle(`[data-theme='dark'].${bg} > svg.affine-svg`, {
-  color: colorSchemes.dark.affine,
+globalStyle(`[data-theme='dark'] .${bg} > svg.affine-svg`, {
+  vars: {
+    [affineIconGradientStart]: colorSchemes.dark.affine.start,
+    [affineIconGradientStop]: colorSchemes.dark.affine.stop,
+  },
 });
 globalStyle(` .${bg} > svg.icons-svg`, {
   color: colorSchemes.light.icon,
