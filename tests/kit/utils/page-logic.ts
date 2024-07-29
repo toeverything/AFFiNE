@@ -1,6 +1,24 @@
 import type { Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
+export function getAllPage(page: Page) {
+  const newPageButton = page.getByTestId('new-page-button-trigger');
+  const newPageDropdown = newPageButton.locator('svg');
+  const edgelessBlockCard = page.getByTestId('new-edgeless-button-in-all-page');
+
+  async function clickNewPageButton() {
+    const newPageButton = page.getByTestId('new-page-button-trigger');
+    return await newPageButton.click();
+  }
+
+  async function clickNewEdgelessDropdown() {
+    await newPageDropdown.click();
+    await edgelessBlockCard.click();
+  }
+
+  return { clickNewPageButton, clickNewEdgelessDropdown };
+}
+
 export async function waitForEditorLoad(page: Page) {
   await page.waitForSelector('v-line', {
     timeout: 20000,
