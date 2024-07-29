@@ -287,7 +287,7 @@ __metadata:
     "@blocksuite/block-std": "npm:0.16.0-canary-202407250137-267cd23"
     "@blocksuite/blocks": "npm:0.16.0-canary-202407250137-267cd23"
     "@blocksuite/global": "npm:0.16.0-canary-202407250137-267cd23"
-    "@blocksuite/icons": "npm:2.1.59"
+    "@blocksuite/icons": "npm:2.1.61"
     "@blocksuite/presets": "npm:0.16.0-canary-202407250137-267cd23"
     "@blocksuite/store": "npm:0.16.0-canary-202407250137-267cd23"
     "@dnd-kit/core": "npm:^6.1.0"
@@ -388,7 +388,7 @@ __metadata:
     "@blocksuite/block-std": "npm:0.16.0-canary-202407250137-267cd23"
     "@blocksuite/blocks": "npm:0.16.0-canary-202407250137-267cd23"
     "@blocksuite/global": "npm:0.16.0-canary-202407250137-267cd23"
-    "@blocksuite/icons": "npm:2.1.60"
+    "@blocksuite/icons": "npm:2.1.61"
     "@blocksuite/inline": "npm:0.16.0-canary-202407250137-267cd23"
     "@blocksuite/presets": "npm:0.16.0-canary-202407250137-267cd23"
     "@blocksuite/store": "npm:0.16.0-canary-202407250137-267cd23"
@@ -3529,9 +3529,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@blocksuite/icons@npm:2.1.59":
-  version: 2.1.59
-  resolution: "@blocksuite/icons@npm:2.1.59"
+"@blocksuite/icons@npm:2.1.61":
+  version: 2.1.61
+  resolution: "@blocksuite/icons@npm:2.1.61"
   peerDependencies:
     "@types/react": ^18.0.25
     lit: ^2.6.1
@@ -3541,23 +3541,7 @@ __metadata:
       optional: true
     react:
       optional: true
-  checksum: 10/78b6164df5f3f20e33f5531ac543b1a681766835015491b5ed5d2d862dc8a8237144ee5edc1b5719b2005585b87efbf1d801beaa2f5cf38b305442c0fe74df1b
-  languageName: node
-  linkType: hard
-
-"@blocksuite/icons@npm:2.1.60":
-  version: 2.1.60
-  resolution: "@blocksuite/icons@npm:2.1.60"
-  peerDependencies:
-    "@types/react": ^18.0.25
-    lit: ^2.6.1
-    react: ^18.2.0
-  peerDependenciesMeta:
-    lit:
-      optional: true
-    react:
-      optional: true
-  checksum: 10/72302c4fd28252ede791cc97aa9c4977ee1e60f17b46043b1837b7ca7c72bdefb68b91bb847bcabb80ce489b0902fc6605ffe345ed321fdbf80f5a73c19ef33f
+  checksum: 10/9112628b785e28cddce787ae0cf8a2d0c0ccbf0987371c72f998bf0fa9e3ab864b91437ef9dda1688b086fa3fcebee30282cc93da03c1571a4b174fdcd82f3a2
   languageName: node
   linkType: hard
 
