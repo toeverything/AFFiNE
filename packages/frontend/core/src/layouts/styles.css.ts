@@ -31,15 +31,3 @@ export const desktopTabsHeader = style({
   width: '100%',
   overflow: 'hidden',
 });
-
-export const desktopTabsHeaderTopLeft = style({
-  display: 'flex',
-  flexFlow: 'row',
-  alignItems: 'center',
-  transition: 'width 0.3s, padding 0.3s',
-  justifyContent: 'space-between',
-  marginRight: -8, // make room for tab's padding
-  padding: '0 16px',
-  flexShrink: 0,
-  ['WebkitAppRegion' as string]: 'drag',
-});

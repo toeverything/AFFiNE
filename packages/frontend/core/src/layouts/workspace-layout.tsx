@@ -35,12 +35,9 @@ import { WorkspaceAIOnboarding } from '../components/affine/ai-onboarding';
 import { AppContainer } from '../components/affine/app-container';
 import { SyncAwareness } from '../components/affine/awareness';
 import {
-  appSidebarFloatingAtom,
-  appSidebarOpenAtom,
   appSidebarResizingAtom,
   SidebarSwitch,
 } from '../components/app-sidebar';
-import { appSidebarWidthAtom } from '../components/app-sidebar/index.jotai';
 import { AIIsland } from '../components/pure/ai-island';
 import { RootAppSidebar } from '../components/root-app-sidebar';
 import { MainContainer } from '../components/workspace';
@@ -181,29 +178,17 @@ const WorkspaceLayoutProviders = ({ children }: PropsWithChildren) => {
 };
 
 const DesktopLayout = ({ children }: PropsWithChildren) => {
-  const resizing = useAtomValue(appSidebarResizingAtom);
-  const sidebarWidth = useAtomValue(appSidebarWidthAtom);
-  const sidebarOpen = useAtomValue(appSidebarOpenAtom);
-  const sidebarFloating = useAtomValue(appSidebarFloatingAtom);
-  const sidebarResizing = useAtomValue(appSidebarResizingAtom);
-  const isMacosDesktop = environment.isDesktop && environment.isMacOs;
-
   return (
     <div className={styles.desktopAppViewContainer}>
       <div className={styles.desktopTabsHeader}>
-        <div
-          className={styles.desktopTabsHeaderTopLeft}
-          style={{
-            transition: sidebarResizing ? 'none' : undefined,
-            paddingLeft:
-              isMacosDesktop && sidebarOpen && !sidebarFloating ? 90 : 16,
-            width: sidebarOpen && !sidebarFloating ? sidebarWidth : 130,
-          }}
-        >
-          <SidebarSwitch show />
-          <NavigationButtons />
-        </div>
-        <AppTabsHeader reportBoundingUpdate={!resizing} />
+        <AppTabsHeader
+          left={
+            <>
+              <SidebarSwitch show />
+              <NavigationButtons />
+            </>
+          }
+        />
       </div>
       <div className={styles.desktopAppViewMain}>
         <RootAppSidebar />

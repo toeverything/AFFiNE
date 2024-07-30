@@ -5,7 +5,6 @@ import {
   type CookiesSetDetails,
   globalShortcut,
   Menu,
-  type Rectangle,
   type View,
   type WebContents,
   WebContentsView,
@@ -130,7 +129,6 @@ export class WebContentViewsManager {
   }
 
   readonly tabViewsMeta$ = TabViewsMetaState.$;
-  readonly tabsBoundingRect$ = new BehaviorSubject<Rectangle | null>(null);
   readonly appTabsUIReady$ = new BehaviorSubject(new Set<string>());
 
   // all web views
@@ -201,14 +199,6 @@ export class WebContentViewsManager {
   readonly patchTabViewsMeta = (patch: Partial<TabViewsMetaSchema>) => {
     TabViewsMetaState.patch(patch);
   };
-
-  get tabsBoundingRect() {
-    return this.tabsBoundingRect$.value;
-  }
-
-  set tabsBoundingRect(rect: Rectangle | null) {
-    this.tabsBoundingRect$.next(rect);
-  }
 
   get shellView() {
     return this.webViewsMap$.value.get('shell');
@@ -584,14 +574,6 @@ export class WebContentViewsManager {
       })
     );
 
-    disposables.push(
-      this.tabsBoundingRect$.subscribe(rect => {
-        if (rect) {
-          this.reorderViews();
-        }
-      })
-    );
-
     app.on('ready', () => {
       // bind CMD/CTRL+1~8 to switch tabs
       // bind CMD/CTRL+9 to switch to the last tab
@@ -745,6 +727,11 @@ export class WebContentViewsManager {
     });
 
     this.resizeView(view);
+
+    view.webContents.on('did-finish-load', () => {
+      this.resizeView(view);
+    });
+
     // reorder will add to main window when loaded
     this.reorderViews();
 
@@ -887,32 +874,12 @@ export const showDevTools = (id?: string) => {
   }
 };
 
-export const onTabsBoundingRectChanged = (
-  fn: (rect: Rectangle | null) => void
-) => {
-  const sub = WebContentViewsManager.instance.tabsBoundingRect$.subscribe(fn);
-  return () => {
-    sub.unsubscribe();
-  };
-};
-
-export const getTabsBoundingRect = () => {
-  return WebContentViewsManager.instance.tabsBoundingRect;
-};
-
-export const updateTabsBoundingRect = (wc: WebContents, rect: Rectangle) => {
-  try {
-    if (isActiveTab(wc)) {
-      WebContentViewsManager.instance.tabsBoundingRect = rect;
-    }
-    const viewId = WebContentViewsManager.instance.getViewIdFromWebContentsId(
-      wc.id
-    );
-    if (viewId) {
-      WebContentViewsManager.instance.setTabUIReady(viewId);
-    }
-  } catch (err) {
-    logger.error(err);
+export const pingAppLayoutReady = (wc: WebContents) => {
+  const viewId = WebContentViewsManager.instance.getViewIdFromWebContentsId(
+    wc.id
+  );
+  if (viewId) {
+    WebContentViewsManager.instance.setTabUIReady(viewId);
   }
 };
 

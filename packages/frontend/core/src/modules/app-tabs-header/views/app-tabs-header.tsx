@@ -1,14 +1,20 @@
-import { IconButton, Loading, observeResize } from '@affine/component';
+import { IconButton, Loading } from '@affine/component';
+import {
+  appSidebarFloatingAtom,
+  appSidebarOpenAtom,
+  appSidebarResizingAtom,
+} from '@affine/core/components/app-sidebar';
+import { appSidebarWidthAtom } from '@affine/core/components/app-sidebar/index.jotai';
 import { WindowsAppControls } from '@affine/core/components/pure/header/windows-app-controls';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { DesktopStateSynchronizer } from '@affine/core/modules/workbench/services/desktop-state-synchronizer';
 import type { WorkbenchMeta } from '@affine/electron-api';
-import { apis } from '@affine/electron-api';
+import { apis, events } from '@affine/electron-api';
 import {
+  AllDocsIcon,
   CloseIcon,
   DeleteIcon,
   EdgelessIcon,
-  FolderIcon,
   PageIcon,
   PlusIcon,
   RightSidebarIcon,
@@ -21,13 +27,15 @@ import {
   useService,
   useServiceOptional,
 } from '@toeverything/infra';
-import { debounce, partition } from 'lodash-es';
+import clsx from 'clsx';
+import { useAtomValue } from 'jotai';
+import { partition } from 'lodash-es';
 import {
   Fragment,
   type MouseEventHandler,
   type ReactNode,
   useEffect,
-  useRef,
+  useState,
 } from 'react';
 
 import {
@@ -39,7 +47,7 @@ import * as styles from './styles.css';
 type ModuleName = NonNullable<WorkbenchMeta['views'][0]['moduleName']>;
 
 const moduleNameToIcon = {
-  all: <FolderIcon />,
+  all: <AllDocsIcon />,
   collection: <ViewLayersIcon />,
   doc: <PageIcon />,
   page: <PageIcon />,
@@ -140,13 +148,39 @@ const WorkbenchTab = ({
   );
 };
 
+const useIsFullScreen = () => {
+  const [fullScreen, setFullScreen] = useState(false);
+
+  useEffect(() => {
+    apis?.ui
+      .isFullScreen()
+      .then(setFullScreen)
+      .then(() => {
+        events?.ui.onFullScreen(setFullScreen);
+      })
+      .catch(console.error);
+  }, []);
+  return fullScreen;
+};
+
 export const AppTabsHeader = ({
   style,
-  reportBoundingUpdate,
+  mode = 'app',
+  className,
+  left,
 }: {
   style?: React.CSSProperties;
-  reportBoundingUpdate?: boolean;
+  mode?: 'app' | 'shell';
+  className?: string;
+  left?: ReactNode;
 }) => {
+  const sidebarWidth = useAtomValue(appSidebarWidthAtom);
+  const sidebarOpen = useAtomValue(appSidebarOpenAtom);
+  const sidebarFloating = useAtomValue(appSidebarFloatingAtom);
+  const sidebarResizing = useAtomValue(appSidebarResizingAtom);
+  const isMacosDesktop = environment.isDesktop && environment.isMacOs;
+  const fullScreen = useIsFullScreen();
+
   const tabsHeaderService = useService(AppTabsHeaderService);
   const tabs = useLiveData(tabsHeaderService.tabsStatus$);
 
@@ -160,42 +194,36 @@ export const AppTabsHeader = ({
     await tabsHeaderService.onToggleRightSidebar();
   }, [tabsHeaderService]);
 
-  const ref = useRef<HTMLDivElement | null>(null);
-
   useServiceOptional(DesktopStateSynchronizer);
 
   useEffect(() => {
-    if (ref.current && reportBoundingUpdate) {
-      return observeResize(
-        ref.current,
-        debounce(() => {
-          if (document.visibilityState === 'visible') {
-            const rect = ref.current?.getBoundingClientRect();
-            if (!rect) {
-              return;
-            }
-            const toInt = (value: number) => Math.round(value);
-            const boundRect = {
-              height: toInt(rect.height),
-              width: toInt(rect.width),
-              x: toInt(rect.x),
-              y: toInt(rect.y),
-            };
-            apis?.ui.updateTabsBoundingRect(boundRect).catch(console.error);
-          }
-        }, 50)
-      );
+    if (mode === 'app') {
+      apis?.ui.pingAppLayoutReady().catch(console.error);
     }
-    return;
-  }, [reportBoundingUpdate]);
+  }, [mode]);
 
   return (
     <div
-      className={styles.root}
-      ref={ref}
+      className={clsx(styles.root, className)}
       style={style}
+      data-mode={mode}
       data-is-windows={environment.isDesktop && environment.isWindows}
     >
+      <div
+        style={{
+          transition: sidebarResizing ? 'none' : undefined,
+          paddingLeft:
+            isMacosDesktop && sidebarOpen && !sidebarFloating && !fullScreen
+              ? 90
+              : 16,
+          width: sidebarOpen && !sidebarFloating ? sidebarWidth : 130,
+          // minus 16 to account for the padding on the right side of the header (for box shadow)
+          marginRight: sidebarOpen && !sidebarFloating ? -16 : 0,
+        }}
+        className={styles.headerLeft}
+      >
+        {left}
+      </div>
       <div className={styles.tabs}>
         {pinned.map(tab => {
           return (

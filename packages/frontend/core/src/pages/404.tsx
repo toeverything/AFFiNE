@@ -44,7 +44,6 @@ export const PageNotFound = ({
           style={{
             paddingLeft: environment.isMacOs ? 80 : 0,
           }}
-          reportBoundingUpdate
         />
       ) : null}
       {noPermission ? (
