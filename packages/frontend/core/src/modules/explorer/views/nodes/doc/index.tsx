@@ -7,6 +7,7 @@ import {
 } from '@affine/component';
 import { InfoModal } from '@affine/core/components/affine/page-properties';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
+import { mixpanel } from '@affine/core/mixpanel';
 import { DocsSearchService } from '@affine/core/modules/docs-search';
 import type { AffineDNDData } from '@affine/core/types/dnd';
 import { useI18n } from '@affine/i18n';
@@ -115,6 +116,11 @@ export const ExplorerDocNode = ({
   const handleRename = useAsyncCallback(
     async (newName: string) => {
       await docsService.changeDocTitle(docId, newName);
+      mixpanel.track('DocRenamed', {
+        page: 'sidebar',
+        module: 'doc',
+        control: 'doc rename',
+      });
     },
     [docId, docsService]
   );
@@ -124,6 +130,11 @@ export const ExplorerDocNode = ({
       if (data.treeInstruction?.type === 'make-child') {
         if (data.source.data.entity?.type === 'doc') {
           await docsService.addLinkedDoc(docId, data.source.data.entity.id);
+          mixpanel.track('LinkedDocCreated', {
+            page: 'sidebar',
+            module: 'doc',
+            control: 'drop doc on doc',
+          });
         } else {
           toast(t['com.affine.rootAppSidebar.doc.link-doc-only']());
         }
@@ -153,6 +164,11 @@ export const ExplorerDocNode = ({
       if (data.source.data.entity?.type === 'doc') {
         // TODO(eyhn): timeout&error handling
         await docsService.addLinkedDoc(docId, data.source.data.entity.id);
+        mixpanel.track('LinkedDocCreated', {
+          page: 'sidebar',
+          module: 'doc',
+          control: 'drop doc on doc',
+        });
       } else {
         toast(t['com.affine.rootAppSidebar.doc.link-doc-only']());
       }

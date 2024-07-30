@@ -5,6 +5,7 @@ import {
   toast,
 } from '@affine/component';
 import { CategoryDivider } from '@affine/core/components/app-sidebar';
+import { mixpanel } from '@affine/core/mixpanel';
 import {
   type ExplorerTreeNodeDropEffect,
   ExplorerTreeRoot,
@@ -44,6 +45,11 @@ export const ExplorerOrganize = ({
       'New Folder',
       rootFolder.indexAt('before')
     );
+    mixpanel.track('FolderCreated', {
+      page: 'sidebar',
+      module: 'organize',
+      control: 'new folder',
+    });
     setNewFolderId(newFolderId);
     setCollapsed(false);
   }, [rootFolder]);
@@ -64,6 +70,13 @@ export const ExplorerOrganize = ({
             data.source.data.entity.id,
             rootFolder.indexAt(at, node.id)
           );
+          mixpanel.track('FolderMoved', {
+            page: 'sidebar',
+            module: 'organize',
+            control: 'drop at root',
+            type: 'folder',
+            id: node.id,
+          });
         } else {
           toast(t['com.affine.rootAppSidebar.organize.root-folder-only']());
         }

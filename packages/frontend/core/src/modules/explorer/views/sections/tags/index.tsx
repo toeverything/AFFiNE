@@ -1,5 +1,6 @@
 import { IconButton } from '@affine/component';
 import { CategoryDivider } from '@affine/core/components/app-sidebar';
+import { mixpanel } from '@affine/core/mixpanel';
 import { ExplorerTreeRoot } from '@affine/core/modules/explorer/views/tree';
 import type { Tag } from '@affine/core/modules/tag';
 import { TagService } from '@affine/core/modules/tag';
@@ -34,6 +35,11 @@ export const ExplorerTags = ({
       tagService.randomTagColor()
     );
     setCreatedTag(newTags);
+    mixpanel.track('TagCreated', {
+      page: 'sidebar',
+      module: 'tags',
+      control: 'new tag button',
+    });
     setCollapsed(false);
   }, [t, tagService]);
 

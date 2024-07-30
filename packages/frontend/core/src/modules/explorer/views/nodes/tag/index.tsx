@@ -3,6 +3,7 @@ import {
   type DropTargetOptions,
   toast,
 } from '@affine/component';
+import { mixpanel } from '@affine/core/mixpanel';
 import type { Tag } from '@affine/core/modules/tag';
 import { TagService } from '@affine/core/modules/tag';
 import type { AffineDNDData } from '@affine/core/types/dnd';
@@ -81,8 +82,13 @@ export const ExplorerTagNode = ({
 
   const handleRename = useCallback(
     (newName: string) => {
-      if (tagRecord) {
+      if (tagRecord && tagRecord.value$.value !== newName) {
         tagRecord.rename(newName);
+        mixpanel.track('TagRenamed', {
+          page: 'sidebar',
+          module: 'tag',
+          control: 'tag rename',
+        });
       }
     },
     [tagRecord]
@@ -93,6 +99,11 @@ export const ExplorerTagNode = ({
       if (data.treeInstruction?.type === 'make-child' && tagRecord) {
         if (data.source.data.entity?.type === 'doc') {
           tagRecord.tag(data.source.data.entity.id);
+          mixpanel.track('DocTagged', {
+            page: 'sidebar',
+            module: 'tag',
+            control: 'drop doc on tag',
+          });
         } else {
           toast(t['com.affine.rootAppSidebar.tag.doc-only']());
         }

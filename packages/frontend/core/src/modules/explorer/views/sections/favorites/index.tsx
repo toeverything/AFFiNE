@@ -5,6 +5,7 @@ import {
   useDropTarget,
 } from '@affine/component';
 import { CategoryDivider } from '@affine/core/components/app-sidebar';
+import { mixpanel } from '@affine/core/mixpanel';
 import {
   DropEffect,
   type ExplorerTreeNodeDropEffect,
@@ -57,6 +58,13 @@ export const ExplorerFavorites = ({
           data.source.data.entity.id,
           favoriteService.favoriteList.indexAt('before')
         );
+        mixpanel.track('AddFavorite', {
+          page: 'sidebar',
+          module: 'favorite',
+          control: 'drop entity to favorite',
+          type: data.source.data.entity.type,
+          id: data.source.data.entity.id,
+        });
         setCollapsed(false);
       }
     },
@@ -89,6 +97,18 @@ export const ExplorerFavorites = ({
       newDoc.id,
       favoriteService.favoriteList.indexAt('before')
     );
+    mixpanel.track('DocCreated', {
+      page: 'sidebar',
+      module: 'favorites',
+      control: 'new favorite doc button',
+    });
+    mixpanel.track('AddFavorite', {
+      page: 'sidebar',
+      module: 'favorite',
+      control: 'new favorite doc button',
+      type: 'doc',
+      id: newDoc.id,
+    });
     workbenchService.workbench.openDoc(newDoc.id);
     setCollapsed(false);
   }, [docsService, favoriteService, workbenchService]);
@@ -118,6 +138,13 @@ export const ExplorerFavorites = ({
               favorite
             )
           );
+          mixpanel.track('ReorderFavorite', {
+            page: 'sidebar',
+            module: 'favorite',
+            control: 'drop to reorder favorite',
+            type: data.source.data.entity.type,
+            id: data.source.data.entity.id,
+          });
         } else if (
           data.source.data.entity?.type &&
           isFavoriteSupportType(data.source.data.entity.type)
@@ -132,6 +159,13 @@ export const ExplorerFavorites = ({
               favorite
             )
           );
+          mixpanel.track('AddFavorite', {
+            page: 'sidebar',
+            module: 'favorite',
+            control: 'drop entity to favorite',
+            type: data.source.data.entity.type,
+            id: data.source.data.entity.id,
+          });
         } else {
           return; // not supported
         }

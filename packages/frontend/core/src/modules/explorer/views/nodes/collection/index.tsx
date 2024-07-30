@@ -10,6 +10,7 @@ import {
   filterPage,
   useEditCollection,
 } from '@affine/core/components/page-list';
+import { mixpanel } from '@affine/core/mixpanel';
 import { CollectionService } from '@affine/core/modules/collection';
 import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/properties';
 import { ShareDocsService } from '@affine/core/modules/share-doc';
@@ -77,11 +78,16 @@ export const ExplorerCollectionNode = ({
 
   const handleRename = useCallback(
     (name: string) => {
-      if (collection) {
+      if (collection && collection.name !== name) {
         collectionService.updateCollection(collectionId, () => ({
           ...collection,
           name,
         }));
+        mixpanel.track('CollectionRenamed', {
+          page: 'sidebar',
+          module: 'collection',
+          control: 'rename collection',
+        });
         toast(t['com.affine.toastMessage.rename']());
       }
     },
@@ -107,6 +113,11 @@ export const ExplorerCollectionNode = ({
       if (collection && data.treeInstruction?.type === 'make-child') {
         if (data.source.data.entity?.type === 'doc') {
           handleAddDocToCollection(data.source.data.entity.id);
+          mixpanel.track('AddDocToCollection', {
+            page: 'sidebar',
+            module: 'collection',
+            control: 'drop doc on collection',
+          });
         }
       } else {
         onDrop?.(data);
@@ -133,6 +144,11 @@ export const ExplorerCollectionNode = ({
     (data: DropTargetDropEvent<AffineDNDData>) => {
       if (collection && data.source.data.entity?.type === 'doc') {
         handleAddDocToCollection(data.source.data.entity.id);
+        mixpanel.track('AddDocToCollection', {
+          page: 'sidebar',
+          module: 'collection',
+          control: 'drop doc on collection',
+        });
       }
     },
     [collection, handleAddDocToCollection]

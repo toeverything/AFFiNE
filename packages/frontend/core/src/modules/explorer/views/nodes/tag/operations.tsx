@@ -6,6 +6,7 @@ import {
   toast,
 } from '@affine/component';
 import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
+import { mixpanel } from '@affine/core/mixpanel';
 import { FavoriteService } from '@affine/core/modules/favorite';
 import { TagService } from '@affine/core/modules/tag';
 import { WorkbenchService } from '@affine/core/modules/workbench';
@@ -49,6 +50,16 @@ export const useExplorerTagNodeOperations = (
     if (tagRecord) {
       const newDoc = docsService.createDoc();
       tagRecord?.tag(newDoc.id);
+      mixpanel.track('DocCreated', {
+        page: 'sidebar',
+        module: 'tag',
+        control: 'add doc button',
+      });
+      mixpanel.track('DocTagged', {
+        page: 'sidebar',
+        module: 'tag',
+        control: 'add doc button',
+      });
       workbenchService.workbench.openDoc(newDoc.id);
       openNodeCollapsed();
     }
@@ -56,6 +67,11 @@ export const useExplorerTagNodeOperations = (
 
   const handleMoveToTrash = useCallback(() => {
     tagService.tagList.deleteTag(tagId);
+    mixpanel.track('TagDeleted', {
+      page: 'sidebar',
+      module: 'tag',
+      control: 'remove tag button',
+    });
     toast(t['com.affine.tags.delete-tags.toast']());
   }, [t, tagId, tagService.tagList]);
 
@@ -63,10 +79,22 @@ export const useExplorerTagNodeOperations = (
     workbenchService.workbench.openTag(tagId, {
       at: 'beside',
     });
+    mixpanel.track('OpenInSplitView', {
+      page: 'sidebar',
+      module: 'tag',
+      control: 'open in split view button',
+    });
   }, [tagId, workbenchService]);
 
   const handleToggleFavoriteTag = useCallback(() => {
     favoriteService.favoriteList.toggle('tag', tagId);
+    mixpanel.track('ToggleFavorite', {
+      page: 'sidebar',
+      module: 'tag',
+      control: 'toggle favorite tag button',
+      type: 'tag',
+      id: tagId,
+    });
   }, [favoriteService, tagId]);
 
   return useMemo(
