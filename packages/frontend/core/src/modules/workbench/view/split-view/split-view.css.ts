@@ -43,10 +43,13 @@ export const splitViewPanel = style({
     },
     '[data-client-border="false"] &:not([data-is-last="true"]):not([data-is-dragging="true"])':
       {
-        borderRight: `1px solid ${cssVar('borderColor')}`,
+        borderRight: `0.5px solid ${cssVar('borderColor')}`,
       },
     '&[data-is-dragging="true"]': {
       zIndex: 1,
+    },
+    '[data-client-border="true"] &': {
+      border: `0.5px solid ${cssVar('borderColor')}`,
     },
   },
 });

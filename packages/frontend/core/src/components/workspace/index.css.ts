@@ -56,9 +56,6 @@ export const mainContainerStyle = style({
       borderRadius: 6,
       margin: '8px',
       overflow: 'clip',
-      // TODO(@Peng): is this performance intensive?
-      // TODO(@catsjuice): not match with design's shadow, theme missing
-      filter: 'drop-shadow(0px 0px 4px rgba(66,65,73,.14))',
       '@media': {
         print: {
           overflow: 'visible',
