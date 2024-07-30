@@ -1,9 +1,16 @@
 import { app, Menu } from 'electron';
 
 import { isMacOS } from '../../shared/utils';
-import { revealLogFile } from '../logger';
-import { initAndShowMainWindow, showMainWindow } from '../main-window';
+import { logger, revealLogFile } from '../logger';
 import { checkForUpdates } from '../updater';
+import {
+  addTab,
+  closeTab,
+  initAndShowMainWindow,
+  showDevTools,
+  showMainWindow,
+  undoCloseTab,
+} from '../windows-manager';
 import { applicationMenuSubjects } from './subject';
 
 // Unique id for menuitems
@@ -55,8 +62,6 @@ export function createApplicationMenu() {
             applicationMenuSubjects.newPageAction$.next();
           },
         },
-        { type: 'separator' },
-        isMac ? { role: 'close' } : { role: 'quit' },
       ],
     },
     // { role: 'editMenu' }
@@ -89,34 +94,44 @@ export function createApplicationMenu() {
       submenu: [
         { role: 'reload' },
         { role: 'forceReload' },
-        { role: 'toggleDevTools' },
+        {
+          label: 'Open devtools',
+          accelerator: isMac ? 'Cmd+Option+I' : 'Ctrl+Shift+I',
+          click: () => {
+            showDevTools();
+          },
+        },
         { type: 'separator' },
         { role: 'resetZoom' },
         { role: 'zoomIn' },
         { role: 'zoomOut' },
         { type: 'separator' },
         { role: 'togglefullscreen' },
-      ],
-    },
-    // { role: 'windowMenu' }
-    {
-      label: 'Window',
-      submenu: [
-        { role: 'minimize' },
-        { role: 'zoom' },
-        ...(isMac
-          ? [
-              { type: 'separator' },
-              { role: 'front' },
-              { type: 'separator' },
-              {
-                role: 'window',
-                click: async () => {
-                  await initAndShowMainWindow();
-                },
-              },
-            ]
-          : [{ role: 'close' }]),
+        { type: 'separator' },
+        {
+          label: 'New tab',
+          accelerator: 'CommandOrControl+T',
+          click() {
+            logger.info('New tab with shortcut');
+            addTab().catch(console.error);
+          },
+        },
+        {
+          label: 'Close tab',
+          accelerator: 'CommandOrControl+W',
+          click() {
+            logger.info('Close tab with shortcut');
+            closeTab().catch(console.error);
+          },
+        },
+        {
+          label: 'Undo close tab',
+          accelerator: 'CommandOrControl+Shift+T',
+          click() {
+            logger.info('Undo close tab with shortcut');
+            undoCloseTab().catch(console.error);
+          },
+        },
       ],
     },
     {

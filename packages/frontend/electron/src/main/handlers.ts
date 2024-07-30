@@ -43,7 +43,7 @@ export const registerHandlers = () => {
         const start = performance.now();
         try {
           const result = await handler(e, ...args);
-          logger.info(
+          logger.debug(
             '[ipc-api]',
             chan,
             args.filter(

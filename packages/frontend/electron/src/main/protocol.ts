@@ -4,7 +4,7 @@ import { net, protocol, session } from 'electron';
 
 import { CLOUD_BASE_URL } from './config';
 import { logger } from './logger';
-import { getCookie } from './main-window';
+import { getCookie } from './windows-manager';
 
 protocol.registerSchemesAsPrivileged([
   {

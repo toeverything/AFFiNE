@@ -4,15 +4,29 @@ import { getLinkPreview } from 'link-preview-js';
 import { isMacOS } from '../../shared/utils';
 import { persistentConfig } from '../config-storage/persist';
 import { logger } from '../logger';
+import type { NamespaceHandlers } from '../type';
 import {
+  activateView,
+  addTab,
+  closeTab,
   getMainWindow,
+  getOnboardingWindow,
+  getTabsBoundingRect,
+  getTabsStatus,
+  getTabViewsMeta,
+  getWorkbenchMeta,
   handleWebContentsResize,
   initAndShowMainWindow,
-} from '../main-window';
-import { getOnboardingWindow } from '../onboarding';
-import type { NamespaceHandlers } from '../type';
-import { launchStage } from '../windows-manager/stage';
+  isActiveTab,
+  launchStage,
+  showDevTools,
+  showTab,
+  showTabContextMenu,
+  updateTabsBoundingRect,
+  updateWorkbenchMeta,
+} from '../windows-manager';
 import { getChallengeResponse } from './challenge';
+import { uiSubjects } from './subject';
 
 export let isOnline = true;
 
@@ -140,5 +154,58 @@ export const uiHandlers = {
   },
   openExternal(_, url: string) {
     return shell.openExternal(url);
+  },
+
+  // tab handlers
+  isActiveTab: async e => {
+    return isActiveTab(e.sender);
+  },
+  getWorkbenchMeta: async (_, ...args: Parameters<typeof getWorkbenchMeta>) => {
+    return getWorkbenchMeta(...args);
+  },
+  updateWorkbenchMeta: async (
+    _,
+    ...args: Parameters<typeof updateWorkbenchMeta>
+  ) => {
+    return updateWorkbenchMeta(...args);
+  },
+  getTabViewsMeta: async () => {
+    return getTabViewsMeta();
+  },
+  getTabsStatus: async () => {
+    return getTabsStatus();
+  },
+  addTab: async (_, ...args: Parameters<typeof addTab>) => {
+    await addTab(...args);
+  },
+  showTab: async (_, ...args: Parameters<typeof showTab>) => {
+    await showTab(...args);
+  },
+  closeTab: async (_, ...args: Parameters<typeof closeTab>) => {
+    await closeTab(...args);
+  },
+  activateView: async (_, ...args: Parameters<typeof activateView>) => {
+    await activateView(...args);
+  },
+  toggleRightSidebar: async (_, tabId?: string) => {
+    tabId ??= getTabViewsMeta().activeWorkbenchId;
+    if (tabId) {
+      uiSubjects.onToggleRightSidebar$.next(tabId);
+    }
+  },
+  getTabsBoundingRect: async () => {
+    return getTabsBoundingRect();
+  },
+  updateTabsBoundingRect: async (
+    e,
+    rect: { x: number; y: number; width: number; height: number }
+  ) => {
+    return updateTabsBoundingRect(e.sender, rect);
+  },
+  showDevTools: async (_, ...args: Parameters<typeof showDevTools>) => {
+    return showDevTools(...args);
+  },
+  showTabContextMenu: async (_, tabKey: string, viewIndex: number) => {
+    return showTabContextMenu(tabKey, viewIndex);
   },
 } satisfies NamespaceHandlers;

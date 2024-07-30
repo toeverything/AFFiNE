@@ -1,4 +1,12 @@
 import type { MainEventRegister } from '../type';
+import {
+  onActiveTabChanged,
+  onTabAction,
+  onTabsBoundingRectChanged,
+  onTabShellViewActiveChange,
+  onTabsStatusChange,
+  onTabViewsMetaChanged,
+} from '../windows-manager';
 import { uiSubjects } from './subject';
 
 /**
@@ -17,4 +25,16 @@ export const uiEvents = {
       sub.unsubscribe();
     };
   },
+  onTabViewsMetaChanged,
+  onTabAction,
+  onToggleRightSidebar: (fn: (tabId: string) => void) => {
+    const sub = uiSubjects.onToggleRightSidebar$.subscribe(fn);
+    return () => {
+      sub.unsubscribe();
+    };
+  },
+  onTabsStatusChange,
+  onActiveTabChanged,
+  onTabShellViewActiveChange,
+  onTabsBoundingRectChanged,
 } satisfies Record<string, MainEventRegister>;

@@ -33,6 +33,7 @@ export type AppSetting = {
   autoDownloadUpdate: boolean;
   enableMultiView: boolean;
   enableTelemetry: boolean;
+  enableOutlineViewer: boolean;
   editorFlags: Partial<Omit<BlockSuiteFlags, 'readonly'>>;
 };
 export const windowFrameStyleOptions: AppSetting['windowFrameStyle'][] = [
@@ -74,6 +75,7 @@ const appSettingBaseAtom = atomWithStorage<AppSetting>('affine-settings', {
   autoDownloadUpdate: true,
   enableTelemetry: true,
   enableMultiView: false,
+  enableOutlineViewer: false,
   editorFlags: {},
 });
 
@@ -103,6 +105,7 @@ export function setupEditorFlags(docCollection: DocCollection) {
 
 type SetStateAction<Value> = Value | ((prev: Value) => Value);
 
+// todo(@pengx17): use global state instead
 const appSettingEffect = atomEffect(get => {
   const settings = get(appSettingBaseAtom);
   // some values in settings should be synced into electron side

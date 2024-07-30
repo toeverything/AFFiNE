@@ -98,7 +98,7 @@ export const tableHeaderTimestamp = style({
 
 export const tableHeaderDivider = style({
   height: 0,
-  borderTop: `1px solid ${cssVar('borderColor')}`,
+  borderTop: `0.5px solid ${cssVar('borderColor')}`,
   width: '100%',
   margin: '8px 0',
 });

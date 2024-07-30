@@ -1,4 +1,3 @@
-import { assertExists } from '@blocksuite/global/utils';
 import type { AffineEditorContainer } from '@blocksuite/presets';
 import { OutlinePanel } from '@blocksuite/presets';
 import { useCallback, useRef } from 'react';
@@ -6,7 +5,7 @@ import { useCallback, useRef } from 'react';
 import * as styles from './outline.css';
 
 // A wrapper for TOCNotesPanel
-export const EditorOutline = ({
+export const EditorOutlinePanel = ({
   editor,
 }: {
   editor: AffineEditorContainer | null;
@@ -15,7 +14,10 @@ export const EditorOutline = ({
 
   const onRefChange = useCallback((container: HTMLDivElement | null) => {
     if (container) {
-      assertExists(outlinePanelRef.current, 'toc panel should be initialized');
+      if (outlinePanelRef.current === null) {
+        console.error('outline panel should be initialized');
+        return;
+      }
       container.append(outlinePanelRef.current);
     }
   }, []);

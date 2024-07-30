@@ -1,4 +1,4 @@
-import { Scrollable } from '@affine/component';
+import { Scrollable, useHasScrollTop } from '@affine/component';
 import { PageDetailSkeleton } from '@affine/component/page-detail-skeleton';
 import type { ChatPanel } from '@affine/core/blocksuite/presets/ai';
 import { AIProvider } from '@affine/core/blocksuite/presets/ai';
@@ -63,10 +63,11 @@ import { performanceRenderLogger } from '../../../shared';
 import { PageNotFound } from '../../404';
 import * as styles from './detail-page.css';
 import { DetailPageHeader } from './detail-page-header';
+import { EditorOutlineViewer } from './outline-viewer';
 import { EditorChatPanel } from './tabs/chat';
 import { EditorFramePanel } from './tabs/frame';
 import { EditorJournalPanel } from './tabs/journal';
-import { EditorOutline } from './tabs/outline';
+import { EditorOutlinePanel } from './tabs/outline';
 
 const DetailPageImpl = memo(function DetailPageImpl() {
   const workbench = useService(WorkbenchService).workbench;
@@ -206,18 +207,31 @@ const DetailPageImpl = memo(function DetailPageImpl() {
     [jumpToPageBlock, docCollection.id, openPage, jumpToTag, workspace.id]
   );
 
+  const openOutlinePanel = useCallback(() => {
+    workbench.openSidebar();
+    view.activeSidebarTab('outline');
+  }, [workbench, view]);
+
+  const [refCallback, hasScrollTop] = useHasScrollTop();
+  const dynamicTopBorder = environment.isDesktop;
+
   return (
     <>
       <ViewHeader>
         <DetailPageHeader page={doc.blockSuiteDoc} workspace={workspace} />
       </ViewHeader>
       <ViewBody>
-        <div className={styles.mainContainer}>
+        <div
+          className={styles.mainContainer}
+          data-dynamic-top-border={dynamicTopBorder}
+          data-has-scroll-top={hasScrollTop}
+        >
           {/* Add a key to force rerender when page changed, to avoid error boundary persisting. */}
           <AffineErrorBoundary key={doc.id}>
             <TopTip pageId={doc.id} workspace={workspace} />
             <Scrollable.Root>
               <Scrollable.Viewport
+                ref={refCallback}
                 className={clsx(
                   'affine-page-viewport',
                   styles.affineDocViewport,
@@ -239,6 +253,12 @@ const DetailPageImpl = memo(function DetailPageImpl() {
           </AffineErrorBoundary>
           {isInTrash ? <TrashPageFooter /> : null}
         </div>
+        {appSettings.enableOutlineViewer && (
+          <EditorOutlineViewer
+            editor={editor}
+            toggleOutlinePanel={openOutlinePanel}
+          />
+        )}
       </ViewBody>
 
       <ViewSidebarTab tabId="chat" icon={<AiIcon />} unmountOnInactive={false}>
@@ -250,7 +270,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
       </ViewSidebarTab>
 
       <ViewSidebarTab tabId="outline" icon={<TocIcon />}>
-        <EditorOutline editor={editor} />
+        <EditorOutlinePanel editor={editor} />
       </ViewSidebarTab>
 
       <ViewSidebarTab tabId="frame" icon={<FrameIcon />}>

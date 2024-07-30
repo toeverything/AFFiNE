@@ -20,7 +20,6 @@ export const header = style({
   flexShrink: 0,
   background: cssVar('backgroundPrimaryColor'),
   padding: '0 16px',
-  ['WebkitAppRegion' as string]: 'drag',
   '@media': {
     print: {
       display: 'none',
@@ -61,11 +60,4 @@ export const viewHeaderContainer = style({
   width: 0,
   flexGrow: 1,
   minWidth: 12,
-});
-
-export const windowsAppControlsContainer = style({
-  display: 'flex',
-  height: '100%',
-  marginRight: '-16px',
-  paddingLeft: '16px',
 });

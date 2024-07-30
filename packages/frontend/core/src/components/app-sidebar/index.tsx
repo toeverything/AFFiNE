@@ -41,7 +41,6 @@ const MIN_WIDTH = 248;
 export function AppSidebar({
   children,
   clientBorder,
-  translucentUI,
 }: AppSidebarProps): ReactElement {
   const [open, setOpen] = useAtom(appSidebarOpenAtom);
   const [width, setWidth] = useAtom(appSidebarWidthAtom);
@@ -49,6 +48,11 @@ export function AppSidebar({
   const [resizing, setResizing] = useAtom(appSidebarResizingAtom);
 
   useEffect(() => {
+    // do not float app sidebar on desktop
+    if (environment.isDesktop) {
+      return;
+    }
+
     function onResize() {
       const isFloatingMaxWidth = window.matchMedia(
         `(max-width: ${floatingMaxWidth}px)`
@@ -75,10 +79,8 @@ export function AppSidebar({
     };
   }, [open, setFloating, setOpen, width]);
 
+  const hasRightBorder = !environment.isDesktop && !clientBorder;
   const isMacosDesktop = environment.isDesktop && environment.isMacOs;
-  const hasRightBorder =
-    !environment.isDesktop || (!clientBorder && !translucentUI);
-
   return (
     <>
       <ResizePanel
@@ -96,12 +98,13 @@ export function AppSidebar({
         resizeHandleOffset={clientBorder ? 8 : 0}
         resizeHandleVerticalPadding={clientBorder ? 16 : 0}
         data-transparent
+        data-open={open}
         data-has-border={hasRightBorder}
         data-testid="app-sidebar-wrapper"
         data-is-macos-electron={isMacosDesktop}
       >
         <nav className={navStyle} data-testid="app-sidebar">
-          <SidebarHeader />
+          {!environment.isDesktop && <SidebarHeader />}
           <div className={navBodyStyle} data-testid="sliderBar-inner">
             {children}
           </div>

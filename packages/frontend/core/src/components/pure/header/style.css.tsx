@@ -56,6 +56,7 @@ export const headerSideContainer = style({
 
 export const windowAppControlsWrapper = style({
   display: 'flex',
+  flexShrink: 0,
 });
 
 export const windowAppControl = style({

@@ -19,7 +19,10 @@ export const useDetailPageHeaderResponsive = (availableWidth: number) => {
   const hideToday = availableWidth < 300;
 
   const showDivider =
-    viewPosition.isLast && !rightSidebarOpen && !(hidePresent && hideShare);
+    viewPosition.isLast &&
+    !rightSidebarOpen &&
+    !(hidePresent && hideShare) &&
+    !environment.isDesktop;
 
   return {
     hideShare,

@@ -49,8 +49,8 @@ export const WorkbenchRoot = memo(() => {
   );
 
   useEffect(() => {
-    workbench.basename$.next(basename);
-  }, [basename, workbench.basename$]);
+    workbench.updateBasename(basename);
+  }, [basename, workbench]);
 
   return (
     <ViewIslandRegistryProvider>

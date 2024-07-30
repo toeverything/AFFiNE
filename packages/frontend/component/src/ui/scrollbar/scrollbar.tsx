@@ -1,7 +1,6 @@
 import * as ScrollArea from '@radix-ui/react-scroll-area';
 import clsx from 'clsx';
 import type { PropsWithChildren } from 'react';
-import { useRef } from 'react';
 
 import * as styles from './index.css';
 import { useHasScrollTop } from './use-has-scroll-top';
@@ -24,8 +23,7 @@ export const ScrollableContainer = ({
   viewPortClassName,
   scrollBarClassName,
 }: PropsWithChildren<ScrollableContainerProps>) => {
-  const ref = useRef<HTMLDivElement>(null);
-  const hasScrollTop = useHasScrollTop(ref);
+  const [setContainer, hasScrollTop] = useHasScrollTop();
   return (
     <ScrollArea.Root
       style={_styles}
@@ -37,7 +35,7 @@ export const ScrollableContainer = ({
       />
       <ScrollArea.Viewport
         className={clsx([styles.scrollableViewport, viewPortClassName])}
-        ref={ref}
+        ref={setContainer}
       >
         <div className={styles.scrollableContainer}>{children}</div>
       </ScrollArea.Viewport>

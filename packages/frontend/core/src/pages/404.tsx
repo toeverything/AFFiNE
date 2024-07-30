@@ -9,6 +9,7 @@ import { useCallback, useState } from 'react';
 
 import { SignOutModal } from '../components/affine/sign-out-modal';
 import { RouteLogic, useNavigateHelper } from '../hooks/use-navigate-helper';
+import { AppTabsHeader } from '../modules/app-tabs-header';
 import { AuthService } from '../modules/cloud';
 import { SignIn } from './sign-in';
 
@@ -38,6 +39,14 @@ export const PageNotFound = ({
 
   return (
     <>
+      {environment.isDesktop ? (
+        <AppTabsHeader
+          style={{
+            paddingLeft: environment.isMacOs ? 80 : 0,
+          }}
+          reportBoundingUpdate
+        />
+      ) : null}
       {noPermission ? (
         <NoPermissionOrNotFound
           user={account}

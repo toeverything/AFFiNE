@@ -4,5 +4,5 @@ export type BuildFlags = {
   channel: 'stable' | 'beta' | 'canary' | 'internal';
   coverage?: boolean;
   localBlockSuite?: string;
-  entry?: string;
+  entry?: string | { [key: string]: string };
 };

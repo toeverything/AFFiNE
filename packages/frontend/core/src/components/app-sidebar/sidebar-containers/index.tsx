@@ -1,8 +1,7 @@
 import { useHasScrollTop } from '@affine/component';
 import * as ScrollArea from '@radix-ui/react-scroll-area';
 import clsx from 'clsx';
-import type { PropsWithChildren } from 'react';
-import { useRef } from 'react';
+import { type PropsWithChildren } from 'react';
 
 import * as styles from './index.css';
 
@@ -11,8 +10,7 @@ export function SidebarContainer({ children }: PropsWithChildren) {
 }
 
 export function SidebarScrollableContainer({ children }: PropsWithChildren) {
-  const ref = useRef<HTMLDivElement>(null);
-  const hasScrollTop = useHasScrollTop(ref);
+  const [setContainer, hasScrollTop] = useHasScrollTop();
   return (
     <ScrollArea.Root className={styles.scrollableContainerRoot}>
       <div
@@ -21,7 +19,7 @@ export function SidebarScrollableContainer({ children }: PropsWithChildren) {
       />
       <ScrollArea.Viewport
         className={clsx([styles.scrollableViewport])}
-        ref={ref}
+        ref={setContainer}
       >
         <div className={clsx([styles.scrollableContainer])}>{children}</div>
       </ScrollArea.Viewport>

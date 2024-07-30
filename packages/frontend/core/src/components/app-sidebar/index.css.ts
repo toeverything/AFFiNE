@@ -1,5 +1,5 @@
 import { cssVar } from '@toeverything/theme';
-import { globalStyle, style } from '@vanilla-extract/css';
+import { style } from '@vanilla-extract/css';
 export const floatingMaxWidth = 768;
 export const navWrapperStyle = style({
   paddingBottom: '8px',
@@ -11,7 +11,7 @@ export const navWrapperStyle = style({
   },
   selectors: {
     '&[data-has-border=true]': {
-      borderRight: `1px solid ${cssVar('borderColor')}`,
+      borderRight: `0.5px solid ${cssVar('borderColor')}`,
     },
     '&[data-is-floating="true"]': {
       backgroundColor: cssVar('backgroundPrimaryColor'),
@@ -44,14 +44,6 @@ export const navHeaderStyle = style({
   alignItems: 'center',
   ['WebkitAppRegion' as string]: 'drag',
 });
-
-globalStyle(
-  `html[data-fullscreen="false"]
-  ${navHeaderStyle}[data-is-macos-electron="true"]`,
-  {
-    paddingLeft: '90px',
-  }
-);
 
 export const navBodyStyle = style({
   flex: '1 1 auto',

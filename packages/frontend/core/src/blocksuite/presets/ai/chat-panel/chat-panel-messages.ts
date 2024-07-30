@@ -168,7 +168,7 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
 
   private _renderAIOnboarding() {
     return this.isLoading ||
-      !this.host.doc.awarenessStore.getFlag('enable_ai_onboarding')
+      !this.host?.doc.awarenessStore.getFlag('enable_ai_onboarding')
       ? nothing
       : html`<div
           style=${styleMap({

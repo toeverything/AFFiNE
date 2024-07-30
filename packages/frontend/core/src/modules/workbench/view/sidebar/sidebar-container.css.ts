@@ -25,7 +25,10 @@ export const sidebarBodyTarget = style({
   height: '100%',
   overflow: 'hidden',
   alignItems: 'center',
-  borderTop: `1px solid ${cssVar('borderColor')}`,
+});
+
+export const borderTop = style({
+  borderTop: `0.5px solid ${cssVar('borderColor')}`,
 });
 
 export const sidebarBodyNoSelection = style({

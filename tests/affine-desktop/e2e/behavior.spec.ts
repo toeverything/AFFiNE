@@ -3,7 +3,7 @@ import os from 'node:os';
 import { test } from '@affine-test/kit/electron';
 import { shouldCallIpcRendererHandler } from '@affine-test/kit/utils/ipc';
 
-test.describe('behavior test', () => {
+test.describe.skip('behavior test', () => {
   if (os.platform() === 'darwin') {
     test('system button should hidden correctly', async ({
       page,

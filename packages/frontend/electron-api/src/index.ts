@@ -45,3 +45,9 @@ export const sharedStorage = (globalThis as any).sharedStorage as
   | null;
 
 export type { UpdateMeta } from '@affine/electron/main/updater/event';
+export {
+  type TabViewsMetaSchema,
+  type WorkbenchMeta,
+  type WorkbenchViewMeta,
+  type WorkbenchViewModule,
+} from '@affine/electron/main/windows-manager/tab-views-meta-schema';

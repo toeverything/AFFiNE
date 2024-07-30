@@ -5,12 +5,12 @@ import {
 } from '@affine/component/global-loading';
 import { useI18n } from '@affine/i18n';
 import { ZipTransformer } from '@blocksuite/blocks';
-import { assertExists } from '@blocksuite/global/utils';
 import {
   type DocMode,
   DocsService,
   effect,
   fromPromise,
+  LiveData,
   onStart,
   throwIfAborted,
   useLiveData,
@@ -19,7 +19,7 @@ import {
 } from '@toeverything/infra';
 import { useAtomValue, useSetAtom } from 'jotai';
 import type { PropsWithChildren } from 'react';
-import { useCallback, useEffect } from 'react';
+import { useEffect } from 'react';
 import {
   catchError,
   EMPTY,
@@ -30,33 +30,35 @@ import {
 } from 'rxjs';
 import { Map as YMap } from 'yjs';
 
-import { openSettingModalAtom } from '../atoms';
 import { AIProvider } from '../blocksuite/presets/ai';
 import { WorkspaceAIOnboarding } from '../components/affine/ai-onboarding';
 import { AppContainer } from '../components/affine/app-container';
 import { SyncAwareness } from '../components/affine/awareness';
-import { appSidebarResizingAtom } from '../components/app-sidebar';
-import { usePageHelper } from '../components/blocksuite/block-suite-page-list/utils';
+import {
+  appSidebarFloatingAtom,
+  appSidebarOpenAtom,
+  appSidebarResizingAtom,
+  SidebarSwitch,
+} from '../components/app-sidebar';
+import { appSidebarWidthAtom } from '../components/app-sidebar/index.jotai';
 import { AIIsland } from '../components/pure/ai-island';
 import { RootAppSidebar } from '../components/root-app-sidebar';
 import { MainContainer } from '../components/workspace';
 import { WorkspaceUpgrade } from '../components/workspace-upgrade';
-import { useAppSettingHelper } from '../hooks/affine/use-app-setting-helper';
 import { useRegisterFindInPageCommands } from '../hooks/affine/use-register-find-in-page-commands';
 import { useSubscriptionNotifyReader } from '../hooks/affine/use-subscription-notify';
-import { useNavigateHelper } from '../hooks/use-navigate-helper';
 import { useRegisterWorkspaceCommands } from '../hooks/use-register-workspace-commands';
+import { AppTabsHeader } from '../modules/app-tabs-header';
+import { NavigationButtons } from '../modules/navigation';
 import { useRegisterNavigationCommands } from '../modules/navigation/view/use-register-navigation-commands';
 import { QuickSearchContainer } from '../modules/quicksearch';
-import { CMDKQuickSearchService } from '../modules/quicksearch/services/cmdk';
 import { WorkbenchService } from '../modules/workbench';
 import {
   AllWorkspaceModals,
   CurrentWorkspaceModals,
 } from '../providers/modal-provider';
 import { SWRConfigProvider } from '../providers/swr-config-provider';
-import { pathGenerator } from '../shared';
-import { mixpanel } from '../utils';
+import * as styles from './styles.css';
 
 export const WorkspaceLayout = function WorkspaceLayout({
   children,
@@ -74,26 +76,14 @@ export const WorkspaceLayout = function WorkspaceLayout({
   );
 };
 
-export const WorkspaceLayoutInner = ({ children }: PropsWithChildren) => {
+const WorkspaceLayoutProviders = ({ children }: PropsWithChildren) => {
   const t = useI18n();
   const pushGlobalLoadingEvent = useSetAtom(pushGlobalLoadingEventAtom);
   const resolveGlobalLoadingEvent = useSetAtom(resolveGlobalLoadingEventAtom);
   const currentWorkspace = useService(WorkspaceService).workspace;
   const docsList = useService(DocsService).list;
-  const { openPage } = useNavigateHelper();
-  const pageHelper = usePageHelper(currentWorkspace.docCollection);
-
-  const upgrading = useLiveData(currentWorkspace.upgrade.upgrading$);
-  const needUpgrade = useLiveData(currentWorkspace.upgrade.needUpgrade$);
 
   const workbench = useService(WorkbenchService).workbench;
-
-  const basename = useLiveData(workbench.basename$);
-
-  const currentPath = useLiveData(
-    workbench.location$.map(location => basename + location.pathname)
-  );
-
   useEffect(() => {
     const insertTemplate = effect(
       switchMap(({ template, mode }: { template: string; mode: string }) => {
@@ -180,64 +170,89 @@ export const WorkspaceLayoutInner = ({ children }: PropsWithChildren) => {
     }
   }, [currentWorkspace.docCollection.doc]);
 
-  const handleCreatePage = useCallback(() => {
-    return pageHelper.createPage();
-  }, [pageHelper]);
-
-  const cmdkQuickSearchService = useService(CMDKQuickSearchService);
-  const handleOpenQuickSearchModal = useCallback(() => {
-    cmdkQuickSearchService.toggle();
-    mixpanel.track('QuickSearchOpened', {
-      segment: 'navigation panel',
-      control: 'search button',
-    });
-  }, [cmdkQuickSearchService]);
-
-  const setOpenSettingModalAtom = useSetAtom(openSettingModalAtom);
-
-  const handleOpenSettingModal = useCallback(() => {
-    setOpenSettingModalAtom({
-      activeTab: 'appearance',
-      open: true,
-    });
-
-    mixpanel.track('SettingsViewed', {
-      // page:
-      segment: 'navigation panel',
-      module: 'general list',
-      control: 'settings button',
-    });
-  }, [setOpenSettingModalAtom]);
-
-  const resizing = useAtomValue(appSidebarResizingAtom);
-
-  const { appSettings } = useAppSettingHelper();
-
   return (
     <>
-      <AppContainer data-current-path={currentPath} resizing={resizing}>
-        <RootAppSidebar
-          isPublicWorkspace={false}
-          onOpenQuickSearchModal={handleOpenQuickSearchModal}
-          onOpenSettingModal={handleOpenSettingModal}
-          currentWorkspace={currentWorkspace}
-          openPage={useCallback(
-            (pageId: string) => {
-              assertExists(currentWorkspace);
-              return openPage(currentWorkspace.id, pageId);
-            },
-            [currentWorkspace, openPage]
-          )}
-          createPage={handleCreatePage}
-          paths={pathGenerator}
-        />
-
-        <MainContainer clientBorder={appSettings.clientBorder}>
-          {needUpgrade || upgrading ? <WorkspaceUpgrade /> : children}
-        </MainContainer>
-      </AppContainer>
+      {/* This DndContext is used for drag page from all-pages list into a folder in sidebar */}
+      {children}
       <QuickSearchContainer />
       <SyncAwareness />
     </>
+  );
+};
+
+const DesktopLayout = ({ children }: PropsWithChildren) => {
+  const resizing = useAtomValue(appSidebarResizingAtom);
+  const sidebarWidth = useAtomValue(appSidebarWidthAtom);
+  const sidebarOpen = useAtomValue(appSidebarOpenAtom);
+  const sidebarFloating = useAtomValue(appSidebarFloatingAtom);
+  const sidebarResizing = useAtomValue(appSidebarResizingAtom);
+  const isMacosDesktop = environment.isDesktop && environment.isMacOs;
+
+  return (
+    <div className={styles.desktopAppViewContainer}>
+      <div className={styles.desktopTabsHeader}>
+        <div
+          className={styles.desktopTabsHeaderTopLeft}
+          style={{
+            transition: sidebarResizing ? 'none' : undefined,
+            paddingLeft:
+              isMacosDesktop && sidebarOpen && !sidebarFloating ? 90 : 16,
+            width: sidebarOpen && !sidebarFloating ? sidebarWidth : 130,
+          }}
+        >
+          <SidebarSwitch show />
+          <NavigationButtons />
+        </div>
+        <AppTabsHeader reportBoundingUpdate={!resizing} />
+      </div>
+      <div className={styles.desktopAppViewMain}>
+        <RootAppSidebar />
+        <MainContainer>{children}</MainContainer>
+      </div>
+    </div>
+  );
+};
+
+const BrowserLayout = ({ children }: PropsWithChildren) => {
+  return (
+    <div className={styles.browserAppViewContainer}>
+      <RootAppSidebar />
+      <MainContainer>{children}</MainContainer>
+    </div>
+  );
+};
+
+/**
+ * Wraps the workspace layout main router view
+ */
+const WorkspaceLayoutUIContainer = ({ children }: PropsWithChildren) => {
+  const workbench = useService(WorkbenchService).workbench;
+  const currentPath = useLiveData(
+    LiveData.computed(get => {
+      return get(workbench.basename$) + get(workbench.location$).pathname;
+    })
+  );
+
+  const resizing = useAtomValue(appSidebarResizingAtom);
+  const LayoutComponent = environment.isDesktop ? DesktopLayout : BrowserLayout;
+
+  return (
+    <AppContainer data-current-path={currentPath} resizing={resizing}>
+      <LayoutComponent>{children}</LayoutComponent>
+    </AppContainer>
+  );
+};
+export const WorkspaceLayoutInner = ({ children }: PropsWithChildren) => {
+  const currentWorkspace = useService(WorkspaceService).workspace;
+
+  const upgrading = useLiveData(currentWorkspace.upgrade.upgrading$);
+  const needUpgrade = useLiveData(currentWorkspace.upgrade.needUpgrade$);
+
+  return (
+    <WorkspaceLayoutProviders>
+      <WorkspaceLayoutUIContainer>
+        {needUpgrade || upgrading ? <WorkspaceUpgrade /> : children}
+      </WorkspaceLayoutUIContainer>
+    </WorkspaceLayoutProviders>
   );
 };
