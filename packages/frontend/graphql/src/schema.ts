@@ -798,6 +798,7 @@ export interface Query {
   serverConfig: ServerConfigType;
   /** get all server runtime configurable settings */
   serverRuntimeConfig: Array<ServerRuntimeConfigType>;
+  serverServiceConfigs: Array<ServerServiceConfig>;
   /** Get user by email */
   user: Maybe<UserOrLimitedUser>;
   /** Get user by id */
@@ -950,6 +951,12 @@ export interface ServerRuntimeConfigType {
   type: RuntimeConfigType;
   updatedAt: Scalars['DateTime']['output'];
   value: Scalars['JSON']['output'];
+}
+
+export interface ServerServiceConfig {
+  __typename?: 'ServerServiceConfig';
+  config: Scalars['JSONObject']['output'];
+  name: Scalars['String']['output'];
 }
 
 export interface SubscriptionAlreadyExistsDataType {

@@ -541,6 +541,7 @@ type Query {
 
   """get all server runtime configurable settings"""
   serverRuntimeConfig: [ServerRuntimeConfigType!]!
+  serverServiceConfigs: [ServerServiceConfig!]!
 
   """Get user by email"""
   user(email: String!): UserOrLimitedUser
@@ -661,6 +662,11 @@ type ServerRuntimeConfigType {
   type: RuntimeConfigType!
   updatedAt: DateTime!
   value: JSON!
+}
+
+type ServerServiceConfig {
+  config: JSONObject!
+  name: String!
 }
 
 type SubscriptionAlreadyExistsDataType {

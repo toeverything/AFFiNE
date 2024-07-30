@@ -1,6 +1,6 @@
 import type { OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { Injectable } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 
 @Injectable()
 export class PrismaService
@@ -9,8 +9,8 @@ export class PrismaService
 {
   static INSTANCE: PrismaService | null = null;
 
-  constructor() {
-    super();
+  constructor(opts: Prisma.PrismaClientOptions) {
+    super(opts);
     PrismaService.INSTANCE = this;
   }
 

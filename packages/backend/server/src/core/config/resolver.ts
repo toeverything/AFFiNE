@@ -175,11 +175,42 @@ export class ServerConfigResolver {
   }
 }
 
+@ObjectType()
+class ServerServiceConfig {
+  @Field()
+  name!: string;
+
+  @Field(() => GraphQLJSONObject)
+  config!: any;
+}
+
+interface ServerServeConfig {
+  https: boolean;
+  host: string;
+  port: number;
+  externalUrl: string;
+}
+
+interface ServerMailerConfig {
+  host?: string | null;
+  port?: number | null;
+  secure?: boolean | null;
+  service?: string | null;
+  sender?: string | null;
+}
+
+interface ServerDatabaseConfig {
+  host: string;
+  port: number;
+  user?: string | null;
+  database: string;
+}
+
+@Admin()
 @Resolver(() => ServerRuntimeConfigType)
 export class ServerRuntimeConfigResolver {
   constructor(private readonly config: Config) {}
 
-  @Admin()
   @Query(() => [ServerRuntimeConfigType], {
     description: 'get all server runtime configurable settings',
   })
@@ -187,7 +218,6 @@ export class ServerRuntimeConfigResolver {
     return this.config.runtime.list();
   }
 
-  @Admin()
   @Mutation(() => ServerRuntimeConfigType, {
     description: 'update server runtime configurable setting',
   })
@@ -198,7 +228,6 @@ export class ServerRuntimeConfigResolver {
     return await this.config.runtime.set(id as any, value);
   }
 
-  @Admin()
   @Mutation(() => [ServerRuntimeConfigType], {
     description: 'update multiple server runtime configurable settings',
   })
@@ -211,5 +240,59 @@ export class ServerRuntimeConfigResolver {
     );
 
     return results;
+  }
+}
+
+@Admin()
+@Resolver(() => ServerServiceConfig)
+export class ServerServiceConfigResolver {
+  constructor(private readonly config: Config) {}
+
+  @Query(() => [ServerServiceConfig])
+  serverServiceConfigs() {
+    return [
+      {
+        name: 'server',
+        config: this.serve(),
+      },
+      {
+        name: 'mailer',
+        config: this.mail(),
+      },
+      {
+        name: 'database',
+        config: this.database(),
+      },
+    ];
+  }
+
+  serve(): ServerServeConfig {
+    return this.config.server;
+  }
+
+  mail(): ServerMailerConfig {
+    const sender =
+      typeof this.config.mailer.from === 'string'
+        ? this.config.mailer.from
+        : this.config.mailer.from?.address;
+
+    return {
+      host: this.config.mailer.host,
+      port: this.config.mailer.port,
+      secure: this.config.mailer.secure,
+      service: this.config.mailer.service,
+      sender,
+    };
+  }
+
+  database(): ServerDatabaseConfig {
+    const url = new URL(this.config.database.datasourceUrl);
+
+    return {
+      host: url.hostname,
+      port: Number(url.port),
+      user: url.username,
+      database: url.pathname.slice(1) ?? url.username,
+    };
   }
 }
