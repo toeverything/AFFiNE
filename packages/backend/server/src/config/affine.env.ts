@@ -12,6 +12,7 @@ AFFiNE.ENV_MAP = {
   MAILER_PASSWORD: 'mailer.auth.pass',
   MAILER_SENDER: 'mailer.from.address',
   MAILER_SECURE: ['mailer.secure', 'boolean'],
+  DATABASE_URL: 'database.datasourceUrl',
   OAUTH_GOOGLE_CLIENT_ID: 'plugins.oauth.providers.google.clientId',
   OAUTH_GOOGLE_CLIENT_SECRET: 'plugins.oauth.providers.google.clientSecret',
   OAUTH_GITHUB_CLIENT_ID: 'plugins.oauth.providers.github.clientId',
