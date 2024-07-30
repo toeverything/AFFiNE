@@ -43,7 +43,7 @@ export const modalOverlay = style({
   position: 'fixed',
   inset: 0,
   backgroundColor: cssVar('backgroundModalColor'),
-  zIndex: cssVar('zIndexModal'),
+  zIndex: `calc(${cssVar('zIndexModal')} + 1)`,
   animation: `${overlayShow} 150ms forwards`,
 });
 const modalContentViewTransitionName = generateIdentifier('modal-content');
@@ -53,7 +53,7 @@ export const modalContentWrapper = style({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  zIndex: cssVar('zIndexModal'),
+  zIndex: `calc(${cssVar('zIndexModal')} + 1)`,
   animation: `${contentShow} 150ms cubic-bezier(0.42, 0, 0.58, 1)`,
   animationFillMode: 'forwards',
   viewTransitionName: modalContentViewTransitionName,
@@ -89,7 +89,7 @@ export const closeButton = style({
   position: 'absolute',
   top: '22px',
   right: '20px',
-  zIndex: cssVar('zIndexModal'),
+  zIndex: `calc(${cssVar('zIndexModal')} + 1)`,
 });
 export const modalHeader = style({
   fontSize: cssVar('fontH6'),
