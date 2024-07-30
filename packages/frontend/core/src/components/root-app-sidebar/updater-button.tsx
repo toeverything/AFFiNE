@@ -1,8 +1,9 @@
 import { useAppUpdater } from '@affine/core/hooks/use-app-updater';
+import { Suspense } from 'react';
 
 import { AppUpdaterButton } from '../app-sidebar';
 
-export const UpdaterButton = () => {
+const UpdaterButtonInner = () => {
   const appUpdater = useAppUpdater();
 
   return (
@@ -18,5 +19,13 @@ export const UpdaterButton = () => {
       downloadProgress={appUpdater.downloadProgress}
       appQuitting={appUpdater.appQuitting}
     />
+  );
+};
+
+export const UpdaterButton = () => {
+  return (
+    <Suspense>
+      <UpdaterButtonInner />
+    </Suspense>
   );
 };
