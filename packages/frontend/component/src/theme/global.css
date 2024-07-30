@@ -178,7 +178,6 @@ legend {
 
 body {
   background: transparent;
-  overflow: hidden;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
@@ -306,7 +305,7 @@ html,
 body {
   height: 100%;
   position: relative;
-  overflow: hidden;
+  overflow: clip;
 }
 
 /**
