@@ -125,8 +125,8 @@ const WorkbenchTab = ({
           </Fragment>
         );
       })}
-      {!workbench.pinned && tabsLength > 1 ? (
-        <div className={styles.tabCloseButtonWrapper}>
+      <div className={styles.tabCloseButtonWrapper}>
+        {!workbench.pinned && tabsLength > 1 ? (
           <button
             data-testid="close-tab-button"
             className={styles.tabCloseButton}
@@ -134,8 +134,8 @@ const WorkbenchTab = ({
           >
             <CloseIcon />
           </button>
-        </div>
-      ) : null}
+        ) : null}
+      </div>
     </div>
   );
 };
