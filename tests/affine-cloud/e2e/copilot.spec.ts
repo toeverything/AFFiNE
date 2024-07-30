@@ -7,6 +7,7 @@ import {
 import { openHomePage } from '@affine-test/kit/utils/load-page';
 import {
   clickNewPageButton,
+  getBlockSuiteEditorTitle,
   waitForEditorLoad,
 } from '@affine-test/kit/utils/page-logic';
 import { clickSideBarAllPageButton } from '@affine-test/kit/utils/sidebar';
@@ -43,6 +44,10 @@ const clearChat = async (page: Page) => {
 
 const collectChat = async (page: Page) => {
   const chatPanel = await page.waitForSelector('.chat-panel-messages');
+  // wait ai response
+  const lastMessage = await chatPanel.$$('.message').then(m => m[m.length - 1]);
+  await lastMessage.waitForSelector('chat-copy-more');
+  await page.waitForTimeout(500);
   return Promise.all(
     Array.from(await chatPanel.$$('.message')).map(async m => ({
       name: await (await m.$('.user-info'))?.innerText(),
@@ -50,6 +55,18 @@ const collectChat = async (page: Page) => {
         await (await m.$('ai-answer-text'))?.$('editor-host')
       )?.innerText(),
     }))
+  );
+};
+
+const getEditorContent = async (page: Page) => {
+  const lines = await page.$$('page-editor .inline-editor');
+  const contents = await Promise.all(lines.map(el => el.innerText()));
+  return (
+    contents
+      // cleanup zero width space
+      .map(c => c.replace(/\u200B/g, '').trim())
+      .filter(c => !!c)
+      .join('\n')
   );
 };
 
@@ -104,5 +121,23 @@ test.describe('chat panel', () => {
     expect(history[1].name).toBe('AFFiNE AI');
     await clearChat(page);
     expect((await collectChat(page)).length).toBe(0);
+  });
+
+  test.only('can be insert below', async ({ page }) => {
+    await page.reload();
+    await clickSideBarAllPageButton(page);
+    await page.waitForTimeout(200);
+    await createLocalWorkspace({ name: 'test' }, page);
+    await clickNewPageButton(page);
+    await makeChat(page, 'hello');
+    const content = (await collectChat(page))[1].content;
+    // go to the editor
+    const title = getBlockSuiteEditorTitle(page);
+    await title.focus();
+    await page.keyboard.press('Enter');
+    // insert below
+    await page.getByTestId('action-insert-below').click();
+    const editorContent = await getEditorContent(page);
+    expect(editorContent).toBe(content);
   });
 });
