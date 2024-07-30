@@ -155,7 +155,7 @@ export class ChatActionList extends LitElement {
                 }}
                 data-testid="action-${action.title
                   .toLowerCase()
-                  .replace(' ', '-')}"
+                  .replaceAll(' ', '-')}"
               >
                 ${action.title}
               </div>

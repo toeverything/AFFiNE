@@ -58,6 +58,12 @@ const collectChat = async (page: Page) => {
   );
 };
 
+const focusToEditor = async (page: Page) => {
+  const title = getBlockSuiteEditorTitle(page);
+  await title.focus();
+  await page.keyboard.press('Enter');
+};
+
 const getEditorContent = async (page: Page) => {
   const lines = await page.$$('page-editor .inline-editor');
   const contents = await Promise.all(lines.map(el => el.innerText()));
@@ -123,7 +129,7 @@ test.describe('chat panel', () => {
     expect((await collectChat(page)).length).toBe(0);
   });
 
-  test.only('can be insert below', async ({ page }) => {
+  test('can be insert below', async ({ page }) => {
     await page.reload();
     await clickSideBarAllPageButton(page);
     await page.waitForTimeout(200);
@@ -131,12 +137,26 @@ test.describe('chat panel', () => {
     await clickNewPageButton(page);
     await makeChat(page, 'hello');
     const content = (await collectChat(page))[1].content;
-    // go to the editor
-    const title = getBlockSuiteEditorTitle(page);
-    await title.focus();
-    await page.keyboard.press('Enter');
+    await focusToEditor(page);
     // insert below
     await page.getByTestId('action-insert-below').click();
+    const editorContent = await getEditorContent(page);
+    expect(editorContent).toBe(content);
+  });
+
+  test.only('can be create as a doc', async ({ page }) => {
+    await page.reload();
+    await clickSideBarAllPageButton(page);
+    await page.waitForTimeout(200);
+    await createLocalWorkspace({ name: 'test' }, page);
+    await clickNewPageButton(page);
+    await makeChat(page, 'hello');
+    const content = (await collectChat(page))[1].content;
+    const editor = await page.waitForSelector('page-editor');
+    await page.getByTestId('action-create-as-a-doc').click();
+    // wait for new editor
+    editor.waitForElementState('hidden');
+    await page.waitForSelector('page-editor');
     const editorContent = await getEditorContent(page);
     expect(editorContent).toBe(content);
   });
