@@ -55,7 +55,7 @@ export const mainContainerStyle = style({
     '&[data-client-border="true"]': {
       borderRadius: 6,
       margin: '8px',
-      overflow: 'hidden',
+      overflow: 'clip',
       // TODO(@Peng): is this performance intensive?
       // TODO(@catsjuice): not match with design's shadow, theme missing
       filter: 'drop-shadow(0px 0px 4px rgba(66,65,73,.14))',
