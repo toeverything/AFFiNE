@@ -66,7 +66,7 @@ export const tab = style({
       boxShadow: cssVar('shadow1'),
     },
     '&[data-pinned="false"]': {
-      paddingRight: 20,
+      paddingRight: 8,
     },
     '&[data-pinned="true"]': {
       flexShrink: 0,
@@ -84,6 +84,9 @@ export const splitViewLabel = style({
   alignItems: 'center',
   maxWidth: 180,
   cursor: 'default',
+  ':last-of-type': {
+    paddingRight: 0,
+  },
 });
 
 export const splitViewLabelText = style({
@@ -121,7 +124,7 @@ export const labelIcon = style([
     fontSize: 16,
     flexShrink: 0,
     selectors: {
-      [`${tab}[data-active=true] &`]: {
+      [`${splitViewLabel}[data-active=true] &`]: {
         color: cssVar('primaryColor'),
       },
       [`${splitViewLabel}[data-active=false]:hover &`]: {
