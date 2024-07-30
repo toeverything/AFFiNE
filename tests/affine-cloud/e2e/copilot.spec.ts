@@ -76,6 +76,14 @@ const getEditorContent = async (page: Page) => {
   );
 };
 
+const switchToEdgelessMode = async (page: Page) => {
+  const editor = await page.waitForSelector('page-editor');
+  await page.getByTestId('switch-edgeless-mode-button').click();
+  // wait for new editor
+  editor.waitForElementState('hidden');
+  await page.waitForSelector('edgeless-editor');
+};
+
 test('can trigger login at chat side panel', async ({ page }) => {
   await openHomePage(page);
   await waitForEditorLoad(page);
@@ -159,5 +167,24 @@ test.describe('chat panel', () => {
     await page.waitForSelector('page-editor');
     const editorContent = await getEditorContent(page);
     expect(editorContent).toBe(content);
+  });
+
+  // feature not launched yet
+  test.skip('can be save chat to block', async ({ page }) => {
+    await page.reload();
+    await clickSideBarAllPageButton(page);
+    await page.waitForTimeout(200);
+    await createLocalWorkspace({ name: 'test' }, page);
+    await clickNewPageButton(page);
+    await makeChat(page, 'hello');
+    const contents = (await collectChat(page)).map(m => m.content);
+    await switchToEdgelessMode(page);
+    await page.getByTestId('action-save-chat-to-block').click();
+    const chatBlock = await page.waitForSelector('affine-edgeless-ai-chat');
+    expect(
+      await Promise.all(
+        (await chatBlock.$$('.ai-chat-user-message')).map(m => m.innerText())
+      )
+    ).toBe(contents);
   });
 });
