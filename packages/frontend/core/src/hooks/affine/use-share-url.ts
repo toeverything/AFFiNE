@@ -1,6 +1,6 @@
 import { notify } from '@affine/component';
+import { mixpanel } from '@affine/core/mixpanel';
 import { getAffineCloudBaseUrl } from '@affine/core/modules/cloud/services/fetch';
-import { mixpanel } from '@affine/core/utils';
 import { useI18n } from '@affine/i18n';
 import type { Disposable } from '@blocksuite/global/utils';
 import { useCallback, useEffect, useMemo, useState } from 'react';

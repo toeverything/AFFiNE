@@ -1,12 +1,12 @@
 import { Button, ErrorMessage, Skeleton } from '@affine/component';
 import { SettingRow } from '@affine/component/setting-components';
 import { openSettingModalAtom } from '@affine/core/atoms';
+import { mixpanel } from '@affine/core/mixpanel';
 import {
   ServerConfigService,
   SubscriptionService,
   UserCopilotQuotaService,
 } from '@affine/core/modules/cloud';
-import { mixpanel } from '@affine/core/utils';
 import { useI18n } from '@affine/i18n';
 import { useLiveData, useService } from '@toeverything/infra';
 import { cssVar } from '@toeverything/theme';

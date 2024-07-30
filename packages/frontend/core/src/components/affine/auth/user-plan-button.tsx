@@ -1,5 +1,5 @@
 import { Tooltip } from '@affine/component/ui/tooltip';
-import { mixpanel } from '@affine/core/utils';
+import { mixpanel } from '@affine/core/mixpanel';
 import { SubscriptionPlan } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
 import { useLiveData, useServices } from '@toeverything/infra';

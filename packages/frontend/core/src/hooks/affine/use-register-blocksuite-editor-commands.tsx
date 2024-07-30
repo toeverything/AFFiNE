@@ -4,9 +4,9 @@ import {
   PreconditionStrategy,
   registerAffineCommand,
 } from '@affine/core/commands';
+import { mixpanel } from '@affine/core/mixpanel';
 import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/properties';
 import { TelemetryWorkspaceContextService } from '@affine/core/modules/telemetry/services/telemetry';
-import { mixpanel } from '@affine/core/utils';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useI18n } from '@affine/i18n';
 import { EdgelessIcon, HistoryIcon, PageIcon } from '@blocksuite/icons/rc';

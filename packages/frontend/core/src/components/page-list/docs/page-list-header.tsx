@@ -7,9 +7,9 @@ import {
 } from '@affine/component';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
+import { mixpanel } from '@affine/core/mixpanel';
 import type { Tag } from '@affine/core/modules/tag';
 import { TagService } from '@affine/core/modules/tag';
-import { mixpanel } from '@affine/core/utils';
 import type { Collection } from '@affine/env/filter';
 import { useI18n } from '@affine/i18n';
 import {

@@ -8,8 +8,8 @@ import { EMPTY, mergeMap, switchMap } from 'rxjs';
 
 import { generateSubscriptionCallbackLink } from '../hooks/affine/use-subscription-notify';
 import { RouteLogic, useNavigateHelper } from '../hooks/use-navigate-helper';
+import { mixpanel } from '../mixpanel';
 import { AuthService, SubscriptionService } from '../modules/cloud';
-import { mixpanel } from '../utils';
 import { container } from './subscribe.css';
 
 export const Component = () => {

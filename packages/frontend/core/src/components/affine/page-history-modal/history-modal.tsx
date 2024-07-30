@@ -4,6 +4,7 @@ import { Button, IconButton } from '@affine/component/ui/button';
 import { Modal, useConfirmModal } from '@affine/component/ui/modal';
 import { openSettingModalAtom } from '@affine/core/atoms';
 import { useDocCollectionPageTitle } from '@affine/core/hooks/use-block-suite-workspace-page-title';
+import { mixpanel } from '@affine/core/mixpanel';
 import { WorkspacePermissionService } from '@affine/core/modules/permissions';
 import { WorkspaceQuotaService } from '@affine/core/modules/quota';
 import { i18nTime, Trans, useI18n } from '@affine/i18n';
@@ -32,7 +33,6 @@ import {
 import { encodeStateAsUpdate } from 'yjs';
 
 import { pageHistoryModalAtom } from '../../../atoms/page-history';
-import { mixpanel } from '../../../utils';
 import { BlockSuiteEditor } from '../../blocksuite/block-suite-editor';
 import { StyledEditorModeSwitch } from '../../blocksuite/block-suite-mode-switch/style';
 import {

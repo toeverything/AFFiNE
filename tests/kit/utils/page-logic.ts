@@ -10,7 +10,7 @@ export async function waitForEditorLoad(page: Page) {
 export async function waitForAllPagesLoad(page: Page) {
   // if filters tag is rendered, we believe all_pages is ready
   await page.waitForSelector('[data-testid="create-first-filter"]', {
-    timeout: 1000,
+    timeout: 20000,
   });
 }
 

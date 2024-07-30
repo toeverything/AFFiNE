@@ -14,7 +14,7 @@ import {
   openSettingModalAtom,
   openSignOutModalAtom,
 } from '@affine/core/atoms';
-import { mixpanel } from '@affine/core/utils';
+import { mixpanel } from '@affine/core/mixpanel';
 import { useI18n } from '@affine/i18n';
 import { AccountIcon, SignOutIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';

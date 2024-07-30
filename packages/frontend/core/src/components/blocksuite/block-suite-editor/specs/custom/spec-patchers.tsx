@@ -7,6 +7,7 @@ import {
   toReactNode,
   type useConfirmModal,
 } from '@affine/component';
+import { mixpanel } from '@affine/core/mixpanel';
 import { DocsSearchService } from '@affine/core/modules/docs-search';
 import { resolveLinkToDoc } from '@affine/core/modules/navigation';
 import type { PeekViewService } from '@affine/core/modules/peek-view';
@@ -18,7 +19,6 @@ import {
   QuickSearchService,
   RecentDocsQuickSearchSession,
 } from '@affine/core/modules/quicksearch';
-import { mixpanel } from '@affine/core/utils';
 import { DebugLogger } from '@affine/debug';
 import type { BlockSpec, WidgetComponent } from '@blocksuite/block-std';
 import {

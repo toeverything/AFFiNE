@@ -5,9 +5,9 @@ import {
   useConfirmModal,
 } from '@affine/component';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import type { MixpanelEvents } from '@affine/core/mixpanel';
+import { mixpanel } from '@affine/core/mixpanel';
+import type { MixpanelEvents } from '@affine/core/mixpanel/events';
 import { SubscriptionService } from '@affine/core/modules/cloud';
-import { mixpanelTrack } from '@affine/core/utils';
 import { SubscriptionPlan } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
 import { SingleSelectSelectSolidIcon } from '@blocksuite/icons/rc';
@@ -32,7 +32,7 @@ export const AIResume = ({ module, ...btnProps }: AIResumeProps) => {
   const resume = useAsyncCallback(async () => {
     const aiSubscription = subscription.ai$.value;
     if (aiSubscription) {
-      mixpanelTrack('PlanChangeStarted', {
+      mixpanel.track('PlanChangeStarted', {
         module,
         segment: 'settings panel',
         control: 'paying',
@@ -59,7 +59,7 @@ export const AIResume = ({ module, ...btnProps }: AIResumeProps) => {
           SubscriptionPlan.AI
         );
         if (aiSubscription) {
-          mixpanelTrack('PlanChangeSucceeded', {
+          mixpanel.track('PlanChangeSucceeded', {
             category: aiSubscription.recurring,
             control: 'paying',
             type: aiSubscription.plan,

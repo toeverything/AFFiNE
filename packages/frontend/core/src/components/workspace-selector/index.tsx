@@ -1,10 +1,10 @@
 import { Menu } from '@affine/component';
+import { mixpanel } from '@affine/core/mixpanel';
 import { useService, WorkspacesService } from '@toeverything/infra';
 import { useAtom } from 'jotai';
 import { useCallback, useEffect } from 'react';
 
 import { openWorkspaceListModalAtom } from '../../atoms';
-import { mixpanel } from '../../utils';
 import { UserWithWorkspaceList } from '../pure/workspace-slider-bar/user-with-workspace-list';
 import { WorkspaceCard } from '../pure/workspace-slider-bar/workspace-card';
 

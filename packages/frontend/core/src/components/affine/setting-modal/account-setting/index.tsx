@@ -6,6 +6,7 @@ import {
 import { Avatar } from '@affine/component/ui/avatar';
 import { Button } from '@affine/component/ui/button';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
+import { mixpanel } from '@affine/core/mixpanel';
 import { useI18n } from '@affine/i18n';
 import { ArrowRightSmallIcon, CameraIcon } from '@blocksuite/icons/rc';
 import {
@@ -24,7 +25,6 @@ import {
   openSignOutModalAtom,
 } from '../../../../atoms';
 import { AuthService, ServerConfigService } from '../../../../modules/cloud';
-import { mixpanel } from '../../../../utils';
 import { Upload } from '../../../pure/file-upload';
 import { AIUsagePanel } from './ai-usage-panel';
 import { StorageProgress } from './storage-progress';
@@ -38,7 +38,7 @@ export const UserAvatar = () => {
   const handleUpdateUserAvatar = useAsyncCallback(
     async (file: File) => {
       try {
-        mixpanel.track_forms('UpdateProfile', 'UploadAvatar', {
+        mixpanel.track('UploadAvatar', {
           userId: account.id,
         });
         await session.uploadAvatar(file);
@@ -104,7 +104,7 @@ export const AvatarAndName = () => {
     }
 
     try {
-      mixpanel.track_forms('UpdateProfile', 'UpdateUsername', {
+      mixpanel.track('UpdateUsername', {
         userId: account.id,
       });
       await session.updateLabel(input);

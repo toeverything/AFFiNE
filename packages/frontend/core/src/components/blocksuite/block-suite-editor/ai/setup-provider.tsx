@@ -2,7 +2,7 @@ import { notify } from '@affine/component';
 import { authAtom, openSettingModalAtom } from '@affine/core/atoms';
 import { AIProvider } from '@affine/core/blocksuite/presets/ai';
 import { toggleGeneralAIOnboarding } from '@affine/core/components/affine/ai-onboarding/apis';
-import { mixpanel } from '@affine/core/utils';
+import { mixpanel } from '@affine/core/mixpanel';
 import {
   getBaseUrl,
   type getCopilotHistoriesQuery,

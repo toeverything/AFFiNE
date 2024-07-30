@@ -7,7 +7,8 @@ import { atomWithObservable, atomWithStorage } from 'jotai/utils';
 import { useCallback, useState } from 'react';
 import { Observable } from 'rxjs';
 
-import { mixpanel, popupWindow } from '../utils';
+import { mixpanel } from '../mixpanel';
+import { popupWindow } from '../utils';
 import { useAsyncCallback } from './affine-async-hooks';
 
 function rpcToObservable<

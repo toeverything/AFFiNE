@@ -2,9 +2,9 @@ import { Button, type ButtonProps, useConfirmModal } from '@affine/component';
 import { useDowngradeNotify } from '@affine/core/components/affine/subscription-landing/notify';
 import { getDowngradeQuestionnaireLink } from '@affine/core/hooks/affine/use-subscription-notify';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import type { MixpanelEvents } from '@affine/core/mixpanel';
+import { mixpanel } from '@affine/core/mixpanel';
+import type { MixpanelEvents } from '@affine/core/mixpanel/events';
 import { AuthService, SubscriptionService } from '@affine/core/modules/cloud';
-import { mixpanel, mixpanelTrack } from '@affine/core/utils';
 import { SubscriptionPlan } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
 import { useService } from '@toeverything/infra';
@@ -27,7 +27,7 @@ export const AICancel = ({ module, ...btnProps }: AICancelProps) => {
   const cancel = useAsyncCallback(async () => {
     const aiSubscription = subscription.ai$.value;
     if (aiSubscription) {
-      mixpanelTrack('PlanChangeStarted', {
+      mixpanel.track('PlanChangeStarted', {
         module,
         segment: 'settings panel',
         control: 'cancel',

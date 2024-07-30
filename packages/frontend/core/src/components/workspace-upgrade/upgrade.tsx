@@ -2,12 +2,12 @@ import { Button } from '@affine/component/ui/button';
 import { AffineShapeIcon } from '@affine/core/components/page-list'; // TODO(@eyhn): import from page-list temporarily, need to defined common svg icon/images management.
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
+import { mixpanel } from '@affine/core/mixpanel';
 import { WorkspaceSubPath } from '@affine/core/shared';
 import { useI18n } from '@affine/i18n';
 import { useLiveData, useService, WorkspaceService } from '@toeverything/infra';
 import { useState } from 'react';
 
-import { mixpanel } from '../../utils';
 import * as styles from './upgrade.css';
 import { ArrowCircleIcon, HeartBreakIcon } from './upgrade-icon';
 

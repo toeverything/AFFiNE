@@ -6,7 +6,7 @@ import type { createStore } from 'jotai';
 
 import { openSettingModalAtom, openWorkspaceListModalAtom } from '../atoms';
 import type { useNavigateHelper } from '../hooks/use-navigate-helper';
-import { mixpanel } from '../utils/mixpanel';
+import { mixpanel } from '../mixpanel';
 import { registerAffineCommand } from './registry';
 
 export function registerAffineNavigationCommands({

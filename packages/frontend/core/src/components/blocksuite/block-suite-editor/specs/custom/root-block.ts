@@ -2,7 +2,7 @@ import {
   AIEdgelessRootBlockSpec,
   AIPageRootBlockSpec,
 } from '@affine/core/blocksuite/presets/ai';
-import { mixpanel } from '@affine/core/utils';
+import { mixpanel } from '@affine/core/mixpanel';
 import type {
   EdgelessRootBlockSpecType,
   PageRootBlockSpecType,
@@ -42,7 +42,7 @@ function withAffineRootService(Service: typeof RootService) {
         eventName: T,
         props: TelemetryEventMap[T]
       ) => {
-        mixpanel.track(eventName, props);
+        mixpanel.track(eventName as string, props as Record<string, unknown>);
       },
     };
   };

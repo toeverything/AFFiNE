@@ -1,7 +1,7 @@
 import { getDowngradeQuestionnaireLink } from '@affine/core/hooks/affine/use-subscription-notify';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import type { MixpanelEvents } from '@affine/core/mixpanel';
-import { mixpanelTrack } from '@affine/core/utils';
+import { mixpanel } from '@affine/core/mixpanel';
+import type { MixpanelEvents } from '@affine/core/mixpanel/events';
 import { SubscriptionPlan } from '@affine/graphql';
 import { useLiveData, useService } from '@toeverything/infra';
 import { nanoid } from 'nanoid';
@@ -36,7 +36,7 @@ export const CancelAction = ({
 
   useEffect(() => {
     if (!open || !proSubscription) return;
-    mixpanelTrack('PlanChangeStarted', {
+    mixpanel.track('PlanChangeStarted', {
       segment: 'settings panel',
       module,
       control: 'cancel',
@@ -58,7 +58,7 @@ export const CancelAction = ({
       onOpenChange(false);
       const proSubscription = subscription.pro$.value;
       if (proSubscription) {
-        mixpanelTrack('PlanChangeSucceeded', {
+        mixpanel.track('PlanChangeSucceeded', {
           control: 'cancel',
           type: proSubscription.plan,
           category: proSubscription.recurring,
@@ -128,7 +128,7 @@ export const ResumeAction = ({
       onOpenChange(false);
       const proSubscription = subscription.pro$.value;
       if (proSubscription) {
-        mixpanelTrack('PlanChangeSucceeded', {
+        mixpanel.track('PlanChangeSucceeded', {
           control: 'paying',
           type: proSubscription.plan,
           category: proSubscription.recurring,

@@ -9,7 +9,7 @@ export const Empty = ({
 }: {
   onDrop: (data: DropTargetDropEvent<AffineDNDData>) => void;
 }) => {
-  const { dropTargetRef } = useDropTarget(
+  const { dropTargetRef } = useDropTarget<AffineDNDData>(
     () => ({
       onDrop,
     }),

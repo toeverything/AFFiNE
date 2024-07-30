@@ -1,5 +1,6 @@
 import { Tooltip } from '@affine/component/ui/tooltip';
 import { useBlockSuiteDocMeta } from '@affine/core/hooks/use-block-suite-page-meta';
+import { mixpanel } from '@affine/core/mixpanel';
 import { useI18n } from '@affine/i18n';
 import {
   type DocMode,
@@ -11,7 +12,7 @@ import type { CSSProperties } from 'react';
 import { useCallback, useEffect } from 'react';
 
 import type { DocCollection } from '../../../shared';
-import { mixpanel, toast } from '../../../utils';
+import { toast } from '../../../utils';
 import { StyledEditorModeSwitch, StyledKeyboardItem } from './style';
 import { EdgelessSwitchItem, PageSwitchItem } from './switch-items';
 

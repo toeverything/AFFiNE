@@ -1,6 +1,6 @@
 import { DropdownButton, Menu } from '@affine/component';
 import { BlockCard } from '@affine/component/card/block-card';
-import { mixpanel } from '@affine/core/utils';
+import { mixpanel } from '@affine/core/mixpanel';
 import { useI18n } from '@affine/i18n';
 import { EdgelessIcon, ImportIcon, PageIcon } from '@blocksuite/icons/rc';
 import type { PropsWithChildren } from 'react';

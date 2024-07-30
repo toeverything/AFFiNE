@@ -1,8 +1,9 @@
 import { Button, type ButtonProps, Skeleton } from '@affine/component';
 import { generateSubscriptionCallbackLink } from '@affine/core/hooks/affine/use-subscription-notify';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
+import { mixpanel } from '@affine/core/mixpanel';
 import { AuthService, SubscriptionService } from '@affine/core/modules/cloud';
-import { mixpanel, popupWindow } from '@affine/core/utils';
+import { popupWindow } from '@affine/core/utils';
 import { SubscriptionPlan, SubscriptionRecurring } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
 import { useLiveData, useService } from '@toeverything/infra';

@@ -10,10 +10,10 @@ import {
 import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
 import { useBlockSuiteMetaHelper } from '@affine/core/hooks/affine/use-block-suite-meta-helper';
 import { useTrashModalHelper } from '@affine/core/hooks/affine/use-trash-modal-helper';
+import { mixpanel } from '@affine/core/mixpanel';
 import { FavoriteService } from '@affine/core/modules/favorite';
 import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/properties';
 import { WorkbenchService } from '@affine/core/modules/workbench';
-import { mixpanel } from '@affine/core/utils';
 import type { Collection, DeleteCollectionInfo } from '@affine/env/filter';
 import { useI18n } from '@affine/i18n';
 import {

@@ -9,6 +9,7 @@ import { Button, IconButton } from '@affine/component/ui/button';
 import { Loading } from '@affine/component/ui/loading';
 import { getUpgradeQuestionnaireLink } from '@affine/core/hooks/affine/use-subscription-notify';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
+import { mixpanel } from '@affine/core/mixpanel';
 import type { InvoicesQuery } from '@affine/graphql';
 import {
   createCustomerPortalMutation,
@@ -32,7 +33,7 @@ import {
 import { useMutation } from '../../../../../hooks/use-mutation';
 import { useQuery } from '../../../../../hooks/use-query';
 import { AuthService, SubscriptionService } from '../../../../../modules/cloud';
-import { mixpanel, mixpanelTrack, popupWindow } from '../../../../../utils';
+import { popupWindow } from '../../../../../utils';
 import { SWRErrorBoundary } from '../../../../pure/swr-error-bundary';
 import { CancelAction, ResumeAction } from '../plans/actions';
 import { AICancel, AIResume, AISubscribe } from '../plans/ai/actions';
@@ -479,7 +480,7 @@ const ResumeSubscription = () => {
     const type = subscription.pro$.value?.plan;
     const category = subscription.pro$.value?.recurring;
     if (type && category) {
-      mixpanelTrack('PlanChangeStarted', {
+      mixpanel.track('PlanChangeStarted', {
         segment: 'settings panel',
         module: 'pricing plan list',
         control: 'paying',

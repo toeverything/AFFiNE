@@ -1,6 +1,7 @@
 import { openSettingModalAtom } from '@affine/core/atoms';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
+import { mixpanel } from '@affine/core/mixpanel';
 import {
   ExplorerCollections,
   ExplorerFavorites,
@@ -12,7 +13,6 @@ import { ExplorerTags } from '@affine/core/modules/explorer/views/sections/tags'
 import { CMDKQuickSearchService } from '@affine/core/modules/quicksearch/services/cmdk';
 import { TelemetryWorkspaceContextService } from '@affine/core/modules/telemetry/services/telemetry';
 import { pathGenerator } from '@affine/core/shared';
-import { mixpanel } from '@affine/core/utils';
 import { apis, events } from '@affine/electron-api';
 import { useI18n } from '@affine/i18n';
 import { FolderIcon, SettingsIcon } from '@blocksuite/icons/rc';

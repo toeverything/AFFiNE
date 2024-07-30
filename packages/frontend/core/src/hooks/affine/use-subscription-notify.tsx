@@ -1,5 +1,5 @@
 import { useUpgradeNotify } from '@affine/core/components/affine/subscription-landing/notify';
-import { mixpanelTrack } from '@affine/core/utils';
+import { mixpanel } from '@affine/core/mixpanel';
 import { SubscriptionPlan, SubscriptionRecurring } from '@affine/graphql';
 import { nanoid } from 'nanoid';
 import { useCallback, useEffect } from 'react';
@@ -130,7 +130,7 @@ export const useSubscriptionNotifyReader = () => {
       localStorage.removeItem(localStorageKey);
 
       // mixpanel
-      mixpanelTrack('PlanChangeSucceeded', {
+      mixpanel.track('PlanChangeSucceeded', {
         category: recurring,
         type: plan,
         control: 'new subscription',

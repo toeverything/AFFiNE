@@ -18,8 +18,8 @@ import { useEnableCloud } from '@affine/core/hooks/affine/use-enable-cloud';
 import { useExportPage } from '@affine/core/hooks/affine/use-export-page';
 import { useTrashModalHelper } from '@affine/core/hooks/affine/use-trash-modal-helper';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
+import { mixpanel } from '@affine/core/mixpanel';
 import { useDetailPageHeaderResponsive } from '@affine/core/pages/workspace/detail-page/use-header-responsive';
-import { mixpanel } from '@affine/core/utils';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useI18n } from '@affine/i18n';
 import {

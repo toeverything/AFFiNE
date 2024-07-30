@@ -1,6 +1,6 @@
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
+import { mixpanel } from '@affine/core/mixpanel';
 import { TelemetryWorkspaceContextService } from '@affine/core/modules/telemetry/services/telemetry';
-import { mixpanel } from '@affine/core/utils';
 import { useI18n } from '@affine/i18n';
 import { ImportIcon } from '@blocksuite/icons/rc';
 import { useService } from '@toeverything/infra';

@@ -6,6 +6,7 @@ import { Avatar } from '@affine/component/ui/avatar';
 import { Tooltip } from '@affine/component/ui/tooltip';
 import { WorkspaceAvatar } from '@affine/component/workspace-avatar';
 import { useWorkspaceInfo } from '@affine/core/hooks/use-workspace-info';
+import { mixpanel } from '@affine/core/mixpanel';
 import { AuthService } from '@affine/core/modules/cloud';
 import { UserFeatureService } from '@affine/core/modules/cloud/services/user-feature';
 import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
@@ -24,7 +25,6 @@ import { useAtom } from 'jotai/react';
 import { Suspense, useCallback, useEffect, useMemo } from 'react';
 
 import { authAtom } from '../../../../atoms';
-import { mixpanel } from '../../../../utils';
 import { UserPlanButton } from '../../auth/user-plan-button';
 import { useGeneralSettingList } from '../general-setting';
 import type { ActiveTab, WorkspaceSubTab } from '../types';

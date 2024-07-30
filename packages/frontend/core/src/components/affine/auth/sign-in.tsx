@@ -3,6 +3,7 @@ import { AuthInput, ModalHeader } from '@affine/component/auth-components';
 import { Button } from '@affine/component/ui/button';
 import { authAtom } from '@affine/core/atoms';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
+import { mixpanel } from '@affine/core/mixpanel';
 import { Trans, useI18n } from '@affine/i18n';
 import { ArrowDownBigIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
@@ -12,7 +13,6 @@ import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import { AuthService } from '../../../modules/cloud';
-import { mixpanel } from '../../../utils';
 import { emailRegex } from '../../../utils/email-regex';
 import type { AuthPanelProps } from './index';
 import { OAuth } from './oauth';
@@ -74,7 +74,7 @@ export const SignIn: FC<AuthPanelProps> = ({
           if (hasPassword) {
             setAuthState('signInWithPassword');
           } else {
-            mixpanel.track_forms('SignIn', 'Email', {
+            mixpanel.track('SignIn', {
               email,
             });
             await authService.sendEmailMagicLink(
@@ -92,7 +92,7 @@ export const SignIn: FC<AuthPanelProps> = ({
             challenge,
             searchParams.get('redirect_uri')
           );
-          mixpanel.track_forms('SignUp', 'Email', {
+          mixpanel.track('SignUp', {
             email,
           });
           setAuthState('afterSignUpSendEmail');

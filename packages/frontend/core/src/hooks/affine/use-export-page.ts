@@ -3,7 +3,7 @@ import {
   pushGlobalLoadingEventAtom,
   resolveGlobalLoadingEventAtom,
 } from '@affine/component/global-loading';
-import { mixpanel } from '@affine/core/utils';
+import { mixpanel } from '@affine/core/mixpanel';
 import { apis } from '@affine/electron-api';
 import { useI18n } from '@affine/i18n';
 import type { PageRootService, RootBlockModel } from '@blocksuite/blocks';

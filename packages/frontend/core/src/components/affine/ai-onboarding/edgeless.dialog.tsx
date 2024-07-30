@@ -1,7 +1,7 @@
 import { Button, FlexWrapper, notify } from '@affine/component';
 import { openSettingModalAtom } from '@affine/core/atoms';
+import { mixpanel } from '@affine/core/mixpanel';
 import { SubscriptionService } from '@affine/core/modules/cloud';
-import { mixpanel } from '@affine/core/utils';
 import { useI18n } from '@affine/i18n';
 import { AiIcon } from '@blocksuite/icons/rc';
 import {

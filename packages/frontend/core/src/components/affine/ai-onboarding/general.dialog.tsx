@@ -1,8 +1,8 @@
 import { Button, IconButton, Modal } from '@affine/component';
 import { openSettingModalAtom } from '@affine/core/atoms';
 import { useBlurRoot } from '@affine/core/hooks/use-blur-root';
+import { mixpanel } from '@affine/core/mixpanel';
 import { AuthService, SubscriptionService } from '@affine/core/modules/cloud';
-import { mixpanel } from '@affine/core/utils';
 import { Trans, useI18n } from '@affine/i18n';
 import { ArrowLeftSmallIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useServices } from '@toeverything/infra';
@@ -117,7 +117,7 @@ export const AIOnboardingGeneral = () => {
       scrollAnchor: 'aiPricingPlan',
     });
     mixpanel.track('PlansViewed', {
-      page: 'whiteboard-editor',
+      page: 'whiteboard editor',
       segment: 'ai onboarding',
       module: 'general',
     });

@@ -1,5 +1,5 @@
+import { mixpanel } from '@affine/core/mixpanel';
 import { WorkspacePropertiesAdapter } from '@affine/core/modules/properties';
-import { mixpanel } from '@affine/core/utils';
 import { I18n, i18nTime } from '@affine/i18n';
 import type { EditorHost } from '@blocksuite/block-std';
 import type { AffineInlineEditor } from '@blocksuite/blocks';

@@ -3,6 +3,7 @@ import type { ConfirmModalProps } from '@affine/component/ui/modal';
 import { ConfirmModal, Modal } from '@affine/component/ui/modal';
 import { authAtom } from '@affine/core/atoms';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
+import { mixpanel } from '@affine/core/mixpanel';
 import { DebugLogger } from '@affine/debug';
 import { apis } from '@affine/electron-api';
 import { WorkspaceFlavour } from '@affine/env/workspace';
@@ -20,7 +21,6 @@ import { useCallback, useLayoutEffect, useState } from 'react';
 import { buildShowcaseWorkspace } from '../../../bootstrap/first-app-data';
 import { AuthService } from '../../../modules/cloud';
 import { _addLocalWorkspace } from '../../../modules/workspace-engine';
-import { mixpanel } from '../../../utils';
 import { CloudSvg } from '../share-page-modal/cloud-svg';
 import * as styles from './index.css';
 
@@ -221,7 +221,7 @@ export const CreateWorkspaceModal = ({
 
   const onConfirmName = useAsyncCallback(
     async (name: string, workspaceFlavour: WorkspaceFlavour) => {
-      mixpanel.track_forms('CreateWorkspaceModel', 'CreateWorkspace', {
+      mixpanel.track('CreateWorkspace', {
         workspaceFlavour,
       });
       if (loading) return;

@@ -1,8 +1,8 @@
+import { mixpanel } from '@affine/core/mixpanel';
 import { CloseIcon, DownloadIcon } from '@blocksuite/icons/rc';
 import clsx from 'clsx';
 import { useCallback, useState } from 'react';
 
-import { mixpanel } from '../../../utils';
 import * as styles from './index.css';
 
 // Although it is called an input, it is actually a button.

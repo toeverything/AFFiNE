@@ -5,5 +5,5 @@ import type { PlanChangeStartedEvent } from './plan-change-started';
  */
 export type PlanChangeSucceededEvent = Pick<
   PlanChangeStartedEvent,
-  'control' | 'type' | 'category'
+  'control' | 'type' | 'category' | 'segment'
 >;

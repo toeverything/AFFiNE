@@ -1,4 +1,4 @@
-import { mixpanel } from '@affine/core/utils';
+import { mixpanel } from '@affine/core/mixpanel';
 import type { QuotaQuery } from '@affine/graphql';
 import type { WorkspaceScope } from '@toeverything/infra';
 import {
@@ -31,20 +31,6 @@ export class TelemetryService extends Service {
   }
 
   onApplicationStart() {
-    if (process.env.MIXPANEL_TOKEN) {
-      mixpanel.init(process.env.MIXPANEL_TOKEN || '', {
-        track_pageview: true,
-        persistence: 'localStorage',
-        api_host: 'https://telemetry.affine.run',
-      });
-      mixpanel.register({
-        appVersion: runtimeConfig.appVersion,
-        environment: runtimeConfig.appBuildType,
-        editorVersion: runtimeConfig.editorVersion,
-        isSelfHosted: Boolean(runtimeConfig.isSelfHosted),
-        isDesktop: environment.isDesktop,
-      });
-    }
     const account = this.auth.session.account$.value;
     this.updateIdentity(account);
   }

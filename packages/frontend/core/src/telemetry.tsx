@@ -2,7 +2,7 @@ import { appSettingAtom } from '@toeverything/infra';
 import { useAtomValue } from 'jotai/react';
 import { useLayoutEffect } from 'react';
 
-import { mixpanel } from './utils/mixpanel';
+import { mixpanel } from './mixpanel';
 
 export function Telemetry() {
   const settings = useAtomValue(appSettingAtom);

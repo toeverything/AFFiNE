@@ -2,8 +2,9 @@ import { Button } from '@affine/component/ui/button';
 import { Tooltip } from '@affine/component/ui/tooltip';
 import { generateSubscriptionCallbackLink } from '@affine/core/hooks/affine/use-subscription-notify';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
+import { mixpanel } from '@affine/core/mixpanel';
 import { AuthService, SubscriptionService } from '@affine/core/modules/cloud';
-import { mixpanelTrack, popupWindow } from '@affine/core/utils';
+import { popupWindow } from '@affine/core/utils';
 import type { SubscriptionRecurring } from '@affine/graphql';
 import { SubscriptionPlan, SubscriptionStatus } from '@affine/graphql';
 import { Trans, useI18n } from '@affine/i18n';
@@ -16,7 +17,6 @@ import type { HTMLAttributes, PropsWithChildren } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { authAtom } from '../../../../../atoms/index';
-import { mixpanel } from '../../../../../utils';
 import { CancelAction, ResumeAction } from './actions';
 import type { DynamicPrice, FixedPrice } from './cloud-plans';
 import { ConfirmLoadingModal } from './modals';
@@ -337,7 +337,7 @@ const ChangeRecurring = ({
   const subscription = useService(SubscriptionService).subscription;
 
   const onStartChange = useCallback(() => {
-    mixpanelTrack('PlanChangeStarted', {
+    mixpanel.track('PlanChangeStarted', {
       segment: 'settings panel',
       module: 'pricing plan list',
       control: 'paying',
@@ -422,7 +422,7 @@ const ResumeButton = () => {
     setOpen(true);
     const pro = subscription.pro$.value;
     if (pro) {
-      mixpanelTrack('PlanChangeStarted', {
+      mixpanel.track('PlanChangeStarted', {
         segment: 'settings panel',
         module: 'pricing plan list',
         control: 'paying',

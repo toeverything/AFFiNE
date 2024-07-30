@@ -1,9 +1,9 @@
 import { ConfirmModal } from '@affine/component/ui/modal';
 import { openQuotaModalAtom, openSettingModalAtom } from '@affine/core/atoms';
+import { mixpanel } from '@affine/core/mixpanel';
 import { UserQuotaService } from '@affine/core/modules/cloud';
 import { WorkspacePermissionService } from '@affine/core/modules/permissions';
 import { WorkspaceQuotaService } from '@affine/core/modules/quota';
-import { mixpanel } from '@affine/core/utils';
 import { useI18n } from '@affine/i18n';
 import { useLiveData, useService, WorkspaceService } from '@toeverything/infra';
 import bytes from 'bytes';

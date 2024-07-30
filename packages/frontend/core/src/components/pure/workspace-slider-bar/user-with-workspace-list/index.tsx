@@ -1,6 +1,7 @@
 import { Loading } from '@affine/component';
 import { Divider } from '@affine/component/ui/divider';
 import { MenuItem } from '@affine/component/ui/menu';
+import { mixpanel } from '@affine/core/mixpanel';
 import { AuthService } from '@affine/core/modules/cloud';
 import { useI18n } from '@affine/i18n';
 import { Logo1Icon } from '@blocksuite/icons/rc';
@@ -13,7 +14,6 @@ import { useSetAtom } from 'jotai';
 import { Suspense, useCallback } from 'react';
 
 import { authAtom, openCreateWorkspaceModalAtom } from '../../../../atoms';
-import { mixpanel } from '../../../../utils';
 import { AddWorkspace } from './add-workspace';
 import * as styles from './index.css';
 import { UserAccountItem } from './user-account';
