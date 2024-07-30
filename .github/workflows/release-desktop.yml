@@ -27,6 +27,8 @@ permissions:
   actions: write
   contents: write
   security-events: write
+  id-token: write
+  attestations: write
 
 env:
   BUILD_TYPE: ${{ github.event.inputs.build-type }}
@@ -158,6 +160,20 @@ jobs:
           mkdir -p builds
           mv packages/frontend/electron/out/*/make/zip/linux/x64/*.zip ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-x64.zip
           mv packages/frontend/electron/out/*/make/*.AppImage ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-x64.appimage
+
+      - uses: actions/attest-build-provenance@v1
+        if: ${{ matrix.spec.platform == 'darwin' }}
+        with:
+          subject-path: |
+            ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-macos-${{ matrix.spec.arch }}.zip
+            ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-macos-${{ matrix.spec.arch }}.dmg
+
+      - uses: actions/attest-build-provenance@v1
+        if: ${{ matrix.spec.platform == 'linux' }}
+        with:
+          subject-path: |
+            ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-x64.zip
+            ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-x64.appimage
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
@@ -328,6 +344,13 @@ jobs:
           mv packages/frontend/electron/out/*/make/squirrel.windows/x64/*.exe ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-windows-x64.exe
           mv packages/frontend/electron/out/*/make/nsis.windows/x64/*.exe ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-windows-x64.nsis.exe
 
+      - uses: actions/attest-build-provenance@v1
+        with:
+          subject-path: |
+            ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-windows-x64.zip
+            ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-windows-x64.exe
+            ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-windows-x64.nsis.exe
+
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -368,7 +391,7 @@ jobs:
           path: ./
       - uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
       - name: Generate Release yml
         run: |
           node ./packages/frontend/electron/scripts/generate-yml.js
