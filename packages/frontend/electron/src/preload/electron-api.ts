@@ -11,42 +11,6 @@ import type {
   RendererToHelper,
 } from '../shared/type';
 
-export const affine = {
-  ipcRenderer: {
-    send(channel: string, ...args: any[]) {
-      ipcRenderer.send(channel, ...args);
-    },
-
-    invoke(channel: string, ...args: any[]) {
-      return ipcRenderer.invoke(channel, ...args);
-    },
-
-    on(
-      channel: string,
-      listener: (event: Electron.IpcRendererEvent, ...args: any[]) => void
-    ) {
-      ipcRenderer.on(channel, listener);
-      return this;
-    },
-
-    once(
-      channel: string,
-      listener: (event: Electron.IpcRendererEvent, ...args: any[]) => void
-    ) {
-      ipcRenderer.once(channel, listener);
-      return this;
-    },
-
-    removeListener(
-      channel: string,
-      listener: (event: Electron.IpcRendererEvent, ...args: any[]) => void
-    ) {
-      ipcRenderer.removeListener(channel, listener);
-      return this;
-    },
-  },
-};
-
 export function getElectronAPIs() {
   const mainAPIs = getMainAPIs();
   const helperAPIs = getHelperAPIs();

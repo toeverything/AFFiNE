@@ -6,10 +6,7 @@ import type {
   events as mainEvents,
   handlers as mainHandlers,
 } from '@affine/electron/main/exposed';
-import type {
-  affine as exposedAffineGlobal,
-  appInfo as exposedAppInfo,
-} from '@affine/electron/preload/electron-api';
+import type { appInfo as exposedAppInfo } from '@affine/electron/preload/electron-api';
 import type { sharedStorage as exposedSharedStorage } from '@affine/electron/preload/shared-storage';
 
 type MainHandlers = typeof mainHandlers;
@@ -37,9 +34,7 @@ export const appInfo = (globalThis as any).appInfo as
   | null;
 export const apis = (globalThis as any).apis as ClientHandler | null;
 export const events = (globalThis as any).events as ClientEvents | null;
-export const affine = (globalThis as any).affine as
-  | typeof exposedAffineGlobal
-  | null;
+
 export const sharedStorage = (globalThis as any).sharedStorage as
   | typeof exposedSharedStorage
   | null;
