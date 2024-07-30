@@ -152,7 +152,25 @@ test.describe('chat panel', () => {
     expect(editorContent).toBe(content);
   });
 
-  test.only('can be create as a doc', async ({ page }) => {
+  test('can be add to edgeless as node', async ({ page }) => {
+    await page.reload();
+    await clickSideBarAllPageButton(page);
+    await page.waitForTimeout(200);
+    await createLocalWorkspace({ name: 'test' }, page);
+    await clickNewPageButton(page);
+    await makeChat(page, 'hello');
+    const content = (await collectChat(page))[1].content;
+    await switchToEdgelessMode(page);
+    // delete default note
+    await (await page.waitForSelector('affine-edgeless-note')).click();
+    page.keyboard.press('Delete');
+    // insert note
+    await page.getByTestId('action-add-to-edgeless-as-note').click();
+    const edgelessNode = await page.waitForSelector('affine-edgeless-note');
+    expect(await edgelessNode.innerText()).toBe(content);
+  });
+
+  test('can be create as a doc', async ({ page }) => {
     await page.reload();
     await clickSideBarAllPageButton(page);
     await page.waitForTimeout(200);
