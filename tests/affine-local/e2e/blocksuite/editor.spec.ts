@@ -117,6 +117,6 @@ test('outline viewer is useable', async ({ page }) => {
   await expect(indicators.nth(1)).toBeVisible();
 
   const viewer = page.locator('affine-outline-panel-body');
-  await indicators.first().hover();
+  await indicators.first().hover({ force: true });
   await expect(viewer).toBeVisible();
 });
