@@ -4,13 +4,12 @@ import type {
   AffineAIPanelWidgetConfig,
 } from '@blocksuite/blocks';
 import {
-  BlocksUtils,
   CodeBlockComponent,
   DividerBlockComponent,
   ListBlockComponent,
   ParagraphBlockComponent,
 } from '@blocksuite/blocks';
-import { type BlockSelector, BlockViewType, type Doc } from '@blocksuite/store';
+import { BlockViewType, type Doc, type Query } from '@blocksuite/store';
 import { css, html, LitElement, type PropertyValues } from 'lit';
 import { customElement, property, query } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
@@ -183,8 +182,9 @@ export class AIAnswerText extends WithDisposable(LitElement) {
     }
   };
 
-  private readonly _selector: BlockSelector = block =>
-    BlocksUtils.matchFlavours(block.model, [
+  private readonly _query: Query = {
+    mode: 'strict',
+    match: [
       'affine:page',
       'affine:note',
       'affine:surface',
@@ -192,9 +192,8 @@ export class AIAnswerText extends WithDisposable(LitElement) {
       'affine:code',
       'affine:list',
       'affine:divider',
-    ])
-      ? BlockViewType.Display
-      : BlockViewType.Hidden;
+    ].map(flavour => ({ flavour, viewType: BlockViewType.Display })),
+  };
 
   private readonly _updateDoc = () => {
     if (this._answers.length > 0) {
@@ -204,10 +203,10 @@ export class AIAnswerText extends WithDisposable(LitElement) {
         markDownToDoc(this.host, latestAnswer)
           .then(doc => {
             this._doc = doc.blockCollection.getDoc({
-              selector: this._selector,
+              query: this._query,
             });
             this.disposables.add(() => {
-              doc.blockCollection.clearSelector(this._selector);
+              doc.blockCollection.clearQuery(this._query);
             });
             this._doc.awarenessStore.setReadonly(
               this._doc.blockCollection,
