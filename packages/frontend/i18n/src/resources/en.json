@@ -1149,7 +1149,7 @@
   "com.affine.rootAppSidebar.explorer.drop-effect.move": "Move",
   "com.affine.rootAppSidebar.explorer.drop-effect.copy": "Copy",
   "com.affine.rootAppSidebar.docs.no-subdoc": "No linked docs",
-  "com.affine.rootAppSidebar.favorites.empty": "You can add documents to your favourites",
+  "com.affine.rootAppSidebar.favorites.empty": "No Favorites",
   "com.affine.rootAppSidebar.others": "Others",
   "com.affine.rootAppSidebar.docs.references-loading": "Loading linked docs...",
   "com.affine.search-tags.placeholder": "Type here ...",

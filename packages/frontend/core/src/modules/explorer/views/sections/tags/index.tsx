@@ -69,9 +69,7 @@ export const ExplorerTags = ({
         </IconButton>
       </CategoryDivider>
       <Collapsible.Content>
-        <ExplorerTreeRoot
-          placeholder={<RootEmpty onClickCreate={handleCreateNewFavoriteDoc} />}
-        >
+        <ExplorerTreeRoot placeholder={<RootEmpty />}>
           {tags.map(tag => (
             <ExplorerTagNode
               key={tag.id}

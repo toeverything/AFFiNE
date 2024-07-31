@@ -1,5 +1,4 @@
 import {
-  Button,
   type DropTargetDropEvent,
   type DropTargetOptions,
   useDropTarget,
@@ -9,6 +8,7 @@ import { useI18n } from '@affine/i18n';
 import { FolderIcon } from '@blocksuite/icons/rc';
 import clsx from 'clsx';
 
+import { ExplorerGroupEmpty } from '../../layouts/empty-layout';
 import * as styles from './empty.css';
 
 export const FolderEmpty = ({
@@ -32,22 +32,16 @@ export const FolderEmpty = ({
 
   const t = useI18n();
   return (
-    <div
-      className={clsx(styles.content, styles.draggedOverHighlight, className)}
+    <ExplorerGroupEmpty
+      className={clsx(styles.draggedOverHighlight, className)}
       ref={dropTargetRef}
-    >
-      <div className={styles.iconWrapper}>
-        <FolderIcon className={styles.icon} />
-      </div>
-      <div
-        data-testid="slider-bar-organize-empty-message"
-        className={styles.message}
-      >
-        {t['com.affine.rootAppSidebar.organize.empty-folder']()}
-      </div>
-      <Button className={styles.newButton} onClick={onClickCreate}>
-        {t['com.affine.rootAppSidebar.organize.empty-folder.add-pages']()}
-      </Button>
-    </div>
+      icon={FolderIcon}
+      message={t['com.affine.rootAppSidebar.organize.empty-folder']()}
+      messageTestId="slider-bar-organize-empty-message"
+      actionText={t[
+        'com.affine.rootAppSidebar.organize.empty-folder.add-pages'
+      ]()}
+      onActionClick={onClickCreate}
+    />
   );
 };

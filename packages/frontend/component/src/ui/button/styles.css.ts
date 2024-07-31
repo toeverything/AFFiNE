@@ -1,4 +1,5 @@
 import { cssVar } from '@toeverything/theme';
+import { cssVarV2 } from '@toeverything/theme/v2';
 import { globalStyle, style } from '@vanilla-extract/css';
 export const dropdownBtn = style({
   display: 'inline-flex',
@@ -124,8 +125,8 @@ export const button = style({
   // changeable
   height: '28px',
   background: cssVar('white'),
-  borderColor: cssVar('borderColor'),
-  color: cssVar('textPrimaryColor'),
+  borderColor: cssVarV2('layer/border'),
+  color: cssVarV2('text/primary'),
   selectors: {
     '&.text-bold': {
       fontWeight: 600,

@@ -1,13 +1,14 @@
 import { cssVar } from '@toeverything/theme';
+import { cssVarV2 } from '@toeverything/theme/v2';
 import { style } from '@vanilla-extract/css';
 
 export const content = style({
+  position: 'relative',
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
-  gap: 6,
-  padding: '9px 20px 25px 21px',
-  position: 'relative',
+  gap: 4,
+  padding: '12px 0px',
 });
 export const iconWrapper = style({
   width: 36,
@@ -16,21 +17,24 @@ export const iconWrapper = style({
   alignItems: 'center',
   justifyContent: 'center',
   borderRadius: '50%',
-  backgroundColor: cssVar('hoverColor'),
+  backgroundColor: cssVarV2('button/emptyIconBackground'),
 });
 export const icon = style({
   fontSize: 20,
-  color: cssVar('iconSecondary'),
+  color: cssVarV2('icon/secondary'),
 });
 export const message = style({
   fontSize: cssVar('fontSm'),
   textAlign: 'center',
-  color: cssVar('black30'),
+  color: cssVarV2('text/tertiary'),
   userSelect: 'none',
+  fontWeight: 400,
+  lineHeight: '22px',
 });
 
 export const newButton = style({
-  padding: '0 8px',
-  height: '28px',
-  fontSize: cssVar('fontXs'),
+  marginTop: 8,
+  padding: '4px 8px',
+  height: '30px',
+  fontSize: cssVar('fontSm'),
 });

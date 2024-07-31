@@ -814,7 +814,11 @@ export const ExplorerFolderNodeFolder = ({
       operations={finalOperations}
       canDrop={handleCanDrop}
       childrenPlaceholder={
-        <FolderEmpty canDrop={handleCanDrop} onDrop={handleDropOnPlaceholder} />
+        <FolderEmpty
+          canDrop={handleCanDrop}
+          onDrop={handleDropOnPlaceholder}
+          onClickCreate={() => handleAddToFolder('doc')}
+        />
       }
       dropEffect={handleDropEffect}
       data-testid={`explorer-folder-${node.id}`}

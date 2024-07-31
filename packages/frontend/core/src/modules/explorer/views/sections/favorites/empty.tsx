@@ -5,10 +5,10 @@ import {
 } from '@affine/component';
 import type { AffineDNDData } from '@affine/core/types/dnd';
 import { useI18n } from '@affine/i18n';
-import { FolderIcon } from '@blocksuite/icons/rc';
+import { FavoriteIcon } from '@blocksuite/icons/rc';
 
+import { ExplorerGroupEmpty } from '../../layouts/empty-layout';
 import { DropEffect, type ExplorerTreeNodeDropEffect } from '../../tree';
-import * as styles from './empty.css';
 
 export const RootEmpty = ({
   onDrop,
@@ -34,16 +34,12 @@ export const RootEmpty = ({
     );
 
   return (
-    <div className={styles.content} ref={dropTargetRef}>
-      <div className={styles.iconWrapper}>
-        <FolderIcon className={styles.icon} />
-      </div>
-      <div
-        data-testid="slider-bar-favorites-empty-message"
-        className={styles.message}
-      >
-        {t['com.affine.rootAppSidebar.favorites.empty']()}
-      </div>
+    <ExplorerGroupEmpty
+      ref={dropTargetRef}
+      icon={FavoriteIcon}
+      message={t['com.affine.rootAppSidebar.favorites.empty']()}
+      messageTestId="slider-bar-favorites-empty-message"
+    >
       {dropEffect && draggedOverDraggable && (
         <DropEffect
           position={{
@@ -56,6 +52,6 @@ export const RootEmpty = ({
           })}
         />
       )}
-    </div>
+    </ExplorerGroupEmpty>
   );
 };
