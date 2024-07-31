@@ -5,7 +5,7 @@ export class OldUserFeature1702620653283 {
   // do the migration
   static async up(db: PrismaClient) {
     await db.$transaction(async tx => {
-      const latestFreePlan = await tx.features.findFirstOrThrow({
+      const latestFreePlan = await tx.feature.findFirstOrThrow({
         where: { feature: QuotaType.FreePlanV1 },
         orderBy: { version: 'desc' },
         select: { id: true },
@@ -17,7 +17,7 @@ export class OldUserFeature1702620653283 {
         select: { id: true },
       });
 
-      await tx.userFeatures.createMany({
+      await tx.userFeature.createMany({
         data: userIds.map(({ id: userId }) => ({
           userId,
           featureId: latestFreePlan.id,
@@ -31,6 +31,6 @@ export class OldUserFeature1702620653283 {
   // revert the migration
   // WARN: this will drop all user features
   static async down(db: PrismaClient) {
-    await db.userFeatures.deleteMany({});
+    await db.userFeature.deleteMany({});
   }
 }
