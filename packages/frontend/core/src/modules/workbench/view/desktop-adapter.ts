@@ -1,5 +1,5 @@
 import type { Location } from 'history';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import { useLocation } from 'react-router-dom';
 
@@ -21,6 +21,7 @@ export function useBindWorkbenchToDesktopRouter(
   basename: string
 ) {
   const browserLocation = useLocation();
+  const firstNavigation = useRef(false);
   useEffect(() => {
     const newLocation = browserLocationToViewLocation(
       browserLocation,
@@ -36,8 +37,19 @@ export function useBindWorkbenchToDesktopRouter(
     ) {
       return;
     }
-    workbench.open(newLocation);
+    // skipping default location initialization since we will init the views
+    // using WorkbenchDefaultState
+    if (firstNavigation.current) {
+      workbench.open(newLocation);
+    }
   }, [basename, browserLocation, workbench]);
+
+  useEffect(() => {
+    firstNavigation.current = true;
+    return () => {
+      firstNavigation.current = false;
+    };
+  }, []);
 }
 
 function browserLocationToViewLocation(
