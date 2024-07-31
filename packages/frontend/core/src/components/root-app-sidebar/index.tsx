@@ -15,7 +15,7 @@ import { TelemetryWorkspaceContextService } from '@affine/core/modules/telemetry
 import { pathGenerator } from '@affine/core/shared';
 import { apis, events } from '@affine/electron-api';
 import { useI18n } from '@affine/i18n';
-import { FolderIcon, SettingsIcon } from '@blocksuite/icons/rc';
+import { AllDocsIcon, SettingsIcon } from '@blocksuite/icons/rc';
 import type { Doc } from '@blocksuite/store';
 import type { Workspace } from '@toeverything/infra';
 import { useLiveData, useService, WorkspaceService } from '@toeverything/infra';
@@ -167,7 +167,7 @@ export const RootAppSidebar = (): ReactElement => {
           <AddPageButton onClick={onClickNewPage} />
         </div>
         <MenuLinkItem
-          icon={<FolderIcon />}
+          icon={<AllDocsIcon />}
           active={allPageActive}
           to={pathGenerator.all(currentWorkspaceId)}
         >
