@@ -18,6 +18,20 @@ export const root = style({
   },
 });
 
+export const headerLeft = style({
+  display: 'flex',
+  flexFlow: 'row',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  padding: '0 16px',
+  flexShrink: 0,
+  selectors: {
+    [`${root}[data-mode="app"] &`]: {
+      transition: 'width 0.3s, padding 0.3s',
+    },
+  },
+});
+
 export const tabs = style({
   display: 'flex',
   flexDirection: 'row',

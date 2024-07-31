@@ -11,7 +11,6 @@ import {
   closeTab,
   getMainWindow,
   getOnboardingWindow,
-  getTabsBoundingRect,
   getTabsStatus,
   getTabViewsMeta,
   getWorkbenchMeta,
@@ -19,10 +18,10 @@ import {
   initAndShowMainWindow,
   isActiveTab,
   launchStage,
+  pingAppLayoutReady,
   showDevTools,
   showTab,
   showTabContextMenu,
-  updateTabsBoundingRect,
   updateWorkbenchMeta,
 } from '../windows-manager';
 import { getChallengeResponse } from './challenge';
@@ -193,14 +192,8 @@ export const uiHandlers = {
       uiSubjects.onToggleRightSidebar$.next(tabId);
     }
   },
-  getTabsBoundingRect: async () => {
-    return getTabsBoundingRect();
-  },
-  updateTabsBoundingRect: async (
-    e,
-    rect: { x: number; y: number; width: number; height: number }
-  ) => {
-    return updateTabsBoundingRect(e.sender, rect);
+  pingAppLayoutReady: async e => {
+    pingAppLayoutReady(e.sender);
   },
   showDevTools: async (_, ...args: Parameters<typeof showDevTools>) => {
     return showDevTools(...args);

@@ -153,7 +153,6 @@ export const Component = () => {
           style={{
             paddingLeft: environment.isMacOs ? 80 : 0,
           }}
-          reportBoundingUpdate
         />
       ) : null}
       <div

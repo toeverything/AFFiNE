@@ -2,7 +2,6 @@ import type { MainEventRegister } from '../type';
 import {
   onActiveTabChanged,
   onTabAction,
-  onTabsBoundingRectChanged,
   onTabShellViewActiveChange,
   onTabsStatusChange,
   onTabViewsMetaChanged,
@@ -36,5 +35,4 @@ export const uiEvents = {
   onTabsStatusChange,
   onActiveTabChanged,
   onTabShellViewActiveChange,
-  onTabsBoundingRectChanged,
 } satisfies Record<string, MainEventRegister>;

@@ -1,12 +1,13 @@
 import 'setimmediate';
 import '@affine/component/theme/global.css';
 import '@affine/component/theme/theme.css';
+import '@affine/core/bootstrap/preload';
 
 import { ThemeProvider } from '@affine/component/theme-provider';
-import { appConfigProxy } from '@affine/core/hooks/use-app-config-storage';
 import { configureAppTabsHeaderModule } from '@affine/core/modules/app-tabs-header';
 import { configureElectronStateStorageImpls } from '@affine/core/modules/storage';
 import { performanceLogger } from '@affine/core/shared';
+import { apis, events } from '@affine/electron-api';
 import {
   configureGlobalStorageModule,
   Framework,
@@ -26,9 +27,17 @@ const frameworkProvider = framework.provider();
 const logger = performanceLogger.namespace('shell');
 
 function main() {
-  appConfigProxy
-    .getSync()
-    .catch(() => console.error('failed to load app config'));
+  const handleMaximized = (maximized: boolean | undefined) => {
+    document.documentElement.dataset.maximized = String(maximized);
+  };
+  const handleFullscreen = (fullscreen: boolean | undefined) => {
+    document.documentElement.dataset.fullscreen = String(fullscreen);
+  };
+
+  apis?.ui.isMaximized().then(handleMaximized).catch(console.error);
+  apis?.ui.isFullScreen().then(handleFullscreen).catch(console.error);
+  events?.ui.onMaximized(handleMaximized);
+  events?.ui.onFullScreen(handleFullscreen);
 }
 
 function mountApp() {

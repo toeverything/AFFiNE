@@ -1,10 +1,13 @@
 import { cssVar } from '@toeverything/theme';
-import { globalStyle, style } from '@vanilla-extract/css';
+import { createVar, globalStyle, style } from '@vanilla-extract/css';
+
+export const sidebarOffsetVar = createVar();
 
 export const root = style({
   width: '100vw',
   height: '100vh',
   opacity: 1,
+  display: 'flex',
   transition: 'opacity 0.1s',
   background: cssVar('backgroundPrimaryColor'),
   selectors: {
