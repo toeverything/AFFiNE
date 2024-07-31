@@ -63,7 +63,7 @@
     "dotenv": "^16.4.5",
     "dotenv-cli": "^7.4.1",
     "express": "^4.19.2",
-    "fast-xml-parser": "^4.4.0",
+    "fast-xml-parser": "^4.4.1",
     "get-stream": "^9.0.1",
     "graphql": "^16.8.1",
     "graphql-scalars": "^1.23.0",
