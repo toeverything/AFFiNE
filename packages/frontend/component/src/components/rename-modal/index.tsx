@@ -45,6 +45,7 @@ export const RenameModal = ({
         onPointerDownOutside: handleRename,
         sideOffset: -12,
         onClick: e => e.stopPropagation(),
+        style: { borderRadius: 10, padding: 8 },
       }}
       items={
         <Input
@@ -55,7 +56,7 @@ export const RenameModal = ({
           onEnter={handleRename}
           onKeyDown={onKeyDown}
           data-testid="rename-modal-input"
-          style={{ width: 220, height: 34 }}
+          style={{ width: 220, height: 34, borderRadius: 4 }}
         />
       }
     >

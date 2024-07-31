@@ -1,13 +1,14 @@
 import { cssVar } from '@toeverything/theme';
+import { cssVarV2 } from '@toeverything/theme/v2';
 import { style } from '@vanilla-extract/css';
 export const inputWrapper = style({
   width: '100%',
   height: 28,
   lineHeight: '22px',
   gap: '10px',
-  color: cssVar('textPrimaryColor'),
+  color: cssVarV2('text/primary'),
   border: '1px solid',
-  backgroundColor: cssVar('white'),
+  backgroundColor: cssVarV2('layer/background/primary'),
   borderRadius: 8,
   display: 'flex',
   justifyContent: 'center',
@@ -44,7 +45,7 @@ export const inputWrapper = style({
       borderColor: cssVar('borderColor'),
     },
     '&.default:is(:focus-within, :focus, :focus-visible)': {
-      borderColor: cssVar('primaryColor'),
+      borderColor: cssVarV2('button/primary'),
       outline: 'none',
       boxShadow: '0px 0px 0px 2px rgba(30, 150, 235, 0.30);',
     },
