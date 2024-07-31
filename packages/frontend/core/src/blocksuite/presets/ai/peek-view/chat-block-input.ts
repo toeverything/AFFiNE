@@ -56,6 +56,7 @@ export class ChatBlockInput extends LitElement {
         resize: none;
         overflow-y: hidden;
         background-color: transparent;
+        user-select: none;
       }
       textarea::placeholder {
         font-size: 14px;
@@ -91,6 +92,17 @@ export class ChatBlockInput extends LitElement {
         }
       }
     }
+
+    .chat-panel-send svg rect {
+      fill: var(--affine-primary-color);
+    }
+    .chat-panel-send[aria-disabled='true'] {
+      cursor: not-allowed;
+    }
+    .chat-panel-send[aria-disabled='true'] svg rect {
+      fill: var(--affine-text-disable-color);
+    }
+
     .close-wrapper {
       width: 16px;
       height: 16px;
@@ -143,17 +155,13 @@ export class ChatBlockInput extends LitElement {
     });
 
     return html`<style>
-        .chat-panel-send svg rect {
-          fill: ${this._isInputEmpty
-            ? 'var(--affine-text-disable-color)'
-            : 'var(--affine-primary-color)'};
-        }
         .chat-panel-input {
           border-color: ${this._focused
             ? 'var(--affine-primary-color)'
             : 'var(--affine-border-color)'};
           box-shadow: ${this._focused ? 'var(--affine-active-shadow)' : 'none'};
           max-height: ${maxHeight}px;
+          user-select: none;
         }
       </style>
       <div class="ai-chat-input">
@@ -233,7 +241,11 @@ export class ChatBlockInput extends LitElement {
               >
                 ${ChatAbortIcon}
               </div>`
-            : html`<div @click="${this._send}" class="chat-panel-send">
+            : html`<div
+                @click="${this._send}"
+                class="chat-panel-send"
+                aria-disabled=${this._isInputEmpty}
+              >
                 ${ChatSendIcon}
               </div>`}
         </div>

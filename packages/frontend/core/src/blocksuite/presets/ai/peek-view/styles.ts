@@ -69,5 +69,6 @@ export const PeekViewStyles = css`
     align-items: center;
     color: var(--affine-text-secondary-color);
     font-size: var(--affine-font-xs);
+    user-select: none;
   }
 `;

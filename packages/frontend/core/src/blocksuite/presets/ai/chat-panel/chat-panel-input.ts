@@ -168,6 +168,16 @@ export class ChatPanelInput extends WithDisposable(LitElement) {
       }
     }
 
+    .chat-panel-send svg rect {
+      fill: var(--affine-primary-color);
+    }
+    .chat-panel-send[aria-disabled='true'] {
+      cursor: not-allowed;
+    }
+    .chat-panel-send[aria-disabled='true'] svg rect {
+      fill: var(--affine-text-disable-color);
+    }
+
     .close-wrapper {
       width: 16px;
       height: 16px;
@@ -286,18 +296,13 @@ export class ChatPanelInput extends WithDisposable(LitElement) {
     const maxHeight = hasImages ? 272 + 2 : 200 + 2;
 
     return html`<style>
-        .chat-panel-send svg rect {
-          fill: ${this.isInputEmpty && hasImages
-            ? 'var(--affine-text-disable-color)'
-            : 'var(--affine-primary-color)'};
-        }
-
         .chat-panel-input {
           border-color: ${this.focused
             ? 'var(--affine-primary-color)'
             : 'var(--affine-border-color)'};
           box-shadow: ${this.focused ? 'var(--affine-active-shadow)' : 'none'};
           max-height: ${maxHeight}px !important;
+          user-select: none;
         }
       </style>
       <div class="chat-panel-input">
@@ -395,7 +400,11 @@ export class ChatPanelInput extends WithDisposable(LitElement) {
               >
                 ${ChatAbortIcon}
               </div>`
-            : html`<div @click="${this.send}" class="chat-panel-send">
+            : html`<div
+                @click="${this.send}"
+                class="chat-panel-send"
+                aria-disabled=${this.isInputEmpty}
+              >
                 ${ChatSendIcon}
               </div>`}
         </div>

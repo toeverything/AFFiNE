@@ -91,6 +91,7 @@ export class ChatPanel extends WithDisposable(ShadowlessElement) {
       align-items: center;
       color: var(--affine-text-secondary-color);
       font-size: 12px;
+      user-select: none;
     }
   `;
 

@@ -1,6 +1,14 @@
 import { cssVar } from '@toeverything/theme';
 import { createVar, keyframes, style } from '@vanilla-extract/css';
 
+export const toolStyle = style({
+  selectors: {
+    '&.hide': {
+      pointerEvents: 'none',
+    },
+  },
+});
+
 export const aiIslandWrapper = style({
   width: 44,
   height: 44,

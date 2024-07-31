@@ -5,6 +5,7 @@ import {
   useLiveData,
   useService,
 } from '@toeverything/infra';
+import clsx from 'clsx';
 import { useEffect, useState } from 'react';
 
 import { ToolContainer } from '../../workspace';
@@ -14,6 +15,7 @@ import {
   aiIslandBtn,
   aiIslandWrapper,
   gradient,
+  toolStyle,
 } from './styles.css';
 
 const RIGHT_SIDEBAR_AI_HAS_EVER_OPENED_KEY =
@@ -49,7 +51,7 @@ export const AIIsland = () => {
   }, [activeTab, haveChatTab, sidebarOpen]);
 
   return (
-    <ToolContainer>
+    <ToolContainer className={clsx(toolStyle, { hide })}>
       <div
         className={aiIslandWrapper}
         data-hide={hide}

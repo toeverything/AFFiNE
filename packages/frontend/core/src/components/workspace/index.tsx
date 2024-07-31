@@ -71,7 +71,9 @@ export const MainContainer = forwardRef<
 
 MainContainer.displayName = 'MainContainer';
 
-export const ToolContainer = (props: PropsWithChildren): ReactElement => {
+export const ToolContainer = (
+  props: PropsWithChildren<{ className?: string }>
+): ReactElement => {
   const docId = useLiveData(
     useService(GlobalContextService).globalContext.docId.$
   );
@@ -79,11 +81,7 @@ export const ToolContainer = (props: PropsWithChildren): ReactElement => {
   const doc = useLiveData(docId ? docRecordList.doc$(docId) : undefined);
   const inTrash = useLiveData(doc?.meta$)?.trash;
   return (
-    <div
-      className={clsx(toolStyle, {
-        trash: inTrash,
-      })}
-    >
+    <div className={clsx(toolStyle, { trash: inTrash }, props.className)}>
       {props.children}
     </div>
   );
