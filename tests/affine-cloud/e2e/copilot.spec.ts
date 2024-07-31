@@ -244,4 +244,48 @@ test.describe('chat panel', () => {
     const editorContent = await getEditorContent(page);
     expect(editorContent).toBe(content);
   });
+
+  test('can be retry or discard chat in page mode', async ({ page }) => {
+    await page.reload();
+    await clickSideBarAllPageButton(page);
+    await page.waitForTimeout(200);
+    await createLocalWorkspace({ name: 'test' }, page);
+    await clickNewPageButton(page);
+    await focusToEditor(page);
+    await page.keyboard.type('/');
+    await page.getByTestId('sub-menu-0').getByText('Ask AI').click();
+    const input = await page.waitForSelector('ai-panel-input textarea');
+    await input.fill('hello');
+    await input.press('Enter');
+    // regenerate
+    {
+      const resp = await page.waitForSelector(
+        'ai-panel-answer .response-list-container:last-child'
+      );
+      const answerEditor = await page.waitForSelector(
+        'ai-panel-answer editor-host'
+      );
+      const content = await answerEditor.innerText();
+      await (await resp.waitForSelector('.ai-item-regenerate')).click();
+      await page.waitForSelector('ai-panel-answer .response-list-container'); // wait response
+      expect(
+        await (
+          await (
+            await page.waitForSelector('ai-panel-answer')
+          ).waitForSelector('editor-host')
+        ).innerText()
+      ).not.toBe(content);
+    }
+
+    // discard
+    {
+      const resp = await page.waitForSelector(
+        'ai-panel-answer .response-list-container:last-child'
+      );
+      await (await resp.waitForSelector('.ai-item-discard')).click();
+      await page.getByTestId('confirm-modal-confirm').click();
+      const editorContent = await getEditorContent(page);
+      expect(editorContent).toBe('');
+    }
+  });
 });
