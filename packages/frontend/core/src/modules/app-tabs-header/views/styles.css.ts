@@ -148,7 +148,7 @@ export const tabCloseButtonWrapper = style({
   paddingRight: 4,
   justifyContent: 'flex-end',
   selectors: {
-    [`${tab}:is([data-active=true], :hover) &`]: {
+    [`${tab}:is([data-active=true], :hover) &:not(:empty)`]: {
       width: 40,
     },
     [`${tab}[data-active=true] &`]: {
