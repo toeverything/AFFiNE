@@ -137,6 +137,22 @@ test.describe('chat panel', () => {
     expect((await collectChat(page)).length).toBe(0);
   });
 
+  test('chat actions', async ({ page }) => {
+    await page.reload();
+    await clickSideBarAllPageButton(page);
+    await page.waitForTimeout(200);
+    await createLocalWorkspace({ name: 'test' }, page);
+    await clickNewPageButton(page);
+    await makeChat(page, 'hello');
+    const content = (await collectChat(page))[1].content;
+    await page.getByTestId('action-copy-button').click();
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
+      content
+    );
+    await page.getByTestId('action-retry-button').click();
+    expect((await collectChat(page))[1].content).not.toBe(content);
+  });
+
   test('can be insert below', async ({ page }) => {
     await page.reload();
     await clickSideBarAllPageButton(page);
