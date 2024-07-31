@@ -44,6 +44,7 @@ export const RenameModal = ({
         side: 'left',
         onPointerDownOutside: handleRename,
         sideOffset: -12,
+        onClick: e => e.stopPropagation(),
       }}
       items={
         <Input

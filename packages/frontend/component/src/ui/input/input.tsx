@@ -58,7 +58,11 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
   const inputRef = useRef<HTMLInputElement | null>(null);
   useLayoutEffect(() => {
     if (inputRef.current && (autoFocus || autoSelect)) {
-      inputRef.current?.focus();
+      // to avoid clicking on something focusable(e.g MenuItem),
+      // then the input will not be focused
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 0);
       if (autoSelect) {
         inputRef.current?.select();
       }
