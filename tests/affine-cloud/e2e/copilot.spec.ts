@@ -221,4 +221,27 @@ test.describe('chat panel', () => {
       )
     ).toBe(contents);
   });
+
+  test('can be chat and insert below in page mode', async ({ page }) => {
+    await page.reload();
+    await clickSideBarAllPageButton(page);
+    await page.waitForTimeout(200);
+    await createLocalWorkspace({ name: 'test' }, page);
+    await clickNewPageButton(page);
+    await focusToEditor(page);
+    await page.keyboard.type('/');
+    await page.getByTestId('sub-menu-0').getByText('Ask AI').click();
+    const input = await page.waitForSelector('ai-panel-input textarea');
+    await input.fill('hello');
+    await input.press('Enter');
+    const resp = await page.waitForSelector(
+      'ai-panel-answer .response-list-container'
+    ); // wait response
+    const content = await (
+      await page.waitForSelector('ai-panel-answer editor-host')
+    ).innerText();
+    await (await resp.waitForSelector('.ai-item-insert-below')).click();
+    const editorContent = await getEditorContent(page);
+    expect(editorContent).toBe(content);
+  });
 });
