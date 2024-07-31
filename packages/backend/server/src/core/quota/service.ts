@@ -17,7 +17,7 @@ export class QuotaService {
 
   // get activated user quota
   async getUserQuota(userId: string) {
-    const quota = await this.prisma.userFeatures.findFirst({
+    const quota = await this.prisma.userFeature.findFirst({
       where: {
         userId,
         feature: {
@@ -44,7 +44,7 @@ export class QuotaService {
 
   // get user all quota records
   async getUserQuotas(userId: string) {
-    const quotas = await this.prisma.userFeatures.findMany({
+    const quotas = await this.prisma.userFeature.findMany({
       where: {
         userId,
         feature: {
@@ -57,6 +57,9 @@ export class QuotaService {
         createdAt: true,
         expiredAt: true,
         featureId: true,
+      },
+      orderBy: {
+        id: 'asc',
       },
     });
     const configs = await Promise.all(
@@ -92,7 +95,7 @@ export class QuotaService {
         return;
       }
 
-      const featureId = await tx.features
+      const featureId = await tx.feature
         .findFirst({
           where: { feature: quota, type: FeatureKind.Quota },
           select: { id: true },
@@ -105,7 +108,7 @@ export class QuotaService {
       }
 
       // we will deactivate all exists quota for this user
-      await tx.userFeatures.updateMany({
+      await tx.userFeature.updateMany({
         where: {
           id: undefined,
           userId,
@@ -118,7 +121,7 @@ export class QuotaService {
         },
       });
 
-      await tx.userFeatures.create({
+      await tx.userFeature.create({
         data: {
           userId,
           featureId,
@@ -133,7 +136,7 @@ export class QuotaService {
   async hasQuota(userId: string, quota: QuotaType, tx?: PrismaTransaction) {
     const executor = tx ?? this.prisma;
 
-    return executor.userFeatures
+    return executor.userFeature
       .count({
         where: {
           userId,

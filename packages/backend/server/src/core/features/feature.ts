@@ -32,7 +32,7 @@ export async function getFeature(prisma: PrismaTransaction, featureId: number) {
     return cachedFeature;
   }
 
-  const feature = await prisma.features.findFirst({
+  const feature = await prisma.feature.findFirst({
     where: {
       id: featureId,
     },

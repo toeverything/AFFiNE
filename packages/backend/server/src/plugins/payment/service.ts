@@ -84,17 +84,17 @@ export class SubscriptionService {
     private readonly db: PrismaClient,
     private readonly scheduleManager: ScheduleManager,
     private readonly event: EventEmitter,
-    private readonly features: FeatureManagementService
+    private readonly feature: FeatureManagementService
   ) {}
 
   async listPrices(user?: CurrentUser) {
     let canHaveEarlyAccessDiscount = false;
     let canHaveAIEarlyAccessDiscount = false;
     if (user) {
-      canHaveEarlyAccessDiscount = await this.features.isEarlyAccessUser(
+      canHaveEarlyAccessDiscount = await this.feature.isEarlyAccessUser(
         user.id
       );
-      canHaveAIEarlyAccessDiscount = await this.features.isEarlyAccessUser(
+      canHaveAIEarlyAccessDiscount = await this.feature.isEarlyAccessUser(
         user.id,
         EarlyAccessType.AI
       );
@@ -181,7 +181,7 @@ export class SubscriptionService {
     if (
       this.config.deploy &&
       this.config.affine.canary &&
-      !this.features.isStaff(user.email)
+      !this.feature.isStaff(user.email)
     ) {
       throw new ActionForbidden();
     }
@@ -847,7 +847,7 @@ export class SubscriptionService {
     plan: SubscriptionPlan,
     recurring: SubscriptionRecurring
   ): Promise<{ price: string; coupon?: string }> {
-    const isEaUser = await this.features.isEarlyAccessUser(customer.userId);
+    const isEaUser = await this.feature.isEarlyAccessUser(customer.userId);
     const oldSubscriptions = await this.stripe.subscriptions.list({
       customer: customer.stripeCustomerId,
       status: 'all',
@@ -876,7 +876,7 @@ export class SubscriptionService {
           : undefined,
       };
     } else {
-      const isAIEaUser = await this.features.isEarlyAccessUser(
+      const isAIEaUser = await this.feature.isEarlyAccessUser(
         customer.userId,
         EarlyAccessType.AI
       );

@@ -13,7 +13,7 @@ export class QuotaConfig {
       return cachedQuota;
     }
 
-    const quota = await tx.features.findFirst({
+    const quota = await tx.feature.findFirst({
       where: {
         id: featureId,
       },

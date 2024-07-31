@@ -15,7 +15,7 @@ export async function upgradeQuotaVersion(
   // migrate all users that using old quota to new quota
   await db.$transaction(
     async tx => {
-      const latestQuotaVersion = await tx.features.findFirstOrThrow({
+      const latestQuotaVersion = await tx.feature.findFirstOrThrow({
         where: { feature: quota.feature },
         orderBy: { version: 'desc' },
         select: { id: true },
@@ -39,7 +39,7 @@ export async function upgradeQuotaVersion(
       });
 
       // deactivate all old quota for the user
-      await tx.userFeatures.updateMany({
+      await tx.userFeature.updateMany({
         where: {
           id: undefined,
           userId: {
@@ -55,7 +55,7 @@ export async function upgradeQuotaVersion(
         },
       });
 
-      await tx.userFeatures.createMany({
+      await tx.userFeature.createMany({
         data: userIds.map(({ id: userId }) => ({
           userId,
           featureId: latestQuotaVersion.id,
