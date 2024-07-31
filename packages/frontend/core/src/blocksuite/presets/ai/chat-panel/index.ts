@@ -97,8 +97,6 @@ export class ChatPanel extends WithDisposable(ShadowlessElement) {
   private readonly _chatMessages: Ref<ChatPanelMessages> =
     createRef<ChatPanelMessages>();
 
-  private _chatSessionId = '';
-
   private _resettingCounter = 0;
 
   private readonly _resetItems = debounce(() => {
@@ -119,7 +117,6 @@ export class ChatPanel extends WithDisposable(ShadowlessElement) {
       if (histories?.at(-1)) {
         const history = histories.at(-1);
         if (!history) return;
-        this._chatSessionId = history.sessionId;
         this.chatContextValue.chatSessionId = history.sessionId;
         items.push(...history.messages);
         AIProvider.LAST_ROOT_SESSION_ID = history.sessionId;
@@ -175,13 +172,14 @@ export class ChatPanel extends WithDisposable(ShadowlessElement) {
       })
     ) {
       await AIProvider.histories?.cleanup(this.doc.collection.id, this.doc.id, [
-        this._chatSessionId,
+        this.chatContextValue.chatSessionId ?? '',
         ...(
           this.chatContextValue.items.filter(
             item => 'sessionId' in item
           ) as ChatAction[]
         ).map(item => item.sessionId),
       ]);
+      this.chatContextValue.chatSessionId = null;
       notification.toast('History cleared');
       this._resetItems();
     }
