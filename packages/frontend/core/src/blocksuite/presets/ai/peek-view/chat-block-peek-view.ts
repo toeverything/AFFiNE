@@ -180,7 +180,8 @@ export class AIChatBlockPeekView extends LitElement {
       return;
     }
 
-    const aiChatBlockId = doc.addBlock(
+    const edgelessService = this._rootService as EdgelessRootService;
+    const aiChatBlockId = edgelessService.addBlock(
       'affine:embed-ai-chat' as keyof BlockSuite.BlockModels,
       {
         xywh: bound.serialize(),
@@ -197,7 +198,6 @@ export class AIChatBlockPeekView extends LitElement {
     this.updateContext({ currentChatBlockId: aiChatBlockId });
 
     // Connect the parent chat block to the AI chat block
-    const edgelessService = this._rootService as EdgelessRootService;
     edgelessService.addElement(CanvasElementType.CONNECTOR, {
       mode: ConnectorMode.Curve,
       controllers: [],

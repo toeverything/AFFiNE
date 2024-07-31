@@ -131,7 +131,7 @@ function getViewportCenter(
 
 // Add AI chat block and focus on it
 function addAIChatBlock(
-  doc: Doc,
+  host: EditorHost,
   messages: ChatMessage[],
   sessionId: string,
   viewportCenter: { x: number; y: number }
@@ -140,6 +140,7 @@ function addAIChatBlock(
     return;
   }
 
+  const { doc } = host;
   const surfaceBlock = doc
     .getBlocks()
     .find(block => block.flavour === 'affine:surface');
@@ -147,6 +148,8 @@ function addAIChatBlock(
     return;
   }
 
+  const surfaceService = host.spec.getService('affine:surface');
+  const { layer } = surfaceService;
   // Add AI chat block to the center of the viewport
   const width = 300; // AI_CHAT_BLOCK_WIDTH = 300
   const height = 320; // AI_CHAT_BLOCK_HEIGHT = 320
@@ -158,6 +161,7 @@ function addAIChatBlock(
     {
       xywh: bound.serialize(),
       messages: JSON.stringify(messages),
+      index: layer.generateIndex('affine:embed-ai-chat'),
       sessionId,
     },
     surfaceBlock.id
@@ -329,7 +333,7 @@ const SAVE_CHAT_TO_BLOCK_ACTION: ChatAction = {
 
       // After switching to edgeless mode, the user can save the chat to a block
       const blockId = addAIChatBlock(
-        host.doc,
+        host,
         messages,
         newSessionId,
         viewportCenter
