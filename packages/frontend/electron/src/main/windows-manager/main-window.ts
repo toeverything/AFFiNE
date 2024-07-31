@@ -143,14 +143,19 @@ export class MainWindowManager {
       }
     });
 
-    mainWindow.on('leave-full-screen', () => {
-      // seems call this too soon may cause the app to crash
+    const refreshBound = (timeout = 0) => {
       setTimeout(() => {
         // FIXME: workaround for theme bug in full screen mode
         const size = mainWindow.getSize();
         mainWindow.setSize(size[0] + 1, size[1] + 1);
         mainWindow.setSize(size[0], size[1]);
-      });
+      }, timeout);
+    };
+
+    mainWindow.on('leave-full-screen', () => {
+      // seems call this too soon may cause the app to crash
+      refreshBound();
+      refreshBound(1000);
       uiSubjects.onMaximized$.next(false);
       uiSubjects.onFullScreen$.next(false);
     });
