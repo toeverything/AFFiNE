@@ -80,7 +80,7 @@ export const getPublicPath = (buildFlags: BuildFlags) => {
     return `https://dev.affineassets.com/`;
   } else if (BUILD_TYPE === 'beta') {
     return `https://beta.affineassets.com/`;
-  } else if (BUILD_TYPE === 'prod') {
+  } else if (BUILD_TYPE === 'stable') {
     return `https://prod.affineassets.com/`;
   }
   return publicPath;
