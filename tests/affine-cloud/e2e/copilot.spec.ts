@@ -50,10 +50,11 @@ const collectChat = async (page: Page) => {
   await page.waitForTimeout(500);
   return Promise.all(
     Array.from(await chatPanel.$$('.message')).map(async m => ({
-      name: await (await m.$('.user-info'))?.innerText(),
-      content: await (
-        await (await m.$('ai-answer-text'))?.$('editor-host')
-      )?.innerText(),
+      name: await m.$('.user-info').then(i => i?.innerText()),
+      content: await m
+        .$('ai-answer-text')
+        .then(t => t?.$('editor-host'))
+        .then(e => e?.innerText()),
     }))
   );
 };
@@ -287,5 +288,68 @@ test.describe('chat panel', () => {
       const editorContent = await getEditorContent(page);
       expect(editorContent).toBe('');
     }
+  });
+});
+
+test.describe('chat with block', () => {
+  let user: {
+    id: string;
+    name: string;
+    email: string;
+    password: string;
+  };
+
+  test.beforeEach(async ({ page }) => {
+    user = await createRandomAIUser();
+    await loginUser(page, user.email);
+  });
+
+  test.describe('chat with image block', () => {
+    const pasteImageToPageEditor = async (page: Page) => {
+      await page.evaluate(async () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 100;
+        canvas.height = 100;
+        const blob = await new Promise<Blob>(resolve =>
+          canvas.toBlob(blob => resolve(blob!), 'image/png')
+        );
+        await navigator.clipboard.write([
+          new ClipboardItem({ [blob.type]: blob }),
+        ]);
+      });
+      await focusToEditor(page);
+      await page.keyboard.press('ControlOrMeta+V');
+    };
+
+    const collectAnswer = async (page: Page) => {
+      // wait ai response
+      await page.waitForSelector(
+        'affine-ai-panel-widget .response-list-container'
+      );
+      const answer = await page.waitForSelector(
+        'affine-ai-panel-widget ai-answer-text editor-host'
+      );
+      return answer.innerText();
+    };
+
+    test.beforeEach(async ({ page }) => {
+      await page.reload();
+      await clickSideBarAllPageButton(page);
+      await page.waitForTimeout(200);
+      await createLocalWorkspace({ name: 'test' }, page);
+      await clickNewPageButton(page);
+      await pasteImageToPageEditor(page);
+      await page.waitForSelector('affine-image').then(i => i.click());
+      await page
+        .waitForSelector('affine-image editor-toolbar ask-ai-button')
+        .then(b => b.click());
+    });
+
+    test('explain this image', async ({ page }) => {
+      await page
+        .waitForSelector('.ai-item-explain-this-image')
+        .then(i => i.click());
+      expect(await collectAnswer(page)).toBeTruthy();
+    });
   });
 });
