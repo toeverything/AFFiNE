@@ -1,3 +1,4 @@
+import { getBackdropContainer } from '@affine/component';
 import * as Dialog from '@radix-ui/react-dialog';
 import anime, { type AnimeInstance, type AnimeParams } from 'animejs';
 import clsx from 'clsx';
@@ -302,7 +303,7 @@ export const PeekViewModalContainer = forwardRef<
   return (
     <PeekViewContext.Provider value={emptyContext}>
       <Dialog.Root modal open={vtOpen} onOpenChange={onOpenChange}>
-        <Dialog.Portal>
+        <Dialog.Portal container={getBackdropContainer()}>
           <PeekViewModalOverlay
             ref={overlayRef}
             className={styles.modalOverlay}

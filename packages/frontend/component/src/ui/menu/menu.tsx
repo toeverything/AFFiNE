@@ -7,6 +7,7 @@ import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import clsx from 'clsx';
 import type { ReactNode } from 'react';
 
+import { getBackdropContainer } from '../../utils';
 import * as styles from './styles.css';
 
 export interface MenuProps {
@@ -45,7 +46,10 @@ export const Menu = ({
           {items}
         </DropdownMenu.Content>
       ) : (
-        <DropdownMenu.Portal {...portalOptions}>
+        <DropdownMenu.Portal
+          container={getBackdropContainer()}
+          {...portalOptions}
+        >
           <DropdownMenu.Content
             className={clsx(styles.menuContent, className)}
             sideOffset={5}
