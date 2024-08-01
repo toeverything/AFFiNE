@@ -29,7 +29,6 @@ export const editorContainer = style({
 export const affineDocViewport = style({
   display: 'flex',
   flexDirection: 'column',
-  userSelect: 'none',
   containerName: 'viewport',
   containerType: 'inline-size',
   background: cssVar('backgroundPrimaryColor'),

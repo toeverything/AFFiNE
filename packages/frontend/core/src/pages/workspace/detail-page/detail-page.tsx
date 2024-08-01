@@ -4,6 +4,7 @@ import type { ChatPanel } from '@affine/core/blocksuite/presets/ai';
 import { AIProvider } from '@affine/core/blocksuite/presets/ai';
 import { PageAIOnboarding } from '@affine/core/components/affine/ai-onboarding';
 import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
+import { useDocMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
 import { RecentDocsService } from '@affine/core/modules/quicksearch';
 import { ViewService } from '@affine/core/modules/workbench/services/view';
 import type { PageRootService } from '@blocksuite/blocks';
@@ -83,6 +84,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
   const mode = useLiveData(doc.mode$);
   const { appSettings } = useAppSettingHelper();
   const chatPanelRef = useRef<ChatPanel | null>(null);
+  const { setDocReadonly } = useDocMetaHelper(workspace.docCollection);
 
   const isActiveView = useIsActiveView();
   // TODO(@eyhn): remove jotai here
@@ -130,6 +132,12 @@ const DetailPageImpl = memo(function DetailPageImpl() {
     }
     return;
   }, [doc, globalContext, isActiveView, mode]);
+
+  useEffect(() => {
+    if ('isMobile' in environment && environment.isMobile) {
+      setDocReadonly(doc.id, true);
+    }
+  }, [doc.id, setDocReadonly]);
 
   const isInTrash = useLiveData(doc.meta$.map(meta => meta.trash));
   useRegisterBlocksuiteEditorCommands();

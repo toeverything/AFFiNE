@@ -1325,6 +1325,7 @@
   "com.affine.toastMessage.successfullyDeleted": "Successfully deleted",
   "com.affine.today": "Today",
   "com.affine.tomorrow": "Tomorrow",
+  "com.affine.top-tip.mobile": "Limited to view-only on mobile.",
   "com.affine.trashOperation.delete": "Delete",
   "com.affine.trashOperation.delete.description": "Once deleted, you can't undo this action. Do you confirm?",
   "com.affine.trashOperation.delete.title": "Permanently delete",

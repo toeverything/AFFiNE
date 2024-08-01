@@ -1254,6 +1254,7 @@
   "com.affine.toastMessage.successfullyDeleted": "删除成功",
   "com.affine.today": "今天",
   "com.affine.tomorrow": "明日",
+  "com.affine.top-tip.mobile": "在移动设备上仅限于查看。",
   "com.affine.trashOperation.delete": "删除",
   "com.affine.trashOperation.delete.description": "一旦删除，您将无法撤销此操作。您确定吗？",
   "com.affine.trashOperation.delete.title": "永久删除",

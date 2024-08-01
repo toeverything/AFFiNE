@@ -3,8 +3,8 @@ import { style } from '@vanilla-extract/css';
 export const browserWarningStyle = style({
   backgroundColor: cssVar('backgroundWarningColor'),
   color: cssVar('warningColor'),
-  height: '36px',
   width: '100%',
+  padding: '8px 16px',
   fontSize: cssVar('fontSm'),
   display: 'flex',
   justifyContent: 'center',

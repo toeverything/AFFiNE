@@ -21,11 +21,13 @@ const shouldShowWarning = (() => {
     // disable in SSR
     return false;
   }
+  if (environment.isMobile) {
+    return true;
+  }
   if (environment.isChrome) {
     return environment.chromeVersion < minimumChromeVersion;
-  } else {
-    return !environment.isMobile;
   }
+  return false;
 })();
 
 const OSWarningMessage = () => {
@@ -35,6 +37,11 @@ const OSWarningMessage = () => {
     environment.isBrowser &&
     environment.isChrome &&
     environment.chromeVersion < minimumChromeVersion;
+
+  // TODO(@L-Sun): remove this message when mobile version is able to edit.
+  if ('isMobile' in environment && environment.isMobile) {
+    return <span>{t['com.affine.top-tip.mobile']()}</span>;
+  }
 
   if (notChrome) {
     return (
@@ -48,6 +55,7 @@ const OSWarningMessage = () => {
   } else if (notGoodVersion) {
     return <span>{t['upgradeBrowser']()}</span>;
   }
+
   return null;
 };
 
