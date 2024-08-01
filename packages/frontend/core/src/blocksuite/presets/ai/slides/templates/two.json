@@ -63,7 +63,7 @@
                     }
                   ]
                 },
-                "background": "--affine-palette-transparent",
+                "background": "transparent",
                 "xywh": "[-509.7051213118268,-469.55707155770506,1924.0508676236536,1089.1141431154101]",
                 "index": "a0"
               },
@@ -78,7 +78,7 @@
           "version": 1,
           "props": {
             "xywh": "[-461.8167639829678,-479.74267557148,1390.0495489396078,383.28507166552515]",
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "index": "a1",
             "hidden": false,
             "displayMode": "edgeless",
@@ -122,7 +122,7 @@
           "version": 1,
           "props": {
             "xywh": "[-452.57487563328925,-183.9800061178195,871.3963546611783,235.3688641606808]",
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "index": "a3",
             "hidden": false,
             "displayMode": "edgeless",
@@ -166,7 +166,7 @@
           "version": 1,
           "props": {
             "xywh": "[452.1184517179579,-183.9800061178195,871.3963546611783,235.3688641606808]",
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "index": "a5",
             "hidden": false,
             "displayMode": "edgeless",
@@ -210,7 +210,7 @@
           "version": 1,
           "props": {
             "xywh": "[-428.74023932678745,-63.577752506957125,849.0831963889726,551.8234792085989]",
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "index": "a6",
             "hidden": false,
             "displayMode": "edgeless",
@@ -254,7 +254,7 @@
           "version": 1,
           "props": {
             "xywh": "[474.43160999016345,-63.577752506957125,849.0831963889726,551.8234792085989]",
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "index": "a8",
             "hidden": false,
             "displayMode": "edgeless",

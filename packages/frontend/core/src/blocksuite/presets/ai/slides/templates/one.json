@@ -67,7 +67,7 @@
                     }
                   ]
                 },
-                "background": "--affine-palette-transparent",
+                "background": "transparent",
                 "xywh": "[-1514.2376426616445,-2905.469439482463,1879.6362584319918,1087.2819474283258]",
                 "index": "a2"
               },
@@ -99,7 +99,7 @@
           "version": 1,
           "props": {
             "xywh": "[-922.880340452472,-2825.1459576709904,1212.5651934196321,236.44460482053137]",
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "index": "aB",
             "hidden": false,
             "displayMode": "edgeless",
@@ -143,7 +143,7 @@
           "version": 1,
           "props": {
             "xywh": "[-910.0113897833639,-2608.958384791207,1198.7335362065319,174.0265670977942]",
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "index": "aF",
             "hidden": false,
             "displayMode": "edgeless",
@@ -187,7 +187,7 @@
           "version": 1,
           "props": {
             "xywh": "[-900.4706500368766,-2493.7715542849137,1187.6524039191502,131.73112646502364]",
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "index": "aH",
             "hidden": false,
             "displayMode": "edgeless",
@@ -291,7 +291,7 @@
                     }
                   ]
                 },
-                "background": "--affine-palette-transparent",
+                "background": "transparent",
                 "xywh": "[-1514.2376426616445,-2905.469439482463,1879.6362584319918,1087.2819474283258]",
                 "index": "a2"
               },
@@ -323,7 +323,7 @@
           "version": 1,
           "props": {
             "xywh": "[-1467.7081022991783,-2825.1459576709904,1212.5651934196321,236.44460482053137]",
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "index": "aB",
             "hidden": false,
             "displayMode": "edgeless",
@@ -367,7 +367,7 @@
           "version": 1,
           "props": {
             "xywh": "[-1454.8391516300703,-2608.958384791207,1198.7335362065319,174.0265670977942]",
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "index": "aF",
             "hidden": false,
             "displayMode": "edgeless",
@@ -411,7 +411,7 @@
           "version": 1,
           "props": {
             "xywh": "[-1445.298411883583,-2493.7715542849137,1187.6524039191502,131.73112646502364]",
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "index": "aH",
             "hidden": false,
             "displayMode": "edgeless",
@@ -515,7 +515,7 @@
                     }
                   ]
                 },
-                "background": "--affine-palette-transparent",
+                "background": "transparent",
                 "xywh": "[-1514.2376426616445,-2905.469439482463,1879.6362584319918,1087.2819474283258]",
                 "index": "a2"
               },
@@ -547,7 +547,7 @@
           "version": 1,
           "props": {
             "xywh": "[-1467.7081022991783,-2676.3146218911334,1212.5651934196321,236.44460482053137]",
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "index": "aB",
             "hidden": false,
             "displayMode": "edgeless",
@@ -591,7 +591,7 @@
           "version": 1,
           "props": {
             "xywh": "[-1454.8391516300703,-2457.6331564505895,1198.7335362065319,174.0265670977942]",
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "index": "aF",
             "hidden": false,
             "displayMode": "edgeless",
@@ -635,7 +635,7 @@
           "version": 1,
           "props": {
             "xywh": "[-1445.298411883583,-2342.446325944296,1187.6524039191502,131.73112646502364]",
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "index": "aH",
             "hidden": false,
             "displayMode": "edgeless",
@@ -739,7 +739,7 @@
                     }
                   ]
                 },
-                "background": "--affine-palette-transparent",
+                "background": "transparent",
                 "index": "a2",
                 "xywh": "[-1514.2376426616445,-2905.469439482463,1879.6362584319918,1087.2819474283258]"
               },
@@ -770,7 +770,7 @@
           "flavour": "affine:note",
           "version": 1,
           "props": {
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "hidden": false,
             "displayMode": "edgeless",
             "index": "aB",
@@ -814,7 +814,7 @@
           "flavour": "affine:note",
           "version": 1,
           "props": {
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "hidden": false,
             "displayMode": "edgeless",
             "index": "aF",
@@ -859,7 +859,7 @@
           "version": 1,
           "props": {
             "xywh": "[-916.6630478386558,-2362.2267494910393,1214.0190493549892,257.958640225178]",
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "index": "aL",
             "hidden": false,
             "displayMode": "edgeless",
@@ -963,7 +963,7 @@
                     }
                   ]
                 },
-                "background": "--affine-palette-transparent",
+                "background": "transparent",
                 "xywh": "[-2101.800074986049,1.1999424525670292,1933.7142508370534,1095.9999738420759]",
                 "index": "a0"
               },
@@ -1029,7 +1029,7 @@
           "version": 1,
           "props": {
             "xywh": "[-1354.6692632128902,343.3351440816688,1127.5440924085192,222.84947966365655]",
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "index": "a5",
             "hidden": false,
             "displayMode": "edgeless",
@@ -1073,7 +1073,7 @@
           "version": 1,
           "props": {
             "xywh": "[-1351.148559784478,459.149012829487,1120.7742609602965,403.49738953307815]",
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "index": "a6",
             "hidden": false,
             "displayMode": "edgeless",
@@ -1177,7 +1177,7 @@
                     }
                   ]
                 },
-                "background": "--affine-palette-transparent",
+                "background": "transparent",
                 "xywh": "[-2101.800074986049,1.1999424525670292,1933.7142508370534,1095.9999738420759]",
                 "index": "a0"
               },
@@ -1243,7 +1243,7 @@
           "version": 1,
           "props": {
             "xywh": "[-1700.213151332694,119.59413792685919,1127.5440924085192,222.84947966365655]",
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "index": "a5",
             "hidden": false,
             "displayMode": "edgeless",
@@ -1287,7 +1287,7 @@
           "version": 1,
           "props": {
             "xywh": "[-1696.8282356085826,235.40800667467738,1120.7742609602965,328.06883554312276]",
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "index": "a6",
             "hidden": false,
             "displayMode": "edgeless",
@@ -1391,7 +1391,7 @@
                     }
                   ]
                 },
-                "background": "--affine-palette-transparent",
+                "background": "transparent",
                 "xywh": "[-2101.800074986049,1.1999424525670292,1933.7142508370534,1095.9999738420759]",
                 "index": "a0"
               },
@@ -1457,7 +1457,7 @@
           "version": 1,
           "props": {
             "xywh": "[-2000.666688464937,74.64747474307153,1156.1906127929688,283.6666920979818]",
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "index": "a1",
             "hidden": false,
             "displayMode": "edgeless",
@@ -1501,7 +1501,7 @@
           "version": 1,
           "props": {
             "xywh": "[-1976.4593162571703,258.7718028519709,1133.4093436470516,274.25339814778795]",
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "index": "a6",
             "hidden": false,
             "displayMode": "edgeless",

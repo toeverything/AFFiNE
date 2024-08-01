@@ -36,7 +36,7 @@
                 "filled": true,
                 "fillColor": "--affine-palette-shape-navy",
                 "strokeWidth": 2,
-                "strokeColor": "--affine-palette-transparent",
+                "strokeColor": "transparent",
                 "strokeStyle": "solid",
                 "shapeStyle": "General",
                 "roughness": 1.4,
@@ -66,7 +66,7 @@
                 "filled": true,
                 "fillColor": "--affine-palette-shape-navy",
                 "strokeWidth": 2,
-                "strokeColor": "--affine-palette-transparent",
+                "strokeColor": "transparent",
                 "strokeStyle": "solid",
                 "shapeStyle": "General",
                 "roughness": 1.4,
@@ -96,7 +96,7 @@
                 "filled": true,
                 "fillColor": "--affine-palette-shape-navy",
                 "strokeWidth": 2,
-                "strokeColor": "--affine-palette-transparent",
+                "strokeColor": "transparent",
                 "strokeStyle": "solid",
                 "shapeStyle": "General",
                 "roughness": 1.4,
@@ -153,7 +153,7 @@
                     }
                   ]
                 },
-                "background": "--affine-palette-transparent",
+                "background": "transparent",
                 "index": "a2",
                 "xywh": "[-1514.2376426616445,-2905.469439482463,1879.6362584319918,1087.2819474283258]"
               },
@@ -184,7 +184,7 @@
           "flavour": "affine:note",
           "version": 1,
           "props": {
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "hidden": false,
             "displayMode": "edgeless",
             "index": "aB",
@@ -228,7 +228,7 @@
           "flavour": "affine:note",
           "version": 1,
           "props": {
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "hidden": false,
             "displayMode": "edgeless",
             "index": "aF",
@@ -273,7 +273,7 @@
           "version": 1,
           "props": {
             "xywh": "[-1409.5371209184764,-2634.1760451184673,577.0683118545286,385.42432914117944]",
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "index": "aL",
             "hidden": false,
             "displayMode": "edgeless",
@@ -317,7 +317,7 @@
           "version": 1,
           "props": {
             "xywh": "[-765.9487034393142,-2732.6331564505895,589.0618769832358,174.0265670977942]",
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "index": "aO",
             "hidden": false,
             "displayMode": "edgeless",
@@ -361,7 +361,7 @@
           "version": 1,
           "props": {
             "xywh": "[-759.2820367726474,-2634.1760451184673,582.4016655329141,382.757652301987]",
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "index": "aP",
             "hidden": false,
             "displayMode": "edgeless",
@@ -405,7 +405,7 @@
           "version": 1,
           "props": {
             "xywh": "[-1416.2037875851431,-2253.571851708401,589.0618769832358,174.0265670977942]",
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "index": "aS",
             "hidden": false,
             "displayMode": "edgeless",
@@ -449,7 +449,7 @@
           "version": 1,
           "props": {
             "xywh": "[-1409.5371209184764,-2155.114740376279,1237.0683118545285,249.42431896865355]",
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "index": "aT",
             "hidden": false,
             "displayMode": "edgeless",
@@ -526,7 +526,7 @@
                 "filled": true,
                 "fillColor": "--affine-palette-shape-navy",
                 "strokeWidth": 2,
-                "strokeColor": "--affine-palette-transparent",
+                "strokeColor": "transparent",
                 "strokeStyle": "solid",
                 "shapeStyle": "General",
                 "roughness": 1.4,
@@ -556,7 +556,7 @@
                 "filled": true,
                 "fillColor": "--affine-palette-shape-navy",
                 "strokeWidth": 2,
-                "strokeColor": "--affine-palette-transparent",
+                "strokeColor": "transparent",
                 "strokeStyle": "solid",
                 "shapeStyle": "General",
                 "roughness": 1.4,
@@ -586,7 +586,7 @@
                 "filled": true,
                 "fillColor": "--affine-palette-shape-navy",
                 "strokeWidth": 2,
-                "strokeColor": "--affine-palette-transparent",
+                "strokeColor": "transparent",
                 "strokeStyle": "solid",
                 "shapeStyle": "General",
                 "roughness": 1.4,
@@ -643,7 +643,7 @@
                     }
                   ]
                 },
-                "background": "--affine-palette-transparent",
+                "background": "transparent",
                 "index": "a2",
                 "xywh": "[-1514.2376426616445,-2905.469439482463,1879.6362584319918,1087.2819474283258]"
               },
@@ -674,7 +674,7 @@
           "flavour": "affine:note",
           "version": 1,
           "props": {
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "hidden": false,
             "displayMode": "edgeless",
             "index": "aB",
@@ -718,7 +718,7 @@
           "flavour": "affine:note",
           "version": 1,
           "props": {
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "hidden": false,
             "displayMode": "edgeless",
             "index": "aF",
@@ -763,7 +763,7 @@
           "version": 1,
           "props": {
             "xywh": "[-895.2513194396817,-2634.1760451184673,577.0683118545286,385.42432914117944]",
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "index": "aL",
             "hidden": false,
             "displayMode": "edgeless",
@@ -807,7 +807,7 @@
           "version": 1,
           "props": {
             "xywh": "[-251.66290196051943,-2732.6331564505895,589.0618769832358,174.0265670977942]",
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "index": "aO",
             "hidden": false,
             "displayMode": "edgeless",
@@ -851,7 +851,7 @@
           "version": 1,
           "props": {
             "xywh": "[-244.9962352938527,-2634.1760451184673,582.4016655329141,382.757652301987]",
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "index": "aP",
             "hidden": false,
             "displayMode": "edgeless",
@@ -895,7 +895,7 @@
           "version": 1,
           "props": {
             "xywh": "[-901.9179861063484,-2253.571851708401,589.0618769832358,174.0265670977942]",
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "index": "aS",
             "hidden": false,
             "displayMode": "edgeless",
@@ -939,7 +939,7 @@
           "version": 1,
           "props": {
             "xywh": "[-895.2513194396817,-2155.114740376279,1237.0683118545285,249.42431896865355]",
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "index": "aT",
             "hidden": false,
             "displayMode": "edgeless",
@@ -1043,7 +1043,7 @@
                     }
                   ]
                 },
-                "background": "--affine-palette-transparent",
+                "background": "transparent",
                 "index": "a2",
                 "xywh": "[-1514.2376426616445,-2905.469439482463,1879.6362584319918,1087.2819474283258]"
               },
@@ -1108,7 +1108,7 @@
           "flavour": "affine:note",
           "version": 1,
           "props": {
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "hidden": false,
             "displayMode": "edgeless",
             "index": "aB",
@@ -1152,7 +1152,7 @@
           "flavour": "affine:note",
           "version": 1,
           "props": {
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "hidden": false,
             "displayMode": "edgeless",
             "index": "aF",
@@ -1197,7 +1197,7 @@
           "version": 1,
           "props": {
             "xywh": "[-1462.8203404379647,-2314.175991080571,577.0683118545286,403.7100259882777]",
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "index": "aL",
             "hidden": false,
             "displayMode": "edgeless",
@@ -1241,7 +1241,7 @@
           "version": 1,
           "props": {
             "xywh": "[-863.2108656111601,-2412.6331564505895,589.0618769832358,174.0265670977942]",
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "index": "aO",
             "hidden": false,
             "displayMode": "edgeless",
@@ -1285,7 +1285,7 @@
           "version": 1,
           "props": {
             "xywh": "[-856.5441989444935,-2314.1759910651094,582.4016655329141,400.9168339278503]",
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "index": "aP",
             "hidden": false,
             "displayMode": "edgeless",
@@ -1329,7 +1329,7 @@
           "version": 1,
           "props": {
             "xywh": "[-250.26805745102206,-2314.1759910651085,582.4016655329141,400.9168339278503]",
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "index": "aT",
             "hidden": false,
             "displayMode": "edgeless",
@@ -1373,7 +1373,7 @@
           "version": 1,
           "props": {
             "xywh": "[-256.9347241176888,-2412.633156450589,589.0618769832358,174.0265670977942]",
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "index": "aS",
             "hidden": false,
             "displayMode": "edgeless",
@@ -1450,7 +1450,7 @@
                 "filled": true,
                 "fillColor": "--affine-palette-shape-navy",
                 "strokeWidth": 2,
-                "strokeColor": "--affine-palette-transparent",
+                "strokeColor": "transparent",
                 "strokeStyle": "solid",
                 "shapeStyle": "General",
                 "roughness": 1.4,
@@ -1480,7 +1480,7 @@
                 "filled": true,
                 "fillColor": "--affine-palette-shape-navy",
                 "strokeWidth": 2,
-                "strokeColor": "--affine-palette-transparent",
+                "strokeColor": "transparent",
                 "strokeStyle": "solid",
                 "shapeStyle": "General",
                 "roughness": 1.4,
@@ -1510,7 +1510,7 @@
                 "filled": true,
                 "fillColor": "--affine-palette-shape-navy",
                 "strokeWidth": 2,
-                "strokeColor": "--affine-palette-transparent",
+                "strokeColor": "transparent",
                 "strokeStyle": "solid",
                 "shapeStyle": "General",
                 "roughness": 1.4,
@@ -1567,7 +1567,7 @@
                     }
                   ]
                 },
-                "background": "--affine-palette-transparent",
+                "background": "transparent",
                 "index": "a2",
                 "xywh": "[-1514.2376426616445,-2905.469439482463,1879.6362584319918,1087.2819474283258]"
               },
@@ -1581,7 +1581,7 @@
           "flavour": "affine:note",
           "version": 1,
           "props": {
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "hidden": false,
             "displayMode": "edgeless",
             "index": "aB",
@@ -1625,7 +1625,7 @@
           "flavour": "affine:note",
           "version": 1,
           "props": {
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "hidden": false,
             "displayMode": "edgeless",
             "index": "aF",
@@ -1670,7 +1670,7 @@
           "version": 1,
           "props": {
             "xywh": "[-1462.8203404379647,-2474.1757884317985,577.0683118545286,549.9957751512243]",
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "index": "aL",
             "hidden": false,
             "displayMode": "edgeless",
@@ -1714,7 +1714,7 @@
           "version": 1,
           "props": {
             "xywh": "[-863.2108656111601,-2591.299792599678,589.0618769832358,174.0265670977942]",
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "index": "aO",
             "hidden": false,
             "displayMode": "edgeless",
@@ -1758,7 +1758,7 @@
           "version": 1,
           "props": {
             "xywh": "[-856.5441989444935,-2474.175788470573,582.4016655329141,546.1904601143724]",
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "index": "aP",
             "hidden": false,
             "displayMode": "edgeless",
@@ -1802,7 +1802,7 @@
           "version": 1,
           "props": {
             "xywh": "[-250.26805745102206,-2474.1757884705717,582.4016655329141,546.1904601143724]",
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "index": "aT",
             "hidden": false,
             "displayMode": "edgeless",
@@ -1846,7 +1846,7 @@
           "version": 1,
           "props": {
             "xywh": "[-256.9347241176888,-2591.2997925996774,589.0618769832358,174.0265670977942]",
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "index": "aS",
             "hidden": false,
             "displayMode": "edgeless",
@@ -1923,7 +1923,7 @@
                 "filled": true,
                 "fillColor": "--affine-palette-shape-navy",
                 "strokeWidth": 2,
-                "strokeColor": "--affine-palette-transparent",
+                "strokeColor": "transparent",
                 "strokeStyle": "solid",
                 "shapeStyle": "General",
                 "roughness": 1.4,
@@ -1953,7 +1953,7 @@
                 "filled": true,
                 "fillColor": "--affine-palette-shape-navy",
                 "strokeWidth": 2,
-                "strokeColor": "--affine-palette-transparent",
+                "strokeColor": "transparent",
                 "strokeStyle": "solid",
                 "shapeStyle": "General",
                 "roughness": 1.4,
@@ -1983,7 +1983,7 @@
                 "filled": true,
                 "fillColor": "--affine-palette-shape-navy",
                 "strokeWidth": 2,
-                "strokeColor": "--affine-palette-transparent",
+                "strokeColor": "transparent",
                 "strokeStyle": "solid",
                 "shapeStyle": "General",
                 "roughness": 1.4,
@@ -2040,7 +2040,7 @@
                     }
                   ]
                 },
-                "background": "--affine-palette-transparent",
+                "background": "transparent",
                 "index": "a2",
                 "xywh": "[-1514.2376426616445,-2905.469439482463,1879.6362584319918,1087.2819474283258]"
               },
@@ -2071,7 +2071,7 @@
           "flavour": "affine:note",
           "version": 1,
           "props": {
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "hidden": false,
             "displayMode": "edgeless",
             "index": "aB",
@@ -2115,7 +2115,7 @@
           "flavour": "affine:note",
           "version": 1,
           "props": {
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "hidden": false,
             "displayMode": "edgeless",
             "index": "aF",
@@ -2160,7 +2160,7 @@
           "version": 1,
           "props": {
             "xywh": "[-863.5540372014515,-2616.3296026670673,1216.9527533796265,180.2289617524957]",
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "index": "aL",
             "hidden": false,
             "displayMode": "edgeless",
@@ -2204,7 +2204,7 @@
           "version": 1,
           "props": {
             "xywh": "[-869.9555772679123,-2438.342789709367,1219.8729704453162,176.8942269932918]",
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "index": "aX",
             "hidden": false,
             "displayMode": "edgeless",
@@ -2248,7 +2248,7 @@
           "version": 1,
           "props": {
             "xywh": "[-863.5540372014515,-2354.2297204315155,1216.9527533796265,180.2289617524957]",
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "index": "aY",
             "hidden": false,
             "displayMode": "edgeless",
@@ -2292,7 +2292,7 @@
           "version": 1,
           "props": {
             "xywh": "[-869.9555772679123,-2173.2705763363133,1219.8729704453162,176.8942269932918]",
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "index": "ab",
             "hidden": false,
             "displayMode": "edgeless",
@@ -2336,7 +2336,7 @@
           "version": 1,
           "props": {
             "xywh": "[-863.5540372014515,-2089.1575070584618,1216.9527533796265,180.2289617524957]",
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "index": "ac",
             "hidden": false,
             "displayMode": "edgeless",
@@ -2413,7 +2413,7 @@
                 "filled": true,
                 "fillColor": "--affine-palette-shape-navy",
                 "strokeWidth": 2,
-                "strokeColor": "--affine-palette-transparent",
+                "strokeColor": "transparent",
                 "strokeStyle": "solid",
                 "shapeStyle": "General",
                 "roughness": 1.4,
@@ -2443,7 +2443,7 @@
                 "filled": true,
                 "fillColor": "--affine-palette-shape-navy",
                 "strokeWidth": 2,
-                "strokeColor": "--affine-palette-transparent",
+                "strokeColor": "transparent",
                 "strokeStyle": "solid",
                 "shapeStyle": "General",
                 "roughness": 1.4,
@@ -2473,7 +2473,7 @@
                 "filled": true,
                 "fillColor": "--affine-palette-shape-navy",
                 "strokeWidth": 2,
-                "strokeColor": "--affine-palette-transparent",
+                "strokeColor": "transparent",
                 "strokeStyle": "solid",
                 "shapeStyle": "General",
                 "roughness": 1.4,
@@ -2530,7 +2530,7 @@
                     }
                   ]
                 },
-                "background": "--affine-palette-transparent",
+                "background": "transparent",
                 "index": "a2",
                 "xywh": "[-1509.6661094585195,-2898.612292265666,1879.6362584319918,1087.2819474283258]"
               },
@@ -2561,7 +2561,7 @@
           "flavour": "affine:note",
           "version": 1,
           "props": {
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "hidden": false,
             "displayMode": "edgeless",
             "index": "aB",
@@ -2605,7 +2605,7 @@
           "flavour": "affine:note",
           "version": 1,
           "props": {
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "hidden": false,
             "displayMode": "edgeless",
             "index": "aF",
@@ -2650,7 +2650,7 @@
           "version": 1,
           "props": {
             "xywh": "[-1480.2945382606815,-2251.702128477929,578.2112678162102,409.5622543957249]",
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "index": "aL",
             "hidden": false,
             "displayMode": "edgeless",
@@ -2694,7 +2694,7 @@
           "version": 1,
           "props": {
             "xywh": "[-863.400071943408,-2335.8151977557804,589.0618769832358,176.8942269932918]",
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "index": "aX",
             "hidden": false,
             "displayMode": "edgeless",
@@ -2738,7 +2738,7 @@
           "version": 1,
           "props": {
             "xywh": "[-856.9985318769473,-2251.702128477929,578.2112678162102,409.5622543957249]",
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "index": "aY",
             "hidden": false,
             "displayMode": "edgeless",
@@ -2782,7 +2782,7 @@
           "version": 1,
           "props": {
             "xywh": "[-235.65499645910882,-2335.8151977557804,589.0618769832358,176.8942269932918]",
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "index": "ab",
             "hidden": false,
             "displayMode": "edgeless",
@@ -2826,7 +2826,7 @@
           "version": 1,
           "props": {
             "xywh": "[-229.2534563926481,-2251.702128477929,578.2112678162102,409.5622543957249]",
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "index": "ac",
             "hidden": false,
             "displayMode": "edgeless",
@@ -2903,7 +2903,7 @@
                 "filled": true,
                 "fillColor": "--affine-palette-shape-navy",
                 "strokeWidth": 2,
-                "strokeColor": "--affine-palette-transparent",
+                "strokeColor": "transparent",
                 "strokeStyle": "solid",
                 "shapeStyle": "General",
                 "roughness": 1.4,
@@ -2925,7 +2925,7 @@
                 "filled": true,
                 "fillColor": "--affine-palette-shape-navy",
                 "strokeWidth": 2,
-                "strokeColor": "--affine-palette-transparent",
+                "strokeColor": "transparent",
                 "strokeStyle": "solid",
                 "shapeStyle": "General",
                 "roughness": 1.4,
@@ -2955,7 +2955,7 @@
                 "filled": true,
                 "fillColor": "--affine-palette-shape-navy",
                 "strokeWidth": 2,
-                "strokeColor": "--affine-palette-transparent",
+                "strokeColor": "transparent",
                 "strokeStyle": "solid",
                 "shapeStyle": "General",
                 "roughness": 1.4,
@@ -2985,7 +2985,7 @@
                 "filled": true,
                 "fillColor": "--affine-palette-shape-navy",
                 "strokeWidth": 2,
-                "strokeColor": "--affine-palette-transparent",
+                "strokeColor": "transparent",
                 "strokeStyle": "solid",
                 "shapeStyle": "General",
                 "roughness": 1.4,
@@ -3042,7 +3042,7 @@
                     }
                   ]
                 },
-                "background": "--affine-palette-transparent",
+                "background": "transparent",
                 "xywh": "[-2101.800074986049,1.1999424525670292,1933.7142508370534,1095.9999738420759]",
                 "index": "a0"
               },
@@ -3057,7 +3057,7 @@
           "version": 1,
           "props": {
             "xywh": "[-2000.764655559536,43.90652033724916,1164.4965343960564,222.84947966365655]",
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "index": "a5",
             "hidden": false,
             "displayMode": "edgeless",
@@ -3101,7 +3101,7 @@
           "version": 1,
           "props": {
             "xywh": "[-1997.764655559536,134.577479626362,1819.3423114296422,286.9259086458013]",
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "index": "a6",
             "hidden": false,
             "displayMode": "edgeless",
@@ -3145,7 +3145,7 @@
           "version": 1,
           "props": {
             "xywh": "[-1997.764655559536,457.07244815577957,1819.3423114296422,286.9259086458013]",
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "index": "aG",
             "hidden": false,
             "displayMode": "edgeless",
@@ -3189,7 +3189,7 @@
           "version": 1,
           "props": {
             "xywh": "[-2000.764655559536,366.40148886666674,1164.4965343960564,222.84947966365655]",
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "index": "aF",
             "hidden": false,
             "displayMode": "edgeless",
@@ -3233,7 +3233,7 @@
           "version": 1,
           "props": {
             "xywh": "[-1997.764655559536,779.567416685197,1819.3423114296422,286.9259086458013]",
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "index": "aK",
             "hidden": false,
             "displayMode": "edgeless",
@@ -3277,7 +3277,7 @@
           "version": 1,
           "props": {
             "xywh": "[-2000.764655559536,688.8964573960843,1164.4965343960564,222.84947966365655]",
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "index": "aJ",
             "hidden": false,
             "displayMode": "edgeless",
@@ -3354,7 +3354,7 @@
                 "filled": true,
                 "fillColor": "--affine-palette-shape-navy",
                 "strokeWidth": 2,
-                "strokeColor": "--affine-palette-transparent",
+                "strokeColor": "transparent",
                 "strokeStyle": "solid",
                 "shapeStyle": "General",
                 "roughness": 1.4,
@@ -3384,7 +3384,7 @@
                 "filled": true,
                 "fillColor": "--affine-palette-shape-navy",
                 "strokeWidth": 2,
-                "strokeColor": "--affine-palette-transparent",
+                "strokeColor": "transparent",
                 "strokeStyle": "solid",
                 "shapeStyle": "General",
                 "roughness": 1.4,
@@ -3414,7 +3414,7 @@
                 "filled": true,
                 "fillColor": "--affine-palette-shape-navy",
                 "strokeWidth": 2,
-                "strokeColor": "--affine-palette-transparent",
+                "strokeColor": "transparent",
                 "strokeStyle": "solid",
                 "shapeStyle": "General",
                 "roughness": 1.4,
@@ -3471,7 +3471,7 @@
                     }
                   ]
                 },
-                "background": "--affine-palette-transparent",
+                "background": "transparent",
                 "xywh": "[-2101.800074986049,1.1999424525670292,1933.7142508370534,1095.9999738420759]",
                 "index": "a0"
               },
@@ -3537,7 +3537,7 @@
           "version": 1,
           "props": {
             "xywh": "[-1926.0980092379216,43.90652033724916,921.8298066942334,222.84947966365655]",
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "index": "a5",
             "hidden": false,
             "displayMode": "edgeless",
@@ -3581,7 +3581,7 @@
           "version": 1,
           "props": {
             "xywh": "[-1923.0980092379216,134.577479626362,918.008998441361,286.9259086458013]",
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "index": "a6",
             "hidden": false,
             "displayMode": "edgeless",
@@ -3625,7 +3625,7 @@
           "version": 1,
           "props": {
             "xywh": "[-1100.2521508241273,375.28962019689266,775.1631400275667,222.8494796636565]",
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "index": "aO",
             "hidden": false,
             "displayMode": "edgeless",
@@ -3669,7 +3669,7 @@
           "version": 1,
           "props": {
             "xywh": "[-1097.2521508241273,465.9605794860054,764.6756651080276,286.9259086458014]",
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "index": "aP",
             "hidden": false,
             "displayMode": "edgeless",
@@ -3713,7 +3713,7 @@
           "version": 1,
           "props": {
             "xywh": "[-1926.0980092379218,656.8200487589916,921.8298066942334,222.84947966365655]",
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "index": "aS",
             "hidden": false,
             "displayMode": "edgeless",
@@ -3757,7 +3757,7 @@
           "version": 1,
           "props": {
             "xywh": "[-1923.0980092379218,747.4910080481044,918.008998441361,286.9259086458013]",
-            "background": "--affine-palette-transparent",
+            "background": "transparent",
             "index": "aT",
             "hidden": false,
             "displayMode": "edgeless",
