@@ -1,5 +1,5 @@
 import { IconButton } from '@affine/component';
-import { ToggleCollapseIcon, ToggleExpandIcon } from '@blocksuite/icons/rc';
+import { ToggleCollapseIcon } from '@blocksuite/icons/rc';
 import clsx from 'clsx';
 import { type ForwardedRef, forwardRef, type PropsWithChildren } from 'react';
 
@@ -28,26 +28,33 @@ export const CategoryDivider = forwardRef(
     }: CategoryDividerProps,
     ref: ForwardedRef<HTMLDivElement>
   ) => {
+    const collapsible = collapsed !== undefined;
+
     return (
-      <div className={clsx([styles.root, className])} ref={ref} {...otherProps}>
-        <div
-          className={styles.label}
-          onClick={() => setCollapsed?.(!collapsed)}
-        >
+      <div
+        className={clsx([styles.root, className])}
+        ref={ref}
+        onClick={() => setCollapsed?.(!collapsed)}
+        data-collapsed={collapsed}
+        data-collapsible={collapsible}
+        {...otherProps}
+      >
+        <div className={styles.label}>
           {label}
-          {collapsed !== undefined && (
+          {collapsible ? (
             <IconButton
               withoutHoverStyle
               className={styles.collapseButton}
               size="small"
               data-testid="category-divider-collapse-button"
             >
-              {collapsed ? <ToggleCollapseIcon /> : <ToggleExpandIcon />}
+              <ToggleCollapseIcon className={styles.collapseIcon} />
             </IconButton>
-          )}
+          ) : null}
         </div>
-        <div style={{ flex: 1 }}></div>
-        {children}
+        <div className={styles.actions} onClick={e => e.stopPropagation()}>
+          {children}
+        </div>
       </div>
     );
   }

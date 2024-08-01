@@ -1,25 +1,37 @@
 import { cssVar } from '@toeverything/theme';
+import { cssVarV2 } from '@toeverything/theme/v2';
 import { style } from '@vanilla-extract/css';
 
+export const actions = style({
+  display: 'flex',
+  gap: 8,
+});
 export const root = style({
   fontSize: cssVar('fontXs'),
-  minHeight: '16px',
-  width: 'calc(100% + 6px)',
+  height: 20,
+  width: 'calc(100%)',
   userSelect: 'none',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'space-between',
-  marginBottom: '4px',
   padding: '0 8px',
-  gap: '8px',
+  borderRadius: 4,
   selectors: {
-    '&:not(:first-of-type)': {
-      marginTop: '16px',
+    [`&[data-collapsible="true"]`]: {
+      cursor: 'pointer',
+    },
+    [`&[data-collapsible="true"]:hover`]: {
+      backgroundColor: cssVarV2('layer/background/hoverOverlay'),
+    },
+    [`&[data-collapsible="true"]:hover:has(${actions}:hover)`]: {
+      backgroundColor: 'transparent',
     },
   },
 });
 export const label = style({
-  color: cssVar('black30'),
+  color: cssVarV2('text/tertiary'),
+  fontWeight: 500,
+  lineHeight: '20px',
   flexGrow: '0',
   display: 'flex',
   alignItems: 'center',
@@ -30,8 +42,17 @@ export const label = style({
 export const collapseButton = style({
   selectors: {
     [`${label} > &`]: {
-      color: cssVar('black30'),
+      color: cssVarV2('icon/tertiary'),
       transform: 'translateY(1px)',
+    },
+  },
+});
+export const collapseIcon = style({
+  transform: 'rotate(90deg)',
+  transition: 'transform 0.2s',
+  selectors: {
+    [`${root}[data-collapsed="true"] &`]: {
+      transform: 'rotate(0deg)',
     },
   },
 });

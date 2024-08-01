@@ -1,5 +1,4 @@
 import { IconButton } from '@affine/component';
-import { CategoryDivider } from '@affine/core/components/app-sidebar';
 import { useEditCollectionName } from '@affine/core/components/page-list';
 import { createEmptyCollection } from '@affine/core/components/page-list/use-collection-manager';
 import { mixpanel } from '@affine/core/mixpanel';
@@ -8,26 +7,23 @@ import { ExplorerTreeRoot } from '@affine/core/modules/explorer/views/tree';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import { useI18n } from '@affine/i18n';
 import { PlusIcon } from '@blocksuite/icons/rc';
-import * as Collapsible from '@radix-ui/react-collapsible';
 import { useLiveData, useServices } from '@toeverything/infra';
 import { nanoid } from 'nanoid';
-import { useCallback, useState } from 'react';
+import { useCallback } from 'react';
 
+import { ExplorerService } from '../../../services/explorer';
+import { CollapsibleSection } from '../../layouts/collapsible-section';
 import { ExplorerCollectionNode } from '../../nodes/collection';
 import { RootEmpty } from './empty';
-import * as styles from './styles.css';
 
-export const ExplorerCollections = ({
-  defaultCollapsed = false,
-}: {
-  defaultCollapsed?: boolean;
-}) => {
+export const ExplorerCollections = () => {
   const t = useI18n();
-  const { collectionService, workbenchService } = useServices({
+  const { collectionService, workbenchService, explorerService } = useServices({
     CollectionService,
     WorkbenchService,
+    ExplorerService,
   });
-  const [collapsed, setCollapsed] = useState(defaultCollapsed);
+  const explorerSection = explorerService.sections.collections;
   const collections = useLiveData(collectionService.collections$);
   const { node, open: openCreateCollectionModel } = useEditCollectionName({
     title: t['com.affine.editCollection.createCollection'](),
@@ -45,25 +41,25 @@ export const ExplorerCollections = ({
           control: 'new collection button',
         });
         workbenchService.workbench.openCollection(id);
-        setCollapsed(false);
+        explorerSection.setCollapsed(false);
       })
       .catch(err => {
         console.error(err);
       });
-  }, [collectionService, openCreateCollectionModel, workbenchService]);
+  }, [
+    collectionService,
+    explorerSection,
+    openCreateCollectionModel,
+    workbenchService.workbench,
+  ]);
 
   return (
     <>
-      <Collapsible.Root
-        className={styles.container}
-        data-testid="explorer-collections"
-        open={!collapsed}
-      >
-        <CategoryDivider
-          label={t['com.affine.rootAppSidebar.collections']()}
-          setCollapsed={setCollapsed}
-          collapsed={collapsed}
-        >
+      <CollapsibleSection
+        name="collections"
+        testId="explorer-collections"
+        title={t['com.affine.rootAppSidebar.collections']()}
+        actions={
           <IconButton
             data-testid="explorer-bar-add-collection-button"
             onClick={handleCreateCollection}
@@ -71,24 +67,23 @@ export const ExplorerCollections = ({
           >
             <PlusIcon />
           </IconButton>
-        </CategoryDivider>
-        <Collapsible.Content>
-          <ExplorerTreeRoot
-            placeholder={<RootEmpty onClickCreate={handleCreateCollection} />}
-          >
-            {collections.map(collection => (
-              <ExplorerCollectionNode
-                key={collection.id}
-                collectionId={collection.id}
-                reorderable={false}
-                location={{
-                  at: 'explorer:collection:list',
-                }}
-              />
-            ))}
-          </ExplorerTreeRoot>
-        </Collapsible.Content>
-      </Collapsible.Root>
+        }
+      >
+        <ExplorerTreeRoot
+          placeholder={<RootEmpty onClickCreate={handleCreateCollection} />}
+        >
+          {collections.map(collection => (
+            <ExplorerCollectionNode
+              key={collection.id}
+              collectionId={collection.id}
+              reorderable={false}
+              location={{
+                at: 'explorer:collection:list',
+              }}
+            />
+          ))}
+        </ExplorerTreeRoot>
+      </CollapsibleSection>
       {node}
     </>
   );

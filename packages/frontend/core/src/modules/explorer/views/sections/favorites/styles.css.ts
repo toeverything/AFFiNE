@@ -1,10 +1,6 @@
 import { cssVar } from '@toeverything/theme';
 import { style } from '@vanilla-extract/css';
 
-export const container = style({
-  marginTop: '8px',
-});
-
 export const draggedOverHighlight = style({
   position: 'relative',
   selectors: {

@@ -39,7 +39,10 @@ export const scrollableContainer = style([
   baseContainer,
   {
     height: '100%',
-    padding: '4px 8px',
+    padding: '0px 8px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 8,
   },
 ]);
 export const scrollbar = style({

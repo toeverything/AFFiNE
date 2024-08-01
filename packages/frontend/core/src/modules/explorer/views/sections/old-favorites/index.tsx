@@ -3,7 +3,6 @@ import {
   type DropTargetOptions,
   IconButton,
 } from '@affine/component';
-import { CategoryDivider } from '@affine/core/components/app-sidebar';
 import {
   type ExplorerTreeNodeDropEffect,
   ExplorerTreeRoot,
@@ -13,29 +12,23 @@ import { WorkbenchService } from '@affine/core/modules/workbench';
 import type { AffineDNDData } from '@affine/core/types/dnd';
 import { useI18n } from '@affine/i18n';
 import { PlusIcon } from '@blocksuite/icons/rc';
-import * as Collapsible from '@radix-ui/react-collapsible';
 import { DocsService, useLiveData, useServices } from '@toeverything/infra';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 
+import { CollapsibleSection } from '../../layouts/collapsible-section';
 import { ExplorerCollectionNode } from '../../nodes/collection';
 import { ExplorerDocNode } from '../../nodes/doc';
 import { RootEmpty } from './empty';
-import * as styles from './styles.css';
 
 /**
  * @deprecated remove this after 0.17 released
  */
-export const ExplorerOldFavorites = ({
-  defaultCollapsed = false,
-}: {
-  defaultCollapsed?: boolean;
-}) => {
+export const ExplorerOldFavorites = () => {
   const { favoriteItemsAdapter, docsService, workbenchService } = useServices({
     FavoriteItemsAdapter,
     DocsService,
     WorkbenchService,
   });
-  const [collapsed, setCollapsed] = useState(defaultCollapsed);
 
   const docs = useLiveData(docsService.list.docs$);
   const trashDocs = useLiveData(docsService.list.trashDocs$);
@@ -180,17 +173,14 @@ export const ExplorerOldFavorites = ({
   );
 
   return (
-    <Collapsible.Root className={styles.container} open={!collapsed}>
-      <CategoryDivider
-        className={styles.draggedOverHighlight}
-        label={
-          runtimeConfig.enableNewFavorite
-            ? `${t['com.affine.rootAppSidebar.favorites']()} (OLD)`
-            : t['com.affine.rootAppSidebar.favorites']()
-        }
-        setCollapsed={setCollapsed}
-        collapsed={collapsed}
-      >
+    <CollapsibleSection
+      name="favoritesOld"
+      title={
+        runtimeConfig.enableNewFavorite
+          ? `${t['com.affine.rootAppSidebar.favorites']()} (OLD)`
+          : t['com.affine.rootAppSidebar.favorites']()
+      }
+      actions={
         <IconButton
           data-testid="explorer-bar-add-old-favorite-button"
           onClick={handleCreateNewFavoriteDoc}
@@ -198,29 +188,28 @@ export const ExplorerOldFavorites = ({
         >
           <PlusIcon />
         </IconButton>
-      </CategoryDivider>
-      <Collapsible.Content>
-        <ExplorerTreeRoot
-          placeholder={
-            <RootEmpty
-              onDrop={handleDrop}
-              canDrop={handleCanDrop}
-              dropEffect={handleDropEffect}
-            />
-          }
-        >
-          {favorites.map((favorite, i) => (
-            <ExplorerFavoriteNode
-              key={favorite.id + ':' + i}
-              favorite={favorite}
-              onDrop={handleOnChildrenDrop}
-              dropEffect={handleChildrenDropEffect}
-              canDrop={handleChildrenCanDrop}
-            />
-          ))}
-        </ExplorerTreeRoot>
-      </Collapsible.Content>
-    </Collapsible.Root>
+      }
+    >
+      <ExplorerTreeRoot
+        placeholder={
+          <RootEmpty
+            onDrop={handleDrop}
+            canDrop={handleCanDrop}
+            dropEffect={handleDropEffect}
+          />
+        }
+      >
+        {favorites.map((favorite, i) => (
+          <ExplorerFavoriteNode
+            key={favorite.id + ':' + i}
+            favorite={favorite}
+            onDrop={handleOnChildrenDrop}
+            dropEffect={handleChildrenDropEffect}
+            canDrop={handleChildrenCanDrop}
+          />
+        ))}
+      </ExplorerTreeRoot>
+    </CollapsibleSection>
   );
 };
 

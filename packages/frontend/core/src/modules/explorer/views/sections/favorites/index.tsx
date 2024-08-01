@@ -4,7 +4,6 @@ import {
   IconButton,
   useDropTarget,
 } from '@affine/component';
-import { CategoryDivider } from '@affine/core/components/app-sidebar';
 import { mixpanel } from '@affine/core/mixpanel';
 import {
   DropEffect,
@@ -20,10 +19,11 @@ import { WorkbenchService } from '@affine/core/modules/workbench';
 import type { AffineDNDData } from '@affine/core/types/dnd';
 import { useI18n } from '@affine/i18n';
 import { PlusIcon } from '@blocksuite/icons/rc';
-import * as Collapsible from '@radix-ui/react-collapsible';
 import { DocsService, useLiveData, useServices } from '@toeverything/infra';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 
+import { ExplorerService } from '../../../services/explorer';
+import { CollapsibleSection } from '../../layouts/collapsible-section';
 import { ExplorerCollectionNode } from '../../nodes/collection';
 import { ExplorerDocNode } from '../../nodes/doc';
 import { ExplorerFolderNode } from '../../nodes/folder';
@@ -31,17 +31,16 @@ import { ExplorerTagNode } from '../../nodes/tag';
 import { RootEmpty } from './empty';
 import * as styles from './styles.css';
 
-export const ExplorerFavorites = ({
-  defaultCollapsed = false,
-}: {
-  defaultCollapsed?: boolean;
-}) => {
-  const { favoriteService, docsService, workbenchService } = useServices({
-    FavoriteService,
-    DocsService,
-    WorkbenchService,
-  });
-  const [collapsed, setCollapsed] = useState(defaultCollapsed);
+export const ExplorerFavorites = () => {
+  const { favoriteService, docsService, workbenchService, explorerService } =
+    useServices({
+      FavoriteService,
+      DocsService,
+      WorkbenchService,
+      ExplorerService,
+    });
+
+  const explorerSection = explorerService.sections.favorites;
 
   const favorites = useLiveData(favoriteService.favoriteList.sortedList$);
 
@@ -65,10 +64,10 @@ export const ExplorerFavorites = ({
           type: data.source.data.entity.type,
           id: data.source.data.entity.id,
         });
-        setCollapsed(false);
+        explorerSection.setCollapsed(false);
       }
     },
-    [favoriteService]
+    [explorerSection, favoriteService.favoriteList]
   );
 
   const handleDropEffect = useCallback<ExplorerTreeNodeDropEffect>(data => {
@@ -110,8 +109,13 @@ export const ExplorerFavorites = ({
       id: newDoc.id,
     });
     workbenchService.workbench.openDoc(newDoc.id);
-    setCollapsed(false);
-  }, [docsService, favoriteService, workbenchService]);
+    explorerSection.setCollapsed(false);
+  }, [
+    docsService,
+    explorerSection,
+    favoriteService.favoriteList,
+    workbenchService.workbench,
+  ]);
 
   const handleOnChildrenDrop = useCallback(
     (
@@ -221,61 +225,57 @@ export const ExplorerFavorites = ({
     );
 
   return (
-    <Collapsible.Root
-      className={styles.container}
-      data-testid="explorer-favorites"
-      open={!collapsed}
+    <CollapsibleSection
+      name="favorites"
+      title={t['com.affine.rootAppSidebar.favorites']()}
+      headerRef={dropTargetRef}
+      testId="explorer-favorites"
+      headerTestId="explorer-favorite-category-divider"
+      headerClassName={styles.draggedOverHighlight}
+      actions={
+        <>
+          <IconButton
+            data-testid="explorer-bar-add-favorite-button"
+            onClick={handleCreateNewFavoriteDoc}
+            size="small"
+          >
+            <PlusIcon />
+          </IconButton>
+          {draggedOverDraggable && (
+            <DropEffect
+              position={{
+                x: draggedOverPosition.relativeX,
+                y: draggedOverPosition.relativeY,
+              }}
+              dropEffect={handleDropEffect({
+                source: draggedOverDraggable,
+                treeInstruction: null,
+              })}
+            />
+          )}
+        </>
+      }
     >
-      <CategoryDivider
-        className={styles.draggedOverHighlight}
-        label={t['com.affine.rootAppSidebar.favorites']()}
-        ref={dropTargetRef}
-        data-testid="explorer-favorite-category-divider"
-        setCollapsed={setCollapsed}
-        collapsed={collapsed}
-      >
-        <IconButton
-          data-testid="explorer-bar-add-favorite-button"
-          onClick={handleCreateNewFavoriteDoc}
-          size="small"
-        >
-          <PlusIcon />
-        </IconButton>
-        {draggedOverDraggable && (
-          <DropEffect
-            position={{
-              x: draggedOverPosition.relativeX,
-              y: draggedOverPosition.relativeY,
-            }}
-            dropEffect={handleDropEffect({
-              source: draggedOverDraggable,
-              treeInstruction: null,
-            })}
+      <ExplorerTreeRoot
+        placeholder={
+          <RootEmpty
+            onDrop={handleDrop}
+            canDrop={handleCanDrop}
+            dropEffect={handleDropEffect}
           />
-        )}
-      </CategoryDivider>
-      <Collapsible.Content>
-        <ExplorerTreeRoot
-          placeholder={
-            <RootEmpty
-              onDrop={handleDrop}
-              canDrop={handleCanDrop}
-              dropEffect={handleDropEffect}
-            />
-          }
-        >
-          {favorites.map(favorite => (
-            <ExplorerFavoriteNode
-              key={favorite.id}
-              favorite={favorite}
-              onDrop={handleOnChildrenDrop}
-              dropEffect={handleChildrenDropEffect}
-              canDrop={handleChildrenCanDrop}
-            />
-          ))}
-        </ExplorerTreeRoot>
-      </Collapsible.Content>
-    </Collapsible.Root>
+        }
+      >
+        {favorites.map(favorite => (
+          <ExplorerFavoriteNode
+            key={favorite.id}
+            favorite={favorite}
+            onDrop={handleOnChildrenDrop}
+            dropEffect={handleChildrenDropEffect}
+            canDrop={handleChildrenCanDrop}
+          />
+        ))}
+      </ExplorerTreeRoot>
+    </CollapsibleSection>
   );
 };
 

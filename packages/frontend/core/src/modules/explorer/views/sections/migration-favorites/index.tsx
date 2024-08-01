@@ -1,25 +1,18 @@
 import { IconButton, useConfirmModal } from '@affine/component';
-import { CategoryDivider } from '@affine/core/components/app-sidebar';
 import { mixpanel } from '@affine/core/mixpanel';
 import { ExplorerTreeRoot } from '@affine/core/modules/explorer/views/tree';
 import { FavoriteItemsAdapter } from '@affine/core/modules/properties';
 import { Trans, useI18n } from '@affine/i18n';
 import { BroomIcon, HelpIcon } from '@blocksuite/icons/rc';
-import * as Collapsible from '@radix-ui/react-collapsible';
 import { DocsService, useLiveData, useServices } from '@toeverything/infra';
-import { useCallback, useState } from 'react';
+import { useCallback } from 'react';
 
+import { CollapsibleSection } from '../../layouts/collapsible-section';
 import { ExplorerCollectionNode } from '../../nodes/collection';
 import { ExplorerDocNode } from '../../nodes/doc';
 import * as styles from './styles.css';
 
-export const ExplorerMigrationFavorites = ({
-  defaultCollapsed = false,
-}: {
-  defaultCollapsed?: boolean;
-}) => {
-  const [collapsed, setCollapsed] = useState(defaultCollapsed);
-
+export const ExplorerMigrationFavorites = () => {
   const t = useI18n();
 
   const { favoriteItemsAdapter, docsService } = useServices({
@@ -112,38 +105,38 @@ export const ExplorerMigrationFavorites = ({
   }
 
   return (
-    <Collapsible.Root className={styles.container} open={!collapsed}>
-      <CategoryDivider
-        label={t['com.affine.rootAppSidebar.migration-data']()}
-        setCollapsed={setCollapsed}
-        collapsed={collapsed}
-      >
-        <IconButton
-          data-testid="explorer-bar-favorite-migration-clear-button"
-          onClick={handleClickClear}
-          size="small"
-        >
-          <BroomIcon />
-        </IconButton>
-        <IconButton
-          data-testid="explorer-bar-favorite-migration-help-button"
-          size="small"
-          onClick={handleClickHelp}
-        >
-          <HelpIcon />
-        </IconButton>
-      </CategoryDivider>
-      <Collapsible.Content>
-        <ExplorerTreeRoot>
-          {favorites.map((favorite, i) => (
-            <ExplorerMigrationFavoriteNode
-              key={favorite.id + ':' + i}
-              favorite={favorite}
-            />
-          ))}
-        </ExplorerTreeRoot>
-      </Collapsible.Content>
-    </Collapsible.Root>
+    <CollapsibleSection
+      name="migrationFavorites"
+      className={styles.container}
+      title={t['com.affine.rootAppSidebar.migration-data']()}
+      actions={
+        <>
+          <IconButton
+            data-testid="explorer-bar-favorite-migration-clear-button"
+            onClick={handleClickClear}
+            size="small"
+          >
+            <BroomIcon />
+          </IconButton>
+          <IconButton
+            data-testid="explorer-bar-favorite-migration-help-button"
+            size="small"
+            onClick={handleClickHelp}
+          >
+            <HelpIcon />
+          </IconButton>
+        </>
+      }
+    >
+      <ExplorerTreeRoot>
+        {favorites.map((favorite, i) => (
+          <ExplorerMigrationFavoriteNode
+            key={favorite.id + ':' + i}
+            favorite={favorite}
+          />
+        ))}
+      </ExplorerTreeRoot>
+    </CollapsibleSection>
   );
 };
 

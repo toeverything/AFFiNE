@@ -4,7 +4,6 @@ import {
   IconButton,
   toast,
 } from '@affine/component';
-import { CategoryDivider } from '@affine/core/components/app-sidebar';
 import { mixpanel } from '@affine/core/mixpanel';
 import {
   type ExplorerTreeNodeDropEffect,
@@ -17,22 +16,23 @@ import {
 import type { AffineDNDData } from '@affine/core/types/dnd';
 import { useI18n } from '@affine/i18n';
 import { PlusIcon } from '@blocksuite/icons/rc';
-import * as Collapsible from '@radix-ui/react-collapsible';
 import { useLiveData, useServices } from '@toeverything/infra';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
+import { ExplorerService } from '../../../services/explorer';
+import { CollapsibleSection } from '../../layouts/collapsible-section';
 import { ExplorerFolderNode } from '../../nodes/folder';
 import { RootEmpty } from './empty';
 import * as styles from './styles.css';
 
-export const ExplorerOrganize = ({
-  defaultCollapsed = false,
-}: {
-  defaultCollapsed?: boolean;
-}) => {
-  const { organizeService } = useServices({ OrganizeService });
+export const ExplorerOrganize = () => {
+  const { organizeService, explorerService } = useServices({
+    OrganizeService,
+    ExplorerService,
+  });
+  const explorerSection = explorerService.sections.organize;
+  const collapsed = useLiveData(explorerSection.collapsed$);
   const [newFolderId, setNewFolderId] = useState<string | null>(null);
-  const [collapsed, setCollapsed] = useState(defaultCollapsed);
 
   const t = useI18n();
 
@@ -51,8 +51,8 @@ export const ExplorerOrganize = ({
       control: 'new folder',
     });
     setNewFolderId(newFolderId);
-    setCollapsed(false);
-  }, [rootFolder]);
+    explorerSection.setCollapsed(false);
+  }, [explorerSection, rootFolder]);
 
   const handleOnChildrenDrop = useCallback(
     (data: DropTargetDropEvent<AffineDNDData>, node?: FolderNode) => {
@@ -108,23 +108,16 @@ export const ExplorerOrganize = ({
     DropTargetOptions<AffineDNDData>['canDrop']
   >(() => args => args.source.data.entity?.type === 'folder', []);
 
-  const handleCollapsedChange = useCallback((collapsed: boolean) => {
-    if (collapsed) {
-      setNewFolderId(null); // reset new folder id to clear the renaming state
-      setCollapsed(true);
-    } else {
-      setCollapsed(false);
-    }
-  }, []);
+  useEffect(() => {
+    if (collapsed) setNewFolderId(null); // reset new folder id to clear the renaming state
+  }, [collapsed]);
 
   return (
-    <Collapsible.Root className={styles.container} open={!collapsed}>
-      <CategoryDivider
-        className={styles.draggedOverHighlight}
-        label={t['com.affine.rootAppSidebar.organize']()}
-        setCollapsed={handleCollapsedChange}
-        collapsed={collapsed}
-      >
+    <CollapsibleSection
+      name="organize"
+      headerClassName={styles.draggedOverHighlight}
+      title={t['com.affine.rootAppSidebar.organize']()}
+      actions={
         <IconButton
           data-testid="explorer-bar-add-organize-button"
           onClick={handleCreateFolder}
@@ -132,27 +125,26 @@ export const ExplorerOrganize = ({
         >
           <PlusIcon />
         </IconButton>
-      </CategoryDivider>
-      <Collapsible.Content>
-        <ExplorerTreeRoot
-          placeholder={<RootEmpty onClickCreate={handleCreateFolder} />}
-        >
-          {folders.map(child => (
-            <ExplorerFolderNode
-              key={child.id}
-              nodeId={child.id as string}
-              defaultRenaming={child.id === newFolderId}
-              onDrop={handleOnChildrenDrop}
-              dropEffect={handleChildrenDropEffect}
-              canDrop={handleChildrenCanDrop}
-              location={{
-                at: 'explorer:organize:folder-node',
-                nodeId: child.id as string,
-              }}
-            />
-          ))}
-        </ExplorerTreeRoot>
-      </Collapsible.Content>
-    </Collapsible.Root>
+      }
+    >
+      <ExplorerTreeRoot
+        placeholder={<RootEmpty onClickCreate={handleCreateFolder} />}
+      >
+        {folders.map(child => (
+          <ExplorerFolderNode
+            key={child.id}
+            nodeId={child.id as string}
+            defaultRenaming={child.id === newFolderId}
+            onDrop={handleOnChildrenDrop}
+            dropEffect={handleChildrenDropEffect}
+            canDrop={handleChildrenCanDrop}
+            location={{
+              at: 'explorer:organize:folder-node',
+              nodeId: child.id as string,
+            }}
+          />
+        ))}
+      </ExplorerTreeRoot>
+    </CollapsibleSection>
   );
 };

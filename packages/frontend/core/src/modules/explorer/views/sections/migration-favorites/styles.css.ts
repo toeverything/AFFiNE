@@ -2,10 +2,9 @@ import { cssVar } from '@toeverything/theme';
 import { style } from '@vanilla-extract/css';
 
 export const container = style({
-  marginTop: '8px',
   position: 'relative',
   selectors: {
-    '&:after': {
+    '&[data-collapsed="false"]:after': {
       display: 'block',
       content: '""',
       position: 'absolute',

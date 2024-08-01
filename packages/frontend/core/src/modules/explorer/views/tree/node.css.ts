@@ -1,4 +1,5 @@
 import { cssVar } from '@toeverything/theme';
+import { cssVarV2 } from '@toeverything/theme/v2';
 import { createVar, keyframes, style } from '@vanilla-extract/css';
 export const levelIndent = createVar();
 export const linkItemRoot = style({
@@ -41,6 +42,7 @@ export const itemContent = style({
   whiteSpace: 'nowrap',
   alignItems: 'center',
   flex: 1,
+  color: cssVarV2('text/primary'),
 });
 export const postfix = style({
   display: 'flex',
@@ -59,7 +61,7 @@ export const postfix = style({
   },
 });
 export const icon = style({
-  color: cssVar('iconColor'),
+  color: cssVarV2('icon/primary'),
   fontSize: '20px',
 });
 export const collapsedIconContainer = style({
@@ -70,7 +72,7 @@ export const collapsedIconContainer = style({
   justifyContent: 'center',
   borderRadius: '2px',
   transition: 'transform 0.2s',
-  color: 'inherit',
+  color: cssVarV2('icon/primary'),
   selectors: {
     '&[data-collapsed="true"]': {
       transform: 'rotate(-90deg)',
@@ -131,6 +133,7 @@ const draggedOverAnimation = keyframes({
 });
 
 export const contentContainer = style({
+  marginTop: 2,
   paddingLeft: levelIndent,
   position: 'relative',
 });

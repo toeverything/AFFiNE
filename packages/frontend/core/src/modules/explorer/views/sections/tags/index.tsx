@@ -1,30 +1,27 @@
 import { IconButton } from '@affine/component';
-import { CategoryDivider } from '@affine/core/components/app-sidebar';
 import { mixpanel } from '@affine/core/mixpanel';
 import { ExplorerTreeRoot } from '@affine/core/modules/explorer/views/tree';
 import type { Tag } from '@affine/core/modules/tag';
 import { TagService } from '@affine/core/modules/tag';
 import { useI18n } from '@affine/i18n';
 import { PlusIcon } from '@blocksuite/icons/rc';
-import * as Collapsible from '@radix-ui/react-collapsible';
 import { useLiveData, useServices } from '@toeverything/infra';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
+import { ExplorerService } from '../../../services/explorer';
+import { CollapsibleSection } from '../../layouts/collapsible-section';
 import { ExplorerTagNode } from '../../nodes/tag';
 import { RootEmpty } from './empty';
 import * as styles from './styles.css';
 
-export const ExplorerTags = ({
-  defaultCollapsed = false,
-}: {
-  defaultCollapsed?: boolean;
-}) => {
-  const { tagService } = useServices({
+export const ExplorerTags = () => {
+  const { tagService, explorerService } = useServices({
     TagService,
+    ExplorerService,
   });
+  const explorerSection = explorerService.sections.tags;
+  const collapsed = useLiveData(explorerSection.collapsed$);
   const [createdTag, setCreatedTag] = useState<Tag | null>(null);
-
-  const [collapsed, setCollapsed] = useState(defaultCollapsed);
   const tags = useLiveData(tagService.tagList.tags$);
 
   const t = useI18n();
@@ -40,26 +37,19 @@ export const ExplorerTags = ({
       module: 'tags',
       control: 'new tag button',
     });
-    setCollapsed(false);
-  }, [t, tagService]);
+    explorerSection.setCollapsed(false);
+  }, [explorerSection, t, tagService]);
 
-  const handleCollapsedChange = useCallback((collapsed: boolean) => {
-    if (collapsed) {
-      setCreatedTag(null); // reset created tag to clear the renaming state
-      setCollapsed(true);
-    } else {
-      setCollapsed(false);
-    }
-  }, []);
+  useEffect(() => {
+    if (collapsed) setCreatedTag(null); // reset created tag to clear the renaming state
+  }, [collapsed]);
 
   return (
-    <Collapsible.Root className={styles.container} open={!collapsed}>
-      <CategoryDivider
-        className={styles.draggedOverHighlight}
-        label={t['com.affine.rootAppSidebar.tags']()}
-        setCollapsed={handleCollapsedChange}
-        collapsed={collapsed}
-      >
+    <CollapsibleSection
+      name="tags"
+      headerClassName={styles.draggedOverHighlight}
+      title={t['com.affine.rootAppSidebar.tags']()}
+      actions={
         <IconButton
           data-testid="explorer-bar-add-favorite-button"
           onClick={handleCreateNewFavoriteDoc}
@@ -67,22 +57,21 @@ export const ExplorerTags = ({
         >
           <PlusIcon />
         </IconButton>
-      </CategoryDivider>
-      <Collapsible.Content>
-        <ExplorerTreeRoot placeholder={<RootEmpty />}>
-          {tags.map(tag => (
-            <ExplorerTagNode
-              key={tag.id}
-              tagId={tag.id}
-              reorderable={false}
-              location={{
-                at: 'explorer:tags:list',
-              }}
-              defaultRenaming={createdTag?.id === tag.id}
-            />
-          ))}
-        </ExplorerTreeRoot>
-      </Collapsible.Content>
-    </Collapsible.Root>
+      }
+    >
+      <ExplorerTreeRoot placeholder={<RootEmpty />}>
+        {tags.map(tag => (
+          <ExplorerTagNode
+            key={tag.id}
+            tagId={tag.id}
+            reorderable={false}
+            location={{
+              at: 'explorer:tags:list',
+            }}
+            defaultRenaming={createdTag?.id === tag.id}
+          />
+        ))}
+      </ExplorerTreeRoot>
+    </CollapsibleSection>
   );
 };

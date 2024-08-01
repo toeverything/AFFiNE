@@ -188,14 +188,10 @@ export const RootAppSidebar = (): ReactElement => {
         {runtimeConfig.enableNewFavorite && <ExplorerFavorites />}
         {runtimeConfig.enableOrganize && <ExplorerOrganize />}
         {runtimeConfig.enableNewFavorite && <ExplorerMigrationFavorites />}
-        {runtimeConfig.enableOldFavorite && (
-          <ExplorerOldFavorites defaultCollapsed />
-        )}
-        <ExplorerCollections defaultCollapsed />
-        <ExplorerTags defaultCollapsed />
+        {runtimeConfig.enableOldFavorite && <ExplorerOldFavorites />}
+        <ExplorerCollections />
+        <ExplorerTags />
         <CategoryDivider label={t['com.affine.rootAppSidebar.others']()} />
-        {/* fixme: remove the following spacer */}
-        <div style={{ height: '4px' }} />
         <div style={{ padding: '0 8px' }}>
           <TrashButton />
           <ImportPage docCollection={docCollection} />
