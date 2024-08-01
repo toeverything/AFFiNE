@@ -351,5 +351,33 @@ test.describe('chat with block', () => {
         .then(i => i.click());
       expect(await collectAnswer(page)).toBeTruthy();
     });
+
+    test('generate a caption', async ({ page }) => {
+      await page
+        .waitForSelector('.ai-item-generate-a-caption')
+        .then(i => i.click());
+      expect(await collectAnswer(page)).toBeTruthy();
+    });
+
+    test('continue with ai', async ({ page }) => {
+      await page
+        .waitForSelector('.ai-item-continue-with-ai')
+        .then(i => i.click());
+      await page
+        .waitForSelector('chat-panel-input .chat-panel-images')
+        .then(el => el.waitForElementState('visible'));
+    });
+
+    test('open ai chat', async ({ page }) => {
+      await page.waitForSelector('.ai-item-open-ai-chat').then(i => i.click());
+      const cards = await page.waitForSelector('chat-panel chat-cards');
+      await cards.waitForElementState('visible');
+      const cardTitles = await Promise.all(
+        await cards
+          .$$('.card-wrapper .card-title')
+          .then(els => els.map(async el => await el.innerText()))
+      );
+      expect(cardTitles).toContain('Start with this Image');
+    });
   });
 });
