@@ -10,7 +10,7 @@ import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
 import { assignInlineVars } from '@vanilla-extract/dynamic';
 import clsx from 'clsx';
 import type { CSSProperties } from 'react';
-import { forwardRef, useCallback } from 'react';
+import { forwardRef, useCallback, useEffect, useState } from 'react';
 
 import type { IconButtonProps } from '../button';
 import { IconButton } from '../button';
@@ -90,129 +90,163 @@ class ModalTransitionContainer extends HTMLElement {
   }
 }
 
-let container: ModalTransitionContainer | null = null;
-function prepareContainer() {
-  if (!container) {
+let defined = false;
+function createContainer() {
+  if (!defined) {
     customElements.define(
       'modal-transition-container',
       ModalTransitionContainer
     );
-    container = new ModalTransitionContainer();
-    document.body.append(container);
+    defined = true;
   }
+  const container = new ModalTransitionContainer();
+  document.body.append(container);
   return container;
 }
 
-export const Modal = forwardRef<HTMLDivElement, ModalProps>((props, ref) => {
-  const {
-    modal,
-    portalOptions,
-    open,
-    onOpenChange,
-    width,
-    height,
-    minHeight = 194,
-    title,
-    description,
-    withoutCloseButton = false,
-    persistent,
-    contentOptions: {
-      style: contentStyle,
-      className: contentClassName,
-      onPointerDownOutside,
-      onEscapeKeyDown,
-      ...otherContentOptions
-    } = {},
-    overlayOptions: {
-      className: overlayClassName,
-      style: overlayStyle,
-      ...otherOverlayOptions
-    } = {},
-    closeButtonOptions = {},
-    children,
-    ...otherProps
-  } = props;
+export const ModalInner = forwardRef<HTMLDivElement, ModalProps>(
+  (props, ref) => {
+    const {
+      modal,
+      portalOptions,
+      open,
+      onOpenChange,
+      width,
+      height,
+      minHeight = 194,
+      title,
+      description,
+      withoutCloseButton = false,
+      persistent,
+      contentOptions: {
+        style: contentStyle,
+        className: contentClassName,
+        onPointerDownOutside,
+        onEscapeKeyDown,
+        ...otherContentOptions
+      } = {},
+      overlayOptions: {
+        className: overlayClassName,
+        style: overlayStyle,
+        ...otherOverlayOptions
+      } = {},
+      closeButtonOptions = {},
+      children,
+      ...otherProps
+    } = props;
 
-  return (
-    <Dialog.Root
-      modal={modal}
-      open={open}
-      onOpenChange={onOpenChange}
-      {...otherProps}
-    >
-      <Dialog.Portal container={prepareContainer()} {...portalOptions}>
-        <Dialog.Overlay
-          className={clsx(styles.modalOverlay, overlayClassName)}
-          style={{
-            ...overlayStyle,
-          }}
-          {...otherOverlayOptions}
-        />
-        <div data-modal={modal} className={clsx(styles.modalContentWrapper)}>
-          <Dialog.Content
-            onPointerDownOutside={useCallback(
-              (e: PointerDownOutsideEvent) => {
-                onPointerDownOutside?.(e);
-                persistent && e.preventDefault();
-              },
-              [onPointerDownOutside, persistent]
-            )}
-            onEscapeKeyDown={useCallback(
-              (e: KeyboardEvent) => {
-                onEscapeKeyDown?.(e);
-                persistent && e.preventDefault();
-              },
-              [onEscapeKeyDown, persistent]
-            )}
-            className={clsx(styles.modalContent, contentClassName)}
+    const [container, setContainer] = useState<ModalTransitionContainer | null>(
+      null
+    );
+
+    useEffect(() => {
+      const container = createContainer();
+      setContainer(container);
+      return () => {
+        setTimeout(() => {
+          container.remove();
+        }, 1000) as unknown as number;
+      };
+    }, []);
+
+    const handlePointerDownOutSide = useCallback(
+      (e: PointerDownOutsideEvent) => {
+        onPointerDownOutside?.(e);
+        persistent && e.preventDefault();
+      },
+      [onPointerDownOutside, persistent]
+    );
+
+    const handleEscapeKeyDown = useCallback(
+      (e: KeyboardEvent) => {
+        onEscapeKeyDown?.(e);
+        persistent && e.preventDefault();
+      },
+      [onEscapeKeyDown, persistent]
+    );
+
+    if (!container) {
+      return;
+    }
+
+    return (
+      <Dialog.Root
+        modal={modal}
+        open={open}
+        onOpenChange={onOpenChange}
+        {...otherProps}
+      >
+        <Dialog.Portal container={container} {...portalOptions}>
+          <Dialog.Overlay
+            className={clsx(styles.modalOverlay, overlayClassName)}
             style={{
-              ...assignInlineVars({
-                [styles.widthVar]: getVar(width, '50vw'),
-                [styles.heightVar]: getVar(height, 'unset'),
-                [styles.minHeightVar]: getVar(minHeight, '26px'),
-              }),
-              ...contentStyle,
+              ...overlayStyle,
             }}
-            {...(description ? {} : { 'aria-describedby': undefined })}
-            {...otherContentOptions}
-            ref={ref}
-          >
-            {withoutCloseButton ? null : (
-              <Dialog.Close asChild>
-                <IconButton
-                  className={styles.closeButton}
-                  aria-label="Close"
-                  type="plain"
-                  data-testid="modal-close-button"
-                  {...closeButtonOptions}
-                >
-                  <CloseIcon />
-                </IconButton>
-              </Dialog.Close>
-            )}
-            {title ? (
-              <Dialog.Title className={styles.modalHeader}>
-                {title}
-              </Dialog.Title>
-            ) : (
-              // Refer: https://www.radix-ui.com/primitives/docs/components/dialog#title
-              // If you want to hide the title, wrap it inside our Visually Hidden utility like this <VisuallyHidden asChild>.
-              <VisuallyHidden.Root asChild>
-                <Dialog.Title></Dialog.Title>
-              </VisuallyHidden.Root>
-            )}
-            {description ? (
-              <Dialog.Description className={styles.modalDescription}>
-                {description}
-              </Dialog.Description>
-            ) : null}
+            {...otherOverlayOptions}
+          />
+          <div data-modal={modal} className={clsx(styles.modalContentWrapper)}>
+            <Dialog.Content
+              onPointerDownOutside={handlePointerDownOutSide}
+              onEscapeKeyDown={handleEscapeKeyDown}
+              className={clsx(styles.modalContent, contentClassName)}
+              style={{
+                ...assignInlineVars({
+                  [styles.widthVar]: getVar(width, '50vw'),
+                  [styles.heightVar]: getVar(height, 'unset'),
+                  [styles.minHeightVar]: getVar(minHeight, '26px'),
+                }),
+                ...contentStyle,
+              }}
+              {...(description ? {} : { 'aria-describedby': undefined })}
+              {...otherContentOptions}
+              ref={ref}
+            >
+              {withoutCloseButton ? null : (
+                <Dialog.Close asChild>
+                  <IconButton
+                    className={styles.closeButton}
+                    aria-label="Close"
+                    type="plain"
+                    data-testid="modal-close-button"
+                    {...closeButtonOptions}
+                  >
+                    <CloseIcon />
+                  </IconButton>
+                </Dialog.Close>
+              )}
+              {title ? (
+                <Dialog.Title className={styles.modalHeader}>
+                  {title}
+                </Dialog.Title>
+              ) : (
+                // Refer: https://www.radix-ui.com/primitives/docs/components/dialog#title
+                // If you want to hide the title, wrap it inside our Visually Hidden utility like this <VisuallyHidden asChild>.
+                <VisuallyHidden.Root asChild>
+                  <Dialog.Title></Dialog.Title>
+                </VisuallyHidden.Root>
+              )}
+              {description ? (
+                <Dialog.Description className={styles.modalDescription}>
+                  {description}
+                </Dialog.Description>
+              ) : null}
 
-            {children}
-          </Dialog.Content>
-        </div>
-      </Dialog.Portal>
-    </Dialog.Root>
-  );
+              {children}
+            </Dialog.Content>
+          </div>
+        </Dialog.Portal>
+      </Dialog.Root>
+    );
+  }
+);
+
+ModalInner.displayName = 'ModalInner';
+
+export const Modal = forwardRef<HTMLDivElement, ModalProps>((props, ref) => {
+  if (!props.open) {
+    return;
+  }
+  return <ModalInner {...props} ref={ref} />;
 });
 
 Modal.displayName = 'Modal';
