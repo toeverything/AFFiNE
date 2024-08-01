@@ -341,10 +341,11 @@ test.describe('chat with block', () => {
       return answer.innerText();
     };
 
-    const collectImageAnswer = async (page: Page) => {
+    const collectImageAnswer = async (page: Page, timeout = 1000 * 10) => {
       // wait ai response
       await page.waitForSelector(
-        'affine-ai-panel-widget .response-list-container'
+        'affine-ai-panel-widget .response-list-container',
+        { timeout }
       );
       const answer = await page.waitForSelector(
         'affine-ai-panel-widget .ai-answer-image img'
@@ -418,6 +419,25 @@ test.describe('chat with block', () => {
         await page.keyboard.press('Enter');
         expect(await collectImageAnswer(page)).toBeTruthy();
       });
+
+      const filters = ['Clay', 'Sketch', 'Anime', 'Pixel'];
+      for (const filter of filters) {
+        // skip by default, image generate is very slow
+        test.skip(`ai image ${filter.toLowerCase()} filter`, async ({
+          page,
+        }) => {
+          await page
+            .waitForSelector('.ai-item-ai-image-filter')
+            .then(i => i.hover());
+          await page.getByText(`${filter} style`).click();
+          {
+            // to be remove
+            await page.keyboard.type('test');
+            await page.keyboard.press('Enter');
+          }
+          expect(await collectImageAnswer(page, 1000 * 60)).toBeTruthy();
+        });
+      }
     });
   });
 });
