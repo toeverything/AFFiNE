@@ -76,6 +76,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
   const activeSidebarTab = useLiveData(view.activeSidebarTab$);
 
   const doc = useService(DocService).doc;
+  const isInTrash = useLiveData(doc.meta$.map(meta => meta.trash));
   const { openPage, jumpToPageBlock, jumpToTag } = useNavigateHelper();
   const [editor, setEditor] = useState<AffineEditorContainer | null>(null);
   const workspace = useService(WorkspaceService).workspace;
@@ -139,7 +140,17 @@ const DetailPageImpl = memo(function DetailPageImpl() {
     }
   }, [doc.id, setDocReadonly]);
 
-  const isInTrash = useLiveData(doc.meta$.map(meta => meta.trash));
+  useEffect(() => {
+    if (isActiveView) {
+      globalContext.isTrashDoc.set(!!isInTrash);
+
+      return () => {
+        globalContext.isTrashDoc.set(null);
+      };
+    }
+    return;
+  }, [globalContext, isActiveView, isInTrash]);
+
   useRegisterBlocksuiteEditorCommands();
   const title = useLiveData(doc.title$);
   usePageDocumentTitle(title);

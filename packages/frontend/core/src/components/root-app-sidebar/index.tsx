@@ -11,7 +11,6 @@ import {
 } from '@affine/core/modules/explorer';
 import { ExplorerTags } from '@affine/core/modules/explorer/views/sections/tags';
 import { CMDKQuickSearchService } from '@affine/core/modules/quicksearch/services/cmdk';
-import { TelemetryWorkspaceContextService } from '@affine/core/modules/telemetry/services/telemetry';
 import { pathGenerator } from '@affine/core/shared';
 import { apis, events } from '@affine/electron-api';
 import { useI18n } from '@affine/i18n';
@@ -91,8 +90,6 @@ export const RootAppSidebar = (): ReactElement => {
     });
   }, [cmdkQuickSearchService]);
 
-  const telemetry = useService(TelemetryWorkspaceContextService);
-
   const allPageActive = currentPath === '/all';
 
   const pageHelper = usePageHelper(currentWorkspace.docCollection);
@@ -105,14 +102,13 @@ export const RootAppSidebar = (): ReactElement => {
     page.load();
     openPage(currentWorkspaceId, page.id);
     mixpanel.track('DocCreated', {
-      page: telemetry.getPageContext(),
       segment: 'navigation panel',
       module: 'bottom button',
       control: 'new doc button',
       category: 'page',
       type: 'doc',
     });
-  }, [createPage, currentWorkspaceId, openPage, telemetry]);
+  }, [createPage, currentWorkspaceId, openPage]);
 
   // Listen to the "New Page" action from the menu
   useEffect(() => {

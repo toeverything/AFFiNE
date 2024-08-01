@@ -6,6 +6,11 @@ import type { GeneralMixpanelEvent, MixpanelEvents } from './events';
 
 const logger = new DebugLogger('mixpanel');
 
+type Middleware = (
+  name: string,
+  properties?: Record<string, unknown>
+) => Record<string, unknown>;
+
 function createMixpanel() {
   let mixpanel;
   if (process.env.MIXPANEL_TOKEN) {
@@ -21,6 +26,8 @@ function createMixpanel() {
       createProxyHandler()
     );
   }
+
+  const middlewares = new Set<Middleware>();
 
   const wrapped = {
     reset() {
@@ -40,8 +47,21 @@ function createMixpanel() {
         : Record<string, unknown>) &
         GeneralMixpanelEvent,
     >(event_name: T, properties?: P) {
-      logger.debug('track', event_name, properties);
-      mixpanel.track(event_name, properties);
+      const middlewareProperties = Array.from(middlewares).reduce(
+        (acc, middleware) => {
+          return middleware(event_name, acc);
+        },
+        properties as Record<string, unknown>
+      );
+      logger.debug('track', event_name, middlewareProperties);
+
+      mixpanel.track(event_name as string, middlewareProperties);
+    },
+    middleware(cb: Middleware): () => void {
+      middlewares.add(cb);
+      return () => {
+        middlewares.delete(cb);
+      };
     },
     opt_out_tracking() {
       mixpanel.opt_out_tracking();

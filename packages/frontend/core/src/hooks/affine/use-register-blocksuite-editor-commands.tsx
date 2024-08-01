@@ -6,7 +6,6 @@ import {
 } from '@affine/core/commands';
 import { mixpanel } from '@affine/core/mixpanel';
 import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/properties';
-import { TelemetryWorkspaceContextService } from '@affine/core/modules/telemetry/services/telemetry';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useI18n } from '@affine/i18n';
 import { EdgelessIcon, HistoryIcon, PageIcon } from '@blocksuite/icons/rc';
@@ -63,8 +62,6 @@ export function useRegisterBlocksuiteEditorCommands() {
     },
     [docId, setTrashModal]
   );
-
-  const telemetry = useService(TelemetryWorkspaceContextService);
 
   const isCloudWorkspace = workspace.flavour === WorkspaceFlavour.AFFINE_CLOUD;
 
@@ -168,7 +165,6 @@ export function useRegisterBlocksuiteEditorCommands() {
             control: 'cmdk',
             type: 'doc duplicate',
             category: 'doc',
-            page: telemetry.getPageContext(),
           });
         },
       })
@@ -299,7 +295,6 @@ export function useRegisterBlocksuiteEditorCommands() {
     favAdapter,
     docId,
     doc,
-    telemetry,
     openInfoModal,
   ]);
 }

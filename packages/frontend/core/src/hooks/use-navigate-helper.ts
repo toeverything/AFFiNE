@@ -18,6 +18,9 @@ function defaultNavigate(to: To, option?: { replace?: boolean }) {
 }
 
 // TODO(@eyhn): add a name -> path helper in the results
+/**
+ * @deprecated use `WorkbenchService` instead
+ */
 export function useNavigateHelper() {
   const navigate = useContext(NavigateContext) ?? defaultNavigate;
 
