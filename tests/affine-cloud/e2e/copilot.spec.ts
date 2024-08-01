@@ -321,7 +321,16 @@ test.describe('chat with block', () => {
       await page.keyboard.press('ControlOrMeta+V');
     };
 
-    const collectAnswer = async (page: Page) => {
+    test.beforeEach(async ({ page }) => {
+      await page.reload();
+      await clickSideBarAllPageButton(page);
+      await page.waitForTimeout(200);
+      await createLocalWorkspace({ name: 'test' }, page);
+      await clickNewPageButton(page);
+      await pasteImageToPageEditor(page);
+    });
+
+    const collectTextAnswer = async (page: Page) => {
       // wait ai response
       await page.waitForSelector(
         'affine-ai-panel-widget .response-list-container'
@@ -332,52 +341,83 @@ test.describe('chat with block', () => {
       return answer.innerText();
     };
 
-    test.beforeEach(async ({ page }) => {
-      await page.reload();
-      await clickSideBarAllPageButton(page);
-      await page.waitForTimeout(200);
-      await createLocalWorkspace({ name: 'test' }, page);
-      await clickNewPageButton(page);
-      await pasteImageToPageEditor(page);
-      await page.waitForSelector('affine-image').then(i => i.click());
-      await page
-        .waitForSelector('affine-image editor-toolbar ask-ai-button')
-        .then(b => b.click());
-    });
-
-    test('explain this image', async ({ page }) => {
-      await page
-        .waitForSelector('.ai-item-explain-this-image')
-        .then(i => i.click());
-      expect(await collectAnswer(page)).toBeTruthy();
-    });
-
-    test('generate a caption', async ({ page }) => {
-      await page
-        .waitForSelector('.ai-item-generate-a-caption')
-        .then(i => i.click());
-      expect(await collectAnswer(page)).toBeTruthy();
-    });
-
-    test('continue with ai', async ({ page }) => {
-      await page
-        .waitForSelector('.ai-item-continue-with-ai')
-        .then(i => i.click());
-      await page
-        .waitForSelector('chat-panel-input .chat-panel-images')
-        .then(el => el.waitForElementState('visible'));
-    });
-
-    test('open ai chat', async ({ page }) => {
-      await page.waitForSelector('.ai-item-open-ai-chat').then(i => i.click());
-      const cards = await page.waitForSelector('chat-panel chat-cards');
-      await cards.waitForElementState('visible');
-      const cardTitles = await Promise.all(
-        await cards
-          .$$('.card-wrapper .card-title')
-          .then(els => els.map(async el => await el.innerText()))
+    const collectImageAnswer = async (page: Page) => {
+      // wait ai response
+      await page.waitForSelector(
+        'affine-ai-panel-widget .response-list-container'
       );
-      expect(cardTitles).toContain('Start with this Image');
+      const answer = await page.waitForSelector(
+        'affine-ai-panel-widget .ai-answer-image img'
+      );
+      return answer.getAttribute('src');
+    };
+
+    test.describe('page mode', () => {
+      test.beforeEach(async ({ page }) => {
+        await page.waitForSelector('affine-image').then(i => i.click());
+        await page
+          .waitForSelector('affine-image editor-toolbar ask-ai-button')
+          .then(b => b.click());
+      });
+
+      test('explain this image', async ({ page }) => {
+        await page
+          .waitForSelector('.ai-item-explain-this-image')
+          .then(i => i.click());
+        expect(await collectTextAnswer(page)).toBeTruthy();
+      });
+
+      test('generate a caption', async ({ page }) => {
+        await page
+          .waitForSelector('.ai-item-generate-a-caption')
+          .then(i => i.click());
+        expect(await collectTextAnswer(page)).toBeTruthy();
+      });
+
+      test('continue with ai', async ({ page }) => {
+        await page
+          .waitForSelector('.ai-item-continue-with-ai')
+          .then(i => i.click());
+        await page
+          .waitForSelector('chat-panel-input .chat-panel-images')
+          .then(el => el.waitForElementState('visible'));
+      });
+
+      test('open ai chat', async ({ page }) => {
+        await page
+          .waitForSelector('.ai-item-open-ai-chat')
+          .then(i => i.click());
+        const cards = await page.waitForSelector('chat-panel chat-cards');
+        await cards.waitForElementState('visible');
+        const cardTitles = await Promise.all(
+          await cards
+            .$$('.card-wrapper .card-title')
+            .then(els => els.map(async el => await el.innerText()))
+        );
+        expect(cardTitles).toContain('Start with this Image');
+      });
+    });
+
+    test.describe('edgeless mode', () => {
+      test.beforeEach(async ({ page }) => {
+        await switchToEdgelessMode(page);
+        await page
+          .waitForSelector('affine-edgeless-note')
+          .then(n => n.dblclick());
+        await page.waitForSelector('affine-image').then(i => i.click());
+        await page
+          .waitForSelector('affine-image editor-toolbar ask-ai-button')
+          .then(b => b.click());
+      });
+
+      test('generate an image', async ({ page }) => {
+        await page
+          .waitForSelector('.ai-item-generate-an-image')
+          .then(i => i.click());
+        await page.keyboard.type('a cat');
+        await page.keyboard.press('Enter');
+        expect(await collectImageAnswer(page)).toBeTruthy();
+      });
     });
   });
 });
