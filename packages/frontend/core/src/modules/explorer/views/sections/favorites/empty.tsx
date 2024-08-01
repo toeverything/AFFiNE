@@ -7,7 +7,7 @@ import type { AffineDNDData } from '@affine/core/types/dnd';
 import { useI18n } from '@affine/i18n';
 import { FavoriteIcon } from '@blocksuite/icons/rc';
 
-import { ExplorerGroupEmpty } from '../../layouts/empty-layout';
+import { ExplorerEmptySection } from '../../layouts/empty-section';
 import { DropEffect, type ExplorerTreeNodeDropEffect } from '../../tree';
 
 export const RootEmpty = ({
@@ -34,7 +34,7 @@ export const RootEmpty = ({
     );
 
   return (
-    <ExplorerGroupEmpty
+    <ExplorerEmptySection
       ref={dropTargetRef}
       icon={FavoriteIcon}
       message={t['com.affine.rootAppSidebar.favorites.empty']()}
@@ -52,6 +52,6 @@ export const RootEmpty = ({
           })}
         />
       )}
-    </ExplorerGroupEmpty>
+    </ExplorerEmptySection>
   );
 };

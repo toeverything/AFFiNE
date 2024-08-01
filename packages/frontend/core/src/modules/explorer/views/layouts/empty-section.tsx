@@ -7,9 +7,9 @@ import {
   type SVGProps,
 } from 'react';
 
-import * as styles from './empty-layout.css';
+import * as styles from './empty-section.css';
 
-interface ExplorerGroupEmptyProps extends HTMLAttributes<HTMLDivElement> {
+interface ExplorerEmptySectionProps extends HTMLAttributes<HTMLDivElement> {
   icon: (props: SVGProps<SVGSVGElement>) => JSX.Element;
   message: string;
   messageTestId?: string;
@@ -17,7 +17,7 @@ interface ExplorerGroupEmptyProps extends HTMLAttributes<HTMLDivElement> {
   onActionClick?: () => void;
 }
 
-export const ExplorerGroupEmpty = forwardRef(function ExplorerGroupEmpty(
+export const ExplorerEmptySection = forwardRef(function ExplorerEmptySection(
   {
     icon: Icon,
     message,
@@ -27,7 +27,7 @@ export const ExplorerGroupEmpty = forwardRef(function ExplorerGroupEmpty(
     className,
     onActionClick,
     ...attrs
-  }: ExplorerGroupEmptyProps,
+  }: ExplorerEmptySectionProps,
   ref: Ref<HTMLDivElement>
 ) {
   return (

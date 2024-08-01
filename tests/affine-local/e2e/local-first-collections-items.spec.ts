@@ -81,7 +81,8 @@ test('Show collections items in sidebar', async ({ page }) => {
   await deletePage.click();
   await page.getByTestId('confirm-modal-confirm').click();
   expect(await first.locator('[data-testid^="explorer-doc-"]').count()).toBe(0);
-  await first.hover();
+  // position is a workaround for the hover issue when empty collection status's height > 26px (will cause scroll)
+  await first.hover({ position: { x: 10, y: 10 } });
   await first.getByTestId('explorer-tree-node-operation-button').click();
   const deleteCollection = page.getByText('Delete');
   await deleteCollection.click();

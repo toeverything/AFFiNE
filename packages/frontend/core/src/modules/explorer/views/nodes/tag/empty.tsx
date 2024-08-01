@@ -2,7 +2,7 @@ import { type DropTargetDropEvent, useDropTarget } from '@affine/component';
 import type { AffineDNDData } from '@affine/core/types/dnd';
 import { useI18n } from '@affine/i18n';
 
-import * as styles from './empty.css';
+import { EmptyNodeChildren } from '../../layouts/empty-node-children';
 
 export const Empty = ({
   onDrop,
@@ -17,8 +17,8 @@ export const Empty = ({
   );
   const t = useI18n();
   return (
-    <div className={styles.noReferences} ref={dropTargetRef}>
+    <EmptyNodeChildren ref={dropTargetRef}>
       {t['com.affine.rootAppSidebar.tags.no-doc']()}
-    </div>
+    </EmptyNodeChildren>
   );
 };
