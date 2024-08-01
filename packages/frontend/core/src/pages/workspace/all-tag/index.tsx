@@ -5,10 +5,16 @@ import {
 import { CreateOrEditTag } from '@affine/core/components/page-list/tags/create-tag';
 import type { TagMeta } from '@affine/core/components/page-list/types';
 import { DeleteTagConfirmModal, TagService } from '@affine/core/modules/tag';
+import { useI18n } from '@affine/i18n';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useCallback, useState } from 'react';
 
-import { ViewBody, ViewHeader } from '../../../modules/workbench';
+import {
+  ViewBody,
+  ViewHeader,
+  ViewIcon,
+  ViewTitle,
+} from '../../../modules/workbench';
 import { EmptyTagList } from '../page-list-empty';
 import * as styles from './all-tag.css';
 import { AllTagHeader } from './header';
@@ -54,8 +60,12 @@ export const AllTag = () => {
     [setOpen, setSelectedTagIds]
   );
 
+  const t = useI18n();
+
   return (
     <>
+      <ViewTitle title={t['Tags']()} />
+      <ViewIcon icon="tag" />
       <ViewHeader>
         <AllTagHeader />
       </ViewHeader>

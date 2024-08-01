@@ -14,7 +14,13 @@ import {
 } from '@toeverything/infra';
 import { useEffect } from 'react';
 
-import { useIsActiveView, ViewBody, ViewHeader } from '../../modules/workbench';
+import {
+  useIsActiveView,
+  ViewBody,
+  ViewHeader,
+  ViewIcon,
+  ViewTitle,
+} from '../../modules/workbench';
 import { EmptyPageList } from './page-list-empty';
 import * as styles from './trash-page.css';
 
@@ -56,8 +62,11 @@ export const TrashPage = () => {
     return;
   }, [globalContextService.globalContext.isTrash, isActiveView]);
 
+  const t = useI18n();
   return (
     <>
+      <ViewTitle title={t['Trash']()} />
+      <ViewIcon icon={'trash'} />
       <ViewHeader>
         <TrashHeader />
       </ViewHeader>

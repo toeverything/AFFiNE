@@ -8,6 +8,8 @@ import {
   useIsActiveView,
   ViewBody,
   ViewHeader,
+  ViewIcon,
+  ViewTitle,
 } from '@affine/core/modules/workbench';
 import {
   GlobalContextService,
@@ -39,6 +41,7 @@ export const TagDetail = ({ tagId }: { tagId?: string }) => {
   }, [pageIds, pageMetas]);
 
   const isActiveView = useIsActiveView();
+  const tagName = useLiveData(currentTag?.value$);
 
   useEffect(() => {
     if (isActiveView && currentTag) {
@@ -59,6 +62,8 @@ export const TagDetail = ({ tagId }: { tagId?: string }) => {
 
   return (
     <>
+      <ViewTitle title={tagName ?? 'Untitled'} />
+      <ViewIcon icon="tag" />
       <ViewHeader>
         <TagDetailHeader />
       </ViewHeader>

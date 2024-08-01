@@ -80,7 +80,7 @@ export const tab = style({
       boxShadow: cssVar('shadow1'),
     },
     '&[data-pinned="false"]': {
-      paddingRight: 8,
+      paddingRight: 20,
     },
     '&[data-pinned="true"]': {
       flexShrink: 0,

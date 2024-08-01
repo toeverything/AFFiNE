@@ -29,6 +29,8 @@ import {
   useIsActiveView,
   ViewBody,
   ViewHeader,
+  ViewIcon,
+  ViewTitle,
 } from '../../../modules/workbench';
 import { WorkspaceSubPath } from '../../../shared';
 import * as styles from './collection.css';
@@ -155,6 +157,8 @@ const Placeholder = ({ collection }: { collection: Collection }) => {
 
   return (
     <>
+      <ViewTitle title={collection.name} />
+      <ViewIcon icon="collection" />
       <ViewHeader>
         <div
           style={{

@@ -6,6 +6,7 @@ import {
 import { useBlockSuiteDocMeta } from '@affine/core/hooks/use-block-suite-page-meta';
 import { performanceRenderLogger } from '@affine/core/shared';
 import type { Filter } from '@affine/env/filter';
+import { useI18n } from '@affine/i18n';
 import {
   GlobalContextService,
   useService,
@@ -17,6 +18,8 @@ import {
   useIsActiveView,
   ViewBody,
   ViewHeader,
+  ViewIcon,
+  ViewTitle,
 } from '../../../modules/workbench';
 import { EmptyPageList } from '../page-list-empty';
 import * as styles from './all-page.css';
@@ -47,8 +50,12 @@ export const AllPage = () => {
     return;
   }, [globalContext, isActiveView]);
 
+  const t = useI18n();
+
   return (
     <>
+      <ViewTitle title={t['All pages']()} />
+      <ViewIcon icon="allDocs" />
       <ViewHeader>
         <AllPageHeader
           showCreateNew={!hideHeaderCreateNew}

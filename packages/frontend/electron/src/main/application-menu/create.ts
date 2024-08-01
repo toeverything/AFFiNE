@@ -7,6 +7,7 @@ import {
   addTab,
   closeTab,
   initAndShowMainWindow,
+  reloadView,
   showDevTools,
   showMainWindow,
   undoCloseTab,
@@ -92,8 +93,13 @@ export function createApplicationMenu() {
     {
       label: 'View',
       submenu: [
-        { role: 'reload' },
-        { role: 'forceReload' },
+        {
+          label: 'Reload',
+          accelerator: 'CommandOrControl+R',
+          click() {
+            reloadView().catch(console.error);
+          },
+        },
         {
           label: 'Open devtools',
           accelerator: isMac ? 'Cmd+Option+I' : 'Ctrl+Shift+I',

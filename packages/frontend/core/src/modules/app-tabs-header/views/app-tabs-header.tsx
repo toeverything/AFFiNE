@@ -7,21 +7,8 @@ import {
 import { appSidebarWidthAtom } from '@affine/core/components/app-sidebar/index.jotai';
 import { WindowsAppControls } from '@affine/core/components/pure/header/windows-app-controls';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import { DesktopStateSynchronizer } from '@affine/core/modules/workbench/services/desktop-state-synchronizer';
-import type { WorkbenchMeta } from '@affine/electron-api';
 import { apis, events } from '@affine/electron-api';
-import {
-  AllDocsIcon,
-  CloseIcon,
-  DeleteIcon,
-  EdgelessIcon,
-  PageIcon,
-  PlusIcon,
-  RightSidebarIcon,
-  TagIcon,
-  TodayIcon,
-  ViewLayersIcon,
-} from '@blocksuite/icons/rc';
+import { CloseIcon, PlusIcon, RightSidebarIcon } from '@blocksuite/icons/rc';
 import {
   useLiveData,
   useService,
@@ -38,24 +25,13 @@ import {
   useState,
 } from 'react';
 
+import { iconNameToIcon } from '../../workbench/constants';
+import { DesktopStateSynchronizer } from '../../workbench/services/desktop-state-synchronizer';
 import {
   AppTabsHeaderService,
   type TabStatus,
 } from '../services/app-tabs-header-service';
 import * as styles from './styles.css';
-
-type ModuleName = NonNullable<WorkbenchMeta['views'][0]['moduleName']>;
-
-const moduleNameToIcon = {
-  all: <AllDocsIcon />,
-  collection: <ViewLayersIcon />,
-  doc: <PageIcon />,
-  page: <PageIcon />,
-  edgeless: <EdgelessIcon />,
-  journal: <TodayIcon />,
-  tag: <TagIcon />,
-  trash: <DeleteIcon />,
-} satisfies Record<ModuleName, ReactNode>;
 
 const WorkbenchTab = ({
   workbench,
@@ -66,6 +42,7 @@ const WorkbenchTab = ({
   active: boolean;
   tabsLength: number;
 }) => {
+  useServiceOptional(DesktopStateSynchronizer);
   const tabsHeaderService = useService(AppTabsHeaderService);
   const activeViewIndex = workbench.activeViewIndex ?? 0;
   const onContextMenu = useAsyncCallback(
@@ -115,7 +92,7 @@ const WorkbenchTab = ({
             >
               <div className={styles.labelIcon}>
                 {workbench.ready || !workbench.loaded ? (
-                  moduleNameToIcon[view.moduleName ?? 'all']
+                  iconNameToIcon[view.iconName ?? 'allDocs']
                 ) : (
                   <Loading />
                 )}
@@ -193,8 +170,6 @@ export const AppTabsHeader = ({
   const onToggleRightSidebar = useAsyncCallback(async () => {
     await tabsHeaderService.onToggleRightSidebar();
   }, [tabsHeaderService]);
-
-  useServiceOptional(DesktopStateSynchronizer);
 
   useEffect(() => {
     if (mode === 'app') {

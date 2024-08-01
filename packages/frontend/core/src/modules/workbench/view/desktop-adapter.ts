@@ -21,6 +21,7 @@ export function useBindWorkbenchToDesktopRouter(
   basename: string
 ) {
   const browserLocation = useLocation();
+
   useEffect(() => {
     const newLocation = browserLocationToViewLocation(
       browserLocation,
@@ -36,6 +37,7 @@ export function useBindWorkbenchToDesktopRouter(
     ) {
       return;
     }
+
     workbench.open(newLocation);
   }, [basename, browserLocation, workbench]);
 }

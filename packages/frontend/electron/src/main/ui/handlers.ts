@@ -23,6 +23,7 @@ import {
   showTab,
   showTabContextMenu,
   updateWorkbenchMeta,
+  updateWorkbenchViewMeta,
 } from '../windows-manager';
 import { getChallengeResponse } from './challenge';
 import { uiSubjects } from './subject';
@@ -167,6 +168,12 @@ export const uiHandlers = {
     ...args: Parameters<typeof updateWorkbenchMeta>
   ) => {
     return updateWorkbenchMeta(...args);
+  },
+  updateWorkbenchViewMeta: async (
+    _,
+    ...args: Parameters<typeof updateWorkbenchViewMeta>
+  ) => {
+    return updateWorkbenchViewMeta(...args);
   },
   getTabViewsMeta: async () => {
     return getTabViewsMeta();

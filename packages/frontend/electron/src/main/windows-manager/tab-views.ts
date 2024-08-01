@@ -258,12 +258,47 @@ export class WebContentViewsManager {
     if (index === -1) {
       return;
     }
+    const workbench = workbenches[index];
     const newWorkbenches = workbenches.toSpliced(index, 1, {
-      ...workbenches[index],
+      ...workbench,
       ...patch,
+      views: patch.views
+        ? patch.views.map(v => {
+            const existing = workbench.views.find(e => e.id === v.id);
+            return {
+              ...existing,
+              ...v,
+            };
+          })
+        : workbench.views,
     });
     this.patchTabViewsMeta({
       workbenches: newWorkbenches,
+    });
+  };
+
+  updateWorkbenchViewMeta = (
+    workbenchId: string,
+    viewId: string,
+    patch: Partial<WorkbenchViewMeta>
+  ) => {
+    const workbench = this.tabViewsMeta.workbenches.find(
+      w => w.id === workbenchId
+    );
+    if (!workbench) {
+      return;
+    }
+    const views = workbench.views;
+    const viewIndex = views.findIndex(v => v.id === viewId);
+    if (viewIndex === -1) {
+      return;
+    }
+    const newViews = views.toSpliced(viewIndex, 1, {
+      ...views[viewIndex],
+      ...patch,
+    });
+    this.updateWorkbenchMeta(workbenchId, {
+      views: newViews,
     });
   };
 
@@ -345,10 +380,18 @@ export class WebContentViewsManager {
 
   addTab = async (option?: AddTabOption) => {
     if (!option) {
+      const activeWorkbench = this.activeWorkbenchMeta;
+      const basename = (activeWorkbench?.basename ?? '') + '/';
+
       option = {
-        basename: '/',
+        basename,
         view: {
           title: 'New Tab',
+          path: basename.startsWith('/workspace')
+            ? {
+                pathname: 'all',
+              }
+            : undefined,
         },
       };
     }
@@ -393,18 +436,18 @@ export class WebContentViewsManager {
     let view = this.tabViewsMap.get(id);
     if (!view) {
       view = await this.createAndAddView('app', id);
-      const workbench = this.tabViewsMeta.workbenches.find(w => w.id === id);
-      const viewMeta = workbench?.views[workbench.activeViewIndex];
-      if (workbench && viewMeta) {
-        const url = new URL(
-          workbench.basename + (viewMeta.path?.pathname ?? ''),
-          mainWindowOrigin
-        );
-        url.hash = viewMeta.path?.hash ?? '';
-        url.search = viewMeta.path?.search ?? '';
-        logger.info(`loading tab ${id} at ${url.href}`);
-        view.webContents.loadURL(url.href).catch(logger.error);
-      }
+    }
+    const workbench = this.tabViewsMeta.workbenches.find(w => w.id === id);
+    const viewMeta = workbench?.views[workbench.activeViewIndex];
+    if (workbench && viewMeta) {
+      const url = new URL(
+        workbench.basename + (viewMeta.path?.pathname ?? ''),
+        mainWindowOrigin
+      );
+      url.hash = viewMeta.path?.hash ?? '';
+      url.search = viewMeta.path?.search ?? '';
+      logger.info(`loading tab ${id} at ${url.href}`);
+      view.webContents.loadURL(url.href).catch(logger.error);
     }
     return view;
   };
@@ -835,6 +878,19 @@ export const updateWorkbenchMeta = (
 ) => {
   WebContentViewsManager.instance.updateWorkbenchMeta(id, meta);
 };
+
+export const updateWorkbenchViewMeta = (
+  workbenchId: string,
+  viewId: string,
+  meta: Partial<WorkbenchViewMeta>
+) => {
+  WebContentViewsManager.instance.updateWorkbenchViewMeta(
+    workbenchId,
+    viewId,
+    meta
+  );
+};
+
 export const getWorkbenchMeta = (id: string) => {
   return TabViewsMetaState.value.workbenches.find(w => w.id === id);
 };
@@ -850,6 +906,13 @@ export const showTab = WebContentViewsManager.instance.showTab;
 export const closeTab = WebContentViewsManager.instance.closeTab;
 export const undoCloseTab = WebContentViewsManager.instance.undoCloseTab;
 export const activateView = WebContentViewsManager.instance.activateView;
+
+export const reloadView = async () => {
+  const id = WebContentViewsManager.instance.activeWorkbenchId;
+  if (id) {
+    await WebContentViewsManager.instance.loadTab(id);
+  }
+};
 
 export const onTabAction = (fn: (event: TabAction) => void) => {
   const { unsubscribe } =

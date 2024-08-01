@@ -13,9 +13,16 @@ import { PageHeaderMenuButton } from '@affine/core/components/blocksuite/block-s
 import { DetailPageHeaderPresentButton } from '@affine/core/components/blocksuite/block-suite-header/present/detail-header-present-button';
 import { EditorModeSwitch } from '@affine/core/components/blocksuite/block-suite-mode-switch';
 import { useRegisterCopyLinkCommands } from '@affine/core/hooks/affine/use-register-copy-link-commands';
+import { useDocCollectionPageTitle } from '@affine/core/hooks/use-block-suite-workspace-page-title';
 import { useJournalInfoHelper } from '@affine/core/hooks/use-journal';
+import { ViewIcon, ViewTitle } from '@affine/core/modules/workbench';
 import type { Doc } from '@blocksuite/store';
-import { type Workspace } from '@toeverything/infra';
+import {
+  DocService,
+  useLiveData,
+  useService,
+  type Workspace,
+} from '@toeverything/infra';
 import { useAtom, useAtomValue } from 'jotai';
 import { forwardRef, useCallback, useEffect, useRef, useState } from 'react';
 
@@ -68,8 +75,11 @@ export function JournalPageHeader({ page, workspace }: PageHeaderProps) {
 
   const { hideShare, hideToday } =
     useDetailPageHeaderResponsive(containerWidth);
+  const title = useDocCollectionPageTitle(workspace.docCollection, page?.id);
   return (
     <Header className={styles.header} ref={containerRef}>
+      <ViewTitle title={title} />
+      <ViewIcon icon="journal" />
       <EditorModeSwitch
         docCollection={workspace.docCollection}
         pageId={page?.id}
@@ -115,8 +125,15 @@ export function NormalPageHeader({ page, workspace }: PageHeaderProps) {
   const onRename = useCallback(() => {
     setTimeout(() => titleInputHandleRef.current?.triggerEdit());
   }, []);
+
+  const title = useDocCollectionPageTitle(workspace.docCollection, page?.id);
+  const doc = useService(DocService).doc;
+  const currentMode = useLiveData(doc.mode$);
+
   return (
     <Header className={styles.header} ref={containerRef}>
+      <ViewTitle title={title} />
+      <ViewIcon icon={currentMode ?? 'page'} />
       <EditorModeSwitch
         docCollection={workspace.docCollection}
         pageId={page?.id}

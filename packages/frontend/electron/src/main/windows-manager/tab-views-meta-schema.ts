@@ -1,8 +1,8 @@
 import { z } from 'zod';
 
-export const workbenchViewModuleSchema = z.enum([
+export const workbenchViewIconNameSchema = z.enum([
   'trash',
-  'all',
+  'allDocs',
   'collection',
   'tag',
   'doc', // refers to a doc whose mode is not yet being resolved
@@ -22,7 +22,7 @@ export const workbenchViewMetaSchema = z.object({
     .optional(),
   // todo: move title/module to cached stated
   title: z.string().optional(),
-  moduleName: workbenchViewModuleSchema.optional(),
+  iconName: workbenchViewIconNameSchema.optional(),
 });
 
 export const workbenchMetaSchema = z.object({
@@ -42,4 +42,4 @@ export const TabViewsMetaKey = 'tabViewsMetaSchema';
 export type TabViewsMetaSchema = z.infer<typeof tabViewsMetaSchema>;
 export type WorkbenchMeta = z.infer<typeof workbenchMetaSchema>;
 export type WorkbenchViewMeta = z.infer<typeof workbenchViewMetaSchema>;
-export type WorkbenchViewModule = z.infer<typeof workbenchViewModuleSchema>;
+export type WorkbenchViewModule = z.infer<typeof workbenchViewIconNameSchema>;

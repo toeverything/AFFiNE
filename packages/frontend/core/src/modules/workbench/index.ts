@@ -3,17 +3,16 @@ export { ViewScope } from './scopes/view';
 export { WorkbenchService } from './services/workbench';
 export { useIsActiveView } from './view/use-is-active-view';
 export { ViewBody, ViewHeader, ViewSidebarTab } from './view/view-islands';
+export { ViewIcon, ViewTitle } from './view/view-meta';
 export { WorkbenchLink } from './view/workbench-link';
 export { WorkbenchRoot } from './view/workbench-root';
 
 import {
-  DocsService,
   type Framework,
   GlobalStateService,
   WorkspaceScope,
 } from '@toeverything/infra';
 
-import { WorkspacePropertiesAdapter } from '../properties';
 import { SidebarTab } from './entities/sidebar-tab';
 import { View } from './entities/view';
 import { Workbench } from './entities/workbench';
@@ -52,9 +51,5 @@ export function configureDesktopWorkbenchModule(services: Framework) {
     .impl(WorkbenchDefaultState, DesktopWorkbenchDefaultState, [
       GlobalStateService,
     ])
-    .service(DesktopStateSynchronizer, [
-      WorkbenchService,
-      WorkspacePropertiesAdapter,
-      DocsService,
-    ]);
+    .service(DesktopStateSynchronizer, [WorkbenchService]);
 }

@@ -6,6 +6,10 @@ import {
   VirtualizedCollectionList,
 } from '@affine/core/components/page-list';
 import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
+import {
+  ViewIcon,
+  ViewTitle,
+} from '@affine/core/modules/workbench/view/view-meta';
 import { useI18n } from '@affine/i18n';
 import { useLiveData, useService, WorkspaceService } from '@toeverything/infra';
 import { nanoid } from 'nanoid';
@@ -55,6 +59,8 @@ export const AllCollection = () => {
 
   return (
     <>
+      <ViewTitle title={t['Collections']()} />
+      <ViewIcon icon="collection" />
       <ViewHeader>
         <AllCollectionHeader
           showCreateNew={!hideHeaderCreateNew}

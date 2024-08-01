@@ -4,7 +4,6 @@ import '@affine/component/theme/theme.css';
 import { NotificationCenter } from '@affine/component';
 import { AffineContext } from '@affine/component/context';
 import { GlobalLoading } from '@affine/component/global-loading';
-import { registerAffineCommand } from '@affine/core/commands';
 import { AppFallback } from '@affine/core/components/affine/app-container';
 import { configureCommonModules } from '@affine/core/modules';
 import { configureAppTabsHeaderModule } from '@affine/core/modules/app-tabs-header';
@@ -22,7 +21,6 @@ import {
 import { Telemetry } from '@affine/core/telemetry';
 import createEmotionCache from '@affine/core/utils/create-emotion-cache';
 import { createI18n, setUpLanguage } from '@affine/i18n';
-import { SettingsIcon } from '@blocksuite/icons/rc';
 import { CacheProvider } from '@emotion/react';
 import {
   Framework,
@@ -127,14 +125,3 @@ export function App() {
     </Suspense>
   );
 }
-
-registerAffineCommand({
-  id: 'affine:reload',
-  category: 'affine:general',
-  label: 'Reload current tab',
-  icon: <SettingsIcon />,
-  keyBinding: '$mod+R',
-  run() {
-    location.reload();
-  },
-});
