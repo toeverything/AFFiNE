@@ -10,7 +10,6 @@ import {
   ConnectorMode,
   type EdgelessRootService,
 } from '@blocksuite/blocks';
-import { Bound } from '@blocksuite/global/utils';
 import {
   type AIChatBlockModel,
   type ChatMessage,
@@ -32,6 +31,7 @@ import { AIChatErrorRenderer } from '../messages/error';
 import { AIProvider } from '../provider';
 import { PeekViewStyles } from './styles';
 import type { ChatContext } from './types';
+import { calcChildBound } from './utils';
 
 @customElement('ai-chat-block-peek-view')
 export class AIChatBlockPeekView extends LitElement {
@@ -51,10 +51,6 @@ export class AIChatBlockPeekView extends LitElement {
 
   private get historyMessagesString() {
     return this.parentModel.messages;
-  }
-
-  private get parentXYWH() {
-    return this.parentModel.xywh;
   }
 
   private get parentChatBlockId() {
@@ -156,21 +152,6 @@ export class AIChatBlockPeekView extends LitElement {
       return;
     }
 
-    const parentXYWH = Bound.deserialize(this.parentXYWH);
-    const {
-      x: parentX,
-      y: parentY,
-      w: parentWidth,
-      h: parentHeight,
-    } = parentXYWH;
-
-    // Add AI chat block to the center of the viewport
-    // TODO: optimize the position of the AI chat block
-    const gap = parentWidth;
-    const x = parentX + parentWidth + gap;
-    const y = parentY;
-    const bound = new Bound(x, y, parentWidth, parentHeight);
-
     // Get fork session messages
     const messages = await this._constructBranchChatBlockMessages(
       doc,
@@ -181,6 +162,7 @@ export class AIChatBlockPeekView extends LitElement {
     }
 
     const edgelessService = this._rootService as EdgelessRootService;
+    const bound = calcChildBound(this.parentModel, edgelessService);
     const aiChatBlockId = edgelessService.addBlock(
       'affine:embed-ai-chat' as keyof BlockSuite.BlockModels,
       {
