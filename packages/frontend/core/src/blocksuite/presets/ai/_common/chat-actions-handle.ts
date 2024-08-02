@@ -48,16 +48,16 @@ export type ChatAction = {
   ) => Promise<boolean>;
 };
 
-export async function queryHistoryMessages(doc: Doc, forkSessionId: string) {
+export async function queryHistoryMessages(
+  workspaceId: string,
+  docId: string,
+  forkSessionId: string
+) {
   // Get fork session messages
-  const histories = await AIProvider.histories?.chats(
-    doc.collection.id,
-    doc.id,
-    {
-      sessionId: forkSessionId,
-      messageOrder: ChatHistoryOrder.asc,
-    }
-  );
+  const histories = await AIProvider.histories?.chats(workspaceId, docId, {
+    sessionId: forkSessionId,
+    messageOrder: ChatHistoryOrder.asc,
+  });
 
   if (!histories || !histories.length) {
     return [];
@@ -98,7 +98,11 @@ export async function constructRootChatBlockMessages(
 ) {
   // Convert chat messages to AI chat block messages
   const userInfo = await AIProvider.userInfo;
-  const forkMessages = await queryHistoryMessages(doc, forkSessionId);
+  const forkMessages = await queryHistoryMessages(
+    doc.collection.id,
+    doc.id,
+    forkSessionId
+  );
   return constructUserInfoWithMessages(forkMessages, userInfo);
 }
 
@@ -163,6 +167,8 @@ function addAIChatBlock(
       messages: JSON.stringify(messages),
       index: layer.generateIndex('affine:embed-ai-chat'),
       sessionId,
+      rootWorkspaceId: doc.collection.id,
+      rootDocId: doc.id,
     },
     surfaceBlock.id
   );

@@ -15,7 +15,6 @@ import {
   type ChatMessage,
   ChatMessagesSchema,
 } from '@blocksuite/presets';
-import type { Doc } from '@blocksuite/store';
 import { html, LitElement, nothing } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
@@ -57,6 +56,14 @@ export class AIChatBlockPeekView extends LitElement {
     return this.parentModel.id;
   }
 
+  private get parentRootDocId() {
+    return this.parentModel.rootDocId;
+  }
+
+  private get parentRootWorkspaceId() {
+    return this.parentModel.rootWorkspaceId;
+  }
+
   private readonly _deserializeHistoryChatMessages = (
     historyMessagesString: string
   ) => {
@@ -75,11 +82,16 @@ export class AIChatBlockPeekView extends LitElement {
   };
 
   private readonly _constructBranchChatBlockMessages = async (
-    doc: Doc,
+    rootWorkspaceId: string,
+    rootDocId: string,
     forkSessionId: string
   ) => {
     const currentUserInfo = await AIProvider.userInfo;
-    const forkMessages = await queryHistoryMessages(doc, forkSessionId);
+    const forkMessages = await queryHistoryMessages(
+      rootWorkspaceId,
+      rootDocId,
+      forkSessionId
+    );
     const forkLength = forkMessages.length;
     const historyLength = this._historyMessages.length;
 
@@ -153,8 +165,10 @@ export class AIChatBlockPeekView extends LitElement {
     }
 
     // Get fork session messages
+    const { parentRootWorkspaceId, parentRootDocId } = this;
     const messages = await this._constructBranchChatBlockMessages(
-      doc,
+      parentRootWorkspaceId,
+      parentRootDocId,
       this.chatContext.currentSessionId
     );
     if (!messages.length) {
@@ -169,6 +183,8 @@ export class AIChatBlockPeekView extends LitElement {
         xywh: bound.serialize(),
         messages: JSON.stringify(messages),
         sessionId: this.chatContext.currentSessionId,
+        rootWorkspaceId: parentRootWorkspaceId,
+        rootDocId: parentRootDocId,
       },
       surfaceBlock.id
     );
@@ -212,8 +228,10 @@ export class AIChatBlockPeekView extends LitElement {
     const chatBlock = doc.getBlock(this.chatContext.currentChatBlockId);
 
     // Get fork session messages
+    const { parentRootWorkspaceId, parentRootDocId } = this;
     const messages = await this._constructBranchChatBlockMessages(
-      doc,
+      parentRootWorkspaceId,
+      parentRootDocId,
       this.chatContext.currentSessionId
     );
     if (!messages.length) {
@@ -346,58 +364,66 @@ export class AIChatBlockPeekView extends LitElement {
     const { host } = this;
     const actions = ChatBlockPeekViewActions;
 
-    return html`${repeat(
-      currentMessages,
-      message => message.createdAt + message.content,
-      (message, idx) => {
-        const { status, error } = this.chatContext;
-        const isAssistantMessage = message.role === 'assistant';
-        const isLastReply =
-          idx === currentMessages.length - 1 && isAssistantMessage;
-        const messageState =
-          isLastReply && status === 'transmitting' ? 'generating' : 'finished';
-        const shouldRenderError = isLastReply && status === 'error' && !!error;
-        const isNotReady = status === 'transmitting' || status === 'loading';
-        const shouldRenderCopyMore =
-          isAssistantMessage && !(isLastReply && isNotReady);
-        const shouldRenderActions =
-          isLastReply && !!message.content && !isNotReady;
+    return html`${repeat(currentMessages, (message, idx) => {
+      const { status, error } = this.chatContext;
+      const isAssistantMessage = message.role === 'assistant';
+      const isLastReply =
+        idx === currentMessages.length - 1 && isAssistantMessage;
+      const messageState =
+        isLastReply && (status === 'transmitting' || status === 'loading')
+          ? 'generating'
+          : 'finished';
+      const shouldRenderError = isLastReply && status === 'error' && !!error;
+      const isNotReady = status === 'transmitting' || status === 'loading';
+      const shouldRenderCopyMore =
+        isAssistantMessage && !(isLastReply && isNotReady);
+      const shouldRenderActions =
+        isLastReply && !!message.content && !isNotReady;
 
-        const messageClasses = classMap({
-          'assistant-message-container': isAssistantMessage,
-        });
+      const messageClasses = classMap({
+        'assistant-message-container': isAssistantMessage,
+      });
 
-        return html`<div class=${messageClasses}>
-          <ai-chat-message
-            .host=${host}
-            .message=${message}
-            .state=${messageState}
-          ></ai-chat-message>
-          ${shouldRenderError ? AIChatErrorRenderer(host, error) : nothing}
-          ${shouldRenderCopyMore
-            ? html` <chat-copy-more
-                .host=${host}
-                .actions=${actions}
-                .content=${message.content}
-                .isLast=${isLastReply}
-                .chatSessionId=${this.chatContext.currentSessionId ?? undefined}
-                .messageId=${message.id ?? undefined}
-                .retry=${() => this.retry()}
-              ></chat-copy-more>`
-            : nothing}
-          ${shouldRenderActions
-            ? html`<chat-action-list
-                .host=${host}
-                .actions=${actions}
-                .content=${message.content}
-                .chatSessionId=${this.chatContext.currentSessionId ?? undefined}
-                .messageId=${message.id ?? undefined}
-                .layoutDirection=${'horizontal'}
-              ></chat-action-list>`
-            : nothing}
-        </div>`;
-      }
-    )}`;
+      const { attachments, role, content } = message;
+      const userInfo = {
+        userId: message.userId,
+        userName: message.userName,
+        avatarUrl: message.avatarUrl,
+      };
+
+      return html`<div class=${messageClasses}>
+        <ai-chat-message
+          .host=${host}
+          .state=${messageState}
+          .content=${content}
+          .attachments=${attachments}
+          .role=${role}
+          .userInfo=${userInfo}
+        ></ai-chat-message>
+        ${shouldRenderError ? AIChatErrorRenderer(host, error) : nothing}
+        ${shouldRenderCopyMore
+          ? html` <chat-copy-more
+              .host=${host}
+              .actions=${actions}
+              .content=${message.content}
+              .isLast=${isLastReply}
+              .chatSessionId=${this.chatContext.currentSessionId ?? undefined}
+              .messageId=${message.id ?? undefined}
+              .retry=${() => this.retry()}
+            ></chat-copy-more>`
+          : nothing}
+        ${shouldRenderActions
+          ? html`<chat-action-list
+              .host=${host}
+              .actions=${actions}
+              .content=${message.content}
+              .chatSessionId=${this.chatContext.currentSessionId ?? undefined}
+              .messageId=${message.id ?? undefined}
+              .layoutDirection=${'horizontal'}
+            ></chat-action-list>`
+          : nothing}
+      </div>`;
+    })}`;
   };
 
   override connectedCallback() {
@@ -405,7 +431,12 @@ export class AIChatBlockPeekView extends LitElement {
     this._historyMessages = this._deserializeHistoryChatMessages(
       this.historyMessagesString
     );
-    queryHistoryMessages(this.host.doc, this.parentSessionId)
+    const { parentRootWorkspaceId, parentRootDocId, parentSessionId } = this;
+    queryHistoryMessages(
+      parentRootWorkspaceId,
+      parentRootDocId,
+      parentSessionId
+    )
       .then(messages => {
         this._historyMessages = this._historyMessages.map((message, idx) => {
           return {
