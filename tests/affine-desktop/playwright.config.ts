@@ -18,9 +18,13 @@ const config: PlaywrightTestConfig = {
   fullyParallel: true,
   workers: 2,
   timeout: process.env.CI ? 50_000 : 30_000,
+  expect: {
+    timeout: process.env.CI ? 5_000 : 10_000,
+  },
   outputDir: testResultDir,
   use: {
     viewport: { width: 1440, height: 800 },
+    trace: 'on-first-retry',
   },
 };
 
