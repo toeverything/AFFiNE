@@ -432,6 +432,24 @@ test.describe('chat with block', () => {
         expect(await collectImageAnswer(page)).toBeTruthy();
       });
 
+      const processes = ['Clearer', 'Remove background', 'Convert to sticker'];
+      for (const process of processes) {
+        // skip by default, image processing depends on image content
+        test.skip(`image processing ${process}`, async ({ page }) => {
+          await page
+            .waitForSelector('.ai-item-image-processing')
+            .then(i => i.hover());
+          await page.getByText(`${process} style`).click();
+          {
+            // to be remove
+            await page.keyboard.type('test');
+            await page.keyboard.press('Enter');
+          }
+
+          expect(await collectImageAnswer(page)).toBeTruthy();
+        });
+      }
+
       const filters = ['Clay', 'Sketch', 'Anime', 'Pixel'];
       for (const filter of filters) {
         // skip by default, image generate is very slow
