@@ -37,6 +37,12 @@ export class FavoriteStore extends Store {
     });
   }
 
+  watchIsLoading() {
+    return this.userdataDB$
+      .map(db => LiveData.from(db.favorite.isLoading$, false))
+      .flat();
+  }
+
   watchFavorites() {
     return this.userdataDB$
       .map(db => LiveData.from(db.favorite.find$(), []))

@@ -22,6 +22,25 @@ export {
   ReadonlyStorage as ReadonlyDocStorage,
 } from './storage';
 
+export interface DocEngineDocState {
+  /**
+   * is syncing with the server
+   */
+  syncing: boolean;
+  /**
+   * is saving to local storage
+   */
+  saving: boolean;
+  /**
+   * is loading from local storage
+   */
+  loading: boolean;
+  retrying: boolean;
+  ready: boolean;
+  errorMessage: string | null;
+  serverClock: number | null;
+}
+
 export class DocEngine {
   readonly clientId: string;
   localPart: DocEngineLocalPart;
@@ -53,13 +72,14 @@ export class DocEngine {
   docState$(docId: string) {
     const localState$ = this.localPart.docState$(docId);
     const remoteState$ = this.remotePart?.docState$(docId);
-    return LiveData.computed(get => {
+    return LiveData.computed<DocEngineDocState>(get => {
       const localState = get(localState$);
       const remoteState = remoteState$ ? get(remoteState$) : null;
       if (remoteState) {
         return {
           syncing: remoteState.syncing,
           saving: localState.syncing,
+          loading: localState.syncing,
           retrying: remoteState.retrying,
           ready: localState.ready,
           errorMessage: remoteState.errorMessage,
@@ -69,6 +89,7 @@ export class DocEngine {
       return {
         syncing: localState.syncing,
         saving: localState.syncing,
+        loading: localState.syncing,
         ready: localState.ready,
         retrying: false,
         errorMessage: null,

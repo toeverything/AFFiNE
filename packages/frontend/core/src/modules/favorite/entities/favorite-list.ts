@@ -9,6 +9,7 @@ export class FavoriteList extends Entity {
   sortedList$ = this.list$.map(v =>
     v.sort((a, b) => (a.index > b.index ? 1 : -1))
   );
+  isLoading$ = this.store.watchIsLoading();
 
   constructor(private readonly store: FavoriteStore) {
     super();

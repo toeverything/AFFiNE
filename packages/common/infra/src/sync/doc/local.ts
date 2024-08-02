@@ -40,6 +40,7 @@ export interface LocalEngineState {
 
 export interface LocalDocState {
   ready: boolean;
+  loading: boolean;
   syncing: boolean;
 }
 
@@ -81,6 +82,7 @@ export class DocEngineLocalPart {
         const next = () => {
           subscribe.next({
             ready: this.status.readyDocs.has(docId) ?? false,
+            loading: this.status.connectedDocs.has(docId),
             syncing:
               (this.status.jobMap.get(docId)?.length ?? 0) > 0 ||
               this.status.currentJob?.docId === docId,
@@ -91,7 +93,7 @@ export class DocEngineLocalPart {
           if (updatedId === docId) next();
         });
       }),
-      { ready: false, syncing: false }
+      { ready: false, loading: false, syncing: false }
     );
   }
 

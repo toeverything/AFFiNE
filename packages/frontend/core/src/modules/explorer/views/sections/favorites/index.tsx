@@ -44,6 +44,8 @@ export const ExplorerFavorites = () => {
 
   const favorites = useLiveData(favoriteService.favoriteList.sortedList$);
 
+  const isLoading = useLiveData(favoriteService.favoriteList.isLoading$);
+
   const t = useI18n();
 
   const handleDrop = useCallback(
@@ -262,6 +264,7 @@ export const ExplorerFavorites = () => {
             onDrop={handleDrop}
             canDrop={handleCanDrop}
             dropEffect={handleDropEffect}
+            isLoading={isLoading}
           />
         }
       >

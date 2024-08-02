@@ -16,6 +16,10 @@ export class FolderStore extends Store {
     });
   }
 
+  watchIsLoading() {
+    return this.dbService.db.folders.isLoading$;
+  }
+
   isAncestor(childId: string, ancestorId: string): boolean {
     if (childId === ancestorId) {
       return false;

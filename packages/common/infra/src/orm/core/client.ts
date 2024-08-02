@@ -5,7 +5,7 @@ import { validators } from './validators';
 
 export class ORMClient {
   static hooksMap: Map<string, Hook<any>[]> = new Map();
-  private readonly tables = new Map<string, Table<any>>();
+  readonly tables = new Map<string, Table<any>>();
   constructor(
     protected readonly db: DBSchemaBuilder,
     protected readonly adapter: DBAdapter

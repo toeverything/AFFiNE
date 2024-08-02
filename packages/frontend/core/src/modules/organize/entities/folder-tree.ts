@@ -13,6 +13,8 @@ export class FolderTree extends Entity {
     id: null,
   });
 
+  isLoading$ = this.folderStore.watchIsLoading();
+
   // get folder by id
   folderNode$(id: string) {
     return LiveData.from(

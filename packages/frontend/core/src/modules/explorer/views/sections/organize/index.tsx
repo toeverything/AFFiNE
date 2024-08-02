@@ -39,6 +39,7 @@ export const ExplorerOrganize = () => {
   const rootFolder = organizeService.folderTree.rootFolder;
 
   const folders = useLiveData(rootFolder.sortedChildren$);
+  const isLoading = useLiveData(organizeService.folderTree.isLoading$);
 
   const handleCreateFolder = useCallback(() => {
     const newFolderId = rootFolder.createFolder(
@@ -128,7 +129,9 @@ export const ExplorerOrganize = () => {
       }
     >
       <ExplorerTreeRoot
-        placeholder={<RootEmpty onClickCreate={handleCreateFolder} />}
+        placeholder={
+          <RootEmpty onClickCreate={handleCreateFolder} isLoading={isLoading} />
+        }
       >
         {folders.map(child => (
           <ExplorerFolderNode

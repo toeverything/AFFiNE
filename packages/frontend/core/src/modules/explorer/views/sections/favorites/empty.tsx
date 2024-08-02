@@ -1,6 +1,7 @@
 import {
   type DropTargetDropEvent,
   type DropTargetOptions,
+  Skeleton,
   useDropTarget,
 } from '@affine/component';
 import type { AffineDNDData } from '@affine/core/types/dnd';
@@ -13,11 +14,13 @@ import { DropEffect, type ExplorerTreeNodeDropEffect } from '../../tree';
 export const RootEmpty = ({
   onDrop,
   canDrop,
+  isLoading,
   dropEffect,
 }: {
   onDrop?: (data: DropTargetDropEvent<AffineDNDData>) => void;
   canDrop?: DropTargetOptions<AffineDNDData>['canDrop'];
   dropEffect?: ExplorerTreeNodeDropEffect;
+  isLoading?: boolean;
 }) => {
   const t = useI18n();
 
@@ -32,6 +35,10 @@ export const RootEmpty = ({
       }),
       [onDrop, canDrop]
     );
+
+  if (isLoading) {
+    return <Skeleton />;
+  }
 
   return (
     <ExplorerEmptySection
