@@ -402,9 +402,21 @@ test.describe('chat with block', () => {
     test.describe('edgeless mode', () => {
       test.beforeEach(async ({ page }) => {
         await switchToEdgelessMode(page);
-        await page
-          .waitForSelector('affine-edgeless-note')
-          .then(n => n.dblclick());
+        const note = await page.waitForSelector('affine-edgeless-note');
+
+        {
+          // move note to avoid menu overlap
+          const box = (await note.boundingBox())!;
+          page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+          page.mouse.down();
+          // sleep to avoid flicker
+          await page.waitForTimeout(500);
+          page.mouse.move(box.x + box.width / 2, box.y + box.height / 2 - 200);
+          await page.waitForTimeout(500);
+          page.mouse.up();
+          note.click();
+        }
+
         await page.waitForSelector('affine-image').then(i => i.click());
         await page
           .waitForSelector('affine-image editor-toolbar ask-ai-button')
