@@ -30,6 +30,8 @@ import {
   type RootService,
 } from '@blocksuite/blocks';
 import { LinkIcon } from '@blocksuite/icons/rc';
+import { AIChatBlockSchema } from '@blocksuite/presets';
+import type { BlockSnapshot } from '@blocksuite/store';
 import {
   type DocMode,
   type DocService,
@@ -506,6 +508,61 @@ export function patchQuickSearchService(
       }
     }
   );
+
+  return specs;
+}
+
+export function patchEdgelessClipboard(specs: BlockSpec[]) {
+  const rootSpec = specs.find(
+    spec => spec.schema.model.flavour === 'affine:page'
+  ) as BlockSpec<string, RootService>;
+
+  if (!rootSpec) {
+    return specs;
+  }
+
+  const oldSetup = rootSpec.setup;
+  rootSpec.setup = (slots, disposableGroup) => {
+    oldSetup?.(slots, disposableGroup);
+    disposableGroup.add(
+      slots.viewConnected.on(view => {
+        const component = view.component;
+        if (component instanceof EdgelessRootBlockComponent) {
+          const AIChatBlockFlavour = AIChatBlockSchema.model.flavour;
+          const createFunc = (blocks: BlockSnapshot[]) => {
+            const blockIds = blocks.map(({ props }) => {
+              const {
+                xywh,
+                scale,
+                messages,
+                sessionId,
+                rootDocId,
+                rootWorkspaceId,
+              } = props;
+              const blockId = component.service.addBlock(
+                AIChatBlockFlavour,
+                {
+                  xywh,
+                  scale,
+                  messages,
+                  sessionId,
+                  rootDocId,
+                  rootWorkspaceId,
+                },
+                component.surface.model.id
+              );
+              return blockId;
+            });
+            return blockIds;
+          };
+          component.clipboardController.registerBlock(
+            AIChatBlockFlavour,
+            createFunc
+          );
+        }
+      })
+    );
+  };
 
   return specs;
 }

@@ -37,6 +37,7 @@ import { BiDirectionalLinkPanel } from './bi-directional-link-panel';
 import { BlocksuiteEditorJournalDocTitle } from './journal-doc-title';
 import {
   patchDocModeService,
+  patchEdgelessClipboard,
   patchForSharedPage,
   patchNotificationService,
   patchPeekViewService,
@@ -102,6 +103,7 @@ const usePatchSpecs = (page: Doc, shared: boolean, mode: DocMode) => {
       confirmModal
     );
     patched = patchPeekViewService(patched, peekViewService);
+    patched = patchEdgelessClipboard(patched);
     if (!page.readonly) {
       patched = patchQuickSearchService(patched, framework);
     }
