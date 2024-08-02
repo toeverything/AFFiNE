@@ -307,7 +307,7 @@ export const DetailPage = ({ pageId }: { pageId: string }): ReactElement => {
   const docsService = useService(DocsService);
   const docRecordList = docsService.list;
   const docListReady = useLiveData(docRecordList.isReady$);
-  const docRecord = docRecordList.doc$(pageId).value;
+  const docRecord = useLiveData(docRecordList.doc$(pageId));
 
   const [doc, setDoc] = useState<Doc | null>(null);
 
