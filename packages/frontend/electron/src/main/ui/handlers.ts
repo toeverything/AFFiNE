@@ -18,6 +18,7 @@ import {
   initAndShowMainWindow,
   isActiveTab,
   launchStage,
+  moveTab,
   pingAppLayoutReady,
   showDevTools,
   showTab,
@@ -192,6 +193,9 @@ export const uiHandlers = {
   },
   activateView: async (_, ...args: Parameters<typeof activateView>) => {
     await activateView(...args);
+  },
+  moveTab: async (_, ...args: Parameters<typeof moveTab>) => {
+    moveTab(...args);
   },
   toggleRightSidebar: async (_, tabId?: string) => {
     tabId ??= getTabViewsMeta().activeWorkbenchId;

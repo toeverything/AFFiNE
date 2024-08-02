@@ -1,4 +1,11 @@
-import { IconButton, Loading } from '@affine/component';
+import {
+  type DropTargetDropEvent,
+  type DropTargetOptions,
+  IconButton,
+  Loading,
+  useDraggable,
+  useDropTarget,
+} from '@affine/component';
 import {
   appSidebarFloatingAtom,
   appSidebarOpenAtom,
@@ -7,6 +14,7 @@ import {
 import { appSidebarWidthAtom } from '@affine/core/components/app-sidebar/index.jotai';
 import { WindowsAppControls } from '@affine/core/components/pure/header/windows-app-controls';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
+import type { AffineDNDData } from '@affine/core/types/dnd';
 import { apis, events } from '@affine/electron-api';
 import { CloseIcon, PlusIcon, RightSidebarIcon } from '@blocksuite/icons/rc';
 import {
@@ -33,27 +41,53 @@ import {
 } from '../services/app-tabs-header-service';
 import * as styles from './styles.css';
 
+const TabSupportType = ['collection', 'tag', 'doc'];
+
+const tabCanDrop =
+  (tab?: TabStatus): NonNullable<DropTargetOptions<AffineDNDData>['canDrop']> =>
+  ctx => {
+    if (
+      ctx.source.data.from?.at === 'app-header:tabs' &&
+      ctx.source.data.from.tabId !== tab?.id
+    ) {
+      return true;
+    }
+
+    if (
+      ctx.source.data.entity?.type &&
+      TabSupportType.includes(ctx.source.data.entity?.type)
+    ) {
+      return true;
+    }
+
+    return false;
+  };
+
 const WorkbenchTab = ({
   workbench,
   active: tabActive,
   tabsLength,
+  dnd,
+  onDrop,
 }: {
   workbench: TabStatus;
   active: boolean;
   tabsLength: number;
+  dnd?: boolean;
+  onDrop?: (data: DropTargetDropEvent<AffineDNDData>) => void;
 }) => {
   useServiceOptional(DesktopStateSynchronizer);
   const tabsHeaderService = useService(AppTabsHeaderService);
   const activeViewIndex = workbench.activeViewIndex ?? 0;
   const onContextMenu = useAsyncCallback(
     async (viewIdx: number) => {
-      await tabsHeaderService.showContextMenu(workbench.id, viewIdx);
+      await tabsHeaderService.showContextMenu?.(workbench.id, viewIdx);
     },
     [tabsHeaderService, workbench.id]
   );
   const onActivateView = useAsyncCallback(
     async (viewIdx: number) => {
-      await tabsHeaderService.activateView(workbench.id, viewIdx);
+      await tabsHeaderService.activateView?.(workbench.id, viewIdx);
     },
     [tabsHeaderService, workbench.id]
   );
@@ -61,66 +95,104 @@ const WorkbenchTab = ({
     async e => {
       e.stopPropagation();
 
-      await tabsHeaderService.closeTab(workbench.id);
+      await tabsHeaderService.closeTab?.(workbench.id);
     },
     [tabsHeaderService, workbench.id]
   );
 
+  const { dropTargetRef, closestEdge } = useDropTarget<AffineDNDData>(
+    () => ({
+      closestEdge: {
+        allowedEdges: ['left', 'right'],
+      },
+      onDrop,
+      dropEffect: 'move',
+      canDrop: tabCanDrop(workbench),
+      isSticky: true,
+    }),
+    [onDrop, workbench]
+  );
+
+  const { dragRef } = useDraggable<AffineDNDData>(
+    () => ({
+      canDrag: dnd,
+      data: {
+        from: {
+          at: 'app-header:tabs',
+          tabId: workbench.id,
+        },
+      },
+      dragPreviewPosition: 'pointer-outside',
+    }),
+    [dnd, workbench.id]
+  );
+
   return (
     <div
-      key={workbench.id}
-      data-testid="workbench-tab"
-      data-active={tabActive}
-      data-pinned={workbench.pinned}
-      className={styles.tab}
+      className={styles.tabWrapper}
+      ref={node => {
+        dropTargetRef.current = node;
+        dragRef.current = node;
+      }}
     >
-      {workbench.views.map((view, viewIdx) => {
-        return (
-          <Fragment key={view.id}>
-            <button
-              key={view.id}
-              data-testid="split-view-label"
-              className={styles.splitViewLabel}
-              data-active={activeViewIndex === viewIdx && tabActive}
-              onContextMenu={() => {
-                onContextMenu(viewIdx);
-              }}
-              onClick={e => {
-                e.stopPropagation();
-                onActivateView(viewIdx);
-              }}
-            >
-              <div className={styles.labelIcon}>
-                {workbench.ready || !workbench.loaded ? (
-                  iconNameToIcon[view.iconName ?? 'allDocs']
-                ) : (
-                  <Loading />
-                )}
-              </div>
-              {workbench.pinned || !view.title ? null : (
-                <div title={view.title} className={styles.splitViewLabelText}>
-                  {view.title}
+      <div
+        key={workbench.id}
+        data-testid="workbench-tab"
+        data-active={tabActive}
+        data-pinned={workbench.pinned}
+        className={styles.tab}
+      >
+        {workbench.views.map((view, viewIdx) => {
+          return (
+            <Fragment key={view.id}>
+              <button
+                key={view.id}
+                data-testid="split-view-label"
+                className={styles.splitViewLabel}
+                data-active={activeViewIndex === viewIdx && tabActive}
+                onContextMenu={() => {
+                  onContextMenu(viewIdx);
+                }}
+                onClick={e => {
+                  e.stopPropagation();
+                  onActivateView(viewIdx);
+                }}
+              >
+                <div className={styles.labelIcon}>
+                  {workbench.ready || !workbench.loaded ? (
+                    iconNameToIcon[view.iconName ?? 'allDocs']
+                  ) : (
+                    <Loading />
+                  )}
                 </div>
-              )}
-            </button>
+                {workbench.pinned || !view.title ? null : (
+                  <div title={view.title} className={styles.splitViewLabelText}>
+                    {view.title}
+                  </div>
+                )}
+              </button>
 
-            {viewIdx !== workbench.views.length - 1 ? (
-              <div className={styles.splitViewSeparator} />
+              {viewIdx !== workbench.views.length - 1 ? (
+                <div className={styles.splitViewSeparator} />
+              ) : null}
+            </Fragment>
+          );
+        })}
+        {!workbench.pinned ? (
+          <div className={styles.tabCloseButtonWrapper}>
+            {tabsLength > 1 ? (
+              <button
+                data-testid="close-tab-button"
+                className={styles.tabCloseButton}
+                onClick={onCloseTab}
+              >
+                <CloseIcon />
+              </button>
             ) : null}
-          </Fragment>
-        );
-      })}
-      <div className={styles.tabCloseButtonWrapper}>
-        {!workbench.pinned && tabsLength > 1 ? (
-          <button
-            data-testid="close-tab-button"
-            className={styles.tabCloseButton}
-            onClick={onCloseTab}
-          >
-            <CloseIcon />
-          </button>
+          </div>
         ) : null}
       </div>
+      <div className={styles.dropIndicator} data-edge={closestEdge} />
     </div>
   );
 };
@@ -164,11 +236,11 @@ export const AppTabsHeader = ({
   const [pinned, unpinned] = partition(tabs, tab => tab.pinned);
 
   const onAddTab = useAsyncCallback(async () => {
-    await tabsHeaderService.onAddTab();
+    await tabsHeaderService.onAddTab?.();
   }, [tabsHeaderService]);
 
   const onToggleRightSidebar = useAsyncCallback(async () => {
-    await tabsHeaderService.onToggleRightSidebar();
+    await tabsHeaderService.onToggleRightSidebar?.();
   }, [tabsHeaderService]);
 
   useEffect(() => {
@@ -176,6 +248,63 @@ export const AppTabsHeader = ({
       apis?.ui.pingAppLayoutReady().catch(console.error);
     }
   }, [mode]);
+
+  const onDrop = useAsyncCallback(
+    async (data: DropTargetDropEvent<AffineDNDData>, targetId?: string) => {
+      const edge = data.closestEdge ?? 'right';
+      targetId = targetId ?? tabs.at(-1)?.id;
+
+      if (!targetId || edge === 'top' || edge === 'bottom') {
+        return;
+      }
+
+      if (data.source.data.from?.at === 'app-header:tabs') {
+        if (targetId === data.source.data.from.tabId) {
+          return;
+        }
+        return await tabsHeaderService.moveTab?.(
+          data.source.data.from.tabId,
+          targetId,
+          edge
+        );
+      }
+
+      if (data.source.data.entity?.type === 'doc') {
+        return await tabsHeaderService.onAddDocTab?.(
+          data.source.data.entity.id,
+          targetId,
+          edge
+        );
+      }
+
+      if (data.source.data.entity?.type === 'tag') {
+        return await tabsHeaderService.onAddTagTab?.(
+          data.source.data.entity.id,
+          targetId,
+          edge
+        );
+      }
+
+      if (data.source.data.entity?.type === 'collection') {
+        return await tabsHeaderService.onAddCollectionTab?.(
+          data.source.data.entity.id,
+          targetId,
+          edge
+        );
+      }
+    },
+    [tabs, tabsHeaderService]
+  );
+
+  const { dropTargetRef: spacerDropTargetRef, draggedOver } =
+    useDropTarget<AffineDNDData>(
+      () => ({
+        onDrop,
+        dropEffect: 'move',
+        canDrop: tabCanDrop(),
+      }),
+      [onDrop]
+    );
 
   return (
     <div
@@ -203,9 +332,11 @@ export const AppTabsHeader = ({
         {pinned.map(tab => {
           return (
             <WorkbenchTab
+              dnd={mode === 'app'}
               tabsLength={pinned.length}
               key={tab.id}
               workbench={tab}
+              onDrop={data => onDrop(data, tab.id)}
               active={tab.active}
             />
           );
@@ -213,21 +344,28 @@ export const AppTabsHeader = ({
         {pinned.length > 0 && unpinned.length > 0 && (
           <div className={styles.pinSeparator} />
         )}
-        {unpinned.map(workbench => {
+        {unpinned.map(tab => {
           return (
             <WorkbenchTab
+              dnd={mode === 'app'}
               tabsLength={tabs.length}
-              key={workbench.id}
-              workbench={workbench}
-              active={workbench.active}
+              key={tab.id}
+              workbench={tab}
+              onDrop={data => onDrop(data, tab.id)}
+              active={tab.active}
             />
           );
         })}
+      </div>
+      <div
+        className={styles.spacer}
+        ref={spacerDropTargetRef}
+        data-dragged-over={draggedOver}
+      >
         <IconButton onClick={onAddTab} data-testid="add-tab-view-button">
           <PlusIcon />
         </IconButton>
       </div>
-      <div className={styles.spacer} />
       <IconButton size="large" onClick={onToggleRightSidebar}>
         <RightSidebarIcon />
       </IconButton>

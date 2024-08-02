@@ -58,6 +58,10 @@ export interface AffineDNDData extends DNDData {
         }
       | {
           at: 'explorer:tags:docs';
+        }
+      | {
+          at: 'app-header:tabs';
+          tabId: string;
         };
   };
   dropTarget:
@@ -84,6 +88,9 @@ export interface AffineDNDData extends DNDData {
       }
     | {
         at: 'explorer:tag';
+      }
+    | {
+        at: 'app-header:tabs';
       }
     | Record<string, unknown>;
 }

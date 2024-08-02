@@ -115,8 +115,14 @@ type TabAction =
   | OpenInSplitViewAction;
 
 type AddTabOption = {
-  basename: string;
+  basename?: string;
   view?: Omit<WorkbenchViewMeta, 'id'> | Array<Omit<WorkbenchViewMeta, 'id'>>;
+  target?: string;
+  edge?: 'left' | 'right';
+  /**
+   * Whether to show the tab after adding.
+   */
+  show?: boolean;
 };
 
 export class WebContentViewsManager {
@@ -405,27 +411,32 @@ export class WebContentViewsManager {
         id: nanoid(),
       };
     });
+
+    const targetItem =
+      workbenches.find(w => w.id === option.target) ?? workbenches.at(-1);
+
+    const newIndex =
+      (targetItem ? workbenches.indexOf(targetItem) : workbenches.length) +
+      (option.edge === 'left' ? 0 : 1);
+
     const workbench: WorkbenchMeta = {
-      basename: option.basename,
+      basename: option.basename ?? this.activeWorkbenchMeta?.basename ?? '/',
       activeViewIndex: 0,
       views: views,
       id: newKey,
-      pinned: false,
+      pinned: targetItem?.pinned ?? false,
     };
 
     this.patchTabViewsMeta({
-      activeWorkbenchId: newKey,
-      workbenches: [...workbenches, workbench],
+      workbenches: workbenches.toSpliced(newIndex, 0, workbench),
+      activeWorkbenchId: this.activeWorkbenchId ?? newKey,
     });
-    await this.showTab(newKey);
+    await (option.show !== false ? this.showTab(newKey) : this.loadTab(newKey));
     this.tabAction$.next({
       type: 'add-tab',
       payload: workbench,
     });
-    return {
-      ...option,
-      key: newKey,
-    };
+    return workbench;
   };
 
   loadTab = async (id: string): Promise<WebContentsView | undefined> => {
@@ -519,6 +530,42 @@ export class WebContentViewsManager {
       activeViewIndex: viewIndex,
     });
     await this.showTab(tabId);
+  };
+
+  moveTab = (from: string, to: string, edge?: 'left' | 'right') => {
+    const workbenches = this.tabViewsMeta.workbenches;
+    let fromItem = workbenches.find(w => w.id === from);
+    const toItem = workbenches.find(w => w.id === to);
+    if (!fromItem || !toItem) {
+      return;
+    }
+
+    const fromIndex = workbenches.indexOf(fromItem);
+
+    fromItem = {
+      ...fromItem,
+      pinned: toItem.pinned,
+    };
+
+    let workbenchesAfterMove = workbenches.toSpliced(fromIndex, 1);
+    const toIndex = workbenchesAfterMove.indexOf(toItem);
+    if (edge === 'left') {
+      workbenchesAfterMove = workbenchesAfterMove.toSpliced(
+        toIndex,
+        0,
+        fromItem
+      );
+    } else {
+      workbenchesAfterMove = workbenchesAfterMove.toSpliced(
+        toIndex + 1,
+        0,
+        fromItem
+      );
+    }
+
+    this.patchTabViewsMeta({
+      workbenches: workbenchesAfterMove,
+    });
   };
 
   separateView = (tabId: string, viewIndex: number) => {
@@ -906,6 +953,7 @@ export const showTab = WebContentViewsManager.instance.showTab;
 export const closeTab = WebContentViewsManager.instance.closeTab;
 export const undoCloseTab = WebContentViewsManager.instance.undoCloseTab;
 export const activateView = WebContentViewsManager.instance.activateView;
+export const moveTab = WebContentViewsManager.instance.moveTab;
 
 export const reloadView = async () => {
   const id = WebContentViewsManager.instance.activeWorkbenchId;

@@ -14,8 +14,8 @@ export async function waitForAllPagesLoad(page: Page) {
   });
 }
 
-export async function clickNewPageButton(page: Page) {
-  //FiXME: when the page is in edgeless mode, clickNewPageButton will create a new edgeless page
+export async function clickNewPageButton(page: Page, title?: string) {
+  // FiXME: when the page is in edgeless mode, clickNewPageButton will create a new edgeless page
   const edgelessPage = page.locator('edgeless-editor');
   if (await edgelessPage.isVisible()) {
     await page.getByTestId('switch-page-mode-button').click({
@@ -27,6 +27,9 @@ export async function clickNewPageButton(page: Page) {
     delay: 100,
   });
   await waitForEmptyEditor(page);
+  if (title) {
+    await getBlockSuiteEditorTitle(page).fill(title);
+  }
 }
 
 export async function waitForEmptyEditor(page: Page) {
@@ -75,7 +78,13 @@ export const dragTo = async (
   page: Page,
   locator: Locator,
   target: Locator,
-  location: 'top-left' | 'top' | 'bottom' | 'center' = 'center'
+  location:
+    | 'top-left'
+    | 'top'
+    | 'bottom'
+    | 'center'
+    | 'left'
+    | 'right' = 'center'
 ) => {
   await locator.hover();
   await page.mouse.down();
@@ -85,19 +94,29 @@ export const dragTo = async (
   if (!targetElement) {
     throw new Error('target element not found');
   }
-  const position =
-    location === 'center'
-      ? {
+  const position = (() => {
+    switch (location) {
+      case 'center':
+        return {
           x: targetElement.width / 2,
           y: targetElement.height / 2,
-        }
-      : location === 'top-left'
-        ? { x: 1, y: 1 }
-        : location === 'top'
-          ? { x: targetElement.width / 2, y: 1 }
-          : location === 'bottom'
-            ? { x: targetElement.width / 2, y: targetElement.height - 1 }
-            : { x: 1, y: 1 };
+        };
+      case 'top':
+        return { x: targetElement.width / 2, y: 1 };
+      case 'bottom':
+        return { x: targetElement.width / 2, y: targetElement.height - 1 };
+
+      case 'left':
+        return { x: 1, y: targetElement.height / 2 };
+
+      case 'right':
+        return { x: targetElement.width - 1, y: targetElement.height / 2 };
+
+      case 'top-left':
+      default:
+        return { x: 1, y: 1 };
+    }
+  })();
   await target.hover({
     position: position,
   });

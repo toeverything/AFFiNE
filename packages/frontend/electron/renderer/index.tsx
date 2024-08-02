@@ -1,5 +1,6 @@
 import './polyfill/dispose';
 import '@affine/core/bootstrap/preload';
+import './global.css';
 
 import { appConfigProxy } from '@affine/core/hooks/use-app-config-storage';
 import { performanceLogger } from '@affine/core/shared';
@@ -96,6 +97,12 @@ function main() {
     }, 50);
     window.addEventListener('resize', handleResize);
     performanceMainLogger.info('setup done');
+    window.addEventListener('dragstart', () => {
+      document.documentElement.dataset.dragging = 'true';
+    });
+    window.addEventListener('dragend', () => {
+      document.documentElement.dataset.dragging = 'false';
+    });
   }
 
   mountApp();

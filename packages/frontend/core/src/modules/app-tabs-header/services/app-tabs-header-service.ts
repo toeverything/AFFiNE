@@ -31,23 +31,63 @@ export class AppTabsHeaderService extends Service {
     []
   );
 
-  showContextMenu = async (workbenchId: string, viewIdx: number) => {
-    await apis?.ui.showTabContextMenu(workbenchId, viewIdx);
+  showContextMenu = apis?.ui.showTabContextMenu;
+
+  activateView = apis?.ui.activateView;
+
+  closeTab = apis?.ui.closeTab;
+
+  onAddTab = apis?.ui.addTab;
+
+  onAddDocTab = async (
+    docId: string,
+    targetTabId?: string,
+    edge?: 'left' | 'right'
+  ) => {
+    await apis?.ui.addTab({
+      view: {
+        path: {
+          pathname: '/' + docId,
+        },
+      },
+      target: targetTabId,
+      edge,
+    });
   };
 
-  activateView = async (workbenchId: string, viewIdx: number) => {
-    await apis?.ui.activateView(workbenchId, viewIdx);
+  onAddTagTab = async (
+    tagId: string,
+    targetTabId?: string,
+    edge?: 'left' | 'right'
+  ) => {
+    await apis?.ui.addTab({
+      view: {
+        path: {
+          pathname: '/tag/' + tagId,
+        },
+      },
+      target: targetTabId,
+      edge,
+    });
   };
 
-  closeTab = async (workbenchId: string) => {
-    await apis?.ui.closeTab(workbenchId);
+  onAddCollectionTab = async (
+    collectionId: string,
+    targetTabId?: string,
+    edge?: 'left' | 'right'
+  ) => {
+    await apis?.ui.addTab({
+      view: {
+        path: {
+          pathname: '/collection/' + collectionId,
+        },
+      },
+      target: targetTabId,
+      edge,
+    });
   };
 
-  onAddTab = async () => {
-    await apis?.ui.addTab();
-  };
+  onToggleRightSidebar = apis?.ui.toggleRightSidebar;
 
-  onToggleRightSidebar = async () => {
-    await apis?.ui.toggleRightSidebar();
-  };
+  moveTab = apis?.ui.moveTab;
 }

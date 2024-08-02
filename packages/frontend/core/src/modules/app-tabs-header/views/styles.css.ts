@@ -37,7 +37,6 @@ export const tabs = style({
   flexDirection: 'row',
   alignItems: 'center',
   padding: '0 8px',
-  gap: '8px',
   overflow: 'clip',
   height: '100%',
   selectors: {
@@ -52,6 +51,7 @@ export const pinSeparator = style({
   width: 1,
   height: 16,
   flexShrink: 0,
+  marginRight: 8,
 });
 
 export const splitViewSeparator = style({
@@ -59,6 +59,16 @@ export const splitViewSeparator = style({
   width: 1,
   height: '100%',
   flexShrink: 0,
+});
+
+export const tabWrapper = style({
+  display: 'flex',
+  alignItems: 'center',
+  height: '100%',
+  overflow: 'clip',
+  position: 'relative',
+  padding: '0 6px',
+  margin: '0 -6px',
 });
 
 export const tab = style({
@@ -75,6 +85,9 @@ export const tab = style({
   position: 'relative',
   ['WebkitAppRegion' as string]: 'no-drag',
   selectors: {
+    [`${tabWrapper} &`]: {
+      marginRight: 8,
+    },
     '&[data-active="true"]': {
       background: cssVar('backgroundPrimaryColor'),
       boxShadow: cssVar('shadow1'),
@@ -84,6 +97,9 @@ export const tab = style({
     },
     '&[data-pinned="true"]': {
       flexShrink: 0,
+    },
+    [`${tabWrapper}[data-dragging="true"] &`]: {
+      boxShadow: `0 0 0 1px ${cssVar('primaryColor')}`,
     },
   },
 });
@@ -192,4 +208,43 @@ export const tabCloseButton = style([
 
 export const spacer = style({
   flexGrow: 1,
+  height: '100%',
+  display: 'flex',
+  alignItems: 'center',
+  marginLeft: -8,
+  position: 'relative',
+  selectors: {
+    '&[data-dragged-over=true]:after': {
+      content: '""',
+      position: 'absolute',
+      top: 10,
+      height: 32,
+      left: -13,
+      right: 0,
+      width: 2,
+      borderRadius: 2,
+      background: cssVar('primaryColor'),
+    },
+  },
+});
+
+export const dropIndicator = style({
+  position: 'absolute',
+  height: 32,
+  top: 10,
+  width: 2,
+  borderRadius: 2,
+  opacity: 0,
+  background: cssVar('primaryColor'),
+  selectors: {
+    '&[data-edge="left"]': {
+      opacity: 1,
+      transform: 'translateX(-5px)',
+    },
+    '&[data-edge="right"]': {
+      right: 0,
+      opacity: 1,
+      transform: 'translateX(-9px)',
+    },
+  },
 });

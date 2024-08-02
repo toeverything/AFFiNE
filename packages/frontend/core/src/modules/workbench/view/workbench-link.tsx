@@ -40,6 +40,7 @@ export const WorkbenchLink = forwardRef<
             await apis?.ui.addTab({
               basename,
               view: { path },
+              show: false,
             });
           }
         } else if (!environment.isDesktop) {
