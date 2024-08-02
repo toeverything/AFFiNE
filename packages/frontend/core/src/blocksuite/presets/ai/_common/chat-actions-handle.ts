@@ -110,7 +110,7 @@ function getViewportCenter(
   mode: DocMode,
   rootService: PageRootService | EdgelessRootService
 ) {
-  const center = { x: 0, y: 0 };
+  const center = { x: 400, y: 50 };
   if (mode === 'page') {
     const viewport = rootService.editPropsStore.getStorage('viewport');
     if (viewport) {
@@ -138,7 +138,8 @@ function addAIChatBlock(
   host: EditorHost,
   messages: ChatMessage[],
   sessionId: string,
-  viewportCenter: { x: number; y: number }
+  viewportCenter: { x: number; y: number },
+  index: string
 ) {
   if (!messages.length || !sessionId) {
     return;
@@ -152,8 +153,6 @@ function addAIChatBlock(
     return;
   }
 
-  const surfaceService = host.spec.getService('affine:surface');
-  const { layer } = surfaceService;
   // Add AI chat block to the center of the viewport
   const width = 300; // AI_CHAT_BLOCK_WIDTH = 300
   const height = 320; // AI_CHAT_BLOCK_HEIGHT = 320
@@ -165,7 +164,7 @@ function addAIChatBlock(
     {
       xywh: bound.serialize(),
       messages: JSON.stringify(messages),
-      index: layer.generateIndex('affine:embed-ai-chat'),
+      index,
       sessionId,
       rootWorkspaceId: doc.collection.id,
       rootDocId: doc.id,
@@ -300,11 +299,14 @@ const SAVE_CHAT_TO_BLOCK_ACTION: ChatAction = {
     }
 
     const rootService = host.spec.getService('affine:page');
-    if (!rootService) return false;
+    const surfaceService = host.spec.getService('affine:surface');
+    if (!rootService || !surfaceService) return false;
 
     const { docModeService, notificationService } = rootService;
+    const { layer } = surfaceService;
     const curMode = docModeService.getMode();
     const viewportCenter = getViewportCenter(curMode, rootService);
+    const newBlockIndex = layer.generateIndex('affine:embed-ai-chat');
     // If current mode is not edgeless, switch to edgeless mode first
     if (curMode !== 'edgeless') {
       // Set mode to edgeless
@@ -342,7 +344,8 @@ const SAVE_CHAT_TO_BLOCK_ACTION: ChatAction = {
         host,
         messages,
         newSessionId,
-        viewportCenter
+        viewportCenter,
+        newBlockIndex
       );
       if (!blockId) {
         return false;
