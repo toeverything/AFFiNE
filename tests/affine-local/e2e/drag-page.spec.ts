@@ -59,7 +59,8 @@ const dragToTrash = async (page: Page, title: string, dragItem: Locator) => {
   const confirmTip = page.getByText('Delete doc?');
   await expect(confirmTip).toBeVisible();
 
-  await page.getByRole('button', { name: 'Delete' }).click();
+  await page.waitForSelector('button[name="Delete"]');
+  await page.getByRole('button', { name: 'Delete' }).focus();
 
   await expect(
     page.getByText(title),
