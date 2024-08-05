@@ -17,7 +17,7 @@ runs:
           PACKAGE_VERSION=$(node -p "require('./package.json').version")
           TIME_VERSION=$(date +%Y%m%d%H%M)
           GIT_SHORT_HASH=$(git rev-parse --short HEAD)
-          APP_VERSION=$PACKAGE_VERSION-$GIT_SHORT_HASH
+          APP_VERSION=$PACKAGE_VERSION-nightly-$GIT_SHORT_HASH
         fi
         echo $APP_VERSION
         echo "APP_VERSION=$APP_VERSION" >> "$GITHUB_OUTPUT"
