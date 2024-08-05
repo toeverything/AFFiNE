@@ -219,7 +219,7 @@ export const spacer = style({
       position: 'absolute',
       top: 10,
       height: 32,
-      left: -13,
+      left: -5,
       right: 0,
       width: 2,
       borderRadius: 2,
