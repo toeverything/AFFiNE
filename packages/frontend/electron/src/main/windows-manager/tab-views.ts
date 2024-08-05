@@ -1019,9 +1019,7 @@ export const showTabContextMenu = async (tabId: string, viewIndex: number) => {
     {
       label: 'Refresh tab',
       click: () => {
-        WebContentViewsManager.instance
-          .getViewById(tabId)
-          ?.webContents.reload();
+        reloadView().catch(logger.error);
       },
     },
     {
