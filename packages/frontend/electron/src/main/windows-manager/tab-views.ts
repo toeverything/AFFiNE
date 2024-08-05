@@ -316,7 +316,7 @@ export class WebContentViewsManager {
   };
 
   closeTab = async (id?: string) => {
-    if (!id) {
+    if (!id && !this.activeWorkbenchMeta?.pinned) {
       id = this.activeWorkbenchId;
     }
 

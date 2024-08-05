@@ -14,6 +14,10 @@ html {
   opacity: 0;
 }
 
+html[data-active='true'] {
+  opacity: 1;
+}
+
 html:is([data-active='false'], [data-dragging='true']) * {
   -webkit-app-region: no-drag !important;
 }
