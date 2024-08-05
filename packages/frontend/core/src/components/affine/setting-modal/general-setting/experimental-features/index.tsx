@@ -150,9 +150,6 @@ const blocksuiteFeatureFlags: Partial<Record<keyof BlockSuiteFlags, string>> = {
   enable_database_attachment_note: 'Enable Database Attachment Note',
   enable_database_statistics: 'Enable Database Block Statistics',
   enable_block_query: 'Enable Todo Block Query',
-  enable_ai_onboarding: 'Enable AI Onboarding',
-  enable_ai_chat_block: 'Enable AI Chat Block',
-  enable_color_picker: 'Enable Color Picker',
 };
 
 const BlocksuiteFeatureFlagSettings = () => {

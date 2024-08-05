@@ -21,12 +21,11 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
         enableExperimentalFeature: true,
         allowLocalWorkspace:
           buildFlags.distribution === 'desktop' ? true : false,
-        enableOrganize: false,
-        enableNewFavorite: false,
-        enableOldFavorite: true,
+        enableOrganize: true,
+        enableNewFavorite: true,
+        enableOldFavorite: false,
 
-        // TODO(@forehalo): enable in next release and canary
-        enableInfoModal: false,
+        enableInfoModal: true,
 
         // CAUTION(@forehalo): product not ready, do not enable it
         enableNewSettingUnstableApi: false,

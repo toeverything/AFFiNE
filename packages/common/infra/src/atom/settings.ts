@@ -95,6 +95,9 @@ export function setupEditorFlags(docCollection: DocCollection) {
       // TODO(@eyhn): need a better way to manage block suite flags
       docCollection.awarenessStore.setFlag('enable_synced_doc_block', true);
       docCollection.awarenessStore.setFlag('enable_edgeless_text', true);
+      docCollection.awarenessStore.setFlag('enable_color_picker', true);
+      docCollection.awarenessStore.setFlag('enable_ai_chat_block', true);
+      docCollection.awarenessStore.setFlag('enable_ai_onboarding', true);
     } catch (err) {
       logger.error('syncEditorFlags', err);
     }
