@@ -15,6 +15,7 @@ import {
   DeleteIcon,
   FavoritedIcon,
   FavoriteIcon,
+  OpenInNewIcon,
   PlusIcon,
   SplitViewIcon,
 } from '@blocksuite/icons/rc';
@@ -97,6 +98,17 @@ export const useExplorerTagNodeOperations = (
     });
   }, [favoriteService, tagId]);
 
+  const handleOpenInNewTab = useCallback(() => {
+    workbenchService.workbench.openTag(tagId, {
+      at: 'new-tab',
+    });
+    mixpanel.track('OpenInNewTab', {
+      page: 'sidebar',
+      module: 'tag',
+      control: 'open in new tab button',
+    });
+  }, [tagId, workbenchService]);
+
   return useMemo(
     () => [
       {
@@ -106,6 +118,21 @@ export const useExplorerTagNodeOperations = (
           <IconButton size="16" onClick={handleNewDoc}>
             <PlusIcon />
           </IconButton>
+        ),
+      },
+      {
+        index: 50,
+        view: (
+          <MenuItem
+            preFix={
+              <MenuIcon>
+                <OpenInNewIcon />
+              </MenuIcon>
+            }
+            onClick={handleOpenInNewTab}
+          >
+            {t['com.affine.workbench.tab.page-menu-open']()}
+          </MenuItem>
         ),
       },
       ...(appSettings.enableMultiView
@@ -180,6 +207,7 @@ export const useExplorerTagNodeOperations = (
       favorite,
       handleMoveToTrash,
       handleNewDoc,
+      handleOpenInNewTab,
       handleOpenInSplitView,
       handleToggleFavoriteTag,
       t,

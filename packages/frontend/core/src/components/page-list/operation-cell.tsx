@@ -18,7 +18,6 @@ import { useI18n } from '@affine/i18n';
 import {
   DeleteIcon,
   DeletePermanentlyIcon,
-  DualLinkIcon,
   DuplicateIcon,
   EditIcon,
   FavoritedIcon,
@@ -27,6 +26,7 @@ import {
   FilterMinusIcon,
   InformationIcon,
   MoreVerticalIcon,
+  OpenInNewIcon,
   PlusIcon,
   ResetIcon,
   SplitViewIcon,
@@ -39,7 +39,6 @@ import {
   WorkspaceService,
 } from '@toeverything/infra';
 import { useCallback, useState } from 'react';
-import { Link } from 'react-router-dom';
 
 import type { CollectionService } from '../../modules/collection';
 import { InfoModal } from '../affine/page-properties';
@@ -49,7 +48,7 @@ import * as styles from './list.css';
 import { DisablePublicSharing, MoveToTrash } from './operation-menu-items';
 import { CreateOrEditTag } from './tags/create-tag';
 import type { TagMeta } from './types';
-import { ColWrapper, stopPropagationWithoutPrevent } from './utils';
+import { ColWrapper } from './utils';
 import { useEditCollection, useEditCollectionName } from './view';
 
 const tooltipSideTop = { side: 'top' as const };
@@ -98,6 +97,10 @@ export const PageOperationCell = ({
 
   const onOpenInSplitView = useCallback(() => {
     workbench.openDoc(page.id, { at: 'tail' });
+  }, [page.id, workbench]);
+
+  const onOpenInNewTab = useCallback(() => {
+    workbench.openDoc(page.id, { at: 'new-tab' });
   }, [page.id, workbench]);
 
   const onToggleFavoritePage = useCallback(() => {
@@ -173,6 +176,17 @@ export const PageOperationCell = ({
         </MenuItem>
       ) : null}
 
+      <MenuItem
+        onClick={onOpenInNewTab}
+        preFix={
+          <MenuIcon>
+            <OpenInNewIcon />
+          </MenuIcon>
+        }
+      >
+        {t['com.affine.workbench.tab.page-menu-open']()}
+      </MenuItem>
+
       {environment.isDesktop && appSettings.enableMultiView ? (
         <MenuItem
           onClick={onOpenInSplitView}
@@ -185,27 +199,6 @@ export const PageOperationCell = ({
           {t['com.affine.workbench.split-view.page-menu-open']()}
         </MenuItem>
       ) : null}
-
-      {!environment.isDesktop && (
-        <Link
-          className={styles.clearLinkStyle}
-          onClick={stopPropagationWithoutPrevent}
-          to={`/workspace/${currentWorkspace.id}/${page.id}`}
-          target={'_blank'}
-          rel="noopener noreferrer"
-        >
-          <MenuItem
-            style={{ marginBottom: 4 }}
-            preFix={
-              <MenuIcon>
-                <DualLinkIcon />
-              </MenuIcon>
-            }
-          >
-            {t['com.affine.openPageOperation.newTab']()}
-          </MenuItem>
-        </Link>
-      )}
 
       <MenuItem
         preFix={

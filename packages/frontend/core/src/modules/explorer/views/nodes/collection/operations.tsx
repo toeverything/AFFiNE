@@ -17,6 +17,7 @@ import {
   FavoritedIcon,
   FavoriteIcon,
   FilterIcon,
+  OpenInNewIcon,
   PlusIcon,
   SplitViewIcon,
 } from '@blocksuite/icons/rc';
@@ -110,6 +111,15 @@ export const useExplorerCollectionNodeOperations = (
     });
   }, [collectionId, workbenchService.workbench]);
 
+  const handleOpenInNewTab = useCallback(() => {
+    workbenchService.workbench.openCollection(collectionId, { at: 'new-tab' });
+    mixpanel.track('OpenInNewTab', {
+      page: 'sidebar',
+      module: 'collection',
+      control: 'open in new tab button',
+    });
+  }, [collectionId, workbenchService.workbench]);
+
   const handleDeleteCollection = useCallback(() => {
     collectionService.deleteCollection(deleteInfo, collectionId);
     mixpanel.track('CollectionDeleted', {
@@ -187,6 +197,21 @@ export const useExplorerCollectionNodeOperations = (
           </MenuItem>
         ),
       },
+      {
+        index: 99,
+        view: (
+          <MenuItem
+            preFix={
+              <MenuIcon>
+                <OpenInNewIcon />
+              </MenuIcon>
+            }
+            onClick={handleOpenInNewTab}
+          >
+            {t['com.affine.workbench.tab.page-menu-open']()}
+          </MenuItem>
+        ),
+      },
       ...(appSettings.enableMultiView
         ? [
             {
@@ -232,6 +257,7 @@ export const useExplorerCollectionNodeOperations = (
       favorite,
       handleAddDocToCollection,
       handleDeleteCollection,
+      handleOpenInNewTab,
       handleOpenInSplitView,
       handleShowEdit,
       handleToggleFavoriteCollection,

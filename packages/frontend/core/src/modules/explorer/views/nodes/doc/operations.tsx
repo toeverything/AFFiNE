@@ -17,6 +17,7 @@ import {
   FavoriteIcon,
   InformationIcon,
   LinkedPageIcon,
+  OpenInNewIcon,
   SplitViewIcon,
 } from '@blocksuite/icons/rc';
 import { DocsService, useLiveData, useServices } from '@toeverything/infra';
@@ -74,6 +75,17 @@ export const useExplorerDocNodeOperations = (
       },
     });
   }, [docRecord, openConfirmModal, t]);
+
+  const handleOpenInNewTab = useCallback(() => {
+    workbenchService.workbench.openDoc(docId, {
+      at: 'new-tab',
+    });
+    mixpanel.track('OpenInNewTab', {
+      page: 'sidebar',
+      module: 'doc',
+      control: 'open in new tab button',
+    });
+  }, [docId, workbenchService]);
 
   const handleOpenInSplitView = useCallback(() => {
     workbenchService.workbench.openDoc(docId, {
@@ -151,6 +163,21 @@ export const useExplorerDocNodeOperations = (
           </MenuItem>
         ),
       },
+      {
+        index: 99,
+        view: (
+          <MenuItem
+            preFix={
+              <MenuIcon>
+                <OpenInNewIcon />
+              </MenuIcon>
+            }
+            onClick={handleOpenInNewTab}
+          >
+            {t['com.affine.workbench.tab.page-menu-open']()}
+          </MenuItem>
+        ),
+      },
       ...(appSettings.enableMultiView
         ? [
             {
@@ -219,6 +246,7 @@ export const useExplorerDocNodeOperations = (
       favorite,
       handleAddLinkedPage,
       handleMoveToTrash,
+      handleOpenInNewTab,
       handleOpenInSplitView,
       handleToggleFavoriteDoc,
       options.openInfoModal,

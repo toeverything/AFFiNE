@@ -4,7 +4,6 @@ import {
   app,
   type CookiesSetDetails,
   globalShortcut,
-  Menu,
   type View,
   type WebContents,
   WebContentsView,
@@ -103,7 +102,10 @@ type SeparateViewAction = {
 
 type OpenInSplitViewAction = {
   type: 'open-in-split-view';
-  payload: { tabId: string };
+  payload: {
+    tabId: string;
+    view?: Omit<WorkbenchViewMeta, 'id'>;
+  };
 };
 
 type TabAction =
@@ -114,7 +116,7 @@ type TabAction =
   | SeparateViewAction
   | OpenInSplitViewAction;
 
-type AddTabOption = {
+export type AddTabOption = {
   basename?: string;
   view?: Omit<WorkbenchViewMeta, 'id'> | Array<Omit<WorkbenchViewMeta, 'id'>>;
   target?: string;
@@ -384,23 +386,19 @@ export class WebContentViewsManager {
     }
   };
 
-  addTab = async (option?: AddTabOption) => {
-    if (!option) {
-      const activeWorkbench = this.activeWorkbenchMeta;
-      const basename = activeWorkbench?.basename ?? '/';
+  addTab = async (option: AddTabOption = {}) => {
+    const activeWorkbench = this.activeWorkbenchMeta;
 
-      option = {
-        basename,
-        view: {
-          title: 'New Tab',
-          path: basename.startsWith('/workspace')
-            ? {
-                pathname: '/all',
-              }
-            : undefined,
-        },
-      };
-    }
+    option.basename ??= activeWorkbench?.basename ?? '/';
+    option.view ??= {
+      title: 'New Tab',
+      path: option.basename?.startsWith('/workspace')
+        ? {
+            pathname: '/all',
+          }
+        : undefined,
+    };
+
     const workbenches = this.tabViewsMeta.workbenches;
     const newKey = this.generateViewId('app');
     const views = (
@@ -420,7 +418,7 @@ export class WebContentViewsManager {
       (option.edge === 'left' ? 0 : 1);
 
     const workbench: WorkbenchMeta = {
-      basename: option.basename ?? this.activeWorkbenchMeta?.basename ?? '/',
+      basename: option.basename,
       activeViewIndex: 0,
       views: views,
       id: newKey,
@@ -588,14 +586,16 @@ export class WebContentViewsManager {
     addTab(newTabMeta).catch(logger.error);
   };
 
-  openInSplitView = (tabId: string) => {
-    const tabMeta = this.tabViewsMeta.workbenches.find(w => w.id === tabId);
+  openInSplitView = (payload: OpenInSplitViewAction['payload']) => {
+    const tabMeta = this.tabViewsMeta.workbenches.find(
+      w => w.id === payload.tabId
+    );
     if (!tabMeta) {
       return;
     }
     this.tabAction$.next({
       type: 'open-in-split-view',
-      payload: { tabId },
+      payload: payload,
     });
   };
 
@@ -954,6 +954,7 @@ export const closeTab = WebContentViewsManager.instance.closeTab;
 export const undoCloseTab = WebContentViewsManager.instance.undoCloseTab;
 export const activateView = WebContentViewsManager.instance.activateView;
 export const moveTab = WebContentViewsManager.instance.moveTab;
+export const openInSplitView = WebContentViewsManager.instance.openInSplitView;
 
 export const reloadView = async () => {
   const id = WebContentViewsManager.instance.activeWorkbenchId;
@@ -992,89 +993,4 @@ export const pingAppLayoutReady = (wc: WebContents) => {
   if (viewId) {
     WebContentViewsManager.instance.setTabUIReady(viewId);
   }
-};
-
-export const showTabContextMenu = async (tabId: string, viewIndex: number) => {
-  const workbenches = WebContentViewsManager.instance.tabViewsMeta.workbenches;
-  const unpinned = workbenches.filter(w => !w.pinned);
-  const tabMeta = workbenches.find(w => w.id === tabId);
-  if (!tabMeta) {
-    return;
-  }
-
-  const template: Parameters<typeof Menu.buildFromTemplate>[0] = [
-    tabMeta.pinned
-      ? {
-          label: 'Unpin tab',
-          click: () => {
-            WebContentViewsManager.instance.pinTab(tabId, false);
-          },
-        }
-      : {
-          label: 'Pin tab',
-          click: () => {
-            WebContentViewsManager.instance.pinTab(tabId, true);
-          },
-        },
-    {
-      label: 'Refresh tab',
-      click: () => {
-        reloadView().catch(logger.error);
-      },
-    },
-    {
-      label: 'Duplicate tab',
-      click: () => {
-        addTab({
-          basename: tabMeta.basename,
-          view: tabMeta.views,
-          show: false,
-        }).catch(logger.error);
-      },
-    },
-
-    { type: 'separator' },
-
-    tabMeta.views.length > 1
-      ? {
-          label: 'Separate tabs',
-          click: () => {
-            WebContentViewsManager.instance.separateView(tabId, viewIndex);
-          },
-        }
-      : {
-          label: 'Open in split view',
-          click: () => {
-            WebContentViewsManager.instance.openInSplitView(tabId);
-          },
-        },
-
-    ...(unpinned.length > 0
-      ? ([
-          { type: 'separator' },
-          {
-            label: 'Close tab',
-            click: () => {
-              closeTab(tabId).catch(logger.error);
-            },
-          },
-          {
-            label: 'Close other tabs',
-            click: () => {
-              const tabsToRetain =
-                WebContentViewsManager.instance.tabViewsMeta.workbenches.filter(
-                  w => w.id === tabId || w.pinned
-                );
-
-              WebContentViewsManager.instance.patchTabViewsMeta({
-                workbenches: tabsToRetain,
-                activeWorkbenchId: tabId,
-              });
-            },
-          },
-        ] as const)
-      : []),
-  ];
-  const menu = Menu.buildFromTemplate(template);
-  menu.popup();
 };
