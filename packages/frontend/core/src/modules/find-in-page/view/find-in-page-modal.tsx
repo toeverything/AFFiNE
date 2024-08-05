@@ -222,7 +222,7 @@ export const FindInPageModal = () => {
           >
             <div
               className={clsx(styles.inputContainer, {
-                active: active,
+                active: active || isSearching,
               })}
             >
               <SearchIcon className={styles.searchIcon} />
