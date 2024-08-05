@@ -1,6 +1,10 @@
 import { cssVar } from '@toeverything/theme';
 import { style } from '@vanilla-extract/css';
 
+export const root = style({
+  containerType: 'inline-size',
+});
+
 export const editor = style({
   vars: {
     '--affine-editor-width': '100%',

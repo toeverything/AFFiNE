@@ -2,6 +2,7 @@ import { cssVar } from '@toeverything/theme';
 import { style } from '@vanilla-extract/css';
 
 export const mainContainer = style({
+  containerType: 'inline-size',
   display: 'flex',
   flexDirection: 'column',
   flex: 1,

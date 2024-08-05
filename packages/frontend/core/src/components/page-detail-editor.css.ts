@@ -5,7 +5,7 @@ export const editor = style({
     '&.full-screen': {
       vars: {
         '--affine-editor-width': '100%',
-        '--affine-editor-side-padding': '15px',
+        '--affine-editor-side-padding': '72px',
       },
     },
   },
