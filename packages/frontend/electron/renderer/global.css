@@ -10,6 +10,10 @@ textarea
   -webkit-app-region: no-drag;
 }
 
+html {
+  opacity: 0;
+}
+
 html:is([data-active='false'], [data-dragging='true']) * {
   -webkit-app-region: no-drag !important;
 }
