@@ -16,6 +16,7 @@ import { WindowsAppControls } from '@affine/core/components/pure/header/windows-
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import type { AffineDNDData } from '@affine/core/types/dnd';
 import { apis, events } from '@affine/electron-api';
+import { useI18n } from '@affine/i18n';
 import { CloseIcon, PlusIcon, RightSidebarIcon } from '@blocksuite/icons/rc';
 import {
   useLiveData,
@@ -223,6 +224,7 @@ export const AppTabsHeader = ({
   className?: string;
   left?: ReactNode;
 }) => {
+  const t = useI18n();
   const sidebarWidth = useAtomValue(appSidebarWidthAtom);
   const sidebarOpen = useAtomValue(appSidebarOpenAtom);
   const sidebarFloating = useAtomValue(appSidebarFloatingAtom);
@@ -365,6 +367,8 @@ export const AppTabsHeader = ({
         <IconButton
           size={22.86}
           onClick={onAddTab}
+          tooltip={t['com.affine.multi-tab.new-tab']()}
+          tooltipShortcut={['$mod', 'T']}
           data-testid="add-tab-view-button"
           style={{ width: 32, height: 32 }}
           icon={<PlusIcon />}

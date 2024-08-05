@@ -18,9 +18,6 @@ export const SidebarSwitch = ({
   const tooltipContent = open
     ? t['com.affine.sidebarSwitch.collapse']()
     : t['com.affine.sidebarSwitch.expand']();
-  // TODO(@CatsJuice): Tooltip shortcut style
-  const collapseKeyboardShortcuts =
-    environment.isBrowser && environment.isMacOs ? ' ⌘+/' : ' Ctrl+/';
 
   return (
     <div
@@ -29,7 +26,8 @@ export const SidebarSwitch = ({
       data-testid={`app-sidebar-arrow-button-${open ? 'collapse' : 'expand'}`}
     >
       <IconButton
-        tooltip={tooltipContent + ' ' + collapseKeyboardShortcuts}
+        tooltip={tooltipContent}
+        tooltipShortcut={['$mod', '/']}
         tooltipOptions={{ side: open ? 'bottom' : 'right' }}
         className={className}
         size="24"

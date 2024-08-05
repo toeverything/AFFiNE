@@ -1417,5 +1417,6 @@
   "com.affine.ai.template-insert.failed": "Failed to insert template, please try again.",
   "com.affine.selector-doc.search-placeholder": "Search docs...",
   "com.affine.selector-collection.search.placeholder": "Search collections...",
-  "com.affine.selector-tag.search.placeholder": "Search tags..."
+  "com.affine.selector-tag.search.placeholder": "Search tags...",
+  "com.affine.multi-tab.new-tab": "New Tab"
 }

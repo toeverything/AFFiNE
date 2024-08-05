@@ -64,7 +64,8 @@ export interface ButtonProps
   suffixStyle?: CSSProperties;
 
   tooltip?: TooltipProps['content'];
-  tooltipOptions?: Partial<Omit<TooltipProps, 'content'>>;
+  tooltipShortcut?: TooltipProps['shortcut'];
+  tooltipOptions?: Partial<Omit<TooltipProps, 'content' | 'shortcut'>>;
 }
 
 const IconSlot = ({
@@ -113,6 +114,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       contentStyle,
 
       tooltip,
+      tooltipShortcut,
       tooltipOptions,
       onClick,
 
@@ -129,7 +131,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     );
 
     return (
-      <Tooltip content={tooltip} {...tooltipOptions}>
+      <Tooltip content={tooltip} shortcut={tooltipShortcut} {...tooltipOptions}>
         <button
           {...otherProps}
           ref={ref}

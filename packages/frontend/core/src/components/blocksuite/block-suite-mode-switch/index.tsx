@@ -13,7 +13,7 @@ import { useCallback, useEffect } from 'react';
 
 import type { DocCollection } from '../../../shared';
 import { toast } from '../../../utils';
-import { StyledEditorModeSwitch, StyledKeyboardItem } from './style';
+import { StyledEditorModeSwitch } from './style';
 import { EdgelessSwitchItem, PageSwitchItem } from './switch-items';
 
 export type EditorModeSwitchProps = {
@@ -24,17 +24,7 @@ export type EditorModeSwitchProps = {
   isPublic?: boolean;
   publicMode?: DocMode;
 };
-const TooltipContent = () => {
-  const t = useI18n();
-  return (
-    <>
-      {t['Switch']()}
-      <StyledKeyboardItem>
-        {!environment.isServer && environment.isMacOs ? '⌥ + S' : 'Alt + S'}
-      </StyledKeyboardItem>
-    </>
-  );
-};
+
 export const EditorModeSwitch = ({
   style,
   docCollection,
@@ -106,7 +96,9 @@ export const EditorModeSwitch = ({
 
   return (
     <Tooltip
-      content={<TooltipContent />}
+      content={t['Switch']()}
+      shortcut={['$alt', 'S']}
+      side="bottom"
       options={{
         hidden: isPublic || trash,
       }}
