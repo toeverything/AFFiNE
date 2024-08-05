@@ -1,15 +1,19 @@
 import { MemoryMemento } from '@toeverything/infra';
 import { ipcRenderer } from 'electron';
 
+import { AFFINE_API_CHANNEL_NAME } from '../shared/type';
+
 const initialGlobalState = ipcRenderer.sendSync(
+  AFFINE_API_CHANNEL_NAME,
   'sharedStorage:getAllGlobalState'
 );
 const initialGlobalCache = ipcRenderer.sendSync(
+  AFFINE_API_CHANNEL_NAME,
   'sharedStorage:getAllGlobalCache'
 );
 
 function invokeWithCatch(key: string, ...args: any[]) {
-  ipcRenderer.invoke(key, ...args).catch(err => {
+  ipcRenderer.invoke(AFFINE_API_CHANNEL_NAME, key, ...args).catch(err => {
     console.error(`Failed to invoke ${key}`, err);
   });
 }

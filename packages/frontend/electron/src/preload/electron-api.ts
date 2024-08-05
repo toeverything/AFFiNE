@@ -5,10 +5,12 @@ import { ipcRenderer } from 'electron';
 import { Subject } from 'rxjs';
 import { z } from 'zod';
 
-import type {
-  ExposedMeta,
-  HelperToRenderer,
-  RendererToHelper,
+import {
+  AFFINE_API_CHANNEL_NAME,
+  AFFINE_EVENT_CHANNEL_NAME,
+  type ExposedMeta,
+  type HelperToRenderer,
+  type RendererToHelper,
 } from '../shared/type';
 
 export function getElectronAPIs() {
@@ -65,7 +67,11 @@ function getMainAPIs() {
         return [
           name,
           (...args: any[]) => {
-            return ipcRenderer.invoke(channel, ...args);
+            return ipcRenderer.invoke(
+              AFFINE_API_CHANNEL_NAME,
+              channel,
+              ...args
+            );
           },
         ];
       });
@@ -79,8 +85,22 @@ function getMainAPIs() {
   const events: any = (() => {
     const { events: eventsMeta } = meta;
 
-    // NOTE: ui may try to listen to a lot of the same events, so we increase the limit...
-    ipcRenderer.setMaxListeners(100);
+    // channel -> callback[]
+    const listenersMap = new Map<string, ((...args: any[]) => void)[]>();
+
+    ipcRenderer.on(AFFINE_EVENT_CHANNEL_NAME, (_event, channel, ...args) => {
+      if (typeof channel !== 'string') {
+        console.error('invalid ipc event', channel);
+        return;
+      }
+      const [namespace, name] = channel.split(':');
+      if (!namespace || !name) {
+        console.error('invalid ipc event', channel);
+        return;
+      }
+      const listeners = listenersMap.get(channel) ?? [];
+      listeners.forEach(listener => listener(...args));
+    });
 
     const all = eventsMeta.map(([namespace, eventNames]) => {
       const namespaceEvents = eventNames.map(name => {
@@ -88,15 +108,17 @@ function getMainAPIs() {
         return [
           name,
           (callback: (...args: any[]) => void) => {
-            const fn: (
-              event: Electron.IpcRendererEvent,
-              ...args: any[]
-            ) => void = (_, ...args) => {
-              callback(...args);
-            };
-            ipcRenderer.on(channel, fn);
+            listenersMap.set(channel, [
+              ...(listenersMap.get(channel) ?? []),
+              callback,
+            ]);
+
             return () => {
-              ipcRenderer.off(channel, fn);
+              const listeners = listenersMap.get(channel) ?? [];
+              const index = listeners.indexOf(callback);
+              if (index !== -1) {
+                listeners.splice(index, 1);
+              }
             };
           },
         ];
