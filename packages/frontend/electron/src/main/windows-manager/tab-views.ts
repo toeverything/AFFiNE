@@ -387,7 +387,7 @@ export class WebContentViewsManager {
   addTab = async (option?: AddTabOption) => {
     if (!option) {
       const activeWorkbench = this.activeWorkbenchMeta;
-      const basename = (activeWorkbench?.basename ?? '') + '/';
+      const basename = activeWorkbench?.basename ?? '/';
 
       option = {
         basename,
@@ -395,7 +395,7 @@ export class WebContentViewsManager {
           title: 'New Tab',
           path: basename.startsWith('/workspace')
             ? {
-                pathname: 'all',
+                pathname: '/all',
               }
             : undefined,
         },
@@ -1025,7 +1025,11 @@ export const showTabContextMenu = async (tabId: string, viewIndex: number) => {
     {
       label: 'Duplicate tab',
       click: () => {
-        addTab(tabMeta).catch(logger.error);
+        addTab({
+          basename: tabMeta.basename,
+          view: tabMeta.views,
+          show: false,
+        }).catch(logger.error);
       },
     },
 
