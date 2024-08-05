@@ -3,6 +3,7 @@ import { WorkspaceFlavour } from '@affine/env/workspace';
 import { DocCollection } from '@blocksuite/store';
 import type {
   BlobStorage,
+  DocStorage,
   WorkspaceEngineProvider,
   WorkspaceFlavourProvider,
   WorkspaceMetadata,
@@ -56,7 +57,8 @@ export class LocalWorkspaceFlavourProvider
   async createWorkspace(
     initial: (
       docCollection: DocCollection,
-      blobStorage: BlobStorage
+      blobStorage: BlobStorage,
+      docStorage: DocStorage
     ) => Promise<void>
   ): Promise<WorkspaceMetadata> {
     const id = nanoid();
@@ -73,7 +75,7 @@ export class LocalWorkspaceFlavourProvider
     });
 
     // apply initial state
-    await initial(docCollection, blobStorage);
+    await initial(docCollection, blobStorage, docStorage);
 
     // save workspace to local storage, should be vary fast
     await docStorage.doc.set(id, encodeStateAsUpdate(docCollection.doc));

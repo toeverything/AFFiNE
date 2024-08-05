@@ -2,7 +2,7 @@ import type { WorkspaceFlavour } from '@affine/env/workspace';
 import type { DocCollection } from '@blocksuite/store';
 
 import { Service } from '../../../framework';
-import type { BlobStorage } from '../../../sync';
+import type { BlobStorage, DocStorage } from '../../../sync';
 import type { WorkspaceFlavourProvider } from '../providers/flavour';
 
 export class WorkspaceFactoryService extends Service {
@@ -20,7 +20,8 @@ export class WorkspaceFactoryService extends Service {
     flavour: WorkspaceFlavour,
     initial: (
       docCollection: DocCollection,
-      blobStorage: BlobStorage
+      blobStorage: BlobStorage,
+      docStorage: DocStorage
     ) => Promise<void> = () => Promise.resolve()
   ) => {
     const provider = this.providers.find(x => x.flavour === flavour);

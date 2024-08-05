@@ -6,7 +6,11 @@ import { applyUpdate, encodeStateAsUpdate } from 'yjs';
 import { Service } from '../../../framework';
 import { LiveData } from '../../../livedata';
 import { wrapMemento } from '../../../storage';
-import { type BlobStorage, MemoryDocStorage } from '../../../sync';
+import {
+  type BlobStorage,
+  type DocStorage,
+  MemoryDocStorage,
+} from '../../../sync';
 import { MemoryBlobStorage } from '../../../sync/blob/blob';
 import type { GlobalState } from '../../storage';
 import type { WorkspaceProfileInfo } from '../entities/profile';
@@ -39,7 +43,8 @@ export class TestingWorkspaceLocalProvider
   async createWorkspace(
     initial: (
       docCollection: DocCollection,
-      blobStorage: BlobStorage
+      blobStorage: BlobStorage,
+      docStorage: DocStorage
     ) => Promise<void>
   ): Promise<WorkspaceMetadata> {
     const id = nanoid();
@@ -59,7 +64,7 @@ export class TestingWorkspaceLocalProvider
     });
 
     // apply initial state
-    await initial(docCollection, blobStorage);
+    await initial(docCollection, blobStorage, this.docStorage);
 
     // save workspace to storage
     await this.docStorage.doc.set(id, encodeStateAsUpdate(docCollection.doc));

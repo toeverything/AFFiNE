@@ -29,6 +29,8 @@ type ConfirmEnableArgs = [Workspace, ConfirmEnableCloudOptions | undefined];
 
 export const useEnableCloud = () => {
   const t = useI18n();
+  const authService = useService(AuthService);
+  const account = useLiveData(authService.session.account$);
   const loginStatus = useLiveData(useService(AuthService).session.status$);
   const setAuthAtom = useSetAtom(authAtom);
   const { openConfirmModal, closeConfirmModal } = useConfirmModal();
@@ -39,7 +41,11 @@ export const useEnableCloud = () => {
     async (ws: Workspace | null, options?: ConfirmEnableCloudOptions) => {
       try {
         if (!ws) return;
-        const { id: newId } = await workspacesService.transformLocalToCloud(ws);
+        if (!account) return;
+        const { id: newId } = await workspacesService.transformLocalToCloud(
+          ws,
+          account.id
+        );
         openPage(newId, options?.openPageId || WorkspaceSubPath.ALL);
         options?.onSuccess?.();
       } catch (e) {
@@ -49,7 +55,7 @@ export const useEnableCloud = () => {
         });
       }
     },
-    [openPage, t, workspacesService]
+    [account, openPage, t, workspacesService]
   );
 
   const openSignIn = useCallback(() => {

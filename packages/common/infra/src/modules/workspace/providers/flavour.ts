@@ -28,7 +28,8 @@ export interface WorkspaceFlavourProvider {
   createWorkspace(
     initial: (
       docCollection: DocCollection,
-      blobStorage: BlobStorage
+      blobStorage: BlobStorage,
+      docStorage: DocStorage
     ) => Promise<void>
   ): Promise<WorkspaceMetadata>;
 

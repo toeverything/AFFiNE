@@ -11,6 +11,7 @@ import {
   ApplicationStarted,
   type BlobStorage,
   catchErrorInto,
+  type DocStorage,
   exhaustMapSwitchUntilChanged,
   fromPromise,
   type GlobalState,
@@ -77,11 +78,10 @@ export class CloudWorkspaceFlavourProviderService
   async createWorkspace(
     initial: (
       docCollection: DocCollection,
-      blobStorage: BlobStorage
+      blobStorage: BlobStorage,
+      docStorage: DocStorage
     ) => Promise<void>
   ): Promise<WorkspaceMetadata> {
-    const tempId = nanoid();
-
     // create workspace on cloud, get workspace id
     const {
       createWorkspace: { id: workspaceId },
@@ -94,7 +94,7 @@ export class CloudWorkspaceFlavourProviderService
     const docStorage = this.storageProvider.getDocStorage(workspaceId);
 
     const docCollection = new DocCollection({
-      id: tempId,
+      id: workspaceId,
       idGenerator: () => nanoid(),
       schema: globalBlockSuiteSchema,
       blobSources: {
@@ -103,7 +103,7 @@ export class CloudWorkspaceFlavourProviderService
     });
 
     // apply initial state
-    await initial(docCollection, blobStorage);
+    await initial(docCollection, blobStorage, docStorage);
 
     // save workspace to local storage, should be vary fast
     await docStorage.doc.set(

@@ -6,6 +6,7 @@ import { WorkspaceDBService } from './services/db';
 
 export { AFFiNE_WORKSPACE_DB_SCHEMA } from './schema';
 export { WorkspaceDBService } from './services/db';
+export { transformWorkspaceDBLocalToCloud } from './services/db';
 
 export function configureWorkspaceDBModule(framework: Framework) {
   framework
