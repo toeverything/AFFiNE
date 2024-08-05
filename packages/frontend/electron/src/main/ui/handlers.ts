@@ -22,10 +22,10 @@ import {
   pingAppLayoutReady,
   showDevTools,
   showTab,
-  showTabContextMenu,
   updateWorkbenchMeta,
   updateWorkbenchViewMeta,
 } from '../windows-manager';
+import { showTabContextMenu } from '../windows-manager/context-menu';
 import { getChallengeResponse } from './challenge';
 import { uiSubjects } from './subject';
 

@@ -3,7 +3,7 @@ import { globalStyle, style } from '@vanilla-extract/css';
 export const appStyle = style({
   width: '100%',
   position: 'relative',
-  height: '100vh',
+  height: '100dvh',
   flexGrow: '1',
   display: 'flex',
   backgroundColor: cssVar('backgroundPrimaryColor'),

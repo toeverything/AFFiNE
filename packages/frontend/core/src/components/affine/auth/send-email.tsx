@@ -203,7 +203,7 @@ export const SendEmail = ({
       </Wrapper>
 
       <Button
-        type="primary"
+        variant="primary"
         size="extraLarge"
         style={{ width: '100%' }}
         disabled={hasSentEmail}

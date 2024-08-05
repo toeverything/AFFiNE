@@ -32,7 +32,7 @@ export const AdminPanelHeader = ({
       </div>
       <div>
         <Button
-          type="primary"
+          variant="primary"
           disabled={modifiedValues.length === 0}
           onClick={() => {
             openConfirmModal({
@@ -41,7 +41,7 @@ export const AdminPanelHeader = ({
                 'Are you sure you want to save the following changes?',
               confirmText: 'Save',
               confirmButtonOptions: {
-                type: 'primary',
+                variant: 'primary',
               },
               onConfirm: onConfirm,
               children:

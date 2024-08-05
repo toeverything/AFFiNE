@@ -36,7 +36,7 @@ export const tabs = style({
   display: 'flex',
   flexDirection: 'row',
   alignItems: 'center',
-  padding: '0 8px',
+  paddingLeft: 8,
   overflow: 'clip',
   height: '100%',
   selectors: {

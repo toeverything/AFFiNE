@@ -1,6 +1,7 @@
 import { Button, IconButton } from '@affine/component/ui/button';
 import { useI18n } from '@affine/i18n';
 import { CloseIcon } from '@blocksuite/icons/rc';
+import { cssVar } from '@toeverything/theme';
 import { useCallback } from 'react';
 
 import * as styles from './index.css';
@@ -37,11 +38,12 @@ export const LocalDemoTips = ({
       </div>
 
       <div className={styles.tipsRightItem}>
-        <div>
-          <Button onClick={handleClick}>{buttonLabel}</Button>
-        </div>
+        <Button style={{ background: cssVar('white') }} onClick={handleClick}>
+          {buttonLabel}
+        </Button>
         <IconButton
           onClick={onClose}
+          size="20"
           data-testid="local-demo-tips-close-button"
         >
           <CloseIcon />

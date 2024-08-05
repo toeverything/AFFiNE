@@ -24,18 +24,6 @@ export const workspaceWrapper = style({
   flex: 1,
 });
 
-export const userInfoWrapper = style({
-  flexShrink: 0,
-  width: 'auto',
-  height: 'auto',
-  padding: '4px 0',
-});
-
-// TODO(@catsjuice):
-globalStyle(`button.${userInfoWrapper} > span`, {
-  lineHeight: 0,
-});
-
 export const operationMenu = style({
   display: 'flex',
   flexDirection: 'column',

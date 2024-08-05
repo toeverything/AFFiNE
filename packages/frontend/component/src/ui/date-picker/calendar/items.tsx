@@ -134,8 +134,7 @@ export const NavButtons = memo(function NavButtons({
     <div className={styles.headerNavButtons} key="nav-btn-group">
       <IconButton
         key="nav-btn-prev"
-        size="small"
-        className={styles.focusInteractive}
+        size="16"
         disabled={prevDisabled}
         data-testid="date-picker-nav-prev"
         onClick={onPrev}
@@ -147,8 +146,7 @@ export const NavButtons = memo(function NavButtons({
 
       <IconButton
         key="nav-btn-next"
-        size="small"
-        className={styles.focusInteractive}
+        size="16"
         disabled={nextDisabled}
         data-testid="date-picker-nav-next"
         onClick={onNext}

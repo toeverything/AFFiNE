@@ -79,21 +79,16 @@ export const settingButton = style({
       boxShadow: cssVar('shadow1'),
       background: cssVar('white80'),
     },
-    // [`.${card}:hover &:hover`]: {
-    //   background: cssVar('hoverColor'),
-    // },
   },
 });
 
-export const enableCloudButton = style({
-  background: 'transparent',
-});
-
 export const showOnCardHover = style({
-  display: 'none',
+  visibility: 'hidden',
+  opacity: 0,
   selectors: {
     [`.${card}:hover &`]: {
-      display: 'block',
+      visibility: 'visible',
+      opacity: 1,
     },
   },
 });

@@ -32,7 +32,7 @@ const SubscriptionChangedNotifyFooter = ({
         className={clsx(actionButton, cancelButton)}
         size={'default'}
         onClick={onCancel}
-        type="plain"
+        variant="plain"
       >
         {cancelText}
       </Button>
@@ -40,7 +40,7 @@ const SubscriptionChangedNotifyFooter = ({
         <Button
           onClick={onConfirm}
           className={clsx(actionButton, confirmButton)}
-          type="plain"
+          variant="plain"
         >
           {okText}
         </Button>

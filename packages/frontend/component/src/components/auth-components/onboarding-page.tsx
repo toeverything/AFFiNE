@@ -219,7 +219,7 @@ export const OnboardingPage = ({
             </Button>
             <Button
               className={styles.button}
-              type="primary"
+              variant="primary"
               size="extraLarge"
               itemType="submit"
               onClick={() => {
@@ -248,8 +248,7 @@ export const OnboardingPage = ({
                   setQuestionIdx(questionIdx + 1);
                 }
               }}
-              iconPosition="end"
-              icon={<ArrowRightSmallIcon />}
+              suffix={<ArrowRightSmallIcon />}
             >
               {questionIdx === 0 ? 'start' : 'Next'}
             </Button>
@@ -271,7 +270,7 @@ export const OnboardingPage = ({
         </p>
         <Button
           className={clsx(styles.button, styles.openAFFiNEButton)}
-          type="primary"
+          variant="primary"
           size="extraLarge"
           onClick={() => {
             if (callbackUrl) {
@@ -280,8 +279,7 @@ export const OnboardingPage = ({
               onOpenAffine();
             }
           }}
-          iconPosition="end"
-          icon={<ArrowRightSmallIcon />}
+          suffix={<ArrowRightSmallIcon />}
         >
           Get Started
         </Button>

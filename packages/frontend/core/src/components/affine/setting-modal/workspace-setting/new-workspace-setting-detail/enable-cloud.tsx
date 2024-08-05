@@ -56,7 +56,7 @@ export const EnableCloudPanel = () => {
     >
       <Button
         data-testid="publish-enable-affine-cloud-button"
-        type="primary"
+        variant="primary"
         onClick={confirmEnableCloudAndClose}
         style={{ marginTop: '12px' }}
       >

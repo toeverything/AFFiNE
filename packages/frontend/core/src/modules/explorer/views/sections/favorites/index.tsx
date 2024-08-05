@@ -239,7 +239,7 @@ export const ExplorerFavorites = () => {
           <IconButton
             data-testid="explorer-bar-add-favorite-button"
             onClick={handleCreateNewFavoriteDoc}
-            size="small"
+            size="16"
           >
             <PlusIcon />
           </IconButton>

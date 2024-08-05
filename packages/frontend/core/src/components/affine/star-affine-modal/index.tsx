@@ -26,7 +26,7 @@ export const StarAFFiNEModal = () => {
       cancelText={t['com.affine.star-affine.cancel']()}
       to={runtimeConfig.githubUrl}
       confirmButtonOptions={{
-        type: 'primary',
+        variant: 'primary',
       }}
       confirmText={t['com.affine.star-affine.confirm']()}
       external

@@ -114,17 +114,3 @@ export const subscribeActions = style({
   gap: 12,
   alignItems: 'center',
 });
-export const baseActionButton = style({
-  fontSize: cssVar('fontBase'),
-  selectors: {
-    '&.large': {
-      fontWeight: 500,
-    },
-  },
-});
-export const transparentActionButton = style([
-  baseActionButton,
-  {
-    backgroundColor: 'transparent',
-  },
-]);

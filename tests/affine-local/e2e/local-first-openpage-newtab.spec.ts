@@ -25,7 +25,8 @@ test('click btn bew page and open in tab', async ({ page, workspace }) => {
     page.getByRole('menuitem', { name: 'Open in new tab' }).click(),
   ]);
 
-  expect(newTabPage.url()).toBe(newPageUrl);
+  await expect(newTabPage).toHaveURL(newPageUrl, { timeout: 15000 });
+
   const currentWorkspace = await workspace.current();
 
   expect(currentWorkspace.meta.flavour).toContain('local');

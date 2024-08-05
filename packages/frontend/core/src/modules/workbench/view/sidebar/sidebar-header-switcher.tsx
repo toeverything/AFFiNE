@@ -33,7 +33,7 @@ export const SidebarHeaderSwitcher = () => {
     [view]
   );
 
-  return (
+  return tabItems.length ? (
     <RadioGroup
       borderRadius={8}
       itemHeight={24}
@@ -44,5 +44,5 @@ export const SidebarHeaderSwitcher = () => {
       onChange={handleActiveTabChange}
       activeItemStyle={{ color: cssVar('primaryColor') }}
     />
-  );
+  ) : null;
 };

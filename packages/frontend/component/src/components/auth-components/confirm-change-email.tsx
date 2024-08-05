@@ -14,7 +14,7 @@ export const ConfirmChangeEmail: FC<{
       title={t['com.affine.auth.change.email.page.success.title']()}
       subtitle={t['com.affine.auth.change.email.page.success.subtitle']()}
     >
-      <Button type="primary" size="large" onClick={onOpenAffine}>
+      <Button variant="primary" size="large" onClick={onOpenAffine}>
         {t['com.affine.auth.open.affine']()}
       </Button>
     </AuthPageContainer>

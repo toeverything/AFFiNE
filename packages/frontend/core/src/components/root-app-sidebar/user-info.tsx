@@ -1,8 +1,8 @@
 import {
   Avatar,
-  Button,
   Divider,
   ErrorMessage,
+  IconButton,
   Menu,
   MenuIcon,
   MenuItem,
@@ -52,13 +52,9 @@ const menuContentOptions: MenuProps['contentOptions'] = {
 const AuthorizedUserInfo = ({ account }: { account: AuthAccountInfo }) => {
   return (
     <Menu items={<OperationMenu />} contentOptions={menuContentOptions}>
-      <Button
-        data-testid="sidebar-user-avatar"
-        type="plain"
-        className={styles.userInfoWrapper}
-      >
+      <IconButton data-testid="sidebar-user-avatar" variant="plain" size="24">
         <Avatar size={24} name={account.label} url={account.avatar} />
-      </Button>
+      </IconButton>
     </Menu>
   );
 };
@@ -71,14 +67,14 @@ const UnauthorizedUserInfo = () => {
   }, [setOpen]);
 
   return (
-    <Button
+    <IconButton
       onClick={openSignInModal}
       data-testid="sidebar-user-avatar"
-      type="plain"
-      className={styles.userInfoWrapper}
+      variant="plain"
+      size="24"
     >
-      <UnknownUserIcon width={24} height={24} />
-    </Button>
+      <UnknownUserIcon />
+    </IconButton>
   );
 };
 

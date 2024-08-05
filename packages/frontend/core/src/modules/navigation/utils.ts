@@ -18,30 +18,42 @@ export const resolveRouteLinkMeta = (href: string) => {
       return null;
     }
 
-    const hash = url.hash;
-    const pathname = url.pathname;
-
     // http://---/workspace/{workspaceid}/xxx/yyy
     // http://---/workspace/{workspaceid}/xxx
     const [_, workspaceId, moduleName, subModuleName] =
-      pathname.match(/\/workspace\/([^/]+)\/([^/]+)(?:\/([^/]+))?/) || [];
+      url.pathname.match(/\/workspace\/([^/]+)\/([^/]+)(?:\/([^/]+))?/) || [];
 
-    if (isRouteModulePath(moduleName)) {
-      return {
-        workspaceId,
-        moduleName,
-        subModuleName,
+    if (workspaceId) {
+      const basename = `/workspace/${workspaceId}`;
+      const pathname = url.pathname.replace(basename, '');
+      const search = url.search;
+      const hash = url.hash;
+      const location = {
+        pathname,
+        search,
+        hash,
       };
-    } else if (moduleName) {
-      // for now we assume all other cases are doc links
-      return {
-        workspaceId,
-        moduleName: 'doc' as const,
-        docId: moduleName,
-        blockId: hash.slice(1),
-      };
+      if (isRouteModulePath(moduleName)) {
+        return {
+          location,
+          basename,
+          workspaceId,
+          moduleName,
+          subModuleName,
+        };
+      } else if (moduleName) {
+        // for now we assume all other cases are doc links
+        return {
+          location,
+          basename,
+          workspaceId,
+          moduleName: 'doc' as const,
+          docId: moduleName,
+          blockId: hash.slice(1),
+        };
+      }
     }
-    return;
+    return null;
   } catch {
     return null;
   }

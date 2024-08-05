@@ -39,6 +39,3 @@ globalStyle(`${avatarWrapper} .camera-icon-wrapper`, {
   color: cssVar('white'),
   fontSize: cssVar('fontH4'),
 });
-export const button = style({
-  padding: '4px 12px',
-});

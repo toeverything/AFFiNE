@@ -215,7 +215,7 @@ export const BlocksuiteEditorContainer = forwardRef<
         return;
       }
       blockElement.scrollIntoView({
-        behavior: 'smooth',
+        behavior: 'instant',
         block: 'center',
       });
       const selectManager = affineEditorContainerProxy.host?.selection;

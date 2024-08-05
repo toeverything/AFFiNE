@@ -48,7 +48,7 @@ export const ConfirmLoadingModal = ({
       cancelText={cancelText}
       confirmText={confirmText}
       confirmButtonOptions={{
-        type: 'primary',
+        variant: 'primary',
         loading,
       }}
       open={open}
@@ -120,7 +120,7 @@ export const DowngradeModal = ({
           <Button
             disabled={loading}
             onClick={() => onOpenChange?.(false)}
-            type="primary"
+            variant="primary"
           >
             {t['com.affine.payment.modal.downgrade.confirm']()}
           </Button>

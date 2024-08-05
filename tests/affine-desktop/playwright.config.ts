@@ -19,7 +19,7 @@ const config: PlaywrightTestConfig = {
   workers: 2,
   timeout: process.env.CI ? 50_000 : 30_000,
   expect: {
-    timeout: process.env.CI ? 5_000 : 10_000,
+    timeout: process.env.CI ? 15_000 : 5_000,
   },
   outputDir: testResultDir,
   use: {

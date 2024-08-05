@@ -3,6 +3,8 @@ import { PageDetailSkeleton } from '@affine/component/page-detail-skeleton';
 import { AIProvider } from '@affine/core/blocksuite/presets/ai';
 import { AffineErrorBoundary } from '@affine/core/components/affine/affine-error-boundary';
 import { BlockSuiteEditor } from '@affine/core/components/blocksuite/block-suite-editor';
+import { EditorOutlineViewer } from '@affine/core/components/blocksuite/outline-viewer';
+import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
 import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
 import { PageNotFound } from '@affine/core/pages/404';
 import { DebugLogger } from '@affine/debug';
@@ -12,7 +14,7 @@ import type { AffineEditorContainer } from '@blocksuite/presets';
 import type { DocMode } from '@toeverything/infra';
 import { DocsService, FrameworkScope, useService } from '@toeverything/infra';
 import clsx from 'clsx';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { WorkbenchService } from '../../../workbench';
 import { PeekViewService } from '../../services/peek-view';
@@ -73,6 +75,7 @@ export function DocPeekPreview({
   const workbench = useService(WorkbenchService).workbench;
   const peekView = useService(PeekViewService).peekView;
   const [editor, setEditor] = useState<AffineEditorContainer | null>(null);
+  const { appSettings } = useAppSettingHelper();
 
   const onRef = (editor: AffineEditorContainer) => {
     setEditor(editor);
@@ -143,6 +146,13 @@ export function DocPeekPreview({
     };
   }, [editor, jumpToTag, peekView, workspace.id]);
 
+  const openOutlinePanel = useCallback(() => {
+    workbench.openDoc(docId);
+    workbench.openSidebar();
+    workbench.activeView$.value.activeSidebarTab('outline');
+    peekView.close();
+  }, [docId, peekView, workbench]);
+
   // if sync engine has been synced and the page is null, show 404 page.
   if (!doc || !resolvedMode) {
     return loading || !resolvedMode ? (
@@ -167,7 +177,15 @@ export function DocPeekPreview({
               page={doc.blockSuiteDoc}
             />
           </FrameworkScope>
+          {appSettings.enableOutlineViewer && (
+            <EditorOutlineViewer
+              editor={editor}
+              show={resolvedMode === 'page'}
+              openOutlinePanel={openOutlinePanel}
+            />
+          )}
         </Scrollable.Viewport>
+
         <Scrollable.Scrollbar />
       </Scrollable.Root>
     </AffineErrorBoundary>

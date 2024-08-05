@@ -40,7 +40,7 @@ export const LocalSharePage = (props: ShareMenuProps) => {
         <div>
           <Button
             onClick={props.onEnableAffineCloud}
-            type="primary"
+            variant="primary"
             data-testid="share-menu-enable-affine-cloud-button"
           >
             {t['Enable AFFiNE Cloud']()}
@@ -256,7 +256,7 @@ export const AffineSharePage = (props: ShareMenuProps) => {
         ) : (
           <Button
             onClick={onClickCreateLink}
-            type="primary"
+            variant="primary"
             data-testid="share-menu-create-link-button"
             style={{ padding: '4px 12px', whiteSpace: 'nowrap' }}
           >

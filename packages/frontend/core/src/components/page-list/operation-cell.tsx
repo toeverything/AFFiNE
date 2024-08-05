@@ -4,7 +4,6 @@ import {
   MenuIcon,
   MenuItem,
   toast,
-  Tooltip,
   useConfirmModal,
 } from '@affine/component';
 import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
@@ -19,7 +18,6 @@ import { useI18n } from '@affine/i18n';
 import {
   DeleteIcon,
   DeletePermanentlyIcon,
-  DualLinkIcon,
   DuplicateIcon,
   EditIcon,
   FavoritedIcon,
@@ -28,6 +26,7 @@ import {
   FilterMinusIcon,
   InformationIcon,
   MoreVerticalIcon,
+  OpenInNewIcon,
   PlusIcon,
   ResetIcon,
   SplitViewIcon,
@@ -40,7 +39,6 @@ import {
   WorkspaceService,
 } from '@toeverything/infra';
 import { useCallback, useState } from 'react';
-import { Link } from 'react-router-dom';
 
 import type { CollectionService } from '../../modules/collection';
 import { InfoModal } from '../affine/page-properties';
@@ -50,8 +48,11 @@ import * as styles from './list.css';
 import { DisablePublicSharing, MoveToTrash } from './operation-menu-items';
 import { CreateOrEditTag } from './tags/create-tag';
 import type { TagMeta } from './types';
-import { ColWrapper, stopPropagationWithoutPrevent } from './utils';
+import { ColWrapper } from './utils';
 import { useEditCollection, useEditCollectionName } from './view';
+
+const tooltipSideTop = { side: 'top' as const };
+const tooltipSideTopAlignEnd = { side: 'top' as const, align: 'end' as const };
 
 export interface PageOperationCellProps {
   page: DocMeta;
@@ -96,6 +97,10 @@ export const PageOperationCell = ({
 
   const onOpenInSplitView = useCallback(() => {
     workbench.openDoc(page.id, { at: 'tail' });
+  }, [page.id, workbench]);
+
+  const onOpenInNewTab = useCallback(() => {
+    workbench.openDoc(page.id, { at: 'new-tab' });
   }, [page.id, workbench]);
 
   const onToggleFavoritePage = useCallback(() => {
@@ -171,6 +176,17 @@ export const PageOperationCell = ({
         </MenuItem>
       ) : null}
 
+      <MenuItem
+        onClick={onOpenInNewTab}
+        preFix={
+          <MenuIcon>
+            <OpenInNewIcon />
+          </MenuIcon>
+        }
+      >
+        {t['com.affine.workbench.tab.page-menu-open']()}
+      </MenuItem>
+
       {environment.isDesktop && appSettings.enableMultiView ? (
         <MenuItem
           onClick={onOpenInSplitView}
@@ -183,27 +199,6 @@ export const PageOperationCell = ({
           {t['com.affine.workbench.split-view.page-menu-open']()}
         </MenuItem>
       ) : null}
-
-      {!environment.isDesktop && (
-        <Link
-          className={styles.clearLinkStyle}
-          onClick={stopPropagationWithoutPrevent}
-          to={`/workspace/${currentWorkspace.id}/${page.id}`}
-          target={'_blank'}
-          rel="noopener noreferrer"
-        >
-          <MenuItem
-            style={{ marginBottom: 4 }}
-            preFix={
-              <MenuIcon>
-                <DualLinkIcon />
-              </MenuIcon>
-            }
-          >
-            {t['com.affine.openPageOperation.newTab']()}
-          </MenuItem>
-        </Link>
-      )}
 
       <MenuItem
         preFix={
@@ -238,7 +233,7 @@ export const PageOperationCell = ({
             align: 'end',
           }}
         >
-          <IconButton type="plain" data-testid="page-list-operation-button">
+          <IconButton data-testid="page-list-operation-button" size="20">
             <MoreVerticalIcon />
           </IconButton>
         </Menu>
@@ -278,7 +273,7 @@ export const TrashOperationCell = ({
       cancelText: t['Cancel'](),
       confirmText: t['com.affine.trashOperation.delete'](),
       confirmButtonOptions: {
-        type: 'error',
+        variant: 'error',
       },
       onConfirm: onPermanentlyDeletePage,
     });
@@ -286,30 +281,29 @@ export const TrashOperationCell = ({
 
   return (
     <ColWrapper flex={1}>
-      <Tooltip content={t['com.affine.trashOperation.restoreIt']()} side="top">
-        <IconButton
-          data-testid="restore-page-button"
-          style={{ marginRight: '12px' }}
-          onClick={() => {
-            onRestorePage();
-          }}
-        >
-          <ResetIcon />
-        </IconButton>
-      </Tooltip>
-      <Tooltip
-        content={t['com.affine.trashOperation.deletePermanently']()}
-        side="top"
-        align="end"
+      <IconButton
+        tooltip={t['com.affine.trashOperation.restoreIt']()}
+        tooltipOptions={tooltipSideTop}
+        data-testid="restore-page-button"
+        style={{ marginRight: '12px' }}
+        onClick={() => {
+          onRestorePage();
+        }}
+        size="20"
       >
-        <IconButton
-          data-testid="delete-page-button"
-          onClick={onConfirmPermanentlyDelete}
-          className={styles.deleteIcon}
-        >
-          <DeletePermanentlyIcon />
-        </IconButton>
-      </Tooltip>
+        <ResetIcon />
+      </IconButton>
+      <IconButton
+        tooltip={t['com.affine.trashOperation.deletePermanently']()}
+        tooltipOptions={tooltipSideTopAlignEnd}
+        data-testid="delete-page-button"
+        onClick={onConfirmPermanentlyDelete}
+        className={styles.deleteButton}
+        iconClassName={styles.deleteIcon}
+        size="20"
+      >
+        <DeletePermanentlyIcon />
+      </IconButton>
     </ColWrapper>
   );
 };
@@ -393,7 +387,7 @@ export const CollectionOperationCell = ({
       cancelText: t['Cancel'](),
       confirmText: t['Confirm'](),
       confirmButtonOptions: {
-        type: 'primary',
+        variant: 'primary',
       },
       onConfirm: createAndAddDocument,
     });
@@ -411,16 +405,20 @@ export const CollectionOperationCell = ({
       >
         <FavoriteTag onClick={onToggleFavoriteCollection} active={favourite} />
       </ColWrapper>
-      <Tooltip content={t['com.affine.collection.menu.rename']()} side="top">
-        <IconButton onClick={handleEditName}>
-          <EditIcon />
-        </IconButton>
-      </Tooltip>
-      <Tooltip content={t['com.affine.collection.menu.edit']()} side="top">
-        <IconButton onClick={handleEdit}>
-          <FilterIcon />
-        </IconButton>
-      </Tooltip>
+      <IconButton
+        onClick={handleEditName}
+        tooltip={t['com.affine.collection.menu.rename']()}
+        tooltipOptions={tooltipSideTop}
+      >
+        <EditIcon />
+      </IconButton>
+      <IconButton
+        onClick={handleEdit}
+        tooltip={t['com.affine.collection.menu.edit']()}
+        tooltipOptions={tooltipSideTop}
+      >
+        <FilterIcon />
+      </IconButton>
       <ColWrapper alignment="start">
         <Menu
           items={
@@ -470,7 +468,7 @@ export const CollectionOperationCell = ({
             align: 'end',
           }}
         >
-          <IconButton type="plain">
+          <IconButton>
             <MoreVerticalIcon />
           </IconButton>
         </Menu>
@@ -521,11 +519,13 @@ export const TagOperationCell = ({
         </div>
       </div>
 
-      <Tooltip content={t['Rename']()} side="top">
-        <IconButton onClick={() => setOpen(true)}>
-          <EditIcon />
-        </IconButton>
-      </Tooltip>
+      <IconButton
+        tooltip={t['Rename']()}
+        tooltipOptions={tooltipSideTop}
+        onClick={() => setOpen(true)}
+      >
+        <EditIcon />
+      </IconButton>
 
       <ColWrapper alignment="start">
         <Menu
@@ -546,7 +546,7 @@ export const TagOperationCell = ({
             align: 'end',
           }}
         >
-          <IconButton type="plain">
+          <IconButton>
             <MoreVerticalIcon />
           </IconButton>
         </Menu>

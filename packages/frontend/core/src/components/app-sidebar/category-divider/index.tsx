@@ -1,4 +1,3 @@
-import { IconButton } from '@affine/component';
 import { ToggleCollapseIcon } from '@blocksuite/icons/rc';
 import clsx from 'clsx';
 import { type ForwardedRef, forwardRef, type PropsWithChildren } from 'react';
@@ -42,14 +41,12 @@ export const CategoryDivider = forwardRef(
         <div className={styles.label}>
           {label}
           {collapsible ? (
-            <IconButton
-              withoutHoverStyle
-              className={styles.collapseButton}
-              size="small"
+            <ToggleCollapseIcon
+              width={16}
+              height={16}
               data-testid="category-divider-collapse-button"
-            >
-              <ToggleCollapseIcon className={styles.collapseIcon} />
-            </IconButton>
+              className={styles.collapseIcon}
+            />
           ) : null}
         </div>
         <div className={styles.actions} onClick={e => e.stopPropagation()}>

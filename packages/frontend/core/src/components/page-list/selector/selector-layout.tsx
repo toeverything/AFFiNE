@@ -61,7 +61,11 @@ export const SelectorLayout = ({
             <span>{t['com.affine.selectPage.selected']()}</span>
             <span className={styles.selectedNum}>{selectedCount ?? 0}</span>
           </div>
-          <Button type="plain" className={styles.clearButton} onClick={onClear}>
+          <Button
+            variant="plain"
+            className={styles.clearButton}
+            onClick={onClear}
+          >
             {t['com.affine.editCollection.pages.clear']()}
           </Button>
         </div>
@@ -75,7 +79,7 @@ export const SelectorLayout = ({
               <Button
                 onClick={onConfirm}
                 className={styles.actionButton}
-                type="primary"
+                variant="primary"
               >
                 {t['Confirm']()}
               </Button>

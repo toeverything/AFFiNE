@@ -251,11 +251,9 @@ const PlanPrompt = () => {
             : '' /* TODO(@catsjuice): loading UI */
         }
 
-        <IconButton
-          size="small"
-          icon={<CloseIcon />}
-          onClick={closeFreePlanPrompt}
-        />
+        <IconButton onClick={closeFreePlanPrompt}>
+          <CloseIcon />
+        </IconButton>
       </div>
     );
   }, [closeFreePlanPrompt, isProWorkspace, t]);
@@ -393,7 +391,7 @@ const PageHistoryList = ({
           })}
           {onLoadMore ? (
             <Button
-              type="plain"
+              variant="plain"
               loading={loadingMore}
               disabled={loadingMore}
               className={styles.historyItemLoadMore}
@@ -480,7 +478,7 @@ const PageHistoryManager = ({
       },
       confirmText: t['com.affine.history.confirm-restore-modal.restore'](),
       confirmButtonOptions: {
-        type: 'primary',
+        variant: 'primary',
         ['data-testid' as string]: 'confirm-restore-history-button',
       },
       onConfirm: handleRestore,
@@ -520,12 +518,12 @@ const PageHistoryManager = ({
       ) : null}
 
       <div className={styles.historyFooter}>
-        <Button type="plain" onClick={onClose}>
+        <Button onClick={onClose}>
           {t['com.affine.history.back-to-page']()}
         </Button>
         <div className={styles.spacer} />
         <Button
-          type="primary"
+          variant="primary"
           onClick={onConfirmRestore}
           disabled={isMutating || !activeVersion}
         >

@@ -17,6 +17,7 @@ import {
   FavoritedIcon,
   FavoriteIcon,
   FilterIcon,
+  OpenInNewIcon,
   PlusIcon,
   SplitViewIcon,
 } from '@blocksuite/icons/rc';
@@ -95,7 +96,7 @@ export const useExplorerCollectionNodeOperations = (
       cancelText: t['Cancel'](),
       confirmText: t['Confirm'](),
       confirmButtonOptions: {
-        type: 'primary',
+        variant: 'primary',
       },
       onConfirm: createAndAddDocument,
     });
@@ -107,6 +108,15 @@ export const useExplorerCollectionNodeOperations = (
       page: 'sidebar',
       module: 'collection',
       control: 'open in split view button',
+    });
+  }, [collectionId, workbenchService.workbench]);
+
+  const handleOpenInNewTab = useCallback(() => {
+    workbenchService.workbench.openCollection(collectionId, { at: 'new-tab' });
+    mixpanel.track('OpenInNewTab', {
+      page: 'sidebar',
+      module: 'collection',
+      control: 'open in new tab button',
     });
   }, [collectionId, workbenchService.workbench]);
 
@@ -129,11 +139,7 @@ export const useExplorerCollectionNodeOperations = (
         index: 0,
         inline: true,
         view: (
-          <IconButton
-            size="small"
-            type="plain"
-            onClick={handleAddDocToCollection}
-          >
+          <IconButton size="16" onClick={handleAddDocToCollection}>
             <PlusIcon />
           </IconButton>
         ),
@@ -191,6 +197,21 @@ export const useExplorerCollectionNodeOperations = (
           </MenuItem>
         ),
       },
+      {
+        index: 99,
+        view: (
+          <MenuItem
+            preFix={
+              <MenuIcon>
+                <OpenInNewIcon />
+              </MenuIcon>
+            }
+            onClick={handleOpenInNewTab}
+          >
+            {t['com.affine.workbench.tab.page-menu-open']()}
+          </MenuItem>
+        ),
+      },
       ...(appSettings.enableMultiView
         ? [
             {
@@ -236,6 +257,7 @@ export const useExplorerCollectionNodeOperations = (
       favorite,
       handleAddDocToCollection,
       handleDeleteCollection,
+      handleOpenInNewTab,
       handleOpenInSplitView,
       handleShowEdit,
       handleToggleFavoriteCollection,

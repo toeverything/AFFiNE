@@ -167,8 +167,7 @@ export const PageDisplayMenu = () => {
       }}
     >
       <Button
-        iconPosition="end"
-        icon={<ArrowDownSmallIcon className={styles.arrowDownSmallIcon} />}
+        suffix={<ArrowDownSmallIcon />}
         className={styles.headerDisplayButton}
         data-testid="page-display-menu-button"
       >

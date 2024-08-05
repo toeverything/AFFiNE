@@ -21,6 +21,11 @@ import { DesktopStateSynchronizer } from './services/desktop-state-synchronizer'
 import { ViewService } from './services/view';
 import { WorkbenchService } from './services/workbench';
 import {
+  BrowserWorkbenchNewTabHandler,
+  DesktopWorkbenchNewTabHandler,
+  WorkbenchNewTabHandler,
+} from './services/workbench-new-tab-handler';
+import {
   DesktopWorkbenchDefaultState,
   InMemoryWorkbenchDefaultState,
   WorkbenchDefaultState,
@@ -30,7 +35,7 @@ export function configureWorkbenchCommonModule(services: Framework) {
   services
     .scope(WorkspaceScope)
     .service(WorkbenchService)
-    .entity(Workbench, [WorkbenchDefaultState])
+    .entity(Workbench, [WorkbenchDefaultState, WorkbenchNewTabHandler])
     .entity(View)
     .scope(ViewScope)
     .service(ViewService, [ViewScope])
@@ -41,7 +46,8 @@ export function configureBrowserWorkbenchModule(services: Framework) {
   configureWorkbenchCommonModule(services);
   services
     .scope(WorkspaceScope)
-    .impl(WorkbenchDefaultState, InMemoryWorkbenchDefaultState);
+    .impl(WorkbenchDefaultState, InMemoryWorkbenchDefaultState)
+    .impl(WorkbenchNewTabHandler, () => BrowserWorkbenchNewTabHandler);
 }
 
 export function configureDesktopWorkbenchModule(services: Framework) {
@@ -51,5 +57,6 @@ export function configureDesktopWorkbenchModule(services: Framework) {
     .impl(WorkbenchDefaultState, DesktopWorkbenchDefaultState, [
       GlobalStateService,
     ])
+    .impl(WorkbenchNewTabHandler, () => DesktopWorkbenchNewTabHandler)
     .service(DesktopStateSynchronizer, [WorkbenchService]);
 }

@@ -27,10 +27,8 @@ export const headerCreateNewButton = style({
   transition: 'opacity 0.1s ease-in-out',
 });
 export const headerCreateNewCollectionIconButton = style({
-  padding: '4px 8px',
-  fontSize: '16px',
-  width: '32px',
-  height: '28px',
+  width: '30px',
+  height: '30px',
   borderRadius: '8px',
 });
 export const headerCreateNewButtonHidden = style({

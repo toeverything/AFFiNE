@@ -12,6 +12,7 @@ import {
   FavoritedIcon,
   FavoriteIcon,
   FilterIcon,
+  OpenInNewIcon,
   PlusIcon,
   SplitViewIcon,
 } from '@blocksuite/icons/rc';
@@ -77,6 +78,10 @@ export const CollectionOperations = ({
 
   const openCollectionSplitView = useCallback(() => {
     workbench.openCollection(collection.id, { at: 'tail' });
+  }, [collection.id, workbench]);
+
+  const openCollectionNewTab = useCallback(() => {
+    workbench.openCollection(collection.id, { at: 'new-tab' });
   }, [collection.id, workbench]);
 
   const favAdapter = useService(CompatibleFavoriteItemsAdapter);
@@ -153,6 +158,15 @@ export const CollectionOperations = ({
           : t['com.affine.favoritePageOperation.add'](),
         click: onToggleFavoritePage,
       },
+      {
+        icon: (
+          <MenuIcon>
+            <OpenInNewIcon />
+          </MenuIcon>
+        ),
+        name: t['com.affine.workbench.tab.page-menu-open'](),
+        click: openCollectionNewTab,
+      },
       ...(appSettings.enableMultiView
         ? [
             {
@@ -189,6 +203,7 @@ export const CollectionOperations = ({
       onAddDocToCollection,
       favorite,
       onToggleFavoritePage,
+      openCollectionNewTab,
       appSettings.enableMultiView,
       openCollectionSplitView,
       service,

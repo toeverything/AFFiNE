@@ -9,6 +9,7 @@ import { configureAppTabsHeaderModule } from '@affine/core/modules/app-tabs-head
 import { configureElectronStateStorageImpls } from '@affine/core/modules/storage';
 import { performanceLogger } from '@affine/core/shared';
 import { apis, events } from '@affine/electron-api';
+import { createI18n, setUpLanguage } from '@affine/i18n';
 import {
   configureGlobalStorageModule,
   Framework,
@@ -27,7 +28,14 @@ const frameworkProvider = framework.provider();
 
 const logger = performanceLogger.namespace('shell');
 
-function main() {
+async function loadLanguage() {
+  const i18n = createI18n();
+  document.documentElement.lang = i18n.language;
+
+  await setUpLanguage(i18n);
+}
+
+async function main() {
   const handleMaximized = (maximized: boolean | undefined) => {
     document.documentElement.dataset.maximized = String(maximized);
   };
@@ -39,6 +47,9 @@ function main() {
   apis?.ui.isFullScreen().then(handleFullscreen).catch(console.error);
   events?.ui.onMaximized(handleMaximized);
   events?.ui.onFullScreen(handleFullscreen);
+
+  await loadLanguage();
+  mountApp();
 }
 
 function mountApp() {
@@ -58,9 +69,4 @@ function mountApp() {
   );
 }
 
-try {
-  main();
-  mountApp();
-} catch (err) {
-  console.error('Failed to bootstrap app', err);
-}
+main().catch(console.error);

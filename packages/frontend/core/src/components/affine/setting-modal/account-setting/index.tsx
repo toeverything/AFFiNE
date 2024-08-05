@@ -142,7 +142,6 @@ export const AvatarAndName = () => {
               <Button
                 data-testid="save-user-name"
                 onClick={handleUpdateUserName}
-                className={styles.button}
                 style={{
                   marginLeft: '12px',
                 }}
@@ -234,7 +233,7 @@ export const AccountSetting: FC = () => {
       />
       <AvatarAndName />
       <SettingRow name={t['com.affine.settings.email']()} desc={account.email}>
-        <Button onClick={onChangeEmail} className={styles.button}>
+        <Button onClick={onChangeEmail}>
           {account.info?.emailVerified
             ? t['com.affine.settings.email.action.change']()
             : t['com.affine.settings.email.action.verify']()}
@@ -244,7 +243,7 @@ export const AccountSetting: FC = () => {
         name={t['com.affine.settings.password']()}
         desc={t['com.affine.settings.password.message']()}
       >
-        <Button onClick={onPasswordButtonClick} className={styles.button}>
+        <Button onClick={onPasswordButtonClick}>
           {account.info?.hasPassword
             ? t['com.affine.settings.password.action.change']()
             : t['com.affine.settings.password.action.set']()}

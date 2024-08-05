@@ -134,7 +134,7 @@ export function patchNotificationService(
             description: toReactNode(message),
             confirmText,
             confirmButtonOptions: {
-              type: 'primary',
+              variant: 'primary',
             },
             cancelText,
             onConfirm: () => {
@@ -177,7 +177,7 @@ export function patchNotificationService(
             description: description,
             confirmText: confirmText ?? 'Confirm',
             confirmButtonOptions: {
-              type: 'primary',
+              variant: 'primary',
             },
             cancelText: cancelText ?? 'Cancel',
             onConfirm: () => {

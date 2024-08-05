@@ -34,25 +34,20 @@ export const label = style({
   lineHeight: '20px',
   flexGrow: '0',
   display: 'flex',
+  gap: 2,
   alignItems: 'center',
   justifyContent: 'start',
   cursor: 'pointer',
 });
 
-export const collapseButton = style({
-  selectors: {
-    [`${label} > &`]: {
-      color: cssVarV2('icon/tertiary'),
-      transform: 'translateY(1px)',
-    },
-  },
-});
 export const collapseIcon = style({
-  transform: 'rotate(90deg)',
+  vars: { '--y': '1px', '--r': '90deg' },
+  color: cssVarV2('icon/tertiary'),
+  transform: 'translateY(var(--y)) rotate(var(--r))',
   transition: 'transform 0.2s',
   selectors: {
     [`${root}[data-collapsed="true"] &`]: {
-      transform: 'rotate(0deg)',
+      vars: { '--r': '0deg' },
     },
   },
 });

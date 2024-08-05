@@ -132,7 +132,7 @@ export const AIUsagePanel = () => {
           </div>
 
           {hasPaymentFeature && (
-            <AISubscribe type="primary" className={styles.storageButton}>
+            <AISubscribe variant="primary">
               {t['com.affine.payment.ai.usage.purchase-button-label']()}
             </AISubscribe>
           )}

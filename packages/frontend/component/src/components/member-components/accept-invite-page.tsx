@@ -37,7 +37,7 @@ export const AcceptInvitePage = ({
         </FlexWrapper>
       }
     >
-      <Button type="primary" size="large" onClick={onOpenWorkspace}>
+      <Button variant="primary" size="large" onClick={onOpenWorkspace}>
         {t['Visit Workspace']()}
       </Button>
     </AuthPageContainer>

@@ -84,12 +84,16 @@ export const editTagWrapper = style({
   },
 });
 
-export const deleteIcon = style({
+export const deleteButton = style({
   color: cssVar('iconColor'),
+  ':hover': {
+    background: cssVar('backgroundErrorColor'),
+  },
+});
+export const deleteIcon = style({
   selectors: {
-    '&:not(.without-hover):hover': {
+    [`${deleteButton}:hover &`]: {
       color: cssVar('errorColor'),
-      background: cssVar('backgroundErrorColor'),
     },
   },
 });

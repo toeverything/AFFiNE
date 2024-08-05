@@ -34,7 +34,7 @@ function Container({
 
 const ToggleButton = ({ onToggle }: { onToggle?: () => void }) => {
   return (
-    <IconButton size="large" onClick={onToggle}>
+    <IconButton size="24" onClick={onToggle}>
       <RightSidebarIcon />
     </IconButton>
   );

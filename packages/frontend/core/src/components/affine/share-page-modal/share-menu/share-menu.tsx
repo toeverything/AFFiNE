@@ -55,7 +55,7 @@ const DefaultShareButton = forwardRef(function DefaultShareButton(
   }, [shareService]);
 
   return (
-    <Button ref={ref} className={styles.shareButton} type="primary">
+    <Button ref={ref} className={styles.shareButton} variant="primary">
       {shared
         ? t['com.affine.share-menu.sharedButton']()
         : t['com.affine.share-menu.shareButton']()}

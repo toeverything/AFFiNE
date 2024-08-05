@@ -1,4 +1,4 @@
-import { Button, IconButton, observeResize } from '@affine/component';
+import { IconButton, observeResize } from '@affine/component';
 import {
   ArrowDownSmallIcon,
   ArrowUpSmallIcon,
@@ -182,63 +182,58 @@ export const FindInPageModal = () => {
             className={styles.modalContent}
             data-state={status}
           >
-            <div className={styles.leftContent}>
-              <div
-                className={clsx(styles.inputContainer, {
-                  active: active,
-                })}
-              >
-                <SearchIcon className={styles.searchIcon} />
-                <div className={styles.inputMain}>
-                  <input
-                    type="text"
-                    autoFocus
-                    value={value}
-                    ref={inputRef}
-                    style={{
-                      visibility: isSearching ? 'hidden' : 'visible',
-                    }}
-                    onBlur={handleBlur}
-                    onFocus={handleFocus}
-                    className={styles.input}
-                    onKeyDown={handleKeydown}
-                    onChange={e => handleValueChange(e.target.value)}
-                  />
-                  <CanvasText className={styles.inputHack} text={value} />
-                </div>
-                <div className={styles.count}>
-                  {value.length > 0 && result && result.matches !== 0 ? (
-                    <>
-                      <span>{result?.activeMatchOrdinal || 0}</span>
-                      <span>/</span>
-                      <span>{result?.matches || 0}</span>
-                    </>
-                  ) : value.length ? (
-                    <span>No matches</span>
-                  ) : null}
-                </div>
+            <div
+              className={clsx(styles.inputContainer, {
+                active: active,
+              })}
+            >
+              <SearchIcon className={styles.searchIcon} />
+              <div className={styles.inputMain}>
+                <input
+                  type="text"
+                  autoFocus
+                  value={value}
+                  ref={inputRef}
+                  style={{
+                    visibility: isSearching ? 'hidden' : 'visible',
+                  }}
+                  onBlur={handleBlur}
+                  onFocus={handleFocus}
+                  className={styles.input}
+                  onKeyDown={handleKeydown}
+                  onChange={e => handleValueChange(e.target.value)}
+                />
+                <CanvasText className={styles.inputHack} text={value} />
               </div>
+              <div className={styles.count}>
+                {value.length > 0 && result && result.matches !== 0 ? (
+                  <>
+                    <span>{result?.activeMatchOrdinal || 0}</span>
+                    <span>/</span>
+                    <span>{result?.matches || 0}</span>
+                  </>
+                ) : value.length ? (
+                  <span>No matches</span>
+                ) : null}
+              </div>
+            </div>
 
-              <Button
+            <div>
+              <IconButton
+                size="24"
                 className={clsx(styles.arrowButton, 'backward')}
                 onClick={handleBackWard}
-              >
-                <ArrowUpSmallIcon />
-              </Button>
-              <Button
+                icon={<ArrowUpSmallIcon />}
+              />
+              <IconButton
+                size="24"
                 className={clsx(styles.arrowButton, 'forward')}
                 onClick={handleForward}
-              >
-                <ArrowDownSmallIcon />
-              </Button>
+                icon={<ArrowDownSmallIcon />}
+              />
             </div>
-            <IconButton
-              className={styles.closeButton}
-              type="plain"
-              onClick={handleDone}
-            >
-              <CloseIcon />
-            </IconButton>
+
+            <IconButton onClick={handleDone} icon={<CloseIcon />} />
           </Dialog.Content>
         </div>
       </Dialog.Portal>

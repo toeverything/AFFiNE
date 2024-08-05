@@ -6,10 +6,12 @@ import * as styles from './outline-viewer.css';
 
 export const EditorOutlineViewer = ({
   editor,
-  toggleOutlinePanel,
+  show,
+  openOutlinePanel,
 }: {
   editor: AffineEditorContainer | null;
-  toggleOutlinePanel: () => void;
+  show: boolean;
+  openOutlinePanel: () => void;
 }) => {
   const outlineViewerRef = useRef<OutlineViewer | null>(null);
 
@@ -24,15 +26,16 @@ export const EditorOutlineViewer = ({
     }
   }, []);
 
-  if (!editor) {
-    return;
-  }
+  if (!editor || !show) return;
 
   if (!outlineViewerRef.current) {
     outlineViewerRef.current = new OutlineViewer();
-    (outlineViewerRef.current as OutlineViewer).editor = editor;
-    (outlineViewerRef.current as OutlineViewer).toggleOutlinePanel =
-      toggleOutlinePanel;
+  }
+  if (outlineViewerRef.current.editor !== editor) {
+    outlineViewerRef.current.editor = editor;
+  }
+  if (outlineViewerRef.current.toggleOutlinePanel !== openOutlinePanel) {
+    outlineViewerRef.current.toggleOutlinePanel = openOutlinePanel;
   }
 
   return <div className={styles.root} ref={onRefChange} />;

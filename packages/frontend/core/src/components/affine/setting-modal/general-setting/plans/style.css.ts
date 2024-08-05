@@ -177,7 +177,17 @@ export const planPriceDesc = style({
 });
 export const planAction = style({
   width: '100%',
-  fontWeight: 500,
+});
+export const resumeAction = style([planAction, {}]);
+export const resumeActionContent = style({
+  ':after': {
+    content: 'var(--default-content)',
+  },
+  selectors: {
+    [`${resumeAction}:hover &:after`]: {
+      content: 'var(--hover-content)',
+    },
+  },
 });
 export const planBenefits = style({
   fontSize: cssVar('fontXs'),

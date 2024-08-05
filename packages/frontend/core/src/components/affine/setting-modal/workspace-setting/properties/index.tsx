@@ -173,11 +173,9 @@ const EditPropertyButton = ({
         }}
         items={editing ? editMenuItems : defaultMenuItems}
       >
-        <IconButton
-          onClick={() => setOpen(true)}
-          type="plain"
-          icon={<MoreHorizontalIcon />}
-        />
+        <IconButton onClick={() => setOpen(true)} size="20">
+          <MoreHorizontalIcon />
+        </IconButton>
       </Menu>
       <ConfirmDeletePropertyModal
         onConfirm={() => {
@@ -350,7 +348,7 @@ const WorkspaceSettingPropertiesMain = () => {
       <div className={styles.listHeader}>
         {properties.length > 0 ? (
           <Menu items={filterMenuItems}>
-            <Button type="default" icon={<FilterIcon />}>
+            <Button prefix={<FilterIcon />}>
               {filterMode === 'all'
                 ? t['com.affine.filter']()
                 : t[`com.affine.settings.workspace.properties.${filterMode}`]()}
@@ -365,7 +363,7 @@ const WorkspaceSettingPropertiesMain = () => {
             />
           }
         >
-          <Button type="primary">
+          <Button variant="primary">
             {t['com.affine.settings.workspace.properties.add_property']()}
           </Button>
         </Menu>

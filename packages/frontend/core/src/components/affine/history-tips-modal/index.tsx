@@ -28,7 +28,7 @@ export const HistoryTipsModal = () => {
       description={t['com.affine.history-vision.tips-modal.description']()}
       cancelText={t['com.affine.history-vision.tips-modal.cancel']()}
       confirmButtonOptions={{
-        type: 'primary',
+        variant: 'primary',
       }}
       onConfirm={handleConfirm}
       confirmText={t['com.affine.history-vision.tips-modal.confirm']()}

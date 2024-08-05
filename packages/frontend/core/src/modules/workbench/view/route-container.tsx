@@ -30,7 +30,7 @@ const ToggleButton = ({
 }) => {
   return (
     <IconButton
-      size="large"
+      size="24"
       onClick={onToggle}
       className={className}
       data-show={show}

@@ -115,7 +115,7 @@ export const CreateCollection = ({
         <Button
           size="large"
           data-testid="save-collection"
-          type="primary"
+          variant="primary"
           disabled={isNameEmpty}
           onClick={save}
         >

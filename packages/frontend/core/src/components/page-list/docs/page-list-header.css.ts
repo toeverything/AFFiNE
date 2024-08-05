@@ -27,14 +27,6 @@ export const titleIcon = style({
 export const titleCollectionName = style({
   color: cssVar('textPrimaryColor'),
 });
-export const addPageButton = style({
-  padding: '6px 10px',
-  borderRadius: '8px',
-  background: cssVar('backgroundPrimaryColor'),
-  fontSize: cssVar('fontXs'),
-  fontWeight: 500,
-  height: '28px',
-});
 export const tagSticky = style({
   display: 'flex',
   alignItems: 'center',

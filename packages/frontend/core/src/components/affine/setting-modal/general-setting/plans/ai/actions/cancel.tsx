@@ -43,12 +43,12 @@ export const AICancel = ({ module, ...btnProps }: AICancelProps) => {
       confirmText:
         t['com.affine.payment.ai.action.cancel.confirm.confirm-text'](),
       confirmButtonOptions: {
-        type: 'default',
+        variant: 'secondary',
       },
       cancelText:
         t['com.affine.payment.ai.action.cancel.confirm.cancel-text'](),
       cancelButtonOptions: {
-        type: 'primary',
+        variant: 'primary',
       },
       onConfirm: async () => {
         try {
@@ -92,7 +92,12 @@ export const AICancel = ({ module, ...btnProps }: AICancelProps) => {
   ]);
 
   return (
-    <Button onClick={cancel} loading={isMutating} type="primary" {...btnProps}>
+    <Button
+      onClick={cancel}
+      loading={isMutating}
+      variant="primary"
+      {...btnProps}
+    >
       {t['com.affine.payment.ai.action.cancel.button-label']()}
     </Button>
   );

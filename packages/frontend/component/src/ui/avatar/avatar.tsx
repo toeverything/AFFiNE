@@ -199,21 +199,20 @@ export const Avatar = forwardRef<HTMLSpanElement, AvatarProps>(
         </Tooltip>
 
         {onRemove ? (
-          <Tooltip
-            portalOptions={{ container: removeButtonDom }}
-            {...removeTooltipOptions}
+          <IconButton
+            tooltipOptions={{
+              portalOptions: { container: removeButtonDom },
+              ...removeTooltipOptions,
+            }}
+            variant="solid"
+            size="12"
+            className={clsx(style.removeButton, removeButtonClassName)}
+            onClick={onRemove}
+            ref={setRemoveButtonDom}
+            {...removeButtonProps}
           >
-            <IconButton
-              size="extraSmall"
-              type="default"
-              className={clsx(style.removeButton, removeButtonClassName)}
-              onClick={onRemove}
-              ref={setRemoveButtonDom}
-              {...removeButtonProps}
-            >
-              <CloseIcon />
-            </IconButton>
-          </Tooltip>
+            <CloseIcon />
+          </IconButton>
         ) : null}
       </AvatarRoot>
     );

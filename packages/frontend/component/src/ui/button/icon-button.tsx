@@ -1,85 +1,78 @@
+import { assignInlineVars } from '@vanilla-extract/dynamic';
 import clsx from 'clsx';
-import type { HTMLAttributes, PropsWithChildren, ReactElement } from 'react';
-import { forwardRef } from 'react';
+import { type CSSProperties, forwardRef, type ReactElement } from 'react';
 
-import { Loading } from '../loading';
-import type { ButtonType } from './button';
-import { iconButton } from './button.css';
+import { Button, type ButtonProps } from './button';
+import { iconButton, iconSizeVar } from './button.css';
 
-export type IconButtonSize = 'default' | 'large' | 'small' | 'extraSmall';
-export type IconButtonProps = Omit<HTMLAttributes<HTMLButtonElement>, 'type'> &
-  PropsWithChildren<{
-    type?: ButtonType;
-    disabled?: boolean;
-    size?: IconButtonSize;
-    loading?: boolean;
-    withoutPadding?: boolean;
-    active?: boolean;
-    withoutHoverStyle?: boolean;
-    icon?: ReactElement;
-  }>;
-
-const defaultProps = {
-  type: 'plain',
-  disabled: false,
-  size: 'default',
-  loading: false,
-  withoutPadding: false,
-  active: false,
-  withoutHoverStyle: false,
-} as const;
+export interface IconButtonProps
+  extends Omit<
+    ButtonProps,
+    | 'variant'
+    | 'size'
+    | 'prefix'
+    | 'suffix'
+    | 'children'
+    | 'prefixClassName'
+    | 'prefixStyle'
+    | 'suffix'
+    | 'suffixClassName'
+    | 'suffixStyle'
+  > {
+  /**  Icon element */
+  children?: ReactElement;
+  /** Same as `children`, compatibility of the old API */
+  icon?: ReactElement;
+  variant?: 'plain' | 'solid' | 'danger' | 'custom';
+  /**
+   * Use preset size,
+   * or use custom size(px) (default padding is `2px`, have to override yourself)
+   *
+   * > These presets size are referenced from the design system.
+   * > The number is the size of the icon, the button size is calculated based on the icon size + padding.
+   * > OR, you can define `width` and `height` in `style` or `className` directly.
+   */
+  size?: '12' | '14' | '16' | '20' | '24' | number;
+  iconClassName?: string;
+  iconStyle?: CSSProperties;
+}
 
 export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
-  (props, ref) => {
-    const {
-      type,
-      size,
-      withoutPadding,
-      children,
-      disabled,
-      loading,
-      active,
-      withoutHoverStyle,
-      icon: propsIcon,
+  (
+    {
+      variant = 'plain',
+      size = '20',
+      style,
       className,
+      children,
+      icon,
+      iconClassName,
+      iconStyle,
       ...otherProps
-    } = {
-      ...defaultProps,
-      ...props,
-    };
+    },
+    ref
+  ) => {
+    const validatedSize = isNaN(parseInt(size as string, 10)) ? 16 : size;
 
     return (
-      <button
+      <Button
         ref={ref}
-        className={clsx(
-          iconButton,
-          {
-            'without-padding': withoutPadding,
-
-            primary: type === 'primary',
-            plain: type === 'plain',
-            error: type === 'error',
-            warning: type === 'warning',
-            success: type === 'success',
-            processing: type === 'processing',
-
-            large: size === 'large',
-            small: size === 'small',
-            'extra-small': size === 'extraSmall',
-
-            disabled,
-            loading,
-            active,
-            'without-hover': withoutHoverStyle,
-          },
-          className
-        )}
-        disabled={disabled}
-        data-disabled={disabled}
+        style={{
+          ...style,
+          ...assignInlineVars({
+            [iconSizeVar]: `${validatedSize}px`,
+          }),
+        }}
+        data-icon-variant={variant}
+        data-icon-size={validatedSize}
+        className={clsx(iconButton, className)}
+        size={'custom'}
+        variant={'custom'}
+        prefix={children ?? icon}
+        prefixClassName={iconClassName}
+        prefixStyle={iconStyle}
         {...otherProps}
-      >
-        {loading ? <Loading /> : children || propsIcon}
-      </button>
+      />
     );
   }
 );

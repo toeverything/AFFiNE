@@ -81,7 +81,7 @@ export const ErrorDetail: FC<ErrorDetailProps> = props => {
         ))}
         <div className={styles.errorFooter}>
           <Button
-            type="primary"
+            variant="primary"
             onClick={onBtnClick}
             loading={isBtnLoading}
             size="extraLarge"

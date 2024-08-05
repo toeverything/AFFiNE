@@ -1,4 +1,4 @@
-import { IconButton, Tooltip } from '@affine/component';
+import { IconButton } from '@affine/component';
 import { useI18n } from '@affine/i18n';
 import { ArrowLeftSmallIcon, ArrowRightSmallIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
@@ -7,6 +7,8 @@ import { useCallback, useEffect, useMemo } from 'react';
 import { useGeneralShortcuts } from '../../../hooks/affine/use-shortcuts';
 import { NavigatorService } from '../services/navigator';
 import * as styles from './navigation-buttons.css';
+
+const tooltipSideBottom = { side: 'bottom' as const };
 
 export const NavigationButtons = () => {
   const t = useI18n();
@@ -63,34 +65,29 @@ export const NavigationButtons = () => {
     return null;
   }
 
+  // TODO(@CatsJuice): tooltip with shortcut
   return (
     <div className={styles.container}>
-      <Tooltip
-        content={`${shortcutsObject.goBack} ${shortcutsObject.goBackShortcut}`}
-        side="bottom"
+      <IconButton
+        tooltip={`${shortcutsObject.goBack} ${shortcutsObject.goBackShortcut}`}
+        tooltipOptions={tooltipSideBottom}
+        className={styles.button}
+        data-testid="app-navigation-button-back"
+        disabled={!backable}
+        onClick={handleBack}
       >
-        <IconButton
-          className={styles.button}
-          data-testid="app-navigation-button-back"
-          disabled={!backable}
-          onClick={handleBack}
-        >
-          <ArrowLeftSmallIcon />
-        </IconButton>
-      </Tooltip>
-      <Tooltip
-        content={`${shortcutsObject.goForward} ${shortcutsObject.goForwardShortcut}`}
-        side="bottom"
+        <ArrowLeftSmallIcon />
+      </IconButton>
+      <IconButton
+        tooltip={`${shortcutsObject.goForward} ${shortcutsObject.goForwardShortcut}`}
+        tooltipOptions={tooltipSideBottom}
+        className={styles.button}
+        data-testid="app-navigation-button-forward"
+        disabled={!forwardable}
+        onClick={handleForward}
       >
-        <IconButton
-          className={styles.button}
-          data-testid="app-navigation-button-forward"
-          disabled={!forwardable}
-          onClick={handleForward}
-        >
-          <ArrowRightSmallIcon />
-        </IconButton>
-      </Tooltip>
+        <ArrowRightSmallIcon />
+      </IconButton>
     </div>
   );
 };

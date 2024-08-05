@@ -397,7 +397,7 @@ export class AIChatBlockPeekView extends LitElement {
           .state=${messageState}
           .content=${content}
           .attachments=${attachments}
-          .role=${role}
+          .messageRole=${role}
           .userInfo=${userInfo}
         ></ai-chat-message>
         ${shouldRenderError ? AIChatErrorRenderer(host, error) : nothing}

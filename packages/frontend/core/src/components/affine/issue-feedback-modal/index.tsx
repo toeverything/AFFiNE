@@ -27,7 +27,7 @@ export const IssueFeedbackModal = () => {
       to={`${runtimeConfig.githubUrl}/issues/new/choose`}
       confirmText={t['com.affine.issue-feedback.confirm']()}
       confirmButtonOptions={{
-        type: 'primary',
+        variant: 'primary',
       }}
       external
     />

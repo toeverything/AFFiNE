@@ -5,12 +5,6 @@ export const menu = style({
   minWidth: '220px',
 });
 
-export const arrowDownSmallIcon = style({
-  width: '16px',
-  height: '16px',
-  color: cssVar('iconColor'),
-});
-
 export const headerDisplayButton = style({
   marginLeft: '16px',
   ['WebkitAppRegion' as string]: 'no-drag',

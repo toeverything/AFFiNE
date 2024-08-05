@@ -3,6 +3,7 @@ import { PageDetailSkeleton } from '@affine/component/page-detail-skeleton';
 import type { ChatPanel } from '@affine/core/blocksuite/presets/ai';
 import { AIProvider } from '@affine/core/blocksuite/presets/ai';
 import { PageAIOnboarding } from '@affine/core/components/affine/ai-onboarding';
+import { EditorOutlineViewer } from '@affine/core/components/blocksuite/outline-viewer';
 import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
 import { useDocMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
 import { RecentDocsService } from '@affine/core/modules/quicksearch';
@@ -64,7 +65,6 @@ import { performanceRenderLogger } from '../../../shared';
 import { PageNotFound } from '../../404';
 import * as styles from './detail-page.css';
 import { DetailPageHeader } from './detail-page-header';
-import { EditorOutlineViewer } from './outline-viewer';
 import { EditorChatPanel } from './tabs/chat';
 import { EditorFramePanel } from './tabs/frame';
 import { EditorJournalPanel } from './tabs/journal';
@@ -83,6 +83,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
   const globalContext = useService(GlobalContextService).globalContext;
   const docCollection = workspace.docCollection;
   const mode = useLiveData(doc.mode$);
+  const isSideBarOpen = useLiveData(workbench.sidebarOpen$);
   const { appSettings } = useAppSettingHelper();
   const chatPanelRef = useRef<ChatPanel | null>(null);
   const { setDocReadonly } = useDocMetaHelper(workspace.docCollection);
@@ -226,13 +227,13 @@ const DetailPageImpl = memo(function DetailPageImpl() {
     [jumpToPageBlock, docCollection.id, openPage, jumpToTag, workspace.id]
   );
 
+  const [refCallback, hasScrollTop] = useHasScrollTop();
+  const dynamicTopBorder = environment.isDesktop;
+
   const openOutlinePanel = useCallback(() => {
     workbench.openSidebar();
     view.activeSidebarTab('outline');
   }, [workbench, view]);
-
-  const [refCallback, hasScrollTop] = useHasScrollTop();
-  const dynamicTopBorder = environment.isDesktop;
 
   return (
     <>
@@ -269,15 +270,16 @@ const DetailPageImpl = memo(function DetailPageImpl() {
                 })}
               />
             </Scrollable.Root>
+            {appSettings.enableOutlineViewer && (
+              <EditorOutlineViewer
+                editor={editor}
+                show={mode === 'page' && !isSideBarOpen}
+                openOutlinePanel={openOutlinePanel}
+              />
+            )}
           </AffineErrorBoundary>
           {isInTrash ? <TrashPageFooter /> : null}
         </div>
-        {appSettings.enableOutlineViewer && (
-          <EditorOutlineViewer
-            editor={editor}
-            toggleOutlinePanel={openOutlinePanel}
-          />
-        )}
       </ViewBody>
 
       <ViewSidebarTab tabId="chat" icon={<AiIcon />} unmountOnInactive={false}>

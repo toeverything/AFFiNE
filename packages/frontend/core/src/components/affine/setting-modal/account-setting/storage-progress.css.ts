@@ -28,6 +28,3 @@ globalStyle(`${storageProgressWrapper} .storage-progress-bar-wrapper`, {
 export const storageProgressBar = style({
   height: '100%',
 });
-export const storageButton = style({
-  padding: '4px 12px',
-});

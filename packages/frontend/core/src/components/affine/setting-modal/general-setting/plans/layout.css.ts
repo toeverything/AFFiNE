@@ -46,6 +46,7 @@ export const allPlansLink = style({
 
 export const collapsibleHeader = style({
   display: 'flex',
+  alignItems: 'start',
   marginBottom: 8,
 });
 export const collapsibleHeaderContent = style({

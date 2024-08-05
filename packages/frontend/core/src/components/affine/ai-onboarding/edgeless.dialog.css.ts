@@ -21,7 +21,6 @@ export const thumbContent = style({
 });
 
 export const actionButton = style({
-  fontWeight: 500,
   fontSize: cssVar('fontSm'),
   lineHeight: '22px',
 });

@@ -58,7 +58,7 @@ export const PricingCollapsible = ({
           <div className={styles.collapsibleHeaderTitle}>{title}</div>
           <div className={styles.collapsibleHeaderCaption}>{caption}</div>
         </div>
-        <IconButton onClick={toggle}>
+        <IconButton onClick={toggle} size="20">
           <ArrowUpSmallIcon
             style={{
               transform: open ? 'rotate(0deg)' : 'rotate(180deg)',
@@ -163,7 +163,7 @@ export const PlanLayout = ({ cloud, ai, cloudTip }: PlanLayoutProps) => {
               </div>
               <Button
                 onClick={() => scrollToAnchor('cloudPricingPlan')}
-                type="primary"
+                variant="primary"
               >
                 {t['com.affine.ai-scroll-tip.view']()}
               </Button>

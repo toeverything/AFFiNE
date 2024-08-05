@@ -1,4 +1,4 @@
-import { Menu, toast } from '@affine/component';
+import { IconButton, Menu, toast } from '@affine/component';
 import { useBlockSuiteDocMeta } from '@affine/core/hooks/use-block-suite-page-meta';
 import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/properties';
 import { ShareDocsService } from '@affine/core/modules/share-doc';
@@ -12,7 +12,6 @@ import {
   useServices,
   WorkspaceService,
 } from '@toeverything/infra';
-import clsx from 'clsx';
 import { type ReactNode, useCallback, useEffect, useState } from 'react';
 
 import { FavoriteTag } from '../../components/favorite-tag';
@@ -185,22 +184,10 @@ export const SelectPage = ({
                 />
               }
             >
-              <div>
-                <FilterIcon
-                  className={clsx(styles.icon, styles.button)}
-                  onClick={clickFilter}
-                  width={24}
-                  height={24}
-                ></FilterIcon>
-              </div>
+              <IconButton icon={<FilterIcon />} onClick={clickFilter} />
             </Menu>
           ) : (
-            <FilterIcon
-              className={clsx(styles.icon, styles.button)}
-              onClick={clickFilter}
-              width={24}
-              height={24}
-            ></FilterIcon>
+            <IconButton icon={<FilterIcon />} onClick={clickFilter} />
           )}
         </div>
         {showFilter ? (

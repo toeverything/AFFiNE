@@ -1,4 +1,4 @@
-import { Tooltip } from '@affine/component';
+import { Button, IconButton, Tooltip } from '@affine/component';
 import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/properties';
 import type { Collection } from '@affine/env/filter';
 import { Trans, useI18n } from '@affine/i18n';
@@ -125,14 +125,12 @@ export const RulesMode = ({
               <div className={styles.rulesContainerLeftContentInclude}>
                 {collection.allowList.length > 0 ? (
                   <div className={styles.includeTitle}>
-                    <ToggleCollapseIcon
+                    <IconButton
                       onClick={() => setExpandInclude(!expandInclude)}
-                      className={styles.button}
-                      width={24}
-                      height={24}
-                      style={{
+                      iconStyle={{
                         transform: expandInclude ? 'rotate(90deg)' : undefined,
                       }}
+                      icon={<ToggleCollapseIcon />}
                     />
                     <div style={{ color: cssVar('textSecondaryColor') }}>
                       {t['com.affine.editCollection.rules.include.title']()}
@@ -181,8 +179,9 @@ export const RulesMode = ({
                             {page?.title || t['Untitled']()}
                           </div>
                         </div>
-                        <CloseIcon
-                          className={styles.button}
+                        <IconButton
+                          size="14"
+                          icon={<CloseIcon />}
                           onClick={() => {
                             updateCollection({
                               ...collection,
@@ -191,7 +190,7 @@ export const RulesMode = ({
                               ),
                             });
                           }}
-                        ></CloseIcon>
+                        />
                       </div>
                     );
                   })}
@@ -240,24 +239,16 @@ export const RulesMode = ({
       </div>
       <div className={styles.rulesBottom}>
         <div className={styles.bottomLeft}>
-          <div
-            className={clsx(
-              styles.button,
-              styles.bottomButton,
-              showPreview && styles.previewActive
-            )}
+          <Button
             onClick={() => {
               setShowPreview(!showPreview);
             }}
           >
             {t['com.affine.editCollection.rules.preview']()}
-          </div>
-          <div
-            className={clsx(styles.button, styles.bottomButton)}
-            onClick={reset}
-          >
+          </Button>
+          <Button variant="plain" onClick={reset}>
             {t['com.affine.editCollection.rules.reset']()}
-          </div>
+          </Button>
           <div className={styles.previewCountTips}>
             <Trans
               i18nKey="com.affine.editCollection.rules.countTips"
@@ -273,7 +264,9 @@ export const RulesMode = ({
             </Trans>
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center' }}>{buttons}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+          {buttons}
+        </div>
       </div>
     </>
   );

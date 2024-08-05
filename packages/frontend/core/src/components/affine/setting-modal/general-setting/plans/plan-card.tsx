@@ -1,4 +1,4 @@
-import { Button } from '@affine/component/ui/button';
+import { Button, type ButtonProps } from '@affine/component/ui/button';
 import { Tooltip } from '@affine/component/ui/tooltip';
 import { generateSubscriptionCallbackLink } from '@affine/core/hooks/affine/use-subscription-notify';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
@@ -10,10 +10,11 @@ import { SubscriptionPlan, SubscriptionStatus } from '@affine/graphql';
 import { Trans, useI18n } from '@affine/i18n';
 import { DoneIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
+import { assignInlineVars } from '@vanilla-extract/dynamic';
 import clsx from 'clsx';
 import { useSetAtom } from 'jotai';
 import { nanoid } from 'nanoid';
-import type { HTMLAttributes, PropsWithChildren } from 'react';
+import type { PropsWithChildren } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { authAtom } from '../../../../../atoms/index';
@@ -194,7 +195,7 @@ const Downgrade = ({ disabled }: { disabled?: boolean }) => {
         <div className={styles.planAction}>
           <Button
             className={styles.planAction}
-            type="primary"
+            variant="primary"
             onClick={handleClick}
             disabled={disabled}
           >
@@ -232,7 +233,7 @@ const BookDemo = ({ plan }: { plan: SubscriptionPlan }) => {
         });
       }}
     >
-      <Button className={styles.planAction} type="primary">
+      <Button className={styles.planAction} variant="primary">
         {t['com.affine.payment.tell-us-use-case']()}
       </Button>
     </a>
@@ -243,8 +244,8 @@ export const Upgrade = ({
   className,
   recurring,
   children,
-  ...attrs
-}: HTMLAttributes<HTMLButtonElement> & {
+  ...btnProps
+}: ButtonProps & {
   recurring: SubscriptionRecurring;
 }) => {
   const [isMutating, setMutating] = useState(false);
@@ -307,11 +308,11 @@ export const Upgrade = ({
   return (
     <Button
       className={clsx(styles.planAction, className)}
-      type="primary"
+      variant="primary"
       onClick={upgrade}
       disabled={isMutating}
       loading={isMutating}
-      {...attrs}
+      {...btnProps}
     >
       {children ?? t['com.affine.payment.upgrade']()}
     </Button>
@@ -371,7 +372,7 @@ const ChangeRecurring = ({
     <>
       <Button
         className={styles.planAction}
-        type="primary"
+        variant="primary"
         onClick={onStartChange}
         disabled={disabled || isMutating}
         loading={isMutating}
@@ -405,7 +406,7 @@ const SignUpAction = ({ children }: PropsWithChildren) => {
     <Button
       onClick={onClickSignIn}
       className={styles.planAction}
-      type="primary"
+      variant="primary"
     >
       {children}
     </Button>
@@ -415,7 +416,6 @@ const SignUpAction = ({ children }: PropsWithChildren) => {
 const ResumeButton = () => {
   const t = useI18n();
   const [open, setOpen] = useState(false);
-  const [hovered, setHovered] = useState(false);
   const subscription = useService(SubscriptionService).subscription;
 
   const handleClick = useCallback(() => {
@@ -435,14 +435,14 @@ const ResumeButton = () => {
   return (
     <ResumeAction open={open} onOpenChange={setOpen}>
       <Button
-        className={styles.planAction}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
+        className={styles.resumeAction}
         onClick={handleClick}
+        style={assignInlineVars({
+          '--default-content': t['com.affine.payment.current-plan'](),
+          '--hover-content': t['com.affine.payment.resume-renewal'](),
+        })}
       >
-        {hovered
-          ? t['com.affine.payment.resume-renewal']()
-          : t['com.affine.payment.current-plan']()}
+        <span className={styles.resumeActionContent} />
       </Button>
     </ResumeAction>
   );

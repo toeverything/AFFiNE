@@ -1,7 +1,6 @@
-import { IconButton, Tooltip } from '@affine/component';
+import { IconButton } from '@affine/component';
 import { useI18n } from '@affine/i18n';
 import { SidebarIcon } from '@blocksuite/icons/rc';
-import clsx from 'clsx';
 import { useAtom } from 'jotai';
 
 import { appSidebarOpenAtom } from '../index.jotai';
@@ -19,19 +18,19 @@ export const SidebarSwitch = ({
   const tooltipContent = open
     ? t['com.affine.sidebarSwitch.collapse']()
     : t['com.affine.sidebarSwitch.expand']();
-  const collapseKeyboardShortcuts =
-    environment.isBrowser && environment.isMacOs ? ' ⌘+/' : ' Ctrl+/';
 
   return (
-    <Tooltip
-      content={tooltipContent + ' ' + collapseKeyboardShortcuts}
-      side={open ? 'bottom' : 'right'}
+    <div
+      data-show={show}
+      className={styles.sidebarSwitchClip}
+      data-testid={`app-sidebar-arrow-button-${open ? 'collapse' : 'expand'}`}
     >
       <IconButton
-        className={clsx(styles.sidebarSwitch, className)}
-        data-show={show}
-        size="large"
-        data-testid={`app-sidebar-arrow-button-${open ? 'collapse' : 'expand'}`}
+        tooltip={tooltipContent}
+        tooltipShortcut={['$mod', '/']}
+        tooltipOptions={{ side: open ? 'bottom' : 'right' }}
+        className={className}
+        size="24"
         style={{
           zIndex: 1,
         }}
@@ -39,6 +38,6 @@ export const SidebarSwitch = ({
       >
         <SidebarIcon />
       </IconButton>
-    </Tooltip>
+    </div>
   );
 };

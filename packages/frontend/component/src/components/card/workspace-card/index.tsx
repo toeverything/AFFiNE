@@ -3,7 +3,6 @@ import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { CollaborationIcon, SettingsIcon } from '@blocksuite/icons/rc';
 import type { WorkspaceMetadata } from '@toeverything/infra';
-import clsx from 'clsx';
 import { type MouseEvent, useCallback } from 'react';
 
 import { Button } from '../../../ui/button';
@@ -89,8 +88,7 @@ export const WorkspaceCard = ({
             <Button
               loading={!!openingId && openingId === meta.id}
               disabled={!!openingId}
-              type="default"
-              className={clsx(styles.enableCloudButton, styles.showOnCardHover)}
+              className={styles.showOnCardHover}
               onClick={onEnableCloud}
             >
               {enableCloudText}

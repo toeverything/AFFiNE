@@ -44,7 +44,7 @@ export const TrashButton = () => {
               ),
               confirmText: t.Delete(),
               confirmButtonOptions: {
-                type: 'error',
+                variant: 'error',
               },
               onConfirm() {
                 docRecord.moveToTrash();

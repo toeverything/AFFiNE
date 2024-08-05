@@ -117,22 +117,14 @@ export const tableBodySortable = style({
 });
 
 export const addPropertyButton = style({
-  display: 'flex',
-  alignItems: 'center',
   alignSelf: 'flex-start',
   fontSize: cssVar('fontSm'),
-  color: `${cssVar('textSecondaryColor')} !important`,
+  color: `${cssVar('textSecondaryColor')}`,
   padding: '0 4px',
   height: 36,
-  cursor: 'pointer',
-  ':hover': {
-    color: cssVar('textPrimaryColor'),
-    backgroundColor: cssVar('hoverColor'),
-  },
-  gap: 2,
   fontWeight: 400,
+  gap: 6,
 });
-
 globalStyle(`${addPropertyButton} svg`, {
   fontSize: 16,
   color: cssVar('iconSecondary'),

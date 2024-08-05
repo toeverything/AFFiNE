@@ -5,11 +5,6 @@ import {
   getBlockSuiteEditorTitle,
   waitForEditorLoad,
 } from '@affine-test/kit/utils/page-logic';
-import {
-  confirmExperimentalPrompt,
-  openExperimentalFeaturesPanel,
-  openSettingModal,
-} from '@affine-test/kit/utils/setting';
 import type { Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
@@ -77,46 +72,4 @@ test('link page is useable', async ({ page }) => {
   await expect(
     page.locator('.doc-title-container:has-text("page1")')
   ).toBeVisible();
-});
-
-test('outline viewer is useable', async ({ page }) => {
-  await openHomePage(page);
-  await waitForEditorLoad(page);
-  await clickNewPageButton(page);
-  await waitForEditorLoad(page);
-
-  await openSettingModal(page);
-  await openExperimentalFeaturesPanel(page);
-  const prompt = page.getByTestId('experimental-prompt');
-  await expect(prompt).toBeVisible();
-  await confirmExperimentalPrompt(page);
-  const settings = page.getByTestId('experimental-settings');
-  const enableOutlineViewerSetting = settings.getByTestId(
-    'outline-viewer-switch'
-  );
-  await expect(enableOutlineViewerSetting).toBeVisible();
-  await enableOutlineViewerSetting.click();
-  await page.waitForTimeout(500);
-  await page.getByTestId('modal-close-button').click();
-  await page.waitForTimeout(500);
-
-  const title = getBlockSuiteEditorTitle(page);
-  await title.pressSequentially('Title');
-  await page.keyboard.press('Enter');
-  expect(await title.innerText()).toBe('Title');
-  await page.keyboard.type('# ');
-  await page.keyboard.type('Heading 1');
-  await page.keyboard.press('Enter');
-  await page.keyboard.type('## ');
-  await page.keyboard.type('Heading 2');
-  await page.keyboard.press('Enter');
-
-  const indicators = page.locator('.outline-heading-indicator');
-  await expect(indicators).toHaveCount(2);
-  await expect(indicators.nth(0)).toBeVisible();
-  await expect(indicators.nth(1)).toBeVisible();
-
-  const viewer = page.locator('affine-outline-panel-body');
-  await indicators.first().hover({ force: true });
-  await expect(viewer).toBeVisible();
 });

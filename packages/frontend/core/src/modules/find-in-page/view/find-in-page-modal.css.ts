@@ -1,4 +1,5 @@
 import { cssVar } from '@toeverything/theme';
+import { cssVarV2 } from '@toeverything/theme/v2';
 import { createVar, keyframes, style } from '@vanilla-extract/css';
 
 export const animationTimeout = createVar();
@@ -52,6 +53,7 @@ export const modalContent = style({
   // :focus-visible will set outline
   outline: 'none',
   display: 'flex',
+  gap: 8,
   alignItems: 'center',
   justifyContent: 'space-between',
   border: `0.5px solid ${cssVar('borderColor')}`,
@@ -133,22 +135,13 @@ export const count = style({
 });
 
 export const arrowButton = style({
-  padding: '4px',
-  fontSize: '24px',
-  width: '32px',
-  height: '32px',
+  width: 32,
+  height: 32,
   flexShrink: 0,
   border: '1px solid',
-  borderColor: cssVar('borderColor'),
-  color: cssVar('iconSecondary'),
-  alignItems: 'baseline',
-  background: 'transparent',
+  borderColor: cssVarV2('layer/border'),
   selectors: {
-    '&:hover': {
-      color: cssVar('iconColor'),
-    },
     '&.backward': {
-      marginLeft: '8px',
       borderRadius: '4px 0 0 4px',
     },
     '&.forward': {
@@ -156,13 +149,4 @@ export const arrowButton = style({
       borderRadius: '0 4px 4px 0',
     },
   },
-});
-export const closeButton = style({
-  padding: '4px',
-  fontSize: '20px',
-  width: '24px',
-  height: '24px',
-  flexShrink: 0,
-  color: cssVar('iconColor'),
-  marginLeft: '8px',
 });

@@ -28,12 +28,10 @@ export const deleteHintText = style({
   overflow: 'hidden',
 });
 export const buttonContainer = style({
-  color: cssVar('pureWhite'),
   padding: '8px 18px',
-  fontSize: '20px',
   height: '36px',
 });
 export const icon = style({
-  display: 'flex',
-  alignContent: 'center',
+  width: 20,
+  height: 20,
 });
