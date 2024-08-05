@@ -1,6 +1,6 @@
 import { Tooltip } from '@affine/component/ui/tooltip';
 import { useBlockSuiteDocMeta } from '@affine/core/hooks/use-block-suite-page-meta';
-import { mixpanel } from '@affine/core/mixpanel';
+import { track } from '@affine/core/mixpanel';
 import { useI18n } from '@affine/i18n';
 import {
   type DocMode,
@@ -62,8 +62,8 @@ export const EditorModeSwitch = ({
   }, [currentMode, isPublic, doc, pageId, t, trash]);
 
   const onSwitchToPageMode = useCallback(() => {
-    mixpanel.track('Button', {
-      resolve: 'SwitchToPageMode',
+    track.$.header.actions.switchPageMode({
+      mode: 'page',
     });
     if (currentMode === 'page' || isPublic) {
       return;
@@ -73,8 +73,8 @@ export const EditorModeSwitch = ({
   }, [currentMode, isPublic, doc, t]);
 
   const onSwitchToEdgelessMode = useCallback(() => {
-    mixpanel.track('Button', {
-      resolve: 'SwitchToEdgelessMode',
+    track.$.header.actions.switchPageMode({
+      mode: 'edgeless',
     });
     if (currentMode === 'edgeless' || isPublic) {
       return;

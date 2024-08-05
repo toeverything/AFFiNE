@@ -1,4 +1,4 @@
-import { mixpanel } from '@affine/core/mixpanel';
+import { track } from '@affine/core/mixpanel';
 import { CloseIcon, DownloadIcon } from '@blocksuite/icons/rc';
 import clsx from 'clsx';
 import { useCallback, useState } from 'react';
@@ -21,9 +21,7 @@ export function AppDownloadButton({
 
   // TODO(@JimmFly): unify this type of literal value.
   const handleClick = useCallback(() => {
-    mixpanel.track('Button', {
-      resolve: 'GoToDownloadAppPage',
-    });
+    track.$.navigationPanel.bottomButtons.downloadApp();
     const url = `https://affine.pro/download?channel=stable`;
     open(url, '_blank');
   }, []);

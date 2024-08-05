@@ -1,5 +1,5 @@
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import { mixpanel } from '@affine/core/mixpanel';
+import { track } from '@affine/core/mixpanel';
 import { useI18n } from '@affine/i18n';
 import { ImportIcon } from '@blocksuite/icons/rc';
 
@@ -13,22 +13,11 @@ const ImportPage = ({ docCollection }: { docCollection: DocCollection }) => {
 
   const onImportFile = useAsyncCallback(async () => {
     const options = await importFile();
-    if (options.isWorkspaceFile) {
-      mixpanel.track('WorkspaceCreated', {
-        segment: 'navigation panel',
-        module: 'doc list header',
-        control: 'import button',
-        type: 'imported workspace',
-      });
-    } else {
-      mixpanel.track('DocCreated', {
-        segment: 'navigation panel',
-        module: 'doc list header',
-        control: 'import button',
-        type: 'imported doc',
-        // category
-      });
-    }
+    track.$.navigationPanel.workspaceList[
+      options.isWorkspaceFile ? 'createWorkspace' : 'createDoc'
+    ]({
+      control: 'import',
+    });
   }, [importFile]);
 
   return (

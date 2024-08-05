@@ -15,7 +15,7 @@ export function makeTracker(trackFn: TrackFn): CallableEventsChain {
       get(target, prop) {
         if (
           typeof prop !== 'string' ||
-          prop === '$$typeof' /* webpack hot load reading this prop */
+          prop === '$$typeof' /* webpack hot-reload reads this prop */
         ) {
           return undefined;
         }
@@ -55,7 +55,12 @@ export function makeTracker(trackFn: TrackFn): CallableEventsChain {
  * @example
  *
  * ```html
- * <button data-event-chain='$.cmdk.settings.quicksearch.changeLanguage' data-event-arg='cn' />
+ * <button
+ *   data-event-chain='$.cmdk.settings.changeLanguage'
+ *   data-event-arg='cn'
+ *   <!-- or -->
+ *   data-event-args-foo='bar'
+ * />
  * ```
  */
 export function enableAutoTrack(root: HTMLElement, trackFn: TrackFn) {
@@ -114,5 +119,6 @@ declare module 'react' {
   interface HTMLAttributes<T> {
     'data-event-props'?: EventsUnion;
     'data-event-arg'?: string;
+    'data-event-args-control'?: string;
   }
 }

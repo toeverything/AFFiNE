@@ -1,6 +1,6 @@
 import { DropdownButton, Menu } from '@affine/component';
 import { BlockCard } from '@affine/component/card/block-card';
-import { mixpanel } from '@affine/core/mixpanel';
+import { track } from '@affine/core/mixpanel';
 import { useI18n } from '@affine/i18n';
 import { EdgelessIcon, ImportIcon, PageIcon } from '@blocksuite/icons/rc';
 import type { PropsWithChildren } from 'react';
@@ -70,26 +70,14 @@ export const NewPageButton = ({
   const handleCreateNewPage = useCallback(() => {
     createNewPage();
     setOpen(false);
-    mixpanel.track('DocCreated', {
-      page: 'doc library',
-      segment: 'all doc',
-      module: 'doc list header',
-      control: 'new doc button',
-      type: 'doc',
-      category: 'page',
-    });
+    track.allDocs.header.actions.createDoc();
   }, [createNewPage]);
 
   const handleCreateNewEdgeless = useCallback(() => {
     createNewEdgeless();
     setOpen(false);
-    mixpanel.track('DocCreated', {
-      page: 'doc library',
-      segment: 'all doc',
-      module: 'doc list header',
-      control: 'new whiteboard button',
-      type: 'doc',
-      category: 'whiteboard',
+    track.allDocs.header.actions.createDoc({
+      mode: 'edgeless',
     });
   }, [createNewEdgeless]);
 

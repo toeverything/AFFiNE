@@ -1,12 +1,13 @@
 import { Button, ErrorMessage, Skeleton } from '@affine/component';
 import { SettingRow } from '@affine/component/setting-components';
 import { openSettingModalAtom } from '@affine/core/atoms';
-import { mixpanel } from '@affine/core/mixpanel';
+import { track } from '@affine/core/mixpanel';
 import {
   ServerConfigService,
   SubscriptionService,
   UserCopilotQuotaService,
 } from '@affine/core/modules/cloud';
+import { SubscriptionPlan } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
 import { useLiveData, useService } from '@toeverything/infra';
 import { cssVar } from '@toeverything/theme';
@@ -47,12 +48,7 @@ export const AIUsagePanel = () => {
       open: true,
       activeTab: 'billing',
     });
-    mixpanel.track('BillingViewed', {
-      segment: 'settings panel',
-      module: 'account usage list',
-      control: 'change plan button',
-      type: 'ai subscription',
-    });
+    track.$.settingsPanel.accountUsage.viewPlans({ plan: SubscriptionPlan.AI });
   }, [setOpenSettingModal]);
 
   if (loading) {
@@ -104,7 +100,7 @@ export const AIUsagePanel = () => {
     >
       {copilotActionLimit === 'unlimited' ? (
         hasPaymentFeature && aiSubscription?.canceledAt ? (
-          <AIResume module="billing subscription list" />
+          <AIResume />
         ) : (
           <Button onClick={openBilling}>
             {t['com.affine.payment.ai.usage.change-button-label']()}

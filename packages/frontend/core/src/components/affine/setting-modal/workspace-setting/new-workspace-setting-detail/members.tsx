@@ -21,7 +21,7 @@ import { useMemberCount } from '@affine/core/hooks/affine/use-member-count';
 import type { Member } from '@affine/core/hooks/affine/use-members';
 import { useMembers } from '@affine/core/hooks/affine/use-members';
 import { useRevokeMemberPermission } from '@affine/core/hooks/affine/use-revoke-member-permission';
-import { mixpanel } from '@affine/core/mixpanel';
+import { track } from '@affine/core/mixpanel';
 import { WorkspacePermissionService } from '@affine/core/modules/permissions';
 import { WorkspaceQuotaService } from '@affine/core/modules/quota';
 import { WorkspaceFlavour } from '@affine/env/workspace';
@@ -146,11 +146,8 @@ export const CloudWorkspaceMembersPanel = () => {
       activeTab: 'plans',
       scrollAnchor: 'cloudPricingPlan',
     });
-    mixpanel.track('PlansViewed', {
-      // page:
-      segment: 'settings panel',
-      module: 'workspace setting',
-      control: 'invite member',
+    track.$.settingsPanel.workspace.viewPlans({
+      control: 'inviteMember',
     });
   }, [setSettingModalAtom]);
 

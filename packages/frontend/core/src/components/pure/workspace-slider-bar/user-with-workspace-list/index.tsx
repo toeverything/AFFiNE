@@ -1,7 +1,7 @@
 import { Loading } from '@affine/component';
 import { Divider } from '@affine/component/ui/divider';
 import { MenuItem } from '@affine/component/ui/menu';
-import { mixpanel } from '@affine/core/mixpanel';
+import { track } from '@affine/core/mixpanel';
 import { AuthService } from '@affine/core/modules/cloud';
 import { useI18n } from '@affine/i18n';
 import { Logo1Icon } from '@blocksuite/icons/rc';
@@ -25,9 +25,7 @@ export const SignInItem = () => {
   const t = useI18n();
 
   const onClickSignIn = useCallback(() => {
-    mixpanel.track('Button', {
-      resolve: 'SignIn',
-    });
+    track.$.navigationPanel.workspaceList.signIn();
     setOpen(state => ({
       ...state,
       openModal: true,
@@ -92,9 +90,7 @@ const UserWithWorkspaceListInner = ({
     if (!isAuthenticated && !runtimeConfig.allowLocalWorkspace) {
       return openSignInModal();
     }
-    mixpanel.track('Button', {
-      resolve: 'NewWorkspace',
-    });
+    track.$.navigationPanel.workspaceList.createWorkspace();
     setOpenCreateWorkspaceModal('new');
     onEventEnd?.();
   }, [
@@ -104,9 +100,10 @@ const UserWithWorkspaceListInner = ({
     setOpenCreateWorkspaceModal,
   ]);
 
+  track.$.navigationPanel.workspaceList.createWorkspace();
   const onAddWorkspace = useCallback(() => {
-    mixpanel.track('Button', {
-      resolve: 'AddWorkspace',
+    track.$.navigationPanel.workspaceList.createWorkspace({
+      control: 'import',
     });
     setOpenCreateWorkspaceModal('add');
     onEventEnd?.();

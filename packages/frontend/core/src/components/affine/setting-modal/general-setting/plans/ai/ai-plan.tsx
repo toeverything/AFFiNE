@@ -53,15 +53,9 @@ export const AIPlan = () => {
         isLoggedIn ? (
           subscription ? (
             subscription.canceledAt ? (
-              <AIResume
-                module="pricing plan list"
-                className={styles.purchaseButton}
-              />
+              <AIResume className={styles.purchaseButton} />
             ) : (
-              <AICancel
-                module="pricing plan list"
-                className={styles.purchaseButton}
-              />
+              <AICancel className={styles.purchaseButton} />
             )
           ) : (
             <>

@@ -15,7 +15,7 @@ import {
   useSelectDoc,
   useSelectTag,
 } from '@affine/core/components/page-list/selector';
-import { mixpanel } from '@affine/core/mixpanel';
+import { track } from '@affine/core/mixpanel';
 import {
   type FolderNode,
   OrganizeService,
@@ -178,10 +178,8 @@ export const ExplorerFolderNodeFolder = ({
 
   const handleDelete = useCallback(() => {
     node.delete();
-    mixpanel.track('FolderDeleted', {
-      page: 'sidebar',
-      module: 'organize',
-      control: `delete folder`,
+    track.$.navigationPanel.organize.deleteOrganizeItem({
+      type: 'folder',
     });
     notify.success({
       title: t['com.affine.rootAppSidebar.organize.delete.notify-title']({
@@ -229,23 +227,14 @@ export const ExplorerFolderNodeFolder = ({
             return;
           }
           node.moveHere(data.source.data.entity.id, node.indexAt('before'));
-          mixpanel.track('FolderMoved', {
-            page: 'sidebar',
-            module: 'organize',
-            control: 'drop folder at folder',
-            type: 'folder',
-            id: data.source.data.entity.id,
-          });
+          track.$.navigationPanel.organize.moveOrganizeItem({ type: 'folder' });
         } else if (
           data.source.data.from?.at === 'explorer:organize:folder-node'
         ) {
           node.moveHere(data.source.data.from.nodeId, node.indexAt('before'));
-          mixpanel.track('FolderLinkMoved', {
-            page: 'sidebar',
-            module: 'organize',
-            control: 'drop folder link at folder',
-            type: data.source.data.entity?.type,
-            id: data.source.data.entity?.id,
+          track.$.navigationPanel.organize.moveOrganizeItem({
+            type: 'link',
+            target: data.source.data.entity?.type,
           });
         } else if (
           data.source.data.entity?.type === 'collection' ||
@@ -257,12 +246,9 @@ export const ExplorerFolderNodeFolder = ({
             data.source.data.entity.id,
             node.indexAt('before')
           );
-          mixpanel.track('FolderLinkCreated', {
-            page: 'sidebar',
-            module: 'organize',
-            control: 'drop entity at folder',
-            type: data.source.data.entity?.type,
-            id: data.source.data.entity?.id,
+          track.$.navigationPanel.organize.createOrganizeItem({
+            type: 'link',
+            target: data.source.data.entity?.type,
           });
         }
       } else {
@@ -312,23 +298,13 @@ export const ExplorerFolderNodeFolder = ({
           return;
         }
         node.moveHere(data.source.data.entity.id, node.indexAt('before'));
-        mixpanel.track('FolderMoved', {
-          page: 'sidebar',
-          module: 'organize',
-          control: 'drop folder at folder',
-          type: 'folder',
-          id: data.source.data.entity.id,
-        });
+        track.$.navigationPanel.organize.moveOrganizeItem({ type: 'folder' });
       } else if (
         data.source.data.from?.at === 'explorer:organize:folder-node'
       ) {
         node.moveHere(data.source.data.from.nodeId, node.indexAt('before'));
-        mixpanel.track('FolderLinkMoved', {
-          page: 'sidebar',
-          module: 'organize',
-          control: 'drop folder link at folder',
+        track.$.navigationPanel.organize.moveOrganizeItem({
           type: data.source.data.entity?.type,
-          id: data.source.data.entity?.id,
         });
       } else if (
         data.source.data.entity?.type === 'collection' ||
@@ -340,12 +316,9 @@ export const ExplorerFolderNodeFolder = ({
           data.source.data.entity.id,
           node.indexAt('before')
         );
-        mixpanel.track('FolderLinkCreated', {
-          page: 'sidebar',
-          module: 'organize',
-          control: 'drop entity at folder',
-          type: data.source.data.entity?.type,
-          id: data.source.data.entity?.id,
+        track.$.navigationPanel.organize.createOrganizeItem({
+          type: 'link',
+          target: data.source.data.entity?.type,
         });
       }
     },
@@ -374,13 +347,7 @@ export const ExplorerFolderNodeFolder = ({
             data.source.data.entity.id,
             node.indexAt(at, dropAtNode.id)
           );
-          mixpanel.track('FolderMoved', {
-            page: 'sidebar',
-            module: 'organize',
-            control: `drop folder ${at === 'before' ? 'above' : 'below'} node`,
-            type: 'folder',
-            id: data.source.data.entity?.id,
-          });
+          track.$.navigationPanel.organize.moveOrganizeItem({ type: 'folder' });
         } else if (
           data.source.data.from?.at === 'explorer:organize:folder-node'
         ) {
@@ -388,12 +355,9 @@ export const ExplorerFolderNodeFolder = ({
             data.source.data.from.nodeId,
             node.indexAt(at, dropAtNode.id)
           );
-          mixpanel.track('FolderLinkMoved', {
-            page: 'sidebar',
-            module: 'organize',
-            control: `drop folder link ${at === 'before' ? 'above' : 'below'} node`,
-            type: data.source.data.entity?.type,
-            id: data.source.data.entity?.id,
+          track.$.navigationPanel.organize.moveOrganizeItem({
+            type: 'link',
+            target: data.source.data.entity?.type,
           });
         } else if (
           data.source.data.entity?.type === 'collection' ||
@@ -405,12 +369,10 @@ export const ExplorerFolderNodeFolder = ({
             data.source.data.entity.id,
             node.indexAt(at, dropAtNode.id)
           );
-          mixpanel.track('FolderLinkCreated', {
-            page: 'sidebar',
-            module: 'organize',
-            control: `drop entity ${at === 'before' ? 'above' : 'below'} node`,
-            type: data.source.data.entity?.type,
-            id: data.source.data.entity?.id,
+
+          track.$.navigationPanel.organize.createOrganizeItem({
+            type: 'link',
+            target: data.source.data.entity?.type,
           });
         }
       } else if (data.treeInstruction?.type === 'reparent') {
@@ -560,17 +522,10 @@ export const ExplorerFolderNodeFolder = ({
     const newDoc = docsService.createDoc();
     node.createLink('doc', newDoc.id, node.indexAt('before'));
     workbenchService.workbench.openDoc(newDoc.id);
-    mixpanel.track('DocCreated', {
-      page: 'sidebar',
-      module: 'organize',
-      control: `folder new doc button`,
-    });
-    mixpanel.track('FolderLinkCreated', {
-      page: 'sidebar',
-      module: 'organize',
-      control: `folder new doc button`,
-      type: 'doc',
-      id: newDoc.id,
+    track.$.navigationPanel.folders.createDoc();
+    track.$.navigationPanel.organize.createOrganizeItem({
+      type: 'link',
+      target: 'doc',
     });
     setCollapsed(false);
   }, [docsService, node, workbenchService.workbench]);
@@ -580,11 +535,7 @@ export const ExplorerFolderNodeFolder = ({
       t['com.affine.rootAppSidebar.organize.new-folders'](),
       node.indexAt('before')
     );
-    mixpanel.track('FolderCreated', {
-      page: 'sidebar',
-      module: 'organize',
-      control: `create sub folder`,
-    });
+    track.$.navigationPanel.organize.createOrganizeItem({ type: 'folder' });
     setCollapsed(false);
     setNewFolderId(newFolderId);
   }, [node, t]);
@@ -612,13 +563,6 @@ export const ExplorerFolderNodeFolder = ({
 
           newItemIds.forEach(id => {
             node.createLink(type, id, node.indexAt('after'));
-            mixpanel.track('FolderLinkCreated', {
-              page: 'sidebar',
-              module: 'organize',
-              control: `add selector`,
-              type,
-              id,
-            });
           });
           removedItems.forEach(node => node.delete());
           const updated = newItemIds.length + removedItems.length;
@@ -627,6 +571,10 @@ export const ExplorerFolderNodeFolder = ({
         .catch(err => {
           console.error(`Unexpected error while selecting ${type}`, err);
         });
+      track.$.navigationPanel.organize.createOrganizeItem({
+        type: 'link',
+        target: type,
+      });
     },
     [
       children,
@@ -763,7 +711,7 @@ export const ExplorerFolderNodeFolder = ({
     handleCreateSubfolder,
     handleDelete,
     handleNewDoc,
-    node.id,
+    node,
     t,
   ]);
 
@@ -773,23 +721,6 @@ export const ExplorerFolderNodeFolder = ({
     }
     return folderOperations;
   }, [additionalOperations, folderOperations]);
-
-  const handleDeleteChildren = useCallback((node: FolderNode) => {
-    node.delete();
-    if (node.type$.value === 'folder') {
-      mixpanel.track('FolderDeleted', {
-        page: 'sidebar',
-        module: 'organize',
-        control: 'remove from folder button',
-      });
-    } else {
-      mixpanel.track('FolderLinkDeleted', {
-        page: 'sidebar',
-        module: 'organize',
-        control: 'remove from folder button',
-      });
-    }
-  }, []);
 
   const childrenOperations = useCallback(
     // eslint-disable-next-line @typescript-eslint/ban-types
@@ -806,7 +737,9 @@ export const ExplorerFolderNodeFolder = ({
                     <RemoveFolderIcon />
                   </MenuIcon>
                 }
-                onClick={() => handleDeleteChildren(node)}
+                data-event-props="$.navigationPanel.organize.deleteOrganizeItem"
+                data-event-args-type={node.type$.value}
+                onClick={node.delete}
               >
                 {t['com.affine.rootAppSidebar.organize.delete-from-folder']()}
               </MenuItem>
@@ -816,7 +749,7 @@ export const ExplorerFolderNodeFolder = ({
       }
       return [];
     },
-    [handleDeleteChildren, t]
+    [t]
   );
 
   const handleCollapsedChange = useCallback((collapsed: boolean) => {

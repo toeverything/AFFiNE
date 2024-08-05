@@ -18,7 +18,7 @@ import { useEnableCloud } from '@affine/core/hooks/affine/use-enable-cloud';
 import { useExportPage } from '@affine/core/hooks/affine/use-export-page';
 import { useTrashModalHelper } from '@affine/core/hooks/affine/use-trash-modal-helper';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import { mixpanel } from '@affine/core/mixpanel';
+import { track } from '@affine/core/mixpanel';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import { ViewService } from '@affine/core/modules/workbench/services/view';
 import { useDetailPageHeaderResponsive } from '@affine/core/pages/workspace/detail-page/use-header-responsive';
@@ -157,36 +157,23 @@ export const PageHeaderMenuButton = ({
 
   const handleDuplicate = useCallback(() => {
     duplicate(pageId);
-    mixpanel.track('DocCreated', {
-      segment: 'editor header',
-      page: doc.mode$.value === 'page' ? 'doc editor' : 'edgeless editor',
-      module: 'header menu',
-      control: 'copy doc',
-      type: 'doc duplicate',
-      category: 'doc',
+    track.$.header.actions.createDoc({
+      control: 'duplicate',
     });
-  }, [doc.mode$.value, duplicate, pageId]);
+  }, [duplicate, pageId]);
 
   const onImportFile = useAsyncCallback(async () => {
     const options = await importFile();
     if (options.isWorkspaceFile) {
-      mixpanel.track('WorkspaceCreated', {
-        segment: 'editor header',
-        page: doc.mode$.value === 'page' ? 'doc editor' : 'edgeless editor',
-        module: 'header menu',
-        control: 'import button',
-        type: 'imported workspace',
+      track.$.header.actions.createWorkspace({
+        control: 'import',
       });
     } else {
-      mixpanel.track('DocCreated', {
-        segment: 'editor header',
-        page: doc.mode$.value === 'page' ? 'doc editor' : 'edgeless editor',
-        module: 'header menu',
-        control: 'import button',
-        type: 'imported doc',
+      track.$.header.actions.createDoc({
+        control: 'import',
       });
     }
-  }, [doc.mode$.value, importFile]);
+  }, [importFile]);
 
   const showResponsiveMenu = hideShare;
   const ResponsiveMenuItems = (

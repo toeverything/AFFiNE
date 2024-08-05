@@ -1,5 +1,4 @@
 import { Tooltip } from '@affine/component/ui/tooltip';
-import { mixpanel } from '@affine/core/mixpanel';
 import { SubscriptionPlan } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
 import { useLiveData, useServices } from '@toeverything/infra';
@@ -44,10 +43,6 @@ export const UserPlanButton = () => {
         activeTab: 'plans',
         scrollAnchor: 'cloudPricingPlan',
       });
-      mixpanel.track('PlansViewed', {
-        segment: 'settings panel',
-        module: 'profile and badge',
-      });
     },
     [setSettingModalAtom]
   );
@@ -72,6 +67,7 @@ export const UserPlanButton = () => {
         data-is-believer={isBeliever ? 'true' : undefined}
         className={styles.userPlanButton}
         onClick={handleClick}
+        data-event-props="$.settingsPanel.profileAndBadge.viewPlans"
       >
         {planLabel}
       </div>

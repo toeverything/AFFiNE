@@ -2,7 +2,7 @@ import { Button, type ButtonProps, useConfirmModal } from '@affine/component';
 import { useDowngradeNotify } from '@affine/core/components/affine/subscription-landing/notify';
 import { getDowngradeQuestionnaireLink } from '@affine/core/hooks/affine/use-subscription-notify';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import { mixpanel } from '@affine/core/mixpanel';
+import { track } from '@affine/core/mixpanel';
 import { AuthService, SubscriptionService } from '@affine/core/modules/cloud';
 import { SubscriptionPlan } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
@@ -10,10 +10,7 @@ import { useService } from '@toeverything/infra';
 import { nanoid } from 'nanoid';
 import { useState } from 'react';
 
-export interface AICancelProps extends ButtonProps {
-  module: string;
-}
-export const AICancel = ({ module, ...btnProps }: AICancelProps) => {
+export const AICancel = (btnProps: ButtonProps) => {
   const t = useI18n();
   const [isMutating, setMutating] = useState(false);
   const [idempotencyKey, setIdempotencyKey] = useState(nanoid());
@@ -26,12 +23,9 @@ export const AICancel = ({ module, ...btnProps }: AICancelProps) => {
   const cancel = useAsyncCallback(async () => {
     const aiSubscription = subscription.ai$.value;
     if (aiSubscription) {
-      mixpanel.track('PlanChangeStarted', {
-        module,
-        segment: 'settings panel',
-        control: 'cancel',
-        type: SubscriptionPlan.AI,
-        category: aiSubscription.recurring,
+      track.$.settingsPanel.plans.cancelSubscription({
+        plan: SubscriptionPlan.AI,
+        recurring: aiSubscription.recurring,
       });
     }
     openConfirmModal({
@@ -57,10 +51,9 @@ export const AICancel = ({ module, ...btnProps }: AICancelProps) => {
             SubscriptionPlan.AI
           );
           setIdempotencyKey(nanoid());
-          mixpanel.track('PlanChangeSucceeded', {
-            segment: 'settings panel',
-            control: 'plan cancel action',
-            type: subscription.ai$.value?.plan,
+          track.$.settingsPanel.plans.confirmCancelingSubscription({
+            plan: SubscriptionPlan.AI,
+            recurring: aiSubscription?.recurring,
           });
           const account = authService.session.account$.value;
           const prevRecurring = subscription.ai$.value?.recurring;
@@ -81,7 +74,6 @@ export const AICancel = ({ module, ...btnProps }: AICancelProps) => {
       },
     });
   }, [
-    module,
     subscription,
     openConfirmModal,
     t,

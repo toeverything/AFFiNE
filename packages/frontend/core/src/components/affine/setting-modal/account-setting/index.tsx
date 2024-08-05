@@ -6,7 +6,8 @@ import {
 import { Avatar } from '@affine/component/ui/avatar';
 import { Button } from '@affine/component/ui/button';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import { mixpanel } from '@affine/core/mixpanel';
+import { track } from '@affine/core/mixpanel';
+import { SubscriptionPlan } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
 import { ArrowRightSmallIcon, CameraIcon } from '@blocksuite/icons/rc';
 import {
@@ -38,9 +39,7 @@ export const UserAvatar = () => {
   const handleUpdateUserAvatar = useAsyncCallback(
     async (file: File) => {
       try {
-        mixpanel.track('UploadAvatar', {
-          userId: account.id,
-        });
+        track.$.settingsPanel.accountSettings.uploadAvatar();
         await session.uploadAvatar(file);
         notify.success({ title: 'Update user avatar success' });
       } catch (e) {
@@ -51,18 +50,16 @@ export const UserAvatar = () => {
         });
       }
     },
-    [account, session]
+    [session]
   );
 
   const handleRemoveUserAvatar = useAsyncCallback(
     async (e: MouseEvent<HTMLButtonElement>) => {
-      mixpanel.track('RemoveAvatar', {
-        userId: account.id,
-      });
+      track.$.settingsPanel.accountSettings.removeAvatar();
       e.stopPropagation();
       await session.removeAvatar();
     },
-    [account, session]
+    [session]
   );
 
   return (
@@ -104,9 +101,7 @@ export const AvatarAndName = () => {
     }
 
     try {
-      mixpanel.track('UpdateUsername', {
-        userId: account.id,
-      });
+      track.$.settingsPanel.accountSettings.updateUserName();
       await session.updateLabel(input);
     } catch (e) {
       notify.error({
@@ -161,11 +156,8 @@ const StoragePanel = () => {
 
   const setSettingModalAtom = useSetAtom(openSettingModalAtom);
   const onUpgrade = useCallback(() => {
-    mixpanel.track('PlansViewed', {
-      segment: 'settings panel',
-      module: 'account usage list',
-      control: 'cloud storage upgrade button',
-      type: 'cloud subscription',
+    track.$.settingsPanel.accountUsage.viewPlans({
+      plan: SubscriptionPlan.Pro,
     });
     setSettingModalAtom({
       open: true,

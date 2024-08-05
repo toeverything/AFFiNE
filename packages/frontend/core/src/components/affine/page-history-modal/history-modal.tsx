@@ -4,7 +4,7 @@ import { Button, IconButton } from '@affine/component/ui/button';
 import { Modal, useConfirmModal } from '@affine/component/ui/modal';
 import { openSettingModalAtom } from '@affine/core/atoms';
 import { useDocCollectionPageTitle } from '@affine/core/hooks/use-block-suite-workspace-page-title';
-import { mixpanel } from '@affine/core/mixpanel';
+import { track } from '@affine/core/mixpanel';
 import { WorkspacePermissionService } from '@affine/core/modules/permissions';
 import { WorkspaceQuotaService } from '@affine/core/modules/quota';
 import { i18nTime, Trans, useI18n } from '@affine/i18n';
@@ -108,18 +108,17 @@ const HistoryEditorPreview = ({
   mode,
   title,
 }: HistoryEditorPreviewProps) => {
-  const onSwitchToPageMode = useCallback(() => {
-    mixpanel.track('Button', {
-      resolve: 'HistorySwitchToPageMode',
-    });
-    onModeChange('page');
-  }, [onModeChange]);
-  const onSwitchToEdgelessMode = useCallback(() => {
-    mixpanel.track('Button', {
-      resolve: 'HistorySwitchToEdgelessMode',
-    });
-    onModeChange('edgeless');
-  }, [onModeChange]);
+  const { onSwitchToPageMode, onSwitchToEdgelessMode } = useMemo(
+    () => ({
+      onSwitchToPageMode: () => {
+        onModeChange('page');
+      },
+      onSwitchToEdgelessMode: () => {
+        onModeChange('edgeless');
+      },
+    }),
+    [onModeChange]
+  );
 
   const content = useMemo(() => {
     return (
@@ -129,11 +128,15 @@ const HistoryEditorPreview = ({
             <PageSwitchItem
               data-testid="switch-page-mode-button"
               active={mode === 'page'}
+              data-event-props="$.docHistory.$.switchPageMode"
+              data-event-args-type="page"
               onClick={onSwitchToPageMode}
             />
             <EdgelessSwitchItem
               data-testid="switch-edgeless-mode-button"
               active={mode === 'edgeless'}
+              data-event-props="$.docHistory.$.switchPageMode"
+              data-event-args-type="edgeless"
               onClick={onSwitchToEdgelessMode}
             />
           </StyledEditorModeSwitch>
@@ -229,9 +232,7 @@ const PlanPrompt = () => {
       activeTab: 'plans',
       scrollAnchor: 'cloudPricingPlan',
     });
-    mixpanel.track('PlansViewed', {
-      segment: 'doc history',
-    });
+    track.$.docHistory.$.viewPlans();
   }, [setSettingModalAtom]);
 
   const t = useI18n();
@@ -562,9 +563,7 @@ export const GlobalPageHistoryModal = () => {
   const workspace = useService(WorkspaceService).workspace;
   const handleOpenChange = useCallback(
     (open: boolean) => {
-      mixpanel.track('Button', {
-        resolve: open ? 'OpenPageHistoryModal' : 'ClosePageHistoryModal',
-      });
+      track.$.docHistory.$[open ? 'open' : 'close']();
       setState(prev => ({
         ...prev,
         open,

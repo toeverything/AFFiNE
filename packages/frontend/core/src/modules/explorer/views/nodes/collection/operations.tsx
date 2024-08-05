@@ -7,7 +7,7 @@ import {
 } from '@affine/component';
 import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
 import { useDeleteCollectionInfo } from '@affine/core/hooks/affine/use-delete-collection-info';
-import { mixpanel } from '@affine/core/mixpanel';
+import { track } from '@affine/core/mixpanel';
 import { CollectionService } from '@affine/core/modules/collection';
 import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/properties';
 import { WorkbenchService } from '@affine/core/modules/workbench';
@@ -58,15 +58,9 @@ export const useExplorerCollectionNodeOperations = (
   const createAndAddDocument = useCallback(() => {
     const newDoc = docsService.createDoc();
     collectionService.addPageToCollection(collectionId, newDoc.id);
-    mixpanel.track('DocCreated', {
-      page: 'sidebar',
-      module: 'collection',
-      control: 'add doc button',
-    });
-    mixpanel.track('AddDocToCollection', {
-      page: 'sidebar',
-      module: 'collection',
-      control: 'add doc button',
+    track.$.navigationPanel.collections.createDoc();
+    track.$.navigationPanel.collections.addDocToCollection({
+      control: 'button',
     });
     workbenchService.workbench.openDoc(newDoc.id);
     onOpenCollapsed();
@@ -80,12 +74,8 @@ export const useExplorerCollectionNodeOperations = (
 
   const handleToggleFavoriteCollection = useCallback(() => {
     compatibleFavoriteItemsAdapter.toggle(collectionId, 'collection');
-    mixpanel.track('ToggleFavorite', {
-      page: 'sidebar',
-      module: 'collection',
-      control: 'toggle favorite collection button',
+    track.$.navigationPanel.organize.toggleFavorite({
       type: 'collection',
-      id: collectionId,
     });
   }, [compatibleFavoriteItemsAdapter, collectionId]);
 
@@ -104,28 +94,20 @@ export const useExplorerCollectionNodeOperations = (
 
   const handleOpenInSplitView = useCallback(() => {
     workbenchService.workbench.openCollection(collectionId, { at: 'beside' });
-    mixpanel.track('OpenInSplitView', {
-      page: 'sidebar',
-      module: 'collection',
-      control: 'open in split view button',
+    track.$.navigationPanel.organize.openInSplitView({
+      type: 'collection',
     });
   }, [collectionId, workbenchService.workbench]);
 
   const handleOpenInNewTab = useCallback(() => {
     workbenchService.workbench.openCollection(collectionId, { at: 'new-tab' });
-    mixpanel.track('OpenInNewTab', {
-      page: 'sidebar',
-      module: 'collection',
-      control: 'open in new tab button',
-    });
+    track.$.navigationPanel.organize.openInNewTab({ type: 'collection' });
   }, [collectionId, workbenchService.workbench]);
 
   const handleDeleteCollection = useCallback(() => {
     collectionService.deleteCollection(deleteInfo, collectionId);
-    mixpanel.track('CollectionDeleted', {
-      page: 'sidebar',
-      module: 'collection',
-      control: 'delete collection button',
+    track.$.navigationPanel.organize.deleteOrganizeItem({
+      type: 'collection',
     });
   }, [collectionId, collectionService, deleteInfo]);
 
