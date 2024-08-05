@@ -19,6 +19,7 @@ import { useExportPage } from '@affine/core/hooks/affine/use-export-page';
 import { useTrashModalHelper } from '@affine/core/hooks/affine/use-trash-modal-helper';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { mixpanel } from '@affine/core/mixpanel';
+import { WorkbenchService } from '@affine/core/modules/workbench';
 import { useDetailPageHeaderResponsive } from '@affine/core/pages/workspace/detail-page/use-header-responsive';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useI18n } from '@affine/i18n';
@@ -31,8 +32,10 @@ import {
   HistoryIcon,
   ImportIcon,
   InformationIcon,
+  OpenInNewIcon,
   PageIcon,
   ShareIcon,
+  SplitViewIcon,
 } from '@blocksuite/icons/rc';
 import type { Doc } from '@blocksuite/store';
 import {
@@ -73,6 +76,8 @@ export const PageHeaderMenuButton = ({
   const isInTrash = useLiveData(doc.meta$.map(m => m.trash));
   const currentMode = useLiveData(doc.mode$);
 
+  const workbench = useService(WorkbenchService).workbench;
+
   const { favorite, toggleFavorite } = useFavorite(pageId);
 
   const { duplicate } = useBlockSuiteMetaHelper(docCollection);
@@ -93,6 +98,18 @@ export const PageHeaderMenuButton = ({
   const openInfoModal = () => {
     setOpenInfoModal(true);
   };
+
+  const handleOpenInNewTab = useCallback(() => {
+    workbench.openDoc(pageId, {
+      at: 'new-tab',
+    });
+  }, [pageId, workbench]);
+
+  const handleOpenInSplitView = useCallback(() => {
+    workbench.openDoc(pageId, {
+      at: 'tail',
+    });
+  }, [pageId, workbench]);
 
   const handleOpenTrashModal = useCallback(() => {
     setTrashModal({
@@ -237,16 +254,35 @@ export const PageHeaderMenuButton = ({
           ? t['com.affine.favoritePageOperation.remove']()
           : t['com.affine.favoritePageOperation.add']()}
       </MenuItem>
-      {/* {TODO(@Peng): add tag function support} */}
-      {/* <MenuItem
-        icon={<TagsIcon />}
-        data-testid="editor-option-menu-add-tag"
-        onClick={() => {}}
+      <MenuSeparator />
+      <MenuItem
+        preFix={
+          <MenuIcon>
+            <OpenInNewIcon />
+          </MenuIcon>
+        }
+        data-testid="editor-option-menu-open-in-new-tab"
+        onSelect={handleOpenInNewTab}
         style={menuItemStyle}
       >
-        {t['com.affine.header.option.add-tag']()}
-      </MenuItem> */}
+        {t['com.affine.workbench.tab.page-menu-open']()}
+      </MenuItem>
+
+      <MenuItem
+        preFix={
+          <MenuIcon>
+            <SplitViewIcon />
+          </MenuIcon>
+        }
+        data-testid="editor-option-menu-open-in-split-new"
+        onSelect={handleOpenInSplitView}
+        style={menuItemStyle}
+      >
+        {t['com.affine.workbench.split-view.page-menu-open']()}
+      </MenuItem>
+
       <MenuSeparator />
+
       {runtimeConfig.enableInfoModal && (
         <MenuItem
           preFix={

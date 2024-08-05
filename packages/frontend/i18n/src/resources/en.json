@@ -1349,6 +1349,7 @@
   "com.affine.workbench.split-view-menu.move-left": "Move Left",
   "com.affine.workbench.split-view-menu.move-right": "Move Right",
   "com.affine.workbench.split-view.page-menu-open": "Open in split view",
+  "com.affine.workbench.tab.page-menu-open": "Open in new tab",
   "com.affine.workspace.cannot-delete": "You cannot delete the last workspace",
   "com.affine.workspace.cloud": "Cloud Workspaces",
   "com.affine.workspace.cloud.account.logout": "Sign Out",

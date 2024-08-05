@@ -3,11 +3,12 @@ import { useI18n } from '@affine/i18n';
 import { PlusIcon } from '@blocksuite/icons/rc';
 import clsx from 'clsx';
 import type React from 'react';
+import type { MouseEventHandler } from 'react';
 
 import * as styles from './index.css';
 
 interface AddPageButtonProps {
-  onClick?: () => void;
+  onClick?: MouseEventHandler;
   className?: string;
   style?: React.CSSProperties;
 }

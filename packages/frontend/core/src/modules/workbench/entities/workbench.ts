@@ -1,20 +1,25 @@
 import { Unreachable } from '@affine/env/constant';
 import { Entity, LiveData } from '@toeverything/infra';
-import type { To } from 'history';
+import { type To } from 'history';
 import { nanoid } from 'nanoid';
 
+import type { WorkbenchNewTabHandler } from '../services/workbench-new-tab-handler';
 import type { WorkbenchDefaultState } from '../services/workbench-view-state';
 import { View } from './view';
 
 export type WorkbenchPosition = 'beside' | 'active' | 'head' | 'tail' | number;
 
-interface WorkbenchOpenOptions {
-  at?: WorkbenchPosition;
+type WorkbenchOpenOptions = {
+  at?: WorkbenchPosition | 'new-tab';
   replaceHistory?: boolean;
-}
+  show?: boolean; // only for new tab
+};
 
 export class Workbench extends Entity {
-  constructor(private readonly defaultState: WorkbenchDefaultState) {
+  constructor(
+    private readonly defaultState: WorkbenchDefaultState,
+    private readonly newTabHandler: WorkbenchNewTabHandler
+  ) {
     super();
   }
 
@@ -74,24 +79,43 @@ export class Workbench extends Entity {
     this.sidebarOpen$.next(!this.sidebarOpen$.value);
   }
 
-  open(
-    to: To,
-    { at = 'active', replaceHistory = false }: WorkbenchOpenOptions = {}
-  ) {
-    let view = this.viewAt(at);
-    if (!view) {
-      const newIndex = this.createView(at, to);
-      view = this.viewAt(newIndex);
-      if (!view) {
-        throw new Unreachable();
-      }
+  open(to: To, option: WorkbenchOpenOptions = {}) {
+    if (option.at === 'new-tab') {
+      this.newTab(to, {
+        show: option.show,
+      });
     } else {
-      if (replaceHistory) {
-        view.history.replace(to);
+      const { at = 'active', replaceHistory = false } = option;
+      let view = this.viewAt(at);
+      if (!view) {
+        const newIndex = this.createView(at, to);
+        view = this.viewAt(newIndex);
+        if (!view) {
+          throw new Unreachable();
+        }
       } else {
-        view.history.push(to);
+        if (replaceHistory) {
+          view.history.replace(to);
+        } else {
+          view.history.push(to);
+        }
       }
     }
+  }
+
+  newTab(
+    to: To,
+    {
+      show,
+    }: {
+      show?: boolean;
+    } = {}
+  ) {
+    this.newTabHandler({
+      basename: this.basename$.value,
+      to,
+      show: show ?? true,
+    });
   }
 
   openDoc(

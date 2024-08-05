@@ -1,6 +1,5 @@
 import { openSettingModalAtom } from '@affine/core/atoms';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
 import { mixpanel } from '@affine/core/mixpanel';
 import {
   ExplorerCollections,
@@ -19,7 +18,7 @@ import type { Doc } from '@blocksuite/store';
 import type { Workspace } from '@toeverything/infra';
 import { useLiveData, useService, WorkspaceService } from '@toeverything/infra';
 import { useAtomValue, useSetAtom } from 'jotai';
-import type { ReactElement } from 'react';
+import type { MouseEvent, ReactElement } from 'react';
 import { useCallback, useEffect } from 'react';
 
 import { useAppSettingHelper } from '../../hooks/affine/use-app-setting-helper';
@@ -72,14 +71,12 @@ export type RootAppSidebarProps = {
 export const RootAppSidebar = (): ReactElement => {
   const currentWorkspace = useService(WorkspaceService).workspace;
   const currentWorkspaceId = currentWorkspace.id;
-  const { openPage } = useNavigateHelper();
   const { appSettings } = useAppSettingHelper();
   const docCollection = currentWorkspace.docCollection;
   const t = useI18n();
+  const workbench = useService(WorkbenchService).workbench;
   const currentPath = useLiveData(
-    useService(WorkbenchService).workbench.location$.map(
-      location => location.pathname
-    )
+    workbench.location$.map(location => location.pathname)
   );
   const cmdkQuickSearchService = useService(CMDKQuickSearchService);
   const onOpenQuickSearchModal = useCallback(() => {
@@ -93,27 +90,29 @@ export const RootAppSidebar = (): ReactElement => {
   const allPageActive = currentPath === '/all';
 
   const pageHelper = usePageHelper(currentWorkspace.docCollection);
-  const createPage = useCallback(() => {
-    return pageHelper.createPage();
-  }, [pageHelper]);
 
-  const onClickNewPage = useAsyncCallback(async () => {
-    const page = createPage();
-    page.load();
-    openPage(currentWorkspaceId, page.id);
-    mixpanel.track('DocCreated', {
-      segment: 'navigation panel',
-      module: 'bottom button',
-      control: 'new doc button',
-      category: 'page',
-      type: 'doc',
-    });
-  }, [createPage, currentWorkspaceId, openPage]);
+  const onClickNewPage = useAsyncCallback(
+    async (e?: MouseEvent) => {
+      const page = pageHelper.createPage('page', false);
+      page.load();
+      mixpanel.track('DocCreated', {
+        segment: 'navigation panel',
+        module: 'bottom button',
+        control: 'new doc button',
+        category: 'page',
+        type: 'doc',
+      });
+      workbench.openDoc(page.id, {
+        at: e?.ctrlKey || e?.metaKey ? 'new-tab' : 'active',
+      });
+    },
+    [pageHelper, workbench]
+  );
 
   // Listen to the "New Page" action from the menu
   useEffect(() => {
     if (environment.isDesktop) {
-      return events?.applicationMenu.onNewPageAction(onClickNewPage);
+      return events?.applicationMenu.onNewPageAction(() => onClickNewPage());
     }
     return;
   }, [onClickNewPage]);

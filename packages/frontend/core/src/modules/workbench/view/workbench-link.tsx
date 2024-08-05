@@ -1,9 +1,7 @@
 import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import { popupWindow } from '@affine/core/utils';
-import { apis } from '@affine/electron-api';
 import { useLiveData, useService } from '@toeverything/infra';
-import { parsePath, type To } from 'history';
+import { type To } from 'history';
 import { forwardRef, type MouseEvent } from 'react';
 
 import { WorkbenchService } from '../services/workbench';
@@ -31,26 +29,18 @@ export const WorkbenchLink = forwardRef<
         return;
       }
 
-      if (event.ctrlKey || event.metaKey) {
-        if (environment.isDesktop) {
-          if (event.altKey && appSettings.enableMultiView) {
-            workbench.open(to, { at: 'tail' });
-          } else {
-            const path = typeof to === 'string' ? parsePath(to) : to;
-            await apis?.ui.addTab({
-              basename,
-              view: { path },
-              show: false,
-            });
-          }
-        } else if (!environment.isDesktop) {
-          popupWindow(link);
+      const at = (() => {
+        if (event.ctrlKey || event.metaKey) {
+          return event.altKey && appSettings.enableMultiView
+            ? 'tail'
+            : 'new-tab';
         }
-      } else {
-        workbench.open(to);
-      }
+        return 'active';
+      })();
+
+      workbench.open(to, { at });
     },
-    [appSettings.enableMultiView, basename, link, onClick, to, workbench]
+    [appSettings.enableMultiView, onClick, to, workbench]
   );
 
   // eslint suspicious runtime error
