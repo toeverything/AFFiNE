@@ -35,7 +35,7 @@ export const SaveAsCollectionButton = ({
       <Button
         onClick={handleClick}
         data-testid="save-as-collection"
-        icon={<SaveIcon />}
+        prefix={<SaveIcon />}
         className={styles.button}
       >
         {t['com.affine.editCollection.saveCollection']()}

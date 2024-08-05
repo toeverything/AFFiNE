@@ -16,7 +16,7 @@ export const AILogin = (btnProps: ButtonProps) => {
   }, [setOpen]);
 
   return (
-    <Button onClick={onClickSignIn} type="primary" {...btnProps}>
+    <Button onClick={onClickSignIn} variant="primary" {...btnProps}>
       {t['com.affine.payment.ai.action.login.button-label']()}
     </Button>
   );

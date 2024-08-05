@@ -59,7 +59,7 @@ export const ChangePasswordPage: FC<{
       }
     >
       {hasSetUp ? (
-        <Button type="primary" size="large" onClick={onOpenAffine}>
+        <Button variant="primary" size="large" onClick={onOpenAffine}>
           {t['com.affine.auth.open.affine']()}
         </Button>
       ) : (

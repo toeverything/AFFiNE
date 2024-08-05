@@ -330,7 +330,7 @@ const ConflictList = ({
                   />
                 }
               >
-                <IconButton type="plain">
+                <IconButton>
                   <MoreHorizontalIcon />
                 </IconButton>
               </Menu>

@@ -18,7 +18,7 @@ export interface StorageProgressProgress {
 
 enum ButtonType {
   Primary = 'primary',
-  Default = 'default',
+  Default = 'secondary',
 }
 
 export const StorageProgress = ({ onUpgrade }: StorageProgressProgress) => {
@@ -101,11 +101,7 @@ export const StorageProgress = ({ onUpgrade }: StorageProgressProgress) => {
           }
         >
           <span tabIndex={0}>
-            <Button
-              type={buttonType}
-              onClick={onUpgrade}
-              className={styles.storageButton}
-            >
+            <Button variant={buttonType} onClick={onUpgrade}>
               {isFreeUser
                 ? t['com.affine.storage.upgrade']()
                 : t['com.affine.storage.change-plan']()}

@@ -158,7 +158,7 @@ export const CreateOrEditTag = ({
       <Button className={styles.cancelBtn} onClick={onClose}>
         {t['Cancel']()}
       </Button>
-      <Button type="primary" onClick={onConfirm} disabled={!tagName}>
+      <Button variant="primary" onClick={onConfirm} disabled={!tagName}>
         {tagMeta ? t['Save']() : t['Create']()}
       </Button>
     </div>

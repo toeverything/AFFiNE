@@ -48,7 +48,7 @@ const UpgradeSuccessLayout = ({
 
   return (
     <AuthPageContainer title={title} subtitle={subtitle}>
-      <Button type="primary" size="extraLarge" onClick={openAffine}>
+      <Button variant="primary" size="extraLarge" onClick={openAffine}>
         {t['com.affine.other-page.nav.open-affine']()}
       </Button>
     </AuthPageContainer>

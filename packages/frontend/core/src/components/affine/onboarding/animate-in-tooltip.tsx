@@ -19,7 +19,7 @@ export const AnimateInTooltip = ({
       </div>
       <div className={styles.next}>
         {visible ? (
-          <Button type="primary" size="extraLarge" onClick={onNext}>
+          <Button variant="primary" size="extraLarge" onClick={onNext}>
             Next
           </Button>
         ) : null}

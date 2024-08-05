@@ -136,7 +136,7 @@ export const DeleteLeaveWorkspace = () => {
           description={t['com.affine.deleteLeaveWorkspace.leaveDescription']()}
           confirmText={t['Leave']()}
           confirmButtonOptions={{
-            type: 'warning',
+            variant: 'error',
           }}
         />
       )}

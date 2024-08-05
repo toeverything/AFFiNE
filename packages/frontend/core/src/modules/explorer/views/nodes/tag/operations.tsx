@@ -103,7 +103,7 @@ export const useExplorerTagNodeOperations = (
         index: 0,
         inline: true,
         view: (
-          <IconButton size="small" type="plain" onClick={handleNewDoc}>
+          <IconButton size="16" onClick={handleNewDoc}>
             <PlusIcon />
           </IconButton>
         ),

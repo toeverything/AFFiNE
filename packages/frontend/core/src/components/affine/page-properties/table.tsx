@@ -703,11 +703,9 @@ export const PagePropertiesTableHeader = ({
         </div>
         {properties.length === 0 || manager.readonly ? null : (
           <PagePropertiesSettingsPopup>
-            <IconButton
-              data-testid="page-info-show-more"
-              type="plain"
-              icon={<MoreHorizontalIcon />}
-            />
+            <IconButton data-testid="page-info-show-more" size="20">
+              <MoreHorizontalIcon />
+            </IconButton>
           </PagePropertiesSettingsPopup>
         )}
         <Collapsible.Trigger asChild role="button" onClick={handleCollapse}>
@@ -715,15 +713,12 @@ export const PagePropertiesTableHeader = ({
             className={styles.tableHeaderCollapseButtonWrapper}
             data-testid="page-info-collapse"
           >
-            <IconButton
-              type="plain"
-              icon={
-                <ToggleExpandIcon
-                  className={styles.collapsedIcon}
-                  data-collapsed={!open}
-                />
-              }
-            />
+            <IconButton size="20">
+              <ToggleExpandIcon
+                className={styles.collapsedIcon}
+                data-collapsed={!open}
+              />
+            </IconButton>
           </div>
         </Collapsible.Trigger>
       </div>
@@ -1056,8 +1051,8 @@ export const PagePropertiesAddProperty = () => {
   return (
     <Menu {...menuOptions}>
       <Button
-        type="plain"
-        icon={<PlusIcon />}
+        variant="plain"
+        prefix={<PlusIcon />}
         className={styles.addPropertyButton}
       >
         {t['com.affine.page-properties.add-property']()}

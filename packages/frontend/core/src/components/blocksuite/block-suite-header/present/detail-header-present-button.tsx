@@ -9,9 +9,10 @@ export const DetailPageHeaderPresentButton = () => {
   return (
     <IconButton
       style={{ flexShrink: 0 }}
-      size={'large'}
-      icon={<PresentationIcon />}
+      size="24"
       onClick={() => handlePresent(!isPresent)}
-    ></IconButton>
+    >
+      <PresentationIcon />
+    </IconButton>
   );
 };

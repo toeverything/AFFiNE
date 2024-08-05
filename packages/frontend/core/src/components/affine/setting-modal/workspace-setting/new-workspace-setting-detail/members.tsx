@@ -63,7 +63,7 @@ const MembersPanelLocal = () => {
     <Tooltip content={t['com.affine.settings.member-tooltip']()}>
       <div className={style.fakeWrapper}>
         <SettingRow name={`${t['Members']()} (0)`} desc={t['Members hint']()}>
-          <Button size="large">{t['Invite Members']()}</Button>
+          <Button>{t['Invite Members']()}</Button>
         </SettingRow>
       </div>
     </Tooltip>
@@ -393,7 +393,6 @@ const MemberItem = ({
       >
         <IconButton
           disabled={!operationButtonInfo.show}
-          type="plain"
           style={{
             visibility: operationButtonInfo.show ? 'visible' : 'hidden',
             flexShrink: 0,

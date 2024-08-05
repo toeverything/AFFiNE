@@ -122,7 +122,7 @@ export const ExplorerOrganize = () => {
         <IconButton
           data-testid="explorer-bar-add-organize-button"
           onClick={handleCreateFolder}
-          size="small"
+          size="16"
         >
           <PlusIcon />
         </IconButton>

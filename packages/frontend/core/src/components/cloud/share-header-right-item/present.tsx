@@ -11,11 +11,10 @@ export const PresentButton = () => {
 
   return (
     <Button
-      icon={<PresentationIcon />}
+      prefix={<PresentationIcon />}
       className={styles.presentButton}
       onClick={() => handlePresent()}
       disabled={isPresent}
-      withoutHoverStyle
     >
       {t['com.affine.share-page.header.present']()}
     </Button>

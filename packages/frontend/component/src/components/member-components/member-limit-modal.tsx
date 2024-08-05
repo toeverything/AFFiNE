@@ -44,7 +44,7 @@ export const MemberLimitModal = ({
           : 'com.affine.payment.member-limit.pro.confirm'
       ]()}
       confirmButtonOptions={{
-        type: 'primary',
+        variant: 'primary',
       }}
       onConfirm={handleConfirm}
     ></ConfirmModal>

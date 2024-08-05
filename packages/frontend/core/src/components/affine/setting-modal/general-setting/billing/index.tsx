@@ -299,9 +299,7 @@ const TypeFormLink = () => {
       desc={t['com.affine.payment.billing-type-form.description']()}
     >
       <a target="_blank" href={link} rel="noreferrer">
-        <Button style={{ padding: '4px 12px' }}>
-          {t['com.affine.payment.billing-type-form.go']()}
-        </Button>
+        <Button>{t['com.affine.payment.billing-type-form.go']()}</Button>
       </a>
     </SettingRow>
   );
@@ -435,7 +433,7 @@ const PlanAction = ({
   return (
     <Button
       className={styles.planAction}
-      type="primary"
+      variant="primary"
       onClick={gotoPlansSetting}
     >
       {plan === SubscriptionPlan.Pro
@@ -460,12 +458,7 @@ const PaymentMethodUpdater = () => {
   }, [trigger]);
 
   return (
-    <Button
-      className={styles.button}
-      onClick={update}
-      loading={isMutating}
-      disabled={isMutating}
-    >
+    <Button onClick={update} loading={isMutating} disabled={isMutating}>
       {t['com.affine.payment.billing-setting.update']()}
     </Button>
   );
@@ -492,7 +485,7 @@ const ResumeSubscription = () => {
 
   return (
     <ResumeAction open={open} onOpenChange={setOpen}>
-      <Button className={styles.button} onClick={handleClick}>
+      <Button onClick={handleClick}>
         {t['com.affine.payment.billing-setting.resume-subscription']()}
       </Button>
     </ResumeAction>
@@ -503,10 +496,11 @@ const CancelSubscription = ({ loading }: { loading?: boolean }) => {
   return (
     <IconButton
       style={{ pointerEvents: 'none' }}
-      icon={<ArrowRightSmallIcon />}
       disabled={loading}
       loading={loading}
-    />
+    >
+      <ArrowRightSmallIcon />
+    </IconButton>
   );
 };
 
@@ -583,7 +577,7 @@ const InvoiceLine = ({
           : ''
       } $${invoice.amount / 100} - ${planText}`}
     >
-      <Button className={styles.button} onClick={open}>
+      <Button onClick={open}>
         {t['com.affine.payment.billing-setting.view-invoice']()}
       </Button>
     </SettingRow>

@@ -95,7 +95,7 @@ export const useExplorerCollectionNodeOperations = (
       cancelText: t['Cancel'](),
       confirmText: t['Confirm'](),
       confirmButtonOptions: {
-        type: 'primary',
+        variant: 'primary',
       },
       onConfirm: createAndAddDocument,
     });
@@ -129,11 +129,7 @@ export const useExplorerCollectionNodeOperations = (
         index: 0,
         inline: true,
         view: (
-          <IconButton
-            size="small"
-            type="plain"
-            onClick={handleAddDocToCollection}
-          >
+          <IconButton size="16" onClick={handleAddDocToCollection}>
             <PlusIcon />
           </IconButton>
         ),

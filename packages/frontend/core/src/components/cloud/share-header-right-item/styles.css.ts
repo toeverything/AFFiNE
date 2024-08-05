@@ -46,7 +46,6 @@ export const headerDivider = style({
 });
 
 export const presentButton = style({
-  gap: '4px',
   background: cssVar('black'),
   color: cssVar('white'),
   borderColor: cssVar('pureBlack10'),

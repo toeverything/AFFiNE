@@ -49,7 +49,7 @@ const MoveToTrashConfirm = ({
       confirmText={t.Delete()}
       confirmButtonOptions={{
         ['data-testid' as string]: 'confirm-delete-page',
-        type: 'error',
+        variant: 'error',
       }}
       {...confirmModalProps}
     />

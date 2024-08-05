@@ -41,7 +41,7 @@ const FooterActions = ({ onDismiss }: { onDismiss: () => void }) => {
       <a href="https://ai.affine.pro" target="_blank" rel="noreferrer">
         <Button
           className={styles.actionButton}
-          type="plain"
+          variant="plain"
           onClick={onDismiss}
         >
           {t['com.affine.ai-onboarding.local.action-learn-more']()}
@@ -50,7 +50,7 @@ const FooterActions = ({ onDismiss }: { onDismiss: () => void }) => {
       {loggedIn ? null : (
         <Button
           className={styles.actionButton}
-          type="plain"
+          variant="plain"
           onClick={() => {
             onDismiss();
             jumpToSignIn('', RouteLogic.REPLACE, {}, { initCloud: 'true' });

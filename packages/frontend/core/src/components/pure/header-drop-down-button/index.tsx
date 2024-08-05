@@ -15,8 +15,6 @@ export const HeaderDropDownButton = forwardRef<
       {...props}
       data-testid="header-dropDownButton"
       className={headerMenuTrigger}
-      withoutHoverStyle={true}
-      type="plain"
     >
       <MoreHorizontalIcon />
     </IconButton>

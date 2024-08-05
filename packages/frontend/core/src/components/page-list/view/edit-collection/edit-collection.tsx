@@ -119,13 +119,13 @@ export const EditCollection = ({
   const buttons = useMemo(
     () => (
       <>
-        <Button size="large" onClick={onCancel}>
+        <Button onClick={onCancel} className={styles.actionButton}>
           {t['com.affine.editCollection.button.cancel']()}
         </Button>
         <Button
-          size="large"
+          className={styles.actionButton}
           data-testid="save-collection"
-          type="primary"
+          variant="primary"
           disabled={isNameEmpty}
           onClick={onSaveCollection}
         >
@@ -183,7 +183,7 @@ export const EditCollection = ({
           reset={reset}
           updateCollection={onChange}
           buttons={buttons}
-        ></RulesMode>
+        />
       )}
     </div>
   );

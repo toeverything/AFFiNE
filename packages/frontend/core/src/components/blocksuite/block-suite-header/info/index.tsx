@@ -1,4 +1,4 @@
-import { IconButton, Tooltip } from '@affine/component';
+import { IconButton } from '@affine/component';
 import { openInfoModalAtom } from '@affine/core/atoms';
 import { useI18n } from '@affine/i18n';
 import { InformationIcon } from '@blocksuite/icons/rc';
@@ -11,12 +11,13 @@ export const InfoButton = () => {
     setOpenInfoModal(true);
   };
   return (
-    <Tooltip content={t['com.affine.page-properties.page-info.view']()}>
-      <IconButton
-        data-testid="header-info-button"
-        onClick={onOpenInfoModal}
-        icon={<InformationIcon />}
-      />
-    </Tooltip>
+    <IconButton
+      size="20"
+      tooltip={t['com.affine.page-properties.page-info.view']()}
+      data-testid="header-info-button"
+      onClick={onOpenInfoModal}
+    >
+      <InformationIcon />
+    </IconButton>
   );
 };

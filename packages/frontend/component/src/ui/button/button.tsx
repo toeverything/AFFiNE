@@ -1,172 +1,168 @@
 import clsx from 'clsx';
 import type {
-  FC,
+  CSSProperties,
   HTMLAttributes,
-  PropsWithChildren,
+  MouseEvent,
   ReactElement,
 } from 'react';
-import { forwardRef, useMemo } from 'react';
+import { cloneElement, forwardRef, useCallback } from 'react';
 
 import { Loading } from '../loading';
-import { button, buttonIcon } from './button.css';
+import { Tooltip, type TooltipProps } from '../tooltip';
+import * as styles from './button.css';
 
 export type ButtonType =
-  | 'default'
   | 'primary'
+  | 'secondary'
   | 'plain'
   | 'error'
-  | 'warning'
   | 'success'
-  | 'processing';
-export type ButtonSize = 'default' | 'large' | 'extraLarge';
-type BaseButtonProps = {
-  type?: ButtonType;
+  | 'custom';
+export type ButtonSize = 'default' | 'large' | 'extraLarge' | 'custom';
+
+export interface ButtonProps
+  extends Omit<HTMLAttributes<HTMLButtonElement>, 'type' | 'prefix'> {
+  /**
+   * Preset color scheme
+   * @default 'secondary'
+   */
+  variant?: ButtonType;
   disabled?: boolean;
-  icon?: ReactElement;
-  iconPosition?: 'start' | 'end';
-  shape?: 'default' | 'round' | 'circle';
+  /**
+   * By default, the button is `inline-flex`, set to `true` to make it `flex`
+   * @default false
+   */
   block?: boolean;
+  /**
+   * Preset size, will be overridden by `style` or `className`
+   * @default 'default'
+   */
   size?: ButtonSize;
+  /**
+   * Will show a loading spinner at `prefix` position
+   */
   loading?: boolean;
-  withoutHoverStyle?: boolean;
-};
 
-export type ButtonProps = PropsWithChildren<BaseButtonProps> &
-  Omit<HTMLAttributes<HTMLButtonElement>, 'type'> & {
-    componentProps?: {
-      startIcon?: Omit<IconButtonProps, 'icon' | 'iconPosition'>;
-      endIcon?: Omit<IconButtonProps, 'icon' | 'iconPosition'>;
-    };
-  };
+  /**
+   * By default, it is considered as an icon with preset size and color,
+   * can be overridden by `prefixClassName` and `prefixStyle`.
+   *
+   * If `loading` is true, will be replaced by a spinner.(`prefixClassName` and `prefixStyle` still work)
+   * */
+  prefix?: ReactElement;
+  prefixClassName?: string;
+  prefixStyle?: CSSProperties;
+  contentClassName?: string;
+  contentStyle?: CSSProperties;
 
-type IconButtonProps = PropsWithChildren<BaseButtonProps> &
-  Omit<HTMLAttributes<HTMLDivElement>, 'type'>;
+  /**
+   * By default, it is considered as an icon with preset size and color,
+   * can be overridden by `suffixClassName` and `suffixStyle`.
+   * */
+  suffix?: ReactElement;
+  suffixClassName?: string;
+  suffixStyle?: CSSProperties;
 
-const defaultProps = {
-  type: 'default',
-  disabled: false,
-  shape: 'default',
-  size: 'default',
-  iconPosition: 'start',
-  loading: false,
-  withoutHoverStyle: false,
-} as const;
+  tooltip?: TooltipProps['content'];
+  tooltipOptions?: Partial<Omit<TooltipProps, 'content'>>;
+}
 
-const ButtonIcon: FC<IconButtonProps> = props => {
-  const {
-    size,
-    icon,
-    iconPosition = 'start',
-    children,
-    type,
-    loading,
-    withoutHoverStyle,
-    ...otherProps
-  } = {
-    ...defaultProps,
-    ...props,
-  };
-  const onlyIcon = icon && !children;
-  return (
-    <div
-      {...otherProps}
-      className={clsx(buttonIcon, {
-        'color-white': type && type !== 'default' && type !== 'plain',
-        large: size === 'large',
-        extraLarge: size === 'extraLarge',
-        end: iconPosition === 'end' && !onlyIcon,
-        start: iconPosition === 'start' && !onlyIcon,
-        loading,
-      })}
-      data-without-hover={withoutHoverStyle}
-    >
-      {icon}
+const IconSlot = ({
+  icon,
+  loading,
+  className,
+  ...attrs
+}: {
+  icon?: ReactElement;
+  loading?: boolean;
+} & HTMLAttributes<HTMLElement>) => {
+  const showLoadingHere = loading !== undefined;
+  const visible = icon || loading;
+  return visible ? (
+    <div className={clsx(styles.icon, className)} {...attrs}>
+      {showLoadingHere && loading ? <Loading size="100%" /> : null}
+      {icon && !loading
+        ? cloneElement(icon, {
+            width: '100%',
+            height: '100%',
+            ...icon.props,
+          })
+        : null}
     </div>
-  );
+  ) : null;
 };
+
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  (props, ref) => {
-    const {
+  (
+    {
+      variant = 'secondary',
+      size = 'default',
       children,
-      type,
       disabled,
-      shape,
-      size,
-      icon: propsIcon,
-      iconPosition,
       block,
       loading,
-      withoutHoverStyle,
       className,
+
+      prefix,
+      prefixClassName,
+      prefixStyle,
+      suffix,
+      suffixClassName,
+      suffixStyle,
+      contentClassName,
+      contentStyle,
+
+      tooltip,
+      tooltipOptions,
+      onClick,
+
       ...otherProps
-    } = {
-      ...defaultProps,
-      ...props,
-    } satisfies ButtonProps;
-
-    const icon = useMemo(() => {
-      if (loading) {
-        return <Loading />;
-      }
-      return propsIcon;
-    }, [propsIcon, loading]);
-
-    const baseIconButtonProps = useMemo(() => {
-      return {
-        size,
-        iconPosition,
-        icon,
-        type,
-        disabled,
-        loading,
-      } as const;
-    }, [disabled, icon, iconPosition, loading, size, type]);
+    },
+    ref
+  ) => {
+    const handleClick = useCallback(
+      (e: MouseEvent<HTMLButtonElement>) => {
+        if (loading || disabled) return;
+        onClick?.(e);
+      },
+      [disabled, loading, onClick]
+    );
 
     return (
-      <button
-        {...otherProps}
-        ref={ref}
-        className={clsx(
-          button,
-          {
-            primary: type === 'primary',
-            plain: type === 'plain',
-            error: type === 'error',
-            warning: type === 'warning',
-            success: type === 'success',
-            processing: type === 'processing',
-            large: size === 'large',
-            extraLarge: size === 'extraLarge',
-            disabled,
-            circle: shape === 'circle',
-            round: shape === 'round',
-            block,
-            loading,
-            'without-hover': withoutHoverStyle,
-          },
-          className
-        )}
-        disabled={disabled}
-        data-disabled={disabled}
-      >
-        {icon && iconPosition === 'start' ? (
-          <ButtonIcon
-            {...baseIconButtonProps}
-            {...props.componentProps?.startIcon}
-            icon={icon}
-            iconPosition="start"
+      <Tooltip content={tooltip} {...tooltipOptions}>
+        <button
+          {...otherProps}
+          ref={ref}
+          className={clsx(styles.button, className)}
+          data-loading={loading || undefined}
+          data-block={block || undefined}
+          disabled={disabled}
+          data-disabled={disabled || undefined}
+          data-size={size}
+          data-variant={variant}
+          onClick={handleClick}
+        >
+          <IconSlot
+            icon={prefix}
+            loading={loading}
+            className={prefixClassName}
+            style={prefixStyle}
           />
-        ) : null}
-        <span>{children}</span>
-        {icon && iconPosition === 'end' ? (
-          <ButtonIcon
-            {...baseIconButtonProps}
-            {...props.componentProps?.endIcon}
-            icon={icon}
-            iconPosition="end"
+          {children ? (
+            <span
+              className={clsx(styles.content, contentClassName)}
+              style={contentStyle}
+            >
+              {children}
+            </span>
+          ) : null}
+          <IconSlot
+            icon={suffix}
+            className={suffixClassName}
+            style={suffixStyle}
           />
-        ) : null}
-      </button>
+        </button>
+      </Tooltip>
     );
   }
 );

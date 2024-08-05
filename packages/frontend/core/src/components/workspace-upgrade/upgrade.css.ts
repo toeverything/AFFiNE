@@ -1,5 +1,5 @@
 import { cssVar } from '@toeverything/theme';
-import { keyframes, style } from '@vanilla-extract/css';
+import { style } from '@vanilla-extract/css';
 export const layout = style({
   margin: '80px auto',
   maxWidth: '536px',
@@ -18,18 +18,4 @@ export const upgradeTips = style({
   fontWeight: '400',
   lineHeight: '20px',
   textAlign: 'center',
-});
-const rotate = keyframes({
-  '0%': {
-    transform: 'rotate(0deg)',
-  },
-  '50%': {
-    transform: 'rotate(180deg)',
-  },
-  '100%': {
-    transform: 'rotate(360deg)',
-  },
-});
-export const loadingIcon = style({
-  animation: `${rotate} 1.2s infinite linear`,
 });

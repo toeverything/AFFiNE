@@ -35,9 +35,6 @@ export const viewOption = style({
 });
 export const filterMenuTrigger = style({
   padding: '6px 8px',
-  ':hover': {
-    backgroundColor: cssVar('hoverColor'),
-  },
   selectors: {
     [`&[data-is-hidden="true"]`]: {
       display: 'none',

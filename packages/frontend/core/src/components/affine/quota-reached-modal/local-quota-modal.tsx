@@ -37,7 +37,7 @@ export const LocalQuotaModal = () => {
       onConfirm={onConfirm}
       confirmText={t['Got it']()}
       confirmButtonOptions={{
-        type: 'primary',
+        variant: 'primary',
       }}
     />
   );

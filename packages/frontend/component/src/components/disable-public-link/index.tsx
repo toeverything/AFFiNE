@@ -13,7 +13,7 @@ export const PublicLinkDisableModal = (props: ConfirmModalProps) => {
       cancelText={t['com.affine.publicLinkDisableModal.button.cancel']()}
       confirmText={t['com.affine.publicLinkDisableModal.button.disable']()}
       confirmButtonOptions={{
-        type: 'error',
+        variant: 'error',
         ['data-testid' as string]: 'confirm-enable-affine-cloud-button',
       }}
       {...props}

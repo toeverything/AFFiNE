@@ -82,11 +82,11 @@ function OAuthProvider({
   return (
     <Button
       key={provider}
-      type="primary"
+      variant="primary"
       block
       size="extraLarge"
-      style={{ marginTop: 30 }}
-      icon={icon}
+      style={{ marginTop: 30, width: '100%' }}
+      prefix={icon}
       onClick={onClick}
     >
       Continue with {provider}

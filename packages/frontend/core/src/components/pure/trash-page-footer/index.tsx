@@ -1,6 +1,5 @@
 import { Button } from '@affine/component/ui/button';
 import { ConfirmModal } from '@affine/component/ui/modal';
-import { Tooltip } from '@affine/component/ui/tooltip';
 import { useI18n } from '@affine/i18n';
 import { DeleteIcon, ResetIcon } from '@blocksuite/icons/rc';
 import { DocService, useService, WorkspaceService } from '@toeverything/infra';
@@ -50,30 +49,23 @@ export const TrashPageFooter = () => {
     >
       <div className={styles.deleteHintText}>{hintText}</div>
       <div className={styles.group}>
-        <Tooltip content={t['com.affine.trashOperation.restoreIt']()}>
-          <Button
-            data-testid="page-restore-button"
-            type="primary"
-            onClick={onRestore}
-            className={styles.buttonContainer}
-          >
-            <div className={styles.icon}>
-              <ResetIcon />
-            </div>
-          </Button>
-        </Tooltip>
-        <Tooltip content={t['com.affine.trashOperation.deletePermanently']()}>
-          <Button
-            type="error"
-            onClick={onDelete}
-            style={{ color: 'var(--affine-pure-white)' }}
-            className={styles.buttonContainer}
-          >
-            <div className={styles.icon}>
-              <DeleteIcon />
-            </div>
-          </Button>
-        </Tooltip>
+        <Button
+          tooltip={t['com.affine.trashOperation.restoreIt']()}
+          data-testid="page-restore-button"
+          variant="primary"
+          onClick={onRestore}
+          className={styles.buttonContainer}
+          prefix={<ResetIcon />}
+          prefixClassName={styles.icon}
+        />
+        <Button
+          tooltip={t['com.affine.trashOperation.deletePermanently']()}
+          variant="error"
+          onClick={onDelete}
+          className={styles.buttonContainer}
+          prefix={<DeleteIcon />}
+          prefixClassName={styles.icon}
+        />
       </div>
       <ConfirmModal
         title={t['com.affine.trashOperation.delete.title']()}
@@ -81,7 +73,7 @@ export const TrashPageFooter = () => {
         description={t['com.affine.trashOperation.delete.description']()}
         confirmText={t['com.affine.trashOperation.delete']()}
         confirmButtonOptions={{
-          type: 'error',
+          variant: 'error',
         }}
         open={open}
         onConfirm={onConfirmDelete}

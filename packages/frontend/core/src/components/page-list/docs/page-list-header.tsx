@@ -125,7 +125,7 @@ export const CollectionPageListHeader = ({
         cancelText: t['Cancel'](),
         confirmText: t['Confirm'](),
         confirmButtonOptions: {
-          type: 'primary',
+          variant: 'primary',
         },
         onConfirm: () => createAndAddDocument(createDocumentFn),
       });
@@ -156,9 +156,7 @@ export const CollectionPageListHeader = ({
           <div className={styles.titleCollectionName}>{collection.name}</div>
         </div>
         <div className={styles.rightButtonGroup}>
-          <Button className={styles.addPageButton} onClick={handleEdit}>
-            {t['Edit']()}
-          </Button>
+          <Button onClick={handleEdit}>{t['Edit']()}</Button>
           <PageListNewPageButton
             size="small"
             testId="new-page-button-trigger"
@@ -253,7 +251,7 @@ export const TagPageListHeader = ({
             </div>
           </Menu>
         </div>
-        <Button className={styles.addPageButton} onClick={handleClick}>
+        <Button onClick={handleClick}>
           {t['com.affine.editCollection.saveCollection']()}
         </Button>
       </div>

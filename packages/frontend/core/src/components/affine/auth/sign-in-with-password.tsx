@@ -129,7 +129,7 @@ export const SignInWithPassword: FC<AuthPanelProps> = ({
         </div>
         <Button
           data-testid="sign-in-button"
-          type="primary"
+          variant="primary"
           size="extraLarge"
           style={{ width: '100%' }}
           disabled={isLoading}

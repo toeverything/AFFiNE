@@ -99,7 +99,7 @@ export const AfterSignInSendEmail = ({
             <Button
               style={!verifyToken ? { cursor: 'not-allowed' } : {}}
               disabled={!verifyToken || isSending}
-              type="plain"
+              variant="plain"
               size="large"
               onClick={onResendClick}
             >

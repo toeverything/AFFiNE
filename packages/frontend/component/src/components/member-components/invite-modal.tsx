@@ -60,7 +60,7 @@ export const InviteModal = ({
       confirmText={t['Invite']()}
       confirmButtonOptions={{
         loading: isMutating,
-        type: 'primary',
+        variant: 'primary',
         ['data-testid' as string]: 'confirm-enable-affine-cloud-button',
       }}
       onConfirm={handleConfirm}

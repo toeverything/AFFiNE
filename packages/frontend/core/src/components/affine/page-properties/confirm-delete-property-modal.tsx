@@ -50,7 +50,7 @@ export const ConfirmDeletePropertyModal = ({
         onClick: onCancel,
       }}
       confirmButtonOptions={{
-        type: 'error',
+        variant: 'error',
       }}
     />
   );

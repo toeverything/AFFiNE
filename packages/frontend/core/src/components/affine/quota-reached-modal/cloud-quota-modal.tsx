@@ -112,7 +112,7 @@ export const CloudQuotaModal = () => {
         isFreePlanOwner ? t['com.affine.payment.upgrade']() : t['Got it']()
       }
       confirmButtonOptions={{
-        type: 'primary',
+        variant: 'primary',
       }}
     />
   );

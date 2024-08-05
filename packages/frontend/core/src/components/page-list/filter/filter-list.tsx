@@ -59,15 +59,11 @@ export const FilterList = ({
         }
       >
         {value.length === 0 ? (
-          <Button
-            icon={<PlusIcon style={{ color: 'var(--affine-icon-color)' }} />}
-            iconPosition="end"
-            style={{ fontSize: 'var(--affine-font-xs)', padding: '0 8px' }}
-          >
+          <Button suffix={<PlusIcon />}>
             {t['com.affine.filterList.button.add']()}
           </Button>
         ) : (
-          <IconButton size="small">
+          <IconButton size="16">
             <PlusIcon />
           </IconButton>
         )}

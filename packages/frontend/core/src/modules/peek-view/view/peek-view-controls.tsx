@@ -1,4 +1,4 @@
-import { IconButton, Tooltip } from '@affine/component';
+import { IconButton } from '@affine/component';
 import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
 import { useI18n } from '@affine/i18n';
 import {
@@ -45,18 +45,16 @@ export const ControlButton = ({
   );
 
   return (
-    <Tooltip content={name}>
-      <IconButton
-        data-testid="peek-view-control"
-        data-action-name={nameKey}
-        size="large"
-        type="default"
-        onClick={handleClick}
-        icon={icon}
-        className={styles.button}
-        withoutHoverStyle
-      />
-    </Tooltip>
+    <IconButton
+      variant="solid"
+      tooltip={name}
+      data-testid="peek-view-control"
+      data-action-name={nameKey}
+      size="20"
+      onClick={handleClick}
+      icon={icon}
+      className={styles.button}
+    />
   );
 };
 

@@ -46,9 +46,6 @@ export const currentPlanName = style({
   color: cssVar('textEmphasisColor'),
   cursor: 'pointer',
 });
-export const button = style({
-  padding: '4px 12px',
-});
 export const subscriptionSettingSkeleton = style({
   display: 'flex',
   flexDirection: 'column',

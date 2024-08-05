@@ -54,16 +54,9 @@ export const WorkspaceUpgrade = function WorkspaceUpgrade() {
           data-testid="upgrade-workspace-button"
           onClick={onButtonClick}
           size="extraLarge"
-          icon={
-            error ? (
-              <HeartBreakIcon />
-            ) : (
-              <ArrowCircleIcon
-                className={upgrading ? styles.loadingIcon : undefined}
-              />
-            )
-          }
-          type={error ? 'error' : 'default'}
+          loading={upgrading}
+          prefix={error ? <HeartBreakIcon /> : <ArrowCircleIcon />}
+          variant={error ? 'error' : 'secondary'}
         >
           {error
             ? t['com.affine.upgrade.button-text.error']()

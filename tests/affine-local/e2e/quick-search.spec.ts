@@ -556,8 +556,10 @@ test('can use slash menu to insert a newly created doc card', async ({
   page,
 }) => {
   await openHomePage(page);
-  await clickNewPageButton(page);
+  // title '1' is a workaround to make sure Keyboard enter works correctly
+  await clickNewPageButton(page, '1');
 
+  // flaky: still focus on the title input
   // goto main content
   await page.keyboard.press('Enter');
 

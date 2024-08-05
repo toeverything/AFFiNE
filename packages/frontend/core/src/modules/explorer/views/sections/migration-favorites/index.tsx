@@ -52,7 +52,7 @@ export const ExplorerMigrationFavorites = () => {
       confirmText:
         t['com.affine.rootAppSidebar.migration-data.clean-all.confirm'](),
       confirmButtonOptions: {
-        type: 'primary',
+        variant: 'primary',
       },
       cancelText:
         t['com.affine.rootAppSidebar.migration-data.clean-all.cancel'](),
@@ -79,13 +79,12 @@ export const ExplorerMigrationFavorites = () => {
         t['com.affine.rootAppSidebar.migration-data.help.description'](),
       confirmText: t['com.affine.rootAppSidebar.migration-data.help.confirm'](),
       confirmButtonOptions: {
-        type: 'primary',
+        variant: 'primary',
       },
       cancelText:
         t['com.affine.rootAppSidebar.migration-data.help.clean-all'](),
       cancelButtonOptions: {
-        icon: <BroomIcon />,
-        type: 'default',
+        prefix: <BroomIcon />,
         onClick: () => {
           requestAnimationFrame(() => {
             handleClickClear();
@@ -114,13 +113,13 @@ export const ExplorerMigrationFavorites = () => {
           <IconButton
             data-testid="explorer-bar-favorite-migration-clear-button"
             onClick={handleClickClear}
-            size="small"
+            size="16"
           >
             <BroomIcon />
           </IconButton>
           <IconButton
             data-testid="explorer-bar-favorite-migration-help-button"
-            size="small"
+            size="16"
             onClick={handleClickHelp}
           >
             <HelpIcon />

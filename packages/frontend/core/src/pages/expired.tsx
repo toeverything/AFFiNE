@@ -17,7 +17,7 @@ export const Component = () => {
       title={t['com.affine.expired.page.title']()}
       subtitle={t['com.affine.expired.page.subtitle']()}
     >
-      <Button type="primary" size="large" onClick={onOpenAffine}>
+      <Button variant="primary" size="large" onClick={onOpenAffine}>
         {t['com.affine.auth.open.affine']()}
       </Button>
     </AuthPageContainer>

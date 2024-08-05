@@ -103,7 +103,7 @@ export const AIOnboardingEdgeless = () => {
                   notify.dismiss(id);
                   toggleEdgelessAIOnboarding(false);
                 }}
-                type="plain"
+                variant="plain"
                 className={styles.actionButton}
               >
                 <span className={styles.getStartedButtonText}>
@@ -113,7 +113,7 @@ export const AIOnboardingEdgeless = () => {
               {aiSubscription ? null : (
                 <Button
                   className={styles.actionButton}
-                  type="plain"
+                  variant="plain"
                   onClick={() => {
                     goToPricingPlans();
                     notify.dismiss(id);

@@ -63,7 +63,7 @@ export const ExplorerCollections = () => {
           <IconButton
             data-testid="explorer-bar-add-collection-button"
             onClick={handleCreateCollection}
-            size="small"
+            size="16"
           >
             <PlusIcon />
           </IconButton>

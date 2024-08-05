@@ -102,7 +102,7 @@ export const AISubscribe = ({
     <Button
       loading={isMutating}
       onClick={subscribe}
-      type="primary"
+      variant="primary"
       {...btnProps}
     >
       {btnProps.children ?? `${priceReadable} / ${priceFrequency}`}

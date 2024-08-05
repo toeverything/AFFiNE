@@ -30,8 +30,7 @@ export const AllPageListOperationsMenu = ({
       >
         <Button
           className={styles.filterMenuTrigger}
-          type="default"
-          icon={<FilterIcon />}
+          prefix={<FilterIcon />}
           data-testid="create-first-filter"
         >
           {t['com.affine.filter']()}

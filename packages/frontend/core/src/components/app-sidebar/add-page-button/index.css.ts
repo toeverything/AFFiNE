@@ -6,11 +6,7 @@ export const root = style({
   height: 32,
   borderRadius: 8,
   boxShadow: '0px 1px 2px 0px rgba(0, 0, 0, 0.15)',
-  border: `1px solid ${cssVarV2('layer/border')}`,
+  borderWidth: 1,
+  borderColor: cssVarV2('layer/border'),
   background: cssVarV2('button/siderbarPrimary/background'),
-});
-export const icon = style({
-  color: cssVarV2('icon/primary'),
-  fontSize: 20,
-  display: 'block',
 });

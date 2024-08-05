@@ -19,8 +19,8 @@ export const CollectionDetailHeader = ({
       right={
         <>
           <IconButton
-            type="default"
-            icon={<PlusIcon fontSize={16} />}
+            size="16"
+            icon={<PlusIcon />}
             onClick={onCreate}
             className={clsx(
               styles.headerCreateNewButton,

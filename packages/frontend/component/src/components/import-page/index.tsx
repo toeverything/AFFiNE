@@ -16,6 +16,9 @@ import {
   importPageContainerStyle,
 } from './index.css';
 
+/**
+ * @deprecated Not used
+ */
 export const ImportPage = ({
   importMarkdown,
   importHtml,
@@ -37,8 +40,9 @@ export const ImportPage = ({
       onClick={() => {
         onClose();
       }}
-      icon={<CloseIcon />}
-    />
+    >
+      <CloseIcon />
+    </IconButton>
     <div className={importPageBodyStyle}>
       <div className="title">Import</div>
       <span>

@@ -146,20 +146,12 @@ export const rulesTitleHighlight = style({
   fontStyle: 'italic',
   fontWeight: 800,
 });
-export const icon = style({
-  color: cssVar('iconColor'),
-});
-export const button = style({
-  userSelect: 'none',
-  borderRadius: 4,
-  cursor: 'pointer',
-  ':hover': {
-    backgroundColor: cssVar('hoverColor'),
-  },
-});
 export const bottomButton = style({
   padding: '4px 12px',
   borderRadius: 8,
+});
+export const actionButton = style({
+  minWidth: 80,
 });
 export const previewActive = style({
   backgroundColor: cssVar('hoverColorFilled'),

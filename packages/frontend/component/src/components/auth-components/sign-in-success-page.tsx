@@ -13,7 +13,7 @@ export const SignInSuccessPage: FC<{
       title={t['com.affine.auth.signed.success.title']()}
       subtitle={t['com.affine.auth.signed.success.subtitle']()}
     >
-      <Button type="primary" size="large" onClick={onOpenAffine}>
+      <Button variant="primary" size="large" onClick={onOpenAffine}>
         {t['com.affine.auth.open.affine']()}
       </Button>
     </AuthPageContainer>

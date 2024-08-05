@@ -130,10 +130,12 @@ export const ModalInner = forwardRef<HTMLDivElement, ModalProps>(
         style: overlayStyle,
         ...otherOverlayOptions
       } = {},
-      closeButtonOptions = {},
+      closeButtonOptions,
       children,
       ...otherProps
     } = props;
+    const { className: closeButtonClassName, ...otherCloseButtonProps } =
+      closeButtonOptions || {};
 
     const [container, setContainer] = useState<ModalTransitionContainer | null>(
       null
@@ -204,11 +206,11 @@ export const ModalInner = forwardRef<HTMLDivElement, ModalProps>(
               {withoutCloseButton ? null : (
                 <Dialog.Close asChild>
                   <IconButton
-                    className={styles.closeButton}
+                    size="20"
+                    className={clsx(styles.closeButton, closeButtonClassName)}
                     aria-label="Close"
-                    type="plain"
                     data-testid="modal-close-button"
-                    {...closeButtonOptions}
+                    {...otherCloseButtonProps}
                   >
                     <CloseIcon />
                   </IconButton>

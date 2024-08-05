@@ -1,23 +1,18 @@
 import { style } from '@vanilla-extract/css';
 
-export const sidebarSwitch = style({
-  opacity: 0,
-  display: 'inline-flex',
+export const sidebarSwitchClip = style({
+  flexShrink: 0,
   overflow: 'hidden',
-  pointerEvents: 'none',
-  transition: 'max-width 0.2s ease-in-out, margin 0.3s ease-in-out',
+  transition:
+    'max-width 0.2s ease-in-out, margin 0.3s ease-in-out, opacity 0.3s ease',
   selectors: {
     '&[data-show=true]': {
-      maxWidth: '32px',
       opacity: 1,
-      width: '32px',
-      flexShrink: 0,
-      fontSize: '24px',
-      pointerEvents: 'auto',
+      maxWidth: '60px',
     },
     '&[data-show=false]': {
+      opacity: 0,
       maxWidth: 0,
-      margin: '0 !important',
     },
   },
 });

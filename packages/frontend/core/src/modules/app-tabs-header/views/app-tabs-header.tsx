@@ -362,11 +362,15 @@ export const AppTabsHeader = ({
         ref={spacerDropTargetRef}
         data-dragged-over={draggedOver}
       >
-        <IconButton onClick={onAddTab} data-testid="add-tab-view-button">
-          <PlusIcon />
-        </IconButton>
+        <IconButton
+          size={22.86}
+          onClick={onAddTab}
+          data-testid="add-tab-view-button"
+          style={{ width: 32, height: 32 }}
+          icon={<PlusIcon />}
+        />
       </div>
-      <IconButton size="large" onClick={onToggleRightSidebar}>
+      <IconButton size="24" onClick={onToggleRightSidebar}>
         <RightSidebarIcon />
       </IconButton>
       {environment.isDesktop && environment.isWindows ? (

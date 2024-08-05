@@ -32,7 +32,7 @@ export const SignOutModal = ({ ...props }: ConfirmModalProps) => {
       cancelText={cancelText ?? defaultTexts.cancelText}
       confirmText={confirmText ?? defaultTexts.children}
       confirmButtonOptions={{
-        type: 'error',
+        variant: 'error',
         ['data-testid' as string]: 'confirm-sign-out-button',
       }}
       contentOptions={{

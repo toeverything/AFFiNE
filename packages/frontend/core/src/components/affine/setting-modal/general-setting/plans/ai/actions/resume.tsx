@@ -48,7 +48,7 @@ export const AIResume = ({ module, ...btnProps }: AIResumeProps) => {
       confirmText:
         t['com.affine.payment.ai.action.resume.confirm.confirm-text'](),
       confirmButtonOptions: {
-        type: 'primary',
+        variant: 'primary',
       },
       cancelText:
         t['com.affine.payment.ai.action.resume.confirm.cancel-text'](),
@@ -79,7 +79,12 @@ export const AIResume = ({ module, ...btnProps }: AIResumeProps) => {
   }, [subscription, openConfirmModal, t, module, idempotencyKey]);
 
   return (
-    <Button loading={isMutating} onClick={resume} type="primary" {...btnProps}>
+    <Button
+      loading={isMutating}
+      onClick={resume}
+      variant="primary"
+      {...btnProps}
+    >
       {t['com.affine.payment.ai.action.resume.button-label']()}
     </Button>
   );

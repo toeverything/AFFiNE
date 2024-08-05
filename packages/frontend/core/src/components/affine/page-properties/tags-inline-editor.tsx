@@ -405,11 +405,9 @@ export const TagsEditor = ({ pageId, readonly }: TagsEditorProps) => {
                     <TagItem maxWidth="100%" tag={tag} mode="inline" />
                     <div className={styles.spacer} />
                     <EditTagMenu tagId={tag.id} onTagDelete={onTagDelete}>
-                      <IconButton
-                        className={styles.tagEditIcon}
-                        type="plain"
-                        icon={<MoreHorizontalIcon />}
-                      />
+                      <IconButton className={styles.tagEditIcon}>
+                        <MoreHorizontalIcon />
+                      </IconButton>
                     </EditTagMenu>
                   </div>
                 );

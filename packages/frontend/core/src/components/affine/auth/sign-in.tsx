@@ -5,8 +5,9 @@ import { authAtom } from '@affine/core/atoms';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { mixpanel } from '@affine/core/mixpanel';
 import { Trans, useI18n } from '@affine/i18n';
-import { ArrowDownBigIcon } from '@blocksuite/icons/rc';
+import { ArrowRightBigIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
+import { cssVar } from '@toeverything/theme';
 import { useAtomValue } from 'jotai';
 import type { FC } from 'react';
 import { useCallback, useEffect, useState } from 'react';
@@ -149,21 +150,13 @@ export const SignIn: FC<AuthPanelProps> = ({
 
         {verifyToken ? (
           <Button
+            style={{ width: '100%' }}
             size="extraLarge"
             data-testid="continue-login-button"
             block
             loading={isMutating}
-            icon={
-              <ArrowDownBigIcon
-                width={20}
-                height={20}
-                style={{
-                  transform: 'rotate(-90deg)',
-                  color: 'var(--affine-blue)',
-                }}
-              />
-            }
-            iconPosition="end"
+            suffix={<ArrowRightBigIcon />}
+            suffixStyle={{ width: 20, height: 20, color: cssVar('blue') }}
             onClick={onContinue}
           >
             {t['com.affine.auth.sign.email.continue']()}

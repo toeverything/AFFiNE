@@ -89,7 +89,7 @@ export const useEnableCloud = () => {
               ? t['Enable']()
               : t['Sign in and Enable'](),
           confirmButtonOptions: {
-            type: 'primary',
+            variant: 'primary',
             ['data-testid' as string]: 'confirm-enable-affine-cloud-button',
           },
           onConfirm: async () =>

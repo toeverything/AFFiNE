@@ -1,371 +1,259 @@
 import { cssVar } from '@toeverything/theme';
-import { globalStyle, style } from '@vanilla-extract/css';
+import { cssVarV2 } from '@toeverything/theme/v2';
+import { createVar, globalStyle, style } from '@vanilla-extract/css';
+
+// Using variables can override externally, without considering the priority of selectors.
+// size vars
+export const hVar = createVar('height');
+export const wVar = createVar('width');
+export const iconSizeVar = createVar('iconSize');
+const gapVar = createVar('gap');
+const paddingVar = createVar('padding');
+const fontSizeVar = createVar('fontSize');
+const fontWeightVar = createVar('fontWeight');
+const lineHeightVar = createVar('lineHeight');
+const shadowVar = createVar('shadow');
+
+// style vars
+const bgVar = createVar('bg');
+const textVar = createVar('fg');
+const iconColorVar = createVar('icon');
+const borderColorVar = createVar('border');
+const borderWidthVar = createVar('borderWidth');
+
 export const button = style({
-  display: 'inline-flex',
-  justifyContent: 'center',
-  alignItems: 'center',
-  userSelect: 'none',
-  touchAction: 'manipulation',
+  vars: {
+    // default vars
+    [gapVar]: '4px',
+    [wVar]: 'unset',
+    [hVar]: 'unset',
+    [borderWidthVar]: '1px',
+  },
+
   flexShrink: 0,
-  outline: '0',
-  border: '1px solid',
-  padding: '0 8px',
-  borderRadius: '8px',
-  fontSize: cssVar('fontXs'),
-  fontWeight: 500,
+  position: 'relative',
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  userSelect: 'none',
+  outline: 0,
+  borderRadius: 8,
   transition: 'all .3s',
-  ['WebkitAppRegion' as string]: 'no-drag',
   cursor: 'pointer',
-  // changeable
-  height: '28px',
-  background: cssVar('white'),
-  borderColor: cssVar('borderColor'),
-  color: cssVar('textPrimaryColor'),
+  ['WebkitAppRegion' as string]: 'no-drag',
+
+  // hover layer
+  ':before': {
+    content: '""',
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+    transition: 'inherit',
+    borderRadius: 'inherit',
+    opacity: 0,
+    left: '50%',
+    top: '50%',
+    transform: 'translate(-50%, -50%)',
+    backgroundColor: cssVarV2('layer/background/hoverOverlay'),
+    borderColor: 'transparent',
+    pointerEvents: 'none',
+    borderWidth: 'inherit',
+    borderStyle: 'inherit',
+  },
+
+  // style
+  backgroundColor: bgVar,
+  color: textVar,
+  boxShadow: shadowVar,
+  borderWidth: borderWidthVar,
+  borderStyle: 'solid',
+  borderColor: borderColorVar,
+
+  // size
+  width: wVar,
+  height: hVar,
+  gap: gapVar,
+  padding: paddingVar,
+  fontSize: fontSizeVar,
+  fontWeight: fontWeightVar,
+  lineHeight: lineHeightVar,
+
   selectors: {
-    '&.text-bold': {
-      fontWeight: 600,
-    },
-    '&:not(.without-hover):hover': {
-      background: cssVar('hoverColor'),
-    },
-    '&.disabled': {
-      opacity: '.4',
-      cursor: 'default',
-      color: cssVar('textDisableColor'),
-      pointerEvents: 'none',
-    },
-    '&.loading': {
-      cursor: 'default',
-      color: cssVar('textDisableColor'),
-      pointerEvents: 'none',
-    },
-    '&.disabled:not(.without-hover):hover, &.loading:not(.without-hover):hover':
-      {
-        background: 'inherit',
+    '&:hover:before': { opacity: 1 },
+    '&[data-block]': { display: 'flex' },
+
+    // size
+    '&[data-size="default"]': {
+      vars: {
+        [hVar]: '28px', // line-height + paddingY * 2 (to ignore border width)
+        [paddingVar]: '0px 8px',
+        [iconSizeVar]: '16px',
+        [paddingVar]: '4px 12px',
+        [fontSizeVar]: cssVar('fontXs'),
+        [fontWeightVar]: '500',
+        [lineHeightVar]: '20px',
       },
-    '&.block': {
-      display: 'flex',
+    },
+    '&[data-size="large"]': {
+      vars: {
+        [hVar]: '32px',
+        [paddingVar]: '0px 8px',
+        [iconSizeVar]: '20px',
+        [paddingVar]: '4px 12px',
+        [fontSizeVar]: '15px',
+        [fontWeightVar]: '500',
+        [lineHeightVar]: '24px',
+      },
+    },
+    '&[data-size="extraLarge"]': {
+      vars: {
+        [hVar]: '40px',
+        [paddingVar]: '0px 8px',
+        [iconSizeVar]: '24px',
+        [paddingVar]: '8px 18px',
+        [fontSizeVar]: '15',
+        [fontWeightVar]: '600',
+        [lineHeightVar]: '24px',
+      },
+    },
+
+    // type
+    '&[data-variant="primary"]': {
+      vars: {
+        [bgVar]: cssVarV2('button/primary'),
+        [textVar]: cssVarV2('button/pureWhiteText'),
+        [iconColorVar]: cssVarV2('button/pureWhiteText'),
+        [borderColorVar]: cssVarV2('button/innerBlackBorder'),
+      },
+    },
+    '&[data-variant="secondary"]': {
+      vars: {
+        [bgVar]: cssVarV2('button/secondary'),
+        [textVar]: cssVarV2('text/primary'),
+        [iconColorVar]: cssVarV2('icon/primary'),
+        [borderColorVar]: cssVarV2('layer/border'),
+      },
+    },
+    '&[data-variant="plain"]': {
+      vars: {
+        [bgVar]: 'transparent',
+        [textVar]: cssVarV2('text/primary'),
+        [iconColorVar]: cssVarV2('icon/primary'),
+        [borderColorVar]: 'transparent',
+        [borderWidthVar]: '0px',
+      },
+    },
+    '&[data-variant="error"]': {
+      vars: {
+        [bgVar]: cssVarV2('button/error'),
+        [textVar]: cssVarV2('button/pureWhiteText'),
+        [iconColorVar]: cssVarV2('button/pureWhiteText'),
+        [borderColorVar]: cssVarV2('button/innerBlackBorder'),
+      },
+    },
+    '&[data-variant="success"]': {
+      vars: {
+        [bgVar]: cssVarV2('button/success'),
+        [textVar]: cssVarV2('button/pureWhiteText'),
+        [iconColorVar]: cssVarV2('button/pureWhiteText'),
+        [borderColorVar]: cssVarV2('button/innerBlackBorder'),
+      },
+    },
+
+    // disabled
+    '&[data-disabled]': {
+      cursor: 'not-allowed',
+      opacity: 0.5,
+    },
+
+    // default keyboard focus style
+    '&:focus-visible::after': {
+      content: '""',
       width: '100%',
-    },
-    '&.circle': {
-      borderRadius: '50%',
-    },
-    '&.round': {
-      borderRadius: '14px',
-    },
-    // size
-    '&.large': {
-      height: '32px',
-      fontSize: cssVar('fontBase'),
-      fontWeight: 600,
-    },
-    '&.round.large': {
-      borderRadius: '16px',
-    },
-    '&.extraLarge': {
-      height: '40px',
-      fontSize: cssVar('fontBase'),
-      fontWeight: 700,
-    },
-    '&.extraLarge.primary': {
-      boxShadow: `${cssVar('largeButtonEffect')} !important`,
-    },
-    '&.round.extraLarge': {
-      borderRadius: '20px',
-    },
-    // type
-    '&.plain': {
-      color: cssVar('textPrimaryColor'),
-      borderColor: 'transparent',
-      background: 'transparent',
-    },
-    '&.primary': {
-      color: cssVar('pureWhite'),
-      background: cssVar('primaryColor'),
-      borderColor: cssVar('black10'),
-    },
-    '&.primary:not(.without-hover):hover': {
-      background: `linear-gradient(0deg, rgba(0, 0, 0, 0.04) 0%, rgba(0, 0, 0, 0.04) 100%), ${cssVar(
-        'primaryColor'
-      )}`,
-    },
-    '&.primary.disabled': {
-      opacity: '.4',
-      cursor: 'default',
-    },
-    '&.primary.disabled:not(.without-hover):hover': {
-      background: cssVar('primaryColor'),
-    },
-    '&.error': {
-      color: cssVar('pureWhite'),
-      background: cssVar('errorColor'),
-      borderColor: cssVar('black10'),
-    },
-    '&.error:not(.without-hover):hover': {
-      background: `linear-gradient(0deg, rgba(0, 0, 0, 0.04) 0%, rgba(0, 0, 0, 0.04) 100%), ${cssVar(
-        'errorColor'
-      )}`,
-    },
-    '&.error.disabled': {
-      opacity: '.4',
-      cursor: 'default',
-    },
-    '&.error.disabled:not(.without-hover):hover': {
-      background: cssVar('errorColor'),
-    },
-    '&.warning': {
-      color: cssVar('pureWhite'),
-      background: cssVar('warningColor'),
-      borderColor: cssVar('black10'),
-    },
-    '&.warning:not(.without-hover):hover': {
-      background: `linear-gradient(0deg, rgba(0, 0, 0, 0.04) 0%, rgba(0, 0, 0, 0.04) 100%), ${cssVar(
-        'warningColor'
-      )}`,
-    },
-    '&.warning.disabled': {
-      opacity: '.4',
-      cursor: 'default',
-    },
-    '&.warning.disabled:not(.without-hover):hover': {
-      background: cssVar('warningColor'),
-    },
-    '&.success': {
-      color: cssVar('pureWhite'),
-      background: cssVar('successColor'),
-      borderColor: cssVar('black10'),
-    },
-    '&.success:not(.without-hover):hover': {
-      background: `linear-gradient(0deg, rgba(0, 0, 0, 0.04) 0%, rgba(0, 0, 0, 0.04) 100%), ${cssVar(
-        'successColor'
-      )}`,
-    },
-    '&.success.disabled': {
-      opacity: '.4',
-      cursor: 'default',
-    },
-    '&.success.disabled:not(.without-hover):hover': {
-      background: cssVar('successColor'),
-    },
-    '&.processing': {
-      color: cssVar('pureWhite'),
-      background: cssVar('processingColor'),
-      borderColor: cssVar('black10'),
-    },
-    '&.processing:not(.without-hover):hover': {
-      background: `linear-gradient(0deg, rgba(0, 0, 0, 0.04) 0%, rgba(0, 0, 0, 0.04) 100%), ${cssVar(
-        'processingColor'
-      )}`,
-    },
-    '&.processing.disabled': {
-      opacity: '.4',
-      cursor: 'default',
-    },
-    '&.processing.disabled:not(.without-hover):hover': {
-      background: cssVar('processingColor'),
-    },
-    '&.danger:hover': {
-      color: cssVar('errorColor'),
-      background: cssVar('backgroundErrorColor'),
+      height: '100%',
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      borderRadius: 'inherit',
+      boxShadow: `0 0 0 1px ${cssVarV2('layer/insideBorder/primary')}`,
     },
   },
 });
-globalStyle(`${button} > span`, {
-  // flex: 1,
-  lineHeight: 1,
-  padding: '0 4px',
+export const content = style({
+  // in case that width is specified by parent and text is too long
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
+  overflow: 'hidden',
 });
-export const buttonIcon = style({
+
+export const icon = style({
   flexShrink: 0,
-  display: 'inline-flex',
-  justifyContent: 'center',
-  alignItems: 'center',
-  color: cssVar('iconColor'),
-  fontSize: '16px',
-  width: '16px',
-  height: '16px',
-  selectors: {
-    '&.start': {
-      marginRight: '4px',
-    },
-    '&.end': {
-      marginLeft: '4px',
-    },
-    '&.large': {
-      fontSize: '20px',
-      width: '20px',
-      height: '20px',
-    },
-    '&.extraLarge': {
-      fontSize: '20px',
-      width: '20px',
-      height: '20px',
-    },
-    '&.color-white': {
-      color: cssVar('pureWhite'),
-    },
-  },
+  // There are two kinds of icon size:
+  // 1. control by props: width and height
+  width: iconSizeVar,
+  height: iconSizeVar,
+  // 2. width/height is set to `1em`
+  fontSize: iconSizeVar,
+  color: iconColorVar,
 });
+globalStyle(`${icon} > svg`, {
+  width: '100%',
+  height: '100%',
+  display: 'block',
+});
+
 export const iconButton = style({
-  display: 'inline-flex',
-  justifyContent: 'center',
-  alignItems: 'center',
-  userSelect: 'none',
-  touchAction: 'manipulation',
-  outline: '0',
-  border: '1px solid',
-  borderRadius: '4px',
-  transition: 'all .3s',
-  ['WebkitAppRegion' as string]: 'no-drag',
-  cursor: 'pointer',
-  background: cssVar('white'),
-  // changeable
-  width: '24px',
-  height: '24px',
-  fontSize: '20px',
-  color: cssVar('textPrimaryColor'),
-  borderColor: cssVar('borderColor'),
+  vars: {
+    [paddingVar]: '2px',
+    // TODO(@CatsJuice): Replace with theme variables when ready
+    '--shadow':
+      '0px 0px 1px 0px rgba(0, 0, 0, 0.12), 0px 1px 5px 0px rgba(0, 0, 0, 0.12)',
+  },
+  borderRadius: 4,
   selectors: {
-    '&.without-padding': {
-      margin: '-2px',
-    },
-    '&.active': {
-      color: cssVar('primaryColor'),
-    },
-    '&:not(.without-hover):hover': {
-      background: cssVar('hoverColor'),
-    },
-    '&.disabled': {
-      opacity: '.4',
-      cursor: 'default',
-      color: cssVar('textDisableColor'),
-      pointerEvents: 'none',
-    },
-    '&.loading': {
-      cursor: 'default',
-      color: cssVar('textDisableColor'),
-      pointerEvents: 'none',
-    },
-    '&.disabled:not(.without-hover):hover, &.loading:not(.without-hover):hover':
-      {
-        background: 'inherit',
+    '[data-theme="dark"] &': {
+      vars: {
+        '--shadow':
+          '0px 0px 1px 0px rgba(0, 0, 0, 0.66), 0px 1px 5px 0px rgba(0, 0, 0, 0.72)',
       },
-    // size
-    '&.large': {
-      width: '32px',
-      height: '32px',
-      fontSize: '24px',
     },
-    '&.large.without-padding': {
-      margin: '-4px',
+    '&[data-icon-variant="plain"]': {
+      vars: {
+        [bgVar]: 'transparent',
+        [iconColorVar]: cssVarV2('icon/primary'),
+        [borderColorVar]: 'transparent',
+        [borderWidthVar]: '0px',
+      },
     },
-    '&.small': {
-      width: '20px',
-      height: '20px',
-      fontSize: '16px',
+    '&[data-icon-variant="danger"]': {
+      vars: {
+        [bgVar]: 'transparent',
+        [iconColorVar]: cssVarV2('icon/primary'),
+        [borderColorVar]: 'transparent',
+        [borderWidthVar]: '0px',
+      },
     },
-    '&.extra-small': {
-      width: '16px',
-      height: '16px',
-      fontSize: '12px',
+    '&[data-icon-variant="danger"]:hover': {
+      vars: {
+        [bgVar]: cssVar('backgroundErrorColor'),
+        [iconColorVar]: cssVar('errorColor'),
+      },
     },
-    // type
-    '&.plain': {
-      color: cssVar('iconColor'),
-      borderColor: 'transparent',
-      background: 'transparent',
+    // disable hover layer for danger type
+    '&[data-icon-variant="danger"]:hover:before': {
+      opacity: 0,
     },
-    '&.plain.active': {
-      color: cssVar('primaryColor'),
+    '&[data-icon-variant="solid"]': {
+      vars: {
+        [bgVar]: cssVarV2('button/iconButtonSolid'),
+        [iconColorVar]: cssVarV2('icon/primary'),
+        [borderColorVar]: 'transparent',
+        [shadowVar]: 'var(--shadow)',
+      },
     },
-    '&.primary': {
-      color: cssVar('white'),
-      background: cssVar('primaryColor'),
-      borderColor: cssVar('black10'),
-    },
-    '&.primary:not(.without-hover):hover': {
-      background: `linear-gradient(0deg, rgba(0, 0, 0, 0.04) 0%, rgba(0, 0, 0, 0.04) 100%), ${cssVar(
-        'primaryColor'
-      )}`,
-    },
-    '&.primary.disabled': {
-      opacity: '.4',
-      cursor: 'default',
-    },
-    '&.primary.disabled:not(.without-hover):hover': {
-      background: cssVar('primaryColor'),
-    },
-    '&.error': {
-      color: cssVar('white'),
-      background: cssVar('errorColor'),
-      borderColor: cssVar('black10'),
-    },
-    '&.error:not(.without-hover):hover': {
-      background: `linear-gradient(0deg, rgba(0, 0, 0, 0.04) 0%, rgba(0, 0, 0, 0.04) 100%), ${cssVar(
-        'errorColor'
-      )}`,
-    },
-    '&.error.disabled': {
-      opacity: '.4',
-      cursor: 'default',
-    },
-    '&.error.disabled:not(.without-hover):hover': {
-      background: cssVar('errorColor'),
-    },
-    '&.warning': {
-      color: cssVar('white'),
-      background: cssVar('warningColor'),
-      borderColor: cssVar('black10'),
-    },
-    '&.warning:not(.without-hover):hover': {
-      background: `linear-gradient(0deg, rgba(0, 0, 0, 0.04) 0%, rgba(0, 0, 0, 0.04) 100%), ${cssVar(
-        'warningColor'
-      )}`,
-    },
-    '&.warning.disabled': {
-      opacity: '.4',
-      cursor: 'default',
-    },
-    '&.warning.disabled:not(.without-hover):hover': {
-      background: cssVar('warningColor'),
-    },
-    '&.success': {
-      color: cssVar('white'),
-      background: cssVar('successColor'),
-      borderColor: cssVar('black10'),
-    },
-    '&.success:not(.without-hover):hover': {
-      background: `linear-gradient(0deg, rgba(0, 0, 0, 0.04) 0%, rgba(0, 0, 0, 0.04) 100%), ${cssVar(
-        'successColor'
-      )}`,
-    },
-    '&.success.disabled': {
-      opacity: '.4',
-      cursor: 'default',
-    },
-    '&.success.disabled:not(.without-hover):hover': {
-      background: cssVar('successColor'),
-    },
-    '&.processing': {
-      color: cssVar('white'),
-      background: cssVar('processingColor'),
-      borderColor: cssVar('black10'),
-    },
-    '&.processing:not(.without-hover):hover': {
-      background: `linear-gradient(0deg, rgba(0, 0, 0, 0.04) 0%, rgba(0, 0, 0, 0.04) 100%), ${cssVar(
-        'processingColor'
-      )}`,
-    },
-    '&.processing.disabled': {
-      opacity: '.4',
-      cursor: 'default',
-    },
-    '&.processing.disabled:not(.without-hover):hover': {
-      background: cssVar('processingColor'),
-    },
-    '&.danger:hover': {
-      color: cssVar('errorColor'),
-      background: cssVar('backgroundErrorColor'),
+
+    '&[data-icon-size="24"]': {
+      vars: { [paddingVar]: '4px' },
     },
   },
 });

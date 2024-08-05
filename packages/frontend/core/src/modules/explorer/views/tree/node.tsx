@@ -344,8 +344,7 @@ export const ExplorerTreeNode = ({
             ))}
           >
             <IconButton
-              size="small"
-              type="plain"
+              size="16"
               data-testid="explorer-tree-node-operation-button"
               style={{ marginLeft: 4 }}
             >

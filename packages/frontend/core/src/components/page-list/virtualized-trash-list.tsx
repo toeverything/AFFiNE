@@ -75,7 +75,7 @@ export const VirtualizedTrashList = () => {
       cancelText: t['Cancel'](),
       confirmText: t['com.affine.trashOperation.delete'](),
       confirmButtonOptions: {
-        type: 'error',
+        variant: 'error',
       },
       onConfirm: handleMultiDelete,
     });

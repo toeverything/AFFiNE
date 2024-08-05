@@ -61,7 +61,7 @@ export const useExplorerDocNodeOperations = (
       confirmText: t['com.affine.moveToTrash.confirmModal.confirm'](),
       cancelText: t['com.affine.moveToTrash.confirmModal.cancel'](),
       confirmButtonOptions: {
-        type: 'error',
+        variant: 'error',
       },
       onConfirm() {
         docRecord.moveToTrash();
