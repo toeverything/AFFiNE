@@ -125,6 +125,7 @@ export type AddTabOption = {
    * Whether to show the tab after adding.
    */
   show?: boolean;
+  pinned?: boolean;
 };
 
 export class WebContentViewsManager {
@@ -328,11 +329,6 @@ export class WebContentViewsManager {
       return;
     }
     const targetWorkbench = this.tabViewsMeta.workbenches[index];
-
-    if (targetWorkbench.pinned) {
-      return;
-    }
-
     const workbenches = this.tabViewsMeta.workbenches.toSpliced(index, 1);
     // if the active view is closed, switch to the next view (index unchanged)
     // if the new index is out of bound, switch to the last view
@@ -398,6 +394,7 @@ export class WebContentViewsManager {
           }
         : undefined,
     };
+    option.pinned ??= false;
 
     const workbenches = this.tabViewsMeta.workbenches;
     const newKey = this.generateViewId('app');
@@ -422,7 +419,7 @@ export class WebContentViewsManager {
       activeViewIndex: 0,
       views: views,
       id: newKey,
-      pinned: targetItem?.pinned ?? false,
+      pinned: option.pinned,
     };
 
     this.patchTabViewsMeta({

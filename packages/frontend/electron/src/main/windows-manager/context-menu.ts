@@ -10,7 +10,6 @@ import {
 
 export const showTabContextMenu = async (tabId: string, viewIndex: number) => {
   const workbenches = WebContentViewsManager.instance.tabViewsMeta.workbenches;
-  const unpinned = workbenches.filter(w => !w.pinned);
   const tabMeta = workbenches.find(w => w.id === tabId);
   if (!tabMeta) {
     return;
@@ -63,7 +62,7 @@ export const showTabContextMenu = async (tabId: string, viewIndex: number) => {
           },
         },
 
-    ...(unpinned.length > 0
+    ...(workbenches.length > 0
       ? ([
           { type: 'separator' },
           {
