@@ -418,7 +418,15 @@ jobs:
               sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
               xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- yarn workspace @affine-test/affine-desktop-cloud e2e
           - name: 'Server Copilot E2E Test'
-            script: yarn workspace @affine-test/affine-cloud e2e --forbid-only
+            script: yarn workspace @affine-test/affine-cloud e2e --forbid-only --shard=1/3
+            openaiKey: COPILOT_OPENAI_API_KEY
+            falKey: COPILOT_FAL_API_KEY
+          - name: 'Server Copilot E2E Test'
+            script: yarn workspace @affine-test/affine-cloud e2e --forbid-only --shard=2/3
+            openaiKey: COPILOT_OPENAI_API_KEY
+            falKey: COPILOT_FAL_API_KEY
+          - name: 'Server Copilot E2E Test'
+            script: yarn workspace @affine-test/affine-cloud e2e --forbid-only --shard=3/3
             openaiKey: COPILOT_OPENAI_API_KEY
             falKey: COPILOT_FAL_API_KEY
     needs:
