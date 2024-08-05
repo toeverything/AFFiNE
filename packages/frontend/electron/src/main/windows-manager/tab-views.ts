@@ -1068,6 +1068,7 @@ export const showTabContextMenu = async (tabId: string, viewIndex: number) => {
 
               WebContentViewsManager.instance.patchTabViewsMeta({
                 workbenches: tabsToRetain,
+                activeWorkbenchId: tabId,
               });
             },
           },
