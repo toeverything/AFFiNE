@@ -428,7 +428,8 @@ test.describe('chat with block', () => {
           .then(b => b.click());
       });
 
-      test('generate an image', async ({ page }) => {
+      // skip by default, dalle is very slow
+      test.skip('generate an image', async ({ page }) => {
         await page
           .waitForSelector('.ai-item-generate-an-image')
           .then(i => i.click());
