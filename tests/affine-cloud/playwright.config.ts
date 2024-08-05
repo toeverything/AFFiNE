@@ -6,7 +6,6 @@ import type {
 
 const config: PlaywrightTestConfig = {
   testDir: './e2e',
-  testMatch: '**/copilot.spec.ts',
   fullyParallel: !process.env.CI,
   timeout: 120_000,
   outputDir: testResultDir,

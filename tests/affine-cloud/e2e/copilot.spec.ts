@@ -14,6 +14,11 @@ import { clickSideBarAllPageButton } from '@affine-test/kit/utils/sidebar';
 import { createLocalWorkspace } from '@affine-test/kit/utils/workspace';
 import { expect, type Page } from '@playwright/test';
 
+test.skip(
+  () => !process.env.COPILOT_OPENAI_API_KEY || !process.env.COPILOT_FAL_API_KEY,
+  'skip test if no copilot api key'
+);
+
 test('can open chat side panel', async ({ page }) => {
   await openHomePage(page);
   await waitForEditorLoad(page);
