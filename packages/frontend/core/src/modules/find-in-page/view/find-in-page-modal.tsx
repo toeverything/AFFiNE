@@ -10,7 +10,10 @@ import { useLiveData, useService } from '@toeverything/infra';
 import { assignInlineVars } from '@vanilla-extract/dynamic';
 import clsx from 'clsx';
 import {
+  type ChangeEventHandler,
+  type CompositionEventHandler,
   type KeyboardEventHandler,
+  type SetStateAction,
   useCallback,
   useEffect,
   useRef,
@@ -23,7 +26,11 @@ import * as styles from './find-in-page-modal.css';
 
 const animationTimeout = 120;
 
-const drawText = (canvas: HTMLCanvasElement, text: string) => {
+const drawText = (
+  canvas: HTMLCanvasElement,
+  text: string,
+  scrollLeft: number
+) => {
   const ctx = canvas.getContext('2d');
   if (!ctx) {
     return;
@@ -43,16 +50,21 @@ const drawText = (canvas: HTMLCanvasElement, text: string) => {
   ctx.fillStyle = textColor;
   ctx.font = '15px Inter';
 
-  ctx.fillText(text, 0, 22);
+  const offsetX = -scrollLeft; // Offset based on scrollLeft
+
+  ctx.fillText(text, offsetX, 22);
+
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
 };
 
 const CanvasText = ({
   text,
+  scrollLeft,
   className,
 }: {
   text: string;
+  scrollLeft: number;
   className: string;
 }) => {
   const ref = useRef<HTMLCanvasElement>(null);
@@ -62,9 +74,9 @@ const CanvasText = ({
     if (!canvas) {
       return;
     }
-    drawText(canvas, text);
-    return observeResize(canvas, () => drawText(canvas, text));
-  }, [text]);
+    drawText(canvas, text, scrollLeft);
+    return observeResize(canvas, () => drawText(canvas, text, scrollLeft));
+  }, [text, scrollLeft]);
 
   return <canvas className={className} ref={ref} />;
 };
@@ -79,6 +91,8 @@ export const FindInPageModal = () => {
 
   const inputRef = useRef<HTMLInputElement>(null);
   const [active, setActive] = useState(false);
+  const [scrollLeft, setScrollLeft] = useState(0);
+  const [composing, setComposing] = useState(false);
 
   const [{ status }, toggle] = useTransition({
     timeout: animationTimeout,
@@ -88,16 +102,19 @@ export const FindInPageModal = () => {
     toggle(visible);
   }, [visible]);
 
-  const handleValueChange = useCallback(
-    (v: string) => {
-      setValue(v);
-      findInPage.findInPage(v);
-      if (v.length === 0) {
+  const handleValueChange: ChangeEventHandler<HTMLInputElement> = useCallback(
+    e => {
+      const value = e.target.value;
+      setValue(value);
+      if (!composing) {
+        findInPage.findInPage(value);
+      }
+      if (value.length === 0) {
         findInPage.clear();
       }
       inputRef.current?.focus();
     },
-    [findInPage]
+    [composing, findInPage]
   );
 
   const handleFocus = useCallback(() => {
@@ -170,8 +187,29 @@ export const FindInPageModal = () => {
     [handleBackWard, handleForward]
   );
 
+  const handleScroll = useCallback(
+    (e: { currentTarget: { scrollLeft: SetStateAction<number> } }) => {
+      setScrollLeft(e.currentTarget.scrollLeft);
+    },
+    []
+  );
+
+  const handleCompositionStart: CompositionEventHandler<HTMLInputElement> =
+    useCallback(() => {
+      setComposing(true);
+    }, []);
+
+  const handleCompositionEnd: CompositionEventHandler<HTMLInputElement> =
+    useCallback(
+      e => {
+        setComposing(false);
+        findInPage.findInPage(e.currentTarget.value);
+      },
+      [findInPage]
+    );
+
   return (
-    <Dialog.Root modal open={status !== 'exited'}>
+    <Dialog.Root open={status !== 'exited'}>
       <Dialog.Portal>
         <Dialog.Overlay className={styles.modalOverlay} />
         <div className={styles.modalContentWrapper}>
@@ -201,9 +239,16 @@ export const FindInPageModal = () => {
                   onFocus={handleFocus}
                   className={styles.input}
                   onKeyDown={handleKeydown}
-                  onChange={e => handleValueChange(e.target.value)}
+                  onChange={handleValueChange}
+                  onScroll={handleScroll}
+                  onCompositionStart={handleCompositionStart}
+                  onCompositionEnd={handleCompositionEnd}
                 />
-                <CanvasText className={styles.inputHack} text={value} />
+                <CanvasText
+                  className={styles.inputHack}
+                  text={value}
+                  scrollLeft={scrollLeft}
+                />
               </div>
               <div className={styles.count}>
                 {value.length > 0 && result && result.matches !== 0 ? (
