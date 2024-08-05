@@ -31,6 +31,8 @@ export class Workbench extends Entity {
       return this.framework.createEntity(View, {
         id: meta.id,
         defaultLocation: meta.path,
+        icon: meta.icon,
+        title: meta.title,
       });
     })
   );
