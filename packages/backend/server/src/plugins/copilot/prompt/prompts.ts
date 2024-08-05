@@ -279,18 +279,6 @@ const workflows: Prompt[] = [
 
 const actions: Prompt[] = [
   {
-    name: 'debug:action:gpt4',
-    action: 'text',
-    model: 'gpt-4o',
-    messages: [],
-  },
-  {
-    name: 'debug:action:vision4',
-    action: 'text',
-    model: 'gpt-4o',
-    messages: [],
-  },
-  {
     name: 'debug:action:dalle3',
     action: 'image',
     model: 'dall-e-3',
@@ -300,12 +288,6 @@ const actions: Prompt[] = [
     name: 'debug:action:fal-sd15',
     action: 'image',
     model: 'lcm-sd15-i2i',
-    messages: [],
-  },
-  {
-    name: 'debug:action:fal-sdturbo',
-    action: 'image',
-    model: 'fast-turbo-diffusion',
     messages: [],
   },
   {
@@ -332,14 +314,14 @@ const actions: Prompt[] = [
     messages: [],
   },
   {
-    name: 'debug:action:fal-summary-caption',
+    name: 'Generate a caption',
     action: 'Generate a caption',
-    model: 'llava-next',
+    model: 'gpt-4o-mini',
     messages: [
       {
         role: 'user',
         content:
-          'Please understand this image and generate a short caption. Limit it to 20 words. {{content}}',
+          'Please understand this image and generate a short caption that can summarize the content of the image. Limit it to up 20 words. {{content}}',
       },
     ],
   },
@@ -393,7 +375,7 @@ content: {{content}}`,
   {
     name: 'Explain this image',
     action: 'Explain this image',
-    model: 'gpt-4-vision-preview',
+    model: 'gpt-4o',
     messages: [
       {
         role: 'user',
@@ -692,7 +674,7 @@ content: {{content}}`,
   {
     name: 'Make it real',
     action: 'Make it real',
-    model: 'gpt-4-vision-preview',
+    model: 'gpt-4o',
     messages: [
       {
         role: 'user',
@@ -731,7 +713,7 @@ content: {{content}}`,
   {
     name: 'Make it real with text',
     action: 'Make it real with text',
-    model: 'gpt-4-vision-preview',
+    model: 'gpt-4o',
     messages: [
       {
         role: 'user',

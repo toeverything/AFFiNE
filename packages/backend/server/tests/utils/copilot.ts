@@ -91,7 +91,7 @@ export class MockCopilotTestProvider
 
   override async *generateTextStream(
     messages: PromptMessage[],
-    model: string = 'gpt-3.5-turbo',
+    model: string = 'gpt-4o-mini',
     options: CopilotChatOptions = {}
   ): AsyncIterable<string> {
     this.checkParams({ messages, model, options });

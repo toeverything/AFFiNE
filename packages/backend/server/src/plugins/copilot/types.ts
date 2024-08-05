@@ -8,9 +8,7 @@ import type { ChatPrompt } from './prompt';
 export enum AvailableModels {
   // text to text
   Gpt4Omni = 'gpt-4o',
-  Gpt4VisionPreview = 'gpt-4-vision-preview',
-  Gpt4TurboPreview = 'gpt-4-turbo-preview',
-  Gpt35Turbo = 'gpt-3.5-turbo',
+  Gpt4OmniMini = 'gpt-4o-mini',
   // embeddings
   TextEmbedding3Large = 'text-embedding-3-large',
   TextEmbedding3Small = 'text-embedding-3-small',
@@ -34,7 +32,8 @@ export function getTokenEncoder(model?: string | null): Tokenizer | null {
     // dalle don't need to calc the token
     return null;
   } else {
-    return fromModelName('gpt-4-turbo-preview');
+    // c100k based model
+    return fromModelName('gpt-4');
   }
 }
 

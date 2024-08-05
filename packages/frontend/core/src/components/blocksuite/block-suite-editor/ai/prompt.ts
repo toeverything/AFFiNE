@@ -2,16 +2,14 @@
 // TODO(@Peng): automate this
 export const promptKeys = [
   'debug:chat:gpt4',
-  'debug:action:gpt4',
-  'debug:action:vision4',
   'debug:action:dalle3',
   'debug:action:fal-sd15',
   'debug:action:fal-upscaler',
   'debug:action:fal-remove-bg',
   'debug:action:fal-face-to-sticker',
-  'debug:action:fal-summary-caption',
   'chat:gpt4',
   'Summary',
+  'Generate a caption',
   'Summary the webpage',
   'Explain this',
   'Explain this image',

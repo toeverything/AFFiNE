@@ -382,7 +382,7 @@ Could you make a new website based on these notes and send back just the html fi
     return textToText({
       ...options,
       content: options.input,
-      promptName: 'debug:action:fal-summary-caption',
+      promptName: 'Generate a caption',
     });
   });
 

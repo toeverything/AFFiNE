@@ -52,9 +52,7 @@ type CopilotMessageNotFoundDataType {
 enum CopilotModels {
   DallE3
   Gpt4Omni
-  Gpt4TurboPreview
-  Gpt4VisionPreview
-  Gpt35Turbo
+  Gpt4OmniMini
   TextEmbedding3Large
   TextEmbedding3Small
   TextEmbeddingAda002

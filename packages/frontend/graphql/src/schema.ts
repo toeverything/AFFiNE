@@ -95,9 +95,7 @@ export interface CopilotMessageNotFoundDataType {
 export enum CopilotModels {
   DallE3 = 'DallE3',
   Gpt4Omni = 'Gpt4Omni',
-  Gpt4TurboPreview = 'Gpt4TurboPreview',
-  Gpt4VisionPreview = 'Gpt4VisionPreview',
-  Gpt35Turbo = 'Gpt35Turbo',
+  Gpt4OmniMini = 'Gpt4OmniMini',
   TextEmbedding3Large = 'TextEmbedding3Large',
   TextEmbedding3Small = 'TextEmbedding3Small',
   TextEmbeddingAda002 = 'TextEmbeddingAda002',
