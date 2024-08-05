@@ -57,6 +57,6 @@ export const bm25 = (
     invDocFreq *
     (d +
       (termFreq * (k + 1)) /
-        (termFreq + k * (1 - b + (b * fieldLength) / avgFieldLength)))
+        (termFreq + k * (1 - b + b * (fieldLength / avgFieldLength))))
   );
 };

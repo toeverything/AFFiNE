@@ -146,7 +146,7 @@ export class DocsSearchService extends Service {
                 },
                 {
                   type: 'boost',
-                  boost: 100,
+                  boost: 1.5,
                   query: {
                     type: 'match',
                     field: 'flavour',
