@@ -571,6 +571,7 @@ export class ChatSessionService {
 
     const forkedState = {
       ...state,
+      userId: options.userId,
       sessionId: randomUUID(),
       messages: [],
       parentSessionId: options.sessionId,

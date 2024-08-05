@@ -273,7 +273,7 @@ test('should be able to manage chat session', async t => {
 });
 
 test('should be able to fork chat session', async t => {
-  const { prompt, session } = t.context;
+  const { auth, prompt, session } = t.context;
 
   await prompt.set('prompt', 'model', [
     { role: 'system', content: 'hello {{word}}' },
@@ -305,8 +305,10 @@ test('should be able to fork chat session', async t => {
     ...commonParams,
   });
   t.not(sessionId, forkedSessionId1, 'should fork a new session');
+
+  const newUser = await auth.signUp('test', 'darksky.1@affine.pro', '123456');
   const forkedSessionId2 = await session.fork({
-    userId,
+    userId: newUser.id,
     sessionId,
     latestMessageId,
     ...commonParams,
@@ -335,9 +337,12 @@ test('should be able to fork chat session', async t => {
     );
   }
 
-  // check second times forked session messages
+  // check second times forked session
   {
     const s2 = (await session.get(forkedSessionId2))!;
+
+    // should overwrite user id
+    t.is(s2.config.userId, newUser.id, 'should have same user id');
 
     const finalMessages = s2
       .finish(params) // @ts-expect-error
