@@ -43,6 +43,9 @@ export interface ButtonProps
    */
   loading?: boolean;
 
+  /** No hover state */
+  withoutHover?: boolean;
+
   /**
    * By default, it is considered as an icon with preset size and color,
    * can be overridden by `prefixClassName` and `prefixStyle`.
@@ -103,6 +106,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       block,
       loading,
       className,
+      withoutHover,
 
       prefix,
       prefixClassName,
@@ -142,6 +146,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           data-disabled={disabled || undefined}
           data-size={size}
           data-variant={variant}
+          data-no-hover={withoutHover || undefined}
           onClick={handleClick}
         >
           <IconSlot

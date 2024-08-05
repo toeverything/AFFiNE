@@ -7,7 +7,7 @@ import { LiveData, Service } from '@toeverything/infra';
 import { defaultsDeep } from 'lodash-es';
 import { Observable } from 'rxjs';
 
-import type { FavoriteService } from '../../favorite';
+import type { FavoriteService, FavoriteSupportType } from '../../favorite';
 import {
   PagePropertyType,
   PageSystemPropertyId,
@@ -305,6 +305,10 @@ export class FavoriteItemsAdapter extends Service {
   }
 }
 
+type CompatibleFavoriteSupportType =
+  | WorkspaceFavoriteItem['type']
+  | FavoriteSupportType;
+
 /**
  * A service written for compatibility,with the same API as FavoriteItemsAdapter.
  * When `runtimeConfig.enableNewFavorite` is false, it operates FavoriteItemsAdapter,
@@ -318,24 +322,29 @@ export class CompatibleFavoriteItemsAdapter extends Service {
     super();
   }
 
-  toggle(id: string, type: WorkspaceFavoriteItem['type']) {
-    if (runtimeConfig.enableNewFavorite) {
+  // old adapter only supports doc and collection
+  private isNewType(type: CompatibleFavoriteSupportType) {
+    return type !== 'doc' && type !== 'collection';
+  }
+
+  toggle(id: string, type: CompatibleFavoriteSupportType) {
+    if (runtimeConfig.enableNewFavorite || this.isNewType(type)) {
       this.favoriteService.favoriteList.toggle(type, id);
     } else {
       this.favoriteItemsAdapter.toggle(id, type);
     }
   }
 
-  isFavorite$(id: string, type: WorkspaceFavoriteItem['type']) {
-    if (runtimeConfig.enableNewFavorite) {
+  isFavorite$(id: string, type: CompatibleFavoriteSupportType) {
+    if (runtimeConfig.enableNewFavorite || this.isNewType(type)) {
       return this.favoriteService.favoriteList.isFavorite$(type, id);
     } else {
       return this.favoriteItemsAdapter.isFavorite$(id, type);
     }
   }
 
-  isFavorite(id: string, type: WorkspaceFavoriteItem['type']) {
-    if (runtimeConfig.enableNewFavorite) {
+  isFavorite(id: string, type: CompatibleFavoriteSupportType) {
+    if (runtimeConfig.enableNewFavorite || this.isNewType(type)) {
       return this.favoriteService.favoriteList.isFavorite$(type, id).value;
     } else {
       return this.favoriteItemsAdapter.isFavorite(id, type);

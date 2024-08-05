@@ -19,6 +19,7 @@ import {
   type FolderNode,
   OrganizeService,
 } from '@affine/core/modules/organize';
+import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/properties';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import type { AffineDNDData } from '@affine/core/types/dnd';
 import { Unreachable } from '@affine/env/constant';
@@ -43,6 +44,7 @@ import { ExplorerDocNode } from '../doc';
 import { ExplorerTagNode } from '../tag';
 import type { GenericExplorerNode } from '../types';
 import { FolderEmpty } from './empty';
+import { FavoriteFolderOperation } from './operations';
 
 export const ExplorerFolderNode = ({
   nodeId,
@@ -164,6 +166,7 @@ export const ExplorerFolderNodeFolder = ({
   const { docsService, workbenchService } = useServices({
     DocsService,
     WorkbenchService,
+    CompatibleFavoriteItemsAdapter,
   });
   const openDocsSelector = useSelectDoc();
   const openTagsSelector = useSelectTag();
@@ -710,6 +713,17 @@ export const ExplorerFolderNodeFolder = ({
           </MenuSub>
         ),
       },
+
+      // favorite, only new favorite available
+      ...(runtimeConfig.enableNewFavorite && node.id
+        ? [
+            {
+              index: 200,
+              view: <FavoriteFolderOperation id={node.id} />,
+            },
+          ]
+        : []),
+
       {
         index: 9999,
         view: <MenuSeparator key="menu-separator" />,
@@ -731,7 +745,14 @@ export const ExplorerFolderNodeFolder = ({
         ),
       },
     ];
-  }, [handleAddToFolder, handleCreateSubfolder, handleDelete, handleNewDoc, t]);
+  }, [
+    handleAddToFolder,
+    handleCreateSubfolder,
+    handleDelete,
+    handleNewDoc,
+    node.id,
+    t,
+  ]);
 
   const finalOperations = useMemo(() => {
     if (additionalOperations) {

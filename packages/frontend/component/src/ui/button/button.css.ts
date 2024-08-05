@@ -79,6 +79,10 @@ export const button = style({
   lineHeight: lineHeightVar,
 
   selectors: {
+    // hover layer
+    '&[data-no-hover]:before, &[data-disabled]:before': {
+      display: 'none',
+    },
     '&:hover:before': { opacity: 1 },
     '&[data-block]': { display: 'flex' },
 
@@ -162,7 +166,6 @@ export const button = style({
 
     // disabled
     '&[data-disabled]': {
-      cursor: 'not-allowed',
       opacity: 0.5,
     },
 

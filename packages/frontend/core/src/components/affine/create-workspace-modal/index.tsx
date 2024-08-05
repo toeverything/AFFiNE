@@ -107,7 +107,8 @@ const NameWorkspaceContent = ({
       confirmText={t['com.affine.nameWorkspace.button.create']()}
       confirmButtonOptions={{
         variant: 'primary',
-        disabled: !workspaceName || loading,
+        loading,
+        disabled: !workspaceName,
         ['data-testid' as string]: 'create-workspace-create-button',
       }}
       closeButtonOptions={{

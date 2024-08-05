@@ -1,4 +1,5 @@
 import { cssVar } from '@toeverything/theme';
+import { cssVarV2 } from '@toeverything/theme/v2';
 import { style } from '@vanilla-extract/css';
 export const pageListEmptyStyle = style({
   height: 'calc(100% - 52px)',
@@ -23,3 +24,15 @@ export const emptyDescKbd = style([
     cursor: 'text',
   },
 ]);
+
+export const plusButton = style({
+  borderWidth: 1,
+  borderColor: cssVarV2('layer/border'),
+  boxShadow: 'none',
+  cursor: 'default',
+});
+export const descWrapper = style({
+  display: 'flex',
+  alignItems: 'center',
+  gap: 8,
+});

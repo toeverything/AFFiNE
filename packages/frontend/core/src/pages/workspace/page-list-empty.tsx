@@ -1,33 +1,30 @@
-import { Empty } from '@affine/component';
+import { Empty, IconButton } from '@affine/component';
 import { Trans, useI18n } from '@affine/i18n';
+import { PlusIcon } from '@blocksuite/icons/rc';
 import type { DocCollection } from '@blocksuite/store';
 import type { ReactNode } from 'react';
-import { useCallback } from 'react';
 
-import { usePageHelper } from '../../components/blocksuite/block-suite-page-list/utils';
 import * as styles from './page-list-empty.css';
 
 export const EmptyPageList = ({
   type,
-  docCollection,
   heading,
 }: {
   type: 'all' | 'trash' | 'shared' | 'public';
   docCollection: DocCollection;
   heading?: ReactNode;
 }) => {
-  const { createPage } = usePageHelper(docCollection);
   const t = useI18n();
-  const onCreatePage = useCallback(() => {
-    createPage?.();
-  }, [createPage]);
 
   const getEmptyDescription = () => {
     if (type === 'all') {
       const createNewPageButton = (
-        <button className={styles.emptyDescButton} onClick={onCreatePage}>
-          {t['New Page']()}
-        </button>
+        <IconButton
+          withoutHover
+          className={styles.plusButton}
+          variant="solid"
+          icon={<PlusIcon />}
+        />
       );
       if (environment.isDesktop) {
         const shortcut = environment.isMacOs ? '⌘ + N' : 'Ctrl + N';
@@ -61,7 +58,9 @@ export const EmptyPageList = ({
       {heading && <div>{heading}</div>}
       <Empty
         title={t['com.affine.emptyDesc']()}
-        description={getEmptyDescription()}
+        description={
+          <span className={styles.descWrapper}>{getEmptyDescription()}</span>
+        }
       />
     </div>
   );
