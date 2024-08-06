@@ -246,14 +246,16 @@ test('should be able to manage chat session', async t => {
 
   const s1 = (await session.get(sessionId))!;
   t.deepEqual(
-    // @ts-expect-error
-    s1.finish(params).map(({ id: _, createdAt: __, ...m }) => m),
+    s1
+      .finish(params)
+      // @ts-expect-error
+      .map(({ id: _, attachments: __, createdAt: ___, ...m }) => m),
     finalMessages,
     'should same as before message'
   );
   t.deepEqual(
     // @ts-expect-error
-    s1.finish({}).map(({ id: _, createdAt: __, ...m }) => m),
+    s1.finish({}).map(({ id: _, attachments: __, createdAt: ___, ...m }) => m),
     [
       { content: 'hello ', params: {}, role: 'system' },
       { content: 'hello', role: 'user' },
@@ -325,7 +327,7 @@ test('should be able to fork chat session', async t => {
 
     const finalMessages = s2
       .finish(params) // @ts-expect-error
-      .map(({ id: _, createdAt: __, ...m }) => m);
+      .map(({ id: _, attachments: __, createdAt: ___, ...m }) => m);
     t.deepEqual(
       finalMessages,
       [
@@ -346,7 +348,7 @@ test('should be able to fork chat session', async t => {
 
     const finalMessages = s2
       .finish(params) // @ts-expect-error
-      .map(({ id: _, createdAt: __, ...m }) => m);
+      .map(({ id: _, attachments: __, createdAt: ___, ...m }) => m);
     t.deepEqual(
       finalMessages,
       [
@@ -364,7 +366,7 @@ test('should be able to fork chat session', async t => {
 
     const finalMessages = s3
       .finish(params) // @ts-expect-error
-      .map(({ id: _, createdAt: __, ...m }) => m);
+      .map(({ id: _, attachments: __, createdAt: ___, ...m }) => m);
     t.deepEqual(
       finalMessages,
       [

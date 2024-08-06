@@ -18,7 +18,7 @@ import { reportResponse } from '../utils/action-reporter';
 import { readBlobAsURL } from '../utils/image';
 import type { ChatContextValue, ChatMessage } from './chat-context';
 
-const MaximumImageCount = 8;
+const MaximumImageCount = 32;
 
 function getFirstTwoLines(text: string) {
   const lines = text.split('\n');

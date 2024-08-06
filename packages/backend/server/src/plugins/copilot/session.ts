@@ -283,7 +283,13 @@ export class ChatSessionService {
           docId: true,
           parentSessionId: true,
           messages: {
-            select: { id: true, role: true, content: true, createdAt: true },
+            select: {
+              id: true,
+              role: true,
+              content: true,
+              attachments: true,
+              createdAt: true,
+            },
             orderBy: { createdAt: 'asc' },
           },
           promptName: true,

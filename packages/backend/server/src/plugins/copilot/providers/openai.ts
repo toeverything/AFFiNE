@@ -233,6 +233,7 @@ export class OpenAIProvider
     options: CopilotChatOptions = {}
   ): AsyncIterable<string> {
     this.checkParams({ messages, model, options });
+
     try {
       const result = await this.instance.chat.completions.create(
         {
