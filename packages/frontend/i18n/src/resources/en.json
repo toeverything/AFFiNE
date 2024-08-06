@@ -1241,7 +1241,7 @@
   "com.affine.settings.workspace.experimental-features.prompt-header": "Do you want to use the plugin system that is in an experimental stage?",
   "com.affine.settings.workspace.experimental-features.prompt-warning": "You are about to enable an experimental feature. This feature is still in development and may contain errors or behave unpredictably. Please proceed with caution and at your own risk.",
   "com.affine.settings.workspace.experimental-features.prompt-warning-title": "WARNING MESSAGE",
-  "com.affine.settings.workspace.not-owner": "Only an owner can edit the the Workspace avatar and name.Changes will be shown for everyone.",
+  "com.affine.settings.workspace.not-owner": "Only an owner can edit the Workspace avatar and name.Changes will be shown for everyone.",
   "com.affine.settings.workspace.preferences": "Preference",
   "com.affine.settings.workspace.properties": "Properties",
   "com.affine.settings.workspace.properties.add_property": "Add property",
