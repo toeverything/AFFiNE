@@ -2,6 +2,7 @@ import 'setimmediate';
 import '@affine/component/theme/global.css';
 import '@affine/component/theme/theme.css';
 import '@affine/core/bootstrap/preload';
+import './index.css';
 
 import { ThemeProvider } from '@affine/component/theme-provider';
 import { configureAppTabsHeaderModule } from '@affine/core/modules/app-tabs-header';
@@ -41,11 +42,15 @@ async function main() {
   const handleFullscreen = (fullscreen: boolean | undefined) => {
     document.documentElement.dataset.fullscreen = String(fullscreen);
   };
+  const handleActive = (active: boolean | undefined) => {
+    document.documentElement.dataset.active = String(active);
+  };
 
   apis?.ui.isMaximized().then(handleMaximized).catch(console.error);
   apis?.ui.isFullScreen().then(handleFullscreen).catch(console.error);
   events?.ui.onMaximized(handleMaximized);
   events?.ui.onFullScreen(handleFullscreen);
+  events?.ui.onTabShellViewActiveChange(handleActive);
 
   await loadLanguage();
   mountApp();

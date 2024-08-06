@@ -140,10 +140,8 @@ export const test = base.extend<{
       await use(electronApp);
       console.log('Cleaning up...');
       const pages = electronApp.windows();
-      for (let i = 0; i < pages.length; i++) {
-        const page = pages[i];
+      for (const page of pages) {
         await page.close();
-        console.log(`Closed page ${i + 1}/${pages.length}`);
       }
       await electronApp.close();
       await removeWithRetry(clonedDist);

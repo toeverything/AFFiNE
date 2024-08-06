@@ -1,4 +1,5 @@
 import { Menu } from '@affine/component/ui/menu';
+import { apis } from '@affine/electron-api';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import {
   useLiveData,
@@ -22,7 +23,6 @@ import {
 import { AppFallback } from '../components/affine/app-container';
 import { UserWithWorkspaceList } from '../components/pure/workspace-slider-bar/user-with-workspace-list';
 import { useNavigateHelper } from '../hooks/use-navigate-helper';
-import { AppTabsHeader } from '../modules/app-tabs-header';
 import { AuthService } from '../modules/cloud';
 import { WorkspaceSubPath } from '../shared';
 
@@ -119,6 +119,10 @@ export const Component = () => {
   ]);
 
   useEffect(() => {
+    apis?.ui.pingAppLayoutReady().catch(console.error);
+  }, []);
+
+  useEffect(() => {
     setCreating(true);
     createFirstAppData(workspacesService)
       .then(createdWorkspace => {
@@ -148,13 +152,6 @@ export const Component = () => {
   // TODO(@eyhn): We need a no workspace page
   return (
     <>
-      {environment.isDesktop ? (
-        <AppTabsHeader
-          style={{
-            paddingLeft: environment.isMacOs ? 80 : 0,
-          }}
-        />
-      ) : null}
       <div
         style={{
           position: 'fixed',

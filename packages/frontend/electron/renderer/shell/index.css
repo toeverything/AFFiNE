@@ -1,0 +1,16 @@
+html,
+html[data-active='false'] {
+  opacity: 0;
+}
+
+html[data-active='false'] {
+  transition: opacity 0.01s 0.2s;
+}
+
+html[data-active='false'] * {
+  -webkit-app-region: no-drag !important;
+}
+
+html[data-active='true'] {
+  opacity: 1;
+}

@@ -62,7 +62,7 @@ export const showTabContextMenu = async (tabId: string, viewIndex: number) => {
           },
         },
 
-    ...(workbenches.length > 0
+    ...(workbenches.length > 1
       ? ([
           { type: 'separator' },
           {

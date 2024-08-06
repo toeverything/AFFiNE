@@ -140,6 +140,10 @@ export class WebContentViewsManager {
   readonly tabViewsMeta$ = TabViewsMetaState.$;
   readonly appTabsUIReady$ = new BehaviorSubject(new Set<string>());
 
+  get appTabsUIReady() {
+    return this.appTabsUIReady$.value;
+  }
+
   // all web views
   readonly webViewsMap$ = new BehaviorSubject(
     new Map<string, WebContentsView>()
@@ -251,8 +255,12 @@ export class WebContentViewsManager {
   }
 
   setTabUIReady = (tabId: string) => {
-    this.appTabsUIReady$.next(new Set([...this.appTabsUIReady$.value, tabId]));
+    this.appTabsUIReady$.next(new Set([...this.appTabsUIReady, tabId]));
     this.reorderViews();
+    const view = this.tabViewsMap.get(tabId);
+    if (view) {
+      this.resizeView(view);
+    }
   };
 
   getViewIdFromWebContentsId = (id: number) => {
@@ -460,10 +468,6 @@ export class WebContentViewsManager {
 
   showTab = async (id: string): Promise<WebContentsView | undefined> => {
     if (this.activeWorkbenchId !== id) {
-      // todo: this will cause the shell view to be on top and flickers the screen
-      // this.appTabsUIReady$.next(
-      //   new Set([...this.appTabsUIReady$.value].filter(key => key !== id))
-      // );
       this.patchTabViewsMeta({
         activeWorkbenchId: id,
       });
@@ -601,26 +605,59 @@ export class WebContentViewsManager {
       // if tab ui of the current active view is not ready,
       // make sure shell view is on top
       const activeView = this.activeWorkbenchView;
-      const ready = this.activeWorkbenchId
-        ? this.appTabsUIReady$.value.has(this.activeWorkbenchId)
-        : false;
 
-      // inactive < active view (not ready) < shell < active view (ready)
-      const getScore = (view: View) => {
-        if (view === this.shellView) {
-          return 2;
-        }
-        if (view === activeView) {
-          return ready ? 3 : 1;
-        }
-        return 0;
+      const getViewId = (view: View) => {
+        return [...this.tabViewsMap.entries()].find(
+          ([_, v]) => v === view
+        )?.[0];
       };
 
-      [...this.tabViewsMap.values()]
-        .toSorted((a, b) => getScore(a) - getScore(b))
-        .forEach((view, index) => {
-          this.mainWindow?.contentView.addChildView(view, index);
-        });
+      const isViewReady = (view: View) => {
+        if (view === this.shellView) {
+          return true;
+        }
+        const id = getViewId(view);
+        return id ? this.appTabsUIReady.has(id) : false;
+      };
+
+      // 2: active view (ready)
+      // 1: shell
+      // 0: inactive view (ready)
+      // -1 inactive view (not ready)
+      // -1 active view (not ready)
+      const getScore = (view: View) => {
+        if (view === this.shellView) {
+          return 1;
+        }
+        const viewReady = isViewReady(view);
+        if (view === activeView) {
+          return viewReady ? 2 : -1;
+        } else {
+          return viewReady ? 0 : -1;
+        }
+      };
+
+      const sorted = [...this.tabViewsMap.entries()]
+        .map(([id, view]) => {
+          return {
+            id,
+            view,
+            score: getScore(view),
+          };
+        })
+        .filter(({ score }) => score >= 0)
+        .toSorted((a, b) => a.score - b.score);
+
+      // remove inactive views
+      this.mainWindow?.contentView.children.forEach(view => {
+        if (!isViewReady(view)) {
+          this.mainWindow?.contentView.removeChildView(view);
+        }
+      });
+
+      sorted.forEach(({ view }, idx) => {
+        this.mainWindow?.contentView.addChildView(view, idx);
+      });
     }
   };
 

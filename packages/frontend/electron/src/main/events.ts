@@ -19,6 +19,7 @@ function getActiveWindows() {
 }
 
 export function registerEvents() {
+  const unsubs: (() => void)[] = [];
   // register events
   for (const [namespace, namespaceEvents] of Object.entries(allEvents)) {
     for (const [key, eventRegister] of Object.entries(namespaceEvents)) {
@@ -52,14 +53,15 @@ export function registerEvents() {
           });
         });
       });
-      app.on('before-quit', () => {
-        // subscription on quit sometimes crashes the app
-        try {
-          unsubscribe();
-        } catch (err) {
-          logger.error('unsubscribe error', err);
-        }
-      });
+      unsubs.push(unsubscribe);
     }
   }
+  app.on('before-quit', () => {
+    // subscription on quit sometimes crashes the app
+    try {
+      unsubs.forEach(unsub => unsub());
+    } catch (err) {
+      logger.error('unsubscribe error', err);
+    }
+  });
 }

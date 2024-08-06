@@ -3,13 +3,13 @@ import {
   NotFoundPage,
 } from '@affine/component/not-found-page';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
+import { apis } from '@affine/electron-api';
 import { useLiveData, useService } from '@toeverything/infra';
 import type { ReactElement } from 'react';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { SignOutModal } from '../components/affine/sign-out-modal';
 import { RouteLogic, useNavigateHelper } from '../hooks/use-navigate-helper';
-import { AppTabsHeader } from '../modules/app-tabs-header';
 import { AuthService } from '../modules/cloud';
 import { SignIn } from './sign-in';
 
@@ -37,15 +37,12 @@ export const PageNotFound = ({
     await authService.signOut();
   }, [authService]);
 
+  useEffect(() => {
+    apis?.ui.pingAppLayoutReady().catch(console.error);
+  }, []);
+
   return (
     <>
-      {environment.isDesktop ? (
-        <AppTabsHeader
-          style={{
-            paddingLeft: environment.isMacOs ? 80 : 0,
-          }}
-        />
-      ) : null}
       {noPermission ? (
         <NoPermissionOrNotFound
           user={account}
