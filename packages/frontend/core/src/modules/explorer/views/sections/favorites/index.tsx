@@ -4,7 +4,7 @@ import {
   IconButton,
   useDropTarget,
 } from '@affine/component';
-import { mixpanel } from '@affine/core/mixpanel';
+import { track } from '@affine/core/mixpanel';
 import {
   DropEffect,
   type ExplorerTreeNodeDropEffect,
@@ -59,12 +59,9 @@ export const ExplorerFavorites = () => {
           data.source.data.entity.id,
           favoriteService.favoriteList.indexAt('before')
         );
-        mixpanel.track('AddFavorite', {
-          page: 'sidebar',
-          module: 'favorite',
-          control: 'drop entity to favorite',
+        track.$.navigationPanel.organize.toggleFavorite({
           type: data.source.data.entity.type,
-          id: data.source.data.entity.id,
+          on: true,
         });
         explorerSection.setCollapsed(false);
       }
@@ -98,18 +95,6 @@ export const ExplorerFavorites = () => {
       newDoc.id,
       favoriteService.favoriteList.indexAt('before')
     );
-    mixpanel.track('DocCreated', {
-      page: 'sidebar',
-      module: 'favorites',
-      control: 'new favorite doc button',
-    });
-    mixpanel.track('AddFavorite', {
-      page: 'sidebar',
-      module: 'favorite',
-      control: 'new favorite doc button',
-      type: 'doc',
-      id: newDoc.id,
-    });
     workbenchService.workbench.openDoc(newDoc.id);
     explorerSection.setCollapsed(false);
   }, [
@@ -144,12 +129,8 @@ export const ExplorerFavorites = () => {
               favorite
             )
           );
-          mixpanel.track('ReorderFavorite', {
-            page: 'sidebar',
-            module: 'favorite',
-            control: 'drop to reorder favorite',
+          track.$.navigationPanel.organize.orderOrganizeItem({
             type: data.source.data.entity.type,
-            id: data.source.data.entity.id,
           });
         } else if (
           data.source.data.entity?.type &&
@@ -165,12 +146,9 @@ export const ExplorerFavorites = () => {
               favorite
             )
           );
-          mixpanel.track('AddFavorite', {
-            page: 'sidebar',
-            module: 'favorite',
-            control: 'drop entity to favorite',
+          track.$.navigationPanel.organize.toggleFavorite({
             type: data.source.data.entity.type,
-            id: data.source.data.entity.id,
+            on: true,
           });
         } else {
           return; // not supported
@@ -238,6 +216,8 @@ export const ExplorerFavorites = () => {
         <>
           <IconButton
             data-testid="explorer-bar-add-favorite-button"
+            data-event-props="$.navigationPanel.favorites.createDoc"
+            data-event-args-control="addFavorite"
             onClick={handleCreateNewFavoriteDoc}
             size="16"
             tooltip={t[

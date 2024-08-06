@@ -1,7 +1,7 @@
 import { notify, Skeleton } from '@affine/component';
 import { Button } from '@affine/component/ui/button';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import { mixpanel } from '@affine/core/mixpanel';
+import { track } from '@affine/core/mixpanel';
 import { OAuthProviderType } from '@affine/graphql';
 import { GithubIcon, GoogleDuotoneIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
@@ -75,7 +75,7 @@ function OAuthProvider({
       notify.error({ title: 'Failed to sign in, please try again.' });
     } finally {
       setIsConnecting(false);
-      mixpanel.track('OAuth', { provider });
+      track.$.$.auth.oauth({ provider });
     }
   }, [authService, provider, redirectUri]);
 

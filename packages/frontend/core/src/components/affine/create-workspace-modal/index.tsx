@@ -3,7 +3,7 @@ import type { ConfirmModalProps } from '@affine/component/ui/modal';
 import { ConfirmModal, Modal } from '@affine/component/ui/modal';
 import { authAtom } from '@affine/core/atoms';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import { mixpanel } from '@affine/core/mixpanel';
+import { track } from '@affine/core/mixpanel';
 import { DebugLogger } from '@affine/debug';
 import { apis } from '@affine/electron-api';
 import { WorkspaceFlavour } from '@affine/env/workspace';
@@ -222,9 +222,7 @@ export const CreateWorkspaceModal = ({
 
   const onConfirmName = useAsyncCallback(
     async (name: string, workspaceFlavour: WorkspaceFlavour) => {
-      mixpanel.track('CreateWorkspace', {
-        workspaceFlavour,
-      });
+      track.$.$.$.createWorkspace({ flavour: workspaceFlavour });
       if (loading) return;
       setLoading(true);
 

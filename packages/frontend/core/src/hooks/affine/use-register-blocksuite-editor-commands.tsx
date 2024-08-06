@@ -4,7 +4,7 @@ import {
   PreconditionStrategy,
   registerAffineCommand,
 } from '@affine/core/commands';
-import { mixpanel } from '@affine/core/mixpanel';
+import { track } from '@affine/core/mixpanel';
 import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/properties';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useI18n } from '@affine/i18n';
@@ -161,10 +161,8 @@ export function useRegisterBlocksuiteEditorCommands() {
         label: t['com.affine.header.option.duplicate'](),
         run() {
           duplicate(docId);
-          mixpanel.track('DocCreated', {
-            control: 'cmdk',
-            type: 'doc duplicate',
-            category: 'doc',
+          track.$.cmdk.$.createDoc({
+            control: 'duplicate',
           });
         },
       })

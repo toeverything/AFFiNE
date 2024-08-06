@@ -8,7 +8,7 @@ import { EMPTY, mergeMap, switchMap } from 'rxjs';
 
 import { generateSubscriptionCallbackLink } from '../hooks/affine/use-subscription-notify';
 import { RouteLogic, useNavigateHelper } from '../hooks/use-navigate-helper';
-import { mixpanel } from '../mixpanel';
+import { mixpanel, track } from '../mixpanel';
 import { AuthService, SubscriptionService } from '../modules/cloud';
 import { container } from './subscribe.css';
 
@@ -70,9 +70,9 @@ export const Component = () => {
                 : !!subscriptionService.subscription.pro$.value;
           if (!subscribed) {
             setMessage('Creating checkout...');
-            mixpanel.track('PlanUpgradeStarted', {
-              type: plan,
-              category: recurring,
+            track.subscriptionLanding.$.$.checkout({
+              plan: receivedPlan,
+              recurring: receivedRecurring,
             });
             try {
               const account = authService.session.account$.value;

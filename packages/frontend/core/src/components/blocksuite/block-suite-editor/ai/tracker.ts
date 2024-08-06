@@ -1,5 +1,5 @@
 import { AIProvider } from '@affine/core/blocksuite/presets/ai';
-import { mixpanel } from '@affine/core/mixpanel';
+import { mixpanel, track } from '@affine/core/mixpanel';
 import type { EditorHost } from '@blocksuite/block-std';
 import type { BlockModel } from '@blocksuite/store';
 import { lowerCase, omit } from 'lodash-es';
@@ -13,7 +13,7 @@ type AIActionEventName =
   | 'AI result accepted';
 
 type AIActionEventProperties = {
-  page: 'doc-editor' | 'whiteboard-editor';
+  page: 'doc' | 'edgeless';
   segment:
     | 'AI action panel'
     | 'right side bar'
@@ -73,9 +73,7 @@ const trackAction = ({
 };
 
 const inferPageMode = (host: EditorHost) => {
-  return host.querySelector('affine-page-root')
-    ? 'doc-editor'
-    : 'whiteboard-editor';
+  return host.querySelector('affine-page-root') ? 'doc' : 'edgeless';
 };
 
 const defaultActionOptions = [
@@ -253,14 +251,12 @@ const toTrackedOptions = (
 
 export function setupTracker() {
   AIProvider.slots.requestUpgradePlan.on(() => {
-    mixpanel.track('AI', {
-      action: 'requestUpgradePlan',
-    });
+    track.$.paywall.aiAction.viewPlans();
   });
 
   AIProvider.slots.requestLogin.on(() => {
-    mixpanel.track('AI', {
-      action: 'requestLogin',
+    track.$.$.auth.signIn({
+      control: 'aiAction',
     });
   });
 

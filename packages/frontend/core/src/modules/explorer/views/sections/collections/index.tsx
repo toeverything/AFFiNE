@@ -1,7 +1,7 @@
 import { IconButton } from '@affine/component';
 import { useEditCollectionName } from '@affine/core/components/page-list';
 import { createEmptyCollection } from '@affine/core/components/page-list/use-collection-manager';
-import { mixpanel } from '@affine/core/mixpanel';
+import { track } from '@affine/core/mixpanel';
 import { CollectionService } from '@affine/core/modules/collection';
 import { ExplorerTreeRoot } from '@affine/core/modules/explorer/views/tree';
 import { WorkbenchService } from '@affine/core/modules/workbench';
@@ -35,10 +35,8 @@ export const ExplorerCollections = () => {
       .then(name => {
         const id = nanoid();
         collectionService.addCollection(createEmptyCollection(id, { name }));
-        mixpanel.track('CollectionCreated', {
-          page: 'sidebar',
-          module: 'collections',
-          control: 'new collection button',
+        track.$.navigationPanel.organize.createOrganizeItem({
+          type: 'collection',
         });
         workbenchService.workbench.openCollection(id);
         explorerSection.setCollapsed(false);

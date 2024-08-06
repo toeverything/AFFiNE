@@ -1,5 +1,5 @@
 import { IconButton, useConfirmModal } from '@affine/component';
-import { mixpanel } from '@affine/core/mixpanel';
+import { track } from '@affine/core/mixpanel';
 import { ExplorerTreeRoot } from '@affine/core/modules/explorer/views/tree';
 import { FavoriteItemsAdapter } from '@affine/core/modules/properties';
 import { Trans, useI18n } from '@affine/i18n';
@@ -58,17 +58,7 @@ export const ExplorerMigrationFavorites = () => {
         t['com.affine.rootAppSidebar.migration-data.clean-all.cancel'](),
       onConfirm() {
         favoriteItemsAdapter.clearAll();
-        mixpanel.track('AllMigrationDataCleared', {
-          page: 'sidebar',
-          module: 'migration data',
-          control: 'clear button',
-        });
       },
-    });
-    mixpanel.track('ClickClearMigrationDataButton', {
-      page: 'sidebar',
-      module: 'migration data',
-      control: 'clear button',
     });
   }, [favoriteItemsAdapter, openConfirmModal, t]);
 
@@ -92,11 +82,7 @@ export const ExplorerMigrationFavorites = () => {
         },
       },
     });
-    mixpanel.track('OpenMigrationDataHelp', {
-      page: 'sidebar',
-      module: 'migration data',
-      control: 'help button',
-    });
+    track.$.navigationPanel.migrationData.openMigrationDataHelp();
   }, [handleClickClear, openConfirmModal, t]);
 
   if (favorites.length === 0) {

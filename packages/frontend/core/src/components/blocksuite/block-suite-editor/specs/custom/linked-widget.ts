@@ -1,4 +1,4 @@
-import { mixpanel } from '@affine/core/mixpanel';
+import { track } from '@affine/core/mixpanel';
 import { WorkspacePropertiesAdapter } from '@affine/core/modules/properties';
 import { I18n, i18nTime } from '@affine/i18n';
 import type { EditorHost } from '@blocksuite/block-std';
@@ -75,12 +75,7 @@ export function createLinkedWidgetConfig(framework: FrameworkProvider) {
                 inlineEditor,
                 docId: doc.id,
               });
-              mixpanel.track('LinkedDocCreated', {
-                control: 'linked doc',
-                module: 'inline @',
-                type: 'doc',
-                other: 'existing doc',
-              });
+              track.doc.editor.atMenu.linkDoc();
             },
           })),
           maxDisplay: MAX_DOCS,

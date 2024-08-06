@@ -7,7 +7,7 @@ import {
 } from '@affine/component';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
-import { mixpanel } from '@affine/core/mixpanel';
+import { track } from '@affine/core/mixpanel';
 import type { Tag } from '@affine/core/modules/tag';
 import { TagService } from '@affine/core/modules/tag';
 import type { Collection } from '@affine/env/filter';
@@ -49,21 +49,12 @@ export const PageListHeader = () => {
   const onImportFile = useAsyncCallback(async () => {
     const options = await importFile();
     if (options.isWorkspaceFile) {
-      mixpanel.track('WorkspaceCreated', {
-        page: 'doc library',
-        segment: 'all doc',
-        module: 'doc list header',
-        control: 'import button',
-        type: 'imported workspace',
+      track.allDocs.header.actions.createWorkspace({
+        control: 'import',
       });
     } else {
-      mixpanel.track('DocCreated', {
-        page: 'doc library',
-        segment: 'all doc',
-        module: 'doc list header',
-        control: 'import button',
-        type: 'imported doc',
-        // category
+      track.allDocs.header.actions.createDoc({
+        control: 'import',
       });
     }
   }, [importFile]);

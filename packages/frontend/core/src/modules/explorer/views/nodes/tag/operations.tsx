@@ -6,7 +6,7 @@ import {
   toast,
 } from '@affine/component';
 import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
-import { mixpanel } from '@affine/core/mixpanel';
+import { track } from '@affine/core/mixpanel';
 import { FavoriteService } from '@affine/core/modules/favorite';
 import { TagService } from '@affine/core/modules/tag';
 import { WorkbenchService } from '@affine/core/modules/workbench';
@@ -51,16 +51,7 @@ export const useExplorerTagNodeOperations = (
     if (tagRecord) {
       const newDoc = docsService.createDoc();
       tagRecord?.tag(newDoc.id);
-      mixpanel.track('DocCreated', {
-        page: 'sidebar',
-        module: 'tag',
-        control: 'add doc button',
-      });
-      mixpanel.track('DocTagged', {
-        page: 'sidebar',
-        module: 'tag',
-        control: 'add doc button',
-      });
+      track.$.navigationPanel.tags.createDoc();
       workbenchService.workbench.openDoc(newDoc.id);
       openNodeCollapsed();
     }
@@ -68,11 +59,7 @@ export const useExplorerTagNodeOperations = (
 
   const handleMoveToTrash = useCallback(() => {
     tagService.tagList.deleteTag(tagId);
-    mixpanel.track('TagDeleted', {
-      page: 'sidebar',
-      module: 'tag',
-      control: 'remove tag button',
-    });
+    track.$.navigationPanel.organize.deleteOrganizeItem({ type: 'tag' });
     toast(t['com.affine.tags.delete-tags.toast']());
   }, [t, tagId, tagService.tagList]);
 
@@ -80,21 +67,13 @@ export const useExplorerTagNodeOperations = (
     workbenchService.workbench.openTag(tagId, {
       at: 'beside',
     });
-    mixpanel.track('OpenInSplitView', {
-      page: 'sidebar',
-      module: 'tag',
-      control: 'open in split view button',
-    });
+    track.$.navigationPanel.organize.openInSplitView({ type: 'tag' });
   }, [tagId, workbenchService]);
 
   const handleToggleFavoriteTag = useCallback(() => {
     favoriteService.favoriteList.toggle('tag', tagId);
-    mixpanel.track('ToggleFavorite', {
-      page: 'sidebar',
-      module: 'tag',
-      control: 'toggle favorite tag button',
+    track.$.navigationPanel.organize.toggleFavorite({
       type: 'tag',
-      id: tagId,
     });
   }, [favoriteService, tagId]);
 
@@ -102,11 +81,7 @@ export const useExplorerTagNodeOperations = (
     workbenchService.workbench.openTag(tagId, {
       at: 'new-tab',
     });
-    mixpanel.track('OpenInNewTab', {
-      page: 'sidebar',
-      module: 'tag',
-      control: 'open in new tab button',
-    });
+    track.$.navigationPanel.organize.openInNewTab({ type: 'tag' });
   }, [tagId, workbenchService]);
 
   return useMemo(

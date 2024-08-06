@@ -1,6 +1,6 @@
 import { openSettingModalAtom } from '@affine/core/atoms';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import { mixpanel } from '@affine/core/mixpanel';
+import { track } from '@affine/core/mixpanel';
 import {
   ExplorerCollections,
   ExplorerFavorites,
@@ -91,21 +91,14 @@ export const RootAppSidebar = (): ReactElement => {
     async (e?: MouseEvent) => {
       const page = pageHelper.createPage('page', false);
       page.load();
-      mixpanel.track('DocCreated', {
-        segment: 'navigation panel',
-        module: 'bottom button',
-        control: 'new doc button',
-        category: 'page',
-        type: 'doc',
-      });
+      track.$.navigationPanel.$.createDoc();
+
       workbench.openDoc(page.id, {
         at: e?.ctrlKey || e?.metaKey ? 'new-tab' : 'active',
       });
     },
     [pageHelper, workbench]
   );
-
-  // Listen to the "New Page" action from the menu
   useEffect(() => {
     if (environment.isDesktop) {
       return events?.applicationMenu.onNewPageAction(() => onClickNewPage());
@@ -120,12 +113,7 @@ export const RootAppSidebar = (): ReactElement => {
       activeTab: 'appearance',
       open: true,
     });
-    mixpanel.track('SettingsViewed', {
-      // page:
-      segment: 'navigation panel',
-      module: 'general list',
-      control: 'settings button',
-    });
+    track.$.navigationPanel.$.openSettings();
   }, [setOpenSettingModalAtom]);
 
   const sidebarOpen = useAtomValue(appSidebarOpenAtom);
@@ -153,7 +141,7 @@ export const RootAppSidebar = (): ReactElement => {
           <QuickSearchInput
             className={quickSearch}
             data-testid="slider-bar-quick-search-button"
-            data-event-props="$.navigationPanel.generalFunction.quickSearch"
+            data-event-props="$.navigationPanel.$.quickSearch"
             onClick={onOpenQuickSearchModal}
           />
           <AddPageButton onClick={onClickNewPage} />

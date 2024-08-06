@@ -1,6 +1,6 @@
 import { ConfirmModal } from '@affine/component/ui/modal';
 import { openQuotaModalAtom, openSettingModalAtom } from '@affine/core/atoms';
-import { mixpanel } from '@affine/core/mixpanel';
+import { track } from '@affine/core/mixpanel';
 import { UserQuotaService } from '@affine/core/modules/cloud';
 import { WorkspacePermissionService } from '@affine/core/modules/permissions';
 import { WorkspaceQuotaService } from '@affine/core/modules/quota';
@@ -50,11 +50,7 @@ export const CloudQuotaModal = () => {
       scrollAnchor: 'cloudPricingPlan',
     });
 
-    mixpanel.track('PlansViewed', {
-      segment: 'payment wall',
-      category: 'payment wall storage',
-    });
-
+    track.$.paywall.storage.viewPlans();
     setOpen(false);
   }, [setOpen, setSettingModalAtom]);
 

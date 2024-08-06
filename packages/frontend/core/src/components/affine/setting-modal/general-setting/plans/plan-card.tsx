@@ -2,7 +2,7 @@ import { Button, type ButtonProps } from '@affine/component/ui/button';
 import { Tooltip } from '@affine/component/ui/tooltip';
 import { generateSubscriptionCallbackLink } from '@affine/core/hooks/affine/use-subscription-notify';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import { mixpanel } from '@affine/core/mixpanel';
+import { track } from '@affine/core/mixpanel';
 import { AuthService, SubscriptionService } from '@affine/core/modules/cloud';
 import { popupWindow } from '@affine/core/utils';
 import type { SubscriptionRecurring } from '@affine/graphql';
@@ -190,7 +190,7 @@ const Downgrade = ({ disabled }: { disabled?: boolean }) => {
   }, []);
 
   return (
-    <CancelAction module="pricing plan list" open={open} onOpenChange={setOpen}>
+    <CancelAction open={open} onOpenChange={setOpen}>
       <Tooltip content={tooltipContent} rootOptions={{ delayDuration: 0 }}>
         <div className={styles.planAction}>
           <Button
@@ -226,14 +226,13 @@ const BookDemo = ({ plan }: { plan: SubscriptionPlan }) => {
       href={url}
       target="_blank"
       rel="noreferrer"
-      onClick={() => {
-        mixpanel.track('Button', {
-          resolve: 'BookDemo',
-          url,
-        });
-      }}
     >
-      <Button className={styles.planAction} variant="primary">
+      <Button
+        className={styles.planAction}
+        variant="primary"
+        data-event-props="$.settingsPanel.billing.bookDemo"
+        data-event-args-url={url}
+      >
         {t['com.affine.payment.tell-us-use-case']()}
       </Button>
     </a>
@@ -276,12 +275,9 @@ export const Upgrade = ({
 
   const upgrade = useAsyncCallback(async () => {
     setMutating(true);
-    mixpanel.track('PlanUpgradeStarted', {
-      segment: 'settings panel',
-      module: 'pricing plan list',
-      control: 'pricing plan action',
-      type: 'cloud pro subscription',
-      category: recurring,
+    track.$.settingsPanel.plans.checkout({
+      plan: SubscriptionPlan.Pro,
+      recurring: recurring,
     });
     const link = await subscriptionService.createCheckoutSession({
       recurring,
@@ -338,12 +334,9 @@ const ChangeRecurring = ({
   const subscription = useService(SubscriptionService).subscription;
 
   const onStartChange = useCallback(() => {
-    mixpanel.track('PlanChangeStarted', {
-      segment: 'settings panel',
-      module: 'pricing plan list',
-      control: 'paying',
-      type: SubscriptionPlan.Pro,
-      category: to,
+    track.$.settingsPanel.plans.changeSubscriptionRecurring({
+      plan: SubscriptionPlan.Pro,
+      recurring: to,
     });
     setOpen(true);
   }, [to]);
@@ -422,12 +415,9 @@ const ResumeButton = () => {
     setOpen(true);
     const pro = subscription.pro$.value;
     if (pro) {
-      mixpanel.track('PlanChangeStarted', {
-        segment: 'settings panel',
-        module: 'pricing plan list',
-        control: 'paying',
-        type: SubscriptionPlan.Pro,
-        category: pro.recurring,
+      track.$.settingsPanel.plans.resumeSubscription({
+        plan: SubscriptionPlan.Pro,
+        recurring: pro.recurring,
       });
     }
   }, [subscription.pro$.value]);

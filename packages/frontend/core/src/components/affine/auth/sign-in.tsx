@@ -3,7 +3,7 @@ import { AuthInput, ModalHeader } from '@affine/component/auth-components';
 import { Button } from '@affine/component/ui/button';
 import { authAtom } from '@affine/core/atoms';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import { mixpanel } from '@affine/core/mixpanel';
+import { track } from '@affine/core/mixpanel';
 import { Trans, useI18n } from '@affine/i18n';
 import { ArrowRightBigIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
@@ -75,9 +75,7 @@ export const SignIn: FC<AuthPanelProps> = ({
           if (hasPassword) {
             setAuthState('signInWithPassword');
           } else {
-            mixpanel.track('SignIn', {
-              email,
-            });
+            track.$.$.auth.signIn();
             await authService.sendEmailMagicLink(
               email,
               verifyToken,
@@ -93,9 +91,7 @@ export const SignIn: FC<AuthPanelProps> = ({
             challenge,
             searchParams.get('redirect_uri')
           );
-          mixpanel.track('SignUp', {
-            email,
-          });
+          track.$.$.auth.signUp();
           setAuthState('afterSignUpSendEmail');
         }
       }

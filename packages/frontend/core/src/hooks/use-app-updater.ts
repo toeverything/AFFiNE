@@ -7,7 +7,7 @@ import { atomWithObservable, atomWithStorage } from 'jotai/utils';
 import { useCallback, useState } from 'react';
 import { Observable } from 'rxjs';
 
-import { mixpanel } from '../mixpanel';
+import { track } from '../mixpanel';
 import { popupWindow } from '../utils';
 import { useAsyncCallback } from './affine-async-hooks';
 
@@ -122,9 +122,7 @@ export const useAppUpdater = () => {
   );
 
   const quitAndInstall = useCallback(() => {
-    mixpanel.track('Button', {
-      resolve: 'QuitAndInstall',
-    });
+    track.$.navigationPanel.bottomButtons.quitAndInstall();
     if (updateReady) {
       setAppQuitting(true);
       apis?.updater.quitAndInstall().catch(err => {
@@ -135,9 +133,7 @@ export const useAppUpdater = () => {
   }, [updateReady]);
 
   const checkForUpdates = useCallback(async () => {
-    mixpanel.track('Button', {
-      resolve: 'CheckForUpdates',
-    });
+    track.$.settingsPanel.about.checkUpdates();
     if (checkingForUpdates) {
       return;
     }
@@ -154,9 +150,7 @@ export const useAppUpdater = () => {
   }, [checkingForUpdates, setCheckingForUpdates]);
 
   const downloadUpdate = useCallback(() => {
-    mixpanel.track('Button', {
-      resolve: 'DownloadUpdate',
-    });
+    track.$.settingsPanel.about.downloadUpdate();
     apis?.updater.downloadUpdate().catch(err => {
       console.error('Error downloading update:', err);
     });
@@ -164,8 +158,8 @@ export const useAppUpdater = () => {
 
   const toggleAutoDownload = useCallback(
     (enable: boolean) => {
-      mixpanel.track('Button', {
-        resolve: 'ToggleAutoDownload',
+      track.$.settingsPanel.about.changeAppSetting({
+        key: 'autoDownload',
         value: enable,
       });
       setSetting({
@@ -177,8 +171,8 @@ export const useAppUpdater = () => {
 
   const toggleAutoCheck = useCallback(
     (enable: boolean) => {
-      mixpanel.track('Button', {
-        resolve: 'ToggleAutoCheck',
+      track.$.settingsPanel.about.changeAppSetting({
+        key: 'autoCheckUpdates',
         value: enable,
       });
       setSetting({
@@ -189,17 +183,13 @@ export const useAppUpdater = () => {
   );
 
   const openChangelog = useAsyncCallback(async () => {
-    mixpanel.track('Button', {
-      resolve: 'OpenChangelog',
-    });
+    track.$.navigationPanel.bottomButtons.openChangelog();
     popupWindow(runtimeConfig.changelogUrl);
     await setChangelogUnread(true);
   }, [setChangelogUnread]);
 
   const dismissChangelog = useAsyncCallback(async () => {
-    mixpanel.track('Button', {
-      resolve: 'DismissChangelog',
-    });
+    track.$.navigationPanel.bottomButtons.dismissChangelog();
     await setChangelogUnread(true);
   }, [setChangelogUnread]);
 

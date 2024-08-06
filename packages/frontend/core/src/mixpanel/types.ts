@@ -1,13 +1,23 @@
-import type { Events } from './events';
+import type { EventArgs, Events } from './events';
+
+type EventPropsOverride = {
+  page?: keyof Events;
+  segment?: string;
+  module?: string;
+  control?: string;
+};
 
 export type CallableEventsChain = {
   [Page in keyof Events]: {
     [Segment in keyof Events[Page]]: {
       [Module in keyof Events[Page][Segment]]: {
         // @ts-expect-error ignore `symbol | number` as key
-        [Control in Events[Page][Segment][Module][number]]: (
-          arg?: string
-        ) => void;
+        [Event in Events[Page][Segment][Module][number]]: Event extends keyof EventArgs
+          ? (
+              // we make all args partial to simply satisfies nullish type checking
+              args?: Partial<EventArgs[Event]> & EventPropsOverride
+            ) => void
+          : (args?: EventPropsOverride) => void;
       };
     };
   };
@@ -18,14 +28,14 @@ export type EventsUnion = {
     [Segment in keyof Events[Page]]: {
       [Module in keyof Events[Page][Segment]]: {
         // @ts-expect-error ignore `symbol | number` as key
-        [Control in Events[Page][Segment][Module][number]]: `${Page}.${Segment}.${Module}.${Control}`;
+        [Event in Events[Page][Segment][Module][number]]: `${Page}.${Segment}.${Module}.${Event}`;
         // @ts-expect-error ignore `symbol | number` as key
       }[Events[Page][Segment][Module][number]];
     }[keyof Events[Page][Segment]];
   }[keyof Events[Page]];
 }[keyof Events];
 
-// page > segment > module > [controls]
+// page > segment > module > [events]
 type IsFourLevelsDeep<
   T,
   Depth extends number[] = [],

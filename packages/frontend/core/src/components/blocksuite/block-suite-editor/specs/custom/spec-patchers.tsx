@@ -7,7 +7,7 @@ import {
   toReactNode,
   type useConfirmModal,
 } from '@affine/component';
-import { mixpanel } from '@affine/core/mixpanel';
+import { track } from '@affine/core/mixpanel';
 import { DocsSearchService } from '@affine/core/modules/docs-search';
 import { resolveLinkToDoc } from '@affine/core/modules/navigation';
 import type { PeekViewService } from '@affine/core/modules/peek-view';
@@ -465,30 +465,11 @@ export function patchQuickSearchService(
                     pageId: linkedDoc.id,
                   },
                 ]);
-                const isEdgeless =
-                  rootComponent instanceof EdgelessRootBlockComponent;
                 if (result.isNewDoc) {
-                  mixpanel.track('DocCreated', {
-                    control: 'linked doc',
-                    module: 'slash commands',
-                    type: 'linked doc',
-                    category: 'doc',
-                    page: isEdgeless ? 'whiteboard editor' : 'doc editor',
-                  });
-                  mixpanel.track('LinkedDocCreated', {
-                    control: 'new doc',
-                    module: 'slash commands',
-                    type: 'doc',
-                    page: isEdgeless ? 'whiteboard editor' : 'doc editor',
-                  });
-                } else {
-                  mixpanel.track('LinkedDocCreated', {
-                    control: 'linked doc',
-                    module: 'slash commands',
-                    type: 'doc',
-                    page: isEdgeless ? 'whiteboard editor' : 'doc editor',
-                  });
+                  track.doc.editor.slashMenu.createDoc({ control: 'linkDoc' });
+                  track.doc.editor.slashMenu.linkDoc({ control: 'createDoc' });
                 }
+                track.doc.editor.slashMenu.linkDoc({ control: 'linkDoc' });
               } else if ('userInput' in result) {
                 const embedOptions = service.getEmbedBlockOptions(
                   result.userInput

@@ -1,5 +1,5 @@
 import { Menu } from '@affine/component';
-import { mixpanel } from '@affine/core/mixpanel';
+import { track } from '@affine/core/mixpanel';
 import { useService, WorkspacesService } from '@toeverything/infra';
 import { useAtom } from 'jotai';
 import { useCallback, useEffect } from 'react';
@@ -16,9 +16,7 @@ export const WorkspaceSelector = () => {
     setOpenUserWorkspaceList(false);
   }, [setOpenUserWorkspaceList]);
   const openUserWorkspaceList = useCallback(() => {
-    mixpanel.track('Button', {
-      resolve: 'OpenWorkspaceList',
-    });
+    track.$.navigationPanel.workspaceList.open();
     setOpenUserWorkspaceList(true);
   }, [setOpenUserWorkspaceList]);
 

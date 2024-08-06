@@ -3,7 +3,7 @@ import {
   pushGlobalLoadingEventAtom,
   resolveGlobalLoadingEventAtom,
 } from '@affine/component/global-loading';
-import { mixpanel } from '@affine/core/mixpanel';
+import { track } from '@affine/core/mixpanel';
 import { apis } from '@affine/electron-api';
 import { useI18n } from '@affine/i18n';
 import type { PageRootService, RootBlockModel } from '@blocksuite/blocks';
@@ -26,10 +26,8 @@ async function exportHandler({ page, type }: ExportHandlerOptions) {
   if (editorRoot) {
     pageService = editorRoot.spec.getService<PageRootService>('affine:page');
   }
-  mixpanel.track('ShareCreated', {
+  track.$.header.share.export({
     type,
-    segment: 'sharing panel',
-    module: 'export share',
   });
   switch (type) {
     case 'html':
