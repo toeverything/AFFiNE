@@ -423,6 +423,7 @@ export class ChatPanelInput extends WithDisposable(LitElement) {
     const { doc } = this.host;
     this.textarea.value = '';
     this.isInputEmpty = true;
+    this.textarea.style.height = 'unset';
     this.updateContext({
       images: [],
       status: 'loading',
