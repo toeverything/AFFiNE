@@ -6,7 +6,7 @@ import type { createStore } from 'jotai';
 
 import { openSettingModalAtom, openWorkspaceListModalAtom } from '../atoms';
 import type { useNavigateHelper } from '../hooks/use-navigate-helper';
-import { mixpanel } from '../mixpanel';
+import { mixpanel, track } from '../mixpanel';
 import { registerAffineCommand } from './registry';
 
 export function registerAffineNavigationCommands({
@@ -77,10 +77,7 @@ export function registerAffineNavigationCommands({
       label: t['com.affine.cmdk.affine.navigation.open-settings'](),
       keyBinding: '$mod+,',
       run() {
-        mixpanel.track('SettingsViewed', {
-          // page:
-          segment: 'cmdk',
-        });
+        track.$.cmdk.settings.openSettings();
         store.set(openSettingModalAtom, s => ({
           activeTab: 'appearance',
           open: !s.open,

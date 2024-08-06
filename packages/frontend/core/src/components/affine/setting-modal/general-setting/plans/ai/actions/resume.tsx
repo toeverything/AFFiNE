@@ -6,7 +6,6 @@ import {
 } from '@affine/component';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { mixpanel } from '@affine/core/mixpanel';
-import type { MixpanelEvents } from '@affine/core/mixpanel/events';
 import { SubscriptionService } from '@affine/core/modules/cloud';
 import { SubscriptionPlan } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
@@ -17,7 +16,7 @@ import { nanoid } from 'nanoid';
 import { useState } from 'react';
 
 export interface AIResumeProps extends ButtonProps {
-  module: MixpanelEvents['PlanChangeStarted']['module'];
+  module: string;
 }
 
 export const AIResume = ({ module, ...btnProps }: AIResumeProps) => {

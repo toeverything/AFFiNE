@@ -1,4 +1,5 @@
 import { mixpanel } from '@affine/core/mixpanel';
+import type { EventProps } from '@affine/core/mixpanel/types';
 import type { QuotaQuery } from '@affine/graphql';
 import type { GlobalContextService } from '@toeverything/infra';
 import { ApplicationStarted, OnEvent, Service } from '@toeverything/infra';
@@ -72,24 +73,24 @@ export class TelemetryService extends Service {
     );
   }
 
-  extractGlobalContext() {
+  extractGlobalContext(): EventProps {
     const globalContext = this.globalContextService.globalContext;
     const page = globalContext.isDoc.get()
       ? globalContext.isTrashDoc.get()
         ? 'trash'
         : globalContext.docMode.get() === 'page'
-          ? 'doc editor'
-          : 'whiteboard editor'
+          ? 'doc'
+          : 'edgeless'
       : globalContext.isAllDocs.get()
-        ? 'doc library'
+        ? 'allDocs'
         : globalContext.isTrash.get()
-          ? 'trash library'
+          ? 'trash'
           : globalContext.isCollection.get()
-            ? 'collection detail'
+            ? 'collection'
             : globalContext.isTag.get()
-              ? 'tag detail'
-              : 'unknown';
-    return { page, activePage: page };
+              ? 'tag'
+              : undefined;
+    return { page };
   }
 
   override dispose(): void {

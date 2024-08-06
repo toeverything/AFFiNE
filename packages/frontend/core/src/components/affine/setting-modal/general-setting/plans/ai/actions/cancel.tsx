@@ -3,7 +3,6 @@ import { useDowngradeNotify } from '@affine/core/components/affine/subscription-
 import { getDowngradeQuestionnaireLink } from '@affine/core/hooks/affine/use-subscription-notify';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { mixpanel } from '@affine/core/mixpanel';
-import type { MixpanelEvents } from '@affine/core/mixpanel/events';
 import { AuthService, SubscriptionService } from '@affine/core/modules/cloud';
 import { SubscriptionPlan } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
@@ -12,7 +11,7 @@ import { nanoid } from 'nanoid';
 import { useState } from 'react';
 
 export interface AICancelProps extends ButtonProps {
-  module: MixpanelEvents['PlanChangeStarted']['module'];
+  module: string;
 }
 export const AICancel = ({ module, ...btnProps }: AICancelProps) => {
   const t = useI18n();

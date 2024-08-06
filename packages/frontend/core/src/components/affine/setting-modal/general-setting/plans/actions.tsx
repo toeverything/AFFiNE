@@ -1,7 +1,6 @@
 import { getDowngradeQuestionnaireLink } from '@affine/core/hooks/affine/use-subscription-notify';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { mixpanel } from '@affine/core/mixpanel';
-import type { MixpanelEvents } from '@affine/core/mixpanel/events';
 import { SubscriptionPlan } from '@affine/graphql';
 import { useLiveData, useService } from '@toeverything/infra';
 import { nanoid } from 'nanoid';
@@ -25,7 +24,7 @@ export const CancelAction = ({
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  module: MixpanelEvents['PlanChangeStarted']['module'];
+  module: string;
 } & PropsWithChildren) => {
   const [idempotencyKey, setIdempotencyKey] = useState(nanoid());
   const [isMutating, setIsMutating] = useState(false);
