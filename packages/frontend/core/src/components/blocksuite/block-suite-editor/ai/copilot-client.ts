@@ -25,14 +25,18 @@ import { getCurrentStore } from '@toeverything/infra';
 type OptionsField<T extends GraphQLQuery> =
   RequestOptions<T>['variables'] extends { options: infer U } ? U : never;
 
-function codeToError(code: number) {
-  switch (code) {
+function codeToError(error: UserFriendlyError) {
+  switch (error.status) {
     case 401:
       return new UnauthorizedError();
     case 402:
       return new PaymentRequiredError();
     default:
-      return new GeneralNetworkError();
+      return new GeneralNetworkError(
+        error.code
+          ? `${error.code}: ${error.message}\nIdentify: ${error.name}`
+          : undefined
+      );
   }
 }
 
@@ -42,7 +46,7 @@ export function resolveError(err: any) {
       ? new UserFriendlyError(err.extensions)
       : UserFriendlyError.fromAnyError(err);
 
-  return codeToError(standardError.status);
+  return codeToError(standardError);
 }
 
 export function handleError(src: any) {

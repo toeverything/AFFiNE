@@ -106,12 +106,23 @@ export const PaymentRequiredErrorRenderer = (host: EditorHost) => html`
   >
 `;
 
-export const GeneralErrorRenderer = (
-  text: TemplateResult<1> = html`An error occurred, If this issue persists
-    please let us know.
-    <a href="mailto:support@toeverything.info"> support@toeverything.info </a>`,
-  template: TemplateResult<1> = html`${nothing}`
-) => html` <ai-error-wrapper .text=${text}>${template}</ai-error-wrapper>`;
+type ErrorProps = {
+  text?: TemplateResult<1>;
+  template?: TemplateResult<1>;
+  error?: TemplateResult<1>;
+};
+
+const generateText = (error?: TemplateResult<1>) =>
+  html`${error || 'An error occurred'}, If this issue persists please let us
+    know.<a href="mailto:support@toeverything.info">
+      support@toeverything.info
+    </a>`;
+
+const nope = html`${nothing}`;
+const GeneralErrorRenderer = (props: ErrorProps = {}) => {
+  const { text = generateText(props.error), template = nope } = props;
+  return html`<ai-error-wrapper .text=${text}>${template}</ai-error-wrapper>`;
+};
 
 declare global {
   interface HTMLElementTagNameMap {
@@ -123,9 +134,9 @@ export function AIChatErrorRenderer(host: EditorHost, error: AIError) {
   if (error instanceof PaymentRequiredError) {
     return PaymentRequiredErrorRenderer(host);
   } else if (error instanceof UnauthorizedError) {
-    return GeneralErrorRenderer(
-      html`You need to login to AFFiNE Cloud to continue using AFFiNE AI.`,
-      html`<div
+    return GeneralErrorRenderer({
+      text: html`You need to login to AFFiNE Cloud to continue using AFFiNE AI.`,
+      template: html`<div
         style=${styleMap({
           padding: '4px 12px',
           borderRadius: '8px',
@@ -136,9 +147,31 @@ export function AIChatErrorRenderer(host: EditorHost, error: AIError) {
         @click=${() => AIProvider.slots.requestLogin.emit({ host })}
       >
         Login
-      </div>`
-    );
+      </div>`,
+    });
   } else {
-    return GeneralErrorRenderer();
+    const tip = error.message;
+    return GeneralErrorRenderer({
+      error: html`<style>
+          .tip {
+            position: relative;
+            cursor: pointer;
+          }
+
+          .tip:hover::after {
+            content: attr(data-tip);
+            position: absolute;
+            left: 0;
+            top: 20px;
+            background-color: black;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            z-index: 1000;
+            white-space: pre;
+          }
+        </style>
+        <a class="tip" href="#" data-tip="${tip}">An error occurred</a>`,
+    });
   }
 }
