@@ -158,7 +158,7 @@
     }
   ],
   "files": [],
-  "exclude": ["node_modules", "target", "lib", "test-results"],
+  "exclude": ["node_modules", "target", "lib", "test-results", "dist"],
   "ts-node": {
     "esm": true,
     "compilerOptions": {

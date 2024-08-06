@@ -25,5 +25,6 @@
       "path": "../../../common/infra"
     }
   ],
-  "include": ["."]
+  "include": ["."],
+  "exclude": ["dist"]
 }

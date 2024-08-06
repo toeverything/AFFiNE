@@ -65,10 +65,10 @@ export function createLinkedWidgetConfig(framework: FrameworkProvider) {
             key: doc.id,
             name: doc.title,
             icon: isJournal(doc)
-              ? TodayIcon
+              ? TodayIcon()
               : isEdgeless(doc)
-                ? LinkedEdgelessIcon
-                : LinkedPageIcon,
+                ? LinkedEdgelessIcon()
+                : LinkedPageIcon(),
             action: () => {
               abort();
               LinkedWidgetUtils.insertLinkedNode({

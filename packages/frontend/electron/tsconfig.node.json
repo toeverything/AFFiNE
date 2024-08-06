@@ -13,6 +13,7 @@
     "allowJs": true
   },
   "include": ["./scripts"],
+  "exclude": ["./renderer"],
   "ts-node": {
     "esm": true,
     "experimentalSpecifierResolution": "node"
