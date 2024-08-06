@@ -64,6 +64,9 @@ export const ExplorerCollections = () => {
             data-testid="explorer-bar-add-collection-button"
             onClick={handleCreateCollection}
             size="16"
+            tooltip={t[
+              'com.affine.rootAppSidebar.explorer.collection-section-add-tooltip'
+            ]()}
           >
             <PlusIcon />
           </IconButton>

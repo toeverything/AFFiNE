@@ -115,7 +115,11 @@ export const useExplorerTagNodeOperations = (
         index: 0,
         inline: true,
         view: (
-          <IconButton size="16" onClick={handleNewDoc}>
+          <IconButton
+            size="16"
+            onClick={handleNewDoc}
+            tooltip={t['com.affine.rootAppSidebar.explorer.tag-add-tooltip']()}
+          >
             <PlusIcon />
           </IconButton>
         ),

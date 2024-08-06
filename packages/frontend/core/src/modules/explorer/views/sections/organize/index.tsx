@@ -123,6 +123,9 @@ export const ExplorerOrganize = () => {
           data-testid="explorer-bar-add-organize-button"
           onClick={handleCreateFolder}
           size="16"
+          tooltip={t[
+            'com.affine.rootAppSidebar.explorer.organize-section-add-tooltip'
+          ]()}
         >
           <PlusIcon />
         </IconButton>

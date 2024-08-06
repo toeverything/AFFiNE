@@ -1,4 +1,5 @@
 import {
+  IconButton,
   MenuIcon,
   MenuItem,
   MenuSeparator,
@@ -18,6 +19,7 @@ import {
   InformationIcon,
   LinkedPageIcon,
   OpenInNewIcon,
+  PlusIcon,
   SplitViewIcon,
 } from '@blocksuite/icons/rc';
 import { DocsService, useLiveData, useServices } from '@toeverything/infra';
@@ -129,6 +131,18 @@ export const useExplorerDocNodeOperations = (
 
   return useMemo(
     () => [
+      {
+        index: 0,
+        inline: true,
+        view: (
+          <IconButton
+            size="16"
+            icon={<PlusIcon />}
+            tooltip={t['com.affine.rootAppSidebar.explorer.doc-add-tooltip']()}
+            onClick={handleAddLinkedPage}
+          />
+        ),
+      },
       ...(runtimeConfig.enableInfoModal
         ? [
             {

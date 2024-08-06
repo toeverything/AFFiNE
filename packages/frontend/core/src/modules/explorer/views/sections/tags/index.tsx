@@ -54,6 +54,9 @@ export const ExplorerTags = () => {
           data-testid="explorer-bar-add-favorite-button"
           onClick={handleCreateNewFavoriteDoc}
           size="16"
+          tooltip={t[
+            'com.affine.rootAppSidebar.explorer.tag-section-add-tooltip'
+          ]()}
         >
           <PlusIcon />
         </IconButton>

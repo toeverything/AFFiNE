@@ -1,4 +1,5 @@
 import { cssVar } from '@toeverything/theme';
+import { cssVarV2 } from '@toeverything/theme/v2';
 import { style } from '@vanilla-extract/css';
 export const linkItemRoot = style({
   color: 'inherit',
@@ -71,7 +72,7 @@ export const postfix = style({
   },
 });
 export const icon = style({
-  color: cssVar('iconColor'),
+  color: cssVarV2('icon/primary'),
   fontSize: '20px',
 });
 export const collapsedIconContainer = style({

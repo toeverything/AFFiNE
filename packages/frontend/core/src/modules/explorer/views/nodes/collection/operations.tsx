@@ -139,7 +139,13 @@ export const useExplorerCollectionNodeOperations = (
         index: 0,
         inline: true,
         view: (
-          <IconButton size="16" onClick={handleAddDocToCollection}>
+          <IconButton
+            size="16"
+            onClick={handleAddDocToCollection}
+            tooltip={t[
+              'com.affine.rootAppSidebar.explorer.collection-add-tooltip'
+            ]()}
+          >
             <PlusIcon />
           </IconButton>
         ),
