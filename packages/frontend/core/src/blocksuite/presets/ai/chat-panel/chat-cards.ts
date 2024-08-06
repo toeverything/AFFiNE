@@ -309,6 +309,15 @@ export class ChatCards extends WithDisposable(LitElement) {
         });
         break;
       }
+      case CardType.Block: {
+        this.updateContext({
+          quote: card.text,
+          markdown: card.markdown,
+          images: card.images,
+        });
+        break;
+      }
+
       case CardType.Doc: {
         await this._handleDocSelection(card);
         this.updateContext({
@@ -336,11 +345,7 @@ export class ChatCards extends WithDisposable(LitElement) {
         text,
         markdown,
       });
-
-      return;
-    }
-
-    if (!hasText && hasImages && images.length === 1) {
+    } else if (!hasText && hasImages && images.length === 1) {
       const [_, data] = this.host.command
         .chain()
         .tryAll(chain => [chain.getImageSelections()])
@@ -364,8 +369,16 @@ export class ChatCards extends WithDisposable(LitElement) {
         image: images[0],
         caption,
       });
-
-      return;
+    } else {
+      const markdown =
+        (await getSelectedTextContent(this.host, 'markdown')).trim() || '';
+      this._updateCards({
+        id: Date.now(),
+        type: CardType.Block,
+        text,
+        markdown,
+        images,
+      });
     }
   }
 

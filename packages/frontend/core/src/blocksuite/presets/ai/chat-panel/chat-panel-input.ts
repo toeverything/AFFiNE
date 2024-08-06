@@ -141,29 +141,34 @@ export class ChatPanelInput extends WithDisposable(LitElement) {
       }
     }
 
-    .chat-panel-images {
-      display: flex;
-      gap: 4px;
-      flex-wrap: wrap;
-      position: relative;
+    .chat-panel-images-wrapper {
+      overflow: hidden scroll;
+      max-height: 128px;
 
-      .image-container {
-        width: 58px;
-        height: 58px;
-        border-radius: 4px;
-        border: 1px solid var(--affine-border-color);
-        cursor: pointer;
-        overflow: hidden;
-        position: relative;
+      .chat-panel-images {
         display: flex;
-        justify-content: center;
-        align-items: center;
+        gap: 4px;
+        flex-wrap: wrap;
+        position: relative;
 
-        img {
-          max-width: 100%;
-          max-height: 100%;
-          width: auto;
-          height: auto;
+        .image-container {
+          width: 58px;
+          height: 58px;
+          border-radius: 4px;
+          border: 1px solid var(--affine-border-color);
+          cursor: pointer;
+          overflow: hidden;
+          position: relative;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+
+          img {
+            max-width: 100%;
+            max-height: 100%;
+            width: auto;
+            height: auto;
+          }
         }
       }
     }
@@ -242,34 +247,37 @@ export class ChatPanelInput extends WithDisposable(LitElement) {
   private _renderImages(images: File[]) {
     return html`
       <div
-        class="chat-panel-images"
+        class="chat-panel-images-wrapper"
         @mouseleave=${() => {
           this.closeWrapper.style.display = 'none';
           this.curIndex = -1;
         }}
       >
-        ${repeat(
-          images,
-          image => image.name,
-          (image, index) =>
-            html`<div
-              class="image-container"
-              @mouseenter=${(evt: MouseEvent) => {
-                const ele = evt.target as HTMLImageElement;
-                const rect = ele.getBoundingClientRect();
-                assertExists(ele.parentElement);
-                const parentRect = ele.parentElement.getBoundingClientRect();
-                const left = Math.abs(rect.right - parentRect.left) - 8;
-                const top = Math.abs(parentRect.top - rect.top) - 8;
-                this.curIndex = index;
-                this.closeWrapper.style.display = 'flex';
-                this.closeWrapper.style.left = left + 'px';
-                this.closeWrapper.style.top = top + 'px';
-              }}
-            >
-              <img src="${URL.createObjectURL(image)}" alt="${image.name}" />
-            </div>`
-        )}
+        <div class="chat-panel-images">
+          ${repeat(
+            images,
+            image => image.name,
+            (image, index) =>
+              html`<div
+                class="image-container"
+                @mouseenter=${(evt: MouseEvent) => {
+                  const ele = evt.target as HTMLImageElement;
+                  const rect = ele.getBoundingClientRect();
+                  assertExists(ele.parentElement?.parentElement);
+                  const parentRect =
+                    ele.parentElement.parentElement.getBoundingClientRect();
+                  const left = Math.abs(rect.right - parentRect.left) - 8;
+                  const top = Math.abs(parentRect.top - rect.top);
+                  this.curIndex = index;
+                  this.closeWrapper.style.display = 'flex';
+                  this.closeWrapper.style.left = left + 'px';
+                  this.closeWrapper.style.top = top + 'px';
+                }}
+              >
+                <img src="${URL.createObjectURL(image)}" alt="${image.name}" />
+              </div>`
+          )}
+        </div>
         <div
           class="close-wrapper"
           @click=${() => {

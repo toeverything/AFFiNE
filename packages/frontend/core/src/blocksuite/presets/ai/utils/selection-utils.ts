@@ -249,7 +249,7 @@ export const getSelectedImagesAsBlobs = async (host: EditorHost) => {
       chain.getImageSelections(),
     ])
     .getSelectedBlocks({
-      types: ['image'],
+      types: ['block', 'image'],
     })
     .run();
 
