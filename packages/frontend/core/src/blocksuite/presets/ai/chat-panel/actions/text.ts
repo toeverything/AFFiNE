@@ -43,7 +43,6 @@ export class ActionText extends WithDisposable(LitElement) {
       >
         ${createTextRenderer(this.host, {
           customHeading: true,
-          maxHeight: 160,
         })(originalText)}
       </div>
     </action-wrapper>`;
