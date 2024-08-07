@@ -405,13 +405,14 @@ export function patchQuickSearchService(
                     resolve({
                       userInput: result.payload.url,
                     });
-                  } else if (
-                    result.source === 'creation' &&
-                    result.id === 'creation:create-page'
-                  ) {
+                  } else if (result.source === 'creation') {
                     const docsService = framework.get(DocsService);
+                    const mode =
+                      result.id === 'creation:create-edgeless'
+                        ? 'edgeless'
+                        : 'page';
                     const newDoc = docsService.createDoc({
-                      mode: 'page',
+                      mode,
                       title: result.payload.title,
                     });
                     resolve({
