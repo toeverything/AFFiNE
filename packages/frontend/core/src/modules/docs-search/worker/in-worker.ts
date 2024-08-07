@@ -1,6 +1,8 @@
 import type { AffineTextAttributes } from '@blocksuite/blocks';
 import type { DeltaInsert } from '@blocksuite/inline';
 import { Document } from '@toeverything/infra';
+import { toHexString } from 'lib0/buffer.js';
+import { digest as lib0Digest } from 'lib0/hash/sha256';
 import { difference } from 'lodash-es';
 import {
   applyUpdate,
@@ -18,24 +20,66 @@ import type {
   WorkerOutput,
 } from './types';
 
-function crawlingDocData({
+let cachedRootDoc: { doc: YDoc; hash: string } | null = null;
+
+async function digest(data: Uint8Array) {
+  if (
+    globalThis.crypto &&
+    globalThis.crypto.subtle &&
+    typeof globalThis.crypto.subtle.digest === 'function'
+  ) {
+    return new Uint8Array(
+      await globalThis.crypto.subtle.digest('SHA-256', data)
+    );
+  }
+  return lib0Digest(data);
+}
+
+async function crawlingDocData({
   docBuffer,
-  docId,
+  storageDocId,
   rootDocBuffer,
-}: WorkerInput & { type: 'doc' }): WorkerOutput {
-  const yRootDoc = new YDoc();
-  applyUpdate(yRootDoc, rootDocBuffer);
+}: WorkerInput & { type: 'doc' }): Promise<WorkerOutput> {
+  if (isEmptyUpdate(rootDocBuffer)) {
+    console.warn('[worker]: Empty root doc buffer');
+    return {};
+  }
+
+  const rootDocBufferHash = toHexString(await digest(rootDocBuffer));
+
+  let yRootDoc;
+  if (cachedRootDoc && cachedRootDoc.hash === rootDocBufferHash) {
+    yRootDoc = cachedRootDoc.doc;
+  } else {
+    yRootDoc = new YDoc();
+    applyUpdate(yRootDoc, rootDocBuffer);
+    cachedRootDoc = { doc: yRootDoc, hash: rootDocBufferHash };
+  }
+
+  let docId = null;
+  for (const [id, subdoc] of yRootDoc.getMap('spaces')) {
+    if (subdoc instanceof YDoc && storageDocId === subdoc.guid) {
+      docId = id;
+      break;
+    }
+  }
+
+  if (docId === null) {
+    return {};
+  }
 
   const ydoc = new YDoc();
 
-  applyUpdate(ydoc, docBuffer);
+  if (!isEmptyUpdate(docBuffer)) {
+    applyUpdate(ydoc, docBuffer);
+  }
 
   let docExists: boolean | null = null;
 
   (
     yRootDoc.getMap('meta').get('pages') as YArray<YMap<any>> | undefined
   )?.forEach(page => {
-    if (page.get('id') === docId) {
+    if (page.get('id') === storageDocId) {
       docExists = !(page.get('trash') ?? false);
     }
   });
@@ -283,7 +327,7 @@ function crawlingRootDocData({
   };
 }
 
-globalThis.onmessage = (event: MessageEvent<WorkerIngoingMessage>) => {
+globalThis.onmessage = async (event: MessageEvent<WorkerIngoingMessage>) => {
   const message = event.data;
   if (message.type === 'init') {
     postMessage({ type: 'init', msgId: message.msgId });
@@ -296,7 +340,7 @@ globalThis.onmessage = (event: MessageEvent<WorkerIngoingMessage>) => {
       if (input.type === 'rootDoc') {
         data = crawlingRootDocData(input);
       } else {
-        data = crawlingDocData(input);
+        data = await crawlingDocData(input);
       }
 
       postMessage({ type: 'done', msgId: message.msgId, output: data });
@@ -311,3 +355,10 @@ globalThis.onmessage = (event: MessageEvent<WorkerIngoingMessage>) => {
 };
 
 declare function postMessage(message: WorkerOutgoingMessage): void;
+
+function isEmptyUpdate(binary: Uint8Array) {
+  return (
+    binary.byteLength === 0 ||
+    (binary.byteLength === 2 && binary[0] === 0 && binary[1] === 0)
+  );
+}

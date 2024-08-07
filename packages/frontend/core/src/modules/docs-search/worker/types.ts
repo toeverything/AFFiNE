@@ -34,7 +34,7 @@ export type WorkerInput =
     }
   | {
       type: 'doc';
-      docId: string;
+      storageDocId: string;
       rootDocBuffer: Uint8Array;
       docBuffer: Uint8Array;
     };

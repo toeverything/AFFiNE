@@ -244,9 +244,12 @@ export class FullTextInvertedIndex implements InvertedIndex {
 
       // normalize score
       const maxScore = submatched.reduce((acc, s) => Math.max(acc, s.score), 0);
-      const minScore = submatched.reduce((acc, s) => Math.min(acc, s.score), 1);
+      const minScore = submatched.reduce((acc, s) => Math.min(acc, s.score), 0);
       for (const { nid, score, position } of submatched) {
-        const normalizedScore = (score - minScore) / (maxScore - minScore);
+        const normalizedScore =
+          maxScore === minScore
+            ? score
+            : (score - minScore) / (maxScore - minScore);
         const match = matched.get(nid) || {
           score: [] as number[],
           positions: new Map(),
