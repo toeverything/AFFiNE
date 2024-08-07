@@ -211,16 +211,14 @@ export const PageOperationCell = ({
   );
   return (
     <>
-      {runtimeConfig.enableNewFavorite && (
-        <ColWrapper
-          hideInSmallContainer
-          data-testid="page-list-item-favorite"
-          data-favorite={favourite ? true : undefined}
-          className={styles.favoriteCell}
-        >
-          <FavoriteTag onClick={onToggleFavoritePage} active={favourite} />
-        </ColWrapper>
-      )}
+      <ColWrapper
+        hideInSmallContainer
+        data-testid="page-list-item-favorite"
+        data-favorite={favourite ? true : undefined}
+        className={styles.favoriteCell}
+      >
+        <FavoriteTag onClick={onToggleFavoritePage} active={favourite} />
+      </ColWrapper>
       <ColWrapper alignment="start">
         <Menu
           items={OperationMenu}

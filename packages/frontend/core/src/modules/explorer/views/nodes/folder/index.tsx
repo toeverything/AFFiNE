@@ -675,15 +675,10 @@ export const ExplorerFolderNodeFolder = ({
         ),
       },
 
-      // favorite, only new favorite available
-      ...(runtimeConfig.enableNewFavorite && node.id
-        ? [
-            {
-              index: 200,
-              view: <FavoriteFolderOperation id={node.id} />,
-            },
-          ]
-        : []),
+      {
+        index: 200,
+        view: node.id ? <FavoriteFolderOperation id={node.id} /> : null,
+      },
 
       {
         index: 9999,

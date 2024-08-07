@@ -22,9 +22,6 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
         allowLocalWorkspace:
           buildFlags.distribution === 'desktop' ? true : false,
         enableOrganize: true,
-        enableNewFavorite: true,
-        enableOldFavorite: false,
-
         enableInfoModal: true,
 
         // CAUTION(@forehalo): product not ready, do not enable it
@@ -57,8 +54,6 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
         changelogUrl: 'https://github.com/toeverything/AFFiNE/releases',
         enableInfoModal: true,
         enableOrganize: true,
-        enableNewFavorite: true,
-        enableOldFavorite: true,
       };
     },
   };

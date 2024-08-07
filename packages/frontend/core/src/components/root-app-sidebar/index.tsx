@@ -5,7 +5,6 @@ import {
   ExplorerCollections,
   ExplorerFavorites,
   ExplorerMigrationFavorites,
-  ExplorerOldFavorites,
   ExplorerOrganize,
 } from '@affine/core/modules/explorer';
 import { ExplorerTags } from '@affine/core/modules/explorer/views/sections/tags';
@@ -169,10 +168,9 @@ export const RootAppSidebar = (): ReactElement => {
         </MenuItem>
       </SidebarContainer>
       <SidebarScrollableContainer>
-        {runtimeConfig.enableNewFavorite && <ExplorerFavorites />}
+        <ExplorerFavorites />
         {runtimeConfig.enableOrganize && <ExplorerOrganize />}
-        {runtimeConfig.enableNewFavorite && <ExplorerMigrationFavorites />}
-        {runtimeConfig.enableOldFavorite && <ExplorerOldFavorites />}
+        <ExplorerMigrationFavorites />
         <ExplorerCollections />
         <ExplorerTags />
         <CategoryDivider label={t['com.affine.rootAppSidebar.others']()} />

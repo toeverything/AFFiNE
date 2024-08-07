@@ -25,7 +25,7 @@ export const ExplorerMigrationFavorites = () => {
   const { openConfirmModal } = useConfirmModal();
 
   const favorites = useLiveData(
-    favoriteItemsAdapter.orderedFavorites$.map(favs => {
+    favoriteItemsAdapter.favorites$.map(favs => {
       return favs.filter(fav => {
         if (fav.type === 'doc') {
           return (

@@ -133,33 +133,29 @@ export const useExplorerTagNodeOperations = (
             },
           ]
         : []),
-      ...(runtimeConfig.enableNewFavorite
-        ? [
-            {
-              index: 199,
-              view: (
-                <MenuItem
-                  preFix={
-                    <MenuIcon>
-                      {favorite ? (
-                        <FavoritedIcon
-                          style={{ color: 'var(--affine-primary-color)' }}
-                        />
-                      ) : (
-                        <FavoriteIcon />
-                      )}
-                    </MenuIcon>
-                  }
-                  onClick={handleToggleFavoriteTag}
-                >
-                  {favorite
-                    ? t['com.affine.favoritePageOperation.remove']()
-                    : t['com.affine.favoritePageOperation.add']()}
-                </MenuItem>
-              ),
-            },
-          ]
-        : []),
+      {
+        index: 199,
+        view: (
+          <MenuItem
+            preFix={
+              <MenuIcon>
+                {favorite ? (
+                  <FavoritedIcon
+                    style={{ color: 'var(--affine-primary-color)' }}
+                  />
+                ) : (
+                  <FavoriteIcon />
+                )}
+              </MenuIcon>
+            }
+            onClick={handleToggleFavoriteTag}
+          >
+            {favorite
+              ? t['com.affine.favoritePageOperation.remove']()
+              : t['com.affine.favoritePageOperation.add']()}
+          </MenuItem>
+        ),
+      },
       {
         index: 9999,
         view: <MenuSeparator key="menu-separator" />,
