@@ -583,7 +583,7 @@
   "com.affine.workspaceSubPath.trash.empty-description": "削除済みのドキュメントはここに表示されます",
   "core": "主要な",
   "dark": "ダーク",
-  "emptyAllPages": "<1>$t(New Doc)</1>  ボタンをクリックして最初のドキュメントを作成しましょう",
+  "emptyAllPages": "<1></1>  ボタンをクリックして最初のドキュメントを作成しましょう",
   "emptyFavorite": "「お気に入りに追加」をクリックすると、ここにドキュメントが表示されます",
   "emptySharedPages": "共有ドキュメントはここに表示されます",
   "emptyTrash": "「ゴミ箱に移動」をクリックすると、ここにドキュメントが表示されます",

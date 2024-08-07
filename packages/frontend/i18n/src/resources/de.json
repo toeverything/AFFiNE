@@ -385,7 +385,7 @@
   "com.affine.yesterday": "Gestern",
   "core": "Core",
   "dark": "Dunkel",
-  "emptyAllPages": "Dieser Workspace ist leer. Erstelle eine Seite, um sie zu bearbeiten.",
+  "emptyAllPages": "Dieser Workspace ist leer. Erstelle eine Seite, um sie zu bearbeiten.<1></1>",
   "emptyFavorite": "Klicke auf \"Zu Favoriten hinzufügen\" und die Seite wird hier erscheinen",
   "emptySharedPages": "Freigegebene Seiten werden hier angezeigt.",
   "emptyTrash": "Klicke auf \"In Papierkorb verschieben\" und die Seite wird hier erscheinen.",
