@@ -3,7 +3,6 @@ import {
   useConfirmModal,
   useDropTarget,
 } from '@affine/component';
-import { WorkbenchLink } from '@affine/core/modules/workbench';
 import type { AffineDNDData } from '@affine/core/types/dnd';
 import { useI18n } from '@affine/i18n';
 import {
@@ -62,7 +61,6 @@ export const TrashButton = () => {
       ref={dropTargetRef}
       icon={<AnimatedDeleteIcon closed={draggedOver} />}
       active={trashActive || draggedOver}
-      linkComponent={WorkbenchLink}
       to={'/trash'}
     >
       <span data-testid="trash-page">

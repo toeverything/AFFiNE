@@ -1,8 +1,8 @@
+import { WorkbenchLink } from '@affine/core/modules/workbench';
 import { ArrowDownSmallIcon } from '@blocksuite/icons/rc';
 import clsx from 'clsx';
 import React from 'react';
 import type { To } from 'react-router-dom';
-import { Link } from 'react-router-dom';
 
 import * as styles from './index.css';
 
@@ -90,7 +90,7 @@ export const MenuItem = React.forwardRef<HTMLDivElement, MenuItemProps>(
 MenuItem.displayName = 'MenuItem';
 
 export const MenuLinkItem = React.forwardRef<HTMLDivElement, MenuLinkItemProps>(
-  ({ to, linkComponent: LinkComponent = Link, ...props }, ref) => {
+  ({ to, linkComponent: LinkComponent = WorkbenchLink, ...props }, ref) => {
     return (
       <LinkComponent to={to} className={styles.linkItemRoot}>
         {/* The <a> element rendered by Link does not generate display box due to `display: contents` style */}

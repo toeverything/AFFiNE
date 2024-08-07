@@ -1,18 +1,14 @@
 import { toast } from '@affine/component';
-import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import { useDocMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
 import { useDocCollectionHelper } from '@affine/core/hooks/use-block-suite-workspace-helper';
-import { WorkspaceSubPath } from '@affine/core/shared';
+import { WorkbenchService } from '@affine/core/modules/workbench';
 import { DocsService, initEmptyPage, useService } from '@toeverything/infra';
 import { useCallback, useMemo } from 'react';
 
-import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
 import type { DocCollection } from '../../../shared';
 
 export const usePageHelper = (docCollection: DocCollection) => {
-  const { openPage, jumpToSubPath } = useNavigateHelper();
+  const workbench = useService(WorkbenchService).workbench;
   const { createDoc } = useDocCollectionHelper(docCollection);
-  const { setDocMeta } = useDocMetaHelper(docCollection);
   const docRecordList = useService(DocsService).list;
 
   const isPreferredEdgeless = useCallback(
@@ -22,18 +18,21 @@ export const usePageHelper = (docCollection: DocCollection) => {
   );
 
   const createPageAndOpen = useCallback(
-    (mode?: 'page' | 'edgeless', open?: boolean) => {
+    (mode?: 'page' | 'edgeless', open?: boolean | 'new-tab') => {
       const page = createDoc();
       initEmptyPage(page);
       docRecordList.doc$(page.id).value?.setMode(mode || 'page');
-      if (open !== false) openPage(docCollection.id, page.id);
+      if (open !== false)
+        workbench.openDoc(page.id, {
+          at: open === 'new-tab' ? 'new-tab' : 'active',
+        });
       return page;
     },
-    [docCollection.id, createDoc, openPage, docRecordList]
+    [createDoc, docRecordList, workbench]
   );
 
   const createEdgelessAndOpen = useCallback(
-    (open?: boolean) => {
+    (open?: boolean | 'new-tab') => {
       return createPageAndOpen('edgeless', open);
     },
     [createPageAndOpen]
@@ -59,7 +58,7 @@ export const usePageHelper = (docCollection: DocCollection) => {
           }.`
         );
         if (options.isWorkspaceFile) {
-          jumpToSubPath(docCollection.id, WorkspaceSubPath.ALL);
+          workbench.openAll();
           return;
         }
 
@@ -67,7 +66,7 @@ export const usePageHelper = (docCollection: DocCollection) => {
           return;
         }
         const pageId = pageIds[0];
-        openPage(docCollection.id, pageId);
+        workbench.openDoc(pageId);
       };
       showImportModal({
         collection: docCollection,
@@ -78,47 +77,20 @@ export const usePageHelper = (docCollection: DocCollection) => {
       });
       return await promise;
     },
-    [docCollection, openPage, jumpToSubPath]
-  );
-
-  const createLinkedPageAndOpen = useAsyncCallback(
-    async (pageId: string) => {
-      const page = createPageAndOpen();
-      page.load();
-      const parentPage = docCollection.getDoc(pageId);
-      if (parentPage) {
-        parentPage.load();
-        const text = parentPage.Text.fromDelta([
-          {
-            insert: ' ',
-            attributes: {
-              reference: {
-                type: 'LinkedPage',
-                pageId: page.id,
-              },
-            },
-          },
-        ]);
-        const [frame] = parentPage.getBlockByFlavour('affine:note');
-        frame && parentPage.addBlock('affine:paragraph', { text }, frame.id);
-        setDocMeta(page.id, {});
-      }
-    },
-    [docCollection, createPageAndOpen, setDocMeta]
+    [docCollection, workbench]
   );
 
   return useMemo(() => {
     return {
       isPreferredEdgeless,
-      createPage: createPageAndOpen,
+      createPage: (open?: boolean | 'new-tab') =>
+        createPageAndOpen('page', open),
       createEdgeless: createEdgelessAndOpen,
       importFile: importFileAndOpen,
-      createLinkedPage: createLinkedPageAndOpen,
     };
   }, [
     isPreferredEdgeless,
     createEdgelessAndOpen,
-    createLinkedPageAndOpen,
     createPageAndOpen,
     importFileAndOpen,
   ]);

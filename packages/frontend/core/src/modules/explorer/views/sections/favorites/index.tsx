@@ -20,7 +20,7 @@ import type { AffineDNDData } from '@affine/core/types/dnd';
 import { useI18n } from '@affine/i18n';
 import { PlusIcon } from '@blocksuite/icons/rc';
 import { DocsService, useLiveData, useServices } from '@toeverything/infra';
-import { useCallback, useMemo } from 'react';
+import { type MouseEventHandler, useCallback, useMemo } from 'react';
 
 import { ExplorerService } from '../../../services/explorer';
 import { CollapsibleSection } from '../../layouts/collapsible-section';
@@ -88,21 +88,26 @@ export const ExplorerFavorites = () => {
     []
   );
 
-  const handleCreateNewFavoriteDoc = useCallback(() => {
-    const newDoc = docsService.createDoc();
-    favoriteService.favoriteList.add(
-      'doc',
-      newDoc.id,
-      favoriteService.favoriteList.indexAt('before')
-    );
-    workbenchService.workbench.openDoc(newDoc.id);
-    explorerSection.setCollapsed(false);
-  }, [
-    docsService,
-    explorerSection,
-    favoriteService.favoriteList,
-    workbenchService.workbench,
-  ]);
+  const handleCreateNewFavoriteDoc: MouseEventHandler = useCallback(
+    e => {
+      const newDoc = docsService.createDoc();
+      favoriteService.favoriteList.add(
+        'doc',
+        newDoc.id,
+        favoriteService.favoriteList.indexAt('before')
+      );
+      workbenchService.workbench.openDoc(newDoc.id, {
+        at: e.ctrlKey || e.metaKey ? 'new-tab' : 'active',
+      });
+      explorerSection.setCollapsed(false);
+    },
+    [
+      docsService,
+      explorerSection,
+      favoriteService.favoriteList,
+      workbenchService.workbench,
+    ]
+  );
 
   const handleOnChildrenDrop = useCallback(
     (

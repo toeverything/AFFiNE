@@ -3,14 +3,14 @@ import { BlockCard } from '@affine/component/card/block-card';
 import { track } from '@affine/core/mixpanel';
 import { useI18n } from '@affine/i18n';
 import { EdgelessIcon, ImportIcon, PageIcon } from '@blocksuite/icons/rc';
-import type { PropsWithChildren } from 'react';
+import type { MouseEvent, PropsWithChildren } from 'react';
 import { useCallback, useState } from 'react';
 
 import { menuContent } from './new-page-button.css';
 
 type NewPageButtonProps = {
-  createNewPage: () => void;
-  createNewEdgeless: () => void;
+  createNewPage: (e?: MouseEvent) => void;
+  createNewEdgeless: (e?: MouseEvent) => void;
   importFile?: () => void;
   size?: 'small' | 'default';
 };
@@ -67,19 +67,26 @@ export const NewPageButton = ({
 }: PropsWithChildren<NewPageButtonProps>) => {
   const [open, setOpen] = useState(false);
 
-  const handleCreateNewPage = useCallback(() => {
-    createNewPage();
-    setOpen(false);
-    track.allDocs.header.actions.createDoc();
-  }, [createNewPage]);
+  const handleCreateNewPage: NewPageButtonProps['createNewPage'] = useCallback(
+    e => {
+      createNewPage(e);
+      setOpen(false);
+      track.allDocs.header.actions.createDoc();
+    },
+    [createNewPage]
+  );
 
-  const handleCreateNewEdgeless = useCallback(() => {
-    createNewEdgeless();
-    setOpen(false);
-    track.allDocs.header.actions.createDoc({
-      mode: 'edgeless',
-    });
-  }, [createNewEdgeless]);
+  const handleCreateNewEdgeless: NewPageButtonProps['createNewEdgeless'] =
+    useCallback(
+      e => {
+        createNewEdgeless(e);
+        setOpen(false);
+        track.allDocs.header.actions.createDoc({
+          mode: 'edgeless',
+        });
+      },
+      [createNewEdgeless]
+    );
 
   const handleImportFile = useCallback(() => {
     importFile?.();

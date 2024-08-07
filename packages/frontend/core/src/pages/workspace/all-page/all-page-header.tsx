@@ -59,8 +59,12 @@ export const AllPageHeader = ({
               styles.headerCreateNewButton,
               !showCreateNew && styles.headerCreateNewButtonHidden
             )}
-            onCreateEdgeless={createEdgeless}
-            onCreatePage={createPage}
+            onCreateEdgeless={e =>
+              createEdgeless(e?.metaKey || e?.ctrlKey ? 'new-tab' : true)
+            }
+            onCreatePage={e =>
+              createPage(e?.metaKey || e?.ctrlKey ? 'new-tab' : true)
+            }
             onImportFile={onImportFile}
           >
             <PlusIcon />

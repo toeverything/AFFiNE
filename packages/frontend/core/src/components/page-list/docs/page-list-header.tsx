@@ -65,8 +65,13 @@ export const PageListHeader = () => {
       <PageListNewPageButton
         size="small"
         testId="new-page-button-trigger"
-        onCreateEdgeless={createEdgeless}
-        onCreatePage={createPage}
+        onCreateEdgeless={e =>
+          // todo: abstract this for ctrl check
+          createEdgeless(e?.metaKey || e?.ctrlKey ? 'new-tab' : true)
+        }
+        onCreatePage={e =>
+          createPage(e?.metaKey || e?.ctrlKey ? 'new-tab' : true)
+        }
         onImportFile={onImportFile}
       >
         <div className={styles.buttonText}>{t['New Page']()}</div>

@@ -38,6 +38,9 @@ const createAndPinCollection = async (
   await getBlockSuiteEditorTitle(page).click();
   await getBlockSuiteEditorTitle(page).fill('test page');
 
+  // fixme: remove this timeout. looks like an issue with useBindWorkbenchToBrowserRouter?
+  await page.waitForTimeout(500);
+
   await page.getByTestId('all-pages').click();
 
   const cell = page.getByTestId('page-list-item-title').getByText('test page');
@@ -67,7 +70,7 @@ test('Show collections items in sidebar', async ({ page }) => {
   const collections = page.getByTestId('explorer-collections');
   await collections.getByTestId('category-divider-collapse-button').click();
   const items = collections.locator('[data-testid^="explorer-collection-"]');
-  expect(await items.count()).toBe(1);
+  await expect(items).toHaveCount(1);
   const first = items.first();
   expect(await first.textContent()).toBe('test collection');
   await first.getByTestId('explorer-collapsed-button').click();
@@ -87,7 +90,7 @@ test('Show collections items in sidebar', async ({ page }) => {
   const deleteCollection = page.getByText('Delete');
   await deleteCollection.click();
   await page.waitForTimeout(50);
-  expect(await items.count()).toBe(0);
+  await expect(items).toHaveCount(0);
   await createAndPinCollection(page);
   expect(await items.count()).toBe(1);
   await clickSideBarAllPageButton(page);

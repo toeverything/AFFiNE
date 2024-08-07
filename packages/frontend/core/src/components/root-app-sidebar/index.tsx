@@ -9,7 +9,6 @@ import {
 } from '@affine/core/modules/explorer';
 import { ExplorerTags } from '@affine/core/modules/explorer/views/sections/tags';
 import { CMDKQuickSearchService } from '@affine/core/modules/quicksearch/services/cmdk';
-import { pathGenerator } from '@affine/core/shared';
 import { apis, events } from '@affine/electron-api';
 import { useI18n } from '@affine/i18n';
 import { AllDocsIcon, SettingsIcon } from '@blocksuite/icons/rc';
@@ -69,7 +68,6 @@ export type RootAppSidebarProps = {
  */
 export const RootAppSidebar = (): ReactElement => {
   const currentWorkspace = useService(WorkspaceService).workspace;
-  const currentWorkspaceId = currentWorkspace.id;
   const { appSettings } = useAppSettingHelper();
   const docCollection = currentWorkspace.docCollection;
   const t = useI18n();
@@ -88,15 +86,13 @@ export const RootAppSidebar = (): ReactElement => {
 
   const onClickNewPage = useAsyncCallback(
     async (e?: MouseEvent) => {
-      const page = pageHelper.createPage('page', false);
+      const page = pageHelper.createPage(
+        e?.ctrlKey || e?.metaKey ? 'new-tab' : true
+      );
       page.load();
       track.$.navigationPanel.$.createDoc();
-
-      workbench.openDoc(page.id, {
-        at: e?.ctrlKey || e?.metaKey ? 'new-tab' : 'active',
-      });
     },
-    [pageHelper, workbench]
+    [pageHelper]
   );
   useEffect(() => {
     if (environment.isDesktop) {
@@ -145,11 +141,7 @@ export const RootAppSidebar = (): ReactElement => {
           />
           <AddPageButton onClick={onClickNewPage} />
         </div>
-        <MenuLinkItem
-          icon={<AllDocsIcon />}
-          active={allPageActive}
-          to={pathGenerator.all(currentWorkspaceId)}
-        >
+        <MenuLinkItem icon={<AllDocsIcon />} active={allPageActive} to={'/all'}>
           <span data-testid="all-pages">
             {t['com.affine.workspaceSubPath.all']()}
           </span>

@@ -1,12 +1,12 @@
 import { i18nTime } from '@affine/i18n';
-import { initEmptyPage } from '@toeverything/infra';
+import { initEmptyPage, useService } from '@toeverything/infra';
 import dayjs from 'dayjs';
 import { useCallback, useMemo } from 'react';
 
+import { WorkbenchService } from '../modules/workbench';
 import type { DocCollection } from '../shared';
 import { useCurrentWorkspacePropertiesAdapter } from './use-affine-adapter';
 import { useDocCollectionHelper } from './use-block-suite-workspace-helper';
-import { useNavigateHelper } from './use-navigate-helper';
 
 type MaybeDate = Date | string | number;
 export const JOURNAL_DATE_FORMAT = 'YYYY-MM-DD';
@@ -153,26 +153,32 @@ export const useJournalHelper = (docCollection: DocCollection) => {
 
 // split useJournalRouteHelper since it requires a <Route /> context, which may not work in lit
 export const useJournalRouteHelper = (docCollection: DocCollection) => {
-  const navigateHelper = useNavigateHelper();
   const { getJournalByDate } = useJournalHelper(docCollection);
+  const workbench = useService(WorkbenchService).workbench;
   /**
    * open journal by date, create one if not exist
    */
   const openJournal = useCallback(
-    (maybeDate: MaybeDate) => {
+    (maybeDate: MaybeDate, newTab?: boolean) => {
       const page = getJournalByDate(maybeDate);
-      navigateHelper.openPage(docCollection.id, page.id);
+      workbench.openDoc(page.id, {
+        at: newTab ? 'new-tab' : 'active',
+      });
+      return page.id;
     },
-    [getJournalByDate, navigateHelper, docCollection.id]
+    [getJournalByDate, workbench]
   );
 
   /**
    * open today's journal
    */
-  const openToday = useCallback(() => {
-    const date = dayjs().format(JOURNAL_DATE_FORMAT);
-    openJournal(date);
-  }, [openJournal]);
+  const openToday = useCallback(
+    (newTab?: boolean) => {
+      const date = dayjs().format(JOURNAL_DATE_FORMAT);
+      return openJournal(date, newTab);
+    },
+    [openJournal]
+  );
 
   return useMemo(
     () => ({

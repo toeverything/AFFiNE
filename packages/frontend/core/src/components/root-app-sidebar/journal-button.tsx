@@ -7,6 +7,7 @@ import type { DocCollection } from '@affine/core/shared';
 import { useI18n } from '@affine/i18n';
 import { TodayIcon, TomorrowIcon, YesterdayIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
+import { type MouseEvent, useCallback } from 'react';
 
 import { MenuItem } from '../app-sidebar';
 
@@ -26,6 +27,13 @@ export const AppSidebarJournalButton = ({
     location.pathname.split('/')[1]
   );
 
+  const handleOpenToday = useCallback(
+    (e: MouseEvent) => {
+      openToday(e.ctrlKey || e.metaKey);
+    },
+    [openToday]
+  );
+
   const Icon =
     isJournal && journalDate
       ? journalDate.isBefore(new Date(), 'day')
@@ -39,7 +47,7 @@ export const AppSidebarJournalButton = ({
     <MenuItem
       data-testid="slider-bar-journals-button"
       active={isJournal}
-      onClick={openToday}
+      onClick={handleOpenToday}
       icon={<Icon />}
     >
       {t['com.affine.journal.app-sidebar-title']()}
