@@ -274,6 +274,7 @@ const ExplorerCollectionNodeChildren = ({
 
   const handleRemoveFromAllowList = useCallback(
     (id: string) => {
+      track.$.navigationPanel.collections.removeOrganizeItem({ type: 'doc' });
       collectionService.deletePageFromCollection(collection.id, id);
       toast(t['com.affine.collection.removePage.success']());
     },

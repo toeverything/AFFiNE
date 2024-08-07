@@ -52,6 +52,11 @@ export const useExplorerDocNodeOperations = (
     }, [docId, compatibleFavoriteItemsAdapter])
   );
 
+  const handleOpenInfoModal = useCallback(() => {
+    track.$.docInfoPanel.$.open();
+    options.openInfoModal();
+  }, [options]);
+
   const handleMoveToTrash = useCallback(() => {
     if (!docRecord) {
       return;
@@ -92,7 +97,7 @@ export const useExplorerDocNodeOperations = (
     track.$.navigationPanel.organize.openInSplitView({
       type: 'doc',
     });
-  }, [docId, workbenchService]);
+  }, [docId, workbenchService.workbench]);
 
   const handleAddLinkedPage = useAsyncCallback(async () => {
     const newDoc = docsService.createDoc();
@@ -102,7 +107,7 @@ export const useExplorerDocNodeOperations = (
     track.$.navigationPanel.docs.linkDoc({ control: 'createDoc' });
     workbenchService.workbench.openDoc(newDoc.id);
     options.openNodeCollapsed();
-  }, [docId, options, docsService, workbenchService.workbench]);
+  }, [docsService, docId, workbenchService.workbench, options]);
 
   const handleToggleFavoriteDoc = useCallback(() => {
     compatibleFavoriteItemsAdapter.toggle(docId, 'doc');
@@ -136,7 +141,7 @@ export const useExplorerDocNodeOperations = (
                       <InformationIcon />
                     </MenuIcon>
                   }
-                  onClick={options.openInfoModal}
+                  onClick={handleOpenInfoModal}
                 >
                   {t['com.affine.page-properties.page-info.view']()}
                 </MenuItem>
@@ -244,8 +249,8 @@ export const useExplorerDocNodeOperations = (
       handleMoveToTrash,
       handleOpenInNewTab,
       handleOpenInSplitView,
+      handleOpenInfoModal,
       handleToggleFavoriteDoc,
-      options.openInfoModal,
       t,
     ]
   );

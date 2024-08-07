@@ -77,9 +77,10 @@ export const PageOperationCell = ({
   const blocksuiteDoc = currentWorkspace.docCollection.getDoc(page.id);
 
   const [openInfoModal, setOpenInfoModal] = useState(false);
-  const onOpenInfoModal = () => {
+  const onOpenInfoModal = useCallback(() => {
+    track.$.docInfoPanel.$.open();
     setOpenInfoModal(true);
-  };
+  }, []);
 
   const onDisablePublicSharing = useCallback(() => {
     toast('Successfully disabled', {
@@ -88,6 +89,8 @@ export const PageOperationCell = ({
   }, []);
 
   const onRemoveToTrash = useCallback(() => {
+    track.allDocs.list.docMenu.deleteDoc();
+
     setTrashModal({
       open: true,
       pageIds: [page.id],
@@ -96,6 +99,8 @@ export const PageOperationCell = ({
   }, [page.id, page.title, setTrashModal]);
 
   const onOpenInSplitView = useCallback(() => {
+    track.allDocs.list.docMenu.openInSplitView();
+
     workbench.openDoc(page.id, { at: 'tail' });
   }, [page.id, workbench]);
 
@@ -113,12 +118,25 @@ export const PageOperationCell = ({
     );
   }, [page.id, favAdapter, t]);
 
+  const onToggleFavoritePageOption = useCallback(() => {
+    track.allDocs.list.docMenu.toggleFavorite();
+
+    onToggleFavoritePage();
+  }, [onToggleFavoritePage]);
+
   const onDuplicate = useCallback(() => {
     duplicate(page.id, false);
     track.allDocs.list.docMenu.createDoc({
       control: 'duplicate',
     });
   }, [duplicate, page.id]);
+
+  const handleRemoveFromAllowList = useCallback(() => {
+    if (onRemoveFromAllowList) {
+      onRemoveFromAllowList();
+      track.collection.docList.docMenu.removeOrganizeItem({ type: 'doc' });
+    }
+  }, [onRemoveFromAllowList]);
 
   const OperationMenu = (
     <>
@@ -132,7 +150,7 @@ export const PageOperationCell = ({
       )}
       {isInAllowList && (
         <MenuItem
-          onClick={onRemoveFromAllowList}
+          onClick={handleRemoveFromAllowList}
           preFix={
             <MenuIcon>
               <FilterMinusIcon />
@@ -143,7 +161,7 @@ export const PageOperationCell = ({
         </MenuItem>
       )}
       <MenuItem
-        onClick={onToggleFavoritePage}
+        onClick={onToggleFavoritePageOption}
         preFix={
           <MenuIcon>
             {favourite ? (

@@ -37,11 +37,7 @@ type DocEvents =
   | 'deleteDoc'
   | 'switchPageMode'
   | 'openDocOptionsMenu'
-  | 'openDocInfo'
-  | 'renameDoc'
-  | 'deleteDoc'
-  | 'viewHistoryVersions'
-  | 'viewInfo';
+  | 'openDocInfo';
 type EditorEvents = 'bold' | 'italic' | 'underline' | 'strikeThrough';
 // END SECTION
 
@@ -65,13 +61,15 @@ type FolderEvents =
   | 'deleteFolder';
 type TagEvents = 'createTag' | 'deleteTag' | 'renameTag' | 'tagDoc';
 type FavoriteEvents = 'toggleFavorite';
+type DocInfoEvents = 'toggle' | 'open';
 type OrganizeItemEvents = // doc, link, folder, collection, tag
 
     | 'createOrganizeItem'
     | 'renameOrganizeItem'
     | 'moveOrganizeItem'
     | 'deleteOrganizeItem'
-    | 'orderOrganizeItem';
+    | 'orderOrganizeItem'
+    | 'removeOrganizeItem';
 type OrganizeEvents =
   | OrganizeItemEvents
   | CollectionEvents
@@ -113,7 +111,8 @@ type UserEvents =
   | ShareEvents
   | AuthEvents
   | AccountEvents
-  | PaymentEvents;
+  | PaymentEvents
+  | DocInfoEvents;
 
 interface PageDivision {
   [page: string]: {
@@ -178,7 +177,7 @@ const PageEvents = {
         'toggleFavorite',
       ],
       docs: ['createDoc', 'deleteDoc', 'linkDoc'],
-      collections: ['createDoc', 'addDocToCollection'],
+      collections: ['createDoc', 'addDocToCollection', 'removeOrganizeItem'],
       folders: ['createDoc'],
       tags: ['createDoc', 'tagDoc'],
       favorites: ['createDoc'],
@@ -238,6 +237,9 @@ const PageEvents = {
       atMenu: ['linkDoc'],
       formatToolbar: ['bold'],
     },
+    inlineDocInfo: {
+      $: ['toggle'],
+    },
   },
   // remove when type added
   // eslint-disable-next-line @typescript-eslint/ban-types
@@ -252,12 +254,22 @@ const PageEvents = {
       actions: ['createDoc', 'createWorkspace'],
     },
     list: {
-      docMenu: ['createDoc'],
+      docMenu: [
+        'createDoc',
+        'deleteDoc',
+        'openInSplitView',
+        'toggleFavorite',
+        'openInNewTab',
+      ],
     },
   },
   // remove when type added
   // eslint-disable-next-line @typescript-eslint/ban-types
-  collection: {},
+  collection: {
+    docList: {
+      docMenu: ['removeOrganizeItem'],
+    },
+  },
   // remove when type added
   // eslint-disable-next-line @typescript-eslint/ban-types
   tag: {},
@@ -304,6 +316,7 @@ export type EventArgs = {
   createOrganizeItem: OrganizeItemArgs;
   renameOrganizeItem: OrganizeItemArgs;
   moveOrganizeItem: OrganizeItemArgs;
+  removeOrganizeItem: OrganizeItemArgs;
   deleteOrganizeItem: OrganizeItemArgs;
   orderOrganizeItem: OrganizeItemArgs;
   openInNewTab: { type: OrganizeItemType };
