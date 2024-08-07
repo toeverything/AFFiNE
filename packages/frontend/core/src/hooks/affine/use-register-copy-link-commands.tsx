@@ -3,9 +3,10 @@ import {
   registerAffineCommand,
 } from '@affine/core/commands';
 import { useSharingUrl } from '@affine/core/hooks/affine/use-share-url';
+import { track } from '@affine/core/mixpanel';
 import { useIsActiveView } from '@affine/core/modules/workbench';
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import type { WorkspaceMetadata } from '@toeverything/infra';
+import { type WorkspaceMetadata } from '@toeverything/infra';
 import { useEffect } from 'react';
 
 export function useRegisterCopyLinkCommands({
@@ -38,6 +39,8 @@ export function useRegisterCopyLinkCommands({
         label: '',
         icon: null,
         run() {
+          track.$.cmdk.general.copyShareLink({ type: 'private' });
+
           isActiveView && isCloud && onClickCopyLink();
         },
       })

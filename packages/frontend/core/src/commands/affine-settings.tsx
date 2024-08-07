@@ -6,6 +6,7 @@ import type { createStore } from 'jotai';
 import type { useTheme } from 'next-themes';
 
 import type { useLanguageHelper } from '../hooks/affine/use-language-helper';
+import { track } from '../mixpanel';
 import { registerAffineCommand } from './registry';
 
 export function registerAffineSettingsCommands({
@@ -34,6 +35,10 @@ export function registerAffineSettingsCommands({
       icon: <SettingsIcon />,
       preconditionStrategy: () => theme.theme !== 'system',
       run() {
+        track.$.cmdk.settings.changeAppSetting({
+          key: 'theme',
+          value: 'system',
+        });
         theme.setTheme('system');
       },
     })
@@ -48,6 +53,10 @@ export function registerAffineSettingsCommands({
       icon: <SettingsIcon />,
       preconditionStrategy: () => theme.theme !== 'dark',
       run() {
+        track.$.cmdk.settings.changeAppSetting({
+          key: 'theme',
+          value: 'dark',
+        });
         theme.setTheme('dark');
       },
     })
@@ -63,6 +72,11 @@ export function registerAffineSettingsCommands({
       icon: <SettingsIcon />,
       preconditionStrategy: () => theme.theme !== 'light',
       run() {
+        track.$.cmdk.settings.changeAppSetting({
+          key: 'theme',
+          value: 'light',
+        });
+
         theme.setTheme('light');
       },
     })
@@ -80,6 +94,11 @@ export function registerAffineSettingsCommands({
       preconditionStrategy: () =>
         store.get(appSettingAtom).fontStyle !== 'Sans',
       run() {
+        track.$.cmdk.settings.changeAppSetting({
+          key: 'fontStyle',
+          value: 'Sans',
+        });
+
         store.set(appSettingAtom, prev => ({
           ...prev,
           fontStyle: 'Sans',
@@ -99,6 +118,11 @@ export function registerAffineSettingsCommands({
       preconditionStrategy: () =>
         store.get(appSettingAtom).fontStyle !== 'Serif',
       run() {
+        track.$.cmdk.settings.changeAppSetting({
+          key: 'fontStyle',
+          value: 'Serif',
+        });
+
         store.set(appSettingAtom, prev => ({
           ...prev,
           fontStyle: 'Serif',
@@ -118,6 +142,11 @@ export function registerAffineSettingsCommands({
       preconditionStrategy: () =>
         store.get(appSettingAtom).fontStyle !== 'Mono',
       run() {
+        track.$.cmdk.settings.changeAppSetting({
+          key: 'fontStyle',
+          value: 'Mono',
+        });
+
         store.set(appSettingAtom, prev => ({
           ...prev,
           fontStyle: 'Mono',
@@ -138,6 +167,11 @@ export function registerAffineSettingsCommands({
         icon: <SettingsIcon />,
         preconditionStrategy: () => currentLanguage?.tag !== language.tag,
         run() {
+          track.$.cmdk.settings.changeAppSetting({
+            key: 'language',
+            value: language.name,
+          });
+
           onLanguageChange(language.tag);
         },
       })
@@ -158,6 +192,10 @@ export function registerAffineSettingsCommands({
       icon: <SettingsIcon />,
       preconditionStrategy: () => environment.isDesktop,
       run() {
+        track.$.cmdk.settings.changeAppSetting({
+          key: 'clientBorder',
+          value: store.get(appSettingAtom).clientBorder ? 'off' : 'on',
+        });
         store.set(appSettingAtom, prev => ({
           ...prev,
           clientBorder: !prev.clientBorder,
@@ -178,6 +216,11 @@ export function registerAffineSettingsCommands({
       category: 'affine:settings',
       icon: <SettingsIcon />,
       run() {
+        track.$.cmdk.settings.changeAppSetting({
+          key: 'fullWidthLayout',
+          value: store.get(appSettingAtom).fullWidthLayout ? 'off' : 'on',
+        });
+
         store.set(appSettingAtom, prev => ({
           ...prev,
           fullWidthLayout: !prev.fullWidthLayout,
@@ -201,6 +244,11 @@ export function registerAffineSettingsCommands({
       icon: <SettingsIcon />,
       preconditionStrategy: () => environment.isDesktop,
       run() {
+        track.$.cmdk.settings.changeAppSetting({
+          key: 'enableNoisyBackground',
+          value: store.get(appSettingAtom).enableNoisyBackground ? 'off' : 'on',
+        });
+
         store.set(appSettingAtom, prev => ({
           ...prev,
           enableNoisyBackground: !prev.enableNoisyBackground,
@@ -222,6 +270,10 @@ export function registerAffineSettingsCommands({
       icon: <SettingsIcon />,
       preconditionStrategy: () => environment.isDesktop && environment.isMacOs,
       run() {
+        track.$.cmdk.settings.changeAppSetting({
+          key: 'enableBlurBackground',
+          value: store.get(appSettingAtom).enableBlurBackground ? 'off' : 'on',
+        });
         store.set(appSettingAtom, prev => ({
           ...prev,
           enableBlurBackground: !prev.enableBlurBackground,

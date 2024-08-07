@@ -150,7 +150,9 @@ export const PageHeaderMenuButton = ({
 
   const handleSwitchMode = useCallback(() => {
     doc.toggleMode();
-    track.$.header.docOptions.switchPageMode();
+    track.$.header.docOptions.switchPageMode({
+      mode: currentMode === 'page' ? 'edgeless' : 'page',
+    });
     toast(
       currentMode === 'page'
         ? t['com.affine.toastMessage.edgelessMode']()

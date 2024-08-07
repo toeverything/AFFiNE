@@ -5,6 +5,7 @@ import type { useI18n } from '@affine/i18n';
 import { ResetIcon } from '@blocksuite/icons/rc';
 import type { createStore } from 'jotai';
 
+import { track } from '../mixpanel';
 import { registerAffineCommand } from './registry';
 
 export function registerAffineUpdatesCommands({
@@ -24,6 +25,8 @@ export function registerAffineUpdatesCommands({
       label: t['com.affine.cmdk.affine.restart-to-upgrade'](),
       preconditionStrategy: () => !!store.get(updateReadyAtom),
       run() {
+        track.$.cmdk.updates.quitAndInstall();
+
         apis?.updater.quitAndInstall().catch(err => {
           notify.error({
             title: 'Failed to restart to upgrade',

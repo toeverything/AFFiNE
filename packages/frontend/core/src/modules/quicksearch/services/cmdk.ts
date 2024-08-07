@@ -1,3 +1,4 @@
+import { track } from '@affine/core/mixpanel';
 import type { DocsService } from '@toeverything/infra';
 import { Service } from '@toeverything/infra';
 
@@ -46,6 +47,10 @@ export class CMDKQuickSearchService extends Service {
               docId: string;
               blockId?: string;
             } = result.payload;
+
+            result.source === 'recent-doc' && track.$.cmdk.recent.recentDocs();
+            result.source === 'docs' &&
+              track.$.cmdk.results.searchResultsDocs();
 
             this.workbenchService.workbench.openDoc({
               docId: doc.docId,

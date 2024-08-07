@@ -3,6 +3,7 @@ import { ContactWithUsIcon, NewIcon } from '@blocksuite/icons/rc';
 import type { createStore } from 'jotai';
 
 import { openSettingModalAtom } from '../atoms';
+import { track } from '../mixpanel';
 import { popupWindow } from '../utils';
 import { registerAffineCommand } from './registry';
 
@@ -21,6 +22,7 @@ export function registerAffineHelpCommands({
       icon: <NewIcon />,
       label: t['com.affine.cmdk.affine.whats-new'](),
       run() {
+        track.$.cmdk.help.openChangelog();
         popupWindow(runtimeConfig.changelogUrl);
       },
     })
@@ -32,6 +34,7 @@ export function registerAffineHelpCommands({
       icon: <ContactWithUsIcon />,
       label: t['com.affine.cmdk.affine.contact-us'](),
       run() {
+        track.$.cmdk.help.contactUs();
         store.set(openSettingModalAtom, {
           open: true,
           activeTab: 'about',

@@ -4,6 +4,7 @@ import type { createStore } from 'jotai';
 
 import { openCreateWorkspaceModalAtom } from '../atoms';
 import type { usePageHelper } from '../components/blocksuite/block-suite-page-list/utils';
+import { track } from '../mixpanel';
 import { registerAffineCommand } from './registry';
 
 export function registerAffineCreationCommands({
@@ -29,6 +30,8 @@ export function registerAffineCreationCommands({
           }
         : undefined,
       run() {
+        track.$.cmdk.creation.createDoc({ mode: 'page' });
+
         pageHelper.createPage();
       },
     })
@@ -41,6 +44,10 @@ export function registerAffineCreationCommands({
       icon: <PlusIcon />,
       label: t['com.affine.cmdk.affine.new-edgeless-page'](),
       run() {
+        track.$.cmdk.creation.createDoc({
+          mode: 'edgeless',
+        });
+
         pageHelper.createEdgeless();
       },
     })
@@ -53,6 +60,8 @@ export function registerAffineCreationCommands({
       icon: <PlusIcon />,
       label: t['com.affine.cmdk.affine.new-workspace'](),
       run() {
+        track.$.cmdk.workspace.createWorkspace();
+
         store.set(openCreateWorkspaceModalAtom, 'new');
       },
     })
@@ -67,6 +76,10 @@ export function registerAffineCreationCommands({
         return environment.isDesktop;
       },
       run() {
+        track.$.cmdk.workspace.createWorkspace({
+          control: 'import',
+        });
+
         store.set(openCreateWorkspaceModalAtom, 'add');
       },
     })

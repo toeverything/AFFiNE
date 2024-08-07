@@ -3,6 +3,7 @@ import { SidebarIcon } from '@blocksuite/icons/rc';
 import type { createStore } from 'jotai';
 
 import { appSidebarOpenAtom } from '../components/app-sidebar';
+import { track } from '../mixpanel';
 import { registerAffineCommand } from './registry';
 
 export function registerAffineLayoutCommands({
@@ -27,6 +28,8 @@ export function registerAffineLayoutCommands({
         binding: '$mod+/',
       },
       run() {
+        track.$.navigationPanel.$.toggle();
+
         store.set(appSidebarOpenAtom, v => !v);
       },
     })

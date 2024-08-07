@@ -2,21 +2,26 @@
 /* eslint-disable rxjs/finnish */
 
 // SECTION: app events
-type GeneralEvents = 'openMigrationDataHelp' | 'export';
-type CmdkEvents = 'quickSearch';
+type GeneralEvents = 'openMigrationDataHelp';
+type CmdkEvents = 'quickSearch' | 'recentDocs' | 'searchResultsDocs';
 type AppEvents =
   | 'checkUpdates'
   | 'downloadUpdate'
   | 'downloadApp'
   | 'quitAndInstall'
   | 'openChangelog'
-  | 'dismissChangelog';
+  | 'dismissChangelog'
+  | 'contactUs'
+  | 'findInPage';
 type NavigationEvents =
   | 'openInNewTab'
   | 'openInSplitView'
   | 'switchTab'
   | 'switchSplitView'
   | 'navigate'
+  | 'goBack'
+  | 'goForward'
+  | 'toggle' // toggle navigation panel
   | 'open'
   | 'close'; // openclose modal/diaglog
 
@@ -35,6 +40,7 @@ type DocEvents =
   | 'renameDoc'
   | 'linkDoc'
   | 'deleteDoc'
+  | 'restoreDoc'
   | 'switchPageMode'
   | 'openDocOptionsMenu'
   | 'openDocInfo';
@@ -61,7 +67,6 @@ type FolderEvents =
   | 'deleteFolder';
 type TagEvents = 'createTag' | 'deleteTag' | 'renameTag' | 'tagDoc';
 type FavoriteEvents = 'toggleFavorite';
-type DocInfoEvents = 'toggle' | 'open';
 type OrganizeItemEvents = // doc, link, folder, collection, tag
 
     | 'createOrganizeItem'
@@ -111,8 +116,7 @@ type UserEvents =
   | ShareEvents
   | AuthEvents
   | AccountEvents
-  | PaymentEvents
-  | DocInfoEvents;
+  | PaymentEvents;
 
 interface PageDivision {
   [page: string]: {
@@ -161,11 +165,28 @@ const PageEvents = {
       about: ['checkUpdates', 'downloadUpdate', 'changeAppSetting'],
     },
     cmdk: {
-      $: ['createDoc'],
+      recent: ['recentDocs'],
+      results: ['searchResultsDocs'],
+      general: ['copyShareLink', 'goBack', 'goForward', 'findInPage'],
+      creation: ['createDoc'],
+      workspace: ['createWorkspace'],
       settings: ['openSettings', 'changeAppSetting'],
+      navigation: ['navigate'],
+      editor: [
+        'toggleFavorite',
+        'switchPageMode',
+        'createDoc',
+        'export',
+        'deleteDoc',
+        'restoreDoc',
+      ],
+      docInfo: ['open'],
+      docHistory: ['open'],
+      updates: ['quitAndInstall'],
+      help: ['contactUs', 'openChangelog'],
     },
     navigationPanel: {
-      $: ['quickSearch', 'createDoc', 'navigate', 'openSettings'],
+      $: ['quickSearch', 'createDoc', 'navigate', 'openSettings', 'toggle'],
       organize: [
         'createOrganizeItem',
         'renameOrganizeItem',
