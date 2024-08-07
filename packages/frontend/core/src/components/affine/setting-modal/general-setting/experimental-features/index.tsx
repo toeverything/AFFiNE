@@ -124,26 +124,6 @@ const SplitViewSettingRow = () => {
   );
 };
 
-const OutlineViewerSettingRow = () => {
-  const { appSettings, updateSettings } = useAppSettingHelper();
-
-  const onToggle = useCallback(
-    (checked: boolean) => {
-      updateSettings('enableOutlineViewer', checked);
-    },
-    [updateSettings]
-  );
-
-  return (
-    <ExperimentalFeaturesItem
-      title="Outline Viewer"
-      checked={appSettings.enableOutlineViewer}
-      onChange={onToggle}
-      testId="outline-viewer-switch"
-    />
-  );
-};
-
 // feature flag -> display name
 const blocksuiteFeatureFlags: Partial<Record<keyof BlockSuiteFlags, string>> = {
   enable_expand_database_block: 'Enable Expand Database Block',
@@ -198,7 +178,6 @@ const ExperimentalFeaturesMain = () => {
       >
         <SplitViewSettingRow />
         <BlocksuiteFeatureFlagSettings />
-        <OutlineViewerSettingRow />
       </div>
     </>
   );

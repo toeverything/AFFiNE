@@ -11,36 +11,13 @@ import {
   waitForEditorLoad,
   waitForEmptyEditor,
 } from '@affine-test/kit/utils/page-logic';
-import {
-  confirmExperimentalPrompt,
-  openExperimentalFeaturesPanel,
-  openSettingModal,
-} from '@affine-test/kit/utils/setting';
-import { expect, type Page } from '@playwright/test';
-
-async function enableOutlineViewer(page: Page) {
-  await openSettingModal(page);
-  await openExperimentalFeaturesPanel(page);
-  const prompt = page.getByTestId('experimental-prompt');
-  await expect(prompt).toBeVisible();
-  await confirmExperimentalPrompt(page);
-  const settings = page.getByTestId('experimental-settings');
-  const enableOutlineViewerSetting = settings.getByTestId(
-    'outline-viewer-switch'
-  );
-  await expect(enableOutlineViewerSetting).toBeVisible();
-  await enableOutlineViewerSetting.click();
-  await page.waitForTimeout(500);
-  await page.getByTestId('modal-close-button').click();
-  await page.waitForTimeout(500);
-}
+import { expect } from '@playwright/test';
 
 test('outline viewer is useable', async ({ page }) => {
   await openHomePage(page);
   await waitForEditorLoad(page);
   await clickNewPageButton(page);
   await waitForEditorLoad(page);
-  await enableOutlineViewer(page);
 
   const title = getBlockSuiteEditorTitle(page);
   await title.click();
@@ -69,7 +46,6 @@ test('outline viewer should hide in edgeless mode', async ({ page }) => {
   await waitForEditorLoad(page);
   await clickNewPageButton(page);
   await waitForEditorLoad(page);
-  await enableOutlineViewer(page);
 
   const title = getBlockSuiteEditorTitle(page);
   await title.click();
@@ -94,7 +70,6 @@ test('outline viewer should be useable in doc peek preview', async ({
 }) => {
   await openHomePage(page);
   await waitForEditorLoad(page);
-  await enableOutlineViewer(page);
   await clickNewPageButton(page);
   await waitForEmptyEditor(page);
 

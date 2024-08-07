@@ -4,7 +4,6 @@ import { AIProvider } from '@affine/core/blocksuite/presets/ai';
 import { AffineErrorBoundary } from '@affine/core/components/affine/affine-error-boundary';
 import { BlockSuiteEditor } from '@affine/core/components/blocksuite/block-suite-editor';
 import { EditorOutlineViewer } from '@affine/core/components/blocksuite/outline-viewer';
-import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
 import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
 import { PageNotFound } from '@affine/core/pages/404';
 import { DebugLogger } from '@affine/debug';
@@ -75,7 +74,6 @@ export function DocPeekPreview({
   const workbench = useService(WorkbenchService).workbench;
   const peekView = useService(PeekViewService).peekView;
   const [editor, setEditor] = useState<AffineEditorContainer | null>(null);
-  const { appSettings } = useAppSettingHelper();
 
   const onRef = (editor: AffineEditorContainer) => {
     setEditor(editor);
@@ -177,13 +175,11 @@ export function DocPeekPreview({
               page={doc.blockSuiteDoc}
             />
           </FrameworkScope>
-          {appSettings.enableOutlineViewer && (
-            <EditorOutlineViewer
-              editor={editor}
-              show={resolvedMode === 'page'}
-              openOutlinePanel={openOutlinePanel}
-            />
-          )}
+          <EditorOutlineViewer
+            editor={editor}
+            show={resolvedMode === 'page'}
+            openOutlinePanel={openOutlinePanel}
+          />
         </Scrollable.Viewport>
 
         <Scrollable.Scrollbar />

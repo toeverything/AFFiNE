@@ -270,13 +270,11 @@ const DetailPageImpl = memo(function DetailPageImpl() {
                 })}
               />
             </Scrollable.Root>
-            {appSettings.enableOutlineViewer && (
-              <EditorOutlineViewer
-                editor={editor}
-                show={mode === 'page' && !isSideBarOpen}
-                openOutlinePanel={openOutlinePanel}
-              />
-            )}
+            <EditorOutlineViewer
+              editor={editor}
+              show={mode === 'page' && !isSideBarOpen}
+              openOutlinePanel={openOutlinePanel}
+            />
           </AffineErrorBoundary>
           {isInTrash ? <TrashPageFooter /> : null}
         </div>
