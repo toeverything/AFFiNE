@@ -283,8 +283,7 @@ const SAVE_CHAT_TO_BLOCK_ACTION: ChatAction = {
   icon: BlockIcon,
   title: 'Save chat to block',
   toast: 'Successfully saved chat to a block',
-  showWhen: (host: EditorHost) =>
-    !!host.doc.awarenessStore.getFlag('enable_ai_chat_block'),
+  showWhen: () => true,
   handler: async (
     host: EditorHost,
     _,
