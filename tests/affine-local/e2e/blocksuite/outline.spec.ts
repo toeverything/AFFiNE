@@ -11,7 +11,13 @@ import {
   waitForEditorLoad,
   waitForEmptyEditor,
 } from '@affine-test/kit/utils/page-logic';
-import { expect } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
+
+function getIndicators(container: Page | Locator) {
+  return container.locator(
+    'affine-outline-viewer .outline-viewer-indicator:not(.header)'
+  );
+}
 
 test('outline viewer is useable', async ({ page }) => {
   await openHomePage(page);
@@ -31,13 +37,14 @@ test('outline viewer is useable', async ({ page }) => {
   await page.keyboard.type('Heading 2');
   await page.keyboard.press('Enter');
 
-  const indicators = page.locator('.outline-heading-indicator');
-  await expect(indicators).toHaveCount(2);
+  const indicators = getIndicators(page);
+  await expect(indicators).toHaveCount(3);
   await expect(indicators.nth(0)).toBeVisible();
   await expect(indicators.nth(1)).toBeVisible();
+  await expect(indicators.nth(2)).toBeVisible();
 
-  const viewer = page.locator('affine-outline-panel-body');
-  await indicators.first().hover({ force: true });
+  const viewer = page.locator('affine-outline-viewer');
+  await indicators.first().hover();
   await expect(viewer).toBeVisible();
 });
 
@@ -55,14 +62,14 @@ test('outline viewer should hide in edgeless mode', async ({ page }) => {
   await page.keyboard.type('# ');
   await page.keyboard.type('Heading 1');
 
-  const indicators = page.locator('.outline-heading-indicator');
-  await expect(indicators).toHaveCount(1);
+  const indicators = getIndicators(page);
+  await expect(indicators).toHaveCount(2);
 
   await clickEdgelessModeButton(page);
   await expect(indicators).toHaveCount(0);
 
   await clickPageModeButton(page);
-  await expect(indicators).toHaveCount(1);
+  await expect(indicators).toHaveCount(2);
 });
 
 test('outline viewer should be useable in doc peek preview', async ({
@@ -98,16 +105,17 @@ test('outline viewer should be useable in doc peek preview', async ({
 
   await page.keyboard.type('# Heading 1');
 
-  const indicators = peekView.locator('.outline-heading-indicator');
-  await expect(indicators).toHaveCount(1);
-  await expect(indicators).toBeVisible();
+  const indicators = getIndicators(peekView);
+  await expect(indicators).toHaveCount(2);
+  await expect(indicators.nth(0)).toBeVisible();
+  await expect(indicators.nth(1)).toBeVisible();
 
-  await indicators.first().hover({ force: true });
-  const viewer = peekView.locator('affine-outline-panel-body');
+  await indicators.first().hover();
+  const viewer = peekView.locator('affine-outline-viewer');
   await expect(viewer).toBeVisible();
 
   const toggleButton = peekView.locator(
-    '.outline-viewer-header-container edgeless-tool-icon-button'
+    '.outline-viewer-indicator.header edgeless-tool-icon-button'
   );
   await toggleButton.click();
 
