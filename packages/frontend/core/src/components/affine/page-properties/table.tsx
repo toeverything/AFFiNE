@@ -8,6 +8,7 @@ import {
   Tooltip,
 } from '@affine/component';
 import { useCurrentWorkspacePropertiesAdapter } from '@affine/core/hooks/use-affine-adapter';
+import { track } from '@affine/core/mixpanel';
 import { DocLinksService } from '@affine/core/modules/doc-link';
 import type {
   PageInfoCustomProperty,
@@ -678,6 +679,7 @@ export const PagePropertiesTableHeader = ({
   const dTimestampElement = useDebouncedValue(timestampElement, 500);
 
   const handleCollapse = useCallback(() => {
+    track.doc.inlineDocInfo.$.toggle();
     onOpenChange(!open);
   }, [onOpenChange, open]);
 
