@@ -34,7 +34,7 @@ export class ChatActionList extends LitElement {
     .action {
       width: fit-content;
       height: 32px;
-      padding: 12px;
+      padding: 4px 18px;
       box-sizing: border-box;
       border-radius: 8px;
       border: 1px solid var(--affine-border-color);
@@ -43,11 +43,12 @@ export class ChatActionList extends LitElement {
       flex-direction: row;
       align-items: center;
       gap: 4px;
-      font-size: 15px;
+      font-size: var(--affine-font-sm);
       font-weight: 500;
       color: var(--affine-text-primary-color);
       cursor: pointer;
       user-select: none;
+      line-height: 22px;
     }
     .action svg {
       color: var(--affine-icon-color);
