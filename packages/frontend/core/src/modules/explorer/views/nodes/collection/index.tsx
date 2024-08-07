@@ -31,10 +31,22 @@ import {
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { ExplorerTreeNode, type ExplorerTreeNodeDropEffect } from '../../tree';
+import type { ExplorerTreeNodeIcon } from '../../tree/node';
 import { ExplorerDocNode } from '../doc';
 import type { GenericExplorerNode } from '../types';
 import { Empty } from './empty';
 import { useExplorerCollectionNodeOperations } from './operations';
+
+const CollectionIcon: ExplorerTreeNodeIcon = ({
+  className,
+  draggedOver,
+  treeInstruction,
+}) => (
+  <AnimatedCollectionsIcon
+    className={className}
+    closed={!!draggedOver && treeInstruction?.type === 'make-child'}
+  />
+);
 
 export const ExplorerCollectionNode = ({
   collectionId,
@@ -202,12 +214,7 @@ export const ExplorerCollectionNode = ({
   return (
     <>
       <ExplorerTreeNode
-        icon={({ draggedOver, className, treeInstruction }) => (
-          <AnimatedCollectionsIcon
-            className={className}
-            closed={!!draggedOver && treeInstruction?.type === 'make-child'}
-          />
-        )}
+        icon={CollectionIcon}
         name={collection.name || t['Untitled']()}
         dndData={dndData}
         onDrop={handleDropOnCollection}

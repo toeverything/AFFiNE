@@ -39,6 +39,7 @@ import { difference } from 'lodash-es';
 import { useCallback, useMemo, useState } from 'react';
 
 import { ExplorerTreeNode, type ExplorerTreeNodeDropEffect } from '../../tree';
+import type { ExplorerTreeNodeIcon } from '../../tree/node';
 import type { NodeOperation } from '../../tree/types';
 import { ExplorerCollectionNode } from '../collection';
 import { ExplorerDocNode } from '../doc';
@@ -149,6 +150,21 @@ export const ExplorerFolderNode = ({
 
   return;
 };
+
+// Define outside the `ExplorerFolderNodeFolder` to avoid re-render(the close animation won't play)
+const ExplorerFolderIcon: ExplorerTreeNodeIcon = ({
+  collapsed,
+  className,
+  draggedOver,
+  treeInstruction,
+}) => (
+  <AnimatedFolderIcon
+    className={className}
+    open={
+      !collapsed || (!!draggedOver && treeInstruction?.type === 'make-child')
+    }
+  />
+);
 
 export const ExplorerFolderNodeFolder = ({
   node,
@@ -758,12 +774,7 @@ export const ExplorerFolderNodeFolder = ({
 
   return (
     <ExplorerTreeNode
-      icon={({ draggedOver, className, treeInstruction }) => (
-        <AnimatedFolderIcon
-          className={className}
-          closed={!!draggedOver && treeInstruction?.type === 'make-child'}
-        />
-      )}
+      icon={ExplorerFolderIcon}
       name={name}
       dndData={dndData}
       onDrop={handleDropOnFolder}

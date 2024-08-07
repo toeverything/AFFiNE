@@ -7,25 +7,31 @@ import animationData from './folder-icon.json';
 import * as styles from './styles.css';
 
 export interface FolderIconProps {
-  closed: boolean; // eg, when folder icon is a "dragged over" state
+  open: boolean; // eg, when folder icon is a "dragged over" state
   className?: string;
+  speed?: number;
 }
 
 // animated folder icon that has two states: closed and opened
-export const AnimatedFolderIcon = ({ closed, className }: FolderIconProps) => {
+export const AnimatedFolderIcon = ({
+  open,
+  className,
+  speed = 0.5,
+}: FolderIconProps) => {
   const lottieRef: LottieRef = useRef(null);
 
   useEffect(() => {
     if (lottieRef.current) {
       const lottie = lottieRef.current;
-      if (closed) {
+      lottie.setSpeed(speed);
+      if (open) {
         lottie.setDirection(1);
       } else {
         lottie.setDirection(-1);
       }
       lottie.play();
     }
-  }, [closed]);
+  }, [open, speed]);
 
   return (
     <Lottie

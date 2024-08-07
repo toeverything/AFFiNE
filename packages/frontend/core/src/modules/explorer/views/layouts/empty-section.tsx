@@ -1,8 +1,10 @@
 import { Button } from '@affine/component';
 import clsx from 'clsx';
 import {
+  cloneElement,
   forwardRef,
   type HTMLAttributes,
+  type ReactElement,
   type Ref,
   type SVGProps,
 } from 'react';
@@ -10,7 +12,7 @@ import {
 import * as styles from './empty-section.css';
 
 interface ExplorerEmptySectionProps extends HTMLAttributes<HTMLDivElement> {
-  icon: (props: SVGProps<SVGSVGElement>) => JSX.Element;
+  icon: ((props: SVGProps<SVGSVGElement>) => JSX.Element) | ReactElement;
   message: string;
   messageTestId?: string;
   actionText?: string;
@@ -30,11 +32,16 @@ export const ExplorerEmptySection = forwardRef(function ExplorerEmptySection(
   }: ExplorerEmptySectionProps,
   ref: Ref<HTMLDivElement>
 ) {
+  const icon =
+    typeof Icon === 'function' ? (
+      <Icon className={styles.icon} />
+    ) : (
+      cloneElement(Icon, { className: styles.icon })
+    );
+
   return (
     <div className={clsx(styles.content, className)} ref={ref} {...attrs}>
-      <div className={styles.iconWrapper}>
-        <Icon className={styles.icon} />
-      </div>
+      <div className={styles.iconWrapper}>{icon}</div>
       <div data-testid={messageTestId} className={styles.message}>
         {message}
       </div>

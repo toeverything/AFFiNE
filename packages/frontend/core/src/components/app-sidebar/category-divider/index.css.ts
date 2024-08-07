@@ -2,10 +2,12 @@ import { cssVar } from '@toeverything/theme';
 import { cssVarV2 } from '@toeverything/theme/v2';
 import { style } from '@vanilla-extract/css';
 
-export const actions = style({
+const baseAction = style({
   display: 'flex',
   gap: 8,
+  opacity: 0,
 });
+
 export const root = style({
   fontSize: cssVar('fontXs'),
   height: 20,
@@ -23,11 +25,22 @@ export const root = style({
     [`&[data-collapsible="true"]:hover`]: {
       backgroundColor: cssVarV2('layer/background/hoverOverlay'),
     },
-    [`&[data-collapsible="true"]:hover:has(${actions}:hover)`]: {
+    [`&[data-collapsible="true"]:hover:has(${baseAction}:hover)`]: {
       backgroundColor: 'transparent',
     },
   },
 });
+
+export const actions = style([
+  baseAction,
+  {
+    selectors: {
+      [`${root}:hover &`]: {
+        opacity: 1,
+      },
+    },
+  },
+]);
 export const label = style({
   color: cssVarV2('text/tertiary'),
   fontWeight: 500,

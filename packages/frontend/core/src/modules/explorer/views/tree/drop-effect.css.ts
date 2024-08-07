@@ -3,10 +3,9 @@ import { style } from '@vanilla-extract/css';
 
 export const dropEffect = style({
   zIndex: 99999,
-  position: 'absolute',
-  left: '0px',
-  top: '-34px',
-  opacity: 0.9,
+  position: 'fixed',
+  left: '10px',
+  top: '-20px',
   background: cssVar('--affine-background-primary-color'),
   boxShadow: cssVar('--affine-toolbar-shadow'),
   padding: '0px 4px',

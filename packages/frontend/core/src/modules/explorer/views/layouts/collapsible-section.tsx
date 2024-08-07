@@ -11,7 +11,7 @@ import {
 
 import { ExplorerService } from '../../services/explorer';
 import type { CollapsibleSectionName } from '../../types';
-import { content, root } from './collapsible-section.css';
+import { content, header, root } from './collapsible-section.css';
 
 interface CollapsibleSectionProps extends PropsWithChildren {
   name: CollapsibleSectionName;
@@ -67,7 +67,7 @@ export const CollapsibleSection = ({
         setCollapsed={setCollapsed}
         collapsed={collapsed}
         ref={headerRef}
-        className={headerClassName}
+        className={clsx(header, headerClassName)}
       >
         {actions}
       </CategoryDivider>

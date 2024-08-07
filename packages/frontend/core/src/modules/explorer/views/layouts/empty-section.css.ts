@@ -9,6 +9,13 @@ export const content = style({
   alignItems: 'center',
   gap: 4,
   padding: '12px 0px',
+  borderRadius: 8,
+  selectors: {
+    // assume that the section can be dragged over
+    '&[data-dragged-over="true"]': {
+      backgroundColor: cssVarV2('layer/background/hoverOverlay'),
+    },
+  },
 });
 export const iconWrapper = style({
   width: 36,

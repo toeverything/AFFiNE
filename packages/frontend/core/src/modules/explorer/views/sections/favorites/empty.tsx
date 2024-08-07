@@ -1,6 +1,5 @@
 import {
   type DropTargetDropEvent,
-  type DropTargetOptions,
   Skeleton,
   useDropTarget,
 } from '@affine/component';
@@ -9,19 +8,18 @@ import { useI18n } from '@affine/i18n';
 import { FavoriteIcon } from '@blocksuite/icons/rc';
 
 import { ExplorerEmptySection } from '../../layouts/empty-section';
-import { DropEffect, type ExplorerTreeNodeDropEffect } from '../../tree';
+import { DropEffect } from '../../tree';
+import { favoriteRootCanDrop, favoriteRootDropEffect } from './dnd';
 
-export const RootEmpty = ({
-  onDrop,
-  canDrop,
-  isLoading,
-  dropEffect,
-}: {
+interface RootEmptyProps {
   onDrop?: (data: DropTargetDropEvent<AffineDNDData>) => void;
-  canDrop?: DropTargetOptions<AffineDNDData>['canDrop'];
-  dropEffect?: ExplorerTreeNodeDropEffect;
   isLoading?: boolean;
-}) => {
+}
+
+const RootEmptyLoading = () => {
+  return <Skeleton />;
+};
+const RootEmptyReady = ({ onDrop }: Omit<RootEmptyProps, 'isLoading'>) => {
   const t = useI18n();
 
   const { dropTargetRef, draggedOverDraggable, draggedOverPosition } =
@@ -31,14 +29,10 @@ export const RootEmpty = ({
           at: 'explorer:favorite:root',
         },
         onDrop: onDrop,
-        canDrop: canDrop,
+        canDrop: favoriteRootCanDrop,
       }),
-      [onDrop, canDrop]
+      [onDrop]
     );
-
-  if (isLoading) {
-    return <Skeleton />;
-  }
 
   return (
     <ExplorerEmptySection
@@ -47,13 +41,10 @@ export const RootEmpty = ({
       message={t['com.affine.rootAppSidebar.favorites.empty']()}
       messageTestId="slider-bar-favorites-empty-message"
     >
-      {dropEffect && draggedOverDraggable && (
+      {draggedOverDraggable && (
         <DropEffect
-          position={{
-            x: draggedOverPosition.relativeX,
-            y: draggedOverPosition.relativeY,
-          }}
-          dropEffect={dropEffect({
+          position={draggedOverPosition}
+          dropEffect={favoriteRootDropEffect({
             source: draggedOverDraggable,
             treeInstruction: null,
           })}
@@ -61,4 +52,8 @@ export const RootEmpty = ({
       )}
     </ExplorerEmptySection>
   );
+};
+
+export const RootEmpty = ({ isLoading, ...props }: RootEmptyProps) => {
+  return isLoading ? <RootEmptyLoading /> : <RootEmptyReady {...props} />;
 };

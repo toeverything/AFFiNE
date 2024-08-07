@@ -5,10 +5,7 @@ import {
   toast,
 } from '@affine/component';
 import { track } from '@affine/core/mixpanel';
-import {
-  type ExplorerTreeNodeDropEffect,
-  ExplorerTreeRoot,
-} from '@affine/core/modules/explorer/views/tree';
+import { ExplorerTreeRoot } from '@affine/core/modules/explorer/views/tree';
 import {
   type FolderNode,
   OrganizeService,
@@ -22,8 +19,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ExplorerService } from '../../../services/explorer';
 import { CollapsibleSection } from '../../layouts/collapsible-section';
 import { ExplorerFolderNode } from '../../nodes/folder';
+import { organizeChildrenDropEffect } from './dnd';
 import { RootEmpty } from './empty';
-import * as styles from './styles.css';
 
 export const ExplorerOrganize = () => {
   const { organizeService, explorerService } = useServices({
@@ -36,10 +33,11 @@ export const ExplorerOrganize = () => {
 
   const t = useI18n();
 
-  const rootFolder = organizeService.folderTree.rootFolder;
+  const folderTree = organizeService.folderTree;
+  const rootFolder = folderTree.rootFolder;
 
   const folders = useLiveData(rootFolder.sortedChildren$);
-  const isLoading = useLiveData(organizeService.folderTree.isLoading$);
+  const isLoading = useLiveData(folderTree.isLoading$);
 
   const handleCreateFolder = useCallback(() => {
     const newFolderId = rootFolder.createFolder(
@@ -49,6 +47,7 @@ export const ExplorerOrganize = () => {
     track.$.navigationPanel.organize.createOrganizeItem({ type: 'folder' });
     setNewFolderId(newFolderId);
     explorerSection.setCollapsed(false);
+    return newFolderId;
   }, [explorerSection, rootFolder]);
 
   const handleOnChildrenDrop = useCallback(
@@ -78,21 +77,22 @@ export const ExplorerOrganize = () => {
     [rootFolder, t]
   );
 
-  const handleChildrenDropEffect = useCallback<ExplorerTreeNodeDropEffect>(
-    data => {
-      if (
-        data.treeInstruction?.type === 'reorder-above' ||
-        data.treeInstruction?.type === 'reorder-below'
-      ) {
-        if (data.source.data.entity?.type === 'folder') {
-          return 'move';
-        }
-      } else {
-        return; // not supported
-      }
-      return;
+  const createFolderAndDrop = useCallback(
+    (data: DropTargetDropEvent<AffineDNDData>) => {
+      const newFolderId = handleCreateFolder();
+      setNewFolderId(null);
+      const newFolder$ = folderTree.folderNode$(newFolderId);
+
+      const entity = data.source.data.entity;
+      if (!entity) return;
+      const { type, id } = entity;
+      if (type === 'folder') return;
+
+      const folder = newFolder$.value;
+      if (!folder) return;
+      folder.createLink(type, id, folder.indexAt('after'));
     },
-    []
+    [folderTree, handleCreateFolder]
   );
 
   const handleChildrenCanDrop = useMemo<
@@ -106,7 +106,6 @@ export const ExplorerOrganize = () => {
   return (
     <CollapsibleSection
       name="organize"
-      headerClassName={styles.draggedOverHighlight}
       title={t['com.affine.rootAppSidebar.organize']()}
       actions={
         <IconButton
@@ -123,7 +122,11 @@ export const ExplorerOrganize = () => {
     >
       <ExplorerTreeRoot
         placeholder={
-          <RootEmpty onClickCreate={handleCreateFolder} isLoading={isLoading} />
+          <RootEmpty
+            onClickCreate={handleCreateFolder}
+            isLoading={isLoading}
+            onDrop={createFolderAndDrop}
+          />
         }
       >
         {folders.map(child => (
@@ -132,7 +135,7 @@ export const ExplorerOrganize = () => {
             nodeId={child.id as string}
             defaultRenaming={child.id === newFolderId}
             onDrop={handleOnChildrenDrop}
-            dropEffect={handleChildrenDropEffect}
+            dropEffect={organizeChildrenDropEffect}
             canDrop={handleChildrenCanDrop}
             location={{
               at: 'explorer:organize:folder-node',

@@ -1,13 +1,11 @@
 import {
   type DropTargetDropEvent,
-  type DropTargetOptions,
   IconButton,
   useDropTarget,
 } from '@affine/component';
 import { track } from '@affine/core/mixpanel';
 import {
   DropEffect,
-  type ExplorerTreeNodeDropEffect,
   ExplorerTreeRoot,
 } from '@affine/core/modules/explorer/views/tree';
 import type { FavoriteSupportType } from '@affine/core/modules/favorite';
@@ -20,7 +18,7 @@ import type { AffineDNDData } from '@affine/core/types/dnd';
 import { useI18n } from '@affine/i18n';
 import { PlusIcon } from '@blocksuite/icons/rc';
 import { DocsService, useLiveData, useServices } from '@toeverything/infra';
-import { type MouseEventHandler, useCallback, useMemo } from 'react';
+import { type MouseEventHandler, useCallback } from 'react';
 
 import { ExplorerService } from '../../../services/explorer';
 import { CollapsibleSection } from '../../layouts/collapsible-section';
@@ -28,8 +26,13 @@ import { ExplorerCollectionNode } from '../../nodes/collection';
 import { ExplorerDocNode } from '../../nodes/doc';
 import { ExplorerFolderNode } from '../../nodes/folder';
 import { ExplorerTagNode } from '../../nodes/tag';
+import {
+  favoriteChildrenCanDrop,
+  favoriteChildrenDropEffect,
+  favoriteRootCanDrop,
+  favoriteRootDropEffect,
+} from './dnd';
 import { RootEmpty } from './empty';
-import * as styles from './styles.css';
 
 export const ExplorerFavorites = () => {
   const { favoriteService, docsService, workbenchService, explorerService } =
@@ -67,25 +70,6 @@ export const ExplorerFavorites = () => {
       }
     },
     [explorerSection, favoriteService.favoriteList]
-  );
-
-  const handleDropEffect = useCallback<ExplorerTreeNodeDropEffect>(data => {
-    if (
-      data.source.data.entity?.type &&
-      isFavoriteSupportType(data.source.data.entity.type)
-    ) {
-      return 'link';
-    }
-    return;
-  }, []);
-
-  const handleCanDrop = useMemo<DropTargetOptions<AffineDNDData>['canDrop']>(
-    () => data => {
-      return data.source.data.entity?.type
-        ? isFavoriteSupportType(data.source.data.entity.type)
-        : false;
-    },
-    []
   );
 
   const handleCreateNewFavoriteDoc: MouseEventHandler = useCallback(
@@ -163,40 +147,6 @@ export const ExplorerFavorites = () => {
     [favoriteService]
   );
 
-  const handleChildrenDropEffect = useCallback<ExplorerTreeNodeDropEffect>(
-    data => {
-      if (
-        data.treeInstruction?.type === 'reorder-above' ||
-        data.treeInstruction?.type === 'reorder-below'
-      ) {
-        if (
-          data.source.data.from?.at === 'explorer:favorite:list' &&
-          data.source.data.entity?.type &&
-          isFavoriteSupportType(data.source.data.entity.type)
-        ) {
-          return 'move';
-        } else if (
-          data.source.data.entity?.type &&
-          isFavoriteSupportType(data.source.data.entity.type)
-        ) {
-          return 'link';
-        }
-      }
-      return; // not supported
-    },
-    []
-  );
-
-  const handleChildrenCanDrop = useMemo<
-    DropTargetOptions<AffineDNDData>['canDrop']
-  >(
-    () => args =>
-      args.source.data.entity?.type
-        ? isFavoriteSupportType(args.source.data.entity.type)
-        : false,
-    []
-  );
-
   const { dropTargetRef, draggedOverDraggable, draggedOverPosition } =
     useDropTarget<AffineDNDData>(
       () => ({
@@ -204,9 +154,9 @@ export const ExplorerFavorites = () => {
           at: 'explorer:favorite:root',
         },
         onDrop: handleDrop,
-        canDrop: handleCanDrop,
+        canDrop: favoriteRootCanDrop,
       }),
-      [handleCanDrop, handleDrop]
+      [handleDrop]
     );
 
   return (
@@ -216,7 +166,6 @@ export const ExplorerFavorites = () => {
       headerRef={dropTargetRef}
       testId="explorer-favorites"
       headerTestId="explorer-favorite-category-divider"
-      headerClassName={styles.draggedOverHighlight}
       actions={
         <>
           <IconButton
@@ -233,11 +182,8 @@ export const ExplorerFavorites = () => {
           </IconButton>
           {draggedOverDraggable && (
             <DropEffect
-              position={{
-                x: draggedOverPosition.relativeX,
-                y: draggedOverPosition.relativeY,
-              }}
-              dropEffect={handleDropEffect({
+              position={draggedOverPosition}
+              dropEffect={favoriteRootDropEffect({
                 source: draggedOverDraggable,
                 treeInstruction: null,
               })}
@@ -247,22 +193,13 @@ export const ExplorerFavorites = () => {
       }
     >
       <ExplorerTreeRoot
-        placeholder={
-          <RootEmpty
-            onDrop={handleDrop}
-            canDrop={handleCanDrop}
-            dropEffect={handleDropEffect}
-            isLoading={isLoading}
-          />
-        }
+        placeholder={<RootEmpty onDrop={handleDrop} isLoading={isLoading} />}
       >
         {favorites.map(favorite => (
           <ExplorerFavoriteNode
             key={favorite.id}
             favorite={favorite}
             onDrop={handleOnChildrenDrop}
-            dropEffect={handleChildrenDropEffect}
-            canDrop={handleChildrenCanDrop}
           />
         ))}
       </ExplorerTreeRoot>
@@ -276,14 +213,11 @@ const childLocation = {
 const ExplorerFavoriteNode = ({
   favorite,
   onDrop,
-  canDrop,
-  dropEffect,
 }: {
   favorite: {
     id: string;
     type: FavoriteSupportType;
   };
-  canDrop?: DropTargetOptions<AffineDNDData>['canDrop'];
   onDrop: (
     favorite: {
       id: string;
@@ -291,7 +225,6 @@ const ExplorerFavoriteNode = ({
     },
     data: DropTargetDropEvent<AffineDNDData>
   ) => void;
-  dropEffect: ExplorerTreeNodeDropEffect;
 }) => {
   const handleOnChildrenDrop = useCallback(
     (data: DropTargetDropEvent<AffineDNDData>) => {
@@ -305,8 +238,8 @@ const ExplorerFavoriteNode = ({
       docId={favorite.id}
       location={childLocation}
       onDrop={handleOnChildrenDrop}
-      dropEffect={dropEffect}
-      canDrop={canDrop}
+      dropEffect={favoriteChildrenDropEffect}
+      canDrop={favoriteChildrenCanDrop}
     />
   ) : favorite.type === 'tag' ? (
     <ExplorerTagNode
@@ -314,8 +247,8 @@ const ExplorerFavoriteNode = ({
       tagId={favorite.id}
       location={childLocation}
       onDrop={handleOnChildrenDrop}
-      dropEffect={dropEffect}
-      canDrop={canDrop}
+      dropEffect={favoriteChildrenDropEffect}
+      canDrop={favoriteChildrenCanDrop}
     />
   ) : favorite.type === 'folder' ? (
     <ExplorerFolderNode
@@ -323,8 +256,8 @@ const ExplorerFavoriteNode = ({
       nodeId={favorite.id}
       location={childLocation}
       onDrop={handleOnChildrenDrop}
-      dropEffect={dropEffect}
-      canDrop={canDrop}
+      dropEffect={favoriteChildrenDropEffect}
+      canDrop={favoriteChildrenCanDrop}
     />
   ) : (
     <ExplorerCollectionNode
@@ -332,8 +265,8 @@ const ExplorerFavoriteNode = ({
       collectionId={favorite.id}
       location={childLocation}
       onDrop={handleOnChildrenDrop}
-      dropEffect={dropEffect}
-      canDrop={canDrop}
+      dropEffect={favoriteChildrenDropEffect}
+      canDrop={favoriteChildrenCanDrop}
     />
   );
 };

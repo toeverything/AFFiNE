@@ -47,6 +47,12 @@ export type ExplorerTreeNodeDropEffectData = {
 export type ExplorerTreeNodeDropEffect = (
   data: ExplorerTreeNodeDropEffectData
 ) => 'copy' | 'move' | 'link' | undefined;
+export type ExplorerTreeNodeIcon = React.ComponentType<{
+  className?: string;
+  draggedOver?: boolean;
+  treeInstruction?: DropTargetTreeInstruction | null;
+  collapsed?: boolean;
+}>;
 
 export const ExplorerTreeNode = ({
   children,
@@ -74,11 +80,7 @@ export const ExplorerTreeNode = ({
   ...otherProps
 }: {
   name?: string;
-  icon?: React.ComponentType<{
-    className?: string;
-    draggedOver?: boolean;
-    treeInstruction?: DropTargetTreeInstruction | null;
-  }>;
+  icon?: ExplorerTreeNodeIcon;
   children?: React.ReactNode;
   active?: boolean;
   reorderable?: boolean;
@@ -311,6 +313,7 @@ export const ExplorerTreeNode = ({
             className={styles.icon}
             draggedOver={draggedOver && !isSelfDraggedOver}
             treeInstruction={treeInstruction}
+            collapsed={collapsed}
           />
         </div>
       )}
@@ -398,10 +401,7 @@ export const ExplorerTreeNode = ({
                 source: draggedOverDraggable,
                 treeInstruction: treeInstruction,
               })}
-              position={{
-                x: draggedOverPosition.relativeX,
-                y: draggedOverPosition.relativeY,
-              }}
+              position={draggedOverPosition}
             />
           )}
       </div>
