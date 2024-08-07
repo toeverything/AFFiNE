@@ -15,6 +15,7 @@ import { EditorModeSwitch } from '@affine/core/components/blocksuite/block-suite
 import { useRegisterCopyLinkCommands } from '@affine/core/hooks/affine/use-register-copy-link-commands';
 import { useDocCollectionPageTitle } from '@affine/core/hooks/use-block-suite-workspace-page-title';
 import { useJournalInfoHelper } from '@affine/core/hooks/use-journal';
+import { track } from '@affine/core/mixpanel';
 import { ViewIcon, ViewTitle } from '@affine/core/modules/workbench';
 import type { Doc } from '@blocksuite/store';
 import {
@@ -129,6 +130,9 @@ export function NormalPageHeader({ page, workspace }: PageHeaderProps) {
   const title = useDocCollectionPageTitle(workspace.docCollection, page?.id);
   const doc = useService(DocService).doc;
   const currentMode = useLiveData(doc.mode$);
+  const onEditSave = useCallback(() => {
+    track.$.header.actions.renameDoc();
+  }, []);
 
   return (
     <Header className={styles.header} ref={containerRef}>
@@ -142,6 +146,7 @@ export function NormalPageHeader({ page, workspace }: PageHeaderProps) {
         inputHandleRef={titleInputHandleRef}
         pageId={page?.id}
         docCollection={workspace.docCollection}
+        onEditSave={onEditSave}
       />
       <div className={styles.iconButtonContainer}>
         {hideCollect ? null : (

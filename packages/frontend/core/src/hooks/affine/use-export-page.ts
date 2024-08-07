@@ -26,7 +26,7 @@ async function exportHandler({ page, type }: ExportHandlerOptions) {
   if (editorRoot) {
     pageService = editorRoot.spec.getService<PageRootService>('affine:page');
   }
-  track.$.header.share.export({
+  track.$.sharePanel.$.export({
     type,
   });
   switch (type) {

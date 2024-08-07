@@ -109,6 +109,7 @@ export const PageHeaderMenuButton = ({
   const setOpenHistoryTipsModal = useSetAtom(openHistoryTipsModalAtom);
 
   const openHistoryModal = useCallback(() => {
+    track.$.header.history.open();
     if (workspace.flavour === WorkspaceFlavour.AFFINE_CLOUD) {
       return setHistoryModalOpen(true);
     }
@@ -116,9 +117,10 @@ export const PageHeaderMenuButton = ({
   }, [setOpenHistoryTipsModal, workspace.flavour]);
 
   const setOpenInfoModal = useSetAtom(openInfoModalAtom);
-  const openInfoModal = () => {
+  const openInfoModal = useCallback(() => {
+    track.$.header.pageInfo.open();
     setOpenInfoModal(true);
-  };
+  }, [setOpenInfoModal]);
 
   const handleOpenInNewTab = useCallback(() => {
     workbench.openDoc(pageId, {
@@ -133,6 +135,7 @@ export const PageHeaderMenuButton = ({
   }, [pageId, workbench]);
 
   const handleOpenTrashModal = useCallback(() => {
+    track.$.header.docOptions.deleteDoc();
     setTrashModal({
       open: true,
       pageIds: [pageId],
@@ -140,8 +143,14 @@ export const PageHeaderMenuButton = ({
     });
   }, [doc.meta$.value.title, pageId, setTrashModal]);
 
+  const handleRename = useCallback(() => {
+    rename?.();
+    track.$.header.docOptions.renameDoc();
+  }, [rename]);
+
   const handleSwitchMode = useCallback(() => {
     doc.toggleMode();
+    track.$.header.docOptions.switchPageMode();
     toast(
       currentMode === 'page'
         ? t['com.affine.toastMessage.edgelessMode']()
@@ -153,17 +162,24 @@ export const PageHeaderMenuButton = ({
     transition: 'all 0.3s',
   };
 
+  const handleMenuOpenChange = useCallback((open: boolean) => {
+    if (open) {
+      track.$.header.docOptions.open();
+    }
+  }, []);
+
   const exportHandler = useExportPage(doc.blockSuiteDoc);
 
   const handleDuplicate = useCallback(() => {
     duplicate(pageId);
-    track.$.header.actions.createDoc({
+    track.$.header.docOptions.createDoc({
       control: 'duplicate',
     });
   }, [duplicate, pageId]);
 
   const onImportFile = useAsyncCallback(async () => {
     const options = await importFile();
+    track.$.header.docOptions.import();
     if (options.isWorkspaceFile) {
       track.$.header.actions.createWorkspace({
         control: 'import',
@@ -174,6 +190,17 @@ export const PageHeaderMenuButton = ({
       });
     }
   }, [importFile]);
+
+  const handleShareMenuOpenChange = useCallback((open: boolean) => {
+    if (open) {
+      track.$.sharePanel.$.open();
+    }
+  }, []);
+
+  const handleToggleFavorite = useCallback(() => {
+    track.$.header.docOptions.toggleFavorite();
+    toggleFavorite();
+  }, [toggleFavorite]);
 
   const showResponsiveMenu = hideShare;
   const ResponsiveMenuItems = (
@@ -204,6 +231,9 @@ export const PageHeaderMenuButton = ({
               </MenuIcon>
             ),
           }}
+          subOptions={{
+            onOpenChange: handleShareMenuOpenChange,
+          }}
         >
           {t['com.affine.share-menu.shareButton']()}
         </MenuSub>
@@ -223,7 +253,7 @@ export const PageHeaderMenuButton = ({
             </MenuIcon>
           }
           data-testid="editor-option-menu-rename"
-          onSelect={rename}
+          onSelect={handleRename}
           style={menuItemStyle}
         >
           {t['Rename']()}
@@ -246,7 +276,7 @@ export const PageHeaderMenuButton = ({
       </MenuItem>
       <MenuItem
         data-testid="editor-option-menu-favorite"
-        onSelect={toggleFavorite}
+        onSelect={handleToggleFavorite}
         style={menuItemStyle}
         preFix={
           <MenuIcon>
@@ -388,6 +418,9 @@ export const PageHeaderMenuButton = ({
         items={EditMenu}
         contentOptions={{
           align: 'center',
+        }}
+        rootOptions={{
+          onOpenChange: handleMenuOpenChange,
         }}
       >
         <HeaderDropDownButton />

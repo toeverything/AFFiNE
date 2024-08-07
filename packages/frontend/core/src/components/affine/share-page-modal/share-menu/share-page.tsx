@@ -106,7 +106,7 @@ export const AffineSharePage = (props: ShareMenuProps) => {
       await shareService.share.enableShare(
         mode === 'edgeless' ? PublicPageMode.Edgeless : PublicPageMode.Page
       );
-      track.$.header.share.createShareLink({
+      track.$.sharePanel.$.createShareLink({
         mode,
       });
       notify.success({

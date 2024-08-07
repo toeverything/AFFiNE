@@ -1,4 +1,5 @@
 import { MenuIcon, MenuItem, MenuSub } from '@affine/component';
+import { track } from '@affine/core/mixpanel';
 import { useI18n } from '@affine/i18n';
 import {
   ExportIcon,
@@ -8,7 +9,7 @@ import {
   ExportToPngIcon,
 } from '@blocksuite/icons/rc';
 import type { ReactNode } from 'react';
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 
 import { transitionStyle } from './index.css';
 
@@ -115,6 +116,12 @@ export const Export = ({ exportHandler, className, pageMode }: ExportProps) => {
       pageMode={pageMode}
     />
   );
+  const handleExportMenuOpenChange = useCallback((open: boolean) => {
+    if (open) {
+      track.$.header.docOptions.export();
+    }
+  }, []);
+
   return (
     <MenuSub
       items={items}
@@ -126,6 +133,9 @@ export const Export = ({ exportHandler, className, pageMode }: ExportProps) => {
           </MenuIcon>
         ),
         ['data-testid' as string]: 'export-menu',
+      }}
+      subOptions={{
+        onOpenChange: handleExportMenuOpenChange,
       }}
     >
       {t.Export()}

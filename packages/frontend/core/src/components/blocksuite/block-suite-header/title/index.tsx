@@ -18,13 +18,14 @@ export interface BlockSuiteHeaderTitleProps {
   isPublic?: boolean;
   inputHandleRef?: InlineEditProps['handleRef'];
   className?: string;
+  onEditSave?: () => void;
 }
 
 const inputAttrs = {
   'data-testid': 'title-content',
 } as HTMLAttributes<HTMLInputElement>;
 export const BlocksuiteHeaderTitle = (props: BlockSuiteHeaderTitleProps) => {
-  const { docCollection, pageId, isPublic, inputHandleRef } = props;
+  const { docCollection, pageId, isPublic, inputHandleRef, onEditSave } = props;
   const currentPage = docCollection.getDoc(pageId);
   const pageMeta = useBlockSuiteDocMeta(docCollection).find(
     meta => meta.id === currentPage?.id
@@ -34,9 +35,10 @@ export const BlocksuiteHeaderTitle = (props: BlockSuiteHeaderTitleProps) => {
 
   const onChange = useCallback(
     (v: string) => {
+      onEditSave?.();
       setDocTitle(currentPage?.id || '', v);
     },
-    [currentPage?.id, setDocTitle]
+    [currentPage?.id, onEditSave, setDocTitle]
   );
 
   return (

@@ -35,7 +35,13 @@ type DocEvents =
   | 'renameDoc'
   | 'linkDoc'
   | 'deleteDoc'
-  | 'switchPageMode';
+  | 'switchPageMode'
+  | 'openDocOptionsMenu'
+  | 'openDocInfo'
+  | 'renameDoc'
+  | 'deleteDoc'
+  | 'viewHistoryVersions'
+  | 'viewInfo';
 type EditorEvents = 'bold' | 'italic' | 'underline' | 'strikeThrough';
 // END SECTION
 
@@ -75,7 +81,11 @@ type OrganizeEvents =
 // END SECTION
 
 // SECTION: cloud events
-type ShareEvents = 'createShareLink' | 'copyShareLink';
+type ShareEvents =
+  | 'createShareLink'
+  | 'copyShareLink'
+  | 'openShareMenu'
+  | 'share';
 type AuthEvents = 'signIn' | 'signUp' | 'oauth' | 'signOut';
 type AccountEvents = 'uploadAvatar' | 'removeAvatar' | 'updateUserName';
 type PaymentEvents =
@@ -126,6 +136,12 @@ const PageEvents = {
     $: {
       $: ['createWorkspace', 'checkout'],
       auth: ['oauth', 'signIn', 'signUp'],
+    },
+    sharePanel: {
+      $: ['createShareLink', 'copyShareLink', 'export', 'open'],
+    },
+    docInfoPanel: {
+      $: ['open'],
     },
     settingsPanel: {
       menu: ['openSettings'],
@@ -194,8 +210,26 @@ const PageEvents = {
       aiAction: ['viewPlans'],
     },
     header: {
-      actions: ['createDoc', 'createWorkspace', 'switchPageMode'],
-      share: ['createShareLink', 'copyShareLink', 'export'],
+      actions: [
+        'createDoc',
+        'createWorkspace',
+        'switchPageMode',
+        'toggleFavorite',
+        'openDocInfo',
+        'renameDoc',
+      ],
+      docOptions: [
+        'open',
+        'deleteDoc',
+        'renameDoc',
+        'switchPageMode',
+        'createDoc',
+        'import',
+        'toggleFavorite',
+        'export',
+      ],
+      history: ['open'],
+      pageInfo: ['open'],
     },
   },
   doc: {

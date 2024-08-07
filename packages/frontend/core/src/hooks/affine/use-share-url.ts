@@ -68,7 +68,7 @@ export const useSharingUrl = ({
         .catch(err => {
           console.error(err);
         });
-      track.$.header.share.copyShareLink({
+      track.$.sharePanel.$.copyShareLink({
         type: urlType === 'share' ? 'public' : 'private',
       });
     } else {
