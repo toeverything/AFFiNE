@@ -2,7 +2,7 @@
 
 <h1 style="border-bottom: none">
     <b><a href="https://affine.pro">AFFiNE.PRO</a></b><br />
-    Write, Draw and Plan All at Once
+    Write, Draw and Plan All at Once in one go 
     <br>
 </h1>
 <a href="https://affine.pro/download">
