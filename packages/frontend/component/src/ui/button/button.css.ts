@@ -198,6 +198,8 @@ export const icon = style({
   // 2. width/height is set to `1em`
   fontSize: iconSizeVar,
   color: iconColorVar,
+  display: 'flex',
+  alignItems: 'center',
 });
 globalStyle(`${icon} > svg`, {
   width: '100%',
