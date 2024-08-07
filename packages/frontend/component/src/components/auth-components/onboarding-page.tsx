@@ -1,7 +1,6 @@
-import { apis } from '@affine/electron-api';
 import { ArrowRightSmallIcon } from '@blocksuite/icons/rc';
 import clsx from 'clsx';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { Location } from 'react-router-dom';
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -122,15 +121,6 @@ export const OnboardingPage = ({
   );
   const isMacosDesktop = environment.isDesktop && environment.isMacOs;
   const isWindowsDesktop = environment.isDesktop && environment.isWindows;
-
-  useEffect(() => {
-    if (environment.isDesktop) {
-      // to hide macOS window control buttons
-      apis?.ui.handleSidebarVisibilityChange(false).catch(err => {
-        console.error(err);
-      });
-    }
-  }, []);
 
   if (!questions) {
     return null;

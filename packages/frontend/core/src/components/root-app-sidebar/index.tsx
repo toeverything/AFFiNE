@@ -9,13 +9,13 @@ import {
 } from '@affine/core/modules/explorer';
 import { ExplorerTags } from '@affine/core/modules/explorer/views/sections/tags';
 import { CMDKQuickSearchService } from '@affine/core/modules/quicksearch/services/cmdk';
-import { apis, events } from '@affine/electron-api';
+import { events } from '@affine/electron-api';
 import { useI18n } from '@affine/i18n';
 import { AllDocsIcon, SettingsIcon } from '@blocksuite/icons/rc';
 import type { Doc } from '@blocksuite/store';
 import type { Workspace } from '@toeverything/infra';
 import { useLiveData, useService, WorkspaceService } from '@toeverything/infra';
-import { useAtomValue, useSetAtom } from 'jotai';
+import { useSetAtom } from 'jotai';
 import type { MouseEvent, ReactElement } from 'react';
 import { useCallback, useEffect } from 'react';
 
@@ -25,7 +25,6 @@ import {
   AddPageButton,
   AppDownloadButton,
   AppSidebar,
-  appSidebarOpenAtom,
   CategoryDivider,
   MenuItem,
   MenuLinkItem,
@@ -110,15 +109,6 @@ export const RootAppSidebar = (): ReactElement => {
     });
     track.$.navigationPanel.$.openSettings();
   }, [setOpenSettingModalAtom]);
-
-  const sidebarOpen = useAtomValue(appSidebarOpenAtom);
-  useEffect(() => {
-    if (environment.isDesktop) {
-      apis?.ui.handleSidebarVisibilityChange(sidebarOpen).catch(err => {
-        console.error(err);
-      });
-    }
-  }, [sidebarOpen]);
 
   return (
     <AppSidebar

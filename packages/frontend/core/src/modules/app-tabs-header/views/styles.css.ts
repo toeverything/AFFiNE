@@ -23,11 +23,12 @@ export const headerLeft = style({
   flexFlow: 'row',
   alignItems: 'center',
   justifyContent: 'space-between',
-  padding: '0 16px',
+  paddingRight: 12,
+  gap: 10,
   flexShrink: 0,
   selectors: {
     [`${root}[data-mode="app"] &`]: {
-      transition: 'width 0.3s, padding 0.3s',
+      transition: 'all 0.3s',
     },
   },
 });

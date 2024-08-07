@@ -7,7 +7,6 @@ import {
   useDropTarget,
 } from '@affine/component';
 import {
-  appSidebarFloatingAtom,
   appSidebarOpenAtom,
   appSidebarResizingAtom,
 } from '@affine/core/components/app-sidebar';
@@ -233,7 +232,6 @@ export const AppTabsHeader = ({
   const t = useI18n();
   const sidebarWidth = useAtomValue(appSidebarWidthAtom);
   const sidebarOpen = useAtomValue(appSidebarOpenAtom);
-  const sidebarFloating = useAtomValue(appSidebarFloatingAtom);
   const sidebarResizing = useAtomValue(appSidebarResizingAtom);
   const isMacosDesktop = environment.isDesktop && environment.isMacOs;
   const fullScreen = useIsFullScreen();
@@ -314,6 +312,8 @@ export const AppTabsHeader = ({
       [onDrop]
     );
 
+  const trafficLightOffset = isMacosDesktop && !fullScreen ? 70 : 0;
+
   return (
     <div
       className={clsx(styles.root, className)}
@@ -324,13 +324,10 @@ export const AppTabsHeader = ({
       <div
         style={{
           transition: sidebarResizing ? 'none' : undefined,
-          paddingLeft:
-            isMacosDesktop && sidebarOpen && !sidebarFloating && !fullScreen
-              ? 90
-              : 16,
-          width: sidebarOpen && !sidebarFloating ? sidebarWidth : 130,
+          paddingLeft: 12 + trafficLightOffset,
+          width: sidebarOpen ? sidebarWidth : 120 + trafficLightOffset,
           // minus 16 to account for the padding on the right side of the header (for box shadow)
-          marginRight: sidebarOpen && !sidebarFloating ? -16 : 0,
+          marginRight: sidebarOpen ? -16 : 0,
         }}
         className={styles.headerLeft}
       >

@@ -75,6 +75,7 @@ export const NavigationButtons = () => {
         data-testid="app-navigation-button-back"
         disabled={!backable}
         onClick={handleBack}
+        size={24}
       >
         <ArrowLeftSmallIcon />
       </IconButton>
@@ -85,6 +86,7 @@ export const NavigationButtons = () => {
         data-testid="app-navigation-button-forward"
         disabled={!forwardable}
         onClick={handleForward}
+        size={24}
       >
         <ArrowRightSmallIcon />
       </IconButton>

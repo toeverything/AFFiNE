@@ -658,6 +658,8 @@ export class WebContentViewsManager {
       sorted.forEach(({ view }, idx) => {
         this.mainWindow?.contentView.addChildView(view, idx);
       });
+
+      handleWebContentsResize(activeView?.webContents).catch(logger.error);
     }
   };
 
@@ -894,12 +896,12 @@ export async function getCookie(url?: string, name?: string) {
 
 // there is no proper way to listen to webContents resize event
 // we will rely on window.resize event in renderer instead
-export async function handleWebContentsResize() {
+export async function handleWebContentsResize(webContents?: WebContents) {
   // right now when window is resized, we will relocate the traffic light positions
   if (isMacOS()) {
     const window = await getMainWindow();
-    const factor = window?.webContents.getZoomFactor() || 1;
-    window?.setWindowButtonPosition({ x: 20 * factor, y: 24 * factor - 6 });
+    const factor = webContents?.getZoomFactor() || 1;
+    window?.setWindowButtonPosition({ x: 16 * factor, y: 24 * factor - 6 });
   }
 }
 

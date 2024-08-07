@@ -1,7 +1,6 @@
 import { app, nativeTheme, shell } from 'electron';
 import { getLinkPreview } from 'link-preview-js';
 
-import { isMacOS } from '../../shared/utils';
 import { persistentConfig } from '../config-storage/persist';
 import { logger } from '../logger';
 import type { NamespaceHandlers } from '../type';
@@ -43,12 +42,6 @@ export const uiHandlers = {
   handleThemeChange: async (_, theme: (typeof nativeTheme)['themeSource']) => {
     nativeTheme.themeSource = theme;
   },
-  handleSidebarVisibilityChange: async (_, visible: boolean) => {
-    if (isMacOS()) {
-      const window = await getMainWindow();
-      window?.setWindowButtonVisibility(visible);
-    }
-  },
   handleMinimizeApp: async () => {
     const window = await getMainWindow();
     window?.minimize();
@@ -68,8 +61,8 @@ export const uiHandlers = {
       window.maximize();
     }
   },
-  handleWindowResize: async () => {
-    await handleWebContentsResize();
+  handleWindowResize: async e => {
+    await handleWebContentsResize(e.sender);
   },
   handleCloseApp: async () => {
     app.quit();
