@@ -1,6 +1,6 @@
 export {
   CompatibleFavoriteItemsAdapter,
-  MigrationFavoriteItemsAdapter as FavoriteItemsAdapter,
+  MigrationFavoriteItemsAdapter,
   WorkspacePropertiesAdapter,
 } from './services/adapter';
 export { WorkspaceLegacyProperties } from './services/legacy-properties';

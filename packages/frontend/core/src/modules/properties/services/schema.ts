@@ -104,6 +104,7 @@ export const WorkspaceAffinePropertiesSchema = z.object({
   schema: WorkspaceAffinePropertiesSchemaSchema.optional(),
   favorites: z.record(WorkspaceFavoriteItemSchema).optional(),
   pageProperties: z.record(WorkspacePagePropertiesSchema).optional(),
+  favoritesMigrated: z.boolean().optional(),
 });
 
 export type PageInfoCustomPropertyMeta = z.infer<

@@ -1,7 +1,7 @@
 import { IconButton, useConfirmModal } from '@affine/component';
 import { track } from '@affine/core/mixpanel';
 import { ExplorerTreeRoot } from '@affine/core/modules/explorer/views/tree';
-import { FavoriteItemsAdapter } from '@affine/core/modules/properties';
+import { MigrationFavoriteItemsAdapter } from '@affine/core/modules/properties';
 import { Trans, useI18n } from '@affine/i18n';
 import { BroomIcon, HelpIcon } from '@blocksuite/icons/rc';
 import { DocsService, useLiveData, useServices } from '@toeverything/infra';
@@ -15,17 +15,18 @@ import * as styles from './styles.css';
 export const ExplorerMigrationFavorites = () => {
   const t = useI18n();
 
-  const { favoriteItemsAdapter, docsService } = useServices({
-    FavoriteItemsAdapter,
+  const { migrationFavoriteItemsAdapter, docsService } = useServices({
+    MigrationFavoriteItemsAdapter,
     DocsService,
   });
 
   const docs = useLiveData(docsService.list.docs$);
   const trashDocs = useLiveData(docsService.list.trashDocs$);
+  const migrated = useLiveData(migrationFavoriteItemsAdapter.migrated$);
   const { openConfirmModal } = useConfirmModal();
 
   const favorites = useLiveData(
-    favoriteItemsAdapter.favorites$.map(favs => {
+    migrationFavoriteItemsAdapter.favorites$.map(favs => {
       return favs.filter(fav => {
         if (fav.type === 'doc') {
           return (
@@ -57,10 +58,10 @@ export const ExplorerMigrationFavorites = () => {
       cancelText:
         t['com.affine.rootAppSidebar.migration-data.clean-all.cancel'](),
       onConfirm() {
-        favoriteItemsAdapter.clearAll();
+        migrationFavoriteItemsAdapter.markFavoritesMigrated();
       },
     });
-  }, [favoriteItemsAdapter, openConfirmModal, t]);
+  }, [migrationFavoriteItemsAdapter, openConfirmModal, t]);
 
   const handleClickHelp = useCallback(() => {
     openConfirmModal({
@@ -85,7 +86,7 @@ export const ExplorerMigrationFavorites = () => {
     track.$.navigationPanel.migrationData.openMigrationDataHelp();
   }, [handleClickClear, openConfirmModal, t]);
 
-  if (favorites.length === 0) {
+  if (favorites.length === 0 || migrated) {
     return null;
   }
 

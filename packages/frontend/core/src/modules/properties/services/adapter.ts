@@ -159,8 +159,8 @@ export class WorkspacePropertiesAdapter extends Service {
   /**
    * After the user completes the migration, call this function to clear the favorite data
    */
-  cleanupFavorites() {
-    this.proxy.favorites = {};
+  markFavoritesMigrated() {
+    this.proxy.favoritesMigrated = true;
   }
 }
 
@@ -173,14 +173,18 @@ export class MigrationFavoriteItemsAdapter extends Service {
     this.getItems().filter(i => i.value)
   );
 
+  migrated$ = this.adapter.properties$.map(
+    props => props.favoritesMigrated ?? false
+  );
+
   getItems() {
     return Object.entries(this.adapter.favorites ?? {})
       .filter(([k]) => k.includes(':'))
       .map(([, v]) => v);
   }
 
-  clearAll() {
-    this.adapter.cleanupFavorites();
+  markFavoritesMigrated() {
+    this.adapter.markFavoritesMigrated();
   }
 }
 
