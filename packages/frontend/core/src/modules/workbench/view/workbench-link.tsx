@@ -1,5 +1,5 @@
 import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
-import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
+import { useCatchEventCallback } from '@affine/core/hooks/use-catch-event-hook';
 import { useLiveData, useService } from '@toeverything/infra';
 import { type To } from 'history';
 import { forwardRef, type MouseEvent } from 'react';
@@ -21,10 +21,9 @@ export const WorkbenchLink = forwardRef<
   const link =
     basename +
     (typeof to === 'string' ? to : `${to.pathname}${to.search}${to.hash}`);
-  const handleClick = useAsyncCallback(
+  const handleClick = useCatchEventCallback(
     async (event: React.MouseEvent<HTMLAnchorElement>) => {
       event.preventDefault();
-      event.stopPropagation();
       if (onClick?.(event) === false) {
         return;
       }

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { type DependencyList } from 'react';
 
 export type AsyncErrorHandler = (error: Error) => void;
 
@@ -17,7 +17,7 @@ export const AsyncCallbackContext = React.createContext<AsyncErrorHandler>(
  */
 export function useAsyncCallback<T extends any[]>(
   callback: (...args: T) => Promise<void>,
-  deps: any[]
+  deps: DependencyList
 ): (...args: T) => void {
   const handleAsyncError = React.useContext(AsyncCallbackContext);
   return React.useCallback(

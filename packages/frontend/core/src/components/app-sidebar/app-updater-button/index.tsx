@@ -1,4 +1,5 @@
 import { Tooltip } from '@affine/component';
+import { useCatchEventCallback } from '@affine/core/hooks/use-catch-event-hook';
 import { popupWindow } from '@affine/core/utils';
 import { Unreachable } from '@affine/env/constant';
 import { useI18n } from '@affine/i18n';
@@ -118,13 +119,9 @@ function OpenDownloadPage({ updateAvailable }: ButtonContentProps) {
 
 function WhatsNew({ onDismissChangelog }: ButtonContentProps) {
   const t = useI18n();
-  const onClickClose: React.MouseEventHandler = useCallback(
-    e => {
-      onDismissChangelog();
-      e.stopPropagation();
-    },
-    [onDismissChangelog]
-  );
+  const onClickClose = useCatchEventCallback(() => {
+    onDismissChangelog();
+  }, [onDismissChangelog]);
   return (
     <>
       <div className={clsx([styles.whatsNewLabel])}>

@@ -2,14 +2,14 @@ import { FlexWrapper, Input, notify, Wrapper } from '@affine/component';
 import { Button } from '@affine/component/ui/button';
 import { WorkspaceAvatar } from '@affine/component/workspace-avatar';
 import { Upload } from '@affine/core/components/pure/file-upload';
-import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
+import { useCatchEventCallback } from '@affine/core/hooks/use-catch-event-hook';
 import { WorkspacePermissionService } from '@affine/core/modules/permissions';
 import { validateAndReduceImage } from '@affine/core/utils/reduce-image';
 import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
 import { useI18n } from '@affine/i18n';
 import { CameraIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService, WorkspaceService } from '@toeverything/infra';
-import type { KeyboardEvent, MouseEvent } from 'react';
+import type { KeyboardEvent } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 
 import * as style from './style.css';
@@ -106,13 +106,9 @@ export const ProfilePanel = () => {
     handleUpdateWorkspaceName(input);
   }, [handleUpdateWorkspaceName, input]);
 
-  const handleRemoveUserAvatar = useAsyncCallback(
-    async (e: MouseEvent<HTMLButtonElement>) => {
-      e.stopPropagation();
-      await setWorkspaceAvatar(null);
-    },
-    [setWorkspaceAvatar]
-  );
+  const handleRemoveUserAvatar = useCatchEventCallback(async () => {
+    await setWorkspaceAvatar(null);
+  }, [setWorkspaceAvatar]);
 
   const handleUploadAvatar = useCallback(
     (file: File) => {

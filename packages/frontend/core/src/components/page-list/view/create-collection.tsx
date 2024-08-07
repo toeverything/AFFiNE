@@ -1,4 +1,5 @@
 import { Button, Input, Modal } from '@affine/component';
+import { useCatchEventCallback } from '@affine/core/hooks/use-catch-event-hook';
 import { useI18n } from '@affine/i18n';
 import type { KeyboardEvent } from 'react';
 import { useCallback, useMemo, useState } from 'react';
@@ -74,7 +75,7 @@ export const CreateCollection = ({
     }
     onConfirm(value);
   }, [onConfirm, value, isNameEmpty]);
-  const onKeyDown = useCallback(
+  const onKeyDown = useCatchEventCallback(
     (e: KeyboardEvent<HTMLInputElement>) => {
       if (e.key === 'Escape') {
         if (isNameEmpty) {
@@ -83,7 +84,6 @@ export const CreateCollection = ({
           e.currentTarget.blur();
         }
       }
-      e.stopPropagation();
     },
     [isNameEmpty]
   );

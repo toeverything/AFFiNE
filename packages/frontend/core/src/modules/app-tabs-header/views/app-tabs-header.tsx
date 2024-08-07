@@ -14,6 +14,7 @@ import {
 import { appSidebarWidthAtom } from '@affine/core/components/app-sidebar/index.jotai';
 import { WindowsAppControls } from '@affine/core/components/pure/header/windows-app-controls';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
+import { useCatchEventCallback } from '@affine/core/hooks/use-catch-event-hook';
 import type { AffineDNDData } from '@affine/core/types/dnd';
 import { apis, events } from '@affine/electron-api';
 import { useI18n } from '@affine/i18n';
@@ -92,14 +93,18 @@ const WorkbenchTab = ({
     },
     [tabsHeaderService, workbench.id]
   );
-  const onCloseTab: MouseEventHandler = useAsyncCallback(
+  const handleAuxClick: MouseEventHandler = useCatchEventCallback(
     async e => {
-      e.stopPropagation();
-
-      await tabsHeaderService.closeTab?.(workbench.id);
+      if (e.button === 1) {
+        await tabsHeaderService.closeTab?.(workbench.id);
+      }
     },
     [tabsHeaderService, workbench.id]
   );
+
+  const handleCloseTab = useCatchEventCallback(async () => {
+    await tabsHeaderService.closeTab?.(workbench.id);
+  }, [tabsHeaderService, workbench.id]);
 
   const { dropTargetRef, closestEdge } = useDropTarget<AffineDNDData>(
     () => ({
@@ -154,6 +159,7 @@ const WorkbenchTab = ({
                 onContextMenu={() => {
                   onContextMenu(viewIdx);
                 }}
+                onAuxClick={handleAuxClick}
                 onClick={e => {
                   e.stopPropagation();
                   onActivateView(viewIdx);
@@ -185,7 +191,7 @@ const WorkbenchTab = ({
               <button
                 data-testid="close-tab-button"
                 className={styles.tabCloseButton}
-                onClick={onCloseTab}
+                onClick={handleCloseTab}
               >
                 <CloseIcon />
               </button>

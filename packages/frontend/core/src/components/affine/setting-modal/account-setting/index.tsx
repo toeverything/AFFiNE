@@ -6,6 +6,7 @@ import {
 import { Avatar } from '@affine/component/ui/avatar';
 import { Button } from '@affine/component/ui/button';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
+import { useCatchEventCallback } from '@affine/core/hooks/use-catch-event-hook';
 import { track } from '@affine/core/mixpanel';
 import { SubscriptionPlan } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
@@ -17,7 +18,7 @@ import {
   useServices,
 } from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
-import type { FC, MouseEvent } from 'react';
+import type { FC } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 
 import {
@@ -53,14 +54,10 @@ export const UserAvatar = () => {
     [session]
   );
 
-  const handleRemoveUserAvatar = useAsyncCallback(
-    async (e: MouseEvent<HTMLButtonElement>) => {
-      track.$.settingsPanel.accountSettings.removeAvatar();
-      e.stopPropagation();
-      await session.removeAvatar();
-    },
-    [session]
-  );
+  const handleRemoveUserAvatar = useCatchEventCallback(async () => {
+    track.$.settingsPanel.accountSettings.removeAvatar();
+    await session.removeAvatar();
+  }, [session]);
 
   return (
     <Upload

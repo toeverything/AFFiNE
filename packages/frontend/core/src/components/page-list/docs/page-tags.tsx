@@ -1,11 +1,11 @@
 import { Menu } from '@affine/component';
+import { useCatchEventCallback } from '@affine/core/hooks/use-catch-event-hook';
 import type { Tag } from '@affine/core/modules/tag';
 import { CloseIcon, MoreHorizontalIcon } from '@blocksuite/icons/rc';
 import { LiveData, useLiveData } from '@toeverything/infra';
 import { assignInlineVars } from '@vanilla-extract/dynamic';
 import clsx from 'clsx';
-import type { MouseEventHandler } from 'react';
-import { useCallback, useMemo } from 'react';
+import { useMemo } from 'react';
 
 import { stopPropagation } from '../utils';
 import * as styles from './page-tags.css';
@@ -62,13 +62,9 @@ export const TagItem = ({
 }: TagItemProps) => {
   const value = useLiveData(tag?.value$);
   const color = useLiveData(tag?.color$);
-  const handleRemove: MouseEventHandler = useCallback(
-    e => {
-      e.stopPropagation();
-      onRemoved?.();
-    },
-    [onRemoved]
-  );
+  const handleRemove = useCatchEventCallback(() => {
+    onRemoved?.();
+  }, [onRemoved]);
   return (
     <div
       data-testid="page-tag"
