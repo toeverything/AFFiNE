@@ -1,13 +1,15 @@
+import { useCatchEventCallback } from '@affine/core/hooks/use-catch-event-hook';
 import {
   useJournalInfoHelper,
   useJournalRouteHelper,
 } from '@affine/core/hooks/use-journal';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import type { DocCollection } from '@affine/core/shared';
+import { isNewTabTrigger } from '@affine/core/utils';
 import { useI18n } from '@affine/i18n';
 import { TodayIcon, TomorrowIcon, YesterdayIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
-import { type MouseEvent, useCallback } from 'react';
+import { type MouseEvent } from 'react';
 
 import { MenuItem } from '../app-sidebar';
 
@@ -27,9 +29,9 @@ export const AppSidebarJournalButton = ({
     location.pathname.split('/')[1]
   );
 
-  const handleOpenToday = useCallback(
+  const handleOpenToday = useCatchEventCallback(
     (e: MouseEvent) => {
-      openToday(e.ctrlKey || e.metaKey);
+      openToday(isNewTabTrigger(e));
     },
     [openToday]
   );
@@ -48,6 +50,7 @@ export const AppSidebarJournalButton = ({
       data-testid="slider-bar-journals-button"
       active={isJournal}
       onClick={handleOpenToday}
+      onAuxClick={handleOpenToday}
       icon={<Icon />}
     >
       {t['com.affine.journal.app-sidebar-title']()}

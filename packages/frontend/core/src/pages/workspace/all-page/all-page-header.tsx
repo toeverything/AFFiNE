@@ -8,6 +8,7 @@ import { Header } from '@affine/core/components/pure/header';
 import { WorkspaceModeFilterTab } from '@affine/core/components/pure/workspace-mode-filter-tab';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { track } from '@affine/core/mixpanel';
+import { isNewTabTrigger } from '@affine/core/utils';
 import type { Filter } from '@affine/env/filter';
 import { PlusIcon } from '@blocksuite/icons/rc';
 import { useService, WorkspaceService } from '@toeverything/infra';
@@ -60,10 +61,10 @@ export const AllPageHeader = ({
               !showCreateNew && styles.headerCreateNewButtonHidden
             )}
             onCreateEdgeless={e =>
-              createEdgeless(e?.metaKey || e?.ctrlKey ? 'new-tab' : true)
+              createEdgeless(isNewTabTrigger(e) ? 'new-tab' : true)
             }
             onCreatePage={e =>
-              createPage(e?.metaKey || e?.ctrlKey ? 'new-tab' : true)
+              createPage(isNewTabTrigger(e) ? 'new-tab' : true)
             }
             onImportFile={onImportFile}
           >
