@@ -18,6 +18,7 @@ type NavigationEvents =
   | 'openInSplitView'
   | 'switchTab'
   | 'switchSplitView'
+  | 'tabAction'
   | 'navigate'
   | 'goBack'
   | 'goForward'
@@ -229,6 +230,9 @@ const PageEvents = {
       storage: ['viewPlans'],
       aiAction: ['viewPlans'],
     },
+    appTabsHeader: {
+      $: ['tabAction'],
+    },
     header: {
       actions: [
         'createDoc',
@@ -319,6 +323,24 @@ type PaymentEventArgs = {
   recurring: string;
 };
 
+type TabActionControlType =
+  | 'click'
+  | 'dnd'
+  | 'midClick'
+  | 'xButton'
+  | 'contextMenu';
+type TabActionType =
+  | 'pin'
+  | 'unpin'
+  | 'close'
+  | 'refresh'
+  | 'moveTab'
+  | 'openInSplitView'
+  | 'openInNewTab'
+  | 'switchSplitView'
+  | 'switchTab'
+  | 'separateTabs';
+
 export type EventArgs = {
   createWorkspace: { flavour: string };
   oauth: { provider: string };
@@ -342,6 +364,11 @@ export type EventArgs = {
   orderOrganizeItem: OrganizeItemArgs;
   openInNewTab: { type: OrganizeItemType };
   openInSplitView: { type: OrganizeItemType };
+  tabAction: {
+    type?: OrganizeItemType;
+    control: TabActionControlType;
+    action: TabActionType;
+  };
   toggleFavorite: OrganizeItemArgs & { on: boolean };
   createDoc: { mode?: 'edgeless' | 'page' };
   switchPageMode: { mode: 'edgeless' | 'page' };

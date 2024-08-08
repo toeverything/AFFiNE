@@ -29,6 +29,7 @@ export function AddPageButton({
       style={style}
       className={clsx([styles.root, className])}
       onClick={onClick}
+      onAuxClick={onClick}
     >
       <PlusIcon />
     </IconButton>

@@ -9,6 +9,7 @@ import {
 import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
 import { useBlockSuiteMetaHelper } from '@affine/core/hooks/affine/use-block-suite-meta-helper';
 import { useTrashModalHelper } from '@affine/core/hooks/affine/use-trash-modal-helper';
+import { useCatchEventCallback } from '@affine/core/hooks/use-catch-event-hook';
 import { track } from '@affine/core/mixpanel';
 import { FavoriteService } from '@affine/core/modules/favorite';
 import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/properties';
@@ -277,18 +278,30 @@ export const TrashOperationCell = ({
   const t = useI18n();
   const { openConfirmModal } = useConfirmModal();
 
-  const onConfirmPermanentlyDelete = useCallback(() => {
-    openConfirmModal({
-      title: `${t['com.affine.trashOperation.deletePermanently']()}?`,
-      description: t['com.affine.trashOperation.deleteDescription'](),
-      cancelText: t['Cancel'](),
-      confirmText: t['com.affine.trashOperation.delete'](),
-      confirmButtonOptions: {
-        variant: 'error',
-      },
-      onConfirm: onPermanentlyDeletePage,
-    });
-  }, [onPermanentlyDeletePage, openConfirmModal, t]);
+  const onConfirmPermanentlyDelete = useCatchEventCallback(
+    e => {
+      e.preventDefault();
+      openConfirmModal({
+        title: `${t['com.affine.trashOperation.deletePermanently']()}?`,
+        description: t['com.affine.trashOperation.deleteDescription'](),
+        cancelText: t['Cancel'](),
+        confirmText: t['com.affine.trashOperation.delete'](),
+        confirmButtonOptions: {
+          variant: 'error',
+        },
+        onConfirm: onPermanentlyDeletePage,
+      });
+    },
+    [onPermanentlyDeletePage, openConfirmModal, t]
+  );
+
+  const handleRestorePage = useCatchEventCallback(
+    e => {
+      e.preventDefault();
+      onRestorePage();
+    },
+    [onRestorePage]
+  );
 
   return (
     <ColWrapper flex={1}>
@@ -297,9 +310,7 @@ export const TrashOperationCell = ({
         tooltipOptions={tooltipSideTop}
         data-testid="restore-page-button"
         style={{ marginRight: '12px' }}
-        onClick={() => {
-          onRestorePage();
-        }}
+        onClick={handleRestorePage}
         size="20"
       >
         <ResetIcon />

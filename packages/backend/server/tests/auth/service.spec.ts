@@ -157,10 +157,10 @@ test('should be able to get user from session', async t => {
 
   const session = await auth.createUserSession(u1);
 
-  const { user } = await auth.getUser(session.sessionId);
+  const userSession = await auth.getUserSession(session.sessionId);
 
-  t.not(user, null);
-  t.is(user!.id, u1.id);
+  t.not(userSession, null);
+  t.is(userSession!.user.id, u1.id);
 });
 
 test('should be able to sign out session', async t => {
@@ -203,19 +203,19 @@ test('should be able to signout multi accounts session', async t => {
 
   t.not(signedOutSession, null);
 
-  const { user: signedU2 } = await auth.getUser(session.sessionId, 0);
-  const { user: noUser } = await auth.getUser(session.sessionId, 1);
+  const userSession1 = await auth.getUserSession(session.sessionId, 0);
+  const userSession2 = await auth.getUserSession(session.sessionId, 1);
 
-  t.is(noUser, null);
-  t.not(signedU2, null);
+  t.is(userSession2, null);
+  t.not(userSession1, null);
 
-  t.is(signedU2!.id, u2.id);
+  t.is(userSession1!.user.id, u2.id);
 
   // sign out user at seq(0)
   signedOutSession = await auth.signOut(session.sessionId);
 
   t.is(signedOutSession, null);
 
-  const { user: noUser2 } = await auth.getUser(session.sessionId, 0);
-  t.is(noUser2, null);
+  const userSession3 = await auth.getUserSession(session.sessionId, 0);
+  t.is(userSession3, null);
 });

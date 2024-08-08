@@ -10,7 +10,7 @@ export class DocDisplayMetaService extends Service {
     super();
   }
 
-  getDocDisplayMeta(docRecord: DocRecord) {
+  getDocDisplayMeta(docRecord: DocRecord, originalTitle?: string) {
     const journalDateString = this.propertiesAdapter.getJournalPageDateString(
       docRecord.id
     );
@@ -22,7 +22,8 @@ export class DocDisplayMetaService extends Service {
 
     const title = journalDateString
       ? i18nTime(journalDateString, { absolute: { accuracy: 'day' } })
-      : docRecord.meta$.value.title ||
+      : originalTitle ||
+        docRecord.meta$.value.title ||
         ({
           key: 'Untitled',
         } as const);

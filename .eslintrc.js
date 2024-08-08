@@ -247,7 +247,8 @@ const config = {
         'react-hooks/exhaustive-deps': [
           'warn',
           {
-            additionalHooks: '(useAsyncCallback|useDraggable|useDropTarget)',
+            additionalHooks:
+              '(useAsyncCallback|useCatchEventCallback|useDraggable|useDropTarget)',
           },
         ],
       },

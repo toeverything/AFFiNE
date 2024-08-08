@@ -329,7 +329,8 @@ export const createConfiguration: (
       IN_CI ? null : new webpack.ProgressPlugin({ percentBy: 'entries' }),
       buildFlags.mode === 'development'
         ? new ReactRefreshWebpackPlugin({ overlay: false, esModule: true })
-        : new MiniCssExtractPlugin({
+        : // todo: support multiple entry points
+          new MiniCssExtractPlugin({
             filename: `[name].[contenthash:8].css`,
             ignoreOrder: true,
           }),

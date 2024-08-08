@@ -1,5 +1,6 @@
 import type { CheckboxProps } from '@affine/component';
 import { Checkbox } from '@affine/component';
+import { useCatchEventCallback } from '@affine/core/hooks/use-catch-event-hook';
 import { useI18n } from '@affine/i18n';
 import { MultiSelectIcon } from '@blocksuite/icons/rc';
 import clsx from 'clsx';
@@ -19,7 +20,6 @@ import {
   useAtomValue,
 } from './scoped-atoms';
 import type { HeaderColDef, ListItem } from './types';
-import { stopPropagation } from './utils';
 
 // the checkbox on the header has three states:
 // when list selectable = true, the checkbox will be presented
@@ -28,23 +28,19 @@ import { stopPropagation } from './utils';
 const ListHeaderCheckbox = () => {
   const [selectionState, setSelectionState] = useAtom(selectionStateAtom);
   const items = useAtomValue(itemsAtom);
-  const onActivateSelection: MouseEventHandler = useCallback(
-    e => {
-      stopPropagation(e);
-      setSelectionState(true);
-    },
-    [setSelectionState]
-  );
+  const onActivateSelection: MouseEventHandler = useCatchEventCallback(() => {
+    setSelectionState(true);
+  }, [setSelectionState]);
   const handlers = useAtomValue(listHandlersAtom);
-  const onChange: NonNullable<CheckboxProps['onChange']> = useCallback(
-    (e, checked) => {
-      stopPropagation(e);
-      handlers.onSelectedIdsChange?.(
-        checked ? (items ?? []).map(i => i.id) : []
-      );
-    },
-    [handlers, items]
-  );
+  const onChange: NonNullable<CheckboxProps['onChange']> =
+    useCatchEventCallback(
+      (_e, checked) => {
+        handlers.onSelectedIdsChange?.(
+          checked ? (items ?? []).map(i => i.id) : []
+        );
+      },
+      [handlers, items]
+    );
 
   if (!selectionState.selectable) {
     return null;

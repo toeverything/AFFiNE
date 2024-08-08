@@ -2,8 +2,10 @@ import { ArgumentsHost, Catch, Logger } from '@nestjs/common';
 import { BaseExceptionFilter } from '@nestjs/core';
 import { GqlContextType } from '@nestjs/graphql';
 import { ThrottlerException } from '@nestjs/throttler';
+import { BaseWsExceptionFilter } from '@nestjs/websockets';
 import { Response } from 'express';
 import { of } from 'rxjs';
+import { Socket } from 'socket.io';
 
 import {
   InternalServerError,
@@ -41,6 +43,20 @@ export class GlobalExceptionFilter extends BaseExceptionFilter {
       res.status(error.status).send(error.toJSON());
       return;
     }
+  }
+}
+
+export class GlobalWsExceptionFilter extends BaseWsExceptionFilter {
+  // @ts-expect-error satisfies the override
+  override handleError(client: Socket, exception: any): void {
+    const error = mapAnyError(exception);
+    error.log('Websocket');
+    metrics.socketio
+      .counter('unhandled_error')
+      .add(1, { status: error.status });
+    client.emit('error', {
+      error: toWebsocketError(error),
+    });
   }
 }
 

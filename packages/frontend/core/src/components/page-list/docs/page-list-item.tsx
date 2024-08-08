@@ -1,6 +1,7 @@
 import { Checkbox, Tooltip, useDraggable } from '@affine/component';
 import { TagService } from '@affine/core/modules/tag';
 import type { AffineDNDData } from '@affine/core/types/dnd';
+import { stopPropagation } from '@affine/core/utils';
 import { i18nTime } from '@affine/i18n';
 import { useLiveData, useService } from '@toeverything/infra';
 import type { ForwardedRef, PropsWithChildren } from 'react';
@@ -15,7 +16,7 @@ import {
 } from '../scoped-atoms';
 import type { PageListItemProps } from '../types';
 import { useAllDocDisplayProperties } from '../use-all-doc-display-properties';
-import { ColWrapper, stopPropagation } from '../utils';
+import { ColWrapper } from '../utils';
 import * as styles from './page-list-item.css';
 import { PageTags } from './page-tags';
 
@@ -310,18 +311,18 @@ const PageListItemWrapper = forwardRef(
         if (!selectionState.selectable) {
           return;
         }
-        stopPropagation(e);
+        e.stopPropagation();
         const currentIndex = pageIds.indexOf(pageId);
 
         if (e.shiftKey) {
+          e.preventDefault();
           if (!selectionState.selectionActive) {
             setSelectionActive(true);
             setAnchorIndex(currentIndex);
             onClick?.();
-            return false;
+          } else {
+            handleShiftClick(currentIndex);
           }
-          handleShiftClick(currentIndex);
-          return false;
         } else {
           setAnchorIndex(undefined);
           setRangeIds([]);

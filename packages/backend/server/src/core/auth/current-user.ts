@@ -1,6 +1,6 @@
 import type { ExecutionContext } from '@nestjs/common';
 import { createParamDecorator } from '@nestjs/common';
-import { User } from '@prisma/client';
+import { User, UserSession } from '@prisma/client';
 
 import { getRequestResponseFromContext } from '../../fundamentals';
 
@@ -53,3 +53,5 @@ export interface CurrentUser
   hasPassword: boolean | null;
   emailVerified: boolean;
 }
+
+export { type UserSession };

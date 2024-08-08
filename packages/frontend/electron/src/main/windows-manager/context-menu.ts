@@ -5,6 +5,7 @@ import {
   addTab,
   closeTab,
   reloadView,
+  type TabAction,
   WebContentViewsManager,
 } from './tab-views';
 
@@ -14,6 +15,8 @@ export const showTabContextMenu = async (tabId: string, viewIndex: number) => {
   if (!tabMeta) {
     return;
   }
+
+  const { resolve, promise } = Promise.withResolvers<TabAction | null>();
 
   const template: Parameters<typeof Menu.buildFromTemplate>[0] = [
     tabMeta.pinned
@@ -90,4 +93,22 @@ export const showTabContextMenu = async (tabId: string, viewIndex: number) => {
   ];
   const menu = Menu.buildFromTemplate(template);
   menu.popup();
+  // eslint-disable-next-line prefer-const
+  let unsub: (() => void) | undefined;
+  const subscription = WebContentViewsManager.instance.tabAction$.subscribe(
+    action => {
+      resolve(action);
+      unsub?.();
+    }
+  );
+  menu.on('menu-will-close', () => {
+    setTimeout(() => {
+      resolve(null);
+      unsub?.();
+    });
+  });
+  unsub = () => {
+    subscription.unsubscribe();
+  };
+  return promise;
 };

@@ -1,6 +1,6 @@
 import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import type { User } from '@prisma/client';
+import type { User, UserSession } from '@prisma/client';
 import { PrismaClient } from '@prisma/client';
 import type { CookieOptions, Request, Response } from 'express';
 import { assign, omit } from 'lodash-es';
@@ -121,27 +121,27 @@ export class AuthService implements OnApplicationBootstrap {
     return sessionUser(user);
   }
 
-  async getUser(
+  async getUserSession(
     token: string,
     seq = 0
-  ): Promise<{ user: CurrentUser | null; expiresAt: Date | null }> {
+  ): Promise<{ user: CurrentUser; session: UserSession } | null> {
     const session = await this.getSession(token);
 
     // no such session
     if (!session) {
-      return { user: null, expiresAt: null };
+      return null;
     }
 
     const userSession = session.userSessions.at(seq);
 
     // no such user session
     if (!userSession) {
-      return { user: null, expiresAt: null };
+      return null;
     }
 
     // user session expired
     if (userSession.expiresAt && userSession.expiresAt <= new Date()) {
-      return { user: null, expiresAt: null };
+      return null;
     }
 
     const user = await this.db.user.findUnique({
@@ -149,10 +149,10 @@ export class AuthService implements OnApplicationBootstrap {
     });
 
     if (!user) {
-      return { user: null, expiresAt: null };
+      return null;
     }
 
-    return { user: sessionUser(user), expiresAt: userSession.expiresAt };
+    return { user: sessionUser(user), session: userSession };
   }
 
   async getUserList(token: string) {
@@ -251,12 +251,13 @@ export class AuthService implements OnApplicationBootstrap {
   async refreshUserSessionIfNeeded(
     _req: Request,
     res: Response,
-    sessionId: string,
-    userId: string,
-    expiresAt: Date,
+    session: UserSession,
     ttr = this.config.auth.session.ttr
   ): Promise<boolean> {
-    if (expiresAt && expiresAt.getTime() - Date.now() > ttr * 1000) {
+    if (
+      session.expiresAt &&
+      session.expiresAt.getTime() - Date.now() > ttr * 1000
+    ) {
       // no need to refresh
       return false;
     }
@@ -267,17 +268,14 @@ export class AuthService implements OnApplicationBootstrap {
 
     await this.db.userSession.update({
       where: {
-        sessionId_userId: {
-          sessionId,
-          userId,
-        },
+        id: session.id,
       },
       data: {
         expiresAt: newExpiresAt,
       },
     });
 
-    res.cookie(AuthService.sessionCookieName, sessionId, {
+    res.cookie(AuthService.sessionCookieName, session.sessionId, {
       expires: newExpiresAt,
       ...this.cookieOptions,
     });

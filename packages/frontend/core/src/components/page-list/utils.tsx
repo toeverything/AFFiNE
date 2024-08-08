@@ -1,5 +1,4 @@
 import clsx from 'clsx';
-import type { BaseSyntheticEvent } from 'react';
 import { forwardRef } from 'react';
 
 import * as styles from './list.css';
@@ -57,14 +56,6 @@ export const betweenDaysAgo = (
 ): boolean => {
   return !withinDaysAgo(date, days0) && withinDaysAgo(date, days1);
 };
-
-export function stopPropagation(event: BaseSyntheticEvent) {
-  event.stopPropagation();
-  event.preventDefault();
-}
-export function stopPropagationWithoutPrevent(event: BaseSyntheticEvent) {
-  event.stopPropagation();
-}
 
 // credit: https://github.com/facebook/fbjs/blob/main/packages/fbjs/src/core/shallowEqual.js
 export function shallowEqual(objA: any, objB: any) {

@@ -1,5 +1,3 @@
-import { assertExists } from '@blocksuite/global/utils';
-
 export class UaHelper {
   private readonly uaMap;
   public isLinux = false;
@@ -12,8 +10,14 @@ export class UaHelper {
   public isIOS = false;
 
   getChromeVersion = (): number => {
-    const raw = this.navigator.userAgent.match(/Chrom(e|ium)\/([0-9]+)\./);
-    assertExists(raw);
+    let raw = this.navigator.userAgent.match(/Chrom(e|ium)\/([0-9]+)\./);
+    if (!raw) {
+      raw = this.navigator.userAgent.match(/(CriOS)\/([0-9]+)/);
+    }
+    if (!raw) {
+      console.error('Cannot get chrome version');
+      return 0;
+    }
     return parseInt(raw[2], 10);
   };
 
