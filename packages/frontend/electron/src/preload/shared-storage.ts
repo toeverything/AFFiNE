@@ -1,7 +1,10 @@
 import { MemoryMemento } from '@toeverything/infra';
 import { ipcRenderer } from 'electron';
 
-import { AFFINE_API_CHANNEL_NAME } from '../shared/type';
+import {
+  AFFINE_API_CHANNEL_NAME,
+  AFFINE_EVENT_CHANNEL_NAME,
+} from '../shared/type';
 
 const initialGlobalState = ipcRenderer.sendSync(
   AFFINE_API_CHANNEL_NAME,
@@ -29,12 +32,14 @@ function createSharedStorageApi(
 ) {
   const memory = new MemoryMemento();
   memory.setAll(init);
-  ipcRenderer.on(`sharedStorage:${event}`, (_event, updates) => {
-    for (const [key, value] of Object.entries(updates)) {
-      if (value === undefined) {
-        memory.del(key);
-      } else {
-        memory.set(key, value);
+  ipcRenderer.on(AFFINE_EVENT_CHANNEL_NAME, (_event, channel, updates) => {
+    if (channel === `sharedStorage:${event}`) {
+      for (const [key, value] of Object.entries(updates)) {
+        if (value === undefined) {
+          memory.del(key);
+        } else {
+          memory.set(key, value);
+        }
       }
     }
   });
