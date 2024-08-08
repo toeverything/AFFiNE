@@ -10,7 +10,6 @@ import { SubscriptionPlan, SubscriptionStatus } from '@affine/graphql';
 import { Trans, useI18n } from '@affine/i18n';
 import { DoneIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
-import { assignInlineVars } from '@vanilla-extract/dynamic';
 import clsx from 'clsx';
 import { useSetAtom } from 'jotai';
 import { nanoid } from 'nanoid';
@@ -424,15 +423,13 @@ const ResumeButton = () => {
 
   return (
     <ResumeAction open={open} onOpenChange={setOpen}>
-      <Button
-        className={styles.resumeAction}
-        onClick={handleClick}
-        style={assignInlineVars({
-          '--default-content': t['com.affine.payment.current-plan'](),
-          '--hover-content': t['com.affine.payment.resume-renewal'](),
-        })}
-      >
-        <span className={styles.resumeActionContent} />
+      <Button className={styles.resumeAction} onClick={handleClick}>
+        <span data-show-hover="true" className={clsx(styles.resumeContent)}>
+          {t['com.affine.payment.resume-renewal']()}
+        </span>
+        <span data-show-hover="false" className={clsx(styles.resumeContent)}>
+          {t['com.affine.payment.current-plan']()}
+        </span>
       </Button>
     </ResumeAction>
   );
