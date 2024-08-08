@@ -152,6 +152,8 @@ function buildAppModule() {
   factor
     // common fundamental modules
     .use(...FunctionalityModules)
+    .useIf(config => config.flavor.sync, WebSocketModule)
+
     // auth
     .use(AuthModule)
 
@@ -159,7 +161,7 @@ function buildAppModule() {
     .use(DocModule)
 
     // sync server only
-    .useIf(config => config.flavor.sync, WebSocketModule, SyncModule)
+    .useIf(config => config.flavor.sync, SyncModule)
 
     // graphql server only
     .useIf(

@@ -341,8 +341,10 @@ test('should throw if oauth account already connected', async t => {
     },
   });
 
-  // @ts-expect-error mock
-  Sinon.stub(auth, 'getUser').resolves({ user: { id: 'u2-id' } });
+  Sinon.stub(auth, 'getUserSession').resolves({
+    user: { id: 'u2-id' },
+    session: {},
+  } as any);
 
   mockOAuthProvider(app, 'u2@affine.pro');
 
@@ -363,8 +365,10 @@ test('should throw if oauth account already connected', async t => {
 test('should be able to connect oauth account', async t => {
   const { app, u1, auth, db } = t.context;
 
-  // @ts-expect-error mock
-  Sinon.stub(auth, 'getUser').resolves({ user: { id: u1.id } });
+  Sinon.stub(auth, 'getUserSession').resolves({
+    user: { id: u1.id },
+    session: {},
+  } as any);
 
   mockOAuthProvider(app, u1.email);
 

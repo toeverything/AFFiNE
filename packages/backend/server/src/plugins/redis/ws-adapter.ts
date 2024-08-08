@@ -18,7 +18,7 @@ export function createSockerIoAdapterImpl(
         console.error(err);
       });
 
-      const server = super.createIOServer(port, options) as Server;
+      const server = super.createIOServer(port, options);
       server.adapter(createAdapter(pubClient, subClient));
       return server;
     }

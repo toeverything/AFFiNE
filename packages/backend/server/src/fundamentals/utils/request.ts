@@ -66,3 +66,29 @@ export function getRequestFromHost(host: ArgumentsHost) {
 export function getRequestResponseFromContext(ctx: ExecutionContext) {
   return getRequestResponseFromHost(ctx);
 }
+
+/**
+ * simple patch for request not protected by `cookie-parser`
+ * only take effect if `req.cookies` is not defined
+ */
+export function parseCookies(req: Request) {
+  if (req.cookies) {
+    return;
+  }
+
+  const cookieStr = req?.headers?.cookie ?? '';
+  req.cookies = cookieStr.split(';').reduce(
+    (cookies, cookie) => {
+      const [key, val] = cookie.split('=');
+
+      if (key) {
+        cookies[decodeURIComponent(key.trim())] = val
+          ? decodeURIComponent(val.trim())
+          : val;
+      }
+
+      return cookies;
+    },
+    {} as Record<string, string>
+  );
+}
