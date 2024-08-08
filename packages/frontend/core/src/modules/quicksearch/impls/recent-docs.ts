@@ -37,8 +37,9 @@ export class RecentDocsQuickSearchSession
 
       const docRecords = this.recentDocsService.getRecentDocs();
 
-      return docRecords.map<QuickSearchItem<'recent-doc', { docId: string }>>(
-        docRecord => {
+      return docRecords
+        .filter(doc => !get(doc.trash$))
+        .map<QuickSearchItem<'recent-doc', { docId: string }>>(docRecord => {
           const { title, icon } =
             this.docDisplayMetaService.getDocDisplayMeta(docRecord);
 
@@ -54,8 +55,7 @@ export class RecentDocsQuickSearchSession
             timestamp: docRecord.meta$.value.updatedDate,
             payload: { docId: docRecord.id },
           };
-        }
-      );
+        });
     });
 
   query(query: string) {

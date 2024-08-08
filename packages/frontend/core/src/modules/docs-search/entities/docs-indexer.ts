@@ -173,7 +173,7 @@ export class DocsIndexer extends Entity {
             }
           );
           for (const block of oldBlocks.nodes) {
-            docIndexWriter.delete(block.id);
+            blockIndexWriter.delete(block.id);
           }
         }
         await blockIndexWriter.commit();
