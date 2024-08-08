@@ -2,12 +2,13 @@ import type { DateCell } from '@affine/component';
 import { DatePicker, IconButton, Menu, Scrollable } from '@affine/component';
 import { MoveToTrash } from '@affine/core/components/page-list';
 import { useTrashModalHelper } from '@affine/core/hooks/affine/use-trash-modal-helper';
+import { useDocCollectionPageTitle } from '@affine/core/hooks/use-block-suite-workspace-page-title';
 import {
   useJournalHelper,
   useJournalInfoHelper,
   useJournalRouteHelper,
 } from '@affine/core/hooks/use-journal';
-import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
+import { WorkbenchLink } from '@affine/core/modules/workbench';
 import { useI18n } from '@affine/i18n';
 import {
   EdgelessIcon,
@@ -41,14 +42,18 @@ const CountDisplay = ({
 }: { count: number; max?: number } & HTMLAttributes<HTMLSpanElement>) => {
   return <span {...attrs}>{count > max ? `${max}+` : count}</span>;
 };
-interface PageItemProps extends HTMLAttributes<HTMLDivElement> {
+interface PageItemProps
+  extends Omit<HTMLAttributes<HTMLAnchorElement>, 'onClick'> {
   docRecord: DocRecord;
   right?: ReactNode;
 }
 const PageItem = ({ docRecord, right, className, ...attrs }: PageItemProps) => {
-  const title = useLiveData(docRecord.title$);
   const mode = useLiveData(docRecord.mode$);
   const workspace = useService(WorkspaceService).workspace;
+  const title = useDocCollectionPageTitle(
+    workspace.docCollection,
+    docRecord.id
+  );
   const { isJournal } = useJournalInfoHelper(
     workspace.docCollection,
     docRecord.id
@@ -60,8 +65,9 @@ const PageItem = ({ docRecord, right, className, ...attrs }: PageItemProps) => {
       ? EdgelessIcon
       : PageIcon;
   return (
-    <div
+    <WorkbenchLink
       aria-label={title}
+      to={`/${docRecord.id}`}
       className={clsx(className, styles.pageItem)}
       {...attrs}
     >
@@ -70,7 +76,7 @@ const PageItem = ({ docRecord, right, className, ...attrs }: PageItemProps) => {
       </div>
       <span className={styles.pageItemLabel}>{title}</span>
       {right}
-    </div>
+    </WorkbenchLink>
   );
 };
 
@@ -177,13 +183,10 @@ const DailyCountEmptyFallback = ({ name }: { name: NavItemName }) => {
   );
 };
 const JournalDailyCountBlock = ({ date }: JournalBlockProps) => {
-  const workspace = useService(WorkspaceService).workspace;
   const nodeRef = useRef<HTMLDivElement>(null);
   const t = useI18n();
   const [activeItem, setActiveItem] = useState<NavItemName>('createdToday');
   const docRecords = useLiveData(useService(DocsService).list.docs$);
-
-  const navigateHelper = useNavigateHelper();
 
   const getTodaysPages = useCallback(
     (field: 'createDate' | 'updatedDate') => {
@@ -267,9 +270,6 @@ const JournalDailyCountBlock = ({ date }: JournalBlockProps) => {
                 <div className={styles.dailyCountContent} ref={nodeRef}>
                   {renderList.map((pageRecord, index) => (
                     <PageItem
-                      onClick={() =>
-                        navigateHelper.openPage(workspace.id, pageRecord.id)
-                      }
                       tabIndex={name === activeItem ? 0 : -1}
                       key={index}
                       docRecord={pageRecord}
@@ -297,7 +297,6 @@ const ConflictList = ({
   className,
   ...attrs
 }: ConflictListProps) => {
-  const navigateHelper = useNavigateHelper();
   const workspace = useService(WorkspaceService).workspace;
   const currentDoc = useService(DocService).doc;
   const { setTrashModal } = useTrashModalHelper(workspace.docCollection);
@@ -335,7 +334,6 @@ const ConflictList = ({
                 </IconButton>
               </Menu>
             }
-            onClick={() => navigateHelper.openPage(workspace.id, docRecord.id)}
           />
         );
       })}
