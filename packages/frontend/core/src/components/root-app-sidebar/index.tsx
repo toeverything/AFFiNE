@@ -9,6 +9,7 @@ import {
 } from '@affine/core/modules/explorer';
 import { ExplorerTags } from '@affine/core/modules/explorer/views/sections/tags';
 import { CMDKQuickSearchService } from '@affine/core/modules/quicksearch/services/cmdk';
+import { isNewTabTrigger } from '@affine/core/utils';
 import { events } from '@affine/electron-api';
 import { useI18n } from '@affine/i18n';
 import { AllDocsIcon, SettingsIcon } from '@blocksuite/icons/rc';
@@ -85,9 +86,7 @@ export const RootAppSidebar = (): ReactElement => {
 
   const onClickNewPage = useAsyncCallback(
     async (e?: MouseEvent) => {
-      const page = pageHelper.createPage(
-        e?.ctrlKey || e?.metaKey ? 'new-tab' : true
-      );
+      const page = pageHelper.createPage(isNewTabTrigger(e) ? 'new-tab' : true);
       page.load();
       track.$.navigationPanel.$.createDoc();
     },

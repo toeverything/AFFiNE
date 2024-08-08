@@ -10,6 +10,7 @@ import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
 import { track } from '@affine/core/mixpanel';
 import type { Tag } from '@affine/core/modules/tag';
 import { TagService } from '@affine/core/modules/tag';
+import { isNewTabTrigger } from '@affine/core/utils';
 import type { Collection } from '@affine/env/filter';
 import { useI18n } from '@affine/i18n';
 import {
@@ -66,12 +67,9 @@ export const PageListHeader = () => {
         size="small"
         testId="new-page-button-trigger"
         onCreateEdgeless={e =>
-          // todo: abstract this for ctrl check
-          createEdgeless(e?.metaKey || e?.ctrlKey ? 'new-tab' : true)
+          createEdgeless(isNewTabTrigger(e) ? 'new-tab' : true)
         }
-        onCreatePage={e =>
-          createPage(e?.metaKey || e?.ctrlKey ? 'new-tab' : true)
-        }
+        onCreatePage={e => createPage(isNewTabTrigger(e) ? 'new-tab' : true)}
         onImportFile={onImportFile}
       >
         <div className={styles.buttonText}>{t['New Page']()}</div>

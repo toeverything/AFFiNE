@@ -10,7 +10,7 @@ import {
 import { waitForLogMessage } from '@affine-test/kit/utils/utils';
 import { expect } from '@playwright/test';
 
-test('New a page and open it ,then favorite it', async ({
+test('New a page and open it, then favorite it', async ({
   page,
   workspace,
 }) => {

@@ -35,6 +35,7 @@ export const CreateNewPagePopup = ({
         desc={t['com.affine.write_with_a_blank_page']()}
         right={<PageIcon width={20} height={20} />}
         onClick={createNewPage}
+        onAuxClick={createNewPage}
         data-testid="new-page-button-in-all-page"
       />
       <BlockCard
@@ -42,6 +43,7 @@ export const CreateNewPagePopup = ({
         desc={t['com.affine.draw_with_a_blank_whiteboard']()}
         right={<EdgelessIcon width={20} height={20} />}
         onClick={createNewEdgeless}
+        onAuxClick={createNewEdgeless}
         data-testid="new-edgeless-button-in-all-page"
       />
       {importFile ? (
@@ -117,6 +119,7 @@ export const NewPageButton = ({
       <DropdownButton
         size={size}
         onClick={handleCreateNewPage}
+        onAuxClick={handleCreateNewPage}
         onClickDropDown={useCallback(() => setOpen(open => !open), [])}
       >
         {children}

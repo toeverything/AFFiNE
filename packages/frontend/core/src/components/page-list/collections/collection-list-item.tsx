@@ -1,13 +1,14 @@
 import { Checkbox, useDraggable } from '@affine/component';
 import { WorkbenchLink } from '@affine/core/modules/workbench';
 import type { AffineDNDData } from '@affine/core/types/dnd';
+import { stopPropagation } from '@affine/core/utils';
 import { useI18n } from '@affine/i18n';
 import type { ForwardedRef, PropsWithChildren } from 'react';
 import { forwardRef, useCallback, useMemo } from 'react';
 
 import { selectionStateAtom, useAtom } from '../scoped-atoms';
 import type { CollectionListItemProps, PageListItemProps } from '../types';
-import { ColWrapper, stopPropagation } from '../utils';
+import { ColWrapper } from '../utils';
 import * as styles from './collection-list-item.css';
 
 const ListTitleCell = ({
