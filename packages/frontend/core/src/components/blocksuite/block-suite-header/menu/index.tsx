@@ -308,18 +308,20 @@ export const PageHeaderMenuButton = ({
         {t['com.affine.workbench.tab.page-menu-open']()}
       </MenuItem>
 
-      <MenuItem
-        preFix={
-          <MenuIcon>
-            <SplitViewIcon />
-          </MenuIcon>
-        }
-        data-testid="editor-option-menu-open-in-split-new"
-        onSelect={handleOpenInSplitView}
-        style={menuItemStyle}
-      >
-        {t['com.affine.workbench.split-view.page-menu-open']()}
-      </MenuItem>
+      {environment.isDesktop && (
+        <MenuItem
+          preFix={
+            <MenuIcon>
+              <SplitViewIcon />
+            </MenuIcon>
+          }
+          data-testid="editor-option-menu-open-in-split-new"
+          onSelect={handleOpenInSplitView}
+          style={menuItemStyle}
+        >
+          {t['com.affine.workbench.split-view.page-menu-open']()}
+        </MenuItem>
+      )}
 
       <MenuSeparator />
 
