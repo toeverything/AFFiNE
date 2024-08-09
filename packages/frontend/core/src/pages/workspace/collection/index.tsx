@@ -121,10 +121,18 @@ export const Component = function CollectionPage() {
   if (!collection) {
     return null;
   }
-  return isEmpty(collection) ? (
+  const inner = isEmpty(collection) ? (
     <Placeholder collection={collection} />
   ) : (
     <CollectionDetail collection={collection} />
+  );
+
+  return (
+    <>
+      <ViewIcon icon="collection" />
+      <ViewTitle title={collection.name} />
+      {inner}
+    </>
   );
 };
 
@@ -157,8 +165,6 @@ const Placeholder = ({ collection }: { collection: Collection }) => {
 
   return (
     <>
-      <ViewTitle title={collection.name} />
-      <ViewIcon icon="collection" />
       <ViewHeader>
         <div
           style={{
