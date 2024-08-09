@@ -33,9 +33,9 @@ export const modalContentContainer = style({
   borderRadius: 12,
   selectors: {
     '[data-padding="true"] &': {
-      width: '90%',
-      height: '90%',
-      maxWidth: 1248,
+      width: 'calc(100% - 64px)',
+      height: 'calc(100% - 64px)',
+      paddingRight: 48,
     },
     '&[data-anime-state="animating"]': {
       opacity: 0,
@@ -73,7 +73,7 @@ export const modalContent = style({
 
 export const modalControls = style({
   position: 'absolute',
-  left: '100%',
+  right: 0,
   top: 0,
   zIndex: -1,
   minWidth: '48px',
