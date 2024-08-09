@@ -60,7 +60,7 @@ export const AIPlan = () => {
           ) : (
             <>
               <AISubscribe
-                className={styles.learnAIButton}
+                className={styles.purchaseButton}
                 displayedFrequency="monthly"
               />
               <a href="https://ai.affine.pro" target="_blank" rel="noreferrer">
