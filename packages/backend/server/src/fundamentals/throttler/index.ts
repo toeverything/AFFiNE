@@ -57,7 +57,7 @@ export class CloudThrottlerGuard extends ThrottlerGuard {
   override getTracker(req: Request): Promise<string> {
     return Promise.resolve(
       //           ↓ prefer session id if available
-      `throttler:${req.sid ?? req.get('CF-Connecting-IP') ?? req.get('CF-ray') ?? req.ip}`
+      `throttler:${req.session?.sessionId ?? req.get('CF-Connecting-IP') ?? req.get('CF-ray') ?? req.ip}`
       // ^ throttler prefix make the key in store recognizable
     );
   }

@@ -179,8 +179,9 @@ export class FullTextInvertedIndex implements InvertedIndex {
     const matched = new Map<
       number,
       {
-        score: number[];
-        positions: Map<number, [number, number][]>;
+        score: number;
+        index: number;
+        ranges: [number, number][];
       }
     >();
     for (const token of queryTokens) {
@@ -250,27 +251,20 @@ export class FullTextInvertedIndex implements InvertedIndex {
           maxScore === minScore
             ? score
             : (score - minScore) / (maxScore - minScore);
-        const match = matched.get(nid) || {
-          score: [] as number[],
-          positions: new Map(),
-        };
-        match.score.push(normalizedScore);
-        const ranges = match.positions.get(position.index) || [];
-        ranges.push(...position.ranges);
-        match.positions.set(position.index, ranges);
-        matched.set(nid, match);
+        const match = matched.get(nid);
+        if (!match || normalizedScore > match.score) {
+          matched.set(nid, {
+            score: normalizedScore,
+            index: position.index,
+            ranges: position.ranges,
+          });
+        }
       }
     }
     const match = new Match();
-    for (const [nid, { score, positions }] of matched) {
-      match.addScore(
-        nid,
-        score.reduce((acc, s) => acc + s, 0)
-      );
-
-      for (const [index, ranges] of positions) {
-        match.addHighlighter(nid, this.fieldKey, index, ranges);
-      }
+    for (const [nid, { score, index, ranges }] of matched) {
+      match.addScore(nid, score);
+      match.addHighlighter(nid, this.fieldKey, index, ranges);
     }
     return match;
   }

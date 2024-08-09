@@ -15,6 +15,7 @@ import {
 } from '@affine/core/modules/favorite';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import type { AffineDNDData } from '@affine/core/types/dnd';
+import { isNewTabTrigger } from '@affine/core/utils';
 import { useI18n } from '@affine/i18n';
 import { PlusIcon } from '@blocksuite/icons/rc';
 import { DocsService, useLiveData, useServices } from '@toeverything/infra';
@@ -81,7 +82,7 @@ export const ExplorerFavorites = () => {
         favoriteService.favoriteList.indexAt('before')
       );
       workbenchService.workbench.openDoc(newDoc.id, {
-        at: e.ctrlKey || e.metaKey ? 'new-tab' : 'active',
+        at: isNewTabTrigger(e) ? 'new-tab' : 'active',
       });
       explorerSection.setCollapsed(false);
     },
@@ -173,6 +174,7 @@ export const ExplorerFavorites = () => {
             data-event-props="$.navigationPanel.favorites.createDoc"
             data-event-args-control="addFavorite"
             onClick={handleCreateNewFavoriteDoc}
+            onAuxClick={handleCreateNewFavoriteDoc}
             size="16"
             tooltip={t[
               'com.affine.rootAppSidebar.explorer.fav-section-add-tooltip'

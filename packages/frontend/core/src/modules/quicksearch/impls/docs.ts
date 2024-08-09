@@ -86,7 +86,10 @@ export class DocsQuickSearchSession
               )
               .map(([doc, docRecord]) => {
                 const { title, icon, updatedDate } =
-                  this.docDisplayMetaService.getDocDisplayMeta(docRecord);
+                  this.docDisplayMetaService.getDocDisplayMeta(
+                    docRecord,
+                    'title' in doc ? doc.title : undefined
+                  );
                 return {
                   id: 'doc:' + docRecord.id,
                   source: 'docs',

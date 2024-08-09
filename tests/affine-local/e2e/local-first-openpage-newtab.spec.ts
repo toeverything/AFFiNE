@@ -8,7 +8,7 @@ import {
 } from '@affine-test/kit/utils/page-logic';
 import { expect } from '@playwright/test';
 
-test('click btn bew page and open in tab', async ({ page, workspace }) => {
+test('click btn new page and open in tab', async ({ page, workspace }) => {
   await openHomePage(page);
   await waitForEditorLoad(page);
   await clickNewPageButton(page);
@@ -30,4 +30,55 @@ test('click btn bew page and open in tab', async ({ page, workspace }) => {
   const currentWorkspace = await workspace.current();
 
   expect(currentWorkspace.meta.flavour).toContain('local');
+});
+
+test('switch between new page and all page', async ({ page }) => {
+  await openHomePage(page);
+  await waitForEditorLoad(page);
+
+  const title = 'this is a new page';
+
+  await clickNewPageButton(page, title);
+  await page.getByTestId('all-pages').click();
+
+  const cell = page.getByTestId('page-list-item').getByText(title);
+  await expect(cell).toBeVisible();
+
+  await cell.click();
+  await expect(getBlockSuiteEditorTitle(page)).toHaveText(title);
+
+  await page.getByTestId('all-pages').click();
+  await expect(cell).toBeVisible();
+});
+
+test('ctrl click all page and open in new tab', async ({ page }) => {
+  await openHomePage(page);
+  await waitForEditorLoad(page);
+
+  const [newTabPage] = await Promise.all([
+    page.waitForEvent('popup'),
+    page.getByTestId('all-pages').click({
+      modifiers: ['ControlOrMeta'],
+    }),
+  ]);
+
+  await expect(newTabPage).toHaveURL(/\/all/, {
+    timeout: 15000,
+  });
+});
+
+test('mid click all page and open in new tab', async ({ page }) => {
+  await openHomePage(page);
+  await waitForEditorLoad(page);
+
+  const [newTabPage] = await Promise.all([
+    page.waitForEvent('popup'),
+    page.getByTestId('all-pages').click({
+      button: 'middle',
+    }),
+  ]);
+
+  await expect(newTabPage).toHaveURL(/\/all/, {
+    timeout: 15000,
+  });
 });

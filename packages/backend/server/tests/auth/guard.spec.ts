@@ -69,7 +69,7 @@ test('should be able to visit public api if signed in', async t => {
   const { app, auth } = t.context;
 
   // @ts-expect-error mock
-  auth.getUser.resolves({ user: { id: '1' } });
+  auth.getUserSession.resolves({ user: { id: '1' }, session: { id: '1' } });
 
   const res = await request(app.getHttpServer())
     .get('/public')
@@ -100,7 +100,7 @@ test('should be able to visit private api if signed in', async t => {
   const { app, auth } = t.context;
 
   // @ts-expect-error mock
-  auth.getUser.resolves({ user: { id: '1' } });
+  auth.getUserSession.resolves({ user: { id: '1' }, session: { id: '1' } });
 
   const res = await request(app.getHttpServer())
     .get('/private')
@@ -114,26 +114,26 @@ test('should be able to parse session cookie', async t => {
   const { app, auth } = t.context;
 
   // @ts-expect-error mock
-  auth.getUser.resolves({ user: { id: '1' } });
+  auth.getUserSession.resolves({ user: { id: '1' }, session: { id: '1' } });
 
   await request(app.getHttpServer())
     .get('/public')
     .set('cookie', `${AuthService.sessionCookieName}=1`)
     .expect(200);
 
-  t.deepEqual(auth.getUser.firstCall.args, ['1', 0]);
+  t.deepEqual(auth.getUserSession.firstCall.args, ['1', 0]);
 });
 
 test('should be able to parse bearer token', async t => {
   const { app, auth } = t.context;
 
   // @ts-expect-error mock
-  auth.getUser.resolves({ user: { id: '1' } });
+  auth.getUserSession.resolves({ user: { id: '1' }, session: { id: '1' } });
 
   await request(app.getHttpServer())
     .get('/public')
     .auth('1', { type: 'bearer' })
     .expect(200);
 
-  t.deepEqual(auth.getUser.firstCall.args, ['1', 0]);
+  t.deepEqual(auth.getUserSession.firstCall.args, ['1', 0]);
 });

@@ -36,5 +36,6 @@ export {
   getRequestFromHost,
   getRequestResponseFromContext,
   getRequestResponseFromHost,
+  parseCookies,
 } from './utils/request';
 export type * from './utils/types';

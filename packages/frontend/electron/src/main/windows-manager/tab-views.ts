@@ -108,7 +108,7 @@ type OpenInSplitViewAction = {
   };
 };
 
-type TabAction =
+export type TabAction =
   | AddTabAction
   | CloseTabAction
   | PinTabAction

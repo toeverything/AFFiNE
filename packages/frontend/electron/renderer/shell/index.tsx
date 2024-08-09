@@ -2,7 +2,6 @@ import 'setimmediate';
 import '@affine/component/theme/global.css';
 import '@affine/component/theme/theme.css';
 import '@affine/core/bootstrap/preload';
-import './index.css';
 
 import { ThemeProvider } from '@affine/component/theme-provider';
 import { configureAppTabsHeaderModule } from '@affine/core/modules/app-tabs-header';

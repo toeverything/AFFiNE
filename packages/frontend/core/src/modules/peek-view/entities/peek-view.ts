@@ -200,7 +200,10 @@ export class PeekViewEntity extends Entity {
     this._active$.next({ target, info: resolvedInfo });
     this._show$.next({
       value: true,
-      animation: resolvedInfo.type === 'doc' ? 'zoom' : 'fade',
+      animation:
+        resolvedInfo.type === 'doc' || resolvedInfo.type === 'ai-chat-block'
+          ? 'zoom'
+          : 'fade',
     });
     return firstValueFrom(race(this._active$, this.show$).pipe(map(() => {})));
   };
