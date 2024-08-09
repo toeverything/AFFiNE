@@ -750,7 +750,7 @@ export const ExplorerFolderNodeFolder = ({
                 }
                 data-event-props="$.navigationPanel.organize.deleteOrganizeItem"
                 data-event-args-type={node.type$.value}
-                onClick={node.delete}
+                onClick={() => node.delete()}
               >
                 {t['com.affine.rootAppSidebar.organize.delete-from-folder']()}
               </MenuItem>
