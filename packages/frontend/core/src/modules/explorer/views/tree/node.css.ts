@@ -36,6 +36,14 @@ export const itemRoot = style({
     },
   },
 });
+export const itemRenameAnchor = style({
+  pointerEvents: 'none',
+  position: 'absolute',
+  left: 0,
+  top: -10,
+  width: 10,
+  height: 10,
+});
 export const itemContent = style({
   overflow: 'hidden',
   textOverflow: 'ellipsis',
@@ -140,7 +148,6 @@ export const contentContainer = style({
 
 export const draggingContainer = style({
   background: cssVar('--affine-background-primary-color'),
-  boxShadow: cssVar('--affine-toolbar-shadow'),
   width: '200px',
   borderRadius: '6px',
 });
