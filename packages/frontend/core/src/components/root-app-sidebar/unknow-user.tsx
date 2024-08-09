@@ -19,7 +19,12 @@ export const UnknownUserIcon = memo(
   </defs>
 </svg>`;
 
-    return <div dangerouslySetInnerHTML={{ __html: svgRaw }} />;
+    return (
+      <div
+        style={{ lineHeight: 0 }}
+        dangerouslySetInnerHTML={{ __html: svgRaw }}
+      />
+    );
   }
 );
 UnknownUserIcon.displayName = 'UnknownUserIcon';
