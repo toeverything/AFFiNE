@@ -70,7 +70,7 @@ export const LOCALES = [
     originalName: '简体中文',
     flagEmoji: '🇨🇳',
     base: false,
-    completeRate: 0.99,
+    completeRate: 0.974,
     res: zh_Hans,
   },
   {
@@ -214,13 +214,13 @@ export const LOCALES = [
     res: ur,
   },
   {
-    id: 1000134013,
+    id: 1000134005,
     name: 'Arabic',
     tag: 'ar',
     originalName: 'العربية',
     flagEmoji: '🇸🇦',
     base: false,
-    completeRate: 0.001,
+    completeRate: 0.974,
     res: ar,
   },
 ] as const;

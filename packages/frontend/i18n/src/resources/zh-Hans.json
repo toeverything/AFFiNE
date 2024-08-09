@@ -1243,7 +1243,7 @@
   "com.affine.settings.translucent-style-description": "在侧边栏使用半透明效果。",
   "com.affine.settings.workspace": "工作区",
   "com.affine.settings.workspace.description": "您可以在此处自定义您的工作区。",
-  "com.affine.settings.workspace.experimental-features": "插件",
+  "com.affine.settings.workspace.experimental-features": "实验性功能",
   "com.affine.settings.workspace.experimental-features.get-started": "开始使用",
   "com.affine.settings.workspace.experimental-features.header.plugins": "实验性功能",
   "com.affine.settings.workspace.experimental-features.prompt-disclaimer": "我已明确风险，并且愿意继续使用它。",
