@@ -66,8 +66,14 @@ export const ExplorerMigrationFavorites = () => {
   const handleClickHelp = useCallback(() => {
     openConfirmModal({
       title: t['com.affine.rootAppSidebar.migration-data.help'](),
-      description:
-        t['com.affine.rootAppSidebar.migration-data.help.description'](),
+      description: (
+        <Trans
+          i18nKey="com.affine.rootAppSidebar.migration-data.help.description"
+          components={{
+            b: <b className={styles.descriptionHighlight} />,
+          }}
+        />
+      ),
       confirmText: t['com.affine.rootAppSidebar.migration-data.help.confirm'](),
       confirmButtonOptions: {
         variant: 'primary',
