@@ -72,6 +72,8 @@ export class LocalWorkspaceFlavourProvider
       idGenerator: () => nanoid(),
       schema: globalBlockSuiteSchema,
       blobSources: { main: blobStorage },
+      disableBacklinkIndex: true,
+      disableSearchIndex: true,
     });
 
     // apply initial state

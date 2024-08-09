@@ -213,7 +213,12 @@ export class AISlidesRenderer extends WithDisposable(LitElement) {
     super.connectedCallback();
 
     const schema = new Schema().register(AffineSchemas);
-    const collection = new DocCollection({ schema, id: 'SLIDES_PREVIEW' });
+    const collection = new DocCollection({
+      schema,
+      id: 'SLIDES_PREVIEW',
+      disableBacklinkIndex: true,
+      disableSearchIndex: true,
+    });
     collection.meta.initialize();
     collection.start();
     const doc = collection.createDoc();

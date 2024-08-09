@@ -61,6 +61,8 @@ export class TestingWorkspaceLocalProvider
       blobSources: {
         main: blobStorage,
       },
+      disableBacklinkIndex: true,
+      disableSearchIndex: true,
     });
 
     // apply initial state
@@ -95,6 +97,8 @@ export class TestingWorkspaceLocalProvider
     const bs = new DocCollection({
       id,
       schema: globalBlockSuiteSchema,
+      disableBacklinkIndex: true,
+      disableSearchIndex: true,
     });
 
     applyUpdate(bs.doc, data);

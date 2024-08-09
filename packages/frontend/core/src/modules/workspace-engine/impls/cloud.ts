@@ -100,6 +100,8 @@ export class CloudWorkspaceFlavourProviderService
       blobSources: {
         main: blobStorage,
       },
+      disableBacklinkIndex: true,
+      disableSearchIndex: true,
     });
 
     // apply initial state
