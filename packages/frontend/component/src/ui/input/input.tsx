@@ -8,14 +8,9 @@ import type {
   KeyboardEventHandler,
   ReactNode,
 } from 'react';
-import {
-  forwardRef,
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-} from 'react';
+import { forwardRef, useCallback, useEffect } from 'react';
 
+import { useAutoFocus, useAutoSelect } from '../../hooks';
 import { input, inputWrapper } from './style.css';
 
 export type InputProps = {
@@ -55,30 +50,31 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
   }: InputProps,
   upstreamRef: ForwardedRef<HTMLInputElement>
 ) {
-  const inputRef = useRef<HTMLInputElement | null>(null);
-  useLayoutEffect(() => {
-    if (inputRef.current && (autoFocus || autoSelect)) {
-      // to avoid clicking on something focusable(e.g MenuItem),
-      // then the input will not be focused
-      setTimeout(() => {
-        inputRef.current?.focus();
-      }, 0);
-      if (autoSelect) {
-        inputRef.current?.select();
+  const focusRef = useAutoFocus<HTMLInputElement>(autoFocus);
+  const selectRef = useAutoSelect<HTMLInputElement>(autoSelect);
+
+  const inputRef = (el: HTMLInputElement | null) => {
+    focusRef.current = el;
+    selectRef.current = el;
+    if (upstreamRef) {
+      if (typeof upstreamRef === 'function') {
+        upstreamRef(el);
+      } else {
+        upstreamRef.current = el;
       }
     }
-  }, [autoFocus, autoSelect, upstreamRef]);
+  };
 
   // use native blur event to get event after unmount
   // don't use useLayoutEffect here, because the cleanup function will be called before unmount
   useEffect(() => {
     if (!onBlur) return;
-    inputRef.current?.addEventListener('blur', onBlur as any);
+    selectRef.current?.addEventListener('blur', onBlur as any);
     return () => {
       // eslint-disable-next-line react-hooks/exhaustive-deps
-      inputRef.current?.removeEventListener('blur', onBlur as any);
+      selectRef.current?.removeEventListener('blur', onBlur as any);
     };
-  }, [onBlur]);
+  }, [onBlur, selectRef]);
 
   return (
     <div
@@ -105,16 +101,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
           large: size === 'large',
           'extra-large': size === 'extraLarge',
         })}
-        ref={ref => {
-          inputRef.current = ref;
-          if (upstreamRef) {
-            if (typeof upstreamRef === 'function') {
-              upstreamRef(ref);
-            } else {
-              upstreamRef.current = ref;
-            }
-          }
-        }}
+        ref={inputRef}
         disabled={disabled}
         style={inputStyle}
         onChange={useCallback(

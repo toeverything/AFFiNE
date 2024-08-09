@@ -7,6 +7,7 @@ import type {
 } from 'react';
 import { cloneElement, forwardRef, useCallback } from 'react';
 
+import { useAutoFocus } from '../../hooks';
 import { Loading } from '../loading';
 import { Tooltip, type TooltipProps } from '../tooltip';
 import * as styles from './button.css';
@@ -120,12 +121,15 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       tooltip,
       tooltipShortcut,
       tooltipOptions,
+      autoFocus,
       onClick,
 
       ...otherProps
     },
-    ref
+    upstreamRef
   ) => {
+    const ref = useAutoFocus<HTMLButtonElement>(autoFocus);
+
     const handleClick = useCallback(
       (e: MouseEvent<HTMLButtonElement>) => {
         if (loading || disabled) return;
@@ -134,11 +138,22 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       [disabled, loading, onClick]
     );
 
+    const buttonRef = (el: HTMLButtonElement | null) => {
+      ref.current = el;
+      if (upstreamRef) {
+        if (typeof upstreamRef === 'function') {
+          upstreamRef(el);
+        } else {
+          upstreamRef.current = el;
+        }
+      }
+    };
+
     return (
       <Tooltip content={tooltip} shortcut={tooltipShortcut} {...tooltipOptions}>
         <button
           {...otherProps}
-          ref={ref}
+          ref={buttonRef}
           className={clsx(styles.button, className)}
           data-loading={loading || undefined}
           data-block={block || undefined}

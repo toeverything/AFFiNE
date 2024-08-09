@@ -17,6 +17,11 @@ export interface ConfirmModalProps extends ModalProps {
   cancelText?: React.ReactNode;
   cancelButtonOptions?: Omit<ButtonProps, 'children'>;
   reverseFooter?: boolean;
+  /**
+   * Auto focus on confirm button when modal opened
+   * @default true
+   */
+  autoFocusConfirm?: boolean;
 }
 
 export const ConfirmModal = ({
@@ -30,6 +35,7 @@ export const ConfirmModal = ({
   onConfirm,
   onCancel,
   width = 480,
+  autoFocusConfirm = true,
   ...props
 }: ConfirmModalProps) => {
   const onConfirmClick = useCallback(() => {
@@ -73,6 +79,7 @@ export const ConfirmModal = ({
         <Button
           onClick={onConfirmClick}
           data-testid="confirm-modal-confirm"
+          autoFocus={autoFocusConfirm}
           {...confirmButtonOptions}
         >
           {confirmText}
