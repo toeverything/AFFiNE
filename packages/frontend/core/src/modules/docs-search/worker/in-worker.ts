@@ -79,7 +79,7 @@ async function crawlingDocData({
   (
     yRootDoc.getMap('meta').get('pages') as YArray<YMap<any>> | undefined
   )?.forEach(page => {
-    if (page.get('id') === storageDocId) {
+    if (page.get('id') === docId) {
       docExists = !(page.get('trash') ?? false);
     }
   });
