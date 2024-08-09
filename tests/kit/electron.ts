@@ -87,7 +87,9 @@ export const test = base.extend<{
       window.localStorage.setItem('dismissAiOnboardingLocal', 'true');
     });
 
-    await page.reload();
+    await page.reload({
+      timeout: 30000,
+    });
 
     await use(page as Page);
   },
