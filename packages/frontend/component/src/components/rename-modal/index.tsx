@@ -1,4 +1,4 @@
-import type { KeyboardEvent } from 'react';
+import type { KeyboardEvent, ReactElement } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 
 import Input from '../../ui/input';
@@ -8,12 +8,16 @@ export const RenameModal = ({
   onRename,
   currentName,
   open,
+  width = 220,
+  children,
   onOpenChange,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onRename: (newName: string) => void;
   currentName: string;
+  width?: string | number;
+  children?: ReactElement;
 }) => {
   const [value, setValue] = useState(currentName);
 
@@ -56,11 +60,11 @@ export const RenameModal = ({
           onEnter={handleRename}
           onKeyDown={onKeyDown}
           data-testid="rename-modal-input"
-          style={{ width: 220, height: 34, borderRadius: 4 }}
+          style={{ width, height: 34, borderRadius: 4 }}
         />
       }
     >
-      <div></div>
+      {children ?? <div />}
     </Menu>
   );
 };
