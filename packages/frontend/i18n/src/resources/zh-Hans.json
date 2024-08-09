@@ -1142,7 +1142,7 @@
   "com.affine.rootAppSidebar.migration-data.clean-all": "清空旧收藏夹",
   "com.affine.rootAppSidebar.migration-data.clean-all.cancel": "取消",
   "com.affine.rootAppSidebar.migration-data.clean-all.confirm": "好的",
-  "com.affine.rootAppSidebar.migration-data.clean-all.description": "此操作将删除旧的收藏夹部分。b>您的文档是安全的</b>，请确保您已将经常访问的文档移动到新的个人收藏夹。",
+  "com.affine.rootAppSidebar.migration-data.clean-all.description": "此操作将删除旧的收藏夹部分。<b>您的文档是安全的</b>，请确保您已将经常访问的文档移动到新的个人收藏夹。",
   "com.affine.rootAppSidebar.migration-data.help": "“收藏夹”将被改为个人收藏夹",
   "com.affine.rootAppSidebar.migration-data.help.clean-all": "清空旧收藏夹",
   "com.affine.rootAppSidebar.migration-data.help.confirm": "好的",

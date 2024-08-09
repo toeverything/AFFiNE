@@ -1,4 +1,3 @@
-import { cssVar } from '@toeverything/theme';
 import { style } from '@vanilla-extract/css';
 
 export const container = style({
@@ -19,6 +18,5 @@ export const container = style({
 });
 
 export const descriptionHighlight = style({
-  color: cssVar('--affine-warning-color'),
-  fontWeight: 'normal',
+  fontWeight: 'bold',
 });

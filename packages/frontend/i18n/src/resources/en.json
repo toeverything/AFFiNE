@@ -1141,7 +1141,7 @@
   "com.affine.rootAppSidebar.migration-data.clean-all": "Empty the old favorites",
   "com.affine.rootAppSidebar.migration-data.clean-all.cancel": "Cancel",
   "com.affine.rootAppSidebar.migration-data.clean-all.confirm": "OK",
-  "com.affine.rootAppSidebar.migration-data.clean-all.description": "This action deletes the old Favorites section. b>Your documents are safe</b>, ensure you've moved your frequently accessed documents to the new personal Favorites section.",
+  "com.affine.rootAppSidebar.migration-data.clean-all.description": "This action deletes the old Favorites section. <b>Your documents are safe</b>, ensure you've moved your frequently accessed documents to the new personal Favorites section.",
   "com.affine.rootAppSidebar.migration-data.help": "The old \"Favorites\" will be replaced",
   "com.affine.rootAppSidebar.migration-data.help.clean-all": "Empty the old favorites",
   "com.affine.rootAppSidebar.migration-data.help.confirm": "OK",
