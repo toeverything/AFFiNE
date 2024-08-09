@@ -123,6 +123,7 @@ export const ModalInner = forwardRef<HTMLDivElement, ModalProps>(
         className: contentClassName,
         onPointerDownOutside,
         onEscapeKeyDown,
+        onOpenAutoFocus,
         ...otherContentOptions
       } = {},
       overlayOptions: {
@@ -167,6 +168,13 @@ export const ModalInner = forwardRef<HTMLDivElement, ModalProps>(
       [onEscapeKeyDown, persistent]
     );
 
+    const handleOpenAutoFocus = useCallback(
+      (e: Event) => {
+        onOpenAutoFocus?.(e);
+      },
+      [onOpenAutoFocus]
+    );
+
     if (!container) {
       return;
     }
@@ -190,6 +198,7 @@ export const ModalInner = forwardRef<HTMLDivElement, ModalProps>(
             <Dialog.Content
               onPointerDownOutside={handlePointerDownOutSide}
               onEscapeKeyDown={handleEscapeKeyDown}
+              onOpenAutoFocus={handleOpenAutoFocus}
               className={clsx(styles.modalContent, contentClassName)}
               style={{
                 ...assignInlineVars({

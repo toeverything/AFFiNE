@@ -13,6 +13,7 @@ export interface ConfirmModalProps extends ModalProps {
   confirmButtonOptions?: Omit<ButtonProps, 'children'>;
   onConfirm?: (() => void) | (() => Promise<void>);
   onCancel?: () => void;
+  onOpenAutoFocus?: (e: Event) => void;
   confirmText?: React.ReactNode;
   cancelText?: React.ReactNode;
   cancelButtonOptions?: Omit<ButtonProps, 'children'>;
@@ -29,6 +30,7 @@ export const ConfirmModal = ({
   reverseFooter,
   onConfirm,
   onCancel,
+  onOpenAutoFocus,
   width = 480,
   ...props
 }: ConfirmModalProps) => {
@@ -44,6 +46,9 @@ export const ConfirmModal = ({
         onPointerDownOutside: e => {
           e.stopPropagation();
           onCancel?.();
+        },
+        onOpenAutoFocus: e => {
+          onOpenAutoFocus?.(e);
         },
       }}
       width={width}

@@ -2,6 +2,7 @@ import type { ConfirmModalProps, MenuItemProps } from '@affine/component';
 import { ConfirmModal, MenuIcon, MenuItem } from '@affine/component';
 import { useI18n } from '@affine/i18n';
 import { DeleteIcon } from '@blocksuite/icons/rc';
+import { useCallback } from 'react';
 
 export const MoveToTrash = (props: MenuItemProps) => {
   const t = useI18n();
@@ -41,6 +42,16 @@ const MoveToTrashConfirm = ({
     : t['com.affine.moveToTrash.confirmModal.description']({
         title: titles[0] || t['Untitled'](),
       });
+  const onOpenAutoFocus = useCallback((e: Event) => {
+    e.preventDefault();
+    const button = document.querySelector<HTMLButtonElement>(
+      '[data-testid="confirm-delete-page"]'
+    );
+    if (button) {
+      console.log('button', button);
+      button.focus();
+    }
+  }, []);
   return (
     <ConfirmModal
       title={title}
@@ -51,6 +62,7 @@ const MoveToTrashConfirm = ({
         ['data-testid' as string]: 'confirm-delete-page',
         variant: 'error',
       }}
+      onOpenAutoFocus={onOpenAutoFocus}
       {...confirmModalProps}
     />
   );
