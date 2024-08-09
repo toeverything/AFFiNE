@@ -178,11 +178,13 @@ export class FullTextInvertedIndex implements InvertedIndex {
     const queryTokens = new GeneralTokenizer().tokenize(term);
     const matched = new Map<
       number,
-      {
-        score: number;
-        index: number;
-        ranges: [number, number][];
-      }
+      Map<
+        number, // index
+        {
+          score: number;
+          ranges: [number, number][];
+        }
+      >
     >();
     for (const token of queryTokens) {
       const key = InvertedIndexKey.forString(this.fieldKey, token.term);
@@ -251,20 +253,42 @@ export class FullTextInvertedIndex implements InvertedIndex {
           maxScore === minScore
             ? score
             : (score - minScore) / (maxScore - minScore);
-        const match = matched.get(nid);
-        if (!match || normalizedScore > match.score) {
-          matched.set(nid, {
-            score: normalizedScore,
-            index: position.index,
-            ranges: position.ranges,
-          });
-        }
+        const match =
+          matched.get(nid) ??
+          new Map<
+            number, // index
+            {
+              score: number;
+              ranges: [number, number][];
+            }
+          >();
+        const item = match.get(position.index) || {
+          score: 0,
+          ranges: [],
+        };
+        item.score += normalizedScore;
+        item.ranges.push(...position.ranges);
+        match.set(position.index, item);
+        matched.set(nid, match);
       }
     }
     const match = new Match();
-    for (const [nid, { score, index, ranges }] of matched) {
-      match.addScore(nid, score);
-      match.addHighlighter(nid, this.fieldKey, index, ranges);
+    for (const [nid, items] of matched) {
+      if (items.size === 0) {
+        break;
+      }
+      let highestScore = -1;
+      let highestIndex = -1;
+      let highestRanges: [number, number][] = [];
+      for (const [index, { score, ranges }] of items) {
+        if (score > highestScore) {
+          highestScore = score;
+          highestIndex = index;
+          highestRanges = ranges;
+        }
+      }
+      match.addScore(nid, highestScore);
+      match.addHighlighter(nid, this.fieldKey, highestIndex, highestRanges);
     }
     return match;
   }
