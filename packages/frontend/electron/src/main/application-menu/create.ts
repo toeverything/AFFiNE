@@ -10,6 +10,7 @@ import {
   reloadView,
   showDevTools,
   showMainWindow,
+  switchTab,
   undoCloseTab,
 } from '../windows-manager';
 import { applicationMenuSubjects } from './subject';
@@ -137,6 +138,22 @@ export function createApplicationMenu() {
             logger.info('Undo close tab with shortcut');
             undoCloseTab().catch(console.error);
           },
+        },
+        {
+          label: 'Switch to tab',
+          acceleratorWorksWhenHidden: true,
+          visible: false,
+          submenu: [1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => {
+            const shortcut = `CommandOrControl+${n}`;
+            const listener = () => {
+              switchTab(n);
+            };
+            return {
+              label: `Switch to tab ${n}`,
+              accelerator: shortcut,
+              click: listener,
+            };
+          }),
         },
       ],
     },

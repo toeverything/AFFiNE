@@ -3,7 +3,6 @@ import { join } from 'node:path';
 import {
   app,
   type CookiesSetDetails,
-  globalShortcut,
   type View,
   type WebContents,
   WebContentsView,
@@ -700,27 +699,6 @@ export class WebContentViewsManager {
       })
     );
 
-    app.on('ready', () => {
-      // bind CMD/CTRL+1~8 to switch tabs
-      // bind CMD/CTRL+9 to switch to the last tab
-      [1, 2, 3, 4, 5, 6, 7, 8, 9].forEach(n => {
-        const shortcut = `CommandOrControl+${n}`;
-        const listener = () => {
-          if (!this.mainWindow?.isFocused()) {
-            return;
-          }
-          const item = this.tabViewsMeta.workbenches.at(n === 9 ? -1 : n - 1);
-          if (item) {
-            this.showTab(item.id).catch(logger.error);
-          }
-        };
-        globalShortcut.register(shortcut, listener);
-        disposables.push({
-          unsubscribe: () => globalShortcut.unregister(shortcut),
-        });
-      });
-    });
-
     app.on('before-quit', () => {
       disposables.forEach(d => d.unsubscribe());
     });
@@ -1028,5 +1006,14 @@ export const pingAppLayoutReady = (wc: WebContents) => {
   );
   if (viewId) {
     WebContentViewsManager.instance.setTabUIReady(viewId);
+  }
+};
+
+export const switchTab = (n: number) => {
+  const item = WebContentViewsManager.instance.tabViewsMeta.workbenches.at(
+    n === 9 ? -1 : n - 1
+  );
+  if (item) {
+    WebContentViewsManager.instance.showTab(item.id).catch(logger.error);
   }
 };
