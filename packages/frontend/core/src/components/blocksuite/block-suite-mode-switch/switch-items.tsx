@@ -5,35 +5,23 @@ import { cloneElement, useState } from 'react';
 
 import edgelessHover from './animation-data/edgeless-hover.json';
 import pageHover from './animation-data/page-hover.json';
-import { StyledSwitchItem } from './style';
 
 type HoverAnimateControllerProps = {
   active?: boolean;
   hide?: boolean;
   trash?: boolean;
   children: React.ReactElement;
-} & HTMLAttributes<HTMLButtonElement>;
+} & HTMLAttributes<HTMLDivElement>;
 
 const HoverAnimateController = ({
-  active,
-  hide,
-  trash,
   children,
   ...props
 }: HoverAnimateControllerProps) => {
   const [startAnimate, setStartAnimate] = useState(false);
   return (
-    <StyledSwitchItem
-      hide={hide}
-      active={active}
-      data-active={active}
-      trash={trash}
-      onMouseEnter={() => {
-        setStartAnimate(true);
-      }}
-      onMouseLeave={() => {
-        setStartAnimate(false);
-      }}
+    <div
+      onMouseEnter={() => setStartAnimate(true)}
+      onMouseLeave={() => setStartAnimate(false)}
       {...props}
     >
       {cloneElement(children, {
@@ -42,7 +30,7 @@ const HoverAnimateController = ({
         width: 20,
         height: 20,
       })}
-    </StyledSwitchItem>
+    </div>
   );
 };
 

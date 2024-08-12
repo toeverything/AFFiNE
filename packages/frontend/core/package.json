@@ -48,7 +48,7 @@
     "@sentry/integrations": "^7.109.0",
     "@sentry/react": "^8.0.0",
     "@sgtpooki/file-type": "^1.0.1",
-    "@toeverything/theme": "^1.0.2",
+    "@toeverything/theme": "^1.0.4",
     "@vanilla-extract/dynamic": "^2.1.0",
     "animejs": "^3.2.2",
     "async-call-rpc": "^6.4.2",

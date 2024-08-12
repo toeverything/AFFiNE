@@ -34,11 +34,7 @@ import { encodeStateAsUpdate } from 'yjs';
 
 import { pageHistoryModalAtom } from '../../../atoms/page-history';
 import { BlockSuiteEditor } from '../../blocksuite/block-suite-editor';
-import { StyledEditorModeSwitch } from '../../blocksuite/block-suite-mode-switch/style';
-import {
-  EdgelessSwitchItem,
-  PageSwitchItem,
-} from '../../blocksuite/block-suite-mode-switch/switch-items';
+import { PureEditorModeSwitch } from '../../blocksuite/block-suite-mode-switch';
 import { AffineErrorBoundary } from '../affine-error-boundary';
 import {
   historyListGroupByDay,
@@ -108,15 +104,11 @@ const HistoryEditorPreview = ({
   mode,
   title,
 }: HistoryEditorPreviewProps) => {
-  const { onSwitchToPageMode, onSwitchToEdgelessMode } = useMemo(
-    () => ({
-      onSwitchToPageMode: () => {
-        onModeChange('page');
-      },
-      onSwitchToEdgelessMode: () => {
-        onModeChange('edgeless');
-      },
-    }),
+  const onModeChangeWithTrack = useCallback(
+    (mode: DocMode) => {
+      track.$.docHistory.$.switchPageMode({ mode });
+      onModeChange(mode);
+    },
     [onModeChange]
   );
 
@@ -124,22 +116,7 @@ const HistoryEditorPreview = ({
     return (
       <div className={styles.previewContent}>
         <div className={styles.previewHeader}>
-          <StyledEditorModeSwitch switchLeft={mode === 'page'}>
-            <PageSwitchItem
-              data-testid="switch-page-mode-button"
-              active={mode === 'page'}
-              data-event-props="$.docHistory.$.switchPageMode"
-              data-event-args-type="page"
-              onClick={onSwitchToPageMode}
-            />
-            <EdgelessSwitchItem
-              data-testid="switch-edgeless-mode-button"
-              active={mode === 'edgeless'}
-              data-event-props="$.docHistory.$.switchPageMode"
-              data-event-args-type="edgeless"
-              onClick={onSwitchToEdgelessMode}
-            />
-          </StyledEditorModeSwitch>
+          <PureEditorModeSwitch mode={mode} setMode={onModeChangeWithTrack} />
           <div className={styles.previewHeaderTitle}>{title}</div>
           <div className={styles.previewHeaderTimestamp}>
             {ts
@@ -170,14 +147,7 @@ const HistoryEditorPreview = ({
         )}
       </div>
     );
-  }, [
-    mode,
-    onSwitchToEdgelessMode,
-    onSwitchToPageMode,
-    snapshotPage,
-    title,
-    ts,
-  ]);
+  }, [mode, onModeChangeWithTrack, snapshotPage, title, ts]);
 
   return (
     <div className={styles.previewWrapper}>

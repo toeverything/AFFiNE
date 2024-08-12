@@ -1,4 +1,5 @@
 import { cssVar } from '@toeverything/theme';
+import { cssVarV2 } from '@toeverything/theme/v2';
 import { createVar, globalStyle, style } from '@vanilla-extract/css';
 
 export const outerPadding = createVar('radio-outer-padding');
@@ -16,16 +17,22 @@ export const radioButton = style({
   display: 'flex',
   justifyContent: 'center',
   alignItems: 'center',
-  color: cssVar('textSecondaryColor'),
+  color: cssVarV2('switch/fontColor/tertiary'),
   whiteSpace: 'nowrap',
   userSelect: 'none',
   fontWeight: 600,
   selectors: {
     '&[data-state="checked"]': {
-      color: cssVar('textPrimaryColor'),
+      color: cssVarV2('switch/fontColor/primary'),
     },
     '&[data-state="unchecked"]:hover': {
-      background: cssVar('hoverColor'),
+      background: cssVarV2('switch/buttonBackground/hover'),
+    },
+    '[data-icon-mode=true] &': {
+      color: cssVarV2('switch/iconColor/default'),
+    },
+    '[data-icon-mode=true] &[data-state="checked"]': {
+      color: cssVarV2('switch/iconColor/active'),
     },
   },
 });
@@ -37,7 +44,7 @@ globalStyle(`${radioButtonContent} > svg`, { display: 'block' });
 export const radioButtonGroup = style({
   display: 'inline-flex',
   alignItems: 'center',
-  background: cssVar('hoverColorFilled'),
+  background: cssVarV2('switch/switchBackground/background'),
 
   borderRadius: outerRadius,
   padding: outerPadding,
@@ -53,8 +60,8 @@ export const indicator = style({
   height: '100%',
   left: 0,
   top: 0,
-  background: cssVar('white'),
-  filter: 'drop-shadow(0px 0px 4px rgba(0, 0, 0, 0.1))',
+  background: cssVarV2('switch/buttonBackground/active'),
+  boxShadow: cssVar('buttonShadow'),
   opacity: 0,
   transformOrigin: 'left',
   selectors: {

@@ -47,6 +47,10 @@ export interface RadioProps extends RadioGroupItemProps {
   activeItemClassName?: string;
   /** Customize active item's style */
   activeItemStyle?: CSSProperties;
+  /**
+   * This prop is used to use a different color scheme
+   */
+  iconMode?: boolean;
 }
 
 export interface RadioItem {

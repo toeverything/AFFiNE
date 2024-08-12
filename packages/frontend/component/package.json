@@ -47,7 +47,7 @@
     "@radix-ui/react-toolbar": "^1.0.4",
     "@radix-ui/react-tooltip": "^1.0.7",
     "@radix-ui/react-visually-hidden": "^1.1.0",
-    "@toeverything/theme": "^1.0.2",
+    "@toeverything/theme": "^1.0.4",
     "@vanilla-extract/dynamic": "^2.1.0",
     "bytes": "^3.1.2",
     "check-password-strength": "^2.0.10",

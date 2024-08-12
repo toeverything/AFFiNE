@@ -600,6 +600,8 @@
   "com.affine.cmdk.no-results": "No results found",
   "com.affine.cmdk.no-results-for": "No results found for",
   "com.affine.cmdk.placeholder": "Type a command or search anything...",
+  "com.affine.cmdk.switch-to-edgeless": "Switch to $t(com.affine.edgelessMode)",
+  "com.affine.cmdk.switch-to-page": "Switch to $t(com.affine.pageMode)",
   "com.affine.collection-bar.action.tooltip.delete": "Delete",
   "com.affine.collection-bar.action.tooltip.edit": "Edit",
   "com.affine.collection-bar.action.tooltip.pin": "Pin to sidebar",

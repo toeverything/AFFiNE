@@ -2,9 +2,8 @@ import { IconButton } from '@affine/component';
 import { useI18n } from '@affine/i18n';
 import { ArrowLeftSmallIcon, ArrowRightSmallIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect } from 'react';
 
-import { useGeneralShortcuts } from '../../../hooks/affine/use-shortcuts';
 import { NavigatorService } from '../services/navigator';
 import * as styles from './navigation-buttons.css';
 
@@ -12,22 +11,6 @@ const tooltipSideBottom = { side: 'bottom' as const };
 
 export const NavigationButtons = () => {
   const t = useI18n();
-
-  const shortcuts = useGeneralShortcuts().shortcuts;
-
-  const shortcutsObject = useMemo(() => {
-    const goBack = t['com.affine.keyboardShortcuts.goBack']();
-    const goBackShortcut = shortcuts?.[goBack];
-
-    const goForward = t['com.affine.keyboardShortcuts.goForward']();
-    const goForwardShortcut = shortcuts?.[goForward];
-    return {
-      goBack,
-      goBackShortcut,
-      goForward,
-      goForwardShortcut,
-    };
-  }, [shortcuts, t]);
 
   const navigator = useService(NavigatorService).navigator;
 
@@ -65,11 +48,11 @@ export const NavigationButtons = () => {
     return null;
   }
 
-  // TODO(@CatsJuice): tooltip with shortcut
   return (
     <div className={styles.container}>
       <IconButton
-        tooltip={`${shortcutsObject.goBack} ${shortcutsObject.goBackShortcut}`}
+        tooltip={t['Go Back']()}
+        tooltipShortcut={['$mod', '[']}
         tooltipOptions={tooltipSideBottom}
         className={styles.button}
         data-testid="app-navigation-button-back"
@@ -80,7 +63,8 @@ export const NavigationButtons = () => {
         <ArrowLeftSmallIcon />
       </IconButton>
       <IconButton
-        tooltip={`${shortcutsObject.goForward} ${shortcutsObject.goForwardShortcut}`}
+        tooltip={t['Go Forward']()}
+        tooltipShortcut={['$mod', ']']}
         tooltipOptions={tooltipSideBottom}
         className={styles.button}
         data-testid="app-navigation-button-forward"

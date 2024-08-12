@@ -1,6 +1,5 @@
 import { RadioGroup } from '@affine/component';
 import { useLiveData, useService } from '@toeverything/infra';
-import { cssVar } from '@toeverything/theme';
 import { useCallback } from 'react';
 
 import { ViewService } from '../../services/view';
@@ -35,6 +34,7 @@ export const SidebarHeaderSwitcher = () => {
 
   return tabItems.length ? (
     <RadioGroup
+      iconMode
       borderRadius={8}
       itemHeight={24}
       padding={4}
@@ -42,7 +42,6 @@ export const SidebarHeaderSwitcher = () => {
       items={tabItems}
       value={activeTab?.id}
       onChange={handleActiveTabChange}
-      activeItemStyle={{ color: cssVar('primaryColor') }}
     />
   ) : null;
 };

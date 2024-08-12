@@ -289,6 +289,12 @@ const CMDKKeyBinding = ({ keyBinding }: { keyBinding: string }) => {
       if (fragment === '$mod') {
         return isMacOS ? '⌘' : 'Ctrl';
       }
+      if (fragment === 'Alt') {
+        return isMacOS ? '⌥' : 'Alt';
+      }
+      if (fragment.startsWith('Key')) {
+        return fragment.slice(3);
+      }
       if (fragment === 'ArrowUp') {
         return '↑';
       }

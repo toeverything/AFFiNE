@@ -81,10 +81,7 @@ export function JournalPageHeader({ page, workspace }: PageHeaderProps) {
     <Header className={styles.header} ref={containerRef}>
       <ViewTitle title={title} />
       <ViewIcon icon="journal" />
-      <EditorModeSwitch
-        docCollection={workspace.docCollection}
-        pageId={page?.id}
-      />
+      <EditorModeSwitch pageId={page?.id} />
       <div className={styles.journalWeekPicker}>
         <JournalWeekDatePicker
           docCollection={workspace.docCollection}
@@ -138,10 +135,7 @@ export function NormalPageHeader({ page, workspace }: PageHeaderProps) {
     <Header className={styles.header} ref={containerRef}>
       <ViewTitle title={title} />
       <ViewIcon icon={currentMode ?? 'page'} />
-      <EditorModeSwitch
-        docCollection={workspace.docCollection}
-        pageId={page?.id}
-      />
+      <EditorModeSwitch pageId={page?.id} />
       <BlocksuiteHeaderTitle
         inputHandleRef={titleInputHandleRef}
         pageId={page?.id}
