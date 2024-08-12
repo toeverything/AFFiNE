@@ -64,7 +64,7 @@ test('create new tab', async ({ views }) => {
   page = await views.getActive();
   // page content should be at all docs page
   await expect(page.getByTestId('virtualized-page-list')).toContainText(
-    'All Docs'
+    'All docs'
   );
 });
 

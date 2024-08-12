@@ -80,7 +80,7 @@ test('Show collections items in sidebar', async ({ page }) => {
   await collectionPage
     .getByTestId('explorer-tree-node-operation-button')
     .click();
-  const deletePage = page.getByText('Move to Trash');
+  const deletePage = page.getByText('Move to trash');
   await deletePage.click();
   await page.getByTestId('confirm-modal-confirm').click();
   expect(await first.locator('[data-testid^="explorer-doc-"]').count()).toBe(0);

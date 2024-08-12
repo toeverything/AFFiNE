@@ -370,16 +370,16 @@ test('can use cmdk to delete page and restore it', async ({ page }) => {
   await getBlockSuiteEditorTitle(page).click();
   await getBlockSuiteEditorTitle(page).fill('this is a new page to delete');
   await openQuickSearchByShortcut(page);
-  await keyboardDownAndSelect(page, 'Move to Trash');
+  await keyboardDownAndSelect(page, 'Move to trash');
   await page.getByTestId('confirm-delete-page').click();
   const restoreButton = page.getByTestId('page-restore-button');
   await expect(restoreButton).toBeVisible();
   await page.waitForTimeout(100);
   await openQuickSearchByShortcut(page);
-  expect(await commandsIsVisible(page, 'Move to Trash')).toBe(false);
+  expect(await commandsIsVisible(page, 'Move to trash')).toBe(false);
   expect(await commandsIsVisible(page, 'Export to PDF')).toBe(false);
-  expect(await commandsIsVisible(page, 'Restore from Trash')).toBe(true);
-  await keyboardDownAndSelect(page, 'Restore from Trash');
+  expect(await commandsIsVisible(page, 'Restore from trash')).toBe(true);
+  await keyboardDownAndSelect(page, 'Restore from trash');
   await expect(restoreButton).not.toBeVisible();
 });
 
