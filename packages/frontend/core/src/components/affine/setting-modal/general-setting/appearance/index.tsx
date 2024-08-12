@@ -15,6 +15,7 @@ import { useAppSettingHelper } from '../../../../../hooks/affine/use-app-setting
 import { LanguageMenu } from '../../../language-menu';
 import { DateFormatSetting } from './date-format-setting';
 import { settingWrapper } from './style.css';
+import { ThemeEditorSetting } from './theme-editor-setting';
 
 export const ThemeSettings = () => {
   const t = useI18n();
@@ -172,6 +173,7 @@ export const AppearanceSettings = () => {
             />
           </SettingRow>
         ) : null}
+        {runtimeConfig.enableThemeEditor ? <ThemeEditorSetting /> : null}
       </SettingWrapper>
       {runtimeConfig.enableNewSettingUnstableApi ? (
         <SettingWrapper title={t['com.affine.appearanceSettings.date.title']()}>

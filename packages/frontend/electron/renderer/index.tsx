@@ -33,7 +33,10 @@ function main() {
     .catch(() => console.error('failed to load app config'));
 
   // skip bootstrap setup for desktop onboarding
-  if (window.appInfo?.windowName === 'onboarding') {
+  if (
+    window.appInfo?.windowName === 'onboarding' ||
+    window.appInfo?.windowName === 'theme-editor'
+  ) {
     performanceMainLogger.info('skip setup');
   } else {
     performanceMainLogger.info('setup start');

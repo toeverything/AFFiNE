@@ -17,6 +17,7 @@ import { configureQuickSearchModule } from './quicksearch';
 import { configureShareDocsModule } from './share-doc';
 import { configureTagModule } from './tag';
 import { configureTelemetryModule } from './telemetry';
+import { configureThemeEditorModule } from './theme-editor';
 
 export function configureCommonModules(framework: Framework) {
   configureInfraModules(framework);
@@ -37,4 +38,5 @@ export function configureCommonModules(framework: Framework) {
   configureOrganizeModule(framework);
   configureFavoriteModule(framework);
   configureExplorerModule(framework);
+  configureThemeEditorModule(framework);
 }

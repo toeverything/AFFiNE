@@ -25,6 +25,7 @@ import {
   updateWorkbenchViewMeta,
 } from '../windows-manager';
 import { showTabContextMenu } from '../windows-manager/context-menu';
+import { getOrCreateCustomThemeWindow } from '../windows-manager/custom-theme-window';
 import { getChallengeResponse } from './challenge';
 import { uiSubjects } from './subject';
 
@@ -204,5 +205,10 @@ export const uiHandlers = {
   },
   showTabContextMenu: async (_, tabKey: string, viewIndex: number) => {
     return showTabContextMenu(tabKey, viewIndex);
+  },
+  openThemeEditor: async () => {
+    const win = await getOrCreateCustomThemeWindow();
+    win.show();
+    win.focus();
   },
 } satisfies NamespaceHandlers;

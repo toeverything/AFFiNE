@@ -109,6 +109,10 @@ export const topLevelRoutes = [
         },
       },
       {
+        path: '/theme-editor',
+        lazy: () => import('./pages/theme-editor'),
+      },
+      {
         path: '*',
         lazy: () => import('./pages/404'),
       },

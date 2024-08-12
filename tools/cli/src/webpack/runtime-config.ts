@@ -27,6 +27,7 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
         // CAUTION(@forehalo): product not ready, do not enable it
         enableNewSettingUnstableApi: false,
         enableEnhanceShareMode: false,
+        enableThemeEditor: false,
       };
     },
     get beta() {
@@ -54,6 +55,7 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
         changelogUrl: 'https://github.com/toeverything/AFFiNE/releases',
         enableInfoModal: true,
         enableOrganize: true,
+        enableThemeEditor: true,
       };
     },
   };

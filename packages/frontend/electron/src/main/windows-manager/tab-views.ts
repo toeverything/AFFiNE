@@ -28,6 +28,7 @@ import { ensureHelperProcess } from '../helper-process';
 import { logger } from '../logger';
 import { globalStateStorage } from '../shared-storage/storage';
 import { parseCookie } from '../utils';
+import { getCustomThemeWindow } from './custom-theme-window';
 import { getMainWindow, MainWindowManager } from './main-window';
 import {
   TabViewsMetaKey,
@@ -992,12 +993,25 @@ export const onActiveTabChanged = (fn: (tabId: string) => void) => {
 };
 
 export const showDevTools = (id?: string) => {
-  const view = id
-    ? WebContentViewsManager.instance.getViewById(id)
-    : WebContentViewsManager.instance.activeWorkbenchView;
-  if (view) {
-    view.webContents.openDevTools();
-  }
+  // use focusedWindow?
+  // const focusedWindow = BrowserWindow.getFocusedWindow()
+
+  // workaround for opening devtools for theme-editor window
+  // there should be some strategy like windows manager, so we can know which window is active
+  getCustomThemeWindow()
+    .then(w => {
+      if (w && w.isFocused()) {
+        w.webContents.openDevTools();
+      } else {
+        const view = id
+          ? WebContentViewsManager.instance.getViewById(id)
+          : WebContentViewsManager.instance.activeWorkbenchView;
+        if (view) {
+          view.webContents.openDevTools();
+        }
+      }
+    })
+    .catch(console.error);
 };
 
 export const pingAppLayoutReady = (wc: WebContents) => {
