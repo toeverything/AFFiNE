@@ -6,20 +6,13 @@ import {
 import { Separator } from '@affine/admin/components/ui/separator';
 import { TooltipProvider } from '@affine/admin/components/ui/tooltip';
 import { cn } from '@affine/admin/utils';
-import {
-  AlignJustifyIcon,
-  ClipboardList,
-  Cpu,
-  Settings,
-  Users,
-} from 'lucide-react';
+import { AlignJustifyIcon } from 'lucide-react';
 import type { ReactNode, RefObject } from 'react';
 import {
   createContext,
   useCallback,
   useContext,
   useEffect,
-  useMemo,
   useRef,
   useState,
 } from 'react';
@@ -35,7 +28,7 @@ import {
   SheetTrigger,
 } from '../components/ui/sheet';
 import { Logo } from './accounts/components/logo';
-import type { NavProp } from './nav/nav';
+import { NavContext } from './nav/context';
 import { Nav } from './nav/nav';
 
 interface LayoutProps {
@@ -50,32 +43,10 @@ interface RightPanelContextType {
   openPanel: () => void;
   closePanel: () => void;
 }
+
 const RightPanelContext = createContext<RightPanelContextType | undefined>(
   undefined
 );
-
-const navLinks: NavProp[] = [
-  {
-    title: 'Accounts',
-    icon: Users,
-    to: '/admin/accounts',
-  },
-  {
-    title: 'AI',
-    icon: Cpu,
-    to: '/admin/ai',
-  },
-  {
-    title: 'Config',
-    icon: ClipboardList,
-    to: '/admin/config',
-  },
-  {
-    title: 'Settings',
-    icon: Settings,
-    to: '/admin/settings',
-  },
-];
 
 export const useRightPanel = () => {
   const context = useContext(RightPanelContext);
@@ -110,6 +81,10 @@ export function Layout({ content }: LayoutProps) {
   const [open, setOpen] = useState(false);
   const rightPanelRef = useRef<ImperativePanelHandle>(null);
 
+  const [activeTab, setActiveTab] = useState('Accounts');
+  const [activeSubTab, setActiveSubTab] = useState('auth');
+  const [currentModule, setCurrentModule] = useState('auth');
+
   const handleExpand = useCallback(() => {
     if (rightPanelRef.current?.getSize() === 0) {
       rightPanelRef.current?.resize(30);
@@ -139,15 +114,6 @@ export function Layout({ content }: LayoutProps) {
     [closePanel, openPanel]
   );
 
-  const activeTab = useMemo(() => {
-    const path = window.location.pathname;
-
-    return (
-      navLinks.find(link => path.endsWith(link.title.toLocaleLowerCase()))
-        ?.title || ''
-    );
-  }, []);
-
   return (
     <RightPanelContext.Provider
       value={{
@@ -159,37 +125,45 @@ export function Layout({ content }: LayoutProps) {
         closePanel,
       }}
     >
-      <TooltipProvider delayDuration={0}>
-        <div className="flex">
-          <LeftPanel activeTab={activeTab} />
-          <ResizablePanelGroup direction="horizontal">
-            <ResizablePanel id="0" order={0} minSize={50}>
-              {content}
-            </ResizablePanel>
-            <RightPanel
-              rightPanelRef={rightPanelRef}
-              onExpand={handleExpand}
-              onCollapse={handleCollapse}
-            />
-          </ResizablePanelGroup>
-        </div>
-      </TooltipProvider>
+      <NavContext.Provider
+        value={{
+          activeTab,
+          activeSubTab,
+          currentModule,
+          setActiveTab,
+          setActiveSubTab,
+          setCurrentModule,
+        }}
+      >
+        <TooltipProvider delayDuration={0}>
+          <div className="flex">
+            <LeftPanel />
+            <ResizablePanelGroup direction="horizontal">
+              <ResizablePanel id="0" order={0} minSize={50}>
+                {content}
+              </ResizablePanel>
+              <RightPanel
+                rightPanelRef={rightPanelRef}
+                onExpand={handleExpand}
+                onCollapse={handleCollapse}
+              />
+            </ResizablePanelGroup>
+          </div>
+        </TooltipProvider>
+      </NavContext.Provider>
     </RightPanelContext.Provider>
   );
 }
 
-export const LeftPanel = ({ activeTab }: { activeTab: string }) => {
+export const LeftPanel = () => {
   const isSmallScreen = useMediaQuery('(max-width: 768px)');
 
   if (isSmallScreen) {
     return (
       <Sheet>
         <SheetTrigger asChild>
-          <Button
-            variant="ghost"
-            className="fixed  top-[14px] left-6 p-0 h-5 w-5"
-          >
-            <AlignJustifyIcon />
+          <Button variant="ghost" className="fixed  top-4 left-6 p-0 h-5 w-5">
+            <AlignJustifyIcon size={20} />
           </Button>
         </SheetTrigger>
         <SheetHeader className="hidden">
@@ -209,7 +183,7 @@ export const LeftPanel = ({ activeTab }: { activeTab: string }) => {
               AFFiNE
             </div>
             <Separator />
-            <Nav links={navLinks} activeTab={activeTab} />
+            <Nav />
           </div>
         </SheetContent>
       </Sheet>
@@ -227,7 +201,7 @@ export const LeftPanel = ({ activeTab }: { activeTab: string }) => {
         AFFiNE
       </div>
       <Separator />
-      <Nav links={navLinks} activeTab={activeTab} />
+      <Nav />
     </div>
   );
 };
