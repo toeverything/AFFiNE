@@ -14,7 +14,7 @@ export function Ai() {
 export function AiPage() {
   return (
     <div className=" h-screen flex-1 flex-col flex">
-      <div className="flex items-center justify-between px-6 py-3 max-md:ml-9 max-md:mt-[2px]">
+      <div className="flex items-center justify-between px-6 py-3 my-[2px] max-md:ml-9 max-md:mt-[2px]">
         <div className="text-base font-medium">AI</div>
       </div>
       <Separator />

@@ -6,6 +6,7 @@ import {
   CarouselItem,
 } from '@affine/admin/components/ui/carousel';
 import { validateEmailAndPassword } from '@affine/admin/utils';
+import { useMutateQueryResource } from '@affine/core/hooks/use-mutation';
 import { useQuery } from '@affine/core/hooks/use-query';
 import { serverConfigQuery } from '@affine/graphql';
 import { useCallback, useEffect, useState } from 'react';
@@ -81,6 +82,8 @@ export const Form = () => {
   const disableContinue =
     (!nameValue || !emailValue || !passwordValue) && isCreateAdminStep;
 
+  const revalidate = useMutateQueryResource();
+
   useEffect(() => {
     if (!api) {
       return;
@@ -92,11 +95,9 @@ export const Form = () => {
     api.on('select', () => {
       setCurrent(api.selectedScrollSnap() + 1);
     });
-  }, [api]);
+  }, [api, data.serverConfig.initialized, navigate]);
 
   const createAdmin = useCallback(async () => {
-    if (invalidEmail || invalidPassword) return;
-
     try {
       const createResponse = await fetch('/api/setup/create-admin-user', {
         method: 'POST',
@@ -115,13 +116,14 @@ export const Form = () => {
       }
 
       await createResponse.json();
+      await revalidate(serverConfigQuery);
       toast.success('Admin account created successfully.');
     } catch (err) {
       toast.error((err as Error).message);
       console.error(err);
       throw err;
     }
-  }, [emailValue, invalidEmail, invalidPassword, passwordValue]);
+  }, [emailValue, passwordValue, revalidate]);
 
   const onNext = useCallback(async () => {
     if (isCreateAdminStep) {
@@ -138,8 +140,12 @@ export const Form = () => {
       } else {
         try {
           await createAdmin();
+          setInvalidEmail(false);
+          setInvalidPassword(false);
         } catch (e) {
           console.error(e);
+          setInvalidEmail(true);
+          setInvalidPassword(true);
           return;
         }
       }
@@ -164,10 +170,14 @@ export const Form = () => {
 
   const onPrevious = useCallback(() => {
     if (current === count) {
-      return navigate('/admin', { replace: true });
+      if (data.serverConfig.initialized === true) {
+        return navigate('/admin', { replace: true });
+      }
+      toast.error('Goto Admin Panel failed, please try again.');
+      return;
     }
     api?.scrollPrev();
-  }, [api, count, current, navigate]);
+  }, [api, count, current, data.serverConfig.initialized, navigate]);
 
   return (
     <div className="flex flex-col justify-between h-full w-full  lg:pl-36 max-lg:items-center ">

@@ -47,7 +47,7 @@ export function EditPrompt({ item }: { item: Prompt }) {
 
   return (
     <div className="flex flex-col h-full gap-1">
-      <div className="flex-grow-0 flex-shrink-0 h-[56px] flex justify-between items-center py-[10px] px-6 ">
+      <div className="flex justify-between items-center py-[10px] px-6 ">
         <Button
           type="button"
           size="icon"

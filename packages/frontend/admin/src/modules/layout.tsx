@@ -6,6 +6,12 @@ import {
 import { Separator } from '@affine/admin/components/ui/separator';
 import { TooltipProvider } from '@affine/admin/components/ui/tooltip';
 import { cn } from '@affine/admin/utils';
+import { useQuery } from '@affine/core/hooks/use-query';
+import {
+  FeatureType,
+  getCurrentUserFeaturesQuery,
+  serverConfigQuery,
+} from '@affine/graphql';
 import { AlignJustifyIcon } from 'lucide-react';
 import type { ReactNode, RefObject } from 'react';
 import {
@@ -17,6 +23,8 @@ import {
   useState,
 } from 'react';
 import type { ImperativePanelHandle } from 'react-resizable-panels';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
 import { Button } from '../components/ui/button';
 import {
@@ -113,6 +121,36 @@ export function Layout({ content }: LayoutProps) {
     () => (rightPanelRef.current?.isCollapsed() ? openPanel() : closePanel()),
     [closePanel, openPanel]
   );
+
+  const {
+    data: { serverConfig },
+  } = useQuery({
+    query: serverConfigQuery,
+  });
+  const {
+    data: { currentUser },
+  } = useQuery({
+    query: getCurrentUserFeaturesQuery,
+  });
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (serverConfig.initialized === false) {
+      navigate('/admin/setup');
+      return;
+    } else if (!currentUser) {
+      navigate('/admin/auth');
+      return;
+    } else if (!currentUser?.features.includes?.(FeatureType.Admin)) {
+      toast.error('You are not an admin, please login the admin account.');
+      navigate('/admin/auth');
+      return;
+    }
+  }, [currentUser, navigate, serverConfig.initialized]);
+
+  if (serverConfig.initialized === false || !currentUser) {
+    return null;
+  }
 
   return (
     <RightPanelContext.Provider

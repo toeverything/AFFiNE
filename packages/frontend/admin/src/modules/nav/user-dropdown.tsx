@@ -43,6 +43,7 @@ export function UserDropdown() {
       method: 'POST',
     })
       .then(() => {
+        toast.success('Logged out successfully');
         navigate('/admin/auth');
       })
       .catch(err => {
