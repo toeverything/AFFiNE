@@ -22,6 +22,7 @@ import { validators } from '../utils/validators';
 import { UserService } from './service';
 import {
   DeleteAccount,
+  ManageUserInput,
   RemoveAvatar,
   UpdateUserInput,
   UserOrLimitedUser,
@@ -174,6 +175,13 @@ export class UserManagementResolver {
     private readonly user: UserService
   ) {}
 
+  @Query(() => Int, {
+    description: 'Get users count',
+  })
+  async usersCount(): Promise<number> {
+    return this.db.user.count();
+  }
+
   @Query(() => [UserType], {
     description: 'List registered users',
   })
@@ -208,6 +216,26 @@ export class UserManagementResolver {
     return sessionUser(user);
   }
 
+  @Query(() => UserType, {
+    name: 'userByEmail',
+    description: 'Get user by email for admin',
+    nullable: true,
+  })
+  async getUserByEmail(@Args('email') email: string) {
+    const user = await this.db.user.findUnique({
+      select: { ...this.user.defaultUserSelect, password: true },
+      where: {
+        email,
+      },
+    });
+
+    if (!user) {
+      return null;
+    }
+
+    return sessionUser(user);
+  }
+
   @Mutation(() => UserType, {
     description: 'Create a new user',
   })
@@ -230,5 +258,37 @@ export class UserManagementResolver {
   async deleteUser(@Args('id') id: string): Promise<DeleteAccount> {
     await this.user.deleteUser(id);
     return { success: true };
+  }
+
+  @Mutation(() => UserType, {
+    description: 'Update a user',
+  })
+  async updateUser(
+    @Args('id') id: string,
+    @Args('input') input: ManageUserInput
+  ): Promise<UserType> {
+    const user = await this.db.user.findUnique({
+      select: { ...this.user.defaultUserSelect, password: true },
+      where: { id },
+    });
+
+    if (!user) {
+      throw new UserNotFound();
+    }
+    validators.assertValidEmail(input.email);
+    if (input.email !== user.email) {
+      const exists = await this.db.user.findFirst({
+        where: { email: input.email },
+      });
+      if (exists) {
+        throw new Error('Email already exists');
+      }
+    }
+    return sessionUser(
+      await this.user.updateUser(user.id, {
+        name: input.name,
+        email: input.email,
+      })
+    );
   }
 }

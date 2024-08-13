@@ -1,0 +1,3 @@
+mutation addToAdmin($email: String!) {
+  addAdminister(email: $email)
+}
