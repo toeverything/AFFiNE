@@ -17,6 +17,7 @@ function createMixpanel() {
       track_pageview: true,
       persistence: 'localStorage',
       api_host: 'https://telemetry.affine.run',
+      ignore_dnt: true,
     });
     mixpanel = mixpanelBrowser;
   } else {
@@ -29,8 +30,7 @@ function createMixpanel() {
   const middlewares = new Set<Middleware>();
 
   const wrapped = {
-    reset() {
-      mixpanel.reset();
+    init() {
       mixpanel.register({
         appVersion: runtimeConfig.appVersion,
         environment: runtimeConfig.appBuildType,
@@ -38,6 +38,10 @@ function createMixpanel() {
         isSelfHosted: Boolean(runtimeConfig.isSelfHosted),
         isDesktop: environment.isDesktop,
       });
+    },
+    reset() {
+      mixpanel.reset();
+      this.init();
     },
     track(event_name: string, properties?: Record<string, any>) {
       const middlewareProperties = Array.from(middlewares).reduce(
@@ -80,12 +84,11 @@ function createMixpanel() {
     },
   };
 
-  wrapped.reset();
-
   return wrapped;
 }
 
 export const mixpanel = createMixpanel();
+mixpanel.init();
 
 function createProxyHandler() {
   const handler = {
