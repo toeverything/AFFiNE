@@ -619,6 +619,9 @@ type SameSubscriptionRecurringDataType {
 }
 
 type ServerConfigType {
+  """Features for user that can be configured"""
+  availableUserFeatures: [FeatureType!]!
+
   """server base url"""
   baseUrl: String!
 

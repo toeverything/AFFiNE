@@ -4,6 +4,7 @@ import { Module } from '@nestjs/common';
 
 import {
   ServerConfigResolver,
+  ServerFeatureConfigResolver,
   ServerRuntimeConfigResolver,
   ServerServiceConfigResolver,
 } from './resolver';
@@ -11,6 +12,7 @@ import {
 @Module({
   providers: [
     ServerConfigResolver,
+    ServerFeatureConfigResolver,
     ServerRuntimeConfigResolver,
     ServerServiceConfigResolver,
   ],
