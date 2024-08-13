@@ -75,6 +75,7 @@ export const tabWrapper = style({
 export const tab = style({
   height: 32,
   minWidth: 32,
+  maxWidth: 200,
   overflow: 'clip',
   background: cssVar('backgroundSecondaryColor'),
   display: 'flex',
@@ -93,7 +94,7 @@ export const tab = style({
       background: cssVar('backgroundPrimaryColor'),
       boxShadow: cssVar('shadow1'),
     },
-    '&[data-pinned="false"]': {
+    '&[data-padding-right="true"]': {
       paddingRight: 20,
     },
     '&[data-pinned="true"]': {
@@ -113,7 +114,6 @@ export const splitViewLabel = style({
   gap: '4px',
   fontWeight: 500,
   alignItems: 'center',
-  maxWidth: 180,
   cursor: 'default',
   ':last-of-type': {
     paddingRight: 0,
@@ -172,7 +172,7 @@ export const tabCloseButtonWrapper = style({
   top: 0,
   bottom: 0,
   height: '100%',
-  width: 16,
+  width: 24,
   overflow: 'clip',
   display: 'flex',
   alignItems: 'center',

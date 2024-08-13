@@ -208,6 +208,7 @@ const WorkbenchTab = ({
         data-testid="workbench-tab"
         data-active={tabActive}
         data-pinned={workbench.pinned}
+        data-padding-right={tabsLength > 1 && !workbench.pinned}
         className={styles.tab}
       >
         {workbench.views.map((view, viewIdx) => {
