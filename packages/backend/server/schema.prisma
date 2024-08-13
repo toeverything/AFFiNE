@@ -13,9 +13,9 @@ model User {
   id              String    @id @default(uuid()) @db.VarChar
   name            String    @db.VarChar
   email           String    @unique @db.VarChar
-  emailVerifiedAt DateTime? @map("email_verified") @db.Timestamp(3)
+  emailVerifiedAt DateTime? @map("email_verified") @db.Timestamptz(3)
   avatarUrl       String?   @map("avatar_url") @db.VarChar
-  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamp(3)
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
   /// Not available if user signed up through OAuth providers
   password        String?   @db.VarChar
   /// Indicate whether the user finished the signup progress.
@@ -45,9 +45,9 @@ model ConnectedAccount {
   scope             String?   @db.Text
   accessToken       String?   @map("access_token") @db.Text
   refreshToken      String?   @map("refresh_token") @db.Text
-  expiresAt         DateTime? @map("expires_at") @db.Timestamp(3)
-  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamp(3)
-  updatedAt         DateTime  @updatedAt @map("updated_at") @db.Timestamp(3)
+  expiresAt         DateTime? @map("expires_at") @db.Timestamptz(3)
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -58,8 +58,8 @@ model ConnectedAccount {
 
 model Session {
   id        String    @id @default(uuid()) @db.VarChar
-  expiresAt DateTime? @map("expires_at") @db.Timestamp(3)
-  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamp(3)
+  expiresAt DateTime? @map("expires_at") @db.Timestamptz(3)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
 
   userSessions UserSession[]
 
@@ -70,8 +70,8 @@ model UserSession {
   id        String    @id @default(uuid()) @db.VarChar
   sessionId String    @map("session_id") @db.VarChar
   userId    String    @map("user_id") @db.VarChar
-  expiresAt DateTime? @map("expires_at") @db.Timestamp(3)
-  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamp(3)
+  expiresAt DateTime? @map("expires_at") @db.Timestamptz(3)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
 
   session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -84,7 +84,7 @@ model VerificationToken {
   token      String   @db.VarChar
   type       Int      @db.SmallInt
   credential String?  @db.Text
-  expiresAt  DateTime @db.Timestamp(3)
+  expiresAt  DateTime @db.Timestamptz(3)
 
   @@unique([type, token])
   @@map("verification_tokens")
@@ -93,7 +93,7 @@ model VerificationToken {
 model Workspace {
   id        String   @id @default(uuid()) @db.VarChar
   public    Boolean
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(3)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
   pages           WorkspacePage[]
   permissions     WorkspaceUserPermission[]
@@ -129,7 +129,7 @@ model WorkspaceUserPermission {
   type        Int      @db.SmallInt
   /// Whether the permission invitation is accepted by the user
   accepted    Boolean  @default(false)
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamp(3)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
@@ -147,7 +147,7 @@ model WorkspacePageUserPermission {
   type        Int      @db.SmallInt
   /// Whether the permission invitation is accepted by the user
   accepted    Boolean  @default(false)
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamp(3)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
@@ -170,9 +170,9 @@ model UserFeature {
   // - pro_plan_v1: "user buy the pro plan"
   reason    String    @db.VarChar
   // record the quota enabled time
-  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamp(3)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
   // record the quota expired time, pay plan is a subscription, so it will expired
-  expiredAt DateTime? @map("expired_at") @db.Timestamp(3)
+  expiredAt DateTime? @map("expired_at") @db.Timestamptz(3)
   // whether the feature is activated
   // for example:
   // - if we switch the user to another plan, we will set the old plan to deactivated, but dont delete it
@@ -198,9 +198,9 @@ model WorkspaceFeature {
   // - copilet_v1: "owner buy the copilet feature package"
   reason    String    @db.VarChar
   // record the feature enabled time
-  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamp(3)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
   // record the quota expired time, pay plan is a subscription, so it will expired
-  expiredAt DateTime? @map("expired_at") @db.Timestamp(3)
+  expiredAt DateTime? @map("expired_at") @db.Timestamptz(3)
   // whether the feature is activated
   // for example:
   // - if owner unsubscribe a feature package, we will set the feature to deactivated, but dont delete it
@@ -220,7 +220,7 @@ model Feature {
   type      Int      @db.Integer
   // configs, define by feature conntroller
   configs   Json     @db.Json
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(3)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
   UserFeatureGates  UserFeature[]
   WorkspaceFeatures WorkspaceFeature[]
@@ -237,10 +237,10 @@ model Snapshot {
   blob        Bytes    @db.ByteA
   seq         Int      @default(0) @db.Integer
   state       Bytes?   @db.ByteA
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamp(3)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   // the `updated_at` field will not record the time of record changed,
   // but the created time of last seen update that has been merged into snapshot.
-  updatedAt   DateTime @map("updated_at") @db.Timestamp(3)
+  updatedAt   DateTime @map("updated_at") @db.Timestamptz(3)
 
   @@id([id, workspaceId])
   @@map("snapshots")
@@ -251,7 +251,7 @@ model Update {
   id          String   @map("guid") @db.VarChar
   seq         Int      @db.Integer
   blob        Bytes    @db.ByteA
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamp(3)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
   @@id([workspaceId, id, seq])
   @@map("updates")
@@ -260,10 +260,10 @@ model Update {
 model SnapshotHistory {
   workspaceId String   @map("workspace_id") @db.VarChar
   id          String   @map("guid") @db.VarChar
-  timestamp   DateTime @db.Timestamp(3)
+  timestamp   DateTime @db.Timestamptz(3)
   blob        Bytes    @db.ByteA
   state       Bytes?   @db.ByteA
-  expiredAt   DateTime @map("expired_at") @db.Timestamp(3)
+  expiredAt   DateTime @map("expired_at") @db.Timestamptz(3)
 
   @@id([workspaceId, id, timestamp])
   @@map("snapshot_histories")
@@ -272,7 +272,7 @@ model SnapshotHistory {
 model UserStripeCustomer {
   userId           String   @id @map("user_id") @db.VarChar
   stripeCustomerId String   @unique @map("stripe_customer_id") @db.VarChar
-  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamp(3)
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -290,21 +290,21 @@ model UserSubscription {
   // subscription.status, active/past_due/canceled/unpaid...
   status               String    @db.VarChar(20)
   // subscription.current_period_start
-  start                DateTime  @map("start") @db.Timestamp(3)
+  start                DateTime  @map("start") @db.Timestamptz(3)
   // subscription.current_period_end, null for lifetime payment
-  end                  DateTime? @map("end") @db.Timestamp(3)
+  end                  DateTime? @map("end") @db.Timestamptz(3)
   // subscription.billing_cycle_anchor
-  nextBillAt           DateTime? @map("next_bill_at") @db.Timestamp(3)
+  nextBillAt           DateTime? @map("next_bill_at") @db.Timestamptz(3)
   // subscription.canceled_at
-  canceledAt           DateTime? @map("canceled_at") @db.Timestamp(3)
+  canceledAt           DateTime? @map("canceled_at") @db.Timestamptz(3)
   // subscription.trial_start
-  trialStart           DateTime? @map("trial_start") @db.Timestamp(3)
+  trialStart           DateTime? @map("trial_start") @db.Timestamptz(3)
   // subscription.trial_end
-  trialEnd             DateTime? @map("trial_end") @db.Timestamp(3)
+  trialEnd             DateTime? @map("trial_end") @db.Timestamptz(3)
   stripeScheduleId     String?   @map("stripe_schedule_id") @db.VarChar
 
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(3)
-  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamp(3)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, plan])
@@ -321,8 +321,8 @@ model UserInvoice {
   status           String   @db.VarChar(20)
   plan             String   @db.VarChar(20)
   recurring        String   @db.VarChar(20)
-  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamp(3)
-  updatedAt        DateTime @updatedAt @map("updated_at") @db.Timestamp(3)
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
   // billing reason
   reason           String   @db.VarChar
   lastPaymentError String?  @map("last_payment_error") @db.Text
@@ -350,7 +350,7 @@ model AiPromptMessage {
   content     String       @db.Text
   attachments Json?        @db.Json
   params      Json?        @db.Json
-  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamp(3)
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
 
   prompt AiPrompt @relation(fields: [promptId], references: [id], onDelete: Cascade)
 
@@ -366,7 +366,7 @@ model AiPrompt {
   action    String?  @db.VarChar
   model     String   @db.VarChar
   config    Json?    @db.Json
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(3)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
   messages AiPromptMessage[]
   sessions AiSession[]
@@ -381,8 +381,8 @@ model AiSessionMessage {
   content     String       @db.Text
   attachments Json?        @db.Json
   params      Json?        @db.Json
-  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamp(3)
-  updatedAt   DateTime     @updatedAt @map("updated_at") @db.Timestamp(3)
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   session AiSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
@@ -399,8 +399,8 @@ model AiSession {
   parentSessionId String?   @map("parent_session_id") @db.VarChar
   messageCost     Int       @default(0)
   tokenCost       Int       @default(0)
-  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamp(3)
-  deletedAt       DateTime? @map("deleted_at") @db.Timestamp(3)
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  deletedAt       DateTime? @map("deleted_at") @db.Timestamptz(3)
 
   user     User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   prompt   AiPrompt           @relation(fields: [promptName], references: [name], onDelete: Cascade)
@@ -412,8 +412,8 @@ model AiSession {
 model DataMigration {
   id         String    @id @default(uuid()) @db.VarChar
   name       String    @db.VarChar
-  startedAt  DateTime  @default(now()) @map("started_at") @db.Timestamp(3)
-  finishedAt DateTime? @map("finished_at") @db.Timestamp(3)
+  startedAt  DateTime  @default(now()) @map("started_at") @db.Timestamptz(3)
+  finishedAt DateTime? @map("finished_at") @db.Timestamptz(3)
 
   @@map("_data_migrations")
 }
@@ -433,8 +433,8 @@ model RuntimeConfig {
   key           String            @db.VarChar
   value         Json              @db.Json
   description   String            @db.Text
-  updatedAt     DateTime          @updatedAt @map("updated_at") @db.Timestamp(3)
-  deletedAt     DateTime?         @map("deleted_at") @db.Timestamp(3)
+  updatedAt     DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
+  deletedAt     DateTime?         @map("deleted_at") @db.Timestamptz(3)
   lastUpdatedBy String?           @map("last_updated_by") @db.VarChar
 
   lastUpdatedByUser User? @relation(fields: [lastUpdatedBy], references: [id])
