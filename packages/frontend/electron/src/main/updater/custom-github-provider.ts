@@ -1,8 +1,5 @@
 // credits: migrated from https://github.com/electron-userland/electron-builder/blob/master/packages/electron-updater/src/providers/GitHubProvider.ts
 
-import fs from 'node:fs';
-import path from 'node:path';
-
 import type {
   CustomPublishOptions,
   GithubOptions,
@@ -10,7 +7,6 @@ import type {
   XElement,
 } from 'builder-util-runtime';
 import { HttpError, newError, parseXml } from 'builder-util-runtime';
-import { app } from 'electron';
 import type {
   AppUpdater,
   ResolvedUpdateFileInfo,
@@ -24,6 +20,9 @@ import {
   resolveFiles,
 } from 'electron-updater/out/providers/Provider';
 import * as semver from 'semver';
+
+import { isSquirrelBuild } from './utils';
+
 interface GithubUpdateInfo extends UpdateInfo {
   tag: string;
 }
@@ -40,13 +39,6 @@ interface GithubRelease {
 }
 
 const hrefRegExp = /\/tag\/([^/]+)$/;
-
-function isSquirrelBuild() {
-  // if it is squirrel build, there will be 'squirrel.exe'
-  // otherwise it is in nsis web mode
-  const files = fs.readdirSync(path.dirname(app.getPath('exe')));
-  return files.some(it => it.includes('squirrel.exe'));
-}
 
 export class CustomGitHubProvider extends BaseGitHubProvider<GithubUpdateInfo> {
   constructor(

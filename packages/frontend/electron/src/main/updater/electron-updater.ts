@@ -1,16 +1,20 @@
 import { app } from 'electron';
-import { autoUpdater } from 'electron-updater';
+import { autoUpdater as defaultAutoUpdater } from 'electron-updater';
 
 import { buildType } from '../config';
 import { logger } from '../logger';
 import { CustomGitHubProvider } from './custom-github-provider';
 import { updaterSubjects } from './event';
+import { WindowsUpdater } from './windows-updater';
 
 const mode = process.env.NODE_ENV;
 const isDev = mode === 'development';
 
 // skip auto update in dev mode & internal
 const disabled = buildType === 'internal' || isDev;
+
+export const autoUpdater =
+  process.platform === 'win32' ? new WindowsUpdater() : defaultAutoUpdater;
 
 export const quitAndInstall = async () => {
   autoUpdater.quitAndInstall();
