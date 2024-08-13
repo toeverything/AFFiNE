@@ -4,6 +4,7 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 import {
   Args,
   Field,
+  Float,
   ID,
   InputType,
   Mutation,
@@ -205,16 +206,16 @@ class CopilotPromptConfigType {
   @Field(() => Boolean, { nullable: true })
   jsonMode!: boolean | null;
 
-  @Field(() => Number, { nullable: true })
+  @Field(() => Float, { nullable: true })
   frequencyPenalty!: number | null;
 
-  @Field(() => Number, { nullable: true })
+  @Field(() => Float, { nullable: true })
   presencePenalty!: number | null;
 
-  @Field(() => Number, { nullable: true })
+  @Field(() => Float, { nullable: true })
   temperature!: number | null;
 
-  @Field(() => Number, { nullable: true })
+  @Field(() => Float, { nullable: true })
   topP!: number | null;
 }
 
@@ -238,8 +239,8 @@ class CopilotPromptType {
   @Field(() => String)
   name!: string;
 
-  @Field(() => AvailableModels)
-  model!: AvailableModels;
+  @Field(() => String)
+  model!: string;
 
   @Field(() => String, { nullable: true })
   action!: string | null;

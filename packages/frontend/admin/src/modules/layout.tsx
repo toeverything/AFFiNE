@@ -81,7 +81,7 @@ export function Layout({ content }: LayoutProps) {
   const [open, setOpen] = useState(false);
   const rightPanelRef = useRef<ImperativePanelHandle>(null);
 
-  const [activeTab, setActiveTab] = useState('Accounts');
+  const [activeTab, setActiveTab] = useState('');
   const [activeSubTab, setActiveSubTab] = useState('auth');
   const [currentModule, setCurrentModule] = useState('auth');
 

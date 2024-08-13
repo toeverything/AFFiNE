@@ -1,0 +1,22 @@
+mutation updatePrompt(
+  $name: String!
+  $messages: [CopilotPromptMessageInput!]!
+) {
+  updateCopilotPrompt(name: $name, messages: $messages) {
+    name
+    model
+    action
+    config {
+      jsonMode
+      frequencyPenalty
+      presencePenalty
+      temperature
+      topP
+    }
+    messages {
+      role
+      content
+      params
+    }
+  }
+}

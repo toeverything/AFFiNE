@@ -104,20 +104,20 @@ export enum CopilotModels {
 }
 
 export interface CopilotPromptConfigInput {
-  frequencyPenalty: InputMaybe<Scalars['Int']['input']>;
+  frequencyPenalty: InputMaybe<Scalars['Float']['input']>;
   jsonMode: InputMaybe<Scalars['Boolean']['input']>;
-  presencePenalty: InputMaybe<Scalars['Int']['input']>;
-  temperature: InputMaybe<Scalars['Int']['input']>;
-  topP: InputMaybe<Scalars['Int']['input']>;
+  presencePenalty: InputMaybe<Scalars['Float']['input']>;
+  temperature: InputMaybe<Scalars['Float']['input']>;
+  topP: InputMaybe<Scalars['Float']['input']>;
 }
 
 export interface CopilotPromptConfigType {
   __typename?: 'CopilotPromptConfigType';
-  frequencyPenalty: Maybe<Scalars['Int']['output']>;
+  frequencyPenalty: Maybe<Scalars['Float']['output']>;
   jsonMode: Maybe<Scalars['Boolean']['output']>;
-  presencePenalty: Maybe<Scalars['Int']['output']>;
-  temperature: Maybe<Scalars['Int']['output']>;
-  topP: Maybe<Scalars['Int']['output']>;
+  presencePenalty: Maybe<Scalars['Float']['output']>;
+  temperature: Maybe<Scalars['Float']['output']>;
+  topP: Maybe<Scalars['Float']['output']>;
 }
 
 export interface CopilotPromptMessageInput {
@@ -149,7 +149,7 @@ export interface CopilotPromptType {
   action: Maybe<Scalars['String']['output']>;
   config: Maybe<CopilotPromptConfigType>;
   messages: Array<CopilotPromptMessageType>;
-  model: CopilotModels;
+  model: Scalars['String']['output'];
   name: Scalars['String']['output'];
 }
 
@@ -1684,6 +1684,32 @@ export type OauthProvidersQuery = {
   };
 };
 
+export type GetPromptsQueryVariables = Exact<{ [key: string]: never }>;
+
+export type GetPromptsQuery = {
+  __typename?: 'Query';
+  listCopilotPrompts: Array<{
+    __typename?: 'CopilotPromptType';
+    name: string;
+    model: string;
+    action: string | null;
+    config: {
+      __typename?: 'CopilotPromptConfigType';
+      jsonMode: boolean | null;
+      frequencyPenalty: number | null;
+      presencePenalty: number | null;
+      temperature: number | null;
+      topP: number | null;
+    } | null;
+    messages: Array<{
+      __typename?: 'CopilotPromptMessageType';
+      role: CopilotPromptMessageRole;
+      content: string;
+      params: Record<string, string> | null;
+    }>;
+  }>;
+};
+
 export type GetServerRuntimeConfigQueryVariables = Exact<{
   [key: string]: never;
 }>;
@@ -2186,6 +2212,35 @@ export type UpdateAccountMutation = {
   };
 };
 
+export type UpdatePromptMutationVariables = Exact<{
+  name: Scalars['String']['input'];
+  messages: Array<CopilotPromptMessageInput> | CopilotPromptMessageInput;
+}>;
+
+export type UpdatePromptMutation = {
+  __typename?: 'Mutation';
+  updateCopilotPrompt: {
+    __typename?: 'CopilotPromptType';
+    name: string;
+    model: string;
+    action: string | null;
+    config: {
+      __typename?: 'CopilotPromptConfigType';
+      jsonMode: boolean | null;
+      frequencyPenalty: number | null;
+      presencePenalty: number | null;
+      temperature: number | null;
+      topP: number | null;
+    } | null;
+    messages: Array<{
+      __typename?: 'CopilotPromptMessageType';
+      role: CopilotPromptMessageRole;
+      content: string;
+      params: Record<string, string> | null;
+    }>;
+  };
+};
+
 export type UpdateServerRuntimeConfigsMutationVariables = Exact<{
   updates: Scalars['JSONObject']['input'];
 }>;
@@ -2431,6 +2486,11 @@ export type Queries =
       name: 'oauthProvidersQuery';
       variables: OauthProvidersQueryVariables;
       response: OauthProvidersQuery;
+    }
+  | {
+      name: 'getPromptsQuery';
+      variables: GetPromptsQueryVariables;
+      response: GetPromptsQuery;
     }
   | {
       name: 'getServerRuntimeConfigQuery';
@@ -2728,6 +2788,11 @@ export type Mutations =
       name: 'updateAccountMutation';
       variables: UpdateAccountMutationVariables;
       response: UpdateAccountMutation;
+    }
+  | {
+      name: 'updatePromptMutation';
+      variables: UpdatePromptMutationVariables;
+      response: UpdatePromptMutation;
     }
   | {
       name: 'updateServerRuntimeConfigsMutation';

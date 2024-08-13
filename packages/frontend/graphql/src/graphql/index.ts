@@ -496,6 +496,33 @@ query oauthProviders {
 }`,
 };
 
+export const getPromptsQuery = {
+  id: 'getPromptsQuery' as const,
+  operationName: 'getPrompts',
+  definitionName: 'listCopilotPrompts',
+  containsFile: false,
+  query: `
+query getPrompts {
+  listCopilotPrompts {
+    name
+    model
+    action
+    config {
+      jsonMode
+      frequencyPenalty
+      presencePenalty
+      temperature
+      topP
+    }
+    messages {
+      role
+      content
+      params
+    }
+  }
+}`,
+};
+
 export const getServerRuntimeConfigQuery = {
   id: 'getServerRuntimeConfigQuery' as const,
   operationName: 'getServerRuntimeConfig',
@@ -1053,6 +1080,33 @@ mutation updateAccount($id: String!, $input: ManageUserInput!) {
     id
     name
     email
+  }
+}`,
+};
+
+export const updatePromptMutation = {
+  id: 'updatePromptMutation' as const,
+  operationName: 'updatePrompt',
+  definitionName: 'updateCopilotPrompt',
+  containsFile: false,
+  query: `
+mutation updatePrompt($name: String!, $messages: [CopilotPromptMessageInput!]!) {
+  updateCopilotPrompt(name: $name, messages: $messages) {
+    name
+    model
+    action
+    config {
+      jsonMode
+      frequencyPenalty
+      presencePenalty
+      temperature
+      topP
+    }
+    messages {
+      role
+      content
+      params
+    }
   }
 }`,
 };
