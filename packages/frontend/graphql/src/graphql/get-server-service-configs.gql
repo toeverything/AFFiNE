@@ -1,0 +1,6 @@
+query getServerServiceConfigs {
+  serverServiceConfigs {
+    name
+    config
+  }
+}

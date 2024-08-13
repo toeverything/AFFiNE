@@ -515,6 +515,20 @@ query getServerRuntimeConfig {
 }`,
 };
 
+export const getServerServiceConfigsQuery = {
+  id: 'getServerServiceConfigsQuery' as const,
+  operationName: 'getServerServiceConfigs',
+  definitionName: 'serverServiceConfigs',
+  containsFile: false,
+  query: `
+query getServerServiceConfigs {
+  serverServiceConfigs {
+    name
+    config
+  }
+}`,
+};
+
 export const getUserByEmailQuery = {
   id: 'getUserByEmailQuery' as const,
   operationName: 'getUserByEmail',
