@@ -495,7 +495,8 @@ export class LiveData<T = unknown>
       throw this.poisonedError;
     }
     this.ops$.next('watch');
-    setImmediate(() => {
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises -- never throw
+    Promise.resolve().then(() => {
       this.ops$.next('unwatch');
     });
     return this.raw$.value;
