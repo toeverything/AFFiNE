@@ -67,7 +67,7 @@ export function UserDropdown() {
   }, [currentUser, navigate, serverConfig.initialized]);
 
   return (
-    <div className="flex items-center justify-between px-4 py-3 flex-nowrap">
+    <div className="flex flex-none items-center justify-between px-4 py-3 flex-nowrap">
       <div className="flex items-center gap-2  font-medium text-ellipsis break-words overflow-hidden">
         <Avatar className="w-6 h-6">
           <AvatarImage src={currentUser?.avatarUrl ?? undefined} />

@@ -61,7 +61,7 @@ export function DataTable<TData, TValue>({
   }, [data]);
 
   return (
-    <div className="space-y-4 py-5 px-6 h-full">
+    <div className="flex flex-col gap-4 py-5 px-6 h-full">
       <DataTableToolbar setDataTable={setTableData} data={data} />
       <ScrollArea className="rounded-md border max-h-[75vh] h-full">
         <Table>
