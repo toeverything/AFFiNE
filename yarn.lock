@@ -184,6 +184,7 @@ __metadata:
     "@radix-ui/react-toggle-group": "npm:^1.1.0"
     "@radix-ui/react-tooltip": "npm:^1.1.1"
     "@sentry/react": "npm:^8.9.0"
+    "@tanstack/react-table": "npm:^8.19.3"
     class-variance-authority: "npm:^0.7.0"
     clsx: "npm:^2.1.1"
     cmdk: "npm:^1.0.0"
@@ -14803,6 +14804,25 @@ __metadata:
   dependencies:
     defer-to-connect: "npm:^2.0.0"
   checksum: 10/c29df3bcec6fc3bdec2b17981d89d9c9fc9bd7d0c9bcfe92821dc533f4440bc890ccde79971838b4ceed1921d456973c4180d7175ee1d0023ad0562240a58d95
+  languageName: node
+  linkType: hard
+
+"@tanstack/react-table@npm:^8.19.3":
+  version: 8.19.3
+  resolution: "@tanstack/react-table@npm:8.19.3"
+  dependencies:
+    "@tanstack/table-core": "npm:8.19.3"
+  peerDependencies:
+    react: ">=16.8"
+    react-dom: ">=16.8"
+  checksum: 10/10a9bd671f7a8ed5cd22120014dcb1e6cccb5387e01c95a810d28ea0d984f26577582197cd736636acdbb4daeb773984ade4614a048ced4d654953bb79b13118
+  languageName: node
+  linkType: hard
+
+"@tanstack/table-core@npm:8.19.3":
+  version: 8.19.3
+  resolution: "@tanstack/table-core@npm:8.19.3"
+  checksum: 10/84af3b9088764ad7ed5f563d564fd5fa480de7b688bf1a8756d169c36730bb49bccf7a0904032eb22f674f84eddf4090e73759be88f86179f8523bbb5bf63f26
   languageName: node
   linkType: hard
 

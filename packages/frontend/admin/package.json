@@ -34,6 +34,7 @@
     "@radix-ui/react-toggle-group": "^1.1.0",
     "@radix-ui/react-tooltip": "^1.1.1",
     "@sentry/react": "^8.9.0",
+    "@tanstack/react-table": "^8.19.3",
     "cmdk": "^1.0.0",
     "date-fns": "^3.6.0",
     "embla-carousel-react": "^8.1.5",

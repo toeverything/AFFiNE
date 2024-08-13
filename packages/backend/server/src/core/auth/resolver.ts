@@ -21,6 +21,7 @@ import {
   Throttle,
   URLHelper,
 } from '../../fundamentals';
+import { Admin } from '../common';
 import { UserService } from '../user';
 import { UserType } from '../user/types';
 import { validators } from '../utils/validators';
@@ -290,5 +291,20 @@ export class AuthResolver {
     const { emailVerifiedAt } = await this.auth.setEmailVerified(user.id);
 
     return emailVerifiedAt !== null;
+  }
+
+  @Admin()
+  @Mutation(() => String, {
+    description: 'Create change password url',
+  })
+  async createChangePasswordUrl(
+    @Args('userId') userId: string,
+    @Args('callbackUrl') callbackUrl: string
+  ): Promise<string> {
+    const token = await this.token.createToken(
+      TokenType.ChangePassword,
+      userId
+    );
+    return this.url.link(callbackUrl, { token });
   }
 }

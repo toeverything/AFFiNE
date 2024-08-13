@@ -23,8 +23,8 @@ const Redirect = function Redirect() {
   const location = useLocation();
   const navigate = useNavigate();
   useEffect(() => {
-    if (!location.pathname.startsWith('/admin')) {
-      navigate('/admin', { replace: true });
+    if (!location.pathname.startsWith('/admin/accounts')) {
+      navigate('/admin/accounts', { replace: true });
     }
   }, [location, navigate]);
   return null;
@@ -41,15 +41,19 @@ export const router = _createBrowserRouter(
       children: [
         {
           path: '',
-          lazy: () => import('./modules/home'),
+          element: <Redirect />,
+        },
+        {
+          path: '/admin/accounts',
+          lazy: () => import('./modules/accounts'),
         },
         {
           path: '/admin/auth',
           lazy: () => import('./modules/auth'),
         },
         {
-          path: '/admin/users',
-          lazy: () => import('./modules/users'),
+          path: '/admin/setup',
+          lazy: () => import('./modules/setup'),
         },
       ],
     },

@@ -1,0 +1,3 @@
+mutation removeAdmin($email: String!) {
+  removeAdminister(email: $email)
+}

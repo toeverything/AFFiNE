@@ -396,6 +396,14 @@ input ListUserInput {
   skip: Int = 0
 }
 
+input ManageUserInput {
+  """User email"""
+  email: String!
+
+  """User name"""
+  name: String
+}
+
 type MissingOauthQueryParameterDataType {
   name: String!
 }
@@ -411,6 +419,9 @@ type Mutation {
 
   """Cleanup sessions"""
   cleanupCopilotSession(options: DeleteSessionInput!): [String!]!
+
+  """Create change password url"""
+  createChangePasswordUrl(callbackUrl: String!, userId: String!): String!
 
   """Create a subscription checkout link of stripe"""
   createCheckoutSession(input: CreateCheckoutSessionInput!): String!
@@ -445,10 +456,11 @@ type Mutation {
   leaveWorkspace(sendLeaveMail: Boolean, workspaceId: String!, workspaceName: String!): Boolean!
   publishPage(mode: PublicPageMode = Page, pageId: String!, workspaceId: String!): WorkspacePage!
   recoverDoc(guid: String!, timestamp: DateTime!, workspaceId: String!): DateTime!
+  removeAdminister(email: String!): Boolean!
 
   """Remove user avatar"""
   removeAvatar: RemoveAvatar!
-  removeEarlyAccess(email: String!): Int!
+  removeEarlyAccess(email: String!, type: EarlyAccessType!): Int!
   removeWorkspaceFeature(feature: FeatureType!, workspaceId: String!): Int!
   resumeSubscription(idempotencyKey: String!, plan: SubscriptionPlan = Pro): UserSubscription!
   revoke(userId: String!, workspaceId: String!): Boolean!
@@ -473,6 +485,9 @@ type Mutation {
   """update multiple server runtime configurable settings"""
   updateRuntimeConfigs(updates: JSONObject!): [ServerRuntimeConfigType!]!
   updateSubscriptionRecurring(idempotencyKey: String!, plan: SubscriptionPlan = Pro, recurring: SubscriptionRecurring!): UserSubscription!
+
+  """Update a user"""
+  updateUser(id: String!, input: ManageUserInput!): UserType!
 
   """Update workspace"""
   updateWorkspace(input: UpdateWorkspaceInput!): WorkspaceType!
@@ -544,11 +559,17 @@ type Query {
   """Get user by email"""
   user(email: String!): UserOrLimitedUser
 
+  """Get user by email for admin"""
+  userByEmail(email: String!): UserType
+
   """Get user by id"""
   userById(id: String!): UserType!
 
   """List registered users"""
   users(filter: ListUserInput!): [UserType!]!
+
+  """Get users count"""
+  usersCount: Int!
 
   """Get workspace by id"""
   workspace(id: String!): WorkspaceType!

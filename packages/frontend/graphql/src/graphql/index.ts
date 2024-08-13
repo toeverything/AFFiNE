@@ -18,6 +18,17 @@ fragment CredentialsRequirement on CredentialsRequirementType {
     ...PasswordLimits
   }
 }`
+export const addToAdminMutation = {
+  id: 'addToAdminMutation' as const,
+  operationName: 'addToAdmin',
+  definitionName: 'addAdminister',
+  containsFile: false,
+  query: `
+mutation addToAdmin($email: String!) {
+  addAdminister(email: $email)
+}`,
+};
+
 export const deleteBlobMutation = {
   id: 'deleteBlobMutation' as const,
   operationName: 'deleteBlob',
@@ -78,6 +89,17 @@ mutation changeEmail($token: String!, $email: String!) {
     id
     email
   }
+}`,
+};
+
+export const createChangePasswordUrlMutation = {
+  id: 'createChangePasswordUrlMutation' as const,
+  operationName: 'createChangePasswordUrl',
+  definitionName: 'createChangePasswordUrl',
+  containsFile: false,
+  query: `
+mutation createChangePasswordUrl($callbackUrl: String!, $userId: String!) {
+  createChangePasswordUrl(callbackUrl: $callbackUrl, userId: $userId)
 }`,
 };
 
@@ -167,6 +189,19 @@ mutation createCustomerPortal {
 }`,
 };
 
+export const createUserMutation = {
+  id: 'createUserMutation' as const,
+  operationName: 'createUser',
+  definitionName: 'createUser',
+  containsFile: false,
+  query: `
+mutation createUser($input: CreateUserInput!) {
+  createUser(input: $input) {
+    id
+  }
+}`,
+};
+
 export const createWorkspaceMutation = {
   id: 'createWorkspaceMutation' as const,
   operationName: 'createWorkspace',
@@ -195,6 +230,19 @@ mutation deleteAccount {
 }`,
 };
 
+export const deleteUserMutation = {
+  id: 'deleteUserMutation' as const,
+  operationName: 'deleteUser',
+  definitionName: 'deleteUser',
+  containsFile: false,
+  query: `
+mutation deleteUser($id: String!) {
+  deleteUser(id: $id) {
+    success
+  }
+}`,
+};
+
 export const deleteWorkspaceMutation = {
   id: 'deleteWorkspaceMutation' as const,
   operationName: 'deleteWorkspace',
@@ -203,6 +251,17 @@ export const deleteWorkspaceMutation = {
   query: `
 mutation deleteWorkspace($id: String!) {
   deleteWorkspace(id: $id)
+}`,
+};
+
+export const addToEarlyAccessMutation = {
+  id: 'addToEarlyAccessMutation' as const,
+  operationName: 'addToEarlyAccess',
+  definitionName: 'addToEarlyAccess',
+  containsFile: false,
+  query: `
+mutation addToEarlyAccess($email: String!, $type: EarlyAccessType!) {
+  addToEarlyAccess(email: $email, type: $type)
 }`,
 };
 
@@ -236,8 +295,8 @@ export const removeEarlyAccessMutation = {
   definitionName: 'removeEarlyAccess',
   containsFile: false,
   query: `
-mutation removeEarlyAccess($email: String!) {
-  removeEarlyAccess(email: $email)
+mutation removeEarlyAccess($email: String!, $type: EarlyAccessType!) {
+  removeEarlyAccess(email: $email, type: $type)
 }`,
 };
 
@@ -456,6 +515,34 @@ query getServerRuntimeConfig {
 }`,
 };
 
+export const getUserByEmailQuery = {
+  id: 'getUserByEmailQuery' as const,
+  operationName: 'getUserByEmail',
+  definitionName: 'userByEmail',
+  containsFile: false,
+  query: `
+query getUserByEmail($email: String!) {
+  userByEmail(email: $email) {
+    id
+    name
+    email
+    features
+    hasPassword
+    emailVerified
+    avatarUrl
+    quota {
+      humanReadable {
+        blobLimit
+        historyPeriod
+        memberLimit
+        name
+        storageQuota
+      }
+    }
+  }
+}`,
+};
+
 export const getUserFeaturesQuery = {
   id: 'getUserFeaturesQuery' as const,
   operationName: 'getUserFeatures',
@@ -491,6 +578,17 @@ query getUser($email: String!) {
       hasPassword
     }
   }
+}`,
+};
+
+export const getUsersCountQuery = {
+  id: 'getUsersCountQuery' as const,
+  operationName: 'getUsersCount',
+  definitionName: 'usersCount',
+  containsFile: false,
+  query: `
+query getUsersCount {
+  usersCount
 }`,
 };
 
@@ -750,6 +848,17 @@ mutation recoverDoc($workspaceId: String!, $docId: String!, $timestamp: DateTime
 }`,
 };
 
+export const removeAdminMutation = {
+  id: 'removeAdminMutation' as const,
+  operationName: 'removeAdmin',
+  definitionName: 'removeAdminister',
+  containsFile: false,
+  query: `
+mutation removeAdmin($email: String!) {
+  removeAdminister(email: $email)
+}`,
+};
+
 export const removeAvatarMutation = {
   id: 'removeAvatarMutation' as const,
   operationName: 'removeAvatar',
@@ -874,6 +983,7 @@ query serverConfig {
     name
     features
     type
+    initialized
     credentialsRequirement {
       ...CredentialsRequirement
     }
@@ -914,6 +1024,21 @@ query subscription {
       nextBillAt
       canceledAt
     }
+  }
+}`,
+};
+
+export const updateAccountMutation = {
+  id: 'updateAccountMutation' as const,
+  operationName: 'updateAccount',
+  definitionName: 'updateUser',
+  containsFile: false,
+  query: `
+mutation updateAccount($id: String!, $input: ManageUserInput!) {
+  updateUser(id: $id, input: $input) {
+    id
+    name
+    email
   }
 }`,
 };

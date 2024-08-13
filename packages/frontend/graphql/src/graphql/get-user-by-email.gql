@@ -1,0 +1,20 @@
+query getUserByEmail($email: String!) {
+  userByEmail(email: $email) {
+    id
+    name
+    email
+    features
+    hasPassword
+    emailVerified
+    avatarUrl
+    quota {
+      humanReadable {
+        blobLimit
+        historyPeriod
+        memberLimit
+        name
+        storageQuota
+      }
+    }
+  }
+}

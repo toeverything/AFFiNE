@@ -83,6 +83,15 @@ export class UpdateUserInput implements Partial<User> {
   name?: string;
 }
 
+@InputType()
+export class ManageUserInput {
+  @Field({ description: 'User name', nullable: true })
+  name?: string;
+
+  @Field({ description: 'User email' })
+  email!: string;
+}
+
 declare module '../../fundamentals/event/def' {
   interface UserEvents {
     admin: {

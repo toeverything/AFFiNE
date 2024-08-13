@@ -57,12 +57,15 @@ export class FeatureManagementResolver {
 
   @Admin()
   @Mutation(() => Int)
-  async removeEarlyAccess(@Args('email') email: string): Promise<number> {
+  async removeEarlyAccess(
+    @Args('email') email: string,
+    @Args({ name: 'type', type: () => EarlyAccessType }) type: EarlyAccessType
+  ): Promise<number> {
     const user = await this.users.findUserByEmail(email);
     if (!user) {
       throw new UserNotFound();
     }
-    return this.feature.removeEarlyAccess(user.id);
+    return this.feature.removeEarlyAccess(user.id, type);
   }
 
   @Admin()
@@ -87,6 +90,20 @@ export class FeatureManagementResolver {
     }
 
     await this.feature.addAdmin(user.id);
+
+    return true;
+  }
+
+  @Admin()
+  @Mutation(() => Boolean)
+  async removeAdminister(@Args('email') email: string): Promise<boolean> {
+    const user = await this.users.findUserByEmail(email);
+
+    if (!user) {
+      throw new UserNotFound();
+    }
+
+    await this.feature.removeAdmin(user.id);
 
     return true;
   }
