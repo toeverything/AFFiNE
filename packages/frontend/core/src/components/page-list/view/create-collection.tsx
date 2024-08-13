@@ -88,7 +88,7 @@ export const CreateCollection = ({
     [isNameEmpty]
   );
   return (
-    <div>
+    <div data-testid="edit-collection-modal">
       <div className={styles.content}>
         <div className={styles.label}>
           {t['com.affine.editCollectionName.name']()}

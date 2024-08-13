@@ -134,7 +134,11 @@ export const CreateOrEditTag = ({
   }
 
   return (
-    <div className={styles.createTagWrapper} data-show={open}>
+    <div
+      className={styles.createTagWrapper}
+      data-show={open}
+      data-testid="edit-tag-modal"
+    >
       <Menu
         rootOptions={{
           open: menuOpen,
@@ -154,11 +158,17 @@ export const CreateOrEditTag = ({
         value={tagName}
         onChange={handleChangeName}
         autoFocus
+        data-testid="edit-tag-input"
       />
       <Button className={styles.cancelBtn} onClick={onClose}>
         {t['Cancel']()}
       </Button>
-      <Button variant="primary" onClick={onConfirm} disabled={!tagName}>
+      <Button
+        variant="primary"
+        onClick={onConfirm}
+        disabled={!tagName}
+        data-testid="save-tag"
+      >
         {tagMeta ? t['Save']() : t['Create']()}
       </Button>
     </div>

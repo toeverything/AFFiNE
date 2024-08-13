@@ -481,6 +481,7 @@ export const CollectionOperationCell = ({
                   </MenuIcon>
                 }
                 type="danger"
+                data-testid="delete-collection"
               >
                 {t['Delete']()}
               </MenuItem>
@@ -490,7 +491,7 @@ export const CollectionOperationCell = ({
             align: 'end',
           }}
         >
-          <IconButton>
+          <IconButton data-testid="collection-item-operation-button">
             <MoreVerticalIcon />
           </IconButton>
         </Menu>
@@ -560,6 +561,7 @@ export const TagOperationCell = ({
               }
               type="danger"
               onSelect={handleDelete}
+              data-testid="delete-tag"
             >
               {t['Delete']()}
             </MenuItem>
@@ -568,7 +570,7 @@ export const TagOperationCell = ({
             align: 'end',
           }}
         >
-          <IconButton>
+          <IconButton data-testid="tag-item-operation-button">
             <MoreVerticalIcon />
           </IconButton>
         </Menu>
