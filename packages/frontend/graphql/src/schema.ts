@@ -200,7 +200,6 @@ export interface CreateCopilotPromptInput {
 export interface CreateUserInput {
   email: Scalars['String']['input'];
   name: InputMaybe<Scalars['String']['input']>;
-  password: InputMaybe<Scalars['String']['input']>;
 }
 
 export interface CredentialsRequirementType {
@@ -245,11 +244,6 @@ export interface DocNotFoundDataType {
   workspaceId: Scalars['String']['output'];
 }
 
-export enum EarlyAccessType {
-  AI = 'AI',
-  App = 'App',
-}
-
 export type ErrorDataUnion =
   | BlobNotFoundDataType
   | CopilotMessageNotFoundDataType
@@ -280,6 +274,8 @@ export enum ErrorNames {
   AUTHENTICATION_REQUIRED = 'AUTHENTICATION_REQUIRED',
   BLOB_NOT_FOUND = 'BLOB_NOT_FOUND',
   BLOB_QUOTA_EXCEEDED = 'BLOB_QUOTA_EXCEEDED',
+  CANNOT_DELETE_ALL_ADMIN_ACCOUNT = 'CANNOT_DELETE_ALL_ADMIN_ACCOUNT',
+  CANNOT_DELETE_OWN_ACCOUNT = 'CANNOT_DELETE_OWN_ACCOUNT',
   CANT_CHANGE_WORKSPACE_OWNER = 'CANT_CHANGE_WORKSPACE_OWNER',
   CANT_UPDATE_LIFETIME_SUBSCRIPTION = 'CANT_UPDATE_LIFETIME_SUBSCRIPTION',
   COPILOT_ACTION_TAKEN = 'COPILOT_ACTION_TAKEN',
@@ -455,7 +451,7 @@ export interface ListUserInput {
 
 export interface ManageUserInput {
   /** User email */
-  email: Scalars['String']['input'];
+  email: InputMaybe<Scalars['String']['input']>;
   /** User name */
   name: InputMaybe<Scalars['String']['input']>;
 }
@@ -468,8 +464,6 @@ export interface MissingOauthQueryParameterDataType {
 export interface Mutation {
   __typename?: 'Mutation';
   acceptInviteById: Scalars['Boolean']['output'];
-  addAdminister: Scalars['Boolean']['output'];
-  addToEarlyAccess: Scalars['Int']['output'];
   addWorkspaceFeature: Scalars['Int']['output'];
   cancelSubscription: UserSubscription;
   changeEmail: UserType;
@@ -503,10 +497,8 @@ export interface Mutation {
   leaveWorkspace: Scalars['Boolean']['output'];
   publishPage: WorkspacePage;
   recoverDoc: Scalars['DateTime']['output'];
-  removeAdminister: Scalars['Boolean']['output'];
   /** Remove user avatar */
   removeAvatar: RemoveAvatar;
-  removeEarlyAccess: Scalars['Int']['output'];
   removeWorkspaceFeature: Scalars['Int']['output'];
   resumeSubscription: UserSubscription;
   revoke: Scalars['Boolean']['output'];
@@ -532,6 +524,8 @@ export interface Mutation {
   updateSubscriptionRecurring: UserSubscription;
   /** Update a user */
   updateUser: UserType;
+  /** update user enabled feature */
+  updateUserFeatures: Array<FeatureType>;
   /** Update workspace */
   updateWorkspace: WorkspaceType;
   /** Upload user avatar */
@@ -543,15 +537,6 @@ export interface MutationAcceptInviteByIdArgs {
   inviteId: Scalars['String']['input'];
   sendAcceptMail: InputMaybe<Scalars['Boolean']['input']>;
   workspaceId: Scalars['String']['input'];
-}
-
-export interface MutationAddAdministerArgs {
-  email: Scalars['String']['input'];
-}
-
-export interface MutationAddToEarlyAccessArgs {
-  email: Scalars['String']['input'];
-  type: EarlyAccessType;
 }
 
 export interface MutationAddWorkspaceFeatureArgs {
@@ -649,15 +634,6 @@ export interface MutationRecoverDocArgs {
   workspaceId: Scalars['String']['input'];
 }
 
-export interface MutationRemoveAdministerArgs {
-  email: Scalars['String']['input'];
-}
-
-export interface MutationRemoveEarlyAccessArgs {
-  email: Scalars['String']['input'];
-  type: EarlyAccessType;
-}
-
 export interface MutationRemoveWorkspaceFeatureArgs {
   feature: FeatureType;
   workspaceId: Scalars['String']['input'];
@@ -753,6 +729,11 @@ export interface MutationUpdateUserArgs {
   input: ManageUserInput;
 }
 
+export interface MutationUpdateUserFeaturesArgs {
+  features: Array<FeatureType>;
+  id: Scalars['String']['input'];
+}
+
 export interface MutationUpdateWorkspaceArgs {
   input: UpdateWorkspaceInput;
 }
@@ -804,7 +785,6 @@ export interface Query {
   collectAllBlobSizes: WorkspaceBlobSizes;
   /** Get current user */
   currentUser: Maybe<UserType>;
-  earlyAccessUsers: Array<UserType>;
   error: ErrorDataUnion;
   /** send workspace invitation */
   getInviteInfo: InvitationType;
@@ -932,6 +912,8 @@ export interface SameSubscriptionRecurringDataType {
 
 export interface ServerConfigType {
   __typename?: 'ServerConfigType';
+  /** Features for user that can be configured */
+  availableUserFeatures: Array<FeatureType>;
   /** server base url */
   baseUrl: Scalars['String']['output'];
   /** credentials requirement */
@@ -1254,13 +1236,28 @@ export interface TokenType {
   token: Scalars['String']['output'];
 }
 
-export type AddToAdminMutationVariables = Exact<{
-  email: Scalars['String']['input'];
-}>;
+export type AdminServerConfigQueryVariables = Exact<{ [key: string]: never }>;
 
-export type AddToAdminMutation = {
-  __typename?: 'Mutation';
-  addAdminister: boolean;
+export type AdminServerConfigQuery = {
+  __typename?: 'Query';
+  serverConfig: {
+    __typename?: 'ServerConfigType';
+    version: string;
+    baseUrl: string;
+    name: string;
+    features: Array<ServerFeature>;
+    type: ServerDeploymentType;
+    initialized: boolean;
+    availableUserFeatures: Array<FeatureType>;
+    credentialsRequirement: {
+      __typename?: 'CredentialsRequirementType';
+      password: {
+        __typename?: 'PasswordLimitsType';
+        minLength: number;
+        maxLength: number;
+      };
+    };
+  };
 };
 
 export type DeleteBlobMutationVariables = Exact<{
@@ -1438,48 +1435,6 @@ export type DeleteWorkspaceMutationVariables = Exact<{
 export type DeleteWorkspaceMutation = {
   __typename?: 'Mutation';
   deleteWorkspace: boolean;
-};
-
-export type AddToEarlyAccessMutationVariables = Exact<{
-  email: Scalars['String']['input'];
-  type: EarlyAccessType;
-}>;
-
-export type AddToEarlyAccessMutation = {
-  __typename?: 'Mutation';
-  addToEarlyAccess: number;
-};
-
-export type EarlyAccessUsersQueryVariables = Exact<{ [key: string]: never }>;
-
-export type EarlyAccessUsersQuery = {
-  __typename?: 'Query';
-  earlyAccessUsers: Array<{
-    __typename?: 'UserType';
-    id: string;
-    name: string;
-    email: string;
-    avatarUrl: string | null;
-    emailVerified: boolean;
-    subscription: {
-      __typename?: 'UserSubscription';
-      plan: SubscriptionPlan;
-      recurring: SubscriptionRecurring;
-      status: SubscriptionStatus;
-      start: string;
-      end: string | null;
-    } | null;
-  }>;
-};
-
-export type RemoveEarlyAccessMutationVariables = Exact<{
-  email: Scalars['String']['input'];
-  type: EarlyAccessType;
-}>;
-
-export type RemoveEarlyAccessMutation = {
-  __typename?: 'Mutation';
-  removeEarlyAccess: number;
 };
 
 export type ForkCopilotSessionMutationVariables = Exact<{
@@ -1956,17 +1911,6 @@ export type ListUsersQuery = {
     hasPassword: boolean | null;
     emailVerified: boolean;
     avatarUrl: string | null;
-    quota: {
-      __typename?: 'UserQuota';
-      humanReadable: {
-        __typename?: 'UserQuotaHumanReadable';
-        blobLimit: string;
-        historyPeriod: string;
-        memberLimit: string;
-        name: string;
-        storageQuota: string;
-      };
-    } | null;
   }>;
 };
 
@@ -2036,15 +1980,6 @@ export type RecoverDocMutationVariables = Exact<{
 export type RecoverDocMutation = {
   __typename?: 'Mutation';
   recoverDoc: string;
-};
-
-export type RemoveAdminMutationVariables = Exact<{
-  email: Scalars['String']['input'];
-}>;
-
-export type RemoveAdminMutation = {
-  __typename?: 'Mutation';
-  removeAdminister: boolean;
 };
 
 export type RemoveAvatarMutationVariables = Exact<{ [key: string]: never }>;
@@ -2154,7 +2089,6 @@ export type ServerConfigQuery = {
     name: string;
     features: Array<ServerFeature>;
     type: ServerDeploymentType;
-    initialized: boolean;
     credentialsRequirement: {
       __typename?: 'CredentialsRequirementType';
       password: {
@@ -2195,6 +2129,16 @@ export type SubscriptionQuery = {
       canceledAt: string | null;
     }>;
   } | null;
+};
+
+export type UpdateAccountFeaturesMutationVariables = Exact<{
+  userId: Scalars['String']['input'];
+  features: Array<FeatureType> | FeatureType;
+}>;
+
+export type UpdateAccountFeaturesMutation = {
+  __typename?: 'Mutation';
+  updateUserFeatures: Array<FeatureType>;
 };
 
 export type UpdateAccountMutationVariables = Exact<{
@@ -2423,6 +2367,11 @@ export type WorkspaceQuotaQuery = {
 
 export type Queries =
   | {
+      name: 'adminServerConfigQuery';
+      variables: AdminServerConfigQueryVariables;
+      response: AdminServerConfigQuery;
+    }
+  | {
       name: 'listBlobsQuery';
       variables: ListBlobsQueryVariables;
       response: ListBlobsQuery;
@@ -2431,11 +2380,6 @@ export type Queries =
       name: 'copilotQuotaQuery';
       variables: CopilotQuotaQueryVariables;
       response: CopilotQuotaQuery;
-    }
-  | {
-      name: 'earlyAccessUsersQuery';
-      variables: EarlyAccessUsersQueryVariables;
-      response: EarlyAccessUsersQuery;
     }
   | {
       name: 'getCopilotHistoriesQuery';
@@ -2615,11 +2559,6 @@ export type Queries =
 
 export type Mutations =
   | {
-      name: 'addToAdminMutation';
-      variables: AddToAdminMutationVariables;
-      response: AddToAdminMutation;
-    }
-  | {
       name: 'deleteBlobMutation';
       variables: DeleteBlobMutationVariables;
       response: DeleteBlobMutation;
@@ -2700,16 +2639,6 @@ export type Mutations =
       response: DeleteWorkspaceMutation;
     }
   | {
-      name: 'addToEarlyAccessMutation';
-      variables: AddToEarlyAccessMutationVariables;
-      response: AddToEarlyAccessMutation;
-    }
-  | {
-      name: 'removeEarlyAccessMutation';
-      variables: RemoveEarlyAccessMutationVariables;
-      response: RemoveEarlyAccessMutation;
-    }
-  | {
       name: 'forkCopilotSessionMutation';
       variables: ForkCopilotSessionMutationVariables;
       response: ForkCopilotSessionMutation;
@@ -2728,11 +2657,6 @@ export type Mutations =
       name: 'recoverDocMutation';
       variables: RecoverDocMutationVariables;
       response: RecoverDocMutation;
-    }
-  | {
-      name: 'removeAdminMutation';
-      variables: RemoveAdminMutationVariables;
-      response: RemoveAdminMutation;
     }
   | {
       name: 'removeAvatarMutation';
@@ -2783,6 +2707,11 @@ export type Mutations =
       name: 'setWorkspacePublicByIdMutation';
       variables: SetWorkspacePublicByIdMutationVariables;
       response: SetWorkspacePublicByIdMutation;
+    }
+  | {
+      name: 'updateAccountFeaturesMutation';
+      variables: UpdateAccountFeaturesMutationVariables;
+      response: UpdateAccountFeaturesMutation;
     }
   | {
       name: 'updateAccountMutation';

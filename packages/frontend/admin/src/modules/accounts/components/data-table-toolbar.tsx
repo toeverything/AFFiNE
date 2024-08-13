@@ -7,8 +7,8 @@ import type { SetStateAction } from 'react';
 import { startTransition, useCallback, useEffect, useState } from 'react';
 
 import { useRightPanel } from '../../layout';
-import { CreateUserPanel } from './ceate-user-panel';
 import { DiscardChanges } from './discard-changes';
+import { CreateUserForm } from './user-form';
 
 interface DataTableToolbarProps<TData> {
   data: TData[];
@@ -38,17 +38,18 @@ export function DataTableToolbar<TData>({
   const [value, setValue] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const debouncedValue = useDebouncedValue(value, 500);
-  const { setRightPanelContent, openPanel, isOpen } = useRightPanel();
+  const { setRightPanelContent, openPanel, closePanel, isOpen } =
+    useRightPanel();
 
   const handleConfirm = useCallback(() => {
-    setRightPanelContent(<CreateUserPanel />);
+    setRightPanelContent(<CreateUserForm onComplete={closePanel} />);
     if (dialogOpen) {
       setDialogOpen(false);
     }
     if (!isOpen) {
       openPanel();
     }
-  }, [setRightPanelContent, dialogOpen, isOpen, openPanel]);
+  }, [setRightPanelContent, closePanel, dialogOpen, isOpen, openPanel]);
 
   const result = useQuery({
     query: getUserByEmailQuery,

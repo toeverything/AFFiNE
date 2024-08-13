@@ -42,10 +42,6 @@ export class FeatureManagementService {
     return this.feature.addUserFeature(userId, FeatureType.Admin, 'Admin user');
   }
 
-  removeAdmin(userId: string) {
-    return this.feature.removeUserFeature(userId, FeatureType.Admin);
-  }
-
   // ======== Early Access ========
   async addEarlyAccess(
     userId: string,

@@ -37,6 +37,7 @@ export function AccountPage() {
 
       <DataTable
         data={users}
+        // @ts-expect-error do not complains
         columns={columns}
         pagination={pagination}
         onPaginationChange={setPagination}

@@ -2,31 +2,21 @@ import { Button } from '@affine/admin/components/ui/button';
 import { Input } from '@affine/admin/components/ui/input';
 import { Label } from '@affine/admin/components/ui/label';
 import { useMutateQueryResource } from '@affine/core/hooks/use-mutation';
-import { useQuery } from '@affine/core/hooks/use-query';
 import {
   FeatureType,
   getCurrentUserFeaturesQuery,
   getUserFeaturesQuery,
-  serverConfigQuery,
 } from '@affine/graphql';
 import { useCallback, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
+import { useCurrentUser, useServerConfig } from '../common';
 import logo from './logo.svg';
 
 export function Auth() {
-  const {
-    data: { currentUser },
-  } = useQuery({
-    query: getCurrentUserFeaturesQuery,
-  });
-
-  const {
-    data: { serverConfig },
-  } = useQuery({
-    query: serverConfigQuery,
-  });
+  const currentUser = useCurrentUser();
+  const serverConfig = useServerConfig();
   const revalidate = useMutateQueryResource();
   const emailRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);

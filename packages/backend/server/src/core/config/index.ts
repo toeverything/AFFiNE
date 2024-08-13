@@ -16,5 +16,5 @@ import {
   ],
 })
 export class ServerConfigModule {}
-export { ADD_ENABLED_FEATURES, ServerConfigType } from './resolver';
+export { ADD_ENABLED_FEATURES } from './server-feature';
 export { ServerFeature } from './types';

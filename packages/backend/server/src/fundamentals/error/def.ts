@@ -498,4 +498,12 @@ export const USER_FRIENDLY_ERRORS = {
     type: 'internal_server_error',
     message: 'Mailer service is not configured.',
   },
+  cannot_delete_all_admin_account: {
+    type: 'action_forbidden',
+    message: 'Cannot delete all admin accounts.',
+  },
+  cannot_delete_own_account: {
+    type: 'action_forbidden',
+    message: 'Cannot delete own account.',
+  },
 } satisfies Record<string, UserFriendlyErrorOptions>;

@@ -12,24 +12,14 @@ import {
 import { PrismaClient, RuntimeConfig, RuntimeConfigType } from '@prisma/client';
 import { GraphQLJSON, GraphQLJSONObject } from 'graphql-scalars';
 
-import { Config, DeploymentType, URLHelper } from '../../fundamentals';
+import { Config, URLHelper } from '../../fundamentals';
 import { Public } from '../auth';
 import { Admin } from '../common';
+import { FeatureType } from '../features';
+import { AvailableUserFeatureConfig } from '../features/resolver';
 import { ServerFlags } from './config';
-import { ServerFeature } from './types';
-
-const ENABLED_FEATURES: Set<ServerFeature> = new Set();
-export function ADD_ENABLED_FEATURES(feature: ServerFeature) {
-  ENABLED_FEATURES.add(feature);
-}
-
-registerEnumType(ServerFeature, {
-  name: 'ServerFeature',
-});
-
-registerEnumType(DeploymentType, {
-  name: 'ServerDeploymentType',
-});
+import { ENABLED_FEATURES } from './server-feature';
+import { ServerConfigType } from './types';
 
 @ObjectType()
 export class PasswordLimitsType {
@@ -43,36 +33,6 @@ export class PasswordLimitsType {
 export class CredentialsRequirementType {
   @Field()
   password!: PasswordLimitsType;
-}
-
-@ObjectType()
-export class ServerConfigType {
-  @Field({
-    description:
-      'server identical name could be shown as badge on user interface',
-  })
-  name!: string;
-
-  @Field({ description: 'server version' })
-  version!: string;
-
-  @Field({ description: 'server base url' })
-  baseUrl!: string;
-
-  @Field(() => DeploymentType, { description: 'server type' })
-  type!: DeploymentType;
-
-  /**
-   * @deprecated
-   */
-  @Field({ description: 'server flavor', deprecationReason: 'use `features`' })
-  flavor!: string;
-
-  @Field(() => [ServerFeature], { description: 'enabled server features' })
-  features!: ServerFeature[];
-
-  @Field({ description: 'enable telemetry' })
-  enableTelemetry!: boolean;
 }
 
 registerEnumType(RuntimeConfigType, {
@@ -172,6 +132,20 @@ export class ServerConfigResolver {
   })
   async initialized() {
     return (await this.db.user.count()) > 0;
+  }
+}
+
+@Resolver(() => ServerConfigType)
+export class ServerFeatureConfigResolver extends AvailableUserFeatureConfig {
+  constructor(config: Config) {
+    super(config);
+  }
+
+  @ResolveField(() => [FeatureType], {
+    description: 'Features for user that can be configured',
+  })
+  override availableUserFeatures() {
+    return super.availableUserFeatures();
   }
 }
 

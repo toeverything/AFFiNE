@@ -3,7 +3,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import type { User, UserSession } from '@prisma/client';
 import { PrismaClient } from '@prisma/client';
 import type { CookieOptions, Request, Response } from 'express';
-import { assign, omit } from 'lodash-es';
+import { assign, pick } from 'lodash-es';
 
 import { Config, EmailAlreadyUsed, MailService } from '../../fundamentals';
 import { FeatureManagementService } from '../features/management';
@@ -41,13 +41,11 @@ export function sessionUser(
     'id' | 'email' | 'avatarUrl' | 'name' | 'emailVerifiedAt'
   > & { password?: string | null }
 ): CurrentUser {
-  return assign(
-    omit(user, 'password', 'registered', 'emailVerifiedAt', 'createdAt'),
-    {
-      hasPassword: user.password !== null,
-      emailVerified: user.emailVerifiedAt !== null,
-    }
-  );
+  // use pick to avoid unexpected fields
+  return assign(pick(user, 'id', 'email', 'avatarUrl', 'name'), {
+    hasPassword: user.password !== null,
+    emailVerified: user.emailVerifiedAt !== null,
+  });
 }
 
 @Injectable()

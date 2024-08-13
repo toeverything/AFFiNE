@@ -2,7 +2,10 @@ import { Module } from '@nestjs/common';
 
 import { UserModule } from '../user';
 import { EarlyAccessType, FeatureManagementService } from './management';
-import { FeatureManagementResolver } from './resolver';
+import {
+  AdminFeatureManagementResolver,
+  FeatureManagementResolver,
+} from './resolver';
 import { FeatureService } from './service';
 
 /**
@@ -17,6 +20,7 @@ import { FeatureService } from './service';
     FeatureService,
     FeatureManagementService,
     FeatureManagementResolver,
+    AdminFeatureManagementResolver,
   ],
   exports: [FeatureService, FeatureManagementService],
 })

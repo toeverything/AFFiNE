@@ -3,6 +3,7 @@ import {
   AvatarFallback,
   AvatarImage,
 } from '@affine/admin/components/ui/avatar';
+import type { UserType } from '@affine/graphql';
 import { FeatureType } from '@affine/graphql';
 import type { ColumnDef } from '@tanstack/react-table';
 import clsx from 'clsx';
@@ -15,7 +16,6 @@ import {
 } from 'lucide-react';
 import type { ReactNode } from 'react';
 
-import type { User } from '../schema';
 import { DataTableRowActions } from './data-table-row-actions';
 
 const StatusItem = ({
@@ -51,7 +51,7 @@ const StatusItem = ({
   </div>
 );
 
-export const columns: ColumnDef<User>[] = [
+export const columns: ColumnDef<UserType>[] = [
   {
     accessorKey: 'info',
     cell: ({ row }) => (
@@ -88,13 +88,13 @@ export const columns: ColumnDef<User>[] = [
   },
   {
     accessorKey: 'property',
-    cell: ({ row }) => (
+    cell: ({ row: { original: user } }) => (
       <div className="flex items-center gap-2">
         <div className="flex flex-col gap-2 text-xs max-md:hidden">
-          <div className="flex justify-end opacity-25">{row.original.id}</div>
+          <div className="flex justify-end opacity-25">{user.id}</div>
           <div className="flex gap-3 items-center justify-end">
             <StatusItem
-              condition={row.original.hasPassword}
+              condition={user.hasPassword}
               IconTrue={<LockIcon size={10} />}
               IconFalse={<UnlockIcon size={10} />}
               textTrue="Password Set"
@@ -102,7 +102,7 @@ export const columns: ColumnDef<User>[] = [
             />
 
             <StatusItem
-              condition={row.original.emailVerified}
+              condition={user.emailVerified}
               IconTrue={<MailIcon size={10} />}
               IconFalse={<MailWarningIcon size={10} />}
               textTrue="Email Verified"
@@ -110,7 +110,7 @@ export const columns: ColumnDef<User>[] = [
             />
           </div>
         </div>
-        <DataTableRowActions row={row} />
+        <DataTableRowActions user={user} />
       </div>
     ),
   },

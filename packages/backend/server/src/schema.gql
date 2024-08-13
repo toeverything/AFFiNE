@@ -152,7 +152,6 @@ input CreateCopilotPromptInput {
 input CreateUserInput {
   email: String!
   name: String
-  password: String
 }
 
 type CredentialsRequirementType {
@@ -196,11 +195,6 @@ type DocNotFoundDataType {
   workspaceId: String!
 }
 
-enum EarlyAccessType {
-  AI
-  App
-}
-
 union ErrorDataUnion = BlobNotFoundDataType | CopilotMessageNotFoundDataType | CopilotPromptNotFoundDataType | CopilotProviderSideErrorDataType | DocAccessDeniedDataType | DocHistoryNotFoundDataType | DocNotFoundDataType | InvalidHistoryTimestampDataType | InvalidPasswordLengthDataType | InvalidRuntimeConfigTypeDataType | MissingOauthQueryParameterDataType | NotInWorkspaceDataType | RuntimeConfigNotFoundDataType | SameSubscriptionRecurringDataType | SubscriptionAlreadyExistsDataType | SubscriptionNotExistsDataType | SubscriptionPlanNotFoundDataType | UnknownOauthProviderDataType | VersionRejectedDataType | WorkspaceAccessDeniedDataType | WorkspaceNotFoundDataType | WorkspaceOwnerNotFoundDataType
 
 enum ErrorNames {
@@ -209,6 +203,8 @@ enum ErrorNames {
   AUTHENTICATION_REQUIRED
   BLOB_NOT_FOUND
   BLOB_QUOTA_EXCEEDED
+  CANNOT_DELETE_ALL_ADMIN_ACCOUNT
+  CANNOT_DELETE_OWN_ACCOUNT
   CANT_CHANGE_WORKSPACE_OWNER
   CANT_UPDATE_LIFETIME_SUBSCRIPTION
   COPILOT_ACTION_TAKEN
@@ -398,7 +394,7 @@ input ListUserInput {
 
 input ManageUserInput {
   """User email"""
-  email: String!
+  email: String
 
   """User name"""
   name: String
@@ -410,8 +406,6 @@ type MissingOauthQueryParameterDataType {
 
 type Mutation {
   acceptInviteById(inviteId: String!, sendAcceptMail: Boolean, workspaceId: String!): Boolean!
-  addAdminister(email: String!): Boolean!
-  addToEarlyAccess(email: String!, type: EarlyAccessType!): Int!
   addWorkspaceFeature(feature: FeatureType!, workspaceId: String!): Int!
   cancelSubscription(idempotencyKey: String!, plan: SubscriptionPlan = Pro): UserSubscription!
   changeEmail(email: String!, token: String!): UserType!
@@ -456,11 +450,9 @@ type Mutation {
   leaveWorkspace(sendLeaveMail: Boolean, workspaceId: String!, workspaceName: String!): Boolean!
   publishPage(mode: PublicPageMode = Page, pageId: String!, workspaceId: String!): WorkspacePage!
   recoverDoc(guid: String!, timestamp: DateTime!, workspaceId: String!): DateTime!
-  removeAdminister(email: String!): Boolean!
 
   """Remove user avatar"""
   removeAvatar: RemoveAvatar!
-  removeEarlyAccess(email: String!, type: EarlyAccessType!): Int!
   removeWorkspaceFeature(feature: FeatureType!, workspaceId: String!): Int!
   resumeSubscription(idempotencyKey: String!, plan: SubscriptionPlan = Pro): UserSubscription!
   revoke(userId: String!, workspaceId: String!): Boolean!
@@ -488,6 +480,9 @@ type Mutation {
 
   """Update a user"""
   updateUser(id: String!, input: ManageUserInput!): UserType!
+
+  """update user enabled feature"""
+  updateUserFeatures(features: [FeatureType!]!, id: String!): [FeatureType!]!
 
   """Update workspace"""
   updateWorkspace(input: UpdateWorkspaceInput!): WorkspaceType!
@@ -532,7 +527,6 @@ type Query {
 
   """Get current user"""
   currentUser: UserType
-  earlyAccessUsers: [UserType!]!
   error(name: ErrorNames!): ErrorDataUnion!
 
   """send workspace invitation"""

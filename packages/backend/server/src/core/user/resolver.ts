@@ -12,7 +12,12 @@ import { PrismaClient } from '@prisma/client';
 import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 import { isNil, omitBy } from 'lodash-es';
 
-import { type FileUpload, Throttle, UserNotFound } from '../../fundamentals';
+import {
+  CannotDeleteOwnAccount,
+  type FileUpload,
+  Throttle,
+  UserNotFound,
+} from '../../fundamentals';
 import { CurrentUser } from '../auth/current-user';
 import { Public } from '../auth/guard';
 import { sessionUser } from '../auth/service';
@@ -162,9 +167,6 @@ class CreateUserInput {
 
   @Field(() => String, { nullable: true })
   name!: string | null;
-
-  @Field(() => String, { nullable: true })
-  password!: string | null;
 }
 
 @Admin()
@@ -244,7 +246,6 @@ export class UserManagementResolver {
   ) {
     const { id } = await this.user.createUser({
       email: input.email,
-      password: input.password,
       registered: true,
     });
 
@@ -255,7 +256,13 @@ export class UserManagementResolver {
   @Mutation(() => DeleteAccount, {
     description: 'Delete a user account',
   })
-  async deleteUser(@Args('id') id: string): Promise<DeleteAccount> {
+  async deleteUser(
+    @CurrentUser() user: CurrentUser,
+    @Args('id') id: string
+  ): Promise<DeleteAccount> {
+    if (user.id === id) {
+      throw new CannotDeleteOwnAccount();
+    }
     await this.user.deleteUser(id);
     return { success: true };
   }
@@ -268,26 +275,22 @@ export class UserManagementResolver {
     @Args('input') input: ManageUserInput
   ): Promise<UserType> {
     const user = await this.db.user.findUnique({
-      select: { ...this.user.defaultUserSelect, password: true },
       where: { id },
     });
 
     if (!user) {
       throw new UserNotFound();
     }
-    validators.assertValidEmail(input.email);
-    if (input.email !== user.email) {
-      const exists = await this.db.user.findFirst({
-        where: { email: input.email },
-      });
-      if (exists) {
-        throw new Error('Email already exists');
-      }
+
+    input = omitBy(input, isNil);
+    if (Object.keys(input).length === 0) {
+      return sessionUser(user);
     }
+
     return sessionUser(
       await this.user.updateUser(user.id, {
-        name: input.name,
         email: input.email,
+        name: input.name,
       })
     );
   }

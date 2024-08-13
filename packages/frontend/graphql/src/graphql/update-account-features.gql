@@ -1,0 +1,3 @@
+mutation updateAccountFeatures($userId: String!, $features: [FeatureType!]!) {
+  updateUserFeatures(id: $userId, features: $features)
+}

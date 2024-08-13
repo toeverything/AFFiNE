@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 
+import { CannotDeleteAllAdminAccount } from '../../fundamentals';
 import { WorkspaceType } from '../workspaces/types';
 import { FeatureConfigType, getFeature } from './feature';
 import { FeatureKind, FeatureType } from './types';
@@ -81,6 +82,9 @@ export class FeatureService {
   }
 
   async removeUserFeature(userId: string, feature: FeatureType) {
+    if (feature === FeatureType.Admin) {
+      await this.ensureNotLastAdmin(userId);
+    }
     return this.prisma.userFeature
       .updateMany({
         where: {
@@ -96,6 +100,20 @@ export class FeatureService {
         },
       })
       .then(r => r.count);
+  }
+
+  async ensureNotLastAdmin(userId: string) {
+    const count = await this.prisma.userFeature.count({
+      where: {
+        userId: { not: userId },
+        feature: { feature: FeatureType.Admin, type: FeatureKind.Feature },
+        activated: true,
+      },
+    });
+
+    if (count === 0) {
+      throw new CannotDeleteAllAdminAccount();
+    }
   }
 
   /**

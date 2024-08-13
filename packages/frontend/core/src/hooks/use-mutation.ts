@@ -35,7 +35,7 @@ export function useMutation<Mutation extends GraphQLQuery, K extends Key = Key>(
   config?: Omit<
     SWRMutationConfiguration<
       QueryResponse<Mutation>,
-      GraphQLError | GraphQLError[],
+      GraphQLError,
       K,
       QueryVariables<Mutation>
     >,
@@ -43,7 +43,7 @@ export function useMutation<Mutation extends GraphQLQuery, K extends Key = Key>(
   >
 ): SWRMutationResponse<
   QueryResponse<Mutation>,
-  GraphQLError | GraphQLError[],
+  GraphQLError,
   K,
   QueryVariables<Mutation>
 >;

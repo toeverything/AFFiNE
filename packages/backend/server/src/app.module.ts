@@ -155,7 +155,7 @@ function buildAppModule() {
     .useIf(config => config.flavor.sync, WebSocketModule)
 
     // auth
-    .use(AuthModule)
+    .use(UserModule, AuthModule)
 
     // business modules
     .use(DocModule)
@@ -169,7 +169,6 @@ function buildAppModule() {
       ServerConfigModule,
       GqlModule,
       StorageModule,
-      UserModule,
       WorkspaceModule,
       FeatureModule,
       QuotaModule

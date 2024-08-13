@@ -18,15 +18,27 @@ fragment CredentialsRequirement on CredentialsRequirementType {
     ...PasswordLimits
   }
 }`
-export const addToAdminMutation = {
-  id: 'addToAdminMutation' as const,
-  operationName: 'addToAdmin',
-  definitionName: 'addAdminister',
+export const adminServerConfigQuery = {
+  id: 'adminServerConfigQuery' as const,
+  operationName: 'adminServerConfig',
+  definitionName: 'serverConfig',
   containsFile: false,
   query: `
-mutation addToAdmin($email: String!) {
-  addAdminister(email: $email)
-}`,
+query adminServerConfig {
+  serverConfig {
+    version
+    baseUrl
+    name
+    features
+    type
+    initialized
+    credentialsRequirement {
+      ...CredentialsRequirement
+    }
+    availableUserFeatures
+  }
+}${passwordLimitsFragment}
+${credentialsRequirementFragment}`,
 };
 
 export const deleteBlobMutation = {
@@ -251,52 +263,6 @@ export const deleteWorkspaceMutation = {
   query: `
 mutation deleteWorkspace($id: String!) {
   deleteWorkspace(id: $id)
-}`,
-};
-
-export const addToEarlyAccessMutation = {
-  id: 'addToEarlyAccessMutation' as const,
-  operationName: 'addToEarlyAccess',
-  definitionName: 'addToEarlyAccess',
-  containsFile: false,
-  query: `
-mutation addToEarlyAccess($email: String!, $type: EarlyAccessType!) {
-  addToEarlyAccess(email: $email, type: $type)
-}`,
-};
-
-export const earlyAccessUsersQuery = {
-  id: 'earlyAccessUsersQuery' as const,
-  operationName: 'earlyAccessUsers',
-  definitionName: 'earlyAccessUsers',
-  containsFile: false,
-  query: `
-query earlyAccessUsers {
-  earlyAccessUsers {
-    id
-    name
-    email
-    avatarUrl
-    emailVerified
-    subscription {
-      plan
-      recurring
-      status
-      start
-      end
-    }
-  }
-}`,
-};
-
-export const removeEarlyAccessMutation = {
-  id: 'removeEarlyAccessMutation' as const,
-  operationName: 'removeEarlyAccess',
-  definitionName: 'removeEarlyAccess',
-  containsFile: false,
-  query: `
-mutation removeEarlyAccess($email: String!, $type: EarlyAccessType!) {
-  removeEarlyAccess(email: $email, type: $type)
 }`,
 };
 
@@ -803,15 +769,6 @@ query listUsers($filter: ListUserInput!) {
     hasPassword
     emailVerified
     avatarUrl
-    quota {
-      humanReadable {
-        blobLimit
-        historyPeriod
-        memberLimit
-        name
-        storageQuota
-      }
-    }
   }
 }`,
 };
@@ -886,17 +843,6 @@ export const recoverDocMutation = {
   query: `
 mutation recoverDoc($workspaceId: String!, $docId: String!, $timestamp: DateTime!) {
   recoverDoc(workspaceId: $workspaceId, guid: $docId, timestamp: $timestamp)
-}`,
-};
-
-export const removeAdminMutation = {
-  id: 'removeAdminMutation' as const,
-  operationName: 'removeAdmin',
-  definitionName: 'removeAdminister',
-  containsFile: false,
-  query: `
-mutation removeAdmin($email: String!) {
-  removeAdminister(email: $email)
 }`,
 };
 
@@ -1024,7 +970,6 @@ query serverConfig {
     name
     features
     type
-    initialized
     credentialsRequirement {
       ...CredentialsRequirement
     }
@@ -1066,6 +1011,17 @@ query subscription {
       canceledAt
     }
   }
+}`,
+};
+
+export const updateAccountFeaturesMutation = {
+  id: 'updateAccountFeaturesMutation' as const,
+  operationName: 'updateAccountFeatures',
+  definitionName: 'updateUserFeatures',
+  containsFile: false,
+  query: `
+mutation updateAccountFeatures($userId: String!, $features: [FeatureType!]!) {
+  updateUserFeatures(id: $userId, features: $features)
 }`,
 };
 

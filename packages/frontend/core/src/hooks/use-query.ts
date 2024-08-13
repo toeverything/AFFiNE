@@ -32,16 +32,12 @@ import useSWRInfinite from 'swr/infinite';
 type useQueryFn = <Query extends GraphQLQuery>(
   options?: QueryOptions<Query>,
   config?: Omit<
-    SWRConfiguration<
-      QueryResponse<Query>,
-      GraphQLError | GraphQLError[],
-      typeof fetcher<Query>
-    >,
+    SWRConfiguration<QueryResponse<Query>, GraphQLError, typeof fetcher<Query>>,
     'fetcher'
   >
 ) => SWRResponse<
   QueryResponse<Query>,
-  GraphQLError | GraphQLError[],
+  GraphQLError,
   {
     suspense: true;
   }

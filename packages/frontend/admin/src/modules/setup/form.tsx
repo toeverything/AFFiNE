@@ -7,12 +7,12 @@ import {
 } from '@affine/admin/components/ui/carousel';
 import { validateEmailAndPassword } from '@affine/admin/utils';
 import { useMutateQueryResource } from '@affine/core/hooks/use-mutation';
-import { useQuery } from '@affine/core/hooks/use-query';
 import { serverConfigQuery } from '@affine/graphql';
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
+import { useServerConfig } from '../common';
 import { CreateAdmin } from './create-admin';
 
 export enum CarouselSteps {
@@ -72,10 +72,8 @@ export const Form = () => {
   const [invalidEmail, setInvalidEmail] = useState(false);
   const [invalidPassword, setInvalidPassword] = useState(false);
 
-  const { data } = useQuery({
-    query: serverConfigQuery,
-  });
-  const passwordLimits = data.serverConfig.credentialsRequirement.password;
+  const serverConfig = useServerConfig();
+  const passwordLimits = serverConfig.credentialsRequirement.password;
 
   const isCreateAdminStep = current - 1 === CarouselSteps.CreateAdmin;
 
@@ -95,7 +93,7 @@ export const Form = () => {
     api.on('select', () => {
       setCurrent(api.selectedScrollSnap() + 1);
     });
-  }, [api, data.serverConfig.initialized, navigate]);
+  }, [api, serverConfig.initialized, navigate]);
 
   const createAdmin = useCallback(async () => {
     try {
@@ -170,14 +168,14 @@ export const Form = () => {
 
   const onPrevious = useCallback(() => {
     if (current === count) {
-      if (data.serverConfig.initialized === true) {
+      if (serverConfig.initialized === true) {
         return navigate('/admin', { replace: true });
       }
       toast.error('Goto Admin Panel failed, please try again.');
       return;
     }
     api?.scrollPrev();
-  }, [api, count, current, data.serverConfig.initialized, navigate]);
+  }, [api, count, current, serverConfig.initialized, navigate]);
 
   return (
     <div className="flex flex-col justify-between h-full w-full  lg:pl-36 max-lg:items-center ">

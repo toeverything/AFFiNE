@@ -12,29 +12,17 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@affine/admin/components/ui/dropdown-menu';
-import { useQuery } from '@affine/core/hooks/use-query';
-import {
-  FeatureType,
-  getCurrentUserFeaturesQuery,
-  serverConfigQuery,
-} from '@affine/graphql';
+import { FeatureType } from '@affine/graphql';
 import { CircleUser, MoreVertical } from 'lucide-react';
 import { useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
-export function UserDropdown() {
-  const {
-    data: { currentUser },
-  } = useQuery({
-    query: getCurrentUserFeaturesQuery,
-  });
+import { useCurrentUser, useServerConfig } from '../common';
 
-  const {
-    data: { serverConfig },
-  } = useQuery({
-    query: serverConfigQuery,
-  });
+export function UserDropdown() {
+  const currentUser = useCurrentUser();
+  const serverConfig = useServerConfig();
 
   const navigate = useNavigate();
 

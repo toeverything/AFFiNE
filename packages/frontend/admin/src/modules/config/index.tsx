@@ -6,7 +6,7 @@ import {
 } from '@affine/admin/components/ui/card';
 import { ScrollArea } from '@affine/admin/components/ui/scroll-area';
 import { Separator } from '@affine/admin/components/ui/separator';
-import { useQuery } from '@affine/core/hooks/use-query';
+import { useQueryImmutable } from '@affine/core/hooks/use-query';
 import { getServerServiceConfigsQuery } from '@affine/graphql';
 
 import { Layout } from '../layout';
@@ -171,7 +171,7 @@ const MailerCard = ({ mailerConfig }: { mailerConfig?: MailerConfig }) => {
 };
 
 export function ServerServiceConfig() {
-  const { data } = useQuery({
+  const { data } = useQueryImmutable({
     query: getServerServiceConfigsQuery,
   });
   const server = data.serverServiceConfigs.find(

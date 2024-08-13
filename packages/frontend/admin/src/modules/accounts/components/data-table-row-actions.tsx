@@ -6,7 +6,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@affine/admin/components/ui/dropdown-menu';
-import type { Row } from '@tanstack/react-table';
 import {
   LockIcon,
   MoreVerticalIcon,
@@ -17,29 +16,26 @@ import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
 
 import { useRightPanel } from '../../layout';
-import { userSchema } from '../schema';
+import type { UserType } from '../schema';
 import { DeleteAccountDialog } from './delete-account';
 import { DiscardChanges } from './discard-changes';
-import { EditPanel } from './edit-panel';
 import { ResetPasswordDialog } from './reset-password';
-import { useUserManagement } from './use-user-management';
+import { useDeleteUser, useResetUserPassword } from './use-user-management';
+import { UpdateUserForm } from './user-form';
 
-interface DataTableRowActionsProps<TData> {
-  row: Row<TData>;
+interface DataTableRowActionsProps {
+  user: UserType;
 }
 
-export function DataTableRowActions<TData>({
-  row,
-}: DataTableRowActionsProps<TData>) {
+export function DataTableRowActions({ user }: DataTableRowActionsProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [resetPasswordDialogOpen, setResetPasswordDialogOpen] = useState(false);
   const [discardDialogOpen, setDiscardDialogOpen] = useState(false);
-  const user = userSchema.parse(row.original);
   const { setRightPanelContent, openPanel, isOpen, closePanel } =
     useRightPanel();
 
-  const { deleteUser, resetPasswordLink, onResetPassword } =
-    useUserManagement();
+  const deleteUser = useDeleteUser();
+  const { resetPasswordLink, onResetPassword } = useResetUserPassword();
 
   const openResetPasswordDialog = useCallback(() => {
     onResetPassword(user.id, () => setResetPasswordDialogOpen(true));
@@ -82,8 +78,9 @@ export function DataTableRowActions<TData>({
 
   const handleConfirm = useCallback(() => {
     setRightPanelContent(
-      <EditPanel
+      <UpdateUserForm
         user={user}
+        onComplete={closePanel}
         onResetPassword={openResetPasswordDialog}
         onDeleteAccount={openDeleteDialog}
       />
@@ -96,6 +93,7 @@ export function DataTableRowActions<TData>({
       openPanel();
     }
   }, [
+    closePanel,
     discardDialogOpen,
     handleDiscardChangesCancel,
     isOpen,

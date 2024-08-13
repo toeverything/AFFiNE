@@ -194,9 +194,7 @@ export class UserService {
 
   async updateUser(
     id: string,
-    data: Omit<Prisma.UserUpdateInput, 'password'> & {
-      password?: string | null;
-    },
+    data: Omit<Partial<Prisma.UserCreateInput>, 'id'>,
     select: Prisma.UserSelect = this.defaultUserSelect
   ) {
     if (data.password) {
@@ -211,6 +209,23 @@ export class UserService {
 
       data.password = await this.crypto.encryptPassword(data.password);
     }
+
+    if (data.email) {
+      validators.assertValidEmail(data.email);
+      const emailTaken = await this.prisma.user.count({
+        where: {
+          email: data.email,
+          id: {
+            not: id,
+          },
+        },
+      });
+
+      if (emailTaken) {
+        throw new EmailAlreadyUsed();
+      }
+    }
+
     const user = await this.prisma.user.update({ where: { id }, data, select });
 
     this.emitter.emit('user.updated', user);

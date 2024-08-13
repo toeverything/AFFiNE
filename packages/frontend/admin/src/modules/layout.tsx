@@ -7,11 +7,7 @@ import { Separator } from '@affine/admin/components/ui/separator';
 import { TooltipProvider } from '@affine/admin/components/ui/tooltip';
 import { cn } from '@affine/admin/utils';
 import { useQuery } from '@affine/core/hooks/use-query';
-import {
-  FeatureType,
-  getCurrentUserFeaturesQuery,
-  serverConfigQuery,
-} from '@affine/graphql';
+import { FeatureType, getCurrentUserFeaturesQuery } from '@affine/graphql';
 import { AlignJustifyIcon } from 'lucide-react';
 import type { ReactNode, RefObject } from 'react';
 import {
@@ -36,6 +32,7 @@ import {
   SheetTrigger,
 } from '../components/ui/sheet';
 import { Logo } from './accounts/components/logo';
+import { useServerConfig } from './common';
 import { NavContext } from './nav/context';
 import { Nav } from './nav/nav';
 
@@ -85,6 +82,13 @@ export function useMediaQuery(query: string) {
 }
 
 export function Layout({ content }: LayoutProps) {
+  const serverConfig = useServerConfig();
+  const {
+    data: { currentUser },
+  } = useQuery({
+    query: getCurrentUserFeaturesQuery,
+  });
+
   const [rightPanelContent, setRightPanelContent] = useState<ReactNode>(null);
   const [open, setOpen] = useState(false);
   const rightPanelRef = useRef<ImperativePanelHandle>(null);
@@ -122,16 +126,6 @@ export function Layout({ content }: LayoutProps) {
     [closePanel, openPanel]
   );
 
-  const {
-    data: { serverConfig },
-  } = useQuery({
-    query: serverConfigQuery,
-  });
-  const {
-    data: { currentUser },
-  } = useQuery({
-    query: getCurrentUserFeaturesQuery,
-  });
   const navigate = useNavigate();
 
   useEffect(() => {

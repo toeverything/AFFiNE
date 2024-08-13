@@ -1,3 +1,0 @@
-mutation addToEarlyAccess($email: String!, $type: EarlyAccessType!) {
-  addToEarlyAccess(email: $email, type: $type)
-}

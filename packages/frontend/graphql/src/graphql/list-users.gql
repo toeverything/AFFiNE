@@ -7,14 +7,5 @@ query listUsers($filter: ListUserInput!) {
     hasPassword
     emailVerified
     avatarUrl
-    quota {
-      humanReadable {
-        blobLimit
-        historyPeriod
-        memberLimit
-        name
-        storageQuota
-      }
-    }
   }
 }

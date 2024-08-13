@@ -4,161 +4,103 @@ import {
   useMutation,
 } from '@affine/core/hooks/use-mutation';
 import {
-  addToAdminMutation,
-  addToEarlyAccessMutation,
   createChangePasswordUrlMutation,
   createUserMutation,
   deleteUserMutation,
-  EarlyAccessType,
-  FeatureType,
   listUsersQuery,
-  removeAdminMutation,
-  removeEarlyAccessMutation,
+  updateAccountFeaturesMutation,
   updateAccountMutation,
 } from '@affine/graphql';
 import { useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
+import type { UserInput } from '../schema';
+
 export const useCreateUser = () => {
-  const { trigger: createUser } = useMutation({
+  const {
+    trigger: createAccount,
+    isMutating: creating,
+    error,
+  } = useMutation({
     mutation: createUserMutation,
   });
 
-  const { trigger: addToEarlyAccess } = useMutation({
-    mutation: addToEarlyAccessMutation,
-  });
-
-  const { trigger: addToAdmin } = useMutation({
-    mutation: addToAdminMutation,
+  const { trigger: updateAccountFeatures } = useMutation({
+    mutation: updateAccountFeaturesMutation,
   });
 
   const revalidate = useMutateQueryResource();
 
-  const updateFeatures = useCallback(
-    (email: string, features: FeatureType[]) => {
-      const shouldAddToAdmin = features.includes(FeatureType.Admin);
-      const shouldAddToAIEarlyAccess = features.includes(
-        FeatureType.AIEarlyAccess
-      );
-
-      return Promise.all([
-        shouldAddToAdmin && addToAdmin({ email }),
-        shouldAddToAIEarlyAccess &&
-          addToEarlyAccess({ email, type: EarlyAccessType.AI }),
-      ]);
-    },
-    [addToAdmin, addToEarlyAccess]
-  );
-
   const create = useAsyncCallback(
-    async ({
-      name,
-      email,
-      password,
-      features,
-      callback,
-    }: {
-      name: string;
-      email: string;
-      password: string;
-      features: FeatureType[];
-      callback?: () => void;
-    }) => {
-      await createUser({
-        input: {
-          name,
-          email,
-          password,
-        },
-      })
-        .then(async () => {
-          await updateFeatures(email, features);
-          await revalidate(listUsersQuery);
-          toast('User created successfully');
-          callback?.();
-        })
-        .catch(e => {
-          toast(e.message);
-          console.error(e);
+    async ({ name, email, features }: UserInput) => {
+      try {
+        const account = await createAccount({
+          input: {
+            name,
+            email,
+          },
         });
+
+        await updateAccountFeatures({
+          userId: account.createUser.id,
+          features,
+        });
+        await revalidate(listUsersQuery);
+        toast('Account updated successfully');
+      } catch (e) {
+        toast.error('Failed to update account: ' + (e as Error).message);
+      }
     },
-    [createUser, revalidate, updateFeatures]
+    [createAccount, revalidate]
   );
 
-  return create;
+  return { creating: creating || !!error, create };
 };
 
-interface UpdateUserProps {
-  userId: string;
-  name: string;
-  email: string;
-  features: FeatureType[];
-  callback?: () => void;
-}
-
 export const useUpdateUser = () => {
-  const { trigger: updateAccount } = useMutation({
+  const {
+    trigger: updateAccount,
+    isMutating: updating,
+    error,
+  } = useMutation({
     mutation: updateAccountMutation,
   });
 
-  const { trigger: addToEarlyAccess } = useMutation({
-    mutation: addToEarlyAccessMutation,
-  });
-
-  const { trigger: removeEarlyAccess } = useMutation({
-    mutation: removeEarlyAccessMutation,
-  });
-
-  const { trigger: addToAdmin } = useMutation({
-    mutation: addToAdminMutation,
-  });
-
-  const { trigger: removeAdmin } = useMutation({
-    mutation: removeAdminMutation,
+  const { trigger: updateAccountFeatures } = useMutation({
+    mutation: updateAccountFeaturesMutation,
   });
 
   const revalidate = useMutateQueryResource();
 
-  const updateFeatures = useCallback(
-    ({ email, features }: { email: string; features: FeatureType[] }) => {
-      const shoutAddToAdmin = features.includes(FeatureType.Admin);
-      const shoutAddToAIEarlyAccess = features.includes(
-        FeatureType.AIEarlyAccess
-      );
-
-      return Promise.all([
-        shoutAddToAdmin ? addToAdmin({ email }) : removeAdmin({ email }),
-        shoutAddToAIEarlyAccess
-          ? addToEarlyAccess({ email, type: EarlyAccessType.AI })
-          : removeEarlyAccess({ email, type: EarlyAccessType.AI }),
-      ]);
-    },
-    [addToAdmin, addToEarlyAccess, removeAdmin, removeEarlyAccess]
-  );
-
   const update = useAsyncCallback(
-    async ({ userId, name, email, features, callback }: UpdateUserProps) => {
-      updateAccount({
-        id: userId,
-        input: {
-          name,
-          email,
-        },
-      })
-        .then(async () => {
-          await updateFeatures({ email, features });
-          await revalidate(listUsersQuery);
-          toast('Account updated successfully');
-          callback?.();
-        })
-        .catch(e => {
-          toast.error('Failed to update account: ' + e.message);
+    async ({
+      userId,
+      name,
+      email,
+      features,
+    }: UserInput & { userId: string }) => {
+      try {
+        await updateAccount({
+          id: userId,
+          input: {
+            name,
+            email,
+          },
         });
+        await updateAccountFeatures({
+          userId,
+          features,
+        });
+        await revalidate(listUsersQuery);
+        toast('Account updated successfully');
+      } catch (e) {
+        toast.error('Failed to update account: ' + (e as Error).message);
+      }
     },
-    [revalidate, updateAccount, updateFeatures]
+    [revalidate, updateAccount]
   );
 
-  return update;
+  return { updating: updating || !!error, update };
 };
 
 export const useResetUserPassword = () => {
@@ -216,21 +158,4 @@ export const useDeleteUser = () => {
   );
 
   return deleteById;
-};
-
-export const useUserManagement = () => {
-  const createUser = useCreateUser();
-  const updateUser = useUpdateUser();
-  const deleteUser = useDeleteUser();
-  const { resetPasswordLink, onResetPassword } = useResetUserPassword();
-
-  return useMemo(() => {
-    return {
-      createUser,
-      updateUser,
-      deleteUser,
-      resetPasswordLink,
-      onResetPassword,
-    };
-  }, [createUser, deleteUser, onResetPassword, resetPasswordLink, updateUser]);
 };
