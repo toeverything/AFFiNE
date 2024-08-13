@@ -35,7 +35,8 @@ export class Lock {
     this.release = release;
   }
 
-  [Symbol.dispose]() {
+  [Symbol.asyncDispose]() {
     this.release();
+    return Promise.resolve();
   }
 }

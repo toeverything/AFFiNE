@@ -249,6 +249,7 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
             id: guid,
             seq,
             blob: update,
+            createdAt: new Date(),
           },
         });
 
@@ -718,6 +719,10 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
           },
         },
       });
+
+      if (!seq) {
+        return batch;
+      }
 
       // reset
       if (seq >= MAX_SEQ_NUM) {
