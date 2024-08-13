@@ -55,6 +55,10 @@ export const router = _createBrowserRouter(
           path: '/admin/setup',
           lazy: () => import('./modules/setup'),
         },
+        {
+          path: '/admin/config',
+          lazy: () => import('./modules/config'),
+        },
       ],
     },
   ],
