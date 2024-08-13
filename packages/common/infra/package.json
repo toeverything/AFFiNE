@@ -42,7 +42,7 @@
     "react": "^18.2.0",
     "rxjs": "^7.8.1",
     "vite": "^5.2.8",
-    "vite-plugin-dts": "3.9.1",
+    "vite-plugin-dts": "4.0.2",
     "vitest": "1.6.0"
   },
   "peerDependencies": {
