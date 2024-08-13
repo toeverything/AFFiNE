@@ -70,10 +70,7 @@ export const Component = () => {
                 : !!subscriptionService.subscription.pro$.value;
           if (!subscribed) {
             setMessage('Creating checkout...');
-            track.subscriptionLanding.$.$.checkout({
-              plan: receivedPlan,
-              recurring: receivedRecurring,
-            });
+
             try {
               const account = authService.session.account$.value;
               // should never reach
@@ -88,6 +85,13 @@ export const Component = () => {
                   : receivedRecurring === 'yearly'
                     ? SubscriptionRecurring.Yearly
                     : SubscriptionRecurring.Lifetime;
+
+              track.subscriptionLanding.$.$.checkout({
+                control: 'pricing',
+                plan: targetPlan,
+                recurring: targetRecurring,
+              });
+
               const checkout = await subscriptionService.createCheckoutSession({
                 idempotencyKey,
                 plan: targetPlan,

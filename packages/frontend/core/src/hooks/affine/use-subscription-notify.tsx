@@ -129,7 +129,7 @@ export const useSubscriptionNotifyReader = () => {
       upgradeNotify(link);
       localStorage.removeItem(localStorageKey);
 
-      track.$.$.$.checkout({
+      track.$.settingsPanel.plans.subscribe({
         plan,
         recurring,
       });

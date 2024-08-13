@@ -96,6 +96,7 @@ type PaymentEvents =
   | 'viewPlans'
   | 'bookDemo'
   | 'checkout'
+  | 'subscribe'
   | 'changeSubscriptionRecurring'
   | 'confirmChangingSubscriptionRecurring'
   | 'cancelSubscription'
@@ -155,6 +156,7 @@ const PageEvents = {
       accountSettings: ['uploadAvatar', 'removeAvatar', 'updateUserName'],
       plans: [
         'checkout',
+        'subscribe',
         'changeSubscriptionRecurring',
         'confirmChangingSubscriptionRecurring',
         'cancelSubscription',
@@ -346,6 +348,7 @@ export type EventArgs = {
   oauth: { provider: string };
   viewPlans: PaymentEventArgs;
   checkout: PaymentEventArgs;
+  subscribe: PaymentEventArgs;
   cancelSubscription: PaymentEventArgs;
   confirmCancelingSubscription: PaymentEventArgs;
   resumeSubscription: PaymentEventArgs;
