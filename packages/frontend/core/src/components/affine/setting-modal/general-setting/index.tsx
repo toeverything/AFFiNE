@@ -40,9 +40,6 @@ export const useGeneralSettingList = (): GeneralSettingList => {
   const hasPaymentFeature = useLiveData(
     serverConfigService.serverConfig.features$.map(f => f?.payment)
   );
-  const isEarlyAccess = useLiveData(
-    userFeatureService.userFeature.isEarlyAccess$
-  );
 
   useEffect(() => {
     userFeatureService.userFeature.revalidate();
@@ -86,7 +83,7 @@ export const useGeneralSettingList = (): GeneralSettingList => {
     }
   }
 
-  if (isEarlyAccess || runtimeConfig.enableExperimentalFeature) {
+  if (runtimeConfig.enableExperimentalFeature) {
     settings.push({
       key: 'experimental-features',
       title: t['com.affine.settings.workspace.experimental-features'](),

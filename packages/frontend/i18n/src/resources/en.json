@@ -1247,6 +1247,7 @@
   "com.affine.settings.workspace.experimental-features": "Experimental features",
   "com.affine.settings.workspace.experimental-features.get-started": "Get started",
   "com.affine.settings.workspace.experimental-features.header.plugins": "Experimental features",
+  "com.affine.settings.workspace.experimental-features.header.subtitle": "You can customize your workspace here.",
   "com.affine.settings.workspace.experimental-features.prompt-disclaimer": "I am aware of the risks, and I am willing to continue to use it.",
   "com.affine.settings.workspace.experimental-features.prompt-header": "Do you want to use the plugin system that is in an experimental stage?",
   "com.affine.settings.workspace.experimental-features.prompt-warning": "You are about to enable an experimental feature. This feature is still in development and may contain errors or behave unpredictably. Please proceed with caution and at your own risk.",

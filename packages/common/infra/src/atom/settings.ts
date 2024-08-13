@@ -91,11 +91,14 @@ export function setupEditorFlags(docCollection: DocCollection) {
 
       // override this flag in app settings
       // TODO(@eyhn): need a better way to manage block suite flags
-      docCollection.awarenessStore.setFlag('enable_synced_doc_block', true);
-      docCollection.awarenessStore.setFlag('enable_edgeless_text', true);
-      docCollection.awarenessStore.setFlag('enable_color_picker', true);
-      docCollection.awarenessStore.setFlag('enable_ai_chat_block', true);
-      docCollection.awarenessStore.setFlag('enable_ai_onboarding', true);
+      Object.entries(blocksuiteFeatureFlags).forEach(([key, value]) => {
+        if (value.defaultState !== undefined) {
+          docCollection.awarenessStore.setFlag(
+            key as keyof BlockSuiteFlags,
+            value.defaultState
+          );
+        }
+      });
     } catch (err) {
       logger.error('syncEditorFlags', err);
     }
@@ -140,3 +143,89 @@ export const appSettingAtom = atom<
     });
   }
 );
+
+export type BuildChannel = 'stable' | 'beta' | 'canary' | 'internal';
+
+export type FeedbackType = 'discord' | 'email' | 'github';
+
+export type PreconditionType = () => boolean | undefined;
+
+export type Flag<K extends string> = Partial<{
+  [key in K]: {
+    displayName: string;
+    description?: string;
+    precondition?: PreconditionType;
+    defaultState?: boolean; // default to open and not controlled by user
+    feedbackType?: FeedbackType;
+  };
+}>;
+
+const isNotStableBuild: PreconditionType = () => {
+  return runtimeConfig.appBuildType !== 'stable';
+};
+const isDesktopEnvironment: PreconditionType = () => environment.isDesktop;
+const neverShow: PreconditionType = () => false;
+
+export const blocksuiteFeatureFlags: Flag<keyof BlockSuiteFlags> = {
+  enable_database_attachment_note: {
+    displayName: 'Database Attachment Note',
+    description: 'Allows adding notes to database attachments.',
+    precondition: isNotStableBuild,
+  },
+  enable_database_statistics: {
+    displayName: 'Database Block Statistics',
+    description: 'Shows statistics for database blocks.',
+    precondition: isNotStableBuild,
+  },
+  enable_block_query: {
+    displayName: 'Todo Block Query',
+    description: 'Enables querying of todo blocks.',
+    precondition: isNotStableBuild,
+  },
+  enable_synced_doc_block: {
+    displayName: 'Synced Doc Block',
+    description: 'Enables syncing of doc blocks.',
+    precondition: neverShow,
+    defaultState: true,
+  },
+  enable_edgeless_text: {
+    displayName: 'Edgeless Text',
+    description: 'Enables edgeless text blocks.',
+    precondition: neverShow,
+    defaultState: true,
+  },
+  enable_color_picker: {
+    displayName: 'Color Picker',
+    description: 'Enables color picker blocks.',
+    precondition: neverShow,
+    defaultState: true,
+  },
+  enable_ai_chat_block: {
+    displayName: 'AI Chat Block',
+    description: 'Enables AI chat blocks.',
+    precondition: neverShow,
+    defaultState: true,
+  },
+  enable_ai_onboarding: {
+    displayName: 'AI Onboarding',
+    description: 'Enables AI onboarding.',
+    precondition: neverShow,
+    defaultState: true,
+  },
+  enable_expand_database_block: {
+    displayName: 'Expand Database Block',
+    description: 'Enables expanding of database blocks.',
+    precondition: neverShow,
+    defaultState: true,
+  },
+};
+
+export const affineFeatureFlags: Flag<keyof AppSetting> = {
+  enableMultiView: {
+    displayName: 'Split View',
+    description:
+      'The Split View feature in AFFiNE allows users to divide their workspace into multiple sections, enabling simultaneous viewing and editing of different documents.The Split View feature in AFFiNE allows users to divide their workspace into multiple sections, enabling simultaneous viewing and editing of different documents.',
+    feedbackType: 'discord',
+    precondition: isDesktopEnvironment,
+  },
+};
