@@ -690,7 +690,7 @@ __metadata:
     vite-plugin-static-copy: "npm:^1.0.2"
     vitest: "npm:1.6.0"
     vitest-fetch-mock: "npm:^0.3.0"
-    vitest-mock-extended: "npm:^1.3.1"
+    vitest-mock-extended: "npm:^2.0.0"
   languageName: unknown
   linkType: soft
 
@@ -38209,15 +38209,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"vitest-mock-extended@npm:^1.3.1":
-  version: 1.3.2
-  resolution: "vitest-mock-extended@npm:1.3.2"
+"vitest-mock-extended@npm:^2.0.0":
+  version: 2.0.0
+  resolution: "vitest-mock-extended@npm:2.0.0"
   dependencies:
     ts-essentials: "npm:>=10.0.0"
   peerDependencies:
     typescript: 3.x || 4.x || 5.x
     vitest: ">=2.0.0"
-  checksum: 10/7940a9ebedd8c65ae2e9512b03b9b7ffeaf301fbd1ee76b9c9a70eb853a314ead72389f1338674603c618a32d7b6f35b2696ce83faf1ae55e5fedffa2c707c84
+  checksum: 10/3940253d07e85c52edca9cfd4f662245247a8c4e5d3aeee1998144a9d8983bc6996181e57a7ffed4d928cb3d28d460dceeb92a6c2cc7814600ae40cd39d094ab
   languageName: node
   linkType: hard
 
