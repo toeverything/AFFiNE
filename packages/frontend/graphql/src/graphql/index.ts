@@ -121,10 +121,8 @@ export const changePasswordMutation = {
   definitionName: 'changePassword',
   containsFile: false,
   query: `
-mutation changePassword($token: String!, $newPassword: String!) {
-  changePassword(token: $token, newPassword: $newPassword) {
-    id
-  }
+mutation changePassword($token: String!, $userId: String!, $newPassword: String!) {
+  changePassword(token: $token, userId: $userId, newPassword: $newPassword)
 }`,
 };
 

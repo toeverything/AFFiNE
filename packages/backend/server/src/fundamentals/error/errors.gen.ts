@@ -137,6 +137,12 @@ export class InvalidEmailToken extends UserFriendlyError {
   }
 }
 
+export class LinkExpired extends UserFriendlyError {
+  constructor(message?: string) {
+    super('bad_request', 'link_expired', message);
+  }
+}
+
 export class AuthenticationRequired extends UserFriendlyError {
   constructor(message?: string) {
     super('authentication_required', 'authentication_required', message);
@@ -520,6 +526,7 @@ export enum ErrorNames {
   SIGN_UP_FORBIDDEN,
   EMAIL_TOKEN_NOT_FOUND,
   INVALID_EMAIL_TOKEN,
+  LINK_EXPIRED,
   AUTHENTICATION_REQUIRED,
   ACTION_FORBIDDEN,
   ACCESS_DENIED,

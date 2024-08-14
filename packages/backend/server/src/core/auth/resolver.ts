@@ -16,6 +16,7 @@ import {
   EmailTokenNotFound,
   EmailVerificationRequired,
   InvalidEmailToken,
+  LinkExpired,
   SameEmailProvided,
   SkipThrottle,
   Throttle,
@@ -89,12 +90,17 @@ export class AuthResolver {
     };
   }
 
-  @Mutation(() => UserType)
+  @Public()
+  @Mutation(() => Boolean)
   async changePassword(
-    @CurrentUser() user: CurrentUser,
     @Args('token') token: string,
-    @Args('newPassword') newPassword: string
+    @Args('newPassword') newPassword: string,
+    @Args('userId', { type: () => String, nullable: true }) userId?: string
   ) {
+    if (!userId) {
+      throw new LinkExpired();
+    }
+
     const config = await this.config.runtime.fetchAll({
       'auth/password.max': true,
       'auth/password.min': true,
@@ -108,7 +114,7 @@ export class AuthResolver {
       TokenType.ChangePassword,
       token,
       {
-        credential: user.id,
+        credential: userId,
       }
     );
 
@@ -116,10 +122,10 @@ export class AuthResolver {
       throw new InvalidEmailToken();
     }
 
-    await this.auth.changePassword(user.id, newPassword);
-    await this.auth.revokeUserSessions(user.id);
+    await this.auth.changePassword(userId, newPassword);
+    await this.auth.revokeUserSessions(userId);
 
-    return user;
+    return true;
   }
 
   @Mutation(() => UserType)
@@ -163,7 +169,7 @@ export class AuthResolver {
       user.id
     );
 
-    const url = this.url.link(callbackUrl, { token });
+    const url = this.url.link(callbackUrl, { userId: user.id, token });
 
     const res = await this.auth.sendChangePasswordEmail(user.email, url);
 
@@ -176,19 +182,7 @@ export class AuthResolver {
     @Args('callbackUrl') callbackUrl: string,
     @Args('email', { nullable: true }) _email?: string
   ) {
-    if (!user.emailVerified) {
-      throw new EmailVerificationRequired();
-    }
-
-    const token = await this.token.createToken(
-      TokenType.ChangePassword,
-      user.id
-    );
-
-    const url = this.url.link(callbackUrl, { token });
-
-    const res = await this.auth.sendSetPasswordEmail(user.email, url);
-    return !res.rejected.length;
+    return this.sendChangePasswordEmail(user, callbackUrl);
   }
 
   // The change email step is:
@@ -305,6 +299,7 @@ export class AuthResolver {
       TokenType.ChangePassword,
       userId
     );
-    return this.url.link(callbackUrl, { token });
+
+    return this.url.link(callbackUrl, { userId, token });
   }
 }

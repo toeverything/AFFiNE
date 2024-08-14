@@ -306,6 +306,7 @@ export enum ErrorNames {
   INVALID_OAUTH_CALLBACK_STATE = 'INVALID_OAUTH_CALLBACK_STATE',
   INVALID_PASSWORD_LENGTH = 'INVALID_PASSWORD_LENGTH',
   INVALID_RUNTIME_CONFIG_TYPE = 'INVALID_RUNTIME_CONFIG_TYPE',
+  LINK_EXPIRED = 'LINK_EXPIRED',
   MAILER_SERVICE_IS_NOT_CONFIGURED = 'MAILER_SERVICE_IS_NOT_CONFIGURED',
   MEMBER_QUOTA_EXCEEDED = 'MEMBER_QUOTA_EXCEEDED',
   MISSING_OAUTH_QUERY_PARAMETER = 'MISSING_OAUTH_QUERY_PARAMETER',
@@ -467,7 +468,7 @@ export interface Mutation {
   addWorkspaceFeature: Scalars['Int']['output'];
   cancelSubscription: UserSubscription;
   changeEmail: UserType;
-  changePassword: UserType;
+  changePassword: Scalars['Boolean']['output'];
   /** Cleanup sessions */
   cleanupCopilotSession: Array<Scalars['String']['output']>;
   /** Create change password url */
@@ -557,6 +558,7 @@ export interface MutationChangeEmailArgs {
 export interface MutationChangePasswordArgs {
   newPassword: Scalars['String']['input'];
   token: Scalars['String']['input'];
+  userId: InputMaybe<Scalars['String']['input']>;
 }
 
 export interface MutationCleanupCopilotSessionArgs {
@@ -1321,12 +1323,13 @@ export type CreateChangePasswordUrlMutation = {
 
 export type ChangePasswordMutationVariables = Exact<{
   token: Scalars['String']['input'];
+  userId: Scalars['String']['input'];
   newPassword: Scalars['String']['input'];
 }>;
 
 export type ChangePasswordMutation = {
   __typename?: 'Mutation';
-  changePassword: { __typename?: 'UserType'; id: string };
+  changePassword: boolean;
 };
 
 export type CopilotQuotaQueryVariables = Exact<{ [key: string]: never }>;

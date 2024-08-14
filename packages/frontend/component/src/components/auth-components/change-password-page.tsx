@@ -7,19 +7,12 @@ import { Button } from '../../ui/button';
 import { notify } from '../../ui/notification';
 import { AuthPageContainer } from './auth-page-container';
 import { SetPassword } from './set-password';
-import type { User } from './type';
 
 export const ChangePasswordPage: FC<{
-  user: User;
   passwordLimits: PasswordLimitsFragment;
   onSetPassword: (password: string) => Promise<void>;
   onOpenAffine: () => void;
-}> = ({
-  user: { email },
-  passwordLimits,
-  onSetPassword: propsOnSetPassword,
-  onOpenAffine,
-}) => {
+}> = ({ passwordLimits, onSetPassword: propsOnSetPassword, onOpenAffine }) => {
   const t = useI18n();
   const [hasSetUp, setHasSetUp] = useState(false);
 
@@ -45,17 +38,12 @@ export const ChangePasswordPage: FC<{
           : t['com.affine.auth.reset.password.page.title']()
       }
       subtitle={
-        hasSetUp ? (
-          t['com.affine.auth.sent.reset.password.success.message']()
-        ) : (
-          <>
-            {t['com.affine.auth.page.sent.email.subtitle']({
+        hasSetUp
+          ? t['com.affine.auth.sent.reset.password.success.message']()
+          : t['com.affine.auth.page.sent.email.subtitle']({
               min: String(passwordLimits.minLength),
               max: String(passwordLimits.maxLength),
-            })}
-            <a href={`mailto:${email}`}>{email}</a>
-          </>
-        )
+            })
       }
     >
       {hasSetUp ? (

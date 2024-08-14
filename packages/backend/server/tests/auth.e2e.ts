@@ -132,13 +132,14 @@ test('set and change password', async t => {
     );
 
     const newPassword = randomBytes(16).toString('hex');
-    const userId = await changePassword(
+    const success = await changePassword(
       app,
-      u1.token.token,
+      u1.id,
       setPasswordToken as string,
       newPassword
     );
-    t.is(u1.id, userId, 'failed to set password');
+
+    t.true(success, 'failed to change password');
 
     const ret = auth.signIn(u1Email, newPassword);
     t.notThrowsAsync(ret, 'failed to check password');
@@ -201,7 +202,7 @@ test('should revoke token after change user identify', async t => {
       await sendSetPasswordEmail(app, u3.token.token, u3Email, 'affine.pro');
       const token = await getTokenFromLatestMailMessage();
       const newPassword = randomBytes(16).toString('hex');
-      await changePassword(app, u3.token.token, token as string, newPassword);
+      await changePassword(app, u3.id, token as string, newPassword);
 
       const user = await currentUser(app, u3.token.token);
       t.is(user, null, 'token should be revoked');

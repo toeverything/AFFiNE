@@ -279,6 +279,10 @@ export const USER_FRIENDLY_ERRORS = {
     type: 'invalid_input',
     message: 'An invalid email token provided.',
   },
+  link_expired: {
+    type: 'bad_request',
+    message: 'The link has expired.',
+  },
 
   // Authentication & Permission Errors
   authentication_required: {

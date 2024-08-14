@@ -17,8 +17,7 @@ import {
 } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
 import { useLiveData, useService } from '@toeverything/infra';
-import type { ReactElement } from 'react';
-import { useCallback, useEffect } from 'react';
+import { useCallback } from 'react';
 import type { LoaderFunction } from 'react-router-dom';
 import { redirect, useParams, useSearchParams } from 'react-router-dom';
 import { z } from 'zod';
@@ -39,7 +38,7 @@ const authTypeSchema = z.enum([
   'verify-email',
 ]);
 
-export const AuthPage = (): ReactElement | null => {
+export const Component = () => {
   const authService = useService(AuthService);
   const account = useLiveData(authService.session.account$);
   const t = useI18n();
@@ -89,6 +88,7 @@ export const AuthPage = (): ReactElement | null => {
     async (password: string) => {
       await changePassword({
         token: searchParams.get('token') || '',
+        userId: searchParams.get('userId') || '',
         newPassword: password,
       });
     },
@@ -98,22 +98,26 @@ export const AuthPage = (): ReactElement | null => {
     jumpToIndex(RouteLogic.REPLACE);
   }, [jumpToIndex]);
 
-  if (!passwordLimits || !account) {
+  if (!passwordLimits) {
     // TODO(@eyhn): loading UI
     return null;
   }
 
   switch (authType) {
     case 'onboarding':
-      return <OnboardingPage user={account} onOpenAffine={onOpenAffine} />;
+      return (
+        account && <OnboardingPage user={account} onOpenAffine={onOpenAffine} />
+      );
     case 'signUp': {
       return (
-        <SignUpPage
-          user={account}
-          passwordLimits={passwordLimits}
-          onSetPassword={onSetPassword}
-          onOpenAffine={onOpenAffine}
-        />
+        account && (
+          <SignUpPage
+            user={account}
+            passwordLimits={passwordLimits}
+            onSetPassword={onSetPassword}
+            onOpenAffine={onOpenAffine}
+          />
+        )
       );
     }
     case 'signIn': {
@@ -122,7 +126,6 @@ export const AuthPage = (): ReactElement | null => {
     case 'changePassword': {
       return (
         <ChangePasswordPage
-          user={account}
           passwordLimits={passwordLimits}
           onSetPassword={onSetPassword}
           onOpenAffine={onOpenAffine}
@@ -132,7 +135,6 @@ export const AuthPage = (): ReactElement | null => {
     case 'setPassword': {
       return (
         <SetPasswordPage
-          user={account}
           passwordLimits={passwordLimits}
           onSetPassword={onSetPassword}
           onOpenAffine={onOpenAffine}
@@ -196,27 +198,5 @@ export const loader: LoaderFunction = async args => {
       return redirect('/expired');
     }
   }
-  return null;
-};
-
-export const Component = () => {
-  const authService = useService(AuthService);
-  const isRevalidating = useLiveData(authService.session.isRevalidating$);
-  const loginStatus = useLiveData(authService.session.status$);
-  const { jumpToExpired } = useNavigateHelper();
-
-  useEffect(() => {
-    authService.session.revalidate();
-  }, [authService]);
-
-  if (loginStatus === 'unauthenticated' && !isRevalidating) {
-    jumpToExpired(RouteLogic.REPLACE);
-  }
-
-  if (loginStatus === 'authenticated') {
-    return <AuthPage />;
-  }
-
-  // TODO(@eyhn): loading UI
   return null;
 };

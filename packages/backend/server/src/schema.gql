@@ -235,6 +235,7 @@ enum ErrorNames {
   INVALID_OAUTH_CALLBACK_STATE
   INVALID_PASSWORD_LENGTH
   INVALID_RUNTIME_CONFIG_TYPE
+  LINK_EXPIRED
   MAILER_SERVICE_IS_NOT_CONFIGURED
   MEMBER_QUOTA_EXCEEDED
   MISSING_OAUTH_QUERY_PARAMETER
@@ -409,7 +410,7 @@ type Mutation {
   addWorkspaceFeature(feature: FeatureType!, workspaceId: String!): Int!
   cancelSubscription(idempotencyKey: String!, plan: SubscriptionPlan = Pro): UserSubscription!
   changeEmail(email: String!, token: String!): UserType!
-  changePassword(newPassword: String!, token: String!): UserType!
+  changePassword(newPassword: String!, token: String!, userId: String): Boolean!
 
   """Cleanup sessions"""
   cleanupCopilotSession(options: DeleteSessionInput!): [String!]!
