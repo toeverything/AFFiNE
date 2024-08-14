@@ -48,7 +48,7 @@ function RootRoutes() {
   const config = useServerConfig();
   const location = useLocation();
 
-  if (!config.initialized) {
+  if (!config.initialized && location.pathname !== '/admin/setup') {
     return <Navigate to="/admin/setup" />;
   }
 

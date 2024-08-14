@@ -9,7 +9,7 @@ import {
   ResolveField,
   Resolver,
 } from '@nestjs/graphql';
-import { PrismaClient, RuntimeConfig, RuntimeConfigType } from '@prisma/client';
+import { RuntimeConfig, RuntimeConfigType } from '@prisma/client';
 import { GraphQLJSON, GraphQLJSONObject } from 'graphql-scalars';
 
 import { Config, URLHelper } from '../../fundamentals';
@@ -19,6 +19,7 @@ import { FeatureType } from '../features';
 import { AvailableUserFeatureConfig } from '../features/resolver';
 import { ServerFlags } from './config';
 import { ENABLED_FEATURES } from './server-feature';
+import { ServerService } from './service';
 import { ServerConfigType } from './types';
 
 @ObjectType()
@@ -76,7 +77,7 @@ export class ServerConfigResolver {
   constructor(
     private readonly config: Config,
     private readonly url: URLHelper,
-    private readonly db: PrismaClient
+    private readonly server: ServerService
   ) {}
 
   @Public()
@@ -131,7 +132,7 @@ export class ServerConfigResolver {
     description: 'whether server has been initialized',
   })
   async initialized() {
-    return (await this.db.user.count()) > 0;
+    return this.server.initialized();
   }
 }
 
