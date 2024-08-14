@@ -3,13 +3,8 @@ import { useQuery } from '@affine/core/hooks/use-query';
 import { listUsersQuery } from '@affine/graphql';
 import { useState } from 'react';
 
-import { Layout } from '../layout';
 import { columns } from './components/columns';
 import { DataTable } from './components/data-table';
-
-export function Accounts() {
-  return <Layout content={<AccountPage />} />;
-}
 
 export function AccountPage() {
   const [pagination, setPagination] = useState({
@@ -45,4 +40,4 @@ export function AccountPage() {
     </div>
   );
 }
-export { Accounts as Component };
+export { AccountPage as Component };

@@ -6,7 +6,6 @@ import { CheckIcon } from 'lucide-react';
 import type { Dispatch, SetStateAction } from 'react';
 import { useCallback, useMemo, useState } from 'react';
 
-import { Layout } from '../layout';
 import { useNav } from '../nav/context';
 import { ConfirmChanges } from './confirm-changes';
 import { RuntimeSettingRow } from './runtime-setting-row';
@@ -24,10 +23,6 @@ export type ModifiedValues = {
   expiredValue: any;
   newValue: any;
 };
-
-export function Settings() {
-  return <Layout content={<SettingsPage />} />;
-}
 
 export function SettingsPage() {
   const { trigger } = useUpdateServerRuntimeConfigs();
@@ -190,4 +185,4 @@ export const AdminPanel = ({
   );
 };
 
-export { Settings as Component };
+export { SettingsPage as Component };

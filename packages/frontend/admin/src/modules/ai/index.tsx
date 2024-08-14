@@ -8,7 +8,7 @@ export function Ai() {
   return null;
 
   // hide ai config in admin until it's ready
-  // return <Layout content={<AiPage />} />;
+  // return <AiPage />;
 }
 
 export function AiPage() {

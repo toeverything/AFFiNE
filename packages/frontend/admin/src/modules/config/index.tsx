@@ -9,7 +9,6 @@ import { Separator } from '@affine/admin/components/ui/separator';
 import { useQueryImmutable } from '@affine/core/hooks/use-query';
 import { getServerServiceConfigsQuery } from '@affine/graphql';
 
-import { Layout } from '../layout';
 import { AboutAFFiNE } from './about';
 
 type ServerConfig = {
@@ -37,10 +36,6 @@ type ServerServiceConfig = {
   name: string;
   config: ServerConfig | MailerConfig | DatabaseConfig;
 };
-
-export function Config() {
-  return <Layout content={<ConfigPage />} />;
-}
 
 export function ConfigPage() {
   return (
@@ -218,4 +213,4 @@ export function ServerServiceConfig() {
   );
 }
 
-export { Config as Component };
+export { ConfigPage as Component };

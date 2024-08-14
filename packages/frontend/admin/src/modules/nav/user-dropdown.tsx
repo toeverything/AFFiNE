@@ -12,48 +12,26 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@affine/admin/components/ui/dropdown-menu';
-import { FeatureType } from '@affine/graphql';
 import { CircleUser, MoreVertical } from 'lucide-react';
-import { useCallback, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useCallback } from 'react';
 import { toast } from 'sonner';
 
-import { useCurrentUser, useServerConfig } from '../common';
+import { useCurrentUser, useRevalidateCurrentUser } from '../common';
 
 export function UserDropdown() {
   const currentUser = useCurrentUser();
-  const serverConfig = useServerConfig();
-
-  const navigate = useNavigate();
+  const relative = useRevalidateCurrentUser();
 
   const handleLogout = useCallback(() => {
-    fetch('/api/auth/sign-out', {
-      method: 'POST',
-    })
+    fetch('/api/auth/sign-out')
       .then(() => {
         toast.success('Logged out successfully');
-        navigate('/admin/auth');
+        relative();
       })
       .catch(err => {
         toast.error(`Failed to logout: ${err.message}`);
       });
-  }, [navigate]);
-
-  useEffect(() => {
-    if (serverConfig.initialized === false) {
-      navigate('/admin/setup');
-      return;
-    }
-    if (!currentUser) {
-      navigate('/admin/auth');
-      return;
-    }
-    if (!currentUser?.features.includes?.(FeatureType.Admin)) {
-      toast.error('You are not an admin, please login the admin account.');
-      navigate('/admin/auth');
-      return;
-    }
-  }, [currentUser, navigate, serverConfig.initialized]);
+  }, [relative]);
 
   return (
     <div className="flex flex-none items-center justify-between px-4 py-3 flex-nowrap">
