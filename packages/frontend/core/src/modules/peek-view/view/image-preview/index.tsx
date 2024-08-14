@@ -33,7 +33,7 @@ import { ErrorBoundary } from 'react-error-boundary';
 import useSWR from 'swr';
 
 import { PeekViewService } from '../../services/peek-view';
-import { useDoc } from '../utils';
+import { useEditor } from '../utils';
 import { useZoomControls } from './hooks/use-zoom';
 import * as styles from './index.css';
 
@@ -108,7 +108,7 @@ const ImagePreviewModalImpl = ({
   onBlockIdChange: (blockId: string) => void;
   onClose: () => void;
 }): ReactElement | null => {
-  const { doc, workspace } = useDoc(docId);
+  const { doc, workspace } = useEditor(docId);
   const blocksuiteDoc = doc?.blockSuiteDoc;
   const docCollection = workspace.docCollection;
   const blockModel = useMemo(() => {

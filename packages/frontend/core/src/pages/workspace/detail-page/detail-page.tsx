@@ -6,6 +6,8 @@ import { PageAIOnboarding } from '@affine/core/components/affine/ai-onboarding';
 import { EditorOutlineViewer } from '@affine/core/components/blocksuite/outline-viewer';
 import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
 import { useDocMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
+import type { Editor } from '@affine/core/modules/editor';
+import { EditorService, EditorsService } from '@affine/core/modules/editor';
 import { RecentDocsService } from '@affine/core/modules/quicksearch';
 import { ViewService } from '@affine/core/modules/workbench/services/view';
 import type { PageRootService } from '@blocksuite/blocks';
@@ -30,6 +32,7 @@ import {
   GlobalContextService,
   useLiveData,
   useService,
+  useServices,
   WorkspaceService,
 } from '@toeverything/infra';
 import clsx from 'clsx';
@@ -71,18 +74,37 @@ import { EditorJournalPanel } from './tabs/journal';
 import { EditorOutlinePanel } from './tabs/outline';
 
 const DetailPageImpl = memo(function DetailPageImpl() {
-  const workbench = useService(WorkbenchService).workbench;
-  const view = useService(ViewService).view;
+  const {
+    workbenchService,
+    viewService,
+    editorService,
+    docService,
+    workspaceService,
+    globalContextService,
+  } = useServices({
+    WorkbenchService,
+    ViewService,
+    EditorService,
+    DocService,
+    WorkspaceService,
+    GlobalContextService,
+  });
+  const workbench = workbenchService.workbench;
+  const editor = editorService.editor;
+  const view = viewService.view;
+  const workspace = workspaceService.workspace;
+  const docCollection = workspace.docCollection;
+  const globalContext = globalContextService.globalContext;
+  const doc = docService.doc;
+
+  const mode = useLiveData(editor.mode$);
   const activeSidebarTab = useLiveData(view.activeSidebarTab$);
 
-  const doc = useService(DocService).doc;
   const isInTrash = useLiveData(doc.meta$.map(meta => meta.trash));
   const { openPage, jumpToPageBlock, jumpToTag } = useNavigateHelper();
-  const [editor, setEditor] = useState<AffineEditorContainer | null>(null);
-  const workspace = useService(WorkspaceService).workspace;
-  const globalContext = useService(GlobalContextService).globalContext;
-  const docCollection = workspace.docCollection;
-  const mode = useLiveData(doc.mode$);
+  const [editorContainer, setEditorContainer] =
+    useState<AffineEditorContainer | null>(null);
+
   const isSideBarOpen = useLiveData(workbench.sidebarOpen$);
   const { appSettings } = useAppSettingHelper();
   const chatPanelRef = useRef<ChatPanel | null>(null);
@@ -94,9 +116,9 @@ const DetailPageImpl = memo(function DetailPageImpl() {
 
   useEffect(() => {
     if (isActiveView) {
-      setActiveBlockSuiteEditor(editor);
+      setActiveBlockSuiteEditor(editorContainer);
     }
-  }, [editor, isActiveView, setActiveBlockSuiteEditor]);
+  }, [editorContainer, isActiveView, setActiveBlockSuiteEditor]);
 
   useEffect(() => {
     const disposable = AIProvider.slots.requestOpenWithChat.on(params => {
@@ -152,7 +174,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
     return;
   }, [globalContext, isActiveView, isInTrash]);
 
-  useRegisterBlocksuiteEditorCommands();
+  useRegisterBlocksuiteEditorCommands(editor);
   const title = useLiveData(doc.title$);
   usePageDocumentTitle(title);
 
@@ -218,7 +240,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
         );
       }
 
-      setEditor(editor);
+      setEditorContainer(editor);
 
       return () => {
         disposable.dispose();
@@ -236,7 +258,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
   }, [workbench, view]);
 
   return (
-    <>
+    <FrameworkScope scope={editor.scope}>
       <ViewHeader>
         <DetailPageHeader page={doc.blockSuiteDoc} workspace={workspace} />
       </ViewHeader>
@@ -271,7 +293,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
               />
             </Scrollable.Root>
             <EditorOutlineViewer
-              editor={editor}
+              editor={editorContainer}
               show={mode === 'page' && !isSideBarOpen}
               openOutlinePanel={openOutlinePanel}
             />
@@ -281,7 +303,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
       </ViewBody>
 
       <ViewSidebarTab tabId="chat" icon={<AiIcon />} unmountOnInactive={false}>
-        <EditorChatPanel editor={editor} ref={chatPanelRef} />
+        <EditorChatPanel editor={editorContainer} ref={chatPanelRef} />
       </ViewSidebarTab>
 
       <ViewSidebarTab tabId="journal" icon={<TodayIcon />}>
@@ -289,16 +311,16 @@ const DetailPageImpl = memo(function DetailPageImpl() {
       </ViewSidebarTab>
 
       <ViewSidebarTab tabId="outline" icon={<TocIcon />}>
-        <EditorOutlinePanel editor={editor} />
+        <EditorOutlinePanel editor={editorContainer} />
       </ViewSidebarTab>
 
       <ViewSidebarTab tabId="frame" icon={<FrameIcon />}>
-        <EditorFramePanel editor={editor} />
+        <EditorFramePanel editor={editorContainer} />
       </ViewSidebarTab>
 
       <GlobalPageHistoryModal />
       <PageAIOnboarding />
-    </>
+    </FrameworkScope>
   );
 });
 
@@ -310,6 +332,7 @@ export const DetailPage = ({ pageId }: { pageId: string }): ReactElement => {
   const docRecord = useLiveData(docRecordList.doc$(pageId));
 
   const [doc, setDoc] = useState<Doc | null>(null);
+  const [editor, setEditor] = useState<Editor | null>(null);
 
   useLayoutEffect(() => {
     if (!docRecord) {
@@ -321,6 +344,19 @@ export const DetailPage = ({ pageId }: { pageId: string }): ReactElement => {
       release();
     };
   }, [docRecord, docsService, pageId]);
+
+  useLayoutEffect(() => {
+    if (!doc) {
+      return;
+    }
+    const editor = doc.scope
+      .get(EditorsService)
+      .createEditor(doc.getPrimaryMode() || 'page');
+    setEditor(editor);
+    return () => {
+      editor.dispose();
+    };
+  }, [doc]);
 
   // set sync engine priority target
   useEffect(() => {
@@ -346,13 +382,15 @@ export const DetailPage = ({ pageId }: { pageId: string }): ReactElement => {
     return <PageNotFound noPermission />;
   }
 
-  if (!doc) {
+  if (!doc || !editor) {
     return <PageDetailSkeleton key="current-page-is-null" />;
   }
 
   return (
     <FrameworkScope scope={doc.scope}>
-      <DetailPageImpl />
+      <FrameworkScope scope={editor.scope}>
+        <DetailPageImpl />
+      </FrameworkScope>
     </FrameworkScope>
   );
 };

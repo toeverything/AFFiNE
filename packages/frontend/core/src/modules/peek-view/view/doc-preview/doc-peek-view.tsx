@@ -17,7 +17,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { WorkbenchService } from '../../../workbench';
 import { PeekViewService } from '../../services/peek-view';
-import { useDoc } from '../utils';
+import { useEditor } from '../utils';
 import * as styles from './doc-peek-view.css';
 
 const logger = new DebugLogger('doc-peek-view');
@@ -69,33 +69,36 @@ export function DocPeekPreview({
   mode?: DocMode;
   xywh?: `[${number},${number},${number},${number}]`;
 }) {
-  const { doc, workspace, loading } = useDoc(docId);
+  const { doc, workspace, loading } = useEditor(docId, mode);
   const { jumpToTag } = useNavigateHelper();
   const workbench = useService(WorkbenchService).workbench;
   const peekView = useService(PeekViewService).peekView;
-  const [editor, setEditor] = useState<AffineEditorContainer | null>(null);
+  const [editorElement, setEditorElement] =
+    useState<AffineEditorContainer | null>(null);
 
   const onRef = (editor: AffineEditorContainer) => {
-    setEditor(editor);
+    setEditorElement(editor);
   };
 
   const docs = useService(DocsService);
   const [resolvedMode, setResolvedMode] = useState<DocMode | undefined>(mode);
 
   useEffect(() => {
-    editor?.updateComplete
+    editorElement?.updateComplete
       .then(() => {
         if (resolvedMode === 'edgeless') {
-          fitViewport(editor, xywh);
+          fitViewport(editorElement, xywh);
         }
       })
       .catch(console.error);
     return;
-  }, [editor, resolvedMode, xywh]);
+  }, [editorElement, resolvedMode, xywh]);
 
   useEffect(() => {
     if (!mode || !resolvedMode) {
-      setResolvedMode(docs.list.doc$(docId).value?.mode$.value || 'page');
+      setResolvedMode(
+        docs.list.doc$(docId).value?.primaryMode$.value || 'page'
+      );
     }
   }, [docId, docs.list, resolvedMode, mode]);
 
@@ -115,14 +118,15 @@ export function DocPeekPreview({
 
   useEffect(() => {
     const disposableGroup = new DisposableGroup();
-    if (editor) {
-      editor.updateComplete
+    if (editorElement) {
+      editorElement.updateComplete
         .then(() => {
-          if (!editor.host) {
+          if (!editorElement.host) {
             return;
           }
 
-          const rootService = editor.host.std.spec.getService('affine:page');
+          const rootService =
+            editorElement.host.std.spec.getService('affine:page');
           // doc change event inside peek view should be handled by peek view
           disposableGroup.add(
             rootService.slots.docLinkClicked.on(({ docId, blockId }) => {
@@ -142,7 +146,7 @@ export function DocPeekPreview({
     return () => {
       disposableGroup.dispose();
     };
-  }, [editor, jumpToTag, peekView, workspace.id]);
+  }, [editorElement, jumpToTag, peekView, workspace.id]);
 
   const openOutlinePanel = useCallback(() => {
     workbench.openDoc(docId);
@@ -176,7 +180,7 @@ export function DocPeekPreview({
             />
           </FrameworkScope>
           <EditorOutlineViewer
-            editor={editor}
+            editor={editorElement}
             show={resolvedMode === 'page'}
             openOutlinePanel={openOutlinePanel}
           />

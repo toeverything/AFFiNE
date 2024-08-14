@@ -48,7 +48,7 @@ interface PageItemProps
   right?: ReactNode;
 }
 const PageItem = ({ docRecord, right, className, ...attrs }: PageItemProps) => {
-  const mode = useLiveData(docRecord.mode$);
+  const mode = useLiveData(docRecord.primaryMode$);
   const workspace = useService(WorkspaceService).workspace;
   const title = useDocCollectionPageTitle(
     workspace.docCollection,

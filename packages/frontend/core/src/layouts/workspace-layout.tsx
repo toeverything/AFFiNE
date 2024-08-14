@@ -101,7 +101,7 @@ const WorkspaceLayoutProviders = ({ children }: PropsWithChildren) => {
           timeout(10000 /* 10s */),
           mergeMap(({ mode, doc }) => {
             if (doc) {
-              docsList.setMode(doc.id, mode as DocMode);
+              docsList.setPrimaryMode(doc.id, mode as DocMode);
               workbench.openDoc(doc.id);
             }
             return EMPTY;

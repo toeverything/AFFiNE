@@ -63,13 +63,13 @@ export class CMDKQuickSearchService extends Service {
           } else if (result.source === 'creation') {
             if (result.id === 'creation:create-page') {
               const newDoc = this.docsService.createDoc({
-                mode: 'page',
+                primaryMode: 'page',
                 title: result.payload.title,
               });
               this.workbenchService.workbench.openDoc(newDoc.id);
             } else if (result.id === 'creation:create-edgeless') {
               const newDoc = this.docsService.createDoc({
-                mode: 'edgeless',
+                primaryMode: 'edgeless',
                 title: result.payload.title,
               });
               this.workbenchService.workbench.openDoc(newDoc.id);

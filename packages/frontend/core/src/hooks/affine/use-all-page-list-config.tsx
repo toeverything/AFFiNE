@@ -10,8 +10,6 @@ import type { DocMeta } from '@blocksuite/store';
 import { useLiveData, useService, WorkspaceService } from '@toeverything/infra';
 import { useCallback, useEffect, useMemo } from 'react';
 
-import { usePageHelper } from '../../components/blocksuite/block-suite-page-list/utils';
-
 /**
  * @deprecated very poor performance
  */
@@ -27,7 +25,6 @@ export const useAllPageListConfig = () => {
 
   const workspace = currentWorkspace.docCollection;
   const pageMetas = useBlockSuiteDocMeta(workspace);
-  const { isPreferredEdgeless } = usePageHelper(workspace);
   const pageMap = useMemo(
     () => Object.fromEntries(pageMetas.map(page => [page.id, page])),
     [pageMetas]
@@ -58,7 +55,6 @@ export const useAllPageListConfig = () => {
   return useMemo<AllPageListConfig>(() => {
     return {
       allPages: pageMetas,
-      isEdgeless: isPreferredEdgeless,
       getPublicMode(id) {
         const mode = shareDocs?.find(shareDoc => shareDoc.id === id)?.mode;
         if (mode === PublicPageMode.Edgeless) {
@@ -83,7 +79,6 @@ export const useAllPageListConfig = () => {
     };
   }, [
     pageMetas,
-    isPreferredEdgeless,
     currentWorkspace.docCollection,
     shareDocs,
     pageMap,

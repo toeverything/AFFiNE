@@ -2,14 +2,10 @@ import { Button, FlexWrapper, notify } from '@affine/component';
 import { openSettingModalAtom } from '@affine/core/atoms';
 import { track } from '@affine/core/mixpanel';
 import { SubscriptionService } from '@affine/core/modules/cloud';
+import { EditorService } from '@affine/core/modules/editor';
 import { useI18n } from '@affine/i18n';
 import { AiIcon } from '@blocksuite/icons/rc';
-import {
-  DocService,
-  useLiveData,
-  useServices,
-  WorkspaceService,
-} from '@toeverything/infra';
+import { useLiveData, useServices } from '@toeverything/infra';
 import { cssVar } from '@toeverything/theme';
 import { useAtomValue, useSetAtom } from 'jotai';
 import Lottie from 'lottie-react';
@@ -46,10 +42,9 @@ const EdgelessOnboardingAnimation = () => {
 };
 
 export const AIOnboardingEdgeless = () => {
-  const { docService, subscriptionService } = useServices({
-    WorkspaceService,
-    DocService,
+  const { subscriptionService, editorService } = useServices({
     SubscriptionService,
+    EditorService,
   });
 
   const t = useI18n();
@@ -61,8 +56,7 @@ export const AIOnboardingEdgeless = () => {
 
   const setSettingModal = useSetAtom(openSettingModalAtom);
 
-  const doc = docService.doc;
-  const mode = useLiveData(doc.mode$);
+  const mode = useLiveData(editorService.editor.mode$);
 
   const goToPricingPlans = useCallback(() => {
     track.$.aiOnboarding.dialog.viewPlans();

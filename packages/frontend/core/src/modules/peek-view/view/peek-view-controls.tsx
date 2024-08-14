@@ -20,7 +20,7 @@ import {
 import { WorkbenchService } from '../../workbench';
 import { PeekViewService } from '../services/peek-view';
 import * as styles from './peek-view-controls.css';
-import { useDoc } from './utils';
+import { useEditor } from './utils';
 
 type ControlButtonProps = {
   nameKey: string;
@@ -100,7 +100,7 @@ export const DocPeekViewControls = ({
   const workbench = useService(WorkbenchService).workbench;
   const { jumpToPageBlock } = useNavigateHelper();
   const t = useI18n();
-  const { doc, workspace } = useDoc(docId);
+  const { doc, workspace } = useEditor(docId);
   const controls = useMemo(() => {
     return [
       {
@@ -115,12 +115,15 @@ export const DocPeekViewControls = ({
         nameKey: 'open',
         onClick: () => {
           // TODO(@Peng): for frame blocks, we should mimic "view in edgeless" button behavior
+          if (mode) {
+            // TODO(@eyhn): change this to use mode link
+            doc?.setPrimaryMode(mode);
+          }
+
           blockId
             ? jumpToPageBlock(workspace.id, docId, blockId)
             : workbench.openDoc(docId);
-          if (mode) {
-            doc?.setMode(mode);
-          }
+
           peekView.close('none');
         },
       },

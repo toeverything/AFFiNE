@@ -1,20 +1,24 @@
-import type { Doc } from '@toeverything/infra';
+import type { Doc, DocMode } from '@toeverything/infra';
 import {
   DocsService,
   useLiveData,
   useService,
   WorkspaceService,
 } from '@toeverything/infra';
-import { useEffect, useLayoutEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
-export const useDoc = (pageId: string) => {
+import { type Editor, EditorsService } from '../../editor';
+
+export const useEditor = (pageId: string, preferMode?: DocMode) => {
   const currentWorkspace = useService(WorkspaceService).workspace;
   const docsService = useService(DocsService);
   const docRecordList = docsService.list;
   const docListReady = useLiveData(docRecordList.isReady$);
   const docRecord = docRecordList.doc$(pageId).value;
+  const preferModeRef = useRef(preferMode);
 
   const [doc, setDoc] = useState<Doc | null>(null);
+  const [editor, setEditor] = useState<Editor | null>(null);
 
   useLayoutEffect(() => {
     if (!docRecord) {
@@ -27,6 +31,19 @@ export const useDoc = (pageId: string) => {
     };
   }, [docRecord, docsService, pageId]);
 
+  useLayoutEffect(() => {
+    if (!doc) {
+      return;
+    }
+    const editor = doc.scope
+      .get(EditorsService)
+      .createEditor(preferModeRef.current || doc.primaryMode$.value);
+    setEditor(editor);
+    return () => {
+      editor.dispose();
+    };
+  }, [doc]);
+
   // set sync engine priority target
   useEffect(() => {
     currentWorkspace.engine.doc.setPriority(pageId, 10);
@@ -35,5 +52,5 @@ export const useDoc = (pageId: string) => {
     };
   }, [currentWorkspace, pageId]);
 
-  return { doc, workspace: currentWorkspace, loading: !docListReady };
+  return { doc, editor, workspace: currentWorkspace, loading: !docListReady };
 };

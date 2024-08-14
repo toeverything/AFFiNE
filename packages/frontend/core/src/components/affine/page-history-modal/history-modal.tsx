@@ -5,6 +5,7 @@ import { Modal, useConfirmModal } from '@affine/component/ui/modal';
 import { openSettingModalAtom } from '@affine/core/atoms';
 import { useDocCollectionPageTitle } from '@affine/core/hooks/use-block-suite-workspace-page-title';
 import { track } from '@affine/core/mixpanel';
+import { EditorService } from '@affine/core/modules/editor';
 import { WorkspacePermissionService } from '@affine/core/modules/permissions';
 import { WorkspaceQuotaService } from '@affine/core/modules/quota';
 import { i18nTime, Trans, useI18n } from '@affine/i18n';
@@ -14,7 +15,6 @@ import * as Collapsible from '@radix-ui/react-collapsible';
 import type { DialogContentProps } from '@radix-ui/react-dialog';
 import {
   type DocMode,
-  DocService,
   useLiveData,
   useService,
   WorkspaceService,
@@ -433,8 +433,8 @@ const PageHistoryManager = ({
     [activeVersion, onClose, onRestore, snapshotPage]
   );
 
-  const doc = useService(DocService).doc;
-  const [mode, setMode] = useState<DocMode>(doc.mode$.value);
+  const editor = useService(EditorService).editor;
+  const [mode, setMode] = useState<DocMode>(editor.mode$.value);
 
   const title = useDocCollectionPageTitle(docCollection, pageId);
 

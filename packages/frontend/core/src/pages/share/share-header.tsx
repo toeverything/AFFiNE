@@ -17,12 +17,8 @@ export function ShareHeader({
 }) {
   return (
     <div className={styles.header}>
-      <EditorModeSwitch isPublic pageId={pageId} publicMode={publishMode} />
-      <BlocksuiteHeaderTitle
-        docCollection={docCollection}
-        pageId={pageId}
-        isPublic={true}
-      />
+      <EditorModeSwitch />
+      <BlocksuiteHeaderTitle docId={pageId} />
       <div className={styles.spacer} />
       <ShareHeaderRightItem
         workspaceId={docCollection.id}

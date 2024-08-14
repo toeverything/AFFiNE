@@ -9,7 +9,6 @@ import type { DocMeta } from '@blocksuite/store';
 import { useService, WorkspaceService } from '@toeverything/infra';
 import { useCallback, useMemo, useRef, useState } from 'react';
 
-import { usePageHelper } from '../../blocksuite/block-suite-page-list/utils';
 import { ListFloatingToolbar } from '../components/list-floating-toolbar';
 import { usePageItemGroupDefinitions } from '../group-definitions';
 import { usePageHeaderColsDef } from '../header-col-def';
@@ -69,7 +68,6 @@ export const VirtualizedPageList = ({
   const currentWorkspace = useService(WorkspaceService).workspace;
   const pageMetas = useBlockSuiteDocMeta(currentWorkspace.docCollection);
   const pageOperations = usePageOperationsRenderer();
-  const { isPreferredEdgeless } = usePageHelper(currentWorkspace.docCollection);
   const pageHeaderColsDef = usePageHeaderColsDef();
 
   const filteredPageMetas = useFilteredPageMetas(pageMetas, {
@@ -162,7 +160,6 @@ export const VirtualizedPageList = ({
         onSelectedIdsChange={setSelectedPageIds}
         items={pageMetasToRender}
         rowAsLink
-        isPreferredEdgeless={isPreferredEdgeless}
         docCollection={currentWorkspace.docCollection}
         operationsRenderer={pageOperationRenderer}
         itemRenderer={pageItemRenderer}

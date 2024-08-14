@@ -1,14 +1,10 @@
 import { RadioGroup, type RadioItem, toast, Tooltip } from '@affine/component';
 import { registerAffineCommand } from '@affine/core/commands';
 import { track } from '@affine/core/mixpanel';
+import { EditorService } from '@affine/core/modules/editor';
 import { useI18n } from '@affine/i18n';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons/rc';
-import {
-  type DocMode,
-  DocsService,
-  useLiveData,
-  useService,
-} from '@toeverything/infra';
+import { type DocMode, useLiveData, useService } from '@toeverything/infra';
 import { useCallback, useEffect, useMemo } from 'react';
 
 import { switchItem } from './style.css';
@@ -33,30 +29,28 @@ const PageRadioItem: RadioItem = {
   className: switchItem,
 };
 
-export const EditorModeSwitch = ({
-  pageId,
-  isPublic,
-  publicMode,
-}: EditorModeSwitchProps) => {
+export const EditorModeSwitch = () => {
   const t = useI18n();
-  const docsService = useService(DocsService);
-  const doc = useLiveData(docsService.list.doc$(pageId));
-  const trash = useLiveData(doc?.trash$);
-  const currentMode = useLiveData(doc?.mode$);
+  const editor = useService(EditorService).editor;
+  const trash = useLiveData(editor.doc.trash$);
+  const isSharedMode = editor.isSharedMode;
+  const currentMode = useLiveData(editor.mode$);
 
   const togglePage = useCallback(() => {
-    if (currentMode === 'page' || isPublic || trash) return;
-    doc?.setMode('page');
+    if (currentMode === 'page' || isSharedMode || trash) return;
+    editor.setMode('page');
+    editor.doc.setPrimaryMode('page');
     toast(t['com.affine.toastMessage.pageMode']());
     track.$.header.actions.switchPageMode({ mode: 'page' });
-  }, [currentMode, doc, isPublic, t, trash]);
+  }, [currentMode, editor, isSharedMode, t, trash]);
 
   const toggleEdgeless = useCallback(() => {
-    if (currentMode === 'edgeless' || isPublic || trash) return;
-    doc?.setMode('edgeless');
+    if (currentMode === 'edgeless' || isSharedMode || trash) return;
+    editor.setMode('edgeless');
+    editor.doc.setPrimaryMode('edgeless');
     toast(t['com.affine.toastMessage.edgelessMode']());
     track.$.header.actions.switchPageMode({ mode: 'edgeless' });
-  }, [currentMode, doc, isPublic, t, trash]);
+  }, [currentMode, editor, isSharedMode, t, trash]);
 
   const onModeChange = useCallback(
     (mode: DocMode) => {
@@ -66,13 +60,12 @@ export const EditorModeSwitch = ({
   );
 
   const shouldHide = useCallback(
-    (mode: DocMode) =>
-      (trash && currentMode !== mode) || (isPublic && publicMode !== mode),
-    [currentMode, isPublic, publicMode, trash]
+    (mode: DocMode) => (trash || isSharedMode) && currentMode !== mode,
+    [currentMode, isSharedMode, trash]
   );
 
   useEffect(() => {
-    if (trash || isPublic || currentMode === undefined) return;
+    if (trash || isSharedMode || currentMode === undefined) return;
     return registerAffineCommand({
       id: 'affine:doc-mode-switch',
       category: 'editor:page',
@@ -87,14 +80,14 @@ export const EditorModeSwitch = ({
       },
       run: () => onModeChange(currentMode === 'edgeless' ? 'page' : 'edgeless'),
     });
-  }, [currentMode, isPublic, onModeChange, t, trash]);
+  }, [currentMode, isSharedMode, onModeChange, t, trash]);
 
   return (
     <Tooltip
       content={t['Switch']()}
       shortcut={['$alt', 'S']}
       side="bottom"
-      options={{ hidden: isPublic || trash }}
+      options={{ hidden: trash || isSharedMode }}
     >
       <div>
         <PureEditorModeSwitch
@@ -110,7 +103,7 @@ export const EditorModeSwitch = ({
 
 export interface PureEditorModeSwitchProps {
   mode?: DocMode;
-  setMode: (mode: DocMode) => void;
+  setMode?: (mode: DocMode) => void;
   hidePage?: boolean;
   hideEdgeless?: boolean;
 }

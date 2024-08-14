@@ -56,25 +56,25 @@ export const ExplorerDocNode = ({
   const [collapsed, setCollapsed] = useState(true);
 
   const docRecord = useLiveData(docsService.list.doc$(docId));
-  const docMode = useLiveData(docRecord?.mode$);
+  const docPrimaryMode = useLiveData(docRecord?.primaryMode$);
   const docTitle = useLiveData(docRecord?.title$);
   const isInTrash = useLiveData(docRecord?.trash$);
 
   const Icon = useCallback(
     ({ className }: { className?: string }) => {
       return isLinked ? (
-        docMode === 'edgeless' ? (
+        docPrimaryMode === 'edgeless' ? (
           <LinkedEdgelessIcon className={className} />
         ) : (
           <LinkedPageIcon className={className} />
         )
-      ) : docMode === 'edgeless' ? (
+      ) : docPrimaryMode === 'edgeless' ? (
         <EdgelessIcon className={className} />
       ) : (
         <PageIcon className={className} />
       );
     },
-    [docMode, isLinked]
+    [docPrimaryMode, isLinked]
   );
 
   const children = useLiveData(

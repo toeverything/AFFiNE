@@ -9,7 +9,7 @@ import {
   ToggleCollapseIcon,
 } from '@blocksuite/icons/rc';
 import type { DocMeta } from '@blocksuite/store';
-import { useLiveData, useService } from '@toeverything/infra';
+import { DocsService, useLiveData, useService } from '@toeverything/infra';
 import { cssVar } from '@toeverything/theme';
 import clsx from 'clsx';
 import type { ReactNode } from 'react';
@@ -42,6 +42,7 @@ export const RulesMode = ({
   const [showPreview, setShowPreview] = useState(true);
   const allowListPages: DocMeta[] = [];
   const rulesPages: DocMeta[] = [];
+  const docsService = useService(DocsService);
   const favAdapter = useService(CompatibleFavoriteItemsAdapter);
   const favorites = useLiveData(favAdapter.favorites$);
   allPageListConfig.allPages.forEach(meta => {
@@ -158,7 +159,8 @@ export const RulesMode = ({
                               alignItems: 'center',
                             }}
                           >
-                            {allPageListConfig.isEdgeless(id) ? (
+                            {docsService.list.getPrimaryMode(id) ===
+                            'edgeless' ? (
                               <EdgelessIcon style={{ width: 16, height: 16 }} />
                             ) : (
                               <PageIcon style={{ width: 16, height: 16 }} />
@@ -211,7 +213,6 @@ export const RulesMode = ({
               className={styles.resultPages}
               items={rulesPages}
               docCollection={allPageListConfig.docCollection}
-              isPreferredEdgeless={allPageListConfig.isEdgeless}
               operationsRenderer={operationsRenderer}
             ></List>
           ) : (
@@ -230,7 +231,6 @@ export const RulesMode = ({
                 className={styles.resultPages}
                 items={allowListPages}
                 docCollection={allPageListConfig.docCollection}
-                isPreferredEdgeless={allPageListConfig.isEdgeless}
                 operationsRenderer={operationsRenderer}
               ></List>
             </div>

@@ -7,7 +7,6 @@ import { Trans, useI18n } from '@affine/i18n';
 import { FilterIcon } from '@blocksuite/icons/rc';
 import type { DocMeta } from '@blocksuite/store';
 import {
-  DocsService,
   useLiveData,
   useServices,
   WorkspaceService,
@@ -57,17 +56,12 @@ export const SelectPage = ({
   const clearSelected = useCallback(() => {
     onChange([]);
   }, [onChange]);
-  const {
-    workspaceService,
-    compatibleFavoriteItemsAdapter,
-    shareDocsService,
-    docsService,
-  } = useServices({
-    DocsService,
-    ShareDocsService,
-    WorkspaceService,
-    CompatibleFavoriteItemsAdapter,
-  });
+  const { workspaceService, compatibleFavoriteItemsAdapter, shareDocsService } =
+    useServices({
+      ShareDocsService,
+      WorkspaceService,
+      CompatibleFavoriteItemsAdapter,
+    });
   const shareDocs = useLiveData(shareDocsService.shareDocs?.list$);
   const workspace = workspaceService.workspace;
   const docCollection = workspace.docCollection;
@@ -95,13 +89,6 @@ export const SelectPage = ({
   const isFavorite = useCallback(
     (meta: DocMeta) => favourites.some(fav => fav.id === meta.id),
     [favourites]
-  );
-
-  const isEdgeless = useCallback(
-    (id: string) => {
-      return docsService.list.doc$(id).value?.mode$.value === 'edgeless';
-    },
-    [docsService.list]
   );
 
   const onToggleFavoritePage = useCallback(
@@ -207,7 +194,6 @@ export const SelectPage = ({
             selectable
             onSelectedIdsChange={onChange}
             selectedIds={value}
-            isPreferredEdgeless={isEdgeless}
             operationsRenderer={operationsRenderer}
             itemRenderer={pageItemRenderer}
             headerRenderer={pageHeaderRenderer}

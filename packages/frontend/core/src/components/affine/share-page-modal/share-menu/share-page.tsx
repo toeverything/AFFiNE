@@ -71,7 +71,7 @@ export const AffineSharePage = (props: ShareMenuProps) => {
     isSharedPage === null || sharedMode === null || baseUrl === null;
   const [showDisable, setShowDisable] = useState(false);
 
-  const currentDocMode = useLiveData(doc.mode$);
+  const currentDocMode = useLiveData(doc.primaryMode$);
 
   const mode = useMemo(() => {
     if (isSharedPage && sharedMode) {

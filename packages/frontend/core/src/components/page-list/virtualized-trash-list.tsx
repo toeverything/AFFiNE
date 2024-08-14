@@ -6,7 +6,6 @@ import type { DocMeta } from '@blocksuite/store';
 import { useService, WorkspaceService } from '@toeverything/infra';
 import { useCallback, useMemo, useRef, useState } from 'react';
 
-import { usePageHelper } from '../blocksuite/block-suite-page-list/utils';
 import { ListFloatingToolbar } from './components/list-floating-toolbar';
 import { usePageHeaderColsDef } from './header-col-def';
 import { TrashOperationCell } from './operation-cell';
@@ -25,8 +24,6 @@ export const VirtualizedTrashList = () => {
   const filteredPageMetas = useFilteredPageMetas(pageMetas, {
     trash: true,
   });
-
-  const { isPreferredEdgeless } = usePageHelper(docCollection);
 
   const listRef = useRef<ItemListHandle>(null);
   const [showFloatingToolbar, setShowFloatingToolbar] = useState(false);
@@ -121,7 +118,6 @@ export const VirtualizedTrashList = () => {
         selectable="toggle"
         items={filteredPageMetas}
         rowAsLink
-        isPreferredEdgeless={isPreferredEdgeless}
         onSelectionActiveChange={setShowFloatingToolbar}
         docCollection={currentWorkspace.docCollection}
         operationsRenderer={pageOperationsRenderer}

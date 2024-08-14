@@ -19,6 +19,7 @@ import { useExportPage } from '@affine/core/hooks/affine/use-export-page';
 import { useTrashModalHelper } from '@affine/core/hooks/affine/use-trash-modal-helper';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { track } from '@affine/core/mixpanel';
+import { EditorService } from '@affine/core/modules/editor';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import { ViewService } from '@affine/core/modules/workbench/services/view';
 import { useDetailPageHeaderResponsive } from '@affine/core/pages/workspace/detail-page/use-header-responsive';
@@ -41,12 +42,7 @@ import {
   TocIcon,
 } from '@blocksuite/icons/rc';
 import type { Doc } from '@blocksuite/store';
-import {
-  DocService,
-  useLiveData,
-  useService,
-  WorkspaceService,
-} from '@toeverything/infra';
+import { useLiveData, useService, WorkspaceService } from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
 import { useCallback, useState } from 'react';
 
@@ -75,9 +71,11 @@ export const PageHeaderMenuButton = ({
   const workspace = useService(WorkspaceService).workspace;
   const docCollection = workspace.docCollection;
 
-  const doc = useService(DocService).doc;
-  const isInTrash = useLiveData(doc.meta$.map(m => m.trash));
-  const currentMode = useLiveData(doc.mode$);
+  const editorService = useService(EditorService);
+  const isInTrash = useLiveData(
+    editorService.editor.doc.meta$.map(meta => meta.trash)
+  );
+  const currentMode = useLiveData(editorService.editor.mode$);
 
   const workbench = useService(WorkbenchService).workbench;
 
@@ -139,9 +137,9 @@ export const PageHeaderMenuButton = ({
     setTrashModal({
       open: true,
       pageIds: [pageId],
-      pageTitles: [doc.meta$.value.title ?? ''],
+      pageTitles: [editorService.editor.doc.meta$.value.title ?? ''],
     });
-  }, [doc.meta$.value.title, pageId, setTrashModal]);
+  }, [editorService, pageId, setTrashModal]);
 
   const handleRename = useCallback(() => {
     rename?.();
@@ -149,7 +147,7 @@ export const PageHeaderMenuButton = ({
   }, [rename]);
 
   const handleSwitchMode = useCallback(() => {
-    doc.toggleMode();
+    editorService.editor.toggleMode();
     track.$.header.docOptions.switchPageMode({
       mode: currentMode === 'page' ? 'edgeless' : 'page',
     });
@@ -158,7 +156,7 @@ export const PageHeaderMenuButton = ({
         ? t['com.affine.toastMessage.edgelessMode']()
         : t['com.affine.toastMessage.pageMode']()
     );
-  }, [currentMode, doc, t]);
+  }, [currentMode, editorService, t]);
   const menuItemStyle = {
     padding: '4px 12px',
     transition: 'all 0.3s',
@@ -170,7 +168,7 @@ export const PageHeaderMenuButton = ({
     }
   }, []);
 
-  const exportHandler = useExportPage(doc.blockSuiteDoc);
+  const exportHandler = useExportPage(editorService.editor.doc.blockSuiteDoc);
 
   const handleDuplicate = useCallback(() => {
     duplicate(pageId);

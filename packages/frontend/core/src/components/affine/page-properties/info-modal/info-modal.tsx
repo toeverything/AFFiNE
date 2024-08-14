@@ -5,12 +5,7 @@ import {
   Scrollable,
 } from '@affine/component';
 import { DocsSearchService } from '@affine/core/modules/docs-search';
-import {
-  LiveData,
-  useLiveData,
-  useServices,
-  WorkspaceService,
-} from '@toeverything/infra';
+import { LiveData, useLiveData, useServices } from '@toeverything/infra';
 import { Suspense, useCallback, useContext, useMemo, useRef } from 'react';
 
 import { BlocksuiteHeaderTitle } from '../../../blocksuite/block-suite-header/title';
@@ -35,9 +30,8 @@ export const InfoModal = ({
   onOpenChange: (open: boolean) => void;
   docId: string;
 }) => {
-  const { docsSearchService, workspaceService } = useServices({
+  const { docsSearchService } = useServices({
     DocsSearchService,
-    WorkspaceService,
   });
   const titleInputHandleRef = useRef<InlineEditHandle>(null);
   const manager = usePagePropertiesManager(docId);
@@ -72,10 +66,9 @@ export const InfoModal = ({
         >
           <div className={styles.titleContainer} data-testid="info-modal-title">
             <BlocksuiteHeaderTitle
+              docId={docId}
               className={styles.titleStyle}
               inputHandleRef={titleInputHandleRef}
-              pageId={docId}
-              docCollection={workspaceService.workspace.docCollection}
             />
           </div>
           <managerContext.Provider value={manager}>

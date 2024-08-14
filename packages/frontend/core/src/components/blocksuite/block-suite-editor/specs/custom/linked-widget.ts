@@ -57,7 +57,7 @@ export function createLinkedWidgetConfig(framework: FrameworkProvider) {
       const MAX_DOCS = 6;
       const docsService = framework.get(DocsService);
       const isEdgeless = (d: DocMeta) =>
-        docsService.list.getMode(d.id) === 'edgeless';
+        docsService.list.getPrimaryMode(d.id) === 'edgeless';
       return Promise.resolve([
         {
           name: 'Link to Doc',

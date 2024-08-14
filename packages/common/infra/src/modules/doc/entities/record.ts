@@ -26,27 +26,17 @@ export class DocRecord extends Entity<{ id: string }> {
     this.docsStore.setDocMeta(this.id, meta);
   }
 
-  mode$: LiveData<DocMode> = LiveData.from(
-    this.docsStore.watchDocModeSetting(this.id),
+  primaryMode$: LiveData<DocMode> = LiveData.from(
+    this.docsStore.watchDocPrimaryModeSetting(this.id),
     'page'
   ).map(mode => (mode === 'edgeless' ? 'edgeless' : 'page'));
 
-  setMode(mode: DocMode) {
-    return this.docsStore.setDocModeSetting(this.id, mode);
+  setPrimaryMode(mode: DocMode) {
+    return this.docsStore.setDocPrimaryModeSetting(this.id, mode);
   }
 
-  getMode() {
-    return this.docsStore.getDocModeSetting(this.id);
-  }
-
-  toggleMode() {
-    const mode = this.getMode() === 'edgeless' ? 'page' : 'edgeless';
-    this.setMode(mode);
-    return this.getMode();
-  }
-
-  observeMode() {
-    return this.docsStore.watchDocModeSetting(this.id);
+  getPrimaryMode() {
+    return this.docsStore.getDocPrimaryModeSetting(this.id);
   }
 
   moveToTrash() {

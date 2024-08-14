@@ -201,7 +201,6 @@ export const ItemGroup = <T extends ListItem>({
 const requiredPropNames = [
   'docCollection',
   'rowAsLink',
-  'isPreferredEdgeless',
   'operationsRenderer',
   'selectedIds',
   'onSelectedIdsChange',
@@ -294,13 +293,12 @@ const PageTitle = ({ id }: { id: string }) => {
 const UnifiedPageIcon = ({
   id,
   docCollection,
-  isPreferredEdgeless,
 }: {
   id: string;
   docCollection: DocCollection;
-  isPreferredEdgeless?: (id: string) => boolean;
 }) => {
-  const isEdgeless = isPreferredEdgeless ? isPreferredEdgeless(id) : false;
+  const list = useService(DocsService).list;
+  const isEdgeless = useLiveData(list.primaryMode$(id)) === 'edgeless';
   const { isJournal } = useJournalInfoHelper(docCollection, id);
   if (isJournal) {
     return <TodayIcon />;
@@ -340,13 +338,7 @@ function pageMetaToListItemProp(
     updatedDate: item.updatedDate ? new Date(item.updatedDate) : undefined,
     to: props.rowAsLink && !props.selectable ? `/${item.id}` : undefined,
     onClick: toggleSelection,
-    icon: (
-      <UnifiedPageIcon
-        id={item.id}
-        docCollection={props.docCollection}
-        isPreferredEdgeless={props.isPreferredEdgeless}
-      />
-    ),
+    icon: <UnifiedPageIcon id={item.id} docCollection={props.docCollection} />,
     tags:
       item.tags
         ?.map(id => tagIdToTagOption(id, props.docCollection))

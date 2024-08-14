@@ -279,28 +279,28 @@ export function patchDocModeService(
     pageService.docModeService = {
       setMode: (mode: DocMode, id?: string) => {
         if (id) {
-          docsService.list.setMode(id, mode);
+          docsService.list.setPrimaryMode(id, mode);
         } else {
-          docService.doc.setMode(mode);
+          docService.doc.setPrimaryMode(mode);
         }
       },
       getMode: (id?: string) => {
         const mode = id
-          ? docsService.list.getMode(id)
-          : docService.doc.getMode();
+          ? docsService.list.getPrimaryMode(id)
+          : docService.doc.getPrimaryMode();
         return mode || DEFAULT_MODE;
       },
       toggleMode: (id?: string) => {
         const mode = id
-          ? docsService.list.toggleMode(id)
-          : docService.doc.toggleMode();
+          ? docsService.list.togglePrimaryMode(id)
+          : docService.doc.togglePrimaryMode();
         return mode || DEFAULT_MODE;
       },
       onModeChange: (handler: (mode: DocMode) => void, id?: string) => {
         // eslint-disable-next-line rxjs/finnish
         const mode$ = id
-          ? docsService.list.observeMode(id)
-          : docService.doc.observeMode();
+          ? docsService.list.primaryMode$(id)
+          : docService.doc.primaryMode$;
         const sub = mode$.subscribe(m => handler(m || DEFAULT_MODE));
         return {
           dispose: sub.unsubscribe,
@@ -412,7 +412,7 @@ export function patchQuickSearchService(
                         ? 'edgeless'
                         : 'page';
                     const newDoc = docsService.createDoc({
-                      mode,
+                      primaryMode: mode,
                       title: result.payload.title,
                     });
                     resolve({

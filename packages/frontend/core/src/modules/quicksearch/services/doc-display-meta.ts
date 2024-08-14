@@ -16,7 +16,7 @@ export class DocDisplayMetaService extends Service {
     );
     const icon = journalDateString
       ? TodayIcon
-      : docRecord.mode$.value === 'edgeless'
+      : docRecord.primaryMode$.value === 'edgeless'
         ? EdgelessIcon
         : PageIcon;
 

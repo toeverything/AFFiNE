@@ -6,7 +6,7 @@ type SimpleRadioItem = string;
 export interface RadioProps extends RadioGroupItemProps {
   items: RadioItem[] | SimpleRadioItem[];
   value: any;
-  onChange: (value: any) => void;
+  onChange?: (value: any) => void;
 
   /**
    * Total width of the radio group, items will be evenly distributed

@@ -31,7 +31,7 @@ export async function buildShowcaseWorkspace(
   );
 
   if (defaultDoc) {
-    defaultDoc.setMode('edgeless');
+    defaultDoc.setPrimaryMode('edgeless');
   }
 
   dispose();

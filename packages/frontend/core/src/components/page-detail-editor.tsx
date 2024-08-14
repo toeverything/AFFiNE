@@ -6,7 +6,6 @@ import type { AffineEditorContainer } from '@blocksuite/presets';
 import type { Doc as BlockSuiteDoc, DocCollection } from '@blocksuite/store';
 import {
   type DocMode,
-  DocService,
   fontStyleOptions,
   useLiveData,
   useService,
@@ -17,6 +16,7 @@ import { memo, Suspense, useCallback, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 
 import { useAppSettingHelper } from '../hooks/affine/use-app-setting-helper';
+import { EditorService } from '../modules/editor';
 import { BlockSuiteEditor as Editor } from './blocksuite/block-suite-editor';
 import * as styles from './page-detail-editor.css';
 
@@ -45,19 +45,10 @@ function useRouterHash() {
 const PageDetailEditorMain = memo(function PageDetailEditorMain({
   page,
   onLoad,
-  isPublic,
-  publishMode,
 }: PageDetailEditorProps & { page: BlockSuiteDoc }) {
-  const currentMode = useLiveData(useService(DocService).doc.mode$);
-  const mode = useMemo(() => {
-    const shareMode = publishMode || currentMode;
-
-    if (isPublic) {
-      return shareMode;
-    }
-    return currentMode;
-  }, [isPublic, publishMode, currentMode]);
-
+  const editor = useService(EditorService).editor;
+  const mode = useLiveData(editor.mode$);
+  const isSharedMode = editor.isSharedMode;
   const { appSettings } = useAppSettingHelper();
 
   const value = useMemo(() => {
@@ -97,8 +88,8 @@ const PageDetailEditorMain = memo(function PageDetailEditorMain({
   return (
     <Editor
       className={clsx(styles.editor, {
-        'full-screen': !isPublic && appSettings.fullWidthLayout,
-        'is-public': isPublic,
+        'full-screen': !isSharedMode && appSettings.fullWidthLayout,
+        'is-public': isSharedMode,
       })}
       style={
         {
@@ -107,7 +98,7 @@ const PageDetailEditorMain = memo(function PageDetailEditorMain({
       }
       mode={mode}
       page={page}
-      shared={isPublic}
+      shared={isSharedMode}
       defaultSelectedBlockId={blockId}
       onLoadEditor={onLoadEditor}
     />

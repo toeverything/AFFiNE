@@ -75,7 +75,8 @@ export function useBlockSuiteMetaHelper(docCollection: DocCollection) {
 
   const duplicate = useAsyncCallback(
     async (pageId: string, openPageAfterDuplication: boolean = true) => {
-      const currentPageMode = pageRecordList.doc$(pageId).value?.mode$.value;
+      const currentPagePrimaryMode =
+        pageRecordList.doc$(pageId).value?.primaryMode$.value;
       const currentPageMeta = getDocMeta(pageId);
       const newPage = createDoc();
       const currentPage = docCollection.getDoc(pageId);
@@ -99,7 +100,9 @@ export function useBlockSuiteMetaHelper(docCollection: DocCollection) {
       const newPageTitle =
         currentPageMeta.title.replace(lastDigitRegex, '') + `(${newNumber})`;
 
-      pageRecordList.doc$(newPage.id).value?.setMode(currentPageMode || 'page');
+      pageRecordList
+        .doc$(newPage.id)
+        .value?.setPrimaryMode(currentPagePrimaryMode || 'page');
       setDocTitle(newPage.id, newPageTitle);
       openPageAfterDuplication && openPage(docCollection.id, newPage.id);
     },

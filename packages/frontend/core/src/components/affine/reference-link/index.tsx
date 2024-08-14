@@ -84,10 +84,17 @@ export function AffinePageReference({
   const t = useI18n();
 
   const docsService = useService(DocsService);
-  const mode$ = LiveData.from(docsService.list.observeMode(pageId), undefined);
-  const docMode = useLiveData(mode$) ?? null;
+  const docPrimaryMode = useLiveData(
+    LiveData.computed(get => {
+      const primaryMode$ = get(docsService.list.doc$(pageId))?.primaryMode$;
+      if (!primaryMode$) {
+        return null;
+      }
+      return get(primaryMode$);
+    })
+  );
   const el = pageReferenceRenderer({
-    docMode,
+    docMode: docPrimaryMode,
     pageId,
     pageMetaHelper,
     journalHelper,

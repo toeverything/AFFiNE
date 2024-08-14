@@ -2,6 +2,7 @@ import { Scrollable } from '@affine/component';
 import { useActiveBlocksuiteEditor } from '@affine/core/hooks/use-block-suite-editor';
 import { usePageDocumentTitle } from '@affine/core/hooks/use-global-state';
 import { AuthService } from '@affine/core/modules/cloud';
+import { type Editor, EditorsService } from '@affine/core/modules/editor';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useI18n } from '@affine/i18n';
 import { noop } from '@blocksuite/global/utils';
@@ -121,6 +122,7 @@ export const Component = () => {
   const t = useI18n();
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const [page, setPage] = useState<Doc | null>(null);
+  const [editor, setEditor] = useState<Editor | null>(null);
   const [_, setActiveBlocksuiteEditor] = useActiveBlocksuiteEditor();
 
   const defaultCloudProvider = workspacesService.framework.get(
@@ -177,6 +179,10 @@ export const Component = () => {
         );
 
         setPage(doc);
+
+        const editor = doc.scope.get(EditorsService).createEditor(publishMode);
+
+        setEditor(editor);
       })
       .catch(err => {
         console.error(err);
@@ -188,6 +194,7 @@ export const Component = () => {
     workspaceArrayBuffer,
     workspaceId,
     workspacesService,
+    publishMode,
   ]);
 
   const pageTitle = useLiveData(page?.title$);
@@ -204,58 +211,60 @@ export const Component = () => {
     [setActiveBlocksuiteEditor]
   );
 
-  if (!workspace || !page) {
+  if (!workspace || !page || !editor) {
     return;
   }
 
   return (
     <FrameworkScope scope={workspace.scope}>
       <FrameworkScope scope={page.scope}>
-        <AppContainer>
-          <MainContainer>
-            <div className={styles.root}>
-              <div className={styles.mainContainer}>
-                <ShareHeader
-                  pageId={page.id}
-                  publishMode={publishMode}
-                  docCollection={page.blockSuiteDoc.collection}
-                />
-                <Scrollable.Root>
-                  <Scrollable.Viewport
-                    className={clsx(
-                      'affine-page-viewport',
-                      styles.editorContainer
-                    )}
-                  >
-                    <PageDetailEditor
-                      isPublic
-                      publishMode={publishMode}
-                      docCollection={page.blockSuiteDoc.collection}
-                      pageId={page.id}
-                      onLoad={onEditorLoad}
-                    />
-                    {publishMode === 'page' ? <ShareFooter /> : null}
-                  </Scrollable.Viewport>
-                  <Scrollable.Scrollbar />
-                </Scrollable.Root>
-                {loginStatus !== 'authenticated' ? (
-                  <a
-                    href="https://affine.pro"
-                    target="_blank"
-                    className={styles.link}
-                    rel="noreferrer"
-                  >
-                    <span className={styles.linkText}>
-                      {t['com.affine.share-page.footer.built-with']()}
-                    </span>
-                    <Logo1Icon fontSize={20} />
-                  </a>
-                ) : null}
+        <FrameworkScope scope={editor.scope}>
+          <AppContainer>
+            <MainContainer>
+              <div className={styles.root}>
+                <div className={styles.mainContainer}>
+                  <ShareHeader
+                    pageId={page.id}
+                    publishMode={publishMode}
+                    docCollection={page.blockSuiteDoc.collection}
+                  />
+                  <Scrollable.Root>
+                    <Scrollable.Viewport
+                      className={clsx(
+                        'affine-page-viewport',
+                        styles.editorContainer
+                      )}
+                    >
+                      <PageDetailEditor
+                        isPublic
+                        publishMode={publishMode}
+                        docCollection={page.blockSuiteDoc.collection}
+                        pageId={page.id}
+                        onLoad={onEditorLoad}
+                      />
+                      {publishMode === 'page' ? <ShareFooter /> : null}
+                    </Scrollable.Viewport>
+                    <Scrollable.Scrollbar />
+                  </Scrollable.Root>
+                  {loginStatus !== 'authenticated' ? (
+                    <a
+                      href="https://affine.pro"
+                      target="_blank"
+                      className={styles.link}
+                      rel="noreferrer"
+                    >
+                      <span className={styles.linkText}>
+                        {t['com.affine.share-page.footer.built-with']()}
+                      </span>
+                      <Logo1Icon fontSize={20} />
+                    </a>
+                  ) : null}
+                </div>
               </div>
-            </div>
-          </MainContainer>
-          <PeekViewManagerModal />
-        </AppContainer>
+            </MainContainer>
+            <PeekViewManagerModal />
+          </AppContainer>
+        </FrameworkScope>
       </FrameworkScope>
     </FrameworkScope>
   );

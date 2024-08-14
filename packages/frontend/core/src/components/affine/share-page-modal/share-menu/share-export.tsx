@@ -3,10 +3,11 @@ import { Divider } from '@affine/component/ui/divider';
 import { ExportMenuItems } from '@affine/core/components/page-list';
 import { useExportPage } from '@affine/core/hooks/affine/use-export-page';
 import { useSharingUrl } from '@affine/core/hooks/affine/use-share-url';
+import { EditorService } from '@affine/core/modules/editor';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useI18n } from '@affine/i18n';
 import { CopyIcon } from '@blocksuite/icons/rc';
-import { DocService, useLiveData, useService } from '@toeverything/infra';
+import { useLiveData, useService } from '@toeverything/infra';
 
 import * as styles from './index.css';
 import type { ShareMenuProps } from './share-menu';
@@ -16,7 +17,7 @@ export const ShareExport = ({
   currentPage,
 }: ShareMenuProps) => {
   const t = useI18n();
-  const doc = useService(DocService).doc;
+  const editor = useService(EditorService).editor;
   const workspaceId = workspace.id;
   const pageId = currentPage.id;
   const { sharingUrl, onClickCopyLink } = useSharingUrl({
@@ -25,7 +26,7 @@ export const ShareExport = ({
     urlType: 'workspace',
   });
   const exportHandler = useExportPage(currentPage);
-  const currentMode = useLiveData(doc.mode$);
+  const currentMode = useLiveData(editor.mode$);
   const isMac = environment.isBrowser && environment.isMacOs;
 
   return (

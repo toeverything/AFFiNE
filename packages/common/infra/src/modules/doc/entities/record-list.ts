@@ -55,21 +55,24 @@ export class DocRecordList extends Entity {
     return this.docs$.map(record => record.find(record => record.id === id));
   }
 
-  public setMode(id: string, mode: DocMode) {
-    return this.store.setDocModeSetting(id, mode);
+  public setPrimaryMode(id: string, mode: DocMode) {
+    return this.store.setDocPrimaryModeSetting(id, mode);
   }
 
-  public getMode(id: string) {
-    return this.store.getDocModeSetting(id);
+  public getPrimaryMode(id: string) {
+    return this.store.getDocPrimaryModeSetting(id);
   }
 
-  public toggleMode(id: string) {
-    const mode = this.getMode(id) === 'edgeless' ? 'page' : 'edgeless';
-    this.setMode(id, mode);
-    return this.getMode(id);
+  public togglePrimaryMode(id: string) {
+    const mode = this.getPrimaryMode(id) === 'edgeless' ? 'page' : 'edgeless';
+    this.setPrimaryMode(id, mode);
+    return this.getPrimaryMode(id);
   }
 
-  public observeMode(id: string) {
-    return this.store.watchDocModeSetting(id);
+  public primaryMode$(id: string) {
+    return LiveData.from(
+      this.store.watchDocPrimaryModeSetting(id),
+      this.getPrimaryMode(id)
+    );
   }
 }

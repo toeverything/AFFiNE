@@ -9,19 +9,14 @@ import type { DocCollection } from '../../../shared';
 export const usePageHelper = (docCollection: DocCollection) => {
   const workbench = useService(WorkbenchService).workbench;
   const { createDoc } = useDocCollectionHelper(docCollection);
-  const docRecordList = useService(DocsService).list;
-
-  const isPreferredEdgeless = useCallback(
-    (pageId: string) =>
-      docRecordList.doc$(pageId).value?.mode$.value === 'edgeless',
-    [docRecordList]
-  );
+  const docsService = useService(DocsService);
+  const docRecordList = docsService.list;
 
   const createPageAndOpen = useCallback(
     (mode?: 'page' | 'edgeless', open?: boolean | 'new-tab') => {
       const page = createDoc();
       initEmptyPage(page);
-      docRecordList.doc$(page.id).value?.setMode(mode || 'page');
+      docRecordList.doc$(page.id).value?.setPrimaryMode(mode || 'page');
       if (open !== false)
         workbench.openDoc(page.id, {
           at: open === 'new-tab' ? 'new-tab' : 'active',
@@ -82,16 +77,10 @@ export const usePageHelper = (docCollection: DocCollection) => {
 
   return useMemo(() => {
     return {
-      isPreferredEdgeless,
       createPage: (open?: boolean | 'new-tab') =>
         createPageAndOpen('page', open),
       createEdgeless: createEdgelessAndOpen,
       importFile: importFileAndOpen,
     };
-  }, [
-    isPreferredEdgeless,
-    createEdgelessAndOpen,
-    createPageAndOpen,
-    importFileAndOpen,
-  ]);
+  }, [createEdgelessAndOpen, createPageAndOpen, importFileAndOpen]);
 };

@@ -5,6 +5,7 @@ import {
   registerAffineCommand,
 } from '@affine/core/commands';
 import { track } from '@affine/core/mixpanel';
+import type { Editor } from '@affine/core/modules/editor';
 import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/properties';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useI18n } from '@affine/i18n';
@@ -23,10 +24,10 @@ import { useBlockSuiteMetaHelper } from './use-block-suite-meta-helper';
 import { useExportPage } from './use-export-page';
 import { useTrashModalHelper } from './use-trash-modal-helper';
 
-export function useRegisterBlocksuiteEditorCommands() {
+export function useRegisterBlocksuiteEditorCommands(editor: Editor) {
   const doc = useService(DocService).doc;
   const docId = doc.id;
-  const mode = useLiveData(doc.mode$);
+  const mode = useLiveData(editor.mode$);
   const t = useI18n();
   const workspace = useService(WorkspaceService).workspace;
   const docCollection = workspace.docCollection;
@@ -149,7 +150,7 @@ export function useRegisterBlocksuiteEditorCommands() {
             mode: mode === 'page' ? 'edgeless' : 'page',
           });
 
-          doc.toggleMode();
+          editor.toggleMode();
           toast(
             mode === 'page'
               ? t['com.affine.toastMessage.edgelessMode']()
@@ -311,6 +312,7 @@ export function useRegisterBlocksuiteEditorCommands() {
       unsubs.forEach(unsub => unsub());
     };
   }, [
+    editor,
     favorite,
     mode,
     onClickDelete,

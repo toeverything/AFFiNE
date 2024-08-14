@@ -15,15 +15,10 @@ import { EditorModeSwitch } from '@affine/core/components/blocksuite/block-suite
 import { useRegisterCopyLinkCommands } from '@affine/core/hooks/affine/use-register-copy-link-commands';
 import { useDocCollectionPageTitle } from '@affine/core/hooks/use-block-suite-workspace-page-title';
 import { useJournalInfoHelper } from '@affine/core/hooks/use-journal';
-import { track } from '@affine/core/mixpanel';
+import { EditorService } from '@affine/core/modules/editor';
 import { ViewIcon, ViewTitle } from '@affine/core/modules/workbench';
 import type { Doc } from '@blocksuite/store';
-import {
-  DocService,
-  useLiveData,
-  useService,
-  type Workspace,
-} from '@toeverything/infra';
+import { useLiveData, useService, type Workspace } from '@toeverything/infra';
 import { useAtom, useAtomValue } from 'jotai';
 import { forwardRef, useCallback, useEffect, useRef, useState } from 'react';
 
@@ -81,7 +76,7 @@ export function JournalPageHeader({ page, workspace }: PageHeaderProps) {
     <Header className={styles.header} ref={containerRef}>
       <ViewTitle title={title} />
       <ViewIcon icon="journal" />
-      <EditorModeSwitch pageId={page?.id} />
+      <EditorModeSwitch />
       <div className={styles.journalWeekPicker}>
         <JournalWeekDatePicker
           docCollection={workspace.docCollection}
@@ -125,22 +120,17 @@ export function NormalPageHeader({ page, workspace }: PageHeaderProps) {
   }, []);
 
   const title = useDocCollectionPageTitle(workspace.docCollection, page?.id);
-  const doc = useService(DocService).doc;
-  const currentMode = useLiveData(doc.mode$);
-  const onEditSave = useCallback(() => {
-    track.$.header.actions.renameDoc();
-  }, []);
+  const editor = useService(EditorService).editor;
+  const currentMode = useLiveData(editor.mode$);
 
   return (
     <Header className={styles.header} ref={containerRef}>
       <ViewTitle title={title} />
       <ViewIcon icon={currentMode ?? 'page'} />
-      <EditorModeSwitch pageId={page?.id} />
+      <EditorModeSwitch />
       <BlocksuiteHeaderTitle
+        docId={page.id}
         inputHandleRef={titleInputHandleRef}
-        pageId={page?.id}
-        docCollection={workspace.docCollection}
-        onEditSave={onEditSave}
       />
       <div className={styles.iconButtonContainer}>
         {hideCollect ? null : (

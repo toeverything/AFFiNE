@@ -1,5 +1,4 @@
 import { Unreachable } from '@affine/env/constant';
-import type { RootBlockModel } from '@blocksuite/blocks';
 
 import { Service } from '../../../framework';
 import { initEmptyPage } from '../../../initialization';
@@ -54,7 +53,7 @@ export class DocsService extends Service {
 
   createDoc(
     options: {
-      mode?: DocMode;
+      primaryMode?: DocMode;
       title?: string;
     } = {}
   ) {
@@ -65,8 +64,8 @@ export class DocsService extends Service {
     if (!docRecord) {
       throw new Unreachable();
     }
-    if (options.mode) {
-      docRecord.setMode(options.mode);
+    if (options.primaryMode) {
+      docRecord.setPrimaryMode(options.primaryMode);
     }
     return docRecord;
   }
@@ -100,15 +99,7 @@ export class DocsService extends Service {
     const { doc, release } = this.open(docId);
     doc.setPriorityLoad(10);
     await doc.waitForSyncReady();
-    const pageBlock = doc.blockSuiteDoc.getBlocksByFlavour('affine:page').at(0)
-      ?.model as RootBlockModel | undefined;
-    if (pageBlock) {
-      doc.blockSuiteDoc.transact(() => {
-        pageBlock.title.delete(0, pageBlock.title.length);
-        pageBlock.title.insert(newTitle, 0);
-      });
-      doc.record.setMeta({ title: newTitle });
-    }
+    doc.changeDocTitle(newTitle);
     release();
   }
 }

@@ -1,9 +1,10 @@
+import { EditorService } from '@affine/core/modules/editor';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import { useViewPosition } from '@affine/core/modules/workbench/view/use-view-position';
-import { DocService, useLiveData, useService } from '@toeverything/infra';
+import { useLiveData, useService } from '@toeverything/infra';
 
 export const useDetailPageHeaderResponsive = (availableWidth: number) => {
-  const mode = useLiveData(useService(DocService).doc.mode$);
+  const mode = useLiveData(useService(EditorService).editor.mode$);
 
   const workbench = useService(WorkbenchService).workbench;
   const viewPosition = useViewPosition();

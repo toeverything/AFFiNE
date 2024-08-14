@@ -192,7 +192,6 @@ export const EditCollection = ({
 export type AllPageListConfig = {
   allPages: DocMeta[];
   docCollection: DocCollection;
-  isEdgeless: (id: string) => boolean;
   /**
    * Return `undefined` if the page is not public
    */
