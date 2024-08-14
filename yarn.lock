@@ -202,6 +202,7 @@ __metadata:
     react-router-dom: "npm:^6.23.1"
     shadcn-ui: "npm:^0.8.0"
     sonner: "npm:^1.5.0"
+    swr: "npm:^2.2.5"
     tailwind-merge: "npm:^2.3.0"
     tailwindcss: "npm:^3.4.4"
     tailwindcss-animate: "npm:^1.0.7"

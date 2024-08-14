@@ -10,6 +10,7 @@ import {
   useLocation,
 } from 'react-router-dom';
 import { toast } from 'sonner';
+import { SWRConfig } from 'swr';
 
 import { TooltipProvider } from './components/ui/tooltip';
 import { isAdmin, useCurrentUser, useServerConfig } from './modules/common';
@@ -108,7 +109,14 @@ export const App = () => {
   return (
     <TooltipProvider>
       <Telemetry />
-      <RouterProvider router={router} />
+      <SWRConfig
+        value={{
+          revalidateOnFocus: false,
+          revalidateOnMount: false,
+        }}
+      >
+        <RouterProvider router={router} />
+      </SWRConfig>
       <Toaster />
     </TooltipProvider>
   );
