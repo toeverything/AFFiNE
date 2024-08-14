@@ -1,3 +1,6 @@
+import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 import pkg from '../../../package.json' assert { type: 'json' };
 import {
   AFFINE_ENV,
@@ -62,6 +65,7 @@ function getPredefinedAFFiNEConfig(): PreDefinedAFFiNEConfig {
     affine,
     node,
     deploy: !node.dev && !node.test,
+    projectRoot: resolve(fileURLToPath(import.meta.url), '../../../../'),
   };
 }
 

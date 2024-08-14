@@ -52,14 +52,14 @@ export function Auth() {
         )
         .then(res => res.json())
         .then(
-          ({
+          async ({
             data: {
               currentUser: { features },
             },
           }) => {
             if (features.includes(FeatureType.Admin)) {
               toast.success('Logged in successfully');
-              revalidate();
+              await revalidate();
             } else {
               toast.error('You are not an admin');
             }

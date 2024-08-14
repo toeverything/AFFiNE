@@ -751,7 +751,6 @@ __metadata:
     "@nestjs/platform-express": "npm:^10.3.7"
     "@nestjs/platform-socket.io": "npm:^10.3.7"
     "@nestjs/schedule": "npm:^4.0.1"
-    "@nestjs/serve-static": "npm:^4.0.2"
     "@nestjs/testing": "npm:^10.3.7"
     "@nestjs/throttler": "npm:5.2.0"
     "@nestjs/websockets": "npm:^10.3.7"
@@ -8713,28 +8712,6 @@ __metadata:
     "@nestjs/common": ^8.0.0 || ^9.0.0 || ^10.0.0
     "@nestjs/core": ^8.0.0 || ^9.0.0 || ^10.0.0
   checksum: 10/288e69afcbce2567e73f60b9303061613ad443291318ee6ff31ddba2b9e65cf19654ac9e753867411f9b4f35c62292fe740833d0ef021a0df3b74083084fbe56
-  languageName: node
-  linkType: hard
-
-"@nestjs/serve-static@npm:^4.0.2":
-  version: 4.0.2
-  resolution: "@nestjs/serve-static@npm:4.0.2"
-  dependencies:
-    path-to-regexp: "npm:0.2.5"
-  peerDependencies:
-    "@fastify/static": ^6.5.0 || ^7.0.0
-    "@nestjs/common": ^9.0.0 || ^10.0.0
-    "@nestjs/core": ^9.0.0 || ^10.0.0
-    express: ^4.18.1
-    fastify: ^4.7.0
-  peerDependenciesMeta:
-    "@fastify/static":
-      optional: true
-    express:
-      optional: true
-    fastify:
-      optional: true
-  checksum: 10/337905afb5545ef7280ed408e8929aa4ab7ecf754e11d0c4a7b3e641b50cd34ed9bdd70e16c19f01fb1446a17cd6098481db6de2719c808a43031fdcd8792ac8
   languageName: node
   linkType: hard
 
@@ -31805,13 +31782,6 @@ __metadata:
   version: 0.1.7
   resolution: "path-to-regexp@npm:0.1.7"
   checksum: 10/701c99e1f08e3400bea4d701cf6f03517474bb1b608da71c78b1eb261415b645c5670dfae49808c89e12cea2dccd113b069f040a80de012da0400191c6dbd1c8
-  languageName: node
-  linkType: hard
-
-"path-to-regexp@npm:0.2.5":
-  version: 0.2.5
-  resolution: "path-to-regexp@npm:0.2.5"
-  checksum: 10/9652fd2b74ec932a0df8a868478478565da81e7445a8dde1e65ca80553ad03062336b1f79234068551ecc01f3b76ad774e34f784cc3a34a97c4646cb5cfcbea9
   languageName: node
   linkType: hard
 

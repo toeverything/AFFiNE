@@ -34,7 +34,6 @@
     "@nestjs/platform-express": "^10.3.7",
     "@nestjs/platform-socket.io": "^10.3.7",
     "@nestjs/schedule": "^4.0.1",
-    "@nestjs/serve-static": "^4.0.2",
     "@nestjs/throttler": "5.2.0",
     "@nestjs/websockets": "^10.3.7",
     "@node-rs/argon2": "^1.8.0",
@@ -138,6 +137,7 @@
     ],
     "watchMode": {
       "ignoreChanges": [
+        "static/**",
         "**/*.gen.*"
       ]
     },

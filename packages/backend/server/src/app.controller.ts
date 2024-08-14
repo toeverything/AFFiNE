@@ -3,7 +3,7 @@ import { Controller, Get } from '@nestjs/common';
 import { Public } from './core/auth';
 import { Config, SkipThrottle } from './fundamentals';
 
-@Controller('/')
+@Controller('/info')
 export class AppController {
   constructor(private readonly config: Config) {}
 

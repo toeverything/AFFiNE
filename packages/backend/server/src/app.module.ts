@@ -1,5 +1,3 @@
-import { join } from 'node:path';
-
 import {
   DynamicModule,
   ForwardReference,
@@ -7,7 +5,6 @@ import {
   Module,
 } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
-import { ServeStaticModule } from '@nestjs/serve-static';
 import { get } from 'lodash-es';
 
 import { AppController } from './app.controller';
@@ -16,7 +13,7 @@ import { ADD_ENABLED_FEATURES, ServerConfigModule } from './core/config';
 import { DocModule } from './core/doc';
 import { FeatureModule } from './core/features';
 import { QuotaModule } from './core/quota';
-import { CustomSetupModule } from './core/setup';
+import { SelfhostModule } from './core/selfhost';
 import { StorageModule } from './core/storage';
 import { SyncModule } from './core/sync';
 import { UserModule } from './core/user';
@@ -137,7 +134,7 @@ export class AppModuleBuilder {
   compile() {
     @Module({
       imports: this.modules,
-      controllers: this.config.isSelfhosted ? [] : [AppController],
+      controllers: [AppController],
     })
     class AppModule {}
 
@@ -145,7 +142,7 @@ export class AppModuleBuilder {
   }
 }
 
-function buildAppModule() {
+export function buildAppModule() {
   AFFiNE = mergeConfigOverride(AFFiNE);
   const factor = new AppModuleBuilder(AFFiNE);
 
@@ -175,18 +172,7 @@ function buildAppModule() {
     )
 
     // self hosted server only
-    .useIf(
-      config => config.isSelfhosted,
-      CustomSetupModule,
-      ServeStaticModule.forRoot({
-        rootPath: join('/app', 'static'),
-        exclude: ['/admin*'],
-      }),
-      ServeStaticModule.forRoot({
-        rootPath: join('/app', 'static', 'admin'),
-        serveRoot: '/admin',
-      })
-    );
+    .useIf(config => config.isSelfhosted, SelfhostModule);
 
   // plugin modules
   ENABLED_PLUGINS.forEach(name => {

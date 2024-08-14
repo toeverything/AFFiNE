@@ -17,6 +17,7 @@ export interface PreDefinedAFFiNEConfig {
   ENV_MAP: Record<string, ConfigPaths | [ConfigPaths, EnvConfigType?]>;
   serverId: string;
   serverName: string;
+  readonly projectRoot: string;
   readonly AFFINE_ENV: AFFINE_ENV;
   readonly NODE_ENV: NODE_ENV;
   readonly version: string;

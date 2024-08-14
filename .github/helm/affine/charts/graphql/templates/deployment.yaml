@@ -204,12 +204,12 @@ spec:
               protocol: TCP
           livenessProbe:
             httpGet:
-              path: /
+              path: /info
               port: http
             initialDelaySeconds: {{ .Values.probe.initialDelaySeconds }}
           readinessProbe:
             httpGet:
-              path: /
+              path: /info
               port: http
             initialDelaySeconds: {{ .Values.probe.initialDelaySeconds }}
           resources:

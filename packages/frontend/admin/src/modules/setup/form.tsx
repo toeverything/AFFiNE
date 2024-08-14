@@ -6,13 +6,11 @@ import {
   CarouselItem,
 } from '@affine/admin/components/ui/carousel';
 import { validateEmailAndPassword } from '@affine/admin/utils';
-import { useMutateQueryResource } from '@affine/core/hooks/use-mutation';
-import { serverConfigQuery } from '@affine/graphql';
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
-import { useServerConfig } from '../common';
+import { useRevalidateServerConfig, useServerConfig } from '../common';
 import { CreateAdmin } from './create-admin';
 
 export enum CarouselSteps {
@@ -73,14 +71,13 @@ export const Form = () => {
   const [invalidPassword, setInvalidPassword] = useState(false);
 
   const serverConfig = useServerConfig();
+  const refreshServerConfig = useRevalidateServerConfig();
   const passwordLimits = serverConfig.credentialsRequirement.password;
 
   const isCreateAdminStep = current - 1 === CarouselSteps.CreateAdmin;
 
   const disableContinue =
     (!nameValue || !emailValue || !passwordValue) && isCreateAdminStep;
-
-  const revalidate = useMutateQueryResource();
 
   useEffect(() => {
     if (!api) {
@@ -114,14 +111,14 @@ export const Form = () => {
       }
 
       await createResponse.json();
-      await revalidate(serverConfigQuery);
+      await refreshServerConfig();
       toast.success('Admin account created successfully.');
     } catch (err) {
       toast.error((err as Error).message);
       console.error(err);
       throw err;
     }
-  }, [emailValue, passwordValue, revalidate]);
+  }, [emailValue, passwordValue, refreshServerConfig]);
 
   const onNext = useCallback(async () => {
     if (isCreateAdminStep) {

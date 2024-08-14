@@ -17,6 +17,7 @@ test.afterEach.always(async () => {
 
 test('should be able to get config', t => {
   t.true(typeof config.server.host === 'string');
+  t.is(config.projectRoot, process.cwd());
   t.is(config.NODE_ENV, 'test');
 });
 

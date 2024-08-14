@@ -1,5 +1,4 @@
 import { Body, Controller, Post, Req, Res } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
 import type { Request, Response } from 'express';
 
 import {
@@ -10,6 +9,7 @@ import {
   PasswordRequired,
 } from '../../fundamentals';
 import { AuthService, Public } from '../auth';
+import { ServerService } from '../config';
 import { UserService } from '../user/service';
 
 interface CreateUserInput {
@@ -20,11 +20,11 @@ interface CreateUserInput {
 @Controller('/api/setup')
 export class CustomSetupController {
   constructor(
-    private readonly db: PrismaClient,
     private readonly user: UserService,
     private readonly auth: AuthService,
     private readonly event: EventEmitter,
-    private readonly mutex: MutexService
+    private readonly mutex: MutexService,
+    private readonly server: ServerService
   ) {}
 
   @Public()
@@ -44,7 +44,7 @@ export class CustomSetupController {
       throw new InternalServerError();
     }
 
-    if ((await this.db.user.count()) > 0) {
+    if (await this.server.initialized()) {
       throw new ActionForbidden('First user already created');
     }
 
