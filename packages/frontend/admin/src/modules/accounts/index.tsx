@@ -1,27 +1,11 @@
 import { Separator } from '@affine/admin/components/ui/separator';
-import { useQuery } from '@affine/core/hooks/use-query';
-import { listUsersQuery } from '@affine/graphql';
-import { useState } from 'react';
 
 import { columns } from './components/columns';
 import { DataTable } from './components/data-table';
+import { useUserList } from './use-user-list';
 
 export function AccountPage() {
-  const [pagination, setPagination] = useState({
-    pageIndex: 0,
-    pageSize: 10,
-  });
-  const {
-    data: { users },
-  } = useQuery({
-    query: listUsersQuery,
-    variables: {
-      filter: {
-        first: pagination.pageSize,
-        skip: pagination.pageIndex * pagination.pageSize,
-      },
-    },
-  });
+  const { users, pagination, setPagination } = useUserList();
 
   return (
     <div className=" h-screen flex-1 flex-col flex">

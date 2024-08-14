@@ -6,36 +6,14 @@ import {
 } from '@affine/admin/components/ui/card';
 import { ScrollArea } from '@affine/admin/components/ui/scroll-area';
 import { Separator } from '@affine/admin/components/ui/separator';
-import { useQueryImmutable } from '@affine/core/hooks/use-query';
-import { getServerServiceConfigsQuery } from '@affine/graphql';
 
 import { AboutAFFiNE } from './about';
-
-type ServerConfig = {
-  externalUrl: string;
-  https: boolean;
-  host: string;
-  port: number;
-  path: string;
-};
-
-type MailerConfig = {
-  host: string;
-  port: number;
-  sender: string;
-};
-
-type DatabaseConfig = {
-  host: string;
-  port: number;
-  user: string;
-  database: string;
-};
-
-type ServerServiceConfig = {
-  name: string;
-  config: ServerConfig | MailerConfig | DatabaseConfig;
-};
+import type {
+  DatabaseConfig,
+  MailerConfig,
+  ServerConfig,
+} from './use-server-service-configs';
+import { useServerServiceConfigs } from './use-server-service-configs';
 
 export function ConfigPage() {
   return (
@@ -166,22 +144,8 @@ const MailerCard = ({ mailerConfig }: { mailerConfig?: MailerConfig }) => {
 };
 
 export function ServerServiceConfig() {
-  const { data } = useQueryImmutable({
-    query: getServerServiceConfigsQuery,
-  });
-  const server = data.serverServiceConfigs.find(
-    (service: ServerServiceConfig) => service.name === 'server'
-  );
-  const mailer = data.serverServiceConfigs.find(
-    (service: ServerServiceConfig) => service.name === 'mailer'
-  );
-  const database = data.serverServiceConfigs.find(
-    (service: ServerServiceConfig) => service.name === 'database'
-  );
-
-  const serverConfig = server?.config as ServerConfig | undefined;
-  const mailerConfig = mailer?.config as MailerConfig | undefined;
-  const databaseConfig = database?.config as DatabaseConfig | undefined;
+  const { serverConfig, mailerConfig, databaseConfig } =
+    useServerServiceConfigs();
 
   return (
     <div className="flex flex-col py-5 px-6">

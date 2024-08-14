@@ -3,10 +3,12 @@ import {
   useMutateQueryResource,
   useMutation,
 } from '@affine/core/hooks/use-mutation';
+import { useQuery } from '@affine/core/hooks/use-query';
 import {
   createChangePasswordUrlMutation,
   createUserMutation,
   deleteUserMutation,
+  getUsersCountQuery,
   listUsersQuery,
   updateAccountFeaturesMutation,
   updateAccountMutation,
@@ -158,4 +160,13 @@ export const useDeleteUser = () => {
   );
 
   return deleteById;
+};
+
+export const useUserCount = () => {
+  const {
+    data: { usersCount },
+  } = useQuery({
+    query: getUsersCountQuery,
+  });
+  return usersCount;
 };

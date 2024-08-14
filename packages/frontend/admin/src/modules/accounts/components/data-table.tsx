@@ -5,8 +5,6 @@ import {
   TableCell,
   TableRow,
 } from '@affine/admin/components/ui/table';
-import { useQuery } from '@affine/core/hooks/use-query';
-import { getUsersCountQuery } from '@affine/graphql';
 import type { ColumnDef, PaginationState } from '@tanstack/react-table';
 import {
   flexRender,
@@ -17,6 +15,7 @@ import { type Dispatch, type SetStateAction, useEffect, useState } from 'react';
 
 import { DataTablePagination } from './data-table-pagination';
 import { DataTableToolbar } from './data-table-toolbar';
+import { useUserCount } from './use-user-management';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -36,11 +35,7 @@ export function DataTable<TData, TValue>({
   pagination,
   onPaginationChange,
 }: DataTableProps<TData, TValue>) {
-  const {
-    data: { usersCount },
-  } = useQuery({
-    query: getUsersCountQuery,
-  });
+  const usersCount = useUserCount();
 
   const [tableData, setTableData] = useState(data);
   const table = useReactTable({
