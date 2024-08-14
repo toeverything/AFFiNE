@@ -1,7 +1,10 @@
-import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
 import { useCatchEventCallback } from '@affine/core/hooks/use-catch-event-hook';
 import { isNewTabTrigger } from '@affine/core/utils';
-import { useLiveData, useService } from '@toeverything/infra';
+import {
+  FeatureFlagService,
+  useLiveData,
+  useServices,
+} from '@toeverything/infra';
 import { type To } from 'history';
 import { forwardRef, type MouseEvent } from 'react';
 
@@ -16,8 +19,14 @@ export const WorkbenchLink = forwardRef<
     } & React.HTMLProps<HTMLAnchorElement>
   >
 >(function WorkbenchLink({ to, onClick, ...other }, ref) {
-  const workbench = useService(WorkbenchService).workbench;
-  const { appSettings } = useAppSettingHelper();
+  const { featureFlagService, workbenchService } = useServices({
+    FeatureFlagService,
+    WorkbenchService,
+  });
+  const enableMultiView = useLiveData(
+    featureFlagService.flags.enable_multi_view.$
+  );
+  const workbench = workbenchService.workbench;
   const basename = useLiveData(workbench.basename$);
   const link =
     basename +
@@ -30,7 +39,7 @@ export const WorkbenchLink = forwardRef<
       }
       const at = (() => {
         if (isNewTabTrigger(event)) {
-          return event.altKey && appSettings.enableMultiView
+          return event.altKey && enableMultiView && environment.isDesktop
             ? 'tail'
             : 'new-tab';
         }
@@ -39,7 +48,7 @@ export const WorkbenchLink = forwardRef<
       workbench.open(to, { at });
       event.preventDefault();
     },
-    [appSettings.enableMultiView, onClick, to, workbench]
+    [enableMultiView, onClick, to, workbench]
   );
 
   // eslint suspicious runtime error

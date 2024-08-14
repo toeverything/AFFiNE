@@ -6,7 +6,6 @@ import {
   toast,
   useConfirmModal,
 } from '@affine/component';
-import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { track } from '@affine/core/mixpanel';
 import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/properties';
@@ -22,7 +21,12 @@ import {
   PlusIcon,
   SplitViewIcon,
 } from '@blocksuite/icons/rc';
-import { DocsService, useLiveData, useServices } from '@toeverything/infra';
+import {
+  DocsService,
+  FeatureFlagService,
+  useLiveData,
+  useServices,
+} from '@toeverything/infra';
 import { useCallback, useMemo } from 'react';
 
 import type { NodeOperation } from '../../tree/types';
@@ -35,13 +39,20 @@ export const useExplorerDocNodeOperations = (
   }
 ): NodeOperation[] => {
   const t = useI18n();
-  const { appSettings } = useAppSettingHelper();
-  const { workbenchService, docsService, compatibleFavoriteItemsAdapter } =
-    useServices({
-      DocsService,
-      WorkbenchService,
-      CompatibleFavoriteItemsAdapter,
-    });
+  const {
+    workbenchService,
+    docsService,
+    compatibleFavoriteItemsAdapter,
+    featureFlagService,
+  } = useServices({
+    DocsService,
+    WorkbenchService,
+    CompatibleFavoriteItemsAdapter,
+    FeatureFlagService,
+  });
+  const enableMultiView = useLiveData(
+    featureFlagService.flags.enable_multi_view.$
+  );
   const { openConfirmModal } = useConfirmModal();
 
   const docRecord = useLiveData(docsService.list.doc$(docId));
@@ -179,7 +190,7 @@ export const useExplorerDocNodeOperations = (
           </MenuItem>
         ),
       },
-      ...(appSettings.enableMultiView
+      ...(enableMultiView && environment.isDesktop
         ? [
             {
               index: 100,
@@ -243,7 +254,7 @@ export const useExplorerDocNodeOperations = (
       },
     ],
     [
-      appSettings.enableMultiView,
+      enableMultiView,
       favorite,
       handleAddLinkedPage,
       handleMoveToTrash,

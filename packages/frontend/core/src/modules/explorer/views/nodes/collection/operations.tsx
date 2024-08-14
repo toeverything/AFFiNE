@@ -5,7 +5,6 @@ import {
   MenuSeparator,
   useConfirmModal,
 } from '@affine/component';
-import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
 import { useDeleteCollectionInfo } from '@affine/core/hooks/affine/use-delete-collection-info';
 import { track } from '@affine/core/mixpanel';
 import { CollectionService } from '@affine/core/modules/collection';
@@ -21,7 +20,12 @@ import {
   PlusIcon,
   SplitViewIcon,
 } from '@blocksuite/icons/rc';
-import { DocsService, useLiveData, useServices } from '@toeverything/infra';
+import {
+  DocsService,
+  FeatureFlagService,
+  useLiveData,
+  useServices,
+} from '@toeverything/infra';
 import { useCallback, useMemo } from 'react';
 
 import type { NodeOperation } from '../../tree/types';
@@ -32,20 +36,24 @@ export const useExplorerCollectionNodeOperations = (
   onOpenEdit: () => void
 ): NodeOperation[] => {
   const t = useI18n();
-  const { appSettings } = useAppSettingHelper();
   const {
     workbenchService,
     docsService,
     collectionService,
     compatibleFavoriteItemsAdapter,
+    featureFlagService,
   } = useServices({
     DocsService,
     WorkbenchService,
     CollectionService,
     CompatibleFavoriteItemsAdapter,
+    FeatureFlagService,
   });
   const deleteInfo = useDeleteCollectionInfo();
 
+  const enableMultiView = useLiveData(
+    featureFlagService.flags.enable_multi_view.$
+  );
   const favorite = useLiveData(
     useMemo(
       () =>
@@ -200,7 +208,7 @@ export const useExplorerCollectionNodeOperations = (
           </MenuItem>
         ),
       },
-      ...(appSettings.enableMultiView
+      ...(environment.isDesktop && enableMultiView
         ? [
             {
               index: 99,
@@ -241,7 +249,7 @@ export const useExplorerCollectionNodeOperations = (
       },
     ],
     [
-      appSettings.enableMultiView,
+      enableMultiView,
       favorite,
       handleAddDocToCollection,
       handleDeleteCollection,

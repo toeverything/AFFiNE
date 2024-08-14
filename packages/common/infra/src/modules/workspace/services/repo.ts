@@ -1,10 +1,10 @@
 import { DebugLogger } from '@affine/debug';
 
-import { setupEditorFlags } from '../../../atom';
 import { fixWorkspaceVersion } from '../../../blocksuite';
 import { Service } from '../../../framework';
 import { ObjectPool } from '../../../utils';
 import type { Workspace } from '../entities/workspace';
+import { WorkspaceInitialized } from '../events';
 import type { WorkspaceOpenOptions } from '../open-options';
 import type { WorkspaceFlavourProvider } from '../providers/flavour';
 import { WorkspaceScope } from '../scopes/workspace';
@@ -103,7 +103,7 @@ export class WorkspaceRepositoryService extends Service {
     // apply compatibility fix
     fixWorkspaceVersion(workspace.docCollection.doc);
 
-    setupEditorFlags(workspace.docCollection);
+    this.framework.emitEvent(WorkspaceInitialized, workspace);
 
     this.profileRepo
       .getProfile(openOptions.metadata)

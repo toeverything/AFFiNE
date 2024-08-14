@@ -56,10 +56,6 @@ export const switchRow = style({
   justifyContent: 'space-between',
   width: '100%',
 });
-export const switchDisabled = style({
-  opacity: 0.5,
-  pointerEvents: 'none',
-});
 export const subHeader = style({
   fontWeight: '600',
   color: cssVar('textSecondaryColor'),

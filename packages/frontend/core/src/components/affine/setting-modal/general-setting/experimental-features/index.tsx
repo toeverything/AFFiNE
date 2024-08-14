@@ -1,6 +1,5 @@
 import { Button, Checkbox, Loading, Switch, Tooltip } from '@affine/component';
 import { SettingHeader } from '@affine/component/setting-components';
-import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { useI18n } from '@affine/i18n';
 import {
@@ -10,9 +9,11 @@ import {
   GithubIcon,
 } from '@blocksuite/icons/rc';
 import {
-  affineFeatureFlags,
-  blocksuiteFeatureFlags,
-  type FeedbackType,
+  AFFINE_FLAGS,
+  FeatureFlagService,
+  type Flag,
+  useLiveData,
+  useServices,
 } from '@toeverything/infra';
 import { useAtom } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
@@ -86,7 +87,7 @@ const ExperimentalFeaturesPrompt = ({
   );
 };
 
-const FeedbackIcon = ({ type }: { type: FeedbackType }) => {
+const FeedbackIcon = ({ type }: { type: Flag['feedbackType'] }) => {
   switch (type) {
     case 'discord':
       return <DiscordIcon fontSize={16} />;
@@ -99,55 +100,45 @@ const FeedbackIcon = ({ type }: { type: FeedbackType }) => {
   }
 };
 
-const feedbackLink: Record<FeedbackType, string> = {
+const feedbackLink: Record<NonNullable<Flag['feedbackType']>, string> = {
   discord: 'https://discord.gg/whd5mjYqVw',
   email: 'mailto:support@toeverything.info',
   github: 'https://github.com/toeverything/AFFiNE/issues',
 };
 
-const ExperimentalFeaturesItem = ({
-  title,
-  description,
-  feedbackType,
-  isMutating,
-  checked,
-  onChange,
-  testId,
-}: {
-  title: React.ReactNode;
-  description?: React.ReactNode;
-  feedbackType?: FeedbackType;
-  isMutating?: boolean;
-  checked: boolean;
-  onChange: (checked: boolean) => void;
-  testId?: string;
-}) => {
-  const link = feedbackType ? feedbackLink[feedbackType] : undefined;
+const ExperimentalFeaturesItem = ({ flag }: { flag: Flag }) => {
+  const value = useLiveData(flag.$);
+  const onChange = useCallback(
+    (checked: boolean) => {
+      flag.set(checked);
+    },
+    [flag]
+  );
+  const link = flag.feedbackType ? feedbackLink[flag.feedbackType] : undefined;
+
+  if (flag.configurable === false) {
+    return null;
+  }
 
   return (
     <div className={styles.rowContainer}>
       <div className={styles.switchRow}>
-        {title}
-        <Switch
-          checked={checked}
-          onChange={onChange}
-          className={isMutating ? styles.switchDisabled : ''}
-          data-testid={testId}
-        />
+        {flag.displayName}
+        <Switch checked={value} onChange={onChange} />
       </div>
-      {!!description && (
-        <Tooltip content={description}>
-          <div className={styles.description}>{description}</div>
+      {!!flag.description && (
+        <Tooltip content={flag.description}>
+          <div className={styles.description}>{flag.description}</div>
         </Tooltip>
       )}
-      {!!feedbackType && (
+      {!!flag.feedbackType && (
         <a
           className={styles.feedback}
           href={link}
           target="_blank"
           rel="noreferrer"
         >
-          <FeedbackIcon type={feedbackType} />
+          <FeedbackIcon type={flag.feedbackType} />
           <span>Discussion about this feature</span>
           <ArrowRightSmallIcon
             fontSize={20}
@@ -159,74 +150,9 @@ const ExperimentalFeaturesItem = ({
   );
 };
 
-const SplitViewSettingRow = () => {
-  const { appSettings, updateSettings } = useAppSettingHelper();
-
-  const onToggle = useCallback(
-    (checked: boolean) => {
-      updateSettings('enableMultiView', checked);
-    },
-    [updateSettings]
-  );
-  const multiViewFlagConfig = affineFeatureFlags['enableMultiView'];
-  const shouldShow = multiViewFlagConfig?.precondition?.();
-
-  if (!multiViewFlagConfig || !shouldShow) {
-    return null;
-  }
-
-  return (
-    <ExperimentalFeaturesItem
-      title={multiViewFlagConfig.displayName}
-      description={multiViewFlagConfig.description}
-      feedbackType={multiViewFlagConfig.feedbackType}
-      checked={appSettings.enableMultiView}
-      onChange={onToggle}
-    />
-  );
-};
-
-const BlocksuiteFeatureFlagSettings = () => {
-  const { appSettings, updateSettings } = useAppSettingHelper();
-  const toggleSetting = useCallback(
-    (flag: keyof BlockSuiteFlags, checked: boolean) => {
-      updateSettings('editorFlags', {
-        ...appSettings.editorFlags,
-        [flag]: checked,
-      });
-    },
-    [appSettings.editorFlags, updateSettings]
-  );
-
-  type EditorFlag = keyof typeof appSettings.editorFlags;
-
-  return (
-    <>
-      {Object.entries(blocksuiteFeatureFlags).map(([key, value]) => {
-        const hidden = value.precondition && !value.precondition();
-
-        if (hidden) {
-          return null;
-        }
-        return (
-          <ExperimentalFeaturesItem
-            key={key}
-            title={'Block Suite: ' + value.displayName}
-            description={value.description}
-            feedbackType={value.feedbackType}
-            checked={!!appSettings.editorFlags?.[key as EditorFlag]}
-            onChange={checked =>
-              toggleSetting(key as keyof BlockSuiteFlags, checked)
-            }
-          />
-        );
-      })}
-    </>
-  );
-};
-
 const ExperimentalFeaturesMain = () => {
   const t = useI18n();
+  const { featureFlagService } = useServices({ FeatureFlagService });
 
   return (
     <>
@@ -242,8 +168,12 @@ const ExperimentalFeaturesMain = () => {
         className={styles.settingsContainer}
         data-testid="experimental-settings"
       >
-        <SplitViewSettingRow />
-        <BlocksuiteFeatureFlagSettings />
+        {Object.keys(AFFINE_FLAGS).map(key => (
+          <ExperimentalFeaturesItem
+            key={key}
+            flag={featureFlagService.flags[key as keyof AFFINE_FLAGS]}
+          />
+        ))}
       </div>
     </>
   );

@@ -5,7 +5,6 @@ import {
   MenuSeparator,
   toast,
 } from '@affine/component';
-import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
 import { track } from '@affine/core/mixpanel';
 import { FavoriteService } from '@affine/core/modules/favorite';
 import { TagService } from '@affine/core/modules/tag';
@@ -19,7 +18,12 @@ import {
   PlusIcon,
   SplitViewIcon,
 } from '@blocksuite/icons/rc';
-import { DocsService, useLiveData, useServices } from '@toeverything/infra';
+import {
+  DocsService,
+  FeatureFlagService,
+  useLiveData,
+  useServices,
+} from '@toeverything/infra';
 import { useCallback, useMemo } from 'react';
 
 import type { NodeOperation } from '../../tree/types';
@@ -33,19 +37,27 @@ export const useExplorerTagNodeOperations = (
   }
 ): NodeOperation[] => {
   const t = useI18n();
-  const { appSettings } = useAppSettingHelper();
-  const { docsService, workbenchService, tagService, favoriteService } =
-    useServices({
-      WorkbenchService,
-      TagService,
-      DocsService,
-      FavoriteService,
-    });
+  const {
+    docsService,
+    workbenchService,
+    tagService,
+    favoriteService,
+    featureFlagService,
+  } = useServices({
+    WorkbenchService,
+    TagService,
+    DocsService,
+    FavoriteService,
+    FeatureFlagService,
+  });
 
   const favorite = useLiveData(
     favoriteService.favoriteList.favorite$('tag', tagId)
   );
   const tagRecord = useLiveData(tagService.tagList.tagByTagId$(tagId));
+  const enableMultiView = useLiveData(
+    featureFlagService.flags.enable_multi_view.$
+  );
 
   const handleNewDoc = useCallback(() => {
     if (tagRecord) {
@@ -114,7 +126,7 @@ export const useExplorerTagNodeOperations = (
           </MenuItem>
         ),
       },
-      ...(appSettings.enableMultiView
+      ...(enableMultiView && environment.isDesktop
         ? [
             {
               index: 100,
@@ -178,7 +190,7 @@ export const useExplorerTagNodeOperations = (
       },
     ],
     [
-      appSettings.enableMultiView,
+      enableMultiView,
       favorite,
       handleMoveToTrash,
       handleNewDoc,

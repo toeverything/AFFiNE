@@ -1,6 +1,5 @@
 import type { MenuItemProps } from '@affine/component';
 import { Menu, MenuIcon, MenuItem } from '@affine/component';
-import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
 import { useDeleteCollectionInfo } from '@affine/core/hooks/affine/use-delete-collection-info';
 import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/properties';
 import { WorkbenchService } from '@affine/core/modules/workbench';
@@ -16,7 +15,12 @@ import {
   PlusIcon,
   SplitViewIcon,
 } from '@blocksuite/icons/rc';
-import { useLiveData, useService } from '@toeverything/infra';
+import {
+  FeatureFlagService,
+  useLiveData,
+  useService,
+  useServices,
+} from '@toeverything/infra';
 import type { PropsWithChildren, ReactElement } from 'react';
 import { useCallback, useMemo } from 'react';
 
@@ -37,10 +41,17 @@ export const CollectionOperations = ({
   openRenameModal?: () => void;
   onAddDocToCollection?: () => void;
 }>) => {
+  const {
+    collectionService: service,
+    workbenchService,
+    featureFlagService,
+  } = useServices({
+    CollectionService,
+    WorkbenchService,
+    FeatureFlagService,
+  });
   const deleteInfo = useDeleteCollectionInfo();
-  const { appSettings } = useAppSettingHelper();
-  const service = useService(CollectionService);
-  const workbench = useService(WorkbenchService).workbench;
+  const workbench = workbenchService.workbench;
   const { open: openEditCollectionModal, node: editModal } =
     useEditCollection();
   const t = useI18n();
@@ -48,6 +59,9 @@ export const CollectionOperations = ({
     useEditCollectionName({
       title: t['com.affine.editCollection.renameCollection'](),
     });
+  const enableMultiView = useLiveData(
+    featureFlagService.flags.enable_multi_view.$
+  );
 
   const showEditName = useCallback(() => {
     // use openRenameModal if it is in the sidebar collection list
@@ -167,7 +181,7 @@ export const CollectionOperations = ({
         name: t['com.affine.workbench.tab.page-menu-open'](),
         click: openCollectionNewTab,
       },
-      ...(appSettings.enableMultiView
+      ...(enableMultiView && environment.isDesktop
         ? [
             {
               icon: (
@@ -197,6 +211,7 @@ export const CollectionOperations = ({
       },
     ],
     [
+      enableMultiView,
       t,
       showEditName,
       showEdit,
@@ -204,7 +219,6 @@ export const CollectionOperations = ({
       favorite,
       onToggleFavoritePage,
       openCollectionNewTab,
-      appSettings.enableMultiView,
       openCollectionSplitView,
       service,
       deleteInfo,

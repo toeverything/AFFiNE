@@ -6,7 +6,6 @@ import {
   toast,
   useConfirmModal,
 } from '@affine/component';
-import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
 import { useBlockSuiteMetaHelper } from '@affine/core/hooks/affine/use-block-suite-meta-helper';
 import { useTrashModalHelper } from '@affine/core/hooks/affine/use-trash-modal-helper';
 import { useCatchEventCallback } from '@affine/core/hooks/use-catch-event-hook';
@@ -34,6 +33,7 @@ import {
 } from '@blocksuite/icons/rc';
 import type { DocMeta } from '@blocksuite/store';
 import {
+  FeatureFlagService,
   useLiveData,
   useService,
   useServices,
@@ -67,13 +67,25 @@ export const PageOperationCell = ({
   onRemoveFromAllowList,
 }: PageOperationCellProps) => {
   const t = useI18n();
-  const currentWorkspace = useService(WorkspaceService).workspace;
-  const { appSettings } = useAppSettingHelper();
+  const {
+    featureFlagService,
+    workspaceService,
+    compatibleFavoriteItemsAdapter: favAdapter,
+    workbenchService,
+  } = useServices({
+    FeatureFlagService,
+    WorkspaceService,
+    CompatibleFavoriteItemsAdapter,
+    WorkbenchService,
+  });
+  const enableSplitView = useLiveData(
+    featureFlagService.flags.enable_multi_view.$
+  );
+  const currentWorkspace = workspaceService.workspace;
   const { setTrashModal } = useTrashModalHelper(currentWorkspace.docCollection);
   const [openDisableShared, setOpenDisableShared] = useState(false);
-  const favAdapter = useService(CompatibleFavoriteItemsAdapter);
   const favourite = useLiveData(favAdapter.isFavorite$(page.id, 'doc'));
-  const workbench = useService(WorkbenchService).workbench;
+  const workbench = workbenchService.workbench;
   const { duplicate } = useBlockSuiteMetaHelper(currentWorkspace.docCollection);
   const blocksuiteDoc = currentWorkspace.docCollection.getDoc(page.id);
 
@@ -201,7 +213,7 @@ export const PageOperationCell = ({
         {t['com.affine.workbench.tab.page-menu-open']()}
       </MenuItem>
 
-      {environment.isDesktop && appSettings.enableMultiView ? (
+      {environment.isDesktop && enableSplitView ? (
         <MenuItem
           onClick={onOpenInSplitView}
           preFix={
