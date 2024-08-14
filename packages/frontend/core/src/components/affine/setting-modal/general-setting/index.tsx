@@ -2,6 +2,7 @@ import { UserFeatureService } from '@affine/core/modules/cloud/services/user-fea
 import { useI18n } from '@affine/i18n';
 import {
   AppearanceIcon,
+  BlocksuiteIcon,
   ExperimentIcon,
   InformationIcon,
   KeyboardIcon,
@@ -15,6 +16,7 @@ import type { GeneralSettingKey } from '../types';
 import { AboutAffine } from './about';
 import { AppearanceSettings } from './appearance';
 import { BillingSettings } from './billing';
+import { EditorSettings } from './editor';
 import { ExperimentalFeatures } from './experimental-features';
 import { PaymentIcon, UpgradeIcon } from './icons';
 import { AFFiNEPricingPlans } from './plans';
@@ -65,6 +67,15 @@ export const useGeneralSettingList = (): GeneralSettingList => {
       testId: 'about-panel-trigger',
     },
   ];
+  if (runtimeConfig.enableEditorSettings) {
+    // add editor settings to second position
+    settings.splice(1, 0, {
+      key: 'editor',
+      title: t['com.affine.settings.editorSettings.title'](),
+      icon: BlocksuiteIcon,
+      testId: 'editor-panel-trigger',
+    });
+  }
 
   if (hasPaymentFeature) {
     settings.splice(3, 0, {
@@ -103,6 +114,8 @@ export const GeneralSetting = ({ generalKey }: GeneralSettingProps) => {
   switch (generalKey) {
     case 'shortcuts':
       return <Shortcuts />;
+    case 'editor':
+      return <EditorSettings />;
     case 'appearance':
       return <AppearanceSettings />;
     case 'about':

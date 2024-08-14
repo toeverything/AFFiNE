@@ -5,6 +5,7 @@ export const GeneralSettingKeys = [
   'plans',
   'billing',
   'experimental-features',
+  'editor',
 ] as const;
 
 export const WorkspaceSubTabs = ['preference', 'properties'] as const;
