@@ -60,6 +60,11 @@ export class SelfhostModule implements OnModuleInit {
 
   onModuleInit() {
     const staticPath = join(this.config.projectRoot, 'static');
+    // in command line mode
+    if (!this.adapterHost.httpAdapter) {
+      return;
+    }
+
     const app = this.adapterHost.httpAdapter.getInstance<Application>();
     const basePath = this.config.server.path;
 
