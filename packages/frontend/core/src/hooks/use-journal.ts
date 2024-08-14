@@ -63,16 +63,14 @@ export const useJournalHelper = (docCollection: DocCollection) => {
   const getJournalsByDate = useCallback(
     (maybeDate: MaybeDate) => {
       const day = dayjs(maybeDate);
-      return Array.from(docCollection.docs.values())
-        .map(blockCollection => blockCollection.getDoc())
-        .filter(page => {
-          const pageId = page.id;
-          if (!isPageJournal(pageId)) return false;
-          if (page.meta?.trash) return false;
-          const journalDate = adapter.getJournalPageDateString(page.id);
-          if (!journalDate) return false;
-          return day.isSame(journalDate, 'day');
-        });
+      return Array.from(docCollection.docs.values()).filter(page => {
+        const pageId = page.id;
+        if (!isPageJournal(pageId)) return false;
+        if (page.meta?.trash) return false;
+        const journalDate = adapter.getJournalPageDateString(page.id);
+        if (!journalDate) return false;
+        return day.isSame(journalDate, 'day');
+      });
     },
     [adapter, isPageJournal, docCollection.docs]
   );
@@ -83,7 +81,7 @@ export const useJournalHelper = (docCollection: DocCollection) => {
   const getJournalByDate = useCallback(
     (maybeDate: MaybeDate) => {
       const pages = getJournalsByDate(maybeDate);
-      if (pages.length) return pages[0];
+      if (pages.length) return pages[0].getDoc();
       return _createJournal(maybeDate);
     },
     [_createJournal, getJournalsByDate]
@@ -140,9 +138,9 @@ export const useJournalHelper = (docCollection: DocCollection) => {
       appendContentToToday,
     }),
     [
+      getJournalsByDate,
       getJournalByDate,
       getJournalDateString,
-      getJournalsByDate,
       getLocalizedJournalDateString,
       isPageJournal,
       isPageTodayJournal,
