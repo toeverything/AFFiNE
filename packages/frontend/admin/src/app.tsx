@@ -81,10 +81,10 @@ export const router = _createBrowserRouter(
               path: 'accounts',
               lazy: () => import('./modules/accounts'),
             },
-            // {
-            //   path: 'ai',
-            //   lazy: () => import('./modules/ai'),
-            // },
+            {
+              path: 'ai',
+              lazy: () => import('./modules/ai'),
+            },
             {
               path: 'config',
               lazy: () => import('./modules/config'),

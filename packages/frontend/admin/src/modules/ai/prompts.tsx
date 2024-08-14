@@ -54,14 +54,16 @@ export function Prompts() {
 export const PromptRow = ({ item, index }: { item: Prompt; index: number }) => {
   const { setRightPanelContent, openPanel, isOpen } = useRightPanel();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [canSave, setCanSave] = useState(false);
 
   const handleDiscardChangesCancel = useCallback(() => {
     setDialogOpen(false);
+    setCanSave(false);
   }, []);
 
   const handleConfirm = useCallback(
     (item: Prompt) => {
-      setRightPanelContent(<EditPrompt item={item} />);
+      setRightPanelContent(<EditPrompt item={item} setCanSave={setCanSave} />);
       if (dialogOpen) {
         handleDiscardChangesCancel();
       }
@@ -81,13 +83,13 @@ export const PromptRow = ({ item, index }: { item: Prompt; index: number }) => {
 
   const handleEdit = useCallback(
     (item: Prompt) => {
-      if (isOpen) {
+      if (isOpen && canSave) {
         setDialogOpen(true);
       } else {
         handleConfirm(item);
       }
     },
-    [handleConfirm, isOpen]
+    [canSave, handleConfirm, isOpen]
   );
   return (
     <div>

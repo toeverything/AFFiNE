@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "ai_prompts_metadata" ADD COLUMN     "modified" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN     "updated_at" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;

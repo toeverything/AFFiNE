@@ -42,7 +42,7 @@ export function createChatSession({
   return client.createSession({
     workspaceId,
     docId,
-    promptName: 'chat:gpt4',
+    promptName: 'Chat With AFFiNE AI',
   });
 }
 

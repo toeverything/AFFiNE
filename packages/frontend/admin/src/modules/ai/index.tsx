@@ -4,14 +4,7 @@ import * as ScrollAreaPrimitive from '@radix-ui/react-scroll-area';
 
 import { Prompts } from './prompts';
 
-export function Ai() {
-  return null;
-
-  // hide ai config in admin until it's ready
-  // return <AiPage />;
-}
-
-export function AiPage() {
+function AiPage() {
   return (
     <div className=" h-screen flex-1 flex-col flex">
       <div className="flex items-center justify-between px-6 py-3 my-[2px] max-md:ml-9 max-md:mt-[2px]">
@@ -38,4 +31,5 @@ export function AiPage() {
     </div>
   );
 }
-export { Ai as Component };
+
+export { AiPage as Component };

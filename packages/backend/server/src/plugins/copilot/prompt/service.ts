@@ -38,16 +38,11 @@ export class PromptService implements OnModuleInit {
         model: true,
         config: true,
         messages: {
-          select: {
-            role: true,
-            content: true,
-            params: true,
-          },
-          orderBy: {
-            idx: 'asc',
-          },
+          select: { role: true, content: true, params: true },
+          orderBy: { idx: 'asc' },
         },
       },
+      orderBy: { action: { sort: 'asc', nulls: 'first' } },
     });
   }
 
@@ -121,11 +116,18 @@ export class PromptService implements OnModuleInit {
       .then(ret => ret.id);
   }
 
-  async update(name: string, messages: PromptMessage[], config?: PromptConfig) {
+  async update(
+    name: string,
+    messages: PromptMessage[],
+    modifyByApi: boolean = false,
+    config?: PromptConfig
+  ) {
     const { id } = await this.db.aiPrompt.update({
       where: { name },
       data: {
         config: config || undefined,
+        updatedAt: new Date(),
+        modified: modifyByApi,
         messages: {
           // cleanup old messages
           deleteMany: {},

@@ -33,7 +33,10 @@ export class ChatPrompt {
   private readonly templateParams: PromptParams = {};
 
   static createFromPrompt(
-    options: Omit<AiPrompt, 'id' | 'createdAt' | 'config'> & {
+    options: Omit<
+      AiPrompt,
+      'id' | 'createdAt' | 'updatedAt' | 'modified' | 'config'
+    > & {
       messages: PromptMessage[];
       config: PromptConfig | undefined;
     }

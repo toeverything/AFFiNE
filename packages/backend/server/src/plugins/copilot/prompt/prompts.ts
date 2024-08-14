@@ -1,8 +1,12 @@
+import { Logger } from '@nestjs/common';
 import { AiPrompt, PrismaClient } from '@prisma/client';
 
 import { PromptConfig, PromptMessage } from '../types';
 
-type Prompt = Omit<AiPrompt, 'id' | 'createdAt' | 'action' | 'config'> & {
+type Prompt = Omit<
+  AiPrompt,
+  'id' | 'createdAt' | 'updatedAt' | 'modified' | 'action' | 'config'
+> & {
   action?: string;
   messages: PromptMessage[];
   config?: PromptConfig;
@@ -830,7 +834,7 @@ const chat: Prompt[] = [
     ],
   },
   {
-    name: 'chat:gpt4',
+    name: 'Chat With AFFiNE AI',
     model: 'gpt-4o',
     messages: [
       {
@@ -845,7 +849,20 @@ const chat: Prompt[] = [
 export const prompts: Prompt[] = [...actions, ...chat, ...workflows];
 
 export async function refreshPrompts(db: PrismaClient) {
+  const needToSkip = await db.aiPrompt
+    .findMany({
+      where: { modified: true },
+      select: { name: true },
+    })
+    .then(p => p.map(p => p.name));
+
   for (const prompt of prompts) {
+    // skip prompt update if already modified by admin panel
+    if (needToSkip.includes(prompt.name)) {
+      new Logger('CopilotPrompt').warn(`Skip modified prompt: ${prompt.name}`);
+      return;
+    }
+
     await db.aiPrompt.upsert({
       create: {
         name: prompt.name,
@@ -865,6 +882,7 @@ export async function refreshPrompts(db: PrismaClient) {
       update: {
         action: prompt.action,
         model: prompt.model,
+        updatedAt: new Date(),
         messages: {
           deleteMany: {},
           create: prompt.messages.map((message, idx) => ({
