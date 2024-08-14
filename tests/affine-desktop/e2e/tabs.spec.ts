@@ -154,7 +154,9 @@ async function enableSplitView(page: Page) {
       })
     );
   });
-  await page.reload();
+  await page.reload({
+    timeout: 30000,
+  });
 }
 
 test('open new tab via cmd+click page link', async ({ page }) => {

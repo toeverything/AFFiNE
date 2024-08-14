@@ -139,22 +139,19 @@ export function createApplicationMenu() {
             undoCloseTab().catch(console.error);
           },
         },
-        {
-          label: 'Switch to tab',
-          acceleratorWorksWhenHidden: true,
-          visible: false,
-          submenu: [1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => {
-            const shortcut = `CommandOrControl+${n}`;
-            const listener = () => {
-              switchTab(n);
-            };
-            return {
-              label: `Switch to tab ${n}`,
-              accelerator: shortcut,
-              click: listener,
-            };
-          }),
-        },
+        ...[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => {
+          const shortcut = `CommandOrControl+${n}`;
+          const listener = () => {
+            switchTab(n);
+          };
+          return {
+            acceleratorWorksWhenHidden: true,
+            label: `Switch to tab ${n}`,
+            accelerator: shortcut,
+            click: listener,
+            visible: false,
+          };
+        }),
       ],
     },
     {
