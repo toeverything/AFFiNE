@@ -14,6 +14,7 @@ import { RenameModal } from '@affine/component/rename-modal';
 import { appSidebarWidthAtom } from '@affine/core/components/app-sidebar/index.jotai';
 import { WorkbenchLink } from '@affine/core/modules/workbench';
 import type { AffineDNDData } from '@affine/core/types/dnd';
+import { extractEmojiIcon } from '@affine/core/utils';
 import { useI18n } from '@affine/i18n';
 import {
   ArrowDownSmallIcon,
@@ -59,7 +60,7 @@ export type ExplorerTreeNodeIcon = React.ComponentType<{
 export const ExplorerTreeNode = ({
   children,
   icon: Icon,
-  name,
+  name: rawName,
   onClick,
   to,
   active,
@@ -68,6 +69,7 @@ export const ExplorerTreeNode = ({
   onRename,
   disabled,
   collapsed,
+  extractEmojiAsIcon,
   setCollapsed,
   canDrop,
   reorderable = true,
@@ -87,6 +89,7 @@ export const ExplorerTreeNode = ({
   active?: boolean;
   reorderable?: boolean;
   defaultRenaming?: boolean;
+  extractEmojiAsIcon?: boolean;
   collapsed: boolean;
   setCollapsed: (collapsed: boolean) => void;
   renameable?: boolean;
@@ -117,6 +120,19 @@ export const ExplorerTreeNode = ({
   const [renaming, setRenaming] = useState(defaultRenaming);
   const [lastInGroup, setLastInGroup] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+  const { emoji, name } = useMemo(() => {
+    if (!extractEmojiAsIcon || !rawName) {
+      return {
+        emoji: null,
+        name: rawName,
+      };
+    }
+    const { emoji, rest } = extractEmojiIcon(rawName);
+    return {
+      emoji,
+      name: rest,
+    };
+  }, [extractEmojiAsIcon, rawName]);
   const { dragRef, dragging, CustomDragPreview } = useDraggable<
     AffineDNDData & { draggable: { __cid: string } }
   >(
@@ -299,34 +315,38 @@ export const ExplorerTreeNode = ({
       data-active={active}
       data-disabled={disabled}
     >
-      {Icon && (
-        <div className={styles.iconsContainer}>
-          <div
-            data-disabled={disabled}
-            onClick={handleCollapsedChange}
-            data-testid="explorer-collapsed-button"
-            className={styles.collapsedIconContainer}
-          >
-            <ArrowDownSmallIcon
-              className={styles.collapsedIcon}
-              data-collapsed={collapsed !== false}
-            />
-          </div>
-          <Icon
-            className={styles.icon}
-            draggedOver={draggedOver && !isSelfDraggedOver}
-            treeInstruction={treeInstruction}
-            collapsed={collapsed}
+      <div className={styles.iconsContainer}>
+        <div
+          data-disabled={disabled}
+          onClick={handleCollapsedChange}
+          data-testid="explorer-collapsed-button"
+          className={styles.collapsedIconContainer}
+        >
+          <ArrowDownSmallIcon
+            className={styles.collapsedIcon}
+            data-collapsed={collapsed !== false}
           />
         </div>
-      )}
+        {emoji ? (
+          <div className={styles.emojiIcon}>{emoji}</div>
+        ) : (
+          Icon && (
+            <Icon
+              className={styles.icon}
+              draggedOver={draggedOver && !isSelfDraggedOver}
+              treeInstruction={treeInstruction}
+              collapsed={collapsed}
+            />
+          )
+        )}
+      </div>
       {renameable && renaming && (
         <RenameModal
           open
           width={sidebarWidth - 32}
           onOpenChange={setRenaming}
           onRename={handleRename}
-          currentName={name ?? ''}
+          currentName={rawName ?? ''}
         >
           <div className={styles.itemRenameAnchor} />
         </RenameModal>

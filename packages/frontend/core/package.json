@@ -62,6 +62,7 @@
     "fractional-indexing": "^3.2.0",
     "fractional-indexing-jittered": "^0.9.1",
     "fuse.js": "^7.0.0",
+    "graphemer": "^1.4.0",
     "graphql": "^16.8.1",
     "history": "^5.3.0",
     "idb": "^8.0.0",

@@ -72,6 +72,15 @@ export const icon = style({
   color: cssVarV2('icon/primary'),
   fontSize: '20px',
 });
+export const emojiIcon = style({
+  width: '20px',
+  height: '20px',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  color: cssVarV2('icon/primary'),
+  fontSize: cssVar('--affine-font-sm'),
+});
 export const collapsedIconContainer = style({
   width: '16px',
   height: '16px',

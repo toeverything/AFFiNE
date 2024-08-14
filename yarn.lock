@@ -444,6 +444,7 @@ __metadata:
     fractional-indexing: "npm:^3.2.0"
     fractional-indexing-jittered: "npm:^0.9.1"
     fuse.js: "npm:^7.0.0"
+    graphemer: "npm:^1.4.0"
     graphql: "npm:^16.8.1"
     history: "npm:^5.3.0"
     idb: "npm:^8.0.0"

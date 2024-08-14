@@ -83,6 +83,14 @@ export const AFFINE_FLAGS = {
     configurable: isDesktopEnvironment,
     defaultState: isCanaryBuild,
   },
+  enable_emoji_folder_icon: {
+    category: 'affine',
+    displayName: 'Emoji Folder Icon',
+    description:
+      'Once enabled, you can use an emoji as the folder icon. When the first character of the folder name is an emoji, it will be extracted and used as its icon.',
+    configurable: true,
+    defaultState: false,
+  },
 } satisfies { [key in string]: FlagInfo };
 
 export type AFFINE_FLAGS = typeof AFFINE_FLAGS;

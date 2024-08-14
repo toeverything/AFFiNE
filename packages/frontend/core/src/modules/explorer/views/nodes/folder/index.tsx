@@ -34,7 +34,12 @@ import {
   RemoveFolderIcon,
   TagsIcon,
 } from '@blocksuite/icons/rc';
-import { DocsService, useLiveData, useServices } from '@toeverything/infra';
+import {
+  DocsService,
+  FeatureFlagService,
+  useLiveData,
+  useServices,
+} from '@toeverything/infra';
 import { difference } from 'lodash-es';
 import { useCallback, useMemo, useState } from 'react';
 
@@ -65,7 +70,9 @@ export const ExplorerFolderNode = ({
     | NodeOperation[]
     | ((type: string, node: FolderNode) => NodeOperation[]);
 } & Omit<GenericExplorerNode, 'operations'>) => {
-  const { organizeService } = useServices({ OrganizeService });
+  const { organizeService } = useServices({
+    OrganizeService,
+  });
   const node = useLiveData(organizeService.folderTree.folderNode$(nodeId));
   const type = useLiveData(node?.type$);
   const data = useLiveData(node?.data$);
@@ -180,15 +187,19 @@ export const ExplorerFolderNodeFolder = ({
   node: FolderNode;
 } & GenericExplorerNode) => {
   const t = useI18n();
-  const { docsService, workbenchService } = useServices({
+  const { docsService, workbenchService, featureFlagService } = useServices({
     DocsService,
     WorkbenchService,
     CompatibleFavoriteItemsAdapter,
+    FeatureFlagService,
   });
   const openDocsSelector = useSelectDoc();
   const openTagsSelector = useSelectTag();
   const openCollectionsSelector = useSelectCollection();
   const name = useLiveData(node.name$);
+  const enableEmojiIcon = useLiveData(
+    featureFlagService.flags.enable_emoji_folder_icon.$
+  );
   const [collapsed, setCollapsed] = useState(true);
   const [newFolderId, setNewFolderId] = useState<string | null>(null);
 
@@ -780,6 +791,7 @@ export const ExplorerFolderNodeFolder = ({
       onDrop={handleDropOnFolder}
       defaultRenaming={defaultRenaming}
       renameable
+      extractEmojiAsIcon={enableEmojiIcon}
       reorderable={reorderable}
       collapsed={collapsed}
       setCollapsed={handleCollapsedChange}
