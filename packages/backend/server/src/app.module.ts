@@ -1,10 +1,13 @@
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import {
   DynamicModule,
   ForwardReference,
   Logger,
+  MiddlewareConsumer,
   Module,
+  NestModule,
 } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ServeStaticModule } from '@nestjs/serve-static';
@@ -16,7 +19,7 @@ import { ADD_ENABLED_FEATURES, ServerConfigModule } from './core/config';
 import { DocModule } from './core/doc';
 import { FeatureModule } from './core/features';
 import { QuotaModule } from './core/quota';
-import { CustomSetupModule } from './core/setup';
+import { CustomSetupModule, SetupMiddleware } from './core/setup';
 import { StorageModule } from './core/storage';
 import { SyncModule } from './core/sync';
 import { UserModule } from './core/user';
@@ -135,15 +138,25 @@ export class AppModuleBuilder {
   }
 
   compile() {
+    const configure = (consumer: MiddlewareConsumer) => {
+      if (this.config.isSelfhosted) {
+        consumer.apply(SetupMiddleware).forRoutes('*');
+      }
+    };
+
     @Module({
       imports: this.modules,
       controllers: this.config.isSelfhosted ? [] : [AppController],
     })
-    class AppModule {}
+    class AppModule implements NestModule {
+      configure = configure;
+    }
 
     return AppModule;
   }
 }
+
+const pwd = resolve(fileURLToPath(import.meta.url), '../../');
 
 function buildAppModule() {
   AFFiNE = mergeConfigOverride(AFFiNE);
@@ -179,12 +192,12 @@ function buildAppModule() {
       config => config.isSelfhosted,
       CustomSetupModule,
       ServeStaticModule.forRoot({
-        rootPath: join('/app', 'static'),
-        exclude: ['/admin*'],
+        rootPath: join(pwd, 'static', 'admin'),
+        renderPath: /^\/admin\/?/,
       }),
       ServeStaticModule.forRoot({
-        rootPath: join('/app', 'static', 'admin'),
-        serveRoot: '/admin',
+        rootPath: join(pwd, 'static'),
+        renderPath: '*',
       })
     );
 
