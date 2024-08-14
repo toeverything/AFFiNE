@@ -54,6 +54,7 @@ const clearChat = async (page: Page) => {
 const collectChat = async (page: Page) => {
   const chatPanel = await page.waitForSelector('.chat-panel-messages');
   // wait ai response
+  await page.waitForSelector('.chat-panel-messages .message chat-copy-more');
   const lastMessage = await chatPanel.$$('.message').then(m => m[m.length - 1]);
   await lastMessage.waitForSelector('chat-copy-more');
   await page.waitForTimeout(500);
@@ -156,6 +157,7 @@ test.describe('chat panel', () => {
     await makeChat(page, 'hello');
     const content = (await collectChat(page))[1].content;
     await page.getByTestId('action-copy-button').click();
+    await page.waitForTimeout(500);
     expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
       content
     );
