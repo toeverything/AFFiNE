@@ -31,9 +31,16 @@ function UserForm({
 }: UserFormProps) {
   const serverConfig = useServerConfig();
 
-  const [changes, setChanges] = useState<Partial<UserInput>>({
-    features: defaultValue?.features ?? [],
-  });
+  const defaultUser: Partial<UserInput> = useMemo(
+    () => ({
+      name: defaultValue?.name ?? '',
+      email: defaultValue?.email ?? '',
+      features: defaultValue?.features ?? [],
+    }),
+    [defaultValue?.email, defaultValue?.features, defaultValue?.name]
+  );
+
+  const [changes, setChanges] = useState<Partial<UserInput>>(defaultUser);
 
   const setField = useCallback(
     <K extends keyof UserInput>(
@@ -74,6 +81,15 @@ function UserForm({
     [setField]
   );
 
+  const handleClose = useCallback(() => {
+    setChanges(defaultUser);
+    onClose();
+  }, [defaultUser, onClose]);
+
+  useEffect(() => {
+    setChanges(defaultUser);
+  }, [defaultUser]);
+
   return (
     <div className="flex flex-col h-full gap-1">
       <div className=" flex justify-between items-center py-[10px] px-6">
@@ -82,7 +98,7 @@ function UserForm({
           size="icon"
           className="w-7 h-7"
           variant="ghost"
-          onClick={onClose}
+          onClick={handleClose}
         >
           <XIcon size={20} />
         </Button>
@@ -104,14 +120,14 @@ function UserForm({
           <InputItem
             label="Name"
             field="name"
-            value={changes.name ?? defaultValue?.name}
+            value={changes.name}
             onChange={setField}
           />
           <Separator />
           <InputItem
             label="Email"
             field="email"
-            value={changes.email ?? defaultValue?.email}
+            value={changes.email}
             onChange={setField}
           />
         </div>
@@ -121,11 +137,7 @@ function UserForm({
             <div key={feature}>
               <ToggleItem
                 name={feature}
-                checked={(
-                  changes.features ??
-                  defaultValue?.features ??
-                  []
-                ).includes(feature)}
+                checked={changes.features?.includes(feature) ?? false}
                 onChange={onFeatureChanged}
               />
               {i < serverConfig.availableUserFeatures.length - 1 && (
@@ -188,7 +200,7 @@ function InputItem({
       <Input
         type="text"
         className="py-2 px-3 text-base font-normal"
-        defaultValue={value}
+        value={value}
         onChange={onValueChange}
       />
     </div>
