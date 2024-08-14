@@ -52,6 +52,7 @@ export class AskAIButton extends WithDisposable(LitElement) {
     .ask-ai-button {
       border-radius: 4px;
       position: relative;
+      user-select: none;
     }
 
     .ask-ai-icon-button {
@@ -110,7 +111,10 @@ export class AskAIButton extends WithDisposable(LitElement) {
         },
       };
     },
-    { allowMultiple: true }
+    {
+      allowMultiple: true,
+      enterDelay: 100,
+    }
   );
 
   @property({ attribute: false })
