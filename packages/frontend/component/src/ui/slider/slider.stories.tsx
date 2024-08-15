@@ -1,4 +1,5 @@
 import type { Meta, StoryFn } from '@storybook/react';
+import { useState } from 'react';
 
 import type { SliderProps } from './index';
 import { Slider } from './index';
@@ -8,7 +9,15 @@ export default {
   component: Slider,
 } satisfies Meta<typeof Slider>;
 
-const Template: StoryFn<SliderProps> = args => <Slider {...args} />;
+const Template: StoryFn<SliderProps> = args => {
+  const [value, setValue] = useState<number[]>([0]);
+  return <Slider value={value} onValueChange={setValue} {...args} />;
+};
 
 export const Default: StoryFn<SliderProps> = Template.bind(undefined);
-Default.args = {};
+Default.args = {
+  min: 0,
+  max: 100,
+  step: 1,
+  nodes: [0, 50, 100],
+};
