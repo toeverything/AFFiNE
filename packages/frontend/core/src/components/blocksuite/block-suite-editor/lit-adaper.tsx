@@ -7,7 +7,7 @@ import { useJournalInfoHelper } from '@affine/core/hooks/use-journal';
 import { EditorSettingService } from '@affine/core/modules/editor-settting';
 import { PeekViewService } from '@affine/core/modules/peek-view';
 import { WorkbenchService } from '@affine/core/modules/workbench';
-import type { DocMode } from '@blocksuite/blocks';
+import { DocMode } from '@blocksuite/blocks';
 import { DocTitle, EdgelessEditor, PageEditor } from '@blocksuite/presets';
 import type { Doc } from '@blocksuite/store';
 import {
@@ -179,7 +179,7 @@ export const BlocksuiteDocEditor = forwardRef<
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const [specs, portals] = usePatchSpecs(page, !!shared, 'page');
+  const [specs, portals] = usePatchSpecs(page, !!shared, DocMode.Page);
 
   const settings = useLiveData(editorSettingService.editorSetting.settings$);
 
@@ -219,7 +219,7 @@ export const BlocksuiteEdgelessEditor = forwardRef<
   EdgelessEditor,
   BlocksuiteEditorProps
 >(function BlocksuiteEdgelessEditor({ page, shared }, ref) {
-  const [specs, portals] = usePatchSpecs(page, !!shared, 'edgeless');
+  const [specs, portals] = usePatchSpecs(page, !!shared, DocMode.Edgeless);
   const editorRef = useRef<EdgelessEditor | null>(null);
 
   const onDocRef = useCallback(

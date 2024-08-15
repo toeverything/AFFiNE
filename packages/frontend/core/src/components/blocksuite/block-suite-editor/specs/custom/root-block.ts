@@ -16,7 +16,8 @@ import {
 } from '@blocksuite/blocks';
 import { type FrameworkProvider } from '@toeverything/infra';
 
-import { createLinkedWidgetConfig } from './linked-widget';
+import { createLinkedWidgetConfig } from './widgets/linked';
+import { createToolbarMoreMenuConfig } from './widgets/toolbar';
 
 function customLoadFonts(service: RootService): void {
   if (runtimeConfig.isSelfHosted) {
@@ -56,6 +57,7 @@ export function createPageRootBlockSpec(
     service: withAffineRootService(PageRootService),
     config: {
       linkedWidget: createLinkedWidgetConfig(framework),
+      toolbarMoreMenu: createToolbarMoreMenuConfig(framework),
     },
   };
 }
@@ -68,6 +70,7 @@ export function createEdgelessRootBlockSpec(
     service: withAffineRootService(EdgelessRootService as never),
     config: {
       linkedWidget: createLinkedWidgetConfig(framework),
+      toolbarMoreMenu: createToolbarMoreMenuConfig(framework),
     },
   };
 }
