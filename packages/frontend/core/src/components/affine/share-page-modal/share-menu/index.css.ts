@@ -25,18 +25,10 @@ export const menuTriggerStyle = style({
   padding: '4px 10px',
   justifyContent: 'space-between',
 });
-export const menuItemStyle = style({
-  padding: '4px',
-});
 export const publicItemRowStyle = style({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'space-between',
-});
-export const publicMenuItemPrefixStyle = style({
-  fontSize: cssVar('fontH5'),
-  color: cssVarV2('icon/primary'),
-  marginRight: '8px',
 });
 export const DoneIconStyle = style({
   color: cssVarV2('button/primary'),
@@ -66,7 +58,6 @@ export const copyLinkButtonStyle = style({
 });
 export const copyLinkLabelContainerStyle = style({
   width: '100%',
-  padding: '4px 12px',
   borderRight: 'none',
   borderTopRightRadius: '0',
   borderBottomRightRadius: '0',
@@ -92,18 +83,7 @@ export const copyLinkShortcutStyle = style({
   color: cssVarV2('text/pureWhite'),
 });
 export const copyLinkTriggerStyle = style({
-  width: '100%',
-  padding: '4px 12px',
-  paddingLeft: '4px',
-  display: 'flex',
-  border: `1px solid ${cssVarV2('button/innerBlackBorder')}`,
-  flex: 0,
-  justifyContent: 'end',
-  alignItems: 'center',
-  gap: '4px',
-  position: 'relative',
-  backgroundColor: cssVarV2('button/primary'),
-  color: cssVarV2('button/pureWhiteText'),
+  padding: '4px 12px 4px 8px',
   borderLeft: 'none',
   borderTopLeftRadius: '0',
   borderBottomLeftRadius: '0',
@@ -111,7 +91,7 @@ export const copyLinkTriggerStyle = style({
     backgroundColor: cssVarV2('button/primary'),
     color: cssVarV2('button/pureWhiteText'),
   },
-  '::before': {
+  '::after': {
     content: '""',
     position: 'absolute',
     left: '0',

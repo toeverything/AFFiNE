@@ -18,7 +18,7 @@ export const AddWorkspace = ({
       {environment.isDesktop ? (
         <MenuItem
           block={true}
-          preFix={<ImportIcon />}
+          prefixIcon={<ImportIcon />}
           onClick={onAddWorkspace}
           data-testid="add-workspace"
           className={styles.ItemContainer}
@@ -30,7 +30,7 @@ export const AddWorkspace = ({
       ) : null}
       <MenuItem
         block={true}
-        preFix={<PlusIcon />}
+        prefixIcon={<PlusIcon />}
         onClick={onNewWorkspace}
         data-testid="new-workspace"
         className={styles.ItemContainer}

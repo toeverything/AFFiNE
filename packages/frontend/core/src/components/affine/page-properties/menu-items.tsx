@@ -1,11 +1,5 @@
 import type { MenuItemProps } from '@affine/component';
-import {
-  Input,
-  MenuIcon,
-  MenuItem,
-  MenuSeparator,
-  Scrollable,
-} from '@affine/component';
+import { Input, MenuItem, MenuSeparator, Scrollable } from '@affine/component';
 import type { PageInfoCustomPropertyMeta } from '@affine/core/modules/properties/services/schema';
 import { useI18n } from '@affine/i18n';
 import type { KeyboardEventHandler, MouseEventHandler } from 'react';
@@ -61,7 +55,7 @@ export const renderMenuItemOptions = (options: MenuItemOption[]) => {
           type={type}
           selected={selected}
           checked={checked}
-          preFix={icon ? <MenuIcon>{icon}</MenuIcon> : null}
+          prefixIcon={icon}
           onClick={onClick}
         >
           {text}

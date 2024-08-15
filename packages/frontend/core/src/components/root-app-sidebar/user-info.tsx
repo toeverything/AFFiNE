@@ -4,7 +4,6 @@ import {
   ErrorMessage,
   IconButton,
   Menu,
-  MenuIcon,
   MenuItem,
   type MenuProps,
   Skeleton,
@@ -100,22 +99,14 @@ const AccountMenu = () => {
   return (
     <>
       <MenuItem
-        preFix={
-          <MenuIcon>
-            <AccountIcon />
-          </MenuIcon>
-        }
+        prefixIcon={<AccountIcon />}
         data-testid="workspace-modal-account-settings-option"
         onClick={onOpenAccountSetting}
       >
         {t['com.affine.workspace.cloud.account.settings']()}
       </MenuItem>
       <MenuItem
-        preFix={
-          <MenuIcon>
-            <SignOutIcon />
-          </MenuIcon>
-        }
+        prefixIcon={<SignOutIcon />}
         data-testid="workspace-modal-sign-out-option"
         onClick={onOpenSignOutModal}
       >

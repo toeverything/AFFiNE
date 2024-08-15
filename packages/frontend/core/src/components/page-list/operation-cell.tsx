@@ -1,7 +1,6 @@
 import {
   IconButton,
   Menu,
-  MenuIcon,
   MenuItem,
   toast,
   useConfirmModal,
@@ -20,8 +19,6 @@ import {
   DeletePermanentlyIcon,
   DuplicateIcon,
   EditIcon,
-  FavoritedIcon,
-  FavoriteIcon,
   FilterIcon,
   FilterMinusIcon,
   InformationIcon,
@@ -44,6 +41,7 @@ import { useCallback, useState } from 'react';
 import type { CollectionService } from '../../modules/collection';
 import { InfoModal } from '../affine/page-properties';
 import { usePageHelper } from '../blocksuite/block-suite-page-list/utils';
+import { IsFavoriteIcon } from '../pure/icons';
 import { FavoriteTag } from './components/favorite-tag';
 import * as styles from './list.css';
 import { DisablePublicSharing, MoveToTrash } from './operation-menu-items';
@@ -164,76 +162,36 @@ export const PageOperationCell = ({
       {isInAllowList && (
         <MenuItem
           onClick={handleRemoveFromAllowList}
-          preFix={
-            <MenuIcon>
-              <FilterMinusIcon />
-            </MenuIcon>
-          }
+          prefixIcon={<FilterMinusIcon />}
         >
           {t['Remove special filter']()}
         </MenuItem>
       )}
       <MenuItem
         onClick={onToggleFavoritePageOption}
-        preFix={
-          <MenuIcon>
-            {favourite ? (
-              <FavoritedIcon style={{ color: 'var(--affine-primary-color)' }} />
-            ) : (
-              <FavoriteIcon />
-            )}
-          </MenuIcon>
-        }
+        prefixIcon={<IsFavoriteIcon favorite={favourite} />}
       >
         {favourite
           ? t['com.affine.favoritePageOperation.remove']()
           : t['com.affine.favoritePageOperation.add']()}
       </MenuItem>
       {runtimeConfig.enableInfoModal ? (
-        <MenuItem
-          onClick={onOpenInfoModal}
-          preFix={
-            <MenuIcon>
-              <InformationIcon />
-            </MenuIcon>
-          }
-        >
+        <MenuItem onClick={onOpenInfoModal} prefixIcon={<InformationIcon />}>
           {t['com.affine.page-properties.page-info.view']()}
         </MenuItem>
       ) : null}
 
-      <MenuItem
-        onClick={onOpenInNewTab}
-        preFix={
-          <MenuIcon>
-            <OpenInNewIcon />
-          </MenuIcon>
-        }
-      >
+      <MenuItem onClick={onOpenInNewTab} prefixIcon={<OpenInNewIcon />}>
         {t['com.affine.workbench.tab.page-menu-open']()}
       </MenuItem>
 
       {environment.isDesktop && enableSplitView ? (
-        <MenuItem
-          onClick={onOpenInSplitView}
-          preFix={
-            <MenuIcon>
-              <SplitViewIcon />
-            </MenuIcon>
-          }
-        >
+        <MenuItem onClick={onOpenInSplitView} prefixIcon={<SplitViewIcon />}>
           {t['com.affine.workbench.split-view.page-menu-open']()}
         </MenuItem>
       ) : null}
 
-      <MenuItem
-        preFix={
-          <MenuIcon>
-            <DuplicateIcon />
-          </MenuIcon>
-        }
-        onSelect={onDuplicate}
-      >
+      <MenuItem prefixIcon={<DuplicateIcon />} onSelect={onDuplicate}>
         {t['com.affine.header.option.duplicate']()}
       </MenuItem>
 
@@ -459,17 +417,7 @@ export const CollectionOperationCell = ({
             <>
               <MenuItem
                 onClick={onToggleFavoriteCollection}
-                preFix={
-                  <MenuIcon>
-                    {favourite ? (
-                      <FavoritedIcon
-                        style={{ color: 'var(--affine-primary-color)' }}
-                      />
-                    ) : (
-                      <FavoriteIcon />
-                    )}
-                  </MenuIcon>
-                }
+                prefixIcon={<IsFavoriteIcon favorite={favourite} />}
               >
                 {favourite
                   ? t['com.affine.favoritePageOperation.remove']()
@@ -477,21 +425,13 @@ export const CollectionOperationCell = ({
               </MenuItem>
               <MenuItem
                 onClick={onConfirmAddDocToCollection}
-                preFix={
-                  <MenuIcon>
-                    <PlusIcon />
-                  </MenuIcon>
-                }
+                prefixIcon={<PlusIcon />}
               >
                 {t['New Page']()}
               </MenuItem>
               <MenuItem
                 onClick={handleDelete}
-                preFix={
-                  <MenuIcon>
-                    <DeleteIcon />
-                  </MenuIcon>
-                }
+                prefixIcon={<DeleteIcon />}
                 type="danger"
                 data-testid="delete-collection"
               >
@@ -566,11 +506,7 @@ export const TagOperationCell = ({
         <Menu
           items={
             <MenuItem
-              preFix={
-                <MenuIcon>
-                  <DeleteIcon />
-                </MenuIcon>
-              }
+              prefixIcon={<DeleteIcon />}
               type="danger"
               onSelect={handleDelete}
               data-testid="delete-tag"

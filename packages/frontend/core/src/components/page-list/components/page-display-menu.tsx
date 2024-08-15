@@ -94,7 +94,7 @@ export const PageDisplayMenu = () => {
         key={option.value}
         onSelect={() => handleSelect(option.value)}
         data-active={workspaceProperties.groupBy === option.value}
-        endFix={
+        suffixIcon={
           workspaceProperties.groupBy === option.value ? (
             <DoneIcon fontSize={'20px'} />
           ) : null

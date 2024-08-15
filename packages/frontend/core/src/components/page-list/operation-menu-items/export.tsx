@@ -1,4 +1,4 @@
-import { MenuIcon, MenuItem, MenuSub } from '@affine/component';
+import { MenuItem, MenuSub } from '@affine/component';
 import { track } from '@affine/core/mixpanel';
 import { useI18n } from '@affine/i18n';
 import {
@@ -40,7 +40,7 @@ export function ExportMenuItem<T>({
       data-testid={`export-to-${type}`}
       onSelect={onSelect}
       block
-      preFix={<MenuIcon>{icon}</MenuIcon>}
+      prefixIcon={icon}
     >
       {label}
     </MenuItem>
@@ -127,11 +127,7 @@ export const Export = ({ exportHandler, className, pageMode }: ExportProps) => {
       items={items}
       triggerOptions={{
         className: transitionStyle,
-        preFix: (
-          <MenuIcon>
-            <ExportIcon />
-          </MenuIcon>
-        ),
+        prefixIcon: <ExportIcon />,
         ['data-testid' as string]: 'export-menu',
       }}
       subOptions={{

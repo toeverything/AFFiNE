@@ -5,7 +5,6 @@ import {
   type DropTargetTreeInstruction,
   IconButton,
   Menu,
-  MenuIcon,
   MenuItem,
   useDraggable,
   useDropTarget,
@@ -246,11 +245,7 @@ export const ExplorerTreeNode = ({
                   <MenuItem
                     key={'explorer-tree-rename'}
                     type={'default'}
-                    preFix={
-                      <MenuIcon>
-                        <EditIcon />
-                      </MenuIcon>
-                    }
+                    prefixIcon={<EditIcon />}
                     onClick={() => setRenaming(true)}
                   >
                     {t['com.affine.menu.rename']()}

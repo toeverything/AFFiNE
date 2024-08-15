@@ -4,7 +4,6 @@ import {
   type DropTargetDropEvent,
   type DropTargetOptions,
   IconButton,
-  MenuIcon,
   MenuItem,
   MenuSeparator,
   MenuSub,
@@ -632,14 +631,7 @@ export const ExplorerFolderNodeFolder = ({
       {
         index: 100,
         view: (
-          <MenuItem
-            preFix={
-              <MenuIcon>
-                <FolderIcon />
-              </MenuIcon>
-            }
-            onClick={handleCreateSubfolder}
-          >
+          <MenuItem prefixIcon={<FolderIcon />} onClick={handleCreateSubfolder}>
             {t['com.affine.rootAppSidebar.organize.folder.create-subfolder']()}
           </MenuItem>
         ),
@@ -648,11 +640,7 @@ export const ExplorerFolderNodeFolder = ({
         index: 101,
         view: (
           <MenuItem
-            preFix={
-              <MenuIcon>
-                <PageIcon />
-              </MenuIcon>
-            }
+            prefixIcon={<PageIcon />}
             onClick={() => handleAddToFolder('doc')}
           >
             {t['com.affine.rootAppSidebar.organize.folder.add-docs']()}
@@ -664,31 +652,19 @@ export const ExplorerFolderNodeFolder = ({
         view: (
           <MenuSub
             triggerOptions={{
-              preFix: (
-                <MenuIcon>
-                  <PlusThickIcon />
-                </MenuIcon>
-              ),
+              prefixIcon: <PlusThickIcon />,
             }}
             items={
               <>
                 <MenuItem
                   onClick={() => handleAddToFolder('tag')}
-                  preFix={
-                    <MenuIcon>
-                      <TagsIcon />
-                    </MenuIcon>
-                  }
+                  prefixIcon={<TagsIcon />}
                 >
                   {t['com.affine.rootAppSidebar.organize.folder.add-tags']()}
                 </MenuItem>
                 <MenuItem
                   onClick={() => handleAddToFolder('collection')}
-                  preFix={
-                    <MenuIcon>
-                      <AnimatedCollectionsIcon closed={false} />
-                    </MenuIcon>
-                  }
+                  prefixIcon={<AnimatedCollectionsIcon closed={false} />}
                 >
                   {t[
                     'com.affine.rootAppSidebar.organize.folder.add-collections'
@@ -716,11 +692,7 @@ export const ExplorerFolderNodeFolder = ({
         view: (
           <MenuItem
             type={'danger'}
-            preFix={
-              <MenuIcon>
-                <DeleteIcon />
-              </MenuIcon>
-            }
+            prefixIcon={<DeleteIcon />}
             onClick={handleDelete}
           >
             {t['com.affine.rootAppSidebar.organize.delete']()}
@@ -754,11 +726,7 @@ export const ExplorerFolderNodeFolder = ({
             view: (
               <MenuItem
                 type={'danger'}
-                preFix={
-                  <MenuIcon>
-                    <RemoveFolderIcon />
-                  </MenuIcon>
-                }
+                prefixIcon={<RemoveFolderIcon />}
                 data-event-props="$.navigationPanel.organize.deleteOrganizeItem"
                 data-event-args-type={node.type$.value}
                 onClick={() => node.delete()}

@@ -1,5 +1,5 @@
 import type { ConfirmModalProps, MenuItemProps } from '@affine/component';
-import { ConfirmModal, MenuIcon, MenuItem } from '@affine/component';
+import { ConfirmModal, MenuItem } from '@affine/component';
 import { useI18n } from '@affine/i18n';
 import { DeleteIcon } from '@blocksuite/icons/rc';
 
@@ -7,15 +7,7 @@ export const MoveToTrash = (props: MenuItemProps) => {
   const t = useI18n();
 
   return (
-    <MenuItem
-      preFix={
-        <MenuIcon>
-          <DeleteIcon />
-        </MenuIcon>
-      }
-      type="danger"
-      {...props}
-    >
+    <MenuItem prefixIcon={<DeleteIcon />} type="danger" {...props}>
       {t['com.affine.moveToTrash.title']()}
     </MenuItem>
   );

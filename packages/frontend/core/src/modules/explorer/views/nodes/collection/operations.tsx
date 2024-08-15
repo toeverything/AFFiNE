@@ -1,10 +1,10 @@
 import {
   IconButton,
-  MenuIcon,
   MenuItem,
   MenuSeparator,
   useConfirmModal,
 } from '@affine/component';
+import { IsFavoriteIcon } from '@affine/core/components/pure/icons';
 import { useDeleteCollectionInfo } from '@affine/core/hooks/affine/use-delete-collection-info';
 import { track } from '@affine/core/mixpanel';
 import { CollectionService } from '@affine/core/modules/collection';
@@ -13,8 +13,6 @@ import { WorkbenchService } from '@affine/core/modules/workbench';
 import { useI18n } from '@affine/i18n';
 import {
   DeleteIcon,
-  FavoritedIcon,
-  FavoriteIcon,
   FilterIcon,
   OpenInNewIcon,
   PlusIcon,
@@ -143,14 +141,7 @@ export const useExplorerCollectionNodeOperations = (
       {
         index: 99,
         view: (
-          <MenuItem
-            preFix={
-              <MenuIcon>
-                <FilterIcon />
-              </MenuIcon>
-            }
-            onClick={handleShowEdit}
-          >
+          <MenuItem prefixIcon={<FilterIcon />} onClick={handleShowEdit}>
             {t['com.affine.collection.menu.edit']()}
           </MenuItem>
         ),
@@ -159,11 +150,7 @@ export const useExplorerCollectionNodeOperations = (
         index: 99,
         view: (
           <MenuItem
-            preFix={
-              <MenuIcon>
-                <PlusIcon />
-              </MenuIcon>
-            }
+            prefixIcon={<PlusIcon />}
             onClick={handleAddDocToCollection}
           >
             {t['New Page']()}
@@ -174,17 +161,7 @@ export const useExplorerCollectionNodeOperations = (
         index: 99,
         view: (
           <MenuItem
-            preFix={
-              <MenuIcon>
-                {favorite ? (
-                  <FavoritedIcon
-                    style={{ color: 'var(--affine-primary-color)' }}
-                  />
-                ) : (
-                  <FavoriteIcon />
-                )}
-              </MenuIcon>
-            }
+            prefixIcon={<IsFavoriteIcon favorite={favorite} />}
             onClick={handleToggleFavoriteCollection}
           >
             {favorite
@@ -196,14 +173,7 @@ export const useExplorerCollectionNodeOperations = (
       {
         index: 99,
         view: (
-          <MenuItem
-            preFix={
-              <MenuIcon>
-                <OpenInNewIcon />
-              </MenuIcon>
-            }
-            onClick={handleOpenInNewTab}
-          >
+          <MenuItem prefixIcon={<OpenInNewIcon />} onClick={handleOpenInNewTab}>
             {t['com.affine.workbench.tab.page-menu-open']()}
           </MenuItem>
         ),
@@ -214,11 +184,7 @@ export const useExplorerCollectionNodeOperations = (
               index: 99,
               view: (
                 <MenuItem
-                  preFix={
-                    <MenuIcon>
-                      <SplitViewIcon />
-                    </MenuIcon>
-                  }
+                  prefixIcon={<SplitViewIcon />}
                   onClick={handleOpenInSplitView}
                 >
                   {t['com.affine.workbench.split-view.page-menu-open']()}
@@ -236,11 +202,7 @@ export const useExplorerCollectionNodeOperations = (
         view: (
           <MenuItem
             type={'danger'}
-            preFix={
-              <MenuIcon>
-                <DeleteIcon />
-              </MenuIcon>
-            }
+            prefixIcon={<DeleteIcon />}
             onClick={handleDeleteCollection}
           >
             {t['Delete']()}

@@ -20,7 +20,7 @@ const LanguageMenuContent = memo(function LanguageMenuContent() {
             title={option.name}
             lang={option.tag}
             onSelect={() => onLanguageChange(option.tag)}
-            endFix={(option.Completeness * 100).toFixed(0) + '%'}
+            suffix={(option.Completeness * 100).toFixed(0) + '%'}
             data-selected={selected}
             className={styles.menuItem}
           >

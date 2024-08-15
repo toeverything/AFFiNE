@@ -4,6 +4,7 @@ import { useCallback, useState } from 'react';
 import { Button } from '../button';
 import type { InputProps } from '../input';
 import { Input } from '../input';
+import { RadioGroup } from '../radio';
 import type { ConfirmModalProps } from './confirm-modal';
 import { ConfirmModal } from './confirm-modal';
 import type { ModalProps } from './modal';
@@ -105,3 +106,36 @@ export const Confirm: StoryFn<ModalProps> =
 
 export const Overlay: StoryFn<ModalProps> =
   OverlayModalTemplate.bind(undefined);
+
+export const Animations = () => {
+  const animations = ['fadeScaleTop', 'slideBottom', 'none'];
+  const [open, setOpen] = useState(false);
+  const [animation, setAnimation] =
+    useState<ModalProps['animation']>('fadeScaleTop');
+
+  return (
+    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+      <RadioGroup
+        value={animation}
+        onChange={setAnimation}
+        items={animations}
+      />
+      <Button onClick={() => setOpen(true)}>Open dialog</Button>
+      <Modal
+        contentWrapperStyle={
+          animation === 'slideBottom'
+            ? {
+                alignItems: 'end',
+                padding: 10,
+              }
+            : {}
+        }
+        open={open}
+        onOpenChange={setOpen}
+        animation={animation}
+      >
+        This is a dialog with animation: {animation}
+      </Modal>
+    </div>
+  );
+};
