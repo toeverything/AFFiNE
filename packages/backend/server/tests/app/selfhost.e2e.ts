@@ -101,9 +101,11 @@ test('should always return static asset files', async t => {
 });
 
 test('should be able to call apis', async t => {
-  await request(t.context.app.getHttpServer()).get('/info').expect(200);
+  const res = await request(t.context.app.getHttpServer())
+    .get('/info')
+    .expect(200);
 
-  t.pass();
+  t.is(res.body.flavor, 'allinone');
 });
 
 const blockedPages = [

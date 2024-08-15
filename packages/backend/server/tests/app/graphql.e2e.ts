@@ -3,8 +3,8 @@ import type { TestFn } from 'ava';
 import ava from 'ava';
 import request from 'supertest';
 
-import { AppModule } from '../src/app.module';
-import { createTestingApp } from './utils';
+import { buildAppModule } from '../../src/app.module';
+import { createTestingApp } from '../utils';
 
 const gql = '/graphql';
 
@@ -12,15 +12,17 @@ const test = ava as TestFn<{
   app: INestApplication;
 }>;
 
-test.beforeEach(async t => {
+test.before('start app', async t => {
+  // @ts-expect-error override
+  AFFiNE.flavor = { type: 'graphql', graphql: true, sync: false };
   const { app } = await createTestingApp({
-    imports: [AppModule],
+    imports: [buildAppModule()],
   });
 
   t.context.app = app;
 });
 
-test.afterEach.always(async t => {
+test.after.always(async t => {
   await t.context.app.close();
 });
 
@@ -54,4 +56,18 @@ test('should init app', async t => {
 
   t.is(config.type, 'Affine');
   t.true(Array.isArray(config.features));
+});
+
+test('should return 404 for unknown path', async t => {
+  await request(t.context.app.getHttpServer()).get('/unknown').expect(404);
+
+  t.pass();
+});
+
+test('should be able to call apis', async t => {
+  const res = await request(t.context.app.getHttpServer())
+    .get('/info')
+    .expect(200);
+
+  t.is(res.body.flavor, 'graphql');
 });
