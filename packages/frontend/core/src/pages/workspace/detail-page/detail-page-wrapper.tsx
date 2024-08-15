@@ -2,7 +2,7 @@ import { PageDetailSkeleton } from '@affine/component/page-detail-skeleton';
 import type { Editor } from '@affine/core/modules/editor';
 import { EditorsService } from '@affine/core/modules/editor';
 import { ViewService } from '@affine/core/modules/workbench/services/view';
-import type { DocMode } from '@blocksuite/blocks';
+import { type DocMode, DocModes } from '@blocksuite/blocks';
 import type { Doc } from '@toeverything/infra';
 import {
   DocsService,
@@ -35,7 +35,7 @@ const useLoadDoc = (pageId: string) => {
   );
 
   const queryStringMode =
-    queryString.mode && ['edgeless', 'page'].includes(queryString.mode)
+    queryString.mode && DocModes.includes(queryString.mode)
       ? (queryString.mode as DocMode)
       : null;
 

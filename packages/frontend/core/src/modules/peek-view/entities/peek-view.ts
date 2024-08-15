@@ -1,6 +1,7 @@
 import type { BlockComponent, EditorHost } from '@blocksuite/block-std';
 import {
   AffineReference,
+  type DocMode,
   type EmbedLinkedDocModel,
   type EmbedSyncedDocModel,
   type ImageBlockModel,
@@ -9,7 +10,7 @@ import {
 } from '@blocksuite/blocks';
 import type { AIChatBlockModel } from '@blocksuite/presets';
 import type { BlockModel } from '@blocksuite/store';
-import { type DocMode, Entity, LiveData } from '@toeverything/infra';
+import { Entity, LiveData } from '@toeverything/infra';
 import type { TemplateResult } from 'lit';
 import { firstValueFrom, map, race } from 'rxjs';
 

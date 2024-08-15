@@ -1,10 +1,11 @@
 import './page-detail-editor.css';
 
 import { useDocCollectionPage } from '@affine/core/hooks/use-block-suite-workspace-page';
+import type { DocMode } from '@blocksuite/blocks';
 import { DisposableGroup } from '@blocksuite/global/utils';
 import type { AffineEditorContainer } from '@blocksuite/presets';
 import type { Doc as BlockSuiteDoc, DocCollection } from '@blocksuite/store';
-import { type DocMode, useLiveData, useService } from '@toeverything/infra';
+import { useLiveData, useService } from '@toeverything/infra';
 import { cssVar } from '@toeverything/theme';
 import clsx from 'clsx';
 import type { CSSProperties } from 'react';

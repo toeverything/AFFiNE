@@ -1,10 +1,9 @@
-import type { RootBlockModel } from '@blocksuite/blocks';
+import { DocMode, type RootBlockModel } from '@blocksuite/blocks';
 
 import { Entity } from '../../../framework';
 import type { WorkspaceService } from '../../workspace';
 import type { DocScope } from '../scopes/doc';
 import type { DocsStore } from '../stores/docs';
-import type { DocMode } from './record';
 
 export class Doc extends Entity {
   constructor(
@@ -44,7 +43,9 @@ export class Doc extends Entity {
 
   togglePrimaryMode() {
     this.setPrimaryMode(
-      this.getPrimaryMode() === 'edgeless' ? 'page' : 'edgeless'
+      this.getPrimaryMode() === DocMode.Edgeless
+        ? DocMode.Page
+        : DocMode.Edgeless
     );
   }
 
