@@ -1,0 +1,10 @@
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: "affine-api-backendconfig"
+spec:
+  healthCheck:
+    timeoutSec: 1
+    type: HTTP
+    requestPath: /info
+
