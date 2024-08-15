@@ -42,7 +42,6 @@ export const navHeaderStyle = style({
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',
-  ['WebkitAppRegion' as string]: 'drag',
 });
 
 export const navBodyStyle = style({
