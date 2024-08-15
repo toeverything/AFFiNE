@@ -23,9 +23,8 @@ import {
 } from '../../../fundamentals';
 import { Auth, CurrentUser } from '../../auth';
 import { DocManager } from '../../doc';
+import { Permission, PermissionService } from '../../permission';
 import { DocID } from '../../utils/doc';
-import { PermissionService } from '../../workspaces/permission';
-import { Permission } from '../../workspaces/types';
 
 const SubscribeMessage = (event: string) =>
   applyDecorators(

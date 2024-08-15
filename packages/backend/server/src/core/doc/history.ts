@@ -11,10 +11,9 @@ import {
   DocNotFound,
   metrics,
   OnEvent,
-  WorkspaceNotFound,
 } from '../../fundamentals';
+import { PermissionService } from '../permission';
 import { QuotaService } from '../quota';
-import { Permission } from '../workspaces/types';
 import { isEmptyBuffer } from './manager';
 
 @Injectable()
@@ -23,7 +22,8 @@ export class DocHistoryManager {
   constructor(
     private readonly config: Config,
     private readonly db: PrismaClient,
-    private readonly quota: QuotaService
+    private readonly quota: QuotaService,
+    private readonly permission: PermissionService
   ) {}
 
   @OnEvent('workspace.deleted')
@@ -235,21 +235,8 @@ export class DocHistoryManager {
   }
 
   async getExpiredDateFromNow(workspaceId: string) {
-    const permission = await this.db.workspaceUserPermission.findFirst({
-      select: {
-        userId: true,
-      },
-      where: {
-        workspaceId,
-        type: Permission.Owner,
-      },
-    });
-
-    if (!permission) {
-      throw new WorkspaceNotFound({ workspaceId });
-    }
-
-    const quota = await this.quota.getUserQuota(permission.userId);
+    const owner = await this.permission.getWorkspaceOwner(workspaceId);
+    const quota = await this.quota.getUserQuota(owner.id);
     return quota.feature.historyPeriodFromNow;
   }
 

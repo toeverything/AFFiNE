@@ -198,6 +198,10 @@ export const USER_FRIENDLY_ERRORS = {
     type: 'too_many_requests',
     message: 'Too many requests.',
   },
+  not_found: {
+    type: 'resource_not_found',
+    message: 'Resource not found.',
+  },
 
   // User Errors
   user_not_found: {

@@ -40,5 +40,3 @@ export class ErrorModule implements OnModuleInit {
 
 export { UserFriendlyError } from './def';
 export * from './errors.gen';
-export * from './payment-required';
-export * from './too-many-requests';

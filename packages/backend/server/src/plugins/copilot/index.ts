@@ -2,8 +2,8 @@ import './config';
 
 import { ServerFeature } from '../../core/config';
 import { FeatureModule } from '../../core/features';
+import { PermissionModule } from '../../core/permission';
 import { QuotaModule } from '../../core/quota';
-import { PermissionService } from '../../core/workspaces/permission';
 import { Plugin } from '../registry';
 import { CopilotController } from './controller';
 import { ChatMessageCache } from './message';
@@ -29,9 +29,8 @@ registerCopilotProvider(OpenAIProvider);
 
 @Plugin({
   name: 'copilot',
-  imports: [FeatureModule, QuotaModule],
+  imports: [FeatureModule, QuotaModule, PermissionModule],
   providers: [
-    PermissionService,
     ChatSessionService,
     CopilotResolver,
     ChatMessageCache,

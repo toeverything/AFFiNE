@@ -2,13 +2,12 @@ import { Injectable } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import { PrismaClient } from '@prisma/client';
 
-import { DocAccessDenied, WorkspaceAccessDenied } from '../../fundamentals';
-import { Permission } from './types';
-
-export enum PublicPageMode {
-  Page,
-  Edgeless,
-}
+import {
+  DocAccessDenied,
+  WorkspaceAccessDenied,
+  WorkspaceOwnerNotFound,
+} from '../../fundamentals';
+import { Permission, PublicPageMode } from './types';
 
 @Injectable()
 export class PermissionService {
@@ -59,7 +58,7 @@ export class PermissionService {
   }
 
   async getWorkspaceOwner(workspaceId: string) {
-    return this.prisma.workspaceUserPermission.findFirstOrThrow({
+    const owner = await this.prisma.workspaceUserPermission.findFirst({
       where: {
         workspaceId,
         type: Permission.Owner,
@@ -68,6 +67,12 @@ export class PermissionService {
         user: true,
       },
     });
+
+    if (!owner) {
+      throw new WorkspaceOwnerNotFound({ workspaceId });
+    }
+
+    return owner.user;
   }
 
   async tryGetWorkspaceOwner(workspaceId: string) {
@@ -193,6 +198,17 @@ export class PermissionService {
     // unsigned in, workspace is not public
     // unaccessible
     return false;
+  }
+
+  async allowUrlPreview(ws: string) {
+    const count = await this.prisma.workspace.count({
+      where: {
+        id: ws,
+        public: true,
+      },
+    });
+
+    return count > 0;
   }
 
   async grant(

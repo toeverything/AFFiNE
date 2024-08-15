@@ -13,9 +13,9 @@ import type { SnapshotHistory } from '@prisma/client';
 
 import { CurrentUser } from '../../auth';
 import { DocHistoryManager } from '../../doc';
+import { Permission, PermissionService } from '../../permission';
 import { DocID } from '../../utils/doc';
-import { PermissionService } from '../permission';
-import { Permission, WorkspaceType } from '../types';
+import { WorkspaceType } from '../types';
 
 @ObjectType()
 class DocHistoryType implements Partial<SnapshotHistory> {

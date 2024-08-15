@@ -13,10 +13,9 @@ import {
 } from '../../fundamentals';
 import { CurrentUser, Public } from '../auth';
 import { DocHistoryManager, DocManager } from '../doc';
+import { Permission, PermissionService, PublicPageMode } from '../permission';
 import { WorkspaceBlobStorage } from '../storage';
 import { DocID } from '../utils/doc';
-import { PermissionService, PublicPageMode } from './permission';
-import { Permission } from './types';
 
 @Controller('/api/workspaces')
 export class WorkspacesController {

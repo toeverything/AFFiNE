@@ -16,6 +16,12 @@ export class TooManyRequest extends UserFriendlyError {
   }
 }
 
+export class NotFound extends UserFriendlyError {
+  constructor(message?: string) {
+    super('resource_not_found', 'not_found', message);
+  }
+}
+
 export class UserNotFound extends UserFriendlyError {
   constructor(message?: string) {
     super('resource_not_found', 'user_not_found', message);
@@ -508,6 +514,7 @@ export class CannotDeleteOwnAccount extends UserFriendlyError {
 export enum ErrorNames {
   INTERNAL_SERVER_ERROR,
   TOO_MANY_REQUEST,
+  NOT_FOUND,
   USER_NOT_FOUND,
   USER_AVATAR_NOT_FOUND,
   EMAIL_ALREADY_USED,

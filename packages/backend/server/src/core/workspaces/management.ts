@@ -12,7 +12,7 @@ import { ActionForbidden } from '../../fundamentals';
 import { CurrentUser } from '../auth';
 import { Admin } from '../common';
 import { FeatureManagementService, FeatureType } from '../features';
-import { PermissionService } from './permission';
+import { PermissionService } from '../permission';
 import { WorkspaceType } from './types';
 
 @Resolver(() => WorkspaceType)
@@ -61,7 +61,7 @@ export class WorkspaceManagementResolver {
 
     const owner = await this.permission.getWorkspaceOwner(workspaceId);
     const availableFeatures = await this.availableFeatures(user);
-    if (owner.user.id !== user.id || !availableFeatures.includes(feature)) {
+    if (owner.id !== user.id || !availableFeatures.includes(feature)) {
       throw new ActionForbidden();
     }
 

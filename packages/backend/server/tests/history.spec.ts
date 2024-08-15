@@ -5,6 +5,7 @@ import test from 'ava';
 import * as Sinon from 'sinon';
 
 import { DocHistoryManager } from '../src/core/doc';
+import { PermissionModule } from '../src/core/permission';
 import { QuotaModule } from '../src/core/quota';
 import { StorageModule } from '../src/core/storage';
 import type { EventPayload } from '../src/fundamentals/event';
@@ -17,7 +18,7 @@ let db: PrismaClient;
 // cleanup database before each test
 test.beforeEach(async () => {
   m = await createTestingModule({
-    imports: [StorageModule, QuotaModule],
+    imports: [StorageModule, QuotaModule, PermissionModule],
     providers: [DocHistoryManager],
   });
 

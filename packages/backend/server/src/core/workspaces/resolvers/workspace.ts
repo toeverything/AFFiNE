@@ -26,17 +26,15 @@ import {
   UserNotFound,
   WorkspaceAccessDenied,
   WorkspaceNotFound,
-  WorkspaceOwnerNotFound,
 } from '../../../fundamentals';
 import { CurrentUser, Public } from '../../auth';
+import { Permission, PermissionService } from '../../permission';
 import { QuotaManagementService, QuotaQueryType } from '../../quota';
 import { WorkspaceBlobStorage } from '../../storage';
 import { UserService, UserType } from '../../user';
-import { PermissionService } from '../permission';
 import {
   InvitationType,
   InviteUserType,
-  Permission,
   UpdateWorkspaceInput,
   WorkspaceType,
 } from '../types';
@@ -101,9 +99,7 @@ export class WorkspaceResolver {
     complexity: 2,
   })
   async owner(@Parent() workspace: WorkspaceType) {
-    const data = await this.permissions.getWorkspaceOwner(workspace.id);
-
-    return data.user;
+    return this.permissions.getWorkspaceOwner(workspace.id);
   }
 
   @ResolveField(() => [InviteUserType], {
@@ -449,7 +445,7 @@ export class WorkspaceResolver {
         avatar: avatar || defaultWorkspaceAvatar,
         id: workspaceId,
       },
-      user: owner.user,
+      user: owner,
       invitee: invitee.user,
     };
   }
@@ -507,12 +503,8 @@ export class WorkspaceResolver {
 
     const owner = await this.permissions.getWorkspaceOwner(workspaceId);
 
-    if (!owner.user) {
-      throw new WorkspaceOwnerNotFound({ workspaceId: workspaceId });
-    }
-
     if (sendLeaveMail) {
-      await this.mailer.sendLeaveWorkspaceEmail(owner.user.email, {
+      await this.mailer.sendLeaveWorkspaceEmail(owner.email, {
         workspaceName,
         inviteeName: user.name,
       });

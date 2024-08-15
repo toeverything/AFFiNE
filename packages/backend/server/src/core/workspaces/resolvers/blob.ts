@@ -19,10 +19,10 @@ import {
   PreventCache,
 } from '../../../fundamentals';
 import { CurrentUser } from '../../auth';
+import { Permission, PermissionService } from '../../permission';
 import { QuotaManagementService } from '../../quota';
 import { WorkspaceBlobStorage } from '../../storage';
-import { PermissionService } from '../permission';
-import { Permission, WorkspaceBlobSizes, WorkspaceType } from '../types';
+import { WorkspaceBlobSizes, WorkspaceType } from '../types';
 
 @UseGuards(CloudThrottlerGuard)
 @Resolver(() => WorkspaceType)

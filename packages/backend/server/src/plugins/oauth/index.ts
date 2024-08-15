@@ -21,6 +21,6 @@ import { OAuthService } from './service';
   ],
   controllers: [OAuthController],
   contributesTo: ServerFeature.OAuth,
-  if: config => !!config.plugins.oauth,
+  if: config => config.flavor.graphql && !!config.plugins.oauth,
 })
 export class OAuthModule {}

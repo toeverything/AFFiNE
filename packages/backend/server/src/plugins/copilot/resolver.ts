@@ -21,8 +21,8 @@ import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 
 import { CurrentUser } from '../../core/auth';
 import { Admin } from '../../core/common';
+import { PermissionService } from '../../core/permission';
 import { UserType } from '../../core/user';
-import { PermissionService } from '../../core/workspaces/permission';
 import {
   CopilotFailedToCreateMessage,
   FileUpload,

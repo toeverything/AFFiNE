@@ -12,9 +12,9 @@ import {
   FeatureService,
   FeatureType,
 } from '../src/core/features';
+import { Permission } from '../src/core/permission';
 import { UserType } from '../src/core/user/types';
 import { WorkspaceResolver } from '../src/core/workspaces/resolvers';
-import { Permission } from '../src/core/workspaces/types';
 import { Config, ConfigModule } from '../src/fundamentals/config';
 import { createTestingApp } from './utils';
 
