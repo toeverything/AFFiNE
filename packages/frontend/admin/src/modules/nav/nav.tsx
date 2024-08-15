@@ -7,12 +7,7 @@ import {
 import { buttonVariants } from '@affine/admin/components/ui/button';
 import { cn } from '@affine/admin/utils';
 import * as ScrollAreaPrimitive from '@radix-ui/react-scroll-area';
-import {
-  ClipboardListIcon,
-  CpuIcon,
-  SettingsIcon,
-  UsersIcon,
-} from 'lucide-react';
+import { ClipboardListIcon, SettingsIcon, UsersIcon } from 'lucide-react';
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
@@ -61,7 +56,7 @@ export function Nav() {
           <UsersIcon className="mr-2 h-4 w-4" />
           Accounts
         </Link>
-        <Link
+        {/* <Link
           to={'/admin/ai'}
           className={cn(
             buttonVariants({
@@ -76,7 +71,7 @@ export function Nav() {
         >
           <CpuIcon className="mr-2 h-4 w-4" />
           AI
-        </Link>
+        </Link> */}
         <Link
           to={'/admin/config'}
           className={cn(
