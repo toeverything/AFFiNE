@@ -468,6 +468,7 @@ __metadata:
     react-dom: "npm:18.3.1"
     react-error-boundary: "npm:^4.0.13"
     react-is: "npm:18.3.1"
+    react-refresh: "npm:^0.10.0"
     react-router-dom: "npm:^6.22.3"
     react-transition-state: "npm:^2.1.1"
     react-virtuoso: "npm:^4.7.8"
@@ -31632,6 +31633,13 @@ __metadata:
   peerDependencies:
     react: ^16 || ^17 || ^18
   checksum: 10/13911c1db55a0ca0fa21c7e0df5e913be1febf7bd0ec7fde5618c48e0119ac45ff8920202c4fd7216f93244529180b4e91de41fc86a40be5e53dec14ae65956c
+  languageName: node
+  linkType: hard
+
+"react-refresh@npm:^0.10.0":
+  version: 0.10.0
+  resolution: "react-refresh@npm:0.10.0"
+  checksum: 10/0050bb02847477459d879bf3a065b106b18fdeaf80bb5a8820dc40fc8a22264edf118bbb4112242c8d5708cee2dac42d63dad296726bafb5bce9e06598d3fe6e
   languageName: node
   linkType: hard
 
