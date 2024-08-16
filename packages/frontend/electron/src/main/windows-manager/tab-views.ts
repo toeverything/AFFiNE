@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import {
   app,
   type CookiesSetDetails,
+  session,
   type View,
   type WebContents,
   WebContentsView,
@@ -22,7 +23,7 @@ import {
 } from 'rxjs';
 
 import { isMacOS } from '../../shared/utils';
-import { isDev } from '../config';
+import { CLOUD_BASE_URL, isDev } from '../config';
 import { mainWindowOrigin, shellViewUrl } from '../constants';
 import { ensureHelperProcess } from '../helper-process';
 import { logger } from '../logger';
@@ -184,6 +185,8 @@ export class WebContentViewsManager {
    * Emits whenever a tab action is triggered.
    */
   readonly tabAction$ = new Subject<TabAction>();
+
+  cookies: Electron.Cookie[] = [];
 
   readonly activeWorkbenchId$ = this.tabViewsMeta$.pipe(
     map(m => m?.activeWorkbenchId ?? m?.workbenches[0].id)
@@ -672,7 +675,6 @@ export class WebContentViewsManager {
     disposables.push(
       windowReadyToShow$.subscribe(w => {
         handleWebContentsResize().catch(logger.error);
-
         const screenSizeChangeEvents = ['resize', 'maximize', 'unmaximize'];
         const onResize = () => {
           if (this.activeWorkbenchView) {
@@ -689,6 +691,23 @@ export class WebContentViewsManager {
         // add shell view
         this.createAndAddView('shell').catch(logger.error);
         (async () => {
+          const updateCookies = () => {
+            session.defaultSession.cookies
+              .get({
+                url: CLOUD_BASE_URL,
+              })
+              .then(cookies => {
+                this.cookies = cookies;
+              })
+              .catch(err => {
+                logger.error('failed to get cookies', err);
+              });
+          };
+          updateCookies();
+          session.defaultSession.cookies.on('changed', () => {
+            updateCookies();
+          });
+
           if (this.tabViewsMeta.workbenches.length === 0) {
             // create a default view (e.g., on first launch)
             await this.addTab();
@@ -705,38 +724,15 @@ export class WebContentViewsManager {
     });
   };
 
-  setCookie = async (cookie: CookiesSetDetails) => {
+  setCookie = async (cookiesSetDetails: CookiesSetDetails) => {
     const views = this.allViews;
     if (!views) {
       return;
     }
-    logger.info('setting cookie to main window view(s)', cookie);
+    logger.info('setting cookie to main window view(s)', cookiesSetDetails);
     for (const view of views) {
-      await view.webContents.session.cookies.set(cookie);
+      await view.webContents.session.cookies.set(cookiesSetDetails);
     }
-  };
-
-  removeCookie = async (url: string, name: string) => {
-    const views = this.allViews;
-    if (!views) {
-      return;
-    }
-    logger.info('removing cookie from main window view(s)', { url, name });
-    for (const view of views) {
-      await view.webContents.session.cookies.remove(url, name);
-    }
-  };
-
-  getCookie = (url?: string, name?: string) => {
-    // all webviews share the same session
-    const view = this.allViews?.at(0);
-    if (!view) {
-      return;
-    }
-    return view.webContents.session.cookies.get({
-      url,
-      name,
-    });
   };
 
   getViewById = (id: string) => {
@@ -865,12 +861,8 @@ export async function setCookie(
   return WebContentViewsManager.instance.setCookie(details);
 }
 
-export async function removeCookie(url: string, name: string): Promise<void> {
-  return WebContentViewsManager.instance.removeCookie(url, name);
-}
-
-export async function getCookie(url?: string, name?: string) {
-  return WebContentViewsManager.instance.getCookie(url, name);
+export function getCookies() {
+  return WebContentViewsManager.instance.cookies;
 }
 
 // there is no proper way to listen to webContents resize event

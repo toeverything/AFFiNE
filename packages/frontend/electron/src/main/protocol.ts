@@ -3,8 +3,7 @@ import { join } from 'node:path';
 import { net, protocol, session } from 'electron';
 
 import { CLOUD_BASE_URL } from './config';
-import { logger } from './logger';
-import { getCookie } from './windows-manager';
+import { getCookies } from './windows-manager';
 
 protocol.registerSchemesAsPrivileged([
   {
@@ -104,33 +103,23 @@ export function registerProtocol() {
   );
 
   session.defaultSession.webRequest.onBeforeSendHeaders((details, callback) => {
-    (async () => {
-      const url = new URL(details.url);
-      const pathname = url.pathname;
-      // if sending request to the cloud, attach the session cookie
-      if (isNetworkResource(pathname)) {
-        const cookie = await getCookie(CLOUD_BASE_URL);
-        if (cookie) {
-          const cookieString = cookie
-            .map(c => `${c.name}=${c.value}`)
-            .join('; ');
-          details.requestHeaders['cookie'] = cookieString;
-        }
-
-        // add the referer and origin headers
-        details.requestHeaders['referer'] ??= CLOUD_BASE_URL;
-        details.requestHeaders['origin'] ??= CLOUD_BASE_URL;
+    const url = new URL(details.url);
+    const pathname = url.pathname;
+    // if sending request to the cloud, attach the session cookie
+    if (isNetworkResource(pathname)) {
+      const cookie = getCookies();
+      if (cookie) {
+        const cookieString = cookie.map(c => `${c.name}=${c.value}`).join('; ');
+        details.requestHeaders['cookie'] = cookieString;
       }
-      callback({
-        cancel: false,
-        requestHeaders: details.requestHeaders,
-      });
-    })().catch(e => {
-      logger.error('failed to attach cookie', e);
-      callback({
-        cancel: false,
-        requestHeaders: details.requestHeaders,
-      });
+
+      // add the referer and origin headers
+      details.requestHeaders['referer'] ??= CLOUD_BASE_URL;
+      details.requestHeaders['origin'] ??= CLOUD_BASE_URL;
+    }
+    callback({
+      cancel: false,
+      requestHeaders: details.requestHeaders,
     });
   });
 }

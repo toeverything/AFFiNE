@@ -1,7 +1,6 @@
 import path from 'node:path';
 
-import type { App, BrowserWindow } from 'electron';
-import { ipcMain } from 'electron';
+import type { App } from 'electron';
 
 import { buildType, CLOUD_BASE_URL, isDev } from './config';
 import { mainWindowOrigin } from './constants';
@@ -103,20 +102,8 @@ async function handleOauthJwt(url: string) {
         ),
       });
 
-      let hiddenWindow: BrowserWindow | null = null;
-
-      ipcMain.once('affine:login', () => {
-        hiddenWindow?.destroy();
-        if (urlObj.searchParams.get('next') === 'onboarding') {
-          // eslint-disable-next-line @typescript-eslint/no-floating-promises
-          mainWindow.loadURL(mainWindowOrigin + '/auth/onboarding');
-        }
-      });
-
       // hacks to refresh auth state in the main window
-      hiddenWindow = await handleOpenUrlInHiddenWindow(
-        mainWindowOrigin + '/auth/signIn'
-      );
+      await handleOpenUrlInHiddenWindow(mainWindowOrigin + '/auth/signIn');
     } catch (e) {
       logger.error('failed to open url in popup', e);
     }
