@@ -14,6 +14,7 @@
     "@perfsee/webpack": "^1.12.2",
     "@pmmmwh/react-refresh-webpack-plugin": "^0.5.11",
     "@sentry/webpack-plugin": "^2.16.1",
+    "@types/mime-types": "^2.1.4",
     "@types/webpack-env": "^1.18.4",
     "@vanilla-extract/webpack-plugin": "^2.3.7",
     "autoprefixer": "^10.4.19",
