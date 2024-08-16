@@ -14,9 +14,7 @@ import {
 import { expect, type Locator, type Page } from '@playwright/test';
 
 function getIndicators(container: Page | Locator) {
-  return container.locator(
-    'affine-outline-viewer .outline-viewer-indicator:not(.header)'
-  );
+  return container.locator('affine-outline-viewer .outline-viewer-indicator');
 }
 
 test('outline viewer is useable', async ({ page }) => {
@@ -44,7 +42,7 @@ test('outline viewer is useable', async ({ page }) => {
   await expect(indicators.nth(2)).toBeVisible();
 
   const viewer = page.locator('affine-outline-viewer');
-  await indicators.first().hover();
+  await indicators.first().hover({ force: true });
   await expect(viewer).toBeVisible();
 });
 
@@ -110,12 +108,12 @@ test('outline viewer should be useable in doc peek preview', async ({
   await expect(indicators.nth(0)).toBeVisible();
   await expect(indicators.nth(1)).toBeVisible();
 
-  await indicators.first().hover();
+  await indicators.first().hover({ force: true });
   const viewer = peekView.locator('affine-outline-viewer');
   await expect(viewer).toBeVisible();
 
   const toggleButton = peekView.locator(
-    '.outline-viewer-indicator.header edgeless-tool-icon-button'
+    '.outline-viewer-header edgeless-tool-icon-button'
   );
   await toggleButton.click();
 

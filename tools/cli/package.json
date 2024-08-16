@@ -6,7 +6,7 @@
     "@affine/env": "workspace:*",
     "@affine/templates": "workspace:*",
     "@aws-sdk/client-s3": "^3.620.0",
-    "@blocksuite/presets": "0.17.0-canary-202408121434-8bc42f0",
+    "@blocksuite/presets": "0.17.0-canary-202408160752-cb4b196",
     "@clack/core": "^0.3.4",
     "@clack/prompts": "^0.7.0",
     "@magic-works/i18n-codegen": "^0.6.0",
