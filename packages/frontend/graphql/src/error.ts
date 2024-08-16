@@ -27,6 +27,13 @@ export class UserFriendlyError implements UserFriendlyErrorResponse {
     }
 
     if (
+      'originError' in response &&
+      response.originError instanceof UserFriendlyError
+    ) {
+      return response.originError as UserFriendlyError;
+    }
+
+    if (
       response &&
       typeof response === 'object' &&
       response.type &&

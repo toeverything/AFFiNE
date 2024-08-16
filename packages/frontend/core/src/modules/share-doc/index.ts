@@ -1,5 +1,7 @@
-export { ShareService } from './services/share';
-export { ShareDocsService } from './services/share-docs';
+export type { ShareReader } from './entities/share-reader';
+export { ShareDocsListService } from './services/share-docs-list';
+export { ShareInfoService } from './services/share-info';
+export { ShareReaderService } from './services/share-reader';
 
 import {
   DocScope,
@@ -10,18 +12,24 @@ import {
   WorkspaceService,
 } from '@toeverything/infra';
 
-import { GraphQLService } from '../cloud';
+import { FetchService, GraphQLService } from '../cloud';
 import { ShareDocsList } from './entities/share-docs-list';
-import { Share } from './entities/share-info';
-import { ShareService } from './services/share';
-import { ShareDocsService } from './services/share-docs';
+import { ShareInfo } from './entities/share-info';
+import { ShareReader } from './entities/share-reader';
+import { ShareDocsListService } from './services/share-docs-list';
+import { ShareInfoService } from './services/share-info';
+import { ShareReaderService } from './services/share-reader';
 import { ShareStore } from './stores/share';
 import { ShareDocsStore } from './stores/share-docs';
+import { ShareReaderStore } from './stores/share-reader';
 
 export function configureShareDocsModule(framework: Framework) {
   framework
+    .service(ShareReaderService)
+    .entity(ShareReader, [ShareReaderStore])
+    .store(ShareReaderStore, [FetchService])
     .scope(WorkspaceScope)
-    .service(ShareDocsService, [WorkspaceService])
+    .service(ShareDocsListService, [WorkspaceService])
     .store(ShareDocsStore, [GraphQLService])
     .entity(ShareDocsList, [
       WorkspaceService,
@@ -29,7 +37,7 @@ export function configureShareDocsModule(framework: Framework) {
       WorkspaceLocalCache,
     ])
     .scope(DocScope)
-    .service(ShareService)
-    .entity(Share, [WorkspaceService, DocService, ShareStore])
+    .service(ShareInfoService)
+    .entity(ShareInfo, [WorkspaceService, DocService, ShareStore])
     .store(ShareStore, [GraphQLService]);
 }

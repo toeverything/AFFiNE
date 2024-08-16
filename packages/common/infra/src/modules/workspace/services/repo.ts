@@ -6,7 +6,10 @@ import { ObjectPool } from '../../../utils';
 import type { Workspace } from '../entities/workspace';
 import { WorkspaceInitialized } from '../events';
 import type { WorkspaceOpenOptions } from '../open-options';
-import type { WorkspaceFlavourProvider } from '../providers/flavour';
+import type {
+  WorkspaceEngineProvider,
+  WorkspaceFlavourProvider,
+} from '../providers/flavour';
 import { WorkspaceScope } from '../scopes/workspace';
 import type { WorkspaceProfileService } from './profile';
 import { WorkspaceService } from './workspace';
@@ -39,7 +42,7 @@ export class WorkspaceRepositoryService extends Service {
    */
   open = (
     options: WorkspaceOpenOptions,
-    customProvider?: WorkspaceFlavourProvider
+    customProvider?: WorkspaceEngineProvider
   ): {
     workspace: Workspace;
     dispose: () => void;
@@ -76,14 +79,16 @@ export class WorkspaceRepositoryService extends Service {
 
   instantiate(
     openOptions: WorkspaceOpenOptions,
-    customProvider?: WorkspaceFlavourProvider
+    customProvider?: WorkspaceEngineProvider
   ) {
     logger.info(
       `open workspace [${openOptions.metadata.flavour}] ${openOptions.metadata.id} `
     );
     const provider =
       customProvider ??
-      this.providers.find(p => p.flavour === openOptions.metadata.flavour);
+      this.providers
+        .find(p => p.flavour === openOptions.metadata.flavour)
+        ?.getEngineProvider(openOptions.metadata.id);
     if (!provider) {
       throw new Error(
         `Unknown workspace flavour: ${openOptions.metadata.flavour}`
@@ -92,7 +97,7 @@ export class WorkspaceRepositoryService extends Service {
 
     const workspaceScope = this.framework.createScope(WorkspaceScope, {
       openOptions,
-      flavourProvider: provider,
+      engineProvider: provider,
     });
 
     const workspace = workspaceScope.get(WorkspaceService).workspace;

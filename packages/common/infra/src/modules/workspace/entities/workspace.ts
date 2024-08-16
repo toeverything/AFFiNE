@@ -62,10 +62,6 @@ export class Workspace extends Entity {
     return this.framework.get(WorkspaceUpgradeService).upgrade;
   }
 
-  get flavourProvider() {
-    return this.scope.props.flavourProvider;
-  }
-
   name$ = LiveData.from<string | undefined>(
     new Observable(subscriber => {
       subscriber.next(this.docCollection.meta.name);

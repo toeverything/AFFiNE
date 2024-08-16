@@ -20,6 +20,8 @@ import {
 } from './impls/local';
 import { WorkspaceEngineStorageProvider } from './providers/engine';
 
+export { CloudBlobStorage } from './impls/engine/blob-cloud';
+
 export function configureBrowserWorkspaceFlavours(framework: Framework) {
   framework
     .impl(WorkspaceFlavourProvider('LOCAL'), LocalWorkspaceFlavourProvider, [

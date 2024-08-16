@@ -13,7 +13,7 @@ import {
 import { track } from '@affine/core/mixpanel';
 import { CollectionService } from '@affine/core/modules/collection';
 import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/properties';
-import { ShareDocsService } from '@affine/core/modules/share-doc';
+import { ShareDocsListService } from '@affine/core/modules/share-doc';
 import type { AffineDNDData } from '@affine/core/types/dnd';
 import type { Collection } from '@affine/env/filter';
 import { PublicPageMode } from '@affine/graphql';
@@ -247,19 +247,19 @@ const ExplorerCollectionNodeChildren = ({
   const {
     docsService,
     compatibleFavoriteItemsAdapter,
-    shareDocsService,
+    shareDocsListService,
     collectionService,
   } = useServices({
     DocsService,
     CompatibleFavoriteItemsAdapter,
-    ShareDocsService,
+    ShareDocsListService,
     CollectionService,
   });
 
   useEffect(() => {
     // TODO(@eyhn): loading & error UI
-    shareDocsService.shareDocs?.revalidate();
-  }, [shareDocsService]);
+    shareDocsListService.shareDocs?.revalidate();
+  }, [shareDocsListService]);
 
   const docMetas = useLiveData(
     useMemo(
@@ -277,7 +277,7 @@ const ExplorerCollectionNodeChildren = ({
     () => new Set(collection.allowList),
     [collection.allowList]
   );
-  const shareDocs = useLiveData(shareDocsService.shareDocs?.list$);
+  const shareDocs = useLiveData(shareDocsListService.shareDocs?.list$);
 
   const handleRemoveFromAllowList = useCallback(
     (id: string) => {

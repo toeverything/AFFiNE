@@ -12,6 +12,6 @@ import { DocsSearchService } from './services/docs-search';
 export function configureDocsSearchModule(framework: Framework) {
   framework
     .scope(WorkspaceScope)
-    .service(DocsSearchService)
+    .service(DocsSearchService, [WorkspaceService])
     .entity(DocsIndexer, [WorkspaceService]);
 }

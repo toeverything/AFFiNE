@@ -3,7 +3,7 @@ import type { AllPageListConfig } from '@affine/core/components/page-list';
 import { FavoriteTag } from '@affine/core/components/page-list';
 import { useBlockSuiteDocMeta } from '@affine/core/hooks/use-block-suite-page-meta';
 import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/properties';
-import { ShareDocsService } from '@affine/core/modules/share-doc';
+import { ShareDocsListService } from '@affine/core/modules/share-doc';
 import { PublicPageMode } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
 import type { DocMeta } from '@blocksuite/store';
@@ -15,13 +15,13 @@ import { useCallback, useEffect, useMemo } from 'react';
  */
 export const useAllPageListConfig = () => {
   const currentWorkspace = useService(WorkspaceService).workspace;
-  const shareDocService = useService(ShareDocsService);
-  const shareDocs = useLiveData(shareDocService.shareDocs?.list$);
+  const shareDocsListService = useService(ShareDocsListService);
+  const shareDocs = useLiveData(shareDocsListService.shareDocs?.list$);
 
   useEffect(() => {
     // TODO(@eyhn): loading & error UI
-    shareDocService.shareDocs?.revalidate();
-  }, [shareDocService]);
+    shareDocsListService.shareDocs?.revalidate();
+  }, [shareDocsListService]);
 
   const workspace = currentWorkspace.docCollection;
   const pageMetas = useBlockSuiteDocMeta(workspace);

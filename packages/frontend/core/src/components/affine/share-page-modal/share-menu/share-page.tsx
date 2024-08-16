@@ -6,7 +6,7 @@ import { useSharingUrl } from '@affine/core/hooks/affine/use-share-url';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { track } from '@affine/core/mixpanel';
 import { ServerConfigService } from '@affine/core/modules/cloud';
-import { ShareService } from '@affine/core/modules/share-doc';
+import { ShareInfoService } from '@affine/core/modules/share-doc';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { PublicPageMode } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
@@ -59,13 +59,13 @@ export const AffineSharePage = (props: ShareMenuProps) => {
     workspaceMetadata: { id: workspaceId },
   } = props;
   const doc = useService(DocService).doc;
-  const shareService = useService(ShareService);
+  const shareInfoService = useService(ShareInfoService);
   const serverConfig = useService(ServerConfigService).serverConfig;
   useEffect(() => {
-    shareService.share.revalidate();
-  }, [shareService]);
-  const isSharedPage = useLiveData(shareService.share.isShared$);
-  const sharedMode = useLiveData(shareService.share.sharedMode$);
+    shareInfoService.shareInfo.revalidate();
+  }, [shareInfoService]);
+  const isSharedPage = useLiveData(shareInfoService.shareInfo.isShared$);
+  const sharedMode = useLiveData(shareInfoService.shareInfo.sharedMode$);
   const baseUrl = useLiveData(serverConfig.config$.map(c => c?.baseUrl));
   const isLoading =
     isSharedPage === null || sharedMode === null || baseUrl === null;
@@ -103,7 +103,7 @@ export const AffineSharePage = (props: ShareMenuProps) => {
 
   const onClickCreateLink = useAsyncCallback(async () => {
     try {
-      await shareService.share.enableShare(
+      await shareInfoService.shareInfo.enableShare(
         mode === 'edgeless' ? PublicPageMode.Edgeless : PublicPageMode.Page
       );
       track.$.sharePanel.$.createShareLink({
@@ -139,11 +139,11 @@ export const AffineSharePage = (props: ShareMenuProps) => {
       });
       console.error(err);
     }
-  }, [mode, shareService.share, sharingUrl, t]);
+  }, [mode, shareInfoService.shareInfo, sharingUrl, t]);
 
   const onDisablePublic = useAsyncCallback(async () => {
     try {
-      await shareService.share.disableShare();
+      await shareInfoService.shareInfo.disableShare();
       notify.error({
         title:
           t[
@@ -168,13 +168,13 @@ export const AffineSharePage = (props: ShareMenuProps) => {
       console.log(err);
     }
     setShowDisable(false);
-  }, [shareService, t]);
+  }, [shareInfoService, t]);
 
   const onShareModeChange = useAsyncCallback(
     async (value: DocMode) => {
       try {
         if (isSharedPage) {
-          await shareService.share.changeShare(
+          await shareInfoService.shareInfo.changeShare(
             value === 'edgeless' ? PublicPageMode.Edgeless : PublicPageMode.Page
           );
           notify.success({
@@ -208,7 +208,7 @@ export const AffineSharePage = (props: ShareMenuProps) => {
         console.error(err);
       }
     },
-    [isSharedPage, shareService.share, t]
+    [isSharedPage, shareInfoService.shareInfo, t]
   );
 
   if (isLoading) {

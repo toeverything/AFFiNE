@@ -170,8 +170,8 @@ export class CloudWorkspaceFlavourProviderService
           catchErrorInto(this.error$, err => {
             logger.error('error to revalidate cloud workspaces', err);
           }),
-          onStart(() => this.isLoading$.next(true)),
-          onComplete(() => this.isLoading$.next(false))
+          onStart(() => this.isRevalidating$.next(true)),
+          onComplete(() => this.isRevalidating$.next(false))
         );
       },
       ({ accountId }) => {
@@ -186,7 +186,7 @@ export class CloudWorkspaceFlavourProviderService
     )
   );
   error$ = new LiveData<any>(null);
-  isLoading$ = new LiveData(false);
+  isRevalidating$ = new LiveData(false);
   workspaces$ = new LiveData<WorkspaceMetadata[]>([]);
   async getWorkspaceProfile(
     id: string,
@@ -277,6 +277,6 @@ export class CloudWorkspaceFlavourProviderService
   }
 
   private waitForLoaded() {
-    return this.isLoading$.waitFor(loading => !loading);
+    return this.isRevalidating$.waitFor(loading => !loading);
   }
 }

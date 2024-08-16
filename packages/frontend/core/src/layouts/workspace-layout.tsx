@@ -228,10 +228,10 @@ const WorkspaceLayoutUIContainer = ({ children }: PropsWithChildren) => {
   );
 };
 export const WorkspaceLayoutInner = ({ children }: PropsWithChildren) => {
-  const currentWorkspace = useService(WorkspaceService).workspace;
+  const workspace = useService(WorkspaceService).workspace;
 
-  const upgrading = useLiveData(currentWorkspace.upgrade.upgrading$);
-  const needUpgrade = useLiveData(currentWorkspace.upgrade.needUpgrade$);
+  const upgrading = useLiveData(workspace.upgrade.upgrading$);
+  const needUpgrade = useLiveData(workspace.upgrade.needUpgrade$);
 
   return (
     <WorkspaceLayoutProviders>

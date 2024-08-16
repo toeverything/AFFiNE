@@ -125,7 +125,7 @@ export class LocalWorkspaceFlavourProvider
     }),
     []
   );
-  isLoading$ = new LiveData(false);
+  isRevalidating$ = new LiveData(false);
   revalidate(): void {
     // notify livedata to re-scan workspaces
     this.notifyChannel.postMessage(null);

@@ -1,3 +1,4 @@
+import type { WorkspaceService } from '@toeverything/infra';
 import {
   fromPromise,
   OnEvent,
@@ -12,7 +13,15 @@ import { DocsIndexer } from '../entities/docs-indexer';
 export class DocsSearchService extends Service {
   readonly indexer = this.framework.createEntity(DocsIndexer);
 
+  constructor(private readonly workspaceService: WorkspaceService) {
+    super();
+  }
+
   handleWorkspaceEngineBeforeStart() {
+    // skip if in shared mode
+    if (this.workspaceService.workspace.openOptions.isSharedMode) {
+      return;
+    }
     this.indexer.setupListener();
     this.indexer.startCrawling();
   }

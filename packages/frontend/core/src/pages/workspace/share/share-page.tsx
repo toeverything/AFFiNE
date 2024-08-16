@@ -1,8 +1,15 @@
 import { Scrollable } from '@affine/component';
+import { AppFallback } from '@affine/core/components/affine/app-container';
+import { PageDetailEditor } from '@affine/core/components/page-detail-editor';
+import { SharePageNotFoundError } from '@affine/core/components/share-page-not-found-error';
+import { AppContainer, MainContainer } from '@affine/core/components/workspace';
 import { useActiveBlocksuiteEditor } from '@affine/core/hooks/use-block-suite-editor';
 import { usePageDocumentTitle } from '@affine/core/hooks/use-global-state';
 import { AuthService } from '@affine/core/modules/cloud';
 import { type Editor, EditorsService } from '@affine/core/modules/editor';
+import { PeekViewManagerModal } from '@affine/core/modules/peek-view';
+import { ShareReaderService } from '@affine/core/modules/share-doc';
+import { CloudBlobStorage } from '@affine/core/modules/workspace-engine';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useI18n } from '@affine/i18n';
 import { noop } from '@blocksuite/global/utils';
@@ -17,117 +24,80 @@ import {
   ReadonlyDocStorage,
   useLiveData,
   useService,
-  WorkspaceFlavourProvider,
+  useServices,
   WorkspacesService,
 } from '@toeverything/infra';
 import clsx from 'clsx';
 import { useCallback, useEffect, useState } from 'react';
-import type { LoaderFunction } from 'react-router-dom';
-import {
-  isRouteErrorResponse,
-  redirect,
-  useLoaderData,
-  useRouteError,
-} from 'react-router-dom';
 
-import { AppContainer } from '../../components/affine/app-container';
-import { PageDetailEditor } from '../../components/page-detail-editor';
-import { SharePageNotFoundError } from '../../components/share-page-not-found-error';
-import { MainContainer } from '../../components/workspace';
-import { PeekViewManagerModal } from '../../modules/peek-view';
-import { CloudBlobStorage } from '../../modules/workspace-engine/impls/engine/blob-cloud';
-import * as styles from './share-detail-page.css';
+import { PageNotFound } from '../../404';
 import { ShareFooter } from './share-footer';
 import { ShareHeader } from './share-header';
+import * as styles from './share-page.css';
 
-type DocPublishMode = 'edgeless' | 'page';
-
-export type CloudDoc = {
-  arrayBuffer: ArrayBuffer;
-  publishMode: DocPublishMode;
-};
-
-export async function downloadBinaryFromCloud(
-  rootGuid: string,
-  pageGuid: string
-): Promise<CloudDoc | null> {
-  const response = await fetch(`/api/workspaces/${rootGuid}/docs/${pageGuid}`);
-  if (response.ok) {
-    const publishMode = (response.headers.get('publish-mode') ||
-      'page') as DocPublishMode;
-    const arrayBuffer = await response.arrayBuffer();
-
-    // return both arrayBuffer and publish mode
-    return { arrayBuffer, publishMode };
-  }
-
-  return null;
-}
-
-type LoaderData = {
-  pageId: string;
+export const SharePage = ({
+  workspaceId,
+  docId,
+}: {
   workspaceId: string;
-  publishMode: DocMode;
-  pageArrayBuffer: ArrayBuffer;
-  workspaceArrayBuffer: ArrayBuffer;
-};
+  docId: string;
+}) => {
+  const { shareReaderService } = useServices({
+    ShareReaderService,
+  });
 
-function assertDownloadResponse(
-  value: CloudDoc | null
-): asserts value is CloudDoc {
-  if (
-    !value ||
-    !((value as CloudDoc).arrayBuffer instanceof ArrayBuffer) ||
-    typeof (value as CloudDoc).publishMode !== 'string'
-  ) {
-    throw new Error('value is not a valid download response');
-  }
-}
+  const isLoading = useLiveData(shareReaderService.reader.isLoading$);
+  const error = useLiveData(shareReaderService.reader.error$);
+  const data = useLiveData(shareReaderService.reader.data$);
 
-export const loader: LoaderFunction = async ({ params }) => {
-  const workspaceId = params?.workspaceId;
-  const pageId = params?.pageId;
-  if (!workspaceId || !pageId) {
-    return redirect('/404');
+  useEffect(() => {
+    shareReaderService.reader.loadShare({ workspaceId, docId });
+  }, [shareReaderService, docId, workspaceId]);
+
+  if (isLoading) {
+    return <AppFallback />;
   }
 
-  const [workspaceResponse, pageResponse] = await Promise.all([
-    downloadBinaryFromCloud(workspaceId, workspaceId),
-    downloadBinaryFromCloud(workspaceId, pageId),
-  ]);
-  assertDownloadResponse(workspaceResponse);
-  const { arrayBuffer: workspaceArrayBuffer } = workspaceResponse;
-  assertDownloadResponse(pageResponse);
-  const { arrayBuffer: pageArrayBuffer, publishMode } = pageResponse;
+  if (error) {
+    // TODO(@eyhn): show error details
+    return <SharePageNotFoundError />;
+  }
 
-  return {
-    workspaceId,
-    pageId,
-    publishMode,
-    workspaceArrayBuffer,
-    pageArrayBuffer,
-  } satisfies LoaderData;
+  if (data) {
+    return (
+      <SharePageInner
+        workspaceId={data.workspaceId}
+        docId={data.docId}
+        workspaceBinary={data.workspaceBinary}
+        docBinary={data.docBinary}
+        publishMode={data.publishMode}
+      />
+    );
+  } else {
+    return <PageNotFound noPermission />;
+  }
 };
 
-export const Component = () => {
-  const {
-    workspaceId,
-    pageId: docId,
-    publishMode,
-    workspaceArrayBuffer,
-    pageArrayBuffer,
-  } = useLoaderData() as LoaderData;
+const SharePageInner = ({
+  workspaceId,
+  docId,
+  workspaceBinary,
+  docBinary,
+  publishMode = 'page',
+}: {
+  workspaceId: string;
+  docId: string;
+  workspaceBinary: Uint8Array;
+  docBinary: Uint8Array;
+  publishMode?: DocMode;
+}) => {
+  const t = useI18n();
   const workspacesService = useService(WorkspacesService);
 
-  const t = useI18n();
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const [page, setPage] = useState<Doc | null>(null);
   const [editor, setEditor] = useState<Editor | null>(null);
   const [_, setActiveBlocksuiteEditor] = useActiveBlocksuiteEditor();
-
-  const defaultCloudProvider = workspacesService.framework.get(
-    WorkspaceFlavourProvider('CLOUD')
-  );
 
   useEffect(() => {
     // create a workspace for share page
@@ -140,28 +110,23 @@ export const Component = () => {
         isSharedMode: true,
       },
       {
-        ...defaultCloudProvider,
-        getEngineProvider(workspaceId) {
-          return {
-            getDocStorage() {
-              return new ReadonlyDocStorage({
-                [workspaceId]: new Uint8Array(workspaceArrayBuffer),
-                [docId]: new Uint8Array(pageArrayBuffer),
-              });
-            },
-            getAwarenessConnections() {
-              return [];
-            },
-            getDocServer() {
-              return null;
-            },
-            getLocalBlobStorage() {
-              return EmptyBlobStorage;
-            },
-            getRemoteBlobStorages() {
-              return [new CloudBlobStorage(workspaceId)];
-            },
-          };
+        getDocStorage() {
+          return new ReadonlyDocStorage({
+            [workspaceId]: workspaceBinary,
+            [docId]: docBinary,
+          });
+        },
+        getAwarenessConnections() {
+          return [];
+        },
+        getDocServer() {
+          return null;
+        },
+        getLocalBlobStorage() {
+          return EmptyBlobStorage;
+        },
+        getRemoteBlobStorages() {
+          return [new CloudBlobStorage(workspaceId)];
         },
       }
     );
@@ -188,13 +153,12 @@ export const Component = () => {
         console.error(err);
       });
   }, [
-    defaultCloudProvider,
-    pageArrayBuffer,
     docId,
-    workspaceArrayBuffer,
     workspaceId,
     workspacesService,
     publishMode,
+    workspaceBinary,
+    docBinary,
   ]);
 
   const pageTitle = useLiveData(page?.title$);
@@ -269,14 +233,3 @@ export const Component = () => {
     </FrameworkScope>
   );
 };
-
-export function ErrorBoundary() {
-  const error = useRouteError();
-  return isRouteErrorResponse(error) ? (
-    <h1>
-      {error.status} {error.statusText}
-    </h1>
-  ) : (
-    <SharePageNotFoundError />
-  );
-}

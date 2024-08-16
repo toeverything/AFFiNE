@@ -1,7 +1,7 @@
 import { IconButton, Menu, toast } from '@affine/component';
 import { useBlockSuiteDocMeta } from '@affine/core/hooks/use-block-suite-page-meta';
 import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/properties';
-import { ShareDocsService } from '@affine/core/modules/share-doc';
+import { ShareDocsListService } from '@affine/core/modules/share-doc';
 import { PublicPageMode } from '@affine/graphql';
 import { Trans, useI18n } from '@affine/i18n';
 import { FilterIcon } from '@blocksuite/icons/rc';
@@ -56,21 +56,24 @@ export const SelectPage = ({
   const clearSelected = useCallback(() => {
     onChange([]);
   }, [onChange]);
-  const { workspaceService, compatibleFavoriteItemsAdapter, shareDocsService } =
-    useServices({
-      ShareDocsService,
-      WorkspaceService,
-      CompatibleFavoriteItemsAdapter,
-    });
-  const shareDocs = useLiveData(shareDocsService.shareDocs?.list$);
+  const {
+    workspaceService,
+    compatibleFavoriteItemsAdapter,
+    shareDocsListService,
+  } = useServices({
+    ShareDocsListService,
+    WorkspaceService,
+    CompatibleFavoriteItemsAdapter,
+  });
+  const shareDocs = useLiveData(shareDocsListService.shareDocs?.list$);
   const workspace = workspaceService.workspace;
   const docCollection = workspace.docCollection;
   const pageMetas = useBlockSuiteDocMeta(docCollection);
   const favourites = useLiveData(compatibleFavoriteItemsAdapter.favorites$);
 
   useEffect(() => {
-    shareDocsService.shareDocs?.revalidate();
-  }, [shareDocsService.shareDocs]);
+    shareDocsListService.shareDocs?.revalidate();
+  }, [shareDocsListService.shareDocs]);
 
   const getPublicMode = useCallback(
     (id: string) => {

@@ -1,7 +1,7 @@
 import { Button } from '@affine/component/ui/button';
 import { Divider } from '@affine/component/ui/divider';
 import { Menu } from '@affine/component/ui/menu';
-import { ShareService } from '@affine/core/modules/share-doc';
+import { ShareInfoService } from '@affine/core/modules/share-doc';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useI18n } from '@affine/i18n';
 import { WebIcon } from '@blocksuite/icons/rc';
@@ -48,12 +48,12 @@ const DefaultShareButton = forwardRef(function DefaultShareButton(
   ref: Ref<HTMLButtonElement>
 ) {
   const t = useI18n();
-  const shareService = useService(ShareService);
-  const shared = useLiveData(shareService.share.isShared$);
+  const shareInfoService = useService(ShareInfoService);
+  const shared = useLiveData(shareInfoService.shareInfo.isShared$);
 
   useEffect(() => {
-    shareService.share.revalidate();
-  }, [shareService]);
+    shareInfoService.shareInfo.revalidate();
+  }, [shareInfoService]);
 
   return (
     <Button ref={ref} className={styles.shareButton} variant="primary">

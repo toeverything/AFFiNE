@@ -4,7 +4,7 @@ import { Service } from '@toeverything/infra';
 
 import { ShareDocsList } from '../entities/share-docs-list';
 
-export class ShareDocsService extends Service {
+export class ShareDocsListService extends Service {
   constructor(private readonly workspaceService: WorkspaceService) {
     super();
   }

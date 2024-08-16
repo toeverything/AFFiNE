@@ -7,10 +7,7 @@ export class WorkspaceEngineService extends Service {
   get engine() {
     if (!this._engine) {
       this._engine = this.framework.createEntity(WorkspaceEngine, {
-        engineProvider:
-          this.workspaceScope.props.flavourProvider.getEngineProvider(
-            this.workspaceScope.props.openOptions.metadata.id
-          ),
+        engineProvider: this.workspaceScope.props.engineProvider,
       });
     }
     return this._engine;

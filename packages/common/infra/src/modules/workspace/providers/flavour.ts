@@ -38,7 +38,7 @@ export interface WorkspaceFlavourProvider {
   /**
    * means the workspace list is loading. if it's true, the workspace page will show loading spinner.
    */
-  isLoading$?: LiveData<boolean>;
+  isRevalidating$?: LiveData<boolean>;
 
   /**
    * revalidate the workspace list.

@@ -11,8 +11,8 @@ export class WorkspaceList extends Entity {
     .map(workspaces => {
       return workspaces.flat();
     });
-  isLoading$ = new LiveData(
-    this.providers.map(p => p.isLoading$ ?? new LiveData(false))
+  isRevalidating$ = new LiveData(
+    this.providers.map(p => p.isRevalidating$ ?? new LiveData(false))
   )
     .flat()
     .map(isLoadings => isLoadings.some(isLoading => isLoading));
@@ -23,5 +23,10 @@ export class WorkspaceList extends Entity {
 
   revalidate() {
     this.providers.forEach(provider => provider.revalidate?.());
+  }
+
+  waitForRevalidation(signal?: AbortSignal) {
+    this.revalidate();
+    return this.isRevalidating$.waitFor(isLoading => !isLoading, signal);
   }
 }

@@ -56,6 +56,7 @@ describe('example', () => {
     fetchUser.mockRejectedValue(new Error('some error'));
     loadUser(1);
     await vi.waitFor(() => expect(error$.value).toBeInstanceOf(Error));
+    await vi.waitFor(() => expect(isLoading$.value).toBe(false));
   });
 
   test('isLoading', async () => {

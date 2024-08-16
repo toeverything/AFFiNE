@@ -1,17 +1,17 @@
 import { AppFallback } from '@affine/core/components/affine/app-container';
-import { useWorkspace } from '@affine/core/hooks/use-workspace';
+import { viewRoutes } from '@affine/core/router';
 import { ZipTransformer } from '@blocksuite/blocks';
-import type { Workspace } from '@toeverything/infra';
+import type { Workspace, WorkspaceMetadata } from '@toeverything/infra';
 import {
   FrameworkScope,
   GlobalContextService,
   useLiveData,
-  useService,
+  useServices,
   WorkspacesService,
 } from '@toeverything/infra';
 import type { ReactElement } from 'react';
-import { useEffect, useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import { matchPath, useLocation, useParams } from 'react-router-dom';
 
 import { AffineErrorBoundary } from '../../components/affine/affine-error-boundary';
 import { WorkspaceLayout } from '../../layouts/workspace-layout';
@@ -19,6 +19,7 @@ import { WorkbenchRoot } from '../../modules/workbench';
 import { AllWorkspaceModals } from '../../providers/modal-provider';
 import { performanceRenderLogger } from '../../shared';
 import { PageNotFound } from '../404';
+import { SharePage } from './share/share-page';
 
 declare global {
   /**
@@ -37,24 +38,104 @@ declare global {
 
 export const Component = (): ReactElement => {
   performanceRenderLogger.debug('WorkspaceLayout');
+  const { workspacesService } = useServices({
+    WorkspacesService,
+  });
 
   const params = useParams();
+  const location = useLocation();
 
-  const [showNotFound, setShowNotFound] = useState(false);
-  const workspacesService = useService(WorkspacesService);
-  const listLoading = useLiveData(workspacesService.list.isLoading$);
+  // check if we are in detail doc route, if so, maybe render share page
+  const detailDocRoute = useMemo(() => {
+    const match = matchPath(
+      '/workspace/:workspaceId/:docId',
+      location.pathname
+    );
+    if (
+      match &&
+      match.params.docId &&
+      match.params.workspaceId &&
+      // TODO(eyhn): need a better way to check if it's a docId
+      viewRoutes.find(route => matchPath(route.path, '/' + match.params.docId))
+        ?.path === '/:pageId'
+    ) {
+      return {
+        docId: match.params.docId,
+        workspaceId: match.params.workspaceId,
+      };
+    } else {
+      return null;
+    }
+  }, [location.pathname]);
+
+  const [workspaceNotFound, setWorkspaceNotFound] = useState(false);
+  const listLoading = useLiveData(workspacesService.list.isRevalidating$);
   const workspaces = useLiveData(workspacesService.list.workspaces$);
-
   const meta = useMemo(() => {
     return workspaces.find(({ id }) => id === params.workspaceId);
   }, [workspaces, params.workspaceId]);
 
-  const workspace = useWorkspace(meta);
-  const globalContext = useService(GlobalContextService).globalContext;
-
+  // if listLoading is false, we can show 404 page, otherwise we should show loading page.
   useEffect(() => {
-    workspacesService.list.revalidate();
-  }, [workspacesService]);
+    if (listLoading === false && meta === undefined) {
+      setWorkspaceNotFound(true);
+    }
+    if (meta) {
+      setWorkspaceNotFound(false);
+    }
+  }, [listLoading, meta, workspacesService]);
+
+  // if workspace is not found, we should revalidate in interval
+  useEffect(() => {
+    if (listLoading === false && meta === undefined) {
+      const timer = setInterval(
+        () => workspacesService.list.revalidate(),
+        5000
+      );
+      return () => clearInterval(timer);
+    }
+    return;
+  }, [listLoading, meta, workspaceNotFound, workspacesService]);
+
+  if (workspaceNotFound) {
+    if (
+      detailDocRoute /*  */ &&
+      environment.isBrowser /* only browser has share page */
+    ) {
+      return (
+        <SharePage
+          docId={detailDocRoute.docId}
+          workspaceId={detailDocRoute.workspaceId}
+        />
+      );
+    }
+    return <PageNotFound noPermission />;
+  }
+  if (!meta) {
+    return <AppFallback key="workspaceLoading" />;
+  }
+
+  return <WorkspacePage meta={meta} />;
+};
+
+const WorkspacePage = ({ meta }: { meta: WorkspaceMetadata }) => {
+  const { workspacesService, globalContextService } = useServices({
+    WorkspacesService,
+    GlobalContextService,
+  });
+
+  const [workspace, setWorkspace] = useState<Workspace | null>(null);
+
+  useLayoutEffect(() => {
+    const ref = workspacesService.open({ metadata: meta });
+    setWorkspace(ref.workspace);
+    return () => {
+      ref.dispose();
+    };
+  }, [meta, workspacesService]);
+
+  const isRootDocReady =
+    useLiveData(workspace?.engine.rootDocState$.map(v => v.ready)) ?? false;
 
   useEffect(() => {
     if (workspace) {
@@ -108,46 +189,17 @@ export const Component = (): ReactElement => {
         input.click();
       };
       localStorage.setItem('last_workspace_id', workspace.id);
-      globalContext.workspaceId.set(workspace.id);
+      globalContextService.globalContext.workspaceId.set(workspace.id);
       return () => {
         window.currentWorkspace = undefined;
-        globalContext.workspaceId.set(null);
+        globalContextService.globalContext.workspaceId.set(null);
       };
     }
     return;
-  }, [globalContext, meta, workspace]);
+  }, [globalContextService, workspace]);
 
-  //  avoid doing operation, before workspace is loaded
-  const isRootDocReady =
-    useLiveData(workspace?.engine.rootDocState$.map(v => v.ready)) ?? false;
-
-  // if listLoading is false, we can show 404 page, otherwise we should show loading page.
-  useEffect(() => {
-    if (listLoading === false && meta === undefined) {
-      setShowNotFound(true);
-    }
-    if (meta) {
-      setShowNotFound(false);
-    }
-  }, [listLoading, meta, workspacesService]);
-
-  useEffect(() => {
-    if (showNotFound) {
-      const timer = setInterval(() => {
-        workspacesService.list.revalidate();
-      }, 3000);
-      return () => {
-        clearInterval(timer);
-      };
-    }
-    return;
-  }, [showNotFound, workspacesService]);
-
-  if (showNotFound) {
-    return <PageNotFound noPermission />;
-  }
   if (!workspace) {
-    return <AppFallback key="workspaceLoading" />;
+    return null; // skip this, workspace will be set in layout effect
   }
 
   if (!isRootDocReady) {

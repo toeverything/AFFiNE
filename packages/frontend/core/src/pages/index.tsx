@@ -47,7 +47,7 @@ export const Component = () => {
 
   const workspacesService = useService(WorkspacesService);
   const list = useLiveData(workspacesService.list.workspaces$);
-  const listIsLoading = useLiveData(workspacesService.list.isLoading$);
+  const listIsLoading = useLiveData(workspacesService.list.isRevalidating$);
 
   const { openPage, jumpToPage } = useNavigateHelper();
   const [searchParams] = useSearchParams();

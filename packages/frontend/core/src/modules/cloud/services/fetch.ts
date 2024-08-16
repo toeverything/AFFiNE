@@ -61,7 +61,7 @@ export class FetchService extends Service {
     if (res.status === 504) {
       const error = new Error('Gateway Timeout');
       logger.debug('network error', error);
-      throw new NetworkError(error);
+      throw new NetworkError(error, res.status);
     }
     if (!res.ok) {
       logger.warn(
@@ -76,7 +76,10 @@ export class FetchService extends Service {
           // ignore
         }
       }
-      throw new BackendError(UserFriendlyError.fromAnyError(reason));
+      throw new BackendError(
+        UserFriendlyError.fromAnyError(reason),
+        res.status
+      );
     }
     return res;
   };
