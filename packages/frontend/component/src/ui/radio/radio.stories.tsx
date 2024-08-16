@@ -1,5 +1,6 @@
 import { AiIcon, FrameIcon, TocIcon, TodayIcon } from '@blocksuite/icons/rc';
 import { cssVar } from '@toeverything/theme';
+import { cssVarV2 } from '@toeverything/theme/v2';
 import { useState } from 'react';
 
 import { ResizePanel } from '../resize-panel/resize-panel';
@@ -144,6 +145,34 @@ export const CustomizeActiveStyle = () => {
       padding={4}
       borderRadius={12}
       gap={8}
+    />
+  );
+};
+
+const shapes = [
+  'Square',
+  'Ellipse',
+  'Diamond',
+  'Triangle',
+  'Rounded ',
+  'Rectangle',
+];
+export const ShapeSelectorDemo = () => {
+  const [shape, setShape] = useState(shapes[0]);
+  return (
+    <RadioGroup
+      padding={0}
+      gap={4}
+      itemHeight={28}
+      borderRadius={8}
+      value={shape}
+      items={shapes}
+      onChange={setShape}
+      style={{ background: 'transparent' }}
+      indicatorStyle={{
+        boxShadow: 'none',
+        backgroundColor: cssVarV2('layer/background/tertiary'),
+      }}
     />
   );
 };
