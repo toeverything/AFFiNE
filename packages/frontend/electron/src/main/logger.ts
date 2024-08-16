@@ -4,6 +4,8 @@ import log from 'electron-log';
 export const logger = log.scope('main');
 log.initialize();
 
+log.transports.file.level = 'info';
+
 export function getLogFilePath() {
   return log.transports.file.getFile().path;
 }
