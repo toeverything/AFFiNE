@@ -10,7 +10,7 @@ import type { Editor } from '@affine/core/modules/editor';
 import { EditorService, EditorsService } from '@affine/core/modules/editor';
 import { RecentDocsService } from '@affine/core/modules/quicksearch';
 import { ViewService } from '@affine/core/modules/workbench/services/view';
-import type { PageRootService } from '@blocksuite/blocks';
+import type { DocMode, PageRootService } from '@blocksuite/blocks';
 import {
   BookmarkBlockService,
   customImageProxyMiddleware,
@@ -330,9 +330,25 @@ export const DetailPage = ({ pageId }: { pageId: string }): ReactElement => {
   const docRecordList = docsService.list;
   const docListReady = useLiveData(docRecordList.isReady$);
   const docRecord = useLiveData(docRecordList.doc$(pageId));
+  const viewService = useService(ViewService);
+
+  const queryString = useLiveData(
+    viewService.view.queryString$<{
+      mode?: string;
+    }>()
+  );
+
+  const queryStringMode =
+    queryString.mode && ['edgeless', 'page'].includes(queryString.mode)
+      ? (queryString.mode as DocMode)
+      : null;
+
+  // We only read the querystring mode when entering, so use useState here.
+  const [initialQueryStringMode] = useState(() => queryStringMode);
 
   const [doc, setDoc] = useState<Doc | null>(null);
   const [editor, setEditor] = useState<Editor | null>(null);
+  const editorMode = useLiveData(editor?.mode$);
 
   useLayoutEffect(() => {
     if (!docRecord) {
@@ -351,12 +367,26 @@ export const DetailPage = ({ pageId }: { pageId: string }): ReactElement => {
     }
     const editor = doc.scope
       .get(EditorsService)
-      .createEditor(doc.getPrimaryMode() || 'page');
+      .createEditor(initialQueryStringMode || doc.getPrimaryMode() || 'page');
     setEditor(editor);
     return () => {
       editor.dispose();
     };
-  }, [doc]);
+  }, [doc, initialQueryStringMode]);
+
+  // update editor mode to queryString
+  useEffect(() => {
+    if (editorMode) {
+      viewService.view.updateQueryString(
+        {
+          mode: editorMode,
+        },
+        {
+          replace: true,
+        }
+      );
+    }
+  }, [editorMode, viewService.view]);
 
   // set sync engine priority target
   useEffect(() => {

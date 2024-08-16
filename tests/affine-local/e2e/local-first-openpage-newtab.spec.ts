@@ -6,6 +6,7 @@ import {
   getPageOperationButton,
   waitForEditorLoad,
 } from '@affine-test/kit/utils/page-logic';
+import { getCurrentDocIdFromUrl } from '@affine-test/kit/utils/url';
 import { expect } from '@playwright/test';
 
 test('click btn new page and open in tab', async ({ page, workspace }) => {
@@ -15,7 +16,7 @@ test('click btn new page and open in tab', async ({ page, workspace }) => {
   await getBlockSuiteEditorTitle(page).click();
   await getBlockSuiteEditorTitle(page).fill('this is a new page');
   const newPageUrl = page.url();
-  const newPageId = page.url().split('/').reverse()[0];
+  const newPageId = getCurrentDocIdFromUrl(page);
 
   await page.getByTestId('all-pages').click();
 

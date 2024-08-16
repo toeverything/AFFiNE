@@ -7,6 +7,7 @@ import {
   getPageOperationButton,
   waitForEditorLoad,
 } from '@affine-test/kit/utils/page-logic';
+import { getCurrentDocIdFromUrl } from '@affine-test/kit/utils/url';
 import { expect } from '@playwright/test';
 
 test('New a page ,then open it and show delete modal', async ({
@@ -44,7 +45,7 @@ test('New a page ,then go to all pages and show delete modal', async ({
   await clickNewPageButton(page);
   await getBlockSuiteEditorTitle(page).click();
   await getBlockSuiteEditorTitle(page).fill('this is a new page to delete');
-  const newPageId = page.url().split('/').reverse()[0];
+  const newPageId = getCurrentDocIdFromUrl(page);
   await page.getByTestId('all-pages').click();
   const cell = page.getByRole('cell', {
     name: 'this is a new page to delete',

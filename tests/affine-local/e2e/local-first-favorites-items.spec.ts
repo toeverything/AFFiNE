@@ -10,6 +10,7 @@ import {
   waitForEditorLoad,
   waitForEmptyEditor,
 } from '@affine-test/kit/utils/page-logic';
+import { getCurrentDocIdFromUrl } from '@affine-test/kit/utils/url';
 import { expect } from '@playwright/test';
 
 test('Show favorite items in sidebar', async ({ page, workspace }) => {
@@ -18,7 +19,7 @@ test('Show favorite items in sidebar', async ({ page, workspace }) => {
   await clickNewPageButton(page);
   await getBlockSuiteEditorTitle(page).click();
   await getBlockSuiteEditorTitle(page).fill('this is a new page to favorite');
-  const newPageId = page.url().split('/').reverse()[0];
+  const newPageId = getCurrentDocIdFromUrl(page);
   await page.getByTestId('all-pages').click();
   const cell = getPageByTitle(page, 'this is a new page to favorite');
   await expect(cell).toBeVisible();
@@ -50,7 +51,7 @@ test('Show favorite reference in sidebar', async ({ page, workspace }) => {
 
   await createLinkedPage(page, 'Another page');
 
-  const newPageId = page.url().split('/').reverse()[0];
+  const newPageId = getCurrentDocIdFromUrl(page);
 
   await clickPageMoreActions(page);
 
@@ -89,7 +90,7 @@ test("Deleted page's reference will not be shown in sidebar", async ({
   await getBlockSuiteEditorTitle(page).click();
   await getBlockSuiteEditorTitle(page).fill('this is a new page to favorite');
 
-  const newPageId = page.url().split('/').reverse()[0];
+  const newPageId = getCurrentDocIdFromUrl(page);
 
   // goes to main content
   await page.keyboard.press('Enter', { delay: 50 });
@@ -108,7 +109,7 @@ test("Deleted page's reference will not be shown in sidebar", async ({
     page.locator('.doc-title-container:has-text("Another page")')
   ).toBeVisible();
 
-  const anotherPageId = page.url().split('/').reverse()[0];
+  const anotherPageId = getCurrentDocIdFromUrl(page);
 
   const favItemTestId = 'explorer-doc-' + newPageId;
 

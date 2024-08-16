@@ -8,6 +8,10 @@ import {
   waitForEditorLoad,
 } from '@affine-test/kit/utils/page-logic';
 import { clickSideBarAllPageButton } from '@affine-test/kit/utils/sidebar';
+import {
+  getCurrentCollectionIdFromUrl,
+  getCurrentDocIdFromUrl,
+} from '@affine-test/kit/utils/url';
 import type { Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
@@ -32,7 +36,7 @@ const createCollection = async (page: Page, name: string) => {
   await expect(input).toBeVisible();
   await input.fill(name);
   await page.getByTestId('save-collection').click();
-  const newCollectionId = page.url().split('/').reverse()[0];
+  const newCollectionId = getCurrentCollectionIdFromUrl(page);
   const collection = page.getByTestId(`explorer-collection-${newCollectionId}`);
   await expect(collection).toBeVisible();
   return collection;
@@ -85,7 +89,7 @@ test('drag a page from "All pages" list to favourites, then drag to trash', asyn
   const title = 'this is a new page to drag';
   await waitForEditorLoad(page);
   await createPage(page, title);
-  const pageId = page.url().split('/').reverse()[0];
+  const pageId = getCurrentDocIdFromUrl(page);
   await clickSideBarAllPageButton(page);
   await page.waitForTimeout(500);
 
@@ -133,7 +137,7 @@ test('drag a page from favourites to collection', async ({ page }) => {
   const title = 'this is a new page to drag';
   await createPage(page, title);
 
-  const pageId = page.url().split('/').reverse()[0];
+  const pageId = getCurrentDocIdFromUrl(page);
   await clickSideBarAllPageButton(page);
   await page.waitForTimeout(500);
 
@@ -152,7 +156,7 @@ test('drag a collection to favourites', async ({ page }) => {
   await clickSideBarAllPageButton(page);
   await page.waitForTimeout(500);
   const collection = await createCollection(page, 'test collection');
-  const collectionId = page.url().split('/').reverse()[0];
+  const collectionId = getCurrentCollectionIdFromUrl(page);
   await dragToFavourites(page, collection, collectionId, 'collection');
 });
 
@@ -167,7 +171,7 @@ test('items in favourites can be reordered by dragging', async ({ page }) => {
 
   {
     const collection = await createCollection(page, 'test collection');
-    const collectionId = page.url().split('/').reverse()[0];
+    const collectionId = getCurrentCollectionIdFromUrl(page);
     await dragToFavourites(page, collection, collectionId, 'collection');
   }
 

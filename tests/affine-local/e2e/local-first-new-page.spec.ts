@@ -5,14 +5,15 @@ import {
   getBlockSuiteEditorTitle,
   waitForEditorLoad,
 } from '@affine-test/kit/utils/page-logic';
+import { getCurrentDocIdFromUrl } from '@affine-test/kit/utils/url';
 import { expect } from '@playwright/test';
 
 test('click btn new page', async ({ page, workspace }) => {
   await openHomePage(page);
   await waitForEditorLoad(page);
-  const originPageId = page.url().split('/').reverse()[0];
+  const originPageId = getCurrentDocIdFromUrl(page);
   await clickNewPageButton(page);
-  const newPageId = page.url().split('/').reverse()[0];
+  const newPageId = getCurrentDocIdFromUrl(page);
   expect(newPageId).not.toBe(originPageId);
   const currentWorkspace = await workspace.current();
 

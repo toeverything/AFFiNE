@@ -16,6 +16,7 @@ import {
   filterTags,
   removeSelectedTag,
 } from '@affine-test/kit/utils/properties';
+import { getCurrentDocIdFromUrl } from '@affine-test/kit/utils/url';
 import { expect, type Page } from '@playwright/test';
 
 const searchAndCreateTag = async (page: Page, name: string) => {
@@ -64,7 +65,7 @@ test('New a page and open it ,then open info modal in the title bar more action 
 });
 
 test('New a page, then open info modal from all doc', async ({ page }) => {
-  const newPageId = page.url().split('/').reverse()[0];
+  const newPageId = getCurrentDocIdFromUrl(page);
 
   await page.getByTestId('all-pages').click();
   const cell = getPageByTitle(page, 'this is a new page');
@@ -83,7 +84,7 @@ test('New a page, then open info modal from all doc', async ({ page }) => {
 test('New a page and add to favourites, then open info modal from sidebar', async ({
   page,
 }) => {
-  const newPageId = page.url().split('/').reverse()[0];
+  const newPageId = getCurrentDocIdFromUrl(page);
 
   await clickPageMoreActions(page);
   await page.getByTestId('editor-option-menu-favorite').click();

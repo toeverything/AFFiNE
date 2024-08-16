@@ -1,5 +1,7 @@
 import { Entity, LiveData } from '@toeverything/infra';
 import type { Location, To } from 'history';
+import { isEqual } from 'lodash-es';
+import queryString from 'query-string';
 import { Observable } from 'rxjs';
 
 import { createNavigableHistory } from '../../../utils/navigable-history';
@@ -76,6 +78,52 @@ export class View extends Entity<{
   title$ = new LiveData(this.props.title ?? '');
 
   icon$ = new LiveData(this.props.icon ?? 'allDocs');
+
+  queryString$<T extends Record<string, unknown>>({
+    parseNumbers = true,
+  }: { parseNumbers?: boolean } = {}) {
+    return this.location$.map(
+      location =>
+        queryString.parse(location.search, {
+          parseBooleans: true,
+          parseNumbers: parseNumbers,
+        }) as Partial<T>
+    );
+  }
+
+  updateQueryString<T extends Record<string, unknown>>(
+    patch: Partial<T>,
+    {
+      forceUpdate,
+      parseNumbers,
+      replace,
+    }: {
+      forceUpdate?: boolean;
+      parseNumbers?: boolean;
+      replace?: boolean;
+    } = {}
+  ) {
+    const oldQueryStrings = queryString.parse(location.search, {
+      parseBooleans: true,
+      parseNumbers: parseNumbers,
+    });
+    const newQueryStrings = { ...oldQueryStrings, ...patch };
+
+    if (forceUpdate || !isEqual(oldQueryStrings, newQueryStrings)) {
+      const search = queryString.stringify(newQueryStrings);
+
+      const newState = {
+        ...this.history.location,
+        search,
+      };
+
+      if (replace) {
+        this.history.replace(newState);
+      } else {
+        this.history.push(newState);
+      }
+    }
+  }
 
   push(path: To) {
     this.history.push(path);
