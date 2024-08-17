@@ -2,6 +2,8 @@ import './security-restrictions';
 
 import path from 'node:path';
 
+import * as Sentry from '@sentry/electron/main';
+import { IPCMode } from '@sentry/electron/main';
 import { app } from 'electron';
 
 import { createApplicationMenu } from './application-menu/create';
@@ -12,6 +14,7 @@ import { registerEvents } from './events';
 import { registerHandlers } from './handlers';
 import { logger } from './logger';
 import { registerProtocol } from './protocol';
+import { isOnline } from './ui';
 import { registerUpdater } from './updater';
 import { launch } from './windows-manager/launcher';
 import { launchStage } from './windows-manager/stage';
@@ -75,3 +78,18 @@ app
   .then(createApplicationMenu)
   .then(registerUpdater)
   .catch(e => console.error('Failed create window:', e));
+
+if (process.env.SENTRY_RELEASE) {
+  // https://docs.sentry.io/platforms/javascript/guides/electron/
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    environment: process.env.BUILD_TYPE ?? 'development',
+    ipcMode: IPCMode.Protocol,
+    transportOptions: {
+      maxAgeDays: 30,
+      maxQueueSize: 100,
+      shouldStore: () => !isOnline,
+      shouldSend: () => isOnline,
+    },
+  });
+}

@@ -59,6 +59,8 @@ function main() {
         appVersion: runtimeConfig.appVersion,
         editorVersion: runtimeConfig.editorVersion,
       });
+
+      apis?.ui.handleNetworkChange(navigator.onLine);
       window.addEventListener('offline', () => {
         apis?.ui.handleNetworkChange(false);
       });
