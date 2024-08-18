@@ -102,10 +102,10 @@ export const EditTagMenu = ({
         }}
         onKeyDown={e => {
           if (e.key === 'Enter') {
-            e.stopPropagation();
             e.preventDefault();
             updateTagName(e.currentTarget.value);
           }
+          e.stopPropagation();
         }}
         placeholder={t['Untitled']()}
       />
