@@ -189,6 +189,7 @@ type DocHistoryNotFoundDataType {
 }
 
 type DocHistoryType {
+  editor: EditorType
   id: String!
   timestamp: DateTime!
   workspaceId: String!
@@ -197,6 +198,11 @@ type DocHistoryType {
 type DocNotFoundDataType {
   docId: String!
   spaceId: String!
+}
+
+type EditorType {
+  avatarUrl: String
+  name: String!
 }
 
 union ErrorDataUnion = AlreadyInSpaceDataType | BlobNotFoundDataType | CopilotMessageNotFoundDataType | CopilotPromptNotFoundDataType | CopilotProviderSideErrorDataType | DocAccessDeniedDataType | DocHistoryNotFoundDataType | DocNotFoundDataType | InvalidHistoryTimestampDataType | InvalidPasswordLengthDataType | InvalidRuntimeConfigTypeDataType | MissingOauthQueryParameterDataType | NotInSpaceDataType | RuntimeConfigNotFoundDataType | SameSubscriptionRecurringDataType | SpaceAccessDeniedDataType | SpaceNotFoundDataType | SpaceOwnerNotFoundDataType | SubscriptionAlreadyExistsDataType | SubscriptionNotExistsDataType | SubscriptionPlanNotFoundDataType | UnknownOauthProviderDataType | VersionRejectedDataType

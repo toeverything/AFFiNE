@@ -12,10 +12,19 @@ import {
 import type { SnapshotHistory } from '@prisma/client';
 
 import { CurrentUser } from '../../auth';
-import { PgWorkspaceDocStorageAdapter } from '../../doc';
+import { type Editor, PgWorkspaceDocStorageAdapter } from '../../doc';
 import { Permission, PermissionService } from '../../permission';
 import { DocID } from '../../utils/doc';
 import { WorkspaceType } from '../types';
+
+@ObjectType()
+class EditorType implements Partial<Editor> {
+  @Field()
+  name!: string;
+
+  @Field(() => String, { nullable: true })
+  avatarUrl!: string | null;
+}
 
 @ObjectType()
 class DocHistoryType implements Partial<SnapshotHistory> {
@@ -27,6 +36,9 @@ class DocHistoryType implements Partial<SnapshotHistory> {
 
   @Field(() => GraphQLISODateTime)
   timestamp!: Date;
+
+  @Field(() => EditorType, { nullable: true })
+  editor!: EditorType | null;
 }
 
 @Resolver(() => WorkspaceType)
@@ -47,17 +59,18 @@ export class DocHistoryResolver {
   ): Promise<DocHistoryType[]> {
     const docId = new DocID(guid, workspace.id);
 
-    const timestamps = await this.workspace.listDocHistories(
+    const histories = await this.workspace.listDocHistories(
       workspace.id,
       docId.guid,
       { before: timestamp.getTime(), limit: take }
     );
 
-    return timestamps.map(timestamp => {
+    return histories.map(history => {
       return {
         workspaceId: workspace.id,
         id: docId.guid,
-        timestamp: new Date(timestamp),
+        timestamp: new Date(history.timestamp),
+        editor: history.editor,
       };
     });
   }
@@ -79,6 +92,7 @@ export class DocHistoryResolver {
     );
 
     await this.workspace.rollbackDoc(
+      user.id,
       docId.workspace,
       docId.guid,
       timestamp.getTime()
