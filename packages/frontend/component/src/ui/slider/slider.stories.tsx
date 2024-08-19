@@ -17,7 +17,8 @@ const Template: StoryFn<SliderProps> = args => {
 export const Default: StoryFn<SliderProps> = Template.bind(undefined);
 Default.args = {
   min: 0,
-  max: 100,
+  max: 10,
+  width: 500,
   step: 1,
-  nodes: [0, 50, 100],
+  nodes: [0, 5, 10],
 };
