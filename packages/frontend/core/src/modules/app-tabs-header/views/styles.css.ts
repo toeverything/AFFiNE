@@ -1,5 +1,9 @@
 import { cssVar } from '@toeverything/theme';
-import { style } from '@vanilla-extract/css';
+import { cssVarV2 } from '@toeverything/theme/v2';
+import { createVar, style } from '@vanilla-extract/css';
+
+export const tabOverlayWidth = createVar('0px');
+export const tabButtonWidth = createVar('16px');
 
 export const root = style({
   width: '100%',
@@ -94,9 +98,6 @@ export const tab = style({
       background: cssVar('backgroundPrimaryColor'),
       boxShadow: cssVar('shadow1'),
     },
-    '&[data-padding-right="true"]': {
-      paddingRight: 20,
-    },
     '&[data-pinned="true"]': {
       flexShrink: 0,
     },
@@ -115,27 +116,30 @@ export const splitViewLabel = style({
   fontWeight: 500,
   alignItems: 'center',
   cursor: 'default',
-  ':last-of-type': {
-    paddingRight: 0,
-  },
 });
 
-export const splitViewLabelText = style({
-  minWidth: 0,
-  textOverflow: 'ellipsis',
+export const tabCloseButtonWrapper = style({
+  pointerEvents: 'none',
+  position: 'absolute',
+  right: 0,
+  top: 0,
+  bottom: 0,
+  height: '100%',
+  width: 14,
   overflow: 'clip',
-  whiteSpace: 'nowrap',
-  color: cssVar('textSecondaryColor'),
-  fontSize: cssVar('fontXs'),
+  display: 'flex',
+  alignItems: 'center',
+  paddingRight: 8,
+  justifyContent: 'flex-end',
   selectors: {
-    [`${splitViewLabel}:hover &`]: {
-      color: cssVar('textPrimaryColor'),
+    [`${tab}:is([data-active=true], :hover) &:not(:empty)`]: {
+      width: 40,
     },
-    [`${splitViewLabel}[data-active="true"] &`]: {
-      color: cssVar('primaryColor'),
+    [`${tab}[data-active=true] &`]: {
+      background: `linear-gradient(270deg, ${cssVar('backgroundPrimaryColor')} 52.86%, rgba(255, 255, 255, 0.00) 100%)`,
     },
-    [`${splitViewLabel}:last-of-type &`]: {
-      textOverflow: 'clip',
+    [`${tab}[data-active=false] &`]: {
+      background: `linear-gradient(270deg, ${cssVar('backgroundSecondaryColor')} 65.71%, rgba(244, 244, 245, 0.00) 100%)`,
     },
   },
 });
@@ -165,47 +169,50 @@ export const labelIcon = style([
   },
 ]);
 
-export const tabCloseButtonWrapper = style({
-  pointerEvents: 'none',
-  position: 'absolute',
-  right: 0,
-  top: 0,
-  bottom: 0,
-  height: '100%',
-  width: 24,
-  overflow: 'clip',
-  display: 'flex',
-  alignItems: 'center',
-  paddingRight: 4,
-  justifyContent: 'flex-end',
-  selectors: {
-    [`${tab}:is([data-active=true], :hover) &:not(:empty)`]: {
-      width: 40,
-    },
-    [`${tab}[data-active=true] &`]: {
-      background: `linear-gradient(270deg, ${cssVar('backgroundPrimaryColor')} 52.86%, rgba(255, 255, 255, 0.00) 100%)`,
-    },
-    [`${tab}[data-active=false] &`]: {
-      background: `linear-gradient(270deg, ${cssVar('backgroundSecondaryColor')} 65.71%, rgba(244, 244, 245, 0.00) 100%)`,
-    },
-  },
-});
-
 export const tabCloseButton = style([
   tabIcon,
   {
     pointerEvents: 'auto',
     width: 16,
-    height: '100%',
+    height: 16,
+    borderRadius: 2,
     display: 'none',
     color: cssVar('iconColor'),
     selectors: {
       [`${tab}:is([data-active=true], :hover) &`]: {
         display: 'flex',
       },
+      '&:hover': {
+        color: cssVarV2('tab/iconColor/hover'),
+        background: cssVarV2('layer/background/hoverOverlay'),
+      },
     },
   },
 ]);
+
+export const splitViewLabelText = style({
+  minWidth: 0,
+  textOverflow: 'ellipsis',
+  overflow: 'clip',
+  whiteSpace: 'nowrap',
+  color: cssVar('textSecondaryColor'),
+  fontSize: cssVar('fontXs'),
+  paddingRight: 4,
+  selectors: {
+    [`${splitViewLabel}:hover &`]: {
+      color: cssVar('textPrimaryColor'),
+    },
+    [`${splitViewLabel}[data-active="true"] &`]: {
+      color: cssVar('primaryColor'),
+    },
+    [`${splitViewLabel}:last-of-type &`]: {
+      textOverflow: 'clip',
+    },
+    [`${splitViewLabel}:last-of-type [data-padding-right="true"]&`]: {
+      paddingRight: 20,
+    },
+  },
+});
 
 export const spacer = style({
   flexGrow: 1,

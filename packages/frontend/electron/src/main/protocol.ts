@@ -105,7 +105,8 @@ export function registerProtocol() {
   session.defaultSession.webRequest.onBeforeSendHeaders((details, callback) => {
     const url = new URL(details.url);
     const pathname = url.pathname;
-    // if sending request to the cloud, attach the session cookie
+    // session cookies are set to file:// on production
+    // if sending request to the cloud, attach the session cookie (to affine cloud server)
     if (isNetworkResource(pathname)) {
       const cookie = getCookies();
       if (cookie) {
