@@ -1,27 +1,32 @@
-import { Input, notify, RadioGroup, Skeleton, Switch } from '@affine/component';
+import { notify, Skeleton } from '@affine/component';
 import { PublicLinkDisableModal } from '@affine/component/disable-public-link';
 import { Button } from '@affine/component/ui/button';
 import { Menu, MenuItem, MenuTrigger } from '@affine/component/ui/menu';
+import { openSettingModalAtom } from '@affine/core/atoms';
 import { useSharingUrl } from '@affine/core/hooks/affine/use-share-url';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { track } from '@affine/core/mixpanel';
 import { ServerConfigService } from '@affine/core/modules/cloud';
+import { EditorService } from '@affine/core/modules/editor';
+import { WorkspacePermissionService } from '@affine/core/modules/permissions';
 import { ShareInfoService } from '@affine/core/modules/share-doc';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { PublicPageMode } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
 import {
-  ArrowRightSmallIcon,
+  CollaborationIcon,
+  DoneIcon,
+  EdgelessIcon,
+  LinkIcon,
+  LockIcon,
+  PageIcon,
   SingleSelectSelectSolidIcon,
+  ViewIcon,
 } from '@blocksuite/icons/rc';
-import {
-  type DocMode,
-  DocService,
-  useLiveData,
-  useService,
-} from '@toeverything/infra';
+import { useLiveData, useService } from '@toeverything/infra';
 import { cssVar } from '@toeverything/theme';
-import { Suspense, useEffect, useMemo, useState } from 'react';
+import { useSetAtom } from 'jotai';
+import { Suspense, useCallback, useEffect, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 
 import { CloudSvg } from '../cloud-svg';
@@ -54,11 +59,12 @@ export const LocalSharePage = (props: ShareMenuProps) => {
   );
 };
 
-export const AffineSharePage = (props: ShareMenuProps) => {
+export const AFFiNESharePage = (props: ShareMenuProps) => {
+  const t = useI18n();
   const {
     workspaceMetadata: { id: workspaceId },
   } = props;
-  const doc = useService(DocService).doc;
+  const editor = useService(EditorService).editor;
   const shareInfoService = useService(ShareInfoService);
   const serverConfig = useService(ServerConfigService).serverConfig;
   useEffect(() => {
@@ -71,44 +77,28 @@ export const AffineSharePage = (props: ShareMenuProps) => {
     isSharedPage === null || sharedMode === null || baseUrl === null;
   const [showDisable, setShowDisable] = useState(false);
 
-  const currentDocMode = useLiveData(doc.primaryMode$);
+  const currentDocMode = useLiveData(editor.mode$);
 
-  const mode = useMemo(() => {
-    if (isSharedPage && sharedMode) {
-      // if it's a shared page, use the share mode
-      return sharedMode.toLowerCase() as DocMode;
+  const permissionService = useService(WorkspacePermissionService);
+  const isOwner = useLiveData(permissionService.permission.isOwner$);
+  const setSettingModalAtom = useSetAtom(openSettingModalAtom);
+
+  const onOpenWorkspaceSettings = useCallback(() => {
+    setSettingModalAtom({
+      open: true,
+      activeTab: 'workspace:preference',
+      workspaceMetadata: props.workspaceMetadata,
+    });
+  }, [props.workspaceMetadata, setSettingModalAtom]);
+
+  const onClickAnyoneReadOnlyShare = useAsyncCallback(async () => {
+    if (isSharedPage) {
+      return;
     }
-    // default to  page mode
-    return currentDocMode;
-  }, [currentDocMode, isSharedPage, sharedMode]);
-
-  const { sharingUrl, onClickCopyLink } = useSharingUrl({
-    workspaceId,
-    pageId: doc.id,
-    urlType: 'share',
-  });
-
-  const t = useI18n();
-
-  const modeOptions = useMemo(
-    () => [
-      { value: 'page', label: t['com.affine.pageMode.page']() },
-      {
-        value: 'edgeless',
-        label: t['com.affine.pageMode.edgeless'](),
-      },
-    ],
-    [t]
-  );
-
-  const onClickCreateLink = useAsyncCallback(async () => {
     try {
-      await shareInfoService.shareInfo.enableShare(
-        mode === 'edgeless' ? PublicPageMode.Edgeless : PublicPageMode.Page
-      );
-      track.$.sharePanel.$.createShareLink({
-        mode,
-      });
+      // TODO(@JimmFly): remove mode when we have a better way to handle it
+      await shareInfoService.shareInfo.enableShare(PublicPageMode.Page);
+      track.$.sharePanel.$.createShareLink();
       notify.success({
         title:
           t[
@@ -121,11 +111,6 @@ export const AffineSharePage = (props: ShareMenuProps) => {
         style: 'normal',
         icon: <SingleSelectSelectSolidIcon color={cssVar('primaryColor')} />,
       });
-      if (sharingUrl) {
-        navigator.clipboard.writeText(sharingUrl).catch(err => {
-          console.error(err);
-        });
-      }
     } catch (err) {
       notify.error({
         title:
@@ -139,7 +124,7 @@ export const AffineSharePage = (props: ShareMenuProps) => {
       });
       console.error(err);
     }
-  }, [mode, shareInfoService.shareInfo, sharingUrl, t]);
+  }, [isSharedPage, shareInfoService.shareInfo, t]);
 
   const onDisablePublic = useAsyncCallback(async () => {
     try {
@@ -170,46 +155,29 @@ export const AffineSharePage = (props: ShareMenuProps) => {
     setShowDisable(false);
   }, [shareInfoService, t]);
 
-  const onShareModeChange = useAsyncCallback(
-    async (value: DocMode) => {
-      try {
-        if (isSharedPage) {
-          await shareInfoService.shareInfo.changeShare(
-            value === 'edgeless' ? PublicPageMode.Edgeless : PublicPageMode.Page
-          );
-          notify.success({
-            title:
-              t[
-                'com.affine.share-menu.confirm-modify-mode.notification.success.title'
-              ](),
-            message: t[
-              'com.affine.share-menu.confirm-modify-mode.notification.success.message'
-            ]({
-              preMode: value === 'edgeless' ? t['Page']() : t['Edgeless'](),
-              currentMode: value === 'edgeless' ? t['Edgeless']() : t['Page'](),
-            }),
-            style: 'normal',
-            icon: (
-              <SingleSelectSelectSolidIcon color={cssVar('primaryColor')} />
-            ),
-          });
-        }
-      } catch (err) {
-        notify.error({
-          title:
-            t[
-              'com.affine.share-menu.confirm-modify-mode.notification.fail.title'
-            ](),
-          message:
-            t[
-              'com.affine.share-menu.confirm-modify-mode.notification.fail.message'
-            ](),
-        });
-        console.error(err);
-      }
-    },
-    [isSharedPage, shareInfoService.shareInfo, t]
-  );
+  const onClickDisable = useCallback(() => {
+    if (isSharedPage) {
+      setShowDisable(true);
+    }
+  }, [isSharedPage]);
+
+  const isMac = environment.isBrowser && environment.isMacOs;
+
+  const { onClickCopyLink } = useSharingUrl({
+    workspaceId,
+    pageId: editor.doc.id,
+  });
+
+  const onCopyPageLink = useCallback(() => {
+    onClickCopyLink('page');
+  }, [onClickCopyLink]);
+  const onCopyEdgelessLink = useCallback(() => {
+    onClickCopyLink('edgeless');
+  }, [onClickCopyLink]);
+  const onCopyBlockLink = useCallback(() => {
+    // TODO(@JimmFly): handle frame
+    onClickCopyLink();
+  }, [onClickCopyLink]);
 
   if (isLoading) {
     // TODO(@eyhn): loading and error UI
@@ -222,110 +190,175 @@ export const AffineSharePage = (props: ShareMenuProps) => {
   }
 
   return (
-    <>
+    <div className={styles.content}>
       <div className={styles.titleContainerStyle}>
-        {t['com.affine.share-menu.publish-to-web']()}
+        {isSharedPage
+          ? t['com.affine.share-menu.option.link.readonly.description']()
+          : t['com.affine.share-menu.option.link.no-access.description']()}
       </div>
       <div className={styles.columnContainerStyle}>
-        <div className={styles.descriptionStyle}>
-          {t['com.affine.share-menu.publish-to-web.description']()}
-        </div>
-      </div>
-      <div className={styles.rowContainerStyle}>
-        <Input
-          inputStyle={{
-            color: 'var(--affine-text-secondary-color)',
-            fontSize: 'var(--affine-font-xs)',
-            lineHeight: '20px',
-          }}
-          value={(isSharedPage && sharingUrl) || `${baseUrl}/...`}
-          readOnly
-        />
-        {isSharedPage ? (
-          <Button
-            onClick={onClickCopyLink}
-            data-testid="share-menu-copy-link-button"
-            style={{ padding: '4px 12px', whiteSpace: 'nowrap' }}
-            disabled={!sharingUrl}
-          >
-            {t.Copy()}
-          </Button>
-        ) : (
-          <Button
-            onClick={onClickCreateLink}
-            variant="primary"
-            data-testid="share-menu-create-link-button"
-            style={{ padding: '4px 12px', whiteSpace: 'nowrap' }}
-          >
-            {t.Create()}
-          </Button>
-        )}
-      </div>
-      <div className={styles.rowContainerStyle}>
-        <div className={styles.subTitleStyle}>
-          {t['com.affine.share-menu.ShareMode']()}
-        </div>
-        <div>
-          <RadioGroup
-            className={styles.radioButtonGroup}
-            value={mode}
-            onChange={onShareModeChange}
-            items={modeOptions}
-          />
-        </div>
-      </div>
-      {isSharedPage ? (
-        <>
-          {runtimeConfig.enableEnhanceShareMode && (
-            <>
-              <div className={styles.rowContainerStyle}>
-                <div className={styles.subTitleStyle}>Link expires</div>
-                <div>
-                  <Menu items={<MenuItem>Never</MenuItem>}>
-                    <MenuTrigger>Never</MenuTrigger>
-                  </Menu>
-                </div>
-              </div>
-              <div className={styles.rowContainerStyle}>
-                <div className={styles.subTitleStyle}>
-                  {'Show "Created with AFFiNE"'}
-                </div>
-                <div>
-                  <Switch />
-                </div>
-              </div>
-              <div className={styles.rowContainerStyle}>
-                <div className={styles.subTitleStyle}>
-                  Search engine indexing
-                </div>
-                <div>
-                  <Switch />
-                </div>
-              </div>
-            </>
-          )}
-          <MenuItem
-            endFix={<ArrowRightSmallIcon />}
-            block
-            type="danger"
-            className={styles.menuItemStyle}
-            onSelect={e => {
-              e.preventDefault();
-              setShowDisable(true);
+        <div className={styles.rowContainerStyle}>
+          <div className={styles.labelStyle}>
+            {t['com.affine.share-menu.option.link.label']()}
+          </div>
+          <Menu
+            contentOptions={{
+              align: 'end',
             }}
+            items={
+              <>
+                <MenuItem
+                  preFix={
+                    <LockIcon className={styles.publicMenuItemPrefixStyle} />
+                  }
+                  onSelect={onClickDisable}
+                  className={styles.menuItemStyle}
+                >
+                  <div className={styles.publicItemRowStyle}>
+                    <div>
+                      {t['com.affine.share-menu.option.link.no-access']()}
+                    </div>
+                    {!isSharedPage && (
+                      <DoneIcon className={styles.DoneIconStyle} />
+                    )}
+                  </div>
+                </MenuItem>
+                <MenuItem
+                  preFix={
+                    <ViewIcon className={styles.publicMenuItemPrefixStyle} />
+                  }
+                  className={styles.menuItemStyle}
+                  onSelect={onClickAnyoneReadOnlyShare}
+                  data-testid="share-link-menu-enable-share"
+                >
+                  <div className={styles.publicItemRowStyle}>
+                    <div>
+                      {t['com.affine.share-menu.option.link.readonly']()}
+                    </div>
+                    {isSharedPage && (
+                      <DoneIcon className={styles.DoneIconStyle} />
+                    )}
+                  </div>
+                </MenuItem>
+              </>
+            }
           >
-            <div className={styles.disableSharePage}>
-              {t['Disable Public Link']()}
-            </div>
-          </MenuItem>
-          <PublicLinkDisableModal
-            open={showDisable}
-            onConfirm={onDisablePublic}
-            onOpenChange={setShowDisable}
+            <MenuTrigger
+              className={styles.menuTriggerStyle}
+              data-testid="share-link-menu-trigger"
+            >
+              {isSharedPage
+                ? t['com.affine.share-menu.option.link.readonly']()
+                : t['com.affine.share-menu.option.link.no-access']()}
+            </MenuTrigger>
+          </Menu>
+        </div>
+        <div className={styles.rowContainerStyle}>
+          <div className={styles.labelStyle}>
+            {t['com.affine.share-menu.option.permission.label']()}
+          </div>
+          <Menu
+            contentOptions={{
+              align: 'end',
+            }}
+            items={
+              <MenuItem>
+                {t['com.affine.share-menu.option.permission.can-edit']()}
+              </MenuItem>
+            }
+          >
+            <MenuTrigger className={styles.menuTriggerStyle} disabled>
+              {t['com.affine.share-menu.option.permission.can-edit']()}
+            </MenuTrigger>
+          </Menu>
+        </div>
+      </div>
+      {isOwner && (
+        <div
+          className={styles.openWorkspaceSettingsStyle}
+          onClick={onOpenWorkspaceSettings}
+        >
+          <CollaborationIcon fontSize={16} />
+          {t['com.affine.share-menu.navigate.workspace']()}
+        </div>
+      )}
+      <div className={styles.copyLinkContainerStyle}>
+        <Button
+          className={styles.copyLinkButtonStyle}
+          onClick={onCopyBlockLink}
+          variant="primary"
+          withoutHover
+        >
+          <span className={styles.copyLinkLabelStyle}>
+            {t['com.affine.share-menu.copy']()}
+          </span>
+          <span className={styles.copyLinkShortcutStyle}>
+            {isMac ? '⌘ + ⌥ + C' : 'Ctrl + Shift + C'}
+          </span>
+          {t['com.affine.share-menu.copy']()}
+        </Button>
+        <Menu
+          contentOptions={{
+            align: 'end',
+          }}
+          items={
+            <>
+              <MenuItem
+                preFix={
+                  <PageIcon className={styles.publicMenuItemPrefixStyle} />
+                }
+                className={styles.menuItemStyle}
+                onSelect={onCopyPageLink}
+                data-testid="share-link-menu-copy-page"
+              >
+                {t['com.affine.share-menu.copy.page']()}
+              </MenuItem>
+              <MenuItem
+                preFix={
+                  <EdgelessIcon className={styles.publicMenuItemPrefixStyle} />
+                }
+                className={styles.menuItemStyle}
+                onSelect={onCopyEdgelessLink}
+                data-testid="share-link-menu-copy-edgeless"
+              >
+                {t['com.affine.share-menu.copy.edgeless']()}
+              </MenuItem>
+              <MenuItem
+                preFix={
+                  <LinkIcon className={styles.publicMenuItemPrefixStyle} />
+                }
+                className={styles.menuItemStyle}
+                onSelect={onCopyBlockLink}
+              >
+                {t['com.affine.share-menu.copy.block']()}
+              </MenuItem>
+              {currentDocMode === 'edgeless' && (
+                <MenuItem
+                  preFix={
+                    <LinkIcon className={styles.publicMenuItemPrefixStyle} />
+                  }
+                  className={styles.menuItemStyle}
+                  onSelect={onCopyBlockLink}
+                >
+                  {t['com.affine.share-menu.copy.frame']()}
+                </MenuItem>
+              )}
+            </>
+          }
+        >
+          <MenuTrigger
+            className={styles.copyLinkTriggerStyle}
+            data-testid="share-menu-copy-link-button"
           />
-        </>
-      ) : null}
-    </>
+        </Menu>
+      </div>
+
+      <PublicLinkDisableModal
+        open={showDisable}
+        onConfirm={onDisablePublic}
+        onOpenChange={setShowDisable}
+      />
+    </div>
   );
 };
 
@@ -339,7 +372,7 @@ export const SharePage = (props: ShareMenuProps) => {
       // TODO(@eyhn): refactor this part
       <ErrorBoundary fallback={null}>
         <Suspense>
-          <AffineSharePage {...props} />
+          <AFFiNESharePage {...props} />
         </Suspense>
       </ErrorBoundary>
     );

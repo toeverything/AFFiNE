@@ -29,6 +29,7 @@ import {
 } from '@toeverything/infra';
 import clsx from 'clsx';
 import { useCallback, useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 
 import { PageNotFound } from '../../404';
 import { ShareFooter } from './share-footer';
@@ -50,6 +51,18 @@ export const SharePage = ({
   const error = useLiveData(shareReaderService.reader.error$);
   const data = useLiveData(shareReaderService.reader.data$);
 
+  const location = useLocation();
+
+  const [mode, setMode] = useState<DocMode | null>(null);
+
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const queryStringMode = searchParams.get('mode') as DocMode | null;
+    if (queryStringMode && ['edgeless', 'page'].includes(queryStringMode)) {
+      setMode(queryStringMode);
+    }
+  }, [location.search]);
+
   useEffect(() => {
     shareReaderService.reader.loadShare({ workspaceId, docId });
   }, [shareReaderService, docId, workspaceId]);
@@ -70,7 +83,7 @@ export const SharePage = ({
         docId={data.docId}
         workspaceBinary={data.workspaceBinary}
         docBinary={data.docBinary}
-        publishMode={data.publishMode}
+        publishMode={mode || data.publishMode}
       />
     );
   } else {

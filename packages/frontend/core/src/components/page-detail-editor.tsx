@@ -48,6 +48,7 @@ const PageDetailEditorMain = memo(function PageDetailEditorMain({
 }: PageDetailEditorProps & { page: BlockSuiteDoc }) {
   const editor = useService(EditorService).editor;
   const mode = useLiveData(editor.mode$);
+
   const isSharedMode = editor.isSharedMode;
   const { appSettings } = useAppSettingHelper();
 

@@ -376,7 +376,9 @@ export type EventArgs = {
   createDoc: { mode?: 'edgeless' | 'page' };
   switchPageMode: { mode: 'edgeless' | 'page' };
   createShareLink: { mode: 'edgeless' | 'page' };
-  copyShareLink: { type: 'public' | 'private' };
+  copyShareLink: {
+    type: 'default' | 'doc' | 'whiteboard' | 'block' | 'element';
+  };
   export: { type: string };
 };
 

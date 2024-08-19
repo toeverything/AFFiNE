@@ -19,10 +19,10 @@ export function useRegisterCopyLinkCommands({
   const isActiveView = useIsActiveView();
   const workspaceId = workspaceMeta.id;
   const isCloud = workspaceMeta.flavour === WorkspaceFlavour.AFFINE_CLOUD;
+
   const { onClickCopyLink } = useSharingUrl({
     workspaceId,
     pageId: docId,
-    urlType: 'workspace',
   });
 
   useEffect(() => {
@@ -39,8 +39,7 @@ export function useRegisterCopyLinkCommands({
         label: '',
         icon: null,
         run() {
-          track.$.cmdk.general.copyShareLink({ type: 'private' });
-
+          track.$.cmdk.general.copyShareLink();
           isActiveView && isCloud && onClickCopyLink();
         },
       })

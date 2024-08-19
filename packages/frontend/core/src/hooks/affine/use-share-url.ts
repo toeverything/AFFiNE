@@ -2,112 +2,138 @@ import { notify } from '@affine/component';
 import { track } from '@affine/core/mixpanel';
 import { getAffineCloudBaseUrl } from '@affine/core/modules/cloud/services/fetch';
 import { useI18n } from '@affine/i18n';
-import type { Disposable } from '@blocksuite/global/utils';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { BaseSelection } from '@blocksuite/block-std';
+import { type DocMode } from '@toeverything/infra';
+import { useCallback } from 'react';
 
 import { useActiveBlocksuiteEditor } from '../use-block-suite-editor';
-
-type UrlType = 'share' | 'workspace';
 
 type UseSharingUrl = {
   workspaceId: string;
   pageId: string;
-  urlType: UrlType;
+  shareMode?: DocMode;
+  blockIds?: string[];
+  elementIds?: string[];
+  xywh?: string; // not needed currently
 };
 
+/**
+ * to generate a url like https://app.affine.pro/workspace/workspaceId/docId?mode=DocMode?element=seletedBlockid#seletedBlockid
+ */
 const generateUrl = ({
   workspaceId,
   pageId,
-  urlType,
-  blockId,
-}: UseSharingUrl & { blockId?: string }) => {
-  // to generate a private url like https://app.affine.app/workspace/123/456
-  // or https://app.affine.app/workspace/123/456#block-123
-
-  // to generate a public url like https://app.affine.app/share/123/456
+  blockIds,
+  elementIds,
+  shareMode,
+  xywh, // not needed currently
+}: UseSharingUrl) => {
+  // Base URL construction
   const baseUrl = getAffineCloudBaseUrl();
   if (!baseUrl) return null;
 
   try {
-    return new URL(
-      `${baseUrl}/${urlType}/${workspaceId}/${pageId}${urlType === 'workspace' && blockId ? `#${blockId}` : ''}`
-    ).toString();
+    const url = new URL(`${baseUrl}/workspace/${workspaceId}/${pageId}`);
+    if (shareMode) {
+      url.searchParams.append('mode', shareMode);
+    }
+    // TODO(@JimmFly): use query string to handle blockIds
+    if (blockIds && blockIds.length > 0) {
+      // hash is used to store blockIds
+      url.hash = blockIds.join(',');
+    }
+    if (elementIds && elementIds.length > 0) {
+      url.searchParams.append('element', elementIds.join(','));
+    }
+    if (xywh) {
+      url.searchParams.append('xywh', xywh);
+    }
+    return url.toString();
   } catch (e) {
     return null;
   }
 };
 
-export const useSharingUrl = ({
-  workspaceId,
-  pageId,
-  urlType,
-}: UseSharingUrl) => {
+const getShareLinkType = ({
+  shareMode,
+  blockIds,
+  elementIds,
+}: {
+  shareMode?: DocMode;
+  blockIds?: string[];
+  elementIds?: string[];
+}) => {
+  if (shareMode === 'page') {
+    return 'doc';
+  } else if (shareMode === 'edgeless') {
+    return 'whiteboard';
+  } else if (blockIds && blockIds.length > 0) {
+    return 'block';
+  } else if (elementIds && elementIds.length > 0) {
+    return 'element';
+  } else {
+    return 'default';
+  }
+};
+
+const getSelectionIds = (selections?: BaseSelection[]) => {
+  if (!selections || selections.length === 0) {
+    return { blockIds: [], elementIds: [] };
+  }
+  const blockIds: string[] = [];
+  const elementIds: string[] = [];
+  // TODO(@JimmFly): handle multiple selections and elementIds
+  if (selections[0].type === 'block') {
+    blockIds.push(selections[0].blockId);
+  }
+  return { blockIds, elementIds };
+};
+
+export const useSharingUrl = ({ workspaceId, pageId }: UseSharingUrl) => {
   const t = useI18n();
-  const [blockId, setBlockId] = useState<string>('');
   const [editor] = useActiveBlocksuiteEditor();
-  const sharingUrl = useMemo(
-    () =>
-      generateUrl({
+
+  const onClickCopyLink = useCallback(
+    (shareMode?: DocMode) => {
+      const selectManager = editor?.host?.selection;
+      const selections = selectManager?.value;
+      const { blockIds, elementIds } = getSelectionIds(selections);
+
+      const sharingUrl = generateUrl({
         workspaceId,
         pageId,
-        urlType,
-        blockId: blockId.length > 0 ? blockId : undefined,
-      }),
-    [workspaceId, pageId, urlType, blockId]
-  );
-
-  const onClickCopyLink = useCallback(() => {
-    if (sharingUrl) {
-      navigator.clipboard
-        .writeText(sharingUrl)
-        .then(() => {
-          notify.success({
-            title: t['Copied link to clipboard'](),
+        blockIds,
+        elementIds,
+        shareMode, // if view is not provided, use the current view
+      });
+      const type = getShareLinkType({
+        shareMode,
+        blockIds,
+        elementIds,
+      });
+      if (sharingUrl) {
+        navigator.clipboard
+          .writeText(sharingUrl)
+          .then(() => {
+            notify.success({
+              title: t['Copied link to clipboard'](),
+            });
+          })
+          .catch(err => {
+            console.error(err);
           });
-        })
-        .catch(err => {
-          console.error(err);
+        track.$.sharePanel.$.copyShareLink({
+          type,
         });
-      track.$.sharePanel.$.copyShareLink({
-        type: urlType === 'share' ? 'public' : 'private',
-      });
-    } else {
-      notify.error({
-        title: 'Network not available',
-      });
-    }
-  }, [sharingUrl, t, urlType]);
-
-  useEffect(() => {
-    let disposable: Disposable | null = null;
-    const selectManager = editor?.host?.selection;
-    if (urlType !== 'workspace' || !selectManager) {
-      return;
-    }
-
-    // if the block is already selected, set the blockId
-    const currentBlockSelection = selectManager.find('block');
-    if (currentBlockSelection) {
-      setBlockId(`#${currentBlockSelection.blockId}`);
-    }
-
-    disposable = selectManager.slots.changed.on(selections => {
-      setBlockId(prev => {
-        if (selections[0] && selections[0].type === 'block') {
-          return `#${selections[0].blockId}`;
-        } else if (prev.length > 0) {
-          return '';
-        } else {
-          return prev;
-        }
-      });
-    });
-    return () => {
-      disposable?.dispose();
-    };
-  }, [editor?.host?.selection, urlType]);
+      } else {
+        notify.error({
+          title: 'Network not available',
+        });
+      }
+    },
+    [editor, pageId, t, workspaceId]
+  );
   return {
-    sharingUrl,
     onClickCopyLink,
   };
 };

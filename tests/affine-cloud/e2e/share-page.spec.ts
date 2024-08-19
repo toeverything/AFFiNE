@@ -2,6 +2,7 @@ import { skipOnboarding, test } from '@affine-test/kit/playwright';
 import {
   createRandomUser,
   enableCloudWorkspaceFromShareButton,
+  enableShare,
   loginUser,
 } from '@affine-test/kit/utils/cloud';
 import { clickEdgelessModeButton } from '@affine-test/kit/utils/editor';
@@ -44,9 +45,11 @@ test('can enable share page', async ({ page, browser }) => {
   });
   await page.keyboard.press('Enter', { delay: 50 });
   await page.keyboard.type('TEST CONTENT', { delay: 50 });
-  await page.getByTestId('cloud-share-menu-button').click();
-  await page.getByTestId('share-menu-create-link-button').click();
+
+  // enable share page and copy page link
+  await enableShare(page);
   await page.getByTestId('share-menu-copy-link-button').click();
+  await page.getByTestId('share-link-menu-copy-page').click();
 
   // check share page is accessible
   {
@@ -86,9 +89,11 @@ test('share page with default edgeless', async ({ page, browser }) => {
   await expect(page.locator('affine-edgeless-root')).toBeVisible({
     timeout: 1000,
   });
-  await page.getByTestId('cloud-share-menu-button').click();
-  await page.getByTestId('share-menu-create-link-button').click();
+
+  // enable share page and copy page link
+  await enableShare(page);
   await page.getByTestId('share-menu-copy-link-button').click();
+  await page.getByTestId('share-link-menu-copy-edgeless').click();
 
   // check share page is accessible
   {
@@ -126,9 +131,10 @@ test('image preview should should be shown', async ({ page, browser }) => {
   await page.keyboard.press('Enter');
   await importImage(page, 'http://localhost:8081/large-image.png');
 
-  await page.getByTestId('cloud-share-menu-button').click();
-  await page.getByTestId('share-menu-create-link-button').click();
+  // enable share page and copy page link
+  await enableShare(page);
   await page.getByTestId('share-menu-copy-link-button').click();
+  await page.getByTestId('share-link-menu-copy-page').click();
 
   // check share page is accessible
   {

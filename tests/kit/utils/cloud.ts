@@ -216,3 +216,9 @@ export async function enableCloudWorkspaceFromShareButton(page: Page) {
   await waitForEditorLoad(page);
   await clickNewPageButton(page);
 }
+
+export async function enableShare(page: Page) {
+  await page.getByTestId('cloud-share-menu-button').click();
+  await page.getByTestId('share-link-menu-trigger').click();
+  await page.getByTestId('share-link-menu-enable-share').click();
+}
