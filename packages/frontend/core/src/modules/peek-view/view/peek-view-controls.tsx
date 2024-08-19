@@ -1,5 +1,4 @@
 import { IconButton } from '@affine/component';
-import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
 import { useI18n } from '@affine/i18n';
 import {
   CloseIcon,
@@ -20,7 +19,6 @@ import {
 import { WorkbenchService } from '../../workbench';
 import { PeekViewService } from '../services/peek-view';
 import * as styles from './peek-view-controls.css';
-import { useEditor } from './utils';
 
 type ControlButtonProps = {
   nameKey: string;
@@ -98,9 +96,7 @@ export const DocPeekViewControls = ({
 }: DocPeekViewControlsProps) => {
   const peekView = useService(PeekViewService).peekView;
   const workbench = useService(WorkbenchService).workbench;
-  const { jumpToPageBlock } = useNavigateHelper();
   const t = useI18n();
-  const { doc, workspace } = useEditor(docId);
   const controls = useMemo(() => {
     return [
       {
@@ -115,14 +111,7 @@ export const DocPeekViewControls = ({
         nameKey: 'open',
         onClick: () => {
           // TODO(@Peng): for frame blocks, we should mimic "view in edgeless" button behavior
-          if (mode) {
-            // TODO(@eyhn): change this to use mode link
-            doc?.setPrimaryMode(mode);
-          }
-
-          blockId
-            ? jumpToPageBlock(workspace.id, docId, blockId)
-            : workbench.openDoc(docId);
+          workbench.openDoc({ docId, blockId, mode });
 
           peekView.close('none');
         },
@@ -146,17 +135,7 @@ export const DocPeekViewControls = ({
         },
       },
     ].filter((opt): opt is ControlButtonProps => Boolean(opt));
-  }, [
-    blockId,
-    doc,
-    docId,
-    jumpToPageBlock,
-    mode,
-    peekView,
-    t,
-    workbench,
-    workspace.id,
-  ]);
+  }, [blockId, docId, mode, peekView, t, workbench]);
   return (
     <div {...rest} className={clsx(styles.root, className)}>
       {controls.map(option => (

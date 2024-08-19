@@ -1,4 +1,5 @@
 import { Unreachable } from '@affine/env/constant';
+import type { DocMode } from '@blocksuite/blocks';
 import { Entity, LiveData } from '@toeverything/infra';
 import { type To } from 'history';
 import { nanoid } from 'nanoid';
@@ -121,12 +122,15 @@ export class Workbench extends Entity {
   }
 
   openDoc(
-    id: string | { docId: string; blockId?: string },
+    id: string | { docId: string; blockId?: string; mode?: DocMode },
     options?: WorkbenchOpenOptions
   ) {
     const docId = typeof id === 'string' ? id : id.docId;
     const blockId = typeof id === 'string' ? undefined : id.blockId;
-    this.open(blockId ? `/${docId}#${blockId}` : `/${docId}`, options);
+    const mode = typeof id === 'string' ? undefined : id.mode;
+    const hash = blockId ? `#${blockId}` : '';
+    const query = mode ? `?mode=${mode}` : '';
+    this.open(`/${docId}${query}${hash}`, options);
   }
 
   openCollections(options?: WorkbenchOpenOptions) {
