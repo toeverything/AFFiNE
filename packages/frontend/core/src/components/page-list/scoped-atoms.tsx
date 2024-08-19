@@ -195,9 +195,9 @@ export const groupsAtom = atom(get => {
   return itemsToItemGroups<ListItem>(sorter.items ?? [], groupBy);
 });
 
-export const {
-  Provider: ListProvider,
-  useAtom,
-  useAtomValue,
-  useSetAtom,
-} = createIsolation();
+const { Provider, useAtom, useAtomValue, useSetAtom } = createIsolation();
+
+export const ListProvider: ReturnType<typeof createIsolation>['Provider'] =
+  Provider;
+
+export { useAtom, useAtomValue, useSetAtom };

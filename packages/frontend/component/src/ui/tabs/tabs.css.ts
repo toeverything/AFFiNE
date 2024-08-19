@@ -20,7 +20,7 @@ export const tabsList = style({
     bottom: '0px',
     width: '100%',
     height: '1px',
-    backgroundColor: cssVarV2('layer/border'),
+    backgroundColor: cssVarV2('layer/insideBorder/border'),
   },
 });
 

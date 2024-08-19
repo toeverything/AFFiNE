@@ -16,7 +16,7 @@ globalStyle(`${root} *`, {
 export const sidebar = style({
   flexShrink: 0,
   width: 240,
-  borderRight: `1px solid ${cssVarV2('layer/border')}`,
+  borderRight: `1px solid ${cssVarV2('layer/insideBorder/border')}`,
   display: 'flex',
   flexDirection: 'column',
   userSelect: 'none',
@@ -31,7 +31,7 @@ export const content = style({
 export const sidebarHeader = style({
   padding: '8px 48px',
   background: cssVarV2('layer/background/primary'),
-  borderBottom: `1px solid ${cssVarV2('layer/border')}`,
+  borderBottom: `1px solid ${cssVarV2('layer/insideBorder/border')}`,
 });
 export const sidebarScrollable = style({
   height: 0,
@@ -60,13 +60,13 @@ export const row = style({
       fontSize: cssVar('fontSm'),
       lineHeight: '22px',
       padding: '9px 0',
-      borderBottom: `1px solid ${cssVarV2('layer/border')}`,
+      borderBottom: `1px solid ${cssVarV2('layer/insideBorder/border')}`,
     },
     [`${mainViewport} &`]: {
       padding: '4px 0',
     },
     [`${mainViewport} &:not(:last-child)`]: {
-      borderBottom: `0.5px solid ${cssVarV2('layer/border')}`,
+      borderBottom: `0.5px solid ${cssVarV2('layer/insideBorder/border')}`,
     },
   },
 });

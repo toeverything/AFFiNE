@@ -27,7 +27,7 @@ export const emptyDescKbd = style([
 
 export const plusButton = style({
   borderWidth: 1,
-  borderColor: cssVarV2('layer/border'),
+  borderColor: cssVarV2('layer/insideBorder/border'),
   boxShadow: 'none',
   cursor: 'default',
 });

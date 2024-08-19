@@ -6,7 +6,7 @@ export const root = style({
   background: cssVarV2('button/siderbarPrimary/background'),
   alignItems: 'center',
   borderRadius: '8px',
-  border: `1px solid ${cssVarV2('layer/border')}`,
+  border: `1px solid ${cssVarV2('layer/insideBorder/border')}`,
   fontSize: cssVar('fontSm'),
   width: '100%',
   height: '36px',

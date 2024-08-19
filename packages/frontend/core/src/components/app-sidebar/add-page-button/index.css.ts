@@ -7,6 +7,6 @@ export const root = style({
   borderRadius: 8,
   boxShadow: '0px 1px 2px 0px rgba(0, 0, 0, 0.15)',
   borderWidth: 1,
-  borderColor: cssVarV2('layer/border'),
+  borderColor: cssVarV2('layer/insideBorder/border'),
   background: cssVarV2('button/siderbarPrimary/background'),
 });

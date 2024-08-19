@@ -9,7 +9,7 @@ export const root = style({
 });
 
 export const header = style({
-  borderBottom: `1px solid ${cssVarV2('layer/border')}`,
+  borderBottom: `1px solid ${cssVarV2('layer/insideBorder/border')}`,
   minHeight: 64,
 });
 export const search = style({
@@ -30,7 +30,7 @@ export const content = style({
 });
 
 export const footer = style({
-  borderTop: `1px solid ${cssVarV2('layer/border')}`,
+  borderTop: `1px solid ${cssVarV2('layer/insideBorder/border')}`,
   minHeight: 64,
   padding: '20px 24px',
   borderBottomLeftRadius: 'inherit',

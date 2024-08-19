@@ -3,7 +3,7 @@ import { createStore } from 'jotai';
 // global store
 let rootStore = createStore();
 
-export function getCurrentStore() {
+export function getCurrentStore(): ReturnType<typeof createStore> {
   return rootStore;
 }
 

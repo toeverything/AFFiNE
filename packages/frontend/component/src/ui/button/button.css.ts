@@ -135,7 +135,7 @@ export const button = style({
         [bgVar]: cssVarV2('button/secondary'),
         [textVar]: cssVarV2('text/primary'),
         [iconColorVar]: cssVarV2('icon/primary'),
-        [borderColorVar]: cssVarV2('layer/border'),
+        [borderColorVar]: cssVarV2('layer/insideBorder/border'),
       },
     },
     '&[data-variant="plain"]': {
@@ -178,7 +178,7 @@ export const button = style({
       top: 0,
       left: 0,
       borderRadius: 'inherit',
-      boxShadow: `0 0 0 1px ${cssVarV2('layer/insideBorder/primary')}`,
+      boxShadow: `0 0 0 1px ${cssVarV2('layer/insideBorder/primaryBorder')}`,
     },
   },
 });

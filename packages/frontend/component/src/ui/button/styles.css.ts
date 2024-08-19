@@ -125,7 +125,7 @@ export const button = style({
   // changeable
   height: '28px',
   background: cssVar('white'),
-  borderColor: cssVarV2('layer/border'),
+  borderColor: cssVarV2('layer/insideBorder/border'),
   color: cssVarV2('text/primary'),
   selectors: {
     '&.text-bold': {

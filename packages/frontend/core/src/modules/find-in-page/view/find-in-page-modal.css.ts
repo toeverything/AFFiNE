@@ -139,7 +139,7 @@ export const arrowButton = style({
   height: 32,
   flexShrink: 0,
   border: '1px solid',
-  borderColor: cssVarV2('layer/border'),
+  borderColor: cssVarV2('layer/insideBorder/border'),
   selectors: {
     '&.backward': {
       borderRadius: '4px 0 0 4px',
