@@ -24,7 +24,13 @@ import {
   useLiveData,
   useService,
 } from '@toeverything/infra';
-import { type ChangeEvent, useCallback, useMemo, useState } from 'react';
+import {
+  type ChangeEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 
 import { menu, menuTrigger, searchInput, settingWrapper } from './style.css';
 
@@ -92,29 +98,32 @@ const getFontFamily = (font: string) => `${font}, ${fontStyleOptions[0].value}`;
 
 const FontMenuItems = ({ onSelect }: { onSelect: (font: string) => void }) => {
   const systemFontFamily = useService(SystemFontFamilyService).systemFontFamily;
-  const systemFontList = useLiveData(systemFontFamily.fontList$);
+  useEffect(() => {
+    systemFontFamily.loadFontList();
+    systemFontFamily.clearSearch();
+  }, [systemFontFamily]);
+
   const isLoading = useLiveData(systemFontFamily.isLoading$);
   const result = useLiveData(systemFontFamily.result$);
   const searchText = useLiveData(systemFontFamily.searchText$);
 
-  const [inputValue, setInputValue] = useState('');
-  const onInputChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
-    setInputValue(e.target.value);
-  }, []);
+  const onInputChange = useCallback(
+    (e: ChangeEvent<HTMLInputElement>) => {
+      systemFontFamily.search(e.target.value);
+    },
+    [systemFontFamily]
+  );
   const onInputKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === 'Enter') {
-        systemFontFamily.search(inputValue);
-      } else if (e.key === 'Backspace' || e.key === 'Escape') {
-        systemFontFamily.clearSearch();
-      }
+      e.stopPropagation(); // avoid typeahead search built-in in the menu
     },
-    [inputValue, systemFontFamily]
+    []
   );
+
   return (
     <div>
       <input
-        value={inputValue}
+        value={searchText ?? ''}
         onChange={onInputChange}
         onKeyDown={onInputKeyDown}
         autoFocus
@@ -131,12 +140,8 @@ const FontMenuItems = ({ onSelect }: { onSelect: (font: string) => void }) => {
               result.map(font => (
                 <FontMenuItem key={font} font={font} onSelect={onSelect} />
               ))
-            ) : searchText && searchText.length > 0 ? (
-              <div>not found</div>
             ) : (
-              systemFontList.map(font => (
-                <FontMenuItem key={font} font={font} onSelect={onSelect} />
-              ))
+              <div>not found</div>
             )}
           </Scrollable.Viewport>
           <Scrollable.Scrollbar />
