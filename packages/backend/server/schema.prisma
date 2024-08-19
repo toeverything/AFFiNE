@@ -33,6 +33,10 @@ model User {
   aiSessions            AiSession[]
   updatedRuntimeConfigs RuntimeConfig[]
   userSnapshots         UserSnapshot[]
+  createdSnapshot       Snapshot[]                    @relation("createdSnapshot")
+  updatedSnapshot       Snapshot[]                    @relation("updatedSnapshot")
+  createdUpdate         Update[]                      @relation("createdUpdate")
+  createdHistory        SnapshotHistory[]             @relation("createdHistory")
 
   @@index([email])
   @@map("users")
@@ -241,9 +245,16 @@ model Snapshot {
   // the `updated_at` field will not record the time of record changed,
   // but the created time of last seen update that has been merged into snapshot.
   updatedAt   DateTime @map("updated_at") @db.Timestamptz(3)
+  createdBy   String?  @map("created_by") @db.VarChar
+  updatedBy   String?  @map("updated_by") @db.VarChar
+
+  // should not delete origin snapshot even if user is deleted
+  // we only delete the snapshot if the workspace is deleted
+  createdByUser User? @relation(name: "createdSnapshot", fields: [createdBy], references: [id], onDelete: SetNull)
+  updatedByUser User? @relation(name: "updatedSnapshot", fields: [updatedBy], references: [id], onDelete: SetNull)
 
   // @deprecated use updatedAt only
-  seq         Int?      @default(0) @db.Integer
+  seq Int? @default(0) @db.Integer
 
   // we need to clear all hanging updates and snapshots before enable the foreign key on workspaceId
   // workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
@@ -274,9 +285,13 @@ model Update {
   id          String   @map("guid") @db.VarChar
   blob        Bytes    @db.ByteA
   createdAt   DateTime @map("created_at") @db.Timestamptz(3)
+  createdBy   String   @map("created_by") @db.VarChar
+
+  // delete update if createor's account is deleted
+  createdByUser User @relation(name: "createdUpdate", fields: [createdBy], references: [id], onDelete: Cascade)
 
   // @deprecated use createdAt only
-  seq         Int?      @db.Integer
+  seq Int? @db.Integer
 
   @@id([workspaceId, id, createdAt])
   @@map("updates")
@@ -289,6 +304,10 @@ model SnapshotHistory {
   blob        Bytes    @db.ByteA
   state       Bytes?   @db.ByteA
   expiredAt   DateTime @map("expired_at") @db.Timestamptz(3)
+  createdBy   String   @map("created_by") @db.VarChar
+
+  // delete history if creator's account is deleted
+  createdByUser User @relation(name: "createdHistory", fields: [createdBy], references: [id], onDelete: Cascade)
 
   @@id([workspaceId, id, timestamp])
   @@map("snapshot_histories")
