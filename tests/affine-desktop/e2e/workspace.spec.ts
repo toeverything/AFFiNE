@@ -12,7 +12,7 @@ import fs from 'fs-extra';
 
 declare global {
   interface Window {
-    apis: typeof apis;
+    __apis: typeof apis;
   }
 }
 
@@ -55,7 +55,7 @@ test('export then add', async ({ page, appInfo, workspace }) => {
 
   // export db file to tmp folder
   await page.evaluate(tmpPath => {
-    return window.apis?.dialog.setFakeDialogResult({
+    return window.__apis?.dialog.setFakeDialogResult({
       filePath: tmpPath,
     });
   }, tmpPath);
@@ -73,7 +73,7 @@ test('export then add', async ({ page, appInfo, workspace }) => {
   await clickSideBarCurrentWorkspaceBanner(page);
 
   await page.evaluate(tmpPath => {
-    return window.apis?.dialog.setFakeDialogResult({
+    return window.__apis?.dialog.setFakeDialogResult({
       filePath: tmpPath,
     });
   }, tmpPath);

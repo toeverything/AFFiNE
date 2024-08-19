@@ -7,7 +7,7 @@ import { sharedStorage } from './shared-storage';
 
 const { apis, events } = getElectronAPIs();
 
-contextBridge.exposeInMainWorld('appInfo', appInfo);
-contextBridge.exposeInMainWorld('apis', apis);
-contextBridge.exposeInMainWorld('events', events);
-contextBridge.exposeInMainWorld('sharedStorage', sharedStorage);
+contextBridge.exposeInMainWorld('__appInfo', appInfo);
+contextBridge.exposeInMainWorld('__apis', apis);
+contextBridge.exposeInMainWorld('__events', events);
+contextBridge.exposeInMainWorld('__sharedStorage', sharedStorage);

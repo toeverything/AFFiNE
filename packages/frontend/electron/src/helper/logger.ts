@@ -1,4 +1,4 @@
-import log from 'electron-log';
+import log from 'electron-log/main';
 
 export const logger = log.scope('helper');
 

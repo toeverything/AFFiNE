@@ -29,13 +29,13 @@ type ClientHandler = {
 } & HelperHandlers;
 type ClientEvents = MainEvents & HelperEvents;
 
-export const appInfo = (globalThis as any).appInfo as
+export const appInfo = (globalThis as any).__appInfo as
   | typeof exposedAppInfo
   | null;
-export const apis = (globalThis as any).apis as ClientHandler | null;
-export const events = (globalThis as any).events as ClientEvents | null;
+export const apis = (globalThis as any).__apis as ClientHandler | null;
+export const events = (globalThis as any).__events as ClientEvents | null;
 
-export const sharedStorage = (globalThis as any).sharedStorage as
+export const sharedStorage = (globalThis as any).__sharedStorage as
   | typeof exposedSharedStorage
   | null;
 
