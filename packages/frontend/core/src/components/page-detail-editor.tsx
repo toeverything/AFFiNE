@@ -57,8 +57,13 @@ const PageDetailEditorMain = memo(function PageDetailEditorMain({
       option => option.key === appSettings.fontStyle
     );
     assertExists(fontStyle);
-    return fontStyle.value;
-  }, [appSettings.fontStyle]);
+
+    const customFontFamily = appSettings.customFontFamily;
+
+    return customFontFamily && fontStyle.key === 'Custom'
+      ? `${customFontFamily}, ${fontStyle.value}`
+      : fontStyle.value;
+  }, [appSettings.customFontFamily, appSettings.fontStyle]);
 
   const blockId = useRouterHash();
 

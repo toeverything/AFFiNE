@@ -7,7 +7,7 @@ import {
 } from '@affine/component/setting-components';
 import { useI18n } from '@affine/i18n';
 import type { AppSetting } from '@toeverything/infra';
-import { fontStyleOptions, windowFrameStyleOptions } from '@toeverything/infra';
+import { windowFrameStyleOptions } from '@toeverything/infra';
 import { useTheme } from 'next-themes';
 import { useCallback, useMemo } from 'react';
 
@@ -58,45 +58,6 @@ export const ThemeSettings = () => {
   );
 };
 
-const FontFamilySettings = () => {
-  const t = useI18n();
-  const { appSettings, updateSettings } = useAppSettingHelper();
-
-  const radioItems = useMemo(() => {
-    return fontStyleOptions.map(({ key, value }) => {
-      const label =
-        key === 'Mono'
-          ? t[`com.affine.appearanceSettings.fontStyle.mono`]()
-          : key === 'Sans'
-            ? t['com.affine.appearanceSettings.fontStyle.sans']()
-            : key === 'Serif'
-              ? t['com.affine.appearanceSettings.fontStyle.serif']()
-              : '';
-      return {
-        value: key,
-        label,
-        testId: 'system-font-style-trigger',
-        style: { fontFamily: value },
-      } satisfies RadioItem;
-    });
-  }, [t]);
-
-  return (
-    <RadioGroup
-      items={radioItems}
-      value={appSettings.fontStyle}
-      width={250}
-      className={settingWrapper}
-      onChange={useCallback(
-        (value: AppSetting['fontStyle']) => {
-          updateSettings('fontStyle', value);
-        },
-        [updateSettings]
-      )}
-    />
-  );
-};
-
 export const AppearanceSettings = () => {
   const t = useI18n();
 
@@ -115,12 +76,6 @@ export const AppearanceSettings = () => {
           desc={t['com.affine.appearanceSettings.color.description']()}
         >
           <ThemeSettings />
-        </SettingRow>
-        <SettingRow
-          name={t['com.affine.appearanceSettings.font.title']()}
-          desc={t['com.affine.appearanceSettings.font.description']()}
-        >
-          <FontFamilySettings />
         </SettingRow>
         <SettingRow
           name={t['com.affine.appearanceSettings.language.title']()}
