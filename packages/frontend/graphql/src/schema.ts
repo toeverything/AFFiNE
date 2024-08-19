@@ -238,6 +238,7 @@ export interface DocHistoryNotFoundDataType {
 
 export interface DocHistoryType {
   __typename?: 'DocHistoryType';
+  editor: Maybe<EditorType>;
   id: Scalars['String']['output'];
   timestamp: Scalars['DateTime']['output'];
   workspaceId: Scalars['String']['output'];
@@ -247,6 +248,12 @@ export interface DocNotFoundDataType {
   __typename?: 'DocNotFoundDataType';
   docId: Scalars['String']['output'];
   spaceId: Scalars['String']['output'];
+}
+
+export interface EditorType {
+  __typename?: 'EditorType';
+  avatarUrl: Maybe<Scalars['String']['output']>;
+  name: Scalars['String']['output'];
 }
 
 export type ErrorDataUnion =
@@ -1862,6 +1869,11 @@ export type ListHistoryQuery = {
       __typename?: 'DocHistoryType';
       id: string;
       timestamp: string;
+      editor: {
+        __typename?: 'EditorType';
+        name: string;
+        avatarUrl: string | null;
+      } | null;
     }>;
   };
 };

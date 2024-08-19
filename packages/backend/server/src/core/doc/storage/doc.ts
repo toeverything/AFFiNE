@@ -30,6 +30,11 @@ export interface HistoryFilter {
   limit?: number;
 }
 
+export interface Editor {
+  name: string;
+  avatarUrl: string | null;
+}
+
 export interface DocStorageOptions {
   mergeUpdates?: (updates: Uint8Array[]) => Promise<Uint8Array> | Uint8Array;
 }
@@ -132,7 +137,7 @@ export abstract class DocStorageAdapter extends Connection {
     spaceId: string,
     docId: string,
     query: { skip?: number; limit?: number }
-  ): Promise<number[]>;
+  ): Promise<{ timestamp: number; editor: Editor | null }[]>;
   abstract getDocHistory(
     spaceId: string,
     docId: string,

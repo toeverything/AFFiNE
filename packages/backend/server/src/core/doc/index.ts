@@ -22,4 +22,4 @@ import { DocStorageOptions } from './options';
 export class DocStorageModule {}
 export { PgUserspaceDocStorageAdapter, PgWorkspaceDocStorageAdapter };
 
-export { DocStorageAdapter } from './storage';
+export { DocStorageAdapter, type Editor } from './storage';

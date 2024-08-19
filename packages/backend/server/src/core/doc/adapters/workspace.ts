@@ -219,6 +219,12 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
     const histories = await this.db.snapshotHistory.findMany({
       select: {
         timestamp: true,
+        createdByUser: {
+          select: {
+            name: true,
+            avatarUrl: true,
+          },
+        },
       },
       where: {
         workspaceId,
@@ -233,7 +239,10 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
       take: query.limit,
     });
 
-    return histories.map(h => h.timestamp.getTime());
+    return histories.map(h => ({
+      timestamp: h.timestamp.getTime(),
+      editor: h.createdByUser,
+    }));
   }
 
   async getDocHistory(workspaceId: string, docId: string, timestamp: number) {
