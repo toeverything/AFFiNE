@@ -264,9 +264,11 @@ export class SpaceSyncGateway
     };
   }
 
+  @Auth()
   @SubscribeMessage('space:push-doc-updates')
   async onReceiveDocUpdates(
     @ConnectedSocket() client: Socket,
+    @CurrentUser() user: CurrentUser,
     @MessageBody()
     message: PushDocUpdatesMessage
   ): Promise<EventResponse<{ accepted: true; timestamp?: number }>> {
@@ -275,6 +277,7 @@ export class SpaceSyncGateway
 
     // TODO(@forehalo): we might need to check write permission before push updates
     const timestamp = await adapter.push(
+      user.id,
       spaceId,
       docId,
       updates.map(update => Buffer.from(update, 'base64'))
@@ -448,8 +451,10 @@ export class SpaceSyncGateway
     });
   }
 
+  @Auth()
   @SubscribeMessage('client-update-v2')
   async handleClientUpdateV2(
+    @CurrentUser() user: CurrentUser,
     @MessageBody()
     {
       workspaceId,
@@ -462,7 +467,7 @@ export class SpaceSyncGateway
     },
     @ConnectedSocket() client: Socket
   ): Promise<EventResponse<{ accepted: true; timestamp?: number }>> {
-    return this.onReceiveDocUpdates(client, {
+    return this.onReceiveDocUpdates(client, user, {
       spaceType: SpaceType.Workspace,
       spaceId: workspaceId,
       docId: guid,
@@ -596,9 +601,9 @@ abstract class SyncSocketAdapter {
     permission?: Permission
   ): Promise<void>;
 
-  push(spaceId: string, docId: string, updates: Buffer[]) {
+  push(editorId: string, spaceId: string, docId: string, updates: Buffer[]) {
     this.assertIn(spaceId);
-    return this.storage.pushDocUpdates(spaceId, docId, updates);
+    return this.storage.pushDocUpdates(editorId, spaceId, docId, updates);
   }
 
   get(spaceId: string, docId: string) {
@@ -621,9 +626,14 @@ class WorkspaceSyncAdapter extends SyncSocketAdapter {
     super(SpaceType.Workspace, client, storage);
   }
 
-  override push(spaceId: string, docId: string, updates: Buffer[]) {
+  override push(
+    editorId: string,
+    spaceId: string,
+    docId: string,
+    updates: Buffer[]
+  ) {
     const id = new DocID(docId, spaceId);
-    return super.push(spaceId, id.guid, updates);
+    return super.push(editorId, spaceId, id.guid, updates);
   }
 
   override get(spaceId: string, docId: string) {
