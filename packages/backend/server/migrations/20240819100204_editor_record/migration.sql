@@ -1,19 +1,12 @@
-/*
-  Warnings:
-
-  - Added the required column `created_by` to the `snapshot_histories` table without a default value. This is not possible if the table is not empty.
-  - Added the required column `created_by` to the `updates` table without a default value. This is not possible if the table is not empty.
-
-*/
 -- AlterTable
-ALTER TABLE "snapshot_histories" ADD COLUMN     "created_by" VARCHAR NOT NULL;
+ALTER TABLE "snapshot_histories" ADD COLUMN     "created_by" VARCHAR;
 
 -- AlterTable
 ALTER TABLE "snapshots" ADD COLUMN     "created_by" VARCHAR,
 ADD COLUMN     "updated_by" VARCHAR;
 
 -- AlterTable
-ALTER TABLE "updates" ADD COLUMN     "created_by" VARCHAR NOT NULL;
+ALTER TABLE "updates" ADD COLUMN     "created_by" VARCHAR NOT NULL DEFAULT 'system';
 
 -- AddForeignKey
 ALTER TABLE "snapshots" ADD CONSTRAINT "snapshots_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;

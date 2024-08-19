@@ -16,13 +16,13 @@ export interface DocRecord {
   docId: string;
   bin: Uint8Array;
   timestamp: number;
-  editor: string;
+  editor?: string;
 }
 
 export interface DocUpdate {
   bin: Uint8Array;
   timestamp: number;
-  editor: string;
+  editor?: string;
 }
 
 export interface HistoryFilter {
