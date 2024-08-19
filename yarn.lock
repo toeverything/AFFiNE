@@ -558,6 +558,7 @@ __metadata:
     electron-updater: "npm:^6.2.1"
     electron-window-state: "npm:^5.0.3"
     esbuild: "npm:^0.23.0"
+    font-list: "npm:^1.5.1"
     fs-extra: "npm:^11.2.0"
     glob: "npm:^11.0.0"
     jotai: "npm:^2.8.0"
@@ -21794,6 +21795,13 @@ __metadata:
     debug:
       optional: true
   checksum: 10/70c7612c4cab18e546e36b991bbf8009a1a41cf85354afe04b113d1117569abf760269409cb3eb842d9f7b03d62826687086b081c566ea7b1e6613cf29030bf7
+  languageName: node
+  linkType: hard
+
+"font-list@npm:^1.5.1":
+  version: 1.5.1
+  resolution: "font-list@npm:1.5.1"
+  checksum: 10/e1500017b63e0a554348143f69d64d4f61dba8bd002456e161840e79454b67feea4bbd33b5fb1648f6f8d0415307616da14751f9289ceaabcbcd62414e0f3ff8
   languageName: node
   linkType: hard
 

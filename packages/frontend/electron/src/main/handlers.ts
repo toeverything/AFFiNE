@@ -5,6 +5,7 @@ import { clipboardHandlers } from './clipboard';
 import { configStorageHandlers } from './config-storage';
 import { exportHandlers } from './export';
 import { findInPageHandlers } from './find-in-page';
+import { fontListHandlers } from './font-list';
 import { getLogFilePath, logger, revealLogFile } from './logger';
 import { sharedStorageHandlers } from './shared-storage';
 import { uiHandlers } from './ui/handlers';
@@ -29,6 +30,7 @@ export const allHandlers = {
   configStorage: configStorageHandlers,
   findInPage: findInPageHandlers,
   sharedStorage: sharedStorageHandlers,
+  fontList: fontListHandlers,
 };
 
 export const registerHandlers = () => {
