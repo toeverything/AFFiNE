@@ -7,12 +7,7 @@ import { useJournalInfoHelper } from '@affine/core/hooks/use-journal';
 import { PeekViewService } from '@affine/core/modules/peek-view';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import type { DocMode } from '@blocksuite/blocks';
-import {
-  DocMetaTags,
-  DocTitle,
-  EdgelessEditor,
-  PageEditor,
-} from '@blocksuite/presets';
+import { DocTitle, EdgelessEditor, PageEditor } from '@blocksuite/presets';
 import type { Doc } from '@blocksuite/store';
 import {
   DocService,
@@ -57,10 +52,6 @@ const adapted = {
   DocTitle: createReactComponentFromLit({
     react: React,
     elementClass: DocTitle,
-  }),
-  PageMetaTags: createReactComponentFromLit({
-    react: React,
-    elementClass: DocMetaTags,
   }),
   EdgelessEditor: createReactComponentFromLit({
     react: React,
@@ -207,7 +198,7 @@ export const BlocksuiteDocEditor = forwardRef<
           <div
             className={styles.docEditorGap}
             onClick={() => {
-              docPage.std.spec.getService('affine:page').appendParagraph();
+              docPage.std.command.exec('appendParagraph' as never, {});
             }}
           ></div>
         ) : null}

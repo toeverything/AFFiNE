@@ -68,7 +68,10 @@ export function findNoteBlockModel(blockElement: BlockComponent) {
     if (matchFlavours(curBlock.model, ['affine:page', 'affine:surface'])) {
       return null;
     }
-    curBlock = curBlock.parentBlock;
+    if (!curBlock.parentComponent) {
+      break;
+    }
+    curBlock = curBlock.parentComponent;
   }
   return null;
 }

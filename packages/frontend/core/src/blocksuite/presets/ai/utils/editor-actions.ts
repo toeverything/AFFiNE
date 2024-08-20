@@ -16,7 +16,10 @@ import {
 const getNoteId = (blockElement: BlockComponent) => {
   let element = blockElement;
   while (element.flavour !== 'affine:note') {
-    element = element.parentBlock;
+    if (!element.parentComponent) {
+      break;
+    }
+    element = element.parentComponent;
   }
 
   return element.model.id;
@@ -53,7 +56,8 @@ export const insert = async (
   selectBlock: BlockComponent,
   below: boolean = true
 ) => {
-  const blockParent = selectBlock.parentBlock;
+  const blockParent = selectBlock.parentComponent;
+  if (!blockParent) return;
   const index = blockParent.model.children.findIndex(
     model => model.id === selectBlock.model.id
   );
@@ -94,7 +98,8 @@ export const replace = async (
   selectedModels: BlockModel[],
   textSelection?: TextSelection
 ) => {
-  const firstBlockParent = firstBlock.parentBlock;
+  const firstBlockParent = firstBlock.parentComponent;
+  if (!firstBlockParent) return;
   const firstIndex = firstBlockParent.model.children.findIndex(
     model => model.id === firstBlock.model.id
   );

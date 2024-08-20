@@ -226,6 +226,7 @@ export class AIChatBlockPeekView extends LitElement {
 
     const { doc } = this.host;
     const chatBlock = doc.getBlock(this.chatContext.currentChatBlockId);
+    if (!chatBlock) return;
 
     // Get fork session messages
     const { parentRootWorkspaceId, parentRootDocId } = this;
@@ -278,7 +279,7 @@ export class AIChatBlockPeekView extends LitElement {
 
       if (currentChatBlockId) {
         const edgelessService = this._rootService as EdgelessRootService;
-        const chatBlock = doc.getBlock(currentChatBlockId).model;
+        const chatBlock = doc.getBlock(currentChatBlockId)?.model;
         if (chatBlock) {
           const connectors = edgelessService.getConnectors(
             chatBlock as AIChatBlockModel

@@ -31,7 +31,7 @@ function customLoadFonts(service: RootService): void {
   }
 }
 
-function withAffineRootService(Service: typeof RootService) {
+function withAffineRootService(Service: typeof PageRootService) {
   return class extends Service {
     override loadFonts(): void {
       customLoadFonts(this);
@@ -65,7 +65,7 @@ export function createEdgelessRootBlockSpec(
 ): EdgelessRootBlockSpecType {
   return {
     ...AIEdgelessRootBlockSpec,
-    service: withAffineRootService(EdgelessRootService),
+    service: withAffineRootService(EdgelessRootService as never),
     config: {
       linkedWidget: createLinkedWidgetConfig(framework),
     },

@@ -189,8 +189,6 @@ export async function markDownToDoc(host: EditorHost, answer: string) {
   // Should not create a new doc in the original collection
   const collection = new DocCollection({
     schema,
-    disableBacklinkIndex: true,
-    disableSearchIndex: true,
   });
   collection.meta.initialize();
   const job = new Job({

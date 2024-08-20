@@ -100,8 +100,6 @@ export class CloudWorkspaceFlavourProviderService
       blobSources: {
         main: blobStorage,
       },
-      disableBacklinkIndex: true,
-      disableSearchIndex: true,
     });
 
     // apply initial state
@@ -212,8 +210,6 @@ export class CloudWorkspaceFlavourProviderService
     const bs = new DocCollection({
       id,
       schema: globalBlockSuiteSchema,
-      disableBacklinkIndex: true,
-      disableSearchIndex: true,
     });
 
     if (localData) applyUpdate(bs.doc, localData);

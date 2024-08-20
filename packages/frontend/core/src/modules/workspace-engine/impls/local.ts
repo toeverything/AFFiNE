@@ -72,8 +72,6 @@ export class LocalWorkspaceFlavourProvider
       idGenerator: () => nanoid(),
       schema: globalBlockSuiteSchema,
       blobSources: { main: blobStorage },
-      disableBacklinkIndex: true,
-      disableSearchIndex: true,
     });
 
     // apply initial state
@@ -146,8 +144,6 @@ export class LocalWorkspaceFlavourProvider
     const bs = new DocCollection({
       id,
       schema: globalBlockSuiteSchema,
-      disableBacklinkIndex: true,
-      disableSearchIndex: true,
     });
 
     if (localData) applyUpdate(bs.doc, localData);

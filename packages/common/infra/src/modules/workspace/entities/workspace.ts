@@ -34,8 +34,6 @@ export class Workspace extends Entity {
         },
         idGenerator: () => nanoid(),
         schema: globalBlockSuiteSchema,
-        disableBacklinkIndex: true,
-        disableSearchIndex: true,
       });
     }
     return this._docCollection;
