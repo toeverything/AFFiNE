@@ -34,8 +34,8 @@ function main() {
 
   // skip bootstrap setup for desktop onboarding
   if (
-    window.appInfo?.windowName === 'onboarding' ||
-    window.appInfo?.windowName === 'theme-editor'
+    appInfo?.windowName === 'onboarding' ||
+    appInfo?.windowName === 'theme-editor'
   ) {
     performanceMainLogger.info('skip setup');
   } else {

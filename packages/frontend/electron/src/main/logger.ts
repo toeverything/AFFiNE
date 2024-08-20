@@ -1,8 +1,10 @@
 import { app, shell } from 'electron';
-import log from 'electron-log';
+import log from 'electron-log/main';
 
 export const logger = log.scope('main');
-log.initialize();
+log.initialize({
+  preload: false,
+});
 
 log.transports.file.level = 'info';
 

@@ -3,7 +3,7 @@ import type { DocCollection } from '@blocksuite/store';
 
 declare global {
   interface Window {
-    appInfo: {
+    __appInfo: {
       electron: boolean;
       schema: string;
       windowName: string;
@@ -14,7 +14,7 @@ declare global {
 //#region runtime variables
 export const isBrowser = typeof window !== 'undefined';
 export const isServer = !isBrowser && typeof navigator === 'undefined';
-export const isDesktop = isBrowser && !!window.appInfo?.electron;
+export const isDesktop = isBrowser && !!window.__appInfo?.electron;
 //#endregion
 export const DEFAULT_WORKSPACE_NAME = 'Demo Workspace';
 export const UNTITLED_WORKSPACE_NAME = 'Untitled';

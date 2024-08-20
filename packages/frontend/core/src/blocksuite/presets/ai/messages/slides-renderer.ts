@@ -216,8 +216,6 @@ export class AISlidesRenderer extends WithDisposable(LitElement) {
     const collection = new DocCollection({
       schema,
       id: 'SLIDES_PREVIEW',
-      disableBacklinkIndex: true,
-      disableSearchIndex: true,
     });
     collection.meta.initialize();
     collection.start();

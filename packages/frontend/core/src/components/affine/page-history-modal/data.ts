@@ -109,8 +109,6 @@ const getOrCreateShellWorkspace = (workspaceId: string) => {
         main: blobStorage,
       },
       schema: globalBlockSuiteSchema,
-      disableBacklinkIndex: true,
-      disableSearchIndex: true,
     });
     docCollectionMap.set(workspaceId, docCollection);
     docCollection.doc.emit('sync', [true, docCollection.doc]);

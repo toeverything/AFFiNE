@@ -1,5 +1,5 @@
 import { AIProvider } from '@affine/core/blocksuite/presets/ai';
-import { apis } from '@affine/electron-api';
+import { apis, appInfo } from '@affine/electron-api';
 import type { OAuthProviderType } from '@affine/graphql';
 import {
   ApplicationFocused,
@@ -160,8 +160,8 @@ export class AuthService extends Service {
 
   private buildRedirectUri(callbackUrl: string) {
     const params: string[][] = [];
-    if (environment.isDesktop && window.appInfo.schema) {
-      params.push(['schema', window.appInfo.schema]);
+    if (environment.isDesktop && appInfo?.schema) {
+      params.push(['schema', appInfo.schema]);
     }
     const query =
       params.length > 0

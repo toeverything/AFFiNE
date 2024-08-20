@@ -10,12 +10,12 @@ import type {
   ImageSelection,
   PageRootService,
 } from '@blocksuite/blocks';
+import { BlocksUtils, NoteDisplayMode } from '@blocksuite/blocks';
 import {
-  BlocksUtils,
+  Bound,
   getElementsBound,
-  NoteDisplayMode,
-} from '@blocksuite/blocks';
-import { Bound, type SerializedXYWH } from '@blocksuite/global/utils';
+  type SerializedXYWH,
+} from '@blocksuite/global/utils';
 import { type ChatMessage } from '@blocksuite/presets';
 import type { Doc } from '@blocksuite/store';
 import type { TemplateResult } from 'lit';
@@ -304,7 +304,10 @@ const SAVE_CHAT_TO_BLOCK_ACTION: ChatAction = {
     const { docModeService, notificationService } = rootService;
     const { layer } = surfaceService;
     const curMode = docModeService.getMode();
-    const viewportCenter = getViewportCenter(curMode, rootService);
+    const viewportCenter = getViewportCenter(
+      curMode,
+      rootService as PageRootService
+    );
     const newBlockIndex = layer.generateIndex('affine:embed-ai-chat');
     // If current mode is not edgeless, switch to edgeless mode first
     if (curMode !== 'edgeless') {

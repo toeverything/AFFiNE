@@ -180,7 +180,7 @@ jobs:
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         with:
-          electron-install: false
+          electron-install: true
           full-cache: true
 
       - name: Download affine.linux-x64-gnu.node

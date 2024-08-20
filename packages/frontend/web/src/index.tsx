@@ -5,6 +5,7 @@ import './polyfill/request-idle-callback';
 import '@affine/core/bootstrap/preload';
 
 import { performanceLogger } from '@affine/core/shared';
+import { appInfo } from '@affine/electron-api';
 import { isDesktop } from '@affine/env/constant';
 import {
   init,
@@ -27,7 +28,7 @@ function main() {
   performanceMainLogger.info('start');
 
   // skip bootstrap setup for desktop onboarding
-  if (isDesktop && window.appInfo?.windowName === 'onboarding') {
+  if (isDesktop && appInfo?.windowName === 'onboarding') {
     performanceMainLogger.info('skip setup');
   } else {
     performanceMainLogger.info('setup start');

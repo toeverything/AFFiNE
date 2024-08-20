@@ -1,3 +1,4 @@
+import { appInfo } from '@affine/electron-api';
 import type {
   CreateCheckoutSessionInput,
   SubscriptionRecurring,
@@ -27,8 +28,8 @@ const getDefaultSubscriptionSuccessCallbackLink = (
     plan === SubscriptionPlan.AI ? '/ai-upgrade-success' : '/upgrade-success';
   const urlString = getAffineCloudBaseUrl() + path;
   const url = new URL(urlString);
-  if (environment.isDesktop) {
-    url.searchParams.set('schema', window.appInfo.schema);
+  if (environment.isDesktop && appInfo) {
+    url.searchParams.set('schema', appInfo.schema);
   }
   return url.toString();
 };
