@@ -11,36 +11,11 @@ import { Locker } from './local-lock';
 export const MUTEX_RETRY = 5;
 export const MUTEX_WAIT = 100;
 
-@Injectable({ scope: Scope.REQUEST })
-export class MutexService {
-  protected logger = new Logger(MutexService.name);
-  private readonly locker: Locker;
+@Injectable()
+export class Mutex {
+  protected logger = new Logger(Mutex.name);
 
-  constructor(
-    @Inject(REQUEST) private readonly request: Request | GraphqlContext,
-    private readonly ref: ModuleRef
-  ) {
-    // nestjs will always find and injecting the locker from local module
-    // so the RedisLocker implemented by the plugin mechanism will not be able to overwrite the internal locker
-    // we need to use find and get the locker from the `ModuleRef` manually
-    //
-    // NOTE: when a `constructor` execute in normal service, the Locker module we expect may not have been initialized
-    //       but in the Service with `Scope.REQUEST`, we will create a separate Service instance for each request
-    //       at this time, all modules have been initialized, so we able to get the correct Locker instance in `constructor`
-    this.locker = this.ref.get(Locker, { strict: false });
-  }
-
-  protected getId() {
-    const req = 'req' in this.request ? this.request.req : this.request;
-    let id = req.headers['x-transaction-id'] as string;
-
-    if (!id) {
-      id = randomUUID();
-      req.headers['x-transaction-id'] = id;
-    }
-
-    return id;
-  }
+  constructor(protected readonly locker: Locker) {}
 
   /**
    * lock an resource and return a lock guard, which will release the lock when disposed
@@ -63,10 +38,10 @@ export class MutexService {
    * @param key resource key
    * @returns LockGuard
    */
-  async lock(key: string) {
+  async lock(key: string, owner: string = 'global') {
     try {
       return await retryable(
-        () => this.locker.lock(this.getId(), key),
+        () => this.locker.lock(owner, key),
         MUTEX_RETRY,
         MUTEX_WAIT
       );
@@ -77,5 +52,38 @@ export class MutexService {
       );
       return undefined;
     }
+  }
+}
+
+@Injectable({ scope: Scope.REQUEST })
+export class RequestMutex extends Mutex {
+  constructor(
+    @Inject(REQUEST) private readonly request: Request | GraphqlContext,
+    ref: ModuleRef
+  ) {
+    // nestjs will always find and injecting the locker from local module
+    // so the RedisLocker implemented by the plugin mechanism will not be able to overwrite the internal locker
+    // we need to use find and get the locker from the `ModuleRef` manually
+    //
+    // NOTE: when a `constructor` execute in normal service, the Locker module we expect may not have been initialized
+    //       but in the Service with `Scope.REQUEST`, we will create a separate Service instance for each request
+    //       at this time, all modules have been initialized, so we able to get the correct Locker instance in `constructor`
+    super(ref.get(Locker));
+  }
+
+  protected getId() {
+    const req = 'req' in this.request ? this.request.req : this.request;
+    let id = req.headers['x-transaction-id'] as string;
+
+    if (!id) {
+      id = randomUUID();
+      req.headers['x-transaction-id'] = id;
+    }
+
+    return id;
+  }
+
+  override lock(key: string) {
+    return super.lock(key, this.getId());
   }
 }

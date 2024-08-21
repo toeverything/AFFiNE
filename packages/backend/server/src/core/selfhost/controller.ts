@@ -5,7 +5,7 @@ import {
   ActionForbidden,
   EventEmitter,
   InternalServerError,
-  MutexService,
+  Mutex,
   PasswordRequired,
 } from '../../fundamentals';
 import { AuthService, Public } from '../auth';
@@ -23,7 +23,7 @@ export class CustomSetupController {
     private readonly user: UserService,
     private readonly auth: AuthService,
     private readonly event: EventEmitter,
-    private readonly mutex: MutexService,
+    private readonly mutex: Mutex,
     private readonly server: ServerService
   ) {}
 

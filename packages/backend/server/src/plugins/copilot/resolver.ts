@@ -26,7 +26,7 @@ import { UserType } from '../../core/user';
 import {
   CopilotFailedToCreateMessage,
   FileUpload,
-  MutexService,
+  RequestMutex,
   Throttle,
   TooManyRequest,
 } from '../../fundamentals';
@@ -265,7 +265,7 @@ export class CopilotType {
 export class CopilotResolver {
   constructor(
     private readonly permissions: PermissionService,
-    private readonly mutex: MutexService,
+    private readonly mutex: RequestMutex,
     private readonly chatSession: ChatSessionService,
     private readonly storage: CopilotStorage
   ) {}

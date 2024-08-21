@@ -20,7 +20,7 @@ import {
   InternalServerError,
   MailService,
   MemberQuotaExceeded,
-  MutexService,
+  RequestMutex,
   Throttle,
   TooManyRequest,
   UserNotFound,
@@ -57,7 +57,7 @@ export class WorkspaceResolver {
     private readonly users: UserService,
     private readonly event: EventEmitter,
     private readonly blobStorage: WorkspaceBlobStorage,
-    private readonly mutex: MutexService
+    private readonly mutex: RequestMutex
   ) {}
 
   @ResolveField(() => Permission, {
