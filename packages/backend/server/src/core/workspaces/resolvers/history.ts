@@ -12,19 +12,11 @@ import {
 import type { SnapshotHistory } from '@prisma/client';
 
 import { CurrentUser } from '../../auth';
-import { type Editor, PgWorkspaceDocStorageAdapter } from '../../doc';
+import { PgWorkspaceDocStorageAdapter } from '../../doc';
 import { Permission, PermissionService } from '../../permission';
 import { DocID } from '../../utils/doc';
 import { WorkspaceType } from '../types';
-
-@ObjectType()
-class EditorType implements Partial<Editor> {
-  @Field()
-  name!: string;
-
-  @Field(() => String, { nullable: true })
-  avatarUrl!: string | null;
-}
+import { EditorType } from './workspace';
 
 @ObjectType()
 class DocHistoryType implements Partial<SnapshotHistory> {
