@@ -35,6 +35,8 @@ export const newPropertyTypes: PagePropertyType[] = [
   PagePropertyType.Number,
   PagePropertyType.Checkbox,
   PagePropertyType.Date,
+  PagePropertyType.CreatedBy,
+  PagePropertyType.UpdatedBy,
   // TODO(@Peng): add more
 ];
 

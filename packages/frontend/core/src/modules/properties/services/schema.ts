@@ -21,6 +21,8 @@ export enum PagePropertyType {
   Progress = 'progress',
   Checkbox = 'checkbox',
   Tags = 'tags',
+  CreatedBy = 'createdBy',
+  UpdatedBy = 'updatedBy',
 }
 
 export const PagePropertyMetaBaseSchema = z.object({

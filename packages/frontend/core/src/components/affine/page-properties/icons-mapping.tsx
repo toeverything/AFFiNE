@@ -109,6 +109,10 @@ export const getDefaultIconName = (
       return 'checkBoxCheckLinear';
     case 'number':
       return 'number';
+    case 'createdBy':
+      return 'account';
+    case 'updatedBy':
+      return 'account';
     default:
       return 'text';
   }
