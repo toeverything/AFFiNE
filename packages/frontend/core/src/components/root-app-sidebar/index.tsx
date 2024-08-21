@@ -12,7 +12,12 @@ import { CMDKQuickSearchService } from '@affine/core/modules/quicksearch/service
 import { isNewTabTrigger } from '@affine/core/utils';
 import { events } from '@affine/electron-api';
 import { useI18n } from '@affine/i18n';
-import { AllDocsIcon, SettingsIcon } from '@blocksuite/icons/rc';
+import {
+  AllDocsIcon,
+  GithubIcon,
+  JournalIcon,
+  SettingsIcon,
+} from '@blocksuite/icons/rc';
 import type { Doc } from '@blocksuite/store';
 import type { Workspace } from '@toeverything/infra';
 import { useLiveData, useService, WorkspaceService } from '@toeverything/infra';
@@ -33,6 +38,7 @@ import {
   SidebarContainer,
   SidebarScrollableContainer,
 } from '../app-sidebar';
+import { ExternalMenuLinkItem } from '../app-sidebar/menu-item/external-menu-link-item';
 import { usePageHelper } from '../blocksuite/block-suite-page-list/utils';
 import { WorkspaceSelector } from '../workspace-selector';
 import ImportPage from './import-page';
@@ -158,6 +164,16 @@ export const RootAppSidebar = (): ReactElement => {
         <div style={{ padding: '0 8px' }}>
           <TrashButton />
           <ImportPage docCollection={docCollection} />
+          <ExternalMenuLinkItem
+            href="https://affine.pro/blog?tag=Release+Note"
+            icon={<JournalIcon />}
+            label={t['com.affine.app-sidebar.learn-more']()}
+          />
+          <ExternalMenuLinkItem
+            href="https://github.com/toeverything/affine"
+            icon={<GithubIcon />}
+            label={t['com.affine.app-sidebar.star-us']()}
+          />
         </div>
       </SidebarScrollableContainer>
       <SidebarContainer>

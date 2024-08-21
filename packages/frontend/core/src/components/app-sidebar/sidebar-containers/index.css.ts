@@ -4,6 +4,9 @@ export const baseContainer = style({
   padding: '4px 16px',
   display: 'flex',
   flexFlow: 'column nowrap',
+  ':empty': {
+    display: 'none',
+  },
 });
 export const scrollableContainerRoot = style({
   flex: '1 1 auto',
@@ -30,6 +33,8 @@ export const scrollTopBorder = style({
 export const scrollableViewport = style({
   height: '100%',
   marginTop: '4px',
+  // safe area to avoid bottom clipping
+  paddingBottom: 8,
 });
 globalStyle(`${scrollableViewport} > div`, {
   maxWidth: '100%',

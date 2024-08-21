@@ -13,7 +13,6 @@ export const root = style({
   userSelect: 'none',
   cursor: 'pointer',
   padding: '0 12px',
-  margin: '20px 0',
   position: 'relative',
   whiteSpace: 'nowrap',
 });

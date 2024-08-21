@@ -102,6 +102,7 @@ export function AppSidebar({
         data-has-border={hasRightBorder}
         data-testid="app-sidebar-wrapper"
         data-is-macos-electron={isMacosDesktop}
+        data-client-border={clientBorder}
       >
         <nav className={navStyle} data-testid="app-sidebar">
           {!environment.isDesktop && <SidebarHeader />}
