@@ -1,0 +1,28 @@
+{
+  "name": "@affine/mobile",
+  "version": "0.16.0",
+  "description": "AFFiNE Desktop Web application",
+  "private": true,
+  "browser": "src/index.tsx",
+  "scripts": {
+    "build": "cross-env DISTRIBUTION=mobile yarn workspace @affine/cli build",
+    "dev": "yarn workspace @affine/cli dev"
+  },
+  "dependencies": {
+    "@affine/component": "workspace:*",
+    "@affine/core": "workspace:*",
+    "@affine/env": "workspace:*",
+    "@sentry/react": "^8.0.0",
+    "core-js": "^3.36.1",
+    "intl-segmenter-polyfill-rs": "^0.1.7",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@affine/cli": "workspace:*",
+    "@types/react": "^18.2.75",
+    "@types/react-dom": "^18.2.24",
+    "cross-env": "^7.0.3",
+    "typescript": "^5.4.5"
+  }
+}

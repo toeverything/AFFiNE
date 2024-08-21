@@ -49,6 +49,9 @@ const buildFlags = process.argv.includes('--static')
               {
                 value: 'admin',
               },
+              {
+                value: 'mobile',
+              },
             ],
             initialValue: 'browser',
           }),

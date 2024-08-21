@@ -23,6 +23,8 @@ module.exports.getCwdFromDistribution = function getCwdFromDistribution(
       return join(projectRoot, 'packages/frontend/electron/renderer');
     case 'admin':
       return join(projectRoot, 'packages/frontend/admin');
+    case 'mobile':
+      return join(projectRoot, 'packages/frontend/mobile');
     default: {
       throw new Error('DISTRIBUTION must be one of browser, desktop');
     }

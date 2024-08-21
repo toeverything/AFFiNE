@@ -1,5 +1,6 @@
 import { ResizePanel } from '@affine/component/resize-panel';
 import { rightSidebarWidthAtom } from '@affine/core/atoms';
+import { viewRoutes } from '@affine/core/router';
 import {
   appSettingAtom,
   FrameworkScope,
@@ -7,13 +8,21 @@ import {
   useService,
 } from '@toeverything/infra';
 import { useAtom, useAtomValue } from 'jotai';
-import { memo, useCallback, useEffect, useRef, useState } from 'react';
+import {
+  lazy as reactLazy,
+  memo,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import { useLocation } from 'react-router-dom';
 
 import type { View } from '../entities/view';
 import { WorkbenchService } from '../services/workbench';
 import { useBindWorkbenchToBrowserRouter } from './browser-adapter';
 import { useBindWorkbenchToDesktopRouter } from './desktop-adapter';
+import { RouteContainer } from './route-container';
 import { SidebarContainer } from './sidebar/sidebar-container';
 import { SplitView } from './split-view/split-view';
 import { ViewIslandRegistryProvider } from './view-islands';
@@ -23,6 +32,24 @@ import * as styles from './workbench-root.css';
 const useAdapter = environment.isDesktop
   ? useBindWorkbenchToDesktopRouter
   : useBindWorkbenchToBrowserRouter;
+
+const warpedRoutes = viewRoutes.map(({ path, lazy }) => {
+  const Component = reactLazy(() =>
+    lazy().then(m => ({
+      default: m.Component as React.ComponentType,
+    }))
+  );
+  const route = {
+    Component,
+  };
+
+  return {
+    path,
+    Component: () => {
+      return <RouteContainer route={route} />;
+    },
+  };
+});
 
 export const WorkbenchRoot = memo(() => {
   const workbench = useService(WorkbenchService).workbench;
@@ -93,7 +120,7 @@ const WorkbenchView = ({ view, index }: { view: View; index: number }) => {
 
   return (
     <div className={styles.workbenchViewContainer} ref={containerRef}>
-      <ViewRoot key={view.id} view={view} />
+      <ViewRoot routes={warpedRoutes} key={view.id} view={view} />
     </div>
   );
 };

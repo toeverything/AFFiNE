@@ -73,7 +73,7 @@ export const WorkspaceLayout = function WorkspaceLayout({
   );
 };
 
-const WorkspaceLayoutProviders = ({ children }: PropsWithChildren) => {
+export const WorkspaceLayoutProviders = ({ children }: PropsWithChildren) => {
   const t = useI18n();
   const pushGlobalLoadingEvent = useSetAtom(pushGlobalLoadingEventAtom);
   const resolveGlobalLoadingEvent = useSetAtom(resolveGlobalLoadingEventAtom);

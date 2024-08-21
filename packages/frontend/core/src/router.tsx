@@ -11,7 +11,7 @@ import {
 
 export const NavigateContext = createContext<NavigateFunction | null>(null);
 
-function RootRouter() {
+export function RootRouter() {
   const navigate = useNavigate();
   const [ready, setReady] = useState(false);
   useEffect(() => {

@@ -637,6 +637,26 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@affine/mobile@workspace:packages/frontend/mobile":
+  version: 0.0.0-use.local
+  resolution: "@affine/mobile@workspace:packages/frontend/mobile"
+  dependencies:
+    "@affine/cli": "workspace:*"
+    "@affine/component": "workspace:*"
+    "@affine/core": "workspace:*"
+    "@affine/env": "workspace:*"
+    "@sentry/react": "npm:^8.0.0"
+    "@types/react": "npm:^18.2.75"
+    "@types/react-dom": "npm:^18.2.24"
+    core-js: "npm:^3.36.1"
+    cross-env: "npm:^7.0.3"
+    intl-segmenter-polyfill-rs: "npm:^0.1.7"
+    react: "npm:^18.2.0"
+    react-dom: "npm:^18.2.0"
+    typescript: "npm:^5.4.5"
+  languageName: unknown
+  linkType: soft
+
 "@affine/monorepo@workspace:.":
   version: 0.0.0-use.local
   resolution: "@affine/monorepo@workspace:."
