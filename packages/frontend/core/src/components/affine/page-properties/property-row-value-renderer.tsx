@@ -1,16 +1,25 @@
-import { Checkbox, DatePicker, Menu } from '@affine/component';
+import { Avatar, Checkbox, DatePicker, Menu } from '@affine/component';
+import { AuthService } from '@affine/core/modules/cloud';
 import type {
   PageInfoCustomProperty,
   PageInfoCustomPropertyMeta,
   PagePropertyType,
 } from '@affine/core/modules/properties/services/schema';
 import { i18nTime, useI18n } from '@affine/i18n';
-import { DocService, useService } from '@toeverything/infra';
+import { DocService, useLiveData, useService } from '@toeverything/infra';
 import { noop } from 'lodash-es';
 import type { ChangeEventHandler } from 'react';
-import { useCallback, useContext, useEffect, useRef, useState } from 'react';
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import { SWRConfig } from 'swr';
 
-import { managerContext } from './common';
+import { managerContext, SWRCustomHandler, useCloudPageMeta } from './common';
 import * as styles from './styles.css';
 import { TagsInlineEditor } from './tags-inline-editor';
 
@@ -190,6 +199,63 @@ export const TagsValue = () => {
   );
 };
 
+const CloudUserAvatar = (props: { type: PagePropertyType }) => {
+  const session = useService(AuthService).session;
+  const account = useLiveData(session.account$);
+  const { isCloud, isLoading, metadata } = useCloudPageMeta(props.type);
+
+  const user = useMemo(() => {
+    if (isCloud) {
+      if (!metadata || typeof metadata !== 'object') return null;
+      return metadata;
+    } else {
+      if (!account) return null;
+      return { name: account.label, avatarUrl: account.avatar };
+    }
+  }, [account, isCloud, metadata]);
+
+  const t = useI18n();
+
+  if (isLoading) return null;
+  if (isCloud) {
+    if (user) {
+      return (
+        <>
+          <Avatar url={user.avatarUrl || ''} name={user.name} size={20} />
+          <span>{user.name}</span>
+        </>
+      );
+    }
+    return (
+      <>
+        <Avatar name="?" size={20} />
+        <span>
+          {t['com.affine.page-properties.property-user-avatar-no-record']()}
+        </span>
+      </>
+    );
+  }
+  if (account) {
+    return (
+      <>
+        <Avatar url={account.avatar || ''} name={account.label} size={20} />
+        <span>{account.label}</span>
+      </>
+    );
+  }
+  return null;
+};
+
+export const UserValue = ({ meta }: PropertyRowValueProps) => {
+  return (
+    <div className={styles.propertyRowValueUserCell}>
+      <SWRConfig value={parent => ({ ...parent, use: [SWRCustomHandler] })}>
+        <CloudUserAvatar type={meta.type} />
+      </SWRConfig>
+    </div>
+  );
+};
+
 export const propertyValueRenderers: Record<
   PagePropertyType,
   typeof DateValue
@@ -198,6 +264,8 @@ export const propertyValueRenderers: Record<
   checkbox: CheckboxValue,
   text: TextValue,
   number: NumberValue,
+  createdBy: UserValue,
+  updatedBy: UserValue,
   // TODO(@Peng): fix following
   tags: TagsValue,
   progress: TextValue,
