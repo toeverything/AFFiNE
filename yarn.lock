@@ -310,6 +310,7 @@ __metadata:
     "@radix-ui/react-popover": "npm:^1.0.7"
     "@radix-ui/react-radio-group": "npm:^1.1.3"
     "@radix-ui/react-scroll-area": "npm:^1.0.5"
+    "@radix-ui/react-slot": "npm:^1.1.0"
     "@radix-ui/react-tabs": "npm:^1.1.0"
     "@radix-ui/react-toast": "npm:^1.1.5"
     "@radix-ui/react-toolbar": "npm:^1.0.4"
@@ -325,7 +326,7 @@ __metadata:
     "@storybook/react": "npm:^8.2.9"
     "@storybook/react-vite": "npm:^8.2.9"
     "@testing-library/react": "npm:^16.0.0"
-    "@toeverything/theme": "npm:^1.0.4"
+    "@toeverything/theme": "npm:^1.0.5"
     "@types/bytes": "npm:^3.1.4"
     "@types/react": "npm:^18.2.75"
     "@types/react-dnd": "npm:^3.0.2"
@@ -421,7 +422,7 @@ __metadata:
     "@sgtpooki/file-type": "npm:^1.0.1"
     "@swc/core": "npm:^1.4.13"
     "@testing-library/react": "npm:^16.0.0"
-    "@toeverything/theme": "npm:^1.0.4"
+    "@toeverything/theme": "npm:^1.0.5"
     "@types/animejs": "npm:^3.1.12"
     "@types/bytes": "npm:^3.1.4"
     "@types/image-blob-reduce": "npm:^4.1.4"
@@ -13857,7 +13858,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@toeverything/theme@npm:^1.0.2, @toeverything/theme@npm:^1.0.4":
+"@toeverything/theme@npm:^1.0.2, @toeverything/theme@npm:^1.0.5":
   version: 1.0.5
   resolution: "@toeverything/theme@npm:1.0.5"
   checksum: 10/26f177192c546b8b6c953a4d75da5520486fa92c872b889052861cd121ef9840b5006e2f1513988117290066812e08015aa99b025d13c01ca50563a9ba26a732
@@ -14624,12 +14625,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:*, @types/node@npm:>=10.0.0, @types/node@npm:>=13.7.0, @types/node@npm:>=8.1.0":
-  version: 22.4.1
-  resolution: "@types/node@npm:22.4.1"
+"@types/node@npm:*, @types/node@npm:>=10.0.0, @types/node@npm:>=13.7.0, @types/node@npm:>=8.1.0, @types/node@npm:^20.12.7, @types/node@npm:^20.14.9, @types/node@npm:^20.9.0":
+  version: 20.16.1
+  resolution: "@types/node@npm:20.16.1"
   dependencies:
     undici-types: "npm:~6.19.2"
-  checksum: 10/cce9221aea24688bccc3d7c25afd26d95c1bdab73a32ee5c43bb456e070116abf6ba537a9ff19c728bc06fe054e69a2c7ec8e5d818e34a3bf9567eae2cb20059
+  checksum: 10/9bae1dffd2094694147a91ebec51dc89a60a607d16d47a0d770320f1a75d3ba58663708fd93c37954a63acb701a4e0fd64245139c57ae810d3ad524e75481d4e
   languageName: node
   linkType: hard
 
@@ -14639,15 +14640,6 @@ __metadata:
   dependencies:
     undici-types: "npm:~5.26.4"
   checksum: 10/978fdd68af65c8f8659037ef09456d41ef46a5f688c3b9550cd59266db2c4ac94e65ed7f08d1871ba909e5b7bdf4e8066c5269715a7dd83333aca34dfa6366db
-  languageName: node
-  linkType: hard
-
-"@types/node@npm:^20.12.7, @types/node@npm:^20.14.9, @types/node@npm:^20.9.0":
-  version: 20.16.1
-  resolution: "@types/node@npm:20.16.1"
-  dependencies:
-    undici-types: "npm:~6.19.2"
-  checksum: 10/9bae1dffd2094694147a91ebec51dc89a60a607d16d47a0d770320f1a75d3ba58663708fd93c37954a63acb701a4e0fd64245139c57ae810d3ad524e75481d4e
   languageName: node
   linkType: hard
 

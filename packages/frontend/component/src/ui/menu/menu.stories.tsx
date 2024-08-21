@@ -6,14 +6,7 @@ import { useCallback, useState } from 'react';
 import { Button } from '../button';
 import { Tooltip } from '../tooltip';
 import type { MenuItemProps, MenuProps } from './index';
-import {
-  Menu,
-  MenuIcon,
-  MenuItem,
-  MenuSeparator,
-  MenuSub,
-  MenuTrigger,
-} from './index';
+import { Menu, MenuItem, MenuSeparator, MenuSub } from './index';
 
 export default {
   title: 'UI/Menu',
@@ -29,14 +22,14 @@ const Template: StoryFn<MenuProps> = args => (
       },
     }}
   >
-    <MenuTrigger>menu trigger</MenuTrigger>
+    <Button>menu trigger</Button>
   </Menu>
 );
 
 interface Items {
   label: ReactNode;
   type?: MenuItemProps['type'];
-  preFix?: MenuItemProps['preFix'];
+  prefixIcon?: MenuItemProps['prefixIcon'];
   disabled?: boolean;
   divider?: boolean;
   subItems?: Items[];
@@ -49,13 +42,7 @@ const items: Items[] = [
   },
   {
     label: 'menu item with icon',
-    preFix: (
-      <Tooltip content="Use `MenuIcon` to wrap your icon and choose `preFix` or `endFix`">
-        <MenuIcon>
-          <InformationIcon />
-        </MenuIcon>
-      </Tooltip>
-    ),
+    prefixIcon: <InformationIcon />,
   },
   {
     label: (
@@ -80,13 +67,7 @@ const items: Items[] = [
     label: 'danger menu item',
     type: 'danger',
     block: true,
-    preFix: (
-      <Tooltip content="Use `MenuIcon` to wrap your icon and choose `preFix` or `endFix`">
-        <MenuIcon>
-          <InformationIcon />
-        </MenuIcon>
-      </Tooltip>
-    ),
+    prefixIcon: <InformationIcon />,
   },
   {
     label: 'warning menu item',
@@ -120,6 +101,9 @@ const items: Items[] = [
           },
           {
             label: 'sub menu item 2-2',
+          },
+          {
+            label: 'sub menu item 2-3',
           },
         ],
       },

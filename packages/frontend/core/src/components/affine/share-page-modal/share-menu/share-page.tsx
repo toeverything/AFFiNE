@@ -207,13 +207,7 @@ export const AFFiNESharePage = (props: ShareMenuProps) => {
             }}
             items={
               <>
-                <MenuItem
-                  preFix={
-                    <LockIcon className={styles.publicMenuItemPrefixStyle} />
-                  }
-                  onSelect={onClickDisable}
-                  className={styles.menuItemStyle}
-                >
+                <MenuItem prefixIcon={<LockIcon />} onSelect={onClickDisable}>
                   <div className={styles.publicItemRowStyle}>
                     <div>
                       {t['com.affine.share-menu.option.link.no-access']()}
@@ -224,10 +218,7 @@ export const AFFiNESharePage = (props: ShareMenuProps) => {
                   </div>
                 </MenuItem>
                 <MenuItem
-                  preFix={
-                    <ViewIcon className={styles.publicMenuItemPrefixStyle} />
-                  }
-                  className={styles.menuItemStyle}
+                  prefixIcon={<ViewIcon />}
                   onSelect={onClickAnyoneReadOnlyShare}
                   data-testid="share-link-menu-enable-share"
                 >
@@ -295,7 +286,6 @@ export const AFFiNESharePage = (props: ShareMenuProps) => {
           <span className={styles.copyLinkShortcutStyle}>
             {isMac ? '⌘ + ⌥ + C' : 'Ctrl + Shift + C'}
           </span>
-          {t['com.affine.share-menu.copy']()}
         </Button>
         <Menu
           contentOptions={{
@@ -304,42 +294,24 @@ export const AFFiNESharePage = (props: ShareMenuProps) => {
           items={
             <>
               <MenuItem
-                preFix={
-                  <PageIcon className={styles.publicMenuItemPrefixStyle} />
-                }
-                className={styles.menuItemStyle}
+                prefixIcon={<PageIcon />}
                 onSelect={onCopyPageLink}
                 data-testid="share-link-menu-copy-page"
               >
                 {t['com.affine.share-menu.copy.page']()}
               </MenuItem>
               <MenuItem
-                preFix={
-                  <EdgelessIcon className={styles.publicMenuItemPrefixStyle} />
-                }
-                className={styles.menuItemStyle}
+                prefixIcon={<EdgelessIcon />}
                 onSelect={onCopyEdgelessLink}
                 data-testid="share-link-menu-copy-edgeless"
               >
                 {t['com.affine.share-menu.copy.edgeless']()}
               </MenuItem>
-              <MenuItem
-                preFix={
-                  <LinkIcon className={styles.publicMenuItemPrefixStyle} />
-                }
-                className={styles.menuItemStyle}
-                onSelect={onCopyBlockLink}
-              >
+              <MenuItem prefixIcon={<LinkIcon />} onSelect={onCopyBlockLink}>
                 {t['com.affine.share-menu.copy.block']()}
               </MenuItem>
               {currentDocMode === 'edgeless' && (
-                <MenuItem
-                  preFix={
-                    <LinkIcon className={styles.publicMenuItemPrefixStyle} />
-                  }
-                  className={styles.menuItemStyle}
-                  onSelect={onCopyBlockLink}
-                >
+                <MenuItem prefixIcon={<LinkIcon />} onSelect={onCopyBlockLink}>
                   {t['com.affine.share-menu.copy.frame']()}
                 </MenuItem>
               )}
@@ -347,8 +319,11 @@ export const AFFiNESharePage = (props: ShareMenuProps) => {
           }
         >
           <MenuTrigger
+            variant="primary"
             className={styles.copyLinkTriggerStyle}
             data-testid="share-menu-copy-link-button"
+            suffixStyle={{ width: 20, height: 20 }}
+            withoutHover
           />
         </Menu>
       </div>

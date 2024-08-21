@@ -1,4 +1,4 @@
-import { MenuIcon, MenuItem } from '@affine/component';
+import { MenuItem } from '@affine/component';
 import { useI18n } from '@affine/i18n';
 import {
   ExpandCloseIcon,
@@ -137,30 +137,21 @@ const SplitViewMenu = ({ view }: { view: View }) => {
 
   const CloseItem =
     views.length > 1 ? (
-      <MenuItem
-        preFix={<MenuIcon icon={<ExpandCloseIcon />} />}
-        onClick={handleClose}
-      >
+      <MenuItem prefixIcon={<ExpandCloseIcon />} onClick={handleClose}>
         {t['com.affine.workbench.split-view-menu.close']()}
       </MenuItem>
     ) : null;
 
   const MoveLeftItem =
     viewIndex > 0 && views.length > 1 ? (
-      <MenuItem
-        onClick={handleMoveLeft}
-        preFix={<MenuIcon icon={<MoveToLeftDuotoneIcon />} />}
-      >
+      <MenuItem onClick={handleMoveLeft} prefixIcon={<MoveToLeftDuotoneIcon />}>
         {t['com.affine.workbench.split-view-menu.move-left']()}
       </MenuItem>
     ) : null;
 
   const FullScreenItem =
     views.length > 1 ? (
-      <MenuItem
-        onClick={handleCloseOthers}
-        preFix={<MenuIcon icon={<SoloViewIcon />} />}
-      >
+      <MenuItem onClick={handleCloseOthers} prefixIcon={<SoloViewIcon />}>
         {t['com.affine.workbench.split-view-menu.keep-this-one']()}
       </MenuItem>
     ) : null;
@@ -169,7 +160,7 @@ const SplitViewMenu = ({ view }: { view: View }) => {
     viewIndex < views.length - 1 ? (
       <MenuItem
         onClick={handleMoveRight}
-        preFix={<MenuIcon icon={<MoveToRightDuotoneIcon />} />}
+        prefixIcon={<MoveToRightDuotoneIcon />}
       >
         {t['com.affine.workbench.split-view-menu.move-right']()}
       </MenuItem>

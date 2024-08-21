@@ -1,4 +1,5 @@
 import { cssVar } from '@toeverything/theme';
+import { cssVarV2 } from '@toeverything/theme/v2';
 import {
   createVar,
   generateIdentifier,
@@ -18,7 +19,7 @@ const overlayShow = keyframes({
     opacity: 1,
   },
 });
-const contentShow = keyframes({
+const contentShowFadeScaleTop = keyframes({
   from: {
     opacity: 0,
     transform: 'translateY(-2%) scale(0.96)',
@@ -28,7 +29,7 @@ const contentShow = keyframes({
     transform: 'translateY(0) scale(1)',
   },
 });
-export const contentHide = keyframes({
+const contentHideFadeScaleTop = keyframes({
   to: {
     opacity: 0,
     transform: 'translateY(-2%) scale(0.96)',
@@ -38,15 +39,35 @@ export const contentHide = keyframes({
     transform: 'translateY(0) scale(1)',
   },
 });
-
+const contentShowSlideBottom = keyframes({
+  from: { transform: 'translateY(100%)' },
+  to: { transform: 'translateY(0)' },
+});
+const contentHideSlideBottom = keyframes({
+  from: { transform: 'translateY(0)' },
+  to: { transform: 'translateY(100%)' },
+});
+const modalContentViewTransitionNameFadeScaleTop = generateIdentifier(
+  'modal-content-fade-scale-top'
+);
+const modalContentViewTransitionNameSlideBottom = generateIdentifier(
+  'modal-content-slide-bottom'
+);
 export const modalOverlay = style({
   position: 'fixed',
   inset: 0,
   backgroundColor: cssVar('backgroundModalColor'),
   zIndex: cssVar('zIndexModal'),
   animation: `${overlayShow} 150ms forwards`,
+  selectors: {
+    '&.anim-none': {
+      animation: 'none',
+    },
+    '&.mobile': {
+      backgroundColor: cssVarV2('layer/mobile/modal'),
+    },
+  },
 });
-const modalContentViewTransitionName = generateIdentifier('modal-content');
 export const modalContentWrapper = style({
   position: 'fixed',
   inset: 0,
@@ -54,14 +75,37 @@ export const modalContentWrapper = style({
   alignItems: 'center',
   justifyContent: 'center',
   zIndex: cssVar('zIndexModal'),
-  animation: `${contentShow} 150ms cubic-bezier(0.42, 0, 0.58, 1)`,
-  animationFillMode: 'forwards',
-  viewTransitionName: modalContentViewTransitionName,
+
+  selectors: {
+    '&.anim-none': {
+      animation: 'none',
+    },
+    '&.anim-fadeScaleTop': {
+      animation: `${contentShowFadeScaleTop} 150ms cubic-bezier(0.42, 0, 0.58, 1)`,
+      viewTransitionName: modalContentViewTransitionNameFadeScaleTop,
+      animationFillMode: 'forwards',
+    },
+    '&.anim-slideBottom': {
+      animation: `${contentShowSlideBottom} 0.23s ease`,
+      viewTransitionName: modalContentViewTransitionNameSlideBottom,
+      animationFillMode: 'forwards',
+    },
+  },
 });
-globalStyle(`::view-transition-old(${modalContentViewTransitionName})`, {
-  animation: `${contentHide} 150ms cubic-bezier(0.42, 0, 0.58, 1)`,
-  animationFillMode: 'forwards',
-});
+globalStyle(
+  `::view-transition-old(${modalContentViewTransitionNameFadeScaleTop})`,
+  {
+    animation: `${contentHideFadeScaleTop} 150ms cubic-bezier(0.42, 0, 0.58, 1)`,
+    animationFillMode: 'forwards',
+  }
+);
+globalStyle(
+  `::view-transition-old(${modalContentViewTransitionNameSlideBottom})`,
+  {
+    animation: `${contentHideSlideBottom} 0.23s ease`,
+    animationFillMode: 'forwards',
+  }
+);
 
 export const modalContent = style({
   vars: {
@@ -72,6 +116,8 @@ export const modalContent = style({
   width: widthVar,
   height: heightVar,
   minHeight: minHeightVar,
+  maxHeight: 'calc(100vh - 32px)',
+  maxWidth: 'calc(100vw - 20px)',
   boxSizing: 'border-box',
   fontSize: cssVar('fontBase'),
   fontWeight: '400',
@@ -81,7 +127,6 @@ export const modalContent = style({
   backgroundColor: cssVar('backgroundOverlayPanelColor'),
   boxShadow: cssVar('popoverShadow'),
   borderRadius: '12px',
-  maxHeight: 'calc(100vh - 32px)',
   // :focus-visible will set outline
   outline: 'none',
 });

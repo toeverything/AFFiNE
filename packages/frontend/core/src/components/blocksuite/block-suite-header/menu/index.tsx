@@ -1,7 +1,6 @@
 import { toast } from '@affine/component';
 import {
   Menu,
-  MenuIcon,
   MenuItem,
   MenuSeparator,
   MenuSub,
@@ -13,6 +12,7 @@ import {
 import { PageHistoryModal } from '@affine/core/components/affine/page-history-modal';
 import { ShareMenuContent } from '@affine/core/components/affine/share-page-modal/share-menu';
 import { Export, MoveToTrash } from '@affine/core/components/page-list';
+import { IsFavoriteIcon } from '@affine/core/components/pure/icons';
 import { useBlockSuiteMetaHelper } from '@affine/core/hooks/affine/use-block-suite-meta-helper';
 import { useEnableCloud } from '@affine/core/hooks/affine/use-enable-cloud';
 import { useExportPage } from '@affine/core/hooks/affine/use-export-page';
@@ -29,8 +29,6 @@ import {
   DuplicateIcon,
   EdgelessIcon,
   EditIcon,
-  FavoritedIcon,
-  FavoriteIcon,
   FrameIcon,
   HistoryIcon,
   ImportIcon,
@@ -157,10 +155,6 @@ export const PageHeaderMenuButton = ({
         : t['com.affine.toastMessage.pageMode']()
     );
   }, [currentMode, editorService, t]);
-  const menuItemStyle = {
-    padding: '4px 12px',
-    transition: 'all 0.3s',
-  };
 
   const handleMenuOpenChange = useCallback((open: boolean) => {
     if (open) {
@@ -225,11 +219,7 @@ export const PageHeaderMenuButton = ({
             </div>
           }
           triggerOptions={{
-            preFix: (
-              <MenuIcon>
-                <ShareIcon />
-              </MenuIcon>
-            ),
+            prefixIcon: <ShareIcon />,
           }}
           subOptions={{
             onOpenChange: handleShareMenuOpenChange,
@@ -247,27 +237,17 @@ export const PageHeaderMenuButton = ({
       {showResponsiveMenu ? ResponsiveMenuItems : null}
       {!isJournal && (
         <MenuItem
-          preFix={
-            <MenuIcon>
-              <EditIcon />
-            </MenuIcon>
-          }
+          prefixIcon={<EditIcon />}
           data-testid="editor-option-menu-rename"
           onSelect={handleRename}
-          style={menuItemStyle}
         >
           {t['Rename']()}
         </MenuItem>
       )}
       <MenuItem
-        preFix={
-          <MenuIcon>
-            {currentMode === 'page' ? <EdgelessIcon /> : <PageIcon />}
-          </MenuIcon>
-        }
+        prefixIcon={currentMode === 'page' ? <EdgelessIcon /> : <PageIcon />}
         data-testid="editor-option-menu-edgeless"
         onSelect={handleSwitchMode}
-        style={menuItemStyle}
       >
         {t['Convert to ']()}
         {currentMode === 'page'
@@ -277,16 +257,7 @@ export const PageHeaderMenuButton = ({
       <MenuItem
         data-testid="editor-option-menu-favorite"
         onSelect={handleToggleFavorite}
-        style={menuItemStyle}
-        preFix={
-          <MenuIcon>
-            {favorite ? (
-              <FavoritedIcon style={{ color: 'var(--affine-primary-color)' }} />
-            ) : (
-              <FavoriteIcon />
-            )}
-          </MenuIcon>
-        }
+        prefixIcon={<IsFavoriteIcon favorite={favorite} />}
       >
         {favorite
           ? t['com.affine.favoritePageOperation.remove']()
@@ -294,28 +265,18 @@ export const PageHeaderMenuButton = ({
       </MenuItem>
       <MenuSeparator />
       <MenuItem
-        preFix={
-          <MenuIcon>
-            <OpenInNewIcon />
-          </MenuIcon>
-        }
+        prefixIcon={<OpenInNewIcon />}
         data-testid="editor-option-menu-open-in-new-tab"
         onSelect={handleOpenInNewTab}
-        style={menuItemStyle}
       >
         {t['com.affine.workbench.tab.page-menu-open']()}
       </MenuItem>
 
       {environment.isDesktop && (
         <MenuItem
-          preFix={
-            <MenuIcon>
-              <SplitViewIcon />
-            </MenuIcon>
-          }
+          prefixIcon={<SplitViewIcon />}
           data-testid="editor-option-menu-open-in-split-new"
           onSelect={handleOpenInSplitView}
-          style={menuItemStyle}
         >
           {t['com.affine.workbench.split-view.page-menu-open']()}
         </MenuItem>
@@ -325,81 +286,51 @@ export const PageHeaderMenuButton = ({
 
       {runtimeConfig.enableInfoModal && (
         <MenuItem
-          preFix={
-            <MenuIcon>
-              <InformationIcon />
-            </MenuIcon>
-          }
+          prefixIcon={<InformationIcon />}
           data-testid="editor-option-menu-info"
           onSelect={openInfoModal}
-          style={menuItemStyle}
         >
           {t['com.affine.page-properties.page-info.view']()}
         </MenuItem>
       )}
       {currentMode === 'page' ? (
         <MenuItem
-          preFix={
-            <MenuIcon>
-              <TocIcon />
-            </MenuIcon>
-          }
+          prefixIcon={<TocIcon />}
           data-testid="editor-option-toc"
           onSelect={openOutlinePanel}
-          style={menuItemStyle}
         >
           {t['com.affine.header.option.view-toc']()}
         </MenuItem>
       ) : (
         <MenuItem
-          preFix={
-            <MenuIcon>
-              <FrameIcon />
-            </MenuIcon>
-          }
+          prefixIcon={<FrameIcon />}
           data-testid="editor-option-frame"
           onSelect={openAllFrames}
-          style={menuItemStyle}
         >
           {t['com.affine.header.option.view-frame']()}
         </MenuItem>
       )}
       <MenuItem
-        preFix={
-          <MenuIcon>
-            <HistoryIcon />
-          </MenuIcon>
-        }
+        prefixIcon={<HistoryIcon />}
         data-testid="editor-option-menu-history"
         onSelect={openHistoryModal}
-        style={menuItemStyle}
       >
         {t['com.affine.history.view-history-version']()}
       </MenuItem>
       <MenuSeparator />
       {!isJournal && (
         <MenuItem
-          preFix={
-            <MenuIcon>
-              <DuplicateIcon />
-            </MenuIcon>
-          }
+          prefixIcon={<DuplicateIcon />}
           data-testid="editor-option-menu-duplicate"
           onSelect={handleDuplicate}
-          style={menuItemStyle}
         >
           {t['com.affine.header.option.duplicate']()}
         </MenuItem>
       )}
       <MenuItem
-        preFix={
-          <MenuIcon>
-            <ImportIcon />
-          </MenuIcon>
-        }
+        prefixIcon={<ImportIcon />}
         data-testid="editor-option-menu-import"
         onSelect={onImportFile}
-        style={menuItemStyle}
       >
         {t['Import']()}
       </MenuItem>

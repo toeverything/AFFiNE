@@ -9,9 +9,10 @@ import * as Dialog from '@radix-ui/react-dialog';
 import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
 import { assignInlineVars } from '@vanilla-extract/dynamic';
 import clsx from 'clsx';
-import type { CSSProperties } from 'react';
+import type { CSSProperties, MouseEvent } from 'react';
 import { forwardRef, useCallback, useEffect, useState } from 'react';
 
+import { isMobile } from '../../utils/env';
 import type { IconButtonProps } from '../button';
 import { IconButton } from '../button';
 import * as styles from './styles.css';
@@ -32,6 +33,12 @@ export interface ModalProps extends DialogProps {
   contentOptions?: DialogContentProps;
   overlayOptions?: DialogOverlayProps;
   closeButtonOptions?: IconButtonProps;
+  contentWrapperClassName?: string;
+  contentWrapperStyle?: CSSProperties;
+  /**
+   * @default 'fadeScaleTop'
+   */
+  animation?: 'fadeScaleTop' | 'none' | 'slideBottom';
 }
 type PointerDownOutsideEvent = Parameters<
   Exclude<DialogContentProps['onPointerDownOutside'], undefined>
@@ -128,10 +135,14 @@ export const ModalInner = forwardRef<HTMLDivElement, ModalProps>(
       overlayOptions: {
         className: overlayClassName,
         style: overlayStyle,
+        onClick: onOverlayClick,
         ...otherOverlayOptions
       } = {},
       closeButtonOptions,
       children,
+      contentWrapperClassName,
+      contentWrapperStyle,
+      animation = 'fadeScaleTop',
       ...otherProps
     } = props;
     const { className: closeButtonClassName, ...otherCloseButtonProps } =
@@ -167,6 +178,18 @@ export const ModalInner = forwardRef<HTMLDivElement, ModalProps>(
       [onEscapeKeyDown, persistent]
     );
 
+    const handleOverlayClick = useCallback(
+      (e: MouseEvent<HTMLDivElement>) => {
+        onOverlayClick?.(e);
+        if (persistent) {
+          e.preventDefault();
+        } else {
+          onOpenChange?.(false);
+        }
+      },
+      [onOpenChange, onOverlayClick, persistent]
+    );
+
     if (!container) {
       return;
     }
@@ -180,13 +203,27 @@ export const ModalInner = forwardRef<HTMLDivElement, ModalProps>(
       >
         <Dialog.Portal container={container} {...portalOptions}>
           <Dialog.Overlay
-            className={clsx(styles.modalOverlay, overlayClassName)}
+            className={clsx(
+              `anim-${animation}`,
+              styles.modalOverlay,
+              overlayClassName,
+              { mobile: isMobile() }
+            )}
             style={{
               ...overlayStyle,
             }}
+            onClick={handleOverlayClick}
             {...otherOverlayOptions}
           />
-          <div data-modal={modal} className={clsx(styles.modalContentWrapper)}>
+          <div
+            data-modal={modal}
+            className={clsx(
+              `anim-${animation}`,
+              styles.modalContentWrapper,
+              contentWrapperClassName
+            )}
+            style={contentWrapperStyle}
+          >
             <Dialog.Content
               onPointerDownOutside={handlePointerDownOutSide}
               onEscapeKeyDown={handleEscapeKeyDown}

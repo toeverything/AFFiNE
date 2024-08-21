@@ -1,12 +1,5 @@
 import type { MenuProps } from '@affine/component';
-import {
-  Button,
-  IconButton,
-  Menu,
-  MenuIcon,
-  MenuItem,
-  Tooltip,
-} from '@affine/component';
+import { Button, IconButton, Menu, MenuItem, Tooltip } from '@affine/component';
 import { useCurrentWorkspacePropertiesAdapter } from '@affine/core/hooks/use-affine-adapter';
 import { track } from '@affine/core/mixpanel';
 import { DocLinksService } from '@affine/core/modules/doc-link';
@@ -346,9 +339,7 @@ export const PagePropertiesSettingsPopup = ({
                 className={styles.propertySettingRow}
                 data-testid="page-properties-settings-menu-item"
               >
-                <MenuIcon>
-                  <Icon />
-                </MenuIcon>
+                <Icon />
                 <div
                   data-testid="page-property-setting-row-name"
                   className={styles.propertyRowName}

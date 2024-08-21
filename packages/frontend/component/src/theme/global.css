@@ -288,3 +288,9 @@ body {
 [data-lit-react-wrapper] {
   display: contents;
 }
+
+/* Avoid color overriden by user-agent */
+button,
+input {
+  color: inherit;
+}

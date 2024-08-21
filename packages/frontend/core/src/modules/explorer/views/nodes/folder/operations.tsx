@@ -1,9 +1,8 @@
-import { MenuIcon, MenuItem } from '@affine/component';
+import { MenuItem } from '@affine/component';
+import { IsFavoriteIcon } from '@affine/core/components/pure/icons';
 import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/properties';
 import { useI18n } from '@affine/i18n';
-import { FavoritedIcon, FavoriteIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
-import { cssVar } from '@toeverything/theme';
 import { useMemo } from 'react';
 
 export const FavoriteFolderOperation = ({ id }: { id: string }) => {
@@ -20,15 +19,7 @@ export const FavoriteFolderOperation = ({ id }: { id: string }) => {
 
   return (
     <MenuItem
-      preFix={
-        <MenuIcon>
-          {favorite ? (
-            <FavoritedIcon style={{ color: cssVar('primaryColor') }} />
-          ) : (
-            <FavoriteIcon />
-          )}
-        </MenuIcon>
-      }
+      prefixIcon={<IsFavoriteIcon favorite={favorite} />}
       onClick={() => compatibleFavoriteItemsAdapter.toggle(id, 'folder')}
     >
       {favorite

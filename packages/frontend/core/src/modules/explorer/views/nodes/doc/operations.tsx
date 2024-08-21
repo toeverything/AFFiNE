@@ -1,11 +1,11 @@
 import {
   IconButton,
-  MenuIcon,
   MenuItem,
   MenuSeparator,
   toast,
   useConfirmModal,
 } from '@affine/component';
+import { IsFavoriteIcon } from '@affine/core/components/pure/icons';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { track } from '@affine/core/mixpanel';
 import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/properties';
@@ -13,8 +13,6 @@ import { WorkbenchService } from '@affine/core/modules/workbench';
 import { useI18n } from '@affine/i18n';
 import {
   DeleteIcon,
-  FavoritedIcon,
-  FavoriteIcon,
   InformationIcon,
   LinkedPageIcon,
   OpenInNewIcon,
@@ -147,11 +145,7 @@ export const useExplorerDocNodeOperations = (
               index: 50,
               view: (
                 <MenuItem
-                  preFix={
-                    <MenuIcon>
-                      <InformationIcon />
-                    </MenuIcon>
-                  }
+                  prefixIcon={<InformationIcon />}
                   onClick={handleOpenInfoModal}
                 >
                   {t['com.affine.page-properties.page-info.view']()}
@@ -164,11 +158,7 @@ export const useExplorerDocNodeOperations = (
         index: 99,
         view: (
           <MenuItem
-            preFix={
-              <MenuIcon>
-                <LinkedPageIcon />
-              </MenuIcon>
-            }
+            prefixIcon={<LinkedPageIcon />}
             onClick={handleAddLinkedPage}
           >
             {t['com.affine.page-operation.add-linked-page']()}
@@ -178,14 +168,7 @@ export const useExplorerDocNodeOperations = (
       {
         index: 99,
         view: (
-          <MenuItem
-            preFix={
-              <MenuIcon>
-                <OpenInNewIcon />
-              </MenuIcon>
-            }
-            onClick={handleOpenInNewTab}
-          >
+          <MenuItem prefixIcon={<OpenInNewIcon />} onClick={handleOpenInNewTab}>
             {t['com.affine.workbench.tab.page-menu-open']()}
           </MenuItem>
         ),
@@ -196,11 +179,7 @@ export const useExplorerDocNodeOperations = (
               index: 100,
               view: (
                 <MenuItem
-                  preFix={
-                    <MenuIcon>
-                      <SplitViewIcon />
-                    </MenuIcon>
-                  }
+                  prefixIcon={<SplitViewIcon />}
                   onClick={handleOpenInSplitView}
                 >
                   {t['com.affine.workbench.split-view.page-menu-open']()}
@@ -213,17 +192,7 @@ export const useExplorerDocNodeOperations = (
         index: 199,
         view: (
           <MenuItem
-            preFix={
-              <MenuIcon>
-                {favorite ? (
-                  <FavoritedIcon
-                    style={{ color: 'var(--affine-primary-color)' }}
-                  />
-                ) : (
-                  <FavoriteIcon />
-                )}
-              </MenuIcon>
-            }
+            prefixIcon={<IsFavoriteIcon favorite={favorite} />}
             onClick={handleToggleFavoriteDoc}
           >
             {favorite
@@ -241,11 +210,7 @@ export const useExplorerDocNodeOperations = (
         view: (
           <MenuItem
             type={'danger'}
-            preFix={
-              <MenuIcon>
-                <DeleteIcon />
-              </MenuIcon>
-            }
+            prefixIcon={<DeleteIcon />}
             onClick={handleMoveToTrash}
           >
             {t['com.affine.moveToTrash.title']()}

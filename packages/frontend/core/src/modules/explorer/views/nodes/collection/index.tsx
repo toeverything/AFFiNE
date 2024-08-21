@@ -2,7 +2,6 @@ import {
   AnimatedCollectionsIcon,
   type DropTargetDropEvent,
   type DropTargetOptions,
-  MenuIcon,
   MenuItem,
   toast,
 } from '@affine/component';
@@ -320,11 +319,7 @@ const ExplorerCollectionNodeChildren = ({
                 index: 99,
                 view: (
                   <MenuItem
-                    preFix={
-                      <MenuIcon>
-                        <FilterMinusIcon />
-                      </MenuIcon>
-                    }
+                    prefixIcon={<FilterMinusIcon />}
                     onClick={() => handleRemoveFromAllowList(doc.id)}
                   >
                     {t['Remove special filter']()}
