@@ -1,8 +1,10 @@
 import { Logger } from '@nestjs/common';
 import {
   Args,
+  Field,
   Int,
   Mutation,
+  ObjectType,
   Parent,
   Query,
   ResolveField,
@@ -16,6 +18,7 @@ import { applyUpdate, Doc } from 'yjs';
 import type { FileUpload } from '../../../fundamentals';
 import {
   CantChangeSpaceOwner,
+  DocNotFound,
   EventEmitter,
   InternalServerError,
   MailService,
@@ -28,6 +31,7 @@ import {
   UserNotFound,
 } from '../../../fundamentals';
 import { CurrentUser, Public } from '../../auth';
+import type { Editor } from '../../doc';
 import { Permission, PermissionService } from '../../permission';
 import { QuotaManagementService, QuotaQueryType } from '../../quota';
 import { WorkspaceBlobStorage } from '../../storage';
@@ -39,6 +43,30 @@ import {
   WorkspaceType,
 } from '../types';
 import { defaultWorkspaceAvatar } from '../utils';
+
+@ObjectType()
+export class EditorType implements Partial<Editor> {
+  @Field()
+  name!: string;
+
+  @Field(() => String, { nullable: true })
+  avatarUrl!: string | null;
+}
+
+@ObjectType()
+class WorkspacePageMeta {
+  @Field(() => Date)
+  createdAt!: Date;
+
+  @Field(() => Date)
+  updatedAt!: Date;
+
+  @Field(() => EditorType, { nullable: true })
+  createdBy!: EditorType | null;
+
+  @Field(() => EditorType, { nullable: true })
+  updatedBy!: EditorType | null;
+}
 
 /**
  * Workspace resolver
@@ -138,6 +166,35 @@ export class WorkspaceResolver {
         inviteId: id,
         accepted,
       }));
+  }
+
+  @ResolveField(() => WorkspacePageMeta, {
+    description: 'Cloud page metadata of workspace',
+    complexity: 2,
+  })
+  async pageMeta(
+    @Parent() workspace: WorkspaceType,
+    @Args('pageId') pageId: string
+  ) {
+    const metadata = await this.prisma.snapshot.findFirst({
+      where: { workspaceId: workspace.id, id: pageId },
+      select: {
+        createdAt: true,
+        updatedAt: true,
+        createdByUser: { select: { name: true, avatarUrl: true } },
+        updatedByUser: { select: { name: true, avatarUrl: true } },
+      },
+    });
+    if (!metadata) {
+      throw new DocNotFound({ spaceId: workspace.id, docId: pageId });
+    }
+
+    return {
+      createdAt: metadata.createdAt,
+      updatedAt: metadata.updatedAt,
+      createdBy: metadata.createdByUser || null,
+      updatedBy: metadata.updatedByUser || null,
+    };
   }
 
   @ResolveField(() => QuotaQueryType, {

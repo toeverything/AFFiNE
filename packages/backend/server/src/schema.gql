@@ -881,6 +881,13 @@ type WorkspacePage {
   workspaceId: String!
 }
 
+type WorkspacePageMeta {
+  createdAt: DateTime!
+  createdBy: EditorType
+  updatedAt: DateTime!
+  updatedBy: EditorType
+}
+
 type WorkspaceType {
   """Available features of workspace"""
   availableFeatures: [FeatureType!]!
@@ -907,6 +914,9 @@ type WorkspaceType {
 
   """Owner of workspace"""
   owner: UserType!
+
+  """Cloud page metadata of workspace"""
+  pageMeta(pageId: String!): WorkspacePageMeta!
 
   """Permission of current signed in user in workspace"""
   permission: Permission!
