@@ -745,7 +745,7 @@ __metadata:
     "@google-cloud/opentelemetry-cloud-monitoring-exporter": "npm:^0.19.0"
     "@google-cloud/opentelemetry-cloud-trace-exporter": "npm:^2.2.0"
     "@google-cloud/opentelemetry-resource-util": "npm:^2.2.0"
-    "@keyv/redis": "npm:^2.8.4"
+    "@keyv/redis": "npm:^3.0.0"
     "@napi-rs/image": "npm:^1.9.1"
     "@nestjs/apollo": "npm:^12.1.0"
     "@nestjs/common": "npm:^10.3.7"
@@ -6703,12 +6703,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@keyv/redis@npm:^2.8.4":
-  version: 2.8.5
-  resolution: "@keyv/redis@npm:2.8.5"
+"@keyv/redis@npm:^3.0.0":
+  version: 3.0.0
+  resolution: "@keyv/redis@npm:3.0.0"
   dependencies:
     ioredis: "npm:^5.4.1"
-  checksum: 10/7243abf11ab698b3f97f0c86bd56f1ec79a26b0e422b23c026d8dd2ad9f629852eaf683354c863508d142b934c73b985cd01f62583b07dfcd2b6842b52b853c3
+  checksum: 10/bcedcb569b1254b1ba94c53137af26b81f8bb562df4c8d707055c07680b241a1e01eba3a6ac365ed45e7ab1397f9cc319af65ded02b23161e147e107582127ad
   languageName: node
   linkType: hard
 

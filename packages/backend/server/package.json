@@ -25,7 +25,7 @@
     "@google-cloud/opentelemetry-cloud-monitoring-exporter": "^0.19.0",
     "@google-cloud/opentelemetry-cloud-trace-exporter": "^2.2.0",
     "@google-cloud/opentelemetry-resource-util": "^2.2.0",
-    "@keyv/redis": "^2.8.4",
+    "@keyv/redis": "^3.0.0",
     "@nestjs/apollo": "^12.1.0",
     "@nestjs/common": "^10.3.7",
     "@nestjs/core": "^10.3.7",
