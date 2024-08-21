@@ -4,23 +4,35 @@ import {
   resolveGlobalLoadingEventAtom,
 } from '@affine/component/global-loading';
 import { track } from '@affine/core/mixpanel';
-import { apis } from '@affine/electron-api';
+import { EditorService } from '@affine/core/modules/editor';
 import { useI18n } from '@affine/i18n';
-import type { PageRootService, RootBlockModel } from '@blocksuite/blocks';
-import { HtmlTransformer, MarkdownTransformer } from '@blocksuite/blocks';
+import type { PageRootService } from '@blocksuite/blocks';
+import {
+  HtmlTransformer,
+  MarkdownTransformer,
+  printToPdf,
+} from '@blocksuite/blocks';
+import type { AffineEditorContainer } from '@blocksuite/presets';
 import type { Doc } from '@blocksuite/store';
+import { useLiveData, useService } from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
 import { nanoid } from 'nanoid';
-import { useCallback } from 'react';
+
+import { useAsyncCallback } from '../affine-async-hooks';
 
 type ExportType = 'pdf' | 'html' | 'png' | 'markdown';
 
 interface ExportHandlerOptions {
   page: Doc;
+  editorContainer: AffineEditorContainer;
   type: ExportType;
 }
 
-async function exportHandler({ page, type }: ExportHandlerOptions) {
+async function exportHandler({
+  page,
+  type,
+  editorContainer,
+}: ExportHandlerOptions) {
   const editorRoot = document.querySelector('editor-host');
   let pageService: PageRootService | null = null;
   if (editorRoot) {
@@ -37,15 +49,8 @@ async function exportHandler({ page, type }: ExportHandlerOptions) {
       await MarkdownTransformer.exportDoc(page);
       break;
     case 'pdf':
-      if (environment.isDesktop && page.meta?.mode === 'page') {
-        await apis?.export.savePDFFileAs(
-          (page.root as RootBlockModel).title.toString()
-        );
-      } else {
-        if (!pageService) return;
-        await pageService.exportManager.exportPdf();
-      }
-      break;
+      await printToPdf(editorContainer);
+      return;
     case 'png': {
       if (!pageService) return;
       await pageService.exportManager.exportPng();
@@ -54,21 +59,31 @@ async function exportHandler({ page, type }: ExportHandlerOptions) {
   }
 }
 
-export const useExportPage = (page: Doc) => {
+export const useExportPage = () => {
+  const editor = useService(EditorService).editor;
+  const editorContainer = useLiveData(editor.editorContainer$);
+  const blocksuiteDoc = editor.doc.blockSuiteDoc;
   const pushGlobalLoadingEvent = useSetAtom(pushGlobalLoadingEventAtom);
   const resolveGlobalLoadingEvent = useSetAtom(resolveGlobalLoadingEventAtom);
   const t = useI18n();
 
-  const onClickHandler = useCallback(
+  const onClickHandler = useAsyncCallback(
     async (type: ExportType) => {
+      if (editorContainer === null) return;
+
+      // editor container is wrapped by a proxy, we need to get the origin
+      const originEditorContainer = (editorContainer as any)
+        .origin as AffineEditorContainer;
+
       const globalLoadingID = nanoid();
       pushGlobalLoadingEvent({
         key: globalLoadingID,
       });
       try {
         await exportHandler({
-          page,
+          page: blocksuiteDoc,
           type,
+          editorContainer: originEditorContainer,
         });
         notify.success({
           title: t['com.affine.export.success.title'](),
@@ -84,7 +99,13 @@ export const useExportPage = (page: Doc) => {
         resolveGlobalLoadingEvent(globalLoadingID);
       }
     },
-    [page, pushGlobalLoadingEvent, resolveGlobalLoadingEvent, t]
+    [
+      blocksuiteDoc,
+      editorContainer,
+      pushGlobalLoadingEvent,
+      resolveGlobalLoadingEvent,
+      t,
+    ]
   );
 
   return onClickHandler;

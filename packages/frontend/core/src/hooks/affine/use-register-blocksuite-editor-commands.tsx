@@ -51,7 +51,7 @@ export function useRegisterBlocksuiteEditorCommands(editor: Editor) {
   }, [setInfoModalState]);
 
   const { duplicate } = useBlockSuiteMetaHelper(docCollection);
-  const exportHandler = useExportPage(doc.blockSuiteDoc);
+  const exportHandler = useExportPage();
   const { setTrashModal } = useTrashModalHelper(docCollection);
   const onClickDelete = useCallback(
     (title: string) => {
@@ -189,7 +189,7 @@ export function useRegisterBlocksuiteEditorCommands(editor: Editor) {
             type: 'pdf',
           });
 
-          await exportHandler('pdf');
+          exportHandler('pdf');
         },
       })
     );
@@ -206,7 +206,7 @@ export function useRegisterBlocksuiteEditorCommands(editor: Editor) {
             type: 'html',
           });
 
-          await exportHandler('html');
+          exportHandler('html');
         },
       })
     );
@@ -223,7 +223,7 @@ export function useRegisterBlocksuiteEditorCommands(editor: Editor) {
             type: 'png',
           });
 
-          await exportHandler('png');
+          exportHandler('png');
         },
       })
     );
@@ -240,7 +240,7 @@ export function useRegisterBlocksuiteEditorCommands(editor: Editor) {
             type: 'markdown',
           });
 
-          await exportHandler('markdown');
+          exportHandler('markdown');
         },
       })
     );

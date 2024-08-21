@@ -148,6 +148,11 @@ export const rowContainerStyle = style({
   alignItems: 'center',
   padding: '4px',
 });
+export const exportContainerStyle = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '8px',
+});
 export const labelStyle = style({
   fontSize: cssVar('fontSm'),
   fontWeight: 500,

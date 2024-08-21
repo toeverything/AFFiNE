@@ -39,7 +39,7 @@ export const ShareMenuContent = (props: ShareMenuProps) => {
           <SharePage {...props} />
         </Tabs.Content>
         <Tabs.Content value="export">
-          <ShareExport {...props} />
+          <ShareExport />
         </Tabs.Content>
       </Tabs.Root>
     </div>

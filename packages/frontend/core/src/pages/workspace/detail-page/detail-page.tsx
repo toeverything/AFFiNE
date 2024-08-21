@@ -102,8 +102,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
 
   const isInTrash = useLiveData(doc.meta$.map(meta => meta.trash));
   const { openPage, jumpToPageBlock, jumpToTag } = useNavigateHelper();
-  const [editorContainer, setEditorContainer] =
-    useState<AffineEditorContainer | null>(null);
+  const editorContainer = useLiveData(editor.editorContainer$);
 
   const isSideBarOpen = useLiveData(workbench.sidebarOpen$);
   const { appSettings } = useAppSettingHelper();
@@ -179,7 +178,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
   usePageDocumentTitle(title);
 
   const onLoad = useCallback(
-    (bsPage: BlockSuiteDoc, editor: AffineEditorContainer) => {
+    (bsPage: BlockSuiteDoc, editorContainer: AffineEditorContainer) => {
       try {
         // todo(joooye34): improve the following migration code
         const surfaceBlock = bsPage.getBlockByFlavour('affine:surface')[0];
@@ -201,7 +200,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
       } catch {}
 
       // blocksuite editor host
-      const editorHost = editor.host;
+      const editorHost = editorContainer.host;
 
       // provide image proxy endpoint to blocksuite
       editorHost?.std.clipboard.use(
@@ -240,13 +239,20 @@ const DetailPageImpl = memo(function DetailPageImpl() {
         );
       }
 
-      setEditorContainer(editor);
+      editor.setEditorContainer(editorContainer);
 
       return () => {
         disposable.dispose();
       };
     },
-    [jumpToPageBlock, docCollection.id, openPage, jumpToTag, workspace.id]
+    [
+      editor,
+      jumpToPageBlock,
+      docCollection.id,
+      openPage,
+      jumpToTag,
+      workspace.id,
+    ]
   );
 
   const [refCallback, hasScrollTop] = useHasScrollTop();

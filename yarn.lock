@@ -326,7 +326,7 @@ __metadata:
     "@storybook/react": "npm:^8.2.9"
     "@storybook/react-vite": "npm:^8.2.9"
     "@testing-library/react": "npm:^16.0.0"
-    "@toeverything/theme": "npm:^1.0.5"
+    "@toeverything/theme": "npm:^1.0.7"
     "@types/bytes": "npm:^3.1.4"
     "@types/react": "npm:^18.2.75"
     "@types/react-dnd": "npm:^3.0.2"
@@ -422,7 +422,7 @@ __metadata:
     "@sgtpooki/file-type": "npm:^1.0.1"
     "@swc/core": "npm:^1.4.13"
     "@testing-library/react": "npm:^16.0.0"
-    "@toeverything/theme": "npm:^1.0.5"
+    "@toeverything/theme": "npm:^1.0.7"
     "@types/animejs": "npm:^3.1.12"
     "@types/bytes": "npm:^3.1.4"
     "@types/image-blob-reduce": "npm:^4.1.4"
@@ -13858,10 +13858,10 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@toeverything/theme@npm:^1.0.2, @toeverything/theme@npm:^1.0.5":
-  version: 1.0.5
-  resolution: "@toeverything/theme@npm:1.0.5"
-  checksum: 10/26f177192c546b8b6c953a4d75da5520486fa92c872b889052861cd121ef9840b5006e2f1513988117290066812e08015aa99b025d13c01ca50563a9ba26a732
+"@toeverything/theme@npm:^1.0.2, @toeverything/theme@npm:^1.0.7":
+  version: 1.0.7
+  resolution: "@toeverything/theme@npm:1.0.7"
+  checksum: 10/86b46af255450ab7ea0a20faf41c27793129852759d23736e914876a696c40e6daa15b25cde7353cd56c673c6191d04cabe6b77f6131ba0b0862bb8d482d7a01
   languageName: node
   linkType: hard
 

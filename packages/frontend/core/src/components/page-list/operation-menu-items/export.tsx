@@ -1,15 +1,15 @@
-import { MenuItem, MenuSub } from '@affine/component';
+import { MenuItem, MenuSeparator, MenuSub } from '@affine/component';
 import { track } from '@affine/core/mixpanel';
 import { useI18n } from '@affine/i18n';
 import {
   ExportIcon,
   ExportToHtmlIcon,
   ExportToMarkdownIcon,
-  ExportToPdfIcon,
   ExportToPngIcon,
+  FileIcon,
 } from '@blocksuite/icons/rc';
 import type { ReactNode } from 'react';
-import { useCallback, useMemo } from 'react';
+import { useCallback } from 'react';
 
 import { transitionStyle } from './index.css';
 
@@ -22,7 +22,7 @@ interface ExportMenuItemProps<T> {
 }
 
 interface ExportProps {
-  exportHandler: (type: 'pdf' | 'html' | 'png' | 'markdown') => Promise<void>;
+  exportHandler: (type: 'pdf' | 'html' | 'png' | 'markdown') => void;
   pageMode?: 'page' | 'edgeless';
   className?: string;
 }
@@ -47,74 +47,73 @@ export function ExportMenuItem<T>({
   );
 }
 
+export const PrintMenuItems = ({
+  exportHandler,
+  className = transitionStyle,
+}: ExportProps) => {
+  const t = useI18n();
+  return (
+    <ExportMenuItem
+      onSelect={() => exportHandler('pdf')}
+      className={className}
+      type="pdf"
+      icon={<FileIcon />}
+      label={t['com.affine.export.print']()}
+    />
+  );
+};
+
 export const ExportMenuItems = ({
   exportHandler,
   className = transitionStyle,
   pageMode = 'page',
 }: ExportProps) => {
   const t = useI18n();
-  const itemMap = useMemo(
-    () => [
-      {
-        component: ExportMenuItem,
-        props: {
-          onSelect: () => exportHandler('pdf'),
-          className: className,
-          type: 'pdf',
-          icon: <ExportToPdfIcon />,
-          label: t['Export to PDF'](),
-        },
-      },
-      {
-        component: ExportMenuItem,
-        props: {
-          onSelect: () => exportHandler('html'),
-          className: className,
-          type: 'html',
-          icon: <ExportToHtmlIcon />,
-          label: t['Export to HTML'](),
-        },
-      },
-      {
-        component: ExportMenuItem,
-        props: {
-          onSelect: () => exportHandler('png'),
-          className: className,
-          type: 'png',
-          icon: <ExportToPngIcon />,
-          label: t['Export to PNG'](),
-        },
-      },
-      {
-        component: ExportMenuItem,
-        props: {
-          onSelect: () => exportHandler('markdown'),
-          className: className,
-          type: 'markdown',
-          icon: <ExportToMarkdownIcon />,
-          label: t['Export to Markdown'](),
-        },
-      },
-    ],
-    [className, exportHandler, t]
+  return (
+    <>
+      <ExportMenuItem
+        onSelect={() => exportHandler('html')}
+        className={className}
+        type="html"
+        icon={<ExportToHtmlIcon />}
+        label={t['Export to HTML']()}
+      />
+      {pageMode !== 'edgeless' && (
+        <ExportMenuItem
+          onSelect={() => exportHandler('png')}
+          className={className}
+          type="png"
+          icon={<ExportToPngIcon />}
+          label={t['Export to PNG']()}
+        />
+      )}
+      <ExportMenuItem
+        onSelect={() => exportHandler('markdown')}
+        className={className}
+        type="markdown"
+        icon={<ExportToMarkdownIcon />}
+        label={t['Export to Markdown']()}
+      />
+    </>
   );
-  const items = itemMap.map(({ component: Component, props }) =>
-    pageMode === 'edgeless' &&
-    (props.type === 'pdf' || props.type === 'png') ? null : (
-      <Component key={props.label} {...props} />
-    )
-  );
-  return items;
 };
 
 export const Export = ({ exportHandler, className, pageMode }: ExportProps) => {
   const t = useI18n();
   const items = (
-    <ExportMenuItems
-      exportHandler={exportHandler}
-      className={className}
-      pageMode={pageMode}
-    />
+    <>
+      <ExportMenuItems
+        exportHandler={exportHandler}
+        className={className}
+        pageMode={pageMode}
+      />
+      {pageMode !== 'edgeless' && (
+        <>
+          <MenuSeparator />
+          <PrintMenuItems exportHandler={exportHandler} className={className} />
+        </>
+      )}
+    </>
   );
   const handleExportMenuOpenChange = useCallback((open: boolean) => {
     if (open) {

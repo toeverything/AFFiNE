@@ -14,6 +14,11 @@ export const container = style({
       padding: '0 24px',
     },
   },
+  '@media': {
+    print: {
+      display: 'none',
+    },
+  },
 });
 
 export const dividerContainer = style({

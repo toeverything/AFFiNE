@@ -1,4 +1,5 @@
 import type { DocMode } from '@blocksuite/blocks';
+import type { AffineEditorContainer } from '@blocksuite/presets';
 import type { DocService, WorkspaceService } from '@toeverything/infra';
 import { Entity, LiveData } from '@toeverything/infra';
 
@@ -14,12 +15,18 @@ export class Editor extends Entity<{ defaultMode: DocMode }> {
   readonly isSharedMode =
     this.workspaceService.workspace.openOptions.isSharedMode;
 
+  readonly editorContainer$ = new LiveData<AffineEditorContainer | null>(null);
+
   toggleMode() {
     this.mode$.next(this.mode$.value === 'edgeless' ? 'page' : 'edgeless');
   }
 
   setMode(mode: DocMode) {
     this.mode$.next(mode);
+  }
+
+  setEditorContainer(editorContainer: AffineEditorContainer | null) {
+    this.editorContainer$.next(editorContainer);
   }
 
   constructor(

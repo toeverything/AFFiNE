@@ -162,7 +162,7 @@ export const PageHeaderMenuButton = ({
     }
   }, []);
 
-  const exportHandler = useExportPage(editorService.editor.doc.blockSuiteDoc);
+  const exportHandler = useExportPage();
 
   const handleDuplicate = useCallback(() => {
     duplicate(pageId);

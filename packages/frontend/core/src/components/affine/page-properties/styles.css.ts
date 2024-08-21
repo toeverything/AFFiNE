@@ -42,6 +42,11 @@ export const tableHeaderInfoRow = style({
   fontSize: cssVar('fontSm'),
   fontWeight: 500,
   minHeight: 34,
+  '@media': {
+    print: {
+      display: 'none',
+    },
+  },
 });
 
 export const tableHeaderSecondaryRow = style({
@@ -54,6 +59,11 @@ export const tableHeaderSecondaryRow = style({
   padding: '0 6px',
   gap: '8px',
   height: 24,
+  '@media': {
+    print: {
+      display: 'none',
+    },
+  },
 });
 
 export const tableHeaderCollapseButtonWrapper = style({
@@ -101,12 +111,26 @@ export const tableHeaderDivider = style({
   borderTop: `0.5px solid ${cssVar('borderColor')}`,
   width: '100%',
   margin: '8px 0',
+  '@media': {
+    print: {
+      display: 'none',
+    },
+  },
 });
 
 export const tableBodyRoot = style({
   display: 'flex',
   flexDirection: 'column',
   gap: 8,
+  '@media': {
+    print: {
+      selectors: {
+        '&[data-state="open"]': {
+          marginBottom: 32,
+        },
+      },
+    },
+  },
 });
 
 export const tableBodySortable = style({
@@ -124,6 +148,11 @@ export const addPropertyButton = style({
   height: 36,
   fontWeight: 400,
   gap: 6,
+  '@media': {
+    print: {
+      display: 'none',
+    },
+  },
 });
 globalStyle(`${addPropertyButton} svg`, {
   fontSize: 16,

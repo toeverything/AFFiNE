@@ -168,6 +168,9 @@ export const BlocksuiteEditorContainer = forwardRef<
       get mode() {
         return mode;
       },
+      get origin() {
+        return rootRef.current;
+      },
     };
 
     const proxy = new Proxy(api, {
