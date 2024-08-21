@@ -26,9 +26,10 @@ export class CloudDocEngineServer implements DocServer {
   ) {}
 
   private async clientHandShake() {
-    await this.socket.emitWithAck('client-handshake-sync', {
-      workspaceId: this.workspaceId,
-      version: runtimeConfig.appVersion,
+    await this.socket.emitWithAck('space:join', {
+      spaceType: 'workspace',
+      spaceId: this.workspaceId,
+      clientVersion: runtimeConfig.appVersion,
     });
   }
 
@@ -44,9 +45,10 @@ export class CloudDocEngineServer implements DocServer {
       timestamp: number;
     }> = await this.socket
       .timeout(this.SEND_TIMEOUT)
-      .emitWithAck('doc-load-v2', {
-        workspaceId: this.workspaceId,
-        guid: docId,
+      .emitWithAck('space:load-doc', {
+        spaceType: 'workspace',
+        spaceId: this.workspaceId,
+        docId: docId,
         stateVector,
       });
 
@@ -72,9 +74,10 @@ export class CloudDocEngineServer implements DocServer {
 
     const response: WebsocketResponse<{ timestamp: number }> = await this.socket
       .timeout(this.SEND_TIMEOUT)
-      .emitWithAck('client-update-v2', {
-        workspaceId: this.workspaceId,
-        guid: docId,
+      .emitWithAck('space:push-doc-updates', {
+        spaceType: 'workspace',
+        spaceId: this.workspaceId,
+        docId: docId,
         updates: [payload],
       });
 
@@ -94,8 +97,9 @@ export class CloudDocEngineServer implements DocServer {
     const response: WebsocketResponse<Record<string, number>> =
       await this.socket
         .timeout(this.SEND_TIMEOUT)
-        .emitWithAck('client-pre-sync', {
-          workspaceId: this.workspaceId,
+        .emitWithAck('space:load-doc-timestamps', {
+          spaceType: 'workspace',
+          spaceId: this.workspaceId,
           timestamp: after,
         });
 
@@ -118,25 +122,29 @@ export class CloudDocEngineServer implements DocServer {
     }) => void
   ): Promise<() => void> {
     const handleUpdate = async (message: {
-      workspaceId: string;
-      guid: string;
+      spaceType: string;
+      spaceId: string;
+      docId: string;
       updates: string[];
       timestamp: number;
     }) => {
-      if (message.workspaceId === this.workspaceId) {
+      if (
+        message.spaceType === 'workspace' &&
+        message.spaceId === this.workspaceId
+      ) {
         message.updates.forEach(update => {
           cb({
-            docId: message.guid,
+            docId: message.docId,
             data: base64ToUint8Array(update),
             serverClock: message.timestamp,
           });
         });
       }
     };
-    this.socket.on('server-updates', handleUpdate);
+    this.socket.on('space:broadcast-doc-updates', handleUpdate);
 
     return () => {
-      this.socket.off('server-updates', handleUpdate);
+      this.socket.off('space:broadcast-doc-updates', handleUpdate);
     };
   }
   async waitForConnectingServer(signal: AbortSignal): Promise<void> {
@@ -165,7 +173,10 @@ export class CloudDocEngineServer implements DocServer {
       return;
     }
 
-    this.socket.emit('client-leave-sync', this.workspaceId);
+    this.socket.emit('space:leave', {
+      spaceType: 'workspace',
+      spaceId: this.workspaceId,
+    });
     this.socket.off('server-version-rejected', this.handleVersionRejected);
     this.socket.off('disconnect', this.handleDisconnect);
     this.socket.disconnect();

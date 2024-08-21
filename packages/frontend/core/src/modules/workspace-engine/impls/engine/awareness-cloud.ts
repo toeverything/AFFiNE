@@ -23,9 +23,9 @@ export class CloudAwarenessConnection implements AwarenessConnection {
   ) {}
 
   connect(awareness: Awareness): void {
-    this.socket.on('server-awareness-broadcast', this.awarenessBroadcast);
+    this.socket.on('space:broadcast-awareness-update', this.awarenessBroadcast);
     this.socket.on(
-      'new-client-awareness-init',
+      'space:collect-awareness',
       this.newClientAwarenessInitHandler
     );
     this.awareness = awareness;
@@ -54,10 +54,17 @@ export class CloudAwarenessConnection implements AwarenessConnection {
     }
     this.awareness = null;
 
-    this.socket.emit('client-leave-awareness', this.workspaceId);
-    this.socket.off('server-awareness-broadcast', this.awarenessBroadcast);
+    this.socket.emit('space:leave-awareness', {
+      spaceType: 'workspace',
+      spaceId: this.workspaceId,
+      docId: this.workspaceId,
+    });
     this.socket.off(
-      'new-client-awareness-init',
+      'space:broadcast-awareness-update',
+      this.awarenessBroadcast
+    );
+    this.socket.off(
+      'space:collect-awareness',
       this.newClientAwarenessInitHandler
     );
     this.socket.off('connect', this.handleConnect);
@@ -66,16 +73,19 @@ export class CloudAwarenessConnection implements AwarenessConnection {
   }
 
   awarenessBroadcast = ({
-    workspaceId: wsId,
+    spaceId: wsId,
+    spaceType,
     awarenessUpdate,
   }: {
-    workspaceId: string;
+    spaceType: string;
+    spaceId: string;
+    docId: string;
     awarenessUpdate: string;
   }) => {
     if (!this.awareness) {
       return;
     }
-    if (wsId !== this.workspaceId) {
+    if (wsId !== this.workspaceId || spaceType !== 'workspace') {
       return;
     }
     applyAwarenessUpdate(
@@ -101,8 +111,10 @@ export class CloudAwarenessConnection implements AwarenessConnection {
     const update = encodeAwarenessUpdate(this.awareness, changedClients);
     uint8ArrayToBase64(update)
       .then(encodedUpdate => {
-        this.socket.emit('awareness-update', {
-          workspaceId: this.workspaceId,
+        this.socket.emit('space:update-awareness', {
+          spaceType: 'workspace',
+          spaceId: this.workspaceId,
+          docId: this.workspaceId,
           awarenessUpdate: encodedUpdate,
         });
       })
@@ -119,8 +131,10 @@ export class CloudAwarenessConnection implements AwarenessConnection {
     ]);
     uint8ArrayToBase64(awarenessUpdate)
       .then(encodedAwarenessUpdate => {
-        this.socket.emit('awareness-update', {
-          workspaceId: this.workspaceId,
+        this.socket.emit('space:update-awareness', {
+          spaceType: 'workspace',
+          spaceId: this.workspaceId,
+          docId: this.workspaceId,
           awarenessUpdate: encodedAwarenessUpdate,
         });
       })
@@ -141,16 +155,26 @@ export class CloudAwarenessConnection implements AwarenessConnection {
 
   handleConnect = () => {
     this.socket.emit(
-      'client-handshake-awareness',
+      'space:join-awareness',
       {
-        workspaceId: this.workspaceId,
-        version: runtimeConfig.appVersion,
+        spaceType: 'workspace',
+        spaceId: this.workspaceId,
+        docId: this.workspaceId,
+        clientVersion: runtimeConfig.appVersion,
       },
       (res: any) => {
         logger.debug('awareness handshake finished', res);
-        this.socket.emit('awareness-init', this.workspaceId, (res: any) => {
-          logger.debug('awareness-init finished', res);
-        });
+        this.socket.emit(
+          'space:load-awarenesses',
+          {
+            spaceType: 'workspace',
+            spaceId: this.workspaceId,
+            docId: this.workspaceId,
+          },
+          (res: any) => {
+            logger.debug('awareness-init finished', res);
+          }
+        );
       }
     );
   };
