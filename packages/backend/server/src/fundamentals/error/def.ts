@@ -306,45 +306,49 @@ export const USER_FRIENDLY_ERRORS = {
     message: 'You must verify your email before accessing this resource.',
   },
 
-  // Workspace & Doc & Sync errors
-  workspace_not_found: {
+  // Workspace & Userspace & Doc & Sync errors
+  space_not_found: {
     type: 'resource_not_found',
-    args: { workspaceId: 'string' },
-    message: ({ workspaceId }) => `Workspace ${workspaceId} not found.`,
+    args: { spaceId: 'string' },
+    message: ({ spaceId }) => `Space ${spaceId} not found.`,
   },
-  not_in_workspace: {
+  not_in_space: {
     type: 'action_forbidden',
-    args: { workspaceId: 'string' },
-    message: ({ workspaceId }) =>
-      `You should join in workspace ${workspaceId} before broadcasting messages.`,
+    args: { spaceId: 'string' },
+    message: ({ spaceId }) =>
+      `You should join in Space ${spaceId} before broadcasting messages.`,
   },
-  workspace_access_denied: {
+  already_in_space: {
+    type: 'action_forbidden',
+    args: { spaceId: 'string' },
+    message: ({ spaceId }) => `You have already joined in Space ${spaceId}.`,
+  },
+  space_access_denied: {
     type: 'no_permission',
-    args: { workspaceId: 'string' },
-    message: ({ workspaceId }) =>
-      `You do not have permission to access workspace ${workspaceId}.`,
+    args: { spaceId: 'string' },
+    message: ({ spaceId }) =>
+      `You do not have permission to access Space ${spaceId}.`,
   },
-  workspace_owner_not_found: {
+  space_owner_not_found: {
     type: 'internal_server_error',
-    args: { workspaceId: 'string' },
-    message: ({ workspaceId }) =>
-      `Owner of workspace ${workspaceId} not found.`,
+    args: { spaceId: 'string' },
+    message: ({ spaceId }) => `Owner of Space ${spaceId} not found.`,
   },
-  cant_change_workspace_owner: {
+  cant_change_space_owner: {
     type: 'action_forbidden',
-    message: 'You are not allowed to change the owner of a workspace.',
+    message: 'You are not allowed to change the owner of a Space.',
   },
   doc_not_found: {
     type: 'resource_not_found',
-    args: { workspaceId: 'string', docId: 'string' },
-    message: ({ workspaceId, docId }) =>
-      `Doc ${docId} under workspace ${workspaceId} not found.`,
+    args: { spaceId: 'string', docId: 'string' },
+    message: ({ spaceId, docId }) =>
+      `Doc ${docId} under Space ${spaceId} not found.`,
   },
   doc_access_denied: {
     type: 'no_permission',
-    args: { workspaceId: 'string', docId: 'string' },
-    message: ({ workspaceId, docId }) =>
-      `You do not have permission to access doc ${docId} under workspace ${workspaceId}.`,
+    args: { spaceId: 'string', docId: 'string' },
+    message: ({ spaceId, docId }) =>
+      `You do not have permission to access doc ${docId} under Space ${spaceId}.`,
   },
   version_rejected: {
     type: 'action_forbidden',
@@ -359,27 +363,35 @@ export const USER_FRIENDLY_ERRORS = {
   },
   doc_history_not_found: {
     type: 'resource_not_found',
-    args: { workspaceId: 'string', docId: 'string', timestamp: 'number' },
-    message: ({ workspaceId, docId, timestamp }) =>
-      `History of ${docId} at ${timestamp} under workspace ${workspaceId}.`,
+    args: { spaceId: 'string', docId: 'string', timestamp: 'number' },
+    message: ({ spaceId, docId, timestamp }) =>
+      `History of ${docId} at ${timestamp} under Space ${spaceId}.`,
   },
   blob_not_found: {
     type: 'resource_not_found',
-    args: { workspaceId: 'string', blobId: 'string' },
-    message: ({ workspaceId, blobId }) =>
-      `Blob ${blobId} not found in workspace ${workspaceId}.`,
+    args: { spaceId: 'string', blobId: 'string' },
+    message: ({ spaceId, blobId }) =>
+      `Blob ${blobId} not found in Space ${spaceId}.`,
   },
   expect_to_publish_page: {
     type: 'invalid_input',
-    message: 'Expected to publish a page, not a workspace.',
+    message: 'Expected to publish a page, not a Space.',
   },
   expect_to_revoke_public_page: {
     type: 'invalid_input',
-    message: 'Expected to revoke a public page, not a workspace.',
+    message: 'Expected to revoke a public page, not a Space.',
   },
   page_is_not_public: {
     type: 'bad_request',
     message: 'Page is not public.',
+  },
+  failed_to_save_updates: {
+    type: 'internal_server_error',
+    message: 'Failed to store doc updates.',
+  },
+  failed_to_upsert_snapshot: {
+    type: 'internal_server_error',
+    message: 'Failed to store doc snapshot.',
   },
 
   // Subscription Errors

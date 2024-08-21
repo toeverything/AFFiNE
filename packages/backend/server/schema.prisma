@@ -32,6 +32,7 @@ model User {
   sessions              UserSession[]
   aiSessions            AiSession[]
   updatedRuntimeConfigs RuntimeConfig[]
+  userSnapshots         UserSnapshot[]
 
   @@index([email])
   @@map("users")
@@ -235,25 +236,49 @@ model Snapshot {
   workspaceId String   @map("workspace_id") @db.VarChar
   id          String   @default(uuid()) @map("guid") @db.VarChar
   blob        Bytes    @db.ByteA
-  seq         Int      @default(0) @db.Integer
   state       Bytes?   @db.ByteA
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   // the `updated_at` field will not record the time of record changed,
   // but the created time of last seen update that has been merged into snapshot.
   updatedAt   DateTime @map("updated_at") @db.Timestamptz(3)
 
+  // @deprecated use updatedAt only
+  seq         Int?      @default(0) @db.Integer
+
+  // we need to clear all hanging updates and snapshots before enable the foreign key on workspaceId
+  // workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
   @@id([id, workspaceId])
   @@map("snapshots")
+}
+
+// user snapshots are special snapshots for user storage like personal app settings, distinguished from workspace snapshots
+// basically they share the same structure with workspace snapshots
+// but for convenience, we don't fork the updates queue and hisotry for user snapshots, until we have to
+// which means all operation on user snapshot will happen in-pace
+model UserSnapshot {
+  userId    String   @map("user_id") @db.VarChar
+  id        String   @map("id") @db.VarChar
+  blob      Bytes    @db.ByteA
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, id])
+  @@map("user_snapshots")
 }
 
 model Update {
   workspaceId String   @map("workspace_id") @db.VarChar
   id          String   @map("guid") @db.VarChar
-  seq         Int      @db.Integer
   blob        Bytes    @db.ByteA
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdAt   DateTime @map("created_at") @db.Timestamptz(3)
 
-  @@id([workspaceId, id, seq])
+  // @deprecated use createdAt only
+  seq         Int?      @db.Integer
+
+  @@id([workspaceId, id, createdAt])
   @@map("updates")
 }
 

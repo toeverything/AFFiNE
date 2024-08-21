@@ -116,7 +116,7 @@ test('should share a page', async t => {
   const msg1 = await publishPage(app, u2.token.token, 'not_exists_ws', 'page2');
   t.is(
     msg1,
-    'You do not have permission to access workspace not_exists_ws.',
+    'You do not have permission to access Space not_exists_ws.',
     'unauthorized user can share page'
   );
   const msg2 = await revokePublicPage(
@@ -127,7 +127,7 @@ test('should share a page', async t => {
   );
   t.is(
     msg2,
-    'You do not have permission to access workspace not_exists_ws.',
+    'You do not have permission to access Space not_exists_ws.',
     'unauthorized user can share page'
   );
 

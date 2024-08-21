@@ -4,8 +4,8 @@ import { PrismaClient } from '@prisma/client';
 
 import {
   DocAccessDenied,
-  WorkspaceAccessDenied,
-  WorkspaceOwnerNotFound,
+  SpaceAccessDenied,
+  SpaceOwnerNotFound,
 } from '../../fundamentals';
 import { Permission, PublicPageMode } from './types';
 
@@ -69,7 +69,7 @@ export class PermissionService {
     });
 
     if (!owner) {
-      throw new WorkspaceOwnerNotFound({ workspaceId });
+      throw new SpaceOwnerNotFound({ spaceId: workspaceId });
     }
 
     return owner.user;
@@ -157,7 +157,7 @@ export class PermissionService {
     permission: Permission = Permission.Read
   ) {
     if (!(await this.tryCheckWorkspace(ws, user, permission))) {
-      throw new WorkspaceAccessDenied({ workspaceId: ws });
+      throw new SpaceAccessDenied({ spaceId: ws });
     }
   }
 
@@ -340,7 +340,7 @@ export class PermissionService {
     permission = Permission.Read
   ) {
     if (!(await this.tryCheckPage(ws, page, user, permission))) {
-      throw new DocAccessDenied({ workspaceId: ws, docId: page });
+      throw new DocAccessDenied({ spaceId: ws, docId: page });
     }
   }
 

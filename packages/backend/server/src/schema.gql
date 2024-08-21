@@ -2,9 +2,13 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+type AlreadyInSpaceDataType {
+  spaceId: String!
+}
+
 type BlobNotFoundDataType {
   blobId: String!
-  workspaceId: String!
+  spaceId: String!
 }
 
 enum ChatHistoryOrder {
@@ -175,13 +179,13 @@ input DeleteSessionInput {
 
 type DocAccessDeniedDataType {
   docId: String!
-  workspaceId: String!
+  spaceId: String!
 }
 
 type DocHistoryNotFoundDataType {
   docId: String!
+  spaceId: String!
   timestamp: Int!
-  workspaceId: String!
 }
 
 type DocHistoryType {
@@ -192,20 +196,21 @@ type DocHistoryType {
 
 type DocNotFoundDataType {
   docId: String!
-  workspaceId: String!
+  spaceId: String!
 }
 
-union ErrorDataUnion = BlobNotFoundDataType | CopilotMessageNotFoundDataType | CopilotPromptNotFoundDataType | CopilotProviderSideErrorDataType | DocAccessDeniedDataType | DocHistoryNotFoundDataType | DocNotFoundDataType | InvalidHistoryTimestampDataType | InvalidPasswordLengthDataType | InvalidRuntimeConfigTypeDataType | MissingOauthQueryParameterDataType | NotInWorkspaceDataType | RuntimeConfigNotFoundDataType | SameSubscriptionRecurringDataType | SubscriptionAlreadyExistsDataType | SubscriptionNotExistsDataType | SubscriptionPlanNotFoundDataType | UnknownOauthProviderDataType | VersionRejectedDataType | WorkspaceAccessDeniedDataType | WorkspaceNotFoundDataType | WorkspaceOwnerNotFoundDataType
+union ErrorDataUnion = AlreadyInSpaceDataType | BlobNotFoundDataType | CopilotMessageNotFoundDataType | CopilotPromptNotFoundDataType | CopilotProviderSideErrorDataType | DocAccessDeniedDataType | DocHistoryNotFoundDataType | DocNotFoundDataType | InvalidHistoryTimestampDataType | InvalidPasswordLengthDataType | InvalidRuntimeConfigTypeDataType | MissingOauthQueryParameterDataType | NotInSpaceDataType | RuntimeConfigNotFoundDataType | SameSubscriptionRecurringDataType | SpaceAccessDeniedDataType | SpaceNotFoundDataType | SpaceOwnerNotFoundDataType | SubscriptionAlreadyExistsDataType | SubscriptionNotExistsDataType | SubscriptionPlanNotFoundDataType | UnknownOauthProviderDataType | VersionRejectedDataType
 
 enum ErrorNames {
   ACCESS_DENIED
   ACTION_FORBIDDEN
+  ALREADY_IN_SPACE
   AUTHENTICATION_REQUIRED
   BLOB_NOT_FOUND
   BLOB_QUOTA_EXCEEDED
   CANNOT_DELETE_ALL_ADMIN_ACCOUNT
   CANNOT_DELETE_OWN_ACCOUNT
-  CANT_CHANGE_WORKSPACE_OWNER
+  CANT_CHANGE_SPACE_OWNER
   CANT_UPDATE_LIFETIME_SUBSCRIPTION
   COPILOT_ACTION_TAKEN
   COPILOT_FAILED_TO_CREATE_MESSAGE
@@ -228,6 +233,8 @@ enum ErrorNames {
   EXPECT_TO_PUBLISH_PAGE
   EXPECT_TO_REVOKE_PUBLIC_PAGE
   FAILED_TO_CHECKOUT
+  FAILED_TO_SAVE_UPDATES
+  FAILED_TO_UPSERT_SNAPSHOT
   INTERNAL_SERVER_ERROR
   INVALID_EMAIL
   INVALID_EMAIL_TOKEN
@@ -240,7 +247,7 @@ enum ErrorNames {
   MEMBER_QUOTA_EXCEEDED
   MISSING_OAUTH_QUERY_PARAMETER
   NOT_FOUND
-  NOT_IN_WORKSPACE
+  NOT_IN_SPACE
   NO_COPILOT_PROVIDER_AVAILABLE
   OAUTH_ACCOUNT_ALREADY_CONNECTED
   OAUTH_STATE_EXPIRED
@@ -250,6 +257,9 @@ enum ErrorNames {
   SAME_EMAIL_PROVIDED
   SAME_SUBSCRIPTION_RECURRING
   SIGN_UP_FORBIDDEN
+  SPACE_ACCESS_DENIED
+  SPACE_NOT_FOUND
+  SPACE_OWNER_NOT_FOUND
   SUBSCRIPTION_ALREADY_EXISTS
   SUBSCRIPTION_EXPIRED
   SUBSCRIPTION_HAS_BEEN_CANCELED
@@ -261,9 +271,6 @@ enum ErrorNames {
   USER_AVATAR_NOT_FOUND
   USER_NOT_FOUND
   VERSION_REJECTED
-  WORKSPACE_ACCESS_DENIED
-  WORKSPACE_NOT_FOUND
-  WORKSPACE_OWNER_NOT_FOUND
   WRONG_SIGN_IN_CREDENTIALS
   WRONG_SIGN_IN_METHOD
 }
@@ -494,8 +501,8 @@ type Mutation {
   verifyEmail(token: String!): Boolean!
 }
 
-type NotInWorkspaceDataType {
-  workspaceId: String!
+type NotInSpaceDataType {
+  spaceId: String!
 }
 
 enum OAuthProviderType {
@@ -687,6 +694,18 @@ type ServerServiceConfig {
   name: String!
 }
 
+type SpaceAccessDeniedDataType {
+  spaceId: String!
+}
+
+type SpaceNotFoundDataType {
+  spaceId: String!
+}
+
+type SpaceOwnerNotFoundDataType {
+  spaceId: String!
+}
+
 type SubscriptionAlreadyExistsDataType {
   plan: String!
 }
@@ -845,20 +864,8 @@ type VersionRejectedDataType {
   version: String!
 }
 
-type WorkspaceAccessDeniedDataType {
-  workspaceId: String!
-}
-
 type WorkspaceBlobSizes {
   size: SafeInt!
-}
-
-type WorkspaceNotFoundDataType {
-  workspaceId: String!
-}
-
-type WorkspaceOwnerNotFoundDataType {
-  workspaceId: String!
 }
 
 type WorkspacePage {

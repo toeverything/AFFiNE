@@ -472,7 +472,7 @@ export class CopilotController {
 
     if (!body) {
       throw new BlobNotFound({
-        workspaceId,
+        spaceId: workspaceId,
         blobId: key,
       });
     }

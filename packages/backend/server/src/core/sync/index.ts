@@ -1,8 +1,11 @@
 import { Module } from '@nestjs/common';
 
-import { EventsModule } from './events/events.module';
+import { DocStorageModule } from '../doc';
+import { PermissionModule } from '../permission';
+import { SpaceSyncGateway } from './gateway';
 
 @Module({
-  imports: [EventsModule],
+  imports: [DocStorageModule, PermissionModule],
+  providers: [SpaceSyncGateway],
 })
 export class SyncModule {}

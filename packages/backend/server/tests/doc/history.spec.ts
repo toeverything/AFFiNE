@@ -4,34 +4,40 @@ import { PrismaClient } from '@prisma/client';
 import test from 'ava';
 import * as Sinon from 'sinon';
 
-import { DocHistoryManager } from '../src/core/doc';
-import { PermissionModule } from '../src/core/permission';
-import { QuotaModule } from '../src/core/quota';
-import { StorageModule } from '../src/core/storage';
-import type { EventPayload } from '../src/fundamentals/event';
-import { createTestingModule } from './utils';
+import {
+  DocStorageModule,
+  PgWorkspaceDocStorageAdapter,
+} from '../../src/core/doc';
+import { DocStorageOptions } from '../../src/core/doc/options';
+import { DocRecord } from '../../src/core/doc/storage';
+import { createTestingModule, initTestingDB } from '../utils';
 
 let m: TestingModule;
-let manager: DocHistoryManager;
+let adapter: PgWorkspaceDocStorageAdapter;
 let db: PrismaClient;
 
 // cleanup database before each test
-test.beforeEach(async () => {
+test.before(async () => {
   m = await createTestingModule({
-    imports: [StorageModule, QuotaModule, PermissionModule],
-    providers: [DocHistoryManager],
+    imports: [DocStorageModule],
   });
 
-  manager = m.get(DocHistoryManager);
-  Sinon.stub(manager, 'getExpiredDateFromNow').resolves(
-    new Date(Date.now() + 1000)
-  );
+  adapter = m.get(PgWorkspaceDocStorageAdapter);
   db = m.get(PrismaClient);
 });
 
-test.afterEach.always(async () => {
-  await m.close();
+test.beforeEach(async () => {
+  await initTestingDB(db);
+  const options = m.get(DocStorageOptions);
+  Sinon.stub(options, 'historyMaxAge').resolves(1000);
+});
+
+test.afterEach(async () => {
   Sinon.restore();
+});
+
+test.after.always(async () => {
+  await m.close();
 });
 
 const snapshot: Snapshot = {
@@ -44,21 +50,22 @@ const snapshot: Snapshot = {
   createdAt: new Date(),
 };
 
-function getEventData(
-  timestamp: Date = new Date()
-): EventPayload<'snapshot.updated'> {
+function getSnapshot(timestamp: number = Date.now()): DocRecord {
   return {
-    workspaceId: snapshot.workspaceId,
-    id: snapshot.id,
-    previous: { ...snapshot, updatedAt: timestamp },
+    spaceId: snapshot.workspaceId,
+    docId: snapshot.id,
+    bin: snapshot.blob,
+    timestamp,
   };
 }
 
 test('should create doc history if never created before', async t => {
-  Sinon.stub(manager, 'last').resolves(null);
+  // @ts-expect-error private method
+  Sinon.stub(adapter, 'lastDocHistory').resolves(null);
 
-  const timestamp = new Date();
-  await manager.onDocUpdated(getEventData(timestamp));
+  const timestamp = Date.now();
+  // @ts-expect-error private method
+  await adapter.createDocHistory(getSnapshot(timestamp));
 
   const history = await db.snapshotHistory.findFirst({
     where: {
@@ -68,33 +75,17 @@ test('should create doc history if never created before', async t => {
   });
 
   t.truthy(history);
-  t.is(history?.timestamp.getTime(), timestamp.getTime());
+  t.is(history?.timestamp.getTime(), timestamp);
 });
 
 test('should not create history if timestamp equals to last record', async t => {
   const timestamp = new Date();
-  Sinon.stub(manager, 'last').resolves({ timestamp, state: null });
 
-  await manager.onDocUpdated(getEventData(timestamp));
+  // @ts-expect-error private method
+  Sinon.stub(adapter, 'lastDocHistory').resolves({ timestamp, state: null });
 
-  const history = await db.snapshotHistory.findFirst({
-    where: {
-      workspaceId: '1',
-      id: 'doc1',
-    },
-  });
-
-  t.falsy(history);
-});
-
-test('should not create history if state equals to last record', async t => {
-  const timestamp = new Date();
-  Sinon.stub(manager, 'last').resolves({
-    timestamp: new Date(timestamp.getTime() - 1),
-    state: snapshot.state,
-  });
-
-  await manager.onDocUpdated(getEventData(timestamp));
+  // @ts-expect-error private method
+  await adapter.createDocHistory(getSnapshot(timestamp));
 
   const history = await db.snapshotHistory.findFirst({
     where: {
@@ -108,12 +99,15 @@ test('should not create history if state equals to last record', async t => {
 
 test('should not create history if time diff is less than interval config', async t => {
   const timestamp = new Date();
-  Sinon.stub(manager, 'last').resolves({
+
+  // @ts-expect-error private method
+  Sinon.stub(adapter, 'lastDocHistory').resolves({
     timestamp: new Date(timestamp.getTime() - 1000),
     state: Buffer.from([0, 1]),
   });
 
-  await manager.onDocUpdated(getEventData(timestamp));
+  // @ts-expect-error private method
+  await adapter.createDocHistory(getSnapshot(timestamp));
 
   const history = await db.snapshotHistory.findFirst({
     where: {
@@ -127,12 +121,15 @@ test('should not create history if time diff is less than interval config', asyn
 
 test('should create history if time diff is larger than interval config and state diff', async t => {
   const timestamp = new Date();
-  Sinon.stub(manager, 'last').resolves({
+
+  // @ts-expect-error private method
+  Sinon.stub(adapter, 'lastDocHistory').resolves({
     timestamp: new Date(timestamp.getTime() - 1000 * 60 * 20),
     state: Buffer.from([0, 1]),
   });
 
-  await manager.onDocUpdated(getEventData(timestamp));
+  // @ts-expect-error private method
+  await adapter.createDocHistory(getSnapshot(timestamp));
 
   const history = await db.snapshotHistory.findFirst({
     where: {
@@ -146,12 +143,15 @@ test('should create history if time diff is larger than interval config and stat
 
 test('should create history with force flag even if time diff in small', async t => {
   const timestamp = new Date();
-  Sinon.stub(manager, 'last').resolves({
+
+  // @ts-expect-error private method
+  Sinon.stub(adapter, 'lastDocHistory').resolves({
     timestamp: new Date(timestamp.getTime() - 1),
     state: Buffer.from([0, 1]),
   });
 
-  await manager.onDocUpdated(getEventData(timestamp), true);
+  // @ts-expect-error private method
+  await adapter.createDocHistory(getSnapshot(timestamp), true);
 
   const history = await db.snapshotHistory.findFirst({
     where: {
@@ -194,31 +194,31 @@ test('should correctly list all history records', async t => {
       })),
   });
 
-  const list = await manager.list(
+  const list = await adapter.listDocHistories(
     snapshot.workspaceId,
     snapshot.id,
-    new Date(timestamp + 20),
-    8
+    { before: timestamp + 20, limit: 8 }
   );
-  const count = await manager.count(snapshot.workspaceId, snapshot.id);
+  const count = await db.snapshotHistory.count();
 
   t.is(list.length, 8);
-  t.is(count, 10);
+  t.is(count, 20);
 });
 
 test('should be able to get history data', async t => {
-  const timestamp = new Date();
+  const timestamp = Date.now();
 
-  await manager.onDocUpdated(getEventData(timestamp), true);
+  // @ts-expect-error private method
+  await adapter.createDocHistory(getSnapshot(timestamp), true);
 
-  const history = await manager.get(
+  const history = await adapter.getDocHistory(
     snapshot.workspaceId,
     snapshot.id,
     timestamp
   );
 
   t.truthy(history);
-  t.deepEqual(history?.blob, snapshot.blob);
+  t.deepEqual(history?.bin, snapshot.blob);
 });
 
 test('should be able to get last history record', async t => {
@@ -238,7 +238,11 @@ test('should be able to get last history record', async t => {
       })),
   });
 
-  const history = await manager.last(snapshot.workspaceId, snapshot.id);
+  // @ts-expect-error private method
+  const history = await adapter.lastDocHistory(
+    snapshot.workspaceId,
+    snapshot.id
+  );
 
   t.truthy(history);
   t.is(history?.timestamp.getTime(), timestamp + 9);
@@ -253,12 +257,14 @@ test('should be able to recover from history', async t => {
     },
   });
   const history1Timestamp = snapshot.updatedAt.getTime() - 10;
-  await manager.onDocUpdated(getEventData(new Date(history1Timestamp)));
 
-  await manager.recover(
+  // @ts-expect-error private method
+  await adapter.createDocHistory(getSnapshot(history1Timestamp));
+
+  await adapter.rollbackDoc(
     snapshot.workspaceId,
     snapshot.id,
-    new Date(history1Timestamp)
+    history1Timestamp
   );
 
   const [history1, history2] = await db.snapshotHistory.findMany({
@@ -273,49 +279,4 @@ test('should be able to recover from history', async t => {
 
   // new history data force created with snapshot state before recovered
   t.deepEqual(history2.blob, Buffer.from([1, 1]));
-  t.deepEqual(history2.state, Buffer.from([1, 1]));
-});
-
-test('should be able to cleanup expired history', async t => {
-  const timestamp = Date.now();
-
-  // insert expired data
-  await db.snapshotHistory.createMany({
-    data: Array.from({ length: 10 })
-      .fill(0)
-      .map((_, i) => ({
-        workspaceId: snapshot.workspaceId,
-        id: snapshot.id,
-        blob: snapshot.blob,
-        state: snapshot.state,
-        timestamp: new Date(timestamp - 10 - i),
-        expiredAt: new Date(timestamp - 1),
-      })),
-  });
-
-  // insert available data
-  await db.snapshotHistory.createMany({
-    data: Array.from({ length: 10 })
-      .fill(0)
-      .map((_, i) => ({
-        workspaceId: snapshot.workspaceId,
-        id: snapshot.id,
-        blob: snapshot.blob,
-        state: snapshot.state,
-        timestamp: new Date(timestamp + i),
-        expiredAt: new Date(timestamp + 1000),
-      })),
-  });
-
-  let count = await db.snapshotHistory.count();
-  t.is(count, 20);
-
-  await manager.cleanupExpiredHistory();
-
-  count = await db.snapshotHistory.count();
-  t.is(count, 10);
-
-  const example = await db.snapshotHistory.findFirst();
-  t.truthy(example);
-  t.true(example!.expiredAt > new Date());
 });

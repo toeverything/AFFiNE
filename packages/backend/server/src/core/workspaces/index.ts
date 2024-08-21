@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 
-import { DocModule } from '../doc';
+import { DocStorageModule } from '../doc';
 import { FeatureModule } from '../features';
 import { PermissionModule } from '../permission';
 import { QuotaModule } from '../quota';
@@ -17,7 +17,7 @@ import {
 
 @Module({
   imports: [
-    DocModule,
+    DocStorageModule,
     FeatureModule,
     QuotaModule,
     StorageModule,

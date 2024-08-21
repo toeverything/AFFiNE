@@ -12,7 +12,7 @@ import {
   InvalidHistoryTimestamp,
 } from '../../fundamentals';
 import { CurrentUser, Public } from '../auth';
-import { DocHistoryManager, DocManager } from '../doc';
+import { PgWorkspaceDocStorageAdapter } from '../doc';
 import { Permission, PermissionService, PublicPageMode } from '../permission';
 import { WorkspaceBlobStorage } from '../storage';
 import { DocID } from '../utils/doc';
@@ -23,8 +23,7 @@ export class WorkspacesController {
   constructor(
     private readonly storage: WorkspaceBlobStorage,
     private readonly permission: PermissionService,
-    private readonly docManager: DocManager,
-    private readonly historyManager: DocHistoryManager,
+    private readonly workspace: PgWorkspaceDocStorageAdapter,
     private readonly prisma: PrismaClient
   ) {}
 
@@ -56,7 +55,7 @@ export class WorkspacesController {
 
     if (!body) {
       throw new BlobNotFound({
-        workspaceId,
+        spaceId: workspaceId,
         blobId: name,
       });
     }
@@ -96,14 +95,14 @@ export class WorkspacesController {
       throw new AccessDenied();
     }
 
-    const binResponse = await this.docManager.getBinary(
+    const binResponse = await this.workspace.getDoc(
       docId.workspace,
       docId.guid
     );
 
     if (!binResponse) {
       throw new DocNotFound({
-        workspaceId: docId.workspace,
+        spaceId: docId.workspace,
         docId: docId.guid,
       });
     }
@@ -125,7 +124,7 @@ export class WorkspacesController {
     }
 
     res.setHeader('content-type', 'application/octet-stream');
-    res.send(binResponse.binary);
+    res.send(binResponse.bin);
   }
 
   @Get('/:id/docs/:guid/histories/:timestamp')
@@ -152,19 +151,19 @@ export class WorkspacesController {
       Permission.Write
     );
 
-    const history = await this.historyManager.get(
+    const history = await this.workspace.getDocHistory(
       docId.workspace,
       docId.guid,
-      ts
+      ts.getTime()
     );
 
     if (history) {
       res.setHeader('content-type', 'application/octet-stream');
       res.setHeader('cache-control', 'private, max-age=2592000, immutable');
-      res.send(history.blob);
+      res.send(history.bin);
     } else {
       throw new DocHistoryNotFound({
-        workspaceId: docId.workspace,
+        spaceId: docId.workspace,
         docId: guid,
         timestamp: ts.getTime(),
       });

@@ -12,7 +12,7 @@ import {
 import type { SnapshotHistory } from '@prisma/client';
 
 import { CurrentUser } from '../../auth';
-import { DocHistoryManager } from '../../doc';
+import { PgWorkspaceDocStorageAdapter } from '../../doc';
 import { Permission, PermissionService } from '../../permission';
 import { DocID } from '../../utils/doc';
 import { WorkspaceType } from '../types';
@@ -32,7 +32,7 @@ class DocHistoryType implements Partial<SnapshotHistory> {
 @Resolver(() => WorkspaceType)
 export class DocHistoryResolver {
   constructor(
-    private readonly historyManager: DocHistoryManager,
+    private readonly workspace: PgWorkspaceDocStorageAdapter,
     private readonly permission: PermissionService
   ) {}
 
@@ -47,17 +47,19 @@ export class DocHistoryResolver {
   ): Promise<DocHistoryType[]> {
     const docId = new DocID(guid, workspace.id);
 
-    return this.historyManager
-      .list(workspace.id, docId.guid, timestamp, take)
-      .then(rows =>
-        rows.map(({ timestamp }) => {
-          return {
-            workspaceId: workspace.id,
-            id: docId.guid,
-            timestamp,
-          };
-        })
-      );
+    const timestamps = await this.workspace.listDocHistories(
+      workspace.id,
+      docId.guid,
+      { before: timestamp.getTime(), limit: take }
+    );
+
+    return timestamps.map(timestamp => {
+      return {
+        workspaceId: workspace.id,
+        id: docId.guid,
+        timestamp: new Date(timestamp),
+      };
+    });
   }
 
   @Mutation(() => Date)
@@ -76,6 +78,12 @@ export class DocHistoryResolver {
       Permission.Write
     );
 
-    return this.historyManager.recover(docId.workspace, docId.guid, timestamp);
+    await this.workspace.rollbackDoc(
+      docId.workspace,
+      docId.guid,
+      timestamp.getTime()
+    );
+
+    return timestamp;
   }
 }

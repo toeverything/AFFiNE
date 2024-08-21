@@ -15,17 +15,17 @@ import { applyUpdate, Doc } from 'yjs';
 
 import type { FileUpload } from '../../../fundamentals';
 import {
-  CantChangeWorkspaceOwner,
+  CantChangeSpaceOwner,
   EventEmitter,
   InternalServerError,
   MailService,
   MemberQuotaExceeded,
   RequestMutex,
+  SpaceAccessDenied,
+  SpaceNotFound,
   Throttle,
   TooManyRequest,
   UserNotFound,
-  WorkspaceAccessDenied,
-  WorkspaceNotFound,
 } from '../../../fundamentals';
 import { CurrentUser, Public } from '../../auth';
 import { Permission, PermissionService } from '../../permission';
@@ -76,7 +76,7 @@ export class WorkspaceResolver {
     const permission = await this.permissions.get(workspace.id, user.id);
 
     if (!permission) {
-      throw new WorkspaceAccessDenied({ workspaceId: workspace.id });
+      throw new SpaceAccessDenied({ spaceId: workspace.id });
     }
 
     return permission;
@@ -193,7 +193,7 @@ export class WorkspaceResolver {
     const workspace = await this.prisma.workspace.findUnique({ where: { id } });
 
     if (!workspace) {
-      throw new WorkspaceNotFound({ workspaceId: id });
+      throw new SpaceNotFound({ spaceId: id });
     }
 
     return workspace;
@@ -304,7 +304,7 @@ export class WorkspaceResolver {
     );
 
     if (permission === Permission.Owner) {
-      throw new CantChangeWorkspaceOwner();
+      throw new CantChangeSpaceOwner();
     }
 
     try {

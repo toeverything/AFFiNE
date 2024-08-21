@@ -173,54 +173,64 @@ export class EmailVerificationRequired extends UserFriendlyError {
   }
 }
 @ObjectType()
-class WorkspaceNotFoundDataType {
-  @Field() workspaceId!: string
+class SpaceNotFoundDataType {
+  @Field() spaceId!: string
 }
 
-export class WorkspaceNotFound extends UserFriendlyError {
-  constructor(args: WorkspaceNotFoundDataType, message?: string | ((args: WorkspaceNotFoundDataType) => string)) {
-    super('resource_not_found', 'workspace_not_found', message, args);
+export class SpaceNotFound extends UserFriendlyError {
+  constructor(args: SpaceNotFoundDataType, message?: string | ((args: SpaceNotFoundDataType) => string)) {
+    super('resource_not_found', 'space_not_found', message, args);
   }
 }
 @ObjectType()
-class NotInWorkspaceDataType {
-  @Field() workspaceId!: string
+class NotInSpaceDataType {
+  @Field() spaceId!: string
 }
 
-export class NotInWorkspace extends UserFriendlyError {
-  constructor(args: NotInWorkspaceDataType, message?: string | ((args: NotInWorkspaceDataType) => string)) {
-    super('action_forbidden', 'not_in_workspace', message, args);
+export class NotInSpace extends UserFriendlyError {
+  constructor(args: NotInSpaceDataType, message?: string | ((args: NotInSpaceDataType) => string)) {
+    super('action_forbidden', 'not_in_space', message, args);
   }
 }
 @ObjectType()
-class WorkspaceAccessDeniedDataType {
-  @Field() workspaceId!: string
+class AlreadyInSpaceDataType {
+  @Field() spaceId!: string
 }
 
-export class WorkspaceAccessDenied extends UserFriendlyError {
-  constructor(args: WorkspaceAccessDeniedDataType, message?: string | ((args: WorkspaceAccessDeniedDataType) => string)) {
-    super('no_permission', 'workspace_access_denied', message, args);
+export class AlreadyInSpace extends UserFriendlyError {
+  constructor(args: AlreadyInSpaceDataType, message?: string | ((args: AlreadyInSpaceDataType) => string)) {
+    super('action_forbidden', 'already_in_space', message, args);
   }
 }
 @ObjectType()
-class WorkspaceOwnerNotFoundDataType {
-  @Field() workspaceId!: string
+class SpaceAccessDeniedDataType {
+  @Field() spaceId!: string
 }
 
-export class WorkspaceOwnerNotFound extends UserFriendlyError {
-  constructor(args: WorkspaceOwnerNotFoundDataType, message?: string | ((args: WorkspaceOwnerNotFoundDataType) => string)) {
-    super('internal_server_error', 'workspace_owner_not_found', message, args);
+export class SpaceAccessDenied extends UserFriendlyError {
+  constructor(args: SpaceAccessDeniedDataType, message?: string | ((args: SpaceAccessDeniedDataType) => string)) {
+    super('no_permission', 'space_access_denied', message, args);
+  }
+}
+@ObjectType()
+class SpaceOwnerNotFoundDataType {
+  @Field() spaceId!: string
+}
+
+export class SpaceOwnerNotFound extends UserFriendlyError {
+  constructor(args: SpaceOwnerNotFoundDataType, message?: string | ((args: SpaceOwnerNotFoundDataType) => string)) {
+    super('internal_server_error', 'space_owner_not_found', message, args);
   }
 }
 
-export class CantChangeWorkspaceOwner extends UserFriendlyError {
+export class CantChangeSpaceOwner extends UserFriendlyError {
   constructor(message?: string) {
-    super('action_forbidden', 'cant_change_workspace_owner', message);
+    super('action_forbidden', 'cant_change_space_owner', message);
   }
 }
 @ObjectType()
 class DocNotFoundDataType {
-  @Field() workspaceId!: string
+  @Field() spaceId!: string
   @Field() docId!: string
 }
 
@@ -231,7 +241,7 @@ export class DocNotFound extends UserFriendlyError {
 }
 @ObjectType()
 class DocAccessDeniedDataType {
-  @Field() workspaceId!: string
+  @Field() spaceId!: string
   @Field() docId!: string
 }
 
@@ -263,7 +273,7 @@ export class InvalidHistoryTimestamp extends UserFriendlyError {
 }
 @ObjectType()
 class DocHistoryNotFoundDataType {
-  @Field() workspaceId!: string
+  @Field() spaceId!: string
   @Field() docId!: string
   @Field() timestamp!: number
 }
@@ -275,7 +285,7 @@ export class DocHistoryNotFound extends UserFriendlyError {
 }
 @ObjectType()
 class BlobNotFoundDataType {
-  @Field() workspaceId!: string
+  @Field() spaceId!: string
   @Field() blobId!: string
 }
 
@@ -300,6 +310,18 @@ export class ExpectToRevokePublicPage extends UserFriendlyError {
 export class PageIsNotPublic extends UserFriendlyError {
   constructor(message?: string) {
     super('bad_request', 'page_is_not_public', message);
+  }
+}
+
+export class FailedToSaveUpdates extends UserFriendlyError {
+  constructor(message?: string) {
+    super('internal_server_error', 'failed_to_save_updates', message);
+  }
+}
+
+export class FailedToUpsertSnapshot extends UserFriendlyError {
+  constructor(message?: string) {
+    super('internal_server_error', 'failed_to_upsert_snapshot', message);
   }
 }
 
@@ -538,11 +560,12 @@ export enum ErrorNames {
   ACTION_FORBIDDEN,
   ACCESS_DENIED,
   EMAIL_VERIFICATION_REQUIRED,
-  WORKSPACE_NOT_FOUND,
-  NOT_IN_WORKSPACE,
-  WORKSPACE_ACCESS_DENIED,
-  WORKSPACE_OWNER_NOT_FOUND,
-  CANT_CHANGE_WORKSPACE_OWNER,
+  SPACE_NOT_FOUND,
+  NOT_IN_SPACE,
+  ALREADY_IN_SPACE,
+  SPACE_ACCESS_DENIED,
+  SPACE_OWNER_NOT_FOUND,
+  CANT_CHANGE_SPACE_OWNER,
   DOC_NOT_FOUND,
   DOC_ACCESS_DENIED,
   VERSION_REJECTED,
@@ -552,6 +575,8 @@ export enum ErrorNames {
   EXPECT_TO_PUBLISH_PAGE,
   EXPECT_TO_REVOKE_PUBLIC_PAGE,
   PAGE_IS_NOT_PUBLIC,
+  FAILED_TO_SAVE_UPDATES,
+  FAILED_TO_UPSERT_SNAPSHOT,
   FAILED_TO_CHECKOUT,
   SUBSCRIPTION_ALREADY_EXISTS,
   SUBSCRIPTION_NOT_EXISTS,
@@ -588,5 +613,5 @@ registerEnumType(ErrorNames, {
 export const ErrorDataUnionType = createUnionType({
   name: 'ErrorDataUnion',
   types: () =>
-    [UnknownOauthProviderDataType, MissingOauthQueryParameterDataType, InvalidPasswordLengthDataType, WorkspaceNotFoundDataType, NotInWorkspaceDataType, WorkspaceAccessDeniedDataType, WorkspaceOwnerNotFoundDataType, DocNotFoundDataType, DocAccessDeniedDataType, VersionRejectedDataType, InvalidHistoryTimestampDataType, DocHistoryNotFoundDataType, BlobNotFoundDataType, SubscriptionAlreadyExistsDataType, SubscriptionNotExistsDataType, SameSubscriptionRecurringDataType, SubscriptionPlanNotFoundDataType, CopilotMessageNotFoundDataType, CopilotPromptNotFoundDataType, CopilotProviderSideErrorDataType, RuntimeConfigNotFoundDataType, InvalidRuntimeConfigTypeDataType] as const,
+    [UnknownOauthProviderDataType, MissingOauthQueryParameterDataType, InvalidPasswordLengthDataType, SpaceNotFoundDataType, NotInSpaceDataType, AlreadyInSpaceDataType, SpaceAccessDeniedDataType, SpaceOwnerNotFoundDataType, DocNotFoundDataType, DocAccessDeniedDataType, VersionRejectedDataType, InvalidHistoryTimestampDataType, DocHistoryNotFoundDataType, BlobNotFoundDataType, SubscriptionAlreadyExistsDataType, SubscriptionNotExistsDataType, SameSubscriptionRecurringDataType, SubscriptionPlanNotFoundDataType, CopilotMessageNotFoundDataType, CopilotPromptNotFoundDataType, CopilotProviderSideErrorDataType, RuntimeConfigNotFoundDataType, InvalidRuntimeConfigTypeDataType] as const,
 });

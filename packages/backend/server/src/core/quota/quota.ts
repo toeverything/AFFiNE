@@ -71,10 +71,6 @@ export class QuotaConfig {
     return this.config.configs.historyPeriod;
   }
 
-  get historyPeriodFromNow() {
-    return new Date(Date.now() + this.historyPeriod);
-  }
-
   get memberLimit() {
     return this.config.configs.memberLimit;
   }
