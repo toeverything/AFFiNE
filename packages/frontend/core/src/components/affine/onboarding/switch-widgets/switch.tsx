@@ -30,13 +30,11 @@ export const EdgelessSwitchButtons = ({
       <PageSwitchItem
         className={styles.switchButton}
         data-active={mode === 'page'}
-        active={mode === 'page'}
         onClick={onSwitchToPageMode}
       />
       <EdgelessSwitchItem
         className={styles.switchButton}
         data-active={mode === 'edgeless'}
-        active={mode === 'edgeless'}
         onClick={onSwitchToEdgelessMode}
       />
     </div>

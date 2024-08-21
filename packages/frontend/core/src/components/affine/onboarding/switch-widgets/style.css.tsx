@@ -16,7 +16,7 @@ export const switchButtons = style({
 
   selectors: {
     // indicator
-    '&::after': {
+    '&::before': {
       content: '',
       width: '48px',
       height: '48px',
@@ -26,16 +26,22 @@ export const switchButtons = style({
       transition: 'transform 0.15s ease',
       boxShadow: 'var(--affine-shadow-1)',
     },
-    '&[data-mode="edgeless"]::after': {
+    '&[data-mode="edgeless"]::before': {
       transform: `translateX(64px)`,
     },
   },
 });
 
 export const switchButton = style({
+  width: 24,
+  height: 24,
   transform: 'scale(2)',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
   boxShadow: 'none',
   opacity: 0.6,
+  cursor: 'pointer',
   selectors: {
     '&:nth-child(1)': {
       transformOrigin: 'left',
