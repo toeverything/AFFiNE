@@ -9,6 +9,9 @@ import { useDarkMode } from 'storybook-dark-mode';
 import type { Preview } from '@storybook/react';
 import React from 'react';
 import { ConfirmModalProvider } from '../src/ui/modal/confirm-modal';
+import { setupGlobal } from '@affine/env/global';
+
+setupGlobal();
 
 export const parameters: Preview = {
   argTypes: {
