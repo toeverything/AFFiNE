@@ -91,6 +91,13 @@ export const AFFINE_FLAGS = {
     configurable: true,
     defaultState: false,
   },
+  enable_editor_settings: {
+    category: 'affine',
+    displayName: 'Editor Settings',
+    description: 'Enables editor settings.',
+    configurable: isCanaryBuild,
+    defaultState: false,
+  },
 } satisfies { [key in string]: FlagInfo };
 
 export type AFFINE_FLAGS = typeof AFFINE_FLAGS;
