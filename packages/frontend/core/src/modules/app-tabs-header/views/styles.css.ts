@@ -52,7 +52,7 @@ export const tabs = style({
 });
 
 export const pinSeparator = style({
-  background: cssVar('iconSecondary'),
+  background: cssVarV2('tab/divider/divider'),
   width: 1,
   height: 16,
   flexShrink: 0,
@@ -60,7 +60,7 @@ export const pinSeparator = style({
 });
 
 export const splitViewSeparator = style({
-  background: cssVar('borderColor'),
+  background: cssVarV2('tab/divider/divider'),
   width: 1,
   height: '100%',
   flexShrink: 0,
@@ -81,11 +81,11 @@ export const tab = style({
   minWidth: 32,
   maxWidth: 200,
   overflow: 'clip',
-  background: cssVar('backgroundSecondaryColor'),
+  background: cssVarV2('tab/tabBackground/default'),
   display: 'flex',
   justifyContent: 'flex-start',
   alignItems: 'center',
-  color: cssVar('textSecondaryColor'),
+  color: cssVarV2('tab/fontColor/default'),
   userSelect: 'none',
   borderRadius: 4,
   position: 'relative',
@@ -95,8 +95,7 @@ export const tab = style({
       marginRight: 8,
     },
     '&[data-active="true"]': {
-      background: cssVar('backgroundPrimaryColor'),
-      boxShadow: cssVar('shadow1'),
+      boxShadow: cssVar('buttonShadow'),
     },
     '&[data-pinned="true"]': {
       flexShrink: 0,
@@ -116,6 +115,11 @@ export const splitViewLabel = style({
   fontWeight: 500,
   alignItems: 'center',
   cursor: 'default',
+  selectors: {
+    '&[data-active="true"]': {
+      background: cssVarV2('tab/tabBackground/active'),
+    },
+  },
 });
 
 export const tabCloseButtonWrapper = style({
@@ -135,17 +139,17 @@ export const tabCloseButtonWrapper = style({
     [`${tab}:is([data-active=true], :hover) &:not(:empty)`]: {
       width: 40,
     },
-    [`${tab}[data-active=true] &`]: {
-      background: `linear-gradient(270deg, ${cssVar('backgroundPrimaryColor')} 52.86%, rgba(255, 255, 255, 0.00) 100%)`,
+    [`${splitViewLabel}:last-of-type[data-active=true] + &`]: {
+      background: `linear-gradient(270deg, ${cssVarV2('tab/tabBackground/active')} 52.86%, rgba(255, 255, 255, 0.00) 100%)`,
     },
-    [`${tab}[data-active=false] &`]: {
-      background: `linear-gradient(270deg, ${cssVar('backgroundSecondaryColor')} 65.71%, rgba(244, 244, 245, 0.00) 100%)`,
+    [`${splitViewLabel}:last-of-type[data-active=false] + &`]: {
+      background: `linear-gradient(270deg, ${cssVarV2('tab/tabBackground/default')} 65.71%, rgba(244, 244, 245, 0.00) 100%)`,
     },
   },
 });
 
 export const tabIcon = style({
-  color: cssVar('iconSecondary'),
+  color: cssVarV2('tab/iconColor/default'),
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
@@ -160,11 +164,12 @@ export const labelIcon = style([
     flexShrink: 0,
     selectors: {
       [`${splitViewLabel}[data-active=true] &`]: {
-        color: cssVar('primaryColor'),
+        color: cssVarV2('tab/iconColor/active'),
       },
-      [`${splitViewLabel}[data-active=false]:hover &`]: {
-        color: cssVar('iconColor'),
-      },
+      [`${splitViewLabel}[data-active=false]:hover &, ${tab}:has(${tabCloseButtonWrapper}:hover) ${splitViewLabel}:last-of-type &`]:
+        {
+          color: cssVarV2('tab/iconColor/hover'),
+        },
     },
   },
 ]);
@@ -177,7 +182,7 @@ export const tabCloseButton = style([
     height: 16,
     borderRadius: 2,
     display: 'none',
-    color: cssVar('iconColor'),
+    color: cssVarV2('tab/iconColor/default'),
     selectors: {
       [`${tab}:is([data-active=true], :hover) &`]: {
         display: 'flex',
@@ -195,15 +200,16 @@ export const splitViewLabelText = style({
   textOverflow: 'ellipsis',
   overflow: 'clip',
   whiteSpace: 'nowrap',
-  color: cssVar('textSecondaryColor'),
+  color: cssVarV2('tab/fontColor/default'),
   fontSize: cssVar('fontXs'),
   paddingRight: 4,
   selectors: {
-    [`${splitViewLabel}:hover &`]: {
-      color: cssVar('textPrimaryColor'),
-    },
+    [`${splitViewLabel}:hover &, ${tab}:has(${tabCloseButtonWrapper}:hover) ${splitViewLabel}:last-of-type &`]:
+      {
+        color: cssVarV2('tab/fontColor/hover'),
+      },
     [`${splitViewLabel}[data-active="true"] &`]: {
-      color: cssVar('primaryColor'),
+      color: cssVarV2('tab/fontColor/active'),
     },
     [`${splitViewLabel}:last-of-type &`]: {
       textOverflow: 'clip',
