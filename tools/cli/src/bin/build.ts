@@ -45,6 +45,7 @@ const flags = {
   channel: getChannel(),
   coverage: process.env.COVERAGE === 'true',
   entry,
+  static: false,
 } satisfies BuildFlags;
 
 buildI18N();

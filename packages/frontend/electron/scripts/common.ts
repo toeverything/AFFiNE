@@ -26,6 +26,7 @@ export const config = (): BuildOptions => {
       distribution: 'desktop',
       mode:
         process.env.NODE_ENV === 'production' ? 'production' : 'development',
+      static: false,
     })
   );
 

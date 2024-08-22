@@ -15,6 +15,7 @@ const flags: BuildFlags = {
   distribution:
     (process.env.DISTRIBUTION as BuildFlags['distribution']) ?? 'browser',
   mode: 'development',
+  static: false,
   channel: 'canary',
   coverage: process.env.COVERAGE === 'true',
   localBlockSuite: undefined,
@@ -33,7 +34,7 @@ for (const file of files) {
 }
 
 const buildFlags = process.argv.includes('--static')
-  ? { ...flags, debugBlockSuite: false }
+  ? { ...flags, debugBlockSuite: false, static: true }
   : ((await p.group(
       {
         distribution: () =>
@@ -107,6 +108,7 @@ flags.distribution = buildFlags.distribution;
 flags.mode = buildFlags.mode;
 flags.channel = buildFlags.channel;
 flags.coverage = buildFlags.coverage;
+flags.static = buildFlags.static;
 flags.entry = undefined;
 
 const cwd = getCwdFromDistribution(flags.distribution);
@@ -143,12 +145,17 @@ if (buildFlags.debugBlockSuite) {
 
 console.info(flags);
 
-watchI18N();
+if (!flags.static) {
+  watchI18N();
+}
 
 try {
   // @ts-expect-error no types
   await import('@affine/templates/build-edgeless');
   const config = createWebpackConfig(cwd, flags);
+  if (flags.static) {
+    config.watch = false;
+  }
   const compiler = webpack(config);
   // Start webpack
   const devServer = new WebpackDevServer(config.devServer, compiler);

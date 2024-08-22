@@ -1,4 +1,4 @@
-FROM openresty/openresty:1.25.3.1-0-buster
+FROM openresty/openresty:1.25.3.2-0-buster
 WORKDIR /app
 COPY ./packages/frontend/web/dist ./dist
 COPY ./packages/frontend/admin/dist ./admin

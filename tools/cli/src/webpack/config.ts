@@ -376,8 +376,8 @@ export const createConfiguration: (
     optimization: OptimizeOptionOptions(buildFlags),
 
     devServer: {
-      hot: 'only',
-      liveReload: true,
+      hot: buildFlags.static ? false : 'only',
+      liveReload: !buildFlags.static,
       client: {
         overlay: process.env.DISABLE_DEV_OVERLAY === 'true' ? false : undefined,
       },
@@ -392,12 +392,12 @@ export const createConfiguration: (
             'public'
           ),
           publicPath: '/',
-          watch: true,
+          watch: !buildFlags.static,
         },
         {
           directory: join(cwd, 'public'),
           publicPath: '/',
-          watch: true,
+          watch: !buildFlags.static,
         },
       ],
       proxy: [

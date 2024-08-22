@@ -5,6 +5,7 @@ globalThis.runtimeConfig = getRuntimeConfig({
   distribution: 'browser',
   mode: 'development',
   channel: 'canary',
+  static: false,
 });
 
 if (typeof window !== 'undefined') {

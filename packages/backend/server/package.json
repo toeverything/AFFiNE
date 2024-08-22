@@ -21,7 +21,7 @@
   "dependencies": {
     "@apollo/server": "^4.10.2",
     "@aws-sdk/client-s3": "^3.620.0",
-    "@fal-ai/serverless-client": "^0.13.0",
+    "@fal-ai/serverless-client": "^0.14.0",
     "@google-cloud/opentelemetry-cloud-monitoring-exporter": "^0.19.0",
     "@google-cloud/opentelemetry-cloud-trace-exporter": "^2.2.0",
     "@google-cloud/opentelemetry-resource-util": "^2.2.0",
@@ -76,7 +76,7 @@
     "mustache": "^4.2.0",
     "nanoid": "^5.0.7",
     "nest-commander": "^3.12.5",
-    "nestjs-throttler-storage-redis": "^0.4.1",
+    "nestjs-throttler-storage-redis": "^0.5.0",
     "nodemailer": "^6.9.13",
     "on-headers": "^1.0.2",
     "openai": "^4.33.0",
