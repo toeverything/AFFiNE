@@ -11,6 +11,8 @@ import {
   showDevTools,
   showMainWindow,
   switchTab,
+  switchToNextTab,
+  switchToPreviousTab,
   undoCloseTab,
 } from '../windows-manager';
 import { applicationMenuSubjects } from './subject';
@@ -152,6 +154,52 @@ export function createApplicationMenu() {
             visible: false,
           };
         }),
+        {
+          label: 'Switch to next tab',
+          accelerator: 'CommandOrControl+Tab',
+          click: () => {
+            switchToNextTab();
+          },
+        },
+        {
+          label: 'Switch to previous tab',
+          accelerator: 'CommandOrControl+Shift+Tab',
+          click: () => {
+            switchToPreviousTab();
+          },
+        },
+        {
+          label: 'Switch to next tab (mac)',
+          accelerator: 'Command+]',
+          visible: false,
+          click: () => {
+            switchToNextTab();
+          },
+        },
+        {
+          label: 'Switch to previous tab (mac)',
+          accelerator: 'Command+[',
+          visible: false,
+          click: () => {
+            switchToPreviousTab();
+          },
+        },
+        {
+          label: 'Switch to next tab (mac 2)',
+          accelerator: 'Alt+Command+]',
+          visible: false,
+          click: () => {
+            switchToNextTab();
+          },
+        },
+        {
+          label: 'Switch to previous tab (mac 2)',
+          accelerator: 'Alt+Command+[',
+          visible: false,
+          click: () => {
+            switchToPreviousTab();
+          },
+        },
       ],
     },
     {

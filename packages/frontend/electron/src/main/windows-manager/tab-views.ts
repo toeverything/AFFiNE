@@ -233,6 +233,12 @@ export class WebContentViewsManager {
     );
   }
 
+  get activeWorkbenchIndex() {
+    return this.tabViewsMeta.workbenches.findIndex(
+      w => w.id === this.activeWorkbenchId
+    );
+  }
+
   get activeWorkbenchView() {
     return this.activeWorkbenchId
       ? this.webViewsMap$.value.get(this.activeWorkbenchId)
@@ -1018,6 +1024,30 @@ export const pingAppLayoutReady = (wc: WebContents) => {
 export const switchTab = (n: number) => {
   const item = WebContentViewsManager.instance.tabViewsMeta.workbenches.at(
     n === 9 ? -1 : n - 1
+  );
+  if (item) {
+    WebContentViewsManager.instance.showTab(item.id).catch(logger.error);
+  }
+};
+
+export const switchToNextTab = () => {
+  const length =
+    WebContentViewsManager.instance.tabViewsMeta.workbenches.length;
+  const activeIndex = WebContentViewsManager.instance.activeWorkbenchIndex;
+  const item = WebContentViewsManager.instance.tabViewsMeta.workbenches.at(
+    activeIndex === length - 1 ? 0 : activeIndex + 1
+  );
+  if (item) {
+    WebContentViewsManager.instance.showTab(item.id).catch(logger.error);
+  }
+};
+
+export const switchToPreviousTab = () => {
+  const length =
+    WebContentViewsManager.instance.tabViewsMeta.workbenches.length;
+  const activeIndex = WebContentViewsManager.instance.activeWorkbenchIndex;
+  const item = WebContentViewsManager.instance.tabViewsMeta.workbenches.at(
+    activeIndex === 0 ? length - 1 : activeIndex - 1
   );
   if (item) {
     WebContentViewsManager.instance.showTab(item.id).catch(logger.error);
