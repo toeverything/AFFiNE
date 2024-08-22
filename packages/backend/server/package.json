@@ -76,7 +76,7 @@
     "mustache": "^4.2.0",
     "nanoid": "^5.0.7",
     "nest-commander": "^3.12.5",
-    "nestjs-throttler-storage-redis": "^0.5.0",
+    "nestjs-throttler-storage-redis": "^0.4.4",
     "nodemailer": "^6.9.13",
     "on-headers": "^1.0.2",
     "openai": "^4.33.0",
