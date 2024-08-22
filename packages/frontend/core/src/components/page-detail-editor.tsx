@@ -10,13 +10,13 @@ import { cssVar } from '@toeverything/theme';
 import clsx from 'clsx';
 import type { CSSProperties } from 'react';
 import { memo, Suspense, useCallback, useMemo } from 'react';
-import { useLocation } from 'react-router-dom';
 
 import { EditorService } from '../modules/editor';
 import {
   EditorSettingService,
   fontStyleOptions,
 } from '../modules/editor-settting';
+import { ViewService } from '../modules/workbench/services/view';
 import { BlockSuiteEditor as Editor } from './blocksuite/block-suite-editor';
 import * as styles from './page-detail-editor.css';
 
@@ -38,14 +38,27 @@ export interface PageDetailEditorProps {
   onLoad?: OnLoadEditor;
 }
 
-function useRouterHash() {
-  return useLocation().hash.substring(1);
-}
-
 const PageDetailEditorMain = memo(function PageDetailEditorMain({
   page,
   onLoad,
 }: PageDetailEditorProps & { page: BlockSuiteDoc }) {
+  const viewService = useService(ViewService);
+  const params = useLiveData(
+    viewService.view.queryString$<{
+      mode?: string;
+      blockIds?: string[];
+      elementIds?: string[];
+    }>({
+      // Cannot handle single id situation correctly: `blockIds=xxx`
+      arrayFormat: 'none',
+      types: {
+        mode: 'string',
+        blockIds: value => (value.length ? value.split(',') : []),
+        elementIds: value => (value.length ? value.split(',') : []),
+      },
+    })
+  );
+
   const editor = useService(EditorService).editor;
   const mode = useLiveData(editor.mode$);
 
@@ -66,8 +79,6 @@ const PageDetailEditorMain = memo(function PageDetailEditorMain({
       ? `${customFontFamily}, ${fontStyle.value}`
       : fontStyle.value;
   }, [settings.customFontFamily, settings.fontFamily]);
-
-  const blockId = useRouterHash();
 
   const onLoadEditor = useCallback(
     (editor: AffineEditorContainer) => {
@@ -107,7 +118,8 @@ const PageDetailEditorMain = memo(function PageDetailEditorMain({
       mode={mode}
       page={page}
       shared={isSharedMode}
-      defaultSelectedBlockId={blockId}
+      blockIds={params.blockIds}
+      elementIds={params.elementIds}
       onLoadEditor={onLoadEditor}
     />
   );

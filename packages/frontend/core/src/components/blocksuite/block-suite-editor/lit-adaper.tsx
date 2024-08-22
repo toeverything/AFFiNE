@@ -73,13 +73,26 @@ const usePatchSpecs = (page: Doc, shared: boolean, mode: DocMode) => {
   const framework = useFramework();
   const referenceRenderer: ReferenceReactRenderer = useMemo(() => {
     return function customReference(reference) {
-      const pageId = reference.delta.attributes?.reference?.pageId;
+      const data = reference.delta.attributes?.reference;
+      if (!data) return <span />;
+
+      const pageId = data.pageId;
       if (!pageId) return <span />;
+
+      const isSameDoc = pageId === page.id;
+
       return (
-        <AffinePageReference docCollection={page.collection} pageId={pageId} />
+        <AffinePageReference
+          docCollection={page.collection}
+          pageId={pageId}
+          mode={mode}
+          params={data.params}
+          std={reference.std}
+          isSameDoc={isSameDoc}
+        />
       );
     };
-  }, [page.collection]);
+  }, [mode, page.id, page.collection]);
 
   const specs = useMemo(() => {
     return mode === 'edgeless'

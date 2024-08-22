@@ -1,15 +1,13 @@
-import type { BlockComponent } from '@blocksuite/block-std';
+import type { ReferenceInfo } from '@blocksuite/affine-model';
+import { DocMode } from '@blocksuite/blocks';
 import type {
   AffineEditorContainer,
   EdgelessEditor,
   PageEditor,
 } from '@blocksuite/presets';
-import type { Doc } from '@blocksuite/store';
-import { Slot } from '@blocksuite/store';
-import { type DocMode } from '@toeverything/infra';
+import { type Doc, Slot } from '@blocksuite/store';
 import clsx from 'clsx';
 import type React from 'react';
-import type { RefObject } from 'react';
 import {
   forwardRef,
   useEffect,
@@ -19,6 +17,7 @@ import {
   useState,
 } from 'react';
 
+import { scrollAnchoring } from '../../affine/reference-link/utils';
 import { BlocksuiteDocEditor, BlocksuiteEdgelessEditor } from './lit-adaper';
 import * as styles from './styles.css';
 
@@ -43,7 +42,8 @@ interface BlocksuiteEditorContainerProps {
   shared?: boolean;
   className?: string;
   style?: React.CSSProperties;
-  defaultSelectedBlockId?: string;
+  blockIds?: string[];
+  elementIds?: string[];
 }
 
 // mimic the interface of the webcomponent and expose slots & host
@@ -53,67 +53,35 @@ type BlocksuiteEditorContainerRef = Pick<
 > &
   HTMLDivElement;
 
-function findBlockElementById(container: HTMLElement, blockId: string) {
-  const element = container.querySelector(
-    `[data-block-id="${blockId}"]`
-  ) as BlockComponent | null;
-  return element;
-}
-
-// a workaround for returning the webcomponent for the given block id
-// by iterating over the children of the rendered dom tree
-const useBlockElementById = (
-  containerRef: RefObject<HTMLElement | null>,
-  blockId: string | undefined,
-  timeout = 1000
-) => {
-  const [blockElement, setBlockElement] = useState<BlockComponent | null>(null);
-  useEffect(() => {
-    if (!blockId) {
-      return;
-    }
-    let canceled = false;
-    const start = Date.now();
-    function run() {
-      if (canceled || !containerRef.current || !blockId) {
-        return;
-      }
-      const element = findBlockElementById(containerRef.current, blockId);
-      if (element) {
-        setBlockElement(element);
-      } else if (Date.now() - start < timeout) {
-        setTimeout(run, 100);
-      }
-    }
-    run();
-    return () => {
-      canceled = true;
-    };
-  }, [blockId, containerRef, timeout]);
-  return blockElement;
-};
-
 export const BlocksuiteEditorContainer = forwardRef<
   AffineEditorContainer,
   BlocksuiteEditorContainerProps
 >(function AffineEditorContainer(
-  { page, mode, className, style, defaultSelectedBlockId, shared },
+  { page, mode, className, style, shared, blockIds, elementIds },
   ref
 ) {
   const scrolledRef = useRef(false);
-  const hashChangedRef = useRef(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const docRef = useRef<PageEditor>(null);
   const edgelessRef = useRef<EdgelessEditor>(null);
+  const [anchor, setAnchor] = useState<string | null>(null);
 
   const slots: BlocksuiteEditorContainerRef['slots'] = useMemo(() => {
     return {
-      docLinkClicked: new Slot(),
+      docLinkClicked: new Slot<ReferenceInfo>(),
       editorModeSwitched: new Slot(),
       docUpdated: new Slot(),
       tagClicked: new Slot(),
     };
   }, []);
+
+  useEffect(() => {
+    if (mode === DocMode.Edgeless && elementIds?.length) {
+      setAnchor(elementIds[0]);
+    } else if (blockIds?.length) {
+      setAnchor(blockIds[0]);
+    }
+  }, [blockIds, elementIds, mode]);
 
   // forward the slot to the webcomponent
   useLayoutEffect(() => {
@@ -209,36 +177,22 @@ export const BlocksuiteEditorContainer = forwardRef<
     }
   }, [affineEditorContainerProxy, ref]);
 
-  const blockElement = useBlockElementById(rootRef, defaultSelectedBlockId);
+  // `scrolledRef` should be updated if blockElement is changed
+  useEffect(() => {
+    scrolledRef.current = false;
+  }, [anchor]);
 
   useEffect(() => {
+    if (!anchor) return;
+
     let canceled = false;
-    const handleScrollToBlock = (blockElement: BlockComponent) => {
-      if (!mode || !blockElement) {
-        return;
-      }
-      blockElement.scrollIntoView({
-        behavior: 'instant',
-        block: 'center',
-      });
-      const selectManager = affineEditorContainerProxy.host?.selection;
-      if (!blockElement.path.length || !selectManager) {
-        return;
-      }
-      const newSelection = selectManager.create('block', {
-        blockId: blockElement.blockId,
-      });
-      selectManager.set([newSelection]);
-    };
     affineEditorContainerProxy.updateComplete
       .then(() => {
-        if (
-          blockElement &&
-          !scrolledRef.current &&
-          !canceled &&
-          !hashChangedRef.current
-        ) {
-          handleScrollToBlock(blockElement);
+        if (!scrolledRef.current && !canceled) {
+          const std = affineEditorContainerProxy.host?.std;
+          if (std) {
+            scrollAnchoring(std, mode, anchor);
+          }
           scrolledRef.current = true;
         }
       })
@@ -246,7 +200,7 @@ export const BlocksuiteEditorContainer = forwardRef<
     return () => {
       canceled = true;
     };
-  }, [blockElement, affineEditorContainerProxy, mode]);
+  }, [anchor, affineEditorContainerProxy, mode]);
 
   return (
     <div

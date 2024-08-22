@@ -4,12 +4,15 @@ import {
   type UseSharingUrl,
 } from '@affine/core/hooks/affine/use-share-url';
 import { getAffineCloudBaseUrl } from '@affine/core/modules/cloud/services/fetch';
-import { EditorService } from '@affine/core/modules/editor';
 import { I18n } from '@affine/i18n';
 import type { MenuItemGroup } from '@blocksuite/affine-components/toolbar';
-import type { MenuContext } from '@blocksuite/blocks';
+import { DocMode, type MenuContext } from '@blocksuite/blocks';
 import { LinkIcon } from '@blocksuite/icons/lit';
-import type { FrameworkProvider } from '@toeverything/infra';
+import {
+  DocsService,
+  type FrameworkProvider,
+  WorkspaceService,
+} from '@toeverything/infra';
 
 export function createToolbarMoreMenuConfig(framework: FrameworkProvider) {
   return {
@@ -51,8 +54,8 @@ function createCopyLinkToBlockMenuItem(
     when: (ctx: MenuContext) => {
       if (ctx.isEmpty()) return false;
 
-      const { editor } = framework.get(EditorService);
-      const mode = editor.mode$.value;
+      const docsService = framework.get(DocsService);
+      const mode = docsService.list.getPrimaryMode(ctx.doc.id) || DocMode.Page;
 
       if (mode === 'edgeless') {
         // linking blocks in notes is currently not supported in edgeless mode.
@@ -76,10 +79,11 @@ function createCopyLinkToBlockMenuItem(
       const baseUrl = getAffineCloudBaseUrl();
       if (!baseUrl) return;
 
-      const { editor } = framework.get(EditorService);
-      const mode = editor.mode$.value;
-      const pageId = editor.doc.id;
-      const workspaceId = editor.doc.workspace.id;
+      const pageId = ctx.doc.id;
+      const workspace = framework.get(WorkspaceService).workspace;
+      const docsService = framework.get(DocsService);
+      const mode = docsService.list.getPrimaryMode(pageId) || DocMode.Page;
+      const workspaceId = workspace.id;
       const options: UseSharingUrl = { workspaceId, pageId, shareMode: mode };
 
       if (mode === 'page') {

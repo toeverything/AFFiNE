@@ -24,11 +24,12 @@ export type EditorProps = {
   page: Doc;
   mode: 'page' | 'edgeless';
   shared?: boolean;
-  defaultSelectedBlockId?: string;
   // on Editor instance instantiated
   onLoadEditor?: (editor: AffineEditorContainer) => () => void;
   style?: CSSProperties;
   className?: string;
+  blockIds?: string[];
+  elementIds?: string[];
 };
 
 function usePageRoot(page: Doc) {
@@ -59,10 +60,11 @@ const BlockSuiteEditorImpl = forwardRef<AffineEditorContainer, EditorProps>(
       mode,
       page,
       className,
-      defaultSelectedBlockId,
       onLoadEditor,
       shared,
       style,
+      blockIds,
+      elementIds,
     },
     ref
   ) {
@@ -113,7 +115,8 @@ const BlockSuiteEditorImpl = forwardRef<AffineEditorContainer, EditorProps>(
         ref={onRefChange}
         className={className}
         style={style}
-        defaultSelectedBlockId={defaultSelectedBlockId}
+        blockIds={blockIds}
+        elementIds={elementIds}
       />
     );
   }

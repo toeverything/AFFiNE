@@ -59,12 +59,14 @@ function fitViewport(
 
 export function DocPeekPreview({
   docId,
-  blockId,
+  blockIds,
+  elementIds,
   mode,
   xywh,
 }: {
   docId: string;
-  blockId?: string;
+  blockIds?: string[];
+  elementIds?: string[];
   mode?: DocMode;
   xywh?: `[${number},${number},${number},${number}]`;
 }) {
@@ -128,8 +130,14 @@ export function DocPeekPreview({
             editorElement.host.std.spec.getService('affine:page');
           // doc change event inside peek view should be handled by peek view
           disposableGroup.add(
-            rootService.slots.docLinkClicked.on(({ docId, blockId }) => {
-              peekView.open({ docId, blockId }).catch(console.error);
+            rootService.slots.docLinkClicked.on(options => {
+              peekView
+                .open({
+                  type: 'doc',
+                  docId: options.pageId,
+                  ...options.params,
+                })
+                .catch(console.error);
             })
           );
           // TODO(@Peng): no tag peek view yet
@@ -174,7 +182,8 @@ export function DocPeekPreview({
               ref={onRef}
               className={styles.editor}
               mode={resolvedMode}
-              defaultSelectedBlockId={blockId}
+              blockIds={blockIds}
+              elementIds={elementIds}
               page={doc.blockSuiteDoc}
             />
           </FrameworkScope>

@@ -128,9 +128,16 @@ export class Workbench extends Entity {
     const docId = typeof id === 'string' ? id : id.docId;
     const blockId = typeof id === 'string' ? undefined : id.blockId;
     const mode = typeof id === 'string' ? undefined : id.mode;
-    const hash = blockId ? `#${blockId}` : '';
-    const query = mode ? `?mode=${mode}` : '';
-    this.open(`/${docId}${query}${hash}`, options);
+
+    let query = '';
+    if (mode || blockId) {
+      const search = new URLSearchParams();
+      if (mode) search.set('mode', mode);
+      if (blockId) search.set('blockIds', blockId);
+      query = `?${search.toString()}`;
+    }
+
+    this.open(`/${docId}${query}`, options);
   }
 
   openCollections(options?: WorkbenchOpenOptions) {

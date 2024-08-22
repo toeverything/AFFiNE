@@ -6,63 +6,77 @@ import {
 } from '@affine/core/modules/peek-view';
 import { WorkbenchLink } from '@affine/core/modules/workbench';
 import { useI18n } from '@affine/i18n';
+import type { BlockStdScope } from '@blocksuite/block-std';
+import { DocMode } from '@blocksuite/blocks';
 import {
+  BlockLinkIcon,
   DeleteIcon,
   LinkedEdgelessIcon,
   LinkedPageIcon,
   TodayIcon,
 } from '@blocksuite/icons/rc';
 import type { DocCollection } from '@blocksuite/store';
+import { useService } from '@toeverything/infra';
 import {
-  type DocMode,
-  DocsService,
-  LiveData,
-  useLiveData,
-  useService,
-} from '@toeverything/infra';
-import { type PropsWithChildren, useCallback, useRef } from 'react';
+  type PropsWithChildren,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 
 import * as styles from './styles.css';
+import { scrollAnchoring } from './utils';
 
 export interface PageReferenceRendererOptions {
-  docMode: DocMode | null;
   pageId: string;
   docCollection: DocCollection;
   pageMetaHelper: ReturnType<typeof useDocMetaHelper>;
   journalHelper: ReturnType<typeof useJournalHelper>;
   t: ReturnType<typeof useI18n>;
+  docMode: DocMode | null;
+  // linking doc with block or element
+  blockIds?: string[];
+  elementIds?: string[];
 }
 // use a function to be rendered in the lit renderer
 export function pageReferenceRenderer({
-  docMode,
   pageId,
   pageMetaHelper,
   journalHelper,
   t,
+  docMode,
+  blockIds,
+  elementIds,
 }: PageReferenceRendererOptions) {
   const { isPageJournal, getLocalizedJournalDateString } = journalHelper;
   const referencedPage = pageMetaHelper.getDocMeta(pageId);
   let title =
     referencedPage?.title ?? t['com.affine.editor.reference-not-found']();
 
-  let icon = !referencedPage ? (
-    <DeleteIcon className={styles.pageReferenceIcon} />
-  ) : docMode === 'page' || docMode === null ? (
-    <LinkedPageIcon className={styles.pageReferenceIcon} />
-  ) : (
-    <LinkedEdgelessIcon className={styles.pageReferenceIcon} />
-  );
+  let Icon = DeleteIcon;
+
+  if (referencedPage) {
+    if (docMode === DocMode.Edgeless) {
+      Icon = LinkedEdgelessIcon;
+    } else {
+      Icon = LinkedPageIcon;
+    }
+    if (blockIds?.length || elementIds?.length) {
+      Icon = BlockLinkIcon;
+    }
+  }
 
   const isJournal = isPageJournal(pageId);
   const localizedJournalDate = getLocalizedJournalDateString(pageId);
   if (isJournal && localizedJournalDate) {
     title = localizedJournalDate;
-    icon = <TodayIcon className={styles.pageReferenceIcon} />;
+    Icon = TodayIcon;
   }
 
   return (
     <>
-      {icon}
+      <Icon className={styles.pageReferenceIcon} />
       <span className="affine-reference-title">
         {title ? title : t['Untitled']()}
       </span>
@@ -74,38 +88,60 @@ export function AffinePageReference({
   pageId,
   docCollection,
   wrapper: Wrapper,
+  mode = DocMode.Page,
+  params = {},
+  isSameDoc = false,
+  std,
 }: {
-  docCollection: DocCollection;
   pageId: string;
+  docCollection: DocCollection;
   wrapper?: React.ComponentType<PropsWithChildren>;
+  mode?: DocMode;
+  params?: {
+    mode?: DocMode;
+    blockIds?: string[];
+    elementIds?: string[];
+  };
+  isSameDoc?: boolean;
+  std?: BlockStdScope;
 }) {
   const pageMetaHelper = useDocMetaHelper(docCollection);
   const journalHelper = useJournalHelper(docCollection);
   const t = useI18n();
+  const [anchor, setAnchor] = useState<{
+    mode: DocMode;
+    id: string;
+  } | null>(null);
 
-  const docsService = useService(DocsService);
-  const docPrimaryMode = useLiveData(
-    LiveData.computed(get => {
-      const primaryMode$ = get(docsService.list.doc$(pageId))?.primaryMode$;
-      if (!primaryMode$) {
-        return null;
-      }
-      return get(primaryMode$);
-    })
-  );
+  const { mode: linkedWithMode, blockIds, elementIds } = params;
+
   const el = pageReferenceRenderer({
-    docMode: docPrimaryMode,
+    docMode: linkedWithMode ?? mode,
     pageId,
     pageMetaHelper,
     journalHelper,
     docCollection,
     t,
+    blockIds,
+    elementIds,
   });
 
   const ref = useRef<HTMLAnchorElement>(null);
 
   const peekView = useService(PeekViewService).peekView;
   const isInPeekView = useInsidePeekView();
+
+  useEffect(() => {
+    if (isSameDoc) {
+      if (mode === DocMode.Edgeless && elementIds?.length) {
+        setAnchor({ mode, id: elementIds[0] });
+      } else if (blockIds?.length) {
+        setAnchor({ mode, id: blockIds[0] });
+      }
+    } else {
+      setAnchor(null);
+    }
+  }, [std, isSameDoc, mode, blockIds, elementIds]);
 
   const onClick = useCallback(
     (e: React.MouseEvent) => {
@@ -114,18 +150,39 @@ export function AffinePageReference({
         e.stopPropagation();
         peekView.open(ref.current).catch(console.error);
       }
-      if (isInPeekView) {
+
+      if (std && anchor) {
+        e.preventDefault();
+        e.stopPropagation();
+        const { mode, id } = anchor;
+        scrollAnchoring(std, mode, id);
+      } else if (isInPeekView) {
         peekView.close();
       }
+
       return;
     },
-    [isInPeekView, peekView]
+    [isInPeekView, peekView, anchor, std]
   );
+
+  // A block/element reference link
+  const search = new URLSearchParams();
+  if (linkedWithMode) {
+    search.set('mode', linkedWithMode);
+  }
+  if (blockIds?.length) {
+    search.set('blockIds', blockIds.join(','));
+  }
+  if (elementIds?.length) {
+    search.set('elementIds', elementIds.join(','));
+  }
+
+  const query = search.size > 0 ? `?${search.toString()}` : '';
 
   return (
     <WorkbenchLink
       ref={ref}
-      to={`/${pageId}`}
+      to={`/${pageId}${query}`}
       onClick={onClick}
       className={styles.pageReferenceLink}
     >

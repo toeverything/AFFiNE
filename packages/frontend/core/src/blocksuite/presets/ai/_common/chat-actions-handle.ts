@@ -424,7 +424,7 @@ const CREATE_AS_DOC = {
     const noteId = newDoc.addBlock('affine:note', {}, rootId);
 
     host.spec.getService('affine:page').slots.docLinkClicked.emit({
-      docId: newDoc.id,
+      pageId: newDoc.id,
     });
     let complete = false;
     (function addContent() {

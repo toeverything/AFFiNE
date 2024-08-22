@@ -22,18 +22,22 @@ function renderPeekView({ info }: ActivePeekView) {
     return toReactNode(info.template);
   }
   if (info.type === 'doc') {
+    console.dir(info);
     return (
       <DocPeekPreview
         mode={info.mode}
         xywh={info.xywh}
         docId={info.docId}
-        blockId={info.blockId}
+        blockIds={info.blockIds}
+        elementIds={info.elementIds}
       />
     );
   }
 
   if (info.type === 'image') {
-    return <ImagePreviewPeekView docId={info.docId} blockId={info.blockId} />;
+    return (
+      <ImagePreviewPeekView docId={info.docId} blockId={info.blockIds[0]} />
+    );
   }
 
   if (info.type === 'ai-chat-block') {

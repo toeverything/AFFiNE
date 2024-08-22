@@ -1,7 +1,7 @@
 import { Entity, LiveData } from '@toeverything/infra';
 import type { Location, To } from 'history';
 import { isEqual } from 'lodash-es';
-import queryString from 'query-string';
+import { default as queryString, type ParseOptions } from 'query-string';
 import { Observable } from 'rxjs';
 
 import { createNavigableHistory } from '../../../utils/navigable-history';
@@ -79,15 +79,14 @@ export class View extends Entity<{
 
   icon$ = new LiveData(this.props.icon ?? 'allDocs');
 
-  queryString$<T extends Record<string, unknown>>({
-    parseNumbers = true,
-  }: { parseNumbers?: boolean } = {}) {
+  queryString$<T extends Record<string, unknown>>(
+    options: ParseOptions = {
+      parseNumbers: true,
+      parseBooleans: true,
+    }
+  ) {
     return this.location$.map(
-      location =>
-        queryString.parse(location.search, {
-          parseBooleans: true,
-          parseNumbers: parseNumbers,
-        }) as Partial<T>
+      location => queryString.parse(location.search, options) as Partial<T>
     );
   }
 

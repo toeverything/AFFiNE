@@ -1,3 +1,6 @@
+import { DocMode } from '@blocksuite/blocks';
+import queryString from 'query-string';
+
 function maybeAffineOrigin(origin: string) {
   return (
     origin.startsWith('file://') ||
@@ -49,7 +52,6 @@ export const resolveRouteLinkMeta = (href: string) => {
           workspaceId,
           moduleName: 'doc' as const,
           docId: moduleName,
-          blockId: hash.slice(1),
         };
       }
     }
@@ -73,9 +75,23 @@ const isRouteModulePath = (
 export const resolveLinkToDoc = (href: string) => {
   const meta = resolveRouteLinkMeta(href);
   if (!meta || meta.moduleName !== 'doc') return null;
+
+  const params: {
+    mode?: DocMode;
+    blockIds?: string[];
+    elementIds?: string[];
+  } = queryString.parse(meta.location.search, {
+    arrayFormat: 'none',
+    types: {
+      mode: value => (value === 'edgeless' ? DocMode.Edgeless : DocMode.Page),
+      blockIds: value => value.split(','),
+      elementIds: value => value.split(','),
+    },
+  });
+
   return {
     workspaceId: meta.workspaceId,
     docId: meta.docId,
-    blockId: meta.blockId,
+    ...params,
   };
 };

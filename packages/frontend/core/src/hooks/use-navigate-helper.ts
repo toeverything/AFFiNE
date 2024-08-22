@@ -1,4 +1,5 @@
 import type { WorkspaceSubPath } from '@affine/core/shared';
+import type { DocMode } from '@toeverything/infra';
 import { createContext, useCallback, useContext, useMemo } from 'react';
 import type { NavigateFunction, NavigateOptions } from 'react-router-dom';
 
@@ -40,10 +41,17 @@ export function useNavigateHelper() {
     (
       workspaceId: string,
       pageId: string,
-      blockId: string,
+      mode?: DocMode,
+      blockIds?: string[],
+      elementIds?: string[],
       logic: RouteLogic = RouteLogic.PUSH
     ) => {
-      return navigate(`/workspace/${workspaceId}/${pageId}#${blockId}`, {
+      const search = new URLSearchParams();
+      if (mode) search.append('mode', mode);
+      if (blockIds?.length) search.append('blockIds', blockIds.join(','));
+      if (elementIds?.length) search.append('elementIds', elementIds.join(','));
+      const query = search.size > 0 ? `?${search.toString()}` : '';
+      return navigate(`/workspace/${workspaceId}/${pageId}${query}`, {
         replace: logic === RouteLogic.REPLACE,
       });
     },

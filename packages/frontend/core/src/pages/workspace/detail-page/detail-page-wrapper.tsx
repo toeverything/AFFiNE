@@ -28,19 +28,14 @@ const useLoadDoc = (pageId: string) => {
   const docRecord = useLiveData(docRecordList.doc$(pageId));
   const viewService = useService(ViewService);
 
-  const queryString = useLiveData(
-    viewService.view.queryString$<{
-      mode?: string;
-    }>()
+  const modeInQuery = useLiveData(
+    viewService.view.queryString$<{ mode?: string }>().map(query => {
+      if (query.mode && DocModes.includes(query.mode)) {
+        return query.mode as DocMode;
+      }
+      return null;
+    })
   );
-
-  const queryStringMode =
-    queryString.mode && DocModes.includes(queryString.mode)
-      ? (queryString.mode as DocMode)
-      : null;
-
-  // We only read the querystring mode when entering, so use useState here.
-  const [initialQueryStringMode] = useState(() => queryStringMode);
 
   const [doc, setDoc] = useState<Doc | null>(null);
   const [editor, setEditor] = useState<Editor | null>(null);
@@ -63,12 +58,12 @@ const useLoadDoc = (pageId: string) => {
     }
     const editor = doc.scope
       .get(EditorsService)
-      .createEditor(initialQueryStringMode || doc.getPrimaryMode() || 'page');
+      .createEditor(modeInQuery || doc.getPrimaryMode() || DocMode.Page);
     setEditor(editor);
     return () => {
       editor.dispose();
     };
-  }, [doc, initialQueryStringMode]);
+  }, [doc, modeInQuery]);
 
   // update editor mode to queryString
   useEffect(() => {
