@@ -133,6 +133,9 @@ const WorkbenchTab = ({
   );
   const onActivateView = useAsyncCallback(
     async (viewIdx: number) => {
+      if (viewIdx === activeViewIndex && tabActive) {
+        return;
+      }
       await tabsHeaderService.activateView?.(workbench.id, viewIdx);
       if (tabActive) {
         track.$.appTabsHeader.$.tabAction({
@@ -146,7 +149,7 @@ const WorkbenchTab = ({
         });
       }
     },
-    [tabActive, tabsHeaderService, workbench.id]
+    [activeViewIndex, tabActive, tabsHeaderService, workbench.id]
   );
   const handleAuxClick: MouseEventHandler = useCatchEventCallback(
     async e => {
