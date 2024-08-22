@@ -1,6 +1,7 @@
 import type { RootBlockModel } from '@blocksuite/blocks';
 
 import { Entity } from '../../../framework';
+import type { WorkspaceService } from '../../workspace';
 import type { DocScope } from '../scopes/doc';
 import type { DocsStore } from '../stores/docs';
 import type { DocMode } from './record';
@@ -8,9 +9,17 @@ import type { DocMode } from './record';
 export class Doc extends Entity {
   constructor(
     public readonly scope: DocScope,
-    private readonly store: DocsStore
+    private readonly store: DocsStore,
+    private readonly workspaceService: WorkspaceService
   ) {
     super();
+  }
+
+  /**
+   * for convenience
+   */
+  get workspace() {
+    return this.workspaceService.workspace;
   }
 
   get id() {

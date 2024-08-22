@@ -28,6 +28,6 @@ export function configureDocModule(framework: Framework) {
     .entity(DocRecord, [DocsStore])
     .entity(DocRecordList, [DocsStore])
     .scope(DocScope)
-    .entity(Doc, [DocScope, DocsStore])
+    .entity(Doc, [DocScope, DocsStore, WorkspaceService])
     .service(DocService);
 }
