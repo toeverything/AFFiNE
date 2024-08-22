@@ -34,7 +34,7 @@
     "@nestjs/platform-express": "^10.3.7",
     "@nestjs/platform-socket.io": "^10.3.7",
     "@nestjs/schedule": "^4.0.1",
-    "@nestjs/throttler": "5.2.0",
+    "@nestjs/throttler": "6.2.1",
     "@nestjs/websockets": "^10.3.7",
     "@node-rs/argon2": "^1.8.0",
     "@node-rs/crc32": "^1.10.0",
