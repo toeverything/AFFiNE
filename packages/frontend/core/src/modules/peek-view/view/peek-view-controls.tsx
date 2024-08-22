@@ -111,8 +111,7 @@ export const DocPeekViewControls = ({
         nameKey: 'open',
         onClick: () => {
           // TODO(@Peng): for frame blocks, we should mimic "view in edgeless" button behavior
-          workbench.openDoc({ docId, blockId, mode });
-
+          workbench.openDoc({ docId, mode, blockId });
           peekView.close('none');
         },
       },
@@ -121,7 +120,7 @@ export const DocPeekViewControls = ({
         nameKey: 'new-tab',
         name: t['com.affine.peek-view-controls.open-doc-in-new-tab'](),
         onClick: () => {
-          workbench.openDoc(docId, { at: 'new-tab' });
+          workbench.openDoc({ docId, mode }, { at: 'new-tab' });
           peekView.close('none');
         },
       },
@@ -130,7 +129,7 @@ export const DocPeekViewControls = ({
         nameKey: 'split-view',
         name: t['com.affine.peek-view-controls.open-doc-in-split-view'](),
         onClick: () => {
-          workbench.openDoc(docId, { at: 'beside' });
+          workbench.openDoc({ docId, mode }, { at: 'beside' });
           peekView.close('none');
         },
       },

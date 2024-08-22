@@ -129,8 +129,8 @@ export function DocPeekPreview({
             editorElement.host.std.spec.getService('affine:page');
           // doc change event inside peek view should be handled by peek view
           disposableGroup.add(
-            rootService.slots.docLinkClicked.on(({ docId, blockId }) => {
-              peekView.open({ docId, blockId }).catch(console.error);
+            rootService.slots.docLinkClicked.on(options => {
+              peekView.open(options).catch(console.error);
             })
           );
           // TODO(@Peng): no tag peek view yet

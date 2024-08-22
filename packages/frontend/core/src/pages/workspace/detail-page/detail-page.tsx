@@ -23,8 +23,8 @@ import { DisposableGroup } from '@blocksuite/global/utils';
 import { AiIcon, FrameIcon, TocIcon, TodayIcon } from '@blocksuite/icons/rc';
 import { type AffineEditorContainer } from '@blocksuite/presets';
 import type { Doc as BlockSuiteDoc } from '@blocksuite/store';
-import type { Doc } from '@toeverything/infra';
 import {
+  type Doc,
   DocService,
   DocsService,
   FrameworkScope,
@@ -226,10 +226,20 @@ const DetailPageImpl = memo(function DetailPageImpl() {
       const disposable = new DisposableGroup();
       if (pageService) {
         disposable.add(
-          pageService.slots.docLinkClicked.on(({ docId, blockId }) => {
-            return blockId
-              ? jumpToPageBlock(docCollection.id, docId, blockId)
-              : openPage(docCollection.id, docId);
+          pageService.slots.docLinkClicked.on(({ pageId, params }) => {
+            if (params) {
+              const { mode, blockIds, elementIds } = params;
+              // TODO(@fundon): jump to element in edgeless mode
+              return jumpToPageBlock(
+                docCollection.id,
+                pageId,
+                mode,
+                blockIds,
+                elementIds
+              );
+            }
+
+            return openPage(docCollection.id, pageId);
           })
         );
         disposable.add(
@@ -338,19 +348,14 @@ export const DetailPage = ({ pageId }: { pageId: string }): ReactElement => {
   const docRecord = useLiveData(docRecordList.doc$(pageId));
   const viewService = useService(ViewService);
 
-  const queryString = useLiveData(
-    viewService.view.queryString$<{
-      mode?: string;
-    }>()
+  const modeInQuery = useLiveData(
+    viewService.view.queryString$<{ mode?: string }>().map(query => {
+      if (query.mode && ['edgeless', 'page'].includes(query.mode)) {
+        return query.mode as DocMode;
+      }
+      return null;
+    })
   );
-
-  const queryStringMode =
-    queryString.mode && ['edgeless', 'page'].includes(queryString.mode)
-      ? (queryString.mode as DocMode)
-      : null;
-
-  // We only read the querystring mode when entering, so use useState here.
-  const [initialQueryStringMode] = useState(() => queryStringMode);
 
   const [doc, setDoc] = useState<Doc | null>(null);
   const [editor, setEditor] = useState<Editor | null>(null);
@@ -373,12 +378,12 @@ export const DetailPage = ({ pageId }: { pageId: string }): ReactElement => {
     }
     const editor = doc.scope
       .get(EditorsService)
-      .createEditor(initialQueryStringMode || doc.getPrimaryMode() || 'page');
+      .createEditor(modeInQuery || doc.getPrimaryMode() || 'page');
     setEditor(editor);
     return () => {
       editor.dispose();
     };
-  }, [doc, initialQueryStringMode]);
+  }, [doc, modeInQuery]);
 
   // update editor mode to queryString
   useEffect(() => {

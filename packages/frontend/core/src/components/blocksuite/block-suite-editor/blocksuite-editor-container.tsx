@@ -1,3 +1,4 @@
+import type { ReferenceInfo } from '@blocksuite/affine-model';
 import type { BlockComponent } from '@blocksuite/block-std';
 import type {
   AffineEditorContainer,
@@ -108,7 +109,7 @@ export const BlocksuiteEditorContainer = forwardRef<
 
   const slots: BlocksuiteEditorContainerRef['slots'] = useMemo(() => {
     return {
-      docLinkClicked: new Slot(),
+      docLinkClicked: new Slot<ReferenceInfo>(),
       editorModeSwitched: new Slot(),
       docUpdated: new Slot(),
       tagClicked: new Slot(),

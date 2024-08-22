@@ -73,10 +73,18 @@ const usePatchSpecs = (page: Doc, shared: boolean, mode: DocMode) => {
   const framework = useFramework();
   const referenceRenderer: ReferenceReactRenderer = useMemo(() => {
     return function customReference(reference) {
-      const pageId = reference.delta.attributes?.reference?.pageId;
+      const data = reference.delta.attributes?.reference;
+      if (!data) return <span />;
+
+      const pageId = data.pageId;
       if (!pageId) return <span />;
+
       return (
-        <AffinePageReference docCollection={page.collection} pageId={pageId} />
+        <AffinePageReference
+          docCollection={page.collection}
+          pageId={pageId}
+          params={data.params}
+        />
       );
     };
   }, [page.collection]);
