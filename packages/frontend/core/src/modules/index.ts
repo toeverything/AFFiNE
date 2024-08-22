@@ -16,6 +16,7 @@ import { configurePermissionsModule } from './permissions';
 import { configureWorkspacePropertiesModule } from './properties';
 import { configureQuickSearchModule } from './quicksearch';
 import { configureShareDocsModule } from './share-doc';
+import { configureSystemFontFamilyModule } from './system-font-family';
 import { configureTagModule } from './tag';
 import { configureTelemetryModule } from './telemetry';
 import { configureThemeEditorModule } from './theme-editor';
@@ -41,4 +42,5 @@ export function configureCommonModules(framework: Framework) {
   configureExplorerModule(framework);
   configureThemeEditorModule(framework);
   configureEditorModule(framework);
+  configureSystemFontFamilyModule(framework);
 }

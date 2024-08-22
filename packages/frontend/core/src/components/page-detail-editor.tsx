@@ -1,7 +1,7 @@
 import './page-detail-editor.css';
 
 import { useDocCollectionPage } from '@affine/core/hooks/use-block-suite-workspace-page';
-import { assertExists, DisposableGroup } from '@blocksuite/global/utils';
+import { DisposableGroup } from '@blocksuite/global/utils';
 import type { AffineEditorContainer } from '@blocksuite/presets';
 import type { Doc as BlockSuiteDoc, DocCollection } from '@blocksuite/store';
 import {
@@ -10,6 +10,7 @@ import {
   useLiveData,
   useService,
 } from '@toeverything/infra';
+import { cssVar } from '@toeverything/theme';
 import clsx from 'clsx';
 import type { CSSProperties } from 'react';
 import { memo, Suspense, useCallback, useMemo } from 'react';
@@ -56,9 +57,15 @@ const PageDetailEditorMain = memo(function PageDetailEditorMain({
     const fontStyle = fontStyleOptions.find(
       option => option.key === appSettings.fontStyle
     );
-    assertExists(fontStyle);
-    return fontStyle.value;
-  }, [appSettings.fontStyle]);
+    if (!fontStyle) {
+      return cssVar('fontSansFamily');
+    }
+    const customFontFamily = appSettings.customFontFamily;
+
+    return customFontFamily && fontStyle.key === 'Custom'
+      ? `${customFontFamily}, ${fontStyle.value}`
+      : fontStyle.value;
+  }, [appSettings.customFontFamily, appSettings.fontStyle]);
 
   const blockId = useRouterHash();
 

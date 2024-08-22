@@ -1,9 +1,12 @@
 import {
+  Loading,
   Menu,
   MenuItem,
+  MenuSeparator,
   MenuTrigger,
   RadioGroup,
   type RadioItem,
+  Scrollable,
   Switch,
 } from '@affine/component';
 import {
@@ -11,38 +14,76 @@ import {
   SettingWrapper,
 } from '@affine/component/setting-components';
 import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
+import {
+  type FontData,
+  SystemFontFamilyService,
+} from '@affine/core/modules/system-font-family';
 import { useI18n } from '@affine/i18n';
 import {
   type AppSetting,
   type DocMode,
+  type FontFamily,
   fontStyleOptions,
+  useLiveData,
+  useService,
 } from '@toeverything/infra';
-import { useCallback, useMemo, useState } from 'react';
+import {
+  type ChangeEvent,
+  forwardRef,
+  type HTMLAttributes,
+  type PropsWithChildren,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
+import { Virtuoso } from 'react-virtuoso';
 
-import { menu, menuTrigger, settingWrapper } from './style.css';
+import { menu, menuTrigger, searchInput, settingWrapper } from './style.css';
 
 const FontFamilySettings = () => {
   const t = useI18n();
   const { appSettings, updateSettings } = useAppSettingHelper();
+  const getLabel = useCallback(
+    (fontKey: FontFamily) => {
+      switch (fontKey) {
+        case 'Sans':
+          return t['com.affine.appearanceSettings.fontStyle.sans']();
+        case 'Serif':
+          return t['com.affine.appearanceSettings.fontStyle.serif']();
+        case 'Mono':
+          return t[`com.affine.appearanceSettings.fontStyle.mono`]();
+        case 'Custom':
+          return t['com.affine.settings.editorSettings.edgeless.custom']();
+        default:
+          return '';
+      }
+    },
+    [t]
+  );
 
   const radioItems = useMemo(() => {
-    return fontStyleOptions.map(({ key, value }) => {
-      const label =
-        key === 'Mono'
-          ? t[`com.affine.appearanceSettings.fontStyle.mono`]()
-          : key === 'Sans'
-            ? t['com.affine.appearanceSettings.fontStyle.sans']()
-            : key === 'Serif'
-              ? t['com.affine.appearanceSettings.fontStyle.serif']()
-              : '';
-      return {
-        value: key,
-        label,
-        testId: 'system-font-style-trigger',
-        style: { fontFamily: value },
-      } satisfies RadioItem;
-    });
-  }, [t]);
+    return fontStyleOptions
+      .map(({ key, value }) => {
+        if (key === 'Custom' && !environment.isDesktop) {
+          return null;
+        }
+        const label = getLabel(key);
+        let fontFamily = value;
+        if (key === 'Custom' && appSettings.customFontFamily) {
+          fontFamily = `${appSettings.customFontFamily}, ${value}`;
+        }
+        return {
+          value: key,
+          label,
+          testId: 'system-font-style-trigger',
+          style: {
+            fontFamily,
+          },
+        } satisfies RadioItem;
+      })
+      .filter(item => item !== null);
+  }, [appSettings.customFontFamily, getLabel]);
 
   return (
     <RadioGroup
@@ -57,6 +98,151 @@ const FontFamilySettings = () => {
         [updateSettings]
       )}
     />
+  );
+};
+
+const getFontFamily = (font: string) => `${font}, ${fontStyleOptions[0].value}`;
+
+const Scroller = forwardRef<
+  HTMLDivElement,
+  PropsWithChildren<HTMLAttributes<HTMLDivElement>>
+>(({ children, ...props }, ref) => {
+  return (
+    <Scrollable.Root>
+      <Scrollable.Viewport {...props} ref={ref}>
+        {children}
+      </Scrollable.Viewport>
+      <Scrollable.Scrollbar />
+    </Scrollable.Root>
+  );
+});
+
+Scroller.displayName = 'Scroller';
+
+const FontMenuItems = ({ onSelect }: { onSelect: (font: string) => void }) => {
+  const systemFontFamily = useService(SystemFontFamilyService).systemFontFamily;
+  useEffect(() => {
+    if (systemFontFamily.fontList$.value.length === 0) {
+      systemFontFamily.loadFontList();
+    }
+    systemFontFamily.clearSearch();
+  }, [systemFontFamily]);
+
+  const isLoading = useLiveData(systemFontFamily.isLoading$);
+  const result = useLiveData(systemFontFamily.result$);
+  const searchText = useLiveData(systemFontFamily.searchText$);
+
+  const onInputChange = useCallback(
+    (e: ChangeEvent<HTMLInputElement>) => {
+      systemFontFamily.search(e.target.value);
+    },
+    [systemFontFamily]
+  );
+  const onInputKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      e.stopPropagation(); // avoid typeahead search built-in in the menu
+    },
+    []
+  );
+
+  return (
+    <div>
+      <input
+        value={searchText ?? ''}
+        onChange={onInputChange}
+        onKeyDown={onInputKeyDown}
+        autoFocus
+        className={searchInput}
+        placeholder="Type here ..."
+      />
+      <MenuSeparator />
+      {isLoading ? (
+        <Loading />
+      ) : (
+        <Scrollable.Root style={{ height: '200px' }}>
+          <Scrollable.Viewport>
+            {result.length > 0 ? (
+              <Virtuoso
+                totalCount={result.length}
+                components={{
+                  Scroller: Scroller,
+                }}
+                itemContent={index => (
+                  <FontMenuItem
+                    key={result[index].fullName}
+                    font={result[index]}
+                    onSelect={onSelect}
+                  />
+                )}
+              />
+            ) : (
+              <div>No font found</div>
+            )}
+          </Scrollable.Viewport>
+          <Scrollable.Scrollbar />
+        </Scrollable.Root>
+      )}
+    </div>
+  );
+};
+
+const FontMenuItem = ({
+  font,
+  onSelect,
+}: {
+  font: FontData;
+  onSelect: (font: string) => void;
+}) => {
+  const handleFontSelect = useCallback(
+    () => onSelect(font.fullName),
+    [font, onSelect]
+  );
+  const fontFamily = getFontFamily(font.family);
+  return (
+    <MenuItem
+      key={font.fullName}
+      onSelect={handleFontSelect}
+      style={{ fontFamily }}
+    >
+      {font.fullName}
+    </MenuItem>
+  );
+};
+
+const CustomFontFamilySettings = () => {
+  const t = useI18n();
+  const { appSettings, updateSettings } = useAppSettingHelper();
+  const fontFamily = getFontFamily(appSettings.customFontFamily);
+  const onCustomFontFamilyChange = useCallback(
+    (fontFamily: string) => {
+      updateSettings('customFontFamily', fontFamily);
+    },
+    [updateSettings]
+  );
+  if (appSettings.fontStyle !== 'Custom' || !environment.isDesktop) {
+    return null;
+  }
+  return (
+    <SettingRow
+      name={t[
+        'com.affine.settings.editorSettings.general.font-family.custom.title'
+      ]()}
+      desc={t[
+        'com.affine.settings.editorSettings.general.font-family.custom.description'
+      ]()}
+    >
+      <Menu
+        items={<FontMenuItems onSelect={onCustomFontFamilyChange} />}
+        contentOptions={{
+          align: 'end',
+          style: { width: '250px' },
+        }}
+      >
+        <MenuTrigger className={menuTrigger} style={{ fontFamily }}>
+          {appSettings.customFontFamily || 'Select a font'}
+        </MenuTrigger>
+      </Menu>
+    </SettingRow>
   );
 };
 const NewDocDefaultModeSettings = () => {
@@ -104,16 +290,7 @@ export const General = () => {
       >
         <FontFamilySettings />
       </SettingRow>
-      <SettingRow
-        name={t[
-          'com.affine.settings.editorSettings.general.font-family.custom.title'
-        ]()}
-        desc={t[
-          'com.affine.settings.editorSettings.general.font-family.custom.description'
-        ]()}
-      >
-        <Switch />
-      </SettingRow>
+      <CustomFontFamilySettings />
       <SettingRow
         name={t[
           'com.affine.settings.editorSettings.general.font-family.title'

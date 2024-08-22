@@ -49,3 +49,18 @@ export const shapeIndicator = style({
   boxShadow: 'none',
   backgroundColor: cssVarV2('layer/background/tertiary'),
 });
+
+export const searchInput = style({
+  flexGrow: 1,
+  padding: '10px 0',
+  margin: '-10px 0',
+  border: 'none',
+  outline: 'none',
+  fontSize: cssVar('fontSm'),
+  fontFamily: 'inherit',
+  color: 'inherit',
+  backgroundColor: 'transparent',
+  '::placeholder': {
+    color: cssVarV2('text/placeholder'),
+  },
+});

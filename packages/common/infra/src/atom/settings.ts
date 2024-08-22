@@ -22,6 +22,7 @@ export type AppSetting = {
   fullWidthLayout: boolean;
   windowFrameStyle: 'frameless' | 'NativeTitleBar';
   fontStyle: FontFamily;
+  customFontFamily: string;
   dateFormat: DateFormats;
   startWeekOnMonday: boolean;
   enableBlurBackground: boolean;
@@ -45,12 +46,13 @@ export const dateFormatOptions: DateFormats[] = [
   'dd MMMM YYYY',
 ];
 
-export type FontFamily = 'Sans' | 'Serif' | 'Mono';
+export type FontFamily = 'Sans' | 'Serif' | 'Mono' | 'Custom';
 
 export const fontStyleOptions = [
   { key: 'Sans', value: 'var(--affine-font-sans-family)' },
   { key: 'Serif', value: 'var(--affine-font-serif-family)' },
   { key: 'Mono', value: 'var(--affine-font-mono-family)' },
+  { key: 'Custom', value: 'var(--affine-font-sans-family)' },
 ] satisfies {
   key: FontFamily;
   value: string;
@@ -61,6 +63,7 @@ const appSettingBaseAtom = atomWithStorage<AppSetting>('affine-settings', {
   fullWidthLayout: false,
   windowFrameStyle: 'frameless',
   fontStyle: 'Sans',
+  customFontFamily: '',
   dateFormat: dateFormatOptions[0],
   startWeekOnMonday: false,
   enableBlurBackground: true,
