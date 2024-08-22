@@ -18,11 +18,13 @@ import {
   fitContent,
   ImageBlockModel,
   InsertBelowIcon,
+  LightLoadingIcon,
   NoteDisplayMode,
   ResetIcon,
 } from '@blocksuite/blocks';
 import { assertExists, Bound } from '@blocksuite/global/utils';
-import type { TemplateResult } from 'lit';
+import { html, type TemplateResult } from 'lit';
+import { styleMap } from 'lit/directives/style-map.js';
 
 import { AIPenIcon, ChatWithAIIcon } from '../_common/icons';
 import { insertFromMarkdown } from '../_common/markdown-utils';
@@ -98,27 +100,55 @@ export function retry(panel: AffineAIPanelWidget): AIItemConfig {
   };
 }
 
+const extraConditions: Record<string, (data: any) => boolean> = {
+  createSlides: data => !!data.contents,
+};
 export function createInsertResp<T extends keyof BlockSuitePresets.AIActions>(
   id: T,
   handler: (host: EditorHost, ctx: CtxRecord) => void,
   host: EditorHost,
   ctx: CtxRecord,
   buttonText: string = 'Insert below'
-): AIItemConfig {
-  return {
-    name: buttonText,
-    icon: InsertBelowIcon,
-    showWhen: () => {
-      const panel = getAIPanel(host);
-      return !EXCLUDING_INSERT_ACTIONS.includes(id) && !!panel.answer;
+): AIItemConfig[] {
+  const extraCondition = extraConditions[id] || ((_: any) => true);
+  return [
+    {
+      name: `${buttonText} - Loading...`,
+      icon: html`<div style=${styleMap({ height: '20px', width: '20px' })}>
+        ${LightLoadingIcon}
+      </div>`,
+      showWhen: () => {
+        const panel = getAIPanel(host);
+        const data = ctx.get();
+        return (
+          !EXCLUDING_INSERT_ACTIONS.includes(id) &&
+          !!panel.answer &&
+          // required data for insert
+          !extraCondition(data)
+        );
+      },
     },
-    handler: () => {
-      reportResponse('result:insert');
-      handler(host, ctx);
-      const panel = getAIPanel(host);
-      panel.hide();
+    {
+      name: buttonText,
+      icon: InsertBelowIcon,
+      showWhen: () => {
+        const panel = getAIPanel(host);
+        const data = ctx.get();
+        return (
+          !EXCLUDING_INSERT_ACTIONS.includes(id) &&
+          !!panel.answer &&
+          // required data for insert
+          !!extraCondition(data)
+        );
+      },
+      handler: () => {
+        reportResponse('result:insert');
+        handler(host, ctx);
+        const panel = getAIPanel(host);
+        panel.hide();
+      },
     },
-  };
+  ];
 }
 
 export function asCaption<T extends keyof BlockSuitePresets.AIActions>(
@@ -555,7 +585,7 @@ export function actionToResponse<T extends keyof BlockSuitePresets.AIActions>(
               panel.hide();
             },
           },
-          getInsertAndReplaceHandler(id, host, ctx, variants),
+          ...getInsertAndReplaceHandler(id, host, ctx, variants),
           asCaption(id, host),
           retry(getAIPanel(host)),
           discard(getAIPanel(host), getEdgelessCopilotWidget(host)),
@@ -603,7 +633,7 @@ export function actionToErrorResponse<
     responses: [
       {
         name: 'Response',
-        items: [getInsertAndReplaceHandler(id, host, ctx, variants)],
+        items: getInsertAndReplaceHandler(id, host, ctx, variants),
       },
       {
         name: '',
