@@ -46,10 +46,10 @@ export class PgUserspaceDocStorageAdapter extends DocStorageAdapter {
   }
 
   async pushDocUpdates(
-    editorId: string,
     userId: string,
     docId: string,
-    updates: Uint8Array[]
+    updates: Uint8Array[],
+    editorId?: string
   ) {
     if (!updates.length) {
       return 0;

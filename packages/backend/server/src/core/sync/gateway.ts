@@ -277,10 +277,10 @@ export class SpaceSyncGateway
 
     // TODO(@forehalo): we might need to check write permission before push updates
     const timestamp = await adapter.push(
-      user.id,
       spaceId,
       docId,
-      updates.map(update => Buffer.from(update, 'base64'))
+      updates.map(update => Buffer.from(update, 'base64')),
+      user.id
     );
 
     // could be put in [adapter.push]
@@ -601,9 +601,9 @@ abstract class SyncSocketAdapter {
     permission?: Permission
   ): Promise<void>;
 
-  push(editorId: string, spaceId: string, docId: string, updates: Buffer[]) {
+  push(spaceId: string, docId: string, updates: Buffer[], editorId: string) {
     this.assertIn(spaceId);
-    return this.storage.pushDocUpdates(editorId, spaceId, docId, updates);
+    return this.storage.pushDocUpdates(spaceId, docId, updates, editorId);
   }
 
   get(spaceId: string, docId: string) {
@@ -627,13 +627,13 @@ class WorkspaceSyncAdapter extends SyncSocketAdapter {
   }
 
   override push(
-    editorId: string,
     spaceId: string,
     docId: string,
-    updates: Buffer[]
+    updates: Buffer[],
+    editorId: string
   ) {
     const id = new DocID(docId, spaceId);
-    return super.push(editorId, spaceId, id.guid, updates);
+    return super.push(spaceId, id.guid, updates, editorId);
   }
 
   override get(spaceId: string, docId: string) {
