@@ -353,9 +353,9 @@ export const propertyRowValueUserCell = style([
   propertyRowValueCell,
   {
     border: 'none',
-    height: '100%',
     overflow: 'hidden',
     columnGap: '0.5rem',
+    alignItems: 'center',
   },
 ]);
 
