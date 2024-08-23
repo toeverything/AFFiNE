@@ -777,7 +777,7 @@ __metadata:
     "@nestjs/platform-socket.io": "npm:^10.3.7"
     "@nestjs/schedule": "npm:^4.0.1"
     "@nestjs/testing": "npm:^10.3.7"
-    "@nestjs/throttler": "npm:5.2.0"
+    "@nestjs/throttler": "npm:6.2.1"
     "@nestjs/websockets": "npm:^10.3.7"
     "@node-rs/argon2": "npm:^1.8.0"
     "@node-rs/crc32": "npm:^1.10.0"
@@ -836,7 +836,7 @@ __metadata:
     mustache: "npm:^4.2.0"
     nanoid: "npm:^5.0.7"
     nest-commander: "npm:^3.12.5"
-    nestjs-throttler-storage-redis: "npm:^0.4.4"
+    nestjs-throttler-storage-redis: "npm:^0.5.0"
     nodemailer: "npm:^6.9.13"
     nodemon: "npm:^3.1.0"
     on-headers: "npm:^1.0.2"
@@ -8221,14 +8221,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@nestjs/throttler@npm:5.2.0":
-  version: 5.2.0
-  resolution: "@nestjs/throttler@npm:5.2.0"
+"@nestjs/throttler@npm:6.2.1":
+  version: 6.2.1
+  resolution: "@nestjs/throttler@npm:6.2.1"
   peerDependencies:
     "@nestjs/common": ^7.0.0 || ^8.0.0 || ^9.0.0 || ^10.0.0
     "@nestjs/core": ^7.0.0 || ^8.0.0 || ^9.0.0 || ^10.0.0
     reflect-metadata: ^0.1.13 || ^0.2.0
-  checksum: 10/ec5805cdba895a61f4cb0f998fb8cd16f3c7a86b41fb699c8eb15a0b74aac9dc7da306e8cd4b95bd6c8d0042bb5a4ee4c479b270a5af9bc6ff781839e9fab5b3
+  checksum: 10/4fc05b62f4a115683e3f4072033c1dde5010a9390ee8c6df396a29e90a2599dc18b5c921c2a2958473f7bb66a8336ae014b969c0ff82c2d3b6869b028cb361ee
   languageName: node
   linkType: hard
 
@@ -27512,16 +27512,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"nestjs-throttler-storage-redis@npm:^0.4.4":
-  version: 0.4.4
-  resolution: "nestjs-throttler-storage-redis@npm:0.4.4"
+"nestjs-throttler-storage-redis@npm:^0.5.0":
+  version: 0.5.0
+  resolution: "nestjs-throttler-storage-redis@npm:0.5.0"
   peerDependencies:
     "@nestjs/common": ^7.0.0 || ^8.0.0 || ^9.0.0 || ^10.0.0
     "@nestjs/core": ^7.0.0 || ^8.0.0 || ^9.0.0 || ^10.0.0
-    "@nestjs/throttler": ">=5.0.0"
+    "@nestjs/throttler": ">=6.0.0"
     ioredis: ">=5.0.0"
     reflect-metadata: ^0.2.1
-  checksum: 10/210aa46d734c2290637b287d620e6852ad24297dfd3e4b06461a816eec966bc559363554b402d3a92b491286b4802d18c8549d0b94be23f10161d83cc8068aee
+  checksum: 10/31073270c4fe045bcd37bbf8bf27832724ccffcc42b6d0a46d2f9e0a207c63b29c952250229e0fcb34feef41eea41f095856da1d92a4e6352cc7f04877b57a2c
   languageName: node
   linkType: hard
 

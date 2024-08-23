@@ -137,6 +137,8 @@ test('should be able to prevent requests if limit is reached', async t => {
   const stub = Sinon.stub(app.get(ThrottlerStorage), 'increment').resolves({
     timeToExpire: 10,
     totalHits: 21,
+    isBlocked: true,
+    timeToBlockExpire: 10,
   });
   const res = await request(app.getHttpServer())
     .get('/nonthrottled/strict')
