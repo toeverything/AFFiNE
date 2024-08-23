@@ -1358,6 +1358,7 @@
   "com.affine.settings.workspace.properties.doc_others": "<0>{{count}}</0> docs",
   "com.affine.settings.workspace.properties.edit-property": "Edit property",
   "com.affine.settings.workspace.properties.general-properties": "General properties",
+  "com.affine.settings.workspace.properties.readonly-properties": "Readonly properties",
   "com.affine.settings.workspace.properties.header.subtitle": "Manage workspace <1>{{name}}</1> properties",
   "com.affine.settings.workspace.properties.header.title": "Properties",
   "com.affine.settings.workspace.properties.in-use": "In use",
