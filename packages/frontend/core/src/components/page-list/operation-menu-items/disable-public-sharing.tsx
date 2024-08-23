@@ -1,6 +1,5 @@
 import type { MenuItemProps } from '@affine/component';
 import { MenuItem } from '@affine/component';
-import { PublicLinkDisableModal } from '@affine/component/disable-public-link';
 import { useI18n } from '@affine/i18n';
 import { ShareIcon } from '@blocksuite/icons/rc';
 
@@ -12,5 +11,3 @@ export const DisablePublicSharing = (props: MenuItemProps) => {
     </MenuItem>
   );
 };
-
-DisablePublicSharing.DisablePublicSharingModal = PublicLinkDisableModal;

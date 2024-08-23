@@ -81,7 +81,6 @@ export const PageOperationCell = ({
   );
   const currentWorkspace = workspaceService.workspace;
   const { setTrashModal } = useTrashModalHelper(currentWorkspace.docCollection);
-  const [openDisableShared, setOpenDisableShared] = useState(false);
   const favourite = useLiveData(favAdapter.isFavorite$(page.id, 'doc'));
   const workbench = workbenchService.workbench;
   const { duplicate } = useBlockSuiteMetaHelper(currentWorkspace.docCollection);
@@ -94,6 +93,7 @@ export const PageOperationCell = ({
   }, []);
 
   const onDisablePublicSharing = useCallback(() => {
+    //TODO(@EYHN): implement disable public sharing
     toast('Successfully disabled', {
       portal: document.body,
     });
@@ -154,9 +154,7 @@ export const PageOperationCell = ({
       {page.isPublic && (
         <DisablePublicSharing
           data-testid="disable-public-sharing"
-          onSelect={() => {
-            setOpenDisableShared(true);
-          }}
+          onSelect={onDisablePublicSharing}
         />
       )}
       {isInAllowList && (
@@ -227,11 +225,6 @@ export const PageOperationCell = ({
           docId={blocksuiteDoc.id}
         />
       ) : null}
-      <DisablePublicSharing.DisablePublicSharingModal
-        onConfirm={onDisablePublicSharing}
-        open={openDisableShared}
-        onOpenChange={setOpenDisableShared}
-      />
     </>
   );
 };

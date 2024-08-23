@@ -1,5 +1,4 @@
 import { notify, Skeleton } from '@affine/component';
-import { PublicLinkDisableModal } from '@affine/component/disable-public-link';
 import { Button } from '@affine/component/ui/button';
 import { Menu, MenuItem, MenuTrigger } from '@affine/component/ui/menu';
 import { openSettingModalAtom } from '@affine/core/atoms';
@@ -14,10 +13,10 @@ import { WorkspaceFlavour } from '@affine/env/workspace';
 import { PublicPageMode } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
 import {
+  BlockIcon,
   CollaborationIcon,
   DoneIcon,
   EdgelessIcon,
-  LinkIcon,
   LockIcon,
   PageIcon,
   SingleSelectSelectSolidIcon,
@@ -26,7 +25,7 @@ import {
 import { useLiveData, useService } from '@toeverything/infra';
 import { cssVar } from '@toeverything/theme';
 import { useSetAtom } from 'jotai';
-import { Suspense, useCallback, useEffect, useState } from 'react';
+import { Suspense, useCallback, useEffect } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 
 import { CloudSvg } from '../cloud-svg';
@@ -75,9 +74,6 @@ export const AFFiNESharePage = (props: ShareMenuProps) => {
   const baseUrl = useLiveData(serverConfig.config$.map(c => c?.baseUrl));
   const isLoading =
     isSharedPage === null || sharedMode === null || baseUrl === null;
-  const [showDisable, setShowDisable] = useState(false);
-
-  const currentDocMode = useLiveData(editor.mode$);
 
   const permissionService = useService(WorkspacePermissionService);
   const isOwner = useLiveData(permissionService.permission.isOwner$);
@@ -152,14 +148,7 @@ export const AFFiNESharePage = (props: ShareMenuProps) => {
       });
       console.log(err);
     }
-    setShowDisable(false);
   }, [shareInfoService, t]);
-
-  const onClickDisable = useCallback(() => {
-    if (isSharedPage) {
-      setShowDisable(true);
-    }
-  }, [isSharedPage]);
 
   const isMac = environment.isBrowser && environment.isMacOs;
 
@@ -207,7 +196,7 @@ export const AFFiNESharePage = (props: ShareMenuProps) => {
             }}
             items={
               <>
-                <MenuItem prefixIcon={<LockIcon />} onSelect={onClickDisable}>
+                <MenuItem prefixIcon={<LockIcon />} onSelect={onDisablePublic}>
                   <div className={styles.publicItemRowStyle}>
                     <div>
                       {t['com.affine.share-menu.option.link.no-access']()}
@@ -248,20 +237,9 @@ export const AFFiNESharePage = (props: ShareMenuProps) => {
           <div className={styles.labelStyle}>
             {t['com.affine.share-menu.option.permission.label']()}
           </div>
-          <Menu
-            contentOptions={{
-              align: 'end',
-            }}
-            items={
-              <MenuItem>
-                {t['com.affine.share-menu.option.permission.can-edit']()}
-              </MenuItem>
-            }
-          >
-            <MenuTrigger className={styles.menuTriggerStyle} disabled>
-              {t['com.affine.share-menu.option.permission.can-edit']()}
-            </MenuTrigger>
-          </Menu>
+          <Button className={styles.menuTriggerStyle} disabled>
+            {t['com.affine.share-menu.option.permission.can-edit']()}
+          </Button>
         </div>
       </div>
       {isOwner && (
@@ -307,14 +285,9 @@ export const AFFiNESharePage = (props: ShareMenuProps) => {
               >
                 {t['com.affine.share-menu.copy.edgeless']()}
               </MenuItem>
-              <MenuItem prefixIcon={<LinkIcon />} onSelect={onCopyBlockLink}>
+              <MenuItem prefixIcon={<BlockIcon />} onSelect={onCopyBlockLink}>
                 {t['com.affine.share-menu.copy.block']()}
               </MenuItem>
-              {currentDocMode === 'edgeless' && (
-                <MenuItem prefixIcon={<LinkIcon />} onSelect={onCopyBlockLink}>
-                  {t['com.affine.share-menu.copy.frame']()}
-                </MenuItem>
-              )}
             </>
           }
         >
@@ -327,12 +300,6 @@ export const AFFiNESharePage = (props: ShareMenuProps) => {
           />
         </Menu>
       </div>
-
-      <PublicLinkDisableModal
-        open={showDisable}
-        onConfirm={onDisablePublic}
-        onOpenChange={setShowDisable}
-      />
     </div>
   );
 };
