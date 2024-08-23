@@ -85,6 +85,8 @@ test('add custom property', async ({ page }) => {
   await addCustomProperty(page, 'Number');
   await addCustomProperty(page, 'Date');
   await addCustomProperty(page, 'Checkbox');
+  await addCustomProperty(page, 'Created by');
+  await addCustomProperty(page, 'Updated by');
 });
 
 test('add custom property & edit', async ({ page }) => {
@@ -103,6 +105,8 @@ test('property table reordering', async ({ page }) => {
   await addCustomProperty(page, 'Number');
   await addCustomProperty(page, 'Date');
   await addCustomProperty(page, 'Checkbox');
+  await addCustomProperty(page, 'Created by');
+  await addCustomProperty(page, 'Updated by');
 
   await dragTo(
     page,
@@ -119,6 +123,8 @@ test('property table reordering', async ({ page }) => {
     'Date',
     'Checkbox',
     'Text',
+    'Created by',
+    'Updated by',
   ].entries()) {
     await expect(
       page
@@ -141,6 +147,8 @@ test('page info show more will show all properties', async ({ page }) => {
   await addCustomProperty(page, 'Number');
   await addCustomProperty(page, 'Date');
   await addCustomProperty(page, 'Checkbox');
+  await addCustomProperty(page, 'Created by');
+  await addCustomProperty(page, 'Updated by');
 
   await expect(page.getByTestId('page-info-show-more')).toBeVisible();
   await page.click('[data-testid="page-info-show-more"]');
@@ -156,6 +164,8 @@ test('page info show more will show all properties', async ({ page }) => {
     'Number',
     'Date',
     'Checkbox',
+    'Created by',
+    'Updated by',
   ].entries()) {
     await expect(
       page
