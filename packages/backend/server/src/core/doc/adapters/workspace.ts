@@ -36,10 +36,10 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
   }
 
   async pushDocUpdates(
-    editorId: string,
     workspaceId: string,
     docId: string,
-    updates: Uint8Array[]
+    updates: Uint8Array[],
+    editorId?: string
   ) {
     if (!updates.length) {
       return 0;
@@ -270,7 +270,7 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
   }
 
   override async rollbackDoc(
-    editorId: string,
+    editorId: string | undefined,
     spaceId: string,
     docId: string,
     timestamp: number

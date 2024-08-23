@@ -97,10 +97,10 @@ export abstract class DocStorageAdapter extends Connection {
   }
 
   abstract pushDocUpdates(
-    editorId: string,
     spaceId: string,
     docId: string,
-    updates: Uint8Array[]
+    updates: Uint8Array[],
+    editorId?: string
   ): Promise<number>;
 
   abstract deleteDoc(spaceId: string, docId: string): Promise<void>;
@@ -124,7 +124,7 @@ export abstract class DocStorageAdapter extends Connection {
     }
 
     const change = this.generateChangeUpdate(fromSnapshot.bin, toSnapshot.bin);
-    await this.pushDocUpdates(editorId, spaceId, docId, [change]);
+    await this.pushDocUpdates(spaceId, docId, [change], editorId);
     // force create a new history record after rollback
     await this.createDocHistory(fromSnapshot, true);
   }
