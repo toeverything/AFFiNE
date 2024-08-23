@@ -242,6 +242,13 @@ const CloudUserAvatar = (props: { type: PagePropertyType }) => {
         <span>{account.label}</span>
       </>
     );
+  } else {
+    return (
+      <>
+        <Avatar name="?" size={20} />
+        <span>{t['com.affine.page-properties.property-user-local']()}</span>
+      </>
+    );
   }
   return null;
 };
