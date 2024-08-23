@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+
 import { TestingModule } from '@nestjs/testing';
 import type { Snapshot } from '@prisma/client';
 import { PrismaClient } from '@prisma/client';
@@ -262,6 +264,7 @@ test('should be able to recover from history', async t => {
   await adapter.createDocHistory(getSnapshot(history1Timestamp));
 
   await adapter.rollbackDoc(
+    randomUUID(),
     snapshot.workspaceId,
     snapshot.id,
     history1Timestamp
