@@ -137,4 +137,6 @@ test('add custom property', async ({ page }) => {
   await addCustomProperty(page, 'Number');
   await addCustomProperty(page, 'Date');
   await addCustomProperty(page, 'Checkbox');
+  await addCustomProperty(page, 'Created by');
+  await addCustomProperty(page, 'Updated by');
 });
