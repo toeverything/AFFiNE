@@ -857,6 +857,7 @@
   "com.affine.page-properties.page-info.view": "View Info",
   "com.affine.page-properties.property-value-placeholder": "Empty",
   "com.affine.page-properties.property-user-avatar-no-record": "No Record",
+  "com.affine.page-properties.property-user-local": "Local User",
   "com.affine.page-properties.property.always-hide": "Always hide",
   "com.affine.page-properties.property.always-show": "Always show",
   "com.affine.page-properties.property.checkbox": "Checkbox",
