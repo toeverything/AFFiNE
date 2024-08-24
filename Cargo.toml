@@ -18,7 +18,7 @@ rand        = "0.8"
 serde       = "1"
 serde_json  = "1"
 sha3        = "0.10"
-sqlx        = { version = "0.7", default-features = false, features = ["chrono", "macros", "migrate", "runtime-tokio", "sqlite", "tls-rustls"] }
+sqlx        = { version = "0.8", default-features = false, features = ["chrono", "macros", "migrate", "runtime-tokio", "sqlite", "tls-rustls"] }
 tiktoken-rs = "0.5"
 tokio       = "1.37"
 uuid        = "1.8"
