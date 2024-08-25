@@ -123,7 +123,7 @@ export class FsStorageProvider implements StorageProvider {
             });
           }
         }
-      } catch (e) {
+      } catch {
         // failed to read dir, stop recursion
       }
     }

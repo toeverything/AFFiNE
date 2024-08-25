@@ -69,7 +69,7 @@ export class QuotaService {
             ...quota,
             feature: await QuotaConfig.get(this.prisma, quota.featureId),
           };
-        } catch (_) {}
+        } catch {}
         return null as unknown as typeof quota & {
           feature: QuotaConfig;
         };

@@ -49,7 +49,7 @@ const getBaseTranslations = async (baseLanguage: { tag: string }) => {
 const main = async () => {
   try {
     await fs.access(RES_DIR);
-  } catch (error) {
+  } catch {
     fs.mkdir(RES_DIR).catch(console.error);
     console.log('Create directory', RES_DIR);
   }

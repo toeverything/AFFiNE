@@ -42,7 +42,7 @@ export async function autoMetadata(
     }
 
     return metadata;
-  } catch (e) {
+  } catch {
     return metadata;
   }
 }

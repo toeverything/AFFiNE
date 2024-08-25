@@ -140,7 +140,7 @@ export class WorkspacesController {
     let ts;
     try {
       ts = new Date(timestamp);
-    } catch (e) {
+    } catch {
       throw new InvalidHistoryTimestamp({ timestamp });
     }
 

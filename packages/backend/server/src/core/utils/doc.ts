@@ -21,7 +21,7 @@ export class DocID {
   static parse(raw: string): DocID | null {
     try {
       return new DocID(raw);
-    } catch (e) {
+    } catch {
       return null;
     }
   }

@@ -72,7 +72,7 @@ export class FetchService extends Service {
       if (res.headers.get('Content-Type')?.includes('application/json')) {
         try {
           reason = await res.json();
-        } catch (err) {
+        } catch {
           // ignore
         }
       }

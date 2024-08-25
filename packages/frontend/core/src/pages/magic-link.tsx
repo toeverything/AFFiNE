@@ -24,7 +24,7 @@ export const loader: LoaderFunction = async ({ request }) => {
     try {
       const { message } = await res.json();
       error = message;
-    } catch (e) {
+    } catch {
       error = 'failed to verify sign-in token';
     }
     return redirect(`/signIn?error=${encodeURIComponent(error)}`);
