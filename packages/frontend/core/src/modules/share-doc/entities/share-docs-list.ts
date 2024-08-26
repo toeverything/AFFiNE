@@ -6,12 +6,13 @@ import {
   catchErrorInto,
   effect,
   Entity,
+  exhaustMapWithTrailing,
   fromPromise,
   LiveData,
   onComplete,
   onStart,
 } from '@toeverything/infra';
-import { EMPTY, mergeMap, switchMap } from 'rxjs';
+import { EMPTY, mergeMap } from 'rxjs';
 
 import { isBackendError, isNetworkError } from '../../cloud';
 import type { ShareDocsStore } from '../stores/share-docs';
@@ -35,7 +36,7 @@ export class ShareDocsList extends Entity {
   }
 
   revalidate = effect(
-    switchMap(() =>
+    exhaustMapWithTrailing(() =>
       fromPromise(signal => {
         return this.store.getWorkspacesShareDocs(
           this.workspaceService.workspace.id,
