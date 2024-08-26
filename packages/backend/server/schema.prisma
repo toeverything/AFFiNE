@@ -288,7 +288,7 @@ model Update {
   // TODO(@darkskygit): fullfill old update, remove default value in next release
   createdBy   String?  @default("system") @map("created_by") @db.VarChar
 
-  // delete update if createor's account is deleted
+  // will delete createor record if createor's account is deleted
   createdByUser User? @relation(name: "createdUpdate", fields: [createdBy], references: [id], onDelete: SetNull)
 
   // @deprecated use createdAt only
@@ -307,7 +307,7 @@ model SnapshotHistory {
   expiredAt   DateTime @map("expired_at") @db.Timestamptz(3)
   createdBy   String?  @map("created_by") @db.VarChar
 
-  // delete history if creator's account is deleted
+  // will delete createor record if creator's account is deleted
   createdByUser User? @relation(name: "createdHistory", fields: [createdBy], references: [id], onDelete: SetNull)
 
   @@id([workspaceId, id, timestamp])
