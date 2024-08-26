@@ -458,7 +458,8 @@ export class LiveData<T = unknown>
       const subscription = this.subscribe(v => {
         if (predicate(v)) {
           resolve(v as any);
-          setImmediate(() => {
+          // eslint-disable-next-line @typescript-eslint/no-floating-promises
+          Promise.resolve().then(() => {
             subscription.unsubscribe();
           });
         }

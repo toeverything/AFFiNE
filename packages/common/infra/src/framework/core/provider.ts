@@ -122,9 +122,10 @@ export class ComponentCachePool {
           try {
             i[Symbol.dispose]();
           } catch (err) {
-            setImmediate(() => {
+            // make a uncaught exception
+            setTimeout(() => {
               throw err;
-            });
+            }, 0);
           }
         }
       }
