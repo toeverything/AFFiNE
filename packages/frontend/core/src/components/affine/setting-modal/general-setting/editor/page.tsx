@@ -33,6 +33,16 @@ export const Page = () => {
       >
         <Switch />
       </SettingRow>
+      <SettingRow
+        name={t[
+          'com.affine.settings.editorSettings.page.display-bi-link.title'
+        ]()}
+        desc={t[
+          'com.affine.settings.editorSettings.page.display-bi-link.description'
+        ]()}
+      >
+        <Switch />
+      </SettingRow>
     </SettingWrapper>
   );
 };

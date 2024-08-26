@@ -1244,6 +1244,8 @@
   "com.affine.settings.editorSettings.page.full-width.description": "Maximise display of content within a page.",
   "com.affine.settings.editorSettings.page.display-doc-info.title": "Display doc info",
   "com.affine.settings.editorSettings.page.display-doc-info.description": "Display document information on the doc.",
+  "com.affine.settings.editorSettings.page.display-bi-link.title": "Display bi-directional links",
+  "com.affine.settings.editorSettings.page.display-bi-link.description": "Display bi-directional links on the doc.",
   "com.affine.settings.editorSettings.edgeless": "Edgeless",
   "com.affine.settings.editorSettings.edgeless.style": "Style",
   "com.affine.settings.editorSettings.edgeless.style.general": "General",
