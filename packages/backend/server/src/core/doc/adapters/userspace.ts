@@ -37,6 +37,10 @@ export class PgUserspaceDocStorageAdapter extends DocStorageAdapter {
     return false;
   }
 
+  override async rollbackDoc() {
+    return;
+  }
+
   override async getDoc(spaceId: string, docId: string) {
     return this.getDocSnapshot(spaceId, docId);
   }
@@ -137,10 +141,10 @@ export class PgUserspaceDocStorageAdapter extends DocStorageAdapter {
   protected async setDocSnapshot(snapshot: DocRecord) {
     // we always get lock before writing to user snapshot table,
     // so a simple upsert without testing on updatedAt is safe
-    await this.db.snapshot.upsert({
+    await this.db.userSnapshot.upsert({
       where: {
-        id_workspaceId: {
-          workspaceId: snapshot.spaceId,
+        userId_id: {
+          userId: snapshot.spaceId,
           id: snapshot.docId,
         },
       },
@@ -149,7 +153,7 @@ export class PgUserspaceDocStorageAdapter extends DocStorageAdapter {
         updatedAt: new Date(snapshot.timestamp),
       },
       create: {
-        workspaceId: snapshot.spaceId,
+        userId: snapshot.spaceId,
         id: snapshot.docId,
         blob: Buffer.from(snapshot.bin),
         createdAt: new Date(snapshot.timestamp),

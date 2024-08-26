@@ -11,6 +11,7 @@ import { Socket } from 'socket.io';
 import { diffUpdate, encodeStateVectorFromUpdate } from 'yjs';
 
 import {
+  AlreadyInSpace,
   CallTimer,
   Config,
   DocNotFound,
@@ -579,8 +580,7 @@ abstract class SyncSocketAdapter {
 
   assertNotIn(spaceId: string, roomType: RoomType = 'sync') {
     if (this.client.rooms.has(this.room(spaceId, roomType))) {
-      // TODO(@forehalo): use new AlreadyInSpace({ spaceId }) instead
-      throw new NotInSpace({ spaceId });
+      throw new AlreadyInSpace({ spaceId });
     }
   }
 
@@ -619,11 +619,6 @@ class WorkspaceSyncAdapter extends SyncSocketAdapter {
     private readonly permission: PermissionService
   ) {
     super(SpaceType.Workspace, client, storage);
-  }
-
-  // backward compatibility
-  override room(spaceId: string, roomType: RoomType = 'sync') {
-    return Room(spaceId, roomType);
   }
 
   override push(spaceId: string, docId: string, updates: Buffer[]) {
