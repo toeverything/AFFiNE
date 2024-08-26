@@ -115,7 +115,7 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
     return rows.map(row => ({
       bin: row.blob,
       timestamp: row.createdAt.getTime(),
-      editor: row.createdBy,
+      editor: row.createdBy || undefined,
     }));
   }
 
