@@ -4,7 +4,7 @@ import {
   updateUserProfileMutation,
   uploadAvatarMutation,
 } from '@affine/graphql';
-import type { GlobalStateService } from '@toeverything/infra';
+import type { GlobalState } from '@toeverything/infra';
 import { Store } from '@toeverything/infra';
 
 import type { AuthSessionInfo } from '../entities/session';
@@ -24,19 +24,17 @@ export class AuthStore extends Store {
   constructor(
     private readonly fetchService: FetchService,
     private readonly gqlService: GraphQLService,
-    private readonly globalStateService: GlobalStateService
+    private readonly globalState: GlobalState
   ) {
     super();
   }
 
   watchCachedAuthSession() {
-    return this.globalStateService.globalState.watch<AuthSessionInfo>(
-      'affine-cloud-auth'
-    );
+    return this.globalState.watch<AuthSessionInfo>('affine-cloud-auth');
   }
 
   setCachedAuthSession(session: AuthSessionInfo | null) {
-    this.globalStateService.globalState.set('affine-cloud-auth', session);
+    this.globalState.set('affine-cloud-auth', session);
   }
 
   async fetchSession() {

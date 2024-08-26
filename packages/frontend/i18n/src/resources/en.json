@@ -874,6 +874,7 @@
   "com.affine.page-properties.property.text": "Text",
   "com.affine.page-properties.property.createdBy": "Created by",
   "com.affine.page-properties.property.updatedBy": "Last edited by",
+  "com.affine.page-properties.local-user": "Local user",
   "com.affine.page-properties.settings.title": "customize properties",
   "com.affine.page-properties.tags.open-tags-page": "Open tag page",
   "com.affine.page-properties.tags.selector-header-title": "Select tag or create one",

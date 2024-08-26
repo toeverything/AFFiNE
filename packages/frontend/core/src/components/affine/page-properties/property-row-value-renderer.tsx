@@ -1,12 +1,18 @@
 import { Avatar, Checkbox, DatePicker, Menu } from '@affine/component';
-import { AuthService } from '@affine/core/modules/cloud';
+import { CloudDocMetaService } from '@affine/core/modules/cloud/services/cloud-doc-meta';
 import type {
   PageInfoCustomProperty,
   PageInfoCustomPropertyMeta,
   PagePropertyType,
 } from '@affine/core/modules/properties/services/schema';
+import { WorkspaceFlavour } from '@affine/env/workspace';
 import { i18nTime, useI18n } from '@affine/i18n';
-import { DocService, useLiveData, useService } from '@toeverything/infra';
+import {
+  DocService,
+  useLiveData,
+  useService,
+  WorkspaceService,
+} from '@toeverything/infra';
 import { noop } from 'lodash-es';
 import type { ChangeEventHandler } from 'react';
 import {
@@ -17,9 +23,8 @@ import {
   useRef,
   useState,
 } from 'react';
-import { SWRConfig } from 'swr';
 
-import { managerContext, SWRCustomHandler, useCloudPageMeta } from './common';
+import { managerContext } from './common';
 import * as styles from './styles.css';
 import { TagsInlineEditor } from './tags-inline-editor';
 
@@ -199,66 +204,98 @@ export const TagsValue = () => {
   );
 };
 
-const CloudUserAvatar = (props: { type: PagePropertyType }) => {
-  const session = useService(AuthService).session;
-  const account = useLiveData(session.account$);
-  const { isCloud, isLoading, metadata } = useCloudPageMeta(props.type);
+const CloudUserAvatar = (props: { type: 'CreatedBy' | 'UpdatedBy' }) => {
+  const cloudDocMetaService = useService(CloudDocMetaService);
+  const cloudDocMeta = useLiveData(cloudDocMetaService.cloudDocMeta.meta$);
+  const isRevalidating = useLiveData(
+    cloudDocMetaService.cloudDocMeta.isRevalidating$
+  );
+  const error = useLiveData(cloudDocMetaService.cloudDocMeta.error$);
+
+  useEffect(() => {
+    cloudDocMetaService.cloudDocMeta.revalidate();
+  }, [cloudDocMetaService]);
 
   const user = useMemo(() => {
-    if (isCloud) {
-      if (!metadata || typeof metadata !== 'object') return null;
-      return metadata;
-    } else {
-      if (!account) return null;
-      return { name: account.label, avatarUrl: account.avatar };
+    if (!cloudDocMeta) return null;
+    if (props.type === 'CreatedBy' && cloudDocMeta.createdBy) {
+      return {
+        name: cloudDocMeta.createdBy.name,
+        avatarUrl: cloudDocMeta.createdBy.avatarUrl,
+      };
+    } else if (props.type === 'UpdatedBy' && cloudDocMeta.updatedBy) {
+      return {
+        name: cloudDocMeta.updatedBy.name,
+        avatarUrl: cloudDocMeta.updatedBy.avatarUrl,
+      };
     }
-  }, [account, isCloud, metadata]);
+    return null;
+  }, [cloudDocMeta, props.type]);
 
   const t = useI18n();
 
-  if (isLoading) return null;
-  if (isCloud) {
-    if (user) {
-      return (
-        <>
-          <Avatar url={user.avatarUrl || ''} name={user.name} size={20} />
-          <span>{user.name}</span>
-        </>
-      );
+  if (!cloudDocMeta) {
+    if (isRevalidating) {
+      // TODO: loading ui
+      return null;
     }
+    if (error) {
+      // error ui
+      return;
+    }
+    return null;
+  }
+  if (user) {
     return (
       <>
-        <Avatar name="?" size={20} />
-        <span>
-          {t['com.affine.page-properties.property-user-avatar-no-record']()}
-        </span>
+        <Avatar url={user.avatarUrl || ''} name={user.name} size={20} />
+        <span>{user.name}</span>
       </>
     );
   }
-  if (account) {
-    return (
-      <>
-        <Avatar url={account.avatar || ''} name={account.label} size={20} />
-        <span>{account.label}</span>
-      </>
-    );
-  } else {
-    return (
-      <>
-        <Avatar name="?" size={20} />
-        <span>{t['com.affine.page-properties.property-user-local']()}</span>
-      </>
-    );
-  }
-  return null;
+  return (
+    <>
+      <Avatar name="?" size={20} />
+      <span>
+        {t['com.affine.page-properties.property-user-avatar-no-record']()}
+      </span>
+    </>
+  );
 };
 
-export const UserValue = ({ meta }: PropertyRowValueProps) => {
+export const LocalUserValue = () => {
+  const t = useI18n();
+  return <span>{t['com.affine.page-properties.local-user']()}</span>;
+};
+
+export const CreatedUserValue = () => {
+  const workspaceService = useService(WorkspaceService);
+  const isCloud =
+    workspaceService.workspace.flavour === WorkspaceFlavour.AFFINE_CLOUD;
+
+  if (!isCloud) {
+    return <LocalUserValue />;
+  }
+
   return (
     <div className={styles.propertyRowValueUserCell}>
-      <SWRConfig value={parent => ({ ...parent, use: [SWRCustomHandler] })}>
-        <CloudUserAvatar type={meta.type} />
-      </SWRConfig>
+      <CloudUserAvatar type="CreatedBy" />
+    </div>
+  );
+};
+
+export const UpdatedUserValue = () => {
+  const workspaceService = useService(WorkspaceService);
+  const isCloud =
+    workspaceService.workspace.flavour === WorkspaceFlavour.AFFINE_CLOUD;
+
+  if (!isCloud) {
+    return <LocalUserValue />;
+  }
+
+  return (
+    <div className={styles.propertyRowValueUserCell}>
+      <CloudUserAvatar type="UpdatedBy" />
     </div>
   );
 };
@@ -271,8 +308,8 @@ export const propertyValueRenderers: Record<
   checkbox: CheckboxValue,
   text: TextValue,
   number: NumberValue,
-  createdBy: UserValue,
-  updatedBy: UserValue,
+  createdBy: CreatedUserValue,
+  updatedBy: UpdatedUserValue,
   // TODO(@Peng): fix following
   tags: TagsValue,
   progress: TextValue,

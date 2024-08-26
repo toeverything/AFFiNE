@@ -12,7 +12,7 @@ import {
   subscriptionQuery,
   updateSubscriptionMutation,
 } from '@affine/graphql';
-import type { GlobalCacheService } from '@toeverything/infra';
+import type { GlobalCache } from '@toeverything/infra';
 import { Store } from '@toeverything/infra';
 
 import type { SubscriptionType } from '../entities/subscription';
@@ -37,7 +37,7 @@ const getDefaultSubscriptionSuccessCallbackLink = (
 export class SubscriptionStore extends Store {
   constructor(
     private readonly gqlService: GraphQLService,
-    private readonly globalCacheService: GlobalCacheService
+    private readonly globalCache: GlobalCache
   ) {
     super();
   }
@@ -97,16 +97,13 @@ export class SubscriptionStore extends Store {
   }
 
   getCachedSubscriptions(userId: string) {
-    return this.globalCacheService.globalCache.get<SubscriptionType[]>(
+    return this.globalCache.get<SubscriptionType[]>(
       SUBSCRIPTION_CACHE_KEY + userId
     );
   }
 
   setCachedSubscriptions(userId: string, subscriptions: SubscriptionType[]) {
-    return this.globalCacheService.globalCache.set(
-      SUBSCRIPTION_CACHE_KEY + userId,
-      subscriptions
-    );
+    return this.globalCache.set(SUBSCRIPTION_CACHE_KEY + userId, subscriptions);
   }
 
   setSubscriptionRecurring(
