@@ -42,7 +42,7 @@ export const tabs = style({
   flexDirection: 'row',
   alignItems: 'center',
   paddingLeft: 8,
-  overflow: 'clip',
+  overflow: 'hidden',
   height: '100%',
   selectors: {
     '&[data-pinned="true"]': {
@@ -70,7 +70,7 @@ export const tabWrapper = style({
   display: 'flex',
   alignItems: 'center',
   height: '100%',
-  overflow: 'clip',
+  overflow: 'hidden',
   position: 'relative',
   padding: '0 6px',
   margin: '0 -6px',
@@ -133,14 +133,14 @@ export const tabCloseButtonWrapper = style({
   overflow: 'clip',
   display: 'flex',
   alignItems: 'center',
-  paddingRight: 8,
+  paddingRight: 6,
   justifyContent: 'flex-end',
   selectors: {
     [`${tab}:is([data-active=true], :hover) &:not(:empty)`]: {
-      width: 40,
+      width: 48,
     },
     [`${splitViewLabel}:last-of-type[data-active=true] + &`]: {
-      background: `linear-gradient(270deg, ${cssVarV2('tab/tabBackground/active')} 52.86%, rgba(255, 255, 255, 0.00) 100%)`,
+      background: `linear-gradient(270deg, ${cssVarV2('tab/tabBackground/active')} 50%, rgba(255, 255, 255, 0.00) 100%)`,
     },
     [`${splitViewLabel}:last-of-type[data-active=false] + &`]: {
       background: `linear-gradient(270deg, ${cssVarV2('tab/tabBackground/default')} 65.71%, rgba(244, 244, 245, 0.00) 100%)`,
@@ -215,7 +215,7 @@ export const splitViewLabelText = style({
       textOverflow: 'clip',
     },
     [`${splitViewLabel}:last-of-type [data-padding-right="true"]&`]: {
-      paddingRight: 20,
+      paddingRight: 32,
     },
   },
 });
