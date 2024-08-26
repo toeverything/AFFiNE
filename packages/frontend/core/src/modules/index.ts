@@ -6,6 +6,7 @@ import { configureCollectionModule } from './collection';
 import { configureDocLinksModule } from './doc-link';
 import { configureDocsSearchModule } from './docs-search';
 import { configureEditorModule } from './editor';
+import { configureEditorSettingModule } from './editor-settting';
 import { configureExplorerModule } from './explorer';
 import { configureFavoriteModule } from './favorite';
 import { configureFindInPageModule } from './find-in-page';
@@ -43,4 +44,5 @@ export function configureCommonModules(framework: Framework) {
   configureThemeEditorModule(framework);
   configureEditorModule(framework);
   configureSystemFontFamilyModule(framework);
+  configureEditorSettingModule(framework);
 }
