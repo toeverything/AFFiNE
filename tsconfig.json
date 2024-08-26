@@ -48,7 +48,6 @@
     "skipLibCheck": true, // skip all type checks for .d.ts files
     "paths": {
       "@affine/core/*": ["./packages/frontend/core/src/*"],
-      "@affine/core": ["./packages/frontend/core/src/index.ts"],
       "@affine/admin/*": ["./packages/frontend/admin/src/*"],
       "@affine/admin/components/ui/*": [
         "./packages/frontend/admin/src/components/ui/*"

@@ -87,11 +87,23 @@ interface Desktop extends ChromeBrowser {
 
 export type Environment = Browser | Server | Desktop;
 
+function setupRuntimeConfig() {
+  if (!process.env.RUNTIME_CONFIG) {
+    return;
+  }
+
+  // registered by [webpack.DefinePlugin]
+  const runtimeConfig = JSON.parse(process.env.RUNTIME_CONFIG ?? '');
+  runtimeFlagsSchema.parse(runtimeConfig);
+  globalThis.runtimeConfig = runtimeConfig;
+}
+
 export function setupGlobal() {
   if (globalThis.$AFFINE_SETUP) {
     return;
   }
-  runtimeFlagsSchema.parse(runtimeConfig);
+
+  setupRuntimeConfig();
 
   let environment: Environment;
   const isDebug = process.env.NODE_ENV === 'development';

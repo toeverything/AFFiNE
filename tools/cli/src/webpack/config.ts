@@ -346,7 +346,9 @@ export const createConfiguration: (
           process.env.MIXPANEL_TOKEN
         ),
         'process.env.DEBUG_JOTAI': JSON.stringify(process.env.DEBUG_JOTAI),
-        runtimeConfig: JSON.stringify(runtimeConfig),
+        'process.env.RUNTIME_CONFIG': JSON.stringify(
+          JSON.stringify(runtimeConfig)
+        ),
       }),
       buildFlags.distribution === 'admin'
         ? null

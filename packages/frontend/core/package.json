@@ -4,10 +4,6 @@
   "private": true,
   "version": "0.16.0",
   "exports": {
-    "./app": "./src/app.tsx",
-    "./router": "./src/router.tsx",
-    "./bootstrap/register-plugins": "./src/bootstrap/register-plugins.ts",
-    "./hooks/*": "./src/hooks/*",
     "./*": "./src/*"
   },
   "dependencies": {
