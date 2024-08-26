@@ -64,7 +64,7 @@ class Storage<T extends object> {
           return this._options.config;
         }
         return cfg;
-      } catch (err) {
+      } catch {
         return this._cfg;
       }
     } else {

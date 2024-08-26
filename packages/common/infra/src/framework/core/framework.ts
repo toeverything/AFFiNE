@@ -521,7 +521,7 @@ function isConstructor(cls: any) {
   try {
     Reflect.construct(function () {}, [], cls);
     return true;
-  } catch (error) {
+  } catch {
     return false;
   }
 }

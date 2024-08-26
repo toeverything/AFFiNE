@@ -187,7 +187,7 @@ function warning(cond: any, message: string) {
       // enabling "pause on exceptions" in your JavaScript debugger.
       throw new Error(message);
       // eslint-disable-next-line no-empty
-    } catch (e) {}
+    } catch {}
   }
 }
 

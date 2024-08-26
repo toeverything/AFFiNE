@@ -49,7 +49,7 @@ const generateUrl = ({
       url.searchParams.append('xywh', xywh);
     }
     return url.toString();
-  } catch (e) {
+  } catch {
     return null;
   }
 };

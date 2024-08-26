@@ -43,7 +43,7 @@ export class CopilotCheckHtmlExecutor extends AutoRegisteredWorkflowExecutor {
         }
       }
       return false;
-    } catch (e) {
+    } catch {
       return false;
     }
   }

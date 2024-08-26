@@ -32,7 +32,7 @@ const generateYml = platform => {
         sha512: hash,
         size: size,
       });
-    } catch (e) {}
+    } catch {}
   });
   // path & sha512 are deprecated
   yml.path = yml.files[0].url;

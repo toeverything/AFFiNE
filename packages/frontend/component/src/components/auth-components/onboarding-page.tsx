@@ -45,7 +45,7 @@ function getCallbackUrl(location: Location) {
       const parsedUrl = new URL(url);
       return parsedUrl.pathname + parsedUrl.search;
     }
-  } catch (_) {}
+  } catch {}
   return null;
 }
 

@@ -34,7 +34,7 @@ export class CopilotCheckJsonExecutor extends AutoRegisteredWorkflowExecutor {
         return true;
       }
       return false;
-    } catch (e) {
+    } catch {
       return false;
     }
   }

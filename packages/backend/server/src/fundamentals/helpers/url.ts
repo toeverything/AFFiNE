@@ -89,7 +89,7 @@ export class URLHelper {
       if (!['http:', 'https:'].includes(url.protocol)) return false;
       if (!url.hostname) return false;
       return true;
-    } catch (_) {
+    } catch {
       return false;
     }
   }
