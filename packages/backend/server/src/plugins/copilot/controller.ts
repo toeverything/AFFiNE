@@ -27,8 +27,7 @@ import {
   toArray,
 } from 'rxjs';
 
-import { Public } from '../../core/auth';
-import { CurrentUser } from '../../core/auth/current-user';
+import { CurrentUser, Public } from '../../core/auth';
 import {
   BlobNotFound,
   Config,

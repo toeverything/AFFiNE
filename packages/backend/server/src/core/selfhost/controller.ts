@@ -56,7 +56,7 @@ export class CustomSetupController {
 
     try {
       await this.event.emitAsync('user.admin.created', user);
-      await this.auth.setCookie(req, res, user);
+      await this.auth.setCookies(req, res, user.id);
       res.send({ id: user.id, email: user.email, name: user.name });
     } catch (e) {
       await this.user.deleteUser(user.id);

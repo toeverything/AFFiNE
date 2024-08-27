@@ -33,7 +33,7 @@ test.afterEach.always(async t => {
 
 test('should include callbackUrl in sending email', async t => {
   const { auth } = t.context;
-  await auth.signUp('Alex Yang', 'alexyang@example.org', '123456');
+  await auth.signUp('test@affine.pro', '123456');
   for (const fn of [
     'sendSetPasswordEmail',
     'sendChangeEmail',
@@ -41,7 +41,7 @@ test('should include callbackUrl in sending email', async t => {
     'sendVerifyChangeEmail',
   ] as const) {
     const prev = await getCurrentMailMessageCount();
-    await auth[fn]('alexyang@example.org', 'https://test.com/callback');
+    await auth[fn]('test@affine.pro', 'https://test.com/callback');
     const current = await getCurrentMailMessageCount();
     const mail = await getLatestMailMessage();
     t.regex(

@@ -3,11 +3,11 @@ import { PrismaClient } from '@prisma/client';
 import ava, { TestFn } from 'ava';
 
 import { CurrentUser } from '../../src/core/auth';
-import { AuthService, parseAuthUserSeqNum } from '../../src/core/auth/service';
+import { AuthService } from '../../src/core/auth/service';
 import { FeatureModule } from '../../src/core/features';
 import { QuotaModule } from '../../src/core/quota';
 import { UserModule, UserService } from '../../src/core/user';
-import { createTestingModule } from '../utils';
+import { createTestingModule, initTestingDB } from '../utils';
 
 const test = ava as TestFn<{
   auth: AuthService;
@@ -17,7 +17,7 @@ const test = ava as TestFn<{
   m: TestingModule;
 }>;
 
-test.beforeEach(async t => {
+test.before(async t => {
   const m = await createTestingModule({
     imports: [QuotaModule, FeatureModule, UserModule],
     providers: [AuthService],
@@ -27,50 +27,18 @@ test.beforeEach(async t => {
   t.context.user = m.get(UserService);
   t.context.db = m.get(PrismaClient);
   t.context.m = m;
-
-  t.context.u1 = await t.context.auth.signUp('u1', 'u1@affine.pro', '1');
 });
 
-test.afterEach.always(async t => {
+test.beforeEach(async t => {
+  await initTestingDB(t.context.db);
+  t.context.u1 = await t.context.auth.signUp('u1@affine.pro', '1');
+});
+
+test.after.always(async t => {
   await t.context.m.close();
 });
 
-test('should be able to parse auth user seq num', t => {
-  t.deepEqual(
-    [
-      '1',
-      '2',
-      3,
-      -3,
-      '-4',
-      '1.1',
-      'str',
-      '1111111111111111111111111111111111111111111',
-    ].map(parseAuthUserSeqNum),
-    [1, 2, 3, 0, 0, 0, 0, 0]
-  );
-});
-
-test('should be able to sign up', async t => {
-  const { auth } = t.context;
-  const u2 = await auth.signUp('u2', 'u2@affine.pro', '1');
-
-  t.is(u2.email, 'u2@affine.pro');
-
-  const signedU2 = await auth.signIn(u2.email, '1');
-
-  t.is(u2.email, signedU2.email);
-});
-
-test('should throw if email duplicated', async t => {
-  const { auth } = t.context;
-
-  await t.throwsAsync(() => auth.signUp('u1', 'u1@affine.pro', '1'), {
-    message: 'This email has already been registered.',
-  });
-});
-
-test('should be able to sign in', async t => {
+test('should be able to sign in by password', async t => {
   const { auth } = t.context;
 
   const signedInUser = await auth.signIn('u1@affine.pro', '1');
@@ -114,7 +82,7 @@ test('should be able to change password', async t => {
   let signedInU1 = await auth.signIn('u1@affine.pro', '1');
   t.is(signedInU1.email, u1.email);
 
-  await auth.changePassword(u1.id, '2');
+  await auth.changePassword(u1.id, 'hello world affine');
 
   await t.throwsAsync(
     () => auth.signIn('u1@affine.pro', '1' /* old password */),
@@ -123,7 +91,7 @@ test('should be able to change password', async t => {
     }
   );
 
-  signedInU1 = await auth.signIn('u1@affine.pro', '2');
+  signedInU1 = await auth.signIn('u1@affine.pro', 'hello world affine');
   t.is(signedInU1.email, u1.email);
 });
 
@@ -147,7 +115,7 @@ test('should be able to change email', async t => {
 test('should be able to create user session', async t => {
   const { auth, u1 } = t.context;
 
-  const session = await auth.createUserSession(u1);
+  const session = await auth.createUserSession(u1.id);
 
   t.is(session.userId, u1.id);
 });
@@ -155,7 +123,7 @@ test('should be able to create user session', async t => {
 test('should be able to get user from session', async t => {
   const { auth, u1 } = t.context;
 
-  const session = await auth.createUserSession(u1);
+  const session = await auth.createUserSession(u1.id);
 
   const userSession = await auth.getUserSession(session.sessionId);
 
@@ -166,23 +134,50 @@ test('should be able to get user from session', async t => {
 test('should be able to sign out session', async t => {
   const { auth, u1 } = t.context;
 
-  const session = await auth.createUserSession(u1);
+  const session = await auth.createUserSession(u1.id);
+  await auth.signOut(session.sessionId);
+  const userSession = await auth.getUserSession(session.sessionId);
 
-  const signedOutSession = await auth.signOut(session.sessionId);
+  t.is(userSession, null);
+});
 
-  t.is(signedOutSession, null);
+test('should not return expired session', async t => {
+  const { auth, u1, db } = t.context;
+
+  const session = await auth.createUserSession(u1.id);
+
+  await db.userSession.update({
+    where: { id: session.id },
+    data: {
+      expiresAt: new Date(Date.now() - 1000),
+    },
+  });
+
+  const userSession = await auth.getUserSession(session.sessionId);
+  t.is(userSession, null);
 });
 
 // Tests for Multi-Accounts Session
 test('should be able to sign in different user in a same session', async t => {
   const { auth, u1 } = t.context;
 
-  const u2 = await auth.signUp('u2', 'u2@affine.pro', '1');
+  const u2 = await auth.signUp('u2@affine.pro', '1');
 
-  const session = await auth.createUserSession(u1);
-  await auth.createUserSession(u2, session.sessionId);
+  const session = await auth.createSession();
 
-  const [signedU1, signedU2] = await auth.getUserList(session.sessionId);
+  await auth.createUserSession(u1.id, session.id);
+
+  let userList = await auth.getUserList(session.id);
+  t.is(userList.length, 1);
+  t.is(userList[0]!.id, u1.id);
+
+  await auth.createUserSession(u2.id, session.id);
+
+  userList = await auth.getUserList(session.id);
+
+  t.is(userList.length, 2);
+
+  const [signedU1, signedU2] = userList;
 
   t.not(signedU1, null);
   t.not(signedU2, null);
@@ -193,29 +188,30 @@ test('should be able to sign in different user in a same session', async t => {
 test('should be able to signout multi accounts session', async t => {
   const { auth, u1 } = t.context;
 
-  const u2 = await auth.signUp('u2', 'u2@affine.pro', '1');
+  const u2 = await auth.signUp('u2@affine.pro', '1');
 
-  const session = await auth.createUserSession(u1);
-  await auth.createUserSession(u2, session.sessionId);
+  const session = await auth.createSession();
 
-  // sign out user at seq(0)
-  let signedOutSession = await auth.signOut(session.sessionId);
+  await auth.createUserSession(u1.id, session.id);
+  await auth.createUserSession(u2.id, session.id);
 
-  t.not(signedOutSession, null);
+  await auth.signOut(session.id, u1.id);
 
-  const userSession1 = await auth.getUserSession(session.sessionId, 0);
-  const userSession2 = await auth.getUserSession(session.sessionId, 1);
+  let list = await auth.getUserList(session.id);
 
-  t.is(userSession2, null);
-  t.not(userSession1, null);
+  t.is(list.length, 1);
+  t.is(list[0]!.id, u2.id);
 
-  t.is(userSession1!.user.id, u2.id);
+  const u1Session = await auth.getUserSession(session.id, u1.id);
 
-  // sign out user at seq(0)
-  signedOutSession = await auth.signOut(session.sessionId);
+  t.is(u1Session, null);
 
-  t.is(signedOutSession, null);
+  await auth.signOut(session.id, u2.id);
+  list = await auth.getUserList(session.id);
 
-  const userSession3 = await auth.getUserSession(session.sessionId, 0);
-  t.is(userSession3, null);
+  t.is(list.length, 0);
+
+  const u2Session = await auth.getUserSession(session.id, u2.id);
+
+  t.is(u2Session, null);
 });

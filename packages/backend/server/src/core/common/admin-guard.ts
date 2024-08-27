@@ -25,8 +25,8 @@ export class AdminGuard implements CanActivate, OnModuleInit {
   async canActivate(context: ExecutionContext) {
     const { req } = getRequestResponseFromContext(context);
     let allow = false;
-    if (req.user) {
-      allow = await this.feature.isAdmin(req.user.id);
+    if (req.session) {
+      allow = await this.feature.isAdmin(req.session.user.id);
     }
 
     if (!allow) {

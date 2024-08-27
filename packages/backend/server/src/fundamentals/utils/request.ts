@@ -1,3 +1,5 @@
+import { IncomingMessage } from 'node:http';
+
 import type { ArgumentsHost, ExecutionContext } from '@nestjs/common';
 import type { GqlContextType } from '@nestjs/graphql';
 import { GqlArgumentsHost } from '@nestjs/graphql';
@@ -25,26 +27,7 @@ export function getRequestResponseFromHost(host: ArgumentsHost) {
     case 'ws': {
       const ws = host.switchToWs();
       const req = ws.getClient<Socket>().client.conn.request as Request;
-
-      const cookieStr = req?.headers?.cookie ?? '';
-      // patch cookies to match auth guard logic
-      if (typeof cookieStr === 'string') {
-        req.cookies = cookieStr.split(';').reduce(
-          (cookies, cookie) => {
-            const [key, val] = cookie.split('=');
-
-            if (key) {
-              cookies[decodeURIComponent(key.trim())] = val
-                ? decodeURIComponent(val.trim())
-                : val;
-            }
-
-            return cookies;
-          },
-          {} as Record<string, string>
-        );
-      }
-
+      parseCookies(req);
       return { req };
     }
     case 'rpc': {
@@ -71,12 +54,14 @@ export function getRequestResponseFromContext(ctx: ExecutionContext) {
  * simple patch for request not protected by `cookie-parser`
  * only take effect if `req.cookies` is not defined
  */
-export function parseCookies(req: Request) {
+export function parseCookies(
+  req: IncomingMessage & { cookies?: Record<string, string> }
+) {
   if (req.cookies) {
     return;
   }
 
-  const cookieStr = req?.headers?.cookie ?? '';
+  const cookieStr = req.headers.cookie ?? '';
   req.cookies = cookieStr.split(';').reduce(
     (cookies, cookie) => {
       const [key, val] = cookie.split('=');

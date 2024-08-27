@@ -82,7 +82,7 @@ test.afterEach.always(async t => {
 test('should be able to set user feature', async t => {
   const { auth, feature } = t.context;
 
-  const u1 = await auth.signUp('DarkSky', 'darksky@example.org', '123456');
+  const u1 = await auth.signUp('test@test.com', '123456');
 
   const f1 = await feature.getUserFeatures(u1.id);
   t.is(f1.length, 0, 'should be empty');
@@ -96,7 +96,7 @@ test('should be able to set user feature', async t => {
 
 test('should be able to check early access', async t => {
   const { auth, feature, management } = t.context;
-  const u1 = await auth.signUp('DarkSky', 'darksky@example.org', '123456');
+  const u1 = await auth.signUp('test@test.com', '123456');
 
   const f1 = await management.canEarlyAccess(u1.email);
   t.false(f1, 'should not have early access');
@@ -112,7 +112,7 @@ test('should be able to check early access', async t => {
 
 test('should be able revert user feature', async t => {
   const { auth, feature, management } = t.context;
-  const u1 = await auth.signUp('DarkSky', 'darksky@example.org', '123456');
+  const u1 = await auth.signUp('test@test.com', '123456');
 
   const f1 = await management.canEarlyAccess(u1.email);
   t.false(f1, 'should not have early access');
@@ -138,7 +138,7 @@ test('should be able revert user feature', async t => {
 
 test('should be same instance after reset the user feature', async t => {
   const { auth, feature, management } = t.context;
-  const u1 = await auth.signUp('DarkSky', 'darksky@example.org', '123456');
+  const u1 = await auth.signUp('test@test.com', '123456');
 
   await management.addEarlyAccess(u1.id);
   const f1 = (await feature.getUserFeatures(u1.id))[0];
@@ -154,7 +154,7 @@ test('should be same instance after reset the user feature', async t => {
 test('should be able to set workspace feature', async t => {
   const { auth, feature, workspace } = t.context;
 
-  const u1 = await auth.signUp('DarkSky', 'darksky@example.org', '123456');
+  const u1 = await auth.signUp('test@test.com', '123456');
   const w1 = await workspace.createWorkspace(u1, null);
 
   const f1 = await feature.getWorkspaceFeatures(w1.id);
@@ -169,7 +169,7 @@ test('should be able to set workspace feature', async t => {
 
 test('should be able to check workspace feature', async t => {
   const { auth, feature, workspace, management } = t.context;
-  const u1 = await auth.signUp('DarkSky', 'darksky@example.org', '123456');
+  const u1 = await auth.signUp('test@test.com', '123456');
   const w1 = await workspace.createWorkspace(u1, null);
 
   const f1 = await management.hasWorkspaceFeature(w1.id, FeatureType.Copilot);
@@ -186,7 +186,7 @@ test('should be able to check workspace feature', async t => {
 
 test('should be able revert workspace feature', async t => {
   const { auth, feature, workspace, management } = t.context;
-  const u1 = await auth.signUp('DarkSky', 'darksky@example.org', '123456');
+  const u1 = await auth.signUp('test@test.com', '123456');
   const w1 = await workspace.createWorkspace(u1, null);
 
   const f1 = await management.hasWorkspaceFeature(w1.id, FeatureType.Copilot);

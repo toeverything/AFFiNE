@@ -44,7 +44,7 @@ test.afterEach.always(async t => {
 test('should be able to set quota', async t => {
   const { auth, quota } = t.context;
 
-  const u1 = await auth.signUp('DarkSky', 'darksky@example.org', '123456');
+  const u1 = await auth.signUp('test@affine.pro', '123456');
 
   const q1 = await quota.getUserQuota(u1.id);
   t.truthy(q1, 'should have quota');
@@ -62,7 +62,7 @@ test('should be able to set quota', async t => {
 
 test('should be able to check storage quota', async t => {
   const { auth, quota, quotaManager } = t.context;
-  const u1 = await auth.signUp('DarkSky', 'darksky@example.org', '123456');
+  const u1 = await auth.signUp('test@affine.pro', '123456');
   const freePlan = FreePlan.configs;
   const proPlan = ProPlan.configs;
 
@@ -78,7 +78,7 @@ test('should be able to check storage quota', async t => {
 
 test('should be able revert quota', async t => {
   const { auth, quota, quotaManager } = t.context;
-  const u1 = await auth.signUp('DarkSky', 'darksky@example.org', '123456');
+  const u1 = await auth.signUp('test@affine.pro', '123456');
   const freePlan = FreePlan.configs;
   const proPlan = ProPlan.configs;
 
@@ -113,7 +113,7 @@ test('should be able revert quota', async t => {
 
 test('should be able to check quota', async t => {
   const { auth, quotaManager } = t.context;
-  const u1 = await auth.signUp('DarkSky', 'darksky@example.org', '123456');
+  const u1 = await auth.signUp('test@affine.pro', '123456');
   const freePlan = FreePlan.configs;
 
   const q1 = await quotaManager.getUserQuota(u1.id);

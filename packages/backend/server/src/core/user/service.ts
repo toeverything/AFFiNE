@@ -56,11 +56,6 @@ export class UserService {
 
   async createUser(data: CreateUserInput) {
     validators.assertValidEmail(data.email);
-    const user = await this.findUserByEmail(data.email);
-
-    if (user) {
-      throw new EmailAlreadyUsed();
-    }
 
     if (data.password) {
       const config = await this.config.runtime.fetchAll({
@@ -77,6 +72,12 @@ export class UserService {
   }
 
   async createUser_without_verification(data: CreateUserInput) {
+    const user = await this.findUserByEmail(data.email);
+
+    if (user) {
+      throw new EmailAlreadyUsed();
+    }
+
     if (data.password) {
       data.password = await this.crypto.encryptPassword(data.password);
     }
@@ -158,9 +159,7 @@ export class UserService {
 
   async fulfillUser(
     email: string,
-    data: Partial<
-      Pick<Prisma.UserCreateInput, 'emailVerifiedAt' | 'registered'>
-    >
+    data: Omit<Partial<Prisma.UserCreateInput>, 'id'>
   ) {
     const user = await this.findUserByEmail(email);
     if (!user) {
@@ -180,7 +179,6 @@ export class UserService {
 
       if (Object.keys(data).length) {
         return await this.prisma.user.update({
-          select: this.defaultUserSelect,
           where: { id: user.id },
           data,
         });

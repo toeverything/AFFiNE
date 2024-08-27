@@ -4,10 +4,6 @@ import { User, UserSession } from '@prisma/client';
 
 import { getRequestResponseFromContext } from '../../fundamentals';
 
-function getUserFromContext(context: ExecutionContext) {
-  return getRequestResponseFromContext(context).req.user;
-}
-
 /**
  * Used to fetch current user from the request context.
  *
@@ -44,7 +40,7 @@ function getUserFromContext(context: ExecutionContext) {
 // eslint-disable-next-line no-redeclare
 export const CurrentUser = createParamDecorator(
   (_: unknown, context: ExecutionContext) => {
-    return getUserFromContext(context);
+    return getRequestResponseFromContext(context).req.session?.user;
   }
 );
 
@@ -54,4 +50,14 @@ export interface CurrentUser
   emailVerified: boolean;
 }
 
-export { type UserSession };
+// interface and variable don't conflict
+// eslint-disable-next-line no-redeclare
+export const Session = createParamDecorator(
+  (_: unknown, context: ExecutionContext) => {
+    return getRequestResponseFromContext(context).req.session;
+  }
+);
+
+export type Session = UserSession & {
+  user: CurrentUser;
+};

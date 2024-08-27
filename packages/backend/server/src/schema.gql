@@ -468,8 +468,8 @@ type Mutation {
   revokePage(pageId: String!, workspaceId: String!): Boolean! @deprecated(reason: "use revokePublicPage")
   revokePublicPage(pageId: String!, workspaceId: String!): WorkspacePage!
   sendChangeEmail(callbackUrl: String!, email: String): Boolean!
-  sendChangePasswordEmail(callbackUrl: String!, email: String): Boolean!
-  sendSetPasswordEmail(callbackUrl: String!, email: String): Boolean!
+  sendChangePasswordEmail(callbackUrl: String!, email: String @deprecated(reason: "fetched from signed in user")): Boolean!
+  sendSetPasswordEmail(callbackUrl: String!, email: String @deprecated(reason: "fetched from signed in user")): Boolean!
   sendVerifyChangeEmail(callbackUrl: String!, email: String!, token: String!): Boolean!
   sendVerifyEmail(callbackUrl: String!): Boolean!
   setBlob(blob: Upload!, workspaceId: String!): String!
@@ -856,7 +856,7 @@ type UserType {
   quota: UserQuota
   subscription(plan: SubscriptionPlan = Pro): UserSubscription @deprecated(reason: "use `UserType.subscriptions`")
   subscriptions: [UserSubscription!]!
-  token: tokenType! @deprecated(reason: "use [/api/auth/authorize]")
+  token: tokenType! @deprecated(reason: "use [/api/auth/sign-in?native=true] instead")
 }
 
 type VersionRejectedDataType {

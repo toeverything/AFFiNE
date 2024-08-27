@@ -58,11 +58,12 @@ model ConnectedAccount {
 }
 
 model Session {
-  id        String    @id @default(uuid()) @db.VarChar
-  expiresAt DateTime? @map("expires_at") @db.Timestamptz(3)
-  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
-
+  id           String        @id @default(uuid()) @db.VarChar
+  createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
   userSessions UserSession[]
+
+  // @deprecated use [UserSession.expiresAt]
+  deprecated_expiresAt DateTime? @map("expires_at") @db.Timestamptz(3)
 
   @@map("multiple_users_sessions")
 }
@@ -243,7 +244,7 @@ model Snapshot {
   updatedAt   DateTime @map("updated_at") @db.Timestamptz(3)
 
   // @deprecated use updatedAt only
-  seq         Int?      @default(0) @db.Integer
+  seq Int? @default(0) @db.Integer
 
   // we need to clear all hanging updates and snapshots before enable the foreign key on workspaceId
   // workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
@@ -276,7 +277,7 @@ model Update {
   createdAt   DateTime @map("created_at") @db.Timestamptz(3)
 
   // @deprecated use createdAt only
-  seq         Int?      @db.Integer
+  seq Int? @db.Integer
 
   @@id([workspaceId, id, createdAt])
   @@map("updates")

@@ -15,7 +15,7 @@ export interface Tokens {
 
 export abstract class OAuthProvider {
   abstract provider: OAuthProviderName;
-  abstract getAuthUrl(state?: string): string;
+  abstract getAuthUrl(state: string): string;
   abstract getToken(code: string): Promise<Tokens>;
   abstract getUser(token: string): Promise<OAuthAccount>;
 }

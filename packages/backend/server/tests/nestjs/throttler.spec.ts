@@ -7,6 +7,7 @@ import {
   INestApplication,
   UseGuards,
 } from '@nestjs/common';
+import { PrismaClient } from '@prisma/client';
 import ava, { TestFn } from 'ava';
 import Sinon from 'sinon';
 import request, { type Response } from 'supertest';
@@ -20,7 +21,7 @@ import {
   Throttle,
   ThrottlerStorage,
 } from '../../src/fundamentals/throttler';
-import { createTestingApp, internalSignIn } from '../utils';
+import { createTestingApp, initTestingDB, internalSignIn } from '../utils';
 
 const test = ava as TestFn<{
   storage: ThrottlerStorage;
@@ -93,7 +94,7 @@ class NonThrottledController {
   }
 }
 
-test.beforeEach(async t => {
+test.before(async t => {
   const { app } = await createTestingApp({
     imports: [
       ConfigModule.forRoot({
@@ -111,14 +112,17 @@ test.beforeEach(async t => {
 
   t.context.storage = app.get(ThrottlerStorage);
   t.context.app = app;
+});
 
+test.beforeEach(async t => {
+  await initTestingDB(t.context.app.get(PrismaClient));
+  const { app } = t.context;
   const auth = app.get(AuthService);
-  const u1 = await auth.signUp('u1', 'u1@affine.pro', 'test');
-
+  const u1 = await auth.signUp('u1@affine.pro', 'test');
   t.context.cookie = await internalSignIn(app, u1.id);
 });
 
-test.afterEach.always(async t => {
+test.after.always(async t => {
   await t.context.app.close();
 });
 

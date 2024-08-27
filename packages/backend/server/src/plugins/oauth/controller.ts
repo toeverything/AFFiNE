@@ -1,4 +1,12 @@
-import { Controller, Get, Query, Req, Res } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  HttpCode,
+  HttpStatus,
+  Post,
+  Req,
+  Res,
+} from '@nestjs/common';
 import { ConnectedAccount, PrismaClient } from '@prisma/client';
 import type { Request, Response } from 'express';
 
@@ -11,34 +19,34 @@ import {
   OauthStateExpired,
   UnknownOauthProvider,
   URLHelper,
-  WrongSignInMethod,
 } from '../../fundamentals';
 import { OAuthProviderName } from './config';
 import { OAuthAccount, Tokens } from './providers/def';
 import { OAuthProviderFactory } from './register';
 import { OAuthService } from './service';
 
-@Controller('/oauth')
+@Controller('/api/oauth')
 export class OAuthController {
   constructor(
     private readonly auth: AuthService,
     private readonly oauth: OAuthService,
     private readonly user: UserService,
-    private readonly providerFactory: OAuthProviderFactory,
     private readonly url: URLHelper,
+    private readonly providerFactory: OAuthProviderFactory,
     private readonly db: PrismaClient
   ) {}
 
   @Public()
-  @Get('/login')
-  async login(
-    @Res() res: Response,
-    @Query('provider') unknownProviderName: string,
-    @Query('redirect_uri') redirectUri?: string
+  @Post('/preflight')
+  @HttpCode(HttpStatus.OK)
+  async preflight(
+    @Body('provider') unknownProviderName?: string,
+    @Body('redirect_uri') redirectUri: string = this.url.home
   ) {
     if (!unknownProviderName) {
       throw new MissingOauthQueryParameter({ name: 'provider' });
     }
+
     // @ts-expect-error safe
     const providerName = OAuthProviderName[unknownProviderName];
     const provider = this.providerFactory.get(providerName);
@@ -48,20 +56,23 @@ export class OAuthController {
     }
 
     const state = await this.oauth.saveOAuthState({
-      redirectUri: redirectUri ?? this.url.home,
       provider: providerName,
+      redirectUri,
     });
 
-    return res.redirect(provider.getAuthUrl(state));
+    return {
+      url: provider.getAuthUrl(state),
+    };
   }
 
   @Public()
-  @Get('/callback')
+  @Post('/callback')
+  @HttpCode(HttpStatus.OK)
   async callback(
     @Req() req: Request,
     @Res() res: Response,
-    @Query('code') code?: string,
-    @Query('state') stateStr?: string
+    @Body('code') code?: string,
+    @Body('state') stateStr?: string
   ) {
     if (!code) {
       throw new MissingOauthQueryParameter({ name: 'code' });
@@ -93,43 +104,18 @@ export class OAuthController {
 
     const tokens = await provider.getToken(code);
     const externAccount = await provider.getUser(tokens.accessToken);
-    const user = req.user;
+    const user = await this.loginFromOauth(
+      state.provider,
+      externAccount,
+      tokens
+    );
 
-    try {
-      if (!user) {
-        // if user not found, login
-        const user = await this.loginFromOauth(
-          state.provider,
-          externAccount,
-          tokens
-        );
-        const session = await this.auth.createUserSession(
-          user,
-          req.cookies[AuthService.sessionCookieName]
-        );
-        res.cookie(AuthService.sessionCookieName, session.sessionId, {
-          expires: session.expiresAt ?? void 0, // expiredAt is `string | null`
-          ...this.auth.cookieOptions,
-        });
-      } else {
-        // if user is found, connect the account to this user
-        await this.connectAccountFromOauth(
-          user,
-          state.provider,
-          externAccount,
-          tokens
-        );
-      }
-    } catch (e: any) {
-      return res.redirect(
-        this.url.link('/signIn', {
-          redirect_uri: state.redirectUri,
-          error: e.message,
-        })
-      );
-    }
-
-    this.url.safeRedirect(res, state.redirectUri);
+    await this.auth.setCookies(req, res, user.id);
+    res.send({
+      id: user.id,
+      /* @deprecated */
+      redirectUri: state.redirectUri,
+    });
   }
 
   private async loginFromOauth(
@@ -154,37 +140,27 @@ export class OAuthController {
       return connectedUser.user;
     }
 
-    let user = await this.user.findUserByEmail(externalAccount.email);
+    const user = await this.user.fulfillUser(externalAccount.email, {
+      emailVerifiedAt: new Date(),
+      registered: true,
+      avatarUrl: externalAccount.avatarUrl,
+    });
 
-    if (user) {
-      // we can't directly connect the external account with given email in sign in scenario for safety concern.
-      // let user manually connect in account sessions instead.
-      if (user.registered) {
-        throw new WrongSignInMethod();
-      }
-
-      await this.db.connectedAccount.create({
-        data: {
-          userId: user.id,
-          provider,
-          providerAccountId: externalAccount.id,
-          ...tokens,
-        },
-      });
-
-      return user;
-    } else {
-      user = await this.createUserWithConnectedAccount(
+    await this.db.connectedAccount.create({
+      data: {
+        userId: user.id,
         provider,
-        externalAccount,
-        tokens
-      );
-    }
-
+        providerAccountId: externalAccount.id,
+        ...tokens,
+      },
+    });
     return user;
   }
 
-  updateConnectedAccount(connectedUser: ConnectedAccount, tokens: Tokens) {
+  private async updateConnectedAccount(
+    connectedUser: ConnectedAccount,
+    tokens: Tokens
+  ) {
     return this.db.connectedAccount.update({
       where: {
         id: connectedUser.id,
@@ -193,27 +169,12 @@ export class OAuthController {
     });
   }
 
-  async createUserWithConnectedAccount(
-    provider: OAuthProviderName,
-    externalAccount: OAuthAccount,
-    tokens: Tokens
-  ) {
-    return this.user.createUser({
-      email: externalAccount.email,
-      name: externalAccount.email.split('@')[0],
-      avatarUrl: externalAccount.avatarUrl,
-      emailVerifiedAt: new Date(),
-      connectedAccounts: {
-        create: {
-          provider,
-          providerAccountId: externalAccount.id,
-          ...tokens,
-        },
-      },
-    });
-  }
-
-  private async connectAccountFromOauth(
+  /**
+   * we currently don't support connect oauth account to existing user
+   * keep it incase we need it in the future
+   */
+  // @ts-expect-error allow unused
+  private async _connectAccount(
     user: { id: string },
     provider: OAuthProviderName,
     externalAccount: OAuthAccount,

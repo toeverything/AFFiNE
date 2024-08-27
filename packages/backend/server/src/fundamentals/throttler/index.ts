@@ -12,7 +12,7 @@ import {
   ThrottlerRequest,
   ThrottlerStorageService,
 } from '@nestjs/throttler';
-import type { Request } from 'express';
+import type { Request, Response } from 'express';
 
 import { Config } from '../config';
 import { getRequestResponseFromContext } from '../utils/request';
@@ -50,7 +50,10 @@ export class CloudThrottlerGuard extends ThrottlerGuard {
     super(options, storageService, reflector);
   }
 
-  override getRequestResponse(context: ExecutionContext) {
+  override getRequestResponse(context: ExecutionContext): {
+    req: Request;
+    res: Response;
+  } {
     return getRequestResponseFromContext(context) as any;
   }
 
@@ -153,7 +156,7 @@ export class CloudThrottlerGuard extends ThrottlerGuard {
     const throttler = this.getSpecifiedThrottler(context);
 
     // if user is logged in, bypass non-protected handlers
-    if (!throttler && req.user) {
+    if (!throttler && req.session?.user) {
       return true;
     }
 
