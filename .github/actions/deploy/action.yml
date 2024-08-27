@@ -24,24 +24,14 @@ runs:
       shell: bash
       run: |
         echo "GIT_SHORT_HASH=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
-    - uses: azure/setup-helm@v4
-    - id: auth
-      uses: google-github-actions/auth@v2
+    - name: 'Auth to cluster'
+      uses: './.github/actions/cluster-auth'
       with:
-        workload_identity_provider: 'projects/${{ inputs.gcp-project-number }}/locations/global/workloadIdentityPools/github-actions/providers/github-actions-helm-deploy'
-        service_account: '${{ inputs.service-account }}'
-        token_format: 'access_token'
-        project_id: '${{ inputs.gcp-project-id }}'
-
-    - name: 'Setup gcloud cli'
-      uses: 'google-github-actions/setup-gcloud@v2'
-      with:
-        install_components: 'gke-gcloud-auth-plugin'
-
-    - id: get-gke-credentials
-      shell: bash
-      run: |
-        gcloud container clusters get-credentials ${{ inputs.cluster-name }} --region ${{ inputs.cluster-location }} --project ${{ inputs.gcp-project-id }}
+        gcp-project-number: '${{ inputs.gcp-project-number }}'
+        gcp-project-id: '${{ inputs.gcp-project-id }}'
+        service-account: '${{ inputs.service-account }}'
+        cluster-name: '${{ inputs.cluster-name }}'
+        cluster-location: '${{ inputs.cluster-location }}'
 
     - name: Deploy
       shell: bash
