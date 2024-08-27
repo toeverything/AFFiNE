@@ -185,7 +185,9 @@ impl SqliteConnection {
           .map_err(anyhow::Error::from)?
           .count
       }
-    };
+    }
+    .try_into()
+    .unwrap();
     Ok(count)
   }
 
@@ -401,7 +403,7 @@ impl SqliteConnection {
       .await
       .map_err(anyhow::Error::from)?
       .max_version;
-    Ok(version)
+    Ok(version.try_into().unwrap())
   }
 
   #[napi]
