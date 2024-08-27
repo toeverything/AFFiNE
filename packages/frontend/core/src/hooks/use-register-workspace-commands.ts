@@ -17,6 +17,7 @@ import {
 } from '../commands';
 import { usePageHelper } from '../components/blocksuite/block-suite-page-list/utils';
 import { CMDKQuickSearchService } from '../modules/quicksearch/services/cmdk';
+import { useEditorSettingsHelper } from './affine/use-editor-settings-helper';
 import { useLanguageHelper } from './affine/use-language-helper';
 import { useActiveBlocksuiteEditor } from './use-block-suite-editor';
 import { useNavigateHelper } from './use-navigate-helper';
@@ -63,6 +64,7 @@ export function useRegisterWorkspaceCommands() {
   const theme = useTheme();
   const currentWorkspace = useService(WorkspaceService).workspace;
   const languageHelper = useLanguageHelper();
+  const editorSettingsHelper = useEditorSettingsHelper();
   const pageHelper = usePageHelper(currentWorkspace.docCollection);
   const navigationHelper = useNavigateHelper();
   const [editor] = useActiveBlocksuiteEditor();
@@ -110,12 +112,13 @@ export function useRegisterWorkspaceCommands() {
       theme,
       languageHelper,
       editor,
+      editorSettingsHelper,
     });
 
     return () => {
       unsub();
     };
-  }, [store, t, theme, languageHelper, editor]);
+  }, [store, t, theme, languageHelper, editor, editorSettingsHelper]);
 
   // register AffineLayoutCommands
   useEffect(() => {

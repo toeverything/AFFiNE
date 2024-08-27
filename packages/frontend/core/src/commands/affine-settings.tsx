@@ -5,6 +5,7 @@ import { appSettingAtom } from '@toeverything/infra';
 import type { createStore } from 'jotai';
 import type { useTheme } from 'next-themes';
 
+import type { useEditorSettingsHelper } from '../hooks/affine/use-editor-settings-helper';
 import type { useLanguageHelper } from '../hooks/affine/use-language-helper';
 import { track } from '../mixpanel';
 import { registerAffineCommand } from './registry';
@@ -14,15 +15,18 @@ export function registerAffineSettingsCommands({
   store,
   theme,
   languageHelper,
+  editorSettingsHelper,
 }: {
   t: ReturnType<typeof useI18n>;
   store: ReturnType<typeof createStore>;
   theme: ReturnType<typeof useTheme>;
   languageHelper: ReturnType<typeof useLanguageHelper>;
   editor: AffineEditorContainer | null;
+  editorSettingsHelper: ReturnType<typeof useEditorSettingsHelper>;
 }) {
   const unsubs: Array<() => void> = [];
   const { onLanguageChange, languagesList, currentLanguage } = languageHelper;
+  const { settings, updateSettings } = editorSettingsHelper;
 
   // color modes
   unsubs.push(
@@ -91,18 +95,14 @@ export function registerAffineSettingsCommands({
       ]()}`,
       category: 'affine:settings',
       icon: <SettingsIcon />,
-      preconditionStrategy: () =>
-        store.get(appSettingAtom).fontStyle !== 'Sans',
+      preconditionStrategy: () => settings.fontFamily !== 'Sans',
       run() {
         track.$.cmdk.settings.changeAppSetting({
           key: 'fontStyle',
           value: 'Sans',
         });
 
-        store.set(appSettingAtom, prev => ({
-          ...prev,
-          fontStyle: 'Sans',
-        }));
+        updateSettings('fontFamily', 'Sans');
       },
     })
   );
@@ -115,18 +115,14 @@ export function registerAffineSettingsCommands({
       ]()}`,
       category: 'affine:settings',
       icon: <SettingsIcon />,
-      preconditionStrategy: () =>
-        store.get(appSettingAtom).fontStyle !== 'Serif',
+      preconditionStrategy: () => settings.fontFamily !== 'Serif',
       run() {
         track.$.cmdk.settings.changeAppSetting({
           key: 'fontStyle',
           value: 'Serif',
         });
 
-        store.set(appSettingAtom, prev => ({
-          ...prev,
-          fontStyle: 'Serif',
-        }));
+        updateSettings('fontFamily', 'Serif');
       },
     })
   );
@@ -139,18 +135,14 @@ export function registerAffineSettingsCommands({
       ]()}`,
       category: 'affine:settings',
       icon: <SettingsIcon />,
-      preconditionStrategy: () =>
-        store.get(appSettingAtom).fontStyle !== 'Mono',
+      preconditionStrategy: () => settings.fontFamily !== 'Mono',
       run() {
         track.$.cmdk.settings.changeAppSetting({
           key: 'fontStyle',
           value: 'Mono',
         });
 
-        store.set(appSettingAtom, prev => ({
-          ...prev,
-          fontStyle: 'Mono',
-        }));
+        updateSettings('fontFamily', 'Mono');
       },
     })
   );
@@ -209,7 +201,7 @@ export function registerAffineSettingsCommands({
       id: `affine:change-full-width-layout`,
       label: () =>
         `${t['com.affine.cmdk.affine.full-width-layout.to']()} ${t[
-          store.get(appSettingAtom).fullWidthLayout
+          settings.fullWidthLayout
             ? 'com.affine.cmdk.affine.switch-state.off'
             : 'com.affine.cmdk.affine.switch-state.on'
         ]()}`,
@@ -218,13 +210,9 @@ export function registerAffineSettingsCommands({
       run() {
         track.$.cmdk.settings.changeAppSetting({
           key: 'fullWidthLayout',
-          value: store.get(appSettingAtom).fullWidthLayout ? 'off' : 'on',
+          value: settings.fullWidthLayout ? 'off' : 'on',
         });
-
-        store.set(appSettingAtom, prev => ({
-          ...prev,
-          fullWidthLayout: !prev.fullWidthLayout,
-        }));
+        updateSettings('fullWidthLayout', !settings.fullWidthLayout);
       },
     })
   );
