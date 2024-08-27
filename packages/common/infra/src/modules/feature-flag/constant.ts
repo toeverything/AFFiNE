@@ -72,7 +72,7 @@ export const AFFINE_FLAGS = {
     displayName: 'Expand Database Block',
     description: 'Enables expanding of database blocks.',
     configurable: false,
-    defaultState: true,
+    defaultState: false,
   },
   enable_multi_view: {
     category: 'affine',
