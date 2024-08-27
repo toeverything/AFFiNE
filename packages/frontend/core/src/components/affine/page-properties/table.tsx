@@ -3,6 +3,7 @@ import { Button, IconButton, Menu, MenuItem, Tooltip } from '@affine/component';
 import { useCurrentWorkspacePropertiesAdapter } from '@affine/core/hooks/use-affine-adapter';
 import { track } from '@affine/core/mixpanel';
 import { DocLinksService } from '@affine/core/modules/doc-link';
+import { EditorSettingService } from '@affine/core/modules/editor-settting';
 import type {
   PageInfoCustomProperty,
   PageInfoCustomPropertyMeta,
@@ -588,16 +589,21 @@ export const PagePropertiesTableHeader = ({
   const manager = useContext(managerContext);
 
   const t = useI18n();
-  const { docLinksServices } = useServices({
+  const {
+    docLinksServices,
+    docService,
+    workspaceService,
+    editorSettingService,
+  } = useServices({
     DocLinksServices: DocLinksService,
+    DocService,
+    WorkspaceService,
+    EditorSettingService,
   });
   const docBacklinks = docLinksServices.backlinks;
   const backlinks = useLiveData(docBacklinks.backlinks$);
 
-  const { docService, workspaceService } = useServices({
-    DocService,
-    WorkspaceService,
-  });
+  const settings = useLiveData(editorSettingService.editorSetting.settings$);
 
   const { syncing, retrying, serverClock } = useLiveData(
     workspaceService.workspace.engine.doc.docState$(docService.doc.id)
@@ -690,31 +696,33 @@ export const PagePropertiesTableHeader = ({
         {dTimestampElement}
       </div>
       <Divider />
-      <div className={styles.tableHeaderSecondaryRow}>
-        <div className={clsx(!open ? styles.pageInfoDimmed : null)}>
-          {t['com.affine.page-properties.page-info']()}
-        </div>
-        {properties.length === 0 || manager.readonly ? null : (
-          <PagePropertiesSettingsPopup>
-            <IconButton data-testid="page-info-show-more" size="20">
-              <MoreHorizontalIcon />
-            </IconButton>
-          </PagePropertiesSettingsPopup>
-        )}
-        <Collapsible.Trigger asChild role="button" onClick={handleCollapse}>
-          <div
-            className={styles.tableHeaderCollapseButtonWrapper}
-            data-testid="page-info-collapse"
-          >
-            <IconButton size="20">
-              <ToggleExpandIcon
-                className={styles.collapsedIcon}
-                data-collapsed={!open}
-              />
-            </IconButton>
+      {settings.displayDocInfo ? (
+        <div className={styles.tableHeaderSecondaryRow}>
+          <div className={clsx(!open ? styles.pageInfoDimmed : null)}>
+            {t['com.affine.page-properties.page-info']()}
           </div>
-        </Collapsible.Trigger>
-      </div>
+          {properties.length === 0 || manager.readonly ? null : (
+            <PagePropertiesSettingsPopup>
+              <IconButton data-testid="page-info-show-more" size="20">
+                <MoreHorizontalIcon />
+              </IconButton>
+            </PagePropertiesSettingsPopup>
+          )}
+          <Collapsible.Trigger asChild role="button" onClick={handleCollapse}>
+            <div
+              className={styles.tableHeaderCollapseButtonWrapper}
+              data-testid="page-info-collapse"
+            >
+              <IconButton size="20">
+                <ToggleExpandIcon
+                  className={styles.collapsedIcon}
+                  data-collapsed={!open}
+                />
+              </IconButton>
+            </div>
+          </Collapsible.Trigger>
+        </div>
+      ) : null}
     </div>
   );
 };

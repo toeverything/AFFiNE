@@ -1,4 +1,5 @@
 import { DocLinksService } from '@affine/core/modules/doc-link';
+import { EditorSettingService } from '@affine/core/modules/editor-settting';
 import {
   useLiveData,
   useServices,
@@ -11,17 +12,25 @@ import * as styles from './bi-directional-link-panel.css';
 
 export const BiDirectionalLinkPanel = () => {
   const [show, setShow] = useState(false);
-  const { docLinksService, workspaceService } = useServices({
-    DocLinksService,
-    WorkspaceService,
-  });
+  const { docLinksService, workspaceService, editorSettingService } =
+    useServices({
+      DocLinksService,
+      WorkspaceService,
+      EditorSettingService,
+    });
 
   const links = useLiveData(docLinksService.links.links$);
   const backlinks = useLiveData(docLinksService.backlinks.backlinks$);
 
+  const settings = useLiveData(editorSettingService.editorSetting.settings$);
+
   const handleClickShow = useCallback(() => {
     setShow(!show);
   }, [show]);
+
+  if (!settings.displayBiDirectionalLink) {
+    return null;
+  }
 
   return (
     <div className={styles.container}>
