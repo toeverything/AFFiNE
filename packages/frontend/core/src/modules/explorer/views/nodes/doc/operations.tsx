@@ -8,6 +8,7 @@ import {
 import { IsFavoriteIcon } from '@affine/core/components/pure/icons';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { track } from '@affine/core/mixpanel';
+import { EditorSettingService } from '@affine/core/modules/editor-settting';
 import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/properties';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import { useI18n } from '@affine/i18n';
@@ -42,16 +43,20 @@ export const useExplorerDocNodeOperations = (
     docsService,
     compatibleFavoriteItemsAdapter,
     featureFlagService,
+    editorSettingService,
   } = useServices({
     DocsService,
     WorkbenchService,
     CompatibleFavoriteItemsAdapter,
     FeatureFlagService,
+    EditorSettingService,
   });
   const enableMultiView = useLiveData(
     featureFlagService.flags.enable_multi_view.$
   );
   const { openConfirmModal } = useConfirmModal();
+
+  const settings = useLiveData(editorSettingService.editorSetting.settings$);
 
   const docRecord = useLiveData(docsService.list.doc$(docId));
 
@@ -109,14 +114,22 @@ export const useExplorerDocNodeOperations = (
   }, [docId, workbenchService.workbench]);
 
   const handleAddLinkedPage = useAsyncCallback(async () => {
-    const newDoc = docsService.createDoc();
+    const newDoc = docsService.createDoc({
+      primaryMode: settings.newDocDefaultMode,
+    });
     // TODO: handle timeout & error
     await docsService.addLinkedDoc(docId, newDoc.id);
     track.$.navigationPanel.docs.createDoc({ control: 'linkDoc' });
     track.$.navigationPanel.docs.linkDoc({ control: 'createDoc' });
     workbenchService.workbench.openDoc(newDoc.id);
     options.openNodeCollapsed();
-  }, [docsService, docId, workbenchService.workbench, options]);
+  }, [
+    docsService,
+    settings.newDocDefaultMode,
+    docId,
+    workbenchService.workbench,
+    options,
+  ]);
 
   const handleToggleFavoriteDoc = useCallback(() => {
     compatibleFavoriteItemsAdapter.toggle(docId, 'doc');

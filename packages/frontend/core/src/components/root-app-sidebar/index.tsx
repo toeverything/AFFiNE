@@ -1,4 +1,5 @@
 import { openSettingModalAtom } from '@affine/core/atoms';
+import { useEditorSettingsHelper } from '@affine/core/hooks/affine/use-editor-settings-helper';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { track } from '@affine/core/mixpanel';
 import {
@@ -89,14 +90,18 @@ export const RootAppSidebar = (): ReactElement => {
   const allPageActive = currentPath === '/all';
 
   const pageHelper = usePageHelper(currentWorkspace.docCollection);
+  const { settings } = useEditorSettingsHelper();
 
   const onClickNewPage = useAsyncCallback(
     async (e?: MouseEvent) => {
-      const page = pageHelper.createPage(isNewTabTrigger(e) ? 'new-tab' : true);
+      const page = pageHelper.createPage(
+        settings.newDocDefaultMode,
+        isNewTabTrigger(e) ? 'new-tab' : true
+      );
       page.load();
-      track.$.navigationPanel.$.createDoc();
+      track.$.navigationPanel.$.createDoc({ mode: settings.newDocDefaultMode });
     },
-    [pageHelper]
+    [pageHelper, settings.newDocDefaultMode]
   );
   useEffect(() => {
     if (environment.isDesktop) {

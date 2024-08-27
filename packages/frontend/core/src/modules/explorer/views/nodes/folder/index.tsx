@@ -15,6 +15,7 @@ import {
   useSelectTag,
 } from '@affine/core/components/page-list/selector';
 import { track } from '@affine/core/mixpanel';
+import { EditorSettingService } from '@affine/core/modules/editor-settting';
 import {
   type FolderNode,
   OrganizeService,
@@ -186,11 +187,17 @@ export const ExplorerFolderNodeFolder = ({
   node: FolderNode;
 } & GenericExplorerNode) => {
   const t = useI18n();
-  const { docsService, workbenchService, featureFlagService } = useServices({
+  const {
+    docsService,
+    workbenchService,
+    featureFlagService,
+    editorSettingService,
+  } = useServices({
     DocsService,
     WorkbenchService,
     CompatibleFavoriteItemsAdapter,
     FeatureFlagService,
+    EditorSettingService,
   });
   const openDocsSelector = useSelectDoc();
   const openTagsSelector = useSelectTag();
@@ -201,6 +208,8 @@ export const ExplorerFolderNodeFolder = ({
   );
   const [collapsed, setCollapsed] = useState(true);
   const [newFolderId, setNewFolderId] = useState<string | null>(null);
+
+  const settings = useLiveData(editorSettingService.editorSetting.settings$);
 
   const handleDelete = useCallback(() => {
     node.delete();
@@ -545,7 +554,9 @@ export const ExplorerFolderNodeFolder = ({
   );
 
   const handleNewDoc = useCallback(() => {
-    const newDoc = docsService.createDoc();
+    const newDoc = docsService.createDoc({
+      primaryMode: settings.newDocDefaultMode,
+    });
     node.createLink('doc', newDoc.id, node.indexAt('before'));
     workbenchService.workbench.openDoc(newDoc.id);
     track.$.navigationPanel.folders.createDoc();
@@ -554,7 +565,12 @@ export const ExplorerFolderNodeFolder = ({
       target: 'doc',
     });
     setCollapsed(false);
-  }, [docsService, node, workbenchService.workbench]);
+  }, [
+    docsService,
+    node,
+    settings.newDocDefaultMode,
+    workbenchService.workbench,
+  ]);
 
   const handleCreateSubfolder = useCallback(() => {
     const newFolderId = node.createFolder(

@@ -8,10 +8,15 @@ import { Header } from '@affine/core/components/pure/header';
 import { WorkspaceModeFilterTab } from '@affine/core/components/pure/workspace-mode-filter-tab';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { track } from '@affine/core/mixpanel';
+import { EditorSettingService } from '@affine/core/modules/editor-settting';
 import { isNewTabTrigger } from '@affine/core/utils';
 import type { Filter } from '@affine/env/filter';
 import { PlusIcon } from '@blocksuite/icons/rc';
-import { useService, WorkspaceService } from '@toeverything/infra';
+import {
+  useLiveData,
+  useServices,
+  WorkspaceService,
+} from '@toeverything/infra';
 import clsx from 'clsx';
 
 import * as styles from './all-page.css';
@@ -25,7 +30,12 @@ export const AllPageHeader = ({
   filters: Filter[];
   onChangeFilters: (filters: Filter[]) => void;
 }) => {
-  const workspace = useService(WorkspaceService).workspace;
+  const { workspaceService, editorSettingService } = useServices({
+    WorkspaceService,
+    EditorSettingService,
+  });
+  const workspace = workspaceService.workspace;
+  const settings = useLiveData(editorSettingService.editorSetting.settings$);
   const { importFile, createEdgeless, createPage } = usePageHelper(
     workspace.docCollection
   );
@@ -64,7 +74,10 @@ export const AllPageHeader = ({
               createEdgeless(isNewTabTrigger(e) ? 'new-tab' : true)
             }
             onCreatePage={e =>
-              createPage(isNewTabTrigger(e) ? 'new-tab' : true)
+              createPage(
+                settings.newDocDefaultMode,
+                isNewTabTrigger(e) ? 'new-tab' : true
+              )
             }
             onImportFile={onImportFile}
           >

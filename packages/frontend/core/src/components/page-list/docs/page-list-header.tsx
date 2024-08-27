@@ -8,6 +8,7 @@ import {
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
 import { track } from '@affine/core/mixpanel';
+import { EditorSettingService } from '@affine/core/modules/editor-settting';
 import type { Tag } from '@affine/core/modules/tag';
 import { TagService } from '@affine/core/modules/tag';
 import { isNewTabTrigger } from '@affine/core/utils';
@@ -19,7 +20,12 @@ import {
   ViewLayersIcon,
 } from '@blocksuite/icons/rc';
 import type { Doc as BlockSuiteDoc } from '@blocksuite/store';
-import { useLiveData, useService, WorkspaceService } from '@toeverything/infra';
+import {
+  useLiveData,
+  useService,
+  useServices,
+  WorkspaceService,
+} from '@toeverything/infra';
 import clsx from 'clsx';
 import { nanoid } from 'nanoid';
 import { useCallback, useMemo, useState } from 'react';
@@ -38,7 +44,14 @@ import { PageListNewPageButton } from './page-list-new-page-button';
 
 export const PageListHeader = () => {
   const t = useI18n();
-  const workspace = useService(WorkspaceService).workspace;
+  const { workspaceService, editorSettingService } = useServices({
+    WorkspaceService,
+    EditorSettingService,
+  });
+
+  const settings = useLiveData(editorSettingService.editorSetting.settings$);
+
+  const workspace = workspaceService.workspace;
   const { importFile, createEdgeless, createPage } = usePageHelper(
     workspace.docCollection
   );
@@ -69,7 +82,12 @@ export const PageListHeader = () => {
         onCreateEdgeless={e =>
           createEdgeless(isNewTabTrigger(e) ? 'new-tab' : true)
         }
-        onCreatePage={e => createPage(isNewTabTrigger(e) ? 'new-tab' : true)}
+        onCreatePage={e =>
+          createPage(
+            settings.newDocDefaultMode,
+            isNewTabTrigger(e) ? 'new-tab' : true
+          )
+        }
         onImportFile={onImportFile}
       >
         <div className={styles.buttonText}>{t['New Page']()}</div>
@@ -86,12 +104,13 @@ export const CollectionPageListHeader = ({
 }) => {
   const t = useI18n();
   const { jumpToCollections } = useNavigateHelper();
+  const { collectionService, workspaceService, editorSettingService } =
+    useServices({ CollectionService, WorkspaceService, EditorSettingService });
 
   const handleJumpToCollections = useCallback(() => {
     jumpToCollections(workspaceId);
   }, [jumpToCollections, workspaceId]);
 
-  const collectionService = useService(CollectionService);
   const { node, open } = useEditCollection();
 
   const handleEdit = useAsyncCallback(async () => {
@@ -99,7 +118,9 @@ export const CollectionPageListHeader = ({
     collectionService.updateCollection(collection.id, () => ret);
   }, [collection, collectionService, open]);
 
-  const workspace = useService(WorkspaceService).workspace;
+  const settings = useLiveData(editorSettingService.editorSetting.settings$);
+
+  const workspace = workspaceService.workspace;
   const { createEdgeless, createPage } = usePageHelper(workspace.docCollection);
   const { openConfirmModal } = useConfirmModal();
 
@@ -131,10 +152,14 @@ export const CollectionPageListHeader = ({
     () => onConfirmAddDocument(createEdgeless),
     [createEdgeless, onConfirmAddDocument]
   );
-  const onCreatePage = useCallback(
-    () => onConfirmAddDocument(createPage),
-    [createPage, onConfirmAddDocument]
+  const createPageByDefaultMode = useCallback(
+    () => createPage(settings.newDocDefaultMode),
+    [createPage, settings.newDocDefaultMode]
   );
+
+  const onCreatePage = useCallback(() => {
+    onConfirmAddDocument(createPageByDefaultMode);
+  }, [createPageByDefaultMode, onConfirmAddDocument]);
 
   return (
     <>

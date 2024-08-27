@@ -1,7 +1,12 @@
 import { toast } from '@affine/component';
 import { useDocCollectionHelper } from '@affine/core/hooks/use-block-suite-workspace-helper';
 import { WorkbenchService } from '@affine/core/modules/workbench';
-import { DocsService, initEmptyPage, useService } from '@toeverything/infra';
+import {
+  type DocMode,
+  DocsService,
+  initEmptyPage,
+  useService,
+} from '@toeverything/infra';
 import { useCallback, useMemo } from 'react';
 
 import type { DocCollection } from '../../../shared';
@@ -77,8 +82,8 @@ export const usePageHelper = (docCollection: DocCollection) => {
 
   return useMemo(() => {
     return {
-      createPage: (open?: boolean | 'new-tab') =>
-        createPageAndOpen('page', open),
+      createPage: (mode: DocMode = 'page', open?: boolean | 'new-tab') =>
+        createPageAndOpen(mode, open),
       createEdgeless: createEdgelessAndOpen,
       importFile: importFileAndOpen,
     };

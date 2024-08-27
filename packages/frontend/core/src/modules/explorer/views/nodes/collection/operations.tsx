@@ -8,6 +8,7 @@ import { IsFavoriteIcon } from '@affine/core/components/pure/icons';
 import { useDeleteCollectionInfo } from '@affine/core/hooks/affine/use-delete-collection-info';
 import { track } from '@affine/core/mixpanel';
 import { CollectionService } from '@affine/core/modules/collection';
+import { EditorSettingService } from '@affine/core/modules/editor-settting';
 import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/properties';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import { useI18n } from '@affine/i18n';
@@ -40,14 +41,18 @@ export const useExplorerCollectionNodeOperations = (
     collectionService,
     compatibleFavoriteItemsAdapter,
     featureFlagService,
+    editorSettingService,
   } = useServices({
     DocsService,
     WorkbenchService,
     CollectionService,
     CompatibleFavoriteItemsAdapter,
     FeatureFlagService,
+    EditorSettingService,
   });
   const deleteInfo = useDeleteCollectionInfo();
+
+  const settings = useLiveData(editorSettingService.editorSetting.settings$);
 
   const enableMultiView = useLiveData(
     featureFlagService.flags.enable_multi_view.$
@@ -62,7 +67,9 @@ export const useExplorerCollectionNodeOperations = (
   const { openConfirmModal } = useConfirmModal();
 
   const createAndAddDocument = useCallback(() => {
-    const newDoc = docsService.createDoc();
+    const newDoc = docsService.createDoc({
+      primaryMode: settings.newDocDefaultMode,
+    });
     collectionService.addPageToCollection(collectionId, newDoc.id);
     track.$.navigationPanel.collections.createDoc();
     track.$.navigationPanel.collections.addDocToCollection({
@@ -75,6 +82,7 @@ export const useExplorerCollectionNodeOperations = (
     collectionService,
     docsService,
     onOpenCollapsed,
+    settings.newDocDefaultMode,
     workbenchService.workbench,
   ]);
 

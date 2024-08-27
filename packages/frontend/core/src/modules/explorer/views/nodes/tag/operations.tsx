@@ -1,6 +1,7 @@
 import { IconButton, MenuItem, MenuSeparator, toast } from '@affine/component';
 import { IsFavoriteIcon } from '@affine/core/components/pure/icons';
 import { track } from '@affine/core/mixpanel';
+import { EditorSettingService } from '@affine/core/modules/editor-settting';
 import { FavoriteService } from '@affine/core/modules/favorite';
 import { TagService } from '@affine/core/modules/tag';
 import { WorkbenchService } from '@affine/core/modules/workbench';
@@ -36,12 +37,14 @@ export const useExplorerTagNodeOperations = (
     tagService,
     favoriteService,
     featureFlagService,
+    editorSettingService,
   } = useServices({
     WorkbenchService,
     TagService,
     DocsService,
     FavoriteService,
     FeatureFlagService,
+    EditorSettingService,
   });
 
   const favorite = useLiveData(
@@ -52,15 +55,27 @@ export const useExplorerTagNodeOperations = (
     featureFlagService.flags.enable_multi_view.$
   );
 
+  const settings = useLiveData(editorSettingService.editorSetting.settings$);
+
   const handleNewDoc = useCallback(() => {
     if (tagRecord) {
-      const newDoc = docsService.createDoc();
+      const newDoc = docsService.createDoc({
+        primaryMode: settings.newDocDefaultMode,
+      });
       tagRecord?.tag(newDoc.id);
-      track.$.navigationPanel.tags.createDoc();
+      track.$.navigationPanel.tags.createDoc({
+        mode: settings.newDocDefaultMode,
+      });
       workbenchService.workbench.openDoc(newDoc.id);
       openNodeCollapsed();
     }
-  }, [docsService, openNodeCollapsed, tagRecord, workbenchService.workbench]);
+  }, [
+    docsService,
+    openNodeCollapsed,
+    settings.newDocDefaultMode,
+    tagRecord,
+    workbenchService.workbench,
+  ]);
 
   const handleMoveToTrash = useCallback(() => {
     tagService.tagList.deleteTag(tagId);

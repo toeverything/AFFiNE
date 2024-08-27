@@ -4,6 +4,7 @@ import {
   useDropTarget,
 } from '@affine/component';
 import { track } from '@affine/core/mixpanel';
+import { EditorSettingService } from '@affine/core/modules/editor-settting';
 import {
   DropEffect,
   ExplorerTreeRoot,
@@ -36,13 +37,19 @@ import {
 import { RootEmpty } from './empty';
 
 export const ExplorerFavorites = () => {
-  const { favoriteService, docsService, workbenchService, explorerService } =
-    useServices({
-      FavoriteService,
-      DocsService,
-      WorkbenchService,
-      ExplorerService,
-    });
+  const {
+    favoriteService,
+    docsService,
+    workbenchService,
+    explorerService,
+    editorSettingService,
+  } = useServices({
+    FavoriteService,
+    DocsService,
+    WorkbenchService,
+    ExplorerService,
+    EditorSettingService,
+  });
 
   const explorerSection = explorerService.sections.favorites;
 
@@ -51,6 +58,8 @@ export const ExplorerFavorites = () => {
   const isLoading = useLiveData(favoriteService.favoriteList.isLoading$);
 
   const t = useI18n();
+
+  const settings = useLiveData(editorSettingService.editorSetting.settings$);
 
   const handleDrop = useCallback(
     (data: DropTargetDropEvent<AffineDNDData>) => {
@@ -75,7 +84,9 @@ export const ExplorerFavorites = () => {
 
   const handleCreateNewFavoriteDoc: MouseEventHandler = useCallback(
     e => {
-      const newDoc = docsService.createDoc();
+      const newDoc = docsService.createDoc({
+        primaryMode: settings.newDocDefaultMode,
+      });
       favoriteService.favoriteList.add(
         'doc',
         newDoc.id,
@@ -90,6 +101,7 @@ export const ExplorerFavorites = () => {
       docsService,
       explorerSection,
       favoriteService.favoriteList,
+      settings.newDocDefaultMode,
       workbenchService.workbench,
     ]
   );

@@ -9,6 +9,7 @@ import { useBlockSuiteMetaHelper } from '@affine/core/hooks/affine/use-block-sui
 import { useTrashModalHelper } from '@affine/core/hooks/affine/use-trash-modal-helper';
 import { useCatchEventCallback } from '@affine/core/hooks/use-catch-event-hook';
 import { track } from '@affine/core/mixpanel';
+import { EditorSettingService } from '@affine/core/modules/editor-settting';
 import { FavoriteService } from '@affine/core/modules/favorite';
 import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/properties';
 import { WorkbenchService } from '@affine/core/modules/workbench';
@@ -32,7 +33,6 @@ import type { DocMeta } from '@blocksuite/store';
 import {
   FeatureFlagService,
   useLiveData,
-  useService,
   useServices,
   WorkspaceService,
 } from '@toeverything/infra';
@@ -305,9 +305,17 @@ export const CollectionOperationCell = ({
   info,
 }: CollectionOperationCellProps) => {
   const t = useI18n();
-
-  const favAdapter = useService(CompatibleFavoriteItemsAdapter);
-  const docCollection = useService(WorkspaceService).workspace.docCollection;
+  const {
+    compatibleFavoriteItemsAdapter: favAdapter,
+    workspaceService,
+    editorSettingService,
+  } = useServices({
+    CompatibleFavoriteItemsAdapter,
+    WorkspaceService,
+    EditorSettingService,
+  });
+  const docCollection = workspaceService.workspace.docCollection;
+  const settings = useLiveData(editorSettingService.editorSetting.settings$);
   const { createPage } = usePageHelper(docCollection);
   const { openConfirmModal } = useConfirmModal();
   const favourite = useLiveData(
@@ -361,9 +369,9 @@ export const CollectionOperationCell = ({
   }, [favAdapter, collection.id, t]);
 
   const createAndAddDocument = useCallback(() => {
-    const newDoc = createPage();
+    const newDoc = createPage(settings.newDocDefaultMode);
     service.addPageToCollection(collection.id, newDoc.id);
-  }, [collection.id, createPage, service]);
+  }, [collection.id, createPage, service, settings.newDocDefaultMode]);
 
   const onConfirmAddDocToCollection = useCallback(() => {
     openConfirmModal({
