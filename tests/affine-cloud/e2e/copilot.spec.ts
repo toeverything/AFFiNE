@@ -57,7 +57,7 @@ const collectChat = async (page: Page) => {
   await page.waitForSelector('.chat-panel-messages .message chat-copy-more');
   const lastMessage = await chatPanel.$$('.message').then(m => m[m.length - 1]);
   await lastMessage.waitForSelector('chat-copy-more');
-  await page.waitForTimeout(500);
+  await page.waitForTimeout(1000);
   return Promise.all(
     Array.from(await chatPanel.$$('.message')).map(async m => ({
       name: await m.$('.user-info').then(i => i?.innerText()),
