@@ -407,7 +407,7 @@ __metadata:
     "@emotion/styled": "npm:^11.11.5"
     "@floating-ui/dom": "npm:^1.6.5"
     "@juggle/resize-observer": "npm:^3.4.0"
-    "@marsidev/react-turnstile": "npm:^0.7.0"
+    "@marsidev/react-turnstile": "npm:^1.0.0"
     "@perfsee/webpack": "npm:^1.12.2"
     "@pmmmwh/react-refresh-webpack-plugin": "npm:^0.5.11"
     "@radix-ui/react-collapsible": "npm:^1.0.3"
@@ -6933,13 +6933,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@marsidev/react-turnstile@npm:^0.7.0":
-  version: 0.7.2
-  resolution: "@marsidev/react-turnstile@npm:0.7.2"
+"@marsidev/react-turnstile@npm:^1.0.0":
+  version: 1.0.0
+  resolution: "@marsidev/react-turnstile@npm:1.0.0"
   peerDependencies:
-    react: ">=16.8.0"
-    react-dom: ">=16.8.0"
-  checksum: 10/70683701f8fcb9fc72743eeaa77c6b6c522089e3ab616d2e368e17ed7769ac075d633ae1221b1858a632a34841cfce78b8a9532bba5bbcf873a6236d6d99669d
+    react: ^17.0.2 || ^18.0.0
+    react-dom: ^17.0.2 || ^18.0.0
+  checksum: 10/0d99dae7e495891d92d630526fbfa9ebbaa2ad6f9ae2f39d8a81b1b23fb1b8c68f2d249d26f7670001c1a89f70a9a053c9efde2a08902cc4d3c6e882b4a04590
   languageName: node
   linkType: hard
 

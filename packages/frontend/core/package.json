@@ -33,7 +33,7 @@
     "@emotion/styled": "^11.11.5",
     "@floating-ui/dom": "^1.6.5",
     "@juggle/resize-observer": "^3.4.0",
-    "@marsidev/react-turnstile": "^0.7.0",
+    "@marsidev/react-turnstile": "^1.0.0",
     "@radix-ui/react-collapsible": "^1.0.3",
     "@radix-ui/react-dialog": "^1.0.5",
     "@radix-ui/react-popover": "^1.0.7",
