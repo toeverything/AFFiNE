@@ -18,7 +18,6 @@ export const BiDirectionalLinkPanel = () => {
 
   const links = useLiveData(docLinksService.links.links$);
   const backlinks = useLiveData(docLinksService.backlinks.backlinks$);
-
   const handleClickShow = useCallback(() => {
     setShow(!show);
   }, [show]);

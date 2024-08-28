@@ -4,6 +4,7 @@ import {
   useLitPortalFactory,
 } from '@affine/component';
 import { useJournalInfoHelper } from '@affine/core/hooks/use-journal';
+import { EditorSettingService } from '@affine/core/modules/editor-settting';
 import { PeekViewService } from '@affine/core/modules/peek-view';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import type { DocMode } from '@blocksuite/blocks';
@@ -145,6 +146,8 @@ export const BlocksuiteDocEditor = forwardRef<
   const activeView = useLiveData(workbench.activeView$);
   const hash = useLiveData(activeView.location$).hash;
 
+  const editorSettingService = useService(EditorSettingService);
+
   const onDocRef = useCallback(
     (el: PageEditor) => {
       docRef.current = el;
@@ -178,6 +181,8 @@ export const BlocksuiteDocEditor = forwardRef<
 
   const [specs, portals] = usePatchSpecs(page, !!shared, 'page');
 
+  const settings = useLiveData(editorSettingService.editorSetting.settings$);
+
   return (
     <>
       <div className={styles.affineDocViewport} style={{ height: '100%' }}>
@@ -202,7 +207,9 @@ export const BlocksuiteDocEditor = forwardRef<
             }}
           ></div>
         ) : null}
-        {!page.readonly ? <BiDirectionalLinkPanel /> : null}
+        {!page.readonly && settings.displayBiDirectionalLink ? (
+          <BiDirectionalLinkPanel />
+        ) : null}
       </div>
       {portals}
     </>
