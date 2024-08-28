@@ -148,24 +148,31 @@ const OpenAppImpl = ({ urlToOpen, channel }: OpenAppProps) => {
 
 const OpenUrl = () => {
   const [params] = useSearchParams();
-  const urlToOpen = useMemo(() => params.get('url'), [params]);
-  const channel = useMemo(() => {
-    const urlObj = new URL(urlToOpen || '');
-    const maybeSchema = appSchemas.safeParse(urlObj.protocol.replace(':', ''));
-    return schemaToChanel[maybeSchema.success ? maybeSchema.data : 'affine'];
-  }, [urlToOpen]);
+  const urlToOpen = params.get('url');
+  params.delete('url');
 
-  return <OpenAppImpl urlToOpen={urlToOpen} channel={channel} />;
+  const urlObj = new URL(urlToOpen || '');
+  const maybeSchema = appSchemas.safeParse(urlObj.protocol.replace(':', ''));
+  const channel =
+    schemaToChanel[maybeSchema.success ? maybeSchema.data : 'affine'];
+
+  params.forEach((v, k) => {
+    urlObj.searchParams.set(k, v);
+  });
+
+  return <OpenAppImpl urlToOpen={urlObj.toString()} channel={channel} />;
 };
 
+/**
+ * @deprecated
+ */
 const OpenOAuthJwt = () => {
   const { currentUser } = useLoaderData() as LoaderData;
   const [params] = useSearchParams();
-  const schema = useMemo(() => {
-    const maybeSchema = appSchemas.safeParse(params.get('schema'));
-    return maybeSchema.success ? maybeSchema.data : 'affine';
-  }, [params]);
-  const next = useMemo(() => params.get('next'), [params]);
+
+  const maybeSchema = appSchemas.safeParse(params.get('schema'));
+  const schema = maybeSchema.success ? maybeSchema.data : 'affine';
+  const next = params.get('next');
   const channel = schemaToChanel[schema as Schema];
 
   if (!currentUser || !currentUser?.token?.sessionToken) {

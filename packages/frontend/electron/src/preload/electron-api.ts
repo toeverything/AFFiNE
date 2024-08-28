@@ -29,12 +29,20 @@ export function getElectronAPIs() {
   };
 }
 
+type Schema =
+  | 'affine'
+  | 'affine-canary'
+  | 'affine-beta'
+  | 'affine-internal'
+  | 'affine-dev';
+
 // todo: remove duplicated codes
 const ReleaseTypeSchema = z.enum(['stable', 'beta', 'canary', 'internal']);
 const envBuildType = (process.env.BUILD_TYPE || 'canary').trim().toLowerCase();
 const buildType = ReleaseTypeSchema.parse(envBuildType);
 const isDev = process.env.NODE_ENV === 'development';
-let schema = buildType === 'stable' ? 'affine' : `affine-${envBuildType}`;
+let schema =
+  buildType === 'stable' ? 'affine' : (`affine-${envBuildType}` as Schema);
 schema = isDev ? 'affine-dev' : schema;
 
 export const appInfo = {
@@ -45,7 +53,7 @@ export const appInfo = {
   viewId:
     process.argv.find(arg => arg.startsWith('--view-id='))?.split('=')[1] ??
     'unknown',
-  schema: `${schema}`,
+  schema,
 };
 
 function getMainAPIs() {

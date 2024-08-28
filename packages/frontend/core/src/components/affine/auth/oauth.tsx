@@ -30,7 +30,7 @@ const OAuthProviderMap: Record<
   },
 };
 
-export function OAuth({ redirectUri }: { redirectUri?: string | null }) {
+export function OAuth() {
   const serverConfig = useService(ServerConfigService).serverConfig;
   const oauth = useLiveData(serverConfig.features$.map(r => r?.oauth));
   const oauthProviders = useLiveData(
@@ -47,21 +47,11 @@ export function OAuth({ redirectUri }: { redirectUri?: string | null }) {
   }
 
   return oauthProviders?.map(provider => (
-    <OAuthProvider
-      key={provider}
-      provider={provider}
-      redirectUri={redirectUri}
-    />
+    <OAuthProvider key={provider} provider={provider} />
   ));
 }
 
-function OAuthProvider({
-  provider,
-  redirectUri,
-}: {
-  provider: OAuthProviderType;
-  redirectUri?: string | null;
-}) {
+function OAuthProvider({ provider }: { provider: OAuthProviderType }) {
   const { icon } = OAuthProviderMap[provider];
   const authService = useService(AuthService);
   const [isConnecting, setIsConnecting] = useState(false);
@@ -69,7 +59,7 @@ function OAuthProvider({
   const onClick = useAsyncCallback(async () => {
     try {
       setIsConnecting(true);
-      await authService.signInOauth(provider, redirectUri);
+      await authService.signInOauth(provider);
     } catch (err) {
       console.error(err);
       notify.error({ title: 'Failed to sign in, please try again.' });
@@ -77,7 +67,7 @@ function OAuthProvider({
       setIsConnecting(false);
       track.$.$.auth.oauth({ provider });
     }
-  }, [authService, provider, redirectUri]);
+  }, [authService, provider]);
 
   return (
     <Button

@@ -2,13 +2,13 @@ import path from 'node:path';
 
 import type { App } from 'electron';
 
-import { buildType, CLOUD_BASE_URL, isDev } from './config';
+import { buildType, isDev } from './config';
 import { mainWindowOrigin } from './constants';
 import { logger } from './logger';
 import {
   getMainWindow,
-  handleOpenUrlInHiddenWindow,
-  setCookie,
+  openUrlInHiddenWindow,
+  openUrlInMainWindow,
 } from './windows-manager';
 
 let protocol = buildType === 'stable' ? 'affine' : `affine-${buildType}`;
@@ -61,51 +61,28 @@ async function handleAffineUrl(url: string) {
   logger.info('open affine url', url);
   const urlObj = new URL(url);
   logger.info('handle affine schema action', urlObj.hostname);
-  // handle more actions here
-  // hostname is the action name
-  if (urlObj.hostname === 'signin-redirect') {
-    await handleOauthJwt(url);
-  }
+
   if (urlObj.hostname === 'bring-to-front') {
     const mainWindow = await getMainWindow();
     if (mainWindow) {
       mainWindow.show();
     }
+  } else {
+    await openUrl(urlObj);
   }
 }
 
-async function handleOauthJwt(url: string) {
-  const mainWindow = await getMainWindow();
-  if (url && mainWindow) {
-    try {
-      mainWindow.show();
-      const urlObj = new URL(url);
-      const token = urlObj.searchParams.get('token');
+async function openUrl(urlObj: URL) {
+  const params = urlObj.searchParams;
 
-      if (!token) {
-        logger.error('no token in url', url);
-        return;
-      }
+  const openInHiddenWindow = params.get('hidden');
+  params.delete('hidden');
 
-      // set token to cookie
-      await setCookie({
-        url: CLOUD_BASE_URL,
-        httpOnly: true,
-        value: token,
-        secure: true,
-        name: 'affine_session',
-        expirationDate: Math.floor(
-          Date.now() / 1000 +
-            3600 *
-              24 *
-              399 /* as long as possible, cookie max expires is 400 days */
-        ),
-      });
-
-      // hacks to refresh auth state in the main window
-      await handleOpenUrlInHiddenWindow(mainWindowOrigin + '/auth/signIn');
-    } catch (e) {
-      logger.error('failed to open url in popup', e);
-    }
+  const url = mainWindowOrigin + urlObj.pathname + '?' + params.toString();
+  if (!openInHiddenWindow) {
+    await openUrlInHiddenWindow(url);
+  } else {
+    // TODO(@pengx17): somehow the page won't load the url passed, help needed
+    await openUrlInMainWindow(url);
   }
 }

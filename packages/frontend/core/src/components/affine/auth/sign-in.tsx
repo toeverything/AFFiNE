@@ -38,6 +38,7 @@ export const SignIn: FC<AuthPanelProps> = ({
 
   const [isValidEmail, setIsValidEmail] = useState(true);
   const { openModal } = useAtomValue(authAtom);
+  const errorMsg = searchParams.get('error');
 
   useEffect(() => {
     const timeout = setInterval(() => {
@@ -65,32 +66,22 @@ export const SignIn: FC<AuthPanelProps> = ({
 
     setAuthEmail(email);
     try {
-      const { hasPassword, isExist: isUserExist } =
+      const { hasPassword, registered } =
         await authService.checkUserByEmail(email);
 
       if (verifyToken) {
-        if (isUserExist) {
+        if (registered) {
           // provider password sign-in if user has by default
           //  If with payment, onl support email sign in to avoid redirect to affine app
           if (hasPassword) {
             setAuthState('signInWithPassword');
           } else {
             track.$.$.auth.signIn();
-            await authService.sendEmailMagicLink(
-              email,
-              verifyToken,
-              challenge,
-              searchParams.get('redirect_uri')
-            );
+            await authService.sendEmailMagicLink(email, verifyToken, challenge);
             setAuthState('afterSignInSendEmail');
           }
         } else {
-          await authService.sendEmailMagicLink(
-            email,
-            verifyToken,
-            challenge,
-            searchParams.get('redirect_uri')
-          );
+          await authService.sendEmailMagicLink(email, verifyToken, challenge);
           track.$.$.auth.signUp();
           setAuthState('afterSignUpSendEmail');
         }
@@ -105,15 +96,7 @@ export const SignIn: FC<AuthPanelProps> = ({
     }
 
     setIsMutating(false);
-  }, [
-    authService,
-    challenge,
-    email,
-    searchParams,
-    setAuthEmail,
-    setAuthState,
-    verifyToken,
-  ]);
+  }, [authService, challenge, email, setAuthEmail, setAuthState, verifyToken]);
 
   return (
     <>
@@ -122,7 +105,7 @@ export const SignIn: FC<AuthPanelProps> = ({
         subTitle={t['com.affine.brand.affineCloud']()}
       />
 
-      <OAuth redirectUri={searchParams.get('redirect_uri')} />
+      <OAuth />
 
       <div className={style.authModalContent}>
         <AuthInput
@@ -142,8 +125,6 @@ export const SignIn: FC<AuthPanelProps> = ({
           onEnter={onContinue}
         />
 
-        {verifyToken ? null : <Captcha />}
-
         {verifyToken ? (
           <Button
             style={{ width: '100%' }}
@@ -157,7 +138,11 @@ export const SignIn: FC<AuthPanelProps> = ({
           >
             {t['com.affine.auth.sign.email.continue']()}
           </Button>
-        ) : null}
+        ) : (
+          <Captcha />
+        )}
+
+        {errorMsg && <div className={style.errorMessage}>{errorMsg}</div>}
 
         <div className={style.authMessage}>
           {/*prettier-ignore*/}
