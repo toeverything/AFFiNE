@@ -32,7 +32,6 @@ import type { DocMeta } from '@blocksuite/store';
 import {
   FeatureFlagService,
   useLiveData,
-  useService,
   useServices,
   WorkspaceService,
 } from '@toeverything/infra';
@@ -305,9 +304,12 @@ export const CollectionOperationCell = ({
   info,
 }: CollectionOperationCellProps) => {
   const t = useI18n();
-
-  const favAdapter = useService(CompatibleFavoriteItemsAdapter);
-  const docCollection = useService(WorkspaceService).workspace.docCollection;
+  const { compatibleFavoriteItemsAdapter: favAdapter, workspaceService } =
+    useServices({
+      CompatibleFavoriteItemsAdapter,
+      WorkspaceService,
+    });
+  const docCollection = workspaceService.workspace.docCollection;
   const { createPage } = usePageHelper(docCollection);
   const { openConfirmModal } = useConfirmModal();
   const favourite = useLiveData(

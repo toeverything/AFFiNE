@@ -4,6 +4,7 @@ import {
   MenuSeparator,
   useConfirmModal,
 } from '@affine/component';
+import { usePageHelper } from '@affine/core/components/blocksuite/block-suite-page-list/utils';
 import { IsFavoriteIcon } from '@affine/core/components/pure/icons';
 import { useDeleteCollectionInfo } from '@affine/core/hooks/affine/use-delete-collection-info';
 import { track } from '@affine/core/mixpanel';
@@ -19,10 +20,10 @@ import {
   SplitViewIcon,
 } from '@blocksuite/icons/rc';
 import {
-  DocsService,
   FeatureFlagService,
   useLiveData,
   useServices,
+  WorkspaceService,
 } from '@toeverything/infra';
 import { useCallback, useMemo } from 'react';
 
@@ -36,18 +37,22 @@ export const useExplorerCollectionNodeOperations = (
   const t = useI18n();
   const {
     workbenchService,
-    docsService,
+    workspaceService,
     collectionService,
     compatibleFavoriteItemsAdapter,
     featureFlagService,
   } = useServices({
-    DocsService,
     WorkbenchService,
+    WorkspaceService,
     CollectionService,
     CompatibleFavoriteItemsAdapter,
     FeatureFlagService,
   });
   const deleteInfo = useDeleteCollectionInfo();
+
+  const { createPage } = usePageHelper(
+    workspaceService.workspace.docCollection
+  );
 
   const enableMultiView = useLiveData(
     featureFlagService.flags.enable_multi_view.$
@@ -62,7 +67,7 @@ export const useExplorerCollectionNodeOperations = (
   const { openConfirmModal } = useConfirmModal();
 
   const createAndAddDocument = useCallback(() => {
-    const newDoc = docsService.createDoc();
+    const newDoc = createPage();
     collectionService.addPageToCollection(collectionId, newDoc.id);
     track.$.navigationPanel.collections.createDoc();
     track.$.navigationPanel.collections.addDocToCollection({
@@ -73,7 +78,7 @@ export const useExplorerCollectionNodeOperations = (
   }, [
     collectionId,
     collectionService,
-    docsService,
+    createPage,
     onOpenCollapsed,
     workbenchService.workbench,
   ]);

@@ -34,7 +34,6 @@ import {
   useCallback,
   useEffect,
   useMemo,
-  useState,
 } from 'react';
 import { Virtuoso } from 'react-virtuoso';
 
@@ -275,7 +274,8 @@ const CustomFontFamilySettings = () => {
 };
 const NewDocDefaultModeSettings = () => {
   const t = useI18n();
-  const [value, setValue] = useState<DocMode>('page');
+  const { editorSettingService } = useServices({ EditorSettingService });
+  const settings = useLiveData(editorSettingService.editorSetting.settings$);
   const radioItems = useMemo<RadioItem[]>(
     () => [
       {
@@ -291,13 +291,19 @@ const NewDocDefaultModeSettings = () => {
     ],
     [t]
   );
+  const updateNewDocDefaultMode = useCallback(
+    (value: DocMode) => {
+      editorSettingService.editorSetting.set('newDocDefaultMode', value);
+    },
+    [editorSettingService.editorSetting]
+  );
   return (
     <RadioGroup
       items={radioItems}
-      value={value}
+      value={settings.newDocDefaultMode}
       width={250}
       className={styles.settingWrapper}
-      onChange={setValue}
+      onChange={updateNewDocDefaultMode}
     />
   );
 };

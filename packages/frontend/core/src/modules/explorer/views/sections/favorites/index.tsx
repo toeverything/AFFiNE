@@ -3,6 +3,7 @@ import {
   IconButton,
   useDropTarget,
 } from '@affine/component';
+import { usePageHelper } from '@affine/core/components/blocksuite/block-suite-page-list/utils';
 import { track } from '@affine/core/mixpanel';
 import {
   DropEffect,
@@ -18,7 +19,11 @@ import type { AffineDNDData } from '@affine/core/types/dnd';
 import { isNewTabTrigger } from '@affine/core/utils';
 import { useI18n } from '@affine/i18n';
 import { PlusIcon } from '@blocksuite/icons/rc';
-import { DocsService, useLiveData, useServices } from '@toeverything/infra';
+import {
+  useLiveData,
+  useServices,
+  WorkspaceService,
+} from '@toeverything/infra';
 import { type MouseEventHandler, useCallback } from 'react';
 
 import { ExplorerService } from '../../../services/explorer';
@@ -36,13 +41,17 @@ import {
 import { RootEmpty } from './empty';
 
 export const ExplorerFavorites = () => {
-  const { favoriteService, docsService, workbenchService, explorerService } =
-    useServices({
-      FavoriteService,
-      DocsService,
-      WorkbenchService,
-      ExplorerService,
-    });
+  const {
+    favoriteService,
+    workspaceService,
+    workbenchService,
+    explorerService,
+  } = useServices({
+    FavoriteService,
+    WorkbenchService,
+    WorkspaceService,
+    ExplorerService,
+  });
 
   const explorerSection = explorerService.sections.favorites;
 
@@ -51,6 +60,10 @@ export const ExplorerFavorites = () => {
   const isLoading = useLiveData(favoriteService.favoriteList.isLoading$);
 
   const t = useI18n();
+
+  const { createPage } = usePageHelper(
+    workspaceService.workspace.docCollection
+  );
 
   const handleDrop = useCallback(
     (data: DropTargetDropEvent<AffineDNDData>) => {
@@ -75,7 +88,7 @@ export const ExplorerFavorites = () => {
 
   const handleCreateNewFavoriteDoc: MouseEventHandler = useCallback(
     e => {
-      const newDoc = docsService.createDoc();
+      const newDoc = createPage();
       favoriteService.favoriteList.add(
         'doc',
         newDoc.id,
@@ -87,7 +100,7 @@ export const ExplorerFavorites = () => {
       explorerSection.setCollapsed(false);
     },
     [
-      docsService,
+      createPage,
       explorerSection,
       favoriteService.favoriteList,
       workbenchService.workbench,

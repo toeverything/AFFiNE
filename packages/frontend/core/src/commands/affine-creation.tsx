@@ -32,7 +32,7 @@ export function registerAffineCreationCommands({
       run() {
         track.$.cmdk.creation.createDoc({ mode: 'page' });
 
-        pageHelper.createPage();
+        pageHelper.createPage('page');
       },
     })
   );

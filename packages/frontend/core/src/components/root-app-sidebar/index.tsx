@@ -1,6 +1,7 @@
 import { openSettingModalAtom } from '@affine/core/atoms';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { track } from '@affine/core/mixpanel';
+import { EditorSettingService } from '@affine/core/modules/editor-settting';
 import {
   ExplorerCollections,
   ExplorerFavorites,
@@ -20,7 +21,11 @@ import {
 } from '@blocksuite/icons/rc';
 import type { Doc } from '@blocksuite/store';
 import type { Workspace } from '@toeverything/infra';
-import { useLiveData, useService, WorkspaceService } from '@toeverything/infra';
+import {
+  useLiveData,
+  useServices,
+  WorkspaceService,
+} from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
 import type { MouseEvent, ReactElement } from 'react';
 import { useCallback, useEffect } from 'react';
@@ -73,30 +78,45 @@ export type RootAppSidebarProps = {
  *
  */
 export const RootAppSidebar = (): ReactElement => {
-  const currentWorkspace = useService(WorkspaceService).workspace;
+  const {
+    workbenchService,
+    workspaceService,
+    cMDKQuickSearchService,
+    editorSettingService,
+  } = useServices({
+    WorkspaceService,
+    WorkbenchService,
+    CMDKQuickSearchService,
+    EditorSettingService,
+  });
+  const currentWorkspace = workspaceService.workspace;
   const { appSettings } = useAppSettingHelper();
   const docCollection = currentWorkspace.docCollection;
   const t = useI18n();
-  const workbench = useService(WorkbenchService).workbench;
+  const workbench = workbenchService.workbench;
   const currentPath = useLiveData(
     workbench.location$.map(location => location.pathname)
   );
-  const cmdkQuickSearchService = useService(CMDKQuickSearchService);
   const onOpenQuickSearchModal = useCallback(() => {
-    cmdkQuickSearchService.toggle();
-  }, [cmdkQuickSearchService]);
+    cMDKQuickSearchService.toggle();
+  }, [cMDKQuickSearchService]);
 
   const allPageActive = currentPath === '/all';
 
   const pageHelper = usePageHelper(currentWorkspace.docCollection);
 
+  const settings = useLiveData(editorSettingService.editorSetting.settings$);
+
   const onClickNewPage = useAsyncCallback(
     async (e?: MouseEvent) => {
-      const page = pageHelper.createPage(isNewTabTrigger(e) ? 'new-tab' : true);
+      const page = pageHelper.createPage(
+        settings.newDocDefaultMode,
+        isNewTabTrigger(e) ? 'new-tab' : true
+      );
       page.load();
-      track.$.navigationPanel.$.createDoc();
+      track.$.navigationPanel.$.createDoc({ mode: settings.newDocDefaultMode });
     },
-    [pageHelper]
+    [pageHelper, settings.newDocDefaultMode]
   );
   useEffect(() => {
     if (environment.isDesktop) {

@@ -9,6 +9,7 @@ import {
   MenuSub,
   notify,
 } from '@affine/component';
+import { usePageHelper } from '@affine/core/components/blocksuite/block-suite-page-list/utils';
 import {
   useSelectCollection,
   useSelectDoc,
@@ -34,10 +35,10 @@ import {
   TagsIcon,
 } from '@blocksuite/icons/rc';
 import {
-  DocsService,
   FeatureFlagService,
   useLiveData,
   useServices,
+  WorkspaceService,
 } from '@toeverything/infra';
 import { difference } from 'lodash-es';
 import { useCallback, useMemo, useState } from 'react';
@@ -186,12 +187,13 @@ export const ExplorerFolderNodeFolder = ({
   node: FolderNode;
 } & GenericExplorerNode) => {
   const t = useI18n();
-  const { docsService, workbenchService, featureFlagService } = useServices({
-    DocsService,
-    WorkbenchService,
-    CompatibleFavoriteItemsAdapter,
-    FeatureFlagService,
-  });
+  const { workbenchService, workspaceService, featureFlagService } =
+    useServices({
+      WorkbenchService,
+      WorkspaceService,
+      CompatibleFavoriteItemsAdapter,
+      FeatureFlagService,
+    });
   const openDocsSelector = useSelectDoc();
   const openTagsSelector = useSelectTag();
   const openCollectionsSelector = useSelectCollection();
@@ -202,6 +204,9 @@ export const ExplorerFolderNodeFolder = ({
   const [collapsed, setCollapsed] = useState(true);
   const [newFolderId, setNewFolderId] = useState<string | null>(null);
 
+  const { createPage } = usePageHelper(
+    workspaceService.workspace.docCollection
+  );
   const handleDelete = useCallback(() => {
     node.delete();
     track.$.navigationPanel.organize.deleteOrganizeItem({
@@ -545,7 +550,7 @@ export const ExplorerFolderNodeFolder = ({
   );
 
   const handleNewDoc = useCallback(() => {
-    const newDoc = docsService.createDoc();
+    const newDoc = createPage();
     node.createLink('doc', newDoc.id, node.indexAt('before'));
     workbenchService.workbench.openDoc(newDoc.id);
     track.$.navigationPanel.folders.createDoc();
@@ -554,7 +559,7 @@ export const ExplorerFolderNodeFolder = ({
       target: 'doc',
     });
     setCollapsed(false);
-  }, [docsService, node, workbenchService.workbench]);
+  }, [createPage, node, workbenchService.workbench]);
 
   const handleCreateSubfolder = useCallback(() => {
     const newFolderId = node.createFolder(

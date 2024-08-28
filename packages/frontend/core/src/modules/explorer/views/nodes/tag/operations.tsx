@@ -1,4 +1,5 @@
 import { IconButton, MenuItem, MenuSeparator, toast } from '@affine/component';
+import { usePageHelper } from '@affine/core/components/blocksuite/block-suite-page-list/utils';
 import { IsFavoriteIcon } from '@affine/core/components/pure/icons';
 import { track } from '@affine/core/mixpanel';
 import { FavoriteService } from '@affine/core/modules/favorite';
@@ -16,6 +17,7 @@ import {
   FeatureFlagService,
   useLiveData,
   useServices,
+  WorkspaceService,
 } from '@toeverything/infra';
 import { useCallback, useMemo } from 'react';
 
@@ -31,13 +33,14 @@ export const useExplorerTagNodeOperations = (
 ): NodeOperation[] => {
   const t = useI18n();
   const {
-    docsService,
     workbenchService,
+    workspaceService,
     tagService,
     favoriteService,
     featureFlagService,
   } = useServices({
     WorkbenchService,
+    WorkspaceService,
     TagService,
     DocsService,
     FavoriteService,
@@ -52,15 +55,19 @@ export const useExplorerTagNodeOperations = (
     featureFlagService.flags.enable_multi_view.$
   );
 
+  const { createPage } = usePageHelper(
+    workspaceService.workspace.docCollection
+  );
+
   const handleNewDoc = useCallback(() => {
     if (tagRecord) {
-      const newDoc = docsService.createDoc();
+      const newDoc = createPage();
       tagRecord?.tag(newDoc.id);
       track.$.navigationPanel.tags.createDoc();
       workbenchService.workbench.openDoc(newDoc.id);
       openNodeCollapsed();
     }
-  }, [docsService, openNodeCollapsed, tagRecord, workbenchService.workbench]);
+  }, [createPage, openNodeCollapsed, tagRecord, workbenchService.workbench]);
 
   const handleMoveToTrash = useCallback(() => {
     tagService.tagList.deleteTag(tagId);

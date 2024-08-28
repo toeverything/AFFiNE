@@ -11,7 +11,7 @@ import { track } from '@affine/core/mixpanel';
 import { isNewTabTrigger } from '@affine/core/utils';
 import type { Filter } from '@affine/env/filter';
 import { PlusIcon } from '@blocksuite/icons/rc';
-import { useService, WorkspaceService } from '@toeverything/infra';
+import { useServices, WorkspaceService } from '@toeverything/infra';
 import clsx from 'clsx';
 
 import * as styles from './all-page.css';
@@ -25,7 +25,10 @@ export const AllPageHeader = ({
   filters: Filter[];
   onChangeFilters: (filters: Filter[]) => void;
 }) => {
-  const workspace = useService(WorkspaceService).workspace;
+  const { workspaceService } = useServices({
+    WorkspaceService,
+  });
+  const workspace = workspaceService.workspace;
   const { importFile, createEdgeless, createPage } = usePageHelper(
     workspace.docCollection
   );
@@ -64,7 +67,10 @@ export const AllPageHeader = ({
               createEdgeless(isNewTabTrigger(e) ? 'new-tab' : true)
             }
             onCreatePage={e =>
-              createPage(isNewTabTrigger(e) ? 'new-tab' : true)
+              createPage('page', isNewTabTrigger(e) ? 'new-tab' : true)
+            }
+            onCreateDoc={e =>
+              createPage(undefined, isNewTabTrigger(e) ? 'new-tab' : true)
             }
             onImportFile={onImportFile}
           >

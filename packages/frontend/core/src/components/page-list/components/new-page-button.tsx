@@ -9,6 +9,7 @@ import { useCallback, useState } from 'react';
 import { menuContent } from './new-page-button.css';
 
 type NewPageButtonProps = {
+  createNewDoc: (e?: MouseEvent) => void;
   createNewPage: (e?: MouseEvent) => void;
   createNewEdgeless: (e?: MouseEvent) => void;
   importFile?: () => void;
@@ -61,6 +62,7 @@ export const CreateNewPagePopup = ({
 };
 
 export const NewPageButton = ({
+  createNewDoc,
   createNewPage,
   createNewEdgeless,
   importFile,
@@ -69,11 +71,20 @@ export const NewPageButton = ({
 }: PropsWithChildren<NewPageButtonProps>) => {
   const [open, setOpen] = useState(false);
 
+  const handleCreateNewDoc: NewPageButtonProps['createNewDoc'] = useCallback(
+    e => {
+      createNewDoc(e);
+      setOpen(false);
+      track.allDocs.header.actions.createDoc();
+    },
+    [createNewDoc]
+  );
+
   const handleCreateNewPage: NewPageButtonProps['createNewPage'] = useCallback(
     e => {
       createNewPage(e);
       setOpen(false);
-      track.allDocs.header.actions.createDoc();
+      track.allDocs.header.actions.createDoc({ mode: 'page' });
     },
     [createNewPage]
   );
@@ -99,6 +110,7 @@ export const NewPageButton = ({
     <Menu
       items={
         <CreateNewPagePopup
+          createNewDoc={handleCreateNewDoc}
           createNewPage={handleCreateNewPage}
           createNewEdgeless={handleCreateNewEdgeless}
           importFile={importFile ? handleImportFile : undefined}
@@ -118,7 +130,7 @@ export const NewPageButton = ({
     >
       <DropdownButton
         size={size}
-        onClick={handleCreateNewPage}
+        onClick={handleCreateNewDoc}
         onAuxClick={handleCreateNewPage}
         onClickDropDown={useCallback(() => setOpen(open => !open), [])}
       >

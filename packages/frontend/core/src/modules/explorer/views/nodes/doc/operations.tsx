@@ -5,6 +5,7 @@ import {
   toast,
   useConfirmModal,
 } from '@affine/component';
+import { usePageHelper } from '@affine/core/components/blocksuite/block-suite-page-list/utils';
 import { IsFavoriteIcon } from '@affine/core/components/pure/icons';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { track } from '@affine/core/mixpanel';
@@ -24,6 +25,7 @@ import {
   FeatureFlagService,
   useLiveData,
   useServices,
+  WorkspaceService,
 } from '@toeverything/infra';
 import { useCallback, useMemo } from 'react';
 
@@ -39,12 +41,14 @@ export const useExplorerDocNodeOperations = (
   const t = useI18n();
   const {
     workbenchService,
+    workspaceService,
     docsService,
     compatibleFavoriteItemsAdapter,
     featureFlagService,
   } = useServices({
     DocsService,
     WorkbenchService,
+    WorkspaceService,
     CompatibleFavoriteItemsAdapter,
     FeatureFlagService,
   });
@@ -54,6 +58,10 @@ export const useExplorerDocNodeOperations = (
   const { openConfirmModal } = useConfirmModal();
 
   const docRecord = useLiveData(docsService.list.doc$(docId));
+
+  const { createPage } = usePageHelper(
+    workspaceService.workspace.docCollection
+  );
 
   const favorite = useLiveData(
     useMemo(() => {
@@ -109,14 +117,14 @@ export const useExplorerDocNodeOperations = (
   }, [docId, workbenchService.workbench]);
 
   const handleAddLinkedPage = useAsyncCallback(async () => {
-    const newDoc = docsService.createDoc();
+    const newDoc = createPage();
     // TODO: handle timeout & error
     await docsService.addLinkedDoc(docId, newDoc.id);
     track.$.navigationPanel.docs.createDoc({ control: 'linkDoc' });
     track.$.navigationPanel.docs.linkDoc({ control: 'createDoc' });
     workbenchService.workbench.openDoc(newDoc.id);
     options.openNodeCollapsed();
-  }, [docsService, docId, workbenchService.workbench, options]);
+  }, [createPage, docsService, docId, workbenchService.workbench, options]);
 
   const handleToggleFavoriteDoc = useCallback(() => {
     compatibleFavoriteItemsAdapter.toggle(docId, 'doc');

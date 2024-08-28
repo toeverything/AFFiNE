@@ -19,7 +19,12 @@ import {
   ViewLayersIcon,
 } from '@blocksuite/icons/rc';
 import type { Doc as BlockSuiteDoc } from '@blocksuite/store';
-import { useLiveData, useService, WorkspaceService } from '@toeverything/infra';
+import {
+  useLiveData,
+  useService,
+  useServices,
+  WorkspaceService,
+} from '@toeverything/infra';
 import clsx from 'clsx';
 import { nanoid } from 'nanoid';
 import { useCallback, useMemo, useState } from 'react';
@@ -38,7 +43,11 @@ import { PageListNewPageButton } from './page-list-new-page-button';
 
 export const PageListHeader = () => {
   const t = useI18n();
-  const workspace = useService(WorkspaceService).workspace;
+  const { workspaceService } = useServices({
+    WorkspaceService,
+  });
+
+  const workspace = workspaceService.workspace;
   const { importFile, createEdgeless, createPage } = usePageHelper(
     workspace.docCollection
   );
@@ -69,7 +78,12 @@ export const PageListHeader = () => {
         onCreateEdgeless={e =>
           createEdgeless(isNewTabTrigger(e) ? 'new-tab' : true)
         }
-        onCreatePage={e => createPage(isNewTabTrigger(e) ? 'new-tab' : true)}
+        onCreatePage={e =>
+          createPage('page', isNewTabTrigger(e) ? 'new-tab' : true)
+        }
+        onCreateDoc={e =>
+          createPage(undefined, isNewTabTrigger(e) ? 'new-tab' : true)
+        }
         onImportFile={onImportFile}
       >
         <div className={styles.buttonText}>{t['New Page']()}</div>
@@ -86,12 +100,15 @@ export const CollectionPageListHeader = ({
 }) => {
   const t = useI18n();
   const { jumpToCollections } = useNavigateHelper();
+  const { collectionService, workspaceService } = useServices({
+    CollectionService,
+    WorkspaceService,
+  });
 
   const handleJumpToCollections = useCallback(() => {
     jumpToCollections(workspaceId);
   }, [jumpToCollections, workspaceId]);
 
-  const collectionService = useService(CollectionService);
   const { node, open } = useEditCollection();
 
   const handleEdit = useAsyncCallback(async () => {
@@ -99,7 +116,7 @@ export const CollectionPageListHeader = ({
     collectionService.updateCollection(collection.id, () => ret);
   }, [collection, collectionService, open]);
 
-  const workspace = useService(WorkspaceService).workspace;
+  const workspace = workspaceService.workspace;
   const { createEdgeless, createPage } = usePageHelper(workspace.docCollection);
   const { openConfirmModal } = useConfirmModal();
 
@@ -127,14 +144,18 @@ export const CollectionPageListHeader = ({
     [openConfirmModal, t, createAndAddDocument]
   );
 
+  const createPageModeDoc = useCallback(() => createPage('page'), [createPage]);
+
   const onCreateEdgeless = useCallback(
     () => onConfirmAddDocument(createEdgeless),
     [createEdgeless, onConfirmAddDocument]
   );
-  const onCreatePage = useCallback(
-    () => onConfirmAddDocument(createPage),
-    [createPage, onConfirmAddDocument]
-  );
+  const onCreatePage = useCallback(() => {
+    onConfirmAddDocument(createPageModeDoc);
+  }, [createPageModeDoc, onConfirmAddDocument]);
+  const onCreateDoc = useCallback(() => {
+    onConfirmAddDocument(createPage);
+  }, [createPage, onConfirmAddDocument]);
 
   return (
     <>
@@ -154,6 +175,7 @@ export const CollectionPageListHeader = ({
           <PageListNewPageButton
             size="small"
             testId="new-page-button-trigger"
+            onCreateDoc={onCreateDoc}
             onCreateEdgeless={onCreateEdgeless}
             onCreatePage={onCreatePage}
           >
