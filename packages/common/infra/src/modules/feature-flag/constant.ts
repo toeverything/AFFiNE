@@ -96,7 +96,7 @@ export const AFFINE_FLAGS = {
     displayName: 'Editor Settings',
     description: 'Enables editor settings.',
     configurable: isCanaryBuild,
-    defaultState: false,
+    defaultState: isCanaryBuild,
   },
 } satisfies { [key in string]: FlagInfo };
 

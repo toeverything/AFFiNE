@@ -13,19 +13,21 @@ import {
   SettingRow,
   SettingWrapper,
 } from '@affine/component/setting-components';
-import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
+import {
+  EditorSettingService,
+  type FontFamily,
+  fontStyleOptions,
+} from '@affine/core/modules/editor-settting';
 import {
   type FontData,
   SystemFontFamilyService,
 } from '@affine/core/modules/system-font-family';
 import { useI18n } from '@affine/i18n';
 import {
-  type AppSetting,
   type DocMode,
-  type FontFamily,
-  fontStyleOptions,
   useLiveData,
   useService,
+  useServices,
 } from '@toeverything/infra';
 import {
   type ChangeEvent,
@@ -43,7 +45,9 @@ import { menu, menuTrigger, searchInput, settingWrapper } from './style.css';
 
 const FontFamilySettings = () => {
   const t = useI18n();
-  const { appSettings, updateSettings } = useAppSettingHelper();
+  const { editorSettingService } = useServices({ EditorSettingService });
+  const settings = useLiveData(editorSettingService.editorSetting.settings$);
+
   const getLabel = useCallback(
     (fontKey: FontFamily) => {
       switch (fontKey) {
@@ -70,8 +74,8 @@ const FontFamilySettings = () => {
         }
         const label = getLabel(key);
         let fontFamily = value;
-        if (key === 'Custom' && appSettings.customFontFamily) {
-          fontFamily = `${appSettings.customFontFamily}, ${value}`;
+        if (key === 'Custom' && settings.customFontFamily) {
+          fontFamily = `${settings.customFontFamily}, ${value}`;
         }
         return {
           value: key,
@@ -83,20 +87,22 @@ const FontFamilySettings = () => {
         } satisfies RadioItem;
       })
       .filter(item => item !== null);
-  }, [appSettings.customFontFamily, getLabel]);
+  }, [getLabel, settings.customFontFamily]);
+
+  const handleFontFamilyChange = useCallback(
+    (value: FontFamily) => {
+      editorSettingService.editorSetting.set('fontFamily', value);
+    },
+    [editorSettingService.editorSetting]
+  );
 
   return (
     <RadioGroup
       items={radioItems}
-      value={appSettings.fontStyle}
+      value={settings.fontFamily}
       width={250}
       className={settingWrapper}
-      onChange={useCallback(
-        (value: AppSetting['fontStyle']) => {
-          updateSettings('fontStyle', value);
-        },
-        [updateSettings]
-      )}
+      onChange={handleFontFamilyChange}
     />
   );
 };
@@ -211,15 +217,17 @@ const FontMenuItem = ({
 
 const CustomFontFamilySettings = () => {
   const t = useI18n();
-  const { appSettings, updateSettings } = useAppSettingHelper();
-  const fontFamily = getFontFamily(appSettings.customFontFamily);
+  const { editorSettingService } = useServices({ EditorSettingService });
+  const settings = useLiveData(editorSettingService.editorSetting.settings$);
+
+  const fontFamily = getFontFamily(settings.customFontFamily);
   const onCustomFontFamilyChange = useCallback(
     (fontFamily: string) => {
-      updateSettings('customFontFamily', fontFamily);
+      editorSettingService.editorSetting.set('customFontFamily', fontFamily);
     },
-    [updateSettings]
+    [editorSettingService.editorSetting]
   );
-  if (appSettings.fontStyle !== 'Custom' || !environment.isDesktop) {
+  if (settings.fontFamily !== 'Custom' || !environment.isDesktop) {
     return null;
   }
   return (
@@ -239,7 +247,7 @@ const CustomFontFamilySettings = () => {
         }}
       >
         <MenuTrigger className={menuTrigger} style={{ fontFamily }}>
-          {appSettings.customFontFamily || 'Select a font'}
+          {settings.customFontFamily || 'Select a font'}
         </MenuTrigger>
       </Menu>
     </SettingRow>
@@ -291,37 +299,6 @@ export const General = () => {
         <FontFamilySettings />
       </SettingRow>
       <CustomFontFamilySettings />
-      <SettingRow
-        name={t[
-          'com.affine.settings.editorSettings.general.font-family.title'
-        ]()}
-        desc={t[
-          'com.affine.settings.editorSettings.general.font-family.description'
-        ]()}
-      >
-        <Menu items={<MenuItem>inter</MenuItem>}>
-          <MenuTrigger className={menuTrigger} disabled>
-            inter
-          </MenuTrigger>
-        </Menu>
-      </SettingRow>
-      <SettingRow
-        name={t['com.affine.settings.editorSettings.general.font-size.title']()}
-        desc={t[
-          'com.affine.settings.editorSettings.general.font-size.description'
-        ]()}
-      >
-        <Menu
-          contentOptions={{
-            className: menu,
-          }}
-          items={<MenuItem>15</MenuItem>}
-        >
-          <MenuTrigger className={menuTrigger} disabled>
-            15
-          </MenuTrigger>
-        </Menu>
-      </SettingRow>
       <SettingRow
         name={t[
           'com.affine.settings.editorSettings.general.default-new-doc.title'

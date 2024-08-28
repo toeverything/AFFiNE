@@ -1,5 +1,5 @@
-import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
 import * as Dialog from '@radix-ui/react-dialog';
+import { useLiveData, useService } from '@toeverything/infra';
 import anime, { type AnimeInstance, type AnimeParams } from 'animejs';
 import clsx from 'clsx';
 import {
@@ -13,6 +13,7 @@ import {
   useState,
 } from 'react';
 
+import { EditorSettingService } from '../../editor-settting';
 import type { PeekViewAnimation } from '../entities/peek-view';
 import * as styles from './modal-container.css';
 
@@ -90,7 +91,8 @@ export const PeekViewModalContainer = forwardRef<
   const overlayRef = useRef<HTMLDivElement>(null);
   const controlsRef = useRef<HTMLDivElement>(null);
   const prevAnimeMap = useRef<Record<string, AnimeInstance | undefined>>({});
-  const { appSettings } = useAppSettingHelper();
+  const editorSettings = useService(EditorSettingService).editorSetting;
+  const settings = useLiveData(editorSettings.settings$);
 
   const animateControls = useCallback((animateIn = false) => {
     const controls = controlsRef.current;
@@ -320,7 +322,7 @@ export const PeekViewModalContainer = forwardRef<
           >
             <div
               data-anime-state={animeState}
-              data-full-width-layout={appSettings.fullWidthLayout}
+              data-full-width-layout={settings.fullWidthLayout}
               ref={contentClipRef}
               className={styles.modalContentContainer}
             >

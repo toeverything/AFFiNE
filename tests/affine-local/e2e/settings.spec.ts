@@ -5,6 +5,7 @@ import {
   confirmExperimentalPrompt,
   openAboutPanel,
   openAppearancePanel,
+  openEditorSetting,
   openExperimentalFeaturesPanel,
   openSettingModal,
   openShortcutsPanel,
@@ -61,8 +62,7 @@ test('Change theme', async ({ page }) => {
 test('Change layout width', async ({ page }) => {
   await openHomePage(page);
   await waitForEditorLoad(page);
-  await openSettingModal(page);
-  await openAppearancePanel(page);
+  await openEditorSetting(page);
 
   await page.getByTestId('full-width-layout-trigger').click();
 

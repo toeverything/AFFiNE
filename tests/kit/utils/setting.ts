@@ -16,6 +16,11 @@ export async function openAppearancePanel(page: Page) {
   await page.getByTestId('appearance-panel-trigger').click();
 }
 
+export async function openEditorSetting(page: Page) {
+  await page.getByTestId('settings-modal-trigger').click();
+  await page.getByTestId('editor-panel-trigger').click();
+}
+
 export async function openShortcutsPanel(page: Page) {
   await page.getByTestId('shortcuts-panel-trigger').click();
 }

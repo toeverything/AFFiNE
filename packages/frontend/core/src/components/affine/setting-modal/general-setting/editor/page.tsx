@@ -3,12 +3,35 @@ import {
   SettingRow,
   SettingWrapper,
 } from '@affine/component/setting-components';
-import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
+import { EditorSettingService } from '@affine/core/modules/editor-settting';
 import { useI18n } from '@affine/i18n';
+import { useLiveData, useService } from '@toeverything/infra';
+import { useCallback } from 'react';
 
 export const Page = () => {
   const t = useI18n();
-  const { appSettings, updateSettings } = useAppSettingHelper();
+  const editorSetting = useService(EditorSettingService).editorSetting;
+  const settings = useLiveData(editorSetting.settings$);
+
+  const handleFullWidthLayoutChange = useCallback(
+    (checked: boolean) => {
+      editorSetting.set('fullWidthLayout', checked);
+    },
+    [editorSetting]
+  );
+  const handleDisplayDocInfoChange = useCallback(
+    (checked: boolean) => {
+      editorSetting.set('displayDocInfo', checked);
+    },
+    [editorSetting]
+  );
+  const handleDisplayBiDirectionalLinkChange = useCallback(
+    (checked: boolean) => {
+      editorSetting.set('displayBiDirectionalLink', checked);
+    },
+    [editorSetting]
+  );
+
   return (
     <SettingWrapper title={t['com.affine.settings.editorSettings.page']()}>
       <SettingRow
@@ -19,8 +42,8 @@ export const Page = () => {
       >
         <Switch
           data-testid="full-width-layout-trigger"
-          checked={appSettings.fullWidthLayout}
-          onChange={checked => updateSettings('fullWidthLayout', checked)}
+          checked={settings.fullWidthLayout}
+          onChange={handleFullWidthLayoutChange}
         />
       </SettingRow>
       <SettingRow
@@ -31,7 +54,11 @@ export const Page = () => {
           'com.affine.settings.editorSettings.page.display-doc-info.description'
         ]()}
       >
-        <Switch />
+        <Switch
+          data-testid="display-doc-info-trigger"
+          checked={settings.displayDocInfo}
+          onChange={handleDisplayDocInfoChange}
+        />
       </SettingRow>
       <SettingRow
         name={t[
@@ -41,7 +68,11 @@ export const Page = () => {
           'com.affine.settings.editorSettings.page.display-bi-link.description'
         ]()}
       >
-        <Switch />
+        <Switch
+          data-testid="display-bi-link-trigger"
+          checked={settings.displayBiDirectionalLink}
+          onChange={handleDisplayBiDirectionalLinkChange}
+        />
       </SettingRow>
     </SettingWrapper>
   );

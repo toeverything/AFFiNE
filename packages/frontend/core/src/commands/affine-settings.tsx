@@ -1,12 +1,12 @@
 import type { useI18n } from '@affine/i18n';
 import { SettingsIcon } from '@blocksuite/icons/rc';
-import type { AffineEditorContainer } from '@blocksuite/presets';
 import { appSettingAtom } from '@toeverything/infra';
 import type { createStore } from 'jotai';
 import type { useTheme } from 'next-themes';
 
 import type { useLanguageHelper } from '../hooks/affine/use-language-helper';
 import { track } from '../mixpanel';
+import type { EditorSettingService } from '../modules/editor-settting';
 import { registerAffineCommand } from './registry';
 
 export function registerAffineSettingsCommands({
@@ -14,15 +14,20 @@ export function registerAffineSettingsCommands({
   store,
   theme,
   languageHelper,
+  editorSettingService,
 }: {
   t: ReturnType<typeof useI18n>;
   store: ReturnType<typeof createStore>;
   theme: ReturnType<typeof useTheme>;
   languageHelper: ReturnType<typeof useLanguageHelper>;
-  editor: AffineEditorContainer | null;
+  editorSettingService: EditorSettingService;
 }) {
   const unsubs: Array<() => void> = [];
   const { onLanguageChange, languagesList, currentLanguage } = languageHelper;
+  const updateSettings = editorSettingService.editorSetting.set.bind(
+    editorSettingService.editorSetting
+  );
+  const settings$ = editorSettingService.editorSetting.settings$;
 
   // color modes
   unsubs.push(
@@ -91,18 +96,14 @@ export function registerAffineSettingsCommands({
       ]()}`,
       category: 'affine:settings',
       icon: <SettingsIcon />,
-      preconditionStrategy: () =>
-        store.get(appSettingAtom).fontStyle !== 'Sans',
+      preconditionStrategy: () => settings$.value.fontFamily !== 'Sans',
       run() {
         track.$.cmdk.settings.changeAppSetting({
           key: 'fontStyle',
           value: 'Sans',
         });
 
-        store.set(appSettingAtom, prev => ({
-          ...prev,
-          fontStyle: 'Sans',
-        }));
+        updateSettings('fontFamily', 'Sans');
       },
     })
   );
@@ -115,18 +116,14 @@ export function registerAffineSettingsCommands({
       ]()}`,
       category: 'affine:settings',
       icon: <SettingsIcon />,
-      preconditionStrategy: () =>
-        store.get(appSettingAtom).fontStyle !== 'Serif',
+      preconditionStrategy: () => settings$.value.fontFamily !== 'Serif',
       run() {
         track.$.cmdk.settings.changeAppSetting({
           key: 'fontStyle',
           value: 'Serif',
         });
 
-        store.set(appSettingAtom, prev => ({
-          ...prev,
-          fontStyle: 'Serif',
-        }));
+        updateSettings('fontFamily', 'Serif');
       },
     })
   );
@@ -139,18 +136,14 @@ export function registerAffineSettingsCommands({
       ]()}`,
       category: 'affine:settings',
       icon: <SettingsIcon />,
-      preconditionStrategy: () =>
-        store.get(appSettingAtom).fontStyle !== 'Mono',
+      preconditionStrategy: () => settings$.value.fontFamily !== 'Mono',
       run() {
         track.$.cmdk.settings.changeAppSetting({
           key: 'fontStyle',
           value: 'Mono',
         });
 
-        store.set(appSettingAtom, prev => ({
-          ...prev,
-          fontStyle: 'Mono',
-        }));
+        updateSettings('fontFamily', 'Mono');
       },
     })
   );
@@ -209,7 +202,7 @@ export function registerAffineSettingsCommands({
       id: `affine:change-full-width-layout`,
       label: () =>
         `${t['com.affine.cmdk.affine.full-width-layout.to']()} ${t[
-          store.get(appSettingAtom).fullWidthLayout
+          settings$.value.fullWidthLayout
             ? 'com.affine.cmdk.affine.switch-state.off'
             : 'com.affine.cmdk.affine.switch-state.on'
         ]()}`,
@@ -218,13 +211,9 @@ export function registerAffineSettingsCommands({
       run() {
         track.$.cmdk.settings.changeAppSetting({
           key: 'fullWidthLayout',
-          value: store.get(appSettingAtom).fullWidthLayout ? 'off' : 'on',
+          value: settings$.value.fullWidthLayout ? 'off' : 'on',
         });
-
-        store.set(appSettingAtom, prev => ({
-          ...prev,
-          fullWidthLayout: !prev.fullWidthLayout,
-        }));
+        updateSettings('fullWidthLayout', !settings$.value.fullWidthLayout);
       },
     })
   );

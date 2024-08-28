@@ -97,17 +97,6 @@ export const AppearanceSettings = () => {
             />
           </SettingRow>
         ) : null}
-
-        <SettingRow
-          name={t['com.affine.appearanceSettings.fullWidth.title']()}
-          desc={t['com.affine.appearanceSettings.fullWidth.description']()}
-        >
-          <Switch
-            data-testid="full-width-layout-trigger"
-            checked={appSettings.fullWidthLayout}
-            onChange={checked => updateSettings('fullWidthLayout', checked)}
-          />
-        </SettingRow>
         {runtimeConfig.enableNewSettingUnstableApi && environment.isDesktop ? (
           <SettingRow
             name={t['com.affine.appearanceSettings.windowFrame.title']()}

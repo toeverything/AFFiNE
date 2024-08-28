@@ -1,5 +1,17 @@
 import { z } from 'zod';
 
+export type FontFamily = 'Sans' | 'Serif' | 'Mono' | 'Custom';
+
+export const fontStyleOptions = [
+  { key: 'Sans', value: 'var(--affine-font-sans-family)' },
+  { key: 'Serif', value: 'var(--affine-font-serif-family)' },
+  { key: 'Mono', value: 'var(--affine-font-mono-family)' },
+  { key: 'Custom', value: 'var(--affine-font-sans-family)' },
+] satisfies {
+  key: FontFamily;
+  value: string;
+}[];
+
 const BSEditorSettingSchema = z.object({
   // TODO: import from bs
   connector: z.object({
@@ -14,9 +26,14 @@ const BSEditorSettingSchema = z.object({
       .default('#000000'),
   }),
 });
-
 const AffineEditorSettingSchema = z.object({
   fontFamily: z.enum(['Sans', 'Serif', 'Mono', 'Custom']).default('Sans'),
+  customFontFamily: z.string().default(''),
+  newDocDefaultMode: z.enum(['edgeless', 'page']).default('page'),
+  spellCheck: z.boolean().default(false),
+  fullWidthLayout: z.boolean().default(false),
+  displayDocInfo: z.boolean().default(true),
+  displayBiDirectionalLink: z.boolean().default(true),
 });
 
 type UnionToIntersection<U> = (U extends any ? (x: U) => void : never) extends (

@@ -4,20 +4,18 @@ import { useDocCollectionPage } from '@affine/core/hooks/use-block-suite-workspa
 import { DisposableGroup } from '@blocksuite/global/utils';
 import type { AffineEditorContainer } from '@blocksuite/presets';
 import type { Doc as BlockSuiteDoc, DocCollection } from '@blocksuite/store';
-import {
-  type DocMode,
-  fontStyleOptions,
-  useLiveData,
-  useService,
-} from '@toeverything/infra';
+import { type DocMode, useLiveData, useService } from '@toeverything/infra';
 import { cssVar } from '@toeverything/theme';
 import clsx from 'clsx';
 import type { CSSProperties } from 'react';
 import { memo, Suspense, useCallback, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 
-import { useAppSettingHelper } from '../hooks/affine/use-app-setting-helper';
 import { EditorService } from '../modules/editor';
+import {
+  EditorSettingService,
+  fontStyleOptions,
+} from '../modules/editor-settting';
 import { BlockSuiteEditor as Editor } from './blocksuite/block-suite-editor';
 import * as styles from './page-detail-editor.css';
 
@@ -51,21 +49,22 @@ const PageDetailEditorMain = memo(function PageDetailEditorMain({
   const mode = useLiveData(editor.mode$);
 
   const isSharedMode = editor.isSharedMode;
-  const { appSettings } = useAppSettingHelper();
+  const editorSetting = useService(EditorSettingService).editorSetting;
+  const settings = useLiveData(editorSetting.settings$);
 
   const value = useMemo(() => {
     const fontStyle = fontStyleOptions.find(
-      option => option.key === appSettings.fontStyle
+      option => option.key === settings.fontFamily
     );
     if (!fontStyle) {
       return cssVar('fontSansFamily');
     }
-    const customFontFamily = appSettings.customFontFamily;
+    const customFontFamily = settings.customFontFamily;
 
     return customFontFamily && fontStyle.key === 'Custom'
       ? `${customFontFamily}, ${fontStyle.value}`
       : fontStyle.value;
-  }, [appSettings.customFontFamily, appSettings.fontStyle]);
+  }, [settings.customFontFamily, settings.fontFamily]);
 
   const blockId = useRouterHash();
 
@@ -96,7 +95,7 @@ const PageDetailEditorMain = memo(function PageDetailEditorMain({
   return (
     <Editor
       className={clsx(styles.editor, {
-        'full-screen': !isSharedMode && appSettings.fullWidthLayout,
+        'full-screen': !isSharedMode && settings.fullWidthLayout,
         'is-public': isSharedMode,
       })}
       style={
