@@ -49,11 +49,16 @@ export const shapeIndicator = style({
   boxShadow: 'none',
   backgroundColor: cssVarV2('layer/background/tertiary'),
 });
-
+export const InputContainer = style({
+  display: 'flex',
+  alignItems: 'center',
+  padding: '4px',
+  width: '100%',
+  justifyContent: 'flex-start',
+  gap: '6px',
+});
 export const searchInput = style({
   flexGrow: 1,
-  padding: '10px 0',
-  margin: '-10px 0',
   border: 'none',
   outline: 'none',
   fontSize: cssVar('fontSm'),
@@ -63,4 +68,40 @@ export const searchInput = style({
   '::placeholder': {
     color: cssVarV2('text/placeholder'),
   },
+});
+export const searchIcon = style({
+  color: cssVarV2('icon/primary'),
+  fontSize: '20px',
+});
+export const fontItemContainer = style({
+  display: 'flex',
+  justifyContent: 'space-between',
+  fontSize: cssVar('fontXs'),
+  alignItems: 'center',
+  overflow: 'hidden',
+  width: '100%',
+});
+export const fontItem = style({
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'flex-start',
+  overflow: 'hidden',
+  whiteSpace: 'nowrap',
+  textOverflow: 'ellipsis',
+});
+export const fontLabel = style({
+  color: cssVarV2('text/secondary'),
+  width: '100%',
+  whiteSpace: 'nowrap',
+  textOverflow: 'ellipsis',
+  overflow: 'hidden',
+  selectors: {
+    '&.secondary': {
+      color: cssVarV2('text/secondary'),
+    },
+  },
+});
+export const selectedIcon = style({
+  color: cssVarV2('button/primary'),
+  marginLeft: '8px',
 });

@@ -29,8 +29,8 @@ export const filledTrackStyle = style({
 });
 
 export const thumbStyle = style({
-  width: '8px',
-  height: '8px',
+  width: '14px',
+  height: '14px',
   backgroundColor: cssVarV2('icon/primary'),
   borderRadius: '50%',
   position: 'absolute',
@@ -40,8 +40,8 @@ export const thumbStyle = style({
 });
 
 export const nodeStyle = style({
-  width: '4px',
-  height: '4px',
+  width: '8px',
+  height: '8px',
   border: '2px solid transparent',
   backgroundColor: cssVarV2('layer/insideBorder/border'),
   borderRadius: '50%',
