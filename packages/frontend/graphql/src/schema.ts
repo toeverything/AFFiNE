@@ -1203,6 +1203,8 @@ export interface WorkspaceType {
   features: Array<FeatureType>;
   histories: Array<DocHistoryType>;
   id: Scalars['ID']['output'];
+  /** is current workspace initialized */
+  initialized: Scalars['Boolean']['output'];
   /** member count of workspace */
   memberCount: Scalars['Int']['output'];
   /** Members of workspace */
@@ -1843,6 +1845,7 @@ export type GetWorkspacesQuery = {
   workspaces: Array<{
     __typename?: 'WorkspaceType';
     id: string;
+    initialized: boolean;
     owner: { __typename?: 'UserType'; id: string };
   }>;
 };

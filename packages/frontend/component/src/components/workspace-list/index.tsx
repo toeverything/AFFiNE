@@ -1,3 +1,4 @@
+import { WorkspaceFlavour } from '@affine/env/workspace';
 import type { WorkspaceMetadata } from '@toeverything/infra';
 import { Suspense } from 'react';
 
@@ -58,9 +59,13 @@ const SortableWorkspaceItem = ({
 export const WorkspaceList = (props: WorkspaceListProps) => {
   const workspaceList = props.items;
 
-  return workspaceList.map(item => (
-    <Suspense fallback={<WorkspaceCardSkeleton />} key={item.id}>
-      <SortableWorkspaceItem key={item.id} {...props} item={item} />
-    </Suspense>
-  ));
+  return workspaceList
+    .filter(
+      w => w.flavour !== WorkspaceFlavour.AFFINE_CLOUD || w.initialized === true
+    )
+    .map(item => (
+      <Suspense fallback={<WorkspaceCardSkeleton />} key={item.id}>
+        <SortableWorkspaceItem key={item.id} {...props} item={item} />
+      </Suspense>
+    ));
 };

@@ -677,6 +677,7 @@ export const getWorkspacesQuery = {
 query getWorkspaces {
   workspaces {
     id
+    initialized
     owner {
       id
     }

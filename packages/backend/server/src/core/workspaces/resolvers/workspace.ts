@@ -94,6 +94,21 @@ export class WorkspaceResolver {
     });
   }
 
+  @ResolveField(() => Boolean, {
+    description: 'is current workspace initialized',
+    complexity: 2,
+  })
+  async initialized(@Parent() workspace: WorkspaceType) {
+    return this.prisma.snapshot
+      .count({
+        where: {
+          id: workspace.id,
+          workspaceId: workspace.id,
+        },
+      })
+      .then(count => count > 0);
+  }
+
   @ResolveField(() => UserType, {
     description: 'Owner of workspace',
     complexity: 2,

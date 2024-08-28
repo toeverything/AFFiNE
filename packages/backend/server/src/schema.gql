@@ -893,6 +893,9 @@ type WorkspaceType {
   histories(before: DateTime, guid: String!, take: Int): [DocHistoryType!]!
   id: ID!
 
+  """is current workspace initialized"""
+  initialized: Boolean!
+
   """member count of workspace"""
   memberCount: Int!
 

@@ -117,7 +117,10 @@ export class CloudWorkspaceFlavourProviderService
     this.revalidate();
     await this.waitForLoaded();
 
-    return { id: workspaceId, flavour: WorkspaceFlavour.AFFINE_CLOUD };
+    return {
+      id: workspaceId,
+      flavour: WorkspaceFlavour.AFFINE_CLOUD,
+    };
   }
   revalidate = effect(
     map(() => {
@@ -138,12 +141,16 @@ export class CloudWorkspaceFlavourProviderService
             },
           });
 
-          const ids = workspaces.map(({ id }) => id);
+          const ids = workspaces.map(({ id, initialized }) => ({
+            id,
+            initialized,
+          }));
           return {
             accountId,
-            workspaces: ids.map(id => ({
+            workspaces: ids.map(({ id, initialized }) => ({
               id,
               flavour: WorkspaceFlavour.AFFINE_CLOUD,
+              initialized,
             })),
           };
         }).pipe(
