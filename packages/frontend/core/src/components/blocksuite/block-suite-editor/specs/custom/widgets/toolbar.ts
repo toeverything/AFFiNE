@@ -77,7 +77,10 @@ function createCopyLinkToBlockMenuItem(
     ...item,
     action: (ctx: MenuContext) => {
       const baseUrl = getAffineCloudBaseUrl();
-      if (!baseUrl) return;
+      if (!baseUrl) {
+        ctx.close();
+        return;
+      }
 
       const pageId = ctx.doc.id;
       const workspace = framework.get(WorkspaceService).workspace;
@@ -98,7 +101,10 @@ function createCopyLinkToBlockMenuItem(
       }
 
       const str = generateUrl(options);
-      if (!str) return;
+      if (!str) {
+        ctx.close();
+        return;
+      }
 
       navigator.clipboard
         .writeText(str)
@@ -108,6 +114,8 @@ function createCopyLinkToBlockMenuItem(
           });
         })
         .catch(console.error);
+
+      ctx.close();
     },
   };
 }
