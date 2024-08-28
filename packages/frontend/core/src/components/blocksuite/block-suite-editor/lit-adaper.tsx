@@ -207,7 +207,7 @@ export const BlocksuiteDocEditor = forwardRef<
             }}
           ></div>
         ) : null}
-        {!page.readonly && settings.displayBiDirectionalLink ? (
+        {!shared && settings.displayBiDirectionalLink ? (
           <BiDirectionalLinkPanel />
         ) : null}
       </div>

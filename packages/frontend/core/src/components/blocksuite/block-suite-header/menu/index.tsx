@@ -18,6 +18,7 @@ import { useEnableCloud } from '@affine/core/hooks/affine/use-enable-cloud';
 import { useExportPage } from '@affine/core/hooks/affine/use-export-page';
 import { useTrashModalHelper } from '@affine/core/hooks/affine/use-trash-modal-helper';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
+import { useDocMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
 import { track } from '@affine/core/mixpanel';
 import { EditorService } from '@affine/core/modules/editor';
 import { WorkbenchService } from '@affine/core/modules/workbench';
@@ -35,6 +36,7 @@ import {
   InformationIcon,
   OpenInNewIcon,
   PageIcon,
+  SaveIcon,
   ShareIcon,
   SplitViewIcon,
   TocIcon,
@@ -82,6 +84,9 @@ export const PageHeaderMenuButton = ({
   const { duplicate } = useBlockSuiteMetaHelper(docCollection);
   const { importFile } = usePageHelper(docCollection);
   const { setTrashModal } = useTrashModalHelper(docCollection);
+
+  const [isEditing, setEditing] = useState(!page.readonly);
+  const { setDocReadonly } = useDocMetaHelper(docCollection);
 
   const view = useService(ViewService).view;
 
@@ -196,6 +201,21 @@ export const PageHeaderMenuButton = ({
     toggleFavorite();
   }, [toggleFavorite]);
 
+  const handleToggleEdit = useCallback(() => {
+    setDocReadonly(page.id, !page.readonly);
+    setEditing(!isEditing);
+  }, [isEditing, page.id, page.readonly, setDocReadonly]);
+
+  const isMobile = environment.isBrowser && environment.isMobile;
+  const mobileEditMenuItem = (
+    <MenuItem
+      prefixIcon={isEditing ? <SaveIcon /> : <EditIcon />}
+      onSelect={handleToggleEdit}
+    >
+      {t[isEditing ? 'Save' : 'Edit']()}
+    </MenuItem>
+  );
+
   const showResponsiveMenu = hideShare;
   const ResponsiveMenuItems = (
     <>
@@ -235,6 +255,7 @@ export const PageHeaderMenuButton = ({
   const EditMenu = (
     <>
       {showResponsiveMenu ? ResponsiveMenuItems : null}
+      {isMobile && mobileEditMenuItem}
       {!isJournal && (
         <MenuItem
           prefixIcon={<EditIcon />}
