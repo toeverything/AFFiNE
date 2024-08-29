@@ -13,3 +13,8 @@ export const header = style({
     },
   },
 });
+
+// mobile
+export const mobileContent = style({
+  paddingTop: 8,
+});

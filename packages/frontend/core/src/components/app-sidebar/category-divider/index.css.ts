@@ -64,3 +64,30 @@ export const collapseIcon = style({
     },
   },
 });
+
+//  ------------- mobile -------------
+export const mobileRoot = style([
+  root,
+  {
+    height: 25,
+    padding: '0 16px',
+    selectors: {
+      '&[data-collapsible="true"]:hover': {
+        backgroundColor: 'transparent',
+      },
+      '&[data-collapsible="true"]:active': {
+        backgroundColor: cssVarV2('layer/background/hoverOverlay'),
+      },
+    },
+  },
+]);
+export const mobileLabel = style([
+  label,
+  {
+    color: cssVarV2('text/primary'),
+    fontSize: 20,
+    lineHeight: '25px',
+    letterSpacing: -0.45,
+    fontWeight: 400,
+  },
+]);
