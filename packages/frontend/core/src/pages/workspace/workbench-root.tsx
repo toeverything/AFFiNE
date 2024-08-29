@@ -1,5 +1,7 @@
-import { WorkbenchService } from '@affine/core/modules/workbench';
-import { useBindWorkbenchToBrowserRouter } from '@affine/core/modules/workbench/view/browser-adapter';
+import {
+  useBindWorkbenchToBrowserRouter,
+  WorkbenchService,
+} from '@affine/core/modules/workbench';
 import { ViewRoot } from '@affine/core/modules/workbench/view/view-root';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useEffect } from 'react';

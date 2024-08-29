@@ -6,6 +6,10 @@ import {
   redirect,
 } from 'react-router-dom';
 
+import { Component as All } from './pages/workspace/all';
+import { Component as Home } from './pages/workspace/home';
+import { Component as Search } from './pages/workspace/search';
+
 export const topLevelRoutes = [
   {
     element: <RootRouter />,
@@ -50,8 +54,16 @@ export const topLevelRoutes = [
 
 export const viewRoutes = [
   {
+    path: '/home',
+    Component: Home,
+  },
+  {
+    path: '/search',
+    Component: Search,
+  },
+  {
     path: '/all',
-    lazy: () => import('./pages/workspace/all'),
+    Component: All,
   },
   {
     path: '/collection',

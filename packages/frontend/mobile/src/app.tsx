@@ -1,5 +1,6 @@
 import '@affine/component/theme/global.css';
 import '@affine/component/theme/theme.css';
+import './styles/mobile.css';
 
 import { AffineContext } from '@affine/component/context';
 import { AppFallback } from '@affine/core/components/affine/app-container';

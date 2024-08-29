@@ -1,5 +1,5 @@
+import { AffineErrorBoundary } from '@affine/core/components/affine/affine-error-boundary';
 import { AppFallback } from '@affine/core/components/affine/app-container';
-import { RouteContainer } from '@affine/core/modules/workbench/view/route-container';
 import { PageNotFound } from '@affine/core/pages/404';
 import { MobileWorkbenchRoot } from '@affine/core/pages/workspace/workbench-root';
 import {
@@ -7,13 +7,44 @@ import {
   useServices,
   WorkspacesService,
 } from '@toeverything/infra';
-import { lazy as reactLazy, useEffect, useMemo, useState } from 'react';
-import { matchPath, useLocation, useParams } from 'react-router-dom';
+import {
+  lazy as reactLazy,
+  Suspense,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
+import {
+  matchPath,
+  type RouteObject,
+  useLocation,
+  useParams,
+} from 'react-router-dom';
 
 import { viewRoutes } from '../../router';
 import { WorkspaceLayout } from './layout';
 
-const warpedRoutes = viewRoutes.map(({ path, lazy }) => {
+type Route = { Component: React.ComponentType };
+/**
+ * Source: core/src/modules/workbench/view/route-container.tsx
+ **/
+const MobileRouteContainer = ({ route }: { route: Route }) => {
+  return (
+    <AffineErrorBoundary>
+      <Suspense>
+        <route.Component />
+      </Suspense>
+    </AffineErrorBoundary>
+  );
+};
+
+const warpedRoutes = viewRoutes.map((originalRoute: RouteObject) => {
+  if (originalRoute.Component || !originalRoute.lazy) {
+    return originalRoute;
+  }
+
+  const { path, lazy } = originalRoute;
+
   const Component = reactLazy(() =>
     lazy().then(m => ({
       default: m.Component as React.ComponentType,
@@ -26,7 +57,7 @@ const warpedRoutes = viewRoutes.map(({ path, lazy }) => {
   return {
     path,
     Component: () => {
-      return <RouteContainer route={route} />;
+      return <MobileRouteContainer route={route} />;
     },
   };
 });

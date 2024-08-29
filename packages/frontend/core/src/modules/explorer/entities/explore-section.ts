@@ -5,6 +5,7 @@ import { map } from 'rxjs';
 import type { CollapsibleSectionName } from '../types';
 
 const DEFAULT_COLLAPSABLE_STATE: Record<CollapsibleSectionName, boolean> = {
+  recent: true,
   favorites: false,
   organize: false,
   collections: true,

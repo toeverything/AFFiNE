@@ -10,56 +10,57 @@ import { forwardRef, type MouseEvent } from 'react';
 
 import { WorkbenchService } from '../services/workbench';
 
-export const WorkbenchLink = forwardRef<
-  HTMLAnchorElement,
-  React.PropsWithChildren<
-    {
-      to: To;
-      onClick?: (e: MouseEvent) => void;
-    } & React.HTMLProps<HTMLAnchorElement>
-  >
->(function WorkbenchLink({ to, onClick, ...other }, ref) {
-  const { featureFlagService, workbenchService } = useServices({
-    FeatureFlagService,
-    WorkbenchService,
-  });
-  const enableMultiView = useLiveData(
-    featureFlagService.flags.enable_multi_view.$
-  );
-  const workbench = workbenchService.workbench;
-  const basename = useLiveData(workbench.basename$);
-  const link =
-    basename +
-    (typeof to === 'string' ? to : `${to.pathname}${to.search}${to.hash}`);
-  const handleClick = useCatchEventCallback(
-    async (event: React.MouseEvent<HTMLAnchorElement>) => {
-      onClick?.(event);
-      if (event.defaultPrevented) {
-        return;
-      }
-      const at = (() => {
-        if (isNewTabTrigger(event)) {
-          return event.altKey && enableMultiView && environment.isDesktop
-            ? 'tail'
-            : 'new-tab';
-        }
-        return 'active';
-      })();
-      workbench.open(to, { at });
-      event.preventDefault();
-    },
-    [enableMultiView, onClick, to, workbench]
-  );
+export type WorkbenchLinkProps = React.PropsWithChildren<
+  {
+    to: To;
+    onClick?: (e: MouseEvent) => void;
+  } & React.HTMLProps<HTMLAnchorElement>
+>;
 
-  // eslint suspicious runtime error
-  // eslint-disable-next-line react/no-danger-with-children
-  return (
-    <a
-      {...other}
-      ref={ref}
-      href={link}
-      onClick={handleClick}
-      onAuxClick={handleClick}
-    />
-  );
-});
+export const WorkbenchLink = forwardRef<HTMLAnchorElement, WorkbenchLinkProps>(
+  function WorkbenchLink({ to, onClick, ...other }, ref) {
+    const { featureFlagService, workbenchService } = useServices({
+      FeatureFlagService,
+      WorkbenchService,
+    });
+    const enableMultiView = useLiveData(
+      featureFlagService.flags.enable_multi_view.$
+    );
+    const workbench = workbenchService.workbench;
+    const basename = useLiveData(workbench.basename$);
+    const link =
+      basename +
+      (typeof to === 'string' ? to : `${to.pathname}${to.search}${to.hash}`);
+    const handleClick = useCatchEventCallback(
+      async (event: React.MouseEvent<HTMLAnchorElement>) => {
+        onClick?.(event);
+        if (event.defaultPrevented) {
+          return;
+        }
+        const at = (() => {
+          if (isNewTabTrigger(event)) {
+            return event.altKey && enableMultiView && environment.isDesktop
+              ? 'tail'
+              : 'new-tab';
+          }
+          return 'active';
+        })();
+        workbench.open(to, { at });
+        event.preventDefault();
+      },
+      [enableMultiView, onClick, to, workbench]
+    );
+
+    // eslint suspicious runtime error
+    // eslint-disable-next-line react/no-danger-with-children
+    return (
+      <a
+        {...other}
+        ref={ref}
+        href={link}
+        onClick={handleClick}
+        onAuxClick={handleClick}
+      />
+    );
+  }
+);

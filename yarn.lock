@@ -660,14 +660,20 @@ __metadata:
     "@affine/component": "workspace:*"
     "@affine/core": "workspace:*"
     "@affine/env": "workspace:*"
+    "@blocksuite/icons": "npm:^2.1.64"
     "@sentry/react": "npm:^8.0.0"
+    "@toeverything/theme": "npm:^1.0.7"
     "@types/react": "npm:^18.2.75"
     "@types/react-dom": "npm:^18.2.24"
+    "@vanilla-extract/css": "npm:^1.15.5"
+    "@vanilla-extract/dynamic": "npm:^2.1.2"
+    clsx: "npm:^2.1.1"
     core-js: "npm:^3.36.1"
     cross-env: "npm:^7.0.3"
     intl-segmenter-polyfill-rs: "npm:^0.1.7"
     react: "npm:^18.2.0"
     react-dom: "npm:^18.2.0"
+    react-router-dom: "npm:^6.26.1"
     typescript: "npm:^5.4.5"
   languageName: unknown
   linkType: soft
@@ -3619,7 +3625,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@blocksuite/icons@npm:2.1.64, @blocksuite/icons@npm:^2.1.62":
+"@blocksuite/icons@npm:2.1.64, @blocksuite/icons@npm:^2.1.62, @blocksuite/icons@npm:^2.1.64":
   version: 2.1.64
   resolution: "@blocksuite/icons@npm:2.1.64"
   peerDependencies:
@@ -15317,7 +15323,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@vanilla-extract/dynamic@npm:^2.1.0":
+"@vanilla-extract/dynamic@npm:^2.1.0, @vanilla-extract/dynamic@npm:^2.1.2":
   version: 2.1.2
   resolution: "@vanilla-extract/dynamic@npm:2.1.2"
   dependencies:
@@ -30816,7 +30822,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-router-dom@npm:^6.22.3, react-router-dom@npm:^6.23.1":
+"react-router-dom@npm:^6.22.3, react-router-dom@npm:^6.23.1, react-router-dom@npm:^6.26.1":
   version: 6.26.1
   resolution: "react-router-dom@npm:6.26.1"
   dependencies:

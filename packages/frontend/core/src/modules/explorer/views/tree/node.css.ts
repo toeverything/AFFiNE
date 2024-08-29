@@ -77,7 +77,7 @@ export const postfix = style({
 });
 export const iconContainer = style({
   display: 'flex',
-  alignContent: 'center',
+  justifyContent: 'center',
   alignItems: 'center',
   width: 20,
   height: 20,

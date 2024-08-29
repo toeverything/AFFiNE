@@ -1,34 +1,32 @@
 import type { DocCollection } from '@blocksuite/store';
 import { useAtomValue } from 'jotai';
-import { Suspense } from 'react';
+import { type ReactNode, Suspense } from 'react';
 
 import { useBlockSuitePagePreview } from './use-block-suite-page-preview';
 import { useDocCollectionPage } from './use-block-suite-workspace-page';
 
-interface PagePreviewInnerProps {
+interface PagePreviewProps {
   docCollection: DocCollection;
   pageId: string;
+  emptyFallback?: ReactNode;
 }
 
 const PagePreviewInner = ({
   docCollection: workspace,
   pageId,
-}: PagePreviewInnerProps) => {
+  emptyFallback,
+}: PagePreviewProps) => {
   const page = useDocCollectionPage(workspace, pageId);
   const previewAtom = useBlockSuitePagePreview(page);
   const preview = useAtomValue(previewAtom);
-  return preview ? preview : null;
+  const res = preview ? preview : null;
+  return res || emptyFallback;
 };
 
-interface PagePreviewProps {
-  docCollection: DocCollection;
-  pageId: string;
-}
-
-export const PagePreview = ({ docCollection, pageId }: PagePreviewProps) => {
+export const PagePreview = (props: PagePreviewProps) => {
   return (
     <Suspense>
-      <PagePreviewInner docCollection={docCollection} pageId={pageId} />
+      <PagePreviewInner {...props} />
     </Suspense>
   );
 };

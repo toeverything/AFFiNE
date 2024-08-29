@@ -12,16 +12,22 @@
     "@affine/component": "workspace:*",
     "@affine/core": "workspace:*",
     "@affine/env": "workspace:*",
+    "@blocksuite/icons": "^2.1.64",
     "@sentry/react": "^8.0.0",
+    "@toeverything/theme": "^1.0.7",
+    "clsx": "^2.1.1",
     "core-js": "^3.36.1",
     "intl-segmenter-polyfill-rs": "^0.1.7",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.26.1"
   },
   "devDependencies": {
     "@affine/cli": "workspace:*",
     "@types/react": "^18.2.75",
     "@types/react-dom": "^18.2.24",
+    "@vanilla-extract/css": "^1.15.5",
+    "@vanilla-extract/dynamic": "^2.1.2",
     "cross-env": "^7.0.3",
     "typescript": "^5.4.5"
   }
