@@ -1,4 +1,5 @@
 import { DocLinksService } from '@affine/core/modules/doc-link';
+import { useI18n } from '@affine/i18n';
 import {
   useLiveData,
   useServices,
@@ -15,6 +16,7 @@ export const BiDirectionalLinkPanel = () => {
     DocLinksService,
     WorkspaceService,
   });
+  const t = useI18n();
 
   const links = useLiveData(docLinksService.links.links$);
   const backlinks = useLiveData(docLinksService.backlinks.backlinks$);
@@ -44,7 +46,7 @@ export const BiDirectionalLinkPanel = () => {
           </div>
           <div className={styles.linksContainer}>
             <div className={styles.linksTitles}>
-              Backlinks · {backlinks.length}
+              {t['com.affine.page-properties.backlinks']()} · {backlinks.length}
             </div>
             {backlinks.map(link => (
               <div key={link.docId} className={styles.link}>
@@ -58,7 +60,8 @@ export const BiDirectionalLinkPanel = () => {
           </div>
           <div className={styles.linksContainer}>
             <div className={styles.linksTitles}>
-              Outgoing links · {links.length}
+              {t['com.affine.page-properties.outgoing-links']()} ·{' '}
+              {links.length}
             </div>
             {links.map(link => (
               <div key={link.docId} className={styles.link}>

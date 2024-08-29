@@ -1,22 +1,24 @@
-import { useI18n } from '@affine/i18n';
+import type { Backlink, Link } from '@affine/core/modules/doc-link';
 import { useContext } from 'react';
 
 import { AffinePageReference } from '../../reference-link';
 import { managerContext } from '../common';
-import * as styles from './back-links-row.css';
-export const BackLinksRow = ({
+import * as styles from './links-row.css';
+
+export const LinksRow = ({
   references,
+  label,
   onClick,
 }: {
-  references: { docId: string; title: string }[];
+  references: Backlink[] | Link[];
+  label: string;
   onClick?: () => void;
 }) => {
   const manager = useContext(managerContext);
-  const t = useI18n();
   return (
     <div>
       <div className={styles.title}>
-        {t['com.affine.page-properties.backlinks']()} · {references.length}
+        {label} · {references.length}
       </div>
       {references.map(link => (
         <AffinePageReference

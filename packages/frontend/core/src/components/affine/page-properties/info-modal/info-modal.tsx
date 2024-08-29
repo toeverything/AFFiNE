@@ -5,6 +5,7 @@ import {
   Scrollable,
 } from '@affine/component';
 import { DocsSearchService } from '@affine/core/modules/docs-search';
+import { useI18n } from '@affine/i18n';
 import { LiveData, useLiveData, useServices } from '@toeverything/infra';
 import { Suspense, useCallback, useContext, useMemo, useRef } from 'react';
 
@@ -16,8 +17,8 @@ import {
   SortableProperties,
   usePagePropertiesManager,
 } from '../table';
-import { BackLinksRow } from './back-links-row';
 import * as styles from './info-modal.css';
+import { LinksRow } from './links-row';
 import { TagsRow } from './tags-row';
 import { TimeRow } from './time-row';
 
@@ -30,21 +31,11 @@ export const InfoModal = ({
   onOpenChange: (open: boolean) => void;
   docId: string;
 }) => {
-  const { docsSearchService } = useServices({
-    DocsSearchService,
-  });
   const titleInputHandleRef = useRef<InlineEditHandle>(null);
   const manager = usePagePropertiesManager(docId);
   const handleClose = useCallback(() => {
     onOpenChange(false);
   }, [onOpenChange]);
-
-  const references = useLiveData(
-    useMemo(
-      () => LiveData.from(docsSearchService.watchRefsFrom(docId), null),
-      [docId, docsSearchService]
-    )
-  );
 
   if (!manager.page || manager.readonly) {
     return null;
@@ -76,7 +67,6 @@ export const InfoModal = ({
               <InfoTable
                 docId={docId}
                 onClose={handleClose}
-                references={references}
                 readonly={manager.readonly}
               />
             </Suspense>
@@ -90,29 +80,52 @@ export const InfoModal = ({
 
 const InfoTable = ({
   onClose,
-  references,
   docId,
   readonly,
 }: {
   docId: string;
   onClose: () => void;
   readonly: boolean;
-  references:
-    | {
-        docId: string;
-        title: string;
-      }[]
-    | null;
 }) => {
+  const t = useI18n();
   const manager = useContext(managerContext);
+  const { docsSearchService } = useServices({
+    DocsSearchService,
+  });
+  const links = useLiveData(
+    useMemo(
+      () => LiveData.from(docsSearchService.watchRefsFrom(docId), null),
+      [docId, docsSearchService]
+    )
+  );
+  const backlinks = useLiveData(
+    useMemo(
+      () => LiveData.from(docsSearchService.watchRefsTo(docId), null),
+      [docId, docsSearchService]
+    )
+  );
 
   return (
     <div>
       <TimeRow docId={docId} />
       <Divider size="thinner" />
-      {references && references.length > 0 ? (
+      {backlinks && backlinks.length > 0 ? (
         <>
-          <BackLinksRow references={references} onClick={onClose} />
+          <LinksRow
+            references={backlinks}
+            onClick={onClose}
+            label={t['com.affine.page-properties.backlinks']()}
+          />
+          <Divider size="thinner" />
+        </>
+      ) : null}
+      {links && links.length > 0 ? (
+        <>
+          <LinksRow
+            references={links}
+            onClick={onClose}
+            label={t['com.affine.page-properties.outgoing-links']()}
+          />
           <Divider size="thinner" />
         </>
       ) : null}

@@ -3,7 +3,7 @@ import { Entity, LiveData } from '@toeverything/infra';
 
 import type { DocsSearchService } from '../../docs-search';
 
-interface Backlink {
+export interface Backlink {
   docId: string;
   blockId: string;
   title: string;

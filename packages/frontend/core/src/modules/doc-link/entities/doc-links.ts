@@ -3,7 +3,7 @@ import { Entity, LiveData } from '@toeverything/infra';
 
 import type { DocsSearchService } from '../../docs-search';
 
-interface Link {
+export interface Link {
   docId: string;
   title: string;
 }
