@@ -31,6 +31,19 @@ export const modalContentContainer = style({
   alignItems: 'center',
   justifyContent: 'center',
   borderRadius: 12,
+  '@media': {
+    'screen and (width <= 640px)': {
+      selectors: {
+        '[data-padding="true"] &': {
+          height: '60%',
+          width: 'calc(100% - 32px)',
+          paddingRight: 0,
+          paddingBottom: 32,
+          alignSelf: 'flex-end',
+        },
+      },
+    },
+  },
   selectors: {
     '[data-padding="true"] &': {
       width: 'calc(100% - 64px)',
@@ -79,4 +92,9 @@ export const modalControls = style({
   minWidth: '48px',
   padding: '8px 0 0 16px',
   pointerEvents: 'auto',
+  '@media': {
+    'screen and (width <= 640px)': {
+      top: -48,
+    },
+  },
 });

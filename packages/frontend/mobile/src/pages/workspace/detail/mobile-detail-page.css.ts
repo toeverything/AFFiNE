@@ -73,6 +73,10 @@ globalStyle('.doc-title-container', {
   },
 });
 
+globalStyle('[data-peek-view-wrapper] .doc-title-container', {
+  fontSize: cssVar('fontH6'),
+});
+
 globalStyle('.affine-page-root-block-container', {
   '@container': {
     [`viewport (width <= 640px)`]: {

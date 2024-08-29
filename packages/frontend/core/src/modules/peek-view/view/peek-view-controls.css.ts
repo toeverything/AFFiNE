@@ -5,6 +5,11 @@ export const root = style({
   flexDirection: 'column',
   height: '100%',
   gap: 8,
+  '@media': {
+    'screen and (width <= 640px)': {
+      flexDirection: 'row',
+    },
+  },
 });
 
 export const button = style({
