@@ -1,15 +1,15 @@
 import { wrapCreateBrowserRouter } from '@sentry/react';
-import { createContext, useEffect, useState } from 'react';
-import type { NavigateFunction, RouteObject } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import type { RouteObject } from 'react-router-dom';
 import {
   createBrowserRouter as reactRouterCreateBrowserRouter,
-  Outlet,
   redirect,
   // eslint-disable-next-line @typescript-eslint/no-restricted-imports
   useNavigate,
 } from 'react-router-dom';
 
-export const NavigateContext = createContext<NavigateFunction | null>(null);
+import { NavigateContext } from './hooks/use-navigate-helper';
+import { RootWrapper } from './pages/root';
 
 export function RootRouter() {
   const navigate = useNavigate();
@@ -22,7 +22,7 @@ export function RootRouter() {
   return (
     ready && (
       <NavigateContext.Provider value={navigate}>
-        <Outlet />
+        <RootWrapper />
       </NavigateContext.Provider>
     )
   );
@@ -113,6 +113,10 @@ export const topLevelRoutes = [
       {
         path: '/theme-editor',
         lazy: () => import('./pages/theme-editor'),
+      },
+      {
+        path: '/template/import',
+        lazy: () => import('./pages/import-template'),
       },
       {
         path: '*',

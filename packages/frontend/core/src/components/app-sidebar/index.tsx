@@ -6,7 +6,7 @@ import { debounce } from 'lodash-es';
 import type { PropsWithChildren, ReactElement } from 'react';
 import { useEffect } from 'react';
 
-import { WorkspaceSelector } from '../workspace-selector';
+import { WorkspaceNavigator } from '../workspace-selector';
 import { fallbackHeaderStyle, fallbackStyle } from './fallback.css';
 import {
   floatingMaxWidth,
@@ -139,7 +139,11 @@ export const AppSidebarFallback = (): ReactElement | null => {
           <div className={fallbackStyle}>
             <div className={fallbackHeaderStyle}>
               {currentWorkspace ? (
-                <WorkspaceSelector />
+                <WorkspaceNavigator
+                  showSettingsButton
+                  showSyncStatus
+                  showEnableCloudButton
+                />
               ) : (
                 <>
                   <Skeleton variant="circular" width={40} height={40} />

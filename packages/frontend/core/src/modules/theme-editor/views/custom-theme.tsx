@@ -23,7 +23,10 @@ export const useCustomTheme = (target: HTMLElement) => {
       const valueMap = themeObj[mode];
 
       // remove previous style
+      // TOOD(@CatsJuice): find better way to remove previous style
       target.style.cssText = '';
+      // recover color scheme set by next-themes
+      target.style.colorScheme = mode;
 
       Object.entries(valueMap).forEach(([key, value]) => {
         value && target.style.setProperty(key, value);

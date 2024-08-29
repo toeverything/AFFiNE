@@ -8,15 +8,8 @@ import {
   useService,
 } from '@toeverything/infra';
 import { useAtom, useAtomValue } from 'jotai';
-import {
-  lazy as reactLazy,
-  memo,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from 'react';
-import { useLocation } from 'react-router-dom';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { type RouteObject, useLocation } from 'react-router-dom';
 
 import type { View } from '../entities/view';
 import { WorkbenchService } from '../services/workbench';
@@ -32,24 +25,6 @@ import * as styles from './workbench-root.css';
 const useAdapter = environment.isDesktop
   ? useBindWorkbenchToDesktopRouter
   : useBindWorkbenchToBrowserRouter;
-
-const warpedRoutes = viewRoutes.map(({ path, lazy }) => {
-  const Component = reactLazy(() =>
-    lazy().then(m => ({
-      default: m.Component as React.ComponentType,
-    }))
-  );
-  const route = {
-    Component,
-  };
-
-  return {
-    path,
-    Component: () => {
-      return <RouteContainer route={route} />;
-    },
-  };
-});
 
 export const WorkbenchRoot = memo(() => {
   const workbench = useService(WorkbenchService).workbench;
@@ -118,9 +93,18 @@ const WorkbenchView = ({ view, index }: { view: View; index: number }) => {
     return;
   }, [handleOnFocus]);
 
+  const routes: RouteObject[] = useMemo(() => {
+    return [
+      {
+        element: <RouteContainer />,
+        children: viewRoutes,
+      },
+    ] satisfies RouteObject[];
+  }, []);
+
   return (
     <div className={styles.workbenchViewContainer} ref={containerRef}>
-      <ViewRoot routes={warpedRoutes} key={view.id} view={view} />
+      <ViewRoot routes={routes} key={view.id} view={view} />
     </div>
   );
 };

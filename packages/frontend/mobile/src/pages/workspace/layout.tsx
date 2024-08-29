@@ -1,10 +1,7 @@
 import { AffineErrorBoundary } from '@affine/core/components/affine/affine-error-boundary';
 import { AppFallback } from '@affine/core/components/affine/app-container';
 import { WorkspaceLayoutProviders } from '@affine/core/layouts/workspace-layout';
-import {
-  AllWorkspaceModals,
-  CurrentWorkspaceModals,
-} from '@affine/core/providers/modal-provider';
+import { CurrentWorkspaceModals } from '@affine/core/providers/modal-provider';
 import { SWRConfigProvider } from '@affine/core/providers/swr-config-provider';
 import type { Workspace, WorkspaceMetadata } from '@toeverything/infra';
 import {
@@ -73,7 +70,6 @@ export const WorkspaceLayout = ({
     return (
       <FrameworkScope scope={workspace.scope}>
         <AppFallback key="workspaceLoading" />
-        <AllWorkspaceModals />
       </FrameworkScope>
     );
   }
@@ -82,7 +78,6 @@ export const WorkspaceLayout = ({
     <FrameworkScope scope={workspace.scope}>
       <AffineErrorBoundary height="100vh">
         <SWRConfigProvider>
-          <AllWorkspaceModals />
           <CurrentWorkspaceModals />
           <WorkspaceLayoutProviders>{children}</WorkspaceLayoutProviders>
         </SWRConfigProvider>

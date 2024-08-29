@@ -1,4 +1,5 @@
-import { UserPlanButton } from '../../../../affine/auth/user-plan-button';
+import { UserPlanButton } from '@affine/core/components/affine/auth/user-plan-button';
+
 import * as styles from './index.css';
 
 export const UserAccountItem = ({

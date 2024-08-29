@@ -1,4 +1,3 @@
-import { Menu } from '@affine/component/ui/menu';
 import { apis } from '@affine/electron-api';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import {
@@ -7,7 +6,6 @@ import {
   WorkspacesService,
 } from '@toeverything/infra';
 import {
-  lazy,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -21,16 +19,10 @@ import {
   createFirstAppData,
 } from '../bootstrap/first-app-data';
 import { AppFallback } from '../components/affine/app-container';
-import { UserWithWorkspaceList } from '../components/pure/workspace-slider-bar/user-with-workspace-list';
+import { WorkspaceNavigator } from '../components/workspace-selector';
 import { useNavigateHelper } from '../hooks/use-navigate-helper';
 import { AuthService } from '../modules/cloud';
 import { WorkspaceSubPath } from '../shared';
-
-const AllWorkspaceModals = lazy(() =>
-  import('../providers/modal-provider').then(({ AllWorkspaceModals }) => ({
-    default: AllWorkspaceModals,
-  }))
-);
 
 export const loader: LoaderFunction = async () => {
   return null;
@@ -41,6 +33,7 @@ export const Component = () => {
   const [navigating, setNavigating] = useState(true);
   const [creating, setCreating] = useState(false);
   const authService = useService(AuthService);
+
   const loggedIn = useLiveData(
     authService.session.status$.map(s => s === 'authenticated')
   );
@@ -151,35 +144,19 @@ export const Component = () => {
 
   // TODO(@eyhn): We need a no workspace page
   return (
-    <>
-      <div
-        style={{
-          position: 'fixed',
-          left: '50%',
-          top: '50%',
+    <div
+      style={{
+        position: 'fixed',
+        left: 'calc(50% - 150px)',
+        top: '50%',
+      }}
+    >
+      <WorkspaceNavigator
+        open={true}
+        menuContentOptions={{
+          forceMount: true,
         }}
-      >
-        <Menu
-          rootOptions={{
-            open: true,
-          }}
-          items={<UserWithWorkspaceList />}
-          noPortal
-          contentOptions={{
-            style: {
-              width: 300,
-              transform: 'translate(-50%, -50%)',
-              borderRadius: '8px',
-              boxShadow: 'var(--affine-shadow-2)',
-              backgroundColor: 'var(--affine-background-overlay-panel-color)',
-              padding: '16px 12px',
-            },
-          }}
-        >
-          <div></div>
-        </Menu>
-      </div>
-      <AllWorkspaceModals />
-    </>
+      />
+    </div>
   );
 };

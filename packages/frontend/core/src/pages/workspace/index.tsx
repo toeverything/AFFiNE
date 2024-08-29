@@ -16,7 +16,6 @@ import { matchPath, useLocation, useParams } from 'react-router-dom';
 import { AffineErrorBoundary } from '../../components/affine/affine-error-boundary';
 import { WorkspaceLayout } from '../../layouts/workspace-layout';
 import { WorkbenchRoot } from '../../modules/workbench';
-import { AllWorkspaceModals } from '../../providers/modal-provider';
 import { performanceRenderLogger } from '../../shared';
 import { PageNotFound } from '../404';
 import { SharePage } from './share/share-page';
@@ -206,7 +205,6 @@ const WorkspacePage = ({ meta }: { meta: WorkspaceMetadata }) => {
     return (
       <FrameworkScope scope={workspace.scope}>
         <AppFallback key="workspaceLoading" />
-        <AllWorkspaceModals />
       </FrameworkScope>
     );
   }

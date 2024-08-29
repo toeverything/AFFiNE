@@ -1551,5 +1551,10 @@
   "will be moved to Trash": "{{title}} will be moved to trash",
   "will delete member": "will delete member",
   "com.affine.app-sidebar.star-us": "Star us",
-  "com.affine.app-sidebar.learn-more": "Learn more"
+  "com.affine.app-sidebar.learn-more": "Learn more",
+  "com.affine.import-template.dialog.errorImport": "Failed to import template, please try again.",
+  "com.affine.import-template.dialog.errorLoad": "Failed to load template, please try again.",
+  "com.affine.import-template.dialog.createDocToWorkspace": "Create doc to \"{{workspace}}\"",
+  "com.affine.import-template.dialog.createDocToNewWorkspace": "Create into a New Workspace",
+  "com.affine.import-template.dialog.createDocWithTemplate": "Create doc with \"{{templateName}}\" template"
 }

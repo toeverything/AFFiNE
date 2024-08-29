@@ -3,6 +3,7 @@ import { configureInfraModules, type Framework } from '@toeverything/infra';
 
 import { configureCloudModule } from './cloud';
 import { configureCollectionModule } from './collection';
+import { configureCreateWorkspaceModule } from './create-workspace';
 import { configureDocLinksModule } from './doc-link';
 import { configureDocsSearchModule } from './docs-search';
 import { configureEditorModule } from './editor';
@@ -10,6 +11,7 @@ import { configureEditorSettingModule } from './editor-settting';
 import { configureExplorerModule } from './explorer';
 import { configureFavoriteModule } from './favorite';
 import { configureFindInPageModule } from './find-in-page';
+import { configureImportTemplateModule } from './import-template';
 import { configureNavigationModule } from './navigation';
 import { configureOrganizeModule } from './organize';
 import { configurePeekViewModule } from './peek-view';
@@ -45,4 +47,6 @@ export function configureCommonModules(framework: Framework) {
   configureEditorModule(framework);
   configureSystemFontFamilyModule(framework);
   configureEditorSettingModule(framework);
+  configureImportTemplateModule(framework);
+  configureCreateWorkspaceModule(framework);
 }

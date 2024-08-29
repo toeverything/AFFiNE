@@ -38,6 +38,7 @@ import {
   appSidebarResizingAtom,
   SidebarSwitch,
 } from '../components/app-sidebar';
+import { OverCapacityNotification } from '../components/over-capacity';
 import { AIIsland } from '../components/pure/ai-island';
 import { RootAppSidebar } from '../components/root-app-sidebar';
 import { MainContainer } from '../components/workspace';
@@ -50,10 +51,7 @@ import { NavigationButtons } from '../modules/navigation';
 import { useRegisterNavigationCommands } from '../modules/navigation/view/use-register-navigation-commands';
 import { QuickSearchContainer } from '../modules/quicksearch';
 import { WorkbenchService } from '../modules/workbench';
-import {
-  AllWorkspaceModals,
-  CurrentWorkspaceModals,
-} from '../providers/modal-provider';
+import { CurrentWorkspaceModals } from '../providers/modal-provider';
 import { SWRConfigProvider } from '../providers/swr-config-provider';
 import * as styles from './styles.css';
 
@@ -63,7 +61,6 @@ export const WorkspaceLayout = function WorkspaceLayout({
   return (
     <SWRConfigProvider>
       {/* load all workspaces is costly, do not block the whole UI */}
-      <AllWorkspaceModals />
       <CurrentWorkspaceModals />
       <WorkspaceLayoutInner>{children}</WorkspaceLayoutInner>
       {/* should show after workspace loaded */}
@@ -173,6 +170,7 @@ export const WorkspaceLayoutProviders = ({ children }: PropsWithChildren) => {
       {children}
       <QuickSearchContainer />
       <SyncAwareness />
+      <OverCapacityNotification />
     </>
   );
 };

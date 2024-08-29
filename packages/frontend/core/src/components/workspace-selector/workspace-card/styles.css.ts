@@ -24,6 +24,15 @@ export const container = style({
   },
 });
 
+export const disable = style({
+  pointerEvents: 'none',
+  opacity: 0.8,
+  ':hover': {
+    cursor: 'default',
+    background: 'none',
+  },
+});
+
 export const workspaceInfoSlider = style({
   height: 42,
   overflow: 'hidden',
@@ -59,7 +68,6 @@ export const workspaceInfo = style({
     },
   },
 });
-
 export const workspaceName = style({
   fontSize: cssVar('fontSm'),
   lineHeight: '22px',
@@ -68,6 +76,8 @@ export const workspaceName = style({
   overflow: 'hidden',
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',
+  width: '100%',
+  display: 'inline-block',
 });
 
 export const workspaceStatus = style({
@@ -104,4 +114,49 @@ export const workspaceInfoTooltip = style({
   lineHeight: '20px',
   padding: '0 8px',
   minHeight: 20,
+});
+
+export const workspaceTitleContainer = style({
+  display: 'flex',
+  flexDirection: 'column',
+  justifyContent: 'center',
+  flex: 1,
+  overflow: 'hidden',
+});
+
+export const settingButton = style({
+  transition: 'all 0.13s ease',
+  width: 0,
+  height: 20,
+  overflow: 'hidden',
+  marginLeft: 0,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  placeItems: 'center',
+
+  borderRadius: 4,
+  boxShadow: 'none',
+  background: 'transparent',
+  cursor: 'pointer',
+
+  selectors: {
+    [`.${container}:hover &`]: {
+      width: 20,
+      marginLeft: 8,
+      boxShadow: cssVar('shadow1'),
+      background: cssVar('white80'),
+    },
+  },
+});
+
+export const showOnCardHover = style({
+  visibility: 'hidden',
+  opacity: 0,
+  selectors: {
+    [`.${container}:hover &`]: {
+      visibility: 'visible',
+      opacity: 1,
+    },
+  },
 });

@@ -1,10 +1,10 @@
-import { notify } from '@affine/component';
+import { NotificationCenter, notify } from '@affine/component';
 import { events } from '@affine/electron-api';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import {
+  GlobalContextService,
   useLiveData,
   useService,
-  useServiceOptional,
   WorkspaceService,
   WorkspacesService,
 } from '@toeverything/infra';
@@ -13,15 +13,9 @@ import type { ReactElement } from 'react';
 import { useCallback, useEffect } from 'react';
 
 import type { SettingAtom } from '../atoms';
-import {
-  authAtom,
-  openCreateWorkspaceModalAtom,
-  openSettingModalAtom,
-  openSignOutModalAtom,
-} from '../atoms';
+import { authAtom, openSettingModalAtom, openSignOutModalAtom } from '../atoms';
 import { AuthModal as Auth } from '../components/affine/auth';
 import { AiLoginRequiredModal } from '../components/affine/auth/ai-login-required';
-import { CreateWorkspaceModal } from '../components/affine/create-workspace-modal';
 import { HistoryTipsModal } from '../components/affine/history-tips-modal';
 import { IssueFeedbackModal } from '../components/affine/issue-feedback-modal';
 import {
@@ -36,7 +30,9 @@ import { useTrashModalHelper } from '../hooks/affine/use-trash-modal-helper';
 import { useAsyncCallback } from '../hooks/affine-async-hooks';
 import { useNavigateHelper } from '../hooks/use-navigate-helper';
 import { AuthService } from '../modules/cloud/services/auth';
+import { CreateWorkspaceDialogProvider } from '../modules/create-workspace';
 import { FindInPageModal } from '../modules/find-in-page/view/find-in-page-modal';
+import { ImportTemplateDialogProvider } from '../modules/import-template';
 import { PeekViewManagerModal } from '../modules/peek-view';
 import { WorkspaceSubPath } from '../shared';
 
@@ -181,9 +177,16 @@ export const SignOutConfirmModal = () => {
   const { openPage } = useNavigateHelper();
   const authService = useService(AuthService);
   const [open, setOpen] = useAtom(openSignOutModalAtom);
-  const currentWorkspace = useServiceOptional(WorkspaceService)?.workspace;
-  const workspaces = useLiveData(
-    useService(WorkspacesService).list.workspaces$
+  const globalContextService = useService(GlobalContextService);
+  const currentWorkspaceId = useLiveData(
+    globalContextService.globalContext.workspaceId.$
+  );
+  const workspacesService = useService(WorkspacesService);
+  const workspaces = useLiveData(workspacesService.list.workspaces$);
+  const currentWorkspaceMetadata = useLiveData(
+    currentWorkspaceId
+      ? workspacesService.list.workspace$(currentWorkspaceId)
+      : undefined
   );
 
   const onConfirm = useAsyncCallback(async () => {
@@ -199,7 +202,7 @@ export const SignOutConfirmModal = () => {
     }
 
     // if current workspace is affine cloud, switch to local workspace
-    if (currentWorkspace?.flavour === WorkspaceFlavour.AFFINE_CLOUD) {
+    if (currentWorkspaceMetadata?.flavour === WorkspaceFlavour.AFFINE_CLOUD) {
       const localWorkspace = workspaces.find(
         w => w.flavour === WorkspaceFlavour.LOCAL
       );
@@ -207,7 +210,13 @@ export const SignOutConfirmModal = () => {
         openPage(localWorkspace.id, WorkspaceSubPath.ALL);
       }
     }
-  }, [authService, currentWorkspace, openPage, setOpen, workspaces]);
+  }, [
+    authService,
+    currentWorkspaceMetadata?.flavour,
+    openPage,
+    setOpen,
+    workspaces,
+  ]);
 
   return (
     <SignOutModal open={open} onOpenChange={setOpen} onConfirm={onConfirm} />
@@ -215,35 +224,11 @@ export const SignOutConfirmModal = () => {
 };
 
 export const AllWorkspaceModals = (): ReactElement => {
-  const [isOpenCreateWorkspaceModal, setOpenCreateWorkspaceModal] = useAtom(
-    openCreateWorkspaceModalAtom
-  );
-
-  const { jumpToSubPath, jumpToPage } = useNavigateHelper();
-
   return (
     <>
-      <CreateWorkspaceModal
-        mode={isOpenCreateWorkspaceModal}
-        onClose={useCallback(() => {
-          setOpenCreateWorkspaceModal(false);
-        }, [setOpenCreateWorkspaceModal])}
-        onCreate={useCallback(
-          (id, defaultDocId) => {
-            setOpenCreateWorkspaceModal(false);
-            // if jumping immediately, the page may stuck in loading state
-            // not sure why yet .. here is a workaround
-            setTimeout(() => {
-              if (!defaultDocId) {
-                jumpToSubPath(id, WorkspaceSubPath.ALL);
-              } else {
-                jumpToPage(id, defaultDocId);
-              }
-            });
-          },
-          [jumpToPage, jumpToSubPath, setOpenCreateWorkspaceModal]
-        )}
-      />
+      <NotificationCenter />
+      <ImportTemplateDialogProvider />
+      <CreateWorkspaceDialogProvider />
       <AuthModal />
       <SignOutConfirmModal />
     </>

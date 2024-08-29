@@ -3,6 +3,7 @@ import { RightSidebarIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useAtomValue } from 'jotai';
 import { Suspense, useCallback } from 'react';
+import { Outlet } from 'react-router-dom';
 
 import { AffineErrorBoundary } from '../../../components/affine/affine-error-boundary';
 import { appSidebarOpenAtom } from '../../../components/app-sidebar/index.jotai';
@@ -40,7 +41,7 @@ const ToggleButton = ({
   );
 };
 
-export const RouteContainer = ({ route }: Props) => {
+export const RouteContainer = () => {
   const viewPosition = useViewPosition();
   const leftSidebarOpen = useAtomValue(appSidebarOpenAtom);
   const workbench = useService(WorkbenchService).workbench;
@@ -74,7 +75,7 @@ export const RouteContainer = ({ route }: Props) => {
 
       <AffineErrorBoundary>
         <Suspense>
-          <route.Component />
+          <Outlet />
         </Suspense>
       </AffineErrorBoundary>
       <ViewBodyTarget viewId={view.id} className={styles.viewBodyContainer} />

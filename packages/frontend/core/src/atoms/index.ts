@@ -1,12 +1,10 @@
 import { atom } from 'jotai';
 
 import type { AuthProps } from '../components/affine/auth';
-import type { CreateWorkspaceMode } from '../components/affine/create-workspace-modal';
 import type { SettingProps } from '../components/affine/setting-modal';
 import type { ActiveTab } from '../components/affine/setting-modal/types';
 // modal atoms
 export const openWorkspacesModalAtom = atom(false);
-export const openCreateWorkspaceModalAtom = atom<CreateWorkspaceMode>(false);
 export const openSignOutModalAtom = atom(false);
 export const openQuotaModalAtom = atom(false);
 export const openStarAFFiNEModalAtom = atom(false);

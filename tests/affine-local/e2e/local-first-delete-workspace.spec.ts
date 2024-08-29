@@ -13,6 +13,7 @@ test('Create new workspace, then delete it', async ({ page, workspace }) => {
   await waitForEditorLoad(page);
   await clickSideBarCurrentWorkspaceBanner(page);
   await page.getByTestId('new-workspace').click();
+  await page.waitForTimeout(1000);
   await page
     .getByTestId('create-workspace-input')
     .pressSequentially('Test Workspace', { delay: 50 });

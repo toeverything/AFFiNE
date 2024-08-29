@@ -1,18 +1,13 @@
 import { ScrollableContainer } from '@affine/component';
 import { Divider } from '@affine/component/ui/divider';
-import { WorkspaceList } from '@affine/component/workspace-list';
+import { openSettingModalAtom } from '@affine/core/atoms';
 import { useEnableCloud } from '@affine/core/hooks/affine/use-enable-cloud';
-import {
-  useWorkspaceInfo,
-  useWorkspaceName,
-} from '@affine/core/hooks/use-workspace-info';
 import { AuthService } from '@affine/core/modules/cloud';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useI18n } from '@affine/i18n';
 import { CloudWorkspaceIcon, LocalWorkspaceIcon } from '@blocksuite/icons/rc';
 import type { WorkspaceMetadata } from '@toeverything/infra';
 import {
-  GlobalContextService,
   useLiveData,
   useService,
   WorkspacesService,
@@ -20,39 +15,23 @@ import {
 import { useSetAtom } from 'jotai';
 import { useCallback, useMemo } from 'react';
 
-import {
-  openCreateWorkspaceModalAtom,
-  openSettingModalAtom,
-} from '../../../../../atoms';
-import { WorkspaceSubPath } from '../../../../../shared';
-import { useNavigateHelper } from '../.././../../../hooks/use-navigate-helper';
+import { WorkspaceCard } from '../../workspace-card';
 import * as styles from './index.css';
 
-function useIsWorkspaceOwner(meta: WorkspaceMetadata) {
-  const info = useWorkspaceInfo(meta);
-
-  return info?.isOwner;
-}
-
 interface WorkspaceModalProps {
-  disabled?: boolean;
   workspaces: WorkspaceMetadata[];
-  currentWorkspaceId?: string | null;
-  openingId?: string | null;
   onClickWorkspace: (workspaceMetadata: WorkspaceMetadata) => void;
-  onClickWorkspaceSetting: (workspaceMetadata: WorkspaceMetadata) => void;
+  onClickWorkspaceSetting?: (workspaceMetadata: WorkspaceMetadata) => void;
   onClickEnableCloud?: (meta: WorkspaceMetadata) => void;
   onNewWorkspace: () => void;
   onAddWorkspace: () => void;
 }
 
 const CloudWorkSpaceList = ({
-  disabled,
   workspaces,
   onClickWorkspace,
   onClickWorkspaceSetting,
-  currentWorkspaceId,
-}: WorkspaceModalProps) => {
+}: Omit<WorkspaceModalProps, 'onNewWorkspace' | 'onAddWorkspace'>) => {
   const t = useI18n();
   if (workspaces.length === 0) {
     return null;
@@ -68,27 +47,20 @@ const CloudWorkSpaceList = ({
         {t['com.affine.workspaceList.workspaceListType.cloud']()}
       </div>
       <WorkspaceList
-        disabled={disabled}
         items={workspaces}
-        currentWorkspaceId={currentWorkspaceId}
         onClick={onClickWorkspace}
         onSettingClick={onClickWorkspaceSetting}
-        useIsWorkspaceOwner={useIsWorkspaceOwner}
-        useWorkspaceName={useWorkspaceName}
       />
     </div>
   );
 };
 
 const LocalWorkspaces = ({
-  disabled,
   workspaces,
   onClickWorkspace,
   onClickWorkspaceSetting,
   onClickEnableCloud,
-  openingId,
-  currentWorkspaceId,
-}: WorkspaceModalProps) => {
+}: Omit<WorkspaceModalProps, 'onNewWorkspace' | 'onAddWorkspace'>) => {
   const t = useI18n();
   if (workspaces.length === 0) {
     return null;
@@ -104,15 +76,10 @@ const LocalWorkspaces = ({
         {t['com.affine.workspaceList.workspaceListType.local']()}
       </div>
       <WorkspaceList
-        openingId={openingId}
-        disabled={disabled}
         items={workspaces}
-        currentWorkspaceId={currentWorkspaceId}
         onClick={onClickWorkspace}
         onSettingClick={onClickWorkspaceSetting}
         onEnableCloudClick={onClickEnableCloud}
-        useIsWorkspaceOwner={useIsWorkspaceOwner}
-        useWorkspaceName={useWorkspaceName}
       />
     </div>
   );
@@ -120,19 +87,19 @@ const LocalWorkspaces = ({
 
 export const AFFiNEWorkspaceList = ({
   onEventEnd,
+  onClickWorkspace,
+  showEnableCloudButton,
+  showSettingsButton,
 }: {
+  onClickWorkspace?: (workspaceMetadata: WorkspaceMetadata) => void;
   onEventEnd?: () => void;
+  showSettingsButton?: boolean;
+  showEnableCloudButton?: boolean;
 }) => {
   const workspacesService = useService(WorkspacesService);
   const workspaces = useLiveData(workspacesService.list.workspaces$);
-  const currentWorkspaceId = useLiveData(
-    useService(GlobalContextService).globalContext.workspaceId.$
-  );
 
-  const setOpenCreateWorkspaceModal = useSetAtom(openCreateWorkspaceModalAtom);
   const confirmEnableCloud = useEnableCloud();
-
-  const { jumpToSubPath } = useNavigateHelper();
 
   const setOpenSettingModalAtom = useSetAtom(openSettingModalAtom);
 
@@ -181,33 +148,13 @@ export const AFFiNEWorkspaceList = ({
     [confirmEnableCloud, workspacesService]
   );
 
-  const onClickWorkspace = useCallback(
+  const handleClickWorkspace = useCallback(
     (workspaceMetadata: WorkspaceMetadata) => {
-      if (document.startViewTransition) {
-        document.startViewTransition(() => {
-          jumpToSubPath(workspaceMetadata.id, WorkspaceSubPath.ALL);
-          onEventEnd?.();
-          return new Promise(resolve =>
-            setTimeout(resolve, 150)
-          ); /* start transition after 150ms */
-        });
-      } else {
-        jumpToSubPath(workspaceMetadata.id, WorkspaceSubPath.ALL);
-        onEventEnd?.();
-      }
+      onClickWorkspace?.(workspaceMetadata);
+      onEventEnd?.();
     },
-    [jumpToSubPath, onEventEnd]
+    [onClickWorkspace, onEventEnd]
   );
-
-  const onNewWorkspace = useCallback(() => {
-    setOpenCreateWorkspaceModal('new');
-    onEventEnd?.();
-  }, [onEventEnd, setOpenCreateWorkspaceModal]);
-
-  const onAddWorkspace = useCallback(() => {
-    setOpenCreateWorkspaceModal('add');
-    onEventEnd?.();
-  }, [onEventEnd, setOpenCreateWorkspaceModal]);
 
   return (
     <ScrollableContainer
@@ -218,11 +165,10 @@ export const AFFiNEWorkspaceList = ({
         <div>
           <CloudWorkSpaceList
             workspaces={cloudWorkspaces}
-            onClickWorkspace={onClickWorkspace}
-            onClickWorkspaceSetting={onClickWorkspaceSetting}
-            onNewWorkspace={onNewWorkspace}
-            onAddWorkspace={onAddWorkspace}
-            currentWorkspaceId={currentWorkspaceId}
+            onClickWorkspace={handleClickWorkspace}
+            onClickWorkspaceSetting={
+              showSettingsButton ? onClickWorkspaceSetting : undefined
+            }
           />
           {localWorkspaces.length > 0 && cloudWorkspaces.length > 0 ? (
             <Divider size="thinner" />
@@ -231,13 +177,55 @@ export const AFFiNEWorkspaceList = ({
       ) : null}
       <LocalWorkspaces
         workspaces={localWorkspaces}
-        onClickWorkspace={onClickWorkspace}
-        onClickWorkspaceSetting={onClickWorkspaceSetting}
-        onClickEnableCloud={onClickEnableCloud}
-        onNewWorkspace={onNewWorkspace}
-        onAddWorkspace={onAddWorkspace}
-        currentWorkspaceId={currentWorkspaceId}
+        onClickWorkspace={handleClickWorkspace}
+        onClickWorkspaceSetting={
+          showSettingsButton ? onClickWorkspaceSetting : undefined
+        }
+        onClickEnableCloud={
+          showEnableCloudButton ? onClickEnableCloud : undefined
+        }
       />
     </ScrollableContainer>
   );
+};
+
+interface WorkspaceListProps {
+  items: WorkspaceMetadata[];
+  onClick: (workspace: WorkspaceMetadata) => void;
+  onSettingClick?: (workspace: WorkspaceMetadata) => void;
+  onEnableCloudClick?: (meta: WorkspaceMetadata) => void;
+}
+
+interface SortableWorkspaceItemProps extends Omit<WorkspaceListProps, 'items'> {
+  workspaceMetadata: WorkspaceMetadata;
+}
+
+const SortableWorkspaceItem = ({
+  workspaceMetadata,
+  onClick,
+  onSettingClick,
+  onEnableCloudClick,
+}: SortableWorkspaceItemProps) => {
+  const handleClick = useCallback(() => {
+    onClick(workspaceMetadata);
+  }, [onClick, workspaceMetadata]);
+
+  return (
+    <WorkspaceCard
+      className={styles.workspaceCard}
+      workspaceMetadata={workspaceMetadata}
+      onClick={handleClick}
+      avatarSize={28}
+      onClickOpenSettings={onSettingClick}
+      onClickEnableCloud={onEnableCloudClick}
+    />
+  );
+};
+
+export const WorkspaceList = (props: WorkspaceListProps) => {
+  const workspaceList = props.items;
+
+  return workspaceList.map(item => (
+    <SortableWorkspaceItem key={item.id} {...props} workspaceMetadata={item} />
+  ));
 };

@@ -1,28 +1,28 @@
 import type { WorkspaceSubPath } from '@affine/core/shared';
-import { useCallback, useContext, useMemo } from 'react';
-import type { NavigateOptions, To } from 'react-router-dom';
+import { createContext, useCallback, useContext, useMemo } from 'react';
+import type { NavigateFunction, NavigateOptions } from 'react-router-dom';
 
-import { NavigateContext, router } from '../router';
+/**
+ * In workbench, we use nested react-router, so default `useNavigate` can't get correct navigate function in workbench.
+ * We use this context to provide navigate function for whole app.
+ */
+export const NavigateContext = createContext<NavigateFunction | null>(null);
 
 export enum RouteLogic {
   REPLACE = 'replace',
   PUSH = 'push',
 }
 
-function defaultNavigate(to: To, option?: { replace?: boolean }) {
-  setTimeout(() => {
-    router?.navigate(to, option).catch(err => {
-      console.error('Failed to navigate', err);
-    });
-  }, 100);
-}
-
 // TODO(@eyhn): add a name -> path helper in the results
 /**
- * @deprecated use `WorkbenchService` instead
+ * Use this for over workbench navigate, for navigate in workbench, use `WorkbenchService`.
  */
 export function useNavigateHelper() {
-  const navigate = useContext(NavigateContext) ?? defaultNavigate;
+  const navigate = useContext(NavigateContext);
+
+  if (!navigate) {
+    throw new Error('useNavigateHelper must be used within a NavigateProvider');
+  }
 
   const jumpToPage = useCallback(
     (
@@ -147,7 +147,7 @@ export function useNavigateHelper() {
       const searchParams = new URLSearchParams();
 
       if (redirectUri) {
-        searchParams.set('redirect_uri', encodeURIComponent(redirectUri));
+        searchParams.set('redirect_uri', redirectUri);
       }
 
       if (params) {

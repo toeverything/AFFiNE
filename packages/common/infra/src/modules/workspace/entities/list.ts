@@ -17,6 +17,12 @@ export class WorkspaceList extends Entity {
     .flat()
     .map(isLoadings => isLoadings.some(isLoading => isLoading));
 
+  workspace$(id: string) {
+    return this.workspaces$.map(workspaces =>
+      workspaces.find(workspace => workspace.id === id)
+    );
+  }
+
   constructor(private readonly providers: WorkspaceFlavourProvider[]) {
     super();
   }

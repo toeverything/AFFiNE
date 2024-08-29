@@ -1,7 +1,6 @@
 import '@affine/component/theme/global.css';
 import '@affine/component/theme/theme.css';
 
-import { NotificationCenter } from '@affine/component';
 import { AffineContext } from '@affine/component/context';
 import { AppFallback } from '@affine/core/components/affine/app-container';
 import { configureCommonModules } from '@affine/core/modules';
@@ -78,7 +77,6 @@ export function App() {
       <FrameworkRoot framework={frameworkProvider}>
         <AffineContext store={getCurrentStore()}>
           <Telemetry />
-          <NotificationCenter />
           <RouterProvider
             fallbackElement={<AppFallback key="RouterFallback" />}
             router={router}

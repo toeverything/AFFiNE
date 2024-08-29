@@ -83,7 +83,7 @@ test.skip('create multi workspace in the workspace list', async ({
 
   await page.reload();
   await openWorkspaceListModal(page);
-  await page.getByTestId('draggable-item').nth(1).click();
+  await page.getByTestId('workspace-card').nth(1).click();
   await page.waitForTimeout(500);
 
   const currentWorkspace = await workspace.current();
@@ -92,8 +92,8 @@ test.skip('create multi workspace in the workspace list', async ({
 
   await openWorkspaceListModal(page);
   await page.waitForTimeout(1000);
-  const sourceElement = page.getByTestId('draggable-item').nth(2);
-  const targetElement = page.getByTestId('draggable-item').nth(1);
+  const sourceElement = page.getByTestId('workspace-card').nth(2);
+  const targetElement = page.getByTestId('workspace-card').nth(1);
 
   const sourceBox = await sourceElement.boundingBox();
   const targetBox = await targetElement.boundingBox();

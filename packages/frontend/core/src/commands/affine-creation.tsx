@@ -1,20 +1,19 @@
 import type { useI18n } from '@affine/i18n';
 import { ImportIcon, PlusIcon } from '@blocksuite/icons/rc';
-import type { createStore } from 'jotai';
 
-import { openCreateWorkspaceModalAtom } from '../atoms';
 import type { usePageHelper } from '../components/blocksuite/block-suite-page-list/utils';
 import { track } from '../mixpanel';
+import type { CreateWorkspaceDialogService } from '../modules/create-workspace';
 import { registerAffineCommand } from './registry';
 
 export function registerAffineCreationCommands({
-  store,
   pageHelper,
   t,
+  createWorkspaceDialogService,
 }: {
   t: ReturnType<typeof useI18n>;
-  store: ReturnType<typeof createStore>;
   pageHelper: ReturnType<typeof usePageHelper>;
+  createWorkspaceDialogService: CreateWorkspaceDialogService;
 }) {
   const unsubs: Array<() => void> = [];
   unsubs.push(
@@ -62,7 +61,7 @@ export function registerAffineCreationCommands({
       run() {
         track.$.cmdk.workspace.createWorkspace();
 
-        store.set(openCreateWorkspaceModalAtom, 'new');
+        createWorkspaceDialogService.dialog.open('new');
       },
     })
   );
@@ -80,7 +79,7 @@ export function registerAffineCreationCommands({
           control: 'import',
         });
 
-        store.set(openCreateWorkspaceModalAtom, 'add');
+        createWorkspaceDialogService.dialog.open('add');
       },
     })
   );

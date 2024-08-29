@@ -173,7 +173,11 @@ export const selectVisibilitySelector = async (
     })
     .click();
 
+  await page.waitForTimeout(500);
+
   await page.keyboard.press('Escape');
+
+  await page.waitForTimeout(500);
 };
 
 export const changePropertyVisibility = async (

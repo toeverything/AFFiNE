@@ -1,18 +1,11 @@
 import { ArrowLeftSmallIcon } from '@blocksuite/icons/rc';
 import { Slot } from '@radix-ui/react-slot';
 import clsx from 'clsx';
-import {
-  Fragment,
-  useCallback,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-} from 'react';
+import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 
 import { observeResize } from '../../../utils';
 import { Button } from '../../button';
-import { Modal, type ModalProps } from '../../modal';
+import { Modal } from '../../modal';
 import type { MenuProps } from '../menu.types';
 import type { SubMenuContent } from './context';
 import { MobileMenuContext } from './context';
@@ -22,7 +15,6 @@ import { MobileMenuSubRaw } from './sub';
 export const MobileMenu = ({
   children,
   items,
-  noPortal,
   contentOptions: {
     className,
     onPointerDownOutside,
@@ -55,25 +47,6 @@ export const MobileMenu = ({
     },
     [onPointerDownOutside, rootOptions]
   );
-
-  const Wrapper = noPortal ? Fragment : Modal;
-  const wrapperProps = noPortal
-    ? {}
-    : ({
-        open: finalOpen,
-        onOpenChange,
-        width: '100%',
-        animation: 'slideBottom',
-        withoutCloseButton: true,
-        contentOptions: {
-          className: clsx(className, styles.mobileMenuModal),
-          ...otherContentOptions,
-        },
-        contentWrapperStyle: {
-          alignItems: 'end',
-          paddingBottom: 10,
-        },
-      } satisfies ModalProps);
 
   const onItemClick = useCallback((e: any) => {
     e.preventDefault();
@@ -127,7 +100,21 @@ export const MobileMenu = ({
       <MobileMenuContext.Provider
         value={{ subMenus, setSubMenus, setOpen: onOpenChange }}
       >
-        <Wrapper {...wrapperProps}>
+        <Modal
+          open={finalOpen}
+          onOpenChange={onOpenChange}
+          width="100%"
+          animation="slideBottom"
+          withoutCloseButton={true}
+          contentOptions={{
+            className: clsx(className, styles.mobileMenuModal),
+            ...otherContentOptions,
+          }}
+          contentWrapperStyle={{
+            alignItems: 'end',
+            paddingBottom: 10,
+          }}
+        >
           <div
             ref={sliderRef}
             className={styles.slider}
@@ -159,7 +146,7 @@ export const MobileMenu = ({
               </div>
             ))}
           </div>
-        </Wrapper>
+        </Modal>
       </MobileMenuContext.Provider>
     </>
   );

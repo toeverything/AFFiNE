@@ -153,14 +153,19 @@ export const ModalInner = forwardRef<HTMLDivElement, ModalProps>(
     );
 
     useEffect(() => {
-      const container = createContainer();
-      setContainer(container);
-      return () => {
-        setTimeout(() => {
-          container.remove();
-        }, 1000) as unknown as number;
-      };
-    }, []);
+      if (open) {
+        const container = createContainer();
+        setContainer(container);
+        return () => {
+          setTimeout(() => {
+            container.remove();
+          }, 1000) as unknown as number;
+        };
+      } else {
+        setContainer(null);
+        return;
+      }
+    }, [open]);
 
     const handlePointerDownOutSide = useCallback(
       (e: PointerDownOutsideEvent) => {

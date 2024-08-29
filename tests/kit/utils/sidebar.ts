@@ -9,7 +9,7 @@ export async function clickSideBarAllPageButton(page: Page) {
 }
 
 export async function clickSideBarCurrentWorkspaceBanner(page: Page) {
-  return page.getByTestId('current-workspace').click();
+  return page.getByTestId('current-workspace-card').click();
 }
 
 export async function clickSideBarUseAvatar(page: Page) {

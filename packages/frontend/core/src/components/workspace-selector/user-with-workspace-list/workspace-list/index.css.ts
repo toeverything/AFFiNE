@@ -29,3 +29,7 @@ export const scrollbar = style({
   transform: 'translateX(8px)',
   width: '4px',
 });
+export const workspaceCard = style({
+  height: '44px',
+  padding: '0 12px',
+});

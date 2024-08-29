@@ -45,7 +45,7 @@ import {
 } from '../app-sidebar';
 import { ExternalMenuLinkItem } from '../app-sidebar/menu-item/external-menu-link-item';
 import { usePageHelper } from '../blocksuite/block-suite-page-list/utils';
-import { WorkspaceSelector } from '../workspace-selector';
+import { WorkspaceNavigator } from '../workspace-selector';
 import ImportPage from './import-page';
 import {
   quickSearch,
@@ -118,6 +118,7 @@ export const RootAppSidebar = (): ReactElement => {
     },
     [pageHelper, settings.newDocDefaultMode]
   );
+
   useEffect(() => {
     if (environment.isDesktop) {
       return events?.applicationMenu.onNewPageAction(() => onClickNewPage());
@@ -143,7 +144,11 @@ export const RootAppSidebar = (): ReactElement => {
       <SidebarContainer>
         <div className={workspaceAndUserWrapper}>
           <div className={workspaceWrapper}>
-            <WorkspaceSelector />
+            <WorkspaceNavigator
+              showEnableCloudButton
+              showSettingsButton
+              showSyncStatus
+            />
           </div>
           <UserInfo />
         </div>

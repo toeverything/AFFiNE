@@ -1,19 +1,21 @@
-import { Loading } from '@affine/component';
 import { Divider } from '@affine/component/ui/divider';
 import { MenuItem } from '@affine/component/ui/menu';
+import { authAtom } from '@affine/core/atoms';
 import { track } from '@affine/core/mixpanel';
 import { AuthService } from '@affine/core/modules/cloud';
+import { CreateWorkspaceDialogService } from '@affine/core/modules/create-workspace';
+import type { CreateWorkspaceCallbackPayload } from '@affine/core/modules/create-workspace/types';
 import { useI18n } from '@affine/i18n';
 import { Logo1Icon } from '@blocksuite/icons/rc';
 import {
   useLiveData,
   useService,
+  type WorkspaceMetadata,
   WorkspacesService,
 } from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
-import { Suspense, useCallback } from 'react';
+import { useCallback } from 'react';
 
-import { authAtom, openCreateWorkspaceModalAtom } from '../../../../atoms';
 import { AddWorkspace } from './add-workspace';
 import * as styles from './index.css';
 import { UserAccountItem } from './user-account';
@@ -56,26 +58,25 @@ export const SignInItem = () => {
   );
 };
 
-const UserWithWorkspaceListLoading = () => {
-  return (
-    <div className={styles.loadingWrapper}>
-      <Loading size={24} />
-    </div>
-  );
-};
-
 interface UserWithWorkspaceListProps {
   onEventEnd?: () => void;
+  onClickWorkspace?: (workspace: WorkspaceMetadata) => void;
+  onCreatedWorkspace?: (payload: CreateWorkspaceCallbackPayload) => void;
+  showSettingsButton?: boolean;
+  showEnableCloudButton?: boolean;
 }
 
 const UserWithWorkspaceListInner = ({
   onEventEnd,
+  onClickWorkspace,
+  onCreatedWorkspace,
+  showSettingsButton,
+  showEnableCloudButton,
 }: UserWithWorkspaceListProps) => {
+  const createWorkspaceDialogService = useService(CreateWorkspaceDialogService);
   const session = useLiveData(useService(AuthService).session.session$);
 
   const isAuthenticated = session.status === 'authenticated';
-
-  const setOpenCreateWorkspaceModal = useSetAtom(openCreateWorkspaceModalAtom);
 
   const setOpenSignIn = useSetAtom(authAtom);
 
@@ -91,23 +92,31 @@ const UserWithWorkspaceListInner = ({
       return openSignInModal();
     }
     track.$.navigationPanel.workspaceList.createWorkspace();
-    setOpenCreateWorkspaceModal('new');
+    createWorkspaceDialogService.dialog.open('new', payload => {
+      if (payload) {
+        onCreatedWorkspace?.(payload);
+      }
+    });
     onEventEnd?.();
   }, [
+    createWorkspaceDialogService.dialog,
     isAuthenticated,
+    onCreatedWorkspace,
     onEventEnd,
     openSignInModal,
-    setOpenCreateWorkspaceModal,
   ]);
 
-  track.$.navigationPanel.workspaceList.createWorkspace();
   const onAddWorkspace = useCallback(() => {
     track.$.navigationPanel.workspaceList.createWorkspace({
       control: 'import',
     });
-    setOpenCreateWorkspaceModal('add');
+    createWorkspaceDialogService.dialog.open('add', payload => {
+      if (payload) {
+        onCreatedWorkspace?.(payload);
+      }
+    });
     onEventEnd?.();
-  }, [onEventEnd, setOpenCreateWorkspaceModal]);
+  }, [createWorkspaceDialogService.dialog, onCreatedWorkspace, onEventEnd]);
 
   const workspaceManager = useService(WorkspacesService);
   const workspaces = useLiveData(workspaceManager.list.workspaces$);
@@ -123,7 +132,12 @@ const UserWithWorkspaceListInner = ({
         <SignInItem />
       )}
       <Divider size="thinner" />
-      <AFFiNEWorkspaceList onEventEnd={onEventEnd} />
+      <AFFiNEWorkspaceList
+        onEventEnd={onEventEnd}
+        onClickWorkspace={onClickWorkspace}
+        showEnableCloudButton={showEnableCloudButton}
+        showSettingsButton={showSettingsButton}
+      />
       {workspaces.length > 0 ? <Divider size="thinner" /> : null}
       <AddWorkspace
         onAddWorkspace={onAddWorkspace}
@@ -134,9 +148,5 @@ const UserWithWorkspaceListInner = ({
 };
 
 export const UserWithWorkspaceList = (props: UserWithWorkspaceListProps) => {
-  return (
-    <Suspense fallback={<UserWithWorkspaceListLoading />}>
-      <UserWithWorkspaceListInner {...props} />
-    </Suspense>
-  );
+  return <UserWithWorkspaceListInner {...props} />;
 };
