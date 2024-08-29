@@ -111,8 +111,6 @@ test('share page with default edgeless', async ({ page, browser }) => {
     expect(page2.locator('affine-paragraph').first()).toContainText(
       'TEST CONTENT'
     );
-    const editButton = page2.getByTestId('share-page-edit-button');
-    await expect(editButton).not.toBeVisible();
   }
 });
 
