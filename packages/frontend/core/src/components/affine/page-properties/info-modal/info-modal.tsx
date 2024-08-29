@@ -78,7 +78,7 @@ export const InfoModal = ({
   );
 };
 
-const InfoTable = ({
+export const InfoTable = ({
   onClose,
   docId,
   readonly,
@@ -106,8 +106,8 @@ const InfoTable = ({
   );
 
   return (
-    <div>
-      <TimeRow docId={docId} />
+    <div className={styles.container}>
+      <TimeRow className={styles.timeRow} docId={docId} />
       <Divider size="thinner" />
       {backlinks && backlinks.length > 0 ? (
         <>

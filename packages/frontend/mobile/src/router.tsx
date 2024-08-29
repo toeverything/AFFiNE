@@ -95,7 +95,7 @@ export const viewRoutes = [
   },
   {
     path: '/:pageId',
-    lazy: () => import('./pages/workspace/detail'),
+    lazy: () => import('./pages/workspace/detail/mobile-detail-page'),
   },
   {
     path: '*',

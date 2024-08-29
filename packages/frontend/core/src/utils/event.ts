@@ -4,6 +4,10 @@ export function stopPropagation(event: BaseSyntheticEvent) {
   event.stopPropagation();
 }
 
+export function preventDefault(event: BaseSyntheticEvent) {
+  event.preventDefault();
+}
+
 export function stopEvent(event: BaseSyntheticEvent) {
   event.stopPropagation();
   event.preventDefault();

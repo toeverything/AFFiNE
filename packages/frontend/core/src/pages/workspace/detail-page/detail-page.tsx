@@ -1,16 +1,14 @@
 import { Scrollable, useHasScrollTop } from '@affine/component';
-import { PageDetailSkeleton } from '@affine/component/page-detail-skeleton';
 import type { ChatPanel } from '@affine/core/blocksuite/presets/ai';
 import { AIProvider } from '@affine/core/blocksuite/presets/ai';
 import { PageAIOnboarding } from '@affine/core/components/affine/ai-onboarding';
 import { EditorOutlineViewer } from '@affine/core/components/blocksuite/outline-viewer';
 import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
 import { useDocMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
-import type { Editor } from '@affine/core/modules/editor';
-import { EditorService, EditorsService } from '@affine/core/modules/editor';
+import { EditorService } from '@affine/core/modules/editor';
 import { RecentDocsService } from '@affine/core/modules/quicksearch';
 import { ViewService } from '@affine/core/modules/workbench/services/view';
-import type { DocMode, PageRootService } from '@blocksuite/blocks';
+import type { PageRootService } from '@blocksuite/blocks';
 import {
   BookmarkBlockService,
   customImageProxyMiddleware,
@@ -23,10 +21,8 @@ import { DisposableGroup } from '@blocksuite/global/utils';
 import { AiIcon, FrameIcon, TocIcon, TodayIcon } from '@blocksuite/icons/rc';
 import { type AffineEditorContainer } from '@blocksuite/presets';
 import type { Doc as BlockSuiteDoc } from '@blocksuite/store';
-import type { Doc } from '@toeverything/infra';
 import {
   DocService,
-  DocsService,
   FrameworkScope,
   globalBlockSuiteSchema,
   GlobalContextService,
@@ -36,15 +32,7 @@ import {
   WorkspaceService,
 } from '@toeverything/infra';
 import clsx from 'clsx';
-import type { ReactElement } from 'react';
-import {
-  memo,
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from 'react';
+import { memo, useCallback, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import type { Map as YMap } from 'yjs';
 
@@ -65,9 +53,9 @@ import {
   WorkbenchService,
 } from '../../../modules/workbench';
 import { performanceRenderLogger } from '../../../shared';
-import { PageNotFound } from '../../404';
 import * as styles from './detail-page.css';
 import { DetailPageHeader } from './detail-page-header';
+import { DetailPageWrapper } from './detail-page-wrapper';
 import { EditorChatPanel } from './tabs/chat';
 import { EditorFramePanel } from './tabs/frame';
 import { EditorJournalPanel } from './tabs/journal';
@@ -330,107 +318,6 @@ const DetailPageImpl = memo(function DetailPageImpl() {
   );
 });
 
-export const DetailPage = ({ pageId }: { pageId: string }): ReactElement => {
-  const currentWorkspace = useService(WorkspaceService).workspace;
-  const docsService = useService(DocsService);
-  const docRecordList = docsService.list;
-  const docListReady = useLiveData(docRecordList.isReady$);
-  const docRecord = useLiveData(docRecordList.doc$(pageId));
-  const viewService = useService(ViewService);
-
-  const queryString = useLiveData(
-    viewService.view.queryString$<{
-      mode?: string;
-    }>()
-  );
-
-  const queryStringMode =
-    queryString.mode && ['edgeless', 'page'].includes(queryString.mode)
-      ? (queryString.mode as DocMode)
-      : null;
-
-  // We only read the querystring mode when entering, so use useState here.
-  const [initialQueryStringMode] = useState(() => queryStringMode);
-
-  const [doc, setDoc] = useState<Doc | null>(null);
-  const [editor, setEditor] = useState<Editor | null>(null);
-  const editorMode = useLiveData(editor?.mode$);
-
-  useLayoutEffect(() => {
-    if (!docRecord) {
-      return;
-    }
-    const { doc: opened, release } = docsService.open(pageId);
-    setDoc(opened);
-    return () => {
-      release();
-    };
-  }, [docRecord, docsService, pageId]);
-
-  useLayoutEffect(() => {
-    if (!doc) {
-      return;
-    }
-    const editor = doc.scope
-      .get(EditorsService)
-      .createEditor(initialQueryStringMode || doc.getPrimaryMode() || 'page');
-    setEditor(editor);
-    return () => {
-      editor.dispose();
-    };
-  }, [doc, initialQueryStringMode]);
-
-  // update editor mode to queryString
-  useEffect(() => {
-    if (editorMode) {
-      viewService.view.updateQueryString(
-        {
-          mode: editorMode,
-        },
-        {
-          replace: true,
-        }
-      );
-    }
-  }, [editorMode, viewService.view]);
-
-  // set sync engine priority target
-  useEffect(() => {
-    currentWorkspace.engine.doc.setPriority(pageId, 10);
-    return () => {
-      currentWorkspace.engine.doc.setPriority(pageId, 5);
-    };
-  }, [currentWorkspace, pageId]);
-
-  const isInTrash = useLiveData(doc?.meta$.map(meta => meta.trash));
-
-  useEffect(() => {
-    if (doc && isInTrash) {
-      currentWorkspace.docCollection.awarenessStore.setReadonly(
-        doc.blockSuiteDoc.blockCollection,
-        true
-      );
-    }
-  }, [currentWorkspace.docCollection.awarenessStore, doc, isInTrash]);
-
-  // if sync engine has been synced and the page is null, show 404 page.
-  if (docListReady && !doc) {
-    return <PageNotFound noPermission />;
-  }
-
-  if (!doc || !editor) {
-    return <PageDetailSkeleton key="current-page-is-null" />;
-  }
-
-  return (
-    <FrameworkScope scope={doc.scope}>
-      <FrameworkScope scope={editor.scope}>
-        <DetailPageImpl />
-      </FrameworkScope>
-    </FrameworkScope>
-  );
-};
-
 export const Component = () => {
   performanceRenderLogger.debug('DetailPage');
 
@@ -448,5 +335,9 @@ export const Component = () => {
 
   const pageId = params.pageId;
 
-  return pageId ? <DetailPage pageId={pageId} /> : null;
+  return pageId ? (
+    <DetailPageWrapper pageId={pageId}>
+      <DetailPageImpl />
+    </DetailPageWrapper>
+  ) : null;
 };

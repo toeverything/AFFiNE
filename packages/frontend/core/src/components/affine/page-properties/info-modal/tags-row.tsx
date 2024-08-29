@@ -11,16 +11,21 @@ import * as styles from './tags-row.css';
 export const TagsRow = ({
   docId,
   readonly,
+  className,
 }: {
   docId: string;
   readonly: boolean;
+  className?: string;
 }) => {
   const t = useI18n();
   const tagList = useService(TagService).tagList;
   const tagIds = useLiveData(tagList.tagIdsByPageId$(docId));
   const empty = !tagIds || tagIds.length === 0;
   return (
-    <div className={styles.rowCell} data-testid="info-modal-tags-row">
+    <div
+      className={clsx(styles.rowCell, className)}
+      data-testid="info-modal-tags-row"
+    >
       <div className={styles.rowNameContainer}>
         <div className={styles.icon}>
           <TagsIcon />

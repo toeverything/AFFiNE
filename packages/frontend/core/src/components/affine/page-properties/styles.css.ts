@@ -2,6 +2,8 @@ import { cssVar } from '@toeverything/theme';
 import { createVar, globalStyle, style } from '@vanilla-extract/css';
 
 const propertyNameCellWidth = createVar();
+export const rowHPadding = createVar();
+export const fontSize = createVar();
 
 export const root = style({
   display: 'flex',
@@ -10,6 +12,16 @@ export const root = style({
   fontFamily: cssVar('fontSansFamily'),
   vars: {
     [propertyNameCellWidth]: '160px',
+    [rowHPadding]: '6px',
+    [fontSize]: cssVar('fontSm'),
+  },
+  '@container': {
+    [`viewport (width <= 640px)`]: {
+      vars: {
+        [rowHPadding]: '0px',
+        [fontSize]: cssVar('fontXs'),
+      },
+    },
   },
 });
 
@@ -22,7 +34,7 @@ export const rootCentered = style({
   padding: `0 ${cssVar('editorSidePadding', '24px')}`,
   '@container': {
     [`viewport (width <= 640px)`]: {
-      padding: '0 24px',
+      padding: '0 16px',
     },
   },
 });
@@ -39,7 +51,7 @@ export const tableHeaderInfoRow = style({
   justifyContent: 'space-between',
   alignItems: 'center',
   color: cssVar('textSecondaryColor'),
-  fontSize: cssVar('fontSm'),
+  fontSize: fontSize,
   fontWeight: 500,
   minHeight: 34,
   '@media': {
@@ -54,9 +66,9 @@ export const tableHeaderSecondaryRow = style({
   flexDirection: 'row',
   alignItems: 'center',
   color: cssVar('textPrimaryColor'),
-  fontSize: cssVar('fontSm'),
+  fontSize: fontSize,
   fontWeight: 500,
-  padding: '0 6px',
+  padding: `0 ${rowHPadding}`,
   gap: '8px',
   height: 24,
   '@media': {
@@ -82,7 +94,7 @@ export const spacer = style({
 });
 
 export const tableHeaderBacklinksHint = style({
-  padding: '6px',
+  padding: `0 ${rowHPadding}`,
   cursor: 'pointer',
   borderRadius: '4px',
   ':hover': {
@@ -103,7 +115,7 @@ export const tableHeaderTimestamp = style({
   alignItems: 'start',
   gap: '8px',
   cursor: 'default',
-  padding: '0 6px',
+  padding: `0 ${rowHPadding}`,
 });
 
 export const tableHeaderDivider = style({
@@ -273,7 +285,7 @@ export const editablePropertyRowCell = style([
 export const propertyRowNameCell = style([
   propertyRowCell,
   {
-    padding: 6,
+    padding: `6px ${rowHPadding}`,
     flexShrink: 0,
     color: cssVar('textSecondaryColor'),
     width: propertyNameCellWidth,
@@ -316,7 +328,7 @@ export const propertyRowValueCell = style([
   propertyRowCell,
   editablePropertyRowCell,
   {
-    padding: '6px 8px',
+    padding: `6px ${rowHPadding} 6px 6px`,
     border: `1px solid transparent`,
     color: cssVar('textPrimaryColor'),
     ':focus': {
@@ -353,7 +365,7 @@ export const propertyRowValueTextarea = style([
   propertyRowValueCell,
   {
     border: 'none',
-    padding: '6px 8px',
+    padding: `6px ${rowHPadding} 6px 8px`,
     height: '100%',
     position: 'absolute',
     top: 0,
@@ -368,7 +380,7 @@ export const propertyRowValueTextareaInvisible = style([
   propertyRowValueCell,
   {
     border: 'none',
-    padding: '6px 8px',
+    padding: `6px ${rowHPadding} 6px 8px`,
     visibility: 'hidden',
     whiteSpace: 'break-spaces',
     wordBreak: 'break-all',
@@ -379,7 +391,7 @@ export const propertyRowValueTextareaInvisible = style([
 export const propertyRowValueNumberCell = style([
   propertyRowValueTextCell,
   {
-    padding: '6px 8px',
+    padding: `6px ${rowHPadding} 6px 8px`,
   },
 ]);
 

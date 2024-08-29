@@ -8,15 +8,17 @@ import * as styles from './links-row.css';
 export const LinksRow = ({
   references,
   label,
+  className,
   onClick,
 }: {
   references: Backlink[] | Link[];
   label: string;
+  className?: string;
   onClick?: () => void;
 }) => {
   const manager = useContext(managerContext);
   return (
-    <div>
+    <div className={className}>
       <div className={styles.title}>
         {label} · {references.length}
       </div>

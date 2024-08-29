@@ -43,3 +43,8 @@ export const hiddenInput = style({
   height: '0',
   position: 'absolute',
 });
+
+export const timeRow = style({
+  marginTop: 20,
+  borderBottom: 4,
+});

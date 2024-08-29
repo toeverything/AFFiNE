@@ -1,5 +1,7 @@
 import { cssVar } from '@toeverything/theme';
-import { style } from '@vanilla-extract/css';
+import { fallbackVar, style } from '@vanilla-extract/css';
+
+import { rowHPadding } from '../styles.css';
 
 export const icon = style({
   fontSize: 16,
@@ -65,7 +67,7 @@ export const rowValueCell = style({
   ':hover': {
     backgroundColor: cssVar('hoverColor'),
   },
-  padding: '6px 8px',
+  padding: `6px ${fallbackVar(rowHPadding, '8px')} 6px 8px`,
   border: `1px solid transparent`,
   color: cssVar('textPrimaryColor'),
   ':focus': {

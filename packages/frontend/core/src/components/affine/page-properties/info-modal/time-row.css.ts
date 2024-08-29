@@ -46,6 +46,4 @@ export const rowCell = style({
 export const container = style({
   display: 'flex',
   flexDirection: 'column',
-  marginTop: 20,
-  marginBottom: 4,
 });

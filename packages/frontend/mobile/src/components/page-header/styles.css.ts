@@ -45,5 +45,5 @@ export const prefix = style({
 export const suffix = style({
   display: 'flex',
   alignItems: 'center',
-  gap: 18,
+  gap: 6,
 });

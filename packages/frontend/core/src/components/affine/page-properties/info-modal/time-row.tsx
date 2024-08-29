@@ -1,6 +1,7 @@
 import { i18nTime, useI18n } from '@affine/i18n';
 import { DateTimeIcon, HistoryIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService, WorkspaceService } from '@toeverything/infra';
+import clsx from 'clsx';
 import type { ConfigType } from 'dayjs';
 import { useDebouncedValue } from 'foxact/use-debounced-value';
 import { type ReactNode, useContext, useMemo } from 'react';
@@ -28,7 +29,13 @@ const RowComponent = ({
   );
 };
 
-export const TimeRow = ({ docId }: { docId: string }) => {
+export const TimeRow = ({
+  docId,
+  className,
+}: {
+  docId: string;
+  className?: string;
+}) => {
   const t = useI18n();
   const manager = useContext(managerContext);
   const workspaceService = useService(WorkspaceService);
@@ -88,5 +95,7 @@ export const TimeRow = ({ docId }: { docId: string }) => {
 
   const dTimestampElement = useDebouncedValue(timestampElement, 500);
 
-  return <div className={styles.container}>{dTimestampElement}</div>;
+  return (
+    <div className={clsx(styles.container, className)}>{dTimestampElement}</div>
+  );
 };
