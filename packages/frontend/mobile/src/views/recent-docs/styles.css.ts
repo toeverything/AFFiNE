@@ -1,5 +1,13 @@
 import { globalStyle, style } from '@vanilla-extract/css';
 
+export const recentSection = style({
+  paddingBottom: 32,
+  selectors: {
+    '&[data-state="open"]': {
+      paddingBottom: 0,
+    },
+  },
+});
 export const scroll = style({
   width: '100%',
   paddingTop: 8,

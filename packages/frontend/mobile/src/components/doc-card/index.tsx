@@ -16,10 +16,11 @@ import { DocCardTags } from './tag';
 
 export interface DocCardProps extends Omit<WorkbenchLinkProps, 'to'> {
   meta: DocMeta;
+  showTags?: boolean;
 }
 
 export const DocCard = forwardRef<HTMLAnchorElement, DocCardProps>(
-  function DocCard({ meta, className, ...attrs }, ref) {
+  function DocCard({ showTags = true, meta, className, ...attrs }, ref) {
     const favAdapter = useService(CompatibleFavoriteItemsAdapter);
     const workspace = useService(WorkspaceService).workspace;
 
@@ -54,7 +55,7 @@ export const DocCard = forwardRef<HTMLAnchorElement, DocCardProps>(
             emptyFallback={<div className={styles.contentEmpty}>Empty</div>}
           />
         </main>
-        <DocCardTags docId={meta.id} rows={2} />
+        {showTags ? <DocCardTags docId={meta.id} rows={2} /> : null}
       </WorkbenchLink>
     );
   }

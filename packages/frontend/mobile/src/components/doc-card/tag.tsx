@@ -122,7 +122,7 @@ const DocCardTagsRenderer = ({ tags, rows }: { tags: Tag[]; rows: number }) => {
       {tags.map(tag => (
         <DocCardTag key={tag.id} tag={tag} />
       ))}
-      {/* TODO: more icon */}
+      {/* TODO(@CatsJuice): more icon */}
       {/* <MoreHorizontalIcon /> */}
     </ul>
   );

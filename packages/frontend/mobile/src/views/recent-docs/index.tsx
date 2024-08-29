@@ -21,6 +21,7 @@ export const RecentDocs = ({ max = 5 }: { max?: number }) => {
       name="recent"
       title="Recent"
       headerClassName={styles.header}
+      className={styles.recentSection}
     >
       <div className={styles.scroll}>
         <ul className={styles.list}>

@@ -18,6 +18,31 @@ type GroupOption = {
   label: string;
 };
 
+export function getGroupOptions(t: ReturnType<typeof useI18n>) {
+  return [
+    {
+      value: 'createDate',
+      label: t['Created'](),
+    },
+    {
+      value: 'updatedDate',
+      label: t['Updated'](),
+    },
+    {
+      value: 'tag',
+      label: t['com.affine.page.display.grouping.group-by-tag'](),
+    },
+    {
+      value: 'favourites',
+      label: t['com.affine.page.display.grouping.group-by-favourites'](),
+    },
+    {
+      value: 'none',
+      label: t['com.affine.page.display.grouping.no-grouping'](),
+    },
+  ] satisfies GroupOption[];
+}
+
 export const PageDisplayMenu = () => {
   const t = useI18n();
   const [workspaceProperties, setProperties] = useAllDocDisplayProperties();
@@ -66,28 +91,7 @@ export const PageDisplayMenu = () => {
   }, [handleSetDocDisplayProperties, t]);
 
   const items = useMemo(() => {
-    const groupOptions: GroupOption[] = [
-      {
-        value: 'createDate',
-        label: t['Created'](),
-      },
-      {
-        value: 'updatedDate',
-        label: t['Updated'](),
-      },
-      {
-        value: 'tag',
-        label: t['com.affine.page.display.grouping.group-by-tag'](),
-      },
-      {
-        value: 'favourites',
-        label: t['com.affine.page.display.grouping.group-by-favourites'](),
-      },
-      {
-        value: 'none',
-        label: t['com.affine.page.display.grouping.no-grouping'](),
-      },
-    ];
+    const groupOptions: GroupOption[] = getGroupOptions(t);
 
     const subItems = groupOptions.map(option => (
       <MenuItem

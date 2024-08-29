@@ -121,7 +121,7 @@ export const Component = function CollectionPage() {
   if (!collection) {
     return null;
   }
-  const inner = isEmpty(collection) ? (
+  const inner = isEmptyCollection(collection) ? (
     <Placeholder collection={collection} />
   ) : (
     <CollectionDetail collection={collection} />
@@ -346,7 +346,7 @@ const Placeholder = ({ collection }: { collection: Collection }) => {
   );
 };
 
-const isEmpty = (collection: Collection) => {
+export const isEmptyCollection = (collection: Collection) => {
   return (
     collection.allowList.length === 0 && collection.filterList.length === 0
   );

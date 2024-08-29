@@ -18,6 +18,7 @@ export const appTabs = style({
 
   position: 'fixed',
   bottom: 0,
+  zIndex: 1,
 });
 export const tabItem = style({
   display: 'flex',

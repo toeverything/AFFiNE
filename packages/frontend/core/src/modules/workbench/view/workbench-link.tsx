@@ -14,11 +14,12 @@ export type WorkbenchLinkProps = React.PropsWithChildren<
   {
     to: To;
     onClick?: (e: MouseEvent) => void;
+    replaceHistory?: boolean;
   } & React.HTMLProps<HTMLAnchorElement>
 >;
 
 export const WorkbenchLink = forwardRef<HTMLAnchorElement, WorkbenchLinkProps>(
-  function WorkbenchLink({ to, onClick, ...other }, ref) {
+  function WorkbenchLink({ to, onClick, replaceHistory, ...other }, ref) {
     const { featureFlagService, workbenchService } = useServices({
       FeatureFlagService,
       WorkbenchService,
@@ -45,10 +46,10 @@ export const WorkbenchLink = forwardRef<HTMLAnchorElement, WorkbenchLinkProps>(
           }
           return 'active';
         })();
-        workbench.open(to, { at });
+        workbench.open(to, { at, replaceHistory });
         event.preventDefault();
       },
-      [enableMultiView, onClick, to, workbench]
+      [enableMultiView, onClick, replaceHistory, to, workbench]
     );
 
     // eslint suspicious runtime error

@@ -1,3 +1,12 @@
+import { AppTabs } from '../../../components';
+import { AllDocsHeader, CollectionList } from '../../../views';
+
 export const Component = () => {
-  return <div>/workspace/:workspaceId/collection</div>;
+  return (
+    <>
+      <AllDocsHeader />
+      <AppTabs />
+      <CollectionList />
+    </>
+  );
 };

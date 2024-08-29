@@ -1,13 +1,19 @@
+import { cssVarV2 } from '@toeverything/theme/v2';
 import { style } from '@vanilla-extract/css';
 
 export const root = style({
   width: '100%',
   minHeight: 44,
   padding: '0 6px',
+  paddingTop: 16,
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'space-between',
-  position: 'relative',
+
+  position: 'sticky',
+  top: 0,
+  zIndex: 1,
+  backgroundColor: cssVarV2('layer/background/secondary'),
 });
 export const content = style({
   selectors: {
@@ -15,6 +21,11 @@ export const content = style({
       position: 'absolute',
       left: '50%',
       transform: 'translateX(-50%)',
+      width: 'fit-content',
+      maxWidth: 'calc(100% - 12px - 88px - 16px)',
+      display: 'flex',
+      justifyContent: 'center',
+      pointerEvents: 'none',
     },
     '&:not(.center)': {
       width: 0,
