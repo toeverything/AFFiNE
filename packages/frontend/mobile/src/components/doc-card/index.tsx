@@ -9,13 +9,16 @@ import {
 import type { DocMeta } from '@blocksuite/store';
 import { useLiveData, useService, WorkspaceService } from '@toeverything/infra';
 import clsx from 'clsx';
-import { forwardRef, useCallback } from 'react';
+import { forwardRef, type ReactNode, useCallback } from 'react';
 
 import * as styles from './styles.css';
 import { DocCardTags } from './tag';
 
 export interface DocCardProps extends Omit<WorkbenchLinkProps, 'to'> {
-  meta: DocMeta;
+  meta: {
+    id: DocMeta['id'];
+    title?: ReactNode;
+  } & { [key: string]: any };
   showTags?: boolean;
 }
 

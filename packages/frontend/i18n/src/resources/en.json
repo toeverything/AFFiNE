@@ -544,6 +544,7 @@
   "com.affine.cloudTempDisable.description": "We are upgrading the AFFiNE Cloud service and it is temporarily unavailable on the client side. If you wish to stay updated on the progress and be notified on availability, you can fill out the <1>AFFiNE Cloud Signup</1>.",
   "com.affine.cloudTempDisable.title": "AFFiNE Cloud is upgrading now.",
   "com.affine.cmdk.affine.category.affine.collections": "Collections",
+  "com.affine.cmdk.affine.category.affine.tags": "Tags",
   "com.affine.cmdk.affine.category.affine.creation": "Create",
   "com.affine.cmdk.affine.category.affine.edgeless": "Edgeless",
   "com.affine.cmdk.affine.category.affine.general": "General",
@@ -1557,5 +1558,6 @@
   "com.affine.import-template.dialog.errorLoad": "Failed to load template, please try again.",
   "com.affine.import-template.dialog.createDocToWorkspace": "Create doc to \"{{workspace}}\"",
   "com.affine.import-template.dialog.createDocToNewWorkspace": "Create into a New Workspace",
-  "com.affine.import-template.dialog.createDocWithTemplate": "Create doc with \"{{templateName}}\" template"
+  "com.affine.import-template.dialog.createDocWithTemplate": "Create doc with \"{{templateName}}\" template",
+  "com.affine.mobile.search.empty": "No results found"
 }

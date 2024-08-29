@@ -26,6 +26,7 @@ import {
 import { Suspense } from 'react';
 import { RouterProvider } from 'react-router-dom';
 
+import { configureMobileModules } from './modules';
 import { router } from './router';
 
 if (!environment.isBrowser && environment.isDebug) {
@@ -58,6 +59,7 @@ configureBrowserWorkbenchModule(framework);
 configureLocalStorageStateStorageImpls(framework);
 configureBrowserWorkspaceFlavours(framework);
 configureIndexedDBWorkspaceEngineStorageProvider(framework);
+configureMobileModules(framework);
 const frameworkProvider = framework.provider();
 
 // setup application lifecycle events, and emit application start event

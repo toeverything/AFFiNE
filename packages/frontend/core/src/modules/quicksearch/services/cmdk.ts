@@ -8,6 +8,7 @@ import { CommandsQuickSearchSession } from '../impls/commands';
 import { CreationQuickSearchSession } from '../impls/creation';
 import { DocsQuickSearchSession } from '../impls/docs';
 import { RecentDocsQuickSearchSession } from '../impls/recent-docs';
+import { TagsQuickSearchSession } from '../impls/tags';
 import type { QuickSearchService } from './quick-search';
 
 export class CMDKQuickSearchService extends Service {
@@ -30,6 +31,7 @@ export class CMDKQuickSearchService extends Service {
           this.framework.createEntity(CommandsQuickSearchSession),
           this.framework.createEntity(CreationQuickSearchSession),
           this.framework.createEntity(DocsQuickSearchSession),
+          this.framework.createEntity(TagsQuickSearchSession),
         ],
         result => {
           if (!result) {
@@ -60,6 +62,8 @@ export class CMDKQuickSearchService extends Service {
             this.workbenchService.workbench.openCollection(
               result.payload.collectionId
             );
+          } else if (result.source === 'tags') {
+            this.workbenchService.workbench.openTag(result.payload.tagId);
           } else if (result.source === 'creation') {
             if (result.id === 'creation:create-page') {
               const newDoc = this.docsService.createDoc({
