@@ -142,7 +142,9 @@ export const ModalInner = forwardRef<HTMLDivElement, ModalProps>(
       children,
       contentWrapperClassName,
       contentWrapperStyle,
-      animation = 'fadeScaleTop',
+      animation = environment.isBrowser && environment.isMobile
+        ? 'slideBottom'
+        : 'fadeScaleTop',
       ...otherProps
     } = props;
     const { className: closeButtonClassName, ...otherCloseButtonProps } =
