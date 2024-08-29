@@ -1,3 +1,4 @@
+import { apis, appInfo } from '@affine/electron-api';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useEffect } from 'react';
 import { type LoaderFunction, redirect } from 'react-router-dom';
@@ -22,6 +23,14 @@ export const loader: LoaderFunction = async ({ request }) => {
     },
     body: JSON.stringify({ email, token }),
   });
+
+  if (environment.isDesktop && appInfo?.windowName === 'hidden-window') {
+    // do nothing in hidden window (loading home page will unnecessary init the data loading routine)
+    apis?.ui.hiddenWindowSignIn(res.ok ? 'success' : 'failed').catch(e => {
+      console.error('failed to notify hidden window sign-in status', e);
+    });
+    return;
+  }
 
   if (!res.ok) {
     let error: string;

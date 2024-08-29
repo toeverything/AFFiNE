@@ -211,4 +211,7 @@ export const uiHandlers = {
     win.show();
     win.focus();
   },
+  hiddenWindowSignIn: async (_, state: 'success' | 'failed') => {
+    uiSubjects.onHiddenWindowSignIn$.next(state);
+  },
 } satisfies NamespaceHandlers;

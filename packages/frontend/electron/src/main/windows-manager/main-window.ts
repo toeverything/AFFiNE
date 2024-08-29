@@ -227,6 +227,15 @@ export async function showMainWindow() {
   window.focus();
 }
 
+const getWindowAdditionalArguments = async () => {
+  const { getExposedMeta } = await import('../exposed');
+  const mainExposedMeta = getExposedMeta();
+  return [
+    `--main-exposed-meta=` + JSON.stringify(mainExposedMeta),
+    `--window-name=hidden-window`,
+  ];
+};
+
 /**
  * Open a URL in a hidden window.
  */
@@ -236,17 +245,25 @@ export async function openUrlInHiddenWindow(url: string) {
     height: 600,
     webPreferences: {
       preload: join(__dirname, './preload.js'),
+      additionalArguments: await getWindowAdditionalArguments(),
     },
     show: environment.isDebug,
   });
+
+  if (environment.isDebug) {
+    win.webContents.openDevTools();
+  }
+
   win.on('close', e => {
     e.preventDefault();
-    if (!win.isDestroyed()) {
+    if (win && !win.isDestroyed()) {
       win.destroy();
     }
   });
   logger.info('loading page at', url);
-  await win.loadURL(url);
+  win.loadURL(url).catch(e => {
+    logger.error('failed to load url', e);
+  });
   return win;
 }
 

@@ -5,10 +5,12 @@ import type { App } from 'electron';
 import { buildType, isDev } from './config';
 import { mainWindowOrigin } from './constants';
 import { logger } from './logger';
+import { uiSubjects } from './ui';
 import {
   getMainWindow,
   openUrlInHiddenWindow,
   openUrlInMainWindow,
+  showMainWindow,
 } from './windows-manager';
 
 let protocol = buildType === 'stable' ? 'affine' : `affine-${buildType}`;
@@ -79,8 +81,13 @@ async function openUrl(urlObj: URL) {
   params.delete('hidden');
 
   const url = mainWindowOrigin + urlObj.pathname + '?' + params.toString();
-  if (!openInHiddenWindow) {
-    await openUrlInHiddenWindow(url);
+  if (openInHiddenWindow) {
+    const win = await openUrlInHiddenWindow(url);
+    const sub = uiSubjects.onHiddenWindowSignIn$.subscribe(() => {
+      win.close();
+      sub.unsubscribe();
+    });
+    await showMainWindow();
   } else {
     // TODO(@pengx17): somehow the page won't load the url passed, help needed
     await openUrlInMainWindow(url);

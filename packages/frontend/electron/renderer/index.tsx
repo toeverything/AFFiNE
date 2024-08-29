@@ -2,9 +2,11 @@ import './polyfill/dispose';
 import '@affine/core/bootstrap/preload';
 import './global.css';
 
+import { notify } from '@affine/component/ui/notification';
 import { appConfigProxy } from '@affine/core/hooks/use-app-config-storage';
 import { performanceLogger } from '@affine/core/shared';
 import { apis, appInfo, events } from '@affine/electron-api';
+import { I18n } from '@affine/i18n';
 import {
   init,
   reactRouterV6BrowserTracingIntegration,
@@ -108,6 +110,22 @@ function main() {
     window.addEventListener('dragend', () => {
       document.documentElement.dataset.dragging = 'false';
     });
+
+    if (appInfo?.windowName !== 'hidden-window') {
+      events?.ui.onHiddenWindowSignIn(state => {
+        if (state === 'success') {
+          notify.success({
+            title: I18n['com.affine.client.signin.success.title'](),
+            message: I18n['com.affine.client.signin.success.message'](),
+          });
+        } else {
+          notify.error({
+            title: I18n['com.affine.client.signin.failed.title'](),
+            message: I18n['com.affine.client.signin.failed.message'](),
+          });
+        }
+      });
+    }
   }
 
   mountApp();

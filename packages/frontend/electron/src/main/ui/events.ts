@@ -35,4 +35,10 @@ export const uiEvents = {
   onTabsStatusChange,
   onActiveTabChanged,
   onTabShellViewActiveChange,
+  onHiddenWindowSignIn: (fn: (state: 'success' | 'failed') => void) => {
+    const sub = uiSubjects.onHiddenWindowSignIn$.subscribe(fn);
+    return () => {
+      sub.unsubscribe();
+    };
+  },
 } satisfies Record<string, MainEventRegister>;

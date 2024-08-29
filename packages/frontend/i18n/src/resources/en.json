@@ -1559,5 +1559,9 @@
   "com.affine.import-template.dialog.createDocToWorkspace": "Create doc to \"{{workspace}}\"",
   "com.affine.import-template.dialog.createDocToNewWorkspace": "Create into a New Workspace",
   "com.affine.import-template.dialog.createDocWithTemplate": "Create doc with \"{{templateName}}\" template",
-  "com.affine.mobile.search.empty": "No results found"
+  "com.affine.mobile.search.empty": "No results found",
+  "com.affine.client.signin.success.title": "Sign in success",
+  "com.affine.client.signin.success.message": "You have successfully signed in to AFFiNE",
+  "com.affine.client.signin.failed.title": "Sign in failed",
+  "com.affine.client.signin.failed.message": "Please try again"
 }

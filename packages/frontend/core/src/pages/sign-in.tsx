@@ -1,6 +1,7 @@
 import { AffineOtherPageLayout } from '@affine/component/affine-other-page-layout';
 import { SignInPageContainer } from '@affine/component/auth-components';
 import { AuthService } from '@affine/core/modules/cloud';
+import { appInfo } from '@affine/electron-api';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useAtom } from 'jotai';
 import { useCallback, useEffect } from 'react';
@@ -24,6 +25,10 @@ export const SignIn = () => {
   const isLoggedIn = status === 'authenticated' && !isRevalidating;
 
   useEffect(() => {
+    if (environment.isDesktop && appInfo?.windowName === 'hidden-window') {
+      return;
+    }
+
     if (isLoggedIn) {
       const redirectUri = searchParams.get('redirect_uri');
       if (redirectUri) {
