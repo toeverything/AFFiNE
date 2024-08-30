@@ -304,7 +304,7 @@ __metadata:
     "@blocksuite/block-std": "npm:0.17.0-canary-202408191538-1511d04"
     "@blocksuite/blocks": "npm:0.17.0-canary-202408191538-1511d04"
     "@blocksuite/global": "npm:0.17.0-canary-202408191538-1511d04"
-    "@blocksuite/icons": "npm:2.1.64"
+    "@blocksuite/icons": "npm:2.1.66"
     "@blocksuite/presets": "npm:0.17.0-canary-202408191538-1511d04"
     "@blocksuite/store": "npm:0.17.0-canary-202408191538-1511d04"
     "@chromatic-com/storybook": "npm:^1"
@@ -385,7 +385,7 @@ __metadata:
   peerDependencies:
     "@blocksuite/blocks": "*"
     "@blocksuite/global": "*"
-    "@blocksuite/icons": 2.1.62
+    "@blocksuite/icons": 2.1.66
     "@blocksuite/presets": "*"
     "@blocksuite/store": "*"
   languageName: unknown
@@ -406,7 +406,7 @@ __metadata:
     "@blocksuite/block-std": "npm:0.17.0-canary-202408191538-1511d04"
     "@blocksuite/blocks": "npm:0.17.0-canary-202408191538-1511d04"
     "@blocksuite/global": "npm:0.17.0-canary-202408191538-1511d04"
-    "@blocksuite/icons": "npm:2.1.64"
+    "@blocksuite/icons": "npm:2.1.66"
     "@blocksuite/inline": "npm:0.17.0-canary-202408191538-1511d04"
     "@blocksuite/presets": "npm:0.17.0-canary-202408191538-1511d04"
     "@blocksuite/store": "npm:0.17.0-canary-202408191538-1511d04"
@@ -660,7 +660,7 @@ __metadata:
     "@affine/component": "workspace:*"
     "@affine/core": "workspace:*"
     "@affine/env": "workspace:*"
-    "@blocksuite/icons": "npm:^2.1.64"
+    "@blocksuite/icons": "npm:^2.1.66"
     "@sentry/react": "npm:^8.0.0"
     "@toeverything/theme": "npm:^1.0.7"
     "@types/lodash-es": "npm:^4.17.12"
@@ -3628,19 +3628,19 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@blocksuite/icons@npm:2.1.64, @blocksuite/icons@npm:^2.1.62, @blocksuite/icons@npm:^2.1.64":
-  version: 2.1.64
-  resolution: "@blocksuite/icons@npm:2.1.64"
+"@blocksuite/icons@npm:2.1.66, @blocksuite/icons@npm:^2.1.62, @blocksuite/icons@npm:^2.1.66":
+  version: 2.1.66
+  resolution: "@blocksuite/icons@npm:2.1.66"
   peerDependencies:
     "@types/react": ^18.0.25
-    lit: ^2.6.1
+    lit: ^3.1.1
     react: ^18.2.0
   peerDependenciesMeta:
     lit:
       optional: true
     react:
       optional: true
-  checksum: 10/4be43918cf50dd5f1c88e8e851b03fc697ad61a01ab67661fdba39b10d3297cc4f2e95e24950f48da990c2c8ee99f0a4e7aad64e171699aaf24be30f139eeafd
+  checksum: 10/dda9885cbf59e53ceb01d0f35c699b2c9d21a828bc4021136f794209967fd22bc17a76e6da2c9b8b766f92d57a39ba81f6be6443c068d75087013cf8aaa2e2da
   languageName: node
   linkType: hard
 

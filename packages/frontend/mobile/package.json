@@ -12,7 +12,7 @@
     "@affine/component": "workspace:*",
     "@affine/core": "workspace:*",
     "@affine/env": "workspace:*",
-    "@blocksuite/icons": "^2.1.64",
+    "@blocksuite/icons": "^2.1.66",
     "@sentry/react": "^8.0.0",
     "@toeverything/theme": "^1.0.7",
     "clsx": "^2.1.1",
