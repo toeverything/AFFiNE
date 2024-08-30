@@ -1,21 +1,19 @@
 import { cssVar } from '@toeverything/theme';
 import { style } from '@vanilla-extract/css';
 export const divider = style({
-  height: '1px',
-  backgroundColor: cssVar('borderColor'),
-  borderRadius: '8px',
+  borderBottom: `1px solid ${cssVar('borderColor')}`,
+  height: 0,
   margin: '8px 0',
   width: '100%',
 });
-export const thinner = style({
-  height: '0.5px',
-});
+
 export const verticalDivider = style({
-  width: '1px',
-  borderRadius: '8px',
+  borderLeft: `1px solid ${cssVar('borderColor')}`,
+  width: 0,
   height: '100%',
   margin: '0 2px',
 });
-export const verticalThinner = style({
-  width: '0.5px',
+
+export const thinner = style({
+  borderWidth: '0.5px',
 });
