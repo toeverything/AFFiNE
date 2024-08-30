@@ -1,7 +1,5 @@
-import type {
-  GetWorkspacePublicPageByIdQuery,
-  PublicPageMode,
-} from '@affine/graphql';
+import type { GetWorkspacePublicPageByIdQuery } from '@affine/graphql';
+import type { DocMode } from '@blocksuite/blocks';
 import type { DocService, WorkspaceService } from '@toeverything/infra';
 import {
   backoffRetry,
@@ -69,7 +67,7 @@ export class ShareInfo extends Entity {
     return this.isRevalidating$.waitFor(v => v === false, signal);
   }
 
-  async enableShare(mode: PublicPageMode) {
+  async enableShare(mode: DocMode) {
     await this.store.enableSharePage(
       this.workspaceService.workspace.id,
       this.docService.doc.id,
@@ -78,7 +76,7 @@ export class ShareInfo extends Entity {
     await this.waitForRevalidation();
   }
 
-  async changeShare(mode: PublicPageMode) {
+  async changeShare(mode: DocMode) {
     await this.enableShare(mode);
   }
 

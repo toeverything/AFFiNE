@@ -10,8 +10,8 @@ import { EditorService } from '@affine/core/modules/editor';
 import { WorkspacePermissionService } from '@affine/core/modules/permissions';
 import { ShareInfoService } from '@affine/core/modules/share-doc';
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import { PublicPageMode } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
+import { DocMode } from '@blocksuite/blocks';
 import {
   BlockIcon,
   CollaborationIcon,
@@ -93,7 +93,7 @@ export const AFFiNESharePage = (props: ShareMenuProps) => {
     }
     try {
       // TODO(@JimmFly): remove mode when we have a better way to handle it
-      await shareInfoService.shareInfo.enableShare(PublicPageMode.Page);
+      await shareInfoService.shareInfo.enableShare(DocMode.Page);
       track.$.sharePanel.$.createShareLink();
       notify.success({
         title:
@@ -158,10 +158,10 @@ export const AFFiNESharePage = (props: ShareMenuProps) => {
   });
 
   const onCopyPageLink = useCallback(() => {
-    onClickCopyLink('page');
+    onClickCopyLink(DocMode.Page);
   }, [onClickCopyLink]);
   const onCopyEdgelessLink = useCallback(() => {
-    onClickCopyLink('edgeless');
+    onClickCopyLink(DocMode.Edgeless);
   }, [onClickCopyLink]);
   const onCopyBlockLink = useCallback(() => {
     // TODO(@JimmFly): handle frame

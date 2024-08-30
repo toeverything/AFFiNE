@@ -4,7 +4,7 @@ import type {
   EdgelessElementToolbarWidget,
   EdgelessRootBlockComponent,
 } from '@blocksuite/blocks';
-import { EdgelessCopilotToolbarEntry } from '@blocksuite/blocks';
+import { DocMode, EdgelessCopilotToolbarEntry } from '@blocksuite/blocks';
 import { noop } from '@blocksuite/global/utils';
 import { html } from 'lit';
 
@@ -27,7 +27,7 @@ export function setupEdgelessElementToolbarEntry(
       const chain = edgeless.service.std.command.chain();
       const filteredGroups = edgelessActionGroups.reduce((pre, group) => {
         const filtered = group.items.filter(item =>
-          item.showWhen?.(chain, 'edgeless', edgeless.host)
+          item.showWhen?.(chain, DocMode.Edgeless, edgeless.host)
         );
 
         if (filtered.length > 0) pre.push({ ...group, items: filtered });

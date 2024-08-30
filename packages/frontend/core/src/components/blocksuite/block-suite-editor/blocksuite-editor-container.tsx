@@ -121,7 +121,7 @@ export const BlocksuiteEditorContainer = forwardRef<
         return page;
       },
       get host() {
-        return mode === 'page'
+        return mode === DocMode.Page
           ? docRef.current?.host
           : edgelessRef.current?.host;
       },
@@ -129,7 +129,7 @@ export const BlocksuiteEditorContainer = forwardRef<
         return page.root as any;
       },
       get updateComplete() {
-        return mode === 'page'
+        return mode === DocMode.Page
           ? docRef.current?.updateComplete
           : edgelessRef.current?.updateComplete;
       },
@@ -214,7 +214,7 @@ export const BlocksuiteEditorContainer = forwardRef<
       style={style}
       ref={rootRef}
     >
-      {mode === 'page' ? (
+      {mode === DocMode.Page ? (
         <BlocksuiteDocEditor shared={shared} page={page} ref={docRef} />
       ) : (
         <BlocksuiteEdgelessEditor

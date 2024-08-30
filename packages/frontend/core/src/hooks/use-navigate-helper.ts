@@ -1,5 +1,5 @@
 import type { WorkspaceSubPath } from '@affine/core/shared';
-import type { DocMode } from '@toeverything/infra';
+import type { DocMode } from '@blocksuite/blocks';
 import { createContext, useCallback, useContext, useMemo } from 'react';
 import type { NavigateFunction, NavigateOptions } from 'react-router-dom';
 

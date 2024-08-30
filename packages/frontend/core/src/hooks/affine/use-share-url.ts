@@ -3,7 +3,7 @@ import { track } from '@affine/core/mixpanel';
 import { getAffineCloudBaseUrl } from '@affine/core/modules/cloud/services/fetch';
 import { useI18n } from '@affine/i18n';
 import type { BaseSelection } from '@blocksuite/block-std';
-import { type DocMode } from '@toeverything/infra';
+import type { DocMode } from '@blocksuite/blocks';
 import { useCallback } from 'react';
 
 import { useActiveBlocksuiteEditor } from '../use-block-suite-editor';

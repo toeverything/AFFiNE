@@ -1,12 +1,13 @@
 import { IconButton } from '@affine/component';
 import { useI18n } from '@affine/i18n';
+import type { DocMode } from '@blocksuite/blocks';
 import {
   CloseIcon,
   ExpandFullIcon,
   OpenInNewIcon,
   SplitViewIcon,
 } from '@blocksuite/icons/rc';
-import { type DocMode, useService } from '@toeverything/infra';
+import { useService } from '@toeverything/infra';
 import { clsx } from 'clsx';
 import {
   type HTMLAttributes,

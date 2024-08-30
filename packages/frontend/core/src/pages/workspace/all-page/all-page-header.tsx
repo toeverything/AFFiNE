@@ -10,6 +10,7 @@ import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { track } from '@affine/core/mixpanel';
 import { isNewTabTrigger } from '@affine/core/utils';
 import type { Filter } from '@affine/env/filter';
+import { DocMode } from '@blocksuite/blocks';
 import { PlusIcon } from '@blocksuite/icons/rc';
 import { useServices, WorkspaceService } from '@toeverything/infra';
 import clsx from 'clsx';
@@ -67,7 +68,7 @@ export const AllPageHeader = ({
               createEdgeless(isNewTabTrigger(e) ? 'new-tab' : true)
             }
             onCreatePage={e =>
-              createPage('page', isNewTabTrigger(e) ? 'new-tab' : true)
+              createPage(DocMode.Page, isNewTabTrigger(e) ? 'new-tab' : true)
             }
             onCreateDoc={e =>
               createPage(undefined, isNewTabTrigger(e) ? 'new-tab' : true)

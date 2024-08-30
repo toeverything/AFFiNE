@@ -1,3 +1,4 @@
+import { DocMode } from '@blocksuite/blocks';
 import { z } from 'zod';
 
 export type FontFamily = 'Sans' | 'Serif' | 'Mono' | 'Custom';
@@ -29,7 +30,7 @@ const BSEditorSettingSchema = z.object({
 const AffineEditorSettingSchema = z.object({
   fontFamily: z.enum(['Sans', 'Serif', 'Mono', 'Custom']).default('Sans'),
   customFontFamily: z.string().default(''),
-  newDocDefaultMode: z.enum(['edgeless', 'page']).default('page'),
+  newDocDefaultMode: z.nativeEnum(DocMode).default(DocMode.Page),
   spellCheck: z.boolean().default(false),
   fullWidthLayout: z.boolean().default(false),
   displayDocInfo: z.boolean().default(true),

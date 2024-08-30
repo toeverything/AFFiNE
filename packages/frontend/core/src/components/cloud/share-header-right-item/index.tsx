@@ -1,5 +1,6 @@
 import { AuthService } from '@affine/core/modules/cloud';
-import { type DocMode, useLiveData, useService } from '@toeverything/infra';
+import type { DocMode } from '@blocksuite/blocks';
+import { useLiveData, useService } from '@toeverything/infra';
 
 import { PresentButton } from './present';
 import { SignIn } from './sign-in';

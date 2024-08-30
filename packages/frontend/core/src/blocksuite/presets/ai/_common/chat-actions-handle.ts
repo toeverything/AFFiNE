@@ -5,12 +5,11 @@ import type {
   TextSelection,
 } from '@blocksuite/block-std';
 import type {
-  DocMode,
   EdgelessRootService,
   ImageSelection,
   PageRootService,
 } from '@blocksuite/blocks';
-import { BlocksUtils, NoteDisplayMode } from '@blocksuite/blocks';
+import { BlocksUtils, DocMode, NoteDisplayMode } from '@blocksuite/blocks';
 import {
   Bound,
   getElementsBound,
@@ -111,7 +110,7 @@ function getViewportCenter(
   rootService: PageRootService | EdgelessRootService
 ) {
   const center = { x: 400, y: 50 };
-  if (mode === 'page') {
+  if (mode === DocMode.Page) {
     const viewport = rootService.editPropsStore.getStorage('viewport');
     if (viewport) {
       if ('xywh' in viewport) {
@@ -310,9 +309,9 @@ const SAVE_CHAT_TO_BLOCK_ACTION: ChatAction = {
     );
     const newBlockIndex = layer.generateIndex('affine:embed-ai-chat');
     // If current mode is not edgeless, switch to edgeless mode first
-    if (curMode !== 'edgeless') {
+    if (curMode !== DocMode.Edgeless) {
       // Set mode to edgeless
-      docModeService.setMode('edgeless');
+      docModeService.setMode(DocMode.Edgeless);
       // Notify user to switch to edgeless mode
       notificationService?.notify({
         title: 'Save chat to a block',
@@ -462,7 +461,7 @@ const CREATE_AS_LINKED_DOC = {
 
     const service = host.spec.getService<EdgelessRootService>('affine:page');
     const mode = service.docModeService.getMode();
-    if (mode !== 'edgeless') {
+    if (mode !== DocMode.Edgeless) {
       return false;
     }
 

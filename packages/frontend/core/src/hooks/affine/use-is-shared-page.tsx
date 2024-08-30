@@ -7,8 +7,9 @@ import {
   revokePublicPageMutation,
 } from '@affine/graphql';
 import { type I18nKeys, useI18n } from '@affine/i18n';
+import { DocMode } from '@blocksuite/blocks';
 import { SingleSelectSelectSolidIcon } from '@blocksuite/icons/rc';
-import type { DocMode, Workspace } from '@toeverything/infra';
+import type { Workspace } from '@toeverything/infra';
 import { cssVar } from '@toeverything/theme';
 import { useCallback, useMemo } from 'react';
 
@@ -84,18 +85,24 @@ export function useIsSharedPage(
     );
     const isPageShared = !!publicPage;
 
-    const currentShareMode: DocMode =
-      publicPage?.mode === PublicPageMode.Edgeless ? 'edgeless' : 'page';
+    const currentShareMode =
+      publicPage?.mode === PublicPageMode.Edgeless
+        ? DocMode.Edgeless
+        : DocMode.Page;
 
     return [isPageShared, currentShareMode];
   }, [data?.workspace.publicPages, pageId]);
 
   const enableShare = useCallback(
     (mode: DocMode) => {
-      const publishMode =
-        mode === 'edgeless' ? PublicPageMode.Edgeless : PublicPageMode.Page;
-
-      enableSharePage({ workspaceId, pageId, mode: publishMode })
+      enableSharePage({
+        workspaceId,
+        pageId,
+        mode:
+          mode === DocMode.Edgeless
+            ? PublicPageMode.Edgeless
+            : PublicPageMode.Page,
+      })
         .then(() => {
           notify.success({
             title: t[notificationToI18nKey['enableSuccessTitle']](),
@@ -120,10 +127,14 @@ export function useIsSharedPage(
 
   const changeShare = useCallback(
     (mode: DocMode) => {
-      const publishMode =
-        mode === 'edgeless' ? PublicPageMode.Edgeless : PublicPageMode.Page;
-
-      enableSharePage({ workspaceId, pageId, mode: publishMode })
+      enableSharePage({
+        workspaceId,
+        pageId,
+        mode:
+          mode === DocMode.Edgeless
+            ? PublicPageMode.Edgeless
+            : PublicPageMode.Page,
+      })
         .then(() => {
           notify.success({
             title: t[notificationToI18nKey['changeSuccessTitle']](),
@@ -131,13 +142,9 @@ export function useIsSharedPage(
               'com.affine.share-menu.confirm-modify-mode.notification.success.message'
             ]({
               preMode:
-                publishMode === PublicPageMode.Edgeless
-                  ? t['Page']()
-                  : t['Edgeless'](),
+                mode === DocMode.Edgeless ? t['Page']() : t['Edgeless'](),
               currentMode:
-                publishMode === PublicPageMode.Edgeless
-                  ? t['Edgeless']()
-                  : t['Page'](),
+                mode === DocMode.Edgeless ? t['Edgeless']() : t['Page'](),
             }),
             style: 'normal',
             icon: (
@@ -210,7 +217,8 @@ export function usePublicPages(workspace: Workspace) {
     () =>
       maybeData?.workspace.publicPages.map(i => ({
         id: i.id,
-        mode: i.mode === PublicPageMode.Edgeless ? 'edgeless' : 'page',
+        mode:
+          i.mode === PublicPageMode.Edgeless ? DocMode.Edgeless : DocMode.Page,
       })) ?? [],
     [maybeData?.workspace.publicPages]
   );

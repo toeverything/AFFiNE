@@ -24,6 +24,7 @@ import type { BlockSpec, WidgetComponent } from '@blocksuite/block-std';
 import {
   type AffineReference,
   AffineSlashMenuWidget,
+  DocMode,
   EdgelessRootBlockComponent,
   EmbedLinkedDocBlockComponent,
   type ParagraphBlockService,
@@ -33,7 +34,6 @@ import { LinkIcon } from '@blocksuite/icons/rc';
 import { AIChatBlockSchema } from '@blocksuite/presets';
 import type { BlockSnapshot } from '@blocksuite/store';
 import {
-  type DocMode,
   type DocService,
   DocsService,
   type FrameworkProvider,
@@ -275,7 +275,7 @@ export function patchDocModeService(
   }
 
   patchSpecService(rootSpec, pageService => {
-    const DEFAULT_MODE = 'page';
+    const DEFAULT_MODE = DocMode.Page;
     pageService.docModeService = {
       setMode: (mode: DocMode, id?: string) => {
         if (id) {
@@ -409,8 +409,8 @@ export function patchQuickSearchService(
                     const docsService = framework.get(DocsService);
                     const mode =
                       result.id === 'creation:create-edgeless'
-                        ? 'edgeless'
-                        : 'page';
+                        ? DocMode.Edgeless
+                        : DocMode.Page;
                     const newDoc = docsService.createDoc({
                       primaryMode: mode,
                       title: result.payload.title,

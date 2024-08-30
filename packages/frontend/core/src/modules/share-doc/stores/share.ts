@@ -1,9 +1,10 @@
-import type { PublicPageMode } from '@affine/graphql';
 import {
   getWorkspacePublicPageByIdQuery,
+  PublicPageMode,
   publishPageMutation,
   revokePublicPageMutation,
 } from '@affine/graphql';
+import { DocMode } from '@blocksuite/blocks';
 import { Store } from '@toeverything/infra';
 
 import type { GraphQLService } from '../../cloud';
@@ -34,7 +35,7 @@ export class ShareStore extends Store {
   async enableSharePage(
     workspaceId: string,
     pageId: string,
-    docMode?: PublicPageMode,
+    docMode?: DocMode,
     signal?: AbortSignal
   ) {
     await this.gqlService.gql({
@@ -42,7 +43,10 @@ export class ShareStore extends Store {
       variables: {
         pageId,
         workspaceId,
-        mode: docMode,
+        mode:
+          docMode === DocMode.Edgeless
+            ? PublicPageMode.Edgeless
+            : PublicPageMode.Page,
       },
       context: {
         signal,

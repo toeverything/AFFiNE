@@ -13,6 +13,7 @@ import { TagService } from '@affine/core/modules/tag';
 import { isNewTabTrigger } from '@affine/core/utils';
 import type { Collection } from '@affine/env/filter';
 import { useI18n } from '@affine/i18n';
+import { DocMode } from '@blocksuite/blocks';
 import {
   ArrowDownSmallIcon,
   SearchIcon,
@@ -79,7 +80,7 @@ export const PageListHeader = () => {
           createEdgeless(isNewTabTrigger(e) ? 'new-tab' : true)
         }
         onCreatePage={e =>
-          createPage('page', isNewTabTrigger(e) ? 'new-tab' : true)
+          createPage(DocMode.Page, isNewTabTrigger(e) ? 'new-tab' : true)
         }
         onCreateDoc={e =>
           createPage(undefined, isNewTabTrigger(e) ? 'new-tab' : true)
@@ -144,7 +145,10 @@ export const CollectionPageListHeader = ({
     [openConfirmModal, t, createAndAddDocument]
   );
 
-  const createPageModeDoc = useCallback(() => createPage('page'), [createPage]);
+  const createPageModeDoc = useCallback(
+    () => createPage(DocMode.Page),
+    [createPage]
+  );
 
   const onCreateEdgeless = useCallback(
     () => onConfirmAddDocument(createEdgeless),

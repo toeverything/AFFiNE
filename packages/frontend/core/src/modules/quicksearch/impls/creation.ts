@@ -1,5 +1,6 @@
+import { DocMode } from '@blocksuite/blocks';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons/rc';
-import { type DocMode, Entity, LiveData } from '@toeverything/infra';
+import { Entity, LiveData } from '@toeverything/infra';
 
 import type { QuickSearchSession } from '../providers/quick-search-provider';
 import type { QuickSearchGroup } from '../types/group';
@@ -34,7 +35,7 @@ export class CreationQuickSearchSession
         },
         group,
         icon: PageIcon,
-        payload: { mode: 'edgeless', title: query },
+        payload: { mode: DocMode.Edgeless, title: query },
       },
       {
         id: 'creation:create-edgeless',
@@ -45,7 +46,7 @@ export class CreationQuickSearchSession
         },
         group,
         icon: EdgelessIcon,
-        payload: { mode: 'edgeless', title: query },
+        payload: { mode: DocMode.Edgeless, title: query },
       },
     ] as QuickSearchItem<'creation', { title: string; mode: DocMode }>[];
   });

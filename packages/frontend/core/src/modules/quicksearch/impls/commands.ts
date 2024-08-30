@@ -4,7 +4,8 @@ import {
   type CommandCategory,
   PreconditionStrategy,
 } from '@affine/core/commands';
-import type { DocMode, GlobalContextService } from '@toeverything/infra';
+import { DocMode } from '@blocksuite/blocks';
+import type { GlobalContextService } from '@toeverything/infra';
 import { Entity, LiveData } from '@toeverything/infra';
 import Fuse from 'fuse.js';
 
@@ -100,17 +101,17 @@ const categories = {
 function filterCommandByContext(
   command: AffineCommand,
   context: {
-    docMode: DocMode | undefined;
+    docMode?: DocMode;
   }
 ) {
   if (command.preconditionStrategy === PreconditionStrategy.Always) {
     return true;
   }
   if (command.preconditionStrategy === PreconditionStrategy.InEdgeless) {
-    return context.docMode === 'edgeless';
+    return context.docMode === DocMode.Edgeless;
   }
   if (command.preconditionStrategy === PreconditionStrategy.InPaper) {
-    return context.docMode === 'page';
+    return context.docMode === DocMode.Page;
   }
   if (command.preconditionStrategy === PreconditionStrategy.InPaperOrEdgeless) {
     return !!context.docMode;
