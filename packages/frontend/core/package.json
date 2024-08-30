@@ -91,7 +91,7 @@
     "swr": "2.2.5",
     "tinykeys": "patch:tinykeys@npm%3A2.1.0#~/.yarn/patches/tinykeys-npm-2.1.0-819feeaed0.patch",
     "uuid": "^10.0.0",
-    "valtio": "^1.13.2",
+    "valtio": "^2.0.0",
     "y-protocols": "^1.0.6",
     "yjs": "patch:yjs@npm%3A13.6.18#~/.yarn/patches/yjs-npm-13.6.18-ad0d5f7c43.patch",
     "zod": "^3.22.4"

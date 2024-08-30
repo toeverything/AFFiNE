@@ -495,7 +495,7 @@ __metadata:
     swr: "npm:2.2.5"
     tinykeys: "patch:tinykeys@npm%3A2.1.0#~/.yarn/patches/tinykeys-npm-2.1.0-819feeaed0.patch"
     uuid: "npm:^10.0.0"
-    valtio: "npm:^1.13.2"
+    valtio: "npm:^2.0.0"
     vitest: "npm:1.6.0"
     y-protocols: "npm:^1.0.6"
     yjs: "patch:yjs@npm%3A13.6.18#~/.yarn/patches/yjs-npm-13.6.18-ad0d5f7c43.patch"
@@ -19737,15 +19737,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"derive-valtio@npm:0.1.0":
-  version: 0.1.0
-  resolution: "derive-valtio@npm:0.1.0"
-  peerDependencies:
-    valtio: "*"
-  checksum: 10/3fec351a46cbe2aa37099059e4fc8f518bc4c2c9e9f29cc3e55811fb9ce61f3fc49302196c620705fc5584e5a8e1be629a4269f9903899450099a487ceea8e3b
-  languageName: node
-  linkType: hard
-
 "destr@npm:^2.0.3":
   version: 2.0.3
   resolution: "destr@npm:2.0.3"
@@ -30259,10 +30250,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"proxy-compare@npm:2.6.0":
-  version: 2.6.0
-  resolution: "proxy-compare@npm:2.6.0"
-  checksum: 10/c7fc9e50873f01bd79bf68ed861f740891d6c590332954b9522479a5c7d598a62225fdfa8a42460d9be5bc7a78c28377839d9d06fbced26cae62332c4410b81a
+"proxy-compare@npm:^3.0.0":
+  version: 3.0.0
+  resolution: "proxy-compare@npm:3.0.0"
+  checksum: 10/072b654e303ac6c7a9ac94648614b84388bd8b25828bd4971123dfe5a843e0848e5bf17d0ce546e9878395f356e695109b234c97183614469ff757e68ed39904
   languageName: node
   linkType: hard
 
@@ -35037,15 +35028,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"use-sync-external-store@npm:1.2.0":
-  version: 1.2.0
-  resolution: "use-sync-external-store@npm:1.2.0"
-  peerDependencies:
-    react: ^16.8.0 || ^17.0.0 || ^18.0.0
-  checksum: 10/a676216affc203876bd47981103f201f28c2731361bb186367e12d287a7566763213a8816910c6eb88265eccd4c230426eb783d64c373c4a180905be8820ed8e
-  languageName: node
-  linkType: hard
-
 "use-sync-external-store@npm:^1.2.0":
   version: 1.2.2
   resolution: "use-sync-external-store@npm:1.2.2"
@@ -35191,22 +35173,20 @@ __metadata:
   languageName: node
   linkType: hard
 
-"valtio@npm:^1.13.2":
-  version: 1.13.2
-  resolution: "valtio@npm:1.13.2"
+"valtio@npm:^2.0.0":
+  version: 2.0.0
+  resolution: "valtio@npm:2.0.0"
   dependencies:
-    derive-valtio: "npm:0.1.0"
-    proxy-compare: "npm:2.6.0"
-    use-sync-external-store: "npm:1.2.0"
+    proxy-compare: "npm:^3.0.0"
   peerDependencies:
-    "@types/react": ">=16.8"
-    react: ">=16.8"
+    "@types/react": ">=18.0.0"
+    react: ">=18.0.0"
   peerDependenciesMeta:
     "@types/react":
       optional: true
     react:
       optional: true
-  checksum: 10/0e638f23314fc61a31571cd27bfc2169330d2488cf6d2bd1526535aca67e633734707a1e787ab475151dbca277754db7da08c5cf0372ea2a48a563f33a25ade0
+  checksum: 10/8730918b7ac4e36e99500c90c7d945a35f519281d4b24ed21324dcd89a7ec9da86fb7a92270bdc11bddd7126172abec3a0d2887f32beef5c1fab9fd5eda4eae3
   languageName: node
   linkType: hard
 
