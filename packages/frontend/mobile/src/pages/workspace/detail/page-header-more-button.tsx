@@ -8,6 +8,7 @@ import { useFavorite } from '@affine/core/components/blocksuite/block-suite-head
 import { IsFavoriteIcon } from '@affine/core/components/pure/icons';
 import { track } from '@affine/core/mixpanel';
 import { EditorService } from '@affine/core/modules/editor';
+import { ViewService } from '@affine/core/modules/workbench/services/view';
 import { EditorOutlinePanel } from '@affine/core/pages/workspace/detail-page/tabs/outline';
 import { preventDefault } from '@affine/core/utils';
 import { useI18n } from '@affine/i18n';
@@ -19,7 +20,7 @@ import {
   TocIcon,
 } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
-import { useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import * as styles from './page-header-more-button.css';
 import { DocInfoSheet } from './sheets/doc-info';
@@ -33,6 +34,9 @@ export const PageHeaderMenuButton = ({ docId }: PageMenuProps) => {
 
   const editorService = useService(EditorService);
   const editorContainer = useLiveData(editorService.editor.editorContainer$);
+
+  const [open, setOpen] = useState(false);
+  const location = useLiveData(useService(ViewService).view.location$);
 
   const isInTrash = useLiveData(
     editorService.editor.doc.meta$.map(meta => meta.trash)
@@ -57,7 +61,13 @@ export const PageHeaderMenuButton = ({ docId }: PageMenuProps) => {
     if (open) {
       track.$.header.docOptions.open();
     }
+    setOpen(open);
   }, []);
+
+  useEffect(() => {
+    // when the location is changed, close the menu
+    handleMenuOpenChange(false);
+  }, [handleMenuOpenChange, location.pathname]);
 
   const handleToggleFavorite = useCallback(() => {
     track.$.header.docOptions.toggleFavorite();
@@ -117,6 +127,7 @@ export const PageHeaderMenuButton = ({ docId }: PageMenuProps) => {
         align: 'center',
       }}
       rootOptions={{
+        open,
         onOpenChange: handleMenuOpenChange,
       }}
     >

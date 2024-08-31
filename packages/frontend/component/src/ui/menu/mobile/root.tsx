@@ -1,3 +1,4 @@
+import { useI18n } from '@affine/i18n';
 import { ArrowLeftSmallIcon } from '@blocksuite/icons/rc';
 import { Slot } from '@radix-ui/react-slot';
 import clsx from 'clsx';
@@ -48,10 +49,13 @@ export const MobileMenu = ({
     [onPointerDownOutside, rootOptions]
   );
 
-  const onItemClick = useCallback((e: any) => {
-    e.preventDefault();
-    setOpen(prev => !prev);
-  }, []);
+  const onItemClick = useCallback(
+    (e: any) => {
+      e.preventDefault();
+      onOpenChange(!open);
+    },
+    [onOpenChange, open]
+  );
 
   // dynamic height for slider
   useEffect(() => {
@@ -77,6 +81,8 @@ export const MobileMenu = ({
       observer?.();
     };
   }, [activeIndex, finalOpen]);
+
+  const t = useI18n();
 
   /**
    * For cascading menu usage
@@ -139,7 +145,7 @@ export const MobileMenu = ({
                   onClick={() => setSubMenus(prev => prev.slice(0, index))}
                   prefixStyle={{ width: 20, height: 20 }}
                 >
-                  Back
+                  {t['com.affine.backButton']()}
                 </Button>
 
                 {sub.items}
