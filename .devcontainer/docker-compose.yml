@@ -8,7 +8,6 @@ services:
     volumes:
       - ../..:/workspaces:cached
     command: sleep infinity
-    network_mode: service:db
     environment:
       DATABASE_URL: postgresql://affine:affine@db:5432/affine
 
