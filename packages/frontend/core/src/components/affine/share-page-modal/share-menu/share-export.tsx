@@ -20,7 +20,7 @@ export const ShareExport = () => {
       <div className={styles.descriptionStyle}>
         {t['com.affine.share-menu.ShareViaExportDescription']()}
       </div>
-      <div>
+      <div className={styles.exportContainerStyle}>
         <ExportMenuItems
           exportHandler={exportHandler}
           className={styles.exportItemStyle}
