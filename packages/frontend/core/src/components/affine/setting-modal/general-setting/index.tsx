@@ -2,10 +2,10 @@ import { UserFeatureService } from '@affine/core/modules/cloud/services/user-fea
 import { useI18n } from '@affine/i18n';
 import {
   AppearanceIcon,
-  BlocksuiteIcon,
   ExperimentIcon,
   InformationIcon,
   KeyboardIcon,
+  PenIcon,
 } from '@blocksuite/icons/rc';
 import {
   FeatureFlagService,
@@ -84,8 +84,8 @@ export const useGeneralSettingList = (): GeneralSettingList => {
     // add editor settings to second position
     settings.splice(1, 0, {
       key: 'editor',
-      title: t['com.affine.settings.editorSettings.title'](),
-      icon: BlocksuiteIcon,
+      title: t['com.affine.settings.editorSettings'](),
+      icon: PenIcon,
       testId: 'editor-panel-trigger',
     });
   }

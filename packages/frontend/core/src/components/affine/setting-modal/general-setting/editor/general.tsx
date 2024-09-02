@@ -173,7 +173,7 @@ const FontMenuItems = ({ onSelect }: { onSelect: (font: string) => void }) => {
       {isLoading ? (
         <Loading />
       ) : (
-        <Scrollable.Root style={{ height: '200px' }}>
+        <Scrollable.Root style={{ height: '330px' }}>
           <Scrollable.Viewport>
             {result.length > 0 ? (
               <Virtuoso
@@ -191,7 +191,7 @@ const FontMenuItems = ({ onSelect }: { onSelect: (font: string) => void }) => {
                 )}
               />
             ) : (
-              <div>No results found.</div>
+              <div className={styles.notFound}>No results found.</div>
             )}
           </Scrollable.Viewport>
           <Scrollable.Scrollbar />
@@ -218,20 +218,24 @@ const FontMenuItem = ({
   const selected = currentFont === font.fullName;
 
   return (
-    <MenuItem key={font.fullName} onSelect={handleFontSelect}>
-      <div className={styles.fontItemContainer}>
-        <div className={styles.fontItem}>
-          <div className={styles.fontLabel} style={{ fontFamily }}>
-            {font.fullName}
+    <div style={{ marginTop: '4px' }}>
+      <MenuItem key={font.fullName} onSelect={handleFontSelect}>
+        <div className={styles.fontItemContainer}>
+          <div className={styles.fontItem}>
+            <div className={styles.fontLabel} style={{ fontFamily }}>
+              {font.fullName}
+            </div>
+            <div className={clsx(styles.fontLabel, 'secondary')}>
+              {font.fullName}
+            </div>
           </div>
-          <div className={clsx(styles.fontLabel, 'secondary')}>
-            {font.fullName}
-          </div>
-        </div>
 
-        {selected && <DoneIcon fontSize={20} className={styles.selectedIcon} />}
-      </div>
-    </MenuItem>
+          {selected && (
+            <DoneIcon fontSize={20} className={styles.selectedIcon} />
+          )}
+        </div>
+      </MenuItem>
+    </div>
   );
 };
 
@@ -263,7 +267,7 @@ const CustomFontFamilySettings = () => {
         items={<FontMenuItems onSelect={onCustomFontFamilyChange} />}
         contentOptions={{
           align: 'end',
-          style: { width: '250px' },
+          style: { width: '250px', height: '380px' },
         }}
       >
         <MenuTrigger className={styles.menuTrigger} style={{ fontFamily }}>
