@@ -21,7 +21,6 @@ vi.mock('@blocksuite/presets', () => ({
     },
   },
   AIChatBlockSpec: {},
-  EdgelessAIChatBlockSpec: {},
 }));
 
 if (typeof window !== 'undefined' && HTMLCanvasElement) {

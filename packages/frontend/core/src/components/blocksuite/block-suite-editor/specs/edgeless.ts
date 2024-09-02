@@ -6,7 +6,7 @@ import {
   EdgelessTextBlockSpec,
   FrameBlockSpec,
 } from '@blocksuite/blocks';
-import { EdgelessAIChatBlockSpec } from '@blocksuite/presets';
+import { AIChatBlockSpec } from '@blocksuite/presets';
 import type { FrameworkProvider } from '@toeverything/infra';
 
 import { CommonBlockSpecs } from './common';
@@ -22,7 +22,7 @@ export function createEdgelessModeSpecs(
     FrameBlockSpec,
     EdgelessTextBlockSpec,
     EdgelessNoteBlockSpec,
-    EdgelessAIChatBlockSpec,
+    AIChatBlockSpec,
     // special
     createEdgelessRootBlockSpec(framework),
   ].flat();
