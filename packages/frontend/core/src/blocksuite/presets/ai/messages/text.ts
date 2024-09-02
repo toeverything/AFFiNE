@@ -1,7 +1,11 @@
-import { type EditorHost, WithDisposable } from '@blocksuite/block-std';
-import type {
-  AffineAIPanelState,
-  AffineAIPanelWidgetConfig,
+import {
+  BlockStdScope,
+  type EditorHost,
+  WithDisposable,
+} from '@blocksuite/block-std';
+import {
+  type AffineAIPanelState,
+  type AffineAIPanelWidgetConfig,
 } from '@blocksuite/blocks';
 import {
   CodeBlockComponent,
@@ -271,7 +275,10 @@ export class AIAnswerText extends WithDisposable(LitElement) {
         ${keyed(
           this._doc,
           html`<div class="ai-answer-text-editor affine-page-viewport">
-            ${this.host.renderSpecPortal(this._doc, CustomPageEditorBlockSpecs)}
+            ${new BlockStdScope({
+              doc: this._doc,
+              extensions: CustomPageEditorBlockSpecs,
+            }).render()}
           </div>`
         )}
       </div>

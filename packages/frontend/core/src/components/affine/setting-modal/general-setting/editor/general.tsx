@@ -23,8 +23,9 @@ import {
   SystemFontFamilyService,
 } from '@affine/core/modules/system-font-family';
 import { useI18n } from '@affine/i18n';
+import type { DocMode } from '@blocksuite/blocks';
 import { DoneIcon, SearchIcon } from '@blocksuite/icons/rc';
-import { type DocMode, useLiveData, useServices } from '@toeverything/infra';
+import { useLiveData, useServices } from '@toeverything/infra';
 import clsx from 'clsx';
 import {
   type ChangeEvent,

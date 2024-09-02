@@ -1,5 +1,6 @@
 import type {
   AIItemGroupConfig,
+  DocMode,
   EdgelessCopilotWidget,
   EdgelessElementToolbarWidget,
   EdgelessRootBlockComponent,
@@ -27,7 +28,7 @@ export function setupEdgelessElementToolbarEntry(
       const chain = edgeless.service.std.command.chain();
       const filteredGroups = edgelessActionGroups.reduce((pre, group) => {
         const filtered = group.items.filter(item =>
-          item.showWhen?.(chain, 'edgeless', edgeless.host)
+          item.showWhen?.(chain, 'edgeless' as DocMode, edgeless.host)
         );
 
         if (filtered.length > 0) pre.push({ ...group, items: filtered });

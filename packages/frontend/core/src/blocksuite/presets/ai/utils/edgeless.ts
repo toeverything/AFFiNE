@@ -40,7 +40,7 @@ export function isMindmapChild(ele: BlockSuite.EdgelessModel) {
 }
 
 export function getService(host: EditorHost) {
-  const edgelessService = host.spec.getService(
+  const edgelessService = host.std.getService(
     'affine:page'
   ) as EdgelessRootService;
 

@@ -7,8 +7,9 @@ import {
   revokePublicPageMutation,
 } from '@affine/graphql';
 import { type I18nKeys, useI18n } from '@affine/i18n';
+import { DocMode } from '@blocksuite/blocks';
 import { SingleSelectSelectSolidIcon } from '@blocksuite/icons/rc';
-import type { DocMode, Workspace } from '@toeverything/infra';
+import { type Workspace } from '@toeverything/infra';
 import { cssVar } from '@toeverything/theme';
 import { useCallback, useMemo } from 'react';
 
@@ -85,7 +86,9 @@ export function useIsSharedPage(
     const isPageShared = !!publicPage;
 
     const currentShareMode: DocMode =
-      publicPage?.mode === PublicPageMode.Edgeless ? 'edgeless' : 'page';
+      publicPage?.mode === PublicPageMode.Edgeless
+        ? DocMode.Edgeless
+        : DocMode.Page;
 
     return [isPageShared, currentShareMode];
   }, [data?.workspace.publicPages, pageId]);
@@ -210,7 +213,8 @@ export function usePublicPages(workspace: Workspace) {
     () =>
       maybeData?.workspace.publicPages.map(i => ({
         id: i.id,
-        mode: i.mode === PublicPageMode.Edgeless ? 'edgeless' : 'page',
+        mode:
+          i.mode === PublicPageMode.Edgeless ? DocMode.Edgeless : DocMode.Page,
       })) ?? [],
     [maybeData?.workspace.publicPages]
   );

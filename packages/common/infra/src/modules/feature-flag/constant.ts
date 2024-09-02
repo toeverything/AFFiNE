@@ -12,13 +12,6 @@ export const AFFINE_FLAGS = {
     description: 'Allows adding notes to database attachments.',
     configurable: isNotStableBuild,
   },
-  enable_database_statistics: {
-    category: 'blocksuite',
-    bsFlag: 'enable_database_statistics',
-    displayName: 'Database Block Statistics',
-    description: 'Shows statistics for database blocks.',
-    configurable: isNotStableBuild,
-  },
   enable_block_query: {
     category: 'blocksuite',
     bsFlag: 'enable_block_query',

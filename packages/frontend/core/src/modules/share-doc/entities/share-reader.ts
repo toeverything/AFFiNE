@@ -1,6 +1,6 @@
 import { UserFriendlyError } from '@affine/graphql';
+import type { DocMode } from '@blocksuite/blocks';
 import {
-  type DocMode,
   effect,
   Entity,
   fromPromise,

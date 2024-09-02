@@ -1,4 +1,4 @@
-import type { EditorHost } from '@blocksuite/block-std';
+import { BlockStdScope, type EditorHost } from '@blocksuite/block-std';
 import { WithDisposable } from '@blocksuite/block-std';
 import {
   type AffineAIPanelWidgetConfig,
@@ -207,7 +207,10 @@ export class AISlidesRenderer extends WithDisposable(LitElement) {
           class="edgeless-container affine-edgeless-viewport"
           ${ref(this._editorContainer)}
         >
-          ${this.host.renderSpecPortal(this._doc, EdgelessEditorBlockSpecs)}
+          ${new BlockStdScope({
+            doc: this._doc,
+            extensions: EdgelessEditorBlockSpecs,
+          }).render()}
         </div>
         <div class="mask"></div>
       </div>`;

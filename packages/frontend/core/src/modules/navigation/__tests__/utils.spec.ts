@@ -25,19 +25,19 @@ afterEach(() => {
 const testCases: [string, ReturnType<typeof resolveLinkToDoc>][] = [
   ['http://example.com/', null],
   [
-    '/workspace/48__RTCSwASvWZxyAk3Jw/-Uge-K6SYcAbcNYfQ5U-j#xxxx',
+    '/workspace/48__RTCSwASvWZxyAk3Jw/-Uge-K6SYcAbcNYfQ5U-j?blockIds=xxxx',
     {
       workspaceId: '48__RTCSwASvWZxyAk3Jw',
       docId: '-Uge-K6SYcAbcNYfQ5U-j',
-      blockId: 'xxxx',
+      blockIds: ['xxxx'],
     },
   ],
   [
-    'http://affine.pro/workspace/48__RTCSwASvWZxyAk3Jw/-Uge-K6SYcAbcNYfQ5U-j#xxxx',
+    'http://affine.pro/workspace/48__RTCSwASvWZxyAk3Jw/-Uge-K6SYcAbcNYfQ5U-j?blockIds=xxxx',
     {
       workspaceId: '48__RTCSwASvWZxyAk3Jw',
       docId: '-Uge-K6SYcAbcNYfQ5U-j',
-      blockId: 'xxxx',
+      blockIds: ['xxxx'],
     },
   ],
   ['http://affine.pro/workspace/48__RTCSwASvWZxyAk3Jw/all', null],
@@ -45,19 +45,19 @@ const testCases: [string, ReturnType<typeof resolveLinkToDoc>][] = [
   ['http://affine.pro/workspace/48__RTCSwASvWZxyAk3Jw/tag', null],
   ['http://affine.pro/workspace/48__RTCSwASvWZxyAk3Jw/trash', null],
   [
-    'file//./workspace/48__RTCSwASvWZxyAk3Jw/-Uge-K6SYcAbcNYfQ5U-j#xxxx',
+    'file//./workspace/48__RTCSwASvWZxyAk3Jw/-Uge-K6SYcAbcNYfQ5U-j?blockIds=xxxx',
     {
       workspaceId: '48__RTCSwASvWZxyAk3Jw',
       docId: '-Uge-K6SYcAbcNYfQ5U-j',
-      blockId: 'xxxx',
+      blockIds: ['xxxx'],
     },
   ],
   [
-    'http//localhost:8000/workspace/48__RTCSwASvWZxyAk3Jw/-Uge-K6SYcAbcNYfQ5U-j#xxxx',
+    'http//localhost:8000/workspace/48__RTCSwASvWZxyAk3Jw/-Uge-K6SYcAbcNYfQ5U-j?blockIds=xxxx',
     {
       workspaceId: '48__RTCSwASvWZxyAk3Jw',
       docId: '-Uge-K6SYcAbcNYfQ5U-j',
-      blockId: 'xxxx',
+      blockIds: ['xxxx'],
     },
   ],
 ];

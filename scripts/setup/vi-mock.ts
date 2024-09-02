@@ -24,25 +24,6 @@ vi.mock('@blocksuite/presets', () => ({
   EdgelessAIChatBlockSpec: {},
 }));
 
-vi.mock('@blocksuite/presets/ai', () => ({
-  AIProvider: {
-    slots: new Proxy(
-      {},
-      {
-        get: () => ({
-          on: vi.fn(),
-        }),
-      }
-    ),
-    provide: vi.fn(),
-  },
-  AIEdgelessRootBlockSpec: {},
-  AICodeBlockSpec: {},
-  AIImageBlockSpec: {},
-  AIParagraphBlockSpec: {},
-  AIPageRootBlockSpec: {},
-}));
-
 if (typeof window !== 'undefined' && HTMLCanvasElement) {
   // @ts-expect-error
   HTMLCanvasElement.prototype.getContext = () => {

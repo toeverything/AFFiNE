@@ -3,7 +3,7 @@ import {
   AIImageBlockSpec,
   AIParagraphBlockSpec,
 } from '@affine/core/blocksuite/presets/ai';
-import type { BlockSpec } from '@blocksuite/block-std';
+import type { ExtensionType } from '@blocksuite/block-std';
 import {
   BookmarkBlockSpec,
   DatabaseBlockSpec,
@@ -17,15 +17,12 @@ import {
   EmbedSyncedDocBlockSpec,
   EmbedYoutubeBlockSpec,
   ListBlockSpec,
-  NoteBlockSpec,
 } from '@blocksuite/blocks';
-import { AIChatBlockSpec, EdgelessAIChatBlockSpec } from '@blocksuite/presets';
 
 import { CustomAttachmentBlockSpec } from './custom/attachment-block';
 
-export const CommonBlockSpecs: BlockSpec[] = [
+export const CommonBlockSpecs: ExtensionType[] = [
   ListBlockSpec,
-  NoteBlockSpec,
   DatabaseBlockSpec,
   DataViewBlockSpec,
   DividerBlockSpec,
@@ -42,6 +39,4 @@ export const CommonBlockSpecs: BlockSpec[] = [
   AICodeBlockSpec,
   AIImageBlockSpec,
   AIParagraphBlockSpec,
-  AIChatBlockSpec,
-  EdgelessAIChatBlockSpec,
-];
+].flat();

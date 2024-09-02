@@ -2,8 +2,8 @@ import { toast } from '@affine/component';
 import { useDocCollectionHelper } from '@affine/core/hooks/use-block-suite-workspace-helper';
 import { EditorSettingService } from '@affine/core/modules/editor-settting';
 import { WorkbenchService } from '@affine/core/modules/workbench';
+import type { DocMode } from '@blocksuite/blocks';
 import {
-  type DocMode,
   DocsService,
   initEmptyPage,
   useLiveData,
@@ -29,7 +29,7 @@ export const usePageHelper = (docCollection: DocCollection) => {
       const page = createDoc();
       initEmptyPage(page);
       const primaryMode = mode || settings.newDocDefaultMode;
-      docRecordList.doc$(page.id).value?.setPrimaryMode(primaryMode);
+      docRecordList.doc$(page.id).value?.setPrimaryMode(primaryMode as DocMode);
       if (open !== false)
         workbench.openDoc(page.id, {
           at: open === 'new-tab' ? 'new-tab' : 'active',
@@ -41,7 +41,7 @@ export const usePageHelper = (docCollection: DocCollection) => {
 
   const createEdgelessAndOpen = useCallback(
     (open?: boolean | 'new-tab') => {
-      return createPageAndOpen('edgeless', open);
+      return createPageAndOpen('edgeless' as DocMode, open);
     },
     [createPageAndOpen]
   );

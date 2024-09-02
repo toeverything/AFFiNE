@@ -2,7 +2,7 @@ import { DebugLogger } from '@affine/debug';
 import { DEFAULT_WORKSPACE_NAME } from '@affine/env/constant';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import onboardingUrl from '@affine/templates/onboarding.zip';
-import { ZipTransformer } from '@blocksuite/blocks';
+import { DocMode, ZipTransformer } from '@blocksuite/blocks';
 import type { WorkspacesService } from '@toeverything/infra';
 import { DocsService, initEmptyPage } from '@toeverything/infra';
 
@@ -31,7 +31,7 @@ export async function buildShowcaseWorkspace(
   );
 
   if (defaultDoc) {
-    defaultDoc.setPrimaryMode('edgeless');
+    defaultDoc.setPrimaryMode(DocMode.Edgeless);
   }
 
   dispose();

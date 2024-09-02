@@ -1,10 +1,10 @@
-import type { BlockSpec } from '@blocksuite/block-std';
+import type { ExtensionType } from '@blocksuite/block-std';
 import { SpecProvider } from '@blocksuite/blocks';
-import { AIChatBlockSpec, EdgelessAIChatBlockSpec } from '@blocksuite/presets';
+import { EdgelessAIChatBlockSpec } from '@blocksuite/presets';
 
-const CustomSpecs: BlockSpec[] = [AIChatBlockSpec, EdgelessAIChatBlockSpec];
+const CustomSpecs: ExtensionType[] = [EdgelessAIChatBlockSpec].flat();
 
-function patchPreviewSpec(id: string, specs: BlockSpec[]) {
+function patchPreviewSpec(id: string, specs: ExtensionType[]) {
   const specProvider = SpecProvider.getInstance();
   specProvider.extendSpec(id, specs);
 }

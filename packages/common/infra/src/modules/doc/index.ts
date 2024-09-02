@@ -1,5 +1,4 @@
 export { Doc } from './entities/doc';
-export type { DocMode } from './entities/record';
 export { DocRecord } from './entities/record';
 export { DocRecordList } from './entities/record-list';
 export { DocScope } from './scopes/doc';

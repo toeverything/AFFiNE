@@ -1,7 +1,8 @@
+import type { DocMode } from '@blocksuite/blocks';
+
 import { Entity } from '../../../framework';
 import { LiveData } from '../../../livedata';
 import { MemoryMemento } from '../../../storage';
-import type { DocMode } from '../../doc';
 
 export class GlobalContext extends Entity {
   memento = new MemoryMemento();

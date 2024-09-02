@@ -1,10 +1,9 @@
+import type { DocMode } from '@blocksuite/blocks';
 import type { DocMeta } from '@blocksuite/store';
 
 import { Entity } from '../../../framework';
 import { LiveData } from '../../../livedata';
 import type { DocsStore } from '../stores/docs';
-
-export type DocMode = 'edgeless' | 'page';
 
 /**
  * # DocRecord
@@ -28,8 +27,8 @@ export class DocRecord extends Entity<{ id: string }> {
 
   primaryMode$: LiveData<DocMode> = LiveData.from(
     this.docsStore.watchDocPrimaryModeSetting(this.id),
-    'page'
-  ).map(mode => (mode === 'edgeless' ? 'edgeless' : 'page'));
+    'page' as DocMode
+  ).map(mode => (mode === 'edgeless' ? 'edgeless' : 'page') as DocMode);
 
   setPrimaryMode(mode: DocMode) {
     return this.docsStore.setDocPrimaryModeSetting(this.id, mode);

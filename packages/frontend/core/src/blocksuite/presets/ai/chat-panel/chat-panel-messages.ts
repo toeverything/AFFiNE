@@ -17,6 +17,7 @@ import type { BaseSelection, EditorHost } from '@blocksuite/block-std';
 import { ShadowlessElement, WithDisposable } from '@blocksuite/block-std';
 import {
   type AIError,
+  DocModeProvider,
   isInsidePageEditor,
   PaymentRequiredError,
   UnauthorizedError,
@@ -161,7 +162,7 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
           this._selectionValue = this.host.selection.value;
         })
       );
-      const { docModeService } = this.host.spec.getService('affine:page');
+      const docModeService = this.host.std.get(DocModeProvider);
       disposables.add(docModeService.onModeChange(() => this.requestUpdate()));
     }
   }

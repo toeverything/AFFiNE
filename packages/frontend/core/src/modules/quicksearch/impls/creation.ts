@@ -1,5 +1,6 @@
+import type { DocMode } from '@blocksuite/blocks';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons/rc';
-import { type DocMode, Entity, LiveData } from '@toeverything/infra';
+import { Entity, LiveData } from '@toeverything/infra';
 
 import type { QuickSearchSession } from '../providers/quick-search-provider';
 import type { QuickSearchGroup } from '../types/group';

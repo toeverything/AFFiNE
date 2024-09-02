@@ -12,7 +12,7 @@ import { Slice } from '@blocksuite/store';
 import { getMarkdownFromSlice } from './markdown-utils';
 
 export const getRootService = (host: EditorHost) => {
-  return host.std.spec.getService('affine:page');
+  return host.std.getService('affine:page');
 };
 
 export function getEdgelessRootFromEditor(editor: EditorHost) {
@@ -24,7 +24,7 @@ export function getEdgelessRootFromEditor(editor: EditorHost) {
   return edgelessRoot;
 }
 export function getEdgelessService(editor: EditorHost) {
-  const rootService = editor.std.spec.getService('affine:page');
+  const rootService = editor.std.getService('affine:page');
   if (rootService instanceof EdgelessRootService) {
     return rootService;
   }

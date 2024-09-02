@@ -1,4 +1,5 @@
-import type { Doc, DocMode } from '@toeverything/infra';
+import type { DocMode } from '@blocksuite/blocks';
+import type { Doc } from '@toeverything/infra';
 import {
   DocsService,
   useLiveData,

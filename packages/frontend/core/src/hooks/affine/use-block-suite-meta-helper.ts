@@ -2,6 +2,7 @@ import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { useDocMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
 import { useDocCollectionHelper } from '@affine/core/hooks/use-block-suite-workspace-helper';
 import { CollectionService } from '@affine/core/modules/collection';
+import type { DocMode } from '@blocksuite/blocks';
 import { DocsService, useService } from '@toeverything/infra';
 import { useCallback } from 'react';
 import { applyUpdate, encodeStateAsUpdate } from 'yjs';
@@ -102,7 +103,7 @@ export function useBlockSuiteMetaHelper(docCollection: DocCollection) {
 
       pageRecordList
         .doc$(newPage.id)
-        .value?.setPrimaryMode(currentPagePrimaryMode || 'page');
+        .value?.setPrimaryMode(currentPagePrimaryMode || ('page' as DocMode));
       setDocTitle(newPage.id, newPageTitle);
       openPageAfterDuplication && openPage(docCollection.id, newPage.id);
     },

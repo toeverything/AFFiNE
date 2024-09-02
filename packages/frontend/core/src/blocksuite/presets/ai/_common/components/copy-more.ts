@@ -73,7 +73,7 @@ export class ChatCopyMore extends WithDisposable(LitElement) {
   `;
 
   private get _rootService() {
-    return this.host.spec.getService('affine:page');
+    return this.host.std.getService('affine:page');
   }
 
   private get _selectionValue() {

@@ -1,3 +1,6 @@
+import type { DocMode } from '@blocksuite/blocks';
+import queryString from 'query-string';
+
 function maybeAffineOrigin(origin: string) {
   return (
     origin.startsWith('file://') ||
@@ -73,9 +76,23 @@ const isRouteModulePath = (
 export const resolveLinkToDoc = (href: string) => {
   const meta = resolveRouteLinkMeta(href);
   if (!meta || meta.moduleName !== 'doc') return null;
+
+  const params: {
+    mode?: DocMode;
+    blockIds?: string[];
+    elementIds?: string[];
+  } = queryString.parse(meta.location.search, {
+    arrayFormat: 'none',
+    types: {
+      mode: value => (value === 'edgeless' ? 'edgeless' : 'page') as DocMode,
+      blockIds: value => value.split(','),
+      elementIds: value => value.split(','),
+    },
+  });
+
   return {
     workspaceId: meta.workspaceId,
     docId: meta.docId,
-    blockId: meta.blockId,
+    ...params,
   };
 };

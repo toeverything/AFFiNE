@@ -7,7 +7,7 @@ import { useJournalInfoHelper } from '@affine/core/hooks/use-journal';
 import { EditorSettingService } from '@affine/core/modules/editor-settting';
 import { PeekViewService } from '@affine/core/modules/peek-view';
 import { WorkbenchService } from '@affine/core/modules/workbench';
-import type { DocMode } from '@blocksuite/blocks';
+import { DocMode } from '@blocksuite/blocks';
 import { DocTitle, EdgelessEditor, PageEditor } from '@blocksuite/presets';
 import type { Doc } from '@blocksuite/store';
 import {
@@ -73,13 +73,26 @@ const usePatchSpecs = (page: Doc, shared: boolean, mode: DocMode) => {
   const framework = useFramework();
   const referenceRenderer: ReferenceReactRenderer = useMemo(() => {
     return function customReference(reference) {
-      const pageId = reference.delta.attributes?.reference?.pageId;
+      const data = reference.delta.attributes?.reference;
+      if (!data) return <span />;
+
+      const pageId = data.pageId;
       if (!pageId) return <span />;
+
+      const isSameDoc = pageId === page.id;
+
       return (
-        <AffinePageReference docCollection={page.collection} pageId={pageId} />
+        <AffinePageReference
+          docCollection={page.collection}
+          pageId={pageId}
+          mode={mode}
+          params={data.params}
+          std={reference.std}
+          isSameDoc={isSameDoc}
+        />
       );
     };
-  }, [page.collection]);
+  }, [mode, page.collection, page.id]);
 
   const specs = useMemo(() => {
     return mode === 'edgeless'
@@ -89,20 +102,19 @@ const usePatchSpecs = (page: Doc, shared: boolean, mode: DocMode) => {
 
   const confirmModal = useConfirmModal();
   const patchedSpecs = useMemo(() => {
-    let patched = patchReferenceRenderer(specs, reactToLit, referenceRenderer);
-    patched = patchNotificationService(
-      patchReferenceRenderer(patched, reactToLit, referenceRenderer),
-      confirmModal
+    let patched = specs.concat(
+      patchReferenceRenderer(reactToLit, referenceRenderer)
     );
-    patched = patchPeekViewService(patched, peekViewService);
-    patched = patchEdgelessClipboard(patched);
+    patched = patched.concat(patchNotificationService(confirmModal));
+    patched = patched.concat(patchPeekViewService(peekViewService));
+    patched = patched.concat(patchEdgelessClipboard());
     if (!page.readonly) {
-      patched = patchQuickSearchService(patched, framework);
+      patched = patched.concat(patchQuickSearchService(framework));
     }
     if (shared) {
-      patched = patchForSharedPage(patched);
+      patched = patched.concat(patchForSharedPage());
     }
-    patched = patchDocModeService(patched, docService, docsService);
+    patched = patched.concat(patchDocModeService(docService, docsService));
     return patched;
   }, [
     confirmModal,
@@ -179,7 +191,7 @@ export const BlocksuiteDocEditor = forwardRef<
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const [specs, portals] = usePatchSpecs(page, !!shared, 'page');
+  const [specs, portals] = usePatchSpecs(page, !!shared, DocMode.Page);
 
   const settings = useLiveData(editorSettingService.editorSetting.settings$);
 
@@ -219,7 +231,7 @@ export const BlocksuiteEdgelessEditor = forwardRef<
   EdgelessEditor,
   BlocksuiteEditorProps
 >(function BlocksuiteEdgelessEditor({ page, shared }, ref) {
-  const [specs, portals] = usePatchSpecs(page, !!shared, 'edgeless');
+  const [specs, portals] = usePatchSpecs(page, !!shared, DocMode.Edgeless);
   const editorRef = useRef<EdgelessEditor | null>(null);
 
   const onDocRef = useCallback(

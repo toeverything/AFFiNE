@@ -3,12 +3,14 @@ import {
   AIPageRootBlockSpec,
 } from '@affine/core/blocksuite/presets/ai';
 import { mixpanel } from '@affine/core/mixpanel';
-import type {
-  EdgelessRootBlockSpecType,
-  PageRootBlockSpecType,
-  RootService,
-  TelemetryEventMap,
-} from '@blocksuite/blocks';
+import {
+  BlockFlavourIdentifier,
+  BlockServiceIdentifier,
+  ConfigExtension,
+  type ExtensionType,
+  StdIdentifier,
+} from '@blocksuite/block-std';
+import type { RootService, TelemetryEventMap } from '@blocksuite/blocks';
 import {
   AffineCanvasTextFonts,
   EdgelessRootService,
@@ -31,6 +33,7 @@ function customLoadFonts(service: RootService): void {
   }
 }
 
+// TODO: make load fonts and telemetry service as BS extension
 function withAffineRootService(Service: typeof PageRootService) {
   return class extends Service {
     override loadFonts(): void {
@@ -50,24 +53,40 @@ function withAffineRootService(Service: typeof PageRootService) {
 
 export function createPageRootBlockSpec(
   framework: FrameworkProvider
-): PageRootBlockSpecType {
-  return {
+): ExtensionType[] {
+  return [
     ...AIPageRootBlockSpec,
-    service: withAffineRootService(PageRootService),
-    config: {
-      linkedWidget: createLinkedWidgetConfig(framework),
+    {
+      setup: di => {
+        di.override(
+          BlockServiceIdentifier('affine:page'),
+          withAffineRootService(PageRootService),
+          [StdIdentifier, BlockFlavourIdentifier('affine:page')]
+        );
+      },
     },
-  };
+    ConfigExtension('affine:page', {
+      linkedWidget: createLinkedWidgetConfig(framework),
+    }),
+  ];
 }
 
 export function createEdgelessRootBlockSpec(
   framework: FrameworkProvider
-): EdgelessRootBlockSpecType {
-  return {
+): ExtensionType[] {
+  return [
     ...AIEdgelessRootBlockSpec,
-    service: withAffineRootService(EdgelessRootService as never),
-    config: {
-      linkedWidget: createLinkedWidgetConfig(framework),
+    {
+      setup: di => {
+        di.override(
+          BlockServiceIdentifier('affine:page'),
+          withAffineRootService(EdgelessRootService as never),
+          [StdIdentifier, BlockFlavourIdentifier('affine:page')]
+        );
+      },
     },
-  };
+    ConfigExtension('affine:page', {
+      linkedWidget: createLinkedWidgetConfig(framework),
+    }),
+  ];
 }

@@ -4,11 +4,12 @@ import type {
   EditorHost,
   TextSelection,
 } from '@blocksuite/block-std';
-import type {
-  DocMode,
-  EdgelessRootService,
-  ImageSelection,
-  PageRootService,
+import {
+  type DocMode,
+  DocModeProvider,
+  type EdgelessRootService,
+  type ImageSelection,
+  type PageRootService,
 } from '@blocksuite/blocks';
 import { BlocksUtils, NoteDisplayMode } from '@blocksuite/blocks';
 import {
@@ -176,8 +177,7 @@ function addAIChatBlock(
 }
 
 export function promptDocTitle(host: EditorHost, autofill?: string) {
-  const notification =
-    host.std.spec.getService('affine:page').notificationService;
+  const notification = host.std.getService('affine:page').notificationService;
   if (!notification) return Promise.resolve(undefined);
 
   return notification.prompt({
@@ -297,11 +297,12 @@ const SAVE_CHAT_TO_BLOCK_ACTION: ChatAction = {
       return false;
     }
 
-    const rootService = host.spec.getService('affine:page');
-    const surfaceService = host.spec.getService('affine:surface');
+    const rootService = host.std.getService('affine:page');
+    const surfaceService = host.std.getService('affine:surface');
     if (!rootService || !surfaceService) return false;
 
-    const { docModeService, notificationService } = rootService;
+    const { notificationService } = rootService;
+    const docModeService = host.std.get(DocModeProvider);
     const { layer } = surfaceService;
     const curMode = docModeService.getMode();
     const viewportCenter = getViewportCenter(
@@ -312,7 +313,7 @@ const SAVE_CHAT_TO_BLOCK_ACTION: ChatAction = {
     // If current mode is not edgeless, switch to edgeless mode first
     if (curMode !== 'edgeless') {
       // Set mode to edgeless
-      docModeService.setMode('edgeless');
+      docModeService.setMode('edgeless' as DocMode);
       // Notify user to switch to edgeless mode
       notificationService?.notify({
         title: 'Save chat to a block',
@@ -382,7 +383,7 @@ const ADD_TO_EDGELESS_AS_NOTE = {
   handler: async (host: EditorHost, content: string) => {
     reportResponse('result:add-note');
     const { doc } = host;
-    const service = host.spec.getService<EdgelessRootService>('affine:page');
+    const service = host.std.getService<EdgelessRootService>('affine:page');
     const elements = service.selection.selectedElements;
 
     const props: { displayMode: NoteDisplayMode; xywh?: SerializedXYWH } = {
@@ -423,8 +424,8 @@ const CREATE_AS_DOC = {
     newDoc.addBlock('affine:surface', {}, rootId);
     const noteId = newDoc.addBlock('affine:note', {}, rootId);
 
-    host.spec.getService('affine:page').slots.docLinkClicked.emit({
-      docId: newDoc.id,
+    host.std.getService('affine:page').slots.docLinkClicked.emit({
+      pageId: newDoc.id,
     });
     let complete = false;
     (function addContent() {
@@ -460,8 +461,9 @@ const CREATE_AS_LINKED_DOC = {
       return false;
     }
 
-    const service = host.spec.getService<EdgelessRootService>('affine:page');
-    const mode = service.docModeService.getMode();
+    const service = host.std.getService<EdgelessRootService>('affine:page');
+    const docModeService = host.std.get(DocModeProvider);
+    const mode = docModeService.getMode();
     if (mode !== 'edgeless') {
       return false;
     }

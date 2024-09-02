@@ -1,4 +1,5 @@
 import { track } from '@affine/core/mixpanel';
+import { DocMode } from '@blocksuite/blocks';
 import type { DocsService } from '@toeverything/infra';
 import { Service } from '@toeverything/infra';
 
@@ -67,13 +68,13 @@ export class CMDKQuickSearchService extends Service {
           } else if (result.source === 'creation') {
             if (result.id === 'creation:create-page') {
               const newDoc = this.docsService.createDoc({
-                primaryMode: 'page',
+                primaryMode: DocMode.Page,
                 title: result.payload.title,
               });
               this.workbenchService.workbench.openDoc(newDoc.id);
             } else if (result.id === 'creation:create-edgeless') {
               const newDoc = this.docsService.createDoc({
-                primaryMode: 'edgeless',
+                primaryMode: DocMode.Edgeless,
                 title: result.payload.title,
               });
               this.workbenchService.workbench.openDoc(newDoc.id);

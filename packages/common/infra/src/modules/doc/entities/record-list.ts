@@ -1,9 +1,10 @@
+import type { DocMode } from '@blocksuite/blocks';
 import { map } from 'rxjs';
 
 import { Entity } from '../../../framework';
 import { LiveData } from '../../../livedata';
 import type { DocsStore } from '../stores/docs';
-import { type DocMode, DocRecord } from './record';
+import { DocRecord } from './record';
 
 export class DocRecordList extends Entity {
   constructor(private readonly store: DocsStore) {
@@ -64,7 +65,9 @@ export class DocRecordList extends Entity {
   }
 
   public togglePrimaryMode(id: string) {
-    const mode = this.getPrimaryMode(id) === 'edgeless' ? 'page' : 'edgeless';
+    const mode = (
+      this.getPrimaryMode(id) === 'edgeless' ? 'page' : 'edgeless'
+    ) as DocMode;
     this.setPrimaryMode(id, mode);
     return this.getPrimaryMode(id);
   }

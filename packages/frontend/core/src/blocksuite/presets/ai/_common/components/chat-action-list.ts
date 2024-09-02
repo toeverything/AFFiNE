@@ -60,7 +60,7 @@ export class ChatActionList extends LitElement {
   }
 
   private get _rootService() {
-    return this.host.spec.getService('affine:page');
+    return this.host.std.getService('affine:page');
   }
 
   private get _currentTextSelection(): TextSelection | undefined {

@@ -1,4 +1,9 @@
-import type { BlockSpec } from '@blocksuite/block-std';
+import {
+  BlockFlavourIdentifier,
+  BlockServiceIdentifier,
+  type ExtensionType,
+  StdIdentifier,
+} from '@blocksuite/block-std';
 import {
   AttachmentBlockService,
   AttachmentBlockSpec,
@@ -14,7 +19,15 @@ class CustomAttachmentBlockService extends AttachmentBlockService {
   }
 }
 
-export const CustomAttachmentBlockSpec: BlockSpec = {
+export const CustomAttachmentBlockSpec: ExtensionType[] = [
   ...AttachmentBlockSpec,
-  service: CustomAttachmentBlockService,
-};
+  {
+    setup: di => {
+      di.override(
+        BlockServiceIdentifier('affine:attachment'),
+        CustomAttachmentBlockService,
+        [StdIdentifier, BlockFlavourIdentifier('affine:attachment')]
+      );
+    },
+  },
+];

@@ -66,7 +66,7 @@ export class DocsQuickSearchSession
                 {
                   docId: resolvedDoc.docId,
                   score: 100,
-                  blockId: resolvedDoc.blockId,
+                  blockId: resolvedDoc.blockIds?.[0],
                   blockContent: '',
                 },
                 ...docs,

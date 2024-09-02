@@ -14,7 +14,7 @@ export const usePresent = () => {
 
       // TODO(@catsjuice): use surfaceService subAtom
       const enterOrLeavePresentationMode = () => {
-        const edgelessRootService = editorHost.spec.getService(
+        const edgelessRootService = editorHost.std.getService(
           'affine:page'
         ) as EdgelessRootService;
 

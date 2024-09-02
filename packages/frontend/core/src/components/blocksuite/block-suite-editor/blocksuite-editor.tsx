@@ -1,4 +1,5 @@
 import { EditorLoading } from '@affine/component/page-detail-skeleton';
+import type { DocMode } from '@blocksuite/blocks';
 import { assertExists } from '@blocksuite/global/utils';
 import type { AffineEditorContainer } from '@blocksuite/presets';
 import type { Doc } from '@blocksuite/store';
@@ -22,13 +23,14 @@ export type ErrorBoundaryProps = {
 
 export type EditorProps = {
   page: Doc;
-  mode: 'page' | 'edgeless';
+  mode: DocMode;
   shared?: boolean;
-  defaultSelectedBlockId?: string;
   // on Editor instance instantiated
   onLoadEditor?: (editor: AffineEditorContainer) => () => void;
   style?: CSSProperties;
   className?: string;
+  blockIds?: string[];
+  elementIds?: string[];
 };
 
 function usePageRoot(page: Doc) {
@@ -59,10 +61,11 @@ const BlockSuiteEditorImpl = forwardRef<AffineEditorContainer, EditorProps>(
       mode,
       page,
       className,
-      defaultSelectedBlockId,
       onLoadEditor,
       shared,
       style,
+      blockIds,
+      elementIds,
     },
     ref
   ) {
@@ -113,7 +116,8 @@ const BlockSuiteEditorImpl = forwardRef<AffineEditorContainer, EditorProps>(
         ref={onRefChange}
         className={className}
         style={style}
-        defaultSelectedBlockId={defaultSelectedBlockId}
+        blockIds={blockIds}
+        elementIds={elementIds}
       />
     );
   }

@@ -36,7 +36,7 @@ async function exportHandler({
   const editorRoot = document.querySelector('editor-host');
   let pageService: PageRootService | null = null;
   if (editorRoot) {
-    pageService = editorRoot.spec.getService<PageRootService>('affine:page');
+    pageService = editorRoot.std.getService<PageRootService>('affine:page');
   }
   track.$.sharePanel.$.export({
     type,

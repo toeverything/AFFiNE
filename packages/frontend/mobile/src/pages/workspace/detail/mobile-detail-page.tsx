@@ -130,14 +130,23 @@ const DetailPageImpl = () => {
 
       // provide page mode and updated date to blocksuite
       const pageService =
-        editorHost?.std.spec.getService<PageRootService>('affine:page');
+        editorHost?.std.getService<PageRootService>('affine:page');
       const disposable = new DisposableGroup();
       if (pageService) {
         disposable.add(
-          pageService.slots.docLinkClicked.on(({ docId, blockId }) => {
-            return blockId
-              ? jumpToPageBlock(docCollection.id, docId, blockId)
-              : openPage(docCollection.id, docId);
+          pageService.slots.docLinkClicked.on(({ pageId, params }) => {
+            if (params) {
+              const { mode, blockIds, elementIds } = params;
+              return jumpToPageBlock(
+                docCollection.id,
+                pageId,
+                mode,
+                blockIds,
+                elementIds
+              );
+            }
+
+            return openPage(docCollection.id, pageId);
           })
         );
         disposable.add(

@@ -1,9 +1,6 @@
 import '../../_common/components/ask-ai-button';
 
-import type {
-  AffineImageToolbarWidget,
-  ImageBlockComponent,
-} from '@blocksuite/blocks';
+import type { AffineImageToolbarWidget } from '@blocksuite/blocks';
 import { html } from 'lit';
 
 import type { AskAIButtonOptions } from '../../_common/components/ask-ai-button';
@@ -17,34 +14,33 @@ const buttonOptions: AskAIButtonOptions = {
 };
 
 export function setupImageToolbarEntry(imageToolbar: AffineImageToolbarWidget) {
-  const onAskAIClick = () => {
-    const { host } = imageToolbar;
-    const { selection } = host;
-    const imageBlock = imageToolbar.block;
-    selection.setGroup('note', [
-      selection.create('image', { blockId: imageBlock.blockId }),
-    ]);
-  };
-  imageToolbar.buildDefaultConfig();
-  imageToolbar.addConfigItems(
+  imageToolbar.addPrimaryItems(
     [
       {
-        type: 'custom',
-        render(imageBlock: ImageBlockComponent, onClick?: () => void) {
-          return html`<ask-ai-button
-            class="image-toolbar-button ask-ai"
-            .host=${imageBlock.host}
-            .actionGroups=${AIImageItemGroups}
-            .toggleType=${'click'}
-            .options=${buttonOptions}
-            @click=${(e: MouseEvent) => {
-              e.stopPropagation();
-              onAskAIClick();
-              onClick?.();
-            }}
-          ></ask-ai-button>`;
+        type: 'ask-ai',
+        when: ({ doc }) => !doc.readonly,
+        generate: ({ host, blockComponent }) => {
+          return {
+            action: () => {
+              const { selection } = host;
+              selection.setGroup('note', [
+                selection.create('image', { blockId: blockComponent.blockId }),
+              ]);
+            },
+            render: item =>
+              html`<ask-ai-button
+                class="image-toolbar-button ask-ai"
+                .host=${host}
+                .actionGroups=${AIImageItemGroups}
+                .toggleType=${'click'}
+                .options=${buttonOptions}
+                @click=${(e: MouseEvent) => {
+                  e.stopPropagation();
+                  item.action();
+                }}
+              ></ask-ai-button>`,
+          };
         },
-        showWhen: imageBlockComponent => !imageBlockComponent.doc.readonly,
       },
     ],
     0
