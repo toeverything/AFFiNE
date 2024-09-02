@@ -45,7 +45,12 @@ export class PgUserspaceDocStorageAdapter extends DocStorageAdapter {
     return this.getDocSnapshot(spaceId, docId);
   }
 
-  async pushDocUpdates(userId: string, docId: string, updates: Uint8Array[]) {
+  async pushDocUpdates(
+    userId: string,
+    docId: string,
+    updates: Uint8Array[],
+    editorId?: string
+  ) {
     if (!updates.length) {
       return 0;
     }
@@ -67,6 +72,7 @@ export class PgUserspaceDocStorageAdapter extends DocStorageAdapter {
       docId,
       bin,
       timestamp,
+      editor: editorId,
     });
 
     return timestamp;
@@ -135,6 +141,7 @@ export class PgUserspaceDocStorageAdapter extends DocStorageAdapter {
       docId,
       bin: snapshot.blob,
       timestamp: snapshot.updatedAt.getTime(),
+      editor: snapshot.userId,
     };
   }
 

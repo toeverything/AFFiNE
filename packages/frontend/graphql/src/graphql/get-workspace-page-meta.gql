@@ -1,0 +1,16 @@
+query getWorkspacePageMetaById($id: String!, $pageId: String!) {
+  workspace(id: $id) {
+    pageMeta(pageId: $pageId) {
+      createdAt
+      updatedAt
+      createdBy {
+        name
+        avatarUrl
+      }
+      updatedBy {
+        name
+        avatarUrl
+      }
+    }
+  }
+}

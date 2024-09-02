@@ -238,6 +238,7 @@ export interface DocHistoryNotFoundDataType {
 
 export interface DocHistoryType {
   __typename?: 'DocHistoryType';
+  editor: Maybe<EditorType>;
   id: Scalars['String']['output'];
   timestamp: Scalars['DateTime']['output'];
   workspaceId: Scalars['String']['output'];
@@ -247,6 +248,12 @@ export interface DocNotFoundDataType {
   __typename?: 'DocNotFoundDataType';
   docId: Scalars['String']['output'];
   spaceId: Scalars['String']['output'];
+}
+
+export interface EditorType {
+  __typename?: 'EditorType';
+  avatarUrl: Maybe<Scalars['String']['output']>;
+  name: Scalars['String']['output'];
 }
 
 export type ErrorDataUnion =
@@ -1189,6 +1196,14 @@ export interface WorkspacePage {
   workspaceId: Scalars['String']['output'];
 }
 
+export interface WorkspacePageMeta {
+  __typename?: 'WorkspacePageMeta';
+  createdAt: Scalars['DateTime']['output'];
+  createdBy: Maybe<EditorType>;
+  updatedAt: Scalars['DateTime']['output'];
+  updatedBy: Maybe<EditorType>;
+}
+
 export interface WorkspaceType {
   __typename?: 'WorkspaceType';
   /** Available features of workspace */
@@ -1211,6 +1226,8 @@ export interface WorkspaceType {
   members: Array<InviteUserType>;
   /** Owner of workspace */
   owner: UserType;
+  /** Cloud page metadata of workspace */
+  pageMeta: WorkspacePageMeta;
   /** Permission of current signed in user in workspace */
   permission: Permission;
   /** is Public workspace */
@@ -1237,6 +1254,10 @@ export interface WorkspaceTypeHistoriesArgs {
 export interface WorkspaceTypeMembersArgs {
   skip: InputMaybe<Scalars['Int']['input']>;
   take: InputMaybe<Scalars['Int']['input']>;
+}
+
+export interface WorkspaceTypePageMetaArgs {
+  pageId: Scalars['String']['input'];
 }
 
 export interface WorkspaceTypePublicPageArgs {
@@ -1787,6 +1808,33 @@ export type GetWorkspaceFeaturesQuery = {
   workspace: { __typename?: 'WorkspaceType'; features: Array<FeatureType> };
 };
 
+export type GetWorkspacePageMetaByIdQueryVariables = Exact<{
+  id: Scalars['String']['input'];
+  pageId: Scalars['String']['input'];
+}>;
+
+export type GetWorkspacePageMetaByIdQuery = {
+  __typename?: 'Query';
+  workspace: {
+    __typename?: 'WorkspaceType';
+    pageMeta: {
+      __typename?: 'WorkspacePageMeta';
+      createdAt: string;
+      updatedAt: string;
+      createdBy: {
+        __typename?: 'EditorType';
+        name: string;
+        avatarUrl: string | null;
+      } | null;
+      updatedBy: {
+        __typename?: 'EditorType';
+        name: string;
+        avatarUrl: string | null;
+      } | null;
+    };
+  };
+};
+
 export type GetWorkspacePublicByIdQueryVariables = Exact<{
   id: Scalars['String']['input'];
 }>;
@@ -1865,6 +1913,11 @@ export type ListHistoryQuery = {
       __typename?: 'DocHistoryType';
       id: string;
       timestamp: string;
+      editor: {
+        __typename?: 'EditorType';
+        name: string;
+        avatarUrl: string | null;
+      } | null;
     }>;
   };
 };
@@ -2486,6 +2539,11 @@ export type Queries =
       name: 'getWorkspaceFeaturesQuery';
       variables: GetWorkspaceFeaturesQueryVariables;
       response: GetWorkspaceFeaturesQuery;
+    }
+  | {
+      name: 'getWorkspacePageMetaByIdQuery';
+      variables: GetWorkspacePageMetaByIdQueryVariables;
+      response: GetWorkspacePageMetaByIdQuery;
     }
   | {
       name: 'getWorkspacePublicByIdQuery';

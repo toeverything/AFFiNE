@@ -177,6 +177,7 @@ test('should be able to merge updates as snapshot', async t => {
         blob: Buffer.from(update),
         seq: 1,
         createdAt: new Date(Date.now() + 1),
+        createdBy: null,
       },
     ],
   });
@@ -199,6 +200,7 @@ test('should be able to merge updates as snapshot', async t => {
       blob: appendUpdate,
       seq: 2,
       createdAt: new Date(),
+      createdBy: null,
     },
   });
 
