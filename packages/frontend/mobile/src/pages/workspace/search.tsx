@@ -133,7 +133,7 @@ export const Component = () => {
 
   return (
     <>
-      <div className={styles.searchHeader}>
+      <div className={styles.searchHeader} data-testid="search-header">
         <SearchInput
           debounce={300}
           autoFocus={!searchInput}

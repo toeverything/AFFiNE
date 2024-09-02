@@ -127,6 +127,16 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@affine-test/affine-mobile@workspace:tests/affine-mobile":
+  version: 0.0.0-use.local
+  resolution: "@affine-test/affine-mobile@workspace:tests/affine-mobile"
+  dependencies:
+    "@affine-test/fixtures": "workspace:*"
+    "@affine-test/kit": "workspace:*"
+    "@playwright/test": "npm:=1.46.1"
+  languageName: unknown
+  linkType: soft
+
 "@affine-test/fixtures@workspace:*, @affine-test/fixtures@workspace:tests/fixtures":
   version: 0.0.0-use.local
   resolution: "@affine-test/fixtures@workspace:tests/fixtures"

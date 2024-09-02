@@ -134,6 +134,9 @@
       "path": "./tests/affine-migration"
     },
     {
+      "path": "./tests/affine-mobile"
+    },
+    {
       "path": "./tests/affine-legacy/0.7.0-canary.18"
     },
     {

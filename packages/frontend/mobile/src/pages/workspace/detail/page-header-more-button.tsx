@@ -78,7 +78,7 @@ export const PageHeaderMenuButton = ({ docId }: PageMenuProps) => {
     <>
       <MobileMenuItem
         prefixIcon={currentMode === 'page' ? <EdgelessIcon /> : <PageIcon />}
-        data-testid="editor-option-menu-edgeless"
+        data-testid="editor-option-menu-mode-switch"
         onSelect={handleSwitchMode}
       >
         {t['Convert to ']()}
@@ -133,7 +133,7 @@ export const PageHeaderMenuButton = ({ docId }: PageMenuProps) => {
     >
       <IconButton
         size={24}
-        data-testid="header-dropDownButton"
+        data-testid="detail-page-header-more-button"
         className={styles.iconButton}
       >
         <MoreHorizontalIcon />

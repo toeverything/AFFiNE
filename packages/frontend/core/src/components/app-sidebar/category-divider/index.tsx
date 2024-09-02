@@ -35,6 +35,7 @@ export const CategoryDivider = forwardRef(
       <div
         className={clsx(mobile ? styles.mobileRoot : styles.root, className)}
         ref={ref}
+        role="switch"
         onClick={() => setCollapsed?.(!collapsed)}
         data-mobile={mobile}
         data-collapsed={collapsed}

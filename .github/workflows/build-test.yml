@@ -143,6 +143,36 @@ jobs:
           path: ./test-results
           if-no-files-found: ignore
 
+  e2e-mobile-test:
+    name: E2E Mobile Test
+    runs-on: ubuntu-latest
+    env:
+      DISTRIBUTION: mobile
+      IN_CI_TEST: true
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          playwright-install: true
+          electron-install: false
+          full-cache: true
+
+      - name: Run playwright tests
+        run: yarn workspace @affine-test/affine-mobile e2e --forbid-only --shard=${{ matrix.shard }}/${{ strategy.job-total }}
+
+      - name: Upload test results
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-e2e-mobile-${{ matrix.shard }}
+          path: ./test-results
+          if-no-files-found: ignore
+
   e2e-migration-test:
     name: E2E Migration Test
     runs-on: ubuntu-latest

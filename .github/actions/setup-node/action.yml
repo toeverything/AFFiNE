@@ -156,7 +156,7 @@ runs:
     - name: Install Playwright's dependencies
       shell: bash
       if: inputs.playwright-install == 'true'
-      run: yarn playwright install --with-deps chromium
+      run: yarn playwright install --with-deps chromium webkit
       env:
         PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/node_modules/.cache/ms-playwright
 

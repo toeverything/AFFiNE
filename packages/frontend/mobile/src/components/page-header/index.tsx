@@ -60,7 +60,12 @@ export const PageHeader = forwardRef<HTMLHeadElement, PageHeaderProps>(
     }, []);
 
     return (
-      <header ref={ref} className={clsx(styles.root, className)} {...attrs}>
+      <header
+        data-testid="mobile-page-header"
+        ref={ref}
+        className={clsx(styles.root, className)}
+        {...attrs}
+      >
         <section
           className={clsx(styles.prefix, prefixClassName)}
           style={prefixStyle}

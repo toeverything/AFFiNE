@@ -40,7 +40,7 @@ export const AppTabs = () => {
   const location = useLiveData(workbench.location$);
 
   return (
-    <ul className={styles.appTabs} id="app-tabs">
+    <ul className={styles.appTabs} id="app-tabs" role="tablist">
       {routes.map(route => {
         const Link = route.LinkComponent || WorkbenchLink;
 
@@ -53,6 +53,8 @@ export const AppTabs = () => {
             to={route.to}
             key={route.to}
             className={styles.tabItem}
+            role="tab"
+            aria-label={route.to.slice(1)}
           >
             <li>
               <route.Icon />
