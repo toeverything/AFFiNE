@@ -28,3 +28,9 @@ export const shortcutHint = style({
   color: cssVarV2('text/tertiary'),
   fontSize: cssVar('fontBase'),
 });
+export const quickSearchBarEllipsisStyle = style({
+  maxWidth: '200px',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
+});

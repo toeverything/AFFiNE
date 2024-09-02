@@ -22,7 +22,9 @@ export function QuickSearchInput({ onClick, ...props }: QuickSearchInputProps) {
       onClick={onClick}
     >
       <SearchIcon className={styles.icon} />
-      {t['Quick search']()}
+      <span className={styles.quickSearchBarEllipsisStyle}>
+        {t['Quick search']()}
+      </span>
       <div className={styles.spacer} />
       <div className={styles.shortcutHint}>
         {isMac ? ' ⌘ + K' : ' Ctrl + K'}
