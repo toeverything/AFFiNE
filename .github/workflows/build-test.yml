@@ -601,6 +601,7 @@ jobs:
       - lint
       - check-yarn-binary
       - e2e-test
+      - e2e-mobile-test
       - e2e-migration-test
       - unit-test
       - server-test

@@ -2,7 +2,7 @@ import { useI18n } from '@affine/i18n';
 import { ArrowLeftSmallIcon } from '@blocksuite/icons/rc';
 import { Slot } from '@radix-ui/react-slot';
 import clsx from 'clsx';
-import { useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { useCallback, useContext, useMemo, useState } from 'react';
 
 import { observeResize } from '../../../utils';
 import { Button } from '../../button';
@@ -33,8 +33,28 @@ export const MobileMenu = ({
   const [sliderHeight, setSliderHeight] = useState(0);
   const { setOpen: pSetOpen } = useContext(MobileMenuContext);
   const finalOpen = rootOptions?.open ?? open;
-  const sliderRef = useRef<HTMLDivElement>(null);
   const activeIndex = subMenus.length;
+
+  // dynamic height for slider
+  const onSliderRef = useMemo(() => {
+    let unsub: (() => void) | null = null;
+
+    return (sliderDiv: HTMLDivElement | null) => {
+      unsub?.();
+
+      if (!sliderDiv || !finalOpen) return;
+
+      const active = sliderDiv.querySelector(
+        `.${styles.menuContent}[data-index="${activeIndex}"]`
+      );
+      if (!active) return;
+
+      // for the situation that content is loaded asynchronously
+      unsub = observeResize(active, entry => {
+        setSliderHeight(entry.borderBoxSize[0].blockSize);
+      });
+    };
+  }, [activeIndex, finalOpen]);
 
   const onOpenChange = useCallback(
     (open: boolean) => {
@@ -56,31 +76,6 @@ export const MobileMenu = ({
     },
     [onOpenChange, open]
   );
-
-  // dynamic height for slider
-  useEffect(() => {
-    if (!finalOpen) return;
-    let observer: () => void;
-    const t = setTimeout(() => {
-      const slider = sliderRef.current;
-      if (!slider) return;
-
-      const active = slider.querySelector(
-        `.${styles.menuContent}[data-index="${activeIndex}"]`
-      );
-      if (!active) return;
-
-      // for the situation that content is loaded asynchronously
-      observer = observeResize(active, entry => {
-        setSliderHeight(entry.borderBoxSize[0].blockSize);
-      });
-    }, 0);
-
-    return () => {
-      clearTimeout(t);
-      observer?.();
-    };
-  }, [activeIndex, finalOpen]);
 
   const t = useI18n();
 
@@ -122,7 +117,7 @@ export const MobileMenu = ({
           }}
         >
           <div
-            ref={sliderRef}
+            ref={onSliderRef}
             className={styles.slider}
             style={{
               transform: `translateX(-${100 * activeIndex}%)`,

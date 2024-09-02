@@ -23,9 +23,11 @@ const config: PlaywrightTestConfig = {
       },
     },
   ],
+  expect: {
+    timeout: process.env.CI ? 15_000 : 5_000,
+  },
   use: {
     baseURL: 'http://localhost:8080/',
-    actionTimeout: 10 * 1000,
     locale: 'en-US',
     // Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer
     // You can open traces locally(`npx playwright show-trace trace.zip`)
