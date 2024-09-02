@@ -1,0 +1,11 @@
+version: 0.16.3
+files:
+  - url: affine-0.16.3-stable-linux-x64.appimage
+    sha512: nmID71T7jq9yKCdujVUeL71TLXmwIdaaWZB0ouDX13Np1vahS1+1A5uJbHUzTH0N/sN0W+LKUg9L29wNgi42gw==
+    size: 178308288
+  - url: affine-0.16.3-stable-linux-x64.zip
+    sha512: fsHTT0fUeU/uLGdlRiuddzSuJWIOcaUTgUj7DB5XSQJ4qA5blAcpij8zOil0ww3Ea7Kwe7qcIe4SSCtNFu31sQ==
+    size: 176405078
+path: affine-0.16.3-stable-linux-x64.appimage
+sha512: nmID71T7jq9yKCdujVUeL71TLXmwIdaaWZB0ouDX13Np1vahS1+1A5uJbHUzTH0N/sN0W+LKUg9L29wNgi42gw==
+releaseDate: 2024-08-14T07:11:42.171Z

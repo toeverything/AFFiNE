@@ -1,0 +1,17 @@
+version: 0.16.3
+files:
+  - url: affine-0.16.3-stable-macos-arm64.dmg
+    sha512: fmJWpi45gVYYUavb0Cd6Y9DR2nxBc3wMagHOiMF1PPg+4tEyHGmVIhRIwY/QaJ5TAR+3tRAENZwen2gvja0UtQ==
+    size: 168093091
+  - url: affine-0.16.3-stable-macos-arm64.zip
+    sha512: u1ud8pJ613A5Oqh3fbcnUUOA4hNoURWBdtAMJoeZ6EIAUvZzV0tsDcAqLiEP89LKbitaH0IdrW3D8EFSsZ9kRw==
+    size: 167540517
+  - url: affine-0.16.3-stable-macos-x64.dmg
+    sha512: Ou1W6/xHyM+ZN9BLYvc+8qCB8wR9F3jLQP5m3oG0uIDDw7wwoR+ny3gcWbDzalfxoOR84CvM74LIfc7BQf69Uw==
+    size: 175029125
+  - url: affine-0.16.3-stable-macos-x64.zip
+    sha512: oot098M9qqdRbw+znnuLjVedZ1U59p4m+gzSxRtpCuYdfvumvu5/RN1jvY2cHssqstJj/Ybh4eBTlREZMgKyyg==
+    size: 174752343
+path: affine-0.16.3-stable-macos-arm64.dmg
+sha512: fmJWpi45gVYYUavb0Cd6Y9DR2nxBc3wMagHOiMF1PPg+4tEyHGmVIhRIwY/QaJ5TAR+3tRAENZwen2gvja0UtQ==
+releaseDate: 2024-08-14T07:11:41.503Z

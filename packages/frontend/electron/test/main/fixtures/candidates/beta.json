@@ -1,0 +1,75 @@
+[
+  {
+    "url": "https://github.com/toeverything/AFFiNE/releases/tag/v0.16.3-beta.2",
+    "name": "0.16.3-beta.2",
+    "tag_name": "v0.16.3-beta.2",
+    "published_at": "2024-08-14T06:56:25Z",
+    "assets": [
+      {
+        "name": "affine-0.16.3-beta.2-beta-linux-x64.appimage",
+        "url": "https://github.com/toeverything/AFFiNE/releases/download/v0.16.3-beta.2/affine-0.16.3-beta.2-beta-linux-x64.appimage",
+        "size": 178308288
+      },
+      {
+        "name": "affine-0.16.3-beta.2-beta-linux-x64.zip",
+        "url": "https://github.com/toeverything/AFFiNE/releases/download/v0.16.3-beta.2/affine-0.16.3-beta.2-beta-linux-x64.zip",
+        "size": 176402697
+      },
+      {
+        "name": "affine-0.16.3-beta.2-beta-macos-arm64.dmg",
+        "url": "https://github.com/toeverything/AFFiNE/releases/download/v0.16.3-beta.2/affine-0.16.3-beta.2-beta-macos-arm64.dmg",
+        "size": 168063426
+      },
+      {
+        "name": "affine-0.16.3-beta.2-beta-macos-arm64.zip",
+        "url": "https://github.com/toeverything/AFFiNE/releases/download/v0.16.3-beta.2/affine-0.16.3-beta.2-beta-macos-arm64.zip",
+        "size": 167528680
+      },
+      {
+        "name": "affine-0.16.3-beta.2-beta-macos-x64.dmg",
+        "url": "https://github.com/toeverything/AFFiNE/releases/download/v0.16.3-beta.2/affine-0.16.3-beta.2-beta-macos-x64.dmg",
+        "size": 175049454
+      },
+      {
+        "name": "affine-0.16.3-beta.2-beta-macos-x64.zip",
+        "url": "https://github.com/toeverything/AFFiNE/releases/download/v0.16.3-beta.2/affine-0.16.3-beta.2-beta-macos-x64.zip",
+        "size": 174740492
+      },
+      {
+        "name": "affine-0.16.3-beta.2-beta-windows-x64.exe",
+        "url": "https://github.com/toeverything/AFFiNE/releases/download/v0.16.3-beta.2/affine-0.16.3-beta.2-beta-windows-x64.exe",
+        "size": 177771240
+      },
+      {
+        "name": "affine-0.16.3-beta.2-beta-windows-x64.nsis.exe",
+        "url": "https://github.com/toeverything/AFFiNE/releases/download/v0.16.3-beta.2/affine-0.16.3-beta.2-beta-windows-x64.nsis.exe",
+        "size": 130309240
+      },
+      {
+        "name": "codecov.yml",
+        "url": "https://github.com/toeverything/AFFiNE/releases/download/v0.16.3-beta.2/codecov.yml",
+        "size": 91
+      },
+      {
+        "name": "latest-linux.yml",
+        "url": "https://github.com/toeverything/AFFiNE/releases/download/v0.16.3-beta.2/latest-linux.yml",
+        "size": 561
+      },
+      {
+        "name": "latest-mac.yml",
+        "url": "https://github.com/toeverything/AFFiNE/releases/download/v0.16.3-beta.2/latest-mac.yml",
+        "size": 897
+      },
+      {
+        "name": "latest.yml",
+        "url": "https://github.com/toeverything/AFFiNE/releases/download/v0.16.3-beta.2/latest.yml",
+        "size": 562
+      },
+      {
+        "name": "web-static.zip",
+        "url": "https://github.com/toeverything/AFFiNE/releases/download/v0.16.3-beta.2/web-static.zip",
+        "size": 61990155
+      }
+    ]
+  }
+]

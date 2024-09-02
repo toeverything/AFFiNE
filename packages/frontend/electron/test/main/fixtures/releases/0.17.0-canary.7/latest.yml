@@ -1,0 +1,11 @@
+version: 0.17.0-canary.7
+files:
+  - url: affine-0.17.0-canary.7-canary-windows-x64.exe
+    sha512: cF47Wcu69PXyMVswSzrdNktNO2lqkjsyJ/HQr2qWjFPuIJfcad9QDTfOyCVsMCV6KGUSSeFiTHyObWgKd6z2DQ==
+    size: 182557416
+  - url: affine-0.17.0-canary.7-canary-windows-x64.nsis.exe
+    sha512: ztugqKwPpxDDSK1OpzUPkGvL8wLXwg9rh985bs9ZvxydY037yKBAZOk96PPtow2qqRb5/9Xn8MuGrWgchqXkVg==
+    size: 133493672
+path: affine-0.17.0-canary.7-canary-windows-x64.exe
+sha512: cF47Wcu69PXyMVswSzrdNktNO2lqkjsyJ/HQr2qWjFPuIJfcad9QDTfOyCVsMCV6KGUSSeFiTHyObWgKd6z2DQ==
+releaseDate: 2024-08-29T08:20:51.573Z

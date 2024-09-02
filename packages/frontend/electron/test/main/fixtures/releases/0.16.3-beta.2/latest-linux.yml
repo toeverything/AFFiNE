@@ -1,0 +1,11 @@
+version: 0.16.3-beta.2
+files:
+  - url: affine-0.16.3-beta.2-beta-linux-x64.appimage
+    sha512: munCzfD0tOky2MRZVVu+/JCCMrQ4C/EcOSxkNXrEVwK0aoeYo3Q0H1Cm/KJ+7mZ2yMfxctdPH0KGfHRL0tNENg==
+    size: 178308288
+  - url: affine-0.16.3-beta.2-beta-linux-x64.zip
+    sha512: 6emy8f8QrhrAdNxOfHj9PSbWtRXI/LocvpsckrbqrYIi7sU12GmmS0dI2SCxvDBwYTDSoC4mh0erfzUeDSLAEg==
+    size: 176402697
+path: affine-0.16.3-beta.2-beta-linux-x64.appimage
+sha512: munCzfD0tOky2MRZVVu+/JCCMrQ4C/EcOSxkNXrEVwK0aoeYo3Q0H1Cm/KJ+7mZ2yMfxctdPH0KGfHRL0tNENg==
+releaseDate: 2024-08-14T06:56:24.609Z

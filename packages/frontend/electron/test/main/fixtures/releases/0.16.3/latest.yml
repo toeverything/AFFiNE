@@ -1,0 +1,11 @@
+version: 0.16.3
+files:
+  - url: affine-0.16.3-stable-windows-x64.exe
+    sha512: 47zaLkAhSxPuWsKq01dSEt8GusXqK1rmSaiOTBLe32lmUiXPhUqYO5JhzbrjJKx7/TFcic4UDJ/Zir3wf9fKRA==
+    size: 177757416
+  - url: affine-0.16.3-stable-windows-x64.nsis.exe
+    sha512: G3Rxa3onqlJTGQIcz7Rz6ZQ/6rAwjzjYnW/HB5yzXkjN6e5yfW2JBk765+AyiPFV5Mn4Rloj7V6GM6m4q7WfWg==
+    size: 130302976
+path: affine-0.16.3-stable-windows-x64.exe
+sha512: 47zaLkAhSxPuWsKq01dSEt8GusXqK1rmSaiOTBLe32lmUiXPhUqYO5JhzbrjJKx7/TFcic4UDJ/Zir3wf9fKRA==
+releaseDate: 2024-08-14T07:11:40.285Z

@@ -1,0 +1,11 @@
+version: 0.16.3-beta.2
+files:
+  - url: affine-0.16.3-beta.2-beta-windows-x64.exe
+    sha512: iHiIF5Swrgz6RfL/Xf9KFZsmFggGFWtSrkj7IUJUt69Z+gxQQp2dO4wrQ4uaZmiqMVr+8Op++oeczMhcjXGPHw==
+    size: 177771240
+  - url: affine-0.16.3-beta.2-beta-windows-x64.nsis.exe
+    sha512: 5437aZddjbgzwGWsj/nxgepS2jBM/WB561DNz3XXA5sTtqPVafMvEmcbE1KE86JZTpAAJHcJheSwjxdYOL/Lgw==
+    size: 130309240
+path: affine-0.16.3-beta.2-beta-windows-x64.exe
+sha512: iHiIF5Swrgz6RfL/Xf9KFZsmFggGFWtSrkj7IUJUt69Z+gxQQp2dO4wrQ4uaZmiqMVr+8Op++oeczMhcjXGPHw==
+releaseDate: 2024-08-14T06:56:22.750Z
