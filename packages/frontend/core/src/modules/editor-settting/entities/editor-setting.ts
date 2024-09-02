@@ -1,5 +1,12 @@
+import {
+  createSignalFromObservable,
+  type Signal,
+} from '@blocksuite/affine-shared/utils';
+import type { DeepPartial } from '@blocksuite/global/utils';
 import { Entity, LiveData } from '@toeverything/infra';
-import { map, type Observable } from 'rxjs';
+import { isObject, merge } from 'lodash-es';
+import type { Observable } from 'rxjs';
+import { map } from 'rxjs';
 
 import type { EditorSettingProvider } from '../provider/editor-setting-provider';
 import { EditorSettingSchema } from '../schema';
@@ -7,17 +14,30 @@ import { EditorSettingSchema } from '../schema';
 export class EditorSetting extends Entity {
   constructor(public readonly provider: EditorSettingProvider) {
     super();
+
+    const { signal, cleanup } = createSignalFromObservable<
+      Partial<EditorSettingSchema>
+    >(this.settings$, {});
+    this.settingSignal = signal;
+    this.disposables.push(cleanup);
   }
 
   settings$ = LiveData.from<EditorSettingSchema>(this.watchAll(), null as any);
 
+  settingSignal: Signal<Partial<EditorSettingSchema>>;
+
+  get<K extends keyof EditorSettingSchema>(key: K) {
+    return this.settings$.value[key];
+  }
+
   set<K extends keyof EditorSettingSchema>(
     key: K,
-    value: EditorSettingSchema[K]
+    value: DeepPartial<EditorSettingSchema[K]>
   ) {
     const schema = EditorSettingSchema.shape[key];
-
-    this.provider.set(key, JSON.stringify(schema.parse(value)));
+    const curValue = this.get(key);
+    const nextValue = isObject(curValue) ? merge(curValue, value) : value;
+    this.provider.set(key, JSON.stringify(schema.parse(nextValue)));
   }
 
   private watchAll(): Observable<EditorSettingSchema> {

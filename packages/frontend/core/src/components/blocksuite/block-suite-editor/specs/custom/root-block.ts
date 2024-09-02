@@ -3,6 +3,7 @@ import {
   AIPageRootBlockSpec,
 } from '@affine/core/blocksuite/presets/ai';
 import { mixpanel } from '@affine/core/mixpanel';
+import { EditorSettingService } from '@affine/core/modules/editor-settting';
 import {
   BlockFlavourIdentifier,
   BlockServiceIdentifier,
@@ -54,6 +55,7 @@ function withAffineRootService(Service: typeof PageRootService) {
 export function createPageRootBlockSpec(
   framework: FrameworkProvider
 ): ExtensionType[] {
+  const editorSettingService = framework.get(EditorSettingService);
   return [
     ...AIPageRootBlockSpec,
     {
@@ -67,6 +69,7 @@ export function createPageRootBlockSpec(
     },
     ConfigExtension('affine:page', {
       linkedWidget: createLinkedWidgetConfig(framework),
+      editorSetting: editorSettingService.editorSetting.settingSignal,
     }),
   ];
 }
@@ -74,6 +77,7 @@ export function createPageRootBlockSpec(
 export function createEdgelessRootBlockSpec(
   framework: FrameworkProvider
 ): ExtensionType[] {
+  const editorSettingService = framework.get(EditorSettingService);
   return [
     ...AIEdgelessRootBlockSpec,
     {
@@ -87,6 +91,7 @@ export function createEdgelessRootBlockSpec(
     },
     ConfigExtension('affine:page', {
       linkedWidget: createLinkedWidgetConfig(framework),
+      editorSetting: editorSettingService.editorSetting.settingSignal,
     }),
   ];
 }

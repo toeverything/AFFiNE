@@ -1270,6 +1270,8 @@
   "com.affine.settings.editorSettings.edgeless.text": "Text",
   "com.affine.settings.editorSettings.edgeless.text.color": "Text color",
   "com.affine.settings.editorSettings.edgeless.text.font": "Font",
+  "com.affine.settings.editorSettings.edgeless.text.font-family": "Font Family",
+  "com.affine.settings.editorSettings.edgeless.text.font-style": "Font Style",
   "com.affine.settings.editorSettings.edgeless.text.font-size": "Font size",
   "com.affine.settings.editorSettings.edgeless.text.font-weight": "Font weight",
   "com.affine.settings.editorSettings.edgeless.text.alignment": "Alignment",

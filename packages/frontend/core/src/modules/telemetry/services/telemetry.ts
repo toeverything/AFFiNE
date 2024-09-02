@@ -19,7 +19,6 @@ import { UserQuotaChanged } from '../../cloud/services/user-quota';
 export class TelemetryService extends Service {
   private prevQuota: NonNullable<QuotaQuery['currentUser']>['quota'] | null =
     null;
-  private readonly disposables: (() => void)[] = [];
 
   constructor(
     private readonly auth: AuthService,

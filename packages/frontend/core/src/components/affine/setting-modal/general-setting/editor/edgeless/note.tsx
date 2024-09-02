@@ -7,39 +7,139 @@ import {
   Slider,
 } from '@affine/component';
 import { SettingRow } from '@affine/component/setting-components';
+import { EditorSettingService } from '@affine/core/modules/editor-settting';
 import { useI18n } from '@affine/i18n';
-import { useMemo, useState } from 'react';
+import {
+  NoteBackgroundColor,
+  NoteShadow,
+  StrokeStyle,
+} from '@blocksuite/blocks';
+import { useFramework, useLiveData } from '@toeverything/infra';
+import { useCallback, useMemo } from 'react';
 
 import { menuTrigger, settingWrapper } from '../style.css';
 import { EdgelessSnapshot } from './snapshot';
 
+const CORNER_SIZE = [
+  { name: 'None', value: 0 },
+  { name: 'Small', value: 8 },
+  { name: 'Medium', value: 16 },
+  { name: 'Large', value: 24 },
+  { name: 'Huge', value: 32 },
+] as const;
+
 export const NoteSettings = () => {
   const t = useI18n();
-  const [borderStyle, setBorderStyle] = useState<'solid' | 'dash' | 'none'>(
-    'solid'
-  );
-  const [borderThickness, setBorderThickness] = useState<number[]>([3]);
+  const framework = useFramework();
+  const { editorSetting } = framework.get(EditorSettingService);
+  const settings = useLiveData(editorSetting.settings$);
 
   const borderStyleItems = useMemo<RadioItem[]>(
     () => [
       {
-        value: 'solid',
+        value: StrokeStyle.Solid,
         label:
           t['com.affine.settings.editorSettings.edgeless.note.border.solid'](),
       },
       {
-        value: 'dash',
+        value: StrokeStyle.Dash,
         label:
           t['com.affine.settings.editorSettings.edgeless.note.border.dash'](),
       },
       {
-        value: 'none',
+        value: StrokeStyle.None,
         label:
           t['com.affine.settings.editorSettings.edgeless.note.border.none'](),
       },
     ],
     [t]
   );
+
+  const { borderStyle } = settings['affine:note'].edgeless.style;
+  const setBorderStyle = useCallback(
+    (value: StrokeStyle) => {
+      editorSetting.set('affine:note', {
+        edgeless: {
+          style: {
+            borderStyle: value,
+          },
+        },
+      });
+    },
+    [editorSetting]
+  );
+
+  const { borderSize } = settings['affine:note'].edgeless.style;
+  const setBorderSize = useCallback(
+    (value: number[]) => {
+      editorSetting.set('affine:note', {
+        edgeless: {
+          style: {
+            borderSize: value[0],
+          },
+        },
+      });
+    },
+    [editorSetting]
+  );
+
+  const backgroundItems = useMemo(() => {
+    const { background } = settings['affine:note'];
+    return Object.entries(NoteBackgroundColor).map(([name, value]) => {
+      const handler = () => {
+        editorSetting.set('affine:note', { background: value });
+      };
+      const isSelected = background === value;
+      return (
+        <MenuItem key={name} onSelect={handler} selected={isSelected}>
+          {name}
+        </MenuItem>
+      );
+    });
+  }, [editorSetting, settings]);
+
+  const cornerItems = useMemo(() => {
+    const { borderRadius } = settings['affine:note'].edgeless.style;
+    return CORNER_SIZE.map(({ name, value }) => {
+      const handler = () => {
+        editorSetting.set('affine:note', {
+          edgeless: {
+            style: {
+              borderRadius: value,
+            },
+          },
+        });
+      };
+      const isSelected = borderRadius === value;
+      return (
+        <MenuItem key={name} onSelect={handler} selected={isSelected}>
+          {name}
+        </MenuItem>
+      );
+    });
+  }, [editorSetting, settings]);
+
+  const shadowItems = useMemo(() => {
+    const { shadowType } = settings['affine:note'].edgeless.style;
+    return Object.entries(NoteShadow).map(([name, value]) => {
+      const handler = () => {
+        editorSetting.set('affine:note', {
+          edgeless: {
+            style: {
+              shadowType: value,
+            },
+          },
+        });
+      };
+      const isSelected = shadowType === value;
+      return (
+        <MenuItem key={name} onSelect={handler} selected={isSelected}>
+          {name}
+        </MenuItem>
+      );
+    });
+  }, [editorSetting, settings]);
+
   return (
     <>
       <EdgelessSnapshot
@@ -53,9 +153,9 @@ export const NoteSettings = () => {
         ]()}
         desc={''}
       >
-        <Menu items={<MenuItem>Yellow</MenuItem>}>
-          <MenuTrigger className={menuTrigger} disabled>
-            Yellow
+        <Menu items={backgroundItems}>
+          <MenuTrigger className={menuTrigger}>
+            {String(settings['affine:note'].background)}
           </MenuTrigger>
         </Menu>
       </SettingRow>
@@ -63,9 +163,9 @@ export const NoteSettings = () => {
         name={t['com.affine.settings.editorSettings.edgeless.note.corners']()}
         desc={''}
       >
-        <Menu items={<MenuItem>Small</MenuItem>}>
-          <MenuTrigger className={menuTrigger} disabled>
-            Small
+        <Menu items={cornerItems}>
+          <MenuTrigger className={menuTrigger}>
+            {String(settings['affine:note'].edgeless.style.borderRadius)}
           </MenuTrigger>
         </Menu>
       </SettingRow>
@@ -73,9 +173,9 @@ export const NoteSettings = () => {
         name={t['com.affine.settings.editorSettings.edgeless.note.shadow']()}
         desc={''}
       >
-        <Menu items={<MenuItem>Box shadow</MenuItem>}>
-          <MenuTrigger className={menuTrigger} disabled>
-            Box shadow
+        <Menu items={shadowItems}>
+          <MenuTrigger className={menuTrigger}>
+            {String(settings['affine:note'].edgeless.style.shadowType)}
           </MenuTrigger>
         </Menu>
       </SettingRow>
@@ -98,12 +198,12 @@ export const NoteSettings = () => {
         desc={''}
       >
         <Slider
-          value={borderThickness}
-          onValueChange={setBorderThickness}
-          min={1}
-          max={5}
-          step={1}
-          nodes={[1, 2, 3, 4, 5]}
+          value={[borderSize]}
+          onValueChange={setBorderSize}
+          min={2}
+          max={12}
+          step={2}
+          nodes={[2, 4, 6, 8, 10, 12]}
         />
       </SettingRow>
     </>

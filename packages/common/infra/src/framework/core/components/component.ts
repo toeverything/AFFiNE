@@ -4,7 +4,10 @@ import type { FrameworkProvider } from '../provider';
 // eslint-disable-next-line @typescript-eslint/ban-types
 export class Component<Props = {}> {
   readonly framework: FrameworkProvider;
+
   readonly props: Props;
+
+  protected readonly disposables: (() => void)[] = [];
 
   get eventBus() {
     return this.framework.eventBus;
@@ -19,7 +22,9 @@ export class Component<Props = {}> {
     CONSTRUCTOR_CONTEXT.current = {};
   }
 
-  dispose() {}
+  dispose() {
+    this.disposables.forEach(dispose => dispose());
+  }
 
   [Symbol.dispose]() {
     this.dispose();
