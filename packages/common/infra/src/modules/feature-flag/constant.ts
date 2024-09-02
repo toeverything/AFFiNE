@@ -12,13 +12,6 @@ export const AFFINE_FLAGS = {
     description: 'Allows adding notes to database attachments.',
     configurable: isNotStableBuild,
   },
-  enable_database_statistics: {
-    category: 'blocksuite',
-    bsFlag: 'enable_database_statistics',
-    displayName: 'Database Block Statistics',
-    description: 'Shows statistics for database blocks.',
-    configurable: isNotStableBuild,
-  },
   enable_block_query: {
     category: 'blocksuite',
     bsFlag: 'enable_block_query',
@@ -78,8 +71,10 @@ export const AFFINE_FLAGS = {
     category: 'affine',
     displayName: 'Split View',
     description:
-      'The Split View feature in AFFiNE allows users to divide their workspace into multiple sections, enabling simultaneous viewing and editing of different documents.The Split View feature in AFFiNE allows users to divide their workspace into multiple sections, enabling simultaneous viewing and editing of different documents.',
+      'The Split View feature enables you to divide your tab into multiple sections for simultaneous viewing and editing of different documents.',
     feedbackType: 'discord',
+    feedbackLink:
+      'https://discord.com/channels/959027316334407691/1280009690004324405',
     configurable: isDesktopEnvironment,
     defaultState: isCanaryBuild,
   },
@@ -88,6 +83,9 @@ export const AFFINE_FLAGS = {
     displayName: 'Emoji Folder Icon',
     description:
       'Once enabled, you can use an emoji as the folder icon. When the first character of the folder name is an emoji, it will be extracted and used as its icon.',
+    feedbackType: 'discord',
+    feedbackLink:
+      'https://discord.com/channels/959027316334407691/1280014319865696351/1280014319865696351',
     configurable: true,
     defaultState: false,
   },

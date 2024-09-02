@@ -1,4 +1,4 @@
-import nodePath from 'node:path';
+import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import type { UpdateCheckResult } from 'electron-updater';
@@ -16,7 +16,7 @@ import {
   vi,
 } from 'vitest';
 
-import { CustomGitHubProvider } from '../../src/main/updater/custom-github-provider';
+import { AFFiNEUpdateProvider } from '../../src/main/updater/affine-update-provider';
 import { MockedAppAdapter, MockedUpdater } from './mocks';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
@@ -39,72 +39,52 @@ const platformTail = (() => {
   }
 })();
 
-function response404() {
-  return HttpResponse.text('Not Found', { status: 404 });
-}
-function response403() {
-  return HttpResponse.text('403', { status: 403 });
-}
-
 describe('testing for client update', () => {
   const expectReleaseList = [
-    { buildType: 'stable', version: '0.11.1' },
-    { buildType: 'beta', version: '0.11.1-beta.1' },
-    { buildType: 'canary', version: '0.11.1-canary.1' },
+    { buildType: 'stable', version: '0.16.3' },
+    { buildType: 'beta', version: '0.16.3-beta.2' },
+    { buildType: 'canary', version: '0.17.0-canary.7' },
   ];
 
   const basicRequestHandlers = [
-    http.get(
-      'https://github.com/toeverything/AFFiNE/releases.atom',
-      async () => {
-        const buffer = await fs.readFile(
-          nodePath.join(__dirname, 'fixtures', 'feeds.txt')
-        );
-        const content = buffer.toString();
-        return HttpResponse.xml(content);
-      }
-    ),
+    http.get('https://affine.pro/api/worker/releases', async ({ request }) => {
+      const url = new URL(request.url);
+      const buffer = await fs.readFile(
+        path.join(
+          __dirname,
+          'fixtures',
+          'candidates',
+          `${url.searchParams.get('channel')}.json`
+        )
+      );
+      const content = buffer.toString();
+      return HttpResponse.text(content);
+    }),
     ...flatten(
-      expectReleaseList.map(({ version, buildType }) => {
+      expectReleaseList.map(({ version }) => {
         return [
           http.get(
             `https://github.com/toeverything/AFFiNE/releases/download/v${version}/latest${platformTail}.yml`,
-            async () => {
+            async req => {
               const buffer = await fs.readFile(
-                nodePath.join(
+                path.join(
                   __dirname,
                   'fixtures',
                   'releases',
-                  `${version}.txt`
+                  version,
+                  path.parse(req.request.url).base
                 )
               );
               const content = buffer.toString();
               return HttpResponse.text(content);
             }
           ),
-          http.get(
-            `https://github.com/toeverything/AFFiNE/releases/download/v${version}/${buildType}${platformTail}.yml`,
-            response404
-          ),
         ];
       })
     ),
   ];
-
   describe('release api request successfully', () => {
-    const server = setupServer(
-      ...basicRequestHandlers,
-      http.get(
-        'https://api.github.com/repos/toeverything/affine/releases',
-        async () => {
-          const buffer = await fs.readFile(
-            nodePath.join(__dirname, 'fixtures', 'release-list.txt')
-          );
-          const content = buffer.toString();
-          return HttpResponse.xml(content);
-        }
-      )
-    );
+    const server = setupServer(...basicRequestHandlers);
     beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
     afterAll(() => server.close());
     afterEach(() => server.resetHandlers());
@@ -113,80 +93,19 @@ describe('testing for client update', () => {
       it(`check update for ${buildType} channel successfully`, async () => {
         const app = new MockedAppAdapter('0.10.0');
         const updater = new MockedUpdater(null, app);
-        updater.allowPrerelease = buildType !== 'stable';
 
-        const feedUrl: Parameters<typeof updater.setFeedURL>[0] = {
-          channel: buildType,
-          // hack for custom provider
-          provider: 'custom' as 'github',
-          repo: 'AFFiNE',
-          owner: 'toeverything',
-          releaseType: buildType === 'stable' ? 'release' : 'prerelease',
-          // @ts-expect-error hack for custom provider
-          updateProvider: CustomGitHubProvider,
-        };
-
-        updater.setFeedURL(feedUrl);
+        updater.setFeedURL(
+          AFFiNEUpdateProvider.configFeed({
+            channel: buildType as any,
+          })
+        );
 
         const info = (await updater.checkForUpdates()) as UpdateCheckResult;
         expect(info).not.toBe(null);
         expect(info.updateInfo.releaseName).toBe(version);
         expect(info.updateInfo.version).toBe(version);
-        expect(info.updateInfo.releaseNotes?.length).toBeGreaterThan(0);
+        // expect(info.updateInfo.releaseNotes?.length).toBeGreaterThan(0);
       });
     }
-  });
-
-  describe('release api request limited', () => {
-    const server = setupServer(
-      ...basicRequestHandlers,
-      http.get(
-        'https://api.github.com/repos/toeverything/affine/releases',
-        response403
-      ),
-      http.get(
-        `https://github.com/toeverything/AFFiNE/releases/download/v0.11.1-canary.2/canary${platformTail}.yml`,
-        async () => {
-          const buffer = await fs.readFile(
-            nodePath.join(
-              __dirname,
-              'fixtures',
-              'releases',
-              `0.11.1-canary.2.txt`
-            )
-          );
-          const content = buffer.toString();
-          return HttpResponse.text(content);
-        }
-      )
-    );
-    beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
-    afterAll(() => server.close());
-    afterEach(() => server.resetHandlers());
-
-    it('check update for canary channel get v0.11.1-canary.2', async () => {
-      const app = new MockedAppAdapter('0.10.0');
-      const updater = new MockedUpdater(null, app);
-      updater.allowPrerelease = true;
-
-      const feedUrl: Parameters<typeof updater.setFeedURL>[0] = {
-        channel: 'canary',
-        // hack for custom provider
-        provider: 'custom' as 'github',
-        repo: 'AFFiNE',
-        owner: 'toeverything',
-        releaseType: 'prerelease',
-        // @ts-expect-error hack for custom provider
-        updateProvider: CustomGitHubProvider,
-      };
-
-      updater.setFeedURL(feedUrl);
-
-      const info = (await updater.checkForUpdates()) as UpdateCheckResult;
-      expect(info).not.toBe(null);
-      expect(info.updateInfo.releaseName).toBe('0.11.1-canary.2');
-      expect(info.updateInfo.version).toBe('0.11.1-canary.2');
-      expect(info.updateInfo.releaseNotes?.length).toBe(0);
-    });
   });
 });

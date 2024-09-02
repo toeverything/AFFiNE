@@ -35,7 +35,14 @@ export const newPropertyTypes: PagePropertyType[] = [
   PagePropertyType.Number,
   PagePropertyType.Checkbox,
   PagePropertyType.Date,
+  PagePropertyType.CreatedBy,
+  PagePropertyType.UpdatedBy,
   // TODO(@Peng): add more
+];
+
+export const readonlyPropertyTypes: PagePropertyType[] = [
+  PagePropertyType.CreatedBy,
+  PagePropertyType.UpdatedBy,
 ];
 
 export class PagePropertiesMetaManager {
@@ -95,6 +102,7 @@ export class PagePropertiesMetaManager {
       type,
       order: newOrder,
       icon: icon ?? getDefaultIconName(type),
+      readonly: readonlyPropertyTypes.includes(type) || undefined,
     } as const;
     this.customPropertiesSchema[id] = property;
     return property;

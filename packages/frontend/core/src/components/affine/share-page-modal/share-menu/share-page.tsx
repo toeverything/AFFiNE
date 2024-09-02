@@ -12,6 +12,7 @@ import { ShareInfoService } from '@affine/core/modules/share-doc';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { PublicPageMode } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
+import type { DocMode } from '@blocksuite/blocks';
 import {
   BlockIcon,
   CollaborationIcon,
@@ -158,10 +159,10 @@ export const AFFiNESharePage = (props: ShareMenuProps) => {
   });
 
   const onCopyPageLink = useCallback(() => {
-    onClickCopyLink('page');
+    onClickCopyLink('page' as DocMode);
   }, [onClickCopyLink]);
   const onCopyEdgelessLink = useCallback(() => {
-    onClickCopyLink('edgeless');
+    onClickCopyLink('edgeless' as DocMode);
   }, [onClickCopyLink]);
   const onCopyBlockLink = useCallback(() => {
     // TODO(@JimmFly): handle frame

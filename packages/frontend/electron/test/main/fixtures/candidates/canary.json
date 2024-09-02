@@ -1,0 +1,75 @@
+[
+  {
+    "url": "https://github.com/toeverything/AFFiNE/releases/tag/v0.17.0-canary.7",
+    "name": "0.17.0-canary.7",
+    "tag_name": "v0.17.0-canary.7",
+    "published_at": "2024-08-29T08:20:54Z",
+    "assets": [
+      {
+        "name": "affine-0.17.0-canary.7-canary-linux-x64.appimage",
+        "url": "https://github.com/toeverything/AFFiNE/releases/download/v0.17.0-canary.7/affine-0.17.0-canary.7-canary-linux-x64.appimage",
+        "size": 181990592
+      },
+      {
+        "name": "affine-0.17.0-canary.7-canary-linux-x64.zip",
+        "url": "https://github.com/toeverything/AFFiNE/releases/download/v0.17.0-canary.7/affine-0.17.0-canary.7-canary-linux-x64.zip",
+        "size": 180105256
+      },
+      {
+        "name": "affine-0.17.0-canary.7-canary-macos-arm64.dmg",
+        "url": "https://github.com/toeverything/AFFiNE/releases/download/v0.17.0-canary.7/affine-0.17.0-canary.7-canary-macos-arm64.dmg",
+        "size": 170556866
+      },
+      {
+        "name": "affine-0.17.0-canary.7-canary-macos-arm64.zip",
+        "url": "https://github.com/toeverything/AFFiNE/releases/download/v0.17.0-canary.7/affine-0.17.0-canary.7-canary-macos-arm64.zip",
+        "size": 170382513
+      },
+      {
+        "name": "affine-0.17.0-canary.7-canary-macos-x64.dmg",
+        "url": "https://github.com/toeverything/AFFiNE/releases/download/v0.17.0-canary.7/affine-0.17.0-canary.7-canary-macos-x64.dmg",
+        "size": 176815834
+      },
+      {
+        "name": "affine-0.17.0-canary.7-canary-macos-x64.zip",
+        "url": "https://github.com/toeverything/AFFiNE/releases/download/v0.17.0-canary.7/affine-0.17.0-canary.7-canary-macos-x64.zip",
+        "size": 176948223
+      },
+      {
+        "name": "affine-0.17.0-canary.7-canary-windows-x64.exe",
+        "url": "https://github.com/toeverything/AFFiNE/releases/download/v0.17.0-canary.7/affine-0.17.0-canary.7-canary-windows-x64.exe",
+        "size": 182557416
+      },
+      {
+        "name": "affine-0.17.0-canary.7-canary-windows-x64.nsis.exe",
+        "url": "https://github.com/toeverything/AFFiNE/releases/download/v0.17.0-canary.7/affine-0.17.0-canary.7-canary-windows-x64.nsis.exe",
+        "size": 133493672
+      },
+      {
+        "name": "codecov.yml",
+        "url": "https://github.com/toeverything/AFFiNE/releases/download/v0.17.0-canary.7/codecov.yml",
+        "size": 91
+      },
+      {
+        "name": "latest-linux.yml",
+        "url": "https://github.com/toeverything/AFFiNE/releases/download/v0.17.0-canary.7/latest-linux.yml",
+        "size": 575
+      },
+      {
+        "name": "latest-mac.yml",
+        "url": "https://github.com/toeverything/AFFiNE/releases/download/v0.17.0-canary.7/latest-mac.yml",
+        "size": 919
+      },
+      {
+        "name": "latest.yml",
+        "url": "https://github.com/toeverything/AFFiNE/releases/download/v0.17.0-canary.7/latest.yml",
+        "size": 576
+      },
+      {
+        "name": "web-static.zip",
+        "url": "https://github.com/toeverything/AFFiNE/releases/download/v0.17.0-canary.7/web-static.zip",
+        "size": 61555023
+      }
+    ]
+  }
+]

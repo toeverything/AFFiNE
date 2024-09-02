@@ -38,7 +38,8 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
   async pushDocUpdates(
     workspaceId: string,
     docId: string,
-    updates: Uint8Array[]
+    updates: Uint8Array[],
+    editorId?: string
   ) {
     if (!updates.length) {
       return 0;
@@ -82,6 +83,7 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
                 blob: Buffer.from(update),
                 seq,
                 createdAt: new Date(createdAt),
+                createdBy: editorId || null,
               };
             }),
           });
@@ -113,6 +115,7 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
     return rows.map(row => ({
       bin: row.blob,
       timestamp: row.createdAt.getTime(),
+      editor: row.createdBy || undefined,
     }));
   }
 
@@ -216,6 +219,12 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
     const histories = await this.db.snapshotHistory.findMany({
       select: {
         timestamp: true,
+        createdByUser: {
+          select: {
+            name: true,
+            avatarUrl: true,
+          },
+        },
       },
       where: {
         workspaceId,
@@ -230,7 +239,10 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
       take: query.limit,
     });
 
-    return histories.map(h => h.timestamp.getTime());
+    return histories.map(h => ({
+      timestamp: h.timestamp.getTime(),
+      editor: h.createdByUser,
+    }));
   }
 
   async getDocHistory(workspaceId: string, docId: string, timestamp: number) {
@@ -253,13 +265,15 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
       docId,
       bin: history.blob,
       timestamp,
+      editor: history.createdBy || undefined,
     };
   }
 
   override async rollbackDoc(
     spaceId: string,
     docId: string,
-    timestamp: number
+    timestamp: number,
+    editorId?: string
   ): Promise<void> {
     await using _lock = await this.lockDocForUpdate(spaceId, docId);
     const toSnapshot = await this.getDocHistory(spaceId, docId, timestamp);
@@ -274,7 +288,14 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
     }
 
     // force create a new history record after rollback
-    await this.createDocHistory(fromSnapshot, true);
+    await this.createDocHistory(
+      {
+        ...fromSnapshot,
+        // override the editor to the one who requested the rollback
+        editor: editorId,
+      },
+      true
+    );
     // WARN:
     //  we should never do the snapshot updating in recovering,
     //  which is not the solution in CRDT.
@@ -331,6 +352,7 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
             id: snapshot.docId,
             timestamp: new Date(snapshot.timestamp),
             blob: Buffer.from(snapshot.bin),
+            createdBy: snapshot.editor,
             expiredAt: new Date(
               Date.now() + (await this.options.historyMaxAge(snapshot.spaceId))
             ),
@@ -374,6 +396,8 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
       docId,
       bin: snapshot.blob,
       timestamp: snapshot.updatedAt.getTime(),
+      // creator and editor may null if their account is deleted
+      editor: snapshot.updatedBy || snapshot.createdBy || undefined,
     };
   }
 
@@ -396,10 +420,10 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
     //                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     try {
       const result: { updatedAt: Date }[] = await this.db.$queryRaw`
-        INSERT INTO "snapshots" ("workspace_id", "guid", "blob", "created_at", "updated_at")
-        VALUES (${spaceId}, ${docId}, ${bin}, DEFAULT, ${updatedAt})
+        INSERT INTO "snapshots" ("workspace_id", "guid", "blob", "created_at", "updated_at", "created_by", "updated_by")
+        VALUES (${spaceId}, ${docId}, ${bin}, DEFAULT, ${updatedAt}, ${snapshot.editor}, ${snapshot.editor})
         ON CONFLICT ("workspace_id", "guid")
-        DO UPDATE SET "blob" = ${bin}, "updated_at" = ${updatedAt}
+        DO UPDATE SET "blob" = ${bin}, "updated_at" = ${updatedAt}, "updated_by" = ${snapshot.editor}
         WHERE "snapshots"."workspace_id" = ${spaceId} AND "snapshots"."guid" = ${docId} AND "snapshots"."updated_at" <= ${updatedAt}
         RETURNING "snapshots"."workspace_id" as "workspaceId", "snapshots"."guid" as "id", "snapshots"."updated_at" as "updatedAt"
       `;

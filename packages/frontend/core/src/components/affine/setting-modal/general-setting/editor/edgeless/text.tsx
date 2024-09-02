@@ -6,37 +6,46 @@ import {
   type RadioItem,
 } from '@affine/component';
 import { SettingRow } from '@affine/component/setting-components';
+import { EditorSettingService } from '@affine/core/modules/editor-settting';
 import { useI18n } from '@affine/i18n';
-import { useMemo, useState } from 'react';
+import {
+  FontFamily,
+  FontFamilyMap,
+  FontStyle,
+  FontWeight,
+  LineColor,
+  TextAlign,
+} from '@blocksuite/blocks';
+import { useFramework, useLiveData } from '@toeverything/infra';
+import { useCallback, useMemo } from 'react';
 
 import { menuTrigger, settingWrapper } from '../style.css';
 import { EdgelessSnapshot } from './snapshot';
 
 export const TextSettings = () => {
   const t = useI18n();
-
-  const [textAlignment, setTextAlignment] = useState<
-    'left' | 'center' | 'right'
-  >('left');
+  const framework = useFramework();
+  const { editorSetting } = framework.get(EditorSettingService);
+  const settings = useLiveData(editorSetting.settings$);
 
   const alignItems = useMemo<RadioItem[]>(
     () => [
       {
-        value: 'left',
+        value: TextAlign.Left,
         label:
           t[
             'com.affine.settings.editorSettings.edgeless.text.alignment.left'
           ](),
       },
       {
-        value: 'center',
+        value: TextAlign.Center,
         label:
           t[
             'com.affine.settings.editorSettings.edgeless.text.alignment.center'
           ](),
       },
       {
-        value: 'right',
+        value: TextAlign.Right,
         label:
           t[
             'com.affine.settings.editorSettings.edgeless.text.alignment.right'
@@ -45,6 +54,76 @@ export const TextSettings = () => {
     ],
     [t]
   );
+
+  const { textAlign } = settings['affine:edgeless-text'];
+  const setTextAlign = useCallback(
+    (value: TextAlign) => {
+      editorSetting.set('affine:edgeless-text', {
+        textAlign: value,
+      });
+    },
+    [editorSetting]
+  );
+
+  const colorItems = useMemo(() => {
+    const { color } = settings['affine:edgeless-text'];
+    return Object.entries(LineColor).map(([name, value]) => {
+      const handler = () => {
+        editorSetting.set('affine:edgeless-text', { color: value });
+      };
+      const isSelected = color === value;
+      return (
+        <MenuItem key={name} onSelect={handler} selected={isSelected}>
+          {name}
+        </MenuItem>
+      );
+    });
+  }, [editorSetting, settings]);
+
+  const fontFamilyItems = useMemo(() => {
+    const { fontFamily } = settings['affine:edgeless-text'];
+    return Object.entries(FontFamily).map(([name, value]) => {
+      const handler = () => {
+        editorSetting.set('affine:edgeless-text', { fontFamily: value });
+      };
+      const isSelected = fontFamily === value;
+      return (
+        <MenuItem key={name} onSelect={handler} selected={isSelected}>
+          {name}
+        </MenuItem>
+      );
+    });
+  }, [editorSetting, settings]);
+
+  const fontStyleItems = useMemo(() => {
+    const { fontStyle } = settings['affine:edgeless-text'];
+    return Object.entries(FontStyle).map(([name, value]) => {
+      const handler = () => {
+        editorSetting.set('affine:edgeless-text', { fontStyle: value });
+      };
+      const isSelected = fontStyle === value;
+      return (
+        <MenuItem key={name} onSelect={handler} selected={isSelected}>
+          {name}
+        </MenuItem>
+      );
+    });
+  }, [editorSetting, settings]);
+
+  const fontWeightItems = useMemo(() => {
+    const { fontWeight } = settings['affine:edgeless-text'];
+    return Object.entries(FontWeight).map(([name, value]) => {
+      const handler = () => {
+        editorSetting.set('affine:edgeless-text', { fontWeight: value });
+      };
+      const isSelected = fontWeight === value;
+      return (
+        <MenuItem key={name} onSelect={handler} selected={isSelected}>
+          {name}
+        </MenuItem>
+      );
+    });
+  }, [editorSetting, settings]);
 
   return (
     <>
@@ -57,29 +136,33 @@ export const TextSettings = () => {
         name={t['com.affine.settings.editorSettings.edgeless.text.color']()}
         desc={''}
       >
-        <Menu items={<MenuItem>Blue</MenuItem>}>
-          <MenuTrigger className={menuTrigger} disabled>
-            Blue
+        <Menu items={colorItems}>
+          <MenuTrigger className={menuTrigger}>
+            {String(settings['affine:edgeless-text'].color)}
           </MenuTrigger>
         </Menu>
       </SettingRow>
       <SettingRow
-        name={t['com.affine.settings.editorSettings.edgeless.text.font']()}
+        name={t[
+          'com.affine.settings.editorSettings.edgeless.text.font-family'
+        ]()}
         desc={''}
       >
-        <Menu items={<MenuItem>Inter</MenuItem>}>
-          <MenuTrigger className={menuTrigger} disabled>
-            Inter
+        <Menu items={fontFamilyItems}>
+          <MenuTrigger className={menuTrigger}>
+            {FontFamilyMap[settings['affine:edgeless-text'].fontFamily]}
           </MenuTrigger>
         </Menu>
       </SettingRow>
       <SettingRow
-        name={t['com.affine.settings.editorSettings.edgeless.text.font-size']()}
+        name={t[
+          'com.affine.settings.editorSettings.edgeless.text.font-style'
+        ]()}
         desc={''}
       >
-        <Menu items={<MenuItem>15px</MenuItem>}>
-          <MenuTrigger className={menuTrigger} disabled>
-            15px
+        <Menu items={fontStyleItems}>
+          <MenuTrigger className={menuTrigger}>
+            {String(settings['affine:edgeless-text'].fontStyle)}
           </MenuTrigger>
         </Menu>
       </SettingRow>
@@ -89,9 +172,9 @@ export const TextSettings = () => {
         ]()}
         desc={''}
       >
-        <Menu items={<MenuItem>Regular</MenuItem>}>
-          <MenuTrigger className={menuTrigger} disabled>
-            Regular
+        <Menu items={fontWeightItems}>
+          <MenuTrigger className={menuTrigger}>
+            {settings['affine:edgeless-text'].fontWeight}
           </MenuTrigger>
         </Menu>
       </SettingRow>
@@ -101,10 +184,10 @@ export const TextSettings = () => {
       >
         <RadioGroup
           items={alignItems}
-          value={textAlignment}
+          value={textAlign}
           width={250}
           className={settingWrapper}
-          onChange={setTextAlignment}
+          onChange={setTextAlign}
         />
       </SettingRow>
     </>

@@ -63,7 +63,9 @@ const useLoadDoc = (pageId: string) => {
     }
     const editor = doc.scope
       .get(EditorsService)
-      .createEditor(initialQueryStringMode || doc.getPrimaryMode() || 'page');
+      .createEditor(
+        initialQueryStringMode || doc.getPrimaryMode() || ('page' as DocMode)
+      );
     setEditor(editor);
     return () => {
       editor.dispose();

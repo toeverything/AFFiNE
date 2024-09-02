@@ -1,15 +1,20 @@
 import './page-detail-editor.css';
 
 import { useDocCollectionPage } from '@affine/core/hooks/use-block-suite-workspace-page';
+import { ViewService } from '@affine/core/modules/workbench/services/view';
+import type { DocMode } from '@blocksuite/blocks';
 import { DisposableGroup } from '@blocksuite/global/utils';
 import type { AffineEditorContainer } from '@blocksuite/presets';
 import type { Doc as BlockSuiteDoc, DocCollection } from '@blocksuite/store';
-import { type DocMode, useLiveData, useService } from '@toeverything/infra';
+import {
+  useLiveData,
+  useService,
+  useServiceOptional,
+} from '@toeverything/infra';
 import { cssVar } from '@toeverything/theme';
 import clsx from 'clsx';
 import type { CSSProperties } from 'react';
 import { memo, Suspense, useCallback, useMemo } from 'react';
-import { useLocation } from 'react-router-dom';
 
 import { EditorService } from '../modules/editor';
 import {
@@ -37,14 +42,27 @@ export interface PageDetailEditorProps {
   onLoad?: OnLoadEditor;
 }
 
-function useRouterHash() {
-  return useLocation().hash.substring(1);
-}
-
 const PageDetailEditorMain = memo(function PageDetailEditorMain({
   page,
   onLoad,
 }: PageDetailEditorProps & { page: BlockSuiteDoc }) {
+  const viewService = useServiceOptional(ViewService);
+  const params = useLiveData(
+    viewService?.view.queryString$<{
+      mode?: string;
+      blockIds?: string[];
+      elementIds?: string[];
+    }>({
+      // Cannot handle single id situation correctly: `blockIds=xxx`
+      arrayFormat: 'none',
+      types: {
+        mode: 'string',
+        blockIds: value => (value.length ? value.split(',') : []),
+        elementIds: value => (value.length ? value.split(',') : []),
+      },
+    })
+  );
+
   const editor = useService(EditorService).editor;
   const mode = useLiveData(editor.mode$);
 
@@ -65,8 +83,6 @@ const PageDetailEditorMain = memo(function PageDetailEditorMain({
       ? `${customFontFamily}, ${fontStyle.value}`
       : fontStyle.value;
   }, [settings.customFontFamily, settings.fontFamily]);
-
-  const blockId = useRouterHash();
 
   const onLoadEditor = useCallback(
     (editor: AffineEditorContainer) => {
@@ -106,7 +122,8 @@ const PageDetailEditorMain = memo(function PageDetailEditorMain({
       mode={mode}
       page={page}
       shared={isSharedMode}
-      defaultSelectedBlockId={blockId}
+      blockIds={params?.blockIds}
+      elementIds={params?.elementIds}
       onLoadEditor={onLoadEditor}
     />
   );

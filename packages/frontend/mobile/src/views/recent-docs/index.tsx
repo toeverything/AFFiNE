@@ -22,8 +22,9 @@ export const RecentDocs = ({ max = 5 }: { max?: number }) => {
       title="Recent"
       headerClassName={styles.header}
       className={styles.recentSection}
+      testId="recent-docs"
     >
-      <div className={styles.scroll}>
+      <div className={styles.scroll} data-testid="recent-docs-list">
         <ul className={styles.list}>
           {cardMetas.map((doc, index) => (
             <li key={index} className={styles.cardWrapper}>

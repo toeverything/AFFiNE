@@ -28,7 +28,12 @@ export const MobileMenuItem = (props: MenuItemProps) => {
   );
 
   return (
-    <div onClick={onItemClick} className={className} {...restProps}>
+    <div
+      role="menuitem"
+      onClick={onItemClick}
+      className={className}
+      {...restProps}
+    >
       {children}
     </div>
   );

@@ -1,7 +1,7 @@
 import { SettingWrapper } from '@affine/component/setting-components';
 import { useI18n } from '@affine/i18n';
 
-import { ConnecterSettings } from './connecter';
+import { ConnectorSettings } from './connector';
 import { MindMapSettings } from './mind-map';
 import { NoteSettings } from './note';
 import { PenSettings } from './pen';
@@ -15,7 +15,7 @@ export const Edgeless = () => {
       <NoteSettings />
       <TextSettings />
       <ShapeSettings />
-      <ConnecterSettings />
+      <ConnectorSettings />
       <PenSettings />
       <MindMapSettings />
     </SettingWrapper>

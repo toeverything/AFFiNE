@@ -20,20 +20,31 @@ import {
   RecentDocsQuickSearchSession,
 } from '@affine/core/modules/quicksearch';
 import { DebugLogger } from '@affine/debug';
-import type { BlockSpec, WidgetComponent } from '@blocksuite/block-std';
 import {
-  type AffineReference,
+  type BlockService,
+  BlockViewIdentifier,
+  type ExtensionType,
+  type WidgetComponent,
+} from '@blocksuite/block-std';
+import { BlockServiceWatcher } from '@blocksuite/block-std';
+import type {
+  AffineReference,
+  DatabaseBlockService,
+  ListBlockService,
+  ParagraphBlockService,
+  RootService,
+} from '@blocksuite/blocks';
+import {
   AffineSlashMenuWidget,
+  DocMode,
+  DocModeProvider,
   EdgelessRootBlockComponent,
   EmbedLinkedDocBlockComponent,
-  type ParagraphBlockService,
-  type RootService,
 } from '@blocksuite/blocks';
 import { LinkIcon } from '@blocksuite/icons/rc';
 import { AIChatBlockSchema } from '@blocksuite/presets';
 import type { BlockSnapshot } from '@blocksuite/store';
 import {
-  type DocMode,
   type DocService,
   DocsService,
   type FrameworkProvider,
@@ -48,84 +59,62 @@ export type ReferenceReactRenderer = (
 
 const logger = new DebugLogger('affine::spec-patchers');
 
-function patchSpecService<Spec extends BlockSpec>(
-  spec: Spec,
-  onMounted: (
-    service: Spec extends BlockSpec<any, infer BlockService>
-      ? BlockService
-      : never
-  ) => (() => void) | void,
+function patchSpecService<Service extends BlockService = BlockService>(
+  flavour: string,
+  onMounted: (service: Service) => (() => void) | void,
   onWidgetConnected?: (component: WidgetComponent) => void
 ) {
-  const oldSetup = spec.setup;
-  spec.setup = (slots, disposableGroup) => {
-    oldSetup?.(slots, disposableGroup);
-    disposableGroup.add(
-      slots.mounted.on(({ service }) => {
-        const disposable = onMounted(service as any);
-        if (disposable) {
-          disposableGroup.add(disposable);
-        }
-      })
-    );
+  class TempServiceWatcher extends BlockServiceWatcher {
+    static override readonly flavour = flavour;
+    override mounted() {
+      super.mounted();
+      const disposable = onMounted(this.blockService as any);
+      const disposableGroup = this.blockService.disposables;
+      if (disposable) {
+        disposableGroup.add(disposable);
+      }
 
-    onWidgetConnected &&
-      disposableGroup.add(
-        slots.widgetConnected.on(({ component }) => {
-          onWidgetConnected(component);
-        })
-      );
-  };
-  return spec;
+      if (onWidgetConnected) {
+        disposableGroup.add(
+          this.blockService.specSlots.widgetConnected.on(({ component }) => {
+            onWidgetConnected(component);
+          })
+        );
+      }
+    }
+  }
+  return TempServiceWatcher;
 }
 
 /**
  * Patch the block specs with custom renderers.
  */
 export function patchReferenceRenderer(
-  specs: BlockSpec[],
   reactToLit: (element: ElementOrFactory) => TemplateResult,
   reactRenderer: ReferenceReactRenderer
-) {
+): ExtensionType[] {
   const litRenderer = (reference: AffineReference) => {
     const node = reactRenderer(reference);
     return reactToLit(node);
   };
 
-  return specs.map(spec => {
-    if (
-      ['affine:paragraph', 'affine:list', 'affine:database'].includes(
-        spec.schema.model.flavour
-      )
-    ) {
-      spec = patchSpecService(
-        spec as BlockSpec<string, ParagraphBlockService>,
-        service => {
-          service.referenceNodeConfig.setCustomContent(litRenderer);
-          return () => {
-            service.referenceNodeConfig.setCustomContent(null);
-          };
-        }
-      );
-    }
-
-    return spec;
+  return ['affine:paragraph', 'affine:list', 'affine:database'].map(flavour => {
+    return patchSpecService<
+      ParagraphBlockService | ListBlockService | DatabaseBlockService
+    >(flavour, service => {
+      service.referenceNodeConfig.setCustomContent(litRenderer);
+      return () => {
+        service.referenceNodeConfig.setCustomContent(null);
+      };
+    });
   });
 }
 
-export function patchNotificationService(
-  specs: BlockSpec[],
-  { closeConfirmModal, openConfirmModal }: ReturnType<typeof useConfirmModal>
-) {
-  const rootSpec = specs.find(
-    spec => spec.schema.model.flavour === 'affine:page'
-  ) as BlockSpec<string, RootService>;
-
-  if (!rootSpec) {
-    return specs;
-  }
-
-  patchSpecService(rootSpec, service => {
+export function patchNotificationService({
+  closeConfirmModal,
+  openConfirmModal,
+}: ReturnType<typeof useConfirmModal>) {
+  return patchSpecService<RootService>('affine:page', service => {
     service.notificationService = {
       confirm: async ({ title, message, confirmText, cancelText, abort }) => {
         return new Promise<boolean>(resolve => {
@@ -234,22 +223,10 @@ export function patchNotificationService(
       },
     };
   });
-  return specs;
 }
 
-export function patchPeekViewService(
-  specs: BlockSpec[],
-  service: PeekViewService
-) {
-  const rootSpec = specs.find(
-    spec => spec.schema.model.flavour === 'affine:page'
-  ) as BlockSpec<string, RootService>;
-
-  if (!rootSpec) {
-    return specs;
-  }
-
-  patchSpecService(rootSpec, pageService => {
+export function patchPeekViewService(service: PeekViewService) {
+  return patchSpecService<RootService>('affine:page', pageService => {
     pageService.peekViewService = {
       peek: (target: ActivePeekView['target'], template?: TemplateResult) => {
         logger.debug('center peek', target, template);
@@ -257,75 +234,55 @@ export function patchPeekViewService(
       },
     };
   });
-
-  return specs;
 }
 
 export function patchDocModeService(
-  specs: BlockSpec[],
   docService: DocService,
   docsService: DocsService
-) {
-  const rootSpec = specs.find(
-    spec => spec.schema.model.flavour === 'affine:page'
-  ) as BlockSpec<string, RootService>;
-
-  if (!rootSpec) {
-    return specs;
+): ExtensionType {
+  const DEFAULT_MODE = 'page';
+  class AffineDocModeService implements DocModeProvider {
+    setMode = (mode: DocMode, id?: string) => {
+      if (id) {
+        docsService.list.setPrimaryMode(id, mode);
+      } else {
+        docService.doc.setPrimaryMode(mode);
+      }
+    };
+    getMode = (id?: string) => {
+      const mode = id
+        ? docsService.list.getPrimaryMode(id)
+        : docService.doc.getPrimaryMode();
+      return (mode || DEFAULT_MODE) as DocMode;
+    };
+    toggleMode = (id?: string) => {
+      const mode = id
+        ? docsService.list.togglePrimaryMode(id)
+        : docService.doc.togglePrimaryMode();
+      return (mode || DEFAULT_MODE) as DocMode;
+    };
+    onModeChange = (handler: (mode: DocMode) => void, id?: string) => {
+      // eslint-disable-next-line rxjs/finnish
+      const mode$ = id
+        ? docsService.list.primaryMode$(id)
+        : docService.doc.primaryMode$;
+      const sub = mode$.subscribe(m => handler((m || DEFAULT_MODE) as DocMode));
+      return {
+        dispose: sub.unsubscribe,
+      };
+    };
   }
 
-  patchSpecService(rootSpec, pageService => {
-    const DEFAULT_MODE = 'page';
-    pageService.docModeService = {
-      setMode: (mode: DocMode, id?: string) => {
-        if (id) {
-          docsService.list.setPrimaryMode(id, mode);
-        } else {
-          docService.doc.setPrimaryMode(mode);
-        }
-      },
-      getMode: (id?: string) => {
-        const mode = id
-          ? docsService.list.getPrimaryMode(id)
-          : docService.doc.getPrimaryMode();
-        return mode || DEFAULT_MODE;
-      },
-      toggleMode: (id?: string) => {
-        const mode = id
-          ? docsService.list.togglePrimaryMode(id)
-          : docService.doc.togglePrimaryMode();
-        return mode || DEFAULT_MODE;
-      },
-      onModeChange: (handler: (mode: DocMode) => void, id?: string) => {
-        // eslint-disable-next-line rxjs/finnish
-        const mode$ = id
-          ? docsService.list.primaryMode$(id)
-          : docService.doc.primaryMode$;
-        const sub = mode$.subscribe(m => handler(m || DEFAULT_MODE));
-        return {
-          dispose: sub.unsubscribe,
-        };
-      },
-    };
-  });
+  const docModeExtension: ExtensionType = {
+    setup: di => [di.override(DocModeProvider, AffineDocModeService)],
+  };
 
-  return specs;
+  return docModeExtension;
 }
 
-export function patchQuickSearchService(
-  specs: BlockSpec[],
-  framework: FrameworkProvider
-) {
-  const rootSpec = specs.find(
-    spec => spec.schema.model.flavour === 'affine:page'
-  ) as BlockSpec<string, RootService>;
-
-  if (!rootSpec) {
-    return specs;
-  }
-
-  patchSpecService(
-    rootSpec,
+export function patchQuickSearchService(framework: FrameworkProvider) {
+  return patchSpecService<RootService>(
+    'affine:page',
     pageService => {
       pageService.quickSearchService = {
         async searchDoc(options) {
@@ -409,8 +366,8 @@ export function patchQuickSearchService(
                     const docsService = framework.get(DocsService);
                     const mode =
                       result.id === 'creation:create-edgeless'
-                        ? 'edgeless'
-                        : 'page';
+                        ? DocMode.Edgeless
+                        : DocMode.Page;
                     const newDoc = docsService.createDoc({
                       primaryMode: mode,
                       title: result.payload.title,
@@ -490,63 +447,56 @@ export function patchQuickSearchService(
       }
     }
   );
-
-  return specs;
 }
 
-export function patchEdgelessClipboard(specs: BlockSpec[]) {
-  const rootSpec = specs.find(
-    spec => spec.schema.model.flavour === 'affine:page'
-  ) as BlockSpec<string, RootService>;
+export function patchEdgelessClipboard() {
+  class EdgelessClipboardWatcher extends BlockServiceWatcher {
+    static override readonly flavour = 'affine:page';
 
-  if (!rootSpec) {
-    return specs;
-  }
-
-  const oldSetup = rootSpec.setup;
-  rootSpec.setup = (slots, disposableGroup) => {
-    oldSetup?.(slots, disposableGroup);
-    disposableGroup.add(
-      slots.viewConnected.on(view => {
-        const component = view.component;
-        if (component instanceof EdgelessRootBlockComponent) {
-          const AIChatBlockFlavour = AIChatBlockSchema.model.flavour;
-          const createFunc = (blocks: BlockSnapshot[]) => {
-            const blockIds = blocks.map(({ props }) => {
-              const {
-                xywh,
-                scale,
-                messages,
-                sessionId,
-                rootDocId,
-                rootWorkspaceId,
-              } = props;
-              const blockId = component.service.addBlock(
-                AIChatBlockFlavour,
-                {
+    override mounted() {
+      super.mounted();
+      this.blockService.disposables.add(
+        this.blockService.specSlots.viewConnected.on(view => {
+          const { component } = view;
+          if (component instanceof EdgelessRootBlockComponent) {
+            const AIChatBlockFlavour = AIChatBlockSchema.model.flavour;
+            const createFunc = (blocks: BlockSnapshot[]) => {
+              const blockIds = blocks.map(({ props }) => {
+                const {
                   xywh,
                   scale,
                   messages,
                   sessionId,
                   rootDocId,
                   rootWorkspaceId,
-                },
-                component.surface.model.id
-              );
-              return blockId;
-            });
-            return blockIds;
-          };
-          component.clipboardController.registerBlock(
-            AIChatBlockFlavour,
-            createFunc
-          );
-        }
-      })
-    );
-  };
+                } = props;
+                const blockId = component.service.addBlock(
+                  AIChatBlockFlavour,
+                  {
+                    xywh,
+                    scale,
+                    messages,
+                    sessionId,
+                    rootDocId,
+                    rootWorkspaceId,
+                  },
+                  component.surface.model.id
+                );
+                return blockId;
+              });
+              return blockIds;
+            };
+            component.clipboardController.registerBlock(
+              AIChatBlockFlavour,
+              createFunc
+            );
+          }
+        })
+      );
+    }
+  }
 
-  return specs;
+  return EdgelessClipboardWatcher;
 }
 
 @customElement('affine-linked-doc-ref-block')
@@ -557,22 +507,18 @@ export class LinkedDocBlockComponent extends EmbedLinkedDocBlockComponent {
   }
 }
 
-export function patchForSharedPage(specs: BlockSpec[]) {
-  return specs.map(spec => {
-    const linkedDocNames = [
-      'affine:embed-linked-doc',
-      'affine:embed-synced-doc',
-    ];
-
-    if (linkedDocNames.includes(spec.schema.model.flavour)) {
-      spec = {
-        ...spec,
-        view: {
-          component: literal`affine-linked-doc-ref-block`,
-          widgets: {},
-        },
-      };
-    }
-    return spec;
-  });
+export function patchForSharedPage() {
+  const extension: ExtensionType = {
+    setup: di => {
+      di.override(
+        BlockViewIdentifier('affine:embed-linked-doc'),
+        () => literal`affine-linked-doc-ref-block`
+      );
+      di.override(
+        BlockViewIdentifier('affine:embed-synced-doc'),
+        () => literal`affine-linked-doc-ref-block`
+      );
+    },
+  };
+  return extension;
 }

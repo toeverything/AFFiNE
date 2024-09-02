@@ -2,8 +2,8 @@ import { BlocksuiteHeaderTitle } from '@affine/core/components/blocksuite/block-
 import { EditorModeSwitch } from '@affine/core/components/blocksuite/block-suite-mode-switch';
 import ShareHeaderRightItem from '@affine/core/components/cloud/share-header-right-item';
 import { AuthModal } from '@affine/core/providers/modal-provider';
+import type { DocMode } from '@blocksuite/blocks';
 import type { DocCollection } from '@blocksuite/store';
-import type { DocMode } from '@toeverything/infra';
 
 import * as styles from './share-header.css';
 

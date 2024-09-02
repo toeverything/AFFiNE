@@ -12,7 +12,7 @@ import {
 } from './template';
 
 export const PPTBuilder = (host: EditorHost) => {
-  const service = host.spec.getService<EdgelessRootService>('affine:page');
+  const service = host.std.getService<EdgelessRootService>('affine:page');
   const docs: PPTDoc[] = [];
   const contents: unknown[] = [];
   const allImages: TemplateImage[][] = [];

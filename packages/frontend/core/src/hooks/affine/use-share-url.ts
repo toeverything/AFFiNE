@@ -3,7 +3,7 @@ import { track } from '@affine/core/mixpanel';
 import { getAffineCloudBaseUrl } from '@affine/core/modules/cloud/services/fetch';
 import { useI18n } from '@affine/i18n';
 import type { BaseSelection } from '@blocksuite/block-std';
-import { type DocMode } from '@toeverything/infra';
+import type { DocMode } from '@blocksuite/blocks';
 import { useCallback } from 'react';
 
 import { useActiveBlocksuiteEditor } from '../use-block-suite-editor';
@@ -34,19 +34,18 @@ const generateUrl = ({
 
   try {
     const url = new URL(`${baseUrl}/workspace/${workspaceId}/${pageId}`);
+    const search = url.searchParams;
     if (shareMode) {
-      url.searchParams.append('mode', shareMode);
+      search.append('mode', shareMode);
     }
-    // TODO(@JimmFly): use query string to handle blockIds
     if (blockIds && blockIds.length > 0) {
-      // hash is used to store blockIds
-      url.hash = blockIds.join(',');
+      search.append('blockIds', blockIds.join(','));
     }
     if (elementIds && elementIds.length > 0) {
-      url.searchParams.append('element', elementIds.join(','));
+      search.append('elementIds', elementIds.join(','));
     }
     if (xywh) {
-      url.searchParams.append('xywh', xywh);
+      search.append('xywh', xywh);
     }
     return url.toString();
   } catch {

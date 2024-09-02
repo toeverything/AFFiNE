@@ -76,7 +76,6 @@ export const searchIcon = style({
 export const fontItemContainer = style({
   display: 'flex',
   justifyContent: 'space-between',
-  fontSize: cssVar('fontXs'),
   alignItems: 'center',
   overflow: 'hidden',
   width: '100%',
@@ -90,18 +89,30 @@ export const fontItem = style({
   textOverflow: 'ellipsis',
 });
 export const fontLabel = style({
-  color: cssVarV2('text/secondary'),
+  display: 'inline-flex',
+  alignItems: 'center',
+  color: cssVarV2('text/primary'),
   width: '100%',
   whiteSpace: 'nowrap',
   textOverflow: 'ellipsis',
   overflow: 'hidden',
+  fontSize: cssVar('fontSm'),
+  lineHeight: 'normal',
+  height: '22px',
   selectors: {
     '&.secondary': {
       color: cssVarV2('text/secondary'),
+      fontSize: cssVar('fontXs'),
+      height: '20px',
     },
   },
 });
 export const selectedIcon = style({
   color: cssVarV2('button/primary'),
   marginLeft: '8px',
+});
+export const notFound = style({
+  color: cssVarV2('text/secondary'),
+  fontSize: cssVar('fontXs'),
+  padding: '4px',
 });

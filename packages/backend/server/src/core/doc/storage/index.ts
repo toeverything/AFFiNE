@@ -28,5 +28,6 @@ export {
   DocStorageAdapter,
   type DocStorageOptions,
   type DocUpdate,
+  type Editor,
   type HistoryFilter,
 } from './doc';

@@ -7,10 +7,9 @@ import { EditorOutlineViewer } from '@affine/core/components/blocksuite/outline-
 import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
 import { PageNotFound } from '@affine/core/pages/404';
 import { DebugLogger } from '@affine/debug';
-import { type EdgelessRootService } from '@blocksuite/blocks';
+import { DocMode, type EdgelessRootService } from '@blocksuite/blocks';
 import { Bound, DisposableGroup } from '@blocksuite/global/utils';
 import type { AffineEditorContainer } from '@blocksuite/presets';
-import type { DocMode } from '@toeverything/infra';
 import { DocsService, FrameworkScope, useService } from '@toeverything/infra';
 import clsx from 'clsx';
 import { useCallback, useEffect, useState } from 'react';
@@ -32,7 +31,7 @@ function fitViewport(
     }
 
     const rootService =
-      editor.host.std.spec.getService<EdgelessRootService>('affine:page');
+      editor.host.std.getService<EdgelessRootService>('affine:page');
     rootService.viewport.onResize();
 
     if (xywh) {
@@ -60,12 +59,14 @@ function fitViewport(
 
 export function DocPeekPreview({
   docId,
-  blockId,
+  blockIds,
+  elementIds,
   mode,
   xywh,
 }: {
   docId: string;
-  blockId?: string;
+  blockIds?: string[];
+  elementIds?: string[];
   mode?: DocMode;
   xywh?: `[${number},${number},${number},${number}]`;
 }) {
@@ -97,7 +98,7 @@ export function DocPeekPreview({
   useEffect(() => {
     if (!mode || !resolvedMode) {
       setResolvedMode(
-        docs.list.doc$(docId).value?.primaryMode$.value || 'page'
+        docs.list.doc$(docId).value?.primaryMode$.value || DocMode.Page
       );
     }
   }, [docId, docs.list, resolvedMode, mode]);
@@ -125,12 +126,17 @@ export function DocPeekPreview({
             return;
           }
 
-          const rootService =
-            editorElement.host.std.spec.getService('affine:page');
+          const rootService = editorElement.host.std.getService('affine:page');
           // doc change event inside peek view should be handled by peek view
           disposableGroup.add(
-            rootService.slots.docLinkClicked.on(({ docId, blockId }) => {
-              peekView.open({ docId, blockId }).catch(console.error);
+            rootService.slots.docLinkClicked.on(options => {
+              peekView
+                .open({
+                  type: 'doc',
+                  docId: options.pageId,
+                  ...options.params,
+                })
+                .catch(console.error);
             })
           );
           // TODO(@Peng): no tag peek view yet
@@ -175,7 +181,8 @@ export function DocPeekPreview({
               ref={onRef}
               className={styles.editor}
               mode={resolvedMode}
-              defaultSelectedBlockId={blockId}
+              blockIds={blockIds}
+              elementIds={elementIds}
               page={doc.blockSuiteDoc}
             />
           </FrameworkScope>

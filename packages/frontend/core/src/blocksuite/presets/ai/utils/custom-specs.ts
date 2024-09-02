@@ -1,3 +1,10 @@
+import {
+  BlockFlavourIdentifier,
+  BlockServiceIdentifier,
+  BlockViewIdentifier,
+  type ExtensionType,
+  StdIdentifier,
+} from '@blocksuite/block-std';
 import { PageEditorBlockSpecs, PageRootService } from '@blocksuite/blocks';
 import { literal } from 'lit/static-html.js';
 
@@ -8,15 +15,19 @@ class CustomPageRootService extends PageRootService {
   override loadFonts() {}
 }
 
-export const CustomPageEditorBlockSpecs = PageEditorBlockSpecs.map(spec => {
-  if (spec.schema.model.flavour === 'affine:page') {
-    return {
-      ...spec,
-      service: CustomPageRootService,
-      view: {
-        component: literal`affine-page-root`,
-      },
-    };
-  }
-  return spec;
-});
+export const CustomPageEditorBlockSpecs: ExtensionType[] = [
+  ...PageEditorBlockSpecs,
+  {
+    setup: di => {
+      di.override(
+        BlockServiceIdentifier('affine:page'),
+        CustomPageRootService,
+        [StdIdentifier, BlockFlavourIdentifier('affine:page')]
+      );
+      di.override(
+        BlockViewIdentifier('affine:page'),
+        () => literal`affine-page-root`
+      );
+    },
+  },
+];

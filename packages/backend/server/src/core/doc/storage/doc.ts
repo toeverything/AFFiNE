@@ -16,16 +16,23 @@ export interface DocRecord {
   docId: string;
   bin: Uint8Array;
   timestamp: number;
+  editor?: string;
 }
 
 export interface DocUpdate {
   bin: Uint8Array;
   timestamp: number;
+  editor?: string;
 }
 
 export interface HistoryFilter {
   before?: number;
   limit?: number;
+}
+
+export interface Editor {
+  name: string;
+  avatarUrl: string | null;
 }
 
 export interface DocStorageOptions {
@@ -61,7 +68,7 @@ export abstract class DocStorageAdapter extends Connection {
     const updates = await this.getDocUpdates(spaceId, docId);
 
     if (updates.length) {
-      const { timestamp, bin } = await this.squash(
+      const { timestamp, bin, editor } = await this.squash(
         snapshot ? [snapshot, ...updates] : updates
       );
 
@@ -70,6 +77,7 @@ export abstract class DocStorageAdapter extends Connection {
         docId,
         bin,
         timestamp,
+        editor,
       };
 
       const success = await this.setDocSnapshot(newSnapshot);
@@ -91,7 +99,8 @@ export abstract class DocStorageAdapter extends Connection {
   abstract pushDocUpdates(
     spaceId: string,
     docId: string,
-    updates: Uint8Array[]
+    updates: Uint8Array[],
+    editorId?: string
   ): Promise<number>;
 
   abstract deleteDoc(spaceId: string, docId: string): Promise<void>;
@@ -99,7 +108,8 @@ export abstract class DocStorageAdapter extends Connection {
   async rollbackDoc(
     spaceId: string,
     docId: string,
-    timestamp: number
+    timestamp: number,
+    editorId?: string
   ): Promise<void> {
     await using _lock = await this.lockDocForUpdate(spaceId, docId);
     const toSnapshot = await this.getDocHistory(spaceId, docId, timestamp);
@@ -114,7 +124,7 @@ export abstract class DocStorageAdapter extends Connection {
     }
 
     const change = this.generateChangeUpdate(fromSnapshot.bin, toSnapshot.bin);
-    await this.pushDocUpdates(spaceId, docId, [change]);
+    await this.pushDocUpdates(spaceId, docId, [change], editorId);
     // force create a new history record after rollback
     await this.createDocHistory(fromSnapshot, true);
   }
@@ -127,7 +137,7 @@ export abstract class DocStorageAdapter extends Connection {
     spaceId: string,
     docId: string,
     query: { skip?: number; limit?: number }
-  ): Promise<number[]>;
+  ): Promise<{ timestamp: number; editor: Editor | null }[]>;
   abstract getDocHistory(
     spaceId: string,
     docId: string,
@@ -173,6 +183,7 @@ export abstract class DocStorageAdapter extends Connection {
     return {
       bin: finalUpdate,
       timestamp: lastUpdate.timestamp,
+      editor: lastUpdate.editor,
     };
   }
 

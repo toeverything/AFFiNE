@@ -38,7 +38,16 @@ export const DoneIconStyle = style({
 export const exportItemStyle = style({
   padding: '4px',
   transition: 'all 0.3s',
+  gap: '0px',
 });
+globalStyle(`${exportItemStyle} > div:first-child`, {
+  alignItems: 'center',
+});
+globalStyle(`${exportItemStyle} svg`, {
+  width: '16px',
+  height: '16px',
+});
+
 export const copyLinkContainerStyle = style({
   padding: '4px',
   display: 'flex',

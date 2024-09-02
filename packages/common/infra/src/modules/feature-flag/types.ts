@@ -6,6 +6,7 @@ export type FlagInfo = {
   configurable?: boolean;
   defaultState?: boolean; // default to open and not controlled by user
   feedbackType?: FeedbackType;
+  feedbackLink?: string;
 } & (
   | {
       category: 'affine';

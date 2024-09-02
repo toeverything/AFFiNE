@@ -8,6 +8,7 @@ import {
   type AIError,
   CanvasElementType,
   ConnectorMode,
+  DocModeProvider,
   type EdgelessRootService,
 } from '@blocksuite/blocks';
 import {
@@ -37,11 +38,11 @@ export class AIChatBlockPeekView extends LitElement {
   static override styles = PeekViewStyles;
 
   private get _rootService() {
-    return this.host.spec.getService('affine:page');
+    return this.host.std.getService('affine:page');
   }
 
   private get _modeService() {
-    return this._rootService.docModeService;
+    return this.host.std.get(DocModeProvider);
   }
 
   private get parentSessionId() {

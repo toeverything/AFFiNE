@@ -1,0 +1,17 @@
+version: 0.17.0-canary.7
+files:
+  - url: affine-0.17.0-canary.7-canary-macos-arm64.dmg
+    sha512: Tdy7dgrCHP95PjsZBt1evxUk7DUkn+JpseBQj1Gz60MmcsFx+0NtJvofZbUcsLFiS0IC32JM/szHlHiNGEznrQ==
+    size: 170556866
+  - url: affine-0.17.0-canary.7-canary-macos-arm64.zip
+    sha512: pmYD0B5Z9hrzgjcHmRCKnNawoPJiO5r1RjBBZi+THVL3TyKXzpJBr9HTNQkjYnQYgqHX4q2eoONsDNCIoqTeBA==
+    size: 170382513
+  - url: affine-0.17.0-canary.7-canary-macos-x64.dmg
+    sha512: k4a4GUmy/6MmSc1xVGJNeNCCtYylWWSRcfDoZA+syUhZFY6x3xrOft972ONsiRrJukXWlKrFmVTwoW68Ywe49A==
+    size: 176815834
+  - url: affine-0.17.0-canary.7-canary-macos-x64.zip
+    sha512: PL24krtjeiQY53F7OuS+hh8EZP3YpbLle0JboXiddSrulypxzBRquOCCinNW88Kg8ZJbOrfTkxaNOHpOAVfeaQ==
+    size: 176948223
+path: affine-0.17.0-canary.7-canary-macos-arm64.dmg
+sha512: Tdy7dgrCHP95PjsZBt1evxUk7DUkn+JpseBQj1Gz60MmcsFx+0NtJvofZbUcsLFiS0IC32JM/szHlHiNGEznrQ==
+releaseDate: 2024-08-29T08:20:52.810Z

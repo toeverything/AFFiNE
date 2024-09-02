@@ -48,6 +48,8 @@ const snapshot: Snapshot = {
   seq: 0,
   updatedAt: new Date(),
   createdAt: new Date(),
+  createdBy: null,
+  updatedBy: null,
 };
 
 function getSnapshot(timestamp: number = Date.now()): DocRecord {

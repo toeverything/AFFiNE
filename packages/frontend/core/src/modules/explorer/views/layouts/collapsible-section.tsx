@@ -81,6 +81,7 @@ export const CollapsibleSection = ({
         {mobile ? null : actions}
       </CategoryDivider>
       <Collapsible.Content
+        data-testid="collapsible-section-content"
         className={clsx(mobile ? mobileContent : content, contentClassName)}
       >
         {children}

@@ -1,5 +1,9 @@
 import { cssVarV2 } from '@toeverything/theme/v2';
-import { style } from '@vanilla-extract/css';
+import { createVar, style } from '@vanilla-extract/css';
+
+export const thumbSize = createVar();
+
+export const root = style({});
 
 export const trackStyle = style({
   width: '100%',
@@ -11,7 +15,8 @@ export const trackStyle = style({
   cursor: 'pointer',
 });
 export const fakeTrackStyle = style({
-  width: '100%',
+  width: `calc(100% - ${thumbSize})`,
+  transform: `translateX(calc(${thumbSize} * 0.5))`,
   height: '1px',
   backgroundColor: cssVarV2('layer/insideBorder/border'),
   position: 'relative',
@@ -29,8 +34,8 @@ export const filledTrackStyle = style({
 });
 
 export const thumbStyle = style({
-  width: '14px',
-  height: '14px',
+  width: thumbSize,
+  height: thumbSize,
   backgroundColor: cssVarV2('icon/primary'),
   borderRadius: '50%',
   position: 'absolute',

@@ -1,0 +1,11 @@
+version: 0.17.0-canary.7
+files:
+  - url: affine-0.17.0-canary.7-canary-linux-x64.appimage
+    sha512: qspZkDlItrHu02vSItbjc3I+t4FcOiHOzGt0Ap6IeZEFKal+hoOh4WIcUN16dlS/OoFm+is8yPBHqN/70xhWKA==
+    size: 181990592
+  - url: affine-0.17.0-canary.7-canary-linux-x64.zip
+    sha512: fom2iuMiPUlnHAGJhQdAnWJwMggK4rloNkiWqH8ZHF1Q09oturgSMGgkUEWZWXsZPpORt545eYNv5Zg9aff8yQ==
+    size: 180105256
+path: affine-0.17.0-canary.7-canary-linux-x64.appimage
+sha512: qspZkDlItrHu02vSItbjc3I+t4FcOiHOzGt0Ap6IeZEFKal+hoOh4WIcUN16dlS/OoFm+is8yPBHqN/70xhWKA==
+releaseDate: 2024-08-29T08:20:53.453Z

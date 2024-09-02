@@ -1,10 +1,10 @@
+import type { DocMode } from '@blocksuite/blocks';
 import { type DocMeta } from '@blocksuite/store';
 import { isEqual } from 'lodash-es';
 import { distinctUntilChanged, Observable } from 'rxjs';
 
 import { Store } from '../../../framework';
 import type { WorkspaceLocalState, WorkspaceService } from '../../workspace';
-import type { DocMode } from '../entities/record';
 
 export class DocsStore extends Store {
   constructor(

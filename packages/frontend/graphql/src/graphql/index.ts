@@ -610,6 +610,30 @@ query getWorkspaceFeatures($workspaceId: String!) {
 }`,
 };
 
+export const getWorkspacePageMetaByIdQuery = {
+  id: 'getWorkspacePageMetaByIdQuery' as const,
+  operationName: 'getWorkspacePageMetaById',
+  definitionName: 'workspace',
+  containsFile: false,
+  query: `
+query getWorkspacePageMetaById($id: String!, $pageId: String!) {
+  workspace(id: $id) {
+    pageMeta(pageId: $pageId) {
+      createdAt
+      updatedAt
+      createdBy {
+        name
+        avatarUrl
+      }
+      updatedBy {
+        name
+        avatarUrl
+      }
+    }
+  }
+}`,
+};
+
 export const getWorkspacePublicByIdQuery = {
   id: 'getWorkspacePublicByIdQuery' as const,
   operationName: 'getWorkspacePublicById',
@@ -696,6 +720,10 @@ query listHistory($workspaceId: String!, $pageDocId: String!, $take: Int, $befor
     histories(guid: $pageDocId, take: $take, before: $before) {
       id
       timestamp
+      editor {
+        name
+        avatarUrl
+      }
     }
   }
 }`,

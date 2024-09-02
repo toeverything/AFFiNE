@@ -89,6 +89,7 @@ export const iconNames = [
   'edgeless',
   'journal',
   'payment',
+  'createdEdited',
 ] as const satisfies fromLibIconName<LibIconComponentName>[];
 
 export type PagePropertyIcon = (typeof iconNames)[number];
@@ -109,6 +110,10 @@ export const getDefaultIconName = (
       return 'checkBoxCheckLinear';
     case 'number':
       return 'number';
+    case 'createdBy':
+      return 'createdEdited';
+    case 'updatedBy':
+      return 'createdEdited';
     default:
       return 'text';
   }

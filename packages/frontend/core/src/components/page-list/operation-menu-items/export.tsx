@@ -6,7 +6,7 @@ import {
   ExportToHtmlIcon,
   ExportToMarkdownIcon,
   ExportToPngIcon,
-  FileIcon,
+  PrinterIcon,
 } from '@blocksuite/icons/rc';
 import type { ReactNode } from 'react';
 import { useCallback } from 'react';
@@ -57,7 +57,7 @@ export const PrintMenuItems = ({
       onSelect={() => exportHandler('pdf')}
       className={className}
       type="pdf"
-      icon={<FileIcon />}
+      icon={<PrinterIcon />}
       label={t['com.affine.export.print']()}
     />
   );

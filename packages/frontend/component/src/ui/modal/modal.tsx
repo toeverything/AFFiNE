@@ -9,7 +9,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
 import { assignInlineVars } from '@vanilla-extract/dynamic';
 import clsx from 'clsx';
-import type { CSSProperties, MouseEvent } from 'react';
+import type { CSSProperties } from 'react';
 import { forwardRef, useCallback, useEffect, useState } from 'react';
 
 import { isMobile } from '../../utils/env';
@@ -135,7 +135,6 @@ export const ModalInner = forwardRef<HTMLDivElement, ModalProps>(
       overlayOptions: {
         className: overlayClassName,
         style: overlayStyle,
-        onClick: onOverlayClick,
         ...otherOverlayOptions
       } = {},
       closeButtonOptions,
@@ -185,18 +184,6 @@ export const ModalInner = forwardRef<HTMLDivElement, ModalProps>(
       [onEscapeKeyDown, persistent]
     );
 
-    const handleOverlayClick = useCallback(
-      (e: MouseEvent<HTMLDivElement>) => {
-        onOverlayClick?.(e);
-        if (persistent) {
-          e.preventDefault();
-        } else {
-          onOpenChange?.(false);
-        }
-      },
-      [onOpenChange, onOverlayClick, persistent]
-    );
-
     if (!container) {
       return;
     }
@@ -219,7 +206,6 @@ export const ModalInner = forwardRef<HTMLDivElement, ModalProps>(
             style={{
               ...overlayStyle,
             }}
-            onClick={handleOverlayClick}
             {...otherOverlayOptions}
           />
           <div

@@ -12,11 +12,12 @@ import { ShareReaderService } from '@affine/core/modules/share-doc';
 import { CloudBlobStorage } from '@affine/core/modules/workspace-engine';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useI18n } from '@affine/i18n';
+import type { DocMode } from '@blocksuite/blocks';
 import { noop } from '@blocksuite/global/utils';
 import { Logo1Icon } from '@blocksuite/icons/rc';
 import type { AffineEditorContainer } from '@blocksuite/presets';
 import type { Doc as BlockSuiteDoc } from '@blocksuite/store';
-import type { Doc, DocMode, Workspace } from '@toeverything/infra';
+import type { Doc, Workspace } from '@toeverything/infra';
 import {
   DocsService,
   EmptyBlobStorage,
@@ -96,7 +97,7 @@ const SharePageInner = ({
   docId,
   workspaceBinary,
   docBinary,
-  publishMode = 'page',
+  publishMode = 'page' as DocMode,
 }: {
   workspaceId: string;
   docId: string;

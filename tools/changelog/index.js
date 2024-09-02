@@ -89,8 +89,16 @@ const content = await readFile(join(rootDir, pkgJsonPath), 'utf8');
 const { dependencies } = JSON.parse(content);
 const blocksuiteVersion = dependencies['@blocksuite/block-std'];
 
-const previousPkgJsonBlob = repo
-  .findCommit(PREV_VERSION)
+const prevCommit = repo.findCommit(PREV_VERSION);
+
+if (!prevCommit) {
+  console.info(
+    `Can't find prev commit ${PREV_VERSION} on the git tree, skip the changelog generation`
+  );
+  process.exit(0);
+}
+
+const previousPkgJsonBlob = prevCommit
   .tree()
   .getPath(pkgJsonPath)
   .toObject(repo)

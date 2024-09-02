@@ -4,7 +4,6 @@ import { useI18n } from '@affine/i18n';
 import { Edgeless } from './edgeless';
 import { General } from './general';
 import { Page } from './page';
-import { Preferences } from './preferences';
 
 export const EditorSettings = () => {
   const t = useI18n();
@@ -18,7 +17,9 @@ export const EditorSettings = () => {
       <General />
       <Page />
       <Edgeless />
-      <Preferences />
+
+      {/* // TODO(@EYHN): implement export and import
+       <Preferences /> */}
     </>
   );
 };

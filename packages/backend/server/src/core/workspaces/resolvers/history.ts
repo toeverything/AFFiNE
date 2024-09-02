@@ -16,6 +16,7 @@ import { PgWorkspaceDocStorageAdapter } from '../../doc';
 import { Permission, PermissionService } from '../../permission';
 import { DocID } from '../../utils/doc';
 import { WorkspaceType } from '../types';
+import { EditorType } from './workspace';
 
 @ObjectType()
 class DocHistoryType implements Partial<SnapshotHistory> {
@@ -27,6 +28,9 @@ class DocHistoryType implements Partial<SnapshotHistory> {
 
   @Field(() => GraphQLISODateTime)
   timestamp!: Date;
+
+  @Field(() => EditorType, { nullable: true })
+  editor!: EditorType | null;
 }
 
 @Resolver(() => WorkspaceType)
@@ -47,17 +51,18 @@ export class DocHistoryResolver {
   ): Promise<DocHistoryType[]> {
     const docId = new DocID(guid, workspace.id);
 
-    const timestamps = await this.workspace.listDocHistories(
+    const histories = await this.workspace.listDocHistories(
       workspace.id,
       docId.guid,
       { before: timestamp.getTime(), limit: take }
     );
 
-    return timestamps.map(timestamp => {
+    return histories.map(history => {
       return {
         workspaceId: workspace.id,
         id: docId.guid,
-        timestamp: new Date(timestamp),
+        timestamp: new Date(history.timestamp),
+        editor: history.editor,
       };
     });
   }
@@ -81,7 +86,8 @@ export class DocHistoryResolver {
     await this.workspace.rollbackDoc(
       docId.workspace,
       docId.guid,
-      timestamp.getTime()
+      timestamp.getTime(),
+      user.id
     );
 
     return timestamp;

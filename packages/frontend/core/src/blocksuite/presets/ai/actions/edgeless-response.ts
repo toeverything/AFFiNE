@@ -507,7 +507,7 @@ export const responses: {
     const contents = data.contents as unknown[];
     if (!contents) return;
     const images = data.images as { url: string; id: string }[][];
-    const service = host.spec.getService<EdgelessRootService>('affine:page');
+    const service = host.std.getService<EdgelessRootService>('affine:page');
 
     (async function () {
       for (let i = 0; i < contents.length - 1; i++) {

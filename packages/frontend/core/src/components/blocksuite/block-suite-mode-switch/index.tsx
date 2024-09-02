@@ -3,8 +3,9 @@ import { registerAffineCommand } from '@affine/core/commands';
 import { track } from '@affine/core/mixpanel';
 import { EditorService } from '@affine/core/modules/editor';
 import { useI18n } from '@affine/i18n';
+import { DocMode } from '@blocksuite/blocks';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons/rc';
-import { type DocMode, useLiveData, useService } from '@toeverything/infra';
+import { useLiveData, useService } from '@toeverything/infra';
 import { useCallback, useEffect, useMemo } from 'react';
 
 import { switchItem } from './style.css';
@@ -38,16 +39,16 @@ export const EditorModeSwitch = () => {
 
   const togglePage = useCallback(() => {
     if (currentMode === 'page' || isSharedMode || trash) return;
-    editor.setMode('page');
-    editor.doc.setPrimaryMode('page');
+    editor.setMode(DocMode.Page);
+    editor.doc.setPrimaryMode(DocMode.Page);
     toast(t['com.affine.toastMessage.pageMode']());
     track.$.header.actions.switchPageMode({ mode: 'page' });
   }, [currentMode, editor, isSharedMode, t, trash]);
 
   const toggleEdgeless = useCallback(() => {
     if (currentMode === 'edgeless' || isSharedMode || trash) return;
-    editor.setMode('edgeless');
-    editor.doc.setPrimaryMode('edgeless');
+    editor.setMode(DocMode.Edgeless);
+    editor.doc.setPrimaryMode(DocMode.Edgeless);
     toast(t['com.affine.toastMessage.edgelessMode']());
     track.$.header.actions.switchPageMode({ mode: 'edgeless' });
   }, [currentMode, editor, isSharedMode, t, trash]);
@@ -78,7 +79,10 @@ export const EditorModeSwitch = () => {
         binding: 'Alt+KeyS',
         capture: true,
       },
-      run: () => onModeChange(currentMode === 'edgeless' ? 'page' : 'edgeless'),
+      run: () =>
+        onModeChange(
+          currentMode === 'edgeless' ? DocMode.Page : DocMode.Edgeless
+        ),
     });
   }, [currentMode, isSharedMode, onModeChange, t, trash]);
 
@@ -93,8 +97,8 @@ export const EditorModeSwitch = () => {
         <PureEditorModeSwitch
           mode={currentMode}
           setMode={onModeChange}
-          hidePage={shouldHide('page')}
-          hideEdgeless={shouldHide('edgeless')}
+          hidePage={shouldHide(DocMode.Page)}
+          hideEdgeless={shouldHide(DocMode.Edgeless)}
         />
       </div>
     </Tooltip>

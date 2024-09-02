@@ -1,4 +1,5 @@
 import { ChatPanel } from '@affine/core/blocksuite/presets/ai';
+import { DocModeProvider } from '@blocksuite/blocks';
 import { assertExists } from '@blocksuite/global/utils';
 import type { AffineEditorContainer } from '@blocksuite/presets';
 import { forwardRef, useCallback, useEffect, useRef } from 'react';
@@ -42,14 +43,16 @@ export const EditorChatPanel = forwardRef(function EditorChatPanel(
 
   useEffect(() => {
     if (!editor) return;
-    const pageService = editor.host?.spec.getService('affine:page');
+    const pageService = editor.host?.std.getService('affine:page');
     if (!pageService) return;
+    const docModeService = editor.host?.std.get(DocModeProvider);
+    if (!docModeService) return;
 
     const disposable = [
       pageService.slots.docLinkClicked.on(() => {
         (chatPanelRef.current as ChatPanel).doc = editor.doc;
       }),
-      pageService.docModeService.onModeChange(() => {
+      docModeService.onModeChange(() => {
         if (!editor.host) return;
         (chatPanelRef.current as ChatPanel).host = editor.host;
       }),

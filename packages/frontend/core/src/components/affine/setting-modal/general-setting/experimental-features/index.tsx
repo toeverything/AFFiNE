@@ -114,7 +114,11 @@ const ExperimentalFeaturesItem = ({ flag }: { flag: Flag }) => {
     },
     [flag]
   );
-  const link = flag.feedbackType ? feedbackLink[flag.feedbackType] : undefined;
+  const link = flag.feedbackType
+    ? flag.feedbackLink
+      ? flag.feedbackLink
+      : feedbackLink[flag.feedbackType]
+    : undefined;
 
   if (flag.configurable === false) {
     return null;

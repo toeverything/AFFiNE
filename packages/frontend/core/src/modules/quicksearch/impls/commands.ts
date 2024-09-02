@@ -4,7 +4,8 @@ import {
   type CommandCategory,
   PreconditionStrategy,
 } from '@affine/core/commands';
-import type { DocMode, GlobalContextService } from '@toeverything/infra';
+import type { DocMode } from '@blocksuite/blocks';
+import type { GlobalContextService } from '@toeverything/infra';
 import { Entity, LiveData } from '@toeverything/infra';
 import Fuse from 'fuse.js';
 

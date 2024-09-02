@@ -1,0 +1,17 @@
+version: 0.16.3-beta.2
+files:
+  - url: affine-0.16.3-beta.2-beta-macos-arm64.dmg
+    sha512: 5sR2TXAV+hgMOvplG2CobW5VSsrGXsAoZmgWqs7uEpf491XoYkUFl5iXQZaL23xi0HpuGkSS33jSZ/b7pwy0Hg==
+    size: 168063426
+  - url: affine-0.16.3-beta.2-beta-macos-arm64.zip
+    sha512: aI/q3DgyORjCNLxrtsT7W1KoAcuaxUT0AY0QtwnRjtMYiJYV/s4aTQtGFISDEdHcU9Vy+mS8ZcZ6yRVCksdKAg==
+    size: 167528680
+  - url: affine-0.16.3-beta.2-beta-macos-x64.dmg
+    sha512: P8JoSRP5tu2fpQb/EwdV6OSPNx9lEj1NT8iAZhawgeCVLaWokMMVkcsqyRYi7vX25Hf7eegvxF5LNpYzUsfKQQ==
+    size: 175049454
+  - url: affine-0.16.3-beta.2-beta-macos-x64.zip
+    sha512: gpzlGq0ucZUeJOZi6h/cIFRpvIhGJ5qYmWkrD6ncMgSJQOVWQapfFOrQrmU7SCwtE92pfRUcrZeH3g9cNrJDSQ==
+    size: 174740492
+path: affine-0.16.3-beta.2-beta-macos-arm64.dmg
+sha512: 5sR2TXAV+hgMOvplG2CobW5VSsrGXsAoZmgWqs7uEpf491XoYkUFl5iXQZaL23xi0HpuGkSS33jSZ/b7pwy0Hg==
+releaseDate: 2024-08-14T06:56:23.981Z

@@ -1,10 +1,10 @@
 import { Unreachable } from '@affine/env/constant';
+import type { DocMode } from '@blocksuite/blocks';
 
 import { Service } from '../../../framework';
 import { initEmptyPage } from '../../../initialization';
 import { ObjectPool } from '../../../utils';
 import type { Doc } from '../entities/doc';
-import type { DocMode } from '../entities/record';
 import { DocRecordList } from '../entities/record-list';
 import { DocScope } from '../scopes/doc';
 import type { DocsStore } from '../stores/docs';

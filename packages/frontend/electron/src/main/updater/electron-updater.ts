@@ -3,7 +3,7 @@ import { autoUpdater as defaultAutoUpdater } from 'electron-updater';
 
 import { buildType } from '../config';
 import { logger } from '../logger';
-import { CustomGitHubProvider } from './custom-github-provider';
+import { AFFiNEUpdateProvider } from './affine-update-provider';
 import { updaterSubjects } from './event';
 import { WindowsUpdater } from './windows-updater';
 
@@ -93,16 +93,9 @@ export const registerUpdater = async () => {
   autoUpdater.autoInstallOnAppQuit = false;
   autoUpdater.autoRunAppAfterInstall = true;
 
-  const feedUrl: Parameters<typeof autoUpdater.setFeedURL>[0] = {
+  const feedUrl = AFFiNEUpdateProvider.configFeed({
     channel: buildType,
-    // hack for custom provider
-    provider: 'custom' as 'github',
-    repo: buildType !== 'internal' ? 'AFFiNE' : 'AFFiNE-Releases',
-    owner: 'toeverything',
-    releaseType: buildType === 'stable' ? 'release' : 'prerelease',
-    // @ts-expect-error hack for custom provider
-    updateProvider: CustomGitHubProvider,
-  };
+  });
 
   logger.debug('auto-updater feed config', feedUrl);
 

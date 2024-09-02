@@ -13,6 +13,7 @@ import { CMDKQuickSearchService } from '@affine/core/modules/quicksearch/service
 import { isNewTabTrigger } from '@affine/core/utils';
 import { events } from '@affine/electron-api';
 import { useI18n } from '@affine/i18n';
+import type { DocMode } from '@blocksuite/blocks';
 import {
   AllDocsIcon,
   GithubIcon,
@@ -110,7 +111,7 @@ export const RootAppSidebar = (): ReactElement => {
   const onClickNewPage = useAsyncCallback(
     async (e?: MouseEvent) => {
       const page = pageHelper.createPage(
-        settings.newDocDefaultMode,
+        settings.newDocDefaultMode as DocMode,
         isNewTabTrigger(e) ? 'new-tab' : true
       );
       page.load();
