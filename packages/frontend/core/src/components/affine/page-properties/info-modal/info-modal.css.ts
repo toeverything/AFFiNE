@@ -1,12 +1,17 @@
 import { cssVar } from '@toeverything/theme';
 import { style } from '@vanilla-extract/css';
 
+import { rowHPadding } from '../styles.css';
+
 export const container = style({
   maxWidth: 480,
   minWidth: 360,
   padding: '20px 0',
   alignSelf: 'start',
   marginTop: '120px',
+  vars: {
+    [rowHPadding]: '6px',
+  },
 });
 
 export const titleContainer = style({

@@ -267,6 +267,7 @@ export const propertyRowCell = style({
   fontSize: cssVar('fontSm'),
   lineHeight: '22px',
   userSelect: 'none',
+  padding: `6px ${rowHPadding} 6px 8px`,
   ':focus-visible': {
     outline: 'none',
   },
@@ -328,7 +329,6 @@ export const propertyRowValueCell = style([
   propertyRowCell,
   editablePropertyRowCell,
   {
-    padding: `6px ${rowHPadding} 6px 6px`,
     border: `1px solid transparent`,
     color: cssVar('textPrimaryColor'),
     ':focus': {

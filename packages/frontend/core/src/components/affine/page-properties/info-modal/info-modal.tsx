@@ -106,7 +106,7 @@ export const InfoTable = ({
   );
 
   return (
-    <div className={styles.container}>
+    <div>
       <TimeRow className={styles.timeRow} docId={docId} />
       <Divider size="thinner" />
       {backlinks && backlinks.length > 0 ? (

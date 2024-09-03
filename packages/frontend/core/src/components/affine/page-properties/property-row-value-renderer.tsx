@@ -265,7 +265,11 @@ const CloudUserAvatar = (props: { type: 'CreatedBy' | 'UpdatedBy' }) => {
 
 export const LocalUserValue = () => {
   const t = useI18n();
-  return <span>{t['com.affine.page-properties.local-user']()}</span>;
+  return (
+    <span className={styles.propertyRowValueCell}>
+      {t['com.affine.page-properties.local-user']()}
+    </span>
+  );
 };
 
 export const CreatedUserValue = () => {
