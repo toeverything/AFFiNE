@@ -13,7 +13,7 @@ import { gql } from './common';
 export async function internalSignIn(app: INestApplication, userId: string) {
   const auth = app.get(AuthService);
 
-  const session = await auth.createUserSession({ id: userId });
+  const session = await auth.createUserSession(userId);
 
   return `${AuthService.sessionCookieName}=${session.sessionId}`;
 }
@@ -56,7 +56,7 @@ export async function signUp(
     password,
     emailVerifiedAt: autoVerifyEmail ? new Date() : null,
   });
-  const { sessionId } = await app.get(AuthService).createUserSession(user);
+  const { sessionId } = await app.get(AuthService).createUserSession(user.id);
 
   return {
     ...sessionUser(user),

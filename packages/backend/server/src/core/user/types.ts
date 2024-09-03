@@ -8,7 +8,7 @@ import {
 import type { User } from '@prisma/client';
 
 import type { Payload } from '../../fundamentals/event/def';
-import { CurrentUser } from '../auth/current-user';
+import { type CurrentUser } from '../auth/session';
 
 @ObjectType()
 export class UserType implements CurrentUser {

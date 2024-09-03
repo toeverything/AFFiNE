@@ -8,8 +8,8 @@ import type { INestApplication } from '@nestjs/common';
 import type { TestFn } from 'ava';
 import ava from 'ava';
 
-import { AuthService } from '../src/core/auth/service';
-import { MailService } from '../src/fundamentals/mailer';
+import { AuthService } from '../../src/core/auth/service';
+import { MailService } from '../../src/fundamentals/mailer';
 import {
   changeEmail,
   changePassword,
@@ -19,7 +19,7 @@ import {
   sendSetPasswordEmail,
   sendVerifyChangeEmail,
   signUp,
-} from './utils';
+} from '../utils';
 
 const test = ava as TestFn<{
   app: INestApplication;

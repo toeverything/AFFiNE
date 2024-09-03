@@ -5,35 +5,12 @@ import { PrismaClient } from '@prisma/client';
 import type { CookieOptions, Request, Response } from 'express';
 import { assign, pick } from 'lodash-es';
 
-import { Config, EmailAlreadyUsed, MailService } from '../../fundamentals';
+import { Config, MailService, SignUpForbidden } from '../../fundamentals';
 import { FeatureManagementService } from '../features/management';
 import { QuotaService } from '../quota/service';
 import { QuotaType } from '../quota/types';
 import { UserService } from '../user/service';
-import type { CurrentUser } from './current-user';
-
-export function parseAuthUserSeqNum(value: any) {
-  let seq: number = 0;
-  switch (typeof value) {
-    case 'number': {
-      seq = value;
-      break;
-    }
-    case 'string': {
-      const result = value.match(/^([\d{0, 10}])$/);
-      if (result?.[1]) {
-        seq = Number(result[1]);
-      }
-      break;
-    }
-
-    default: {
-      seq = 0;
-    }
-  }
-
-  return Math.max(0, seq);
-}
+import type { CurrentUser } from './session';
 
 export function sessionUser(
   user: Pick<
@@ -48,6 +25,14 @@ export function sessionUser(
   });
 }
 
+function extractTokenFromHeader(authorization: string) {
+  if (!/^Bearer\s/i.test(authorization)) {
+    return;
+  }
+
+  return authorization.substring(7);
+}
+
 @Injectable()
 export class AuthService implements OnApplicationBootstrap {
   readonly cookieOptions: CookieOptions = {
@@ -57,7 +42,7 @@ export class AuthService implements OnApplicationBootstrap {
     secure: this.config.server.https,
   };
   static readonly sessionCookieName = 'affine_session';
-  static readonly authUserSeqHeaderName = 'x-auth-user';
+  static readonly userCookieName = 'affine_user_id';
 
   constructor(
     private readonly config: Config,
@@ -93,46 +78,69 @@ export class AuthService implements OnApplicationBootstrap {
     return this.feature.canEarlyAccess(email);
   }
 
-  async signUp(
-    name: string,
-    email: string,
-    password: string
-  ): Promise<CurrentUser> {
-    const user = await this.user.findUserByEmail(email);
-
-    if (user) {
-      throw new EmailAlreadyUsed();
+  /**
+   * This is a test only helper to quickly signup a user, do not use in production
+   */
+  async signUp(email: string, password: string): Promise<CurrentUser> {
+    if (!this.config.node.test) {
+      throw new SignUpForbidden(
+        'sign up helper is forbidden for non-test environment'
+      );
     }
 
     return this.user
-      .createUser({
-        name,
+      .createUser_without_verification({
         email,
         password,
       })
       .then(sessionUser);
   }
 
-  async signIn(email: string, password: string) {
-    const user = await this.user.signIn(email, password);
+  async signIn(email: string, password: string): Promise<CurrentUser> {
+    return this.user.signIn(email, password).then(sessionUser);
+  }
 
-    return sessionUser(user);
+  async signOut(sessionId: string, userId?: string) {
+    // sign out all users in the session
+    if (!userId) {
+      await this.db.session.deleteMany({
+        where: {
+          id: sessionId,
+        },
+      });
+    } else {
+      await this.db.userSession.deleteMany({
+        where: {
+          sessionId,
+          userId,
+        },
+      });
+    }
   }
 
   async getUserSession(
-    token: string,
-    seq = 0
+    sessionId: string,
+    userId?: string
   ): Promise<{ user: CurrentUser; session: UserSession } | null> {
-    const session = await this.getSession(token);
+    const userSession = await this.db.userSession.findFirst({
+      where: {
+        sessionId,
+        userId,
+      },
+      select: {
+        id: true,
+        sessionId: true,
+        userId: true,
+        createdAt: true,
+        expiresAt: true,
+        user: true,
+      },
+      orderBy: {
+        createdAt: 'asc',
+      },
+    });
 
     // no such session
-    if (!session) {
-      return null;
-    }
-
-    const userSession = session.userSessions.at(seq);
-
-    // no such user session
     if (!userSession) {
       return null;
     }
@@ -142,112 +150,93 @@ export class AuthService implements OnApplicationBootstrap {
       return null;
     }
 
-    const user = await this.db.user.findUnique({
-      where: { id: userSession.userId },
-    });
-
-    if (!user) {
-      return null;
-    }
-
-    return { user: sessionUser(user), session: userSession };
+    return { user: sessionUser(userSession.user), session: userSession };
   }
 
-  async getUserList(token: string) {
-    const session = await this.getSession(token);
-
-    if (!session || !session.userSessions.length) {
-      return [];
-    }
-
-    const users = await this.db.user.findMany({
-      where: {
-        id: {
-          in: session.userSessions.map(({ userId }) => userId),
-        },
-      },
-    });
-
-    // TODO(@forehalo): need to separate expired session, same for [getUser]
-    // Session
-    //   | { user: LimitedUser { email, avatarUrl }, expired: true }
-    //   | { user: User, expired: false }
-    return session.userSessions
-      .map(userSession => {
-        // keep users in the same order as userSessions
-        const user = users.find(({ id }) => id === userSession.userId);
-        if (!user) {
-          return null;
-        }
-        return sessionUser(user);
-      })
-      .filter(Boolean) as CurrentUser[];
-  }
-
-  async signOut(token: string, seq = 0) {
-    const session = await this.getSession(token);
-
-    if (session) {
-      // overflow the logged in user
-      if (session.userSessions.length <= seq) {
-        return session;
-      }
-
-      await this.db.userSession.deleteMany({
-        where: { id: session.userSessions[seq].id },
-      });
-
-      // no more user session active, delete the whole session
-      if (session.userSessions.length === 1) {
-        await this.db.session.delete({ where: { id: session.id } });
-        return null;
-      }
-
-      return session;
-    }
-
-    return null;
-  }
-
-  async getSession(token: string) {
-    if (!token) {
-      return null;
-    }
-
-    return this.db.$transaction(async tx => {
-      const session = await tx.session.findUnique({
+  async createUserSession(
+    userId: string,
+    sessionId?: string,
+    ttl = this.config.auth.session.ttl
+  ) {
+    // check whether given session is valid
+    if (sessionId) {
+      const session = await this.db.session.findFirst({
         where: {
-          id: token,
-        },
-        include: {
-          userSessions: {
-            orderBy: {
-              createdAt: 'asc',
-            },
-          },
+          id: sessionId,
         },
       });
 
       if (!session) {
-        return null;
+        sessionId = undefined;
       }
+    }
 
-      if (session.expiresAt && session.expiresAt <= new Date()) {
-        await tx.session.delete({
-          where: {
-            id: session.id,
+    if (!sessionId) {
+      const session = await this.createSession();
+      sessionId = session.id;
+    }
+
+    const expiresAt = new Date(Date.now() + ttl * 1000);
+
+    return this.db.userSession.upsert({
+      where: {
+        sessionId_userId: {
+          sessionId,
+          userId,
+        },
+      },
+      update: {
+        expiresAt,
+      },
+      create: {
+        sessionId,
+        userId,
+        expiresAt,
+      },
+    });
+  }
+
+  async getUserList(sessionId: string) {
+    const sessions = await this.db.userSession.findMany({
+      where: {
+        sessionId,
+        OR: [
+          {
+            expiresAt: null,
           },
-        });
+          {
+            expiresAt: {
+              gt: new Date(),
+            },
+          },
+        ],
+      },
+      include: {
+        user: true,
+      },
+      orderBy: {
+        createdAt: 'asc',
+      },
+    });
 
-        return null;
-      }
+    return sessions.map(({ user }) => sessionUser(user));
+  }
 
-      return session;
+  async createSession() {
+    return this.db.session.create({
+      data: {},
+    });
+  }
+
+  async getSession(sessionId: string) {
+    return this.db.session.findFirst({
+      where: {
+        id: sessionId,
+      },
     });
   }
 
   async refreshUserSessionIfNeeded(
-    _req: Request,
     res: Response,
     session: UserSession,
     ttr = this.config.auth.session.ttr
@@ -281,70 +270,63 @@ export class AuthService implements OnApplicationBootstrap {
     return true;
   }
 
-  async createUserSession(
-    user: { id: string },
-    existingSession?: string,
-    ttl = this.config.auth.session.ttl
-  ) {
-    const session = existingSession
-      ? await this.getSession(existingSession)
-      : null;
-
-    const expiresAt = new Date(Date.now() + ttl * 1000);
-    if (session) {
-      return this.db.userSession.upsert({
-        where: {
-          sessionId_userId: {
-            sessionId: session.id,
-            userId: user.id,
-          },
-        },
-        update: {
-          expiresAt,
-        },
-        create: {
-          sessionId: session.id,
-          userId: user.id,
-          expiresAt,
-        },
-      });
-    } else {
-      return this.db.userSession.create({
-        data: {
-          expiresAt,
-          session: {
-            create: {},
-          },
-          user: {
-            connect: {
-              id: user.id,
-            },
-          },
-        },
-      });
-    }
-  }
-
-  async revokeUserSessions(userId: string, sessionId?: string) {
+  async revokeUserSessions(userId: string) {
     return this.db.userSession.deleteMany({
       where: {
         userId,
-        sessionId,
       },
     });
   }
 
-  async setCookie(_req: Request, res: Response, user: { id: string }) {
-    const session = await this.createUserSession(
-      user
-      // TODO(@forehalo): enable multi user session
-      // req.cookies[AuthService.sessionCookieName]
-    );
+  getSessionOptionsFromRequest(req: Request) {
+    let sessionId: string | undefined =
+      req.cookies[AuthService.sessionCookieName];
 
-    res.cookie(AuthService.sessionCookieName, session.sessionId, {
-      expires: session.expiresAt ?? void 0,
+    if (!sessionId && req.headers.authorization) {
+      sessionId = extractTokenFromHeader(req.headers.authorization);
+    }
+
+    const userId: string | undefined =
+      req.cookies[AuthService.userCookieName] ||
+      req.headers[AuthService.userCookieName];
+
+    return {
+      sessionId,
+      userId,
+    };
+  }
+
+  async setCookies(req: Request, res: Response, userId: string) {
+    const { sessionId } = this.getSessionOptionsFromRequest(req);
+
+    const userSession = await this.createUserSession(userId, sessionId);
+
+    res.cookie(AuthService.sessionCookieName, userSession.sessionId, {
       ...this.cookieOptions,
+      expires: userSession.expiresAt ?? void 0,
     });
+
+    this.setUserCookie(res, userId);
+  }
+
+  setUserCookie(res: Response, userId: string) {
+    res.cookie(AuthService.userCookieName, userId, {
+      ...this.cookieOptions,
+      // user cookie is client readable & writable for fast user switch if there are multiple users in one session
+      // it safe to be non-secure & non-httpOnly because server will validate it by `cookie[AuthService.sessionCookieName]`
+      httpOnly: false,
+      secure: false,
+    });
+  }
+
+  async getUserSessionFromRequest(req: Request) {
+    const { sessionId, userId } = this.getSessionOptionsFromRequest(req);
+
+    if (!sessionId) {
+      return null;
+    }
+
+    return this.getUserSession(sessionId, userId);
   }
 
   async changePassword(
@@ -393,24 +375,16 @@ export class AuthService implements OnApplicationBootstrap {
 
   async sendSignInEmail(email: string, link: string, signUp: boolean) {
     return signUp
-      ? await this.mailer.sendSignUpMail(link.toString(), {
+      ? await this.mailer.sendSignUpMail(link, {
           to: email,
         })
-      : await this.mailer.sendSignInMail(link.toString(), {
+      : await this.mailer.sendSignInMail(link, {
           to: email,
         });
   }
 
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async cleanExpiredSessions() {
-    await this.db.session.deleteMany({
-      where: {
-        expiresAt: {
-          lte: new Date(),
-        },
-      },
-    });
-
     await this.db.userSession.deleteMany({
       where: {
         expiresAt: {

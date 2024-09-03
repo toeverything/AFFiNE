@@ -20,7 +20,7 @@ const test = ava as TestFn<{
   app: INestApplication;
 }>;
 
-test.beforeEach(async t => {
+test.before(async t => {
   const { app } = await createTestingApp({
     imports: [FeatureModule, UserModule, AuthModule],
     tapModule: m => {
@@ -36,10 +36,14 @@ test.beforeEach(async t => {
   t.context.mailer = app.get(MailService);
   t.context.app = app;
 
-  t.context.u1 = await t.context.auth.signUp('u1', 'u1@affine.pro', '1');
+  t.context.u1 = await t.context.auth.signUp('u1@affine.pro', '1');
 });
 
-test.afterEach.always(async t => {
+test.beforeEach(() => {
+  Sinon.reset();
+});
+
+test.after.always(async t => {
   await t.context.app.close();
 });
 

@@ -28,4 +28,4 @@ export class AuthModule {}
 export * from './guard';
 export { ClientTokenType } from './resolver';
 export { AuthService, TokenService, TokenType };
-export * from './current-user';
+export * from './session';

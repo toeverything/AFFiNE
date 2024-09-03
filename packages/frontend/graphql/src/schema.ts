@@ -1160,7 +1160,7 @@ export interface UserType {
   /** @deprecated use `UserType.subscriptions` */
   subscription: Maybe<UserSubscription>;
   subscriptions: Array<UserSubscription>;
-  /** @deprecated use [/api/auth/authorize] */
+  /** @deprecated use [/api/auth/sign-in?native=true] instead */
   token: TokenType;
 }
 

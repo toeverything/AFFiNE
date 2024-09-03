@@ -1,15 +1,10 @@
 import { Controller, Get, HttpStatus, INestApplication } from '@nestjs/common';
-import { APP_GUARD } from '@nestjs/core';
+import { PrismaClient } from '@prisma/client';
 import ava, { TestFn } from 'ava';
 import Sinon from 'sinon';
 import request from 'supertest';
 
-import {
-  AuthGuard,
-  AuthModule,
-  CurrentUser,
-  Public,
-} from '../../src/core/auth';
+import { AuthModule, CurrentUser, Public, Session } from '../../src/core/auth';
 import { AuthService } from '../../src/core/auth/service';
 import { createTestingApp } from '../utils';
 
@@ -25,115 +20,123 @@ class TestController {
   private(@CurrentUser() user: CurrentUser) {
     return { user };
   }
+
+  @Get('/session')
+  session(@Session() session: Session) {
+    return session;
+  }
 }
 
 const test = ava as TestFn<{
   app: INestApplication;
-  auth: Sinon.SinonStubbedInstance<AuthService>;
 }>;
 
-test.beforeEach(async t => {
+let server!: any;
+let auth!: AuthService;
+let u1!: CurrentUser;
+
+test.before(async t => {
   const { app } = await createTestingApp({
     imports: [AuthModule],
-    providers: [
-      {
-        provide: APP_GUARD,
-        useClass: AuthGuard,
-      },
-    ],
     controllers: [TestController],
-    tapModule: m => {
-      m.overrideProvider(AuthService).useValue(
-        Sinon.createStubInstance(AuthService)
-      );
-    },
   });
 
-  t.context.auth = app.get(AuthService);
+  auth = app.get(AuthService);
+  u1 = await auth.signUp('u1@affine.pro', '1');
+
+  const db = app.get(PrismaClient);
+  await db.session.create({
+    data: {
+      id: '1',
+    },
+  });
+  await auth.createUserSession(u1.id, '1');
+
+  server = app.getHttpServer();
   t.context.app = app;
 });
 
-test.afterEach.always(async t => {
+test.after.always(async t => {
   await t.context.app.close();
 });
 
 test('should be able to visit public api if not signed in', async t => {
-  const { app } = t.context;
-
-  const res = await request(app.getHttpServer()).get('/public').expect(200);
+  const res = await request(server).get('/public').expect(200);
 
   t.is(res.body.user, undefined);
 });
 
 test('should be able to visit public api if signed in', async t => {
-  const { app, auth } = t.context;
-
-  // @ts-expect-error mock
-  auth.getUserSession.resolves({ user: { id: '1' }, session: { id: '1' } });
-
-  const res = await request(app.getHttpServer())
+  const res = await request(server)
     .get('/public')
     .set('Cookie', `${AuthService.sessionCookieName}=1`)
     .expect(HttpStatus.OK);
 
-  t.is(res.body.user.id, '1');
+  t.is(res.body.user.id, u1.id);
 });
 
 test('should not be able to visit private api if not signed in', async t => {
-  const { app } = t.context;
-
-  await request(app.getHttpServer())
-    .get('/private')
-    .expect(HttpStatus.UNAUTHORIZED)
-    .expect({
-      status: 401,
-      code: 'Unauthorized',
-      type: 'AUTHENTICATION_REQUIRED',
-      name: 'AUTHENTICATION_REQUIRED',
-      message: 'You must sign in first to access this resource.',
-    });
+  await request(server).get('/private').expect(HttpStatus.UNAUTHORIZED).expect({
+    status: 401,
+    code: 'Unauthorized',
+    type: 'AUTHENTICATION_REQUIRED',
+    name: 'AUTHENTICATION_REQUIRED',
+    message: 'You must sign in first to access this resource.',
+  });
 
   t.assert(true);
 });
 
 test('should be able to visit private api if signed in', async t => {
-  const { app, auth } = t.context;
-
-  // @ts-expect-error mock
-  auth.getUserSession.resolves({ user: { id: '1' }, session: { id: '1' } });
-
-  const res = await request(app.getHttpServer())
+  const res = await request(server)
     .get('/private')
     .set('Cookie', `${AuthService.sessionCookieName}=1`)
     .expect(HttpStatus.OK);
 
-  t.is(res.body.user.id, '1');
+  t.is(res.body.user.id, u1.id);
 });
 
 test('should be able to parse session cookie', async t => {
-  const { app, auth } = t.context;
-
-  // @ts-expect-error mock
-  auth.getUserSession.resolves({ user: { id: '1' }, session: { id: '1' } });
-
-  await request(app.getHttpServer())
+  const spy = Sinon.spy(auth, 'getUserSession');
+  await request(server)
     .get('/public')
     .set('cookie', `${AuthService.sessionCookieName}=1`)
     .expect(200);
 
-  t.deepEqual(auth.getUserSession.firstCall.args, ['1', 0]);
+  t.deepEqual(spy.firstCall.args, ['1', undefined]);
+  spy.restore();
 });
 
 test('should be able to parse bearer token', async t => {
-  const { app, auth } = t.context;
+  const spy = Sinon.spy(auth, 'getUserSession');
 
-  // @ts-expect-error mock
-  auth.getUserSession.resolves({ user: { id: '1' }, session: { id: '1' } });
-
-  await request(app.getHttpServer())
+  await request(server)
     .get('/public')
     .auth('1', { type: 'bearer' })
     .expect(200);
 
-  t.deepEqual(auth.getUserSession.firstCall.args, ['1', 0]);
+  t.deepEqual(spy.firstCall.args, ['1', undefined]);
+  spy.restore();
+});
+
+test('should be able to refresh session if needed', async t => {
+  await t.context.app.get(PrismaClient).userSession.updateMany({
+    where: {
+      sessionId: '1',
+    },
+    data: {
+      expiresAt: new Date(Date.now() + 1000 * 60 * 60 /* expires in 1 hour */),
+    },
+  });
+
+  const res = await request(server)
+    .get('/session')
+    .set('cookie', `${AuthService.sessionCookieName}=1`)
+    .expect(200);
+
+  const cookie = res
+    .get('Set-Cookie')
+    ?.find(c => c.startsWith(AuthService.sessionCookieName));
+
+  t.truthy(cookie);
 });

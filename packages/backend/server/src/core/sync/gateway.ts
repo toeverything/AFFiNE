@@ -21,7 +21,7 @@ import {
   SpaceAccessDenied,
   VersionRejected,
 } from '../../fundamentals';
-import { Auth, CurrentUser } from '../auth';
+import { CurrentUser } from '../auth';
 import {
   DocStorageAdapter,
   PgUserspaceDocStorageAdapter,
@@ -203,7 +203,6 @@ export class SpaceSyncGateway
   }
 
   // v3
-  @Auth()
   @SubscribeMessage('space:join')
   async onJoinSpace(
     @CurrentUser() user: CurrentUser,
@@ -264,7 +263,6 @@ export class SpaceSyncGateway
     };
   }
 
-  @Auth()
   @SubscribeMessage('space:push-doc-updates')
   async onReceiveDocUpdates(
     @ConnectedSocket() client: Socket,
@@ -324,7 +322,6 @@ export class SpaceSyncGateway
     };
   }
 
-  @Auth()
   @SubscribeMessage('space:join-awareness')
   async onJoinAwareness(
     @ConnectedSocket() client: Socket,
@@ -410,7 +407,6 @@ export class SpaceSyncGateway
 
   // TODO(@forehalo): remove
   // deprecated section
-  @Auth()
   @SubscribeMessage('client-handshake-sync')
   async handleClientHandshakeSync(
     @CurrentUser() user: CurrentUser,
@@ -451,7 +447,6 @@ export class SpaceSyncGateway
     });
   }
 
-  @Auth()
   @SubscribeMessage('client-update-v2')
   async handleClientUpdateV2(
     @CurrentUser() user: CurrentUser,
@@ -499,7 +494,6 @@ export class SpaceSyncGateway
     });
   }
 
-  @Auth()
   @SubscribeMessage('client-handshake-awareness')
   async handleClientHandshakeAwareness(
     @ConnectedSocket() client: Socket,

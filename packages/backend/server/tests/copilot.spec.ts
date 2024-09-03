@@ -105,7 +105,7 @@ test.afterEach.always(async t => {
 let userId: string;
 test.beforeEach(async t => {
   const { auth } = t.context;
-  const user = await auth.signUp('test', 'darksky@affine.pro', '123456');
+  const user = await auth.signUp('test@affine.pro', '123456');
   userId = user.id;
 });
 
@@ -308,7 +308,7 @@ test('should be able to fork chat session', async t => {
   });
   t.not(sessionId, forkedSessionId1, 'should fork a new session');
 
-  const newUser = await auth.signUp('test', 'darksky.1@affine.pro', '123456');
+  const newUser = await auth.signUp('darksky.1@affine.pro', '123456');
   const forkedSessionId2 = await session.fork({
     userId: newUser.id,
     sessionId,

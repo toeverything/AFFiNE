@@ -62,11 +62,12 @@ model ConnectedAccount {
 }
 
 model Session {
-  id        String    @id @default(uuid()) @db.VarChar
-  expiresAt DateTime? @map("expires_at") @db.Timestamptz(3)
-  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
-
+  id           String        @id @default(uuid()) @db.VarChar
+  createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
   userSessions UserSession[]
+
+  // @deprecated use [UserSession.expiresAt]
+  deprecated_expiresAt DateTime? @map("expires_at") @db.Timestamptz(3)
 
   @@map("multiple_users_sessions")
 }

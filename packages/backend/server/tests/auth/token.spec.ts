@@ -10,7 +10,7 @@ const test = ava as TestFn<{
   m: TestingModule;
 }>;
 
-test.beforeEach(async t => {
+test.before(async t => {
   const m = await createTestingModule({
     providers: [TokenService],
   });
@@ -19,7 +19,7 @@ test.beforeEach(async t => {
   t.context.m = m;
 });
 
-test.afterEach.always(async t => {
+test.after.always(async t => {
   await t.context.m.close();
 });
 

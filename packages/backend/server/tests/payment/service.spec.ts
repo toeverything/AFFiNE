@@ -69,7 +69,7 @@ test.beforeEach(async t => {
   t.context.db = app.get(PrismaClient);
   t.context.app = app;
 
-  t.context.u1 = await app.get(AuthService).signUp('u1', 'u1@affine.pro', '1');
+  t.context.u1 = await app.get(AuthService).signUp('u1@affine.pro', '1');
   await t.context.db.userStripeCustomer.create({
     data: {
       userId: t.context.u1.id,

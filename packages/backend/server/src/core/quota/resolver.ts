@@ -7,7 +7,7 @@ import {
 } from '@nestjs/graphql';
 import { SafeIntResolver } from 'graphql-scalars';
 
-import { CurrentUser } from '../auth/current-user';
+import { CurrentUser } from '../auth/session';
 import { EarlyAccessType } from '../features';
 import { UserType } from '../user';
 import { QuotaService } from './service';

@@ -18,9 +18,9 @@ import {
   Throttle,
   UserNotFound,
 } from '../../fundamentals';
-import { CurrentUser } from '../auth/current-user';
 import { Public } from '../auth/guard';
 import { sessionUser } from '../auth/service';
+import { CurrentUser } from '../auth/session';
 import { Admin } from '../common';
 import { AvatarStorage } from '../storage';
 import { validators } from '../utils/validators';

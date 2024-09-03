@@ -15,7 +15,7 @@ import { ConfigModule } from '../../src/fundamentals/config';
 import { OAuthProviderName } from '../../src/plugins/oauth/config';
 import { GoogleOAuthProvider } from '../../src/plugins/oauth/providers/google';
 import { OAuthService } from '../../src/plugins/oauth/service';
-import { createTestingApp, getSession } from '../utils';
+import { createTestingApp, getSession, initTestingDB } from '../utils';
 
 const test = ava as TestFn<{
   auth: AuthService;
@@ -26,7 +26,7 @@ const test = ava as TestFn<{
   app: INestApplication;
 }>;
 
-test.beforeEach(async t => {
+test.before(async t => {
   const { app } = await createTestingApp({
     imports: [
       ConfigModule.forRoot({
@@ -50,11 +50,15 @@ test.beforeEach(async t => {
   t.context.user = app.get(UserService);
   t.context.db = app.get(PrismaClient);
   t.context.app = app;
-
-  t.context.u1 = await t.context.auth.signUp('u1', 'u1@affine.pro', '1');
 });
 
-test.afterEach.always(async t => {
+test.beforeEach(async t => {
+  Sinon.restore();
+  await initTestingDB(t.context.db);
+  t.context.u1 = await t.context.auth.signUp('u1@affine.pro', '1');
+});
+
+test.after.always(async t => {
   await t.context.app.close();
 });
 
@@ -62,10 +66,13 @@ test("should be able to redirect to oauth provider's login page", async t => {
   const { app } = t.context;
 
   const res = await request(app.getHttpServer())
-    .get('/oauth/login?provider=Google')
-    .expect(HttpStatus.FOUND);
+    .post('/api/oauth/preflight')
+    .send({ provider: 'Google' })
+    .expect(HttpStatus.OK);
 
-  const redirect = new URL(res.header.location);
+  const { url } = res.body;
+
+  const redirect = new URL(url);
   t.is(redirect.origin, 'https://accounts.google.com');
 
   t.is(redirect.pathname, '/o/oauth2/v2/auth');
@@ -83,7 +90,8 @@ test('should throw if provider is invalid', async t => {
   const { app } = t.context;
 
   await request(app.getHttpServer())
-    .get('/oauth/login?provider=Invalid')
+    .post('/api/oauth/preflight')
+    .send({ provider: 'Invalid' })
     .expect(HttpStatus.BAD_REQUEST)
     .expect({
       status: 400,
@@ -101,7 +109,6 @@ test('should be able to save oauth state', async t => {
   const { oauth } = t.context;
 
   const id = await oauth.saveOAuthState({
-    redirectUri: 'https://example.com',
     provider: OAuthProviderName.Google,
   });
 
@@ -109,7 +116,6 @@ test('should be able to save oauth state', async t => {
 
   t.truthy(state);
   t.is(state!.provider, OAuthProviderName.Google);
-  t.is(state!.redirectUri, 'https://example.com');
 });
 
 test('should be able to get registered oauth providers', async t => {
@@ -124,7 +130,8 @@ test('should throw if code is missing in callback uri', async t => {
   const { app } = t.context;
 
   await request(app.getHttpServer())
-    .get('/oauth/callback')
+    .post('/api/oauth/callback')
+    .send({})
     .expect(HttpStatus.BAD_REQUEST)
     .expect({
       status: 400,
@@ -142,7 +149,8 @@ test('should throw if state is missing in callback uri', async t => {
   const { app } = t.context;
 
   await request(app.getHttpServer())
-    .get('/oauth/callback?code=1')
+    .post('/api/oauth/callback')
+    .send({ code: '1' })
     .expect(HttpStatus.BAD_REQUEST)
     .expect({
       status: 400,
@@ -161,7 +169,8 @@ test('should throw if state is expired', async t => {
   Sinon.stub(oauth, 'isValidState').resolves(true);
 
   await request(app.getHttpServer())
-    .get('/oauth/callback?code=1&state=1')
+    .post('/api/oauth/callback')
+    .send({ code: '1', state: '1' })
     .expect(HttpStatus.BAD_REQUEST)
     .expect({
       status: 400,
@@ -178,7 +187,8 @@ test('should throw if state is invalid', async t => {
   const { app } = t.context;
 
   await request(app.getHttpServer())
-    .get('/oauth/callback?code=1&state=1')
+    .post('/api/oauth/callback')
+    .send({ code: '1', state: '1' })
     .expect(HttpStatus.BAD_REQUEST)
     .expect({
       status: 400,
@@ -199,7 +209,8 @@ test('should throw if provider is missing in state', async t => {
   Sinon.stub(oauth, 'isValidState').resolves(true);
 
   await request(app.getHttpServer())
-    .get(`/oauth/callback?code=1&state=1`)
+    .post('/api/oauth/callback')
+    .send({ code: '1', state: '1' })
     .expect(HttpStatus.BAD_REQUEST)
     .expect({
       status: 400,
@@ -221,7 +232,8 @@ test('should throw if provider is invalid in callback uri', async t => {
   Sinon.stub(oauth, 'isValidState').resolves(true);
 
   await request(app.getHttpServer())
-    .get(`/oauth/callback?code=1&state=1`)
+    .post('/api/oauth/callback')
+    .send({ code: '1', state: '1' })
     .expect(HttpStatus.BAD_REQUEST)
     .expect({
       status: 400,
@@ -242,7 +254,6 @@ function mockOAuthProvider(app: INestApplication, email: string) {
   Sinon.stub(oauth, 'isValidState').resolves(true);
   Sinon.stub(oauth, 'getOAuthState').resolves({
     provider: OAuthProviderName.Google,
-    redirectUri: '/',
   });
 
   // @ts-expect-error mock
@@ -260,8 +271,9 @@ test('should be able to sign up with oauth', async t => {
   mockOAuthProvider(app, 'u2@affine.pro');
 
   const res = await request(app.getHttpServer())
-    .get(`/oauth/callback?code=1&state=1`)
-    .expect(HttpStatus.FOUND);
+    .post(`/api/oauth/callback`)
+    .send({ code: '1', state: '1' })
+    .expect(HttpStatus.OK);
 
   const session = await getSession(app, res);
 
@@ -283,22 +295,17 @@ test('should be able to sign up with oauth', async t => {
   t.is(user!.connectedAccounts[0].providerAccountId, '1');
 });
 
-test('should throw if account register in another way', async t => {
+test('should not throw if account registered', async t => {
   const { app, u1 } = t.context;
 
   mockOAuthProvider(app, u1.email);
 
   const res = await request(app.getHttpServer())
-    .get(`/oauth/callback?code=1&state=1`)
-    .expect(HttpStatus.FOUND);
+    .post(`/api/oauth/callback`)
+    .send({ code: '1', state: '1' })
+    .expect(HttpStatus.OK);
 
-  const link = new URL(res.headers.location);
-
-  t.is(link.pathname, '/signIn');
-  t.is(
-    link.searchParams.get('error'),
-    'You are trying to sign in by a different method than you signed up with.'
-  );
+  t.is(res.body.id, u1.id);
 });
 
 test('should be able to fullfil user with oauth sign in', async t => {
@@ -313,8 +320,9 @@ test('should be able to fullfil user with oauth sign in', async t => {
   mockOAuthProvider(app, u3.email);
 
   const res = await request(app.getHttpServer())
-    .get(`/oauth/callback?code=1&state=1`)
-    .expect(HttpStatus.FOUND);
+    .post('/api/oauth/callback')
+    .send({ code: '1', state: '1' })
+    .expect(HttpStatus.OK);
 
   const session = await getSession(app, res);
 
@@ -328,61 +336,4 @@ test('should be able to fullfil user with oauth sign in', async t => {
   });
 
   t.truthy(account);
-});
-
-test('should throw if oauth account already connected', async t => {
-  const { app, db, u1, auth } = t.context;
-
-  await db.connectedAccount.create({
-    data: {
-      userId: u1.id,
-      provider: OAuthProviderName.Google,
-      providerAccountId: '1',
-    },
-  });
-
-  Sinon.stub(auth, 'getUserSession').resolves({
-    user: { id: 'u2-id' },
-    session: {},
-  } as any);
-
-  mockOAuthProvider(app, 'u2@affine.pro');
-
-  const res = await request(app.getHttpServer())
-    .get(`/oauth/callback?code=1&state=1`)
-    .set('cookie', `${AuthService.sessionCookieName}=1`)
-    .expect(HttpStatus.FOUND);
-
-  const link = new URL(res.headers.location);
-
-  t.is(link.pathname, '/signIn');
-  t.is(
-    link.searchParams.get('error'),
-    'The third-party account has already been connected to another user.'
-  );
-});
-
-test('should be able to connect oauth account', async t => {
-  const { app, u1, auth, db } = t.context;
-
-  Sinon.stub(auth, 'getUserSession').resolves({
-    user: { id: u1.id },
-    session: {},
-  } as any);
-
-  mockOAuthProvider(app, u1.email);
-
-  await request(app.getHttpServer())
-    .get(`/oauth/callback?code=1&state=1`)
-    .set('cookie', `${AuthService.sessionCookieName}=1`)
-    .expect(HttpStatus.FOUND);
-
-  const account = await db.connectedAccount.findFirst({
-    where: {
-      userId: u1.id,
-    },
-  });
-
-  t.truthy(account);
-  t.is(account!.userId, u1.id);
 });

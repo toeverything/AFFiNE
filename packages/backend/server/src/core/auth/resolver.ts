@@ -11,7 +11,6 @@ import {
 
 import {
   ActionForbidden,
-  Config,
   EmailAlreadyUsed,
   EmailTokenNotFound,
   EmailVerificationRequired,
@@ -26,9 +25,9 @@ import { Admin } from '../common';
 import { UserService } from '../user';
 import { UserType } from '../user/types';
 import { validators } from '../utils/validators';
-import { CurrentUser } from './current-user';
 import { Public } from './guard';
 import { AuthService } from './service';
+import { CurrentUser } from './session';
 import { TokenService, TokenType } from './token';
 
 @ObjectType('tokenType')
@@ -47,7 +46,6 @@ export class ClientTokenType {
 @Resolver(() => UserType)
 export class AuthResolver {
   constructor(
-    private readonly config: Config,
     private readonly url: URLHelper,
     private readonly auth: AuthService,
     private readonly user: UserService,
@@ -67,7 +65,7 @@ export class AuthResolver {
 
   @ResolveField(() => ClientTokenType, {
     name: 'token',
-    deprecationReason: 'use [/api/auth/authorize]',
+    deprecationReason: 'use [/api/auth/sign-in?native=true] instead',
   })
   async clientToken(
     @CurrentUser() currentUser: CurrentUser,
@@ -77,15 +75,11 @@ export class AuthResolver {
       throw new ActionForbidden();
     }
 
-    const session = await this.auth.createUserSession(
-      user,
-      undefined,
-      this.config.auth.accessToken.ttl
-    );
+    const userSession = await this.auth.createUserSession(user.id);
 
     return {
-      sessionToken: session.sessionId,
-      token: session.sessionId,
+      sessionToken: userSession.sessionId,
+      token: userSession.sessionId,
       refresh: '',
     };
   }
@@ -101,14 +95,6 @@ export class AuthResolver {
       throw new LinkExpired();
     }
 
-    const config = await this.config.runtime.fetchAll({
-      'auth/password.max': true,
-      'auth/password.min': true,
-    });
-    validators.assertValidPassword(newPassword, {
-      min: config['auth/password.min'],
-      max: config['auth/password.max'],
-    });
     // NOTE: Set & Change password are using the same token type.
     const valid = await this.token.verifyToken(
       TokenType.ChangePassword,
@@ -134,7 +120,6 @@ export class AuthResolver {
     @Args('token') token: string,
     @Args('email') email: string
   ) {
-    validators.assertValidEmail(email);
     // @see [sendChangeEmail]
     const valid = await this.token.verifyToken(TokenType.VerifyEmail, token, {
       credential: user.id,
@@ -157,8 +142,11 @@ export class AuthResolver {
   async sendChangePasswordEmail(
     @CurrentUser() user: CurrentUser,
     @Args('callbackUrl') callbackUrl: string,
-    // @deprecated
-    @Args('email', { nullable: true }) _email?: string
+    @Args('email', {
+      nullable: true,
+      deprecationReason: 'fetched from signed in user',
+    })
+    _email?: string
   ) {
     if (!user.emailVerified) {
       throw new EmailVerificationRequired();
@@ -180,7 +168,11 @@ export class AuthResolver {
   async sendSetPasswordEmail(
     @CurrentUser() user: CurrentUser,
     @Args('callbackUrl') callbackUrl: string,
-    @Args('email', { nullable: true }) _email?: string
+    @Args('email', {
+      nullable: true,
+      deprecationReason: 'fetched from signed in user',
+    })
+    _email?: string
   ) {
     return this.sendChangePasswordEmail(user, callbackUrl);
   }

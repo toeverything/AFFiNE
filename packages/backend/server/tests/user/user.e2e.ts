@@ -17,7 +17,7 @@ test.beforeEach(async t => {
     imports: [AppModule],
   });
 
-  t.context.u1 = await app.get(AuthService).signUp('u1', 'u1@affine.pro', '1');
+  t.context.u1 = await app.get(AuthService).signUp('u1@affine.pro', '1');
   t.context.app = app;
 });
 

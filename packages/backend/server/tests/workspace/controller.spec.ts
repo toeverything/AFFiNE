@@ -33,7 +33,7 @@ test.before(async t => {
   });
 
   const auth = app.get(AuthService);
-  t.context.u1 = await auth.signUp('u1', 'u1@affine.pro', '1');
+  t.context.u1 = await auth.signUp('u1@affine.pro', '1');
   const db = app.get(PrismaClient);
 
   t.context.db = db;

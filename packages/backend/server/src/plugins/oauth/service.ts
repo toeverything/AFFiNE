@@ -9,7 +9,7 @@ import { OAuthProviderFactory } from './register';
 const OAUTH_STATE_KEY = 'OAUTH_STATE';
 
 interface OAuthState {
-  redirectUri: string;
+  redirectUri?: string;
   provider: OAuthProviderName;
 }
 

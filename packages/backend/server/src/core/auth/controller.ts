@@ -18,6 +18,7 @@ import {
   EarlyAccessRequired,
   EmailTokenNotFound,
   InternalServerError,
+  InvalidEmail,
   InvalidEmailToken,
   SignUpForbidden,
   Throttle,
@@ -25,19 +26,25 @@ import {
 } from '../../fundamentals';
 import { UserService } from '../user';
 import { validators } from '../utils/validators';
-import { CurrentUser } from './current-user';
 import { Public } from './guard';
-import { AuthService, parseAuthUserSeqNum } from './service';
+import { AuthService } from './service';
+import { CurrentUser, Session } from './session';
 import { TokenService, TokenType } from './token';
 
-class SignInCredential {
-  email!: string;
-  password?: string;
+interface PreflightResponse {
+  registered: boolean;
+  hasPassword: boolean;
 }
 
-class MagicLinkCredential {
-  email!: string;
-  token!: string;
+interface SignInCredential {
+  email: string;
+  password?: string;
+  callbackUrl?: string;
+}
+
+interface MagicLinkCredential {
+  email: string;
+  token: string;
 }
 
 @Throttle('strict')
@@ -52,13 +59,43 @@ export class AuthController {
   ) {}
 
   @Public()
+  @Post('/preflight')
+  async preflight(
+    @Body() params?: { email: string }
+  ): Promise<PreflightResponse> {
+    if (!params?.email) {
+      throw new InvalidEmail();
+    }
+    validators.assertValidEmail(params.email);
+
+    const user = await this.user.findUserWithHashedPasswordByEmail(
+      params.email
+    );
+
+    if (!user) {
+      return {
+        registered: false,
+        hasPassword: false,
+      };
+    }
+
+    return {
+      registered: user.registered,
+      hasPassword: !!user.password,
+    };
+  }
+
+  @Public()
   @Post('/sign-in')
   @Header('content-type', 'application/json')
   async signIn(
     @Req() req: Request,
     @Res() res: Response,
     @Body() credential: SignInCredential,
-    @Query('redirect_uri') redirectUri = this.url.home
+    /**
+     * @deprecated
+     */
+    @Query('redirect_uri') redirectUri?: string
   ) {
     validators.assertValidEmail(credential.email);
     const canSignIn = await this.auth.canSignIn(credential.email);
@@ -67,80 +104,83 @@ export class AuthController {
     }
 
     if (credential.password) {
-      const user = await this.auth.signIn(
+      await this.passwordSignIn(
+        req,
+        res,
         credential.email,
         credential.password
       );
-
-      await this.auth.setCookie(req, res, user);
-      res.status(HttpStatus.OK).send(user);
     } else {
-      // send email magic link
-      const user = await this.user.findUserByEmail(credential.email);
-      if (!user) {
-        const allowSignup = await this.config.runtime.fetch('auth/allowSignup');
-        if (!allowSignup) {
-          throw new SignUpForbidden();
-        }
-      }
-
-      const result = await this.sendSignInEmail(
-        { email: credential.email, signUp: !user },
+      await this.sendMagicLink(
+        req,
+        res,
+        credential.email,
+        credential.callbackUrl,
         redirectUri
       );
-
-      if (result.rejected.length) {
-        throw new InternalServerError('Failed to send sign-in email.');
-      }
-
-      res.status(HttpStatus.OK).send({
-        email: credential.email,
-      });
     }
   }
 
-  async sendSignInEmail(
-    { email, signUp }: { email: string; signUp: boolean },
-    redirectUri: string
+  async passwordSignIn(
+    req: Request,
+    res: Response,
+    email: string,
+    password: string
   ) {
+    const user = await this.auth.signIn(email, password);
+
+    await this.auth.setCookies(req, res, user.id);
+    res.status(HttpStatus.OK).send(user);
+  }
+
+  async sendMagicLink(
+    _req: Request,
+    res: Response,
+    email: string,
+    callbackUrl = '/magic-link',
+
+    redirectUrl = this.url.home
+  ) {
+    // send email magic link
+    const user = await this.user.findUserByEmail(email);
+    if (!user) {
+      const allowSignup = await this.config.runtime.fetch('auth/allowSignup');
+      if (!allowSignup) {
+        throw new SignUpForbidden();
+      }
+    }
+
     const token = await this.token.createToken(TokenType.SignIn, email);
 
-    const magicLink = this.url.link('/magic-link', {
+    const magicLink = this.url.link(callbackUrl, {
       token,
       email,
-      redirect_uri: redirectUri,
+      redirect_uri: redirectUrl,
     });
 
-    const result = await this.auth.sendSignInEmail(email, magicLink, signUp);
+    const result = await this.auth.sendSignInEmail(email, magicLink, !user);
 
-    return result;
+    if (result.rejected.length) {
+      throw new InternalServerError('Failed to send sign-in email.');
+    }
+
+    res.status(HttpStatus.OK).send({
+      email: email,
+    });
   }
 
   @Get('/sign-out')
   async signOut(
-    @Req() req: Request,
     @Res() res: Response,
-    @Query('redirect_uri') redirectUri?: string
+    @Session() session: Session,
+    @Body() { all }: { all: boolean }
   ) {
-    const session = await this.auth.signOut(
-      req.cookies[AuthService.sessionCookieName],
-      parseAuthUserSeqNum(req.headers[AuthService.authUserSeqHeaderName])
+    await this.auth.signOut(
+      session.sessionId,
+      all ? undefined : session.userId
     );
 
-    if (session) {
-      res.cookie(AuthService.sessionCookieName, session.id, {
-        expires: session.expiresAt ?? void 0, // expiredAt is `string | null`
-        ...this.auth.cookieOptions,
-      });
-    } else {
-      res.clearCookie(AuthService.sessionCookieName);
-    }
-
-    if (redirectUri) {
-      return this.url.safeRedirect(res, redirectUri);
-    } else {
-      return res.send(null);
-    }
+    res.status(HttpStatus.OK).send({});
   }
 
   @Public()
@@ -156,11 +196,11 @@ export class AuthController {
 
     validators.assertValidEmail(email);
 
-    const valid = await this.token.verifyToken(TokenType.SignIn, token, {
+    const tokenRecord = await this.token.verifyToken(TokenType.SignIn, token, {
       credential: email,
     });
 
-    if (!valid) {
+    if (!tokenRecord) {
       throw new InvalidEmailToken();
     }
 
@@ -169,9 +209,8 @@ export class AuthController {
       registered: true,
     });
 
-    await this.auth.setCookie(req, res, user);
-
-    res.send({ id: user.id, email: user.email, name: user.name });
+    await this.auth.setCookies(req, res, user.id);
+    res.send({ id: user.id });
   }
 
   @Throttle('default', { limit: 1200 })
