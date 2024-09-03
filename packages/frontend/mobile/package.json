@@ -20,7 +20,12 @@
     "core-js": "^3.36.1",
     "figma-squircle": "^0.3.1",
     "intl-segmenter-polyfill-rs": "^0.1.7",
+    "jotai": "^2.9.3",
+    "jotai-devtools": "^0.10.1",
+    "jotai-effect": "^1.0.2",
+    "jotai-scope": "^0.7.2",
     "lodash-es": "^4.17.21",
+    "next-themes": "^0.3.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.26.1"

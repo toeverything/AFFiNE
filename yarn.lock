@@ -683,7 +683,12 @@ __metadata:
     cross-env: "npm:^7.0.3"
     figma-squircle: "npm:^0.3.1"
     intl-segmenter-polyfill-rs: "npm:^0.1.7"
+    jotai: "npm:^2.9.3"
+    jotai-devtools: "npm:^0.10.1"
+    jotai-effect: "npm:^1.0.2"
+    jotai-scope: "npm:^0.7.2"
     lodash-es: "npm:^4.17.21"
+    next-themes: "npm:^0.3.0"
     react: "npm:^18.2.0"
     react-dom: "npm:^18.2.0"
     react-router-dom: "npm:^6.26.1"
@@ -25076,7 +25081,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"jotai-devtools@npm:^0.10.0":
+"jotai-devtools@npm:^0.10.0, jotai-devtools@npm:^0.10.1":
   version: 0.10.1
   resolution: "jotai-devtools@npm:0.10.1"
   dependencies:
@@ -25097,16 +25102,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"jotai-effect@npm:^1.0.0":
-  version: 1.0.0
-  resolution: "jotai-effect@npm:1.0.0"
+"jotai-effect@npm:^1.0.0, jotai-effect@npm:^1.0.2":
+  version: 1.0.2
+  resolution: "jotai-effect@npm:1.0.2"
   peerDependencies:
     jotai: ">=2.5.0"
-  checksum: 10/4393c88deaebbfd4e8fad46ac1b7d03235d0dd684c56049e8c57b14a1298695e80b047c0b1561cbb5af694db9ea819aaaf6ae9c1a35b27d4ef98532b39065d15
+  checksum: 10/8435562902ff633138cb45ca987837c291dd4ab56d408affa5e14e167c4ddf33dd0d70dcffaef0520e38e84334583221b262fce4d45cc8ece3a195144e7a58e6
   languageName: node
   linkType: hard
 
-"jotai-scope@npm:^0.7.0":
+"jotai-scope@npm:^0.7.0, jotai-scope@npm:^0.7.2":
   version: 0.7.2
   resolution: "jotai-scope@npm:0.7.2"
   peerDependencies:
@@ -25116,7 +25121,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"jotai@npm:^2.8.0":
+"jotai@npm:^2.8.0, jotai@npm:^2.9.3":
   version: 2.9.3
   resolution: "jotai@npm:2.9.3"
   peerDependencies:

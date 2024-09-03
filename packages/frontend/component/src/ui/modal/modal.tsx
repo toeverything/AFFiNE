@@ -39,6 +39,10 @@ export interface ModalProps extends DialogProps {
    * @default 'fadeScaleTop'
    */
   animation?: 'fadeScaleTop' | 'none' | 'slideBottom';
+  /**
+   * Whether to show the modal in full screen mode
+   */
+  fullScreen?: boolean;
 }
 type PointerDownOutsideEvent = Parameters<
   Exclude<DialogContentProps['onPointerDownOutside'], undefined>
@@ -144,6 +148,7 @@ export const ModalInner = forwardRef<HTMLDivElement, ModalProps>(
       animation = environment.isBrowser && environment.isMobile
         ? 'slideBottom'
         : 'fadeScaleTop',
+      fullScreen,
       ...otherProps
     } = props;
     const { className: closeButtonClassName, ...otherCloseButtonProps } =
@@ -209,6 +214,7 @@ export const ModalInner = forwardRef<HTMLDivElement, ModalProps>(
             {...otherOverlayOptions}
           />
           <div
+            data-full-screen={fullScreen}
             data-modal={modal}
             className={clsx(
               `anim-${animation}`,
@@ -223,8 +229,14 @@ export const ModalInner = forwardRef<HTMLDivElement, ModalProps>(
               className={clsx(styles.modalContent, contentClassName)}
               style={{
                 ...assignInlineVars({
-                  [styles.widthVar]: getVar(width, '50vw'),
-                  [styles.heightVar]: getVar(height, 'unset'),
+                  [styles.widthVar]: getVar(
+                    width,
+                    fullScreen ? '100dvw' : '50dvw'
+                  ),
+                  [styles.heightVar]: getVar(
+                    height,
+                    fullScreen ? '100dvh' : 'unset'
+                  ),
                   [styles.minHeightVar]: getVar(minHeight, '26px'),
                 }),
                 ...contentStyle,

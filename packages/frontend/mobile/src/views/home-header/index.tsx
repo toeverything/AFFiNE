@@ -1,11 +1,12 @@
 import { IconButton } from '@affine/component';
+import { openSettingModalAtom } from '@affine/core/atoms';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import { useI18n } from '@affine/i18n';
 import { SettingsIcon } from '@blocksuite/icons/rc';
 import { useService } from '@toeverything/infra';
 import clsx from 'clsx';
+import { useSetAtom } from 'jotai';
 import { useCallback, useState } from 'react';
-import { Link } from 'react-router-dom';
 
 import { SearchInput, WorkspaceSelector } from '../../components';
 import { useGlobalEvent } from '../../hooks/use-global-events';
@@ -20,6 +21,7 @@ import * as styles from './styles.css';
 export const HomeHeader = () => {
   const t = useI18n();
   const workbench = useService(WorkbenchService).workbench;
+  const openSetting = useSetAtom(openSettingModalAtom);
 
   const [dense, setDense] = useState(false);
 
@@ -49,13 +51,14 @@ export const HomeHeader = () => {
             <WorkspaceSelector />
           </div>
           <div className={styles.settingWrapper}>
-            <Link to="/settings">
-              <IconButton
-                size="24"
-                style={{ padding: 10 }}
-                icon={<SettingsIcon />}
-              />
-            </Link>
+            <IconButton
+              onClick={() => {
+                openSetting({ open: true, activeTab: 'appearance' });
+              }}
+              size="24"
+              style={{ padding: 10 }}
+              icon={<SettingsIcon />}
+            />
           </div>
         </div>
         <div className={styles.searchWrapper}>

@@ -9,6 +9,9 @@ type SignOutConfirmModalI18NKeys =
   | 'cancel'
   | 'confirm';
 
+/**
+ * @deprecated use `useSignOut` instead
+ */
 export const SignOutModal = ({ ...props }: ConfirmModalProps) => {
   const { title, description, cancelText, confirmText } = props;
   const t = useI18n();

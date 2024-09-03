@@ -41,51 +41,67 @@ import { Virtuoso } from 'react-virtuoso';
 import { DropdownMenu } from './menu';
 import * as styles from './style.css';
 
+const getLabel = (fontKey: FontFamily, t: ReturnType<typeof useI18n>) => {
+  switch (fontKey) {
+    case 'Sans':
+      return t['com.affine.appearanceSettings.fontStyle.sans']();
+    case 'Serif':
+      return t['com.affine.appearanceSettings.fontStyle.serif']();
+    case 'Mono':
+      return t[`com.affine.appearanceSettings.fontStyle.mono`]();
+    case 'Custom':
+      return t['com.affine.settings.editorSettings.edgeless.custom']();
+    default:
+      return '';
+  }
+};
+
+export const getBaseFontStyleOptions = (
+  t: ReturnType<typeof useI18n>
+): Array<Omit<RadioItem, 'value'> & { value: FontFamily }> => {
+  return fontStyleOptions
+    .map(({ key, value }) => {
+      if (key === 'Custom') {
+        return null;
+      }
+      const label = getLabel(key, t);
+      return {
+        value: key,
+        label,
+        testId: 'system-font-style-trigger',
+        style: {
+          fontFamily: value,
+        },
+      } satisfies RadioItem;
+    })
+    .filter(item => item !== null);
+};
+
 const FontFamilySettings = () => {
   const t = useI18n();
   const { editorSettingService } = useServices({ EditorSettingService });
   const settings = useLiveData(editorSettingService.editorSetting.settings$);
 
-  const getLabel = useCallback(
-    (fontKey: FontFamily) => {
-      switch (fontKey) {
-        case 'Sans':
-          return t['com.affine.appearanceSettings.fontStyle.sans']();
-        case 'Serif':
-          return t['com.affine.appearanceSettings.fontStyle.serif']();
-        case 'Mono':
-          return t[`com.affine.appearanceSettings.fontStyle.mono`]();
-        case 'Custom':
-          return t['com.affine.settings.editorSettings.edgeless.custom']();
-        default:
-          return '';
-      }
-    },
-    [t]
-  );
-
   const radioItems = useMemo(() => {
-    return fontStyleOptions
-      .map(({ key, value }) => {
-        if (key === 'Custom' && !environment.isDesktop) {
-          return null;
-        }
-        const label = getLabel(key);
-        let fontFamily = value;
-        if (key === 'Custom' && settings.customFontFamily) {
-          fontFamily = `${settings.customFontFamily}, ${value}`;
-        }
-        return {
-          value: key,
-          label,
-          testId: 'system-font-style-trigger',
-          style: {
-            fontFamily,
-          },
-        } satisfies RadioItem;
-      })
-      .filter(item => item !== null);
-  }, [getLabel, settings.customFontFamily]);
+    const items = getBaseFontStyleOptions(t);
+    if (!environment.isDesktop) return items;
+
+    // resolve custom fonts
+    const customOption = fontStyleOptions.find(opt => opt.key === 'Custom');
+    if (customOption) {
+      const fontFamily = settings.customFontFamily
+        ? `${settings.customFontFamily}, ${customOption.value}`
+        : customOption.value;
+      items.push({
+        value: customOption.key,
+        label: getLabel(customOption.key, t),
+        testId: 'system-font-style-trigger',
+        style: { fontFamily },
+      });
+    }
+
+    return items;
+  }, [settings.customFontFamily, t]);
 
   const handleFontFamilyChange = useCallback(
     (value: FontFamily) => {

@@ -17,30 +17,30 @@ import { DateFormatSetting } from './date-format-setting';
 import { settingWrapper } from './style.css';
 import { ThemeEditorSetting } from './theme-editor-setting';
 
+export const getThemeOptions = (t: ReturnType<typeof useI18n>) =>
+  [
+    {
+      value: 'system',
+      label: t['com.affine.themeSettings.system'](),
+      testId: 'system-theme-trigger',
+    },
+    {
+      value: 'light',
+      label: t['com.affine.themeSettings.light'](),
+      testId: 'light-theme-trigger',
+    },
+    {
+      value: 'dark',
+      label: t['com.affine.themeSettings.dark'](),
+      testId: 'dark-theme-trigger',
+    },
+  ] satisfies RadioItem[];
+
 export const ThemeSettings = () => {
   const t = useI18n();
   const { setTheme, theme } = useTheme();
 
-  const radioItems = useMemo<RadioItem[]>(
-    () => [
-      {
-        value: 'system',
-        label: t['com.affine.themeSettings.system'](),
-        testId: 'system-theme-trigger',
-      },
-      {
-        value: 'light',
-        label: t['com.affine.themeSettings.light'](),
-        testId: 'light-theme-trigger',
-      },
-      {
-        value: 'dark',
-        label: t['com.affine.themeSettings.dark'](),
-        testId: 'dark-theme-trigger',
-      },
-    ],
-    [t]
-  );
+  const radioItems = useMemo<RadioItem[]>(() => getThemeOptions(t), [t]);
 
   return (
     <RadioGroup

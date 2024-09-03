@@ -5,6 +5,9 @@ import type { SettingProps } from '../components/affine/setting-modal';
 import type { ActiveTab } from '../components/affine/setting-modal/types';
 // modal atoms
 export const openWorkspacesModalAtom = atom(false);
+/**
+ * @deprecated use `useSignOut` hook instated
+ */
 export const openSignOutModalAtom = atom(false);
 export const openQuotaModalAtom = atom(false);
 export const openStarAFFiNEModalAtom = atom(false);

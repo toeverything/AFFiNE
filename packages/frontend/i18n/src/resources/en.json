@@ -1567,5 +1567,18 @@
   "com.affine.import-template.dialog.createDocToWorkspace": "Create doc to \"{{workspace}}\"",
   "com.affine.import-template.dialog.createDocToNewWorkspace": "Create into a New Workspace",
   "com.affine.import-template.dialog.createDocWithTemplate": "Create doc with \"{{templateName}}\" template",
+  "com.affine.mobile.setting.header-title": "Settings",
+  "com.affine.mobile.setting.appearance.title": "Appearance",
+  "com.affine.mobile.setting.appearance.theme": "Color mode",
+  "com.affine.mobile.setting.appearance.font": "Font style",
+  "com.affine.mobile.setting.appearance.language": "Display language",
+  "com.affine.mobile.setting.about.title": "About",
+  "com.affine.mobile.setting.about.appVersion": "App version",
+  "com.affine.mobile.setting.about.editorVersion": "Editor version",
+  "com.affine.mobile.setting.others.title": "Privacy & others",
+  "com.affine.mobile.setting.others.github": "Star us on GitHub",
+  "com.affine.mobile.setting.others.website": "Official website",
+  "com.affine.mobile.setting.others.privacy": "Privacy",
+  "com.affine.mobile.setting.others.terms": "Terms of use",
   "com.affine.mobile.search.empty": "No results found"
 }

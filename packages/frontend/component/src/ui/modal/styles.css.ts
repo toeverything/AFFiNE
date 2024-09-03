@@ -84,6 +84,9 @@ export const modalContentWrapper = style({
   },
 
   selectors: {
+    '&[data-full-screen="true"]': {
+      padding: '0 !important',
+    },
     '&.anim-none': {
       animation: 'none',
     },
@@ -136,6 +139,19 @@ export const modalContent = style({
   borderRadius: '12px',
   // :focus-visible will set outline
   outline: 'none',
+
+  selectors: {
+    '[data-full-screen="true"] &': {
+      vars: {
+        [widthVar]: '100vw',
+        [heightVar]: '100vh',
+        [minHeightVar]: '100vh',
+      },
+      maxWidth: '100vw',
+      maxHeight: '100vh',
+      borderRadius: 0,
+    },
+  },
 });
 export const closeButton = style({
   position: 'absolute',

@@ -16,6 +16,10 @@ export interface PageHeaderProps
    * whether to show back button
    */
   back?: boolean;
+  /**
+   * Override back button action
+   */
+  backAction?: () => void;
 
   /**
    * prefix content, shown after back button(if exists)
@@ -42,6 +46,7 @@ export const PageHeader = forwardRef<HTMLHeadElement, PageHeaderProps>(
   function PageHeader(
     {
       back,
+      backAction,
       prefix,
       suffix,
       children,
@@ -56,8 +61,8 @@ export const PageHeader = forwardRef<HTMLHeadElement, PageHeaderProps>(
     ref
   ) {
     const handleRouteBack = useCallback(() => {
-      history.back();
-    }, []);
+      backAction ? backAction() : history.back();
+    }, [backAction]);
 
     return (
       <header
