@@ -65,7 +65,7 @@
     "@testing-library/react": "^16.0.0",
     "@toeverything/infra": "workspace:*",
     "@types/affine__env": "workspace:*",
-    "@types/eslint": "^8.56.7",
+    "@types/eslint": "^9.0.0",
     "@types/node": "^20.12.7",
     "@typescript-eslint/eslint-plugin": "^7.6.0",
     "@typescript-eslint/parser": "^7.6.0",
