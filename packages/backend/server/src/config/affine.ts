@@ -95,6 +95,15 @@ AFFiNE.server.port = 3010;
 // });
 //
 //
+// /* Captcha Plugin Default Config */
+// AFFiNE.plugins.use('captcha', {
+//   turnstile: {},
+//   challenge: {
+//     bits: 20,
+//   },
+// });
+//
+//
 // /* Cloudflare R2 Plugin */
 // /* Enable if you choose to store workspace blobs or user avatars in Cloudflare R2 Storage Service */
 // AFFiNE.use('cloudflare-r2', {

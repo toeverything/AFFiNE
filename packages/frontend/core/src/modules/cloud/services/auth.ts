@@ -82,27 +82,19 @@ export class AuthService extends Service {
     verifyToken: string,
     challenge?: string
   ) {
-    const searchParams = new URLSearchParams();
-    if (challenge) {
-      searchParams.set('challenge', challenge);
-    }
-    searchParams.set('token', verifyToken);
-
-    const res = await this.fetchService.fetch(
-      '/api/auth/sign-in?' + searchParams.toString(),
-      {
-        method: 'POST',
-        body: JSON.stringify({
-          email,
-          // we call it [callbackUrl] instead of [redirect_uri]
-          // to make it clear the url is used to finish the sign-in process instead of redirect after signed-in
-          callbackUrl: `/magic-link?client=${environment.isDesktop ? appInfo?.schema : 'web'}`,
-        }),
-        headers: {
-          'content-type': 'application/json',
-        },
-      }
-    );
+    const res = await this.fetchService.fetch('/api/auth/sign-in', {
+      method: 'POST',
+      body: JSON.stringify({
+        email,
+        // we call it [callbackUrl] instead of [redirect_uri]
+        // to make it clear the url is used to finish the sign-in process instead of redirect after signed-in
+        callbackUrl: `/magic-link?client=${environment.isDesktop ? appInfo?.schema : 'web'}`,
+      }),
+      headers: {
+        'content-type': 'application/json',
+        ...this.captchaHeaders(verifyToken, challenge),
+      },
+    });
     if (!res.ok) {
       throw new Error('Failed to send email');
     }
@@ -159,12 +151,18 @@ export class AuthService extends Service {
     return await res.json();
   }
 
-  async signInPassword(credential: { email: string; password: string }) {
+  async signInPassword(credential: {
+    email: string;
+    password: string;
+    verifyToken: string;
+    challenge?: string;
+  }) {
     const res = await this.fetchService.fetch('/api/auth/sign-in', {
       method: 'POST',
       body: JSON.stringify(credential),
       headers: {
         'content-type': 'application/json',
+        ...this.captchaHeaders(credential.verifyToken, credential.challenge),
       },
     });
     if (!res.ok) {
@@ -181,5 +179,17 @@ export class AuthService extends Service {
 
   checkUserByEmail(email: string) {
     return this.store.checkUserByEmail(email);
+  }
+
+  captchaHeaders(token: string, challenge?: string) {
+    const headers: Record<string, string> = {
+      'x-captcha-token': token,
+    };
+
+    if (challenge) {
+      headers['x-captcha-challenge'] = challenge;
+    }
+
+    return headers;
   }
 }

@@ -1,9 +1,11 @@
 import { apis } from '@affine/electron-api';
 import { Turnstile } from '@marsidev/react-turnstile';
+import { useLiveData, useService } from '@toeverything/infra';
 import { atom, useAtom, useSetAtom } from 'jotai';
 import { useEffect, useRef } from 'react';
 import useSWR from 'swr';
 
+import { ServerConfigService } from '../../../modules/cloud';
 import * as style from './style.css';
 
 type Challenge = {
@@ -27,6 +29,7 @@ const challengeFetcher = async (url: string) => {
 
   return challenge;
 };
+
 const generateChallengeResponse = async (challenge: string) => {
   if (!environment.isDesktop) {
     return undefined;
@@ -38,11 +41,18 @@ const generateChallengeResponse = async (challenge: string) => {
 const captchaAtom = atom<string | undefined>(undefined);
 const responseAtom = atom<string | undefined>(undefined);
 
+const useHasCaptcha = () => {
+  const serverConfig = useService(ServerConfigService).serverConfig;
+  const hasCaptcha = useLiveData(serverConfig.features$.map(r => r?.captcha));
+  return hasCaptcha || false;
+};
+
 export const Captcha = () => {
   const setCaptcha = useSetAtom(captchaAtom);
   const [response] = useAtom(responseAtom);
+  const hasCaptchaFeature = useHasCaptcha();
 
-  if (!runtimeConfig.enableCaptcha) {
+  if (!hasCaptchaFeature) {
     return null;
   }
 
@@ -66,6 +76,7 @@ export const Captcha = () => {
 export const useCaptcha = (): [string | undefined, string?] => {
   const [verifyToken] = useAtom(captchaAtom);
   const [response, setResponse] = useAtom(responseAtom);
+  const hasCaptchaFeature = useHasCaptcha();
 
   const { data: challenge } = useSWR('/api/auth/challenge', challengeFetcher, {
     suspense: false,
@@ -75,7 +86,7 @@ export const useCaptcha = (): [string | undefined, string?] => {
 
   useEffect(() => {
     if (
-      runtimeConfig.enableCaptcha &&
+      hasCaptchaFeature &&
       environment.isDesktop &&
       challenge?.challenge &&
       prevChallenge.current !== challenge.challenge
@@ -87,9 +98,9 @@ export const useCaptcha = (): [string | undefined, string?] => {
           console.error('Error getting challenge response:', err);
         });
     }
-  }, [challenge, setResponse]);
+  }, [challenge, hasCaptchaFeature, setResponse]);
 
-  if (!runtimeConfig.enableCaptcha) {
+  if (!hasCaptchaFeature) {
     return ['XXXX.DUMMY.TOKEN.XXXX'];
   }
 

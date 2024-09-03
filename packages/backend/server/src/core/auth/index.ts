@@ -20,7 +20,7 @@ import { TokenService, TokenType } from './token';
     AuthGuard,
     AuthWebsocketOptionsProvider,
   ],
-  exports: [AuthService, AuthGuard, AuthWebsocketOptionsProvider],
+  exports: [AuthService, AuthGuard, AuthWebsocketOptionsProvider, TokenService],
   controllers: [AuthController],
 })
 export class AuthModule {}

@@ -1,3 +1,4 @@
+import './captcha';
 import './copilot';
 import './gcloud';
 import './oauth';

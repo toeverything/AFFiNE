@@ -1,5 +1,3 @@
-import { randomUUID } from 'node:crypto';
-
 import {
   Body,
   Controller,
@@ -23,6 +21,7 @@ import {
   SignUpForbidden,
   Throttle,
   URLHelper,
+  UseNamedGuard,
 } from '../../fundamentals';
 import { UserService } from '../user';
 import { validators } from '../utils/validators';
@@ -86,6 +85,7 @@ export class AuthController {
   }
 
   @Public()
+  @UseNamedGuard('captcha')
   @Post('/sign-in')
   @Header('content-type', 'application/json')
   async signIn(
@@ -235,16 +235,6 @@ export class AuthController {
 
     return {
       users: await this.auth.getUserList(token),
-    };
-  }
-
-  @Public()
-  @Get('/challenge')
-  async challenge() {
-    // TODO(@darksky): impl in following PR
-    return {
-      challenge: randomUUID(),
-      resource: randomUUID(),
     };
   }
 }

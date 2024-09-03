@@ -3,6 +3,7 @@ import { Field, ObjectType, registerEnumType } from '@nestjs/graphql';
 import { DeploymentType } from '../../fundamentals';
 
 export enum ServerFeature {
+  Captcha = 'captcha',
   Copilot = 'copilot',
   Payment = 'payment',
   OAuth = 'oauth',

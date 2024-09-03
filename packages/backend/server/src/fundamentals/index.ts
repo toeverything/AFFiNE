@@ -16,6 +16,7 @@ export {
 export * from './error';
 export { EventEmitter, type EventPayload, OnEvent } from './event';
 export type { GraphqlContext } from './graphql';
+export * from './guard';
 export { CryptoHelper, URLHelper } from './helpers';
 export { MailService } from './mailer';
 export { CallCounter, CallTimer, metrics } from './metrics';

@@ -17,7 +17,6 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
         imageProxyUrl: '/api/worker/image-proxy',
         linkPreviewUrl: '/api/worker/link-preview',
         enablePreloading: true,
-        enableCaptcha: true,
         enableExperimentalFeature: true,
         allowLocalWorkspace:
           buildFlags.distribution === 'desktop' ? true : false,
@@ -76,11 +75,6 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
     enableNewSettingUnstableApi: process.env.ENABLE_NEW_SETTING_UNSTABLE_API
       ? process.env.ENABLE_NEW_SETTING_UNSTABLE_API === 'true'
       : currentBuildPreset.enableNewSettingUnstableApi,
-    enableCaptcha: process.env.ENABLE_CAPTCHA
-      ? process.env.ENABLE_CAPTCHA === 'true'
-      : buildFlags.mode === 'development'
-        ? false
-        : currentBuildPreset.enableCaptcha,
     enableEnhanceShareMode: process.env.ENABLE_ENHANCE_SHARE_MODE
       ? process.env.ENABLE_ENHANCE_SHARE_MODE === 'true'
       : currentBuildPreset.enableEnhanceShareMode,

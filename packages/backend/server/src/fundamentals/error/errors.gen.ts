@@ -533,6 +533,12 @@ export class CannotDeleteOwnAccount extends UserFriendlyError {
     super('action_forbidden', 'cannot_delete_own_account', message);
   }
 }
+
+export class CaptchaVerificationFailed extends UserFriendlyError {
+  constructor(message?: string) {
+    super('bad_request', 'captcha_verification_failed', message);
+  }
+}
 export enum ErrorNames {
   INTERNAL_SERVER_ERROR,
   TOO_MANY_REQUEST,
@@ -604,7 +610,8 @@ export enum ErrorNames {
   INVALID_RUNTIME_CONFIG_TYPE,
   MAILER_SERVICE_IS_NOT_CONFIGURED,
   CANNOT_DELETE_ALL_ADMIN_ACCOUNT,
-  CANNOT_DELETE_OWN_ACCOUNT
+  CANNOT_DELETE_OWN_ACCOUNT,
+  CAPTCHA_VERIFICATION_FAILED
 }
 registerEnumType(ErrorNames, {
   name: 'ErrorNames'

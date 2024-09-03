@@ -526,4 +526,10 @@ export const USER_FRIENDLY_ERRORS = {
     type: 'action_forbidden',
     message: 'Cannot delete own account.',
   },
+
+  // captcha errors
+  captcha_verification_failed: {
+    type: 'bad_request',
+    message: 'Captcha verification failed.',
+  },
 } satisfies Record<string, UserFriendlyErrorOptions>;

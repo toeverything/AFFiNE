@@ -77,8 +77,6 @@ spec:
             value: "{{ .Values.app.https }}"
           - name: ENABLE_R2_OBJECT_STORAGE
             value: "{{ .Values.app.objectStorage.r2.enabled }}"
-          - name: ENABLE_CAPTCHA
-            value: "{{ .Values.app.captcha.enabled }}"
           - name: FEATURES_EARLY_ACCESS_PREVIEW
             value: "{{ .Values.app.features.earlyAccessPreview }}"
           - name: FEATURES_SYNC_CLIENT_VERSION_CHECK
