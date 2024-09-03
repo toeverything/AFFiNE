@@ -41,6 +41,7 @@ export const RenameModal = ({
   return (
     <Menu
       rootOptions={{
+        modal: true,
         open: open,
         onOpenChange: onOpenChange,
       }}

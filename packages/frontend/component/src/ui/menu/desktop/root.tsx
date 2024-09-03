@@ -10,7 +10,7 @@ export const DesktopMenu = ({
   children,
   items,
   portalOptions,
-  rootOptions: { onOpenChange, defaultOpen, ...rootOptions } = {},
+  rootOptions: { onOpenChange, defaultOpen, modal, ...rootOptions } = {},
   contentOptions: {
     className = '',
     style: contentStyle = {},
@@ -30,9 +30,18 @@ export const DesktopMenu = ({
     <DropdownMenu.Root
       onOpenChange={handleOpenChange}
       defaultOpen={defaultOpen}
+      modal={modal ?? false}
       {...rootOptions}
     >
-      <DropdownMenu.Trigger asChild>{children}</DropdownMenu.Trigger>
+      <DropdownMenu.Trigger
+        asChild
+        onClick={e => {
+          e.stopPropagation();
+          e.preventDefault();
+        }}
+      >
+        {children}
+      </DropdownMenu.Trigger>
 
       <DropdownMenu.Portal {...portalOptions}>
         <DropdownMenu.Content
