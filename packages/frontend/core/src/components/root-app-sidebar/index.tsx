@@ -11,7 +11,7 @@ import {
 import { ExplorerTags } from '@affine/core/modules/explorer/views/sections/tags';
 import { CMDKQuickSearchService } from '@affine/core/modules/quicksearch/services/cmdk';
 import { isNewTabTrigger } from '@affine/core/utils';
-import { events } from '@affine/electron-api';
+import { apis, events } from '@affine/electron-api';
 import { useI18n } from '@affine/i18n';
 import type { DocMode } from '@blocksuite/blocks';
 import {
@@ -122,7 +122,19 @@ export const RootAppSidebar = (): ReactElement => {
 
   useEffect(() => {
     if (environment.isDesktop) {
-      return events?.applicationMenu.onNewPageAction(() => onClickNewPage());
+      return events?.applicationMenu.onNewPageAction(() => {
+        apis?.ui
+          .isActiveTab()
+          .then(isActive => {
+            if (!isActive) {
+              return;
+            }
+            onClickNewPage();
+          })
+          .catch(err => {
+            console.error(err);
+          });
+      });
     }
     return;
   }, [onClickNewPage]);
