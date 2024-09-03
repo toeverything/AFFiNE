@@ -8,7 +8,7 @@ import { EditorService } from '@affine/core/modules/editor';
 import { I18n } from '@affine/i18n';
 import type { DatabaseBlockModel, MenuOptions } from '@blocksuite/blocks';
 import { LinkIcon } from '@blocksuite/icons/lit';
-import { type FrameworkProvider } from '@toeverything/infra';
+import type { FrameworkProvider } from '@toeverything/infra';
 import type { TemplateResult } from 'lit';
 
 export function createDatabaseOptionsConfig(framework: FrameworkProvider) {
@@ -54,12 +54,12 @@ function createCopyLinkToBlockMenuItem(
       const baseUrl = getAffineCloudBaseUrl();
       if (!baseUrl) return;
 
+      const pageId = model.doc.id;
       const { editor } = framework.get(EditorService);
       const mode = editor.mode$.value;
 
       if (mode === 'edgeless') return;
 
-      const pageId = editor.doc.id;
       const workspaceId = editor.doc.workspace.id;
       const options: UseSharingUrl = {
         workspaceId,

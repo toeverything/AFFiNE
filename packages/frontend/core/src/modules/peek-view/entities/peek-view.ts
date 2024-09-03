@@ -1,7 +1,7 @@
 import type { BlockComponent, EditorHost } from '@blocksuite/block-std';
 import {
   AffineReference,
-  type DocMode,
+  DocMode,
   type EmbedLinkedDocModel,
   type EmbedSyncedDocModel,
   type ImageBlockModel,
@@ -135,7 +135,7 @@ function resolvePeekInfoFromPeekTarget(
         return {
           type: 'doc',
           docId,
-          mode: 'edgeless' as DocMode,
+          mode: DocMode.Edgeless,
           xywh: refModel.xywh,
         };
       }

@@ -52,7 +52,6 @@ export const resolveRouteLinkMeta = (href: string) => {
           workspaceId,
           moduleName: 'doc' as const,
           docId: moduleName,
-          blockId: hash.slice(1),
         };
       }
     }

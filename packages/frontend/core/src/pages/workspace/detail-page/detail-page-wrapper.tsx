@@ -28,33 +28,34 @@ const useLoadDoc = (pageId: string) => {
   const docRecord = useLiveData(docRecordList.doc$(pageId));
   const viewService = useService(ViewService);
 
-  const queryString = useLiveData(
-    viewService.view.queryString$<{
-      mode?: string;
-      blockIds?: string[];
-      elementIds?: string[];
-    }>({
-      // Cannot handle single id situation correctly: `blockIds=xxx`
-      arrayFormat: 'none',
-      types: {
-        mode: 'string',
-        blockIds: value => (value.length ? value.split(',') : []),
-        elementIds: value => (value.length ? value.split(',') : []),
-      },
+  const queryString$ = viewService.view.queryString$<{
+    mode?: string;
+    blockIds?: string[];
+    elementIds?: string[];
+  }>({
+    // Cannot handle single id situation correctly: `blockIds=xxx`
+    arrayFormat: 'none',
+    types: {
+      mode: 'string',
+      blockIds: value => (value.length ? value.split(',') : []),
+      elementIds: value => (value.length ? value.split(',') : []),
+    },
+  });
+
+  const modeInQuery = useLiveData(
+    queryString$.map(q => {
+      if (q.mode && DocModes.includes(q.mode)) {
+        return q.mode as DocMode;
+      }
+      return null;
     })
   );
 
-  const queryStringMode =
-    queryString.mode && DocModes.includes(queryString.mode)
-      ? (queryString.mode as DocMode)
-      : null;
-
   // We only read the querystring mode when entering, so use useState here.
-  const [initialQueryStringMode] = useState(() => queryStringMode);
-  const [initialQueryStringSelector] = useState(() => ({
-    blockIds: queryString.blockIds,
-    elementIds: queryString.elementIds,
-  }));
+  const [initialQueryStringSelector] = useState(() => {
+    const { blockIds, elementIds } = queryString$.value;
+    return { blockIds, elementIds };
+  });
 
   const [doc, setDoc] = useState<Doc | null>(null);
   const [editor, setEditor] = useState<Editor | null>(null);
@@ -75,17 +76,18 @@ const useLoadDoc = (pageId: string) => {
     if (!doc) {
       return;
     }
+
     const editor = doc.scope
       .get(EditorsService)
       .createEditor(
-        initialQueryStringMode || doc.getPrimaryMode() || ('page' as DocMode),
+        modeInQuery || doc.getPrimaryMode() || ('page' as DocMode),
         initialQueryStringSelector
       );
     setEditor(editor);
     return () => {
       editor.dispose();
     };
-  }, [doc, initialQueryStringMode, initialQueryStringSelector]);
+  }, [doc, modeInQuery, initialQueryStringSelector]);
 
   // update editor mode to queryString
   useEffect(() => {

@@ -29,23 +29,23 @@ import * as styles from './styles.css';
 import { scrollAnchoring } from './utils';
 
 export interface PageReferenceRendererOptions {
-  docMode: DocMode | null;
   pageId: string;
   docCollection: DocCollection;
   pageMetaHelper: ReturnType<typeof useDocMetaHelper>;
   journalHelper: ReturnType<typeof useJournalHelper>;
   t: ReturnType<typeof useI18n>;
+  docMode?: DocMode;
   // linking doc with block or element
   blockIds?: string[];
   elementIds?: string[];
 }
 // use a function to be rendered in the lit renderer
 export function pageReferenceRenderer({
-  docMode,
   pageId,
   pageMetaHelper,
   journalHelper,
   t,
+  docMode,
   blockIds,
   elementIds,
 }: PageReferenceRendererOptions) {
@@ -93,8 +93,8 @@ export function AffinePageReference({
   isSameDoc = false,
   std,
 }: {
-  docCollection: DocCollection;
   pageId: string;
+  docCollection: DocCollection;
   wrapper?: React.ComponentType<PropsWithChildren>;
   mode?: DocMode;
   params?: {
