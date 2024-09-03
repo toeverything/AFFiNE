@@ -2,7 +2,7 @@ import { useI18n } from '@affine/i18n';
 import { ArrowLeftSmallIcon } from '@blocksuite/icons/rc';
 import { Slot } from '@radix-ui/react-slot';
 import clsx from 'clsx';
-import { useCallback, useContext, useMemo, useState } from 'react';
+import { useCallback, useContext, useEffect, useState } from 'react';
 
 import { observeResize } from '../../../utils';
 import { Button } from '../../button';
@@ -31,30 +31,28 @@ export const MobileMenu = ({
   const [subMenus, setSubMenus] = useState<SubMenuContent[]>([]);
   const [open, setOpen] = useState(false);
   const [sliderHeight, setSliderHeight] = useState(0);
+  const [sliderElement, setSliderElement] = useState<HTMLDivElement | null>(
+    null
+  );
   const { setOpen: pSetOpen } = useContext(MobileMenuContext);
   const finalOpen = rootOptions?.open ?? open;
   const activeIndex = subMenus.length;
 
   // dynamic height for slider
-  const onSliderRef = useMemo(() => {
-    let unsub: (() => void) | null = null;
-
-    return (sliderDiv: HTMLDivElement | null) => {
-      unsub?.();
-
-      if (!sliderDiv || !finalOpen) return;
-
-      const active = sliderDiv.querySelector(
+  useEffect(() => {
+    if (sliderElement && finalOpen) {
+      const active = sliderElement.querySelector(
         `.${styles.menuContent}[data-index="${activeIndex}"]`
       );
       if (!active) return;
 
       // for the situation that content is loaded asynchronously
-      unsub = observeResize(active, entry => {
+      return observeResize(active, entry => {
         setSliderHeight(entry.borderBoxSize[0].blockSize);
       });
-    };
-  }, [activeIndex, finalOpen]);
+    }
+    return;
+  }, [activeIndex, finalOpen, sliderElement]);
 
   const onOpenChange = useCallback(
     (open: boolean) => {
@@ -117,7 +115,7 @@ export const MobileMenu = ({
           }}
         >
           <div
-            ref={onSliderRef}
+            ref={setSliderElement}
             className={styles.slider}
             style={{
               transform: `translateX(-${100 * activeIndex}%)`,
