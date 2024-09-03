@@ -256,7 +256,9 @@ export const createComponent = <
 
   const ReactComponent = React.forwardRef<I, Props>((props, ref) => {
     const containerRef = React.useRef<HTMLElement | null>(null);
-    const prevPropsRef = React.useRef<Props | null>(null);
+    const prevPropsRef = React.useRef<React.PropsWithoutRef<Props> | null>(
+      null
+    );
     const elementRef = React.useRef<I | null>(null);
 
     // Props to be passed to React.createElement
@@ -300,7 +302,9 @@ export const createComponent = <
         setProperty(
           elementRef.current,
           prop,
+          // @ts-expect-error: prop is a key of props
           props[prop],
+          // @ts-expect-error: prop is a key of props
           prevPropsRef.current ? prevPropsRef.current[prop] : undefined,
           events
         );

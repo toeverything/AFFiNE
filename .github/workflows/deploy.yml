@@ -326,7 +326,7 @@ jobs:
           BLOCKSUITE_REPO_PATH: ${{ github.workspace }}/blocksuite
       - name: Post Failed event to a Slack channel
         id: failed-slack
-        uses: slackapi/slack-github-action@v1.26.0
+        uses: slackapi/slack-github-action@v1.27.0
         if: ${{ always() && contains(needs.*.result, 'failure') }}
         with:
           channel-id: ${{ secrets.RELEASE_SLACK_CHNNEL_ID }}
@@ -346,7 +346,7 @@ jobs:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
       - name: Post Cancel event to a Slack channel
         id: cancel-slack
-        uses: slackapi/slack-github-action@v1.26.0
+        uses: slackapi/slack-github-action@v1.27.0
         if: ${{ always() && contains(needs.*.result, 'cancelled') && !contains(needs.*.result, 'failure') }}
         with:
           channel-id: ${{ secrets.RELEASE_SLACK_CHNNEL_ID }}

@@ -39,7 +39,7 @@
     "date-fns": "^3.6.0",
     "embla-carousel-react": "^8.1.5",
     "input-otp": "^1.2.4",
-    "lucide-react": "^0.435.0",
+    "lucide-react": "^0.438.0",
     "next-themes": "^0.3.0",
     "react": "^18.3.1",
     "react-day-picker": "^8.10.1",
@@ -56,7 +56,7 @@
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "cross-env": "^7.0.3",
-    "shadcn-ui": "^0.8.0",
+    "shadcn-ui": "^0.9.0",
     "tailwind-merge": "^2.3.0",
     "tailwindcss": "^3.4.4",
     "tailwindcss-animate": "^1.0.7"
