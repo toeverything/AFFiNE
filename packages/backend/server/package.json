@@ -70,7 +70,7 @@
     "graphql-upload": "^16.0.2",
     "html-validate": "^8.20.1",
     "ioredis": "^5.3.2",
-    "keyv": "^4.5.4",
+    "keyv": "^5.0.0",
     "lodash-es": "^4.17.21",
     "mixpanel": "^0.18.0",
     "mustache": "^4.2.0",

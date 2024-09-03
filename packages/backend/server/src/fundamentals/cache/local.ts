@@ -1,17 +1,17 @@
-import Keyv from 'keyv';
+import Keyv, { KeyvOptions } from 'keyv';
 
 import type { Cache, CacheSetOptions } from './def';
 
 export class LocalCache implements Cache {
   private readonly kv: Keyv;
 
-  constructor(opts: Keyv.Options<any> = {}) {
+  constructor(opts: KeyvOptions = {}) {
     this.kv = new Keyv(opts);
   }
 
   // standard operation
   async get<T = unknown>(key: string): Promise<T | undefined> {
-    return this.kv.get(key).catch(() => undefined);
+    return this.kv.get<T>(key).catch(() => undefined);
   }
 
   async set<T = unknown>(
@@ -74,14 +74,14 @@ export class LocalCache implements Cache {
 
   // list operations
   private async getArray<T = unknown>(key: string) {
-    const raw = await this.kv.get(key, { raw: true });
+    const raw = await this.kv.get<T[]>(key, { raw: true });
     if (raw && !Array.isArray(raw.value)) {
       throw new Error(
         `Expect an Array keyed by ${key}, but found ${raw.value}`
       );
     }
 
-    return raw as Keyv.DeserializedData<T[]>;
+    return raw;
   }
 
   private async setArray<T = unknown>(
@@ -97,7 +97,9 @@ export class LocalCache implements Cache {
     let ttl: number | undefined = undefined;
     const raw = await this.getArray(key);
     if (raw) {
-      list = raw.value;
+      if (raw.value) {
+        list = raw.value;
+      }
       if (raw.expires) {
         ttl = raw.expires - Date.now();
       }
@@ -112,7 +114,9 @@ export class LocalCache implements Cache {
     let ttl: number | undefined = undefined;
     const raw = await this.getArray(key);
     if (raw) {
-      list = raw.value;
+      if (raw.value) {
+        list = raw.value;
+      }
       if (raw.expires) {
         ttl = raw.expires - Date.now();
       }
@@ -123,7 +127,7 @@ export class LocalCache implements Cache {
   }
 
   async len(key: string): Promise<number> {
-    return this.getArray(key).then(v => v?.value.length ?? 0);
+    return this.getArray<any[]>(key).then(v => v?.value?.length ?? 0);
   }
 
   /**
@@ -147,7 +151,7 @@ export class LocalCache implements Cache {
 
   private async trim<T = unknown>(key: string, start: number, end: number) {
     const raw = await this.getArray<T>(key);
-    if (raw) {
+    if (raw && raw.value) {
       start = (raw.value.length + start) % raw.value.length;
       // make negative end index work, and end indice is inclusive
       end = ((raw.value.length + end) % raw.value.length) + 1;
@@ -173,7 +177,7 @@ export class LocalCache implements Cache {
 
   // map operations
   private async getMap<T = unknown>(map: string) {
-    const raw = await this.kv.get(map, { raw: true });
+    const raw = await this.kv.get<Record<string, T>>(map, { raw: true });
 
     if (raw) {
       if (typeof raw.value !== 'object') {
@@ -187,7 +191,7 @@ export class LocalCache implements Cache {
       }
     }
 
-    return raw as Keyv.DeserializedData<Record<string, T>>;
+    return raw;
   }
 
   private async setMap<T = unknown>(
@@ -263,7 +267,7 @@ export class LocalCache implements Cache {
 
   async mapKeys(map: string): Promise<string[]> {
     const raw = await this.getMap(map);
-    if (raw) {
+    if (raw?.value) {
       return Object.keys(raw.value);
     }
 
@@ -277,6 +281,6 @@ export class LocalCache implements Cache {
 
   async mapLen(map: string): Promise<number> {
     const raw = await this.getMap(map);
-    return raw ? Object.keys(raw.value).length : 0;
+    return raw?.value ? Object.keys(raw.value).length : 0;
   }
 }

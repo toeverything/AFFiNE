@@ -868,7 +868,7 @@ __metadata:
     graphql-upload: "npm:^16.0.2"
     html-validate: "npm:^8.20.1"
     ioredis: "npm:^5.3.2"
-    keyv: "npm:^4.5.4"
+    keyv: "npm:^5.0.0"
     lodash-es: "npm:^4.17.21"
     mixpanel: "npm:^0.18.0"
     mustache: "npm:^4.2.0"
@@ -25637,7 +25637,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"keyv@npm:*":
+"keyv@npm:*, keyv@npm:^5.0.0":
   version: 5.0.1
   resolution: "keyv@npm:5.0.1"
   dependencies:
@@ -25646,7 +25646,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"keyv@npm:^4.0.0, keyv@npm:^4.5.3, keyv@npm:^4.5.4":
+"keyv@npm:^4.0.0, keyv@npm:^4.5.3":
   version: 4.5.4
   resolution: "keyv@npm:4.5.4"
   dependencies:
