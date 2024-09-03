@@ -1,22 +1,17 @@
 import './page-detail-editor.css';
 
 import { useDocCollectionPage } from '@affine/core/hooks/use-block-suite-workspace-page';
-import { ViewService } from '@affine/core/modules/workbench/services/view';
 import type { DocMode } from '@blocksuite/blocks';
 import { DisposableGroup } from '@blocksuite/global/utils';
 import type { AffineEditorContainer } from '@blocksuite/presets';
 import type { Doc as BlockSuiteDoc, DocCollection } from '@blocksuite/store';
-import {
-  useLiveData,
-  useService,
-  useServiceOptional,
-} from '@toeverything/infra';
+import { useLiveData, useService } from '@toeverything/infra';
 import { cssVar } from '@toeverything/theme';
 import clsx from 'clsx';
 import type { CSSProperties } from 'react';
-import { memo, Suspense, useCallback, useMemo } from 'react';
+import { memo, useCallback, useMemo } from 'react';
 
-import { EditorService } from '../modules/editor';
+import { type EditorSelector, EditorService } from '../modules/editor';
 import {
   EditorSettingService,
   fontStyleOptions,
@@ -40,35 +35,26 @@ export interface PageDetailEditorProps {
   docCollection: DocCollection;
   pageId: string;
   onLoad?: OnLoadEditor;
+  defaultEditorSelector?: EditorSelector;
 }
 
 const PageDetailEditorMain = memo(function PageDetailEditorMain({
   page,
   onLoad,
+  defaultEditorSelector,
 }: PageDetailEditorProps & { page: BlockSuiteDoc }) {
-  const viewService = useServiceOptional(ViewService);
-  const params = useLiveData(
-    viewService?.view.queryString$<{
-      mode?: string;
-      blockIds?: string[];
-      elementIds?: string[];
-    }>({
-      // Cannot handle single id situation correctly: `blockIds=xxx`
-      arrayFormat: 'none',
-      types: {
-        mode: 'string',
-        blockIds: value => (value.length ? value.split(',') : []),
-        elementIds: value => (value.length ? value.split(',') : []),
-      },
-    })
-  );
-
   const editor = useService(EditorService).editor;
   const mode = useLiveData(editor.mode$);
 
   const isSharedMode = editor.isSharedMode;
   const editorSetting = useService(EditorSettingService).editorSetting;
-  const settings = useLiveData(editorSetting.settings$);
+  const settings = useLiveData(
+    editorSetting.settings$.selector(s => ({
+      fontFamily: s.fontFamily,
+      customFontFamily: s.customFontFamily,
+      fullWidthLayout: s.fullWidthLayout,
+    }))
+  );
 
   const value = useMemo(() => {
     const fontStyle = fontStyleOptions.find(
@@ -122,8 +108,7 @@ const PageDetailEditorMain = memo(function PageDetailEditorMain({
       mode={mode}
       page={page}
       shared={isSharedMode}
-      blockIds={params?.blockIds}
-      elementIds={params?.elementIds}
+      defaultEditorSelector={defaultEditorSelector}
       onLoadEditor={onLoadEditor}
     />
   );
@@ -135,9 +120,5 @@ export const PageDetailEditor = (props: PageDetailEditorProps) => {
   if (!page) {
     return null;
   }
-  return (
-    <Suspense>
-      <PageDetailEditorMain {...props} page={page} />
-    </Suspense>
-  );
+  return <PageDetailEditorMain {...props} page={page} />;
 };

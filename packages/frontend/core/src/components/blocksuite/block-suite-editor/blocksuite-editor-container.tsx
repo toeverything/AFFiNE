@@ -1,7 +1,10 @@
+import type { EditorSelector } from '@affine/core/modules/editor';
 import type { ReferenceInfo } from '@blocksuite/affine-model';
 import { DocMode } from '@blocksuite/blocks';
+import type { InlineEditor } from '@blocksuite/inline/inline-editor';
 import type {
   AffineEditorContainer,
+  DocTitle,
   EdgelessEditor,
   PageEditor,
 } from '@blocksuite/presets';
@@ -10,6 +13,7 @@ import clsx from 'clsx';
 import type React from 'react';
 import {
   forwardRef,
+  useCallback,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -42,8 +46,7 @@ interface BlocksuiteEditorContainerProps {
   shared?: boolean;
   className?: string;
   style?: React.CSSProperties;
-  blockIds?: string[];
-  elementIds?: string[];
+  defaultEditorSelector?: EditorSelector;
 }
 
 // mimic the interface of the webcomponent and expose slots & host
@@ -57,14 +60,24 @@ export const BlocksuiteEditorContainer = forwardRef<
   AffineEditorContainer,
   BlocksuiteEditorContainerProps
 >(function AffineEditorContainer(
-  { page, mode, className, style, shared, blockIds, elementIds },
+  { page, mode, className, style, shared, defaultEditorSelector },
   ref
 ) {
-  const scrolledRef = useRef(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const docRef = useRef<PageEditor>(null);
+  const docTitleRef = useRef<DocTitle>(null);
   const edgelessRef = useRef<EdgelessEditor>(null);
-  const [anchor, setAnchor] = useState<string | null>(null);
+  const [anchor] = useState<string | null>(() => {
+    if (
+      mode === DocMode.Edgeless &&
+      defaultEditorSelector?.elementIds?.length
+    ) {
+      return defaultEditorSelector.elementIds[0];
+    } else if (defaultEditorSelector?.blockIds?.length) {
+      return defaultEditorSelector.blockIds[0];
+    }
+    return null;
+  });
 
   const slots: BlocksuiteEditorContainerRef['slots'] = useMemo(() => {
     return {
@@ -74,14 +87,6 @@ export const BlocksuiteEditorContainer = forwardRef<
       tagClicked: new Slot(),
     };
   }, []);
-
-  useEffect(() => {
-    if (mode === DocMode.Edgeless && elementIds?.length) {
-      setAnchor(elementIds[0]);
-    } else if (blockIds?.length) {
-      setAnchor(blockIds[0]);
-    }
-  }, [blockIds, elementIds, mode]);
 
   // forward the slot to the webcomponent
   useLayoutEffect(() => {
@@ -162,7 +167,7 @@ export const BlocksuiteEditorContainer = forwardRef<
         }
         return undefined;
       },
-    }) as unknown as AffineEditorContainer;
+    }) as unknown as AffineEditorContainer & { origin: HTMLDivElement };
 
     return proxy;
   }, [mode, page, slots]);
@@ -177,30 +182,48 @@ export const BlocksuiteEditorContainer = forwardRef<
     }
   }, [affineEditorContainerProxy, ref]);
 
-  // `scrolledRef` should be updated if blockElement is changed
   useEffect(() => {
-    scrolledRef.current = false;
-  }, [anchor]);
-
-  useEffect(() => {
-    if (!anchor) return;
-
-    let canceled = false;
-    affineEditorContainerProxy.updateComplete
-      .then(() => {
-        if (!scrolledRef.current && !canceled) {
-          const std = affineEditorContainerProxy.host?.std;
-          if (std) {
-            scrollAnchoring(std, mode, anchor);
+    if (anchor) {
+      let canceled = false;
+      affineEditorContainerProxy.updateComplete
+        .then(() => {
+          if (!canceled) {
+            const std = affineEditorContainerProxy.host?.std;
+            if (std) {
+              scrollAnchoring(std, mode, anchor);
+            }
           }
-          scrolledRef.current = true;
-        }
-      })
-      .catch(console.error);
-    return () => {
-      canceled = true;
-    };
+        })
+        .catch(console.error);
+      return () => {
+        canceled = true;
+      };
+    } else {
+      // if no anchor, focus the title
+      let canceled = false;
+
+      affineEditorContainerProxy.updateComplete
+        .then(() => {
+          if (!canceled) {
+            const title = docTitleRef.current?.querySelector<
+              HTMLElement & { inlineEditor: InlineEditor }
+            >('rich-text');
+            title?.inlineEditor.focusEnd();
+          }
+        })
+        .catch(console.error);
+      return () => {
+        canceled = true;
+      };
+    }
   }, [anchor, affineEditorContainerProxy, mode]);
+
+  const handleClickPageModeBlank = useCallback(() => {
+    affineEditorContainerProxy.host?.std.command.exec(
+      'appendParagraph' as never,
+      {}
+    );
+  }, [affineEditorContainerProxy]);
 
   return (
     <div
@@ -215,7 +238,13 @@ export const BlocksuiteEditorContainer = forwardRef<
       ref={rootRef}
     >
       {mode === 'page' ? (
-        <BlocksuiteDocEditor shared={shared} page={page} ref={docRef} />
+        <BlocksuiteDocEditor
+          shared={shared}
+          page={page}
+          ref={docRef}
+          titleRef={docTitleRef}
+          onClickBlank={handleClickPageModeBlank}
+        />
       ) : (
         <BlocksuiteEdgelessEditor
           shared={shared}

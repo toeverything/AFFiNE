@@ -8,15 +8,20 @@ import {
 } from '@toeverything/infra';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
-import { type Editor, EditorsService } from '../../editor';
+import { type Editor, type EditorSelector, EditorsService } from '../../editor';
 
-export const useEditor = (pageId: string, preferMode?: DocMode) => {
+export const useEditor = (
+  pageId: string,
+  preferMode?: DocMode,
+  preferSelector?: EditorSelector
+) => {
   const currentWorkspace = useService(WorkspaceService).workspace;
   const docsService = useService(DocsService);
   const docRecordList = docsService.list;
   const docListReady = useLiveData(docRecordList.isReady$);
   const docRecord = docRecordList.doc$(pageId).value;
   const preferModeRef = useRef(preferMode);
+  const preferSelectorRef = useRef(preferSelector);
 
   const [doc, setDoc] = useState<Doc | null>(null);
   const [editor, setEditor] = useState<Editor | null>(null);
@@ -38,7 +43,10 @@ export const useEditor = (pageId: string, preferMode?: DocMode) => {
     }
     const editor = doc.scope
       .get(EditorsService)
-      .createEditor(preferModeRef.current || doc.primaryMode$.value);
+      .createEditor(
+        preferModeRef.current || doc.primaryMode$.value,
+        preferSelectorRef.current
+      );
     setEditor(editor);
     return () => {
       editor.dispose();

@@ -31,7 +31,17 @@ const useLoadDoc = (pageId: string) => {
   const queryString = useLiveData(
     viewService.view.queryString$<{
       mode?: string;
-    }>()
+      blockIds?: string[];
+      elementIds?: string[];
+    }>({
+      // Cannot handle single id situation correctly: `blockIds=xxx`
+      arrayFormat: 'none',
+      types: {
+        mode: 'string',
+        blockIds: value => (value.length ? value.split(',') : []),
+        elementIds: value => (value.length ? value.split(',') : []),
+      },
+    })
   );
 
   const queryStringMode =
@@ -41,6 +51,10 @@ const useLoadDoc = (pageId: string) => {
 
   // We only read the querystring mode when entering, so use useState here.
   const [initialQueryStringMode] = useState(() => queryStringMode);
+  const [initialQueryStringSelector] = useState(() => ({
+    blockIds: queryString.blockIds,
+    elementIds: queryString.elementIds,
+  }));
 
   const [doc, setDoc] = useState<Doc | null>(null);
   const [editor, setEditor] = useState<Editor | null>(null);
@@ -64,13 +78,14 @@ const useLoadDoc = (pageId: string) => {
     const editor = doc.scope
       .get(EditorsService)
       .createEditor(
-        initialQueryStringMode || doc.getPrimaryMode() || ('page' as DocMode)
+        initialQueryStringMode || doc.getPrimaryMode() || ('page' as DocMode),
+        initialQueryStringSelector
       );
     setEditor(editor);
     return () => {
       editor.dispose();
     };
-  }, [doc, initialQueryStringMode]);
+  }, [doc, initialQueryStringMode, initialQueryStringSelector]);
 
   // update editor mode to queryString
   useEffect(() => {

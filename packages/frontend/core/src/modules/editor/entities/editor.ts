@@ -4,13 +4,20 @@ import type { DocService, WorkspaceService } from '@toeverything/infra';
 import { Entity, LiveData } from '@toeverything/infra';
 
 import { EditorScope } from '../scopes/editor';
+import type { EditorSelector } from '../types';
 
-export class Editor extends Entity<{ defaultMode: DocMode }> {
+export class Editor extends Entity<{
+  defaultMode: DocMode;
+  defaultEditorSelector?: EditorSelector;
+}> {
   readonly scope = this.framework.createScope(EditorScope, {
     editor: this as Editor,
   });
 
   readonly mode$ = new LiveData(this.props.defaultMode);
+  readonly selector$ = new LiveData<EditorSelector | undefined>(
+    this.props.defaultEditorSelector
+  );
   readonly doc = this.docService.doc;
   readonly isSharedMode =
     this.workspaceService.workspace.openOptions.isSharedMode;

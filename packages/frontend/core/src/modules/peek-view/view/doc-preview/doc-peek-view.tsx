@@ -10,7 +10,12 @@ import { DebugLogger } from '@affine/debug';
 import { DocMode, type EdgelessRootService } from '@blocksuite/blocks';
 import { Bound, DisposableGroup } from '@blocksuite/global/utils';
 import type { AffineEditorContainer } from '@blocksuite/presets';
-import { DocsService, FrameworkScope, useService } from '@toeverything/infra';
+import {
+  DocsService,
+  FrameworkScope,
+  useLiveData,
+  useService,
+} from '@toeverything/infra';
 import clsx from 'clsx';
 import { useCallback, useEffect, useState } from 'react';
 
@@ -70,10 +75,14 @@ export function DocPeekPreview({
   mode?: DocMode;
   xywh?: `[${number},${number},${number},${number}]`;
 }) {
-  const { doc, workspace, loading } = useEditor(docId, mode);
+  const { doc, workspace, editor, loading } = useEditor(docId, mode, {
+    blockIds,
+    elementIds,
+  });
   const { jumpToTag } = useNavigateHelper();
   const workbench = useService(WorkbenchService).workbench;
   const peekView = useService(PeekViewService).peekView;
+  const defaultEditorSelector = useLiveData(editor?.selector$);
   const [editorElement, setEditorElement] =
     useState<AffineEditorContainer | null>(null);
 
@@ -162,7 +171,7 @@ export function DocPeekPreview({
   }, [docId, peekView, workbench]);
 
   // if sync engine has been synced and the page is null, show 404 page.
-  if (!doc || !resolvedMode) {
+  if (!doc || !resolvedMode || !editor) {
     return loading || !resolvedMode ? (
       <PageDetailSkeleton key="current-page-is-null" />
     ) : (
@@ -177,14 +186,15 @@ export function DocPeekPreview({
           className={clsx('affine-page-viewport', styles.affineDocViewport)}
         >
           <FrameworkScope scope={doc.scope}>
-            <BlockSuiteEditor
-              ref={onRef}
-              className={styles.editor}
-              mode={resolvedMode}
-              blockIds={blockIds}
-              elementIds={elementIds}
-              page={doc.blockSuiteDoc}
-            />
+            <FrameworkScope scope={editor.scope}>
+              <BlockSuiteEditor
+                ref={onRef}
+                className={styles.editor}
+                mode={resolvedMode}
+                defaultEditorSelector={defaultEditorSelector}
+                page={doc.blockSuiteDoc}
+              />
+            </FrameworkScope>
           </FrameworkScope>
           <EditorOutlineViewer
             editor={editorElement}

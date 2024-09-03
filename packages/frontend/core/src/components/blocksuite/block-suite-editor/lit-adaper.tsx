@@ -6,7 +6,6 @@ import {
 import { useJournalInfoHelper } from '@affine/core/hooks/use-journal';
 import { EditorSettingService } from '@affine/core/modules/editor-settting';
 import { PeekViewService } from '@affine/core/modules/peek-view';
-import { WorkbenchService } from '@affine/core/modules/workbench';
 import { DocMode } from '@blocksuite/blocks';
 import { DocTitle, EdgelessEditor, PageEditor } from '@blocksuite/presets';
 import type { Doc } from '@blocksuite/store';
@@ -24,7 +23,6 @@ import React, {
   useEffect,
   useMemo,
   useRef,
-  useState,
 } from 'react';
 
 import { PagePropertiesTable } from '../../affine/page-properties';
@@ -146,17 +144,17 @@ const usePatchSpecs = (page: Doc, shared: boolean, mode: DocMode) => {
 
 export const BlocksuiteDocEditor = forwardRef<
   PageEditor,
-  BlocksuiteEditorProps
->(function BlocksuiteDocEditor({ page, shared }, ref) {
-  const titleRef = useRef<DocTitle>(null);
+  BlocksuiteEditorProps & {
+    onClickBlank?: () => void;
+    titleRef?: React.Ref<DocTitle>;
+  }
+>(function BlocksuiteDocEditor(
+  { page, shared, onClickBlank, titleRef: externalTitleRef },
+  ref
+) {
+  const titleRef = useRef<DocTitle | null>(null);
   const docRef = useRef<PageEditor | null>(null);
-  const [docPage, setDocPage] =
-    useState<HTMLElementTagNameMap['affine-page-root']>();
   const { isJournal } = useJournalInfoHelper(page.collection, page.id);
-
-  const workbench = useService(WorkbenchService).workbench;
-  const activeView = useLiveData(workbench.activeView$);
-  const hash = useLiveData(activeView.location$).hash;
 
   const editorSettingService = useService(EditorSettingService);
 
@@ -174,22 +172,19 @@ export const BlocksuiteDocEditor = forwardRef<
     [ref]
   );
 
-  useEffect(() => {
-    // auto focus the title
-    setTimeout(() => {
-      const docPage = docRef.current?.querySelector('affine-page-root');
-      if (docPage) {
-        setDocPage(docPage);
+  const onTitleRef = useCallback(
+    (el: DocTitle) => {
+      titleRef.current = el;
+      if (externalTitleRef) {
+        if (typeof externalTitleRef === 'function') {
+          externalTitleRef(el);
+        } else {
+          (externalTitleRef as any).current = el;
+        }
       }
-      if (titleRef.current && !hash) {
-        const richText = titleRef.current.querySelector('rich-text');
-        richText?.inlineEditor?.focusEnd();
-      } else {
-        docPage?.focusFirstParagraph();
-      }
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    },
+    [externalTitleRef]
+  );
 
   const [specs, portals] = usePatchSpecs(page, !!shared, DocMode.Page);
 
@@ -199,7 +194,7 @@ export const BlocksuiteDocEditor = forwardRef<
     <>
       <div className={styles.affineDocViewport} style={{ height: '100%' }}>
         {!isJournal ? (
-          <adapted.DocTitle doc={page} ref={titleRef} />
+          <adapted.DocTitle doc={page} ref={onTitleRef} />
         ) : (
           <BlocksuiteEditorJournalDocTitle page={page} />
         )}
@@ -211,14 +206,7 @@ export const BlocksuiteDocEditor = forwardRef<
           specs={specs}
           hasViewport={false}
         />
-        {docPage && !page.readonly ? (
-          <div
-            className={styles.docEditorGap}
-            onClick={() => {
-              docPage.std.command.exec('appendParagraph' as never, {});
-            }}
-          ></div>
-        ) : null}
+        <div className={styles.docEditorGap} onClick={onClickBlank}></div>
         {!shared && settings.displayBiDirectionalLink ? (
           <BiDirectionalLinkPanel />
         ) : null}
