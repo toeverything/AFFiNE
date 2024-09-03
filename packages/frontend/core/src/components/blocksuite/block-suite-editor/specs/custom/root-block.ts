@@ -19,6 +19,7 @@ import {
 } from '@blocksuite/blocks';
 import { type FrameworkProvider } from '@toeverything/infra';
 
+import { createDatabaseOptionsConfig } from './database-block';
 import { createLinkedWidgetConfig } from './widgets/linked';
 import { createToolbarMoreMenuConfig } from './widgets/toolbar';
 
@@ -72,6 +73,7 @@ export function createPageRootBlockSpec(
       linkedWidget: createLinkedWidgetConfig(framework),
       editorSetting: editorSettingService.editorSetting.settingSignal,
       toolbarMoreMenu: createToolbarMoreMenuConfig(framework),
+      databaseOptions: createDatabaseOptionsConfig(framework),
     }),
   ];
 }
@@ -95,6 +97,7 @@ export function createEdgelessRootBlockSpec(
       linkedWidget: createLinkedWidgetConfig(framework),
       editorSetting: editorSettingService.editorSetting.settingSignal,
       toolbarMoreMenu: createToolbarMoreMenuConfig(framework),
+      databaseOptions: createDatabaseOptionsConfig(framework),
     }),
   ];
 }
