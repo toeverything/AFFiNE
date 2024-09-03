@@ -276,6 +276,9 @@ jobs:
   deploy-done:
     needs:
       - output-prev-version
+      - build-web
+      - build-admin
+      - build-mobile
       - build-frontend-image
       - build-server-image
       - deploy

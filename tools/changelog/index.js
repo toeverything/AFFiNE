@@ -49,6 +49,12 @@ async function getChangeLog(repo, previousCommit, currentCommit) {
 
   if (currentCommit) {
     const commit = repo.findCommit(currentCommit);
+    if (!commit) {
+      console.log(
+        `Current commit ${currentCommit} not found in ${repo.path()}`
+      );
+      return '';
+    }
     revWalk.push(commit.id());
   } else {
     revWalk.pushHead();
