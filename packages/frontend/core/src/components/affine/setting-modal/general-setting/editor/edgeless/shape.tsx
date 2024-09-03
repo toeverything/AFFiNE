@@ -1,5 +1,4 @@
 import {
-  Menu,
   MenuItem,
   MenuTrigger,
   RadioGroup,
@@ -10,6 +9,7 @@ import { SettingRow } from '@affine/component/setting-components';
 import { useI18n } from '@affine/i18n';
 import { useMemo, useState } from 'react';
 
+import { DropdownMenu } from '../menu';
 import { menuTrigger, settingWrapper, shapeIndicator } from '../style.css';
 import { EdgelessSnapshot } from './snapshot';
 
@@ -164,11 +164,14 @@ export const ShapeSettings = () => {
         ]()}
         desc={''}
       >
-        <Menu items={<MenuItem>Yellow</MenuItem>}>
-          <MenuTrigger className={menuTrigger} disabled>
-            Yellow
-          </MenuTrigger>
-        </Menu>
+        <DropdownMenu
+          items={<MenuItem>Yellow</MenuItem>}
+          trigger={
+            <MenuTrigger className={menuTrigger} disabled>
+              Yellow
+            </MenuTrigger>
+          }
+        />
       </SettingRow>
       <SettingRow
         name={t[
@@ -176,11 +179,14 @@ export const ShapeSettings = () => {
         ]()}
         desc={''}
       >
-        <Menu items={<MenuItem>Yellow</MenuItem>}>
-          <MenuTrigger className={menuTrigger} disabled>
-            Yellow
-          </MenuTrigger>
-        </Menu>
+        <DropdownMenu
+          items={<MenuItem>Yellow</MenuItem>}
+          trigger={
+            <MenuTrigger className={menuTrigger} disabled>
+              Yellow
+            </MenuTrigger>
+          }
+        />
       </SettingRow>
       <SettingRow
         name={t[
@@ -217,21 +223,28 @@ export const ShapeSettings = () => {
         ]()}
         desc={''}
       >
-        <Menu items={<MenuItem>Yellow</MenuItem>}>
-          <MenuTrigger className={menuTrigger} disabled>
-            Yellow
-          </MenuTrigger>
-        </Menu>
+        <DropdownMenu
+          items={<MenuItem>Yellow</MenuItem>}
+          trigger={
+            <MenuTrigger className={menuTrigger} disabled>
+              Yellow
+            </MenuTrigger>
+          }
+        />
       </SettingRow>
       <SettingRow
         name={t['com.affine.settings.editorSettings.edgeless.shape.font']()}
         desc={''}
       >
-        <Menu items={<MenuItem>Inter</MenuItem>}>
-          <MenuTrigger className={menuTrigger} disabled>
-            Inter
-          </MenuTrigger>
-        </Menu>
+        {' '}
+        <DropdownMenu
+          items={<MenuItem>Inter</MenuItem>}
+          trigger={
+            <MenuTrigger className={menuTrigger} disabled>
+              Inter
+            </MenuTrigger>
+          }
+        />
       </SettingRow>
       <SettingRow
         name={t[
@@ -239,11 +252,14 @@ export const ShapeSettings = () => {
         ]()}
         desc={''}
       >
-        <Menu items={<MenuItem>15px</MenuItem>}>
-          <MenuTrigger className={menuTrigger} disabled>
-            15px
-          </MenuTrigger>
-        </Menu>
+        <DropdownMenu
+          items={<MenuItem>15px</MenuItem>}
+          trigger={
+            <MenuTrigger className={menuTrigger} disabled>
+              15px
+            </MenuTrigger>
+          }
+        />
       </SettingRow>
       <SettingRow
         name={t[
@@ -251,11 +267,14 @@ export const ShapeSettings = () => {
         ]()}
         desc={''}
       >
-        <Menu items={<MenuItem>Regular</MenuItem>}>
-          <MenuTrigger className={menuTrigger} disabled>
-            Regular
-          </MenuTrigger>
-        </Menu>
+        <DropdownMenu
+          items={<MenuItem>Regular</MenuItem>}
+          trigger={
+            <MenuTrigger className={menuTrigger} disabled>
+              Regular
+            </MenuTrigger>
+          }
+        />
       </SettingRow>
       <SettingRow
         name={t[

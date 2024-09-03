@@ -1,4 +1,4 @@
-import { Menu, MenuItem, MenuTrigger, Slider } from '@affine/component';
+import { MenuItem, MenuTrigger, Slider } from '@affine/component';
 import { SettingRow } from '@affine/component/setting-components';
 import { EditorSettingService } from '@affine/core/modules/editor-settting';
 import { useI18n } from '@affine/i18n';
@@ -6,6 +6,7 @@ import { LineColor } from '@blocksuite/blocks';
 import { useFramework, useLiveData } from '@toeverything/infra';
 import { useCallback, useMemo } from 'react';
 
+import { DropdownMenu } from '../menu';
 import { menuTrigger } from '../style.css';
 import { EdgelessSnapshot } from './snapshot';
 
@@ -39,7 +40,6 @@ export const PenSettings = () => {
     },
     [editorSetting]
   );
-
   return (
     <>
       <EdgelessSnapshot
@@ -51,11 +51,14 @@ export const PenSettings = () => {
         name={t['com.affine.settings.editorSettings.edgeless.pen.color']()}
         desc={''}
       >
-        <Menu items={colorItems}>
-          <MenuTrigger className={menuTrigger}>
-            {String(settings.brush.color)}
-          </MenuTrigger>
-        </Menu>
+        <DropdownMenu
+          items={colorItems}
+          trigger={
+            <MenuTrigger className={menuTrigger}>
+              {String(settings.brush.color)}
+            </MenuTrigger>
+          }
+        />
       </SettingRow>
       <SettingRow
         name={t['com.affine.settings.editorSettings.edgeless.pen.thickness']()}

@@ -1,5 +1,4 @@
 import {
-  Menu,
   MenuItem,
   MenuTrigger,
   RadioGroup,
@@ -17,7 +16,9 @@ import {
 import { useFramework, useLiveData } from '@toeverything/infra';
 import { useCallback, useMemo } from 'react';
 
+import { DropdownMenu } from '../menu';
 import { menuTrigger, settingWrapper } from '../style.css';
+import { Point } from './point';
 import { EdgelessSnapshot } from './snapshot';
 
 const CORNER_SIZE = [
@@ -91,7 +92,12 @@ export const NoteSettings = () => {
       };
       const isSelected = background === value;
       return (
-        <MenuItem key={name} onSelect={handler} selected={isSelected}>
+        <MenuItem
+          key={name}
+          onSelect={handler}
+          selected={isSelected}
+          prefix={<Point color={value} />}
+        >
           {name}
         </MenuItem>
       );
@@ -140,6 +146,13 @@ export const NoteSettings = () => {
     });
   }, [editorSetting, settings]);
 
+  const currentColor = useMemo(() => {
+    const { background } = settings['affine:note'];
+    return Object.entries(NoteBackgroundColor).find(
+      ([, value]) => value === background
+    );
+  }, [settings]);
+
   return (
     <>
       <EdgelessSnapshot
@@ -153,31 +166,45 @@ export const NoteSettings = () => {
         ]()}
         desc={''}
       >
-        <Menu items={backgroundItems}>
-          <MenuTrigger className={menuTrigger}>
-            {String(settings['affine:note'].background)}
-          </MenuTrigger>
-        </Menu>
+        {currentColor ? (
+          <DropdownMenu
+            items={backgroundItems}
+            trigger={
+              <MenuTrigger
+                className={menuTrigger}
+                prefix={<Point color={currentColor[1]} />}
+              >
+                {currentColor[0]}
+              </MenuTrigger>
+            }
+          />
+        ) : null}
       </SettingRow>
       <SettingRow
         name={t['com.affine.settings.editorSettings.edgeless.note.corners']()}
         desc={''}
       >
-        <Menu items={cornerItems}>
-          <MenuTrigger className={menuTrigger}>
-            {String(settings['affine:note'].edgeless.style.borderRadius)}
-          </MenuTrigger>
-        </Menu>
+        <DropdownMenu
+          items={cornerItems}
+          trigger={
+            <MenuTrigger className={menuTrigger}>
+              {String(settings['affine:note'].edgeless.style.borderRadius)}
+            </MenuTrigger>
+          }
+        />
       </SettingRow>
       <SettingRow
         name={t['com.affine.settings.editorSettings.edgeless.note.shadow']()}
         desc={''}
       >
-        <Menu items={shadowItems}>
-          <MenuTrigger className={menuTrigger}>
-            {String(settings['affine:note'].edgeless.style.shadowType)}
-          </MenuTrigger>
-        </Menu>
+        <DropdownMenu
+          items={shadowItems}
+          trigger={
+            <MenuTrigger className={menuTrigger}>
+              {String(settings['affine:note'].edgeless.style.shadowType)}
+            </MenuTrigger>
+          }
+        />
       </SettingRow>
       <SettingRow
         name={t['com.affine.settings.editorSettings.edgeless.note.border']()}

@@ -1,5 +1,4 @@
 import {
-  Menu,
   MenuItem,
   MenuTrigger,
   RadioGroup,
@@ -9,6 +8,7 @@ import { SettingRow } from '@affine/component/setting-components';
 import { useI18n } from '@affine/i18n';
 import { useMemo, useState } from 'react';
 
+import { DropdownMenu } from '../menu';
 import { menuTrigger, settingWrapper } from '../style.css';
 import { EdgelessSnapshot } from './snapshot';
 
@@ -54,11 +54,14 @@ export const MindMapSettings = () => {
         name={t['com.affine.settings.editorSettings.edgeless.style']()}
         desc={''}
       >
-        <Menu items={<MenuItem>Style 1</MenuItem>}>
-          <MenuTrigger className={menuTrigger} disabled>
-            Style 1
-          </MenuTrigger>
-        </Menu>
+        <DropdownMenu
+          items={<MenuItem>Style 1</MenuItem>}
+          trigger={
+            <MenuTrigger className={menuTrigger} disabled>
+              Style 1
+            </MenuTrigger>
+          }
+        />
       </SettingRow>
       <SettingRow
         name={t[

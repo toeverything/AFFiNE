@@ -38,6 +38,7 @@ import {
 } from 'react';
 import { Virtuoso } from 'react-virtuoso';
 
+import { DropdownMenu } from './menu';
 import * as styles from './style.css';
 
 const FontFamilySettings = () => {
@@ -94,13 +95,18 @@ const FontFamilySettings = () => {
   );
 
   return (
-    <RadioGroup
-      items={radioItems}
-      value={settings.fontFamily}
-      width={250}
-      className={styles.settingWrapper}
-      onChange={handleFontFamilyChange}
-    />
+    <SettingRow
+      name={t['com.affine.appearanceSettings.font.title']()}
+      desc={t['com.affine.appearanceSettings.font.description']()}
+    >
+      <RadioGroup
+        items={radioItems}
+        value={settings.fontFamily}
+        width={250}
+        className={styles.settingWrapper}
+        onChange={handleFontFamilyChange}
+      />
+    </SettingRow>
   );
 };
 
@@ -303,13 +309,71 @@ const NewDocDefaultModeSettings = () => {
     [editorSettingService.editorSetting]
   );
   return (
-    <RadioGroup
-      items={radioItems}
-      value={settings.newDocDefaultMode}
-      width={250}
-      className={styles.settingWrapper}
-      onChange={updateNewDocDefaultMode}
-    />
+    <SettingRow
+      name={t[
+        'com.affine.settings.editorSettings.general.default-new-doc.title'
+      ]()}
+      desc={t[
+        'com.affine.settings.editorSettings.general.default-new-doc.description'
+      ]()}
+    >
+      <RadioGroup
+        items={radioItems}
+        value={settings.newDocDefaultMode}
+        width={250}
+        className={styles.settingWrapper}
+        onChange={updateNewDocDefaultMode}
+      />
+    </SettingRow>
+  );
+};
+
+export const DeFaultCodeBlockSettings = () => {
+  const t = useI18n();
+  return (
+    <>
+      <SettingRow
+        name={t[
+          'com.affine.settings.editorSettings.general.default-code-block.language.title'
+        ]()}
+        desc={t[
+          'com.affine.settings.editorSettings.general.default-code-block.language.description'
+        ]()}
+      >
+        <DropdownMenu
+          items={<MenuItem>Plain Text</MenuItem>}
+          trigger={
+            <MenuTrigger className={styles.menuTrigger} disabled>
+              Plain Text
+            </MenuTrigger>
+          }
+        />
+      </SettingRow>
+      <SettingRow
+        name={t[
+          'com.affine.settings.editorSettings.general.default-code-block.wrap.title'
+        ]()}
+        desc={t[
+          'com.affine.settings.editorSettings.general.default-code-block.wrap.description'
+        ]()}
+      >
+        <Switch />
+      </SettingRow>
+    </>
+  );
+};
+
+export const SpellCheckSettings = () => {
+  const t = useI18n();
+  return (
+    <SettingRow
+      name={t['com.affine.settings.editorSettings.general.spell-check.title']()}
+      desc={t[
+        'com.affine.settings.editorSettings.general.spell-check.description'
+      ]()}
+    >
+      <Switch />
+    </SettingRow>
   );
 };
 
@@ -323,62 +387,11 @@ export const General = () => {
       >
         <Switch />
       </SettingRow>
-      <SettingRow
-        name={t['com.affine.appearanceSettings.font.title']()}
-        desc={t['com.affine.appearanceSettings.font.description']()}
-      >
-        <FontFamilySettings />
-      </SettingRow>
+      <FontFamilySettings />
       <CustomFontFamilySettings />
-      <SettingRow
-        name={t[
-          'com.affine.settings.editorSettings.general.default-new-doc.title'
-        ]()}
-        desc={t[
-          'com.affine.settings.editorSettings.general.default-new-doc.description'
-        ]()}
-      >
-        <NewDocDefaultModeSettings />
-      </SettingRow>
-      <SettingRow
-        name={t[
-          'com.affine.settings.editorSettings.general.default-code-block.language.title'
-        ]()}
-        desc={t[
-          'com.affine.settings.editorSettings.general.default-code-block.language.description'
-        ]()}
-      >
-        <Menu
-          contentOptions={{
-            className: styles.menu,
-          }}
-          items={<MenuItem>Plain Text</MenuItem>}
-        >
-          <MenuTrigger className={styles.menuTrigger} disabled>
-            Plain Text
-          </MenuTrigger>
-        </Menu>
-      </SettingRow>
-      <SettingRow
-        name={t[
-          'com.affine.settings.editorSettings.general.default-code-block.wrap.title'
-        ]()}
-        desc={t[
-          'com.affine.settings.editorSettings.general.default-code-block.wrap.description'
-        ]()}
-      >
-        <Switch />
-      </SettingRow>
-      <SettingRow
-        name={t[
-          'com.affine.settings.editorSettings.general.spell-check.title'
-        ]()}
-        desc={t[
-          'com.affine.settings.editorSettings.general.spell-check.description'
-        ]()}
-      >
-        <Switch />
-      </SettingRow>
+      <NewDocDefaultModeSettings />
+      <DeFaultCodeBlockSettings />
+      <SpellCheckSettings />
     </SettingWrapper>
   );
 };

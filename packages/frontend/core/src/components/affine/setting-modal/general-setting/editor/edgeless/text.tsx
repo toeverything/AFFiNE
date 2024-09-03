@@ -1,5 +1,4 @@
 import {
-  Menu,
   MenuItem,
   MenuTrigger,
   RadioGroup,
@@ -19,7 +18,9 @@ import {
 import { useFramework, useLiveData } from '@toeverything/infra';
 import { useCallback, useMemo } from 'react';
 
+import { DropdownMenu } from '../menu';
 import { menuTrigger, settingWrapper } from '../style.css';
+import { Point } from './point';
 import { EdgelessSnapshot } from './snapshot';
 
 export const TextSettings = () => {
@@ -73,7 +74,12 @@ export const TextSettings = () => {
       };
       const isSelected = color === value;
       return (
-        <MenuItem key={name} onSelect={handler} selected={isSelected}>
+        <MenuItem
+          key={name}
+          onSelect={handler}
+          selected={isSelected}
+          prefix={<Point color={value} />}
+        >
           {name}
         </MenuItem>
       );
@@ -125,6 +131,10 @@ export const TextSettings = () => {
     });
   }, [editorSetting, settings]);
 
+  const currentColor = useMemo(() => {
+    const { color } = settings['affine:edgeless-text'];
+    return Object.entries(LineColor).find(([, value]) => value === color);
+  }, [settings]);
   return (
     <>
       <EdgelessSnapshot
@@ -136,11 +146,19 @@ export const TextSettings = () => {
         name={t['com.affine.settings.editorSettings.edgeless.text.color']()}
         desc={''}
       >
-        <Menu items={colorItems}>
-          <MenuTrigger className={menuTrigger}>
-            {String(settings['affine:edgeless-text'].color)}
-          </MenuTrigger>
-        </Menu>
+        {currentColor ? (
+          <DropdownMenu
+            items={colorItems}
+            trigger={
+              <MenuTrigger
+                className={menuTrigger}
+                prefix={<Point color={currentColor[1]} />}
+              >
+                {currentColor[0]}
+              </MenuTrigger>
+            }
+          />
+        ) : null}
       </SettingRow>
       <SettingRow
         name={t[
@@ -148,11 +166,14 @@ export const TextSettings = () => {
         ]()}
         desc={''}
       >
-        <Menu items={fontFamilyItems}>
-          <MenuTrigger className={menuTrigger}>
-            {FontFamilyMap[settings['affine:edgeless-text'].fontFamily]}
-          </MenuTrigger>
-        </Menu>
+        <DropdownMenu
+          items={fontFamilyItems}
+          trigger={
+            <MenuTrigger className={menuTrigger}>
+              {FontFamilyMap[settings['affine:edgeless-text'].fontFamily]}
+            </MenuTrigger>
+          }
+        />
       </SettingRow>
       <SettingRow
         name={t[
@@ -160,11 +181,14 @@ export const TextSettings = () => {
         ]()}
         desc={''}
       >
-        <Menu items={fontStyleItems}>
-          <MenuTrigger className={menuTrigger}>
-            {String(settings['affine:edgeless-text'].fontStyle)}
-          </MenuTrigger>
-        </Menu>
+        <DropdownMenu
+          items={fontStyleItems}
+          trigger={
+            <MenuTrigger className={menuTrigger}>
+              {String(settings['affine:edgeless-text'].fontStyle)}
+            </MenuTrigger>
+          }
+        />
       </SettingRow>
       <SettingRow
         name={t[
@@ -172,11 +196,14 @@ export const TextSettings = () => {
         ]()}
         desc={''}
       >
-        <Menu items={fontWeightItems}>
-          <MenuTrigger className={menuTrigger}>
-            {settings['affine:edgeless-text'].fontWeight}
-          </MenuTrigger>
-        </Menu>
+        <DropdownMenu
+          items={fontWeightItems}
+          trigger={
+            <MenuTrigger className={menuTrigger}>
+              {settings['affine:edgeless-text'].fontWeight}
+            </MenuTrigger>
+          }
+        />
       </SettingRow>
       <SettingRow
         name={t['com.affine.settings.editorSettings.edgeless.text.alignment']()}

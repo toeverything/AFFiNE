@@ -1,5 +1,4 @@
 import {
-  Menu,
   MenuItem,
   MenuTrigger,
   RadioGroup,
@@ -18,7 +17,9 @@ import {
 import { useFramework, useLiveData } from '@toeverything/infra';
 import { useCallback, useMemo } from 'react';
 
+import { DropdownMenu } from '../menu';
 import { menuTrigger, settingWrapper } from '../style.css';
+import { Point } from './point';
 import { EdgelessSnapshot } from './snapshot';
 
 enum ConnecterStyle {
@@ -130,6 +131,11 @@ export const ConnectorSettings = () => {
     [editorSetting]
   );
 
+  const currentColor = useMemo(() => {
+    const color = settings.connector.stroke;
+    return Object.entries(LineColor).find(([, value]) => value === color);
+  }, [settings]);
+
   const colorItems = useMemo(() => {
     const { stroke } = settings.connector;
     return Object.entries(LineColor).map(([name, value]) => {
@@ -138,7 +144,12 @@ export const ConnectorSettings = () => {
       };
       const isSelected = stroke === value;
       return (
-        <MenuItem key={name} onSelect={handler} selected={isSelected}>
+        <MenuItem
+          key={name}
+          onSelect={handler}
+          selected={isSelected}
+          prefix={<Point color={value} />}
+        >
           {name}
         </MenuItem>
       );
@@ -188,11 +199,19 @@ export const ConnectorSettings = () => {
         ]()}
         desc={''}
       >
-        <Menu items={colorItems}>
-          <MenuTrigger className={menuTrigger}>
-            {String(settings.connector.stroke)}
-          </MenuTrigger>
-        </Menu>
+        {currentColor ? (
+          <DropdownMenu
+            items={colorItems}
+            trigger={
+              <MenuTrigger
+                className={menuTrigger}
+                prefix={<Point color={currentColor[1]} />}
+              >
+                {currentColor[0]}
+              </MenuTrigger>
+            }
+          />
+        ) : null}
       </SettingRow>
       <SettingRow
         name={t['com.affine.settings.editorSettings.edgeless.style']()}
@@ -255,11 +274,14 @@ export const ConnectorSettings = () => {
         ]()}
         desc={''}
       >
-        <Menu items={startEndPointItems}>
-          <MenuTrigger className={menuTrigger}>
-            {String(settings.connector.frontEndpointStyle)}
-          </MenuTrigger>
-        </Menu>
+        <DropdownMenu
+          items={startEndPointItems}
+          trigger={
+            <MenuTrigger className={menuTrigger}>
+              {String(settings.connector.frontEndpointStyle)}
+            </MenuTrigger>
+          }
+        />
       </SettingRow>
       <SettingRow
         name={t[
@@ -267,11 +289,14 @@ export const ConnectorSettings = () => {
         ]()}
         desc={''}
       >
-        <Menu items={endEndPointItems}>
-          <MenuTrigger className={menuTrigger}>
-            {String(settings.connector.rearEndpointStyle)}
-          </MenuTrigger>
-        </Menu>
+        <DropdownMenu
+          items={endEndPointItems}
+          trigger={
+            <MenuTrigger className={menuTrigger}>
+              {String(settings.connector.rearEndpointStyle)}
+            </MenuTrigger>
+          }
+        />
       </SettingRow>
     </>
   );
