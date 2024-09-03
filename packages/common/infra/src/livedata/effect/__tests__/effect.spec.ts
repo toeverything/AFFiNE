@@ -17,7 +17,7 @@ describe('example', () => {
     name: string;
   };
 
-  const fetchUser = vi.fn<[number], Promise<User>>();
+  const fetchUser = vi.fn<(id: number) => Promise<User>>();
 
   const user$ = new LiveData<User | null>(null);
   const isLoading$ = new LiveData<boolean>(false);

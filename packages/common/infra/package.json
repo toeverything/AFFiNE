@@ -43,7 +43,7 @@
     "rxjs": "^7.8.1",
     "vite": "^5.2.8",
     "vite-plugin-dts": "4.1.0",
-    "vitest": "1.6.0"
+    "vitest": "2.0.5"
   },
   "peerDependencies": {
     "@affine/templates": "*",

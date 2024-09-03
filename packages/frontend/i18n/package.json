@@ -31,7 +31,7 @@
     "prettier": "^3.2.5",
     "ts-node": "^10.9.2",
     "typescript": "^5.4.5",
-    "vitest": "1.6.0"
+    "vitest": "2.0.5"
   },
   "version": "0.16.0"
 }

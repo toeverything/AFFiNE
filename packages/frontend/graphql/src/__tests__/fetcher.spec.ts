@@ -38,8 +38,8 @@ describe('GraphQL fetcher', () => {
     );
 
     expect(fetch).toBeCalledTimes(1);
-    expect(fetch.mock.lastCall[0]).toBe('https://example.com/graphql');
-    const ctx = fetch.mock.lastCall[1] as RequestInit;
+    expect(fetch.mock.lastCall?.[0]).toBe('https://example.com/graphql');
+    const ctx = fetch.mock.lastCall?.[1] as RequestInit;
     expect(ctx.method).toBe('POST');
   });
 
@@ -50,7 +50,7 @@ describe('GraphQL fetcher', () => {
       variables: { a: 1, b: '2', c: { d: false } },
     });
 
-    expect(fetch.mock.lastCall[1]).toEqual(
+    expect(fetch.mock.lastCall?.[1]).toEqual(
       expect.objectContaining({
         body: '{"query":"query { field }","variables":{"a":1,"b":"2","c":{"d":false}},"operationName":"query"}',
         headers: expect.objectContaining({
@@ -70,7 +70,7 @@ describe('GraphQL fetcher', () => {
       variables: { a: false, b: null, c: undefined },
     });
 
-    expect(fetch.mock.lastCall[1].body).toMatchInlineSnapshot(
+    expect(fetch.mock.lastCall?.[1].body).toMatchInlineSnapshot(
       `"{"query":"query { field }","variables":{"a":false,"b":null},"operationName":"query"}"`
     );
 
@@ -81,7 +81,7 @@ describe('GraphQL fetcher', () => {
       keepNilVariables: false,
     });
 
-    expect(fetch.mock.lastCall[1].body).toMatchInlineSnapshot(
+    expect(fetch.mock.lastCall?.[1].body).toMatchInlineSnapshot(
       `"{"query":"query { field }","variables":{"a":false},"operationName":"query"}"`
     );
   });
