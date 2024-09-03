@@ -15,6 +15,7 @@ export const root = style({
   padding: '0 12px',
   position: 'relative',
   whiteSpace: 'nowrap',
+  overflow: 'hidden',
 });
 export const icon = style({
   marginRight: '8px',
@@ -27,4 +28,9 @@ export const spacer = style({
 export const shortcutHint = style({
   color: cssVarV2('text/tertiary'),
   fontSize: cssVar('fontBase'),
+});
+export const quickSearchBarEllipsisStyle = style({
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
 });
