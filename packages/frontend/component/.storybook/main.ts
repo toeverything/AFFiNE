@@ -13,7 +13,6 @@ export default {
     getAbsolutePath('@storybook/addon-essentials'),
     getAbsolutePath('@storybook/addon-interactions'),
     getAbsolutePath('@storybook/addon-mdx-gfm'),
-    getAbsolutePath('storybook-dark-mode'),
     '@chromatic-com/storybook',
   ],
 
@@ -60,6 +59,7 @@ export default {
           mode: 'development',
           channel: 'canary',
           coverage: false,
+          static: false,
         }),
       },
     });

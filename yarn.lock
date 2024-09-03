@@ -384,7 +384,6 @@ __metadata:
     rxjs: "npm:^7.8.1"
     sonner: "npm:^1.4.41"
     storybook: "npm:^8.2.9"
-    storybook-dark-mode: "npm:4.0.2"
     swr: "npm:^2.2.5"
     typescript: "npm:^5.4.5"
     unplugin-swc: "npm:^1.5.1"
@@ -13685,21 +13684,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@storybook/components@npm:^8.0.0, @storybook/components@npm:^8.2.9":
+"@storybook/components@npm:^8.2.9":
   version: 8.2.9
   resolution: "@storybook/components@npm:8.2.9"
   peerDependencies:
     storybook: ^8.2.9
   checksum: 10/32153df19777ea751d1adb33da6e92b5647d19fd924753b2ca1c80bcc102ee0489eac7b02914a2e56406233940f6eca7f1aa3ba0c441a164cabc954679a67869
-  languageName: node
-  linkType: hard
-
-"@storybook/core-events@npm:^8.0.0":
-  version: 8.2.9
-  resolution: "@storybook/core-events@npm:8.2.9"
-  peerDependencies:
-    storybook: ^8.2.9
-  checksum: 10/6ac658a75702c645695d82fbd69da5cf4d559050ffa1f0023729ad34c0d84965b2abeeb65efd168b0cdb049314de002c00267eaf692064e3efeae1337cc3ba52
   languageName: node
   linkType: hard
 
@@ -13772,7 +13762,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@storybook/manager-api@npm:^8.0.0, @storybook/manager-api@npm:^8.2.9":
+"@storybook/manager-api@npm:^8.2.9":
   version: 8.2.9
   resolution: "@storybook/manager-api@npm:8.2.9"
   peerDependencies:
@@ -13892,7 +13882,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@storybook/theming@npm:^8.0.0, @storybook/theming@npm:^8.2.9":
+"@storybook/theming@npm:^8.2.9":
   version: 8.2.9
   resolution: "@storybook/theming@npm:8.2.9"
   peerDependencies:
@@ -33295,22 +33285,6 @@ __metadata:
   version: 1.1.0
   resolution: "stoppable@npm:1.1.0"
   checksum: 10/63104fcbdece130bc4906fd982061e763d2ef48065ed1ab29895e5ad00552c625f8a4c50c9cd2e3bfa805c8a2c3bfdda0f07c5ae39694bd2d5cb0bee1618d1e9
-  languageName: node
-  linkType: hard
-
-"storybook-dark-mode@npm:4.0.2":
-  version: 4.0.2
-  resolution: "storybook-dark-mode@npm:4.0.2"
-  dependencies:
-    "@storybook/components": "npm:^8.0.0"
-    "@storybook/core-events": "npm:^8.0.0"
-    "@storybook/global": "npm:^5.0.0"
-    "@storybook/icons": "npm:^1.2.5"
-    "@storybook/manager-api": "npm:^8.0.0"
-    "@storybook/theming": "npm:^8.0.0"
-    fast-deep-equal: "npm:^3.1.3"
-    memoizerific: "npm:^1.11.3"
-  checksum: 10/c9ef7bc6734df7486ff763c9da3c69505269eaf5fd7b5b489553f023b363ea892862241e6d701ad647ca5d1e64fd9a2646b8985c7ea8ac97a3bca87891db6fe5
   languageName: node
   linkType: hard
 

@@ -1,13 +1,11 @@
 import './polyfill';
 import '../src/theme/global.css';
 import './preview.css';
-import { ThemeProvider, useTheme } from 'next-themes';
+import { ThemeProvider } from 'next-themes';
 import type { ComponentType } from 'react';
-import { useEffect } from 'react';
-import { useDarkMode } from 'storybook-dark-mode';
 
 import type { Preview } from '@storybook/react';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ConfirmModalProvider } from '../src/ui/modal/confirm-modal';
 import { setupGlobal } from '@affine/env/global';
 
@@ -19,47 +17,37 @@ export const parameters: Preview = {
       table: { category: 'Group' },
     },
   },
-  globalTypes: {
-    theme: {
-      description: 'Global theme for components',
-      defaultValue: 'light',
-      toolbar: {
-        title: 'Theme',
-        icon: 'circlehollow',
-        items: ['light', 'dark'],
-        dynamicTitle: true,
-      },
+};
+export const globalTypes = {
+  theme: {
+    description: 'Global theme for components',
+    defaultValue: 'light',
+    toolbar: {
+      title: 'theme',
+      icon: 'circlehollow',
+      dynamic: true,
+      items: [
+        { value: 'light', title: 'Light', icon: 'sun' },
+        { value: 'dark', title: 'Dark', icon: 'moon' },
+      ],
     },
   },
 };
 
-const ThemeChange = () => {
-  const isDark = useDarkMode();
-  const theme = useTheme();
-  if (theme.resolvedTheme === 'dark' && !isDark) {
-    theme.setTheme('light');
-  } else if (theme.resolvedTheme === 'light' && isDark) {
-    theme.setTheme('dark');
-  }
-  return null;
-};
+const useTheme = context => {
+  const { theme } = context.globals;
 
-const Component = () => {
-  const isDark = useDarkMode();
-  const theme = useTheme();
   useEffect(() => {
-    theme.setTheme(isDark ? 'dark' : 'light');
-  }, [isDark]);
-  return null;
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
 };
 
 export const decorators = [
   (Story: ComponentType, context) => {
+    useTheme(context);
     return (
       <ThemeProvider themes={['dark', 'light']} enableSystem={true}>
         <ConfirmModalProvider>
-          <ThemeChange />
-          <Component />
           <Story {...context} />
         </ConfirmModalProvider>
       </ThemeProvider>
