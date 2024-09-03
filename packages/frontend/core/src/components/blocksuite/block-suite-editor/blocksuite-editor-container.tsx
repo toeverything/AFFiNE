@@ -67,14 +67,9 @@ export const BlocksuiteEditorContainer = forwardRef<
   const docRef = useRef<PageEditor>(null);
   const docTitleRef = useRef<DocTitle>(null);
   const edgelessRef = useRef<EdgelessEditor>(null);
-  const [anchor] = useState<string | null>(() => {
-    if (mode === 'edgeless' && defaultEditorSelector?.elementIds?.length) {
-      return defaultEditorSelector.elementIds[0];
-    } else if (defaultEditorSelector?.blockIds?.length) {
-      return defaultEditorSelector.blockIds[0];
-    }
-    return null;
-  });
+  const [anchor, setAnchor] = useState<{ id: string; at?: number } | null>(
+    null
+  );
 
   const slots: BlocksuiteEditorContainerRef['slots'] = useMemo(() => {
     return {
@@ -170,6 +165,19 @@ export const BlocksuiteEditorContainer = forwardRef<
   }, [mode, page, slots]);
 
   useEffect(() => {
+    const id =
+      mode === 'edgeless' && defaultEditorSelector?.elementIds?.length
+        ? defaultEditorSelector?.elementIds?.[0]
+        : defaultEditorSelector?.blockIds?.[0];
+
+    if (id) {
+      setAnchor({ id, at: Date.now() });
+    } else {
+      setAnchor(null);
+    }
+  }, [mode, defaultEditorSelector]);
+
+  useEffect(() => {
     if (ref) {
       if (typeof ref === 'function') {
         ref(affineEditorContainerProxy);
@@ -180,40 +188,38 @@ export const BlocksuiteEditorContainer = forwardRef<
   }, [affineEditorContainerProxy, ref]);
 
   useEffect(() => {
+    // if no anchor, focus the title
+    let canceled = false;
+    let callback: (() => void) | null = null;
+
     if (anchor) {
-      let canceled = false;
-      affineEditorContainerProxy.updateComplete
-        .then(() => {
-          if (!canceled) {
-            const std = affineEditorContainerProxy.host?.std;
-            if (std) {
-              scrollAnchoring(std, mode, anchor);
-            }
-          }
-        })
-        .catch(console.error);
-      return () => {
-        canceled = true;
+      callback = () => {
+        const std = affineEditorContainerProxy.host?.std;
+        if (std) {
+          scrollAnchoring(std, mode, anchor.id);
+        }
       };
     } else {
-      // if no anchor, focus the title
-      let canceled = false;
+      callback = () => {
+        if (mode !== 'page') return;
 
-      affineEditorContainerProxy.updateComplete
-        .then(() => {
-          if (!canceled) {
-            const title = docTitleRef.current?.querySelector<
-              HTMLElement & { inlineEditor: InlineEditor }
-            >('rich-text');
-            title?.inlineEditor.focusEnd();
-          }
-        })
-        .catch(console.error);
-      return () => {
-        canceled = true;
+        const title = docTitleRef.current?.querySelector<
+          HTMLElement & { inlineEditor: InlineEditor }
+        >('rich-text');
+        title?.inlineEditor.focusEnd();
       };
     }
-  }, [anchor, affineEditorContainerProxy, mode]);
+
+    affineEditorContainerProxy.updateComplete
+      .then(() => {
+        !canceled && callback?.();
+      })
+      .catch(console.error);
+
+    return () => {
+      canceled = true;
+    };
+  }, [anchor, mode, affineEditorContainerProxy]);
 
   const handleClickPageModeBlank = useCallback(() => {
     affineEditorContainerProxy.host?.std.command.exec(

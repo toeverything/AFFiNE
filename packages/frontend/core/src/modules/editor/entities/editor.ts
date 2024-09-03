@@ -36,6 +36,10 @@ export class Editor extends Entity<{
     this.editorContainer$.next(editorContainer);
   }
 
+  setSelector(selector?: EditorSelector) {
+    this.selector$.next(selector);
+  }
+
   constructor(
     private readonly docService: DocService,
     private readonly workspaceService: WorkspaceService

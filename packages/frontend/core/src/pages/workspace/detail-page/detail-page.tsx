@@ -32,7 +32,7 @@ import {
   WorkspaceService,
 } from '@toeverything/infra';
 import clsx from 'clsx';
-import { memo, useCallback, useEffect, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import type { Map as YMap } from 'yjs';
 
@@ -91,7 +91,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
   const isInTrash = useLiveData(doc.meta$.map(meta => meta.trash));
   const { openPage, jumpToPageBlock, jumpToTag } = useNavigateHelper();
   const editorContainer = useLiveData(editor.editorContainer$);
-  const [defaultSelector] = useState(() => editor.selector$.value);
+  const defaultSelector = useLiveData(editor.selector$);
 
   const isSideBarOpen = useLiveData(workbench.sidebarOpen$);
   const { appSettings } = useAppSettingHelper();

@@ -1,6 +1,5 @@
 import { PageDetailSkeleton } from '@affine/component/page-detail-skeleton';
-import type { Editor } from '@affine/core/modules/editor';
-import { EditorsService } from '@affine/core/modules/editor';
+import { type Editor, EditorsService } from '@affine/core/modules/editor';
 import { ViewService } from '@affine/core/modules/workbench/services/view';
 import { type DocMode, DocModes } from '@blocksuite/blocks';
 import type { Doc } from '@toeverything/infra';
@@ -51,15 +50,19 @@ const useLoadDoc = (pageId: string) => {
     })
   );
 
-  // We only read the querystring mode when entering, so use useState here.
-  const [initialQueryStringSelector] = useState(() => {
-    const { blockIds, elementIds } = queryString$.value;
-    return { blockIds, elementIds };
-  });
+  const selectorInQuery = useLiveData(
+    queryString$.map(q =>
+      q.blockIds?.length || q.elementIds?.length
+        ? {
+            blockIds: q.blockIds,
+            elementIds: q.elementIds,
+          }
+        : undefined
+    )
+  );
 
   const [doc, setDoc] = useState<Doc | null>(null);
   const [editor, setEditor] = useState<Editor | null>(null);
-  const editorMode = useLiveData(editor?.mode$);
 
   useLayoutEffect(() => {
     if (!docRecord) {
@@ -73,35 +76,25 @@ const useLoadDoc = (pageId: string) => {
   }, [docRecord, docsService, pageId]);
 
   useLayoutEffect(() => {
+    if (!editor) {
+      return;
+    }
+
+    editor.setSelector(selectorInQuery);
+  }, [editor, selectorInQuery]);
+
+  useLayoutEffect(() => {
     if (!doc) {
       return;
     }
 
-    const editor = doc.scope
-      .get(EditorsService)
-      .createEditor(
-        modeInQuery || doc.getPrimaryMode() || ('page' as DocMode),
-        initialQueryStringSelector
-      );
+    const mode = modeInQuery || doc.getPrimaryMode() || ('page' as DocMode);
+    const editor = doc.scope.get(EditorsService).createEditor(mode);
     setEditor(editor);
     return () => {
       editor.dispose();
     };
-  }, [doc, modeInQuery, initialQueryStringSelector]);
-
-  // update editor mode to queryString
-  useEffect(() => {
-    if (editorMode) {
-      viewService.view.updateQueryString(
-        {
-          mode: editorMode,
-        },
-        {
-          replace: true,
-        }
-      );
-    }
-  }, [editorMode, viewService.view]);
+  }, [doc, modeInQuery]);
 
   // set sync engine priority target
   useEffect(() => {

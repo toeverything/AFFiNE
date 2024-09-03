@@ -77,20 +77,16 @@ const usePatchSpecs = (page: Doc, shared: boolean, mode: DocMode) => {
       const pageId = data.pageId;
       if (!pageId) return <span />;
 
-      const isSameDoc = pageId === page.id;
-
       return (
         <AffinePageReference
           docCollection={page.collection}
           pageId={pageId}
           mode={mode}
           params={data.params}
-          std={reference.std}
-          isSameDoc={isSameDoc}
         />
       );
     };
-  }, [mode, page.collection, page.id]);
+  }, [mode, page.collection]);
 
   const specs = useMemo(() => {
     return mode === 'edgeless'
