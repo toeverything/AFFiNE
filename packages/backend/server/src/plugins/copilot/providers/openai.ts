@@ -255,6 +255,9 @@ export class OpenAIProvider
       );
 
       for await (const message of result) {
+        if (!Array.isArray(message.choices) || !message.choices.length) {
+          continue;
+        }
         const content = message.choices[0].delta.content;
         if (content) {
           yield content;
