@@ -1,5 +1,5 @@
 import { i18nTime } from '@affine/i18n';
-import { initEmptyPage, useService } from '@toeverything/infra';
+import { DocsService, initEmptyPage, useService } from '@toeverything/infra';
 import dayjs from 'dayjs';
 import { useCallback, useMemo } from 'react';
 
@@ -24,6 +24,7 @@ function toDayjs(j?: string | false) {
 
 export const useJournalHelper = (docCollection: DocCollection) => {
   const bsWorkspaceHelper = useDocCollectionHelper(docCollection);
+  const docsService = useService(DocsService);
   const adapter = useCurrentWorkspacePropertiesAdapter();
 
   /**
@@ -34,6 +35,7 @@ export const useJournalHelper = (docCollection: DocCollection) => {
       const day = dayjs(maybeDate);
       const title = day.format(JOURNAL_DATE_FORMAT);
       const page = bsWorkspaceHelper.createDoc();
+      docsService.list.setPrimaryMode(page.id, 'page');
       // set created date to match the journal date
       page.collection.setDocMeta(page.id, {
         createDate: dayjs()
@@ -47,7 +49,7 @@ export const useJournalHelper = (docCollection: DocCollection) => {
       adapter.setJournalPageDateString(page.id, title);
       return page;
     },
-    [adapter, bsWorkspaceHelper]
+    [adapter, bsWorkspaceHelper, docsService.list]
   );
 
   const isPageJournal = useCallback(

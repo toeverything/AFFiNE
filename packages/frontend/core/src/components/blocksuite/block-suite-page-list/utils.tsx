@@ -2,11 +2,7 @@ import { toast } from '@affine/component';
 import { useDocCollectionHelper } from '@affine/core/hooks/use-block-suite-workspace-helper';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import type { DocMode } from '@blocksuite/blocks';
-import {
-  DocsService,
-  initEmptyPage,
-  useServices,
-} from '@toeverything/infra';
+import { DocsService, initEmptyPage, useServices } from '@toeverything/infra';
 import { useCallback, useMemo } from 'react';
 
 import type { DocCollection } from '../../../shared';
@@ -24,8 +20,10 @@ export const usePageHelper = (docCollection: DocCollection) => {
     (mode?: DocMode, open?: boolean | 'new-tab') => {
       const page = createDoc();
       initEmptyPage(page);
-      const primaryMode = mode;
-      docRecordList.doc$(page.id).value?.setPrimaryMode(primaryMode as DocMode);
+      if (mode) {
+        docRecordList.doc$(page.id).value?.setPrimaryMode(mode);
+      }
+
       if (open !== false)
         workbench.openDoc(page.id, {
           at: open === 'new-tab' ? 'new-tab' : 'active',
@@ -37,7 +35,7 @@ export const usePageHelper = (docCollection: DocCollection) => {
 
   const createEdgelessAndOpen = useCallback(
     (open?: boolean | 'new-tab') => {
-      return createPageAndOpen('edgeless' as DocMode, open);
+      return createPageAndOpen('edgeless', open);
     },
     [createPageAndOpen]
   );
