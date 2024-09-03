@@ -2,7 +2,7 @@ import { buttonVariants } from '@affine/admin/components/ui/button';
 import { cn } from '@affine/admin/utils';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import type * as React from 'react';
-import { DayPicker } from 'react-day-picker';
+import { Chevron, DayPicker } from 'react-day-picker';
 
 export type CalendarProps = React.ComponentProps<typeof DayPicker>;
 
@@ -51,8 +51,15 @@ function Calendar({
         ...classNames,
       }}
       components={{
-        IconLeft: () => <ChevronLeft className="w-4 h-4" />,
-        IconRight: () => <ChevronRight className="w-4 h-4" />,
+        Chevron: props => {
+          if (props.orientation === 'left') {
+            return <ChevronLeft className="w-4 h-4" />;
+          }
+          if (props.orientation === 'right') {
+            return <ChevronRight className="w-4 h-4" />;
+          }
+          return <Chevron {...props} />;
+        },
       }}
       {...props}
     />
