@@ -44,7 +44,7 @@ const useLoadDoc = (pageId: string) => {
 
   const modeInQuery = useLiveData(
     queryString$.map(q => {
-      if (q.mode && DocModes.includes(q.mode)) {
+      if (q.mode && DocModes.includes(q.mode as DocMode)) {
         return q.mode as DocMode;
       }
       return null;

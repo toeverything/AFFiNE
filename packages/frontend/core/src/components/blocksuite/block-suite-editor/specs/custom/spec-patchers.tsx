@@ -30,16 +30,17 @@ import { BlockServiceWatcher } from '@blocksuite/block-std';
 import type {
   AffineReference,
   DatabaseBlockService,
+  DocMode,
   ListBlockService,
   ParagraphBlockService,
   RootService,
 } from '@blocksuite/blocks';
 import {
   AffineSlashMenuWidget,
-  DocMode,
   DocModeProvider,
   EdgelessRootBlockComponent,
   EmbedLinkedDocBlockComponent,
+  QuickSearchProvider,
 } from '@blocksuite/blocks';
 import { LinkIcon } from '@blocksuite/icons/rc';
 import { AIChatBlockSchema } from '@blocksuite/presets';
@@ -281,10 +282,9 @@ export function patchDocModeService(
 }
 
 export function patchQuickSearchService(framework: FrameworkProvider) {
-  return patchSpecService<RootService>(
-    'affine:page',
-    pageService => {
-      pageService.quickSearchService = {
+  const QuickSearchExtension: ExtensionType = {
+    setup: di => {
+      di.addImpl(QuickSearchProvider, () => ({
         async searchDoc(options) {
           let searchResult:
             | { docId: string; isNewDoc?: boolean }
@@ -366,8 +366,8 @@ export function patchQuickSearchService(framework: FrameworkProvider) {
                     const docsService = framework.get(DocsService);
                     const mode =
                       result.id === 'creation:create-edgeless'
-                        ? DocMode.Edgeless
-                        : DocMode.Page;
+                        ? 'edgeless'
+                        : 'page';
                     const newDoc = docsService.createDoc({
                       primaryMode: mode,
                       title: result.payload.title,
@@ -393,8 +393,12 @@ export function patchQuickSearchService(framework: FrameworkProvider) {
 
           return searchResult;
         },
-      };
+      }));
     },
+  };
+  const SlashMenuQuickSearchExtension = patchSpecService<RootService>(
+    'affine:page',
+    () => {},
     (component: WidgetComponent) => {
       if (component instanceof AffineSlashMenuWidget) {
         component.config.items.forEach(item => {
@@ -405,7 +409,8 @@ export function patchQuickSearchService(framework: FrameworkProvider) {
             const oldAction = item.action;
             item.action = async ({ model, rootComponent }) => {
               const { host, service, std } = rootComponent;
-              const { quickSearchService } = service;
+              const quickSearchService =
+                component.std.getOptional(QuickSearchProvider);
 
               if (!quickSearchService)
                 return oldAction({ model, rootComponent });
@@ -447,6 +452,7 @@ export function patchQuickSearchService(framework: FrameworkProvider) {
       }
     }
   );
+  return [QuickSearchExtension, SlashMenuQuickSearchExtension];
 }
 
 export function patchEdgelessClipboard() {

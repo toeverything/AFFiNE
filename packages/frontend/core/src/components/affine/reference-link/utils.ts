@@ -1,8 +1,8 @@
 import type { BlockStdScope } from '@blocksuite/block-std';
-import {
+import type {
   DocMode,
-  type EdgelessRootService,
-  type PageRootService,
+  EdgelessRootService,
+  PageRootService,
 } from '@blocksuite/blocks';
 import { Bound, deserializeXYWH } from '@blocksuite/global/utils';
 
@@ -71,7 +71,7 @@ function scrollAnchoringInEdgelessMode(
 
 function scrollAnchoringInPageMode(service: PageRootService, id: string) {
   const blockComponent = service.std.view.getBlock(id);
-  if (!blockComponent || !blockComponent.path.length) return;
+  if (!blockComponent) return;
 
   blockComponent.scrollIntoView({
     behavior: 'instant',
@@ -92,7 +92,7 @@ function scrollAnchoringInPageMode(service: PageRootService, id: string) {
 
 // TODO(@fundon): it should be a command
 export function scrollAnchoring(std: BlockStdScope, mode: DocMode, id: string) {
-  if (mode === DocMode.Edgeless) {
+  if (mode === 'edgeless') {
     const service = std.getService<EdgelessRootService>('affine:page');
     if (!service) return;
 

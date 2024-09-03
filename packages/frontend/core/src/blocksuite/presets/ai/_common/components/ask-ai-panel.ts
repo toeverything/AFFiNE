@@ -1,7 +1,6 @@
 import { type EditorHost, WithDisposable } from '@blocksuite/block-std';
 import {
   type AIItemGroupConfig,
-  DocMode,
   EdgelessRootService,
   scrollbarStyle,
 } from '@blocksuite/blocks';
@@ -64,7 +63,7 @@ export class AskAIPanel extends WithDisposable(LitElement) {
           item.showWhen
             ? item.showWhen(
                 this.host.command.chain(),
-                this._edgeless ? DocMode.Edgeless : DocMode.Page,
+                this._edgeless ? 'edgeless' : 'page',
                 this.host
               )
             : true

@@ -1,6 +1,6 @@
 import type { EditorSelector } from '@affine/core/modules/editor';
 import type { ReferenceInfo } from '@blocksuite/affine-model';
-import { DocMode } from '@blocksuite/blocks';
+import type { DocMode } from '@blocksuite/blocks';
 import type { InlineEditor } from '@blocksuite/inline/inline-editor';
 import type {
   AffineEditorContainer,
@@ -68,10 +68,7 @@ export const BlocksuiteEditorContainer = forwardRef<
   const docTitleRef = useRef<DocTitle>(null);
   const edgelessRef = useRef<EdgelessEditor>(null);
   const [anchor] = useState<string | null>(() => {
-    if (
-      mode === DocMode.Edgeless &&
-      defaultEditorSelector?.elementIds?.length
-    ) {
+    if (mode === 'edgeless' && defaultEditorSelector?.elementIds?.length) {
       return defaultEditorSelector.elementIds[0];
     } else if (defaultEditorSelector?.blockIds?.length) {
       return defaultEditorSelector.blockIds[0];

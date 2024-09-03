@@ -1,4 +1,4 @@
-import { DocMode } from '@blocksuite/blocks';
+import type { DocMode } from '@blocksuite/blocks';
 import type { AffineEditorContainer } from '@blocksuite/presets';
 import type { DocService, WorkspaceService } from '@toeverything/infra';
 import { Entity, LiveData } from '@toeverything/infra';
@@ -25,9 +25,7 @@ export class Editor extends Entity<{
   readonly editorContainer$ = new LiveData<AffineEditorContainer | null>(null);
 
   toggleMode() {
-    this.mode$.next(
-      this.mode$.value === 'edgeless' ? DocMode.Page : DocMode.Edgeless
-    );
+    this.mode$.next(this.mode$.value === 'edgeless' ? 'page' : 'edgeless');
   }
 
   setMode(mode: DocMode) {

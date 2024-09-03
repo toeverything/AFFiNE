@@ -1,13 +1,13 @@
 import type { BlockComponent, EditorHost } from '@blocksuite/block-std';
-import {
-  AffineReference,
+import type {
   DocMode,
-  type EmbedLinkedDocModel,
-  type EmbedSyncedDocModel,
-  type ImageBlockModel,
-  type SurfaceRefBlockComponent,
-  type SurfaceRefBlockModel,
+  EmbedLinkedDocModel,
+  EmbedSyncedDocModel,
+  ImageBlockModel,
+  SurfaceRefBlockComponent,
+  SurfaceRefBlockModel,
 } from '@blocksuite/blocks';
+import { AffineReference } from '@blocksuite/blocks';
 import type { AIChatBlockModel } from '@blocksuite/presets';
 import type { BlockModel } from '@blocksuite/store';
 import { Entity, LiveData } from '@toeverything/infra';
@@ -135,7 +135,7 @@ function resolvePeekInfoFromPeekTarget(
         return {
           type: 'doc',
           docId,
-          mode: DocMode.Edgeless,
+          mode: 'edgeless',
           xywh: refModel.xywh,
         };
       }

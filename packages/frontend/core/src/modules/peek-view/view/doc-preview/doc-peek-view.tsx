@@ -7,7 +7,7 @@ import { EditorOutlineViewer } from '@affine/core/components/blocksuite/outline-
 import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
 import { PageNotFound } from '@affine/core/pages/404';
 import { DebugLogger } from '@affine/debug';
-import { DocMode, type EdgelessRootService } from '@blocksuite/blocks';
+import type { DocMode, EdgelessRootService } from '@blocksuite/blocks';
 import { Bound, DisposableGroup } from '@blocksuite/global/utils';
 import type { AffineEditorContainer } from '@blocksuite/presets';
 import {
@@ -107,7 +107,7 @@ export function DocPeekPreview({
   useEffect(() => {
     if (!mode || !resolvedMode) {
       setResolvedMode(
-        docs.list.doc$(docId).value?.primaryMode$.value || DocMode.Page
+        docs.list.doc$(docId).value?.primaryMode$.value || 'page'
       );
     }
   }, [docId, docs.list, resolvedMode, mode]);

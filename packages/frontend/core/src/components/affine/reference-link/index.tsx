@@ -7,7 +7,7 @@ import {
 import { WorkbenchLink } from '@affine/core/modules/workbench';
 import { useI18n } from '@affine/i18n';
 import type { BlockStdScope } from '@blocksuite/block-std';
-import { DocMode } from '@blocksuite/blocks';
+import type { DocMode } from '@blocksuite/blocks';
 import {
   BlockLinkIcon,
   DeleteIcon,
@@ -57,7 +57,7 @@ export function pageReferenceRenderer({
   let Icon = DeleteIcon;
 
   if (referencedPage) {
-    if (docMode === DocMode.Edgeless) {
+    if (docMode === 'edgeless') {
       Icon = LinkedEdgelessIcon;
     } else {
       Icon = LinkedPageIcon;
@@ -88,7 +88,7 @@ export function AffinePageReference({
   pageId,
   docCollection,
   wrapper: Wrapper,
-  mode = DocMode.Page,
+  mode = 'page',
   params = {},
   isSameDoc = false,
   std,
@@ -133,7 +133,7 @@ export function AffinePageReference({
 
   useEffect(() => {
     if (isSameDoc) {
-      if (mode === DocMode.Edgeless && elementIds?.length) {
+      if (mode === 'edgeless' && elementIds?.length) {
         setAnchor({ mode, id: elementIds[0] });
       } else if (blockIds?.length) {
         setAnchor({ mode, id: blockIds[0] });
