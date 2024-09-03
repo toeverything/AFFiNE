@@ -141,7 +141,7 @@ export function AffinePageReference({
     } else {
       setAnchor(null);
     }
-  }, [std, isSameDoc, mode, blockIds, elementIds]);
+  }, [isSameDoc, mode, blockIds, elementIds]);
 
   const onClick = useCallback(
     (e: React.MouseEvent) => {

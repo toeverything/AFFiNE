@@ -3,10 +3,15 @@ import {
   generateUrl,
   type UseSharingUrl,
 } from '@affine/core/hooks/affine/use-share-url';
+import { track } from '@affine/core/mixpanel';
 import { getAffineCloudBaseUrl } from '@affine/core/modules/cloud/services/fetch';
 import { EditorService } from '@affine/core/modules/editor';
 import { I18n } from '@affine/i18n';
 import type { MenuItemGroup } from '@blocksuite/affine-components/toolbar';
+import type {
+  GfxBlockElementModel,
+  GfxPrimitiveElementModel,
+} from '@blocksuite/block-std/gfx';
 import type { MenuContext } from '@blocksuite/blocks';
 import { LinkIcon } from '@blocksuite/icons/lit';
 import type { FrameworkProvider } from '@toeverything/infra';
@@ -74,27 +79,42 @@ function createCopyLinkToBlockMenuItem(
     ...item,
     action: (ctx: MenuContext) => {
       const baseUrl = getAffineCloudBaseUrl();
-      if (!baseUrl) return;
+      if (!baseUrl) {
+        ctx.close();
+        return;
+      }
 
       const { editor } = framework.get(EditorService);
       const mode = editor.mode$.value;
       const pageId = editor.doc.id;
       const workspaceId = editor.doc.workspace.id;
       const options: UseSharingUrl = { workspaceId, pageId, shareMode: mode };
+      let type = '';
 
       if (mode === 'page') {
         // maybe multiple blocks
         const blockIds = ctx.selectedBlockModels.map(model => model.id);
         options.blockIds = blockIds;
+        type = ctx.selectedBlockModels[0].flavour;
       } else if (mode === 'edgeless' && ctx.firstElement) {
         // single block/element
         const id = ctx.firstElement.id;
-        const key = ctx.isElement() ? 'element' : 'block';
-        options[`${key}Ids`] = [id];
+        if (ctx.isElement()) {
+          options.elementIds = [id];
+          type = (ctx.firstElement as GfxPrimitiveElementModel).type;
+        } else {
+          options.blockIds = [id];
+          type = (ctx.firstElement as GfxBlockElementModel).flavour;
+        }
       }
 
       const str = generateUrl(options);
-      if (!str) return;
+      if (!str) {
+        ctx.close();
+        return;
+      }
+
+      track.doc.editor.toolbar.copyBlockToLink({ type });
 
       navigator.clipboard
         .writeText(str)
@@ -104,6 +124,8 @@ function createCopyLinkToBlockMenuItem(
           });
         })
         .catch(console.error);
+
+      ctx.close();
     },
   };
 }
