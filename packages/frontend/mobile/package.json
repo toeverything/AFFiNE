@@ -18,7 +18,7 @@
     "@toeverything/theme": "^1.0.7",
     "clsx": "^2.1.1",
     "core-js": "^3.36.1",
-    "figma-squircle": "^0.3.1",
+    "figma-squircle": "^1.0.0",
     "intl-segmenter-polyfill-rs": "^0.1.7",
     "jotai": "^2.9.3",
     "jotai-devtools": "^0.10.1",

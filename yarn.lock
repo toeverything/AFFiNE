@@ -681,7 +681,7 @@ __metadata:
     clsx: "npm:^2.1.1"
     core-js: "npm:^3.36.1"
     cross-env: "npm:^7.0.3"
-    figma-squircle: "npm:^0.3.1"
+    figma-squircle: "npm:^1.0.0"
     intl-segmenter-polyfill-rs: "npm:^0.1.7"
     jotai: "npm:^2.9.3"
     jotai-devtools: "npm:^0.10.1"
@@ -22060,6 +22060,13 @@ __metadata:
   version: 0.3.1
   resolution: "figma-squircle@npm:0.3.1"
   checksum: 10/0a0c0965d96a5540cab444f476abac5b8b406fce7941128ad3bcefdbfbff0a613cce011f5377c39620dd96aeb0e57eab57b14c1cbb7eecab27bcf60e2d5beda7
+  languageName: node
+  linkType: hard
+
+"figma-squircle@npm:^1.0.0":
+  version: 1.0.0
+  resolution: "figma-squircle@npm:1.0.0"
+  checksum: 10/6f981c06bd66e4da16b7b9742dc830ff0745d88cac2fc87c058a3cacea7087be2734117229f1553700a38cc6c54ade6d05dbba9328ae00f0f378f6a4a008abef
   languageName: node
   linkType: hard
 
