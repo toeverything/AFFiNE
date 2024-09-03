@@ -1,4 +1,5 @@
 import { AIProvider } from '@affine/core/blocksuite/presets/ai';
+import { buildAppUrl, popupWindow } from '@affine/core/utils';
 import { apis, appInfo } from '@affine/electron-api';
 import type { OAuthProviderType } from '@affine/graphql';
 import {
@@ -80,72 +81,82 @@ export class AuthService extends Service {
   async sendEmailMagicLink(
     email: string,
     verifyToken: string,
-    challenge?: string,
-    redirectUri?: string | null
+    challenge?: string
   ) {
     const searchParams = new URLSearchParams();
     if (challenge) {
       searchParams.set('challenge', challenge);
     }
     searchParams.set('token', verifyToken);
-    const redirect = environment.isDesktop
-      ? this.buildRedirectUri('/open-app/signin-redirect')
-      : (redirectUri ?? location.href);
-    searchParams.set('redirect_uri', redirect.toString());
 
     const res = await this.fetchService.fetch(
       '/api/auth/sign-in?' + searchParams.toString(),
       {
         method: 'POST',
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({
+          email,
+          // we call it [callbackUrl] instead of [redirect_uri]
+          // to make it clear the url is used to finish the sign-in process instead of redirect after signed-in
+          callbackUrl: buildAppUrl('/magic-link', {
+            desktop: environment.isDesktop,
+            openInHiddenWindow: true,
+            redirectFromWeb: true,
+          }),
+        }),
         headers: {
           'content-type': 'application/json',
         },
       }
     );
-    if (!res?.ok) {
+    if (!res.ok) {
       throw new Error('Failed to send email');
     }
   }
 
-  async signInOauth(provider: OAuthProviderType, redirectUri?: string | null) {
+  async signInOauth(provider: OAuthProviderType) {
+    const res = await this.fetchService.fetch('/api/oauth/preflight', {
+      method: 'POST',
+      body: JSON.stringify({ provider }),
+      headers: {
+        'content-type': 'application/json',
+      },
+    });
+
+    if (!res.ok) {
+      throw new Error(`Failed to sign in with ${provider}`);
+    }
+
+    let { url } = await res.json();
+
+    // change `state=xxx` to `state={state:xxx,native:true}`
+    // so we could know the callback should be redirect to native app
+    const oauthUrl = new URL(url);
+    oauthUrl.searchParams.set(
+      'state',
+      JSON.stringify({
+        state: oauthUrl.searchParams.get('state'),
+        client: environment.isDesktop ? appInfo?.schema : 'web',
+      })
+    );
+    url = oauthUrl.toString();
+
     if (environment.isDesktop) {
-      await apis?.ui.openExternal(
-        `${
-          runtimeConfig.serverUrlPrefix
-        }/desktop-signin?provider=${provider}&redirect_uri=${this.buildRedirectUri(
-          '/open-app/signin-redirect'
-        )}`
-      );
+      await apis?.ui.openExternal(url);
     } else {
-      location.href = `${
-        runtimeConfig.serverUrlPrefix
-      }/oauth/login?provider=${provider}&redirect_uri=${encodeURIComponent(
-        redirectUri ?? location.pathname
-      )}`;
+      popupWindow(url);
     }
 
     return;
   }
 
   async signInPassword(credential: { email: string; password: string }) {
-    const searchParams = new URLSearchParams();
-    const redirectUri = new URL(location.href);
-    if (environment.isDesktop) {
-      redirectUri.pathname = this.buildRedirectUri('/open-app/signin-redirect');
-    }
-    searchParams.set('redirect_uri', redirectUri.toString());
-
-    const res = await this.fetchService.fetch(
-      '/api/auth/sign-in?' + searchParams.toString(),
-      {
-        method: 'POST',
-        body: JSON.stringify(credential),
-        headers: {
-          'content-type': 'application/json',
-        },
-      }
-    );
+    const res = await this.fetchService.fetch('/api/auth/sign-in', {
+      method: 'POST',
+      body: JSON.stringify(credential),
+      headers: {
+        'content-type': 'application/json',
+      },
+    });
     if (!res.ok) {
       throw new Error('Failed to sign in');
     }
@@ -156,19 +167,6 @@ export class AuthService extends Service {
     await this.fetchService.fetch('/api/auth/sign-out');
     this.store.setCachedAuthSession(null);
     this.session.revalidate();
-  }
-
-  private buildRedirectUri(callbackUrl: string) {
-    const params: string[][] = [];
-    if (environment.isDesktop && appInfo?.schema) {
-      params.push(['schema', appInfo.schema]);
-    }
-    const query =
-      params.length > 0
-        ? '?' +
-          params.map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&')
-        : '';
-    return callbackUrl + query;
   }
 
   checkUserByEmail(email: string) {

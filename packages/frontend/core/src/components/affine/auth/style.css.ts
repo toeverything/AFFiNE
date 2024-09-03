@@ -14,6 +14,14 @@ export const authMessage = style({
   fontSize: cssVar('fontXs'),
   lineHeight: 1.5,
 });
+
+export const errorMessage = style({
+  marginTop: '30px',
+  color: cssVar('textHighlightForegroundRed'),
+  fontSize: cssVar('fontXs'),
+  lineHeight: 1.5,
+});
+
 globalStyle(`${authMessage} a`, {
   color: cssVar('linkColor'),
 });

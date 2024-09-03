@@ -2,6 +2,7 @@ import { DebugLogger } from '@affine/debug';
 import { type LoaderFunction, Navigate, useLoaderData } from 'react-router-dom';
 
 const trustedDomain = [
+  'google.com',
   'stripe.com',
   'github.com',
   'twitter.com',

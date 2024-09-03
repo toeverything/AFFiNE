@@ -229,16 +229,15 @@ export async function showMainWindow() {
 
 /**
  * Open a URL in a hidden window.
- * This is useful for opening a URL in the background without user interaction for *authentication*.
  */
-export async function handleOpenUrlInHiddenWindow(url: string) {
+export async function openUrlInHiddenWindow(url: string) {
   const win = new BrowserWindow({
     width: 1200,
     height: 600,
     webPreferences: {
       preload: join(__dirname, './preload.js'),
     },
-    show: false,
+    show: environment.isDebug,
   });
   win.on('close', e => {
     e.preventDefault();
@@ -249,4 +248,12 @@ export async function handleOpenUrlInHiddenWindow(url: string) {
   logger.info('loading page at', url);
   await win.loadURL(url);
   return win;
+}
+
+export async function openUrlInMainWindow(url: string) {
+  const mainWindow = await getMainWindow();
+  if (mainWindow) {
+    mainWindow.show();
+    await mainWindow.loadURL(url);
+  }
 }

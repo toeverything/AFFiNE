@@ -7,34 +7,54 @@ import { AuthService } from '../modules/cloud';
 export const loader: LoaderFunction = async ({ request }) => {
   const url = new URL(request.url);
   const queries = url.searchParams;
-  const email = queries.get('email');
-  const token = queries.get('token');
-  const redirectUri = queries.get('redirect_uri');
+  const code = queries.get('code');
+  let stateStr = queries.get('state') ?? '{}';
 
-  if (!email || !token) {
-    return redirect('/404');
+  let error: string | undefined;
+  try {
+    const { state, client } = JSON.parse(stateStr);
+    stateStr = state;
+
+    // bypass code & state to redirect_uri
+    if (!environment.isDesktop && client && client !== 'web') {
+      url.searchParams.set('state', JSON.stringify({ state }));
+      return redirect(
+        `/open-app/url?url=${encodeURIComponent(`${client}://${url.pathname}${url.search}`)}&hidden=true`
+      );
+    }
+  } catch {
+    error = 'Invalid oauth callback parameters';
   }
 
-  const res = await fetch('/api/auth/magic-link', {
+  const res = await fetch('/api/oauth/callback', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ email, token }),
+    body: JSON.stringify({ code, state: stateStr }),
   });
 
   if (!res.ok) {
-    let error: string;
     try {
       const { message } = await res.json();
       error = message;
     } catch {
       error = 'failed to verify sign-in token';
     }
-    return redirect(`/signIn?error=${encodeURIComponent(error)}`);
   }
 
-  location.href = redirectUri || '/';
+  if (error) {
+    // TODO(@pengx17): in desktop app, the callback page will be opened in a hidden window
+    // how could we tell the main window to show the error message?
+    return redirect(`/signIn?error=${encodeURIComponent(error)}`);
+  } else {
+    const body = await res.json();
+    /* @deprecated handle for old client */
+    if (body.redirect_uri) {
+      return redirect(body.redirect_uri);
+    }
+  }
+
   return null;
 };
 
@@ -50,6 +70,5 @@ export const Component = () => {
     window.close();
   }
 
-  // TODO(@eyhn): loading ui
   return null;
 };

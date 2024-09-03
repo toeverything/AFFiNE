@@ -39,6 +39,8 @@ const desktopWhiteList = [
   '/upgrade-success',
   '/ai-upgrade-success',
   '/share',
+  '/oauth',
+  '/magic-link',
 ];
 if (
   !environment.isDesktop &&

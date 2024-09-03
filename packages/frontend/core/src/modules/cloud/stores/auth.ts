@@ -1,5 +1,4 @@
 import {
-  getUserQuery,
   removeAvatarMutation,
   updateUserProfileMutation,
   uploadAvatarMutation,
@@ -81,15 +80,23 @@ export class AuthStore extends Store {
   }
 
   async checkUserByEmail(email: string) {
-    const data = await this.gqlService.gql({
-      query: getUserQuery,
-      variables: {
-        email,
+    const res = await this.fetchService.fetch('/api/auth/preflight', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+      headers: {
+        'content-type': 'application/json',
       },
     });
-    return {
-      isExist: !!data.user,
-      hasPassword: !!data.user?.hasPassword,
+
+    if (!res.ok) {
+      throw new Error(`Failed to check user by email: ${email}`);
+    }
+
+    const data = (await res.json()) as {
+      registered: boolean;
+      hasPassword: boolean;
     };
+
+    return data;
   }
 }

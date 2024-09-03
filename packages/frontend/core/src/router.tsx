@@ -75,20 +75,12 @@ export const topLevelRoutes = [
         lazy: () => import('./pages/magic-link'),
       },
       {
-        path: '/open-app/:action',
-        lazy: () => import('./pages/open-app'),
-      },
-      {
         path: '/upgrade-success',
         lazy: () => import('./pages/upgrade-success'),
       },
       {
         path: '/ai-upgrade-success',
         lazy: () => import('./pages/ai-upgrade-success'),
-      },
-      {
-        path: '/desktop-signin',
-        lazy: () => import('./pages/desktop-signin'),
       },
       {
         path: '/onboarding',
@@ -117,6 +109,20 @@ export const topLevelRoutes = [
       {
         path: '/template/import',
         lazy: () => import('./pages/import-template'),
+      },
+      {
+        path: '/oauth/callback',
+        lazy: () => import('./pages/oauth-callback'),
+      },
+      {
+        path: '/open-app/:action',
+        lazy: () => import('./pages/open-app'),
+      },
+      // deprecated, keep for old client compatibility
+      // TODO(@forehalo): remove
+      {
+        path: '/desktop-signin',
+        lazy: () => import('./pages/desktop-signin'),
       },
       {
         path: '*',
