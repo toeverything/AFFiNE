@@ -8,7 +8,7 @@ import { useCallback } from 'react';
 
 import { useActiveBlocksuiteEditor } from '../use-block-suite-editor';
 
-type UseSharingUrl = {
+export type UseSharingUrl = {
   workspaceId: string;
   pageId: string;
   shareMode?: DocMode;
@@ -20,7 +20,7 @@ type UseSharingUrl = {
 /**
  * to generate a url like https://app.affine.pro/workspace/workspaceId/docId?mode=DocMode?element=seletedBlockid#seletedBlockid
  */
-const generateUrl = ({
+export const generateUrl = ({
   workspaceId,
   pageId,
   blockIds,

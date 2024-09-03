@@ -19,7 +19,8 @@ import {
 } from '@blocksuite/blocks';
 import { type FrameworkProvider } from '@toeverything/infra';
 
-import { createLinkedWidgetConfig } from './linked-widget';
+import { createLinkedWidgetConfig } from './widgets/linked';
+import { createToolbarMoreMenuConfig } from './widgets/toolbar';
 
 function customLoadFonts(service: RootService): void {
   if (runtimeConfig.isSelfHosted) {
@@ -70,6 +71,7 @@ export function createPageRootBlockSpec(
     ConfigExtension('affine:page', {
       linkedWidget: createLinkedWidgetConfig(framework),
       editorSetting: editorSettingService.editorSetting.settingSignal,
+      toolbarMoreMenu: createToolbarMoreMenuConfig(framework),
     }),
   ];
 }
@@ -92,6 +94,7 @@ export function createEdgelessRootBlockSpec(
     ConfigExtension('affine:page', {
       linkedWidget: createLinkedWidgetConfig(framework),
       editorSetting: editorSettingService.editorSetting.settingSignal,
+      toolbarMoreMenu: createToolbarMoreMenuConfig(framework),
     }),
   ];
 }

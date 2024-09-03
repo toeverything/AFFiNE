@@ -12,7 +12,7 @@ import { ShareReaderService } from '@affine/core/modules/share-doc';
 import { CloudBlobStorage } from '@affine/core/modules/workspace-engine';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useI18n } from '@affine/i18n';
-import type { DocMode } from '@blocksuite/blocks';
+import { type DocMode, DocModes } from '@blocksuite/blocks';
 import { noop } from '@blocksuite/global/utils';
 import { Logo1Icon } from '@blocksuite/icons/rc';
 import type { AffineEditorContainer } from '@blocksuite/presets';
@@ -59,7 +59,7 @@ export const SharePage = ({
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
     const queryStringMode = searchParams.get('mode') as DocMode | null;
-    if (queryStringMode && ['edgeless', 'page'].includes(queryStringMode)) {
+    if (queryStringMode && DocModes.includes(queryStringMode)) {
       setMode(queryStringMode);
     }
   }, [location.search]);
