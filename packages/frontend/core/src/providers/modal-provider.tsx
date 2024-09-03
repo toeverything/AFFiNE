@@ -13,8 +13,8 @@ import type { ReactElement } from 'react';
 import { useCallback, useEffect } from 'react';
 
 import type { SettingAtom } from '../atoms';
-import { authAtom, openSettingModalAtom, openSignOutModalAtom } from '../atoms';
-import { AuthModal as Auth } from '../components/affine/auth';
+import { openSettingModalAtom, openSignOutModalAtom } from '../atoms';
+import { AuthModal } from '../components/affine/auth';
 import { AiLoginRequiredModal } from '../components/affine/auth/ai-login-required';
 import { HistoryTipsModal } from '../components/affine/history-tips-modal';
 import { IssueFeedbackModal } from '../components/affine/issue-feedback-modal';
@@ -84,46 +84,6 @@ export const Setting = () => {
       workspaceMetadata={workspaceMetadata}
       onSettingClick={onSettingClick}
       onOpenChange={onOpenChange}
-    />
-  );
-};
-
-export const AuthModal = (): ReactElement => {
-  const [
-    { openModal, state, email = '', emailType = 'changePassword' },
-    setAuthAtom,
-  ] = useAtom(authAtom);
-
-  return (
-    <Auth
-      open={openModal}
-      state={state}
-      email={email}
-      emailType={emailType}
-      setEmailType={useCallback(
-        emailType => {
-          setAuthAtom(prev => ({ ...prev, emailType }));
-        },
-        [setAuthAtom]
-      )}
-      setOpen={useCallback(
-        open => {
-          setAuthAtom(prev => ({ ...prev, openModal: open }));
-        },
-        [setAuthAtom]
-      )}
-      setAuthState={useCallback(
-        state => {
-          setAuthAtom(prev => ({ ...prev, state }));
-        },
-        [setAuthAtom]
-      )}
-      setAuthEmail={useCallback(
-        email => {
-          setAuthAtom(prev => ({ ...prev, email }));
-        },
-        [setAuthAtom]
-      )}
     />
   );
 };

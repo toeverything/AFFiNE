@@ -1,16 +1,14 @@
 import { notify } from '@affine/component';
 import { AuthInput, ModalHeader } from '@affine/component/auth-components';
 import { Button } from '@affine/component/ui/button';
-import { authAtom } from '@affine/core/atoms';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { track } from '@affine/core/mixpanel';
 import { Trans, useI18n } from '@affine/i18n';
 import { ArrowRightBigIcon } from '@blocksuite/icons/rc';
-import { useLiveData, useService } from '@toeverything/infra';
+import { useService } from '@toeverything/infra';
 import { cssVar } from '@toeverything/theme';
-import { useAtomValue } from 'jotai';
 import type { FC } from 'react';
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import { AuthService } from '../../../modules/cloud';
@@ -24,35 +22,18 @@ function validateEmail(email: string) {
   return emailRegex.test(email);
 }
 
-export const SignIn: FC<AuthPanelProps> = ({
-  setAuthState,
-  setAuthEmail,
-  email,
-  onSignedIn,
+export const SignIn: FC<AuthPanelProps<'signIn'>> = ({
+  setAuthData: setAuthState,
 }) => {
   const t = useI18n();
   const authService = useService(AuthService);
   const [searchParams] = useSearchParams();
   const [isMutating, setIsMutating] = useState(false);
   const [verifyToken, challenge] = useCaptcha();
+  const [email, setEmail] = useState('');
 
   const [isValidEmail, setIsValidEmail] = useState(true);
-  const { openModal } = useAtomValue(authAtom);
   const errorMsg = searchParams.get('error');
-
-  useEffect(() => {
-    const timeout = setInterval(() => {
-      // revalidate session to get the latest status
-      authService.session.revalidate();
-    }, 3000);
-    return () => {
-      clearInterval(timeout);
-    };
-  }, [authService]);
-  const loginStatus = useLiveData(authService.session.status$);
-  if (loginStatus === 'authenticated' && openModal) {
-    onSignedIn?.();
-  }
 
   const onContinue = useAsyncCallback(async () => {
     if (!validateEmail(email)) {
@@ -61,10 +42,8 @@ export const SignIn: FC<AuthPanelProps> = ({
     }
 
     setIsValidEmail(true);
-
     setIsMutating(true);
 
-    setAuthEmail(email);
     try {
       const { hasPassword, registered } =
         await authService.checkUserByEmail(email);
@@ -74,16 +53,25 @@ export const SignIn: FC<AuthPanelProps> = ({
           // provider password sign-in if user has by default
           //  If with payment, onl support email sign in to avoid redirect to affine app
           if (hasPassword) {
-            setAuthState('signInWithPassword');
+            setAuthState({
+              state: 'signInWithPassword',
+              email,
+            });
           } else {
             track.$.$.auth.signIn();
             await authService.sendEmailMagicLink(email, verifyToken, challenge);
-            setAuthState('afterSignInSendEmail');
+            setAuthState({
+              state: 'afterSignInSendEmail',
+              email,
+            });
           }
         } else {
           await authService.sendEmailMagicLink(email, verifyToken, challenge);
           track.$.$.auth.signUp();
-          setAuthState('afterSignUpSendEmail');
+          setAuthState({
+            state: 'afterSignUpSendEmail',
+            email,
+          });
         }
       }
     } catch (err) {
@@ -96,7 +84,7 @@ export const SignIn: FC<AuthPanelProps> = ({
     }
 
     setIsMutating(false);
-  }, [authService, challenge, email, setAuthEmail, setAuthState, verifyToken]);
+  }, [authService, challenge, email, setAuthState, verifyToken]);
 
   return (
     <>
@@ -111,13 +99,7 @@ export const SignIn: FC<AuthPanelProps> = ({
         <AuthInput
           label={t['com.affine.settings.email']()}
           placeholder={t['com.affine.auth.sign.email.placeholder']()}
-          value={email}
-          onChange={useCallback(
-            (value: string) => {
-              setAuthEmail(value);
-            },
-            [setAuthEmail]
-          )}
+          onChange={setEmail}
           error={!isValidEmail}
           errorHint={
             isValidEmail ? '' : t['com.affine.auth.sign.email.error']()

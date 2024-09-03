@@ -21,7 +21,7 @@ import {
   WorkspacesService,
 } from '@toeverything/infra';
 import clsx from 'clsx';
-import { useAtom } from 'jotai/react';
+import { useSetAtom } from 'jotai/react';
 import {
   type MouseEvent,
   Suspense,
@@ -81,7 +81,7 @@ export const UserInfo = ({ onAccountSettingClick, active }: UserInfoProps) => {
 
 export const SignInButton = () => {
   const t = useI18n();
-  const [, setAuthModal] = useAtom(authAtom);
+  const setAuthModal = useSetAtom(authAtom);
 
   return (
     <div

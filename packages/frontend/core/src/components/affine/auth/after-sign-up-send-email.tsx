@@ -8,7 +8,7 @@ import {
 import { Button } from '@affine/component/ui/button';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { Trans, useI18n } from '@affine/i18n';
-import { useLiveData, useService } from '@toeverything/infra';
+import { useService } from '@toeverything/infra';
 import type { FC } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 
@@ -17,11 +17,9 @@ import type { AuthPanelProps } from './index';
 import * as style from './style.css';
 import { Captcha, useCaptcha } from './use-captcha';
 
-export const AfterSignUpSendEmail: FC<AuthPanelProps> = ({
-  setAuthState,
-  email,
-  onSignedIn,
-}) => {
+export const AfterSignUpSendEmail: FC<
+  AuthPanelProps<'afterSignUpSendEmail'>
+> = ({ setAuthData, email }) => {
   const [resendCountDown, setResendCountDown] = useState(60);
 
   useEffect(() => {
@@ -37,19 +35,6 @@ export const AfterSignUpSendEmail: FC<AuthPanelProps> = ({
   const [isSending, setIsSending] = useState(false);
   const t = useI18n();
   const authService = useService(AuthService);
-  const loginStatus = useLiveData(authService.session.status$);
-  useEffect(() => {
-    const timeout = setInterval(() => {
-      // revalidate session to get the latest status
-      authService.session.revalidate();
-    }, 3000);
-    return () => {
-      clearInterval(timeout);
-    };
-  }, [authService]);
-  if (loginStatus === 'authenticated') {
-    onSignedIn?.();
-  }
 
   const [verifyToken, challenge] = useCaptcha();
 
@@ -117,8 +102,8 @@ export const AfterSignUpSendEmail: FC<AuthPanelProps> = ({
 
       <BackButton
         onClick={useCallback(() => {
-          setAuthState('signIn');
-        }, [setAuthState])}
+          setAuthData({ state: 'signIn' });
+        }, [setAuthData])}
       />
     </>
   );

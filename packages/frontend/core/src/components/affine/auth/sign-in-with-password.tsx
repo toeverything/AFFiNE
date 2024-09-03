@@ -16,11 +16,9 @@ import type { AuthPanelProps } from './index';
 import * as styles from './style.css';
 import { useCaptcha } from './use-captcha';
 
-export const SignInWithPassword: FC<AuthPanelProps> = ({
-  setAuthState,
-  setEmailType,
+export const SignInWithPassword: FC<AuthPanelProps<'signInWithPassword'>> = ({
+  setAuthData,
   email,
-  onSignedIn,
 }) => {
   const t = useI18n();
   const authService = useService(AuthService);
@@ -40,14 +38,13 @@ export const SignInWithPassword: FC<AuthPanelProps> = ({
         email,
         password,
       });
-      onSignedIn?.();
     } catch (err) {
       console.error(err);
       setPasswordError(true);
     } finally {
       setIsLoading(false);
     }
-  }, [isLoading, authService, email, password, onSignedIn]);
+  }, [isLoading, authService, email, password]);
 
   const sendMagicLink = useAsyncCallback(async () => {
     if (sendingEmail) return;
@@ -55,7 +52,7 @@ export const SignInWithPassword: FC<AuthPanelProps> = ({
     try {
       if (verifyToken) {
         await authService.sendEmailMagicLink(email, verifyToken, challenge);
-        setAuthState('afterSignInSendEmail');
+        setAuthData({ state: 'afterSignInSendEmail' });
       }
     } catch (err) {
       console.error(err);
@@ -65,12 +62,11 @@ export const SignInWithPassword: FC<AuthPanelProps> = ({
       // TODO(@eyhn): handle error better
     }
     setSendingEmail(false);
-  }, [sendingEmail, verifyToken, authService, email, challenge, setAuthState]);
+  }, [sendingEmail, verifyToken, authService, email, challenge, setAuthData]);
 
   const sendChangePasswordEmail = useCallback(() => {
-    setEmailType('changePassword');
-    setAuthState('sendEmail');
-  }, [setAuthState, setEmailType]);
+    setAuthData({ state: 'sendEmail', emailType: 'changePassword' });
+  }, [setAuthData]);
 
   return (
     <>
@@ -140,8 +136,8 @@ export const SignInWithPassword: FC<AuthPanelProps> = ({
       </Wrapper>
       <BackButton
         onClick={useCallback(() => {
-          setAuthState('signIn');
-        }, [setAuthState])}
+          setAuthData({ state: 'signIn' });
+        }, [setAuthData])}
       />
     </>
   );

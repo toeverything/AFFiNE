@@ -3,12 +3,13 @@ import path from 'node:path';
 import type { App } from 'electron';
 
 import { buildType, isDev } from './config';
-import { mainWindowOrigin } from './constants';
 import { logger } from './logger';
+import { uiSubjects } from './ui';
 import {
   getMainWindow,
   openUrlInHiddenWindow,
   openUrlInMainWindow,
+  showMainWindow,
 } from './windows-manager';
 
 let protocol = buildType === 'stable' ? 'affine' : `affine-${buildType}`;
@@ -58,31 +59,39 @@ export function setupDeepLink(app: App) {
 }
 
 async function handleAffineUrl(url: string) {
+  await showMainWindow();
+
   logger.info('open affine url', url);
   const urlObj = new URL(url);
-  logger.info('handle affine schema action', urlObj.hostname);
 
-  if (urlObj.hostname === 'bring-to-front') {
-    const mainWindow = await getMainWindow();
-    if (mainWindow) {
-      mainWindow.show();
+  if (urlObj.hostname === 'authentication') {
+    const method = urlObj.searchParams.get('method');
+    const payload = JSON.parse(urlObj.searchParams.get('payload') ?? 'false');
+
+    if (
+      !method ||
+      (method !== 'magic-link' && method !== 'oauth') ||
+      !payload
+    ) {
+      logger.error('Invalid authentication url', url);
+      return;
     }
+
+    uiSubjects.authenticationRequest$.next({
+      method,
+      payload,
+    });
   } else {
-    await openUrl(urlObj);
-  }
-}
+    const hiddenWindow = urlObj.searchParams.get('hidden')
+      ? await openUrlInHiddenWindow(urlObj)
+      : await openUrlInMainWindow(urlObj);
 
-async function openUrl(urlObj: URL) {
-  const params = urlObj.searchParams;
-
-  const openInHiddenWindow = params.get('hidden');
-  params.delete('hidden');
-
-  const url = mainWindowOrigin + urlObj.pathname + '?' + params.toString();
-  if (!openInHiddenWindow) {
-    await openUrlInHiddenWindow(url);
-  } else {
-    // TODO(@pengx17): somehow the page won't load the url passed, help needed
-    await openUrlInMainWindow(url);
+    const main = await getMainWindow();
+    if (main && hiddenWindow) {
+      // when hidden window closed, the main window will be hidden somehow
+      hiddenWindow.on('close', () => {
+        main.show();
+      });
+    }
   }
 }

@@ -6,6 +6,7 @@ import { BehaviorSubject } from 'rxjs';
 
 import { isLinux, isMacOS, isWindows } from '../../shared/utils';
 import { buildType } from '../config';
+import { mainWindowOrigin } from '../constants';
 import { ensureHelperProcess } from '../helper-process';
 import { logger } from '../logger';
 import { uiSubjects } from '../ui/subject';
@@ -227,33 +228,60 @@ export async function showMainWindow() {
   window.focus();
 }
 
+const getWindowAdditionalArguments = async () => {
+  const { getExposedMeta } = await import('../exposed');
+  const mainExposedMeta = getExposedMeta();
+  return [
+    `--main-exposed-meta=` + JSON.stringify(mainExposedMeta),
+    `--window-name=hidden-window`,
+  ];
+};
+
+function transformToAppUrl(url: URL) {
+  const params = url.searchParams;
+  return mainWindowOrigin + url.pathname + '?' + params.toString();
+}
+
 /**
  * Open a URL in a hidden window.
  */
-export async function openUrlInHiddenWindow(url: string) {
+export async function openUrlInHiddenWindow(urlObj: URL) {
+  const url = transformToAppUrl(urlObj);
   const win = new BrowserWindow({
     width: 1200,
     height: 600,
     webPreferences: {
       preload: join(__dirname, './preload.js'),
+      additionalArguments: await getWindowAdditionalArguments(),
     },
     show: environment.isDebug,
   });
+
+  if (environment.isDebug) {
+    win.webContents.openDevTools();
+  }
+
   win.on('close', e => {
     e.preventDefault();
-    if (!win.isDestroyed()) {
+    if (win && !win.isDestroyed()) {
       win.destroy();
     }
   });
   logger.info('loading page at', url);
-  await win.loadURL(url);
+  win.loadURL(url).catch(e => {
+    logger.error('failed to load url', e);
+  });
   return win;
 }
 
-export async function openUrlInMainWindow(url: string) {
+// TODO(@pengx17): somehow the page won't load the url passed, help needed
+export async function openUrlInMainWindow(urlObj: URL) {
+  const url = transformToAppUrl(urlObj);
+  logger.info('loading page at', url);
   const mainWindow = await getMainWindow();
   if (mainWindow) {
-    mainWindow.show();
     await mainWindow.loadURL(url);
   }
+
+  return null;
 }

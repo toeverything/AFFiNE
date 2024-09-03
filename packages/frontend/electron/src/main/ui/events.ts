@@ -1,5 +1,6 @@
 import type { MainEventRegister } from '../type';
 import {
+  type AuthenticationRequest,
   onActiveTabChanged,
   onTabAction,
   onTabShellViewActiveChange,
@@ -35,4 +36,10 @@ export const uiEvents = {
   onTabsStatusChange,
   onActiveTabChanged,
   onTabShellViewActiveChange,
+  onAuthenticationRequest: (fn: (state: AuthenticationRequest) => void) => {
+    const sub = uiSubjects.authenticationRequest$.subscribe(fn);
+    return () => {
+      sub.unsubscribe();
+    };
+  },
 } satisfies Record<string, MainEventRegister>;

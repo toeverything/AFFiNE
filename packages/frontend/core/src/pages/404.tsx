@@ -11,7 +11,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { SignOutModal } from '../components/affine/sign-out-modal';
 import { RouteLogic, useNavigateHelper } from '../hooks/use-navigate-helper';
 import { AuthService } from '../modules/cloud';
-import { SignIn } from './sign-in';
+import { SignIn } from './auth/sign-in';
 
 export const PageNotFound = ({
   noPermission,

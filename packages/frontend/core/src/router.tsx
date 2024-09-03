@@ -55,24 +55,12 @@ export const topLevelRoutes = [
         lazy: () => import('./pages/admin-panel'),
       },
       {
-        path: '/auth/:authType',
-        lazy: () => import('./pages/auth'),
-      },
-      {
         path: '/expired',
         lazy: () => import('./pages/expired'),
       },
       {
         path: '/invite/:inviteId',
         lazy: () => import('./pages/invite'),
-      },
-      {
-        path: '/signIn',
-        lazy: () => import('./pages/sign-in'),
-      },
-      {
-        path: '/magic-link',
-        lazy: () => import('./pages/magic-link'),
       },
       {
         path: '/upgrade-success',
@@ -111,18 +99,33 @@ export const topLevelRoutes = [
         lazy: () => import('./pages/import-template'),
       },
       {
-        path: '/oauth/callback',
-        lazy: () => import('./pages/oauth-callback'),
+        path: '/auth/:authType',
+        lazy: () => import(/* webpackChunkName: "auth" */ './pages/auth/auth'),
       },
       {
-        path: '/open-app/:action',
-        lazy: () => import('./pages/open-app'),
+        path: '/signIn',
+        lazy: () =>
+          import(/* webpackChunkName: "auth" */ './pages/auth/sign-in'),
+      },
+      {
+        path: '/magic-link',
+        lazy: () =>
+          import(/* webpackChunkName: "auth" */ './pages/auth/magic-link'),
+      },
+      {
+        path: '/oauth/callback',
+        lazy: () =>
+          import(/* webpackChunkName: "auth" */ './pages/auth/oauth-callback'),
       },
       // deprecated, keep for old client compatibility
       // TODO(@forehalo): remove
       {
         path: '/desktop-signin',
-        lazy: () => import('./pages/desktop-signin'),
+        lazy: () => import('./pages/auth/desktop-signin'),
+      },
+      {
+        path: '/open-app/:action',
+        lazy: () => import('./pages/open-app'),
       },
       {
         path: '*',

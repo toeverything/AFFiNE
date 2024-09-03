@@ -9,7 +9,7 @@ import { Button } from '@affine/component/ui/button';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { AuthService } from '@affine/core/modules/cloud';
 import { Trans, useI18n } from '@affine/i18n';
-import { useLiveData, useService } from '@toeverything/infra';
+import { useService } from '@toeverything/infra';
 import { useCallback, useEffect, useState } from 'react';
 
 import type { AuthPanelProps } from './index';
@@ -17,10 +17,9 @@ import * as style from './style.css';
 import { Captcha, useCaptcha } from './use-captcha';
 
 export const AfterSignInSendEmail = ({
-  setAuthState,
+  setAuthData: setAuth,
   email,
-  onSignedIn,
-}: AuthPanelProps) => {
+}: AuthPanelProps<'afterSignInSendEmail'>) => {
   const [resendCountDown, setResendCountDown] = useState(60);
 
   useEffect(() => {
@@ -37,21 +36,8 @@ export const AfterSignInSendEmail = ({
 
   const t = useI18n();
   const authService = useService(AuthService);
-  useEffect(() => {
-    const timer = setInterval(() => {
-      authService.session.revalidate();
-    }, 3000);
 
-    return () => {
-      clearInterval(timer);
-    };
-  }, [authService]);
-  const loginStatus = useLiveData(authService.session.status$);
   const [verifyToken, challenge] = useCaptcha();
-
-  if (loginStatus === 'authenticated') {
-    onSignedIn?.();
-  }
 
   const onResendClick = useAsyncCallback(async () => {
     setIsSending(true);
@@ -70,12 +56,12 @@ export const AfterSignInSendEmail = ({
   }, [authService, challenge, email, verifyToken]);
 
   const onSignInWithPasswordClick = useCallback(() => {
-    setAuthState('signInWithPassword');
-  }, [setAuthState]);
+    setAuth({ state: 'signInWithPassword' });
+  }, [setAuth]);
 
   const onBackBottomClick = useCallback(() => {
-    setAuthState('signIn');
-  }, [setAuthState]);
+    setAuth({ state: 'signIn' });
+  }, [setAuth]);
 
   return (
     <>

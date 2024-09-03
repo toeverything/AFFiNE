@@ -1,6 +1,5 @@
 import { atom } from 'jotai';
 
-import type { AuthProps } from '../components/affine/auth';
 import type { SettingProps } from '../components/affine/setting-modal';
 import type { ActiveTab } from '../components/affine/setting-modal/types';
 // modal atoms
@@ -37,18 +36,37 @@ export const openSettingModalAtom = atom<SettingAtom>({
   open: false,
 });
 
-export type AuthAtom = {
-  openModal: boolean;
-  state: AuthProps['state'];
-  email?: string;
-  emailType?: AuthProps['emailType'];
-};
+export type AuthAtomData =
+  | { state: 'signIn' }
+  | {
+      state: 'afterSignUpSendEmail';
+      email: string;
+    }
+  | {
+      state: 'afterSignInSendEmail';
+      email: string;
+    }
+  | {
+      state: 'signInWithPassword';
+      email: string;
+    }
+  | {
+      state: 'sendEmail';
+      email: string;
+      emailType:
+        | 'setPassword'
+        | 'changePassword'
+        | 'changeEmail'
+        | 'verifyEmail';
+    };
 
-export const authAtom = atom<AuthAtom>({
+export const authAtom = atom<
+  AuthAtomData & {
+    openModal: boolean;
+  }
+>({
   openModal: false,
   state: 'signIn',
-  email: '',
-  emailType: 'changeEmail',
 });
 
 export type AllPageFilterOption = 'docs' | 'collections' | 'tags';

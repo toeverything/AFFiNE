@@ -2,6 +2,8 @@ import { notify, Skeleton } from '@affine/component';
 import { Button } from '@affine/component/ui/button';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { track } from '@affine/core/mixpanel';
+import { popupWindow } from '@affine/core/utils';
+import { apis } from '@affine/electron-api';
 import { OAuthProviderType } from '@affine/graphql';
 import { GithubIcon, GoogleDuotoneIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
@@ -59,7 +61,12 @@ function OAuthProvider({ provider }: { provider: OAuthProviderType }) {
   const onClick = useAsyncCallback(async () => {
     try {
       setIsConnecting(true);
-      await authService.signInOauth(provider);
+      const url = await authService.oauthPreflight(provider);
+      if (environment.isDesktop) {
+        await apis?.ui.openExternal(url);
+      } else {
+        popupWindow(url);
+      }
     } catch (err) {
       console.error(err);
       notify.error({ title: 'Failed to sign in, please try again.' });

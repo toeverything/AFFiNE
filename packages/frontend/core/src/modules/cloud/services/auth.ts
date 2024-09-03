@@ -1,6 +1,5 @@
 import { AIProvider } from '@affine/core/blocksuite/presets/ai';
-import { buildAppUrl, popupWindow } from '@affine/core/utils';
-import { apis, appInfo } from '@affine/electron-api';
+import { appInfo } from '@affine/electron-api';
 import type { OAuthProviderType } from '@affine/graphql';
 import {
   ApplicationFocused,
@@ -97,11 +96,7 @@ export class AuthService extends Service {
           email,
           // we call it [callbackUrl] instead of [redirect_uri]
           // to make it clear the url is used to finish the sign-in process instead of redirect after signed-in
-          callbackUrl: buildAppUrl('/magic-link', {
-            desktop: environment.isDesktop,
-            openInHiddenWindow: true,
-            redirectFromWeb: true,
-          }),
+          callbackUrl: `/magic-link?client=${environment.isDesktop ? appInfo?.schema : 'web'}`,
         }),
         headers: {
           'content-type': 'application/json',
@@ -113,18 +108,27 @@ export class AuthService extends Service {
     }
   }
 
-  async signInOauth(provider: OAuthProviderType) {
+  async signInMagicLink(email: string, token: string) {
+    await this.fetchService.fetch('/api/auth/magic-link', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, token }),
+    });
+  }
+
+  async oauthPreflight(
+    provider: OAuthProviderType,
+    /** @deprecated*/ redirectUrl?: string
+  ) {
     const res = await this.fetchService.fetch('/api/oauth/preflight', {
       method: 'POST',
-      body: JSON.stringify({ provider }),
+      body: JSON.stringify({ provider, redirect_uri: redirectUrl }),
       headers: {
         'content-type': 'application/json',
       },
     });
-
-    if (!res.ok) {
-      throw new Error(`Failed to sign in with ${provider}`);
-    }
 
     let { url } = await res.json();
 
@@ -140,13 +144,19 @@ export class AuthService extends Service {
     );
     url = oauthUrl.toString();
 
-    if (environment.isDesktop) {
-      await apis?.ui.openExternal(url);
-    } else {
-      popupWindow(url);
-    }
+    return url;
+  }
 
-    return;
+  async signInOauth(code: string, state: string) {
+    const res = await this.fetchService.fetch('/api/oauth/callback', {
+      method: 'POST',
+      body: JSON.stringify({ code, state }),
+      headers: {
+        'content-type': 'application/json',
+      },
+    });
+
+    return await res.json();
   }
 
   async signInPassword(credential: { email: string; password: string }) {

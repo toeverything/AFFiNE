@@ -22,9 +22,9 @@ import type { LoaderFunction } from 'react-router-dom';
 import { redirect, useParams, useSearchParams } from 'react-router-dom';
 import { z } from 'zod';
 
-import { useMutation } from '../hooks/use-mutation';
-import { RouteLogic, useNavigateHelper } from '../hooks/use-navigate-helper';
-import { AuthService, ServerConfigService } from '../modules/cloud';
+import { useMutation } from '../../hooks/use-mutation';
+import { RouteLogic, useNavigateHelper } from '../../hooks/use-navigate-helper';
+import { AuthService, ServerConfigService } from '../../modules/cloud';
 
 const authTypeSchema = z.enum([
   'onboarding',

@@ -195,6 +195,7 @@ export const AccountSetting: FC = () => {
     setAuthModal({
       openModal: true,
       state: 'sendEmail',
+      // @ts-expect-error accont email is always defined
       email: account.email,
       emailType: account.info?.emailVerified ? 'changeEmail' : 'verifyEmail',
     });
@@ -204,6 +205,7 @@ export const AccountSetting: FC = () => {
     setAuthModal({
       openModal: true,
       state: 'sendEmail',
+      // @ts-expect-error accont email is always defined
       email: account.email,
       emailType: account.info?.hasPassword ? 'changePassword' : 'setPassword',
     });
