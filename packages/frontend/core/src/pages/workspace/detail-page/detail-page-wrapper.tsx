@@ -1,4 +1,3 @@
-import { PageDetailSkeleton } from '@affine/component/page-detail-skeleton';
 import type { Editor } from '@affine/core/modules/editor';
 import { EditorsService } from '@affine/core/modules/editor';
 import { ViewService } from '@affine/core/modules/workbench/services/view';
@@ -13,12 +12,11 @@ import {
 } from '@toeverything/infra';
 import {
   type PropsWithChildren,
+  type ReactNode,
   useEffect,
   useLayoutEffect,
   useState,
 } from 'react';
-
-import { PageNotFound } from '../../404';
 
 const useLoadDoc = (pageId: string) => {
   const currentWorkspace = useService(WorkspaceService).workspace;
@@ -136,15 +134,21 @@ const useLoadDoc = (pageId: string) => {
 export const DetailPageWrapper = ({
   pageId,
   children,
-}: PropsWithChildren<{ pageId: string }>) => {
+  skeleton,
+  notFound,
+}: PropsWithChildren<{
+  pageId: string;
+  skeleton: ReactNode;
+  notFound: ReactNode;
+}>) => {
   const { doc, editor, docListReady } = useLoadDoc(pageId);
   // if sync engine has been synced and the page is null, show 404 page.
   if (docListReady && !doc) {
-    return <PageNotFound noPermission />;
+    return notFound;
   }
 
   if (!doc || !editor) {
-    return <PageDetailSkeleton key="current-page-is-null" />;
+    return skeleton;
   }
 
   return (

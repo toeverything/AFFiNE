@@ -1580,5 +1580,7 @@
   "com.affine.mobile.setting.others.website": "Official website",
   "com.affine.mobile.setting.others.privacy": "Privacy",
   "com.affine.mobile.setting.others.terms": "Terms of use",
-  "com.affine.mobile.search.empty": "No results found"
+  "com.affine.mobile.search.empty": "No results found",
+  "com.affine.mobile.sign-in.skip.link": "Start AFFiNE without an account",
+  "com.affine.mobile.sign-in.skip.hint": "Want to keep data local?"
 }

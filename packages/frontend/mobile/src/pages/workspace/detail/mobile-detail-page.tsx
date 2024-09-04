@@ -1,4 +1,5 @@
 import { IconButton } from '@affine/component';
+import { PageDetailSkeleton } from '@affine/component/page-detail-skeleton';
 import { AffineErrorBoundary } from '@affine/core/components/affine/affine-error-boundary';
 import { PageDetailEditor } from '@affine/core/components/page-detail-editor';
 import { useRegisterBlocksuiteEditorCommands } from '@affine/core/hooks/affine/use-register-blocksuite-editor-commands';
@@ -10,6 +11,7 @@ import { EditorService } from '@affine/core/modules/editor';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import { ViewService } from '@affine/core/modules/workbench/services/view';
 import { DetailPageWrapper } from '@affine/core/pages/workspace/detail-page/detail-page-wrapper';
+import { WorkspaceFlavour } from '@affine/env/workspace';
 import type { PageRootService } from '@blocksuite/blocks';
 import {
   BookmarkBlockService,
@@ -20,7 +22,7 @@ import {
   ImageBlockService,
 } from '@blocksuite/blocks';
 import { DisposableGroup } from '@blocksuite/global/utils';
-import { ShareIcon } from '@blocksuite/icons/rc';
+import { ShareiOsIcon } from '@blocksuite/icons/rc';
 import { type AffineEditorContainer } from '@blocksuite/presets';
 import type { Doc as BlockSuiteDoc } from '@blocksuite/store';
 import {
@@ -28,6 +30,7 @@ import {
   FrameworkScope,
   GlobalContextService,
   useLiveData,
+  useService,
   useServices,
   WorkspaceService,
 } from '@toeverything/infra';
@@ -201,9 +204,24 @@ const DetailPageImpl = () => {
   );
 };
 
+const skeleton = (
+  <>
+    <PageHeader back className={styles.header} />
+    <PageDetailSkeleton />
+  </>
+);
+
+const notFound = (
+  <>
+    <PageHeader back className={styles.header} />
+    Page Not Found (TODO)
+  </>
+);
+
 export const Component = () => {
   const params = useParams();
   const pageId = params.pageId;
+  const workspace = useService(WorkspaceService).workspace;
 
   if (!pageId) {
     return null;
@@ -211,18 +229,23 @@ export const Component = () => {
 
   return (
     <div className={styles.root}>
-      <DetailPageWrapper pageId={pageId}>
+      <DetailPageWrapper
+        skeleton={skeleton}
+        notFound={notFound}
+        pageId={pageId}
+      >
         <PageHeader
           back
           className={styles.header}
           suffix={
             <>
-              <IconButton
-                size={24}
-                style={{ padding: 10 }}
-                onClick={console.log}
-                icon={<ShareIcon />}
-              />
+              {workspace.meta.flavour !== WorkspaceFlavour.LOCAL && (
+                <IconButton
+                  size={24}
+                  style={{ padding: 10 }}
+                  icon={<ShareiOsIcon />}
+                />
+              )}
               <PageHeaderMenuButton docId={pageId} />
             </>
           }

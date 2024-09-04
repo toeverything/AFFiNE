@@ -5,7 +5,6 @@ import './polyfill/request-idle-callback';
 import '@affine/core/bootstrap/preload';
 
 import { performanceLogger } from '@affine/core/shared';
-import { isDesktop } from '@affine/env/constant';
 import {
   init,
   reactRouterV6BrowserTracingIntegration,
@@ -24,36 +23,28 @@ import { App } from './app';
 
 const performanceMainLogger = performanceLogger.namespace('main');
 function main() {
-  performanceMainLogger.info('start');
-
-  // skip bootstrap setup for desktop onboarding
-  if (isDesktop && window.appInfo?.windowName === 'onboarding') {
-    performanceMainLogger.info('skip setup');
-  } else {
-    performanceMainLogger.info('setup start');
-    if (window.SENTRY_RELEASE || environment.isDebug) {
-      // https://docs.sentry.io/platforms/javascript/guides/react/#configure
-      init({
-        dsn: process.env.SENTRY_DSN,
-        environment: process.env.BUILD_TYPE ?? 'development',
-        integrations: [
-          reactRouterV6BrowserTracingIntegration({
-            useEffect,
-            useLocation,
-            useNavigationType,
-            createRoutesFromChildren,
-            matchRoutes,
-          }),
-        ],
-      });
-      setTags({
-        appVersion: runtimeConfig.appVersion,
-        editorVersion: runtimeConfig.editorVersion,
-      });
-    }
-    performanceMainLogger.info('setup done');
+  performanceMainLogger.info('setup start');
+  if (window.SENTRY_RELEASE || environment.isDebug) {
+    // https://docs.sentry.io/platforms/javascript/guides/react/#configure
+    init({
+      dsn: process.env.SENTRY_DSN,
+      environment: process.env.BUILD_TYPE ?? 'development',
+      integrations: [
+        reactRouterV6BrowserTracingIntegration({
+          useEffect,
+          useLocation,
+          useNavigationType,
+          createRoutesFromChildren,
+          matchRoutes,
+        }),
+      ],
+    });
+    setTags({
+      appVersion: runtimeConfig.appVersion,
+      editorVersion: runtimeConfig.editorVersion,
+    });
   }
-
+  performanceMainLogger.info('setup done');
   mountApp();
 }
 

@@ -1,4 +1,5 @@
 import { Scrollable, useHasScrollTop } from '@affine/component';
+import { PageDetailSkeleton } from '@affine/component/page-detail-skeleton';
 import type { ChatPanel } from '@affine/core/blocksuite/presets/ai';
 import { AIProvider } from '@affine/core/blocksuite/presets/ai';
 import { PageAIOnboarding } from '@affine/core/components/affine/ai-onboarding';
@@ -53,6 +54,7 @@ import {
   WorkbenchService,
 } from '../../../modules/workbench';
 import { performanceRenderLogger } from '../../../shared';
+import { PageNotFound } from '../../404';
 import * as styles from './detail-page.css';
 import { DetailPageHeader } from './detail-page-header';
 import { DetailPageWrapper } from './detail-page-wrapper';
@@ -347,7 +349,11 @@ export const Component = () => {
   const pageId = params.pageId;
 
   return pageId ? (
-    <DetailPageWrapper pageId={pageId}>
+    <DetailPageWrapper
+      pageId={pageId}
+      skeleton={<PageDetailSkeleton />}
+      notFound={<PageNotFound noPermission />}
+    >
       <DetailPageImpl />
     </DetailPageWrapper>
   ) : null;

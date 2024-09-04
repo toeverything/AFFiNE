@@ -40,12 +40,7 @@ export function OAuth() {
   );
 
   if (!oauth) {
-    return (
-      <>
-        <br />
-        <Skeleton height={50} />
-      </>
-    );
+    return <Skeleton height={50} />;
   }
 
   return oauthProviders?.map(provider => (

@@ -1,9 +1,12 @@
-import { RootRouter } from '@affine/core/router';
+import { NavigateContext } from '@affine/core/hooks/use-navigate-helper';
 import { wrapCreateBrowserRouter } from '@sentry/react';
+import { useEffect, useState } from 'react';
 import type { RouteObject } from 'react-router-dom';
 import {
   createBrowserRouter as reactRouterCreateBrowserRouter,
+  Outlet,
   redirect,
+  useNavigate,
 } from 'react-router-dom';
 
 import { Component as All } from './pages/workspace/all';
@@ -13,6 +16,25 @@ import { Component as Home } from './pages/workspace/home';
 import { Component as Search } from './pages/workspace/search';
 import { Component as Tag } from './pages/workspace/tag';
 import { Component as TagDetail } from './pages/workspace/tag/detail';
+import { AllWorkspaceModals } from './provider/model-provider';
+
+function RootRouter() {
+  const navigate = useNavigate();
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    // a hack to make sure router is ready
+    setReady(true);
+  }, []);
+
+  return (
+    ready && (
+      <NavigateContext.Provider value={navigate}>
+        <AllWorkspaceModals />
+        <Outlet />
+      </NavigateContext.Provider>
+    )
+  );
+}
 
 export const topLevelRoutes = [
   {

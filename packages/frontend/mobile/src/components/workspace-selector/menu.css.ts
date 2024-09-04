@@ -3,7 +3,7 @@ import { cssVarV2 } from '@toeverything/theme/v2';
 import { style } from '@vanilla-extract/css';
 
 export const root = style({
-  maxHeight: 'calc(100vh - 100px)',
+  maxHeight: 'calc(100dvh - 100px)',
   display: 'flex',
   flexDirection: 'column',
 });

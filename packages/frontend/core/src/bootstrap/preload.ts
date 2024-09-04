@@ -7,3 +7,5 @@ import './edgeless-template';
 import { setupGlobal } from '@affine/env/global';
 
 setupGlobal();
+
+import '../types/types.d.ts';

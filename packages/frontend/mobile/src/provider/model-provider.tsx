@@ -1,3 +1,4 @@
+import { NotificationCenter } from '@affine/component';
 import { AiLoginRequiredModal } from '@affine/core/components/affine/auth/ai-login-required';
 import { HistoryTipsModal } from '@affine/core/components/affine/history-tips-modal';
 import { IssueFeedbackModal } from '@affine/core/components/affine/issue-feedback-modal';
@@ -8,12 +9,15 @@ import {
 import { StarAFFiNEModal } from '@affine/core/components/affine/star-affine-modal';
 import { MoveToTrash } from '@affine/core/components/page-list';
 import { useTrashModalHelper } from '@affine/core/hooks/affine/use-trash-modal-helper';
+import { CreateWorkspaceDialogProvider } from '@affine/core/modules/create-workspace';
 import { PeekViewManagerModal } from '@affine/core/modules/peek-view';
+import { SignOutConfirmModal } from '@affine/core/providers/modal-provider';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useService, WorkspaceService } from '@toeverything/infra';
 import { useCallback } from 'react';
 
 import { MobileSettingModal } from '../views';
+import { MobileSignInModal } from '../views/sign-in/modal';
 
 export function MobileCurrentWorkspaceModals() {
   const currentWorkspace = useService(WorkspaceService).workspace;
@@ -58,3 +62,15 @@ export function MobileCurrentWorkspaceModals() {
     </>
   );
 }
+
+// I don't like the name, but let's keep it for now
+export const AllWorkspaceModals = () => {
+  return (
+    <>
+      <NotificationCenter />
+      <CreateWorkspaceDialogProvider />
+      <MobileSignInModal />
+      <SignOutConfirmModal />
+    </>
+  );
+};

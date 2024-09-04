@@ -293,7 +293,11 @@ export const createConfiguration: (
             },
             {
               test: /\.txt$/,
-              loader: 'raw-loader',
+              type: 'asset/source',
+            },
+            {
+              test: /\.inline\.svg$/,
+              type: 'asset/inline',
             },
             {
               test: /\.css$/,

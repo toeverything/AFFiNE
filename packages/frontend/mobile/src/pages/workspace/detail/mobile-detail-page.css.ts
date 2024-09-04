@@ -4,7 +4,7 @@ import { globalStyle, style } from '@vanilla-extract/css';
 
 export const root = style({
   background: cssVarV2('layer/background/primary'),
-  minHeight: '100vh',
+  minHeight: '100dvh',
   display: 'flex',
   flexDirection: 'column',
 });

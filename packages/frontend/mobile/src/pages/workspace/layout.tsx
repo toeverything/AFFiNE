@@ -77,7 +77,7 @@ export const WorkspaceLayout = ({
 
   return (
     <FrameworkScope scope={workspace.scope}>
-      <AffineErrorBoundary height="100vh">
+      <AffineErrorBoundary height="100dvh">
         <SWRConfigProvider>
           <MobileCurrentWorkspaceModals />
           <WorkspaceLayoutProviders>{children}</WorkspaceLayoutProviders>
