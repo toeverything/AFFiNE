@@ -53,6 +53,9 @@ const clearChat = async (page: Page) => {
 
 const collectChat = async (page: Page) => {
   const chatPanel = await page.waitForSelector('.chat-panel-messages');
+  if (await chatPanel.$('.chat-panel-messages-placeholder')) {
+    return [];
+  }
   // wait ai response
   await page.waitForSelector('.chat-panel-messages .message chat-copy-more');
   const lastMessage = await chatPanel.$$('.message').then(m => m[m.length - 1]);
@@ -176,6 +179,7 @@ test.describe('chat panel', () => {
     await focusToEditor(page);
     // insert below
     await page.getByTestId('action-insert-below').click();
+    await page.waitForSelector('affine-format-bar-widget editor-toolbar');
     const editorContent = await getEditorContent(page);
     expect(editorContent).toBe(content);
   });
